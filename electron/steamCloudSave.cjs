@@ -581,9 +581,13 @@ function sanitizeDisplaySettings(display = {}) {
   const size = raw.windowSize || raw.resolution || raw.size || {};
   const width = sanitizeNumber(size.width, 1280, { min: 960, max: 7680 });
   const height = sanitizeNumber(size.height, 720, { min: 540, max: 4320 });
+  const uiScale = [1, 1.25, 1.5, 1.75, 2].includes(Number(raw.uiScale))
+    ? Number(raw.uiScale)
+    : 1;
   return {
     mode,
-    windowSize: { width, height }
+    windowSize: { width, height },
+    uiScale
   };
 }
 

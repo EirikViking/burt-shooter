@@ -62,22 +62,26 @@ function checkRendererDefaultsAndPersistence() {
   const storage = installBrowserGlobals();
   assert.deepEqual(getDisplaySettings({ storage }), {
     mode: 'fullscreen',
-    windowSize: { width: 1280, height: 720 }
+    windowSize: { width: 1280, height: 720 },
+    uiScale: 1
   });
 
   const savedMode = saveDisplaySettings({
     mode: 'windowed',
-    windowSize: { width: 1600, height: 900 }
+    windowSize: { width: 1600, height: 900 },
+    uiScale: 1.5
   }, { storage });
   assert.deepEqual(savedMode, {
     mode: 'windowed',
-    windowSize: { width: 1600, height: 900 }
+    windowSize: { width: 1600, height: 900 },
+    uiScale: 1.5
   });
   assert.deepEqual(getDisplaySettings({ storage }), savedMode);
 
   const reset = resetDisplaySettings({ storage });
   assert.equal(reset.mode, 'fullscreen');
   assert.deepEqual(reset.windowSize, { width: 1280, height: 720 });
+  assert.equal(reset.uiScale, 1);
 }
 
 async function checkElectronBridgeApply() {
@@ -106,12 +110,14 @@ async function checkElectronBridgeApply() {
   assert.equal(options.sizes[0].width, 2560);
   const result = await applyDisplaySettings({
     mode: 'windowed',
-    windowSize: { width: 1600, height: 900 }
+    windowSize: { width: 1600, height: 900 },
+    uiScale: 1.75
   }, { storage });
   assert.equal(result.ok, true);
   assert.deepEqual(applied, {
     mode: 'windowed',
-    windowSize: { width: 1600, height: 900 }
+    windowSize: { width: 1600, height: 900 },
+    uiScale: 1.75
   });
   assert.equal(storage.getItem('nova_display_mode_v1'), 'windowed');
 }
@@ -167,9 +173,11 @@ function checkElectronPersistenceRoundTrip() {
   try {
     const saved = writeDisplaySettings(userDataPath, {
       mode: 'borderless',
-      windowSize: { width: 1920, height: 1080 }
+      windowSize: { width: 1920, height: 1080 },
+      uiScale: 2
     });
     assert.equal(saved.mode, 'borderless');
+    assert.equal(saved.uiScale, 2);
     assert.deepEqual(readDisplaySettings(userDataPath), saved);
   } finally {
     rmSync(userDataPath, { recursive: true, force: true });
@@ -180,6 +188,8 @@ function checkI18nText() {
   for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
     assert.notEqual(translateTextForLocale(locale, 'Display Mode'), 'Display Mode', `${locale} display mode translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Window Size'), 'Window Size', `${locale} window size translation missing`);
+    assert.notEqual(translateTextForLocale(locale, 'UI Scale'), 'UI Scale', `${locale} UI scale translation missing`);
+    assert.notEqual(translateTextForLocale(locale, 'UI scale applied'), 'UI scale applied', `${locale} UI scale applied translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Safe display reset applied'), 'Safe display reset applied', `${locale} reset translation missing`);
   }
 }

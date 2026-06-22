@@ -10,9 +10,11 @@ import {
 import {
   DEFAULT_WINDOW_SIZE_OPTIONS,
   DISPLAY_MODES,
+  UI_SCALE_OPTIONS,
   applyDisplaySettings,
   getDisplayOptions,
   getDisplaySettings,
+  getUiScaleLabel,
   resetDisplaySettings
 } from '../config/DisplaySettings.js';
 import { BUILD_ID } from '../buildInfo.js';
@@ -28,6 +30,7 @@ import {
 } from '../i18n/index.js';
 import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
+import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -98,6 +101,7 @@ export class SettingsOverlay {
     this.musicPackButton = null;
     this.displayModeButton = null;
     this.displaySizeButton = null;
+    this.uiScaleButton = null;
     this.displayStatusText = null;
     this.displayOptions = {
       modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
@@ -134,6 +138,7 @@ export class SettingsOverlay {
     this.controls = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    this.uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
     this.container.eventMode = 'static';
@@ -157,8 +162,8 @@ export class SettingsOverlay {
     });
 
     const isCompact = width < 620 || height < 820;
-    const panelWidth = Math.min(680, width * 0.9);
-    const panelHeight = Math.min(isCompact ? 790 : 760, height * (isCompact ? 0.98 : 0.97));
+    const panelWidth = Math.min(680 * this.uiScale, width * 0.9);
+    const panelHeight = Math.min((isCompact ? 820 : 900) * this.uiScale, height * (isCompact ? 0.98 : 0.97));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
@@ -170,7 +175,7 @@ export class SettingsOverlay {
 
     const titleText = createText(this.title, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 28 : 34,
+      fontSize: Math.round((isCompact ? 28 : 34) * this.uiScale),
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
@@ -181,19 +186,21 @@ export class SettingsOverlay {
     this.container.addChild(titleText);
 
     const dense = height < 760;
-    const sectionGap = dense ? 22 : 26;
-    const toggleGap = dense ? 30 : (isCompact ? 32 : 34);
-    const testGap = dense ? 30 : (isCompact ? 31 : 34);
-    const sliderGap = dense ? 31 : (isCompact ? 32 : 34);
+    const sectionGap = Math.round((dense ? 22 : 26) * this.uiScale);
+    const toggleGap = Math.round((dense ? 30 : (isCompact ? 32 : 34)) * this.uiScale);
+    const testGap = Math.round((dense ? 30 : (isCompact ? 31 : 34)) * this.uiScale);
+    const sliderGap = Math.round((dense ? 31 : (isCompact ? 32 : 34)) * this.uiScale);
     const footerButtonHeight = isCompact ? 32 : 38;
-    const stackedButtonWidth = Math.min(240, panelWidth - 56);
-    let y = panelY + (dense ? 74 : (isCompact ? 84 : 92));
+    const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
+    let y = panelY + Math.round((dense ? 74 : (isCompact ? 84 : 92)) * this.uiScale);
     this.addSectionLabel('DISPLAY', y);
     y += sectionGap;
     this.addDisplayModeRow('Display Mode', y);
     y += toggleGap;
     this.addDisplaySizeRow('Window Size', y);
     y += testGap;
+    this.addUiScaleRow('UI Scale', y);
+    y += toggleGap;
     this.addDisplayResetRow('Safe Reset', y);
     y += sectionGap;
     this.addSectionLabel('AUDIO', y);
@@ -553,6 +560,9 @@ export class SettingsOverlay {
   }
 
   createButton(label, x, y, onPress, { width = 240, height = 38 } = {}) {
+    const controlScale = Math.max(1, Math.min(2, Number(this.uiScale) || 1));
+    width = Math.round(width * controlScale);
+    height = Math.round(height * controlScale);
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
@@ -668,6 +678,10 @@ export class SettingsOverlay {
       this.displaySizeButton._label.text = this.getSizeLabel(settings.windowSize);
       fitTextToWidth(this.displaySizeButton._label, 174);
     }
+    if (this.uiScaleButton?._label) {
+      this.uiScaleButton._label.text = getUiScaleLabel(settings.uiScale);
+      fitTextToWidth(this.uiScaleButton._label, 174);
+    }
   }
 
   async refreshDisplayOptions() {
@@ -681,6 +695,7 @@ export class SettingsOverlay {
 
   async applyDisplayUpdate(settings, status = 'Display changes applied') {
     const result = await applyDisplaySettings(settings);
+    applyResponsiveLayout(window.innerWidth, window.innerHeight);
     this.updateDisplayControls();
     this.setDisplayStatus(result?.ok ? status : 'Browser display fallback active');
     AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
@@ -720,15 +735,34 @@ export class SettingsOverlay {
     });
   }
 
+  addUiScaleRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, getUiScaleLabel(settings.uiScale), y, async (direction = 1) => {
+      const current = getDisplaySettings().uiScale;
+      const currentIndex = Math.max(0, UI_SCALE_OPTIONS.findIndex((entry) => entry === current));
+      const next = UI_SCALE_OPTIONS[((currentIndex + Math.sign(direction || 1)) % UI_SCALE_OPTIONS.length + UI_SCALE_OPTIONS.length) % UI_SCALE_OPTIONS.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), uiScale: next }, 'UI scale applied');
+      this.rebuild();
+    }, {
+      id: 'ui_scale',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.uiScaleButton = button;
+      }
+    });
+  }
+
   addDisplayResetRow(label, y) {
     const width = this.game.getWidth();
     const row = new PIXI.Container();
     row.position.set(width / 2, y);
 
-    const button = this.createButton(label, -60, 0, async () => {
+    const buttonX = -Math.round(60 * this.uiScale);
+    const buttonWidth = 168;
+    const button = this.createButton(label, buttonX, 0, async () => {
       const settings = resetDisplaySettings();
       await this.applyDisplayUpdate(settings, 'Safe display reset applied');
-    }, { width: 168, height: 30 });
+    }, { width: buttonWidth, height: 30 });
     row.addChild(button);
 
     const status = createText(translateText('Display changes apply immediately'), {
@@ -737,7 +771,7 @@ export class SettingsOverlay {
       fill: '#ffc96e'
     });
     status.anchor.set(0, 0.5);
-    status.x = 44;
+    status.x = buttonX + (buttonWidth * this.uiScale) / 2 + 24;
     this.displayStatusText = status;
     row.addChild(status);
 
@@ -894,6 +928,9 @@ export class SettingsOverlay {
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.uiScaleButton = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -1687,6 +1724,8 @@ export class SettingsOverlay {
       display: {
         mode: displaySettings.mode,
         windowSize: displaySettings.windowSize,
+        uiScale: displaySettings.uiScale,
+        uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
         modeLabel: this.displayModeButton?._label?.text || null,
         sizeLabel: this.displaySizeButton?._label?.text || null,
         status: this.displayStatusText?.text || null,

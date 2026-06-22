@@ -1,6 +1,8 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "UI Scale": "Jiemian suofang",
+  "UI scale applied": "Jiemian suofang yi yingyong",
   "SECTOR RUN DECK": "SECTOR RUN DECK",
   "Steam sector run records loaded.": "Steam Sector Run records loaded.",
   "Steam sector run board has no entries yet.": "Steam Sector Run board has no entries yet.",

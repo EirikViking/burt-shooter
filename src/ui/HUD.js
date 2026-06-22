@@ -310,7 +310,7 @@ export class HUD {
     const rankTex = RankAssets.getRankTexture(this.game.rankIndex);
     if (rankTex) {
       this.rankIcon.texture = rankTex;
-      const maxSz = 42;
+      const maxSz = 42 * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
       if (this.rankIcon.texture?.width > 0) {
         const scale = Math.min(maxSz / this.rankIcon.texture.width, maxSz / this.rankIcon.texture.height);
         this.rankIcon.scale.set(scale);
@@ -318,37 +318,38 @@ export class HUD {
     }
 
     this.rankText.text = rankManager.getRankString(this.game.rankIndex);
-    const rankPanelWidth = 164;
-    const rankTextX = 56;
-    const rankTextMaxWidth = 92;
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const rankPanelWidth = 164 * uiScale;
+    const rankTextX = 56 * uiScale;
+    const rankTextMaxWidth = 92 * uiScale;
     this.rankText.x = rankTextX;
-    this.rankText.y = 8;
+    this.rankText.y = 8 * uiScale;
     this.rankText.scale.set(1);
     this.rankText.updateText?.(false);
     if (this.rankText.width > rankTextMaxWidth) {
       this.rankText.scale.set(Math.max(0.58, rankTextMaxWidth / this.rankText.width));
     }
-    this.rankIcon.x = 25;
-    this.rankIcon.y = 24;
+    this.rankIcon.x = 25 * uiScale;
+    this.rankIcon.y = 24 * uiScale;
 
     this.rankBadgeBg.clear();
-    this.rankBadgeBg.roundRect(-5, -3, rankPanelWidth, 58, 9);
+    this.rankBadgeBg.roundRect(-5 * uiScale, -3 * uiScale, rankPanelWidth, 58 * uiScale, 9 * uiScale);
     this.rankBadgeBg.fill({ color: 0x020916, alpha: 0.76 });
     this.rankBadgeBg.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.82 });
 
     this.rankTextBg.clear();
-    this.rankTextBg.roundRect(rankTextX - 4, 5, rankTextMaxWidth + 8, 22, 4);
+    this.rankTextBg.roundRect(rankTextX - 4 * uiScale, 5 * uiScale, rankTextMaxWidth + 8 * uiScale, 22 * uiScale, 4 * uiScale);
     this.rankTextBg.fill({ color: 0x020711, alpha: 0.72 });
     this.rankTextBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.2 });
 
     // XP Bar
     const progress = this.game.getRankProgress();
     const barW = rankTextMaxWidth + 8;
-    const barH = 5;
+    const barH = 5 * uiScale;
 
-    this.rankBarBg.clear().roundRect(rankTextX - 4, 40, barW, barH, 3).fill({ color: 0x102238, alpha: 0.94 });
+    this.rankBarBg.clear().roundRect(rankTextX - 4 * uiScale, 40 * uiScale, barW, barH, 3 * uiScale).fill({ color: 0x102238, alpha: 0.94 });
     this.rankBarBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.45 });
-    this.rankBarFill.clear().roundRect(rankTextX - 4, 40, barW * progress, barH, 3).fill({ color: 0xffef7e });
+    this.rankBarFill.clear().roundRect(rankTextX - 4 * uiScale, 40 * uiScale, barW * progress, barH, 3 * uiScale).fill({ color: 0xffef7e });
 
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
@@ -526,12 +527,13 @@ export class HUD {
 
     const layout = getCurrentLayout();
     const isMobile = Boolean(layout?.isMobile);
-    const width = isMobile ? 194 : 256;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
+    const width = Math.round((isMobile ? 194 : 256) * uiScale);
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = isMobile ? 32 : 38;
-    const titleHeight = isMobile ? 16 : 18;
+    const rowHeight = Math.round((isMobile ? 32 : 38) * uiScale);
+    const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
     this.activePowerupBg.clear();
@@ -545,7 +547,7 @@ export class HUD {
     this.activePowerupTitle.text = hasDebuff
       ? 'SYSTEM STATUS'
       : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
-    this.activePowerupTitle.style.fontSize = isMobile ? 10 : 12;
+    this.activePowerupTitle.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     this.activePowerupTitle.x = paddingX + 1;
     this.activePowerupTitle.y = paddingTop - 2;
     this.activePowerupTitle.visible = true;
@@ -569,7 +571,7 @@ export class HUD {
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
     if (canvasWidth) {
-      const margin = 10;
+      const margin = Math.round(10 * uiScale);
       const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
       const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
       const groupX = canvasWidth - margin - width;
@@ -640,9 +642,10 @@ export class HUD {
   }
 
   updateActivePowerupRow(row, state, width, height, isMobile) {
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const color = Number.isFinite(state.color) ? state.color : this.getPowerupColor(state.type);
-    const iconSize = isMobile ? 20 : 23;
-    const iconX = 17;
+    const iconSize = Math.round((isMobile ? 20 : 23) * uiScale);
+    const iconX = Math.round(17 * uiScale);
     const iconY = height / 2 - 1;
     const texture = GameAssets.getPowerupTexture(state.iconType || state.type);
     row.bg.clear();
@@ -668,8 +671,8 @@ export class HUD {
       row.icon.visible = false;
     }
 
-    row.label.style.fontSize = isMobile ? 11 : 14;
-    row.meta.style.fontSize = isMobile ? 10 : 12;
+    row.label.style.fontSize = Math.round((isMobile ? 11 : 14) * uiScale);
+    row.meta.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 18);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
@@ -914,27 +917,30 @@ export class HUD {
     if (!layout || typeof layout.width !== 'number') return;
 
     const canvasWidth = this.game.getWidth ? this.game.getWidth() : layout.width;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
     const isLargeDesktop = !layout.isMobile && canvasWidth >= 1920;
-    const margin = layout.isMobile ? 14 : 16;
-    const blockSpacing = layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24);
-    const scoreFont = layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20);
-    const livesFont = layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20);
-    const leftPanelWidth = layout.isMobile ? Math.min(286, canvasWidth * 0.72) : (isLargeDesktop ? 410 : 390);
-    const leftPanelHeight = layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136);
-    const rightPanelWidth = layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164);
-    const rightPanelHeight = layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52);
-    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : (isLargeDesktop ? 520 : 440);
-    const missionPanelHeight = layout.isMobile ? 38 : (isLargeDesktop ? 58 : 52);
+    const margin = Math.round((layout.isMobile ? 14 : 16) * Math.min(uiScale, 1.45));
+    const blockSpacing = Math.round((layout.isMobile ? 24 : (isLargeDesktop ? 26 : 24)) * uiScale);
+    const scoreFont = Math.round((layout.isMobile ? 15 : (isLargeDesktop ? 22 : 20)) * uiScale);
+    const livesFont = Math.round((layout.isMobile ? 16 : (isLargeDesktop ? 22 : 20)) * uiScale);
+    const leftPanelWidth = layout.isMobile
+      ? Math.min(286 * uiScale, canvasWidth * 0.72)
+      : Math.min(canvasWidth * 0.42, (isLargeDesktop ? 410 : 390) * uiScale);
+    const leftPanelHeight = Math.round((layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136)) * uiScale);
+    const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
+    const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
+    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.56, (isLargeDesktop ? 520 : 440) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 38 : (isLargeDesktop ? 58 : 52)) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
     const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
 
     this.scoreText.style.fontSize = scoreFont;
     this.levelText.style.fontSize = scoreFont;
     this.livesText.style.fontSize = livesFont;
-    this.locationText.style.fontSize = layout.isMobile ? 11 : (isLargeDesktop ? 16 : 14);
-    this.rankText.style.fontSize = layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14);
-    this.missionLabel.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11);
-    this.missionText.style.fontSize = layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15);
+    this.locationText.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 16 : 14)) * uiScale);
+    this.rankText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14)) * uiScale);
+    this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
+    this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
 
     this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
     this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
@@ -945,7 +951,7 @@ export class HUD {
     this.rankGroup.y = margin + 10;
 
     // Shift Score and Level to the right of Rank
-    const rankOffset = layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198);
+    const rankOffset = Math.round((layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198)) * uiScale);
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;
@@ -956,15 +962,15 @@ export class HUD {
     this.levelText.y = margin + blockSpacing + 8;
 
     if (this.highscoreChaseGroup) {
-      const chaseWidth = Math.max(layout.isMobile ? 248 : 320, leftPanelWidth - 24);
-      const chaseHeight = layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52);
+      const chaseWidth = Math.max((layout.isMobile ? 248 : 320) * uiScale, leftPanelWidth - 24);
+      const chaseHeight = Math.round((layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
       this.highscoreChaseGroup.__w = chaseWidth;
       this.highscoreChaseGroup.__h = chaseHeight;
       this.highscoreChaseGroup.x = margin + 12;
       this.highscoreChaseGroup.y = margin + (layout.isMobile ? 68 : 72);
-      this.highscoreChaseTitle.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11);
-      this.highscoreChaseTarget.style.fontSize = layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13);
-      this.highscoreChaseGap.style.fontSize = layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10);
+      this.highscoreChaseTitle.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
+      this.highscoreChaseTarget.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13)) * uiScale);
+      this.highscoreChaseGap.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10)) * uiScale);
     }
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;

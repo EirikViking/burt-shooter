@@ -1424,23 +1424,24 @@ export class MenuScene {
     const safeMargin = responsiveLayout.safeArea;
     const isMobileLayout = layout.isMobile || width < 760;
     const isShortLayout = height < 820;
+    const uiScale = Math.max(1, Math.min(2, Number(responsiveLayout?.uiScale) || 1));
     this.layoutBackdrop(width, height);
     this.layoutMissionConsole(width, height);
     resizeMenuFx(this, width, height);
 
-    const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72));
-    const subtitleSize = Math.round(clampNumber(width * 0.009, isMobileLayout ? 12 : 14, isMobileLayout ? 16 : 18));
+    const titleSize = Math.round(clampNumber(width * (isMobileLayout ? 0.076 : 0.035), isMobileLayout ? 38 : 46, isMobileLayout ? 58 : 72) * uiScale);
+    const subtitleSize = Math.round(clampNumber(width * 0.009, isMobileLayout ? 12 : 14, isMobileLayout ? 16 : 18) * uiScale);
     const controlsSize = getResponsiveFontSize(layout, 'small');
     const titleX = isMobileLayout ? width * 0.5 : clampNumber(width * 0.05, 44, 96);
     const titleY = safeMargin.top + clampNumber(height * 0.075, isMobileLayout ? 46 : 58, isMobileLayout ? 72 : 92);
-    const titleWidth = isMobileLayout ? width * 0.88 : Math.min(width * 0.42, 560);
+    const titleWidth = isMobileLayout ? width * 0.88 : Math.min(width * 0.5, 560 * uiScale);
 
     this.kicker.visible = false;
     this.kicker.alpha = 0;
     this.title.style.fontSize = titleSize;
-    this.title.style.stroke = { color: '#031527', width: isMobileLayout ? 5 : 7 };
+    this.title.style.stroke = { color: '#031527', width: Math.round((isMobileLayout ? 5 : 7) * uiScale) };
     this.title.style.letterSpacing = 0;
-    this.title.style.padding = isMobileLayout ? 12 : 26;
+    this.title.style.padding = Math.round((isMobileLayout ? 12 : 26) * uiScale);
     this.title.anchor.set(isMobileLayout ? 0.5 : 0, 0.5);
     this.title.x = titleX;
     this.title.y = titleY;
@@ -1497,7 +1498,7 @@ export class MenuScene {
     const marginX = clampNumber(width * 0.018, 16, 34);
     const gap = clampNumber(width * 0.007, 8, 16);
     const dockWidth = Math.max(0, width - marginX * 2);
-    const dockHeight = clampNumber(height * 0.118, isShortLayout ? 82 : 96, isMobileLayout ? 112 : 128);
+    const dockHeight = clampNumber(height * 0.118 * uiScale, (isShortLayout ? 82 : 96) * uiScale, (isMobileLayout ? 112 : 128) * uiScale);
     const safeBottomEdge = Number.isFinite(safeMargin.bottom)
       ? (safeMargin.bottom > height * 0.5 ? safeMargin.bottom : height - safeMargin.bottom)
       : height;
@@ -1515,8 +1516,8 @@ export class MenuScene {
     const briefingHeight = Math.round(clampNumber(height * 0.15, isShortLayout ? 118 : 132, isShortLayout ? 142 : 164));
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
-    const cardWidth = Math.round(clampNumber(width * 0.17, isMobileLayout ? 238 : 246, isMobileLayout ? 300 : 320));
-    const cardHeight = Math.round(clampNumber(height * 0.052, isShortLayout ? 44 : 50, isMobileLayout ? 58 : 62));
+    const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
+    const cardHeight = Math.round(clampNumber(height * 0.052 * uiScale, (isShortLayout ? 44 : 50) * uiScale, (isMobileLayout ? 58 : 62) * uiScale));
     const deckHeight = cardHeight * 3 + cardGap * 2;
     const deckX = Math.round(isMobileLayout
       ? (width - cardWidth) / 2
@@ -1544,8 +1545,8 @@ export class MenuScene {
       button._variant = button === this.startBtn ? 'primary' : 'secondary';
       button._dockIndex = null;
       button._launchDeckIndex = index;
-      button._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.05, 13, 17));
-      button._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.031, 8, 10));
+      button._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.05, 13 * uiScale, 17 * uiScale));
+      button._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.031, 8 * uiScale, 10 * uiScale));
       if (button._bodyLabel) {
         button._bodyLabel.text = '';
         button._bodyLabel.visible = false;
@@ -1560,7 +1561,7 @@ export class MenuScene {
     });
 
     const remainingWidth = dockWidth - gap * (dockButtons.length - 1);
-    const secondaryWidth = Math.max(isMobileLayout ? 132 : 156, remainingWidth / Math.max(1, dockButtons.length));
+    const secondaryWidth = Math.max((isMobileLayout ? 132 : 156) * uiScale, remainingWidth / Math.max(1, dockButtons.length));
     let cursorX = marginX;
 
     dockButtons.forEach((button, index) => {
@@ -1571,8 +1572,8 @@ export class MenuScene {
       button._btnHeight = tileHeight;
       button._variant = button === this.exitBtn ? 'danger' : 'secondary';
       button._dockIndex = index;
-      button._label.style.fontSize = Math.round(clampNumber(btnWidth * 0.056, 11, 16));
-      button._sublabel.style.fontSize = Math.round(clampNumber(btnWidth * 0.039, 8, 11));
+      button._label.style.fontSize = Math.round(clampNumber(btnWidth * 0.056, 11 * uiScale, 16 * uiScale));
+      button._sublabel.style.fontSize = Math.round(clampNumber(btnWidth * 0.039, 8 * uiScale, 11 * uiScale));
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
       button.x = cursorX + btnWidth / 2;
       button.y = dockTop + dockHeight * (isShortLayout ? 0.54 : 0.56);
@@ -1609,7 +1610,7 @@ export class MenuScene {
     ));
     const briefingPadX = isMobileLayout ? 18 : 22;
     const briefingPadY = isShortLayout ? 12 : 14;
-    this.runModeBriefingTitle.style.fontSize = isMobileLayout ? 12 : 14;
+    this.runModeBriefingTitle.style.fontSize = Math.round((isMobileLayout ? 12 : 14) * uiScale);
     this.runModeBriefingTitle.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
     this.runModeBriefingTitle.x = briefingX + briefingPadX;
     this.runModeBriefingTitle.y = briefingY + briefingPadY;
@@ -1650,9 +1651,9 @@ export class MenuScene {
     this.easter.y = dockBottom + 4;
     this.easter.anchor.set(0, 0.5);
 
-    const utilityWidth = isMobileLayout ? 132 : 158;
-    const utilityHeight = isMobileLayout ? 28 : 32;
-    const utilityGap = isMobileLayout ? 6 : 7;
+    const utilityWidth = (isMobileLayout ? 132 : 158) * uiScale;
+    const utilityHeight = (isMobileLayout ? 28 : 32) * uiScale;
+    const utilityGap = (isMobileLayout ? 6 : 7) * uiScale;
     const utilityButtons = [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean);
     utilityButtons.forEach((button, index) => {
       button.visible = true;

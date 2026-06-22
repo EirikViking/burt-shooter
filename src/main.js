@@ -623,6 +623,7 @@ function buildGameTextState(game) {
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
     display: getDisplaySettings(),
+    layout: getCurrentLayout(),
     accessibility: getAccessibilitySettings(),
     input: {
       gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null

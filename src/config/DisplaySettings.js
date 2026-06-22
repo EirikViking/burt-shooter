@@ -1,5 +1,6 @@
 export const DISPLAY_MODE_KEY = 'nova_display_mode_v1';
 export const DISPLAY_WINDOW_SIZE_KEY = 'nova_display_window_size_v1';
+export const UI_SCALE_KEY = 'nova_ui_scale_v1';
 
 export const DISPLAY_MODES = Object.freeze([
   { id: 'fullscreen', label: 'Fullscreen' },
@@ -9,8 +10,11 @@ export const DISPLAY_MODES = Object.freeze([
 
 export const DEFAULT_DISPLAY_SETTINGS = Object.freeze({
   mode: 'fullscreen',
-  windowSize: Object.freeze({ width: 1280, height: 720 })
+  windowSize: Object.freeze({ width: 1280, height: 720 }),
+  uiScale: 1
 });
+
+export const UI_SCALE_OPTIONS = Object.freeze([1, 1.25, 1.5, 1.75, 2]);
 
 export const DEFAULT_WINDOW_SIZE_OPTIONS = Object.freeze([
   { width: 1280, height: 720, label: '1280 x 720' },
@@ -34,13 +38,27 @@ function clampSize(value, fallback) {
   return { width, height };
 }
 
+export function normalizeUiScale(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return DEFAULT_DISPLAY_SETTINGS.uiScale;
+  const rounded = Math.round(numeric * 100) / 100;
+  return UI_SCALE_OPTIONS.includes(rounded)
+    ? rounded
+    : DEFAULT_DISPLAY_SETTINGS.uiScale;
+}
+
+export function getUiScaleLabel(value) {
+  return `${Math.round(normalizeUiScale(value) * 100)}%`;
+}
+
 export function normalizeDisplaySettings(settings = {}) {
   const mode = DISPLAY_MODES.some((entry) => entry.id === settings?.mode)
     ? settings.mode
     : DEFAULT_DISPLAY_SETTINGS.mode;
   return {
     mode,
-    windowSize: clampSize(settings?.windowSize || settings?.resolution || settings?.size, DEFAULT_DISPLAY_SETTINGS.windowSize)
+    windowSize: clampSize(settings?.windowSize || settings?.resolution || settings?.size, DEFAULT_DISPLAY_SETTINGS.windowSize),
+    uiScale: normalizeUiScale(settings?.uiScale ?? settings?.ui_scale ?? settings?.interfaceScale)
   };
 }
 
@@ -48,15 +66,18 @@ export function getDisplaySettings({ storage = null } = {}) {
   const localStorageRef = getStorage(storage);
   let mode = DEFAULT_DISPLAY_SETTINGS.mode;
   let windowSize = DEFAULT_DISPLAY_SETTINGS.windowSize;
+  let uiScale = DEFAULT_DISPLAY_SETTINGS.uiScale;
   try {
     const storedMode = localStorageRef?.getItem?.(DISPLAY_MODE_KEY);
     if (DISPLAY_MODES.some((entry) => entry.id === storedMode)) mode = storedMode;
     const parsedSize = JSON.parse(localStorageRef?.getItem?.(DISPLAY_WINDOW_SIZE_KEY) || 'null');
     windowSize = clampSize(parsedSize, DEFAULT_DISPLAY_SETTINGS.windowSize);
+    uiScale = normalizeUiScale(localStorageRef?.getItem?.(UI_SCALE_KEY));
   } catch {
     windowSize = DEFAULT_DISPLAY_SETTINGS.windowSize;
+    uiScale = DEFAULT_DISPLAY_SETTINGS.uiScale;
   }
-  return normalizeDisplaySettings({ mode, windowSize });
+  return normalizeDisplaySettings({ mode, windowSize, uiScale });
 }
 
 export function saveDisplaySettings(settings, { storage = null, syncCloud = true } = {}) {
@@ -65,6 +86,7 @@ export function saveDisplaySettings(settings, { storage = null, syncCloud = true
   try {
     localStorageRef?.setItem?.(DISPLAY_MODE_KEY, clean.mode);
     localStorageRef?.setItem?.(DISPLAY_WINDOW_SIZE_KEY, JSON.stringify(clean.windowSize));
+    localStorageRef?.setItem?.(UI_SCALE_KEY, String(clean.uiScale));
     if (syncCloud && typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
   } catch {
     // The settings still apply for the current session when storage is unavailable.
@@ -78,6 +100,7 @@ export function resetDisplaySettings({ storage = null } = {}) {
   try {
     localStorageRef?.setItem?.(DISPLAY_MODE_KEY, clean.mode);
     localStorageRef?.setItem?.(DISPLAY_WINDOW_SIZE_KEY, JSON.stringify(clean.windowSize));
+    localStorageRef?.setItem?.(UI_SCALE_KEY, String(clean.uiScale));
     if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.()?.catch?.(() => {});
   } catch {
     // Storage may be unavailable; caller still receives the safe default.

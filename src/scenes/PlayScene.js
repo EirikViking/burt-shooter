@@ -20,6 +20,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import { getCurrentLayout } from '../ui/responsiveLayout.js';
 import {
   MenuFxLayer,
   playMenuBackSfx,
@@ -3960,8 +3961,9 @@ export class PlayScene {
     decorLayer.sortableChildren = true;
     overlay.addChild(decorLayer);
 
-    const panelWidth = Math.min(620, Math.max(500, width * 0.34));
-    const panelHeight = 430;
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const panelWidth = Math.min(620 * uiScale, Math.max(500 * uiScale, width * 0.34 * uiScale));
+    const panelHeight = Math.min(height * 0.86, 430 * uiScale);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const centerX = width / 2;
@@ -4129,10 +4131,10 @@ export class PlayScene {
     decorLayer.addChild(scoreChip, sectorChip);
 
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 206, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 258, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 310, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 362, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 206 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 258 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 310 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 362 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.hidePauseOverlay();
@@ -4244,13 +4246,14 @@ export class PlayScene {
   }
 
   createPauseButton(label, x, y, onPress, options = {}) {
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.activate = onPress;
 
-    const width = 312;
-    const height = 44;
+    const width = 312 * uiScale;
+    const height = 44 * uiScale;
     const accent = options.accent || 0x00eaff;
     const hot = options.hot === true;
     const draw = (hovered = false) => {

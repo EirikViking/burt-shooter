@@ -8,6 +8,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Steam constants preserved: AppID `4765070`, Depot `4765071`, global leaderboard identity `nova_swarm_global_score_v2`.
 - Rollback: reassign Steam public/default back to BuildID `23809188`. No packaging, Steam upload, Steam branch assignment, gameplay/source, Steamworks metadata, leaderboard, achievement, Steam Cloud, save format, or store text changes were made during this closeout pass.
 
+## 2026-06-22 UI Scale 4K Readability
+
+- Current player report: text is unreadable on a 4K monitor, and changing resolution is not an acceptable workaround.
+- Implementation direction: added an explicit Display -> UI Scale setting with `100%`, `125%`, `150%`, `175%`, and `200%` values persisted as `nova_ui_scale_v1`, included in display settings/Steam Cloud diagnostics, and exposed through `render_game_to_text().display.uiScale` plus `layout.uiScale`.
+- Scope guard: UI scale is applied through UI layout/text systems and HUD/pause/menu/settings geometry only. Gameplay world scale, camera dimensions, score formula, leaderboard identity, achievements metadata, Steam Cloud settings, save format, balance, enemies, bosses, progression, and Steamworks metadata are not intended to change.
+- New evidence harness: `npm run check:ui-scale-4k` simulates `1920x1080@100%`, `2560x1440@100%`, `3840x2160@100%`, `3840x2160@150%`, and `3840x2160@200%`, saving screenshots and `report.json`; current passing evidence is under `test-results/ui-scale-4k-2026-06-22T07-20-24-013Z/`.
+
 ## 2026-06-21 Release Candidate Final Tuning
 
 - Current request: prepare a possible release-candidate private build from the accepted Mayhem performance line after BuildID `23845237`, keeping realtime high-score chase and menu exit fixes intact unless focused checks fail.

@@ -12,13 +12,15 @@ import {
 import {
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
+  UI_SCALE_KEY,
   getDisplaySettings,
-  normalizeDisplaySettings
+  normalizeDisplaySettings,
+  normalizeUiScale
 } from './config/DisplaySettings.js';
 import { invalidateThreatDiscoveryStateCache } from './progression/ThreatDiscoveryState.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
-export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY };
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -801,7 +803,8 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     const display = normalizeDisplaySettings(settings.display);
     const wroteMode = writeStorage(storage, DISPLAY_MODE_KEY, display.mode);
     const wroteSize = writeStorage(storage, DISPLAY_WINDOW_SIZE_KEY, JSON.stringify(display.windowSize));
-    if (wroteMode || wroteSize) {
+    const wroteUiScale = writeStorage(storage, UI_SCALE_KEY, normalizeUiScale(display.uiScale));
+    if (wroteMode || wroteSize || wroteUiScale) {
       summary.settings += 1;
       summary.restored = true;
     }

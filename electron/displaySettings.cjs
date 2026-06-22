@@ -13,6 +13,7 @@ const SUPPORTED_DISPLAY_MODES = new Set([
 const DEFAULT_WINDOW_SIZE = Object.freeze({ width: 1280, height: 720 });
 const MIN_WINDOW_SIZE = Object.freeze({ width: 960, height: 540 });
 const MAX_WINDOW_SIZE = Object.freeze({ width: 7680, height: 4320 });
+const SUPPORTED_UI_SCALES = Object.freeze([1, 1.25, 1.5, 1.75, 2]);
 const COMMON_WINDOW_SIZES = Object.freeze([
   { width: 1280, height: 720, label: '1280 x 720' },
   { width: 1366, height: 768, label: '1366 x 768' },
@@ -38,9 +39,11 @@ function sanitizeDisplaySettings(settings = {}, options = {}) {
   const raw = settings && typeof settings === 'object' ? settings : {};
   const defaultMode = SUPPORTED_DISPLAY_MODES.has(options.defaultMode) ? options.defaultMode : DISPLAY_MODE_FULLSCREEN;
   const mode = SUPPORTED_DISPLAY_MODES.has(raw.mode) ? raw.mode : defaultMode;
+  const uiScale = SUPPORTED_UI_SCALES.includes(Number(raw.uiScale)) ? Number(raw.uiScale) : 1;
   return {
     mode,
-    windowSize: sanitizeWindowSize(raw.windowSize || raw.resolution || raw.size, DEFAULT_WINDOW_SIZE)
+    windowSize: sanitizeWindowSize(raw.windowSize || raw.resolution || raw.size, DEFAULT_WINDOW_SIZE),
+    uiScale
   };
 }
 

@@ -1,6 +1,8 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "UI Scale": "Masshtab UI",
+  "UI scale applied": "Masshtab UI primenen",
   "SECTOR RUN DECK": "TABLICA SECTOR RUN",
   "Steam sector run records loaded.": "Zapisi Steam Sector Run zagruzheny.",
   "Steam sector run board has no entries yet.": "V tablitsye Steam Sector Run poka net zapisey.",

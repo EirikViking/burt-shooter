@@ -117,6 +117,7 @@ export function calculateCenteredStartY(layout, contentHeight, topBias = 0.1) {
  */
 export function getResponsiveFontSize(layout, type) {
   const { isMobile, isPortrait, height } = layout;
+  const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
 
   const sizes = {
     title: isMobile ? (isPortrait ? 36 : 32) : Math.min(56, height * 0.08),
@@ -129,7 +130,7 @@ export function getResponsiveFontSize(layout, type) {
     tableRow: isMobile ? (isPortrait ? 16 : 14) : Math.min(18, height * 0.025)
   };
 
-  return sizes[type] || sizes.body;
+  return Math.round((sizes[type] || sizes.body) * uiScale);
 }
 
 export function clampTextWidth(width, layout) {
