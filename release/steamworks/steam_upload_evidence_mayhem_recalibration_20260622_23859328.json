@@ -1,0 +1,108 @@
+{
+  "uploadedAt": "2026-06-22T16:18:54.000Z",
+  "branch": "codex/mayhem-score-difficulty-recalibration-fix-20260622",
+  "startingCommit": "81d673882baa2a3c62ea142275b04416f96110d1",
+  "sourceCommit": "b73f72cdf59145ccf6a84e19941a066dae64cc79",
+  "packaged": {
+    "buildVersion": "v2026-06-22_18-09-05",
+    "gitSha": "b73f72c",
+    "proof": [
+      "test-results/packaged-exe-smoke-2026-06-22T16-12-24-467Z/report.json",
+      "test-results/packaged-perf-smoke-2026-06-22T16-13-03-346Z/report.json"
+    ]
+  },
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "buildId": 23859328,
+    "setLive": "",
+    "branchAssigned": false,
+    "uploadLog": "test-results/steam-upload-mayhem-recalibration-20260622-181723/steamcmd-upload.log",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "payload": {
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 879674412,
+    "manifestHash": "b5983e92ea3eb2f65bd2a65d6f7321a4aa1eeb905163e55c9fa352155b018eed",
+    "manifestFileSha256": "cb31fa7b1ff683c79e445d711cd9443d636a6ac3598884abf480b33ee19ae4ab",
+    "exeSha256": "0d801443153988fe2559586fc14fa4440f62b1d9ef473699d20617be26ab2c00"
+  },
+  "analysis": {
+    "report": "test-results/mayhem-difficulty-score-delta-2026-06-22T16-08-34-111Z/report.json",
+    "implementedMatchesCandidateF": true,
+    "highSkill": {
+      "oldPublic": {
+        "medianSector": 34,
+        "medianScore": 416622,
+        "medianXp": 20650,
+        "scorePerMinute": 5926,
+        "probability250k": 0.99,
+        "probability390k": 0.62,
+        "normalDeaths": 4.9,
+        "bossDeaths": 0.24
+      },
+      "currentAccepted": {
+        "medianSector": 23,
+        "medianScore": 250578,
+        "medianXp": 12778,
+        "scorePerMinute": 5827,
+        "probability250k": 0.51,
+        "probability390k": 0.05,
+        "normalDeaths": 5.95,
+        "bossDeaths": 0.03
+      },
+      "implemented": {
+        "medianSector": 30,
+        "medianScore": 391073,
+        "medianXp": 18244,
+        "scorePerMinute": 6773,
+        "probability250k": 0.92,
+        "probability390k": 0.51,
+        "normalDeaths": 5.61,
+        "bossDeaths": 0.1
+      }
+    }
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:run-modes",
+    "npm run check:steam-electron-bridge",
+    "npm run check:highscore-chase-target",
+    "npm run check:mayhem-collision-hotpath-stress",
+    "npm run check:mayhem-scout-difficulty-delta",
+    "npm run check:menu-exit-focus-safety",
+    "npm run check:threat-codex",
+    "npm run check:scout-codex-persistence",
+    "npm run check:profile-isolation",
+    "npm run build:current",
+    "node --check scripts/analyze-mayhem-difficulty-score-delta.mjs",
+    "node scripts/analyze-mayhem-difficulty-score-delta.mjs",
+    "npm run desktop:smoke:current",
+    "npm run desktop:perf:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run smoke (known timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture; treated as non-blocking because current and packaged smoke/perf checks passed)"
+  ],
+  "guardrails": {
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudSettingsChanged": false,
+    "storeVisibilityChanged": false,
+    "saveFormatChanged": false,
+    "profileRescueRun": false,
+    "bossBehaviorChanged": false,
+    "scoutChanged": false,
+    "sectorRunChanged": false
+  },
+  "notes": [
+    "Candidate F was implemented in source and matched the deterministic candidate metrics.",
+    "Mayhem bosses, Scout bosses, Sector Run, leaderboard identity, achievements metadata, Steam Cloud settings, and save format were unchanged.",
+    "VDF verified SetLive blank exactly as \"SetLive\" \"\" before upload."
+  ]
+}

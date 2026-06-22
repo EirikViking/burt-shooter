@@ -42,7 +42,7 @@ Pilot XP compensation is applied only to ranked Mayhem wave-clear XP and no-hit-
 
 Deterministic analysis report:
 
-`test-results/mayhem-difficulty-score-delta-2026-06-22T16-03-28-643Z/report.json`
+`test-results/mayhem-difficulty-score-delta-2026-06-22T16-08-34-111Z/report.json`
 
 High-skill/aggressive metrics:
 
@@ -53,6 +53,24 @@ High-skill/aggressive metrics:
 | Implemented | 30 | 391,073 | 18,244 | 6,773 | 92% | 51% | 5.61 | 0.10 |
 
 The implemented source matched candidate F in the deterministic analysis (`implementedMatches=true`). Boss deaths remain below old public, and modeled boss-chain deaths remain at 0% for the high-skill profile.
+
+## Steam Private Build Evidence
+
+Source commit `b73f72cdf59145ccf6a84e19941a066dae64cc79` was packaged as `v2026-06-22_18-09-05`.
+
+Packaged smoke and perf reports prove packaged gitSha `b73f72c`:
+
+- `test-results/packaged-exe-smoke-2026-06-22T16-12-24-467Z/report.json`
+- `test-results/packaged-perf-smoke-2026-06-22T16-13-03-346Z/report.json`
+
+SteamPipe evidence:
+
+- Payload manifest: `release/steamworks/steam_payload_manifest.json`
+- VDF: `release/steamworks/app_build_LOCAL.vdf`
+- Evidence JSON: `release/steamworks/steam_upload_evidence_mayhem_recalibration_20260622_23859328.json`
+- Private Steam BuildID: `23859328`
+- `SetLive` was verified blank as `"SetLive" ""`.
+- No Steam branch, public/default assignment, store metadata, AppID, depot ID, achievements metadata, leaderboard identity, Steam Cloud settings, save format, or profile rescue changed.
 
 ## Guardrails
 
