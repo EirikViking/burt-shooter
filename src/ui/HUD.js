@@ -783,21 +783,36 @@ export class HUD {
     }
 
     const event = this.getTraitMeterEvent(state);
-    const paddingX = 8;
-    const paddingY = 6;
-    const barHeight = 4;
-    const barGap = 4;
+    const layout = getCurrentLayout();
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
+    const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
+    const isLargeDesktop = !layout?.isMobile && canvasWidth >= 1920;
+    const paddingX = Math.round(8 * uiScale);
+    const paddingY = Math.round(6 * uiScale);
+    const barHeight = Math.max(4, Math.round(4 * uiScale));
+    const barGap = Math.round(4 * uiScale);
+    this.traitLabel.style.fontSize = Math.round((isLargeDesktop ? 12 : 11) * uiScale);
+    this.traitLabel.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
+    this.traitText.style.fontSize = Math.round((isLargeDesktop ? 13 : 12) * uiScale);
+    this.traitText.style.stroke = { color: '#000000', width: Math.round(3 * uiScale) };
     const label = `TRAIT: ${this.truncateLabel(state.label, 17)}`;
     this.traitLabel.text = label;
     this.traitText.text = event.text;
-    const width = Math.max(154, Math.min(228, Math.max(this.traitLabel.width, this.traitText.width) + paddingX * 2));
+    this.traitLabel.updateText?.(false);
+    this.traitText.updateText?.(false);
+    const minWidth = Math.round(154 * uiScale);
+    const maxWidth = Math.round(Math.min(
+      canvasWidth ? canvasWidth * (layout?.isMobile ? 0.74 : 0.34) : 300 * uiScale,
+      (isLargeDesktop ? 300 : 260) * uiScale
+    ));
+    const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + paddingX * 2));
     const textHeight = this.traitLabel.height + this.traitText.height + 1;
     const height = textHeight + barGap + barHeight + paddingY * 2;
 
     this.traitBg.clear();
-    this.traitBg.roundRect(0, 0, width, height, 8);
+    this.traitBg.roundRect(0, 0, width, height, 8 * uiScale);
     this.traitBg.fill({ color: 0x050914, alpha: 0.52 });
-    this.traitBg.stroke({ color: event.color, width: 1.2, alpha: 0.7 });
+    this.traitBg.stroke({ color: event.color, width: 1.2 * uiScale, alpha: 0.7 });
 
     this.traitLabel.x = paddingX;
     this.traitLabel.y = paddingY - 2;
@@ -807,21 +822,20 @@ export class HUD {
     const barWidth = Math.max(24, width - paddingX * 2);
     const barY = paddingY + textHeight + barGap - 3;
     this.traitBarBg.clear();
-    this.traitBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2);
+    this.traitBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2 * uiScale);
     this.traitBarBg.fill({ color: 0x231a14, alpha: 0.85 });
     this.traitBarFill.clear();
-    this.traitBarFill.roundRect(paddingX, barY, Math.max(2, barWidth * event.progress), barHeight, 2);
+    this.traitBarFill.roundRect(paddingX, barY, Math.max(2 * uiScale, barWidth * event.progress), barHeight, 2 * uiScale);
     this.traitBarFill.fill({ color: event.color, alpha: 0.96 });
     this.traitGroup.visible = true;
 
-    const canvasWidth = this.game.getWidth ? this.game.getWidth() : 0;
     if (canvasWidth) {
-      const margin = 10;
+      const margin = Math.round(10 * Math.min(uiScale, 1.45));
       const powerupBottom = this.activePowerupGroup?.visible
-        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
+        ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6 * uiScale
         : 0;
-      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 : 0;
-      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 : 0;
+      const livesBottom = this.livesGroup ? this.livesGroup.y + this.livesGroup.height + 6 * uiScale : 0;
+      const locationBottom = this.locationText ? this.locationText.y + this.locationText.height + 6 * uiScale : 0;
       this.traitGroup.x = canvasWidth - margin - width;
       this.traitGroup.y = Math.max(powerupBottom, livesBottom, locationBottom);
     }

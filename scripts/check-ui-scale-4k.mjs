@@ -10,9 +10,12 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/ui-scale-4k-${timestamp()}`);
 const scenarios = [
   { name: '1920x1080-scale100', width: 1920, height: 1080, scale: 1 },
-  { name: '2560x1440-scale100', width: 2560, height: 1440, scale: 1 },
+  { name: '1920x1080-scale150', width: 1920, height: 1080, scale: 1.5 },
+  { name: '1920x1080-scale175', width: 1920, height: 1080, scale: 1.75 },
+  { name: '1920x1080-scale200', width: 1920, height: 1080, scale: 2 },
   { name: '3840x2160-scale100', width: 3840, height: 2160, scale: 1 },
   { name: '3840x2160-scale150', width: 3840, height: 2160, scale: 1.5 },
+  { name: '3840x2160-scale175', width: 3840, height: 2160, scale: 1.75 },
   { name: '3840x2160-scale200', width: 3840, height: 2160, scale: 2 }
 ];
 
@@ -175,6 +178,21 @@ async function captureSettings(page, scenarioDir, shots, expectedScale) {
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });
 }
 
+async function captureHangar(page, scenarioDir, shots) {
+  await page.evaluate(() => window.__game?.showShipSelect?.());
+  await waitForScene(page, 'shipSelect');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return Boolean(state.shipSelect?.shipName);
+  }, null, { timeout: 20000 });
+  await page.waitForTimeout(600);
+  shots.push(await snapshot(page, scenarioDir, '03-hangar-combat-readout'));
+  await page.evaluate(() => window.__game?.currentScene?.openCareerInfoOverlay?.('test'));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.careerInfo?.visible === true, null, { timeout: 10000 });
+  shots.push(await snapshot(page, scenarioDir, '04-hangar-career-intel'));
+  await page.evaluate(() => window.__game?.currentScene?.closeCareerInfoOverlay?.('test'));
+}
+
 async function captureGameplayAndPause(page, scenarioDir, shots) {
   await page.evaluate(() => window.__game?.startGame?.());
   await waitForScene(page, 'play');
@@ -188,10 +206,15 @@ async function captureGameplayAndPause(page, scenarioDir, shots) {
       play.hud?.update?.();
     }
   });
-  shots.push(await snapshot(page, scenarioDir, '03-hud-gameplay'));
+  shots.push(await snapshot(page, scenarioDir, '05-hud-gameplay'));
   await page.evaluate(() => window.__game?.scenes?.play?.setPaused?.(true));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.pause === true, null, { timeout: 10000 });
-  shots.push(await snapshot(page, scenarioDir, '04-pause-menu'));
+  shots.push(await snapshot(page, scenarioDir, '06-pause-menu'));
+  await page.evaluate(() => window.__game?.scenes?.play?.openSettingsOverlay?.());
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.settingsOverlay), null, { timeout: 10000 });
+  shots.push(await snapshot(page, scenarioDir, '07-in-game-settings'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => !window.__game?.scenes?.play?.settingsOverlay, null, { timeout: 10000 });
 }
 
 async function captureScrollableScreens(page, scenarioDir, shots) {
@@ -201,7 +224,7 @@ async function captureScrollableScreens(page, scenarioDir, shots) {
   await page.evaluate(() => window.__game?.currentScene?.moveEntry?.(6));
   await page.waitForTimeout(120);
   const codexAfter = await page.evaluate(() => window.__game?.currentScene?.entryIndex || 0);
-  shots.push(await snapshot(page, scenarioDir, '05-threat-codex'));
+  shots.push(await snapshot(page, scenarioDir, '08-threat-codex'));
 
   await page.evaluate(() => window.__game?.switchScene?.('achievements'));
   await waitForScene(page, 'achievements');
@@ -213,7 +236,7 @@ async function captureScrollableScreens(page, scenarioDir, shots) {
   });
   await page.waitForTimeout(120);
   const achievementsAfter = await page.evaluate(() => window.__game?.currentScene?.scrollOffset || 0);
-  shots.push(await snapshot(page, scenarioDir, '06-achievements'));
+  shots.push(await snapshot(page, scenarioDir, '09-achievements'));
   return {
     codexScrolled: codexAfter > codexBefore,
     achievementsScrolled: achievementsAfter > achievementsBefore
@@ -228,7 +251,7 @@ async function captureResult(page, scenarioDir, shots) {
   });
   await waitForScene(page, 'gameOver');
   await page.waitForTimeout(500);
-  shots.push(await snapshot(page, scenarioDir, '07-result-screen'));
+  shots.push(await snapshot(page, scenarioDir, '10-result-screen'));
 }
 
 async function runScenario(browser, scenario) {
@@ -254,6 +277,7 @@ async function runScenario(browser, scenario) {
     await waitForScene(page, 'menu');
     await openMenu(page, scenarioDir, shots);
     await captureSettings(page, scenarioDir, shots, scenario.scale);
+    await captureHangar(page, scenarioDir, shots);
     await captureGameplayAndPause(page, scenarioDir, shots);
     scroll = await captureScrollableScreens(page, scenarioDir, shots);
     await captureResult(page, scenarioDir, shots);

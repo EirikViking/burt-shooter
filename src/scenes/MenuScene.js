@@ -1514,7 +1514,13 @@ export class MenuScene {
       right: marginX + dockWidth,
       bottom: Math.min(height - 8, dockTop + dockHeight)
     };
-    const briefingHeight = Math.round(clampNumber(height * 0.15, isShortLayout ? 118 : 132, isShortLayout ? 142 : 164));
+    const briefingScale = Math.max(1, Math.min(2, uiScale));
+    const briefingResponsiveScale = Math.min(briefingScale, isMobileLayout ? 1.25 : 1.6);
+    const briefingHeight = Math.round(clampNumber(
+      height * 0.15 * briefingResponsiveScale,
+      (isShortLayout ? 118 : 132) * briefingScale,
+      (isShortLayout ? 142 : 164) * briefingScale
+    ));
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
@@ -1587,7 +1593,11 @@ export class MenuScene {
 
     const briefingWidth = Math.min(
       width - marginX * 2,
-      Math.round(clampNumber(width * (isMobileLayout ? 0.36 : 0.29), isMobileLayout ? 360 : 420, isMobileLayout ? 470 : 560))
+      Math.round(clampNumber(
+        width * (isMobileLayout ? 0.36 : 0.29) * Math.min(briefingScale, 1.35),
+        (isMobileLayout ? 360 : 420) * briefingScale,
+        (isMobileLayout ? 470 : 560) * briefingScale
+      ))
     );
     const briefingX = Math.round(clampNumber(
       width - marginX - briefingWidth,
@@ -1609,18 +1619,18 @@ export class MenuScene {
       safeMargin.top + clampNumber(height * 0.12, 92, 142),
       Math.max(safeMargin.top + 90, dockTop - briefingHeight - 24)
     ));
-    const briefingPadX = isMobileLayout ? 18 : 22;
-    const briefingPadY = isShortLayout ? 12 : 14;
+    const briefingPadX = Math.round((isMobileLayout ? 18 : 22) * briefingScale);
+    const briefingPadY = Math.round((isShortLayout ? 12 : 14) * briefingScale);
     this.runModeBriefingTitle.style.fontSize = Math.round((isMobileLayout ? 12 : 14) * uiScale);
     this.runModeBriefingTitle.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
     this.runModeBriefingTitle.x = briefingX + briefingPadX;
     this.runModeBriefingTitle.y = briefingY + briefingPadY;
     this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
-    this.runModeExplainer.style.fontSize = Math.max(11, isMobileLayout ? controlsSize - 1 : controlsSize);
+    this.runModeExplainer.style.fontSize = Math.round((isMobileLayout ? 12 : 13) * uiScale);
     this.runModeExplainer.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
     this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.24);
     this.runModeExplainer.x = briefingX + briefingPadX;
-    this.runModeExplainer.y = briefingY + briefingPadY + (isShortLayout ? 26 : 31);
+    this.runModeExplainer.y = briefingY + briefingPadY + Math.round((isShortLayout ? 26 : 31) * briefingScale);
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
     this.runModePanel.alpha = this.runModePanel.alpha || 1;
     this.runModePanel._briefingBounds = {

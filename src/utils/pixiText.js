@@ -16,7 +16,14 @@ function normalizeFontFamily(fontFamily) {
 export function normalizeTextStyle(style = {}) {
   const next = { ...style };
   const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout?.()?.uiScale) || 1));
-  const textScale = Math.min(1.35, 1 + (uiScale - 1) * 0.35);
+  const uiScaleMode = next.uiScaleMode || next.accessibilityScale || 'capped';
+  delete next.uiScaleMode;
+  delete next.accessibilityScale;
+  const textScale = uiScaleMode === 'full'
+    ? uiScale
+    : uiScaleMode === 'none' || uiScaleMode === false
+      ? 1
+      : Math.min(1.35, 1 + (uiScale - 1) * 0.35);
   next.fontFamily = normalizeFontFamily(next.fontFamily);
   if (Number.isFinite(Number(next.fontSize))) next.fontSize = Math.round(Number(next.fontSize) * textScale);
   if (Number.isFinite(Number(next.padding))) next.padding = Math.round(Number(next.padding) * textScale);

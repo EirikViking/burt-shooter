@@ -77,7 +77,7 @@ function drawSegmentedBar(graphics, x, y, width, height, progress, color) {
   }
 }
 
-function createStatRow({ label, value, progress, color, y, width, compact }) {
+function createStatRow({ label, value, progress, color, y, width, compact, uiScaleMode }) {
   const row = new PIXI.Container();
   const leftX = -width / 2 + (compact ? 18 : 24);
   const barX = compact ? -44 : -34;
@@ -87,7 +87,8 @@ function createStatRow({ label, value, progress, color, y, width, compact }) {
   const labelText = makeText(label, {
     fontSize: compact ? 11 : 13,
     fontWeight: '800',
-    fill: '#aeefff'
+    fill: '#aeefff',
+    uiScaleMode
   });
   labelText.anchor.set(0, 0.5);
   labelText.position.set(leftX, y);
@@ -100,7 +101,8 @@ function createStatRow({ label, value, progress, color, y, width, compact }) {
   const valueText = makeText(value, {
     fontSize: compact ? 12 : 14,
     fontWeight: '900',
-    fill: toHexText(color)
+    fill: toHexText(color),
+    uiScaleMode
   });
   valueText.anchor.set(1, 0.5);
   valueText.position.set(width / 2 - (compact ? 16 : 22), y);
@@ -117,6 +119,7 @@ export function createShipStatPanel(ship = {}, options = {}) {
   const ranges = options.ranges || DEFAULT_RANGES;
   const stats = ship.stats || {};
   const role = getShipCombatRole(ship, ranges);
+  const uiScaleMode = options.uiScaleMode;
 
   const panel = new PIXI.Container();
   panel.shipStatPanel = true;
@@ -133,7 +136,8 @@ export function createShipStatPanel(ship = {}, options = {}) {
     fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
     fontSize: compact ? 11 : 14,
     fontWeight: '900',
-    fill: '#ffffff'
+    fill: '#ffffff',
+    uiScaleMode
   });
   title.anchor.set(0, 0.5);
   title.position.set(-width / 2 + (compact ? 16 : 22), compact ? 15 : 18);
@@ -142,7 +146,8 @@ export function createShipStatPanel(ship = {}, options = {}) {
   const roleText = makeText(role, {
     fontSize: compact ? 11 : 13,
     fontWeight: '900',
-    fill: toHexText(accent)
+    fill: toHexText(accent),
+    uiScaleMode
   });
   roleText.anchor.set(1, 0.5);
   roleText.position.set(width / 2 - (compact ? 16 : 22), compact ? 15 : 18);
@@ -185,7 +190,8 @@ export function createShipStatPanel(ship = {}, options = {}) {
       ...row,
       y: startY + index * step,
       width,
-      compact
+      compact,
+      uiScaleMode
     }));
   });
 

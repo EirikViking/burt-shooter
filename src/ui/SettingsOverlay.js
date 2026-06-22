@@ -140,7 +140,9 @@ export class SettingsOverlay {
     this.controls = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    this.uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const requestedUiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const viewportScaleCap = Math.max(1, Math.min(2, width / 1400, height / 980));
+    this.uiScale = Math.min(requestedUiScale, viewportScaleCap);
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
     this.container.eventMode = 'static';

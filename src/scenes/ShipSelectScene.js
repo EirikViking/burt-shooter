@@ -14,6 +14,7 @@ import {
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { getCurrentLayout } from '../ui/responsiveLayout.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
@@ -197,7 +198,8 @@ export class ShipSelectScene {
       height,
       isMobile: width < 640,
       showSideIntel: width >= 980,
-      showLeftIntel: width >= 1120
+      showLeftIntel: width >= 1120,
+      uiScale: Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1))
     };
 
     this.createHangarFrame(width, height);
@@ -1279,7 +1281,8 @@ export class ShipSelectScene {
       wordWrap: true,
       wordWrapWidth: 210,
       lineHeight: Math.round(size * 1.24),
-      letterSpacing: 0
+      letterSpacing: 0,
+      uiScaleMode: 'none'
     });
     text.position.set(x, y);
     return text;
@@ -1296,11 +1299,12 @@ export class ShipSelectScene {
   createRecommendationBanner(width, height) {
     const recommended = this.recommendedShip;
     if (!recommended || width < 760) return;
+    const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
     const bannerWidth = Math.min(760, width - 360);
     const bannerHeight = 42;
     const banner = new PIXI.Container();
     banner.label = 'ui_shipRecommendationBanner';
-    banner.position.set(width / 2 - bannerWidth / 2, 100);
+    banner.position.set(width / 2 - bannerWidth / 2, Math.round(100 * Math.min(uiScale, 1.45)));
     banner.zIndex = 50;
     banner.bannerWidth = bannerWidth;
 
@@ -1759,10 +1763,14 @@ export class ShipSelectScene {
   createIntelPanels(width, height) {
     this.intelPanels = new PIXI.Container();
     this.container.addChild(this.intelPanels);
+    const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
+    const panelMargin = Math.round(22 * Math.min(uiScale, 1.45));
+    const panelTop = Math.round((this.layout.isMobile ? 118 : 128) * Math.min(uiScale, 1.45));
 
     if (this.layout.showLeftIntel) {
       const left = this.createPanel(230, 292, 0x66ffdd);
-      left.position.set(22, 128);
+      left.position.set(panelMargin, panelTop);
+      left.scale.set(uiScale);
       left.eventMode = 'static';
       left.cursor = 'pointer';
       left.hitArea = new PIXI.Rectangle(0, 0, 230, 292);
@@ -1787,7 +1795,8 @@ export class ShipSelectScene {
 
     if (this.layout.showSideIntel) {
       const right = this.createPanel(262, 380, 0xffd166);
-      right.position.set(width - 284, 128);
+      right.position.set(width - panelMargin - 262 * uiScale, panelTop);
+      right.scale.set(uiScale);
       const title = this.createIntelText('COMBAT READOUT', 16, 10, 13, '#ffffff', '900');
       const role = this.createIntelText('', 16, 44, 17, '#ffef7e', '900');
       const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
@@ -1798,7 +1807,8 @@ export class ShipSelectScene {
         width: 228,
         accent: 0xffd166,
         ranges: this.statRanges,
-        title: 'LIVE TUNE'
+        title: 'LIVE TUNE',
+        uiScaleMode: 'none'
       });
       statPanel.position.set(131, 186);
       right.addChild(title, role, weapon, trait, statPanel, unlock);
@@ -2485,7 +2495,8 @@ export class ShipSelectScene {
         width: 228,
         accent,
         ranges: this.statRanges,
-        title: 'LIVE TUNE'
+        title: 'LIVE TUNE',
+        uiScaleMode: 'none'
       });
       statPanel.position.set(131, 186);
       this.rightIntel.panel.addChild(statPanel);
