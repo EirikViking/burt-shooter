@@ -11,6 +11,7 @@ import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, res
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } from '../config/ShipMetadata.js';
+import { getMenuSettings } from '../config/MenuSettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
@@ -342,7 +343,7 @@ export class MenuScene {
       } else if (isMoveRight) {
         this.moveMenuFocus(1);
       } else if (isCancel) {
-        this.openQuitConfirmation();
+        this.openQuitConfirmation({ source: 'keyboard' });
       } else {
         this.activateFocusedMenuOption();
       }
@@ -1170,7 +1171,7 @@ export class MenuScene {
     this.exitBtn.alpha = 0;
     this.exitBtn.on('pointerdown', (event) => {
       event?.stopPropagation?.();
-      this.openQuitConfirmation({ source: 'exit_button' });
+      this.exitGame({ source: 'exit_button' });
     });
     this.container.addChild(this.exitBtn);
 
@@ -2435,6 +2436,7 @@ export class MenuScene {
       },
       quitConfirmation: {
         open: Boolean(this.quitConfirmOpen),
+        confirmExit: getMenuSettings().confirmExit,
         focusedIndex: this.quitConfirmFocusIndex,
         focusedLabel: this.quitConfirmButtons?.[this.quitConfirmFocusIndex]?._label?.text || null,
         defaultFocusIsCancel: this.quitConfirmFocusIndex === 0 && this.quitConfirmButtons?.[0]?._label?.text === translateText('CANCEL'),
@@ -3737,7 +3739,7 @@ export class MenuScene {
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
-    if (nav.pressed.cancel || nav.pressed.back) this.openQuitConfirmation();
+    if (nav.pressed.cancel || nav.pressed.back) this.openQuitConfirmation({ source: 'controller' });
   }
 
   openShipSelect() {
@@ -3976,6 +3978,11 @@ export class MenuScene {
   }
 
   openQuitConfirmation({ source = 'keyboard' } = {}) {
+    if (!getMenuSettings().confirmExit) {
+      this.closeQuitConfirmation({ silent: true });
+      this.exitGame({ confirmed: true, source });
+      return;
+    }
     try {
       this.ensureQuitConfirmation();
       this.closeSectorSelector();
@@ -4084,9 +4091,9 @@ export class MenuScene {
     });
   }
 
-  async exitGame({ confirmed = false } = {}) {
+  async exitGame({ confirmed = false, source = 'keyboard' } = {}) {
     if (!confirmed) {
-      this.openQuitConfirmation();
+      this.openQuitConfirmation({ source });
       return;
     }
     if (this.game?.isMenuExitGuardActive?.()) {

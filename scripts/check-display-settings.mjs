@@ -10,6 +10,11 @@ import {
   resetDisplaySettings,
   saveDisplaySettings
 } from '../src/config/DisplaySettings.js';
+import {
+  CONFIRM_EXIT_KEY,
+  getMenuSettings,
+  saveMenuSettings
+} from '../src/config/MenuSettings.js';
 import { translateTextForLocale } from '../src/i18n/index.js';
 
 const require = createRequire(import.meta.url);
@@ -82,6 +87,12 @@ function checkRendererDefaultsAndPersistence() {
   assert.equal(reset.mode, 'fullscreen');
   assert.deepEqual(reset.windowSize, { width: 1280, height: 720 });
   assert.equal(reset.uiScale, 1);
+
+  assert.deepEqual(getMenuSettings({ storage }), { confirmExit: true });
+  const savedMenu = saveMenuSettings({ confirmExit: false }, { storage });
+  assert.deepEqual(savedMenu, { confirmExit: false });
+  assert.equal(storage.getItem(CONFIRM_EXIT_KEY), '0');
+  assert.deepEqual(getMenuSettings({ storage }), { confirmExit: false });
 }
 
 async function checkElectronBridgeApply() {
@@ -189,6 +200,7 @@ function checkI18nText() {
     assert.notEqual(translateTextForLocale(locale, 'Display Mode'), 'Display Mode', `${locale} display mode translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Window Size'), 'Window Size', `${locale} window size translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI Scale'), 'UI Scale', `${locale} UI scale translation missing`);
+    assert.notEqual(translateTextForLocale(locale, 'Confirm Exit'), 'Confirm Exit', `${locale} confirm exit translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI scale applied'), 'UI scale applied', `${locale} UI scale applied translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Safe display reset applied'), 'Safe display reset applied', `${locale} reset translation missing`);
   }

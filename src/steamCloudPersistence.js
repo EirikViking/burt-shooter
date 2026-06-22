@@ -17,10 +17,18 @@ import {
   normalizeDisplaySettings,
   normalizeUiScale
 } from './config/DisplaySettings.js';
-import { invalidateThreatDiscoveryStateCache } from './progression/ThreatDiscoveryState.js';
+import {
+  CONFIRM_EXIT_KEY,
+  getMenuSettings,
+  normalizeConfirmExit
+} from './config/MenuSettings.js';
+import {
+  getCodexDiscoverySignature,
+  invalidateThreatDiscoveryStateCache
+} from './progression/ThreatDiscoveryState.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
-export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY };
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -454,6 +462,27 @@ function filterUnreadThreatIds(unreadIds = [], items = {}) {
     .filter((id) => discovered.has(id));
 }
 
+function normalizeCodexViewMarker(state = {}) {
+  const signature = String(state?.lastViewedCodexDiscoverySignature || '').trim().slice(0, 120);
+  if (!signature) return null;
+  const at = state?.lastViewedCodexAt ? String(state.lastViewedCodexAt).slice(0, 80) : null;
+  return {
+    lastViewedCodexDiscoverySignature: signature,
+    lastViewedCodexDiscoveryCount: Math.max(0, Math.floor(Number(state?.lastViewedCodexDiscoveryCount) || 0)),
+    lastViewedCodexAt: at
+  };
+}
+
+function pickLatestCodexViewMarker(localState = {}, cloudState = {}) {
+  const candidates = [normalizeCodexViewMarker(localState), normalizeCodexViewMarker(cloudState)].filter(Boolean);
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => {
+    const aTime = Date.parse(a.lastViewedCodexAt || '') || 0;
+    const bTime = Date.parse(b.lastViewedCodexAt || '') || 0;
+    return bTime - aTime;
+  })[0];
+}
+
 function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   const local = localState && typeof localState === 'object' ? localState : {};
   const cloud = cloudState && typeof cloudState === 'object' ? cloudState : {};
@@ -470,6 +499,14 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
       items[category][id] = mergeThreatDiscoveryItem(localBucket[id], cloudBucket[id], { id, category });
     }
   }
+  const viewedMarker = pickLatestCodexViewMarker(local, cloud);
+  const currentSignature = getCodexDiscoverySignature(items);
+  const unreadIds = viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+    ? []
+    : filterUnreadThreatIds([
+      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
+      ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
+    ], items);
   return {
     ...local,
     ...cloud,
@@ -479,10 +516,11 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
       ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
       ...(Array.isArray(cloud.recentRunThemes) ? cloud.recentRunThemes : [])
     ])].slice(-8),
-    unreadIds: filterUnreadThreatIds([
-      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
-      ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
-    ], items)
+    ...(viewedMarker || {}),
+    ...(viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+      ? { lastViewedCodexDiscoveryCount: currentSignature.count }
+      : {}),
+    unreadIds
   };
 }
 
@@ -654,7 +692,8 @@ export function collectSteamCloudPersistenceState({
       playerFocus: clampUnit(settings.playerFocus, 0.72),
       colorAssist: Boolean(settings.colorAssist),
       audio: collectAudioSettings(storage),
-      display: getDisplaySettings({ storage })
+      display: getDisplaySettings({ storage }),
+      menu: getMenuSettings({ storage })
     }
   };
 }
@@ -820,6 +859,10 @@ export function restoreSteamCloudPersistenceToStorage(save, {
       summary.settings += 1;
       summary.restored = true;
     }
+  }
+  if (settings.menu?.confirmExit !== undefined && writeStorage(storage, CONFIRM_EXIT_KEY, normalizeConfirmExit(settings.menu.confirmExit) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
   }
   if (summary.settings > 0) summary.restored = true;
 

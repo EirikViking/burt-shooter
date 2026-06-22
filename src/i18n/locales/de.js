@@ -9,6 +9,7 @@ const sourceText = Object.freeze({
   "Display Mode": "Anzeigemodus",
   "Window Size": "Fenstergroesse",
   "UI Scale": "UI-Skalierung",
+  "Confirm Exit": "Beenden bestaetigen",
   "Safe Reset": "Sicher zuruecksetzen",
   "AUDIO": "AUDIO",
   "Fullscreen": "Vollbild",

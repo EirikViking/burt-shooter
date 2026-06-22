@@ -6,6 +6,7 @@ import { HANGAR_PROGRESS_KEY, LEGACY_UNLOCK_PROGRESS_KEY } from '../src/progress
 import {
   THREAT_DISCOVERY_KEY,
   clearThreatCodexUnread,
+  getCodexDiscoverySignature,
   getCodexCompletionCounts,
   getDiscoveryStats,
   getThreatCodexState,
@@ -24,6 +25,7 @@ globalThis.localStorage = {
   removeItem: (key) => fakeStorage.delete(key)
 };
 resetDiscoveryStateForTests();
+if (getDiscoveryStats().unreadCount !== 0) fail('fresh profile with no discoveries should not show Codex glow');
 
 const catalog = getThreatCodexCatalog();
 const totalEntries = Object.values(catalog).reduce((sum, entries) => sum + (Array.isArray(entries) ? entries.length : 0), 0);
@@ -176,6 +178,8 @@ if (getDiscoveryStats().unreadCount !== 1) fail('new discovery should create exa
 startUnreadLifecycleChecks();
 const cleared = clearThreatCodexUnread();
 if (cleared.unreadIds.length !== 0) fail('codex unread badge should clear');
+if (!cleared.lastViewedCodexDiscoverySignature) fail('opening Threat Codex should persist a viewed discovery signature');
+if (getDiscoveryStats().unreadCount !== 0) fail('opening Threat Codex should clear the menu glow immediately');
 
 const menuSource = readFileSync('src/scenes/MenuScene.js', 'utf8');
 const gameSource = readFileSync('src/game/Game.js', 'utf8');
@@ -214,10 +218,27 @@ function startUnreadLifecycleChecks() {
   if (getDiscoveryStats().unreadCount !== 1) fail('stale unread IDs should not drive the menu glow');
   const opened = clearThreatCodexUnread();
   if (opened.unreadIds.length !== 0) fail('opening Threat Codex should mark current discoveries read');
+  const largeSignature = getCodexDiscoverySignature(opened.items);
+  if (opened.lastViewedCodexDiscoverySignature !== largeSignature.signature) fail('Codex read marker should match the canonical large-profile discovery signature');
+  if (opened.lastViewedCodexDiscoveryCount !== largeSignature.count) fail(`large Codex read marker should count all discoveries, got ${opened.lastViewedCodexDiscoveryCount} expected ${largeSignature.count}`);
   invalidateThreatDiscoveryStateCache();
   if (getDiscoveryStats().unreadCount !== 0) fail('cleared unread state should survive restart/profile reload');
+  const reloaded = getThreatCodexState();
+  if (reloaded.unreadIds.length !== 0) fail('restart/profile reload should discard stale unread IDs once the viewed signature matches');
+  fakeStorage.set(THREAT_DISCOVERY_KEY, JSON.stringify({
+    ...reloaded,
+    unreadIds: ['enemies:large_codex_650']
+  }));
+  invalidateThreatDiscoveryStateCache();
+  if (getDiscoveryStats().unreadCount !== 0) fail('stale restored unread IDs should not relight the menu glow when the viewed signature is current');
   const later = recordThreatSeen('large_codex_651', 'enemies', { name: 'Later Signal' });
   if (!later.isNew || getDiscoveryStats().unreadCount !== 1) fail('later new discoveries should bring back the Codex glow');
+  const reopened = clearThreatCodexUnread();
+  invalidateThreatDiscoveryStateCache();
+  const reopenedSignature = getCodexDiscoverySignature(reopened.items);
+  if (getDiscoveryStats().unreadCount !== 0 || reopened.lastViewedCodexDiscoveryCount !== reopenedSignature.count || reopenedSignature.count <= largeSignature.count) {
+    fail('opening Codex again should clear the later discovery and advance the read marker');
+  }
 }
 
 if (errors.length) {

@@ -17,6 +17,7 @@ import {
   getUiScaleLabel,
   resetDisplaySettings
 } from '../config/DisplaySettings.js';
+import { getMenuSettings, saveMenuSettings } from '../config/MenuSettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -102,6 +103,7 @@ export class SettingsOverlay {
     this.displayModeButton = null;
     this.displaySizeButton = null;
     this.uiScaleButton = null;
+    this.confirmExitButton = null;
     this.displayStatusText = null;
     this.displayOptions = {
       modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
@@ -201,6 +203,13 @@ export class SettingsOverlay {
     y += testGap;
     this.addUiScaleRow('UI Scale', y);
     y += toggleGap;
+    this.addToggleRow('Confirm Exit', getMenuSettings().confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+      id: 'confirm_exit',
+      onButton: (button) => {
+        this.confirmExitButton = button;
+      }
+    });
+    y += toggleGap;
     this.addDisplayResetRow('Safe Reset', y);
     y += sectionGap;
     this.addSectionLabel('AUDIO', y);
@@ -264,7 +273,7 @@ export class SettingsOverlay {
     }
   }
 
-  addToggleRow(label, initialValue, y, onChange) {
+  addToggleRow(label, initialValue, y, onChange, { id = null, onButton = null } = {}) {
     const width = this.game.getWidth();
     const row = new PIXI.Container();
     row.position.set(width / 2, y);
@@ -276,6 +285,7 @@ export class SettingsOverlay {
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = -82;
+    fitTextToWidth(labelText, 126, { minScale: 0.68 });
     row.addChild(labelText);
 
     let enabled = Boolean(initialValue);
@@ -287,10 +297,11 @@ export class SettingsOverlay {
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
     }, { width: 132, height: 34 });
     button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
+    onButton?.(button);
     row.addChild(button);
     this.registerControl({
       type: 'button',
-      id: `toggle_${label.toLowerCase().replace(/\s+/g, '_')}`,
+      id: `toggle_${id || label.toLowerCase().replace(/\s+/g, '_')}`,
       button,
       label
     });
@@ -931,6 +942,7 @@ export class SettingsOverlay {
     this.displayModeButton = null;
     this.displaySizeButton = null;
     this.uiScaleButton = null;
+    this.confirmExitButton = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -1726,6 +1738,8 @@ export class SettingsOverlay {
         windowSize: displaySettings.windowSize,
         uiScale: displaySettings.uiScale,
         uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
+        confirmExit: getMenuSettings().confirmExit,
+        confirmExitLabel: this.confirmExitButton?._label?.text || (getMenuSettings().confirmExit ? 'ON' : 'OFF'),
         modeLabel: this.displayModeButton?._label?.text || null,
         sizeLabel: this.displaySizeButton?._label?.text || null,
         status: this.displayStatusText?.text || null,

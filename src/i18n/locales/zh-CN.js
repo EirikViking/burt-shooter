@@ -1,6 +1,7 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "Confirm Exit": "Queren tuichu",
   "UI Scale": "Jiemian suofang",
   "UI scale applied": "Jiemian suofang yi yingyong",
   "SECTOR RUN DECK": "SECTOR RUN DECK",

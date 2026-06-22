@@ -50,6 +50,9 @@ function emptyState() {
     discoveriesThisRun: [],
     recentRunThemes: [],
     unreadIds: [],
+    lastViewedCodexDiscoverySignature: null,
+    lastViewedCodexDiscoveryCount: 0,
+    lastViewedCodexAt: null,
     updatedAt: nowIso()
   };
 }
@@ -58,14 +61,19 @@ function makeUnreadId(category, id) {
   return `${String(category || '')}:${String(id || '')}`;
 }
 
-function getDiscoveredUnreadIdSet(items = {}) {
-  const discovered = new Set();
+function getCanonicalDiscoveredIds(items = {}) {
+  const discovered = [];
   for (const [category, bucket] of Object.entries(items || {})) {
     if (!bucket || typeof bucket !== 'object') continue;
     for (const id of Object.keys(bucket)) {
-      if (id) discovered.add(makeUnreadId(category, id));
+      if (id) discovered.push(makeUnreadId(category, id));
     }
   }
+  return [...new Set(discovered)].sort();
+}
+
+function getDiscoveredUnreadIdSet(items = {}) {
+  const discovered = new Set(getCanonicalDiscoveredIds(items));
   return discovered;
 }
 
@@ -73,6 +81,39 @@ function normalizeUnreadIds(unreadIds = [], items = {}) {
   const discovered = getDiscoveredUnreadIdSet(items);
   return [...new Set((Array.isArray(unreadIds) ? unreadIds : []).map(String).filter(Boolean))]
     .filter((id) => discovered.has(id));
+}
+
+function hashDiscoveryIds(ids = []) {
+  let hashA = 0x811c9dc5;
+  let hashB = 0x9e3779b9;
+  for (const id of ids) {
+    const text = String(id || '');
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      hashA = Math.imul(hashA ^ code, 0x01000193) >>> 0;
+      hashB = (Math.imul(hashB ^ code, 0x85ebca6b) + 0xc2b2ae35) >>> 0;
+    }
+    hashA = Math.imul(hashA ^ 31, 0x01000193) >>> 0;
+    hashB = (Math.imul(hashB ^ 31, 0x85ebca6b) + 0xc2b2ae35) >>> 0;
+  }
+  return `${hashA.toString(36).padStart(7, '0')}${hashB.toString(36).padStart(7, '0')}`;
+}
+
+export function getCodexDiscoverySignature(items = {}) {
+  const ids = getCanonicalDiscoveredIds(items);
+  return {
+    signature: `v1:${ids.length}:${hashDiscoveryIds(ids)}`,
+    count: ids.length
+  };
+}
+
+function normalizeViewedSignature(value) {
+  const text = String(value || '').trim();
+  return text ? text.slice(0, 120) : null;
+}
+
+function normalizeViewedCount(value) {
+  return Math.max(0, Math.floor(Number(value) || 0));
 }
 
 function isActivePlayScene() {
@@ -287,7 +328,15 @@ export function normalizeThreatDiscoveryState(raw = {}) {
   }
   state.discoveriesThisRun = Array.isArray(raw?.discoveriesThisRun) ? raw.discoveriesThisRun.slice(-80) : [];
   state.recentRunThemes = Array.isArray(raw?.recentRunThemes) ? raw.recentRunThemes.slice(-8) : [];
+  state.lastViewedCodexDiscoverySignature = normalizeViewedSignature(raw?.lastViewedCodexDiscoverySignature);
+  state.lastViewedCodexDiscoveryCount = normalizeViewedCount(raw?.lastViewedCodexDiscoveryCount);
+  state.lastViewedCodexAt = raw?.lastViewedCodexAt ? String(raw.lastViewedCodexAt).slice(0, 80) : null;
   state.unreadIds = normalizeUnreadIds(raw?.unreadIds, state.items);
+  const currentSignature = getCodexDiscoverySignature(state.items);
+  if (state.lastViewedCodexDiscoverySignature === currentSignature.signature) {
+    state.unreadIds = [];
+    state.lastViewedCodexDiscoveryCount = currentSignature.count;
+  }
   state.updatedAt = raw?.updatedAt || nowIso();
   return state;
 }
@@ -490,10 +539,22 @@ export function getDiscoveryStats(state = readThreatDiscoveryState()) {
     counts[category] = count;
     totalDiscovered += count;
   }
+  const currentSignature = getCodexDiscoverySignature(state.items);
+  const validUnreadCount = normalizeUnreadIds(state.unreadIds, state.items).length;
+  const viewedSignature = normalizeViewedSignature(state.lastViewedCodexDiscoverySignature);
+  const viewedCount = normalizeViewedCount(state.lastViewedCodexDiscoveryCount);
+  const unreadCount = viewedSignature === currentSignature.signature
+    ? 0
+    : Math.max(
+      validUnreadCount,
+      viewedSignature && currentSignature.count > 0 && (viewedCount !== currentSignature.count || viewedSignature !== currentSignature.signature)
+        ? 1
+        : 0
+    );
   return {
     totalDiscovered,
     counts,
-    unreadCount: normalizeUnreadIds(state.unreadIds, state.items).length,
+    unreadCount,
     discoveriesThisRun: getDiscoveriesThisRun(state).length
   };
 }
@@ -523,8 +584,13 @@ export function getCodexCompletionCounts(catalog = {}, state = readThreatDiscove
 
 export function clearThreatCodexUnread() {
   const state = readThreatDiscoveryState();
+  const currentSignature = getCodexDiscoverySignature(state.items);
   state.unreadIds = [];
-  return writeThreatDiscoveryState(state);
+  state.lastViewedCodexDiscoverySignature = currentSignature.signature;
+  state.lastViewedCodexDiscoveryCount = currentSignature.count;
+  state.lastViewedCodexAt = nowIso();
+  writeThreatDiscoveryState(state);
+  return flushThreatDiscoveryState();
 }
 
 export function resetDiscoveryStateForTests() {

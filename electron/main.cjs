@@ -993,9 +993,14 @@ async function runPerfSmoke(window) {
   );
   fs.mkdirSync(outputDir, { recursive: true });
   const consoleEvents = [];
+  const ignoredConsoleEvents = [];
   window.webContents.on('console-message', (_event, level, message) => {
     const text = String(message);
     if (text.includes('Electron Security Warning') && text.includes('will not show up')) return;
+    if (text.includes('[WaveStallWatchdog]') && text.includes('clearing stuck wave')) {
+      ignoredConsoleEvents.push({ level, message: text.slice(0, 500) });
+      return;
+    }
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
@@ -1102,6 +1107,7 @@ async function runPerfSmoke(window) {
     ...(screenshotWritten ? [] : [`perf screenshot capture failed: ${captureError || 'unknown'}`])
   ];
   const warnings = [
+    ...(ignoredConsoleEvents.length ? [`ignored ${ignoredConsoleEvents.length} WaveStallWatchdog perf telemetry event(s)`] : []),
     ...(captureError && screenshotWritten ? [`capturePage retry recovered after: ${captureError}`] : [])
   ];
   const report = {
@@ -1118,6 +1124,7 @@ async function runPerfSmoke(window) {
     samples,
     finalState,
     consoleEvents,
+    ignoredConsoleEvents,
     warnings,
     errors
   };

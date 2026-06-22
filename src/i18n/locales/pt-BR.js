@@ -11,6 +11,7 @@ const sourceText = Object.freeze({
   "Display Mode": "Modo de tela",
   "Window Size": "Tamanho da janela",
   "UI Scale": "Escala da interface",
+  "Confirm Exit": "Confirmar saida",
   "Safe Reset": "Redefinir seguro",
   "AUDIO": "AUDIO",
   "Fullscreen": "Tela cheia",

@@ -13,11 +13,13 @@ import {
   CLOUD_SHIP_USAGE_KEY,
   CLOUD_SHIP_USAGE_TOTAL_KEY,
   CLOUD_THREAT_DISCOVERY_KEY,
+  CONFIRM_EXIT_KEY,
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
   collectSteamCloudPersistenceState,
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
+import { getCodexDiscoverySignature } from '../src/progression/ThreatDiscoveryState.js';
 
 const require = createRequire(import.meta.url);
 const { createSteamCloudSave, getPaths } = require('../electron/steamCloudSave.cjs');
@@ -123,7 +125,8 @@ try {
       display: {
         mode: 'windowed',
         windowSize: { width: 1600, height: 900 }
-      }
+      },
+      menu: { confirmExit: false }
     },
     hangarProgress: {
       pilotXp: 54321,
@@ -207,6 +210,7 @@ try {
   assert.equal(merged.settings.audio.bossVoiceEnabled, false);
   assert.equal(merged.settings.display.mode, 'windowed');
   assert.deepEqual(merged.settings.display.windowSize, { width: 1600, height: 900 });
+  assert.equal(merged.settings.menu.confirmExit, false);
   assert.equal(Object.hasOwn(merged, 'debugFlags'), false);
   assert.equal(Object.hasOwn(merged, 'absolutePath'), false);
 
@@ -261,7 +265,8 @@ try {
         shipName: 'Local Scout',
         completedAt: '2026-01-07T00:00:00.000Z'
       }
-    })]
+    })],
+    [CONFIRM_EXIT_KEY, '0']
   ]);
   const collected = collectSteamCloudPersistenceState({
     storage,
@@ -292,6 +297,41 @@ try {
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].scoreEarned, 4444);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
   assert.equal(collectedSave.scoutRunRecords.best.score, 130000);
+  assert.equal(collectedSave.settings.menu.confirmExit, false);
+
+  const markerUserData = mkdtempSync(path.join(tmpdir(), 'nova-steam-cloud-codex-marker-'));
+  try {
+    const markerSystem = createSteamCloudSave(markerUserData, { warn() {} });
+    const markerItems = {
+      enemies: {
+        scout: { id: 'scout', category: 'enemies', name: 'Scout', timesSeen: 1 }
+      }
+    };
+    const marker = getCodexDiscoverySignature(markerItems);
+    markerSystem.writeSave({
+      threatDiscovery: {
+        version: 1,
+        items: markerItems,
+        unreadIds: [],
+        lastViewedCodexDiscoverySignature: marker.signature,
+        lastViewedCodexDiscoveryCount: marker.count,
+        lastViewedCodexAt: '2026-06-22T10:00:00.000Z'
+      }
+    });
+    const staleUnreadMerge = markerSystem.mergeRendererState({
+      threatDiscovery: {
+        version: 1,
+        items: markerItems,
+        unreadIds: ['enemies:scout'],
+        updatedAt: '2026-06-22T09:00:00.000Z'
+      }
+    });
+    assert.deepEqual(staleUnreadMerge.threatDiscovery.unreadIds, [], 'current Codex viewed marker should suppress stale cloud unread IDs after restart merge');
+    assert.equal(staleUnreadMerge.threatDiscovery.lastViewedCodexDiscoverySignature, marker.signature);
+    assert.equal(staleUnreadMerge.threatDiscovery.lastViewedCodexDiscoveryCount, 1);
+  } finally {
+    rmSync(markerUserData, { recursive: true, force: true });
+  }
 
   const richCodex = makeRichCodexDiscovery();
   const lowHangar = {
@@ -470,7 +510,8 @@ try {
       playerFocus: 0.75,
       colorAssist: true,
       audio: { musicEnabled: false, bossVoiceEnabled: false, musicPack: 'classic' },
-      display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } }
+      display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } },
+      menu: { confirmExit: false }
     }
   }, { storage: restartStorage });
   assert.equal(restoreSummary.language, 'ja');
@@ -484,6 +525,7 @@ try {
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');
   assert.equal(restartStorage.getItem(DISPLAY_MODE_KEY), 'borderless');
   assert.deepEqual(JSON.parse(restartStorage.getItem(DISPLAY_WINDOW_SIZE_KEY)), { width: 1920, height: 1080 });
+  assert.equal(restartStorage.getItem(CONFIRM_EXIT_KEY), '0');
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
   assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
   assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);

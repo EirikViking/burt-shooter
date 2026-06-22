@@ -451,6 +451,61 @@ function sanitizeThreatItem(item = {}, fallback = {}) {
   };
 }
 
+function getCanonicalCodexDiscoveryIds(items = {}) {
+  const ids = [];
+  for (const [category, bucket] of Object.entries(items || {})) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const id of Object.keys(bucket)) {
+      if (id) ids.push(`${String(category || '')}:${String(id || '')}`);
+    }
+  }
+  return [...new Set(ids)].sort();
+}
+
+function hashCodexDiscoveryIds(ids = []) {
+  let hashA = 0x811c9dc5;
+  let hashB = 0x9e3779b9;
+  for (const id of ids) {
+    const text = String(id || '');
+    for (let index = 0; index < text.length; index += 1) {
+      const code = text.charCodeAt(index);
+      hashA = Math.imul(hashA ^ code, 0x01000193) >>> 0;
+      hashB = (Math.imul(hashB ^ code, 0x85ebca6b) + 0xc2b2ae35) >>> 0;
+    }
+    hashA = Math.imul(hashA ^ 31, 0x01000193) >>> 0;
+    hashB = (Math.imul(hashB ^ 31, 0x85ebca6b) + 0xc2b2ae35) >>> 0;
+  }
+  return `${hashA.toString(36).padStart(7, '0')}${hashB.toString(36).padStart(7, '0')}`;
+}
+
+function getCodexDiscoverySignature(items = {}) {
+  const ids = getCanonicalCodexDiscoveryIds(items);
+  return {
+    signature: `v1:${ids.length}:${hashCodexDiscoveryIds(ids)}`,
+    count: ids.length
+  };
+}
+
+function sanitizeCodexViewMarker(raw = {}) {
+  const signature = String(raw?.lastViewedCodexDiscoverySignature || '').trim().slice(0, 120);
+  if (!signature) return null;
+  return {
+    lastViewedCodexDiscoverySignature: signature,
+    lastViewedCodexDiscoveryCount: sanitizeNumber(raw?.lastViewedCodexDiscoveryCount, 0),
+    lastViewedCodexAt: raw?.lastViewedCodexAt ? String(raw.lastViewedCodexAt).slice(0, 80) : null
+  };
+}
+
+function pickLatestCodexViewMarker(localState = {}, rendererState = {}) {
+  const candidates = [sanitizeCodexViewMarker(localState), sanitizeCodexViewMarker(rendererState)].filter(Boolean);
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => {
+    const aTime = Date.parse(a.lastViewedCodexAt || '') || 0;
+    const bTime = Date.parse(b.lastViewedCodexAt || '') || 0;
+    return bTime - aTime;
+  })[0];
+}
+
 function sanitizeThreatDiscovery(discovery = {}) {
   const raw = discovery && typeof discovery === 'object' ? discovery : {};
   const rawItems = raw.items && typeof raw.items === 'object' ? raw.items : {};
@@ -472,12 +527,20 @@ function sanitizeThreatDiscovery(discovery = {}) {
   for (const [category, bucket] of Object.entries(items)) {
     for (const id of Object.keys(bucket || {})) discoveredUnreadIds.add(`${category}:${id}`);
   }
+  const viewedMarker = sanitizeCodexViewMarker(raw);
+  const currentSignature = getCodexDiscoverySignature(items);
   return {
     version: Math.max(1, sanitizeNumber(raw.version, 1)),
     items,
     discoveriesThisRun,
     recentRunThemes: sanitizeStringArray(raw.recentRunThemes, { maxItems: 8 }),
-    unreadIds: sanitizeStringArray(raw.unreadIds).filter((id) => discoveredUnreadIds.has(id)),
+    ...(viewedMarker || {}),
+    ...(viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+      ? { lastViewedCodexDiscoveryCount: currentSignature.count }
+      : {}),
+    unreadIds: viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+      ? []
+      : sanitizeStringArray(raw.unreadIds).filter((id) => discoveredUnreadIds.has(id)),
     updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : nowIso()
   };
 }
@@ -595,6 +658,15 @@ function sanitizeDisplaySettings(display = {}) {
   };
 }
 
+function sanitizeMenuSettings(menu = {}) {
+  const raw = menu && typeof menu === 'object' ? menu : {};
+  const value = raw.confirmExit;
+  const confirmExit = value === false || value === 'false' || value === '0' || value === 0 || value === 'off'
+    ? false
+    : true;
+  return { confirmExit };
+}
+
 function sanitizeSettings(settings = {}) {
   const clampUnit = (value, fallback) => {
     const number = Number(value);
@@ -606,7 +678,8 @@ function sanitizeSettings(settings = {}) {
     playerFocus: clampUnit(settings.playerFocus, 0.72),
     colorAssist: Boolean(settings.colorAssist),
     audio: sanitizeAudioSettings(settings.audio || {}),
-    display: sanitizeDisplaySettings(settings.display || {})
+    display: sanitizeDisplaySettings(settings.display || {}),
+    menu: sanitizeMenuSettings(settings.menu || {})
   };
 }
 
@@ -815,6 +888,14 @@ function mergeThreatDiscovery(localDiscovery = {}, rendererDiscovery = {}) {
       items[category][id] = mergeThreatItem(localBucket[id], rendererBucket[id], { id, category });
     }
   }
+  const viewedMarker = pickLatestCodexViewMarker(local, renderer);
+  const currentSignature = getCodexDiscoverySignature(items);
+  const unreadIds = viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+    ? []
+    : [...new Set([
+      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
+      ...(Array.isArray(renderer.unreadIds) ? renderer.unreadIds : [])
+    ])];
   return sanitizeThreatDiscovery({
     ...local,
     ...renderer,
@@ -824,10 +905,11 @@ function mergeThreatDiscovery(localDiscovery = {}, rendererDiscovery = {}) {
       ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
       ...(Array.isArray(renderer.recentRunThemes) ? renderer.recentRunThemes : [])
     ])].slice(-8),
-    unreadIds: [...new Set([
-      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
-      ...(Array.isArray(renderer.unreadIds) ? renderer.unreadIds : [])
-    ])]
+    ...(viewedMarker || {}),
+    ...(viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+      ? { lastViewedCodexDiscoveryCount: currentSignature.count }
+      : {}),
+    unreadIds
   });
 }
 

@@ -1,6 +1,7 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "Confirm Exit": "Podtverzhdat vykhod",
   "UI Scale": "Masshtab UI",
   "UI scale applied": "Masshtab UI primenen",
   "SECTOR RUN DECK": "TABLICA SECTOR RUN",

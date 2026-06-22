@@ -118,6 +118,8 @@ function assertSourceGuards() {
   const game = fs.readFileSync('src/game/Game.js', 'utf8');
   const highscore = fs.readFileSync('src/scenes/HighscoreScene.js', 'utf8');
   const play = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
+  const settingsOverlay = fs.readFileSync('src/ui/SettingsOverlay.js', 'utf8');
+  const menuSettings = fs.readFileSync('src/config/MenuSettings.js', 'utf8');
   assert(!main.includes('dialog.showMessageBox'), 'Electron exit bridge must quit without a native confirmation dialog');
   assert(main.includes('nova-app:window-blur'), 'Electron main must send native window blur to renderer');
   assert(main.includes('browser-window-blur'), 'Electron app blur must also notify the renderer');
@@ -126,6 +128,8 @@ function assertSourceGuards() {
   assert(highscore.includes('returnToMenu(') && highscore.includes('armMenuExitGuard'), 'Leaderboard Back must use guarded return-to-menu flow');
   assert(play.includes('native_window_blur'), 'PlayScene must auto-pause on native window blur');
   assert(play.includes('focus_out'), 'PlayScene must auto-pause on renderer focusout');
+  assert(settingsOverlay.includes('Confirm Exit') && settingsOverlay.includes('saveMenuSettings'), 'Settings overlay must expose the Confirm Exit toggle');
+  assert(menuSettings.includes('CONFIRM_EXIT_KEY') && menuSettings.includes('DEFAULT_MENU_SETTINGS'), 'Confirm Exit must have a persisted default-on settings module');
 }
 
 async function runMenuExitChecks(browser) {
@@ -157,8 +161,8 @@ async function runMenuExitChecks(browser) {
   assert(afterTopRightExit.menu.quitConfirmation.focusedLabel === 'CANCEL', `top-right Exit should default modal focus to Cancel: ${JSON.stringify(afterTopRightExit.menu.quitConfirmation)}`);
   assert((await page.evaluate(() => window.__novaExitRequests?.length || 0)) === 0, 'top-right Exit should not request exit before confirmation');
 
-  await clickBounds(page, afterTopRightExit.menu.quitConfirmation.buttons?.[0]?.bounds, 'quit confirmation Cancel');
-  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'Cancel closes quit confirmation after top-right Exit');
+  await page.keyboard.press('Enter');
+  await waitForState(page, (next) => next.scene === 'menu' && next.menu?.quitConfirmation?.open === false, 'default-focused Cancel closes quit confirmation after top-right Exit');
   assert((await page.evaluate(() => window.__novaExitRequests?.length || 0)) === 0, 'Cancel should not request exit');
 
   await page.keyboard.press('Escape');
@@ -211,6 +215,40 @@ async function runMenuExitChecks(browser) {
   const firstExitPayload = await page.evaluate(() => window.__novaExitRequests[0]);
   assert(!firstExitPayload.message && !firstExitPayload.title, `confirmed menu exit should not pass native dialog copy: ${JSON.stringify(firstExitPayload)}`);
   await waitForState(page, (state) => state.scene === 'menu', 'menu after confirmed browser exit fallback');
+
+  await page.evaluate(() => {
+    window.__novaExitRequests = [];
+    window.localStorage?.setItem?.('nova_confirm_exit_v1', '0');
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  const instantMenu = await waitForState(page, (state) =>
+    state.scene === 'menu' &&
+    state.menu?.quitConfirmation?.confirmExit === false,
+  'Confirm Exit Off persisted after reload');
+  assert(instantMenu.menu.quitConfirmation.open === false, 'Confirm Exit Off should not start with a stale modal open');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
+  const instantEscState = await readState(page);
+  assert(instantEscState.menu?.quitConfirmation?.open === false, `Confirm Exit Off Esc should not open modal: ${JSON.stringify(instantEscState.menu?.quitConfirmation)}`);
+  const instantEscPayload = await page.evaluate(() => window.__novaExitRequests[0]);
+  assert(!instantEscPayload.message && !instantEscPayload.title, `instant Esc exit should not pass native dialog copy: ${JSON.stringify(instantEscPayload)}`);
+
+  await page.evaluate(() => { window.__novaExitRequests = []; });
+  state = await readState(page);
+  await clickBounds(page, state.menu?.items?.exitButton, 'top-right Exit Game with Confirm Exit Off');
+  await page.waitForFunction(() => window.__novaExitRequests?.length === 1, null, { timeout: 10000 });
+  const instantClickState = await readState(page);
+  assert(instantClickState.menu?.quitConfirmation?.open === false, 'Confirm Exit Off top-right Exit should not open modal');
+
+  await page.evaluate(() => {
+    window.__novaExitRequests = [];
+    window.localStorage?.setItem?.('nova_confirm_exit_v1', '1');
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForState(page, (state) =>
+    state.scene === 'menu' &&
+    state.menu?.quitConfirmation?.confirmExit === true,
+  'Confirm Exit On restored after reload');
 
   await page.evaluate(() => { window.__novaExitRequests = []; });
   await page.evaluate(() => {
@@ -284,8 +322,31 @@ async function runFocusPauseCheck(browser) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
+  await page.addInitScript(() => {
+    window.localStorage?.setItem?.('nova_confirm_exit_v1', '0');
+    window.__novaExitRequests = [];
+    Object.defineProperty(window, '__novaApp', {
+      configurable: true,
+      value: {
+        exitGame: async (payload) => {
+          window.__novaExitRequests.push(payload || {});
+          return { ok: false, canceled: true };
+        }
+      }
+    });
+  });
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForState(page, (state) => state.scene === 'play' && !state.isPaused, 'active gameplay');
+  await page.keyboard.press('Escape');
+  const gameplayEscapePause = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause, 'gameplay Escape still pauses with Confirm Exit Off');
+  const gameplayEscapeExitRequests = await page.evaluate(() => window.__novaExitRequests?.length || 0);
+  assert(gameplayEscapeExitRequests === 0, `gameplay Escape must not request immediate desktop exit when Confirm Exit is Off (${gameplayEscapeExitRequests} request(s))`);
+  assert(gameplayEscapePause.isPaused === true, 'gameplay Escape should pause before focus checks');
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play?.setPaused?.(false);
+  });
+  await waitForState(page, (state) => state.scene === 'play' && !state.isPaused && !state.overlays?.pause, 'gameplay resumed after Escape pause');
   await page.evaluate(() => window.dispatchEvent(new Event('nova-app-window-blur')));
   const paused = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause, 'native blur pause');
   await page.screenshot({ path: path.join(outputDir, 'native-blur-pause.png'), fullPage: true });

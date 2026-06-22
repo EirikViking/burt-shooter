@@ -14,6 +14,7 @@ import {
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
 import { normalizeHangarProgress } from '../src/progression/HangarProgressState.js';
+import { getCodexDiscoverySignature } from '../src/progression/ThreatDiscoveryState.js';
 import {
   PROFILE_SCOPED_STORAGE_KEYS,
   getProfileScopedStorageKey,
@@ -55,6 +56,14 @@ function makeItems(category, count) {
 }
 
 function highProgressRendererState() {
+  const threatItems = {
+    enemies: makeItems('enemy', 45),
+    attackPatterns: makeItems('attack', 20),
+    powerups: makeItems('powerup', 22),
+    sectors: makeItems('sector', 12),
+    bosses: makeItems('boss', 8),
+    runThemes: makeItems('theme', 2)
+  };
   return {
     localHighscores: [
       { name: 'MAINACE', score: 300000, level: 15, rankIndex: 10, timestamp: '2026-06-07T00:00:00.000Z' }
@@ -80,14 +89,7 @@ function highProgressRendererState() {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05', 'nova_ship_06', 'nova_ship_07', 'nova_ship_08']
     },
     threatDiscovery: {
-      items: {
-        enemies: makeItems('enemy', 45),
-        attackPatterns: makeItems('attack', 20),
-        powerups: makeItems('powerup', 22),
-        sectors: makeItems('sector', 12),
-        bosses: makeItems('boss', 8),
-        runThemes: makeItems('theme', 2)
-      },
+      items: threatItems,
       unreadIds: ['powerups:powerup_001']
     },
     shipUsage: {
@@ -134,6 +136,18 @@ try {
   assert.equal(Object.keys(mainSaved.threatDiscovery.items.powerups || {}).length, 22);
   assert.equal(Object.keys(mainSaved.threatDiscovery.items.sectors || {}).length, 12);
   assert.deepEqual(mainSaved.threatDiscovery.unreadIds, ['powerups:powerup_001'], 'main profile should retain its own unread Codex marker');
+  const mainCodexMarker = getCodexDiscoverySignature(mainSaved.threatDiscovery.items);
+  const mainCleared = mainSaveSystem.mergeRendererState({
+    threatDiscovery: {
+      ...mainSaved.threatDiscovery,
+      unreadIds: [],
+      lastViewedCodexDiscoverySignature: mainCodexMarker.signature,
+      lastViewedCodexDiscoveryCount: mainCodexMarker.count,
+      lastViewedCodexAt: '2026-06-22T12:00:00.000Z'
+    }
+  });
+  assert.deepEqual(mainCleared.threatDiscovery.unreadIds, [], 'main profile Codex read marker should clear only the main profile glow');
+  assert.equal(mainCleared.threatDiscovery.lastViewedCodexDiscoverySignature, mainCodexMarker.signature);
 
   const freshSaveSystem = createSteamCloudSave(userData, { warn() {} }, { profile: freshProfile });
   const freshInitialized = freshSaveSystem.ensureInitialized();
@@ -153,7 +167,8 @@ try {
   assert.equal(mainReloaded.hangarProgress.pilotRank, 5, 'switching back to main profile should restore main rank');
   assert.equal(mainReloaded.hangarProgress.totalCodexDiscoveries, 107, 'switching back should restore main Codex progress');
   assert.equal(Object.keys(mainReloaded.threatDiscovery.items.powerups || {}).length, 22, 'main profile powerups should remain intact');
-  assert.deepEqual(mainReloaded.threatDiscovery.unreadIds, ['powerups:powerup_001'], 'switching back should restore the main profile unread Codex marker only');
+  assert.deepEqual(mainReloaded.threatDiscovery.unreadIds, [], 'switching back should restore the main profile cleared Codex marker only');
+  assert.equal(mainReloaded.threatDiscovery.lastViewedCodexDiscoverySignature, mainCodexMarker.signature, 'switching back should preserve the main profile Codex read signature');
 
   const localFallback = createSteamCloudSave(userData, { warn() {} }, { profile: { id: 'local-offline', reason: 'steam_missing' } });
   const localInitialized = localFallback.ensureInitialized();

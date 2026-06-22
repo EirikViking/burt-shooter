@@ -121,6 +121,7 @@ const {
 } = await import('../src/steamCloudPersistence.js');
 const {
   THREAT_DISCOVERY_KEY,
+  getCodexDiscoverySignature,
   getDiscoveryStats,
   recordThreatSeen,
   startThreatDiscoveryRun
@@ -252,6 +253,26 @@ try {
   assert.ok(restoredDiscovery.unreadIds.includes('enemies:scout_added_040'), 'Restart restore should preserve new Scout unread markers');
   assert.equal(restoreSummary.scoutRunBest, 185000, 'Restart restore should report restored Scout local best');
   assert.equal(restoredScoutBest.best.score, 185000, 'Restart/profile reload should restore Scout local best above the stale value');
+
+  const viewedSignature = getCodexDiscoverySignature(savedAfterScout.threatDiscovery.items);
+  const viewedLargeCodexState = {
+    ...savedAfterScout.threatDiscovery,
+    unreadIds: [],
+    lastViewedCodexDiscoverySignature: viewedSignature.signature,
+    lastViewedCodexDiscoveryCount: viewedSignature.count,
+    lastViewedCodexAt: '2026-06-22T12:30:00.000Z'
+  };
+  const viewedRestoreStorage = new MemoryStorage([
+    [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify({
+      ...baselineDiscovery,
+      unreadIds: ['enemies:known_0763']
+    })]
+  ]);
+  restoreSteamCloudPersistenceToStorage({ threatDiscovery: viewedLargeCodexState }, { storage: viewedRestoreStorage });
+  const viewedRestoredDiscovery = JSON.parse(viewedRestoreStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY));
+  assert.equal(discoveryCount(viewedRestoredDiscovery), expectedAfterScout, 'Viewed large Codex restore should still keep all 500+ discoveries');
+  assert.deepEqual(viewedRestoredDiscovery.unreadIds, [], 'Viewed large Codex restore should not relight stale unread markers');
+  assert.equal(viewedRestoredDiscovery.lastViewedCodexDiscoverySignature, viewedSignature.signature, 'Viewed large Codex restore should persist the canonical read signature');
 
   const lowerCloudRestoreStorage = new MemoryStorage([
     [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(afterScoutState)],
