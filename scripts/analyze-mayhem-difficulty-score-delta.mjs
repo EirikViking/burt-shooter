@@ -15,6 +15,11 @@ const EXPECTED_LEADERBOARD = 'nova_swarm_global_score_v2';
 
 const OLD_WORKTREE = path.resolve(process.env.OLD_WORKTREE || 'D:/vibe-coding-e/nova-swarm-delta-old-23809188-20260622');
 const CURRENT_WORKTREE = path.resolve(process.env.CURRENT_WORKTREE || 'D:/vibe-coding-e/nova-swarm-delta-current-f6d372a-20260622');
+const IMPLEMENTED_WORKTREE = path.resolve(process.env.IMPLEMENTED_WORKTREE || repoRoot);
+const IMPLEMENTED_SOURCE_COMMIT = String(process.env.IMPLEMENTED_SOURCE_COMMIT || '').trim();
+const IMPLEMENTED_BUILD_ID = String(process.env.IMPLEMENTED_BUILD_ID || '').trim() || 'working-tree';
+const IMPLEMENTED_ALLOW_DIRTY = process.env.IMPLEMENTED_ALLOW_DIRTY === '1' ||
+  (!process.env.IMPLEMENTED_WORKTREE && !process.env.IMPLEMENTED_SOURCE_COMMIT);
 const OUTPUT_DIR = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/mayhem-difficulty-score-delta-${timestamp()}`);
 
 const SEED_COUNT = Number(process.env.MAYHEM_DELTA_SEEDS || 100);
@@ -1413,14 +1418,14 @@ const currentBuild = await loadBuild({
   commit: CURRENT_SOURCE_COMMIT,
   worktree: CURRENT_WORKTREE
 });
-const implementedSourceCommit = git(['rev-parse', 'HEAD'], repoRoot);
+const implementedSourceCommit = IMPLEMENTED_SOURCE_COMMIT || git(['rev-parse', 'HEAD'], IMPLEMENTED_WORKTREE);
 const implementedBuild = await loadBuild({
   id: 'implemented_source',
-  label: 'Implemented source working tree',
-  buildId: 'working-tree',
+  label: IMPLEMENTED_BUILD_ID === 'working-tree' ? 'Implemented source working tree' : `Implemented source BuildID ${IMPLEMENTED_BUILD_ID}`,
+  buildId: IMPLEMENTED_BUILD_ID,
   commit: implementedSourceCommit,
-  worktree: repoRoot,
-  allowDirty: true
+  worktree: IMPLEMENTED_WORKTREE,
+  allowDirty: IMPLEMENTED_ALLOW_DIRTY
 });
 
 assert.equal(oldBuild.leaderboardName, EXPECTED_LEADERBOARD, 'old leaderboard identity mismatch');
