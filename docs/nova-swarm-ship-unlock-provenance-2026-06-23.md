@@ -34,8 +34,12 @@ Ship unlocks showed whether a hull was available, but not what the player did to
 
 ## Evidence
 
-- Focused provenance report: `test-results/ship-unlock-provenance-2026-06-23T10-45-10-089Z/report.json`
-- Existing 4K UI Scale harness captures the Hangar combat readout at `03-hangar-combat-readout` for `100%`, `150%`, and `200%` simulated 4K layouts when run for this branch.
+- Focused provenance report: `test-results/ship-unlock-provenance-2026-06-23T10-46-14-295Z/report.json`
+- Simulated 4K UI Scale Hangar evidence: `test-results/ui-scale-4k-2026-06-23T10-47-52-339Z/`, including `03-hangar-combat-readout` captures for the 4K scale scenarios.
+- Packaged smoke proof: `test-results/packaged-exe-smoke-2026-06-23T11-13-20-348Z/report.json`, build `v2026-06-23_13-09-25`, gitSha `d44064c`.
+- Packaged perf proof: `test-results/packaged-perf-smoke-2026-06-23T11-13-20-340Z/report.json`, build `v2026-06-23_13-09-25`, gitSha `d44064c`.
+- Payload manifest: `release/steamworks/steam_payload_manifest.json`, 336 files, 880,525,922 bytes, manifest hash `4d7cb0f5b841c6d7a4bc511e75519a2c61f219f84cc2462750189619c38a7734`.
+- Steam upload was not completed: SteamCMD had no cached credentials and `+login gaunziman` returned `ERROR (Invalid Password)`. The generated VDF kept `"SetLive" ""`.
 
 ## Scope Guard
 
