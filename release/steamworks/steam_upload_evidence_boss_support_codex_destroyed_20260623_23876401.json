@@ -1,0 +1,62 @@
+{
+  "createdAt": "2026-06-23T14:14:21Z",
+  "branch": "codex/boss-support-codex-destroyed-audit-20260623",
+  "sourceCommit": "b202c693aea91e23d08242414923a28494f8440f",
+  "startingCommit": "f7a0291270a11c70bb7d89a866f0598068b2704d",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23876401",
+    "setLive": "",
+    "branchAssignedByUpload": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2"
+  },
+  "package": {
+    "buildVersion": "v2026-06-23_16-06-04",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 880527348,
+    "manifestHash": "12716da1d65202f3b4dfab1cb53e0d867448166e4c0d13e2bf213d2faa7af8e0",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfProof": {
+      "appId": "\"AppID\" \"4765070\"",
+      "depot": "\"4765071\"",
+      "setLive": "\"SetLive\" \"\""
+    }
+  },
+  "packagedGitShaProof": {
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-23T14-09-47-057Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-23T14-09-47-074Z/report.json",
+    "gitSha": "b202c69"
+  },
+  "focusedEvidence": {
+    "bossSupportCodex": "test-results/boss-support-codex-2026-06-23T13-57-22-701Z/report.json",
+    "steamPackageRuntime": "test-results/steam-package-runtime-2026-06-23T14-12-00-223Z/report.json",
+    "steamUploadLog": "test-results/steam-upload-boss-support-codex-20260623-161235/steamcmd-upload.log"
+  },
+  "commands": [
+    "git diff --check",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:run-modes",
+    "npm run check:steam-electron-bridge",
+    "npm run check:controller-flow",
+    "npm run check:threat-codex",
+    "npm run check:boss-support-codex",
+    "npm run check:profile-isolation",
+    "npm run check:steam-cloud-save",
+    "npm run build:current",
+    "npm run desktop:smoke:current",
+    "npm run desktop:perf:current",
+    "npm run smoke",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:write-vdf",
+    "npm run steamworks:payload-manifest",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:\\\\vibe-coding-e\\\\nova-swarm-sector-continue-prototype\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "smokeNote": "npm run smoke hit the known non-blocking timeout at scripts/smoke-playtest.mjs:764:26 after the level 3 debug capture; current and packaged desktop smoke/perf checks were green.",
+  "scopeGuard": "No gameplay balance, score formula, XP formula, leaderboard identity, achievements metadata or behavior, Steam Cloud settings, save format, profile rescue, AppID, depot ID, store visibility, public/default branch assignment, or Steamworks metadata were changed."
+}
