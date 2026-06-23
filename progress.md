@@ -11,6 +11,15 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Details-modal polish Steam evidence: source commit `052fbfd72db6c42c5e96555ee26690499253418e` packaged as `v2026-06-23_13-57-04`; packaged smoke/perf proved gitSha `052fbfd` at `test-results/packaged-exe-smoke-2026-06-23T12-00-22-218Z/report.json` and `test-results/packaged-perf-smoke-2026-06-23T12-00-34-714Z/report.json`; payload manifest recorded 336 files / 880,526,466 bytes with manifest hash `e9887d86a9dc08a5cf622603c34456af9fbcfa32151c6cc5dfa5dd9d05008d85`; VDF kept `SetLive ""`; SteamCMD uploaded private BuildID `23874257`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, achievements metadata/behavior, leaderboard identity, Steam Cloud settings, save format, profile rescue, gameplay balance, score formula, or XP formula changed.
 - Scope guard: no gameplay balance, unlock thresholds, score formula, XP formula, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, profile rescue, AppID/depot, store visibility, or Steamworks metadata were intentionally changed.
 
+## 2026-06-23 Boss Support Codex Destroyed Audit
+
+- Current request: fix Threat Codex Destroyed counts for Boss Support Ships, especially the generic Boss Fuel Ship entry showing Encounters but zero Destroyed, without changing balance, score/XP formula, enemy/boss behavior, leaderboard identity, achievements, Steam Cloud settings, save format, or Steamworks metadata.
+- Root cause: support ships were discovered under both `boss_fuel_ship` and the generated support profile ID, but player kills only queued defeat tracking for the runtime generated enemy type used for the ship art. The generic Boss Fuel Ship Codex entry and exact support profile entry never received defeated records.
+- Implementation direction: added a tiny Boss Support Codex mapping helper and made `PlayScene.onEnemyKilled()` queue no-score-bonus defeated records for `boss_fuel_ship` plus the exact `boss_support_ship_###` profile when a Boss Fuel Ship is actually destroyed. Support delivery to the boss still records only encounters and does not count as destroyed.
+- Focused evidence: `npm run check:boss-support-codex` passed, covering all 111 support profiles, generic Boss Fuel Ship, delivery-without-defeat, fallback profile ID lookup, non-fuel support waves, no extra first-defeat score bonus, and large defeated Codex state over 500 entries. Report: `test-results/boss-support-codex-2026-06-23T13-57-22-701Z/report.json`.
+- Docs note: `docs/nova-swarm-boss-support-codex-destroyed-2026-06-23.md`.
+- Scope guard: no support ship HP, movement, healing, spawn cadence, visuals, rewards, boss behavior, boss balance, score formula, XP formula, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, save format, profile rescue, AppID/depot, store visibility, or Steamworks metadata were intentionally changed.
+
 ## 2026-06-21 Public Release Closeout
 
 - Public release status: Steam BuildID `23846155` is the released public build for the Mayhem, Scout, and Sector Run release line. Previous public build for rollback is Steam BuildID `23809188`.

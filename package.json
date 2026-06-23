@@ -35,6 +35,7 @@
     "check:sector-arrival-stinger": "node scripts/check-sector-arrival-stinger.mjs",
     "check:sector-arrival-spawn-delay": "node scripts/check-sector-arrival-spawn-delay.mjs",
     "check:boss-support-ships": "node scripts/check-boss-support-ships.mjs",
+    "check:boss-support-codex": "node scripts/check-boss-support-codex.mjs",
     "check:ship-trait-combat": "node scripts/check-ship-trait-combat.mjs",
     "check:debug-unranked": "node scripts/check-debug-run-unranked.mjs",
     "check:debug-tools": "node scripts/check-debug-tools.mjs",

@@ -69,6 +69,7 @@ import {
   recordThreatDefeatedBatch,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
+import { getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
 import { updateHangarProgress } from '../progression/HangarProgressState.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { RUN_MODES, getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
@@ -7501,7 +7502,7 @@ export class PlayScene {
     return seen;
   }
 
-  queueThreatDefeat(id, category, metadata = {}) {
+  queueThreatDefeat(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
     if (!this.game?.isRankedRun?.()) return null;
 
@@ -7520,14 +7521,21 @@ export class PlayScene {
       const bonus = category === 'bosses'
         ? RunPacingConfig.discovery.firstBossDefeatBonus
         : RunPacingConfig.discovery.firstDefeatBonus;
-      if (this.isCollisionHotPathActive) {
-        this.deferHotPathScoreAward(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
-      } else {
-        const appliedBonus = this.game.addScore(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
-        if (category !== 'bosses') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+      const scoreBonusEnabled = options.scoreBonus !== false;
+      if (scoreBonusEnabled) {
+        if (this.isCollisionHotPathActive) {
+          this.deferHotPathScoreAward(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+        } else {
+          const appliedBonus = this.game.addScore(bonus, category === 'bosses' ? 'bossBonus' : 'discoveryBonus');
+          if (category !== 'bosses') this.discoveryBonus = (Number(this.discoveryBonus) || 0) + appliedBonus;
+        }
       }
       this.deferredThreatDefeatStats.firstDefeats += 1;
-      return { isFirstDefeat, appliedBonus: this.isCollisionHotPathActive ? 0 : bonus };
+      return {
+        isFirstDefeat,
+        appliedBonus: scoreBonusEnabled && !this.isCollisionHotPathActive ? bonus : 0,
+        scoreBonusEnabled
+      };
     }
 
     return { isFirstDefeat, appliedBonus: 0 };
@@ -7730,6 +7738,9 @@ export class PlayScene {
         role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy',
         sector: this.game.level
       });
+      for (const entry of getBossSupportCodexDefeatEntries(enemy, this.game.level)) {
+        this.queueThreatDefeat(entry.threatId, entry.category, entry.metadata, { scoreBonus: false });
+      }
     }
     this.recordBalanceKill(enemy);
     if (now - this.lastKillAt > this.comboWindowMs) {
