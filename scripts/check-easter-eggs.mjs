@@ -34,6 +34,9 @@ for (const egg of EASTER_EGGS) {
   assert(typeof egg.line === 'string' && egg.line.length >= 24, `${egg.id} line too short`);
 }
 
+const spaceTaxAudit = EASTER_EGGS.find((egg) => egg.id === 'space_tax_audit');
+assert.equal(spaceTaxAudit?.sfx, 'space_tax_audit_flyby', 'Space Tax Audit should use its dedicated non-annoying flyby SFX');
+
 assert(
   EASTER_EGGS.some((egg) => egg.minLevel === 1) &&
   EASTER_EGGS.some((egg) => egg.minLevel >= 8),
@@ -66,5 +69,11 @@ assert(playScene.includes('EASTER_EGG_TOTAL'), 'PlayScene must track catalog tot
 const main = readFileSync('src/main.js', 'utf8');
 assert(main.includes('lastEasterEgg'), 'render_game_to_text must expose lastEasterEgg');
 assert(main.includes('activeEasterEgg'), 'render_game_to_text must expose activeEasterEgg');
+
+const soundCatalog = readFileSync('src/audio/SoundCatalog.js', 'utf8');
+assert(soundCatalog.includes('space_tax_audit_flyby'), 'SoundCatalog must register Space Tax Audit flyby SFX');
+
+const assetManifest = readFileSync('src/assets/assetManifest.js', 'utf8');
+assert(assetManifest.includes('nova_space_tax_audit_flyby.mp3'), 'AssetManifest must ship Space Tax Audit flyby SFX');
 
 console.log(`[easter-eggs] PASS ${EASTER_EGG_TOTAL} localized easter eggs`);

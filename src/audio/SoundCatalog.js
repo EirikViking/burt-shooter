@@ -256,6 +256,7 @@ export const SFX_MIX = {
     intro_panel_whoosh: { volume: 0.58, minIntervalMs: 350 },
     coin_portal_open: { volume: 0.74, minIntervalMs: 900 },
     swarm_chatter_stinger: { volume: 0.58, minIntervalMs: 700 },
+    space_tax_audit_flyby: { volume: 0.38, minIntervalMs: 1800 },
     boss_reveal_stinger: { volume: 0.82, minIntervalMs: 1200 },
     start_game_confirm: { volume: 0.7, minIntervalMs: 500 },
     nova_boss_arrival_alarm: { volume: 0.72, minIntervalMs: 1200 },
@@ -757,6 +758,9 @@ export const SFX_CATALOG = {
     ],
     'swarm_chatter_stinger': [
         getSfx('swarm_chatter_stinger')
+    ],
+    'space_tax_audit_flyby': [
+        getSfx('nova_space_tax_audit_flyby')
     ],
     'boss_reveal_stinger': [
         getSfx('boss_reveal_stinger')

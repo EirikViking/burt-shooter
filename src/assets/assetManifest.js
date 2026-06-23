@@ -25,6 +25,9 @@ export const AssetManifest = {
             bossWarningAtlas: '/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-atlas-20260603-clean.png',
             bossWarningEmblems: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-${String(i + 1).padStart(2, '0')}-20260603-clean.png`)
         },
+        easterEggFlyby: {
+            spaceTaxAudit: '/art/generated/nova-swarm/easter-eggs/nova-space-tax-audit-flyby-20260623.png'
+        },
         sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sector-scenes/nova-sector-scene-${String(i + 1).padStart(3, '0')}-20260616.png`),
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
         playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
@@ -351,6 +354,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/intro_panel_whoosh.mp3',
             '/audio/sfx/nova-swarm/coin_portal_open.mp3',
             '/audio/sfx/nova-swarm/swarm_chatter_stinger.mp3',
+            '/audio/sfx/nova-swarm/nova_space_tax_audit_flyby.mp3',
             '/audio/sfx/nova-swarm/boss_reveal_stinger.mp3',
             '/audio/sfx/nova-swarm/start_game_confirm.mp3',
             '/audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3',

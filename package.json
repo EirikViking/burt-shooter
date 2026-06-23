@@ -14,6 +14,7 @@
     "check:ui-readability": "node scripts/check-ui-readability.mjs",
     "check:how-to-play": "node scripts/check-how-to-play.mjs",
     "check:easter-eggs": "node scripts/check-easter-eggs.mjs",
+    "check:easter-egg-flyby": "node scripts/check-easter-egg-flyby.mjs",
     "check:fullscreen-menu-removed": "node scripts/check-fullscreen-menu-removed.mjs",
     "check:ship-recommendation": "node scripts/check-ship-recommendation.mjs",
     "check:boss-hit-clarity": "node scripts/check-boss-hit-clarity.mjs",

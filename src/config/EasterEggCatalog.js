@@ -59,7 +59,7 @@ export const EASTER_EGGS = Object.freeze([
     accent: 0x66ff9d,
     secondary: 0xffef7e,
     minLevel: 5,
-    sfx: 'computerNoise'
+    sfx: 'space_tax_audit_flyby'
   },
   {
     id: 'intern_fixed_physics',

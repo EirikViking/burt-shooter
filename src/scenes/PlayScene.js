@@ -98,9 +98,11 @@ export class PlayScene {
     this.game = game;
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
+    this.decorativeOverlay = new PIXI.Container();
     this.uiContainer = new PIXI.Container();
     this.uiOverlay = new PIXI.Container();
     this.container.addChild(this.gameContainer);
+    this.container.addChild(this.decorativeOverlay);
     this.container.addChild(this.uiContainer);
     this.container.addChild(this.uiOverlay);
 
@@ -377,8 +379,11 @@ export class PlayScene {
     this.lastGameplayGamepadConnected = false;
     this.setupAutoPauseHandlers();
     this.gameContainer.removeChildren();
+    this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
+    this.decorativeOverlay.sortableChildren = true;
+    this.decorativeOverlay.eventMode = 'none';
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.overrunClearEffects = [];
@@ -8683,8 +8688,9 @@ export class PlayScene {
         flyby.sprite.x = flyby.startX + (flyby.endX - flyby.startX) * eased;
         flyby.sprite.y = flyby.baseY + Math.sin(t * Math.PI * 2.4 + flyby.waveOffset) * flyby.wave;
         flyby.sprite.rotation = flyby.rotation + Math.sin(t * Math.PI * 3) * 0.08;
-        flyby.sprite.alpha = t < 0.16 ? t / 0.16 : t > 0.82 ? Math.max(0, (1 - t) / 0.18) : 1;
-        flyby.sprite.scale.set(0.9 + Math.sin(t * Math.PI) * 0.22);
+        const fade = t < 0.18 ? t / 0.18 : t > 0.78 ? Math.max(0, (1 - t) / 0.22) : 1;
+        flyby.sprite.alpha = fade * (flyby.maxAlpha || 0.32);
+        flyby.sprite.scale.set((flyby.baseScale || 0.58) + Math.sin(t * Math.PI) * (flyby.scalePulse || 0.05));
       }
       if (t >= 1) {
         if (flyby.sprite?.parent) flyby.sprite.parent.removeChild(flyby.sprite);
@@ -8744,49 +8750,75 @@ export class PlayScene {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const flyby = new PIXI.Container();
-    flyby.zIndex = 9000;
+    flyby.zIndex = 5;
     flyby.eventMode = 'none';
     flyby.label = `gameplay_easterEgg_${egg.id}`;
+    flyby.__novaIntent = 'decorative_lore_signal';
+    flyby.__novaLayer = 'gameplay_decorative_overlay';
+    flyby.__novaCollision = false;
+    flyby.__novaShootable = false;
+    flyby.__novaDamagesPlayer = false;
+    flyby.__novaGivesReward = false;
 
     const accent = Number(egg.accent) || 0xffef7e;
     const secondary = Number(egg.secondary) || 0x37f5ff;
-    const core = new PIXI.Graphics();
-    core.moveTo(0, -24);
-    core.lineTo(42, 0);
-    core.lineTo(0, 24);
-    core.lineTo(-42, 0);
-    core.closePath();
-    core.fill({ color: 0x041322, alpha: 0.92 });
-    core.stroke({ color: accent, width: 3, alpha: 0.95 });
-    core.circle(0, 0, 12);
-    core.stroke({ color: secondary, width: 2, alpha: 0.82 });
-    core.rect(-58, -4, 116, 8);
-    core.fill({ color: secondary, alpha: 0.22 });
-    core.rect(-5, -38, 10, 76);
-    core.fill({ color: accent, alpha: 0.14 });
+    const rightSide = width >= 900;
+    const artSrc = AssetManifest.generated?.easterEggFlyby?.spaceTaxAudit;
+    const artTexture = artSrc ? PIXI.Texture.from(artSrc) : null;
 
-    const glow = new PIXI.Graphics();
-    glow.circle(0, 0, 58);
-    glow.stroke({ color: accent, width: 6, alpha: 0.16 });
-    glow.circle(0, 0, 37);
-    glow.stroke({ color: secondary, width: 3, alpha: 0.24 });
+    const softWake = new PIXI.Graphics();
+    const wakeDir = rightSide ? 1 : -1;
+    softWake.ellipse(wakeDir * 52, 0, 124, 38);
+    softWake.fill({ color: accent, alpha: 0.018 });
+    softWake.moveTo(wakeDir * 92, -20);
+    softWake.lineTo(wakeDir * 150, -38);
+    softWake.stroke({ color: accent, width: 2, alpha: 0.07 });
+    softWake.moveTo(wakeDir * 88, 22);
+    softWake.lineTo(wakeDir * 146, 42);
+    softWake.stroke({ color: secondary, width: 1.5, alpha: 0.05 });
 
-    const spark = new PIXI.Graphics();
-    spark.rect(-32, 39, 64, 3);
-    spark.fill({ color: accent, alpha: 0.65 });
-    spark.rect(-18, 46, 36, 2);
-    spark.fill({ color: secondary, alpha: 0.48 });
+    let silhouette = null;
+    const craft = artTexture ? new PIXI.Sprite(artTexture) : new PIXI.Graphics();
+    if (craft instanceof PIXI.Sprite) {
+      craft.anchor.set(0.5);
+      craft.width = 230;
+      craft.height = 230;
+      if (rightSide) craft.scale.x *= -1;
+      craft.alpha = 1;
+      silhouette = new PIXI.Sprite(artTexture);
+      silhouette.anchor.set(0.5);
+      silhouette.width = 246;
+      silhouette.height = 246;
+      if (rightSide) silhouette.scale.x *= -1;
+      silhouette.tint = 0x37f5ff;
+      silhouette.alpha = 0.22;
+      silhouette.blendMode = 'add';
+    } else {
+      craft.moveTo(0, -16);
+      craft.lineTo(28, 0);
+      craft.lineTo(0, 16);
+      craft.lineTo(-28, 0);
+      craft.closePath();
+      craft.fill({ color: 0x041322, alpha: 0.38 });
+      craft.stroke({ color: accent, width: 1.5, alpha: 0.34 });
+    }
 
-    flyby.addChild(glow, core, spark);
-    this.uiOverlay.addChild(flyby);
+    if (silhouette) {
+      flyby.addChild(softWake, silhouette, craft);
+    } else {
+      flyby.addChild(softWake, craft);
+    }
+    this.decorativeOverlay.addChild(flyby);
 
-    const fromLeft = Math.random() < 0.5;
-    const startX = fromLeft ? -120 : width + 120;
-    const endX = fromLeft ? width + 120 : -120;
-    const baseY = Math.max(130, Math.min(height - 180, height * (0.2 + Math.random() * 0.42)));
+    const startX = rightSide ? width + 70 : -70;
+    const endX = rightSide
+      ? Math.max(width * 0.62, width - 560)
+      : Math.min(width * 0.28, 230);
+    const baseY = Math.max(270, Math.min(height - 260, height * (0.38 + Math.random() * 0.1)));
     flyby.x = startX;
     flyby.y = baseY;
-    flyby.rotation = fromLeft ? 0.1 : -0.1;
+    flyby.rotation = rightSide ? -0.08 : 0.08;
+    flyby.alpha = 0;
 
     if (this.easterEggFlyby?.sprite?.parent) {
       this.easterEggFlyby.sprite.parent.removeChild(this.easterEggFlyby.sprite);
@@ -8796,13 +8828,23 @@ export class PlayScene {
       alias: egg.id,
       sprite: flyby,
       ageMs: 0,
-      durationMs: 2200 + Math.random() * 850,
+      durationMs: 3600 + Math.random() * 900,
       startX,
       endX,
       baseY,
-      wave: 20 + Math.random() * 24,
+      wave: 8 + Math.random() * 10,
       waveOffset: Math.random() * Math.PI * 2,
-      rotation: flyby.rotation
+      rotation: flyby.rotation,
+      visualIntent: flyby.__novaIntent,
+      layer: flyby.__novaLayer,
+      hasCollision: flyby.__novaCollision,
+      shootable: flyby.__novaShootable,
+      damagesPlayer: flyby.__novaDamagesPlayer,
+      givesReward: flyby.__novaGivesReward,
+      artSrc,
+      maxAlpha: 0.84,
+      baseScale: 0.9,
+      scalePulse: 0.025
     };
   }
 
