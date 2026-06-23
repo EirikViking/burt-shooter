@@ -9,7 +9,7 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettings.js';
-import { getShipUnlockHistoryLine, getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import { getShipUnlockHistoryLine, getShipUnlockProgress, getShipUnlockRequirementLine, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
 import {
@@ -805,6 +805,11 @@ function buildGameTextState(game) {
     shipDetails: shipDetailsScene ? {
       spriteKey: shipDetailsScene.spriteKey || null,
       shipName: shipDetailsScene.ship?.name || null,
+      unlocked: isShipUnlocked(shipDetailsScene.spriteKey, getShipUnlockProgress()),
+      unlockHistoryText: getShipUnlockHistoryLine(shipDetailsScene.spriteKey, getShipUnlockProgress(), { translate: translateText }),
+      unlockRequirementText: getShipUnlockRequirementLine(shipDetailsScene.spriteKey, { translate: translateText }),
+      unlockProvenanceText: shipDetailsScene.unlockProvenanceText?.text || null,
+      unlockProvenanceBounds: getBoundsDebug(shipDetailsScene.unlockProvenanceText),
       focusedButtonIndex: Number.isFinite(shipDetailsScene.focusedButtonIndex) ? shipDetailsScene.focusedButtonIndex : null,
       focusedButtonId: shipDetailsScene.focusedButtonIndex === 0 ? 'back' : shipDetailsScene.focusedButtonIndex === 1 ? 'start' : null,
       backButton: getBoundsDebug(shipDetailsScene.backButton),

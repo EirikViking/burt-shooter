@@ -11,6 +11,7 @@ import {
   getShipUnlockHistoryLine,
   getShipUnlockRequirementLine,
   readHangarProgressState,
+  shipUnlockMet,
   updateHangarProgress
 } from '../src/progression/HangarProgressState.js';
 import {
@@ -124,6 +125,7 @@ try {
   }));
   const migrated = readHangarProgressState();
   assert(migrated.unlockedShipIds.includes('nova_ship_12'));
+  assert.equal(shipUnlockMet('nova_ship_12', migrated), true);
   assert.equal(migrated.shipUnlockHistory.nova_ship_12.reasonKey, SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy);
   checkpoint('legacy fallback for already unlocked ship', {
     novaShip12Text: getShipUnlockHistoryLine('nova_ship_12', migrated)

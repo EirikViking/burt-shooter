@@ -1,6 +1,15 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { getDefaultShipKey, getShipMetadata, getShipUnlockLabel, getShipUnlockProgress, getShipUsage, getTotalUsage, isShipUnlocked } from '../config/ShipMetadata.js';
+import {
+    getDefaultShipKey,
+    getShipMetadata,
+    getShipUnlockHistoryLine,
+    getShipUnlockProgress,
+    getShipUnlockRequirementLine,
+    getShipUsage,
+    getTotalUsage,
+    isShipUnlocked
+} from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
 import { createShipStatPanel } from '../ui/ShipStatPanel.js';
@@ -130,24 +139,29 @@ export class ShipDetailsScene {
         usageText.anchor.set(0.5, 0);
         usageText.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(usageText);
-        yOffset += 35;
+        yOffset += 24;
 
-        if (locked) {
-            const unlockText = createText(getShipUnlockLabel(this.spriteKey), {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: isMobile ? 12 : 14,
-                fill: '#ffcc00',
-                align: 'center',
-                wordWrap: true,
-                wordWrapWidth: panelWidth - 80,
-                stroke: '#000000',
-                strokeThickness: 2
-            });
-            unlockText.anchor.set(0.5, 0);
-            unlockText.position.set(panelWidth / 2, yOffset);
-            contentContainer.addChild(unlockText);
-            yOffset += unlockText.height + 18;
-        }
+        const unlockLine = locked
+            ? getShipUnlockRequirementLine(this.spriteKey, { translate: translateText })
+            : getShipUnlockHistoryLine(this.spriteKey, this.unlockProgress, { translate: translateText });
+        const unlockText = createText(unlockLine, {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 13 : 15,
+            fill: locked ? '#ffcc00' : '#ffef7e',
+            align: 'center',
+            wordWrap: true,
+            wordWrapWidth: panelWidth - 80,
+            lineHeight: isMobile ? 16 : 18,
+            stroke: '#000000',
+            strokeThickness: 2,
+            fontWeight: '700'
+        });
+        unlockText.anchor.set(0.5, 0);
+        unlockText.position.set(panelWidth / 2, yOffset);
+        unlockText.label = 'ui_shipDetailsUnlockProvenance';
+        contentContainer.addChild(unlockText);
+        this.unlockProvenanceText = unlockText;
+        yOffset += unlockText.height + 16;
 
         // Lore section with better formatting. Keep it inside the space above the fixed buttons.
         const buttonTop = panelHeight - (isMobile ? 78 : 84);

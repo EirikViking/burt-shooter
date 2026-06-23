@@ -187,9 +187,18 @@ async function captureHangar(page, scenarioDir, shots) {
   }, null, { timeout: 20000 });
   await page.waitForTimeout(600);
   shots.push(await snapshot(page, scenarioDir, '03-hangar-combat-readout'));
+  await page.evaluate(() => window.__game?.currentScene?.openSelectedShipDetails?.());
+  await waitForScene(page, 'shipDetails');
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return /^Unlocked: |^Unlock: /.test(String(state.shipDetails?.unlockProvenanceText || ''));
+  }, null, { timeout: 10000 });
+  shots.push(await snapshot(page, scenarioDir, '04-hangar-details-unlock-history'));
+  await page.evaluate(() => window.__game?.currentScene?.goBack?.());
+  await waitForScene(page, 'shipSelect');
   await page.evaluate(() => window.__game?.currentScene?.openCareerInfoOverlay?.('test'));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.careerInfo?.visible === true, null, { timeout: 10000 });
-  shots.push(await snapshot(page, scenarioDir, '04-hangar-career-intel'));
+  shots.push(await snapshot(page, scenarioDir, '05-hangar-career-intel'));
   await page.evaluate(() => window.__game?.currentScene?.closeCareerInfoOverlay?.('test'));
 }
 
@@ -206,13 +215,13 @@ async function captureGameplayAndPause(page, scenarioDir, shots) {
       play.hud?.update?.();
     }
   });
-  shots.push(await snapshot(page, scenarioDir, '05-hud-gameplay'));
+  shots.push(await snapshot(page, scenarioDir, '06-hud-gameplay'));
   await page.evaluate(() => window.__game?.scenes?.play?.setPaused?.(true));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.pause === true, null, { timeout: 10000 });
-  shots.push(await snapshot(page, scenarioDir, '06-pause-menu'));
+  shots.push(await snapshot(page, scenarioDir, '07-pause-menu'));
   await page.evaluate(() => window.__game?.scenes?.play?.openSettingsOverlay?.());
   await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.settingsOverlay), null, { timeout: 10000 });
-  shots.push(await snapshot(page, scenarioDir, '07-in-game-settings'));
+  shots.push(await snapshot(page, scenarioDir, '08-in-game-settings'));
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.scenes?.play?.settingsOverlay, null, { timeout: 10000 });
 }
@@ -224,7 +233,7 @@ async function captureScrollableScreens(page, scenarioDir, shots) {
   await page.evaluate(() => window.__game?.currentScene?.moveEntry?.(6));
   await page.waitForTimeout(120);
   const codexAfter = await page.evaluate(() => window.__game?.currentScene?.entryIndex || 0);
-  shots.push(await snapshot(page, scenarioDir, '08-threat-codex'));
+  shots.push(await snapshot(page, scenarioDir, '09-threat-codex'));
 
   await page.evaluate(() => window.__game?.switchScene?.('achievements'));
   await waitForScene(page, 'achievements');
@@ -236,7 +245,7 @@ async function captureScrollableScreens(page, scenarioDir, shots) {
   });
   await page.waitForTimeout(120);
   const achievementsAfter = await page.evaluate(() => window.__game?.currentScene?.scrollOffset || 0);
-  shots.push(await snapshot(page, scenarioDir, '09-achievements'));
+  shots.push(await snapshot(page, scenarioDir, '10-achievements'));
   return {
     codexScrolled: codexAfter > codexBefore,
     achievementsScrolled: achievementsAfter > achievementsBefore
@@ -251,7 +260,7 @@ async function captureResult(page, scenarioDir, shots) {
   });
   await waitForScene(page, 'gameOver');
   await page.waitForTimeout(500);
-  shots.push(await snapshot(page, scenarioDir, '10-result-screen'));
+  shots.push(await snapshot(page, scenarioDir, '11-result-screen'));
 }
 
 async function runScenario(browser, scenario) {
@@ -273,7 +282,7 @@ async function runScenario(browser, scenario) {
   const shots = [];
   let scroll = { codexScrolled: false, achievementsScrolled: false };
   try {
-    await page.goto(withQuery(baseUrl, { offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(withQuery(baseUrl, { offlineLeaderboard: '1', skipIntro: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForScene(page, 'menu');
     await openMenu(page, scenarioDir, shots);
     await captureSettings(page, scenarioDir, shots, scenario.scale);

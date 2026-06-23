@@ -185,7 +185,8 @@ function checkpoint(label, state, extra = {}) {
     } : null,
     shipDetails: state?.shipDetails ? {
       spriteKey: state.shipDetails.spriteKey,
-      focusedButtonId: state.shipDetails.focusedButtonId
+      focusedButtonId: state.shipDetails.focusedButtonId,
+      unlockProvenanceText: state.shipDetails.unlockProvenanceText || null
     } : null,
     ...extra
   });
@@ -194,7 +195,11 @@ function checkpoint(label, state, extra = {}) {
 try {
   mkdirSync(outputDir, { recursive: true });
   await page.addInitScript(() => {
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 19, bestLevel: 60 }));
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_02'],
+      shipUnlockHistory: {}
+    }));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
     localStorage.removeItem('nova.controllerPilotName.v1');
     window.__burtGamepadOverride = {
       id: 'hangar-controller-details-test-pad',
@@ -208,6 +213,12 @@ try {
   await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launch', 'menu launch focus', 30000);
   checkpoint('menu-initial', menuInitial);
+  await page.evaluate(() => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_02'],
+      shipUnlockHistory: {}
+    }));
+  });
 
   await steerMenuTo(page, 'hangar');
   await tapButton(page, 0);
@@ -218,7 +229,14 @@ try {
   'ship select opened with ship focus');
   checkpoint('ship-select-open', hangar, { screenshot: await screenshot(page, '01-ship-select-open') });
 
-  const initialIndex = hangar.shipSelect.selectedIndex;
+  await page.evaluate(() => window.__game?.currentScene?.navigateTo?.(0));
+  const starterFocused = await waitForState(page, (state) =>
+    state.scene === 'shipSelect' &&
+    state.shipSelect?.selectedIndex === 0 &&
+    state.shipSelect?.controllerFocus === 'ship',
+  'test setup focused starter ship');
+  await page.waitForTimeout(650);
+  const initialIndex = starterFocused.shipSelect.selectedIndex;
   await tapButton(page, 15);
   const movedRight = await waitForState(page, (state) =>
     state.scene === 'shipSelect' &&
@@ -240,7 +258,8 @@ try {
   await tapButton(page, 0);
   const detailsOpen = await waitForState(page, (state) =>
     state.scene === 'shipDetails' &&
-    state.shipDetails?.spriteKey === detailsSprite,
+    state.shipDetails?.spriteKey === detailsSprite &&
+    /^Unlocked: |^Unlock: /.test(String(state.shipDetails?.unlockProvenanceText || '')),
   'controller A opened Details for focused ship');
   checkpoint('ship-details-opened-by-a', detailsOpen, { screenshot: await screenshot(page, '03-ship-details-opened') });
 
