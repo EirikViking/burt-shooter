@@ -39,7 +39,7 @@ Ship unlocks showed whether a hull was available, but not what the player did to
 - Packaged smoke proof: `test-results/packaged-exe-smoke-2026-06-23T11-13-20-348Z/report.json`, build `v2026-06-23_13-09-25`, gitSha `d44064c`.
 - Packaged perf proof: `test-results/packaged-perf-smoke-2026-06-23T11-13-20-340Z/report.json`, build `v2026-06-23_13-09-25`, gitSha `d44064c`.
 - Payload manifest: `release/steamworks/steam_payload_manifest.json`, 336 files, 880,525,922 bytes, manifest hash `4d7cb0f5b841c6d7a4bc511e75519a2c61f219f84cc2462750189619c38a7734`.
-- Steam upload was not completed: SteamCMD had no cached credentials and `+login gaunziman` returned `ERROR (Invalid Password)`. The generated VDF kept `"SetLive" ""`.
+- Steam upload: SteamCMD uploaded private BuildID `23873700`. The generated VDF kept `"SetLive" ""`, with AppID `4765070` and depot `4765071`; no Steam branch was assigned.
 
 ## Scope Guard
 
