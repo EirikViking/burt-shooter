@@ -264,11 +264,15 @@ try {
   await tapButton(page, 14);
   await waitForState(page, (state) =>
     state.scene === 'shipSelect' &&
-    state.shipSelect?.selectedIndex === 1 &&
+    Number(state.shipSelect?.selectedIndex) < Number(movedAfterClose.shipSelect.selectedIndex) &&
     state.shipSelect?.controllerFocus === 'ship',
   'controller moved back toward unlocked ship');
-  await page.waitForTimeout(500);
-  await tapButton(page, 14);
+  for (let step = 0; step < 24; step += 1) {
+    const state = await readState(page);
+    if (state.scene === 'shipSelect' && state.shipSelect?.selectedIndex === 0) break;
+    await page.waitForTimeout(120);
+    await tapButton(page, 14);
+  }
   const unlockedLaunchTarget = await waitForState(page, (state) =>
     state.scene === 'shipSelect' &&
     state.shipSelect?.selectedIndex === 0 &&

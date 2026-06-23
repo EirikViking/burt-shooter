@@ -9,7 +9,7 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettings.js';
-import { getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
+import { getShipUnlockHistoryLine, getShipUnlockProgress, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
 import {
@@ -780,6 +780,8 @@ function buildGameTextState(game) {
       trait: selectedShip.trait?.label || null,
       unlocked: isShipUnlocked(selectedShip.spriteKey, getShipUnlockProgress()),
       unlock: selectedShip.unlock || null,
+      unlockHistoryText: getShipUnlockHistoryLine(selectedShip.spriteKey, getShipUnlockProgress(), { translate: translateText }),
+      unlockDetailsText: shipSelectScene.rightIntel?.unlock?.text || null,
       recommended: shipSelectScene.recommendedShip ? {
         shipName: shipSelectScene.recommendedShip.name || null,
         spriteKey: shipSelectScene.recommendedShip.spriteKey || null,

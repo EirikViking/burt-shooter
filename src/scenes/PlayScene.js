@@ -643,6 +643,11 @@ export class PlayScene {
       .catch((error) => {
         console.warn('[PlayScene] Powerup texture preload failed:', error);
       });
+    this.easterEggFlybyAssetReady = GameAssets.ensureEasterEggFlybyTexture('spaceTaxAudit')
+      .catch((error) => {
+        console.warn('[PlayScene] Easter egg flyby texture preload failed:', error);
+        return null;
+      });
     this.commsPortraitsReady = GameAssets.loadCommsPortraits();
 
     // Initialize touch controls
@@ -8764,7 +8769,8 @@ export class PlayScene {
     const secondary = Number(egg.secondary) || 0x37f5ff;
     const rightSide = width >= 900;
     const artSrc = AssetManifest.generated?.easterEggFlyby?.spaceTaxAudit;
-    const artTexture = artSrc ? PIXI.Texture.from(artSrc) : null;
+    const cachedArtTexture = GameAssets.getEasterEggFlybyTexture('spaceTaxAudit');
+    const artTexture = GameAssets.isValidTexture(cachedArtTexture) ? cachedArtTexture : null;
 
     const softWake = new PIXI.Graphics();
     const wakeDir = rightSide ? 1 : -1;

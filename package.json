@@ -127,6 +127,7 @@
     "check:codex-layout": "node scripts/check-codex-layout.mjs",
     "check:codex-tab-count-layout": "node scripts/check-codex-tab-count-layout.mjs",
     "check:ship-unlocks": "node scripts/check-ship-unlocks.mjs",
+    "check:ship-unlock-provenance": "node scripts/check-ship-unlock-provenance.mjs",
     "check:normal-enemy-threat-actions": "node scripts/check-normal-enemy-threat-actions.mjs",
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",

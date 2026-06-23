@@ -15,6 +15,10 @@ const MAX_THREAT_DISCOVERY_ITEMS_PER_CATEGORY = 5000;
 const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 const MUSIC_PACKS = new Set(['classic', 'generated']);
 const DISPLAY_MODES = new Set(['fullscreen', 'windowed', 'borderless']);
+const SHIP_UNLOCK_LEGACY_REASON_KEYS = new Set([
+  'shipUnlock.reason.legacy',
+  'shipUnlock.reason.unknown'
+]);
 const PILOT_XP_THRESHOLDS = [
   0, 650, 1600, 3000, 5000, 7600, 10800, 14600, 19000, 24200,
   30400, 37800, 46600, 57000, 69400, 84200, 101800, 122800, 147800, 177500,
@@ -384,6 +388,54 @@ function sanitizeJsonValue(value, depth = 2) {
   return null;
 }
 
+function sanitizeShipUnlockHistoryEntry(entry = {}) {
+  const raw = entry && typeof entry === 'object' && !Array.isArray(entry) ? entry : {};
+  const params = raw.reasonParams && typeof raw.reasonParams === 'object' && !Array.isArray(raw.reasonParams)
+    ? sanitizeJsonValue(raw.reasonParams, 3)
+    : {};
+  return {
+    unlockedAt: raw.unlockedAt ? String(raw.unlockedAt).slice(0, 80) : nowIso(),
+    reasonKey: String(raw.reasonKey || 'shipUnlock.reason.unknown').slice(0, 120),
+    reasonParams: params && typeof params === 'object' ? params : {},
+    source: String(raw.source || 'unknown').slice(0, 80),
+    sector: raw.sector == null ? null : sanitizeNumber(raw.sector, 0),
+    score: raw.score == null ? null : sanitizeNumber(raw.score, 0),
+    bossCount: raw.bossCount == null ? null : sanitizeNumber(raw.bossCount, 0),
+    runMode: raw.runMode == null ? null : String(raw.runMode).slice(0, 80),
+    buildVersion: raw.buildVersion == null ? null : String(raw.buildVersion).slice(0, 80)
+  };
+}
+
+function sanitizeShipUnlockHistory(history = {}) {
+  const raw = history && typeof history === 'object' && !Array.isArray(history) ? history : {};
+  return Object.fromEntries(Object.entries(raw)
+    .slice(0, 80)
+    .map(([shipId, entry]) => [String(shipId).slice(0, 80), sanitizeShipUnlockHistoryEntry(entry)])
+    .filter(([shipId]) => shipId));
+}
+
+function chooseShipUnlockHistoryEntry(localEntry = null, rendererEntry = null) {
+  const localSpecific = localEntry && !SHIP_UNLOCK_LEGACY_REASON_KEYS.has(localEntry.reasonKey);
+  const rendererSpecific = rendererEntry && !SHIP_UNLOCK_LEGACY_REASON_KEYS.has(rendererEntry.reasonKey);
+  if (localSpecific && !rendererSpecific) return localEntry;
+  if (rendererSpecific && !localSpecific) return rendererEntry;
+  if (localEntry && rendererEntry) {
+    const localTime = Date.parse(localEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    const rendererTime = Date.parse(rendererEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    return localTime <= rendererTime ? localEntry : rendererEntry;
+  }
+  return localEntry || rendererEntry || null;
+}
+
+function mergeShipUnlockHistory(localHistory = {}, rendererHistory = {}) {
+  const local = sanitizeShipUnlockHistory(localHistory);
+  const renderer = sanitizeShipUnlockHistory(rendererHistory);
+  const ids = [...new Set([...Object.keys(local), ...Object.keys(renderer)])];
+  return Object.fromEntries(ids
+    .map((shipId) => [shipId, chooseShipUnlockHistoryEntry(local[shipId], renderer[shipId])])
+    .filter(([, entry]) => entry));
+}
+
 function sanitizeHangarProgress(progress = {}) {
   const raw = progress && typeof progress === 'object' ? progress : {};
   const reachedSector = Math.max(
@@ -422,6 +474,7 @@ function sanitizeHangarProgress(progress = {}) {
     secretShipUnlockIds: sanitizeStringArray(raw.secretShipUnlockIds),
     creditsEasterEggFound: Boolean(raw.creditsEasterEggFound),
     unlockedShipIds: sanitizeStringArray(raw.unlockedShipIds),
+    shipUnlockHistory: sanitizeShipUnlockHistory(raw.shipUnlockHistory),
     lastNewlyUnlockedShipIds: sanitizeStringArray(raw.lastNewlyUnlockedShipIds),
     newRanksThisRun: sanitizeStringArray(raw.newRanksThisRun, { maxItems: 32, maxLength: 12 })
       .map((value) => sanitizeNumber(value, 0, { min: 0, max: 20 })),
@@ -634,6 +687,7 @@ function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
     secretShipUnlockIds: mergeStringArray(local.secretShipUnlockIds, renderer.secretShipUnlockIds),
     creditsEasterEggFound: Boolean(local.creditsEasterEggFound || renderer.creditsEasterEggFound),
     unlockedShipIds: mergeStringArray(local.unlockedShipIds, renderer.unlockedShipIds),
+    shipUnlockHistory: mergeShipUnlockHistory(local.shipUnlockHistory, renderer.shipUnlockHistory),
     lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : [],
     newRanksThisRun: Array.isArray(local.newRanksThisRun) ? local.newRanksThisRun : [],
     rankAchievementsUnlocked: mergeStringArray(local.rankAchievementsUnlocked, renderer.rankAchievementsUnlocked),

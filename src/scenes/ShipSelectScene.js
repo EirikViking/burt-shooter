@@ -4,9 +4,11 @@ import { BonusAsset } from '../utils/BonusAsset.js';
 import {
   getSelectableShips,
   getDefaultShipKey,
+  getShipUnlockHistoryLine,
   getShipUnlockLabel,
   getShipUnlockProgressDetails,
   getShipUnlockProgress,
+  getShipUnlockRequirementLine,
   isShipUnlocked,
   isValidShipKey,
   resolveShipKey
@@ -2443,8 +2445,11 @@ export class ShipSelectScene {
         .join('  ')
       : '';
     const unlock = unlocked
-      ? 'STATUS: READY FOR LAUNCH'
-      : `${getShipUnlockLabel(ship.spriteKey)}${progressLine ? `\nPROGRESS: ${progressLine}` : ''}`;
+      ? [
+        translateText('STATUS: READY FOR LAUNCH'),
+        getShipUnlockHistoryLine(ship.spriteKey, this.unlockProgress, { translate: translateText })
+      ].join('\n')
+      : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     if (this.leftIntel) {
@@ -2486,6 +2491,8 @@ export class ShipSelectScene {
       this.rightIntel.weapon.text = weapon;
       this.rightIntel.trait.text = this.getShipTraitText(ship);
       this.rightIntel.unlock.text = unlock;
+      this.rightIntel.unlock.scale.set(1);
+      fitDisplayToBox(this.rightIntel.unlock, 226, 48, { minScale: 0.62 });
       if (this.rightIntel.statPanel?.parent) {
         this.rightIntel.statPanel.parent.removeChild(this.rightIntel.statPanel);
       }
@@ -2504,7 +2511,8 @@ export class ShipSelectScene {
     }
 
     if (this.compactIntel) {
-      this.compactIntel.role.text = `${role} | ${unlock}`;
+      const compactStatus = unlocked ? translateText('READY') : getShipUnlockLabel(ship.spriteKey);
+      this.compactIntel.role.text = [role, compactStatus].join(' | ');
       this.compactIntel.weapon.text = weapon;
     }
   }

@@ -8,6 +8,7 @@ import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import {
   getSelectableShips,
+  getShipUnlockHistoryReason,
   getShipUnlockProgress,
   getShipUnlockProgressDetails,
   isShipUnlocked
@@ -3175,9 +3176,12 @@ export class GameOverScene {
       const names = newlyUnlocked.slice(0, 2).map(ship => ship.name).join(' + ');
       const suffix = newlyUnlocked.length > 2 ? ` +${newlyUnlocked.length - 2} MORE` : '';
       const prefix = newlyUnlocked.length === 1 ? 'SHIP UNLOCKED' : 'SHIPS UNLOCKED';
+      const reason = newlyUnlocked.length === 1
+        ? getShipUnlockHistoryReason(newlyUnlocked[0].spriteKey, currentProgress, { translate: translateText })
+        : null;
       return [
         translateText(`${prefix}: ${names}${suffix}`),
-        translateText('VISIT THE HANGAR TO TRY THEM')
+        reason ? translateText('Reason: {reason}', { reason }) : translateText('VISIT THE HANGAR TO TRY THEM')
       ];
     }
 

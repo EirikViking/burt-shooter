@@ -9,6 +9,10 @@ import { buildSelectableShipVariants } from './VisualVariantCatalog.js';
 import { getTraitExplanation } from './ShipTraitDescriptions.js';
 import { getShipUnlockDefinition } from './ShipUnlockConfig.js';
 import {
+  formatShipUnlockHistoryReason as formatHangarShipUnlockHistoryReason,
+  getShipUnlockHistoryEntry as getHangarShipUnlockHistoryEntry,
+  getShipUnlockHistoryLine as getHangarShipUnlockHistoryLine,
+  getShipUnlockRequirementLine as getHangarShipUnlockRequirementLine,
   getShipUnlockProgressDetails as getHangarShipUnlockProgressDetails,
   readHangarProgressState,
   shipUnlockMet,
@@ -160,6 +164,23 @@ export function getUnlockedSelectableShips() {
 
 export function getShipUnlockProgressDetails(spriteKey, progress = readUnlockProgress()) {
   return getHangarShipUnlockProgressDetails(getShipUnlockId(spriteKey), progress);
+}
+
+export function getShipUnlockHistoryEntry(spriteKey, progress = readUnlockProgress()) {
+  return getHangarShipUnlockHistoryEntry(getShipUnlockId(spriteKey), progress);
+}
+
+export function getShipUnlockHistoryLine(spriteKey, progress = readUnlockProgress(), options = {}) {
+  return getHangarShipUnlockHistoryLine(getShipUnlockId(spriteKey), progress, options);
+}
+
+export function getShipUnlockHistoryReason(spriteKey, progress = readUnlockProgress(), options = {}) {
+  const shipId = getShipUnlockId(spriteKey);
+  return formatHangarShipUnlockHistoryReason(getHangarShipUnlockHistoryEntry(shipId, progress), shipId, options);
+}
+
+export function getShipUnlockRequirementLine(spriteKey, options = {}) {
+  return getHangarShipUnlockRequirementLine(getShipUnlockId(spriteKey), options);
 }
 
 const SHIP_USAGE_STORAGE_KEY = 'burt.shipUsage.v1';

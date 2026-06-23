@@ -10,11 +10,19 @@ import {
   getRankFromPilotXp
 } from '../shared/RankPolicy.js';
 import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
+import { BUILD_ID } from '../buildInfo.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const HANGAR_PROGRESS_VERSION = 1;
 export const HANGAR_UNLOCK_TUNING_VERSION = 3;
+export const SHIP_UNLOCK_HISTORY_REASON_KEYS = Object.freeze({
+  available: 'shipUnlock.reason.available',
+  requirements: 'shipUnlock.reason.requirements',
+  secret: 'shipUnlock.reason.secret',
+  legacy: 'shipUnlock.reason.legacy',
+  unknown: 'shipUnlock.reason.unknown'
+});
 
 function storage() {
   try {
@@ -29,8 +37,19 @@ function floor(value, fallback = 0) {
   return Number.isFinite(number) ? Math.max(0, Math.floor(number)) : fallback;
 }
 
+function clampText(value, maxLength = 160) {
+  const text = String(value ?? '').trim();
+  return text ? text.slice(0, maxLength) : '';
+}
+
 function nowIso() {
   return new Date().toISOString();
+}
+
+function interpolateSourceText(value, vars = {}) {
+  let text = String(value ?? '');
+  for (const [name, replacement] of Object.entries(vars || {})) text = text.replaceAll(`{${name}}`, String(replacement));
+  return text;
 }
 
 function readJson(key, fallback = {}) {
@@ -80,6 +99,7 @@ export function createDefaultHangarProgress() {
     secretShipUnlockIds: [],
     creditsEasterEggFound: false,
     unlockedShipIds: ['nova_ship_01'],
+    shipUnlockHistory: {},
     lastNewlyUnlockedShipIds: [],
     newRanksThisRun: [],
     rankAchievementsUnlocked: [],
@@ -105,6 +125,151 @@ function legacyLevelToSector(bestLevel = 1) {
   return Math.max(1, Math.min(10, Math.ceil(level / 6)));
 }
 
+function knownShipIdSet() {
+  return new Set(ShipUnlockConfig.map((entry) => entry.shipId));
+}
+
+function normalizeRequirementGroup(requirements = {}) {
+  if (!requirements || typeof requirements !== 'object' || Array.isArray(requirements)) return [];
+  return Object.entries(requirements)
+    .filter(([key]) => SUPPORTED_SHIP_UNLOCK_REQUIREMENT_KEYS.includes(key))
+    .map(([key, target]) => [key, typeof target === 'string' ? String(target) : floor(target)])
+    .filter(([, target]) => target !== '' && target !== null && target !== undefined)
+    .sort(([a], [b]) => a.localeCompare(b));
+}
+
+function normalizeReasonParams(params = {}) {
+  const raw = params && typeof params === 'object' && !Array.isArray(params) ? params : {};
+  const out = {};
+  if (Array.isArray(raw.requirements)) {
+    out.requirements = raw.requirements
+      .map((entry) => {
+        if (Array.isArray(entry)) return [clampText(entry[0], 80), typeof entry[1] === 'string' ? clampText(entry[1], 120) : floor(entry[1])];
+        if (entry && typeof entry === 'object') return [clampText(entry.key, 80), typeof entry.target === 'string' ? clampText(entry.target, 120) : floor(entry.target)];
+        return null;
+      })
+      .filter((entry) => entry && SUPPORTED_SHIP_UNLOCK_REQUIREMENT_KEYS.includes(entry[0]));
+  }
+  for (const key of ['sector', 'score', 'bossCount', 'count', 'rank', 'seconds', 'runMode', 'source']) {
+    if (raw[key] == null) continue;
+    out[key] = typeof raw[key] === 'string' ? clampText(raw[key], 120) : floor(raw[key]);
+  }
+  return out;
+}
+
+function normalizeShipUnlockHistoryEntry(entry = {}) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+  const reasonKey = clampText(entry.reasonKey, 120) || SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown;
+  return {
+    unlockedAt: clampText(entry.unlockedAt, 80) || nowIso(),
+    reasonKey,
+    reasonParams: normalizeReasonParams(entry.reasonParams),
+    source: clampText(entry.source, 80) || 'unknown',
+    sector: entry.sector == null ? null : floor(entry.sector),
+    score: entry.score == null ? null : floor(entry.score),
+    bossCount: entry.bossCount == null ? null : floor(entry.bossCount),
+    runMode: entry.runMode == null ? null : clampText(entry.runMode, 80),
+    buildVersion: clampText(entry.buildVersion, 80) || null
+  };
+}
+
+export function normalizeShipUnlockHistory(history = {}) {
+  if (!history || typeof history !== 'object' || Array.isArray(history)) return {};
+  const validIds = knownShipIdSet();
+  const normalized = {};
+  for (const [shipId, entry] of Object.entries(history)) {
+    const id = clampText(shipId, 80);
+    if (!id || !validIds.has(id)) continue;
+    const normalizedEntry = normalizeShipUnlockHistoryEntry(entry);
+    if (normalizedEntry) normalized[id] = normalizedEntry;
+  }
+  return normalized;
+}
+
+function createHistoryEntry(shipId, {
+  reasonKey = SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown,
+  requirements = [],
+  source = 'unknown',
+  context = {}
+} = {}) {
+  const requirementList = Array.isArray(requirements)
+    ? requirements
+    : normalizeRequirementGroup(requirements);
+  return normalizeShipUnlockHistoryEntry({
+    unlockedAt: clampText(context.unlockedAt, 80) || nowIso(),
+    reasonKey,
+    reasonParams: requirementList.length ? { requirements: requirementList } : {},
+    source,
+    sector: context.sector ?? context.sectorReached ?? context.bestSector ?? null,
+    score: context.score ?? context.bestScore ?? null,
+    bossCount: context.bossCount ?? context.bossesKilled ?? context.totalBossesDefeated ?? null,
+    runMode: context.runMode ?? null,
+    buildVersion: context.buildVersion ?? BUILD_ID ?? null
+  });
+}
+
+function createLegacyShipUnlockHistoryEntry(source = 'legacy') {
+  return createHistoryEntry(null, {
+    reasonKey: SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    source,
+    context: { buildVersion: BUILD_ID }
+  });
+}
+
+function createAvailableShipUnlockHistoryEntry() {
+  return createHistoryEntry(null, {
+    reasonKey: SHIP_UNLOCK_HISTORY_REASON_KEYS.available,
+    source: 'starter',
+    context: { buildVersion: BUILD_ID }
+  });
+}
+
+function requirementGroupsForShip(shipId) {
+  const definition = getShipUnlockDefinition(shipId);
+  if (!definition) return [];
+  return [
+    definition.requirements || {},
+    ...(Array.isArray(definition.requirementsAny) ? definition.requirementsAny : [])
+  ]
+    .map(normalizeRequirementGroup)
+    .filter((group) => group.length > 0);
+}
+
+function groupToRequirementObject(group = []) {
+  return Object.fromEntries(group);
+}
+
+function selectUnlockRequirementGroup(shipId, previousProgress, nextProgress) {
+  const groups = requirementGroupsForShip(shipId);
+  if (!groups.length) return [];
+  const newlyMet = groups.find((group) => {
+    const requirements = groupToRequirementObject(group);
+    return requirementsMet(nextProgress, requirements) && !requirementsMet(previousProgress, requirements);
+  });
+  if (newlyMet) return newlyMet;
+  return groups.find((group) => requirementsMet(nextProgress, groupToRequirementObject(group))) || groups[0];
+}
+
+function shouldReplaceHistoryEntry(entry) {
+  if (!entry) return true;
+  return [
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown
+  ].includes(entry.reasonKey);
+}
+
+function fillMissingShipUnlockHistory(progress, source = 'migration') {
+  const history = normalizeShipUnlockHistory(progress.shipUnlockHistory);
+  const unlockedIds = Array.isArray(progress.unlockedShipIds) ? progress.unlockedShipIds.map(String) : [];
+  for (const shipId of unlockedIds) {
+    if (history[shipId]) continue;
+    history[shipId] = shipId === 'nova_ship_01'
+      ? createAvailableShipUnlockHistoryEntry()
+      : createLegacyShipUnlockHistoryEntry(source);
+  }
+  return history;
+}
+
 export function normalizeHangarProgress(raw = {}) {
   const defaults = createDefaultHangarProgress();
   const legacy = readLegacyUnlockProgress();
@@ -124,7 +289,8 @@ export function normalizeHangarProgress(raw = {}) {
   const bestSector = reachedSector;
   const unlocked = new Set([
     ...defaults.unlockedShipIds,
-    ...legacyUnlockedShipIds(legacy.bestLevel)
+    ...legacyUnlockedShipIds(legacy.bestLevel),
+    ...(Array.isArray(raw.unlockedShipIds) ? raw.unlockedShipIds.map(String) : [])
   ]);
   const normalized = {
     ...defaults,
@@ -155,12 +321,14 @@ export function normalizeHangarProgress(raw = {}) {
     secretShipUnlockIds: Array.isArray(raw.secretShipUnlockIds) ? [...new Set(raw.secretShipUnlockIds.map(String))] : [],
     creditsEasterEggFound: Boolean(raw.creditsEasterEggFound),
     unlockedShipIds: [...unlocked],
+    shipUnlockHistory: normalizeShipUnlockHistory(raw.shipUnlockHistory),
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
     newRanksThisRun: Array.isArray(raw.newRanksThisRun) ? raw.newRanksThisRun.map(Number).filter(Number.isFinite) : [],
     rankAchievementsUnlocked: Array.isArray(raw.rankAchievementsUnlocked) ? raw.rankAchievementsUnlocked.map(String) : [],
     updatedAt: raw.updatedAt || nowIso()
   };
   normalized.unlockedShipIds = recalculateUnlockedShipIds(normalized);
+  normalized.shipUnlockHistory = fillMissingShipUnlockHistory(normalized);
   return normalized;
 }
 
@@ -230,6 +398,9 @@ export function shipUnlockMet(shipId, progress = readHangarProgressState()) {
 export function recalculateUnlockedShipIds(progress = readHangarProgressState()) {
   const normalized = { ...progress };
   const unlocked = new Set(['nova_ship_01']);
+  if (Array.isArray(normalized.unlockedShipIds)) {
+    for (const shipId of normalized.unlockedShipIds) unlocked.add(String(shipId));
+  }
   for (const entry of ShipUnlockConfig) {
     if (shipUnlockMet(entry.shipId, normalized)) unlocked.add(entry.shipId);
   }
@@ -241,7 +412,7 @@ export function recalculateUnlockedShipIds(progress = readHangarProgressState())
     .filter((shipId) => unlocked.has(shipId));
 }
 
-export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true } = {}) {
+export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true, unlockContext = {} } = {}) {
   const previous = readHangarProgressState();
   const merged = normalizeHangarProgress({
     ...previous,
@@ -267,6 +438,10 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true 
     runThemesSurvived: [...new Set([...previous.runThemesSurvived, ...(Array.isArray(partial.runThemesSurvived) ? partial.runThemesSurvived : [])])],
     secretShipUnlockIds: [...new Set([...previous.secretShipUnlockIds, ...(Array.isArray(partial.secretShipUnlockIds) ? partial.secretShipUnlockIds : [])])],
     creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || partial.creditsEasterEggFound),
+    shipUnlockHistory: {
+      ...previous.shipUnlockHistory,
+      ...normalizeShipUnlockHistory(partial.shipUnlockHistory)
+    },
     lastNewlyUnlockedShipIds: preserveLastUnlocks ? previous.lastNewlyUnlockedShipIds : []
   });
   merged.pilotRank = getRankFromPilotXp(merged.pilotXp);
@@ -275,6 +450,19 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true 
   const before = new Set(previous.unlockedShipIds);
   merged.unlockedShipIds = recalculateUnlockedShipIds(merged);
   merged.lastNewlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
+  merged.shipUnlockHistory = fillMissingShipUnlockHistory(merged);
+  for (const shipId of merged.lastNewlyUnlockedShipIds) {
+    if (!shouldReplaceHistoryEntry(merged.shipUnlockHistory[shipId])) continue;
+    const requirements = selectUnlockRequirementGroup(shipId, previous, merged);
+    merged.shipUnlockHistory[shipId] = createHistoryEntry(shipId, {
+      reasonKey: requirements.length
+        ? SHIP_UNLOCK_HISTORY_REASON_KEYS.requirements
+        : (shipId === 'nova_ship_01' ? SHIP_UNLOCK_HISTORY_REASON_KEYS.available : SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown),
+      requirements,
+      source: clampText(unlockContext.source || unlockContext.runMode || 'run_progression', 80),
+      context: unlockContext
+    });
+  }
   return writeHangarProgressState(merged);
 }
 
@@ -293,10 +481,22 @@ export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
   }
 
   const alreadyUnlocked = previous.unlockedShipIds.includes(id);
+  const nextHistory = {
+    ...previous.shipUnlockHistory
+  };
+  if (!alreadyUnlocked || shouldReplaceHistoryEntry(nextHistory[id])) {
+    nextHistory[id] = createHistoryEntry(id, {
+      reasonKey: SHIP_UNLOCK_HISTORY_REASON_KEYS.secret,
+      source,
+      context: { source, buildVersion: BUILD_ID }
+    });
+  }
+
   const next = writeHangarProgressState({
     ...previous,
     secretShipUnlockIds: [...new Set([...(previous.secretShipUnlockIds || []), id])],
     creditsEasterEggFound: source === 'credits_easter_egg' ? true : previous.creditsEasterEggFound,
+    shipUnlockHistory: nextHistory,
     lastNewlyUnlockedShipIds: alreadyUnlocked ? previous.lastNewlyUnlockedShipIds : [id]
   });
 
@@ -387,7 +587,18 @@ export function applyRunProgression(summary = {}) {
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],
     runThemesSurvived: summary.runTheme ? [summary.runTheme] : [],
     newRanksThisRun
-  }, { preserveLastUnlocks: false });
+  }, {
+    preserveLastUnlocks: false,
+    unlockContext: {
+      source: summary.runMode || 'mayhem',
+      runMode: summary.runMode || null,
+      sector: Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1)),
+      score: floor(summary.score),
+      bossCount: previous.totalBossesDefeated + floor(summary.bossesKilled),
+      bossesKilled: floor(summary.bossesKilled),
+      buildVersion: BUILD_ID
+    }
+  });
   next.newRanksThisRun = newRanksThisRun;
   next.rankProgress = getPilotRankProgress(next.pilotXp);
   writeHangarProgressState(next);
@@ -426,6 +637,91 @@ export function getShipUnlockProgressDetails(shipId, progress = readHangarProgre
   };
 }
 
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('en-US');
+}
+
+export function formatShipUnlockRequirementPhrase([key, target] = [], { translate = interpolateSourceText } = {}) {
+  const count = typeof target === 'string' ? target : floor(target);
+  switch (key) {
+    case 'bestSector':
+      return translate('Reached Sector {sector}', { sector: count });
+    case 'bestScore':
+      return translate('Scored {score} points in one run', { score: formatNumber(count) });
+    case 'totalBossesDefeated':
+      return translate('Defeated {count} bosses', { count });
+    case 'totalWavesCleared':
+      return translate('Cleared {count} waves', { count });
+    case 'totalRuns':
+      return translate('Finished {count} runs', { count });
+    case 'pilotRank':
+      return translate('Reached Pilot Rank {rank}', { rank: count });
+    case 'runClears':
+      return translate('Cleared the arcade run {count} times', { count });
+    case 'codexDiscoveries':
+      return translate('Discovered {count} Threat Codex entries', { count });
+    case 'noHitWaves':
+      return translate('Completed {count} no-hit waves', { count });
+    case 'noHitSectors':
+      return translate('Completed {count} no-hit sectors', { count });
+    case 'survivedSeconds':
+      return count >= 60 && count % 60 === 0
+        ? translate('Survived {minutes} minutes', { minutes: Math.floor(count / 60) })
+        : translate('Survived {seconds} seconds', { seconds: count });
+    case 'specificThreatDiscovered':
+      return typeof target === 'string'
+        ? translate('Discovered a specific Threat Codex entry')
+        : translate('Discovered {count} specific threats', { count });
+    case 'specificBossDefeated':
+      return typeof target === 'string'
+        ? translate('Defeated a specific boss')
+        : translate('Defeated {count} boss types', { count });
+    case 'specificRunThemeSurvived':
+      return translate('Survived encounters from {count} run themes', { count });
+    case 'clearWithLivesRemaining':
+      return translate('Cleared with {count} lives remaining', { count });
+    case 'highestScoreMultiplier':
+      return translate('Reached a x{count} score multiplier', { count });
+    default:
+      return translate('Met an unlock milestone');
+  }
+}
+
+export function formatShipUnlockHistoryReason(entry = null, shipId = '', { translate = interpolateSourceText } = {}) {
+  const normalized = normalizeShipUnlockHistoryEntry(entry);
+  if (!normalized) return translate('Unknown unlock source');
+  if (normalized.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.available) return translate('Starting hull');
+  if (normalized.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy) return translate('Before tracking was added');
+  if (normalized.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.secret) return translate('Secret discovery');
+  const requirements = Array.isArray(normalized.reasonParams?.requirements)
+    ? normalized.reasonParams.requirements
+    : [];
+  if (requirements.length) {
+    const phrases = requirements.map((requirement) => formatShipUnlockRequirementPhrase(requirement, { translate }));
+    return phrases.join(` ${translate('and')} `);
+  }
+  const definition = getShipUnlockDefinition(shipId);
+  if (definition?.label) return translate(definition.label);
+  return translate('Unknown unlock source');
+}
+
+export function getShipUnlockHistoryEntry(shipId, progress = readHangarProgressState()) {
+  const id = clampText(shipId, 80);
+  return id ? normalizeShipUnlockHistory(progress.shipUnlockHistory)?.[id] || null : null;
+}
+
+export function getShipUnlockHistoryLine(shipId, progress = readHangarProgressState(), { translate = interpolateSourceText } = {}) {
+  const reason = formatShipUnlockHistoryReason(getShipUnlockHistoryEntry(shipId, progress), shipId, { translate });
+  return translate('Unlocked: {reason}', { reason });
+}
+
+export function getShipUnlockRequirementLine(shipId, { translate = interpolateSourceText } = {}) {
+  const definition = getShipUnlockDefinition(shipId);
+  return translate('Unlock: {requirement}', {
+    requirement: translate(definition?.label || 'Unknown unlock requirement')
+  });
+}
+
 export function getHangarProgressSummary(progress = readHangarProgressState()) {
   return {
     pilotXp: progress.pilotXp,
@@ -442,6 +738,7 @@ export function getHangarProgressSummary(progress = readHangarProgressState()) {
     secretShipUnlockIds: progress.secretShipUnlockIds.slice(),
     creditsEasterEggFound: Boolean(progress.creditsEasterEggFound),
     unlockedShipIds: progress.unlockedShipIds.slice(),
+    shipUnlockHistory: { ...progress.shipUnlockHistory },
     newlyUnlockedShipIds: progress.lastNewlyUnlockedShipIds.slice(),
     rankProgress: getPilotRankProgress(progress.pilotXp)
   };

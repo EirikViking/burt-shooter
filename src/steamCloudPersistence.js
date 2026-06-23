@@ -26,6 +26,7 @@ import {
   getCodexDiscoverySignature,
   invalidateThreatDiscoveryStateCache
 } from './progression/ThreatDiscoveryState.js';
+import { SHIP_UNLOCK_HISTORY_REASON_KEYS, normalizeShipUnlockHistory } from './progression/HangarProgressState.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY };
@@ -235,6 +236,34 @@ function mergeShipUsage(localUsage = {}, cloudUsage = {}) {
     .filter(([, value]) => value > 0));
 }
 
+function chooseShipUnlockHistoryEntry(localEntry = null, cloudEntry = null) {
+  const localSpecific = localEntry && ![
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown
+  ].includes(localEntry.reasonKey);
+  const cloudSpecific = cloudEntry && ![
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown
+  ].includes(cloudEntry.reasonKey);
+  if (localSpecific && !cloudSpecific) return localEntry;
+  if (cloudSpecific && !localSpecific) return cloudEntry;
+  if (localEntry && cloudEntry) {
+    const localTime = Date.parse(localEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    const cloudTime = Date.parse(cloudEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    return localTime <= cloudTime ? localEntry : cloudEntry;
+  }
+  return localEntry || cloudEntry || null;
+}
+
+function mergeShipUnlockHistory(localHistory = {}, cloudHistory = {}) {
+  const local = normalizeShipUnlockHistory(localHistory);
+  const cloud = normalizeShipUnlockHistory(cloudHistory);
+  const ids = [...new Set([...Object.keys(local), ...Object.keys(cloud)])];
+  return Object.fromEntries(ids
+    .map((shipId) => [shipId, chooseShipUnlockHistoryEntry(local[shipId], cloud[shipId])])
+    .filter(([, entry]) => entry));
+}
+
 function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
   const local = localProgress && typeof localProgress === 'object' ? localProgress : {};
   const cloud = cloudProgress && typeof cloudProgress === 'object' ? cloudProgress : {};
@@ -269,6 +298,7 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     defeatedBossIds: mergeArrayUnique(local, cloud, 'defeatedBossIds'),
     runThemesSurvived: mergeArrayUnique(local, cloud, 'runThemesSurvived'),
     unlockedShipIds: mergeArrayUnique(local, cloud, 'unlockedShipIds'),
+    shipUnlockHistory: mergeShipUnlockHistory(local.shipUnlockHistory, cloud.shipUnlockHistory),
     lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : []
   };
 }

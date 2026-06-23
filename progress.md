@@ -1,5 +1,13 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-23 Ship Unlock Provenance
+
+- Current request: add profile-scoped ship unlock provenance/history without changing unlock requirements, balance, score/XP formula, leaderboard behavior or identity, achievements metadata/behavior, Steam Cloud settings, save profile namespace, AppID/depot, store visibility, or Steamworks metadata.
+- Implementation direction: `nova.hangarProgress.v1` now carries `shipUnlockHistory` keyed by canonical ship ID. New unlocks store stable reason keys plus structured requirement params and run context; existing unlocked ships without reliable event history get the safe fallback `Unlocked: Before tracking was added`; known records are not overwritten by migration.
+- UI direction: Ship Select / Hangar combat readout shows `Unlock: <requirement>` for locked hulls and `Unlocked: <reason>` for ready hulls. Single-ship Game Over unlock notifications can include `Reason: <reason>`.
+- Focused evidence so far: `npm run check:ship-unlock-provenance`, `npm run check:ship-unlocks`, `npm run check:i18n`, and `npm run check:steam-cloud-save` pass. Latest focused report is `test-results/ship-unlock-provenance-2026-06-23T10-45-10-089Z/report.json`.
+- Scope guard: no gameplay balance, unlock thresholds, score formula, XP formula, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, profile rescue, AppID/depot, store visibility, or Steamworks metadata were intentionally changed.
+
 ## 2026-06-21 Public Release Closeout
 
 - Public release status: Steam BuildID `23846155` is the released public build for the Mayhem, Scout, and Sector Run release line. Previous public build for rollback is Steam BuildID `23809188`.
