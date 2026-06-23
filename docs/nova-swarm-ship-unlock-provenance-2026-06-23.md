@@ -20,6 +20,10 @@ Ship unlocks showed whether a hull was available, but not what the player did to
 - Ship Select / Hangar combat readout:
   - Locked hulls show `Unlock: <requirement>` plus progress counts when available.
   - Unlocked hulls show `STATUS: READY FOR LAUNCH` and `Unlocked: <reason>`.
+- Ship Details modal:
+  - The primary discoverable placement is now under `YOUR LAUNCHES`.
+  - Unlocked hulls show `Unlocked: <reason>`.
+  - Locked hulls show `Unlock: <requirement>`.
 - Game Over unlock summary:
   - A single newly unlocked ship can show `Reason: <reason>` below the unlock line.
   - No active-gameplay popups were added.
@@ -40,6 +44,9 @@ Ship unlocks showed whether a hull was available, but not what the player did to
 - Packaged perf proof: `test-results/packaged-perf-smoke-2026-06-23T11-13-20-340Z/report.json`, build `v2026-06-23_13-09-25`, gitSha `d44064c`.
 - Payload manifest: `release/steamworks/steam_payload_manifest.json`, 336 files, 880,525,922 bytes, manifest hash `4d7cb0f5b841c6d7a4bc511e75519a2c61f219f84cc2462750189619c38a7734`.
 - Steam upload: SteamCMD uploaded private BuildID `23873700`. The generated VDF kept `"SetLive" ""`, with AppID `4765070` and depot `4765071`; no Steam branch was assigned.
+- Details-modal polish evidence: `test-results/ui-scale-4k-2026-06-23T11-52-53-810Z/` includes `04-hangar-details-unlock-history` captures at 100%, 150%, 175%, and 200% UI Scale.
+- Legacy fallback Details proof: `test-results/hangar-controller-details-2026-06-23T11-50-26-435Z/03-ship-details-opened.png` shows `Unlocked: Before tracking was added` in the modal.
+- Details-modal polish package: source commit `052fbfd72db6c42c5e96555ee26690499253418e`, build `v2026-06-23_13-57-04`, packaged gitSha `052fbfd`, private Steam BuildID `23874257`, VDF `"SetLive" ""`.
 
 ## Scope Guard
 
