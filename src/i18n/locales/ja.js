@@ -257,8 +257,6 @@ const sourceText = Object.freeze({
   'A distant hill is transmitting rent complaints at weaponized volume.': '遠い丘が家賃の文句を兵器級音量で送信中。',
   "SONIA'S MIXTAPE": 'Soniaのミックステープ',
   'Four centuries old, still too dramatic, somehow still your problem.': '400年前の音源なのに大げさで、なぜかまだあなたの問題です。',
-  'SPACE TAX AUDIT': '宇宙税務監査',
-  'Receipts detected. Enemy morale fell three percent and filed an appeal.': '領収書を検出。敵士気が3パーセント低下し、不服申し立て中。',
   'INTERN FIXED PHYSICS': 'インターンが物理を修理',
   'Reality is held together with tape, spite, and one unpaid checkbox.': '現実はテープ、意地、未払いのチェックボックスで保たれています。',
   'TINYFOUNDRY AFTERBURNER': 'TinyFoundryアフターバーナー',

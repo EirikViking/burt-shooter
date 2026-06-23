@@ -21,6 +21,15 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Steam package/upload evidence: source commit `b202c693aea91e23d08242414923a28494f8440f` packaged as `v2026-06-23_16-06-04`; packaged smoke/perf proved gitSha `b202c69` at `test-results/packaged-exe-smoke-2026-06-23T14-09-47-057Z/report.json` and `test-results/packaged-perf-smoke-2026-06-23T14-09-47-074Z/report.json`; payload manifest recorded 336 files / 880,527,348 bytes with manifest hash `12716da1d65202f3b4dfab1cb53e0d867448166e4c0d13e2bf213d2faa7af8e0`; VDF kept `SetLive ""`; SteamCMD uploaded private BuildID `23876401`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, achievements metadata/behavior, leaderboard identity, Steam Cloud settings, save format, profile rescue, gameplay balance, score formula, or XP formula changed.
 - Scope guard: no support ship HP, movement, healing, spawn cadence, visuals, rewards, boss behavior, boss balance, score formula, XP formula, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, save format, profile rescue, AppID/depot, store visibility, or Steamworks metadata were intentionally changed.
 
+## 2026-06-23 Space Tax Audit Removal
+
+- Current request: remove the `SPACE TAX AUDIT` ambient flyby/easter egg completely from runtime rather than redesigning its visual or sound again.
+- Implementation direction: removed `space_tax_audit` from `EasterEggCatalog`, reduced `EASTER_EGG_TOTAL` from 10 to 9, removed localized Space Tax Audit title/body strings, removed the dedicated Space Tax Audit SFX key, removed the generated flyby PNG and MP3 manifest references, deleted `public/art/generated/nova-swarm/easter-eggs/nova-space-tax-audit-flyby-20260623.png` and `public/audio/sfx/nova-swarm/nova_space_tax_audit_flyby.mp3`, removed the deleted-art preload/fetch path, and added a defensive `PlayScene.spawnEasterEggFlyby()` guard so stale forced `space_tax_audit` objects cannot create a flyby.
+- Generic easter egg framework remains because the other ambient non-Space-Tax easter eggs still use it.
+- Focused evidence: `npm run check:easter-eggs` and `npm run check:easter-egg-flyby` passed. Removal report: `test-results/space-tax-audit-removed-2026-06-23T14-54-25-013Z/report.json`.
+- Docs note: `docs/nova-swarm-space-tax-audit-removal-2026-06-23.md`.
+- Scope guard: no gameplay balance, score formula, XP formula, leaderboard identity/behavior, achievements metadata/behavior, Steam Cloud settings, save format, Mayhem recalibration, boss behavior, enemy behavior beyond the decorative removal, AppID/depot, store visibility, or Steamworks metadata were intentionally changed.
+
 ## 2026-06-21 Public Release Closeout
 
 - Public release status: Steam BuildID `23846155` is the released public build for the Mayhem, Scout, and Sector Run release line. Previous public build for rollback is Steam BuildID `23809188`.

@@ -644,11 +644,6 @@ export class PlayScene {
       .catch((error) => {
         console.warn('[PlayScene] Powerup texture preload failed:', error);
       });
-    this.easterEggFlybyAssetReady = GameAssets.ensureEasterEggFlybyTexture('spaceTaxAudit')
-      .catch((error) => {
-        console.warn('[PlayScene] Easter egg flyby texture preload failed:', error);
-        return null;
-      });
     this.commsPortraitsReady = GameAssets.loadCommsPortraits();
 
     // Initialize touch controls
@@ -8763,6 +8758,7 @@ export class PlayScene {
   }
 
   spawnEasterEggFlyby(egg) {
+    if (egg?.id === 'space_tax_audit') return false;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const flyby = new PIXI.Container();
@@ -8779,10 +8775,6 @@ export class PlayScene {
     const accent = Number(egg.accent) || 0xffef7e;
     const secondary = Number(egg.secondary) || 0x37f5ff;
     const rightSide = width >= 900;
-    const artSrc = AssetManifest.generated?.easterEggFlyby?.spaceTaxAudit;
-    const cachedArtTexture = GameAssets.getEasterEggFlybyTexture('spaceTaxAudit');
-    const artTexture = GameAssets.isValidTexture(cachedArtTexture) ? cachedArtTexture : null;
-
     const softWake = new PIXI.Graphics();
     const wakeDir = rightSide ? 1 : -1;
     softWake.ellipse(wakeDir * 52, 0, 124, 38);
@@ -8794,37 +8786,16 @@ export class PlayScene {
     softWake.lineTo(wakeDir * 146, 42);
     softWake.stroke({ color: secondary, width: 1.5, alpha: 0.05 });
 
-    let silhouette = null;
-    const craft = artTexture ? new PIXI.Sprite(artTexture) : new PIXI.Graphics();
-    if (craft instanceof PIXI.Sprite) {
-      craft.anchor.set(0.5);
-      craft.width = 230;
-      craft.height = 230;
-      if (rightSide) craft.scale.x *= -1;
-      craft.alpha = 1;
-      silhouette = new PIXI.Sprite(artTexture);
-      silhouette.anchor.set(0.5);
-      silhouette.width = 246;
-      silhouette.height = 246;
-      if (rightSide) silhouette.scale.x *= -1;
-      silhouette.tint = 0x37f5ff;
-      silhouette.alpha = 0.22;
-      silhouette.blendMode = 'add';
-    } else {
-      craft.moveTo(0, -16);
-      craft.lineTo(28, 0);
-      craft.lineTo(0, 16);
-      craft.lineTo(-28, 0);
-      craft.closePath();
-      craft.fill({ color: 0x041322, alpha: 0.38 });
-      craft.stroke({ color: accent, width: 1.5, alpha: 0.34 });
-    }
+    const craft = new PIXI.Graphics();
+    craft.moveTo(0, -16);
+    craft.lineTo(28, 0);
+    craft.lineTo(0, 16);
+    craft.lineTo(-28, 0);
+    craft.closePath();
+    craft.fill({ color: 0x041322, alpha: 0.38 });
+    craft.stroke({ color: accent, width: 1.5, alpha: 0.34 });
 
-    if (silhouette) {
-      flyby.addChild(softWake, silhouette, craft);
-    } else {
-      flyby.addChild(softWake, craft);
-    }
+    flyby.addChild(softWake, craft);
     this.decorativeOverlay.addChild(flyby);
 
     const startX = rightSide ? width + 70 : -70;
@@ -8858,7 +8829,7 @@ export class PlayScene {
       shootable: flyby.__novaShootable,
       damagesPlayer: flyby.__novaDamagesPlayer,
       givesReward: flyby.__novaGivesReward,
-      artSrc,
+      artSrc: null,
       maxAlpha: 0.84,
       baseScale: 0.9,
       scalePulse: 0.025

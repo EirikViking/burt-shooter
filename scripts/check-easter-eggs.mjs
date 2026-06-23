@@ -16,7 +16,7 @@ const localeFiles = [
   'zh-CN'
 ];
 
-assert.equal(EASTER_EGG_TOTAL, 10, 'easter egg total must stay at 10');
+assert.equal(EASTER_EGG_TOTAL, 9, 'easter egg total must stay at 9 after removing Space Tax Audit');
 assert.equal(EASTER_EGGS.length, EASTER_EGG_TOTAL, 'catalog count mismatch');
 
 const ids = new Set(EASTER_EGGS.map((egg) => egg.id));
@@ -34,8 +34,7 @@ for (const egg of EASTER_EGGS) {
   assert(typeof egg.line === 'string' && egg.line.length >= 24, `${egg.id} line too short`);
 }
 
-const spaceTaxAudit = EASTER_EGGS.find((egg) => egg.id === 'space_tax_audit');
-assert.equal(spaceTaxAudit?.sfx, 'space_tax_audit_flyby', 'Space Tax Audit should use its dedicated non-annoying flyby SFX');
+assert(!ids.has('space_tax_audit'), 'Space Tax Audit must remain removed from the easter egg catalog');
 
 assert(
   EASTER_EGGS.some((egg) => egg.minLevel === 1) &&
@@ -71,9 +70,11 @@ assert(main.includes('lastEasterEgg'), 'render_game_to_text must expose lastEast
 assert(main.includes('activeEasterEgg'), 'render_game_to_text must expose activeEasterEgg');
 
 const soundCatalog = readFileSync('src/audio/SoundCatalog.js', 'utf8');
-assert(soundCatalog.includes('space_tax_audit_flyby'), 'SoundCatalog must register Space Tax Audit flyby SFX');
+assert(!soundCatalog.includes('space_tax_audit_flyby'), 'SoundCatalog must not register removed Space Tax Audit flyby SFX');
+assert(!soundCatalog.includes('nova_space_tax_audit_flyby'), 'SoundCatalog must not reference removed Space Tax Audit audio file');
 
 const assetManifest = readFileSync('src/assets/assetManifest.js', 'utf8');
-assert(assetManifest.includes('nova_space_tax_audit_flyby.mp3'), 'AssetManifest must ship Space Tax Audit flyby SFX');
+assert(!assetManifest.includes('nova-space-tax-audit-flyby-20260623.png'), 'AssetManifest must not reference removed Space Tax Audit PNG');
+assert(!assetManifest.includes('nova_space_tax_audit_flyby.mp3'), 'AssetManifest must not ship removed Space Tax Audit SFX');
 
 console.log(`[easter-eggs] PASS ${EASTER_EGG_TOTAL} localized easter eggs`);

@@ -257,8 +257,6 @@ const sourceText = Object.freeze({
   'A distant hill is transmitting rent complaints at weaponized volume.': '远处山丘正在用武器级音量广播租金抱怨。',
   "SONIA'S MIXTAPE": 'Sonia 的混音带',
   'Four centuries old, still too dramatic, somehow still your problem.': '四百年前的东西，仍然戏太多，而且莫名还是你的问题。',
-  'SPACE TAX AUDIT': '太空税务审计',
-  'Receipts detected. Enemy morale fell three percent and filed an appeal.': '检测到收据。敌方士气下降3%，并提交了申诉。',
   'INTERN FIXED PHYSICS': '实习生修好了物理',
   'Reality is held together with tape, spite, and one unpaid checkbox.': '现实靠胶带、怨念和一个未付款复选框勉强维持。',
   'TINYFOUNDRY AFTERBURNER': 'TinyFoundry 加力燃烧室',

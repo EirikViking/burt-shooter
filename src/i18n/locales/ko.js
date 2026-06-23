@@ -257,8 +257,6 @@ const sourceText = Object.freeze({
   'A distant hill is transmitting rent complaints at weaponized volume.': '먼 언덕이 임대료 불평을 무기급 음량으로 송신 중입니다.',
   "SONIA'S MIXTAPE": 'Sonia의 믹스테이프',
   'Four centuries old, still too dramatic, somehow still your problem.': '400년 묵었는데 아직도 과장되고, 어째서인지 여전히 당신 문제입니다.',
-  'SPACE TAX AUDIT': '우주 세무 감사',
-  'Receipts detected. Enemy morale fell three percent and filed an appeal.': '영수증 감지. 적 사기가 3퍼센트 하락했고 이의를 제기했습니다.',
   'INTERN FIXED PHYSICS': '인턴이 물리를 고쳤다',
   'Reality is held together with tape, spite, and one unpaid checkbox.': '현실은 테이프, 오기, 미지급 체크박스로 버티고 있습니다.',
   'TINYFOUNDRY AFTERBURNER': 'TinyFoundry 애프터버너',

@@ -257,8 +257,6 @@ const sourceText = Object.freeze({
   'A distant hill is transmitting rent complaints at weaponized volume.': 'Далекий холм передает жалобы на аренду на боевой громкости.',
   "SONIA'S MIXTAPE": 'МИКСТЕЙП SONIA',
   'Four centuries old, still too dramatic, somehow still your problem.': 'Ему четыре века, он все еще слишком драматичен и почему-то ваша проблема.',
-  'SPACE TAX AUDIT': 'КОСМИЧЕСКАЯ НАЛОГОВАЯ ПРОВЕРКА',
-  'Receipts detected. Enemy morale fell three percent and filed an appeal.': 'Обнаружены чеки. Мораль врага упала на три процента и подала апелляцию.',
   'INTERN FIXED PHYSICS': 'СТАЖЕР ПОЧИНИЛ ФИЗИКУ',
   'Reality is held together with tape, spite, and one unpaid checkbox.': 'Реальность держится на скотче, упрямстве и неоплаченном чекбоксе.',
   'TINYFOUNDRY AFTERBURNER': 'ФОРСАЖ TINYFOUNDRY',

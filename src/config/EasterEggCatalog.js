@@ -1,4 +1,4 @@
-export const EASTER_EGG_TOTAL = 10;
+export const EASTER_EGG_TOTAL = 9;
 
 export const EASTER_EGGS = Object.freeze([
   {
@@ -50,16 +50,6 @@ export const EASTER_EGGS = Object.freeze([
     secondary: 0xffef7e,
     minLevel: 4,
     sfx: 'codex_open'
-  },
-  {
-    id: 'space_tax_audit',
-    title: 'SPACE TAX AUDIT',
-    line: 'Receipts detected. Enemy morale fell three percent and filed an appeal.',
-    symbol: 'FORM 404',
-    accent: 0x66ff9d,
-    secondary: 0xffef7e,
-    minLevel: 5,
-    sfx: 'space_tax_audit_flyby'
   },
   {
     id: 'intern_fixed_physics',

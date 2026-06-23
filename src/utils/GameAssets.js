@@ -16,7 +16,6 @@ class GameAssetsManager {
         this.enemyWeaponTextures = [];
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
-        this.easterEggFlybyTextures = {};
         this.xtra = this.createXtraStore();
     }
 
@@ -114,29 +113,6 @@ class GameAssetsManager {
 
     getBonusCore() {
         return this.getBonusCoreTexture();
-    }
-
-    async ensureEasterEggFlybyTexture(key = 'spaceTaxAudit') {
-        const src = AssetManifest.generated?.easterEggFlyby?.[key];
-        if (!src) return null;
-        if (this.isValidTexture(this.easterEggFlybyTextures[key])) return this.easterEggFlybyTextures[key];
-        try {
-            const texture = await PIXI.Assets.load({
-                alias: `easter_egg_flyby_${key}`,
-                src
-            });
-            if (this.isValidTexture(texture)) {
-                this.easterEggFlybyTextures[key] = texture;
-                return texture;
-            }
-        } catch (e) {
-            console.warn(`[GameAssets] Failed to load easter egg flyby ${key}:`, e);
-        }
-        return null;
-    }
-
-    getEasterEggFlybyTexture(key = 'spaceTaxAudit') {
-        return this.easterEggFlybyTextures?.[key] || null;
     }
 
     getCommsPortrait(alias) {
