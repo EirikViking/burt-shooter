@@ -1,0 +1,36 @@
+{
+  "purpose": "Ascendant ships, Eirik credits easter egg, and quiet combo-kill audio private Steam upload",
+  "uploadedAtLocal": "2026-06-24T21:29:55+02:00",
+  "source": {
+    "branch": "codex/ascendant-ships-20260624",
+    "commit": "618ec16cde5cc90cba13e3e761dd1a8decc5358d",
+    "shortCommit": "618ec16"
+  },
+  "package": {
+    "buildId": "v2026-06-24_21-22-57",
+    "packagedGitSha": "618ec16",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-24T19-26-51-124Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-24T19-27-44-323Z/report.json"
+  },
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "branchAssignment": "none",
+    "buildId": "23899727",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamCmdPath": "tools/steamcmd/steamcmd.exe",
+    "steamCmdUploadLog": "test-results/steam-upload-ascendant-ships-20260624-20260624-212757/steamcmd-upload.log",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23899727)."
+  },
+  "guardrails": [
+    "SetLive was blank, so no public/default/private Steam branch was assigned by Codex.",
+    "Steam AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud settings, and Steamworks metadata were not changed.",
+    "No live leaderboard scores or live Steam Cloud saves were written by this upload."
+  ],
+  "rollback": {
+    "source": "git revert 618ec16cde5cc90cba13e3e761dd1a8decc5358d",
+    "steam": "Do not assign BuildID 23899727, or if it is later assigned manually, reassign that Steam branch back to the previous desired BuildID."
+  }
+}
