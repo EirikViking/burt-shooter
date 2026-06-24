@@ -16,6 +16,11 @@ const config = BalanceConfig.difficulty?.mayhemReinforcements;
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
 if (config.chance !== 0.05) fail(`Expected rare 5% reinforcement chance, got ${config.chance}.`);
+if (config.firstPityEligibleMisses !== 14) fail(`Expected first reinforcement pity after 14 eligible misses, got ${config.firstPityEligibleMisses}.`);
+if (config.firstPityMinLevel !== 6) fail(`Expected first reinforcement pity to start at level 6, got ${config.firstPityMinLevel}.`);
+if (config.firstPityMaxLevel !== 9) fail(`Expected first reinforcement pity to protect by level 9, got ${config.firstPityMaxLevel}.`);
+if (config.repeatPityEligibleMisses !== 24) fail(`Expected repeat reinforcement pity to stay rare, got ${config.repeatPityEligibleMisses}.`);
+if (config.minWaveAgeMs !== 5000) fail(`Expected faster reinforcement eligibility at 5000ms, got ${config.minWaveAgeMs}.`);
 if (config.warningMs !== 2000) fail(`Expected 2000ms warning, got ${config.warningMs}.`);
 if (config.minClearRatio !== 0.4) {
   fail(`Expected early-overlap clear ratio gate at 40%, got ${config.minClearRatio}.`);
@@ -47,6 +52,9 @@ const requiredSourceSnippets = [
   'showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT)',
   'AudioManager.playVoice(MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
   'spawnAt: now + warningMs',
+  'shouldForceMayhemReinforcementByPity',
+  'recordMayhemReinforcementMiss',
+  'eligibility.reasons.length === 1 && eligibility.reasons[0] === \'roll_failed\'',
   'isMayhemReinforcement: true',
   'mayhemReinforcementConsumedWaveIndices.add',
   'hasPendingMayhemReinforcement()',
@@ -89,6 +97,25 @@ for (let seed = 0; seed < 1000; seed += 1) {
 const observedRate = hits / eligibleRolls;
 if (observedRate < 0.043 || observedRate > 0.057) {
   fail(`Stable reinforcement roll drifted outside rare 5% band: ${observedRate.toFixed(4)}.`);
+}
+
+let misses = 0;
+let firstPityLevel = null;
+for (let level = 1; level <= 9; level += 1) {
+  for (let wave = 1; wave <= 3; wave += 1) {
+    const pityReady = level >= config.firstPityMinLevel &&
+      level <= config.firstPityMaxLevel &&
+      misses >= config.firstPityEligibleMisses;
+    if (pityReady) {
+      firstPityLevel = level;
+      break;
+    }
+    misses += 1;
+  }
+  if (firstPityLevel !== null) break;
+}
+if (firstPityLevel === null || firstPityLevel > config.firstPityMaxLevel) {
+  fail('First reinforcement pity must force a later eligible wave before level 9 can pass with no event.');
 }
 
 const expectedVoiceFiles = Array.from(

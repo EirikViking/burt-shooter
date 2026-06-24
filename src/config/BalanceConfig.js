@@ -85,7 +85,11 @@ export const BalanceConfig = {
         mayhemReinforcements: {
             enabled: true,
             chance: 0.05,
-            minWaveAgeMs: 6500,
+            firstPityEligibleMisses: 14,
+            firstPityMinLevel: 6,
+            firstPityMaxLevel: 9,
+            repeatPityEligibleMisses: 24,
+            minWaveAgeMs: 5000,
             minClearRatio: 0.4,
             maxActiveEnemies: 9,
             maxActiveEnemyBullets: 18,
