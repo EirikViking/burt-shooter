@@ -1,0 +1,63 @@
+{
+  "uploadedAtLocal": "2026-06-24 13:08:02 Europe/Oslo",
+  "branch": "codex/how-to-play-dodge-graze-facelift-20260624",
+  "sourceCommit": "8cda4ee34c8461666e0296385571879a7bfceb06",
+  "sourceCommitShort": "8cda4ee",
+  "changes": [
+    "How To Play visual facelift with clearer Graze, Graze Break, Dodge / Phase, and Chained Dodge explanations.",
+    "Boss life-loss cap remains max 2 lives, with a 7000ms window through level 30, then reduced by 100ms per level to a 4000ms floor."
+  ],
+  "package": {
+    "buildVersion": "v2026-06-24_12-59-54",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-24T11-03-55-445Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-24T11-03-55-439Z/report.json",
+    "packageRuntimeReport": "test-results/steam-package-runtime-2026-06-24T11-05-58-443Z/report.json",
+    "packagedGitSha": "8cda4ee"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "leaderboardIdentity": "nova_swarm_global_score_v2",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "steamBuildId": "23892059",
+    "steamcmdUser": "gaunziman",
+    "steamcmdResultLine": "[2026-06-24 13:08:02]: Successfully finished AppID 4765070 build (BuildID 23892059).",
+    "steamBranchAssignment": "none",
+    "steamworksMetadataChanged": false
+  },
+  "checks": [
+    { "command": "git diff --check", "status": "passed" },
+    { "command": "npm run check:i18n", "status": "passed" },
+    { "command": "npm run check:i18n-ui", "status": "passed", "artifact": "test-results/i18n-ui-2026-06-24T10-51-22-144Z" },
+    { "command": "npm run check:how-to-play", "status": "passed", "artifact": "test-results/how-to-play-2026-06-24T10-52-48-321Z/report.json" },
+    { "command": "npm run check:boss-mercy", "status": "passed" },
+    { "command": "npm run check:boss-fairness-cadence-wall", "status": "passed", "artifact": "test-results/boss-fairness-cadence-wall-2026-06-24T10-57-38-720Z/report.json" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "artifact": "test-results/packaged-exe-smoke-2026-06-24T11-03-55-445Z/report.json" },
+    { "command": "npm run desktop:perf:packaged", "status": "passed", "artifact": "test-results/packaged-perf-smoke-2026-06-24T11-03-55-439Z/report.json" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "SteamCMD run_app_build app_build_LOCAL.vdf", "status": "passed" }
+  ],
+  "guardrails": {
+    "setLiveBlank": true,
+    "publicDefaultBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "achievementMetadataChanged": false,
+    "steamCloudSettingsChanged": false,
+    "leaderboardIdentityChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "profileRescueRun": false,
+    "liveLeaderboardSubmission": false
+  },
+  "rollback": {
+    "source": "git revert 8cda4ee34c8461666e0296385571879a7bfceb06",
+    "steam": "Do not assign BuildID 23892059, or reassign any private test branch back to the previous desired BuildID."
+  }
+}
