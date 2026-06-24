@@ -1,0 +1,61 @@
+{
+  "uploadedAt": "2026-06-24T20:25:36+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm ElevenLabs local SFX bake private Steam upload",
+  "sourceCommit": "76de28f90846ae6386b066baddcd2a753e8bc936",
+  "packagedBuild": "v2026-06-24_20-18-08",
+  "packagedGitShaProof": {
+    "path": "test-results/packaged-exe-smoke-2026-06-24T18-22-19-678Z/report.json",
+    "gitSha": "76de28f",
+    "status": "passed"
+  },
+  "packageRuntime": {
+    "path": "test-results/steam-package-runtime-2026-06-24T18-22-21-011Z/report.json",
+    "status": "passed",
+    "appId": 4765070,
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 891242807,
+    "manifestHash": "88ca9f0d947d8a98101b1f8604f5b8f4babf1367e96be7ae2dca4b556867a692"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "desc": "Nova Swarm v2026-06-24_20-18-08 ElevenLabs SFX bake private test 76de28f",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "steamcmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "user": "gaunziman",
+    "log": "test-results/steam-upload-elevenlabs-sfx-bake-20260624-20260624-202337/steamcmd-upload.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23898805).",
+    "buildId": 23898805
+  },
+  "audioBake": {
+    "report": "docs/reviews/elevenlabs-sfx-bake-report.md",
+    "jsonReport": "test-results/elevenlabs-sfx-bake-report.json",
+    "generatedCandidates": 70,
+    "productionReplacements": 66,
+    "unchangedRejectedCandidates": [
+      "nova_boss_beam_fire.mp3",
+      "nova_boss_web_snap.mp3",
+      "nova_elite_jammer_disruptor_active.mp3",
+      "nova_elite_burst_artillery_active.mp3"
+    ]
+  },
+  "scopeGuard": [
+    "Private unassigned SteamPipe upload only.",
+    "The VDF kept SetLive blank, so no public/default/private Steam branch was assigned by Codex.",
+    "Steamworks store metadata, AppID, depot ID, leaderboard identity, achievement metadata, Steam Cloud settings, save format, public visibility, and live branch settings were not changed.",
+    "public/audio/voice and public/audio/music were not changed.",
+    "No runtime ElevenLabs API call was added."
+  ],
+  "rollback": {
+    "source": "git revert 76de28f90846ae6386b066baddcd2a753e8bc936",
+    "steam": "Do not assign BuildID 23898805. If it is later assigned manually, reassign the relevant Steam branch back to the previous desired BuildID in Steamworks."
+  }
+}
