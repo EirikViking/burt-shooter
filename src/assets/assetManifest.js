@@ -55,18 +55,34 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/elites/nova-elite-middle-20-late-game-elite-hunter-20260523.png'
         ],
         enemyWeapons: [
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-01-crimson-shard-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-02-amber-plasma-orb-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-03-cyan-rail-needle-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-04-magenta-crescent-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-05-toxic-splinter-seed-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-06-violet-star-mine-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-07-white-comet-lance-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-08-orange-molten-slug-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-09-teal-fork-dart-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-10-pink-spiral-disruptor-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-11-lime-saw-disc-20260519.png',
-            '/art/generated/nova-swarm/weapons/nova-enemy-weapon-12-purple-boss-spear-20260519.png'
+            '/art/generated/nova-swarm/projectiles/nova-basic-enemy-bolt-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-heavy-enemy-orb-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-fast-enemy-needle-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-boss-shard-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-boss-shard-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-heavy-enemy-orb-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-fast-enemy-needle-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-enemy-fireball-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-tractor-beam-energy-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-boss-shard-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-warning-hazard-marker-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-boss-plasma-bolt-20260624.png'
+        ],
+        projectiles: {
+            basicEnemyBolt: '/art/generated/nova-swarm/projectiles/nova-basic-enemy-bolt-20260624.png',
+            fastEnemyNeedle: '/art/generated/nova-swarm/projectiles/nova-fast-enemy-needle-20260624.png',
+            heavyEnemyOrb: '/art/generated/nova-swarm/projectiles/nova-heavy-enemy-orb-20260624.png',
+            enemyFireball: '/art/generated/nova-swarm/projectiles/nova-enemy-fireball-20260624.png',
+            bossPlasmaBolt: '/art/generated/nova-swarm/projectiles/nova-boss-plasma-bolt-20260624.png',
+            bossShard: '/art/generated/nova-swarm/projectiles/nova-boss-shard-20260624.png',
+            bossLaserCore: '/art/generated/nova-swarm/projectiles/nova-boss-laser-core-20260624.png',
+            bossLaserEdge: '/art/generated/nova-swarm/projectiles/nova-boss-laser-edge-20260624.png',
+            tractorBeamEnergy: '/art/generated/nova-swarm/projectiles/nova-tractor-beam-energy-20260624.png',
+            warningHazardMarker: '/art/generated/nova-swarm/projectiles/nova-warning-hazard-marker-20260624.png'
+        },
+        projectileSourceSheet: [
+            '/art/generated/nova-swarm/source/nova-enemy-projectile-source-sheet-20260624.png',
+            '/art/generated/nova-swarm/projectiles/nova-enemy-projectile-sheet-alpha-20260624.png'
         ],
         powerups: {
             triple_beam: '/art/generated/nova-swarm/powerups/nova-powerup-triple_beam-20260519.png',

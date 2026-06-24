@@ -961,6 +961,8 @@ function buildGameTextState(game) {
           radius: bullet.radius || 0,
           profile: bullet.weaponProfileId || null,
           label: bullet.weaponLabel || null,
+          art: bullet.visualConfig?.projectileArt || null,
+          animation: bullet.visualConfig?.animationStyle || null,
           behavior: bullet.behavior || null,
           waveTactic: bullet.waveTactic || null,
           threatAction: bullet.threatActionId || null,

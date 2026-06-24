@@ -14,6 +14,7 @@ class GameAssetsManager {
         this.generatedEnemyTextures = [];
         this.eliteMiddleShipTextures = [];
         this.enemyWeaponTextures = [];
+        this.projectileTextures = {};
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
         this.xtra = this.createXtraStore();
@@ -216,6 +217,19 @@ class GameAssetsManager {
             }
         }));
 
+        const projectileAssets = AssetManifest.generated?.projectiles || {};
+        await Promise.all(Object.entries(projectileAssets).map(async ([name, filepath]) => {
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_projectile_${name}`,
+                    src: filepath
+                });
+                if (this.isValidTexture(texture)) this.projectileTextures[name] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load projectile asset ${filepath}:`, e);
+            }
+        }));
+
         const eliteMiddleShips = AssetManifest.generated?.eliteMiddleShips || [];
         await Promise.all(eliteMiddleShips.map(async (filepath, index) => {
             try {
@@ -229,7 +243,7 @@ class GameAssetsManager {
             }
         }));
 
-        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length);
+        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length, 'Projectiles:', Object.keys(this.projectileTextures).length);
 
         // Load Xtra Assets
         await this.loadXtraAssets();
@@ -284,6 +298,10 @@ class GameAssetsManager {
 
     getEnemyWeaponTexture(index) {
         return this.enemyWeaponTextures ? this.enemyWeaponTextures[index] : null;
+    }
+
+    getProjectileTexture(name) {
+        return this.projectileTextures ? this.projectileTextures[name] : null;
     }
 
     getRankShipCount() {

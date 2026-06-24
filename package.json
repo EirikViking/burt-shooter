@@ -160,6 +160,7 @@
     "check:boss-adds": "node scripts/check-boss-adds.mjs",
     "check:boss-roster": "node scripts/check-boss-roster.mjs",
     "check:enemy-weapons": "node scripts/check-enemy-weapons.mjs",
+    "check:projectile-visuals": "node scripts/check-projectile-visuals.mjs",
     "check:enemy-wave-patterns": "node scripts/check-enemy-wave-patterns.mjs",
     "check:normal-enemy-attack-variety": "node scripts/check-normal-enemy-attack-variety.mjs",
     "check:menu-credits-layout": "node scripts/check-menu-credits-layout.mjs",

@@ -1134,24 +1134,24 @@ export class Enemy {
     const add = (angle, speed = 2.2, damage = 1, extra = {}) => this.addEliteBullet(angle, speed, damage, color, extra);
 
     if (pattern === 'rail') {
-      add(baseAngle, 4.2, 1.2, { radius: 6, index: 10, trailLength: 58, warningColor: 0xff55ff, trailColor: 0xff55ff, haloColor: 0x61f6ff });
+      add(baseAngle, 4.2, 1.2, { radius: 6, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.95, animationAmp: 0.09, alphaPulse: 0.12, trailLength: 58, warningColor: 0xff55ff, trailColor: 0xff55ff, haloColor: 0x61f6ff });
     } else if (pattern === 'mine') {
-      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 11 + index, index: 11, pulseRate: 0.52 + index * 0.18, spin: 0.035, warningColor: 0xffd166, trailColor: 0xff7a3d, haloColor: 0xffd166 }));
+      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 11 + index, assetIndex: 1, projectileArt: 'heavy_enemy_orb', animationStyle: 'orb', animationRate: 0.85 + index * 0.08, animationAmp: 0.1, alphaPulse: 0.11, pulseRate: 0.52 + index * 0.18, spin: 0.035, warningColor: 0xffd166, trailColor: 0xff7a3d, haloColor: 0xffd166 }));
     } else if (pattern === 'burst') {
-      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset, index) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 5 + (index % 2), index: 9, trailLength: 26 + index * 4, warningColor: index % 2 ? 0x61f6ff : 0xff66cc, trailColor: index % 2 ? 0x61f6ff : 0xff66cc }));
+      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset, index) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 5 + (index % 2), assetIndex: 3, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.35 + index * 0.06, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 26 + index * 4, warningColor: index % 2 ? 0x61f6ff : 0xff66cc, trailColor: index % 2 ? 0x61f6ff : 0xff66cc }));
     } else if (pattern === 'lane') {
       [-150, -75, 0, 75, 150].forEach((offset) => {
         const laneAngle = Math.atan2(playerY - this.y, (playerX + offset) - this.x);
-        add(laneAngle, 1.75, 1, { radius: 7, index: 12, trailLength: 36, warningColor: 0xffd166, trailColor: 0xffd166, haloColor: 0xfff2a6 });
+        add(laneAngle, 1.75, 1, { radius: 7, assetIndex: 6, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.55, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 36, warningColor: 0xffd166, trailColor: 0xffd166, haloColor: 0xfff2a6 });
       });
     } else if (pattern === 'web') {
-      [-0.42, -0.2, 0.2, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.62, 1, { radius: 8, index: 13, spin: 0.06 + index * 0.015, wobble: 0.11, warningColor: 0x9f7cff, trailColor: 0x9f7cff, haloColor: 0x9f7cff }));
+      [-0.42, -0.2, 0.2, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.62, 1, { radius: 8, assetIndex: 9, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.35, animationAmp: 0.08, alphaPulse: 0.11, spin: 0.06 + index * 0.015, wobble: 0.11, warningColor: 0x9f7cff, trailColor: 0x9f7cff, haloColor: 0x9f7cff }));
     } else if (pattern === 'missile') {
-      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, index: 14, trailLength: 52, accel: 0.0026, warningColor: 0xff3355, trailColor: 0xff3355, haloColor: 0xff6b4a }));
+      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, assetIndex: 7, projectileArt: 'enemy_fireball', animationStyle: 'fireball', animationRate: 1.25, animationAmp: 0.11, alphaPulse: 0.12, trailLength: 52, accel: 0.0026, warningColor: 0xff3355, trailColor: 0xff3355, haloColor: 0xff6b4a }));
     } else if (pattern === 'anchor') {
-      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.9, 1, { radius: 7 + (index === 2 ? 2 : 0), index: 15, trailLength: 34, pulseRate: 0.9, warningColor: 0x7cff44, trailColor: 0x7cff44, haloColor: 0x7cff44 }));
+      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.9, 1, { radius: 7 + (index === 2 ? 2 : 0), assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 1.05, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 34, pulseRate: 0.9, warningColor: 0xff3355, trailColor: 0xff6a3a, haloColor: 0xff2438 }));
     } else if (pattern === 'hunter') {
-      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, index: 16, trailLength: 46, accel: 0.0012, warningColor: 0x00ff99, trailColor: 0x00ff99, haloColor: 0x00ff99 }));
+      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.9, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 46, accel: 0.0012, warningColor: 0x00ff99, trailColor: 0x00ff99, haloColor: 0x00ff99 }));
     }
   }
 

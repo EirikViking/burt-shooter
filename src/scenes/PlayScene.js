@@ -5984,14 +5984,33 @@ export class PlayScene {
 
     if (hazard.kind === 'beam') {
       const coreA = hazard.angle;
+      const px = -Math.sin(coreA);
+      const py = Math.cos(coreA);
+      const railOffset = Math.max(10, (hazard.radius || 13) * 1.28);
+      for (const side of [-1, 1]) {
+        const offset = railOffset * side;
+        layer.moveTo(hazard.sourceX + px * offset, hazard.sourceY + py * offset);
+        layer.lineTo(
+          hazard.sourceX + Math.cos(coreA) * hazard.length + px * offset,
+          hazard.sourceY + Math.sin(coreA) * hazard.length + py * offset
+        );
+      }
+      layer.stroke({ color: 0xff55d9, width: 2.8 * pulse, alpha: 0.32 * alpha });
+      for (const side of [-1, 1]) {
+        const offset = railOffset * 0.48 * side;
+        layer.moveTo(hazard.sourceX + px * offset, hazard.sourceY + py * offset);
+        layer.lineTo(
+          hazard.sourceX + Math.cos(coreA) * hazard.length + px * offset,
+          hazard.sourceY + Math.sin(coreA) * hazard.length + py * offset
+        );
+      }
+      layer.stroke({ color, width: 1.4 * pulse, alpha: 0.44 * alpha });
       layer.moveTo(hazard.sourceX, hazard.sourceY);
       layer.lineTo(
         hazard.sourceX + Math.cos(coreA) * hazard.length,
         hazard.sourceY + Math.sin(coreA) * hazard.length
       );
       layer.stroke({ color: hotColor, width: 2.2 + shimmer * 2, alpha: 0.78 * alpha });
-      const px = -Math.sin(coreA);
-      const py = Math.cos(coreA);
       for (let i = 1; i <= 6; i += 1) {
         const t = i / 7;
         const cx = hazard.sourceX + Math.cos(coreA) * hazard.length * t;

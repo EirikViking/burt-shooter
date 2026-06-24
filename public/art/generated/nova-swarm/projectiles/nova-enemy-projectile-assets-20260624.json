@@ -1,0 +1,117 @@
+{
+  "source": "/art/generated/nova-swarm/source/nova-enemy-projectile-source-sheet-20260624.png",
+  "alphaSource": "/art/generated/nova-swarm/projectiles/nova-enemy-projectile-sheet-alpha-20260624.png",
+  "generatedWith": "Codex built-in image_gen",
+  "assets": [
+    {
+      "id": "basic_enemy_bolt",
+      "file": "nova-basic-enemy-bolt-20260624.png",
+      "bbox": {
+        "left": 41,
+        "top": 198,
+        "width": 313,
+        "height": 141
+      },
+      "size": "150x68"
+    },
+    {
+      "id": "fast_enemy_needle",
+      "file": "nova-fast-enemy-needle-20260624.png",
+      "bbox": {
+        "left": 354,
+        "top": 220,
+        "width": 309,
+        "height": 105
+      },
+      "size": "154x52"
+    },
+    {
+      "id": "heavy_enemy_orb",
+      "file": "nova-heavy-enemy-orb-20260624.png",
+      "bbox": {
+        "left": 731,
+        "top": 142,
+        "width": 333,
+        "height": 253
+      },
+      "size": "96x73"
+    },
+    {
+      "id": "enemy_fireball",
+      "file": "nova-enemy-fireball-20260624.png",
+      "bbox": {
+        "left": 1064,
+        "top": 161,
+        "width": 355,
+        "height": 212
+      },
+      "size": "148x88"
+    },
+    {
+      "id": "boss_plasma_bolt",
+      "file": "nova-boss-plasma-bolt-20260624.png",
+      "bbox": {
+        "left": 1419,
+        "top": 166,
+        "width": 325,
+        "height": 207
+      },
+      "size": "135x86"
+    },
+    {
+      "id": "boss_shard",
+      "file": "nova-boss-shard-20260624.png",
+      "bbox": {
+        "left": 27,
+        "top": 512,
+        "width": 327,
+        "height": 232
+      },
+      "size": "138x98"
+    },
+    {
+      "id": "boss_laser_core",
+      "file": "nova-boss-laser-core-20260624.png",
+      "bbox": {
+        "left": 354,
+        "top": 549,
+        "width": 311,
+        "height": 161
+      },
+      "size": "135x70"
+    },
+    {
+      "id": "boss_laser_edge",
+      "file": "nova-boss-laser-edge-20260624.png",
+      "bbox": {
+        "left": 709,
+        "top": 558,
+        "width": 355,
+        "height": 147
+      },
+      "size": "150x62"
+    },
+    {
+      "id": "tractor_beam_energy",
+      "file": "nova-tractor-beam-energy-20260624.png",
+      "bbox": {
+        "left": 1064,
+        "top": 552,
+        "width": 355,
+        "height": 163
+      },
+      "size": "160x73"
+    },
+    {
+      "id": "warning_hazard_marker",
+      "file": "nova-warning-hazard-marker-20260624.png",
+      "bbox": {
+        "left": 1436,
+        "top": 455,
+        "width": 296,
+        "height": 331
+      },
+      "size": "104x116"
+    }
+  ]
+}

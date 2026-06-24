@@ -33,6 +33,10 @@ export class Bullet {
     this.warningRing = null;
     this.core = null;
     this.visualConfig = visualConfig || {};
+    this.coreAnimationStyle = !isPlayer ? (this.visualConfig.animationStyle || 'pulse') : 'none';
+    this.coreAnimationRate = Number.isFinite(this.visualConfig.animationRate) ? this.visualConfig.animationRate : 1;
+    this.coreAnimationAmp = Number.isFinite(this.visualConfig.animationAmp) ? this.visualConfig.animationAmp : 0.08;
+    this.coreAlphaPulse = Number.isFinite(this.visualConfig.alphaPulse) ? this.visualConfig.alphaPulse : 0.08;
     this.weaponProfileId = this.visualConfig.weaponProfileId || null;
     this.weaponLabel = this.visualConfig.weaponLabel || null;
     this.sourceEnemyType = this.visualConfig.sourceEnemyType || null;
@@ -84,6 +88,10 @@ export class Bullet {
         const spriteScale = this.visualConfig.spriteScale || (isPlayer ? 0.8 : 0.72);
         this.baseScale = spriteScale;
         this.core.scale.set(spriteScale);
+        this.core.__novaProjectileSprite = true;
+        this.core.label = this.weaponProfileId
+          ? `projectile_core:${this.weaponProfileId}`
+          : 'projectile_core';
       }
     }
 
@@ -215,6 +223,7 @@ export class Bullet {
       if (this.spin && this.core) {
         this.core.rotation += this.spin * delta;
       }
+      this.updateEnemyProjectileAnimation(delta);
       if (this.wobble) {
         const wobbleAngle = this.baseAngle + Math.sin(this.pulseTimer * 2.6) * this.wobble;
         this.sprite.rotation = (this.angle - this.baseAngle) + (wobbleAngle - this.baseAngle);
@@ -240,6 +249,61 @@ export class Bullet {
     ) {
       this.active = false;
     }
+  }
+
+  updateEnemyProjectileAnimation(delta) {
+    if (this.isPlayer || !this.core?.__novaProjectileSprite) return;
+    const phase = this.pulseTimer * (this.coreAnimationRate || 1);
+    const wave = Math.sin(phase * 2.4);
+    const wave2 = Math.cos(phase * 1.7 + this.behaviorPhase * 0.4);
+    const amp = Math.max(0, Math.min(0.16, this.coreAnimationAmp || 0));
+    const alphaPulse = Math.max(0, Math.min(0.22, this.coreAlphaPulse || 0));
+    const base = this.baseScale || 1;
+    let sx = base;
+    let sy = base;
+    let alpha = 1 - alphaPulse * 0.35 + Math.max(0, wave) * alphaPulse;
+
+    switch (this.coreAnimationStyle) {
+      case 'needle':
+        sx = base * (1 + amp * 0.65 * Math.max(0, wave));
+        sy = base * (1 - amp * 0.42 * Math.max(0, wave2));
+        alpha = 0.9 + Math.max(0, wave) * alphaPulse;
+        break;
+      case 'orb':
+        sx = base * (1 + amp * wave);
+        sy = base * (1 + amp * wave);
+        alpha = 0.88 + Math.max(0, wave2) * alphaPulse;
+        break;
+      case 'fireball':
+        sx = base * (1 + amp * 0.8 * wave);
+        sy = base * (1 + amp * 0.55 * wave2);
+        alpha = 0.92 + Math.max(0, Math.sin(phase * 3.2)) * alphaPulse;
+        break;
+      case 'shard':
+        sx = base * (1 + amp * 0.45 * wave);
+        sy = base * (1 - amp * 0.35 * wave);
+        alpha = 0.9 + Math.max(0, wave2) * alphaPulse;
+        break;
+      case 'boss':
+        sx = base * (1 + amp * 0.72 * wave);
+        sy = base * (1 + amp * 0.28 * wave2);
+        alpha = 0.9 + Math.max(0, wave) * alphaPulse;
+        this.core.rotation += Math.sin(phase) * 0.002 * delta;
+        break;
+      case 'marker':
+        sx = base * (1 + amp * 0.5 * Math.max(0, wave));
+        sy = base * (1 + amp * 0.5 * Math.max(0, wave));
+        alpha = 0.86 + Math.max(0, wave) * alphaPulse;
+        break;
+      case 'pulse':
+      default:
+        sx = base * (1 + amp * 0.5 * wave);
+        sy = base * (1 + amp * 0.5 * wave);
+        break;
+    }
+
+    this.core.scale.set(Math.max(0.01, sx), Math.max(0.01, sy));
+    this.core.alpha = Math.max(0.72, Math.min(1, alpha));
   }
 
   handleTimedThreatBehavior() {
