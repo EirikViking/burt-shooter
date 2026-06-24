@@ -14,7 +14,7 @@ import {
   TRACTOR_DEBUFF_IMMUNITY_MS,
   pickTractorDebuff
 } from '../config/TractorDebuffs.js';
-import { BASE_POWERUP_TYPES, getPowerupMeta } from '../config/PowerupCatalog.js';
+import { BASE_POWERUP_TYPES, getPowerupDurationMode, getPowerupMeta } from '../config/PowerupCatalog.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -103,7 +103,7 @@ export class Player {
     this.flashDuration = 0;
 
     // Powerups
-    this.activePowerup = { type: null, expiresAt: 0 };
+    this.activePowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock' };
     this.powerupEffect = null;
     this.powerupMovementBoostMult = 1;
     this.powerupDodgeDelayMult = 1;
@@ -537,6 +537,9 @@ export class Player {
       this.selectedShipSpriteKey = newConfig.spriteKey || this.selectedShipSpriteKey;
       this.selectedShipTextureIndex = index;
       this.activePowerup.type = null; // Clear powerups on ship swap to avoid stuck states? No, keep powerups.
+      this.activePowerup.expiresAt = 0;
+      this.activePowerup.remainingMs = 0;
+      this.activePowerup.durationMode = 'wall_clock';
       this.recalculateStats();
     }
 
@@ -814,8 +817,10 @@ export class Player {
     const dt = delta * 16.67;
     const deltaSeconds = dt / 1000;
 
+    this.updateActivePowerupDuration(now, dt);
+
     // Powerup Expiry
-    if (this.activePowerup.type && now > this.activePowerup.expiresAt) {
+    if (this.activePowerup.type && this.getActivePowerupRemainingMs(now) <= 0) {
       this.resetPowerups();
     }
     if (this.rankBoost.type && now > this.rankBoost.expiresAt) {
@@ -1735,6 +1740,47 @@ export class Player {
     return getPowerupMeta(type)?.name || String(type || '').replace(/_/g, ' ').toUpperCase();
   }
 
+  getActivePowerupRemainingMs(now = Date.now()) {
+    if (!this.activePowerup?.type) return 0;
+    if (this.activePowerup.durationMode === 'while_firing') {
+      return Math.max(0, Number(this.activePowerup.remainingMs) || 0);
+    }
+    return Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+  }
+
+  setActivePowerupDuration(type, durationMs, now = Date.now()) {
+    const safeDuration = Math.max(0, Number(durationMs) || 0);
+    const durationMode = getPowerupDurationMode(type);
+    this.activePowerup.durationMode = durationMode;
+    this.activePowerup.remainingMs = safeDuration;
+    this.activePowerup.expiresAt = now + safeDuration;
+    return this.activePowerup.expiresAt;
+  }
+
+  isWeaponPowerupDrainActive() {
+    if (this.activePowerup?.durationMode !== 'while_firing') return false;
+    if (this.isPowerupSuppressed()) return false;
+    return Boolean(this.inputManager?.isFiring?.());
+  }
+
+  updateActivePowerupDuration(now = Date.now(), dt = 0) {
+    if (!this.activePowerup?.type) return;
+    if (this.activePowerup.durationMode !== 'while_firing') {
+      this.activePowerup.remainingMs = Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+      return;
+    }
+
+    const previousRemaining = Number.isFinite(Number(this.activePowerup.remainingMs))
+      ? Number(this.activePowerup.remainingMs)
+      : Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+    const drainMs = this.isWeaponPowerupDrainActive()
+      ? Math.max(0, Number(dt) || 0)
+      : 0;
+    const remainingMs = Math.max(0, previousRemaining - drainMs);
+    this.activePowerup.remainingMs = remainingMs;
+    this.activePowerup.expiresAt = now + remainingMs;
+  }
+
   getActivePowerupStates() {
     const now = Date.now();
     const states = [];
@@ -1776,7 +1822,10 @@ export class Player {
     };
 
     if (this.activePowerup?.type) {
-      addTimedState(this.activePowerup.type, this.activePowerup.expiresAt, getPrimaryStateDetail(this.activePowerup.type));
+      addTimedState(this.activePowerup.type, now + this.getActivePowerupRemainingMs(now), {
+        durationMode: this.activePowerup.durationMode || 'wall_clock',
+        ...getPrimaryStateDetail(this.activePowerup.type)
+      });
     }
 
     if (this.shieldActive && !activeEffect.shield) {
@@ -2176,6 +2225,8 @@ export class Player {
     if (effect.instant && !effect.durationMs && !effect.bombShots) {
       this.activePowerup.type = null;
       this.activePowerup.expiresAt = 0;
+      this.activePowerup.remainingMs = 0;
+      this.activePowerup.durationMode = 'wall_clock';
       this.powerupEffect = null;
     }
   }
@@ -2186,7 +2237,7 @@ export class Player {
     const now = Date.now();
     const durationMs = Math.max(0, Number(effect.durationMs || 12000));
     if (type !== 'shield' && this.activePowerup.type === type) {
-      this.activePowerup.expiresAt = now + durationMs;
+      this.setActivePowerupDuration(type, durationMs, now);
       if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
       if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
       if (this.dronesActive) this.dronesExpiresAt = this.activePowerup.expiresAt;
@@ -2197,16 +2248,16 @@ export class Player {
 
     this.resetPowerups(); // Clear existing to prevent stacking weirdness
     this.activePowerup.type = type;
-    this.activePowerup.expiresAt = now + durationMs; // 12 Seconds Default
+    this.setActivePowerupDuration(type, durationMs, now);
     this.powerupEffect = effect;
 
     switch (type) {
       case 'slow_time':
         // Global effect handled by Scene
-        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
+        this.setActivePowerupDuration(type, 8000); // 8s
         break;
       case 'ghost':
-        this.activePowerup.expiresAt = Date.now() + 8000; // 8s
+        this.setActivePowerupDuration(type, 8000); // 8s
         // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
         this.sprite.alpha = 0.4;
         break;
@@ -2220,24 +2271,27 @@ export class Player {
         this.createDrones();
         break;
       case 'rapid_fire':
-        this.activePowerup.expiresAt = Date.now() + 8000;
+        this.setActivePowerupDuration(type, 8000);
         break;
       case 'double_shot':
-        this.activePowerup.expiresAt = Date.now() + 8000;
+        this.setActivePowerupDuration(type, 8000);
         break;
       case 'damage_up':
-        this.activePowerup.expiresAt = Date.now() + 8000;
+        this.setActivePowerupDuration(type, 8000);
         break;
       case 'speed_up':
-        this.activePowerup.expiresAt = Date.now() + 8000;
+        this.setActivePowerupDuration(type, 8000);
         break;
       case 'pierce':
-        this.activePowerup.expiresAt = Date.now() + 7000;
+        this.setActivePowerupDuration(type, 7000);
         break;
       case 'shield':
         this.activateShield();
         if (type === 'shield') {
           this.activePowerup.type = null; // Don't block weapon slot
+          this.activePowerup.expiresAt = 0;
+          this.activePowerup.durationMode = 'wall_clock';
+          this.activePowerup.remainingMs = 0;
           this.powerupEffect = null;
         }
         break;
@@ -2256,29 +2310,32 @@ export class Player {
         this.scoreMultiplier = 2;
         this.scoreMultiplierType = 'score_x2';
         this.scoreBoostExpiresAt = Date.now() + 10000; // 10 seconds
-        this.activePowerup.expiresAt = Date.now() + 10000;
+        this.setActivePowerupDuration(type, 10000);
         break;
       case 'shockwave':
         // Clear all enemy bullets and deal damage to nearby enemies
         this.triggerShockwave();
         this.activePowerup.type = null; // Instant effect, don't block slot
+        this.activePowerup.expiresAt = 0;
+        this.activePowerup.durationMode = 'wall_clock';
+        this.activePowerup.remainingMs = 0;
         this.powerupEffect = null;
         break;
       case 'chain_lightning':
         this.chainLightningActive = true;
         this.chainLightningMaxChains = 3;
-        this.activePowerup.expiresAt = Date.now() + 12000;
+        this.setActivePowerupDuration(type, 12000);
         break;
       case 'orbital_strike':
         this.orbitalStrikeActive = true;
         this.orbitalStrikeCharges = 5;
         this.orbitalStrikeCooldown = 0;
-        this.activePowerup.expiresAt = Date.now() + 15000;
+        this.setActivePowerupDuration(type, 15000);
         break;
       case 'vampire':
         this.vampireActive = true;
         this.vampireKillCount = 0;
-        this.activePowerup.expiresAt = Date.now() + 20000; // 20 seconds
+        this.setActivePowerupDuration(type, 20000); // 20 seconds
         break;
       default:
         this.applyCatalogPowerupEffect(type, effect, now);
@@ -2331,6 +2388,8 @@ export class Player {
     this.droneColor = 0x66ccff;
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
+    this.activePowerup.remainingMs = 0;
+    this.activePowerup.durationMode = 'wall_clock';
     const before = this.getStatSnapshot();
     this.recalculateStats();
     const after = this.getStatSnapshot();

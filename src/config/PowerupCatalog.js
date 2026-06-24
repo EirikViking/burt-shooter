@@ -592,6 +592,21 @@ const NEW_POWERUPS = [
   }
 ];
 
+export const POWERUP_DURATION_MODES = Object.freeze({
+  triple_beam: 'while_firing',
+  rapid_cabinet: 'while_firing',
+  overdrive_core: 'while_firing',
+  rapid_fire: 'while_firing',
+  double_shot: 'while_firing',
+  damage_up: 'while_firing',
+  pierce: 'while_firing',
+  prism_splitter: 'while_firing',
+  rail_surge: 'while_firing',
+  plasma_lance: 'while_firing',
+  mirror_shots: 'while_firing',
+  target_paint: 'while_firing'
+});
+
 export const POWERUP_DEFINITIONS = Object.freeze([...BASE_POWERUPS, ...NEW_POWERUPS]);
 export const BASE_POWERUP_TYPES = Object.freeze(BASE_POWERUPS.map((powerup) => powerup.id));
 export const NEW_POWERUP_TYPES = Object.freeze(NEW_POWERUPS.map((powerup) => powerup.id));
@@ -614,4 +629,12 @@ export function getPowerupMeta(type) {
 
 export function getPowerupEffect(type) {
   return getPowerupMeta(type)?.effect || null;
+}
+
+export function getPowerupDurationMode(type) {
+  return POWERUP_DURATION_MODES[type] || 'wall_clock';
+}
+
+export function isWeaponPowerupDurationMode(type) {
+  return getPowerupDurationMode(type) === 'while_firing';
 }

@@ -166,6 +166,7 @@
     "check:powerup-assets": "node scripts/check-powerup-assets.mjs",
     "check:powerup-balance": "node scripts/check-powerup-balance.mjs",
     "check:life-cap": "node scripts/check-life-cap-removed.mjs",
+    "check:weapon-powerup-firing-duration": "node scripts/check-weapon-powerup-firing-duration.mjs",
     "check:powerup-effects": "node scripts/check-powerup-effects.mjs",
     "check:powerup-visuals": "node scripts/check-powerup-visuals.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs",

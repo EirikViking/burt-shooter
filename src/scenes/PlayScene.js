@@ -2742,8 +2742,8 @@ export class PlayScene {
           if ((dx * dx + dy * dy) >= radius * radius) continue;
           collisionStats.playerBulletEnemyHits += 1;
           hitEvents.push({ bullet, enemy, bulletProxy });
-          if (!bulletProxy.piercing) bullet.active = false;
           if (bulletProxy.isBomb) break;
+          if (!bulletProxy.piercing) bullet.active = false;
         }
       }
       collisionStats.playerBulletEnemyHitEvents = hitEvents.length;

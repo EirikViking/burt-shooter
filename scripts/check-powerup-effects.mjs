@@ -304,7 +304,11 @@ try {
     const spawnEnemies = (count, startX, startY, spacing = 54, health = 8) => {
       play.enemyManager.clearEnemies?.();
       const waves = play.enemyManager.generateWaves(1);
-      play.enemyManager.spawnWave(waves[0]);
+      play.enemyManager.currentWaveIndex = 0;
+      play.enemyManager.normalWavesTotal = waves.length;
+      play.enemyManager.phase = 'WAVES';
+      play.enemyManager.state = 'WAVE_ACTIVE';
+      play.enemyManager.spawnWave({ ...waves[0], count: Math.max(count, Number(waves[0]?.count) || 0) });
       const result = play.enemyManager.enemies.slice(0, count);
       assert(result.length >= count, `expected ${count} spawned enemies`);
       for (const other of play.enemyManager.enemies) {
