@@ -298,6 +298,16 @@ function buildEarlySurgeProfile(surgeIndex, slot, tint, accent) {
   };
 }
 
+function getReadableFastTargetRadius(baseRadius, targetWidth, spriteScale, roleId, movementStyle) {
+  const safeBaseRadius = Math.max(1, Number(baseRadius) || 1);
+  const isFastTarget = roleId === 'fast_scout' || movementStyle === 'fastNeedle';
+  if (!isFastTarget) return safeBaseRadius;
+
+  const apparentRadius = (Math.max(1, Number(targetWidth) || 1) * Math.max(0.1, Number(spriteScale) || 1)) / 2;
+  const visualFloor = Math.ceil(apparentRadius * 0.5);
+  return clamp(Math.max(safeBaseRadius, Math.min(safeBaseRadius + 3, visualFloor)), safeBaseRadius, 24);
+}
+
 function profileFor(index) {
   const unlockLevel = UNLOCK_LEVELS[index];
   const isLateMayhem = index >= GENERATED_ENEMY_LEGACY_TOTAL && index < GENERATED_ENEMY_EARLY_SURGE_START_INDEX;
@@ -343,6 +353,19 @@ function profileFor(index) {
       (slot % 3) * 6 +
       (isLateMayhem ? 18 + (extraIndex % 5) * 4 : 0)
     );
+  const spriteScale = round(
+    isEarlySurge
+      ? 0.94 + (surgeIndex % 9) * 0.01 + (assetBand % 3) * 0.014
+      : 0.92 + (slot % 4) * 0.035 + assetBand * 0.026 + (role.radius > 1 ? 0.04 : 0),
+    3
+  );
+  const targetWidth = isEarlySurge
+    ? Math.round(58 + (surgeIndex % 11) * 2 + (assetBand % 4) * 4)
+    : Math.round(38 + (slot % 5) * 3 + assetBand * (isLateMayhem ? 1.7 : 4) + Math.min(8, unlockLevel / 8));
+  const baseRadius = isEarlySurge
+    ? clamp(11 + (surgeIndex % 6) + role.radius, 10, 18)
+    : clamp(13 + (slot % 5) + role.radius + (heavy ? 2 : 0), 11, 24);
+  const radius = getReadableFastTargetRadius(baseRadius, targetWidth, spriteScale, role.id, movementStyle);
 
   return {
     id: `nova_enemy_${String(index + 1).padStart(3, '0')}`,
@@ -361,19 +384,12 @@ function profileFor(index) {
     tint,
     accent,
     hullTint: isLateMayhem || isEarlySurge ? 0xffffff : assetBand === 0 ? 0xffffff : tint,
-    spriteScale: round(
-      isEarlySurge
-        ? 0.94 + (surgeIndex % 9) * 0.01 + (assetBand % 3) * 0.014
-        : 0.92 + (slot % 4) * 0.035 + assetBand * 0.026 + (role.radius > 1 ? 0.04 : 0),
-      3
-    ),
+    spriteScale,
     glowAlpha: round((isLateMayhem ? 0.28 : isEarlySurge ? 0.2 : 0.15) + Math.min(0.18, assetBand * 0.022) + (unlockLevel >= 30 ? 0.03 : 0), 3),
     health: Math.max(1, healthBase),
     speed: round(Math.max(0.42, speedBase), 2),
     shootDelay,
-    radius: isEarlySurge
-      ? clamp(11 + (surgeIndex % 6) + role.radius, 10, 18)
-      : clamp(13 + (slot % 5) + role.radius + (heavy ? 2 : 0), 11, 24),
+    radius,
     scoreValue: isEarlySurge
       ? 10 + role.score + (surgeIndex % 9) + Math.floor(surgeIndex / 240)
       : 16 + Math.floor(unlockLevel * 1.3) + slot * 2 + role.score + (heavy ? 5 : 0) + (isLateMayhem ? 4 + (extraIndex % 6) : 0),
@@ -401,9 +417,7 @@ function profileFor(index) {
         : (role.dive + (slot % 6) * 0.035 + Math.min(0.28, unlockLevel * 0.006)) * (mayhem?.profileDiveScalar || 1),
       2
     ),
-    targetWidth: isEarlySurge
-      ? Math.round(58 + (surgeIndex % 11) * 2 + (assetBand % 4) * 4)
-      : Math.round(38 + (slot % 5) * 3 + assetBand * (isLateMayhem ? 1.7 : 4) + Math.min(8, unlockLevel / 8)),
+    targetWidth,
     ...(mayhem || {}),
     ...(surge || {})
   };
