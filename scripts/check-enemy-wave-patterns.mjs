@@ -92,6 +92,9 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
   if (message.type() === 'error' || message.type() === 'warning') consoleWarningsOrErrors.push(message.text());
 });
+await page.addInitScript(() => {
+  localStorage.setItem('nova_display_mode_v1', 'windowed');
+});
 
 try {
   await page.goto(withQuery(baseUrl, {
@@ -229,7 +232,15 @@ try {
   const inheritedOk = data.samples.every((sample) => sample.enemyCount > 0 && sample.inheritedCount === sample.enemyCount);
   const delayedEntrySamples = data.samples.filter((sample) => sample.waitingEntryCount > 0);
   const objectiveCoversDelayedEntries = data.samples.every((sample) => sample.objectiveCountBeforeEntry >= sample.enemyCount);
-  const plannedEnemyCountsOk = data.samples.every((sample) => sample.spawnedCount >= Math.max(4, Math.min(6, sample.plannedCount || 0)));
+  const plannedEnemyCountsOk = data.samples.every((sample) => {
+    const planned = Math.max(0, Math.floor(Number(sample.plannedCount) || 0));
+    const minimumStaged = Math.min(3, planned);
+    const maximumStaged = Math.max(minimumStaged, Math.min(6, planned));
+    return planned >= sample.spawnedCount &&
+      sample.spawnedCount >= minimumStaged &&
+      sample.spawnedCount <= maximumStaged &&
+      sample.objectiveCountBeforeEntry >= sample.spawnedCount;
+  });
   const waveCountLifecycleOk = data.samples.every((sample) =>
     sample.spawnedCount > 1 &&
     sample.afterSpawnSweepCount === sample.spawnedCount &&

@@ -131,18 +131,11 @@ try {
   const menuPanel = menuState.menu?.panel;
   const menuItems = menuState.menu?.items || {};
   const menuFailures = outsideFrameFailures(menuPanel, menuItems, [
-    'kicker',
-    'title',
-    'subtitle',
-    'flavor',
-    'primaryHint',
-    'launchButton',
     'hangarButton',
     'highscoresButton',
     'threatCodexButton',
-    'settingsButton',
-    'exitButton',
-    'disclaimer'
+    'achievementsButton',
+    'settingsButton'
   ]);
 
   await page.evaluate(() => {

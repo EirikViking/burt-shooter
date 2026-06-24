@@ -748,6 +748,7 @@ async function runSmoke() {
       }
       const enemyManager = play?.enemyManager;
       if (!enemyManager) return;
+      enemyManager.clearPendingWaveSpawns?.();
       enemyManager.enemies = enemyManager.enemies.filter((enemy) => {
         const isObjective = typeof enemyManager.isObjectiveEnemy === 'function'
           ? enemyManager.isObjectiveEnemy(enemy)
@@ -757,6 +758,12 @@ async function runSmoke() {
         if (enemy.sprite?.parent) enemy.sprite.parent.removeChild(enemy.sprite);
         return false;
       });
+      enemyManager.spawning = false;
+      enemyManager.waveSpawnPendingCount = 0;
+      enemyManager.waveEnding = false;
+      enemyManager.cleanupTimer = 0;
+      enemyManager.cleanupPhase = 'NONE';
+      enemyManager.onWaveCleared?.();
     });
     await stabilizeSmokePlayer(transitionPage);
     await transitionPage.waitForFunction(() => {

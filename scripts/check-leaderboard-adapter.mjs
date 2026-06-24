@@ -167,7 +167,7 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'local'], 'Steam Friends tab should stay hidden without friend entries while Sector is visible');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'friends', 'local'], 'Steam tabs should expose global, sector, friends, and local views');
 
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
     {

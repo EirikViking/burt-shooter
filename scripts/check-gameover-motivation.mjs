@@ -110,6 +110,9 @@ async function clickLaunchRun(targetPage) {
   });
   if (!bounds) throw new Error('Launch Run button bounds unavailable');
   await targetPage.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await targetPage.waitForTimeout(250);
+  const clicked = await targetPage.evaluate(() => window.__game?.currentSceneName !== 'menu');
+  if (!clicked) await targetPage.keyboard.press('Enter');
 }
 
 async function clickPrimaryCta(targetPage) {
@@ -413,9 +416,37 @@ try {
 
   const menuReplayPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   observePage(menuReplayPage);
+  await menuReplayPage.addInitScript(() => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
+    localStorage.removeItem('burt.selectedShip.v1');
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
+  });
   await menuReplayPage.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clickLaunchRun(menuReplayPage);
-  await menuReplayPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
+  try {
+    await menuReplayPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
+  } catch (error) {
+    const launchState = await menuReplayPage.evaluate(() => {
+      let state = {};
+      try {
+        state = JSON.parse(window.render_game_to_text?.() || '{}');
+      } catch {}
+      return {
+        currentSceneName: window.__game?.currentSceneName || null,
+        scene: state.scene || null,
+        menu: state.menu || null,
+        selectedShipSpriteKey: window.__game?.selectedShipSpriteKey || null,
+        storage: {
+          hangar: localStorage.getItem('nova.hangarProgress.v1'),
+          legacyUnlock: localStorage.getItem('burt.shipUnlockProgress.v1'),
+          selectedShip: localStorage.getItem('burt.selectedShip.v1')
+        }
+      };
+    });
+    console.error('[gameover-motivation] menu replay launch timeout', JSON.stringify(launchState, null, 2));
+    throw error;
+  }
   const firstMenuLaunchState = await menuReplayPage.evaluate(() => JSON.parse(window.render_game_to_text()));
   await menuReplayPage.evaluate(() => {
     const game = window.__game;

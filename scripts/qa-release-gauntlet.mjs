@@ -9,7 +9,9 @@ import {
   GENERATED_ENEMY_PROFILES,
   GENERATED_ENEMY_STARTER_COUNT,
   GENERATED_ENEMY_TOTAL,
-  getGeneratedEnemyPoolStats
+  SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT,
+  getGeneratedEnemyPoolStats,
+  isSmallGeneratedEnemyProfile
 } from '../src/config/GeneratedEnemyProfiles.js';
 import {
   ENEMY_ATTACK_STYLE_DEFS,
@@ -201,6 +203,10 @@ function validateEnemyVariety() {
   const level10Profiles = getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
   const level11 = stats.find((entry) => entry.level === 11);
   const level40 = stats.find((entry) => entry.level === 40);
+  const smallLateMayhem = lateMayhem.filter(isSmallGeneratedEnemyProfile);
+  const expectedLevel40 = SMALL_GENERATED_ENEMY_ROSTER_ENABLED_BY_DEFAULT
+    ? total
+    : total - smallLateMayhem.length;
   const expectedLevel1 = GENERATED_ENEMY_STARTER_COUNT + GENERATED_ENEMY_EARLY_SURGE_TOTAL;
   if (level1.availableProfiles !== expectedLevel1) {
     fail(`level 1 should expose ${expectedLevel1} normal enemy profiles, found ${level1.availableProfiles}`);
@@ -211,7 +217,9 @@ function validateEnemyVariety() {
   if (level11.availableProfiles >= total) fail(`level 11 exposes all ${total} normal enemy profiles`);
   if (level11.movementFamilies >= level11.totalMovementFamilies) fail('level 11 exposes all movement families');
   if (level11.attackFamilies >= level11.totalAttackFamilies) fail('level 11 exposes all attack families');
-  if (level40.availableProfiles !== total) fail(`level 40 exposes ${level40.availableProfiles}/${total} profiles`);
+  if (level40.availableProfiles !== expectedLevel40) {
+    fail(`level 40 exposes ${level40.availableProfiles}/${expectedLevel40} default-playable profiles (${total} total)`);
+  }
   if (level40.movementFamilies !== level40.totalMovementFamilies) fail('level 40 does not expose all movement families');
   if (level40.attackFamilies !== level40.totalAttackFamilies) fail('level 40 does not expose all attack families');
   return stats;
@@ -407,6 +415,7 @@ const movementAfter11 = ENEMY_MOVEMENT_STYLE_DEFS
 const attacksAfter11 = ENEMY_ATTACK_STYLE_DEFS
   .filter((style) => style.unlockLevel > 11)
   .map((style) => `${style.id}@${style.unlockLevel}`);
+const levelBeforeLateMayhem = getGeneratedEnemyPoolStats(GENERATED_ENEMY_EXTRA_UNLOCK_LEVEL - 1);
 
 const report = {
   ok: errors.length === 0,
@@ -427,7 +436,7 @@ const report = {
     totalAttackFamilies: unique(GENERATED_ENEMY_PROFILES.map((profile) => profile.fireStyle)).length,
     fullUnlockLevel: GENERATED_ENEMY_FULL_UNLOCK_LEVEL,
     sampledLevels: enemyStats,
-    levelBeforeLateMayhem: level10Profiles,
+    levelBeforeLateMayhem,
     movementFamiliesAfterLevel11: movementAfter11,
     attackFamiliesAfterLevel11: attacksAfter11
   },

@@ -287,10 +287,11 @@ export function normalizeHangarProgress(raw = {}) {
   );
   const bestLevel = reachedSector;
   const bestSector = reachedSector;
+  const shouldCarrySavedUnlockIds = previousTuningVersion >= HANGAR_UNLOCK_TUNING_VERSION;
   const unlocked = new Set([
     ...defaults.unlockedShipIds,
     ...legacyUnlockedShipIds(legacy.bestLevel),
-    ...(Array.isArray(raw.unlockedShipIds) ? raw.unlockedShipIds.map(String) : [])
+    ...(shouldCarrySavedUnlockIds && Array.isArray(raw.unlockedShipIds) ? raw.unlockedShipIds.map(String) : [])
   ]);
   const normalized = {
     ...defaults,
