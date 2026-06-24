@@ -1,6 +1,8 @@
 import * as PIXI from 'pixi.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { GameAssets } from '../utils/GameAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 
@@ -144,54 +146,6 @@ function drawCornerBrackets(container, x, y, width, height, color) {
   return g;
 }
 
-function drawTrainingScope(container, cx, cy, radius, compact = false) {
-  const scope = new PIXI.Graphics();
-  scope.circle(cx, cy, radius);
-  scope.fill({ color: 0x020a18, alpha: 0.72 });
-  scope.circle(cx, cy, radius);
-  scope.stroke({ color: 0x37f5ff, width: compact ? 1.4 : 2, alpha: 0.62 });
-  scope.circle(cx, cy, radius * 0.66);
-  scope.stroke({ color: 0xff55d9, width: 1, alpha: 0.24 });
-  scope.circle(cx, cy, radius * 0.34);
-  scope.stroke({ color: 0x66ff9d, width: 1, alpha: 0.28 });
-  scope.moveTo(cx - radius * 0.86, cy);
-  scope.lineTo(cx - radius * 0.38, cy);
-  scope.moveTo(cx + radius * 0.38, cy);
-  scope.lineTo(cx + radius * 0.86, cy);
-  scope.moveTo(cx, cy - radius * 0.86);
-  scope.lineTo(cx, cy - radius * 0.38);
-  scope.moveTo(cx, cy + radius * 0.38);
-  scope.lineTo(cx, cy + radius * 0.86);
-  scope.stroke({ color: 0x7ee9ff, width: 1, alpha: 0.38 });
-
-  const ship = new PIXI.Graphics();
-  ship.moveTo(cx, cy - radius * 0.36);
-  ship.lineTo(cx + radius * 0.22, cy + radius * 0.27);
-  ship.lineTo(cx, cy + radius * 0.14);
-  ship.lineTo(cx - radius * 0.22, cy + radius * 0.27);
-  ship.closePath();
-  ship.fill({ color: 0x9bf8ff, alpha: 0.92 });
-  ship.stroke({ color: 0xffffff, width: 1.4, alpha: 0.9 });
-
-  const bullet = new PIXI.Graphics();
-  bullet.circle(cx + radius * 0.74, cy - radius * 0.28, compact ? 4 : 5);
-  bullet.fill({ color: 0xff66ff, alpha: 0.9 });
-  bullet.circle(cx + radius * 0.52, cy + radius * 0.32, compact ? 3 : 4);
-  bullet.fill({ color: 0xffcc00, alpha: 0.9 });
-  bullet.moveTo(cx + radius * 0.74, cy - radius * 0.28);
-  bullet.lineTo(cx + radius * 0.2, cy - radius * 0.05);
-  bullet.stroke({ color: 0xff66ff, width: compact ? 1 : 1.4, alpha: 0.36 });
-
-  const graze = new PIXI.Graphics();
-  graze.arc(cx, cy, radius * 0.48, -0.35, 0.62);
-  graze.stroke({ color: 0x66ff9d, width: compact ? 3 : 4, alpha: 0.82 });
-  graze.arc(cx, cy, radius * 0.55, -0.32, 0.55);
-  graze.stroke({ color: 0xff66ff, width: compact ? 1.8 : 2.4, alpha: 0.66 });
-
-  container.addChild(scope, ship, bullet, graze);
-  return scope;
-}
-
 export class HowToPlayOverlay {
   constructor(game, { onClose = null } = {}) {
     this.game = game;
@@ -204,6 +158,9 @@ export class HowToPlayOverlay {
     this.closeButton = null;
     this.keyHandler = null;
     this.debugLayout = null;
+    this.heroMotionNodes = [];
+    this.heroTextureSprites = [];
+    this.reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
     this.gamepadNavigator = new GamepadNavigator();
     this.gamepadNavigator.suppressUntilReleased();
     this.build();
@@ -211,6 +168,8 @@ export class HowToPlayOverlay {
   }
 
   build() {
+    this.heroMotionNodes = [];
+    this.heroTextureSprites = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const compact = width < 900 || height < 700;
@@ -296,9 +255,23 @@ export class HowToPlayOverlay {
     this.container.addChild(sideRail);
 
     if (!veryShort) {
-      const scopeRadius = compact ? 36 : 48;
-      drawTrainingScope(this.container, panelX + pad + scopeRadius + 24, panelY + headerHeight * 0.5 + 4, scopeRadius, compact);
-      drawTrainingScope(this.container, panelX + panelWidth - pad - scopeRadius - 24, panelY + headerHeight * 0.5 + 4, scopeRadius, compact);
+      const scopeRadius = compact ? 38 : spacious ? 66 : 56;
+      this.addTrainingHeroPod({
+        x: panelX + pad + scopeRadius + (compact ? 18 : 32),
+        y: panelY + headerHeight * 0.5 + 6,
+        radius: scopeRadius,
+        compact,
+        side: -1,
+        palette: { primary: 0x37f5ff, secondary: 0xff55d9, danger: 0xff8f5a }
+      });
+      this.addTrainingHeroPod({
+        x: panelX + panelWidth - pad - scopeRadius - (compact ? 18 : 32),
+        y: panelY + headerHeight * 0.5 + 6,
+        radius: scopeRadius,
+        compact,
+        side: 1,
+        palette: { primary: 0xff55d9, secondary: 0xffef7e, danger: 0x66ff9d }
+      });
     }
 
     const title = createText(translateText('HOW TO PLAY'), {
@@ -466,6 +439,203 @@ export class HowToPlayOverlay {
       button: buttonBounds,
       layoutWarnings
     };
+  }
+
+  addTrainingHeroPod({ x, y, radius, compact, side, palette }) {
+    const pod = new PIXI.Container();
+    pod.label = side < 0 ? 'ui_howToPlayHeroPod_left' : 'ui_howToPlayHeroPod_right';
+    pod.position.set(x, y);
+    pod.eventMode = 'none';
+    pod.interactiveChildren = false;
+    this.container.addChild(pod);
+
+    const primary = palette.primary;
+    const secondary = palette.secondary;
+    const danger = palette.danger;
+    const backGlow = new PIXI.Graphics();
+    backGlow.circle(0, 0, radius * 1.18);
+    backGlow.fill({ color: primary, alpha: 0.12 });
+    backGlow.circle(0, 0, radius * 0.8);
+    backGlow.fill({ color: 0x020a18, alpha: 0.84 });
+    backGlow.circle(0, 0, radius * 1.08);
+    backGlow.stroke({ color: primary, width: compact ? 1.4 : 2, alpha: 0.72 });
+    backGlow.circle(0, 0, radius * 0.7);
+    backGlow.stroke({ color: secondary, width: 1.2, alpha: 0.38 });
+    backGlow.circle(0, 0, radius * 0.42);
+    backGlow.stroke({ color: 0xffffff, width: 1, alpha: 0.14 });
+    pod.addChild(backGlow);
+
+    const scan = new PIXI.Graphics();
+    scan.moveTo(0, 0);
+    scan.arc(0, 0, radius * 1.05, -0.2, 0.35);
+    scan.lineTo(0, 0);
+    scan.closePath();
+    scan.fill({ color: primary, alpha: 0.16 });
+    scan.moveTo(0, 0);
+    scan.lineTo(radius * 1.05, 0);
+    scan.stroke({ color: primary, width: 2, alpha: 0.42 });
+    pod.addChild(scan);
+    this.heroMotionNodes.push({ target: scan, kind: 'rotate', speed: 0.018 * side, pulse: 0.05, baseAlpha: 0.78 });
+
+    const cross = new PIXI.Graphics();
+    for (let index = 0; index < 4; index += 1) {
+      const angle = index * Math.PI / 2;
+      const inner = radius * 0.5;
+      const outer = radius * 1.08;
+      cross.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      cross.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    cross.stroke({ color: 0x7ee9ff, width: 1, alpha: 0.25 });
+    pod.addChild(cross);
+
+    const trail = new PIXI.Graphics();
+    trail.arc(0, 0, radius * 0.92, side < 0 ? -1.15 : 2.0, side < 0 ? 0.55 : 3.55);
+    trail.stroke({ color: danger, width: compact ? 3.4 : 4.4, alpha: 0.74 });
+    trail.arc(0, 0, radius * 0.76, side < 0 ? -0.55 : 2.55, side < 0 ? 1.0 : 4.0);
+    trail.stroke({ color: secondary, width: compact ? 1.8 : 2.4, alpha: 0.62 });
+    pod.addChild(trail);
+    this.heroMotionNodes.push({ target: trail, kind: 'pulse', baseAlpha: 0.8, amp: 0.18, speed: 0.035, phase: side > 0 ? 1.4 : 0 });
+
+    const fallbackShip = new PIXI.Graphics();
+    fallbackShip.moveTo(0, -radius * 0.42);
+    fallbackShip.lineTo(radius * 0.28, radius * 0.3);
+    fallbackShip.lineTo(0, radius * 0.14);
+    fallbackShip.lineTo(-radius * 0.28, radius * 0.3);
+    fallbackShip.closePath();
+    fallbackShip.fill({ color: 0x9bf8ff, alpha: 0.86 });
+    fallbackShip.stroke({ color: 0xffffff, width: 1.4, alpha: 0.9 });
+    pod.addChild(fallbackShip);
+    this.heroMotionNodes.push({ target: fallbackShip, kind: 'hover', baseX: 0, baseY: 0, amp: radius * 0.04, speed: 0.035, phase: 0, rotationSpeed: 0.002 * side });
+
+    const shipSprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    shipSprite.anchor.set(0.5);
+    shipSprite.visible = false;
+    shipSprite.label = side < 0 ? 'ui_howToPlayHeroShip_art' : 'ui_howToPlayHeroPhaseShip_art';
+    pod.addChild(shipSprite);
+    this.loadHeroTexture(shipSprite, side < 0 ? AssetManifest.generated.playerShips[10] : AssetManifest.generated.playerShips[15], radius * (compact ? 0.92 : 1.02), fallbackShip);
+    this.heroMotionNodes.push({ target: shipSprite, kind: 'hover', baseX: 0, baseY: 0, amp: radius * 0.04, speed: 0.035, phase: 0.35, rotationSpeed: 0.002 * side });
+
+    const enemySource = side < 0
+      ? AssetManifest.generated.enemies[16]
+      : AssetManifest.generated.eliteMiddleShips[11];
+    const enemyA = this.createHeroSprite(pod, enemySource, {
+      x: side * radius * 0.72,
+      y: -radius * 0.38,
+      size: radius * 0.46,
+      fallbackColor: danger,
+      label: side < 0 ? 'ui_howToPlayThreat_art' : 'ui_howToPlayPhaseThreat_art'
+    });
+    const enemyB = this.createHeroSprite(pod, AssetManifest.generated.enemies[38], {
+      x: side * radius * 0.58,
+      y: radius * 0.48,
+      size: radius * 0.35,
+      fallbackColor: secondary,
+      label: side < 0 ? 'ui_howToPlayGrazeThreat_art' : 'ui_howToPlayChainThreat_art'
+    });
+    this.heroMotionNodes.push({ target: enemyA, kind: 'orbit', baseX: enemyA.x, baseY: enemyA.y, amp: radius * 0.07, speed: 0.028, phase: side > 0 ? 1.1 : 0.2, rotationSpeed: -0.005 * side });
+    this.heroMotionNodes.push({ target: enemyB, kind: 'orbit', baseX: enemyB.x, baseY: enemyB.y, amp: radius * 0.06, speed: 0.033, phase: side > 0 ? 2.4 : 1.6, rotationSpeed: 0.006 * side });
+
+    const weaponSprite = this.createHeroSprite(pod, side < 0 ? AssetManifest.generated.enemyWeapons[3] : AssetManifest.generated.enemyWeapons[10], {
+      x: -side * radius * 0.56,
+      y: side < 0 ? radius * 0.44 : -radius * 0.42,
+      size: radius * 0.32,
+      fallbackColor: side < 0 ? 0xff66ff : 0x66ff9d,
+      label: side < 0 ? 'ui_howToPlayGrazeBreakProjectile_art' : 'ui_howToPlayDodgeProjectile_art'
+    });
+    this.heroMotionNodes.push({ target: weaponSprite, kind: 'projectile', baseX: weaponSprite.x, baseY: weaponSprite.y, amp: radius * 0.22, speed: 0.045, phase: side > 0 ? 1.8 : 0.3, rotationSpeed: 0.035 * side });
+
+    const sparks = [];
+    for (let index = 0; index < 5; index += 1) {
+      const spark = new PIXI.Graphics();
+      spark.circle(0, 0, Math.max(2, radius * (0.025 + index * 0.002)));
+      spark.fill({ color: index % 2 ? secondary : primary, alpha: 0.78 });
+      pod.addChild(spark);
+      const angle = index * 1.26 + (side > 0 ? 0.4 : 0);
+      spark.position.set(Math.cos(angle) * radius * 0.92, Math.sin(angle) * radius * 0.92);
+      sparks.push(spark);
+      this.heroMotionNodes.push({
+        target: spark,
+        kind: 'spark',
+        baseAngle: angle,
+        radius: radius * (0.78 + index * 0.045),
+        speed: (0.018 + index * 0.003) * side,
+        phase: index * 0.8,
+        baseAlpha: 0.72
+      });
+    }
+    pod._debugHeroSparkCount = sparks.length;
+
+    return pod;
+  }
+
+  createHeroSprite(parent, source, { x, y, size, fallbackColor, label }) {
+    const fallback = new PIXI.Graphics();
+    fallback.circle(0, 0, size * 0.32);
+    fallback.fill({ color: fallbackColor, alpha: 0.72 });
+    fallback.circle(0, 0, size * 0.46);
+    fallback.stroke({ color: fallbackColor, width: 2, alpha: 0.42 });
+    fallback.position.set(x, y);
+    fallback.label = `${label}_fallback`;
+    parent.addChild(fallback);
+
+    const sprite = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    sprite.anchor.set(0.5);
+    sprite.position.set(x, y);
+    sprite.visible = false;
+    sprite.label = label;
+    parent.addChild(sprite);
+    this.loadHeroTexture(sprite, source, size, fallback);
+    return sprite;
+  }
+
+  loadHeroTexture(sprite, source, maxSide, fallback = null) {
+    if (!sprite || !source) return;
+    this.heroTextureSprites.push(sprite);
+    PIXI.Assets.load(source)
+      .then((texture) => {
+        if (!sprite || sprite.destroyed || !this.container || this.container.destroyed || !GameAssets.isValidTexture(texture)) return;
+        sprite.texture = texture;
+        const textureMax = Math.max(texture.width || 1, texture.height || 1);
+        sprite.scale.set(maxSide / textureMax);
+        sprite.visible = true;
+        if (fallback && !fallback.destroyed) fallback.visible = false;
+      })
+      .catch((error) => {
+        console.warn(`[HowToPlayOverlay] Failed to load hero art ${source}`, error);
+      });
+  }
+
+  updateHeroMotion(delta = 1) {
+    if (!this.heroMotionNodes?.length || this.reducedMotion) return;
+    const step = Math.max(0.25, Math.min(2.2, Number(delta) || 1));
+    for (const node of this.heroMotionNodes) {
+      const target = node.target;
+      if (!target || target.destroyed) continue;
+      node.phase = (Number(node.phase) || 0) + step * (node.speed || 0.02);
+      if (node.kind === 'rotate') {
+        target.rotation += step * (node.speed || 0.01);
+        target.alpha = Math.max(0.35, Math.min(1, (node.baseAlpha || 0.8) + Math.sin(node.phase * 2.4) * (node.pulse || 0.08)));
+      } else if (node.kind === 'pulse') {
+        target.alpha = Math.max(0.38, Math.min(1, (node.baseAlpha || 0.75) + Math.sin(node.phase * 2.8) * (node.amp || 0.12)));
+      } else if (node.kind === 'hover') {
+        target.x = node.baseX + Math.cos(node.phase * 2.1) * (node.amp || 2);
+        target.y = node.baseY + Math.sin(node.phase * 2.8) * (node.amp || 2);
+        target.rotation += step * (node.rotationSpeed || 0);
+      } else if (node.kind === 'orbit') {
+        target.x = node.baseX + Math.cos(node.phase * 2.5) * (node.amp || 3);
+        target.y = node.baseY + Math.sin(node.phase * 1.8) * (node.amp || 3);
+        target.rotation += step * (node.rotationSpeed || 0);
+      } else if (node.kind === 'projectile') {
+        target.x = node.baseX + Math.cos(node.phase * 3.4) * (node.amp || 8);
+        target.y = node.baseY + Math.sin(node.phase * 2.5) * (node.amp || 8) * 0.42;
+        target.rotation += step * (node.rotationSpeed || 0.02);
+        target.alpha = 0.72 + Math.sin(node.phase * 5) * 0.2;
+      } else if (node.kind === 'spark') {
+        const angle = node.baseAngle + node.phase;
+        target.position.set(Math.cos(angle) * node.radius, Math.sin(angle) * node.radius);
+        target.alpha = Math.max(0.32, Math.min(0.9, (node.baseAlpha || 0.7) + Math.sin(node.phase * 3) * 0.18));
+      }
+    }
   }
 
   addHelpCard(row, layout) {
@@ -636,6 +806,7 @@ export class HowToPlayOverlay {
 
   update(delta = 1) {
     updateMenuFx(this, delta);
+    this.updateHeroMotion(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
@@ -660,6 +831,12 @@ export class HowToPlayOverlay {
       translatedTrainingFlow: translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'),
       focusedControl: 'back',
       layout: this.debugLayout,
+      heroArt: {
+        motionNodes: this.heroMotionNodes?.length || 0,
+        textureSprites: this.heroTextureSprites?.length || 0,
+        visibleTextureSprites: this.heroTextureSprites?.filter((sprite) => sprite?.visible).length || 0,
+        reducedMotion: this.reducedMotion
+      },
       menuFx: this.menuFx?.getDebugState?.() || null
     };
   }

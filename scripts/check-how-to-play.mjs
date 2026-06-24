@@ -151,6 +151,9 @@ function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
   assert(overlay?.cardCount === 10, `${label} expected 10 help cards, saw ${overlay?.cardCount}`);
+  assert(overlay?.heroArt?.motionNodes >= 20, `${label} expected animated hero art nodes, saw ${overlay?.heroArt?.motionNodes}`);
+  assert(overlay?.heroArt?.textureSprites >= 6, `${label} expected real hero texture slots, saw ${overlay?.heroArt?.textureSprites}`);
+  assert(overlay?.heroArt?.visibleTextureSprites >= 4, `${label} expected loaded hero art sprites, saw ${overlay?.heroArt?.visibleTextureSprites}`);
   assert(layout?.cards?.length === overlay.cardCount, `${label} card layout count mismatch`);
   assert(!layout.layoutWarnings?.length, `${label} layout warnings: ${(layout.layoutWarnings || []).join('; ')}`);
   assert(layout.panel?.width > 500 && layout.panel?.height > 420, `${label} panel too small`);
@@ -247,7 +250,13 @@ try {
       assert(menu.menu?.items?.helpButton?.width > 80, `${scenario.name} How To Play menu button is missing or too small`);
 
       await page.evaluate(() => window.__game?.currentScene?.openHowToPlayOverlay?.());
-      const menuHelp = await waitForState(page, (state) => state.overlays?.howToPlay && state.howToPlayOverlay?.rows?.length >= 8, `${scenario.name} menu help overlay`);
+      const menuHelp = await waitForState(
+        page,
+        (state) => state.overlays?.howToPlay &&
+          state.howToPlayOverlay?.rows?.length >= 8 &&
+          state.howToPlayOverlay?.heroArt?.visibleTextureSprites >= 4,
+        `${scenario.name} menu help overlay`
+      );
       assertOverlayLayout(menuHelp, `${scenario.name} menu help overlay`);
       assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`);
       const menuShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play');
@@ -297,7 +306,15 @@ try {
         play?.setPaused?.(true);
         play?.openHowToPlayOverlay?.();
       });
-      const pauseHelp = await waitForState(page, (state) => state.scene === 'play' && state.isPaused && state.overlays?.pause && state.overlays?.howToPlay, `${scenario.name} pause help overlay`);
+      const pauseHelp = await waitForState(
+        page,
+        (state) => state.scene === 'play' &&
+          state.isPaused &&
+          state.overlays?.pause &&
+          state.overlays?.howToPlay &&
+          state.howToPlayOverlay?.heroArt?.visibleTextureSprites >= 4,
+        `${scenario.name} pause help overlay`
+      );
       assertOverlayLayout(pauseHelp, `${scenario.name} pause help overlay`);
       assertCleanHelpCopy(pauseHelp, `${scenario.name} pause help overlay`);
       const pauseShot = await screenshotWithAudit(page, scenarioDir, 'pause-how-to-play');
