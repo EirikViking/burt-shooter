@@ -65,6 +65,8 @@ for (const locale of ['de', 'es', 'ja', 'ko', 'pt-BR', 'ru', 'zh-CN']) {
 
 const settingsOverlay = readFileSync('src/ui/SettingsOverlay.js', 'utf8');
 assert(settingsOverlay.includes("source: 'credits_easter_egg'"), 'credits secret unlock easter egg should remain available');
+assert(settingsOverlay.includes('rollCreditsAscendantEasterEgg'), 'credits ascendant easter egg roll should remain wired');
+assert(settingsOverlay.includes('CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS'), 'credits ascendant easter egg attempt cap should remain visible in debug state');
 
 const soundCatalog = readFileSync('src/audio/SoundCatalog.js', 'utf8');
 assert(!soundCatalog.includes('space_tax_audit_flyby'), 'SoundCatalog must not register removed Space Tax Audit flyby SFX');

@@ -167,6 +167,36 @@ export const ShipUnlockConfig = Object.freeze([
     label: 'Clear twice, reach rank 16, and discover 180 threats',
     requirements: { runClears: 2, pilotRank: 16, codexDiscoveries: 180 },
     legacyLevel: 60
+  },
+  {
+    shipId: 'nova_ship_26',
+    label: 'Unlocks at Level 30',
+    requirements: { bestSector: 30 },
+    legacyLevel: 30
+  },
+  {
+    shipId: 'nova_ship_27',
+    label: 'Unlocks at Level 35',
+    requirements: { bestSector: 35 },
+    legacyLevel: 35
+  },
+  {
+    shipId: 'nova_ship_28',
+    label: 'Unlocks at Level 40',
+    requirements: { bestSector: 40 },
+    legacyLevel: 40
+  },
+  {
+    shipId: 'nova_ship_29',
+    label: 'Unlocks at Level 45',
+    requirements: { bestSector: 45 },
+    legacyLevel: 45
+  },
+  {
+    shipId: 'nova_ship_30',
+    label: 'Unlocks at Level 50',
+    requirements: { bestSector: 50 },
+    legacyLevel: 50
   }
 ]);
 

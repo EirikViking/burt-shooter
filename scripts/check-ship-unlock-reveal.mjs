@@ -191,8 +191,12 @@ async function runScenario(browser, scenario) {
   assert(unlocks.bounds?.height >= 88, `${scenario.name}: reveal bounds are too small: ${JSON.stringify(unlocks.bounds)}`);
   assert(unlocks.voiceKey === scenario.expectedVoiceKey, `${scenario.name}: expected voice ${scenario.expectedVoiceKey}, got ${unlocks.voiceKey}`);
   assert(unlocks.voicePlayed === true, `${scenario.name}: unlock voice did not trigger`);
-  assert(String(state.gameOver?.unlockSummary || '').includes(scenario.expectedSummary), `${scenario.name}: unexpected summary ${state.gameOver?.unlockSummary}`);
-  assert(String(state.gameOver?.unlockSummary || '').includes('VISIT THE HANGAR'), `${scenario.name}: hangar CTA missing`);
+  const unlockSummary = String(state.gameOver?.unlockSummary || '');
+  assert(unlockSummary.includes(scenario.expectedSummary), `${scenario.name}: unexpected summary ${state.gameOver?.unlockSummary}`);
+  assert(
+    unlockSummary.includes('VISIT THE HANGAR') || unlockSummary.includes('Reason:'),
+    `${scenario.name}: unlock follow-up missing`
+  );
   assert(pageErrors.length === 0, `${scenario.name}: page errors: ${pageErrors.join('; ')}`);
   await page.screenshot({ path: path.join(outputDir, `${scenario.name}.png`), fullPage: true });
   const runbackState = await enterRunbackStage(page);
@@ -253,6 +257,19 @@ try {
     expectedCount: 2,
     expectedVoiceKey: 'mission_control_ships_unlocked',
     expectedSummary: 'SHIPS UNLOCKED'
+  }));
+  results.push(await runScenario(browser, {
+    name: 'eirik',
+    previousProgress: baseHangarProgress({
+      bestSector: 49,
+      bestLevel: 49,
+      unlockedShipIds: Array.from({ length: 29 }, (_, index) => `nova_ship_${String(index + 1).padStart(2, '0')}`)
+    }),
+    finalLevel: 50,
+    finalScore: 250000,
+    expectedCount: 1,
+    expectedVoiceKey: 'mission_control_eirik_viking_unlocked',
+    expectedSummary: 'EIRIK THE VIKING'
   }));
   console.log(`[ship-unlock-reveal] PASS ${JSON.stringify(results)}`);
 } finally {

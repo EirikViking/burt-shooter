@@ -222,6 +222,8 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
   );
   const shipId = raw.shipId ?? raw.ship_id ?? raw.metadata?.shipId ?? null;
   const shipName = raw.shipName ?? raw.ship_name ?? raw.metadata?.shipName ?? null;
+  const shipTier = raw.shipTier ?? raw.ship_tier ?? raw.metadata?.shipTier ?? null;
+  const shipPowerRating = raw.shipPowerRating ?? raw.ship_power_rating ?? raw.metadata?.shipPowerRating ?? null;
   const sectorStart = sectorEntry
     ? firstFiniteInt([
       raw.sectorStart,
@@ -278,6 +280,8 @@ export function normalizeLeaderboardEntry(raw = {}, options = {}) {
     rankIndex,
     shipId,
     shipName,
+    shipTier,
+    shipPowerRating: shipPowerRating == null ? null : Number(shipPowerRating),
     runTimeSeconds: runTimeSeconds == null ? null : Math.max(0, numericInt(runTimeSeconds, 0)),
     kills: kills == null ? null : Math.max(0, numericInt(kills, 0)),
     bossKills: bossKills == null ? null : Math.max(0, numericInt(bossKills, 0)),
@@ -326,6 +330,8 @@ export function createRunResultFromGame(game, overrides = {}) {
     shipId: shipMetadata?.id || selectedShipSpriteKey || null,
     shipNumericId: getShipNumericId(selectedShipSpriteKey),
     shipName: shipMetadata?.name || null,
+    shipTier: shipMetadata?.tier || 'standard',
+    shipPowerRating: Number.isFinite(shipMetadata?.powerRating) ? shipMetadata.powerRating : 1,
     selectedShipSpriteKey,
     runTimeSeconds: Math.max(0, numericInt(overrides.runTimeSeconds ?? playScene?.gameTime, 0)),
     kills: Math.max(0, numericInt(overrides.kills ?? playScene?.totalKills, 0)),
@@ -373,6 +379,8 @@ export function createSectorStartRunResultFromGame(game, overrides = {}) {
     shipId: shipMetadata?.id || selectedShipSpriteKey || null,
     shipNumericId: getShipNumericId(selectedShipSpriteKey),
     shipName: shipMetadata?.name || null,
+    shipTier: shipMetadata?.tier || 'standard',
+    shipPowerRating: Number.isFinite(shipMetadata?.powerRating) ? shipMetadata.powerRating : 1,
     selectedShipSpriteKey,
     runTimeSeconds: Math.max(0, numericInt(overrides.runTimeSeconds ?? summary.runElapsedSeconds ?? playScene?.gameTime, 0)),
     kills: Math.max(0, numericInt(overrides.kills ?? summary.kills ?? playScene?.totalKills, 0)),

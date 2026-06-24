@@ -339,7 +339,7 @@ function groupBy(items, keyFn) {
 
 function writeShipAudit() {
   const ships = buildSelectableShipVariants(ShipData);
-  if (ships.length !== 25) fail(`ship trait audit expected 25 selectable ships, found ${ships.length}`);
+  if (ships.length !== 30) fail(`ship trait audit expected 30 selectable ships, found ${ships.length}`);
   const rows = ships.map((ship) => {
     const unlock = getShipUnlockDefinition(ship.id);
     const stats = ship.stats || {};

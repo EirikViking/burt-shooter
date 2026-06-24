@@ -276,6 +276,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_game_over_alt02.mp3',
             '/audio/voice/mission-control/mission_control_ship_unlocked_01.mp3',
             '/audio/voice/mission-control/mission_control_ships_unlocked_01.mp3',
+            '/audio/voice/mission-control/mission_control_eirik_viking_unlocked_01.mp3',
             '/audio/voice/mission-control/mission_control_combo_01.mp3',
             '/audio/voice/mission-control/mission_control_combo_02.mp3',
             '/audio/voice/mission-control/mission_control_combo_03.mp3',

@@ -187,6 +187,7 @@ try {
     if (!overlay || !coin || typeof overlay.triggerCreditsEasterEgg !== 'function') {
       return { ok: false, reason: 'credits cabinet seal unavailable' };
     }
+    window.__novaCreditsAscendantEasterEggRandom = () => 1;
     overlay.triggerCreditsEasterEgg(coin);
     overlay.triggerCreditsEasterEgg(coin);
     overlay.triggerCreditsEasterEgg(coin);

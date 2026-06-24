@@ -28,6 +28,7 @@ import {
   GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
 } from '../achievements/AchievementCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID } from '../progression/HangarProgressState.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
@@ -3253,19 +3254,26 @@ export class GameOverScene {
   playShipUnlockVoice() {
     if (this.shipUnlockVoicePlayed || this.newlyUnlockedShips.length <= 0) return false;
     this.shipUnlockVoicePlayed = true;
-    const voiceKey = this.newlyUnlockedShips.length === 1
-      ? 'mission_control_ship_unlocked'
-      : 'mission_control_ships_unlocked';
+    const voiceKey = this.getShipUnlockVoiceKey();
     return AudioManager.playVoice(voiceKey, {
       force: true,
       stopOtherVoices: true,
       exclusiveGroup: 'announcer',
       cooldownMs: 8000,
       eventCooldownMs: 0,
-      duckMs: 3200,
-      duckFactor: 0.34,
-      volume: 0.98
+      duckMs: voiceKey === 'mission_control_eirik_viking_unlocked' ? 4300 : 3200,
+      duckFactor: voiceKey === 'mission_control_eirik_viking_unlocked' ? 0.26 : 0.34,
+      volume: voiceKey === 'mission_control_eirik_viking_unlocked' ? 1.04 : 0.98
     });
+  }
+
+  getShipUnlockVoiceKey() {
+    const ships = this.newlyUnlockedShips || [];
+    const includesEirik = ships.some(ship => (ship?.baseId || ship?.id || null) === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID);
+    if (includesEirik) return 'mission_control_eirik_viking_unlocked';
+    return ships.length === 1
+      ? 'mission_control_ship_unlocked'
+      : 'mission_control_ships_unlocked';
   }
 
   playGameOverTaunt() {
@@ -3298,11 +3306,7 @@ export class GameOverScene {
       bounds: bounds
         ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }
         : null,
-      voiceKey: ships.length === 1
-        ? 'mission_control_ship_unlocked'
-        : ships.length > 1
-          ? 'mission_control_ships_unlocked'
-          : null,
+      voiceKey: ships.length > 0 ? this.getShipUnlockVoiceKey() : null,
       voicePlayed: Boolean(this.shipUnlockVoicePlayed)
     };
   }

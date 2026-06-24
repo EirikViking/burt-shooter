@@ -29,7 +29,14 @@ import {
   setLanguagePreference,
   translateText
 } from '../i18n/index.js';
-import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
+import { ShipData } from '../config/ShipData.js';
+import {
+  CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+  CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+  CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+  grantSecretShipUnlock,
+  rollCreditsAscendantEasterEgg
+} from '../progression/HangarProgressState.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
 
@@ -77,6 +84,26 @@ function debugBounds(displayObject) {
   } catch {
     return null;
   }
+}
+
+function getCreditsAscendantRandom() {
+  const override = typeof window !== 'undefined'
+    ? window.__novaCreditsAscendantEasterEggRandom
+    : globalThis.__novaCreditsAscendantEasterEggRandom;
+  return typeof override === 'function' ? override : Math.random;
+}
+
+function getCreditsRevealShip(shipId = 'nova_ship_07') {
+  const fallback = ShipData[6] || ShipData[0] || {};
+  const ship = ShipData.find(candidate => candidate.id === shipId) || fallback;
+  const textureIndex = Number.isInteger(ship.textureIndex)
+    ? ship.textureIndex
+    : Math.max(0, Number.parseInt(String(ship.spriteKey || '').replace(/\D/g, ''), 10) - 1);
+  return {
+    ship,
+    name: ship.name || 'QUASAR FAN',
+    asset: AssetManifest.generated.playerShips?.[textureIndex]
+  };
 }
 
 function getMusicPackOption(pack) {
@@ -1320,29 +1347,46 @@ export class SettingsOverlay {
     }
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
+    const ascendantRoll = rollCreditsAscendantEasterEgg({ random: getCreditsAscendantRandom() });
+    const revealResult = ascendantRoll.unlocked ? ascendantRoll : result;
     if (this.creditsEggStatusText) {
       this.creditsEggStatusText.text = translateText(
-        result.unlocked
+        ascendantRoll.unlocked
+          ? 'Ascendant signal answered: Eirik the Viking is ready in the hangar.'
+          : result.unlocked
           ? 'Cabinet Ghost waiver filed: Quasar Fan is ready in the hangar.'
           : 'Cabinet Ghost already signed this waiver. Quasar Fan remains suspiciously ready.'
       );
       this.creditsEggStatusText.style.fill = '#fff3a2';
     }
     coinButton._drawCoin?.(true);
-    this.showCreditsShipUnlockReveal(result);
+    this.showCreditsShipUnlockReveal(revealResult);
     this.creditsDebugState = {
       ...(this.creditsDebugState || {}),
       easterEgg: {
         clicks: this.creditsCoinClicks,
         shipId: 'nova_ship_07',
         unlocked: Boolean(result.unlocked),
-        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+        alreadyUnlocked: Boolean(result.alreadyUnlocked),
+        ascendant: {
+          shipId: CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+          chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+          maxAttempts: CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+          attempted: Boolean(ascendantRoll.attempted),
+          attempts: ascendantRoll.attempts,
+          attemptsRemaining: ascendantRoll.attemptsRemaining,
+          success: Boolean(ascendantRoll.success),
+          unlocked: Boolean(ascendantRoll.unlocked),
+          alreadyUnlocked: Boolean(ascendantRoll.alreadyUnlocked),
+          exhausted: Boolean(ascendantRoll.exhausted)
+        }
       }
     };
   }
 
   showCreditsShipUnlockReveal(result = {}) {
     if (!this.creditsPanel) return;
+    const revealShip = getCreditsRevealShip(result.shipId);
     if (this.creditsRevealTicker) {
       this.game.app.ticker.remove(this.creditsRevealTicker);
       this.creditsRevealTicker = null;
@@ -1417,7 +1461,7 @@ export class SettingsOverlay {
     fitDisplayToBox(subtitle, maxW - 56, compact ? 34 : 44, { minScale: 0.62 });
     reveal.addChild(subtitle);
 
-    const shipName = createText(translateText('QUASAR FAN'), {
+    const shipName = createText(revealShip.name, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 28 : 44,
       fontWeight: '900',
@@ -1439,7 +1483,7 @@ export class SettingsOverlay {
     reveal.addChild(shipRing);
     this.creditsAnimatedNodes.push({ node: shipRing, kind: 'breathe', baseScale: 1, speed: 3.1 });
 
-    const shipSrc = AssetManifest.generated.playerShips?.[6];
+    const shipSrc = revealShip.asset;
     if (shipSrc) {
       PIXI.Assets.load(shipSrc)
         .then((texture) => {
@@ -1487,6 +1531,18 @@ export class SettingsOverlay {
 
     AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+    if (result.shipId === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID && result.unlocked) {
+      AudioManager.playVoice('mission_control_eirik_viking_unlocked', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        cooldownMs: 8000,
+        eventCooldownMs: 0,
+        duckMs: 4300,
+        duckFactor: 0.26,
+        volume: 1.04
+      });
+    }
 
     let elapsed = 0;
     const ticker = (delta) => {

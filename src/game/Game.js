@@ -852,6 +852,7 @@ export class Game {
     const discoveries = getDiscoveriesThisRun();
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
     const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
+    const ship = getShipMetadata(this.selectedShipSpriteKey);
     const summary = {
       score: this.score,
       finalScore: this.score,
@@ -881,6 +882,11 @@ export class Game {
       highestScoreMultiplier: Math.max(1, Number(this.runPressureDirector?.getScoreMultiplier?.()) || 1),
       runMode: this.runMode,
       runModeReason: this.runModeReason,
+      selectedShipSpriteKey: this.selectedShipSpriteKey || null,
+      shipId: ship?.id || this.selectedShipSpriteKey || null,
+      shipName: ship?.name || null,
+      shipTier: ship?.tier || 'standard',
+      shipPowerRating: Number.isFinite(ship?.powerRating) ? ship.powerRating : 1,
       sectorStartCheckpoint: this.sectorStartCheckpoint || null,
       sectorStartPlaySector: this.sectorStartPlaySector || null,
       discoveriesThisRun: discoveries,
@@ -990,7 +996,9 @@ export class Game {
       const challengeRecord = recordSectorStartChallengeRun(this.runSummary, {
         selectedShipSpriteKey: this.selectedShipSpriteKey,
         shipId: ship?.id || this.selectedShipSpriteKey || null,
-        shipName: ship?.name || null
+        shipName: ship?.name || null,
+        shipTier: ship?.tier || 'standard',
+        shipPowerRating: Number.isFinite(ship?.powerRating) ? ship.powerRating : 1
       });
       this.lastSectorStartChallengeRecord = challengeRecord;
       this.runSummary = {
@@ -1006,7 +1014,9 @@ export class Game {
       const scoutRecord = recordScoutRun(this.runSummary, {
         selectedShipSpriteKey: this.selectedShipSpriteKey,
         shipId: ship?.id || this.selectedShipSpriteKey || null,
-        shipName: ship?.name || null
+        shipName: ship?.name || null,
+        shipTier: ship?.tier || 'standard',
+        shipPowerRating: Number.isFinite(ship?.powerRating) ? ship.powerRating : 1
       });
       this.lastScoutRunRecord = scoutRecord;
       this.runSummary = {

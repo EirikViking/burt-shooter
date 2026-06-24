@@ -22,7 +22,7 @@ export const RESPAWN_INVULNERABILITY_MS = 1000;
 // transparent frames. Keep runtime centering neutral so the focus ring,
 // hitbox, bullet origin, and ship art all share the same logical center.
 const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
-  { length: 25 },
+  { length: ShipData.length },
   () => Object.freeze({ x: 0, y: 0 })
 );
 const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);

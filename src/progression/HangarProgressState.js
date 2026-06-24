@@ -16,6 +16,9 @@ export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const HANGAR_PROGRESS_VERSION = 1;
 export const HANGAR_UNLOCK_TUNING_VERSION = 3;
+export const CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID = 'nova_ship_30';
+export const CREDITS_ASCENDANT_EASTER_EGG_CHANCE = 0.002;
+export const CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS = 25;
 export const SHIP_UNLOCK_HISTORY_REASON_KEYS = Object.freeze({
   available: 'shipUnlock.reason.available',
   requirements: 'shipUnlock.reason.requirements',
@@ -98,6 +101,8 @@ export function createDefaultHangarProgress() {
     runThemesSurvived: [],
     secretShipUnlockIds: [],
     creditsEasterEggFound: false,
+    creditsAscendantEasterEggAttempts: 0,
+    creditsAscendantEasterEggFound: false,
     unlockedShipIds: ['nova_ship_01'],
     shipUnlockHistory: {},
     lastNewlyUnlockedShipIds: [],
@@ -321,6 +326,8 @@ export function normalizeHangarProgress(raw = {}) {
     runThemesSurvived: Array.isArray(raw.runThemesSurvived) ? [...new Set(raw.runThemesSurvived.map(String))] : [],
     secretShipUnlockIds: Array.isArray(raw.secretShipUnlockIds) ? [...new Set(raw.secretShipUnlockIds.map(String))] : [],
     creditsEasterEggFound: Boolean(raw.creditsEasterEggFound),
+    creditsAscendantEasterEggAttempts: Math.min(CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS, floor(raw.creditsAscendantEasterEggAttempts)),
+    creditsAscendantEasterEggFound: Boolean(raw.creditsAscendantEasterEggFound),
     unlockedShipIds: [...unlocked],
     shipUnlockHistory: normalizeShipUnlockHistory(raw.shipUnlockHistory),
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
@@ -440,6 +447,14 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true,
     runThemesSurvived: [...new Set([...previous.runThemesSurvived, ...(Array.isArray(partial.runThemesSurvived) ? partial.runThemesSurvived : [])])],
     secretShipUnlockIds: [...new Set([...previous.secretShipUnlockIds, ...(Array.isArray(partial.secretShipUnlockIds) ? partial.secretShipUnlockIds : [])])],
     creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || partial.creditsEasterEggFound),
+    creditsAscendantEasterEggAttempts: Math.min(
+      CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+      Math.max(
+        previous.creditsAscendantEasterEggAttempts || 0,
+        floor(partial.creditsAscendantEasterEggAttempts, previous.creditsAscendantEasterEggAttempts || 0)
+      )
+    ),
+    creditsAscendantEasterEggFound: Boolean(previous.creditsAscendantEasterEggFound || partial.creditsAscendantEasterEggFound),
     shipUnlockHistory: {
       ...previous.shipUnlockHistory,
       ...normalizeShipUnlockHistory(partial.shipUnlockHistory)
@@ -468,8 +483,7 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true,
   return writeHangarProgressState(merged);
 }
 
-export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
-  const previous = readHangarProgressState();
+function writeSecretShipUnlock(previous, shipId, { source = 'secret', extraProgress = {} } = {}) {
   const id = String(shipId || '').trim();
   if (!id) {
     return {
@@ -496,8 +510,21 @@ export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
 
   const next = writeHangarProgressState({
     ...previous,
+    ...extraProgress,
     secretShipUnlockIds: [...new Set([...(previous.secretShipUnlockIds || []), id])],
-    creditsEasterEggFound: source === 'credits_easter_egg' ? true : previous.creditsEasterEggFound,
+    creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || extraProgress.creditsEasterEggFound || source === 'credits_easter_egg'),
+    creditsAscendantEasterEggAttempts: Math.min(
+      CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+      Math.max(
+        floor(previous.creditsAscendantEasterEggAttempts),
+        floor(extraProgress.creditsAscendantEasterEggAttempts, previous.creditsAscendantEasterEggAttempts)
+      )
+    ),
+    creditsAscendantEasterEggFound: Boolean(
+      previous.creditsAscendantEasterEggFound ||
+      extraProgress.creditsAscendantEasterEggFound ||
+      source === 'credits_ascendant_easter_egg'
+    ),
     shipUnlockHistory: nextHistory,
     lastNewlyUnlockedShipIds: alreadyUnlocked ? previous.lastNewlyUnlockedShipIds : [id]
   });
@@ -509,6 +536,84 @@ export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
     alreadyUnlocked,
     shipId: id,
     source
+  };
+}
+
+export function grantSecretShipUnlock(shipId, { source = 'secret' } = {}) {
+  return writeSecretShipUnlock(readHangarProgressState(), shipId, { source });
+}
+
+export function rollCreditsAscendantEasterEgg({ random = Math.random } = {}) {
+  const previous = readHangarProgressState();
+  const attempts = Math.min(
+    CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+    floor(previous.creditsAscendantEasterEggAttempts)
+  );
+  const alreadyUnlocked = previous.unlockedShipIds.includes(CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID);
+  const exhausted = attempts >= CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS;
+
+  if (previous.creditsAscendantEasterEggFound || exhausted || alreadyUnlocked) {
+    return {
+      previous,
+      next: previous,
+      attempted: false,
+      roll: null,
+      success: false,
+      unlocked: false,
+      alreadyUnlocked,
+      exhausted,
+      shipId: CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+      chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+      attempts,
+      attemptsRemaining: Math.max(0, CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS - attempts),
+      source: 'credits_ascendant_easter_egg'
+    };
+  }
+
+  const rawRoll = Number(typeof random === 'function' ? random() : Math.random());
+  const roll = Math.max(0, Math.min(0.999999, Number.isFinite(rawRoll) ? rawRoll : Math.random()));
+  const nextAttempts = Math.min(CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS, attempts + 1);
+  const success = roll < CREDITS_ASCENDANT_EASTER_EGG_CHANCE;
+
+  if (!success) {
+    const next = writeHangarProgressState({
+      ...previous,
+      creditsAscendantEasterEggAttempts: nextAttempts
+    });
+    return {
+      previous,
+      next,
+      attempted: true,
+      roll,
+      success: false,
+      unlocked: false,
+      alreadyUnlocked: false,
+      exhausted: nextAttempts >= CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+      shipId: CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+      chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+      attempts: nextAttempts,
+      attemptsRemaining: Math.max(0, CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS - nextAttempts),
+      source: 'credits_ascendant_easter_egg'
+    };
+  }
+
+  const result = writeSecretShipUnlock(previous, CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID, {
+    source: 'credits_ascendant_easter_egg',
+    extraProgress: {
+      creditsAscendantEasterEggAttempts: nextAttempts,
+      creditsAscendantEasterEggFound: true
+    }
+  });
+
+  return {
+    ...result,
+    attempted: true,
+    roll,
+    success: true,
+    exhausted: false,
+    chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+    attempts: nextAttempts,
+    attemptsRemaining: Math.max(0, CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS - nextAttempts)
   };
 }
 
@@ -739,6 +844,8 @@ export function getHangarProgressSummary(progress = readHangarProgressState()) {
     runClears: progress.runClears,
     secretShipUnlockIds: progress.secretShipUnlockIds.slice(),
     creditsEasterEggFound: Boolean(progress.creditsEasterEggFound),
+    creditsAscendantEasterEggAttempts: progress.creditsAscendantEasterEggAttempts,
+    creditsAscendantEasterEggFound: Boolean(progress.creditsAscendantEasterEggFound),
     unlockedShipIds: progress.unlockedShipIds.slice(),
     shipUnlockHistory: { ...progress.shipUnlockHistory },
     newlyUnlockedShipIds: progress.lastNewlyUnlockedShipIds.slice(),

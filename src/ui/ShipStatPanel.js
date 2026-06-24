@@ -40,6 +40,7 @@ export function computeShipStatRanges(ships = ShipData) {
 }
 
 export function getShipCombatRole(ship = {}, ranges = DEFAULT_RANGES) {
+  if (ship?.role) return String(ship.role).toUpperCase();
   const stats = ship.stats || {};
   const damage = normalizeRange(stats.damage, ranges.damage);
   const speed = normalizeRange(stats.speed, ranges.speed);
@@ -51,6 +52,10 @@ export function getShipCombatRole(ship = {}, ranges = DEFAULT_RANGES) {
   if (shotSpeed > 0.74 && damage > 0.55) return 'RAIL DUELIST';
   if (speed > 0.62 && cadence > 0.55) return 'TEMPO SKIRMISHER';
   return 'BALANCED ARCADE';
+}
+
+export function getShipTierLabel(ship = {}) {
+  return ship?.tier === 'ascendant' ? 'ASCENDANT TIER' : '';
 }
 
 function makeText(label, style = {}) {
@@ -118,7 +123,8 @@ export function createShipStatPanel(ship = {}, options = {}) {
   const accent = Number.isFinite(options.accent) ? options.accent : 0x00eaff;
   const ranges = options.ranges || DEFAULT_RANGES;
   const stats = ship.stats || {};
-  const role = getShipCombatRole(ship, ranges);
+  const tierLabel = getShipTierLabel(ship);
+  const role = tierLabel || getShipCombatRole(ship, ranges);
   const uiScaleMode = options.uiScaleMode;
 
   const panel = new PIXI.Container();

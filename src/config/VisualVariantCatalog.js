@@ -22,7 +22,12 @@ const SHIP_VARIANT_SETS = [
   ['Signal', 0xfff7a8, 0x2affea, 'SIG'],
   ['Nova', 0xff8cff, 0x6cf6ff, 'NVA'],
   ['Chrome', 0xdce7ff, 0xff5efc, 'CHR'],
-  ['Hazard', 0xffcc00, 0x111111, 'HZD']
+  ['Hazard', 0xffcc00, 0x111111, 'HZD'],
+  ['Aegis', 0x7fffd8, 0x2deeff, 'AGS'],
+  ['Railbreaker', 0xfff0a6, 0xff3355, 'RLB'],
+  ['Sovereign', 0xa8ff60, 0x37f5ff, 'DRN'],
+  ['Seraph', 0xf4d7ff, 0x8b5cff, 'SRP'],
+  ['Singularity', 0xffef7e, 0xff55d9, 'EIR']
 ];
 
 export const SHIP_VISUAL_VARIANTS = SHIP_VARIANT_SETS.map(([name, tint, accent, code], index) => ({
@@ -209,6 +214,55 @@ const SHIP_TRAIT_PROFILES = {
     speedMult: 0.94,
     hitboxMult: 1.1,
     spreadDelta: 0.02
+  },
+  aegis: {
+    label: 'AEGIS COMET',
+    description: 'Recovery-tuned dodge pulse with stronger main shots and slower movement.',
+    speedMult: 0.94,
+    fireRateMult: 0.94,
+    damageMult: 1.08,
+    bulletSpeedMult: 1.05,
+    hitboxMult: 0.88,
+    spreadDelta: 0.02
+  },
+  railbreaker: {
+    label: 'RAILBREAKER',
+    description: 'Heavy rail damage and piercing lines with slower movement.',
+    speedMult: 0.92,
+    fireRateMult: 1.13,
+    damageMult: 1.16,
+    bulletSpeedMult: 1.2,
+    spreadDelta: -0.04,
+    hitboxMult: 1.04
+  },
+  sovereign: {
+    label: 'DRONE SOVEREIGN',
+    description: 'Fast wing volleys and bonus shots for high-density swarm clear.',
+    speedMult: 1.02,
+    fireRateMult: 0.88,
+    damageMult: 0.98,
+    bulletSpeedMult: 1.04,
+    spreadDelta: 0.055
+  },
+  seraph: {
+    label: 'PHASE SERAPH',
+    description: 'Fast phase movement, smaller hitbox, dodge pulse, and near-miss rewards.',
+    speedMult: 1.12,
+    fireRateMult: 0.88,
+    damageMult: 0.98,
+    bulletSpeedMult: 1.1,
+    hitboxMult: 0.82,
+    spreadDelta: 0.025
+  },
+  singularity: {
+    label: 'EIRIK THE VIKING',
+    description: 'Endgame Viking overdrive pressure with stronger main shots, wider control, and a larger hitbox.',
+    speedMult: 1.03,
+    fireRateMult: 0.86,
+    damageMult: 1.18,
+    bulletSpeedMult: 1.12,
+    hitboxMult: 1.04,
+    spreadDelta: 0.055
   }
 };
 
@@ -432,6 +486,17 @@ export function buildSelectableShipVariants(baseShips) {
         description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
         loreShort: `${base.loreShort}-${variant.slug}`,
         loreLong: `${base.loreLong} This hull ships with the ${variant.name.toLowerCase()} combat profile: ${tuned.trait.description.toLowerCase()}`,
+        tier: base.tier,
+        powerClass: base.powerClass,
+        unlockLevel: base.unlockLevel,
+        powerRating: base.powerRating,
+        intendedSectorBand: base.intendedSectorBand,
+        difficulty: base.difficulty,
+        role: base.role,
+        fantasy: base.fantasy,
+        weakness: base.weakness,
+        recommendedBuildTags: Array.isArray(base.recommendedBuildTags) ? [...base.recommendedBuildTags] : [],
+        art: base.art ? { ...base.art } : null,
         stats: tuned.stats,
         weapon: tuned.weapon,
         visuals: {
@@ -461,6 +526,17 @@ export function buildSelectableShipVariants(baseShips) {
       description: `${tuned.trait.label}: ${tuned.trait.description} ${base.description}`,
       loreShort: `${base.loreShort}-${variant.slug}`,
       loreLong: `${base.loreLong} The ${variant.name.toLowerCase()} cabinet trim changes the actual flight profile: ${tuned.trait.description.toLowerCase()}`,
+      tier: base.tier,
+      powerClass: base.powerClass,
+      unlockLevel: base.unlockLevel,
+      powerRating: base.powerRating,
+      intendedSectorBand: base.intendedSectorBand,
+      difficulty: base.difficulty,
+      role: base.role,
+      fantasy: base.fantasy,
+      weakness: base.weakness,
+      recommendedBuildTags: Array.isArray(base.recommendedBuildTags) ? [...base.recommendedBuildTags] : [],
+      art: base.art ? { ...base.art } : null,
       stats: tuned.stats,
       weapon: tuned.weapon,
       visuals: {

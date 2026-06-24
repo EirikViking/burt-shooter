@@ -214,6 +214,10 @@ const lines = [
     text: 'Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging.'
   },
   {
+    file: 'mission_control_eirik_viking_unlocked_01.mp3',
+    text: 'Eirik the Viking! Eirik the Viking! Ro, ro, ro for Norge! Level fifty, storm the stars! Hei! Hei! Hei!'
+  },
+  {
     file: 'mission_control_overrun_clear_01.mp3',
     text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
   },

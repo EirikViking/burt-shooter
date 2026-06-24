@@ -43,15 +43,15 @@ function assertRequirementsUseSupportedKeys(entry) {
   }
 }
 
-assert.equal(ships.length, 25, 'ship roster should stay at 25 ships');
-assert.equal(ShipUnlockConfig.length, 25, 'ship unlock config should cover all 25 ships');
+assert.equal(ships.length, 30, 'ship roster should include 30 ships');
+assert.equal(ShipUnlockConfig.length, 30, 'ship unlock config should cover all 30 ships');
 ShipUnlockConfig.forEach(assertRequirementsUseSupportedKeys);
 
 const legacyLevels = ShipUnlockConfig.map((entry) => Number(entry.legacyLevel));
 assert.deepEqual(legacyLevels, [
   1, 2, 3, 4, 5, 7, 9, 11, 14, 17,
   20, 23, 26, 29, 32, 35, 38, 41, 44, 47,
-  50, 53, 56, 58, 60
+  50, 53, 56, 58, 60, 30, 35, 40, 45, 50
 ], 'legacy level mapping should remain stable for save migration');
 
 const fresh = createDefaultHangarProgress();
@@ -149,14 +149,14 @@ const lateCareer = unlockedFor({
   runClears: 3,
   runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine']
 });
-assert(lateCareer.length >= 20 && lateCareer.length < 25, `late-career profile should feel rich but not complete, got ${lateCareer.length}`);
+assert(lateCareer.length >= 20 && lateCareer.length < 30, `late-career profile should feel rich but not complete, got ${lateCareer.length}`);
 ['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
   assert(lateCareer.includes(shipId), `late-career profile should unlock ${shipId}`);
 });
 
 const mastery = unlockedFor({
   totalRuns: 50,
-  bestSector: 15,
+  bestSector: 50,
   bestScore: 550000,
   pilotRank: MAX_RANK_INDEX,
   totalBossesDefeated: 40,
@@ -170,7 +170,7 @@ const mastery = unlockedFor({
   clearWithLivesRemaining: 2,
   highestScoreMultiplier: 2
 });
-assert.equal(mastery.length, 25, `mastery profile should complete the hangar, got ${mastery.length}`);
+assert.equal(mastery.length, 30, `mastery profile should complete the hangar, got ${mastery.length}`);
 
 assert.equal(getRankFromPilotXp(0), 0, '0 pilot XP should be Cadet');
 assert.equal(getRankTitle(getRankFromPilotXp(0)), 'Cadet');

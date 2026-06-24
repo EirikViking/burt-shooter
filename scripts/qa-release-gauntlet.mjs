@@ -233,7 +233,7 @@ function validateProgression() {
   const expectedLegacyLevels = [
     1, 2, 3, 4, 5, 7, 9, 11, 14, 17,
     20, 23, 26, 29, 32, 35, 38, 41, 44, 47,
-    50, 53, 56, 58, 60
+    50, 53, 56, 58, 60, 30, 35, 40, 45, 50
   ];
   const actualLegacyLevels = ShipUnlockConfig.map((entry) => Number(entry.legacyLevel));
 
@@ -263,7 +263,7 @@ function validateProgression() {
     }),
     mastery: buildHangarProfile({
       totalRuns: 50,
-      bestSector: 15,
+      bestSector: 50,
       bestScore: 550000,
       pilotRank: MAX_RANK_INDEX,
       totalBossesDefeated: 40,
@@ -283,7 +283,7 @@ function validateProgression() {
     Object.entries(profiles).map(([name, progress]) => [name, summarizeProfile(progress)])
   );
 
-  if (ships.length !== 25) fail(`expected 25 selectable ships, found ${ships.length}`);
+  if (ships.length !== 30) fail(`expected 30 selectable ships, found ${ships.length}`);
   if (ShipUnlockConfig.length !== ships.length) fail(`ship unlock config should cover every ship ${ShipUnlockConfig.length}/${ships.length}`);
   if (JSON.stringify(actualLegacyLevels) !== JSON.stringify(expectedLegacyLevels)) {
     fail(`legacy ship unlock levels drifted: ${actualLegacyLevels.join(', ')}`);

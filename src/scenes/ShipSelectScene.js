@@ -19,7 +19,7 @@ import { createText } from '../utils/pixiText.js';
 import { getCurrentLayout } from '../ui/responsiveLayout.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
+import { computeShipStatRanges, createShipStatPanel, getShipCombatRole, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
@@ -1947,6 +1947,7 @@ export class ShipSelectScene {
     const accent = variant?.accent || 0x00ffff;
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
+    const tierLabel = getShipTierLabel(ship);
 
     const heroY = this.layout.isMobile ? -38 : -58;
     const heroSize = this.layout.isMobile ? 128 : 172;
@@ -2056,6 +2057,31 @@ export class ShipSelectScene {
     glow.fill({ color: accent, alpha: 0 });
     container.addChild(glow);
     container.glowEffect = glow;
+
+    if (tierLabel) {
+      const badgeWidth = this.layout.isMobile ? 156 : 190;
+      const badge = new PIXI.Container();
+      badge.position.set(-badgeWidth / 2, this.layout.isMobile ? 50 : 60);
+      const badgeBg = new PIXI.Graphics();
+      badgeBg.roundRect(0, 0, badgeWidth, 24, 6);
+      badgeBg.fill({ color: 0x13061f, alpha: 0.9 });
+      badgeBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.88 });
+      const badgeText = createText(tierLabel, {
+        fontFamily: FONT_DISPLAY,
+        fontSize: this.layout.isMobile ? 10 : 11,
+        fill: '#ffef7e',
+        align: 'center',
+        fontWeight: '900',
+        letterSpacing: 0,
+        stroke: '#000000',
+        strokeThickness: 2
+      });
+      badgeText.anchor.set(0.5);
+      badgeText.position.set(badgeWidth / 2, 12);
+      badge.addChild(badgeBg, badgeText);
+      container.addChild(badge);
+      container.tierBadge = badge;
+    }
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
@@ -2180,6 +2206,7 @@ export class ShipSelectScene {
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
+      if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
@@ -2436,6 +2463,8 @@ export class ShipSelectScene {
     if (!ship) return;
     const unlocked = isShipUnlocked(ship.spriteKey, this.unlockProgress);
     const role = getShipCombatRole(ship, this.statRanges);
+    const tierLabel = getShipTierLabel(ship);
+    const roleLine = tierLabel ? `${tierLabel} // ${role}` : role;
     const weapon = this.getWeaponSummary(ship);
     const unlockDetails = getShipUnlockProgressDetails(ship.spriteKey, this.unlockProgress);
     const progressLine = !unlocked && Array.isArray(unlockDetails.requirements) && unlockDetails.requirements.length
@@ -2487,7 +2516,7 @@ export class ShipSelectScene {
     }
 
     if (this.rightIntel) {
-      this.rightIntel.role.text = role;
+      this.rightIntel.role.text = roleLine;
       this.rightIntel.weapon.text = weapon;
       this.rightIntel.trait.text = this.getShipTraitText(ship);
       this.rightIntel.unlock.text = unlock;
@@ -2512,7 +2541,7 @@ export class ShipSelectScene {
 
     if (this.compactIntel) {
       const compactStatus = unlocked ? translateText('READY') : getShipUnlockLabel(ship.spriteKey);
-      this.compactIntel.role.text = [role, compactStatus].join(' | ');
+      this.compactIntel.role.text = [roleLine, compactStatus].join(' | ');
       this.compactIntel.weapon.text = weapon;
     }
   }
@@ -2755,7 +2784,10 @@ export class ShipSelectScene {
   getShipTraitText(ship) {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
-    return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}`;
+    const weakness = ship?.tier === 'ascendant' && ship?.weakness
+      ? `\nWEAKNESS: ${this.getShortTeaser(ship.weakness, 74)}`
+      : '';
+    return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}${weakness}`;
   }
 
   getTraitEffectTags(trait) {

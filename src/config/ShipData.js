@@ -1,7 +1,8 @@
 /**
  * Single source of truth for playable ship data.
  *
- * The public roster uses 25 original generated Nova Swarm ships. Only the
+ * The public roster uses 25 original generated Nova Swarm ship sprites plus
+ * five late-game Ascendant hulls with explicit temporary art fallbacks. Only the
  * first craft is available on a fresh profile; the rest unlock through
  * level progress so ship choice becomes part of long-term mastery.
  */
@@ -43,7 +44,72 @@ const SHIP_BLUEPRINTS = [
     ['Verdant Flow', 'verdant', 'Smooth all-round craft with forgiving rhythm.', 'flow', 53, 7.0, 122, 1.0, 11.7, 2, 0.13, 11],
     ['Hazard Ram', 'hazard', 'Dangerous burst hull with a broad body.', 'hazard', 56, 5.9, 150, 1.88, 11.2, 2, 0.19, 15],
     ['Nova Overdrive', 'nova', 'Aggressive late-roster all-round pressure machine.', 'overdrive', 58, 7.1, 112, 1.3, 12.6, 3, 0.16, 12],
-    ['Arcade Legend', 'arcade', 'Final cabinet hero craft with absurd confidence.', 'legend', 60, 7.25, 108, 1.45, 13.0, 3, 0.22, 12]
+    ['Arcade Legend', 'arcade', 'Final cabinet hero craft with absurd confidence.', 'legend', 60, 7.25, 108, 1.45, 13.0, 3, 0.22, 12],
+    ['Aegis Comet', 'aegis', 'Survive the sector wall. Shield-style recovery and mistake forgiveness at the cost of speed.', 'aegis-comet', 30, 5.9, 108, 1.65, 12.4, 3, 0.13, 12, {
+        textureIndex: 20,
+        tier: 'ascendant',
+        powerClass: 'late_game',
+        powerRating: 1.31,
+        intendedSectorBand: '30-34',
+        difficulty: 'survival bridge',
+        role: 'Survival bridge',
+        fantasy: 'A late-game shield cruiser built to survive the first impossible sector wall.',
+        weakness: 'Slower movement and less boss burst than the cannon hulls.',
+        recommendedBuildTags: ['shield', 'recovery', 'safe-entry'],
+        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-21.png', note: 'Final Aegis Comet art needed.' }
+    }],
+    ['Railbreaker', 'railbreaker', 'Crack boss gates. Heavy precision damage, weaker crowd cleanup.', 'railbreaker', 35, 5.45, 112, 2.32, 13.8, 3, 0.02, 13, {
+        textureIndex: 21,
+        tier: 'ascendant',
+        powerClass: 'late_game',
+        powerRating: 1.5,
+        intendedSectorBand: '35-39',
+        difficulty: 'boss killer',
+        role: 'Boss killer',
+        fantasy: 'A precision cannon ship that turns boss gates into damage races.',
+        weakness: 'Tight lanes and slower handling make dense swarms harder.',
+        recommendedBuildTags: ['boss', 'pierce', 'precision'],
+        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-22.png', note: 'Final Railbreaker art needed.' }
+    }],
+    ['Drone Sovereign', 'sovereign', 'Command the swarm back. Drone-style side pressure and magnet control turn density into opportunity.', 'drone-sovereign', 40, 6.15, 94, 1.45, 12.2, 4, 0.21, 12, {
+        textureIndex: 22,
+        tier: 'ascendant',
+        powerClass: 'late_game',
+        powerRating: 1.77,
+        intendedSectorBand: '40-44',
+        difficulty: 'swarm clearer',
+        role: 'Swarm clearer',
+        fantasy: 'A command ship that turns drones, magnets, and chain pressure into a moving kill zone.',
+        weakness: 'Crowd tools are excellent, but boss damage relies on staying on target.',
+        recommendedBuildTags: ['crowd-clear', 'magnet', 'side-lanes'],
+        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-23.png', note: 'Final Drone Sovereign art needed.' }
+    }],
+    ['Phase Seraph', 'seraph', 'Slip through impossible screens. Phase and near-miss tools, lower raw damage than the cannon hulls.', 'phase-seraph', 45, 7.4, 90, 1.38, 13.0, 4, 0.11, 10, {
+        textureIndex: 23,
+        tier: 'ascendant',
+        powerClass: 'late_game',
+        powerRating: 2.01,
+        intendedSectorBand: '45-49',
+        difficulty: 'bullet-hell specialist',
+        role: 'Bullet-hell specialist',
+        fantasy: 'A phase-dodge ship built for sectors where the screen stops pretending to be fair.',
+        weakness: 'Lower raw boss pressure than Railbreaker or Eirik the Viking.',
+        recommendedBuildTags: ['phase', 'near-miss', 'dodge'],
+        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-24.png', note: 'Final Phase Seraph art needed.' }
+    }],
+    ['Eirik the Viking', 'singularity', 'Level-50 endgame hull. Viking overdrive built for the sectors that hate you personally.', 'eirik-the-viking', 50, 6.85, 90, 1.42, 13.5, 4, 0.19, 13, {
+        textureIndex: 24,
+        tier: 'ascendant',
+        powerClass: 'late_game',
+        powerRating: 2.38,
+        intendedSectorBand: '50+',
+        difficulty: 'apex late-game',
+        role: 'Apex late-game ship',
+        fantasy: 'The level-50 endgame monster ship: Viking overdrive, boss pressure, and swarm control in one terrifying package.',
+        weakness: 'Large core and high output reward clean positioning; sloppy overdrive windows still lose runs.',
+        recommendedBuildTags: ['overdrive', 'boss', 'crowd-control'],
+        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-25.png', note: 'Final Eirik the Viking art needed.' }
+    }]
 ];
 
 function shipSpriteKey(index) {
@@ -66,20 +132,44 @@ export const ShipData = SHIP_BLUEPRINTS.map(([
     bulletSpeed,
     bullets,
     spread,
-    radius
+    radius,
+    metadata = {}
 ], index) => ({
     id: `nova_ship_${String(index + 1).padStart(2, '0')}`,
     spriteKey: shipSpriteKey(index),
     legacySpriteKeys: index < LEGACY_PLAYER_SHIP_KEYS.length ? [LEGACY_PLAYER_SHIP_KEYS[index]] : [],
-    textureIndex: index,
+    textureIndex: Number.isInteger(metadata.textureIndex) ? metadata.textureIndex : index,
     name: titleCase(name),
     description,
     loreShort,
-    loreLong: `${name} is a public Nova Swarm hangar build, tuned for arcade clarity and score-chase personality. Its ${loreShort} profile changes real handling, weapon cadence, and hitbox behavior instead of acting like a cosmetic skin.`,
+    loreLong: metadata.fantasy
+        ? `${metadata.fantasy} ${description}`
+        : `${name} is a public Nova Swarm hangar build, tuned for arcade clarity and score-chase personality. Its ${loreShort} profile changes real handling, weapon cadence, and hitbox behavior instead of acting like a cosmetic skin.`,
     traitSlug,
     unlock: {
         level: unlockLevel,
-        label: index === 0 ? 'Available now' : `Reach Level ${unlockLevel}`
+        label: index === 0
+            ? 'Available now'
+            : (metadata.tier === 'ascendant' ? `Unlocks at Level ${unlockLevel}` : `Reach Level ${unlockLevel}`)
+    },
+    tier: metadata.tier || 'standard',
+    powerClass: metadata.powerClass || 'normal',
+    unlockLevel,
+    powerRating: Number.isFinite(metadata.powerRating) ? metadata.powerRating : 1,
+    intendedSectorBand: metadata.intendedSectorBand || null,
+    difficulty: metadata.difficulty || null,
+    role: metadata.role || null,
+    fantasy: metadata.fantasy || null,
+    weakness: metadata.weakness || null,
+    recommendedBuildTags: Array.isArray(metadata.recommendedBuildTags) ? [...metadata.recommendedBuildTags] : [],
+    art: metadata.art ? {
+        spriteKey: shipSpriteKey(index),
+        textureIndex: Number.isInteger(metadata.textureIndex) ? metadata.textureIndex : index,
+        ...metadata.art
+    } : {
+        spriteKey: shipSpriteKey(index),
+        textureIndex: Number.isInteger(metadata.textureIndex) ? metadata.textureIndex : index,
+        temporaryFallback: false
     },
     stats: {
         speed,

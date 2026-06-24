@@ -318,7 +318,7 @@ function mergeHangarProgress(target, source, updatedAt) {
     'version', 'unlockTuningVersion', 'pilotXp', 'pilotRank', 'highestPilotRank', 'totalRuns', 'bestScore',
     'bestSector', 'bestLevel', 'bestRank', 'bestRunTimeSeconds', 'survivedSeconds', 'totalBossesDefeated',
     'totalWavesCleared', 'totalCodexDiscoveries', 'runClears', 'noHitWaves', 'noHitSectors',
-    'clearWithLivesRemaining', 'highestScoreMultiplier'
+    'clearWithLivesRemaining', 'highestScoreMultiplier', 'creditsAscendantEasterEggAttempts'
   ];
   const next = { ...a };
   for (const key of numericKeys) next[key] = maxNumber(a[key], b[key]);
@@ -332,6 +332,7 @@ function mergeHangarProgress(target, source, updatedAt) {
     next[key] = uniqueStrings(array(a[key]), array(b[key]));
   }
   next.creditsEasterEggFound = Boolean(a.creditsEasterEggFound || b.creditsEasterEggFound);
+  next.creditsAscendantEasterEggFound = Boolean(a.creditsAscendantEasterEggFound || b.creditsAscendantEasterEggFound);
   next.shipSpecificMilestones = mergeNumericObjectMax(a.shipSpecificMilestones, b.shipSpecificMilestones);
   next.rankProgress = mergeNumericObjectMax(a.rankProgress, b.rankProgress);
   next.updatedAt = updatedAt;

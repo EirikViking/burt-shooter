@@ -13,6 +13,8 @@ import {
 
 const root = process.cwd();
 const errors = [];
+const PLAYABLE_SHIP_COUNT = 30;
+const GENERATED_PLAYER_SHIP_ASSET_COUNT = 25;
 
 function fail(message) {
   errors.push(message);
@@ -24,9 +26,9 @@ function existsPublic(publicPath) {
 }
 
 const ships = buildSelectableShipVariants(ShipData);
-if (ships.length !== 25) fail(`expected 25 playable ships, found ${ships.length}`);
-if ((AssetManifest.generated?.playerShips || []).length !== 25) fail('AssetManifest.generated.playerShips must contain 25 assets');
-if ((AssetManifest.sprites?.playerRankShips || []).length !== 25) fail('AssetManifest.sprites.playerRankShips must contain 25 generated playable assets');
+if (ships.length !== PLAYABLE_SHIP_COUNT) fail(`expected ${PLAYABLE_SHIP_COUNT} playable ships, found ${ships.length}`);
+if ((AssetManifest.generated?.playerShips || []).length !== GENERATED_PLAYER_SHIP_ASSET_COUNT) fail(`AssetManifest.generated.playerShips must contain ${GENERATED_PLAYER_SHIP_ASSET_COUNT} real generated assets`);
+if ((AssetManifest.sprites?.playerRankShips || []).length !== GENERATED_PLAYER_SHIP_ASSET_COUNT) fail(`AssetManifest.sprites.playerRankShips must contain ${GENERATED_PLAYER_SHIP_ASSET_COUNT} real generated playable assets`);
 
 for (const ship of ships) {
   const asset = AssetManifest.sprites.playerRankShips[ship.textureIndex];

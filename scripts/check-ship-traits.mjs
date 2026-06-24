@@ -33,12 +33,12 @@ function signature(ship) {
   ].join('|');
 }
 
-if (ShipData.length !== 25) {
-  fail(`expected 25 playable generated ships, found ${ShipData.length}`);
+if (ShipData.length !== 30) {
+  fail(`expected 30 playable ships, found ${ShipData.length}`);
 }
 
-if (ships.length !== 25) {
-  fail(`expected exactly 25 selectable ships, found ${ships.length}`);
+if (ships.length !== 30) {
+  fail(`expected exactly 30 selectable ships, found ${ships.length}`);
 }
 
 for (const base of ShipData) {
@@ -92,8 +92,8 @@ if (unlockedAtStart.length !== 1) {
 }
 
 const totalSignatures = new Set(ships.map(signature)).size;
-if (totalSignatures < 20) {
-  fail(`expected at least 20 distinct ship combat signatures, found ${totalSignatures}`);
+if (totalSignatures < 25) {
+  fail(`expected at least 25 distinct ship combat signatures, found ${totalSignatures}`);
 }
 
 if (failures.length) {

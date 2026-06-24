@@ -7944,11 +7944,6 @@ export class PlayScene {
         this.enqueueToast(message, toastOptions);
       }
     };
-    const queueAudio = (sfx, audioOptions) => {
-      if (!this.queueCollisionSideEffect(sideEffects, 'audio', { sfx, options: audioOptions })) {
-        AudioManager.playSfx(sfx, audioOptions);
-      }
-    };
     const queuePlayerExplosion = (x, y, color, intensity) => {
       if (!this.queueCollisionSideEffect(sideEffects, 'playerExplosions', { x, y, color, intensity })) {
         this.particleManager?.createExplosion?.(x, y, color, intensity);
@@ -8004,7 +7999,6 @@ export class PlayScene {
           type: 'milestone',
           duration: 1800
         });
-        queueAudio('combo_breakout', { force: true, volume: 0.95 });
         queuePlayerExplosion(this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
         queueScreenShake(6, 15);
       }
@@ -8019,7 +8013,6 @@ export class PlayScene {
     if (this.comboMultiplier !== prevMultiplier) {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       queueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
-      queueAudio('combo_breakout', { force: true, volume: 0.82 });
       queuePlayerExplosion(this.player?.x, this.player?.y, 0x00ffff);
     }
 
@@ -8029,7 +8022,6 @@ export class PlayScene {
       if (this.comboCount % 20 === 0) {
         queueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
       }
-      queueAudio('combo_tick', { force: false, volume: 0.16, minIntervalMs: 900 });
     }
 
     const clutchChance = 0;

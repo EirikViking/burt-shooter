@@ -396,6 +396,7 @@ const sourceText = Object.freeze({
   'Cabinet seal warming. {count} more coin reports required.': 'Cabinet 印が予熱中。コイン報告があと {count} 件必要です。',
   'Cabinet Ghost waiver filed: Quasar Fan is ready in the hangar.': 'Cabinet 幽霊の許可を提出: Quasar Fan がハンガーで待機中です。',
   'Cabinet Ghost already signed this waiver. Quasar Fan remains suspiciously ready.': 'Cabinet 幽霊はすでに許可済み。Quasar Fan は怪しいほど準備万端です。',
+  'Ascendant signal answered: Eirik the Viking is ready in the hangar.': 'Ascendant 信号に応答: Eirik the Viking がハンガーで待機中です。',
   'Cabinet Log': 'Cabinet ログ',
   'Cabinet Logs': 'Cabinet ログ',
   'CABINET LOG': 'CABINET ログ',

@@ -12,7 +12,7 @@ import {
 } from '../config/ShipMetadata.js';
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { createText } from '../utils/pixiText.js';
-import { createShipStatPanel } from '../ui/ShipStatPanel.js';
+import { createShipStatPanel, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
@@ -192,6 +192,31 @@ export class ShipDetailsScene {
         statPanel.position.set(panelWidth / 2, yOffset);
         container.addChild(statPanel);
         yOffset += statPanel.height + 18;
+
+        const tierLabel = getShipTierLabel(this.ship);
+        if (tierLabel || this.ship.role || this.ship.weakness) {
+            const metaLine = [
+                tierLabel,
+                this.ship.role ? String(this.ship.role).toUpperCase() : '',
+                this.ship.weakness ? `WEAKNESS: ${this.ship.weakness}` : ''
+            ].filter(Boolean).join(' // ');
+            const metaText = createText(metaLine, {
+                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+                fontSize: isMobile ? 11 : 13,
+                fill: tierLabel ? '#ffef7e' : '#d8fbff',
+                align: 'center',
+                wordWrap: true,
+                wordWrapWidth: panelWidth - 100,
+                lineHeight: isMobile ? 14 : 16,
+                stroke: '#000000',
+                strokeThickness: 2,
+                fontWeight: '800'
+            });
+            metaText.anchor.set(0.5, 0);
+            metaText.position.set(panelWidth / 2, yOffset);
+            container.addChild(metaText);
+            yOffset += metaText.height + 12;
+        }
 
         const explanation = getTraitExplanation(trait, this.ship);
         const traitTitleText = 'TRAIT: ' + explanation.label;

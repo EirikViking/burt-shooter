@@ -266,6 +266,7 @@ try {
   await tapButton(page, 0);
   const creditsOpen = await waitForState(page, (state) => state.overlays?.credits && state.settingsOverlay?.credits, 'credits opened from settings by controller');
   checkpoint('menu-settings-credits-open', creditsOpen, { screenshot: await screenshot(page, '03-menu-settings-credits-open') });
+  await page.evaluate(() => { window.__novaCreditsAscendantEasterEggRandom = () => 1; });
   await tapButton(page, 12);
   await tapButton(page, 0);
   await tapButton(page, 0);
