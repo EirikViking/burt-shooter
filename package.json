@@ -192,6 +192,7 @@
     "check:steam-trailer-opening": "node scripts/check-steam-trailer-opening.mjs",
     "check:gameplay-cursor": "node scripts/check-gameplay-cursor.mjs",
     "check:gameplay-performance-analysis": "node scripts/check-gameplay-performance-analysis.mjs",
+    "check:plasma-lance-smoothness": "node scripts/check-plasma-lance-smoothness.mjs",
     "check:mayhem-sector-frame-pacing": "node scripts/check-mayhem-sector-frame-pacing.mjs",
     "check:mayhem-performance-diagnostics": "node scripts/check-mayhem-performance-diagnostics.mjs",
     "check:mayhem-collision-hotpath-stress": "node scripts/check-mayhem-collision-hotpath-stress.mjs",

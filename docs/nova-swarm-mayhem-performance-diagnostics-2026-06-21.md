@@ -30,6 +30,7 @@ The report includes:
 - slow-frame samples and worst slow frames
 - collision counters, collision subsection timings, and queued side-effect counts
 - side-effect timings for score popups, particles/death feedback, hit audio, and powerup drops
+- raw and clamped ticker delta, simulation steps per render, interpolation alpha, time scale, Plasma Lance state, hit-stop/freeze state, per-frame sound effects, and per-frame localStorage writes
 - a browser JS heap signal when Chromium exposes it
 - native write result/path
 
@@ -102,6 +103,8 @@ No hotkey sequence is required for the main playability test.
 - `Ctrl+Shift+F8` reveals the profiler overlay without disabling logging
 - diagnostic reports are cached locally and can be written through the Electron bridge
 - `noLeaderboardTargets` prevents target priming when set before Mayhem launch
+
+`npm run check:plasma-lance-smoothness` runs a focused 60-second dev-only Plasma Lance chaos probe with diagnostics enabled. It samples frame pacing, duplicate gameplay-state streaks, Plasma Lance hit pressure, collision candidate counts, long tasks, and active-gameplay localStorage writes.
 
 ## Recommendation
 

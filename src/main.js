@@ -398,6 +398,23 @@ function updatePerfStats(app, game, delta, clampedDelta) {
   }
 }
 
+function publishTickerFrameTiming(game, rawDelta, clampedDelta, source = 'pixi_ticker') {
+  if (!game) return;
+  const raw = Number.isFinite(rawDelta) ? rawDelta : 0;
+  const clamped = Number.isFinite(clampedDelta) ? clampedDelta : raw;
+  game.lastTickerFrameTiming = {
+    source,
+    rawDelta: raw,
+    clampedDelta: clamped,
+    rawDeltaMs: raw * (1000 / 60),
+    clampedDeltaMs: clamped * (1000 / 60),
+    simulationStepsPerRender: 1,
+    interpolationAlpha: 1,
+    timeScale: 1,
+    capturedAt: typeof performance !== 'undefined' ? performance.now() : Date.now()
+  };
+}
+
 function getStableSceneName(game) {
   if (!game?.currentScene) {
     return game?.currentSceneName || 'boot';
@@ -1568,6 +1585,7 @@ async function init() {
   window.advanceTime = (ms = 1000 / 60) => {
     const steps = Math.max(1, Math.min(600, Math.round(Number(ms) / (1000 / 60))));
     for (let i = 0; i < steps; i++) {
+      publishTickerFrameTiming(game, 1, 1, 'advanceTime');
       game.update(1);
       updatePerfStats(app, game, 1, 1);
     }
@@ -1593,6 +1611,7 @@ async function init() {
     app.ticker.add((delta) => {
       const rawDelta = delta.deltaTime;
       const clampedDelta = Math.min(rawDelta, MAX_DELTA);
+      publishTickerFrameTiming(game, rawDelta, clampedDelta);
       game.update(clampedDelta);
       updatePerfStats(app, game, rawDelta, clampedDelta);
     });

@@ -337,10 +337,15 @@ class AudioController {
 
   playSfx(eventName, options = {}) {
     if (!this.enabled) return false;
+    const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
+    if (frameCounters) frameCounters.sfxAttempts = (Number(frameCounters.sfxAttempts) || 0) + 1;
 
     // Filter "blipp blopp" -> 'computerNoise' usage
     // If eventName is specifically one we hate, mapped here
-    if (eventName === 'bad_sound') return;
+    if (eventName === 'bad_sound') {
+      if (frameCounters) frameCounters.sfxSuppressed = (Number(frameCounters.sfxSuppressed) || 0) + 1;
+      return false;
+    }
 
     const originalName = eventName;
     if (this.sfxDenylist && this.sfxDenylist.has(eventName)) {
@@ -370,6 +375,7 @@ class AudioController {
     const now = Date.now();
     const minIntervalMs = this.readMixNumber(options.minIntervalMs, mix.minIntervalMs ?? 50);
     if (!options.force && this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
+      if (frameCounters) frameCounters.sfxSuppressed = (Number(frameCounters.sfxSuppressed) || 0) + 1;
       return false;
     }
     this.sfxCooldowns[eventName] = now + minIntervalMs;
@@ -389,6 +395,10 @@ class AudioController {
     this.lastSfxPlayedAt[eventName] = now;
     this.lastSfxEvent = eventName;
     this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
+    if (frameCounters) {
+      frameCounters.sfxPlayed = (Number(frameCounters.sfxPlayed) || 0) + 1;
+      frameCounters.lastSfxEvent = eventName;
+    }
     return true;
   }
 

@@ -1,9 +1,12 @@
 const STORAGE_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.v1';
 const STORAGE_REPORT_KEY = 'novaSwarm.mayhemPerformanceDiagnostics.latestReport.v1';
 const GLOBAL_KEY = '__novaMayhemPerformanceDiagnostics';
+const FRAME_COUNTER_KEY = '__novaMayhemFrameCounters';
+const STORAGE_PATCH_KEY = '__novaMayhemStorageProbe';
 const AUTO_DIAGNOSTICS_ENABLED = false;
 const SLOW_FRAME_MS = 20;
 const IMPORTANT_SLOW_FRAME_MS = 33;
+const SEVERE_SLOW_FRAME_MS = 50;
 const AUTO_WRITE_INTERVAL_MS = 5000;
 const PERIODIC_WRITE_INTERVAL_MS = 10000;
 
@@ -145,27 +148,169 @@ function percentile(values, pct) {
   return sorted[index];
 }
 
+function installStorageProbe() {
+  const win = getWindow();
+  const StorageCtor = win?.Storage;
+  if (!StorageCtor?.prototype?.setItem || win[STORAGE_PATCH_KEY]) return;
+  const originalSetItem = StorageCtor.prototype.setItem;
+  win[STORAGE_PATCH_KEY] = { originalSetItem };
+  StorageCtor.prototype.setItem = function novaMayhemStorageProbe(key, value) {
+    const counters = win[FRAME_COUNTER_KEY];
+    const startedAt = counters ? performance.now() : 0;
+    try {
+      return originalSetItem.call(this, key, value);
+    } finally {
+      if (counters) {
+        const textKey = String(key ?? 'unknown');
+        counters.localStorageWrites = (Number(counters.localStorageWrites) || 0) + 1;
+        counters.localStorageWriteMs = (Number(counters.localStorageWriteMs) || 0) + (performance.now() - startedAt);
+        counters.localStorageWriteBytes = (Number(counters.localStorageWriteBytes) || 0) + String(value ?? '').length;
+        counters.localStorageKeys = counters.localStorageKeys || {};
+        counters.localStorageKeys[textKey] = (Number(counters.localStorageKeys[textKey]) || 0) + 1;
+      }
+    }
+  };
+}
+
+function startFrameCounters() {
+  const win = getWindow();
+  if (!win) return null;
+  const counters = {
+    sfxAttempts: 0,
+    sfxPlayed: 0,
+    sfxSuppressed: 0,
+    localStorageWrites: 0,
+    localStorageWriteMs: 0,
+    localStorageWriteBytes: 0,
+    localStorageKeys: {},
+    lastSfxEvent: null
+  };
+  win[FRAME_COUNTER_KEY] = counters;
+  return counters;
+}
+
+function consumeFrameCounters() {
+  const win = getWindow();
+  const counters = win?.[FRAME_COUNTER_KEY] || null;
+  if (win && counters) delete win[FRAME_COUNTER_KEY];
+  if (!counters) {
+    return {
+      sfxAttempts: 0,
+      sfxPlayed: 0,
+      sfxSuppressed: 0,
+      localStorageWrites: 0,
+      localStorageWriteMs: 0,
+      localStorageWriteBytes: 0,
+      localStorageKeys: {},
+      lastSfxEvent: null
+    };
+  }
+  return {
+    sfxAttempts: Math.max(0, Math.floor(Number(counters.sfxAttempts) || 0)),
+    sfxPlayed: Math.max(0, Math.floor(Number(counters.sfxPlayed) || 0)),
+    sfxSuppressed: Math.max(0, Math.floor(Number(counters.sfxSuppressed) || 0)),
+    localStorageWrites: Math.max(0, Math.floor(Number(counters.localStorageWrites) || 0)),
+    localStorageWriteMs: roundMs(counters.localStorageWriteMs),
+    localStorageWriteBytes: Math.max(0, Math.floor(Number(counters.localStorageWriteBytes) || 0)),
+    localStorageKeys: { ...(counters.localStorageKeys || {}) },
+    lastSfxEvent: counters.lastSfxEvent || null
+  };
+}
+
+function makeFrameCounterTotals() {
+  return {
+    sfxAttempts: 0,
+    sfxPlayed: 0,
+    sfxSuppressed: 0,
+    localStorageWrites: 0,
+    localStorageWriteMs: 0,
+    localStorageWriteBytes: 0,
+    localStorageKeys: {},
+    lastSfxEvent: null
+  };
+}
+
+function addFrameCounterTotals(totals, counters) {
+  if (!totals || !counters) return;
+  totals.sfxAttempts += Number(counters.sfxAttempts) || 0;
+  totals.sfxPlayed += Number(counters.sfxPlayed) || 0;
+  totals.sfxSuppressed += Number(counters.sfxSuppressed) || 0;
+  totals.localStorageWrites += Number(counters.localStorageWrites) || 0;
+  totals.localStorageWriteMs = roundMs((Number(totals.localStorageWriteMs) || 0) + (Number(counters.localStorageWriteMs) || 0));
+  totals.localStorageWriteBytes += Number(counters.localStorageWriteBytes) || 0;
+  if (counters.lastSfxEvent) totals.lastSfxEvent = counters.lastSfxEvent;
+  for (const [key, count] of Object.entries(counters.localStorageKeys || {})) {
+    totals.localStorageKeys[key] = (Number(totals.localStorageKeys[key]) || 0) + (Number(count) || 0);
+  }
+}
+
+function getFrameTiming(scene, delta) {
+  const timing = scene?.game?.lastTickerFrameTiming || {};
+  const fallbackDelta = Number.isFinite(delta) ? delta : 0;
+  const rawDelta = Number.isFinite(timing.rawDelta) ? timing.rawDelta : fallbackDelta;
+  const clampedDelta = Number.isFinite(timing.clampedDelta) ? timing.clampedDelta : fallbackDelta;
+  return {
+    source: timing.source || 'unknown',
+    rawDelta: roundMs(rawDelta),
+    clampedDelta: roundMs(clampedDelta),
+    rawDeltaMs: roundMs(Number.isFinite(timing.rawDeltaMs) ? timing.rawDeltaMs : rawDelta * (1000 / 60)),
+    clampedDeltaMs: roundMs(Number.isFinite(timing.clampedDeltaMs) ? timing.clampedDeltaMs : clampedDelta * (1000 / 60)),
+    simulationStepsPerRender: Math.max(0, Math.floor(Number(timing.simulationStepsPerRender) || 1)),
+    interpolationAlpha: Number.isFinite(timing.interpolationAlpha) ? roundMs(timing.interpolationAlpha) : null,
+    timeScale: Number.isFinite(timing.timeScale) ? roundMs(timing.timeScale) : 1
+  };
+}
+
+function getCombatTiming(scene) {
+  const freezeTimerMs = Math.max(0, Number(scene?.freezeTimerMs) || 0);
+  const screenShakeFreezeFrames = Math.max(0, Number(scene?.screenShake?.freezeFrames) || 0);
+  const activePowerup = scene?.player?.activePowerup;
+  const plasmaLanceActive = activePowerup?.type === 'plasma_lance';
+  return {
+    plasmaLanceActive,
+    plasmaLanceRemainingMs: plasmaLanceActive
+      ? Math.max(0, Math.round(scene?.player?.getActivePowerupRemainingMs?.() || activePowerup?.remainingMs || 0))
+      : 0,
+    hitStopActive: freezeTimerMs > 0,
+    hitStopRequestedMs: Math.max(0, Number(scene?.lastHitStopRequestMs) || 0),
+    hitStopRemainingMs: roundMs(freezeTimerMs),
+    screenShakeFreezeFrames: roundMs(screenShakeFreezeFrames),
+    timeScale: freezeTimerMs > 0 ? 0 : 1
+  };
+}
+
 function getCounts(scene) {
   const bulletManager = scene?.bulletManager;
   const enemyManager = scene?.enemyManager;
+  const playerBullets = bulletManager?.playerBullets?.length || 0;
+  const enemyBullets = bulletManager?.enemyBullets?.length || 0;
+  const pendingEnemyBullets = bulletManager?.pendingEnemyBullets?.length || 0;
+  const particles = scene?.particleManager?.particles?.length || 0;
+  const scorePopups = scene?.scorePopupManager?.popups?.length || 0;
+  const pendingScorePopups = scene?.scorePopupManager?.pendingPopups?.length || 0;
   return {
     sector: Math.max(1, Math.floor(Number(scene?.game?.level) || 1)),
     score: Math.max(0, Math.floor(Number(scene?.game?.score) || 0)),
     lives: Math.max(0, Math.floor(Number(scene?.game?.lives) || 0)),
     runMode: scene?.game?.runMode || 'unknown',
     enemies: enemyManager?.enemies?.length || 0,
+    enemyCount: enemyManager?.enemies?.length || 0,
     bossActive: Boolean(enemyManager?.boss?.active),
-    playerBullets: bulletManager?.playerBullets?.length || 0,
-    enemyBullets: bulletManager?.enemyBullets?.length || 0,
-    pendingEnemyBullets: bulletManager?.pendingEnemyBullets?.length || 0,
-    particles: scene?.particleManager?.particles?.length || 0,
-    scorePopups: scene?.scorePopupManager?.popups?.length || 0,
-    pendingScorePopups: scene?.scorePopupManager?.pendingPopups?.length || 0,
+    playerBullets,
+    enemyBullets,
+    pendingEnemyBullets,
+    projectileCount: playerBullets + enemyBullets + pendingEnemyBullets,
+    particles,
+    particleCount: particles,
+    scorePopups,
+    pendingScorePopups,
+    combatTextCount: scorePopups + pendingScorePopups,
     bossHazards: scene?.bossHazards?.length || 0,
     ambientBonusDrones: scene?.ambientBonusDrones?.length || 0,
     deferredThreatDefeats: scene?.deferredThreatDefeats?.length || 0,
     deferredThreatDefeatStats: scene?.deferredThreatDefeatStats || null,
-    collision: scene?.collisionDiagnosticStats || null
+    collision: scene?.collisionDiagnosticStats || null,
+    timing: getCombatTiming(scene)
   };
 }
 
@@ -198,6 +343,12 @@ class MayhemPerformanceDiagnostics {
     this.sessionId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`;
     this.samples = [];
     this.slowFrames = [];
+    this.longFrameBuckets = {
+      over20Ms: 0,
+      over33Ms: 0,
+      over50Ms: 0
+    };
+    this.frameCounterTotals = makeFrameCounterTotals();
     this.sections = new Map();
     this.frameStartedAt = 0;
     this.previousFrameStartedAt = 0;
@@ -218,6 +369,7 @@ class MayhemPerformanceDiagnostics {
     this.installLifecycleFlush();
     this.installPeriodicWrites();
     this.publishGlobal();
+    if (this.enabled) installStorageProbe();
     if (this.enabled && this.options.showOverlay) this.ensureOverlay();
   }
 
@@ -289,6 +441,7 @@ class MayhemPerformanceDiagnostics {
     this.options = normalizeOptions({ ...this.options, ...options });
     if (AUTO_DIAGNOSTICS_ENABLED) this.options.enabled = true;
     this.enabled = Boolean(this.options.enabled);
+    if (this.enabled) installStorageProbe();
     safeWriteStorage(this.options);
     if (this.enabled && this.options.showOverlay) {
       this.ensureOverlay();
@@ -302,6 +455,12 @@ class MayhemPerformanceDiagnostics {
   resetSamples() {
     this.samples = [];
     this.slowFrames = [];
+    this.longFrameBuckets = {
+      over20Ms: 0,
+      over33Ms: 0,
+      over50Ms: 0
+    };
+    this.frameCounterTotals = makeFrameCounterTotals();
     this.sections.clear();
     this.pendingEvents = [];
     this.eventLog = [];
@@ -316,12 +475,24 @@ class MayhemPerformanceDiagnostics {
 
   beginFrame(delta, scene = this.scene) {
     if (!this.enabled) return;
+    installStorageProbe();
+    startFrameCounters();
     const previousStartedAt = this.previousFrameStartedAt;
     this.frameStartedAt = performance.now();
     this.previousFrameStartedAt = this.frameStartedAt;
     this.lastCounts = getCounts(scene);
+    const frameTiming = getFrameTiming(scene, delta);
     this.currentFrame = {
       delta: roundMs(delta),
+      rawDelta: frameTiming.rawDelta,
+      clampedDelta: frameTiming.clampedDelta,
+      rawDeltaMs: frameTiming.rawDeltaMs,
+      clampedDeltaMs: frameTiming.clampedDeltaMs,
+      simulationStepsPerRender: frameTiming.simulationStepsPerRender,
+      interpolationAlpha: frameTiming.interpolationAlpha,
+      timeScale: frameTiming.timeScale,
+      frameTiming,
+      combat: getCombatTiming(scene),
       startedAt: this.frameStartedAt,
       preFrameGapMs: previousStartedAt > 0 ? roundMs(this.frameStartedAt - previousStartedAt) : 0,
       counts: this.lastCounts,
@@ -373,15 +544,38 @@ class MayhemPerformanceDiagnostics {
   endFrame(scene = this.scene) {
     if (!this.enabled || !this.currentFrame) return;
     const elapsed = performance.now() - this.frameStartedAt;
+    const frameCounters = consumeFrameCounters();
+    addFrameCounterTotals(this.frameCounterTotals, frameCounters);
+    const counts = getCounts(scene);
+    const frameTiming = getFrameTiming(scene, this.currentFrame.delta);
+    const combat = getCombatTiming(scene);
     const sample = {
       ...this.currentFrame,
       frameMs: roundMs(elapsed),
-      counts: getCounts(scene),
+      rawDelta: frameTiming.rawDelta,
+      clampedDelta: frameTiming.clampedDelta,
+      rawDeltaMs: frameTiming.rawDeltaMs,
+      clampedDeltaMs: frameTiming.clampedDeltaMs,
+      simulationStepsPerRender: frameTiming.simulationStepsPerRender,
+      interpolationAlpha: frameTiming.interpolationAlpha,
+      timeScale: frameTiming.timeScale,
+      frameTiming,
+      combat,
+      frameCounters,
+      counts: {
+        ...counts,
+        timing: combat
+      },
       memory: getMemorySignal(),
       topSections: getFrameTopSections(this.currentFrame.sections)
     };
     this.samples.push(sample);
+    this.lastCounts = sample.counts;
     if (this.samples.length > 900) this.samples.shift();
+    const frameCost = Math.max(elapsed, Number(sample.preFrameGapMs) || 0);
+    if (frameCost >= SLOW_FRAME_MS) this.longFrameBuckets.over20Ms += 1;
+    if (frameCost >= IMPORTANT_SLOW_FRAME_MS) this.longFrameBuckets.over33Ms += 1;
+    if (frameCost >= SEVERE_SLOW_FRAME_MS) this.longFrameBuckets.over50Ms += 1;
     if (elapsed >= SLOW_FRAME_MS || sample.preFrameGapMs >= SLOW_FRAME_MS) {
       this.slowFrames.push(sample);
       if (this.slowFrames.length > 120) this.slowFrames.shift();
@@ -476,6 +670,7 @@ class MayhemPerformanceDiagnostics {
     const overlay = this.ensureOverlay();
     if (!overlay) return;
     const report = this.getReport();
+    const latest = report.recentSamples[report.recentSamples.length - 1] || {};
     const top = report.topSections.slice(0, 4)
       .map((section) => `${section.label}:${section.lastMs.toFixed(2)}ms`)
       .join(' ');
@@ -487,8 +682,10 @@ class MayhemPerformanceDiagnostics {
     overlay.textContent = [
       'NOVA PERF DIAG  Ctrl+Shift+F8',
       `frame avg/p95/max ${report.frame.avgMs.toFixed(2)} / ${report.frame.p95Ms.toFixed(2)} / ${report.frame.maxMs.toFixed(2)} ms`,
+      `delta raw/clamp ${Number(latest.rawDeltaMs || 0).toFixed(2)} / ${Number(latest.clampedDeltaMs || 0).toFixed(2)} ms  long ${report.longFrames.over20Ms}/${report.longFrames.over33Ms}/${report.longFrames.over50Ms}`,
       `sector ${counts.sector} ${counts.runMode}  enemies ${counts.enemies}  bullets ${counts.playerBullets}/${counts.enemyBullets}`,
-      `particles ${counts.particles}  popups ${counts.scorePopups}  hazards ${counts.bossHazards}`,
+      `particles ${counts.particles}  popups ${counts.scorePopups}  plasma ${counts.timing?.plasmaLanceActive ? 'on' : 'off'}  hitstop ${counts.timing?.hitStopRemainingMs || 0}ms`,
+      `sfx ${latest.frameCounters?.sfxPlayed || 0}/${latest.frameCounters?.sfxAttempts || 0}  storage ${latest.frameCounters?.localStorageWrites || 0}`,
       `top ${top || 'collecting...'}`,
       `toggles ${toggles}`,
       `log ${this.lastWriteResult?.latestPath || this.lastWriteResult?.reason || 'pending'}`
@@ -525,6 +722,11 @@ class MayhemPerformanceDiagnostics {
         preFrameGapMaxMs: roundMs(preFrameGapValues.length ? Math.max(...preFrameGapValues) : 0)
       },
       lastCounts: this.lastCounts,
+      longFrames: { ...this.longFrameBuckets },
+      frameCounterTotals: {
+        ...this.frameCounterTotals,
+        localStorageKeys: { ...this.frameCounterTotals.localStorageKeys }
+      },
       lastWriteResult: this.lastWriteResult,
       topSections,
       recentEvents: this.eventLog.slice(-60),

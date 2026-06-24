@@ -93,6 +93,9 @@ const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const SECTOR_ARRIVAL_STINGER_MS = 2400;
+const COLLISION_GRID_CELL_SIZE = 96;
+const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
+const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 
 export class PlayScene {
   constructor(game) {
@@ -330,9 +333,12 @@ export class PlayScene {
     this.seasonLevel = 0;
     this.seasonUnlocks = {};
     this.lastScoreSeen = 0;
+    this.seasonProgressDirty = false;
+    this.lastSeasonProgressWriteAt = 0;
     this.lastBossDefeatedLevel = 0;
     this.postBossLevelIntroPending = false;
     this.freezeTimerMs = 0;
+    this.lastHitStopRequestMs = 0;
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
@@ -503,6 +509,7 @@ export class PlayScene {
     this.bulletManager = new BulletManager(this.gameContainer, capHandler);
     this.bulletManager.setScreenBounds(width, height);
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
+    this.particleManager.prewarm?.(384);
     this.powerupManager = new PowerupManager(this.gameContainer, this.game);
     this.screenShake = new ScreenShake(this.gameContainer);
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
@@ -1871,8 +1878,29 @@ export class PlayScene {
       measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
       measure('collisions', () => this.checkCollisions());
-      measure('deferred_progression.score_progress', () => this.flushDeferredHotPathProgress());
-      measure('deferred_progression.threat_defeats', () => this.processDeferredThreatDefeats(40));
+      measure('deferred_progression.score_progress', () => {
+        if (this.shouldDeferActiveGameplayPersistence()) {
+          return {
+            progressFlushed: false,
+            liveRankRefreshed: false,
+            scoreCuesRefreshed: false,
+            deferred: true
+          };
+        }
+        return this.flushDeferredHotPathProgress();
+      });
+      measure('deferred_progression.threat_defeats', () => {
+        if (this.shouldDeferActiveGameplayPersistence()) {
+          return {
+            flushed: 0,
+            pending: this.deferredThreatDefeats?.length || 0,
+            firstDefeats: 0,
+            deferred: true
+          };
+        }
+        return this.processDeferredThreatDefeats(40);
+      });
+      measure('deferred_progression.season_progress', () => this.flushDeferredSeasonProgress());
       measure('deferred_visual_feedback.collision_ui', () => this.flushDeferredCollisionUiFeedback());
       measure('overrun_celebrations', () => this.updateOverrunClearCelebrations());
 
@@ -2591,15 +2619,18 @@ export class PlayScene {
     measured('collision.side_effects.powerups', () => {
       if (skipAllSideEffects) {
         stats.powerupSpawnQueued = (stats.powerupSpawnQueued || 0) + queue.powerupSpawns.length;
+        stats.powerupSpawnDropped = (stats.powerupSpawnDropped || 0) + queue.powerupSpawns.length;
         return;
       }
       let spawned = 0;
-      for (const entry of queue.powerupSpawns) {
+      const maxPowerupSpawns = COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET;
+      for (const entry of queue.powerupSpawns.slice(0, maxPowerupSpawns)) {
         this.powerupManager?.spawn?.(entry.x, entry.y);
         spawned += 1;
       }
       stats.powerupSpawnQueued = (stats.powerupSpawnQueued || 0) + queue.powerupSpawns.length;
       stats.powerupSpawned = (stats.powerupSpawned || 0) + spawned;
+      stats.powerupSpawnDropped = (stats.powerupSpawnDropped || 0) + Math.max(0, queue.powerupSpawns.length - spawned);
     });
 
     measured('collision.side_effects.ui_feedback', () => {
@@ -2640,12 +2671,17 @@ export class PlayScene {
       bombApexChecks: 0,
       bombApexDetonations: 0,
       playerBulletEnemyPairs: 0,
+      playerBulletEnemyCandidateCells: 0,
+      playerBulletEnemyCandidateChecks: 0,
       playerBulletEnemyHits: 0,
       playerBulletEnemyHitEvents: 0,
       playerBulletEnemyKills: 0,
       playerBulletEnemyDamageOnly: 0,
       playerBulletEnemyProxies: 0,
       enemyCollisionProxies: 0,
+      plasmaLanceActive: this.player?.activePowerup?.type === 'plasma_lance',
+      plasmaLanceHitEvents: 0,
+      plasmaLanceKills: 0,
       playerBulletHijackerPairs: 0,
       playerBulletHijackerHits: 0,
       projectileDefensePairs: 0,
@@ -2675,7 +2711,8 @@ export class PlayScene {
       audioQueued: 0,
       audioPlayed: 0,
       powerupSpawnQueued: 0,
-      powerupSpawned: 0
+      powerupSpawned: 0,
+      powerupSpawnDropped: 0
     };
     this.collisionDiagnosticStats = collisionStats;
 
@@ -2702,40 +2739,103 @@ export class PlayScene {
     let bulletProxies = [];
     let enemyProxies = [];
     let hitEvents = [];
+    let enemyGrid = null;
 
     measure('collision.player_bullets_enemies.build_proxies', () => {
-      bulletProxies = this.bulletManager.playerBullets
-        .filter((bullet) => bullet?.active)
-        .map((bullet) => ({
+      for (const bullet of this.bulletManager.playerBullets) {
+        if (!bullet?.active) continue;
+        bulletProxies.push({
           ref: bullet,
           x: Number(bullet.x) || 0,
           y: Number(bullet.y) || 0,
           radius: this.getCollisionRadius(bullet),
           damage: Math.max(0, Number(bullet.damage) || 0),
           piercing: Boolean(bullet.piercing),
-          isBomb: Boolean(bullet.isBomb)
-        }));
-      enemyProxies = this.enemyManager.enemies
-        .filter((enemy) => enemy?.active)
-        .map((enemy) => ({
+          isBomb: Boolean(bullet.isBomb),
+          isPlasmaLance: Boolean(bullet.isPlasmaLance || bullet.powerupType === 'plasma_lance')
+        });
+      }
+      let enemyIndex = 0;
+      for (const enemy of this.enemyManager.enemies) {
+        if (!enemy?.active) {
+          enemyIndex += 1;
+          continue;
+        }
+        enemyProxies.push({
           ref: enemy,
+          index: enemyIndex,
           x: Number(enemy.x) || 0,
           y: Number(enemy.y) || 0,
-          radius: this.getCollisionRadius(enemy)
-        }));
+          radius: this.getCollisionRadius(enemy),
+          queryToken: 0
+        });
+        enemyIndex += 1;
+      }
       collisionStats.playerBulletEnemyProxies = bulletProxies.length;
       collisionStats.enemyCollisionProxies = enemyProxies.length;
     });
 
     measure('collision.player_bullets_enemies.broadphase', () => {
-      // Reserved for a spatial grid if proxy counts prove the N*M pass is still too costly.
+      if (!bulletProxies.length || !enemyProxies.length) return;
+      const cellSize = COLLISION_GRID_CELL_SIZE;
+      const grid = new Map();
+      for (const enemyProxy of enemyProxies) {
+        const minCellX = Math.floor((enemyProxy.x - enemyProxy.radius) / cellSize);
+        const maxCellX = Math.floor((enemyProxy.x + enemyProxy.radius) / cellSize);
+        const minCellY = Math.floor((enemyProxy.y - enemyProxy.radius) / cellSize);
+        const maxCellY = Math.floor((enemyProxy.y + enemyProxy.radius) / cellSize);
+        for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+          for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+            const key = cellX + cellY * 4096;
+            let bucket = grid.get(key);
+            if (!bucket) {
+              bucket = [];
+              grid.set(key, bucket);
+            }
+            bucket.push(enemyProxy);
+          }
+        }
+      }
+      enemyGrid = {
+        cellSize,
+        grid,
+        queryToken: 0
+      };
+      collisionStats.playerBulletEnemyGridCells = grid.size;
     });
 
     measure('collision.player_bullets_enemies.hit_test', () => {
+      const markCandidateEnemies = (bulletProxy) => {
+        if (!enemyGrid?.grid) return 0;
+        const { cellSize, grid } = enemyGrid;
+        const minCellX = Math.floor((bulletProxy.x - bulletProxy.radius) / cellSize);
+        const maxCellX = Math.floor((bulletProxy.x + bulletProxy.radius) / cellSize);
+        const minCellY = Math.floor((bulletProxy.y - bulletProxy.radius) / cellSize);
+        const maxCellY = Math.floor((bulletProxy.y + bulletProxy.radius) / cellSize);
+        const queryToken = (enemyGrid.queryToken += 1);
+        let candidateCount = 0;
+        for (let cellY = minCellY; cellY <= maxCellY; cellY += 1) {
+          for (let cellX = minCellX; cellX <= maxCellX; cellX += 1) {
+            const bucket = grid.get(cellX + cellY * 4096);
+            collisionStats.playerBulletEnemyCandidateCells += 1;
+            if (!bucket) continue;
+            for (const enemyProxy of bucket) {
+              if (enemyProxy.queryToken === queryToken) continue;
+              enemyProxy.queryToken = queryToken;
+              candidateCount += 1;
+            }
+          }
+        }
+        collisionStats.playerBulletEnemyCandidateChecks += candidateCount;
+        return queryToken;
+      };
+
       for (const bulletProxy of bulletProxies) {
         const bullet = bulletProxy.ref;
         if (!bullet?.active) continue;
+        const queryToken = markCandidateEnemies(bulletProxy);
         for (const enemyProxy of enemyProxies) {
+          if (queryToken && enemyProxy.queryToken !== queryToken) continue;
           const enemy = enemyProxy.ref;
           if (!bullet.active) break;
           if (!enemy?.active) continue;
@@ -2745,6 +2845,7 @@ export class PlayScene {
           const dy = bulletProxy.y - enemyProxy.y;
           if ((dx * dx + dy * dy) >= radius * radius) continue;
           collisionStats.playerBulletEnemyHits += 1;
+          if (bulletProxy.isPlasmaLance) collisionStats.plasmaLanceHitEvents += 1;
           hitEvents.push({ bullet, enemy, bulletProxy });
           if (bulletProxy.isBomb) break;
           if (!bulletProxy.piercing) bullet.active = false;
@@ -2770,10 +2871,12 @@ export class PlayScene {
 
     measure('collision.player_bullets_enemies.kill_marking', () => {
       for (const event of hitEvents) {
-        const { enemy, destroyed } = event;
+        const { enemy, destroyed, bulletProxy } = event;
         if (event.bulletProxy?.isBomb) continue;
+        const frequentMultiHit = Boolean(bulletProxy?.isPlasmaLance || bulletProxy?.piercing);
         if (destroyed) {
           collisionStats.playerBulletEnemyKills += 1;
+          if (bulletProxy?.isPlasmaLance) collisionStats.plasmaLanceKills += 1;
           if (!this.player.isSlowTimeActive?.()) {
             const scoreAwarded = this.getNormalWaveScoreAward(this.getComboScore(enemy.scoreValue), enemy);
             const appliedScore = this.game.addScore(scoreAwarded);
@@ -2786,10 +2889,14 @@ export class PlayScene {
           measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy, { sideEffects }));
           this.queueCollisionSideEffect(sideEffects, 'deathFeedback', {
             enemy,
-            options: { volume: 0.5 }
+            options: {
+              volume: frequentMultiHit ? 0.38 : 0.5,
+              intensity: frequentMultiHit ? 0.56 : undefined,
+              sfx: frequentMultiHit ? false : undefined
+            }
           });
           this.queueCollisionSideEffect(sideEffects, 'screenShakes', {
-            intensity: 3
+            intensity: frequentMultiHit ? 1.5 : 3
           });
           this.queueCollisionSideEffect(sideEffects, 'powerupSpawns', {
             x: enemy.x,
@@ -2799,11 +2906,15 @@ export class PlayScene {
           collisionStats.playerBulletEnemyDamageOnly += 1;
           this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
             x: enemy.x,
-            y: enemy.y
+            y: enemy.y,
+            intensity: frequentMultiHit ? 0.6 : undefined
           });
           this.queueCollisionSideEffect(sideEffects, 'audio', {
             sfx: 'hit',
-            options: { volume: 0.4 }
+            options: {
+              volume: frequentMultiHit ? 0.26 : 0.4,
+              minIntervalMs: frequentMultiHit ? 75 : undefined
+            }
           });
         }
       }
@@ -2812,6 +2923,7 @@ export class PlayScene {
     measure('collision.player_bullets_enemies.cleanup', () => {
       bulletProxies = null;
       enemyProxies = null;
+      enemyGrid = null;
       hitEvents = null;
     });
     });
@@ -3491,6 +3603,8 @@ export class PlayScene {
 
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
+    this.flushDeferredHotPathProgress();
+    this.flushDeferredSeasonProgress(true);
     if (this.deferredThreatDefeats?.length) {
       this.processDeferredThreatDefeats(this.deferredThreatDefeats.length);
     }
@@ -3730,6 +3844,7 @@ export class PlayScene {
     }
 
     this.uiOverlay.addChild(overlay);
+    this.lastHitStopRequestMs = GAME_OVER_INTERLUDE_MS;
     this.freezeTimerMs = Math.max(this.freezeTimerMs || 0, GAME_OVER_INTERLUDE_MS);
     this.screenShake?.shake(compact ? 12 : 20, compact ? 22 : 34);
     this.screenShake?.freezeFrame?.(compact ? 3 : 5);
@@ -4565,7 +4680,8 @@ export class PlayScene {
     const impactX = this.player?.x ?? width / 2;
     const impactY = this.player?.y ?? height * 0.72;
 
-    this.freezeTimerMs = finalDeath ? 420 : 180;
+    this.lastHitStopRequestMs = finalDeath ? 420 : 180;
+    this.freezeTimerMs = this.lastHitStopRequestMs;
 
     if (this.screenShake) this.screenShake.shake(finalDeath ? 42 : 25);
 
@@ -7692,6 +7808,47 @@ export class PlayScene {
     };
   }
 
+  shouldDeferActiveGameplayPersistence() {
+    const enemies = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
+    const projectiles = (this.bulletManager?.playerBullets?.length || 0)
+      + (this.bulletManager?.enemyBullets?.length || 0)
+      + (this.bulletManager?.pendingEnemyBullets?.length || 0);
+    const particles = this.particleManager?.particles?.length || 0;
+    const combatText = (this.scorePopupManager?.popups?.length || 0)
+      + (this.scorePopupManager?.pendingPopups?.length || 0);
+    const playerFiring = Boolean(this.inputManager?.isFiring?.());
+    const enemyState = this.enemyManager?.state || '';
+    const activeCombatState = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
+    if (!activeCombatState && !playerFiring && enemies <= 0 && projectiles <= 12) return false;
+    return playerFiring || enemies > 0 || projectiles > 12 || particles > 18 || combatText > 3;
+  }
+
+  markSeasonProgressDirty() {
+    this.seasonProgressDirty = true;
+  }
+
+  flushDeferredSeasonProgress(force = false) {
+    if (!this.seasonProgressDirty) return { flushed: false, dirty: false };
+    const now = Date.now();
+    if (!force) {
+      if (this.shouldDeferActiveGameplayPersistence()) {
+        return { flushed: false, dirty: true, deferred: true };
+      }
+      if (now - this.lastSeasonProgressWriteAt < DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS) {
+        return { flushed: false, dirty: true, throttled: true };
+      }
+    }
+    try {
+      localStorage.setItem('burt_season_xp', String(this.seasonXp));
+      localStorage.setItem('burt_season_unlocks', JSON.stringify(this.seasonUnlocks));
+      this.seasonProgressDirty = false;
+      this.lastSeasonProgressWriteAt = now;
+      return { flushed: true, dirty: false };
+    } catch {
+      return { flushed: false, dirty: true, error: 'storage_unavailable' };
+    }
+  }
+
   flushDeferredCollisionUiFeedback() {
     const feedback = this.deferredCollisionUiFeedback || {};
     this.deferredCollisionUiFeedback = {
@@ -7776,11 +7933,13 @@ export class PlayScene {
       this.particleManager?.createHitSpark?.(x, y, palette[2] || baseColor, 1.15);
     }
 
-    const sfx = lateMayhem && profile.deathSfx ? profile.deathSfx : (options.sfx || 'enemy_explode');
-    AudioManager.playSfx(sfx, {
-      volume: Number.isFinite(options.volume) ? options.volume : (lateMayhem ? 0.56 : 0.5),
-      minIntervalMs: lateMayhem ? 55 : 35
-    });
+    if (options.sfx !== false) {
+      const sfx = lateMayhem && profile.deathSfx ? profile.deathSfx : (options.sfx || 'enemy_explode');
+      AudioManager.playSfx(sfx, {
+        volume: Number.isFinite(options.volume) ? options.volume : (lateMayhem ? 0.56 : 0.5),
+        minIntervalMs: lateMayhem ? 55 : 35
+      });
+    }
   }
 
   onEnemyKilled(enemy, options = {}) {
@@ -8395,10 +8554,7 @@ export class PlayScene {
       }
       this.applySeasonCosmetics();
     }
-    try {
-      localStorage.setItem('burt_season_xp', String(this.seasonXp));
-      localStorage.setItem('burt_season_unlocks', JSON.stringify(this.seasonUnlocks));
-    } catch { }
+    this.markSeasonProgressDirty();
   }
 
   showUnlockToast(text) {
@@ -9517,7 +9673,8 @@ export class PlayScene {
     card.addChild(line);
 
     this.uiOverlay.addChild(card);
-    this.freezeTimerMs = 250;
+    this.lastHitStopRequestMs = 250;
+    this.freezeTimerMs = this.lastHitStopRequestMs;
     AudioManager.play('menuSelect'); // Calmer sound for boss intro (removed annoying computerNoise)
 
     let elapsed = 0;

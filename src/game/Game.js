@@ -575,7 +575,7 @@ export class Game {
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
     this.scoreBreakdown.finalScore = this.score;
 
-    const deferProgress = Boolean(playScene?.isCollisionHotPathActive);
+    const deferProgress = Boolean(playScene?.isCollisionHotPathActive || playScene?.shouldDeferActiveGameplayPersistence?.());
     if (this.canUnlockAchievementsForCurrentRun() && !deferProgress) {
       updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
     } else if (this.canUnlockAchievementsForCurrentRun() && deferProgress) {

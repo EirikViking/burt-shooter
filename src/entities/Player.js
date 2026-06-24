@@ -1130,6 +1130,12 @@ export class Player {
     const bullets = [];
     this.traitShotCounter += 1;
     const shotCounter = this.traitShotCounter;
+    const pType = this.activePowerup.type;
+    const annotatePowerupBullet = (bullet) => {
+      if (!bullet || !pType) return;
+      bullet.powerupType = pType;
+      if (pType === 'plasma_lance') bullet.isPlasmaLance = true;
+    };
 
     // Check if firing bomb
     if (this.bombShotsLeft > 0) {
@@ -1149,6 +1155,7 @@ export class Player {
       bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
       bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
       bomb.haloColor = this.bombColor;
+      annotatePowerupBullet(bomb);
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
 
@@ -1182,7 +1189,6 @@ export class Player {
 
     // Visuals based on powerup
     let vConfig = { color: 'Blue', index: 1 };
-    const pType = this.activePowerup.type;
 
     if (pType === 'rapid_cabinet') vConfig = { color: 'Red', index: 1 };
     else if (pType === 'triple_beam') vConfig = { color: 'Green', index: 13 };
@@ -1205,6 +1211,7 @@ export class Player {
       const bulletColor = this.visualVariant?.accent || 0x00ffff;
       const bullet = new Bullet(this.x + offsetX, spawnY, vx, vy, this.bulletDamage, bulletColor, true, vConfig);
       if (this.bulletPierce) bullet.piercing = true;
+      annotatePowerupBullet(bullet);
       this.applyTraitProjectileEffects(bullet, shotCounter);
       bullets.push(bullet);
 
@@ -1235,6 +1242,7 @@ export class Player {
           { color: 'Green', index: 13 }
         );
         wing.isTraitWingShot = true;
+        annotatePowerupBullet(wing);
         this.applyTraitProjectileEffects(wing, shotCounter);
         bullets.push(wing);
       });
@@ -1257,6 +1265,7 @@ export class Player {
           true,
           { color: 'Blue', index: 7 } // Cyan-ish bullet
         );
+        annotatePowerupBullet(bullet);
         this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true });
         bullets.push(bullet);
       });
@@ -1275,6 +1284,7 @@ export class Player {
         true,
         { color: 'Green', index: 7 }
       );
+      annotatePowerupBullet(bonus);
       this.applyTraitProjectileEffects(bonus, shotCounter, { bonus: true });
       bullets.push(bonus);
     }

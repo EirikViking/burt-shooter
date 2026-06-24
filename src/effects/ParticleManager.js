@@ -99,6 +99,22 @@ export class ParticleManager {
     this.onCap = onCap;
   }
 
+  attachParticleDisplay(particle) {
+    if (!particle) return;
+    if (particle.sprite?.parent !== this.container) this.container.addChild(particle.sprite);
+    if (particle.bitmap?.parent !== this.container) this.container.addChild(particle.bitmap);
+  }
+
+  prewarm(count = 0) {
+    const safeCount = Math.max(0, Math.min(this.maxParticles, Math.floor(Number(count) || 0)));
+    const existing = this.pool.length + this.particles.length;
+    for (let i = existing; i < safeCount; i += 1) {
+      const particle = new Particle();
+      this.attachParticleDisplay(particle);
+      this.pool.push(particle);
+    }
+  }
+
   spawnParticle(x, y, vx, vy, color, size, lifetime, texture = null) {
     if (this.particles.length >= this.maxParticles) {
       if (this.onCap) this.onCap('particles');
@@ -109,9 +125,7 @@ export class ParticleManager {
     particle.reset(x, y, vx, vy, color, size, lifetime, texture);
     this.particles.push(particle);
 
-    // Ensure both are added (safe to add if already added, PIXI handles parent checks)
-    this.container.addChild(particle.sprite);
-    this.container.addChild(particle.bitmap);
+    this.attachParticleDisplay(particle);
 
     return particle;
   }
@@ -364,8 +378,6 @@ export class ParticleManager {
     this.particles = this.particles.filter(particle => {
       particle.update(delta);
       if (!particle.active) {
-        this.container.removeChild(particle.sprite);
-        this.container.removeChild(particle.bitmap);
         this.pool.push(particle);
         return false;
       }
