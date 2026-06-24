@@ -64,6 +64,17 @@ Source and extraction records:
 - Runtime screenshots: `basic_wave.png`, `dense_missile_wave.png`, `fireball_white_x.png`, `boss_bullet_pattern.png`, `boss_beam_tractor.png`, `pickup_comparison.png` in the same report folder.
 - Focused dense projectile sample: 180 frames, no frames over 50 ms, no runtime `generateTexture` calls, p95 21.30 ms, p99 22.90 ms, max 23.40 ms in headless browser/dev-server capture.
 
+## Steam Package Evidence
+
+- Source commit: `9906b82531955232606cd93bdfcc55dfbb0fda20`
+- Packaged build: `v2026-06-24_16-38-35`
+- Packaged gitSha proof: `9906b82` in `test-results/packaged-exe-smoke-2026-06-24T14-42-11-679Z/report.json` and `test-results/packaged-perf-smoke-2026-06-24T14-43-00-108Z/report.json`
+- Packaged perf: 60.01 FPS average, 59.52 FPS minimum
+- Payload manifest: `release/steamworks/steam_payload_manifest.json`, 336 files, 888,574,529 bytes, manifest hash `fdc42c0f7f4345490cb8a2c6a90db65667f3676fe93bc9a9ae04a5a463dbb518`
+- VDF: AppID `4765070`, depot `4765071`, `SetLive ""`
+- Private unassigned Steam BuildID: `23895509`
+- Evidence record: `release/steamworks/steam_upload_evidence_enemy_projectile_visual_refresh_20260624_23895509.json`
+
 ## How To Verify
 
 Run:
