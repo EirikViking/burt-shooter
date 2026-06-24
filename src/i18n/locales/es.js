@@ -940,6 +940,7 @@ const sourceText = Object.freeze({
   'LAST STAND REPAIR': 'REPARACIÓN DE ÚLTIMO RECURSO',
   'BONUS CORE APPEARED!': 'NÚCLEO BONUS DETECTADO',
   'BOSS INCOMING': 'JEFE ENTRANTE',
+  'INCOMING REINFORCEMENTS': 'REFUERZOS ENTRANTES',
   'Mission Control is hiding under the desk.': 'Control de Mision se esconde bajo la mesa.',
   'The boss brought paperwork. This is not a drill.': 'El jefe trae papeleo. Esto no es un simulacro.',
   'Please stop the boss before it invoices us.': 'Para al jefe antes de que nos mande factura.',

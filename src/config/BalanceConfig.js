@@ -82,6 +82,16 @@ export const BalanceConfig = {
         waveCleanupMs: 680,
         enemyEntryDurationMs: 1460,
         enemyEntryDelayBaseMs: 150,
+        mayhemReinforcements: {
+            enabled: true,
+            chance: 0.1,
+            minWaveAgeMs: 6500,
+            minClearRatio: 0.75,
+            maxActiveEnemies: 4,
+            maxActiveEnemyBullets: 18,
+            warningMs: 2000,
+            minNextWaveIndex: 1
+        },
         bossGateMs: 950,
         challengeWaveChance: 0.015,
         challengeWaveCount: 8,

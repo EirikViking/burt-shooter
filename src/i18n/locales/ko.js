@@ -931,6 +931,7 @@ const sourceText = Object.freeze({
 
   'BOSS': '보스',
   'BOSS INCOMING': '보스 접근',
+  'INCOMING REINFORCEMENTS': '지원 병력 접근',
   'Mission Control is hiding under the desk.': '미션 관제부가 책상 밑에 숨었습니다.',
   'The boss brought paperwork. This is not a drill.': '보스가 서류를 들고 왔습니다. 훈련이 아닙니다.',
   'Please stop the boss before it invoices us.': '보스가 청구서를 보내기 전에 막아 주세요.',

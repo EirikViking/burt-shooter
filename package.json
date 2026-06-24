@@ -62,6 +62,7 @@
     "check:scout-local-best": "node scripts/check-scout-local-best.mjs",
     "check:scout-codex-persistence": "node scripts/check-scout-codex-persistence.mjs",
     "check:mayhem-scout-difficulty-delta": "node scripts/check-mayhem-scout-difficulty-delta.mjs",
+    "check:mayhem-reinforcement-waves": "node scripts/check-mayhem-reinforcement-waves.mjs",
     "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
     "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",
     "check:sector-start-challenge-records": "node scripts/check-sector-start-challenge-records.mjs",

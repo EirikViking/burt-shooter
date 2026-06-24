@@ -8,6 +8,7 @@ import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
 import { translateText } from '../i18n/index.js';
+import { RUN_MODES } from '../game/RunMode.js';
 import {
   GENERATED_ENEMY_TYPES,
   getGeneratedEnemyProfile,
@@ -34,6 +35,8 @@ import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../conf
 const WAVE_OBJECTIVE_FAILSAFE_MS = 45000;
 const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
 const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
+export const MAYHEM_REINFORCEMENT_WAVE_SOUND_ID = 'mission_control_reinforcements_incoming';
+export const MAYHEM_REINFORCEMENT_WARNING_TEXT = 'INCOMING REINFORCEMENTS';
 
 const BASE_WAVE_TACTICS = [
   {
@@ -217,6 +220,17 @@ export class EnemyManager {
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
     this.currentWaveThreatState = null;
+    this.mayhemReinforcementState = null;
+    this.mayhemReinforcementTriggeredWaves = new Set();
+    this.mayhemReinforcementConsumedWaveIndices = new Set();
+    this.mayhemReinforcementStats = {
+      scheduled: 0,
+      spawned: 0,
+      warnings: 0,
+      lastWarningLeadMs: null,
+      lastRoll: null,
+      lastEligibility: null
+    };
 
     // BOSS FIX: Boss state machine
     this.boss = null;
@@ -281,6 +295,7 @@ export class EnemyManager {
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
     this.resetWaveWatchdog();
+    this.resetMayhemReinforcementState();
 
     // BOSS FIX: Reset boss state
     this.boss = null;
@@ -946,6 +961,201 @@ export class EnemyManager {
     this.waveObjectiveFailsafeTriggered = false;
   }
 
+  resetMayhemReinforcementState() {
+    this.mayhemReinforcementState = null;
+    this.mayhemReinforcementTriggeredWaves = new Set();
+    this.mayhemReinforcementConsumedWaveIndices = new Set();
+    this.mayhemReinforcementStats = {
+      scheduled: 0,
+      spawned: 0,
+      warnings: 0,
+      lastWarningLeadMs: null,
+      lastRoll: null,
+      lastEligibility: null
+    };
+  }
+
+  getMayhemReinforcementConfig() {
+    const config = BalanceConfig.difficulty?.mayhemReinforcements || {};
+    if (config.enabled !== true) return null;
+    return {
+      chance: Math.max(0, Math.min(1, Number(config.chance) || 0)),
+      minWaveAgeMs: Math.max(0, Number(config.minWaveAgeMs) || 0),
+      minClearRatio: Math.max(0, Math.min(1, Number(config.minClearRatio) || 0.75)),
+      maxActiveEnemies: Math.max(0, Math.floor(Number(config.maxActiveEnemies) || 0)),
+      maxActiveEnemyBullets: Math.max(0, Math.floor(Number(config.maxActiveEnemyBullets) || 0)),
+      warningMs: Math.max(0, Number(config.warningMs) || 2000),
+      minNextWaveIndex: Math.max(0, Math.floor(Number(config.minNextWaveIndex) || 0))
+    };
+  }
+
+  getStableReinforcementRoll(level = this.level, waveIndex = this.currentWaveIndex) {
+    const seed = String(this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm');
+    const input = `${seed}:mayhem-reinforcement:${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
+    let hash = 2166136261;
+    for (let i = 0; i < input.length; i += 1) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return ((hash >>> 0) % 1000000) / 1000000;
+  }
+
+  getMayhemReinforcementWaveExpectedCount(config = this.waves?.[this.currentWaveIndex]) {
+    if (!config) return 0;
+    let expected = Math.max(1, Math.floor(Number(config.count) || 1));
+    if (config.eliteMiddleShipId) expected += 1;
+    if (Array.isArray(config.multiEliteMiddleShipIds)) expected += config.multiEliteMiddleShipIds.length;
+    return expected;
+  }
+
+  getMayhemReinforcementEligibility(objectiveCount = this.getObjectiveEnemyCount()) {
+    const config = this.getMayhemReinforcementConfig();
+    const currentWaveIndex = Math.max(0, Math.floor(Number(this.currentWaveIndex) || 0));
+    const nextWaveIndex = currentWaveIndex + 1;
+    const nextWave = this.waves?.[nextWaveIndex] || null;
+    const currentWave = this.waves?.[currentWaveIndex] || null;
+    const playScene = this.game?.scenes?.play || null;
+    const activeEnemyBullets = playScene?.bulletManager?.enemyBullets
+      ?.filter((bullet) => bullet?.active !== false).length || 0;
+    const expected = this.getMayhemReinforcementWaveExpectedCount(currentWave);
+    const clearRatio = expected > 0 ? Math.max(0, Math.min(1, (expected - objectiveCount) / expected)) : 0;
+    const reasons = [];
+
+    if (!config) reasons.push('disabled');
+    if (this.game?.runMode !== RUN_MODES.RANKED) reasons.push('not_mayhem');
+    if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE') reasons.push('not_normal_wave_phase');
+    if (this.boss?.active || this.bossSpawnedThisLevel || this.state === 'BOSS_GATE') reasons.push('boss_active_or_pending');
+    if (this.waveEnding || this.spawning || this.pendingWaveConfig) reasons.push('wave_not_stable');
+    if (playScene?.sectorArrivalStinger?.active) reasons.push('sector_stinger_active');
+    if (playScene?.player?.invulnerable) reasons.push('player_respawn_or_invulnerable');
+    if (this.mayhemReinforcementState) reasons.push('already_scheduled');
+    if (this.mayhemReinforcementTriggeredWaves?.has(currentWaveIndex)) reasons.push('already_triggered_for_wave');
+    if (nextWaveIndex >= this.normalWavesTotal) reasons.push('no_next_wave');
+    if (nextWaveIndex < (config?.minNextWaveIndex || 0)) reasons.push('too_early_in_sector');
+    if (!nextWave || nextWave.type === 'BOSS' || nextWave.type === 'bonus_challenge' || nextWave.isChallenge) reasons.push('next_wave_not_normal');
+    if ((Number(this.waveActiveTimer) || 0) < (config?.minWaveAgeMs || 0)) reasons.push('wave_too_young');
+    if (clearRatio < (config?.minClearRatio || 0)) reasons.push('not_mostly_cleared');
+    if (objectiveCount > (config?.maxActiveEnemies || 0)) reasons.push('too_many_enemies');
+    if (activeEnemyBullets > (config?.maxActiveEnemyBullets || 0)) reasons.push('too_many_bullets');
+
+    const roll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex) : 1;
+    if (config && roll >= config.chance) reasons.push('roll_failed');
+
+    const result = {
+      eligible: reasons.length === 0,
+      reasons,
+      config,
+      currentWaveIndex,
+      nextWaveIndex,
+      objectiveCount,
+      expected,
+      clearRatio,
+      activeEnemyBullets,
+      roll,
+      chance: config?.chance || 0
+    };
+    if (this.mayhemReinforcementStats) this.mayhemReinforcementStats.lastEligibility = result;
+    return result;
+  }
+
+  maybeScheduleMayhemReinforcement(objectiveCount = this.getObjectiveEnemyCount()) {
+    const eligibility = this.getMayhemReinforcementEligibility(objectiveCount);
+    if (this.mayhemReinforcementStats) this.mayhemReinforcementStats.lastRoll = eligibility.roll;
+    if (!eligibility.eligible) return false;
+
+    const warningMs = eligibility.config.warningMs;
+    const now = Date.now();
+    this.mayhemReinforcementState = {
+      currentWaveIndex: eligibility.currentWaveIndex,
+      reinforcementWaveIndex: eligibility.nextWaveIndex,
+      scheduledAt: now,
+      spawnAt: now + warningMs,
+      warningMs,
+      warningFired: false,
+      spawned: false
+    };
+    this.mayhemReinforcementTriggeredWaves.add(eligibility.currentWaveIndex);
+    this.mayhemReinforcementStats.scheduled += 1;
+    this.fireMayhemReinforcementWarning(this.mayhemReinforcementState);
+    console.log(
+      `[MayhemReinforcement] scheduled level=${this.level}` +
+      ` wave=${eligibility.currentWaveIndex + 1}->${eligibility.nextWaveIndex + 1}` +
+      ` roll=${eligibility.roll.toFixed(4)} chance=${eligibility.chance}` +
+      ` clear=${eligibility.clearRatio.toFixed(2)} enemies=${eligibility.objectiveCount}/${eligibility.expected}` +
+      ` bullets=${eligibility.activeEnemyBullets}`
+    );
+    return true;
+  }
+
+  fireMayhemReinforcementWarning(state = this.mayhemReinforcementState) {
+    if (!state || state.warningFired) return false;
+    state.warningFired = true;
+    this.mayhemReinforcementStats.warnings += 1;
+    this.mayhemReinforcementStats.lastWarningLeadMs = Math.max(0, state.spawnAt - Date.now());
+
+    const playScene = this.game?.scenes?.play;
+    if (playScene?.showToast) {
+      const compactHud = this.game.getWidth() < 620;
+      playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
+        fontSize: compactHud ? 17 : 22,
+        fill: '#ffef7e',
+        stroke: '#1d0500',
+        strokeThickness: 4,
+        y: compactHud ? this.game.getHeight() * 0.25 : 118,
+        duration: Math.max(1200, Math.min(2200, state.warningMs + 250)),
+        slot: 'top',
+        type: 'warning',
+        priority: 4,
+        maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.64)
+      });
+    }
+    AudioManager.playVoice(MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
+      force: true,
+      bypassGlobalCooldown: true,
+      cooldownMs: 2200,
+      eventCooldownMs: 2200,
+      duckMs: 1150,
+      voicePriority: 7
+    });
+    return true;
+  }
+
+  updateMayhemReinforcement() {
+    const state = this.mayhemReinforcementState;
+    if (!state || state.spawned) return false;
+    if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE' || this.waveEnding) {
+      this.mayhemReinforcementState = null;
+      return false;
+    }
+    if (Date.now() < state.spawnAt) return false;
+
+    const config = this.waves?.[state.reinforcementWaveIndex];
+    if (!config || config.type === 'BOSS' || config.type === 'bonus_challenge' || config.isChallenge) {
+      this.mayhemReinforcementState = null;
+      return false;
+    }
+
+    state.spawned = true;
+    this.mayhemReinforcementConsumedWaveIndices.add(state.reinforcementWaveIndex);
+    this.mayhemReinforcementStats.spawned += 1;
+    this.measurePerformance('mayhem_reinforcement.spawn_wave', () => this.spawnWave({
+      ...config,
+      isMayhemReinforcement: true,
+      reinforcedFromWaveIndex: state.currentWaveIndex
+    }));
+    console.log(
+      `[MayhemReinforcement] spawned level=${this.level}` +
+      ` wave=${state.reinforcementWaveIndex + 1}/${this.normalWavesTotal}` +
+      ` warningLeadMs=${Math.round(this.mayhemReinforcementStats.lastWarningLeadMs || 0)}`
+    );
+    return true;
+  }
+
+  hasPendingMayhemReinforcement() {
+    const state = this.mayhemReinforcementState;
+    return Boolean(state && !state.spawned && this.phase === 'WAVES' && this.state === 'WAVE_ACTIVE');
+  }
+
   maybeClearStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
     if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered) return false;
     const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
@@ -998,10 +1208,14 @@ export class EnemyManager {
         if (!this.waveEnding) {
           this.waveActiveTimer += Math.max(0, Math.min(1000, delta * 16.67));
         }
+        this.updateMayhemReinforcement();
         // WAVE FIX: Check objective enemies only, not bonus drones
         const objectiveCount = this.getObjectiveEnemyCount();
         if (objectiveCount === 0 && !this.waveEnding) {
           if (this.spawning) {
+            break;
+          }
+          if (this.hasPendingMayhemReinforcement()) {
             break;
           }
           // Start wave ending immediately when last objective enemy dies
@@ -1028,6 +1242,7 @@ export class EnemyManager {
           this.cleanupTimer = 0;
           this.cleanupPhase = 'SLOWING';
         } else if (objectiveCount > 0 && !this.waveEnding) {
+          this.maybeScheduleMayhemReinforcement(objectiveCount);
           this.maybeClearStalledWave(objectiveCount);
         }
 
@@ -3051,16 +3266,21 @@ export class EnemyManager {
     const clearedWaveIndex = this.currentWaveIndex;
     const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
     const clearedWaveNumber = clearedWaveIndex + 1;
+    const consumedReinforcementWaveIndex = this.mayhemReinforcementConsumedWaveIndices?.has(clearedWaveIndex + 1)
+      ? clearedWaveIndex + 1
+      : null;
+    const transitionWaveIndex = consumedReinforcementWaveIndex ?? clearedWaveIndex;
+    const clearedWaveCount = consumedReinforcementWaveIndex !== null ? 2 : 1;
     if (this.game?.scenes?.play) {
       const playScene = this.game.scenes.play;
-      playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + 1;
+      playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount;
       if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
         playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
         playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
       }
       playScene.damageTakenThisWave = 0;
     }
-    let hasUpcomingWave = clearedWaveIndex < this.normalWavesTotal - 1;
+    let hasUpcomingWave = transitionWaveIndex < this.normalWavesTotal - 1;
 
     if (!hasUpcomingWave && this.shouldAddBossSpacingWave()) {
       const extraWave = this.createBossSpacingWave();
@@ -3088,7 +3308,9 @@ export class EnemyManager {
     } else {
       // Normal Bonus
       const rewardConfig = BalanceConfig.rewards || {};
-      const bonus = (rewardConfig.waveClearScoreBase || 500) * clearedWaveNumber;
+      const waveClearScoreBase = rewardConfig.waveClearScoreBase || 500;
+      const bonus = waveClearScoreBase * clearedWaveNumber +
+        (consumedReinforcementWaveIndex !== null ? waveClearScoreBase * (consumedReinforcementWaveIndex + 1) : 0);
       const appliedBonus = this.game.scenes.play?.addNormalWaveScore?.(bonus, 'waveClearBonus') ?? this.game.addScore(bonus, 'waveClearBonus');
       if (this.game.scenes.play) {
         let repairDelta = 0;
@@ -3100,7 +3322,7 @@ export class EnemyManager {
           );
         }
         const nextLabel = hasUpcomingWave
-          ? `NEXT WAVE ${clearedWaveNumber + 1}/${this.normalWavesTotal}`
+          ? `NEXT WAVE ${transitionWaveIndex + 2}/${this.normalWavesTotal}`
           : 'BOSS GATE NEXT';
         const repairLabel = repairDelta > 0 ? ` - REPAIR +${repairDelta}` : '';
         const transitionLabel = hasUpcomingWave ? 'WAVE CLEARED!' : 'SECTOR CLEAR';
@@ -3115,13 +3337,13 @@ export class EnemyManager {
     }
 
     this.maybeSpawnHijacker({
-      clearedWaveNumber,
+      clearedWaveNumber: transitionWaveIndex + 1,
       hasUpcomingWave
     });
 
     // Logic to potentially inject a short score-risk challenge wave.
     const normalWaveLevel = this.getNormalWaveDifficultyLevel(this.level);
-    if (normalWaveLevel > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
+    if (consumedReinforcementWaveIndex === null && normalWaveLevel > 1 && hasUpcomingWave && this.currentWaveIndex > 0) {
       const diff = BalanceConfig.difficulty;
       const pressureTuning = getNormalWavePressureTuning(normalWaveLevel);
       const challengeMinLevel = Number(pressureTuning.challengeMinLevel) || 1;
@@ -3150,12 +3372,15 @@ export class EnemyManager {
       }
     }
 
-    if (this.currentWaveIndex < this.normalWavesTotal - 1) {
-      this.currentWaveIndex += 1;
+    if (transitionWaveIndex < this.normalWavesTotal - 1) {
+      this.currentWaveIndex = transitionWaveIndex + 1;
+      this.mayhemReinforcementState = null;
       const config = this.waves[this.currentWaveIndex];
       this.beginWaveBriefing(config);
       return;
     }
+    this.currentWaveIndex = transitionWaveIndex;
+    this.mayhemReinforcementState = null;
 
     if (this.isBossLevel && !this.bossSpawnedThisLevel && !this.bossDefeatedThisLevel) {
       this.phase = 'BOSS';
