@@ -84,10 +84,10 @@ export const BalanceConfig = {
         enemyEntryDelayBaseMs: 150,
         mayhemReinforcements: {
             enabled: true,
-            chance: 0.1,
+            chance: 0.05,
             minWaveAgeMs: 6500,
-            minClearRatio: 0.75,
-            maxActiveEnemies: 4,
+            minClearRatio: 0.4,
+            maxActiveEnemies: 9,
             maxActiveEnemyBullets: 18,
             warningMs: 2000,
             minNextWaveIndex: 1

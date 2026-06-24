@@ -15,12 +15,23 @@ const soundCatalog = read('src/audio/SoundCatalog.js');
 const config = BalanceConfig.difficulty?.mayhemReinforcements;
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
-if (config.chance !== 0.1) fail(`Expected 10% reinforcement chance, got ${config.chance}.`);
+if (config.chance !== 0.05) fail(`Expected rare 5% reinforcement chance, got ${config.chance}.`);
 if (config.warningMs !== 2000) fail(`Expected 2000ms warning, got ${config.warningMs}.`);
-if (config.minClearRatio < 0.7 || config.minClearRatio > 0.8) {
-  fail(`Expected clear ratio gate around 70-80%, got ${config.minClearRatio}.`);
+if (config.minClearRatio !== 0.4) {
+  fail(`Expected early-overlap clear ratio gate at 40%, got ${config.minClearRatio}.`);
 }
-if (config.maxActiveEnemies > 4) fail(`Expected safe active enemy gate <=4, got ${config.maxActiveEnemies}.`);
+if (config.maxActiveEnemies !== 9) fail(`Expected active enemy gate to allow about 60% of a 14-enemy wave left, got ${config.maxActiveEnemies}.`);
+
+const canSpawnWithAboutSixtyPercentLeft = ({ expected, objectiveCount }) => (
+  objectiveCount <= config.maxActiveEnemies &&
+  ((expected - objectiveCount) / expected) >= config.minClearRatio
+);
+if (!canSpawnWithAboutSixtyPercentLeft({ expected: 10, objectiveCount: 6 })) {
+  fail('Reinforcements must be eligible with 60% of a 10-enemy wave still alive.');
+}
+if (!canSpawnWithAboutSixtyPercentLeft({ expected: 14, objectiveCount: 8 })) {
+  fail('Reinforcements must be eligible with roughly 60% of a 14-enemy wave still alive.');
+}
 
 const requiredSourceSnippets = [
   'RUN_MODES.RANKED',
@@ -30,6 +41,7 @@ const requiredSourceSnippets = [
   'sector_stinger_active',
   'player_respawn_or_invulnerable',
   'too_many_bullets',
+  'not_enough_wave_progress',
   'MAYHEM_REINFORCEMENT_WARNING_TEXT',
   'mission_control_reinforcements_incoming',
   'showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT)',
@@ -75,8 +87,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedRate = hits / eligibleRolls;
-if (observedRate < 0.085 || observedRate > 0.115) {
-  fail(`Stable reinforcement roll drifted outside rare 10% band: ${observedRate.toFixed(4)}.`);
+if (observedRate < 0.043 || observedRate > 0.057) {
+  fail(`Stable reinforcement roll drifted outside rare 5% band: ${observedRate.toFixed(4)}.`);
 }
 
 const expectedVoiceFiles = Array.from(

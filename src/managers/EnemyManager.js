@@ -1034,7 +1034,7 @@ export class EnemyManager {
     if (nextWaveIndex < (config?.minNextWaveIndex || 0)) reasons.push('too_early_in_sector');
     if (!nextWave || nextWave.type === 'BOSS' || nextWave.type === 'bonus_challenge' || nextWave.isChallenge) reasons.push('next_wave_not_normal');
     if ((Number(this.waveActiveTimer) || 0) < (config?.minWaveAgeMs || 0)) reasons.push('wave_too_young');
-    if (clearRatio < (config?.minClearRatio || 0)) reasons.push('not_mostly_cleared');
+    if (clearRatio < (config?.minClearRatio || 0)) reasons.push('not_enough_wave_progress');
     if (objectiveCount > (config?.maxActiveEnemies || 0)) reasons.push('too_many_enemies');
     if (activeEnemyBullets > (config?.maxActiveEnemyBullets || 0)) reasons.push('too_many_bullets');
 
