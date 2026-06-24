@@ -773,6 +773,12 @@ function buildGameTextState(game) {
       unlock: selectedShip.unlock || null,
       unlockHistoryText: getShipUnlockHistoryLine(selectedShip.spriteKey, getShipUnlockProgress(), { translate: translateText }),
       unlockDetailsText: shipSelectScene.rightIntel?.unlock?.text || null,
+      careerSignal: shipSelectScene.leftIntel ? {
+        count: shipSelectScene.leftIntel.count?.text || null,
+        progress: shipSelectScene.leftIntel.progress?.text || null,
+        stats: shipSelectScene.leftIntel.stats?.text || null,
+        hint: shipSelectScene.leftIntel.hint?.text || null
+      } : null,
       recommended: shipSelectScene.recommendedShip ? {
         shipName: shipSelectScene.recommendedShip.name || null,
         spriteKey: shipSelectScene.recommendedShip.spriteKey || null,

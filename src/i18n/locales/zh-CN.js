@@ -772,6 +772,8 @@ const sourceText = Object.freeze({
   'CODEX SCANS': '图鉴扫描',
   'BEST SCORE': '最高分',
   'LOCAL PROFILE': '本地档案',
+  'PROFILE REPAIRED': '档案已修复',
+  'RUN EVIDENCE VERIFIED': '出击证据已验证',
   'CLICK FOR CAREER INTEL': '点击查看生涯情报',
   'CAREER INTEL': '生涯情报',
   'PILOT DOSSIER // LIVE ARCADE SIGNAL': '飞行员档案 // 实时街机信号',

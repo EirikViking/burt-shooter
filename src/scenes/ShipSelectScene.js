@@ -40,6 +40,7 @@ const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
 const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
 const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
+const HANGAR_PROFILE_REPAIR_REASON = 'legacy_codex_rescue_inflation';
 const HANGAR_UNLOCK_STRINGS = {
   titleSingle: 'NEW HULL ARRIVED',
   titlePlural: 'NEW HULLS ARRIVED',
@@ -65,6 +66,16 @@ function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScal
 
 function hexColor(color) {
   return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
+}
+
+function getHangarProfileFooterLines(progress = {}) {
+  if (progress?.integrityRepairReason === HANGAR_PROFILE_REPAIR_REASON) {
+    return [
+      translateText('PROFILE REPAIRED'),
+      translateText('RUN EVIDENCE VERIFIED')
+    ];
+  }
+  return [translateText('LOCAL PROFILE')];
 }
 
 function shipRecommendationScore(ship) {
@@ -2508,7 +2519,11 @@ export class ShipSelectScene {
         (Number(this.unlockProgress.totalCodexDiscoveries) || 0) > 0
       ));
       if (this.leftIntel.stats) {
-        this.leftIntel.stats.text = `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}\n${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\n${translateText('LOCAL PROFILE')}`;
+        this.leftIntel.stats.text = [
+          `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}`,
+          `${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`,
+          ...getHangarProfileFooterLines(this.unlockProgress)
+        ].join('\n');
       }
       if (this.leftIntel.hint) {
         this.leftIntel.hint.text = translateText('CLICK FOR CAREER INTEL');

@@ -791,6 +791,8 @@ const sourceText = Object.freeze({
   'CODEX SCANS': '코덱스 스캔',
   'BEST SCORE': '최고 점수',
   'LOCAL PROFILE': '로컬 프로필',
+  'PROFILE REPAIRED': '프로필 복구됨',
+  'RUN EVIDENCE VERIFIED': '런 증거 확인됨',
   'CLICK FOR CAREER INTEL': '클릭해 커리어 정보 보기',
   'CAREER INTEL': '커리어 정보',
   'PILOT DOSSIER // LIVE ARCADE SIGNAL': '파일럿 문서 // 실시간 아케이드 신호',

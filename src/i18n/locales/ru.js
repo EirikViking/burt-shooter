@@ -772,6 +772,8 @@ const sourceText = Object.freeze({
   'CODEX SCANS': 'СКАНЫ КОДЕКСА',
   'BEST SCORE': 'ЛУЧШИЙ СЧЕТ',
   'LOCAL PROFILE': 'ЛОКАЛЬНЫЙ ПРОФИЛЬ',
+  'PROFILE REPAIRED': 'ПРОФИЛЬ ИСПРАВЛЕН',
+  'RUN EVIDENCE VERIFIED': 'ДАННЫЕ ЗАБЕГА ПРОВЕРЕНЫ',
   'CLICK FOR CAREER INTEL': 'НАЖМИ: КАРЬЕРНАЯ СВОДКА',
   'CAREER INTEL': 'КАРЬЕРНАЯ СВОДКА',
   'PILOT DOSSIER // LIVE ARCADE SIGNAL': 'ДОСЬЕ ПИЛОТА // ЖИВОЙ АРКАДНЫЙ СИГНАЛ',
