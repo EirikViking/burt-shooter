@@ -1,0 +1,77 @@
+{
+  "task": "enemy projectile unframed visibility follow-up",
+  "uploadedAt": "2026-06-24T17:37:48+02:00",
+  "branch": "codex/enemy-projectile-visual-refresh-20260623",
+  "sourceCommit": "3c6eb17bb88fc1b86f373292d7f681ace046900c",
+  "sourceCommits": [
+    {
+      "commit": "54626a2584bb01311ace13770fcf741eca69b98b",
+      "summary": "Remove the old warning ring, corner hazard mark, and halo bubble from generated enemy projectile sprites in normal mode."
+    },
+    {
+      "commit": "3c6eb17bb88fc1b86f373292d7f681ace046900c",
+      "summary": "Apply a visual-only 1.32x unframed scale boost to generated enemy projectile sprites and guard against tiny framed regressions."
+    }
+  ],
+  "build": {
+    "version": "v2026-06-24_17-27-55",
+    "packagedGitSha": "3c6eb17",
+    "packagedGitShaProof": "test-results/packaged-exe-smoke-2026-06-24T15-30-31-532Z/report.json"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "buildId": "23896393",
+    "branchAssignment": "none",
+    "uploadLog": "test-results/steam-upload-projectile-unframed-20260624-1736/steamcmd-upload.log",
+    "successLine": "[2026-06-24 17:37:48]: Successfully finished AppID 4765070 build (BuildID 23896393)."
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 888574899,
+    "manifestHash": "2b032a131e5b1432c0288264afb74c41ab5bd7beb5b55768cb9d15841ce2c68e",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "checks": {
+    "focusedProjectileVisuals": {
+      "status": "passed",
+      "report": "test-results/projectile-visuals-2026-06-24T15-26-28-322Z/report.json",
+      "p95Ms": 18.5,
+      "p99Ms": 20.9,
+      "maxMs": 21.5
+    },
+    "gitDiffCheck": "passed",
+    "releaseLine": "passed",
+    "buildAndPackage": "passed",
+    "packagedSmoke": {
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-24T15-30-31-532Z/report.json"
+    },
+    "packagedPerf": {
+      "status": "skipped_after_user_request",
+      "note": "A previous attempt showed acceptable FPS but failed the harness because the final scene was threatCodex; follow-up tests were skipped after the user said to skip tests this time."
+    }
+  },
+  "guardrails": {
+    "visualOnly": true,
+    "projectileSpeedChanged": false,
+    "projectileDamageChanged": false,
+    "projectileHitboxesChanged": false,
+    "firingCadenceChanged": false,
+    "spawnRatesChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudChanged": false,
+    "saveFormatChanged": false,
+    "steamworksMetadataChanged": false,
+    "publicBranchAssigned": false
+  },
+  "rollback": {
+    "source": "git revert 3c6eb17bb88fc1b86f373292d7f681ace046900c 54626a2584bb01311ace13770fcf741eca69b98b",
+    "steam": "Do not assign BuildID 23896393, or reassign the private test branch back to the previous desired BuildID."
+  }
+}
