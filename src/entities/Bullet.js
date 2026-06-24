@@ -126,6 +126,8 @@ export class Bullet {
 
   createReadableProjectileShell() {
     const colorAssist = getColorAssistEnabled();
+    const generatedProjectileCore = !this.isPlayer && Boolean(this.core?.__novaProjectileSprite);
+    const drawProjectileFrame = !generatedProjectileCore || colorAssist || this.visualConfig.forceProjectileFrame === true;
     const trailColor = colorAssist
       ? (this.isPlayer ? 0xfff45c : 0xffffff)
       : (this.isPlayer ? this.color : (this.visualConfig.trailColor || 0xff6655));
@@ -146,11 +148,13 @@ export class Bullet {
     this.sprite.addChild(this.trail);
 
     if (!this.isPlayer) {
-      this.warningRing = new PIXI.Graphics();
-      this.warningRing.circle(0, 0, this.radius + (colorAssist ? 8 : 5));
-      this.warningRing.stroke({ color: colorAssist ? 0xffffff : (this.visualConfig.warningColor || 0xff2f2f), width: colorAssist ? 3 : 2, alpha: colorAssist ? 0.9 : 0.75 });
-      this.sprite.addChild(this.warningRing);
-      if (this.visualConfig.haloColor) {
+      if (drawProjectileFrame) {
+        this.warningRing = new PIXI.Graphics();
+        this.warningRing.circle(0, 0, this.radius + (colorAssist ? 8 : 5));
+        this.warningRing.stroke({ color: colorAssist ? 0xffffff : (this.visualConfig.warningColor || 0xff2f2f), width: colorAssist ? 3 : 2, alpha: colorAssist ? 0.9 : 0.75 });
+        this.sprite.addChild(this.warningRing);
+      }
+      if (this.visualConfig.haloColor && (!generatedProjectileCore || colorAssist || this.visualConfig.forceProjectileHalo === true)) {
         const halo = new PIXI.Graphics();
         halo.circle(0, 0, this.radius + 9);
         halo.fill({ color: this.visualConfig.haloColor, alpha: 0.1 });
@@ -166,7 +170,7 @@ export class Bullet {
         cross.lineTo(0, r);
         cross.stroke({ color: 0x10131c, width: 2, alpha: 0.82 });
         this.sprite.addChild(cross);
-      } else {
+      } else if (drawProjectileFrame) {
         const hazardMark = new PIXI.Graphics();
         const r = this.radius + 8;
         hazardMark.moveTo(-r, -r * 0.58);

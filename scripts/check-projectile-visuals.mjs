@@ -385,11 +385,27 @@ async function stageScenario(page, scenario) {
 
     const activeBullets = bm.enemyBullets.filter((bullet) => bullet?.active !== false);
     const generatedSprites = activeBullets.filter((bullet) => bullet.core?.__novaProjectileSprite).length;
+    const framedGeneratedSprites = activeBullets.filter((bullet) => (
+      bullet.core?.__novaProjectileSprite &&
+      (
+        Boolean(bullet.warningRing) ||
+        Boolean(bullet.halo) ||
+        Boolean(bullet.sprite?.children?.some?.((child) => child?.__novaHazardReadabilityMark))
+      )
+    )).length;
     const spriteDetails = activeBullets.slice(0, 80).map((bullet) => ({
       profile: bullet.weaponProfileId || null,
       art: bullet.visualConfig?.projectileArt || null,
       animation: bullet.visualConfig?.animationStyle || null,
       coreSprite: Boolean(bullet.core?.__novaProjectileSprite),
+      framed: Boolean(
+        bullet.core?.__novaProjectileSprite &&
+        (
+          Boolean(bullet.warningRing) ||
+          Boolean(bullet.halo) ||
+          Boolean(bullet.sprite?.children?.some?.((child) => child?.__novaHazardReadabilityMark))
+        )
+      ),
       radius: bullet.radius,
       width: Math.round((bullet.core?.width || 0) * 10) / 10,
       height: Math.round((bullet.core?.height || 0) * 10) / 10
@@ -399,6 +415,7 @@ async function stageScenario(page, scenario) {
       scenario: scenarioName,
       bulletCount: activeBullets.length,
       generatedSprites,
+      framedGeneratedSprites,
       activeProfiles: [...new Set(activeBullets.map((bullet) => bullet.weaponProfileId).filter(Boolean))],
       arts: [...new Set(activeBullets.map((bullet) => bullet.visualConfig?.projectileArt).filter(Boolean))],
       animations: [...new Set(activeBullets.map((bullet) => bullet.visualConfig?.animationStyle).filter(Boolean))],
@@ -597,6 +614,9 @@ const errors = [...manifestErrors];
 for (const capture of captures) {
   if (capture.state.bulletCount > 0 && capture.state.generatedSprites < capture.state.bulletCount) {
     errors.push(`${capture.scenario} has non-generated enemy bullet sprites ${capture.state.generatedSprites}/${capture.state.bulletCount}`);
+  }
+  if (capture.state.framedGeneratedSprites > 0) {
+    errors.push(`${capture.scenario} still frames generated enemy projectile sprites ${capture.state.framedGeneratedSprites}/${capture.state.generatedSprites}`);
   }
   if (capture.state.bulletCount > 0 && capture.animation.changed < Math.min(5, capture.animation.sampled)) {
     errors.push(`${capture.scenario} did not animate enough projectile samples`);
