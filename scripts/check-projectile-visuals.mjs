@@ -618,6 +618,10 @@ for (const capture of captures) {
   if (capture.state.framedGeneratedSprites > 0) {
     errors.push(`${capture.scenario} still frames generated enemy projectile sprites ${capture.state.framedGeneratedSprites}/${capture.state.generatedSprites}`);
   }
+  const tinyGeneratedSprites = capture.state.spriteDetails.filter((detail) => detail.coreSprite && detail.width < 28);
+  if (tinyGeneratedSprites.length > 0) {
+    errors.push(`${capture.scenario} has generated enemy projectile sprites that are too small after unframing: ${tinyGeneratedSprites.map((detail) => `${detail.profile}:${detail.width}x${detail.height}`).join(', ')}`);
+  }
   if (capture.state.bulletCount > 0 && capture.animation.changed < Math.min(5, capture.animation.sampled)) {
     errors.push(`${capture.scenario} did not animate enough projectile samples`);
   }

@@ -2,6 +2,8 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
+const GENERATED_PROJECTILE_UNFRAMED_SCALE_MULT = 1.32;
+
 export class Bullet {
   constructor(x, y, vx, vy, damage, color, isPlayer, visualConfig = null) {
     this.x = x;
@@ -86,8 +88,13 @@ export class Bullet {
         this.core.anchor.set(0.5);
         this.core.rotation = generatedTex ? this.angle : this.angle + Math.PI / 2;
         const spriteScale = this.visualConfig.spriteScale || (isPlayer ? 0.8 : 0.72);
-        this.baseScale = spriteScale;
-        this.core.scale.set(spriteScale);
+        const scaleBoost = !isPlayer && generatedTex && !getColorAssistEnabled() && this.visualConfig.forceProjectileFrame !== true
+          ? (Number.isFinite(this.visualConfig.unframedScaleBoost)
+            ? this.visualConfig.unframedScaleBoost
+            : GENERATED_PROJECTILE_UNFRAMED_SCALE_MULT)
+          : 1;
+        this.baseScale = spriteScale * scaleBoost;
+        this.core.scale.set(this.baseScale);
         this.core.__novaProjectileSprite = true;
         this.core.label = this.weaponProfileId
           ? `projectile_core:${this.weaponProfileId}`
