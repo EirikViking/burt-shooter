@@ -1,14 +1,17 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
-const outputDir = path.resolve('public/audio/sfx/nova-swarm');
-const force = process.argv.includes('--force');
-const onlyArg = process.argv.find((arg) => arg.startsWith('--only='));
-const onlyFiles = onlyArg
-  ? new Set(onlyArg.slice('--only='.length).split(',').map((item) => item.trim()).filter(Boolean))
-  : null;
+const rootDir = process.cwd();
+const defaultOutputDir = path.resolve(rootDir, 'public/audio/sfx/nova-swarm');
+const defaultCandidateDir = path.resolve(rootDir, 'public/audio/sfx/nova-swarm-candidates');
+const defaultJsonReportPath = path.resolve(rootDir, 'test-results/elevenlabs-sfx-bake-report.json');
+const defaultMdReportPath = path.resolve(rootDir, 'docs/reviews/elevenlabs-sfx-bake-report.md');
+const defaultModelId = 'eleven_text_to_sound_v2';
+const defaultOutputFormat = 'mp3_44100_128';
 
 const eliteMiddleShipSounds = [
   {
@@ -527,20 +530,120 @@ const sounds = [
   ...eliteMiddleShipSounds
 ];
 
-function requireApiKey() {
+function parseArgs(argv) {
+  const parsed = {
+    dryRun: false,
+    force: false,
+    onlyFiles: null,
+    outputDir: defaultOutputDir,
+    candidateDir: defaultCandidateDir,
+    candidateCount: 2,
+    delayMs: 650,
+    modelId: process.env.ELEVENLABS_SFX_MODEL_ID || defaultModelId,
+    outputFormat: process.env.ELEVENLABS_SFX_OUTPUT_FORMAT || defaultOutputFormat,
+    jsonReportPath: defaultJsonReportPath,
+    mdReportPath: defaultMdReportPath,
+    help: false
+  };
+
+  for (const arg of argv) {
+    if (arg === '--dry-run') {
+      parsed.dryRun = true;
+    } else if (arg === '--force') {
+      parsed.force = true;
+    } else if (arg === '--help' || arg === '-h') {
+      parsed.help = true;
+    } else if (arg.startsWith('--only=')) {
+      parsed.onlyFiles = new Set(arg.slice('--only='.length)
+        .split(',')
+        .map((item) => path.basename(item.trim()))
+        .filter(Boolean));
+    } else if (arg.startsWith('--out=')) {
+      parsed.outputDir = path.resolve(rootDir, arg.slice('--out='.length));
+    } else if (arg.startsWith('--candidate-dir=')) {
+      parsed.candidateDir = path.resolve(rootDir, arg.slice('--candidate-dir='.length));
+    } else if (arg.startsWith('--candidate-count=')) {
+      parsed.candidateCount = parsePositiveInt(arg, '--candidate-count', 2);
+    } else if (arg.startsWith('--delay-ms=')) {
+      parsed.delayMs = parsePositiveInt(arg, '--delay-ms', 650);
+    } else if (arg.startsWith('--json-report=')) {
+      parsed.jsonReportPath = path.resolve(rootDir, arg.slice('--json-report='.length));
+    } else if (arg.startsWith('--md-report=')) {
+      parsed.mdReportPath = path.resolve(rootDir, arg.slice('--md-report='.length));
+    } else if (arg.startsWith('--model-id=')) {
+      parsed.modelId = arg.slice('--model-id='.length).trim() || defaultModelId;
+    } else if (arg.startsWith('--output-format=')) {
+      parsed.outputFormat = arg.slice('--output-format='.length).trim() || defaultOutputFormat;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+
+  parsed.candidateCount = Math.max(1, Math.min(8, parsed.candidateCount));
+  parsed.delayMs = Math.max(0, parsed.delayMs);
+  return parsed;
+}
+
+function parsePositiveInt(arg, name, fallback) {
+  const raw = arg.slice(name.length + 1);
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function printHelp() {
+  console.log(`Usage: npm run generate:nova-sfx -- [options]
+
+Safely bakes local Nova Swarm SFX candidates with ElevenLabs Sound Generation.
+The game never calls ElevenLabs at runtime; this script writes local MP3 files.
+
+Options:
+  --dry-run                         List selected SFX without generating audio.
+  --force                           Overwrite candidates and promote the first technically clean candidate to production.
+  --only=file1.mp3,file2.mp3        Limit generation to exact existing SFX filenames.
+  --out=public/audio/sfx/nova-swarm Production SFX directory for accepted replacements.
+  --candidate-dir=public/audio/sfx/nova-swarm-candidates
+                                    Candidate output directory.
+  --candidate-count=2               Candidates per selected SFX.
+  --delay-ms=650                    Delay between ElevenLabs requests.
+  --model-id=eleven_text_to_sound_v2
+  --output-format=mp3_44100_128     Requested ElevenLabs output format.
+  --json-report=<path>              JSON report path.
+  --md-report=<path>                Markdown report path.
+`);
+}
+
+function requireApiKey(args) {
+  if (args.dryRun) return;
   if (!apiKey) {
-    throw new Error('ELEVENLABS_API_KEY is required. Keep it in the environment and never commit it.');
+    throw new Error('ELEVENLABS_API_KEY is required. Keep it in the environment and never commit or print it.');
   }
 }
 
-async function generateSound(sound) {
-  const target = path.join(outputDir, sound.file);
-  if (!force && existsSync(target)) {
-    console.log(`skip existing ${sound.file}`);
-    return;
+function selectSounds(args) {
+  const selected = sounds.filter((entry) => !args.onlyFiles || args.onlyFiles.has(entry.file));
+  if (args.onlyFiles) {
+    const known = new Set(sounds.map((entry) => entry.file));
+    const missing = [...args.onlyFiles].filter((file) => !known.has(file));
+    if (missing.length) {
+      console.warn(`[nova-sfx] warning: --only included unknown file(s): ${missing.join(', ')}`);
+    }
   }
+  return selected;
+}
 
-  const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
+function isRetryableStatus(status) {
+  return status === 429 || (status >= 500 && status < 600);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestSound(sound, args, attempt = 1) {
+  const url = new URL('https://api.elevenlabs.io/v1/sound-generation');
+  url.searchParams.set('output_format', args.outputFormat);
+
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'xi-api-key': apiKey,
@@ -550,29 +653,455 @@ async function generateSound(sound) {
       text: sound.text,
       duration_seconds: sound.duration_seconds,
       prompt_influence: sound.prompt_influence,
-      output_format: 'mp3_44100_128'
+      model_id: args.modelId
     })
   });
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`ElevenLabs SFX failed for ${sound.file}: HTTP ${response.status} ${body.slice(0, 240)}`);
+  if (response.ok) {
+    return Buffer.from(await response.arrayBuffer());
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  await writeFile(target, buffer);
-  console.log(`generated ${sound.file} (${buffer.length} bytes)`);
+  const body = await response.text().catch(() => '');
+  if (attempt < 4 && isRetryableStatus(response.status)) {
+    const retryAfterSeconds = Number(response.headers.get('retry-after'));
+    const retryDelay = Number.isFinite(retryAfterSeconds)
+      ? retryAfterSeconds * 1000
+      : Math.min(8000, 1000 * 2 ** (attempt - 1));
+    console.warn(`[nova-sfx] ${sound.file} got HTTP ${response.status}; retry ${attempt}/3 after ${retryDelay}ms`);
+    await sleep(retryDelay);
+    return requestSound(sound, args, attempt + 1);
+  }
+
+  throw new Error(`HTTP ${response.status} ${body.slice(0, 240)}`);
+}
+
+function candidateFileFor(sound, index, args) {
+  const ext = path.extname(sound.file) || '.mp3';
+  const base = path.basename(sound.file, ext);
+  return path.join(args.candidateDir, `${base}.candidate-${String(index + 1).padStart(2, '0')}${ext}`);
+}
+
+function expectedDurationRange(sound) {
+  const expected = Number(sound.duration_seconds) || 1;
+  const tiny = expected <= 1;
+  const fanfare = expected >= 4;
+  return {
+    min: tiny ? 0.25 : Math.max(0.45, expected * 0.45),
+    max: fanfare ? expected + 2.5 : Math.max(1.1, expected * 1.75 + 0.35)
+  };
+}
+
+async function evaluateAudio(filePath, sound) {
+  const fileStat = await stat(filePath);
+  const buffer = await readFile(filePath);
+  const probe = probeAudio(filePath);
+  const volume = measureVolume(filePath);
+  const durationRange = expectedDurationRange(sound);
+  const reasons = [];
+  const warnings = [];
+
+  if (fileStat.size < 5000) {
+    reasons.push(`suspiciously small file (${fileStat.size} bytes)`);
+  }
+
+  if (!Number.isFinite(probe.durationSeconds)) {
+    reasons.push('ffprobe could not read duration');
+  } else {
+    if (probe.durationSeconds < durationRange.min) {
+      reasons.push(`too short (${probe.durationSeconds.toFixed(3)}s, expected >= ${durationRange.min.toFixed(2)}s)`);
+    }
+    if (probe.durationSeconds > durationRange.max) {
+      reasons.push(`too long (${probe.durationSeconds.toFixed(3)}s, expected <= ${durationRange.max.toFixed(2)}s)`);
+    }
+  }
+
+  if (Number.isFinite(volume.maxDb) && volume.maxDb > 0) {
+    reasons.push(`clipped peak (${volume.maxDb.toFixed(1)} dB)`);
+  } else if (Number.isFinite(volume.maxDb) && volume.maxDb > -0.1) {
+    warnings.push(`raw peak is very close to full scale (${volume.maxDb.toFixed(1)} dB)`);
+  }
+
+  if (Number.isFinite(volume.meanDb) && volume.meanDb > -7) {
+    reasons.push(`mean loudness is extremely hot (${volume.meanDb.toFixed(1)} dB)`);
+  }
+
+  if (Number.isFinite(volume.maxDb) && volume.maxDb < -48) {
+    reasons.push(`peak is likely inaudible (${volume.maxDb.toFixed(1)} dB)`);
+  }
+
+  if (Number.isFinite(volume.meanDb) && volume.meanDb < -60) {
+    reasons.push(`mean loudness is likely silent (${volume.meanDb.toFixed(1)} dB)`);
+  }
+
+  return {
+    file: path.relative(rootDir, filePath).replaceAll('\\', '/'),
+    sizeBytes: fileStat.size,
+    sha256: createHash('sha256').update(buffer).digest('hex'),
+    durationSeconds: round(probe.durationSeconds, 3),
+    sampleRate: probe.sampleRate,
+    codecName: probe.codecName,
+    bitRate: probe.bitRate,
+    meanDb: round(volume.meanDb, 1),
+    maxDb: round(volume.maxDb, 1),
+    ffprobeAvailable: probe.available,
+    ffmpegAvailable: volume.available,
+    technicallyClean: reasons.length === 0,
+    warnings,
+    rejectReasons: reasons
+  };
+}
+
+function probeAudio(filePath) {
+  const result = spawnSync('ffprobe', [
+    '-v', 'error',
+    '-select_streams', 'a:0',
+    '-show_entries', 'stream=codec_name,sample_rate,bit_rate:format=duration',
+    '-of', 'json',
+    filePath
+  ], {
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024
+  });
+
+  if (result.status !== 0) {
+    return { available: false, durationSeconds: null, sampleRate: null, codecName: null, bitRate: null };
+  }
+
+  try {
+    const parsed = JSON.parse(result.stdout || '{}');
+    const stream = parsed.streams?.[0] || {};
+    return {
+      available: true,
+      durationSeconds: Number(parsed.format?.duration),
+      sampleRate: Number(stream.sample_rate) || null,
+      codecName: stream.codec_name || null,
+      bitRate: Number(stream.bit_rate) || null
+    };
+  } catch {
+    return { available: true, durationSeconds: null, sampleRate: null, codecName: null, bitRate: null };
+  }
+}
+
+function measureVolume(filePath) {
+  const nullSink = process.platform === 'win32' ? 'NUL' : '/dev/null';
+  const result = spawnSync('ffmpeg', [
+    '-hide_banner',
+    '-nostats',
+    '-i',
+    filePath,
+    '-af',
+    'volumedetect',
+    '-f',
+    'null',
+    nullSink
+  ], {
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024 * 4
+  });
+
+  if (result.status !== 0) {
+    return { available: false, meanDb: null, maxDb: null };
+  }
+
+  const output = `${result.stdout || ''}\n${result.stderr || ''}`;
+  return {
+    available: true,
+    meanDb: parseDb(output, 'mean_volume'),
+    maxDb: parseDb(output, 'max_volume')
+  };
+}
+
+function parseDb(output, key) {
+  const match = output.match(new RegExp(`${key}:\\s*(-?[0-9.]+) dB`));
+  return match ? Number(match[1]) : null;
+}
+
+function round(value, places) {
+  if (!Number.isFinite(value)) return null;
+  const scale = 10 ** places;
+  return Math.round(value * scale) / scale;
+}
+
+function promotionTargetFor(sound, args) {
+  return path.join(args.outputDir, sound.file);
+}
+
+async function promoteCandidate(sound, candidatePath, args) {
+  const target = promotionTargetFor(sound, args);
+  if (!existsSync(target)) {
+    throw new Error(`production target does not exist: ${path.relative(rootDir, target)}`);
+  }
+  await copyFile(candidatePath, target);
+  return path.relative(rootDir, target).replaceAll('\\', '/');
+}
+
+async function generateSound(sound, args) {
+  const productionTarget = promotionTargetFor(sound, args);
+  const entry = {
+    file: sound.file,
+    prompt: sound.text,
+    requestedDurationSeconds: sound.duration_seconds,
+    promptInfluence: sound.prompt_influence,
+    productionTarget: path.relative(rootDir, productionTarget).replaceAll('\\', '/'),
+    productionExists: existsSync(productionTarget),
+    candidates: [],
+    replacement: null,
+    status: 'unchanged',
+    errors: []
+  };
+
+  if (!entry.productionExists) {
+    entry.status = 'skipped';
+    entry.errors.push('production target is missing; refusing to create a new runtime SFX filename');
+    return entry;
+  }
+
+  for (let index = 0; index < args.candidateCount; index += 1) {
+    const candidatePath = candidateFileFor(sound, index, args);
+    const candidate = {
+      file: path.relative(rootDir, candidatePath).replaceAll('\\', '/'),
+      index: index + 1,
+      generated: false,
+      evaluation: null,
+      decision: 'not_generated',
+      error: null
+    };
+
+    if (!args.force && existsSync(candidatePath)) {
+      candidate.decision = 'left_for_manual_audition';
+      candidate.error = 'candidate already exists; use --force to regenerate it';
+      try {
+        candidate.evaluation = await evaluateAudio(candidatePath, sound);
+      } catch (error) {
+        candidate.error = `existing candidate could not be evaluated: ${error.message}`;
+      }
+      entry.candidates.push(candidate);
+      continue;
+    }
+
+    try {
+      const buffer = await requestSound(sound, args);
+      await writeFile(candidatePath, buffer);
+      candidate.generated = true;
+      candidate.evaluation = await evaluateAudio(candidatePath, sound);
+      candidate.decision = candidate.evaluation.technicallyClean
+        ? 'clean_candidate'
+        : 'rejected';
+      if (candidate.generated) {
+        console.log(`[nova-sfx] candidate ${sound.file} #${index + 1} (${buffer.length} bytes)`);
+      }
+    } catch (error) {
+      candidate.error = error.message;
+      candidate.decision = 'failed';
+      entry.errors.push(`candidate ${index + 1}: ${error.message}`);
+      console.error(`[nova-sfx] failed ${sound.file} #${index + 1}: ${error.message}`);
+    }
+
+    entry.candidates.push(candidate);
+    if (args.delayMs > 0) {
+      await sleep(args.delayMs);
+    }
+  }
+
+  const promoted = entry.candidates.find((candidate) => candidate.evaluation?.technicallyClean);
+  if (args.force && promoted) {
+    try {
+      const promotedPath = path.resolve(rootDir, promoted.file);
+      const replacedPath = await promoteCandidate(sound, promotedPath, args);
+      promoted.decision = 'accepted';
+      entry.replacement = {
+        candidate: promoted.file,
+        productionFile: replacedPath
+      };
+      entry.status = 'replaced';
+      console.log(`[nova-sfx] replaced ${sound.file} from ${path.basename(promoted.file)}`);
+    } catch (error) {
+      entry.errors.push(`promotion failed: ${error.message}`);
+      entry.status = 'unchanged';
+    }
+  } else if (promoted) {
+    entry.status = 'manual_audition';
+    for (const candidate of entry.candidates) {
+      if (candidate.decision === 'clean_candidate') candidate.decision = 'left_for_manual_audition';
+    }
+  } else if (entry.candidates.some((candidate) => candidate.decision === 'rejected' || candidate.decision === 'failed')) {
+    entry.status = 'unchanged';
+  }
+
+  return entry;
+}
+
+async function writeReports(report, args) {
+  await mkdir(path.dirname(args.jsonReportPath), { recursive: true });
+  await mkdir(path.dirname(args.mdReportPath), { recursive: true });
+  await writeFile(args.jsonReportPath, `${JSON.stringify(report, null, 2)}\n`);
+  await writeFile(args.mdReportPath, renderMarkdown(report));
+  console.log(`[nova-sfx] wrote ${path.relative(rootDir, args.jsonReportPath)}`);
+  console.log(`[nova-sfx] wrote ${path.relative(rootDir, args.mdReportPath)}`);
+}
+
+function buildReport(args, selected, entries) {
+  const candidates = entries.flatMap((entry) => entry.candidates);
+  const replacements = entries.filter((entry) => entry.replacement);
+  const failures = entries.filter((entry) => entry.errors.length);
+  return {
+    generatedAt: new Date().toISOString(),
+    dryRun: args.dryRun,
+    force: args.force,
+    modelId: args.modelId,
+    outputFormat: args.outputFormat,
+    outputDir: path.relative(rootDir, args.outputDir).replaceAll('\\', '/'),
+    candidateDir: path.relative(rootDir, args.candidateDir).replaceAll('\\', '/'),
+    candidateCount: args.candidateCount,
+    delayMs: args.delayMs,
+    counts: {
+      selectedSounds: selected.length,
+      candidates: candidates.length,
+      generatedCandidates: candidates.filter((candidate) => candidate.generated).length,
+      cleanCandidates: candidates.filter((candidate) => candidate.evaluation?.technicallyClean).length,
+      replacements: replacements.length,
+      failures: failures.length
+    },
+    replacements: replacements.map((entry) => entry.replacement),
+    unchanged: entries
+      .filter((entry) => !entry.replacement)
+      .map((entry) => entry.productionTarget),
+    entries,
+    rollback: [
+      'git checkout -- public/audio/sfx/nova-swarm',
+      'git checkout -- scripts/generate-nova-swarm-sfx.mjs docs/elevenlabs-sfx-bake.md docs/reviews/elevenlabs-sfx-bake-report.md',
+      'or revert the final commit'
+    ]
+  };
+}
+
+function renderMarkdown(report) {
+  const lines = [
+    '# ElevenLabs SFX Bake Report',
+    '',
+    `Generated: ${report.generatedAt}`,
+    '',
+    'This is a one-time local SFX asset bake. The shipped game plays local files only and does not call ElevenLabs at runtime.',
+    '',
+    '## Summary',
+    '',
+    `- Dry run: ${report.dryRun ? 'yes' : 'no'}`,
+    `- Force/promote clean candidates: ${report.force ? 'yes' : 'no'}`,
+    `- Model: ${report.modelId}`,
+    `- Output format request: ${report.outputFormat}`,
+    `- Selected SFX files: ${report.counts.selectedSounds}`,
+    `- Generated candidates: ${report.counts.generatedCandidates}`,
+    `- Technically clean candidates: ${report.counts.cleanCandidates}`,
+    `- Production replacements: ${report.counts.replacements}`,
+    `- Files with failures/warnings: ${report.counts.failures}`,
+    '',
+    '## Replacements',
+    ''
+  ];
+
+  if (report.replacements.length) {
+    for (const replacement of report.replacements) {
+      lines.push(`- ${replacement.productionFile} from ${replacement.candidate}`);
+    }
+  } else {
+    lines.push('- None.');
+  }
+
+  lines.push('', '## Candidates', '');
+  if (report.entries.length) {
+    lines.push('| SFX | Candidate | Duration | Size | Peak | Mean | Decision | Notes |');
+    lines.push('| --- | --- | ---: | ---: | ---: | ---: | --- | --- |');
+    for (const entry of report.entries) {
+      if (!entry.candidates.length) {
+        lines.push(`| ${entry.file} | n/a | n/a | n/a | n/a | n/a | ${entry.status} | ${entry.errors.join('; ') || 'No candidate generated.'} |`);
+        continue;
+      }
+      for (const candidate of entry.candidates) {
+        const evaluation = candidate.evaluation || {};
+        const notes = [
+          ...(evaluation.warnings || []),
+          ...(evaluation.rejectReasons || []),
+          candidate.error
+        ].filter(Boolean).join('; ');
+        lines.push(`| ${entry.file} | ${candidate.file} | ${formatCell(evaluation.durationSeconds)} | ${formatCell(evaluation.sizeBytes)} | ${formatDb(evaluation.maxDb)} | ${formatDb(evaluation.meanDb)} | ${candidate.decision} | ${notes || ''} |`);
+      }
+    }
+  } else {
+    lines.push('- None.');
+  }
+
+  lines.push(
+    '',
+    '## Unchanged Production Files',
+    '',
+    ...(report.unchanged.length ? report.unchanged.map((file) => `- ${file}`) : ['- None.']),
+    '',
+    '## Rollback',
+    '',
+    '```powershell',
+    'git checkout -- public/audio/sfx/nova-swarm',
+    'git checkout -- scripts/generate-nova-swarm-sfx.mjs docs/elevenlabs-sfx-bake.md docs/reviews/elevenlabs-sfx-bake-report.md',
+    '# or revert the final commit',
+    '```'
+  );
+
+  return `${lines.join('\n')}\n`;
+}
+
+function formatCell(value) {
+  return value === undefined || value === null ? 'n/a' : String(value);
+}
+
+function formatDb(value) {
+  return Number.isFinite(value) ? `${value.toFixed(1)} dB` : 'n/a';
 }
 
 async function main() {
-  requireApiKey();
-  await mkdir(outputDir, { recursive: true });
-
-  for (const sound of sounds.filter((entry) => !onlyFiles || onlyFiles.has(entry.file))) {
-    await generateSound(sound);
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    return;
   }
 
-  console.log(`Nova Swarm SFX written to ${outputDir}`);
+  const selected = selectSounds(args);
+  requireApiKey(args);
+  await mkdir(args.candidateDir, { recursive: true });
+  await mkdir(args.outputDir, { recursive: true });
+
+  if (args.dryRun) {
+    const entries = selected.map((sound) => ({
+      file: sound.file,
+      prompt: sound.text,
+      requestedDurationSeconds: sound.duration_seconds,
+      promptInfluence: sound.prompt_influence,
+      productionTarget: path.relative(rootDir, promotionTargetFor(sound, args)).replaceAll('\\', '/'),
+      productionExists: existsSync(promotionTargetFor(sound, args)),
+      candidates: [],
+      replacement: null,
+      status: 'dry_run',
+      errors: []
+    }));
+    const report = buildReport(args, selected, entries);
+    await writeReports(report, args);
+    console.log(`[nova-sfx] dry run: ${selected.length} selected SFX file(s)`);
+    for (const sound of selected) {
+      console.log(`- ${sound.file} (${sound.duration_seconds}s)`);
+    }
+    return;
+  }
+
+  const entries = [];
+  for (const sound of selected) {
+    entries.push(await generateSound(sound, args));
+  }
+
+  const report = buildReport(args, selected, entries);
+  await writeReports(report, args);
+
+  console.log(`[nova-sfx] complete: ${report.counts.generatedCandidates} candidate(s), ${report.counts.replacements} replacement(s), ${report.counts.failures} file(s) with failures`);
+  if (report.counts.failures) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((error) => {

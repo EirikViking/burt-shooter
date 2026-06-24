@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-24 ElevenLabs Local SFX Bake
+
+- Current request: perform a one-time ElevenLabs Sound Generation SFX-only bake, preserving local runtime audio architecture and leaving `public/audio/voice/`, `public/audio/music/`, Steam identity/settings, Cloudflare secrets, gameplay, scoring, controls, achievements, leaderboards, and save/cloud formats untouched.
+- Safety/tooling direction: branch `codex/elevenlabs-sfx-bake-20260624` from `44a5f1bbee8fc4f61d855c16bc0b617589dfb4e3` with snapshot tag `snapshot/pre-elevenlabs-sfx-bake-20260624`; upgraded `scripts/generate-nova-swarm-sfx.mjs` with dry-run, safe candidate output, no-overwrite default, exact-file `--only`, opt-in `--force` promotion, retries for 429/5xx, per-file failure continuation, ffprobe/ffmpeg candidate evaluation, and JSON/Markdown bake reports.
+- Bake evidence: `npm run generate:nova-sfx -- --dry-run` passed, then a focused high-impact bake generated 70 local MP3 candidates under ignored `public/audio/sfx/nova-swarm-candidates/` and promoted 66 technically clean exact-name replacements under `public/audio/sfx/nova-swarm/`; 4 candidates were left unchanged because they were too hot by objective loudness checks. Bake report: `test-results/elevenlabs-sfx-bake-report.json`; tracked review report: `docs/reviews/elevenlabs-sfx-bake-report.md`.
+- Verification so far: `git diff --check`, `npm run check:audio`, `npm run audit:audio-mix`, `npm run check:release-line`, `npm run check:boss-telegraph`, `npm run check:boss-phase-variety`, `npm run check:enemy-weapons`, `npm run check:elite-ships`, and `npm run build` passed. `audit:audio-mix` still reports raw-peak warnings on some SFX, but the loudest effective SFX peak is about -19.3 dB.
+
 ## 2026-06-24 Enemy Projectile Visual Refresh
 
 - Current request: improve enemy bullets, fireballs, lasers, beams, warning shots, boss shots, tractor-related effects, and hostile projectile readability without changing gameplay balance, projectile speed/damage/hitboxes/cadence, enemy/boss behavior, scoring, XP, leaderboard identity, achievements, Steam Cloud, save format, AppID/depot, or Steamworks metadata.

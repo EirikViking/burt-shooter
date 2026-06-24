@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-24T13:49:18.964Z",
+  "generatedAt": "2026-06-24T18:07:38.933Z",
   "defaults": {
     "masterVolume": 0.3,
     "musicVolume": 0.2,
@@ -16,7 +16,7 @@
     "musicRows": 40,
     "sfxRows": 189,
     "voiceRows": 611,
-    "warnings": 12,
+    "warnings": 61,
     "errors": 0
   },
   "loudestEffectivePeaks": {
@@ -143,39 +143,53 @@
         "mixVolume": 0.9,
         "duckFactor": null,
         "effectiveLinear": 0.108,
-        "rawMeanDb": -11.9,
+        "rawMeanDb": -12.6,
         "rawPeakDb": 0,
         "gainDb": -19.3,
-        "effectiveMeanDb": -31.2,
+        "effectiveMeanDb": -31.9,
         "effectivePeakDb": -19.3
       },
       {
         "type": "sfx",
-        "event": "boss_death_cascade",
-        "url": "/audio/sfx/nova-swarm/nova_boss_death_cascade.mp3",
-        "durationSeconds": 4,
+        "event": "overrun_clear_coronation",
+        "url": "/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3",
+        "durationSeconds": 7,
         "mixVolume": 0.88,
         "duckFactor": null,
         "effectiveLinear": 0.1056,
-        "rawMeanDb": -17.4,
-        "rawPeakDb": -0.1,
+        "rawMeanDb": -13.7,
+        "rawPeakDb": 0,
         "gainDb": -19.5,
-        "effectiveMeanDb": -36.9,
-        "effectivePeakDb": -19.6
+        "effectiveMeanDb": -33.2,
+        "effectivePeakDb": -19.5
       },
       {
         "type": "sfx",
-        "event": "nova_boss_death_cascade",
-        "url": "/audio/sfx/nova-swarm/nova_boss_death_cascade.mp3",
-        "durationSeconds": 4,
-        "mixVolume": 0.88,
+        "event": "overrun_clear_shockwave",
+        "url": "/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3",
+        "durationSeconds": 3,
+        "mixVolume": 0.86,
         "duckFactor": null,
-        "effectiveLinear": 0.1056,
-        "rawMeanDb": -17.4,
+        "effectiveLinear": 0.1032,
+        "rawMeanDb": -18.9,
         "rawPeakDb": -0.1,
-        "gainDb": -19.5,
-        "effectiveMeanDb": -36.9,
-        "effectivePeakDb": -19.6
+        "gainDb": -19.7,
+        "effectiveMeanDb": -38.6,
+        "effectivePeakDb": -19.8
+      },
+      {
+        "type": "sfx",
+        "event": "nova_global_slot_fanfare",
+        "url": "/audio/sfx/nova-swarm/nova_global_slot_fanfare.mp3",
+        "durationSeconds": 6,
+        "mixVolume": 0.84,
+        "duckFactor": null,
+        "effectiveLinear": 0.1008,
+        "rawMeanDb": -17.4,
+        "rawPeakDb": 0,
+        "gainDb": -19.9,
+        "effectiveMeanDb": -37.3,
+        "effectivePeakDb": -19.9
       },
       {
         "type": "sfx",
@@ -189,20 +203,6 @@
         "rawPeakDb": -1.1,
         "gainDb": -18.9,
         "effectiveMeanDb": -34.8,
-        "effectivePeakDb": -20
-      },
-      {
-        "type": "sfx",
-        "event": "overrun_clear_shockwave",
-        "url": "/audio/sfx/nova-swarm/nova_overrun_clear_shockwave.mp3",
-        "durationSeconds": 3,
-        "mixVolume": 0.86,
-        "duckFactor": null,
-        "effectiveLinear": 0.1032,
-        "rawMeanDb": -19.8,
-        "rawPeakDb": -0.3,
-        "gainDb": -19.7,
-        "effectiveMeanDb": -39.5,
         "effectivePeakDb": -20
       },
       {
@@ -443,11 +443,11 @@
         "mixVolume": 0.08,
         "duckFactor": null,
         "effectiveLinear": 0.0096,
-        "rawMeanDb": -12.7,
-        "rawPeakDb": -4.6,
+        "rawMeanDb": -19.5,
+        "rawPeakDb": -5,
         "gainDb": -40.4,
-        "effectiveMeanDb": -53.1,
-        "effectivePeakDb": -45
+        "effectiveMeanDb": -59.9,
+        "effectivePeakDb": -45.4
       },
       {
         "type": "sfx",
@@ -465,37 +465,37 @@
       },
       {
         "type": "sfx",
-        "event": "menu_tick",
-        "url": "/audio/sfx/nova-swarm/nova_menu_tick.mp3",
+        "event": "pause_in",
+        "url": "/audio/sfx/nova-swarm/nova_pause_in.mp3",
         "durationSeconds": 1,
-        "mixVolume": 0.2,
+        "mixVolume": 0.34,
         "duckFactor": null,
-        "effectiveLinear": 0.024,
-        "rawMeanDb": -25,
-        "rawPeakDb": -7.4,
-        "gainDb": -32.4,
-        "effectiveMeanDb": -57.4,
-        "effectivePeakDb": -39.8
-      },
-      {
-        "type": "sfx",
-        "event": "forceField",
-        "url": "/audio/sfx/nova-swarm/nova_shield_snap.mp3",
-        "durationSeconds": 2,
-        "mixVolume": 0.5,
-        "duckFactor": null,
-        "effectiveLinear": 0.06,
-        "rawMeanDb": -38.5,
-        "rawPeakDb": -13.7,
-        "gainDb": -24.4,
+        "effectiveLinear": 0.0408,
+        "rawMeanDb": -35.1,
+        "rawPeakDb": -10.5,
+        "gainDb": -27.8,
         "effectiveMeanDb": -62.9,
-        "effectivePeakDb": -38.1
+        "effectivePeakDb": -38.3
       },
       {
         "type": "sfx",
         "event": "enemy_threat_soft_warn",
         "url": "/audio/sfx/forceField_001.mp3",
         "durationSeconds": 0.95,
+        "mixVolume": 0.12,
+        "duckFactor": null,
+        "effectiveLinear": 0.0144,
+        "rawMeanDb": -11.9,
+        "rawPeakDb": -1.2,
+        "gainDb": -36.8,
+        "effectiveMeanDb": -48.7,
+        "effectivePeakDb": -38
+      },
+      {
+        "type": "sfx",
+        "event": "enemy_threat_soft_warn",
+        "url": "/audio/sfx/forceField_002.mp3",
+        "durationSeconds": 0.96,
         "mixVolume": 0.12,
         "duckFactor": null,
         "effectiveLinear": 0.0144,
@@ -624,6 +624,96 @@
   "warnings": [
     {
       "type": "sfx",
+      "event": "pickup",
+      "url": "/audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "powerup_pickup",
+      "url": "/audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "playerHit",
+      "url": "/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "levelComplete",
+      "url": "/audio/sfx/nova-swarm/nova_rank_fanfare.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "life_up",
+      "url": "/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_spawn",
+      "url": "/audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_entrance_impact",
+      "url": "/audio/sfx/nova-swarm/nova_boss_entrance_impact.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_charge_lattice",
+      "url": "/audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_boss_arrival_alarm",
+      "url": "/audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_boss_entrance_impact",
+      "url": "/audio/sfx/nova-swarm/nova_boss_entrance_impact.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_boss_charge_lattice",
+      "url": "/audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_bonus_core_jackpot",
+      "url": "/audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_rank_fanfare",
+      "url": "/audio/sfx/nova-swarm/nova_rank_fanfare.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_global_near_fanfare",
+      "url": "/audio/sfx/nova-swarm/nova_global_near_fanfare.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_global_slot_fanfare",
+      "url": "/audio/sfx/nova-swarm/nova_global_slot_fanfare.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
       "event": "nova_top10_fanfare",
       "url": "/audio/sfx/nova-swarm/nova_top10_fanfare.mp3",
       "message": "raw peak is very close to full scale (0.0 dB)"
@@ -662,6 +752,210 @@
       "type": "sfx",
       "event": "nova_boss_death_carrier",
       "url": "/audio/sfx/nova-swarm/nova_boss_death_carrier.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "overrun_clear_coronation",
+      "url": "/audio/sfx/nova-swarm/nova_overrun_clear_coronation.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_player_hit_crackle",
+      "url": "/audio/sfx/nova-swarm/nova_player_hit_crackle.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_life_extend_bloom",
+      "url": "/audio/sfx/nova-swarm/nova_life_extend_bloom.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "nova_game_over_drop",
+      "url": "/audio/sfx/nova-swarm/nova_game_over_drop.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "combo_breakout",
+      "url": "/audio/sfx/nova-swarm/nova_combo_breakout.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_phase_surge",
+      "url": "/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "chain_lightning_arc",
+      "url": "/audio/sfx/nova-swarm/nova_chain_lightning_arc.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "ghost_phase_shift",
+      "url": "/audio/sfx/nova-swarm/nova_ghost_phase_shift.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "time_slow_warp",
+      "url": "/audio/sfx/nova-swarm/nova_time_slow_warp.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "drone_launch_blip",
+      "url": "/audio/sfx/nova-swarm/nova_drone_launch_blip.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "orbital_strike_charge",
+      "url": "/audio/sfx/nova-swarm/nova_orbital_strike_charge.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "tractor_lock_charge",
+      "url": "/audio/sfx/nova-swarm/nova_tractor_lock_charge.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "tractor_beam_active",
+      "url": "/audio/sfx/nova-swarm/nova_tractor_beam_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "tractor_break_bloom",
+      "url": "/audio/sfx/nova-swarm/nova_tractor_break_bloom.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "tractor_debuff_apply",
+      "url": "/audio/sfx/nova-swarm/nova_tractor_debuff_apply.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_spawn_alert",
+      "url": "/audio/sfx/nova-swarm/nova_elite_spawn_alert.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_special_active",
+      "url": "/audio/sfx/nova-swarm/nova_enemy_pew_cluster.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_special_active",
+      "url": "/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_death",
+      "url": "/audio/sfx/nova-swarm/nova_elite_death.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_tractor_puller_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_tractor_puller_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_drone_carrier_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_drone_carrier_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_mine_layer_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_mine_layer_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_sniper_rail_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_sniper_rail_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_repair_healer_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_repair_healer_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_barrier_projector_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_barrier_projector_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_missile_frigate_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_missile_frigate_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_pulse_emp_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_pulse_emp_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_escort_commander_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_escort_commander_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "elite_hunter_active",
+      "url": "/audio/sfx/nova-swarm/nova_elite_hunter_active.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_net_telegraph",
+      "url": "/audio/sfx/nova-swarm/nova_boss_net_telegraph.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "boss_hazard_impact",
+      "url": "/audio/sfx/nova-swarm/nova_boss_hazard_impact.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "trait_wing_hit",
+      "url": "/audio/sfx/nova-swarm/nova_drone_launch_blip.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "trait_pierce_hit",
+      "url": "/audio/sfx/nova-swarm/nova_chain_lightning_arc.mp3",
+      "message": "raw peak is very close to full scale (0.0 dB)"
+    },
+    {
+      "type": "sfx",
+      "event": "trait_crit_splash",
+      "url": "/audio/sfx/nova-swarm/nova_boss_phase_surge.mp3",
       "message": "raw peak is very close to full scale (0.0 dB)"
     },
     {
@@ -1783,11 +2077,11 @@
       "mixVolume": 0.28,
       "duckFactor": null,
       "effectiveLinear": 0.0336,
-      "rawMeanDb": -25,
-      "rawPeakDb": -7.4,
+      "rawMeanDb": -22.3,
+      "rawPeakDb": -2.8,
       "gainDb": -29.5,
-      "effectiveMeanDb": -54.5,
-      "effectivePeakDb": -36.9
+      "effectiveMeanDb": -51.8,
+      "effectivePeakDb": -32.3
     },
     {
       "type": "sfx",
@@ -1825,11 +2119,11 @@
       "mixVolume": 0.24,
       "duckFactor": null,
       "effectiveLinear": 0.0288,
-      "rawMeanDb": -26.6,
-      "rawPeakDb": -2.5,
+      "rawMeanDb": -25.3,
+      "rawPeakDb": -3.3,
       "gainDb": -30.8,
-      "effectiveMeanDb": -57.4,
-      "effectivePeakDb": -33.3
+      "effectiveMeanDb": -56.1,
+      "effectivePeakDb": -34.1
     },
     {
       "type": "sfx",
@@ -1923,11 +2217,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -19.2,
-      "rawPeakDb": -3,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": 0,
       "gainDb": -22.6,
-      "effectiveMeanDb": -41.8,
-      "effectivePeakDb": -25.6
+      "effectiveMeanDb": -36.1,
+      "effectivePeakDb": -22.6
     },
     {
       "type": "sfx",
@@ -1965,11 +2259,11 @@
       "mixVolume": 0.68,
       "duckFactor": null,
       "effectiveLinear": 0.0816,
-      "rawMeanDb": -22.2,
-      "rawPeakDb": -4.9,
+      "rawMeanDb": -16.9,
+      "rawPeakDb": -0.1,
       "gainDb": -21.8,
-      "effectiveMeanDb": -44,
-      "effectivePeakDb": -26.7
+      "effectiveMeanDb": -38.7,
+      "effectivePeakDb": -21.9
     },
     {
       "type": "sfx",
@@ -2203,11 +2497,11 @@
       "mixVolume": 0.56,
       "duckFactor": null,
       "effectiveLinear": 0.0672,
-      "rawMeanDb": -19.2,
-      "rawPeakDb": -3,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": 0,
       "gainDb": -23.5,
-      "effectiveMeanDb": -42.7,
-      "effectivePeakDb": -26.5
+      "effectiveMeanDb": -37,
+      "effectivePeakDb": -23.5
     },
     {
       "type": "sfx",
@@ -2231,11 +2525,11 @@
       "mixVolume": 0.3,
       "duckFactor": null,
       "effectiveLinear": 0.036,
-      "rawMeanDb": -25,
-      "rawPeakDb": -7.4,
+      "rawMeanDb": -22.3,
+      "rawPeakDb": -2.8,
       "gainDb": -28.9,
-      "effectiveMeanDb": -53.9,
-      "effectivePeakDb": -36.3
+      "effectiveMeanDb": -51.2,
+      "effectivePeakDb": -31.7
     },
     {
       "type": "sfx",
@@ -2259,11 +2553,11 @@
       "mixVolume": 0.78,
       "duckFactor": null,
       "effectiveLinear": 0.0936,
-      "rawMeanDb": -24.1,
-      "rawPeakDb": -2.3,
+      "rawMeanDb": -15,
+      "rawPeakDb": 0,
       "gainDb": -20.6,
-      "effectiveMeanDb": -44.7,
-      "effectivePeakDb": -22.9
+      "effectiveMeanDb": -35.6,
+      "effectivePeakDb": -20.6
     },
     {
       "type": "sfx",
@@ -2287,11 +2581,11 @@
       "mixVolume": 0.45,
       "duckFactor": null,
       "effectiveLinear": 0.054,
-      "rawMeanDb": -21.8,
-      "rawPeakDb": -3,
+      "rawMeanDb": -18.2,
+      "rawPeakDb": -0.6,
       "gainDb": -25.4,
-      "effectiveMeanDb": -47.2,
-      "effectivePeakDb": -28.4
+      "effectiveMeanDb": -43.6,
+      "effectivePeakDb": -26
     },
     {
       "type": "sfx",
@@ -2301,11 +2595,11 @@
       "mixVolume": 0.45,
       "duckFactor": null,
       "effectiveLinear": 0.054,
-      "rawMeanDb": -18.6,
-      "rawPeakDb": -3.1,
+      "rawMeanDb": -16,
+      "rawPeakDb": 0,
       "gainDb": -25.4,
-      "effectiveMeanDb": -44,
-      "effectivePeakDb": -28.5
+      "effectiveMeanDb": -41.4,
+      "effectivePeakDb": -25.4
     },
     {
       "type": "sfx",
@@ -2315,11 +2609,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -38.5,
-      "rawPeakDb": -13.7,
+      "rawMeanDb": -33.4,
+      "rawPeakDb": -7,
       "gainDb": -24.4,
-      "effectiveMeanDb": -62.9,
-      "effectivePeakDb": -38.1
+      "effectiveMeanDb": -57.8,
+      "effectivePeakDb": -31.4
     },
     {
       "type": "sfx",
@@ -2343,11 +2637,11 @@
       "mixVolume": 0.55,
       "duckFactor": null,
       "effectiveLinear": 0.066,
-      "rawMeanDb": -38.5,
-      "rawPeakDb": -13.7,
+      "rawMeanDb": -33.4,
+      "rawPeakDb": -7,
       "gainDb": -23.6,
-      "effectiveMeanDb": -62.1,
-      "effectivePeakDb": -37.3
+      "effectiveMeanDb": -57,
+      "effectivePeakDb": -30.6
     },
     {
       "type": "sfx",
@@ -2413,11 +2707,11 @@
       "mixVolume": 0.7,
       "duckFactor": null,
       "effectiveLinear": 0.084,
-      "rawMeanDb": -16.8,
-      "rawPeakDb": -2.9,
+      "rawMeanDb": -14,
+      "rawPeakDb": 0,
       "gainDb": -21.5,
-      "effectiveMeanDb": -38.3,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -35.5,
+      "effectivePeakDb": -21.5
     },
     {
       "type": "sfx",
@@ -2483,11 +2777,11 @@
       "mixVolume": 0.75,
       "duckFactor": null,
       "effectiveLinear": 0.09,
-      "rawMeanDb": -13.4,
-      "rawPeakDb": -2.4,
+      "rawMeanDb": -9.7,
+      "rawPeakDb": 0,
       "gainDb": -20.9,
-      "effectiveMeanDb": -34.3,
-      "effectivePeakDb": -23.3
+      "effectiveMeanDb": -30.6,
+      "effectivePeakDb": -20.9
     },
     {
       "type": "sfx",
@@ -2525,11 +2819,11 @@
       "mixVolume": 0.78,
       "duckFactor": null,
       "effectiveLinear": 0.0936,
-      "rawMeanDb": -18.4,
-      "rawPeakDb": -3.4,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": 0,
       "gainDb": -20.6,
-      "effectiveMeanDb": -39,
-      "effectivePeakDb": -24
+      "effectiveMeanDb": -34.1,
+      "effectivePeakDb": -20.6
     },
     {
       "type": "sfx",
@@ -2539,11 +2833,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -14.5,
-      "rawPeakDb": -3.6,
+      "rawMeanDb": -7.2,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -38.9,
-      "effectivePeakDb": -28
+      "effectiveMeanDb": -31.6,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -2567,11 +2861,11 @@
       "mixVolume": 0.88,
       "duckFactor": null,
       "effectiveLinear": 0.1056,
-      "rawMeanDb": -17.4,
-      "rawPeakDb": -0.1,
+      "rawMeanDb": -16.1,
+      "rawPeakDb": -2.5,
       "gainDb": -19.5,
-      "effectiveMeanDb": -36.9,
-      "effectivePeakDb": -19.6
+      "effectiveMeanDb": -35.6,
+      "effectivePeakDb": -22
     },
     {
       "type": "sfx",
@@ -2651,11 +2945,11 @@
       "mixVolume": 0.72,
       "duckFactor": null,
       "effectiveLinear": 0.0864,
-      "rawMeanDb": -13.4,
-      "rawPeakDb": -2.4,
+      "rawMeanDb": -9.7,
+      "rawPeakDb": 0,
       "gainDb": -21.3,
-      "effectiveMeanDb": -34.7,
-      "effectivePeakDb": -23.7
+      "effectiveMeanDb": -31,
+      "effectivePeakDb": -21.3
     },
     {
       "type": "sfx",
@@ -2665,11 +2959,11 @@
       "mixVolume": 0.78,
       "duckFactor": null,
       "effectiveLinear": 0.0936,
-      "rawMeanDb": -18.4,
-      "rawPeakDb": -3.4,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": 0,
       "gainDb": -20.6,
-      "effectiveMeanDb": -39,
-      "effectivePeakDb": -24
+      "effectiveMeanDb": -34.1,
+      "effectivePeakDb": -20.6
     },
     {
       "type": "sfx",
@@ -2679,11 +2973,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -14.5,
-      "rawPeakDb": -3.6,
+      "rawMeanDb": -7.2,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -38.9,
-      "effectivePeakDb": -28
+      "effectiveMeanDb": -31.6,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -2707,11 +3001,11 @@
       "mixVolume": 0.88,
       "duckFactor": null,
       "effectiveLinear": 0.1056,
-      "rawMeanDb": -17.4,
-      "rawPeakDb": -0.1,
+      "rawMeanDb": -16.1,
+      "rawPeakDb": -2.5,
       "gainDb": -19.5,
-      "effectiveMeanDb": -36.9,
-      "effectivePeakDb": -19.6
+      "effectiveMeanDb": -35.6,
+      "effectivePeakDb": -22
     },
     {
       "type": "sfx",
@@ -2721,11 +3015,11 @@
       "mixVolume": 0.66,
       "duckFactor": null,
       "effectiveLinear": 0.0792,
-      "rawMeanDb": -19.2,
-      "rawPeakDb": -3,
+      "rawMeanDb": -13.5,
+      "rawPeakDb": 0,
       "gainDb": -22,
-      "effectiveMeanDb": -41.2,
-      "effectivePeakDb": -25
+      "effectiveMeanDb": -35.5,
+      "effectivePeakDb": -22
     },
     {
       "type": "sfx",
@@ -2735,11 +3029,11 @@
       "mixVolume": 0.54,
       "duckFactor": null,
       "effectiveLinear": 0.0648,
-      "rawMeanDb": -38.5,
-      "rawPeakDb": -13.7,
+      "rawMeanDb": -33.4,
+      "rawPeakDb": -7,
       "gainDb": -23.8,
-      "effectiveMeanDb": -62.3,
-      "effectivePeakDb": -37.5
+      "effectiveMeanDb": -57.2,
+      "effectivePeakDb": -30.8
     },
     {
       "type": "sfx",
@@ -2749,11 +3043,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -18.6,
-      "rawPeakDb": -3.1,
+      "rawMeanDb": -16,
+      "rawPeakDb": 0,
       "gainDb": -22.6,
-      "effectiveMeanDb": -41.2,
-      "effectivePeakDb": -25.7
+      "effectiveMeanDb": -38.6,
+      "effectivePeakDb": -22.6
     },
     {
       "type": "sfx",
@@ -2763,11 +3057,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -22.2,
-      "rawPeakDb": -4.9,
+      "rawMeanDb": -16.9,
+      "rawPeakDb": -0.1,
       "gainDb": -22.6,
-      "effectiveMeanDb": -44.8,
-      "effectivePeakDb": -27.5
+      "effectiveMeanDb": -39.5,
+      "effectivePeakDb": -22.7
     },
     {
       "type": "sfx",
@@ -2777,11 +3071,11 @@
       "mixVolume": 0.68,
       "duckFactor": null,
       "effectiveLinear": 0.0816,
-      "rawMeanDb": -19.8,
-      "rawPeakDb": -3,
+      "rawMeanDb": -16.4,
+      "rawPeakDb": 0,
       "gainDb": -21.8,
-      "effectiveMeanDb": -41.6,
-      "effectivePeakDb": -24.8
+      "effectiveMeanDb": -38.2,
+      "effectivePeakDb": -21.8
     },
     {
       "type": "sfx",
@@ -2791,11 +3085,11 @@
       "mixVolume": 0.84,
       "duckFactor": null,
       "effectiveLinear": 0.1008,
-      "rawMeanDb": -19.1,
-      "rawPeakDb": -3,
+      "rawMeanDb": -17.4,
+      "rawPeakDb": 0,
       "gainDb": -19.9,
-      "effectiveMeanDb": -39,
-      "effectivePeakDb": -22.9
+      "effectiveMeanDb": -37.3,
+      "effectivePeakDb": -19.9
     },
     {
       "type": "sfx",
@@ -2805,10 +3099,10 @@
       "mixVolume": 0.9,
       "duckFactor": null,
       "effectiveLinear": 0.108,
-      "rawMeanDb": -11.9,
+      "rawMeanDb": -12.6,
       "rawPeakDb": 0,
       "gainDb": -19.3,
-      "effectiveMeanDb": -31.2,
+      "effectiveMeanDb": -31.9,
       "effectivePeakDb": -19.3
     },
     {
@@ -2819,11 +3113,11 @@
       "mixVolume": 0.96,
       "duckFactor": null,
       "effectiveLinear": 0.1152,
-      "rawMeanDb": -19.9,
-      "rawPeakDb": -3.6,
+      "rawMeanDb": -19,
+      "rawPeakDb": -1.7,
       "gainDb": -18.8,
-      "effectiveMeanDb": -38.7,
-      "effectivePeakDb": -22.4
+      "effectiveMeanDb": -37.8,
+      "effectivePeakDb": -20.5
     },
     {
       "type": "sfx",
@@ -2833,11 +3127,11 @@
       "mixVolume": 1.05,
       "duckFactor": null,
       "effectiveLinear": 0.126,
-      "rawMeanDb": -21.4,
-      "rawPeakDb": -6.3,
+      "rawMeanDb": -18.1,
+      "rawPeakDb": -3.2,
       "gainDb": -18,
-      "effectiveMeanDb": -39.4,
-      "effectivePeakDb": -24.3
+      "effectiveMeanDb": -36.1,
+      "effectivePeakDb": -21.2
     },
     {
       "type": "sfx",
@@ -3043,11 +3337,11 @@
       "mixVolume": 0.88,
       "duckFactor": null,
       "effectiveLinear": 0.1056,
-      "rawMeanDb": -16.9,
-      "rawPeakDb": -2.1,
+      "rawMeanDb": -13.7,
+      "rawPeakDb": 0,
       "gainDb": -19.5,
-      "effectiveMeanDb": -36.4,
-      "effectivePeakDb": -21.6
+      "effectiveMeanDb": -33.2,
+      "effectivePeakDb": -19.5
     },
     {
       "type": "sfx",
@@ -3057,11 +3351,11 @@
       "mixVolume": 0.86,
       "duckFactor": null,
       "effectiveLinear": 0.1032,
-      "rawMeanDb": -19.8,
-      "rawPeakDb": -0.3,
+      "rawMeanDb": -18.9,
+      "rawPeakDb": -0.1,
       "gainDb": -19.7,
-      "effectiveMeanDb": -39.5,
-      "effectivePeakDb": -20
+      "effectiveMeanDb": -38.6,
+      "effectivePeakDb": -19.8
     },
     {
       "type": "sfx",
@@ -3071,11 +3365,11 @@
       "mixVolume": 0.72,
       "duckFactor": null,
       "effectiveLinear": 0.0864,
-      "rawMeanDb": -24.1,
-      "rawPeakDb": -2.3,
+      "rawMeanDb": -15,
+      "rawPeakDb": 0,
       "gainDb": -21.3,
-      "effectiveMeanDb": -45.4,
-      "effectivePeakDb": -23.6
+      "effectiveMeanDb": -36.3,
+      "effectivePeakDb": -21.3
     },
     {
       "type": "sfx",
@@ -3085,11 +3379,11 @@
       "mixVolume": 0.66,
       "duckFactor": null,
       "effectiveLinear": 0.0792,
-      "rawMeanDb": -16.8,
-      "rawPeakDb": -2.9,
+      "rawMeanDb": -14,
+      "rawPeakDb": 0,
       "gainDb": -22,
-      "effectiveMeanDb": -38.8,
-      "effectivePeakDb": -24.9
+      "effectiveMeanDb": -36,
+      "effectivePeakDb": -22
     },
     {
       "type": "sfx",
@@ -3099,11 +3393,11 @@
       "mixVolume": 0.54,
       "duckFactor": null,
       "effectiveLinear": 0.0648,
-      "rawMeanDb": -24,
-      "rawPeakDb": -5.8,
+      "rawMeanDb": -28.3,
+      "rawPeakDb": -9.2,
       "gainDb": -23.8,
-      "effectiveMeanDb": -47.8,
-      "effectivePeakDb": -29.6
+      "effectiveMeanDb": -52.1,
+      "effectivePeakDb": -33
     },
     {
       "type": "sfx",
@@ -3113,11 +3407,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -19.2,
-      "rawPeakDb": -3.5,
+      "rawMeanDb": -14.8,
+      "rawPeakDb": 0,
       "gainDb": -22.6,
-      "effectiveMeanDb": -41.8,
-      "effectivePeakDb": -26.1
+      "effectiveMeanDb": -37.4,
+      "effectivePeakDb": -22.6
     },
     {
       "type": "sfx",
@@ -3127,11 +3421,11 @@
       "mixVolume": 0.42,
       "duckFactor": null,
       "effectiveLinear": 0.0504,
-      "rawMeanDb": -12.7,
-      "rawPeakDb": -4.6,
+      "rawMeanDb": -19.5,
+      "rawPeakDb": -5,
       "gainDb": -26,
-      "effectiveMeanDb": -38.7,
-      "effectivePeakDb": -30.6
+      "effectiveMeanDb": -45.5,
+      "effectivePeakDb": -31
     },
     {
       "type": "sfx",
@@ -3141,11 +3435,11 @@
       "mixVolume": 0.68,
       "duckFactor": null,
       "effectiveLinear": 0.0816,
-      "rawMeanDb": -18.8,
-      "rawPeakDb": -0.4,
+      "rawMeanDb": -12.6,
+      "rawPeakDb": 0,
       "gainDb": -21.8,
-      "effectiveMeanDb": -40.6,
-      "effectivePeakDb": -22.2
+      "effectiveMeanDb": -34.4,
+      "effectivePeakDb": -21.8
     },
     {
       "type": "sfx",
@@ -3155,11 +3449,11 @@
       "mixVolume": 0.76,
       "duckFactor": null,
       "effectiveLinear": 0.0912,
-      "rawMeanDb": -8.7,
-      "rawPeakDb": -2.8,
+      "rawMeanDb": -8.8,
+      "rawPeakDb": 0,
       "gainDb": -20.8,
-      "effectiveMeanDb": -29.5,
-      "effectivePeakDb": -23.6
+      "effectiveMeanDb": -29.6,
+      "effectivePeakDb": -20.8
     },
     {
       "type": "sfx",
@@ -3169,11 +3463,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -21.8,
-      "rawPeakDb": -3,
+      "rawMeanDb": -18.2,
+      "rawPeakDb": -0.6,
       "gainDb": -22.6,
-      "effectiveMeanDb": -44.4,
-      "effectivePeakDb": -25.6
+      "effectiveMeanDb": -40.8,
+      "effectivePeakDb": -23.2
     },
     {
       "type": "sfx",
@@ -3183,11 +3477,11 @@
       "mixVolume": 0.2,
       "duckFactor": null,
       "effectiveLinear": 0.024,
-      "rawMeanDb": -25,
-      "rawPeakDb": -7.4,
+      "rawMeanDb": -22.3,
+      "rawPeakDb": -2.8,
       "gainDb": -32.4,
-      "effectiveMeanDb": -57.4,
-      "effectivePeakDb": -39.8
+      "effectiveMeanDb": -54.7,
+      "effectivePeakDb": -35.2
     },
     {
       "type": "sfx",
@@ -3197,11 +3491,11 @@
       "mixVolume": 0.34,
       "duckFactor": null,
       "effectiveLinear": 0.0408,
-      "rawMeanDb": -21.5,
-      "rawPeakDb": -4.8,
+      "rawMeanDb": -35.1,
+      "rawPeakDb": -10.5,
       "gainDb": -27.8,
-      "effectiveMeanDb": -49.3,
-      "effectivePeakDb": -32.6
+      "effectiveMeanDb": -62.9,
+      "effectivePeakDb": -38.3
     },
     {
       "type": "sfx",
@@ -3211,11 +3505,11 @@
       "mixVolume": 0.3,
       "duckFactor": null,
       "effectiveLinear": 0.036,
-      "rawMeanDb": -26.6,
-      "rawPeakDb": -2.5,
+      "rawMeanDb": -25.3,
+      "rawPeakDb": -3.3,
       "gainDb": -28.9,
-      "effectiveMeanDb": -55.5,
-      "effectivePeakDb": -31.4
+      "effectiveMeanDb": -54.2,
+      "effectivePeakDb": -32.2
     },
     {
       "type": "sfx",
@@ -3225,11 +3519,11 @@
       "mixVolume": 0.56,
       "duckFactor": null,
       "effectiveLinear": 0.0672,
-      "rawMeanDb": -21.3,
-      "rawPeakDb": -2.7,
+      "rawMeanDb": -22.7,
+      "rawPeakDb": -1.5,
       "gainDb": -23.5,
-      "effectiveMeanDb": -44.8,
-      "effectivePeakDb": -26.2
+      "effectiveMeanDb": -46.2,
+      "effectivePeakDb": -25
     },
     {
       "type": "sfx",
@@ -3239,11 +3533,11 @@
       "mixVolume": 0.45,
       "duckFactor": null,
       "effectiveLinear": 0.054,
-      "rawMeanDb": -19.7,
-      "rawPeakDb": -0.6,
+      "rawMeanDb": -15.4,
+      "rawPeakDb": 0,
       "gainDb": -25.4,
-      "effectiveMeanDb": -45.1,
-      "effectivePeakDb": -26
+      "effectiveMeanDb": -40.8,
+      "effectivePeakDb": -25.4
     },
     {
       "type": "sfx",
@@ -3253,11 +3547,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -25.1,
-      "rawPeakDb": -5.2,
+      "rawMeanDb": -26.5,
+      "rawPeakDb": -4,
       "gainDb": -24.4,
-      "effectiveMeanDb": -49.5,
-      "effectivePeakDb": -29.6
+      "effectiveMeanDb": -50.9,
+      "effectivePeakDb": -28.4
     },
     {
       "type": "sfx",
@@ -3267,11 +3561,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -21.7,
-      "rawPeakDb": -1,
+      "rawMeanDb": -19,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -46.5,
-      "effectivePeakDb": -25.8
+      "effectiveMeanDb": -43.8,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3281,11 +3575,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -20.2,
-      "rawPeakDb": -1.2,
+      "rawMeanDb": -13.9,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -45,
-      "effectivePeakDb": -26
+      "effectiveMeanDb": -38.7,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3295,11 +3589,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -18.7,
-      "rawPeakDb": -2.7,
+      "rawMeanDb": -16.9,
+      "rawPeakDb": 0,
       "gainDb": -25.2,
-      "effectiveMeanDb": -43.9,
-      "effectivePeakDb": -27.9
+      "effectiveMeanDb": -42.1,
+      "effectivePeakDb": -25.2
     },
     {
       "type": "sfx",
@@ -3309,11 +3603,11 @@
       "mixVolume": 0.56,
       "duckFactor": null,
       "effectiveLinear": 0.0672,
-      "rawMeanDb": -15.8,
-      "rawPeakDb": -1.8,
+      "rawMeanDb": -14.1,
+      "rawPeakDb": 0,
       "gainDb": -23.5,
-      "effectiveMeanDb": -39.3,
-      "effectivePeakDb": -25.3
+      "effectiveMeanDb": -37.6,
+      "effectivePeakDb": -23.5
     },
     {
       "type": "sfx",
@@ -3323,11 +3617,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -22.1,
-      "rawPeakDb": -9.5,
+      "rawMeanDb": -14.5,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -46.5,
-      "effectivePeakDb": -33.9
+      "effectiveMeanDb": -38.9,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -3337,11 +3631,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -15.1,
-      "rawPeakDb": -0.2,
+      "rawMeanDb": -14.8,
+      "rawPeakDb": 0,
       "gainDb": -25.2,
-      "effectiveMeanDb": -40.3,
-      "effectivePeakDb": -25.4
+      "effectiveMeanDb": -40,
+      "effectivePeakDb": -25.2
     },
     {
       "type": "sfx",
@@ -3351,11 +3645,11 @@
       "mixVolume": 0.68,
       "duckFactor": null,
       "effectiveLinear": 0.0816,
-      "rawMeanDb": -9.5,
-      "rawPeakDb": -0.2,
+      "rawMeanDb": -8.5,
+      "rawPeakDb": 0,
       "gainDb": -21.8,
-      "effectiveMeanDb": -31.3,
-      "effectivePeakDb": -22
+      "effectiveMeanDb": -30.3,
+      "effectivePeakDb": -21.8
     },
     {
       "type": "sfx",
@@ -3365,11 +3659,11 @@
       "mixVolume": 0.54,
       "duckFactor": null,
       "effectiveLinear": 0.0648,
-      "rawMeanDb": -22.1,
-      "rawPeakDb": -10.7,
+      "rawMeanDb": -23.9,
+      "rawPeakDb": -5.4,
       "gainDb": -23.8,
-      "effectiveMeanDb": -45.9,
-      "effectivePeakDb": -34.5
+      "effectiveMeanDb": -47.7,
+      "effectivePeakDb": -29.2
     },
     {
       "type": "sfx",
@@ -3379,11 +3673,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -19.3,
-      "rawPeakDb": -1.2,
+      "rawMeanDb": -17,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -43.7,
-      "effectivePeakDb": -25.6
+      "effectiveMeanDb": -41.4,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -3393,11 +3687,11 @@
       "mixVolume": 0.28,
       "duckFactor": null,
       "effectiveLinear": 0.0336,
-      "rawMeanDb": -22.4,
-      "rawPeakDb": -2.4,
+      "rawMeanDb": -19.8,
+      "rawPeakDb": -0.1,
       "gainDb": -29.5,
-      "effectiveMeanDb": -51.9,
-      "effectivePeakDb": -31.9
+      "effectiveMeanDb": -49.3,
+      "effectivePeakDb": -29.6
     },
     {
       "type": "sfx",
@@ -3407,11 +3701,11 @@
       "mixVolume": 0.62,
       "duckFactor": null,
       "effectiveLinear": 0.0744,
-      "rawMeanDb": -16.9,
-      "rawPeakDb": -1,
+      "rawMeanDb": -12.5,
+      "rawPeakDb": 0,
       "gainDb": -22.6,
-      "effectiveMeanDb": -39.5,
-      "effectivePeakDb": -23.6
+      "effectiveMeanDb": -35.1,
+      "effectivePeakDb": -22.6
     },
     {
       "type": "sfx",
@@ -3421,11 +3715,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -19.9,
-      "rawPeakDb": -10.1,
+      "rawMeanDb": -29.1,
+      "rawPeakDb": -10.3,
       "gainDb": -25.2,
-      "effectiveMeanDb": -45.1,
-      "effectivePeakDb": -35.3
+      "effectiveMeanDb": -54.3,
+      "effectivePeakDb": -35.5
     },
     {
       "type": "sfx",
@@ -3435,11 +3729,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -17.5,
-      "rawPeakDb": -1.8,
+      "rawMeanDb": -16.7,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -42.3,
-      "effectivePeakDb": -26.6
+      "effectiveMeanDb": -41.5,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3449,11 +3743,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -8.7,
-      "rawPeakDb": -2.8,
+      "rawMeanDb": -8.8,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -33.5,
-      "effectivePeakDb": -27.6
+      "effectiveMeanDb": -33.6,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3463,11 +3757,11 @@
       "mixVolume": 0.58,
       "duckFactor": null,
       "effectiveLinear": 0.0696,
-      "rawMeanDb": -11.7,
-      "rawPeakDb": -2.4,
+      "rawMeanDb": -9.9,
+      "rawPeakDb": 0,
       "gainDb": -23.1,
-      "effectiveMeanDb": -34.8,
-      "effectivePeakDb": -25.5
+      "effectiveMeanDb": -33,
+      "effectivePeakDb": -23.1
     },
     {
       "type": "sfx",
@@ -3477,11 +3771,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -13.3,
-      "rawPeakDb": -2.7,
+      "rawMeanDb": -7.7,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -38.1,
-      "effectivePeakDb": -27.5
+      "effectiveMeanDb": -32.5,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3491,11 +3785,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -18.8,
-      "rawPeakDb": -3,
+      "rawMeanDb": -20,
+      "rawPeakDb": -4,
       "gainDb": -24.8,
-      "effectiveMeanDb": -43.6,
-      "effectivePeakDb": -27.8
+      "effectiveMeanDb": -44.8,
+      "effectivePeakDb": -28.8
     },
     {
       "type": "sfx",
@@ -3505,11 +3799,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -19.3,
-      "rawPeakDb": -1.1,
+      "rawMeanDb": -14.8,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -44.1,
-      "effectivePeakDb": -25.9
+      "effectiveMeanDb": -39.6,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3519,11 +3813,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -23.1,
-      "rawPeakDb": -3.8,
+      "rawMeanDb": -20.1,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -47.9,
-      "effectivePeakDb": -28.6
+      "effectiveMeanDb": -44.9,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3533,11 +3827,11 @@
       "mixVolume": 0.54,
       "duckFactor": null,
       "effectiveLinear": 0.0648,
-      "rawMeanDb": -10.4,
-      "rawPeakDb": -0.9,
+      "rawMeanDb": -9.8,
+      "rawPeakDb": 0,
       "gainDb": -23.8,
-      "effectiveMeanDb": -34.2,
-      "effectivePeakDb": -24.7
+      "effectiveMeanDb": -33.6,
+      "effectivePeakDb": -23.8
     },
     {
       "type": "sfx",
@@ -3561,11 +3855,11 @@
       "mixVolume": 0.44,
       "duckFactor": null,
       "effectiveLinear": 0.0528,
-      "rawMeanDb": -23.9,
-      "rawPeakDb": -1.2,
+      "rawMeanDb": -22.9,
+      "rawPeakDb": 0,
       "gainDb": -25.5,
-      "effectiveMeanDb": -49.4,
-      "effectivePeakDb": -26.7
+      "effectiveMeanDb": -48.4,
+      "effectivePeakDb": -25.5
     },
     {
       "type": "sfx",
@@ -3575,11 +3869,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -29.7,
-      "rawPeakDb": -3.4,
+      "rawMeanDb": -33.6,
+      "rawPeakDb": -6.1,
       "gainDb": -25.2,
-      "effectiveMeanDb": -54.9,
-      "effectivePeakDb": -28.6
+      "effectiveMeanDb": -58.8,
+      "effectivePeakDb": -31.3
     },
     {
       "type": "sfx",
@@ -3589,11 +3883,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -26,
-      "rawPeakDb": -8.4,
+      "rawMeanDb": -13.8,
+      "rawPeakDb": 0,
       "gainDb": -24.8,
-      "effectiveMeanDb": -50.8,
-      "effectivePeakDb": -33.2
+      "effectiveMeanDb": -38.6,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3603,11 +3897,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -19,
-      "rawPeakDb": -3,
+      "rawMeanDb": -16.3,
+      "rawPeakDb": -0.4,
       "gainDb": -24.4,
-      "effectiveMeanDb": -43.4,
-      "effectivePeakDb": -27.4
+      "effectiveMeanDb": -40.7,
+      "effectivePeakDb": -24.8
     },
     {
       "type": "sfx",
@@ -3631,11 +3925,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -22.4,
-      "rawPeakDb": -4.5,
+      "rawMeanDb": -20,
+      "rawPeakDb": -3,
       "gainDb": -25.2,
-      "effectiveMeanDb": -47.6,
-      "effectivePeakDb": -29.7
+      "effectiveMeanDb": -45.2,
+      "effectivePeakDb": -28.2
     },
     {
       "type": "sfx",
@@ -3645,11 +3939,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -32.3,
-      "rawPeakDb": -8.1,
+      "rawMeanDb": -30.6,
+      "rawPeakDb": -7.3,
       "gainDb": -24.4,
-      "effectiveMeanDb": -56.7,
-      "effectivePeakDb": -32.5
+      "effectiveMeanDb": -55,
+      "effectivePeakDb": -31.7
     },
     {
       "type": "sfx",
@@ -3659,11 +3953,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -30.8,
-      "rawPeakDb": -7.7,
+      "rawMeanDb": -35.1,
+      "rawPeakDb": -6.4,
       "gainDb": -24.8,
-      "effectiveMeanDb": -55.6,
-      "effectivePeakDb": -32.5
+      "effectiveMeanDb": -59.9,
+      "effectivePeakDb": -31.2
     },
     {
       "type": "sfx",
@@ -3673,11 +3967,11 @@
       "mixVolume": 0.52,
       "duckFactor": null,
       "effectiveLinear": 0.0624,
-      "rawMeanDb": -17,
-      "rawPeakDb": -2.8,
+      "rawMeanDb": -14.5,
+      "rawPeakDb": 0,
       "gainDb": -24.1,
-      "effectiveMeanDb": -41.1,
-      "effectivePeakDb": -26.9
+      "effectiveMeanDb": -38.6,
+      "effectivePeakDb": -24.1
     },
     {
       "type": "sfx",
@@ -3687,11 +3981,11 @@
       "mixVolume": 0.44,
       "duckFactor": null,
       "effectiveLinear": 0.0528,
-      "rawMeanDb": -22.9,
-      "rawPeakDb": -0.6,
+      "rawMeanDb": -20.5,
+      "rawPeakDb": -3.7,
       "gainDb": -25.5,
-      "effectiveMeanDb": -48.4,
-      "effectivePeakDb": -26.1
+      "effectiveMeanDb": -46,
+      "effectivePeakDb": -29.2
     },
     {
       "type": "sfx",
@@ -3701,11 +3995,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -14.5,
-      "rawPeakDb": -0.7,
+      "rawMeanDb": -13.6,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -38.9,
-      "effectivePeakDb": -25.1
+      "effectiveMeanDb": -38,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -3715,11 +4009,11 @@
       "mixVolume": 0.52,
       "duckFactor": null,
       "effectiveLinear": 0.0624,
-      "rawMeanDb": -15.8,
-      "rawPeakDb": -0.3,
+      "rawMeanDb": -18.6,
+      "rawPeakDb": -2.9,
       "gainDb": -24.1,
-      "effectiveMeanDb": -39.9,
-      "effectivePeakDb": -24.4
+      "effectiveMeanDb": -42.7,
+      "effectivePeakDb": -27
     },
     {
       "type": "sfx",
@@ -3729,11 +4023,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -12.3,
-      "rawPeakDb": -1.7,
+      "rawMeanDb": -12.1,
+      "rawPeakDb": 0,
       "gainDb": -25.2,
-      "effectiveMeanDb": -37.5,
-      "effectivePeakDb": -26.9
+      "effectiveMeanDb": -37.3,
+      "effectivePeakDb": -25.2
     },
     {
       "type": "sfx",
@@ -3743,11 +4037,11 @@
       "mixVolume": 0.52,
       "duckFactor": null,
       "effectiveLinear": 0.0624,
-      "rawMeanDb": -28.9,
-      "rawPeakDb": -0.4,
+      "rawMeanDb": -23.8,
+      "rawPeakDb": 0,
       "gainDb": -24.1,
-      "effectiveMeanDb": -53,
-      "effectivePeakDb": -24.5
+      "effectiveMeanDb": -47.9,
+      "effectivePeakDb": -24.1
     },
     {
       "type": "sfx",
@@ -3757,11 +4051,11 @@
       "mixVolume": 0.56,
       "duckFactor": null,
       "effectiveLinear": 0.0672,
-      "rawMeanDb": -13.2,
-      "rawPeakDb": -1.8,
+      "rawMeanDb": -9.5,
+      "rawPeakDb": -0.3,
       "gainDb": -23.5,
-      "effectiveMeanDb": -36.7,
-      "effectivePeakDb": -25.3
+      "effectiveMeanDb": -33,
+      "effectivePeakDb": -23.8
     },
     {
       "type": "sfx",
@@ -3785,11 +4079,11 @@
       "mixVolume": 0.48,
       "duckFactor": null,
       "effectiveLinear": 0.0576,
-      "rawMeanDb": -22.9,
-      "rawPeakDb": -1.8,
+      "rawMeanDb": -18.3,
+      "rawPeakDb": -1.1,
       "gainDb": -24.8,
-      "effectiveMeanDb": -47.7,
-      "effectivePeakDb": -26.6
+      "effectiveMeanDb": -43.1,
+      "effectivePeakDb": -25.9
     },
     {
       "type": "sfx",
@@ -3813,11 +4107,11 @@
       "mixVolume": 0.5,
       "duckFactor": null,
       "effectiveLinear": 0.06,
-      "rawMeanDb": -12.2,
-      "rawPeakDb": -0.6,
+      "rawMeanDb": -10.2,
+      "rawPeakDb": 0,
       "gainDb": -24.4,
-      "effectiveMeanDb": -36.6,
-      "effectivePeakDb": -25
+      "effectiveMeanDb": -34.6,
+      "effectivePeakDb": -24.4
     },
     {
       "type": "sfx",
@@ -3827,11 +4121,11 @@
       "mixVolume": 0.66,
       "duckFactor": null,
       "effectiveLinear": 0.0792,
-      "rawMeanDb": -23.2,
-      "rawPeakDb": -3.1,
+      "rawMeanDb": -19,
+      "rawPeakDb": -0.1,
       "gainDb": -22,
-      "effectiveMeanDb": -45.2,
-      "effectivePeakDb": -25.1
+      "effectiveMeanDb": -41,
+      "effectivePeakDb": -22.1
     },
     {
       "type": "sfx",
@@ -3841,11 +4135,11 @@
       "mixVolume": 0.58,
       "duckFactor": null,
       "effectiveLinear": 0.0696,
-      "rawMeanDb": -15.7,
-      "rawPeakDb": -1.2,
+      "rawMeanDb": -10.4,
+      "rawPeakDb": 0,
       "gainDb": -23.1,
-      "effectiveMeanDb": -38.8,
-      "effectivePeakDb": -24.3
+      "effectiveMeanDb": -33.5,
+      "effectivePeakDb": -23.1
     },
     {
       "type": "sfx",
@@ -3855,11 +4149,11 @@
       "mixVolume": 0.08,
       "duckFactor": null,
       "effectiveLinear": 0.0096,
-      "rawMeanDb": -12.7,
-      "rawPeakDb": -4.6,
+      "rawMeanDb": -19.5,
+      "rawPeakDb": -5,
       "gainDb": -40.4,
-      "effectiveMeanDb": -53.1,
-      "effectivePeakDb": -45
+      "effectiveMeanDb": -59.9,
+      "effectivePeakDb": -45.4
     },
     {
       "type": "sfx",
@@ -3869,11 +4163,11 @@
       "mixVolume": 0.34,
       "duckFactor": null,
       "effectiveLinear": 0.0408,
-      "rawMeanDb": -18.7,
-      "rawPeakDb": -2.7,
+      "rawMeanDb": -16.9,
+      "rawPeakDb": 0,
       "gainDb": -27.8,
-      "effectiveMeanDb": -46.5,
-      "effectivePeakDb": -30.5
+      "effectiveMeanDb": -44.7,
+      "effectivePeakDb": -27.8
     },
     {
       "type": "sfx",
@@ -3883,11 +4177,11 @@
       "mixVolume": 0.32,
       "duckFactor": null,
       "effectiveLinear": 0.0384,
-      "rawMeanDb": -19.7,
-      "rawPeakDb": -0.6,
+      "rawMeanDb": -15.4,
+      "rawPeakDb": 0,
       "gainDb": -28.3,
-      "effectiveMeanDb": -48,
-      "effectivePeakDb": -28.9
+      "effectiveMeanDb": -43.7,
+      "effectivePeakDb": -28.3
     },
     {
       "type": "sfx",
@@ -3897,11 +4191,11 @@
       "mixVolume": 0.46,
       "duckFactor": null,
       "effectiveLinear": 0.0552,
-      "rawMeanDb": -8.7,
-      "rawPeakDb": -2.8,
+      "rawMeanDb": -8.8,
+      "rawPeakDb": 0,
       "gainDb": -25.2,
-      "effectiveMeanDb": -33.9,
-      "effectivePeakDb": -28
+      "effectiveMeanDb": -34,
+      "effectivePeakDb": -25.2
     },
     {
       "type": "voice",

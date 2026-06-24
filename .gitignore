@@ -35,4 +35,5 @@ steamworks/
 # Protected generated build artifacts - never commit
 public/sw.js
 public/version.json
+public/audio/sfx/nova-swarm-candidates/
 .pw-browsers/
