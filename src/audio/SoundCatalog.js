@@ -2,6 +2,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
+import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -396,7 +397,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_launch: 'mission_control_launch.mp3',
     mission_control_level_start: 'mission_control_level_start.mp3',
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
-    mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming.mp3',
+    mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming_001.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
     mission_control_lives_max: 'mission_control_lives_max.mp3',
@@ -713,7 +714,7 @@ export const SFX_CATALOG = {
     'mission_control_launch': missionControlPool('mission_control_launch'),
     'mission_control_level_start': missionControlPool('mission_control_level_start'),
     'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
-    'mission_control_reinforcements_incoming': missionControlPool('mission_control_reinforcements_incoming', 0),
+    'mission_control_reinforcements_incoming': paddedNumberedVoicePool('mission_control_reinforcements_incoming', REINFORCEMENT_VOICE_COUNT, 3),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),
     'mission_control_lives_max': missionControlPool('mission_control_lives_max', 0),

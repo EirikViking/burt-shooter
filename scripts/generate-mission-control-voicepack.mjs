@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { reinforcementVoiceLines } from '../src/config/ReinforcementVoiceLines.js';
+
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
 const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
@@ -238,7 +240,11 @@ const lines = [
   {
     file: 'mission_control_overrun_clear_far_signal_01.mp3',
     text: 'Far overrun sector cleared. The run is off the map. Keep the line.'
-  }
+  },
+  ...reinforcementVoiceLines.map((line) => ({
+    file: `${line.id}.mp3`,
+    text: line.text
+  }))
 ];
 
 function requiredEnv() {

@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { AssetManifest } from '../src/assets/assetManifest.js';
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
+import { REINFORCEMENT_VOICE_COUNT } from '../src/config/ReinforcementVoiceLines.js';
 
 const fail = (message) => {
   console.error(`[check-mayhem-reinforcement-waves] ${message}`);
@@ -9,7 +11,6 @@ const fail = (message) => {
 const read = (path) => readFileSync(path, 'utf8');
 
 const enemyManager = read('src/managers/EnemyManager.js');
-const assetManifest = read('src/assets/assetManifest.js');
 const soundCatalog = read('src/audio/SoundCatalog.js');
 const config = BalanceConfig.difficulty?.mayhemReinforcements;
 
@@ -78,12 +79,16 @@ if (observedRate < 0.085 || observedRate > 0.115) {
   fail(`Stable reinforcement roll drifted outside rare 10% band: ${observedRate.toFixed(4)}.`);
 }
 
-const voiceFile = 'public/audio/voice/mission-control/mission_control_reinforcements_incoming.mp3';
-if (!existsSync(voiceFile)) fail(`Missing reinforcement voice asset: ${voiceFile}`);
-if (!assetManifest.includes('/audio/voice/mission-control/mission_control_reinforcements_incoming.mp3')) {
-  fail('Asset manifest does not include reinforcement voice asset.');
+const expectedVoiceFiles = Array.from(
+  { length: REINFORCEMENT_VOICE_COUNT },
+  (_, index) => `public/audio/voice/mission-control/mission_control_reinforcements_incoming_${String(index + 1).padStart(3, '0')}.mp3`
+);
+for (const voiceFile of expectedVoiceFiles) {
+  if (!existsSync(voiceFile)) fail(`Missing reinforcement voice asset: ${voiceFile}`);
+  const manifestUrl = `/${voiceFile.replace(/^public\//, '').replaceAll('\\', '/')}`;
+  if (!AssetManifest.audio.voice.includes(manifestUrl)) fail(`Asset manifest missing reinforcement voice asset: ${manifestUrl}`);
 }
-if (!soundCatalog.includes('mission_control_reinforcements_incoming')) {
+if (!soundCatalog.includes('mission_control_reinforcements_incoming') || !soundCatalog.includes('REINFORCEMENT_VOICE_COUNT')) {
   fail('Sound catalog does not include reinforcement voice event.');
 }
 

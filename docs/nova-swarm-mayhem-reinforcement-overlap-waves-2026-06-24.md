@@ -18,9 +18,9 @@ Mayhem can feel too stop-start after most of a normal wave has been cleared. The
 ## Warning And Audio
 
 - Visual warning text: `INCOMING REINFORCEMENTS`
-- Voice line text: `Incoming enemy reinforcements!`
-- Voice asset: `public/audio/voice/mission-control/mission_control_reinforcements_incoming.mp3`
-- The voice line uses the existing mission-control voice event path and respects voice settings. The visual warning remains the reliable gameplay signal.
+- Voice event: `mission_control_reinforcements_incoming`
+- Voice assets: `public/audio/voice/mission-control/mission_control_reinforcements_incoming_001.mp3` through `_100.mp3`
+- The 100-line warning pool uses the same approved mission-control `Female misfit` voice as the other in-game announcer lines and respects voice settings. The visual warning remains the reliable gameplay signal.
 
 ## Balance Notes
 
@@ -56,4 +56,5 @@ The model is a deterministic comparative pressure check, not a live Steam or hum
 ## Focused Verification
 
 - `npm run check:mayhem-reinforcement-waves`
+- `npm run check:reinforcement-voices`
 - `node scripts/analyze-mayhem-reinforcement-waves.mjs`

@@ -241,7 +241,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_wave_clear.mp3',
             '/audio/voice/mission-control/mission_control_wave_clear_alt01.mp3',
             '/audio/voice/mission-control/mission_control_wave_clear_alt02.mp3',
-            '/audio/voice/mission-control/mission_control_reinforcements_incoming.mp3',
+            ...Array.from({ length: 100 }, (_, i) => `/audio/voice/mission-control/mission_control_reinforcements_incoming_${String(i + 1).padStart(3, '0')}.mp3`),
             '/audio/voice/mission-control/mission_control_boss_inbound.mp3',
             '/audio/voice/mission-control/mission_control_boss_inbound_alt01.mp3',
             '/audio/voice/mission-control/mission_control_boss_inbound_alt02.mp3',

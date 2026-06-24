@@ -17,6 +17,7 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 - Repeated events use variation pools with per-event no-repeat bags in `AudioManager`.
 - High-frequency moments use event-level cooldowns in addition to the global voice cooldown. Fast restart does not bypass launch/restart replay guards unless a call explicitly opts into `bypassEventCooldown`.
 - Powerup, combo, wave-clear, and hijacker warnings have cooldowns so the first minute stays clean.
+- Reinforcement warnings use the same mission-control female voice as the rest of the in-game announcer.
 - Game-over delayed voice callbacks are cleared before instant restart so leaderboard, near-miss, personal-best, and retry prompts do not bleed into the next run.
 - Global leaderboard qualification is allowed to interrupt with a bigger fanfare and special voice line because it is rare and score-defining.
 - Optional intro narration remains exclusive to the `intro_narrator` group and is stopped on panel changes.
@@ -26,6 +27,7 @@ Nova Swarm's announcer should feel like the arcade cabinet is daring the player 
 - `mission_control_launch`: run start.
 - `mission_control_level_start`: wave start and level pressure.
 - `mission_control_wave_clear`: wave clear and challenge clear.
+- `mission_control_reinforcements_incoming`: Mayhem reinforcement warnings, with a 100-line no-repeat pool.
 - `mission_control_boss_inbound`: boss gate and boss entry.
 - `mission_control_victory`: boss defeat.
 - `mission_control_combo`: combo multiplier spikes.

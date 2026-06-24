@@ -25,6 +25,22 @@ npm run generate:local-announcer-voicepack
 
 The ElevenLabs generator covers the mission-control variation pools plus the four intro narration files.
 
+Mayhem reinforcement warnings use a 100-line numbered mission-control pool:
+
+```text
+public/audio/voice/mission-control/mission_control_reinforcements_incoming_001.mp3
+...
+public/audio/voice/mission-control/mission_control_reinforcements_incoming_100.mp3
+```
+
+Regenerate only those warnings with:
+
+```bash
+npm run generate:reinforcement-voices
+```
+
+That generator is locked to the same approved `Female misfit` voice as the rest of mission control and rejects a different reinforcement voice ID. `npm run check:reinforcement-voices` verifies the 100 unique scripts, the numbered files, manifest/catalog coverage, and the approved voice guard.
+
 ## Boss death agony voicepack
 
 The 2026-06-12 boss death follow-up adds a separate male ElevenLabs voice pool for boss agony screams:
@@ -116,6 +132,7 @@ ELEVENLABS_MODEL_ID=<model id>
 - `mission_control_launch`
 - `mission_control_level_start`
 - `mission_control_wave_clear`
+- `mission_control_reinforcements_incoming`
 - `mission_control_boss_inbound`
 - `mission_control_life_low`
 - `mission_control_powerup`

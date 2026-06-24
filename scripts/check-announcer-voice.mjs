@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { SFX_CATALOG, VOICE_MIX } from '../src/audio/SoundCatalog.js';
+import { REINFORCEMENT_VOICE_COUNT } from '../src/config/ReinforcementVoiceLines.js';
 
 const rootDir = process.cwd();
 const errors = [];
@@ -11,6 +12,7 @@ const requiredPools = {
   mission_control_launch: 3,
   mission_control_level_start: 3,
   mission_control_wave_clear: 3,
+  mission_control_reinforcements_incoming: REINFORCEMENT_VOICE_COUNT,
   mission_control_boss_inbound: 3,
   mission_control_life_low: 3,
   mission_control_lives_max: 1,
@@ -116,6 +118,7 @@ for (const requiredText of [
   'mission_control_ship_unlocked',
   'mission_control_ships_unlocked',
   'mission_control_lives_max',
+  'mission_control_reinforcements_incoming',
   'mission_control_restart',
   'mission_control_tractor_hijack',
   'mission_control_overrun_clear_sector_10',
