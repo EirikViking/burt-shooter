@@ -559,6 +559,11 @@ export const BalanceConfig = {
         levelReductionMs: 250,
         contactPushbackPx: 72,
         blockedHitFeedbackCooldownMs: 600,
+        lifeLossCap: {
+            enabled: true,
+            maxLives: 2,
+            windowMs: 8000
+        },
         wipeoutGuard: {
             enabled: true,
             recentDeathWindowMs: 14000,

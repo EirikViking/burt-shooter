@@ -153,8 +153,10 @@ export class PlayScene {
     this.bossMercyUntilMs = 0;
     this.lastBossMercyBlockLogAt = 0;
     this.lastBossMercyFeedbackAt = 0;
+    this.lastBossLifeLossCapBlockLogAt = 0;
     this.bossWipeoutGuard = null;
     this.pendingBossWipeoutRecovery = null;
+    this.bossLifeLossCapState = null;
     this.deferredThreatDefeats = [];
     this.deferredThreatDefeatStats = {
       queued: 0,
@@ -817,6 +819,7 @@ export class PlayScene {
     this.bossHazards = [];
     this.lastBossHazardHit = null;
     this.bossMercyUntilMs = 0;
+    this.resetBossLifeLossCap('debug_level_jump');
     this.resetBossWipeoutGuard('debug_level_jump');
     this.game.level = targetLevel;
     const computedRank = rankManager.getRankFromLevel(targetLevel);
@@ -1164,6 +1167,7 @@ export class PlayScene {
     this._lastStartedLevel = this.game.level;
 
     this.levelAdvancePending = false;
+    this.resetBossLifeLossCap('level_start');
     this.resetBossWipeoutGuard('level_start');
     const postBossLevelIntro = Boolean(this.postBossLevelIntroPending);
     this.postBossLevelIntroPending = false;
@@ -4827,6 +4831,73 @@ export class PlayScene {
     this.pendingBossWipeoutRecovery = null;
   }
 
+  getBossLifeLossCapConfig() {
+    const config = BalanceConfig.bossMercy?.lifeLossCap || {};
+    if (BalanceConfig.bossMercy?.enabled !== true || config.enabled !== true) return null;
+    return {
+      maxLives: Math.max(1, Math.floor(Number(config.maxLives) || 2)),
+      windowMs: Math.max(1000, Number(config.windowMs) || 8000)
+    };
+  }
+
+  resetBossLifeLossCap(reason = 'reset') {
+    if (this.bossLifeLossCapState && this.debugPowerups) {
+      console.log(`[BossLifeLossCap] reset reason=${reason} losses=${this.bossLifeLossCapState.lossTimes?.length || 0}`);
+    }
+    this.bossLifeLossCapState = null;
+  }
+
+  getRecentBossLifeLossTimes(boss = this.enemyManager?.boss, now = Date.now()) {
+    const config = this.getBossLifeLossCapConfig();
+    if (!config || !boss?.active) return [];
+    const encounterKey = this.getBossEncounterKey(boss);
+    const state = this.bossLifeLossCapState?.encounterKey === encounterKey
+      ? this.bossLifeLossCapState
+      : { encounterKey, lossTimes: [] };
+    const lossTimes = (state.lossTimes || []).filter((time) => now - time < config.windowMs);
+    this.bossLifeLossCapState = { encounterKey, lossTimes };
+    return lossTimes;
+  }
+
+  canBossLifeLossCapAllowHit(source = 'boss_damage', boss = this.enemyManager?.boss) {
+    const config = this.getBossLifeLossCapConfig();
+    if (!config || !boss?.active) return true;
+    const now = Date.now();
+    const lossTimes = this.getRecentBossLifeLossTimes(boss, now);
+    if (lossTimes.length < config.maxLives) return true;
+
+    const oldest = Math.min(...lossTimes);
+    const remainingMs = Math.max(0, config.windowMs - (now - oldest));
+    const feedbackCooldownMs = Math.max(0, Number(BalanceConfig.bossMercy?.blockedHitFeedbackCooldownMs) || 600);
+    if (now - (this.lastBossLifeLossCapBlockLogAt || 0) >= feedbackCooldownMs) {
+      this.lastBossLifeLossCapBlockLogAt = now;
+      console.log(
+        `[BossLifeLossCap] block source=${source}` +
+        ` level=${Number(boss?.level) || Number(this.game?.level) || 1}` +
+        ` recent=${lossTimes.length}/${config.maxLives}` +
+        ` windowMs=${Math.round(config.windowMs)} remainingMs=${Math.round(remainingMs)}`
+      );
+    }
+    this.showBossMercyBlockedFeedback(source);
+    return false;
+  }
+
+  recordBossLifeLossCap(source = 'boss_damage', boss = this.enemyManager?.boss) {
+    const config = this.getBossLifeLossCapConfig();
+    if (!config || !boss?.active) return null;
+    const now = Date.now();
+    const encounterKey = this.getBossEncounterKey(boss);
+    const lossTimes = this.getRecentBossLifeLossTimes(boss, now);
+    lossTimes.push(now);
+    this.bossLifeLossCapState = {
+      encounterKey,
+      lossTimes: lossTimes.filter((time) => now - time < config.windowMs),
+      lastSource: source,
+      lastLossAt: now
+    };
+    return this.bossLifeLossCapState;
+  }
+
   recordBossWipeoutLifeLoss(source = 'boss_damage', boss = this.enemyManager?.boss) {
     const config = this.getBossWipeoutConfig();
     if (!config || !boss?.active) return null;
@@ -4907,6 +4978,7 @@ export class PlayScene {
     const config = BalanceConfig.bossMercy || {};
     if (config.enabled !== true) return true;
     const now = Date.now();
+    if (!this.canBossLifeLossCapAllowHit(source, boss)) return false;
     const remainingMs = Math.max(0, (this.bossMercyUntilMs || 0) - now);
     if (remainingMs <= 0) return true;
 
@@ -4995,6 +5067,7 @@ export class PlayScene {
       return false;
     }
 
+    this.recordBossLifeLossCap(source, boss);
     const wipeoutGuard = this.recordBossWipeoutLifeLoss(source, boss);
     const cooldownMs = this.startBossMercyWindow(
       source,
@@ -9679,6 +9752,7 @@ export class PlayScene {
   }
 
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
+    this.resetBossLifeLossCap('boss_defeated');
     this.resetBossWipeoutGuard('boss_defeated');
     if (!this.uiOverlay) return;
     this.recordBalanceBossEnd();
