@@ -26,7 +26,11 @@ import {
   getCodexDiscoverySignature,
   invalidateThreatDiscoveryStateCache
 } from './progression/ThreatDiscoveryState.js';
-import { SHIP_UNLOCK_HISTORY_REASON_KEYS, normalizeShipUnlockHistory } from './progression/HangarProgressState.js';
+import {
+  SHIP_UNLOCK_HISTORY_REASON_KEYS,
+  normalizeShipUnlockHistory,
+  recalculateUnlockedShipIds
+} from './progression/HangarProgressState.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY };
@@ -333,9 +337,46 @@ function getHighestDiscoveredPilotRank(discovery = {}) {
     .reduce((max, rank) => Math.max(max, Math.floor(rank)), -1);
 }
 
-function bestScoreFromScores(scores = []) {
-  return normalizeScores(scores)
-    .reduce((max, entry) => Math.max(max, Math.floor(Number(entry.score) || 0)), 0);
+function rankedRunEvidenceFromScores(scores = []) {
+  const normalized = normalizeScores(scores);
+  const evidence = {
+    runCount: normalized.length,
+    bestScore: 0,
+    bestLevel: 1,
+    bestBosses: 0,
+    bestWaves: 0,
+    bestRunTimeSeconds: 0,
+    runClears: 0,
+    noHitWaves: 0,
+    noHitSectors: 0,
+    clearWithLivesRemaining: 0,
+    highestScoreMultiplier: 1
+  };
+  for (const entry of normalized) {
+    evidence.bestScore = Math.max(evidence.bestScore, Math.floor(Number(entry.score) || 0));
+    evidence.bestLevel = Math.max(evidence.bestLevel, readLeaderboardLevel(entry, 1));
+    evidence.bestBosses = Math.max(
+      evidence.bestBosses,
+      Math.floor(Number(entry.bossKills ?? entry.bossesKilled) || 0)
+    );
+    evidence.bestWaves = Math.max(evidence.bestWaves, Math.floor(Number(entry.wavesCleared) || 0));
+    evidence.bestRunTimeSeconds = Math.max(
+      evidence.bestRunTimeSeconds,
+      Math.floor(Number(entry.runTimeSeconds ?? entry.runElapsedSeconds) || 0)
+    );
+    evidence.noHitWaves = Math.max(evidence.noHitWaves, Math.floor(Number(entry.noHitWaves) || 0));
+    evidence.noHitSectors = Math.max(evidence.noHitSectors, Math.floor(Number(entry.noHitSectors) || 0));
+    evidence.clearWithLivesRemaining = Math.max(
+      evidence.clearWithLivesRemaining,
+      Math.floor(Number(entry.clearWithLivesRemaining ?? entry.livesRemaining) || 0)
+    );
+    evidence.highestScoreMultiplier = Math.max(
+      evidence.highestScoreMultiplier,
+      Number(entry.highestScoreMultiplier) || 1
+    );
+    if (entry.runCleared === true) evidence.runClears += 1;
+  }
+  return evidence;
 }
 
 function shipIdFromAny(value) {
@@ -391,6 +432,103 @@ function shouldApplyCodexHangarRescue(progress = {}, discovery = {}) {
     baseXp <= Math.floor(rankFloorXp * 0.25);
 }
 
+function shouldClampLegacyRescueInflation(progress = {}, { threatDiscovery = {}, localHighscores = [] } = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  const savedUnlocks = Array.isArray(base.unlockedShipIds) ? base.unlockedShipIds : [];
+  const history = normalizeShipUnlockHistory(base.shipUnlockHistory);
+  const historyEntries = Object.values(history);
+  const legacyHistoryCount = historyEntries
+    .filter((entry) => entry?.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy).length;
+  if (savedUnlocks.length < 12 || legacyHistoryCount < 8) return false;
+
+  const evidence = rankedRunEvidenceFromScores(localHighscores);
+  if (evidence.runCount <= 0) return false;
+
+  const bestSector = Math.max(
+    1,
+    Math.floor(Number(base.bestSector ?? base.bestLevel) || 1),
+    Math.floor(Number(base.bestLevel ?? base.bestSector) || 1)
+  );
+  const discoveredSector = getHighestDiscoveredSector(threatDiscovery);
+  const discoveredRank = getHighestDiscoveredPilotRank(threatDiscovery);
+  const bestScore = Math.max(Math.floor(Number(base.bestScore) || 0), evidence.bestScore);
+
+  return bestSector >= 50 &&
+    discoveredSector >= Math.max(50, bestSector) &&
+    discoveredRank >= 18 &&
+    evidence.bestLevel < bestSector - 12 &&
+    bestScore < 220000;
+}
+
+function clampLegacyRescueInflatedHangar(progress = {}, context = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  if (!shouldClampLegacyRescueInflation(base, context)) return base;
+
+  const evidence = rankedRunEvidenceFromScores(context.localHighscores || []);
+  const bestLevel = Math.max(1, Math.min(
+    Math.floor(Number(base.bestSector ?? base.bestLevel) || 1),
+    evidence.bestLevel
+  ));
+  const bestScore = Math.max(Math.floor(Number(base.bestScore) || 0), evidence.bestScore);
+  const evidenceRank = Math.max(
+    0,
+    Math.min(14, Math.floor(bestLevel / 2), Math.floor(bestScore / 25000))
+  );
+  const rankXp = getPilotXpThreshold(evidenceRank);
+  const codexCap = Math.max(0, Math.floor(bestLevel * 4));
+  const runThemeCap = Math.max(0, Math.floor(bestLevel / 10));
+  const history = normalizeShipUnlockHistory(base.shipUnlockHistory);
+  const preservedSecretIds = Array.isArray(base.secretShipUnlockIds)
+    ? base.secretShipUnlockIds
+      .map(String)
+      .filter((shipId) => history[shipId]?.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.secret)
+    : [];
+
+  const repaired = {
+    ...base,
+    integrityRepairVersion: 1,
+    integrityRepairReason: 'legacy_codex_rescue_inflation',
+    pilotXp: Math.min(Math.floor(Number(base.pilotXp) || 0), rankXp),
+    pilotRank: evidenceRank,
+    highestPilotRank: evidenceRank,
+    bestRank: Math.min(Math.floor(Number(base.bestRank) || 0), evidenceRank),
+    bestSector: bestLevel,
+    bestLevel,
+    totalBossesDefeated: Math.min(Math.floor(Number(base.totalBossesDefeated) || 0), evidence.bestBosses),
+    totalWavesCleared: Math.min(Math.floor(Number(base.totalWavesCleared) || 0), evidence.bestWaves),
+    totalCodexDiscoveries: Math.min(
+      Math.floor(Number(base.totalCodexDiscoveries) || 0),
+      countThreatDiscoveryItems(context.threatDiscovery || {}),
+      codexCap
+    ),
+    runClears: Math.min(Math.floor(Number(base.runClears) || 0), evidence.runClears),
+    noHitWaves: Math.min(Math.floor(Number(base.noHitWaves) || 0), evidence.noHitWaves),
+    noHitSectors: Math.min(Math.floor(Number(base.noHitSectors) || 0), evidence.noHitSectors),
+    clearWithLivesRemaining: Math.min(
+      Math.floor(Number(base.clearWithLivesRemaining) || 0),
+      evidence.clearWithLivesRemaining
+    ),
+    highestScoreMultiplier: Math.min(
+      Math.max(1, Number(base.highestScoreMultiplier) || 1),
+      Math.max(1, evidence.highestScoreMultiplier)
+    ),
+    survivedSeconds: Math.min(Math.floor(Number(base.survivedSeconds) || 0), evidence.bestRunTimeSeconds),
+    runThemesSurvived: Array.isArray(base.runThemesSurvived)
+      ? base.runThemesSurvived.map(String).filter(Boolean).slice(0, runThemeCap)
+      : [],
+    secretShipUnlockIds: preservedSecretIds,
+    unlockedShipIds: ['nova_ship_01', ...preservedSecretIds],
+    lastNewlyUnlockedShipIds: []
+  };
+  repaired.unlockedShipIds = recalculateUnlockedShipIds(repaired);
+  const repairedUnlocks = new Set(repaired.unlockedShipIds);
+  repaired.shipUnlockHistory = Object.fromEntries(
+    Object.entries(history)
+      .filter(([shipId, entry]) => repairedUnlocks.has(shipId) && entry?.reasonKey !== SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy)
+  );
+  return repaired;
+}
+
 function repairHangarProgressFromPersistence(progress = {}, {
   threatDiscovery = {},
   localHighscores = [],
@@ -401,32 +539,31 @@ function repairHangarProgressFromPersistence(progress = {}, {
   shipUsage = {}
 } = {}) {
   const base = progress && typeof progress === 'object' ? progress : {};
-  if (!shouldApplyCodexHangarRescue(base, threatDiscovery)) return base;
+  if (!shouldApplyCodexHangarRescue(base, threatDiscovery)) {
+    return clampLegacyRescueInflatedHangar(base, { threatDiscovery, localHighscores });
+  }
+  const evidence = rankedRunEvidenceFromScores(localHighscores);
   const discoveryCount = countThreatDiscoveryItems(threatDiscovery);
   const discoveredIds = getThreatDiscoveryIds(threatDiscovery);
-  const highestSector = getHighestDiscoveredSector(threatDiscovery);
-  const highestRank = getHighestDiscoveredPilotRank(threatDiscovery);
-  const rankFloorXp = highestRank >= 0 ? getPilotXpThreshold(highestRank) : 0;
   const bestScore = Math.max(
     Math.floor(Number(base.bestScore) || 0),
     Math.floor(Number(progression?.bestScore) || 0),
-    bestScoreFromScores(localHighscores)
+    evidence.bestScore
   );
   const bestLevel = Math.max(
     Math.floor(Number(base.bestLevel) || 1),
     Math.floor(Number(base.bestSector) || 1),
     Math.floor(Number(progression?.bestLevel) || 1),
-    highestSector || 1
+    evidence.bestLevel
   );
   const bestRank = Math.max(
     Math.floor(Number(base.bestRank) || 0),
-    Math.floor(Number(progression?.bestRank) || 0),
-    highestRank
+    Math.floor(Number(progression?.bestRank) || 0)
   );
-  return mergeHangarProgress(base, {
-    pilotXp: Math.max(Math.floor(Number(base.pilotXp) || 0), rankFloorXp),
-    pilotRank: Math.max(Math.floor(Number(base.pilotRank) || 0), highestRank),
-    highestPilotRank: Math.max(Math.floor(Number(base.highestPilotRank) || 0), highestRank),
+  return clampLegacyRescueInflatedHangar(mergeHangarProgress(base, {
+    pilotXp: Math.floor(Number(base.pilotXp) || 0),
+    pilotRank: Math.floor(Number(base.pilotRank) || 0),
+    highestPilotRank: Math.floor(Number(base.highestPilotRank) || 0),
     bestScore,
     bestSector: bestLevel,
     bestLevel,
@@ -439,15 +576,8 @@ function repairHangarProgressFromPersistence(progress = {}, {
       sectorStartChallengeRecords,
       scoutRunRecords,
       shipUsage
-    }),
-    secretShipUnlockIds: collectEvidencedShipIds({
-      selectedShipKey,
-      localHighscores,
-      sectorStartChallengeRecords,
-      scoutRunRecords,
-      shipUsage
     })
-  });
+  }), { threatDiscovery, localHighscores });
 }
 
 function mergeThreatDiscoveryItem(localItem = {}, cloudItem = {}, fallback = {}) {

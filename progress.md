@@ -1,5 +1,11 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-24 Hangar Unlock Integrity Hotfix
+
+- Current request: fix and deploy the over-unlocked Hangar profile state where legacy/Codex-rescue data could make the player appear to have almost every ship.
+- Root cause: legacy unlock provenance plus rich Codex sector/rank discovery could over-promote Hangar sector/rank/unlock progress, then missing per-ship provenance displayed as `Unlocked: Before tracking was added`.
+- Fix direction: Steam Cloud persistence now clamps the legacy rescue-inflation pattern back to real ranked-run evidence and no longer turns Codex sector/rank discovery into endgame Hangar sector/rank progress by itself. The new `check:hangar-unlock-integrity` regression covers the observed sector-60 legacy profile, fresh Codex rescue, and valid mastery profiles.
+
 ## 2026-06-24 ElevenLabs Local SFX Bake
 
 - Current request: perform a one-time ElevenLabs Sound Generation SFX-only bake, preserving local runtime audio architecture and leaving `public/audio/voice/`, `public/audio/music/`, Steam identity/settings, Cloudflare secrets, gameplay, scoring, controls, achievements, leaderboards, and save/cloud formats untouched.

@@ -354,11 +354,11 @@ try {
     [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(richCodex)]
   ]);
   const codexRepairedCollect = collectSteamCloudPersistenceState({ storage: codexOnlyStorage });
-  assert.equal(codexRepairedCollect.hangarProgress.pilotRank, 19, 'Codex pilot-rank entries should repair a reset Hangar rank before cloud write');
-  assert.equal(codexRepairedCollect.hangarProgress.highestPilotRank, 19);
-  assert.equal(codexRepairedCollect.hangarProgress.pilotXp >= 177500, true);
-  assert.equal(codexRepairedCollect.hangarProgress.bestSector, 60);
-  assert.equal(codexRepairedCollect.hangarProgress.bestLevel, 60);
+  assert.equal(codexRepairedCollect.hangarProgress.pilotRank, 0, 'Codex pilot-rank entries must not over-promote Hangar rank before cloud write');
+  assert.equal(codexRepairedCollect.hangarProgress.highestPilotRank, 0);
+  assert.equal(codexRepairedCollect.hangarProgress.pilotXp, 0);
+  assert.equal(codexRepairedCollect.hangarProgress.bestSector, 20, 'Hangar sector repair should come from real ranked run evidence');
+  assert.equal(codexRepairedCollect.hangarProgress.bestLevel, 20);
   assert.equal(codexRepairedCollect.hangarProgress.bestScore, 168666);
   assert.equal(codexRepairedCollect.hangarProgress.totalCodexDiscoveries >= 646, true);
   assert.equal(codexRepairedCollect.hangarProgress.discoveredThreatIds.includes('nova_enemy_559'), true, 'Codex-derived Hangar IDs must not be truncated at 500');
