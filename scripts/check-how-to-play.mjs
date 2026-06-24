@@ -19,9 +19,11 @@ const scenarios = [
   { name: '3840x2160-scale200', width: 3840, height: 2160, scale: 2 }
 ];
 const expectedRows = [
-  'PHASE BURST',
+  'DODGE / PHASE',
+  'CHAINED DODGE',
+  'GRAZE',
+  'GRAZE BREAK',
   'COMBOS',
-  'NEAR MISS',
   'TRACTOR SHIPS',
   'PICKUPS & BONUS',
   'RUN MODES'
@@ -129,6 +131,10 @@ function assertCleanHelpCopy(state, label) {
   assert(!rows.includes('DODGE'), `${label} still labels the phase protection as DODGE`);
   assert(!rows.includes('NEAR MISSES'), `${label} still uses the old NEAR MISSES card label`);
   assert(!rows.includes('TRACTOR BEAMS'), `${label} still uses the old TRACTOR BEAMS card label`);
+  assert(joined.includes('3 GRAZES ARM YOUR NEXT SHOT'), `${label} should explain Graze Break arming`);
+  assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
+  assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
+  assert(joined.includes('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'), `${label} should show the new training flow`);
   assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
   assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
@@ -144,7 +150,7 @@ function assertScreenshotAudit(audit, label) {
 function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
-  assert(overlay?.cardCount === 8, `${label} expected 8 help cards, saw ${overlay?.cardCount}`);
+  assert(overlay?.cardCount === 10, `${label} expected 10 help cards, saw ${overlay?.cardCount}`);
   assert(layout?.cards?.length === overlay.cardCount, `${label} card layout count mismatch`);
   assert(!layout.layoutWarnings?.length, `${label} layout warnings: ${(layout.layoutWarnings || []).join('; ')}`);
   assert(layout.panel?.width > 500 && layout.panel?.height > 420, `${label} panel too small`);

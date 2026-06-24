@@ -562,7 +562,10 @@ export const BalanceConfig = {
         lifeLossCap: {
             enabled: true,
             maxLives: 2,
-            windowMs: 8000
+            windowMs: 7000,
+            fullWindowThroughLevel: 30,
+            windowReductionMsPerLevel: 100,
+            minimumWindowMs: 4000
         },
         wipeoutGuard: {
             enabled: true,

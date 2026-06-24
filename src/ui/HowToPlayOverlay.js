@@ -10,6 +10,7 @@ const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, s
 const HELP_ROWS = Object.freeze([
   {
     code: '01',
+    icon: 'NAV',
     label: 'MOVE',
     control: 'WASD / ARROWS / LEFT STICK',
     tip: 'Stay mobile. Controlled movement keeps you alive longer than drifting into open space.',
@@ -17,6 +18,7 @@ const HELP_ROWS = Object.freeze([
   },
   {
     code: '02',
+    icon: 'FIRE',
     label: 'SHOOT',
     control: 'SPACE / LEFT MOUSE / GAMEPAD A',
     tip: 'Hold fire and choose targets. Clearing the right enemies keeps the run under control.',
@@ -24,41 +26,63 @@ const HELP_ROWS = Object.freeze([
   },
   {
     code: '03',
-    label: 'PHASE BURST',
+    icon: 'PHASE',
+    label: 'DODGE / PHASE',
     control: 'LEFT/RIGHT SHIFT / GAMEPAD B',
-    tip: 'Tap to phase through danger for a short moment. It protects you briefly, but it does not move the ship for you.',
+    tip: 'Tap Phase Burst to pass safely through bullets or contact for a heartbeat. It protects you; it is not a movement dash.',
     accent: 0xff55d9
   },
   {
     code: '04',
+    icon: 'CHAIN',
+    label: 'CHAINED DODGE',
+    control: 'GRAZE AGAIN BEFORE THE TIMER ENDS',
+    tip: 'Several close grazes in a row count as a chained danger-dodge streak. These streaks drive the Danger Dodge achievements.',
+    accent: 0xff8f5a
+  },
+  {
+    code: '05',
+    icon: 'SKIM',
+    label: 'GRAZE',
+    control: 'PASS CLOSE TO ENEMY SHOTS',
+    tip: 'Skim enemy bullets without getting hit to earn NEAR MISS score popups and build your graze streak.',
+    accent: 0x66ff9d
+  },
+  {
+    code: '06',
+    icon: 'BREAK',
+    label: 'GRAZE BREAK',
+    control: '3 GRAZES ARM YOUR NEXT SHOT',
+    tip: 'After three quick grazes, fire the charged magenta shot into enemy fire to clear bullets, damage nearby threats, and score.',
+    accent: 0xff66ff
+  },
+  {
+    code: '07',
+    icon: 'COMBO',
     label: 'COMBOS',
     control: 'FAST KILLS KEEP THE CHAIN',
     tip: 'Destroy enemies quickly to keep the chain alive. Tough targets can slow the rhythm, so target choice matters.',
     accent: 0xff8f5a
   },
   {
-    code: '05',
-    label: 'NEAR MISS',
-    control: 'SKIM DANGER, THEN ESCAPE',
-    tip: 'Pass close to enemy shots without getting hit to earn NEAR MISS score popups. Risk pays, but do not live in the bullet cloud.',
-    accent: 0x66ff9d
-  },
-  {
-    code: '06',
+    code: '08',
+    icon: 'BEAM',
     label: 'TRACTOR SHIPS',
     control: 'BREAK ACTIVE BEAMS',
     tip: 'Destroy tractor ships during their beam to break the pull, clear nearby shots, and earn bonus score from nearby enemies.',
     accent: 0x7ee9ff
   },
   {
-    code: '07',
+    code: '09',
+    icon: 'LOOT',
     label: 'PICKUPS & BONUS',
     control: 'BRIGHT ICONS ARE SAFE',
     tip: 'Collect bright pickup icons. Shoot bonus drones for extra score and watch for the BONUS popup.',
     accent: 0xb285ff
   },
   {
-    code: '08',
+    code: '10',
+    icon: 'MODE',
     label: 'RUN MODES',
     control: 'MAYHEM / SCOUT / SECTOR RUN',
     tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you practice unlocked later starts.',
@@ -120,6 +144,54 @@ function drawCornerBrackets(container, x, y, width, height, color) {
   return g;
 }
 
+function drawTrainingScope(container, cx, cy, radius, compact = false) {
+  const scope = new PIXI.Graphics();
+  scope.circle(cx, cy, radius);
+  scope.fill({ color: 0x020a18, alpha: 0.72 });
+  scope.circle(cx, cy, radius);
+  scope.stroke({ color: 0x37f5ff, width: compact ? 1.4 : 2, alpha: 0.62 });
+  scope.circle(cx, cy, radius * 0.66);
+  scope.stroke({ color: 0xff55d9, width: 1, alpha: 0.24 });
+  scope.circle(cx, cy, radius * 0.34);
+  scope.stroke({ color: 0x66ff9d, width: 1, alpha: 0.28 });
+  scope.moveTo(cx - radius * 0.86, cy);
+  scope.lineTo(cx - radius * 0.38, cy);
+  scope.moveTo(cx + radius * 0.38, cy);
+  scope.lineTo(cx + radius * 0.86, cy);
+  scope.moveTo(cx, cy - radius * 0.86);
+  scope.lineTo(cx, cy - radius * 0.38);
+  scope.moveTo(cx, cy + radius * 0.38);
+  scope.lineTo(cx, cy + radius * 0.86);
+  scope.stroke({ color: 0x7ee9ff, width: 1, alpha: 0.38 });
+
+  const ship = new PIXI.Graphics();
+  ship.moveTo(cx, cy - radius * 0.36);
+  ship.lineTo(cx + radius * 0.22, cy + radius * 0.27);
+  ship.lineTo(cx, cy + radius * 0.14);
+  ship.lineTo(cx - radius * 0.22, cy + radius * 0.27);
+  ship.closePath();
+  ship.fill({ color: 0x9bf8ff, alpha: 0.92 });
+  ship.stroke({ color: 0xffffff, width: 1.4, alpha: 0.9 });
+
+  const bullet = new PIXI.Graphics();
+  bullet.circle(cx + radius * 0.74, cy - radius * 0.28, compact ? 4 : 5);
+  bullet.fill({ color: 0xff66ff, alpha: 0.9 });
+  bullet.circle(cx + radius * 0.52, cy + radius * 0.32, compact ? 3 : 4);
+  bullet.fill({ color: 0xffcc00, alpha: 0.9 });
+  bullet.moveTo(cx + radius * 0.74, cy - radius * 0.28);
+  bullet.lineTo(cx + radius * 0.2, cy - radius * 0.05);
+  bullet.stroke({ color: 0xff66ff, width: compact ? 1 : 1.4, alpha: 0.36 });
+
+  const graze = new PIXI.Graphics();
+  graze.arc(cx, cy, radius * 0.48, -0.35, 0.62);
+  graze.stroke({ color: 0x66ff9d, width: compact ? 3 : 4, alpha: 0.82 });
+  graze.arc(cx, cy, radius * 0.55, -0.32, 0.55);
+  graze.stroke({ color: 0xff66ff, width: compact ? 1.8 : 2.4, alpha: 0.66 });
+
+  container.addChild(scope, ship, bullet, graze);
+  return scope;
+}
+
 export class HowToPlayOverlay {
   constructor(game, { onClose = null } = {}) {
     this.game = game;
@@ -144,16 +216,16 @@ export class HowToPlayOverlay {
     const compact = width < 900 || height < 700;
     const veryShort = height < 560;
     const spacious = width >= 1800 && height >= 980;
-    const panelWidth = Math.min(spacious ? 1180 : 1040, width * (compact ? 0.94 : 0.88));
-    const panelHeight = Math.min(spacious ? 760 : 690, height * (compact ? 0.94 : 0.9));
+    const panelWidth = Math.min(spacious ? 1320 : 1160, width * (compact ? 0.96 : 0.9));
+    const panelHeight = Math.min(spacious ? 860 : 820, height * (compact ? 0.96 : 0.92));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const pad = veryShort ? 18 : compact ? 24 : 34;
-    const headerHeight = veryShort ? 86 : compact ? 104 : 128;
+    const headerHeight = veryShort ? 98 : compact ? 124 : 166;
     const footerHeight = veryShort ? 62 : compact ? 76 : 86;
     const gridGap = veryShort ? 8 : compact ? 10 : 14;
     const columns = compact ? 1 : 2;
-    const visualRows = compact ? HELP_ROWS.length : Math.ceil((HELP_ROWS.length + 1) / columns);
+    const visualRows = compact ? HELP_ROWS.length : Math.ceil(HELP_ROWS.length / columns);
     const gridX = panelX + pad;
     const gridY = panelY + headerHeight;
     const gridWidth = panelWidth - pad * 2;
@@ -165,7 +237,7 @@ export class HowToPlayOverlay {
       veryShort ? 42 : compact ? 54 : 92,
       Math.floor((gridHeight - gridGap * (visualRows - 1)) / visualRows)
     );
-    const titleSize = veryShort ? 24 : spacious ? 46 : compact ? 31 : 40;
+    const titleSize = veryShort ? 24 : spacious ? 48 : compact ? 31 : 42;
     const subtitleSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : 14;
     const labelSize = veryShort ? 11 : spacious ? 16 : compact ? 13 : 15;
     const controlSize = veryShort ? 11 : spacious ? 17 : compact ? 13 : 15;
@@ -203,6 +275,14 @@ export class HowToPlayOverlay {
     this.container.addChild(panel);
     drawCornerBrackets(this.container, panelX + 6, panelY + 6, panelWidth - 12, panelHeight - 12, 0x37f5ff);
 
+    const trainingBand = new PIXI.Graphics();
+    trainingBand.roundRect(panelX + pad, panelY + pad + (veryShort ? 18 : 24), panelWidth - pad * 2, headerHeight - pad * 0.78, 8);
+    trainingBand.fill({ color: 0x02111f, alpha: 0.82 });
+    trainingBand.stroke({ color: 0x37f5ff, width: 1, alpha: 0.28 });
+    trainingBand.rect(panelX + pad + 10, panelY + headerHeight - (veryShort ? 12 : 20), panelWidth - pad * 2 - 20, 2);
+    trainingBand.fill({ color: 0xff55d9, alpha: 0.35 });
+    this.container.addChild(trainingBand);
+
     for (let i = 1; i <= 5; i += 1) {
       const y = panelY + headerHeight + i * (gridHeight / 6);
       addGlowLine(this.container, panelX + pad, y, panelX + panelWidth - pad, y, 0x174f70, 0.18);
@@ -215,6 +295,12 @@ export class HowToPlayOverlay {
     sideRail.fill({ color: 0xff55d9, alpha: 0.54 });
     this.container.addChild(sideRail);
 
+    if (!veryShort) {
+      const scopeRadius = compact ? 36 : 48;
+      drawTrainingScope(this.container, panelX + pad + scopeRadius + 24, panelY + headerHeight * 0.5 + 4, scopeRadius, compact);
+      drawTrainingScope(this.container, panelX + panelWidth - pad - scopeRadius - 24, panelY + headerHeight * 0.5 + 4, scopeRadius, compact);
+    }
+
     const title = createText(translateText('HOW TO PLAY'), {
       fontFamily: FONT_DISPLAY,
       fontSize: titleSize,
@@ -225,7 +311,7 @@ export class HowToPlayOverlay {
       align: 'center'
     });
     title.anchor.set(0.5);
-    title.position.set(width / 2, panelY + (veryShort ? 31 : compact ? 42 : 52));
+    title.position.set(width / 2, panelY + (veryShort ? 34 : compact ? 44 : 54));
     fitTextToBox(title, panelWidth - pad * 3, 54, { minScale: 0.58 });
     this.container.addChild(title);
 
@@ -240,7 +326,7 @@ export class HowToPlayOverlay {
       align: 'center'
     });
     subtitle.anchor.set(0.5);
-    subtitle.position.set(width / 2, panelY + (veryShort ? 57 : compact ? 70 : 82));
+    subtitle.position.set(width / 2, panelY + (veryShort ? 61 : compact ? 72 : 84));
     fitTextToBox(subtitle, panelWidth - pad * 4, 22, { minScale: 0.62 });
     this.container.addChild(subtitle);
 
@@ -254,15 +340,30 @@ export class HowToPlayOverlay {
       align: 'center'
     });
     chipText.anchor.set(0.5);
-    chipText.position.set(width / 2, panelY + (veryShort ? 75 : compact ? 91 : 106));
+    chipText.position.set(width / 2, panelY + (veryShort ? 80 : compact ? 94 : 110));
     fitTextToBox(chipText, panelWidth - pad * 5, 20, { minScale: 0.58 });
     this.container.addChild(chipText);
 
+    if (!veryShort) {
+      const skillText = createText(translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'), {
+        fontFamily: FONT_BODY,
+        fontSize: spacious ? 15 : compact ? 12 : 13,
+        fontWeight: '900',
+        fill: '#ffffff',
+        stroke: '#00111d',
+        strokeThickness: 2,
+        align: 'center'
+      });
+      skillText.anchor.set(0.5);
+      skillText.position.set(width / 2, panelY + (compact ? 115 : 134));
+      fitTextToBox(skillText, panelWidth - pad * 5, 22, { minScale: 0.58 });
+      this.container.addChild(skillText);
+    }
+
     HELP_ROWS.forEach((row, index) => {
-      const isWideFinalCard = columns > 1 && index === HELP_ROWS.length - 1;
-      const finalWideRow = Math.ceil((HELP_ROWS.length - 1) / columns);
-      const column = columns === 1 || isWideFinalCard ? 0 : index % columns;
-      const rowIndex = columns === 1 ? index : isWideFinalCard ? finalWideRow : Math.floor(index / columns);
+      const isWideFinalCard = false;
+      const column = columns === 1 ? 0 : index % columns;
+      const rowIndex = columns === 1 ? index : Math.floor(index / columns);
       const cardX = gridX + column * (cardWidth + gridGap);
       const cardY = gridY + rowIndex * (cardHeight + gridGap);
       const actualCardWidth = isWideFinalCard ? gridWidth : cardWidth;
@@ -372,13 +473,21 @@ export class HowToPlayOverlay {
     const accent = row.accent;
     const card = new PIXI.Graphics();
     card.roundRect(x, y, width, height, 8);
-    card.fill({ color: 0x061a2b, alpha: 0.9 });
-    card.stroke({ color: accent, width: 1, alpha: 0.58 });
+    card.fill({ color: 0x061a2b, alpha: 0.92 });
+    card.stroke({ color: accent, width: 1.2, alpha: 0.66 });
     card.rect(x, y, Math.max(4, Math.min(7, width * 0.018)), height);
-    card.fill({ color: accent, alpha: 0.75 });
-    card.roundRect(x + 12, y + 12, veryShort ? 28 : 36, veryShort ? 20 : 26, 5);
-    card.fill({ color: 0x010814, alpha: 0.82 });
-    card.stroke({ color: accent, width: 1, alpha: 0.7 });
+    card.fill({ color: accent, alpha: 0.78 });
+    card.moveTo(x + width * 0.48, y);
+    card.lineTo(x + width, y);
+    card.lineTo(x + width, y + height);
+    card.lineTo(x + width * 0.62, y + height);
+    card.closePath();
+    card.fill({ color: accent, alpha: 0.055 });
+    card.rect(x + 14, y + height - 7, width - 28, 1.5);
+    card.fill({ color: accent, alpha: 0.2 });
+    card.roundRect(x + 12, y + 12, veryShort ? 34 : 44, veryShort ? 24 : 34, 6);
+    card.fill({ color: 0x010814, alpha: 0.88 });
+    card.stroke({ color: accent, width: 1, alpha: 0.74 });
     this.container.addChild(card);
 
     const code = createText(row.code, {
@@ -389,13 +498,28 @@ export class HowToPlayOverlay {
       align: 'center'
     });
     code.anchor.set(0.5);
-    code.position.set(x + 12 + (veryShort ? 14 : 18), y + 12 + (veryShort ? 10 : 13));
+    code.position.set(x + 12 + (veryShort ? 17 : 22), y + 12 + (veryShort ? 8 : 10));
     this.container.addChild(code);
 
-    const textX = x + (veryShort ? 50 : 62);
+    const icon = createText(translateText(row.icon || row.label), {
+      fontFamily: FONT_BODY,
+      fontSize: veryShort ? 7 : compact ? 8 : 9,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center',
+      letterSpacing: 0
+    });
+    icon.anchor.set(0.5);
+    icon.position.set(x + 12 + (veryShort ? 17 : 22), y + 12 + (veryShort ? 18 : 25));
+    fitTextToBox(icon, veryShort ? 30 : 40, veryShort ? 9 : 12, { minScale: 0.5 });
+    this.container.addChild(icon);
+
+    const textX = x + (veryShort ? 56 : 72);
     const rightPad = compact ? 18 : 22;
-    const labelMax = compact ? Math.min(210, width * 0.34) : Math.min(170, width * 0.34);
-    const controlX = textX + labelMax + (compact ? 12 : 18);
+    const labelMax = compact ? Math.min(230, width * 0.36) : Math.min(190, width * 0.36);
+    const controlX = textX + labelMax + (compact ? 10 : 16);
     const controlMax = Math.max(120, x + width - rightPad - controlX);
     const topY = y + (veryShort ? 17 : 23);
     const tipY = y + (veryShort ? 31 : 52);
@@ -405,7 +529,7 @@ export class HowToPlayOverlay {
       fontFamily: FONT_DISPLAY,
       fontSize: labelSize,
       fontWeight: '900',
-      fill: '#7ee9ff',
+      fill: '#f6fbff',
       stroke: '#00111d',
       strokeThickness: 3
     });
@@ -418,7 +542,7 @@ export class HowToPlayOverlay {
       fontFamily: FONT_BODY,
       fontSize: controlSize,
       fontWeight: '900',
-      fill: '#ffffff',
+      fill: '#ffef7e',
       stroke: '#00111d',
       strokeThickness: 3,
       wordWrap: true,
@@ -532,6 +656,8 @@ export class HowToPlayOverlay {
         translatedTip: translateText(row.tip)
       })),
       cardCount: HELP_ROWS.length,
+      trainingFlow: 'GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE',
+      translatedTrainingFlow: translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'),
       focusedControl: 'back',
       layout: this.debugLayout,
       menuFx: this.menuFx?.getDebugState?.() || null

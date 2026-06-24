@@ -4834,9 +4834,16 @@ export class PlayScene {
   getBossLifeLossCapConfig() {
     const config = BalanceConfig.bossMercy?.lifeLossCap || {};
     if (BalanceConfig.bossMercy?.enabled !== true || config.enabled !== true) return null;
+    const safeLevel = Math.max(1, Math.floor(Number(this.enemyManager?.boss?.level) || Number(this.game?.level) || 1));
+    const baseWindowMs = Math.max(1000, Number(config.windowMs) || 7000);
+    const fullWindowThroughLevel = Math.max(1, Math.floor(Number(config.fullWindowThroughLevel) || 30));
+    const windowReductionMsPerLevel = Math.max(0, Number(config.windowReductionMsPerLevel) || 0);
+    const minimumWindowMs = Math.max(1000, Number(config.minimumWindowMs) || baseWindowMs);
+    const levelsPastFullWindow = Math.max(0, safeLevel - fullWindowThroughLevel);
+    const windowMs = Math.max(minimumWindowMs, baseWindowMs - levelsPastFullWindow * windowReductionMsPerLevel);
     return {
       maxLives: Math.max(1, Math.floor(Number(config.maxLives) || 2)),
-      windowMs: Math.max(1000, Number(config.windowMs) || 8000)
+      windowMs
     };
   }
 
