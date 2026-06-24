@@ -2073,12 +2073,12 @@ export class Player {
   repairFromPowerup(effect = {}, type = 'powerup') {
     const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
     if (repairLives <= 0 || !this.game) return;
-    const maxLives = Math.max(
-      1,
-      Number(this.game.balanceConfig?.survival?.maxLives) ||
-      Number(this.game.maxLives) ||
-      MAX_PLAYER_LIVES
-    );
+    const configuredMaxLives = Number(this.game.balanceConfig?.survival?.maxLives)
+      || Number(this.game.maxLives)
+      || MAX_PLAYER_LIVES;
+    const maxLives = Number.isFinite(configuredMaxLives)
+      ? Math.max(1, configuredMaxLives)
+      : Number.POSITIVE_INFINITY;
     let repaired = 0;
     for (let i = 0; i < repairLives && this.game.lives < maxLives; i += 1) {
       this.game.gainLife?.();

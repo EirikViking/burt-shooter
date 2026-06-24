@@ -233,9 +233,9 @@ const cabinetLogsEn = Object.freeze([
     id: 'max-lives-read',
     title: 'CABINET LOG: HULL SURPLUS',
     role: 'Sustain read',
-    line: 'Max lives reached. Excellent. Now spend that confidence on reading patterns, not auditioning for the next explosion.',
-    description: 'Filed when the player reaches the life cap. It turns a reward moment into a reminder that sustain is breathing room, not permission to ignore patterns.',
-    tip: 'At max lives, keep collecting score safely. The extra buffer is for mistakes, not for standing still.',
+    line: 'Extra life banked. Excellent. Spend that confidence on reading patterns, not auditioning for the next explosion.',
+    description: 'Filed for the old capped-life reward moment. Retained only for legacy copy references.',
+    tip: 'Extra lives are breathing room for mistakes, not permission to stand still.',
     imageAlias: 'nova-swarm-story-comms-02-20260519',
     accent: 0x7dffcc
   }

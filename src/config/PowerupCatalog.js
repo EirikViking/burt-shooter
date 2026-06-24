@@ -103,10 +103,10 @@ const BASE_POWERUPS = [
     shortLabel: 'LIFE',
     color: 0xff0000,
     duration: 'instant sustain',
-    effectDescription: 'one life if you are below the max, or score if you are already capped',
+    effectDescription: 'one extra life added to the current run',
     read: 'run survival first and score value second',
     when: 'the overrun push needs another hull',
-    tip: 'At max lives it becomes a bonus, so take it only if the path is safe.',
+    tip: 'Extra lives now keep stacking, so a safe pickup can become the buffer that saves a deep run.',
     pickupMessage: 'EXTRA LIFE!',
     sfx: 'life_up',
     effect: { instant: true }
@@ -372,13 +372,13 @@ const NEW_POWERUPS = [
     shortLabel: 'PATCH',
     color: 0x8dff8d,
     duration: 'instant repair',
-    effectDescription: 'one emergency hull repair or a score payout at max lives',
+    effectDescription: 'one emergency hull repair added to the current run',
     read: 'a tiny mechanic with heroic billing',
     when: 'your ship is smoking and pretending it is style',
-    tip: 'Grab it when hurt. At max lives it becomes expensive confetti.',
+    tip: 'Grab it when hurt or when a deep push needs one more mistake buffer.',
     pickupMessage: 'NANO PATCH! The hull stops whining.',
     sfx: 'life_up',
-    effect: { instant: true, repairLives: 1, scoreBonusAtMax: 1200, invulnMs: 1200 }
+    effect: { instant: true, repairLives: 1, invulnMs: 1200 }
   },
   {
     id: 'score_fever',
@@ -532,7 +532,7 @@ const NEW_POWERUPS = [
     tip: 'Do not waste mercy at full health. Even miracles hate paperwork.',
     pickupMessage: 'MERCY PROTOCOL! The cabinet blinked first.',
     sfx: 'life_up',
-    effect: { instant: true, repairLives: 1, shield: true, shieldDurationMs: 9000, invulnMs: 1600, scoreBonusAtMax: 900 }
+    effect: { instant: true, repairLives: 1, shield: true, shieldDurationMs: 9000, invulnMs: 1600 }
   },
   {
     id: 'target_paint',

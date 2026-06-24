@@ -167,7 +167,8 @@ try {
     const hasState = (type) => activeStates().some((entry) => entry.type === type);
     const activePlayerBullets = () => play.bulletManager?.playerBullets?.filter(bullet => bullet?.active !== false) || [];
     const activeEnemyBullets = () => play.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false) || [];
-    const maxLives = Math.max(1, Number(game.balanceConfig?.survival?.maxLives) || 6);
+    const configuredMaxLives = Number(game.balanceConfig?.survival?.maxLives);
+    const maxLives = Number.isFinite(configuredMaxLives) ? Math.max(1, configuredMaxLives) : null;
 
     const clearSprites = (items) => {
       for (const item of items || []) {
@@ -357,7 +358,7 @@ try {
       const startLives = game.lives;
       const baselineScoreAward = typeof game.getScoreAward === 'function' ? game.getScoreAward(100) : 100;
 
-      if (type === 'life') game.lives = Math.max(1, maxLives - 1);
+      if (type === 'life') game.lives = maxLives ? Math.max(1, maxLives - 1) : 6;
       if (type === 'shockwave') {
         spawnEnemyAt(player.x + 70, player.y - 120, { health: 10 });
         play.bulletManager.enemyBullets = [
@@ -441,7 +442,7 @@ try {
           note('alpha', player.sprite.alpha);
           break;
         case 'life':
-          assert(game.lives === maxLives, `${type}: life did not increase to max`, { maxLives, lives: game.lives });
+          assert(game.lives === (maxLives || 7), `${type}: life did not increase beyond the old cap`, { maxLives, lives: game.lives });
           note('lives', game.lives);
           break;
         case 'shield':

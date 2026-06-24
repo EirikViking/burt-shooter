@@ -204,10 +204,16 @@ class Powerup {
     this.showPickupEffect(scene);
     this.playPickupSFX(scene);
 
-    const maxLives = this.type === 'life'
-      ? Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES)
+    const configuredMaxLives = this.type === 'life'
+      ? Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES
       : null;
-    const reachesMaxLives = this.type === 'life' && scene.game.lives < maxLives && scene.game.lives + 1 >= maxLives;
+    const maxLives = Number.isFinite(configuredMaxLives)
+      ? Math.max(1, configuredMaxLives)
+      : Number.POSITIVE_INFINITY;
+    const reachesMaxLives = this.type === 'life'
+      && Number.isFinite(maxLives)
+      && scene.game.lives < maxLives
+      && scene.game.lives + 1 >= maxLives;
     const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
     if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
@@ -216,23 +222,11 @@ class Powerup {
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
     if (this.type === 'life') {
-      if (scene.game.lives < maxLives) {
-        scene.game.gainLife(); // Use the new gainLife() method
+      scene.game.gainLife(); // Use the new gainLife() method
 
-        // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
-        if (scene.game && scene.game.audio) {
-          scene.game.audio.playSfx('ui_open'); // Positive, distinct sound
-        }
-      } else {
-        // Score bonus instead
-        console.log(`[Lives] pickup extra_life before=${scene.game.lives} after=${scene.game.lives} max=${maxLives} applied=false (at max, bonus awarded)`);
-        scene.game.addScore(1000);
-        scene.showToast(translateText('MAX LIVES REACHED!'), { fontSize: 24, fill: '#00ff00' });
-
-        // Play pickup sound for bonus
-        if (scene.game && scene.game.audio) {
-          scene.game.audio.playSfx('pickup');
-        }
+      // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
+      if (scene.game && scene.game.audio) {
+        scene.game.audio.playSfx('ui_open'); // Positive, distinct sound
       }
     } else {
       // Pass type directly to player (Player handles all powerup logic)

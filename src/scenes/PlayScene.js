@@ -5018,11 +5018,18 @@ export class PlayScene {
   }
 
   getMaxLives() {
-    return Math.max(1, Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES);
+    const configuredMaxLives = Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES;
+    return Number.isFinite(configuredMaxLives)
+      ? Math.max(1, configuredMaxLives)
+      : Number.POSITIVE_INFINITY;
   }
 
   onLifeGained(lives, context = {}) {
-    const maxLives = Math.max(1, Number(context.maxLives) || this.getMaxLives());
+    const configuredMaxLives = Number(context.maxLives) || this.getMaxLives();
+    const maxLives = Number.isFinite(configuredMaxLives)
+      ? Math.max(1, configuredMaxLives)
+      : Number.POSITIVE_INFINITY;
+    if (!Number.isFinite(maxLives)) return;
     const before = Number.isFinite(context.before) ? context.before : maxLives - 1;
     const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
     if (currentLives >= maxLives && before < maxLives) {

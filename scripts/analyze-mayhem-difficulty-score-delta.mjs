@@ -43,6 +43,11 @@ const SCORE = Object.freeze({
   pickupScoreAverage: 140
 });
 
+function finiteNumberOr(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 const VARIANT_DEFINITIONS = [
   {
     id: 'A_current_baseline',
@@ -352,7 +357,7 @@ async function loadBuild({ id, label, buildId, commit, worktree, allowDirty = fa
     commit,
     worktree,
     BalanceConfig: balanceModule.BalanceConfig,
-    MAX_PLAYER_LIVES: balanceModule.MAX_PLAYER_LIVES || 6,
+    MAX_PLAYER_LIVES: finiteNumberOr(balanceModule.MAX_PLAYER_LIVES, 6),
     getNormalWavePressureTuning: balanceModule.getNormalWavePressureTuning,
     getNormalWaveDangerMoment: balanceModule.getNormalWaveDangerMoment,
     getGeneratedEnemyTypeAtLevelProgress: generatedModule.getGeneratedEnemyTypeAtLevelProgress,
@@ -850,7 +855,7 @@ function simulateRun(build, skill, seed) {
     bossesEncountered: 0,
     bossesDefeated: 0,
     deaths: 0,
-    lives: build.MAX_PLAYER_LIVES || 6,
+    lives: finiteNumberOr(build.MAX_PLAYER_LIVES, 6),
     score: 0,
     enemyScore: 0,
     comboBonus: 0,

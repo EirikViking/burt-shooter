@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-24 Remove 6-Life Cap
+
+- Current request: lift/remove the 6-life max limit without touching Steamworks metadata, AppID/depot IDs, leaderboard identity, achievements metadata/behavior, Steam Cloud settings, save format, profile rescue, live saves, or live leaderboards.
+- Implementation direction: `MAX_PLAYER_LIVES`/`BalanceConfig.survival.maxLives` are now unlimited, extra-life pickups keep adding lives beyond 6 through the existing `Game.gainLife()` path, and the old capped-life score-bonus/toast branch was removed from the life pickup flow.
+- Sustain guard: boss-clear recovery still uses the separate `bossClearRepairMaxLives: 3` low-life repair cap; boss, enemy, wave, score formula, XP formula, leaderboard behavior, achievement behavior, and save format were not intentionally changed.
+- Verification: `git diff --check`, `npm run check:life-cap`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run check:run-modes`, `npm run check:steam-electron-bridge`, `npm run check:controller-flow`, `npm run check:how-to-play`, `npm run check:danger-dodge`, `npm run check:highscore-chase-target`, `npm run check:mayhem-collision-hotpath-stress`, `npm run check:mayhem-scout-difficulty-delta`, `npm run check:threat-codex`, `npm run check:boss-support-codex`, `npm run check:powerup-balance`, `npm run build:current`, and Steamworks-disabled local `npm run desktop:smoke:current`/`npm run desktop:perf:current` passed. Browser `npm run smoke` hit the known non-blocking timeout at `scripts/smoke-playtest.mjs:764:26` after level 3 debug capture. Real Steam-enabled desktop smoke/perf were blocked on this machine because Steam was not running and SteamAPI initialization failed, so no Steam package/upload was performed. Docs note: `docs/nova-swarm-remove-life-cap-2026-06-24.md`.
+
 ## 2026-06-23 Ship Unlock Provenance
 
 - Current request: add profile-scoped ship unlock provenance/history without changing unlock requirements, balance, score/XP formula, leaderboard behavior or identity, achievements metadata/behavior, Steam Cloud settings, save profile namespace, AppID/depot, store visibility, or Steamworks metadata.

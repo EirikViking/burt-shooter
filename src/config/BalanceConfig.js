@@ -1,4 +1,4 @@
-export const MAX_PLAYER_LIVES = 6;
+export const MAX_PLAYER_LIVES = Number.POSITIVE_INFINITY;
 
 export const BalanceConfig = {
     // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.

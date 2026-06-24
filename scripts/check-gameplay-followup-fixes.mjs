@@ -45,8 +45,8 @@ assert(player.includes('this.statusVfxPulse = 1.45') && player.includes('duratio
 
 assert(enemyManager.includes('eliteMinY') && enemyManager.includes('minFormationY'),
   'enemy formation/elite vertical clamp is missing');
-assert(powerups.includes("translateText('MAX LIVES REACHED!')"),
-  'extra-life pickup at max lives must show the explicit max-lives message');
+assert(powerups.includes("scene.game.gainLife()") && !powerups.includes("translateText('MAX LIVES REACHED!')"),
+  'extra-life pickup must gain another life instead of preserving the old max-lives message path');
 
 assert(gameOver.includes('createUnlockSummary') && gameOver.includes('playShipUnlockVoice') && gameOver.includes('getShipUnlockRevealDebugState'),
   'ship-unlock reveal/announcement path is missing');

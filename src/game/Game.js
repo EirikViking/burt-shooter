@@ -820,7 +820,8 @@ export class Game {
     this.lives = Math.min(this.lives + 1, maxLives);
     const after = this.lives;
     const applied = after > before;
-    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${maxLives} applied=${applied}`);
+    const maxLabel = Number.isFinite(maxLives) ? String(maxLives) : 'none';
+    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${maxLabel} applied=${applied}`);
 
     // Notify scene if needed
     if (this.currentScene && this.currentScene.onLifeGained) {
@@ -829,7 +830,7 @@ export class Game {
         after,
         maxLives,
         source: 'extra_life',
-        reachedMax: applied && after >= maxLives
+        reachedMax: applied && Number.isFinite(maxLives) && after >= maxLives
       });
     }
   }

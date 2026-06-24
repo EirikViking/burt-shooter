@@ -338,10 +338,10 @@ const POWERUP_CODEX_ENTRIES = Object.freeze([
     id: 'life',
     name: 'EXTRA LIFE',
     duration: 'instant sustain',
-    effect: 'one life if you are below the max, or score if you are already capped',
+    effect: 'one extra life added to the current run',
     read: 'run survival first and score value second',
     when: 'the overrun push needs another hull',
-    tip: 'At max lives it becomes a bonus, so take it only if the path is safe.',
+    tip: 'Extra lives now keep stacking, so a safe pickup can become the buffer that saves a deep run.',
     accent: 0xff0000
   },
   {
