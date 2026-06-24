@@ -1,73 +1,70 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import {
-  EASTER_EGG_TOTAL,
-  EASTER_EGGS,
-  pickEasterEggForLevel
-} from '../src/config/EasterEggCatalog.js';
+import { existsSync, readFileSync } from 'node:fs';
 
-const localeFiles = [
-  'de',
-  'es',
-  'ja',
-  'ko',
-  'pt-BR',
-  'ru',
-  'zh-CN'
+const removedCatalog = 'src/config/EasterEggCatalog.js';
+const removedRuntimeSnippets = [
+  'EasterEggCatalog',
+  'EASTER_EGG_TOTAL',
+  'pickEasterEggForLevel',
+  'updateEasterEgg',
+  'spawnEasterEgg()',
+  'spawnAmbientEasterEgg',
+  'spawnEasterEggFlyby',
+  'easterEggFlyby',
+  'easterEggTimer',
+  'easterEggSeenIds',
+  'lastEasterEgg',
+  'activeEasterEgg',
+  'easterEggSignals',
+  'gameplay_easterEgg',
+  'decorative_lore_signal',
+  'legendaryFlyby'
 ];
 
-assert.equal(EASTER_EGG_TOTAL, 9, 'easter egg total must stay at 9 after removing Space Tax Audit');
-assert.equal(EASTER_EGGS.length, EASTER_EGG_TOTAL, 'catalog count mismatch');
+const removedCopy = [
+  'COIN GHOST RECEIPT',
+  'The cabinet charged one invisible quarter. Accounting is terrified.',
+  'THE BUTTON BLINKED BACK',
+  'Cockpit hardware is now emotionally available. Bad timing, honestly.',
+  'SNACK BAR WARP',
+  'A vending machine crossed hyperspace and still forgot the spoon.',
+  "KURT'S HAT SIGNAL",
+  'A distant hill is transmitting rent complaints at weaponized volume.',
+  "SONIA'S MIXTAPE",
+  'Four centuries old, still too dramatic, somehow still your problem.',
+  'INTERN FIXED PHYSICS',
+  'Reality is held together with tape, spite, and one unpaid checkbox.',
+  'TINYFOUNDRY AFTERBURNER',
+  'A legal department said this glow was too much. We added two more.',
+  'LEADERBOARD WHISPER',
+  'The Top 40 just cleared its throat. It wants your initials and your lunch.',
+  'VOID CUSTOMER SUPPORT',
+  'Your ticket is important to the abyss. Estimated reply time: never.'
+];
 
-const ids = new Set(EASTER_EGGS.map((egg) => egg.id));
-const titles = new Set(EASTER_EGGS.map((egg) => egg.title));
-const lines = new Set(EASTER_EGGS.map((egg) => egg.line));
-assert.equal(ids.size, EASTER_EGG_TOTAL, 'easter egg ids must be unique');
-assert.equal(titles.size, EASTER_EGG_TOTAL, 'easter egg titles must be unique');
-assert.equal(lines.size, EASTER_EGG_TOTAL, 'easter egg lines must be unique');
+const runtimeFiles = [
+  'src/scenes/PlayScene.js',
+  'src/main.js'
+];
 
-for (const egg of EASTER_EGGS) {
-  assert.match(egg.id, /^[a-z0-9_]+$/, `bad easter egg id ${egg.id}`);
-  assert(Number.isInteger(egg.minLevel) && egg.minLevel >= 1, `${egg.id} must unlock at or after level 1`);
-  assert(Number.isFinite(egg.accent) && Number.isFinite(egg.secondary), `${egg.id} needs numeric colors`);
-  assert(typeof egg.title === 'string' && egg.title.length >= 8, `${egg.id} title too short`);
-  assert(typeof egg.line === 'string' && egg.line.length >= 24, `${egg.id} line too short`);
-}
+assert(!existsSync(removedCatalog), 'ambient gameplay easter egg catalog must be removed');
 
-assert(!ids.has('space_tax_audit'), 'Space Tax Audit must remain removed from the easter egg catalog');
-
-assert(
-  EASTER_EGGS.some((egg) => egg.minLevel === 1) &&
-  EASTER_EGGS.some((egg) => egg.minLevel >= 8),
-  'easter eggs should appear throughout the run, not only one level'
-);
-
-for (let level = 1; level <= 12; level += 1) {
-  const picked = pickEasterEggForLevel(level, new Set());
-  assert(picked, `picker returned nothing at level ${level}`);
-  assert(picked.minLevel <= level, `picker returned locked egg ${picked.id} at level ${level}`);
-}
-
-for (const locale of localeFiles) {
-  const mod = await import(`../src/i18n/locales/${locale}.js`);
-  const sourceText = mod.default?.sourceText || Object.values(mod).find((entry) => entry?.sourceText)?.sourceText || {};
-  for (const egg of EASTER_EGGS) {
-    assert.equal(typeof sourceText[egg.title], 'string', `${locale} missing title ${egg.title}`);
-    assert.equal(typeof sourceText[egg.line], 'string', `${locale} missing line ${egg.line}`);
-    assert(sourceText[egg.title].trim(), `${locale} empty title ${egg.title}`);
-    assert(sourceText[egg.line].trim(), `${locale} empty line ${egg.line}`);
+for (const file of runtimeFiles) {
+  const source = readFileSync(file, 'utf8');
+  for (const snippet of removedRuntimeSnippets) {
+    assert(!source.includes(snippet), `${file} still contains removed ambient easter egg runtime snippet: ${snippet}`);
   }
 }
 
-const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
-assert(playScene.includes('pickEasterEggForLevel'), 'PlayScene must pick from easter egg catalog');
-assert(playScene.includes('spawnAmbientEasterEgg'), 'PlayScene must spawn ambient easter eggs');
-assert(playScene.includes('lastEasterEgg'), 'PlayScene must expose last easter egg state');
-assert(playScene.includes('EASTER_EGG_TOTAL'), 'PlayScene must track catalog total');
+for (const locale of ['de', 'es', 'ja', 'ko', 'pt-BR', 'ru', 'zh-CN']) {
+  const source = readFileSync(`src/i18n/locales/${locale}.js`, 'utf8');
+  for (const snippet of removedCopy) {
+    assert(!source.includes(snippet), `${locale} still ships removed ambient easter egg copy: ${snippet}`);
+  }
+}
 
-const main = readFileSync('src/main.js', 'utf8');
-assert(main.includes('lastEasterEgg'), 'render_game_to_text must expose lastEasterEgg');
-assert(main.includes('activeEasterEgg'), 'render_game_to_text must expose activeEasterEgg');
+const settingsOverlay = readFileSync('src/ui/SettingsOverlay.js', 'utf8');
+assert(settingsOverlay.includes("source: 'credits_easter_egg'"), 'credits secret unlock easter egg should remain available');
 
 const soundCatalog = readFileSync('src/audio/SoundCatalog.js', 'utf8');
 assert(!soundCatalog.includes('space_tax_audit_flyby'), 'SoundCatalog must not register removed Space Tax Audit flyby SFX');
@@ -77,4 +74,4 @@ const assetManifest = readFileSync('src/assets/assetManifest.js', 'utf8');
 assert(!assetManifest.includes('nova-space-tax-audit-flyby-20260623.png'), 'AssetManifest must not reference removed Space Tax Audit PNG');
 assert(!assetManifest.includes('nova_space_tax_audit_flyby.mp3'), 'AssetManifest must not ship removed Space Tax Audit SFX');
 
-console.log(`[easter-eggs] PASS ${EASTER_EGG_TOTAL} localized easter eggs`);
+console.log('[easter-eggs] PASS ambient gameplay easter egg flybys removed; credits secret remains');

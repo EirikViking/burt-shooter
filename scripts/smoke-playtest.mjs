@@ -138,8 +138,6 @@ async function collectGameState(page) {
       pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
       settingsOverlayVisible: Boolean(scene?.settingsOverlay?.container?.parent || play?.settingsOverlay?.container?.parent),
       creditsOverlayVisible: Boolean(scene?.settingsOverlay?.creditsPanel?.parent || play?.settingsOverlay?.creditsPanel?.parent),
-      easterEggActive: Boolean(play?.legendaryFlyby),
-      easterEggAlias: play?.legendaryFlyby?.alias || null,
       storyTransmission: (() => {
         const toasts = (() => {
           try {
@@ -884,7 +882,6 @@ async function runSmoke() {
       ...((gamepadMoveState.textState?.player?.y || 0) >= (gamepadBeforeState.textState?.player?.y || 9999) - 4 ? ['gamepad movement did not move the player upward'] : []),
       ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
-      ...(storyTransmissionState.easterEggActive ? ['removed lore flyby was still active'] : []),
       ...(!storyTransmissionState.storyTransmission ? ['forced story transmission did not appear'] : []),
       ...(!/^nova-swarm-story-comms-/.test(storyTransmissionState.storyTransmission?.imageAlias || '') ? [`story transmission did not use generated story art: ${storyTransmissionState.storyTransmission?.imageAlias || 'none'}`] : []),
       ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),

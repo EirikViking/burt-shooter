@@ -706,36 +706,6 @@ function buildGameTextState(game) {
       score: game?.score || 0,
       scoreBreakdown: game?.scoreBreakdown || null,
       lastCabinetLog: playScene?.lastCabinetLog || null,
-      lastEasterEgg: playScene?.lastEasterEgg || null,
-      activeEasterEgg: playScene?.easterEggFlyby ? {
-        id: playScene.easterEggFlyby.alias || null,
-        remainingMs: Math.max(0, Math.round((playScene.easterEggFlyby.durationMs || 0) - (playScene.easterEggFlyby.ageMs || 0))),
-        visualIntent: playScene.easterEggFlyby.visualIntent || playScene.easterEggFlyby.sprite?.__novaIntent || null,
-        layer: playScene.easterEggFlyby.layer || playScene.easterEggFlyby.sprite?.__novaLayer || null,
-        zIndex: Number.isFinite(playScene.easterEggFlyby.sprite?.zIndex) ? playScene.easterEggFlyby.sprite.zIndex : null,
-        eventMode: playScene.easterEggFlyby.sprite?.eventMode || null,
-        parentLayer: playScene.easterEggFlyby.sprite?.parent === playScene.gameContainer
-          ? 'gameContainer'
-          : playScene.easterEggFlyby.sprite?.parent === playScene.decorativeOverlay
-          ? 'decorativeOverlay'
-          : playScene.easterEggFlyby.sprite?.parent === playScene.uiOverlay
-          ? 'uiOverlay'
-          : null,
-        hasCollision: Boolean(playScene.easterEggFlyby.hasCollision || playScene.easterEggFlyby.sprite?.__novaCollision),
-        shootable: Boolean(playScene.easterEggFlyby.shootable || playScene.easterEggFlyby.sprite?.__novaShootable),
-        damagesPlayer: Boolean(playScene.easterEggFlyby.damagesPlayer || playScene.easterEggFlyby.sprite?.__novaDamagesPlayer),
-        givesReward: Boolean(playScene.easterEggFlyby.givesReward || playScene.easterEggFlyby.sprite?.__novaGivesReward),
-        artSrc: playScene.easterEggFlyby.artSrc || null,
-        alpha: Number.isFinite(playScene.easterEggFlyby.sprite?.alpha)
-          ? Number(playScene.easterEggFlyby.sprite.alpha.toFixed(3))
-          : null,
-        x: Number.isFinite(playScene.easterEggFlyby.sprite?.x)
-          ? Math.round(playScene.easterEggFlyby.sprite.x)
-          : null,
-        y: Number.isFinite(playScene.easterEggFlyby.sprite?.y)
-          ? Math.round(playScene.easterEggFlyby.sprite.y)
-          : null
-      } : null,
       currentEnemyBulletCount: enemyBullets.filter(bullet => bullet?.active !== false).length,
       peakEnemyBulletCount: playScene?.peakEnemyBulletCount || null,
       pilotXp: hangarProgressSummary.pilotXp,

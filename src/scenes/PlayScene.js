@@ -47,10 +47,6 @@ import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import {
-  EASTER_EGG_TOTAL,
-  pickEasterEggForLevel
-} from '../config/EasterEggCatalog.js';
-import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -182,12 +178,7 @@ export class PlayScene {
     this.debugLevelToolsUsed = false;
     this.maintainerDevtoolsEnabled = false;
     this.ambientBonusDroneTimer = 0;
-    this.easterEggTimer = 0;
-    this.easterEggSeenIds = new Set();
-    this.lastEasterEgg = null;
     this.ambientBonusDrones = []; // Lists for update
-    this.legendaryFlyby = null;
-    this.easterEggFlyby = null;
     this.isReady = false;
     this.starfieldContainer = null;
     this.starLayers = [];
@@ -451,16 +442,12 @@ export class PlayScene {
       bonusPickupsSpawned: 0,
       bonusPickupsCollected: 0,
       bonusBossSpawned: 0,
-      commsPortraitsSpawned: 0,
-      legendaryFlybyTriggered: 0,
-      easterEggSignals: 0
+      commsPortraitsSpawned: 0
     };
 
     this.gameTime = 0;
     this.shownCabinetLogIds.clear();
-    this.easterEggSeenIds.clear();
     this.lastCabinetLog = null;
-    this.lastEasterEgg = null;
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
@@ -2024,7 +2011,6 @@ export class PlayScene {
       measure('ambient_bonus_drones', () => this.updateAmbientBonusDrones(delta)); // Handles hazard drones and collectible power cores
       measure('magnet_pull', () => this.applyMagnetPull(delta));
       measure('orbital_strike', () => this.updateOrbitalStrike(delta));
-      measure('easter_egg', () => this.updateEasterEgg(delta));
       measure('random_popups', () => this.updateRandomPopups(delta));
       measure('low_lives', () => this.checkLowLives());
 
@@ -3666,16 +3652,6 @@ export class PlayScene {
       this.introOverlay.parent.removeChild(this.introOverlay);
     }
     this.introOverlay = null;
-    if (this.legendaryFlyby?.sprite?.parent) {
-      this.legendaryFlyby.sprite.parent.removeChild(this.legendaryFlyby.sprite);
-    }
-    this.legendaryFlyby?.sprite?.destroy?.({ children: true });
-    this.legendaryFlyby = null;
-    if (this.easterEggFlyby?.sprite?.parent) {
-      this.easterEggFlyby.sprite.parent.removeChild(this.easterEggFlyby.sprite);
-    }
-    this.easterEggFlyby?.sprite?.destroy?.({ children: true });
-    this.easterEggFlyby = null;
     this.introActive = false;
     this.introComplete = false;
     this.removeAchievementToast();
@@ -4563,7 +4539,6 @@ export class PlayScene {
     this.achievementTimer = 0;
     this.tauntTimer = 0;
     this.storyTransmissionTimer = 0;
-    this.easterEggTimer = this.getRandomTimer(12000, 22000);
   }
 
   updateRandomPopups(delta) {
@@ -8921,162 +8896,6 @@ export class PlayScene {
     targets.push(...ambientBonusDrones);
 
     return targets;
-  }
-
-  updateEasterEgg(delta) {
-    if (this.legendaryFlyby) {
-      if (this.legendaryFlyby.sprite?.parent) {
-        this.legendaryFlyby.sprite.parent.removeChild(this.legendaryFlyby.sprite);
-      }
-      this.legendaryFlyby.sprite?.destroy?.({ children: true });
-      this.legendaryFlyby = null;
-    }
-
-    if (this.easterEggFlyby) {
-      const flyby = this.easterEggFlyby;
-      flyby.ageMs = (flyby.ageMs || 0) + delta * 16.67;
-      const duration = Math.max(1, flyby.durationMs || 2200);
-      const t = Math.min(1, flyby.ageMs / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      if (flyby.sprite?.parent) {
-        flyby.sprite.x = flyby.startX + (flyby.endX - flyby.startX) * eased;
-        flyby.sprite.y = flyby.baseY + Math.sin(t * Math.PI * 2.4 + flyby.waveOffset) * flyby.wave;
-        flyby.sprite.rotation = flyby.rotation + Math.sin(t * Math.PI * 3) * 0.08;
-        const fade = t < 0.18 ? t / 0.18 : t > 0.78 ? Math.max(0, (1 - t) / 0.22) : 1;
-        flyby.sprite.alpha = fade * (flyby.maxAlpha || 0.32);
-        flyby.sprite.scale.set((flyby.baseScale || 0.58) + Math.sin(t * Math.PI) * (flyby.scalePulse || 0.05));
-      }
-      if (t >= 1) {
-        if (flyby.sprite?.parent) flyby.sprite.parent.removeChild(flyby.sprite);
-        flyby.sprite?.destroy?.({ children: true });
-        this.easterEggFlyby = null;
-      }
-    }
-
-    if (this.isPaused || this.introActive || this.gameOverSequenceStarted || this.gameOverInterlude?.active) return;
-    if (!this.player || this.game?.currentScene !== this) return;
-    this.easterEggTimer -= delta * 16.67;
-    if (this.easterEggTimer > 0) return;
-
-    const spawned = this.spawnAmbientEasterEgg();
-    this.easterEggTimer = this.getRandomTimer(spawned ? 26000 : 9000, spawned ? 43000 : 16000);
-  }
-
-  spawnEasterEgg() {
-    return this.showStoryTransmission({ force: true });
-  }
-
-  spawnAmbientEasterEgg({ force = false } = {}) {
-    if (!force && !this.canShowLore()) return false;
-    const egg = pickEasterEggForLevel(this.game?.level || 1, this.easterEggSeenIds);
-    if (!egg) return false;
-
-    const title = translateText(egg.title);
-    const line = translateText(egg.line);
-    const shown = this.showLoreBanner(line, {
-      title,
-      force,
-      accent: egg.accent,
-      duration: 3400,
-      maxWidth: this.game.getWidth() < 900
-        ? this.game.getWidth() * 0.72
-        : Math.min(430, this.game.getWidth() * 0.34)
-    });
-    if (!shown) return false;
-
-    this.easterEggSeenIds.add(egg.id);
-    this.lastEasterEgg = {
-      id: egg.id,
-      title,
-      level: this.game?.level || 1,
-      seen: this.easterEggSeenIds.size,
-      total: EASTER_EGG_TOTAL
-    };
-    if (this.debugStats) this.debugStats.easterEggSignals = (this.debugStats.easterEggSignals || 0) + 1;
-    this.spawnEasterEggFlyby(egg);
-    if (egg.sfx) {
-      AudioManager.playSfx(egg.sfx, { force: true, volume: 0.56, minIntervalMs: 0 });
-    }
-    return true;
-  }
-
-  spawnEasterEggFlyby(egg) {
-    if (egg?.id === 'space_tax_audit') return false;
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
-    const flyby = new PIXI.Container();
-    flyby.zIndex = 5;
-    flyby.eventMode = 'none';
-    flyby.label = `gameplay_easterEgg_${egg.id}`;
-    flyby.__novaIntent = 'decorative_lore_signal';
-    flyby.__novaLayer = 'gameplay_decorative_overlay';
-    flyby.__novaCollision = false;
-    flyby.__novaShootable = false;
-    flyby.__novaDamagesPlayer = false;
-    flyby.__novaGivesReward = false;
-
-    const accent = Number(egg.accent) || 0xffef7e;
-    const secondary = Number(egg.secondary) || 0x37f5ff;
-    const rightSide = width >= 900;
-    const softWake = new PIXI.Graphics();
-    const wakeDir = rightSide ? 1 : -1;
-    softWake.ellipse(wakeDir * 52, 0, 124, 38);
-    softWake.fill({ color: accent, alpha: 0.018 });
-    softWake.moveTo(wakeDir * 92, -20);
-    softWake.lineTo(wakeDir * 150, -38);
-    softWake.stroke({ color: accent, width: 2, alpha: 0.07 });
-    softWake.moveTo(wakeDir * 88, 22);
-    softWake.lineTo(wakeDir * 146, 42);
-    softWake.stroke({ color: secondary, width: 1.5, alpha: 0.05 });
-
-    const craft = new PIXI.Graphics();
-    craft.moveTo(0, -16);
-    craft.lineTo(28, 0);
-    craft.lineTo(0, 16);
-    craft.lineTo(-28, 0);
-    craft.closePath();
-    craft.fill({ color: 0x041322, alpha: 0.38 });
-    craft.stroke({ color: accent, width: 1.5, alpha: 0.34 });
-
-    flyby.addChild(softWake, craft);
-    this.decorativeOverlay.addChild(flyby);
-
-    const startX = rightSide ? width + 70 : -70;
-    const endX = rightSide
-      ? Math.max(width * 0.62, width - 560)
-      : Math.min(width * 0.28, 230);
-    const baseY = Math.max(270, Math.min(height - 260, height * (0.38 + Math.random() * 0.1)));
-    flyby.x = startX;
-    flyby.y = baseY;
-    flyby.rotation = rightSide ? -0.08 : 0.08;
-    flyby.alpha = 0;
-
-    if (this.easterEggFlyby?.sprite?.parent) {
-      this.easterEggFlyby.sprite.parent.removeChild(this.easterEggFlyby.sprite);
-      this.easterEggFlyby.sprite.destroy?.({ children: true });
-    }
-    this.easterEggFlyby = {
-      alias: egg.id,
-      sprite: flyby,
-      ageMs: 0,
-      durationMs: 3600 + Math.random() * 900,
-      startX,
-      endX,
-      baseY,
-      wave: 8 + Math.random() * 10,
-      waveOffset: Math.random() * Math.PI * 2,
-      rotation: flyby.rotation,
-      visualIntent: flyby.__novaIntent,
-      layer: flyby.__novaLayer,
-      hasCollision: flyby.__novaCollision,
-      shootable: flyby.__novaShootable,
-      damagesPlayer: flyby.__novaDamagesPlayer,
-      givesReward: flyby.__novaGivesReward,
-      artSrc: null,
-      maxAlpha: 0.84,
-      baseScale: 0.9,
-      scalePulse: 0.025
-    };
   }
 
   safeGetEnemyTaunt() {
