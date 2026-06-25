@@ -1,0 +1,71 @@
+{
+  "uploadedAt": "2026-06-25T10:28:19+02:00",
+  "purpose": "Private unassigned Steam build for hangar unlock reveal restoration and reinforcement pity visibility fix.",
+  "branch": "codex/hangar-reinforcement-visibility-fix-20260625",
+  "sourceCommit": "cfcadf2a40ea85701961c950280e1efd531e4cd9",
+  "sourceShortSha": "cfcadf2",
+  "buildVersion": "v2026-06-25_10-18-37",
+  "steamBuildId": "23908364",
+  "steamcmdExitCode": 0,
+  "steamcmdLog": "test-results/steam-upload-hangar-reinforcement-fix-20260625-102627/steamcmd-upload.log",
+  "steamcmdLogSha256": "235d3ab573c1fe740fe0b2f88ac2c0074db1b0c06f81e3310e93cc05d8cea347",
+  "steamcmdProofLine": "[2026-06-25 10:28:19]: Successfully finished AppID 4765070 build (BuildID 23908364).",
+  "nonUploadAttempt": {
+    "steamcmdExitCode": 6,
+    "steamcmdLog": "test-results/steam-upload-hangar-reinforcement-fix-20260625-102549/steamcmd-upload.log",
+    "reason": "Relative VDF path was not found by SteamCMD before any upload started."
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "sha256": "f7414d33b1af0e249705cc9581f44f8669eaae4d2c776f369eea2ef2c7a96716",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "description": "Nova Swarm hangar unlock and reinforcement fix cfcadf2",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked"
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestFileSha256": "1c1406a6128ff5b5a4993481a16882584ac4111302e72c073f746abf78c23045",
+    "fileCount": 336,
+    "totalBytes": 891439981,
+    "manifestHash": "c083ac1933a932da7d19de7912abd61640f0e25912a45604e336521b3763e0d1",
+    "executableSha256": "ed152538a8b8134c14cff6726f7e77c83d2516e7056e1945ed2b83e200e57ac7",
+    "appAsarSha256": "ad4c0818d9cfef894c1ad2ab3a2fdef5d019d299e78eaf9469dde5a2a94626f1"
+  },
+  "packagedGitShaProof": {
+    "path": "test-results/packaged-gitsha-proof-20260625/packaged-gitsha-proof.json",
+    "sha256": "52a00beca5951a37e3b64180556081f83f7309f833f8fa92c86171849c0d6274",
+    "sourceCommit": "cfcadf2a40ea85701961c950280e1efd531e4cd9",
+    "sourceShortSha": "cfcadf2",
+    "containsSourceShortSha": true,
+    "matchingAsset": "dist\\\\assets\\\\index-m3t7-yPO.js"
+  },
+  "checksRun": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf",
+    "packaged git SHA proof extraction",
+    "steamcmd +login gaunziman +run_app_build D:\\\\vibe-coding-e\\\\nova-swarm-sector-continue-prototype\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "guardrails": {
+    "setLiveBlank": true,
+    "publicBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudChanged": false,
+    "saveFormatChanged": false,
+    "gameplayChangedDuringDeploy": false,
+    "fullSmokeRun": false
+  },
+  "rollback": {
+    "source": "git revert cfcadf2a40ea85701961c950280e1efd531e4cd9",
+    "steam": "Do not assign BuildID 23908364, or reassign the private test branch back to the previous desired BuildID."
+  }
+}
