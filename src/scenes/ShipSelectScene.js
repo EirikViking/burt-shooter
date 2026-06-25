@@ -40,7 +40,10 @@ const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
 const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
 const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
-const HANGAR_PROFILE_REPAIR_REASON = 'legacy_codex_rescue_inflation';
+const HANGAR_PROFILE_REPAIR_REASONS = new Set([
+  'legacy_codex_rescue_inflation',
+  'legacy_codex_rescue_preserved'
+]);
 const HANGAR_UNLOCK_STRINGS = {
   titleSingle: 'NEW HULL ARRIVED',
   titlePlural: 'NEW HULLS ARRIVED',
@@ -69,7 +72,7 @@ function hexColor(color) {
 }
 
 function getHangarProfileFooterLines(progress = {}) {
-  if (progress?.integrityRepairReason === HANGAR_PROFILE_REPAIR_REASON) {
+  if (HANGAR_PROFILE_REPAIR_REASONS.has(progress?.integrityRepairReason)) {
     return [
       translateText('PROFILE REPAIRED'),
       translateText('RUN EVIDENCE VERIFIED')

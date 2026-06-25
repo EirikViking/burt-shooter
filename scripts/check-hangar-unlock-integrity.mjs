@@ -5,7 +5,8 @@ import {
 } from '../src/steamCloudPersistence.js';
 import {
   SHIP_UNLOCK_HISTORY_REASON_KEYS,
-  createDefaultHangarProgress
+  createDefaultHangarProgress,
+  normalizeHangarProgress
 } from '../src/progression/HangarProgressState.js';
 import { ShipUnlockConfig } from '../src/config/ShipUnlockConfig.js';
 
@@ -116,16 +117,51 @@ const inflatedSave = {
 };
 
 const repaired = restoreHangar(inflatedSave);
-assert.equal(repaired.integrityRepairReason, 'legacy_codex_rescue_inflation');
-assert.equal(repaired.bestSector, 31, 'Codex sector 60 must not over-promote hangar sector progress');
-assert.equal(repaired.bestLevel, 31);
-assert.equal(repaired.pilotRank, 6, 'legacy rescue profile rank should be capped by real run evidence');
-assert.equal(repaired.unlockedShipIds.includes('nova_ship_30'), false, 'legacy rescue profile must not unlock Eirik');
-assert.equal(repaired.unlockedShipIds.includes('nova_ship_29'), false, 'legacy rescue profile must not unlock late Ascendant ships');
-assert(repaired.unlockedShipIds.length <= 12, `legacy rescue clamp should leave a mid hangar, got ${repaired.unlockedShipIds.length}`);
-assert(repaired.totalCodexDiscoveries <= 124, 'Codex count used for unlocks should be capped by run evidence');
-assert.equal(repaired.runClears, 0, 'missing explicit run-clear evidence must not preserve inflated clears');
-assert.equal(repaired.noHitWaves, 0, 'missing no-hit evidence must not preserve inflated no-hit waves');
+assert.equal(repaired.integrityRepairReason, 'legacy_codex_rescue_preserved');
+assert.equal(repaired.bestSector, 60, 'legacy restore must not lower existing hangar sector progress');
+assert.equal(repaired.bestLevel, 60);
+assert.equal(repaired.pilotRank, 20, 'legacy restore must not lower existing hangar rank');
+for (const shipId of legacyUnlocks) {
+  assert.equal(repaired.unlockedShipIds.includes(shipId), true, `saved legacy unlock ${shipId} must survive restore`);
+}
+const repairedVisible = normalizeHangarProgress(repaired);
+assert.equal(repairedVisible.unlockedShipIds.includes('nova_ship_30'), true, 'normalized legacy profile with sector 60 should keep Eirik available');
+assert(repairedVisible.unlockedShipIds.length >= legacyUnlocks.length, `legacy restore should not shrink visible hangar, got ${repairedVisible.unlockedShipIds.length}`);
+assert.equal(repaired.runClears, 16, 'existing explicit run-clear progress must survive restore');
+assert.equal(repaired.noHitWaves, 1873, 'existing no-hit progress must survive restore');
+
+const previouslyClampedSave = {
+  version: 2,
+  localHighscores: inflatedSave.localHighscores,
+  progression: { bestScore: 168666, bestRank: 20, bestLevel: 60 },
+  hangarProgress: {
+    ...createDefaultHangarProgress(),
+    unlockTuningVersion: 3,
+    integrityRepairVersion: 1,
+    integrityRepairReason: 'legacy_codex_rescue_inflation',
+    pilotXp: 42000,
+    pilotRank: 6,
+    highestPilotRank: 6,
+    bestRank: 6,
+    bestScore: 168666,
+    bestSector: 31,
+    bestLevel: 31,
+    totalRuns: 71,
+    totalBossesDefeated: 312,
+    totalWavesCleared: 2012,
+    totalCodexDiscoveries: 80,
+    unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_03', 'nova_ship_04', 'nova_ship_05']
+  },
+  threatDiscovery: makeThreatDiscovery({ sectors: 60, ranks: 20, other: 1200 })
+};
+
+const recoveredClamp = restoreHangar(previouslyClampedSave);
+assert.equal(recoveredClamp.integrityRepairReason, 'legacy_codex_rescue_preserved');
+assert.equal(recoveredClamp.bestSector, 60, 'previous bad clamp should recover saved progression level');
+assert.equal(recoveredClamp.bestLevel, 60);
+assert.equal(recoveredClamp.pilotRank, 20, 'previous bad clamp should recover saved progression rank');
+assert.equal(recoveredClamp.highestPilotRank, 20);
+assert.equal(recoveredClamp.unlockedShipIds.includes('nova_ship_30'), true, 'recovered rank/sector should make late ships visible again');
 
 const freshCodexRescueSave = {
   version: 2,
@@ -199,4 +235,4 @@ assert.equal(mastery.bestSector, 60);
 assert.equal(mastery.unlockedShipIds.includes('nova_ship_30'), true, 'valid mastery profile should keep Eirik');
 assert.equal(mastery.unlockedShipIds.length, ShipUnlockConfig.length);
 
-console.log(`[hangar-unlock-integrity] PASS repaired=${repaired.unlockedShipIds.length} rescued=${rescued.unlockedShipIds.length} mastery=${mastery.unlockedShipIds.length}`);
+console.log(`[hangar-unlock-integrity] PASS preserved=${repairedVisible.unlockedShipIds.length} recovered=${recoveredClamp.unlockedShipIds.length} rescued=${rescued.unlockedShipIds.length} mastery=${mastery.unlockedShipIds.length}`);

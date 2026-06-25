@@ -80,7 +80,7 @@ function repairedProfile() {
     version: 1,
     unlockTuningVersion: 3,
     integrityRepairVersion: 1,
-    integrityRepairReason: 'legacy_codex_rescue_inflation',
+    integrityRepairReason: 'legacy_codex_rescue_preserved',
     pilotXp: 8000,
     pilotRank: 3,
     highestPilotRank: 3,
