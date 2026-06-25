@@ -39,11 +39,11 @@ const EXPECTED_NORMALS = [
 ];
 
 const ASCENDANT_TARGETS = [
-  ['nova_ship_26', 'AEGIS COMET', 30, [1.25, 1.35]],
-  ['nova_ship_27', 'RAILBREAKER', 35, [1.45, 1.55]],
-  ['nova_ship_28', 'DRONE SOVEREIGN', 40, [1.65, 1.8]],
-  ['nova_ship_29', 'PHASE SERAPH', 45, [1.9, 2.1]],
-  ['nova_ship_30', 'EIRIK THE VIKING', 50, [2.25, 2.5]]
+  ['nova_ship_26', 'AEGIS COMET', 30, [1.095, 1.13]],
+  ['nova_ship_27', 'RAILBREAKER', 35, [1.105, 1.15]],
+  ['nova_ship_28', 'DRONE SOVEREIGN', 40, [1.12, 1.16]],
+  ['nova_ship_29', 'PHASE SERAPH', 45, [1.145, 1.18]],
+  ['nova_ship_30', 'EIRIK THE VIKING', 50, [1.17, 1.2]]
 ];
 
 function fail(message) {
@@ -184,9 +184,9 @@ const level30 = shipsById.get('nova_ship_26');
 const level50 = shipsById.get('nova_ship_30');
 const level30Ratio = level30 ? ratio(calculateEffectivePowerIndex(level30), topNormalEpi) : 0;
 const level50Ratio = level50 ? ratio(calculateEffectivePowerIndex(level50), topNormalEpi) : 0;
-if (level30Ratio < 1.2) fail(`Aegis Comet should be at least 20% above top normal, got ${level30Ratio.toFixed(3)}`);
-if (level50Ratio < 2) fail(`Eirik the Viking should be at least 100% above top normal, got ${level50Ratio.toFixed(3)}`);
-if (level50Ratio > 2.65) fail(`Eirik the Viking exceeds safety ceiling, got ${level50Ratio.toFixed(3)}`);
+if (level30Ratio < 1.095) fail(`Aegis Comet should be about 10% above top normal, got ${level30Ratio.toFixed(3)}`);
+if (level50Ratio < 1.17) fail(`Eirik the Viking should remain a stronger endgame hull, got ${level50Ratio.toFixed(3)}`);
+if (level50Ratio > 1.2) fail(`Eirik the Viking exceeds the 20% Ascendant safety ceiling, got ${level50Ratio.toFixed(3)}`);
 
 const shipSelectSource = fs.readFileSync(path.join(root, 'src/scenes/ShipSelectScene.js'), 'utf8');
 for (const token of ['getShipTierLabel', 'tierBadge', 'this.ships.length', 'WEAKNESS:']) {
