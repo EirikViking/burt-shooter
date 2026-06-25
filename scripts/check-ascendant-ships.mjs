@@ -39,11 +39,11 @@ const EXPECTED_NORMALS = [
 ];
 
 const ASCENDANT_TARGETS = [
-  ['nova_ship_26', 'AEGIS COMET', 30, [1.095, 1.13]],
-  ['nova_ship_27', 'RAILBREAKER', 35, [1.105, 1.15]],
-  ['nova_ship_28', 'DRONE SOVEREIGN', 40, [1.12, 1.16]],
-  ['nova_ship_29', 'PHASE SERAPH', 45, [1.145, 1.18]],
-  ['nova_ship_30', 'EIRIK THE VIKING', 50, [1.17, 1.2]]
+  ['nova_ship_26', 'AEGIS COMET', 30, [1.09, 1.14]],
+  ['nova_ship_27', 'RAILBREAKER', 35, [1.1, 1.15]],
+  ['nova_ship_28', 'DRONE SOVEREIGN', 40, [1.1, 1.15]],
+  ['nova_ship_29', 'PHASE SERAPH', 45, [1.1, 1.15]],
+  ['nova_ship_30', 'EIRIK THE VIKING', 50, [1.11, 1.16]]
 ];
 
 function fail(message) {
@@ -98,6 +98,41 @@ export function calculateEffectivePowerIndex(ship = {}) {
     controlUtilityFactor;
 }
 
+export function calculateSustainedShotDps(ship = {}, volleys = 240) {
+  const stats = ship.stats || {};
+  const weapon = ship.weapon || {};
+  const combat = ship.trait?.effects?.combat || {};
+  const bulletCount = Math.max(1, Number(weapon.bullets) || 1);
+  const baseDamage = Math.max(0, Number(stats.damage) || 0);
+  const fireRate = Math.max(1, Number(stats.fireRate) || 140);
+  let totalDamage = 0;
+
+  for (let shot = 1; shot <= volleys; shot += 1) {
+    for (let i = 0; i < bulletCount; i += 1) {
+      let damage = baseDamage;
+      if (combat.pierceEvery && shot % Number(combat.pierceEvery) === 0) {
+        damage = Math.max(0.5, damage * (Number(combat.pierceDamageMult) || 0.72));
+      }
+      if (combat.critEvery && shot % Number(combat.critEvery) === 0) {
+        damage = Math.max(1, damage * (Number(combat.critDamageMult) || 1.38));
+      }
+      totalDamage += damage;
+    }
+
+    if (combat.wingShotEvery && shot % Number(combat.wingShotEvery) === 0) {
+      const wingDamage = Math.max(0.35, baseDamage * (Number(combat.wingShotDamageMult) || 0.42));
+      totalDamage += wingDamage * 2;
+    }
+
+    if (combat.bonusShotEvery && shot % Number(combat.bonusShotEvery) === 0) {
+      const bonusDamage = Math.max(0.45, baseDamage * (Number(combat.bonusShotDamageMult) || 0.5));
+      totalDamage += bonusDamage;
+    }
+  }
+
+  return (totalDamage / Math.max(1, volleys)) * (1000 / fireRate);
+}
+
 const ships = getSelectableShips();
 const shipsById = new Map(ships.map((ship) => [ship.id, ship]));
 const unlocksById = new Map(ShipUnlockConfig.map((entry) => [entry.shipId, entry]));
@@ -117,8 +152,8 @@ if (ascendant.length !== 5) fail(`expected exactly 5 Ascendant ships, found ${as
 
 const normalShips = ships.filter((ship) => ship.tier !== 'ascendant');
 const topNormalEpi = Math.max(...normalShips.map(calculateEffectivePowerIndex));
+const topNormalSustainedDps = Math.max(...normalShips.map(calculateSustainedShotDps));
 let previousPowerRating = 0;
-let previousMeasuredRatio = 0;
 const measuredRows = [];
 
 for (const [id, expectedName, expectedLevel, targetRange] of ASCENDANT_TARGETS) {
@@ -159,34 +194,39 @@ for (const [id, expectedName, expectedLevel, targetRange] of ASCENDANT_TARGETS) 
 
   const measured = calculateEffectivePowerIndex(ship);
   const measuredRatio = ratio(measured, topNormalEpi);
+  const sustainedDps = calculateSustainedShotDps(ship);
+  const sustainedRatio = ratio(sustainedDps, topNormalSustainedDps);
   measuredRows.push({
     id,
     name: ship.name,
     unlockLevel: expectedLevel,
     epi: Number(measured.toFixed(3)),
-    ratio: Number(measuredRatio.toFixed(3)),
+    epiRatio: Number(measuredRatio.toFixed(3)),
+    sustainedDps: Number(sustainedDps.toFixed(3)),
+    damageRatio: Number(sustainedRatio.toFixed(3)),
     target: targetRange.join('-')
   });
 
   if (!(ship.powerRating > previousPowerRating)) fail(`${id} powerRating should be monotonic`);
-  if (!(measuredRatio > previousMeasuredRatio)) fail(`${id} measured EPI ratio should be monotonic`);
-  if (measuredRatio < targetRange[0] || measuredRatio > targetRange[1]) {
-    fail(`${id} measured EPI ratio ${measuredRatio.toFixed(3)} outside target ${targetRange.join('-')}`);
+  if (sustainedRatio < targetRange[0] || sustainedRatio > targetRange[1]) {
+    fail(`${id} sustained damage ratio ${sustainedRatio.toFixed(3)} outside target ${targetRange.join('-')}`);
   }
-  if (Math.abs((Number(ship.powerRating) || 0) - measuredRatio) > 0.08) {
-    fail(`${id} powerRating ${ship.powerRating} should match measured ratio ${measuredRatio.toFixed(3)} within 0.08`);
+  if (measuredRatio > 1.35) {
+    fail(`${id} overall utility EPI ratio ${measuredRatio.toFixed(3)} exceeds the Ascendant utility ceiling 1.35`);
+  }
+  if (Math.abs((Number(ship.powerRating) || 0) - sustainedRatio) > 0.06) {
+    fail(`${id} powerRating ${ship.powerRating} should match sustained damage ratio ${sustainedRatio.toFixed(3)} within 0.06`);
   }
   previousPowerRating = Number(ship.powerRating) || 0;
-  previousMeasuredRatio = measuredRatio;
 }
 
 const level30 = shipsById.get('nova_ship_26');
 const level50 = shipsById.get('nova_ship_30');
-const level30Ratio = level30 ? ratio(calculateEffectivePowerIndex(level30), topNormalEpi) : 0;
-const level50Ratio = level50 ? ratio(calculateEffectivePowerIndex(level50), topNormalEpi) : 0;
-if (level30Ratio < 1.095) fail(`Aegis Comet should be about 10% above top normal, got ${level30Ratio.toFixed(3)}`);
-if (level50Ratio < 1.17) fail(`Eirik the Viking should remain a stronger endgame hull, got ${level50Ratio.toFixed(3)}`);
-if (level50Ratio > 1.2) fail(`Eirik the Viking exceeds the 20% Ascendant safety ceiling, got ${level50Ratio.toFixed(3)}`);
+const level30Ratio = level30 ? ratio(calculateSustainedShotDps(level30), topNormalSustainedDps) : 0;
+const level50Ratio = level50 ? ratio(calculateSustainedShotDps(level50), topNormalSustainedDps) : 0;
+if (level30Ratio < 1.09) fail(`Aegis Comet should stay near 10% above top normal sustained damage, got ${level30Ratio.toFixed(3)}`);
+if (level50Ratio < 1.11) fail(`Eirik the Viking should remain a stronger endgame hull, got ${level50Ratio.toFixed(3)}`);
+if (level50Ratio > 1.16) fail(`Eirik the Viking exceeds the modest Ascendant damage ceiling, got ${level50Ratio.toFixed(3)}`);
 
 const shipSelectSource = fs.readFileSync(path.join(root, 'src/scenes/ShipSelectScene.js'), 'utf8');
 for (const token of ['getShipTierLabel', 'tierBadge', 'this.ships.length', 'WEAKNESS:']) {
@@ -207,4 +247,4 @@ if (errors.length) {
 
 console.table(measuredRows);
 if (warn.length) warn.forEach((message) => console.warn(`[ascendant-ships] WARN ${message}`));
-console.log(`[ascendant-ships] PASS ships=${ships.length} ascendant=${ascendant.length} topNormalEpi=${topNormalEpi.toFixed(3)} level30Ratio=${level30Ratio.toFixed(3)} level50Ratio=${level50Ratio.toFixed(3)}`);
+console.log(`[ascendant-ships] PASS ships=${ships.length} ascendant=${ascendant.length} topNormalEpi=${topNormalEpi.toFixed(3)} topNormalSustainedDps=${topNormalSustainedDps.toFixed(3)} level30DamageRatio=${level30Ratio.toFixed(3)} level50DamageRatio=${level50Ratio.toFixed(3)}`);

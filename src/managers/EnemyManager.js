@@ -1049,9 +1049,12 @@ export class EnemyManager {
     const spawned = Math.max(0, Math.floor(Number(this.mayhemReinforcementRunSpawned) || 0));
     const level = Math.max(1, Math.floor(Number(this.level) || 1));
     if (spawned <= 0) {
+      const overdueMisses = Math.max(1, Math.ceil(config.firstPityEligibleMisses * 0.5));
       return level >= config.firstPityMinLevel &&
-        level <= config.firstPityMaxLevel &&
-        misses >= config.firstPityEligibleMisses;
+        (
+          misses >= config.firstPityEligibleMisses ||
+          (level >= config.firstPityMaxLevel && misses >= overdueMisses)
+        );
     }
     return misses >= config.repeatPityEligibleMisses;
   }

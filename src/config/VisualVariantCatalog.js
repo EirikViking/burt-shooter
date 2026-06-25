@@ -220,7 +220,7 @@ const SHIP_TRAIT_PROFILES = {
     description: 'Recovery-tuned dodge pulse with stronger main shots and slower movement.',
     speedMult: 0.94,
     fireRateMult: 0.94,
-    damageMult: 1.08,
+    damageMult: 1,
     bulletSpeedMult: 1.05,
     hitboxMult: 0.88,
     spreadDelta: 0.02
@@ -230,39 +230,65 @@ const SHIP_TRAIT_PROFILES = {
     description: 'Heavy rail damage and piercing lines with slower movement.',
     speedMult: 0.92,
     fireRateMult: 1.13,
-    damageMult: 1.16,
+    damageMult: 1,
     bulletSpeedMult: 1.2,
     spreadDelta: -0.04,
-    hitboxMult: 1.04
+    hitboxMult: 1.04,
+    combatOverrides: {
+      pierceEvery: 8,
+      critEvery: 0,
+      critDamageMult: 0
+    }
   },
   sovereign: {
     label: 'DRONE SOVEREIGN',
     description: 'Fast wing volleys and bonus shots for high-density swarm clear.',
     speedMult: 1.02,
     fireRateMult: 0.88,
-    damageMult: 0.98,
+    damageMult: 1,
     bulletSpeedMult: 1.04,
-    spreadDelta: 0.055
+    spreadDelta: 0.055,
+    combatOverrides: {
+      bonusShotEvery: 8,
+      bonusShotDamageMult: 0.35,
+      wingShotEvery: 8,
+      wingShotDamageMult: 0.36
+    }
   },
   seraph: {
     label: 'PHASE SERAPH',
     description: 'Fast phase movement, smaller hitbox, dodge pulse, and near-miss rewards.',
     speedMult: 1.12,
     fireRateMult: 0.88,
-    damageMult: 0.98,
+    damageMult: 1,
     bulletSpeedMult: 1.1,
     hitboxMult: 0.82,
-    spreadDelta: 0.025
+    spreadDelta: 0.025,
+    combatOverrides: {
+      bonusShotEvery: 0,
+      bonusShotDamageMult: 0,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0
+    }
   },
   singularity: {
     label: 'EIRIK THE VIKING',
     description: 'Endgame Viking overdrive pressure with stronger main shots, wider control, and a larger hitbox.',
     speedMult: 1.03,
     fireRateMult: 0.86,
-    damageMult: 1.18,
+    damageMult: 1,
     bulletSpeedMult: 1.12,
     hitboxMult: 1.04,
-    spreadDelta: 0.055
+    spreadDelta: 0.055,
+    combatOverrides: {
+      bonusShotEvery: 8,
+      bonusShotDamageMult: 0.35,
+      wingShotEvery: 8,
+      wingShotDamageMult: 0.36,
+      critEvery: 0,
+      critDamageMult: 0
+    }
   }
 };
 
@@ -380,7 +406,7 @@ function buildTraitCombatEffects(traitProfile) {
     ? Math.round(clampNumber(44 + agileScore * 280, 48, 96))
     : 0;
 
-  return {
+  const combat = {
     projectileRadiusMult,
     dodgeCooldownMult,
     dodgeDurationMult: roundStat(clampNumber(1 + Math.max(0, speedMult - 1) * 0.55 + Math.max(0, 1 - hitboxMult) * 0.45, 1, 1.18), 2),
@@ -396,6 +422,10 @@ function buildTraitCombatEffects(traitProfile) {
     dodgePulseRadius,
     nearMissScoreMult: roundStat(clampNumber(1 + agileScore * 2.4 - Math.max(0, hitboxMult - 1) * 1.2, 0.85, 1.75), 2)
   };
+
+  return traitProfile.combatOverrides
+    ? { ...combat, ...traitProfile.combatOverrides }
+    : combat;
 }
 
 function applyShipTrait(base, variant) {

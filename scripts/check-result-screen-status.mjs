@@ -15,6 +15,10 @@ assert.ok(gameOver.includes('getVisibleLocalPlacementRank()'), 'Result screen mu
 for (const forbidden of ['Steamboard', 'Steam Board', 'Steam board', 'STEAM BOARD']) {
   assert.ok(!gameOver.includes(forbidden), `Result screen copy must not use bad Steam-board term: ${forbidden}`);
 }
+assert.ok(!gameOver.includes('No visible leaderboard slot this run'), 'Result hold copy must not expose technical no-slot wording');
+assert.ok(!gameOver.includes('Global: Offline - local still works'), 'Offline leaderboard copy must use clear Steam-unavailable wording');
+assert.ok(gameOver.includes('Steam leaderboard unavailable. Local score is saved.'), 'Offline leaderboard copy must clearly say Steam is unavailable and local score is saved');
+assert.ok(gameOver.includes("if (reason === 'no_slot') return this.getLeaderboardStatusMessage();"), 'No-slot hold copy must show the normal local/global status lines');
 assert.ok(gameOver.includes('Local: Not in local top'), 'Outside-visible local ranks must use clear not-in-top copy');
 assert.ok(gameOver.includes('const localRank = this.getVisibleLocalPlacementRank();'), 'Runback copy must derive local ranks from visible local placement only');
 assert.ok(gameOver.includes('steam_best_unchanged'), 'Steam best-unchanged state must be first-class');

@@ -886,9 +886,9 @@ export class GameOverScene {
       checking: 'Global: Checking...',
       qualified: 'Global: Qualified',
       missed: 'Global: No slot',
-      offline: 'Global: Offline - local still works',
+      offline: translateText('Steam leaderboard unavailable. Local score is saved.'),
       submitting: 'Global: Submitting...',
-      failed: 'Global: Failed - local saved',
+      failed: translateText('Steam leaderboard unavailable. Local score is saved.'),
       unranked: 'Global: Practice run'
     }[this.globalStatus] || `Global: ${String(this.globalStatus || 'unknown')}`;
   }
@@ -1193,14 +1193,18 @@ export class GameOverScene {
   }
 
   getLeaderboardStatusMessage() {
-    return this.getLeaderboardPlacementLines().join('\n');
+    return this.getLeaderboardPlacementLines()
+      .filter(Boolean)
+      .map((line) => translateText(line))
+      .join('\n');
   }
 
   getHoldStatusText(reason = this.pendingRunbackReason) {
     if (this.state === 'submitting' || this.globalStatus === 'submitting') return 'Steam: Rank updating...';
     if (reason === 'global_failed' || this.globalStatus === 'failed') return 'Steam: Unavailable - local backup saved';
     if (reason === 'steam_best_unchanged' || this.isSteamBestUnchangedResult()) return this.getSteamPlacementLine();
-    if (reason === 'no_slot' || reason === 'offline_no_slot') return 'No visible leaderboard slot this run';
+    if (reason === 'offline_no_slot') return translateText('Steam leaderboard unavailable. Local score is saved.');
+    if (reason === 'no_slot') return this.getLeaderboardStatusMessage();
     return this.getGlobalPlacementLine();
   }
 

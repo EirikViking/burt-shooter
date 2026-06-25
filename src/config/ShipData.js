@@ -45,7 +45,7 @@ const SHIP_BLUEPRINTS = [
     ['Hazard Ram', 'hazard', 'Dangerous burst hull with a broad body.', 'hazard', 56, 5.9, 150, 1.88, 11.2, 2, 0.19, 15],
     ['Nova Overdrive', 'nova', 'Aggressive late-roster all-round pressure machine.', 'overdrive', 58, 7.1, 112, 1.3, 12.6, 3, 0.16, 12],
     ['Arcade Legend', 'arcade', 'Final cabinet hero craft with absurd confidence.', 'legend', 60, 7.25, 108, 1.45, 13.0, 3, 0.22, 12],
-    ['Aegis Comet', 'aegis', 'Survive the sector wall. Shield-style recovery and mistake forgiveness at the cost of speed.', 'aegis-comet', 30, 5.9, 108, 1.39, 12.4, 3, 0.13, 12, {
+    ['Aegis Comet', 'aegis', 'Survive the sector wall. Shield-style recovery and mistake forgiveness at the cost of speed.', 'aegis-comet', 30, 5.9, 108, 1.62, 12.4, 3, 0.13, 12, {
         textureIndex: 20,
         tier: 'ascendant',
         powerClass: 'late_game',
@@ -58,11 +58,11 @@ const SHIP_BLUEPRINTS = [
         recommendedBuildTags: ['shield', 'recovery', 'safe-entry'],
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-21.png', note: 'Final Aegis Comet art needed.' }
     }],
-    ['Railbreaker', 'railbreaker', 'Crack boss gates. Heavy precision damage, weaker crowd cleanup.', 'railbreaker', 35, 5.45, 112, 1.73, 13.8, 3, 0.02, 13, {
+    ['Railbreaker', 'railbreaker', 'Crack boss gates. Heavy precision damage, weaker crowd cleanup.', 'railbreaker', 35, 5.45, 112, 2.11, 13.8, 3, 0.02, 13, {
         textureIndex: 21,
         tier: 'ascendant',
         powerClass: 'late_game',
-        powerRating: 1.12,
+        powerRating: 1.11,
         intendedSectorBand: '35-39',
         difficulty: 'boss killer',
         role: 'Boss killer',
@@ -71,11 +71,11 @@ const SHIP_BLUEPRINTS = [
         recommendedBuildTags: ['boss', 'pierce', 'precision'],
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-22.png', note: 'Final Railbreaker art needed.' }
     }],
-    ['Drone Sovereign', 'sovereign', 'Command the swarm back. Drone-style side pressure and magnet control turn density into opportunity.', 'drone-sovereign', 40, 6.15, 94, 0.93, 12.2, 4, 0.21, 12, {
+    ['Drone Sovereign', 'sovereign', 'Command the swarm back. Drone-style side pressure and magnet control turn density into opportunity.', 'drone-sovereign', 40, 6.15, 94, 0.96, 12.2, 4, 0.21, 12, {
         textureIndex: 22,
         tier: 'ascendant',
         powerClass: 'late_game',
-        powerRating: 1.14,
+        powerRating: 1.12,
         intendedSectorBand: '40-44',
         difficulty: 'swarm clearer',
         role: 'Swarm clearer',
@@ -84,11 +84,11 @@ const SHIP_BLUEPRINTS = [
         recommendedBuildTags: ['crowd-clear', 'magnet', 'side-lanes'],
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-23.png', note: 'Final Drone Sovereign art needed.' }
     }],
-    ['Phase Seraph', 'seraph', 'Slip through impossible screens. Phase and near-miss tools, lower raw damage than the cannon hulls.', 'phase-seraph', 45, 7.4, 90, 0.8, 13.0, 4, 0.11, 10, {
+    ['Phase Seraph', 'seraph', 'Slip through impossible screens. Phase and near-miss tools, lower raw damage than the cannon hulls.', 'phase-seraph', 45, 7.4, 90, 0.98, 13.0, 4, 0.11, 10, {
         textureIndex: 23,
         tier: 'ascendant',
         powerClass: 'late_game',
-        powerRating: 1.16,
+        powerRating: 1.13,
         intendedSectorBand: '45-49',
         difficulty: 'bullet-hell specialist',
         role: 'Bullet-hell specialist',
@@ -97,11 +97,11 @@ const SHIP_BLUEPRINTS = [
         recommendedBuildTags: ['phase', 'near-miss', 'dodge'],
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-24.png', note: 'Final Phase Seraph art needed.' }
     }],
-    ['Eirik the Viking', 'singularity', 'Level-50 endgame hull. Viking overdrive built for the sectors that hate you personally.', 'eirik-the-viking', 50, 6.85, 90, 0.71, 13.5, 4, 0.19, 13, {
+    ['Eirik the Viking', 'singularity', 'Level-50 endgame hull. Viking overdrive built for the sectors that hate you personally.', 'eirik-the-viking', 50, 6.85, 90, 0.96, 13.5, 4, 0.19, 13, {
         textureIndex: 24,
         tier: 'ascendant',
         powerClass: 'late_game',
-        powerRating: 1.18,
+        powerRating: 1.14,
         intendedSectorBand: '50+',
         difficulty: 'apex late-game',
         role: 'Apex late-game ship',

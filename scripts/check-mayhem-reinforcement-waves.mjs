@@ -16,10 +16,10 @@ const config = BalanceConfig.difficulty?.mayhemReinforcements;
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
 if (config.chance !== 0.05) fail(`Expected rare 5% reinforcement chance, got ${config.chance}.`);
-if (config.firstPityEligibleMisses !== 14) fail(`Expected first reinforcement pity after 14 eligible misses, got ${config.firstPityEligibleMisses}.`);
-if (config.firstPityMinLevel !== 6) fail(`Expected first reinforcement pity to start at level 6, got ${config.firstPityMinLevel}.`);
-if (config.firstPityMaxLevel !== 9) fail(`Expected first reinforcement pity to protect by level 9, got ${config.firstPityMaxLevel}.`);
-if (config.repeatPityEligibleMisses !== 24) fail(`Expected repeat reinforcement pity to stay rare, got ${config.repeatPityEligibleMisses}.`);
+if (config.firstPityEligibleMisses !== 8) fail(`Expected first reinforcement pity after 8 eligible misses, got ${config.firstPityEligibleMisses}.`);
+if (config.firstPityMinLevel !== 5) fail(`Expected first reinforcement pity to start at level 5, got ${config.firstPityMinLevel}.`);
+if (config.firstPityMaxLevel !== 8) fail(`Expected first reinforcement pity target window at level 8, got ${config.firstPityMaxLevel}.`);
+if (config.repeatPityEligibleMisses !== 18) fail(`Expected repeat reinforcement pity to stay rare but reachable, got ${config.repeatPityEligibleMisses}.`);
 if (config.minWaveAgeMs !== 5000) fail(`Expected faster reinforcement eligibility at 5000ms, got ${config.minWaveAgeMs}.`);
 if (config.warningMs !== 2000) fail(`Expected 2000ms warning, got ${config.warningMs}.`);
 if (config.minClearRatio !== 0.4) {
@@ -60,6 +60,8 @@ const requiredSourceSnippets = [
   'canRecordMayhemReinforcementMiss',
   'canRelaxMayhemReinforcementPityGates',
   'recordMayhemReinforcementMiss',
+  'overdueMisses',
+  'level >= config.firstPityMaxLevel && misses >= overdueMisses',
   'eligibility.reasons?.includes(\'roll_failed\')',
   'MAYHEM_REINFORCEMENT_HARD_REASONS',
   'MAYHEM_REINFORCEMENT_SOFT_REASONS',
@@ -110,11 +112,17 @@ if (observedRate < 0.043 || observedRate > 0.057) {
 
 let misses = 0;
 let firstPityLevel = null;
-for (let level = 1; level <= 9; level += 1) {
+const firstPityReady = (level, missCount) => {
+  const overdueMisses = Math.max(1, Math.ceil(config.firstPityEligibleMisses * 0.5));
+  return level >= config.firstPityMinLevel &&
+    (
+      missCount >= config.firstPityEligibleMisses ||
+      (level >= config.firstPityMaxLevel && missCount >= overdueMisses)
+    );
+};
+for (let level = 1; level <= 12; level += 1) {
   for (let wave = 1; wave <= 3; wave += 1) {
-    const pityReady = level >= config.firstPityMinLevel &&
-      level <= config.firstPityMaxLevel &&
-      misses >= config.firstPityEligibleMisses;
+    const pityReady = firstPityReady(level, misses);
     if (pityReady) {
       firstPityLevel = level;
       break;
@@ -124,7 +132,10 @@ for (let level = 1; level <= 9; level += 1) {
   if (firstPityLevel !== null) break;
 }
 if (firstPityLevel === null || firstPityLevel > config.firstPityMaxLevel) {
-  fail('First reinforcement pity must force a later eligible wave before level 9 can pass with no event.');
+  fail('First reinforcement pity must force a later eligible wave by the level-8 target window.');
+}
+if (!firstPityReady(10, Math.ceil(config.firstPityEligibleMisses * 0.5))) {
+  fail('First reinforcement pity must not expire after the target window; overdue misses must still force it later.');
 }
 
 let softBlockedMisses = 0;
@@ -133,9 +144,7 @@ for (let level = 1; level <= 12; level += 1) {
   for (let wave = 1; wave <= 3; wave += 1) {
     const rollFailed = rollFor('no-natural-0', level, wave) >= config.chance;
     if (!rollFailed) continue;
-    const pityReady = level >= config.firstPityMinLevel &&
-      level <= config.firstPityMaxLevel &&
-      softBlockedMisses >= config.firstPityEligibleMisses;
+    const pityReady = firstPityReady(level, softBlockedMisses);
     if (pityReady) {
       softPityLevel = level;
       break;
@@ -145,7 +154,7 @@ for (let level = 1; level <= 12; level += 1) {
   if (softPityLevel !== null) break;
 }
 if (softPityLevel === null || softPityLevel > config.firstPityMaxLevel) {
-  fail('Soft-blocked reinforcement misses must still feed first pity before level 9.');
+  fail('Soft-blocked reinforcement misses must still feed first pity by the level-8 target window.');
 }
 
 const pityCanSpawnWithLotsLeft = ({ expected, objectiveCount, bullets, ageMs }) => (

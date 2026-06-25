@@ -38,21 +38,41 @@ const simulateRun = ({ seed, profile, enabled }) => {
   let reinforcementDeaths = 0;
   let wavesCleared = 0;
   let bossEncounters = 0;
+  let reinforcementEligibleMisses = 0;
+  let reinforcementSpawned = 0;
+
+  const firstPityReady = () => {
+    if (reinforcementSpawned > 0) return false;
+    const overdueMisses = Math.max(1, Math.ceil(config.firstPityEligibleMisses * 0.5));
+    return sector >= config.firstPityMinLevel &&
+      (
+        reinforcementEligibleMisses >= config.firstPityEligibleMisses ||
+        (sector >= config.firstPityMaxLevel && reinforcementEligibleMisses >= overdueMisses)
+      );
+  };
+
+  const repeatPityReady = () => (
+    reinforcementSpawned > 0 &&
+    reinforcementEligibleMisses >= config.repeatPityEligibleMisses
+  );
 
   while (lives > 0 && sector <= 45) {
     let wave = 0;
     while (wave < 5 && lives > 0) {
       const enemies = enemyCountFor(sector, wave);
       const waveSeconds = profile.clearSeconds + enemies * 0.34 + sector * 0.08;
-      const eligible = enabled &&
+      const canAttemptReinforcement = enabled &&
         wave < 4 &&
-        wave >= config.minNextWaveIndex &&
-        rollFor(seed, sector, wave) < config.chance;
+        wave >= config.minNextWaveIndex;
+      const naturalHit = canAttemptReinforcement && rollFor(seed, sector, wave) < config.chance;
+      const eligible = canAttemptReinforcement && (naturalHit || firstPityReady() || repeatPityReady());
       if (eligible) {
         const nextEnemies = enemyCountFor(sector, wave + 1);
         const pressureRoll = rollFor(seed, sector, wave, `pressure-${profile.id}`);
         const pressureDeathRisk = Math.min(0.18, profile.pressureRisk + sector * 0.00045);
         reinforcements += 1;
+        reinforcementSpawned += 1;
+        reinforcementEligibleMisses = 0;
         seconds += config.warningMs / 1000 + waveSeconds + Math.max(3.8, nextEnemies * 0.3);
         score += (enemies + nextEnemies) * 48 * profile.scoreMult;
         xp += (enemies + nextEnemies) * 2.25 * profile.xpMult;
@@ -66,6 +86,7 @@ const simulateRun = ({ seed, profile, enabled }) => {
         wave += 2;
         continue;
       }
+      if (canAttemptReinforcement) reinforcementEligibleMisses += 1;
 
       const deathRoll = rollFor(seed, sector, wave, `normal-${profile.id}`);
       const normalDeathRisk = Math.min(0.14, profile.deathRisk + sector * 0.00035);
