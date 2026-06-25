@@ -93,6 +93,10 @@ export const BalanceConfig = {
             minClearRatio: 0.4,
             maxActiveEnemies: 9,
             maxActiveEnemyBullets: 18,
+            pityMinWaveAgeMs: 3200,
+            pityMinClearRatio: 0.25,
+            pityMaxActiveEnemies: 12,
+            pityMaxActiveEnemyBullets: 30,
             warningMs: 2000,
             minNextWaveIndex: 1
         },

@@ -466,7 +466,11 @@ export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true,
   merged.bestRank = Math.max(merged.bestRank, merged.highestPilotRank);
   const before = new Set(previous.unlockedShipIds);
   merged.unlockedShipIds = recalculateUnlockedShipIds(merged);
-  merged.lastNewlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
+  const newlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
+  merged.lastNewlyUnlockedShipIds = preserveLastUnlocks
+    ? [...new Set([...(previous.lastNewlyUnlockedShipIds || []), ...newlyUnlockedShipIds])]
+      .filter((shipId) => merged.unlockedShipIds.includes(shipId))
+    : newlyUnlockedShipIds;
   merged.shipUnlockHistory = fillMissingShipUnlockHistory(merged);
   for (const shipId of merged.lastNewlyUnlockedShipIds) {
     if (!shouldReplaceHistoryEntry(merged.shipUnlockHistory[shipId])) continue;

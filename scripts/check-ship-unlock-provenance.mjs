@@ -92,6 +92,13 @@ try {
     novaShip03Text: getShipUnlockHistoryLine('nova_ship_03', firstUnlock)
   });
 
+  const liveScoreProgress = updateHangarProgress({ bestScore: 26000 });
+  assert(liveScoreProgress.lastNewlyUnlockedShipIds.includes('nova_ship_02'));
+  assert(liveScoreProgress.lastNewlyUnlockedShipIds.includes('nova_ship_03'));
+  checkpoint('live progress writes preserve pending hangar reveal', {
+    pendingAfterScoreWrite: liveScoreProgress.lastNewlyUnlockedShipIds
+  });
+
   const reloaded = readHangarProgressState();
   assert.deepEqual(reloaded.shipUnlockHistory.nova_ship_03, firstUnlock.shipUnlockHistory.nova_ship_03);
   checkpoint('unlock reason persists after reload', {
@@ -120,6 +127,7 @@ try {
   });
 
   storage.setItem(HANGAR_PROGRESS_KEY, JSON.stringify({
+    unlockTuningVersion: 3,
     unlockedShipIds: ['nova_ship_01', 'nova_ship_12'],
     shipUnlockHistory: {}
   }));

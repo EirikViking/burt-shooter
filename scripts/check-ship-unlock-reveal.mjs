@@ -161,6 +161,16 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, r
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
+async function applyLiveProgress(page, progress = null) {
+  if (!progress) return;
+  await page.evaluate(({ level, scoreAward }) => {
+    const game = window.__game;
+    if (!game) return;
+    game.level = Math.max(1, Number(level) || Number(game.level) || 1);
+    if ((Number(scoreAward) || 0) > 0) game.addScore(Number(scoreAward) || 0, 'baseScore');
+  }, progress);
+}
+
 async function enterRunbackStage(page) {
   await page.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
@@ -177,8 +187,41 @@ async function enterRunbackStage(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text()));
 }
 
+async function openHangarAndAssertPresentation(page, scenario) {
+  await page.evaluate(async () => {
+    await window.__game?.showShipSelect?.();
+  });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'shipSelect' && state.shipSelect?.unlockPresentation?.visible === true;
+    }, null, { timeout: 15000 });
+  } catch (error) {
+    const diagnostic = await page.evaluate(() => ({
+      localHangarProgress: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || 'null'),
+      runProgressionResult: window.__game?.runProgressionResult || null,
+      pending: window.__game?.currentScene?.pendingHangarUnlockShips?.map?.(ship => ({
+        id: ship.id,
+        baseId: ship.baseId,
+        spriteKey: ship.spriteKey,
+        name: ship.name
+      })) || null
+    }));
+    throw new Error(`${scenario.name}: hangar unlock presentation did not appear: ${error.message}\n${JSON.stringify(diagnostic, null, 2)}`);
+  }
+  await page.waitForTimeout(750);
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const reveal = state.shipSelect?.unlockPresentation || {};
+  assert(reveal.visible === true, `${scenario.name}: hangar presentation was not visible`);
+  assert(reveal.animated === true, `${scenario.name}: hangar presentation did not animate`);
+  assert(reveal.count === scenario.expectedCount, `${scenario.name}: hangar expected ${scenario.expectedCount} unlock(s), got ${reveal.count}`);
+  assert(reveal.selectedUnlockFocused === true, `${scenario.name}: hangar did not focus the newly unlocked ship`);
+  await page.screenshot({ path: path.join(outputDir, `${scenario.name}-hangar-presentation.png`), fullPage: true });
+}
+
 async function runScenario(browser, scenario) {
   const { page, pageErrors } = await preparePage(browser, scenario);
+  await applyLiveProgress(page, scenario.liveProgress);
   const state = await forceGameOver(page, scenario.finalLevel, scenario.finalScore, scenario.runStats);
   const unlocks = state.gameOver?.shipUnlocks || {};
   const expectedSpriteCount = Math.min(scenario.expectedCount, 4);
@@ -208,6 +251,9 @@ async function runScenario(browser, scenario) {
   assert(runbackUnlocks.layout?.spriteSize >= 60, `${scenario.name}: runback ship sprites are too small: ${JSON.stringify(runbackUnlocks.layout)}`);
   assert(runbackUnlocks.bounds?.height >= 88, `${scenario.name}: runback reveal bounds are too small: ${JSON.stringify(runbackUnlocks.bounds)}`);
   await page.screenshot({ path: path.join(outputDir, `${scenario.name}-runback.png`), fullPage: true });
+  if (scenario.expectHangarPresentation) {
+    await openHangarAndAssertPresentation(page, scenario);
+  }
   await page.close();
   return {
     scenario: scenario.name,
@@ -229,6 +275,20 @@ const browser = await chromium.launch({
 
 try {
   const results = [];
+  results.push(await runScenario(browser, {
+    name: 'live-progress-preserved',
+    previousProgress: baseHangarProgress(),
+    liveProgress: {
+      level: 2,
+      scoreAward: 10000
+    },
+    finalLevel: 2,
+    finalScore: 10000,
+    expectedCount: 1,
+    expectedVoiceKey: 'mission_control_ship_unlocked',
+    expectedSummary: 'SHIP UNLOCKED',
+    expectHangarPresentation: true
+  }));
   results.push(await runScenario(browser, {
     name: 'single',
     previousProgress: baseHangarProgress({

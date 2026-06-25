@@ -37,6 +37,26 @@ const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
 const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
 export const MAYHEM_REINFORCEMENT_WAVE_SOUND_ID = 'mission_control_reinforcements_incoming';
 export const MAYHEM_REINFORCEMENT_WARNING_TEXT = 'INCOMING REINFORCEMENTS';
+const MAYHEM_REINFORCEMENT_HARD_REASONS = new Set([
+  'disabled',
+  'not_mayhem',
+  'not_normal_wave_phase',
+  'boss_active_or_pending',
+  'wave_not_stable',
+  'sector_stinger_active',
+  'player_respawn_or_invulnerable',
+  'already_scheduled',
+  'already_triggered_for_wave',
+  'no_next_wave',
+  'too_early_in_sector',
+  'next_wave_not_normal'
+]);
+const MAYHEM_REINFORCEMENT_SOFT_REASONS = new Set([
+  'wave_too_young',
+  'not_enough_wave_progress',
+  'too_many_enemies',
+  'too_many_bullets'
+]);
 
 const BASE_WAVE_TACTICS = [
   {
@@ -1000,7 +1020,11 @@ export class EnemyManager {
       firstPityEligibleMisses: Math.max(1, Math.floor(Number(config.firstPityEligibleMisses) || 14)),
       firstPityMinLevel: Math.max(1, Math.floor(Number(config.firstPityMinLevel) || 6)),
       firstPityMaxLevel: Math.max(1, Math.floor(Number(config.firstPityMaxLevel) || 9)),
-      repeatPityEligibleMisses: Math.max(1, Math.floor(Number(config.repeatPityEligibleMisses) || 24))
+      repeatPityEligibleMisses: Math.max(1, Math.floor(Number(config.repeatPityEligibleMisses) || 24)),
+      pityMinWaveAgeMs: Math.max(0, Number(config.pityMinWaveAgeMs) || 3200),
+      pityMinClearRatio: Math.max(0, Math.min(1, Number(config.pityMinClearRatio) || 0.25)),
+      pityMaxActiveEnemies: Math.max(0, Math.floor(Number(config.pityMaxActiveEnemies) || 12)),
+      pityMaxActiveEnemyBullets: Math.max(0, Math.floor(Number(config.pityMaxActiveEnemyBullets) || 30))
     };
   }
 
@@ -1040,6 +1064,27 @@ export class EnemyManager {
     return true;
   }
 
+  canRecordMayhemReinforcementMiss(eligibility) {
+    if (!eligibility?.config || !eligibility.reasons?.includes('roll_failed')) return false;
+    return (eligibility.hardReasons || []).length === 0;
+  }
+
+  canRelaxMayhemReinforcementPityGates({ config, waveAgeMs, clearRatio, objectiveCount, expected, activeEnemyBullets }) {
+    if (!config) return false;
+    const pityMinAge = Math.min(config.minWaveAgeMs, config.pityMinWaveAgeMs);
+    const pityMinClear = Math.min(config.minClearRatio, config.pityMinClearRatio);
+    const pityMaxEnemies = Math.max(
+      config.maxActiveEnemies,
+      config.pityMaxActiveEnemies,
+      Math.ceil(Math.max(1, expected) * 0.75)
+    );
+    const pityMaxBullets = Math.max(config.maxActiveEnemyBullets, config.pityMaxActiveEnemyBullets);
+    return waveAgeMs >= pityMinAge &&
+      clearRatio >= pityMinClear &&
+      objectiveCount <= pityMaxEnemies &&
+      activeEnemyBullets <= pityMaxBullets;
+  }
+
   getMayhemReinforcementWaveExpectedCount(config = this.waves?.[this.currentWaveIndex]) {
     if (!config) return 0;
     let expected = Math.max(1, Math.floor(Number(config.count) || 1));
@@ -1059,7 +1104,7 @@ export class EnemyManager {
       ?.filter((bullet) => bullet?.active !== false).length || 0;
     const expected = this.getMayhemReinforcementWaveExpectedCount(currentWave);
     const clearRatio = expected > 0 ? Math.max(0, Math.min(1, (expected - objectiveCount) / expected)) : 0;
-    const reasons = [];
+    let reasons = [];
 
     if (!config) reasons.push('disabled');
     if (this.game?.runMode !== RUN_MODES.RANKED) reasons.push('not_mayhem');
@@ -1073,18 +1118,36 @@ export class EnemyManager {
     if (nextWaveIndex >= this.normalWavesTotal) reasons.push('no_next_wave');
     if (nextWaveIndex < (config?.minNextWaveIndex || 0)) reasons.push('too_early_in_sector');
     if (!nextWave || nextWave.type === 'BOSS' || nextWave.type === 'bonus_challenge' || nextWave.isChallenge) reasons.push('next_wave_not_normal');
-    if ((Number(this.waveActiveTimer) || 0) < (config?.minWaveAgeMs || 0)) reasons.push('wave_too_young');
+    const waveAgeMs = Number(this.waveActiveTimer) || 0;
+    if (waveAgeMs < (config?.minWaveAgeMs || 0)) reasons.push('wave_too_young');
     if (clearRatio < (config?.minClearRatio || 0)) reasons.push('not_enough_wave_progress');
     if (objectiveCount > (config?.maxActiveEnemies || 0)) reasons.push('too_many_enemies');
     if (activeEnemyBullets > (config?.maxActiveEnemyBullets || 0)) reasons.push('too_many_bullets');
 
     const roll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex) : 1;
+    const hardReasons = reasons.filter((reason) => MAYHEM_REINFORCEMENT_HARD_REASONS.has(reason));
+    const pityReady = Boolean(config && roll >= config.chance && this.shouldForceMayhemReinforcementByPity(config));
+    const pityRelaxed = Boolean(pityReady &&
+      hardReasons.length === 0 &&
+      this.canRelaxMayhemReinforcementPityGates({
+        config,
+        waveAgeMs,
+        clearRatio,
+        objectiveCount,
+        expected,
+        activeEnemyBullets
+      }));
+    if (pityRelaxed) {
+      reasons = reasons.filter((reason) => !MAYHEM_REINFORCEMENT_SOFT_REASONS.has(reason));
+    }
     const pityForced = Boolean(config && reasons.length === 0 && roll >= config.chance && this.shouldForceMayhemReinforcementByPity(config));
     if (config && roll >= config.chance && !pityForced) reasons.push('roll_failed');
 
     const result = {
       eligible: reasons.length === 0,
       reasons,
+      hardReasons: reasons.filter((reason) => MAYHEM_REINFORCEMENT_HARD_REASONS.has(reason)),
+      softReasons: reasons.filter((reason) => MAYHEM_REINFORCEMENT_SOFT_REASONS.has(reason)),
       config,
       currentWaveIndex,
       nextWaveIndex,
@@ -1092,9 +1155,11 @@ export class EnemyManager {
       expected,
       clearRatio,
       activeEnemyBullets,
+      waveAgeMs,
       roll,
       chance: config?.chance || 0,
       pityForced,
+      pityRelaxed,
       eligibleMisses: this.mayhemReinforcementEligibleMisses || 0,
       runSpawned: this.mayhemReinforcementRunSpawned || 0
     };
@@ -1105,7 +1170,7 @@ export class EnemyManager {
   maybeScheduleMayhemReinforcement(objectiveCount = this.getObjectiveEnemyCount()) {
     const eligibility = this.getMayhemReinforcementEligibility(objectiveCount);
     if (this.mayhemReinforcementStats) this.mayhemReinforcementStats.lastRoll = eligibility.roll;
-    if (!eligibility.eligible && eligibility.reasons.length === 1 && eligibility.reasons[0] === 'roll_failed') {
+    if (!eligibility.eligible && this.canRecordMayhemReinforcementMiss(eligibility)) {
       this.recordMayhemReinforcementMiss(eligibility);
     }
     if (!eligibility.eligible) return false;

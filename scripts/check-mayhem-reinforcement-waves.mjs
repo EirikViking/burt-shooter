@@ -26,6 +26,10 @@ if (config.minClearRatio !== 0.4) {
   fail(`Expected early-overlap clear ratio gate at 40%, got ${config.minClearRatio}.`);
 }
 if (config.maxActiveEnemies !== 9) fail(`Expected active enemy gate to allow about 60% of a 14-enemy wave left, got ${config.maxActiveEnemies}.`);
+if (config.pityMinWaveAgeMs !== 3200) fail(`Expected first-pity reinforcement soft gate at 3200ms, got ${config.pityMinWaveAgeMs}.`);
+if (config.pityMinClearRatio !== 0.25) fail(`Expected first-pity reinforcement clear ratio gate at 25%, got ${config.pityMinClearRatio}.`);
+if (config.pityMaxActiveEnemies !== 12) fail(`Expected first-pity reinforcement enemy gate at 12, got ${config.pityMaxActiveEnemies}.`);
+if (config.pityMaxActiveEnemyBullets !== 30) fail(`Expected first-pity reinforcement bullet gate at 30, got ${config.pityMaxActiveEnemyBullets}.`);
 
 const canSpawnWithAboutSixtyPercentLeft = ({ expected, objectiveCount }) => (
   objectiveCount <= config.maxActiveEnemies &&
@@ -53,8 +57,13 @@ const requiredSourceSnippets = [
   'AudioManager.playVoice(MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
   'spawnAt: now + warningMs',
   'shouldForceMayhemReinforcementByPity',
+  'canRecordMayhemReinforcementMiss',
+  'canRelaxMayhemReinforcementPityGates',
   'recordMayhemReinforcementMiss',
-  'eligibility.reasons.length === 1 && eligibility.reasons[0] === \'roll_failed\'',
+  'eligibility.reasons?.includes(\'roll_failed\')',
+  'MAYHEM_REINFORCEMENT_HARD_REASONS',
+  'MAYHEM_REINFORCEMENT_SOFT_REASONS',
+  'pityRelaxed',
   'isMayhemReinforcement: true',
   'mayhemReinforcementConsumedWaveIndices.add',
   'hasPendingMayhemReinforcement()',
@@ -116,6 +125,37 @@ for (let level = 1; level <= 9; level += 1) {
 }
 if (firstPityLevel === null || firstPityLevel > config.firstPityMaxLevel) {
   fail('First reinforcement pity must force a later eligible wave before level 9 can pass with no event.');
+}
+
+let softBlockedMisses = 0;
+let softPityLevel = null;
+for (let level = 1; level <= 12; level += 1) {
+  for (let wave = 1; wave <= 3; wave += 1) {
+    const rollFailed = rollFor('no-natural-0', level, wave) >= config.chance;
+    if (!rollFailed) continue;
+    const pityReady = level >= config.firstPityMinLevel &&
+      level <= config.firstPityMaxLevel &&
+      softBlockedMisses >= config.firstPityEligibleMisses;
+    if (pityReady) {
+      softPityLevel = level;
+      break;
+    }
+    softBlockedMisses += 1;
+  }
+  if (softPityLevel !== null) break;
+}
+if (softPityLevel === null || softPityLevel > config.firstPityMaxLevel) {
+  fail('Soft-blocked reinforcement misses must still feed first pity before level 9.');
+}
+
+const pityCanSpawnWithLotsLeft = ({ expected, objectiveCount, bullets, ageMs }) => (
+  ageMs >= config.pityMinWaveAgeMs &&
+  ((expected - objectiveCount) / expected) >= config.pityMinClearRatio &&
+  objectiveCount <= Math.max(config.pityMaxActiveEnemies, Math.ceil(expected * 0.75)) &&
+  bullets <= config.pityMaxActiveEnemyBullets
+);
+if (!pityCanSpawnWithLotsLeft({ expected: 14, objectiveCount: 10, bullets: 24, ageMs: 3300 })) {
+  fail('First pity must be allowed to surface while roughly 70% of a 14-enemy wave is still alive.');
 }
 
 const expectedVoiceFiles = Array.from(

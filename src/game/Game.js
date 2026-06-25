@@ -47,7 +47,8 @@ import {
   getHangarProgressSummary,
   previewRunProgression,
   readHangarProgressState,
-  updateHangarProgress
+  updateHangarProgress,
+  writeHangarProgressState
 } from '../progression/HangarProgressState.js';
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
@@ -970,9 +971,29 @@ export class Game {
     this.runSummary = this.buildRunSummary(overrides);
     flushThreatDiscoveryState();
     const previousProgress = readHangarProgressState();
-    const result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled
+    let result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled
       ? applyRunProgression(this.runSummary)
       : { previous: previousProgress, next: previousProgress, xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [], rankProgress: null };
+    if (this.isRankedRun() && result?.next) {
+      const runStartProgress = this.hangarProgressAtRunStart || result.previous || previousProgress;
+      const runStartUnlocked = new Set((runStartProgress.unlockedShipIds || []).map(String));
+      const newlyUnlockedShipIds = (result.next.unlockedShipIds || [])
+        .map(String)
+        .filter((shipId) => shipId && !runStartUnlocked.has(shipId));
+      let nextProgress = result.next;
+      if (newlyUnlockedShipIds.length > 0) {
+        nextProgress = writeHangarProgressState({
+          ...result.next,
+          lastNewlyUnlockedShipIds: newlyUnlockedShipIds
+        });
+      }
+      result = {
+        ...result,
+        previous: runStartProgress,
+        next: nextProgress,
+        newlyUnlockedShipIds
+      };
+    }
     this.runProgressionResult = result;
     this.rankIndex = result.next?.pilotRank ?? this.rankIndex;
     this.lastRankIndex = this.rankIndex;
