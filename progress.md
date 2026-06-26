@@ -1,5 +1,10 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-26 Menu Boss Voice Navigation
+
+- Current request: replace the annoying robotic menu navigation sound with funny boss-voice barks plus VFX, using the existing boss voice via ElevenLabs and keeping the API key secret.
+- Work direction: add a local menu-bark catalog with hundreds of generated MP3 voice clips, route main menu, utility buttons, sector selector, and quit-confirm navigation through randomized boss voice events, and silence the old menu tick focus sound.
+
 ## 2026-06-24 Hangar Unlock Integrity Hotfix
 
 - Current request: fix and deploy the over-unlocked Hangar profile state where legacy/Codex-rescue data could make the player appear to have almost every ship.

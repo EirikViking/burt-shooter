@@ -174,15 +174,16 @@ export class HowToPlayOverlay {
     const height = this.game.getHeight();
     const compact = width < 900 || height < 700;
     const veryShort = height < 560;
+    const shortDesktop = !compact && height < 780;
     const spacious = width >= 1800 && height >= 980;
     const panelWidth = Math.min(spacious ? 1320 : 1160, width * (compact ? 0.96 : 0.9));
     const panelHeight = Math.min(spacious ? 860 : 820, height * (compact ? 0.96 : 0.92));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
-    const pad = veryShort ? 18 : compact ? 24 : 34;
-    const headerHeight = veryShort ? 98 : compact ? 124 : 166;
-    const footerHeight = veryShort ? 62 : compact ? 76 : 86;
-    const gridGap = veryShort ? 8 : compact ? 10 : 14;
+    const pad = veryShort ? 18 : compact ? 24 : shortDesktop ? 28 : 34;
+    const headerHeight = veryShort ? 98 : compact ? 124 : shortDesktop ? 132 : 166;
+    const footerHeight = veryShort ? 62 : compact ? 76 : shortDesktop ? 76 : 86;
+    const gridGap = veryShort ? 8 : compact ? 10 : shortDesktop ? 10 : 14;
     const columns = compact ? 1 : 2;
     const visualRows = compact ? HELP_ROWS.length : Math.ceil(HELP_ROWS.length / columns);
     const gridX = panelX + pad;
@@ -193,14 +194,14 @@ export class HowToPlayOverlay {
       ? gridWidth
       : (gridWidth - gridGap) / 2;
     const cardHeight = Math.max(
-      veryShort ? 42 : compact ? 54 : 92,
+      veryShort ? 42 : compact ? 54 : shortDesktop ? 76 : 92,
       Math.floor((gridHeight - gridGap * (visualRows - 1)) / visualRows)
     );
     const titleSize = veryShort ? 24 : spacious ? 48 : compact ? 31 : 42;
     const subtitleSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : 14;
-    const labelSize = veryShort ? 11 : spacious ? 16 : compact ? 13 : 15;
-    const controlSize = veryShort ? 11 : spacious ? 17 : compact ? 13 : 15;
-    const tipSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : 15;
+    const labelSize = veryShort ? 11 : spacious ? 16 : compact ? 13 : shortDesktop ? 12 : 15;
+    const controlSize = veryShort ? 11 : spacious ? 17 : compact ? 13 : shortDesktop ? 12 : 15;
+    const tipSize = veryShort ? 11 : spacious ? 16 : compact ? 12 : shortDesktop ? 11 : 15;
     const cardLayouts = [];
 
     this.container.eventMode = 'static';
@@ -347,6 +348,7 @@ export class HowToPlayOverlay {
         height: cardHeight,
         compact,
         veryShort,
+        shortDesktop,
         labelSize,
         controlSize,
         tipSize
@@ -427,6 +429,7 @@ export class HowToPlayOverlay {
     this.debugLayout = {
       compact,
       veryShort,
+      shortDesktop,
       columns,
       panel: {
         x: Math.round(panelX),
@@ -639,7 +642,7 @@ export class HowToPlayOverlay {
   }
 
   addHelpCard(row, layout) {
-    const { x, y, width, height, compact, veryShort, labelSize, controlSize, tipSize } = layout;
+    const { x, y, width, height, compact, veryShort, shortDesktop, labelSize, controlSize, tipSize } = layout;
     const accent = row.accent;
     const card = new PIXI.Graphics();
     card.roundRect(x, y, width, height, 8);
@@ -655,7 +658,7 @@ export class HowToPlayOverlay {
     card.fill({ color: accent, alpha: 0.055 });
     card.rect(x + 14, y + height - 7, width - 28, 1.5);
     card.fill({ color: accent, alpha: 0.2 });
-    card.roundRect(x + 12, y + 12, veryShort ? 34 : 44, veryShort ? 24 : 34, 6);
+    card.roundRect(x + 12, y + 12, veryShort ? 34 : shortDesktop ? 38 : 44, veryShort ? 24 : shortDesktop ? 28 : 34, 6);
     card.fill({ color: 0x010814, alpha: 0.88 });
     card.stroke({ color: accent, width: 1, alpha: 0.74 });
     this.container.addChild(card);
@@ -668,12 +671,12 @@ export class HowToPlayOverlay {
       align: 'center'
     });
     code.anchor.set(0.5);
-    code.position.set(x + 12 + (veryShort ? 17 : 22), y + 12 + (veryShort ? 8 : 10));
+    code.position.set(x + 12 + (veryShort ? 17 : shortDesktop ? 19 : 22), y + 12 + (veryShort ? 8 : shortDesktop ? 9 : 10));
     this.container.addChild(code);
 
     const icon = createText(translateText(row.icon || row.label), {
       fontFamily: FONT_BODY,
-      fontSize: veryShort ? 7 : compact ? 8 : 9,
+      fontSize: veryShort ? 7 : compact || shortDesktop ? 8 : 9,
       fontWeight: '900',
       fill: '#ffffff',
       stroke: '#00111d',
@@ -682,18 +685,18 @@ export class HowToPlayOverlay {
       letterSpacing: 0
     });
     icon.anchor.set(0.5);
-    icon.position.set(x + 12 + (veryShort ? 17 : 22), y + 12 + (veryShort ? 18 : 25));
-    fitTextToBox(icon, veryShort ? 30 : 40, veryShort ? 9 : 12, { minScale: 0.5 });
+    icon.position.set(x + 12 + (veryShort ? 17 : shortDesktop ? 19 : 22), y + 12 + (veryShort ? 18 : shortDesktop ? 21 : 25));
+    fitTextToBox(icon, veryShort ? 30 : shortDesktop ? 34 : 40, veryShort ? 9 : 12, { minScale: 0.5 });
     this.container.addChild(icon);
 
-    const textX = x + (veryShort ? 56 : 72);
-    const rightPad = compact ? 18 : 22;
+    const textX = x + (veryShort ? 56 : shortDesktop ? 64 : 72);
+    const rightPad = compact || shortDesktop ? 18 : 22;
     const labelMax = compact ? Math.min(230, width * 0.36) : Math.min(190, width * 0.36);
-    const controlX = textX + labelMax + (compact ? 10 : 16);
+    const controlX = textX + labelMax + (compact || shortDesktop ? 10 : 16);
     const controlMax = Math.max(120, x + width - rightPad - controlX);
-    const topY = y + (veryShort ? 17 : 23);
-    const tipY = y + (veryShort ? 31 : 52);
-    const tipMaxHeight = Math.max(14, y + height - tipY - (veryShort ? 6 : 10));
+    const topY = y + (veryShort ? 17 : shortDesktop ? 19 : 23);
+    const tipY = y + (veryShort ? 31 : shortDesktop ? 40 : 52);
+    const tipMaxHeight = Math.max(14, y + height - tipY - (veryShort ? 6 : shortDesktop ? 8 : 10));
 
     const label = createText(translateText(row.label), {
       fontFamily: FONT_DISPLAY,
@@ -733,11 +736,11 @@ export class HowToPlayOverlay {
       strokeThickness: 2,
       wordWrap: true,
       wordWrapWidth: width - (textX - x) - rightPad,
-      lineHeight: Math.round(tipSize * 1.12)
+      lineHeight: Math.round(tipSize * (shortDesktop ? 1.05 : 1.12))
     });
     tip.anchor.set(0, 0);
     tip.position.set(textX, tipY);
-    fitTextToBox(tip, width - (textX - x) - rightPad, tipMaxHeight, { minScale: veryShort ? 0.48 : 0.56 });
+    fitTextToBox(tip, width - (textX - x) - rightPad, tipMaxHeight, { minScale: veryShort ? 0.48 : shortDesktop ? 0.46 : 0.56 });
     this.container.addChild(tip);
   }
 

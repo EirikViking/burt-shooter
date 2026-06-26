@@ -2,6 +2,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
+import { MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 
 // Safe lookup helpers
@@ -49,6 +50,13 @@ const paddedNumberedVoicePool = (base, count, width = 3) => getVoicePool(
 
 const GAME_OVER_CTA_VOICE_CATALOG = Object.fromEntries(
     gameOverCtaVoiceLines.map((line) => [line.id, [getVoiceFile(`${line.id}.mp3`)].filter(Boolean)])
+);
+
+const MENU_BOSS_BARK_CATALOG = Object.fromEntries(
+    MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
+        eventName,
+        paddedNumberedVoicePool(eventName, MENU_BOSS_BARK_VARIANTS_PER_EVENT, 3)
+    ])
 );
 
 const GENERATED_MENU_POOL = [
@@ -363,6 +371,10 @@ export const VOICE_MIX = {
     game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
     boss_death_agony: { volume: 1.0, duckFactor: 0.42, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
+    ...Object.fromEntries(MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
+        eventName,
+        { volume: 0.96, duckFactor: 0.36, duckMs: 1050, cooldownMs: 180, eventCooldownMs: 0, priority: 3 }
+    ])),
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
     mission_control_lives_max: { volume: 0.82, duckFactor: 0.48, duckMs: 1500, cooldownMs: 30000 },
     mission_control_powerup: { volume: 0.72, duckFactor: 0.52, duckMs: 900, cooldownMs: 28000 },
@@ -461,7 +473,6 @@ export const SFX_CATALOG = {
         getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
     'ui_open': [
-        getSfx('nova_menu_tick'),
         getSfx('doorOpen_000'), getSfx('doorOpen_001')
     ],
     'ui_close': [
@@ -502,7 +513,7 @@ export const SFX_CATALOG = {
     // Mappings and Aliases
     'shoot': [getSfx('laserSmall_000')],
     'explosion': [getSfx('explosionCrunch_000')],
-    'menuSelect': [getSfx('nova_menu_tick'), getSfx('doorOpen_000')],
+    'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('nova_player_hit_crackle'), getSfx('impactMetal_000')],
     'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_rank_fanfare')],
 
@@ -748,6 +759,7 @@ export const SFX_CATALOG = {
     'mission_control_overrun_clear_far_signal': numberedVoicePool('mission_control_overrun_clear_far_signal', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     'boss_death_agony': paddedNumberedVoicePool('boss_death_agony', 100, 3),
+    ...MENU_BOSS_BARK_CATALOG,
     'game_over_taunt': paddedNumberedVoicePool('game_over_taunt', GAME_OVER_TAUNT_VOICE_COUNT, 3),
     'level_clear_flirt': paddedNumberedVoicePool('level_clear_flirt', LEVEL_CLEAR_VOICE_COUNT, 3),
     ...GAME_OVER_CTA_VOICE_CATALOG,

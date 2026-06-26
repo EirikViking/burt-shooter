@@ -41,6 +41,23 @@ const MENU_ICON_ASSET_KEYS = {
   exit: 'exit'
 };
 
+const MENU_BOSS_BARK_EVENTS = {
+  launch: 'boss_menu_bark_launch',
+  scout: 'boss_menu_bark_scout',
+  sectorStart: 'boss_menu_bark_sector_start',
+  hangar: 'boss_menu_bark_hangar',
+  highscores: 'boss_menu_bark_leaderboard',
+  leaderboard: 'boss_menu_bark_leaderboard',
+  threatCodex: 'boss_menu_bark_threat_codex',
+  achievements: 'boss_menu_bark_achievements',
+  settings: 'boss_menu_bark_settings',
+  music: 'boss_menu_bark_music',
+  howToPlay: 'boss_menu_bark_how_to_play',
+  exit: 'boss_menu_bark_exit',
+  sectorSelect: 'boss_menu_bark_sector_select',
+  cancel: 'boss_menu_bark_cancel'
+};
+
 const DERIVED_MENU_ICON_SOURCES = {
   launch: '/art/generated/nova-swarm/menu/icons/derived/derived-menu-glyph-launch-run.png',
   sectorChallenge: '/art/generated/nova-swarm/menu/icons/derived/derived-menu-glyph-sector-challenge.png',
@@ -238,6 +255,8 @@ export class MenuScene {
     this.launchingRun = false;
     this.menuOptions = [];
     this.focusedMenuIndex = 0;
+    this.lastBossMenuBarkAt = 0;
+    this.lastBossMenuBarkId = null;
     this.menuGamepadNavigator = new GamepadNavigator();
     this.lastInputDevice = 'keyboard';
     this.menuIconTextures = {};
@@ -318,7 +337,9 @@ export class MenuScene {
       if (this.quitConfirmOpen) {
         if (isMoveLeft || isMoveRight || isMoveUp || isMoveDown || event.key === 'Tab') {
           this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
+          this.playBossMenuBarkForButton(this.quitConfirmButtons?.[this.quitConfirmFocusIndex], { intent: 'focus' });
         } else if (isCancel) {
+          this.playBossMenuBark('cancel', { target: this.quitConfirmButtons?.[0] || this.quitConfirmPanel, intent: 'activate', force: true });
           this.closeQuitConfirmation();
         } else {
           this.activateQuitConfirmation();
@@ -330,8 +351,17 @@ export class MenuScene {
         else if (isMoveDown) this.moveSectorSelectorFocus(this.getSectorSelectorColumns());
         else if (isMoveLeft) this.moveSectorSelectorFocus(-1);
         else if (isMoveRight) this.moveSectorSelectorFocus(1);
-        else if (isCancel) this.closeSectorSelector();
-        else this.activateSectorSelectorSelection();
+        else if (isCancel) {
+          this.playBossMenuBark('cancel', { target: this.sectorSelectorBackButton || this.sectorSelectorPanel, intent: 'activate', force: true });
+          this.closeSectorSelector();
+        } else {
+          this.playBossMenuBark('sectorSelect', {
+            target: this.sectorSelectorItems?.[this.selectedSectorSelectorIndex] || this.sectorSelectorLaunchButton,
+            intent: 'activate',
+            force: true
+          });
+          this.activateSectorSelectorSelection();
+        }
         return;
       }
       if (isMoveUp) {
@@ -343,6 +373,7 @@ export class MenuScene {
       } else if (isMoveRight) {
         this.moveMenuFocus(1);
       } else if (isCancel) {
+        this.playBossMenuBark('exit', { target: this.exitBtn, intent: 'activate', force: true });
         this.openQuitConfirmation({ source: 'keyboard' });
       } else {
         this.activateFocusedMenuOption();
@@ -2134,12 +2165,14 @@ export class MenuScene {
       this.selectedSectorSelectorIndex = index;
       this.drawSectorSelectorOverlay();
       playMenuFocusSfx(0.09);
+      this.playBossMenuBark('sectorSelect', { target: item, intent: 'focus' });
     });
     item.on('pointerdown', (event) => {
       event.stopPropagation?.();
       this.selectedSectorSelectorIndex = index;
       this.drawSectorSelectorOverlay();
       if (!entry.unlocked) return;
+      this.playBossMenuBark('sectorSelect', { target: item, intent: 'activate', force: true });
       this.activateSectorSelectorSelection();
     });
     item._cellBg = bg;
@@ -2606,6 +2639,81 @@ export class MenuScene {
     };
   }
 
+  getBossMenuBarkEvent(menuId) {
+    return MENU_BOSS_BARK_EVENTS[menuId] || null;
+  }
+
+  showBossMenuBarkVfx(target, { intent = 'focus', color = null } = {}) {
+    if (!this.menuFx?.burst) return;
+    const width = Number(target?._btnWidth) || 160;
+    const height = Number(target?._btnHeight) || 52;
+    let x = Number.isFinite(target?.x) ? target.x : this.game.getWidth() * 0.5;
+    let y = Number.isFinite(target?.y) ? target.y : this.game.getHeight() * 0.5;
+    try {
+      if (target?.getGlobalPosition && this.container?.toLocal) {
+        const global = target.getGlobalPosition(new PIXI.Point());
+        const local = this.container.toLocal(global);
+        if (Number.isFinite(local?.x) && Number.isFinite(local?.y)) {
+          const hitArea = target.hitArea || null;
+          const originX = Number.isFinite(hitArea?.x) && hitArea.x >= 0 ? width * 0.5 : 0;
+          const originY = Number.isFinite(hitArea?.y) && hitArea.y >= 0 ? height * 0.5 : 0;
+          x = local.x + originX;
+          y = local.y + originY;
+        }
+      }
+    } catch (error) {
+      // Best effort only; the bark should never fail because a nested menu item moved.
+    }
+    const isActivate = intent === 'activate';
+    this.menuFx.burst(x, y, {
+      color: color || target?._accent || (isActivate ? 0xffd15c : 0xff55d9),
+      radius: Math.max(isActivate ? 112 : 74, Math.min(172, Math.max(width, height) * (isActivate ? 0.56 : 0.38))),
+      durationMs: isActivate ? 560 : 360
+    });
+  }
+
+  playBossMenuBark(menuId, { target = null, intent = 'focus', force = false } = {}) {
+    const eventName = this.getBossMenuBarkEvent(menuId);
+    if (!eventName) return false;
+    const now = Date.now();
+    if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < 420) {
+      this.showBossMenuBarkVfx(target, { intent });
+      return false;
+    }
+    this.lastBossMenuBarkId = menuId;
+    this.lastBossMenuBarkAt = now;
+    try {
+      AudioManager.init();
+      const played = AudioManager.playVoice(eventName, {
+        force,
+        bypassGlobalCooldown: true,
+        bypassEventCooldown: true,
+        bypassVoiceLock: true,
+        exclusiveGroup: 'boss_menu_bark',
+        cooldownMs: force ? 0 : 160,
+        eventCooldownMs: 0,
+        duckMs: intent === 'activate' ? 1250 : 950,
+        duckFactor: intent === 'activate' ? 0.28 : 0.38,
+        volume: intent === 'activate' ? 1.04 : 0.92,
+        voicePriority: intent === 'activate' ? 4 : 3
+      });
+      this.showBossMenuBarkVfx(target, { intent });
+      return played;
+    } catch (error) {
+      console.warn('[MenuScene] Boss menu bark failed:', error?.message || error);
+      return false;
+    }
+  }
+
+  playBossMenuBarkForButton(button, options = {}) {
+    const menuId = button?._menuVoiceId || button?._menuOptionId || button?._runModeCardId || null;
+    return this.playBossMenuBark(menuId, { target: button, ...options });
+  }
+
+  playBossMenuBarkForOption(option, options = {}) {
+    return this.playBossMenuBark(option?.id || null, { target: option?.button || null, ...options });
+  }
+
   createButton(text, layout, options = {}) {
     const container = new PIXI.Container();
     container.eventMode = 'static';
@@ -2708,6 +2816,7 @@ export class MenuScene {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(container);
       playMenuFocusSfx(0.11);
+      this.playBossMenuBarkForButton(container, { intent: 'focus' });
       label.style.fill = '#ffffff';
       sublabel.style.fill = '#dffcff';
       this.drawMenuButton(container, true);
@@ -2721,6 +2830,7 @@ export class MenuScene {
 
     container.on('pointerdown', () => {
       playMenuConfirmSfx(container._variant === 'primary' ? 0.32 : 0.24);
+      this.playBossMenuBarkForButton(container, { intent: 'activate', force: true });
       this.menuFx?.burst?.(container.x, container.y, {
         color: container._accent || 0xffd15c,
         radius: container._variant === 'primary' ? 132 : 92,
@@ -2827,6 +2937,11 @@ export class MenuScene {
     this.sectorSelectorLaunchButton.addChild(this.sectorSelectorLaunchText);
     this.sectorSelectorLaunchButton.on('pointerdown', (event) => {
       event.stopPropagation?.();
+      this.playBossMenuBark('sectorSelect', {
+        target: this.sectorSelectorLaunchButton,
+        intent: 'activate',
+        force: true
+      });
       this.activateSectorSelectorSelection();
     });
     overlay.addChild(this.sectorSelectorLaunchButton);
@@ -2851,6 +2966,11 @@ export class MenuScene {
     this.sectorSelectorBackButton.addChild(this.sectorSelectorBackText);
     this.sectorSelectorBackButton.on('pointerdown', (event) => {
       event.stopPropagation?.();
+      this.playBossMenuBark('cancel', {
+        target: this.sectorSelectorBackButton,
+        intent: 'activate',
+        force: true
+      });
       this.closeSectorSelector();
     });
     overlay.addChild(this.sectorSelectorBackButton);
@@ -2943,7 +3063,11 @@ export class MenuScene {
     const count = this.sectorSelectorSectors.length;
     this.selectedSectorSelectorIndex = (this.selectedSectorSelectorIndex + delta + count) % count;
     this.drawSectorSelectorOverlay();
-    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+    playMenuFocusSfx(0.09);
+    this.playBossMenuBark('sectorSelect', {
+      target: this.sectorSelectorItems?.[this.selectedSectorSelectorIndex] || this.sectorSelectorPanel,
+      intent: 'focus'
+    });
   }
 
   activateSectorSelectorSelection() {
@@ -3671,6 +3795,8 @@ export class MenuScene {
     ].filter((option) => option.button);
 
     this.menuOptions.forEach((option) => {
+      option.button._menuOptionId = option.id;
+      option.button._menuVoiceId = option.id;
       option.button.activate = option.activate;
     });
     const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
@@ -3715,11 +3841,13 @@ export class MenuScene {
 
   moveMenuFocus(delta) {
     this.setMenuFocus(this.focusedMenuIndex + delta);
-    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+    playMenuFocusSfx(0.1);
+    this.playBossMenuBarkForOption(this.menuOptions[this.focusedMenuIndex], { intent: 'focus' });
   }
 
   activateFocusedMenuOption() {
     const option = this.menuOptions[this.focusedMenuIndex] || this.menuOptions[0];
+    this.playBossMenuBarkForOption(option, { intent: 'activate', force: true });
     option?.activate?.();
   }
 
@@ -3730,6 +3858,7 @@ export class MenuScene {
     if (this.quitConfirmOpen) {
       if (nav.pressed.left || nav.pressed.right || nav.pressed.up || nav.pressed.down) {
         this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
+        this.playBossMenuBarkForButton(this.quitConfirmButtons?.[this.quitConfirmFocusIndex], { intent: 'focus' });
       }
       if (nav.pressed.confirm) this.activateQuitConfirmation();
       if (nav.pressed.cancel || nav.pressed.back) this.closeQuitConfirmation();
@@ -3740,8 +3869,18 @@ export class MenuScene {
       if (nav.pressed.right) this.moveSectorSelectorFocus(1);
       if (nav.pressed.up) this.moveSectorSelectorFocus(-this.getSectorSelectorColumns());
       if (nav.pressed.down) this.moveSectorSelectorFocus(this.getSectorSelectorColumns());
-      if (nav.pressed.confirm) this.activateSectorSelectorSelection();
-      if (nav.pressed.cancel || nav.pressed.back) this.closeSectorSelector();
+      if (nav.pressed.confirm) {
+        this.playBossMenuBark('sectorSelect', {
+          target: this.sectorSelectorItems?.[this.selectedSectorSelectorIndex] || this.sectorSelectorLaunchButton,
+          intent: 'activate',
+          force: true
+        });
+        this.activateSectorSelectorSelection();
+      }
+      if (nav.pressed.cancel || nav.pressed.back) {
+        this.playBossMenuBark('cancel', { target: this.sectorSelectorBackButton || this.sectorSelectorPanel, intent: 'activate', force: true });
+        this.closeSectorSelector();
+      }
       return;
     }
     if (nav.pressed.left) this.moveMenuFocus(-1);
@@ -3749,7 +3888,10 @@ export class MenuScene {
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
-    if (nav.pressed.cancel || nav.pressed.back) this.openQuitConfirmation({ source: 'controller' });
+    if (nav.pressed.cancel || nav.pressed.back) {
+      this.playBossMenuBark('exit', { target: this.exitBtn, intent: 'activate', force: true });
+      this.openQuitConfirmation({ source: 'controller' });
+    }
   }
 
   openShipSelect() {
@@ -3856,7 +3998,8 @@ export class MenuScene {
       selectedCheckpoint: checkpoints[this.selectedSectorStartIndex]
     };
     this.updateSectorStartButton({ forceGpuRefresh: true });
-    AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 });
+    playMenuFocusSfx(0.09);
+    this.playBossMenuBark('sectorStart', { target: this.sectorStartBtn, intent: 'focus' });
     return true;
   }
 
@@ -3954,6 +4097,7 @@ export class MenuScene {
       button.cursor = 'pointer';
       button._variant = variant;
       button._action = action;
+      button._menuVoiceId = label === 'CANCEL' ? 'cancel' : 'exit';
       button._bg = new PIXI.Graphics();
       button._label = createText(translateText(label), {
         fontFamily: FONT_BUTTON,
@@ -3968,6 +4112,7 @@ export class MenuScene {
       button.addChild(button._bg, button._label);
       button.on('pointerover', () => {
         this.setQuitConfirmFocus(this.quitConfirmButtons.indexOf(button));
+        this.playBossMenuBarkForButton(button, { intent: 'focus' });
       });
       button.on('pointerdown', (event) => {
         event.stopPropagation();
@@ -4041,6 +4186,7 @@ export class MenuScene {
 
   activateQuitConfirmation() {
     const button = this.quitConfirmButtons?.[this.quitConfirmFocusIndex] || this.quitConfirmButtons?.[0];
+    this.playBossMenuBarkForButton(button, { intent: 'activate', force: true });
     button?._action?.();
   }
 

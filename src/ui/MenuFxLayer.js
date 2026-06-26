@@ -327,7 +327,7 @@ export function playMenuOpenSfx(volume = 0.34) {
 }
 
 export function playMenuFocusSfx(volume = 0.12) {
-  AudioManager.playSfx('menu_tick', { volume, minIntervalMs: 52 });
+  void volume;
 }
 
 export function playMenuConfirmSfx(volume = 0.28) {
