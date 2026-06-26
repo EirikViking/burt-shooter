@@ -10,6 +10,14 @@ const POWERUP_CODEX_NAMES = Object.freeze(Object.fromEntries(
   ALL_POWERUP_TYPES.map((type) => [type, getPowerupMeta(type)?.name || String(type).replace(/_/g, ' ').toUpperCase()])
 ));
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function randomBetween(min, max) {
+  return min + Math.random() * Math.max(0, max - min);
+}
+
 class Powerup {
   constructor(x, y, type) {
     this.x = x;
@@ -24,6 +32,22 @@ class Powerup {
     const data = getPowerupMeta(type) || getPowerupMeta('triple_beam');
     this.color = data.color;
     this.label = data.shortLabel || data.name || 'POWER';
+    this.effect = data.effect || {};
+    this.movement = data.movement || {};
+    this.magnetImmune = this.movement.magnetImmune === true;
+    if (Number.isFinite(Number(this.movement.pickupRadius))) {
+      this.radius = Math.max(6, Number(this.movement.pickupRadius));
+    }
+    if (Number.isFinite(Number(this.movement.verticalSpeed))) {
+      this.vy = Number(this.movement.verticalSpeed);
+    }
+    if (Number.isFinite(Number(this.movement.lifeTimeMs))) {
+      this.lifeTime = Math.max(4000, Number(this.movement.lifeTimeMs));
+    }
+    this.evasiveConfig = this.movement.evasive ? this.movement : null;
+    this.evasiveVx = (Math.random() < 0.5 ? -1 : 1) * randomBetween(2.8, 5.8);
+    this.evasiveTargetX = x;
+    this.nextEvasiveJumpAt = randomBetween(120, 360);
 
     // TASK A: Idle animation state
     this.bobPhase = Math.random() * Math.PI * 2;
@@ -55,7 +79,7 @@ class Powerup {
         const iconSprite = new PIXI.Sprite(texture);
         iconSprite.anchor.set(0.5);
         iconSprite.label = 'mainSprite';
-        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb'].includes(this.type) ? 52 : 48;
+        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb', 'super_extra_life'].includes(this.type) ? 52 : 48;
         const scale = maxIconSize / Math.max(texture.width, texture.height);
         iconSprite.scale.set(scale);
 
@@ -67,8 +91,11 @@ class Powerup {
 
         const glow = new PIXI.Graphics();
         glow.circle(0, 0, 25);
-        glow.fill({ color: this.color, alpha: 0.34 });
+        glow.fill({ color: this.color, alpha: this.type === 'super_extra_life' ? 0.48 : 0.34 });
         this.sprite.addChildAt(glow, 1);
+        if (this.type === 'super_extra_life') {
+          this.createSuperLifeOverlays();
+        }
       } else {
         this.createFallbackSprite();
       }
@@ -100,6 +127,106 @@ class Powerup {
     this.sprite.addChild(text);
   }
 
+  createSuperLifeOverlays() {
+    this.evasiveTrail = new PIXI.Graphics();
+    this.evasiveTrail.label = 'superExtraLifeTrail';
+    this.sprite.addChildAt(this.evasiveTrail, 0);
+
+    this.superLifeOrbit = new PIXI.Graphics();
+    this.superLifeOrbit.label = 'superExtraLifeOrbit';
+    this.sprite.addChild(this.superLifeOrbit);
+  }
+
+  scheduleNextEvasiveJump(age) {
+    const minMs = Number(this.evasiveConfig?.jumpIntervalMinMs) || 260;
+    const maxMs = Math.max(minMs, Number(this.evasiveConfig?.jumpIntervalMaxMs) || 620);
+    this.nextEvasiveJumpAt = age + randomBetween(minMs, maxMs);
+  }
+
+  updateEvasiveMovement(delta, scene, age) {
+    if (!this.evasiveConfig) return false;
+    const screenWidth = Math.max(
+      320,
+      Number(scene?.game?.app?.screen?.width) ||
+      Number(scene?.game?.getWidth?.()) ||
+      Number(scene?.game?.width) ||
+      800
+    );
+    const margin = Math.max(42, Number(this.evasiveConfig.edgeMarginPx) || 56);
+    const minX = margin;
+    const maxX = Math.max(minX, screenWidth - margin);
+    const player = scene?.player;
+    const playerX = Number(player?.x);
+    const playerY = Number(player?.y);
+    const hasPlayer = Number.isFinite(playerX) && Number.isFinite(playerY);
+    const dt = clamp(Number(delta) || 1, 0.25, 2.5);
+
+    if (age >= this.nextEvasiveJumpAt) {
+      const away = hasPlayer && playerX > this.x ? -1 : 1;
+      const jumpMin = Number(this.evasiveConfig.jumpDistanceMinPx) || 92;
+      const jumpMax = Math.max(jumpMin, Number(this.evasiveConfig.jumpDistanceMaxPx) || 188);
+      const jitter = randomBetween(
+        -(Number(this.evasiveConfig.horizontalJitterPx) || 48),
+        Number(this.evasiveConfig.horizontalJitterPx) || 48
+      );
+      this.evasiveTargetX = clamp(this.x + away * randomBetween(jumpMin, jumpMax) + jitter, minX, maxX);
+      this.evasiveVx += away * randomBetween(2.2, 4.8);
+      this.scheduleNextEvasiveJump(age);
+    }
+
+    let acceleration = (this.evasiveTargetX - this.x) * (Number(this.evasiveConfig.targetEase) || 0.18);
+    if (hasPlayer) {
+      const dx = this.x - playerX;
+      const dy = this.y - playerY;
+      const dodgeRadius = Number(this.evasiveConfig.dodgeRadius) || 190;
+      const verticalPressure = Math.max(0, 1 - Math.abs(dy) / 270);
+      const horizontalPressure = Math.max(0, 1 - Math.abs(dx) / dodgeRadius);
+      if (horizontalPressure > 0 && verticalPressure > 0) {
+        const direction = dx >= 0 ? 1 : -1;
+        acceleration += direction * (Number(this.evasiveConfig.lateralAccel) || 2.2) * 18 * horizontalPressure * verticalPressure;
+      }
+    }
+
+    const maxSpeed = Number(this.evasiveConfig.maxSpeedX) || 13.5;
+    this.evasiveVx = clamp((this.evasiveVx + acceleration * 0.11 * dt) * 0.91, -maxSpeed, maxSpeed);
+    this.x = clamp(this.x + this.evasiveVx * dt, minX, maxX);
+    if (this.x <= minX || this.x >= maxX) {
+      this.evasiveVx *= -0.82;
+      this.evasiveTargetX = clamp(this.x + this.evasiveVx * 18, minX, maxX);
+    }
+    this.baseY += this.vy * dt;
+    return true;
+  }
+
+  updateSuperLifeVisuals(age) {
+    if (!this.evasiveTrail && !this.superLifeOrbit) return;
+    const pulse = Math.sin(age * 0.013);
+    if (this.evasiveTrail) {
+      this.evasiveTrail.clear();
+      for (let i = 0; i < 3; i += 1) {
+        const spread = 22 + i * 8 + pulse * 3;
+        const alpha = 0.34 - i * 0.08;
+        this.evasiveTrail.moveTo(-spread, -18 + i * 12);
+        this.evasiveTrail.lineTo(-spread - 20, -10 + i * 10);
+        this.evasiveTrail.moveTo(spread, 18 - i * 11);
+        this.evasiveTrail.lineTo(spread + 18, 9 - i * 9);
+        this.evasiveTrail.stroke({ width: 2.4, color: i % 2 ? 0xffe34d : 0x43f7ff, alpha });
+      }
+    }
+    if (this.superLifeOrbit) {
+      const orbit = 31 + pulse * 4;
+      const sweep = age * 0.008;
+      this.superLifeOrbit.clear();
+      this.superLifeOrbit.circle(0, 0, orbit);
+      this.superLifeOrbit.stroke({ width: 2.4, color: 0xffffff, alpha: 0.38 });
+      for (let i = 0; i < 2; i += 1) {
+        const angle = sweep + i * Math.PI;
+        this.superLifeOrbit.circle(Math.cos(angle) * orbit, Math.sin(angle) * orbit, 4);
+        this.superLifeOrbit.fill({ color: i === 0 ? 0xffe34d : 0x43f7ff, alpha: 0.88 });
+      }
+    }
+  }
+
   update(delta, scene) {
     if (!this.active) return;
 
@@ -114,10 +241,14 @@ class Powerup {
     const pulseScale = 1.0 + Math.sin(this.pulsePhase) * 0.06;
 
     // Update position with bob
-    this.baseY += this.vy * delta;
+    const movedByProfile = this.updateEvasiveMovement(delta, scene, age);
+    if (!movedByProfile) {
+      this.baseY += this.vy * delta;
+    }
     this.y = this.baseY + bobOffset;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.updateSuperLifeVisuals(age);
 
     // PART B: Apply pulse to main sprite using stable base scale (no accumulation)
     if (this.mainSprite && this.baseScale !== undefined) {
@@ -126,13 +257,13 @@ class Powerup {
     }
 
     // Gentle rotation
-    this.sprite.rotation += 0.02 * delta;
+    this.sprite.rotation += (this.type === 'super_extra_life' ? 0.045 : 0.02) * delta;
 
     // TASK A: Breathing aura ring (reduced size)
     if (this.aura) {
       const auraPhase = (age * 0.003) % (Math.PI * 2);
-      const auraRadius = 24 + Math.sin(auraPhase) * 4;
-      const auraAlpha = 0.42 + Math.sin(auraPhase) * 0.16;
+      const auraRadius = (this.type === 'super_extra_life' ? 29 : 24) + Math.sin(auraPhase) * 4;
+      const auraAlpha = (this.type === 'super_extra_life' ? 0.56 : 0.42) + Math.sin(auraPhase) * 0.16;
 
       this.aura.clear();
       this.aura.circle(0, 0, auraRadius);
@@ -160,13 +291,13 @@ class Powerup {
 
       // Spawn tiny sparkle around powerup (reduced distance)
       const angle = Math.random() * Math.PI * 2;
-      const dist = 14 + Math.random() * 13;
+      const dist = (this.type === 'super_extra_life' ? 19 : 14) + Math.random() * 13;
       const sx = this.x + Math.cos(angle) * dist;
       const sy = this.y + Math.sin(angle) * dist;
-      const vx = (Math.random() - 0.5) * 0.3;
+      const vx = (Math.random() - 0.5) * (this.type === 'super_extra_life' ? 0.8 : 0.3);
       const vy = (Math.random() - 0.5) * 0.3;
 
-      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, 1.6, 22);
+      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, this.type === 'super_extra_life' ? 2.1 : 1.6, 22);
 
       // Decrement count after particle dies
       setTimeout(() => {
@@ -204,16 +335,18 @@ class Powerup {
     this.showPickupEffect(scene);
     this.playPickupSFX(scene);
 
-    const configuredMaxLives = this.type === 'life'
+    const lifeGrant = Math.max(0, Math.round(Number(this.effect?.grantLives || (this.type === 'life' ? 1 : 0))));
+    const grantsLives = lifeGrant > 0;
+    const configuredMaxLives = grantsLives
       ? Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES
       : null;
     const maxLives = Number.isFinite(configuredMaxLives)
       ? Math.max(1, configuredMaxLives)
       : Number.POSITIVE_INFINITY;
-    const reachesMaxLives = this.type === 'life'
+    const reachesMaxLives = grantsLives
       && Number.isFinite(maxLives)
       && scene.game.lives < maxLives
-      && scene.game.lives + 1 >= maxLives;
+      && scene.game.lives + lifeGrant >= maxLives;
     const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
     if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
@@ -221,12 +354,18 @@ class Powerup {
 
     // Pass type directly to player (Player handles reset)
     // Life Powerup Logic
-    if (this.type === 'life') {
-      scene.game.gainLife(); // Use the new gainLife() method
+    if (grantsLives) {
+      scene.game.gainLife({
+        count: lifeGrant,
+        source: this.type
+      });
+      if (Number.isFinite(Number(this.effect?.invulnMs))) {
+        player?.grantInvulnerability?.(Number(this.effect.invulnMs), this.type);
+      }
 
       // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
       if (scene.game && scene.game.audio) {
-        scene.game.audio.playSfx('ui_open'); // Positive, distinct sound
+        scene.game.audio.playSfx(this.type === 'super_extra_life' ? 'nova_rank_fanfare' : 'ui_open'); // Positive, distinct sound
       }
     } else {
       // Pass type directly to player (Player handles all powerup logic)
@@ -273,9 +412,9 @@ class Powerup {
 
       if (progress < 1) {
         ring.clear();
-        const radius = 15 + progress * 30;
-        ring.circle(0, 0, radius);
-        ring.stroke({ width: 3, color: this.color, alpha: 0.8 * (1 - progress) });
+      const radius = 15 + progress * (this.type === 'super_extra_life' ? 46 : 30);
+      ring.circle(0, 0, radius);
+      ring.stroke({ width: this.type === 'super_extra_life' ? 4 : 3, color: this.color, alpha: 0.8 * (1 - progress) });
         ring.alpha = 1 - progress;
       } else {
         scene.game.app.ticker.remove(ringTicker);
@@ -297,14 +436,14 @@ class Powerup {
     const message = translateText(meta?.pickupMessage || 'POWERUP!');
     if (typeof scene.enqueueToast === 'function') {
       scene.enqueueToast(message, {
-        fontSize: this.type === 'bomb' || meta?.effect?.charges ? 30 : 24,
+        fontSize: this.type === 'super_extra_life' ? 30 : (this.type === 'bomb' || meta?.effect?.charges ? 30 : 24),
         fill: this.color,
         stroke: '#000000',
-        strokeThickness: this.type === 'bomb' || meta?.effect?.charges ? 5 : 4,
+        strokeThickness: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 5 : 4,
         slot: 'center',
         type: 'powerup',
-        priority: this.type === 'bomb' || meta?.effect?.charges ? 8 : 2,
-        duration: this.type === 'bomb' || meta?.effect?.charges ? 2100 : 1500,
+        priority: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 8 : 2,
+        duration: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 2100 : 1500,
         y: height * 0.34,
         maxWidth: width * 0.62
       });
@@ -493,6 +632,12 @@ export class PowerupManager {
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
+    } else if (extraLifeDropsEnabled &&
+      this.canSpawnSuperExtraLife() &&
+      rand < ((BalanceConfig.powerups.superExtraLifeChance ?? 0) * sustainMult)) {
+      type = 'super_extra_life';
+      this.lastExtraLifeLevel = this.currentLevel;
+      this.extraLifeSpawnedThisLevel = true;
     } else if (extraLifeDropsEnabled && rand < ((BalanceConfig.powerups.extraLifeChance ?? 0) * sustainMult)) {
       type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
@@ -594,6 +739,10 @@ export class PowerupManager {
     const y = 120;
     this.spawnSpecific(x, y, type);
     console.log(`[PowerupTest] spawned type=${type}`);
+  }
+
+  canSpawnSuperExtraLife() {
+    return !this.powerups.some((powerup) => powerup.type === 'super_extra_life' && powerup.active);
   }
 
   spawnSpecific(x, y, type, options = {}) {

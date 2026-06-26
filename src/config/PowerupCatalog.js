@@ -603,6 +603,38 @@ const NEW_POWERUPS = [
     pickupMessage: 'PULSE REFUND! Bullets become paperwork.',
     sfx: 'powerup',
     effect: { instant: true, shockwave: true, shockwaveRadius: 230, shockwaveDamage: 0, shockwaveColor: 0x4dffcf, scorePerBullet: 75, scoreBulletCap: 18 }
+  },
+  {
+    id: 'super_extra_life',
+    name: 'SUPER EXTRA LIFE',
+    shortLabel: '2 LIFE',
+    color: 0xff36c9,
+    duration: 'instant double sustain',
+    effectDescription: 'two extra lives if you can catch the evasive pickup',
+    read: 'a double-life jackpot that actively dodges your ship',
+    when: 'you can cut off its lane instead of chasing its tail',
+    tip: 'Anticipate the next side jump. It ignores magnet pull and punishes lazy chasing.',
+    pickupMessage: 'SUPER EXTRA LIFE! +2 LIVES!',
+    sfx: 'super_life_up',
+    movement: {
+      evasive: true,
+      catchabilityTarget: 0.2,
+      magnetImmune: true,
+      pickupRadius: 10,
+      verticalSpeed: 0.74,
+      lifeTimeMs: 15500,
+      dodgeRadius: 190,
+      maxSpeedX: 13.5,
+      lateralAccel: 2.2,
+      targetEase: 0.18,
+      edgeMarginPx: 56,
+      horizontalJitterPx: 48,
+      jumpIntervalMinMs: 260,
+      jumpIntervalMaxMs: 620,
+      jumpDistanceMinPx: 92,
+      jumpDistanceMaxPx: 188
+    },
+    effect: { instant: true, grantLives: 2, invulnMs: 1500 }
   }
 ];
 

@@ -660,6 +660,14 @@ export class PlayScene {
       this._debugKeyHandler = (e) => this.handleDebugKeys(e);
       window.addEventListener('keydown', this._debugKeyHandler);
     }
+    if (this.canUseMaintainerDevtools() && typeof window !== 'undefined') {
+      const forceSuperStorm = () => this.debugForceMayhemSuperStorm('console');
+      forceSuperStorm.playScene = this;
+      window.__novaForceMayhemSuperStorm = forceSuperStorm;
+      const forceSuperExtraLife = () => this.debugForceSuperExtraLife('console');
+      forceSuperExtraLife.playScene = this;
+      window.__novaForceSuperExtraLife = forceSuperExtraLife;
+    }
 
     // Start first level - DEFERRED until intro complete
     // this.startLevel();
@@ -706,6 +714,14 @@ export class PlayScene {
     const key = e.code || e.key;
     if (key === 'Digit1' || key === 'Numpad1' || e.key === '1') {
       this.toggleDebugInvincibility();
+      return true;
+    }
+    if ((key === 'KeyM' || e.key?.toLowerCase?.() === 'm') && e.shiftKey) {
+      this.debugForceMayhemSuperStorm('debug_key');
+      return true;
+    }
+    if ((key === 'KeyL' || e.key?.toLowerCase?.() === 'l') && e.shiftKey) {
+      this.debugForceSuperExtraLife('debug_key');
       return true;
     }
     if (key === 'KeyL' || e.key?.toLowerCase?.() === 'l') {
@@ -832,6 +848,60 @@ export class PlayScene {
     });
     console.log(`[DebugTools] jump_level=${targetLevel} rank=${computedRank} reason=${reason}`);
     return true;
+  }
+
+  debugForceMayhemSuperStorm(reason = 'debug_mayhem_super_storm') {
+    if (!this.canUseMaintainerDevtools()) return false;
+    this.game?.markUnrankedRun?.(reason);
+    this.debugLevelToolsUsed = true;
+    const result = this.enemyManager?.forceMayhemSuperStormForDebug?.();
+    if (result?.ok) {
+      this.showToast(`FORCED SUPER STORM x${result.groupCount}`, {
+        fontSize: this.game.getWidth() < 620 ? 16 : 20,
+        fill: '#ff5df7',
+        stroke: '#160006',
+        strokeThickness: 3,
+        type: 'debug',
+        slot: 'top',
+        priority: 7,
+        duration: 1400
+      });
+      return true;
+    }
+    this.showToast(`SUPER STORM BLOCKED: ${result?.reason || 'unknown'}`, {
+      fontSize: this.game.getWidth() < 620 ? 14 : 18,
+      fill: '#ffb35c',
+      stroke: '#160006',
+      strokeThickness: 3,
+      type: 'debug',
+      slot: 'top',
+      priority: 7,
+      duration: 1600
+    });
+    return false;
+  }
+
+  debugForceSuperExtraLife(reason = 'debug_super_extra_life') {
+    if (!this.canUseMaintainerDevtools()) return false;
+    if (!this.powerupManager || !this.player || !this.game) return false;
+    this.game?.markUnrankedRun?.(reason);
+    this.debugLevelToolsUsed = true;
+    const x = Math.max(90, Math.min(this.game.getWidth() - 90, this.player.x + (Math.random() < 0.5 ? -150 : 150)));
+    const y = Math.max(88, this.game.getHeight() * 0.24);
+    const spawned = this.powerupManager.spawnSpecific(x, y, 'super_extra_life', {
+      source: reason
+    });
+    this.showToast(spawned ? 'SUPER EXTRA LIFE SPAWNED' : 'SUPER EXTRA LIFE BLOCKED', {
+      fontSize: this.game.getWidth() < 620 ? 14 : 18,
+      fill: spawned ? '#ff5df7' : '#ffb35c',
+      stroke: '#160006',
+      strokeThickness: 3,
+      type: 'debug',
+      slot: 'top',
+      priority: 7,
+      duration: 1500
+    });
+    return Boolean(spawned);
   }
 
   activateMarketingSpawnMode(reason = 'marketing_spawn_debug') {
@@ -3616,6 +3686,12 @@ export class PlayScene {
     if (this._debugKeyHandler) {
       window.removeEventListener('keydown', this._debugKeyHandler);
       this._debugKeyHandler = null;
+    }
+    if (typeof window !== 'undefined' && window.__novaForceMayhemSuperStorm?.playScene === this) {
+      delete window.__novaForceMayhemSuperStorm;
+    }
+    if (typeof window !== 'undefined' && window.__novaForceSuperExtraLife?.playScene === this) {
+      delete window.__novaForceSuperExtraLife;
     }
     if (this.inputManager) {
       this.inputManager.destroy();
@@ -8716,6 +8792,7 @@ export class PlayScene {
 
     this.powerupManager?.powerups?.forEach(p => {
       if (!p.active) return;
+      if (p.magnetImmune) return;
       const dx = px - p.x;
       const dy = py - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -9454,8 +9531,8 @@ export class PlayScene {
     });
   }
 
-  showMayhemReinforcementStormWarning({ groupCount = 1, boss = false } = {}) {
-    const count = Math.max(1, Math.min(4, Math.floor(Number(groupCount) || 1)));
+  showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false } = {}) {
+    const count = Math.max(1, Math.min(6, Math.floor(Number(groupCount) || 1)));
     if (count < 2) return false;
 
     const width = this.game.getWidth();
@@ -9463,7 +9540,7 @@ export class PlayScene {
     const compactHud = width < 620;
     this.enqueueToast(`${translateText('REINFORCEMENT STORM')} x${count}`, {
       fontSize: compactHud ? 18 : 24,
-      fill: boss ? '#ff8f9c' : '#ffef7e',
+      fill: superStorm ? '#ff5df7' : boss ? '#ff8f9c' : '#ffef7e',
       stroke: '#160006',
       strokeThickness: compactHud ? 3 : 4,
       slot: 'top',
@@ -9509,7 +9586,7 @@ export class PlayScene {
         overlay.stroke({ color, width: compactHud ? 5 : 7, alpha: 0.55 * alpha });
       }
       overlay.rect(0, 0, width, height);
-      overlay.stroke({ color: boss ? 0xff3d7f : 0xffef7e, width: 2, alpha: 0.16 * alpha });
+      overlay.stroke({ color: superStorm ? 0xff5df7 : boss ? 0xff3d7f : 0xffef7e, width: 2, alpha: 0.16 * alpha });
       if (t >= 1 || this.game?.currentScene !== this) {
         this.game.app.ticker.remove(ticker);
         if (overlay.parent) overlay.parent.removeChild(overlay);

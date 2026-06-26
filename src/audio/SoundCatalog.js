@@ -2,6 +2,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
+import { MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT } from '../config/MayhemSuperStormVoiceLines.js';
 import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 
@@ -256,6 +257,7 @@ export const SFX_MIX = {
     shield_up: { volume: 0.55, minIntervalMs: 140 },
     spawn_special: { volume: 0.55, minIntervalMs: 600 },
     life_up: { volume: 0.7, minIntervalMs: 700 },
+    super_life_up: { volume: 0.9, minIntervalMs: 900 },
     explosionCrunch: { volume: 0.74, minIntervalMs: 80 },
     boss_spawn: { volume: 0.75, minIntervalMs: 800 },
     boss_entrance_impact: { volume: 0.78, minIntervalMs: 1200 },
@@ -374,6 +376,8 @@ export const VOICE_MIX = {
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     mission_control_reinforcements_incoming: { volume: 0.9, duckFactor: 0.42, duckMs: 1150, cooldownMs: 2200, eventCooldownMs: 2200, priority: 7 },
+    boss_mayhem_super_storm_warning: { volume: 1.04, duckFactor: 0.24, duckMs: 2400, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
+    boss_mayhem_super_storm_survived: { volume: 1.0, duckFactor: 0.3, duckMs: 2200, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
     mission_control_row_core: { volume: 0.9, duckFactor: 0.36, duckMs: 2200, cooldownMs: 30000, priority: 5 },
     level_clear_flirt: { volume: 0.9, duckFactor: 0.38, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
     game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
@@ -419,6 +423,8 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_level_start: 'mission_control_level_start.mp3',
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
     mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming_001.mp3',
+    boss_mayhem_super_storm_warning: 'boss_mayhem_super_storm_warning_01.mp3',
+    boss_mayhem_super_storm_survived: 'boss_mayhem_super_storm_survived_01.mp3',
     mission_control_row_core: 'mission_control_row_core_01.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
@@ -530,6 +536,7 @@ export const SFX_CATALOG = {
     'forceField': [getSfx('nova_shield_snap'), getSfx('forceField_000')], // Alias for shield/pickup reuse
     'shield_up': [getSfx('nova_shield_snap'), getSfx('forceField_000')],
     'life_up': [getSfx('nova_life_extend_bloom'), getSfx('doorOpen_002')],
+    'super_life_up': [getSfx('nova_life_extend_bloom'), getSfx('nova_bonus_core_jackpot'), getSfx('nova_rank_fanfare')],
     'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
 
     // Refined Categories
@@ -760,6 +767,8 @@ export const SFX_CATALOG = {
     'mission_control_level_start': missionControlPool('mission_control_level_start'),
     'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
     'mission_control_reinforcements_incoming': paddedNumberedVoicePool('mission_control_reinforcements_incoming', REINFORCEMENT_VOICE_COUNT, 3),
+    'boss_mayhem_super_storm_warning': paddedNumberedVoicePool('boss_mayhem_super_storm_warning', MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT, 2),
+    'boss_mayhem_super_storm_survived': paddedNumberedVoicePool('boss_mayhem_super_storm_survived', MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, 2),
     'mission_control_row_core': numberedVoicePool('mission_control_row_core', 5),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),

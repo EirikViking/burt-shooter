@@ -65,8 +65,15 @@ if (!existsSync(imagegenNormalizeScript)) {
 }
 
 const imagegenSourceDir = path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260617');
+const sourceDirByPowerup = new Map([
+  ['super_extra_life', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260626')]
+]);
+const expectedAssetSuffixByPowerup = new Map([
+  ['super_extra_life', '-20260626.png']
+]);
+
 for (const key of NEW_POWERUP_TYPES) {
-  const sourcePath = path.join(imagegenSourceDir, `${key}.png`);
+  const sourcePath = path.join(sourceDirByPowerup.get(key) || imagegenSourceDir, `${key}.png`);
   if (!existsSync(sourcePath)) {
     errors.push(`${key} imagegen source icon missing: ${sourcePath}`);
   }
@@ -74,8 +81,9 @@ for (const key of NEW_POWERUP_TYPES) {
 
 for (const key of NEW_POWERUP_TYPES) {
   const url = generatedPowerups[key] || '';
-  if (!url.endsWith('-20260613.png')) {
-    errors.push(`${key} should stay on the refreshed 2026-06-13 asset slot, got ${url || 'missing'}`);
+  const expectedSuffix = expectedAssetSuffixByPowerup.get(key) || '-20260613.png';
+  if (!url.endsWith(expectedSuffix)) {
+    errors.push(`${key} should stay on the expected powerup asset slot ${expectedSuffix}, got ${url || 'missing'}`);
   }
 }
 

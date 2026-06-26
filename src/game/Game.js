@@ -815,22 +815,30 @@ export class Game {
     }
   }
 
-  gainLife() {
+  gainLife(options = {}) {
+    const requested = typeof options === 'number'
+      ? options
+      : Number(options.count || 1);
+    const source = typeof options === 'object' && options?.source
+      ? String(options.source)
+      : 'extra_life';
+    const grantCount = Math.max(1, Math.round(Number(requested) || 1));
     const before = this.lives;
     const maxLives = MAX_PLAYER_LIVES;
-    this.lives = Math.min(this.lives + 1, maxLives);
+    this.lives = Math.min(this.lives + grantCount, maxLives);
     const after = this.lives;
     const applied = after > before;
     const maxLabel = Number.isFinite(maxLives) ? String(maxLives) : 'none';
-    console.log(`[Lives] pickup extra_life before=${before} after=${after} max=${maxLabel} applied=${applied}`);
+    console.log(`[Lives] pickup ${source} grant=${grantCount} before=${before} after=${after} max=${maxLabel} applied=${applied}`);
 
     // Notify scene if needed
     if (this.currentScene && this.currentScene.onLifeGained) {
       this.currentScene.onLifeGained(this.lives, {
         before,
         after,
+        grantCount,
         maxLives,
-        source: 'extra_life',
+        source,
         reachedMax: applied && Number.isFinite(maxLives) && after >= maxLives
       });
     }

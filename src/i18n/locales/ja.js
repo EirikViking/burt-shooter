@@ -988,6 +988,7 @@ const sourceText = Object.freeze({
   "VOID CROWN": "VOIDO KURAUN",
   "SWARM CONTRACT": "SUWOMU KEIYAKU",
   "PULSE REFUND": "PARUSU HENKIN",
+  "SUPER EXTRA LIFE": "SUPA EKUSUTORA RAIFU",
   "PRISM SPLITTER! Four lanes, zero manners.": "PURIZUMU SUPURITTA!",
   "RAIL SURGE! The lane signed a waiver.": "RERU SAJI!",
   "CHRONO ANCHOR! Time sits down.": "KURONO ANKA!",
@@ -1008,6 +1009,7 @@ const sourceText = Object.freeze({
   "VOID CROWN! Briefly, you are the incident.": "VOIDO KURAUN!",
   "SWARM CONTRACT! Read nothing, profit briefly.": "SUWOMU KEIYAKU!",
   "PULSE REFUND! Bullets become paperwork.": "PARUSU HENKIN!",
+  "SUPER EXTRA LIFE! +2 LIVES!": "SUPA EKUSUTORA RAIFU! +2!",
 
 
   'BOOTING ARCADE CABINET...': 'アーケードCabinet起動中...',

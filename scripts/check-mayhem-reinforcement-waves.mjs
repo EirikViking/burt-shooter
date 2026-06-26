@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
+import { MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT } from '../src/config/MayhemSuperStormVoiceLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../src/config/ReinforcementVoiceLines.js';
 
 const fail = (message) => {
@@ -12,6 +13,7 @@ const fail = (message) => {
 const read = (path) => readFileSync(path, 'utf8');
 
 const enemyManager = read('src/managers/EnemyManager.js');
+const playScene = read('src/scenes/PlayScene.js');
 const soundCatalog = read('src/audio/SoundCatalog.js');
 const leaderboardTypes = read('src/leaderboard/LeaderboardTypes.js');
 const steamBridge = read('electron/steamLeaderboardBridge.cjs');
@@ -65,6 +67,18 @@ if (config.normalMinWaveCount !== 3) fail(`Expected normal reinforcement events 
 if (config.normalMaxWaveCount !== 4) fail(`Expected normal reinforcement events to sometimes spawn 4 waves, got ${config.normalMaxWaveCount}.`);
 if (config.normalMaxWaveChance !== 0.55) fail(`Expected 55% fourth-wave chance inside normal reinforcement events, got ${config.normalMaxWaveChance}.`);
 if (config.normalMultiWaveMinLevel !== 8) fail(`Expected normal multi-wave reinforcements to be gated until level 8, got ${config.normalMultiWaveMinLevel}.`);
+if (config.superStormChance !== 0.05) fail(`Expected 5% Mayhem super-storm chance, got ${config.superStormChance}.`);
+if (config.superStormWaveCount !== 5) fail(`Expected Mayhem super-storms to spawn 5 waves, got ${config.superStormWaveCount}.`);
+if (config.superStormMinLevel !== 8) fail(`Expected Mayhem super-storms to be gated until level 8, got ${config.superStormMinLevel}.`);
+if (config.superStormFirstPityMinLevel !== 12) fail(`Expected first Mayhem super-storm pity to start at level 12, got ${config.superStormFirstPityMinLevel}.`);
+if (config.superStormFirstPityMaxLevel !== 18) fail(`Expected first Mayhem super-storm pity to guarantee by level 18, got ${config.superStormFirstPityMaxLevel}.`);
+if (config.superStormFirstPityEligibleMisses !== 16) fail(`Expected first Mayhem super-storm pity after 16 eligible misses, got ${config.superStormFirstPityEligibleMisses}.`);
+if (config.superStormWarningMs < 2000 || config.superStormWarningMs > 3000) {
+  fail(`Expected Mayhem super-storm warning lead to stay within 2-3 seconds, got ${config.superStormWarningMs}.`);
+}
+if (config.superStormWarningMs !== 2600) fail(`Expected Mayhem super-storm warning lead at 2600ms, got ${config.superStormWarningMs}.`);
+if (config.superStormEntryDelayMs !== 220) fail(`Expected Mayhem super-storm group entry spacing at 220ms, got ${config.superStormEntryDelayMs}.`);
+if (config.superStormLaneOffsetPx !== 58) fail(`Expected Mayhem super-storm lane offset at 58px, got ${config.superStormLaneOffsetPx}.`);
 if (config.reinforcementScoreMultiplier !== 1.25) fail(`Expected normal reinforcement score multiplier 1.25, got ${config.reinforcementScoreMultiplier}.`);
 if (config.bossReinforcementScoreMultiplier !== 1.35) fail(`Expected boss reinforcement score multiplier 1.35, got ${config.bossReinforcementScoreMultiplier}.`);
 if (config.firstPityEligibleMisses !== 12) fail(`Expected first reinforcement pity after 12 eligible misses, got ${config.firstPityEligibleMisses}.`);
@@ -106,7 +120,7 @@ const requiredSourceSnippets = [
   'MAYHEM_REINFORCEMENT_WARNING_TEXT',
   'mission_control_reinforcements_incoming',
   'showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT)',
-  'AudioManager.playVoice(MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
+  'state.isSuperStorm ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
   'spawnAt: now + warningMs',
   'shouldForceMayhemReinforcementByPity',
   'canRecordMayhemReinforcementMiss',
@@ -118,6 +132,27 @@ const requiredSourceSnippets = [
   'normalMaxWaveCount',
   'normalMaxWaveChance',
   'normalMultiWaveMinLevel',
+  'superStormChance',
+  'superStormWaveCount',
+  'superStormFirstPityMinLevel',
+  'superStormFirstPityMaxLevel',
+  'superStormFirstPityEligibleMisses',
+  'shouldForceMayhemSuperStormByPity',
+  'recordMayhemSuperStormMiss',
+  'canRecordSuperStormMiss',
+  'superStormPityForced',
+  'superStormWarningMs',
+  'superStormEntryDelayMs',
+  'superStormLaneOffsetPx',
+  'createMayhemSuperStormSyntheticWaveConfig',
+  'getMayhemSuperStormWavePlan',
+  "'mayhem-reinforcement-super-storm'",
+  'MAYHEM_SUPER_STORM_WARNING_SOUND_ID',
+  'MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID',
+  'AudioManager.playVoice(MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID',
+  'mayhemSuperStormSurvivalWaveCounts',
+  'isMayhemSuperStorm',
+  'forceMayhemSuperStormForDebug',
   'reinforcementScoreMultiplier',
   'bossReinforcementScoreMultiplier',
   'enemy.mayhemReinforcementScoreMultiplier',
@@ -138,7 +173,7 @@ const requiredSourceSnippets = [
   'Math.min(3',
   'groupIndex * 1200',
   'index * 1200',
-  'index * 900',
+  'allowConcurrentSpawn: isSuperStorm || index > 0',
   'this.bossReinforcementNextCheckAtMs = Date.now() + 1200',
   'doubleWaveMinLevel',
   'doubleWaveRequiresPriorReinforcement',
@@ -146,7 +181,7 @@ const requiredSourceSnippets = [
   'reinforcementWaveIndices',
   'reinforcementGroupCount',
   'reinforcementLaneOffsetPx',
-  'centeredIndex * 72',
+  'centeredIndex * (isSuperStorm',
   'reinforcementEntryDelayMs',
   'allowConcurrentSpawn',
   'multi_wave_gated',
@@ -169,6 +204,16 @@ const requiredSourceSnippets = [
 
 for (const snippet of requiredSourceSnippets) {
   if (!enemyManager.includes(snippet)) fail(`Missing source guard/behavior snippet: ${snippet}`);
+}
+
+for (const snippet of [
+  'debugForceMayhemSuperStorm',
+  'window.__novaForceMayhemSuperStorm',
+  "this.game?.markUnrankedRun?.(reason)",
+  "key === 'KeyM'",
+  'e.shiftKey'
+]) {
+  if (!playScene.includes(snippet)) fail(`Missing PlayScene debug review snippet: ${snippet}`);
 }
 
 const reinforcementSpawnBlock = enemyManager.slice(
@@ -253,6 +298,56 @@ if (normalReinforcementWaveCountFor({ seed: fourWaveSeed, level: 12, waveIndex: 
 const observedFourthWaveRate = fourthWaveHits / normalMultiWaveEligibleEvents;
 if (observedFourthWaveRate < 0.53 || observedFourthWaveRate > 0.57) {
   fail(`Fourth normal reinforcement wave roll drifted outside 55% band: ${observedFourthWaveRate.toFixed(4)}.`);
+}
+
+const superStormWaveCountFor = ({ seed, level, waveIndex }) => (
+  level >= config.superStormMinLevel &&
+  rollFor(seed, level, waveIndex, 'mayhem-reinforcement-super-storm') < config.superStormChance
+    ? config.superStormWaveCount
+    : 0
+);
+
+let superStormSeed = null;
+let superStormEligibleEvents = 0;
+let superStormHits = 0;
+for (let seed = 0; seed < 5000; seed += 1) {
+  for (let level = 8; level <= 40; level += 1) {
+    for (let wave = 0; wave <= 5; wave += 1) {
+      const id = `super-storm-${seed}`;
+      superStormEligibleEvents += 1;
+      if (superStormWaveCountFor({ seed: id, level, waveIndex: wave }) === 5) {
+        superStormHits += 1;
+        superStormSeed ??= id;
+      }
+    }
+  }
+}
+if (!superStormSeed) fail('Expected at least one deterministic Mayhem super-storm seed.');
+if (superStormWaveCountFor({ seed: superStormSeed, level: 7, waveIndex: 1 }) !== 0) {
+  fail('Mayhem super-storms must stay gated before level 8.');
+}
+const observedSuperStormRate = superStormHits / superStormEligibleEvents;
+if (observedSuperStormRate < 0.048 || observedSuperStormRate > 0.052) {
+  fail(`Mayhem super-storm roll drifted outside 5% band: ${observedSuperStormRate.toFixed(4)}.`);
+}
+
+const superStormFirstPityReady = ({ level, misses, spawned = 0 }) => {
+  if (spawned > 0) return false;
+  if (level < config.superStormFirstPityMinLevel) return false;
+  if (level >= config.superStormFirstPityMaxLevel) return true;
+  return misses >= config.superStormFirstPityEligibleMisses;
+};
+if (superStormFirstPityReady({ level: 11, misses: 99 })) {
+  fail('Mayhem super-storm pity must not force before level 12.');
+}
+if (!superStormFirstPityReady({ level: 12, misses: config.superStormFirstPityEligibleMisses })) {
+  fail('Mayhem super-storm pity must be able to force from level 12 after enough eligible misses.');
+}
+if (!superStormFirstPityReady({ level: 18, misses: 0 })) {
+  fail('Mayhem super-storm pity must guarantee the first super storm by level 18 even with zero recorded misses.');
+}
+if (superStormFirstPityReady({ level: 18, misses: 99, spawned: 1 })) {
+  fail('Mayhem super-storm pity must stop after the first super storm has spawned.');
 }
 
 let bossDoubleEligibleEvents = 0;
@@ -375,6 +470,19 @@ if (!soundCatalog.includes('mission_control_reinforcements_incoming') || !soundC
   fail('Sound catalog does not include reinforcement voice event.');
 }
 
+for (const [eventName, count] of [
+  ['boss_mayhem_super_storm_warning', MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT],
+  ['boss_mayhem_super_storm_survived', MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT]
+]) {
+  for (let index = 0; index < count; index += 1) {
+    const voiceFile = `public/audio/voice/mayhem-super-storm/${eventName}_${String(index + 1).padStart(2, '0')}.mp3`;
+    if (!existsSync(voiceFile)) fail(`Missing Mayhem super-storm voice asset: ${voiceFile}`);
+    const manifestUrl = `/${voiceFile.replace(/^public\//, '').replaceAll('\\', '/')}`;
+    if (!AssetManifest.audio.voice.includes(manifestUrl)) fail(`Asset manifest missing Mayhem super-storm voice asset: ${manifestUrl}`);
+  }
+  if (!soundCatalog.includes(eventName)) fail(`Sound catalog does not include Mayhem super-storm voice event ${eventName}.`);
+}
+
 for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   const localeSource = read(`src/i18n/locales/${locale}.js`);
   if (!localeSource.includes("'INCOMING REINFORCEMENTS'")) {
@@ -382,4 +490,4 @@ for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   }
 }
 
-console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} fourthObserved=${observedFourthWaveRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} bossTripleChance=${config.tripleWaveChance} bossTripleObserved=${observedBossTripleRate.toFixed(4)} scoreMult=${config.reinforcementScoreMultiplier}/${config.bossReinforcementScoreMultiplier} warningMs=${config.warningMs}`);
+console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} fourthObserved=${observedFourthWaveRate.toFixed(4)} superStormChance=${config.superStormChance} superStormObserved=${observedSuperStormRate.toFixed(4)} superStormWaves=${config.superStormWaveCount} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} bossTripleChance=${config.tripleWaveChance} bossTripleObserved=${observedBossTripleRate.toFixed(4)} scoreMult=${config.reinforcementScoreMultiplier}/${config.bossReinforcementScoreMultiplier} warningMs=${config.warningMs}/${config.superStormWarningMs}`);

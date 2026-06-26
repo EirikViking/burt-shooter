@@ -39,11 +39,14 @@ const simulateRun = ({ seed, profile, enabled }) => {
   let doubleReinforcementEvents = 0;
   let tripleBossReinforcementEvents = 0;
   let fourthNormalReinforcementEvents = 0;
+  let superStormEvents = 0;
   let reinforcementWaves = 0;
   let wavesCleared = 0;
   let bossEncounters = 0;
   let reinforcementEligibleMisses = 0;
   let reinforcementSpawned = 0;
+  let superStormEligibleMisses = 0;
+  let superStormSpawned = 0;
 
   const firstPityReady = () => {
     if (reinforcementSpawned > 0) return false;
@@ -60,6 +63,13 @@ const simulateRun = ({ seed, profile, enabled }) => {
     reinforcementEligibleMisses >= config.repeatPityEligibleMisses
   );
 
+  const firstSuperStormPityReady = () => {
+    if (superStormSpawned > 0) return false;
+    if (sector < config.superStormFirstPityMinLevel) return false;
+    if (sector >= config.superStormFirstPityMaxLevel) return true;
+    return superStormEligibleMisses >= config.superStormFirstPityEligibleMisses;
+  };
+
   while (lives > 0 && sector <= 45) {
     let wave = 0;
     while (wave < 5 && lives > 0) {
@@ -71,6 +81,45 @@ const simulateRun = ({ seed, profile, enabled }) => {
       const canAttemptReinforcement = enabled &&
         canSpawnNormalMultiWave &&
         wave + 1 >= config.minNextWaveIndex;
+      const canAttemptSuperStorm = enabled &&
+        sector >= config.superStormMinLevel &&
+        wave + 1 >= config.minNextWaveIndex;
+      const superStormHit = canAttemptSuperStorm &&
+        (
+          rollFor(seed, sector, wave, 'mayhem-reinforcement-super-storm') < config.superStormChance ||
+          firstSuperStormPityReady()
+        );
+      if (superStormHit) {
+        const superStormWaves = config.superStormWaveCount;
+        const consumedFutureWaves = Math.max(0, Math.min(superStormWaves, availableFutureWaves));
+        const reinforcementEnemies = Array.from(
+          { length: superStormWaves },
+          (_, index) => enemyCountFor(sector, wave + 1 + index)
+        ).reduce((sum, count) => sum + count, 0);
+        const pressureRoll = rollFor(seed, sector, wave, `super-storm-pressure-${profile.id}`);
+        const pressureDeathRisk = Math.min(0.34, profile.pressureRisk + sector * 0.00055 + 0.044);
+        reinforcements += 1;
+        superStormEvents += 1;
+        reinforcementWaves += superStormWaves;
+        reinforcementSpawned += 1;
+        superStormSpawned += 1;
+        reinforcementEligibleMisses = 0;
+        superStormEligibleMisses = 0;
+        seconds += (config.superStormWarningMs || config.warningMs) / 1000 + waveSeconds + Math.max(7.4, reinforcementEnemies * 0.24);
+        score += (enemies * 48 * profile.scoreMult) +
+          (reinforcementEnemies * 48 * profile.scoreMult * (config.reinforcementScoreMultiplier || 1));
+        xp += (enemies + reinforcementEnemies) * 2.25 * profile.xpMult;
+        wavesCleared += 1 + consumedFutureWaves;
+        if (pressureRoll < pressureDeathRisk) {
+          deaths += 1;
+          reinforcementDeaths += 1;
+          lives -= 1;
+          seconds += 1.2;
+        }
+        wave += 1 + consumedFutureWaves;
+        continue;
+      }
+      if (canAttemptSuperStorm) superStormEligibleMisses += 1;
       const naturalHit = canAttemptReinforcement && rollFor(seed, sector, wave) < config.chance;
       const eligible = canAttemptReinforcement && (naturalHit || firstPityReady() || repeatPityReady());
       if (eligible) {
@@ -173,6 +222,7 @@ const simulateRun = ({ seed, profile, enabled }) => {
     doubleReinforcementEvents,
     tripleBossReinforcementEvents,
     fourthNormalReinforcementEvents,
+    superStormEvents,
     reinforcementDeaths,
     wavesCleared,
     bossEncounters
@@ -199,6 +249,7 @@ const summarize = (runs) => {
     averageDoubleReinforcementEvents: Number(average('doubleReinforcementEvents').toFixed(2)),
     averageTripleBossReinforcementEvents: Number(average('tripleBossReinforcementEvents').toFixed(2)),
     averageFourthNormalReinforcementEvents: Number(average('fourthNormalReinforcementEvents').toFixed(2)),
+    averageSuperStormEvents: Number(average('superStormEvents').toFixed(2)),
     averageReinforcementDeaths: Number(average('reinforcementDeaths').toFixed(2)),
     averageWavesCleared: Number(average('wavesCleared').toFixed(2)),
     p250k: Number((runs.filter((run) => run.score >= 250000).length / runs.length).toFixed(3)),
@@ -240,6 +291,7 @@ const report = {
     scorePerMinute: high.withReinforcements.scorePerMinute - high.withoutReinforcements.scorePerMinute,
     averageDeaths: Number((high.withReinforcements.averageDeaths - high.withoutReinforcements.averageDeaths).toFixed(2)),
     averageReinforcements: high.withReinforcements.averageReinforcements,
+    averageSuperStormEvents: high.withReinforcements.averageSuperStormEvents,
     averageTripleBossReinforcementEvents: high.withReinforcements.averageTripleBossReinforcementEvents
   }
 };

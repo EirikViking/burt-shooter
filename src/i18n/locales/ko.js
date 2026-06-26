@@ -988,6 +988,7 @@ const sourceText = Object.freeze({
   "VOID CROWN": "GONGHEO WANGGWAN",
   "SWARM CONTRACT": "SEUWOM GYEEYAK",
   "PULSE REFUND": "PEOLSEU HWANBUL",
+  "SUPER EXTRA LIFE": "SYUPEO CHUGA SAENGMYEONG",
   "PRISM SPLITTER! Four lanes, zero manners.": "PEURIJEUM BUNHAL!",
   "RAIL SURGE! The lane signed a waiver.": "REIL SEOJI!",
   "CHRONO ANCHOR! Time sits down.": "KEURONO AENGKEO!",
@@ -1008,6 +1009,7 @@ const sourceText = Object.freeze({
   "VOID CROWN! Briefly, you are the incident.": "GONGHEO WANGGWAN!",
   "SWARM CONTRACT! Read nothing, profit briefly.": "SEUWOM GYEEYAK!",
   "PULSE REFUND! Bullets become paperwork.": "PEOLSEU HWANBUL!",
+  "SUPER EXTRA LIFE! +2 LIVES!": "SYUPEO CHUGA SAENGMYEONG! +2!",
 
 
   'BOOTING ARCADE CABINET...': '아케이드 Cabinet 부팅 중...',

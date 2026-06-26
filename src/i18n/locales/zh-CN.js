@@ -990,6 +990,7 @@ const sourceText = Object.freeze({
   "VOID CROWN": "XUKONG WANGGUAN",
   "SWARM CONTRACT": "CHONGQUN QIYUE",
   "PULSE REFUND": "MAICHONG TUIKUAN",
+  "SUPER EXTRA LIFE": "CHAOJI EWAI SHENGMING",
   "PRISM SPLITTER! Four lanes, zero manners.": "LENGJING FENLIE!",
   "RAIL SURGE! The lane signed a waiver.": "GUIDAO YONGLIU!",
   "CHRONO ANCHOR! Time sits down.": "SHIXU MAO!",
@@ -1010,6 +1011,7 @@ const sourceText = Object.freeze({
   "VOID CROWN! Briefly, you are the incident.": "XUKONG WANGGUAN!",
   "SWARM CONTRACT! Read nothing, profit briefly.": "CHONGQUN QIYUE!",
   "PULSE REFUND! Bullets become paperwork.": "MAICHONG TUIKUAN!",
+  "SUPER EXTRA LIFE! +2 LIVES!": "CHAOJI EWAI SHENGMING! +2!",
 
 
   'BOOTING ARCADE CABINET...': '正在启动街机 Cabinet...',

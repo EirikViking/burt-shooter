@@ -20,6 +20,7 @@ export const BalanceConfig = {
         minPerLevel: 1,
         extraLifeDropsEnabled: true,
         extraLifeChance: 0.06,
+        superExtraLifeChance: 0.012,
         extraLifeGuaranteedEveryLevels: 8,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress
@@ -98,6 +99,15 @@ export const BalanceConfig = {
             normalMaxWaveCount: 4,
             normalMaxWaveChance: 0.55,
             normalMultiWaveMinLevel: 8,
+            superStormChance: 0.05,
+            superStormWaveCount: 5,
+            superStormMinLevel: 8,
+            superStormFirstPityMinLevel: 12,
+            superStormFirstPityMaxLevel: 18,
+            superStormFirstPityEligibleMisses: 16,
+            superStormWarningMs: 2600,
+            superStormEntryDelayMs: 220,
+            superStormLaneOffsetPx: 58,
             reinforcementScoreMultiplier: 1.25,
             bossReinforcementScoreMultiplier: 1.35,
             firstPityEligibleMisses: 12,

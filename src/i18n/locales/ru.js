@@ -990,6 +990,7 @@ const sourceText = Object.freeze({
   "VOID CROWN": "KORONA PUSTOTY",
   "SWARM CONTRACT": "KONTRAKT ROYA",
   "PULSE REFUND": "IMPULS VOZVRAT",
+  "SUPER EXTRA LIFE": "SUPER DOP ZHIZN",
   "PRISM SPLITTER! Four lanes, zero manners.": "PRIZMA!",
   "RAIL SURGE! The lane signed a waiver.": "RELSOVYI RYVOK!",
   "CHRONO ANCHOR! Time sits down.": "KHRONO YAKOR!",
@@ -1009,6 +1010,7 @@ const sourceText = Object.freeze({
   "TARGET PAINT! Everything has a receipt.": "MARKER TSELI!",
   "VOID CROWN! Briefly, you are the incident.": "KORONA PUSTOTY!",
   "SWARM CONTRACT! Read nothing, profit briefly.": "KONTRAKT ROYA!",
+  "SUPER EXTRA LIFE! +2 LIVES!": "SUPER DOP ZHIZN! +2 ZHIZNI!",
   "PULSE REFUND! Bullets become paperwork.": "IMPULS VOZVRAT!",
 
 

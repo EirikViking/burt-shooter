@@ -1000,6 +1000,7 @@ const sourceText = Object.freeze({
   "VOID CROWN": "CORONA DEL VACIO",
   "SWARM CONTRACT": "CONTRATO ENJAMBRE",
   "PULSE REFUND": "REEMBOLSO DE PULSO",
+  "SUPER EXTRA LIFE": "SUPER VIDA EXTRA",
   "PRISM SPLITTER! Four lanes, zero manners.": "\u00a1DIVISOR PRISMA! Cuatro carriles, cero modales.",
   "RAIL SURGE! The lane signed a waiver.": "\u00a1IMPULSO RAIL! El carril firmo la renuncia.",
   "CHRONO ANCHOR! Time sits down.": "\u00a1ANCLA CRONO! El tiempo se sienta.",
@@ -1020,6 +1021,7 @@ const sourceText = Object.freeze({
   "VOID CROWN! Briefly, you are the incident.": "\u00a1CORONA DEL VACIO! Por poco, eres el incidente.",
   "SWARM CONTRACT! Read nothing, profit briefly.": "\u00a1CONTRATO ENJAMBRE! No leas nada, gana un rato.",
   "PULSE REFUND! Bullets become paperwork.": "\u00a1REEMBOLSO DE PULSO! Balas a papeleo.",
+  "SUPER EXTRA LIFE! +2 LIVES!": "\u00a1SUPER VIDA EXTRA! +2 VIDAS!",
 
 
   'BOOTING ARCADE CABINET...': 'ARRANCANDO CABINET ARCADE...',

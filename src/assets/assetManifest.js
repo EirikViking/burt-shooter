@@ -1,4 +1,5 @@
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
+import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 
 export const AssetManifest = {
     generated: {
@@ -130,6 +131,7 @@ export const AssetManifest = {
             void_crown: '/art/generated/nova-swarm/powerups/nova-powerup-void_crown-20260613.png',
             swarm_contract: '/art/generated/nova-swarm/powerups/nova-powerup-swarm_contract-20260613.png',
             pulse_refund: '/art/generated/nova-swarm/powerups/nova-powerup-pulse_refund-20260613.png',
+            super_extra_life: '/art/generated/nova-swarm/powerups/nova-powerup-super_extra_life-20260626.png',
             bonus_core: '/art/generated/nova-swarm/powerups/nova-powerup-bonus_core-20260519.png'
         },
         introPanels: [
@@ -261,6 +263,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_wave_clear_alt01.mp3',
             '/audio/voice/mission-control/mission_control_wave_clear_alt02.mp3',
             ...Array.from({ length: 100 }, (_, i) => `/audio/voice/mission-control/mission_control_reinforcements_incoming_${String(i + 1).padStart(3, '0')}.mp3`),
+            ...mayhemSuperStormVoiceLines.map((line) => `/audio/voice/mayhem-super-storm/${line.id}.mp3`),
             '/audio/voice/mission-control/mission_control_row_core_01.mp3',
             '/audio/voice/mission-control/mission_control_row_core_02.mp3',
             '/audio/voice/mission-control/mission_control_row_core_03.mp3',
