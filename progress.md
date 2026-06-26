@@ -3,7 +3,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 ## 2026-06-26 Full Reinforcement Wave Retune
 
 - Current request: boss-fight reinforcements felt too weak; boss fights should get one full reinforcement wave and sometimes two, while normal Mayhem waves should very rarely trigger a dramatic 3-4 simultaneous-wave reinforcement spike.
-- Fix direction: boss reinforcements keep the existing warning and 15% boss check but now spawn full generated wave configs instead of small nerfed add groups, with an 8% double-full-wave spike from level 8 onward. Normal wave reinforcements are now rare 5% events from level 8 onward that consume and launch 3 future waves, with a 35% chance to launch a fourth when enough future wave configs exist.
+- Fix direction: boss reinforcements keep the existing warning and 15% boss check but now spawn full generated wave configs instead of small nerfed add groups, with an 8% double-full-wave spike from level 8 onward. Normal wave reinforcements stay at a high-action 15% event chance from level 8 onward and consume/launch 3 future waves, with a 35% chance to launch a fourth when enough future wave configs exist.
 
 ## 2026-06-26 Reinforcement Visibility Repair
 

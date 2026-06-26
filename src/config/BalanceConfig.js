@@ -84,7 +84,7 @@ export const BalanceConfig = {
         enemyEntryDelayBaseMs: 150,
         mayhemReinforcements: {
             enabled: true,
-            chance: 0.05,
+            chance: 0.15,
             bossFightChance: 0.15,
             bossFightMinAgeMs: 3500,
             bossFightCheckIntervalMs: 2600,

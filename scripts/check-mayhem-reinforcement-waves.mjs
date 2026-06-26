@@ -51,7 +51,7 @@ if (!steamBridge.includes('DEFAULT_STEAM_APP_ID = 4765070')) {
 }
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
-if (config.chance !== 0.05) fail(`Expected 5% normal-wave reinforcement chance, got ${config.chance}.`);
+if (config.chance !== 0.15) fail(`Expected 15% normal-wave reinforcement chance, got ${config.chance}.`);
 if (config.bossFightChance !== 0.15) fail(`Expected boss-fight reinforcement chance to be 15%, got ${config.bossFightChance}.`);
 if (config.bossFightMinAgeMs !== 3500) fail(`Expected boss-fight reinforcements to start checking after 3500ms, got ${config.bossFightMinAgeMs}.`);
 if (config.bossFightCheckIntervalMs !== 2600) fail(`Expected boss-fight reinforcement checks every 2600ms, got ${config.bossFightCheckIntervalMs}.`);
@@ -189,8 +189,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedRate = hits / eligibleRolls;
-if (observedRate < 0.04 || observedRate > 0.06) {
-  fail(`Stable normal reinforcement roll drifted outside 5% band: ${observedRate.toFixed(4)}.`);
+if (observedRate < 0.14 || observedRate > 0.16) {
+  fail(`Stable normal reinforcement roll drifted outside 15% band: ${observedRate.toFixed(4)}.`);
 }
 
 let bossEligibleRolls = 0;
