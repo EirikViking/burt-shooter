@@ -1,5 +1,21 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-26 ROW CORE Powerup And Mayhem Hype
+
+- Current request: implement premium `ROW CORE` powerup from the attached brief and add the three low-hanging fruit ideas: more legible/hype reinforcement moments, score dopamine for surviving chaos, and more in-run boss/mission-control personality.
+- Safety direction: keep all audio original/generated/static; no real stadium, football organization, team, player, song, broadcast, or fan-group references in text, filenames, or prompts. Do not put ElevenLabs keys in files or logs, and do not add runtime network calls.
+- Implementation direction: add `row_core` to the powerup catalog/drop/debug path, implement a six-pulse instant ritual in `Player`, add procedural PIXI ring/oar/RO pulse VFX, hook Row Core SFX/voice catalog entries, add an ElevenLabs development script, and cover the behavior with focused checks instead of touching Steam achievement IDs/metadata.
+- Implemented: Row Core now has a rare 7% powerup-drop branch, keeps the current weapon slot, runs six pulses over 4.2s, clears nearby bullets, pushes/damages enemies, pays +35 per bullet and +75 per enemy hit, gives +500 if already active, and grants PERFECT ROW +1000 if every pulse was useful.
+- Implemented: generated 9 original Row Core SFX files and 5 boss-voice mission-control lines with `npm run generate:row-core-audio`; manifest/provenance lives under `public/audio/generated/row-core/row-core-audio-manifest.json`.
+- Implemented low-hanging fruit: multi-group Mayhem reinforcements now show a storm lane warning overlay, clearing a 3+ wave reinforcement storm gives a small `STORM SURVIVED` score reward, and boss fights get extra combat notices/taunts for Row Core and phase changes.
+- Verification so far: `npm run check:row-core` passes after stubbing browser audio in the Node check harness.
+
+## 2026-06-26 Menu Idle Boss Taunts
+
+- Current request: menu click barks are fun, but long menu idling produced no taunts; implement the previously requested idle taunts that challenge the player to start one more run.
+- Implemented: added a dedicated 30-line `boss_menu_bark_idle` voice pool, generated 30 new boss-voice MP3 files with the existing ElevenLabs menu-bark generator, and changed the menu bark manifest/catalog to derive from the bark config so per-group counts are not hardcoded.
+- Runtime direction: `MenuScene` now tracks real menu inactivity from pointer, key, and controller input; after roughly 8-12 seconds idle it fires an idle boss bark, then repeats every roughly 18-30 seconds while the player keeps idling. Settings/How To Play overlays still allow idle taunts.
+
 ## 2026-06-26 Full Reinforcement Wave Retune
 
 - Current request: boss-fight reinforcements felt too weak; boss fights should get one full reinforcement wave and sometimes two, while normal Mayhem waves should very rarely trigger a dramatic 3-4 simultaneous-wave reinforcement spike.

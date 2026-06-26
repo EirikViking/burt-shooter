@@ -6,6 +6,7 @@ import { AssetManifest } from '../src/assets/assetManifest.js';
 import { SFX_CATALOG, VOICE_MIX } from '../src/audio/SoundCatalog.js';
 import {
   MENU_BOSS_BARK_DEFAULT_VOICE_ID,
+  MENU_BOSS_BARK_EVENT_COUNTS,
   MENU_BOSS_BARK_TOTAL_COUNT,
   MENU_BOSS_BARK_VARIANTS_PER_EVENT,
   menuBossBarkGroups,
@@ -37,9 +38,20 @@ const ids = new Set();
 const texts = new Set();
 for (const group of menuBossBarkGroups) {
   if (!group.event?.startsWith('boss_menu_bark_')) fail(`bad menu boss bark event: ${group.event}`);
-  if (group.lines.length !== MENU_BOSS_BARK_VARIANTS_PER_EVENT) {
-    fail(`${group.id} expected ${MENU_BOSS_BARK_VARIANTS_PER_EVENT} variants, got ${group.lines.length}`);
+  const expectedCount = group.id === 'idle' ? 30 : MENU_BOSS_BARK_VARIANTS_PER_EVENT;
+  if (group.lines.length !== expectedCount) {
+    fail(`${group.id} expected ${expectedCount} variants, got ${group.lines.length}`);
   }
+  if (MENU_BOSS_BARK_EVENT_COUNTS[group.event] !== group.lines.length) {
+    fail(`${group.event} count map mismatch`);
+  }
+}
+
+const idleGroup = menuBossBarkGroups.find((group) => group.id === 'idle');
+if (!idleGroup) fail('missing idle menu boss bark group');
+const idleChallengeLines = idleGroup?.lines.filter((line) => /\b(run|launch|mayhem|score|swarm|ship|button|leaderboard|boss|thumbs|lasers|cabinet)\b/i.test(line)).length || 0;
+if (idleGroup && idleChallengeLines < 24) {
+  fail('idle menu barks should challenge the player toward another run');
 }
 
 for (const line of menuBossBarkLines) {
@@ -71,11 +83,12 @@ for (const url of expectedUrls) {
 
 for (const group of menuBossBarkGroups) {
   const catalog = SFX_CATALOG[group.event] || [];
-  if (catalog.length !== MENU_BOSS_BARK_VARIANTS_PER_EVENT) {
-    fail(`SFX_CATALOG.${group.event} expected ${MENU_BOSS_BARK_VARIANTS_PER_EVENT}, got ${catalog.length}`);
+  const expectedCount = MENU_BOSS_BARK_EVENT_COUNTS[group.event] || MENU_BOSS_BARK_VARIANTS_PER_EVENT;
+  if (catalog.length !== expectedCount) {
+    fail(`SFX_CATALOG.${group.event} expected ${expectedCount}, got ${catalog.length}`);
   }
   if (!VOICE_MIX[group.event]) fail(`VOICE_MIX.${group.event} missing`);
-  for (let index = 0; index < MENU_BOSS_BARK_VARIANTS_PER_EVENT; index += 1) {
+  for (let index = 0; index < expectedCount; index += 1) {
     const expected = `/audio/voice/menu-boss-barks/${group.event}_${String(index + 1).padStart(3, '0')}.mp3`;
     if (!catalog.includes(expected)) fail(`SFX_CATALOG.${group.event} missing ${expected}`);
   }
@@ -94,7 +107,11 @@ for (const snippet of [
   'playBossMenuBarkForOption',
   "exclusiveGroup: 'boss_menu_bark'",
   'showBossMenuBarkVfx',
-  'playMenuFocusSfx'
+  'playMenuFocusSfx',
+  'setupMenuActivityTracking',
+  'scheduleNextIdleBossBark',
+  'updateIdleBossMenuBark',
+  "this.playBossMenuBark('idle'"
 ]) {
   if (!menuSceneSource.includes(snippet)) fail(`MenuScene missing ${snippet}`);
 }

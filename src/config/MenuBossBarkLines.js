@@ -1,7 +1,6 @@
 import { BOSS_DEATH_DEFAULT_VOICE_ID, BOSS_DEATH_DEFAULT_VOICE_NAME, BOSS_DEATH_MODEL_ID } from './BossDeathVoiceLines.js';
 
 export const MENU_BOSS_BARK_VARIANTS_PER_EVENT = 17;
-export const MENU_BOSS_BARK_TOTAL_COUNT = 221;
 export const MENU_BOSS_BARK_DEFAULT_VOICE_ID = BOSS_DEATH_DEFAULT_VOICE_ID;
 export const MENU_BOSS_BARK_DEFAULT_VOICE_NAME = `${BOSS_DEATH_DEFAULT_VOICE_NAME} - Menu Bark`;
 export const MENU_BOSS_BARK_MODEL_ID = BOSS_DEATH_MODEL_ID;
@@ -305,10 +304,49 @@ export const menuBossBarkGroups = [
       'Cancel! You have chosen more menu. Correct!',
       'Back! Reality can wait in the hallway!'
     ]
+  },
+  {
+    id: 'idle',
+    event: 'boss_menu_bark_idle',
+    lines: [
+      'Still here? Wonderful. The launch button was starting to develop abandonment issues!',
+      'Pilot, I respect the menu meditation, but the swarm is not going to explode itself!',
+      'One more run. Tiny ship, enormous consequences, excellent use of furniture!',
+      'The cabinet is humming because it believes in you, or because a wire is dramatic!',
+      'If you start now, I promise to shout encouragement with completely unreasonable confidence!',
+      'The leaderboard just whispered your name and then pretended it was stretching!',
+      'Idle detected. Converting hesitation into a strongly worded launch recommendation!',
+      'Your ship is warmed up, your excuses are refrigerated, and the swarm is available!',
+      'Press Mayhem. The button has been doing pushups while you were thinking!',
+      'I have counted fourteen menu stars and none of them are as shiny as a new high score!',
+      'Pilot, the safest place is not the menu. It is moving very fast through bullets!',
+      'The boss gate asked if you were scared. I said probably, but charmingly!',
+      'One more run would be medically inadvisable and spiritually excellent!',
+      'Your thumbs are just standing there wearing tiny uniforms. Deploy them!',
+      'The swarm is rehearsing an entrance. Rude to miss it, honestly!',
+      'Menu idling is legal, but the cabinet prefers crimes against enemy geometry!',
+      'I made a tiny trophy out of impatience. It says start another run!',
+      'The launch deck lights are blinking in Morse code. It says stop browsing!',
+      'I can smell a personal best behind that button. It smells like hot neon!',
+      'Another run? Yes. The answer arrived wearing a cape and making engine noises!',
+      'Your ship has not exploded for several seconds. Suspicious. Correct this!',
+      'The menu is lovely, but it contains fewer lasers than science recommends!',
+      'Commander, I have prepared a motivational speech and thirty-seven backup insults!',
+      'The swarm filed a complaint. It says you are making it wait in formation!',
+      'Start one more run and I will pretend this was your idea the whole time!',
+      'That Mayhem button is not decoration. It is a dare with excellent typography!',
+      'Pilot, breathe in, select courage, breathe out, immediately regret nothing!',
+      'The cabinet wants another story, ideally one with score multipliers and panic!',
+      'High scores do not happen in menus, except emotionally, and that barely counts!',
+      'If you launch now, I will personally overreact to every good dodge!'
+    ]
   }
 ];
 
 export const MENU_BOSS_BARK_EVENT_IDS = menuBossBarkGroups.map((group) => group.event);
+export const MENU_BOSS_BARK_EVENT_COUNTS = Object.freeze(Object.fromEntries(
+  menuBossBarkGroups.map((group) => [group.event, group.lines.length])
+));
 
 export const menuBossBarkLines = menuBossBarkGroups.flatMap((group) =>
   group.lines.map((text, index) => ({
@@ -319,3 +357,5 @@ export const menuBossBarkLines = menuBossBarkGroups.flatMap((group) =>
     generationText: `[huge theatrical alien boss voice, amused and commanding, shouted menu bark] ${text}`
   }))
 );
+
+export const MENU_BOSS_BARK_TOTAL_COUNT = menuBossBarkLines.length;

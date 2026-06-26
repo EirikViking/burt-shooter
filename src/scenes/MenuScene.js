@@ -55,7 +55,8 @@ const MENU_BOSS_BARK_EVENTS = {
   howToPlay: 'boss_menu_bark_how_to_play',
   exit: 'boss_menu_bark_exit',
   sectorSelect: 'boss_menu_bark_sector_select',
-  cancel: 'boss_menu_bark_cancel'
+  cancel: 'boss_menu_bark_cancel',
+  idle: 'boss_menu_bark_idle'
 };
 
 const DERIVED_MENU_ICON_SOURCES = {
@@ -257,6 +258,10 @@ export class MenuScene {
     this.focusedMenuIndex = 0;
     this.lastBossMenuBarkAt = 0;
     this.lastBossMenuBarkId = null;
+    this.lastMenuActivityAt = 0;
+    this.nextIdleBossBarkAt = 0;
+    this.idleBossBarkCount = 0;
+    this.menuActivityPointerHandler = null;
     this.menuGamepadNavigator = new GamepadNavigator();
     this.lastInputDevice = 'keyboard';
     this.menuIconTextures = {};
@@ -275,6 +280,9 @@ export class MenuScene {
     this.launchingRun = false;
     this.menuGamepadActionWasPressed = false;
     this.menuGamepadNavigator.suppressUntilReleased();
+    this.lastMenuActivityAt = Date.now();
+    this.idleBossBarkCount = 0;
+    this.scheduleNextIdleBossBark({ initial: true });
     this.container.sortableChildren = true;
     this.createStarfield();
     this.initBackdrop();
@@ -312,6 +320,54 @@ export class MenuScene {
     // PART A: Initialize story rotation
     this.initStoryRotation();
     this.setupPrimaryInput();
+    this.setupMenuActivityTracking();
+  }
+
+  setupMenuActivityTracking() {
+    if (this.menuActivityPointerHandler) {
+      window.removeEventListener('pointermove', this.menuActivityPointerHandler);
+      window.removeEventListener('pointerdown', this.menuActivityPointerHandler);
+    }
+    this.menuActivityPointerHandler = () => this.markMenuActivity();
+    window.addEventListener('pointermove', this.menuActivityPointerHandler, { passive: true });
+    window.addEventListener('pointerdown', this.menuActivityPointerHandler, { passive: true });
+  }
+
+  markMenuActivity() {
+    this.lastMenuActivityAt = Date.now();
+    this.idleBossBarkCount = 0;
+    this.scheduleNextIdleBossBark({ initial: true });
+  }
+
+  getIdleBossBarkDelayMs({ initial = false } = {}) {
+    const base = initial ? 8000 : 18000;
+    const spread = initial ? 4000 : 12000;
+    return base + Math.floor(Math.random() * spread);
+  }
+
+  scheduleNextIdleBossBark(options = {}) {
+    this.nextIdleBossBarkAt = Date.now() + this.getIdleBossBarkDelayMs(options);
+  }
+
+  updateIdleBossMenuBark() {
+    if (this.launchingRun || !this.container?.visible) return;
+    const now = Date.now();
+    if (!this.nextIdleBossBarkAt) this.scheduleNextIdleBossBark({ initial: true });
+    if (now < this.nextIdleBossBarkAt) return;
+    if (now - this.lastMenuActivityAt < 7600) {
+      this.scheduleNextIdleBossBark({ initial: true });
+      return;
+    }
+
+    const overlayTarget = this.settingsOverlay?.container || this.howToPlayOverlay?.container || this.quitConfirmPanel || this.sectorSelectorPanel;
+    const focusedTarget = this.menuOptions?.[this.focusedMenuIndex]?.button || this.startBtn || this.menuPanel || this.container;
+    this.playBossMenuBark('idle', {
+      target: overlayTarget || focusedTarget,
+      intent: 'focus',
+      force: true
+    });
+    this.idleBossBarkCount += 1;
+    this.scheduleNextIdleBossBark({ initial: false });
   }
 
   setupPrimaryInput() {
@@ -322,6 +378,7 @@ export class MenuScene {
       const target = event.target;
       const tagName = String(target?.tagName || '').toLowerCase();
       if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) return;
+      this.markMenuActivity();
       if (this.settingsOverlay || this.howToPlayOverlay) return;
 
       const isPrimaryStart = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
@@ -2675,6 +2732,7 @@ export class MenuScene {
   playBossMenuBark(menuId, { target = null, intent = 'focus', force = false } = {}) {
     const eventName = this.getBossMenuBarkEvent(menuId);
     if (!eventName) return false;
+    if (menuId !== 'idle') this.markMenuActivity();
     const now = Date.now();
     if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < 420) {
       this.showBossMenuBarkVfx(target, { intent });
@@ -3855,6 +3913,7 @@ export class MenuScene {
     const nav = this.menuGamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
+    if (Object.values(nav.pressed || {}).some(Boolean)) this.markMenuActivity();
     if (this.quitConfirmOpen) {
       if (nav.pressed.left || nav.pressed.right || nav.pressed.up || nav.pressed.down) {
         this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
@@ -4430,6 +4489,7 @@ export class MenuScene {
     if (this.storyTypewriter) {
       this.storyTypewriter.update(delta);
     }
+    this.updateIdleBossMenuBark();
     this.updateCodexSignalCue(delta);
     this.updateMenuButtonMotion(delta);
     this.drawSectorStartStepperCue();
@@ -4562,6 +4622,11 @@ export class MenuScene {
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler);
       this.keyHandler = null;
+    }
+    if (this.menuActivityPointerHandler) {
+      window.removeEventListener('pointermove', this.menuActivityPointerHandler);
+      window.removeEventListener('pointerdown', this.menuActivityPointerHandler);
+      this.menuActivityPointerHandler = null;
     }
 
     if (this.layoutUnsubscribe) {

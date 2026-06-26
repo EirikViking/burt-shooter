@@ -1,6 +1,16 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ROW CORE": "ROW CORE",
+  "ROW CORE! OARS OUT!": "ROW CORE! No deureora!",
+  "LONGSHIP PROTOCOL": "LONGSHIP PEUROTOCOL",
+  "ROW CORE ALREADY CHARGED +500": "ROW CORE IMI CHUNGJEON +500",
+  "PERFECT ROW": "WANBYEOKHAN RO",
+  "PERFECT ROW +1000": "WANBYEOKHAN RO +1000",
+  "THE BOSS HEARS THE OARS": "BOSEU GA NO SORIREUL DEUTNEUNDA",
+  "PERFECT ROW. ANNOYINGLY HEROIC.": "WANBYEOKHAN RO. GEOSULRIL MANKEUM YEONGUNGJEOK.",
+  "REINFORCEMENT STORM": "JIWON POKPUNG",
+  "STORM SURVIVED +{score}": "POKPUNG SAENGJON +{score}",
   "Confirm Exit": "Jongnyo hwagin",
   "STATUS: READY FOR LAUNCH": "STATUS: chulbal junbi",
   "Unlocked: {reason}": "Haeseokdoem: {reason}",

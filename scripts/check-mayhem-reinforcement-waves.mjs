@@ -51,23 +51,26 @@ if (!steamBridge.includes('DEFAULT_STEAM_APP_ID = 4765070')) {
 }
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
-if (config.chance !== 0.15) fail(`Expected 15% normal-wave reinforcement chance, got ${config.chance}.`);
-if (config.bossFightChance !== 0.15) fail(`Expected boss-fight reinforcement chance to be 15%, got ${config.bossFightChance}.`);
+if (config.chance !== 0.20) fail(`Expected 20% normal-wave reinforcement chance, got ${config.chance}.`);
+if (config.bossFightChance !== 0.20) fail(`Expected boss-fight reinforcement chance to be 20%, got ${config.bossFightChance}.`);
 if (config.bossFightMinAgeMs !== 3500) fail(`Expected boss-fight reinforcements to start checking after 3500ms, got ${config.bossFightMinAgeMs}.`);
 if (config.bossFightCheckIntervalMs !== 2600) fail(`Expected boss-fight reinforcement checks every 2600ms, got ${config.bossFightCheckIntervalMs}.`);
 if (config.bossFightCooldownMs !== 9000) fail(`Expected boss-fight reinforcement cooldown at 9000ms, got ${config.bossFightCooldownMs}.`);
 if (config.bossFightMaxEvents !== 2) fail(`Expected boss-fight reinforcements to cap at 2 events, got ${config.bossFightMaxEvents}.`);
-if (config.doubleWaveChance !== 0.08) fail(`Expected 8% double-reinforcement chance, got ${config.doubleWaveChance}.`);
+if (config.doubleWaveChance !== 0.16) fail(`Expected 16% double-reinforcement chance, got ${config.doubleWaveChance}.`);
+if (config.tripleWaveChance !== 0.10) fail(`Expected 10% triple-reinforcement chance, got ${config.tripleWaveChance}.`);
 if (config.doubleWaveMinLevel !== 8) fail(`Expected double reinforcements to be gated until level 8, got ${config.doubleWaveMinLevel}.`);
-if (config.doubleWaveRequiresPriorReinforcement !== false) fail('Double reinforcements must be allowed on the first reinforcement event from level 8 onward.');
+if (config.doubleWaveRequiresPriorReinforcement !== false) fail('Multi-wave boss reinforcements must be allowed on the first reinforcement event from level 8 onward.');
 if (config.normalMinWaveCount !== 3) fail(`Expected normal reinforcement events to spawn 3 waves, got ${config.normalMinWaveCount}.`);
 if (config.normalMaxWaveCount !== 4) fail(`Expected normal reinforcement events to sometimes spawn 4 waves, got ${config.normalMaxWaveCount}.`);
-if (config.normalMaxWaveChance !== 0.35) fail(`Expected 35% fourth-wave chance inside normal reinforcement events, got ${config.normalMaxWaveChance}.`);
+if (config.normalMaxWaveChance !== 0.55) fail(`Expected 55% fourth-wave chance inside normal reinforcement events, got ${config.normalMaxWaveChance}.`);
 if (config.normalMultiWaveMinLevel !== 8) fail(`Expected normal multi-wave reinforcements to be gated until level 8, got ${config.normalMultiWaveMinLevel}.`);
-if (config.firstPityEligibleMisses !== 24) fail(`Expected first reinforcement pity after 24 eligible misses, got ${config.firstPityEligibleMisses}.`);
+if (config.reinforcementScoreMultiplier !== 1.25) fail(`Expected normal reinforcement score multiplier 1.25, got ${config.reinforcementScoreMultiplier}.`);
+if (config.bossReinforcementScoreMultiplier !== 1.35) fail(`Expected boss reinforcement score multiplier 1.35, got ${config.bossReinforcementScoreMultiplier}.`);
+if (config.firstPityEligibleMisses !== 12) fail(`Expected first reinforcement pity after 12 eligible misses, got ${config.firstPityEligibleMisses}.`);
 if (config.firstPityMinLevel !== 8) fail(`Expected first reinforcement pity to start at level 8, got ${config.firstPityMinLevel}.`);
-if (config.firstPityMaxLevel !== 14) fail(`Expected first reinforcement pity target window at level 14, got ${config.firstPityMaxLevel}.`);
-if (config.repeatPityEligibleMisses !== 34) fail(`Expected repeat reinforcement pity to stay rare but reachable, got ${config.repeatPityEligibleMisses}.`);
+if (config.firstPityMaxLevel !== 10) fail(`Expected first reinforcement pity target window at level 10, got ${config.firstPityMaxLevel}.`);
+if (config.repeatPityEligibleMisses !== 18) fail(`Expected repeat reinforcement pity to stay action-forward but not constant, got ${config.repeatPityEligibleMisses}.`);
 if (config.minWaveAgeMs !== 3600) fail(`Expected faster reinforcement eligibility at 3600ms, got ${config.minWaveAgeMs}.`);
 if (config.warningMs !== 2000) fail(`Expected 2000ms warning, got ${config.warningMs}.`);
 if (config.minClearRatio !== 0.32) {
@@ -110,10 +113,14 @@ const requiredSourceSnippets = [
   'canRelaxMayhemReinforcementPityGates',
   'recordMayhemReinforcementMiss',
   'doubleWaveChance',
+  'tripleWaveChance',
   'normalMinWaveCount',
   'normalMaxWaveCount',
   'normalMaxWaveChance',
   'normalMultiWaveMinLevel',
+  'reinforcementScoreMultiplier',
+  'bossReinforcementScoreMultiplier',
+  'enemy.mayhemReinforcementScoreMultiplier',
   'bossFightChance',
   'bossFightCheckIntervalMs',
   'bossFightCooldownMs',
@@ -124,10 +131,14 @@ const requiredSourceSnippets = [
   'boss_mayhem_reinforcement.spawn_full_wave',
   "'mayhem-boss-reinforcement'",
   "'mayhem-boss-reinforcement-double-wave'",
+  "'mayhem-boss-reinforcement-triple-wave'",
   "enemy.kind = 'boss_mayhem_reinforcement'",
   "config.isBossMayhemReinforcement",
   'reinforcementGroupCount',
-  'groupIndex * 900',
+  'Math.min(3',
+  'groupIndex * 1200',
+  'index * 1200',
+  'index * 900',
   'this.bossReinforcementNextCheckAtMs = Date.now() + 1200',
   'doubleWaveMinLevel',
   'doubleWaveRequiresPriorReinforcement',
@@ -135,7 +146,7 @@ const requiredSourceSnippets = [
   'reinforcementWaveIndices',
   'reinforcementGroupCount',
   'reinforcementLaneOffsetPx',
-  'centeredIndex * 58',
+  'centeredIndex * 72',
   'reinforcementEntryDelayMs',
   'allowConcurrentSpawn',
   'multi_wave_gated',
@@ -189,8 +200,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedRate = hits / eligibleRolls;
-if (observedRate < 0.14 || observedRate > 0.16) {
-  fail(`Stable normal reinforcement roll drifted outside 15% band: ${observedRate.toFixed(4)}.`);
+if (observedRate < 0.19 || observedRate > 0.21) {
+  fail(`Stable normal reinforcement roll drifted outside 20% band: ${observedRate.toFixed(4)}.`);
 }
 
 let bossEligibleRolls = 0;
@@ -204,8 +215,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedBossRate = bossHits / bossEligibleRolls;
-if (observedBossRate < 0.14 || observedBossRate > 0.16) {
-  fail(`Boss-fight reinforcement roll drifted outside 15% band: ${observedBossRate.toFixed(4)}.`);
+if (observedBossRate < 0.19 || observedBossRate > 0.21) {
+  fail(`Boss-fight reinforcement roll drifted outside 20% band: ${observedBossRate.toFixed(4)}.`);
 }
 
 const normalReinforcementWaveCountFor = ({ seed, level, waveIndex, availableFutureWaves = 4 }) => {
@@ -240,8 +251,8 @@ if (normalReinforcementWaveCountFor({ seed: fourWaveSeed, level: 12, waveIndex: 
   fail('Normal reinforcements must not trigger unless enough future waves are available.');
 }
 const observedFourthWaveRate = fourthWaveHits / normalMultiWaveEligibleEvents;
-if (observedFourthWaveRate < 0.33 || observedFourthWaveRate > 0.37) {
-  fail(`Fourth normal reinforcement wave roll drifted outside 35% band: ${observedFourthWaveRate.toFixed(4)}.`);
+if (observedFourthWaveRate < 0.53 || observedFourthWaveRate > 0.57) {
+  fail(`Fourth normal reinforcement wave roll drifted outside 55% band: ${observedFourthWaveRate.toFixed(4)}.`);
 }
 
 let bossDoubleEligibleEvents = 0;
@@ -252,8 +263,46 @@ for (let seed = 0; seed < 5000; seed += 1) {
   if (doubleRoll < config.doubleWaveChance) bossDoubleHits += 1;
 }
 const observedBossDoubleRate = bossDoubleHits / bossDoubleEligibleEvents;
-if (observedBossDoubleRate < 0.07 || observedBossDoubleRate > 0.09) {
-  fail(`Boss double-reinforcement roll drifted outside 8% band: ${observedBossDoubleRate.toFixed(4)}.`);
+if (observedBossDoubleRate < 0.15 || observedBossDoubleRate > 0.17) {
+  fail(`Boss double-reinforcement roll drifted outside 16% band: ${observedBossDoubleRate.toFixed(4)}.`);
+}
+
+let bossTripleEligibleEvents = 0;
+let bossTripleHits = 0;
+for (let seed = 0; seed < 5000; seed += 1) {
+  const tripleRoll = rollFor(`boss-triple-${seed}`, 13, 0, 'mayhem-boss-reinforcement-triple-wave');
+  bossTripleEligibleEvents += 1;
+  if (tripleRoll < config.tripleWaveChance) bossTripleHits += 1;
+}
+const observedBossTripleRate = bossTripleHits / bossTripleEligibleEvents;
+if (observedBossTripleRate < 0.09 || observedBossTripleRate > 0.11) {
+  fail(`Boss triple-reinforcement roll drifted outside 10% band: ${observedBossTripleRate.toFixed(4)}.`);
+}
+
+const bossReinforcementGroupCountFor = ({ seed, level, attempt }) => {
+  if (level < config.doubleWaveMinLevel) return 1;
+  const tripleRoll = rollFor(seed, level, attempt, 'mayhem-boss-reinforcement-triple-wave');
+  if (tripleRoll < config.tripleWaveChance) return 3;
+  const doubleRoll = rollFor(seed, level, attempt, 'mayhem-boss-reinforcement-double-wave');
+  return doubleRoll < config.doubleWaveChance ? 2 : 1;
+};
+
+let bossSingleSeed = null;
+let bossDoubleSeed = null;
+let bossTripleSeed = null;
+for (let seed = 0; seed < 10000; seed += 1) {
+  const id = `boss-group-count-${seed}`;
+  const groupCount = bossReinforcementGroupCountFor({ seed: id, level: 13, attempt: 0 });
+  if (groupCount === 1) bossSingleSeed ??= id;
+  if (groupCount === 2) bossDoubleSeed ??= id;
+  if (groupCount === 3) bossTripleSeed ??= id;
+  if (bossSingleSeed && bossDoubleSeed && bossTripleSeed) break;
+}
+if (!bossSingleSeed) fail('Boss reinforcement events must still usually schedule one wave.');
+if (!bossDoubleSeed) fail('Boss reinforcement events must be able to schedule two waves.');
+if (!bossTripleSeed) fail('Boss reinforcement events must be able to schedule three waves.');
+if (bossReinforcementGroupCountFor({ seed: bossTripleSeed, level: 7, attempt: 0 }) !== 1) {
+  fail('Boss triple reinforcements must stay gated before level 8.');
 }
 
 let misses = 0;
@@ -278,7 +327,7 @@ for (let level = 1; level <= 16; level += 1) {
   if (firstPityLevel !== null) break;
 }
 if (firstPityLevel === null || firstPityLevel > config.firstPityMaxLevel) {
-  fail('First reinforcement pity must force a later eligible wave by the level-14 target window.');
+  fail('First reinforcement pity must force a later eligible wave by the level-10 target window.');
 }
 if (!firstPityReady(15, Math.ceil(config.firstPityEligibleMisses * 0.5))) {
   fail('First reinforcement pity must not expire after the target window; overdue misses must still force it later.');
@@ -300,7 +349,7 @@ for (let level = 1; level <= 16; level += 1) {
   if (softPityLevel !== null) break;
 }
 if (softPityLevel === null || softPityLevel > config.firstPityMaxLevel) {
-  fail('Soft-blocked reinforcement misses must still feed first pity by the level-14 target window.');
+  fail('Soft-blocked reinforcement misses must still feed first pity by the level-10 target window.');
 }
 
 const pityCanSpawnWithLotsLeft = ({ expected, objectiveCount, bullets, ageMs }) => (
@@ -333,4 +382,4 @@ for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   }
 }
 
-console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} fourthObserved=${observedFourthWaveRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} warningMs=${config.warningMs}`);
+console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} fourthObserved=${observedFourthWaveRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} bossTripleChance=${config.tripleWaveChance} bossTripleObserved=${observedBossTripleRate.toFixed(4)} scoreMult=${config.reinforcementScoreMultiplier}/${config.bossReinforcementScoreMultiplier} warningMs=${config.warningMs}`);

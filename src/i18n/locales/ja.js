@@ -1,6 +1,16 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ROW CORE": "ROW CORE",
+  "ROW CORE! OARS OUT!": "ROW CORE! Ooru tenkai!",
+  "LONGSHIP PROTOCOL": "LONGSHIP PROTOCOL",
+  "ROW CORE ALREADY CHARGED +500": "ROW CORE juuden zumi +500",
+  "PERFECT ROW": "Kanzen na ro",
+  "PERFECT ROW +1000": "Kanzen na ro +1000",
+  "THE BOSS HEARS THE OARS": "BOSS ga ooru wo kiita",
+  "PERFECT ROW. ANNOYINGLY HEROIC.": "Kanzen na ro. Mendou na hodo eiyuuteki.",
+  "REINFORCEMENT STORM": "Zouen arashi",
+  "STORM SURVIVED +{score}": "Arashi toppa +{score}",
   "Confirm Exit": "Shuuryou kakunin",
   "STATUS: READY FOR LAUNCH": "STATUS: shuppatsu junbi OK",
   "Unlocked: {reason}": "Unlock zumi: {reason}",

@@ -2,7 +2,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
 import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
 import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
-import { MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
+import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 
 // Safe lookup helpers
@@ -55,7 +55,7 @@ const GAME_OVER_CTA_VOICE_CATALOG = Object.fromEntries(
 const MENU_BOSS_BARK_CATALOG = Object.fromEntries(
     MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
         eventName,
-        paddedNumberedVoicePool(eventName, MENU_BOSS_BARK_VARIANTS_PER_EVENT, 3)
+        paddedNumberedVoicePool(eventName, MENU_BOSS_BARK_EVENT_COUNTS[eventName] || MENU_BOSS_BARK_VARIANTS_PER_EVENT, 3)
     ])
 );
 
@@ -313,6 +313,13 @@ export const SFX_MIX = {
     magnet_pull: { volume: 0.5, minIntervalMs: 260 },
     ghost_phase_shift: { volume: 0.48, minIntervalMs: 450 },
     time_slow_warp: { volume: 0.48, minIntervalMs: 450 },
+    row_core_pickup: { volume: 0.78, minIntervalMs: 900 },
+    row_core_horn: { volume: 0.82, minIntervalMs: 2500 },
+    row_core_drum: { volume: 0.72, minIntervalMs: 300 },
+    row_core_chant: { volume: 0.84, minIntervalMs: 220 },
+    row_core_chant_big: { volume: 0.95, minIntervalMs: 700 },
+    row_core_wave: { volume: 0.58, minIntervalMs: 150 },
+    row_core_perfect: { volume: 0.9, minIntervalMs: 1000 },
     drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
     orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 },
     tractor_lock_charge: { volume: 0.5, minIntervalMs: 700 },
@@ -367,6 +374,7 @@ export const VOICE_MIX = {
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
     mission_control_reinforcements_incoming: { volume: 0.9, duckFactor: 0.42, duckMs: 1150, cooldownMs: 2200, eventCooldownMs: 2200, priority: 7 },
+    mission_control_row_core: { volume: 0.9, duckFactor: 0.36, duckMs: 2200, cooldownMs: 30000, priority: 5 },
     level_clear_flirt: { volume: 0.9, duckFactor: 0.38, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
     game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
@@ -411,6 +419,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_level_start: 'mission_control_level_start.mp3',
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
     mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming_001.mp3',
+    mission_control_row_core: 'mission_control_row_core_01.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
     mission_control_lives_max: 'mission_control_lives_max.mp3',
@@ -537,6 +546,29 @@ export const SFX_CATALOG = {
     'powerup_pickup': [
         getSfx('nova_bonus_core_jackpot'),
         getSfx('doorOpen_002')
+    ],
+    'row_core_pickup': [
+        getSfx('nova_row_core_pickup')
+    ],
+    'row_core_horn': [
+        getSfx('nova_row_core_horn')
+    ],
+    'row_core_drum': [
+        getSfx('nova_row_core_drum')
+    ],
+    'row_core_chant': [
+        getSfx('nova_row_core_ro_01'),
+        getSfx('nova_row_core_ro_02'),
+        getSfx('nova_row_core_ro_03')
+    ],
+    'row_core_chant_big': [
+        getSfx('nova_row_core_ro_big')
+    ],
+    'row_core_wave': [
+        getSfx('nova_row_core_wave')
+    ],
+    'row_core_perfect': [
+        getSfx('nova_row_core_perfect')
     ],
     'chain_lightning_arc': [
         getSfx('nova_chain_lightning_arc')
@@ -728,6 +760,7 @@ export const SFX_CATALOG = {
     'mission_control_level_start': missionControlPool('mission_control_level_start'),
     'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
     'mission_control_reinforcements_incoming': paddedNumberedVoicePool('mission_control_reinforcements_incoming', REINFORCEMENT_VOICE_COUNT, 3),
+    'mission_control_row_core': numberedVoicePool('mission_control_row_core', 5),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),
     'mission_control_lives_max': missionControlPool('mission_control_lives_max', 0),

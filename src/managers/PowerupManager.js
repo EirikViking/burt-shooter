@@ -497,13 +497,15 @@ export class PowerupManager {
       type = 'life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
-    } else if (rand < 0.15 && !shieldActive) {
-      type = 'shield'; // 13% Uncommon, if no shield
-    } else if (rand < 0.25) {
+    } else if (rand < 0.07) {
+      type = 'row_core'; // Rare premium panic ritual.
+    } else if (rand < 0.18 && !shieldActive) {
+      type = 'shield'; // 11% uncommon, if no shield
+    } else if (rand < 0.28) {
       // BOMB & SHOCKWAVE - 10% dedicated chance for most visible powerups
       const burstPowerups = ['bomb', 'shockwave', 'stasis_net', 'pulse_refund', 'saw_matrix'];
       type = burstPowerups[Math.floor(Math.random() * burstPowerups.length)];
-    } else if (rand < 0.50) {
+    } else if (rand < 0.52) {
       // Spectacle powerups - 25% chance pool for high-readability showpieces.
       const spectaclePowerups = [
         'chain_lightning',
@@ -516,7 +518,7 @@ export class PowerupManager {
         'swarm_contract'
       ];
       type = spectaclePowerups[Math.floor(Math.random() * spectaclePowerups.length)];
-    } else if (rand < 0.60) {
+    } else if (rand < 0.62) {
       // Combat/support powerups - 10% chance pool
       const combatPowerups = [
         'score_x2',

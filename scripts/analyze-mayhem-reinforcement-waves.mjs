@@ -37,6 +37,7 @@ const simulateRun = ({ seed, profile, enabled }) => {
   let reinforcements = 0;
   let reinforcementDeaths = 0;
   let doubleReinforcementEvents = 0;
+  let tripleBossReinforcementEvents = 0;
   let fourthNormalReinforcementEvents = 0;
   let reinforcementWaves = 0;
   let wavesCleared = 0;
@@ -88,7 +89,8 @@ const simulateRun = ({ seed, profile, enabled }) => {
         reinforcementSpawned += 1;
         reinforcementEligibleMisses = 0;
         seconds += config.warningMs / 1000 + waveSeconds + Math.max(4.8, reinforcementEnemies * 0.22);
-        score += (enemies + reinforcementEnemies) * 48 * profile.scoreMult;
+        score += (enemies * 48 * profile.scoreMult) +
+          (reinforcementEnemies * 48 * profile.scoreMult * (config.reinforcementScoreMultiplier || 1));
         xp += (enemies + reinforcementEnemies) * 2.25 * profile.xpMult;
         wavesCleared += 1 + consumedWaves;
         if (pressureRoll < pressureDeathRisk) {
@@ -129,19 +131,25 @@ const simulateRun = ({ seed, profile, enabled }) => {
       sector >= 2 &&
       rollFor(seed, sector, 0, 'mayhem-boss-reinforcement') < config.bossFightChance
     ) {
-      const canBossDouble = sector >= config.doubleWaveMinLevel &&
+      const canBossMultiWave = sector >= config.doubleWaveMinLevel &&
+        (!config.doubleWaveRequiresPriorReinforcement || reinforcementSpawned > 0);
+      const canBossTriple = canBossMultiWave &&
+        rollFor(seed, sector, 0, 'mayhem-boss-reinforcement-triple-wave') < config.tripleWaveChance;
+      const canBossDouble = canBossMultiWave &&
+        !canBossTriple &&
         rollFor(seed, sector, 0, 'mayhem-boss-reinforcement-double-wave') < config.doubleWaveChance;
-      const bossReinforcementWaves = canBossDouble ? 2 : 1;
+      const bossReinforcementWaves = canBossTriple ? 3 : canBossDouble ? 2 : 1;
       const bossReinforcementEnemiesTotal = Array.from(
         { length: bossReinforcementWaves },
         (_, index) => enemyCountFor(sector, index)
       ).reduce((sum, count) => sum + count, 0);
       seconds += config.warningMs / 1000 + Math.max(4.8, bossReinforcementEnemiesTotal * 0.24);
-      score += bossReinforcementEnemiesTotal * 48 * profile.scoreMult;
+      score += bossReinforcementEnemiesTotal * 48 * profile.scoreMult * (config.bossReinforcementScoreMultiplier || config.reinforcementScoreMultiplier || 1);
       xp += bossReinforcementEnemiesTotal * 2.25 * profile.xpMult;
       reinforcements += 1;
       reinforcementWaves += bossReinforcementWaves;
       if (canBossDouble) doubleReinforcementEvents += 1;
+      if (canBossTriple) tripleBossReinforcementEvents += 1;
     }
     score += 1250 * profile.scoreMult + sector * 42;
     xp += 55 * profile.xpMult + sector * 1.6;
@@ -163,6 +171,7 @@ const simulateRun = ({ seed, profile, enabled }) => {
     reinforcements,
     reinforcementWaves,
     doubleReinforcementEvents,
+    tripleBossReinforcementEvents,
     fourthNormalReinforcementEvents,
     reinforcementDeaths,
     wavesCleared,
@@ -188,6 +197,7 @@ const summarize = (runs) => {
     averageReinforcements: Number(average('reinforcements').toFixed(2)),
     averageReinforcementWaves: Number(average('reinforcementWaves').toFixed(2)),
     averageDoubleReinforcementEvents: Number(average('doubleReinforcementEvents').toFixed(2)),
+    averageTripleBossReinforcementEvents: Number(average('tripleBossReinforcementEvents').toFixed(2)),
     averageFourthNormalReinforcementEvents: Number(average('fourthNormalReinforcementEvents').toFixed(2)),
     averageReinforcementDeaths: Number(average('reinforcementDeaths').toFixed(2)),
     averageWavesCleared: Number(average('wavesCleared').toFixed(2)),
@@ -229,7 +239,8 @@ const report = {
     medianScore: high.withReinforcements.medianScore - high.withoutReinforcements.medianScore,
     scorePerMinute: high.withReinforcements.scorePerMinute - high.withoutReinforcements.scorePerMinute,
     averageDeaths: Number((high.withReinforcements.averageDeaths - high.withoutReinforcements.averageDeaths).toFixed(2)),
-    averageReinforcements: high.withReinforcements.averageReinforcements
+    averageReinforcements: high.withReinforcements.averageReinforcements,
+    averageTripleBossReinforcementEvents: high.withReinforcements.averageTripleBossReinforcementEvents
   }
 };
 

@@ -8925,6 +8925,10 @@ export class PlayScene {
         return getMicroMessage('bossIntro');
       case 'boss_life_lost':
         return getMicroMessage('lifeLost');
+      case 'boss_row_core':
+        return translateText('THE BOSS HEARS THE OARS');
+      case 'boss_row_core_perfect':
+        return translateText('PERFECT ROW. ANNOYINGLY HEROIC.');
       case 'boss_phase2':
       case 'boss_half':
         return this.safeGetEnemyTaunt();
@@ -9423,11 +9427,18 @@ export class PlayScene {
 
   showBossCombatNotice(reason, caption) {
     const compactHud = this.game.getWidth() < 620;
-    const label = reason === 'boss_life_lost'
+    const rawLabel = reason === 'boss_life_lost'
       ? 'HIT TAKEN'
       : reason === 'boss_half'
         ? 'BOSS WEAKENING'
-        : 'PATTERN SHIFT';
+        : reason === 'boss_row_core'
+          ? 'ROW CORE'
+          : reason === 'boss_row_core_perfect'
+            ? 'PERFECT ROW'
+            : reason === 'reinforcement_storm'
+              ? 'REINFORCEMENT STORM'
+              : 'PATTERN SHIFT';
+    const label = translateText(rawLabel);
     const text = reason === 'boss_life_lost' ? label : `${label}: ${caption}`;
     this.enqueueToast(text, {
       fontSize: compactHud ? 15 : 18,
@@ -9441,6 +9452,78 @@ export class PlayScene {
       y: this.game.getHeight() * (compactHud ? 0.28 : 0.2),
       maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
     });
+  }
+
+  showMayhemReinforcementStormWarning({ groupCount = 1, boss = false } = {}) {
+    const count = Math.max(1, Math.min(4, Math.floor(Number(groupCount) || 1)));
+    if (count < 2) return false;
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compactHud = width < 620;
+    this.enqueueToast(`${translateText('REINFORCEMENT STORM')} x${count}`, {
+      fontSize: compactHud ? 18 : 24,
+      fill: boss ? '#ff8f9c' : '#ffef7e',
+      stroke: '#160006',
+      strokeThickness: compactHud ? 3 : 4,
+      slot: 'top',
+      type: 'warning',
+      priority: 6,
+      duration: 1500,
+      y: compactHud ? height * 0.24 : 96,
+      maxWidth: width * (compactHud ? 0.86 : 0.62)
+    });
+
+    const layer = this.uiOverlay || this.gameContainer || this.container;
+    if (!layer || !this.game?.app?.ticker) {
+      AudioManager.playSfx(count >= 3 ? 'swarm_chatter_stinger' : 'enemy_threat_soft_warn', {
+        force: count >= 3,
+        volume: count >= 3 ? 0.68 : 0.34
+      });
+      return true;
+    }
+
+    const overlay = new PIXI.Graphics();
+    overlay.label = 'mayhem_reinforcement_storm_warning';
+    overlay.blendMode = 'add';
+    overlay.alpha = 0.92;
+    layer.addChild(overlay);
+
+    const laneWidth = width / (count + 1);
+    const duration = 1350;
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      const alpha = Math.max(0, 1 - t);
+      overlay.clear();
+      for (let i = 1; i <= count; i += 1) {
+        const x = laneWidth * i;
+        const sweepY = -height * 0.18 + (height * 1.28) * t;
+        const color = i % 2 ? 0xffef7e : 0xff3d7f;
+        overlay.moveTo(x, 0);
+        overlay.lineTo(x, height);
+        overlay.stroke({ color, width: compactHud ? 2 : 3, alpha: 0.18 * alpha });
+        overlay.moveTo(x - 44, sweepY - 40);
+        overlay.lineTo(x + 44, sweepY + 40);
+        overlay.stroke({ color, width: compactHud ? 5 : 7, alpha: 0.55 * alpha });
+      }
+      overlay.rect(0, 0, width, height);
+      overlay.stroke({ color: boss ? 0xff3d7f : 0xffef7e, width: 2, alpha: 0.16 * alpha });
+      if (t >= 1 || this.game?.currentScene !== this) {
+        this.game.app.ticker.remove(ticker);
+        if (overlay.parent) overlay.parent.removeChild(overlay);
+        overlay.destroy?.();
+      }
+    };
+    this.game.app.ticker.add(ticker);
+
+    AudioManager.playSfx(count >= 3 ? 'swarm_chatter_stinger' : 'enemy_threat_soft_warn', {
+      force: count >= 3,
+      volume: count >= 3 ? 0.68 : 0.34
+    });
+    if (count >= 3) this.screenShake?.shake?.(5, 12);
+    return true;
   }
 
   showBossIntro(name, taunt) {
@@ -9739,6 +9822,7 @@ export class PlayScene {
     this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 1.0 });
+    this.showBossTaunt(phase === 2 ? 'boss_half' : 'boss_phase2');
   }
 
   showWantedPoster() {

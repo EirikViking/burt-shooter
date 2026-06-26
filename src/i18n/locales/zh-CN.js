@@ -1,6 +1,16 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ROW CORE": "ROW CORE",
+  "ROW CORE! OARS OUT!": "ROW CORE! Chuanjiang zhankai!",
+  "LONGSHIP PROTOCOL": "LONGSHIP XIEYI",
+  "ROW CORE ALREADY CHARGED +500": "ROW CORE YI CHONGNENG +500",
+  "PERFECT ROW": "WANMEI HUACHUAN",
+  "PERFECT ROW +1000": "WANMEI HUACHUAN +1000",
+  "THE BOSS HEARS THE OARS": "BOSS TINGJIAN LE CHUANJIANG",
+  "PERFECT ROW. ANNOYINGLY HEROIC.": "WANMEI HUACHUAN. YINGXIONG DE LINGREN TOUTENG.",
+  "REINFORCEMENT STORM": "ZENGYUAN FENGBAO",
+  "STORM SURVIVED +{score}": "FENGBAO TINGGUO +{score}",
   "Confirm Exit": "Queren tuichu",
   "STATUS: READY FOR LAUNCH": "Zhuangtai: zhunbei chufa",
   "Unlocked: {reason}": "Yi jiesuo: {reason}",

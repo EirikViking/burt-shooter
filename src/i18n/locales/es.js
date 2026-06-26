@@ -2,6 +2,16 @@ import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
   "SECTOR RUN DECK": "MARCADOR DE SECTOR RUN",
+  "ROW CORE": "NUCLEO ROW",
+  "ROW CORE! OARS OUT!": "¡NUCLEO ROW! ¡REMOS FUERA!",
+  "LONGSHIP PROTOCOL": "PROTOCOLO LONGSHIP",
+  "ROW CORE ALREADY CHARGED +500": "NUCLEO ROW YA CARGADO +500",
+  "PERFECT ROW": "REMO PERFECTO",
+  "PERFECT ROW +1000": "REMO PERFECTO +1000",
+  "THE BOSS HEARS THE OARS": "EL JEFE OYE LOS REMOS",
+  "PERFECT ROW. ANNOYINGLY HEROIC.": "REMO PERFECTO. MOLESTAMENTE HEROICO.",
+  "REINFORCEMENT STORM": "TORMENTA DE REFUERZOS",
+  "STORM SURVIVED +{score}": "TORMENTA SUPERADA +{score}",
   "Steam leaderboard unavailable. Local score is saved.": "Clasificacion de Steam no disponible. La puntuacion local esta guardada.",
   "Steam friends who play Nova Swarm and submit scores will appear here.": "Los amigos de Steam que jueguen Nova Swarm y envien puntuaciones apareceran aqui.",
   "Steam sector run records loaded.": "Registros de Sector Run de Steam cargados.",

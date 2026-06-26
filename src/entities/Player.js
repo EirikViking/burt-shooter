@@ -6,7 +6,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
-import { getPlayerFocusScale } from '../config/AccessibilitySettings.js';
+import { getAccessibilitySettings, getPlayerFocusScale } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
@@ -167,6 +167,22 @@ export class Player {
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
+
+    // Row Core instant ritual state.
+    this.rowCoreActive = false;
+    this.rowCoreStartedAt = 0;
+    this.rowCorePulseStats = [];
+    this.rowCoreTimeouts = [];
+    this.rowCoreVisualTickers = [];
+    this.rowCoreStats = {
+      uses: 0,
+      ignored: 0,
+      perfects: 0,
+      bulletsCleared: 0,
+      enemiesHit: 0,
+      kills: 0,
+      bestBulletsCleared: 0
+    };
 
     // Bomb State
     this.bombShotsLeft = 0;
@@ -1460,6 +1476,349 @@ export class Player {
     return { clearedBullets, hitCount };
   }
 
+  getRowCoreConfig() {
+    return Object.freeze({
+      durationMs: 4200,
+      pulses: [0, 700, 1400, 2100, 2800, 3500],
+      normalRadius: 210,
+      finalRadius: 285,
+      normalDamage: 2,
+      finalDamage: 4,
+      scorePerBullet: 35,
+      scorePerEnemyHit: 75,
+      overlapScore: 500,
+      perfectScore: 1000
+    });
+  }
+
+  clearRowCoreTimers() {
+    for (const timeoutId of this.rowCoreTimeouts || []) {
+      clearTimeout(timeoutId);
+    }
+    this.rowCoreTimeouts = [];
+  }
+
+  triggerRowCore() {
+    const config = this.getRowCoreConfig();
+    const playScene = this.game?.scenes?.play;
+
+    if (this.rowCoreActive) {
+      const appliedScore = this.game?.addScore?.(config.overlapScore, 'row_core_overlap') ?? config.overlapScore;
+      this.rowCoreStats.ignored += 1;
+      playScene?.enqueueToast?.(translateText('ROW CORE ALREADY CHARGED +500'), {
+        fontSize: 18,
+        fill: '#ff6688',
+        stroke: '#110003',
+        strokeThickness: 3,
+        slot: 'top',
+        type: 'powerup',
+        priority: 7,
+        duration: 1100
+      });
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - 38, appliedScore, {
+        prefix: translateText('BONUS'),
+        color: '#ff6688'
+      });
+      AudioManager.playSfx('row_core_drum', { force: true, volume: 0.62, minIntervalMs: 0 });
+      return { started: false, alreadyActive: true, bonus: appliedScore };
+    }
+
+    this.rowCoreActive = true;
+    this.rowCoreStartedAt = Date.now();
+    this.rowCorePulseStats = [];
+    this.clearRowCoreTimers();
+    this.rowCoreStats.uses += 1;
+
+    playScene?.enqueueToast?.(translateText('LONGSHIP PROTOCOL'), {
+      fontSize: this.game?.getWidth?.() < 620 ? 20 : 28,
+      fill: '#ff6688',
+      stroke: '#070009',
+      strokeThickness: 5,
+      slot: 'center',
+      type: 'powerup',
+      priority: 8,
+      duration: 1350,
+      y: (this.game?.getHeight?.() || 720) * 0.36,
+      maxWidth: (this.game?.getWidth?.() || 960) * 0.7
+    });
+    if (playScene?.enemyManager?.boss?.active) {
+      playScene.showBossCombatNotice?.('boss_row_core', translateText('THE BOSS HEARS THE OARS'));
+    }
+
+    AudioManager.playSfx('row_core_pickup', { force: true, volume: 0.78, minIntervalMs: 0 });
+    AudioManager.playSfx('row_core_horn', { force: true, volume: 0.82, minIntervalMs: 0 });
+    AudioManager.playVoice?.('mission_control_row_core', {
+      force: true,
+      cooldownMs: 30000,
+      duckMs: 2200,
+      voicePriority: 5
+    });
+
+    config.pulses.forEach((delayMs, index) => {
+      const timeoutId = setTimeout(() => {
+        this.rowCoreTimeouts = (this.rowCoreTimeouts || []).filter(id => id !== timeoutId);
+        this.pulseRowCore(playScene || this.game?.scenes?.play, index, config.pulses.length);
+      }, delayMs);
+      this.rowCoreTimeouts.push(timeoutId);
+    });
+
+    const finalDelay = config.pulses[config.pulses.length - 1] + 720;
+    const cleanupId = setTimeout(() => {
+      this.rowCoreTimeouts = (this.rowCoreTimeouts || []).filter(id => id !== cleanupId);
+      this.endRowCoreSequence(playScene || this.game?.scenes?.play);
+    }, finalDelay);
+    this.rowCoreTimeouts.push(cleanupId);
+
+    return { started: true, pulses: config.pulses.length };
+  }
+
+  pulseRowCore(playScene = this.game?.scenes?.play, index = 0, total = 6) {
+    const config = this.getRowCoreConfig();
+    const finalPulse = index >= total - 1;
+    const radius = finalPulse ? config.finalRadius : config.normalRadius;
+    const damage = finalPulse ? config.finalDamage : config.normalDamage;
+    const pulseColor = finalPulse ? 0xffffff : (index % 2 === 0 ? 0xff2244 : 0x22ccff);
+    let bulletsCleared = 0;
+    let enemiesHit = 0;
+    let kills = 0;
+
+    if (playScene?.bulletManager && Array.isArray(playScene.bulletManager.enemyBullets)) {
+      const remainingBullets = [];
+      for (const bullet of playScene.bulletManager.enemyBullets) {
+        if (!bullet?.active) continue;
+        const distance = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
+        if (distance <= radius) {
+          bullet.active = false;
+          bulletsCleared += 1;
+          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+          playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, pulseColor, finalPulse ? 1.25 : 0.85);
+        } else {
+          remainingBullets.push(bullet);
+        }
+      }
+      playScene.bulletManager.enemyBullets = remainingBullets;
+    }
+
+    const enemyTargets = Array.isArray(playScene?.enemyManager?.enemies)
+      ? [...playScene.enemyManager.enemies]
+      : [];
+    const hijacker = playScene?.enemyManager?.hijacker;
+    if (hijacker?.active && !enemyTargets.includes(hijacker)) enemyTargets.push(hijacker);
+
+    const width = Number(this.game?.getWidth?.()) || Number(playScene?.game?.getWidth?.()) || 960;
+    const height = Number(this.game?.getHeight?.()) || Number(playScene?.game?.getHeight?.()) || 720;
+    const pushStrength = finalPulse ? 58 : 36;
+
+    for (const enemy of enemyTargets) {
+      if (!enemy?.active || enemy.kind === 'boss') continue;
+      const dx = (enemy.x || 0) - this.x;
+      const dy = (enemy.y || 0) - this.y;
+      const distance = Math.hypot(dx, dy);
+      if (distance > radius) continue;
+
+      enemiesHit += 1;
+      const safeDistance = Math.max(1, distance);
+      const pushX = (dx / safeDistance) * pushStrength;
+      const pushY = (dy / safeDistance) * pushStrength - (finalPulse ? 18 : 10);
+      enemy.x = Math.max(20, Math.min(width - 20, (enemy.x || 0) + pushX));
+      enemy.y = Math.max(42, Math.min(height - 96, (enemy.y || 0) + pushY));
+      if (enemy.sprite) {
+        enemy.sprite.x = enemy.x;
+        enemy.sprite.y = enemy.y;
+      }
+
+      let destroyed = false;
+      try {
+        destroyed = typeof enemy.takeDamage === 'function' ? enemy.takeDamage(damage) : false;
+      } catch (error) {
+        console.warn('[RowCore] enemy damage failed', error);
+      }
+      playScene.particleManager?.createHitSpark?.(enemy.x, enemy.y, pulseColor, finalPulse ? 1.35 : 0.9);
+      if (destroyed || enemy.active === false || enemy.health <= 0) {
+        kills += 1;
+        playScene.onEnemyKilled?.(enemy);
+        playScene.playEnemyDeathFeedback?.(enemy, { color: pulseColor, intensity: finalPulse ? 0.9 : 0.62, volume: 0.38 });
+        playScene.enemyManager?.removeEnemySprite?.(enemy, 'row_core');
+      }
+    }
+
+    const score = bulletsCleared * config.scorePerBullet + enemiesHit * config.scorePerEnemyHit;
+    const appliedScore = score > 0 ? (this.game?.addScore?.(score, 'row_core') ?? score) : 0;
+    if (appliedScore > 0) {
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - (finalPulse ? 52 : 34), appliedScore, {
+        prefix: 'ROW',
+        color: finalPulse ? '#ffffff' : '#ff6688'
+      });
+    }
+
+    const stats = {
+      index,
+      finalPulse,
+      radius,
+      damage,
+      bulletsCleared,
+      enemiesHit,
+      kills,
+      score: appliedScore,
+      useful: bulletsCleared > 0 || enemiesHit > 0
+    };
+    this.rowCorePulseStats[index] = stats;
+    this.rowCoreStats.bulletsCleared += bulletsCleared;
+    this.rowCoreStats.enemiesHit += enemiesHit;
+    this.rowCoreStats.kills += kills;
+
+    AudioManager.playSfx(finalPulse ? 'row_core_chant_big' : 'row_core_chant', {
+      force: true,
+      volume: finalPulse ? 0.95 : 0.82,
+      minIntervalMs: 0
+    });
+    AudioManager.playSfx('row_core_wave', {
+      volume: finalPulse ? 0.72 : 0.52,
+      minIntervalMs: 0
+    });
+    if (index === 0) AudioManager.playSfx('row_core_drum', { force: true, volume: 0.72, minIntervalMs: 0 });
+
+    const shakeScale = Math.max(0, Number(getAccessibilitySettings().screenShake) || 0);
+    if (shakeScale > 0) {
+      playScene?.screenShake?.shake?.((finalPulse ? 9 : 4) * shakeScale, (finalPulse ? 18 : 10) * shakeScale);
+    }
+    this.createRowCoreWave(playScene, radius, index, { finalPulse, color: pulseColor });
+
+    return stats;
+  }
+
+  createRowCoreWave(playScene = this.game?.scenes?.play, radius = 210, index = 0, options = {}) {
+    const container = playScene?.gameContainer || playScene?.container || playScene?.uiOverlay;
+    if (!container) return null;
+
+    const finalPulse = Boolean(options.finalPulse);
+    const color = Number.isFinite(options.color) ? options.color : (finalPulse ? 0xffffff : 0xff2244);
+    const accent = finalPulse ? 0xff2244 : 0x22ccff;
+    const visual = new PIXI.Container();
+    visual.label = `row_core_wave_${index}`;
+    visual.x = this.x;
+    visual.y = this.y;
+    visual.blendMode = 'add';
+
+    const ring = new PIXI.Graphics();
+    const oars = new PIXI.Graphics();
+    const sparks = new PIXI.Graphics();
+    visual.addChild(ring, oars, sparks);
+
+    const chantText = createText('RO!', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: finalPulse ? 38 : 28,
+      fill: finalPulse ? '#ffffff' : '#ff6688',
+      stroke: '#090012',
+      strokeThickness: finalPulse ? 5 : 4,
+      fontWeight: '900'
+    });
+    chantText.anchor.set(0.5);
+    chantText.y = finalPulse ? -60 : -48;
+    chantText.blendMode = 'add';
+    visual.addChild(chantText);
+
+    container.addChild(visual);
+    const duration = finalPulse ? 520 : 420;
+    let elapsed = 0;
+    const ticker = (delta) => {
+      const deltaMs = (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      elapsed += deltaMs;
+      const t = Math.min(1, elapsed / duration);
+      const easeOut = 1 - Math.pow(1 - t, 2);
+      const currentRadius = 22 + (radius - 22) * easeOut;
+      const alpha = Math.max(0, 1 - t);
+      ring.clear();
+      ring.circle(0, 0, currentRadius);
+      ring.stroke({ color, width: finalPulse ? 6 : 4, alpha: 0.82 * alpha });
+      ring.circle(0, 0, currentRadius * 0.72);
+      ring.stroke({ color: accent, width: finalPulse ? 3 : 2, alpha: 0.5 * alpha });
+
+      oars.clear();
+      const sweep = 44 + 42 * easeOut;
+      const strokeWidth = finalPulse ? 8 : 5;
+      for (const side of [-1, 1]) {
+        const x1 = side * (24 + sweep * 0.36);
+        const x2 = side * (72 + sweep);
+        oars.moveTo(x1, -18 - sweep * 0.12);
+        oars.lineTo(x2, 28 + sweep * 0.24);
+        oars.stroke({ color: side < 0 ? accent : color, width: strokeWidth, alpha: 0.78 * alpha });
+        oars.moveTo(x1 * 0.72, 20 + sweep * 0.06);
+        oars.lineTo(x2 * 0.84, -30 - sweep * 0.12);
+        oars.stroke({ color: 0xffffff, width: Math.max(2, strokeWidth * 0.45), alpha: 0.46 * alpha });
+      }
+
+      sparks.clear();
+      const sparkCount = finalPulse ? 18 : 10;
+      for (let i = 0; i < sparkCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / sparkCount + index * 0.36;
+        const inner = currentRadius * 0.42;
+        const outer = currentRadius * (0.75 + (i % 3) * 0.08);
+        sparks.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        sparks.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        sparks.stroke({ color: i % 2 ? accent : color, width: finalPulse ? 2.4 : 1.6, alpha: 0.34 * alpha });
+      }
+
+      chantText.alpha = alpha;
+      chantText.y = (finalPulse ? -60 : -48) - t * 24;
+      chantText.scale.set(1 + t * (finalPulse ? 0.42 : 0.25));
+      visual.alpha = Math.max(0, alpha);
+
+      if (t >= 1 || (this.game?.currentScene && this.game.currentScene !== playScene)) {
+        playScene?.game?.app?.ticker?.remove?.(ticker);
+        this.rowCoreVisualTickers = (this.rowCoreVisualTickers || []).filter(entry => entry !== ticker);
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      }
+    };
+
+    if (playScene?.game?.app?.ticker?.add) {
+      playScene.game.app.ticker.add(ticker);
+      this.rowCoreVisualTickers.push(ticker);
+    } else {
+      setTimeout(() => {
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      }, duration);
+    }
+
+    return visual;
+  }
+
+  endRowCoreSequence(playScene = this.game?.scenes?.play) {
+    const config = this.getRowCoreConfig();
+    this.clearRowCoreTimers();
+    const pulseStats = Array.from({ length: config.pulses.length }, (_, index) => this.rowCorePulseStats[index] || null);
+    const allUseful = pulseStats.length === config.pulses.length && pulseStats.every(stats => stats?.useful);
+    const bulletsCleared = pulseStats.reduce((sum, stats) => sum + (Number(stats?.bulletsCleared) || 0), 0);
+    this.rowCoreStats.bestBulletsCleared = Math.max(this.rowCoreStats.bestBulletsCleared || 0, bulletsCleared);
+
+    if (allUseful) {
+      const appliedScore = this.game?.addScore?.(config.perfectScore, 'row_core_perfect') ?? config.perfectScore;
+      this.rowCoreStats.perfects += 1;
+      playScene?.enqueueToast?.(translateText('PERFECT ROW +1000'), {
+        fontSize: this.game?.getWidth?.() < 620 ? 18 : 24,
+        fill: '#ffffff',
+        stroke: '#140006',
+        strokeThickness: 4,
+        slot: 'top',
+        type: 'powerup',
+        priority: 8,
+        duration: 1550
+      });
+      playScene?.scorePopupManager?.addScorePopup?.(this.x, this.y - 54, appliedScore, {
+        prefix: translateText('BONUS'),
+        color: '#ffffff'
+      });
+      playScene?.showBossCombatNotice?.('boss_row_core_perfect', translateText('PERFECT ROW. ANNOYINGLY HEROIC.'));
+      AudioManager.playSfx('row_core_perfect', { force: true, volume: 0.9, minIntervalMs: 0 });
+    }
+
+    this.rowCoreActive = false;
+    this.rowCoreStartedAt = 0;
+    return { allUseful, bulletsCleared, pulseStats };
+  }
+
   getStatSnapshot() {
     const shots = this.multiShot + this.rankBoostExtraShots;
     const trait = this.shipTrait?.label ? this.shipTrait.label.replace(/\s+/g, '_') : 'none';
@@ -1835,6 +2194,14 @@ export class Player {
       addTimedState(this.activePowerup.type, now + this.getActivePowerupRemainingMs(now), {
         durationMode: this.activePowerup.durationMode || 'wall_clock',
         ...getPrimaryStateDetail(this.activePowerup.type)
+      });
+    }
+
+    if (this.rowCoreActive) {
+      const config = this.getRowCoreConfig();
+      const elapsed = now - (Number(this.rowCoreStartedAt) || now);
+      addTimedState('row_core', now + Math.max(0, config.durationMs - elapsed), {
+        detail: 'LONGSHIP'
       });
     }
 
@@ -2246,6 +2613,12 @@ export class Player {
     const effect = meta?.effect || {};
     const now = Date.now();
     const durationMs = Math.max(0, Number(effect.durationMs || 12000));
+    if (type === 'row_core' || effect.rowCore) {
+      this.triggerRowCore();
+      this.notePowerup(type);
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
     if (type !== 'shield' && this.activePowerup.type === type) {
       this.setActivePowerupDuration(type, durationMs, now);
       if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;

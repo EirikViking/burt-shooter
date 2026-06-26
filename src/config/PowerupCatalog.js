@@ -451,6 +451,20 @@ const NEW_POWERUPS = [
     effect: { instant: true, shockwave: true, shockwaveRadius: 290, shockwaveDamage: 3, shockwaveColor: 0x8aefff }
   },
   {
+    id: 'row_core',
+    name: 'ROW CORE',
+    shortLabel: 'ROW',
+    color: 0xff2244,
+    duration: '4.2 second ritual',
+    effectDescription: 'six rhythmic Longship Protocol pulses that clear bullets, push enemies, and pay score',
+    read: 'a crowd-powered panic window that still asks you to steer',
+    when: 'bullet hell gets dense and you want the cabinet to row with you',
+    tip: 'Stay near danger without face-tanking it. Every useful pulse pushes the Perfect Row bonus closer.',
+    pickupMessage: 'ROW CORE! OARS OUT!',
+    sfx: 'row_core_pickup',
+    effect: { instant: true, rowCore: true }
+  },
+  {
     id: 'aegis_burst',
     name: 'AEGIS BURST',
     shortLabel: 'AEGIS',
