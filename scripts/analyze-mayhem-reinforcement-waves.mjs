@@ -36,6 +36,8 @@ const simulateRun = ({ seed, profile, enabled }) => {
   let deaths = 0;
   let reinforcements = 0;
   let reinforcementDeaths = 0;
+  let doubleReinforcementEvents = 0;
+  let reinforcementWaves = 0;
   let wavesCleared = 0;
   let bossEncounters = 0;
   let reinforcementEligibleMisses = 0;
@@ -68,22 +70,31 @@ const simulateRun = ({ seed, profile, enabled }) => {
       const eligible = canAttemptReinforcement && (naturalHit || firstPityReady() || repeatPityReady());
       if (eligible) {
         const nextEnemies = enemyCountFor(sector, wave + 1);
+        const hasSecondWave = wave + 2 < 5;
+        const canDouble = sector >= config.doubleWaveMinLevel &&
+          (!config.doubleWaveRequiresPriorReinforcement || reinforcementSpawned > 0) &&
+          hasSecondWave &&
+          rollFor(seed, sector, wave, 'mayhem-reinforcement-double-wave') < config.doubleWaveChance;
+        const secondEnemies = canDouble ? enemyCountFor(sector, wave + 2) : 0;
+        const consumedWaves = canDouble ? 2 : 1;
         const pressureRoll = rollFor(seed, sector, wave, `pressure-${profile.id}`);
-        const pressureDeathRisk = Math.min(0.18, profile.pressureRisk + sector * 0.00045);
+        const pressureDeathRisk = Math.min(0.2, profile.pressureRisk + sector * 0.00045 + (canDouble ? 0.012 : 0));
         reinforcements += 1;
+        reinforcementWaves += consumedWaves;
+        if (canDouble) doubleReinforcementEvents += 1;
         reinforcementSpawned += 1;
         reinforcementEligibleMisses = 0;
-        seconds += config.warningMs / 1000 + waveSeconds + Math.max(3.8, nextEnemies * 0.3);
-        score += (enemies + nextEnemies) * 48 * profile.scoreMult;
-        xp += (enemies + nextEnemies) * 2.25 * profile.xpMult;
-        wavesCleared += 2;
+        seconds += config.warningMs / 1000 + waveSeconds + Math.max(3.8, (nextEnemies + secondEnemies) * 0.3);
+        score += (enemies + nextEnemies + secondEnemies) * 48 * profile.scoreMult;
+        xp += (enemies + nextEnemies + secondEnemies) * 2.25 * profile.xpMult;
+        wavesCleared += 1 + consumedWaves;
         if (pressureRoll < pressureDeathRisk) {
           deaths += 1;
           reinforcementDeaths += 1;
           lives -= 1;
           seconds += 1.2;
         }
-        wave += 2;
+        wave += 1 + consumedWaves;
         continue;
       }
       if (canAttemptReinforcement) reinforcementEligibleMisses += 1;
@@ -110,6 +121,17 @@ const simulateRun = ({ seed, profile, enabled }) => {
       deaths += 1;
       lives -= 1;
     }
+    if (
+      enabled &&
+      sector >= 2 &&
+      rollFor(seed, sector, 0, 'mayhem-boss-reinforcement') < config.bossFightChance
+    ) {
+      const bossReinforcementEnemies = sector <= 4 ? 2 : sector <= 9 ? 3 : 4;
+      seconds += config.warningMs / 1000 + Math.max(3.2, bossReinforcementEnemies * 0.55);
+      score += bossReinforcementEnemies * 42 * profile.scoreMult;
+      xp += bossReinforcementEnemies * 1.9 * profile.xpMult;
+      reinforcementWaves += 1;
+    }
     score += 1250 * profile.scoreMult + sector * 42;
     xp += 55 * profile.xpMult + sector * 1.6;
     sector += 1;
@@ -128,6 +150,8 @@ const simulateRun = ({ seed, profile, enabled }) => {
     deaths,
     livesRemaining: Math.max(0, lives),
     reinforcements,
+    reinforcementWaves,
+    doubleReinforcementEvents,
     reinforcementDeaths,
     wavesCleared,
     bossEncounters
@@ -150,6 +174,8 @@ const summarize = (runs) => {
     xpPerMinute: Math.round(average('xpPerMinute')),
     averageDeaths: Number(average('deaths').toFixed(2)),
     averageReinforcements: Number(average('reinforcements').toFixed(2)),
+    averageReinforcementWaves: Number(average('reinforcementWaves').toFixed(2)),
+    averageDoubleReinforcementEvents: Number(average('doubleReinforcementEvents').toFixed(2)),
     averageReinforcementDeaths: Number(average('reinforcementDeaths').toFixed(2)),
     averageWavesCleared: Number(average('wavesCleared').toFixed(2)),
     p250k: Number((runs.filter((run) => run.score >= 250000).length / runs.length).toFixed(3)),

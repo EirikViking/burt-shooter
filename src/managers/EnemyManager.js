@@ -246,6 +246,11 @@ export class EnemyManager {
     this.mayhemReinforcementRunMissedWaveKeys = new Set();
     this.mayhemReinforcementEligibleMisses = 0;
     this.mayhemReinforcementRunSpawned = 0;
+    this.bossReinforcementState = null;
+    this.bossReinforcementAttemptIndex = 0;
+    this.bossReinforcementEventsThisBoss = 0;
+    this.bossReinforcementNextCheckAtMs = 0;
+    this.bossReinforcementCooldownUntilMs = 0;
     this.mayhemReinforcementStats = {
       scheduled: 0,
       spawned: 0,
@@ -277,6 +282,11 @@ export class EnemyManager {
     this.bossFuelShipCooldownUntilMs = 0;
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
+    this.bossReinforcementState = null;
+    this.bossReinforcementAttemptIndex = 0;
+    this.bossReinforcementEventsThisBoss = 0;
+    this.bossReinforcementNextCheckAtMs = 0;
+    this.bossReinforcementCooldownUntilMs = 0;
     this.directorState = { tier: 0, spawnCadenceScale: 1, eliteChance: 0.02, clutchDropChance: 0.04 };
     this.lastAlienAttackBarkAt = 0;
     this.alienAttackBarkWindowCount = 0;
@@ -447,6 +457,11 @@ export class EnemyManager {
     this.bossFuelShipCooldownUntilMs = 0;
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
+    this.bossReinforcementState = null;
+    this.bossReinforcementAttemptIndex = 0;
+    this.bossReinforcementEventsThisBoss = 0;
+    this.bossReinforcementNextCheckAtMs = 0;
+    this.bossReinforcementCooldownUntilMs = 0;
   }
 
   enableMarketingDebugMode() {
@@ -1011,6 +1026,11 @@ export class EnemyManager {
     if (config.enabled !== true) return null;
     return {
       chance: Math.max(0, Math.min(1, Number(config.chance) || 0)),
+      bossFightChance: Math.max(0, Math.min(1, Number(config.bossFightChance ?? config.chance) || 0)),
+      bossFightMinAgeMs: Math.max(0, Number(config.bossFightMinAgeMs) || 8000),
+      bossFightCheckIntervalMs: Math.max(1000, Number(config.bossFightCheckIntervalMs) || 3600),
+      bossFightCooldownMs: Math.max(3000, Number(config.bossFightCooldownMs) || 14500),
+      bossFightMaxEvents: Math.max(0, Math.floor(Number(config.bossFightMaxEvents) || 0)),
       minWaveAgeMs: Math.max(0, Number(config.minWaveAgeMs) || 0),
       minClearRatio: Math.max(0, Math.min(1, Number(config.minClearRatio) || 0.75)),
       maxActiveEnemies: Math.max(0, Math.floor(Number(config.maxActiveEnemies) || 0)),
@@ -1021,6 +1041,9 @@ export class EnemyManager {
       firstPityMinLevel: Math.max(1, Math.floor(Number(config.firstPityMinLevel) || 6)),
       firstPityMaxLevel: Math.max(1, Math.floor(Number(config.firstPityMaxLevel) || 9)),
       repeatPityEligibleMisses: Math.max(1, Math.floor(Number(config.repeatPityEligibleMisses) || 24)),
+      doubleWaveChance: Math.max(0, Math.min(1, Number(config.doubleWaveChance) || 0)),
+      doubleWaveMinLevel: Math.max(1, Math.floor(Number(config.doubleWaveMinLevel) || 8)),
+      doubleWaveRequiresPriorReinforcement: config.doubleWaveRequiresPriorReinforcement !== false,
       pityMinWaveAgeMs: Math.max(0, Number(config.pityMinWaveAgeMs) || 3200),
       pityMinClearRatio: Math.max(0, Math.min(1, Number(config.pityMinClearRatio) || 0.25)),
       pityMaxActiveEnemies: Math.max(0, Math.floor(Number(config.pityMaxActiveEnemies) || 12)),
@@ -1028,9 +1051,9 @@ export class EnemyManager {
     };
   }
 
-  getStableReinforcementRoll(level = this.level, waveIndex = this.currentWaveIndex) {
+  getStableReinforcementRoll(level = this.level, waveIndex = this.currentWaveIndex, salt = 'mayhem-reinforcement') {
     const seed = String(this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm');
-    const input = `${seed}:mayhem-reinforcement:${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
+    const input = `${seed}:${salt}:${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
     let hash = 2166136261;
     for (let i = 0; i < input.length; i += 1) {
       hash ^= input.charCodeAt(i);
@@ -1096,11 +1119,17 @@ export class EnemyManager {
     return expected;
   }
 
+  isMayhemReinforcementWaveConfig(config) {
+    return Boolean(config && config.type !== 'BOSS' && config.type !== 'bonus_challenge' && !config.isChallenge);
+  }
+
   getMayhemReinforcementEligibility(objectiveCount = this.getObjectiveEnemyCount()) {
     const config = this.getMayhemReinforcementConfig();
     const currentWaveIndex = Math.max(0, Math.floor(Number(this.currentWaveIndex) || 0));
     const nextWaveIndex = currentWaveIndex + 1;
+    const secondWaveIndex = currentWaveIndex + 2;
     const nextWave = this.waves?.[nextWaveIndex] || null;
+    const secondWave = this.waves?.[secondWaveIndex] || null;
     const currentWave = this.waves?.[currentWaveIndex] || null;
     const playScene = this.game?.scenes?.play || null;
     const activeEnemyBullets = playScene?.bulletManager?.enemyBullets
@@ -1128,6 +1157,7 @@ export class EnemyManager {
     if (activeEnemyBullets > (config?.maxActiveEnemyBullets || 0)) reasons.push('too_many_bullets');
 
     const roll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex) : 1;
+    const doubleWaveRoll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex, 'mayhem-reinforcement-double-wave') : 1;
     const hardReasons = reasons.filter((reason) => MAYHEM_REINFORCEMENT_HARD_REASONS.has(reason));
     const pityReady = Boolean(config && roll >= config.chance && this.shouldForceMayhemReinforcementByPity(config));
     const pityRelaxed = Boolean(pityReady &&
@@ -1145,6 +1175,13 @@ export class EnemyManager {
     }
     const pityForced = Boolean(config && reasons.length === 0 && roll >= config.chance && this.shouldForceMayhemReinforcementByPity(config));
     if (config && roll >= config.chance && !pityForced) reasons.push('roll_failed');
+    const level = Math.max(1, Math.floor(Number(this.level) || 1));
+    const canDoubleWave = Boolean(config &&
+      level >= config.doubleWaveMinLevel &&
+      (!config.doubleWaveRequiresPriorReinforcement || this.mayhemReinforcementRunSpawned > 0) &&
+      secondWaveIndex < this.normalWavesTotal &&
+      this.isMayhemReinforcementWaveConfig(secondWave) &&
+      doubleWaveRoll < config.doubleWaveChance);
 
     const result = {
       eligible: reasons.length === 0,
@@ -1154,13 +1191,17 @@ export class EnemyManager {
       config,
       currentWaveIndex,
       nextWaveIndex,
+      secondWaveIndex,
       objectiveCount,
       expected,
       clearRatio,
       activeEnemyBullets,
       waveAgeMs,
       roll,
+      doubleWaveRoll,
       chance: config?.chance || 0,
+      doubleWaveChance: config?.doubleWaveChance || 0,
+      reinforcementWaveIndices: reasons.length === 0 && canDoubleWave ? [nextWaveIndex, secondWaveIndex] : [nextWaveIndex],
       pityForced,
       pityRelaxed,
       eligibleMisses: this.mayhemReinforcementEligibleMisses || 0,
@@ -1183,6 +1224,7 @@ export class EnemyManager {
     this.mayhemReinforcementState = {
       currentWaveIndex: eligibility.currentWaveIndex,
       reinforcementWaveIndex: eligibility.nextWaveIndex,
+      reinforcementWaveIndices: eligibility.reinforcementWaveIndices,
       scheduledAt: now,
       spawnAt: now + warningMs,
       warningMs,
@@ -1195,8 +1237,9 @@ export class EnemyManager {
     this.fireMayhemReinforcementWarning(this.mayhemReinforcementState);
     console.log(
       `[MayhemReinforcement] scheduled level=${this.level}` +
-      ` wave=${eligibility.currentWaveIndex + 1}->${eligibility.nextWaveIndex + 1}` +
+      ` wave=${eligibility.currentWaveIndex + 1}->${eligibility.reinforcementWaveIndices.map((index) => index + 1).join('+')}` +
       ` roll=${eligibility.roll.toFixed(4)} chance=${eligibility.chance}` +
+      ` doubleRoll=${eligibility.doubleWaveRoll.toFixed(4)} doubleChance=${eligibility.doubleWaveChance}` +
       ` clear=${eligibility.clearRatio.toFixed(2)} enemies=${eligibility.objectiveCount}/${eligibility.expected}` +
       ` bullets=${eligibility.activeEnemyBullets}` +
       ` pity=${eligibility.pityForced ? 'yes' : 'no'} misses=${eligibility.eligibleMisses}`
@@ -1246,29 +1289,120 @@ export class EnemyManager {
     }
     if (Date.now() < state.spawnAt) return false;
 
-    const config = this.waves?.[state.reinforcementWaveIndex];
-    if (!config || config.type === 'BOSS' || config.type === 'bonus_challenge' || config.isChallenge) {
+    const reinforcementWaveIndices = Array.isArray(state.reinforcementWaveIndices) && state.reinforcementWaveIndices.length
+      ? state.reinforcementWaveIndices
+      : [state.reinforcementWaveIndex];
+    const configs = reinforcementWaveIndices.map((waveIndex) => this.waves?.[waveIndex] || null);
+    if (!configs.length || configs.some((config) => !this.isMayhemReinforcementWaveConfig(config))) {
       this.mayhemReinforcementState = null;
       return false;
     }
 
     state.spawned = true;
-    this.mayhemReinforcementConsumedWaveIndices.add(state.reinforcementWaveIndex);
-    this.mayhemReinforcementStats.spawned += 1;
+    for (const waveIndex of reinforcementWaveIndices) {
+      this.mayhemReinforcementConsumedWaveIndices.add(waveIndex);
+    }
+    this.mayhemReinforcementStats.spawned += reinforcementWaveIndices.length;
     this.mayhemReinforcementRunSpawned = Math.max(0, Math.floor(Number(this.mayhemReinforcementRunSpawned) || 0)) + 1;
     this.mayhemReinforcementEligibleMisses = 0;
     this.mayhemReinforcementRunMissedWaveKeys?.clear();
-    this.measurePerformance('mayhem_reinforcement.spawn_wave', () => this.spawnWave({
-      ...config,
-      isMayhemReinforcement: true,
-      reinforcedFromWaveIndex: state.currentWaveIndex
-    }));
+    configs.forEach((config, index) => {
+      this.measurePerformance('mayhem_reinforcement.spawn_wave', () => this.spawnWave({
+        ...config,
+        entry: index % 2 === 0 ? 'split' : 'alternating',
+        isMayhemReinforcement: true,
+        reinforcedFromWaveIndex: state.currentWaveIndex,
+        reinforcementGroupIndex: index,
+        reinforcementGroupCount: configs.length,
+        reinforcementEntryDelayMs: index * 420,
+        reinforcementLaneOffsetPx: configs.length > 1 ? (index === 0 ? -42 : 42) : 0,
+        allowConcurrentSpawn: index > 0
+      }));
+    });
     console.log(
       `[MayhemReinforcement] spawned level=${this.level}` +
-      ` wave=${state.reinforcementWaveIndex + 1}/${this.normalWavesTotal}` +
+      ` waves=${reinforcementWaveIndices.map((index) => index + 1).join('+')}/${this.normalWavesTotal}` +
       ` warningLeadMs=${Math.round(this.mayhemReinforcementStats.lastWarningLeadMs || 0)}`
     );
     return true;
+  }
+
+  maybeScheduleBossMayhemReinforcement() {
+    const config = this.getMayhemReinforcementConfig();
+    if (!config || config.bossFightChance <= 0 || config.bossFightMaxEvents <= 0) return false;
+    if (this.game?.runMode !== RUN_MODES.RANKED) return false;
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return false;
+    if (this.bossReinforcementState && !this.bossReinforcementState.spawned) return false;
+    if (this.bossReinforcementEventsThisBoss >= config.bossFightMaxEvents) return false;
+
+    const now = Date.now();
+    const bossAgeMs = now - (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now);
+    if (bossAgeMs < config.bossFightMinAgeMs) return false;
+    if (now < this.bossReinforcementCooldownUntilMs || now < this.bossReinforcementNextCheckAtMs) return false;
+
+    const playScene = this.game?.scenes?.play;
+    const activeBossAdds = this.enemies.filter((enemy) =>
+      enemy?.kind !== 'boss' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
+    const level = Math.max(1, Math.floor(Number(this.level) || 1));
+    const addCap = level <= 4 ? 4 : level <= 9 ? 6 : 8;
+    const bulletCap = level <= 4 ? 18 : level <= 9 ? 26 : 34;
+    if (activeBossAdds > addCap || activeBullets > bulletCap) {
+      this.bossReinforcementNextCheckAtMs = now + Math.round(config.bossFightCheckIntervalMs * 0.75);
+      return false;
+    }
+    if (playScene?.lastHitAt && now - playScene.lastHitAt < 4200) {
+      this.bossReinforcementNextCheckAtMs = now + Math.round(config.bossFightCheckIntervalMs * 0.75);
+      return false;
+    }
+
+    const attemptIndex = Math.max(0, Math.floor(Number(this.bossReinforcementAttemptIndex) || 0));
+    const roll = this.getStableReinforcementRoll(level, attemptIndex, 'mayhem-boss-reinforcement');
+    this.bossReinforcementAttemptIndex = attemptIndex + 1;
+    this.bossReinforcementNextCheckAtMs = now + config.bossFightCheckIntervalMs + Math.random() * 1600;
+    if (roll >= config.bossFightChance) return false;
+
+    this.bossReinforcementState = {
+      bossLevel: level,
+      attemptIndex,
+      scheduledAt: now,
+      spawnAt: now + config.warningMs,
+      warningMs: config.warningMs,
+      warningFired: false,
+      spawned: false,
+      roll
+    };
+    this.fireMayhemReinforcementWarning(this.bossReinforcementState);
+    this.bossReinforcementCooldownUntilMs = now + config.bossFightCooldownMs;
+    this.mayhemReinforcementStats.scheduled += 1;
+    console.log(
+      `[MayhemReinforcement] boss_scheduled level=${level}` +
+      ` attempt=${attemptIndex} roll=${roll.toFixed(4)} chance=${config.bossFightChance}`
+    );
+    return true;
+  }
+
+  updateBossMayhemReinforcement() {
+    const state = this.bossReinforcementState;
+    if (!state || state.spawned) return false;
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) {
+      this.bossReinforcementState = null;
+      return false;
+    }
+    if (Date.now() < state.spawnAt) return false;
+    const spawned = this.spawnBossMayhemReinforcementWave();
+    state.spawned = true;
+    if (spawned > 0) {
+      this.bossReinforcementEventsThisBoss += 1;
+      this.mayhemReinforcementStats.spawned += 1;
+      console.log(
+        `[MayhemReinforcement] boss_spawned level=${this.level}` +
+        ` count=${spawned} warningLeadMs=${Math.round(this.mayhemReinforcementStats.lastWarningLeadMs || 0)}`
+      );
+      return true;
+    }
+    return false;
   }
 
   hasPendingMayhemReinforcement() {
@@ -1520,6 +1654,8 @@ export class EnemyManager {
             });
           }
         }
+        this.updateBossMayhemReinforcement();
+        this.maybeScheduleBossMayhemReinforcement();
         this.maybeTriggerBossChaos();
         this.maybeSpawnBossFuelShip();
         break;
@@ -1876,7 +2012,9 @@ export class EnemyManager {
       type: config?.type,
       count: config?.count
     });
-    this.clearPendingWaveSpawns();
+    if (!config.allowConcurrentSpawn) {
+      this.clearPendingWaveSpawns();
+    }
     if (config.type === 'BOSS') {
       AudioManager.playVoice('mission_control_boss_inbound', { cooldownMs: 14000, duckMs: 1800, bypassGlobalCooldown: true });
       this.spawnBoss(this.level); // Fire and forget
@@ -1894,6 +2032,16 @@ export class EnemyManager {
       this.currentNormalWaveDifficultyLevel = normalWaveLevel;
       tactic = { ...this.resolveWaveTactic(config) };
       positions = this.getFormationPositions(formation, count);
+      if (config.isMayhemReinforcement && Number(config.reinforcementGroupCount) > 1) {
+        const laneOffset = Number(config.reinforcementLaneOffsetPx) || 0;
+        const groupIndex = Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0));
+        const yOffset = groupIndex % 2 === 0 ? -10 : 18;
+        positions = positions.map((pos) => ({
+          ...pos,
+          x: Math.max(36, Math.min(this.game.getWidth() - 36, pos.x + laneOffset)),
+          y: Math.max(56, pos.y + yOffset)
+        }));
+      }
       threatPlan = this.createThreatActionPlan({ count, formation, tactic, config, level: normalWaveLevel });
     });
     this.currentNormalWaveDifficultyLevel = normalWaveLevel;
@@ -1943,8 +2091,8 @@ export class EnemyManager {
     const dangerAssignments = new Map((Array.isArray(config.dangerMidShipIds) ? config.dangerMidShipIds : [])
       .map((entry) => [Number(entry.slot), getDangerMidShipProfile(entry.id)])
       .filter((entry) => Number.isFinite(entry[0]) && entry[1]));
-    this.spawning = positions.length > 0;
-    this.waveSpawnPendingCount = positions.length;
+    this.spawning = this.spawning || positions.length > 0;
+    this.waveSpawnPendingCount = Math.max(0, Number(this.waveSpawnPendingCount) || 0) + positions.length;
 
     const markWaveSpawnDone = () => {
       this.waveSpawnPendingCount = Math.max(0, (Number(this.waveSpawnPendingCount) || 0) - 1);
@@ -2008,7 +2156,7 @@ export class EnemyManager {
         if (enemyTactic.forcedDive) {
           enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
         }
-        const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs);
+        const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, entryDelayMs);
         this.enemies.push(enemy);
         this.container.addChild(enemy.sprite);
@@ -2797,6 +2945,11 @@ export class EnemyManager {
       this.bossChaosNextCheckAtMs = Date.now() + 8000 + Math.random() * 4000;
       this.bossChaosCooldownUntilMs = 0;
       this.bossChaosPressureReliefUntilMs = 0;
+      this.bossReinforcementState = null;
+      this.bossReinforcementAttemptIndex = 0;
+      this.bossReinforcementEventsThisBoss = 0;
+      this.bossReinforcementNextCheckAtMs = Date.now() + 8200;
+      this.bossReinforcementCooldownUntilMs = 0;
     } else {
       this.boss = boss;
     }
@@ -3263,6 +3416,54 @@ export class EnemyManager {
     return spawned;
   }
 
+  spawnBossMayhemReinforcementWave() {
+    if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return 0;
+    const level = Math.max(1, Number(this.level) || 1);
+    const activeReinforcements = this.enemies.filter((enemy) =>
+      enemy?.kind === 'boss_mayhem_reinforcement' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    const maxActive = level <= 4 ? 3 : level <= 9 ? 4 : 5;
+    const desired = level <= 4 ? 2 : level <= 9 ? 3 : 4;
+    const spawnCount = Math.max(0, Math.min(desired, maxActive - activeReinforcements));
+    if (spawnCount <= 0) return 0;
+
+    const positions = this.getFormationPositions(level >= 8 ? 'STAGGERED_WING' : 'ARC', spawnCount);
+    const screenW = this.game.getWidth();
+    const startLeft = Math.random() < 0.5;
+    const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
+    const tactic = { id: 'boss_mayhem_reinforcement', fireScalar: 0.28, fireDelayMult: 1.62, entrySpeed: 0.9, volley: 'staggered', shot: 'needle' };
+    let spawned = 0;
+    positions.forEach((pos, index) => {
+      const entryMode = index % 2 === 0 ? 'split' : 'alternating';
+      const startX = this.getWaveEntryX(entryMode, index, startLeft, screenW);
+      const targetX = Math.max(46, Math.min(screenW - 46, pos.x + (index % 2 === 0 ? -36 : 36)));
+      const targetY = Math.max(112, Math.min(this.game.getHeight() * 0.42, pos.y + 72 + index * 4));
+      const enemy = new Enemy(startX, -118, type, level, this.game, 'Red');
+      const lanePressure = this.getLanePressureForPosition(targetX, 'BOSS_MAYHEM_REINFORCEMENT');
+      const supportTactic = this.applyLanePressureToTactic(tactic, lanePressure);
+      enemy.kind = 'boss_mayhem_reinforcement';
+      enemy.health = Math.max(1, Math.min(enemy.health, level <= 4 ? 2 : 3));
+      enemy.maxHealth = enemy.health;
+      enemy.scoreValue = Math.max(30, Math.round((enemy.scoreValue || 60) * 0.7));
+      enemy.shootDelay = Math.round((enemy.shootDelay || 120) * 1.55);
+      enemy.radius = Math.max(12, Math.round((enemy.radius || 16) * 0.88));
+      enemy.updateHealthBar?.();
+      enemy.applyWaveTactic?.(supportTactic, {
+        index,
+        count: spawnCount,
+        formation: 'BOSS_MAYHEM_REINFORCEMENT',
+        centerX: screenW / 2,
+        centerY: 160,
+        side: targetX < screenW / 2 ? -1 : 1
+      });
+      enemy.startEntry(startX, -70, targetX, targetY, 1340, index * 180);
+      this.enemies.push(enemy);
+      this.container.addChild(enemy.sprite);
+      spawned += 1;
+    });
+    return spawned;
+  }
+
   spawnBossChaosMiniBoss() {
     const level = Math.max(1, Number(this.level) || 1);
     const activeElites = this.enemies.filter((enemy) =>
@@ -3386,11 +3587,17 @@ export class EnemyManager {
     const clearedWaveIndex = this.currentWaveIndex;
     const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
     const clearedWaveNumber = clearedWaveIndex + 1;
-    const consumedReinforcementWaveIndex = this.mayhemReinforcementConsumedWaveIndices?.has(clearedWaveIndex + 1)
-      ? clearedWaveIndex + 1
-      : null;
-    const transitionWaveIndex = consumedReinforcementWaveIndex ?? clearedWaveIndex;
-    const clearedWaveCount = consumedReinforcementWaveIndex !== null ? 2 : 1;
+    const consumedReinforcementWaveIndices = [];
+    let nextConsumedWaveIndex = clearedWaveIndex + 1;
+    while (this.mayhemReinforcementConsumedWaveIndices?.has(nextConsumedWaveIndex)) {
+      consumedReinforcementWaveIndices.push(nextConsumedWaveIndex);
+      nextConsumedWaveIndex += 1;
+    }
+    const transitionWaveIndex = consumedReinforcementWaveIndices.length
+      ? consumedReinforcementWaveIndices[consumedReinforcementWaveIndices.length - 1]
+      : clearedWaveIndex;
+    const consumedReinforcementWaveIndex = consumedReinforcementWaveIndices[0] ?? null;
+    const clearedWaveCount = 1 + consumedReinforcementWaveIndices.length;
     if (this.game?.scenes?.play) {
       const playScene = this.game.scenes.play;
       playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount;

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../src/config/ReinforcementVoiceLines.js';
@@ -12,10 +13,51 @@ const read = (path) => readFileSync(path, 'utf8');
 
 const enemyManager = read('src/managers/EnemyManager.js');
 const soundCatalog = read('src/audio/SoundCatalog.js');
+const leaderboardTypes = read('src/leaderboard/LeaderboardTypes.js');
+const steamBridge = read('electron/steamLeaderboardBridge.cjs');
 const config = BalanceConfig.difficulty?.mayhemReinforcements;
+const changedFiles = execFileSync('git', ['diff', '--name-only', 'HEAD', '--'], { encoding: 'utf8' })
+  .split(/\r?\n/)
+  .map((file) => file.trim())
+  .filter(Boolean);
+const protectedSurfacePatterns = [
+  /^electron\/.*steam/i,
+  /^release\/steamworks\//i,
+  /^steam(_sdk|works)?\//i,
+  /^src\/leaderboard\//i,
+  /^src\/achievements\//i,
+  /^src\/save\//i,
+  /^src\/cloud\//i,
+  /^src\/xp\//i,
+  /^src\/scor(e|ing)\//i,
+  /achievement/i,
+  /leaderboard/i,
+  /steam.*(appid|depot|cloud|branch|metadata)/i
+];
+const protectedChangedFiles = changedFiles
+  .map((file) => file.replaceAll('\\', '/'))
+  .filter((file) => protectedSurfacePatterns.some((pattern) => pattern.test(file)));
+if (protectedChangedFiles.length) {
+  fail(`Reinforcement tuning must not touch protected Steam/score/XP/save/achievement surfaces: ${protectedChangedFiles.join(', ')}`);
+}
+if (!leaderboardTypes.includes("STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2'")) {
+  fail('Global Steam leaderboard identity changed.');
+}
+if (!steamBridge.includes("DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2'")) {
+  fail('Steam bridge leaderboard identity changed.');
+}
+if (!steamBridge.includes('DEFAULT_STEAM_APP_ID = 4765070')) {
+  fail('Steam AppID changed.');
+}
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
-if (config.chance !== 0.05) fail(`Expected rare 5% reinforcement chance, got ${config.chance}.`);
+if (config.chance !== 0.08) fail(`Expected rare 8% reinforcement chance, got ${config.chance}.`);
+if (config.bossFightChance !== 0.08) fail(`Expected boss-fight reinforcement chance to stay 8%, got ${config.bossFightChance}.`);
+if (config.bossFightMinAgeMs !== 8000) fail(`Expected boss-fight reinforcements to wait 8000ms, got ${config.bossFightMinAgeMs}.`);
+if (config.bossFightMaxEvents !== 2) fail(`Expected boss-fight reinforcements to cap at 2 events, got ${config.bossFightMaxEvents}.`);
+if (config.doubleWaveChance !== 0.18) fail(`Expected rare 18% double-reinforcement chance, got ${config.doubleWaveChance}.`);
+if (config.doubleWaveMinLevel !== 8) fail(`Expected double reinforcements to be gated until level 8, got ${config.doubleWaveMinLevel}.`);
+if (config.doubleWaveRequiresPriorReinforcement !== true) fail('Double reinforcements must require at least one prior reinforcement event.');
 if (config.firstPityEligibleMisses !== 8) fail(`Expected first reinforcement pity after 8 eligible misses, got ${config.firstPityEligibleMisses}.`);
 if (config.firstPityMinLevel !== 5) fail(`Expected first reinforcement pity to start at level 5, got ${config.firstPityMinLevel}.`);
 if (config.firstPityMaxLevel !== 8) fail(`Expected first reinforcement pity target window at level 8, got ${config.firstPityMaxLevel}.`);
@@ -60,6 +102,21 @@ const requiredSourceSnippets = [
   'canRecordMayhemReinforcementMiss',
   'canRelaxMayhemReinforcementPityGates',
   'recordMayhemReinforcementMiss',
+  'doubleWaveChance',
+  'bossFightChance',
+  'maybeScheduleBossMayhemReinforcement',
+  'updateBossMayhemReinforcement',
+  'spawnBossMayhemReinforcementWave',
+  "'mayhem-boss-reinforcement'",
+  "enemy.kind = 'boss_mayhem_reinforcement'",
+  'doubleWaveMinLevel',
+  'doubleWaveRequiresPriorReinforcement',
+  "'mayhem-reinforcement-double-wave'",
+  'reinforcementWaveIndices',
+  'reinforcementGroupCount',
+  'reinforcementLaneOffsetPx',
+  'reinforcementEntryDelayMs',
+  'allowConcurrentSpawn',
   'overdueMisses',
   'level >= config.firstPityMaxLevel && misses >= overdueMisses',
   'eligibility.reasons?.includes(\'roll_failed\')',
@@ -68,9 +125,12 @@ const requiredSourceSnippets = [
   'pityRelaxed',
   'isMayhemReinforcement: true',
   'mayhemReinforcementConsumedWaveIndices.add',
+  'while (this.mayhemReinforcementConsumedWaveIndices?.has(nextConsumedWaveIndex))',
   'hasPendingMayhemReinforcement()',
-  'transitionWaveIndex = consumedReinforcementWaveIndex ?? clearedWaveIndex',
-  'playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount'
+  'const transitionWaveIndex = consumedReinforcementWaveIndices.length',
+  'playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount',
+  'const bonus = waveClearScoreBase * clearedWaveNumber +',
+  '(consumedReinforcementWaveIndex !== null ? waveClearScoreBase * (consumedReinforcementWaveIndex + 1) : 0)'
 ];
 
 for (const snippet of requiredSourceSnippets) {
@@ -85,8 +145,8 @@ if (reinforcementSpawnBlock.includes('forceClearAllEnemies') || reinforcementSpa
   fail('Reinforcement spawn must not clear existing wave enemies.');
 }
 
-const rollFor = (seed, level, waveIndex) => {
-  const input = `${seed}:mayhem-reinforcement:${level}:${waveIndex}`;
+const rollFor = (seed, level, waveIndex, salt = 'mayhem-reinforcement') => {
+  const input = `${seed}:${salt}:${level}:${waveIndex}`;
   let hash = 2166136261;
   for (let index = 0; index < input.length; index += 1) {
     hash ^= input.charCodeAt(index);
@@ -106,8 +166,60 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedRate = hits / eligibleRolls;
-if (observedRate < 0.043 || observedRate > 0.057) {
-  fail(`Stable reinforcement roll drifted outside rare 5% band: ${observedRate.toFixed(4)}.`);
+if (observedRate < 0.073 || observedRate > 0.087) {
+  fail(`Stable reinforcement roll drifted outside rare 8% band: ${observedRate.toFixed(4)}.`);
+}
+
+let bossEligibleRolls = 0;
+let bossHits = 0;
+for (let seed = 0; seed < 1000; seed += 1) {
+  for (let level = 2; level <= 40; level += 1) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      bossEligibleRolls += 1;
+      if (rollFor(`boss-check-${seed}`, level, attempt, 'mayhem-boss-reinforcement') < config.bossFightChance) bossHits += 1;
+    }
+  }
+}
+const observedBossRate = bossHits / bossEligibleRolls;
+if (observedBossRate < 0.073 || observedBossRate > 0.087) {
+  fail(`Boss-fight reinforcement roll drifted outside rare 8% band: ${observedBossRate.toFixed(4)}.`);
+}
+
+const reinforcementWaveCountFor = ({ seed, level, waveIndex, priorReinforcements = 1, hasSecondWave = true }) => {
+  const doubleRoll = rollFor(seed, level, waveIndex, 'mayhem-reinforcement-double-wave');
+  const canDouble = level >= config.doubleWaveMinLevel &&
+    (!config.doubleWaveRequiresPriorReinforcement || priorReinforcements > 0) &&
+    hasSecondWave &&
+    doubleRoll < config.doubleWaveChance;
+  return canDouble ? 2 : 1;
+};
+
+let oneWaveSeed = null;
+let twoWaveSeed = null;
+let doubleEligibleEvents = 0;
+let doubleHits = 0;
+for (let seed = 0; seed < 5000; seed += 1) {
+  const id = `double-check-${seed}`;
+  const count = reinforcementWaveCountFor({ seed: id, level: 12, waveIndex: 1, priorReinforcements: 1 });
+  doubleEligibleEvents += 1;
+  if (count === 2) {
+    doubleHits += 1;
+    twoWaveSeed ??= id;
+  } else {
+    oneWaveSeed ??= id;
+  }
+}
+if (!oneWaveSeed) fail('Expected at least one deterministic reinforcement event that remains a single wave.');
+if (!twoWaveSeed) fail('Expected at least one deterministic reinforcement event that can become two waves.');
+if (reinforcementWaveCountFor({ seed: twoWaveSeed, level: 7, waveIndex: 1, priorReinforcements: 1 }) !== 1) {
+  fail('Double reinforcements must stay gated before level 8.');
+}
+if (reinforcementWaveCountFor({ seed: twoWaveSeed, level: 12, waveIndex: 1, priorReinforcements: 0 }) !== 1) {
+  fail('Double reinforcements must not be the first reinforcement event in a run.');
+}
+const observedDoubleRate = doubleHits / doubleEligibleEvents;
+if (observedDoubleRate < 0.15 || observedDoubleRate > 0.21) {
+  fail(`Double reinforcement roll drifted outside rare 18% band: ${observedDoubleRate.toFixed(4)}.`);
 }
 
 let misses = 0;
@@ -187,4 +299,4 @@ for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   }
 }
 
-console.log(`[check-mayhem-reinforcement-waves] ok chance=${config.chance} observed=${observedRate.toFixed(4)} warningMs=${config.warningMs}`);
+console.log(`[check-mayhem-reinforcement-waves] ok chance=${config.chance} observed=${observedRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} doubleChance=${config.doubleWaveChance} doubleObserved=${observedDoubleRate.toFixed(4)} warningMs=${config.warningMs}`);

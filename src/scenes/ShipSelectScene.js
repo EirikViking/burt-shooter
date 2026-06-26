@@ -67,6 +67,11 @@ function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScal
   return scale;
 }
 
+function bottomOf(display) {
+  if (!display) return 0;
+  return (Number(display.y) || 0) + Math.max(0, Number(display.height) || 0);
+}
+
 function hexColor(color) {
   return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
 }
@@ -1818,6 +1823,10 @@ export class ShipSelectScene {
       const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
       const trait = this.createIntelText('', 16, 126, 13, '#9ceeff');
       const unlock = this.createIntelText('', 16, 302, 13, '#ffd166', '900');
+      role.style.wordWrapWidth = 226;
+      weapon.style.wordWrapWidth = 226;
+      trait.style.wordWrapWidth = 226;
+      unlock.style.wordWrapWidth = 226;
       const statPanel = createShipStatPanel(this.ships[this.selectedIndex], {
         compact: true,
         width: 228,
@@ -2146,7 +2155,8 @@ export class ShipSelectScene {
       strokeThickness: 2
     });
     trait.anchor.set(0.5, 0);
-    trait.position.set(0, this.layout.isMobile ? 145 : 160);
+    trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : 12));
+    fitDisplayToBox(trait, this.layout.isMobile ? 330 : 560, this.layout.isMobile ? 52 : 58, { minScale: 0.72 });
     container.addChild(trait);
     container.traitText = trait;
 
@@ -2538,8 +2548,16 @@ export class ShipSelectScene {
       this.rightIntel.weapon.text = weapon;
       this.rightIntel.trait.text = this.getShipTraitText(ship);
       this.rightIntel.unlock.text = unlock;
+      this.rightIntel.role.scale.set(1);
+      this.rightIntel.weapon.scale.set(1);
+      this.rightIntel.trait.scale.set(1);
+      fitDisplayToBox(this.rightIntel.role, 226, 44, { minScale: 0.78 });
+      this.rightIntel.role.y = 44;
+      this.rightIntel.weapon.y = Math.max(76, bottomOf(this.rightIntel.role) + 6);
+      fitDisplayToBox(this.rightIntel.weapon, 226, 38, { minScale: 0.78 });
+      this.rightIntel.trait.y = Math.max(118, bottomOf(this.rightIntel.weapon) + 18);
+      fitDisplayToBox(this.rightIntel.trait, 226, 68, { minScale: 0.64 });
       this.rightIntel.unlock.scale.set(1);
-      fitDisplayToBox(this.rightIntel.unlock, 226, 48, { minScale: 0.62 });
       if (this.rightIntel.statPanel?.parent) {
         this.rightIntel.statPanel.parent.removeChild(this.rightIntel.statPanel);
       }
@@ -2552,9 +2570,11 @@ export class ShipSelectScene {
         title: 'LIVE TUNE',
         uiScaleMode: 'none'
       });
-      statPanel.position.set(131, 186);
+      statPanel.position.set(131, Math.max(188, bottomOf(this.rightIntel.trait) + 12));
       this.rightIntel.panel.addChild(statPanel);
       this.rightIntel.statPanel = statPanel;
+      this.rightIntel.unlock.y = Math.min(330, bottomOf(statPanel) + 16);
+      fitDisplayToBox(this.rightIntel.unlock, 226, 42, { minScale: 0.58 });
     }
 
     if (this.compactIntel) {
