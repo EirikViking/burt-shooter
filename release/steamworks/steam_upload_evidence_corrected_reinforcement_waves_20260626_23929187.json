@@ -1,0 +1,81 @@
+{
+  "uploadedAt": "2026-06-26T10:16:11Z",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "buildId": 23929187,
+  "sourceBranch": "codex/boss-full-reinforcement-waves-20260626",
+  "sourceCommit": "c3ecf49284197f72848669500631fc7c8354bb72",
+  "gameplayCorrectionCommit": "9c01587a50ffd0ec4f85652e12995b8bbb078f74",
+  "packageBuild": "v2026-06-26_12-07-07",
+  "setLive": "",
+  "privateUnassignedBuild": true,
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfVerified": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 907190667,
+    "manifestHash": "60152b608120b4374a19285b771ad308931b8167ca3a92a1392d814a6e549af5",
+    "executableSha256": "144a94702992963754e7c638a6fd2c8459d0eb27554c097053f8a1ad8439dc38"
+  },
+  "steamCmd": {
+    "path": "C:\\\\steamcmd\\\\steamcmd.exe",
+    "user": "gaunziman",
+    "logPath": "test-results/steam-upload-corrected-reinforcement-20260626-121500/steamcmd-upload.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23929187).",
+    "uploadedContent": "7.7 MB"
+  },
+  "checks": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "git worktree list",
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run check:mayhem-reinforcement-waves",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npx electron-builder --win dir --x64 --config electron-builder.json --publish never",
+    "npm run check:steam-package-runtime",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "passedProof": [
+    "check:release-line passed before packaging and VDF writing.",
+    "check:mayhem-reinforcement-waves passed with normalObserved=0.1501, normalWaves=3-4, fourthObserved=0.3498, bossObserved=0.1510, bossDoubleObserved=0.0778.",
+    "build:current passed before this deploy request.",
+    "check:steam-package-runtime passed for the final payload at test-results/steam-package-runtime-2026-06-26T10-12-41-695Z/report.json and again during VDF writing at test-results/steam-package-runtime-2026-06-26T10-13-33-141Z/report.json."
+  ],
+  "knownWarnings": [
+    "Vite reported the existing large chunk warning.",
+    "Ascendant ship checks reported the existing temporary fallback art warnings for nova_ship_26 through nova_ship_30.",
+    "Electron-builder emitted the existing DEP0190 warning from shell argument handling."
+  ],
+  "blockedOrFailedChecks": [
+    {
+      "command": "npm run package:steam:win",
+      "result": "eventually_bypassed",
+      "reason": "The wrapper failed during earlier attempts due to generated output cleanup/copy issues, including a missing dist/_headers and partial win-unpacked state. The final package artifact was produced by running the same electron-builder command directly after release-line, SDK, and Vite build checks had passed."
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "result": "failed",
+      "reason": "Packaged smoke timed out / failed readiness in this local Electron environment. The final upload relied on package-runtime verification and did not launch the packaged executable after the final clean package."
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "result": "failed",
+      "reason": "Current Electron smoke hit a local Electron load timeout after a Chromium network-service restart."
+    }
+  ],
+  "notes": [
+    "This build supersedes private BuildID 23928356, which was uploaded before the final normal reinforcement chance correction back to 15%.",
+    "Build uploaded as a private unassigned SteamPipe build.",
+    "SetLive remained blank, so no live/default/beta branch assignment was changed by this upload.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, achievement IDs, Steam Cloud paths, save format, scoring, or XP settings were intentionally changed."
+  ]
+}

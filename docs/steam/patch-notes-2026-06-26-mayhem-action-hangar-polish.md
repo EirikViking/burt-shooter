@@ -111,7 +111,7 @@ Tiny Foundry
 ## Internal Checklist Before Publishing
 
 - Package and upload a build from source commit `9c01587a50ffd0ec4f85652e12995b8bbb078f74` or newer before publishing this exact wording.
-- The private SteamPipe BuildID `23928356` was uploaded before the final normal reinforcement correction back to 15%; do not cite it as the final public build unless a newer package/upload supersedes it.
+- Private SteamPipe BuildID `23929187` contains source commit `c3ecf49284197f72848669500631fc7c8354bb72`, including the final normal reinforcement correction back to 15%. It was uploaded with `SetLive` blank and still needs deliberate branch assignment before public release.
 - Confirm the final VDF keeps `"SetLive" ""` unless intentionally assigning the build live.
 - If publishing to Steam News, update the document timestamp and build note after branch assignment.
 - Run at minimum `npm run check:release-line`, `npm run check:mayhem-reinforcement-waves`, `npm run build:current`, `npm run package:steam:win`, and one successful launch/smoke path for the exact package being assigned.
