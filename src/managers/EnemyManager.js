@@ -1359,26 +1359,35 @@ export class EnemyManager {
 
     const attemptIndex = Math.max(0, Math.floor(Number(this.bossReinforcementAttemptIndex) || 0));
     const roll = this.getStableReinforcementRoll(level, attemptIndex, 'mayhem-boss-reinforcement');
+    const doubleWaveRoll = this.getStableReinforcementRoll(level, attemptIndex, 'mayhem-boss-reinforcement-double-wave');
     this.bossReinforcementAttemptIndex = attemptIndex + 1;
     this.bossReinforcementNextCheckAtMs = now + config.bossFightCheckIntervalMs + Math.random() * 1600;
     if (roll >= config.bossFightChance) return false;
+    const canDoubleWave = level >= config.doubleWaveMinLevel &&
+      (!config.doubleWaveRequiresPriorReinforcement || this.mayhemReinforcementRunSpawned > 0) &&
+      doubleWaveRoll < config.doubleWaveChance;
+    const reinforcementGroupCount = canDoubleWave ? 2 : 1;
 
     this.bossReinforcementState = {
       bossLevel: level,
       attemptIndex,
+      reinforcementGroupCount,
       scheduledAt: now,
       spawnAt: now + config.warningMs,
       warningMs: config.warningMs,
       warningFired: false,
       spawned: false,
-      roll
+      roll,
+      doubleWaveRoll
     };
     this.fireMayhemReinforcementWarning(this.bossReinforcementState);
     this.bossReinforcementCooldownUntilMs = now + config.bossFightCooldownMs;
     this.mayhemReinforcementStats.scheduled += 1;
     console.log(
       `[MayhemReinforcement] boss_scheduled level=${level}` +
-      ` attempt=${attemptIndex} roll=${roll.toFixed(4)} chance=${config.bossFightChance}`
+      ` attempt=${attemptIndex} roll=${roll.toFixed(4)} chance=${config.bossFightChance}` +
+      ` doubleRoll=${doubleWaveRoll.toFixed(4)} doubleChance=${config.doubleWaveChance}` +
+      ` groups=${reinforcementGroupCount}`
     );
     return true;
   }
@@ -1391,14 +1400,17 @@ export class EnemyManager {
       return false;
     }
     if (Date.now() < state.spawnAt) return false;
-    const spawned = this.spawnBossMayhemReinforcementWave();
+    const groupCount = Math.max(1, Math.min(2, Math.floor(Number(state.reinforcementGroupCount) || 1)));
+    const spawned = this.spawnBossMayhemReinforcementWave(groupCount);
     state.spawned = true;
     if (spawned > 0) {
       this.bossReinforcementEventsThisBoss += 1;
-      this.mayhemReinforcementStats.spawned += 1;
+      this.mayhemReinforcementStats.spawned += groupCount;
+      this.mayhemReinforcementRunSpawned = Math.max(0, Math.floor(Number(this.mayhemReinforcementRunSpawned) || 0)) + 1;
       console.log(
         `[MayhemReinforcement] boss_spawned level=${this.level}` +
-        ` count=${spawned} warningLeadMs=${Math.round(this.mayhemReinforcementStats.lastWarningLeadMs || 0)}`
+        ` groups=${groupCount} count=${spawned}` +
+        ` warningLeadMs=${Math.round(this.mayhemReinforcementStats.lastWarningLeadMs || 0)}`
       );
       return true;
     }
@@ -2948,7 +2960,7 @@ export class EnemyManager {
       this.bossReinforcementState = null;
       this.bossReinforcementAttemptIndex = 0;
       this.bossReinforcementEventsThisBoss = 0;
-      this.bossReinforcementNextCheckAtMs = Date.now() + 8200;
+      this.bossReinforcementNextCheckAtMs = Date.now() + 1200;
       this.bossReinforcementCooldownUntilMs = 0;
     } else {
       this.boss = boss;
@@ -3416,51 +3428,66 @@ export class EnemyManager {
     return spawned;
   }
 
-  spawnBossMayhemReinforcementWave() {
+  spawnBossMayhemReinforcementWave(groupCount = 1) {
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return 0;
     const level = Math.max(1, Number(this.level) || 1);
+    const waveGroups = Math.max(1, Math.min(2, Math.floor(Number(groupCount) || 1)));
     const activeReinforcements = this.enemies.filter((enemy) =>
       enemy?.kind === 'boss_mayhem_reinforcement' && (enemy.active || enemy.waitingForEntry)
     ).length;
-    const maxActive = level <= 4 ? 3 : level <= 9 ? 4 : 5;
+    const maxActivePerGroup = level <= 4 ? 3 : level <= 9 ? 4 : 5;
+    const maxActive = maxActivePerGroup * waveGroups;
     const desired = level <= 4 ? 2 : level <= 9 ? 3 : 4;
-    const spawnCount = Math.max(0, Math.min(desired, maxActive - activeReinforcements));
-    if (spawnCount <= 0) return 0;
+    let spawnBudget = Math.max(0, maxActive - activeReinforcements);
+    if (spawnBudget <= 0) return 0;
 
-    const positions = this.getFormationPositions(level >= 8 ? 'STAGGERED_WING' : 'ARC', spawnCount);
     const screenW = this.game.getWidth();
     const startLeft = Math.random() < 0.5;
     const type = pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
     const tactic = { id: 'boss_mayhem_reinforcement', fireScalar: 0.28, fireDelayMult: 1.62, entrySpeed: 0.9, volley: 'staggered', shot: 'needle' };
     let spawned = 0;
-    positions.forEach((pos, index) => {
-      const entryMode = index % 2 === 0 ? 'split' : 'alternating';
-      const startX = this.getWaveEntryX(entryMode, index, startLeft, screenW);
-      const targetX = Math.max(46, Math.min(screenW - 46, pos.x + (index % 2 === 0 ? -36 : 36)));
-      const targetY = Math.max(112, Math.min(this.game.getHeight() * 0.42, pos.y + 72 + index * 4));
-      const enemy = new Enemy(startX, -118, type, level, this.game, 'Red');
-      const lanePressure = this.getLanePressureForPosition(targetX, 'BOSS_MAYHEM_REINFORCEMENT');
-      const supportTactic = this.applyLanePressureToTactic(tactic, lanePressure);
-      enemy.kind = 'boss_mayhem_reinforcement';
-      enemy.health = Math.max(1, Math.min(enemy.health, level <= 4 ? 2 : 3));
-      enemy.maxHealth = enemy.health;
-      enemy.scoreValue = Math.max(30, Math.round((enemy.scoreValue || 60) * 0.7));
-      enemy.shootDelay = Math.round((enemy.shootDelay || 120) * 1.55);
-      enemy.radius = Math.max(12, Math.round((enemy.radius || 16) * 0.88));
-      enemy.updateHealthBar?.();
-      enemy.applyWaveTactic?.(supportTactic, {
-        index,
-        count: spawnCount,
-        formation: 'BOSS_MAYHEM_REINFORCEMENT',
-        centerX: screenW / 2,
-        centerY: 160,
-        side: targetX < screenW / 2 ? -1 : 1
+
+    for (let groupIndex = 0; groupIndex < waveGroups && spawnBudget > 0; groupIndex += 1) {
+      const spawnCount = Math.max(0, Math.min(desired, spawnBudget));
+      if (spawnCount <= 0) break;
+      const formation = groupIndex % 2 === 0 ? (level >= 8 ? 'STAGGERED_WING' : 'ARC') : 'PINCER';
+      const positions = this.getFormationPositions(formation, spawnCount);
+      const groupLaneOffset = waveGroups > 1 ? (groupIndex === 0 ? -46 : 46) : 0;
+      const groupEntryDelayMs = groupIndex * 900;
+      const groupStartLeft = groupIndex % 2 === 0 ? startLeft : !startLeft;
+
+      positions.forEach((pos, index) => {
+        const entryMode = (index + groupIndex) % 2 === 0 ? 'split' : 'alternating';
+        const startX = this.getWaveEntryX(entryMode, index + groupIndex, groupStartLeft, screenW);
+        const targetX = Math.max(46, Math.min(screenW - 46, pos.x + groupLaneOffset + (index % 2 === 0 ? -28 : 28)));
+        const targetY = Math.max(112, Math.min(this.game.getHeight() * 0.45, pos.y + 68 + groupIndex * 48 + index * 4));
+        const enemy = new Enemy(startX, -118, type, level, this.game, 'Red');
+        const lanePressure = this.getLanePressureForPosition(targetX, 'BOSS_MAYHEM_REINFORCEMENT');
+        const supportTactic = this.applyLanePressureToTactic(tactic, lanePressure);
+        enemy.kind = 'boss_mayhem_reinforcement';
+        enemy.reinforcementGroupIndex = groupIndex;
+        enemy.reinforcementGroupCount = waveGroups;
+        enemy.health = Math.max(1, Math.min(enemy.health, level <= 4 ? 2 : 3));
+        enemy.maxHealth = enemy.health;
+        enemy.scoreValue = Math.max(30, Math.round((enemy.scoreValue || 60) * 0.7));
+        enemy.shootDelay = Math.round((enemy.shootDelay || 120) * 1.55);
+        enemy.radius = Math.max(12, Math.round((enemy.radius || 16) * 0.88));
+        enemy.updateHealthBar?.();
+        enemy.applyWaveTactic?.(supportTactic, {
+          index,
+          count: spawnCount,
+          formation: 'BOSS_MAYHEM_REINFORCEMENT',
+          centerX: screenW / 2 + groupLaneOffset,
+          centerY: 160 + groupIndex * 48,
+          side: targetX < screenW / 2 ? -1 : 1
+        });
+        enemy.startEntry(startX, -70, targetX, targetY, 1340, groupEntryDelayMs + index * 180);
+        this.enemies.push(enemy);
+        this.container.addChild(enemy.sprite);
+        spawned += 1;
       });
-      enemy.startEntry(startX, -70, targetX, targetY, 1340, index * 180);
-      this.enemies.push(enemy);
-      this.container.addChild(enemy.sprite);
-      spawned += 1;
-    });
+      spawnBudget -= spawnCount;
+    }
     return spawned;
   }
 

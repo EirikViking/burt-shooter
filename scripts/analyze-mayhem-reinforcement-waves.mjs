@@ -126,11 +126,17 @@ const simulateRun = ({ seed, profile, enabled }) => {
       sector >= 2 &&
       rollFor(seed, sector, 0, 'mayhem-boss-reinforcement') < config.bossFightChance
     ) {
+      const canBossDouble = sector >= config.doubleWaveMinLevel &&
+        rollFor(seed, sector, 0, 'mayhem-boss-reinforcement-double-wave') < config.doubleWaveChance;
+      const bossReinforcementWaves = canBossDouble ? 2 : 1;
       const bossReinforcementEnemies = sector <= 4 ? 2 : sector <= 9 ? 3 : 4;
-      seconds += config.warningMs / 1000 + Math.max(3.2, bossReinforcementEnemies * 0.55);
-      score += bossReinforcementEnemies * 42 * profile.scoreMult;
-      xp += bossReinforcementEnemies * 1.9 * profile.xpMult;
-      reinforcementWaves += 1;
+      const bossReinforcementEnemiesTotal = bossReinforcementEnemies * bossReinforcementWaves;
+      seconds += config.warningMs / 1000 + Math.max(3.2, bossReinforcementEnemiesTotal * 0.48);
+      score += bossReinforcementEnemiesTotal * 42 * profile.scoreMult;
+      xp += bossReinforcementEnemiesTotal * 1.9 * profile.xpMult;
+      reinforcements += 1;
+      reinforcementWaves += bossReinforcementWaves;
+      if (canBossDouble) doubleReinforcementEvents += 1;
     }
     score += 1250 * profile.scoreMult + sector * 42;
     xp += 55 * profile.xpMult + sector * 1.6;

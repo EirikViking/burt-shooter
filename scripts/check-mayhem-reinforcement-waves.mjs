@@ -51,23 +51,26 @@ if (!steamBridge.includes('DEFAULT_STEAM_APP_ID = 4765070')) {
 }
 
 if (!config?.enabled) fail('Mayhem reinforcement config must be enabled.');
-if (config.chance !== 0.08) fail(`Expected rare 8% reinforcement chance, got ${config.chance}.`);
-if (config.bossFightChance !== 0.08) fail(`Expected boss-fight reinforcement chance to stay 8%, got ${config.bossFightChance}.`);
-if (config.bossFightMinAgeMs !== 8000) fail(`Expected boss-fight reinforcements to wait 8000ms, got ${config.bossFightMinAgeMs}.`);
+if (config.chance !== 0.15) fail(`Expected 15% reinforcement chance, got ${config.chance}.`);
+if (config.bossFightChance !== 0.15) fail(`Expected boss-fight reinforcement chance to be 15%, got ${config.bossFightChance}.`);
+if (config.bossFightMinAgeMs !== 3500) fail(`Expected boss-fight reinforcements to start checking after 3500ms, got ${config.bossFightMinAgeMs}.`);
+if (config.bossFightCheckIntervalMs !== 2600) fail(`Expected boss-fight reinforcement checks every 2600ms, got ${config.bossFightCheckIntervalMs}.`);
+if (config.bossFightCooldownMs !== 9000) fail(`Expected boss-fight reinforcement cooldown at 9000ms, got ${config.bossFightCooldownMs}.`);
 if (config.bossFightMaxEvents !== 2) fail(`Expected boss-fight reinforcements to cap at 2 events, got ${config.bossFightMaxEvents}.`);
-if (config.doubleWaveChance !== 0.18) fail(`Expected rare 18% double-reinforcement chance, got ${config.doubleWaveChance}.`);
+if (config.doubleWaveChance !== 0.08) fail(`Expected 8% double-reinforcement chance, got ${config.doubleWaveChance}.`);
 if (config.doubleWaveMinLevel !== 8) fail(`Expected double reinforcements to be gated until level 8, got ${config.doubleWaveMinLevel}.`);
-if (config.doubleWaveRequiresPriorReinforcement !== true) fail('Double reinforcements must require at least one prior reinforcement event.');
+if (config.doubleWaveRequiresPriorReinforcement !== false) fail('Double reinforcements must be allowed on the first reinforcement event from level 8 onward.');
 if (config.firstPityEligibleMisses !== 8) fail(`Expected first reinforcement pity after 8 eligible misses, got ${config.firstPityEligibleMisses}.`);
 if (config.firstPityMinLevel !== 5) fail(`Expected first reinforcement pity to start at level 5, got ${config.firstPityMinLevel}.`);
 if (config.firstPityMaxLevel !== 8) fail(`Expected first reinforcement pity target window at level 8, got ${config.firstPityMaxLevel}.`);
 if (config.repeatPityEligibleMisses !== 18) fail(`Expected repeat reinforcement pity to stay rare but reachable, got ${config.repeatPityEligibleMisses}.`);
-if (config.minWaveAgeMs !== 5000) fail(`Expected faster reinforcement eligibility at 5000ms, got ${config.minWaveAgeMs}.`);
+if (config.minWaveAgeMs !== 3600) fail(`Expected faster reinforcement eligibility at 3600ms, got ${config.minWaveAgeMs}.`);
 if (config.warningMs !== 2000) fail(`Expected 2000ms warning, got ${config.warningMs}.`);
-if (config.minClearRatio !== 0.4) {
-  fail(`Expected early-overlap clear ratio gate at 40%, got ${config.minClearRatio}.`);
+if (config.minClearRatio !== 0.32) {
+  fail(`Expected early-overlap clear ratio gate at 32%, got ${config.minClearRatio}.`);
 }
-if (config.maxActiveEnemies !== 9) fail(`Expected active enemy gate to allow about 60% of a 14-enemy wave left, got ${config.maxActiveEnemies}.`);
+if (config.maxActiveEnemies !== 10) fail(`Expected active enemy gate to allow visible overlap pressure, got ${config.maxActiveEnemies}.`);
+if (config.maxActiveEnemyBullets !== 26) fail(`Expected bullet gate to allow visible overlap pressure, got ${config.maxActiveEnemyBullets}.`);
 if (config.pityMinWaveAgeMs !== 3200) fail(`Expected first-pity reinforcement soft gate at 3200ms, got ${config.pityMinWaveAgeMs}.`);
 if (config.pityMinClearRatio !== 0.25) fail(`Expected first-pity reinforcement clear ratio gate at 25%, got ${config.pityMinClearRatio}.`);
 if (config.pityMaxActiveEnemies !== 12) fail(`Expected first-pity reinforcement enemy gate at 12, got ${config.pityMaxActiveEnemies}.`);
@@ -104,11 +107,19 @@ const requiredSourceSnippets = [
   'recordMayhemReinforcementMiss',
   'doubleWaveChance',
   'bossFightChance',
+  'bossFightCheckIntervalMs',
+  'bossFightCooldownMs',
   'maybeScheduleBossMayhemReinforcement',
   'updateBossMayhemReinforcement',
   'spawnBossMayhemReinforcementWave',
   "'mayhem-boss-reinforcement'",
+  "'mayhem-boss-reinforcement-double-wave'",
   "enemy.kind = 'boss_mayhem_reinforcement'",
+  'reinforcementGroupCount',
+  'groupEntryDelayMs',
+  'groupIndex * 900',
+  'maxActivePerGroup * waveGroups',
+  'this.bossReinforcementNextCheckAtMs = Date.now() + 1200',
   'doubleWaveMinLevel',
   'doubleWaveRequiresPriorReinforcement',
   "'mayhem-reinforcement-double-wave'",
@@ -166,8 +177,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedRate = hits / eligibleRolls;
-if (observedRate < 0.073 || observedRate > 0.087) {
-  fail(`Stable reinforcement roll drifted outside rare 8% band: ${observedRate.toFixed(4)}.`);
+if (observedRate < 0.14 || observedRate > 0.16) {
+  fail(`Stable reinforcement roll drifted outside 15% band: ${observedRate.toFixed(4)}.`);
 }
 
 let bossEligibleRolls = 0;
@@ -181,8 +192,8 @@ for (let seed = 0; seed < 1000; seed += 1) {
   }
 }
 const observedBossRate = bossHits / bossEligibleRolls;
-if (observedBossRate < 0.073 || observedBossRate > 0.087) {
-  fail(`Boss-fight reinforcement roll drifted outside rare 8% band: ${observedBossRate.toFixed(4)}.`);
+if (observedBossRate < 0.14 || observedBossRate > 0.16) {
+  fail(`Boss-fight reinforcement roll drifted outside 15% band: ${observedBossRate.toFixed(4)}.`);
 }
 
 const reinforcementWaveCountFor = ({ seed, level, waveIndex, priorReinforcements = 1, hasSecondWave = true }) => {
@@ -214,12 +225,24 @@ if (!twoWaveSeed) fail('Expected at least one deterministic reinforcement event 
 if (reinforcementWaveCountFor({ seed: twoWaveSeed, level: 7, waveIndex: 1, priorReinforcements: 1 }) !== 1) {
   fail('Double reinforcements must stay gated before level 8.');
 }
-if (reinforcementWaveCountFor({ seed: twoWaveSeed, level: 12, waveIndex: 1, priorReinforcements: 0 }) !== 1) {
-  fail('Double reinforcements must not be the first reinforcement event in a run.');
+if (reinforcementWaveCountFor({ seed: twoWaveSeed, level: 12, waveIndex: 1, priorReinforcements: 0 }) !== 2) {
+  fail('Double reinforcements must be allowed as the first reinforcement event once level 8 is reached.');
 }
 const observedDoubleRate = doubleHits / doubleEligibleEvents;
-if (observedDoubleRate < 0.15 || observedDoubleRate > 0.21) {
-  fail(`Double reinforcement roll drifted outside rare 18% band: ${observedDoubleRate.toFixed(4)}.`);
+if (observedDoubleRate < 0.07 || observedDoubleRate > 0.09) {
+  fail(`Double reinforcement roll drifted outside 8% band: ${observedDoubleRate.toFixed(4)}.`);
+}
+
+let bossDoubleEligibleEvents = 0;
+let bossDoubleHits = 0;
+for (let seed = 0; seed < 5000; seed += 1) {
+  const doubleRoll = rollFor(`boss-double-${seed}`, 13, 0, 'mayhem-boss-reinforcement-double-wave');
+  bossDoubleEligibleEvents += 1;
+  if (doubleRoll < config.doubleWaveChance) bossDoubleHits += 1;
+}
+const observedBossDoubleRate = bossDoubleHits / bossDoubleEligibleEvents;
+if (observedBossDoubleRate < 0.07 || observedBossDoubleRate > 0.09) {
+  fail(`Boss double-reinforcement roll drifted outside 8% band: ${observedBossDoubleRate.toFixed(4)}.`);
 }
 
 let misses = 0;
@@ -299,4 +322,4 @@ for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   }
 }
 
-console.log(`[check-mayhem-reinforcement-waves] ok chance=${config.chance} observed=${observedRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} doubleChance=${config.doubleWaveChance} doubleObserved=${observedDoubleRate.toFixed(4)} warningMs=${config.warningMs}`);
+console.log(`[check-mayhem-reinforcement-waves] ok chance=${config.chance} observed=${observedRate.toFixed(4)} bossObserved=${observedBossRate.toFixed(4)} doubleChance=${config.doubleWaveChance} doubleObserved=${observedDoubleRate.toFixed(4)} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} warningMs=${config.warningMs}`);

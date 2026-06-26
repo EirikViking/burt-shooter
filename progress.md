@@ -1,5 +1,10 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-26 Reinforcement Visibility Repair
+
+- Current request: make Mayhem reinforcements show up more reliably after a level-13 run saw none; raise the reinforcement event chance to 15% and make double reinforcements an 8% spike that adds two extra wave groups within three seconds of the warning.
+- Fix direction: normal-wave and boss-fight reinforcement rolls now both use 15%; double reinforcements are allowed from level 8 onward without requiring a prior event; boss-fight checks start much earlier and can spawn two staggered reinforcement groups after the existing `INCOMING REINFORCEMENTS` warning.
+
 ## 2026-06-26 Menu Boss Voice Navigation
 
 - Current request: replace the annoying robotic menu navigation sound with funny boss-voice barks plus VFX, using the existing boss voice via ElevenLabs and keeping the API key secret.
