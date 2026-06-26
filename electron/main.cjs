@@ -1030,6 +1030,7 @@ async function runPerfSmoke(window) {
   window.webContents.focus();
   window.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space' });
   await setPerfSmokeAutopilot(window, true);
+  await ensureUnpaused(window);
 
   const durationMs = Math.max(5000, Number(process.env.NOVA_SWARM_PERF_SMOKE_DURATION_MS || 60000));
   const sampleMs = Math.max(1000, Number(process.env.NOVA_SWARM_PERF_SMOKE_SAMPLE_MS || 5000));
@@ -1041,6 +1042,7 @@ async function runPerfSmoke(window) {
   try {
     while (Date.now() - startedAt < durationMs) {
       await new Promise((resolve) => setTimeout(resolve, sampleMs));
+      await ensureUnpaused(window);
       const elapsedMs = Date.now() - startedAt;
       const sample = await window.webContents.executeJavaScript(`
         (() => {
