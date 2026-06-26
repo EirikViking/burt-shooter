@@ -1,0 +1,73 @@
+{
+  "uploadedAt": "2026-06-26T09:18:47Z",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "buildId": 23928356,
+  "sourceBranch": "codex/boss-full-reinforcement-waves-20260626",
+  "sourceCommit": "50208d0219396599571a2a75266bfc9be68e089b",
+  "packageBuild": "v2026-06-26_11-12-09",
+  "setLive": "",
+  "privateUnassignedBuild": true,
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfVerified": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 907190667,
+    "manifestHash": "d71693c2eae254fd9c66f9255093e54e7b3475c2dc04f46723e08b1fe2c8beca",
+    "executableSha256": "5eb8b7850c90b28e69e7db3f35bbfa9362ff48b9c78f8680e704bbcf00aaf6b1"
+  },
+  "steamCmd": {
+    "path": "C:\\\\steamcmd\\\\steamcmd.exe",
+    "user": "gaunziman",
+    "logPath": "test-results/steam-upload-boss-full-reinforcement-20260626-111724/steamcmd-upload.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23928356).",
+    "uploadedContent": "8.8 MB"
+  },
+  "checks": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "git worktree list",
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run check:mayhem-reinforcement-waves",
+    "node scripts/analyze-mayhem-reinforcement-waves.mjs",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "npm run desktop:smoke:current"
+  ],
+  "knownWarnings": [
+    "Vite reported the existing large chunk warning.",
+    "Ascendant ship checks reported the existing temporary fallback art warnings for nova_ship_26 through nova_ship_30."
+  ],
+  "blockedOrFailedChecks": [
+    {
+      "command": "node C:/Users/cromk/.codex/skills/develop-web-game/scripts/web_game_playwright_client.js",
+      "result": "blocked",
+      "reason": "Playwright Chromium binary was not installed on this machine."
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "result": "failed",
+      "reason": "Packaged Electron smoke timed out before writing report.json; non-packaged desktop smoke passed against build v2026-06-26_11-12-09 and gitSha 50208d0."
+    },
+    {
+      "command": "npm run steamworks:write-vdf",
+      "result": "initial_failed_then_verified",
+      "reason": "Initial run failed because Steam AppID/depot environment variables were not set. Rerun with explicit AppID 4765070, depot 4765071, and blank SetLive wrote release/steamworks/app_build_LOCAL.vdf; VDF contents were verified after rerun."
+    }
+  ],
+  "notes": [
+    "Build uploaded as a private unassigned SteamPipe build.",
+    "SetLive remained blank, so no live/default/beta branch assignment was changed by this upload.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, achievement IDs, Steam Cloud paths, save format, scoring, or XP settings were intentionally changed."
+  ]
+}
