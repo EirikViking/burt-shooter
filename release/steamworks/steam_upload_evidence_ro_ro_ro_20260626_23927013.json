@@ -1,0 +1,45 @@
+{
+  "uploadedAt": "2026-06-26T07:44:03Z",
+  "steamBuildId": "23927013",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "branchAssignment": "none",
+  "steamCmdPath": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+  "appBuildVdf": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+  "sourceCommitForPackage": "10263fa0bd29a80af87d1c4f96c05a5acc8e314d",
+  "payloadManifestCommitBeforeUpload": "e8943ef36e2c7d108087bd3a213438fc546cac0a",
+  "branch": "codex/rename-boss-3-ro-ro-ro-20260626",
+  "package": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "50ba4524886d6cf315e6f225c4186e6ea620155f1e859034eccb2d61fdee4c80",
+    "fileCount": 336,
+    "totalBytes": 907188133,
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "762b754a40959cfdc6098e6e087658f86786439b61085251771a3a1e800114ef"
+    }
+  },
+  "checks": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf"
+  ],
+  "notes": [
+    "Private SteamPipe upload completed successfully with SetLive empty.",
+    "No Steam branch was assigned by this upload.",
+    "The first packaged smoke/perf attempt was run in parallel and both checks timed out; sequential reruns passed before upload.",
+    "Steam package runtime check reported AppID 4765070 and leaderboard nova_swarm_global_score_v2."
+  ],
+  "steamCmdResult": {
+    "exitCode": 0,
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23927013)."
+  }
+}
