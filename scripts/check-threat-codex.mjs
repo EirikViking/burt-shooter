@@ -60,8 +60,11 @@ const bossById = Object.fromEntries((catalog.bosses || []).map((entry) => [entry
 if (!/Czechia|loved to chat|adored her|already carried a vow|balcony beam/i.test(bossById.nova_boss_01?.description || '') || (bossById.nova_boss_01?.description || '').length < 900) {
   fail('Sonia boss Codex entry should include a long Czechia signal-boundary love story');
 }
+if (bossById.nova_boss_03?.name !== 'Ro ro ro') {
+  fail('Boss 3 should be named Ro ro ro');
+}
 if (!/Berget-9|deckhand|admiral throne|royal hangover cannon/i.test(bossById.nova_boss_03?.description || '') || (bossById.nova_boss_03?.description || '').length < 900) {
-  fail('KurtBossEdgar boss Codex entry should include a long Jeppe pa Berget-inspired story');
+  fail('Ro ro ro boss Codex entry should include a long Jeppe pa Berget-inspired story');
 }
 if (bossById.nova_boss_01?.codexBodyMode !== 'epic' || bossById.nova_boss_03?.codexBodyMode !== 'epic') {
   fail('long boss Codex stories should use epic body layout mode');

@@ -464,7 +464,7 @@ try {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_05']
     },
     threatDiscovery: {
-      items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'KurtBossEdgar' } } },
+      items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'Ro ro ro' } } },
       unreadIds: ['bosses:nova_boss_03']
     },
     shipUsage: {
@@ -519,7 +519,7 @@ try {
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_LOCAL_LEADERBOARD_KEY))[0].name, 'CLOUDACE');
   assert.deepEqual(JSON.parse(restartStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).unlocked.sort(), ['cloud_unlock', 'existing_local']);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY)).pilotXp, 8888);
-  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'KurtBossEdgar');
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'Ro ro ro');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');

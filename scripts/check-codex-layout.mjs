@@ -25,7 +25,7 @@ const categoryShots = [
   { categoryId: 'sectors', entryId: 'sector_060', label: 'sectors-60-far-signal' },
   { categoryId: 'runThemes', entryIndex: 0, label: 'runThemes' },
   { categoryId: 'bosses', entryId: 'nova_boss_01', label: 'bosses-sonia' },
-  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-kurtbossedgar' }
+  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-ro-ro-ro' }
 ];
 
 async function isPortAvailable(candidatePort) {

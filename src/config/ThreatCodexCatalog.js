@@ -56,12 +56,12 @@ Now Sonia fights like a love letter locked behind a safety glass. Her movement t
   },
   nova_boss_03: {
     signalClass: 'Berget class authority hangover',
-    description: `KurtBossEdgar began as Kurt Edgar, deckhand third class on Mining Rock Berget-9, where the gravity sagged, the coffee argued back, and every supervisor believed morale was a wrench you hit people with. Kurt dodged work with heroic consistency. He blamed the drills, the stars, his boots, and once a lunch tray that had already filed a complaint.
+    description: `Ro ro ro began as Kurt Edgar, deckhand third class on Mining Rock Berget-9, where the gravity sagged, the coffee argued back, and every supervisor believed morale was a wrench you hit people with. Kurt dodged work with heroic consistency. He blamed the drills, the stars, his boots, and once a lunch tray that had already filed a complaint.
 
 One payday he drank reactor gin beside an ore chute and woke in the admiral throne of a stolen dreadnought. The officers had found him snoring, thought it would be funny, and dressed him in a cape with too many medals. Kurt looked at the bridge, accepted the evidence, and became awful in under twelve seconds. He promoted a mop. He taxed the moon for looking smug. He ordered the ship's doctor to diagnose everyone else with being insufficiently Kurt.
 
 Then the joke reversed. They dumped him back on Berget-9 with a headache, a fake execution notice, and just enough memory to become dangerous. Kurt decided the universe had briefly confessed its secret: power is a chair, and whoever wakes in it gets to shout. He bolted a throne to a gunship and kept the paperwork error as his name. His movement lurches like borrowed authority, his pressure comes in pompous barrages, and his signature tell is the royal hangover cannon. Let him posture. When the crown light blinks, move. Every tyrant has a recovery animation.`,
-    tip: 'KurtBossEdgar is funniest before the cannon fires. Let the throne wobble, dodge the royal hangover shot, then revoke his chair privileges.'
+    tip: 'Ro ro ro is funniest before the cannon fires. Let the throne wobble, dodge the royal hangover shot, then revoke his chair privileges.'
   }
 });
 

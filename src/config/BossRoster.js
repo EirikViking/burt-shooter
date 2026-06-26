@@ -94,7 +94,7 @@ const ARCHETYPES = [
 const CALLSIGNS = [
   'Sonia',
   'Sam the Misfit',
-  'KurtBossEdgar',
+  'Ro ro ro',
   'LANE EATER',
   'NEON WARDEN',
   'Misfit Galaxy',
