@@ -1,0 +1,44 @@
+{
+  "uploadedAt": "2026-06-26T06:36:30Z",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "buildId": 23926193,
+  "sourceBranch": "codex/reinforcement-double-wave-8pct-20260626",
+  "sourceCommit": "578ee84e120d5b4390b9145baa3e9629f16739e5",
+  "packageBuild": "v2026-06-25_12-53-25",
+  "setLive": "",
+  "privateUnassignedBuild": true,
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 891448789,
+    "manifestHash": "7d2eadd1beae083dd7fb50f7bca0cf56b99ddc2ef5ed0eb787366272f4f0dcfb",
+    "executableSha256": "ed2fb112f5ab6d1edc59925edb7f83faa5023481656aee529e579aafc40e6ed3"
+  },
+  "steamPipe": {
+    "depotManifestId": "1037094889890123949",
+    "baselineManifestId": "1591328471124747260",
+    "filesAdded": 0,
+    "filesChanged": 2,
+    "changedBytes": "7.80 MB",
+    "filesRemoved": 0,
+    "uploadedChunks": 9
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run check:mayhem-reinforcement-waves",
+    "npm run build:current",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "notes": [
+    "First SteamCMD attempt failed downloading the prior depot manifest before SteamCMD updated itself.",
+    "Retry with the same verified VDF succeeded.",
+    "SetLive remained blank, so no live or beta branch was assigned by this upload."
+  ]
+}
