@@ -1,5 +1,10 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-26 Full Reinforcement Wave Retune
+
+- Current request: boss-fight reinforcements felt too weak; boss fights should get one full reinforcement wave and sometimes two, while normal Mayhem waves should very rarely trigger a dramatic 3-4 simultaneous-wave reinforcement spike.
+- Fix direction: boss reinforcements keep the existing warning and 15% boss check but now spawn full generated wave configs instead of small nerfed add groups, with an 8% double-full-wave spike from level 8 onward. Normal wave reinforcements are now rare 5% events from level 8 onward that consume and launch 3 future waves, with a 35% chance to launch a fourth when enough future wave configs exist.
+
 ## 2026-06-26 Reinforcement Visibility Repair
 
 - Current request: make Mayhem reinforcements show up more reliably after a level-13 run saw none; raise the reinforcement event chance to 15% and make double reinforcements an 8% spike that adds two extra wave groups within three seconds of the warning.
