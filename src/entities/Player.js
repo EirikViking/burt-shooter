@@ -26,6 +26,7 @@ const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
   () => Object.freeze({ x: 0, y: 0 })
 );
 const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
+const FOCUS_DRIFT_SPEED_MULTIPLIER = 0.48;
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -123,6 +124,7 @@ export class Player {
     this.dodgeRing = null;
     this.dodgeText = null;
     this.dodgeFlashMs = 0;
+    this.focusDriftActive = false;
     this.focusPulse = 0;
     this.damageOverlay = null;
     this.boostAura = null;
@@ -399,15 +401,15 @@ export class Player {
 
     this.focusPulse += deltaSeconds;
     const lowLife = Number.isFinite(this.game?.lives) && this.game.lives <= 1;
-    const dangerBoost = lowLife || this.invulnerable || this.isDodging ? 1.22 : 1;
+    const dangerBoost = lowLife || this.invulnerable || this.isDodging || this.focusDriftActive ? 1.22 : 1;
     const pulse = (Math.sin(this.focusPulse * 5) + 1) / 2;
     const shipWidth = this.baseShipWidth || 64;
     const radius = Math.max(34, shipWidth * (0.62 + focusScale * 0.22)) * dangerBoost;
-    const alpha = Math.min(0.86, 0.18 + focusScale * 0.46 + (lowLife ? 0.12 : 0));
+    const alpha = Math.min(0.9, 0.18 + focusScale * 0.46 + (lowLife ? 0.12 : 0) + (this.focusDriftActive ? 0.1 : 0));
     const tick = Math.max(8, radius * 0.18);
     const tickInset = radius + 4;
     const tickOutset = radius + tick;
-    const color = lowLife ? 0xff55d9 : 0x66f7ff;
+    const color = lowLife ? 0xff55d9 : this.focusDriftActive ? 0xffef7e : 0x66f7ff;
 
     this.focusRing.clear();
     this.focusRing.circle(0, 0, radius + pulse * 2);
@@ -961,7 +963,10 @@ export class Player {
     // Apply Speed. Tractor debuffs never invert controls; drift only adds mild inertia.
     const engineDrag = this.getStatusEffect('engine_drag');
     const controlDrift = this.getStatusEffect('control_drift');
-    const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1);
+    const focusDriftRequested = Boolean(this.inputManager?.isKeyPressed?.('focus'));
+    this.focusDriftActive = focusDriftRequested && !this.isDodging && !this.isGhostActive();
+    const focusDriftMultiplier = this.focusDriftActive ? FOCUS_DRIFT_SPEED_MULTIPLIER : 1;
+    const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1) * focusDriftMultiplier;
     const targetMoveX = dx * this.speed * speedMultiplier;
     const targetMoveY = dy * this.speed * speedMultiplier;
     if (controlDrift) {

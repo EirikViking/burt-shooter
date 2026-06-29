@@ -1,5 +1,12 @@
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
+## 2026-06-29 Forum Feedback Precision Drift
+
+- Current request: read the Steam forum feedback, make the most sensible low-risk improvement from it, and push a Steam build.
+- Forum judgment: the strongest current actionable ask is more player agency during dense bullet patterns without changing score, XP, leaderboards, achievements, save format, or Steamworks settings.
+- Implementation direction: add a hold-to-focus precision drift control for tight bullet weaving, document it in How To Play/menu hints, localize the new text, and extend focused checks before any private Steam upload.
+- Verification direction: `check:how-to-play` now proves the Focus card, Ctrl slow-move, and LT focus input; current source gates passed `git diff --check`, i18n, i18n-ui, controller-flow, release-line, and `build:current`.
+
 ## 2026-06-26 ROW CORE Powerup And Mayhem Hype
 
 - Current request: implement premium `ROW CORE` powerup from the attached brief and add the three low-hanging fruit ideas: more legible/hype reinforcement moments, score dopamine for surviving chaos, and more in-run boss/mission-control personality.

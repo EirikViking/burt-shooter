@@ -1834,10 +1834,10 @@ export class MenuScene {
   }
 
   getControlsText(layout) {
-    if (layout.isMobile) return 'Joystick: Move | FIRE button: Shoot';
+    if (layout.isMobile) return translateText('Joystick: Move | FIRE button: Shoot');
     return this.lastInputDevice === 'controller'
-      ? 'Left Stick/D-Pad: Move | A/RT: Shoot | B/LB: Dodge | Start: Pause'
-      : 'WASD/Arrows: Move | Space: Shoot | Shift: Dodge | P/Esc: Pause';
+      ? translateText('Stick/D-Pad: Move | LT: Focus | A/RT: Shoot | B/LB: Phase | Start: Pause')
+      : translateText('WASD/Arrows: Move | Ctrl: Focus | Space: Shoot | Shift: Phase | P/Esc: Pause');
   }
 
   getDisclaimerText(layout) {
@@ -1852,8 +1852,8 @@ export class MenuScene {
         : translateText('ARROWS: SELECT // ENTER/SPACE: START // ESC: BACK');
     }
     return this.lastInputDevice === 'controller'
-      ? 'D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK'
-      : 'ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK';
+      ? translateText('D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK')
+      : translateText('ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK');
   }
 
   getRunModeExplainerText() {

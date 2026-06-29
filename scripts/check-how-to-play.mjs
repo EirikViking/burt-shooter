@@ -19,6 +19,7 @@ const scenarios = [
   { name: '3840x2160-scale200', width: 3840, height: 2160, scale: 2 }
 ];
 const expectedRows = [
+  'FOCUS DRIFT',
   'DODGE / PHASE',
   'CHAINED DODGE',
   'GRAZE',
@@ -135,6 +136,8 @@ function assertCleanHelpCopy(state, label) {
   assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
   assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
   assert(joined.includes('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'), `${label} should show the new training flow`);
+  assert(joined.includes('HOLD CTRL / LT'), `${label} should mention the Focus Drift input`);
+  assert(joined.includes('tight weaving'), `${label} should explain Focus Drift movement use`);
   assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
   assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
@@ -150,7 +153,7 @@ function assertScreenshotAudit(audit, label) {
 function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
-  assert(overlay?.cardCount === 10, `${label} expected 10 help cards, saw ${overlay?.cardCount}`);
+  assert(overlay?.cardCount === 11, `${label} expected 11 help cards, saw ${overlay?.cardCount}`);
   assert(overlay?.heroArt?.motionNodes >= 20, `${label} expected animated hero art nodes, saw ${overlay?.heroArt?.motionNodes}`);
   assert(overlay?.heroArt?.textureSprites >= 6, `${label} expected real hero texture slots, saw ${overlay?.heroArt?.textureSprites}`);
   assert(overlay?.heroArt?.visibleTextureSprites >= 4, `${label} expected loaded hero art sprites, saw ${overlay?.heroArt?.visibleTextureSprites}`);
@@ -274,6 +277,53 @@ try {
         input.touchFireActive = true;
         const leftMouseFires = Boolean(input.isFiring?.());
         input.touchFireActive = wasTouchFireActive;
+        const oldKeys = { ...(input.keys || {}) };
+        const oldTouchInput = { ...(player.touchInput || {}) };
+        const oldDriftVelocity = { ...(player.statusDriftVelocity || {}) };
+        const oldFocusDriftActive = player.focusDriftActive;
+        const oldX = player.x;
+        const oldY = player.y;
+        const measureMovement = (withFocus) => {
+          input.keys = {};
+          input.setKeyPressed?.('ArrowRight', true);
+          if (withFocus) input.setKeyPressed?.('ControlLeft', true);
+          player.touchInput = { moveX: 0, moveY: 0 };
+          if (player.statusDriftVelocity) {
+            player.statusDriftVelocity.x = 0;
+            player.statusDriftVelocity.y = 0;
+          }
+          player.x = Math.max(120, Math.min((play.game?.getWidth?.() || 1280) - 120, oldX));
+          player.y = Math.max(120, Math.min((play.game?.getHeight?.() || 720) - 140, oldY));
+          const before = player.x;
+          player.update(1);
+          const moved = player.x - before;
+          return { moved, focusDriftActive: Boolean(player.focusDriftActive) };
+        };
+        const normalMove = measureMovement(false);
+        const focusMove = measureMovement(true);
+        input.keys = oldKeys;
+        player.touchInput = oldTouchInput;
+        player.statusDriftVelocity = oldDriftVelocity;
+        player.focusDriftActive = oldFocusDriftActive;
+        player.x = oldX;
+        player.y = oldY;
+        if (player.sprite) {
+          player.sprite.x = oldX;
+          player.sprite.y = oldY;
+        }
+
+        const oldGamepadOverride = window.__burtGamepadOverride;
+        const focusButtons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+        focusButtons[6] = { pressed: true, value: 1 };
+        window.__burtGamepadOverride = {
+          id: 'focus-proof-gamepad',
+          axes: [0, 0, 0, 0],
+          buttons: focusButtons,
+          connected: true
+        };
+        const leftTriggerFocus = Boolean(input.isKeyPressed?.('focus'));
+        window.__burtGamepadOverride = oldGamepadOverride;
+        input.pollGamepad?.(true);
 
         const oldOverride = window.__burtKeyboardOverride;
         const oldDodging = player.isDodging;
@@ -298,7 +348,19 @@ try {
         if (player.dodgeRing) player.dodgeRing.visible = false;
         if (player.sprite) player.sprite.alpha = 1;
         window.__burtKeyboardOverride = oldOverride;
-        return { ok: leftMouseFires && rightShiftStartsPhase, leftMouseFires, rightShiftStartsPhase };
+        const focusSlowsMovement = normalMove.moved > 0 &&
+          focusMove.moved > 0 &&
+          focusMove.moved < normalMove.moved * 0.7 &&
+          focusMove.focusDriftActive;
+        return {
+          ok: leftMouseFires && rightShiftStartsPhase && focusSlowsMovement && leftTriggerFocus,
+          leftMouseFires,
+          rightShiftStartsPhase,
+          focusSlowsMovement,
+          leftTriggerFocus,
+          normalMove,
+          focusMove
+        };
       });
       assert(inputProof.ok, `${scenario.name} input proof failed: ${JSON.stringify(inputProof)}`);
       await page.evaluate(() => {

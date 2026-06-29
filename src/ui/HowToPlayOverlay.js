@@ -20,6 +20,14 @@ const HELP_ROWS = Object.freeze([
   },
   {
     code: '02',
+    icon: 'FOCUS',
+    label: 'FOCUS DRIFT',
+    control: 'HOLD CTRL / LT',
+    tip: 'Hold Focus to slow your ship for tight weaving without changing your weapon.',
+    accent: 0xffef7e
+  },
+  {
+    code: '03',
     icon: 'FIRE',
     label: 'SHOOT',
     control: 'SPACE / LEFT MOUSE / GAMEPAD A',
@@ -27,7 +35,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xffef7e
   },
   {
-    code: '03',
+    code: '04',
     icon: 'PHASE',
     label: 'DODGE / PHASE',
     control: 'LEFT/RIGHT SHIFT / GAMEPAD B',
@@ -35,7 +43,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xff55d9
   },
   {
-    code: '04',
+    code: '05',
     icon: 'CHAIN',
     label: 'CHAINED DODGE',
     control: 'GRAZE AGAIN BEFORE THE TIMER ENDS',
@@ -43,7 +51,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xff8f5a
   },
   {
-    code: '05',
+    code: '06',
     icon: 'SKIM',
     label: 'GRAZE',
     control: 'PASS CLOSE TO ENEMY SHOTS',
@@ -51,7 +59,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0x66ff9d
   },
   {
-    code: '06',
+    code: '07',
     icon: 'BREAK',
     label: 'GRAZE BREAK',
     control: '3 GRAZES ARM YOUR NEXT SHOT',
@@ -59,7 +67,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xff66ff
   },
   {
-    code: '07',
+    code: '08',
     icon: 'COMBO',
     label: 'COMBOS',
     control: 'FAST KILLS KEEP THE CHAIN',
@@ -67,7 +75,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xff8f5a
   },
   {
-    code: '08',
+    code: '09',
     icon: 'BEAM',
     label: 'TRACTOR SHIPS',
     control: 'BREAK ACTIVE BEAMS',
@@ -75,7 +83,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0x7ee9ff
   },
   {
-    code: '09',
+    code: '10',
     icon: 'LOOT',
     label: 'PICKUPS & BONUS',
     control: 'BRIGHT ICONS ARE SAFE',
@@ -83,7 +91,7 @@ const HELP_ROWS = Object.freeze([
     accent: 0xb285ff
   },
   {
-    code: '10',
+    code: '11',
     icon: 'MODE',
     label: 'RUN MODES',
     control: 'MAYHEM / SCOUT / SECTOR RUN',
@@ -193,8 +201,9 @@ export class HowToPlayOverlay {
     const cardWidth = columns === 1
       ? gridWidth
       : (gridWidth - gridGap) / 2;
+    const minCardHeight = veryShort ? 42 : compact ? 54 : shortDesktop || visualRows >= 6 ? 76 : 92;
     const cardHeight = Math.max(
-      veryShort ? 42 : compact ? 54 : shortDesktop ? 76 : 92,
+      minCardHeight,
       Math.floor((gridHeight - gridGap * (visualRows - 1)) / visualRows)
     );
     const titleSize = veryShort ? 24 : spacious ? 48 : compact ? 31 : 42;
