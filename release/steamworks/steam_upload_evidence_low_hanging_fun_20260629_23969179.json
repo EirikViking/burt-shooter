@@ -1,0 +1,163 @@
+{
+  "status": "uploaded_private_unassigned_build",
+  "uploadedAt": "2026-06-29T16:19:08Z",
+  "steamBuildId": "23969179",
+  "steamworksUser": "gaunziman",
+  "branch": "codex/low-hanging-fun-20260629",
+  "baselineCommit": "f30fd5264faecb555e07a97d5e96ae8baaf1a39e",
+  "sourceCommit": "60e894425d591c1a565803e7d1d4155fda0c9aed",
+  "sourceCommitShort": "60e8944",
+  "sourceCommitMessage": "Add low-hanging gameplay fun feedback",
+  "build": {
+    "version": "v2026-06-29_18-03-22",
+    "timestamp": "2026-06-29T16:03:22.042Z"
+  },
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfAbsolutePath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+    "changedStoreMetadata": false,
+    "changedLiveBranchAssignment": false,
+    "changedSteamCloudSettings": false,
+    "changedAchievementsMetadata": false,
+    "branchAssignmentEvidence": "The generated VDF has SetLive blank; SteamCMD output reports private build creation only, with no branch assignment."
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915861327,
+    "manifestHash": "7b3c8d5eef07273ce6cf57c44658097d862946ece6724f40d2f14cacbeb38d2f",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "3eb0818d99f7eda8da10f1f6e8b46a31ad4a20614f3002db69f08de0452bacac"
+    }
+  },
+  "changesUploaded": {
+    "baselineDepotManifest": "8540605820179454680",
+    "newDepotManifest": "497202928615448419",
+    "summary": "0 files added, 2 files changed, 0 files removed; 10 new chunks uploaded.",
+    "changedFiles": [
+      "Nova Swarm.exe",
+      "resources/app.asar"
+    ]
+  },
+  "lowHangingFun": [
+    "Near-miss streaks now trigger a small surge that readies the next shot and adds VFX/audio.",
+    "Combo milestone/multiplier jumps now get player-centered burst and shockwave feedback.",
+    "Powerup pickups now get player-centered burst and shockwave pickup feedback."
+  ],
+  "verification": {
+    "preUploadChecks": [
+      {
+        "command": "git fetch --all --prune",
+        "status": "passed"
+      },
+      {
+        "command": "git status --short --branch",
+        "status": "passed_expected_generated_manifest_dirty",
+        "notes": "Only release/steamworks/steam_payload_manifest.json was modified by packaging."
+      },
+      {
+        "command": "git worktree list --porcelain",
+        "status": "passed_single_worktree_for_branch"
+      },
+      {
+        "command": "git diff --check",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:low-hanging-fun",
+        "status": "passed",
+        "screenshot": "test-results/low-hanging-fun-2026-06-29T16-02-42-514Z/low-hanging-fun.png"
+      },
+      {
+        "command": "npm run check:danger-dodge",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:i18n",
+        "status": "passed"
+      },
+      {
+        "command": "npm run build:current",
+        "status": "passed",
+        "notes": "Existing large-chunk and ascendant fallback-art warnings only."
+      },
+      {
+        "command": "npm run check:i18n-ui",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:release-line",
+        "status": "passed",
+        "notes": "Reran immediately before SteamCMD upload."
+      },
+      {
+        "command": "npm run package:steam:win",
+        "status": "passed"
+      },
+      {
+        "command": "npm run desktop:smoke:packaged",
+        "status": "passed",
+        "report": "test-results/packaged-exe-smoke-2026-06-29T16-12-28-337Z/report.json",
+        "build": "v2026-06-29_18-03-22",
+        "gitSha": "60e8944",
+        "consoleEvents": 0
+      },
+      {
+        "command": "npm run desktop:perf:packaged",
+        "status": "passed",
+        "report": "test-results/packaged-perf-smoke-2026-06-29T16-12-28-337Z/report.json",
+        "build": "v2026-06-29_18-03-22",
+        "gitSha": "60e8944",
+        "minFps": 59.99999999999999,
+        "avgFps": 59.99999999999999,
+        "warnings": [
+          "capturePage retry recovered after: UnknownVizError"
+        ],
+        "errors": []
+      },
+      {
+        "command": "npm run steamworks:payload-manifest",
+        "status": "passed",
+        "report": "release/steamworks/steam_payload_manifest.json"
+      },
+      {
+        "command": "$env:STEAM_APP_ID='4765070'; $env:STEAM_DEPOT_ID='4765071'; $env:STEAM_SET_LIVE=''; npm run steamworks:write-vdf",
+        "status": "passed"
+      }
+    ],
+    "steamcmd": {
+      "path": "C:/steamcmd/steamcmd.exe",
+      "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+      "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+      "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+      "consoleLog": "release/steamworks/steam_upload_console_20260629_low_hanging_fun.log",
+      "exitCode": 0,
+      "result": "Successfully finished AppID 4765070 build (BuildID 23969179)."
+    },
+    "notes": [
+      "The generic develop-web-game Playwright client ran after installing the skill browser bundle, but its screenshot capture stayed black; repo Playwright screenshots and packaged checks were used as visual/runtime proof.",
+      "Packaged smoke confirms Steam bridge ready, AppID 4765070, leaderboard nova_swarm_global_score_v2, build v2026-06-29_18-03-22, and gitSha 60e8944."
+    ]
+  },
+  "protectedInvariants": {
+    "steamAppIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardNameChanged": false,
+    "achievementIdsChanged": false,
+    "steamCloudPathChanged": false,
+    "saveFormatChanged": false,
+    "scoringChangedByDeploy": false,
+    "xpChangedByDeploy": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "releaseBranchAssigned": false,
+    "setLiveBlank": true
+  }
+}
