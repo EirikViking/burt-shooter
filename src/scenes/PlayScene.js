@@ -304,6 +304,8 @@ export class PlayScene {
     this.dangerDodgeTimerMs = 0;
     this.bestDangerDodgeStreak = 0;
     this.lastDangerDodgeScore = 0;
+    this.nearMissSurgesThisRun = 0;
+    this.lastNearMissSurge = null;
     this.grazeBreakReady = false;
     this.grazeBreakArmedAt = 0;
     this.grazeBreakExpiresAt = 0;
@@ -311,6 +313,8 @@ export class PlayScene {
     this.grazeBreakToken = 0;
     this.grazeBreaksThisRun = 0;
     this.lastGrazeBreak = null;
+    this.lastComboCelebration = null;
+    this.lastPowerupPickupJuice = null;
     this.lastTraitImpactToastAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
@@ -466,12 +470,16 @@ export class PlayScene {
     this.dangerDodgeTimerMs = 0;
     this.bestDangerDodgeStreak = 0;
     this.lastDangerDodgeScore = 0;
+    this.nearMissSurgesThisRun = 0;
+    this.lastNearMissSurge = null;
     this.grazeBreakReady = false;
     this.grazeBreakArmedAt = 0;
     this.grazeBreakExpiresAt = 0;
     this.grazeBreakCooldownAt = 0;
     this.grazeBreakToken = 0;
     this.lastGrazeBreak = null;
+    this.lastComboCelebration = null;
+    this.lastPowerupPickupJuice = null;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -3270,6 +3278,7 @@ export class PlayScene {
           AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
           this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
+          this.triggerPowerupPickupJuice(powerup);
           // CRITICAL: Ensure player visibility after powerup pickup
           this.player.ensureRenderable('afterPowerupPickup');
         }
@@ -8012,6 +8021,135 @@ export class PlayScene {
     }
   }
 
+  triggerComboMilestoneFlare(options = {}) {
+    const threshold = Math.max(0, Math.round(Number(options.threshold ?? this.comboCount) || 0));
+    const multiplier = Math.max(1, Math.round(Number(options.multiplier ?? this.comboMultiplier) || 1));
+    const reason = options.reason || 'combo_milestone';
+    const x = Number.isFinite(options.x) ? options.x : (this.player?.x ?? this.game.getWidth() / 2);
+    const y = Number.isFinite(options.y) ? options.y : (this.player?.y ?? this.game.getHeight() * 0.72);
+    const highTier = threshold >= 25 || multiplier >= 3;
+    const color = Number.isFinite(options.color) ? options.color : (highTier ? 0xff66ff : 0x00ffff);
+    const accent = Number.isFinite(options.accent) ? options.accent : (highTier ? 0xffff66 : 0xffffff);
+
+    this.particleManager?.createRadialBurst?.(x, y, color, {
+      count: highTier ? 34 : 24,
+      intensity: highTier ? 1.08 : 0.78,
+      minSpeed: 1.6,
+      maxSpeed: highTier ? 6.2 : 4.8,
+      size: highTier ? 2.8 : 2.2,
+      lifetime: highTier ? 44 : 34,
+      alternateColor: accent,
+      upwardBias: 0.35
+    });
+    this.particleManager?.createHitSpark?.(x, y - 18, accent, highTier ? 1.45 : 1.05);
+    this.triggerShockwave?.(x, y, color);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 3 : (highTier ? 6 : 4), highTier ? 16 : 11);
+    AudioManager.playSfx(highTier ? 'combo_breakout' : 'combo_tick', {
+      volume: highTier ? 0.58 : 0.44,
+      minIntervalMs: 160
+    });
+
+    this.lastComboCelebration = {
+      triggered: true,
+      startedAt: Date.now(),
+      durationMs: highTier ? 1050 : 850,
+      threshold,
+      multiplier,
+      reason
+    };
+    return this.lastComboCelebration;
+  }
+
+  triggerPowerupPickupJuice(powerup = {}) {
+    const type = powerup?.type || 'powerup';
+    const x = Number.isFinite(this.player?.x) ? this.player.x : (Number.isFinite(powerup?.x) ? powerup.x : this.game.getWidth() / 2);
+    const y = Number.isFinite(this.player?.y) ? this.player.y : (Number.isFinite(powerup?.y) ? powerup.y : this.game.getHeight() * 0.72);
+    const color = Number.isFinite(powerup?.color)
+      ? powerup.color
+      : (this.player?.visualVariant?.accent || this.player?.visualVariant?.glow || 0x66ffff);
+    const major = ['super_extra_life', 'bomb', 'row_core', 'plasma_lance', 'shockwave'].includes(type);
+
+    this.particleManager?.createPickupEffect?.(x, y, color);
+    this.particleManager?.createRadialBurst?.(x, y, color, {
+      count: major ? 30 : 18,
+      intensity: major ? 1.05 : 0.7,
+      minSpeed: 0.9,
+      maxSpeed: major ? 5.4 : 3.8,
+      size: major ? 2.8 : 2,
+      lifetime: major ? 46 : 32,
+      alternateColor: 0xffffff,
+      upwardBias: 0.75
+    });
+    this.triggerShockwave?.(x, y, color);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : (major ? 5 : 3), major ? 14 : 9);
+
+    this.lastPowerupPickupJuice = {
+      triggered: true,
+      startedAt: Date.now(),
+      durationMs: major ? 950 : 720,
+      type,
+      major,
+      x: Math.round(x),
+      y: Math.round(y)
+    };
+    return this.lastPowerupPickupJuice;
+  }
+
+  triggerNearMissSurge() {
+    const streak = Math.max(0, Math.round(Number(this.dangerDodgeCount) || 0));
+    if (streak < 5 || streak % 5 !== 0 || !this.player) return false;
+
+    const now = Date.now();
+    if (this.lastNearMissSurge?.streak === streak && now - (this.lastNearMissSurge.startedAt || 0) < 900) {
+      return false;
+    }
+
+    const beforeCooldown = Math.max(0, Number(this.player.shootCooldown) || 0);
+    const readyCooldown = Math.max(0, Math.min(beforeCooldown, Math.round((Number(this.player.shootDelay) || 140) * 0.16)));
+    this.player.shootCooldown = readyCooldown;
+
+    const x = this.player.x;
+    const y = this.player.y;
+    const color = streak >= 10 ? 0xff66ff : 0xffcc00;
+    this.particleManager?.createNearMissEffect?.(x, y, Math.min(9, streak + 2));
+    this.particleManager?.createRadialBurst?.(x, y, color, {
+      count: streak >= 10 ? 28 : 20,
+      intensity: streak >= 10 ? 1 : 0.74,
+      minSpeed: 1.2,
+      maxSpeed: streak >= 10 ? 5.8 : 4.2,
+      size: 2.1,
+      lifetime: 34,
+      alternateColor: 0xffffff,
+      upwardBias: 0.6
+    });
+    this.triggerShockwave?.(x, y, color);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : 4, 10);
+    AudioManager.playSfx('combo_tick', { volume: 0.68, minIntervalMs: 120 });
+
+    const nearMissLabel = translateText('NEAR MISS');
+    this.enqueueToast(`${nearMissLabel} x${streak}`, {
+      fontSize: this.game.getWidth() < 620 ? 16 : 20,
+      fill: streak >= 10 ? '#ff66ff' : '#ffef7e',
+      stroke: '#120018',
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
+      slot: 'corner',
+      type: 'dangerDodge',
+      priority: 3,
+      duration: 850
+    });
+
+    this.nearMissSurgesThisRun = (Number(this.nearMissSurgesThisRun) || 0) + 1;
+    this.lastNearMissSurge = {
+      triggered: true,
+      startedAt: now,
+      durationMs: 900,
+      streak,
+      cooldownBefore: Math.round(beforeCooldown),
+      cooldownAfter: Math.round(this.player.shootCooldown || 0)
+    };
+    return true;
+  }
+
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
     const sideEffects = options.sideEffects || null;
@@ -8077,6 +8215,13 @@ export class PlayScene {
         });
         queuePlayerExplosion(this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
         queueScreenShake(6, 15);
+        this.triggerComboMilestoneFlare({
+          threshold: milestone.threshold,
+          multiplier: this.comboMultiplier,
+          reason: 'combo_milestone',
+          color: 0xffaa00,
+          accent: 0xffffff
+        });
       }
     }
 
@@ -8090,6 +8235,15 @@ export class PlayScene {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
       queueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       queuePlayerExplosion(this.player?.x, this.player?.y, 0x00ffff);
+      if (!COMBO_MILESTONES.some((milestone) => milestone.threshold === this.comboCount)) {
+        this.triggerComboMilestoneFlare({
+          threshold: this.comboCount,
+          multiplier: this.comboMultiplier,
+          reason: 'combo_multiplier',
+          color: 0x00ffff,
+          accent: 0xff66ff
+        });
+      }
     }
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
@@ -8393,6 +8547,7 @@ export class PlayScene {
         source: 'near_miss_streak'
       });
     }
+    this.triggerNearMissSurge();
   }
 
   applyShipTraitBulletImpact(bullet, sourceEnemy) {

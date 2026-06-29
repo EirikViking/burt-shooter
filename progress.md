@@ -1,3 +1,12 @@
+Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
+
+## 2026-06-29 Low-Hanging Fun Pass
+
+- Current request: identify and implement at least three low-hanging fruit improvements that make the game more fun.
+- Chosen low-risk fun wins: near-miss streaks now get a five-graze surge that readies the next shot with extra VFX; combo milestones/multiplier jumps now fire a visible player-centered celebration burst; powerup pickups now add a player-centered pickup burst/shockwave in addition to the pickup-location effect.
+- Verification direction: added `npm run check:low-hanging-fun` to prove all three feedback hooks in a real PlayScene and capture a screenshot/report.
+- Verification: `git diff --check`, `npm run check:low-hanging-fun`, `npm run check:danger-dodge`, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run build:current`, and `npm run check:release-line` passed. The web-game skill client ran after installing its Playwright browser bundle under `D:\Codex\playwright-browsers\develop-web-game-1.58.2`; its text state reached active gameplay, but both headless and headed screenshots were black due that client/browser capture path, so visual proof came from the nonblank `check:low-hanging-fun` screenshot.
+
 Original goal: Continue autonomous development of Nova Swarm toward a polished Steam-ready indie release candidate across gameplay, visuals, audio, UX, polish, stability, performance, documentation, and review loops. Use image generation extensively. ElevenLabs may be used for audio/voice/music if useful, but the provided API key is secret and must never be committed, logged, printed, or stored in tracked files.
 
 ## 2026-06-29 Forum Feedback Precision Drift

@@ -665,6 +665,35 @@ function buildGameTextState(game) {
       dangerDodgeTimerMs: Math.max(0, Math.round(playScene.dangerDodgeTimerMs || 0)),
       bestDangerDodgeStreak: playScene.bestDangerDodgeStreak || 0,
       lastDangerDodgeScore: playScene.lastDangerDodgeScore || 0,
+      nearMissSurgesThisRun: playScene.nearMissSurgesThisRun || 0,
+      lastNearMissSurge: playScene.lastNearMissSurge ? {
+        triggered: Boolean(playScene.lastNearMissSurge.triggered),
+        streak: playScene.lastNearMissSurge.streak || 0,
+        cooldownBefore: playScene.lastNearMissSurge.cooldownBefore || 0,
+        cooldownAfter: playScene.lastNearMissSurge.cooldownAfter || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastNearMissSurge.startedAt + playScene.lastNearMissSurge.durationMs) - Date.now()
+        ))
+      } : null,
+      lastComboCelebration: playScene.lastComboCelebration ? {
+        triggered: Boolean(playScene.lastComboCelebration.triggered),
+        threshold: playScene.lastComboCelebration.threshold || 0,
+        multiplier: playScene.lastComboCelebration.multiplier || 1,
+        reason: playScene.lastComboCelebration.reason || null,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastComboCelebration.startedAt + playScene.lastComboCelebration.durationMs) - Date.now()
+        ))
+      } : null,
+      lastPowerupPickupJuice: playScene.lastPowerupPickupJuice ? {
+        triggered: Boolean(playScene.lastPowerupPickupJuice.triggered),
+        type: playScene.lastPowerupPickupJuice.type || null,
+        major: Boolean(playScene.lastPowerupPickupJuice.major),
+        x: playScene.lastPowerupPickupJuice.x || 0,
+        y: playScene.lastPowerupPickupJuice.y || 0,
+        remainingMs: Math.max(0, Math.round(
+          (playScene.lastPowerupPickupJuice.startedAt + playScene.lastPowerupPickupJuice.durationMs) - Date.now()
+        ))
+      } : null,
       grazeBreakReady: Boolean(playScene.grazeBreakReady && Date.now() <= (playScene.grazeBreakExpiresAt || 0)),
       grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - Date.now())),
       grazeBreakBullets: playerBullets.filter(bullet => bullet?.active !== false && bullet.isGrazeBreaker).length,

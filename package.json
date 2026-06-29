@@ -48,6 +48,7 @@
     "check:steam-achievements-mock": "node scripts/check-steam-achievements-mock.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
+    "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
     "check:result-screen-status": "node scripts/check-result-screen-status.mjs",
