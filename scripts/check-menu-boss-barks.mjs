@@ -109,6 +109,7 @@ for (const snippet of [
   'scheduleBossMenuBark',
   'hasActiveMenuBossBarkVoice',
   "exclusiveGroup: 'boss_menu_bark'",
+  "Focus barks wait before starting, but click barks must be able to cut a hover bark cleanly.",
   'showBossMenuBarkVfx',
   'playMenuFocusSfx',
   'setupMenuActivityTracking',
@@ -120,6 +121,9 @@ for (const snippet of [
 }
 if (menuSceneSource.includes("AudioManager.playSfx('thrusterFire', { volume: 0.07, minIntervalMs: 90 })")) {
   fail('menu navigation should not use the old thrusterFire focus chirp');
+}
+if (menuSceneSource.includes("exclusiveGroup: isActivate ? 'boss_menu_bark' : null")) {
+  fail('hover/focus menu barks must also use the boss_menu_bark group so click barks can cut them cleanly');
 }
 
 const fxSource = fs.readFileSync(path.join(rootDir, 'src/ui/MenuFxLayer.js'), 'utf8');

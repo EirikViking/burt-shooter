@@ -71,6 +71,7 @@
     "check:mayhem-super-storm-voices": "node scripts/check-mayhem-super-storm-voices.mjs",
     "check:row-core": "node scripts/check-row-core.mjs",
     "check:menu-boss-barks": "node scripts/check-menu-boss-barks.mjs",
+    "check:menu-voice-overlap": "node scripts/check-menu-voice-overlap.mjs",
     "check:reinforcement-voices": "node scripts/check-reinforcement-voices.mjs",
     "check:sector-continue-mode": "node scripts/check-sector-continue-mode.mjs",
     "check:sector-continue-controller-flow": "node scripts/check-sector-continue-controller-flow.mjs",

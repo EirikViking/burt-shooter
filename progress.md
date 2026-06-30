@@ -8,6 +8,12 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Non-goal note: the memory-canonical feedback backlog doc (`docs/nova-swarm-feedback-priority-backlog-2026-06-18.md`) is not present on this branch; only add the seeded/daily/weekly leaderboard note if an equivalent canonical backlog artifact is found locally.
 - Follow-up Steam package/upload evidence: source commit `e4cd7db8ed9a6e1d0bc14ea54b9a76d7283c79a9` packaged as `v2026-06-30_14-21-55`; packaged smoke/controls/perf proved gitSha `e4cd7db` at `test-results/packaged-exe-smoke-2026-06-30T12-27-50-103Z/report.json`, `test-results/packaged-control-smoke-2026-06-30T12-27-50-150Z/report.json`, and `test-results/packaged-perf-smoke-2026-06-30T12-27-50-103Z/report.json`; payload manifest recorded 336 files / 915,871,413 bytes with manifest hash `0426bebae5004e3c7c0f795add8b71920b0f580db1c9b04372765d6e4c1dcfae`; VDF verified AppID `4765070`, depot `4765071`, `ContentRoot "..\\desktop\\win-unpacked"`, and `SetLive ""`; SteamCMD cached login uploaded private unassigned BuildID `23983678`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud settings, save format, score identity, or deploy state changed.
 
+## 2026-06-30 Menu Voice Overlap Hotfix
+
+- Current request: fix remaining overlapping menu voices when a player hovers over a button long enough to start a boss bark, then clicks it, and redeploy to Steam.
+- Implementation direction: keep the hover/focus delay and anti-spam cooldowns, but register focus barks in the same `boss_menu_bark` exclusive group as activation barks so click barks can cut only menu barks cleanly. Pending hover barks are still cleared by activation.
+- Verification direction: added `npm run check:menu-voice-overlap`, which runs the real menu in Chromium with fake audio, starts a focus bark, fires an activation bark, and proves active voice count stays at 1 and pending hover timers do not fire after a click. `npm run check:menu-boss-barks` and `npm run check:menu-voice-overlap` passed.
+
 ## 2026-06-29 Low-Hanging Fun Pass
 
 - Current request: identify and implement at least three low-hanging fruit improvements that make the game more fun.

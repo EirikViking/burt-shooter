@@ -2820,8 +2820,8 @@ export class MenuScene {
         bypassGlobalCooldown: isActivate,
         bypassEventCooldown: isActivate,
         bypassVoiceLock: isActivate,
-        // Activation barks keep exclusiveGroup: 'boss_menu_bark'; focus barks wait instead of cutting each other off.
-        exclusiveGroup: isActivate ? 'boss_menu_bark' : null,
+        // Focus barks wait before starting, but click barks must be able to cut a hover bark cleanly.
+        exclusiveGroup: 'boss_menu_bark',
         cooldownMs: isActivate ? 0 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
         eventCooldownMs: isActivate ? 0 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS,
         delayIfVoiceLocked: !isActivate,
