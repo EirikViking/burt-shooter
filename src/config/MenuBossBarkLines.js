@@ -14,7 +14,7 @@ export const menuBossBarkGroups = [
       'Launch! The cabinet demands bad decisions at full speed!',
       'Mayhem run! Your insurance form just burst into flames!',
       'Launch the ranked run! I have cleared my calendar for screaming!',
-      'Mayhem! Put your tiny ship where the danger lives!',
+      'Mayhem! Put your tiny ship where the danger waits!',
       'Launch! The scoreboard is hungry and it brought a fork!',
       'Ranked run! Excellent, press the bravery rectangle!',
       'Mayhem run! The swarm asked for a polite meeting. I declined!',
@@ -288,7 +288,7 @@ export const menuBossBarkGroups = [
     lines: [
       'Cancel! Wise pause, dramatic eyebrow!',
       'Cancel! The exit door has been denied glory!',
-      'Back! Excellent, the menu lives another second!',
+      'Back! Excellent, the menu survives another second!',
       'Cancel! A tactical no with excellent posture!',
       'Back! Retreat from retreat, very advanced!',
       'Cancel! The cabinet appreciates commitment issues!',

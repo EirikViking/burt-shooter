@@ -4,6 +4,7 @@ import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
 import {
   getAccessibilitySettings,
   setColorAssistEnabled,
+  setPlayerHitboxVisible,
   setPlayerFocusScale,
   setScreenShakeScale
 } from '../config/AccessibilitySettings.js';
@@ -271,6 +272,10 @@ export class SettingsOverlay {
     y += sliderGap;
     this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
       onChange: setPlayerFocusScale
+    });
+    y += toggleGap;
+    this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, {
+      id: 'player_hitbox'
     });
     y += toggleGap;
     this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);

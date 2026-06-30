@@ -6,7 +6,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { enhanceShipVisuals } from '../utils/ShipVisualEnhancer.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
-import { getAccessibilitySettings, getPlayerFocusScale } from '../config/AccessibilitySettings.js';
+import { getAccessibilitySettings, getPlayerFocusScale, getPlayerHitboxVisible } from '../config/AccessibilitySettings.js';
 import { getDefaultShipKey, getShipMetadata } from '../config/ShipMetadata.js';
 import { ShipData } from '../config/ShipData.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
@@ -121,11 +121,14 @@ export class Player {
     this.rankBoostBulletFx = false;
     this.currentModel = 1;
     this.focusRing = null;
+    this.hitboxReticle = null;
     this.dodgeRing = null;
     this.dodgeText = null;
     this.dodgeFlashMs = 0;
     this.focusDriftActive = false;
     this.focusPulse = 0;
+    this.hitboxPulseUntil = 0;
+    this.hitboxPulseReason = null;
     this.damageOverlay = null;
     this.boostAura = null;
     this.rankBoostText = null;
@@ -291,6 +294,17 @@ export class Player {
       this.sprite.addChildAt(this.focusRing, 0);
     }
 
+    if (!this.hitboxReticle) {
+      this.hitboxReticle = new PIXI.Graphics();
+      this.hitboxReticle.label = 'playerHitboxReticle';
+      this.hitboxReticle.visible = false;
+    }
+
+    if (this.hitboxReticle.parent !== this.sprite) {
+      if (this.hitboxReticle.parent) this.hitboxReticle.parent.removeChild(this.hitboxReticle);
+      this.sprite.addChild(this.hitboxReticle);
+    }
+
     if (!this.damageOverlay) {
       this.damageOverlay = new PIXI.Sprite();
       this.damageOverlay.anchor.set(0.5);
@@ -426,6 +440,62 @@ export class Player {
     this.focusRing.lineTo(0, tickOutset);
     this.focusRing.stroke({ color, width: 2, alpha: alpha * 0.82 });
     this.focusRing.visible = true;
+  }
+
+  pulseHitboxReticle(reason = 'feedback', durationMs = 900) {
+    const duration = Math.max(120, Math.min(2200, Number(durationMs) || 900));
+    this.hitboxPulseUntil = Math.max(this.hitboxPulseUntil || 0, Date.now() + duration);
+    this.hitboxPulseReason = reason;
+  }
+
+  updateHitboxReticle(deltaSeconds) {
+    if (!this.hitboxReticle) return;
+    const now = Date.now();
+    const settingEnabled = getPlayerHitboxVisible();
+    const pulsing = now < (this.hitboxPulseUntil || 0);
+    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing;
+    if (!settingEnabled && !contextual) {
+      this.hitboxReticle.visible = false;
+      return;
+    }
+
+    const radius = Math.max(5, Number(this.radius || this.baseHitboxRadius || 10));
+    const pulse = (Math.sin((this.focusPulse + deltaSeconds) * 8) + 1) / 2;
+    const phaseColor = this.focusDriftActive ? 0xffef7e : this.isDodging || this.invulnerable ? 0x7fffd8 : 0x66f7ff;
+    const color = pulsing && !this.focusDriftActive ? 0xff66ff : phaseColor;
+    const alpha = Math.min(0.95, settingEnabled ? 0.58 : 0.7);
+    const strokeWidth = settingEnabled ? 1.5 : 2;
+    const ringRadius = radius + (pulsing ? 1.4 + pulse * 1.6 : pulse * 0.8);
+    const tickInner = ringRadius + 2;
+    const tickOuter = ringRadius + 7;
+
+    this.hitboxReticle.clear();
+    this.hitboxReticle.circle(0, 0, ringRadius);
+    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha });
+    this.hitboxReticle.circle(0, 0, 2.4);
+    this.hitboxReticle.fill({ color: 0xffffff, alpha: Math.min(0.72, alpha + 0.12) });
+    this.hitboxReticle.moveTo(-tickOuter, 0);
+    this.hitboxReticle.lineTo(-tickInner, 0);
+    this.hitboxReticle.moveTo(tickInner, 0);
+    this.hitboxReticle.lineTo(tickOuter, 0);
+    this.hitboxReticle.moveTo(0, -tickOuter);
+    this.hitboxReticle.lineTo(0, -tickInner);
+    this.hitboxReticle.moveTo(0, tickInner);
+    this.hitboxReticle.lineTo(0, tickOuter);
+    this.hitboxReticle.stroke({ color, width: strokeWidth, alpha: alpha * 0.92 });
+    this.hitboxReticle.visible = true;
+  }
+
+  getHitboxReticleDebugState() {
+    return {
+      visible: Boolean(this.hitboxReticle?.visible),
+      settingEnabled: getPlayerHitboxVisible(),
+      radius: Math.round(Number(this.radius || this.baseHitboxRadius || 0)),
+      focusDriftActive: Boolean(this.focusDriftActive),
+      phasing: Boolean(this.isDodging || this.invulnerable || this.isGhostActive?.()),
+      pulseMs: Math.max(0, Math.round((this.hitboxPulseUntil || 0) - Date.now())),
+      pulseReason: this.hitboxPulseReason || null
+    };
   }
 
   getAvailableRankShipIndices() {
@@ -1057,6 +1127,7 @@ export class Player {
         }
       }
     }
+    this.updateHitboxReticle(deltaSeconds);
 
     // Cooldowns
     if (this.shootCooldown > 0) this.shootCooldown -= dt;

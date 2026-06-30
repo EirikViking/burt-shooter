@@ -206,6 +206,42 @@ try {
     });
   }
 
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene for combat relocation check');
+    play.clearToastState?.();
+    play.introActive = false;
+    play.introComplete = true;
+    if (play.enemyManager) {
+      play.enemyManager.enemies = [{
+        active: true,
+        visible: true,
+        waitingForEntry: false,
+        x: game.getWidth() * 0.5,
+        y: game.getHeight() * 0.32,
+        radius: 18,
+        update() {},
+        canShoot() { return false; }
+      }];
+    }
+    if (play.bulletManager) play.bulletManager.enemyBullets = [];
+    play.enqueueToast('COMBAT SAFE REWARD +200', {
+      slot: 'center',
+      type: 'score_boost',
+      priority: 1,
+      fontSize: 30,
+      duration: 1400
+    });
+  });
+  await page.waitForTimeout(160);
+  const relocationState = await readState(page);
+  const relocatedToast = (relocationState.toast?.active || []).find((toast) => toast.message === 'COMBAT SAFE REWARD +200');
+  if (!relocatedToast || relocatedToast.slot !== 'top' || relocatedToast.combatRelocated !== true) {
+    throw new Error(`combat relocation failed: ${JSON.stringify(relocationState.toast?.active || [], null, 2)}`);
+  }
+  validateSample(relocationState, 'combat_relocation');
+
   const screenshot = path.join(outputDir, 'gameplay-message-overlap-final.png');
   await page.screenshot({ path: screenshot, fullPage: true });
   const report = {

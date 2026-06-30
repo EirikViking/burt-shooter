@@ -1,5 +1,6 @@
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
+const PLAYER_HITBOX_KEY = 'nova_accessibility_player_hitbox';
 const COLOR_ASSIST_KEY = 'nova_accessibility_color_assist';
 
 function clampUnit(value, fallback = 1) {
@@ -68,6 +69,25 @@ export function setPlayerFocusScale(value) {
   return clamped;
 }
 
+export function getPlayerHitboxVisible() {
+  try {
+    return localStorage.getItem(PLAYER_HITBOX_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setPlayerHitboxVisible(enabled) {
+  const next = Boolean(enabled);
+  try {
+    localStorage.setItem(PLAYER_HITBOX_KEY, next ? '1' : '0');
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+  } catch {
+    // Storage can be unavailable in privacy modes; callers can still use the returned value.
+  }
+  return next;
+}
+
 export function getColorAssistEnabled() {
   try {
     return localStorage.getItem(COLOR_ASSIST_KEY) === '1';
@@ -91,6 +111,7 @@ export function getAccessibilitySettings() {
   return {
     screenShake: getScreenShakeScale(),
     playerFocus: getPlayerFocusScale(),
+    playerHitbox: getPlayerHitboxVisible(),
     colorAssist: getColorAssistEnabled(),
     prefersReducedMotion: prefersReducedMotion()
   };

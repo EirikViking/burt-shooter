@@ -59,6 +59,10 @@ const MENU_BOSS_BARK_EVENTS = {
   idle: 'boss_menu_bark_idle'
 };
 
+const MENU_BOSS_BARK_FOCUS_DELAY_MS = 360;
+const MENU_BOSS_BARK_FOCUS_COOLDOWN_MS = 1800;
+const MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS = 3200;
+
 const DERIVED_MENU_ICON_SOURCES = {
   launch: '/art/generated/nova-swarm/menu/icons/derived/derived-menu-glyph-launch-run.png',
   sectorChallenge: '/art/generated/nova-swarm/menu/icons/derived/derived-menu-glyph-sector-challenge.png',
@@ -258,6 +262,9 @@ export class MenuScene {
     this.focusedMenuIndex = 0;
     this.lastBossMenuBarkAt = 0;
     this.lastBossMenuBarkId = null;
+    this.pendingBossMenuBarkTimer = null;
+    this.pendingBossMenuBarkToken = 0;
+    this.pendingBossMenuBarkRequest = null;
     this.lastMenuActivityAt = 0;
     this.nextIdleBossBarkAt = 0;
     this.idleBossBarkCount = 0;
@@ -279,6 +286,7 @@ export class MenuScene {
     this.animationTime = 0;
     this.launchingRun = false;
     this.menuGamepadActionWasPressed = false;
+    this.clearPendingBossMenuBark();
     this.menuGamepadNavigator.suppressUntilReleased();
     this.lastMenuActivityAt = Date.now();
     this.idleBossBarkCount = 0;
@@ -2729,13 +2737,78 @@ export class MenuScene {
     });
   }
 
-  playBossMenuBark(menuId, { target = null, intent = 'focus', force = false } = {}) {
+  clearPendingBossMenuBark() {
+    if (this.pendingBossMenuBarkTimer) {
+      clearTimeout(this.pendingBossMenuBarkTimer);
+      this.pendingBossMenuBarkTimer = null;
+    }
+    this.pendingBossMenuBarkRequest = null;
+    this.pendingBossMenuBarkToken += 1;
+  }
+
+  isBossMenuBarkTargetCurrent(menuId, target, { requireHover = false } = {}) {
+    if (!target) return true;
+    if (target.destroyed || target._destroyed || target.visible === false) return false;
+    if (requireHover && target._hovered !== true) return false;
+    if (this.sectorSelectorOpen && menuId === 'sectorSelect') {
+      return target === this.sectorSelectorItems?.[this.selectedSectorSelectorIndex] ||
+        target === this.sectorSelectorLaunchButton ||
+        target === this.sectorSelectorPanel;
+    }
+    if (this.quitConfirmOpen) {
+      return this.quitConfirmButtons?.[this.quitConfirmFocusIndex] === target;
+    }
+    const focusedButton = this.menuOptions?.[this.focusedMenuIndex]?.button || null;
+    return !focusedButton || focusedButton === target;
+  }
+
+  hasActiveMenuBossBarkVoice() {
+    try {
+      const settings = AudioManager.getSettings?.();
+      if (settings?.activeVoiceGroups?.boss_menu_bark) return true;
+      return (settings?.activeVoiceEvents || []).some((entry) =>
+        /^boss_menu_bark_/.test(String(entry?.eventName || ''))
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  scheduleBossMenuBark(menuId, { target = null, intent = 'focus', requireHover = false } = {}) {
+    this.clearPendingBossMenuBark();
+    const token = this.pendingBossMenuBarkToken;
+    this.pendingBossMenuBarkRequest = { menuId, target, intent, requireHover, startedAt: Date.now() };
+    this.pendingBossMenuBarkTimer = setTimeout(() => {
+      if (token !== this.pendingBossMenuBarkToken) return;
+      this.pendingBossMenuBarkTimer = null;
+      this.pendingBossMenuBarkRequest = null;
+      if (!this.isBossMenuBarkTargetCurrent(menuId, target, { requireHover })) return;
+      this.playBossMenuBark(menuId, { target, intent, immediate: true });
+    }, MENU_BOSS_BARK_FOCUS_DELAY_MS);
+    return false;
+  }
+
+  playBossMenuBark(menuId, { target = null, intent = 'focus', force = false, immediate = false, requireHover = false } = {}) {
     const eventName = this.getBossMenuBarkEvent(menuId);
     if (!eventName) return false;
     if (menuId !== 'idle') this.markMenuActivity();
+    const isActivate = intent === 'activate' || force;
+    if (!isActivate && !immediate && menuId !== 'idle') {
+      return this.scheduleBossMenuBark(menuId, { target, intent, requireHover });
+    }
+    if (isActivate) this.clearPendingBossMenuBark();
     const now = Date.now();
-    if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < 420) {
-      this.showBossMenuBarkVfx(target, { intent });
+    const minCooldown = isActivate ? 420 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS;
+    const sameCooldown = isActivate ? 420 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS;
+    if (!force && now - this.lastBossMenuBarkAt < minCooldown) {
+      if (isActivate) this.showBossMenuBarkVfx(target, { intent });
+      return false;
+    }
+    if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < sameCooldown) {
+      if (isActivate) this.showBossMenuBarkVfx(target, { intent });
+      return false;
+    }
+    if (!isActivate && this.hasActiveMenuBossBarkVoice()) {
       return false;
     }
     this.lastBossMenuBarkId = menuId;
@@ -2744,18 +2817,20 @@ export class MenuScene {
       AudioManager.init();
       const played = AudioManager.playVoice(eventName, {
         force,
-        bypassGlobalCooldown: true,
-        bypassEventCooldown: true,
-        bypassVoiceLock: true,
-        exclusiveGroup: 'boss_menu_bark',
-        cooldownMs: force ? 0 : 160,
-        eventCooldownMs: 0,
+        bypassGlobalCooldown: isActivate,
+        bypassEventCooldown: isActivate,
+        bypassVoiceLock: isActivate,
+        // Activation barks keep exclusiveGroup: 'boss_menu_bark'; focus barks wait instead of cutting each other off.
+        exclusiveGroup: isActivate ? 'boss_menu_bark' : null,
+        cooldownMs: isActivate ? 0 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
+        eventCooldownMs: isActivate ? 0 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS,
+        delayIfVoiceLocked: !isActivate,
         duckMs: intent === 'activate' ? 1250 : 950,
         duckFactor: intent === 'activate' ? 0.28 : 0.38,
         volume: intent === 'activate' ? 1.04 : 0.92,
-        voicePriority: intent === 'activate' ? 4 : 3
+        voicePriority: intent === 'activate' ? 4 : 2
       });
-      this.showBossMenuBarkVfx(target, { intent });
+      if (played || isActivate) this.showBossMenuBarkVfx(target, { intent });
       return played;
     } catch (error) {
       console.warn('[MenuScene] Boss menu bark failed:', error?.message || error);
@@ -2871,16 +2946,18 @@ export class MenuScene {
     this.drawMenuButton(container, false);
 
     container.on('pointerover', () => {
+      container._hovered = true;
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(container);
       playMenuFocusSfx(0.11);
-      this.playBossMenuBarkForButton(container, { intent: 'focus' });
+      this.playBossMenuBarkForButton(container, { intent: 'focus', requireHover: true });
       label.style.fill = '#ffffff';
       sublabel.style.fill = '#dffcff';
       this.drawMenuButton(container, true);
     });
 
     container.on('pointerout', () => {
+      container._hovered = false;
       label.style.fill = '#c9fbff';
       sublabel.style.fill = '#9feeff';
       this.drawMenuButton(container, false);
@@ -4598,6 +4675,7 @@ export class MenuScene {
     this.closeSectorSelector();
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
+    this.clearPendingBossMenuBark();
     destroyMenuFx(this);
     if (this.idleMotionLayer?.parent) {
       this.idleMotionLayer.parent.removeChild(this.idleMotionLayer);

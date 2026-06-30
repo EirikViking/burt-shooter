@@ -696,6 +696,9 @@ function buildGameTextState(game) {
       } : null,
       grazeBreakReady: Boolean(playScene.grazeBreakReady && Date.now() <= (playScene.grazeBreakExpiresAt || 0)),
       grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - Date.now())),
+      grazeBreakNeedsFireRelease: Boolean(playScene.grazeBreakNeedsFireRelease),
+      grazeBreakReleasePrimed: Boolean(playScene.grazeBreakReleasePrimed),
+      firePressed: Boolean(playScene.currentFirePressed),
       grazeBreakBullets: playerBullets.filter(bullet => bullet?.active !== false && bullet.isGrazeBreaker).length,
       lastGrazeBreak: playScene.lastGrazeBreak ? {
         triggered: Boolean(playScene.lastGrazeBreak.triggered),
@@ -934,6 +937,7 @@ function buildGameTextState(game) {
       powerup: player.activePowerup?.type || null,
       powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : [],
       statusEffects: player.getActiveStatusEffects ? player.getActiveStatusEffects() : [],
+      hitboxReticle: player.getHitboxReticleDebugState ? player.getHitboxReticleDebugState() : null,
       tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null
     } : null,
     hijacker: hijacker?.active ? {

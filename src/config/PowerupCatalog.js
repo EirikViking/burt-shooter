@@ -364,7 +364,7 @@ const NEW_POWERUPS = [
     tip: 'Blink through pressure, then stop moving before confidence becomes comedy.',
     pickupMessage: 'BLINK DRIVE! Your ship found a shortcut.',
     sfx: 'ghost_phase_shift',
-    effect: { durationMs: 9000, movementBoostMult: 1.55, speedMult: 1.12, dodgeDelayMult: 0.65, invulnMs: 600 }
+    effect: { durationMs: 9000, movementBoostMult: 1.34, speedMult: 1.04, dodgeDelayMult: 0.68, invulnMs: 650 }
   },
   {
     id: 'nano_patch',

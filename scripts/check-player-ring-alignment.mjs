@@ -268,6 +268,7 @@ async function renderShipCase(browser, viewport, shipSource) {
   await page.waitForFunction(() => Boolean(window.__game?.switchScene), null, { timeout: 30000 });
   await page.evaluate((shipKey) => {
     localStorage.setItem('burt_accessibility_player_focus', '1');
+    localStorage.setItem('nova_accessibility_player_hitbox', '1');
     window.__game.selectedShipSpriteKey = shipKey;
     window.__game.level = 1;
     window.__game.lives = 3;
@@ -307,6 +308,7 @@ async function renderShipCase(browser, viewport, shipSource) {
       player.shipSprite.alpha = 1;
     }
     player.updateFocusRing(1 / 60);
+    player.updateHitboxReticle?.(1 / 60);
     const ship = player.shipSprite;
     const focusRing = player.focusRing;
     const scaleX = Number(ship?.scale?.x || 1);
@@ -323,6 +325,7 @@ async function renderShipCase(browser, viewport, shipSource) {
       textureIndex: player.selectedShipTextureIndex,
       player: { x: player.x, y: player.y },
       ringVisible: Boolean(focusRing?.visible),
+      hitboxReticle: player.getHitboxReticleDebugState?.() || null,
       ringGlobal: { x: Number(ringGlobal.x || 0), y: Number(ringGlobal.y || 0) },
       shipGlobal: { x: Number(shipGlobal.x || 0), y: Number(shipGlobal.y || 0) },
       shipLocal: {
@@ -341,6 +344,8 @@ async function renderShipCase(browser, viewport, shipSource) {
     alignment.scene !== 'play' ? `expected play scene, got ${alignment.scene || 'missing'}` : null,
     alignment.shipKey !== shipSource.shipKey ? `expected ${shipSource.shipKey}, got ${alignment.shipKey || 'missing'}` : null,
     !alignment.ringVisible ? 'focus ring was not visible' : null,
+    !alignment.hitboxReticle?.visible ? 'hitbox reticle was not visible with accessibility toggle enabled' : null,
+    Math.abs((alignment.hitboxReticle?.radius || 0) - 11) > 6 ? `hitbox reticle radius looks off: ${alignment.hitboxReticle?.radius}` : null,
     Math.abs(alignment.visualDelta.x) > runtimeTolerancePx || Math.abs(alignment.visualDelta.y) > runtimeTolerancePx
       ? `visual center drift ${JSON.stringify(alignment.visualDelta)} exceeds ${runtimeTolerancePx}px`
       : null,

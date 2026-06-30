@@ -12,6 +12,7 @@ const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec83
 const powerupTypes = [
   'triple_beam',
   'vector_boost',
+  'blink_drive',
   'rapid_cabinet',
   'overdrive_core',
   'slow_time',
@@ -222,6 +223,7 @@ try {
       speed: player.speed,
       damage: player.bulletDamage,
       shots: player.multiShot + (player.rankBoostExtraShots || 0),
+      dodgeDelay: player.dodgeDelay,
       pierce: Boolean(player.bulletPierce)
     });
     const collect = (type) => {
@@ -363,6 +365,10 @@ try {
       const baselineScoreAward = typeof game.getScoreAward === 'function' ? game.getScoreAward(100) : 100;
 
       if (type === 'life') game.lives = maxLives ? Math.max(1, maxLives - 1) : 6;
+      if (type === 'blink_drive') {
+        player.invulnerable = false;
+        player.invulnerableTime = 0;
+      }
       if (type === 'shockwave') {
         spawnEnemyAt(player.x + 70, player.y - 120, { health: 10 });
         play.bulletManager.enemyBullets = [
@@ -413,6 +419,30 @@ try {
           assert(boostedDelta > normalDelta * 1.25, `${type}: movement boost missing`, { boostedDelta, normalDelta });
           note('movementDelta', { boostedDelta, normalDelta });
           break;
+        case 'blink_drive': {
+          assert(player.activePowerup.type === 'blink_drive', `${type}: active state missing`);
+          const blinkDodgeDelay = player.dodgeDelay;
+          const blinkInvulnerability = player.invulnerable && player.invulnerableTime >= 500;
+          player.x = game.getWidth() * 0.42;
+          window.__burtKeyboardOverride = { ArrowRight: true, KeyD: true };
+          const boostedStartX = player.x;
+          player.update(1);
+          const boostedDelta = player.x - boostedStartX;
+          player.resetPowerups?.();
+          player.x = game.getWidth() * 0.42;
+          player.recalculateStats?.();
+          const normalStartX = player.x;
+          player.update(1);
+          const normalDelta = player.x - normalStartX;
+          window.__burtKeyboardOverride = null;
+          assert(boostedDelta > normalDelta * 1.12, `${type}: movement boost missing`, { boostedDelta, normalDelta });
+          assert(boostedDelta < normalDelta * 1.55, `${type}: movement boost too hot for controllable Blink Drive`, { boostedDelta, normalDelta });
+          assert(blinkDodgeDelay < base.dodgeDelay, `${type}: dodge recovery boost missing`, { blinkDodgeDelay, baseDodgeDelay: base.dodgeDelay });
+          assert(blinkInvulnerability, `${type}: safety flicker missing`, { invulnerable: player.invulnerable, invulnerableTime: player.invulnerableTime });
+          note('movementDelta', { boostedDelta, normalDelta });
+          note('dodgeDelay', blinkDodgeDelay);
+          break;
+        }
         case 'rapid_cabinet': {
           assert(player.bulletDamage >= Math.max(3, base.damage), `${type}: damage boost missing`, { base, after });
           assert(player.shootDelay < base.shootDelay, `${type}: rapid fire missing`, { base, after });

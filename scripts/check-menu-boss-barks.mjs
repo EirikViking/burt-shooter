@@ -105,6 +105,9 @@ const menuSceneSource = fs.readFileSync(path.join(rootDir, 'src/scenes/MenuScene
 for (const snippet of [
   'playBossMenuBarkForButton',
   'playBossMenuBarkForOption',
+  'MENU_BOSS_BARK_FOCUS_DELAY_MS',
+  'scheduleBossMenuBark',
+  'hasActiveMenuBossBarkVoice',
   "exclusiveGroup: 'boss_menu_bark'",
   'showBossMenuBarkVfx',
   'playMenuFocusSfx',

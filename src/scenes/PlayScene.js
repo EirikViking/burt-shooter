@@ -311,6 +311,10 @@ export class PlayScene {
     this.grazeBreakExpiresAt = 0;
     this.grazeBreakCooldownAt = 0;
     this.grazeBreakToken = 0;
+    this.grazeBreakNeedsFireRelease = false;
+    this.grazeBreakReleasePrimed = false;
+    this.currentFirePressed = false;
+    this.fireInputWasPressed = false;
     this.grazeBreaksThisRun = 0;
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
@@ -477,6 +481,10 @@ export class PlayScene {
     this.grazeBreakExpiresAt = 0;
     this.grazeBreakCooldownAt = 0;
     this.grazeBreakToken = 0;
+    this.grazeBreakNeedsFireRelease = false;
+    this.grazeBreakReleasePrimed = false;
+    this.currentFirePressed = false;
+    this.fireInputWasPressed = false;
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
@@ -1833,6 +1841,7 @@ export class PlayScene {
         this.updateComboTimers(delta);
         this.updateDangerDodgeTimer(delta);
         this.updateGrazeBreakTimer();
+        this.maybeRelocateActiveCenterToastForCombat();
         if (this.player?.synergyState?.type) {
           this.setSynergyBadge(this.player.synergyState.label || this.player.synergyState.type);
         } else {
@@ -1883,6 +1892,7 @@ export class PlayScene {
       // Fire logic - merge keyboard and touch input
       const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
+      this.updateGrazeBreakFireIntent(firePressed);
 
       if (firePressed && this.player && !this.introActive) {
         measure('shooting', () => {
@@ -7205,15 +7215,97 @@ export class PlayScene {
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
   }
 
+  hasActiveCombatThreats() {
+    if (this.introActive || this.isPaused || this.overrunMilestoneInterlude?.active) return false;
+    const enemies = this.enemyManager?.enemies || [];
+    const enemyBullets = this.bulletManager?.enemyBullets || [];
+    const activeEnemy = enemies.some(enemy =>
+      enemy?.active !== false && enemy.waitingForEntry !== true && enemy.visible !== false
+    );
+    const activeBullet = enemyBullets.some(bullet => bullet?.active !== false && bullet.visible !== false);
+    return activeEnemy || activeBullet;
+  }
+
+  shouldRelocateCenterToastForCombat(entryOrMeta) {
+    if (!entryOrMeta || !this.hasActiveCombatThreats()) return false;
+    const options = entryOrMeta.options || entryOrMeta.originalOptions || entryOrMeta;
+    const slot = options.slot || entryOrMeta.slot || 'center';
+    if (slot !== 'center') return false;
+    if (options.combatSafeCenter === true || options.combatRelocated === true || options.banner === true) return false;
+    const type = options.type || entryOrMeta.type || 'generic';
+    const priority = Number.isFinite(options.priority)
+      ? options.priority
+      : Number.isFinite(entryOrMeta.priority)
+      ? entryOrMeta.priority
+      : 0;
+    if (priority >= 4) return false;
+    return !this.isTransitionToastType(type);
+  }
+
+  queueCombatRelocatedToast(entry, now = Date.now(), remainingMs = null) {
+    if (!entry?.message) return false;
+    const sourceOptions = entry.options || entry.originalOptions || {};
+    const baseFontSize = Number(sourceOptions.fontSize) || (this.game.getWidth() < 620 ? 16 : 20);
+    const duration = Math.max(500, Math.min(Number(remainingMs) || Number(sourceOptions.duration) || 1300, 1500));
+    const nextEntry = {
+      message: entry.message,
+      priority: Math.max(Number(entry.priority) || Number(sourceOptions.priority) || 0, 1),
+      createdAt: now,
+      notBefore: now,
+      options: {
+        ...sourceOptions,
+        slot: 'top',
+        type: sourceOptions.type || entry.type || 'generic',
+        priority: Math.max(Number(entry.priority) || Number(sourceOptions.priority) || 0, 1),
+        fontSize: Math.min(baseFontSize, this.game.getWidth() < 620 ? 15 : 18),
+        duration,
+        notBefore: now,
+        combatRelocated: true
+      }
+    };
+    this.toastTopQueue.push(nextEntry);
+    this.toastTopQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    while (this.toastTopQueue.length > this.getToastQueueLimit('top')) this.toastTopQueue.pop();
+    return true;
+  }
+
+  maybeRelocateActiveCenterToastForCombat(now = Date.now()) {
+    const display = this.activeCenterToast;
+    const meta = display?.__toastMeta;
+    if (!display || !meta || !this.shouldRelocateCenterToastForCombat(meta)) return false;
+    const elapsed = Math.max(0, now - (meta.createdAt || now));
+    const remaining = Math.max(550, Math.min((meta.duration || 1200) - elapsed, 1200));
+    const relocated = this.queueCombatRelocatedToast({
+      message: meta.message,
+      type: meta.type,
+      priority: meta.priority,
+      originalOptions: meta.originalOptions || {}
+    }, now, remaining);
+    this.dismissToastDisplay(display, 'center');
+    if (relocated) this.processToastQueue();
+    return relocated;
+  }
+
   processToastQueue() {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
-    const centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+    this.maybeRelocateActiveCenterToastForCombat(now);
+    let centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
       ? this.peekReadyToast(this.toastQueue, now)
       : null;
-    const topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+    let topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
       ? this.peekReadyToast(this.toastTopQueue, now)
       : null;
+    if (centerReady && this.shouldRelocateCenterToastForCombat(centerReady)) {
+      const entry = this.dequeueReadyToast(this.toastQueue, now);
+      if (entry) this.queueCombatRelocatedToast(entry, now);
+      centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+        ? this.peekReadyToast(this.toastQueue, now)
+        : null;
+      topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+        ? this.peekReadyToast(this.toastTopQueue, now)
+        : null;
+    }
     if (centerReady && topReady && this.isTransitionToastEntry(centerReady) && this.isTransitionToastEntry(topReady)) {
       if ((centerReady.priority || 0) >= (topReady.priority || 0)) {
         this.delayReadyToast(this.toastTopQueue, topReady, 600, now);
@@ -7323,6 +7415,7 @@ export class PlayScene {
       title: meta.title || null,
       imageAlias: meta.imageAlias || null,
       duration: meta.duration,
+      combatRelocated: Boolean(meta.combatRelocated),
       ageMs: Math.max(0, Date.now() - meta.createdAt),
       bounds: typeof getBounds === 'function'
         ? getBounds(display)
@@ -7645,6 +7738,8 @@ export class PlayScene {
       duration,
       title: options.title || null,
       imageAlias: options.imageAlias || null,
+      combatRelocated: options.combatRelocated === true,
+      originalOptions: { ...options },
       createdAt: now
     };
 
@@ -8353,7 +8448,43 @@ export class PlayScene {
   updateGrazeBreakTimer() {
     if (this.grazeBreakReady && Date.now() > this.grazeBreakExpiresAt) {
       this.grazeBreakReady = false;
+      this.grazeBreakNeedsFireRelease = false;
+      this.grazeBreakReleasePrimed = false;
     }
+  }
+
+  updateGrazeBreakFireIntent(firePressed = false) {
+    const pressed = Boolean(firePressed);
+    if (this.grazeBreakReady && this.grazeBreakNeedsFireRelease && this.fireInputWasPressed && !pressed) {
+      this.primeGrazeBreakAfterRelease();
+    }
+    this.currentFirePressed = pressed;
+    this.fireInputWasPressed = pressed;
+  }
+
+  primeGrazeBreakAfterRelease() {
+    if (!this.grazeBreakReady || !this.grazeBreakNeedsFireRelease) return false;
+    if (Date.now() > this.grazeBreakExpiresAt) {
+      this.grazeBreakReady = false;
+      this.grazeBreakNeedsFireRelease = false;
+      this.grazeBreakReleasePrimed = false;
+      return false;
+    }
+    this.grazeBreakNeedsFireRelease = false;
+    this.grazeBreakReleasePrimed = true;
+    this.player?.pulseHitboxReticle?.('graze_break_primed', 1150);
+    this.showToast(translateText('GRAZE BREAK PRIMED'), {
+      fontSize: this.game.getWidth() < 620 ? 15 : 19,
+      fill: '#ff88ff',
+      stroke: '#130018',
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
+      slot: 'corner',
+      type: 'dangerDodge',
+      priority: 3,
+      duration: 900
+    });
+    AudioManager.playSfx('combo_tick', { volume: 0.44, minIntervalMs: 220 });
+    return true;
   }
 
   armGrazeBreak() {
@@ -8364,7 +8495,10 @@ export class PlayScene {
     this.grazeBreakArmedAt = now;
     this.grazeBreakExpiresAt = now + 6500;
     this.grazeBreakCooldownAt = now + 2400;
-    this.showToast('GRAZE BREAK ARMED', {
+    this.grazeBreakNeedsFireRelease = Boolean(this.currentFirePressed);
+    this.grazeBreakReleasePrimed = !this.grazeBreakNeedsFireRelease;
+    this.player?.pulseHitboxReticle?.('graze_break_armed', 1200);
+    this.showToast(translateText('GRAZE BREAK ARMED'), {
       fontSize: this.game.getWidth() < 620 ? 16 : 21,
       fill: '#ff66ff',
       stroke: '#130018',
@@ -8381,8 +8515,11 @@ export class PlayScene {
   markGrazeBreakShot(bullets = []) {
     if (!this.grazeBreakReady || Date.now() > this.grazeBreakExpiresAt || !Array.isArray(bullets) || !bullets.length) {
       this.grazeBreakReady = false;
+      this.grazeBreakNeedsFireRelease = false;
+      this.grazeBreakReleasePrimed = false;
       return null;
     }
+    if (this.grazeBreakNeedsFireRelease) return null;
 
     const eligible = bullets
       .filter(bullet => bullet?.active !== false && bullet.isPlayer)
@@ -8402,6 +8539,8 @@ export class PlayScene {
       eligible.sprite.addChild(ring);
     }
     this.grazeBreakReady = false;
+    this.grazeBreakNeedsFireRelease = false;
+    this.grazeBreakReleasePrimed = false;
     return eligible;
   }
 
@@ -8510,6 +8649,7 @@ export class PlayScene {
     const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
     const appliedScore = this.game.addScore(score);
     this.lastDangerDodgeScore = appliedScore;
+    this.player?.pulseHitboxReticle?.('near_miss', this.dangerDodgeCount >= 3 ? 1250 : 850);
     const nearMissLabel = translateText('NEAR MISS');
     const label = this.dangerDodgeCount >= 2
       ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`
