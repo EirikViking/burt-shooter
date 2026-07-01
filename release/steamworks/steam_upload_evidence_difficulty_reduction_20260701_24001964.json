@@ -1,0 +1,86 @@
+{
+  "task": "difficulty_reduction_and_reinforcement_cap",
+  "uploadedAt": "2026-07-01T12:19:44Z",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24001964",
+    "setLive": "",
+    "branchAssignment": "none",
+    "uploadMode": "private_unassigned_steampipe_build",
+    "account": "gaunziman"
+  },
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/difficulty-reduction-20260701",
+    "commit": "ee6a6c5d5333cbf3aeb0df3fc1a7737290caa96e",
+    "buildVersion": "v2026-07-01_14-10-15"
+  },
+  "payload": {
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 915871502,
+    "manifestHash": "270e1056dc644e7e223fbd17a72db38f0c7538a9ccccffce2ac5f5632de08bcb",
+    "contentRoot": "release/desktop/win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "verification": {
+    "passed": [
+      "git diff --check",
+      "npm run check:mayhem-reinforcement-waves",
+      "npm run check:difficulty-tuning",
+      "npm run check:mayhem-super-storm-voices",
+      "npm run check:mayhem-scout-difficulty-delta",
+      "npm run build:current",
+      "npm run desktop:smoke:current",
+      "npm run check:controller-flow",
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf",
+      "SteamCMD run_app_build"
+    ],
+    "packagedReports": {
+      "smoke": "test-results/packaged-exe-smoke-2026-07-01T12-15-51-886Z/report.json",
+      "controls": "test-results/packaged-control-smoke-2026-07-01T12-15-51-999Z/report.json",
+      "perf": "test-results/packaged-perf-smoke-2026-07-01T12-15-52-032Z/report.json"
+    },
+    "perfSummary": {
+      "averageFps": 59.85286390345123,
+      "minimumFps": 58.8235294117647,
+      "warnings": [],
+      "errors": []
+    },
+    "knownNonBlockingFailures": [
+      {
+        "command": "npm run check:normal-wave-difficulty-shift",
+        "reason": "Historical guard already expects normalWaveDifficultyLevelOffset 9 while this branch baseline is 7."
+      },
+      {
+        "command": "npm run check:early-wave-threat",
+        "reason": "Historical target ranges are stale against this branch's current early-wave pressure bands."
+      },
+      {
+        "command": "npm run check:early-wave-lethality",
+        "reason": "Historical danger-wave-count and powerup-diff guards are stale against this branch's current baseline."
+      },
+      {
+        "command": "npm run check:early-mid-wave-tighten",
+        "reason": "Historical danger-wave-count and powerup-diff guards are stale against this branch's current baseline."
+      }
+    ]
+  },
+  "steamworksUntouched": [
+    "live branch assignment",
+    "store metadata",
+    "pricing metadata",
+    "AppID",
+    "depot ID",
+    "leaderboard identity",
+    "achievements metadata",
+    "Steam Cloud settings"
+  ]
+}
