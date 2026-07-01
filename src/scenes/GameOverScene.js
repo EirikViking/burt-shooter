@@ -68,6 +68,34 @@ const GAME_OVER_EFFECT_PROFILES = Array.from({ length: GAME_OVER_EFFECT_COUNT },
   };
 });
 
+const RUN_REPORT_SECTION_LABELS = Object.freeze({
+  run: 'Run',
+  combat: 'Combat',
+  survival: 'Survival',
+  rewards: 'Rewards'
+});
+
+const RUN_REPORT_FIELD_LABELS = Object.freeze({
+  mode: 'Mode',
+  ship: 'Ship',
+  score: 'Score',
+  sector: 'Sector',
+  time: 'Time',
+  kills: 'Kills',
+  bossKills: 'Boss kills',
+  waves: 'Waves cleared',
+  nearMissSurges: 'Near-miss surges',
+  grazeBreaks: 'Graze breaks',
+  livesLost: 'Lives lost',
+  respawns: 'Respawns',
+  extraLives: 'Extra lives earned',
+  finalHit: 'Final hit',
+  powerups: 'Powerups',
+  careerXp: 'Career XP',
+  newRanks: 'New ranks',
+  codex: 'Codex discoveries'
+});
+
 function formatUnlockRequirementProgress(item) {
   const current = Math.min(Number(item?.current) || 0, Number(item?.target) || 0);
   const target = Number(item?.target) || 0;
@@ -224,6 +252,15 @@ export class GameOverScene {
     this.gameOverGlitchBars = [];
     this.gameOverShards = [];
     this.gameOverTauntPlayed = false;
+    this.runReportOpen = false;
+    this.runReportButton = null;
+    this.runReportButtonBg = null;
+    this.runReportButtonLabel = null;
+    this.runReportOverlay = null;
+    this.runReportOverlayBg = null;
+    this.runReportPanel = null;
+    this.runReportCloseButton = null;
+    this.runReportOverlayDebug = null;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -316,6 +353,8 @@ export class GameOverScene {
     this.ctaVoicePlayed = false;
     this.runbackStartedAt = 0;
     this.reportShownAt = Date.now();
+    this.runReportOpen = false;
+    this.runReportOverlayDebug = null;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
     this.resultHoldContinueReadyAt = 0;
@@ -611,6 +650,10 @@ export class GameOverScene {
     this.container.addChild(this.hangarButton);
     this.createMainMenuButton(layout);
     this.container.addChild(this.mainMenuButton);
+    this.createRunReportButton(layout);
+    this.container.addChild(this.runReportButton);
+    this.createRunReportOverlay(layout);
+    this.container.addChild(this.runReportOverlay);
 
     if (!this.isRankedRun) {
       this.promptText.eventMode = 'none';
@@ -1673,6 +1716,7 @@ export class GameOverScene {
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
     this.drawMainMenuButton(layout);
+    this.drawRunReportButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
     [
@@ -1693,7 +1737,7 @@ export class GameOverScene {
     // Calculate content height for centering
     const compactRunbackDesktop = !layout.isMobile && this.state === 'runback' && height < 820;
     const spacing = layout.isMobile ? 7 : compactRunbackDesktop ? 7 : 11;
-    const sectionGap = layout.isMobile ? 12 : compactRunbackDesktop ? 10 : 18;
+    const sectionGap = layout.isMobile ? 12 : compactRunbackDesktop ? 12 : 18;
 
     // Use measured text heights so extra unlock/rank lines cannot collide.
     const titleHeight = Math.max(titleSize * 1.2, this.title.height || 0);
@@ -1714,12 +1758,14 @@ export class GameOverScene {
     const leaderboardVisible = this.shouldShowLeaderboardButton();
     const hangarVisible = this.shouldShowHangarButton();
     const mainMenuVisible = this.shouldShowMainMenuButton();
+    const runReportVisible = this.shouldShowRunReportButton();
     const secondaryVisibleCount = [leaderboardVisible, hangarVisible, mainMenuVisible].filter(Boolean).length;
     const secondaryButtonsShareRow = secondaryVisibleCount > 1 && !layout.isMobile;
     const retryHeight = this.retryButtonHeight || (layout.isMobile ? 58 : 66);
     const rawLeaderboardHeight = this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48);
     const rawHangarHeight = this.hangarButtonHeight || (layout.isMobile ? 42 : 48);
     const rawMainMenuHeight = this.mainMenuButtonHeight || (layout.isMobile ? 42 : 48);
+    const rawRunReportHeight = this.runReportButtonHeight || (layout.isMobile ? 32 : 34);
     const secondaryRowHeight = secondaryButtonsShareRow
       ? Math.max(rawLeaderboardHeight, rawHangarHeight, rawMainMenuHeight)
       : 0;
@@ -1728,8 +1774,9 @@ export class GameOverScene {
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
     const mainMenuHeight = mainMenuVisible && !secondaryButtonsShareRow ? rawMainMenuHeight : 0;
+    const runReportHeight = runReportVisible ? rawRunReportHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + nameHeight + spacing * (secondaryVisibleCount ? 12 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + runReportHeight + nameHeight + spacing * (secondaryVisibleCount || runReportVisible ? 12 : 9) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1869,6 +1916,17 @@ export class GameOverScene {
       });
     }
 
+    if (this.runReportButton) {
+      this.runReportButton.visible = runReportVisible;
+      if (runReportVisible) {
+        this.runReportButton.x = width / 2;
+        this.runReportButton.y = placeCenteredElement(this.runReportButton, spacing * 0.55, rawRunReportHeight);
+      } else {
+        this.runReportButton.x = width / 2;
+        this.runReportButton.y = this.retryButton.y;
+      }
+    }
+
     if (nameVisible) {
       this.nameDisplay.x = width / 2;
       this.nameDisplay.y = stackY + nameHeight / 2;
@@ -1880,6 +1938,7 @@ export class GameOverScene {
     this.drawResultSectionCard(this.rankProgressBg, this.rankProgressText, layout, 0xffd45c, { minHeight: layout.isMobile ? 44 : 50, widthRatio: layout.isMobile ? 0.88 : 0.56 });
     this.drawResultSectionCard(this.shipUnlockProgressBg, this.shipUnlockProgressText, layout, 0x37f5ff, { minHeight: layout.isMobile ? 48 : 56, widthRatio: layout.isMobile ? 0.9 : 0.58 });
     this.drawResultSectionCard(this.leaderboardStatusBg, this.leaderboardStatusText, layout, 0xff55d9);
+    this.layoutRunReportOverlay(layout);
   }
 
   drawResultSectionCard(graphics, textNode, layout, accent = 0x37f5ff, options = {}) {
@@ -2488,6 +2547,8 @@ export class GameOverScene {
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
     this.drawMainMenuButton(layout);
+    this.drawRunReportButton(layout);
+    this.layoutRunReportOverlay(layout);
   }
 
   createFallbackBackdrop(width, height) {
@@ -2769,6 +2830,14 @@ export class GameOverScene {
 
       this.setInputDevice('keyboard');
 
+      if (this.runReportOpen) {
+        if (isEscape || isSubmitKey || isRestartKey) {
+          e.preventDefault();
+          this.closeRunReport();
+        }
+        return;
+      }
+
       if (this.state === 'submitting' && !isRestartKey && !isEscape) {
         return;
       }
@@ -2935,6 +3004,12 @@ export class GameOverScene {
   }
 
   handleGamepadNavigation(nav) {
+    if (this.runReportOpen) {
+      if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu || nav.pressed.confirm) {
+        this.closeRunReport();
+      }
+      return;
+    }
     if (this.state === 'submitting') return;
     if (this.state === 'submitted_hold') {
       if (nav.pressed.menu || nav.pressed.back || nav.pressed.cancel) {
@@ -3905,6 +3980,306 @@ export class GameOverScene {
     }
   }
 
+  getRunReport() {
+    return this.game?.lastRunReport || null;
+  }
+
+  shouldShowRunReportButton() {
+    return this.isResultActionStage() && Boolean(this.getRunReport());
+  }
+
+  createRunReportButton(layout) {
+    this.runReportButton = new PIXI.Container();
+    this.runReportButton.zIndex = 8;
+    this.runReportButton.eventMode = 'static';
+    this.runReportButton.cursor = 'pointer';
+
+    this.runReportButtonBg = new PIXI.Graphics();
+    this.runReportButtonLabel = createText(translateText('RUN REPORT'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 14 : 16,
+      fontWeight: 'bold',
+      fill: '#b9faff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#37f5ff',
+      dropShadowBlur: 3
+    });
+    this.runReportButtonLabel.anchor.set(0.5);
+
+    this.runReportButton.addChild(this.runReportButtonBg, this.runReportButtonLabel);
+    this.runReportButton.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.toggleRunReport();
+    });
+    this.runReportButton.on('pointerover', () => this.runReportButton.scale.set(1.02));
+    this.runReportButton.on('pointerout', () => this.runReportButton.scale.set(1));
+    this.drawRunReportButton(layout);
+  }
+
+  drawRunReportButton(layout) {
+    if (!this.runReportButton || !this.runReportButtonBg || !this.runReportButtonLabel) return;
+    const visible = this.shouldShowRunReportButton();
+    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.52 : 0.18), layout.isMobile ? 220 : 210);
+    const buttonHeight = layout.isMobile ? 32 : 34;
+    const halfWidth = buttonWidth / 2;
+    const halfHeight = buttonHeight / 2;
+    this.runReportButtonWidth = buttonWidth;
+    this.runReportButtonHeight = buttonHeight;
+    this.runReportButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
+    this.runReportButton.visible = visible;
+    this.runReportButton.alpha = visible ? 0.78 : 0;
+    this.runReportButton.cursor = visible ? 'pointer' : 'default';
+    this.runReportButton.eventMode = visible ? 'static' : 'none';
+
+    this.runReportButtonBg.clear();
+    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, layout.isMobile ? 7 : 8);
+    this.runReportButtonBg.fill({ color: 0x03101c, alpha: 0.74 });
+    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, layout.isMobile ? 7 : 8);
+    this.runReportButtonBg.stroke({ color: 0x37f5ff, width: 1.25, alpha: visible ? 0.5 : 0 });
+
+    this.runReportButtonLabel.text = translateText('RUN REPORT');
+    this.runReportButtonLabel.style.fontSize = layout.isMobile ? 14 : 16;
+    this.runReportButtonLabel.y = 0;
+  }
+
+  createRunReportOverlay(layout) {
+    this.runReportOverlay = new PIXI.Container();
+    this.runReportOverlay.zIndex = 80;
+    this.runReportOverlay.visible = false;
+    this.runReportOverlay.eventMode = 'none';
+
+    this.runReportOverlayBg = new PIXI.Graphics();
+    this.runReportOverlayBg.eventMode = 'static';
+    this.runReportOverlayBg.cursor = 'pointer';
+    this.runReportOverlayBg.on('pointerdown', () => this.closeRunReport());
+
+    this.runReportPanel = new PIXI.Container();
+    this.runReportPanel.eventMode = 'static';
+    this.runReportPanel.cursor = 'default';
+
+    this.runReportOverlay.addChild(this.runReportOverlayBg, this.runReportPanel);
+    this.layoutRunReportOverlay(layout);
+  }
+
+  toggleRunReport() {
+    if (this.runReportOpen) {
+      this.closeRunReport();
+    } else {
+      this.openRunReport();
+    }
+  }
+
+  openRunReport() {
+    if (!this.getRunReport()) return;
+    this.runReportOpen = true;
+    if (this.runReportOverlay) {
+      this.runReportOverlay.visible = true;
+      this.runReportOverlay.eventMode = 'static';
+    }
+    this.layoutRunReportOverlay(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+  }
+
+  closeRunReport() {
+    this.runReportOpen = false;
+    if (this.runReportOverlay) {
+      this.runReportOverlay.visible = false;
+      this.runReportOverlay.eventMode = 'none';
+    }
+    this.runReportOverlayDebug = this.getRunReportOverlayDebugState();
+  }
+
+  getRunReportSectionLabel(sectionId) {
+    return translateText(RUN_REPORT_SECTION_LABELS[sectionId] || sectionId);
+  }
+
+  getRunReportFieldLabel(fieldId) {
+    return translateText(RUN_REPORT_FIELD_LABELS[fieldId] || fieldId);
+  }
+
+  getRunReportDeathSourceLabel(rawValue) {
+    const source = String(rawValue || '').trim().toLowerCase();
+    if (source === 'enemy_bullet') return 'Enemy bullet';
+    if (source === 'boss_bullet') return 'Boss bullet';
+    if (source === 'enemy_contact') return 'Enemy contact';
+    if (source === 'boss_contact') return 'Boss contact';
+    if (source === 'ambient_hazard_contact') return 'Hazard contact';
+    if (source === 'unknown') return 'Unknown';
+    return String(rawValue || 'Unknown').replace(/[_-]+/g, ' ');
+  }
+
+  getRunReportModeLabel(rawValue, fallback) {
+    const mode = String(rawValue || '').trim().toLowerCase();
+    if (mode === 'scout') return 'Scout Run';
+    if (mode === 'sector_start') return 'Sector Run';
+    if (mode === 'unranked') return 'Practice Run';
+    if (mode === 'ranked') return 'Mayhem Run';
+    return fallback || 'Mayhem Run';
+  }
+
+  formatRunReportValue(row = {}) {
+    if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
+    if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
+    if (typeof row.value === 'number') {
+      return row.value.toLocaleString('en-US');
+    }
+    return String(row.value ?? '');
+  }
+
+  layoutRunReportOverlay(layout) {
+    if (!this.runReportOverlay || !this.runReportOverlayBg || !this.runReportPanel) return;
+    const report = this.getRunReport();
+    const { width, height } = this.game.app.screen;
+    this.runReportOverlay.visible = Boolean(this.runReportOpen && report);
+    this.runReportOverlay.eventMode = this.runReportOverlay.visible ? 'static' : 'none';
+
+    this.runReportOverlayBg.clear();
+    this.runReportOverlayBg.rect(0, 0, width, height);
+    this.runReportOverlayBg.fill({ color: 0x020712, alpha: this.runReportOverlay.visible ? 0.62 : 0 });
+    this.runReportOverlayBg.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const removed = this.runReportPanel.removeChildren();
+    removed.forEach((child) => child.destroy?.({ children: true }));
+
+    if (!report) {
+      this.runReportOverlayDebug = { visible: false, localOnly: true, sectionIds: [] };
+      return;
+    }
+
+    const safeMargin = layout.safeArea || { top: 0, bottom: 0 };
+    const panelWidth = Math.min(width - 28, layout.isMobile ? width * 0.92 : 660);
+    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, layout.isMobile ? 540 : 470);
+    const columns = layout.isMobile ? 1 : 2;
+    const gap = layout.isMobile ? 12 : 16;
+    const innerPad = layout.isMobile ? 18 : 24;
+    const titleSize = layout.isMobile ? 22 : 26;
+    const sectionTitleSize = layout.isMobile ? 14 : 16;
+    const rowSize = layout.isMobile ? 12 : 14;
+    const closeHeight = layout.isMobile ? 34 : 36;
+    const contentTop = -panelHeight / 2 + innerPad + titleSize + 20;
+    const contentBottom = panelHeight / 2 - innerPad - closeHeight - 18;
+    const sectionAreaHeight = Math.max(180, contentBottom - contentTop);
+    const sectionWidth = (panelWidth - innerPad * 2 - gap * (columns - 1)) / columns;
+    const sectionHeight = layout.isMobile
+      ? (sectionAreaHeight - gap * 3) / 4
+      : (sectionAreaHeight - gap) / 2;
+
+    this.runReportPanel.x = width / 2;
+    this.runReportPanel.y = Math.max(safeMargin.top + panelHeight / 2 + 10, height / 2);
+
+    const panelBg = new PIXI.Graphics();
+    panelBg.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 10);
+    panelBg.fill({ color: 0x03101c, alpha: 0.97 });
+    panelBg.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 10);
+    panelBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.72 });
+    panelBg.rect(-panelWidth / 2 + innerPad, -panelHeight / 2 + innerPad + titleSize + 8, panelWidth - innerPad * 2, 2);
+    panelBg.fill({ color: 0x37f5ff, alpha: 0.3 });
+    this.runReportPanel.addChild(panelBg);
+
+    const title = createText(translateText('RUN REPORT'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: titleSize,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.x = 0;
+    title.y = -panelHeight / 2 + innerPad + titleSize / 2;
+    this.runReportPanel.addChild(title);
+
+    const textLines = [];
+    (report.sections || []).forEach((section, index) => {
+      const column = columns === 1 ? 0 : index % columns;
+      const row = columns === 1 ? index : Math.floor(index / columns);
+      const x = -panelWidth / 2 + innerPad + column * (sectionWidth + gap);
+      const y = contentTop + row * (sectionHeight + gap);
+      const sectionBox = new PIXI.Graphics();
+      sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
+      sectionBox.fill({ color: 0x06182a, alpha: 0.78 });
+      sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
+      sectionBox.stroke({ color: 0x37f5ff, width: 1.1, alpha: 0.32 });
+      this.runReportPanel.addChild(sectionBox);
+
+      const header = createText(this.getRunReportSectionLabel(section.id), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: sectionTitleSize,
+        fontWeight: 'bold',
+        fill: '#7dffcc',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left'
+      });
+      header.x = x + 12;
+      header.y = y + 9;
+      this.runReportPanel.addChild(header);
+      textLines.push(header.text);
+
+      const rows = (section.rows || []).slice(0, 5);
+      rows.forEach((entry, rowIndex) => {
+        const label = this.getRunReportFieldLabel(entry.id);
+        const value = this.formatRunReportValue(entry);
+        const rowText = [label, value].join(': ');
+        const line = createText(rowText, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: rowSize,
+          fontWeight: rowIndex === 0 ? 'bold' : 'normal',
+          fill: rowIndex === 0 ? '#ffffff' : '#cbeff4',
+          stroke: '#031323',
+          strokeThickness: 2,
+          align: 'left',
+          wordWrap: true,
+          wordWrapWidth: sectionWidth - 24
+        });
+        line.x = x + 12;
+        line.y = y + 33 + rowIndex * (rowSize + 7);
+        this.runReportPanel.addChild(line);
+        textLines.push(line.text);
+      });
+    });
+
+    this.runReportCloseButton = new PIXI.Container();
+    this.runReportCloseButton.eventMode = 'static';
+    this.runReportCloseButton.cursor = 'pointer';
+    this.runReportCloseButton.on('pointerdown', () => this.closeRunReport());
+    const closeWidth = layout.isMobile ? 142 : 150;
+    const closeBg = new PIXI.Graphics();
+    closeBg.roundRect(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight, 8);
+    closeBg.fill({ color: 0x07192b, alpha: 0.96 });
+    closeBg.roundRect(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight, 8);
+    closeBg.stroke({ color: 0xffd15c, width: 1.5, alpha: 0.82 });
+    const closeLabel = createText(translateText('CLOSE'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 14 : 16,
+      fontWeight: 'bold',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    closeLabel.anchor.set(0.5);
+    this.runReportCloseButton.addChild(closeBg, closeLabel);
+    this.runReportCloseButton.hitArea = new PIXI.Rectangle(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight);
+    this.runReportCloseButton.x = 0;
+    this.runReportCloseButton.y = panelHeight / 2 - innerPad - closeHeight / 2;
+    this.runReportPanel.addChild(this.runReportCloseButton);
+
+    this.runReportOverlayDebug = {
+      visible: Boolean(this.runReportOverlay.visible),
+      localOnly: Boolean(report.localOnly),
+      sectionIds: (report.sections || []).map((section) => section.id),
+      text: textLines.join('\n'),
+      x: Math.round(this.runReportPanel.x - panelWidth / 2),
+      y: Math.round(this.runReportPanel.y - panelHeight / 2),
+      width: Math.round(panelWidth),
+      height: Math.round(panelHeight)
+    };
+  }
+
   async confirmGlobalLeaderboardAchievements(result) {
     if (!this.isRankedRun || this.game?.runMode === 'unranked' || this.game?.isDebugRun) return null;
     if (result?.globalStatus !== 'submitted') return null;
@@ -4348,6 +4723,60 @@ export class GameOverScene {
     } catch {
       return fallback;
     }
+  }
+
+  getRunReportCtaDebugState() {
+    const fallback = {
+      label: this.runReportButtonLabel?.text || null,
+      visible: Boolean(this.runReportButton?.visible && this.runReportButton?.parent),
+      hasReport: Boolean(this.getRunReport())
+    };
+    try {
+      if (!this.runReportButton?.getBounds) return fallback;
+      const bounds = this.runReportButton.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || 0),
+        height: Math.round(bounds.height || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  getRunReportOverlayDebugState() {
+    const report = this.getRunReport();
+    const base = {
+      visible: Boolean(this.runReportOverlay?.visible && this.runReportOverlay?.parent),
+      open: Boolean(this.runReportOpen),
+      localOnly: Boolean(report?.localOnly),
+      sectionIds: Array.isArray(report?.sections) ? report.sections.map((section) => section.id) : [],
+      text: this.runReportOverlayDebug?.text || ''
+    };
+    if (this.runReportOverlayDebug) {
+      return {
+        ...base,
+        x: this.runReportOverlayDebug.x,
+        y: this.runReportOverlayDebug.y,
+        width: this.runReportOverlayDebug.width,
+        height: this.runReportOverlayDebug.height,
+        text: this.runReportOverlayDebug.text || base.text
+      };
+    }
+    return base;
+  }
+
+  getRunReportDebugState() {
+    const report = this.getRunReport();
+    if (!report) return null;
+    return {
+      localOnly: Boolean(report.localOnly),
+      summary: report.summary || null,
+      sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : [],
+      overlay: this.getRunReportOverlayDebugState()
+    };
   }
 
   showInputOverlay() {

@@ -2,6 +2,7 @@ import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
+import { summarizeRunReport } from './game/RunReport.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
@@ -748,6 +749,7 @@ function buildGameTextState(game) {
       newlyUnlockedShips: game?.runSummary?.newlyUnlockedShips || [],
       shipUnlockProgressSummary: hangarProgressSummary
     },
+    runReport: summarizeRunReport(game?.lastRunReport || null),
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,
@@ -865,6 +867,9 @@ function buildGameTextState(game) {
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
       mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
+      runReportCta: gameOverScene.getRunReportCtaDebugState ? gameOverScene.getRunReportCtaDebugState() : null,
+      runReportOverlay: gameOverScene.getRunReportOverlayDebugState ? gameOverScene.getRunReportOverlayDebugState() : null,
+      runReport: gameOverScene.getRunReportDebugState ? gameOverScene.getRunReportDebugState() : null,
       state: gameOverScene.state || null,
       submittedHoldReady: typeof gameOverScene.isSubmittedHoldContinueReady === 'function'
         ? gameOverScene.isSubmittedHoldContinueReady()

@@ -292,6 +292,10 @@ export class PlayScene {
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
     this.lifeLossesThisRun = 0;
+    this.respawnsThisRun = 0;
+    this.extraLivesEarnedThisRun = 0;
+    this.lastLifeLossSource = null;
+    this.finalLifeLossSource = null;
     this.powerupsCollectedThisRun = 0;
     this.repairsGrantedThisRun = 0;
     this.lastKillAt = 0;
@@ -467,6 +471,10 @@ export class PlayScene {
     this.discoveryBonus = 0;
     this.defeatedBossIds = [];
     this.lifeLossesThisRun = 0;
+    this.respawnsThisRun = 0;
+    this.extraLivesEarnedThisRun = 0;
+    this.lastLifeLossSource = null;
+    this.finalLifeLossSource = null;
     this.powerupsCollectedThisRun = 0;
     this.grazeBreaksThisRun = 0;
     this.repairsGrantedThisRun = 0;
@@ -3113,7 +3121,7 @@ export class PlayScene {
             if (damageTaken) {
               this.recordBalanceDamage('enemy_bullet');
               this.lastHitAt = Date.now();
-              this.game.loseLife();
+              this.game.loseLife({ source: 'enemy_bullet' });
               this.triggerPlayerDeathFeedback();
             } else {
               // Shield absorbed it
@@ -3151,7 +3159,7 @@ export class PlayScene {
               if (damageTaken) {
                 this.recordBalanceDamage('ambient_hazard_contact');
                 this.lastHitAt = Date.now();
-                this.game.loseLife();
+                this.game.loseLife({ source: 'ambient_hazard_contact' });
                 this.triggerPlayerDeathFeedback();
               } else {
                 this.screenShake.shake(3);
@@ -3263,7 +3271,7 @@ export class PlayScene {
             if (damageTaken) {
               this.recordBalanceDamage('enemy_contact');
               this.lastHitAt = Date.now();
-              this.game.loseLife();
+              this.game.loseLife({ source: 'enemy_contact' });
               this.triggerPlayerDeathFeedback();
             } else {
               this.screenShake.shake(3);
@@ -4896,13 +4904,23 @@ export class PlayScene {
     this._activeTickers.push(ticker);
   }
 
-  onLifeLost() {
+  onLifeLost(lives, context = {}) {
+    const source = String(context?.source || 'unknown');
+    this.lastLifeLossSource = source;
+    if (context?.final || (Number(lives) || 0) <= 0) {
+      this.finalLifeLossSource = source;
+    }
     this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     this.recordBalanceLifeLost();
     this.player?.clearStatusEffects?.('life_lost');
-    if (this.tryLastStandRepair()) return;
+    if (this.tryLastStandRepair()) {
+      if ((Number(this.game?.lives) || 0) > 0) {
+        this.respawnsThisRun = (Number(this.respawnsThisRun) || 0) + 1;
+      }
+      return;
+    }
     if (this.game.lives <= 0) {
       this.flushBalanceDebugSummary('game_over');
       return;
@@ -4917,6 +4935,7 @@ export class PlayScene {
 
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
+      this.respawnsThisRun = (Number(this.respawnsThisRun) || 0) + 1;
       this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
       this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'respawn');
       this.recordBalanceRespawn();
@@ -5274,7 +5293,7 @@ export class PlayScene {
     });
     this.recordBalanceDamage(options.balanceSource || source);
     this.lastHitAt = Date.now();
-    this.game.loseLife();
+    this.game.loseLife({ source });
     this.triggerPlayerDeathFeedback();
     return true;
   }
@@ -5291,14 +5310,20 @@ export class PlayScene {
   }
 
   onLifeGained(lives, context = {}) {
+    const before = Number.isFinite(context.before) ? context.before : null;
+    const after = Number.isFinite(context.after) ? context.after : (Number.isFinite(lives) ? lives : null);
+    const gained = before != null && after != null ? Math.max(0, Math.round(after - before)) : 0;
+    if (gained > 0) {
+      this.extraLivesEarnedThisRun = (Number(this.extraLivesEarnedThisRun) || 0) + gained;
+    }
     const configuredMaxLives = Number(context.maxLives) || this.getMaxLives();
     const maxLives = Number.isFinite(configuredMaxLives)
       ? Math.max(1, configuredMaxLives)
       : Number.POSITIVE_INFINITY;
     if (!Number.isFinite(maxLives)) return;
-    const before = Number.isFinite(context.before) ? context.before : maxLives - 1;
+    const beforeLives = Number.isFinite(context.before) ? context.before : maxLives - 1;
     const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
-    if (currentLives >= maxLives && before < maxLives) {
+    if (currentLives >= maxLives && beforeLives < maxLives) {
       this.showMaxLivesNotification({ maxLives });
     }
   }

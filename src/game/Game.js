@@ -24,6 +24,7 @@ import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConf
 import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
+import { createRunReport } from './RunReport.js';
 import {
   RUN_MODES,
   canRunModeSubmitGlobalLeaderboard,
@@ -76,6 +77,7 @@ export class Game {
     this.runClearScoreBonusAward = null;
     this.runFinalized = false;
     this.runSummary = null;
+    this.lastRunReport = null;
     this.runProgressionResult = null;
     this.runPressureDirector = null;
     this.contentDirector = null;
@@ -295,6 +297,7 @@ export class Game {
     this.runClearScoreBonusAward = null;
     this.runFinalized = false;
     this.runSummary = null;
+    this.lastRunReport = null;
     this.runProgressionResult = null;
     this.liveRankProgression = null;
     this.liveRankBaseProgress = null;
@@ -799,15 +802,25 @@ export class Game {
     return rankManager.getPilotRankProgress(currentPilotXp).progress;
   }
 
-  loseLife() {
+  loseLife(options = {}) {
     if (this.currentScene?.isDebugInvincibleActive?.()) {
       this.currentScene.onDebugDamageBlocked?.('game_lose_life');
       return;
     }
 
+    const source = typeof options === 'string'
+      ? options
+      : String(options?.source || 'unknown');
+    const before = this.lives;
     this.lives--;
+    const after = this.lives;
     if (this.currentScene && this.currentScene.onLifeLost) {
-      this.currentScene.onLifeLost(this.lives);
+      this.currentScene.onLifeLost(this.lives, {
+        before,
+        after,
+        source,
+        final: after <= 0
+      });
     }
     if (this.lives <= 0) {
       if (this.currentScene?.beginGameOverSequence?.()) return;
@@ -873,8 +886,14 @@ export class Game {
       totalKills: Number(play?.totalKills) || 0,
       bestComboCount: Number(play?.bestComboCount) || 0,
       bestDangerDodgeStreak: Number(play?.bestDangerDodgeStreak) || 0,
+      nearMissSurges: Number(play?.nearMissSurgesThisRun) || 0,
       grazeBreaks: Number(play?.grazeBreaksThisRun) || 0,
       lifeLosses: Number(play?.lifeLossesThisRun) || 0,
+      respawns: Number(play?.respawnsThisRun) || 0,
+      extraLivesEarned: Number(play?.extraLivesEarnedThisRun) || 0,
+      repairsGranted: Number(play?.repairsGrantedThisRun) || 0,
+      lastLifeLossSource: play?.lastLifeLossSource || null,
+      finalDeathSource: play?.finalLifeLossSource || null,
       powerupsCollected: Number(play?.powerupsCollectedThisRun) || 0,
       livesRemaining: this.lives,
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
@@ -1087,6 +1106,7 @@ export class Game {
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
       }
     }
+    this.lastRunReport = createRunReport(this.runSummary);
     return result;
   }
 
