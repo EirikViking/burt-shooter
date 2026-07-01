@@ -62,7 +62,7 @@ Scout Run and Sector Run are unranked. They are allowed to show local run result
 
 Steam achievements are Mayhem Run only in this first version. This is intentional for clarity and fairness. Scout Run and Sector Run cannot unlock Steam achievements, including milestone achievements.
 
-No Steam achievements were created, deleted, renamed, or changed for this mode split. The Early Pilot status/backfill path remains preserved.
+No Steam achievements were created, deleted, renamed, or changed for this mode split. The First Ranked Run (`ACH_EARLY_PILOT`) status/backfill path remains preserved.
 
 ## Future Option
 

@@ -11,9 +11,13 @@ function idsFor(summary = {}, progress = {}) {
   return getMilestoneAchievementUnlocks({ summary, progress }).map((entry) => entry.achievement.id);
 }
 
-assert.equal(MILESTONE_ACHIEVEMENTS.length, 10, 'Nova Swarm should keep the 9 launch milestones plus Early Pilot.');
+assert.equal(MILESTONE_ACHIEVEMENTS.length, 10, 'Nova Swarm should keep the 9 launch milestones plus First Ranked Run.');
 assert.equal(LEGEND_ACHIEVEMENTS.length, 30, 'Nova Swarm should include 30 legend score-gated achievements.');
 assert.deepEqual(idsFor({}, {}), [], 'Fresh profiles should not unlock milestone achievements.');
+
+const firstRankedRun = MILESTONE_ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_EARLY_PILOT');
+assert.equal(firstRankedRun?.name, 'First Ranked Run');
+assert.equal(firstRankedRun?.description, 'Finish any ranked run. Practice and Sector Start runs do not count.');
 
 assert.ok(idsFor({}, { totalRuns: 1 }).includes('ACH_EARLY_PILOT'));
 assert.ok(idsFor({ sectorReached: 5 }, {}).includes('ACH_SECTOR_FIVE'));
@@ -87,6 +91,28 @@ assert.deepEqual(
   [],
   'Legend achievements must not unlock below the 100,000 score gate.'
 );
+
+const noRepairNonClear = idsFor({
+  score: LEGEND_COMPOUND_SCORE_GATE,
+  finalScore: LEGEND_COMPOUND_SCORE_GATE,
+  runCleared: false,
+  lifeLosses: 0
+}, {});
+assert.ok(
+  !noRepairNonClear.includes('ACH_NO_REPAIR_RECEIPTS'),
+  'No Repair Receipts should require a cleared ranked run.'
+);
+const noRepairClear = idsFor({
+  score: LEGEND_COMPOUND_SCORE_GATE,
+  finalScore: LEGEND_COMPOUND_SCORE_GATE,
+  runCleared: true,
+  lifeLosses: 0
+}, {});
+assert.ok(
+  noRepairClear.includes('ACH_NO_REPAIR_RECEIPTS'),
+  'No Repair Receipts should unlock on a cleared 250k no-life-loss ranked run.'
+);
+
 const fullLegendUnlockIds = idsFor({
   ...overqualifiedLowScoreSummary,
   score: 2000000,

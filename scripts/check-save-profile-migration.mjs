@@ -149,7 +149,7 @@ function runUnscopedMigrationClaimTest() {
   const scopedRecords = assertScopedCopy(storage, mainProfile, SECTOR_RECORDS_KEY, 'main profile');
   assert.equal(scopedRecords.byCheckpoint['30'].highestSectorReached, 32);
   const scopedAchievements = assertScopedCopy(storage, mainProfile, ACHIEVEMENTS_KEY, 'main profile');
-  assert.equal(scopedAchievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'Early Pilot mirror should survive migration');
+  assert.equal(scopedAchievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'First Ranked Run mirror should survive migration');
 
   const secondProfile = { steamId: '76561198953993508', personaName: 'Tiny Foundry' };
   const secondInstalled = installProfileStorageNamespace(secondProfile);
@@ -206,7 +206,7 @@ function runSteamCloudLegacyAndProfileTests() {
     const importedA = createSteamCloudSave(userData, { warn() {} }, { profile: profileA }).ensureInitialized();
     assert.equal(importedA.profile.steamId, profileA.steamId);
     assert.equal(importedA.hangarProgress.bestSector, 31, 'unprofiled shared legacy save should import into first Steam profile');
-    assert.equal(importedA.achievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'Early Pilot mirror should survive Steam Cloud import');
+    assert.equal(importedA.achievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'First Ranked Run mirror should survive Steam Cloud import');
     assert.deepEqual(getSectorStartCheckpoints(importedA.hangarProgress), [5, 10, 15, 20, 25, 30]);
 
     const freshB = createSteamCloudSave(userData, { warn() {} }, { profile: profileB }).ensureInitialized();
@@ -225,4 +225,4 @@ runUnscopedMigrationClaimTest();
 runExistingScopedProfileProtectionTest();
 runSteamCloudLegacyAndProfileTests();
 
-console.log('[save-profile-migration] PASS legacy unscoped progress migrates once, profile isolation holds, Early Pilot survives');
+console.log('[save-profile-migration] PASS legacy unscoped progress migrates once, profile isolation holds, First Ranked Run survives');

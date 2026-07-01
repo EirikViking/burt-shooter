@@ -1,12 +1,12 @@
-# Early Pilot Achievement Steamworks Checklist
+# First Ranked Run Achievement Steamworks Checklist
 
 Status: code and assets implemented. Manual Steamworks app-admin setup may still be required.
 
 ## Achievement
 
 - API Name: `ACH_EARLY_PILOT`
-- Display Name: `Early Pilot`
-- Description: `Play one ranked run during the early pilot window.`
+- Display Name: `First Ranked Run`
+- Description: `Finish any ranked run. Practice and Sector Start runs do not count.`
 - Hidden: `false`
 - Achieved icon: `release/steamworks/achievement-icons/ACH_EARLY_PILOT-achieved.jpg`
 - Locked icon: `release/steamworks/achievement-icons/ACH_EARLY_PILOT-locked.jpg`
@@ -15,7 +15,7 @@ Status: code and assets implemented. Manual Steamworks app-admin setup may still
 
 - The catalog entry lives in `src/achievements/AchievementCatalog.js`.
 - Normal unlock condition: milestone metric `totalRuns >= 1`.
-- Safe backfill: `src/game/Game.js` checks existing hangar progress on startup and unlocks Early Pilot if the player already has ranked-run activity, best score, boss defeats, or wave clears.
+- Safe backfill: `src/game/Game.js` checks existing hangar progress on startup and unlocks First Ranked Run if the player already has ranked-run activity, best score, boss defeats, or wave clears.
 - Existing achievement IDs were not changed.
 
 ## Manual Steamworks Steps

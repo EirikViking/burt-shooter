@@ -78,6 +78,18 @@ if (!ids.includes('ACH_GLOBAL_NUMBER_ONE')) {
   fail('Missing ACH_GLOBAL_NUMBER_ONE.');
 }
 
+const earlyPilot = ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_EARLY_PILOT');
+if (!earlyPilot) {
+  fail('Missing ACH_EARLY_PILOT.');
+} else {
+  if (earlyPilot.name !== 'First Ranked Run') {
+    fail(`ACH_EARLY_PILOT display name should stay "First Ranked Run"; saw "${earlyPilot.name}".`);
+  }
+  if (earlyPilot.description !== 'Finish any ranked run. Practice and Sector Start runs do not count.') {
+    fail(`ACH_EARLY_PILOT description drifted: "${earlyPilot.description}".`);
+  }
+}
+
 const rankNumbers = ids
   .map((id) => /^ACH_RANK_(\d{2})$/.exec(id))
   .filter(Boolean)

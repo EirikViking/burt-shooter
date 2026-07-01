@@ -3,7 +3,7 @@
   "generatedAt": "2026-06-15T12:45:28.054Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
   "sourceSheet": "nova-swarm-achievement-icons-sheet-20260615-legendary-unique.png",
-  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and Early Pilot icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs.",
+  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and First Ranked Run icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs.",
   "iconSize": "256x256 jpg",
   "icons": [
     {
@@ -336,8 +336,8 @@
     },
     {
       "apiName": "ACH_EARLY_PILOT",
-      "displayName": "Early Pilot",
-      "description": "Play one ranked run during the early pilot window.",
+      "displayName": "First Ranked Run",
+      "description": "Finish any ranked run. Practice and Sector Start runs do not count.",
       "hidden": false,
       "achievedIcon": "ACH_EARLY_PILOT-achieved.jpg",
       "lockedIcon": "ACH_EARLY_PILOT-locked.jpg"
@@ -353,7 +353,7 @@
     {
       "apiName": "ACH_FINAL_CLIMAX",
       "displayName": "Final Climax Signal",
-      "description": "Reach the final climax sector.",
+      "description": "Reach Sector 10 in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_FINAL_CLIMAX-achieved.jpg",
       "lockedIcon": "ACH_FINAL_CLIMAX-locked.jpg"
@@ -361,7 +361,7 @@
     {
       "apiName": "ACH_ARCADE_CLEAR",
       "displayName": "Cabinet Survived",
-      "description": "Clear the current arcade run.",
+      "description": "Clear a ranked Mayhem run.",
       "hidden": false,
       "achievedIcon": "ACH_ARCADE_CLEAR-achieved.jpg",
       "lockedIcon": "ACH_ARCADE_CLEAR-locked.jpg"
@@ -369,7 +369,7 @@
     {
       "apiName": "ACH_TWO_LIVES_CLEAR",
       "displayName": "Spare Hull Ceremony",
-      "description": "Clear the run with at least 2 lives remaining.",
+      "description": "Clear a ranked Mayhem run with at least 2 lives remaining.",
       "hidden": false,
       "achievedIcon": "ACH_TWO_LIVES_CLEAR-achieved.jpg",
       "lockedIcon": "ACH_TWO_LIVES_CLEAR-locked.jpg"
@@ -449,7 +449,7 @@
     {
       "apiName": "ACH_SECTOR_STORMRIDER",
       "displayName": "Sector Stormrider",
-      "description": "Reach Sector 12 with at least 250,000 points.",
+      "description": "Reach Sector 12 with at least 250,000 points in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_SECTOR_STORMRIDER-achieved.jpg",
       "lockedIcon": "ACH_SECTOR_STORMRIDER-locked.jpg"
@@ -457,7 +457,7 @@
     {
       "apiName": "ACH_OVERRUN_CARTOGRAPHER",
       "displayName": "Overrun Cartographer",
-      "description": "Reach Sector 20 with at least 250,000 points.",
+      "description": "Reach Sector 20 with at least 250,000 points in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_OVERRUN_CARTOGRAPHER-achieved.jpg",
       "lockedIcon": "ACH_OVERRUN_CARTOGRAPHER-locked.jpg"
@@ -521,7 +521,7 @@
     {
       "apiName": "ACH_NO_REPAIR_RECEIPTS",
       "displayName": "No Repair Receipts",
-      "description": "Finish a 250,000-point ranked run without losing a life.",
+      "description": "Clear a 250,000-point ranked run without losing a life.",
       "hidden": false,
       "achievedIcon": "ACH_NO_REPAIR_RECEIPTS-achieved.jpg",
       "lockedIcon": "ACH_NO_REPAIR_RECEIPTS-locked.jpg"
@@ -529,7 +529,7 @@
     {
       "apiName": "ACH_FULL_HULL_FIREWORKS",
       "displayName": "Full-Hull Fireworks",
-      "description": "Clear a run with 3 lives remaining and at least 250,000 points.",
+      "description": "Clear a ranked run with 3 lives remaining and at least 250,000 points.",
       "hidden": false,
       "achievedIcon": "ACH_FULL_HULL_FIREWORKS-achieved.jpg",
       "lockedIcon": "ACH_FULL_HULL_FIREWORKS-locked.jpg"
@@ -537,7 +537,7 @@
     {
       "apiName": "ACH_SWARM_TAXONOMIST",
       "displayName": "Swarm Taxonomist",
-      "description": "Discover 100 Threat Codex signals, then finish a 250,000-point run.",
+      "description": "Discover 100 Threat Codex signals, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_SWARM_TAXONOMIST-achieved.jpg",
       "lockedIcon": "ACH_SWARM_TAXONOMIST-locked.jpg"
@@ -553,7 +553,7 @@
     {
       "apiName": "ACH_HANGAR_AFTERPARTY",
       "displayName": "Hangar Afterparty",
-      "description": "Unlock 15 playable ships, then finish a 250,000-point run.",
+      "description": "Unlock 15 playable ships, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_HANGAR_AFTERPARTY-achieved.jpg",
       "lockedIcon": "ACH_HANGAR_AFTERPARTY-locked.jpg"
@@ -561,7 +561,7 @@
     {
       "apiName": "ACH_BOSS_ROSTER_STAMPED",
       "displayName": "Boss Roster Stamped",
-      "description": "Defeat 8 unique boss signals across your career, then finish a 250,000-point run.",
+      "description": "Defeat 8 unique boss signals across your career, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_BOSS_ROSTER_STAMPED-achieved.jpg",
       "lockedIcon": "ACH_BOSS_ROSTER_STAMPED-locked.jpg"
@@ -569,7 +569,7 @@
     {
       "apiName": "ACH_THEME_PARK_PANIC",
       "displayName": "Theme Park Panic",
-      "description": "Survive 6 different run themes, then finish a 250,000-point run.",
+      "description": "Survive 6 different run themes, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_THEME_PARK_PANIC-achieved.jpg",
       "lockedIcon": "ACH_THEME_PARK_PANIC-locked.jpg"
@@ -585,7 +585,7 @@
     {
       "apiName": "ACH_SECTOR_THIRTY_BLACKOUT",
       "displayName": "Sector 30 Blackout",
-      "description": "Reach Sector 30 with at least 250,000 points.",
+      "description": "Reach Sector 30 with at least 250,000 points in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_SECTOR_THIRTY_BLACKOUT-achieved.jpg",
       "lockedIcon": "ACH_SECTOR_THIRTY_BLACKOUT-locked.jpg"
@@ -593,7 +593,7 @@
     {
       "apiName": "ACH_SECTOR_FIFTY_ENDLESS",
       "displayName": "Sector 50 Endless",
-      "description": "Reach Sector 50 with at least 250,000 points.",
+      "description": "Reach Sector 50 with at least 250,000 points in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_SECTOR_FIFTY_ENDLESS-achieved.jpg",
       "lockedIcon": "ACH_SECTOR_FIFTY_ENDLESS-locked.jpg"
@@ -649,7 +649,7 @@
     {
       "apiName": "ACH_FULL_HANGAR_OMEGA",
       "displayName": "Full Hangar Omega",
-      "description": "Unlock all 25 playable ships, then finish a 250,000-point run.",
+      "description": "Unlock all 25 playable ships, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_FULL_HANGAR_OMEGA-achieved.jpg",
       "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"

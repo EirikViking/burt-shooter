@@ -273,7 +273,7 @@ function runTests() {
       'checkpoint records are unioned'
     );
     assert.equal(mergedTarget.settings.audio.masterVolume, 0.44, 'active settings are preserved');
-    assert.equal(mergedTarget.achievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'Early Pilot status survives');
+    assert.equal(mergedTarget.achievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'First Ranked Run status survives');
     assert.equal(readFileSync(fixture.otherPath, 'utf8'), otherBefore, 'unrelated Steam profile must not be modified');
 
     const idempotent = runProfileRescue({

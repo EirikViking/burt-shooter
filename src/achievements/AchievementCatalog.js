@@ -81,8 +81,8 @@ const rankAchievements = Array.from({ length: Math.max(0, NUM_RANKS - 1) }, (_, 
 export const MILESTONE_ACHIEVEMENTS = Object.freeze([
   {
     id: MILESTONE_ACHIEVEMENT_IDS.EARLY_PILOT,
-    name: 'Early Pilot',
-    description: 'Play one ranked run during the early pilot window.',
+    name: 'First Ranked Run',
+    description: 'Finish any ranked run. Practice and Sector Start runs do not count.',
     type: 'milestone',
     metric: 'totalRuns',
     target: 1,
@@ -102,7 +102,7 @@ export const MILESTONE_ACHIEVEMENTS = Object.freeze([
   {
     id: MILESTONE_ACHIEVEMENT_IDS.FINAL_CLIMAX,
     name: 'Final Climax Signal',
-    description: 'Reach the final climax sector.',
+    description: 'Reach Sector 10 in a ranked run.',
     type: 'milestone',
     metric: 'bestSector',
     target: 10,
@@ -112,7 +112,7 @@ export const MILESTONE_ACHIEVEMENTS = Object.freeze([
   {
     id: MILESTONE_ACHIEVEMENT_IDS.ARCADE_CLEAR,
     name: 'Cabinet Survived',
-    description: 'Clear the current arcade run.',
+    description: 'Clear a ranked Mayhem run.',
     type: 'milestone',
     metric: 'runClears',
     target: 1,
@@ -122,7 +122,7 @@ export const MILESTONE_ACHIEVEMENTS = Object.freeze([
   {
     id: MILESTONE_ACHIEVEMENT_IDS.TWO_LIVES_CLEAR,
     name: 'Spare Hull Ceremony',
-    description: 'Clear the run with at least 2 lives remaining.',
+    description: 'Clear a ranked Mayhem run with at least 2 lives remaining.',
     type: 'milestone',
     metric: 'clearWithLivesRemaining',
     target: 2,
@@ -233,7 +233,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.SECTOR_STORMRIDER,
     name: 'Sector Stormrider',
-    description: 'Reach Sector 12 with at least 250,000 points.',
+    description: 'Reach Sector 12 with at least 250,000 points in a ranked run.',
     type: 'milestone',
     metric: 'sectorReached',
     target: 12,
@@ -245,7 +245,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.OVERRUN_CARTOGRAPHER,
     name: 'Overrun Cartographer',
-    description: 'Reach Sector 20 with at least 250,000 points.',
+    description: 'Reach Sector 20 with at least 250,000 points in a ranked run.',
     type: 'milestone',
     metric: 'sectorReached',
     target: 20,
@@ -341,19 +341,22 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.NO_REPAIR_RECEIPTS,
     name: 'No Repair Receipts',
-    description: 'Finish a 250,000-point ranked run without losing a life.',
+    description: 'Clear a 250,000-point ranked run without losing a life.',
     type: 'milestone',
     metric: 'lifeLosses',
     target: 0,
     minimumScore: LEGEND_COMPOUND_SCORE_GATE,
-    requirements: scoreGated([{ metric: 'lifeLosses', target: 0, comparator: '<=' }], LEGEND_COMPOUND_SCORE_GATE),
+    requirements: scoreGated([
+      { metric: 'runCleared', target: 1 },
+      { metric: 'lifeLosses', target: 0, comparator: '<=' }
+    ], LEGEND_COMPOUND_SCORE_GATE),
     difficulty: 'legendary',
     hidden: false
   },
   {
     id: LEGEND_ACHIEVEMENT_IDS.FULL_HULL_FIREWORKS,
     name: 'Full-Hull Fireworks',
-    description: 'Clear a run with 3 lives remaining and at least 250,000 points.',
+    description: 'Clear a ranked run with 3 lives remaining and at least 250,000 points.',
     type: 'milestone',
     metric: 'clearLivesRemaining',
     target: 3,
@@ -368,7 +371,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.SWARM_TAXONOMIST,
     name: 'Swarm Taxonomist',
-    description: 'Discover 100 Threat Codex signals, then finish a 250,000-point run.',
+    description: 'Discover 100 Threat Codex signals, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'totalCodexDiscoveries',
     target: 100,
@@ -392,7 +395,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.HANGAR_AFTERPARTY,
     name: 'Hangar Afterparty',
-    description: 'Unlock 15 playable ships, then finish a 250,000-point run.',
+    description: 'Unlock 15 playable ships, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'unlockedShipCount',
     target: 15,
@@ -404,7 +407,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.BOSS_ROSTER_STAMPED,
     name: 'Boss Roster Stamped',
-    description: 'Defeat 8 unique boss signals across your career, then finish a 250,000-point run.',
+    description: 'Defeat 8 unique boss signals across your career, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'uniqueBossesDefeated',
     target: 8,
@@ -416,7 +419,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.THEME_PARK_PANIC,
     name: 'Theme Park Panic',
-    description: 'Survive 6 different run themes, then finish a 250,000-point run.',
+    description: 'Survive 6 different run themes, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'uniqueRunThemesSurvived',
     target: 6,
@@ -440,7 +443,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.SECTOR_THIRTY_BLACKOUT,
     name: 'Sector 30 Blackout',
-    description: 'Reach Sector 30 with at least 250,000 points.',
+    description: 'Reach Sector 30 with at least 250,000 points in a ranked run.',
     type: 'milestone',
     metric: 'sectorReached',
     target: 30,
@@ -452,7 +455,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.SECTOR_FIFTY_ENDLESS,
     name: 'Sector 50 Endless',
-    description: 'Reach Sector 50 with at least 250,000 points.',
+    description: 'Reach Sector 50 with at least 250,000 points in a ranked run.',
     type: 'milestone',
     metric: 'sectorReached',
     target: 50,
@@ -536,7 +539,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.FULL_HANGAR_OMEGA,
     name: 'Full Hangar Omega',
-    description: 'Unlock all 25 playable ships, then finish a 250,000-point run.',
+    description: 'Unlock all 25 playable ships, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'unlockedShipCount',
     target: 25,
