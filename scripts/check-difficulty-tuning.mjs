@@ -149,6 +149,13 @@ const summaries = [
 
 const summaryByLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
+if (BalanceConfig.DIFFICULTY_MULTIPLIER !== 0.792) {
+  fail(`global movement difficulty multiplier should be reduced by 10% to 0.792, got ${BalanceConfig.DIFFICULTY_MULTIPLIER}`);
+}
+if (BalanceConfig.difficulty.pressureScalar !== 0.765) {
+  fail(`global fire/projectile pressure scalar should be reduced by 10% to 0.765, got ${BalanceConfig.difficulty.pressureScalar}`);
+}
+
 assertRange('levels 1 to 2 conservative opening', summaryByLabel.get('levels 1 to 2').increasePct / 100, [0.03, 0.07]);
 assertRange('levels 3 to 5 early movement checks', summaryByLabel.get('levels 3 to 5').increasePct / 100, [0.48, 0.6]);
 assertRange('levels 6 to 10 early kill window', summaryByLabel.get('levels 6 to 10').increasePct / 100, [0.86, 1.05]);

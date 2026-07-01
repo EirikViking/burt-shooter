@@ -1061,12 +1061,12 @@ export class EnemyManager {
       tripleWaveChance: Math.max(0, Math.min(1, Number(config.tripleWaveChance) || 0)),
       doubleWaveMinLevel: Math.max(1, Math.floor(Number(config.doubleWaveMinLevel) || 8)),
       doubleWaveRequiresPriorReinforcement: config.doubleWaveRequiresPriorReinforcement !== false,
-      normalMinWaveCount: Math.max(1, Math.floor(Number(config.normalMinWaveCount) || 1)),
-      normalMaxWaveCount: Math.max(1, Math.floor(Number(config.normalMaxWaveCount) || Number(config.normalMinWaveCount) || 1)),
+      normalMinWaveCount: Math.max(1, Math.min(3, Math.floor(Number(config.normalMinWaveCount) || 1))),
+      normalMaxWaveCount: Math.max(1, Math.min(3, Math.floor(Number(config.normalMaxWaveCount) || Number(config.normalMinWaveCount) || 1))),
       normalMaxWaveChance: Math.max(0, Math.min(1, Number(config.normalMaxWaveChance) || 0)),
       normalMultiWaveMinLevel: Math.max(1, Math.floor(Number(config.normalMultiWaveMinLevel) || 1)),
       superStormChance: Math.max(0, Math.min(1, Number(config.superStormChance) || 0)),
-      superStormWaveCount: Math.max(1, Math.min(6, Math.floor(Number(config.superStormWaveCount) || 5))),
+      superStormWaveCount: Math.max(1, Math.min(3, Math.floor(Number(config.superStormWaveCount) || 3))),
       superStormMinLevel: Math.max(1, Math.floor(Number(config.superStormMinLevel) || 8)),
       superStormFirstPityMinLevel: Math.max(1, Math.floor(Number(config.superStormFirstPityMinLevel) || 12)),
       superStormFirstPityMaxLevel: Math.max(1, Math.floor(Number(config.superStormFirstPityMaxLevel) || 18)),
@@ -1127,6 +1127,7 @@ export class EnemyManager {
     const spawned = Math.max(0, Math.floor(Number(this.mayhemSuperStormRunSpawned) || 0));
     if (spawned > 0) return false;
     const level = Math.max(1, Math.floor(Number(this.level) || 1));
+    if (config.superStormChance <= 0) return false;
     if (level < config.superStormFirstPityMinLevel) return false;
     if (level >= config.superStormFirstPityMaxLevel) return true;
     const misses = Math.max(0, Math.floor(Number(this.mayhemSuperStormEligibleMisses) || 0));
@@ -1176,8 +1177,8 @@ export class EnemyManager {
 
   getNormalMayhemReinforcementWaveIndices({ config, currentWaveIndex, extraWaveRoll }) {
     if (!config) return [];
-    const minCount = Math.max(1, Math.min(6, Math.floor(Number(config.normalMinWaveCount) || 1)));
-    const maxCount = Math.max(minCount, Math.min(6, Math.floor(Number(config.normalMaxWaveCount) || minCount)));
+    const minCount = Math.max(1, Math.min(3, Math.floor(Number(config.normalMinWaveCount) || 1)));
+    const maxCount = Math.max(minCount, Math.min(3, Math.floor(Number(config.normalMaxWaveCount) || minCount)));
     const desiredCount = maxCount > minCount && extraWaveRoll < config.normalMaxWaveChance ? maxCount : minCount;
     const indices = [];
     for (let waveIndex = currentWaveIndex + 1; waveIndex < this.normalWavesTotal && indices.length < desiredCount; waveIndex += 1) {
@@ -1215,7 +1216,7 @@ export class EnemyManager {
   }
 
   getMayhemSuperStormWavePlan({ config, currentWaveIndex }) {
-    const groupCount = Math.max(1, Math.min(6, Math.floor(Number(config?.superStormWaveCount) || 5)));
+    const groupCount = Math.max(1, Math.min(3, Math.floor(Number(config?.superStormWaveCount) || 3)));
     const reinforcementWaveIndices = [];
     const reinforcementWaveConfigs = [];
     for (
@@ -1280,6 +1281,7 @@ export class EnemyManager {
     );
     const superStormPityForced = Boolean(
       config &&
+      config.superStormChance > 0 &&
       this.shouldForceMayhemSuperStormByPity(config)
     );
     const superStormCandidate = Boolean(superStormNaturalHit || superStormPityForced);
@@ -1303,6 +1305,7 @@ export class EnemyManager {
       : null;
     const canRecordSuperStormMiss = Boolean(
       config &&
+      config.superStormChance > 0 &&
       !superStormCandidate &&
       level >= config.superStormMinLevel &&
       superStormGateReasons.length === 0 &&
@@ -1408,7 +1411,7 @@ export class EnemyManager {
     this.mayhemReinforcementStats.lastPityForced = eligibility.pityForced;
     this.fireMayhemReinforcementWarning(this.mayhemReinforcementState);
     const targetLabel = eligibility.isSuperStorm
-      ? `${eligibility.reinforcementWaveConfigs?.length || eligibility.superStormWaveCount || 5}groups` +
+      ? `${eligibility.reinforcementWaveConfigs?.length || eligibility.superStormWaveCount || 3}groups` +
         (eligibility.syntheticWaveCount ? `+${eligibility.syntheticWaveCount}synthetic` : '')
       : eligibility.reinforcementWaveIndices.map((index) => index + 1).join('+');
     console.log(
@@ -1499,22 +1502,23 @@ export class EnemyManager {
     const groupCount = Math.max(
       1,
       Math.floor(Number(state.reinforcementGroupCount) ||
-        Number(state.reinforcementWaveConfigs?.length) ||
-        Number(state.reinforcementWaveIndices?.length) ||
+        Math.min(3, Number(state.reinforcementWaveConfigs?.length) || 0) ||
+        Math.min(3, Number(state.reinforcementWaveIndices?.length) || 0) ||
         1)
     );
+    const useSuperStormVoice = state.isSuperStorm === true && groupCount >= 5;
     playScene?.showMayhemReinforcementStormWarning?.({
       groupCount,
       boss: this.state === 'BOSS_ACTIVE',
       superStorm: state.isSuperStorm === true
     });
-    AudioManager.playVoice(state.isSuperStorm ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
+    AudioManager.playVoice(useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
       force: true,
       bypassGlobalCooldown: true,
-      cooldownMs: state.isSuperStorm ? 0 : 2200,
-      eventCooldownMs: state.isSuperStorm ? 0 : 2200,
-      duckMs: state.isSuperStorm ? 2400 : 1150,
-      voicePriority: state.isSuperStorm ? 8 : 7
+      cooldownMs: useSuperStormVoice ? 0 : 2200,
+      eventCooldownMs: useSuperStormVoice ? 0 : 2200,
+      duckMs: useSuperStormVoice ? 2400 : 1150,
+      voicePriority: useSuperStormVoice ? 8 : 7
     });
     return true;
   }
@@ -1546,7 +1550,7 @@ export class EnemyManager {
     this.mayhemReinforcementStats.spawned += reinforcementWaveIndices.length;
     if (state.isSuperStorm) this.mayhemSuperStormSurvivalWaveCounts.set(
       state.currentWaveIndex,
-      Math.max(1, Math.floor(Number(configs.length) || Number(state.reinforcementGroupCount) || 5))
+      Math.max(1, Math.min(3, Math.floor(Number(configs.length) || Number(state.reinforcementGroupCount) || 3)))
     );
     if (state.isSuperStorm) {
       this.mayhemSuperStormRunSpawned = Math.max(0, Math.floor(Number(this.mayhemSuperStormRunSpawned) || 0)) + 1;

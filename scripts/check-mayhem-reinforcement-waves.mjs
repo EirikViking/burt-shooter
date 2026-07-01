@@ -64,11 +64,11 @@ if (config.tripleWaveChance !== 0.10) fail(`Expected 10% triple-reinforcement ch
 if (config.doubleWaveMinLevel !== 8) fail(`Expected double reinforcements to be gated until level 8, got ${config.doubleWaveMinLevel}.`);
 if (config.doubleWaveRequiresPriorReinforcement !== false) fail('Multi-wave boss reinforcements must be allowed on the first reinforcement event from level 8 onward.');
 if (config.normalMinWaveCount !== 3) fail(`Expected normal reinforcement events to spawn 3 waves, got ${config.normalMinWaveCount}.`);
-if (config.normalMaxWaveCount !== 4) fail(`Expected normal reinforcement events to sometimes spawn 4 waves, got ${config.normalMaxWaveCount}.`);
-if (config.normalMaxWaveChance !== 0.55) fail(`Expected 55% fourth-wave chance inside normal reinforcement events, got ${config.normalMaxWaveChance}.`);
+if (config.normalMaxWaveCount !== 3) fail(`Expected normal reinforcement events to cap at 3 waves, got ${config.normalMaxWaveCount}.`);
+if (config.normalMaxWaveChance !== 0) fail(`Expected extra fourth-wave chance to be disabled, got ${config.normalMaxWaveChance}.`);
 if (config.normalMultiWaveMinLevel !== 8) fail(`Expected normal multi-wave reinforcements to be gated until level 8, got ${config.normalMultiWaveMinLevel}.`);
 if (config.superStormChance !== 0.05) fail(`Expected 5% Mayhem super-storm chance, got ${config.superStormChance}.`);
-if (config.superStormWaveCount !== 5) fail(`Expected Mayhem super-storms to spawn 5 waves, got ${config.superStormWaveCount}.`);
+if (config.superStormWaveCount !== 3) fail(`Expected Mayhem super-storms to cap at 3 waves, got ${config.superStormWaveCount}.`);
 if (config.superStormMinLevel !== 8) fail(`Expected Mayhem super-storms to be gated until level 8, got ${config.superStormMinLevel}.`);
 if (config.superStormFirstPityMinLevel !== 12) fail(`Expected first Mayhem super-storm pity to start at level 12, got ${config.superStormFirstPityMinLevel}.`);
 if (config.superStormFirstPityMaxLevel !== 18) fail(`Expected first Mayhem super-storm pity to guarantee by level 18, got ${config.superStormFirstPityMaxLevel}.`);
@@ -120,7 +120,7 @@ const requiredSourceSnippets = [
   'MAYHEM_REINFORCEMENT_WARNING_TEXT',
   'mission_control_reinforcements_incoming',
   'showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT)',
-  'state.isSuperStorm ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
+  'useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
   'spawnAt: now + warningMs',
   'shouldForceMayhemReinforcementByPity',
   'canRecordMayhemReinforcementMiss',
@@ -171,6 +171,7 @@ const requiredSourceSnippets = [
   "config.isBossMayhemReinforcement",
   'reinforcementGroupCount',
   'Math.min(3',
+  'const useSuperStormVoice = state.isSuperStorm === true && groupCount >= 5',
   'groupIndex * 1200',
   'index * 1200',
   'allowConcurrentSpawn: isSuperStorm || index > 0',
@@ -273,32 +274,24 @@ const normalReinforcementWaveCountFor = ({ seed, level, waveIndex, availableFutu
 };
 
 let threeWaveSeed = null;
-let fourWaveSeed = null;
 let normalMultiWaveEligibleEvents = 0;
-let fourthWaveHits = 0;
+let overCapHits = 0;
 for (let seed = 0; seed < 5000; seed += 1) {
   const id = `normal-multi-check-${seed}`;
   const count = normalReinforcementWaveCountFor({ seed: id, level: 12, waveIndex: 1, availableFutureWaves: 4 });
   normalMultiWaveEligibleEvents += 1;
-  if (count === 4) {
-    fourthWaveHits += 1;
-    fourWaveSeed ??= id;
-  } else {
-    threeWaveSeed ??= id;
-  }
+  if (count === 3) threeWaveSeed ??= id;
+  if (count > 3) overCapHits += 1;
 }
-if (!threeWaveSeed) fail('Expected at least one deterministic normal reinforcement event that remains three waves.');
-if (!fourWaveSeed) fail('Expected at least one deterministic normal reinforcement event that can become four waves.');
-if (normalReinforcementWaveCountFor({ seed: fourWaveSeed, level: 7, waveIndex: 1, availableFutureWaves: 4 }) !== 0) {
+if (!threeWaveSeed) fail('Expected at least one deterministic normal reinforcement event that schedules three waves.');
+if (overCapHits > 0) fail(`Normal reinforcements must never schedule more than three waves; saw ${overCapHits} over-cap events.`);
+if (normalReinforcementWaveCountFor({ seed: threeWaveSeed, level: 7, waveIndex: 1, availableFutureWaves: 4 }) !== 0) {
   fail('Normal multi-wave reinforcements must stay gated before level 8.');
 }
-if (normalReinforcementWaveCountFor({ seed: fourWaveSeed, level: 12, waveIndex: 1, availableFutureWaves: 2 }) !== 0) {
+if (normalReinforcementWaveCountFor({ seed: threeWaveSeed, level: 12, waveIndex: 1, availableFutureWaves: 2 }) !== 0) {
   fail('Normal reinforcements must not trigger unless enough future waves are available.');
 }
-const observedFourthWaveRate = fourthWaveHits / normalMultiWaveEligibleEvents;
-if (observedFourthWaveRate < 0.53 || observedFourthWaveRate > 0.57) {
-  fail(`Fourth normal reinforcement wave roll drifted outside 55% band: ${observedFourthWaveRate.toFixed(4)}.`);
-}
+const observedOverCapRate = overCapHits / normalMultiWaveEligibleEvents;
 
 const superStormWaveCountFor = ({ seed, level, waveIndex }) => (
   level >= config.superStormMinLevel &&
@@ -315,7 +308,7 @@ for (let seed = 0; seed < 5000; seed += 1) {
     for (let wave = 0; wave <= 5; wave += 1) {
       const id = `super-storm-${seed}`;
       superStormEligibleEvents += 1;
-      if (superStormWaveCountFor({ seed: id, level, waveIndex: wave }) === 5) {
+      if (superStormWaveCountFor({ seed: id, level, waveIndex: wave }) === 3) {
         superStormHits += 1;
         superStormSeed ??= id;
       }
@@ -490,4 +483,4 @@ for (const locale of ['de', 'es', 'pt-BR', 'ru', 'ja', 'ko', 'zh-CN']) {
   }
 }
 
-console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} fourthObserved=${observedFourthWaveRate.toFixed(4)} superStormChance=${config.superStormChance} superStormObserved=${observedSuperStormRate.toFixed(4)} superStormWaves=${config.superStormWaveCount} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} bossTripleChance=${config.tripleWaveChance} bossTripleObserved=${observedBossTripleRate.toFixed(4)} scoreMult=${config.reinforcementScoreMultiplier}/${config.bossReinforcementScoreMultiplier} warningMs=${config.warningMs}/${config.superStormWarningMs}`);
+console.log(`[check-mayhem-reinforcement-waves] ok normalChance=${config.chance} normalObserved=${observedRate.toFixed(4)} normalWaves=${config.normalMinWaveCount}-${config.normalMaxWaveCount} overCapObserved=${observedOverCapRate.toFixed(4)} superStormChance=${config.superStormChance} superStormObserved=${observedSuperStormRate.toFixed(4)} superStormWaves=${config.superStormWaveCount} bossObserved=${observedBossRate.toFixed(4)} bossDoubleChance=${config.doubleWaveChance} bossDoubleObserved=${observedBossDoubleRate.toFixed(4)} bossTripleChance=${config.tripleWaveChance} bossTripleObserved=${observedBossTripleRate.toFixed(4)} scoreMult=${config.reinforcementScoreMultiplier}/${config.bossReinforcementScoreMultiplier} warningMs=${config.warningMs}/${config.superStormWarningMs}`);

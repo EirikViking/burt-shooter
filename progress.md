@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-01 Difficulty Relief And Reinforcement Cap
+
+- Current request: reduce game difficulty, verify whether the current maximum simultaneous extra-wave event is 5, then cap the spike at 3 if that is true, reduce overall difficulty by 10%, then deploy to Steam.
+- Baseline safety: fetched remotes, confirmed repo `D:\vibe-coding-e\nova-swarm-sector-continue-prototype`, clean branch `codex/menu-voice-overlap-fix-20260630` at `afeef9b382552ac2b6d8f04d42eaa82973e08081` with no upstream configured, then created `codex/difficulty-reduction-20260701` from that local baseline.
+- Verification: baseline `HEAD` has `superStormWaveCount: 5` in `src/config/BalanceConfig.js`; normal Mayhem reinforcements were `3-4` waves and boss reinforcements could reach `3`.
+- Implementation direction: lower the central movement and firing/projectile pressure scalars by 10%, cap normal Mayhem reinforcement and Mayhem super-storm group counts at 3, preserve boss triple reinforcements at the new cap, and route capped three-wave super-storm warnings through the generic reinforcement voice so the old "five waves" voice pack is not used inaccurately.
+
 ## 2026-06-30 Feedback Polish Pass
 
 - Current request: implement a small, low-risk feedback polish pass for hitbox visibility, Graze Break/near-miss control, mid-combat text, menu voice cadence, and Blink Drive control. Do not package, upload to Steam, deploy, or change Steamworks metadata.
