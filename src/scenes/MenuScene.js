@@ -15,6 +15,7 @@ import { getMenuSettings } from '../config/MenuSettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState } from '../progression/HangarProgressState.js';
+import { getRunContractMenuState } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
@@ -181,6 +182,12 @@ export class MenuScene {
     this.runModePanel = null;
     this.runModeBriefingTitle = null;
     this.runModeExplainer = null;
+    this.missionBoardPanel = null;
+    this.missionBoardTitle = null;
+    this.missionBoardSubtitle = null;
+    this.missionBoardRows = [];
+    this.missionBoardBounds = null;
+    this.missionBoardState = null;
     this.launchDeckBounds = null;
     this.disclaimer = null;
     this.startBtn = null;
@@ -1124,6 +1131,44 @@ export class MenuScene {
     this.runModeExplainer.zIndex = 10;
     this.container.addChild(this.runModeExplainer);
 
+    this.missionBoardPanel = new PIXI.Graphics();
+    this.missionBoardPanel.zIndex = 9;
+    this.missionBoardPanel.alpha = 0;
+    this.container.addChild(this.missionBoardPanel);
+
+    this.missionBoardTitle = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(11, Math.round(runModeSize * 0.9)),
+      fontWeight: '900',
+      fill: '#ffd15c',
+      stroke: '#020711',
+      strokeThickness: 3,
+      align: 'left'
+    });
+    this.missionBoardTitle.anchor.set(0, 0);
+    this.missionBoardTitle.alpha = 0;
+    this.missionBoardTitle.zIndex = 10;
+    this.container.addChild(this.missionBoardTitle);
+
+    this.missionBoardSubtitle = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(9, Math.round(runModeSize * 0.72)),
+      fontWeight: '800',
+      fill: '#9feeff',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'left',
+      wordWrap: true,
+      wordWrapWidth: clampTextWidth(width * 0.34, layout)
+    });
+    this.missionBoardSubtitle.anchor.set(0, 0);
+    this.missionBoardSubtitle.alpha = 0;
+    this.missionBoardSubtitle.zIndex = 10;
+    this.container.addChild(this.missionBoardSubtitle);
+
+    this.missionBoardRows = [0, 1, 2].map((index) => this.createMissionBoardRow(index));
+    for (const row of this.missionBoardRows) this.container.addChild(row);
+
     this.disclaimer = createText(
       this.getDisclaimerText(layout),
       {
@@ -1740,6 +1785,15 @@ export class MenuScene {
     this.runModePanel._briefingAccent = runModeBriefing.accent;
     this.runModePanel._briefingSecondary = runModeBriefing.secondary;
     this.drawRunModeExplainerPanel(layout, width, height);
+    this.layoutMissionBoard(layout, {
+      width,
+      height,
+      uiScale,
+      isShortLayout,
+      isMobileLayout,
+      dockTop,
+      safeTop: safeMargin.top
+    });
 
     if (this.exitNotice) {
       this.exitNotice.style.fontSize = Math.max(11, controlsSize);
@@ -1828,7 +1882,11 @@ export class MenuScene {
       [this.menuPanel, 0.72],
       [this.runModePanel, 0.14],
       [this.runModeBriefingTitle, 0.06],
-      [this.runModeExplainer, 0.06]
+      [this.runModeExplainer, 0.06],
+      [this.missionBoardPanel, 0.12],
+      [this.missionBoardTitle, 0.08],
+      [this.missionBoardSubtitle, 0.08],
+      ...(this.missionBoardRows || []).map((row) => [row, 0.1])
     ].forEach(([item, alpha]) => {
       if (!item) return;
       if (modalOpen) {
@@ -1943,6 +2001,134 @@ export class MenuScene {
     this.runModePanel.fill({ color: 0xffffff, alpha: 0.16 });
     this.runModePanel.rect(x + 22, y + panelHeight - 10, panelWidth - 44, 1);
     this.runModePanel.fill({ color: secondary, alpha: 0.2 });
+  }
+
+  layoutMissionBoard(layout, metrics = {}) {
+    if (!this.missionBoardPanel || !this.launchDeckBounds) return;
+    const width = Number(metrics.width) || this.game.getWidth();
+    const height = Number(metrics.height) || this.game.getHeight();
+    const uiScale = Number(metrics.uiScale) || 1;
+    const isShortLayout = Boolean(metrics.isShortLayout);
+    const isMobileLayout = Boolean(metrics.isMobileLayout);
+    const dockTop = Number(metrics.dockTop) || height;
+    const gap = Math.round(clampNumber(height * 0.006, 5, 8) * uiScale);
+    const padX = Math.round((isMobileLayout ? 10 : 16) * uiScale);
+    const padY = Math.round((isShortLayout ? 8 : 10) * uiScale);
+    const rowHeight = Math.round(clampNumber(
+      height * 0.047 * uiScale,
+      (isShortLayout ? 32 : 36) * uiScale,
+      (isMobileLayout ? 36 : 40) * uiScale
+    ));
+    const headerHeight = Math.round((isShortLayout ? 40 : 44) * uiScale);
+    const desiredBoardWidth = isMobileLayout
+      ? this.launchDeckBounds.width
+      : clampNumber(width * 0.285, Math.max(this.launchDeckBounds.width, 330 * uiScale), 430 * uiScale);
+    const briefingLeft = Number(this.runModePanel?._briefingBounds?.x) || width;
+    const availableBoardWidth = Math.max(
+      this.launchDeckBounds.width,
+      Math.min(width - this.launchDeckBounds.x - 24, briefingLeft - this.launchDeckBounds.x - 32)
+    );
+    const boardWidth = Math.round(Math.min(desiredBoardWidth, availableBoardWidth));
+    const boardHeight = Math.round(padY * 2 + headerHeight + rowHeight * 3 + gap * 2);
+    const boardX = Math.round(this.launchDeckBounds.x);
+    let boardY = Math.round(this.launchDeckBounds.bottom + clampNumber(height * 0.013, 8, 14));
+    const maxBoardY = Math.round(dockTop - boardHeight - clampNumber(height * 0.014, 8, 16));
+    if (boardY > maxBoardY) {
+      boardY = Math.max(Math.round(this.launchDeckBounds.y), maxBoardY);
+    }
+    boardY = Math.max(Math.round((metrics.safeTop || 0) + 68), boardY);
+    this.missionBoardBounds = {
+      x: boardX,
+      y: boardY,
+      width: boardWidth,
+      height: boardHeight,
+      headerHeight,
+      right: boardX + boardWidth,
+      bottom: boardY + boardHeight
+    };
+    this.missionBoardState = getRunContractMenuState(readHangarProgressState());
+
+    this.missionBoardTitle.text = translateText('MISSION BOARD');
+    this.missionBoardTitle.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
+    this.missionBoardTitle.x = boardX + padX;
+    this.missionBoardTitle.y = boardY + padY;
+    this.missionBoardTitle.alpha = this.missionBoardTitle.alpha || 1;
+    this.missionBoardTitle.visible = true;
+    refreshTextTexture(this.missionBoardTitle);
+    fitTextToWidth(this.missionBoardTitle, boardWidth - padX * 2, { minScale: 0.7 });
+
+    this.missionBoardSubtitle.text = translateText('Optional goals for your next Mayhem run.');
+    this.missionBoardSubtitle.style.fontSize = Math.round((isMobileLayout ? 8 : 10) * uiScale);
+    this.missionBoardSubtitle.style.wordWrapWidth = boardWidth - padX * 2;
+    this.missionBoardSubtitle.style.lineHeight = Math.round(this.missionBoardSubtitle.style.fontSize * 1.18);
+    this.missionBoardSubtitle.x = boardX + padX;
+    this.missionBoardSubtitle.y = boardY + padY + Math.round(17 * uiScale);
+    this.missionBoardSubtitle.alpha = this.missionBoardSubtitle.alpha || 1;
+    this.missionBoardSubtitle.visible = true;
+    refreshTextTexture(this.missionBoardSubtitle);
+
+    const rows = this.missionBoardState.active || [];
+    this.missionBoardRows.forEach((row, index) => {
+      const contract = rows[index];
+      row.visible = Boolean(contract);
+      if (!contract) return;
+      row.alpha = row.alpha || 1;
+      row.x = boardX + padX;
+      row.y = boardY + padY + headerHeight + index * (rowHeight + gap);
+      row._width = boardWidth - padX * 2;
+      row._height = rowHeight;
+      row._accent = contract.accent || 0x37f5ff;
+      const completionCount = Number(contract.completionCount || 0);
+      row._title.text = translateText(contract.shortTitle || contract.title);
+      row._detail.text = translateText(contract.description || contract.modeLabel || 'Mayhem');
+      row._progress.text = completionCount > 0
+        ? translateText('DONE x{count}', { count: completionCount })
+        : translateText('{progress}/{target}', { progress: 0, target: contract.target || 1 });
+      row._title.style.fontSize = Math.round((isMobileLayout ? 10 : 13) * uiScale);
+      row._detail.style.fontSize = Math.round((isMobileLayout ? 8 : 10) * uiScale);
+      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 92 : 104) * uiScale);
+      row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
+      row._progress.style.fontSize = Math.round((isMobileLayout ? 9 : 11) * uiScale);
+      row._title.x = Math.round(13 * uiScale);
+      row._title.y = Math.round(rowHeight * 0.32);
+      row._detail.x = Math.round(13 * uiScale);
+      row._detail.y = Math.round(rowHeight * 0.68);
+      row._progress.x = row._width - Math.round(11 * uiScale);
+      row._progress.y = Math.round(rowHeight * 0.5);
+      refreshTextTexture(row._title);
+      refreshTextTexture(row._detail);
+      refreshTextTexture(row._progress);
+      fitTextToWidth(row._title, row._width - Math.round(112 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._detail, row._width - Math.round(104 * uiScale), { minScale: 0.64 });
+      fitTextToWidth(row._progress, Math.round(84 * uiScale), { minScale: 0.62 });
+    });
+
+    this.drawMissionBoardPanel();
+  }
+
+  drawMissionBoardPanel() {
+    if (!this.missionBoardPanel || !this.missionBoardBounds) return;
+    const { x, y, width, height } = this.missionBoardBounds;
+    const pulse = 0.5 + Math.sin(this.animationTime * 2.1) * 0.5;
+    this.missionBoardPanel.clear();
+    drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.74 }, { color: 0x7fffd8, width: 1.2, alpha: 0.58 });
+    this.missionBoardPanel.rect(x + 10, y + 9, 3, Math.max(8, height - 18));
+    this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.76 });
+    this.missionBoardPanel.rect(x + 18, y + Math.min(height - 16, this.missionBoardBounds.headerHeight || 34), width - 36, 1);
+    this.missionBoardPanel.fill({ color: 0xffffff, alpha: 0.16 });
+
+    for (const row of this.missionBoardRows || []) {
+      if (!row?.visible || !row._bg) continue;
+      const w = row._width || 0;
+      const h = row._height || 0;
+      const accent = row._accent || 0x37f5ff;
+      row._bg.clear();
+      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: 0x061b2a, alpha: 0.68 }, { color: accent, width: 1, alpha: 0.36 });
+      row._bg.rect(5, 5, 3, Math.max(6, h - 10));
+      row._bg.fill({ color: accent, alpha: 0.58 + pulse * 0.16 });
+      row._bg.rect(w - 54, h - 6, 40, 2);
+      row._bg.fill({ color: accent, alpha: 0.32 + pulse * 0.1 });
+    }
   }
 
   drawMenuPanel(layout) {
@@ -2516,6 +2702,23 @@ export class MenuScene {
         titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
         bodyBounds: boundsForDisplayObject(this.runModeExplainer)
       },
+      missionBoard: {
+        title: this.missionBoardTitle?.text || null,
+        subtitle: this.missionBoardSubtitle?.text || null,
+        bounds: this.missionBoardBounds || boundsForDisplayObject(this.missionBoardPanel),
+        titleBounds: boundsForDisplayObject(this.missionBoardTitle),
+        subtitleBounds: boundsForDisplayObject(this.missionBoardSubtitle),
+        rows: (this.missionBoardRows || []).filter((row) => row?.visible).map((row, index) => ({
+          id: this.missionBoardState?.active?.[index]?.id || null,
+          title: row?._title?.text || null,
+          detail: row?._detail?.text || null,
+          progress: row?._progress?.text || null,
+          bounds: boundsForDisplayObject(row),
+          titleBounds: boundsForDisplayObject(row?._title),
+          detailBounds: boundsForDisplayObject(row?._detail),
+          progressBounds: boundsForDisplayObject(row?._progress)
+        }))
+      },
       launchDeck: {
         bounds: this.launchDeckBounds,
         cards: {
@@ -2845,6 +3048,52 @@ export class MenuScene {
 
   playBossMenuBarkForOption(option, options = {}) {
     return this.playBossMenuBark(option?.id || null, { target: option?.button || null, ...options });
+  }
+
+  createMissionBoardRow(index) {
+    const row = new PIXI.Container();
+    row.label = `ui_menuMissionBoardRow_${index}`;
+    row.zIndex = 10;
+    row.alpha = 0;
+    row.visible = true;
+    row._bg = new PIXI.Graphics();
+    row.addChild(row._bg);
+    row._title = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 12,
+      fontWeight: '900',
+      fill: '#dffcff',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'left'
+    });
+    row._title.anchor.set(0, 0.5);
+    row.addChild(row._title);
+    row._detail = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 9,
+      fontWeight: '800',
+      fill: '#9feeff',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'left',
+      wordWrap: true,
+      lineHeight: 11
+    });
+    row._detail.anchor.set(0, 0.5);
+    row.addChild(row._detail);
+    row._progress = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'right'
+    });
+    row._progress.anchor.set(1, 0.5);
+    row.addChild(row._progress);
+    return row;
   }
 
   createButton(text, layout, options = {}) {
@@ -3384,6 +3633,9 @@ export class MenuScene {
     if (this.menuPanel?.visible && this.menuPanel.alpha > 0.05 && !modalOpen) {
       this.drawMenuPanel();
     }
+    if (this.missionBoardPanel?.visible && this.missionBoardPanel.alpha > 0.05 && !modalOpen) {
+      this.drawMissionBoardPanel();
+    }
   }
 
   drawMenuButtonIcon(icon, type, centerX, centerY, size, color, alpha = 0.82) {
@@ -3846,6 +4098,10 @@ export class MenuScene {
     this.animateElement(this.runModePanel, 0.74, 0.42);
     this.animateElement(this.runModeBriefingTitle, 0.75, 0.42);
     this.animateElement(this.runModeExplainer, 0.77, 0.42);
+    this.animateElement(this.missionBoardPanel, 0.82, 0.42);
+    this.animateElement(this.missionBoardTitle, 0.84, 0.42);
+    this.animateElement(this.missionBoardSubtitle, 0.86, 0.42);
+    this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.startBtn, 0.92, 0.4);
     this.animateElement(this.scoutRunBtn, 1.02, 0.4);

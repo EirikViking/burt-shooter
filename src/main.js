@@ -637,6 +637,7 @@ function buildGameTextState(game) {
     pauseOverlay: playScene?.getPauseDebugState ? playScene.getPauseDebugState() : null,
     cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
+    runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,

@@ -11,6 +11,7 @@ import {
 } from '../shared/RankPolicy.js';
 import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { BUILD_ID } from '../buildInfo.js';
+import { normalizeRunContractsState } from './RunContracts.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
@@ -108,6 +109,7 @@ export function createDefaultHangarProgress() {
     lastNewlyUnlockedShipIds: [],
     newRanksThisRun: [],
     rankAchievementsUnlocked: [],
+    runContracts: normalizeRunContractsState(),
     updatedAt: nowIso()
   };
 }
@@ -333,6 +335,7 @@ export function normalizeHangarProgress(raw = {}) {
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
     newRanksThisRun: Array.isArray(raw.newRanksThisRun) ? raw.newRanksThisRun.map(Number).filter(Number.isFinite) : [],
     rankAchievementsUnlocked: Array.isArray(raw.rankAchievementsUnlocked) ? raw.rankAchievementsUnlocked.map(String) : [],
+    runContracts: normalizeRunContractsState(raw.runContracts),
     updatedAt: raw.updatedAt || nowIso()
   };
   normalized.unlockedShipIds = recalculateUnlockedShipIds(normalized);

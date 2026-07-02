@@ -65,8 +65,15 @@ import {
   recordThreatDefeatedBatch,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
-import { getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
-import { updateHangarProgress } from '../progression/HangarProgressState.js';
+import { BOSS_FUEL_SHIP_CODEX_ID, getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
+import { readHangarProgressState, updateHangarProgress, writeHangarProgressState } from '../progression/HangarProgressState.js';
+import {
+  applyRunContractEvent,
+  getRunContractById,
+  getRunContractSessionState,
+  recordRunContractCompletion,
+  startRunContractSession
+} from '../progression/RunContracts.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { RUN_MODES, getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
@@ -324,6 +331,7 @@ export class PlayScene {
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
     this.lastTraitImpactToastAt = 0;
+    this.runContractSession = null;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Powerup mechanics (orbital strike timer tracked in scene)
@@ -496,6 +504,10 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    this.runContractSession = startRunContractSession({
+      runMode: this.game?.runMode || RUN_MODES.RANKED,
+      progress: this.game?.hangarProgressAtRunStart || readHangarProgressState()
+    });
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -1104,10 +1116,60 @@ export class PlayScene {
 
   recordBalancePickup(powerup) {
     if (powerup) this.powerupsCollectedThisRun = (Number(this.powerupsCollectedThisRun) || 0) + 1;
+    if (powerup?.type) {
+      this.emitRunContractEvent('powerup_collected', {
+        powerupType: powerup.type,
+        sector: this.game?.level || 1
+      });
+    }
     const stats = this.balanceDebug;
     if (!stats || !powerup) return;
     const key = powerup.type || 'unknown';
     stats.pickupsCollected[key] = (stats.pickupsCollected[key] || 0) + 1;
+  }
+
+  emitRunContractEvent(type, payload = {}) {
+    if (!this.runContractSession) return [];
+    const result = applyRunContractEvent(this.runContractSession, {
+      ...payload,
+      type,
+      sector: payload.sector || this.game?.level || 1
+    });
+    this.runContractSession = result.session;
+    for (const completion of result.completed || []) {
+      this.persistRunContractCompletion(completion);
+      this.showRunContractCompletion(completion.id);
+    }
+    return result.completed || [];
+  }
+
+  persistRunContractCompletion(completion) {
+    const previous = readHangarProgressState();
+    const runContracts = recordRunContractCompletion(previous.runContracts, completion);
+    writeHangarProgressState({
+      ...previous,
+      runContracts
+    });
+  }
+
+  showRunContractCompletion(contractId) {
+    const contract = getRunContractById(contractId);
+    if (!contract) return;
+    const title = translateText(contract.shortTitle || contract.title);
+    this.enqueueToast(translateText('MISSION COMPLETE: {title}', { title }), {
+      fontSize: this.game.getWidth() < 620 ? 15 : 18,
+      fill: '#7fffd8',
+      stroke: '#031321',
+      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
+      slot: 'corner',
+      type: 'runContract',
+      priority: 3,
+      duration: 1700
+    });
+  }
+
+  getRunContractDebugState() {
+    return getRunContractSessionState(this.runContractSession);
   }
 
   recordBalanceBossStart(boss) {
@@ -1253,6 +1315,7 @@ export class PlayScene {
     }
     console.log(`[LevelStart] starting source=${source} level=${this.game.level}`);
     this._lastStartedLevel = this.game.level;
+    this.emitRunContractEvent('sector_reached', { sector: this.game.level });
 
     this.levelAdvancePending = false;
     this.resetBossLifeLossCap('level_start');
@@ -4914,6 +4977,7 @@ export class PlayScene {
     this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
+    this.emitRunContractEvent('life_lost', { sector: this.game?.level || 1, source });
     this.recordBalanceLifeLost();
     this.player?.clearStatusEffects?.('life_lost');
     if (this.tryLastStandRepair()) {
@@ -8468,6 +8532,12 @@ export class PlayScene {
       for (const entry of getBossSupportCodexDefeatEntries(enemy, this.game.level)) {
         this.queueThreatDefeat(entry.threatId, entry.category, entry.metadata, { scoreBonus: false });
       }
+      if (enemy?.kind === BOSS_FUEL_SHIP_CODEX_ID) {
+        this.emitRunContractEvent('boss_support_defeated', {
+          sector: this.game?.level || 1,
+          supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID
+        });
+      }
     }
     this.recordBalanceKill(enemy);
     if (now - this.lastKillAt > this.comboWindowMs) {
@@ -8816,6 +8886,12 @@ export class PlayScene {
       bonusScore
     };
     this.grazeBreaksThisRun = (Number(this.grazeBreaksThisRun) || 0) + 1;
+    this.emitRunContractEvent('graze_break', {
+      sector: this.game?.level || 1,
+      count: this.grazeBreaksThisRun,
+      bulletsCleared: cleared.length,
+      enemiesDestroyed
+    });
     this.grazeBreakCooldownAt = Date.now() + 5200;
     return this.lastGrazeBreak;
   }
@@ -8831,6 +8907,10 @@ export class PlayScene {
     this.dangerDodgeCount += 1;
     this.dangerDodgeTimerMs = 2200;
     this.bestDangerDodgeStreak = Math.max(this.bestDangerDodgeStreak, this.dangerDodgeCount);
+    this.emitRunContractEvent('near_miss', {
+      sector: this.game?.level || 1,
+      streak: this.dangerDodgeCount
+    });
     const comboMult = Math.max(1, this.comboMultiplier);
     const traitMult = Number(this.player?.traitCombat?.nearMissScoreMult || 1);
     const streakBonus = Math.min(100, 25 + this.dangerDodgeCount * 15);
@@ -10401,6 +10481,12 @@ export class PlayScene {
     const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();
     const bossName = this.enemyManager?.boss?.profile?.name || String(type || 'Boss').replace(/_/g, ' ');
     this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+    this.emitRunContractEvent('boss_defeated', {
+      sector: level,
+      bossId,
+      slowTimeActive: Boolean(this.player?.isSlowTimeActive?.()),
+      powerupType: this.player?.activePowerup?.type || null
+    });
     this.recordThreatDefeat(bossId, 'bosses', {
       name: bossName,
       role: this.enemyManager?.boss?.profile?.title || 'boss',

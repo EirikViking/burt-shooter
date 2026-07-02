@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "MISSION BOARD": "미션 보드",
+  "Optional goals for your next Mayhem run.": "다음 Mayhem 런을 위한 선택 목표입니다.",
+  "Graze Break Drill": "Graze Break 훈련",
+  "Graze Break x3": "Graze Break x3",
+  "Trigger 3 Graze Breaks in one Mayhem run.": "Mayhem 한 런에서 Graze Break를 3번 발동하세요.",
+  "Support Hunter": "지원 사냥꾼",
+  "Defeat 2 boss support ships in one Mayhem run.": "Mayhem 한 런에서 보스 지원 함선 2척을 격파하세요.",
+  "Slow-Mo Finisher": "슬로모 피니셔",
+  "Defeat a boss while Slow Time or Chrono Anchor is active.": "Slow Time 또는 Chrono Anchor가 활성화된 동안 보스를 격파하세요.",
+  "Mayhem": "Mayhem",
+  "DONE x{count}": "완료 x{count}",
+  "{progress}/{target}": "{progress}/{target}",
+  "MISSION COMPLETE: {title}": "미션 완료: {title}",
   "RUN REPORT": "런 보고서",
   "Run": "런",
   "Combat": "전투",

@@ -1,6 +1,19 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "MISSION BOARD": "ПАНЕЛЬ МИССИЙ",
+  "Optional goals for your next Mayhem run.": "Необязательные цели для следующего забега Mayhem.",
+  "Graze Break Drill": "Тренировка Graze Break",
+  "Graze Break x3": "Graze Break x3",
+  "Trigger 3 Graze Breaks in one Mayhem run.": "Активируйте 3 Graze Break за один забег Mayhem.",
+  "Support Hunter": "Охотник за поддержкой",
+  "Defeat 2 boss support ships in one Mayhem run.": "Победите 2 корабля поддержки босса за один забег Mayhem.",
+  "Slow-Mo Finisher": "Финишер замедления",
+  "Defeat a boss while Slow Time or Chrono Anchor is active.": "Победите босса, пока активны Slow Time или Chrono Anchor.",
+  "Mayhem": "Mayhem",
+  "DONE x{count}": "ГОТОВО x{count}",
+  "{progress}/{target}": "{progress}/{target}",
+  "MISSION COMPLETE: {title}": "МИССИЯ ВЫПОЛНЕНА: {title}",
   "RUN REPORT": "ОТЧЕТ О ЗАБЕГЕ",
   "Run": "Забег",
   "Combat": "Бой",

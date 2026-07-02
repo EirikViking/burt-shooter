@@ -54,6 +54,7 @@
     "check:result-screen-status": "node scripts/check-result-screen-status.mjs",
     "check:result-screen-flow": "node scripts/check-result-screen-flow.mjs",
     "check:run-report": "node scripts/check-run-report.mjs",
+    "check:run-contracts": "node scripts/check-run-contracts.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
     "check:hangar-unlock-presentation": "node scripts/check-hangar-unlock-presentation.mjs",
     "check:hangar-profile-repair-notice": "node scripts/check-hangar-profile-repair-notice.mjs",

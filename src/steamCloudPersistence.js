@@ -31,6 +31,7 @@ import {
   normalizeShipUnlockHistory,
   recalculateUnlockedShipIds
 } from './progression/HangarProgressState.js';
+import { mergeRunContractsState } from './progression/RunContracts.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY };
@@ -303,6 +304,7 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     runThemesSurvived: mergeArrayUnique(local, cloud, 'runThemesSurvived'),
     unlockedShipIds: mergeArrayUnique(local, cloud, 'unlockedShipIds'),
     shipUnlockHistory: mergeShipUnlockHistory(local.shipUnlockHistory, cloud.shipUnlockHistory),
+    runContracts: mergeRunContractsState(local.runContracts, cloud.runContracts),
     lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : []
   };
 }

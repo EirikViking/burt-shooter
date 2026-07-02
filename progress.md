@@ -1,5 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-02 Main-Menu Mission Board / Run Contracts
+
+- Current request: add a small optional Run Contracts / Combat Missions loop, but surface it in the main menu because most players launch from there. Make it very easy to roll back if it does not feel right.
+- Baseline safety: verified authoritative repo `D:\vibe-coding-e\nova-swarm-sector-continue-prototype`, clean source branch `codex/boss-support-slowmo-20260702` at `c304a7f7993dcf0a3296177654c81c881580309f`, then created branch `codex/main-menu-run-contracts-20260702` and snapshot tag `snapshot/pre-main-menu-run-contracts-20260702`.
+- Implementation direction: add a fixed three-row `MISSION BOARD` to the main menu with optional Mayhem goals. First pass tracks completions only, with rewards disabled behind `RUN_CONTRACT_REWARDS_ENABLED = false`. Do not change leaderboards, score identity, XP formula, achievements API IDs, balance, Steamworks metadata, packaging, upload, or public branch assignment.
+- Contract examples: Graze Break x3, Support Hunter, and Slow-Mo Finisher. Scout/Sector runs do not count for these first Mayhem-only contracts.
+- Verification direction: add `npm run check:run-contracts` for catalog/save migration, cloud/local completion merge, main-menu browser layout proof, in-run completion toast, and persisted profile state. Then run i18n/build/smoke/release-line/profile checks and `git diff --check`.
+- Verification: syntax checks for touched JS files, `npm run check:run-contracts` with visual inspection of main-menu/completion screenshots, `npm run check:i18n`, `npm run check:i18n-ui`, `npm run build:current`, `npm run check:release-line`, `npm run check:save-profile-migration`, `npm run check:profile-rescue-import`, `npm run check:steam-electron-bridge`, `npm run check:graze-break`, `npm run check:boss-support-codex`, `npm run smoke`, `npm run desktop:smoke:current`, `npm run check:controller-flow`, and `git diff --check` passed. No package, upload, deploy, branch assignment, or Steamworks metadata change performed.
+
 ## 2026-07-02 Tractor And Mini-Boss VFX Pass
 
 - Current request: give the tractor beam ship and mini bosses a similar visual treatment to the boss VFX pass, make their attacks look much more diverse and visually stunning, then deploy to Steam.
