@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-02 Tractor And Mini-Boss VFX Pass
+
+- Current request: give the tractor beam ship and mini bosses a similar visual treatment to the boss VFX pass, make their attacks look much more diverse and visually stunning, then deploy to Steam.
+- Baseline safety: fetched remotes, confirmed repo `D:\vibe-coding-e\nova-swarm-sector-continue-prototype`, clean branch `codex/boss-vfx-clarity-20260702` at `0b30af5062260872cf03dd43bef14eab11e4861b`, then branched `codex/tractor-miniboss-vfx-20260702`.
+- Implementation direction: visual-only VFX additions. Hijacker tractor beams now layer a braided lattice, ship-local lock mandala, and capture glyphs on top of the existing cone. Elite middle ships / boss-chaos mini bosses now draw role-specific attack signatures for tractor, vortex, rail/hunter, shield/barrier, support/command, pulse/EMP, phase/mirror/splitter, carrier, and ordnance families. Do not change hitboxes, pull strength, ability timing, projectile counts, damage, score, XP, balance, save format, Steam IDs, leaderboard identity, or Steamworks metadata.
+- Audio direction: no new ElevenLabs SFX needed so far because the existing SFX catalog already includes Hijacker tractor sounds and unique active SFX for every elite role. If this changes, keep the environment API key out of logs and tracked files.
+- Verification direction: run `git diff --check`, `npm run check:tractor-miniboss-vfx`, existing Hijacker/tractor and elite checks, capture elite/tractor screenshots for visual review, then release-line/package/upload only if gates pass.
+
 ## 2026-07-02 Boss VFX Clarity Pass
 
 - Current request: make the boss attack animation improvements more obvious while staying safe.

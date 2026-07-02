@@ -386,6 +386,176 @@ export class Hijacker {
       layer.circle(0, tipY, 6 + shimmer * 2);
       layer.fill({ color: 0xffffff, alpha: 0.42 });
     }
+
+    this.drawBeamLattice(layer, {
+      active,
+      progress,
+      now,
+      tipY,
+      endX,
+      endY,
+      coneWidth,
+      innerWidth,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+    this.drawBeamLockMandala(layer, {
+      active,
+      progress,
+      now,
+      tipY,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+    this.drawBeamCaptureGlyph(layer, {
+      active,
+      progress,
+      now,
+      endX,
+      endY,
+      coneWidth,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+  }
+
+  drawBeamLattice(layer, {
+    active,
+    progress,
+    now,
+    tipY,
+    endX,
+    endY,
+    coneWidth,
+    innerWidth,
+    coreColor,
+    edgeColor,
+    hotColor,
+    shimmer
+  }) {
+    const beamDx = endX;
+    const beamDy = endY - tipY;
+    const length = Math.max(1, Math.hypot(beamDx, beamDy));
+    const normalX = -beamDy / length;
+    const normalY = beamDx / length;
+    const laneCount = active ? 7 : 5;
+    const segmentCount = active ? 7 : 5;
+
+    for (let i = 0; i < laneCount; i += 1) {
+      const lane = laneCount === 1 ? 0 : (i / (laneCount - 1) - 0.5);
+      const phase = now * (0.008 + i * 0.0007) + i * 1.37;
+      for (let s = 0; s <= segmentCount; s += 1) {
+        const t = s / segmentCount;
+        const widthAtT = innerWidth * (0.12 + t * 0.92);
+        const braid = Math.sin(phase + t * Math.PI * 3.2) * (active ? 8 : 4) * (0.25 + t);
+        const lateral = lane * widthAtT + braid;
+        const x = beamDx * t + normalX * lateral;
+        const y = tipY + beamDy * t + normalY * lateral;
+        if (s === 0) layer.moveTo(x, y);
+        else layer.lineTo(x, y);
+      }
+    }
+    layer.stroke({
+      color: hotColor,
+      width: active ? 2.4 : 1.6,
+      alpha: active ? 0.44 + shimmer * 0.18 : 0.16 + progress * 0.34
+    });
+
+    const rungCount = active ? 8 : 5;
+    for (let i = 1; i <= rungCount; i += 1) {
+      const t = i / (rungCount + 1);
+      const centerX = beamDx * t;
+      const centerY = tipY + beamDy * t;
+      const half = coneWidth * (0.18 + t * 0.62) * (active ? 0.68 : 0.5);
+      const skew = Math.sin(now * 0.011 + i) * (active ? 8 : 4);
+      layer.moveTo(centerX - normalX * half + beamDx / length * skew, centerY - normalY * half + beamDy / length * skew);
+      layer.lineTo(centerX + normalX * half + beamDx / length * skew, centerY + normalY * half + beamDy / length * skew);
+    }
+    layer.stroke({
+      color: active ? 0xffffff : edgeColor,
+      width: active ? 1.8 : 1.2,
+      alpha: active ? 0.26 : 0.12 + progress * 0.24
+    });
+
+    if (!active) return;
+    for (let i = 0; i < 5; i += 1) {
+      const t = ((now * 0.0007 + i * 0.2) % 1);
+      const x = beamDx * t;
+      const y = tipY + beamDy * t;
+      const r = 4 + shimmer * 3 + i * 0.4;
+      layer.circle(x + Math.sin(now * 0.018 + i) * 10, y, r);
+      layer.fill({ color: i % 2 ? coreColor : 0xffffff, alpha: 0.22 });
+    }
+  }
+
+  drawBeamLockMandala(layer, { active, progress, now, tipY, coreColor, edgeColor, hotColor, shimmer }) {
+    const charge = active ? 1 : progress;
+    const spin = now * (active ? 0.006 : 0.003);
+    const outer = this.radius * (0.82 + charge * 0.42) + shimmer * 4;
+    this.drawBeamArc(layer, 0, tipY, outer, outer * 0.58, spin, spin + Math.PI * 0.72, edgeColor, active ? 2.2 : 1.6, active ? 0.52 : 0.18 + progress * 0.34);
+    this.drawBeamArc(layer, 0, tipY, outer * 0.78, outer * 0.44, spin + Math.PI, spin + Math.PI * 1.72, hotColor, active ? 2.4 : 1.5, active ? 0.44 : 0.16 + progress * 0.28);
+    for (let i = 0; i < 10; i += 1) {
+      const a = spin + i * Math.PI * 0.2;
+      const inner = outer * 0.34;
+      const tip = outer * (0.72 + (i % 2) * 0.2);
+      layer.moveTo(Math.cos(a) * inner, tipY + Math.sin(a) * inner * 0.52);
+      layer.lineTo(Math.cos(a) * tip, tipY + Math.sin(a) * tip * 0.52);
+    }
+    layer.stroke({ color: coreColor, width: active ? 1.6 : 1.1, alpha: active ? 0.38 : 0.12 + progress * 0.24 });
+  }
+
+  drawBeamCaptureGlyph(layer, {
+    active,
+    progress,
+    now,
+    endX,
+    endY,
+    coneWidth,
+    coreColor,
+    edgeColor,
+    hotColor,
+    shimmer
+  }) {
+    const lockAlpha = active ? 0.58 : 0.18 + progress * 0.34;
+    const lockR = Math.max(24, coneWidth * (active ? 0.24 : 0.18 + progress * 0.08));
+    const spin = now * (active ? -0.006 : -0.003);
+    for (let i = 0; i < 4; i += 1) {
+      const a = spin + i * Math.PI * 0.5;
+      this.drawBeamArc(layer, endX, endY, lockR, lockR * 0.38, a - 0.22, a + 0.34, i % 2 ? coreColor : edgeColor, active ? 2.4 : 1.6, lockAlpha);
+    }
+    for (let i = 0; i < 6; i += 1) {
+      const a = spin * 1.3 + i * Math.PI / 3;
+      const outerX = endX + Math.cos(a) * lockR * 1.12;
+      const outerY = endY + Math.sin(a) * lockR * 0.42;
+      const innerX = endX + Math.cos(a) * lockR * 0.74;
+      const innerY = endY + Math.sin(a) * lockR * 0.28;
+      layer.moveTo(innerX, innerY);
+      layer.lineTo(outerX, outerY);
+    }
+    layer.stroke({ color: hotColor, width: active ? 1.9 : 1.2, alpha: active ? 0.42 + shimmer * 0.1 : 0.12 + progress * 0.24 });
+    if (active) {
+      layer.circle(endX, endY, 5 + shimmer * 3);
+      layer.fill({ color: 0xffffff, alpha: 0.32 });
+    }
+  }
+
+  drawBeamArc(layer, cx, cy, rx, ry, start, end, color, width, alpha) {
+    const steps = 12;
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const a = start + (end - start) * t;
+      const x = cx + Math.cos(a) * rx;
+      const y = cy + Math.sin(a) * ry;
+      if (i === 0) layer.moveTo(x, y);
+      else layer.lineTo(x, y);
+    }
+    layer.stroke({ color, width, alpha });
   }
 
   clearBeamVisual() {

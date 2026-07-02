@@ -1092,6 +1092,343 @@ export class Enemy {
       }
       layer.stroke({ color: 0xffffff, width: active ? 2.2 : 1.4, alpha: active ? 0.38 : 0.14 + progress * 0.26 });
     }
+
+    this.drawEliteAttackSignatureVfx(layer, {
+      ability,
+      profile,
+      progress,
+      active,
+      playerX,
+      playerY,
+      color,
+      pulse,
+      radius,
+      now
+    });
+  }
+
+  drawEliteAttackSignatureVfx(layer, context) {
+    const { ability, profile, progress, active, playerX, playerY, color, pulse, radius, now } = context;
+    const relX = playerX - this.x;
+    const relY = playerY - this.y;
+    const intensity = active ? 1 : Math.max(0.18, progress);
+    const accent = profile?.accent || color || 0x66ffff;
+    const tint = profile?.tint || accent;
+
+    this.drawEliteCoreChargeNodes(layer, {
+      count: ability === 'tractor_pull' || ability === 'vortex_gravity' ? 10 : 7,
+      radius: radius * (active ? 0.92 : 0.76),
+      color: accent,
+      pulse,
+      now,
+      intensity
+    });
+
+    if (ability === 'tractor_pull') {
+      this.drawEliteTractorSignature(layer, { relX, relY, progress, active, color: accent, tint, now, pulse });
+      return;
+    }
+    if (ability === 'vortex_gravity') {
+      this.drawEliteVortexSignature(layer, { progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    if (ability === 'sniper_rail' || ability === 'elite_hunter') {
+      this.drawEliteRailSignature(layer, { relX, relY, progress, active, color: accent, tint, now, pulse, hunter: ability === 'elite_hunter' });
+      return;
+    }
+    if (ability === 'shield_projector' || ability === 'barrier_projector') {
+      this.drawEliteShieldSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, barrier: ability === 'barrier_projector' });
+      return;
+    }
+    if (ability === 'repair_healer' || ability === 'escort_commander') {
+      this.drawEliteSupportSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, command: ability === 'escort_commander' });
+      return;
+    }
+    if (ability === 'jammer_disruptor' || ability === 'pulse_emp') {
+      this.drawElitePulseSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, emp: ability === 'pulse_emp' });
+      return;
+    }
+    if (ability === 'phase_raider' || ability === 'mirror_decoy' || ability === 'splitter_clone') {
+      this.drawElitePhaseMirrorSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, mirror: ability !== 'phase_raider' });
+      return;
+    }
+    if (ability === 'drone_carrier') {
+      this.drawEliteCarrierSignature(layer, { progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    this.drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color: accent, tint, now, pulse, radius });
+  }
+
+  drawEliteCoreChargeNodes(layer, { count, radius, color, pulse, now, intensity }) {
+    for (let i = 0; i < count; i += 1) {
+      const a = now * (0.0035 + (i % 3) * 0.0007) + i * Math.PI * 2 / count;
+      const wobble = 0.88 + Math.sin(now * 0.011 + i) * 0.08;
+      layer.circle(Math.cos(a) * radius * wobble, Math.sin(a) * radius * 0.62 * wobble, 2.6 + pulse * 2);
+      layer.fill({ color: i % 2 ? color : 0xffffff, alpha: 0.12 + intensity * 0.22 });
+    }
+  }
+
+  drawEliteTractorSignature(layer, { relX, relY, progress, active, color, tint, now, pulse }) {
+    const targetY = Math.max(150, relY);
+    const halfWidth = 50 + targetY * 0.18;
+    const alpha = active ? 0.62 : 0.18 + progress * 0.36;
+    const rows = active ? 6 : 4;
+    for (let i = 1; i <= rows; i += 1) {
+      const t = i / (rows + 1);
+      const x = relX * t;
+      const y = this.radius + (targetY - this.radius) * t;
+      const rx = halfWidth * t * (0.46 + pulse * 0.08);
+      const ry = 7 + i * 2.2;
+      this.drawEliteArc(layer, x, y, rx, ry, now * 0.006 + i, now * 0.006 + i + Math.PI * 1.42, i % 2 ? color : 0xffffff, active ? 2.6 : 1.5, alpha);
+      this.drawEliteArc(layer, x, y, rx * 0.72, ry * 0.72, -now * 0.007 + i, -now * 0.007 + i + Math.PI * 1.08, tint, 1.2, alpha * 0.7);
+    }
+    for (let i = 0; i < 5; i += 1) {
+      const lane = i / 4 - 0.5;
+      const phase = now * 0.009 + i * 1.2;
+      layer.moveTo(Math.sin(phase) * 5, this.radius * 0.55);
+      layer.lineTo(relX + lane * halfWidth * 0.82 + Math.sin(phase * 1.4) * 10, targetY);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 2.1 : 1.2, alpha: active ? 0.32 : 0.1 + progress * 0.2 });
+    this.drawEliteCaptureBrackets(layer, relX, targetY, Math.max(20, halfWidth * 0.26), color, active ? 0.58 : 0.18 + progress * 0.28, now);
+  }
+
+  drawEliteVortexSignature(layer, { progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.56 : 0.16 + progress * 0.38;
+    for (let i = 0; i < 5; i += 1) {
+      const r = radius * (0.52 + i * 0.21 + pulse * 0.04);
+      const spin = now * (0.004 + i * 0.0009) + i * Math.PI * 0.55;
+      this.drawEliteArc(layer, 0, 0, r, r * 0.58, spin, spin + Math.PI * (active ? 1.48 : 1.08), i % 2 ? color : tint, active ? 2.5 : 1.5, alpha * (1 - i * 0.09));
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const a = now * 0.006 + i * Math.PI / 6;
+      const inner = radius * 0.28;
+      const outer = radius * (0.82 + (i % 3) * 0.08);
+      layer.moveTo(Math.cos(a) * outer, Math.sin(a) * outer * 0.58);
+      layer.lineTo(Math.cos(a + 0.2) * inner, Math.sin(a + 0.2) * inner * 0.58);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.7 : 1.1, alpha: active ? 0.26 : 0.1 + progress * 0.18 });
+  }
+
+  drawEliteRailSignature(layer, { relX, relY, progress, active, color, tint, now, pulse, hunter }) {
+    const angle = Math.atan2(relY, relX);
+    const length = Math.max(180, Math.hypot(relX, relY));
+    const alpha = active ? 0.72 : 0.22 + progress * 0.42;
+    const normal = angle + Math.PI / 2;
+    const lanes = hunter ? [-10, 10] : [-8, 0, 8];
+    lanes.forEach((offset, index) => {
+      layer.moveTo(Math.cos(normal) * offset, this.radius * 0.25 + Math.sin(normal) * offset);
+      layer.lineTo(Math.cos(angle) * length + Math.cos(normal) * offset, Math.sin(angle) * length + Math.sin(normal) * offset);
+      layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.5 : 1.4, alpha: alpha * (index === 1 ? 1 : 0.7) });
+    });
+    for (let i = 1; i <= 5; i += 1) {
+      const t = i / 6;
+      const x = Math.cos(angle) * length * t;
+      const y = Math.sin(angle) * length * t;
+      const notch = 9 + pulse * 6;
+      layer.moveTo(x + Math.cos(normal) * -notch, y + Math.sin(normal) * -notch);
+      layer.lineTo(x + Math.cos(normal) * notch, y + Math.sin(normal) * notch);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: active ? 0.34 : 0.12 + progress * 0.2 });
+    this.drawEliteCaptureBrackets(layer, relX, relY, hunter ? 19 : 24, hunter ? 0x7cff44 : color, active ? 0.6 : 0.2 + progress * 0.32, now);
+  }
+
+  drawEliteShieldSignature(layer, { progress, active, color, tint, now, pulse, radius, barrier }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.36;
+    const panels = barrier ? 8 : 6;
+    for (let i = 0; i < panels; i += 1) {
+      const a = now * (barrier ? 0.002 : 0.0035) + i * Math.PI * 2 / panels;
+      const next = a + Math.PI * (barrier ? 0.13 : 0.18);
+      const rx = radius * (barrier ? 1.32 : 1.1);
+      const ry = radius * (barrier ? 0.72 : 0.62);
+      this.drawEliteArc(layer, 0, 0, rx, ry, a, next, i % 2 ? color : tint, active ? 3.4 : 2, alpha);
+      layer.circle(Math.cos(a) * rx, Math.sin(a) * ry, 3 + pulse * 2);
+      layer.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.1 + progress * 0.16 });
+    }
+    if (barrier) {
+      [-1, 1].forEach((side) => {
+        const x = side * radius * (1.05 + pulse * 0.08);
+        layer.rect(x - 4, -radius * 0.82, 8, radius * 1.64);
+        layer.fill({ color, alpha: active ? 0.12 : 0.04 + progress * 0.08 });
+        layer.stroke({ color: 0xffffff, width: 1.4, alpha: active ? 0.26 : 0.1 + progress * 0.16 });
+      });
+    }
+  }
+
+  drawEliteSupportSignature(layer, { progress, active, color, tint, now, pulse, radius, command }) {
+    const alpha = active ? 0.5 : 0.16 + progress * 0.3;
+    const allies = this.game?.scenes?.play?.enemyManager?.enemies || [];
+    let tetherCount = 0;
+    for (const ally of allies) {
+      if (!ally?.active || ally === this || ally.kind === 'boss' || tetherCount >= 4) continue;
+      const dx = (ally.x || 0) - this.x;
+      const dy = (ally.y || 0) - this.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > (command ? 190 : 165)) continue;
+      layer.moveTo(0, 0);
+      layer.lineTo(dx, dy);
+      tetherCount += 1;
+    }
+    if (tetherCount > 0) {
+      layer.stroke({ color: command ? 0xffdd66 : color, width: active ? 2.2 : 1.3, alpha });
+    }
+    const pipCount = command ? 7 : 5;
+    for (let i = 0; i < pipCount; i += 1) {
+      const a = now * 0.004 + i * Math.PI * 2 / pipCount;
+      const x = Math.cos(a) * radius * 1.08;
+      const y = Math.sin(a) * radius * 0.64;
+      if (command) {
+        layer.moveTo(x, y - 5 - pulse * 3);
+        layer.lineTo(x + 5, y + 4);
+        layer.lineTo(x - 5, y + 4);
+        layer.closePath();
+        layer.fill({ color: i % 2 ? tint : color, alpha: alpha * 0.7 });
+      } else {
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: i % 2 ? 0xffffff : color, alpha: alpha * 0.7 });
+      }
+    }
+  }
+
+  drawElitePulseSignature(layer, { progress, active, color, tint, now, pulse, radius, emp }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.36;
+    const waves = emp ? 4 : 3;
+    for (let i = 0; i < waves; i += 1) {
+      const r = radius * (0.55 + i * 0.24 + (active ? pulse * 0.1 : progress * 0.08));
+      const segments = emp ? 14 : 11;
+      for (let s = 0; s < segments; s += 1) {
+        const a0 = now * 0.004 + s * Math.PI * 2 / segments;
+        const a1 = a0 + Math.PI * (emp ? 0.055 : 0.075);
+        this.drawEliteArc(layer, 0, 0, r, r * 0.62, a0, a1, (s + i) % 2 ? color : tint, active ? 2.2 : 1.3, alpha * (1 - i * 0.12));
+      }
+    }
+    for (let i = 0; i < (emp ? 8 : 6); i += 1) {
+      const a = now * 0.008 + i * Math.PI * 2 / (emp ? 8 : 6);
+      const r1 = radius * 0.35;
+      const r2 = radius * (0.88 + (i % 2) * 0.16);
+      layer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1 * 0.6);
+      layer.lineTo(Math.cos(a + 0.12) * r2, Math.sin(a + 0.12) * r2 * 0.6);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.7 : 1.1, alpha: active ? 0.24 : 0.08 + progress * 0.18 });
+  }
+
+  drawElitePhaseMirrorSignature(layer, { progress, active, color, tint, now, pulse, radius, mirror }) {
+    const alpha = active ? 0.48 : 0.14 + progress * 0.32;
+    const copies = mirror ? [-1, 1] : [-1.5, -0.75, 0.75, 1.5];
+    copies.forEach((side, index) => {
+      const offsetX = side * radius * (0.52 + pulse * 0.08);
+      const offsetY = Math.sin(now * 0.01 + index) * 8;
+      layer.ellipse(offsetX, offsetY, radius * (mirror ? 0.48 : 0.34), radius * 0.78);
+      layer.stroke({ color: index % 2 ? color : tint, width: active ? 2.2 : 1.3, alpha: alpha * (mirror ? 0.9 : 0.62) });
+      this.drawEliteArc(layer, offsetX, offsetY, radius * 0.62, radius * 0.32, now * 0.004 + index, now * 0.004 + index + Math.PI * 0.78, 0xffffff, 1.2, alpha * 0.55);
+    });
+    if (mirror) {
+      layer.moveTo(-radius * 1.12, 0);
+      layer.lineTo(0, -radius * 0.62);
+      layer.lineTo(radius * 1.12, 0);
+      layer.lineTo(0, radius * 0.62);
+      layer.closePath();
+      layer.stroke({ color: 0xffffff, width: active ? 1.9 : 1.1, alpha: active ? 0.28 : 0.1 + progress * 0.18 });
+    }
+  }
+
+  drawEliteCarrierSignature(layer, { progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.56 : 0.16 + progress * 0.34;
+    [-1, 1].forEach((side) => {
+      const bayX = side * radius * 0.62;
+      layer.rect(bayX - 8, -radius * 0.18, 16, radius * 0.88);
+      layer.fill({ color: side > 0 ? color : tint, alpha: active ? 0.1 : 0.04 + progress * 0.08 });
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1.1, alpha: alpha * 0.72 });
+      for (let i = 0; i < 3; i += 1) {
+        const t = (i + 1) / 4;
+        layer.circle(bayX + side * (14 + pulse * 4), -radius * 0.08 + radius * 0.68 * t, 2.4 + pulse * 1.4);
+        layer.fill({ color, alpha: alpha * 0.8 });
+      }
+    });
+    this.drawEliteArc(layer, 0, radius * 0.34, radius * 1.04, radius * 0.28, now * 0.005, now * 0.005 + Math.PI, color, active ? 2.4 : 1.4, alpha);
+  }
+
+  drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.34;
+    const isLane = ability === 'lane_blocker';
+    const isWeb = ability === 'orb_webber';
+    const isMissile = ability === 'missile_frigate';
+    const isMine = ability === 'mine_layer';
+    const isAnchor = ability === 'anchor_turret';
+    const count = isLane ? 5 : isWeb ? 6 : isMissile ? 2 : isMine ? 3 : isAnchor ? 5 : 7;
+
+    if (isLane) {
+      const baseX = relX * 0.22;
+      for (let i = 0; i < count; i += 1) {
+        const x = baseX + (i - 2) * 24;
+        layer.rect(x - 4, this.radius * 0.35, 8, Math.max(170, relY));
+        layer.fill({ color, alpha: active ? 0.08 : 0.025 + progress * 0.05 });
+        layer.stroke({ color: i % 2 ? 0xffffff : tint, width: active ? 1.8 : 1.1, alpha: alpha * 0.72 });
+      }
+      return;
+    }
+
+    if (isMine || isMissile) {
+      for (let i = 0; i < count; i += 1) {
+        const spread = count === 1 ? 0 : (i - (count - 1) / 2) * (isMissile ? 30 : 34);
+        const y = this.radius * 0.9 + (isMine ? 34 + i * 16 : 22);
+        layer.ellipse(spread, y, isMissile ? 13 + pulse * 4 : 15 + pulse * 5, isMissile ? 24 : 10);
+        layer.stroke({ color: i % 2 ? tint : color, width: active ? 2.4 : 1.4, alpha });
+        layer.circle(spread, y, 3 + pulse * 2);
+        layer.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.08 + progress * 0.18 });
+      }
+      return;
+    }
+
+    if (isWeb) {
+      const webR = radius * 1.06;
+      for (let i = 0; i < count; i += 1) {
+        const a = now * 0.003 + i * Math.PI * 2 / count;
+        const x = Math.cos(a) * webR;
+        const y = Math.sin(a) * webR * 0.62;
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: i % 2 ? color : tint, alpha: alpha * 0.76 });
+        layer.moveTo(x, y);
+        const nextA = now * 0.003 + ((i + 1) % count) * Math.PI * 2 / count;
+        layer.lineTo(Math.cos(nextA) * webR, Math.sin(nextA) * webR * 0.62);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.6 : 1, alpha: active ? 0.22 : 0.08 + progress * 0.16 });
+      return;
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      const a = now * 0.004 + i * Math.PI * 2 / count;
+      const inner = radius * 0.32;
+      const outer = radius * (0.86 + (i % 2) * 0.18 + pulse * 0.04);
+      layer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner * 0.62);
+      layer.lineTo(Math.cos(a) * outer, Math.sin(a) * outer * 0.62);
+    }
+    layer.stroke({ color: isAnchor ? 0xff8844 : color, width: active ? 2.4 : 1.4, alpha });
+    this.drawEliteArc(layer, 0, 0, radius * 1.08, radius * 0.62, -now * 0.004, -now * 0.004 + Math.PI * 1.2, tint, active ? 2.2 : 1.3, alpha * 0.82);
+  }
+
+  drawEliteCaptureBrackets(layer, x, y, size, color, alpha, now) {
+    const spin = now * 0.004;
+    for (let i = 0; i < 4; i += 1) {
+      const a = spin + i * Math.PI * 0.5;
+      const cx = x + Math.cos(a) * size;
+      const cy = y + Math.sin(a) * size * 0.52;
+      layer.moveTo(cx, cy);
+      layer.lineTo(cx - Math.cos(a) * size * 0.32 + Math.cos(a + Math.PI / 2) * size * 0.2, cy - Math.sin(a) * size * 0.18 + Math.sin(a + Math.PI / 2) * size * 0.12);
+    }
+    layer.stroke({ color, width: 2, alpha });
+  }
+
+  drawEliteArc(layer, cx, cy, rx, ry, start, end, color, width, alpha) {
+    const steps = 14;
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const a = start + (end - start) * t;
+      const x = cx + Math.cos(a) * rx;
+      const y = cy + Math.sin(a) * ry;
+      if (i === 0) layer.moveTo(x, y);
+      else layer.lineTo(x, y);
+    }
+    layer.stroke({ color, width, alpha });
   }
 
   applyEliteTractorPull(delta, playerX, playerY) {
