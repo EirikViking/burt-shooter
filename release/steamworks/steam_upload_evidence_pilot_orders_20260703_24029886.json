@@ -1,0 +1,137 @@
+{
+  "schema": "nova-swarm-steam-upload-evidence.v1",
+  "createdAt": "2026-07-02T23:38:07Z",
+  "branch": "codex/main-menu-run-contracts-20260702",
+  "sourceCommit": "c653716fb45820f571118e2d5c3c1a0deab2a28e",
+  "sourceCommitShort": "c653716",
+  "sourceCommitMessage": "Refine run contracts into pilot orders",
+  "requestScope": "finite Pilot Orders starter onboarding system, visual spacing polish, ChatGPT Pro safety consultation, then private Steam upload",
+  "chatGptProConsultation": {
+    "tab": "Nova Swarm Safety Check",
+    "verdict": "Go for private SteamPipe upload",
+    "blockingIssues": [],
+    "nonBlockingNotes": [
+      "Pilot Orders text may still be small at some scales.",
+      "First three orders are slightly advanced but acceptable for a private candidate.",
+      "Run Report placement under rewards is acceptable for this pass.",
+      "A future multi-toast overlap pass can be considered if completion bursts stack."
+    ]
+  },
+  "build": {
+    "version": "v2026-07-03_01-25-17",
+    "timestamp": "2026-07-02T23:25:17.001Z",
+    "description": "Nova Swarm Pilot Orders 2026-07-03"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24029886",
+    "setLive": "",
+    "branchAssignment": "none",
+    "uploadMode": "private-unassigned",
+    "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "6e1ce028b58796f680f80ccc41661dafaa48a0238cf75f791b4a29aa0ee4fb68",
+    "uploadLogPath": "release/steamworks/steam_upload_console_pilot_orders_20260703.log",
+    "uploadLogSha256": "c5925e4bc1de1502d42300154b9dae9f980016b47593012d2cc1661e8423fc53",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 24029886)."
+  },
+  "vdfInspection": {
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "descLine": "\"Desc\" \"Nova Swarm Pilot Orders 2026-07-03\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "depotIdLine": "\"4765071\"",
+    "localPathLine": "\"LocalPath\" \"*\"",
+    "depotPathLine": "\"DepotPath\" \".\""
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "dc9da92fe707b5ef53c7d7e5a637e7012b0adafe3cdc813fd3a5dd027dddfeb1",
+    "manifestFileSha256": "3c49a6aeadababd86f87c89cafe53652871322cd7a0bc1c628ea7314ff0707b8",
+    "fileCount": 336,
+    "totalBytes": 915968245,
+    "executableSha256": "8fa1184d117b1a81a4d9dfe0397c40dd84f4bf2aaaebf8efcaa145e2d3054ec3"
+  },
+  "verification": {
+    "sourceChecks": [
+      "node --check src/progression/RunContracts.js",
+      "node --check src/game/Game.js",
+      "node --check src/game/RunReport.js",
+      "node --check src/scenes/MenuScene.js",
+      "node --check src/scenes/PlayScene.js",
+      "node --check src/scenes/GameOverScene.js",
+      "node --check scripts/check-run-contracts.mjs",
+      "npm run check:run-contracts",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run build:current",
+      "npm run check:release-line",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-rescue-import",
+      "npm run check:steam-electron-bridge",
+      "npm run check:graze-break",
+      "npm run check:boss-support-codex",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "npm run check:controller-flow",
+      "git diff --check"
+    ],
+    "releaseChecks": [
+      "git fetch --all --prune",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf",
+      "npm run desktop:smoke:current",
+      "npm run check:desktop-package",
+      "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "reportPaths": {
+      "runContracts": "test-results/run-contracts-2026-07-02T22-18-54-976Z/report.json",
+      "i18nUi": "test-results/i18n-ui-2026-07-02T22-20-16-063Z",
+      "grazeBreak": "test-results/graze-break-2026-07-02T22-55-59-256Z/graze-break.png",
+      "bossSupportCodex": "test-results/boss-support-codex-2026-07-02T22-57-49-044Z/report.json",
+      "smoke": "test-results/smoke-2026-07-02T22-59-59-062Z/report.json",
+      "controllerFlow": "test-results/controller-only-flow-2026-07-02T23-05-03-232Z",
+      "steamSdkReady": "test-results/steam-sdk-ready-2026-07-02T23-25-16-305Z/report.json",
+      "steamPackageRuntime": "test-results/steam-package-runtime-2026-07-02T23-33-55-130Z/report.json",
+      "currentElectronSmoke": "test-results/electron-smoke-2026-07-02T23-34-15-049Z/report.json",
+      "packagedSmoke": "test-results/packaged-exe-smoke-2026-07-02T23-31-17-706Z/report.json",
+      "packagedControls": "test-results/packaged-control-smoke-2026-07-02T23-32-04-528Z/report.json",
+      "packagedPerf": "test-results/packaged-perf-smoke-2026-07-02T23-32-23-047Z/report.json",
+      "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+    }
+  },
+  "safety": {
+    "steamworksSettingsChanged": false,
+    "storeMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudPathsChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "balanceChanged": false,
+    "newSteamAchievements": false,
+    "newRuntimeNetworkCalls": false,
+    "newSfxAdded": false,
+    "elevenLabsUsed": false,
+    "notes": [
+      "Pilot Orders are a finite starter onboarding board, not a daily or rotating contract system.",
+      "Rewards remain disabled; no XP, score, leaderboard, achievement, or balance changes were made for this upload.",
+      "SteamCMD upload succeeded with cached credentials and blank SetLive, so the build is private/unassigned until manually routed in Steamworks.",
+      "No public/default branch assignment was made by this upload.",
+      "No Steam event, patch note, store metadata, Steamworks setting, AppID, depot, leaderboard, achievement API ID, Steam Cloud path, score identity, XP formula, or release script was changed."
+    ]
+  },
+  "rollback": {
+    "sourceRollback": "git switch codex/boss-support-slowmo-20260702",
+    "featureRevert": "git revert c653716fb45820f571118e2d5c3c1a0deab2a28e",
+    "steamRollback": "No Steam branch rollback is needed for this upload-only build because SetLive was blank. If BuildID 24029886 is manually assigned later and needs rollback, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the prior desired BuildID."
+  }
+}
