@@ -458,6 +458,8 @@ try {
         }
         case 'slow_time': {
           assert(player.activePowerup.type === 'slow_time', `${type}: active state missing`);
+          assert(player.getSlowTimeEnemyScale?.() <= 0.35, `${type}: enemy time scale should be strongly slowed`, { scale: player.getSlowTimeEnemyScale?.() });
+          assert(player.getSlowTimeHazardScale?.() <= 0.35, `${type}: hazard time scale should be strongly slowed`, { scale: player.getSlowTimeHazardScale?.() });
           const slowBullet = dummyEnemyBullet(100, 100);
           play.bulletManager.enemyBullets = [slowBullet];
           play.update(1);
@@ -467,7 +469,8 @@ try {
           play.bulletManager.enemyBullets = [normalBullet];
           play.update(1);
           const normalDelta = normalBullet.y - 100;
-          assert(slowDelta > 0 && slowDelta < normalDelta * 0.75, `${type}: enemy bullet scale missing`, { slowDelta, normalDelta });
+          assert(slowDelta > 0 && slowDelta < normalDelta * 0.5, `${type}: stronger enemy bullet slow scale missing`, { slowDelta, normalDelta });
+          assert(player.getSlowTimeEnemyScale?.() === 1, `${type}: enemy scale should reset after the powerup ends`);
           note('enemyBulletDelta', { slowDelta, normalDelta });
           break;
         }

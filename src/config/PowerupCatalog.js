@@ -67,7 +67,7 @@ const BASE_POWERUPS = [
     tip: 'Use the slow window to choose a lane, not to drift across the whole board.',
     pickupMessage: 'SLOW MOTION!',
     sfx: 'time_slow_warp',
-    effect: { durationMs: 8000, slowTime: true }
+    effect: { durationMs: 8000, slowTime: true, enemyTimeScale: 0.33, enemyBulletScale: 0.35, hazardTimeScale: 0.35 }
   },
   {
     id: 'ghost',
@@ -350,7 +350,7 @@ const NEW_POWERUPS = [
     tip: 'Anchor first, dodge once, then make the wave regret being scheduled.',
     pickupMessage: 'CHRONO ANCHOR! Time sits down.',
     sfx: 'time_slow_warp',
-    effect: { durationMs: 7000, slowTime: true, fireRateMult: 0.82 }
+    effect: { durationMs: 7000, slowTime: true, enemyTimeScale: 0.33, enemyBulletScale: 0.35, hazardTimeScale: 0.35, fireRateMult: 0.82 }
   },
   {
     id: 'blink_drive',

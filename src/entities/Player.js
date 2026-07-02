@@ -1992,6 +1992,26 @@ export class Player {
     return this.activePowerup?.type === 'slow_time' || this.getCurrentPowerupEffect()?.slowTime === true;
   }
 
+  getSlowTimeScale(effectKey, fallback = 0.35) {
+    if (!this.isSlowTimeActive()) return 1;
+    const effect = this.getCurrentPowerupEffect() || {};
+    const value = Number(effect[effectKey]);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(0.05, Math.min(1, value));
+  }
+
+  getSlowTimeEnemyScale() {
+    return this.getSlowTimeScale('enemyTimeScale', 0.33);
+  }
+
+  getSlowTimeEnemyBulletScale() {
+    return this.getSlowTimeScale('enemyBulletScale', 0.35);
+  }
+
+  getSlowTimeHazardScale() {
+    return this.getSlowTimeScale('hazardTimeScale', 0.35);
+  }
+
   isGhostActive() {
     return this.activePowerup?.type === 'ghost' && !this.isPowerupSuppressed();
   }

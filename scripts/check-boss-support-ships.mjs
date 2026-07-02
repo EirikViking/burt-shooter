@@ -31,6 +31,9 @@ const assets = AssetManifest.generated?.enemies || [];
 const ids = new Set();
 const names = new Set();
 const signatures = new Set();
+const glyphs = new Set();
+const beamStyles = new Set();
+const deliveryFx = new Set();
 
 if (BOSS_SUPPORT_SHIPS.length !== BOSS_SUPPORT_SHIP_TOTAL) {
   fail(`expected ${BOSS_SUPPORT_SHIP_TOTAL} boss support ship profiles, found ${BOSS_SUPPORT_SHIPS.length}`);
@@ -58,11 +61,20 @@ for (const profile of BOSS_SUPPORT_SHIPS) {
     fail(`${profile.id} references invalid spriteIndex ${profile.spriteIndex}`);
   }
   if (!assets[profile.spriteIndex]) fail(`${profile.id} missing generated enemy art`);
+  if (!profile.glyph) fail(`${profile.id} missing support glyph`);
+  if (!profile.beamStyle) fail(`${profile.id} missing support beamStyle`);
+  if (!profile.deliveryFx) fail(`${profile.id} missing support deliveryFx`);
+  glyphs.add(profile.glyph);
+  beamStyles.add(profile.beamStyle);
+  deliveryFx.add(profile.deliveryFx);
   signatures.add(profile.behaviorSignature);
 }
 
 if (signatures.size !== BOSS_SUPPORT_SHIP_TOTAL) {
   fail(`expected ${BOSS_SUPPORT_SHIP_TOTAL} unique support behavior signatures, found ${signatures.size}`);
+}
+if (glyphs.size < 8 || beamStyles.size < 8 || deliveryFx.size < 8) {
+  fail(`support roles should have distinct live VFX metadata, glyphs=${glyphs.size} beams=${beamStyles.size} delivery=${deliveryFx.size}`);
 }
 
 const picked = new Set();
@@ -86,11 +98,50 @@ for (const token of [
   'bossSupportShipProfile',
   'recordThreatDiscovery?.(supportProfile.id',
   'guaranteedFirstSupport',
+  'getBossFuelShipSupportCount',
+  'spawnBossFuelShipSquad',
+  'BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT',
+  'singleSupportHealMultiplier',
   'attachBossFuelTether',
   'updateBossFuelTether',
+  'createBossFuelDeliveryBurst',
   'bossFuelShipHealTether'
 ]) {
   if (!managerSource.includes(token)) fail(`EnemyManager missing support ship runtime token ${token}`);
+}
+
+const countProbe = Object.assign(Object.create(EnemyManager.prototype), {
+  bossFuelShipsSpawnedThisBoss: 0
+});
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.05) !== 3) {
+  fail('late boss support roll below 10% should request 3 helpers');
+}
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.2) !== 2) {
+  fail('late boss support roll between 10% and 30% should request 2 helpers');
+}
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.8) !== 1) {
+  fail('late boss support roll above 30% should request 1 helper');
+}
+if (countProbe.getBossFuelShipSupportCount(1, () => 0.05) !== 3) {
+  fail('early boss support event should still be able to roll 3 helpers');
+}
+countProbe.bossFuelShipsSpawnedThisBoss = 2;
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.02) !== 1) {
+  fail('support squad count should clamp to the absolute three-helper cap');
+}
+countProbe.bossFuelShipsSpawnedThisBoss = 0;
+let rolledOne = 0;
+let rolledTwo = 0;
+let rolledThree = 0;
+for (let i = 0; i < 100; i += 1) {
+  const roll = (i + 0.5) / 100;
+  const count = countProbe.getBossFuelShipSupportCount(12, () => roll);
+  if (count === 1) rolledOne += 1;
+  if (count === 2) rolledTwo += 1;
+  if (count === 3) rolledThree += 1;
+}
+if (rolledTwo !== 20 || rolledThree !== 10 || rolledOne !== 70) {
+  fail(`support squad distribution should be 70/20/10 over percentile rolls, got ${rolledOne}/${rolledTwo}/${rolledThree}`);
 }
 
 const spawnProbe = Object.assign(Object.create(EnemyManager.prototype), {
@@ -112,9 +163,9 @@ const spawnProbe = Object.assign(Object.create(EnemyManager.prototype), {
   }
 });
 let spawned = 0;
-spawnProbe.spawnBossFuelShip = () => {
-  spawned += 1;
-  return true;
+spawnProbe.spawnBossFuelShipSquad = (count) => {
+  spawned += count;
+  return count;
 };
 const originalDateNow = Date.now;
 const originalRandom = Math.random;
@@ -123,7 +174,7 @@ try {
   Math.random = () => 0.99;
   spawnProbe.maybeSpawnBossFuelShip();
   if (spawned !== 1 || spawnProbe.bossFuelShipsSpawnedThisBoss !== 1) {
-    fail('first eligible hurt boss should spawn a support ship even when random chance is unfavorable');
+    fail('first eligible hurt boss should spawn boss support even when random chance is unfavorable');
   }
   spawnProbe.bossFuelShipCooldownUntilMs = 0;
   spawnProbe.bossFuelShipNextCheckAtMs = 0;
@@ -207,6 +258,8 @@ const tetherEnemy = {
   x: 80,
   y: 110,
   radius: 18,
+  bossSupportShipProfile: { tint: 0x8cfbff, accent: 0xff55d9, beamStyle: 'braid' },
+  bossFuelProfile: { groupSize: 3, groupSlot: 1 },
   bossFuelTether: fakeTether
 };
 tetherProbe.updateBossFuelTether(tetherEnemy, {
@@ -218,7 +271,7 @@ tetherProbe.updateBossFuelTether(tetherEnemy, {
     return 92;
   }
 }, 142);
-if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 3 || tetherFills < 4) {
+if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 7 || tetherFills < 10) {
   fail(`support tether should draw an active heal beam, visible=${fakeTether.visible} renderable=${fakeTether.renderable} strokes=${tetherStrokes} fills=${tetherFills}`);
 }
 tetherProbe.clearBossFuelTether(tetherEnemy);
@@ -237,4 +290,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log(`[boss-support-ships] PASS profiles=${BOSS_SUPPORT_SHIPS.length} picked=${picked.size} codex=${BOSS_SUPPORT_SHIPS.length}`);
+console.log(`[boss-support-ships] PASS profiles=${BOSS_SUPPORT_SHIPS.length} picked=${picked.size} codex=${BOSS_SUPPORT_SHIPS.length} glyphs=${glyphs.size} beams=${beamStyles.size}`);

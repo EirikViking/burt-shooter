@@ -35,6 +35,9 @@ import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../conf
 const WAVE_OBJECTIVE_FAILSAFE_MS = 45000;
 const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
 const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
+const BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT = 1.25;
+const BOSS_FUEL_DOUBLE_SUPPORT_ROLL = 0.30;
+const BOSS_FUEL_TRIPLE_SUPPORT_ROLL = 0.10;
 export const MAYHEM_REINFORCEMENT_WAVE_SOUND_ID = 'mission_control_reinforcements_incoming';
 export const MAYHEM_SUPER_STORM_WARNING_SOUND_ID = 'boss_mayhem_super_storm_warning';
 export const MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID = 'boss_mayhem_super_storm_survived';
@@ -2110,7 +2113,7 @@ export class EnemyManager {
     // SAFEGUARD: Check for active time-slow powerups correctly.
     const isSlowTime = player?.isSlowTimeActive?.() === true;
 
-    const timeScale = isSlowTime ? 0.5 : 1.0;
+    const timeScale = isSlowTime ? (player?.getSlowTimeEnemyScale?.() ?? 0.33) : 1.0;
     const tier = this.directorState?.tier || 0;
     const diff = BalanceConfig.difficulty;
     const pressureLevel = this.phase === 'BOSS' || this.state === 'BOSS_ACTIVE'
@@ -3324,6 +3327,20 @@ export class EnemyManager {
     return 3;
   }
 
+  getBossFuelShipSupportCount(level = this.level, random = Math.random) {
+    const spawned = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
+    const remaining = Math.max(0, 3 - spawned);
+    if (remaining <= 0) return 0;
+
+    const roll = typeof random === 'function' ? random() : Math.random();
+    const desired = roll < BOSS_FUEL_TRIPLE_SUPPORT_ROLL
+      ? 3
+      : roll < BOSS_FUEL_DOUBLE_SUPPORT_ROLL
+        ? 2
+        : 1;
+    return Math.max(1, Math.min(remaining, desired));
+  }
+
   getActiveBossFuelShips() {
     return this.enemies.filter((enemy) =>
       enemy?.kind === 'boss_fuel_ship' && (enemy.active || enemy.waitingForEntry)
@@ -3351,34 +3368,73 @@ export class EnemyManager {
     const guaranteedFirstSupport = this.bossFuelShipsSpawnedThisBoss === 0 && healthRatio <= 0.82;
     const chance = guaranteedFirstSupport ? 1 : level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
     if (Math.random() > chance) return;
-    if (this.spawnBossFuelShip()) {
-      this.bossFuelShipsSpawnedThisBoss += 1;
+    const supportCount = this.getBossFuelShipSupportCount(level);
+    const spawnedCount = this.spawnBossFuelShipSquad(supportCount);
+    if (spawnedCount > 0) {
+      this.bossFuelShipsSpawnedThisBoss += spawnedCount;
       this.bossFuelShipCooldownUntilMs = now + (level <= 5 ? 17500 : 13500) + Math.random() * 4500;
     }
   }
 
-  spawnBossFuelShip() {
+  spawnBossFuelShipSquad(count = 1) {
+    const desiredCount = Math.max(1, Math.min(3, Math.floor(Number(count) || 1)));
+    const baseEventIndex = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
+    const formationFlip = Math.random() < 0.5 ? -1 : 1;
+    let spawned = 0;
+    for (let slot = 0; slot < desiredCount; slot += 1) {
+      if (this.spawnBossFuelShip({
+        eventIndex: baseEventIndex + slot,
+        groupSize: desiredCount,
+        groupSlot: slot,
+        formationFlip
+      })) {
+        spawned += 1;
+      }
+    }
+    return spawned;
+  }
+
+  spawnBossFuelShip(options = {}) {
     if (!this.boss?.active) return false;
     const level = Math.max(1, Number(this.level) || 1);
+    const eventIndex = Math.max(0, Math.floor(Number(options.eventIndex ?? this.bossFuelShipsSpawnedThisBoss) || 0));
+    const groupSize = Math.max(1, Math.min(3, Math.floor(Number(options.groupSize) || 1)));
+    const groupSlot = Math.max(0, Math.min(groupSize - 1, Math.floor(Number(options.groupSlot) || 0)));
+    const slotOffset = groupSlot - (groupSize - 1) / 2;
+    const formationFlip = Number(options.formationFlip) === -1 ? -1 : 1;
     const supportProfile = pickBossSupportShipProfile(
       level,
-      getBossSupportShipEventSeed(level, this.bossFuelShipsSpawnedThisBoss)
+      getBossSupportShipEventSeed(level, eventIndex)
     );
     const screenW = this.game.getWidth();
-    const startLeft = Math.random() < 0.5;
+    const side = groupSize === 1
+      ? (Math.random() < 0.5 ? -1 : 1)
+      : (groupSlot % 2 === 0 ? formationFlip : -formationFlip);
+    const startLeft = side < 0;
     const startX = startLeft ? -46 : screenW + 46;
-    const targetX = Math.max(58, Math.min(screenW - 58, this.boss.x + (startLeft ? -170 : 170)));
-    const targetY = Math.max(90, Math.min(this.game.getHeight() * 0.35, (this.boss.y || 150) + 20));
+    const flankSpacing = 158 + Math.abs(slotOffset) * 42;
+    const targetX = Math.max(58, Math.min(screenW - 58, this.boss.x + side * flankSpacing + slotOffset * 28));
+    const targetY = Math.max(90, Math.min(this.game.getHeight() * 0.35, (this.boss.y || 150) + 20 + Math.abs(slotOffset) * 30));
     const type = getGeneratedEnemyTypeForSpriteIndex(supportProfile.spriteIndex) ||
       pickGeneratedEnemyTypeForLevel(Math.max(1, Math.min(level, 18)));
     const enemy = new Enemy(startX, -96, type, level, this.game, 'Green');
     enemy.kind = 'boss_fuel_ship';
     enemy.bossSupportShipProfile = supportProfile;
+    const singleSupportHealMultiplier = groupSize === 1 ? BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT : 1;
+    const baseHealCap = level <= 4 ? 0.075 : 0.09;
+    const baseHealPercent = supportProfile.healPercent + Math.min(0.016, level * 0.0015);
     enemy.bossFuelProfile = {
       id: supportProfile.id,
       displayName: supportProfile.displayName,
-      healPercent: Math.min(level <= 4 ? 0.075 : 0.09, supportProfile.healPercent + Math.min(0.016, level * 0.0015)),
-      speed: supportProfile.speed + Math.min(0.28, level * 0.01)
+      healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier),
+      baseHealPercent: Math.min(baseHealCap, baseHealPercent),
+      singleSupportHealMultiplier,
+      speed: supportProfile.speed + Math.min(0.28, level * 0.01),
+      groupSize,
+      groupSlot,
+      eventIndex,
+      beamStyle: supportProfile.beamStyle,
+      deliveryFx: supportProfile.deliveryFx
     };
     enemy.health = Math.max(2, Math.min(5, supportProfile.health + (level >= 10 && supportProfile.health < 4 ? 1 : 0)));
     enemy.maxHealth = enemy.health;
@@ -3401,10 +3457,53 @@ export class EnemyManager {
     if (enemy.sprite) {
       enemy.sprite.label = `enemy_visual:${supportProfile.id}`;
       const halo = new PIXI.Graphics();
-      halo.circle(0, 0, enemy.radius * (2.1 + supportProfile.haloScale * 0.22));
-      halo.fill({ color: supportProfile.tint, alpha: 0.16 });
-      halo.circle(0, 0, enemy.radius * supportProfile.haloScale);
-      halo.stroke({ color: supportProfile.accent, width: 3, alpha: 0.52 });
+      const haloRadius = enemy.radius * supportProfile.haloScale;
+      const outerRadius = enemy.radius * (2.1 + supportProfile.haloScale * 0.24 + (groupSize - 1) * 0.08);
+      halo.circle(0, 0, outerRadius);
+      halo.fill({ color: supportProfile.tint, alpha: 0.14 });
+      halo.circle(0, 0, haloRadius);
+      halo.stroke({ color: supportProfile.accent, width: 3, alpha: 0.56 });
+      halo.circle(0, 0, haloRadius * 0.58);
+      halo.stroke({ color: 0xffffff, width: 1.2, alpha: 0.32 });
+
+      const spokeCount = supportProfile.glyph === 'spark' ? 10 : supportProfile.glyph === 'brackets' ? 4 : 6;
+      for (let i = 0; i < spokeCount; i += 1) {
+        const a = (Math.PI * 2 * i) / spokeCount + groupSlot * 0.38;
+        const inner = haloRadius * 0.72;
+        const outer = haloRadius * (supportProfile.glyph === 'chevron' ? 1.32 : 1.14);
+        halo.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+        halo.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+      }
+      halo.stroke({ color: supportProfile.glyph === 'spark' ? 0xffffff : supportProfile.accent, width: 1.5, alpha: 0.38 });
+
+      if (supportProfile.glyph === 'cross') {
+        halo.moveTo(-haloRadius * 0.34, 0);
+        halo.lineTo(haloRadius * 0.34, 0);
+        halo.moveTo(0, -haloRadius * 0.34);
+        halo.lineTo(0, haloRadius * 0.34);
+        halo.stroke({ color: 0xffffff, width: 2.4, alpha: 0.58 });
+      } else if (supportProfile.glyph === 'brackets') {
+        for (const sideX of [-1, 1]) {
+          halo.moveTo(sideX * haloRadius * 0.46, -haloRadius * 0.36);
+          halo.lineTo(sideX * haloRadius * 0.62, -haloRadius * 0.36);
+          halo.lineTo(sideX * haloRadius * 0.62, haloRadius * 0.36);
+          halo.lineTo(sideX * haloRadius * 0.46, haloRadius * 0.36);
+        }
+        halo.stroke({ color: 0xffffff, width: 1.8, alpha: 0.5 });
+      } else if (supportProfile.glyph === 'cells') {
+        for (let i = 0; i < 3; i += 1) {
+          halo.circle((i - 1) * haloRadius * 0.23, 0, haloRadius * 0.1);
+        }
+        halo.fill({ color: supportProfile.accent, alpha: 0.5 });
+      } else if (supportProfile.glyph === 'tow') {
+        halo.moveTo(-haloRadius * 0.42, -haloRadius * 0.1);
+        halo.lineTo(0, haloRadius * 0.2);
+        halo.lineTo(haloRadius * 0.42, -haloRadius * 0.1);
+        halo.stroke({ color: 0xffffff, width: 2, alpha: 0.52 });
+      } else {
+        halo.circle(0, 0, haloRadius * 0.2);
+        halo.fill({ color: supportProfile.accent, alpha: 0.46 });
+      }
       halo.label = 'bossFuelShipHalo';
       enemy.sprite.addChildAt(halo, 0);
       enemy.ownedVisuals?.push(halo);
@@ -3492,50 +3591,154 @@ export class EnemyManager {
     if (!tether || !enemy?.active || !boss?.active) return;
 
     const now = Date.now();
+    const supportProfile = enemy.bossSupportShipProfile || {};
+    const baseColor = supportProfile.tint || BOSS_FUEL_TETHER_COLOR;
+    const accentColor = supportProfile.accent || BOSS_FUEL_TETHER_ACCENT;
+    const beamStyle = supportProfile.beamStyle || enemy.bossFuelProfile?.beamStyle || 'pulse';
+    const groupSize = Math.max(1, Math.min(3, Number(enemy.bossFuelProfile?.groupSize) || 1));
+    const groupSlot = Math.max(0, Number(enemy.bossFuelProfile?.groupSlot) || 0);
     const dx = boss.x - enemy.x;
     const dy = boss.y - enemy.y;
     const angle = Math.atan2(dy, dx);
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
     const supportRadius = Math.max(10, enemy.radius || 18) * 0.72;
     const bossRadius = Math.max(36, boss.getVisualRadius?.() || boss.radius || 70) * 0.36;
     const startX = enemy.x + Math.cos(angle) * supportRadius;
     const startY = enemy.y + Math.sin(angle) * supportRadius;
     const endX = boss.x - Math.cos(angle) * bossRadius;
     const endY = boss.y - Math.sin(angle) * bossRadius;
-    const pulse = Math.sin(now * 0.011 + distance * 0.018) * 0.5 + 0.5;
+    const pulse = Math.sin(now * 0.011 + distance * 0.018 + groupSlot * 0.7) * 0.5 + 0.5;
+    const fastPulse = Math.sin(now * 0.032 + groupSlot) * 0.5 + 0.5;
     const tension = Math.max(0.38, Math.min(1, 1 - distance / 620));
+    const styleBoost = beamStyle === 'surge' || beamStyle === 'reactor' ? 1.22 : beamStyle === 'towline' ? 0.92 : 1;
+    const beamWidth = (8.5 + groupSize * 1.2 + pulse * 1.6) * styleBoost;
 
     tether.clear();
     tether.visible = true;
     tether.renderable = true;
     tether.alpha = 0.88 + pulse * 0.12;
-    tether.moveTo(startX, startY);
-    tether.lineTo(endX, endY);
-    tether.stroke({ color: BOSS_FUEL_TETHER_COLOR, width: 10, alpha: 0.16 + tension * 0.12 });
-    tether.moveTo(startX, startY);
-    tether.lineTo(endX, endY);
-    tether.stroke({ color: BOSS_FUEL_TETHER_ACCENT, width: 4 + pulse * 1.7, alpha: 0.34 + tension * 0.26 });
-    tether.moveTo(startX, startY);
-    tether.lineTo(endX, endY);
-    tether.stroke({ color: 0xffffff, width: 1.4, alpha: 0.44 + pulse * 0.24 });
 
-    const packetCount = 3;
-    for (let i = 0; i < packetCount; i += 1) {
-      const t = (now * 0.00135 + i / packetCount) % 1;
-      const packetX = startX + (endX - startX) * t;
-      const packetY = startY + (endY - startY) * t;
-      const packetRadius = 2.8 + pulse * 1.4;
-      tether.circle(packetX, packetY, packetRadius);
-      tether.fill({ color: BOSS_FUEL_TETHER_ACCENT, alpha: 0.36 + tension * 0.28 });
+    const drawOffsetLine = (offset, width, color, alpha) => {
+      const wobble = Math.sin(now * 0.006 + offset * 0.31 + groupSlot) * (beamStyle === 'braid' ? 4.5 : 2.5);
+      tether.moveTo(startX + px * (offset + wobble), startY + py * (offset + wobble));
+      tether.lineTo(endX + px * (offset - wobble * 0.5), endY + py * (offset - wobble * 0.5));
+      tether.stroke({ color, width, alpha });
+    };
+
+    drawOffsetLine(0, beamWidth + 7, baseColor, 0.1 + tension * 0.16);
+    drawOffsetLine(-beamWidth * 0.34, 2.6 + pulse * 0.9, accentColor, 0.28 + tension * 0.2);
+    drawOffsetLine(beamWidth * 0.34, 2.6 + fastPulse * 0.9, accentColor, 0.24 + tension * 0.2);
+    drawOffsetLine(0, 2 + pulse * 1.5, 0xffffff, 0.34 + tension * 0.28);
+
+    if (beamStyle === 'shield' || beamStyle === 'towline') {
+      for (const offset of [-beamWidth * 0.72, beamWidth * 0.72]) {
+        drawOffsetLine(offset, 1.7, beamStyle === 'shield' ? 0xffffff : accentColor, 0.2 + tension * 0.22);
+      }
     }
 
-    tether.circle(startX, startY, 5 + pulse * 2);
-    tether.stroke({ color: BOSS_FUEL_TETHER_COLOR, width: 2, alpha: 0.38 + tension * 0.24 });
+    const packetCount = groupSize >= 3 ? 6 : groupSize === 2 ? 5 : 4;
+    for (let i = 0; i < packetCount; i += 1) {
+      const t = (now * (beamStyle === 'towline' ? 0.0009 : 0.00145) + i / packetCount + groupSlot * 0.11) % 1;
+      const side = i % 2 ? -1 : 1;
+      const lane = side * (beamWidth * 0.18 + Math.sin(now * 0.012 + i) * 3.4);
+      const packetX = startX + (endX - startX) * t + px * lane;
+      const packetY = startY + (endY - startY) * t + py * lane;
+      const packetRadius = 2.8 + pulse * 1.4 + (beamStyle === 'reactor' ? 1 : 0);
+      tether.circle(packetX, packetY, packetRadius);
+      tether.fill({ color: i % 2 ? accentColor : baseColor, alpha: 0.34 + tension * 0.3 });
+      tether.circle(packetX, packetY, packetRadius * 0.38);
+      tether.fill({ color: 0xffffff, alpha: 0.24 + tension * 0.2 });
+    }
+
+    const nodeCount = beamStyle === 'stitch' ? 6 : 4;
+    for (let i = 1; i <= nodeCount; i += 1) {
+      const t = i / (nodeCount + 1);
+      const nodeX = startX + (endX - startX) * t;
+      const nodeY = startY + (endY - startY) * t;
+      const nodeOffset = (i % 2 ? -1 : 1) * (beamWidth * 0.5 + fastPulse * 3);
+      tether.circle(nodeX + px * nodeOffset, nodeY + py * nodeOffset, 2.2 + (i % 2) + pulse);
+      tether.fill({ color: beamStyle === 'stitch' ? 0xffffff : accentColor, alpha: 0.22 + tension * 0.18 });
+    }
+
+    for (let i = 0; i < 3; i += 1) {
+      tether.circle(startX, startY, 4.5 + pulse * 2 + i * 4.2);
+      tether.stroke({ color: i % 2 ? accentColor : baseColor, width: 1.5 + i * 0.35, alpha: (0.28 + tension * 0.18) / (1 + i * 0.35) });
+    }
     tether.circle(startX, startY, 2.8 + pulse);
     tether.fill({ color: 0xffffff, alpha: 0.36 + tension * 0.2 });
-    tether.circle(endX, endY, 7 + pulse * 3);
-    tether.stroke({ color: BOSS_FUEL_TETHER_ACCENT, width: 2, alpha: 0.3 + tension * 0.28 });
+    for (let i = 0; i < 3; i += 1) {
+      tether.circle(endX, endY, 6.8 + fastPulse * 3 + i * 5.6);
+      tether.stroke({ color: i % 2 ? baseColor : accentColor, width: 1.8 + i * 0.45, alpha: (0.3 + tension * 0.25) / (1 + i * 0.38) });
+    }
     tether.circle(endX, endY, 3.6 + pulse * 1.4);
-    tether.fill({ color: BOSS_FUEL_TETHER_COLOR, alpha: 0.32 + tension * 0.22 });
+    tether.fill({ color: baseColor, alpha: 0.32 + tension * 0.22 });
+  }
+
+  createBossFuelDeliveryBurst(enemy, boss, healed = 0) {
+    if (!enemy || !boss || !this.container) return;
+    const supportProfile = enemy.bossSupportShipProfile || {};
+    const baseColor = supportProfile.tint || BOSS_FUEL_TETHER_COLOR;
+    const accentColor = supportProfile.accent || BOSS_FUEL_TETHER_ACCENT;
+    const groupSize = Math.max(1, Math.min(3, Number(enemy.bossFuelProfile?.groupSize) || 1));
+    const burst = new PIXI.Graphics();
+    burst.label = 'bossFuelShipDeliveryBurst';
+    burst.zIndex = 26;
+    burst.blendMode = 'add';
+    const startedAt = Date.now();
+    const durationMs = 360;
+    const draw = () => {
+      const progress = Math.max(0, Math.min(1, (Date.now() - startedAt) / durationMs));
+      const fade = 1 - progress;
+      const pulse = Math.sin(progress * Math.PI);
+      const dx = boss.x - enemy.x;
+      const dy = boss.y - enemy.y;
+      const angle = Math.atan2(dy, dx);
+      const px = -Math.sin(angle);
+      const py = Math.cos(angle);
+      burst.clear();
+      burst.alpha = Math.max(0, fade);
+      burst.moveTo(enemy.x, enemy.y);
+      burst.lineTo(boss.x, boss.y);
+      burst.stroke({ color: baseColor, width: 8 + groupSize * 2 + pulse * 6, alpha: 0.16 * fade });
+      burst.moveTo(enemy.x, enemy.y);
+      burst.lineTo(boss.x, boss.y);
+      burst.stroke({ color: 0xffffff, width: 2.4 + pulse * 2, alpha: 0.32 * fade });
+      for (let i = 0; i < 3 + groupSize; i += 1) {
+        const t = i / (3 + groupSize);
+        const cx = enemy.x + dx * t + px * Math.sin(progress * Math.PI * 2 + i) * 12;
+        const cy = enemy.y + dy * t + py * Math.cos(progress * Math.PI * 2 + i) * 12;
+        burst.circle(cx, cy, 3 + pulse * 4 + i * 0.3);
+        burst.fill({ color: i % 2 ? accentColor : baseColor, alpha: 0.24 * fade });
+      }
+      const bossRadius = Math.max(38, boss.getVisualRadius?.() || boss.radius || 70);
+      for (let i = 0; i < 4; i += 1) {
+        burst.circle(boss.x, boss.y, bossRadius * (0.28 + i * 0.13 + progress * 0.22));
+        burst.stroke({ color: i % 2 ? accentColor : baseColor, width: 2.2 + pulse * 2, alpha: (0.22 + i * 0.04) * fade });
+      }
+      const spokes = 8 + groupSize * 2;
+      for (let i = 0; i < spokes; i += 1) {
+        const a = (Math.PI * 2 * i) / spokes + progress * 1.8;
+        const inner = bossRadius * 0.18;
+        const outer = bossRadius * (0.38 + pulse * 0.22);
+        burst.moveTo(boss.x + Math.cos(a) * inner, boss.y + Math.sin(a) * inner);
+        burst.lineTo(boss.x + Math.cos(a) * outer, boss.y + Math.sin(a) * outer);
+      }
+      burst.stroke({ color: healed > 0 ? 0xffffff : accentColor, width: 1.7 + pulse * 1.4, alpha: 0.24 * fade });
+    };
+    draw();
+    this.container.addChild(burst);
+    const ticker = this.game?.app?.ticker;
+    let tick = null;
+    if (ticker?.add && ticker?.remove) {
+      tick = () => draw();
+      ticker.add(tick);
+    }
+    setTimeout(() => {
+      if (tick) ticker?.remove?.(tick);
+      burst.clear?.();
+      if (burst.parent) burst.parent.removeChild(burst);
+    }, durationMs + 40);
   }
 
   updateBossFuelShip(enemy, delta) {
@@ -3562,8 +3765,11 @@ export class EnemyManager {
       const healed = boss.heal?.(healAmount, { source: 'boss_fuel_ship' }) || 0;
       enemy.active = false;
       enemy.deactivateVisuals?.('boss_fuel_delivered');
-      this.game?.scenes?.play?.particleManager?.createHitSpark?.(enemy.x, enemy.y, 0x7dffcc, 1.6);
-      this.game?.scenes?.play?.particleManager?.createBossChargeSparks?.(boss.x, boss.y, 0x7dffcc, 1.2);
+      const supportColor = enemy.bossSupportShipProfile?.tint || 0x7dffcc;
+      const accentColor = enemy.bossSupportShipProfile?.accent || 0xffec8a;
+      this.createBossFuelDeliveryBurst(enemy, boss, healed);
+      this.game?.scenes?.play?.particleManager?.createHitSpark?.(enemy.x, enemy.y, supportColor, 1.8);
+      this.game?.scenes?.play?.particleManager?.createBossChargeSparks?.(boss.x, boss.y, accentColor, 1.35);
       this.game?.scenes?.play?.showToast?.(translateText('BOSS REFUELED +{amount} HP', { amount: healed }), {
         fontSize: this.game.getWidth() < 620 ? 14 : 17,
         fill: '#ffec8a',

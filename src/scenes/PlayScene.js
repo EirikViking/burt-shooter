@@ -1916,7 +1916,8 @@ export class PlayScene {
 
       // Managers update
       const slowTimeActive = this.player?.isSlowTimeActive?.() === true;
-      const enemyBulletScale = slowTimeActive ? 0.6 : 1;
+      const enemyBulletScale = slowTimeActive ? (this.player?.getSlowTimeEnemyBulletScale?.() ?? 0.35) : 1;
+      const hazardTimeScale = slowTimeActive ? (this.player?.getSlowTimeHazardScale?.() ?? 0.35) : 1;
       measure('bullets', () => {
         if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
       });
@@ -1932,7 +1933,7 @@ export class PlayScene {
         if (this.powerupManager) this.powerupManager.update(delta, this);
       });
       measure('tractor', () => this.updateTractorHijack(delta));
-      measure('boss_hazards', () => this.updateBossHazards(delta));
+      measure('boss_hazards', () => this.updateBossHazards(delta, hazardTimeScale));
       if (!perfOptions?.noParticles) {
         measure('particles', () => {
           if (this.particleManager) this.particleManager.update(delta);
@@ -5964,18 +5965,25 @@ export class PlayScene {
     return hazard;
   }
 
-  updateBossHazards() {
+  updateBossHazards(delta = 1, timeScale = 1) {
     const layer = this.bossHazardLayer;
     if (!layer) return;
     layer.clear();
     if (!Array.isArray(this.bossHazards) || this.bossHazards.length === 0) return;
 
     const now = Date.now();
+    const deltaMs = Math.max(0, Number(delta) || 0) * 16.67;
+    const safeTimeScale = Math.max(0.05, Math.min(1, Number(timeScale) || 1));
     this.bossHazards = this.bossHazards.filter((hazard) => {
-      const progress = Math.max(0, Math.min(1, (now - hazard.startedAt) / hazard.durationMs));
+      if (!Number.isFinite(hazard.elapsedMs)) {
+        hazard.elapsedMs = Math.max(0, now - hazard.startedAt);
+      } else {
+        hazard.elapsedMs += deltaMs * safeTimeScale;
+      }
+      const progress = Math.max(0, Math.min(1, hazard.elapsedMs / hazard.durationMs));
       if (progress >= 1) return false;
       this.drawBossHazard(hazard, progress);
-      const armed = (now - hazard.startedAt) >= (hazard.armingMs || 0);
+      const armed = hazard.elapsedMs >= (hazard.armingMs || 0);
       if (armed && !hazard.hit && this.isPlayerInsideBossHazard(hazard)) {
         hazard.hit = true;
         this.damagePlayerFromBossHazard(hazard);
@@ -9163,6 +9171,9 @@ export class PlayScene {
     // Update existing
     // TASK 1: Count remaining hazard drones for wave easing
     const hazardCount = this.ambientBonusDrones.filter(b => b.type === 'HAZARD' && b.active).length;
+    const ambientHazardTimeScale = this.player?.isSlowTimeActive?.()
+      ? (this.player?.getSlowTimeHazardScale?.() ?? 0.35)
+      : 1;
 
     this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
       // Check if manually removed or destroyed
@@ -9172,7 +9183,8 @@ export class PlayScene {
         return false;
       }
 
-      bonusDrone.update(delta, hazardCount); // Pass hazard count for wave easing
+      const updateDelta = bonusDrone.type === 'HAZARD' ? delta * ambientHazardTimeScale : delta;
+      bonusDrone.update(updateDelta, hazardCount); // Pass hazard count for wave easing
       return true;
     });
   }
