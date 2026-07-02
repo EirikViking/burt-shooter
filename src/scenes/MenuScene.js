@@ -1610,7 +1610,7 @@ export class MenuScene {
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
     const runModeBriefing = this.getRunModeBriefing();
-    this.runModeBriefingTitle.text = translateText('MISSION BRIEFING') + ' // ' + runModeBriefing.title;
+    this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + runModeBriefing.title;
     this.runModeExplainer.text = runModeBriefing.menuBody || runModeBriefing.body;
     this.disclaimer.text = this.getDisclaimerText(layout);
 
@@ -1671,7 +1671,8 @@ export class MenuScene {
       ? (width - cardWidth) / 2
       : clampNumber(width * 0.018, 20, 46));
     const minimumDeckTop = titleClearForDeck + clampNumber(height * 0.055, 34, 58);
-    const preferredDeckTop = safeMargin.top + clampNumber(height * 0.34, isMobileLayout ? 200 : 246, isMobileLayout ? 272 : 326);
+    const highScaleDeckLift = Math.round(Math.max(0, uiScale - 1) * clampNumber(height * 0.085, 36, 74));
+    const preferredDeckTop = safeMargin.top + clampNumber(height * 0.34, isMobileLayout ? 200 : 246, isMobileLayout ? 272 : 326) - highScaleDeckLift;
     const cardTop = Math.round(clampNumber(
       preferredDeckTop,
       minimumDeckTop,
@@ -2011,18 +2012,17 @@ export class MenuScene {
     const isShortLayout = Boolean(metrics.isShortLayout);
     const isMobileLayout = Boolean(metrics.isMobileLayout);
     const dockTop = Number(metrics.dockTop) || height;
-    const gap = Math.round(clampNumber(height * 0.006, 5, 8) * uiScale);
+    const boardScale = Math.min(uiScale, isMobileLayout ? 1.18 : 1.25);
+    const gap = Math.round(clampNumber(height * 0.006, 5, 8) * boardScale);
     const padX = Math.round((isMobileLayout ? 10 : 16) * uiScale);
-    const padY = Math.round((isShortLayout ? 8 : 10) * uiScale);
+    const padY = Math.round((isShortLayout ? 8 : 10) * boardScale);
     const rowHeight = Math.round(clampNumber(
-      height * 0.047 * uiScale,
-      (isShortLayout ? 32 : 36) * uiScale,
-      (isMobileLayout ? 36 : 40) * uiScale
+      height * 0.047 * boardScale,
+      (isShortLayout ? 32 : 36) * boardScale,
+      (isMobileLayout ? 38 : 44) * boardScale
     ));
-    const headerHeight = Math.round((isShortLayout ? 40 : 44) * uiScale);
-    const desiredBoardWidth = isMobileLayout
-      ? this.launchDeckBounds.width
-      : clampNumber(width * 0.285, Math.max(this.launchDeckBounds.width, 330 * uiScale), 430 * uiScale);
+    const headerHeight = Math.round((isShortLayout ? 40 : 44) * boardScale);
+    const desiredBoardWidth = this.launchDeckBounds.width;
     const briefingLeft = Number(this.runModePanel?._briefingBounds?.x) || width;
     const availableBoardWidth = Math.max(
       this.launchDeckBounds.width,
@@ -2080,27 +2080,27 @@ export class MenuScene {
       row._accent = contract.accent || 0x37f5ff;
       const completionCount = Number(contract.completionCount || 0);
       row._title.text = translateText(contract.shortTitle || contract.title);
-      row._detail.text = translateText(contract.description || contract.modeLabel || 'Mayhem');
+      row._detail.text = translateText('Mayhem only');
       row._progress.text = completionCount > 0
         ? translateText('DONE x{count}', { count: completionCount })
         : translateText('{progress}/{target}', { progress: 0, target: contract.target || 1 });
-      row._title.style.fontSize = Math.round((isMobileLayout ? 10 : 13) * uiScale);
-      row._detail.style.fontSize = Math.round((isMobileLayout ? 8 : 10) * uiScale);
-      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 92 : 104) * uiScale);
+      row._title.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
+      row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
+      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 80 : 92) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
-      row._progress.style.fontSize = Math.round((isMobileLayout ? 9 : 11) * uiScale);
+      row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 12) * uiScale);
       row._title.x = Math.round(13 * uiScale);
-      row._title.y = Math.round(rowHeight * 0.32);
+      row._title.y = Math.round(rowHeight * 0.33);
       row._detail.x = Math.round(13 * uiScale);
-      row._detail.y = Math.round(rowHeight * 0.68);
+      row._detail.y = Math.round(rowHeight * 0.73);
       row._progress.x = row._width - Math.round(11 * uiScale);
-      row._progress.y = Math.round(rowHeight * 0.5);
+      row._progress.y = row._title.y;
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
-      fitTextToWidth(row._title, row._width - Math.round(112 * uiScale), { minScale: 0.68 });
-      fitTextToWidth(row._detail, row._width - Math.round(104 * uiScale), { minScale: 0.64 });
-      fitTextToWidth(row._progress, Math.round(84 * uiScale), { minScale: 0.62 });
+      fitTextToWidth(row._title, row._width - Math.round(88 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._detail, row._width - Math.round(92 * uiScale), { minScale: 0.72 });
+      fitTextToWidth(row._progress, Math.round(68 * uiScale), { minScale: 0.68 });
     });
 
     this.drawMissionBoardPanel();
@@ -2109,25 +2109,28 @@ export class MenuScene {
   drawMissionBoardPanel() {
     if (!this.missionBoardPanel || !this.missionBoardBounds) return;
     const { x, y, width, height } = this.missionBoardBounds;
-    const pulse = 0.5 + Math.sin(this.animationTime * 2.1) * 0.5;
     this.missionBoardPanel.clear();
-    drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.74 }, { color: 0x7fffd8, width: 1.2, alpha: 0.58 });
+    drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.78 }, { color: 0xffd15c, width: 1.2, alpha: 0.52 });
+    drawCutPanel(this.missionBoardPanel, x + 5, y + 5, width - 10, height - 10, 8, { color: 0x061d2c, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
     this.missionBoardPanel.rect(x + 10, y + 9, 3, Math.max(8, height - 18));
-    this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.76 });
+    this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.68 });
     this.missionBoardPanel.rect(x + 18, y + Math.min(height - 16, this.missionBoardBounds.headerHeight || 34), width - 36, 1);
-    this.missionBoardPanel.fill({ color: 0xffffff, alpha: 0.16 });
+    this.missionBoardPanel.fill({ color: 0xffef7e, alpha: 0.18 });
 
     for (const row of this.missionBoardRows || []) {
       if (!row?.visible || !row._bg) continue;
       const w = row._width || 0;
       const h = row._height || 0;
       const accent = row._accent || 0x37f5ff;
+      const progressSlotWidth = Math.min(58, Math.max(46, w * 0.22));
       row._bg.clear();
-      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: 0x061b2a, alpha: 0.68 }, { color: accent, width: 1, alpha: 0.36 });
+      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: 0x061b2a, alpha: 0.72 }, { color: accent, width: 1, alpha: 0.28 });
+      drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: 0.07 });
       row._bg.rect(5, 5, 3, Math.max(6, h - 10));
-      row._bg.fill({ color: accent, alpha: 0.58 + pulse * 0.16 });
-      row._bg.rect(w - 54, h - 6, 40, 2);
-      row._bg.fill({ color: accent, alpha: 0.32 + pulse * 0.1 });
+      row._bg.fill({ color: accent, alpha: 0.46 });
+      drawCutPanel(row._bg, w - progressSlotWidth - 7, 6, progressSlotWidth, Math.max(15, h * 0.42), 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
+      row._bg.rect(12, h - 6, w - 24, 2);
+      row._bg.fill({ color: accent, alpha: 0.16 });
     }
   }
 
@@ -4223,7 +4226,7 @@ export class MenuScene {
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
     if (this.runModeBriefingTitle || this.runModeExplainer) {
       const briefing = this.getRunModeBriefing();
-      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('MISSION BRIEFING') + ' // ' + briefing.title;
+      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + briefing.title;
       if (this.runModeExplainer) this.runModeExplainer.text = briefing.menuBody || briefing.body;
     }
     this.drawSectorStartStepperCue();

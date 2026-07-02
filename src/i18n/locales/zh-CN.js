@@ -11,6 +11,7 @@ const sourceText = Object.freeze({
   "Slow-Mo Finisher": "慢动作终结",
   "Defeat a boss while Slow Time or Chrono Anchor is active.": "在 Slow Time 或 Chrono Anchor 生效时击败 Boss。",
   "Mayhem": "Mayhem",
+  "Mayhem only": "仅限 Mayhem",
   "DONE x{count}": "完成 x{count}",
   "{progress}/{target}": "{progress}/{target}",
   "MISSION COMPLETE: {title}": "任务完成：{title}",

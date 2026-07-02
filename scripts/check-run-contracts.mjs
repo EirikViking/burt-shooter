@@ -191,6 +191,34 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+async function waitForMenu(page) {
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', null, { timeout: 30000 });
+}
+
+async function captureMenuProof(page, { label, width, height, uiScale = 1 }) {
+  await page.setViewportSize({ width, height });
+  await page.evaluate((scale) => {
+    localStorage.setItem('nova_ui_scale_v1', String(scale));
+    localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+  }, uiScale);
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForMenu(page);
+  await page.waitForTimeout(2400);
+  const state = await readState(page);
+  const screenshot = path.join(outputDir, `${label}.png`);
+  await page.screenshot({ path: screenshot, fullPage: true });
+  assertMissionBoardLayout(state.menu);
+  return {
+    label,
+    width,
+    height,
+    uiScale,
+    screenshot,
+    focusedOption: state.menu?.focusedOption || null,
+    state
+  };
+}
+
 function assertInside(bounds, screen, label) {
   assert.ok(bounds?.width > 0 && bounds?.height > 0, `${label}: missing bounds`);
   assert.ok(bounds.x >= -2, `${label}: left edge offscreen`);
@@ -203,6 +231,7 @@ function assertMissionBoardLayout(menu) {
   const screen = menu?.screen;
   const board = menu?.missionBoard;
   assert.ok(screen?.width > 0 && screen?.height > 0, 'menu screen bounds should be exposed');
+  assert.match(menu?.missionBriefing?.title || '', /^RUN MODES \/\/ /, 'run mode panel should avoid Mission wording repetition');
   assert.equal(board?.title, 'MISSION BOARD');
   assert.equal(board?.subtitle, 'Optional goals for your next Mayhem run.');
   assert.equal(board?.rows?.length, 3, 'Mission Board should show exactly three rows');
@@ -215,8 +244,11 @@ function assertMissionBoardLayout(menu) {
     assertInside(row.titleBounds, screen, `${row.id} title`);
     assertInside(row.detailBounds, screen, `${row.id} detail`);
     assertInside(row.progressBounds, screen, `${row.id} progress`);
+    assert.equal(row.detail, 'Mayhem only', `${row.id} should show compact Mayhem-only eligibility`);
     assert.match(row.progress, /^0\/\d+$/, `${row.id} should start incomplete`);
   }
+  assert.ok(Math.abs(board.bounds.x - menu.launchDeck.bounds.x) <= 2, 'Mission Board should align with launch deck x');
+  assert.ok(Math.abs(board.bounds.width - menu.launchDeck.bounds.width) <= 8, 'Mission Board should align with launch deck width');
   assert.ok(board.bounds.y >= menu.launchDeck.bounds.bottom - 6, 'Mission Board should sit below the launch deck');
   assert.ok(board.bounds.bottom <= menu.panel.y + 6, 'Mission Board should stay above the utility dock');
 }
@@ -244,14 +276,24 @@ async function runBrowserSmoke() {
       localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
     });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', null, { timeout: 30000 });
-    await page.waitForTimeout(1200);
-
-    const menuState = await readState(page);
-    assertMissionBoardLayout(menuState.menu);
     mkdirSync(outputDir, { recursive: true });
-    const menuScreenshot = path.join(outputDir, 'mission-board-main-menu.png');
-    await page.screenshot({ path: menuScreenshot, fullPage: true });
+    await waitForMenu(page);
+
+    const menuProofs = [
+      await captureMenuProof(page, { label: 'mission-board-main-menu', width: 1280, height: 720, uiScale: 1 }),
+      await captureMenuProof(page, { label: 'mission-board-steam-deck', width: 1280, height: 800, uiScale: 1 }),
+      await captureMenuProof(page, { label: 'mission-board-1080p-ui150', width: 1920, height: 1080, uiScale: 1.5 })
+    ];
+    const menuState = menuProofs[0].state;
+    const menuScreenshot = menuProofs[0].screenshot;
+
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.evaluate(() => {
+      localStorage.setItem('nova_ui_scale_v1', '1');
+    });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.waitForTimeout(500);
 
     await page.evaluate(async () => {
       await window.__game?.startGame?.(undefined, { runMode: 'ranked' });
@@ -311,7 +353,16 @@ async function runBrowserSmoke() {
       consoleErrors,
       screenshots: {
         menu: menuScreenshot,
-        play: playScreenshot
+        play: playScreenshot,
+        menuResponsive: Object.fromEntries(menuProofs.map((proof) => [
+          proof.label,
+          {
+            path: proof.screenshot,
+            viewport: { width: proof.width, height: proof.height },
+            uiScale: proof.uiScale,
+            focusedOption: proof.focusedOption
+          }
+        ]))
       }
     };
     writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);

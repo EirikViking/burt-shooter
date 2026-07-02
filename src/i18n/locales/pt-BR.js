@@ -11,6 +11,7 @@ const sourceText = Object.freeze({
   "Slow-Mo Finisher": "Finalizador em camera lenta",
   "Defeat a boss while Slow Time or Chrono Anchor is active.": "Derrote um chefe enquanto Slow Time ou Chrono Anchor esta ativo.",
   "Mayhem": "Mayhem",
+  "Mayhem only": "Somente Mayhem",
   "DONE x{count}": "FEITO x{count}",
   "{progress}/{target}": "{progress}/{target}",
   "MISSION COMPLETE: {title}": "MISSAO COMPLETA: {title}",

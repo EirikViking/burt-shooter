@@ -11,6 +11,7 @@ const sourceText = Object.freeze({
   "Slow-Mo Finisher": "슬로모 피니셔",
   "Defeat a boss while Slow Time or Chrono Anchor is active.": "Slow Time 또는 Chrono Anchor가 활성화된 동안 보스를 격파하세요.",
   "Mayhem": "Mayhem",
+  "Mayhem only": "Mayhem 전용",
   "DONE x{count}": "완료 x{count}",
   "{progress}/{target}": "{progress}/{target}",
   "MISSION COMPLETE: {title}": "미션 완료: {title}",
