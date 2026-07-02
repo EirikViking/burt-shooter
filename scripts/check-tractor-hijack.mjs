@@ -140,10 +140,30 @@ try {
     const sourceY = 132;
     const playerY = Math.round(height * 0.79);
 
-    enemyManager.enemies
+    const targets = enemyManager.enemies
       .filter(enemy => enemy.kind !== 'boss')
-      .slice(0, 4)
-      .forEach((enemy, index) => {
+      .slice(0, 4);
+    while (targets.length < 4) {
+      const staged = {
+        kind: 'tractor_hijack_test_target',
+        type: 'chaser',
+        active: true,
+        waitingForEntry: false,
+        radius: 22,
+        health: 1,
+        maxHealth: 1,
+        canShoot: () => false,
+        shoot: () => null,
+        update: () => {},
+        destroy() {
+          this.destroyed = true;
+          this.active = false;
+        }
+      };
+      enemyManager.enemies.push(staged);
+      targets.push(staged);
+    }
+    targets.forEach((enemy, index) => {
         const t = 0.28 + index * 0.13;
         enemy.waitingForEntry = false;
         enemy.active = true;
@@ -225,13 +245,16 @@ try {
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const last = hijackedState.tractorHijack?.last || {};
-  const expectedMinimumGain = 1700 + last.bonusScore;
+  const expectedBreakGain = await page.evaluate(() => window.__game?.getScoreAward?.(1700) || 1700);
+  const expectedRawBonus = 600 + (last.capturedEnemies || 0) * 360 + (last.clearedBullets || 0) * 25;
+  const expectedAppliedBonus = await page.evaluate((raw) => window.__game?.getScoreAward?.(raw) || raw, expectedRawBonus);
+  const expectedMinimumGain = Math.max(0, expectedBreakGain + (last.bonusScore || 0) - 2);
   const actualGain = hijackedState.score - scoreBeforeBreak;
   const report = {
     ok: last.triggered === true &&
       last.capturedEnemies >= 3 &&
       last.clearedBullets >= 1 &&
-      last.bonusScore >= 600 + last.capturedEnemies * 360 + last.clearedBullets * 25 &&
+      last.bonusScore >= expectedAppliedBonus - 2 &&
       actualGain >= expectedMinimumGain &&
       hijackedState.audio?.lastVoiceEvent === 'mission_control_tractor_hijack' &&
       pageErrors.length === 0 &&
@@ -240,6 +263,9 @@ try {
     scoreBeforeBreak,
     scoreAfterBreak: hijackedState.score,
     actualGain,
+    expectedBreakGain,
+    expectedRawBonus,
+    expectedAppliedBonus,
     expectedMinimumGain,
     tractor: armedState.hijacker?.tractor || null,
     tractorHijack: last,

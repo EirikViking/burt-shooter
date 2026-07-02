@@ -1,5 +1,20 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-02 Boss VFX And Hijacker Voice Polish
+
+- Current request: implement the recommended low-risk boss attack animation polish, plus a slice of attack-family animation templates, fix the Hijacker beam warning voice overlap, then deploy to Steam.
+- Implementation direction: keep boss hitboxes, arming windows, bullet counts, score, XP, and balance unchanged; enrich the existing boss telegraph/hazard graphics with animated charge nodes, ring arcs, muzzle charge motifs, wall sweeps, and release-front highlights.
+- Hijacker root cause: `mission_control_hijacker` was played with only a normal cooldown while the tractor-hijack payoff already used a hard exclusive voice request, so the spawn/beam warning could coexist with non-announcer voice lines.
+- Hijacker fix direction: make the Hijacker warning a combat-critical exclusive announcer callout that stops current voices and reserves a short voice lock.
+- Verification direction: run focused boss VFX/hazard checks, Hijacker voice/tractor checks, release-line before any Steam packaging, then package/upload only if gates pass.
+
+## 2026-07-02 Elite Codex Destroyed Hotfix
+
+- Current request: surgical fix for Threat Codex elite detail panels showing `Destroyed: 0` for every elite despite high encounter counts.
+- Root cause: elite spawns were discovered under the `elites` Codex category, but the enemy death path queued non-boss defeats under `enemies`, so elite `timesDefeated` never reached the bucket rendered by the Elites tab.
+- Implementation direction: route elite middle ship kills into the `elites` defeat bucket, include elites in the first-defeat seen-key cache, and mirror old elite defeat counts that were saved under `enemies` into `elites` during Threat Discovery normalization so existing profiles display sane counts.
+- Verification direction: extend `npm run check:threat-codex` with a legacy repair regression and run focused Codex/build checks. No deploy or Steamworks change requested.
+
 ## 2026-07-02 Difficulty And Score Nudge
 
 - Current request: further reduce overall difficulty by 5% and increase overall score/points by 15%.

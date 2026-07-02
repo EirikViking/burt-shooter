@@ -162,6 +162,7 @@
     "check:normal-wave-runtime-lethality": "node scripts/check-normal-wave-runtime-lethality.mjs",
     "check:early-mid-wave-tighten": "node scripts/check-early-mid-wave-tighten.mjs",
     "check:hijacker-tractor": "node scripts/check-hijacker-tractor.mjs",
+    "check:hijacker-voice-exclusivity": "node scripts/check-hijacker-voice-exclusivity.mjs",
     "check:tractor-hijack": "node scripts/check-tractor-hijack.mjs",
     "check:hijacker-spawn-cadence": "node scripts/check-hijacker-spawn-cadence.mjs",
     "check:intro-voice": "node scripts/check-intro-voice-exclusivity.mjs",

@@ -5714,6 +5714,9 @@ export class PlayScene {
         bypassEventCooldown: true,
         bypassGlobalCooldown: true,
         cooldownMs: 26000,
+        exclusiveLockMs: 1500,
+        exclusiveLockReason: 'tractor_hijack_payoff',
+        voicePriority: 100,
         duckMs: 1300
       });
       this.screenShake?.shake(width < 620 ? 5 : 8, 16);
@@ -6064,6 +6067,17 @@ export class PlayScene {
         layer.lineTo(hazard.sourceX + Math.cos(a) * (outer + 6), hazard.sourceY + Math.sin(a) * (outer + 6));
       }
       layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.42 * alpha });
+      const snap = Math.min(1, progress * 1.24);
+      const snapRadius = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * snap;
+      layer.circle(hazard.sourceX, hazard.sourceY, snapRadius);
+      layer.stroke({ color: hotColor, width: 4 + shimmer * 3, alpha: 0.26 * alpha });
+      for (let i = 0; i < 4; i += 1) {
+        const start = progress * 2.2 + i * Math.PI * 0.5;
+        const end = start + 0.34 + progress * 0.22;
+        const r = inner + (outer - inner) * (0.35 + i * 0.13);
+        layer.arc(hazard.sourceX, hazard.sourceY, r, start, end);
+      }
+      layer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 * alpha });
       return;
     }
 
@@ -6175,6 +6189,30 @@ export class PlayScene {
       }
       layer.fill({ color: hotColor, alpha: 0.18 * alpha });
     }
+
+    const front = Math.min(1, 0.08 + progress * 1.08);
+    const frontX = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * front;
+    const frontY = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * front;
+    const frontPx = -Math.sin(hazard.angle);
+    const frontPy = Math.cos(hazard.angle);
+    const frontWidth = hazard.kind === 'beam'
+      ? Math.max(20, (hazard.radius || 13) * 2.4)
+      : Math.max(18, hazard.length * front * Math.sin(half) * 0.34);
+    layer.moveTo(frontX - frontPx * frontWidth, frontY - frontPy * frontWidth);
+    layer.lineTo(frontX + frontPx * frontWidth, frontY + frontPy * frontWidth);
+    layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 4.2 : 2.8, alpha: 0.3 * alpha });
+    const nodeCount = hazard.kind === 'beam' ? 5 : 7;
+    for (let i = 0; i < nodeCount; i += 1) {
+      const t = ((progress * 1.35 + i / nodeCount) % 1);
+      const x = hazard.sourceX + Math.cos(hazard.angle) * hazard.length * (0.12 + t * 0.78);
+      const y = hazard.sourceY + Math.sin(hazard.angle) * hazard.length * (0.12 + t * 0.78);
+      const widthAtT = hazard.kind === 'beam'
+        ? Math.max(8, (hazard.radius || 13) * 0.78)
+        : Math.max(6, hazard.length * (0.12 + t * 0.78) * Math.sin(half) * 0.16);
+      const side = i % 2 === 0 ? -1 : 1;
+      layer.circle(x + frontPx * widthAtT * side, y + frontPy * widthAtT * side, 2.4 + shimmer * 2.2);
+    }
+    layer.fill({ color: hotColor, alpha: 0.16 * alpha });
 
     layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 14 + shimmer * 5 : 11 + shimmer * 4);
     layer.fill({ color, alpha: 0.24 * alpha });
@@ -7887,7 +7925,7 @@ export class PlayScene {
     if (!RunPacingConfig.threatCodexEnabled || !this.game?.isRankedRun?.()) return seen;
     try {
       const items = readThreatDiscoveryState()?.items || {};
-      for (const category of ['enemies', 'bosses']) {
+      for (const category of ['enemies', 'elites', 'bosses']) {
         const bucket = items[category] || {};
         for (const [id, item] of Object.entries(bucket)) {
           if ((Number(item?.timesDefeated) || 0) > 0) seen.add(`${category}:${id}`);
@@ -8297,9 +8335,18 @@ export class PlayScene {
         sector: this.game.level
       });
     } else {
-      this.queueThreatDefeat(enemy?.type, 'enemies', {
-        name: enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || enemy?.type,
-        role: enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy',
+      const isEliteMiddleShip = enemy?.kind === 'elite_middle_ship' || enemy?.isEliteMiddleShip || Boolean(enemy?.middleShipProfile);
+      const threatCategory = isEliteMiddleShip ? 'elites' : 'enemies';
+      const threatId = isEliteMiddleShip
+        ? (enemy?.middleShipProfile?.id || enemy?.type)
+        : enemy?.type;
+      this.queueThreatDefeat(threatId, threatCategory, {
+        name: isEliteMiddleShip
+          ? (enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId)
+          : (enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId),
+        role: isEliteMiddleShip
+          ? (enemy?.middleShipProfile?.role || 'elite')
+          : (enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'),
         sector: this.game.level
       });
       for (const entry of getBossSupportCodexDefeatEntries(enemy, this.game.level)) {

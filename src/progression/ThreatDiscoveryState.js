@@ -227,6 +227,47 @@ function getCatalogIndex() {
   return catalogIndex;
 }
 
+function repairLegacyEliteDefeatStats(state) {
+  const enemyBucket = state.items?.enemies || {};
+  const eliteBucket = state.items?.elites || {};
+  if (!enemyBucket || typeof enemyBucket !== 'object') return state;
+
+  const index = getCatalogIndex();
+  let changed = false;
+  for (const [id, legacyEnemyItem] of Object.entries(enemyBucket)) {
+    const catalogEntry = index.get(id);
+    if (catalogEntry?.category !== 'elites') continue;
+    const legacyDefeats = Math.max(0, Math.floor(Number(legacyEnemyItem?.timesDefeated) || 0));
+    if (legacyDefeats <= 0) continue;
+
+    const existingEliteItem = eliteBucket[id] || null;
+    const eliteItem = existingEliteItem || normalizeItem({
+      ...legacyEnemyItem,
+      id,
+      category: 'elites',
+      name: catalogEntry.name || legacyEnemyItem?.name || id,
+      timesSeen: Math.max(
+        1,
+        Math.floor(Number(legacyEnemyItem?.timesSeen) || 0),
+        legacyDefeats
+      )
+    }, { id, category: 'elites', name: catalogEntry.name || id });
+
+    const previousDefeats = Math.max(0, Math.floor(Number(eliteItem.timesDefeated) || 0));
+    eliteItem.timesDefeated = Math.max(previousDefeats, legacyDefeats);
+    eliteItem.timesSeen = Math.max(
+      Math.max(0, Math.floor(Number(eliteItem.timesSeen) || 0)),
+      Math.floor(Number(legacyEnemyItem?.timesSeen) || 0),
+      1
+    );
+    eliteBucket[id] = eliteItem;
+    changed = changed || !existingEliteItem || eliteItem.timesDefeated !== previousDefeats;
+  }
+
+  if (changed) state.items.elites = eliteBucket;
+  return state;
+}
+
 function getEarnedPilotRankIds(progress = {}, index = new Map()) {
   const candidates = [
     progress.highestPilotRank,
@@ -326,6 +367,7 @@ export function normalizeThreatDiscoveryState(raw = {}) {
         .map(([id, item]) => [id, normalizeItem(item, { id, category })])
     );
   }
+  repairLegacyEliteDefeatStats(state);
   state.discoveriesThisRun = Array.isArray(raw?.discoveriesThisRun) ? raw.discoveriesThisRun.slice(-80) : [];
   state.recentRunThemes = Array.isArray(raw?.recentRunThemes) ? raw.recentRunThemes.slice(-8) : [];
   state.lastViewedCodexDiscoverySignature = normalizeViewedSignature(raw?.lastViewedCodexDiscoverySignature);

@@ -4152,8 +4152,17 @@ export class EnemyManager {
     this.hijacker = new Hijacker(spawnX, spawnY, this.level, this.game);
     this.container.addChild(this.hijacker.sprite);
 
-    // Play spawn audio
-    AudioManager.playVoice('mission_control_hijacker', { cooldownMs: 24000, duckMs: 1500 });
+    // The Hijacker warning is a combat-critical callout, so keep it out of voice pileups.
+    AudioManager.playVoice('mission_control_hijacker', {
+      cooldownMs: 24000,
+      eventCooldownMs: 24000,
+      duckMs: 1500,
+      stopOtherVoices: true,
+      exclusiveGroup: 'announcer',
+      exclusiveLockMs: 1700,
+      exclusiveLockReason: 'hijacker_warning',
+      voicePriority: 80
+    });
 
     // Show toast
     if (this.game.scenes.play) {

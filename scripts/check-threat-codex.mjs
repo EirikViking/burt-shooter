@@ -11,6 +11,7 @@ import {
   getDiscoveryStats,
   getThreatCodexState,
   invalidateThreatDiscoveryStateCache,
+  recordThreatDefeatedBatch,
   recordThreatSeen,
   resetDiscoveryStateForTests
 } from '../src/progression/ThreatDiscoveryState.js';
@@ -173,6 +174,60 @@ if (!legacyRestoredState.items?.pilotRanks?.pilot_rank_18) fail('Threat Codex sh
 fakeStorage.delete(LEGACY_UNLOCK_PROGRESS_KEY);
 resetDiscoveryStateForTests();
 
+const eliteProbe = catalog.elites?.[0];
+if (!eliteProbe?.id) fail('Threat Codex should include an elite probe entry for defeat-stat checks');
+if (eliteProbe?.id) {
+  const eliteProbeId = eliteProbe.id;
+  fakeStorage.set(THREAT_DISCOVERY_KEY, JSON.stringify({
+    version: 1,
+    items: {
+      enemies: {
+        [eliteProbeId]: {
+          id: eliteProbeId,
+          category: 'enemies',
+          name: eliteProbe.name,
+          timesSeen: 0,
+          timesDefeated: 7
+        }
+      },
+      elites: {
+        [eliteProbeId]: {
+          id: eliteProbeId,
+          category: 'elites',
+          name: eliteProbe.name,
+          timesSeen: 433,
+          timesDefeated: 0
+        }
+      }
+    },
+    discoveriesThisRun: [],
+    recentRunThemes: [],
+    unreadIds: [],
+    updatedAt: new Date(Date.UTC(2026, 6, 2)).toISOString()
+  }));
+  invalidateThreatDiscoveryStateCache();
+  const repairedEliteState = getThreatCodexState();
+  const repairedElite = repairedEliteState.items?.elites?.[eliteProbeId];
+  if ((repairedElite?.timesDefeated || 0) !== 7) {
+    fail(`legacy elite defeat counts should display under elites, got ${repairedElite?.timesDefeated || 0}`);
+  }
+  if ((repairedElite?.timesSeen || 0) !== 433) {
+    fail(`legacy elite repair should preserve elite encounter counts, got ${repairedElite?.timesSeen || 0}`);
+  }
+
+  resetDiscoveryStateForTests();
+  recordThreatSeen(eliteProbeId, 'elites', { name: eliteProbe.name });
+  recordThreatDefeatedBatch([{ threatId: eliteProbeId, category: 'elites', metadata: { name: eliteProbe.name } }]);
+  const defeatedEliteState = getThreatCodexState();
+  if ((defeatedEliteState.items?.elites?.[eliteProbeId]?.timesDefeated || 0) !== 1) {
+    fail('elite defeats should be recorded in the elites Codex bucket');
+  }
+  if ((defeatedEliteState.items?.enemies?.[eliteProbeId]?.timesDefeated || 0) !== 0) {
+    fail('new elite defeats should not be recorded in the enemies Codex bucket');
+  }
+  resetDiscoveryStateForTests();
+}
+
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
 if (!seen.isNew) fail('new discovery should be marked new');
 const completion = getCodexCompletionCounts(catalog);
@@ -187,8 +242,15 @@ if (getDiscoveryStats().unreadCount !== 0) fail('opening Threat Codex should cle
 const menuSource = readFileSync('src/scenes/MenuScene.js', 'utf8');
 const gameSource = readFileSync('src/game/Game.js', 'utf8');
 const sceneSource = readFileSync('src/scenes/ThreatCodexScene.js', 'utf8');
+const playSource = readFileSync('src/scenes/PlayScene.js', 'utf8');
 if (!menuSource.includes('THREAT CODEX')) fail('Threat Codex must be visible in main menu');
 if (!gameSource.includes('showThreatCodex')) fail('Game must expose showThreatCodex');
+if (!playSource.includes("const threatCategory = isEliteMiddleShip ? 'elites' : 'enemies'")) {
+  fail('elite middle ship kills should queue defeats into the elites Codex bucket');
+}
+if (!playSource.includes("['enemies', 'elites', 'bosses']")) {
+  fail('defeat seen-key cache should include elites so first-defeat scoring stays stable');
+}
 for (const token of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'pointerdown', 'gamepad', 'PageUp', 'PageDown', 'wheelNavigation', 'entryScroll']) {
   if (!sceneSource.includes(token)) fail(`ThreatCodexScene missing ${token} navigation support`);
 }

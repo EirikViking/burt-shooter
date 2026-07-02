@@ -146,6 +146,7 @@ try {
   await page.waitForTimeout(500);
   const pulledState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const scoreBeforeBreak = pulledState.score;
+  const expectedBreakScore = await page.evaluate(() => window.__game?.getScoreAward?.(1700) || 1700);
 
   await page.evaluate(() => {
     const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
@@ -168,7 +169,7 @@ try {
       Number.isFinite(yBeforePull) &&
       Number.isFinite(yAfterPull) &&
       yAfterPull < yBeforePull &&
-      brokenState.score >= scoreBeforeBreak + 1700 &&
+      brokenState.score >= scoreBeforeBreak + expectedBreakScore &&
       pageErrors.length === 0 &&
       consoleWarningsOrErrors.length === 0,
     baseUrl,
@@ -176,6 +177,7 @@ try {
     yAfterPull,
     scoreBeforeBreak,
     scoreAfterBreak: brokenState.score,
+    expectedBreakScore,
     tractor: activeState.hijacker?.tractor || null,
     pageErrors,
     consoleWarningsOrErrors,

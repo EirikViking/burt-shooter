@@ -1622,7 +1622,11 @@ async function init() {
       document.body.dataset.menuReady = '1';
     }
     syncSteamCloudRendererState().catch(() => {});
-    applyDisplaySettings(getDisplaySettings()).catch(() => {});
+    const displaySettings = getDisplaySettings();
+    const hasDisplayBridge = Boolean(window.__novaDisplay?.applySettings);
+    if (hasDisplayBridge || displaySettings.mode !== 'fullscreen') {
+      applyDisplaySettings(displaySettings).catch(() => {});
+    }
     if (isAutoStartEnabled() && !autoStartTriggered) {
       autoStartTriggered = true;
       setTimeout(() => {

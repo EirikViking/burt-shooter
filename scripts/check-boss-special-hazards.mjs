@@ -133,6 +133,7 @@ try {
       play.bossHazards = [];
       play.lastBossHazardHit = null;
       play.bossMercyUntilMs = 0;
+      play.resetBossLifeLossCap?.('boss_special_hazards_case');
       play.lastBossMercyBlockLogAt = 0;
       play.lastBossMercyFeedbackAt = 0;
       play.lastHitAt = 0;
@@ -149,7 +150,7 @@ try {
       play.updateBossHazards(1);
       return {
         name,
-        ok: game.lives === beforeLives - 1 && Boolean(play.lastBossHazardHit),
+        ok: game.lives === beforeLives - 1 && Boolean(hazard?.hit),
         livesBefore: beforeLives,
         livesAfter: game.lives,
         hazard: hazard ? {
