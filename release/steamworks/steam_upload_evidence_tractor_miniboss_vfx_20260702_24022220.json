@@ -1,0 +1,96 @@
+{
+  "schema": "nova-swarm-steam-upload-evidence.v1",
+  "createdAt": "2026-07-02T14:26:50Z",
+  "branch": "codex/tractor-miniboss-vfx-20260702",
+  "sourceCommit": "646881773d7f0346fa965a57ec804c4bec8a7e2b",
+  "sourceCommitShort": "6468817",
+  "sourceCommitMessage": "Polish tractor and mini-boss attack VFX",
+  "requestScope": "visual-only tractor beam ship and mini-boss attack VFX polish, then private Steam upload",
+  "build": {
+    "version": "v2026-07-02_16-14-15",
+    "timestamp": "2026-07-02T14:14:15.039Z",
+    "description": "Nova Swarm tractor mini-boss VFX 6468817"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24022220",
+    "setLive": "",
+    "branchAssignment": "none",
+    "uploadMode": "private-unassigned",
+    "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "uploadLogPath": "release/steamworks/steam_upload_console_20260702_tractor_miniboss_vfx.log"
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "b15b846dab741769510f77cc4f933feeb69a280419e5a6b5242947c1c4d490e2",
+    "manifestFileSha256": "15f3c4ec41f1973d67cd738f0c6f8a9ffeec89c27ffbdb19340ae6818d6b3d3e",
+    "fileCount": 336,
+    "totalBytes": 915919148,
+    "executableSha256": "0e43229c65f733a923aee5060e780609252cd358ebfa3c508fa88d37c3479856"
+  },
+  "verification": {
+    "sourceChecks": [
+      "git diff --check",
+      "node --check src/entities/Hijacker.js",
+      "node --check src/entities/Enemy.js",
+      "npm run check:tractor-miniboss-vfx",
+      "npm run check:elite-ships",
+      "npm run check:hijacker-voice-exclusivity",
+      "npm run capture:elite-middle-ships",
+      "npm run check:tractor-hijack",
+      "npm run build:current",
+      "npm run check:hijacker-tractor",
+      "npm run check:tractor-hijack",
+      "npm run check:i18n-ui",
+      "npm run check:boss-vfx-clarity",
+      "develop-web-game client smoke"
+    ],
+    "releaseChecks": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run desktop:smoke:current",
+      "npm run check:desktop-package",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf"
+    ],
+    "reportPaths": {
+      "eliteCapture": "test-results/elite-middle-ships/2026-07-02T14-06-20-385Z/report.json",
+      "hijackerTractor": "test-results/hijacker-tractor-2026-07-02T14-09-26-976Z/report.json",
+      "tractorHijack": "test-results/tractor-hijack-2026-07-02T14-09-26-982Z/report.json",
+      "i18nUi": "test-results/i18n-ui-2026-07-02T14-09-27-000Z",
+      "webGameClient": "test-results/web-game-client-tractor-miniboss-vfx/screens/state-2.json",
+      "steamSdkReady": "test-results/steam-sdk-ready-2026-07-02T14-14-14-204Z/report.json",
+      "steamPackageRuntime": "test-results/steam-package-runtime-2026-07-02T14-24-13-442Z/report.json",
+      "packagedSmoke": "test-results/packaged-exe-smoke-2026-07-02T14-20-07-845Z/report.json",
+      "packagedControls": "test-results/packaged-control-smoke-2026-07-02T14-20-59-062Z/report.json",
+      "packagedPerf": "test-results/packaged-perf-smoke-2026-07-02T14-21-28-299Z/report.json",
+      "currentElectronSmoke": "test-results/electron-smoke-2026-07-02T14-22-53-548Z/report.json",
+      "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+    }
+  },
+  "safety": {
+    "steamworksSettingsChanged": false,
+    "storeMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudPathsChanged": false,
+    "saveFormatChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "balanceChanged": false,
+    "newNetworkRuntimeCalls": false,
+    "elevenLabsUsed": false,
+    "notes": [
+      "VFX changes are rendered from existing runtime states and do not alter hitboxes, ability timing, pull strength, projectile counts, damage, score, XP, or cooldowns.",
+      "SteamCMD upload succeeded with cached credentials and blank SetLive, so the build is private/unassigned until manually routed in Steamworks."
+    ]
+  }
+}
