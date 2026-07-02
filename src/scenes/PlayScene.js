@@ -5984,6 +5984,113 @@ export class PlayScene {
     });
   }
 
+  getBossHazardVfxPalette(hazard, fallbackColor = 0xfff45c) {
+    if (hazard?.kind === 'beam' || hazard?.type === 'lance' || hazard?.attack === 'sniper') {
+      return { base: 0x72fff1, hot: 0xffffff, edge: 0xff4fe4 };
+    }
+    if (hazard?.kind === 'wall' || hazard?.type === 'wall') {
+      return { base: 0xff8f3d, hot: 0xffffff, edge: 0x8cffb5 };
+    }
+    if (hazard?.kind === 'ring' || ['ring', 'adds', 'radial', 'spiral', 'clock', 'chord'].includes(hazard?.type)) {
+      return { base: fallbackColor || 0xff3355, hot: 0xffffff, edge: 0xffe066 };
+    }
+    return { base: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0xffa83d };
+  }
+
+  drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress) {
+    if (!layer || !hazard) return;
+    const shimmer = 0.5 + Math.sin(Date.now() * 0.08) * 0.5;
+    const radius = hazard.kind === 'beam'
+      ? Math.max(22, (hazard.radius || 13) * 2.4)
+      : Math.max(18, (hazard.radius || 24) * 1.25);
+    const pulse = 0.78 + shimmer * 0.22 + progress * 0.18;
+
+    for (let i = 0; i < 3; i += 1) {
+      layer.circle(hazard.sourceX, hazard.sourceY, radius * (0.58 + i * 0.34 + progress * 0.18) * pulse);
+      layer.stroke({
+        color: i === 1 ? palette.edge : palette.base,
+        width: 2.2 + progress * 2.8,
+        alpha: (0.18 + progress * 0.22) * alpha / (1 + i * 0.18)
+      });
+    }
+
+    const spokes = hazard.kind === 'beam' ? 14 : 10;
+    const rotation = Date.now() * 0.004;
+    for (let i = 0; i < spokes; i += 1) {
+      const a = (Math.PI * 2 * i) / spokes + rotation;
+      const inner = radius * 0.5;
+      const outer = radius * (1.08 + progress * 0.45 + (i % 2) * 0.18);
+      layer.moveTo(hazard.sourceX + Math.cos(a) * inner, hazard.sourceY + Math.sin(a) * inner);
+      layer.lineTo(hazard.sourceX + Math.cos(a) * outer, hazard.sourceY + Math.sin(a) * outer);
+    }
+    layer.stroke({ color: palette.hot, width: 1.5 + progress * 2, alpha: 0.18 * alpha + progress * 0.18 * alpha });
+  }
+
+  drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress) {
+    if (!layer || !hazard) return;
+    const shimmer = 0.5 + Math.sin(Date.now() * 0.065) * 0.5;
+
+    if (hazard.kind === 'wall') {
+      const h = Math.max(1, hazard.endY - hazard.startY);
+      const y = hazard.startY + h * Math.min(0.96, 0.08 + progress * 0.84);
+      for (const x of hazard.columns || []) {
+        layer.roundRect(x - hazard.width * 1.65, y - 10, hazard.width * 3.3, 20, 10);
+        layer.fill({ color: palette.edge, alpha: (0.1 + progress * 0.16) * alpha });
+        layer.roundRect(x - hazard.width, y - 4, hazard.width * 2, 8, 5);
+        layer.fill({ color: palette.hot, alpha: (0.18 + shimmer * 0.16) * alpha });
+        for (const side of [-1, 1]) {
+          layer.moveTo(x + side * hazard.width * 1.1, y - 22);
+          layer.lineTo(x + side * hazard.width * 2.2, y - 6);
+        }
+      }
+      layer.stroke({ color: palette.hot, width: 1.6 + progress * 1.2, alpha: 0.2 * alpha });
+      return;
+    }
+
+    if (hazard.kind === 'ring') {
+      const range = Math.max(1, hazard.outerRadius - hazard.innerRadius);
+      const wave = hazard.innerRadius + range * Math.min(1, 0.12 + progress * 1.05);
+      layer.circle(hazard.sourceX, hazard.sourceY, wave);
+      layer.stroke({ color: palette.hot, width: 5 + shimmer * 4, alpha: 0.18 * alpha });
+      for (let i = 0; i < 5; i += 1) {
+        const start = progress * 2.6 + i * 1.22;
+        const radius = hazard.innerRadius + range * (0.18 + i * 0.16);
+        layer.arc(hazard.sourceX, hazard.sourceY, radius, start, start + 0.45 + shimmer * 0.18);
+      }
+      layer.stroke({ color: palette.edge, width: 2.4, alpha: 0.22 * alpha });
+      return;
+    }
+
+    const angle = hazard.angle || 0;
+    const half = Math.max(0.01, (hazard.spread || 0.12) / 2);
+    const t = Math.min(1, 0.1 + progress * 1.05);
+    const cx = hazard.sourceX + Math.cos(angle) * hazard.length * t;
+    const cy = hazard.sourceY + Math.sin(angle) * hazard.length * t;
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
+    const frontWidth = hazard.kind === 'beam'
+      ? Math.max(24, (hazard.radius || 13) * 3.2)
+      : Math.max(22, hazard.length * t * Math.sin(half) * 0.42);
+    layer.moveTo(cx - px * frontWidth, cy - py * frontWidth);
+    layer.lineTo(cx + px * frontWidth, cy + py * frontWidth);
+    layer.stroke({ color: palette.hot, width: hazard.kind === 'beam' ? 7 : 4.5, alpha: 0.28 * alpha });
+    layer.moveTo(cx - px * frontWidth * 0.7, cy - py * frontWidth * 0.7);
+    layer.lineTo(cx + px * frontWidth * 0.7, cy + py * frontWidth * 0.7);
+    layer.stroke({ color: palette.edge, width: hazard.kind === 'beam' ? 3.4 : 2.4, alpha: 0.42 * alpha });
+
+    const chevrons = hazard.kind === 'beam' ? 5 : 4;
+    for (let i = 0; i < chevrons; i += 1) {
+      const ct = Math.min(0.98, t - 0.035 * i);
+      const x = hazard.sourceX + Math.cos(angle) * hazard.length * ct;
+      const y = hazard.sourceY + Math.sin(angle) * hazard.length * ct;
+      const size = 12 + shimmer * 5 + i * 2;
+      layer.moveTo(x - Math.cos(angle) * size + px * size * 0.62, y - Math.sin(angle) * size + py * size * 0.62);
+      layer.lineTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+      layer.lineTo(x - Math.cos(angle) * size - px * size * 0.62, y - Math.sin(angle) * size - py * size * 0.62);
+    }
+    layer.stroke({ color: palette.base, width: 2.2, alpha: 0.28 * alpha });
+  }
+
   drawBossHazard(hazard, progress) {
     const layer = this.bossHazardLayer;
     if (!layer) return;
@@ -5992,11 +6099,8 @@ export class PlayScene {
     const pulse = 1 + Math.sin(now * 0.05) * 0.08;
     const shimmer = 0.5 + Math.sin(now * 0.07) * 0.5;
     const color = hazard.color || 0xfff45c;
-    const hotColor = hazard.kind === 'beam'
-      ? 0x9cfff7
-      : hazard.kind === 'ring' || hazard.kind === 'wall'
-        ? 0xffe066
-        : 0xffffff;
+    const palette = this.getBossHazardVfxPalette(hazard, color);
+    const hotColor = palette.hot;
 
     if (hazard.kind === 'wall') {
       for (const x of hazard.columns || []) {
@@ -6023,6 +6127,7 @@ export class PlayScene {
         layer.lineTo(x + hazard.width * 0.62, hazard.endY);
       }
       layer.stroke({ color: hotColor, width: 1.8, alpha: 0.44 * alpha });
+      this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
       return;
     }
 
@@ -6078,6 +6183,7 @@ export class PlayScene {
         layer.arc(hazard.sourceX, hazard.sourceY, r, start, end);
       }
       layer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 * alpha });
+      this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
       return;
     }
 
@@ -6201,6 +6307,7 @@ export class PlayScene {
     layer.moveTo(frontX - frontPx * frontWidth, frontY - frontPy * frontWidth);
     layer.lineTo(frontX + frontPx * frontWidth, frontY + frontPy * frontWidth);
     layer.stroke({ color: 0xffffff, width: hazard.kind === 'beam' ? 4.2 : 2.8, alpha: 0.3 * alpha });
+    this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
     const nodeCount = hazard.kind === 'beam' ? 5 : 7;
     for (let i = 0; i < nodeCount; i += 1) {
       const t = ((progress * 1.35 + i / nodeCount) % 1);
@@ -6214,6 +6321,7 @@ export class PlayScene {
     }
     layer.fill({ color: hotColor, alpha: 0.16 * alpha });
 
+    this.drawBossHazardMuzzleBurst(layer, hazard, palette, alpha, progress);
     layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 14 + shimmer * 5 : 11 + shimmer * 4);
     layer.fill({ color, alpha: 0.24 * alpha });
     layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 6 + shimmer * 3 : 5 + shimmer * 2);

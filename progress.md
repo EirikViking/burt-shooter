@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-02 Boss VFX Clarity Pass
+
+- Current request: make the boss attack animation improvements more obvious while staying safe.
+- Implementation direction: visual-only stronger boss-local charge halos, attack-family color accents, release gates, muzzle bursts, and active hazard release pulses for beams/cones, rings, and walls. Do not change attack timing, hitboxes, bullet counts, score, XP, balance, Steamworks, packaging, or deploy state.
+- Verification direction: add `npm run check:boss-vfx-clarity`, run existing boss telegraph/hazard/capture checks, inspect screenshots, and run build/current checks. No Steam upload requested for this pass.
+- Verification: `git diff --check`, `npm run check:boss-vfx-clarity`, `npm run check:boss-telegraph`, `npm run check:boss-special-hazards`, `npm run check:boss-animation`, `npm run capture:boss-vfx-polish`, `npm run build:current`, and `npm run check:i18n-ui` passed. Visual inspection confirmed the new charge halos/gates are obvious and the corrected active beam capture shows a real `kind: "beam"` hazard with the player outside the lane. The generic develop-web-game client reached gameplay and wrote state/screenshots; one later screenshot was black due the known generic WebGL capture flake, so boss-specific Playwright captures remain the visual proof.
+
 ## 2026-07-02 Boss VFX And Hijacker Voice Polish
 
 - Current request: implement the recommended low-risk boss attack animation polish, plus a slice of attack-family animation templates, fix the Hijacker beam warning voice overlap, then deploy to Steam.

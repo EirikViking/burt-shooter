@@ -121,6 +121,7 @@
     "check:early-boss-difficulty-relief": "node scripts/check-early-boss-difficulty-relief.mjs",
     "check:boss-phase-variety": "node scripts/check-boss-phase-variety.mjs",
     "check:boss-animation": "node scripts/check-boss-animation.mjs",
+    "check:boss-vfx-clarity": "node scripts/check-boss-vfx-clarity.mjs",
     "check:boss-warning-popup": "node scripts/check-boss-warning-popup.mjs",
     "check:boss-movement-variety": "node scripts/check-boss-movement-variety.mjs",
     "check:boss-special-hazards": "node scripts/check-boss-special-hazards.mjs",

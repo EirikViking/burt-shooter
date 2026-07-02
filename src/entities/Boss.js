@@ -1773,6 +1773,96 @@ export class Boss {
     layer.fill({ color: 0xffffff, alpha: 0.08 + charge * 0.14 });
   }
 
+  getTelegraphVfxPalette(type, fallbackColor) {
+    if (type === 'lance') return { warning: 0x72fff1, hot: 0xffffff, edge: 0xff4fe4 };
+    if (type === 'mirror') return { warning: 0xff6fff, hot: 0xffffff, edge: 0x74fff0 };
+    if (type === 'cone' || type === 'fan' || type === 'aim') return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0xffa83d };
+    if (type === 'wall') return { warning: 0xff8f3d, hot: 0xffffff, edge: 0x8cffb5 };
+    if (type === 'ring' || type === 'adds' || type === 'radial') return { warning: fallbackColor || 0xff3355, hot: 0xffffff, edge: 0xffe066 };
+    return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0x72fff1 };
+  }
+
+  drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.032) * 0.5;
+    const warning = palette?.warning || 0xfff45c;
+    const hot = palette?.hot || 0xffffff;
+    const edge = palette?.edge || warning;
+    const scale = Number.isFinite(options.scale) ? options.scale : 1;
+    const base = Math.max(14, radius * scale);
+    const ringCount = Math.max(2, Math.floor(options.rings || 3));
+
+    for (let i = 0; i < ringCount; i += 1) {
+      const ringProgress = (charge * 0.7 + pulse * 0.18 + i * 0.22) % 1;
+      const r = base * (0.78 + i * 0.23 + ringProgress * 0.2);
+      layer.circle(originX, originY, r);
+      layer.stroke({
+        color: i === ringCount - 1 ? edge : warning,
+        width: 2 + charge * 2.8,
+        alpha: (0.18 + charge * 0.24) / (1 + i * 0.22)
+      });
+    }
+
+    const spokes = Math.max(8, Math.floor(options.spokes || 12));
+    const rotation = now * 0.0035 * (options.reverse ? -1 : 1);
+    for (let i = 0; i < spokes; i += 1) {
+      const angle = (Math.PI * 2 * i) / spokes + rotation;
+      const inner = base * (0.48 + charge * 0.08);
+      const outer = base * (0.92 + charge * 0.48 + (i % 2) * 0.12);
+      layer.moveTo(originX + Math.cos(angle) * inner, originY + Math.sin(angle) * inner);
+      layer.lineTo(originX + Math.cos(angle) * outer, originY + Math.sin(angle) * outer);
+    }
+    layer.stroke({ color: edge, width: 1.6 + charge * 1.8, alpha: 0.16 + charge * 0.22 });
+
+    const nodes = Math.max(6, Math.floor(options.nodes || 10));
+    for (let i = 0; i < nodes; i += 1) {
+      const angle = (Math.PI * 2 * i) / nodes - rotation * 1.4;
+      const distance = base * (0.78 + charge * 0.28 + ((i + 1) % 3) * 0.04);
+      layer.circle(
+        originX + Math.cos(angle) * distance,
+        originY + Math.sin(angle) * distance,
+        2.6 + charge * 3.4 + pulse * 1.4
+      );
+    }
+    layer.fill({ color: hot, alpha: 0.08 + charge * 0.18 });
+  }
+
+  drawTelegraphReleaseGate(layer, originX, originY, angle, length, spread, palette, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const warning = palette?.warning || 0xfff45c;
+    const hot = palette?.hot || 0xffffff;
+    const edge = palette?.edge || warning;
+    const laneSpread = Math.max(0.02, Math.abs(spread || 0.12));
+    const t = Number.isFinite(options.t) ? options.t : (0.26 + charge * 0.58);
+    const centerX = originX + Math.cos(angle) * length * t;
+    const centerY = originY + Math.sin(angle) * length * t;
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
+    const gateWidth = Math.max(18, length * t * Math.sin(laneSpread * 0.5) * (options.widthMult || 0.92));
+
+    layer.moveTo(centerX - px * gateWidth, centerY - py * gateWidth);
+    layer.lineTo(centerX + px * gateWidth, centerY + py * gateWidth);
+    layer.stroke({ color: hot, width: 2.8 + charge * 4, alpha: 0.28 + charge * 0.34 });
+    layer.moveTo(centerX - px * gateWidth * 0.72, centerY - py * gateWidth * 0.72);
+    layer.lineTo(centerX + px * gateWidth * 0.72, centerY + py * gateWidth * 0.72);
+    layer.stroke({ color: edge, width: 1.8 + charge * 2.2, alpha: 0.32 + charge * 0.38 });
+
+    const chevrons = Math.max(2, Math.floor(options.chevrons || 3));
+    for (let i = 0; i < chevrons; i += 1) {
+      const ct = Math.min(0.96, t + i * 0.055);
+      const cx = originX + Math.cos(angle) * length * ct;
+      const cy = originY + Math.sin(angle) * length * ct;
+      const size = 10 + charge * 10 + i * 2;
+      layer.moveTo(cx - Math.cos(angle) * size + px * size * 0.58, cy - Math.sin(angle) * size + py * size * 0.58);
+      layer.lineTo(cx + Math.cos(angle) * size, cy + Math.sin(angle) * size);
+      layer.lineTo(cx - Math.cos(angle) * size - px * size * 0.58, cy - Math.sin(angle) * size - py * size * 0.58);
+    }
+    layer.stroke({ color: warning, width: 1.7 + charge * 1.4, alpha: 0.24 + charge * 0.24 });
+  }
+
   drawTelegraphLaneCharge(layer, originX, originY, angle, length, lanes, spread, color, progress, options = {}) {
     if (!layer || !Array.isArray(lanes) || lanes.length === 0) return;
     const nodeCount = Math.max(2, Math.floor(options.nodeCount || 4));
@@ -1837,9 +1927,11 @@ export class Boss {
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
 
-    const warningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
+    const baseWarningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
       ? (this.profile?.accent || 0xff3355)
       : (this.profile?.palette || 0xfff45c);
+    const palette = this.getTelegraphVfxPalette(this.telegraph.type, baseWarningColor);
+    const warningColor = palette.warning;
     const fillAlpha = 0.28 + progress * 0.16;
     const laneAlpha = 0.54 + progress * 0.24;
     const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
@@ -1891,6 +1983,15 @@ export class Boss {
       warningLayer.fill({ color: warningColor, alpha: 0.18 + progress * 0.1 });
       warningLayer.circle(originX, originY, visualRadius * (0.18 + progress * 0.08));
       warningLayer.fill({ color: 0xffffff, alpha: 0.18 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY, visualRadius, palette, progress, {
+        scale: this.telegraph.type === 'lance' ? 1.24 : 1.08,
+        spokes: this.telegraph.type === 'lance' ? 14 : 12,
+        nodes: this.telegraph.type === 'lance' ? 12 : 10
+      });
+      this.drawTelegraphReleaseGate(warningLayer, originX, originY, angle, length * pulse, spread, palette, progress, {
+        widthMult: this.telegraph.type === 'lance' ? 0.36 : 0.9,
+        chevrons: this.telegraph.type === 'lance' ? 4 : 3
+      });
       this.drawTelegraphLaneCharge(warningLayer, originX, originY, angle, length * pulse, lanes, spread, warningColor, progress, {
         nodeCount: this.telegraph.type === 'lance' ? 5 : 4,
         size: this.telegraph.type === 'lance' ? 3.6 : 3
@@ -1923,6 +2024,13 @@ export class Boss {
         warningLayer.circle(originX + Math.cos(a) * nodeR, originY + 18 + Math.sin(a) * nodeR, 4 + progress * 3);
       }
       warningLayer.fill({ color: 0xffffff, alpha: 0.16 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY + 18, visualRadius * 1.2, palette, progress, {
+        scale: 1.26,
+        rings: 4,
+        spokes: 16,
+        nodes: 14,
+        reverse: true
+      });
       this.drawTelegraphRingCharge(warningLayer, originX, originY, inner, outer, warningColor, progress, {
         centerY: 18,
         arcCount: 3,
@@ -1986,6 +2094,8 @@ export class Boss {
     layer.clear();
 
     const warningColor = this.profile?.accent || this.profile?.palette || 0xfff45c;
+    const palette = this.getTelegraphVfxPalette(this.regularTelegraph.type, warningColor);
+    const familyColor = palette.warning;
     const pulse = 1 + Math.sin(Date.now() * 0.03) * 0.06;
     const alpha = 0.18 + progress * 0.34;
     const width = 2 + progress * 2;
@@ -2004,6 +2114,13 @@ export class Boss {
       layer.stroke({ color: warningColor, width: 4, alpha: 0.38 + progress * 0.26 });
       layer.circle(originX, originY, inner);
       layer.stroke({ color: 0xffffff, width: 2, alpha: 0.28 + progress * 0.24 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 1.02, palette, progress, {
+        scale: 1.16,
+        rings: 3,
+        spokes: 14,
+        nodes: 12,
+        reverse: true
+      });
       for (let i = 0; i < 10; i++) {
         const a = (Math.PI * 2 * i) / 10 + progress * 0.45;
         layer.moveTo(originX + Math.cos(a) * (inner + 10), originY + Math.sin(a) * (inner + 10));
@@ -2022,16 +2139,28 @@ export class Boss {
       const sweepY = originY + visualRadius * 0.42 + length * (0.12 + progress * 0.78);
       for (const x of offsets) {
         layer.roundRect(x - 7, originY + visualRadius * 0.35, 14, length * pulse, 8);
-        layer.fill({ color: warningColor, alpha });
+        layer.fill({ color: familyColor, alpha });
         layer.moveTo(x, originY + visualRadius * 0.2);
         layer.lineTo(x, originY + length * pulse);
       }
       layer.stroke({ color: 0xffffff, width, alpha: 0.34 + progress * 0.26 });
       for (const x of offsets) {
+        layer.roundRect(x - 20, sweepY - 10, 40, 18, 9);
+        layer.fill({ color: palette.edge, alpha: 0.18 + progress * 0.22 });
+        layer.roundRect(x - 12, sweepY - 5, 24, 10, 5);
+        layer.fill({ color: palette.hot, alpha: 0.16 + progress * 0.3 });
         layer.moveTo(x - 22, sweepY);
         layer.lineTo(x + 22, sweepY + 10);
+        layer.moveTo(x - 16, sweepY - 24);
+        layer.lineTo(x + 16, sweepY - 12);
       }
       layer.stroke({ color: 0xffffff, width: 2.4 + progress * 1.6, alpha: 0.18 + progress * 0.24 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+        scale: 1.06,
+        rings: 2,
+        spokes: 10,
+        nodes: 8
+      });
       const safeColumn = this.getWallSafeColumn() * Math.min(30, gameWidth * 0.035);
       layer.roundRect(safeColumn - 14, originY + visualRadius * 0.4, 28, length * 0.92, 12);
       layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.32 + progress * 0.28 });
@@ -2060,6 +2189,16 @@ export class Boss {
       layer.poly(points);
       layer.fill({ color: warningColor, alpha: 0.08 + progress * 0.1 });
     }
+    this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+      scale: this.regularTelegraph.attack === 'sniper' ? 1.18 : 1,
+      rings: 3,
+      spokes: this.regularTelegraph.attack === 'sniper' ? 14 : 10,
+      nodes: this.regularTelegraph.attack === 'sniper' ? 12 : 8
+    });
+    this.drawTelegraphReleaseGate(layer, originX, originY, angle, length * pulse, spread, palette, progress, {
+      widthMult: this.regularTelegraph.attack === 'sniper' ? 0.24 : 0.78,
+      chevrons: this.regularTelegraph.attack === 'sniper' ? 4 : 2
+    });
     this.drawTelegraphLaneCharge(layer, originX, originY, angle, length * pulse, lanes, spread, warningColor, progress, {
       nodeCount: this.regularTelegraph.type === 'fan' ? 3 : 4,
       size: this.regularTelegraph.attack === 'sniper' ? 3.4 : 2.8

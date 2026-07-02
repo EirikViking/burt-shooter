@@ -165,11 +165,30 @@ async function stage(page, scenario) {
 
     if (scenarioName === 'beam-hazard') {
       boss.phase = 3;
-      player.x = boss.x;
-      player.y = game.getHeight() * 0.78;
-      boss.startSignatureTelegraph?.('lance', player.x, player.y);
-      if (boss.telegraph) boss.telegraph.start -= boss.telegraph.duration + 20;
-      boss.update?.(2, player.x, player.y);
+      player.x = game.getWidth() * 0.18;
+      player.y = game.getHeight() * 0.84;
+      boss.telegraph = null;
+      boss.regularTelegraph = null;
+      boss.delayedSignature = null;
+      boss.signatureCooldown = 999999;
+      boss.shootCooldown = 999999;
+      boss.clearTelegraphVisual?.();
+      boss.clearRegularAttackTelegraphVisual?.();
+      play.bossHazards = [];
+      play.registerBossHazardFromBoss?.(boss, 'signature', {
+        type: 'lance',
+        attack: 'sniper',
+        playerX: boss.x,
+        playerY: game.getHeight() * 0.88,
+        sourceX: boss.x,
+        sourceY: boss.y + 18
+      });
+      const hazard = play.bossHazards?.[0];
+      if (hazard) {
+        hazard.durationMs = Math.max(hazard.durationMs || 0, 1600);
+        hazard.startedAt = Date.now() - Math.round(hazard.durationMs * 0.36);
+        hazard.armingMs = 999999;
+      }
       play.updateBossHazards?.(2);
     }
   }, scenario);
