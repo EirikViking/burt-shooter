@@ -93,7 +93,8 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   powerups: 'Powerups',
   careerXp: 'Career XP',
   newRanks: 'New ranks',
-  codex: 'Codex discoveries'
+  codex: 'Codex discoveries',
+  pilotOrders: 'Pilot orders'
 });
 
 function formatUnlockRequirementProgress(item) {
@@ -4122,6 +4123,7 @@ export class GameOverScene {
   formatRunReportValue(row = {}) {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
+    if (Array.isArray(row.value)) return row.value.map((value) => translateText(value)).join(', ');
     if (typeof row.value === 'number') {
       return row.value.toLocaleString('en-US');
     }

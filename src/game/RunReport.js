@@ -34,9 +34,17 @@ function normalizeDeathSource(value) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function getPilotOrdersCompleted(runContracts = null) {
+  const completed = Array.isArray(runContracts?.completedThisRun) ? runContracts.completedThisRun : [];
+  return completed
+    .map((entry) => String(entry?.shortTitle || entry?.title || '').trim())
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 function buildRows(entries) {
   return entries
-    .filter((entry) => entry && entry.value !== null && entry.value !== undefined && entry.value !== '')
+    .filter((entry) => entry && entry.value !== null && entry.value !== undefined && entry.value !== '' && (!Array.isArray(entry.value) || entry.value.length > 0))
     .map((entry) => ({
       id: entry.id,
       value: entry.value,
@@ -55,6 +63,7 @@ export function createRunReport(summary = {}) {
   const lifeLosses = toWholeNumber(summary.lifeLosses);
   const respawns = toWholeNumber(summary.respawns);
   const finalDeathSource = normalizeDeathSource(summary.finalDeathSource || summary.lastLifeLossSource);
+  const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -69,7 +78,8 @@ export function createRunReport(summary = {}) {
       sectorReached,
       runtimeSeconds,
       runtimeLabel: formatDuration(runtimeSeconds),
-      runCleared: Boolean(summary.runCleared)
+      runCleared: Boolean(summary.runCleared),
+      pilotOrdersCompleted
     },
     sections: [
       {
@@ -107,7 +117,8 @@ export function createRunReport(summary = {}) {
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
           { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
-          { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) }
+          { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
+          { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
         ])
       }
     ]
@@ -125,6 +136,7 @@ export function summarizeRunReport(report = null) {
     score: report.summary?.score || 0,
     sectorReached: report.summary?.sectorReached || 0,
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
+    pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };
 }

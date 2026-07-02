@@ -917,6 +917,7 @@ export class Game {
       shipPowerRating: Number.isFinite(ship?.powerRating) ? ship.powerRating : 1,
       sectorStartCheckpoint: this.sectorStartCheckpoint || null,
       sectorStartPlaySector: this.sectorStartPlaySector || null,
+      runContracts: play?.getRunContractDebugState?.() || null,
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },

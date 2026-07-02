@@ -226,3 +226,4 @@ runExistingScopedProfileProtectionTest();
 runSteamCloudLegacyAndProfileTests();
 
 console.log('[save-profile-migration] PASS legacy unscoped progress migrates once, profile isolation holds, First Ranked Run survives');
+process.exit(0);

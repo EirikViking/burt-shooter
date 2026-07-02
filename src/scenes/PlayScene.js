@@ -71,7 +71,9 @@ import {
   applyRunContractEvent,
   getRunContractById,
   getRunContractSessionState,
+  prepareRunContractsForEligibleRun,
   recordRunContractCompletion,
+  recordRunContractSessionProgress,
   startRunContractSession
 } from '../progression/RunContracts.js';
 import { getBossProfile } from '../config/BossRoster.js';
@@ -504,10 +506,22 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
+    if ((this.game?.runMode || RUN_MODES.RANKED) === RUN_MODES.RANKED) {
+      const preparedRunContracts = prepareRunContractsForEligibleRun(runContractProgress.runContracts);
+      runContractProgress = writeHangarProgressState({
+        ...runContractProgress,
+        runContracts: preparedRunContracts
+      });
+      if (this.game) this.game.hangarProgressAtRunStart = runContractProgress;
+    }
     this.runContractSession = startRunContractSession({
       runMode: this.game?.runMode || RUN_MODES.RANKED,
-      progress: this.game?.hangarProgressAtRunStart || readHangarProgressState()
+      progress: runContractProgress
     });
+    this.blinkDriveOrderStartedAt = null;
+    this.blinkDriveOrderCompleted = false;
+    this.playerPhaseWasActive = false;
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
@@ -1121,6 +1135,10 @@ export class PlayScene {
         powerupType: powerup.type,
         sector: this.game?.level || 1
       });
+      if (powerup.type === 'blink_drive') {
+        this.blinkDriveOrderStartedAt = Number(this.gameTime) || 0;
+        this.blinkDriveOrderCompleted = false;
+      }
     }
     const stats = this.balanceDebug;
     if (!stats || !powerup) return;
@@ -1136,6 +1154,7 @@ export class PlayScene {
       sector: payload.sector || this.game?.level || 1
     });
     this.runContractSession = result.session;
+    this.persistRunContractSessionProgress();
     for (const completion of result.completed || []) {
       this.persistRunContractCompletion(completion);
       this.showRunContractCompletion(completion.id);
@@ -1152,11 +1171,21 @@ export class PlayScene {
     });
   }
 
+  persistRunContractSessionProgress() {
+    if (!this.runContractSession) return;
+    const previous = readHangarProgressState();
+    const runContracts = recordRunContractSessionProgress(previous.runContracts, this.runContractSession);
+    writeHangarProgressState({
+      ...previous,
+      runContracts
+    });
+  }
+
   showRunContractCompletion(contractId) {
     const contract = getRunContractById(contractId);
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
-    this.enqueueToast(translateText('MISSION COMPLETE: {title}', { title }), {
+    this.enqueueToast(translateText('ORDER COMPLETE: {title}', { title }), {
       fontSize: this.game.getWidth() < 620 ? 15 : 18,
       fill: '#7fffd8',
       stroke: '#031321',
@@ -1170,6 +1199,46 @@ export class PlayScene {
 
   getRunContractDebugState() {
     return getRunContractSessionState(this.runContractSession);
+  }
+
+  countDangerousBulletsNearPlayer(radius = 96) {
+    if (!this.player || !this.bulletManager?.enemyBullets) return 0;
+    const px = Number(this.player.x) || 0;
+    const py = Number(this.player.y) || 0;
+    const threshold = Math.max(radius, (Number(this.player.radius) || 12) + 72);
+    let count = 0;
+    for (const bullet of this.bulletManager.enemyBullets) {
+      if (!bullet?.active) continue;
+      const dx = (Number(bullet.x) || 0) - px;
+      const dy = (Number(bullet.y) || 0) - py;
+      if ((dx * dx + dy * dy) <= threshold * threshold) count += 1;
+    }
+    return count;
+  }
+
+  updateRunContractActionWatchers() {
+    const phaseActive = Boolean(this.player?.isDodging);
+    if (phaseActive && !this.playerPhaseWasActive) {
+      const nearbyBullets = this.countDangerousBulletsNearPlayer();
+      this.emitRunContractEvent('phase_used', {
+        sector: this.game?.level || 1,
+        dangerous: nearbyBullets > 0,
+        nearbyBullets
+      });
+    }
+    this.playerPhaseWasActive = phaseActive;
+
+    if (
+      this.blinkDriveOrderStartedAt !== null &&
+      !this.blinkDriveOrderCompleted &&
+      (this.gameTime - this.blinkDriveOrderStartedAt) >= 6
+    ) {
+      this.blinkDriveOrderCompleted = true;
+      this.emitRunContractEvent('blink_drive_survived', {
+        sector: this.game?.level || 1,
+        survivedSeconds: Math.floor(this.gameTime - this.blinkDriveOrderStartedAt)
+      });
+    }
   }
 
   recordBalanceBossStart(boss) {
@@ -1892,6 +1961,7 @@ export class PlayScene {
         }
 
         this.player.update(delta);
+        this.updateRunContractActionWatchers();
         const sprite = this.player.sprite;
         if (sprite) {
           sprite.visible = true;

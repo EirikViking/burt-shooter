@@ -14,8 +14,8 @@ import { getDefaultShipKey, isShipUnlocked, isValidShipKey, resolveShipKey } fro
 import { getMenuSettings } from '../config/MenuSettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
-import { readHangarProgressState } from '../progression/HangarProgressState.js';
-import { getRunContractMenuState } from '../progression/RunContracts.js';
+import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
+import { acknowledgeRunContractCompletionNotice, getRunContractMenuState } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
@@ -188,6 +188,7 @@ export class MenuScene {
     this.missionBoardRows = [];
     this.missionBoardBounds = null;
     this.missionBoardState = null;
+    this.missionBoardCompletionNoticeLatched = false;
     this.launchDeckBounds = null;
     this.disclaimer = null;
     this.startBtn = null;
@@ -2019,9 +2020,25 @@ export class MenuScene {
     const rowHeight = Math.round(clampNumber(
       height * 0.047 * boardScale,
       (isShortLayout ? 32 : 36) * boardScale,
-      (isMobileLayout ? 38 : 44) * boardScale
+      (isMobileLayout ? 38 : 40) * boardScale
     ));
-    const headerHeight = Math.round((isShortLayout ? 40 : 44) * boardScale);
+    const headerHeight = Math.round((isShortLayout ? 38 : 40) * boardScale);
+    let hangarProgress = readHangarProgressState();
+    let missionState = getRunContractMenuState(hangarProgress, {
+      forceCompletionVisible: this.missionBoardCompletionNoticeLatched
+    });
+    if (missionState.status === 'complete') {
+      this.missionBoardCompletionNoticeLatched = true;
+      if (!missionState.completionNoticeSeen) {
+        const runContracts = acknowledgeRunContractCompletionNotice(hangarProgress.runContracts);
+        hangarProgress = writeHangarProgressState({
+          ...hangarProgress,
+          runContracts
+        });
+        missionState = getRunContractMenuState(hangarProgress, { forceCompletionVisible: true });
+      }
+    }
+    this.missionBoardState = missionState;
     const desiredBoardWidth = this.launchDeckBounds.width;
     const briefingLeft = Number(this.runModePanel?._briefingBounds?.x) || width;
     const availableBoardWidth = Math.max(
@@ -2029,9 +2046,20 @@ export class MenuScene {
       Math.min(width - this.launchDeckBounds.x - 24, briefingLeft - this.launchDeckBounds.x - 32)
     );
     const boardWidth = Math.round(Math.min(desiredBoardWidth, availableBoardWidth));
-    const boardHeight = Math.round(padY * 2 + headerHeight + rowHeight * 3 + gap * 2);
+    const rows = missionState.active || [];
+    const completeState = missionState.status === 'complete';
+    const hiddenState = missionState.hidden || missionState.status === 'hidden';
+    const boardHeight = hiddenState
+      ? 0
+      : Math.round(completeState
+        ? padY * 2 + Math.round((isMobileLayout ? 54 : 62) * boardScale)
+        : padY * 2 + headerHeight + rowHeight * 3 + gap * 2);
     const boardX = Math.round(this.launchDeckBounds.x);
-    let boardY = Math.round(this.launchDeckBounds.bottom + clampNumber(height * 0.013, 8, 14));
+    const stackToBoardGap = Math.round(
+      clampNumber(height * 0.022, isMobileLayout ? 12 : 16, isMobileLayout ? 22 : 30) *
+      Math.min(uiScale, 1.2)
+    );
+    let boardY = Math.round(this.launchDeckBounds.bottom + stackToBoardGap);
     const maxBoardY = Math.round(dockTop - boardHeight - clampNumber(height * 0.014, 8, 16));
     if (boardY > maxBoardY) {
       boardY = Math.max(Math.round(this.launchDeckBounds.y), maxBoardY);
@@ -2044,11 +2072,24 @@ export class MenuScene {
       height: boardHeight,
       headerHeight,
       right: boardX + boardWidth,
-      bottom: boardY + boardHeight
+      bottom: boardY + boardHeight,
+      hidden: hiddenState,
+      status: missionState.status
     };
-    this.missionBoardState = getRunContractMenuState(readHangarProgressState());
 
-    this.missionBoardTitle.text = translateText('MISSION BOARD');
+    if (hiddenState) {
+      this.missionBoardPanel.clear();
+      this.missionBoardPanel.visible = false;
+      this.missionBoardTitle.visible = false;
+      this.missionBoardSubtitle.visible = false;
+      this.missionBoardRows.forEach((row) => {
+        row.visible = false;
+      });
+      return;
+    }
+
+    this.missionBoardPanel.visible = true;
+    this.missionBoardTitle.text = translateText(completeState ? missionState.completionTitle : missionState.title);
     this.missionBoardTitle.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;
@@ -2057,20 +2098,19 @@ export class MenuScene {
     refreshTextTexture(this.missionBoardTitle);
     fitTextToWidth(this.missionBoardTitle, boardWidth - padX * 2, { minScale: 0.7 });
 
-    this.missionBoardSubtitle.text = translateText('Optional goals for your next Mayhem run.');
-    this.missionBoardSubtitle.style.fontSize = Math.round((isMobileLayout ? 8 : 10) * uiScale);
+    this.missionBoardSubtitle.text = translateText(completeState ? missionState.completionBody : missionState.subtitle);
+    this.missionBoardSubtitle.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
     this.missionBoardSubtitle.style.wordWrapWidth = boardWidth - padX * 2;
-    this.missionBoardSubtitle.style.lineHeight = Math.round(this.missionBoardSubtitle.style.fontSize * 1.18);
+    this.missionBoardSubtitle.style.lineHeight = Math.round(this.missionBoardSubtitle.style.fontSize * 1.2);
     this.missionBoardSubtitle.x = boardX + padX;
-    this.missionBoardSubtitle.y = boardY + padY + Math.round(17 * uiScale);
+    this.missionBoardSubtitle.y = boardY + padY + Math.round((completeState ? 22 : 17) * uiScale);
     this.missionBoardSubtitle.alpha = this.missionBoardSubtitle.alpha || 1;
     this.missionBoardSubtitle.visible = true;
     refreshTextTexture(this.missionBoardSubtitle);
 
-    const rows = this.missionBoardState.active || [];
     this.missionBoardRows.forEach((row, index) => {
       const contract = rows[index];
-      row.visible = Boolean(contract);
+      row.visible = Boolean(contract && !completeState);
       if (!contract) return;
       row.alpha = row.alpha || 1;
       row.x = boardX + padX;
@@ -2078,17 +2118,23 @@ export class MenuScene {
       row._width = boardWidth - padX * 2;
       row._height = rowHeight;
       row._accent = contract.accent || 0x37f5ff;
-      const completionCount = Number(contract.completionCount || 0);
+      row._completed = Boolean(contract.completed);
       row._title.text = translateText(contract.shortTitle || contract.title);
-      row._detail.text = translateText('Mayhem only');
-      row._progress.text = completionCount > 0
-        ? translateText('DONE x{count}', { count: completionCount })
-        : translateText('{progress}/{target}', { progress: 0, target: contract.target || 1 });
+      row._detail.text = translateText(contract.shortDescription || contract.description || 'Mayhem only');
+      row._progress.text = contract.completed
+        ? translateText('COMPLETE')
+        : translateText('{progress}/{target}', {
+            progress: contract.progress || 0,
+            target: contract.target || 1
+          });
+      row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
+      row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
+      row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
       row._title.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
-      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 80 : 92) * uiScale);
+      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 80 : 106) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
-      row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 12) * uiScale);
+      row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
       row._title.x = Math.round(13 * uiScale);
       row._title.y = Math.round(rowHeight * 0.33);
       row._detail.x = Math.round(13 * uiScale);
@@ -2098,9 +2144,9 @@ export class MenuScene {
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
-      fitTextToWidth(row._title, row._width - Math.round(88 * uiScale), { minScale: 0.68 });
-      fitTextToWidth(row._detail, row._width - Math.round(92 * uiScale), { minScale: 0.72 });
-      fitTextToWidth(row._progress, Math.round(68 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._title, row._width - Math.round(96 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._detail, row._width - Math.round(106 * uiScale), { minScale: 0.72 });
+      fitTextToWidth(row._progress, Math.round(82 * uiScale), { minScale: 0.62 });
     });
 
     this.drawMissionBoardPanel();
@@ -2110,6 +2156,7 @@ export class MenuScene {
     if (!this.missionBoardPanel || !this.missionBoardBounds) return;
     const { x, y, width, height } = this.missionBoardBounds;
     this.missionBoardPanel.clear();
+    if (this.missionBoardBounds.hidden || height <= 0) return;
     drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.78 }, { color: 0xffd15c, width: 1.2, alpha: 0.52 });
     drawCutPanel(this.missionBoardPanel, x + 5, y + 5, width - 10, height - 10, 8, { color: 0x061d2c, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
     this.missionBoardPanel.rect(x + 10, y + 9, 3, Math.max(8, height - 18));
@@ -2124,10 +2171,10 @@ export class MenuScene {
       const accent = row._accent || 0x37f5ff;
       const progressSlotWidth = Math.min(58, Math.max(46, w * 0.22));
       row._bg.clear();
-      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: 0x061b2a, alpha: 0.72 }, { color: accent, width: 1, alpha: 0.28 });
+      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: row._completed ? 0x082116 : 0x061b2a, alpha: row._completed ? 0.82 : 0.72 }, { color: accent, width: 1, alpha: row._completed ? 0.48 : 0.28 });
       drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: 0.07 });
       row._bg.rect(5, 5, 3, Math.max(6, h - 10));
-      row._bg.fill({ color: accent, alpha: 0.46 });
+      row._bg.fill({ color: accent, alpha: row._completed ? 0.72 : 0.46 });
       drawCutPanel(row._bg, w - progressSlotWidth - 7, 6, progressSlotWidth, Math.max(15, h * 0.42), 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
       row._bg.rect(12, h - 6, w - 24, 2);
       row._bg.fill({ color: accent, alpha: 0.16 });
@@ -2708,6 +2755,10 @@ export class MenuScene {
       missionBoard: {
         title: this.missionBoardTitle?.text || null,
         subtitle: this.missionBoardSubtitle?.text || null,
+        status: this.missionBoardState?.status || null,
+        hidden: Boolean(this.missionBoardState?.hidden || this.missionBoardBounds?.hidden),
+        allComplete: Boolean(this.missionBoardState?.allComplete),
+        completionNoticeSeen: Boolean(this.missionBoardState?.completionNoticeSeen),
         bounds: this.missionBoardBounds || boundsForDisplayObject(this.missionBoardPanel),
         titleBounds: boundsForDisplayObject(this.missionBoardTitle),
         subtitleBounds: boundsForDisplayObject(this.missionBoardSubtitle),
