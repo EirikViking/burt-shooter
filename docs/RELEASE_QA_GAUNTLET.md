@@ -41,7 +41,7 @@ Follow-up combat readability changes added a Boss Mercy System that prevents rep
 | `npm run check:boss-telegraph` | Pass | `test-results/boss-telegraph-2026-05-22T17-45-28-348Z/` |
 | `npm run check:boss-special-hazards` | Pass | `test-results/boss-special-hazards-2026-05-22T17-45-54-203Z/` |
 | `npm run check:powerup-balance` | Pass | sparse drops, max 2 per level |
-| `npm run check:score-normalization` | Pass | 100000 -> 10000, 553006 -> 55301 |
+| `npm run check:score-normalization` | Pass | 100000 -> 11500 live award, 553006 -> 55301 legacy normalization |
 | `npm run check:unlock-rank-pacing` | Pass | level 1 Cadet, level 11 Combo Courier, level 60 Arcade Legend, level 410 Heat-Death Champion |
 | `npm run check:leaderboard-adapter` | Pass | Eirik regression and mock Steam covered |
 | `npm run check:leaderboard-split` | Pass | `test-results/leaderboard-split-2026-05-22T17-46-17-163Z/report.json` |

@@ -32,6 +32,7 @@ import {
 import { PRE_RELEASE_SEED_SCORES, sanitizeLocalPilotName } from '../src/api/LocalLeaderboard.js';
 import {
   SCORE_NORMALIZATION_FACTOR,
+  SCORE_REWARD_MULTIPLIER,
   SCORE_NORMALIZATION_ROUNDING,
   normalizeLegacyScoreForReset,
   normalizeScoreDelta
@@ -356,8 +357,9 @@ function validateProgression() {
 
 function validateScoreAndLeaderboards() {
   if (SCORE_NORMALIZATION_FACTOR !== 0.1) fail(`score normalization factor is ${SCORE_NORMALIZATION_FACTOR}, expected 0.1`);
+  if (SCORE_REWARD_MULTIPLIER !== 1.15) fail(`score reward multiplier is ${SCORE_REWARD_MULTIPLIER}, expected 1.15`);
   if (SCORE_NORMALIZATION_ROUNDING !== 'Math.round') fail(`score rounding is ${SCORE_NORMALIZATION_ROUNDING}, expected Math.round`);
-  if (normalizeScoreDelta(100000) !== 10000) fail(`100000 should normalize to 10000, got ${normalizeScoreDelta(100000)}`);
+  if (normalizeScoreDelta(100000) !== 11500) fail(`100000 should normalize to 11500 with reward multiplier, got ${normalizeScoreDelta(100000)}`);
   if (normalizeLegacyScoreForReset(553006) !== 55301) {
     fail(`553006 should normalize to 55301, got ${normalizeLegacyScoreForReset(553006)}`);
   }
@@ -392,6 +394,7 @@ function validateScoreAndLeaderboards() {
 
   return {
     scoreFactor: SCORE_NORMALIZATION_FACTOR,
+    scoreRewardMultiplier: SCORE_REWARD_MULTIPLIER,
     scoreRounding: SCORE_NORMALIZATION_ROUNDING,
     examples: {
       old100000: normalizeScoreDelta(100000),

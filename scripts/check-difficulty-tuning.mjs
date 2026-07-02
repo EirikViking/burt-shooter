@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { BalanceConfig, getNormalWavePressureTuning } from '../src/config/BalanceConfig.js';
 import { getThreatBudgetForLevel } from '../src/config/EnemyThreatActions.js';
+import { SCORE_REWARD_MULTIPLIER } from '../src/shared/ScorePolicy.js';
 
 const EXPECTED_LEADERBOARD = 'nova_swarm_global_score_v2';
 
@@ -149,11 +150,14 @@ const summaries = [
 
 const summaryByLabel = new Map(summaries.map((summary) => [summary.label, summary]));
 
-if (BalanceConfig.DIFFICULTY_MULTIPLIER !== 0.792) {
-  fail(`global movement difficulty multiplier should be reduced by 10% to 0.792, got ${BalanceConfig.DIFFICULTY_MULTIPLIER}`);
+if (BalanceConfig.DIFFICULTY_MULTIPLIER !== 0.7524) {
+  fail(`global movement difficulty multiplier should be reduced by a further 5% to 0.7524, got ${BalanceConfig.DIFFICULTY_MULTIPLIER}`);
 }
-if (BalanceConfig.difficulty.pressureScalar !== 0.765) {
-  fail(`global fire/projectile pressure scalar should be reduced by 10% to 0.765, got ${BalanceConfig.difficulty.pressureScalar}`);
+if (BalanceConfig.difficulty.pressureScalar !== 0.72675) {
+  fail(`global fire/projectile pressure scalar should be reduced by a further 5% to 0.72675, got ${BalanceConfig.difficulty.pressureScalar}`);
+}
+if (SCORE_REWARD_MULTIPLIER !== 1.15) {
+  fail(`score reward multiplier should be 1.15 for the requested 15% score increase, got ${SCORE_REWARD_MULTIPLIER}`);
 }
 
 assertRange('levels 1 to 2 conservative opening', summaryByLabel.get('levels 1 to 2').increasePct / 100, [0.03, 0.07]);
@@ -185,7 +189,6 @@ const blockedExact = new Set([
   'src/entities/Boss.js',
   'src/game/BossFactory.js',
   'src/config/BossRoster.js',
-  'src/shared/ScorePolicy.js',
   'src/steamCloudPersistence.js'
 ]);
 const blockedPrefixes = [

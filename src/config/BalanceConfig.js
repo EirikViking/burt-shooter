@@ -2,7 +2,7 @@ export const MAX_PLAYER_LIVES = Number.POSITIVE_INFINITY;
 
 export const BalanceConfig = {
     // Global pressure trim: below 1 keeps Nova Swarm readable while the wave count rises.
-    DIFFICULTY_MULTIPLIER: 0.792,
+    DIFFICULTY_MULTIPLIER: 0.7524,
 
     // Rank System
     ranks: {
@@ -38,7 +38,7 @@ export const BalanceConfig = {
 
     // Difficulty: six-wave early sectors, then a steady linear climb.
     difficulty: {
-        pressureScalar: 0.765,
+        pressureScalar: 0.72675,
         baseEnemyHealthMultiplier: 0.62,
         hpScalePerLevel: 0.035,
         enemyHealthMaxMultiplier: 1.8,

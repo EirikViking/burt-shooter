@@ -1,5 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-02 Difficulty And Score Nudge
+
+- Current request: further reduce overall difficulty by 5% and increase overall score/points by 15%.
+- Baseline safety: fetched remotes, confirmed repo `D:\vibe-coding-e\nova-swarm-sector-continue-prototype`, clean branch `codex/local-run-report-20260701` at `be4511e9a7eac9ca7f01b0a4bcd80d475d3a5eba`, then branched `codex/difficulty-score-nudge-20260702`.
+- Implementation direction: use the existing global difficulty knobs rather than per-enemy rewrites: `DIFFICULTY_MULTIPLIER` `0.792 -> 0.7524` and `difficulty.pressureScalar` `0.765 -> 0.72675`. Add a runtime-only `SCORE_REWARD_MULTIPLIER = 1.15` in `ScorePolicy` so live score awards rise 15% while legacy score reset normalization stays at `0.1`.
+- Verification direction: update focused score/difficulty checks and run `git diff --check`, `npm run check:difficulty-tuning`, `npm run check:score-normalization`, nearby scoring/balance checks, and `npm run build:current`. No Steam upload has been requested for this pass. First `check:difficulty-tuning` run correctly failed because the old guard treated any `ScorePolicy.js` edit as forbidden; the guard was narrowed to allow only the explicit `SCORE_REWARD_MULTIPLIER = 1.15` score bump.
+- Verification so far: `npm run check:difficulty-tuning`, `npm run check:score-normalization`, `git diff --check`, `npm run check:mayhem-reinforcement-waves`, `node scripts/check-mayhem-score-xp-attribution.mjs`, `npm run check:boss-fairness-cadence-wall`, `npm run check:powerup-effects` on retry with `CHECK_PORT=4463`, and `node scripts/qa-release-gauntlet.mjs` pass. The first `check:powerup-effects` attempt failed before gameplay because its temporary Vite server did not become ready on port 4363.
+- Final verification: `npm run build:current` passed with existing ascendant fallback-art and chunk-size warnings. The generic develop-web-game Playwright client was rerun using `PLAYWRIGHT_BROWSERS_PATH=D:\Codex\playwright-browsers\develop-web-game-1.58.2`; text state reached active ranked gameplay and score rose from 290 to 895, but both headless and headed screenshots stayed black due the known generic-client/WebGL capture path. Visual/runtime proof for this pass therefore relies on the repo Playwright checks, especially `check:powerup-effects`, plus `build:current`.
+
 ## 2026-07-01 Difficulty Relief And Reinforcement Cap
 
 - Current request: reduce game difficulty, verify whether the current maximum simultaneous extra-wave event is 5, then cap the spike at 3 if that is true, reduce overall difficulty by 10%, then deploy to Steam.
