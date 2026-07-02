@@ -1,0 +1,103 @@
+﻿{
+    "schema":  "nova-swarm-steam-upload-evidence.v1",
+    "createdAt":  "2026-07-02T16:39:46Z",
+    "branch":  "codex/boss-support-slowmo-20260702",
+    "sourceCommit":  "b15be8dd18bb54b10524e73fdb7edd2fd74ce0db",
+    "sourceCommitShort":  "b15be8d",
+    "sourceCommitMessage":  "Polish boss support squads and slow time",
+    "requestScope":  "boss support squad/VFX polish, stronger slow-time gameplay feel, then private Steam upload",
+    "build":  {
+                  "version":  "v2026-07-02_18-22-03",
+                  "timestamp":  "2026-07-02T16:22:03.584Z",
+                  "description":  "Nova Swarm boss support squads and slow time polish 2026-07-02"
+              },
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "24024372",
+                  "setLive":  "",
+                  "branchAssignment":  "none",
+                  "uploadMode":  "private-unassigned",
+                  "steamCmd":  "C:\\steamcmd\\steamcmd.exe",
+                  "vdfPath":  "release/steamworks/app_build_LOCAL.vdf",
+                  "uploadLogPath":  "release/steamworks/steam_upload_console_boss_support_slowmo_20260702.log"
+              },
+    "payload":  {
+                    "contentRoot":  "release/desktop/win-unpacked",
+                    "manifestPath":  "release/steamworks/steam_payload_manifest.json",
+                    "manifestHash":  "a787311a33855cc7c983f453e572a14422a220e73432e7192db0a357d19878a9",
+                    "manifestFileSha256":  "86e3334cf7bb655601dc9c030678b5af5ad705a2a50ebea82cad80580ae84dde",
+                    "fileCount":  336,
+                    "totalBytes":  915925848,
+                    "executableSha256":  "666bfc34fbb6a04d27a9643b92e3fc2bed6054b147fdcb829b0b66200e95072d"
+                },
+    "verification":  {
+                         "sourceChecks":  [
+                                              "node --check src/managers/EnemyManager.js",
+                                              "node --check src/entities/Player.js",
+                                              "node --check src/scenes/PlayScene.js",
+                                              "node --check src/config/PowerupCatalog.js",
+                                              "npm run check:boss-support-ships",
+                                              "npm run check:boss-support-codex",
+                                              "npm run check:boss-vfx-clarity",
+                                              "npm run check:powerup-effects",
+                                              "npm run check:powerup-visuals",
+                                              "npm run check:boss-telegraph",
+                                              "npm run check:boss-special-hazards",
+                                              "npm run check:boss-animation",
+                                              "npm run check:powerup-balance",
+                                              "npm run check:weapon-powerup-firing-duration",
+                                              "git diff --check",
+                                              "npm run build:current",
+                                              "develop-web-game client smoke headless and headed"
+                                          ],
+                         "releaseChecks":  [
+                                               "npm run check:release-line",
+                                               "npm run package:steam:win",
+                                               "npm run desktop:smoke:current",
+                                               "npm run desktop:smoke:packaged",
+                                               "npm run desktop:controls:packaged",
+                                               "npm run desktop:perf:packaged",
+                                               "npm run steamworks:write-vdf",
+                                               "npm run steamworks:payload-manifest",
+                                               "SteamCMD +run_app_build release/steamworks/app_build_LOCAL.vdf"
+                                           ],
+                         "reportPaths":  {
+                                             "bossSupportCodex":  "test-results/boss-support-codex-2026-07-02T16-04-53-911Z/report.json",
+                                             "powerupEffects":  "test-results/powerup-effects-2026-07-02T16-04-15-668Z/report.json",
+                                             "powerupVisuals":  "test-results/powerup-visuals-2026-07-02T16-04-15-667Z/powerup-icons-runtime.png",
+                                             "bossTelegraph":  "test-results/boss-telegraph-2026-07-02T16-06-26-776Z/boss-regular-telegraph.png",
+                                             "bossSpecialHazards":  "test-results/boss-special-hazards-2026-07-02T16-06-26-707Z/boss-special-hazards.png",
+                                             "bossAnimation":  "test-results/boss-animation-2026-07-02T16-08-37-806Z/boss-animation-level10.png",
+                                             "webGameClient":  "test-results/web-game-client-2026-07-02-boss-support-slowmo/state-4.json",
+                                             "webGameClientHeaded":  "test-results/web-game-client-2026-07-02-boss-support-slowmo-headed/state-1.json",
+                                             "steamSdkReady":  "test-results/steam-sdk-ready-2026-07-02T16-22-02-417Z/report.json",
+                                             "steamPackageRuntime":  "test-results/steam-package-runtime-2026-07-02T16-34-49-154Z/report.json",
+                                             "packagedSmoke":  "test-results/packaged-exe-smoke-2026-07-02T16-32-22-095Z/report.json",
+                                             "packagedControls":  "test-results/packaged-control-smoke-2026-07-02T16-33-06-224Z/report.json",
+                                             "packagedPerf":  "test-results/packaged-perf-smoke-2026-07-02T16-33-18-995Z/report.json",
+                                             "currentElectronSmoke":  "test-results/electron-smoke-2026-07-02T16-31-45-610Z/report.json"
+                                         }
+                     },
+    "safety":  {
+                   "steamworksSettingsChanged":  false,
+                   "storeMetadataChanged":  false,
+                   "appIdChanged":  false,
+                   "depotIdChanged":  false,
+                   "leaderboardIdentityChanged":  false,
+                   "achievementsMetadataChanged":  false,
+                   "steamCloudPathsChanged":  false,
+                   "saveFormatChanged":  false,
+                   "scoreFormulaChanged":  false,
+                   "xpFormulaChanged":  false,
+                   "balanceChanged":  true,
+                   "newNetworkRuntimeCalls":  false,
+                   "newSfxAdded":  false,
+                   "elevenLabsUsed":  false,
+                   "notes":  [
+                                 "Boss support behavior changed intentionally: support events roll 70% one helper, 20% two helpers, 10% three helpers, with a three-helper cap; one-helper events heal 25% more.",
+                                 "Slow Time and Chrono Anchor now use stronger enemy, projectile, and hazard time scales while keeping player control normal.",
+                                 "SteamCMD upload succeeded with cached credentials and blank SetLive, so the build is private/unassigned until manually routed in Steamworks."
+                             ]
+               }
+}
