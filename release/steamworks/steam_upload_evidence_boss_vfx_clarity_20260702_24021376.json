@@ -1,0 +1,50 @@
+{
+  "status": "uploaded_private_unassigned",
+  "steamBuildId": "24021376",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "sourceCommit": "4ab058a1658dbd4124fee54e6539b360daff8173",
+  "sourceCommitShort": "4ab058a",
+  "branch": "codex/boss-vfx-clarity-20260702",
+  "build": {
+    "version": "v2026-07-02_15-25-21",
+    "timestamp": "2026-07-02T13:25:21.360Z"
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915907554,
+    "manifestHash": "1006fefe37bc2fc1c35fbc413cd7a0efa298d873c175a49fd46070e21224749b",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": "",
+    "desc": "Nova Swarm boss VFX clarity 4ab058a"
+  },
+  "steamcmd": {
+    "path": "tools/steamcmd/steamcmd.exe",
+    "login": "gaunziman",
+    "consoleLog": "release/steamworks/steam_upload_console_20260702_boss_vfx_clarity.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24021376)."
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run desktop:smoke:current",
+    "npm run check:desktop-package",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+  ],
+  "notes": [
+    "SteamCMD uploaded a private unassigned build only.",
+    "The generated VDF kept SetLive blank, so no public/default/test branch was assigned by this upload.",
+    "No Steamworks store metadata, AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud settings, save format, score formula, XP formula, price metadata, or live branch settings were changed."
+  ]
+}
