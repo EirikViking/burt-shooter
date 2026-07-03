@@ -1,0 +1,120 @@
+{
+  "schema": "nova-swarm-steam-upload-evidence.v1",
+  "createdAt": "2026-07-03T10:18:00Z",
+  "branch": "codex/main-menu-run-contracts-20260702",
+  "sourceCommit": "f923f4483177a0fe6700d208a558738184bf11df",
+  "sourceCommitShort": "f923f44",
+  "sourceCommitMessage": "Polish pilot orders goals and notices",
+  "requestScope": "upload the Pilot Orders usability follow-up to Steam as a private unassigned SteamPipe build",
+  "build": {
+    "version": "v2026-07-03_12-00-14",
+    "timestamp": "2026-07-03T10:00:14.193Z",
+    "description": "Nova Swarm Pilot Orders usability RC f923f44 v2026-07-03_12-00-14"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24037041",
+    "setLive": "",
+    "branchAssignment": "none",
+    "uploadMode": "private-unassigned",
+    "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "e4a54e5e0666dd683819f9e59b11bf820131233ed957aaaedfe362683fa79b00",
+    "uploadLogPath": "release/steamworks/steam_upload_console_pilot_orders_usability_20260703.log",
+    "uploadLogSha256": "da2970e54990e40a1677e798e7562c0c989e40242117332e59c6f93401eb0dba",
+    "failedRelativeVdfAttemptLogPath": "release/steamworks/steam_upload_console_pilot_orders_usability_20260703_attempt1_failed.log",
+    "failedRelativeVdfAttemptLogSha256": "06dc62c4e695c77681210ce49c0fa26309994d9d81de5f1809d8cb5c935b39e2",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 24037041)."
+  },
+  "vdfInspection": {
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "descLine": "\"Desc\" \"Nova Swarm Pilot Orders usability RC f923f44 v2026-07-03_12-00-14\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "depotIdLine": "\"4765071\"",
+    "localPathLine": "\"LocalPath\" \"*\"",
+    "depotPathLine": "\"DepotPath\" \".\""
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "4c65ceb97718224b82bbc8b7e28a8edde5b3deb56d55887a8f0360c51b90b197",
+    "manifestFileSha256": "eebfed9ff1dafd1af7d78e5cdbc341e8c67cd6c5788dfbf3e0ccf352fd8330d4",
+    "fileCount": 336,
+    "totalBytes": 915975325,
+    "executableSha256": "c9e7e820cdf87ba2b5ea7903e6d28724e373fe2ae3218aa3fe250f6b59d25d7d"
+  },
+  "verification": {
+    "sourceChecks": [
+      "npm run check:run-contracts",
+      "npm run check:how-to-play",
+      "npm run check:i18n",
+      "npm run build:current",
+      "npm run check:i18n-ui",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-rescue-import",
+      "npm run check:release-line",
+      "npm run check:controller-flow",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "git diff --check"
+    ],
+    "releaseChecks": [
+      "git fetch --all --prune",
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run check:desktop-package",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf",
+      "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "reportPaths": {
+      "runContracts": "test-results/run-contracts-2026-07-03T08-17-17-066Z/report.json",
+      "howToPlay": "test-results/how-to-play-2026-07-03T08-11-52-246Z/report.json",
+      "i18nUi": "test-results/i18n-ui-2026-07-03T08-20-33-403Z",
+      "smoke": "test-results/smoke-2026-07-03T08-23-20-659Z/report.json",
+      "controllerFlow": "test-results/controller-only-flow-2026-07-03T08-22-26-197Z",
+      "sourceElectronSmoke": "test-results/electron-smoke-2026-07-03T08-25-06-213Z/report.json",
+      "steamSdkReady": "test-results/steam-sdk-ready-2026-07-03T10-00-13-222Z/report.json",
+      "steamPackageRuntime": "test-results/steam-package-runtime-2026-07-03T10-08-49-851Z/report.json",
+      "currentElectronSmoke": "test-results/electron-smoke-2026-07-03T10-07-04-785Z/report.json",
+      "packagedSmoke": "test-results/packaged-exe-smoke-2026-07-03T10-06-00-431Z/report.json",
+      "packagedControls": "test-results/packaged-control-smoke-2026-07-03T10-06-00-431Z/report.json",
+      "packagedPerf": "test-results/packaged-perf-smoke-2026-07-03T10-06-00-431Z/report.json",
+      "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+    },
+    "nonBlockingNotes": [
+      "Current and packaged Electron checks report steam_init_returned_false outside the Steam client, but confirm AppID 4765070, Steam bridge presence, local profile fallback, and build gitSha f923f44.",
+      "First SteamCMD call used a relative VDF path and failed before upload because SteamCMD could not resolve app_build_LOCAL.vdf; the successful retry used the absolute VDF path."
+    ]
+  },
+  "safety": {
+    "steamworksSettingsChanged": false,
+    "storeMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudPathsChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "balanceChanged": false,
+    "newSteamAchievements": false,
+    "steamBranchAssignment": false,
+    "publicDefaultAssignment": false,
+    "notes": [
+      "SteamCMD upload succeeded with cached credentials and blank SetLive, so the build is private/unassigned until manually routed in Steamworks.",
+      "No public/default branch assignment was made by this upload.",
+      "No Steam event, patch note, store metadata, Steamworks setting, AppID, depot, leaderboard, achievement API ID, Steam Cloud path, score identity, XP formula, or release script was changed."
+    ]
+  },
+  "rollback": {
+    "sourceRollback": "git revert f923f4483177a0fe6700d208a558738184bf11df",
+    "steamRollback": "No Steam branch rollback is needed for this upload-only build because SetLive was blank. If BuildID 24037041 is manually assigned later and needs rollback, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the prior desired BuildID."
+  }
+}
