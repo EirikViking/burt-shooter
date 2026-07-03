@@ -217,18 +217,28 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(Object.keys(rotated.progress), [], 'rotation should clear old partial active progress');
 
   const allComplete = completeIds(migrated.runContracts, RUN_CONTRACT_ORDER_IDS);
+  assert.ok(allComplete.allCompletedAt, 'all-complete state should keep a lightweight completion timestamp');
   const allCompleteMenu = getRunContractMenuState(allComplete);
   assert.equal(allCompleteMenu.status, 'complete');
   assert.equal(allCompleteMenu.completionTitle, 'PILOT ORDERS COMPLETE');
+  assert.equal(allCompleteMenu.completionNoticeSeen, false);
+  assert.ok(allCompleteMenu.allCompletedAt, 'menu state should expose all-complete timestamp');
   const acknowledged = acknowledgeRunContractCompletionNotice(allComplete);
+  assert.equal(acknowledged.completionNoticeSeen, true);
+  assert.ok(acknowledged.completionNoticeSeenAt, 'acknowledged state should record notice seen time');
   const hiddenMenu = getRunContractMenuState(acknowledged);
   assert.equal(hiddenMenu.status, 'hidden', 'all-complete board should hide after the completion notice is seen');
+  assert.equal(hiddenMenu.completionNoticeSeen, true);
+  assert.ok(hiddenMenu.completionNoticeSeenAt, 'hidden menu state should expose notice seen time');
 
   const merged = mergeRunContractsState(
     { completed: { graze_break_drill: { id: 'graze_break_drill', count: 1, completedAt: '2026-07-02T10:00:00.000Z' } } },
     { completed: { graze_break_drill: { id: 'graze_break_drill', count: 4, completedAt: '2026-07-02T11:00:00.000Z' } } }
   );
   assert.equal(merged.completed.graze_break_drill.count, 4, 'cloud/local merge should keep the higher completion count');
+  const mergedAcknowledged = mergeRunContractsState(acknowledged, {});
+  assert.equal(mergedAcknowledged.completionNoticeSeen, true, 'merge should preserve completion notice acknowledgement');
+  assert.ok(mergedAcknowledged.completionNoticeSeenAt, 'merge should preserve notice seen timestamp');
 
   writeHangarProgressState({
     ...migrated,
@@ -335,12 +345,12 @@ async function seedMenuProfile(page, runContracts, uiScale) {
   });
 }
 
-async function captureMenuProof(page, { label, width, height, uiScale = 1, runContracts = null, expectedStatus = 'active' }) {
+async function captureMenuProof(page, { label, width, height, uiScale = 1, runContracts = null, expectedStatus = 'active', waitMs = 2400 }) {
   await page.setViewportSize({ width, height });
   await seedMenuProfile(page, runContracts, uiScale);
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForMenu(page);
-  await page.waitForTimeout(2400);
+  await page.waitForTimeout(waitMs);
   const state = await readState(page);
   const screenshot = path.join(outputDir, `${label}.png`);
   await page.screenshot({ path: screenshot, fullPage: true });
@@ -429,6 +439,11 @@ async function runBrowserSmoke() {
     const completedOrderState = runContractState({ completedIds: ['graze_break_drill'] });
     const completeNoticeState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: false });
     const hiddenState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: true });
+    const finalRunState = runContractState({
+      activeIds: ['graze_break_drill'],
+      completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'graze_break_drill'),
+      completionNoticeSeen: false
+    });
 
     const activeProof = await captureMenuProof(page, {
       label: 'pilot-orders-active-menu',
@@ -477,6 +492,7 @@ async function runBrowserSmoke() {
       runContracts: completeNoticeState,
       expectedStatus: 'complete'
     });
+    assert.equal(completeProof.state.menu.missionBoard.completionNoticePending, true, 'complete notice should wait to be acknowledged until visible');
 
     const hiddenProof = await captureMenuProof(page, {
       label: 'pilot-orders-hidden-menu',
@@ -487,8 +503,19 @@ async function runBrowserSmoke() {
       expectedStatus: 'hidden'
     });
 
+    const autoHiddenProof = await captureMenuProof(page, {
+      label: 'pilot-orders-hidden-after-completion-notice',
+      width: 1280,
+      height: 720,
+      uiScale: 1,
+      runContracts: completeNoticeState,
+      expectedStatus: 'hidden',
+      waitMs: 4400
+    });
+    assert.equal(autoHiddenProof.state.menu.missionBoard.completionNoticeSeen, true, 'visible completion notice should be marked seen before hiding');
+
     await page.setViewportSize({ width: 1280, height: 720 });
-    await seedMenuProfile(page, activeState, 1);
+    await seedMenuProfile(page, finalRunState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
     await page.waitForTimeout(500);
@@ -524,6 +551,7 @@ async function runBrowserSmoke() {
     const graze = completionResult.runContracts?.active?.find((item) => item.id === 'graze_break_drill');
     assert.equal(graze?.progress, 3, 'in-run Graze Break order should reach target');
     assert.equal(graze?.completed, true, 'in-run Graze Break order should mark complete');
+    assert.equal(completionResult.runContracts?.allCompleteThisRun, true, 'final order completion should be exposed to run report state');
     assert.equal(
       completionResult.savedRunContracts?.completed?.graze_break_drill?.count,
       1,
@@ -552,7 +580,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: Graze Break x3/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, Graze Break x3/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 
@@ -577,6 +605,7 @@ async function runBrowserSmoke() {
         completedOrderMenu: completedProof.screenshot,
         completeStateMenu: completeProof.screenshot,
         hiddenMenu: hiddenProof.screenshot,
+        hiddenAfterCompletionNotice: autoHiddenProof.screenshot,
         playToast: playScreenshot,
         runReport: reportScreenshot
       }

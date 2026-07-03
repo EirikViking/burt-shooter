@@ -1,7 +1,7 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 2;
+export const RUN_CONTRACTS_VERSION = 3;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
@@ -218,6 +218,26 @@ function progressForActiveIds(progress = {}, activeIds = [], completed = {}) {
   return result;
 }
 
+function latestIso(...values) {
+  let best = '';
+  let bestTime = 0;
+  for (const value of values.flat()) {
+    const text = clampText(value, 80);
+    const time = Date.parse(text || '');
+    if (Number.isFinite(time) && time > bestTime) {
+      best = text;
+      bestTime = time;
+    }
+  }
+  return best;
+}
+
+function getAllCompletedAt(completed = {}) {
+  const allComplete = RUN_CONTRACT_ORDER_IDS.every((id) => completed[id]);
+  if (!allComplete) return null;
+  return latestIso(RUN_CONTRACT_ORDER_IDS.map((id) => completed[id]?.completedAt)) || nowIso();
+}
+
 export function getRunContractCatalog() {
   return RUN_CONTRACT_CATALOG.map((contract) => ({ ...contract, modes: [...contract.modes] }));
 }
@@ -241,13 +261,20 @@ export function normalizeRunContractsState(raw = {}) {
   const completedIds = orderedCompletedIds(completed, source.completedIds);
   const activeIds = selectActiveIds(source.activeIds, completed, { rotateCompleted: false });
   const progress = progressForActiveIds(source.progress, activeIds, completed);
+  const allCompletedAt = getAllCompletedAt(completed);
+  const completionNoticeSeen = Boolean(source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen);
+  const completionNoticeSeenAt = completionNoticeSeen
+    ? (latestIso(source.completionNoticeSeenAt, source.completedNoticeSeenAt, source.allCompleteSeenAt) || clampText(source.updatedAt, 80) || allCompletedAt || nowIso())
+    : null;
   return {
     version: RUN_CONTRACTS_VERSION,
     activeIds,
     completedIds,
     completed,
     progress,
-    completionNoticeSeen: Boolean(source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen),
+    allCompletedAt,
+    completionNoticeSeen,
+    completionNoticeSeenAt,
     updatedAt: clampText(source.updatedAt, 80) || nowIso()
   };
 }
@@ -270,10 +297,12 @@ export function prepareRunContractsForEligibleRun(state = {}) {
 export function acknowledgeRunContractCompletionNotice(state = {}) {
   const normalized = normalizeRunContractsState(state);
   if (!areAllRunContractsComplete(normalized) || normalized.completionNoticeSeen) return normalized;
+  const acknowledgedAt = nowIso();
   return normalizeRunContractsState({
     ...normalized,
     completionNoticeSeen: true,
-    updatedAt: nowIso()
+    completionNoticeSeenAt: acknowledgedAt,
+    updatedAt: acknowledgedAt
   });
 }
 
@@ -298,6 +327,8 @@ export function mergeRunContractsState(localState = {}, cloudState = {}) {
     completedIds: orderedCompletedIds(completed),
     progress: { ...cloud.progress, ...local.progress },
     completionNoticeSeen,
+    allCompletedAt: latestIso(local.allCompletedAt, cloud.allCompletedAt),
+    completionNoticeSeenAt: latestIso(local.completionNoticeSeenAt, cloud.completionNoticeSeenAt),
     updatedAt: local.updatedAt || cloud.updatedAt || nowIso()
   });
 }
@@ -311,6 +342,8 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
     version: RUN_CONTRACTS_VERSION,
     runMode: mode,
     noLifeLost: true,
+    allCompleteThisRun: false,
+    allCompletedAt: state.allCompletedAt || null,
     active: activeIds.map((id) => {
       const contract = getRunContractById(id);
       return {
@@ -471,6 +504,8 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     hidden: status === 'hidden',
     allComplete,
     completionNoticeSeen: Boolean(state.completionNoticeSeen),
+    allCompletedAt: state.allCompletedAt || null,
+    completionNoticeSeenAt: state.completionNoticeSeenAt || null,
     completionTitle: 'PILOT ORDERS COMPLETE',
     completionBody: 'All starter combat goals cleared.',
     active: activeIds.map((id) => {
@@ -518,6 +553,8 @@ export function getRunContractSessionState(session = null) {
     version: session.version || RUN_CONTRACTS_VERSION,
     runMode: normalizeRunMode(session.runMode),
     noLifeLost: session.noLifeLost !== false,
+    allCompleteThisRun: Boolean(session.allCompleteThisRun),
+    allCompletedAt: session.allCompletedAt || null,
     active: (session.active || []).map((item) => {
       const contract = getRunContractById(item.id);
       return {

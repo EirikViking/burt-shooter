@@ -36,10 +36,12 @@ function normalizeDeathSource(value) {
 
 function getPilotOrdersCompleted(runContracts = null) {
   const completed = Array.isArray(runContracts?.completedThisRun) ? runContracts.completedThisRun : [];
-  return completed
+  const titles = completed
     .map((entry) => String(entry?.shortTitle || entry?.title || '').trim())
     .filter(Boolean)
     .slice(0, 3);
+  if (!runContracts?.allCompleteThisRun) return titles;
+  return ['PILOT ORDERS COMPLETE', ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')].slice(0, 3);
 }
 
 function buildRows(entries) {

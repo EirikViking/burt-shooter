@@ -68,6 +68,7 @@ import {
 import { BOSS_FUEL_SHIP_CODEX_ID, getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
 import { readHangarProgressState, updateHangarProgress, writeHangarProgressState } from '../progression/HangarProgressState.js';
 import {
+  areAllRunContractsComplete,
   applyRunContractEvent,
   getRunContractById,
   getRunContractSessionState,
@@ -1164,7 +1165,13 @@ export class PlayScene {
 
   persistRunContractCompletion(completion) {
     const previous = readHangarProgressState();
+    const wasAllComplete = areAllRunContractsComplete(previous.runContracts);
     const runContracts = recordRunContractCompletion(previous.runContracts, completion);
+    const isAllComplete = areAllRunContractsComplete(runContracts);
+    if (!wasAllComplete && isAllComplete && this.runContractSession) {
+      this.runContractSession.allCompleteThisRun = true;
+      this.runContractSession.allCompletedAt = runContracts.allCompletedAt || completion.completedAt || null;
+    }
     writeHangarProgressState({
       ...previous,
       runContracts

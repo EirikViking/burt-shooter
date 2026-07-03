@@ -63,6 +63,7 @@ const MENU_BOSS_BARK_EVENTS = {
 const MENU_BOSS_BARK_FOCUS_DELAY_MS = 360;
 const MENU_BOSS_BARK_FOCUS_COOLDOWN_MS = 1800;
 const MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS = 3200;
+const PILOT_ORDERS_COMPLETE_NOTICE_MIN_MS = 3200;
 
 const DERIVED_MENU_ICON_SOURCES = {
   launch: '/art/generated/nova-swarm/menu/icons/derived/derived-menu-glyph-launch-run.png',
@@ -189,6 +190,8 @@ export class MenuScene {
     this.missionBoardBounds = null;
     this.missionBoardState = null;
     this.missionBoardCompletionNoticeLatched = false;
+    this.missionBoardCompletionNoticePending = false;
+    this.missionBoardCompletionNoticeVisibleMs = 0;
     this.launchDeckBounds = null;
     this.disclaimer = null;
     this.startBtn = null;
@@ -2028,15 +2031,15 @@ export class MenuScene {
       forceCompletionVisible: this.missionBoardCompletionNoticeLatched
     });
     if (missionState.status === 'complete') {
-      this.missionBoardCompletionNoticeLatched = true;
       if (!missionState.completionNoticeSeen) {
-        const runContracts = acknowledgeRunContractCompletionNotice(hangarProgress.runContracts);
-        hangarProgress = writeHangarProgressState({
-          ...hangarProgress,
-          runContracts
-        });
+        this.missionBoardCompletionNoticeLatched = true;
+        this.missionBoardCompletionNoticePending = true;
         missionState = getRunContractMenuState(hangarProgress, { forceCompletionVisible: true });
       }
+    } else {
+      this.missionBoardCompletionNoticeLatched = false;
+      this.missionBoardCompletionNoticePending = false;
+      this.missionBoardCompletionNoticeVisibleMs = 0;
     }
     this.missionBoardState = missionState;
     const desiredBoardWidth = this.launchDeckBounds.width;
@@ -2759,6 +2762,11 @@ export class MenuScene {
         hidden: Boolean(this.missionBoardState?.hidden || this.missionBoardBounds?.hidden),
         allComplete: Boolean(this.missionBoardState?.allComplete),
         completionNoticeSeen: Boolean(this.missionBoardState?.completionNoticeSeen),
+        completionNoticePending: Boolean(this.missionBoardCompletionNoticePending),
+        completionNoticeVisibleMs: Math.round(this.missionBoardCompletionNoticeVisibleMs || 0),
+        completionNoticeMinMs: PILOT_ORDERS_COMPLETE_NOTICE_MIN_MS,
+        allCompletedAt: this.missionBoardState?.allCompletedAt || null,
+        completionNoticeSeenAt: this.missionBoardState?.completionNoticeSeenAt || null,
         bounds: this.missionBoardBounds || boundsForDisplayObject(this.missionBoardPanel),
         titleBounds: boundsForDisplayObject(this.missionBoardTitle),
         subtitleBounds: boundsForDisplayObject(this.missionBoardSubtitle),
@@ -4859,6 +4867,34 @@ export class MenuScene {
     return 1 - Math.pow(1 - t, 3);
   }
 
+  updateMissionBoardCompletionNotice(delta = 0) {
+    if (!this.missionBoardCompletionNoticePending) return;
+    if (this.missionBoardState?.status !== 'complete' || this.missionBoardState?.completionNoticeSeen) return;
+    if (!this.missionBoardPanel?.visible || this.missionBoardBounds?.hidden) return;
+    if (this.settingsOverlay || this.howToPlayOverlay || this.sectorSelectorOpen || this.quitConfirmOpen) return;
+
+    this.missionBoardCompletionNoticeVisibleMs += Math.max(0, Number(delta) || 0) * (1000 / 60);
+    if (this.missionBoardCompletionNoticeVisibleMs < PILOT_ORDERS_COMPLETE_NOTICE_MIN_MS) return;
+
+    const hangarProgress = readHangarProgressState();
+    const runContracts = acknowledgeRunContractCompletionNotice(hangarProgress.runContracts);
+    if (!runContracts.completionNoticeSeen) {
+      this.missionBoardCompletionNoticeLatched = false;
+      this.missionBoardCompletionNoticePending = false;
+      this.missionBoardCompletionNoticeVisibleMs = 0;
+      return;
+    }
+
+    writeHangarProgressState({
+      ...hangarProgress,
+      runContracts
+    });
+    this.missionBoardCompletionNoticeLatched = false;
+    this.missionBoardCompletionNoticePending = false;
+    this.missionBoardCompletionNoticeVisibleMs = 0;
+    this.layoutMenu();
+  }
+
   update(delta) {
     this.animationTime += delta * 0.016;
     updateMenuFx(this, delta);
@@ -4879,6 +4915,7 @@ export class MenuScene {
     this.updateIdleBossMenuBark();
     this.updateCodexSignalCue(delta);
     this.updateMenuButtonMotion(delta);
+    this.updateMissionBoardCompletionNotice(delta);
     this.drawSectorStartStepperCue();
     if (this.sectorSelectorOpen) {
       this.sectorSelectorOpenAge = Math.min(1, (this.sectorSelectorOpenAge || 0) + delta * 0.016 / 0.34);
