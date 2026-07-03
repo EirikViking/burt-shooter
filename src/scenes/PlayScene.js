@@ -1217,6 +1217,7 @@ export class PlayScene {
       slot: 'top',
       type: 'runContract',
       priority: 4,
+      bypassFocusLock: false,
       duration: 3600,
       banner: true,
       title: translateText('PILOT ORDERS'),
@@ -7428,7 +7429,7 @@ export class PlayScene {
     const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
     const now = Date.now();
     const lockUntil = this.getToastSlotLockUntil(slot);
-    const bypassFocusLock = options.bypassFocusLock === true || priority > 3;
+    const bypassFocusLock = options.bypassFocusLock === true || (options.bypassFocusLock !== false && priority > 3);
     const notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
     const entry = {
       message,
@@ -10594,6 +10595,7 @@ export class PlayScene {
     const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();
     const bossName = this.enemyManager?.boss?.profile?.name || String(type || 'Boss').replace(/_/g, ' ');
     this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
+    this.reserveMessageFocus(2800, { priority: 4, slots: ['top', 'corner'] });
     this.emitRunContractEvent('boss_defeated', {
       sector: level,
       bossId,

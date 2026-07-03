@@ -72,7 +72,7 @@ const RUN_REPORT_SECTION_LABELS = Object.freeze({
   run: 'Run',
   combat: 'Combat',
   survival: 'Survival',
-  rewards: 'Rewards'
+  rewards: 'Run Progress'
 });
 
 const RUN_REPORT_FIELD_LABELS = Object.freeze({

@@ -12,6 +12,7 @@ import {
 } from '../src/config/DisplaySettings.js';
 import {
   CONFIRM_EXIT_KEY,
+  SHOW_PILOT_ORDERS_KEY,
   getMenuSettings,
   saveMenuSettings
 } from '../src/config/MenuSettings.js';
@@ -88,11 +89,43 @@ function checkRendererDefaultsAndPersistence() {
   assert.deepEqual(reset.windowSize, { width: 1280, height: 720 });
   assert.equal(reset.uiScale, 1);
 
-  assert.deepEqual(getMenuSettings({ storage }), { confirmExit: true });
+  assert.deepEqual(getMenuSettings({ storage }), {
+    confirmExit: true,
+    showPilotOrders: true,
+    showPilotOrdersStored: false
+  });
+  assert.deepEqual(getMenuSettings({
+    storage: new MemoryStorage(),
+    defaultShowPilotOrders: false
+  }), {
+    confirmExit: true,
+    showPilotOrders: false,
+    showPilotOrdersStored: false
+  });
   const savedMenu = saveMenuSettings({ confirmExit: false }, { storage });
-  assert.deepEqual(savedMenu, { confirmExit: false });
+  assert.deepEqual(savedMenu, {
+    confirmExit: false,
+    showPilotOrders: true,
+    showPilotOrdersStored: false
+  });
   assert.equal(storage.getItem(CONFIRM_EXIT_KEY), '0');
-  assert.deepEqual(getMenuSettings({ storage }), { confirmExit: false });
+  assert.deepEqual(getMenuSettings({ storage }), {
+    confirmExit: false,
+    showPilotOrders: true,
+    showPilotOrdersStored: false
+  });
+  const savedPilotOrders = saveMenuSettings({ showPilotOrders: false }, { storage });
+  assert.deepEqual(savedPilotOrders, {
+    confirmExit: false,
+    showPilotOrders: false,
+    showPilotOrdersStored: true
+  });
+  assert.equal(storage.getItem(SHOW_PILOT_ORDERS_KEY), '0');
+  assert.deepEqual(getMenuSettings({ storage }), {
+    confirmExit: false,
+    showPilotOrders: false,
+    showPilotOrdersStored: true
+  });
 }
 
 async function checkElectronBridgeApply() {
@@ -201,6 +234,7 @@ function checkI18nText() {
     assert.notEqual(translateTextForLocale(locale, 'Window Size'), 'Window Size', `${locale} window size translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI Scale'), 'UI Scale', `${locale} UI scale translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Confirm Exit'), 'Confirm Exit', `${locale} confirm exit translation missing`);
+    assert.notEqual(translateTextForLocale(locale, 'Show Pilot Orders'), 'Show Pilot Orders', `${locale} show pilot orders translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'UI scale applied'), 'UI scale applied', `${locale} UI scale applied translation missing`);
     assert.notEqual(translateTextForLocale(locale, 'Safe display reset applied'), 'Safe display reset applied', `${locale} reset translation missing`);
   }

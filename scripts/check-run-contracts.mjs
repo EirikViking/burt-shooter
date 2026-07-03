@@ -32,6 +32,7 @@ globalThis.window = { localStorage: new MemoryStorage() };
 globalThis.localStorage = globalThis.window.localStorage;
 
 const { RUN_MODES } = await import('../src/game/RunMode.js');
+const { SHOW_PILOT_ORDERS_KEY } = await import('../src/config/MenuSettings.js');
 const {
   HANGAR_PROGRESS_KEY,
   readHangarProgressState,
@@ -43,6 +44,7 @@ const {
   RUN_CONTRACT_ORDER_IDS,
   acknowledgeRunContractCompletionNotice,
   applyRunContractEvent,
+  getDefaultShowPilotOrders,
   getRunContractCatalog,
   getRunContractMenuState,
   mergeRunContractsState,
@@ -58,12 +60,19 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-contracts-${timestamp()}`);
 
-const FIRST_THREE = ['graze_break_drill', 'support_hunter', 'slow_mo_finisher'];
-const SECOND_THREE = ['phase_runner', 'near_miss_streak', 'blink_control'];
+const FIRST_THREE = ['boss_breaker', 'near_miss_streak', 'graze_break_drill'];
+const SECOND_THREE = ['graze_break_x3', 'support_hunter', 'phase_runner'];
 const ACTIVE_DESCRIPTIONS = {
-  graze_break_drill: '3 grazes in Mayhem.',
+  boss_breaker: 'Defeat a Mayhem boss.',
+  near_miss_streak: 'Reach a 5x near-miss streak.',
+  graze_break_drill: 'Trigger 1 Graze Break.',
+  graze_break_x3: 'Trigger 3 Graze Breaks.',
   support_hunter: 'Destroy 2 support ships.',
-  slow_mo_finisher: 'Boss defeat during Slow Time.'
+  slow_mo_finisher: 'Boss defeat during Slow Time.',
+  phase_runner: 'Phase through dangerous bullets.',
+  blink_control: 'Collect Blink Drive and survive.',
+  sector_10_signal: 'Reach Sector 10 in Mayhem.',
+  enemy_sweep_1000: 'Destroy 1000 enemies.'
 };
 
 function timestamp() {
@@ -101,12 +110,17 @@ function completeIds(state, ids) {
 }
 
 function sessionFor(activeIds) {
-  return startRunContractSession({
+  const requested = new Set(activeIds);
+  const session = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
       runContracts: normalizeRunContractsState({ activeIds })
     }
   });
+  return {
+    ...session,
+    active: session.active.filter((item) => requested.has(item.id))
+  };
 }
 
 function applyEvents(session, events) {
@@ -130,14 +144,14 @@ function runCatalogAndSaveTests() {
   assert.equal(catalog.length, 10, 'Pilot Orders should expose the finite starter catalog');
   assert.equal(new Set(catalog.map((contract) => contract.id)).size, catalog.length, 'contract ids must be unique');
   assert.deepEqual(RUN_CONTRACT_ORDER_IDS, [
-    'graze_break_drill',
-    'support_hunter',
-    'slow_mo_finisher',
-    'phase_runner',
-    'near_miss_streak',
-    'blink_control',
-    'sector_5_survivor',
     'boss_breaker',
+    'near_miss_streak',
+    'graze_break_drill',
+    'graze_break_x3',
+    'support_hunter',
+    'phase_runner',
+    'blink_control',
+    'slow_mo_finisher',
     'sector_10_signal',
     'enemy_sweep_1000'
   ]);
@@ -148,21 +162,36 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(migrated.runContracts.activeIds, DEFAULT_ACTIVE_RUN_CONTRACT_IDS);
   const menuState = getRunContractMenuState(migrated);
   assert.equal(menuState.title, 'PILOT ORDERS');
-  assert.equal(menuState.subtitle, 'Starter combat goals for Mayhem.');
+  assert.equal(menuState.subtitle, 'Learn key Mayhem tactics.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
   assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
+  const disabledMenuState = getRunContractMenuState(migrated, { showPilotOrders: false });
+  assert.equal(disabledMenuState.status, 'hidden', 'settings toggle should hide unfinished Pilot Orders');
+  assert.equal(disabledMenuState.disabledBySetting, true, 'hidden unfinished board should identify the toggle as the reason');
+  assert.equal(getDefaultShowPilotOrders({ bestSector: 1, totalRuns: 0 }), true, 'fresh profiles should show Pilot Orders by default');
+  assert.equal(getDefaultShowPilotOrders({ bestSector: 10 }), false, 'mature profiles should hide Pilot Orders by default');
 
   let session = startRunContractSession({ runMode: RUN_MODES.RANKED, progress: migrated });
-  for (let index = 0; index < 2; index += 1) {
-    const result = applyRunContractEvent(session, { type: 'near_miss', streak: index + 1, sector: 1 });
-    session = result.session;
-    assert.equal(result.completed.length, 0, 'Graze order should wait for the third graze');
-  }
-  const grazeResult = applyRunContractEvent(session, { type: 'near_miss', streak: 3, sector: 1 });
-  assert.equal(grazeResult.completed.length, 1, 'third graze should complete the ranked order');
+  const bossResult = applyRunContractEvent(session, { type: 'boss_defeated', sector: 2 });
+  assert.deepEqual(bossResult.completed.map((entry) => entry.id), ['boss_breaker'], 'first Mayhem boss defeat should complete Boss Breaker');
+
+  const grazeNope = applyRunContractEvent(sessionFor(['graze_break_drill']), { type: 'near_miss', streak: 3, sector: 1 });
+  assert.equal(grazeNope.completed.length, 0, 'Graze Break order should wait for the explicit Graze Break event');
+  const grazeResult = applyRunContractEvent(grazeNope.session, { type: 'graze_break', sector: 1 });
+  assert.equal(grazeResult.completed.length, 1, 'one Graze Break should complete the starter Graze Break order');
   assert.equal(grazeResult.completed[0].id, 'graze_break_drill');
-  assert.equal(findSessionItem(grazeResult.session, 'graze_break_drill').progress, 3);
+  assert.equal(findSessionItem(grazeResult.session, 'graze_break_drill').progress, 1);
+
+  let grazeX3Session = sessionFor(['graze_break_x3']);
+  for (let index = 0; index < 2; index += 1) {
+    const result = applyRunContractEvent(grazeX3Session, { type: 'graze_break', sector: 1 });
+    grazeX3Session = result.session;
+    assert.equal(result.completed.length, 0, 'Graze Break x3 should wait for the third Graze Break');
+  }
+  const grazeX3Result = applyRunContractEvent(grazeX3Session, { type: 'graze_break', sector: 1 });
+  assert.deepEqual(grazeX3Result.completed.map((entry) => entry.id), ['graze_break_x3']);
+  assert.equal(findSessionItem(grazeX3Result.session, 'graze_break_x3').progress, 3);
 
   const supportResult = applyEvents(sessionFor(['support_hunter']), [
     { type: 'boss_support_defeated', sector: 4 },
@@ -183,17 +212,6 @@ function runCatalogAndSaveTests() {
 
   const blinkResult = applyRunContractEvent(sessionFor(['blink_control']), { type: 'blink_drive_survived', survivedSeconds: 6, sector: 1 });
   assert.deepEqual(blinkResult.completed.map((entry) => entry.id), ['blink_control']);
-
-  const sectorFailed = applyEvents(sessionFor(['sector_5_survivor']), [
-    { type: 'life_lost', sector: 3 },
-    { type: 'sector_reached', sector: 5 }
-  ]);
-  assert.equal(sectorFailed.completed.length, 0, 'Sector 5 Survivor should require no life loss');
-  const sectorResult = applyRunContractEvent(sessionFor(['sector_5_survivor']), { type: 'sector_reached', sector: 5 });
-  assert.deepEqual(sectorResult.completed.map((entry) => entry.id), ['sector_5_survivor']);
-
-  const bossBreaker = applyRunContractEvent(sessionFor(['boss_breaker']), { type: 'boss_defeated', sector: 2 });
-  assert.deepEqual(bossBreaker.completed.map((entry) => entry.id), ['boss_breaker']);
 
   const sectorTen = applyRunContractEvent(sessionFor(['sector_10_signal']), { type: 'sector_reached', sector: 10 });
   assert.deepEqual(sectorTen.completed.map((entry) => entry.id), ['sector_10_signal']);
@@ -224,13 +242,13 @@ function runCatalogAndSaveTests() {
   assert.equal(findSessionItem(scoutResult.session, 'graze_break_drill').eligible, false);
 
   let firstSave = recordRunContractCompletion(migrated.runContracts, grazeResult.completed[0]);
-  firstSave = recordRunContractSessionProgress(firstSave, applyRunContractEvent(sessionFor(['support_hunter']), { type: 'boss_support_defeated', sector: 3 }).session);
-  assert.equal(firstSave.progress.support_hunter.progress, 1, 'partial progress should persist for active unfinished orders');
+  firstSave = recordRunContractSessionProgress(firstSave, applyRunContractEvent(sessionFor(['near_miss_streak']), { type: 'near_miss', streak: 3, sector: 1 }).session);
+  assert.equal(firstSave.progress.near_miss_streak.progress, 3, 'partial progress should persist for active unfinished orders');
 
   const completedFirstThree = completeIds(migrated.runContracts, FIRST_THREE);
   assert.deepEqual(completedFirstThree.activeIds, FIRST_THREE, 'completed orders should linger in active slots before transition');
   const completedMenu = getRunContractMenuState(completedFirstThree);
-  assert.equal(completedMenu.active[0].progress, 3, 'completed active row should report target progress');
+  assert.equal(completedMenu.active[0].progress, completedMenu.active[0].target, 'completed active row should report target progress');
   assert.equal(completedMenu.active[0].completed, true);
 
   const rotated = prepareRunContractsForEligibleRun(completedFirstThree);
@@ -244,6 +262,9 @@ function runCatalogAndSaveTests() {
   assert.equal(allCompleteMenu.completionTitle, 'PILOT ORDERS COMPLETE');
   assert.equal(allCompleteMenu.completionNoticeSeen, false);
   assert.ok(allCompleteMenu.allCompletedAt, 'menu state should expose all-complete timestamp');
+  const allCompleteMenuWithToggleOff = getRunContractMenuState(allComplete, { showPilotOrders: false });
+  assert.equal(allCompleteMenuWithToggleOff.status, 'complete', 'final completion notice should show once even if the toggle is off');
+  assert.equal(allCompleteMenuWithToggleOff.disabledBySetting, false);
   const acknowledged = acknowledgeRunContractCompletionNotice(allComplete);
   assert.equal(acknowledged.completionNoticeSeen, true);
   assert.ok(acknowledged.completionNoticeSeenAt, 'acknowledged state should record notice seen time');
@@ -251,6 +272,9 @@ function runCatalogAndSaveTests() {
   assert.equal(hiddenMenu.status, 'hidden', 'all-complete board should hide after the completion notice is seen');
   assert.equal(hiddenMenu.completionNoticeSeen, true);
   assert.ok(hiddenMenu.completionNoticeSeenAt, 'hidden menu state should expose notice seen time');
+  const hiddenMenuWithToggleOff = getRunContractMenuState(acknowledged, { showPilotOrders: false });
+  assert.equal(hiddenMenuWithToggleOff.status, 'hidden', 'acknowledged completion should stay hidden regardless of setting');
+  assert.equal(hiddenMenuWithToggleOff.disabledBySetting, false);
 
   const merged = mergeRunContractsState(
     { completed: { graze_break_drill: { id: 'graze_break_drill', count: 1, completedAt: '2026-07-02T10:00:00.000Z' } } },
@@ -277,9 +301,19 @@ function runCatalogAndSaveTests() {
   });
   assert.deepEqual(normalized.activeIds, [
     'support_hunter',
-    'graze_break_drill',
-    'slow_mo_finisher'
+    'boss_breaker',
+    'near_miss_streak'
   ], 'normalization should drop invalid/duplicate ids and refill active slots');
+
+  const legacyOpeningState = normalizeRunContractsState({
+    version: RUN_CONTRACTS_VERSION - 1,
+    activeIds: ['graze_break_drill', 'support_hunter', 'slow_mo_finisher'],
+    progress: {
+      graze_break_drill: { id: 'graze_break_drill', progress: 2, target: 3 }
+    }
+  });
+  assert.deepEqual(legacyOpeningState.activeIds, FIRST_THREE, 'older unfinished starter saves should move to the easier opening ladder');
+  assert.equal(legacyOpeningState.progress.graze_break_drill, undefined, 'old Graze partial progress should not become misleading Graze Break progress');
 
   const expandedCompleteState = normalizeRunContractsState({
     version: RUN_CONTRACTS_VERSION - 1,
@@ -360,34 +394,59 @@ async function waitForMenu(page) {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'menu', null, { timeout: 30000 });
 }
 
-async function seedMenuProfile(page, runContracts, uiScale) {
-  await page.evaluate(({ key, runContracts: seededRunContracts, uiScale: seededUiScale }) => {
+async function seedMenuProfile(page, runContracts, uiScale, { showPilotOrders = null, hangarPatch = null } = {}) {
+  await page.evaluate(({
+    key,
+    showPilotOrdersKey,
+    runContracts: seededRunContracts,
+    uiScale: seededUiScale,
+    showPilotOrders: seededShowPilotOrders,
+    hangarPatch: seededHangarPatch
+  }) => {
     localStorage.clear();
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
     localStorage.setItem('nova_ui_scale_v1', String(seededUiScale));
-    if (seededRunContracts) {
+    if (seededShowPilotOrders !== null) {
+      localStorage.setItem(showPilotOrdersKey, seededShowPilotOrders ? '1' : '0');
+    }
+    if (seededRunContracts || seededHangarPatch) {
       localStorage.setItem(key, JSON.stringify({
         version: 1,
-        runContracts: seededRunContracts
+        ...(seededHangarPatch || {}),
+        ...(seededRunContracts ? { runContracts: seededRunContracts } : {})
       }));
     }
   }, {
     key: HANGAR_PROGRESS_KEY,
+    showPilotOrdersKey: SHOW_PILOT_ORDERS_KEY,
     runContracts,
-    uiScale
+    uiScale,
+    showPilotOrders,
+    hangarPatch
   });
 }
 
-async function captureMenuProof(page, { label, width, height, uiScale = 1, runContracts = null, expectedStatus = 'active', waitMs = 2400 }) {
+async function captureMenuProof(page, {
+  label,
+  width,
+  height,
+  uiScale = 1,
+  runContracts = null,
+  showPilotOrders = null,
+  hangarPatch = null,
+  expectedStatus = 'active',
+  expectedDisabledBySetting = null,
+  waitMs = 2400
+}) {
   await page.setViewportSize({ width, height });
-  await seedMenuProfile(page, runContracts, uiScale);
+  await seedMenuProfile(page, runContracts, uiScale, { showPilotOrders, hangarPatch });
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForMenu(page);
   await page.waitForTimeout(waitMs);
   const state = await readState(page);
   const screenshot = path.join(outputDir, `${label}.png`);
   await page.screenshot({ path: screenshot, fullPage: true });
-  assertPilotOrdersLayout(state.menu, expectedStatus);
+  assertPilotOrdersLayout(state.menu, expectedStatus, { expectedDisabledBySetting });
   return {
     label,
     width,
@@ -417,12 +476,15 @@ function boundsOverlap(a, b, pad = 0) {
   );
 }
 
-function assertPilotOrdersLayout(menu, expectedStatus = 'active') {
+function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisabledBySetting = null } = {}) {
   const screen = menu?.screen;
   const board = menu?.missionBoard;
   assert.ok(screen?.width > 0 && screen?.height > 0, 'menu screen bounds should be exposed');
   assert.match(menu?.missionBriefing?.title || '', /^RUN MODES \/\/ /, 'run mode panel should avoid Mission wording repetition');
   assert.equal(board?.status, expectedStatus);
+  if (expectedDisabledBySetting !== null) {
+    assert.equal(board?.disabledBySetting, expectedDisabledBySetting, 'Pilot Orders hidden reason should match expectation');
+  }
 
   if (expectedStatus === 'hidden') {
     assert.equal(board?.hidden, true, 'completed Pilot Orders board should be hidden after notice is seen');
@@ -446,7 +508,7 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active') {
   }
 
   assert.equal(board?.title, 'PILOT ORDERS');
-  assert.equal(board?.subtitle, 'Starter combat goals for Mayhem.');
+  assert.equal(board?.subtitle, 'Learn key Mayhem tactics.');
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   for (const row of board.rows) {
     assertInside(row.bounds, screen, `${row.id} row`);
@@ -482,7 +544,7 @@ async function runBrowserSmoke() {
     mkdirSync(outputDir, { recursive: true });
 
     const activeState = runContractState();
-    const completedOrderState = runContractState({ completedIds: ['graze_break_drill'] });
+    const completedOrderState = runContractState({ completedIds: ['boss_breaker'] });
     const completeNoticeState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: false });
     const hiddenState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: true });
     const finalRunState = runContractState({
@@ -500,7 +562,22 @@ async function runBrowserSmoke() {
       expectedStatus: 'active'
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/3', '0/2', '0/1']);
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/1', '0/5', '0/1']);
+
+    await seedMenuProfile(page, activeState, 1);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(() => window.__game?.scenes?.menu?.openSettingsOverlay?.());
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.overlays?.settings === true && state.settingsOverlay?.display?.showPilotOrders === true;
+    }, null, { timeout: 10000 });
+    const settingsState = await readState(page);
+    assert.equal(settingsState.settingsOverlay?.display?.showPilotOrdersLabel, 'ON', 'settings toggle should default on for unfinished fresh players');
+    const settingsScreenshot = path.join(outputDir, 'pilot-orders-settings-toggle.png');
+    await page.screenshot({ path: settingsScreenshot, fullPage: true });
+    await page.evaluate(() => window.__game?.scenes?.menu?.closeSettingsOverlay?.());
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.settings !== true, null, { timeout: 10000 });
 
     const steamDeckProof = await captureMenuProof(page, {
       label: 'pilot-orders-steam-deck',
@@ -518,6 +595,28 @@ async function runBrowserSmoke() {
       uiScale: 1.5,
       runContracts: activeState,
       expectedStatus: 'active'
+    });
+
+    const settingHiddenProof = await captureMenuProof(page, {
+      label: 'pilot-orders-hidden-by-setting-menu',
+      width: 1280,
+      height: 720,
+      uiScale: 1,
+      runContracts: activeState,
+      showPilotOrders: false,
+      expectedStatus: 'hidden',
+      expectedDisabledBySetting: true
+    });
+
+    const veteranHiddenProof = await captureMenuProof(page, {
+      label: 'pilot-orders-veteran-default-hidden-menu',
+      width: 1280,
+      height: 720,
+      uiScale: 1,
+      runContracts: activeState,
+      hangarPatch: { bestSector: 10, bestLevel: 10, totalRuns: 8 },
+      expectedStatus: 'hidden',
+      expectedDisabledBySetting: true
     });
 
     const completedProof = await captureMenuProof(page, {
@@ -577,9 +676,7 @@ async function runBrowserSmoke() {
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
-      for (let index = 0; index < 3; index += 1) {
-        play.emitRunContractEvent('near_miss', { streak: index + 1, sector: window.__game?.level || 1 });
-      }
+      play.emitRunContractEvent('graze_break', { sector: window.__game?.level || 1 });
     });
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -596,7 +693,7 @@ async function runBrowserSmoke() {
       };
     });
     const graze = completionResult.runContracts?.active?.find((item) => item.id === 'graze_break_drill');
-    assert.equal(graze?.progress, 3, 'in-run Graze order should reach target');
+    assert.equal(graze?.progress, 1, 'in-run Graze Break order should reach target');
     assert.equal(graze?.completed, true, 'in-run Graze order should mark complete');
     assert.equal(completionResult.runContracts?.allCompleteThisRun, true, 'final order completion should be exposed to run report state');
     assert.equal(
@@ -605,7 +702,7 @@ async function runBrowserSmoke() {
       'completion should persist to hangar profile'
     );
     assert.ok(
-      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze x3')),
+      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze Break')),
       'completion toast should be visible through text state'
     );
     const orderToast = completionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
@@ -631,7 +728,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, Graze x3/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, Graze Break/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 
@@ -651,8 +748,11 @@ async function runBrowserSmoke() {
       consoleErrors,
       screenshots: {
         activeMenu: activeProof.screenshot,
+        settingsToggle: settingsScreenshot,
         steamDeckMenu: steamDeckProof.screenshot,
         largeUiMenu: largeUiProof.screenshot,
+        hiddenBySettingMenu: settingHiddenProof.screenshot,
+        veteranDefaultHiddenMenu: veteranHiddenProof.screenshot,
         completedOrderMenu: completedProof.screenshot,
         completeStateMenu: completeProof.screenshot,
         hiddenMenu: hiddenProof.screenshot,

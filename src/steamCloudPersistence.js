@@ -19,8 +19,10 @@ import {
 } from './config/DisplaySettings.js';
 import {
   CONFIRM_EXIT_KEY,
+  SHOW_PILOT_ORDERS_KEY,
   getMenuSettings,
-  normalizeConfirmExit
+  normalizeConfirmExit,
+  normalizeShowPilotOrders
 } from './config/MenuSettings.js';
 import {
   getCodexDiscoverySignature,
@@ -34,7 +36,7 @@ import {
 import { mergeRunContractsState } from './progression/RunContracts.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
-export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY };
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -1063,6 +1065,10 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     }
   }
   if (settings.menu?.confirmExit !== undefined && writeStorage(storage, CONFIRM_EXIT_KEY, normalizeConfirmExit(settings.menu.confirmExit) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.menu?.showPilotOrders !== undefined && writeStorage(storage, SHOW_PILOT_ORDERS_KEY, normalizeShowPilotOrders(settings.menu.showPilotOrders) ? '1' : '0')) {
     summary.settings += 1;
     summary.restored = true;
   }

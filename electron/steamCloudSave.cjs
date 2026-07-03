@@ -718,7 +718,11 @@ function sanitizeMenuSettings(menu = {}) {
   const confirmExit = value === false || value === 'false' || value === '0' || value === 0 || value === 'off'
     ? false
     : true;
-  return { confirmExit };
+  const pilotOrdersValue = raw.showPilotOrders;
+  const showPilotOrders = pilotOrdersValue === false || pilotOrdersValue === 'false' || pilotOrdersValue === '0' || pilotOrdersValue === 0 || pilotOrdersValue === 'off'
+    ? false
+    : true;
+  return { confirmExit, showPilotOrders };
 }
 
 function sanitizeSettings(settings = {}) {

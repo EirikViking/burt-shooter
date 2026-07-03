@@ -1,22 +1,58 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 4;
+export const RUN_CONTRACTS_VERSION = 5;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
 export const RUN_CONTRACT_CATALOG = Object.freeze([
   Object.freeze({
-    id: 'graze_break_drill',
-    title: 'Graze Drill',
-    shortTitle: 'Graze x3',
-    description: 'Graze 3 bullets in Mayhem.',
-    shortDescription: '3 grazes in Mayhem.',
+    id: 'boss_breaker',
+    title: 'Boss Breaker',
+    shortTitle: 'Boss Breaker',
+    description: 'Defeat your first boss in Mayhem.',
+    shortDescription: 'Defeat a Mayhem boss.',
     modeLabel: 'Mayhem',
     modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'grazes',
-    target: 3,
+    objective: 'boss_defeated',
+    target: 1,
+    accent: 0xffd15c
+  }),
+  Object.freeze({
+    id: 'near_miss_streak',
+    title: 'Near-Miss Streak',
+    shortTitle: 'Near-Miss Streak',
+    description: 'Build a 5x near-miss streak.',
+    shortDescription: 'Reach a 5x near-miss streak.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'near_miss_streak',
+    target: 5,
+    accent: 0xffef7e
+  }),
+  Object.freeze({
+    id: 'graze_break_drill',
+    title: 'Graze Break',
+    shortTitle: 'Graze Break',
+    description: 'Trigger 1 Graze Break in Mayhem.',
+    shortDescription: 'Trigger 1 Graze Break.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'graze_breaks',
+    target: 1,
     accent: 0xff66ff
+  }),
+  Object.freeze({
+    id: 'graze_break_x3',
+    title: 'Graze Break x3',
+    shortTitle: 'Graze Break x3',
+    description: 'Trigger 3 Graze Breaks in one Mayhem run.',
+    shortDescription: 'Trigger 3 Graze Breaks.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'graze_breaks',
+    target: 3,
+    accent: 0xff8cff
   }),
   Object.freeze({
     id: 'support_hunter',
@@ -31,18 +67,6 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     accent: 0x7fffd8
   }),
   Object.freeze({
-    id: 'slow_mo_finisher',
-    title: 'Slow-Mo Finisher',
-    shortTitle: 'Slow-Mo Finisher',
-    description: 'Defeat a boss while Slow Time or Chrono Anchor is active.',
-    shortDescription: 'Boss defeat during Slow Time.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'boss_slow_time_defeat',
-    target: 1,
-    accent: 0x63ffe8
-  }),
-  Object.freeze({
     id: 'phase_runner',
     title: 'Phase Runner',
     shortTitle: 'Phase Runner',
@@ -53,18 +77,6 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     objective: 'phase_through_danger',
     target: 1,
     accent: 0x9cfbff
-  }),
-  Object.freeze({
-    id: 'near_miss_streak',
-    title: 'Near-Miss Streak',
-    shortTitle: 'Near-Miss Streak',
-    description: 'Trigger a 5x near-miss streak.',
-    shortDescription: 'Reach a 5x near-miss streak.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'near_miss_streak',
-    target: 5,
-    accent: 0xffef7e
   }),
   Object.freeze({
     id: 'blink_control',
@@ -80,29 +92,16 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     accent: 0x7df9ff
   }),
   Object.freeze({
-    id: 'sector_5_survivor',
-    title: 'Sector 5 Survivor',
-    shortTitle: 'Sector 5 Survivor',
-    description: 'Reach Sector 5 without losing a life.',
-    shortDescription: 'Reach Sector 5 without life loss.',
+    id: 'slow_mo_finisher',
+    title: 'Slow-Mo Finisher',
+    shortTitle: 'Slow-Mo Finisher',
+    description: 'Defeat a boss while Slow Time or Chrono Anchor is active.',
+    shortDescription: 'Boss defeat during Slow Time.',
     modeLabel: 'Mayhem',
     modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'sector_no_life_loss',
+    objective: 'boss_slow_time_defeat',
     target: 1,
-    sectorTarget: 5,
-    accent: 0x8dff8d
-  }),
-  Object.freeze({
-    id: 'boss_breaker',
-    title: 'Boss Breaker',
-    shortTitle: 'Boss Breaker',
-    description: 'Defeat any boss in Mayhem.',
-    shortDescription: 'Defeat any Mayhem boss.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'boss_defeated',
-    target: 1,
-    accent: 0xffd15c
+    accent: 0x63ffe8
   }),
   Object.freeze({
     id: 'sector_10_signal',
@@ -259,6 +258,22 @@ export function getRunContractById(id) {
   return CONTRACT_BY_ID.get(String(id || '')) || null;
 }
 
+export function isMaturePilotOrdersProfile(progress = {}) {
+  const source = progress && typeof progress === 'object' ? progress : {};
+  const bestSector = Math.max(
+    floor(source.bestSector, 1),
+    floor(source.bestLevel, 1)
+  );
+  return bestSector >= 10
+    || floor(source.totalRuns) >= 8
+    || floor(source.totalBossesDefeated) >= 3
+    || floor(source.runClears) >= 1;
+}
+
+export function getDefaultShowPilotOrders(progress = {}) {
+  return !isMaturePilotOrdersProfile(progress);
+}
+
 function shouldPreserveRunProgress(id) {
   return getRunContractById(id)?.persistAcrossRuns === true;
 }
@@ -278,6 +293,10 @@ export function normalizeRunContractsState(raw = {}) {
   const completedIds = orderedCompletedIds(completed, source.completedIds);
   const sourceVersion = floor(source.version);
   let activeIds = selectActiveIds(source.activeIds, completed, { rotateCompleted: false });
+  const migratedFromOlderCatalog = sourceVersion > 0 && sourceVersion < RUN_CONTRACTS_VERSION;
+  if (migratedFromOlderCatalog) {
+    activeIds = selectActiveIds(DEFAULT_ACTIVE_RUN_CONTRACT_IDS, completed, { rotateCompleted: false });
+  }
   const catalogExpandedWithNewWork = sourceVersion < RUN_CONTRACTS_VERSION
     && completedIds.length > 0
     && completedIds.length < RUN_CONTRACT_ORDER_IDS.length;
@@ -285,6 +304,9 @@ export function normalizeRunContractsState(raw = {}) {
     activeIds = selectActiveIds(activeIds, completed, { rotateCompleted: true });
   }
   const progress = progressForActiveIds(source.progress, activeIds, completed);
+  if (migratedFromOlderCatalog) {
+    delete progress.graze_break_drill;
+  }
   const allCompletedAt = getAllCompletedAt(completed);
   const completionNoticeSeen = Boolean(allCompletedAt && (source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen));
   const completionNoticeSeenAt = completionNoticeSeen
@@ -527,16 +549,20 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
   const state = normalizeRunContractsState(progressOrState?.runContracts || progressOrState || {});
   const allComplete = areAllRunContractsComplete(state);
   const forceCompletionVisible = Boolean(options.forceCompletionVisible);
-  const status = allComplete
+  const showPilotOrders = options.showPilotOrders !== false;
+  const status = !showPilotOrders && !allComplete
+    ? 'hidden'
+    : allComplete
     ? (state.completionNoticeSeen && !forceCompletionVisible ? 'hidden' : 'complete')
     : 'active';
   const activeIds = status === 'active' ? state.activeIds : [];
   return {
     version: state.version,
     title: 'PILOT ORDERS',
-    subtitle: 'Starter combat goals for Mayhem.',
+    subtitle: 'Learn key Mayhem tactics.',
     status,
     hidden: status === 'hidden',
+    disabledBySetting: !showPilotOrders && !allComplete,
     allComplete,
     completionNoticeSeen: Boolean(state.completionNoticeSeen),
     allCompletedAt: state.allCompletedAt || null,

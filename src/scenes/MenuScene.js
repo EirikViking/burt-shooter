@@ -15,7 +15,7 @@ import { getMenuSettings } from '../config/MenuSettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
-import { acknowledgeRunContractCompletionNotice, getRunContractMenuState } from '../progression/RunContracts.js';
+import { acknowledgeRunContractCompletionNotice, getDefaultShowPilotOrders, getRunContractMenuState } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
@@ -2027,14 +2027,21 @@ export class MenuScene {
     ));
     const headerHeight = Math.round((isShortLayout ? 38 : 40) * boardScale);
     let hangarProgress = readHangarProgressState();
+    const menuSettings = getMenuSettings({
+      defaultShowPilotOrders: getDefaultShowPilotOrders(hangarProgress)
+    });
     let missionState = getRunContractMenuState(hangarProgress, {
-      forceCompletionVisible: this.missionBoardCompletionNoticeLatched
+      forceCompletionVisible: this.missionBoardCompletionNoticeLatched,
+      showPilotOrders: menuSettings.showPilotOrders
     });
     if (missionState.status === 'complete') {
       if (!missionState.completionNoticeSeen) {
         this.missionBoardCompletionNoticeLatched = true;
         this.missionBoardCompletionNoticePending = true;
-        missionState = getRunContractMenuState(hangarProgress, { forceCompletionVisible: true });
+        missionState = getRunContractMenuState(hangarProgress, {
+          forceCompletionVisible: true,
+          showPilotOrders: menuSettings.showPilotOrders
+        });
       }
     } else {
       this.missionBoardCompletionNoticeLatched = false;
@@ -2761,6 +2768,7 @@ export class MenuScene {
         subtitle: this.missionBoardSubtitle?.text || null,
         status: this.missionBoardState?.status || null,
         hidden: Boolean(this.missionBoardState?.hidden || this.missionBoardBounds?.hidden),
+        disabledBySetting: Boolean(this.missionBoardState?.disabledBySetting),
         allComplete: Boolean(this.missionBoardState?.allComplete),
         completionNoticeSeen: Boolean(this.missionBoardState?.completionNoticeSeen),
         completionNoticePending: Boolean(this.missionBoardCompletionNoticePending),

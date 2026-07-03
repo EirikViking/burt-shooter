@@ -36,8 +36,10 @@ import {
   CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
   CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
   grantSecretShipUnlock,
+  readHangarProgressState,
   rollCreditsAscendantEasterEgg
 } from '../progression/HangarProgressState.js';
+import { getDefaultShowPilotOrders } from '../progression/RunContracts.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
 import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
 
@@ -132,6 +134,7 @@ export class SettingsOverlay {
     this.displaySizeButton = null;
     this.uiScaleButton = null;
     this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
     this.displayStatusText = null;
     this.displayOptions = {
       modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
@@ -173,6 +176,7 @@ export class SettingsOverlay {
     this.uiScale = Math.min(requestedUiScale, viewportScaleCap);
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
+    const menuSettings = this.getMenuSettingsForOverlay();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -233,10 +237,21 @@ export class SettingsOverlay {
     y += testGap;
     this.addUiScaleRow('UI Scale', y);
     y += toggleGap;
-    this.addToggleRow('Confirm Exit', getMenuSettings().confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+    this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
       id: 'confirm_exit',
       onButton: (button) => {
         this.confirmExitButton = button;
+      }
+    });
+    y += toggleGap;
+    this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, y, (enabled) => saveMenuSettings({
+      showPilotOrders: enabled
+    }, {
+      defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+    }), {
+      id: 'show_pilot_orders',
+      onButton: (button) => {
+        this.pilotOrdersButton = button;
       }
     });
     y += toggleGap;
@@ -305,6 +320,16 @@ export class SettingsOverlay {
         height: footerButtonHeight
       });
     }
+  }
+
+  getDefaultShowPilotOrdersSetting() {
+    return getDefaultShowPilotOrders(readHangarProgressState());
+  }
+
+  getMenuSettingsForOverlay() {
+    return getMenuSettings({
+      defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+    });
   }
 
   addToggleRow(label, initialValue, y, onChange, { id = null, onButton = null } = {}) {
@@ -977,6 +1002,7 @@ export class SettingsOverlay {
     this.displaySizeButton = null;
     this.uiScaleButton = null;
     this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -1801,8 +1827,10 @@ export class SettingsOverlay {
         windowSize: displaySettings.windowSize,
         uiScale: displaySettings.uiScale,
         uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
-        confirmExit: getMenuSettings().confirmExit,
-        confirmExitLabel: this.confirmExitButton?._label?.text || (getMenuSettings().confirmExit ? 'ON' : 'OFF'),
+        confirmExit: this.getMenuSettingsForOverlay().confirmExit,
+        confirmExitLabel: this.confirmExitButton?._label?.text || (this.getMenuSettingsForOverlay().confirmExit ? 'ON' : 'OFF'),
+        showPilotOrders: this.getMenuSettingsForOverlay().showPilotOrders,
+        showPilotOrdersLabel: this.pilotOrdersButton?._label?.text || (this.getMenuSettingsForOverlay().showPilotOrders ? 'ON' : 'OFF'),
         modeLabel: this.displayModeButton?._label?.text || null,
         sizeLabel: this.displaySizeButton?._label?.text || null,
         status: this.displayStatusText?.text || null,
