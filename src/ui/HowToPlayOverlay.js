@@ -97,6 +97,14 @@ const HELP_ROWS = Object.freeze([
     control: 'MAYHEM / SCOUT / SECTOR RUN',
     tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you practice unlocked later starts.',
     accent: 0xff8f5a
+  },
+  {
+    code: '12',
+    icon: 'ORDER',
+    label: 'PILOT ORDERS',
+    control: 'STARTER GOALS IN MAYHEM',
+    tip: 'Use the main-menu Pilot Orders as optional combat drills. They teach core mechanics and hide once cleared.',
+    accent: 0x7fffd8
   }
 ]);
 

@@ -2135,13 +2135,14 @@ export class MenuScene {
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
       row._title.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
+      row._detail.style.wordWrap = false;
       row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 80 : 106) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
       row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
       row._title.x = Math.round(13 * uiScale);
-      row._title.y = Math.round(rowHeight * 0.33);
+      row._title.y = Math.round(rowHeight * 0.28);
       row._detail.x = Math.round(13 * uiScale);
-      row._detail.y = Math.round(rowHeight * 0.73);
+      row._detail.y = Math.round(rowHeight * 0.79);
       row._progress.x = row._width - Math.round(11 * uiScale);
       row._progress.y = row._title.y;
       refreshTextTexture(row._title);

@@ -1155,12 +1155,26 @@ export class PlayScene {
       sector: payload.sector || this.game?.level || 1
     });
     this.runContractSession = result.session;
-    this.persistRunContractSessionProgress();
+    if (this.shouldPersistRunContractProgress(type, result)) {
+      this.persistRunContractSessionProgress();
+    }
     for (const completion of result.completed || []) {
       this.persistRunContractCompletion(completion);
       this.showRunContractCompletion(completion.id);
     }
     return result.completed || [];
+  }
+
+  shouldPersistRunContractProgress(type, result = {}) {
+    if ((result.completed || []).length > 0) return true;
+    if (type !== 'enemy_defeated') return true;
+    const enemySweep = (result.session?.active || []).find((item) => {
+      const contract = getRunContractById(item.id);
+      return contract?.objective === 'enemy_defeats' && item.eligible && !item.completed;
+    });
+    if (!enemySweep) return false;
+    const progress = Math.max(0, Math.floor(Number(enemySweep.progress) || 0));
+    return progress <= 5 || progress % 25 === 0;
   }
 
   persistRunContractCompletion(completion) {
@@ -1192,15 +1206,24 @@ export class PlayScene {
     const contract = getRunContractById(contractId);
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
+    const compactHud = this.game.getWidth() < 620;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
     this.enqueueToast(translateText('ORDER COMPLETE: {title}', { title }), {
-      fontSize: this.game.getWidth() < 620 ? 15 : 18,
-      fill: '#7fffd8',
+      fontSize: compactHud ? 17 : 22,
+      fill: '#f6fbff',
       stroke: '#031321',
-      strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
-      slot: 'corner',
+      strokeThickness: compactHud ? 3 : 4,
+      slot: 'top',
       type: 'runContract',
-      priority: 3,
-      duration: 1700
+      priority: 4,
+      duration: 3600,
+      banner: true,
+      title: translateText('PILOT ORDERS'),
+      align: 'center',
+      y: Math.min(height - 132, Math.max(compactHud ? 132 : 158, height * 0.22)),
+      maxWidth: compactHud ? width * 0.82 : Math.min(440, width * 0.38),
+      accent: contract.accent || 0x7fffd8
     });
   }
 
@@ -7894,6 +7917,7 @@ export class PlayScene {
 
     let display = null;
     if (options.banner) {
+      const runContractBanner = options.type === 'runContract';
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -7946,16 +7970,19 @@ export class PlayScene {
       const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
       const panel = new PIXI.Graphics();
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
-      panel.fill({ color: options.type === 'lore' ? 0x05121c : 0x111111, alpha: options.type === 'lore' ? 0.78 : 0.88 });
+      panel.fill({
+        color: options.type === 'lore' ? 0x05121c : (runContractBanner ? 0x031321 : 0x111111),
+        alpha: options.type === 'lore' ? 0.78 : (runContractBanner ? 0.94 : 0.88)
+      });
       panel.stroke({
-        color: options.type === 'lore' ? (options.accent || 0x6fe7ff) : 0xffff00,
-        width: options.type === 'lore' ? 1.5 : 3,
+        color: options.type === 'lore' || runContractBanner ? (options.accent || 0x6fe7ff) : 0xffff00,
+        width: options.type === 'lore' ? 1.5 : (runContractBanner ? 3.5 : 3),
         alpha: options.type === 'lore' ? 0.78 : 1
       });
 
       const accent = new PIXI.Graphics();
       accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 10);
-      accent.stroke({ color: 0xff66cc, width: 1, alpha: 0.7 });
+      accent.stroke({ color: runContractBanner ? 0xffef7e : 0xff66cc, width: runContractBanner ? 1.4 : 1, alpha: runContractBanner ? 0.82 : 0.7 });
 
       const noise = new PIXI.Graphics();
       for (let i = 0; i < 24; i++) {
@@ -7978,7 +8005,7 @@ export class PlayScene {
         const titleLabel = createText(String(options.title).toUpperCase(), {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
           fontSize: options.type === 'lore' ? 12 : 14,
-          fill: options.type === 'lore' ? '#7ee9ff' : '#ffff00',
+          fill: options.type === 'lore' ? '#7ee9ff' : (runContractBanner ? '#ffef7e' : '#ffff00'),
           fontWeight: 'bold',
           stroke: '#000000',
           strokeThickness: options.type === 'lore' ? 2 : 3
@@ -8613,6 +8640,15 @@ export class PlayScene {
         this.emitRunContractEvent('boss_support_defeated', {
           sector: this.game?.level || 1,
           supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID
+        });
+      }
+      if ((this.runContractSession?.active || []).some((item) => {
+        const contract = getRunContractById(item.id);
+        return contract?.objective === 'enemy_defeats' && item.eligible && !item.completed;
+      })) {
+        this.emitRunContractEvent('enemy_defeated', {
+          sector: this.game?.level || 1,
+          enemyType: enemy?.type || enemy?.kind || 'enemy'
         });
       }
     }

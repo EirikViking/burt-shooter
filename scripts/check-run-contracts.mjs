@@ -61,7 +61,7 @@ const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run
 const FIRST_THREE = ['graze_break_drill', 'support_hunter', 'slow_mo_finisher'];
 const SECOND_THREE = ['phase_runner', 'near_miss_streak', 'blink_control'];
 const ACTIVE_DESCRIPTIONS = {
-  graze_break_drill: '3 Graze Breaks in Mayhem.',
+  graze_break_drill: '3 grazes in Mayhem.',
   support_hunter: 'Destroy 2 support ships.',
   slow_mo_finisher: 'Boss defeat during Slow Time.'
 };
@@ -127,7 +127,7 @@ function findSessionItem(session, id) {
 function runCatalogAndSaveTests() {
   const storage = setStorage(new MemoryStorage());
   const catalog = getRunContractCatalog();
-  assert.equal(catalog.length, 9, 'Pilot Orders should expose the finite starter catalog');
+  assert.equal(catalog.length, 10, 'Pilot Orders should expose the finite starter catalog');
   assert.equal(new Set(catalog.map((contract) => contract.id)).size, catalog.length, 'contract ids must be unique');
   assert.deepEqual(RUN_CONTRACT_ORDER_IDS, [
     'graze_break_drill',
@@ -138,7 +138,8 @@ function runCatalogAndSaveTests() {
     'blink_control',
     'sector_5_survivor',
     'boss_breaker',
-    'sector_10_signal'
+    'sector_10_signal',
+    'enemy_sweep_1000'
   ]);
   assert.deepEqual(DEFAULT_ACTIVE_RUN_CONTRACT_IDS, FIRST_THREE);
 
@@ -154,12 +155,12 @@ function runCatalogAndSaveTests() {
 
   let session = startRunContractSession({ runMode: RUN_MODES.RANKED, progress: migrated });
   for (let index = 0; index < 2; index += 1) {
-    const result = applyRunContractEvent(session, { type: 'graze_break', sector: 1 });
+    const result = applyRunContractEvent(session, { type: 'near_miss', streak: index + 1, sector: 1 });
     session = result.session;
-    assert.equal(result.completed.length, 0, 'Graze Break order should wait for the third trigger');
+    assert.equal(result.completed.length, 0, 'Graze order should wait for the third graze');
   }
-  const grazeResult = applyRunContractEvent(session, { type: 'graze_break', sector: 1 });
-  assert.equal(grazeResult.completed.length, 1, 'third Graze Break should complete the ranked order');
+  const grazeResult = applyRunContractEvent(session, { type: 'near_miss', streak: 3, sector: 1 });
+  assert.equal(grazeResult.completed.length, 1, 'third graze should complete the ranked order');
   assert.equal(grazeResult.completed[0].id, 'graze_break_drill');
   assert.equal(findSessionItem(grazeResult.session, 'graze_break_drill').progress, 3);
 
@@ -197,8 +198,28 @@ function runCatalogAndSaveTests() {
   const sectorTen = applyRunContractEvent(sessionFor(['sector_10_signal']), { type: 'sector_reached', sector: 10 });
   assert.deepEqual(sectorTen.completed.map((entry) => entry.id), ['sector_10_signal']);
 
+  const enemySweepBase = normalizeRunContractsState({ activeIds: ['enemy_sweep_1000'] });
+  const enemySweepPartial = applyEvents(sessionFor(['enemy_sweep_1000']), [
+    { type: 'enemy_defeated', sector: 2, count: 250 },
+    { type: 'enemy_defeated', sector: 3, count: 250 }
+  ]);
+  assert.equal(findSessionItem(enemySweepPartial.session, 'enemy_sweep_1000').progress, 500, 'enemy sweep should count cumulative enemy defeats');
+  const savedSweep = recordRunContractSessionProgress(enemySweepBase, enemySweepPartial.session);
+  const resumedSweep = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      runContracts: normalizeRunContractsState({
+        ...savedSweep,
+        activeIds: ['enemy_sweep_1000']
+      })
+    }
+  });
+  assert.equal(findSessionItem(resumedSweep, 'enemy_sweep_1000').progress, 500, 'enemy sweep should preserve progress across eligible Mayhem starts');
+  const enemySweepComplete = applyRunContractEvent(resumedSweep, { type: 'enemy_defeated', sector: 4, count: 500 });
+  assert.deepEqual(enemySweepComplete.completed.map((entry) => entry.id), ['enemy_sweep_1000']);
+
   const scoutSession = startRunContractSession({ runMode: RUN_MODES.SCOUT, progress: migrated });
-  const scoutResult = applyRunContractEvent(scoutSession, { type: 'graze_break', sector: 1 });
+  const scoutResult = applyRunContractEvent(scoutSession, { type: 'near_miss', streak: 1, sector: 1 });
   assert.equal(scoutResult.completed.length, 0, 'Scout runs should not complete Mayhem-only orders');
   assert.equal(findSessionItem(scoutResult.session, 'graze_break_drill').eligible, false);
 
@@ -259,6 +280,18 @@ function runCatalogAndSaveTests() {
     'graze_break_drill',
     'slow_mo_finisher'
   ], 'normalization should drop invalid/duplicate ids and refill active slots');
+
+  const expandedCompleteState = normalizeRunContractsState({
+    version: RUN_CONTRACTS_VERSION - 1,
+    activeIds: FIRST_THREE,
+    completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'enemy_sweep_1000'),
+    completed: Object.fromEntries(RUN_CONTRACT_ORDER_IDS
+      .filter((id) => id !== 'enemy_sweep_1000')
+      .map((id) => [id, completion(id)])),
+    completionNoticeSeen: true
+  });
+  assert.deepEqual(expandedCompleteState.activeIds, ['enemy_sweep_1000'], 'catalog expansion should surface the new unfinished starter order');
+  assert.equal(expandedCompleteState.completionNoticeSeen, false, 'catalog expansion should let the final completion notice show again after the new order');
 }
 
 async function isPortAvailable(candidatePort) {
@@ -374,6 +407,16 @@ function assertInside(bounds, screen, label) {
   assert.ok(bounds.bottom <= screen.height + 2, `${label}: bottom edge offscreen`);
 }
 
+function boundsOverlap(a, b, pad = 0) {
+  if (!a || !b) return false;
+  return !(
+    a.x + a.width + pad <= b.x
+    || b.x + b.width + pad <= a.x
+    || a.y + a.height + pad <= b.y
+    || b.y + b.height + pad <= a.y
+  );
+}
+
 function assertPilotOrdersLayout(menu, expectedStatus = 'active') {
   const screen = menu?.screen;
   const board = menu?.missionBoard;
@@ -410,6 +453,9 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active') {
     assertInside(row.titleBounds, screen, `${row.id} title`);
     assertInside(row.detailBounds, screen, `${row.id} detail`);
     assertInside(row.progressBounds, screen, `${row.id} progress`);
+    assert.ok(!boundsOverlap(row.titleBounds, row.detailBounds, 0), `${row.id} title/detail text should not overlap`);
+    assert.ok(!boundsOverlap(row.titleBounds, row.progressBounds, 2), `${row.id} title/progress text should not overlap`);
+    assert.ok(!boundsOverlap(row.detailBounds, row.progressBounds, 2), `${row.id} detail/progress text should not overlap`);
     assert.equal(row.detail, ACTIVE_DESCRIPTIONS[row.id], `${row.id} should show its starter goal description`);
     assert.match(row.progress, /^(COMPLETE|[0-9]+\/[0-9]+)$/, `${row.id} should show clear progress`);
   }
@@ -532,7 +578,7 @@ async function runBrowserSmoke() {
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
       for (let index = 0; index < 3; index += 1) {
-        play.emitRunContractEvent('graze_break', { sector: window.__game?.level || 1 });
+        play.emitRunContractEvent('near_miss', { streak: index + 1, sector: window.__game?.level || 1 });
       }
     });
     await page.waitForFunction(() => {
@@ -544,13 +590,14 @@ async function runBrowserSmoke() {
       const profile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
       return {
         runContracts: textState.runContracts,
+        toastActive: textState.toast?.active || [],
         toastMessages: (textState.toast?.active || []).map((toast) => toast.message),
         savedRunContracts: profile.runContracts || null
       };
     });
     const graze = completionResult.runContracts?.active?.find((item) => item.id === 'graze_break_drill');
-    assert.equal(graze?.progress, 3, 'in-run Graze Break order should reach target');
-    assert.equal(graze?.completed, true, 'in-run Graze Break order should mark complete');
+    assert.equal(graze?.progress, 3, 'in-run Graze order should reach target');
+    assert.equal(graze?.completed, true, 'in-run Graze order should mark complete');
     assert.equal(completionResult.runContracts?.allCompleteThisRun, true, 'final order completion should be exposed to run report state');
     assert.equal(
       completionResult.savedRunContracts?.completed?.graze_break_drill?.count,
@@ -558,9 +605,13 @@ async function runBrowserSmoke() {
       'completion should persist to hangar profile'
     );
     assert.ok(
-      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze Break x3')),
+      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze x3')),
       'completion toast should be visible through text state'
     );
+    const orderToast = completionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
+    assert.equal(orderToast?.slot, 'top', 'completion toast should use the top queue instead of the crowded corner');
+    assert.equal(orderToast?.type, 'runContract', 'completion toast should expose the runContract type');
+    assert.ok(orderToast?.duration >= 3200, 'completion toast should stay visible long enough to notice');
 
     await page.waitForTimeout(250);
     const playScreenshot = path.join(outputDir, 'pilot-order-complete-play.png');
@@ -580,7 +631,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, Graze Break x3/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, Graze x3/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 

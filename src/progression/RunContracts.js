@@ -1,20 +1,20 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 3;
+export const RUN_CONTRACTS_VERSION = 4;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
 export const RUN_CONTRACT_CATALOG = Object.freeze([
   Object.freeze({
     id: 'graze_break_drill',
-    title: 'Graze Break Drill',
-    shortTitle: 'Graze Break x3',
-    description: 'Trigger 3 Graze Breaks in Mayhem.',
-    shortDescription: '3 Graze Breaks in Mayhem.',
+    title: 'Graze Drill',
+    shortTitle: 'Graze x3',
+    description: 'Graze 3 bullets in Mayhem.',
+    shortDescription: '3 grazes in Mayhem.',
     modeLabel: 'Mayhem',
     modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'graze_breaks',
+    objective: 'grazes',
     target: 3,
     accent: 0xff66ff
   }),
@@ -116,6 +116,19 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     target: 1,
     sectorTarget: 10,
     accent: 0xcaa6ff
+  }),
+  Object.freeze({
+    id: 'enemy_sweep_1000',
+    title: 'Enemy Sweep',
+    shortTitle: '1000 Enemies',
+    description: 'Destroy 1000 enemies in Mayhem.',
+    shortDescription: 'Destroy 1000 enemies.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'enemy_defeats',
+    target: 1000,
+    persistAcrossRuns: true,
+    accent: 0xff8f5a
   })
 ]);
 
@@ -246,6 +259,10 @@ export function getRunContractById(id) {
   return CONTRACT_BY_ID.get(String(id || '')) || null;
 }
 
+function shouldPreserveRunProgress(id) {
+  return getRunContractById(id)?.persistAcrossRuns === true;
+}
+
 export function areAllRunContractsComplete(state = {}) {
   const normalized = normalizeRunContractsState(state);
   return RUN_CONTRACT_ORDER_IDS.every((id) => normalized.completedIds.includes(id));
@@ -259,10 +276,17 @@ export function normalizeRunContractsState(raw = {}) {
     if (normalized) completed[normalized.id] = normalized;
   }
   const completedIds = orderedCompletedIds(completed, source.completedIds);
-  const activeIds = selectActiveIds(source.activeIds, completed, { rotateCompleted: false });
+  const sourceVersion = floor(source.version);
+  let activeIds = selectActiveIds(source.activeIds, completed, { rotateCompleted: false });
+  const catalogExpandedWithNewWork = sourceVersion < RUN_CONTRACTS_VERSION
+    && completedIds.length > 0
+    && completedIds.length < RUN_CONTRACT_ORDER_IDS.length;
+  if (catalogExpandedWithNewWork && activeIds.length && activeIds.every((id) => completed[id])) {
+    activeIds = selectActiveIds(activeIds, completed, { rotateCompleted: true });
+  }
   const progress = progressForActiveIds(source.progress, activeIds, completed);
   const allCompletedAt = getAllCompletedAt(completed);
-  const completionNoticeSeen = Boolean(source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen);
+  const completionNoticeSeen = Boolean(allCompletedAt && (source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen));
   const completionNoticeSeenAt = completionNoticeSeen
     ? (latestIso(source.completionNoticeSeenAt, source.completedNoticeSeenAt, source.allCompleteSeenAt) || clampText(source.updatedAt, 80) || allCompletedAt || nowIso())
     : null;
@@ -286,10 +310,17 @@ export function createDefaultRunContractsState() {
 export function prepareRunContractsForEligibleRun(state = {}) {
   const normalized = normalizeRunContractsState(state);
   if (areAllRunContractsComplete(normalized)) return normalized;
+  const activeIds = selectActiveIds(normalized.activeIds, normalized.completed, { rotateCompleted: true });
+  const progress = {};
+  for (const id of activeIds) {
+    if (shouldPreserveRunProgress(id) && normalized.progress[id] && !normalized.completed[id]) {
+      progress[id] = normalized.progress[id];
+    }
+  }
   return normalizeRunContractsState({
     ...normalized,
-    activeIds: selectActiveIds(normalized.activeIds, normalized.completed, { rotateCompleted: true }),
-    progress: {},
+    activeIds,
+    progress,
     updatedAt: nowIso()
   });
 }
@@ -346,11 +377,11 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
     allCompletedAt: state.allCompletedAt || null,
     active: activeIds.map((id) => {
       const contract = getRunContractById(id);
-      return {
-        id,
-        progress: 0,
-        target: contract?.target || 1,
-        completed: false,
+        return {
+          id,
+          progress: contract?.persistAcrossRuns ? Math.min(contract.target || 1, floor(state.progress?.[id]?.progress)) : 0,
+          target: contract?.target || 1,
+          completed: false,
         eligible: isRunContractEligible(contract, mode) && !state.completed[id],
         completedAt: null
       };
@@ -369,6 +400,8 @@ function progressForEvent(contract, item, event, session) {
   const type = String(event?.type || '');
   const current = floor(item.progress);
   switch (contract.objective) {
+    case 'grazes':
+      return type === 'near_miss' ? current + 1 : current;
     case 'graze_breaks':
       return type === 'graze_break' ? current + 1 : current;
     case 'boss_support_defeats':
@@ -387,6 +420,8 @@ function progressForEvent(contract, item, event, session) {
         : current;
     case 'boss_defeated':
       return type === 'boss_defeated' ? contract.target : current;
+    case 'enemy_defeats':
+      return type === 'enemy_defeated' ? current + Math.max(1, floor(event.count, 1)) : current;
     case 'sector_reached':
       return type === 'sector_reached' && floor(event.sector, 1) >= floor(contract.sectorTarget || 10, 10)
         ? contract.target

@@ -27,7 +27,8 @@ const expectedRows = [
   'COMBOS',
   'TRACTOR SHIPS',
   'PICKUPS & BONUS',
-  'RUN MODES'
+  'RUN MODES',
+  'PILOT ORDERS'
 ];
 
 function timestamp() {
@@ -140,6 +141,8 @@ function assertCleanHelpCopy(state, label) {
   assert(joined.includes('tight weaving'), `${label} should explain Focus Drift movement use`);
   assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
   assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
+  assert(joined.includes('optional combat drills'), `${label} should explain Pilot Orders as optional drills`);
+  assert(joined.includes('hide once cleared'), `${label} should explain Pilot Orders completion behavior`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
     assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);
@@ -153,7 +156,7 @@ function assertScreenshotAudit(audit, label) {
 function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
-  assert(overlay?.cardCount === 11, `${label} expected 11 help cards, saw ${overlay?.cardCount}`);
+  assert(overlay?.cardCount === 12, `${label} expected 12 help cards, saw ${overlay?.cardCount}`);
   assert(overlay?.heroArt?.motionNodes >= 20, `${label} expected animated hero art nodes, saw ${overlay?.heroArt?.motionNodes}`);
   assert(overlay?.heroArt?.textureSprites >= 6, `${label} expected real hero texture slots, saw ${overlay?.heroArt?.textureSprites}`);
   assert(overlay?.heroArt?.visibleTextureSprites >= 4, `${label} expected loaded hero art sprites, saw ${overlay?.heroArt?.visibleTextureSprites}`);
