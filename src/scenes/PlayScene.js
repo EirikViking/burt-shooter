@@ -520,6 +520,17 @@ export class PlayScene {
       runMode: this.game?.runMode || RUN_MODES.RANKED,
       progress: runContractProgress
     });
+    const currentPilotRankIndex = Math.max(
+      0,
+      Math.floor(Number(runContractProgress?.pilotRank) || 0),
+      Math.floor(Number(runContractProgress?.highestPilotRank) || 0),
+      Math.floor(Number(runContractProgress?.bestRank) || 0)
+    );
+    this.emitRunContractEvent('pilot_rank_reached', {
+      rankIndex: currentPilotRankIndex,
+      displayRank: currentPilotRankIndex + 1,
+      sector: this.game?.level || 1
+    });
     this.blinkDriveOrderStartedAt = null;
     this.blinkDriveOrderCompleted = false;
     this.playerPhaseWasActive = false;
@@ -1168,12 +1179,16 @@ export class PlayScene {
   shouldPersistRunContractProgress(type, result = {}) {
     if ((result.completed || []).length > 0) return true;
     if (type !== 'enemy_defeated') return true;
-    const enemySweep = (result.session?.active || []).find((item) => {
+    const trackedEnemyOrder = (result.session?.active || []).find((item) => {
       const contract = getRunContractById(item.id);
-      return contract?.objective === 'enemy_defeats' && item.eligible && !item.completed;
+      return (contract?.objective === 'enemy_defeats' || contract?.objective === 'unique_enemy_defeats')
+        && item.eligible
+        && !item.completed;
     });
-    if (!enemySweep) return false;
-    const progress = Math.max(0, Math.floor(Number(enemySweep.progress) || 0));
+    if (!trackedEnemyOrder) return false;
+    const progress = Math.max(0, Math.floor(Number(trackedEnemyOrder.progress) || 0));
+    const contract = getRunContractById(trackedEnemyOrder.id);
+    if (contract?.objective === 'unique_enemy_defeats') return progress <= 5 || progress % 5 === 0;
     return progress <= 5 || progress % 25 === 0;
   }
 
@@ -2333,6 +2348,11 @@ export class PlayScene {
     if (this.player && this.player.setRank) {
       this.player.setRank(nr, 'rank_up');
     }
+    this.emitRunContractEvent('pilot_rank_reached', {
+      rankIndex: nr,
+      displayRank: nr + 1,
+      sector: this.game?.level || 1
+    });
     this.showRankUp(nr);
   }
 
@@ -8645,7 +8665,9 @@ export class PlayScene {
       }
       if ((this.runContractSession?.active || []).some((item) => {
         const contract = getRunContractById(item.id);
-        return contract?.objective === 'enemy_defeats' && item.eligible && !item.completed;
+        return (contract?.objective === 'enemy_defeats' || contract?.objective === 'unique_enemy_defeats')
+          && item.eligible
+          && !item.completed;
       })) {
         this.emitRunContractEvent('enemy_defeated', {
           sector: this.game?.level || 1,

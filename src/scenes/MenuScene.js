@@ -2781,6 +2781,7 @@ export class MenuScene {
         subtitleBounds: boundsForDisplayObject(this.missionBoardSubtitle),
         rows: (this.missionBoardRows || []).filter((row) => row?.visible).map((row, index) => ({
           id: this.missionBoardState?.active?.[index]?.id || null,
+          group: this.missionBoardState?.active?.[index]?.group || null,
           title: row?._title?.text || null,
           detail: row?._detail?.text || null,
           progress: row?._progress?.text || null,

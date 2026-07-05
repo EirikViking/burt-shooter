@@ -62,13 +62,24 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-contracts-${timestamp()}`);
 
 const FIRST_THREE = ['boss_breaker', 'near_miss_streak', 'enemy_sweep_1000'];
-const SECOND_THREE = ['enemy_sweep_2500', 'support_hunter', 'phase_runner'];
+const SECOND_THREE = ['support_hunter', 'phase_runner', 'blink_control'];
 const ACTIVE_DESCRIPTIONS = {
   boss_breaker: 'Defeat a Mayhem boss.',
   near_miss_streak: 'Reach a 5x near-miss streak.',
   enemy_sweep_1000: 'Destroy 1000 enemies.',
   enemy_sweep_2500: 'Destroy 2500 enemies.',
+  enemy_sweep_10000: 'Destroy 10000 enemies.',
+  enemy_sweep_25000: 'Destroy 25000 enemies.',
   support_hunter: 'Destroy 2 support ships.',
+  support_hunter_10: 'Destroy 10 support ships.',
+  support_hunter_50: 'Destroy 50 support ships.',
+  support_hunter_100: 'Destroy 100 support ships.',
+  boss_hunter_10: 'Defeat 10 bosses.',
+  boss_hunter_50: 'Defeat 50 bosses.',
+  boss_hunter_100: 'Defeat 100 bosses.',
+  enemy_variety_50: 'Destroy 50 enemy types.',
+  enemy_variety_100: 'Destroy 100 enemy types.',
+  pilot_rank_5: 'Achieve rank 5.',
   slow_mo_finisher: 'Boss defeat during Slow Time.',
   phase_runner: 'Phase through dangerous bullets.',
   blink_control: 'Collect Blink Drive and survive.',
@@ -138,30 +149,50 @@ function findSessionItem(session, id) {
   return session.active.find((item) => item.id === id);
 }
 
+function assertDistinctActiveGroups(stateOrIds, label = 'active orders') {
+  const catalogById = new Map(getRunContractCatalog().map((contract) => [contract.id, contract]));
+  const ids = Array.isArray(stateOrIds) ? stateOrIds : (stateOrIds.activeIds || []);
+  const groups = ids.map((id) => catalogById.get(id)?.group || id);
+  assert.equal(new Set(groups).size, groups.length, `${label} should not contain two orders from the same group`);
+}
+
 function runCatalogAndSaveTests() {
   const storage = setStorage(new MemoryStorage());
   const catalog = getRunContractCatalog();
-  assert.equal(catalog.length, 9, 'Pilot Orders should expose the finite starter catalog');
+  assert.equal(catalog.length, 20, 'Pilot Orders should expose the finite starter catalog');
   assert.equal(new Set(catalog.map((contract) => contract.id)).size, catalog.length, 'contract ids must be unique');
+  assert.equal(catalog.every((contract) => typeof contract.group === 'string' && contract.group), true, 'contract catalog should tag every order with a display group');
   assert.deepEqual(RUN_CONTRACT_ORDER_IDS, [
     'boss_breaker',
     'near_miss_streak',
     'enemy_sweep_1000',
-    'enemy_sweep_2500',
     'support_hunter',
     'phase_runner',
     'blink_control',
     'slow_mo_finisher',
-    'sector_10_signal'
+    'sector_10_signal',
+    'enemy_sweep_2500',
+    'boss_hunter_10',
+    'support_hunter_10',
+    'enemy_variety_50',
+    'enemy_sweep_10000',
+    'pilot_rank_5',
+    'boss_hunter_50',
+    'support_hunter_50',
+    'enemy_variety_100',
+    'enemy_sweep_25000',
+    'boss_hunter_100',
+    'support_hunter_100'
   ]);
   assert.deepEqual(DEFAULT_ACTIVE_RUN_CONTRACT_IDS, FIRST_THREE);
 
   const migrated = readHangarProgressState();
   assert.equal(migrated.runContracts.version, RUN_CONTRACTS_VERSION, 'default profile should gain runContracts state');
   assert.deepEqual(migrated.runContracts.activeIds, DEFAULT_ACTIVE_RUN_CONTRACT_IDS);
+  assertDistinctActiveGroups(migrated.runContracts, 'default Pilot Orders');
   const menuState = getRunContractMenuState(migrated);
   assert.equal(menuState.title, 'PILOT ORDERS');
-  assert.equal(menuState.subtitle, 'Learn key Mayhem tactics.');
+  assert.equal(menuState.subtitle, 'Review cleared orders in Ship Hangar.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
   assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
@@ -170,6 +201,12 @@ function runCatalogAndSaveTests() {
   assert.equal(disabledMenuState.disabledBySetting, true, 'hidden unfinished board should identify the toggle as the reason');
   assert.equal(getDefaultShowPilotOrders({ bestSector: 1, totalRuns: 0 }), true, 'fresh profiles should show Pilot Orders by default');
   assert.equal(getDefaultShowPilotOrders({ bestSector: 10 }), false, 'mature profiles should hide Pilot Orders by default');
+
+  const dedupedEnemyOrders = normalizeRunContractsState({
+    activeIds: ['near_miss_streak', 'enemy_sweep_1000', 'enemy_sweep_2500']
+  });
+  assertDistinctActiveGroups(dedupedEnemyOrders, 'normalized duplicate enemy orders');
+  assert.equal(dedupedEnemyOrders.activeIds.includes('enemy_sweep_2500'), false, 'normalization should not show two enemy-kill orders together');
 
   let session = startRunContractSession({ runMode: RUN_MODES.RANKED, progress: migrated });
   const bossResult = applyRunContractEvent(session, { type: 'boss_defeated', sector: 2 });
@@ -194,11 +231,51 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(enemy2500Result.completed.map((entry) => entry.id), ['enemy_sweep_2500']);
   assert.equal(findSessionItem(enemy2500Result.session, 'enemy_sweep_2500').progress, 2500);
 
+  const enemy10000Result = applyRunContractEvent(sessionFor(['enemy_sweep_10000']), { type: 'enemy_defeated', sector: 8, count: 10000 });
+  assert.deepEqual(enemy10000Result.completed.map((entry) => entry.id), ['enemy_sweep_10000']);
+  const enemy25000Result = applyRunContractEvent(sessionFor(['enemy_sweep_25000']), { type: 'enemy_defeated', sector: 12, count: 25000 });
+  assert.deepEqual(enemy25000Result.completed.map((entry) => entry.id), ['enemy_sweep_25000']);
+
   const supportResult = applyEvents(sessionFor(['support_hunter']), [
     { type: 'boss_support_defeated', sector: 4 },
     { type: 'boss_support_defeated', sector: 4 }
   ]);
   assert.deepEqual(supportResult.completed.map((entry) => entry.id), ['support_hunter']);
+  const supportTenResult = applyEvents(sessionFor(['support_hunter_10']), Array.from({ length: 10 }, () => ({ type: 'boss_support_defeated', sector: 4 })));
+  assert.deepEqual(supportTenResult.completed.map((entry) => entry.id), ['support_hunter_10']);
+
+  const bossTenPartial = applyEvents(sessionFor(['boss_hunter_10']), Array.from({ length: 9 }, () => ({ type: 'boss_defeated', sector: 4 })));
+  assert.equal(bossTenPartial.completed.length, 0, '10 Bosses should wait until the tenth boss defeat');
+  assert.equal(findSessionItem(bossTenPartial.session, 'boss_hunter_10').progress, 9);
+  const bossTenResult = applyRunContractEvent(bossTenPartial.session, { type: 'boss_defeated', sector: 5 });
+  assert.deepEqual(bossTenResult.completed.map((entry) => entry.id), ['boss_hunter_10']);
+
+  const enemyVarietyPartial = applyEvents(sessionFor(['enemy_variety_50']), Array.from({ length: 49 }, (_, index) => ({
+    type: 'enemy_defeated',
+    sector: 3,
+    enemyType: `enemy_type_${index}`
+  })));
+  assert.equal(enemyVarietyPartial.completed.length, 0, 'enemy variety should wait for distinct enemy types');
+  assert.equal(findSessionItem(enemyVarietyPartial.session, 'enemy_variety_50').progress, 49);
+  const enemyVarietyDuplicate = applyRunContractEvent(enemyVarietyPartial.session, {
+    type: 'enemy_defeated',
+    sector: 3,
+    enemyType: 'enemy_type_10'
+  });
+  assert.equal(findSessionItem(enemyVarietyDuplicate.session, 'enemy_variety_50').progress, 49, 'duplicate enemy types should not advance variety orders');
+  const enemyVarietyResult = applyRunContractEvent(enemyVarietyDuplicate.session, {
+    type: 'enemy_defeated',
+    sector: 3,
+    enemyType: 'enemy_type_49'
+  });
+  assert.deepEqual(enemyVarietyResult.completed.map((entry) => entry.id), ['enemy_variety_50']);
+
+  const rankPartial = applyRunContractEvent(sessionFor(['pilot_rank_5']), { type: 'pilot_rank_reached', rankIndex: 3, sector: 1 });
+  assert.equal(rankPartial.completed.length, 0, 'Rank 5 should wait for display rank 5');
+  assert.equal(findSessionItem(rankPartial.session, 'pilot_rank_5').progress, 4);
+  const rankResult = applyRunContractEvent(rankPartial.session, { type: 'pilot_rank_reached', rankIndex: 4, sector: 1 });
+  assert.deepEqual(rankResult.completed.map((entry) => entry.id), ['pilot_rank_5']);
+
 
   const slowNope = applyRunContractEvent(sessionFor(['slow_mo_finisher']), { type: 'boss_defeated', slowTimeActive: false, sector: 2 });
   assert.equal(slowNope.completed.length, 0, 'boss defeat without Slow Time should not satisfy Slow-Mo Finisher');
@@ -237,6 +314,26 @@ function runCatalogAndSaveTests() {
   const enemySweepComplete = applyRunContractEvent(resumedSweep, { type: 'enemy_defeated', sector: 4, count: 500 });
   assert.deepEqual(enemySweepComplete.completed.map((entry) => entry.id), ['enemy_sweep_1000']);
 
+  const enemyVarietyBase = normalizeRunContractsState({ activeIds: ['enemy_variety_50'] });
+  const enemyVarietySavedPartial = applyEvents(sessionFor(['enemy_variety_50']), [
+    { type: 'enemy_defeated', sector: 2, enemyType: 'codex_scout' },
+    { type: 'enemy_defeated', sector: 2, enemyType: 'codex_diver' },
+    { type: 'enemy_defeated', sector: 2, enemyType: 'codex_scout' }
+  ]);
+  const savedVariety = recordRunContractSessionProgress(enemyVarietyBase, enemyVarietySavedPartial.session);
+  assert.equal(savedVariety.progress.enemy_variety_50.progress, 2, 'enemy variety should persist unique enemy type count');
+  assert.deepEqual(savedVariety.progress.enemy_variety_50.uniqueIds.sort(), ['codex_diver', 'codex_scout']);
+  const resumedVariety = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      runContracts: normalizeRunContractsState({
+        ...savedVariety,
+        activeIds: ['enemy_variety_50']
+      })
+    }
+  });
+  assert.equal(findSessionItem(resumedVariety, 'enemy_variety_50').progress, 2, 'enemy variety should resume unique progress');
+
   const scoutSession = startRunContractSession({ runMode: RUN_MODES.SCOUT, progress: migrated });
   const scoutResult = applyRunContractEvent(scoutSession, { type: 'near_miss', streak: 1, sector: 1 });
   assert.equal(scoutResult.completed.length, 0, 'Scout runs should not complete Mayhem-only orders');
@@ -254,6 +351,7 @@ function runCatalogAndSaveTests() {
 
   const rotated = prepareRunContractsForEligibleRun(completedFirstThree);
   assert.deepEqual(rotated.activeIds, SECOND_THREE, 'next eligible Mayhem run should rotate completed starters out');
+  assertDistinctActiveGroups(rotated, 'rotated Pilot Orders');
   assert.deepEqual(Object.keys(rotated.progress), [], 'rotation should clear old partial active progress');
 
   const allComplete = completeIds(migrated.runContracts, RUN_CONTRACT_ORDER_IDS);
@@ -288,6 +386,24 @@ function runCatalogAndSaveTests() {
   const mergedAcknowledged = mergeRunContractsState(acknowledged, {});
   assert.equal(mergedAcknowledged.completionNoticeSeen, true, 'merge should preserve completion notice acknowledgement');
   assert.ok(mergedAcknowledged.completionNoticeSeenAt, 'merge should preserve notice seen timestamp');
+  const mergedProgress = mergeRunContractsState(
+    {
+      activeIds: ['enemy_sweep_1000', 'enemy_variety_50'],
+      progress: {
+        enemy_sweep_1000: { id: 'enemy_sweep_1000', progress: 500, target: 1000 },
+        enemy_variety_50: { id: 'enemy_variety_50', progress: 1, target: 50, uniqueIds: ['scout'] }
+      }
+    },
+    {
+      activeIds: ['enemy_sweep_1000', 'enemy_variety_50'],
+      progress: {
+        enemy_sweep_1000: { id: 'enemy_sweep_1000', progress: 750, target: 1000 },
+        enemy_variety_50: { id: 'enemy_variety_50', progress: 1, target: 50, uniqueIds: ['diver'] }
+      }
+    }
+  );
+  assert.equal(mergedProgress.progress.enemy_sweep_1000.progress, 750, 'merge should keep higher enemy-kill progress');
+  assert.deepEqual(mergedProgress.progress.enemy_variety_50.uniqueIds.sort(), ['diver', 'scout'], 'merge should union unique enemy type progress');
 
   writeHangarProgressState({
     ...migrated,
@@ -514,8 +630,9 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   }
 
   assert.equal(board?.title, 'PILOT ORDERS');
-  assert.equal(board?.subtitle, 'Learn key Mayhem tactics.');
+  assert.equal(board?.subtitle, 'Review cleared orders in Ship Hangar.');
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
+  assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
   for (const row of board.rows) {
     assertInside(row.bounds, screen, `${row.id} row`);
     assertInside(row.titleBounds, screen, `${row.id} title`);

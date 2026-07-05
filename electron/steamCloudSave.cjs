@@ -25,6 +25,35 @@ const PILOT_XP_THRESHOLDS = [
   225000, 285000, 360000, 450000, 555000, 675000, 815000, 975000, 1155000, 1360000,
   1590000, 1850000, 2140000, 2465000, 2830000, 3240000, 3700000, 4215000, 4790000, 5430000
 ];
+const RUN_CONTRACTS_VERSION = 7;
+const RUN_CONTRACT_ACTIVE_LIMIT = 3;
+const RUN_CONTRACT_DEFINITIONS = Object.freeze([
+  ['boss_breaker', 1, 'boss_intro', 'boss_defeated'],
+  ['near_miss_streak', 5, 'near_miss', 'near_miss_streak'],
+  ['enemy_sweep_1000', 1000, 'enemy_kills', 'enemy_defeats'],
+  ['support_hunter', 2, 'support_kills', 'boss_support_defeats'],
+  ['phase_runner', 1, 'phase', 'phase_through_danger'],
+  ['blink_control', 1, 'blink', 'blink_drive_survive'],
+  ['slow_mo_finisher', 1, 'slow_time', 'boss_slow_time_defeat'],
+  ['sector_10_signal', 1, 'sector_reach', 'sector_reached'],
+  ['enemy_sweep_2500', 2500, 'enemy_kills', 'enemy_defeats'],
+  ['boss_hunter_10', 10, 'boss_kills', 'boss_defeats'],
+  ['support_hunter_10', 10, 'support_kills', 'boss_support_defeats'],
+  ['enemy_variety_50', 50, 'enemy_variety', 'unique_enemy_defeats'],
+  ['enemy_sweep_10000', 10000, 'enemy_kills', 'enemy_defeats'],
+  ['pilot_rank_5', 5, 'pilot_rank', 'pilot_rank_reached'],
+  ['boss_hunter_50', 50, 'boss_kills', 'boss_defeats'],
+  ['support_hunter_50', 50, 'support_kills', 'boss_support_defeats'],
+  ['enemy_variety_100', 100, 'enemy_variety', 'unique_enemy_defeats'],
+  ['enemy_sweep_25000', 25000, 'enemy_kills', 'enemy_defeats'],
+  ['boss_hunter_100', 100, 'boss_kills', 'boss_defeats'],
+  ['support_hunter_100', 100, 'support_kills', 'boss_support_defeats']
+]);
+const RUN_CONTRACT_IDS = RUN_CONTRACT_DEFINITIONS.map(([id]) => id);
+const RUN_CONTRACT_BY_ID = new Map(RUN_CONTRACT_DEFINITIONS.map(([id, target, group, objective]) => [
+  id,
+  { id, target, group, objective }
+]));
 
 function nowIso() {
   return new Date().toISOString();
@@ -180,6 +209,19 @@ function updateProfileIndex(paths, profile, patch = {}) {
   return index;
 }
 
+function hasMeaningfulRunContracts(raw = {}) {
+  const state = raw?.hangarProgress?.runContracts || raw?.runContracts || {};
+  if (!state || typeof state !== 'object') return false;
+  return Boolean(
+    (Array.isArray(state.completedIds) && state.completedIds.length > 0) ||
+    (state.completed && typeof state.completed === 'object' && Object.keys(state.completed).length > 0) ||
+    (state.progress && typeof state.progress === 'object' && Object.keys(state.progress).length > 0) ||
+    state.completionNoticeSeen === true ||
+    state.completedNoticeSeen === true ||
+    state.allCompleteSeen === true
+  );
+}
+
 function isMeaningfulSave(save = {}) {
   const hangar = save.hangarProgress || {};
   const discoveryItems = save.threatDiscovery?.items || {};
@@ -193,6 +235,7 @@ function isMeaningfulSave(save = {}) {
     Number(hangar.totalRuns) > 0 ||
     Number(hangar.totalCodexDiscoveries) > 0 ||
     (Array.isArray(hangar.unlockedShipIds) && hangar.unlockedShipIds.length > 1) ||
+    hasMeaningfulRunContracts(save) ||
     scoutBestScore > 0 ||
     discoveryCount > 0 ||
     Object.keys(sanitizeSectorStartChallengeRecords(save.sectorStartChallengeRecords || save.sectorStartRecords || {}).byCheckpoint).length > 0 ||
@@ -436,6 +479,221 @@ function mergeShipUnlockHistory(localHistory = {}, rendererHistory = {}) {
     .filter(([, entry]) => entry));
 }
 
+function runContractDefinition(id) {
+  return RUN_CONTRACT_BY_ID.get(String(id || '')) || null;
+}
+
+function uniqueRunContractIds(values = []) {
+  const ids = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const id = String(value || '').trim().slice(0, 80);
+    if (!runContractDefinition(id) || ids.includes(id)) continue;
+    ids.push(id);
+  }
+  return ids;
+}
+
+function uniqueContractTextIds(values = [], { maxItems = 160, maxLength = 120 } = {}) {
+  const ids = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const id = String(value || '').trim().slice(0, maxLength);
+    if (!id || ids.includes(id)) continue;
+    ids.push(id);
+    if (ids.length >= maxItems) break;
+  }
+  return ids;
+}
+
+function normalizeRunContractCompletion(entry = {}, id = '') {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+  const contractId = String(entry.id || id || '').trim().slice(0, 80);
+  if (!runContractDefinition(contractId)) return null;
+  const count = sanitizeNumber(entry.count, 1, { min: 1 });
+  return {
+    id: contractId,
+    count,
+    completedAt: String(entry.completedAt || entry.lastCompletedAt || nowIso()).slice(0, 80),
+    lastRunMode: String(entry.lastRunMode || 'ranked').slice(0, 40),
+    lastSector: Math.max(1, sanitizeNumber(entry.lastSector, 1, { min: 1 })),
+    buildVersion: entry.buildVersion ? String(entry.buildVersion).slice(0, 80) : null
+  };
+}
+
+function normalizeRunContractProgress(entry = {}, id = '') {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+  const contractId = String(entry.id || id || '').trim().slice(0, 80);
+  const contract = runContractDefinition(contractId);
+  if (!contract) return null;
+  const progress = Math.min(contract.target || 1, sanitizeNumber(entry.progress, 0, { min: 0 }));
+  const result = {
+    id: contractId,
+    progress,
+    target: contract.target || 1,
+    updatedAt: String(entry.updatedAt || nowIso()).slice(0, 80),
+    lastRunMode: String(entry.lastRunMode || 'ranked').slice(0, 40),
+    lastSector: Math.max(1, sanitizeNumber(entry.lastSector, 1, { min: 1 }))
+  };
+  if (contract.objective === 'unique_enemy_defeats') {
+    result.uniqueIds = uniqueContractTextIds(entry.uniqueIds, {
+      maxItems: contract.target || 100,
+      maxLength: 120
+    });
+    result.progress = Math.min(contract.target || 1, Math.max(progress, result.uniqueIds.length));
+  }
+  return result;
+}
+
+function selectRunContractActiveIds(activeIds = [], completed = {}, { rotateCompleted = false } = {}) {
+  const completedSet = new Set(Object.keys(completed || {}));
+  const selected = [];
+  const groups = new Set();
+  const trySelect = (id, { skipCompleted = false } = {}) => {
+    if (selected.length >= RUN_CONTRACT_ACTIVE_LIMIT) return;
+    const contract = runContractDefinition(id);
+    if (!contract || selected.includes(contract.id)) return;
+    if (skipCompleted && completedSet.has(contract.id)) return;
+    if (groups.has(contract.group)) return;
+    selected.push(contract.id);
+    groups.add(contract.group);
+  };
+  for (const id of uniqueRunContractIds(activeIds)) trySelect(id, { skipCompleted: rotateCompleted });
+  for (const id of RUN_CONTRACT_IDS) trySelect(id, { skipCompleted: true });
+  if (selected.length || completedSet.size < RUN_CONTRACT_IDS.length) return selected;
+  return uniqueRunContractIds(activeIds)
+    .filter((id, index, ids) => ids.findIndex((candidate) => runContractDefinition(candidate)?.group === runContractDefinition(id)?.group) === index)
+    .slice(0, RUN_CONTRACT_ACTIVE_LIMIT);
+}
+
+function orderedRunContractCompletedIds(completed = {}, extraIds = []) {
+  const ids = new Set([
+    ...Object.keys(completed || {}),
+    ...uniqueRunContractIds(extraIds)
+  ]);
+  return RUN_CONTRACT_IDS.filter((id) => ids.has(id));
+}
+
+function latestRunContractIso(...values) {
+  let best = '';
+  let bestTime = 0;
+  for (const value of values.flat()) {
+    const text = String(value || '').trim().slice(0, 80);
+    const time = Date.parse(text || '');
+    if (Number.isFinite(time) && time > bestTime) {
+      best = text;
+      bestTime = time;
+    }
+  }
+  return best;
+}
+
+function getAllRunContractsCompletedAt(completed = {}) {
+  if (!RUN_CONTRACT_IDS.every((id) => completed[id])) return null;
+  return latestRunContractIso(RUN_CONTRACT_IDS.map((id) => completed[id]?.completedAt)) || nowIso();
+}
+
+function sanitizeRunContractsState(raw = {}) {
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const completed = {};
+  for (const [id, entry] of Object.entries(source.completed || {})) {
+    const normalized = normalizeRunContractCompletion(entry, id);
+    if (normalized) completed[normalized.id] = normalized;
+  }
+  const completedIds = orderedRunContractCompletedIds(completed, source.completedIds);
+  const activeIds = selectRunContractActiveIds(source.activeIds, completed, { rotateCompleted: false });
+  const progress = {};
+  const active = new Set(activeIds);
+  for (const [id, entry] of Object.entries(source.progress || {})) {
+    if (!active.has(id) || completed[id]) continue;
+    const normalized = normalizeRunContractProgress(entry, id);
+    if (normalized) progress[normalized.id] = normalized;
+  }
+  const allCompletedAt = getAllRunContractsCompletedAt(completed);
+  const completionNoticeSeen = Boolean(allCompletedAt && (
+    source.completionNoticeSeen ||
+    source.completedNoticeSeen ||
+    source.allCompleteSeen
+  ));
+  return {
+    version: RUN_CONTRACTS_VERSION,
+    activeIds,
+    completedIds,
+    completed,
+    progress,
+    allCompletedAt,
+    completionNoticeSeen,
+    completionNoticeSeenAt: completionNoticeSeen
+      ? (latestRunContractIso(source.completionNoticeSeenAt, source.completedNoticeSeenAt, source.allCompleteSeenAt) || allCompletedAt || nowIso())
+      : null,
+    updatedAt: String(source.updatedAt || nowIso()).slice(0, 80)
+  };
+}
+
+function mergeRunContractProgressEntry(localEntry = null, rendererEntry = null, id = '') {
+  const local = normalizeRunContractProgress(localEntry, id);
+  const renderer = normalizeRunContractProgress(rendererEntry, id);
+  if (!local) return renderer;
+  if (!renderer) return local;
+  const contract = runContractDefinition(id || local.id || renderer.id);
+  if (contract?.objective === 'unique_enemy_defeats') {
+    const uniqueIds = uniqueContractTextIds([...(renderer.uniqueIds || []), ...(local.uniqueIds || [])], {
+      maxItems: contract.target || 100,
+      maxLength: 120
+    });
+    return normalizeRunContractProgress({
+      ...renderer,
+      ...local,
+      uniqueIds,
+      progress: Math.max(local.progress, renderer.progress, uniqueIds.length),
+      updatedAt: latestRunContractIso(local.updatedAt, renderer.updatedAt) || local.updatedAt || renderer.updatedAt
+    }, contract.id);
+  }
+  if (local.progress > renderer.progress) return local;
+  if (renderer.progress > local.progress) return renderer;
+  const localTime = Date.parse(local.updatedAt || '') || 0;
+  const rendererTime = Date.parse(renderer.updatedAt || '') || 0;
+  return rendererTime > localTime ? renderer : local;
+}
+
+function mergeRunContractProgress(localProgress = {}, rendererProgress = {}) {
+  const ids = new Set([
+    ...Object.keys(localProgress || {}),
+    ...Object.keys(rendererProgress || {})
+  ]);
+  const progress = {};
+  for (const id of RUN_CONTRACT_IDS) {
+    if (!ids.has(id)) continue;
+    const merged = mergeRunContractProgressEntry(localProgress?.[id], rendererProgress?.[id], id);
+    if (merged) progress[merged.id] = merged;
+  }
+  return progress;
+}
+
+function mergeRunContractsState(localState = {}, rendererState = {}) {
+  const local = sanitizeRunContractsState(localState);
+  const renderer = sanitizeRunContractsState(rendererState);
+  const completed = { ...local.completed };
+  for (const [id, rendererEntry] of Object.entries(renderer.completed)) {
+    const localEntry = completed[id];
+    if (!localEntry || rendererEntry.count > localEntry.count) {
+      completed[id] = rendererEntry;
+    } else if (rendererEntry.count === localEntry.count) {
+      const localTime = Date.parse(localEntry.completedAt || '') || 0;
+      const rendererTime = Date.parse(rendererEntry.completedAt || '') || 0;
+      if (rendererTime > localTime) completed[id] = rendererEntry;
+    }
+  }
+  return sanitizeRunContractsState({
+    activeIds: renderer.activeIds?.length ? renderer.activeIds : local.activeIds,
+    completed,
+    completedIds: orderedRunContractCompletedIds(completed),
+    progress: mergeRunContractProgress(local.progress, renderer.progress),
+    completionNoticeSeen: Boolean(local.completionNoticeSeen || renderer.completionNoticeSeen),
+    allCompletedAt: latestRunContractIso(local.allCompletedAt, renderer.allCompletedAt),
+    completionNoticeSeenAt: latestRunContractIso(local.completionNoticeSeenAt, renderer.completionNoticeSeenAt),
+    updatedAt: local.updatedAt || renderer.updatedAt || nowIso()
+  });
+}
+
 function sanitizeHangarProgress(progress = {}) {
   const raw = progress && typeof progress === 'object' ? progress : {};
   const reachedSector = Math.max(
@@ -482,6 +740,7 @@ function sanitizeHangarProgress(progress = {}) {
     rankProgress: raw.rankProgress && typeof raw.rankProgress === 'object'
       ? sanitizeJsonValue(raw.rankProgress, 1)
       : null,
+    runContracts: sanitizeRunContractsState(raw.runContracts),
     updatedAt: raw.updatedAt ? String(raw.updatedAt).slice(0, 80) : nowIso()
   };
 }
@@ -692,6 +951,7 @@ function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
     newRanksThisRun: Array.isArray(local.newRanksThisRun) ? local.newRanksThisRun : [],
     rankAchievementsUnlocked: mergeStringArray(local.rankAchievementsUnlocked, renderer.rankAchievementsUnlocked),
     rankProgress: renderer.rankProgress || local.rankProgress || null,
+    runContracts: mergeRunContractsState(local.runContracts, renderer.runContracts),
     updatedAt: renderer.updatedAt || local.updatedAt || nowIso()
   });
 }
@@ -1364,6 +1624,7 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       progression: save.progression,
       hangarPilotXp: Math.max(0, Math.floor(Number(save.hangarProgress?.pilotXp) || 0)),
       hangarUnlockedShips: Array.isArray(save.hangarProgress?.unlockedShipIds) ? save.hangarProgress.unlockedShipIds.length : 0,
+      pilotOrdersCompleted: Object.keys(sanitizeRunContractsState(save.hangarProgress?.runContracts).completed).length,
       shipUsageShips: Object.keys(sanitizeShipUsage(save.shipUsage)).length,
       shipUsageTotal: Math.max(sanitizeNumber(save.shipUsageTotal, 0), sumShipUsage(save.shipUsage)),
       sectorStartChallengeCheckpoints: Object.keys(

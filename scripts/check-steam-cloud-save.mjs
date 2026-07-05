@@ -21,6 +21,7 @@ import {
   restoreSteamCloudPersistenceToStorage
 } from '../src/steamCloudPersistence.js';
 import { getCodexDiscoverySignature } from '../src/progression/ThreatDiscoveryState.js';
+import { RUN_CONTRACTS_VERSION } from '../src/progression/RunContracts.js';
 
 const require = createRequire(import.meta.url);
 const { createSteamCloudSave, getPaths } = require('../electron/steamCloudSave.cjs');
@@ -73,6 +74,42 @@ function makeRichCodexDiscovery() {
     unreadIds: [],
     recentRunThemes: [],
     updatedAt: '2026-06-21T00:00:00.000Z'
+  };
+}
+
+function makePilotOrdersState({
+  activeIds = ['boss_breaker', 'near_miss_streak', 'enemy_sweep_1000'],
+  completedId = 'boss_breaker',
+  progressId = 'enemy_sweep_1000',
+  progress = 250
+} = {}) {
+  return {
+    version: RUN_CONTRACTS_VERSION,
+    activeIds,
+    completedIds: completedId ? [completedId] : [],
+    completed: completedId ? {
+      [completedId]: {
+        id: completedId,
+        count: 1,
+        completedAt: '2026-07-05T10:00:00.000Z',
+        lastRunMode: 'ranked',
+        lastSector: 2,
+        buildVersion: 'check-steam-cloud-save'
+      }
+    } : {},
+    progress: progressId ? {
+      [progressId]: {
+        id: progressId,
+        progress,
+        target: progressId === 'enemy_variety_50' ? 50 : 1000,
+        uniqueIds: progressId === 'enemy_variety_50' ? ['scout', 'diver'] : undefined,
+        updatedAt: '2026-07-05T10:01:00.000Z',
+        lastRunMode: 'ranked',
+        lastSector: 2
+      }
+    } : {},
+    completionNoticeSeen: false,
+    updatedAt: '2026-07-05T10:01:00.000Z'
   };
 }
 
@@ -139,7 +176,8 @@ try {
       totalCodexDiscoveries: 3,
       unlockedShipIds: ['nova_ship_01', 'nova_ship_09'],
       lastNewlyUnlockedShipIds: ['nova_ship_09'],
-      discoveredThreatIds: ['nova_boss_01']
+      discoveredThreatIds: ['nova_boss_01'],
+      runContracts: makePilotOrdersState()
     },
     threatDiscovery: {
       items: {
@@ -196,6 +234,8 @@ try {
   assert.deepEqual(merged.progression, { bestScore: 9000, bestRank: 7, bestLevel: 12 });
   assert.equal(merged.hangarProgress.pilotXp, 54321);
   assert.equal(merged.hangarProgress.unlockedShipIds.includes('nova_ship_09'), true);
+  assert.equal(merged.hangarProgress.runContracts.completed.boss_breaker.count, 1);
+  assert.equal(merged.hangarProgress.runContracts.progress.enemy_sweep_1000.progress, 250);
   assert.equal(merged.threatDiscovery.items.bosses.nova_boss_01.name, 'Sonia');
   assert.deepEqual(merged.threatDiscovery.unreadIds, ['bosses:nova_boss_01']);
   assert.equal(merged.shipUsage.nova_ship_01, 4);
@@ -232,7 +272,13 @@ try {
       bestScore: 4444,
       bestRank: 6,
       bestLevel: 8,
-      unlockedShipIds: ['nova_ship_01', 'nova_ship_04']
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_04'],
+      runContracts: makePilotOrdersState({
+        activeIds: ['support_hunter', 'enemy_variety_50', 'enemy_sweep_1000'],
+        completedId: 'support_hunter',
+        progressId: 'enemy_variety_50',
+        progress: 2
+      })
     })],
     [CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify({
       items: { enemies: { scout: { id: 'scout', category: 'enemies', name: 'Scout', timesSeen: 2 } } },
@@ -281,7 +327,13 @@ try {
       bestScore: 4444,
       bestRank: 6,
       bestLevel: 8,
-      unlockedShipIds: ['nova_ship_01', 'nova_ship_04']
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_04'],
+      runContracts: makePilotOrdersState({
+        activeIds: ['support_hunter', 'enemy_variety_50', 'enemy_sweep_1000'],
+        completedId: 'support_hunter',
+        progressId: 'enemy_variety_50',
+        progress: 2
+      })
     }),
     getAccessibilitySettings: () => ({ screenShake: 0.4, playerFocus: 0.9, colorAssist: true })
   });
@@ -291,6 +343,10 @@ try {
   assert.deepEqual(collectedSave.achievements.unlocked, ['first_launch']);
   assert.equal(collectedSave.hangarProgress.pilotXp, 54321, 'Steam Cloud Hangar XP should keep the richer existing value');
   assert.equal(collectedSave.hangarProgress.unlockedShipIds.includes('nova_ship_04'), true);
+  assert.equal(collectedSave.hangarProgress.runContracts.completed.boss_breaker.count, 1, 'Steam Cloud should preserve existing Pilot Order completions');
+  assert.equal(collectedSave.hangarProgress.runContracts.completed.support_hunter.count, 1, 'Steam Cloud should merge renderer Pilot Order completions');
+  assert.equal(collectedSave.hangarProgress.runContracts.progress.enemy_sweep_1000.progress, 250);
+  assert.deepEqual(collectedSave.hangarProgress.runContracts.progress.enemy_variety_50.uniqueIds.sort(), ['diver', 'scout']);
   assert.equal(collectedSave.threatDiscovery.items.enemies.scout.name, 'Scout');
   assert.deepEqual([...collectedSave.threatDiscovery.unreadIds].sort(), ['bosses:nova_boss_01', 'enemies:scout']);
   assert.equal(collectedSave.shipUsage.nova_ship_01, 4);
@@ -465,7 +521,13 @@ try {
       bestScore: 5555,
       bestRank: 7,
       bestLevel: 9,
-      unlockedShipIds: ['nova_ship_01', 'nova_ship_05']
+      unlockedShipIds: ['nova_ship_01', 'nova_ship_05'],
+      runContracts: makePilotOrdersState({
+        activeIds: ['boss_hunter_10', 'enemy_sweep_10000', 'pilot_rank_5'],
+        completedId: 'boss_hunter_10',
+        progressId: 'enemy_sweep_10000',
+        progress: 900
+      })
     },
     threatDiscovery: {
       items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'Ro ro ro' } } },
@@ -522,7 +584,10 @@ try {
   assert.equal(restartStorage.getItem(CLOUD_LANGUAGE_KEY), 'ja');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_LOCAL_LEADERBOARD_KEY))[0].name, 'CLOUDACE');
   assert.deepEqual(JSON.parse(restartStorage.getItem(CLOUD_ACHIEVEMENT_KEY)).unlocked.sort(), ['cloud_unlock', 'existing_local']);
-  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY)).pilotXp, 8888);
+  const restoredHangarProgress = JSON.parse(restartStorage.getItem(CLOUD_HANGAR_PROGRESS_KEY));
+  assert.equal(restoredHangarProgress.pilotXp, 8888);
+  assert.equal(restoredHangarProgress.runContracts.completed.boss_hunter_10.count, 1, 'restored Steam Cloud storage should keep Pilot Order completions');
+  assert.equal(restoredHangarProgress.runContracts.progress.enemy_sweep_10000.progress, 900, 'restored Steam Cloud storage should keep Pilot Order progress');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'Ro ro ro');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
@@ -572,6 +637,7 @@ try {
   assert.equal(diagnostics.persistenceSummary.cloudSavePath, paths.cloudSavePath);
   assert.equal(diagnostics.persistenceSummary.legacyCloudSavePath, paths.legacyCloudSavePath);
   assert.equal(diagnostics.persistenceSummary.hangarPilotXp >= 0, true);
+  assert.equal(diagnostics.persistenceSummary.pilotOrdersCompleted >= 0, true);
   assert.equal(diagnostics.persistenceSummary.threatDiscoveryCategories >= 0, true);
   assert.equal(diagnostics.persistenceSummary.shipUsageTotal >= 0, true);
 

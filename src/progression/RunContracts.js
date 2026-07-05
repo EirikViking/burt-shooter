@@ -1,7 +1,7 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 6;
+export const RUN_CONTRACTS_VERSION = 7;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
@@ -16,6 +16,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_defeated',
     target: 1,
+    group: 'boss_intro',
     accent: 0xffd15c
   }),
   Object.freeze({
@@ -28,6 +29,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'near_miss_streak',
     target: 5,
+    group: 'near_miss',
     accent: 0xffef7e
   }),
   Object.freeze({
@@ -41,20 +43,8 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     objective: 'enemy_defeats',
     target: 1000,
     persistAcrossRuns: true,
+    group: 'enemy_kills',
     accent: 0xff8f5a
-  }),
-  Object.freeze({
-    id: 'enemy_sweep_2500',
-    title: 'Enemy Sweep II',
-    shortTitle: '2500 Enemies',
-    description: 'Destroy 2500 total enemies in Mayhem.',
-    shortDescription: 'Destroy 2500 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'enemy_defeats',
-    target: 2500,
-    persistAcrossRuns: true,
-    accent: 0xffb86a
   }),
   Object.freeze({
     id: 'support_hunter',
@@ -66,6 +56,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_support_defeats',
     target: 2,
+    group: 'support_kills',
     accent: 0x7fffd8
   }),
   Object.freeze({
@@ -78,6 +69,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'phase_through_danger',
     target: 1,
+    group: 'phase',
     accent: 0x9cfbff
   }),
   Object.freeze({
@@ -91,6 +83,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     objective: 'blink_drive_survive',
     target: 1,
     surviveSeconds: 6,
+    group: 'blink',
     accent: 0x7df9ff
   }),
   Object.freeze({
@@ -103,6 +96,7 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_slow_time_defeat',
     target: 1,
+    group: 'slow_time',
     accent: 0x63ffe8
   }),
   Object.freeze({
@@ -116,7 +110,176 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     objective: 'sector_reached',
     target: 1,
     sectorTarget: 10,
+    group: 'sector_reach',
     accent: 0xcaa6ff
+  }),
+  Object.freeze({
+    id: 'enemy_sweep_2500',
+    title: 'Enemy Sweep II',
+    shortTitle: '2500 Enemies',
+    description: 'Destroy 2500 total enemies in Mayhem.',
+    shortDescription: 'Destroy 2500 enemies.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'enemy_defeats',
+    target: 2500,
+    persistAcrossRuns: true,
+    group: 'enemy_kills',
+    accent: 0xffb86a
+  }),
+  Object.freeze({
+    id: 'boss_hunter_10',
+    title: 'Boss Hunter I',
+    shortTitle: '10 Bosses',
+    description: 'Defeat 10 total bosses in Mayhem.',
+    shortDescription: 'Defeat 10 bosses.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_defeats',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'boss_kills',
+    accent: 0xffd15c
+  }),
+  Object.freeze({
+    id: 'support_hunter_10',
+    title: 'Support Hunter I',
+    shortTitle: '10 Supports',
+    description: 'Destroy 10 total boss support ships.',
+    shortDescription: 'Destroy 10 support ships.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_support_defeats',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'support_kills',
+    accent: 0x7fffd8
+  }),
+  Object.freeze({
+    id: 'enemy_variety_50',
+    title: 'Enemy Variety I',
+    shortTitle: '50 Enemy Types',
+    description: 'Destroy 50 different enemy types in Mayhem.',
+    shortDescription: 'Destroy 50 enemy types.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'unique_enemy_defeats',
+    target: 50,
+    persistAcrossRuns: true,
+    group: 'enemy_variety',
+    accent: 0x66ff9d
+  }),
+  Object.freeze({
+    id: 'enemy_sweep_10000',
+    title: 'Enemy Sweep III',
+    shortTitle: '10000 Enemies',
+    description: 'Destroy 10000 total enemies in Mayhem.',
+    shortDescription: 'Destroy 10000 enemies.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'enemy_defeats',
+    target: 10000,
+    persistAcrossRuns: true,
+    group: 'enemy_kills',
+    accent: 0xffa36a
+  }),
+  Object.freeze({
+    id: 'pilot_rank_5',
+    title: 'Rank 5 Signal',
+    shortTitle: 'Rank 5',
+    description: 'Achieve pilot rank 5.',
+    shortDescription: 'Achieve rank 5.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'pilot_rank_reached',
+    target: 5,
+    persistAcrossRuns: true,
+    group: 'pilot_rank',
+    accent: 0xb6f2ff
+  }),
+  Object.freeze({
+    id: 'boss_hunter_50',
+    title: 'Boss Hunter II',
+    shortTitle: '50 Bosses',
+    description: 'Defeat 50 total bosses in Mayhem.',
+    shortDescription: 'Defeat 50 bosses.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_defeats',
+    target: 50,
+    persistAcrossRuns: true,
+    group: 'boss_kills',
+    accent: 0xffd15c
+  }),
+  Object.freeze({
+    id: 'support_hunter_50',
+    title: 'Support Hunter II',
+    shortTitle: '50 Supports',
+    description: 'Destroy 50 total boss support ships.',
+    shortDescription: 'Destroy 50 support ships.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_support_defeats',
+    target: 50,
+    persistAcrossRuns: true,
+    group: 'support_kills',
+    accent: 0x7fffd8
+  }),
+  Object.freeze({
+    id: 'enemy_variety_100',
+    title: 'Enemy Variety II',
+    shortTitle: '100 Enemy Types',
+    description: 'Destroy 100 different enemy types in Mayhem.',
+    shortDescription: 'Destroy 100 enemy types.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'unique_enemy_defeats',
+    target: 100,
+    persistAcrossRuns: true,
+    group: 'enemy_variety',
+    accent: 0x66ff9d
+  }),
+  Object.freeze({
+    id: 'enemy_sweep_25000',
+    title: 'Enemy Sweep IV',
+    shortTitle: '25000 Enemies',
+    description: 'Destroy 25000 total enemies in Mayhem.',
+    shortDescription: 'Destroy 25000 enemies.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'enemy_defeats',
+    target: 25000,
+    persistAcrossRuns: true,
+    group: 'enemy_kills',
+    accent: 0xffc36a
+  }),
+  Object.freeze({
+    id: 'boss_hunter_100',
+    title: 'Boss Hunter III',
+    shortTitle: '100 Bosses',
+    description: 'Defeat 100 total bosses in Mayhem.',
+    shortDescription: 'Defeat 100 bosses.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_defeats',
+    target: 100,
+    persistAcrossRuns: true,
+    group: 'boss_kills',
+    accent: 0xffd15c
+  }),
+  Object.freeze({
+    id: 'support_hunter_100',
+    title: 'Support Hunter III',
+    shortTitle: '100 Supports',
+    description: 'Destroy 100 total boss support ships.',
+    shortDescription: 'Destroy 100 support ships.',
+    modeLabel: 'Mayhem',
+    modes: Object.freeze([RUN_MODES.RANKED]),
+    objective: 'boss_support_defeats',
+    target: 100,
+    persistAcrossRuns: true,
+    group: 'support_kills',
+    accent: 0x7fffd8
   }),
 ]);
 
@@ -152,6 +315,24 @@ function uniqueValidIds(values = []) {
   return ids;
 }
 
+function uniqueTextIds(values = [], { maxItems = 160, maxLength = 120 } = {}) {
+  const ids = [];
+  for (const value of Array.isArray(values) ? values : []) {
+    const id = clampText(value, maxLength);
+    if (!id || ids.includes(id)) continue;
+    ids.push(id);
+    if (ids.length >= maxItems) break;
+  }
+  return ids;
+}
+
+function getContractGroup(contractOrId) {
+  const contract = typeof contractOrId === 'object' && contractOrId
+    ? contractOrId
+    : getRunContractById(contractOrId);
+  return clampText(contract?.group || contract?.id || contractOrId, 80);
+}
+
 function orderedCompletedIds(completed = {}, extraIds = []) {
   const valid = new Set([
     ...Object.keys(completed || {}),
@@ -181,7 +362,7 @@ function normalizeProgressEntry(entry = {}, id = '') {
   const contract = getRunContractById(contractId);
   if (!contract) return null;
   const progress = Math.min(contract.target || 1, floor(entry?.progress));
-  return {
+  const result = {
     id: contractId,
     progress,
     target: contract.target || 1,
@@ -189,23 +370,40 @@ function normalizeProgressEntry(entry = {}, id = '') {
     lastRunMode: clampText(entry?.lastRunMode, 40) || RUN_MODES.RANKED,
     lastSector: Math.max(1, floor(entry?.lastSector, 1))
   };
+  if (contract.objective === 'unique_enemy_defeats') {
+    result.uniqueIds = uniqueTextIds(entry?.uniqueIds, {
+      maxItems: contract.target || 100,
+      maxLength: 120
+    });
+    result.progress = Math.min(contract.target || 1, Math.max(progress, result.uniqueIds.length));
+  }
+  return result;
 }
 
 function selectActiveIds(activeIds = [], completed = {}, { rotateCompleted = false } = {}) {
   const completedSet = new Set(Object.keys(completed || {}));
   const selected = [];
+  const selectedGroups = new Set();
+  const trySelect = (id, { skipCompleted = false } = {}) => {
+    if (selected.length >= RUN_CONTRACT_ACTIVE_LIMIT) return;
+    const contract = getRunContractById(id);
+    if (!contract || selected.includes(contract.id)) return;
+    if (skipCompleted && completedSet.has(contract.id)) return;
+    const group = getContractGroup(contract);
+    if (selectedGroups.has(group)) return;
+    selected.push(contract.id);
+    selectedGroups.add(group);
+  };
   for (const id of uniqueValidIds(activeIds)) {
-    if (selected.length >= RUN_CONTRACT_ACTIVE_LIMIT) break;
-    if (rotateCompleted && completedSet.has(id)) continue;
-    selected.push(id);
+    trySelect(id, { skipCompleted: rotateCompleted });
   }
   for (const id of RUN_CONTRACT_ORDER_IDS) {
-    if (selected.length >= RUN_CONTRACT_ACTIVE_LIMIT) break;
-    if (selected.includes(id) || completedSet.has(id)) continue;
-    selected.push(id);
+    trySelect(id, { skipCompleted: true });
   }
   if (selected.length || completedSet.size < RUN_CONTRACT_ORDER_IDS.length) return selected;
-  return uniqueValidIds(activeIds).slice(0, RUN_CONTRACT_ACTIVE_LIMIT);
+  return uniqueValidIds(activeIds)
+    .filter((id, index, ids) => ids.findIndex((candidate) => getContractGroup(candidate) === getContractGroup(id)) === index)
+    .slice(0, RUN_CONTRACT_ACTIVE_LIMIT);
 }
 
 function progressForActiveIds(progress = {}, activeIds = [], completed = {}) {
@@ -265,6 +463,16 @@ export function getDefaultShowPilotOrders(progress = {}) {
 
 function shouldPreserveRunProgress(id) {
   return getRunContractById(id)?.persistAcrossRuns === true;
+}
+
+function getPilotRankDisplay(progress = {}) {
+  const source = progress && typeof progress === 'object' ? progress : {};
+  const index = Math.max(
+    floor(source.pilotRank),
+    floor(source.highestPilotRank),
+    floor(source.bestRank)
+  );
+  return Math.max(1, index + 1);
 }
 
 export function areAllRunContractsComplete(state = {}) {
@@ -349,7 +557,61 @@ export function acknowledgeRunContractCompletionNotice(state = {}) {
   });
 }
 
+function mergeProgressEntry(localEntry = null, cloudEntry = null, id = '') {
+  const local = normalizeProgressEntry(localEntry, id);
+  const cloud = normalizeProgressEntry(cloudEntry, id);
+  if (!local) return cloud;
+  if (!cloud) return local;
+  const contract = getRunContractById(id || local.id || cloud.id);
+  if (contract?.objective === 'unique_enemy_defeats') {
+    const uniqueIds = uniqueTextIds([...(cloud.uniqueIds || []), ...(local.uniqueIds || [])], {
+      maxItems: contract.target || 100,
+      maxLength: 120
+    });
+    return normalizeProgressEntry({
+      ...cloud,
+      ...local,
+      uniqueIds,
+      progress: Math.max(local.progress, cloud.progress, uniqueIds.length),
+      updatedAt: latestIso(local.updatedAt, cloud.updatedAt) || local.updatedAt || cloud.updatedAt
+    }, contract.id);
+  }
+  if (local.progress > cloud.progress) return local;
+  if (cloud.progress > local.progress) return cloud;
+  const localTime = Date.parse(local.updatedAt || '') || 0;
+  const cloudTime = Date.parse(cloud.updatedAt || '') || 0;
+  return cloudTime > localTime ? cloud : local;
+}
+
+function mergeProgressState(localProgress = {}, cloudProgress = {}) {
+  const ids = new Set([
+    ...Object.keys(localProgress || {}),
+    ...Object.keys(cloudProgress || {})
+  ]);
+  const progress = {};
+  for (const id of RUN_CONTRACT_ORDER_IDS) {
+    if (!ids.has(id)) continue;
+    const merged = mergeProgressEntry(localProgress?.[id], cloudProgress?.[id], id);
+    if (merged) progress[merged.id] = merged;
+  }
+  return progress;
+}
+
+function hasStoredRunContractState(state = {}) {
+  const source = state && typeof state === 'object' && !Array.isArray(state) ? state : {};
+  return Boolean(
+    (Array.isArray(source.activeIds) && source.activeIds.length > 0) ||
+    (Array.isArray(source.completedIds) && source.completedIds.length > 0) ||
+    (source.completed && typeof source.completed === 'object' && Object.keys(source.completed).length > 0) ||
+    (source.progress && typeof source.progress === 'object' && Object.keys(source.progress).length > 0) ||
+    source.completionNoticeSeen === true ||
+    source.completedNoticeSeen === true ||
+    source.allCompleteSeen === true
+  );
+}
+
 export function mergeRunContractsState(localState = {}, cloudState = {}) {
+  const localHasStoredState = hasStoredRunContractState(localState);
   const local = normalizeRunContractsState(localState);
   const cloud = normalizeRunContractsState(cloudState);
   const completed = { ...local.completed };
@@ -365,10 +627,10 @@ export function mergeRunContractsState(localState = {}, cloudState = {}) {
   }
   const completionNoticeSeen = Boolean(local.completionNoticeSeen || cloud.completionNoticeSeen);
   return normalizeRunContractsState({
-    activeIds: local.activeIds?.length ? local.activeIds : cloud.activeIds,
+    activeIds: localHasStoredState && local.activeIds?.length ? local.activeIds : cloud.activeIds,
     completed,
     completedIds: orderedCompletedIds(completed),
-    progress: { ...cloud.progress, ...local.progress },
+    progress: mergeProgressState(local.progress, cloud.progress),
     completionNoticeSeen,
     allCompletedAt: latestIso(local.allCompletedAt, cloud.allCompletedAt),
     completionNoticeSeenAt: latestIso(local.completionNoticeSeenAt, cloud.completionNoticeSeenAt),
@@ -389,13 +651,23 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
     allCompletedAt: state.allCompletedAt || null,
     active: activeIds.map((id) => {
       const contract = getRunContractById(id);
+      const savedProgress = state.progress?.[id] || null;
+      const progressValue = contract?.objective === 'pilot_rank_reached'
+        ? Math.min(contract.target || 1, Math.max(floor(savedProgress?.progress), getPilotRankDisplay(progress)))
+        : contract?.persistAcrossRuns
+          ? Math.min(contract.target || 1, floor(savedProgress?.progress))
+          : 0;
+      const uniqueIds = contract?.objective === 'unique_enemy_defeats'
+        ? uniqueTextIds(savedProgress?.uniqueIds, { maxItems: contract.target || 100, maxLength: 120 })
+        : undefined;
         return {
           id,
-          progress: contract?.persistAcrossRuns ? Math.min(contract.target || 1, floor(state.progress?.[id]?.progress)) : 0,
+          progress: progressValue,
           target: contract?.target || 1,
           completed: false,
         eligible: isRunContractEligible(contract, mode) && !state.completed[id],
-        completedAt: null
+        completedAt: null,
+        ...(uniqueIds ? { uniqueIds } : {})
       };
     }),
     completedThisRun: []
@@ -432,8 +704,19 @@ function progressForEvent(contract, item, event, session) {
         : current;
     case 'boss_defeated':
       return type === 'boss_defeated' ? contract.target : current;
+    case 'boss_defeats':
+      return type === 'boss_defeated' ? current + 1 : current;
     case 'enemy_defeats':
       return type === 'enemy_defeated' ? current + Math.max(1, floor(event.count, 1)) : current;
+    case 'pilot_rank_reached': {
+      if (type !== 'pilot_rank_reached') return current;
+      const displayRank = Math.max(
+        floor(event.displayRank),
+        floor(event.rank),
+        floor(event.rankIndex) + 1
+      );
+      return Math.max(current, displayRank);
+    }
     case 'sector_reached':
       return type === 'sector_reached' && floor(event.sector, 1) >= floor(contract.sectorTarget || 10, 10)
         ? contract.target
@@ -458,7 +741,18 @@ export function applyRunContractEvent(session, event = {}) {
     const nextItem = { ...item };
     nextItem.lastSector = Math.max(1, floor(event.sector, 1));
     if (nextItem.eligible && !nextItem.completed) {
-      nextItem.progress = Math.min(contract.target, progressForEvent(contract, nextItem, event, nextSession));
+      if (contract.objective === 'unique_enemy_defeats' && String(event?.type || '') === 'enemy_defeated') {
+        const enemyType = clampText(event.enemyType || event.threatId || event.enemyId || event.kind, 120);
+        const uniqueIds = uniqueTextIds(nextItem.uniqueIds, {
+          maxItems: contract.target || 100,
+          maxLength: 120
+        });
+        if (enemyType && !uniqueIds.includes(enemyType)) uniqueIds.push(enemyType);
+        nextItem.uniqueIds = uniqueIds.slice(0, contract.target || 100);
+        nextItem.progress = Math.min(contract.target, Math.max(floor(nextItem.progress), nextItem.uniqueIds.length));
+      } else {
+        nextItem.progress = Math.min(contract.target, progressForEvent(contract, nextItem, event, nextSession));
+      }
       if (nextItem.progress >= contract.target) {
         nextItem.completed = true;
         nextItem.completedAt = nowIso();
@@ -469,6 +763,12 @@ export function applyRunContractEvent(session, event = {}) {
           lastSector: Math.max(1, floor(event.sector, 1)),
           buildVersion: BUILD_ID || null
         };
+        if (contract.objective === 'unique_enemy_defeats') {
+          completion.uniqueIds = uniqueTextIds(nextItem.uniqueIds, {
+            maxItems: contract.target || 100,
+            maxLength: 120
+          });
+        }
         completed.push(completion);
         nextSession.completedThisRun.push(completion);
       }
@@ -484,7 +784,7 @@ export function recordRunContractSessionProgress(state = {}, session = {}) {
   for (const item of Array.isArray(session.active) ? session.active : []) {
     const contract = getRunContractById(item.id);
     if (!contract || normalized.completed[item.id]) continue;
-    progress[item.id] = {
+    const entry = {
       id: item.id,
       progress: Math.min(contract.target || 1, floor(item.progress)),
       target: contract.target || 1,
@@ -492,6 +792,14 @@ export function recordRunContractSessionProgress(state = {}, session = {}) {
       lastRunMode: normalizeRunMode(session.runMode),
       lastSector: Math.max(1, floor(item.lastSector, 1))
     };
+    if (contract.objective === 'unique_enemy_defeats') {
+      entry.uniqueIds = uniqueTextIds(item.uniqueIds, {
+        maxItems: contract.target || 100,
+        maxLength: 120
+      });
+      entry.progress = Math.min(contract.target || 1, Math.max(entry.progress, entry.uniqueIds.length));
+    }
+    progress[item.id] = entry;
   }
   return normalizeRunContractsState({
     ...normalized,
@@ -506,6 +814,20 @@ export function recordRunContractCompletion(state = {}, completion = {}) {
   if (!contract) return normalized;
   const previous = normalized.completed[contract.id];
   const count = floor(previous?.count) + 1;
+  const progressEntry = {
+    id: contract.id,
+    progress: contract.target || 1,
+    target: contract.target || 1,
+    updatedAt: completion.completedAt || nowIso(),
+    lastRunMode: completion.lastRunMode || RUN_MODES.RANKED,
+    lastSector: completion.lastSector || 1
+  };
+  if (contract.objective === 'unique_enemy_defeats') {
+    progressEntry.uniqueIds = uniqueTextIds(completion.uniqueIds || normalized.progress?.[contract.id]?.uniqueIds, {
+      maxItems: contract.target || 100,
+      maxLength: 120
+    });
+  }
   return normalizeRunContractsState({
     ...normalized,
     completed: {
@@ -521,14 +843,7 @@ export function recordRunContractCompletion(state = {}, completion = {}) {
     },
     progress: {
       ...normalized.progress,
-      [contract.id]: {
-        id: contract.id,
-        progress: contract.target || 1,
-        target: contract.target || 1,
-        updatedAt: completion.completedAt || nowIso(),
-        lastRunMode: completion.lastRunMode || RUN_MODES.RANKED,
-        lastSector: completion.lastSector || 1
-      }
+      [contract.id]: progressEntry
     },
     completedIds: [...new Set([...(normalized.completedIds || []), contract.id])],
     updatedAt: nowIso()
@@ -549,7 +864,7 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
   return {
     version: state.version,
     title: 'PILOT ORDERS',
-    subtitle: 'Learn key Mayhem tactics.',
+    subtitle: 'Review cleared orders in Ship Hangar.',
     status,
     hidden: status === 'hidden',
     disabledBySetting: !showPilotOrders && !allComplete,
@@ -575,6 +890,7 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
         target,
         progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
         objective: contract?.objective || 'unknown',
+        group: getContractGroup(contract),
         accent: contract?.accent || 0x37f5ff,
         completed,
         completionCount: floor(completion?.count),
@@ -606,6 +922,7 @@ export function getRunContractCompletionReviewState(progressOrState = {}) {
       completedAt: completion?.completedAt || null,
       lastRunMode: completion?.lastRunMode || null,
       lastSector: completion?.lastSector || null,
+      group: getContractGroup(contract),
       accent: contract?.accent || 0x37f5ff
     };
   });
@@ -650,6 +967,8 @@ export function getRunContractSessionState(session = null) {
         shortTitle: contract?.shortTitle || contract?.title || item.id,
         progress: floor(item.progress),
         target: floor(item.target || contract?.target || 1, 1),
+        group: getContractGroup(contract),
+        uniqueCount: Array.isArray(item.uniqueIds) ? uniqueTextIds(item.uniqueIds).length : 0,
         completed: Boolean(item.completed),
         eligible: Boolean(item.eligible),
         completedAt: item.completedAt || null

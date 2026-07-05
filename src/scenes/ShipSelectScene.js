@@ -37,6 +37,8 @@ const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
 const PILOT_ORDERS_ARCHIVE_EMPTY = 'No Pilot Orders cleared yet.';
+const PILOT_ORDERS_ARCHIVE_HINT = 'Review cleared Pilot Orders here.';
+const PILOT_ORDERS_ARCHIVE_DONE = 'DONE';
 const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
 const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
 const HANGAR_PROFILE_REPAIR_REASONS = new Set([
@@ -890,7 +892,7 @@ export class ShipSelectScene {
 
     const completedOrders = Array.isArray(review?.completed) ? review.completed : [];
     const completedText = completedOrders.length
-      ? completedOrders.map((entry) => translateText(entry.shortTitle || entry.title || entry.id)).join(' / ')
+      ? completedOrders.map((entry) => `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`).join('\n')
       : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
     const accent = completedOrders.length ? 0x9cfbff : 0x49677a;
 
@@ -932,19 +934,45 @@ export class ShipSelectScene {
     count.position.set(width - 18, 10);
     fitDisplayToBox(count, 68, compact ? 18 : 20, { minScale: 0.58 });
 
-    const copy = createText(completedText, {
+    const hint = createText(translateText(PILOT_ORDERS_ARCHIVE_HINT), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 10 : 12,
+      fontSize: compact ? 9 : 11,
       fontWeight: '800',
-      fill: completedOrders.length ? '#d8fbff' : '#90aeba',
+      fill: '#fff3a2',
       wordWrap: true,
       wordWrapWidth: width - 36,
-      lineHeight: compact ? 12 : 15,
+      lineHeight: compact ? 10 : 12,
       letterSpacing: 0
     });
-    copy.position.set(18, compact ? 30 : 34);
-    fitDisplayToBox(copy, width - 36, height - (compact ? 36 : 42), { minScale: 0.68 });
-    panel.addChild(heading, count, copy);
+    hint.position.set(18, compact ? 28 : 32);
+    fitDisplayToBox(hint, width - 36, compact ? 14 : 17, { minScale: 0.64 });
+
+    const columnCount = width >= 420 && completedOrders.length > 5 ? 2 : 1;
+    const columnGap = columnCount > 1 ? 14 : 0;
+    const columnWidth = Math.floor((width - 36 - columnGap) / columnCount);
+    const orderedLines = completedOrders.length ? completedText.split('\n') : [completedText];
+    const columnLists = Array.from({ length: columnCount }, () => []);
+    orderedLines.forEach((line, index) => {
+      columnLists[index % columnCount].push(line);
+    });
+    const listTop = compact ? 43 : 50;
+    const listHeight = Math.max(18, height - listTop - 16);
+    const listTexts = columnLists.map((lines, column) => {
+      const copy = createText(lines.join('\n'), {
+        fontFamily: FONT_BODY,
+        fontSize: compact ? 9 : 11,
+        fontWeight: '800',
+        fill: completedOrders.length ? '#d8fbff' : '#90aeba',
+        wordWrap: true,
+        wordWrapWidth: columnWidth,
+        lineHeight: compact ? 10 : 13,
+        letterSpacing: 0
+      });
+      copy.position.set(18 + column * (columnWidth + columnGap), listTop);
+      fitDisplayToBox(copy, columnWidth, listHeight, { minScale: 0.58 });
+      return copy;
+    });
+    panel.addChild(heading, count, hint, ...listTexts);
 
     panel._pilotOrdersArchive = {
       text: completedText,
@@ -1261,8 +1289,8 @@ export class ShipSelectScene {
     const cardW = panelWidth - 80;
     const cardTop = statsTop + Math.ceil(stats.length / statCols) * (statH + statGap) + (compact ? 8 : 14);
     const cardH = Math.max(
-      compact ? 54 : 64,
-      Math.min(narrow ? 104 : short ? 68 : 78, panelY + panelHeight - cardTop - (compact ? 68 : 76))
+      compact ? 70 : 88,
+      Math.min(narrow ? 144 : short ? 108 : 168, panelY + panelHeight - cardTop - (compact ? 68 : 76))
     );
     const pilotOrdersArchive = this.createPilotOrdersArchivePanel(
       pilotOrdersReview,
@@ -1882,7 +1910,7 @@ export class ShipSelectScene {
       const count = this.createIntelText('', 16, 48, 16, '#ffef7e', '900');
       const progress = this.createIntelText('', 16, 96, 12, '#b8fff1');
       const stats = this.createIntelText('', 16, 176, 12, '#d8fbff');
-      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 244, 12, '#ffef7e', '900');
+      const hint = this.createIntelText('CLICK FOR CAREER + PILOT ORDERS', 16, 244, 12, '#ffef7e', '900');
       [progress, stats, hint].forEach(text => {
         text.style.wordWrapWidth = 196;
       });
