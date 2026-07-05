@@ -27,6 +27,8 @@ const GENERATED_SHIP_VISUAL_CENTER_OFFSETS = Array.from(
 );
 const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
 const FOCUS_DRIFT_SPEED_MULTIPLIER = 0.48;
+const SHIELD_SPENT_FEEDBACK_MS = 2400;
+const BOMB_SPENT_FEEDBACK_MS = 2400;
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -166,6 +168,7 @@ export class Player {
     // Shield State
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
+    this.shieldSpentUntil = 0;
     this.shieldSprite = null;
 
     // Point Defense State
@@ -191,6 +194,7 @@ export class Player {
 
     // Bomb State
     this.bombShotsLeft = 0;
+    this.bombSpentUntil = 0;
     this.bombIndicator = null;
 
     // Touch input (set externally by PlayScene)
@@ -1254,7 +1258,7 @@ export class Player {
       this.bombShotsLeft--;
       this.updateBombIndicator();
       if (this.bombShotsLeft <= 0) {
-        this.deactivateBomb();
+        this.deactivateBomb({ spentFeedback: true });
       }
 
       AudioManager.playSfx(this.weaponSfxKey, { volume: 0.8, force: false });
@@ -2254,7 +2258,7 @@ export class Player {
     const addTimedState = (type, expiresAt, extra = {}) => {
       if (!type || seen.has(type)) return;
       const remainingMs = Math.max(0, (Number(expiresAt) || 0) - now);
-      if (remainingMs <= 0 && !extra.charges) return;
+      if (remainingMs <= 0 && !extra.charges && !extra.spent) return;
       seen.add(type);
       states.push({
         type,
@@ -2286,11 +2290,22 @@ export class Player {
       }
     };
 
+    const activePowerupIsEmptyBomb = () => (
+      this.bombShotsLeft <= 0
+      && (
+        this.activePowerup?.type === 'bomb'
+        || this.getCurrentPowerupEffect()?.bombShots
+      )
+    );
+
     if (this.activePowerup?.type) {
-      addTimedState(this.activePowerup.type, now + this.getActivePowerupRemainingMs(now), {
-        durationMode: this.activePowerup.durationMode || 'wall_clock',
-        ...getPrimaryStateDetail(this.activePowerup.type)
-      });
+      const powerupType = this.activePowerup.type;
+      if (!activePowerupIsEmptyBomb()) {
+        addTimedState(powerupType, now + this.getActivePowerupRemainingMs(now), {
+          durationMode: this.activePowerup.durationMode || 'wall_clock',
+          ...getPrimaryStateDetail(powerupType)
+        });
+      }
     }
 
     if (this.rowCoreActive) {
@@ -2303,6 +2318,13 @@ export class Player {
 
     if (this.shieldActive && !activeEffect.shield) {
       addTimedState('shield', this.shieldExpiresAt);
+    } else if (!this.shieldActive && this.shieldSpentUntil > now) {
+      addTimedState('shield', now, {
+        remainingMs: 0,
+        detail: 'EMPTY',
+        spent: true,
+        color: 0xff6677
+      });
     }
 
     if (this.scoreMultiplier > 1) {
@@ -2327,6 +2349,15 @@ export class Player {
         charges: this.bombShotsLeft,
         maxCharges: this.bombMaxShots || 3,
         detail: `${this.bombShotsLeft} SHOTS`
+      });
+    } else if (this.bombShotsLeft <= 0 && this.bombSpentUntil > now) {
+      addTimedState('bomb', now, {
+        remainingMs: 0,
+        charges: 0,
+        maxCharges: this.bombMaxShots || 3,
+        detail: 'EMPTY',
+        spent: true,
+        color: 0xff6677
       });
     }
 
@@ -2494,14 +2525,8 @@ export class Player {
     }
 
     if (this.shieldActive && !this.isDefenseSuppressed()) {
-      this.deactivateShield();
-      // Play Break Sound
-      if (this.game && this.game.scenes && this.game.scenes.play) {
-        // Direct access if possible, or assume generic hit sound
-        // AudioManager.playSfx('shield_break');
-      }
-      // Flash effect even for shield break
-      this.triggerFlash(0xff6666, 200);
+      this.deactivateShield({ spentFeedback: true });
+      this.triggerShieldBreakFeedback();
       return false; // DAMAGE ABSORBED
     }
 
@@ -2528,16 +2553,30 @@ export class Player {
   activateShield(durationMs = 15000) {
     this.shieldActive = true;
     this.shieldExpiresAt = Date.now() + Math.max(1000, Number(durationMs) || 15000);
+    this.shieldSpentUntil = 0;
     if (this.shieldSprite) this.shieldSprite.visible = true;
     // CRITICAL: Ensure player remains visible after shield activation
     this.ensureRenderable('activateShield');
   }
 
-  deactivateShield() {
+  deactivateShield(options = {}) {
     this.shieldActive = false;
+    this.shieldExpiresAt = 0;
+    if (options.spentFeedback) {
+      this.shieldSpentUntil = Date.now() + SHIELD_SPENT_FEEDBACK_MS;
+    }
     if (this.shieldSprite) this.shieldSprite.visible = false;
     // CRITICAL: Ensure player remains visible after shield breaks
     this.ensureRenderable('deactivateShield');
+  }
+
+  triggerShieldBreakFeedback() {
+    const playScene = this.game?.scenes?.play;
+    AudioManager.playSfx('forceField', { force: true, volume: 0.72, minIntervalMs: 80 });
+    this.triggerFlash(0x66ffff, 260);
+    playScene?.screenShake?.shake?.(5, 14);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x66ffff, 1.45);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y - 18, 0xffffff, 0.9);
   }
 
   createPointDefenseRing() {
@@ -2583,10 +2622,20 @@ export class Player {
     }
   }
 
-  deactivateBomb() {
+  deactivateBomb(options = {}) {
     this.bombShotsLeft = 0;
+    if (options.spentFeedback) {
+      this.bombSpentUntil = Date.now() + BOMB_SPENT_FEEDBACK_MS;
+    }
     if (this.bombIndicator) {
       this.bombIndicator.visible = false;
+    }
+    if (this.activePowerup.type === 'bomb' || this.getCurrentPowerupEffect()?.bombShots) {
+      this.activePowerup.type = null;
+      this.activePowerup.expiresAt = 0;
+      this.activePowerup.remainingMs = 0;
+      this.activePowerup.durationMode = 'wall_clock';
+      this.powerupEffect = null;
     }
   }
 
@@ -2641,6 +2690,7 @@ export class Player {
     if (effect.bombShots) {
       this.bombMaxShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
       this.bombShotsLeft = this.bombMaxShots;
+      this.bombSpentUntil = 0;
       this.bombBlastRadius = Math.max(40, Number(effect.bombBlastRadius || 150));
       this.bombDamageMult = Math.max(1, Number(effect.bombDamageMult || 5));
       this.bombColor = Number.isFinite(effect.bombColor) ? effect.bombColor : (getPowerupMeta(type)?.color || 0xffaa00);
@@ -2782,6 +2832,7 @@ export class Player {
         break;
       case 'bomb':
         this.bombShotsLeft = 3; // Next 3 shots are bombs
+        this.bombSpentUntil = 0;
         this.createBombIndicator();
         AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
         break;
@@ -2850,6 +2901,8 @@ export class Player {
     this.deactivatePointDefense();
     this.deactivateBomb();
     this.powerupEffect = null;
+    this.shieldSpentUntil = 0;
+    this.bombSpentUntil = 0;
     this.scoreMultiplier = 1;
     this.scoreMultiplierType = null;
     this.scoreBoostExpiresAt = 0;

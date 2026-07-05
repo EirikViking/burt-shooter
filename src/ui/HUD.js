@@ -644,21 +644,22 @@ export class HUD {
   updateActivePowerupRow(row, state, width, height, isMobile) {
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const color = Number.isFinite(state.color) ? state.color : this.getPowerupColor(state.type);
+    const spent = Boolean(state.spent);
     const iconSize = Math.round((isMobile ? 20 : 23) * uiScale);
     const iconX = Math.round(17 * uiScale);
     const iconY = height / 2 - 1;
     const texture = GameAssets.getPowerupTexture(state.iconType || state.type);
     row.bg.clear();
     row.bg.roundRect(0, 0, width, height, 7);
-    row.bg.fill({ color: 0x03101d, alpha: 0.58 });
-    row.bg.stroke({ color, width: 1, alpha: 0.65 });
+    row.bg.fill({ color: spent ? 0x1e0710 : 0x03101d, alpha: spent ? 0.72 : 0.58 });
+    row.bg.stroke({ color, width: spent ? 1.5 : 1, alpha: spent ? 0.92 : 0.65 });
 
     row.iconGlow.clear();
     row.iconGlow.circle(iconX, iconY, iconSize * 0.62);
-    row.iconGlow.fill({ color, alpha: 0.16 });
+    row.iconGlow.fill({ color, alpha: spent ? 0.08 : 0.16 });
     row.iconFrame.clear();
     row.iconFrame.circle(iconX, iconY, iconSize * 0.58);
-    row.iconFrame.stroke({ color, width: 1.4, alpha: 0.82 });
+    row.iconFrame.stroke({ color, width: spent ? 1.8 : 1.4, alpha: spent ? 0.95 : 0.82 });
 
     if (texture) {
       row.icon.visible = true;
@@ -667,12 +668,15 @@ export class HUD {
       row.icon.scale.set(Number.isFinite(scale) ? scale : 1);
       row.icon.x = iconX;
       row.icon.y = iconY;
+      row.icon.alpha = spent ? 0.55 : 1;
     } else {
       row.icon.visible = false;
     }
 
     row.label.style.fontSize = Math.round((isMobile ? 11 : 14) * uiScale);
     row.meta.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
+    row.label.style.fill = spent ? '#ffd6d6' : '#f8fbff';
+    row.meta.style.fill = spent ? '#ff9d9d' : '#ffff66';
     row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 18);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
@@ -686,25 +690,30 @@ export class HUD {
     const progress = this.getPowerupProgress(state);
     row.barBg.clear();
     row.barBg.roundRect(barX, barY, barWidth, 4, 2);
-    row.barBg.fill({ color: 0x143042, alpha: 0.9 });
+    row.barBg.fill({ color: spent ? 0x3a1118 : 0x143042, alpha: 0.9 });
     row.barFill.clear();
-    row.barFill.roundRect(barX, barY, Math.max(2, barWidth * progress), 4, 2);
-    row.barFill.fill({ color, alpha: 0.98 });
+    const fillWidth = spent ? 0 : Math.max(2, barWidth * progress);
+    if (fillWidth > 0) {
+      row.barFill.roundRect(barX, barY, fillWidth, 4, 2);
+      row.barFill.fill({ color, alpha: 0.98 });
+    }
   }
 
   formatPowerupMeta(state) {
     const remaining = Math.max(0, Math.ceil((state.remainingMs || 0) / 1000));
     const detail = String(state.detail || '').trim();
     const charges = Number(state.charges || 0);
+    if (state.spent) return translateText(detail || 'EMPTY');
     if (remaining && detail) return `${remaining}s | ${detail}`;
     if (remaining && charges) return `${remaining}s | ${charges}`;
     if (remaining) return `${remaining}s`;
     if (detail) return detail;
-    if (charges) return `${charges} LEFT`;
-    return 'ACTIVE';
+    if (charges) return `${charges} ${translateText('LEFT')}`;
+    return translateText('ACTIVE');
   }
 
   getPowerupProgress(state) {
+    if (state.spent) return 0;
     const charges = Number(state.charges || 0);
     const maxCharges = Number(state.maxCharges || 0);
     if ((state.remainingMs || 0) > 0) {

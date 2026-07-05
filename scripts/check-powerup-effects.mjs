@@ -166,6 +166,7 @@ try {
     const getDistance = (a, b) => Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
     const activeStates = () => player.getActivePowerupStates?.() || [];
     const hasState = (type) => activeStates().some((entry) => entry.type === type);
+    const findState = (type) => activeStates().find((entry) => entry.type === type);
     const activePlayerBullets = () => play.bulletManager?.playerBullets?.filter(bullet => bullet?.active !== false) || [];
     const activeEnemyBullets = () => play.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false) || [];
     const configuredMaxLives = Number(game.balanceConfig?.survival?.maxLives);
@@ -251,7 +252,8 @@ try {
         activeStates: activeStates().map(entry => ({
           type: entry.type,
           detail: entry.detail || null,
-          charges: entry.charges || null
+          charges: entry.charges || null,
+          spent: Boolean(entry.spent)
         }))
       };
     };
@@ -484,7 +486,22 @@ try {
           break;
         case 'shield':
           assert(player.shieldActive && player.shieldSprite?.visible !== false, `${type}: shield visual missing`);
-          note('shieldActive', player.shieldActive);
+          assert(hasState('shield'), `${type}: shield active HUD state missing`);
+          const previousDebugInvincible = play.debugInvincible;
+          play.debugInvincible = false;
+          const absorbedByShield = player.takeDamage();
+          play.debugInvincible = previousDebugInvincible;
+          assert(absorbedByShield === false, `${type}: shield did not absorb damage`);
+          assert(player.shieldActive === false, `${type}: shield stayed active after absorbing a hit`);
+          assert(player.shieldSprite?.visible === false, `${type}: shield sprite stayed visible after absorb`);
+          assert(findState('shield')?.spent === true, `${type}: spent shield HUD state missing`);
+          player.shieldSpentUntil = Date.now() - 1;
+          assert(!findState('shield'), `${type}: spent shield HUD state did not clear`);
+          player.activateShield(1000);
+          player.shieldExpiresAt = Date.now() - 1;
+          player.update(1);
+          assert(player.shieldActive === false && !findState('shield'), `${type}: shield timeout should clear without spent warning`);
+          note('shieldSpentFeedback', true);
           break;
         case 'rapid_fire':
           assert(player.shootDelay < base.shootDelay, `${type}: fire rate did not improve`, { base, after });
@@ -578,6 +595,15 @@ try {
           });
           assert((audit.staleVisibleCount || 0) === 0 && (audit.orphanedVisibleCount || 0) === 0, `${type}: bomb left dead enemy visuals`, audit);
           assert(game.score > beforeScore, `${type}: bomb kill did not award score`, { beforeScore, score: game.score });
+          shootNow();
+          shootNow();
+          const spentState = findState('bomb');
+          assert(player.bombShotsLeft === 0, `${type}: bomb charges did not empty`);
+          assert(player.bombIndicator?.visible === false, `${type}: bomb charge pips stayed visible after empty`);
+          assert(player.activePowerup?.type !== 'bomb', `${type}: bomb active timer stayed live after charges emptied`);
+          assert(spentState?.spent === true && spentState?.charges === 0, `${type}: spent bomb HUD state missing`, spentState);
+          player.bombSpentUntil = Date.now() - 1;
+          assert(!findState('bomb'), `${type}: spent bomb HUD state did not clear`);
           note('detonatedClean', audit);
           break;
         }
