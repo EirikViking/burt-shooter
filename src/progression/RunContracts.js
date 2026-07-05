@@ -1,280 +1,614 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 7;
+export const RUN_CONTRACTS_VERSION = 8;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
+const MAYHEM_MODES = Object.freeze([RUN_MODES.RANKED]);
+
+function defineContract(config = {}) {
+  return Object.freeze({
+    modeLabel: 'Mayhem',
+    modes: MAYHEM_MODES,
+    accent: 0x37f5ff,
+    ...config,
+    ...(Array.isArray(config.powerupTypes) ? { powerupTypes: Object.freeze([...config.powerupTypes]) } : {})
+  });
+}
+
 export const RUN_CONTRACT_CATALOG = Object.freeze([
-  Object.freeze({
+  defineContract({
+    id: 'graze_10',
+    title: 'Graze Cadet',
+    shortTitle: 'Graze x10',
+    description: 'Graze 10 bullets in Mayhem.',
+    shortDescription: 'Graze 10 bullets.',
+    objective: 'grazes',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'graze_count',
+    accent: 0x9cfbff
+  }),
+  defineContract({
     id: 'boss_breaker',
     title: 'Boss Breaker',
     shortTitle: 'Boss Breaker',
     description: 'Defeat your first boss in Mayhem.',
     shortDescription: 'Defeat a Mayhem boss.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_defeated',
     target: 1,
     group: 'boss_intro',
     accent: 0xffd15c
   }),
-  Object.freeze({
-    id: 'near_miss_streak',
-    title: 'Near-Miss Streak',
-    shortTitle: 'Near-Miss Streak',
-    description: 'Build a 5x near-miss streak.',
-    shortDescription: 'Reach a 5x near-miss streak.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'near_miss_streak',
-    target: 5,
-    group: 'near_miss',
-    accent: 0xffef7e
-  }),
-  Object.freeze({
+  defineContract({
     id: 'enemy_sweep_1000',
     title: 'Enemy Sweep I',
     shortTitle: '1000 Enemies',
     description: 'Destroy 1000 total enemies in Mayhem.',
     shortDescription: 'Destroy 1000 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'enemy_defeats',
     target: 1000,
     persistAcrossRuns: true,
     group: 'enemy_kills',
     accent: 0xff8f5a
   }),
-  Object.freeze({
+  defineContract({
     id: 'support_hunter',
     title: 'Support Hunter',
     shortTitle: 'Support Hunter',
     description: 'Destroy 2 boss support ships.',
     shortDescription: 'Destroy 2 support ships.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_support_defeats',
     target: 2,
     group: 'support_kills',
     accent: 0x7fffd8
   }),
-  Object.freeze({
+  defineContract({
     id: 'phase_runner',
     title: 'Phase Runner',
     shortTitle: 'Phase Runner',
     description: 'Use Phase through dangerous bullets.',
     shortDescription: 'Phase through dangerous bullets.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'phase_through_danger',
     target: 1,
     group: 'phase',
     accent: 0x9cfbff
   }),
-  Object.freeze({
+  defineContract({
+    id: 'powerup_collector_10',
+    title: 'Powerup Pilot I',
+    shortTitle: '10 Powerups',
+    description: 'Collect 10 powerups in Mayhem.',
+    shortDescription: 'Collect 10 powerups.',
+    objective: 'powerup_collected',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'powerup_total',
+    accent: 0x66ffdd
+  }),
+  defineContract({
+    id: 'near_miss_streak',
+    title: 'Near-Miss Streak',
+    shortTitle: 'Near-Miss Streak',
+    description: 'Build a 5x near-miss streak.',
+    shortDescription: 'Reach a 5x near-miss streak.',
+    objective: 'near_miss_streak',
+    target: 5,
+    group: 'near_miss',
+    accent: 0xffef7e
+  }),
+  defineContract({
+    id: 'shield_pickup',
+    title: 'Shield Check',
+    shortTitle: 'Shield Check',
+    description: 'Collect a Shield powerup in Mayhem.',
+    shortDescription: 'Collect Shield.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['shield'],
+    group: 'shield_powerup',
+    accent: 0x7fffd8
+  }),
+  defineContract({
+    id: 'slow_mo_finisher',
+    title: 'Slow-Mo Finisher',
+    shortTitle: 'Slow-Mo Finisher',
+    description: 'Defeat a boss while Slow Time or Chrono Anchor is active.',
+    shortDescription: 'Boss defeat during Slow Time.',
+    objective: 'boss_slow_time_defeat',
+    target: 1,
+    group: 'slow_time',
+    accent: 0x63ffe8
+  }),
+  defineContract({
+    id: 'sector_5_survivor',
+    title: 'Sector 5 Survivor',
+    shortTitle: 'Sector 5 Survivor',
+    description: 'Reach Sector 5 without losing a life.',
+    shortDescription: 'Reach Sector 5 without life loss.',
+    objective: 'sector_no_life_loss',
+    target: 1,
+    sectorTarget: 5,
+    group: 'no_life_sector',
+    accent: 0xcaa6ff
+  }),
+  defineContract({
     id: 'blink_control',
     title: 'Blink Control',
     shortTitle: 'Blink Control',
     description: 'Collect Blink Drive and survive long enough.',
     shortDescription: 'Collect Blink Drive and survive.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'blink_drive_survive',
     target: 1,
     surviveSeconds: 6,
     group: 'blink',
     accent: 0x7df9ff
   }),
-  Object.freeze({
-    id: 'slow_mo_finisher',
-    title: 'Slow-Mo Finisher',
-    shortTitle: 'Slow-Mo Finisher',
-    description: 'Defeat a boss while Slow Time or Chrono Anchor is active.',
-    shortDescription: 'Boss defeat during Slow Time.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'boss_slow_time_defeat',
-    target: 1,
-    group: 'slow_time',
-    accent: 0x63ffe8
-  }),
-  Object.freeze({
-    id: 'sector_10_signal',
-    title: 'Sector 10 Signal',
-    shortTitle: 'Sector 10 Signal',
-    description: 'Reach Sector 10 in Mayhem.',
-    shortDescription: 'Reach Sector 10 in Mayhem.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
+  defineContract({
+    id: 'sector_3_signal',
+    title: 'Sector 3 Signal',
+    shortTitle: 'Sector 3',
+    description: 'Reach Sector 3 in Mayhem.',
+    shortDescription: 'Reach Sector 3.',
     objective: 'sector_reached',
     target: 1,
-    sectorTarget: 10,
+    sectorTarget: 3,
     group: 'sector_reach',
     accent: 0xcaa6ff
   }),
-  Object.freeze({
+  defineContract({
+    id: 'bomb_pickup',
+    title: 'Bomb Drill',
+    shortTitle: 'Bomb Drill',
+    description: 'Collect a Bomb powerup in Mayhem.',
+    shortDescription: 'Collect Bomb.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['bomb'],
+    group: 'bomb_powerup',
+    accent: 0xff8f5a
+  }),
+  defineContract({
     id: 'enemy_sweep_2500',
     title: 'Enemy Sweep II',
     shortTitle: '2500 Enemies',
     description: 'Destroy 2500 total enemies in Mayhem.',
     shortDescription: 'Destroy 2500 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'enemy_defeats',
     target: 2500,
     persistAcrossRuns: true,
     group: 'enemy_kills',
     accent: 0xffb86a
   }),
-  Object.freeze({
+  defineContract({
+    id: 'graze_50',
+    title: 'Graze Pilot',
+    shortTitle: 'Graze x50',
+    description: 'Graze 50 bullets in Mayhem.',
+    shortDescription: 'Graze 50 bullets.',
+    objective: 'grazes',
+    target: 50,
+    persistAcrossRuns: true,
+    group: 'graze_count',
+    accent: 0x9cfbff
+  }),
+  defineContract({
     id: 'boss_hunter_10',
     title: 'Boss Hunter I',
     shortTitle: '10 Bosses',
     description: 'Defeat 10 total bosses in Mayhem.',
     shortDescription: 'Defeat 10 bosses.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_defeats',
     target: 10,
     persistAcrossRuns: true,
     group: 'boss_kills',
     accent: 0xffd15c
   }),
-  Object.freeze({
+  defineContract({
     id: 'support_hunter_10',
     title: 'Support Hunter I',
     shortTitle: '10 Supports',
     description: 'Destroy 10 total boss support ships.',
     shortDescription: 'Destroy 10 support ships.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_support_defeats',
     target: 10,
     persistAcrossRuns: true,
     group: 'support_kills',
     accent: 0x7fffd8
   }),
-  Object.freeze({
+  defineContract({
     id: 'enemy_variety_50',
     title: 'Enemy Variety I',
     shortTitle: '50 Enemy Types',
     description: 'Destroy 50 different enemy types in Mayhem.',
     shortDescription: 'Destroy 50 enemy types.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'unique_enemy_defeats',
     target: 50,
     persistAcrossRuns: true,
     group: 'enemy_variety',
     accent: 0x66ff9d
   }),
-  Object.freeze({
-    id: 'enemy_sweep_10000',
-    title: 'Enemy Sweep III',
-    shortTitle: '10000 Enemies',
-    description: 'Destroy 10000 total enemies in Mayhem.',
-    shortDescription: 'Destroy 10000 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'enemy_defeats',
-    target: 10000,
-    persistAcrossRuns: true,
-    group: 'enemy_kills',
-    accent: 0xffa36a
-  }),
-  Object.freeze({
+  defineContract({
     id: 'pilot_rank_5',
     title: 'Rank 5 Signal',
     shortTitle: 'Rank 5',
     description: 'Achieve pilot rank 5.',
     shortDescription: 'Achieve rank 5.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'pilot_rank_reached',
     target: 5,
     persistAcrossRuns: true,
     group: 'pilot_rank',
     accent: 0xb6f2ff
   }),
-  Object.freeze({
-    id: 'boss_hunter_50',
+  defineContract({
+    id: 'sector_7_signal',
+    title: 'Sector 7 Signal',
+    shortTitle: 'Sector 7',
+    description: 'Reach Sector 7 in Mayhem.',
+    shortDescription: 'Reach Sector 7.',
+    objective: 'sector_reached',
+    target: 1,
+    sectorTarget: 7,
+    group: 'sector_reach',
+    accent: 0xcaa6ff
+  }),
+  defineContract({
+    id: 'slow_time_pickup',
+    title: 'Slow Time Drill',
+    shortTitle: 'Slow Time Drill',
+    description: 'Collect Slow Time in Mayhem.',
+    shortDescription: 'Collect Slow Time.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['slow_time'],
+    group: 'slow_time_collect',
+    accent: 0x63ffe8
+  }),
+  defineContract({
+    id: 'phase_veteran_10',
+    title: 'Phase Veteran',
+    shortTitle: '10 Phases',
+    description: 'Use Phase 10 times in Mayhem.',
+    shortDescription: 'Use Phase 10 times.',
+    objective: 'phase_uses',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'phase',
+    accent: 0x9cfbff
+  }),
+  defineContract({
+    id: 'powerup_collector_25',
+    title: 'Powerup Pilot II',
+    shortTitle: '25 Powerups',
+    description: 'Collect 25 powerups in Mayhem.',
+    shortDescription: 'Collect 25 powerups.',
+    objective: 'powerup_collected',
+    target: 25,
+    persistAcrossRuns: true,
+    group: 'powerup_total',
+    accent: 0x66ffdd
+  }),
+  defineContract({
+    id: 'chrono_anchor_pickup',
+    title: 'Chrono Anchor Drill',
+    shortTitle: 'Chrono Anchor',
+    description: 'Collect Chrono Anchor in Mayhem.',
+    shortDescription: 'Collect Chrono Anchor.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['chrono_anchor'],
+    group: 'chrono_powerup',
+    accent: 0x63ffe8
+  }),
+  defineContract({
+    id: 'extra_life_found',
+    title: 'Extra Life Found',
+    shortTitle: 'Extra Life',
+    description: 'Collect an extra-life powerup in Mayhem.',
+    shortDescription: 'Collect an extra life.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['life', 'super_extra_life'],
+    group: 'extra_life_powerup',
+    accent: 0x7fffd8
+  }),
+  defineContract({
+    id: 'near_miss_streak_10',
+    title: 'Close Call Specialist',
+    shortTitle: 'Near-Miss x10',
+    description: 'Build a 10x near-miss streak.',
+    shortDescription: 'Reach a 10x near-miss streak.',
+    objective: 'near_miss_streak',
+    target: 10,
+    group: 'near_miss',
+    accent: 0xffef7e
+  }),
+  defineContract({
+    id: 'sector_10_signal',
+    title: 'Sector 10 Signal',
+    shortTitle: 'Sector 10 Signal',
+    description: 'Reach Sector 10 in Mayhem.',
+    shortDescription: 'Reach Sector 10 in Mayhem.',
+    objective: 'sector_reached',
+    target: 1,
+    sectorTarget: 10,
+    group: 'sector_reach',
+    accent: 0xcaa6ff
+  }),
+  defineContract({
+    id: 'blink_veteran_3',
+    title: 'Blink Veteran',
+    shortTitle: '3 Blink Drives',
+    description: 'Collect 3 Blink Drives in Mayhem.',
+    shortDescription: 'Collect 3 Blink Drives.',
+    objective: 'powerup_collected',
+    target: 3,
+    powerupTypes: ['blink_drive'],
+    persistAcrossRuns: true,
+    group: 'blink',
+    accent: 0x7df9ff
+  }),
+  defineContract({
+    id: 'shield_collector_5',
+    title: 'Shield Veteran',
+    shortTitle: '5 Shields',
+    description: 'Collect 5 Shield powerups in Mayhem.',
+    shortDescription: 'Collect 5 Shields.',
+    objective: 'powerup_collected',
+    target: 5,
+    powerupTypes: ['shield'],
+    persistAcrossRuns: true,
+    group: 'shield_powerup',
+    accent: 0x7fffd8
+  }),
+  defineContract({
+    id: 'bomb_collector_5',
+    title: 'Bombardier',
+    shortTitle: '5 Bombs',
+    description: 'Collect 5 Bomb powerups in Mayhem.',
+    shortDescription: 'Collect 5 Bombs.',
+    objective: 'powerup_collected',
+    target: 5,
+    powerupTypes: ['bomb'],
+    persistAcrossRuns: true,
+    group: 'bomb_powerup',
+    accent: 0xff8f5a
+  }),
+  defineContract({
+    id: 'enemy_sweep_10000',
+    title: 'Enemy Sweep III',
+    shortTitle: '10000 Enemies',
+    description: 'Destroy 10000 total enemies in Mayhem.',
+    shortDescription: 'Destroy 10000 enemies.',
+    objective: 'enemy_defeats',
+    target: 10000,
+    persistAcrossRuns: true,
+    group: 'enemy_kills',
+    accent: 0xffa36a
+  }),
+  defineContract({
+    id: 'boss_hunter_25',
     title: 'Boss Hunter II',
+    shortTitle: '25 Bosses',
+    description: 'Defeat 25 total bosses in Mayhem.',
+    shortDescription: 'Defeat 25 bosses.',
+    objective: 'boss_defeats',
+    target: 25,
+    persistAcrossRuns: true,
+    group: 'boss_kills',
+    accent: 0xffd15c
+  }),
+  defineContract({
+    id: 'support_hunter_25',
+    title: 'Support Hunter II',
+    shortTitle: '25 Supports',
+    description: 'Destroy 25 total boss support ships.',
+    shortDescription: 'Destroy 25 support ships.',
+    objective: 'boss_support_defeats',
+    target: 25,
+    persistAcrossRuns: true,
+    group: 'support_kills',
+    accent: 0x7fffd8
+  }),
+  defineContract({
+    id: 'enemy_variety_75',
+    title: 'Enemy Variety II',
+    shortTitle: '75 Enemy Types',
+    description: 'Destroy 75 different enemy types in Mayhem.',
+    shortDescription: 'Destroy 75 enemy types.',
+    objective: 'unique_enemy_defeats',
+    target: 75,
+    persistAcrossRuns: true,
+    group: 'enemy_variety',
+    accent: 0x66ff9d
+  }),
+  defineContract({
+    id: 'graze_150',
+    title: 'Graze Ace',
+    shortTitle: 'Graze x150',
+    description: 'Graze 150 bullets in Mayhem.',
+    shortDescription: 'Graze 150 bullets.',
+    objective: 'grazes',
+    target: 150,
+    persistAcrossRuns: true,
+    group: 'graze_count',
+    accent: 0x9cfbff
+  }),
+  defineContract({
+    id: 'point_defense_pickup',
+    title: 'Point Defense Drill',
+    shortTitle: 'Point Defense',
+    description: 'Collect Point Defense in Mayhem.',
+    shortDescription: 'Collect Point Defense.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['point_defense', 'aegis_burst'],
+    group: 'point_defense_powerup',
+    accent: 0x7fffd8
+  }),
+  defineContract({
+    id: 'repair_pickup',
+    title: 'Repair Protocol',
+    shortTitle: 'Repair Protocol',
+    description: 'Collect a repair-style powerup in Mayhem.',
+    shortDescription: 'Collect a repair powerup.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['nano_patch', 'mercy_protocol', 'life', 'super_extra_life'],
+    group: 'repair_powerup',
+    accent: 0x66ff9d
+  }),
+  defineContract({
+    id: 'shockwave_pickup',
+    title: 'Shockwave Drill',
+    shortTitle: 'Shockwave',
+    description: 'Collect Shockwave in Mayhem.',
+    shortDescription: 'Collect Shockwave.',
+    objective: 'powerup_collected',
+    target: 1,
+    powerupTypes: ['shockwave'],
+    group: 'shockwave_powerup',
+    accent: 0xffef7e
+  }),
+  defineContract({
+    id: 'sector_15_signal',
+    title: 'Sector 15 Signal',
+    shortTitle: 'Sector 15',
+    description: 'Reach Sector 15 in Mayhem.',
+    shortDescription: 'Reach Sector 15.',
+    objective: 'sector_reached',
+    target: 1,
+    sectorTarget: 15,
+    group: 'sector_reach',
+    accent: 0xcaa6ff
+  }),
+  defineContract({
+    id: 'powerup_collector_50',
+    title: 'Powerup Pilot III',
+    shortTitle: '50 Powerups',
+    description: 'Collect 50 powerups in Mayhem.',
+    shortDescription: 'Collect 50 powerups.',
+    objective: 'powerup_collected',
+    target: 50,
+    persistAcrossRuns: true,
+    group: 'powerup_total',
+    accent: 0x66ffdd
+  }),
+  defineContract({
+    id: 'phase_master_25',
+    title: 'Phase Master',
+    shortTitle: '25 Phases',
+    description: 'Use Phase 25 times in Mayhem.',
+    shortDescription: 'Use Phase 25 times.',
+    objective: 'phase_uses',
+    target: 25,
+    persistAcrossRuns: true,
+    group: 'phase',
+    accent: 0x9cfbff
+  }),
+  defineContract({
+    id: 'boss_hunter_50',
+    title: 'Boss Hunter III',
     shortTitle: '50 Bosses',
     description: 'Defeat 50 total bosses in Mayhem.',
     shortDescription: 'Defeat 50 bosses.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_defeats',
     target: 50,
     persistAcrossRuns: true,
     group: 'boss_kills',
     accent: 0xffd15c
   }),
-  Object.freeze({
+  defineContract({
     id: 'support_hunter_50',
-    title: 'Support Hunter II',
+    title: 'Support Hunter III',
     shortTitle: '50 Supports',
     description: 'Destroy 50 total boss support ships.',
     shortDescription: 'Destroy 50 support ships.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_support_defeats',
     target: 50,
     persistAcrossRuns: true,
     group: 'support_kills',
     accent: 0x7fffd8
   }),
-  Object.freeze({
+  defineContract({
     id: 'enemy_variety_100',
-    title: 'Enemy Variety II',
+    title: 'Enemy Variety III',
     shortTitle: '100 Enemy Types',
     description: 'Destroy 100 different enemy types in Mayhem.',
     shortDescription: 'Destroy 100 enemy types.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'unique_enemy_defeats',
     target: 100,
     persistAcrossRuns: true,
     group: 'enemy_variety',
     accent: 0x66ff9d
   }),
-  Object.freeze({
+  defineContract({
+    id: 'pilot_rank_10',
+    title: 'Rank 10 Signal',
+    shortTitle: 'Rank 10',
+    description: 'Achieve pilot rank 10.',
+    shortDescription: 'Achieve rank 10.',
+    objective: 'pilot_rank_reached',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'pilot_rank',
+    accent: 0xb6f2ff
+  }),
+  defineContract({
+    id: 'ranked_launch_3',
+    title: 'Ranked Launches I',
+    shortTitle: '3 Mayhem Runs',
+    description: 'Start 3 Mayhem runs.',
+    shortDescription: 'Start 3 Mayhem runs.',
+    objective: 'run_starts',
+    target: 3,
+    persistAcrossRuns: true,
+    group: 'run_starts',
+    accent: 0xffd15c
+  }),
+  defineContract({
+    id: 'ranked_regular_10',
+    title: 'Ranked Launches II',
+    shortTitle: '10 Mayhem Runs',
+    description: 'Start 10 Mayhem runs.',
+    shortDescription: 'Start 10 Mayhem runs.',
+    objective: 'run_starts',
+    target: 10,
+    persistAcrossRuns: true,
+    group: 'run_starts',
+    accent: 0xffd15c
+  }),
+  defineContract({
     id: 'enemy_sweep_25000',
     title: 'Enemy Sweep IV',
     shortTitle: '25000 Enemies',
     description: 'Destroy 25000 total enemies in Mayhem.',
     shortDescription: 'Destroy 25000 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'enemy_defeats',
     target: 25000,
     persistAcrossRuns: true,
     group: 'enemy_kills',
     accent: 0xffc36a
   }),
-  Object.freeze({
+  defineContract({
     id: 'boss_hunter_100',
-    title: 'Boss Hunter III',
+    title: 'Boss Hunter IV',
     shortTitle: '100 Bosses',
     description: 'Defeat 100 total bosses in Mayhem.',
     shortDescription: 'Defeat 100 bosses.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_defeats',
     target: 100,
     persistAcrossRuns: true,
     group: 'boss_kills',
     accent: 0xffd15c
   }),
-  Object.freeze({
+  defineContract({
     id: 'support_hunter_100',
-    title: 'Support Hunter III',
+    title: 'Support Hunter IV',
     shortTitle: '100 Supports',
     description: 'Destroy 100 total boss support ships.',
     shortDescription: 'Destroy 100 support ships.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
     objective: 'boss_support_defeats',
     target: 100,
     persistAcrossRuns: true,
@@ -438,7 +772,11 @@ function getAllCompletedAt(completed = {}) {
 }
 
 export function getRunContractCatalog() {
-  return RUN_CONTRACT_CATALOG.map((contract) => ({ ...contract, modes: [...contract.modes] }));
+  return RUN_CONTRACT_CATALOG.map((contract) => ({
+    ...contract,
+    modes: [...contract.modes],
+    ...(Array.isArray(contract.powerupTypes) ? { powerupTypes: [...contract.powerupTypes] } : {})
+  }));
 }
 
 export function getRunContractById(id) {
@@ -694,10 +1032,22 @@ function progressForEvent(contract, item, event, session) {
       return type === 'boss_defeated' && event.slowTimeActive === true ? contract.target : current;
     case 'phase_through_danger':
       return type === 'phase_used' && event.dangerous === true ? contract.target : current;
+    case 'phase_uses':
+      return type === 'phase_used' ? current + 1 : current;
     case 'near_miss_streak':
       return type === 'near_miss' ? Math.max(current, floor(event.streak)) : current;
     case 'blink_drive_survive':
-      return type === 'blink_drive_survived' ? contract.target : current;
+      return type === 'blink_drive_survived' ? current + 1 : current;
+    case 'run_starts':
+      return type === 'run_started' ? current + 1 : current;
+    case 'powerup_collected': {
+      if (type !== 'powerup_collected') return current;
+      const powerupType = clampText(event.powerupType || event.powerupId || event.typeId, 80);
+      if (Array.isArray(contract.powerupTypes) && contract.powerupTypes.length && !contract.powerupTypes.includes(powerupType)) {
+        return current;
+      }
+      return current + 1;
+    }
     case 'sector_no_life_loss':
       return type === 'sector_reached' && session.noLifeLost && floor(event.sector, 1) >= floor(contract.sectorTarget || 5, 5)
         ? contract.target

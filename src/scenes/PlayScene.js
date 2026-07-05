@@ -531,6 +531,9 @@ export class PlayScene {
       displayRank: currentPilotRankIndex + 1,
       sector: this.game?.level || 1
     });
+    this.emitRunContractEvent('run_started', {
+      sector: this.game?.level || 1
+    });
     this.blinkDriveOrderStartedAt = null;
     this.blinkDriveOrderCompleted = false;
     this.playerPhaseWasActive = false;
@@ -1178,6 +1181,17 @@ export class PlayScene {
 
   shouldPersistRunContractProgress(type, result = {}) {
     if ((result.completed || []).length > 0) return true;
+    if (type === 'near_miss') {
+      const trackedGrazeOrder = (result.session?.active || []).find((item) => {
+        const contract = getRunContractById(item.id);
+        return contract?.objective === 'grazes'
+          && item.eligible
+          && !item.completed;
+      });
+      if (!trackedGrazeOrder) return true;
+      const progress = Math.max(0, Math.floor(Number(trackedGrazeOrder.progress) || 0));
+      return progress <= 5 || progress % 5 === 0;
+    }
     if (type !== 'enemy_defeated') return true;
     const trackedEnemyOrder = (result.session?.active || []).find((item) => {
       const contract = getRunContractById(item.id);

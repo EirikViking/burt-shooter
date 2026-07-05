@@ -947,9 +947,15 @@ export class ShipSelectScene {
     hint.position.set(18, compact ? 28 : 32);
     fitDisplayToBox(hint, width - 36, compact ? 14 : 17, { minScale: 0.64 });
 
-    const columnCount = width >= 420 && completedOrders.length > 5 ? 2 : 1;
-    const columnGap = columnCount > 1 ? 14 : 0;
-    const columnWidth = Math.floor((width - 36 - columnGap) / columnCount);
+    const columnCount = completedOrders.length > 36 && width >= 720
+      ? 4
+      : completedOrders.length > 18 && width >= 560
+        ? 3
+        : width >= 420 && completedOrders.length > 5
+          ? 2
+          : 1;
+    const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
+    const columnWidth = Math.floor((width - 36 - columnGap * (columnCount - 1)) / columnCount);
     const orderedLines = completedOrders.length ? completedText.split('\n') : [completedText];
     const columnLists = Array.from({ length: columnCount }, () => []);
     orderedLines.forEach((line, index) => {
@@ -957,19 +963,22 @@ export class ShipSelectScene {
     });
     const listTop = compact ? 43 : 50;
     const listHeight = Math.max(18, height - listTop - 16);
+    const denseArchive = completedOrders.length > 30;
+    const listFontSize = compact ? (denseArchive ? 7 : 9) : (denseArchive ? 8 : 11);
+    const listLineHeight = compact ? (denseArchive ? 8 : 10) : (denseArchive ? 9 : 13);
     const listTexts = columnLists.map((lines, column) => {
       const copy = createText(lines.join('\n'), {
         fontFamily: FONT_BODY,
-        fontSize: compact ? 9 : 11,
+        fontSize: listFontSize,
         fontWeight: '800',
         fill: completedOrders.length ? '#d8fbff' : '#90aeba',
         wordWrap: true,
         wordWrapWidth: columnWidth,
-        lineHeight: compact ? 10 : 13,
+        lineHeight: listLineHeight,
         letterSpacing: 0
       });
       copy.position.set(18 + column * (columnWidth + columnGap), listTop);
-      fitDisplayToBox(copy, columnWidth, listHeight, { minScale: 0.58 });
+      fitDisplayToBox(copy, columnWidth, listHeight, { minScale: denseArchive ? 0.48 : 0.58 });
       return copy;
     });
     panel.addChild(heading, count, hint, ...listTexts);

@@ -61,30 +61,63 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-contracts-${timestamp()}`);
 
-const FIRST_THREE = ['boss_breaker', 'near_miss_streak', 'enemy_sweep_1000'];
-const SECOND_THREE = ['support_hunter', 'phase_runner', 'blink_control'];
-const ACTIVE_DESCRIPTIONS = {
-  boss_breaker: 'Defeat a Mayhem boss.',
-  near_miss_streak: 'Reach a 5x near-miss streak.',
-  enemy_sweep_1000: 'Destroy 1000 enemies.',
-  enemy_sweep_2500: 'Destroy 2500 enemies.',
-  enemy_sweep_10000: 'Destroy 10000 enemies.',
-  enemy_sweep_25000: 'Destroy 25000 enemies.',
-  support_hunter: 'Destroy 2 support ships.',
-  support_hunter_10: 'Destroy 10 support ships.',
-  support_hunter_50: 'Destroy 50 support ships.',
-  support_hunter_100: 'Destroy 100 support ships.',
-  boss_hunter_10: 'Defeat 10 bosses.',
-  boss_hunter_50: 'Defeat 50 bosses.',
-  boss_hunter_100: 'Defeat 100 bosses.',
-  enemy_variety_50: 'Destroy 50 enemy types.',
-  enemy_variety_100: 'Destroy 100 enemy types.',
-  pilot_rank_5: 'Achieve rank 5.',
-  slow_mo_finisher: 'Boss defeat during Slow Time.',
-  phase_runner: 'Phase through dangerous bullets.',
-  blink_control: 'Collect Blink Drive and survive.',
-  sector_10_signal: 'Reach Sector 10 in Mayhem.'
-};
+const FIRST_THREE = ['graze_10', 'boss_breaker', 'enemy_sweep_1000'];
+const SECOND_THREE = ['support_hunter', 'phase_runner', 'powerup_collector_10'];
+const EXPECTED_ORDER_IDS = [
+  'graze_10',
+  'boss_breaker',
+  'enemy_sweep_1000',
+  'support_hunter',
+  'phase_runner',
+  'powerup_collector_10',
+  'near_miss_streak',
+  'shield_pickup',
+  'slow_mo_finisher',
+  'sector_5_survivor',
+  'blink_control',
+  'sector_3_signal',
+  'bomb_pickup',
+  'enemy_sweep_2500',
+  'graze_50',
+  'boss_hunter_10',
+  'support_hunter_10',
+  'enemy_variety_50',
+  'pilot_rank_5',
+  'sector_7_signal',
+  'slow_time_pickup',
+  'phase_veteran_10',
+  'powerup_collector_25',
+  'chrono_anchor_pickup',
+  'extra_life_found',
+  'near_miss_streak_10',
+  'sector_10_signal',
+  'blink_veteran_3',
+  'shield_collector_5',
+  'bomb_collector_5',
+  'enemy_sweep_10000',
+  'boss_hunter_25',
+  'support_hunter_25',
+  'enemy_variety_75',
+  'graze_150',
+  'point_defense_pickup',
+  'repair_pickup',
+  'shockwave_pickup',
+  'sector_15_signal',
+  'powerup_collector_50',
+  'phase_master_25',
+  'boss_hunter_50',
+  'support_hunter_50',
+  'enemy_variety_100',
+  'pilot_rank_10',
+  'ranked_launch_3',
+  'ranked_regular_10',
+  'enemy_sweep_25000',
+  'boss_hunter_100',
+  'support_hunter_100'
+];
+const ACTIVE_DESCRIPTIONS = Object.fromEntries(
+  getRunContractCatalog().map((contract) => [contract.id, contract.shortDescription])
+);
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -159,31 +192,10 @@ function assertDistinctActiveGroups(stateOrIds, label = 'active orders') {
 function runCatalogAndSaveTests() {
   const storage = setStorage(new MemoryStorage());
   const catalog = getRunContractCatalog();
-  assert.equal(catalog.length, 20, 'Pilot Orders should expose the finite starter catalog');
+  assert.equal(catalog.length, 50, 'Pilot Orders should expose the finite starter catalog');
   assert.equal(new Set(catalog.map((contract) => contract.id)).size, catalog.length, 'contract ids must be unique');
   assert.equal(catalog.every((contract) => typeof contract.group === 'string' && contract.group), true, 'contract catalog should tag every order with a display group');
-  assert.deepEqual(RUN_CONTRACT_ORDER_IDS, [
-    'boss_breaker',
-    'near_miss_streak',
-    'enemy_sweep_1000',
-    'support_hunter',
-    'phase_runner',
-    'blink_control',
-    'slow_mo_finisher',
-    'sector_10_signal',
-    'enemy_sweep_2500',
-    'boss_hunter_10',
-    'support_hunter_10',
-    'enemy_variety_50',
-    'enemy_sweep_10000',
-    'pilot_rank_5',
-    'boss_hunter_50',
-    'support_hunter_50',
-    'enemy_variety_100',
-    'enemy_sweep_25000',
-    'boss_hunter_100',
-    'support_hunter_100'
-  ]);
+  assert.deepEqual(RUN_CONTRACT_ORDER_IDS, EXPECTED_ORDER_IDS);
   assert.deepEqual(DEFAULT_ACTIVE_RUN_CONTRACT_IDS, FIRST_THREE);
 
   const migrated = readHangarProgressState();
@@ -211,6 +223,16 @@ function runCatalogAndSaveTests() {
   let session = startRunContractSession({ runMode: RUN_MODES.RANKED, progress: migrated });
   const bossResult = applyRunContractEvent(session, { type: 'boss_defeated', sector: 2 });
   assert.deepEqual(bossResult.completed.map((entry) => entry.id), ['boss_breaker'], 'first Mayhem boss defeat should complete Boss Breaker');
+
+  const grazePartial = applyEvents(sessionFor(['graze_10']), Array.from({ length: 9 }, (_, index) => ({
+    type: 'near_miss',
+    streak: index + 1,
+    sector: 1
+  })));
+  assert.equal(grazePartial.completed.length, 0, 'Graze x10 should wait until ten grazes');
+  assert.equal(findSessionItem(grazePartial.session, 'graze_10').progress, 9);
+  const grazeResult = applyRunContractEvent(grazePartial.session, { type: 'near_miss', streak: 10, sector: 1 });
+  assert.deepEqual(grazeResult.completed.map((entry) => entry.id), ['graze_10']);
 
   const enemyNope = applyRunContractEvent(sessionFor(['enemy_sweep_1000']), { type: 'near_miss', streak: 3, sector: 1 });
   assert.equal(enemyNope.completed.length, 0, 'enemy kill orders should only advance on enemy defeats');
@@ -243,12 +265,20 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(supportResult.completed.map((entry) => entry.id), ['support_hunter']);
   const supportTenResult = applyEvents(sessionFor(['support_hunter_10']), Array.from({ length: 10 }, () => ({ type: 'boss_support_defeated', sector: 4 })));
   assert.deepEqual(supportTenResult.completed.map((entry) => entry.id), ['support_hunter_10']);
+  for (const [id, target] of [['support_hunter_25', 25], ['support_hunter_50', 50], ['support_hunter_100', 100]]) {
+    const result = applyEvents(sessionFor([id]), Array.from({ length: target }, () => ({ type: 'boss_support_defeated', sector: 7 })));
+    assert.deepEqual(result.completed.map((entry) => entry.id), [id], `${id} should complete at ${target} support defeats`);
+  }
 
   const bossTenPartial = applyEvents(sessionFor(['boss_hunter_10']), Array.from({ length: 9 }, () => ({ type: 'boss_defeated', sector: 4 })));
   assert.equal(bossTenPartial.completed.length, 0, '10 Bosses should wait until the tenth boss defeat');
   assert.equal(findSessionItem(bossTenPartial.session, 'boss_hunter_10').progress, 9);
   const bossTenResult = applyRunContractEvent(bossTenPartial.session, { type: 'boss_defeated', sector: 5 });
   assert.deepEqual(bossTenResult.completed.map((entry) => entry.id), ['boss_hunter_10']);
+  for (const [id, target] of [['boss_hunter_25', 25], ['boss_hunter_50', 50], ['boss_hunter_100', 100]]) {
+    const result = applyEvents(sessionFor([id]), Array.from({ length: target }, () => ({ type: 'boss_defeated', sector: 7 })));
+    assert.deepEqual(result.completed.map((entry) => entry.id), [id], `${id} should complete at ${target} boss defeats`);
+  }
 
   const enemyVarietyPartial = applyEvents(sessionFor(['enemy_variety_50']), Array.from({ length: 49 }, (_, index) => ({
     type: 'enemy_defeated',
@@ -269,12 +299,22 @@ function runCatalogAndSaveTests() {
     enemyType: 'enemy_type_49'
   });
   assert.deepEqual(enemyVarietyResult.completed.map((entry) => entry.id), ['enemy_variety_50']);
+  for (const [id, target] of [['enemy_variety_75', 75], ['enemy_variety_100', 100]]) {
+    const result = applyEvents(sessionFor([id]), Array.from({ length: target }, (_, index) => ({
+      type: 'enemy_defeated',
+      sector: 8,
+      enemyType: `${id}_type_${index}`
+    })));
+    assert.deepEqual(result.completed.map((entry) => entry.id), [id], `${id} should complete at ${target} distinct enemy types`);
+  }
 
   const rankPartial = applyRunContractEvent(sessionFor(['pilot_rank_5']), { type: 'pilot_rank_reached', rankIndex: 3, sector: 1 });
   assert.equal(rankPartial.completed.length, 0, 'Rank 5 should wait for display rank 5');
   assert.equal(findSessionItem(rankPartial.session, 'pilot_rank_5').progress, 4);
   const rankResult = applyRunContractEvent(rankPartial.session, { type: 'pilot_rank_reached', rankIndex: 4, sector: 1 });
   assert.deepEqual(rankResult.completed.map((entry) => entry.id), ['pilot_rank_5']);
+  const rankTenResult = applyRunContractEvent(sessionFor(['pilot_rank_10']), { type: 'pilot_rank_reached', displayRank: 10, sector: 1 });
+  assert.deepEqual(rankTenResult.completed.map((entry) => entry.id), ['pilot_rank_10']);
 
 
   const slowNope = applyRunContractEvent(sessionFor(['slow_mo_finisher']), { type: 'boss_defeated', slowTimeActive: false, sector: 2 });
@@ -284,13 +324,43 @@ function runCatalogAndSaveTests() {
 
   const phaseResult = applyRunContractEvent(sessionFor(['phase_runner']), { type: 'phase_used', dangerous: true, sector: 1 });
   assert.deepEqual(phaseResult.completed.map((entry) => entry.id), ['phase_runner']);
+  const phaseVeteran = applyEvents(sessionFor(['phase_veteran_10']), Array.from({ length: 10 }, () => ({ type: 'phase_used', dangerous: false, sector: 3 })));
+  assert.deepEqual(phaseVeteran.completed.map((entry) => entry.id), ['phase_veteran_10']);
+  const phaseMaster = applyEvents(sessionFor(['phase_master_25']), Array.from({ length: 25 }, () => ({ type: 'phase_used', dangerous: false, sector: 6 })));
+  assert.deepEqual(phaseMaster.completed.map((entry) => entry.id), ['phase_master_25']);
 
   const nearMissResult = applyRunContractEvent(sessionFor(['near_miss_streak']), { type: 'near_miss', streak: 5, sector: 1 });
   assert.deepEqual(nearMissResult.completed.map((entry) => entry.id), ['near_miss_streak']);
+  const nearMissTenResult = applyRunContractEvent(sessionFor(['near_miss_streak_10']), { type: 'near_miss', streak: 10, sector: 1 });
+  assert.deepEqual(nearMissTenResult.completed.map((entry) => entry.id), ['near_miss_streak_10']);
 
   const blinkResult = applyRunContractEvent(sessionFor(['blink_control']), { type: 'blink_drive_survived', survivedSeconds: 6, sector: 1 });
   assert.deepEqual(blinkResult.completed.map((entry) => entry.id), ['blink_control']);
 
+  const powerupTotal = applyEvents(sessionFor(['powerup_collector_10']), Array.from({ length: 10 }, () => ({ type: 'powerup_collected', powerupType: 'shield', sector: 2 })));
+  assert.deepEqual(powerupTotal.completed.map((entry) => entry.id), ['powerup_collector_10']);
+  const shieldNope = applyRunContractEvent(sessionFor(['shield_pickup']), { type: 'powerup_collected', powerupType: 'bomb', sector: 2 });
+  assert.equal(shieldNope.completed.length, 0, 'Shield Check should require a shield pickup');
+  const shieldResult = applyRunContractEvent(shieldNope.session, { type: 'powerup_collected', powerupType: 'shield', sector: 2 });
+  assert.deepEqual(shieldResult.completed.map((entry) => entry.id), ['shield_pickup']);
+  const blinkVeteran = applyEvents(sessionFor(['blink_veteran_3']), Array.from({ length: 3 }, () => ({ type: 'powerup_collected', powerupType: 'blink_drive', sector: 4 })));
+  assert.deepEqual(blinkVeteran.completed.map((entry) => entry.id), ['blink_veteran_3']);
+  const repairResult = applyRunContractEvent(sessionFor(['repair_pickup']), { type: 'powerup_collected', powerupType: 'nano_patch', sector: 2 });
+  assert.deepEqual(repairResult.completed.map((entry) => entry.id), ['repair_pickup']);
+
+  const runLaunches = applyEvents(sessionFor(['ranked_launch_3']), Array.from({ length: 3 }, () => ({ type: 'run_started', sector: 1 })));
+  assert.deepEqual(runLaunches.completed.map((entry) => entry.id), ['ranked_launch_3']);
+
+  const noLifeLossFail = applyEvents(sessionFor(['sector_5_survivor']), [
+    { type: 'life_lost', sector: 2 },
+    { type: 'sector_reached', sector: 5 }
+  ]);
+  assert.equal(noLifeLossFail.completed.length, 0, 'Sector 5 Survivor should fail after life loss');
+  const noLifeLossResult = applyRunContractEvent(sessionFor(['sector_5_survivor']), { type: 'sector_reached', sector: 5 });
+  assert.deepEqual(noLifeLossResult.completed.map((entry) => entry.id), ['sector_5_survivor']);
+
+  const sectorThree = applyRunContractEvent(sessionFor(['sector_3_signal']), { type: 'sector_reached', sector: 3 });
+  assert.deepEqual(sectorThree.completed.map((entry) => entry.id), ['sector_3_signal']);
   const sectorTen = applyRunContractEvent(sessionFor(['sector_10_signal']), { type: 'sector_reached', sector: 10 });
   assert.deepEqual(sectorTen.completed.map((entry) => entry.id), ['sector_10_signal']);
 
@@ -339,9 +409,16 @@ function runCatalogAndSaveTests() {
   assert.equal(scoutResult.completed.length, 0, 'Scout runs should not complete Mayhem-only orders');
   assert.equal(findSessionItem(scoutResult.session, 'enemy_sweep_1000').eligible, false);
 
-  let firstSave = recordRunContractCompletion(migrated.runContracts, bossResult.completed[0]);
-  firstSave = recordRunContractSessionProgress(firstSave, applyRunContractEvent(sessionFor(['near_miss_streak']), { type: 'near_miss', streak: 3, sector: 1 }).session);
-  assert.equal(firstSave.progress.near_miss_streak.progress, 3, 'partial progress should persist for active unfinished orders');
+  const firstSave = recordRunContractCompletion(migrated.runContracts, bossResult.completed[0]);
+  const grazePartialSave = recordRunContractSessionProgress(
+    normalizeRunContractsState({ activeIds: ['graze_10'] }),
+    applyEvents(sessionFor(['graze_10']), Array.from({ length: 3 }, (_, index) => ({
+      type: 'near_miss',
+      streak: index + 1,
+      sector: 1
+    }))).session
+  );
+  assert.equal(grazePartialSave.progress.graze_10.progress, 3, 'partial progress should persist for active unfinished orders');
 
   const completedFirstThree = completeIds(migrated.runContracts, FIRST_THREE);
   assert.deepEqual(completedFirstThree.activeIds, FIRST_THREE, 'completed orders should linger in active slots before transition');
@@ -421,8 +498,8 @@ function runCatalogAndSaveTests() {
   });
   assert.deepEqual(normalized.activeIds, [
     'support_hunter',
-    'boss_breaker',
-    'near_miss_streak'
+    'graze_10',
+    'boss_breaker'
   ], 'normalization should drop invalid/duplicate ids and refill active slots');
 
   const legacyOpeningState = normalizeRunContractsState({
@@ -435,17 +512,40 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(legacyOpeningState.activeIds, FIRST_THREE, 'older unfinished starter saves should move to the easier opening ladder');
   assert.equal(legacyOpeningState.progress.graze_break_drill, undefined, 'old Graze partial progress should not become misleading Graze Break progress');
 
+  const oldCatalogIds = [
+    'boss_breaker',
+    'near_miss_streak',
+    'enemy_sweep_1000',
+    'support_hunter',
+    'phase_runner',
+    'blink_control',
+    'slow_mo_finisher',
+    'sector_10_signal',
+    'enemy_sweep_2500',
+    'boss_hunter_10',
+    'support_hunter_10',
+    'enemy_variety_50',
+    'enemy_sweep_10000',
+    'pilot_rank_5',
+    'boss_hunter_50',
+    'support_hunter_50',
+    'enemy_variety_100',
+    'enemy_sweep_25000',
+    'boss_hunter_100',
+    'support_hunter_100'
+  ];
   const expandedCompleteState = normalizeRunContractsState({
     version: RUN_CONTRACTS_VERSION - 1,
     activeIds: FIRST_THREE,
-    completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'enemy_sweep_2500'),
-    completed: Object.fromEntries(RUN_CONTRACT_ORDER_IDS
-      .filter((id) => id !== 'enemy_sweep_2500')
-      .map((id) => [id, completion(id)])),
+    completedIds: oldCatalogIds,
+    completed: Object.fromEntries(oldCatalogIds.map((id) => [id, completion(id)])),
     completionNoticeSeen: true
   });
-  assert.deepEqual(expandedCompleteState.activeIds, ['enemy_sweep_2500'], 'catalog expansion should surface the new unfinished starter order');
-  assert.equal(expandedCompleteState.completionNoticeSeen, false, 'catalog expansion should let the final completion notice show again after the new order');
+  assert.equal(expandedCompleteState.completedIds.length, oldCatalogIds.length, 'catalog expansion should preserve old completed orders');
+  assert.equal(expandedCompleteState.allCompletedAt, null, 'expanded catalog should no longer count old all-complete saves as finished');
+  assert.equal(expandedCompleteState.completionNoticeSeen, false, 'catalog expansion should let the final completion notice show again after new orders');
+  assertDistinctActiveGroups(expandedCompleteState, 'expanded catalog active orders');
+  assert.ok(expandedCompleteState.activeIds.some((id) => !oldCatalogIds.includes(id)), 'expanded catalog should surface newly added unfinished orders');
 }
 
 async function isPortAvailable(candidatePort) {
@@ -667,7 +767,7 @@ async function runBrowserSmoke() {
     mkdirSync(outputDir, { recursive: true });
 
     const activeState = runContractState();
-    const completedOrderState = runContractState({ completedIds: ['boss_breaker'] });
+    const completedOrderState = runContractState({ completedIds: ['graze_10'] });
     const completedReviewState = runContractState({ completedIds: ['boss_breaker', 'enemy_sweep_1000', 'enemy_sweep_2500'] });
     const completeNoticeState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: false });
     const hiddenState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: true });
@@ -686,7 +786,7 @@ async function runBrowserSmoke() {
       expectedStatus: 'active'
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/1', '0/5', '0/1000']);
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1000']);
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
