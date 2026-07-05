@@ -26,18 +26,17 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
+import { getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, sans-serif';
 const CAREER_INTEL_BODY = 'Your career profile grows between runs. Score, sectors, bosses, Codex discoveries, clean waves, and clears feed Career XP.';
-const CAREER_INTEL_RANK_COPY = 'Pilot Rank is your long-term arcade signal. Rank progress unlocks achievements and helps open the hangar.';
-const CAREER_INTEL_HANGAR_COPY = 'Ship unlocks read milestones from this profile, so even a failed run can move the roster forward.';
-const CAREER_INTEL_CODEX_COPY = 'Codex scans are discoveries from your own profile. New threats are knowledge, score, XP, and future ship progress.';
 const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
+const PILOT_ORDERS_ARCHIVE_EMPTY = 'No Pilot Orders cleared yet.';
 const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
 const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
 const HANGAR_PROFILE_REPAIR_REASONS = new Set([
@@ -884,6 +883,77 @@ export class ShipSelectScene {
     return card;
   }
 
+  createPilotOrdersArchivePanel(review, x, y, width, height, compact = false) {
+    const panel = new PIXI.Container();
+    panel.label = 'ui_pilotOrdersArchive';
+    panel.position.set(x, y);
+
+    const completedOrders = Array.isArray(review?.completed) ? review.completed : [];
+    const completedText = completedOrders.length
+      ? completedOrders.map((entry) => translateText(entry.shortTitle || entry.title || entry.id)).join(' / ')
+      : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
+    const accent = completedOrders.length ? 0x9cfbff : 0x49677a;
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 8);
+    bg.fill({ color: 0x071b2a, alpha: 0.9 });
+    bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    bg.rect(0, 0, 7, height);
+    bg.fill({ color: accent, alpha: 0.86 });
+    bg.moveTo(18, height - 10);
+    bg.lineTo(width - 18, height - 10);
+    bg.stroke({ color: accent, width: 1, alpha: 0.3 });
+    panel.addChild(bg);
+
+    const heading = createText(translateText('PILOT ORDERS CLEARED'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 11 : 13,
+      fontWeight: '900',
+      fill: hexColor(accent),
+      letterSpacing: 0
+    });
+    heading.position.set(18, 10);
+    fitDisplayToBox(heading, width - 104, compact ? 18 : 20, { minScale: 0.56 });
+
+    const count = createText(translateText('{progress}/{target}', {
+      progress: review?.completedCount || 0,
+      target: review?.total || 0
+    }), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 12 : 14,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'right',
+      letterSpacing: 0
+    });
+    count.anchor.set(1, 0);
+    count.position.set(width - 18, 10);
+    fitDisplayToBox(count, 68, compact ? 18 : 20, { minScale: 0.58 });
+
+    const copy = createText(completedText, {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 12,
+      fontWeight: '800',
+      fill: completedOrders.length ? '#d8fbff' : '#90aeba',
+      wordWrap: true,
+      wordWrapWidth: width - 36,
+      lineHeight: compact ? 12 : 15,
+      letterSpacing: 0
+    });
+    copy.position.set(18, compact ? 30 : 34);
+    fitDisplayToBox(copy, width - 36, height - (compact ? 36 : 42), { minScale: 0.68 });
+    panel.addChild(heading, count, copy);
+
+    panel._pilotOrdersArchive = {
+      text: completedText,
+      completedCount: review?.completedCount || 0,
+      total: review?.total || 0
+    };
+    return panel;
+  }
+
   getNextShipUnlockSummary(progress = this.unlockProgress) {
     const locked = this.ships
       .filter(ship => !isShipUnlocked(ship.spriteKey, progress))
@@ -951,6 +1021,12 @@ export class ShipSelectScene {
       stats: (refs.stats || []).map((tile) => bounds(tile)),
       cards: (refs.cards || []).map((card) => bounds(card)),
       snapshot: bounds(refs.snapshot),
+      pilotOrdersArchive: refs.pilotOrdersArchive ? {
+        bounds: bounds(refs.pilotOrdersArchive),
+        text: refs.pilotOrdersArchive._pilotOrdersArchive?.text || '',
+        completedCount: refs.pilotOrdersArchive._pilotOrdersArchive?.completedCount || 0,
+        total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0
+      } : null,
       backButton: bounds(refs.close)
     };
   }
@@ -984,6 +1060,7 @@ export class ShipSelectScene {
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
     const nextUnlock = this.getNextShipUnlockSummary(this.unlockProgress);
+    const pilotOrdersReview = getRunContractCompletionReviewState(this.unlockProgress);
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 9);
@@ -1181,23 +1258,22 @@ export class ShipSelectScene {
       return tile;
     });
 
-    const cardData = [
-      ['EARN XP', CAREER_INTEL_CODEX_COPY, 0xffe76a],
-      ['PILOT RANK', CAREER_INTEL_RANK_COPY, 0x66ffdd],
-      ['HANGAR UNLOCKS', CAREER_INTEL_HANGAR_COPY, 0xff55d9]
-    ];
-    const cardGap = compact ? 7 : 10;
-    const cardCols = narrow ? 1 : 3;
-    const cardW = narrow ? panelWidth - 80 : (panelWidth - 80 - cardGap * 2) / 3;
-    const cardH = narrow ? 44 : short ? 64 : 72;
+    const cardW = panelWidth - 80;
     const cardTop = statsTop + Math.ceil(stats.length / statCols) * (statH + statGap) + (compact ? 8 : 14);
-    const cards = cardData.map(([heading, copy, accent], index) => {
-      const col = narrow ? 0 : index;
-      const row = narrow ? index : 0;
-      const card = this.createCareerCopyCard(heading, copy, panelX + 40 + col * (cardW + cardGap), cardTop + row * (cardH + 7), cardW, cardH, accent, compact);
-      overlay.addChild(card);
-      return card;
-    });
+    const cardH = Math.max(
+      compact ? 54 : 64,
+      Math.min(narrow ? 104 : short ? 68 : 78, panelY + panelHeight - cardTop - (compact ? 68 : 76))
+    );
+    const pilotOrdersArchive = this.createPilotOrdersArchivePanel(
+      pilotOrdersReview,
+      panelX + 40,
+      cardTop,
+      cardW,
+      cardH,
+      compact
+    );
+    overlay.addChild(pilotOrdersArchive);
+    const cards = [pilotOrdersArchive];
 
     const snapshot = createText(
       `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${displayRank} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
@@ -1247,6 +1323,7 @@ export class ShipSelectScene {
       stats: statTiles,
       cards,
       snapshot,
+      pilotOrdersArchive,
       close,
       nextUnlock
     };

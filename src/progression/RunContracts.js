@@ -1,7 +1,7 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
-export const RUN_CONTRACTS_VERSION = 5;
+export const RUN_CONTRACTS_VERSION = 6;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
 export const RUN_CONTRACT_REWARDS_ENABLED = false;
 
@@ -31,28 +31,30 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     accent: 0xffef7e
   }),
   Object.freeze({
-    id: 'graze_break_drill',
-    title: 'Graze Break',
-    shortTitle: 'Graze Break',
-    description: 'Trigger 1 Graze Break in Mayhem.',
-    shortDescription: 'Trigger 1 Graze Break.',
+    id: 'enemy_sweep_1000',
+    title: 'Enemy Sweep I',
+    shortTitle: '1000 Enemies',
+    description: 'Destroy 1000 total enemies in Mayhem.',
+    shortDescription: 'Destroy 1000 enemies.',
     modeLabel: 'Mayhem',
     modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'graze_breaks',
-    target: 1,
-    accent: 0xff66ff
+    objective: 'enemy_defeats',
+    target: 1000,
+    persistAcrossRuns: true,
+    accent: 0xff8f5a
   }),
   Object.freeze({
-    id: 'graze_break_x3',
-    title: 'Graze Break x3',
-    shortTitle: 'Graze Break x3',
-    description: 'Trigger 3 Graze Breaks in one Mayhem run.',
-    shortDescription: 'Trigger 3 Graze Breaks.',
+    id: 'enemy_sweep_2500',
+    title: 'Enemy Sweep II',
+    shortTitle: '2500 Enemies',
+    description: 'Destroy 2500 total enemies in Mayhem.',
+    shortDescription: 'Destroy 2500 enemies.',
     modeLabel: 'Mayhem',
     modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'graze_breaks',
-    target: 3,
-    accent: 0xff8cff
+    objective: 'enemy_defeats',
+    target: 2500,
+    persistAcrossRuns: true,
+    accent: 0xffb86a
   }),
   Object.freeze({
     id: 'support_hunter',
@@ -116,19 +118,6 @@ export const RUN_CONTRACT_CATALOG = Object.freeze([
     sectorTarget: 10,
     accent: 0xcaa6ff
   }),
-  Object.freeze({
-    id: 'enemy_sweep_1000',
-    title: 'Enemy Sweep',
-    shortTitle: '1000 Enemies',
-    description: 'Destroy 1000 enemies in Mayhem.',
-    shortDescription: 'Destroy 1000 enemies.',
-    modeLabel: 'Mayhem',
-    modes: Object.freeze([RUN_MODES.RANKED]),
-    objective: 'enemy_defeats',
-    target: 1000,
-    persistAcrossRuns: true,
-    accent: 0xff8f5a
-  })
 ]);
 
 export const RUN_CONTRACT_ORDER_IDS = Object.freeze(RUN_CONTRACT_CATALOG.map((contract) => contract.id));
@@ -306,6 +295,7 @@ export function normalizeRunContractsState(raw = {}) {
   const progress = progressForActiveIds(source.progress, activeIds, completed);
   if (migratedFromOlderCatalog) {
     delete progress.graze_break_drill;
+    delete progress.graze_break_x3;
   }
   const allCompletedAt = getAllCompletedAt(completed);
   const completionNoticeSeen = Boolean(allCompletedAt && (source.completionNoticeSeen || source.completedNoticeSeen || source.allCompleteSeen));
@@ -593,6 +583,42 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     }),
     completedIds: [...state.completedIds],
     rewardsEnabled: RUN_CONTRACT_REWARDS_ENABLED
+  };
+}
+
+export function getRunContractCompletionReviewState(progressOrState = {}) {
+  const state = normalizeRunContractsState(progressOrState?.runContracts || progressOrState || {});
+  const entries = RUN_CONTRACT_ORDER_IDS.map((id) => {
+    const contract = getRunContractById(id);
+    const completion = state.completed[id] || null;
+    const savedProgress = state.progress[id] || null;
+    const target = contract?.target || 1;
+    return {
+      id,
+      title: contract?.title || id,
+      shortTitle: contract?.shortTitle || contract?.title || id,
+      description: contract?.description || '',
+      shortDescription: contract?.shortDescription || contract?.description || '',
+      modeLabel: contract?.modeLabel || 'Mayhem',
+      target,
+      progress: completion ? target : Math.min(target, floor(savedProgress?.progress)),
+      completed: Boolean(completion),
+      completedAt: completion?.completedAt || null,
+      lastRunMode: completion?.lastRunMode || null,
+      lastSector: completion?.lastSector || null,
+      accent: contract?.accent || 0x37f5ff
+    };
+  });
+  const completed = entries.filter((entry) => entry.completed);
+  return {
+    version: state.version,
+    total: entries.length,
+    completedCount: completed.length,
+    completed,
+    pending: entries.filter((entry) => !entry.completed),
+    allComplete: entries.length > 0 && completed.length === entries.length,
+    allCompletedAt: state.allCompletedAt || null,
+    completionNoticeSeen: Boolean(state.completionNoticeSeen)
   };
 }
 
