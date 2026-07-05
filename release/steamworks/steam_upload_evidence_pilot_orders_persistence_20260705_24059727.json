@@ -1,0 +1,54 @@
+{
+  "kind": "steam_upload_evidence",
+  "feature": "pilot_orders_persistence",
+  "recordedAt": "2026-07-05T10:18:00Z",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "40967cb85d21540c6252e683226e2b876acb3313",
+    "commitSummary": "Expand pilot orders persistence"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24059727",
+    "buildVersion": "v2026-07-05_09-04-29",
+    "buildDescription": "Nova Swarm v2026-07-05_09-04-29 pilot orders persistence 40967cb",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignedByUpload": false,
+    "publicDefaultAssignedByUpload": false,
+    "manualPublishRequired": true
+  },
+  "artifacts": {
+    "packageRoot": "release/desktop/win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "efbf090994a34326bda4bd14387ef2dda31b8cec2a7a56d529c5b97068ef5936",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "checks": [
+    { "command": "git fetch --all --prune", "status": "passed" },
+    { "command": "git status --short --branch", "status": "passed", "note": "clean before packaging" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "skipped", "note": "User requested no smoke tests this upload and will verify manually." },
+    { "command": "npm run desktop:perf:packaged", "status": "skipped", "note": "User requested no smoke tests this upload and will verify manually." }
+  ],
+  "steamCmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "exitCode": 0,
+    "login": "cached gaunziman",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24059727)."
+  },
+  "notes": [
+    "The VDF kept SetLive blank, so this upload did not assign BuildID 24059727 to public/default or any beta branch.",
+    "No Steamworks metadata, branch assignment, or public/default release change was made.",
+    "Manual publication/branch assignment remains required before players receive this build.",
+    "If BuildID 24059727 is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the target branch to the previous desired BuildID."
+  ]
+}
