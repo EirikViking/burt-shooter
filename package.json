@@ -48,6 +48,7 @@
     "check:steam-achievements-mock": "node scripts/check-steam-achievements-mock.mjs",
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:hud-readability": "node scripts/check-hud-readability.mjs",
+    "check:highscore-chase-hud": "node scripts/check-highscore-chase-hud.mjs",
     "check:mission-progress-hud": "node scripts/check-mission-progress-hud.mjs",
     "check:critical-hull-overlay": "node scripts/check-critical-hull-overlay.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",

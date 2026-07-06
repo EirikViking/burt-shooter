@@ -620,3 +620,22 @@ Safety notes:
 
 - No XP, rank thresholds, rank boost duration, boost stats, ship stats, score, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only rank-up and rank-boost readability polish.
+
+## Batch 29 - High-Score Chase HUD Pressure
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+106. The high-score chase panel now gets a live pulse when the player is close to beating the target.
+107. The chase bar now shows 25%, 50%, 75%, and 100% markers for clearer score-hunt pacing.
+108. The chase bar now draws a glint at the current progress edge so score movement is easier to read at a glance.
+109. Beating the target now adds a stronger gold double-rail state around the panel without changing any score logic.
+110. `check:highscore-chase-hud` proves near-target and surpassed HUD states with browser screenshots.
+
+Verification:
+
+- `npm run check:highscore-chase-hud`
+
+Safety notes:
+
+- No score awards, score formula, leaderboard target retrieval, personal-best persistence, rank, XP, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- HUD-only score-pressure polish using the existing high-score chase state.

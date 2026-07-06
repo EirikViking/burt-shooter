@@ -19,6 +19,7 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Baseline safety: fetched remotes and confirmed authoritative repo `D:\vibe-coding-e\nova-swarm-sector-continue-prototype`, branch `codex/main-menu-run-contracts-20260702`, clean HEAD `aac8451e33f7e905d475cfe49030ed8ce6ef83df` before edits.
 - Implementation direction: visual-only rank-up clarity. Rank-up badges gain a broadcast burst, signal pips, and a rotating rank halo; temporary rank-boost auras now have type-specific colors/shapes for fire-rate, speed, and damage. No XP, rank thresholds, rank boost duration, boost stats, score, leaderboard, achievements, Steamworks, package, upload, deploy, or branch-assignment changes.
 - Verification direction: run `npm run check:rank-up-clarity`, inspect the screenshot, then run i18n/build/controller/diff checks relevant to the UI/VFX touch.
+- Batch 29 direction: HUD-only high-score chase pressure polish inspired by high-score arcade competitors. The chase panel now pulses near the target, shows 25/50/75/100 markers, draws a progress glint, and gives the surpassed state a stronger gold rail. No score awards, score formula, leaderboard retrieval, personal-best persistence, rank, XP, achievements, Steamworks, package, upload, deploy, or branch-assignment changes.
 
 ## 2026-07-02 Tractor And Mini-Boss VFX Pass
 

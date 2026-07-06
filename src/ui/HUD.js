@@ -422,7 +422,9 @@ export class HUD {
     const ratio = hasTarget ? Math.min(1.25, score / target) : 0;
     const surpassed = hasTarget && score > target;
     const nearTarget = hasTarget && !surpassed && ratio >= 0.9;
-    const pulse = 0.5;
+    const chaseIsHot = nearTarget || surpassed;
+    const pulse = chaseIsHot ? (Math.sin(Date.now() * 0.009) + 1) / 2 : 0.5;
+    const pulseBucket = chaseIsHot ? Math.floor(Date.now() / 140) % 16 : 0;
     const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
     const label = chase?.runMode === 'sector_start'
       ? translateText('SECTOR RECORD TARGET')
@@ -436,6 +438,8 @@ export class HUD {
       sectorKey,
       syncingTarget ? 1 : 0,
       surpassed ? 1 : 0,
+      nearTarget ? 1 : 0,
+      pulseBucket,
       w,
       h,
       this.highscoreChaseTitle?.style?.fontSize || '',
@@ -500,6 +504,15 @@ export class HUD {
     this.highscoreChaseBg.fill({ color: dangerColor, alpha: 0.72 });
     this.highscoreChaseBg.rect(w - 9, 5, 3, h - 10);
     this.highscoreChaseBg.fill({ color: 0xff55d9, alpha: 0.52 });
+    if (nearTarget) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.22 + pulse * 0.24 });
+    } else if (surpassed) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.36 + pulse * 0.28 });
+      this.highscoreChaseBg.roundRect(7, 7, w - 14, h - 14, 4);
+      this.highscoreChaseBg.stroke({ color: 0xffffff, width: 0.8, alpha: 0.18 + pulse * 0.18 });
+    }
 
     const barX = 11;
     const barY = h - 10;
@@ -511,7 +524,8 @@ export class HUD {
     this.highscoreChaseBarFill.fill({ color: dangerColor, alpha: 0.92 });
     this.highscoreChaseTicks.clear();
     if (hasTarget) {
-      for (const mark of [0.5, 0.75, 1]) {
+      const markerValues = [0.25, 0.5, 0.75, 1];
+      for (const mark of markerValues) {
         const x = Math.round(barX + barW * mark);
         const cleared = ratio >= mark;
         this.highscoreChaseTicks.moveTo(x, barY - 3);
@@ -522,6 +536,9 @@ export class HUD {
           alpha: cleared ? 0.9 : 0.52
         });
       }
+      const glintX = Math.round(barX + barW * Math.min(1, progress));
+      this.highscoreChaseTicks.roundRect(glintX - 2, barY - 5, 4, 14, 2);
+      this.highscoreChaseTicks.fill({ color: 0xffffff, alpha: 0.32 + pulse * 0.3 });
       if (nearTarget) {
         this.highscoreChaseTicks.roundRect(barX - 2, barY - 4, barW + 4, 12, 5);
         this.highscoreChaseTicks.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
@@ -539,7 +556,9 @@ export class HUD {
       progress: Number(progress.toFixed(3)),
       nearTarget,
       surpassed,
-      tickCount: hasTarget ? 3 : 0
+      tickCount: hasTarget ? 4 : 0,
+      glintX: hasTarget ? Math.round(barX + barW * Math.min(1, progress)) : null,
+      pulseBucket
     };
   }
 
