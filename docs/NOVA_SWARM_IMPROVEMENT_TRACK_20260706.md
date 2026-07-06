@@ -83,6 +83,7 @@ Verification:
 - `npm run build:current`
 - `npm run check:i18n-ui`
 - `npm run check:controller-flow`
+- Steam private build: `24077384`
 
 Safety notes:
 

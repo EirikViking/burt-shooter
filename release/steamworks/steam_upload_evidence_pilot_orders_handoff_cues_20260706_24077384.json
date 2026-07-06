@@ -1,0 +1,53 @@
+{
+  "recordedAt": "2026-07-06T17:54:30Z",
+  "sourceCommit": "f4c3c7e6de6dc256c5c101e56e5c3d9bf0c49b6d",
+  "sourceBranch": "codex/main-menu-run-contracts-20260702",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24077384",
+    "setLive": "",
+    "branchAssignment": "none_private_unassigned"
+  },
+  "build": {
+    "version": "v2026-07-06_19-43-51",
+    "timestamp": "2026-07-06T17:43:51.126Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 916083386,
+    "manifestHash": "6be7e53d9e76ea29a590e506709704fd84d65c196ecb9c9426a50ae5dcf858fa",
+    "payloadManifestFileSha256": "31BB92BABAEAD3F7C68B17C72E06BFD93CB6C9D31396ECF7913BE9433F61C0B5",
+    "executableSha256": "276FCE62E50DDDC1BD772C63E32584A0F7A2011788A78924F199A38EF1BF7E76"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "sha256": "C69F0567B90C74908B2B8DBFF8CA2D61A149317CCFA046C526045EC6CF944139",
+    "verifiedFields": {
+      "AppID": "4765070",
+      "DepotID": "4765071",
+      "ContentRoot": "..\\\\desktop\\\\win-unpacked",
+      "SetLive": ""
+    }
+  },
+  "upload": {
+    "steamcmdLog": "test-results/steam-upload-pilot-orders-handoff-cues-20260706_20260706_195207/steamcmd-upload.log",
+    "steamcmdLogSha256": "77174A6853C9BD9D38483D4F34AD829D8DA5A4149203E6E23EB7998A5D23A0D1",
+    "result": "success"
+  },
+  "checks": [
+    "npm run check:run-contracts",
+    "npm run check:i18n",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:controller-flow",
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "notes": [
+    "Private SteamPipe build only; SetLive remained blank.",
+    "No Steamworks metadata, public/default branch, score, XP, leaderboard, achievement API ID, or balance changes."
+  ]
+}
