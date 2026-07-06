@@ -142,7 +142,7 @@ try {
     const measure = (callback) => {
       let graphicsClearCalls = 0;
       let textUpdateCalls = 0;
-      const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill].filter(Boolean);
+      const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill, hud.highscoreChaseTicks].filter(Boolean);
       const texts = [hud.highscoreChaseTitle, hud.highscoreChaseTarget, hud.highscoreChaseGap].filter(Boolean);
       const restore = [];
       for (const graphic of graphics) {
@@ -214,7 +214,7 @@ try {
   const targetCrossingProbe = await page.evaluate((targetScore) => {
     const hud = window.__game?.scenes?.play?.hud;
     if (!hud?.updateHighscoreChase) return { available: false };
-    const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill].filter(Boolean);
+    const graphics = [hud.highscoreChaseBg, hud.highscoreChaseBarBg, hud.highscoreChaseBarFill, hud.highscoreChaseTicks].filter(Boolean);
     const texts = [hud.highscoreChaseTitle, hud.highscoreChaseTarget, hud.highscoreChaseGap].filter(Boolean);
     let graphicsClearCalls = 0;
     let textUpdateCalls = 0;
@@ -248,7 +248,8 @@ try {
       available: true,
       graphicsClearCalls,
       textUpdateCalls,
-      text: hud.highscoreChaseGap?.text || null
+      text: hud.highscoreChaseGap?.text || null,
+      debug: hud.highscoreChaseGroup?._debugChase || null
     };
   }, realBest.score);
 
@@ -265,11 +266,15 @@ try {
   assert.equal(targetCrossingProbe.available, true, 'target-crossing probe should attach');
   assert.ok(targetCrossingProbe.graphicsClearCalls > 0, 'crossing the target should still redraw the high-score chase widget');
   assert.match(targetCrossingProbe.text || '', /OLD SCORE HUMILIATED/i, 'crossing the target should still show the success line');
+  assert.equal(targetCrossingProbe.debug?.surpassed, true, 'crossing the target should expose surpassed high-score chase state');
+  assert.equal(targetCrossingProbe.debug?.tickCount, 3, 'high-score chase should draw target milestone ticks');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });
-  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState, renderCacheProbe, targetCrossingProbe }, null, 2)}\n`);
-  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} sameSectorRedraws=${renderCacheProbe.sameSectorScore.graphicsClearCalls} sectorRedraws=${renderCacheProbe.nextSector.graphicsClearCalls} report=${path.join(outputDir, 'report.json')}`);
+  const screenshot = path.join(outputDir, 'highscore-chase-target.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: true, baseUrl, finalState, renderCacheProbe, targetCrossingProbe, screenshot }, null, 2)}\n`);
+  console.log(`[highscore-chase-target] PASS target=${finalState.targetScore} source=${finalState.targetSource} sameSectorRedraws=${renderCacheProbe.sameSectorScore.graphicsClearCalls} sectorRedraws=${renderCacheProbe.nextSector.graphicsClearCalls} screenshot=${screenshot} report=${path.join(outputDir, 'report.json')}`);
   await page.close();
 } catch (error) {
   mkdirSync(outputDir, { recursive: true });

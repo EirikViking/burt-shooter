@@ -324,3 +324,27 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Uses existing localized `COMBO` text; no new locale strings were added.
+
+## Batch 15 - High-Score Chase Target Feel
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+47. The high-score chase bar now draws 50%, 75%, and target tick marks so the personal-best chase has visible structure.
+48. The high-score chase bar now gets a stronger near-target frame once the player is closing in.
+49. Surpassing the high-score target now adds a gold success frame and endcap on the bar, making the beat-the-best moment read faster.
+50. The top-left HUD cluster now gives the high-score chase strip a little more breathing room under the rank/score row.
+
+Verification:
+
+- `npm run check:highscore-chase-target`
+- Screenshot proof: `test-results/highscore-chase-target-2026-07-06T21-10-37-674Z/highscore-chase-target.png`
+- `npm run check:ui-readability`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only high-score chase polish; personal-best lookup and scoring behavior are unchanged.
