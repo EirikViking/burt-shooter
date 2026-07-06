@@ -193,6 +193,7 @@
     "check:powerup-effects": "node scripts/check-powerup-effects.mjs",
     "check:powerup-visuals": "node scripts/check-powerup-visuals.mjs",
     "check:powerup-expiry-readability": "node scripts/check-powerup-expiry-readability.mjs",
+    "check:powerup-pickup-guides": "node scripts/check-powerup-pickup-guides.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs",
     "qa:release": "node scripts/qa-release-gauntlet.mjs",
     "qa:progression": "npm run check:unlock-rank-pacing && npm run check:gameover-motivation",

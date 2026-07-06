@@ -490,3 +490,22 @@ Safety notes:
 
 - No enemy health, damage taken, score, XP, leaderboard, achievement API ID, balance, enemy behavior, projectile behavior, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only hit confirmation with per-enemy spark throttling.
+
+## Batch 22 - Powerup Pickup Guidance
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+75. Nearby powerups now draw small directional pickup chevrons that point toward the player.
+76. Pickup chevrons intensify as the player gets closer, making reachable pickups feel more intentional without changing pickup radius.
+77. Far-away and already-inside-radius powerups keep the guide hidden, reducing clutter and avoiding redundant arrows.
+78. `check:powerup-pickup-guides` now proves nearby/far/inside-radius guide states with browser screenshot evidence.
+
+Verification:
+
+- `npm run check:powerup-pickup-guides`
+- Screenshot proof: `test-results/powerup-pickup-guides-2026-07-06T22-31-52-058Z/powerup-pickup-guides.png`
+
+Safety notes:
+
+- No powerup drop rate, movement speed, lifetime, pickup radius, effect, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only pickup readability cue using existing player/powerup positions.

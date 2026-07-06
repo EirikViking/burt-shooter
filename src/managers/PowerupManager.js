@@ -71,6 +71,10 @@ class Powerup {
     this.readabilityHalo = new PIXI.Graphics();
     this.readabilityHalo.label = 'readabilityHalo';
     this.sprite.addChild(this.readabilityHalo);
+    this.pickupGuide = new PIXI.Graphics();
+    this.pickupGuide.label = 'pickupGuide';
+    this.pickupGuide.visible = false;
+    this.sprite.addChild(this.pickupGuide);
     this.expiryCue = new PIXI.Graphics();
     this.expiryCue.label = 'expiryCue';
     this.expiryCue.visible = false;
@@ -292,6 +296,7 @@ class Powerup {
       Number(scene?.game?.height) ||
       620
     );
+    this.updatePickupGuide(scene, age);
     this.updateExpiryCue(age, screenHeight);
 
     // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
@@ -389,6 +394,77 @@ class Powerup {
       alpha: this.sprite.alpha,
       litSegments,
       urgent
+    };
+  }
+
+  updatePickupGuide(scene, age) {
+    const guide = this.pickupGuide;
+    if (!guide || !this.sprite) return;
+    const player = scene?.player;
+    const playerX = Number(player?.x);
+    const playerY = Number(player?.y);
+    const hasPlayer = Number.isFinite(playerX) && Number.isFinite(playerY);
+    guide.clear();
+    if (!hasPlayer || player?.active === false) {
+      guide.visible = false;
+      guide.__debugPickupGuide = { visible: false, reason: 'no_player' };
+      return;
+    }
+
+    const dx = playerX - this.x;
+    const dy = playerY - this.y;
+    const distance = Math.hypot(dx, dy);
+    const pickupRadius = Math.max(18, Number(this.radius) || 12);
+    const guideRadius = this.type === 'super_extra_life' ? 290 : 230;
+    const closeLimit = pickupRadius + 10;
+    if (!Number.isFinite(distance) || distance <= closeLimit || distance > guideRadius) {
+      guide.visible = false;
+      guide.__debugPickupGuide = {
+        visible: false,
+        reason: distance <= closeLimit ? 'inside_pickup_radius' : 'out_of_range',
+        distance: Math.round(Number.isFinite(distance) ? distance : 0)
+      };
+      return;
+    }
+
+    const urgency = clamp(1 - ((distance - closeLimit) / Math.max(1, guideRadius - closeLimit)), 0, 1);
+    const angle = Math.atan2(dy, dx) - (this.sprite.rotation || 0);
+    const pulse = Math.sin(age * 0.014) * 0.5 + 0.5;
+    const color = this.type === 'super_extra_life' ? 0xffe34d : this.color;
+    const alpha = 0.22 + urgency * 0.5 + pulse * 0.12;
+    const dashCount = urgency > 0.62 ? 3 : 2;
+    const side = Math.PI * 0.5;
+    const spread = 4 + urgency * 5;
+
+    guide.circle(0, 0, pickupRadius + 18 + urgency * 8);
+    guide.stroke({ width: 1.2, color, alpha: 0.12 + urgency * 0.2 });
+    for (let i = 0; i < dashCount; i += 1) {
+      const inner = pickupRadius + 20 + i * 9;
+      const outer = inner + 6 + urgency * 5;
+      const cx = Math.cos(angle) * inner;
+      const cy = Math.sin(angle) * inner;
+      const leftX = cx + Math.cos(angle + side) * spread;
+      const leftY = cy + Math.sin(angle + side) * spread;
+      const rightX = cx + Math.cos(angle - side) * spread;
+      const rightY = cy + Math.sin(angle - side) * spread;
+      const tipX = Math.cos(angle) * outer;
+      const tipY = Math.sin(angle) * outer;
+      guide.moveTo(leftX, leftY);
+      guide.lineTo(tipX, tipY);
+      guide.lineTo(rightX, rightY);
+    }
+    guide.stroke({ width: 1.6 + urgency * 0.8, color, alpha });
+    if (urgency > 0.72) {
+      guide.circle(Math.cos(angle) * (pickupRadius + 14), Math.sin(angle) * (pickupRadius + 14), 3.5 + pulse * 1.5);
+      guide.fill({ color: 0xffffff, alpha: 0.18 + urgency * 0.18 });
+    }
+    guide.visible = true;
+    guide.__debugPickupGuide = {
+      visible: true,
+      distance: Math.round(distance),
+      urgency: Number(urgency.toFixed(3)),
+      dashCount,
+      angle: Number(angle.toFixed(3))
     };
   }
 
