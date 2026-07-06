@@ -1264,12 +1264,17 @@ export class PlayScene {
     this.runContractProgressToastMarkers?.set(change.id, marker);
     const contract = getRunContractById(change.id);
     const title = translateText(contract?.shortTitle || change.shortTitle || change.title || change.id);
-    const compactHud = this.game.getWidth() < 620;
-    this.enqueueToast(translateText('ORDER PROGRESS: {title} {progress}/{target}', {
+    const progressLabel = this.getRunContractTrackProgressLabel();
+    const progressMessage = translateText('ORDER PROGRESS: {title} {progress}/{target}', {
       title,
       ...formatRunContractProgressValue(change.progress, change.target)
-    }), {
-      fontSize: compactHud ? 16 : 20,
+    });
+    const message = progressLabel
+      ? `${progressMessage}\n${translateText('PILOT ORDERS')} ${progressLabel}`
+      : progressMessage;
+    const compactHud = this.game.getWidth() < 620;
+    this.enqueueToast(message, {
+      fontSize: compactHud ? 15 : 18,
       fill: '#fff3a2',
       stroke: '#031321',
       strokeThickness: compactHud ? 3 : 4,
@@ -1277,9 +1282,13 @@ export class PlayScene {
       type: 'runContractProgress',
       priority: 2,
       bypassFocusLock: false,
-      duration: 2600,
-      y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
-      maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46)
+      duration: progressLabel ? 3000 : 2600,
+      banner: true,
+      title: translateText('PILOT ORDERS'),
+      align: 'left',
+      y: Math.min(this.game.getHeight() - 132, Math.max(compactHud ? 154 : 202, this.game.getHeight() * 0.28)),
+      maxWidth: compactHud ? this.game.getWidth() * 0.72 : Math.min(480, this.game.getWidth() * 0.38),
+      accent: contract?.accent || 0x7fffd8
     });
   }
 
@@ -1386,9 +1395,12 @@ export class PlayScene {
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
     const progressLabel = this.getRunContractTrackProgressLabel();
-    const message = progressLabel
-      ? `${translateText('ORDER COMPLETE: {title}', { title })}\n${translateText('PILOT ORDERS')} ${progressLabel}`
-      : translateText('ORDER COMPLETE: {title}', { title });
+    const nextSummary = this.getNextRunContractSummary();
+    const message = [
+      translateText('ORDER COMPLETE: {title}', { title }),
+      progressLabel ? `${translateText('PILOT ORDERS')} ${progressLabel}` : null,
+      nextSummary ? `${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}` : null
+    ].filter(Boolean).join('\n');
     const compactHud = this.game.getWidth() < 620;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -1401,12 +1413,12 @@ export class PlayScene {
       type: 'runContract',
       priority: 4,
       bypassFocusLock: false,
-      duration: 3600,
+      duration: nextSummary ? 4400 : 3600,
       banner: true,
       title: translateText('PILOT ORDERS'),
       align: 'center',
       y: Math.min(height - 132, Math.max(compactHud ? 132 : 158, height * 0.22)),
-      maxWidth: compactHud ? width * 0.82 : Math.min(440, width * 0.38),
+      maxWidth: compactHud ? width * 0.86 : Math.min(500, width * 0.42),
       accent: contract.accent || 0x7fffd8
     });
   }
@@ -1442,6 +1454,16 @@ export class PlayScene {
       showPilotOrders: true
     });
     return menuState.progressLabel || null;
+  }
+
+  getNextRunContractSummary(state = null) {
+    const source = state || this.getRunContractDebugState();
+    const item = (source?.next || []).find((entry) => entry?.id && !entry.completed);
+    if (!item) return null;
+    return {
+      title: translateText(item.shortTitle || item.title || item.id),
+      progress: translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target))
+    };
   }
 
   countDangerousBulletsNearPlayer(radius = 96) {
@@ -4815,17 +4837,22 @@ export class PlayScene {
   }
 
   getPausePilotOrdersSummary() {
-    const active = (this.getRunContractDebugState()?.active || [])
-      .filter((item) => item.eligible && !item.completed)
-      .slice(0, 1);
-    if (!active.length) return `${translateText('PILOT ORDERS')}: ${translateText('COMPLETE')}`;
-    const item = active[0];
-    const title = translateText(item.shortTitle || item.title || item.id);
-    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
+    const state = this.getRunContractDebugState();
     const trackProgress = this.getRunContractTrackProgressLabel();
     const prefix = trackProgress
       ? `${translateText('PILOT ORDERS')} ${trackProgress}`
       : translateText('PILOT ORDERS');
+    const active = (state?.active || [])
+      .filter((item) => item.eligible && !item.completed)
+      .slice(0, 1);
+    if (!active.length) {
+      const nextSummary = this.getNextRunContractSummary(state);
+      if (nextSummary) return `${prefix}: ${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}`;
+      return `${translateText('PILOT ORDERS')}: ${translateText('COMPLETE')}`;
+    }
+    const item = active[0];
+    const title = translateText(item.shortTitle || item.title || item.id);
+    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
     return `${prefix}: ${title} ${progress}`;
   }
 
@@ -8170,7 +8197,9 @@ export class PlayScene {
 
     let display = null;
     if (options.banner) {
-      const runContractBanner = options.type === 'runContract' || options.type === 'runContractStart';
+      const runContractBanner = options.type === 'runContract'
+        || options.type === 'runContractStart'
+        || options.type === 'runContractProgress';
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',

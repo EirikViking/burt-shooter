@@ -66,3 +66,25 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Generic `develop-web-game` Playwright client remains blocked by the local missing Chromium headless-shell install; repo-native Playwright checks passed with local Chrome.
+
+## Batch 4 - Pilot Orders Handoff Cues
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+10. Pilot Orders completion banners now show the next queued order when the track is not finished.
+11. Pilot Orders progress banners now include overall track progress and use a safer left-side framed notice.
+12. Run Report now reserves a `NEXT` line after non-final Pilot Order completions so follow-up goals are not crowded out.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T17-30-38-648Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, public branch, or live branch change in the source pass.
+- Rollback should remain one source commit for this batch.

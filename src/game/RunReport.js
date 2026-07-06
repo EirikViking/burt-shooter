@@ -75,6 +75,14 @@ function getPilotOrdersCompleted(runContracts = null) {
       ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')
     ].slice(0, 3);
   }
+  if (nextEntries.length > 0 && titles.length > 0) {
+    const completedTitleLimit = trackSummary ? 1 : 2;
+    return [
+      ...(trackSummary ? [trackSummary] : []),
+      ...titles.slice(0, completedTitleLimit),
+      nextEntries[0]
+    ].slice(0, 3);
+  }
   return [
     ...(trackSummary ? [trackSummary] : []),
     ...titles,

@@ -401,6 +401,29 @@ function runCatalogAndSaveTests() {
   assert.equal(pilotOrdersRow?.value?.[0]?.progress, 500);
   assert.equal(pilotOrdersRow?.value?.[1]?.type, 'pilotOrderNext', 'run report should expose the next queued Pilot Order');
   assert.equal(pilotOrdersRow?.value?.[1]?.title, 'Support Hunter');
+  const completionReport = createRunReport({
+    runMode: RUN_MODES.RANKED,
+    runContracts: {
+      progressLabel: '1/50',
+      completedThisRun: [{
+        id: 'graze_10',
+        shortTitle: 'Graze x10'
+      }],
+      next: [{
+        id: 'support_hunter',
+        shortTitle: 'Support Hunter',
+        progress: 0,
+        target: 2
+      }]
+    }
+  });
+  const completionPilotOrdersRow = completionReport.sections
+    .find((section) => section.id === 'rewards')
+    ?.rows.find((row) => row.id === 'pilotOrders');
+  assert.equal(completionPilotOrdersRow?.value?.[0], 'PILOT ORDERS 1/50', 'run report should keep track progress after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[1], 'Graze x10', 'run report should keep the completed order title');
+  assert.equal(completionPilotOrdersRow?.value?.[2]?.type, 'pilotOrderNext', 'run report should reserve room for the next queued order after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[2]?.title, 'Support Hunter');
   const resumedSweep = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -823,6 +846,100 @@ async function runBrowserSmoke() {
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play' && Boolean(window.__game?.scenes?.play?.emitRunContractEvent);
+    }, null, { timeout: 30000 });
+    await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      for (let index = 0; index < 10; index += 1) {
+        play.emitRunContractEvent('near_miss', { sector: window.__game?.level || 1, streak: index + 1 });
+      }
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
+    }, null, { timeout: 5000 });
+    const nonFinalCompletionResult = await page.evaluate(() => {
+      const textState = JSON.parse(window.render_game_to_text?.() || '{}');
+      return {
+        runContracts: textState.runContracts,
+        toastActive: textState.toast?.active || [],
+        toastMessages: (textState.toast?.active || []).map((toast) => toast.message)
+      };
+    });
+    assert.equal(nonFinalCompletionResult.runContracts?.completedCount, 1, 'first Pilot Order completion should update track progress');
+    assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.id, 'support_hunter', 'non-final completion should expose the next queued order');
+    assert.ok(
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze x10')),
+      'non-final completion toast should name the completed order'
+    );
+    assert.ok(
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('PILOT ORDERS 1/50')),
+      'non-final completion toast should include track progress'
+    );
+    assert.ok(
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('NEXT: Support Hunter 0/2')),
+      'non-final completion toast should point to the next queued order'
+    );
+    const nonFinalToast = nonFinalCompletionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
+    assert.ok(nonFinalToast?.duration >= 4000, 'next-order completion toast should stay visible long enough to read');
+    const nonFinalToastScreenshot = path.join(outputDir, 'pilot-order-next-completion-toast.png');
+    await page.screenshot({ path: nonFinalToastScreenshot, fullPage: true });
+
+    await page.evaluate(() => {
+      const game = window.__game;
+      game.score = Math.max(game.score || 0, 4321);
+      game.gameOver();
+    });
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'gameOver', null, { timeout: 30000 });
+    await page.evaluate(() => {
+      window.__game?.scenes?.gameOver?.openRunReport?.();
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
+    }, null, { timeout: 10000 });
+    const nonFinalReportState = await readState(page);
+    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS 1\/50\s+Graze x10\s+NEXT: Support Hunter 0\/2/);
+    const nonFinalReportScreenshot = path.join(outputDir, 'pilot-orders-next-run-report.png');
+    await page.screenshot({ path: nonFinalReportScreenshot, fullPage: true });
+
+    const singleSlotState = runContractState({ activeIds: ['graze_10'] });
+    await seedMenuProfile(page, singleSlotState, 1);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play' && Boolean(window.__game?.scenes?.play?.emitRunContractEvent);
+    }, null, { timeout: 30000 });
+    await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      for (let index = 0; index < 10; index += 1) {
+        play.emitRunContractEvent('near_miss', { sector: window.__game?.level || 1, streak: index + 1 });
+      }
+      play.setPaused(true);
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.isPaused && state.pauseOverlay?.visible === true;
+    }, null, { timeout: 5000 });
+    const singleSlotPauseState = await readState(page);
+    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50: Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
+    const singleSlotPauseScreenshot = path.join(outputDir, 'pilot-orders-next-pause-line.png');
+    await page.screenshot({ path: singleSlotPauseScreenshot, fullPage: true });
+
+    await seedMenuProfile(page, activeState, 1);
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
     await page.evaluate(() => window.__game?.scenes?.menu?.openSettingsOverlay?.());
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -993,8 +1110,10 @@ async function runBrowserSmoke() {
     const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
     assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
     assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
-    assert.ok(progressToast?.duration >= 2000, 'progress toast should stay visible long enough to notice');
+    assert.match(progressToast?.message || '', /PILOT ORDERS 49\/50/, 'progress toast should include overall Pilot Orders track progress');
+    assert.ok(progressToast?.duration >= 2800, 'progress toast should stay visible long enough to notice');
     const progressToastScreenshot = path.join(outputDir, 'pilot-order-progress-toast.png');
+    await page.waitForTimeout(300);
     await page.screenshot({ path: progressToastScreenshot, fullPage: true });
 
     await page.evaluate(() => {
@@ -1098,6 +1217,9 @@ async function runBrowserSmoke() {
         largeUiMenu: largeUiProof.screenshot,
         hiddenBySettingMenu: settingHiddenProof.screenshot,
         veteranDefaultHiddenMenu: veteranHiddenProof.screenshot,
+        nextCompletionToast: nonFinalToastScreenshot,
+        nextRunReport: nonFinalReportScreenshot,
+        nextPauseLine: singleSlotPauseScreenshot,
         completedOrderMenu: completedProof.screenshot,
         completeStateMenu: completeProof.screenshot,
         hiddenMenu: hiddenProof.screenshot,
