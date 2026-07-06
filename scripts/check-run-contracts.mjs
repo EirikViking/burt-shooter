@@ -942,7 +942,7 @@ async function runBrowserSmoke() {
       return state.isPaused && state.pauseOverlay?.visible === true;
     }, null, { timeout: 5000 });
     const singleSlotPauseState = await readState(page);
-    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50: Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
+    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50 \/\/ Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
     const singleSlotPauseScreenshot = path.join(outputDir, 'pilot-orders-next-pause-line.png');
     await page.screenshot({ path: singleSlotPauseScreenshot, fullPage: true });
 
@@ -1099,7 +1099,7 @@ async function runBrowserSmoke() {
     }, null, { timeout: 7000 });
     const startNudgeState = await readState(page);
     const startNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
-    assert.match(startNudge?.message || '', /PILOT ORDERS 49\/50: 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order with track progress');
+    assert.match(startNudge?.message || '', /PILOT ORDERS 49\/50 \/\/ 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order with track progress');
     const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-run-start-nudge.png');
     await page.screenshot({ path: startNudgeScreenshot, fullPage: true });
     await page.waitForTimeout(2700);

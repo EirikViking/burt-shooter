@@ -181,3 +181,25 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 9 - Pilot Orders Status Line Consistency
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+25. Run-start Pilot Orders nudges now use a compact status separator instead of a sentence-like colon.
+26. Pause-menu Pilot Orders lines now use the same compact separator for active orders.
+27. Pause-menu fallback lines preserve track progress when showing `NEXT` or `COMPLETE`.
+
+Verification:
+
+- `npm run check:run-contracts`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.

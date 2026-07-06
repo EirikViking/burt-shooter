@@ -1319,7 +1319,7 @@ export class PlayScene {
       const prefix = summary.trackProgress
         ? `${translateText('PILOT ORDERS')} ${summary.trackProgress}`
         : translateText('PILOT ORDERS');
-      this.enqueueToast(`${prefix}: ${summary.title} ${summary.progress}`, {
+      this.enqueueToast(`${prefix} // ${summary.title} ${summary.progress}`, {
         fontSize: compactHud ? 16 : 20,
         fill: '#dffcff',
         stroke: '#031321',
@@ -4847,13 +4847,13 @@ export class PlayScene {
       .slice(0, 1);
     if (!active.length) {
       const nextSummary = this.getNextRunContractSummary(state);
-      if (nextSummary) return `${prefix}: ${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}`;
-      return `${translateText('PILOT ORDERS')}: ${translateText('COMPLETE')}`;
+      if (nextSummary) return `${prefix} // ${translateText('NEXT')} ${nextSummary.title} ${nextSummary.progress}`;
+      return `${prefix} // ${translateText('COMPLETE')}`;
     }
     const item = active[0];
     const title = translateText(item.shortTitle || item.title || item.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
-    return `${prefix}: ${title} ${progress}`;
+    return `${prefix} // ${title} ${progress}`;
   }
 
   openSettingsOverlay() {
