@@ -374,3 +374,28 @@ Safety notes:
 
 - No boss health, damage, phase timing, attack cadence, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only boss-local health bar polish.
+
+## Batch 17 - Phase Cooldown Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+55. Phase cooldown now draws a compact recharge ring around the player ship once the active Phase window ends.
+56. The Phase recharge ring includes quarter ticks so its cooldown state reads like a cockpit instrument instead of a vague glow.
+57. Phase now gives a brief ready flash when the cooldown reaches zero.
+58. The cooldown ring hides during active Phase so the active invulnerability ring stays visually dominant.
+
+Verification:
+
+- `npm run check:phase-cooldown-readability`
+- Screenshot proof: `test-results/phase-cooldown-readability-2026-07-06T21-32-48-800Z/phase-cooldown-readability.png`
+- `npm run check:player-ring-alignment`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No Phase duration, cooldown timing, invulnerability, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only player feedback polish with a focused browser guard.

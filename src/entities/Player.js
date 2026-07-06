@@ -124,9 +124,11 @@ export class Player {
     this.currentModel = 1;
     this.focusRing = null;
     this.hitboxReticle = null;
+    this.dodgeCooldownRing = null;
     this.dodgeRing = null;
     this.dodgeText = null;
     this.dodgeFlashMs = 0;
+    this.dodgeReadyFlashMs = 0;
     this.focusDriftActive = false;
     this.focusPulse = 0;
     this.hitboxPulseUntil = 0;
@@ -316,6 +318,15 @@ export class Player {
       this.sprite.addChild(this.damageOverlay);
     } else if (!this.damageOverlay.parent) {
       this.sprite.addChild(this.damageOverlay);
+    }
+
+    if (!this.dodgeCooldownRing) {
+      this.dodgeCooldownRing = new PIXI.Graphics();
+      this.dodgeCooldownRing.label = 'playerDodgeCooldownRing';
+      this.dodgeCooldownRing.visible = false;
+      this.sprite.addChild(this.dodgeCooldownRing);
+    } else if (!this.dodgeCooldownRing.parent) {
+      this.sprite.addChild(this.dodgeCooldownRing);
     }
 
     if (!this.dodgeRing) {
@@ -1135,7 +1146,14 @@ export class Player {
 
     // Cooldowns
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
-    if (this.dodgeCooldown > 0) this.dodgeCooldown -= dt;
+    const previousDodgeCooldown = Math.max(0, Number(this.dodgeCooldown) || 0);
+    if (this.dodgeCooldown > 0) {
+      this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
+    }
+    if (previousDodgeCooldown > 0 && this.dodgeCooldown <= 0 && !this.isDodging) {
+      this.dodgeReadyFlashMs = 650;
+    }
+    this.updateDodgeCooldownVisual(dt);
 
     if (this.rankBoost.type && this.boostAura) {
       this.rankBoostPulse += deltaSeconds;
@@ -2429,6 +2447,7 @@ export class Player {
     this.dodgeDuration = this.dodgeDurationMax;
     this.dodgeCooldown = this.dodgeDelay;
     this.dodgeFlashMs = this.dodgeDurationMax;
+    this.dodgeReadyFlashMs = 0;
     AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
     this.updateDodgeVisual(0);
     this.triggerTraitDodgePulse();
@@ -2455,6 +2474,98 @@ export class Player {
       this.dodgeText.alpha = 0.86 * (1 - progress * 0.35);
       this.dodgeText.scale.set(1 + pulse * 0.08);
     }
+  }
+
+  updateDodgeCooldownVisual(dt = 0) {
+    if (!this.dodgeCooldownRing) return;
+    const ring = this.dodgeCooldownRing;
+    const elapsedMs = Math.max(0, Number(dt) || 0);
+    const remainingMs = Math.max(0, Number(this.dodgeCooldown) || 0);
+    const delayMs = Math.max(1, Number(this.dodgeDelay) || 1);
+    const readyFlashMs = Math.max(0, (this.dodgeReadyFlashMs || 0) - elapsedMs);
+    this.dodgeReadyFlashMs = readyFlashMs;
+    const readyFlashProgress = Math.max(0, Math.min(1, readyFlashMs / 650));
+
+    ring.clear();
+
+    if (this.isDodging) {
+      ring.visible = false;
+      ring.__debugPhaseCooldown = {
+        visible: false,
+        activePhase: true,
+        remainingMs,
+        readyProgress: 0,
+        readyFlashProgress
+      };
+      return;
+    }
+
+    const coolingDown = remainingMs > 0;
+    const readyFlashing = readyFlashProgress > 0;
+    if (!coolingDown && !readyFlashing) {
+      ring.visible = false;
+      ring.__debugPhaseCooldown = {
+        visible: false,
+        activePhase: false,
+        remainingMs: 0,
+        readyProgress: 1,
+        readyFlashProgress: 0
+      };
+      return;
+    }
+
+    const radius = Math.max(44, (this.baseShipWidth || 64) * 0.74);
+    const accent = this.visualVariant?.accent || 0xff55d9;
+    const readyColor = 0x7fffd8;
+    const pulse = Math.sin(Date.now() * 0.018) * 0.5 + 0.5;
+    const readyProgress = coolingDown
+      ? Math.max(0.02, Math.min(0.985, 1 - (remainingMs / delayMs)))
+      : 1;
+
+    ring.circle(0, 0, radius);
+    ring.stroke({ color: 0x063442, width: 4.5, alpha: 0.48 });
+
+    if (coolingDown) {
+      const start = -Math.PI / 2;
+      const end = start + (Math.PI * 2 * readyProgress);
+      ring.arc(0, 0, radius, start, end);
+      ring.stroke({ color: accent, width: 5.5, alpha: 0.36 + readyProgress * 0.34 });
+      for (let i = 0; i < 4; i += 1) {
+        const angle = start + (Math.PI * 0.5 * i);
+        const inner = radius - 6;
+        const outer = radius + 7;
+        ring.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ring.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      ring.stroke({ color: 0x9afcff, width: 1.8, alpha: 0.28 });
+    }
+
+    if (readyFlashing) {
+      const flashRadius = radius + 3 + pulse * 5;
+      ring.circle(0, 0, flashRadius);
+      ring.stroke({ color: readyColor, width: 3.8, alpha: 0.24 + readyFlashProgress * 0.46 });
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI / 3) + pulse * 0.08;
+        const inner = flashRadius + 5;
+        const outer = flashRadius + 13;
+        ring.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        ring.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      ring.stroke({ color: 0xffffff, width: 1.6, alpha: 0.16 + readyFlashProgress * 0.28 });
+    }
+
+    ring.visible = true;
+    ring.__debugPhaseCooldown = {
+      visible: true,
+      activePhase: false,
+      remainingMs,
+      delayMs,
+      readyProgress,
+      readyFlashProgress,
+      coolingDown,
+      readyFlashing,
+      radius
+    };
   }
 
   clearDodgeVisual() {

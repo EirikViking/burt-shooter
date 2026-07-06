@@ -49,6 +49,7 @@
     "check:trait-hud": "node scripts/check-trait-hud.mjs",
     "check:hud-readability": "node scripts/check-hud-readability.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
+    "check:phase-cooldown-readability": "node scripts/check-phase-cooldown-readability.mjs",
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",
