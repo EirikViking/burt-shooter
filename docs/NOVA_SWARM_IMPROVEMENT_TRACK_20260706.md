@@ -14,6 +14,7 @@ Verification:
 
 - `npm run check:run-contracts`
 - Screenshots: `test-results/run-contracts-2026-07-06T16-00-15-473Z/`
+- Steam private build: `24076150`
 
 Safety notes:
 
