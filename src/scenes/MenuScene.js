@@ -15,7 +15,12 @@ import { getMenuSettings } from '../config/MenuSettings.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
-import { acknowledgeRunContractCompletionNotice, getDefaultShowPilotOrders, getRunContractMenuState } from '../progression/RunContracts.js';
+import {
+  acknowledgeRunContractCompletionNotice,
+  formatRunContractProgressValue,
+  getDefaultShowPilotOrders,
+  getRunContractMenuState
+} from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
@@ -2099,7 +2104,10 @@ export class MenuScene {
     }
 
     this.missionBoardPanel.visible = true;
-    this.missionBoardTitle.text = translateText(completeState ? missionState.completionTitle : missionState.title);
+    const missionTitle = translateText(completeState ? missionState.completionTitle : missionState.title);
+    this.missionBoardTitle.text = completeState
+      ? missionTitle
+      : `${missionTitle} ${missionState.progressLabel || ''}`.trim();
     this.missionBoardTitle.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;
@@ -2133,17 +2141,14 @@ export class MenuScene {
       row._detail.text = translateText(contract.shortDescription || contract.description || 'Mayhem only');
       row._progress.text = contract.completed
         ? translateText('COMPLETE')
-        : translateText('{progress}/{target}', {
-            progress: contract.progress || 0,
-            target: contract.target || 1
-          });
+        : translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
       row._title.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
       row._detail.style.wordWrap = false;
-      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 80 : 106) * uiScale);
+      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 96 : 118) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
       row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
       row._title.x = Math.round(13 * uiScale);
@@ -2155,9 +2160,9 @@ export class MenuScene {
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
-      fitTextToWidth(row._title, row._width - Math.round(96 * uiScale), { minScale: 0.68 });
-      fitTextToWidth(row._detail, row._width - Math.round(106 * uiScale), { minScale: 0.72 });
-      fitTextToWidth(row._progress, Math.round(82 * uiScale), { minScale: 0.62 });
+      fitTextToWidth(row._title, row._width - Math.round(114 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._detail, row._width - Math.round(118 * uiScale), { minScale: 0.72 });
+      fitTextToWidth(row._progress, Math.round(104 * uiScale), { minScale: 0.62 });
     });
 
     this.drawMissionBoardPanel();
@@ -2180,7 +2185,7 @@ export class MenuScene {
       const w = row._width || 0;
       const h = row._height || 0;
       const accent = row._accent || 0x37f5ff;
-      const progressSlotWidth = Math.min(58, Math.max(46, w * 0.22));
+      const progressSlotWidth = Math.min(92, Math.max(58, w * 0.28));
       row._bg.clear();
       drawCutPanel(row._bg, 0, 0, w, h, 6, { color: row._completed ? 0x082116 : 0x061b2a, alpha: row._completed ? 0.82 : 0.72 }, { color: accent, width: 1, alpha: row._completed ? 0.48 : 0.28 });
       drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: 0.07 });

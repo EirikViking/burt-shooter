@@ -29,6 +29,7 @@ import {
 } from '../achievements/AchievementCatalog.js';
 import { translateText } from '../i18n/index.js';
 import { CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID } from '../progression/HangarProgressState.js';
+import { formatRunContractProgressValue } from '../progression/RunContracts.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
@@ -4127,10 +4128,7 @@ export class GameOverScene {
       return row.value.map((value) => {
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
-          const progress = translateText('{progress}/{target}', {
-            progress: Math.max(0, Number(value.progress) || 0).toLocaleString('en-US'),
-            target: Math.max(1, Number(value.target) || 1).toLocaleString('en-US')
-          });
+          const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
           return `${title} ${progress}`;
         }
         return translateText(value);

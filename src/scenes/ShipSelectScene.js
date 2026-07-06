@@ -26,7 +26,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
-import { getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -917,10 +917,7 @@ export class ShipSelectScene {
     heading.position.set(18, 10);
     fitDisplayToBox(heading, width - 104, compact ? 18 : 20, { minScale: 0.56 });
 
-    const count = createText(translateText('{progress}/{target}', {
-      progress: review?.completedCount || 0,
-      target: review?.total || 0
-    }), {
+    const count = createText(translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0)), {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 12 : 14,
       fontWeight: '900',

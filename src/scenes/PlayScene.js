@@ -70,6 +70,7 @@ import { readHangarProgressState, updateHangarProgress, writeHangarProgressState
 import {
   areAllRunContractsComplete,
   applyRunContractEvent,
+  formatRunContractProgressValue,
   getRunContractById,
   getRunContractSessionState,
   prepareRunContractsForEligibleRun,
@@ -337,6 +338,7 @@ export class PlayScene {
     this.runContractSession = null;
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
+    this.runContractStartNudgeTimeout = null;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Powerup mechanics (orbital strike timer tracked in scene)
@@ -509,6 +511,7 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    this.clearRunContractStartNudge();
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
@@ -540,6 +543,7 @@ export class PlayScene {
       sector: this.game?.level || 1,
       suppressProgressToast: true
     });
+    this.scheduleRunContractStartNudge();
     this.blinkDriveOrderStartedAt = null;
     this.blinkDriveOrderCompleted = false;
     this.playerPhaseWasActive = false;
@@ -1262,8 +1266,7 @@ export class PlayScene {
     const compactHud = this.game.getWidth() < 620;
     this.enqueueToast(translateText('ORDER PROGRESS: {title} {progress}/{target}', {
       title,
-      progress: Math.min(change.target, Math.max(0, Math.floor(Number(change.progress) || 0))).toLocaleString('en-US'),
-      target: Math.max(1, Math.floor(Number(change.target) || 1)).toLocaleString('en-US')
+      ...formatRunContractProgressValue(change.progress, change.target)
     }), {
       fontSize: compactHud ? 16 : 20,
       fill: '#fff3a2',
@@ -1277,6 +1280,49 @@ export class PlayScene {
       y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
       maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46)
     });
+  }
+
+  clearRunContractStartNudge() {
+    if (!this.runContractStartNudgeTimeout) return;
+    clearTimeout(this.runContractStartNudgeTimeout);
+    this.runContractStartNudgeTimeout = null;
+  }
+
+  getRunContractStartNudgeSummary() {
+    const active = (this.getRunContractDebugState()?.active || [])
+      .find((item) => item.eligible && !item.completed);
+    if (!active) return null;
+    const title = translateText(active.shortTitle || active.title || active.id);
+    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(active.progress, active.target));
+    return { title, progress };
+  }
+
+  scheduleRunContractStartNudge() {
+    this.clearRunContractStartNudge();
+    if (!this.getRunContractStartNudgeSummary()) return;
+    this.runContractStartNudgeTimeout = setTimeout(() => {
+      this.runContractStartNudgeTimeout = null;
+      if (this.gameOverSequenceStarted) return;
+      const summary = this.getRunContractStartNudgeSummary();
+      if (!summary) return;
+      const compactHud = this.game.getWidth() < 620;
+      this.enqueueToast(`${translateText('PILOT ORDERS')}: ${summary.title} ${summary.progress}`, {
+        fontSize: compactHud ? 16 : 20,
+        fill: '#dffcff',
+        stroke: '#031321',
+        strokeThickness: compactHud ? 3 : 4,
+        slot: 'top',
+        type: 'runContractStart',
+        priority: 1,
+        bypassFocusLock: false,
+        duration: 3000,
+        banner: true,
+        align: 'center',
+        y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
+        maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46),
+        accent: 0x7fffd8
+      });
+    }, 3500);
   }
 
   shouldPersistRunContractProgress(type, result = {}) {
@@ -4008,6 +4054,7 @@ export class PlayScene {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
+    this.clearRunContractStartNudge();
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.clearBackgroundLevelEntryWarmup();
@@ -4750,10 +4797,7 @@ export class PlayScene {
     if (!active.length) return `${translateText('PILOT ORDERS')}: ${translateText('COMPLETE')}`;
     const item = active[0];
     const title = translateText(item.shortTitle || item.title || item.id);
-    const progress = translateText('{progress}/{target}', {
-      progress: Math.max(0, Math.floor(Number(item.progress) || 0)).toLocaleString('en-US'),
-      target: Math.max(1, Math.floor(Number(item.target) || 1)).toLocaleString('en-US')
-    });
+    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
     return `${translateText('PILOT ORDERS')}: ${title} ${progress}`;
   }
 
@@ -8098,7 +8142,7 @@ export class PlayScene {
 
     let display = null;
     if (options.banner) {
-      const runContractBanner = options.type === 'runContract';
+      const runContractBanner = options.type === 'runContract' || options.type === 'runContractStart';
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',

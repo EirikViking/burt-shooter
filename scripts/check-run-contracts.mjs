@@ -205,6 +205,9 @@ function runCatalogAndSaveTests() {
   assertDistinctActiveGroups(migrated.runContracts, 'default Pilot Orders');
   const menuState = getRunContractMenuState(migrated);
   assert.equal(menuState.title, 'PILOT ORDERS');
+  assert.equal(menuState.progressLabel, '0/50');
+  assert.equal(menuState.completedCount, 0);
+  assert.equal(menuState.total, 50);
   assert.equal(menuState.subtitle, 'Review cleared orders in Ship Hangar.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
@@ -747,7 +750,7 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     return;
   }
 
-  assert.equal(board?.title, 'PILOT ORDERS');
+  assert.match(board?.title || '', /^PILOT ORDERS [0-9,]+\/[0-9,]+$/);
   assert.equal(board?.subtitle, 'Review cleared orders in Ship Hangar.');
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
@@ -760,7 +763,7 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     assert.ok(!boundsOverlap(row.titleBounds, row.progressBounds, 2), `${row.id} title/progress text should not overlap`);
     assert.ok(!boundsOverlap(row.detailBounds, row.progressBounds, 2), `${row.id} detail/progress text should not overlap`);
     assert.equal(row.detail, ACTIVE_DESCRIPTIONS[row.id], `${row.id} should show its starter goal description`);
-    assert.match(row.progress, /^(COMPLETE|[0-9]+\/[0-9]+)$/, `${row.id} should show clear progress`);
+    assert.match(row.progress, /^(COMPLETE|[0-9,]+\/[0-9,]+)$/, `${row.id} should show clear progress`);
   }
 }
 
@@ -804,7 +807,7 @@ async function runBrowserSmoke() {
       expectedStatus: 'active'
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1000']);
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -941,6 +944,17 @@ async function runBrowserSmoke() {
       return state.scene === 'play' && Boolean(window.__game?.scenes?.play?.emitRunContractEvent);
     }, null, { timeout: 30000 });
 
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).some((toast) => toast.type === 'runContractStart');
+    }, null, { timeout: 7000 });
+    const startNudgeState = await readState(page);
+    const startNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
+    assert.match(startNudge?.message || '', /PILOT ORDERS: 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order');
+    const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-run-start-nudge.png');
+    await page.screenshot({ path: startNudgeScreenshot, fullPage: true });
+    await page.waitForTimeout(2700);
+
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
       play.emitRunContractEvent('enemy_defeated', { sector: window.__game?.level || 1, count: 625 });
@@ -976,7 +990,7 @@ async function runBrowserSmoke() {
     }, null, { timeout: 5000 });
     const pauseState = await readState(page);
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /2500 Enemies/, 'pause overlay should show the active Pilot Order');
-    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500|625\/2500/, 'pause overlay should show active Pilot Order progress');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500/, 'pause overlay should show active Pilot Order progress');
     const pauseScreenshot = path.join(outputDir, 'pilot-orders-pause-line.png');
     await page.screenshot({ path: pauseScreenshot, fullPage: true });
     await page.evaluate(() => {
@@ -1068,6 +1082,7 @@ async function runBrowserSmoke() {
         hiddenMenu: hiddenProof.screenshot,
         hangarCompletedReview: hangarReviewScreenshot,
         hiddenAfterCompletionNotice: autoHiddenProof.screenshot,
+        runStartNudge: startNudgeScreenshot,
         progressToast: progressToastScreenshot,
         pauseOrdersLine: pauseScreenshot,
         playToast: playScreenshot,

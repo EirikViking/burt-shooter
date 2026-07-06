@@ -629,6 +629,18 @@ function floor(value, fallback = 0) {
   return Number.isFinite(number) ? Math.max(0, Math.floor(number)) : fallback;
 }
 
+export function formatRunContractCount(value = 0) {
+  return floor(value).toLocaleString('en-US');
+}
+
+export function formatRunContractProgressValue(progress = 0, target = 1) {
+  const normalizedTarget = Math.max(1, floor(target, 1));
+  return {
+    progress: formatRunContractCount(Math.min(normalizedTarget, floor(progress))),
+    target: formatRunContractCount(normalizedTarget)
+  };
+}
+
 function clampText(value, maxLength = 120) {
   const text = String(value ?? '').trim();
   return text ? text.slice(0, maxLength) : '';
@@ -1211,6 +1223,8 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     ? (state.completionNoticeSeen && !forceCompletionVisible ? 'hidden' : 'complete')
     : 'active';
   const activeIds = status === 'active' ? state.activeIds : [];
+  const total = RUN_CONTRACT_ORDER_IDS.length;
+  const completedCount = RUN_CONTRACT_ORDER_IDS.filter((id) => state.completed[id]).length;
   return {
     version: state.version,
     title: 'PILOT ORDERS',
@@ -1222,6 +1236,9 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     completionNoticeSeen: Boolean(state.completionNoticeSeen),
     allCompletedAt: state.allCompletedAt || null,
     completionNoticeSeenAt: state.completionNoticeSeenAt || null,
+    total,
+    completedCount,
+    progressLabel: `${formatRunContractCount(completedCount)}/${formatRunContractCount(total)}`,
     completionTitle: 'PILOT ORDERS COMPLETE',
     completionBody: 'All starter combat goals cleared.',
     active: activeIds.map((id) => {
