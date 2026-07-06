@@ -23,6 +23,8 @@ export class BonusDrone {
         // Bobbing for power cores
         this.bobTimer = 0;
         this.baseY = y;
+        this.intentTimer = Math.random() * Math.PI * 2;
+        this.clarityPulse = 0;
 
         this.createSprite();
 
@@ -35,6 +37,15 @@ export class BonusDrone {
         this.sprite = new PIXI.Container();
         this.sprite.x = this.x;
         this.sprite.y = this.y;
+        this.sprite.label = `bonusDrone:${this.type.toLowerCase()}`;
+
+        this.motionTrail = new PIXI.Graphics();
+        this.motionTrail.label = 'bonusDroneMotionTrail';
+        this.sprite.addChild(this.motionTrail);
+
+        this.intentHalo = new PIXI.Graphics();
+        this.intentHalo.label = 'bonusDroneIntentHalo';
+        this.sprite.addChild(this.intentHalo);
 
         const texture = GameAssets.getBonusCoreTexture();
         if (GameAssets.isValidTexture(texture)) {
@@ -61,12 +72,19 @@ export class BonusDrone {
             g.fill({ color: this.type === 'POWERUP' ? 0xffffff : 0xff0000 });
             this.sprite.addChild(g);
         }
+
+        this.intentGlyph = new PIXI.Graphics();
+        this.intentGlyph.label = 'bonusDroneIntentGlyph';
+        this.sprite.addChild(this.intentGlyph);
+        this.updateClarityVisuals(0, 1);
     }
 
     update(delta, remainingHazardCount = null) {
         if (!this.active) return;
 
         const width = this.game.getWidth();
+        this.intentTimer += delta * 0.12;
+        this.clarityPulse = 0.5 + Math.sin(this.intentTimer * 2.4) * 0.5;
 
         // TASK 1: Wave easing - reduce speed when few hazard drones remain
         // This prevents frustrating ultra-fast drones at wave end
@@ -109,6 +127,7 @@ export class BonusDrone {
         }
 
         this.sprite.x = this.x;
+        this.updateClarityVisuals(delta, speedMultiplier);
 
         // Despawn
         if (this.y > this.game.getHeight() + 50) {
@@ -120,6 +139,94 @@ export class BonusDrone {
                 this.active = false;
             }
         }
+    }
+
+    updateClarityVisuals(delta = 1, speedMultiplier = 1) {
+        if (!this.intentHalo || !this.intentGlyph || !this.motionTrail) return;
+        const isPowerup = this.type === 'POWERUP';
+        const pulse = Number.isFinite(this.clarityPulse) ? this.clarityPulse : 0.5;
+        const baseRadius = isPowerup ? 33 : 29;
+        const radius = baseRadius + pulse * (isPowerup ? 4 : 3);
+        const primary = isPowerup ? 0xfff2a8 : 0xff516d;
+        const secondary = isPowerup ? 0x38f7ff : 0xffd15c;
+        const alpha = isPowerup ? 0.38 + pulse * 0.24 : 0.34 + pulse * 0.22;
+
+        this.intentHalo.clear();
+        this.intentHalo.circle(0, 0, radius);
+        this.intentHalo.stroke({ color: primary, width: isPowerup ? 2 : 1.6, alpha });
+        this.intentHalo.circle(0, 0, Math.max(8, radius * 0.58));
+        this.intentHalo.stroke({ color: secondary, width: 1, alpha: alpha * 0.62 });
+        if (isPowerup) {
+            this.intentHalo.circle(0, 0, radius + 6);
+            this.intentHalo.stroke({ color: 0xffffff, width: 1, alpha: 0.08 + pulse * 0.08 });
+        }
+
+        this.intentGlyph.clear();
+        if (isPowerup) {
+            const r = radius + 8;
+            const chevron = 7;
+            const drawChevron = (x1, y1, x2, y2, x3, y3) => {
+                this.intentGlyph.moveTo(x1, y1);
+                this.intentGlyph.lineTo(x2, y2);
+                this.intentGlyph.lineTo(x3, y3);
+            };
+            drawChevron(0, -r + chevron, -chevron, -r, -chevron * 1.8, -r + chevron * 0.9);
+            drawChevron(0, -r + chevron, chevron, -r, chevron * 1.8, -r + chevron * 0.9);
+            drawChevron(0, r - chevron, -chevron, r, -chevron * 1.8, r - chevron * 0.9);
+            drawChevron(0, r - chevron, chevron, r, chevron * 1.8, r - chevron * 0.9);
+            drawChevron(-r + chevron, 0, -r, -chevron, -r + chevron * 0.9, -chevron * 1.8);
+            drawChevron(-r + chevron, 0, -r, chevron, -r + chevron * 0.9, chevron * 1.8);
+            drawChevron(r - chevron, 0, r, -chevron, r - chevron * 0.9, -chevron * 1.8);
+            drawChevron(r - chevron, 0, r, chevron, r - chevron * 0.9, chevron * 1.8);
+            this.intentGlyph.stroke({ color: primary, width: 2, alpha: 0.46 + pulse * 0.28 });
+        } else {
+            const r = radius + 5;
+            const bracket = 12;
+            const drawBracket = (sx, sy) => {
+                const x = sx * r;
+                const y = sy * r;
+                this.intentGlyph.moveTo(x - sx * bracket, y);
+                this.intentGlyph.lineTo(x, y);
+                this.intentGlyph.lineTo(x, y - sy * bracket);
+            };
+            drawBracket(1, 1);
+            drawBracket(-1, 1);
+            drawBracket(1, -1);
+            drawBracket(-1, -1);
+            this.intentGlyph.moveTo(-8, 0);
+            this.intentGlyph.lineTo(8, 0);
+            this.intentGlyph.moveTo(0, -8);
+            this.intentGlyph.lineTo(0, 8);
+            this.intentGlyph.stroke({ color: primary, width: 1.8, alpha: 0.48 + pulse * 0.3 });
+        }
+
+        const vx = Number(this.vx) || 0;
+        const vy = Number(this.vy) || 0;
+        const length = Math.max(0.01, Math.hypot(vx, vy));
+        const nx = vx / length;
+        const ny = vy / length;
+        const trailLength = Math.min(42, 18 + length * (isPowerup ? 5 : 7));
+        const trailAlpha = Math.max(0.12, Math.min(0.46, 0.2 + pulse * 0.18 + Math.max(0, speedMultiplier - 0.5) * 0.08));
+        this.motionTrail.clear();
+        for (let i = 0; i < 3; i += 1) {
+            const offset = (i - 1) * (isPowerup ? 5 : 4);
+            const ox = -ny * offset;
+            const oy = nx * offset;
+            this.motionTrail.moveTo(ox - nx * 16, oy - ny * 16);
+            this.motionTrail.lineTo(ox - nx * (trailLength + i * 7), oy - ny * (trailLength + i * 7));
+        }
+        this.motionTrail.stroke({ color: isPowerup ? 0x38f7ff : 0xff8a45, width: isPowerup ? 2 : 1.5, alpha: trailAlpha });
+        this.sprite._debugBonusClarity = {
+            type: this.type,
+            intent: isPowerup ? 'collect' : 'shoot',
+            halo: true,
+            glyph: true,
+            trail: true,
+            radius: Number(radius.toFixed(2)),
+            trailAlpha: Number(trailAlpha.toFixed(3)),
+            pulse: Number(pulse.toFixed(3)),
+            delta: Number(delta || 0)
+        };
     }
 
     takeDamage(amount) {

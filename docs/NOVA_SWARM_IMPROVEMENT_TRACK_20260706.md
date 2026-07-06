@@ -527,3 +527,21 @@ Safety notes:
 
 - No life count, damage, invulnerability, enemy behavior, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only last-life readability cue drawn on the existing UI overlay.
+
+## Batch 24 - Bonus Drone Intent Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+83. Shootable ambient bonus drones now carry red target brackets and a compact crosshair so they read as optional score targets.
+84. Collectible bonus cores now carry gold/cyan collection halos and inward chevrons so they read as pickups rather than hostile drones.
+85. Both bonus drone types now draw short motion streaks, improving movement readability without changing speed, hitboxes, score, or spawn cadence.
+86. `check:bonus-drone-clarity` proves hazard and power-core intent states with side-by-side browser screenshot evidence.
+
+Verification:
+
+- `npm run check:bonus-drone-clarity`
+
+Safety notes:
+
+- No bonus drone health, movement speed, score value, spawn cadence, powerup roll, pickup radius, enemy behavior, projectile behavior, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only intent chrome owned by the `BonusDrone` entity.
