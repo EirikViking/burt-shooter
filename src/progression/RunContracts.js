@@ -641,6 +641,23 @@ export function formatRunContractProgressValue(progress = 0, target = 1) {
   };
 }
 
+export function getRunContractOrderNumber(id = '') {
+  const index = RUN_CONTRACT_ORDER_IDS.indexOf(String(id || ''));
+  return index >= 0 ? index + 1 : 0;
+}
+
+export function formatRunContractOrderSlotLabel(contractOrId = '', total = RUN_CONTRACT_ORDER_IDS.length) {
+  const id = typeof contractOrId === 'object' && contractOrId
+    ? contractOrId.id
+    : contractOrId;
+  const orderNumber = typeof contractOrId === 'object' && contractOrId
+    ? floor(contractOrId.orderNumber) || getRunContractOrderNumber(id)
+    : getRunContractOrderNumber(id);
+  if (!orderNumber) return '';
+  const normalizedTotal = Math.max(orderNumber, floor(total, RUN_CONTRACT_ORDER_IDS.length));
+  return `${String(orderNumber).padStart(2, '0')}/${formatRunContractCount(normalizedTotal)}`;
+}
+
 function clampText(value, maxLength = 120) {
   const text = String(value ?? '').trim();
   return text ? text.slice(0, maxLength) : '';
@@ -768,13 +785,14 @@ function buildRunContractDisplayEntry(id, state = {}) {
   if (!contract) return null;
   const completion = state.completed?.[id] || null;
   const savedProgress = state.progress?.[id] || null;
-  const catalogIndex = RUN_CONTRACT_ORDER_IDS.indexOf(id);
+  const orderNumber = getRunContractOrderNumber(id);
   const target = contract.target || 1;
   const completed = Boolean(completion);
   return {
     id,
-    orderIndex: catalogIndex,
-    orderNumber: catalogIndex >= 0 ? catalogIndex + 1 : 0,
+    orderIndex: orderNumber ? orderNumber - 1 : -1,
+    orderNumber,
+    orderSlot: formatRunContractOrderSlotLabel({ id, orderNumber }),
     title: contract.title || id,
     shortTitle: contract.shortTitle || contract.title || id,
     description: contract.description || '',
@@ -1323,8 +1341,11 @@ export function getRunContractCompletionReviewState(progressOrState = {}) {
 
 function describeCompletion(completion = {}) {
   const contract = getRunContractById(completion.id);
+  const orderNumber = getRunContractOrderNumber(completion.id);
   return {
     id: completion.id,
+    orderNumber,
+    orderSlot: formatRunContractOrderSlotLabel({ id: completion.id, orderNumber }),
     title: contract?.title || completion.id,
     shortTitle: contract?.shortTitle || contract?.title || completion.id,
     completedAt: completion.completedAt || null,
@@ -1343,8 +1364,11 @@ export function getRunContractSessionState(session = null) {
     allCompletedAt: session.allCompletedAt || null,
     active: (session.active || []).map((item) => {
       const contract = getRunContractById(item.id);
+      const orderNumber = getRunContractOrderNumber(item.id);
       return {
         id: item.id,
+        orderNumber,
+        orderSlot: formatRunContractOrderSlotLabel({ id: item.id, orderNumber }),
         title: contract?.title || item.id,
         shortTitle: contract?.shortTitle || contract?.title || item.id,
         progress: floor(item.progress),

@@ -26,7 +26,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
-import { formatRunContractCount, formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { formatRunContractOrderSlotLabel, formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -895,22 +895,23 @@ export class ShipSelectScene {
     const nextOrders = Array.isArray(review?.next) ? review.next : [];
     const activeLines = activeOrders.map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
+      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total);
       return {
-        text: `${translateText('ACTIVE')} ${progress} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+        text: `${translateText('ACTIVE')} ${progress} // ${orderLabel ? `${orderLabel} ` : ''}${translateText(entry.shortTitle || entry.title || entry.id)}`,
         tone: 'active'
       };
     });
     const nextLines = nextOrders.slice(0, 1).map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
+      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total);
       return {
-        text: `${translateText('NEXT')} ${progress} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+        text: `${translateText('NEXT')} ${progress} // ${orderLabel ? `${orderLabel} ` : ''}${translateText(entry.shortTitle || entry.title || entry.id)}`,
         tone: 'next'
       };
     });
     const completedLines = completedOrders.map((entry, index) => {
-      const orderNumber = Number(entry.orderNumber) || (index + 1);
-      const totalOrders = Math.max(1, Number(review?.total) || completedOrders.length || 1);
-      const orderLabel = `${String(orderNumber).padStart(2, '0')}/${formatRunContractCount(totalOrders)}`;
+      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total)
+        || `${String(index + 1).padStart(2, '0')}/${Math.max(1, Number(review?.total) || completedOrders.length || 1)}`;
       return {
         text: `${orderLabel} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
         tone: 'done'

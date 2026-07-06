@@ -70,6 +70,7 @@ import { readHangarProgressState, updateHangarProgress, writeHangarProgressState
 import {
   areAllRunContractsComplete,
   applyRunContractEvent,
+  formatRunContractOrderSlotLabel,
   formatRunContractProgressValue,
   getRunContractById,
   getRunContractMenuState,
@@ -1215,6 +1216,7 @@ export class PlayScene {
           id: item.id,
           title: contract.title,
           shortTitle: contract.shortTitle || contract.title,
+          orderSlot: formatRunContractOrderSlotLabel(item.id),
           progress: Math.min(target, progress),
           previousProgress: Math.min(target, previousProgress),
           target,
@@ -1235,6 +1237,7 @@ export class PlayScene {
       id: change.id,
       title: change.title,
       shortTitle: change.shortTitle || change.title,
+      orderSlot: change.orderSlot || existing?.orderSlot || formatRunContractOrderSlotLabel(change.id),
       previousProgress,
       progress: Math.max(Number(existing?.progress) || 0, Number(change.progress) || 0),
       target: Math.max(1, Number(change.target) || Number(existing?.target) || 1),
@@ -1264,9 +1267,11 @@ export class PlayScene {
     this.runContractProgressToastMarkers?.set(change.id, marker);
     const contract = getRunContractById(change.id);
     const title = translateText(contract?.shortTitle || change.shortTitle || change.title || change.id);
+    const orderSlot = change.orderSlot || formatRunContractOrderSlotLabel(change.id);
+    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
     const progressLabel = this.getRunContractTrackProgressLabel();
     const progressMessage = translateText('ORDER PROGRESS: {title} {progress}/{target}', {
-      title,
+      title: orderTitle,
       ...formatRunContractProgressValue(change.progress, change.target)
     });
     const message = progressLabel
@@ -1303,8 +1308,13 @@ export class PlayScene {
       .find((item) => item.eligible && !item.completed);
     if (!active) return null;
     const title = translateText(active.shortTitle || active.title || active.id);
+    const orderSlot = active.orderSlot || formatRunContractOrderSlotLabel(active.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(active.progress, active.target));
-    return { title, progress, trackProgress: this.getRunContractTrackProgressLabel() };
+    return {
+      title: orderSlot ? `${orderSlot} ${title}` : title,
+      progress,
+      trackProgress: this.getRunContractTrackProgressLabel()
+    };
   }
 
   scheduleRunContractStartNudge() {
@@ -1394,10 +1404,12 @@ export class PlayScene {
     const contract = getRunContractById(contractId);
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
+    const orderSlot = formatRunContractOrderSlotLabel(contractId);
+    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
     const progressLabel = this.getRunContractTrackProgressLabel();
     const nextSummary = this.getNextRunContractSummary();
     const message = [
-      translateText('ORDER COMPLETE: {title}', { title }),
+      translateText('ORDER COMPLETE: {title}', { title: orderTitle }),
       progressLabel ? `${translateText('PILOT ORDERS')} ${progressLabel}` : null,
       nextSummary ? `${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}` : null
     ].filter(Boolean).join('\n');
@@ -1439,6 +1451,7 @@ export class PlayScene {
         id: entry.id,
         title: entry.title,
         shortTitle: entry.shortTitle || entry.title,
+        orderSlot: entry.orderSlot || formatRunContractOrderSlotLabel(entry.id),
         previousProgress: Math.max(0, Math.floor(Number(entry.previousProgress) || 0)),
         progress: Math.max(0, Math.floor(Number(entry.progress) || 0)),
         target: Math.max(1, Math.floor(Number(entry.target) || 1)),
@@ -1460,8 +1473,10 @@ export class PlayScene {
     const source = state || this.getRunContractDebugState();
     const item = (source?.next || []).find((entry) => entry?.id && !entry.completed);
     if (!item) return null;
+    const orderSlot = item.orderSlot || formatRunContractOrderSlotLabel(item.id);
+    const title = translateText(item.shortTitle || item.title || item.id);
     return {
-      title: translateText(item.shortTitle || item.title || item.id),
+      title: orderSlot ? `${orderSlot} ${title}` : title,
       progress: translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target))
     };
   }
@@ -4852,8 +4867,9 @@ export class PlayScene {
     }
     const item = active[0];
     const title = translateText(item.shortTitle || item.title || item.id);
+    const orderSlot = item.orderSlot || formatRunContractOrderSlotLabel(item.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
-    return `${prefix} // ${title} ${progress}`;
+    return `${prefix} // ${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
   }
 
   openSettingsOverlay() {

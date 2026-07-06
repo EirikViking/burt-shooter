@@ -249,3 +249,28 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 12 - Pilot Orders Path Labels
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+35. RunContracts now exposes a shared `NN/50` order-slot label so every Pilot Orders surface can reference the same finite path.
+36. Main-menu active Pilot Orders rows and the Mayhem briefing now show order slots such as `01/50 Graze x10`.
+37. In-run Pilot Orders start, progress, completion, next-order, and pause cues now include the active order slot.
+38. Run Report Pilot Orders entries now keep completed/progress/next orders structured with slot labels, preserving localization while improving review clarity.
+39. Hangar Career Intel active and next Pilot Orders rows now use the same slot labels as completed rows.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T20-10-40-865Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.

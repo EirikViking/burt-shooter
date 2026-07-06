@@ -17,6 +17,7 @@ import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
 import {
   acknowledgeRunContractCompletionNotice,
+  formatRunContractOrderSlotLabel,
   formatRunContractProgressValue,
   getDefaultShowPilotOrders,
   getRunContractMenuState
@@ -2010,7 +2011,9 @@ export class MenuScene {
     if (!contract) return null;
     const title = translateText(contract.shortTitle || contract.title || contract.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
-    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''} // ${title} ${progress}`.trim();
+    const orderSlot = contract.orderSlot || formatRunContractOrderSlotLabel(contract, missionState.total);
+    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
+    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''} // ${orderTitle} ${progress}`.trim();
   }
 
   getHangarButtonSubLabel() {
@@ -2178,7 +2181,9 @@ export class MenuScene {
       row._height = rowHeight;
       row._accent = contract.accent || 0x37f5ff;
       row._completed = Boolean(contract.completed);
-      row._title.text = translateText(contract.shortTitle || contract.title);
+      const orderSlot = contract.orderSlot || formatRunContractOrderSlotLabel(contract, missionState.total);
+      const titleText = translateText(contract.shortTitle || contract.title);
+      row._title.text = orderSlot ? `${orderSlot} ${titleText}` : titleText;
       row._detail.text = translateText(contract.shortDescription || contract.description || 'Mayhem only');
       row._progress.text = contract.completed
         ? translateText('COMPLETE')
@@ -2859,6 +2864,7 @@ export class MenuScene {
         rows: (this.missionBoardRows || []).filter((row) => row?.visible).map((row, index) => ({
           id: this.missionBoardState?.active?.[index]?.id || null,
           group: this.missionBoardState?.active?.[index]?.group || null,
+          orderSlot: this.missionBoardState?.active?.[index]?.orderSlot || null,
           title: row?._title?.text || null,
           detail: row?._detail?.text || null,
           progress: row?._progress?.text || null,

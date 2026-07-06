@@ -4134,15 +4134,22 @@ export class GameOverScene {
           const progress = String(value.progressLabel || '').trim();
           return progress ? `${translateText('DONE')} ${progress}` : translateText('DONE');
         }
+        if (value && typeof value === 'object' && value.type === 'pilotOrderDone') {
+          const title = translateText(value.title || '');
+          const orderSlot = String(value.orderSlot || '').trim();
+          return `${orderSlot ? `${orderSlot} ` : ''}${title}`.trim();
+        }
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
+          const orderSlot = String(value.orderSlot || '').trim();
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
-          return `${title} ${progress}`;
+          return `${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderNext') {
           const title = translateText(value.title || '');
+          const orderSlot = String(value.orderSlot || '').trim();
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
-          return `${translateText('NEXT')}: ${title} ${progress}`;
+          return `${translateText('NEXT')}: ${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
         }
         return translateText(value);
       }).join(separator);

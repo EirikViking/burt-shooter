@@ -1,3 +1,5 @@
+import { formatRunContractOrderSlotLabel } from '../progression/RunContracts.js';
+
 const RUN_REPORT_VERSION = 1;
 
 function toNumber(value, fallback = 0) {
@@ -41,9 +43,13 @@ function getPilotOrdersCompleted(runContracts = null) {
     type: 'pilotOrderTrack',
     progressLabel
   } : null;
-  const titles = completed
-    .map((entry) => String(entry?.shortTitle || entry?.title || '').trim())
-    .filter(Boolean)
+  const completedEntries = completed
+    .map((entry) => ({
+      type: 'pilotOrderDone',
+      title: String(entry?.shortTitle || entry?.title || '').trim(),
+      orderSlot: entry?.orderSlot || formatRunContractOrderSlotLabel(entry)
+    }))
+    .filter((entry) => entry.title)
     .slice(0, 3);
   const completedIds = new Set(completed.map((entry) => entry?.id).filter(Boolean));
   const progressEntries = (Array.isArray(runContracts?.progressThisRun) ? runContracts.progressThisRun : [])
@@ -56,17 +62,19 @@ function getPilotOrdersCompleted(runContracts = null) {
       return {
         type: 'pilotOrderProgress',
         title: String(entry.shortTitle || entry.title || entry.id).trim(),
+        orderSlot: entry.orderSlot || formatRunContractOrderSlotLabel(entry),
         progress,
         target
       };
     })
     .filter((entry) => entry && entry.title)
-    .slice(0, Math.max(0, 3 - titles.length));
+    .slice(0, Math.max(0, 3 - completedEntries.length));
   const nextEntries = (Array.isArray(runContracts?.next) ? runContracts.next : [])
     .filter((entry) => entry?.id && !completedIds.has(entry.id))
     .map((entry) => ({
       type: 'pilotOrderNext',
       title: String(entry.shortTitle || entry.title || entry.id).trim(),
+      orderSlot: entry.orderSlot || formatRunContractOrderSlotLabel(entry),
       progress: toWholeNumber(entry.progress),
       target: Math.max(1, toWholeNumber(entry.target, 1))
     }))
@@ -75,20 +83,20 @@ function getPilotOrdersCompleted(runContracts = null) {
     return [
       { type: 'pilotOrderComplete' },
       ...(trackSummary ? [trackSummary] : []),
-      ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')
+      ...completedEntries.filter((entry) => entry.title !== 'PILOT ORDERS COMPLETE')
     ].slice(0, 3);
   }
-  if (nextEntries.length > 0 && titles.length > 0) {
+  if (nextEntries.length > 0 && completedEntries.length > 0) {
     const completedTitleLimit = trackSummary ? 1 : 2;
     return [
       ...(trackSummary ? [trackSummary] : []),
-      ...titles.slice(0, completedTitleLimit),
+      ...completedEntries.slice(0, completedTitleLimit),
       nextEntries[0]
     ].slice(0, 3);
   }
   return [
     ...(trackSummary ? [trackSummary] : []),
-    ...titles,
+    ...completedEntries,
     ...progressEntries,
     ...nextEntries
   ].slice(0, 3);

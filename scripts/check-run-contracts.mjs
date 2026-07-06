@@ -211,7 +211,9 @@ function runCatalogAndSaveTests() {
   assert.equal(menuState.subtitle, 'Learn key Mayhem tactics.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
+  assert.deepEqual(menuState.active.map((entry) => entry.orderSlot), ['01/50', '02/50', '03/50'], 'menu state should expose active order slots');
   assert.equal(menuState.next?.[0]?.id, 'support_hunter', 'menu state should expose the next queued Pilot Order after active slots');
+  assert.equal(menuState.next?.[0]?.orderSlot, '04/50', 'menu state should expose queued order slot labels');
   assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
   const completedSubtitleState = getRunContractMenuState(completeIds(migrated.runContracts, ['graze_10']));
   assert.equal(completedSubtitleState.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders should point players to Ship Hangar review');
@@ -400,9 +402,11 @@ function runCatalogAndSaveTests() {
     .find((section) => section.id === 'rewards')
     ?.rows.find((row) => row.id === 'pilotOrders');
   assert.equal(pilotOrdersRow?.value?.[0]?.type, 'pilotOrderProgress', 'run report should summarize non-completing Pilot Orders progress');
+  assert.equal(pilotOrdersRow?.value?.[0]?.orderSlot, '03/50', 'run report should keep the progressed order catalog slot');
   assert.equal(pilotOrdersRow?.value?.[0]?.progress, 500);
   assert.equal(pilotOrdersRow?.value?.[1]?.type, 'pilotOrderNext', 'run report should expose the next queued Pilot Order');
   assert.equal(pilotOrdersRow?.value?.[1]?.title, 'Support Hunter');
+  assert.equal(pilotOrdersRow?.value?.[1]?.orderSlot, '04/50', 'run report should keep the next order catalog slot');
   const completionReport = createRunReport({
     runMode: RUN_MODES.RANKED,
     runContracts: {
@@ -424,9 +428,12 @@ function runCatalogAndSaveTests() {
     ?.rows.find((row) => row.id === 'pilotOrders');
   assert.equal(completionPilotOrdersRow?.value?.[0]?.type, 'pilotOrderTrack', 'run report should keep structured track progress after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[0]?.progressLabel, '1/50', 'run report should keep track progress after a completion');
-  assert.equal(completionPilotOrdersRow?.value?.[1], 'Graze x10', 'run report should keep the completed order title');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.type, 'pilotOrderDone', 'run report should keep completed order entries structured');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.title, 'Graze x10', 'run report should keep the completed order title');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.orderSlot, '01/50', 'run report should keep completed order catalog slot');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.type, 'pilotOrderNext', 'run report should reserve room for the next queued order after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.title, 'Support Hunter');
+  assert.equal(completionPilotOrdersRow?.value?.[2]?.orderSlot, '04/50', 'run report should keep next-order catalog slot after a completion');
   const resumedSweep = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -872,7 +879,9 @@ async function runBrowserSmoke() {
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
     assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Learn key Mayhem tactics.', 'fresh Pilot Orders board should introduce the feature as tactics training');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
-    assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS 0\/50 \/\/ Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order');
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01/50', '02/50', '03/50'], 'main-menu rows should expose their finite Pilot Orders slots');
+    assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^01\/50 Graze x10$/, 'main-menu row title should show the active order slot');
+    assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS 0\/50 \/\/ 01\/50 Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order with its slot');
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -905,8 +914,9 @@ async function runBrowserSmoke() {
     });
     assert.equal(nonFinalCompletionResult.runContracts?.completedCount, 1, 'first Pilot Order completion should update track progress');
     assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.id, 'support_hunter', 'non-final completion should expose the next queued order');
+    assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.orderSlot, '04/50', 'non-final completion should expose the next queued order slot');
     assert.ok(
-      nonFinalCompletionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze x10')),
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 01/50 Graze x10')),
       'non-final completion toast should name the completed order'
     );
     assert.ok(
@@ -914,7 +924,7 @@ async function runBrowserSmoke() {
       'non-final completion toast should include track progress'
     );
     assert.ok(
-      nonFinalCompletionResult.toastMessages.some((message) => message.includes('NEXT: Support Hunter 0/2')),
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('NEXT: 04/50 Support Hunter 0/2')),
       'non-final completion toast should point to the next queued order'
     );
     const nonFinalToast = nonFinalCompletionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
@@ -936,7 +946,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const nonFinalReportState = await readState(page);
-    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+Graze x10\s+NEXT: Support Hunter 0\/2/);
+    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+01\/50 Graze x10\s+NEXT: 04\/50 Support Hunter 0\/2/);
     const nonFinalReportScreenshot = path.join(outputDir, 'pilot-orders-next-run-report.png');
     await page.screenshot({ path: nonFinalReportScreenshot, fullPage: true });
 
@@ -964,7 +974,7 @@ async function runBrowserSmoke() {
       return state.isPaused && state.pauseOverlay?.visible === true;
     }, null, { timeout: 5000 });
     const singleSlotPauseState = await readState(page);
-    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50 \/\/ Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
+    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50 \/\/ 02\/50 Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
     const singleSlotPauseScreenshot = path.join(outputDir, 'pilot-orders-next-pause-line.png');
     await page.screenshot({ path: singleSlotPauseScreenshot, fullPage: true });
 
@@ -1080,8 +1090,8 @@ async function runBrowserSmoke() {
     assert.match(archive?.summary || '', /ACTIVE 1/, 'Hangar review header should summarize active Pilot Orders');
     assert.match(archive?.summary || '', /NEXT [1-9]/, 'Hangar review header should summarize queued Pilot Orders');
     assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
-    assert.match(archive?.text || '', /ACTIVE 0\/10 \/\/ Graze x10/, 'Hangar review should list active Pilot Orders with progress first');
-    assert.match(archive?.text || '', /NEXT 0\/2 \/\/ Support Hunter/, 'Hangar review should list the next queued Pilot Order with progress first');
+    assert.match(archive?.text || '', /ACTIVE 0\/10 \/\/ 01\/50 Graze x10/, 'Hangar review should list active Pilot Orders with progress and slot');
+    assert.match(archive?.text || '', /NEXT 0\/2 \/\/ 04\/50 Support Hunter/, 'Hangar review should list the next queued Pilot Order with progress and slot');
     assert.match(archive?.text || '', /02\/50 DONE \/\/ Boss Breaker/, 'Hangar review should show the catalog slot for completed Boss Breaker');
     assert.match(archive?.text || '', /03\/50 DONE \/\/ 1000 Enemies/, 'Hangar review should show the catalog slot for completed 1000 Enemies');
     assert.match(archive?.text || '', /14\/50 DONE \/\/ 2500 Enemies/, 'Hangar review should show the catalog slot for completed 2500 Enemies');
@@ -1121,7 +1131,7 @@ async function runBrowserSmoke() {
     }, null, { timeout: 7000 });
     const startNudgeState = await readState(page);
     const startNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
-    assert.match(startNudge?.message || '', /PILOT ORDERS 49\/50 \/\/ 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order with track progress');
+    assert.match(startNudge?.message || '', /PILOT ORDERS 49\/50 \/\/ 14\/50 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order with track progress and slot');
     const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-run-start-nudge.png');
     await page.screenshot({ path: startNudgeScreenshot, fullPage: true });
     await page.waitForTimeout(2700);
@@ -1145,10 +1155,12 @@ async function runBrowserSmoke() {
     const progressSweep = progressResult.runContracts?.active?.find((item) => item.id === 'enemy_sweep_2500');
     assert.equal(progressSweep?.progress, 625, 'in-run 2500 Enemies order should show partial progress');
     assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 625, 'partial Pilot Orders progress should be exposed for run report state');
+    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '14/50', 'partial Pilot Orders progress should expose the order slot');
     const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
     assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
     assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
     assert.match(progressToast?.message || '', /PILOT ORDERS 49\/50/, 'progress toast should include overall Pilot Orders track progress');
+    assert.match(progressToast?.message || '', /ORDER PROGRESS: 14\/50 2500 Enemies 625\/2,500/, 'progress toast should include the active order slot');
     assert.ok(progressToast?.duration >= 2800, 'progress toast should stay visible long enough to notice');
     const progressToastScreenshot = path.join(outputDir, 'pilot-order-progress-toast.png');
     await page.waitForTimeout(300);
@@ -1162,7 +1174,7 @@ async function runBrowserSmoke() {
       return state.isPaused && state.pauseOverlay?.visible === true;
     }, null, { timeout: 5000 });
     const pauseState = await readState(page);
-    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /2500 Enemies/, 'pause overlay should show the active Pilot Order');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /14\/50 2500 Enemies/, 'pause overlay should show the active Pilot Order slot');
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 49\/50/, 'pause overlay should show Pilot Orders track progress');
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500/, 'pause overlay should show active Pilot Order progress');
     const pauseScreenshot = path.join(outputDir, 'pilot-orders-pause-line.png');
@@ -1200,7 +1212,7 @@ async function runBrowserSmoke() {
       'completion should persist to hangar profile'
     );
     assert.ok(
-      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 2500 Enemies')),
+      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 14/50 2500 Enemies')),
       'completion toast should be visible through text state'
     );
     assert.ok(
@@ -1230,7 +1242,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+2500 Enemies/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+14\/50 2500 Enemies/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 
