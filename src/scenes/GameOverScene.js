@@ -95,7 +95,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   careerXp: 'Career XP',
   newRanks: 'New ranks',
   codex: 'Codex discoveries',
-  pilotOrders: 'Pilot orders'
+  pilotOrders: 'PILOT ORDERS'
 });
 
 function formatUnlockRequirementProgress(item) {

@@ -102,8 +102,8 @@ const HELP_ROWS = Object.freeze([
     code: '12',
     icon: 'ORDER',
     label: 'PILOT ORDERS',
-    control: 'STARTER GOALS IN MAYHEM',
-    tip: 'Use main-menu Pilot Orders as optional combat drills. Review cleared orders in Ship Hangar.',
+    control: 'OPTIONAL MAYHEM DRILLS',
+    tip: 'Use main-menu Pilot Orders as optional combat drills. Review cleared orders in Ship Hangar Career Intel.',
     accent: 0x7fffd8
   }
 ]);

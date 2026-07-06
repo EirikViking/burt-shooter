@@ -141,8 +141,9 @@ function assertCleanHelpCopy(state, label) {
   assert(joined.includes('tight weaving'), `${label} should explain Focus Drift movement use`);
   assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
   assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
+  assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should frame Pilot Orders as optional Mayhem drills`);
   assert(joined.includes('optional combat drills'), `${label} should explain Pilot Orders as optional drills`);
-  assert(joined.includes('hide once cleared'), `${label} should explain Pilot Orders completion behavior`);
+  assert(joined.includes('Ship Hangar Career Intel'), `${label} should point completed Pilot Orders to Career Intel`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
     assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);

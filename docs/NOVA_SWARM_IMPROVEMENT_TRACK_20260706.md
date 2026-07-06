@@ -113,3 +113,27 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 6 - Pilot Orders Language Consistency
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+16. Run Report now uses the consistent `PILOT ORDERS` label instead of mixed-case `Pilot orders`.
+17. How To Play now frames Pilot Orders as `OPTIONAL MAYHEM DRILLS`, reducing chore/quest-board feel.
+18. How To Play now points completed-order review to Ship Hangar Career Intel, matching the actual UI path.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T18-34-57-724Z/`
+- `npm run check:how-to-play`
+- Screenshot/report proof: `test-results/how-to-play-2026-07-06T18-36-23-663Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.
