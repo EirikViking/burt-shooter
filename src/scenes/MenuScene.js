@@ -1965,6 +1965,7 @@ export class MenuScene {
       };
     }
     if (focused === 'launch') {
+      const pilotOrdersLine = this.getPilotOrdersBriefingLine();
       return {
         id: 'launch',
         title: translateText('MAYHEM RUN'),
@@ -1972,6 +1973,7 @@ export class MenuScene {
         secondary: 0x7fffd8,
         menuBody: [
           translateText('MAIN RANKED RUN'),
+          ...(pilotOrdersLine ? [pilotOrdersLine] : []),
           translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
         ].join('\n'),
         body: translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
@@ -1988,6 +1990,22 @@ export class MenuScene {
       ].join('\n'),
       body: translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
     };
+  }
+
+  getPilotOrdersBriefingLine() {
+    const hangarProgress = readHangarProgressState();
+    const menuSettings = getMenuSettings({
+      defaultShowPilotOrders: getDefaultShowPilotOrders(hangarProgress)
+    });
+    const missionState = getRunContractMenuState(hangarProgress, {
+      showPilotOrders: menuSettings.showPilotOrders
+    });
+    if (missionState.status !== 'active') return null;
+    const contract = (missionState.active || []).find((item) => !item.completed);
+    if (!contract) return null;
+    const title = translateText(contract.shortTitle || contract.title || contract.id);
+    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
+    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''}: ${title} ${progress}`.trim();
   }
 
   drawRunModeExplainerPanel(layout, width, height) {

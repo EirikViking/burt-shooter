@@ -72,6 +72,7 @@ import {
   applyRunContractEvent,
   formatRunContractProgressValue,
   getRunContractById,
+  getRunContractMenuState,
   getRunContractSessionState,
   prepareRunContractsForEligibleRun,
   recordRunContractCompletion,
@@ -1294,7 +1295,7 @@ export class PlayScene {
     if (!active) return null;
     const title = translateText(active.shortTitle || active.title || active.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(active.progress, active.target));
-    return { title, progress };
+    return { title, progress, trackProgress: this.getRunContractTrackProgressLabel() };
   }
 
   scheduleRunContractStartNudge() {
@@ -1306,7 +1307,10 @@ export class PlayScene {
       const summary = this.getRunContractStartNudgeSummary();
       if (!summary) return;
       const compactHud = this.game.getWidth() < 620;
-      this.enqueueToast(`${translateText('PILOT ORDERS')}: ${summary.title} ${summary.progress}`, {
+      const prefix = summary.trackProgress
+        ? `${translateText('PILOT ORDERS')} ${summary.trackProgress}`
+        : translateText('PILOT ORDERS');
+      this.enqueueToast(`${prefix}: ${summary.title} ${summary.progress}`, {
         fontSize: compactHud ? 16 : 20,
         fill: '#dffcff',
         stroke: '#031321',
@@ -1381,10 +1385,14 @@ export class PlayScene {
     const contract = getRunContractById(contractId);
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
+    const progressLabel = this.getRunContractTrackProgressLabel();
+    const message = progressLabel
+      ? `${translateText('ORDER COMPLETE: {title}', { title })}\n${translateText('PILOT ORDERS')} ${progressLabel}`
+      : translateText('ORDER COMPLETE: {title}', { title });
     const compactHud = this.game.getWidth() < 620;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    this.enqueueToast(translateText('ORDER COMPLETE: {title}', { title }), {
+    this.enqueueToast(message, {
       fontSize: compactHud ? 17 : 22,
       fill: '#f6fbff',
       stroke: '#031321',
@@ -1406,6 +1414,13 @@ export class PlayScene {
   getRunContractDebugState() {
     const state = getRunContractSessionState(this.runContractSession);
     if (!state) return state;
+    const menuState = getRunContractMenuState(readHangarProgressState(), {
+      forceCompletionVisible: true,
+      showPilotOrders: true
+    });
+    state.completedCount = menuState.completedCount || 0;
+    state.total = menuState.total || 0;
+    state.progressLabel = menuState.progressLabel || null;
     state.progressThisRun = Array.from(this.runContractProgressThisRun?.values?.() || [])
       .filter((entry) => !entry.completed && Number(entry.progress) > Number(entry.previousProgress))
       .map((entry) => ({
@@ -1418,6 +1433,14 @@ export class PlayScene {
         lastSector: Math.max(1, Math.floor(Number(entry.lastSector) || 1))
       }));
     return state;
+  }
+
+  getRunContractTrackProgressLabel() {
+    const menuState = getRunContractMenuState(readHangarProgressState(), {
+      forceCompletionVisible: true,
+      showPilotOrders: true
+    });
+    return menuState.progressLabel || null;
   }
 
   countDangerousBulletsNearPlayer(radius = 96) {
@@ -4798,7 +4821,11 @@ export class PlayScene {
     const item = active[0];
     const title = translateText(item.shortTitle || item.title || item.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
-    return `${translateText('PILOT ORDERS')}: ${title} ${progress}`;
+    const trackProgress = this.getRunContractTrackProgressLabel();
+    const prefix = trackProgress
+      ? `${translateText('PILOT ORDERS')} ${trackProgress}`
+      : translateText('PILOT ORDERS');
+    return `${prefix}: ${title} ${progress}`;
   }
 
   openSettingsOverlay() {
