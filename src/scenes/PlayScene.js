@@ -2670,6 +2670,27 @@ export class PlayScene {
     container.zIndex = 10000;
     this.uiOverlay.addChild(container);
 
+    const burstLayer = new PIXI.Container();
+    burstLayer.label = 'rank_up_broadcast_burst';
+    burstLayer.alpha = 0.82;
+    container.addChild(burstLayer);
+
+    const burst = new PIXI.Graphics();
+    const burstRadius = panelWidth * (compact ? 0.5 : 0.56);
+    for (let i = 0; i < 16; i++) {
+      const angle = (Math.PI * 2 * i) / 16;
+      const inner = burstRadius * (i % 2 === 0 ? 0.78 : 0.88);
+      const outer = burstRadius + (i % 2 === 0 ? 28 : 16);
+      burst.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      burst.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    burst.stroke({ color: 0xffef7e, width: 2, alpha: 0.42 });
+    burst.circle(0, 0, burstRadius * 0.82);
+    burst.stroke({ color: 0x66f7ff, width: 1.5, alpha: 0.34 });
+    burst.circle(0, 0, burstRadius + 20);
+    burst.stroke({ color: 0xffef7e, width: 1, alpha: 0.28 });
+    burstLayer.addChild(burst);
+
     const panel = new PIXI.Graphics();
     panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
     panel.fill({ color: 0x041019, alpha: 0.94 });
@@ -2683,7 +2704,46 @@ export class PlayScene {
     glow.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.58 });
     container.addChild(glow);
 
+    const signalPips = new PIXI.Container();
+    signalPips.label = 'rank_up_signal_pips';
+    const pipCount = compact ? 4 : 5;
+    for (let i = 0; i < pipCount; i++) {
+      const pip = new PIXI.Graphics();
+      const pipW = 24 + i * 5;
+      pip.roundRect(-pipW / 2, 0, pipW, 4, 2);
+      pip.fill({ color: i % 2 === 0 ? 0xffef7e : 0x66f7ff, alpha: 0.86 - i * 0.08 });
+      pip.x = -panelWidth / 2 + 40 + i * 44;
+      pip.y = panelHeight / 2 - 17;
+      signalPips.addChild(pip);
+    }
+    container.addChild(signalPips);
+
     const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
+    const rankHalo = new PIXI.Graphics();
+    rankHalo.label = 'rank_up_rank_halo';
+    const haloX = -panelWidth / 2 + 58;
+    const haloY = -6;
+    const haloRadius = compact ? 34 : 39;
+    rankHalo.x = haloX;
+    rankHalo.y = haloY;
+    rankHalo.circle(0, 0, haloRadius);
+    rankHalo.stroke({ color: 0xffef7e, width: 2, alpha: 0.62 });
+    for (let i = 0; i < 8; i++) {
+      const angle = (Math.PI * 2 * i) / 8;
+      rankHalo.moveTo(Math.cos(angle) * (haloRadius + 4), Math.sin(angle) * (haloRadius + 4));
+      rankHalo.lineTo(Math.cos(angle) * (haloRadius + 12), Math.sin(angle) * (haloRadius + 12));
+    }
+    rankHalo.stroke({ color: 0x66f7ff, width: 2, alpha: 0.72 });
+    if (!rankTexture) {
+      rankHalo.moveTo(0, -haloRadius * 0.38);
+      rankHalo.lineTo(haloRadius * 0.34, 0);
+      rankHalo.lineTo(0, haloRadius * 0.38);
+      rankHalo.lineTo(-haloRadius * 0.34, 0);
+      rankHalo.lineTo(0, -haloRadius * 0.38);
+      rankHalo.stroke({ color: 0xffef7e, width: 2, alpha: 0.78 });
+    }
+    container.addChild(rankHalo);
+
     if (rankTexture) {
       const rankSprite = new PIXI.Sprite(rankTexture);
       rankSprite.anchor.set(0.5);
@@ -2747,6 +2807,15 @@ export class PlayScene {
     lore.y = rankTitle ? 22 : 14;
     container.addChild(lore);
 
+    container._debugRankUpClarity = {
+      broadcastBurst: true,
+      signalPips: pipCount,
+      rankHalo: Boolean(rankHalo),
+      panelWidth,
+      panelHeight,
+      compact
+    };
+
     let elapsed = 0;
     const phases = { easeIn: 260, hold: 1850, easeOut: 500 };
     const totalDuration = phases.easeIn + phases.hold + phases.easeOut;
@@ -2756,6 +2825,11 @@ export class PlayScene {
         return;
       }
       elapsed += delta.deltaTime * 16.67;
+      const shimmer = Math.sin(elapsed * 0.008);
+      burstLayer.rotation = shimmer * 0.012;
+      burstLayer.alpha = 0.62 + Math.max(0, shimmer) * 0.24;
+      signalPips.alpha = 0.74 + Math.max(0, Math.sin(elapsed * 0.012)) * 0.22;
+      if (rankHalo) rankHalo.rotation += delta.deltaTime * 0.028;
       if (elapsed < phases.easeIn) {
         const t = elapsed / phases.easeIn;
         const eased = 1 - Math.pow(1 - t, 3);

@@ -601,3 +601,22 @@ Safety notes:
 
 - No pause input behavior, gameplay timing, powerup duration, life count, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - UI-only pause overlay context polish using existing run and player state.
+
+## Batch 28 - Rank-Up Evolution Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+101. Rank-up badges now include a broadcast-burst ring so promotions read as a bigger evolution moment.
+102. Rank-up badges now include bottom signal pips to make the promotion card feel more arcade-instrumented and less like a plain toast.
+103. The rank icon inside the promotion badge now gets its own rotating halo for quicker visual recognition.
+104. Temporary rank boosts now redraw the player aura by boost type: fire-rate, speed, and damage each get different colors and shapes.
+105. `check:rank-up-clarity` proves the rank-up badge clarity elements and type-specific damage aura in a browser screenshot.
+
+Verification:
+
+- `npm run check:rank-up-clarity`
+
+Safety notes:
+
+- No XP, rank thresholds, rank boost duration, boost stats, ship stats, score, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only rank-up and rank-boost readability polish.

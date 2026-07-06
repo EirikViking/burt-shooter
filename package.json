@@ -152,6 +152,7 @@
     "check:ship-unlock-provenance": "node scripts/check-ship-unlock-provenance.mjs",
     "check:normal-enemy-threat-actions": "node scripts/check-normal-enemy-threat-actions.mjs",
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
+    "check:rank-up-clarity": "node scripts/check-rank-up-clarity.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
     "check:enemy-spawn-cue": "node scripts/check-enemy-spawn-cue.mjs",
     "check:sector10-clear-time-pacing": "node scripts/check-sector10-clear-time-pacing.mjs",

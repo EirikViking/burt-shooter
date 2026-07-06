@@ -135,6 +135,7 @@ export class Player {
     this.hitboxPulseReason = null;
     this.damageOverlay = null;
     this.boostAura = null;
+    this.baseBoostAuraColor = 0x66ffff;
     this.rankBoostText = null;
     this.bulletPierce = false;
     this.scoreMultiplier = 1;
@@ -372,11 +373,9 @@ export class Player {
 
     if (!this.boostAura) {
       this.boostAura = new PIXI.Graphics();
-      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
-      this.boostAura.circle(0, 0, radius);
-      this.boostAura.stroke({ width: 4, color: 0x66ffff, alpha: 0.95 });
       this.boostAura.alpha = 0.95;
       this.boostAura.visible = false;
+      this.drawRankBoostAura(this.rankBoost?.type);
       this.sprite.addChild(this.boostAura);
     } else if (!this.boostAura.parent) {
       this.sprite.addChild(this.boostAura);
@@ -408,16 +407,78 @@ export class Player {
   }
 
   setCosmetics({ auraColor, muzzleColor } = {}) {
-    if (Number.isFinite(auraColor) && this.boostAura) {
-      this.boostAura.clear();
-      const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
-      this.boostAura.circle(0, 0, radius);
-      this.boostAura.stroke({ width: 4, color: auraColor, alpha: 0.95 });
+    if (Number.isFinite(auraColor)) {
+      this.baseBoostAuraColor = auraColor;
+      this.drawRankBoostAura(this.rankBoost?.type);
     }
     if (Number.isFinite(muzzleColor)) {
       this.muzzleFlashColor = muzzleColor;
       this.baseMuzzleFlashColor = muzzleColor;
     }
+  }
+
+  drawRankBoostAura(type = null) {
+    if (!this.boostAura) return;
+    const radius = Math.max(46, (this.baseShipWidth || 60) * 0.95);
+    const palette = {
+      fire_rate: { color: 0xffef7e, alt: 0x66f7ff, ticks: 12 },
+      speed: { color: 0x66f7ff, alt: 0xffef7e, ticks: 6 },
+      damage: { color: 0xff6677, alt: 0xffef7e, ticks: 8 }
+    };
+    const style = palette[type] || { color: this.baseBoostAuraColor || 0x66ffff, alt: 0xffffff, ticks: 4 };
+    const inner = radius * 0.68;
+    const outer = radius + 10;
+
+    this.boostAura.clear();
+    this.boostAura.circle(0, 0, radius);
+    this.boostAura.stroke({ width: 4, color: style.color, alpha: 0.95 });
+    this.boostAura.circle(0, 0, radius * 0.58);
+    this.boostAura.stroke({ width: 1.4, color: style.alt, alpha: 0.48 });
+
+    for (let i = 0; i < style.ticks; i++) {
+      const angle = (Math.PI * 2 * i) / style.ticks;
+      this.boostAura.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      this.boostAura.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    this.boostAura.stroke({ width: type === 'damage' ? 3 : 2, color: style.alt, alpha: 0.75 });
+
+    if (type === 'speed') {
+      for (const side of [-1, 1]) {
+        const y = radius * 0.28 * side;
+        this.boostAura.moveTo(-radius * 0.62, y - 7 * side);
+        this.boostAura.lineTo(-radius * 0.26, y);
+        this.boostAura.lineTo(-radius * 0.62, y + 7 * side);
+        this.boostAura.moveTo(radius * 0.26, y - 7 * side);
+        this.boostAura.lineTo(radius * 0.62, y);
+        this.boostAura.lineTo(radius * 0.26, y + 7 * side);
+      }
+      this.boostAura.stroke({ width: 2.4, color: style.color, alpha: 0.82 });
+    } else if (type === 'damage') {
+      const spike = radius + 18;
+      this.boostAura.moveTo(0, -spike);
+      this.boostAura.lineTo(8, -radius - 4);
+      this.boostAura.lineTo(0, -radius + 6);
+      this.boostAura.lineTo(-8, -radius - 4);
+      this.boostAura.moveTo(0, spike);
+      this.boostAura.lineTo(8, radius + 4);
+      this.boostAura.lineTo(0, radius - 6);
+      this.boostAura.lineTo(-8, radius + 4);
+      this.boostAura.stroke({ width: 2.6, color: style.alt, alpha: 0.78 });
+    } else if (type === 'fire_rate') {
+      for (let i = 0; i < 4; i++) {
+        const angle = (Math.PI / 2) * i + Math.PI / 4;
+        this.boostAura.circle(Math.cos(angle) * radius * 0.82, Math.sin(angle) * radius * 0.82, 3.4);
+      }
+      this.boostAura.fill({ color: style.alt, alpha: 0.82 });
+    }
+
+    this.boostAura._debugRankBoostAura = {
+      type: type || 'default',
+      radius,
+      color: style.color,
+      alt: style.alt,
+      ticks: style.ticks
+    };
   }
 
   updateFocusRing(deltaSeconds) {
@@ -3277,6 +3338,7 @@ export class Player {
     if (!this.rankBoost.type) return;
     this.rankBoost.type = null;
     this.rankBoost.expiresAt = 0;
+    this.drawRankBoostAura(null);
     this.recalculateStats();
   }
 
@@ -3294,6 +3356,7 @@ export class Player {
       this.rankBoost.expiresAt = now + durationMs;
       this.recalculateStats();
     }
+    this.drawRankBoostAura(type);
 
     const playScene = this.game && this.game.scenes ? this.game.scenes.play : null;
     if (playScene && playScene.showToast) {
