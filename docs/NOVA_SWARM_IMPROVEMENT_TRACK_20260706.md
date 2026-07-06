@@ -274,3 +274,29 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 13 - HUD Combat Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+40. Last-life HUD state now uses a stronger emergency backing and pulsing heart/text treatment so `LIVES 1` reads as danger, not ordinary status.
+41. Spent Shield/Bomb-style powerup rows now get a visible slash and hatch treatment instead of only showing an empty timer/status.
+42. The active powerup panel frame/header now reflects spent/empty and expiring states, not only debuffs.
+43. Timed powerups under 25% remaining now get an amber expiring row/bar pulse so the player can feel the timer running out.
+
+Verification:
+
+- `npm run check:hud-readability`
+- Screenshot proof: `test-results/hud-readability-2026-07-06T20-41-35-317Z/hud-readability.png`
+- `npm run check:trait-hud`
+- `npm run check:powerup-visuals`
+- `npm run check:gameplay-message-overlap`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only HUD patch plus focused browser proof; rollback should remain one source commit for this batch.

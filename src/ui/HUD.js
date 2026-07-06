@@ -522,6 +522,7 @@ export class HUD {
     if (!activeStates.length) {
       this.activePowerupRows.forEach(row => { row.container.visible = false; });
       this.activePowerupGroup.visible = false;
+      this.activePowerupGroup._debugStatus = { visible: false, count: 0 };
       return;
     }
 
@@ -536,21 +537,34 @@ export class HUD {
     const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
+    const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
+    const hasSpent = activeStates.some((state) => Boolean(state.spent));
+    const hasExpiring = activeStates.some((state) => this.isPowerupExpiring(state));
+    const statusColor = hasDebuff ? 0xff6688 : hasSpent ? 0xff6677 : hasExpiring ? 0xffd166 : 0x00e5ff;
+    const statusAlpha = hasDebuff ? 0.88 : hasSpent ? 0.86 : hasExpiring ? 0.82 : 0.7;
     this.activePowerupBg.clear();
     this.activePowerupBg.roundRect(0, 0, width, height, 8);
-    this.activePowerupBg.fill({ color: 0x020914, alpha: 0.62 });
-    const hasDebuff = activeStates.some((state) => String(state.type || '').startsWith('debuff_'));
-    this.activePowerupBg.stroke({ color: hasDebuff ? 0xff6688 : 0x00e5ff, width: hasDebuff ? 2 : 1.2, alpha: hasDebuff ? 0.88 : 0.7 });
+    this.activePowerupBg.fill({ color: hasSpent ? 0x12050b : 0x020914, alpha: hasSpent ? 0.68 : 0.62 });
+    this.activePowerupBg.stroke({ color: statusColor, width: hasDebuff || hasSpent || hasExpiring ? 2 : 1.2, alpha: statusAlpha });
     this.activePowerupBg.rect(1, 1, Math.max(0, width - 2), 14);
-    this.activePowerupBg.fill({ color: hasDebuff ? 0xff6688 : 0x00e5ff, alpha: hasDebuff ? 0.17 : 0.11 });
+    this.activePowerupBg.fill({ color: statusColor, alpha: hasDebuff || hasSpent || hasExpiring ? 0.17 : 0.11 });
 
     this.activePowerupTitle.text = hasDebuff
       ? 'SYSTEM STATUS'
       : activeStates.length > 1 ? 'POWERUPS ONLINE' : 'POWERUP ONLINE';
+    this.activePowerupTitle.style.fill = hasDebuff ? '#ffb7c8' : hasSpent ? '#ffb0b8' : hasExpiring ? '#ffe08a' : '#7ee9ff';
     this.activePowerupTitle.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     this.activePowerupTitle.x = paddingX + 1;
     this.activePowerupTitle.y = paddingTop - 2;
     this.activePowerupTitle.visible = true;
+    this.activePowerupGroup._debugStatus = {
+      visible: true,
+      count: activeStates.length,
+      hasDebuff,
+      hasSpent,
+      hasExpiring,
+      statusColor
+    };
 
     activeStates.forEach((state, index) => {
       const row = this.getActivePowerupRow(index);
@@ -625,6 +639,8 @@ export class HUD {
     });
     const barBg = new PIXI.Graphics();
     const barFill = new PIXI.Graphics();
+    const expiryOverlay = new PIXI.Graphics();
+    const spentOverlay = new PIXI.Graphics();
 
     container.addChild(bg);
     container.addChild(iconGlow);
@@ -634,9 +650,11 @@ export class HUD {
     container.addChild(meta);
     container.addChild(barBg);
     container.addChild(barFill);
+    container.addChild(expiryOverlay);
+    container.addChild(spentOverlay);
     this.activePowerupList.addChild(container);
 
-    const row = { container, bg, iconGlow, iconFrame, icon, label, meta, barBg, barFill };
+    const row = { container, bg, iconGlow, iconFrame, icon, label, meta, barBg, barFill, expiryOverlay, spentOverlay };
     this.activePowerupRows[index] = row;
     return row;
   }
@@ -645,14 +663,18 @@ export class HUD {
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const color = Number.isFinite(state.color) ? state.color : this.getPowerupColor(state.type);
     const spent = Boolean(state.spent);
+    const progress = this.getPowerupProgress(state);
+    const expiring = this.isPowerupExpiring(state);
+    const pulse = 0.5 + Math.sin(Date.now() * 0.018) * 0.5;
+    const rowColor = spent ? 0xff6677 : expiring ? 0xffd166 : color;
     const iconSize = Math.round((isMobile ? 20 : 23) * uiScale);
     const iconX = Math.round(17 * uiScale);
     const iconY = height / 2 - 1;
     const texture = GameAssets.getPowerupTexture(state.iconType || state.type);
     row.bg.clear();
     row.bg.roundRect(0, 0, width, height, 7);
-    row.bg.fill({ color: spent ? 0x1e0710 : 0x03101d, alpha: spent ? 0.72 : 0.58 });
-    row.bg.stroke({ color, width: spent ? 1.5 : 1, alpha: spent ? 0.92 : 0.65 });
+    row.bg.fill({ color: spent ? 0x1e0710 : 0x03101d, alpha: spent ? 0.76 : 0.58 });
+    row.bg.stroke({ color: rowColor, width: spent || expiring ? 1.7 : 1, alpha: spent ? 0.95 : expiring ? 0.68 + pulse * 0.25 : 0.65 });
 
     row.iconGlow.clear();
     row.iconGlow.circle(iconX, iconY, iconSize * 0.62);
@@ -676,7 +698,7 @@ export class HUD {
     row.label.style.fontSize = Math.round((isMobile ? 11 : 14) * uiScale);
     row.meta.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     row.label.style.fill = spent ? '#ffd6d6' : '#f8fbff';
-    row.meta.style.fill = spent ? '#ff9d9d' : '#ffff66';
+    row.meta.style.fill = spent ? '#ff9d9d' : expiring ? (pulse > 0.5 ? '#fff2a6' : '#ffc95b') : '#ffff66';
     row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 18);
     row.meta.text = this.formatPowerupMeta(state);
     row.label.x = 34;
@@ -687,7 +709,6 @@ export class HUD {
     const barX = 34;
     const barY = height - 8;
     const barWidth = Math.max(34, width - barX - 7);
-    const progress = this.getPowerupProgress(state);
     row.barBg.clear();
     row.barBg.roundRect(barX, barY, barWidth, 4, 2);
     row.barBg.fill({ color: spent ? 0x3a1118 : 0x143042, alpha: 0.9 });
@@ -695,8 +716,44 @@ export class HUD {
     const fillWidth = spent ? 0 : Math.max(2, barWidth * progress);
     if (fillWidth > 0) {
       row.barFill.roundRect(barX, barY, fillWidth, 4, 2);
-      row.barFill.fill({ color, alpha: 0.98 });
+      row.barFill.fill({ color: rowColor, alpha: expiring ? 0.72 + pulse * 0.26 : 0.98 });
     }
+
+    row.expiryOverlay.clear();
+    row.expiryOverlay.visible = expiring;
+    if (expiring) {
+      row.expiryOverlay.roundRect(1, 1, Math.max(0, width - 2), Math.max(0, height - 2), 7);
+      row.expiryOverlay.stroke({ color: 0xffd166, width: 1.2, alpha: 0.25 + pulse * 0.36 });
+      row.expiryOverlay.rect(3, 4, 3, Math.max(0, height - 8));
+      row.expiryOverlay.fill({ color: 0xffd166, alpha: 0.34 + pulse * 0.34 });
+    }
+
+    row.spentOverlay.clear();
+    row.spentOverlay.visible = spent;
+    if (spent) {
+      const slashPad = iconSize * 0.48;
+      row.spentOverlay.moveTo(iconX - slashPad, iconY - slashPad);
+      row.spentOverlay.lineTo(iconX + slashPad, iconY + slashPad);
+      row.spentOverlay.stroke({ color: 0xffc1c8, width: 2.2, alpha: 0.95 });
+      const hatchStart = Math.max(barX + 70, width - 45);
+      for (let i = 0; i < 3; i += 1) {
+        const hx = hatchStart + i * 10;
+        row.spentOverlay.moveTo(hx, height - 15);
+        row.spentOverlay.lineTo(hx + 8, height - 7);
+      }
+      row.spentOverlay.stroke({ color: 0xff7584, width: 1.4, alpha: 0.82 });
+    }
+
+    row.container._debugPowerupState = {
+      type: state.type || null,
+      label: row.label.text,
+      meta: row.meta.text,
+      spent,
+      expiring,
+      progress: Number(progress.toFixed(3)),
+      spentOverlayVisible: Boolean(row.spentOverlay.visible),
+      expiryOverlayVisible: Boolean(row.expiryOverlay.visible)
+    };
   }
 
   formatPowerupMeta(state) {
@@ -724,6 +781,13 @@ export class HUD {
       return Math.max(0, Math.min(1, charges / maxCharges));
     }
     return 1;
+  }
+
+  isPowerupExpiring(state) {
+    if (!state || state.spent) return false;
+    const remainingMs = Number(state.remainingMs || 0);
+    if (remainingMs <= 0) return false;
+    return this.getPowerupProgress(state) <= 0.25;
   }
 
   getPowerupDurationMs(type, remainingMs = 0) {
@@ -1035,6 +1099,11 @@ export class HUD {
   updateLivesVisuals() {
     if (!this.livesGroup || !this.livesText || !this.livesIcon) return;
     const padding = 8;
+    const critical = Number(this.game?.lives || 0) === 1;
+    const pulse = critical ? 0.5 + Math.sin(Date.now() * 0.014) * 0.5 : 0;
+    this.livesIcon.style.fill = critical ? (pulse > 0.52 ? '#ff4444' : '#ffd166') : '#ff8080';
+    this.livesIcon.alpha = critical ? 0.86 + pulse * 0.14 : 1;
+    this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff4444' : '#ffd166') : '#00ff00';
     const height = Math.max(this.livesIcon.height, this.livesText.height) + padding;
     this.livesGroup.pivot.set(0, 0);
     this.livesIcon.x = padding / 2;
@@ -1044,7 +1113,12 @@ export class HUD {
     const width = this.livesText.x + this.livesText.width + padding / 2;
     this.livesBg.clear();
     this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
-    this.livesBg.fill({ color: 0x000000, alpha: 0.02 });
+    this.livesBg.fill({ color: critical ? 0x2a050a : 0x000000, alpha: critical ? 0.16 + pulse * 0.1 : 0.02 });
+    if (critical) {
+      this.livesBg.stroke({ color: pulse > 0.52 ? 0xff4040 : 0xffd166, width: 1.4, alpha: 0.52 + pulse * 0.34 });
+    }
+    this.livesGroup._debugCritical = critical;
+    this.livesGroup._debugPulse = Number(pulse.toFixed(3));
   }
 
   destroy() {
