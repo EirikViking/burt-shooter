@@ -142,6 +142,10 @@ try {
         color: 0x6be8ff
       }
     ]);
+    play.comboCount = 12;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = 820;
+    play.comboWindowMs = 2000;
 
     hud.update();
     hud.updateActivePowerup();
@@ -154,6 +158,7 @@ try {
       ok: true,
       livesCritical: Boolean(hud.livesGroup?._debugCritical),
       livesPulse: hud.livesGroup?._debugPulse ?? null,
+      comboMeter: hud.comboMeterGroup?._debugComboMeter || null,
       status: hud.activePowerupGroup?._debugStatus || null,
       rows,
       activePowerupVisible: Boolean(hud.activePowerupGroup?.visible),
@@ -176,6 +181,11 @@ try {
     ok: Boolean(
       state.ok &&
       state.livesCritical &&
+      state.comboMeter?.visible &&
+      state.comboMeter?.count === 12 &&
+      state.comboMeter?.multiplier === 2 &&
+      state.comboMeter?.progress > 0.35 &&
+      state.comboMeter?.progress < 0.5 &&
       state.activePowerupVisible &&
       state.status?.hasSpent &&
       state.status?.hasExpiring &&

@@ -300,3 +300,27 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only HUD patch plus focused browser proof; rollback should remain one source commit for this batch.
+
+## Batch 14 - Combo Mastery Meter
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+44. The score panel now shows a compact live combo meter once a kill chain is active, making the hidden combo state readable during play.
+45. The combo meter includes a remaining-chain progress rail so players can see when the next kill must happen.
+46. The combo meter color shifts into an urgent low-time state, giving mastery feedback without changing score formula or combo rules.
+
+Verification:
+
+- `npm run check:hud-readability`
+- Screenshot proof: `test-results/hud-readability-2026-07-06T20-57-32-034Z/hud-readability.png`
+- `npm run check:trait-hud`
+- `npm run check:gameplay-message-overlap`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Uses existing localized `COMBO` text; no new locale strings were added.

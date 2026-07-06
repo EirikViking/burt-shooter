@@ -108,6 +108,23 @@ export class HUD {
     this.scoreMultiplierText.visible = false;
     this.hudContainer.addChild(this.scoreMultiplierText);
 
+    this.comboMeterGroup = new PIXI.Container();
+    this.comboMeterBg = new PIXI.Graphics();
+    this.comboMeterFill = new PIXI.Graphics();
+    this.comboMeterText = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    this.comboMeterGroup.addChild(this.comboMeterBg);
+    this.comboMeterGroup.addChild(this.comboMeterFill);
+    this.comboMeterGroup.addChild(this.comboMeterText);
+    this.comboMeterGroup.visible = false;
+    this.hudContainer.addChild(this.comboMeterGroup);
+
     this.highscoreChaseGroup = new PIXI.Container();
     this.highscoreChaseBg = new PIXI.Graphics();
     this.highscoreChaseBarBg = new PIXI.Graphics();
@@ -294,6 +311,7 @@ export class HUD {
       this.scoreMultiplierText.scale.set(1);
     }
     this.levelText.text = `LEVEL ${this.game.level}`;
+    this.updateComboMeter();
     this.livesText.text = `LIVES ${this.game.lives}`;
     this.updateMissionStatus();
 
@@ -1000,6 +1018,59 @@ export class HUD {
     }
   }
 
+  updateComboMeter() {
+    const playScene = this.game?.scenes?.play;
+    const count = Math.max(0, Math.round(Number(playScene?.comboCount) || 0));
+    const multiplier = Math.max(1, Math.round(Number(playScene?.comboMultiplier) || 1));
+    const timerMs = Math.max(0, Number(playScene?.comboTimerMs) || 0);
+    const windowMs = Math.max(1, Number(playScene?.comboWindowMs) || 1);
+    if (!this.comboMeterGroup || count < 2 || timerMs <= 0) {
+      if (this.comboMeterGroup) {
+        this.comboMeterGroup.visible = false;
+        this.comboMeterGroup._debugComboMeter = { visible: false, count, multiplier, progress: 0 };
+      }
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(1, timerMs / windowMs));
+    const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const width = Math.round(this.comboMeterGroup.__w || (106 * uiScale));
+    const height = Math.round(this.comboMeterGroup.__h || (22 * uiScale));
+    const low = progress <= 0.25;
+    const pulse = low ? 0.5 + Math.sin(Date.now() * 0.018) * 0.5 : 0;
+    const color = low ? 0xffd166 : multiplier >= 3 ? 0xff66ff : multiplier >= 2 ? 0x66f7ff : 0x75ff8d;
+    const panelRight = Number(this.comboMeterGroup.__panelRight || (this.scoreText.x + this.scoreText.width + width + 10));
+    const anchor = this.scoreMultiplierText?.visible ? this.levelText : this.scoreText;
+    const rawX = (anchor?.x || this.scoreText.x) + (anchor?.width || this.scoreText.width) + Math.round(9 * uiScale);
+    this.comboMeterGroup.x = Math.min(rawX, panelRight - width);
+    this.comboMeterGroup.y = (anchor?.y || this.scoreText.y) + Math.round(2 * uiScale);
+
+    this.comboMeterBg.clear();
+    this.comboMeterBg.roundRect(0, 0, width, height, 5);
+    this.comboMeterBg.fill({ color: low ? 0x221304 : 0x03101d, alpha: 0.76 });
+    this.comboMeterBg.stroke({ color, width: low ? 1.6 : 1.1, alpha: low ? 0.66 + pulse * 0.26 : 0.72 });
+
+    this.comboMeterFill.clear();
+    this.comboMeterFill.roundRect(2, height - 5, Math.max(2, (width - 4) * progress), 3, 2);
+    this.comboMeterFill.fill({ color, alpha: low ? 0.74 + pulse * 0.22 : 0.92 });
+
+    const comboLabel = translateText('COMBO');
+    this.comboMeterText.text = [comboLabel, String(count), `x${multiplier}`].join(' ');
+    this.comboMeterText.style.fontSize = Math.round((getCurrentLayout()?.isMobile ? 11 : 13) * uiScale);
+    this.comboMeterText.x = Math.round(5 * uiScale);
+    this.comboMeterText.y = Math.max(0, Math.round((height - this.comboMeterText.height) / 2) - 1);
+    this.fitTextToWidth(this.comboMeterText, width - Math.round(10 * uiScale), 0.6);
+    this.comboMeterGroup.visible = true;
+    this.comboMeterGroup._debugComboMeter = {
+      visible: true,
+      count,
+      multiplier,
+      progress: Number(progress.toFixed(3)),
+      low,
+      label: this.comboMeterText.text
+    };
+  }
+
   applyLayout(layout = getCurrentLayout()) {
     if (!layout || typeof layout.width !== 'number') return;
 
@@ -1044,6 +1115,11 @@ export class HUD {
     this.scoreText.y = margin + 10;
     this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
     this.scoreMultiplierText.y = this.scoreText.y + 2;
+    if (this.comboMeterGroup) {
+      this.comboMeterGroup.__w = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
+      this.comboMeterGroup.__h = Math.round((layout.isMobile ? 19 : 22) * uiScale);
+      this.comboMeterGroup.__panelRight = margin + leftPanelWidth - 14;
+    }
 
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing + 8;
