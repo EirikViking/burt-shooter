@@ -4127,6 +4127,13 @@ export class GameOverScene {
     if (Array.isArray(row.value)) {
       const separator = row.id === 'pilotOrders' ? '\n' : ', ';
       return row.value.map((value) => {
+        if (value && typeof value === 'object' && value.type === 'pilotOrderComplete') {
+          return translateText('COMPLETE');
+        }
+        if (value && typeof value === 'object' && value.type === 'pilotOrderTrack') {
+          const progress = String(value.progressLabel || '').trim();
+          return progress ? `${translateText('DONE')} ${progress}` : translateText('DONE');
+        }
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));

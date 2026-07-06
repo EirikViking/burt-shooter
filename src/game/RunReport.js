@@ -37,7 +37,10 @@ function normalizeDeathSource(value) {
 function getPilotOrdersCompleted(runContracts = null) {
   const completed = Array.isArray(runContracts?.completedThisRun) ? runContracts.completedThisRun : [];
   const progressLabel = String(runContracts?.progressLabel || '').trim();
-  const trackSummary = progressLabel ? `PILOT ORDERS ${progressLabel}` : null;
+  const trackSummary = progressLabel ? {
+    type: 'pilotOrderTrack',
+    progressLabel
+  } : null;
   const titles = completed
     .map((entry) => String(entry?.shortTitle || entry?.title || '').trim())
     .filter(Boolean)
@@ -70,7 +73,7 @@ function getPilotOrdersCompleted(runContracts = null) {
     .filter((entry) => entry && entry.title);
   if (runContracts?.allCompleteThisRun) {
     return [
-      'PILOT ORDERS COMPLETE',
+      { type: 'pilotOrderComplete' },
       ...(trackSummary ? [trackSummary] : []),
       ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')
     ].slice(0, 3);

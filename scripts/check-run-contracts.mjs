@@ -422,7 +422,8 @@ function runCatalogAndSaveTests() {
   const completionPilotOrdersRow = completionReport.sections
     .find((section) => section.id === 'rewards')
     ?.rows.find((row) => row.id === 'pilotOrders');
-  assert.equal(completionPilotOrdersRow?.value?.[0], 'PILOT ORDERS 1/50', 'run report should keep track progress after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[0]?.type, 'pilotOrderTrack', 'run report should keep structured track progress after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[0]?.progressLabel, '1/50', 'run report should keep track progress after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[1], 'Graze x10', 'run report should keep the completed order title');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.type, 'pilotOrderNext', 'run report should reserve room for the next queued order after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.title, 'Support Hunter');
@@ -913,7 +914,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const nonFinalReportState = await readState(page);
-    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: PILOT ORDERS 1\/50\s+Graze x10\s+NEXT: Support Hunter 0\/2/);
+    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+Graze x10\s+NEXT: Support Hunter 0\/2/);
     const nonFinalReportScreenshot = path.join(outputDir, 'pilot-orders-next-run-report.png');
     await page.screenshot({ path: nonFinalReportScreenshot, fullPage: true });
 
@@ -1207,7 +1208,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: PILOT ORDERS COMPLETE\s+PILOT ORDERS 50\/50\s+2500 Enemies/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+2500 Enemies/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 

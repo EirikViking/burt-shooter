@@ -159,3 +159,25 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 8 - Pilot Orders Run Report Cleanup
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+22. Run Report Pilot Orders rows no longer repeat the section name inside the value text.
+23. Pilot Orders track progress now renders as a concise `DONE x/50` line in Run Report.
+24. Run Report now carries Pilot Orders track progress as structured data so Game Over owns the visible formatting.
+
+Verification:
+
+- `npm run check:run-contracts`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.
