@@ -891,10 +891,26 @@ export class ShipSelectScene {
     panel.position.set(x, y);
 
     const completedOrders = Array.isArray(review?.completed) ? review.completed : [];
-    const completedText = completedOrders.length
-      ? completedOrders.map((entry) => `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`).join('\n')
+    const activeOrders = Array.isArray(review?.active) ? review.active : [];
+    const nextOrders = Array.isArray(review?.next) ? review.next : [];
+    const activeLines = activeOrders.map((entry) => {
+      const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
+      return `${translateText('ACTIVE')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`;
+    });
+    const nextLines = nextOrders.slice(0, 1).map((entry) => {
+      const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
+      return `${translateText('NEXT')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`;
+    });
+    const completedLines = completedOrders.map((entry) => `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`);
+    const orderedLines = [
+      ...activeLines,
+      ...nextLines,
+      ...completedLines
+    ];
+    const completedText = orderedLines.length
+      ? orderedLines.join('\n')
       : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
-    const accent = completedOrders.length ? 0x9cfbff : 0x49677a;
+    const accent = completedOrders.length || activeOrders.length ? 0x9cfbff : 0x49677a;
 
     const bg = new PIXI.Graphics();
     bg.roundRect(0, 0, width, height, 8);
@@ -953,14 +969,14 @@ export class ShipSelectScene {
           : 1;
     const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
     const columnWidth = Math.floor((width - 36 - columnGap * (columnCount - 1)) / columnCount);
-    const orderedLines = completedOrders.length ? completedText.split('\n') : [completedText];
     const columnLists = Array.from({ length: columnCount }, () => []);
-    orderedLines.forEach((line, index) => {
+    const displayLines = orderedLines.length ? orderedLines : [completedText];
+    displayLines.forEach((line, index) => {
       columnLists[index % columnCount].push(line);
     });
     const listTop = compact ? 43 : 50;
     const listHeight = Math.max(18, height - listTop - 16);
-    const denseArchive = completedOrders.length > 30;
+    const denseArchive = displayLines.length > 30;
     const listFontSize = compact ? (denseArchive ? 7 : 9) : (denseArchive ? 8 : 11);
     const listLineHeight = compact ? (denseArchive ? 8 : 10) : (denseArchive ? 9 : 13);
     const listTexts = columnLists.map((lines, column) => {
@@ -968,7 +984,7 @@ export class ShipSelectScene {
         fontFamily: FONT_BODY,
         fontSize: listFontSize,
         fontWeight: '800',
-        fill: completedOrders.length ? '#d8fbff' : '#90aeba',
+        fill: orderedLines.length ? '#d8fbff' : '#90aeba',
         wordWrap: true,
         wordWrapWidth: columnWidth,
         lineHeight: listLineHeight,
@@ -982,6 +998,8 @@ export class ShipSelectScene {
 
     panel._pilotOrdersArchive = {
       text: completedText,
+      activeCount: activeOrders.length,
+      nextCount: nextOrders.length,
       completedCount: review?.completedCount || 0,
       total: review?.total || 0
     };
@@ -1058,6 +1076,8 @@ export class ShipSelectScene {
       pilotOrdersArchive: refs.pilotOrdersArchive ? {
         bounds: bounds(refs.pilotOrdersArchive),
         text: refs.pilotOrdersArchive._pilotOrdersArchive?.text || '',
+        activeCount: refs.pilotOrdersArchive._pilotOrdersArchive?.activeCount || 0,
+        nextCount: refs.pilotOrdersArchive._pilotOrdersArchive?.nextCount || 0,
         completedCount: refs.pilotOrdersArchive._pilotOrdersArchive?.completedCount || 0,
         total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0
       } : null,
@@ -1083,7 +1103,7 @@ export class ShipSelectScene {
     const short = height < 620;
     const compact = narrow || short;
     const panelWidth = Math.min(compact ? width - 22 : 900, width - 28);
-    const panelHeight = Math.min(compact ? height - 18 : 560, height - 22);
+    const panelHeight = Math.min(compact ? height - 18 : Math.min(640, height - 44), height - 22);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);

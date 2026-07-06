@@ -211,6 +211,7 @@ function runCatalogAndSaveTests() {
   assert.equal(menuState.subtitle, 'Review cleared orders in Ship Hangar.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
+  assert.equal(menuState.next?.[0]?.id, 'support_hunter', 'menu state should expose the next queued Pilot Order after active slots');
   assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
   const disabledMenuState = getRunContractMenuState(migrated, { showPilotOrders: false });
   assert.equal(disabledMenuState.status, 'hidden', 'settings toggle should hide unfinished Pilot Orders');
@@ -384,6 +385,12 @@ function runCatalogAndSaveTests() {
         previousProgress: 0,
         progress: 500,
         target: 1000
+      }],
+      next: [{
+        id: 'support_hunter',
+        shortTitle: 'Support Hunter',
+        progress: 0,
+        target: 2
       }]
     }
   });
@@ -392,6 +399,8 @@ function runCatalogAndSaveTests() {
     ?.rows.find((row) => row.id === 'pilotOrders');
   assert.equal(pilotOrdersRow?.value?.[0]?.type, 'pilotOrderProgress', 'run report should summarize non-completing Pilot Orders progress');
   assert.equal(pilotOrdersRow?.value?.[0]?.progress, 500);
+  assert.equal(pilotOrdersRow?.value?.[1]?.type, 'pilotOrderNext', 'run report should expose the next queued Pilot Order');
+  assert.equal(pilotOrdersRow?.value?.[1]?.title, 'Support Hunter');
   const resumedSweep = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -912,6 +921,10 @@ async function runBrowserSmoke() {
     const hangarReviewState = await readState(page);
     const archive = hangarReviewState.shipSelect?.careerInfo?.pilotOrdersArchive;
     assert.equal(archive?.total, RUN_CONTRACT_ORDER_IDS.length, 'Hangar review should expose the full finite order count');
+    assert.equal(archive?.activeCount, 1, 'Hangar review should show active unfinished Pilot Orders');
+    assert.ok(archive?.nextCount >= 1, 'Hangar review should expose at least one queued Pilot Order');
+    assert.match(archive?.text || '', /ACTIVE Graze x10 0\/10/, 'Hangar review should list active Pilot Orders with progress');
+    assert.match(archive?.text || '', /NEXT Support Hunter 0\/2/, 'Hangar review should list the next queued Pilot Order');
     assert.match(archive?.text || '', /Boss Breaker/, 'Hangar review should list completed Boss Breaker');
     assert.match(archive?.text || '', /1000 Enemies/, 'Hangar review should list completed 1000 Enemies');
     assert.match(archive?.text || '', /2500 Enemies/, 'Hangar review should list completed 2500 Enemies');

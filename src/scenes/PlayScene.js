@@ -1432,6 +1432,7 @@ export class PlayScene {
         target: Math.max(1, Math.floor(Number(entry.target) || 1)),
         lastSector: Math.max(1, Math.floor(Number(entry.lastSector) || 1))
       }));
+    state.next = Array.isArray(menuState.next) ? menuState.next : [];
     return state;
   }
 

@@ -763,6 +763,54 @@ function progressForActiveIds(progress = {}, activeIds = [], completed = {}) {
   return result;
 }
 
+function buildRunContractDisplayEntry(id, state = {}) {
+  const contract = getRunContractById(id);
+  if (!contract) return null;
+  const completion = state.completed?.[id] || null;
+  const savedProgress = state.progress?.[id] || null;
+  const target = contract.target || 1;
+  const completed = Boolean(completion);
+  return {
+    id,
+    title: contract.title || id,
+    shortTitle: contract.shortTitle || contract.title || id,
+    description: contract.description || '',
+    shortDescription: contract.shortDescription || contract.description || '',
+    modeLabel: contract.modeLabel || 'Mayhem',
+    target,
+    progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
+    objective: contract.objective || 'unknown',
+    group: getContractGroup(contract),
+    accent: contract.accent || 0x37f5ff,
+    completed,
+    completionCount: floor(completion?.count),
+    completedAt: completion?.completedAt || null,
+    lastRunMode: completion?.lastRunMode || null,
+    lastSector: completion?.lastSector || null
+  };
+}
+
+function getQueuedRunContractEntries(state = {}, limit = RUN_CONTRACT_ACTIVE_LIMIT) {
+  const normalized = normalizeRunContractsState(state);
+  const activeIds = uniqueValidIds(normalized.activeIds);
+  const activeIdSet = new Set(activeIds);
+  const reservedGroups = new Set(activeIds
+    .filter((id) => !normalized.completed[id])
+    .map((id) => getContractGroup(id)));
+  const queued = [];
+  for (const id of RUN_CONTRACT_ORDER_IDS) {
+    if (queued.length >= limit) break;
+    if (normalized.completed[id] || activeIdSet.has(id)) continue;
+    const group = getContractGroup(id);
+    if (reservedGroups.has(group)) continue;
+    const entry = buildRunContractDisplayEntry(id, normalized);
+    if (!entry) continue;
+    queued.push(entry);
+    reservedGroups.add(group);
+  }
+  return queued;
+}
+
 function latestIso(...values) {
   let best = '';
   let bestTime = 0;
@@ -1241,29 +1289,8 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     progressLabel: `${formatRunContractCount(completedCount)}/${formatRunContractCount(total)}`,
     completionTitle: 'PILOT ORDERS COMPLETE',
     completionBody: 'All starter combat goals cleared.',
-    active: activeIds.map((id) => {
-      const contract = getRunContractById(id);
-      const completion = state.completed[id] || null;
-      const savedProgress = state.progress[id] || null;
-      const target = contract?.target || 1;
-      const completed = Boolean(completion);
-      return {
-        id,
-        title: contract?.title || id,
-        shortTitle: contract?.shortTitle || contract?.title || id,
-        description: contract?.description || '',
-        shortDescription: contract?.shortDescription || contract?.description || '',
-        modeLabel: contract?.modeLabel || 'Mayhem',
-        target,
-        progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
-        objective: contract?.objective || 'unknown',
-        group: getContractGroup(contract),
-        accent: contract?.accent || 0x37f5ff,
-        completed,
-        completionCount: floor(completion?.count),
-        completedAt: completion?.completedAt || null
-      };
-    }),
+    active: activeIds.map((id) => buildRunContractDisplayEntry(id, state)).filter(Boolean),
+    next: status === 'active' ? getQueuedRunContractEntries(state, RUN_CONTRACT_ACTIVE_LIMIT) : [],
     completedIds: [...state.completedIds],
     rewardsEnabled: RUN_CONTRACT_REWARDS_ENABLED
   };
@@ -1271,34 +1298,19 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
 
 export function getRunContractCompletionReviewState(progressOrState = {}) {
   const state = normalizeRunContractsState(progressOrState?.runContracts || progressOrState || {});
-  const entries = RUN_CONTRACT_ORDER_IDS.map((id) => {
-    const contract = getRunContractById(id);
-    const completion = state.completed[id] || null;
-    const savedProgress = state.progress[id] || null;
-    const target = contract?.target || 1;
-    return {
-      id,
-      title: contract?.title || id,
-      shortTitle: contract?.shortTitle || contract?.title || id,
-      description: contract?.description || '',
-      shortDescription: contract?.shortDescription || contract?.description || '',
-      modeLabel: contract?.modeLabel || 'Mayhem',
-      target,
-      progress: completion ? target : Math.min(target, floor(savedProgress?.progress)),
-      completed: Boolean(completion),
-      completedAt: completion?.completedAt || null,
-      lastRunMode: completion?.lastRunMode || null,
-      lastSector: completion?.lastSector || null,
-      group: getContractGroup(contract),
-      accent: contract?.accent || 0x37f5ff
-    };
-  });
+  const entries = RUN_CONTRACT_ORDER_IDS
+    .map((id) => buildRunContractDisplayEntry(id, state))
+    .filter(Boolean);
   const completed = entries.filter((entry) => entry.completed);
+  const activeIds = new Set(state.activeIds || []);
+  const active = entries.filter((entry) => activeIds.has(entry.id) && !entry.completed);
   return {
     version: state.version,
     total: entries.length,
     completedCount: completed.length,
     completed,
+    active,
+    next: getQueuedRunContractEntries(state, RUN_CONTRACT_ACTIVE_LIMIT),
     pending: entries.filter((entry) => !entry.completed),
     allComplete: entries.length > 0 && completed.length === entries.length,
     allCompletedAt: state.allCompletedAt || null,

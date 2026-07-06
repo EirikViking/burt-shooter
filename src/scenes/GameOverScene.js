@@ -4131,6 +4131,11 @@ export class GameOverScene {
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
           return `${title} ${progress}`;
         }
+        if (value && typeof value === 'object' && value.type === 'pilotOrderNext') {
+          const title = translateText(value.title || '');
+          const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
+          return `${translateText('NEXT')}: ${title} ${progress}`;
+        }
         return translateText(value);
       }).join(', ');
     }

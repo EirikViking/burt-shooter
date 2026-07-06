@@ -59,6 +59,15 @@ function getPilotOrdersCompleted(runContracts = null) {
     })
     .filter((entry) => entry && entry.title)
     .slice(0, Math.max(0, 3 - titles.length));
+  const nextEntries = (Array.isArray(runContracts?.next) ? runContracts.next : [])
+    .filter((entry) => entry?.id && !completedIds.has(entry.id))
+    .map((entry) => ({
+      type: 'pilotOrderNext',
+      title: String(entry.shortTitle || entry.title || entry.id).trim(),
+      progress: toWholeNumber(entry.progress),
+      target: Math.max(1, toWholeNumber(entry.target, 1))
+    }))
+    .filter((entry) => entry && entry.title);
   if (runContracts?.allCompleteThisRun) {
     return [
       'PILOT ORDERS COMPLETE',
@@ -69,7 +78,8 @@ function getPilotOrdersCompleted(runContracts = null) {
   return [
     ...(trackSummary ? [trackSummary] : []),
     ...titles,
-    ...progressEntries
+    ...progressEntries,
+    ...nextEntries
   ].slice(0, 3);
 }
 

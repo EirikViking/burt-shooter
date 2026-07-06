@@ -20,3 +20,26 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, public branch, or live branch change.
 - Rollback should remain a single source commit for this batch.
+
+## Batch 2 - Pilot Orders Review Follow-Through
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+4. Hangar Career Intel now shows active Pilot Orders with progress inside the review/archive panel.
+5. The shared Pilot Orders state now exposes the next queued order after the current active slots.
+6. Run Report can show the next queued Pilot Order after reporting completed or progressed orders.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T16-37-26-157Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Generic `develop-web-game` Playwright client was attempted but blocked by the local missing Chromium headless-shell install; repo-native Playwright checks passed with local Chrome.
