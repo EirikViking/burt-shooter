@@ -51,6 +51,12 @@ export class Enemy {
     this.moveTimer = 0;
     this.scoreValue = 10;
     this.slow_time = 0;
+    this.hitFeedbackLayer = null;
+    this.hitFeedbackStartedAt = 0;
+    this.hitFeedbackUntil = 0;
+    this.hitFeedbackDamage = 0;
+    this.lastHitSparkAt = 0;
+    this.hitFeedbackSparkCount = 0;
 
     // Arcade formation state machine.
     this.state = 'ENTRY';
@@ -475,6 +481,13 @@ export class Enemy {
     this.updateHealthBar();
     this.sprite.addChild(this.healthBar);
 
+    this.hitFeedbackLayer = new PIXI.Graphics();
+    this.hitFeedbackLayer.label = 'enemyHitFeedback';
+    this.hitFeedbackLayer.zIndex = 9;
+    this.hitFeedbackLayer.blendMode = 'add';
+    this.hitFeedbackLayer.visible = false;
+    this.sprite.addChild(this.hitFeedbackLayer);
+
     if (this.middleShipProfile) {
       this.eliteVfxLayer = new PIXI.Graphics();
       this.eliteVfxLayer.zIndex = -1;
@@ -582,6 +595,66 @@ export class Enemy {
     }
     this.healthBar.rect(-barWidth / 2, this.radius + 5, barWidth * healthPercent, barHeight);
     this.healthBar.fill({ color: colorAssist ? 0xfff45c : healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
+  }
+
+  triggerHitFeedback(amount = 1, now = Date.now()) {
+    if (!this.hitFeedbackLayer || !this.active || this.visualsDeactivated) return;
+    const damage = Math.max(0.1, Number(amount) || 0.1);
+    this.hitFeedbackDamage = Math.max(this.hitFeedbackDamage * 0.6, Math.min(4, damage));
+    this.hitFeedbackStartedAt = now;
+    this.hitFeedbackUntil = Math.max(this.hitFeedbackUntil || 0, now + 170);
+    const sparkIntervalMs = this.isEliteMiddleShip ? 95 : 70;
+    if (now - (this.lastHitSparkAt || 0) >= sparkIntervalMs) {
+      const color = this.visualVariant?.accent || this.color || 0x66f7ff;
+      const scale = this.isEliteMiddleShip ? 1.05 : 0.72;
+      this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, color, scale);
+      this.lastHitSparkAt = now;
+      this.hitFeedbackSparkCount += 1;
+    }
+    this.updateHitFeedback(now);
+  }
+
+  updateHitFeedback(now = Date.now()) {
+    const layer = this.hitFeedbackLayer;
+    if (!layer) return;
+    layer.clear();
+    if (!this.active || this.visualsDeactivated || now >= (this.hitFeedbackUntil || 0)) {
+      layer.visible = false;
+      layer._debugHitFeedback = {
+        visible: false,
+        sparkCount: this.hitFeedbackSparkCount || 0
+      };
+      return;
+    }
+
+    const duration = Math.max(1, (this.hitFeedbackUntil || now) - (this.hitFeedbackStartedAt || now - 1));
+    const elapsed = Math.max(0, now - (this.hitFeedbackStartedAt || now));
+    const progress = Math.max(0, Math.min(1, elapsed / duration));
+    const fade = Math.pow(1 - progress, 0.7);
+    const damageLift = Math.min(1, Math.max(0, Number(this.hitFeedbackDamage) || 0) / Math.max(1, Number(this.maxHealth) || 1));
+    const color = this.visualVariant?.accent || this.color || 0x66f7ff;
+    const radius = Math.max(10, this.radius * (1.08 + progress * 0.48 + damageLift * 0.18));
+    const tickInner = radius * 0.78;
+    const tickOuter = radius + 5 + damageLift * 4;
+    const width = this.isEliteMiddleShip ? 2.4 : 1.7;
+    layer.circle(0, 0, radius);
+    layer.stroke({ color, width, alpha: 0.34 + fade * 0.5 });
+    layer.circle(0, 0, Math.max(3, radius * 0.28));
+    layer.fill({ color: 0xffffff, alpha: 0.08 + fade * 0.16 });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = this.idlePhase + progress * 0.9 + i * Math.PI * 0.5;
+      layer.moveTo(Math.cos(angle) * tickInner, Math.sin(angle) * tickInner);
+      layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
+    }
+    layer.stroke({ color: 0xffffff, width: Math.max(1, width - 0.4), alpha: 0.28 + fade * 0.38 });
+    layer.visible = true;
+    layer._debugHitFeedback = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      fade: Number(fade.toFixed(3)),
+      radius: Number(radius.toFixed(1)),
+      sparkCount: this.hitFeedbackSparkCount || 0
+    };
   }
 
   // --- Arcade formation behavior ---
@@ -850,6 +923,7 @@ export class Enemy {
       this.updateThreatAction(delta, playerX, playerY);
     }
     this.updateMayhemVfx(delta);
+    this.updateHitFeedback();
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
@@ -2168,6 +2242,7 @@ export class Enemy {
       this.deactivateVisuals('death');
       return true;
     }
+    this.triggerHitFeedback(resolvedAmount, now);
     return false;
   }
 
@@ -2187,6 +2262,8 @@ export class Enemy {
       }
     }
     if (this.healthBar) this.healthBar.visible = false;
+    this.hitFeedbackLayer?.clear();
+    if (this.hitFeedbackLayer) this.hitFeedbackLayer.visible = false;
     this.threatTelegraphLayer?.clear();
     this.eliteVfxLayer?.clear();
     if (this.visualEnhancementCleanup) {

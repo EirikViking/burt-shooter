@@ -471,3 +471,22 @@ Safety notes:
 
 - No wave count, enemy spawn, boss timing, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only HUD instrumentation based on existing wave/hostile/threat state.
+
+## Batch 21 - Enemy Hit Confirmation
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+71. Surviving enemies now show a brief local impact ring when damaged, making non-lethal hits easier to read.
+72. The hit ring scales subtly with enemy size and damage fraction, so larger/thicker targets communicate impact without changing health values.
+73. Non-lethal enemy hits now emit a throttled hit spark through the existing particle helper, avoiding unbounded particle spam.
+74. `check:enemy-hit-feedback` now proves a real runtime enemy survives a non-lethal hit while showing the ring/spark debug state.
+
+Verification:
+
+- `npm run check:enemy-hit-feedback`
+- Screenshot proof: `test-results/enemy-hit-feedback-2026-07-06T22-23-51-397Z/enemy-hit-feedback.png`
+
+Safety notes:
+
+- No enemy health, damage taken, score, XP, leaderboard, achievement API ID, balance, enemy behavior, projectile behavior, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only hit confirmation with per-enemy spark throttling.
