@@ -399,3 +399,29 @@ Safety notes:
 
 - No Phase duration, cooldown timing, invulnerability, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only player feedback polish with a focused browser guard.
+
+## Batch 18 - Powerup Expiry Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+59. Falling powerups now get a late-life outer warning cue before they leave the playable area.
+60. Powerup expiry cues escalate from amber to red as the pickup becomes urgent.
+61. Expiring powerups now use segmented countdown ticks so the warning reads without adding text.
+62. Urgent expiring pickups use a controlled blink that stays visible instead of fading almost completely out.
+
+Verification:
+
+- `npm run check:powerup-expiry-readability`
+- Screenshot proof: `test-results/powerup-expiry-readability-2026-07-06T21-45-37-125Z/powerup-expiry-readability.png`
+- `npm run check:powerup-effects`
+- `npm run check:powerup-visuals`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No powerup drop rate, lifetime, movement speed, pickup radius, effect, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only pickup readability polish with a focused browser guard.

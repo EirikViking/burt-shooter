@@ -71,6 +71,10 @@ class Powerup {
     this.readabilityHalo = new PIXI.Graphics();
     this.readabilityHalo.label = 'readabilityHalo';
     this.sprite.addChild(this.readabilityHalo);
+    this.expiryCue = new PIXI.Graphics();
+    this.expiryCue.label = 'expiryCue';
+    this.expiryCue.visible = false;
+    this.sprite.addChild(this.expiryCue);
 
     try {
       const texture = GameAssets.getPowerupTexture(this.type) || GameAssets.getBonusCoreTexture();
@@ -281,6 +285,15 @@ class Powerup {
       this.readabilityHalo.stroke({ width: 2.2, color: this.color, alpha: 0.58 });
     }
 
+    const screenHeight = Math.max(
+      620,
+      Number(scene?.game?.app?.screen?.height) ||
+      Number(scene?.game?.getHeight?.()) ||
+      Number(scene?.game?.height) ||
+      620
+    );
+    this.updateExpiryCue(age, screenHeight);
+
     // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
     this.sparkleTimer += delta * 16.67;
     const sparkleInterval = 200 + Math.random() * 100;
@@ -305,22 +318,78 @@ class Powerup {
       }, 25);
     }
 
-    const screenHeight = Math.max(
-      620,
-      Number(scene?.game?.app?.screen?.height) ||
-      Number(scene?.game?.getHeight?.()) ||
-      Number(scene?.game?.height) ||
-      620
-    );
     const offscreenMargin = Math.max(90, this.radius * 6);
-
-    if (age > this.lifeTime - 2500 && this.y > screenHeight * 0.72) {
-      this.sprite.alpha = 0.5 + Math.sin(age * 0.01) * 0.5;
-    }
 
     if (this.y > screenHeight + offscreenMargin || (age > this.lifeTime && this.y > screenHeight)) {
       this.active = false;
     }
+  }
+
+  updateExpiryCue(age, screenHeight) {
+    if (!this.expiryCue || !this.sprite) return;
+    const lifetime = Math.max(1, Number(this.lifeTime) || 1);
+    const remainingMs = Math.max(0, lifetime - Math.max(0, Number(age) || 0));
+    const timeUrgency = clamp(1 - (remainingMs / 6000), 0, 1);
+    const bottomUrgency = clamp((this.y - screenHeight * 0.64) / Math.max(1, screenHeight * 0.28), 0, 1);
+    const urgency = Math.max(timeUrgency, bottomUrgency);
+    const pulse = Math.sin(age * 0.02) * 0.5 + 0.5;
+
+    this.expiryCue.clear();
+    if (urgency <= 0.08) {
+      this.expiryCue.visible = false;
+      this.sprite.alpha = 1;
+      this.expiryCue.__debugExpiryCue = {
+        visible: false,
+        urgency,
+        timeUrgency,
+        bottomUrgency,
+        remainingMs,
+        alpha: this.sprite.alpha
+      };
+      return;
+    }
+
+    const urgent = urgency > 0.66;
+    const color = urgent ? 0xff6174 : 0xffd36b;
+    const radius = 36 + urgency * 8 + pulse * (urgent ? 4 : 2);
+    const segmentCount = 8;
+    const litSegments = Math.max(1, Math.ceil(segmentCount * urgency));
+
+    this.expiryCue.circle(0, 0, radius);
+    this.expiryCue.stroke({ width: 2.2, color, alpha: 0.2 + urgency * 0.28 });
+    for (let i = 0; i < segmentCount; i += 1) {
+      const angle = -Math.PI / 2 + i * (Math.PI * 2 / segmentCount);
+      const inner = radius - 5;
+      const outer = radius + 4;
+      this.expiryCue.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      this.expiryCue.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    this.expiryCue.stroke({ width: 1.4, color, alpha: 0.16 });
+    for (let i = 0; i < litSegments; i += 1) {
+      const angle = -Math.PI / 2 + i * (Math.PI * 2 / segmentCount);
+      const inner = radius - 6;
+      const outer = radius + 8;
+      this.expiryCue.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      this.expiryCue.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    this.expiryCue.stroke({ width: 2.4, color, alpha: 0.24 + urgency * 0.48 });
+    if (urgent) {
+      this.expiryCue.circle(0, 0, radius + 8 + pulse * 3);
+      this.expiryCue.stroke({ width: 1.6, color: 0xffffff, alpha: 0.14 + urgency * 0.16 });
+    }
+
+    this.expiryCue.visible = true;
+    this.sprite.alpha = urgent ? 0.62 + pulse * 0.28 : 1;
+    this.expiryCue.__debugExpiryCue = {
+      visible: true,
+      urgency,
+      timeUrgency,
+      bottomUrgency,
+      remainingMs,
+      alpha: this.sprite.alpha,
+      litSegments,
+      urgent
+    };
   }
 
   collect(player, scene) {
