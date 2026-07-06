@@ -40,8 +40,27 @@ function getPilotOrdersCompleted(runContracts = null) {
     .map((entry) => String(entry?.shortTitle || entry?.title || '').trim())
     .filter(Boolean)
     .slice(0, 3);
-  if (!runContracts?.allCompleteThisRun) return titles;
-  return ['PILOT ORDERS COMPLETE', ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')].slice(0, 3);
+  const completedIds = new Set(completed.map((entry) => entry?.id).filter(Boolean));
+  const progressEntries = (Array.isArray(runContracts?.progressThisRun) ? runContracts.progressThisRun : [])
+    .filter((entry) => entry?.id && !completedIds.has(entry.id))
+    .map((entry) => {
+      const progress = toWholeNumber(entry.progress);
+      const previousProgress = toWholeNumber(entry.previousProgress);
+      const target = Math.max(1, toWholeNumber(entry.target, 1));
+      if (progress <= previousProgress || progress >= target) return null;
+      return {
+        type: 'pilotOrderProgress',
+        title: String(entry.shortTitle || entry.title || entry.id).trim(),
+        progress,
+        target
+      };
+    })
+    .filter((entry) => entry && entry.title)
+    .slice(0, Math.max(0, 3 - titles.length));
+  if (runContracts?.allCompleteThisRun) {
+    return ['PILOT ORDERS COMPLETE', ...titles.filter((title) => title !== 'PILOT ORDERS COMPLETE')].slice(0, 3);
+  }
+  return [...titles, ...progressEntries].slice(0, 3);
 }
 
 function buildRows(entries) {

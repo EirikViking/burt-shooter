@@ -335,6 +335,8 @@ export class PlayScene {
     this.lastPowerupPickupJuice = null;
     this.lastTraitImpactToastAt = 0;
     this.runContractSession = null;
+    this.runContractProgressThisRun = new Map();
+    this.runContractProgressToastMarkers = new Map();
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Powerup mechanics (orbital strike timer tracked in scene)
@@ -507,6 +509,8 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    this.runContractProgressThisRun = new Map();
+    this.runContractProgressToastMarkers = new Map();
     let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
     if ((this.game?.runMode || RUN_MODES.RANKED) === RUN_MODES.RANKED) {
       const preparedRunContracts = prepareRunContractsForEligibleRun(runContractProgress.runContracts);
@@ -529,10 +533,12 @@ export class PlayScene {
     this.emitRunContractEvent('pilot_rank_reached', {
       rankIndex: currentPilotRankIndex,
       displayRank: currentPilotRankIndex + 1,
-      sector: this.game?.level || 1
+      sector: this.game?.level || 1,
+      suppressProgressToast: true
     });
     this.emitRunContractEvent('run_started', {
-      sector: this.game?.level || 1
+      sector: this.game?.level || 1,
+      suppressProgressToast: true
     });
     this.blinkDriveOrderStartedAt = null;
     this.blinkDriveOrderCompleted = false;
@@ -1163,12 +1169,21 @@ export class PlayScene {
 
   emitRunContractEvent(type, payload = {}) {
     if (!this.runContractSession) return [];
+    const { suppressProgressToast = false, ...eventPayload } = payload || {};
+    const previousActive = Array.isArray(this.runContractSession.active)
+      ? this.runContractSession.active.map((item) => ({ ...item }))
+      : [];
     const result = applyRunContractEvent(this.runContractSession, {
-      ...payload,
+      ...eventPayload,
       type,
-      sector: payload.sector || this.game?.level || 1
+      sector: eventPayload.sector || this.game?.level || 1
     });
     this.runContractSession = result.session;
+    const progressChanges = this.getRunContractProgressChanges(previousActive, result.session?.active || [], result.completed || []);
+    progressChanges.forEach((change) => {
+      this.recordRunContractProgressThisRun(change);
+      if (!suppressProgressToast) this.showRunContractProgress(change);
+    });
     if (this.shouldPersistRunContractProgress(type, result)) {
       this.persistRunContractSessionProgress();
     }
@@ -1177,6 +1192,91 @@ export class PlayScene {
       this.showRunContractCompletion(completion.id);
     }
     return result.completed || [];
+  }
+
+  getRunContractProgressChanges(previousActive = [], nextActive = [], completed = []) {
+    const completedIds = new Set((completed || []).map((entry) => entry?.id).filter(Boolean));
+    const previousById = new Map(previousActive.map((item) => [item.id, item]));
+    return (nextActive || [])
+      .map((item) => {
+        const contract = getRunContractById(item.id);
+        if (!contract || !item.eligible) return null;
+        const previous = previousById.get(item.id) || {};
+        const previousProgress = Math.max(0, Math.floor(Number(previous.progress) || 0));
+        const progress = Math.max(0, Math.floor(Number(item.progress) || 0));
+        const target = Math.max(1, Math.floor(Number(item.target || contract.target) || 1));
+        if (progress <= previousProgress) return null;
+        return {
+          id: item.id,
+          title: contract.title,
+          shortTitle: contract.shortTitle || contract.title,
+          progress: Math.min(target, progress),
+          previousProgress: Math.min(target, previousProgress),
+          target,
+          completed: Boolean(item.completed || completedIds.has(item.id)),
+          lastSector: Math.max(1, Math.floor(Number(item.lastSector || this.game?.level) || 1))
+        };
+      })
+      .filter(Boolean);
+  }
+
+  recordRunContractProgressThisRun(change = {}) {
+    if (!change.id || !this.runContractProgressThisRun) return;
+    const existing = this.runContractProgressThisRun.get(change.id);
+    const previousProgress = existing
+      ? Math.min(existing.previousProgress, change.previousProgress)
+      : change.previousProgress;
+    this.runContractProgressThisRun.set(change.id, {
+      id: change.id,
+      title: change.title,
+      shortTitle: change.shortTitle || change.title,
+      previousProgress,
+      progress: Math.max(Number(existing?.progress) || 0, Number(change.progress) || 0),
+      target: Math.max(1, Number(change.target) || Number(existing?.target) || 1),
+      completed: Boolean(change.completed || existing?.completed),
+      lastSector: Math.max(1, Number(change.lastSector) || Number(existing?.lastSector) || 1)
+    });
+  }
+
+  getRunContractProgressToastMarker(change = {}) {
+    const progress = Math.max(0, Math.floor(Number(change.progress) || 0));
+    const previous = Math.max(0, Math.floor(Number(change.previousProgress) || 0));
+    const target = Math.max(1, Math.floor(Number(change.target) || 1));
+    if (change.completed || target <= 1 || progress <= previous || progress >= target) return null;
+    if (target <= 10) return String(progress);
+    const previousPercent = previous / target;
+    const progressPercent = progress / target;
+    const thresholds = [0.25, 0.5, 0.75];
+    const crossed = thresholds.find((threshold) => previousPercent < threshold && progressPercent >= threshold);
+    return crossed ? String(Math.round(crossed * 100)) : null;
+  }
+
+  showRunContractProgress(change = {}) {
+    const marker = this.getRunContractProgressToastMarker(change);
+    if (!marker) return;
+    const previousMarker = this.runContractProgressToastMarkers?.get(change.id);
+    if (previousMarker === marker) return;
+    this.runContractProgressToastMarkers?.set(change.id, marker);
+    const contract = getRunContractById(change.id);
+    const title = translateText(contract?.shortTitle || change.shortTitle || change.title || change.id);
+    const compactHud = this.game.getWidth() < 620;
+    this.enqueueToast(translateText('ORDER PROGRESS: {title} {progress}/{target}', {
+      title,
+      progress: Math.min(change.target, Math.max(0, Math.floor(Number(change.progress) || 0))).toLocaleString('en-US'),
+      target: Math.max(1, Math.floor(Number(change.target) || 1)).toLocaleString('en-US')
+    }), {
+      fontSize: compactHud ? 16 : 20,
+      fill: '#fff3a2',
+      stroke: '#031321',
+      strokeThickness: compactHud ? 3 : 4,
+      slot: 'top',
+      type: 'runContractProgress',
+      priority: 2,
+      bypassFocusLock: false,
+      duration: 2600,
+      y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
+      maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46)
+    });
   }
 
   shouldPersistRunContractProgress(type, result = {}) {
@@ -1258,7 +1358,20 @@ export class PlayScene {
   }
 
   getRunContractDebugState() {
-    return getRunContractSessionState(this.runContractSession);
+    const state = getRunContractSessionState(this.runContractSession);
+    if (!state) return state;
+    state.progressThisRun = Array.from(this.runContractProgressThisRun?.values?.() || [])
+      .filter((entry) => !entry.completed && Number(entry.progress) > Number(entry.previousProgress))
+      .map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        shortTitle: entry.shortTitle || entry.title,
+        previousProgress: Math.max(0, Math.floor(Number(entry.previousProgress) || 0)),
+        progress: Math.max(0, Math.floor(Number(entry.progress) || 0)),
+        target: Math.max(1, Math.floor(Number(entry.target) || 1)),
+        lastSector: Math.max(1, Math.floor(Number(entry.lastSector) || 1))
+      }));
+    return state;
   }
 
   countDangerousBulletsNearPlayer(radius = 96) {
@@ -4555,11 +4668,27 @@ export class PlayScene {
     const sectorChip = makeChip(translateText('SECTOR'), String(this.game.level || 1).padStart(2, '0'), centerX + 104, panelY + 150, 0x00eaff);
     decorLayer.addChild(scoreChip, sectorChip);
 
+    const pilotOrdersLine = createText(this.getPausePilotOrdersSummary(), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: Math.round(13 * Math.min(uiScale, 1.25)),
+      fontWeight: 'bold',
+      fill: '#b9faff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 76
+    });
+    pilotOrdersLine.anchor.set(0.5);
+    pilotOrdersLine.position.set(centerX, panelY + 184 * uiScale);
+    pilotOrdersLine.zIndex = 7;
+    overlay.addChild(pilotOrdersLine);
+
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 206 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 258 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 310 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 362 * uiScale, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 228 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 280 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 332 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 384 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.hidePauseOverlay();
@@ -4584,6 +4713,7 @@ export class PlayScene {
       status,
       scoreValue: scoreChip.valueText,
       sectorValue: sectorChip.valueText,
+      pilotOrdersValue: pilotOrdersLine,
       leftRadar,
       rightRadar,
       resize: () => {}
@@ -4600,6 +4730,7 @@ export class PlayScene {
     if (!decor) return;
     if (decor.scoreValue) decor.scoreValue.text = Number(this.game?.score || 0).toLocaleString('en-US');
     if (decor.sectorValue) decor.sectorValue.text = String(this.game?.level || 1).padStart(2, '0');
+    if (decor.pilotOrdersValue) decor.pilotOrdersValue.text = this.getPausePilotOrdersSummary();
   }
 
   getPauseDebugState() {
@@ -4607,8 +4738,23 @@ export class PlayScene {
     return {
       visible: Boolean(this.pauseOverlay?.visible && this.pauseOverlay?.parent),
       score: decor?.scoreValue?.text ?? null,
-      sector: decor?.sectorValue?.text ?? null
+      sector: decor?.sectorValue?.text ?? null,
+      pilotOrders: decor?.pilotOrdersValue?.text ?? null
     };
+  }
+
+  getPausePilotOrdersSummary() {
+    const active = (this.getRunContractDebugState()?.active || [])
+      .filter((item) => item.eligible && !item.completed)
+      .slice(0, 1);
+    if (!active.length) return `${translateText('PILOT ORDERS')}: ${translateText('COMPLETE')}`;
+    const item = active[0];
+    const title = translateText(item.shortTitle || item.title || item.id);
+    const progress = translateText('{progress}/{target}', {
+      progress: Math.max(0, Math.floor(Number(item.progress) || 0)).toLocaleString('en-US'),
+      target: Math.max(1, Math.floor(Number(item.target) || 1)).toLocaleString('en-US')
+    });
+    return `${translateText('PILOT ORDERS')}: ${title} ${progress}`;
   }
 
   openSettingsOverlay() {

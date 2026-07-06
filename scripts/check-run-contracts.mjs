@@ -32,6 +32,7 @@ globalThis.window = { localStorage: new MemoryStorage() };
 globalThis.localStorage = globalThis.window.localStorage;
 
 const { RUN_MODES } = await import('../src/game/RunMode.js');
+const { createRunReport } = await import('../src/game/RunReport.js');
 const { SHOW_PILOT_ORDERS_KEY } = await import('../src/config/MenuSettings.js');
 const {
   HANGAR_PROGRESS_KEY,
@@ -371,6 +372,23 @@ function runCatalogAndSaveTests() {
   ]);
   assert.equal(findSessionItem(enemySweepPartial.session, 'enemy_sweep_1000').progress, 500, 'enemy sweep should count cumulative enemy defeats');
   const savedSweep = recordRunContractSessionProgress(enemySweepBase, enemySweepPartial.session);
+  const progressReport = createRunReport({
+    runMode: RUN_MODES.RANKED,
+    runContracts: {
+      progressThisRun: [{
+        id: 'enemy_sweep_1000',
+        shortTitle: '1000 Enemies',
+        previousProgress: 0,
+        progress: 500,
+        target: 1000
+      }]
+    }
+  });
+  const pilotOrdersRow = progressReport.sections
+    .find((section) => section.id === 'rewards')
+    ?.rows.find((row) => row.id === 'pilotOrders');
+  assert.equal(pilotOrdersRow?.value?.[0]?.type, 'pilotOrderProgress', 'run report should summarize non-completing Pilot Orders progress');
+  assert.equal(pilotOrdersRow?.value?.[0]?.progress, 500);
   const resumedSweep = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -925,6 +943,49 @@ async function runBrowserSmoke() {
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
+      play.emitRunContractEvent('enemy_defeated', { sector: window.__game?.level || 1, count: 625 });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return (state.toast?.active || []).some((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
+    }, null, { timeout: 5000 });
+    const progressResult = await page.evaluate(() => {
+      const textState = JSON.parse(window.render_game_to_text?.() || '{}');
+      return {
+        runContracts: textState.runContracts,
+        toastActive: textState.toast?.active || [],
+        pauseOverlay: textState.pauseOverlay || null
+      };
+    });
+    const progressSweep = progressResult.runContracts?.active?.find((item) => item.id === 'enemy_sweep_2500');
+    assert.equal(progressSweep?.progress, 625, 'in-run 2500 Enemies order should show partial progress');
+    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 625, 'partial Pilot Orders progress should be exposed for run report state');
+    const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
+    assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
+    assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
+    assert.ok(progressToast?.duration >= 2000, 'progress toast should stay visible long enough to notice');
+    const progressToastScreenshot = path.join(outputDir, 'pilot-order-progress-toast.png');
+    await page.screenshot({ path: progressToastScreenshot, fullPage: true });
+
+    await page.evaluate(() => {
+      window.__game?.scenes?.play?.setPaused?.(true);
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.isPaused && state.pauseOverlay?.visible === true;
+    }, null, { timeout: 5000 });
+    const pauseState = await readState(page);
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /2500 Enemies/, 'pause overlay should show the active Pilot Order');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500|625\/2500/, 'pause overlay should show active Pilot Order progress');
+    const pauseScreenshot = path.join(outputDir, 'pilot-orders-pause-line.png');
+    await page.screenshot({ path: pauseScreenshot, fullPage: true });
+    await page.evaluate(() => {
+      window.__game?.scenes?.play?.setPaused?.(false);
+    });
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').isPaused === false, null, { timeout: 5000 });
+
+    await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
       play.emitRunContractEvent('enemy_defeated', { sector: window.__game?.level || 1, count: 2500 });
     });
     await page.waitForFunction(() => {
@@ -1007,6 +1068,8 @@ async function runBrowserSmoke() {
         hiddenMenu: hiddenProof.screenshot,
         hangarCompletedReview: hangarReviewScreenshot,
         hiddenAfterCompletionNotice: autoHiddenProof.screenshot,
+        progressToast: progressToastScreenshot,
+        pauseOrdersLine: pauseScreenshot,
         playToast: playScreenshot,
         runReport: reportScreenshot
       }

@@ -27,6 +27,7 @@ const sourceText = Object.freeze({
   "Review cleared Pilot Orders here.": "Revise aqui as Ordens de Piloto concluidas.",
   "DONE": "FEITO",
   "ORDER COMPLETE: {title}": "ORDEM CONCLUIDA: {title}",
+  "ORDER PROGRESS: {title} {progress}/{target}": "PROGRESSO DA ORDEM: {title} {progress}/{target}",
   "COMPLETE": "CONCLUIDO",
   "Graze Break": "Graze Break",
   "Trigger 1 Graze Break in Mayhem.": "Ative 1 Graze Break em Mayhem.",

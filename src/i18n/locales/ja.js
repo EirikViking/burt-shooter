@@ -53,6 +53,7 @@ const sourceText = Object.freeze({
   "PILOT ORDERS COMPLETE": "パイロット指令完了",
   "All starter combat goals cleared.": "すべての初期戦闘目標をクリア。",
   "ORDER COMPLETE: {title}": "指令完了: {title}",
+  "ORDER PROGRESS: {title} {progress}/{target}": "指令進行: {title} {progress}/{target}",
   "COMPLETE": "完了",
   "Graze Break": "Graze Break",
   "Trigger 1 Graze Break in Mayhem.": "MayhemでGraze Breakを1回発動。",

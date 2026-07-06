@@ -4123,7 +4123,19 @@ export class GameOverScene {
   formatRunReportValue(row = {}) {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
-    if (Array.isArray(row.value)) return row.value.map((value) => translateText(value)).join(', ');
+    if (Array.isArray(row.value)) {
+      return row.value.map((value) => {
+        if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
+          const title = translateText(value.title || '');
+          const progress = translateText('{progress}/{target}', {
+            progress: Math.max(0, Number(value.progress) || 0).toLocaleString('en-US'),
+            target: Math.max(1, Number(value.target) || 1).toLocaleString('en-US')
+          });
+          return `${title} ${progress}`;
+        }
+        return translateText(value);
+      }).join(', ');
+    }
     if (typeof row.value === 'number') {
       return row.value.toLocaleString('en-US');
     }
