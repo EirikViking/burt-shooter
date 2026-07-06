@@ -1,0 +1,61 @@
+{
+  "kind": "steam_upload_evidence",
+  "feature": "pilot_orders_feedback_cues",
+  "sourceCommit": "77d6521bb0537f0606c309b882d67f270d8145a8",
+  "sourceBranch": "codex/main-menu-run-contracts-20260702",
+  "build": {
+    "version": "v2026-07-06_15-46-48",
+    "timestamp": "2026-07-06T13:46:48.080Z"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24073916",
+    "setLive": "",
+    "branchAssignment": "none",
+    "visibility": "private_unassigned_steampipe_build",
+    "steamworksMetadataChanged": false
+  },
+  "payload": {
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 916079375,
+    "manifestHash": "5c4dd60ef40b38396e5fa96a556a03892780f2aeb80ee48da9476ecb64bff802",
+    "manifestFileSha256": "DF3BFF6CF7E99120747449429D4620DA984DEC8F25AE33320A25DEE433E36C92",
+    "contentRoot": "release/desktop/win-unpacked"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "sha256": "3178EB6E932E36CC65249CCA417E46C297DACFC6DE987FB834C301615420679F",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "path": "C:\\\\steamcmd\\\\steamcmd.exe",
+    "user": "gaunziman",
+    "uploadLog": "test-results/steam-upload-pilot-orders-feedback-cues-20260706_155211/steamcmd-upload.log",
+    "uploadLogSha256": "8F5C64DF0CFB4A567DAE69ACC1F6192ED10DF7D04352B02687A6CE4C6134A942",
+    "proofLine": "[2026-07-06 15:53:39]: Successfully finished AppID 4765070 build (BuildID 24073916)."
+  },
+  "checks": [
+    { "command": "git fetch --all --prune", "status": "passed" },
+    { "command": "git status --short --branch", "status": "clean_before_source_and_clean_before_package" },
+    { "command": "npm run check:run-contracts", "status": "passed", "evidence": "test-results/run-contracts-2026-07-06T13-39-03-381Z/" },
+    { "command": "npm run check:i18n", "status": "passed" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "npm run check:i18n-ui", "status": "passed", "evidence": "test-results/i18n-ui-2026-07-06T13-42-59-766Z/" },
+    { "command": "git diff --check", "status": "passed_with_crlf_normalization_warnings_only" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed", "buildVersion": "v2026-07-06_15-46-48" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "C:\\\\steamcmd\\\\steamcmd.exe +login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit", "status": "passed" }
+  ],
+  "notes": [
+    "Steam upload only; no Steamworks metadata edits were made.",
+    "SetLive remained blank, so no public/default branch assignment was made.",
+    "Full generic smoke and desktop smoke were not run in this pass; focused Pilot Orders browser proof and package/runtime gates passed."
+  ]
+}
