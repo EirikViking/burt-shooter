@@ -57,6 +57,9 @@ export class Enemy {
     this.hitFeedbackDamage = 0;
     this.lastHitSparkAt = 0;
     this.hitFeedbackSparkCount = 0;
+    this.spawnCueLayer = null;
+    this.spawnCueStartedAt = Date.now();
+    this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
 
     // Arcade formation state machine.
     this.state = 'ENTRY';
@@ -488,6 +491,13 @@ export class Enemy {
     this.hitFeedbackLayer.visible = false;
     this.sprite.addChild(this.hitFeedbackLayer);
 
+    this.spawnCueLayer = new PIXI.Graphics();
+    this.spawnCueLayer.label = 'enemySpawnCue';
+    this.spawnCueLayer.zIndex = -8;
+    this.spawnCueLayer.blendMode = 'add';
+    this.spawnCueLayer.visible = true;
+    this.sprite.addChild(this.spawnCueLayer);
+
     if (this.middleShipProfile) {
       this.eliteVfxLayer = new PIXI.Graphics();
       this.eliteVfxLayer.zIndex = -1;
@@ -807,6 +817,7 @@ export class Enemy {
         this.active = true;
         this.sprite.visible = true;
         this.entryCurve.startTime = Date.now();
+        this.resetSpawnCue();
       } else {
         return;
       }
@@ -924,12 +935,68 @@ export class Enemy {
     }
     this.updateMayhemVfx(delta);
     this.updateHitFeedback();
+    this.updateSpawnCue();
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
     // Shooting
     if (this.shootCooldown > 0) this.shootCooldown -= delta;
+  }
+
+  resetSpawnCue(now = Date.now()) {
+    this.spawnCueStartedAt = now;
+    this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
+    if (this.spawnCueLayer) {
+      this.spawnCueLayer.visible = true;
+      this.spawnCueLayer._debugSpawnCue = {
+        visible: true,
+        progress: 0,
+        resetAt: now
+      };
+    }
+  }
+
+  updateSpawnCue(now = Date.now()) {
+    const layer = this.spawnCueLayer;
+    if (!layer) return;
+    layer.clear();
+    const duration = Math.max(1, Number(this.spawnCueDurationMs) || 860);
+    const elapsed = Math.max(0, now - (this.spawnCueStartedAt || now));
+    const progress = Math.max(0, Math.min(1, elapsed / duration));
+    if (!this.active || this.visualsDeactivated || progress >= 1) {
+      layer.visible = false;
+      layer._debugSpawnCue = {
+        visible: false,
+        progress: Number(progress.toFixed(3))
+      };
+      return;
+    }
+
+    const fade = Math.pow(1 - progress, 0.72);
+    const color = this.visualVariant?.accent || this.visualVariant?.tint || this.color || 0x66f7ff;
+    const radius = Math.max(14, this.radius * (1.35 + progress * 0.75));
+    const outer = radius + 8 + progress * 12;
+    const sweep = this.idlePhase + progress * Math.PI * 1.4;
+    layer.circle(0, 0, outer);
+    layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
+    layer.circle(0, 0, radius * 0.66);
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.18 * fade });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = sweep + i * Math.PI * 0.5;
+      const inner = radius * 0.5;
+      const tip = outer + (i % 2) * 4;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * tip, Math.sin(angle) * tip);
+    }
+    layer.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.26 * fade });
+    layer.visible = true;
+    layer._debugSpawnCue = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      radius: Number(outer.toFixed(1)),
+      fade: Number(fade.toFixed(3))
+    };
   }
 
   returnToFormation() {
@@ -2264,6 +2331,8 @@ export class Enemy {
     if (this.healthBar) this.healthBar.visible = false;
     this.hitFeedbackLayer?.clear();
     if (this.hitFeedbackLayer) this.hitFeedbackLayer.visible = false;
+    this.spawnCueLayer?.clear();
+    if (this.spawnCueLayer) this.spawnCueLayer.visible = false;
     this.threatTelegraphLayer?.clear();
     this.eliteVfxLayer?.clear();
     if (this.visualEnhancementCleanup) {

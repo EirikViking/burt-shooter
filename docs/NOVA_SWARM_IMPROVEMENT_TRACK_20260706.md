@@ -545,3 +545,21 @@ Safety notes:
 
 - No bonus drone health, movement speed, score value, spawn cadence, powerup roll, pickup radius, enemy behavior, projectile behavior, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only intent chrome owned by the `BonusDrone` entity.
+
+## Batch 25 - Enemy Spawn Arrival Cues
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+87. Newly visible enemies now get a brief local arrival shimmer so fresh threats are easier to spot.
+88. The arrival cue uses enemy accent colors plus a subtle cyan sweep, preserving enemy identity while staying non-textual.
+89. Delayed-entry enemies reset the cue when they actually appear, so offscreen wait time cannot consume the readable entrance effect.
+90. `check:enemy-spawn-cue` proves the cue appears on a real enemy and clears after its short duration.
+
+Verification:
+
+- `npm run check:enemy-spawn-cue`
+
+Safety notes:
+
+- No enemy spawn timing, movement, health, damage, hitboxes, firing cadence, score value, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only enemy-local entrance feedback owned by the `Enemy` entity.
