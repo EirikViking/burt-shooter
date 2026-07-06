@@ -1050,13 +1050,15 @@ async function runBrowserSmoke() {
     const hangarReviewState = await readState(page);
     const archive = hangarReviewState.shipSelect?.careerInfo?.pilotOrdersArchive;
     assert.equal(archive?.total, RUN_CONTRACT_ORDER_IDS.length, 'Hangar review should expose the full finite order count');
+    assert.equal(archive?.heading, 'PILOT ORDERS', 'Hangar review should be framed as the full Pilot Orders review');
+    assert.equal(archive?.countLabel, 'DONE 3/50', 'Hangar review should label the completed-order counter');
     assert.equal(archive?.activeCount, 1, 'Hangar review should show active unfinished Pilot Orders');
     assert.ok(archive?.nextCount >= 1, 'Hangar review should expose at least one queued Pilot Order');
     assert.match(archive?.summary || '', /ACTIVE 1/, 'Hangar review header should summarize active Pilot Orders');
     assert.match(archive?.summary || '', /NEXT [1-9]/, 'Hangar review header should summarize queued Pilot Orders');
     assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
-    assert.match(archive?.text || '', /ACTIVE Graze x10 0\/10/, 'Hangar review should list active Pilot Orders with progress');
-    assert.match(archive?.text || '', /NEXT Support Hunter 0\/2/, 'Hangar review should list the next queued Pilot Order');
+    assert.match(archive?.text || '', /ACTIVE 0\/10 \/\/ Graze x10/, 'Hangar review should list active Pilot Orders with progress first');
+    assert.match(archive?.text || '', /NEXT 0\/2 \/\/ Support Hunter/, 'Hangar review should list the next queued Pilot Order with progress first');
     assert.match(archive?.text || '', /Boss Breaker/, 'Hangar review should list completed Boss Breaker');
     assert.match(archive?.text || '', /1000 Enemies/, 'Hangar review should list completed 1000 Enemies');
     assert.match(archive?.text || '', /2500 Enemies/, 'Hangar review should list completed 2500 Enemies');

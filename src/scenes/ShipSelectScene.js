@@ -896,19 +896,19 @@ export class ShipSelectScene {
     const activeLines = activeOrders.map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
       return {
-        text: `${translateText('ACTIVE')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`,
+        text: `${translateText('ACTIVE')} ${progress} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
         tone: 'active'
       };
     });
     const nextLines = nextOrders.slice(0, 1).map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
       return {
-        text: `${translateText('NEXT')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`,
+        text: `${translateText('NEXT')} ${progress} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
         tone: 'next'
       };
     });
     const completedLines = completedOrders.map((entry) => ({
-      text: `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+      text: `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
       tone: 'done'
     }));
     const lineEntries = [
@@ -932,7 +932,8 @@ export class ShipSelectScene {
     bg.stroke({ color: accent, width: 1, alpha: 0.3 });
     panel.addChild(bg);
 
-    const heading = createText(translateText('PILOT ORDERS CLEARED'), {
+    const headingLabel = translateText('PILOT ORDERS');
+    const heading = createText(headingLabel, {
       fontFamily: FONT_BODY,
       fontSize: compact ? 11 : 13,
       fontWeight: '900',
@@ -940,9 +941,10 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     heading.position.set(18, 10);
-    fitDisplayToBox(heading, width - 104, compact ? 18 : 20, { minScale: 0.56 });
+    fitDisplayToBox(heading, width - 124, compact ? 18 : 20, { minScale: 0.56 });
 
-    const count = createText(translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0)), {
+    const countLabel = `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0))}`;
+    const count = createText(countLabel, {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 12 : 14,
       fontWeight: '900',
@@ -954,7 +956,7 @@ export class ShipSelectScene {
     });
     count.anchor.set(1, 0);
     count.position.set(width - 18, 10);
-    fitDisplayToBox(count, 68, compact ? 18 : 20, { minScale: 0.58 });
+    fitDisplayToBox(count, 92, compact ? 18 : 20, { minScale: 0.52 });
 
     const archiveSummaryParts = [
       activeOrders.length ? `${translateText('ACTIVE')} ${activeOrders.length}` : null,
@@ -1045,6 +1047,8 @@ export class ShipSelectScene {
     panel.addChild(heading, count, hint, ...listTexts);
 
     panel._pilotOrdersArchive = {
+      heading: headingLabel,
+      countLabel,
       text: completedText,
       activeCount: activeOrders.length,
       nextCount: nextOrders.length,
@@ -1124,6 +1128,8 @@ export class ShipSelectScene {
       snapshot: bounds(refs.snapshot),
       pilotOrdersArchive: refs.pilotOrdersArchive ? {
         bounds: bounds(refs.pilotOrdersArchive),
+        heading: refs.pilotOrdersArchive._pilotOrdersArchive?.heading || '',
+        countLabel: refs.pilotOrdersArchive._pilotOrdersArchive?.countLabel || '',
         text: refs.pilotOrdersArchive._pilotOrdersArchive?.text || '',
         activeCount: refs.pilotOrdersArchive._pilotOrdersArchive?.activeCount || 0,
         nextCount: refs.pilotOrdersArchive._pilotOrdersArchive?.nextCount || 0,

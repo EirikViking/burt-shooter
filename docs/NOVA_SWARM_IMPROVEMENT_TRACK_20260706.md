@@ -137,3 +137,25 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 7 - Pilot Orders Archive Clarity
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+19. Hangar Career Intel now labels the Pilot Orders review panel as `PILOT ORDERS` instead of implying it only contains cleared orders.
+20. The archive count now explicitly reads as a completed-order counter, such as `DONE 3/50`.
+21. Active and queued archive rows now put progress first, making long review lists faster to scan.
+
+Verification:
+
+- `npm run check:run-contracts`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.
