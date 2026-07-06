@@ -47,6 +47,10 @@ export class HUD {
     this.missionPanel = new PIXI.Graphics();
     this.missionLabel = null;
     this.missionText = null;
+    this.missionProgressBg = new PIXI.Graphics();
+    this.missionProgressFill = new PIXI.Graphics();
+    this.missionProgressActive = new PIXI.Graphics();
+    this.missionProgressTicks = new PIXI.Graphics();
     this.activePowerupRows = [];
     this.highscoreChaseRenderKey = '';
     this.highscoreChaseDisplayKey = '';
@@ -77,6 +81,10 @@ export class HUD {
     this.hudContainer.addChild(this.leftPanel);
     this.hudContainer.addChild(this.rightPanel);
     this.hudContainer.addChild(this.missionPanel);
+    this.hudContainer.addChild(this.missionProgressBg);
+    this.hudContainer.addChild(this.missionProgressFill);
+    this.hudContainer.addChild(this.missionProgressActive);
+    this.hudContainer.addChild(this.missionProgressTicks);
 
     // Rank Group
     this.rankIcon.anchor.set(0.5);
@@ -551,21 +559,161 @@ export class HUD {
       this.missionText.text = bossHealth === null
         ? 'BOSS SIGNAL INBOUND'
         : `BOSS HP ${bossHealth}`;
+      this.updateMissionProgress({
+        state,
+        phase: 'BOSS',
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
       return;
     }
 
     if (state === 'LEVEL_COMPLETE') {
       this.missionText.text = 'SECTOR CLEAR';
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies: 0,
+        activeBullets: 0
+      });
       return;
     }
 
     if (state === 'WAVE_BRIEFING') {
       this.missionText.text = `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
       return;
     }
 
     const waveText = waveTotal > 0 ? `WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL ${this.game.level}`;
     this.missionText.text = `${waveText}  HOSTILES ${activeEnemies}  THREATS ${activeBullets}`;
+    this.updateMissionProgress({
+      state,
+      phase,
+      waveTotal,
+      waveIndex,
+      activeEnemies,
+      activeBullets
+    });
+  }
+
+  updateMissionProgress({
+    state = 'IDLE',
+    phase = 'WAVES',
+    waveTotal = 0,
+    waveIndex = 1,
+    activeEnemies = 0,
+    activeBullets = 0
+  } = {}) {
+    const rail = this.missionProgressBg;
+    const fill = this.missionProgressFill;
+    const active = this.missionProgressActive;
+    const ticks = this.missionProgressTicks;
+    if (!rail || !fill || !active || !ticks) return;
+
+    const width = Math.max(0, Number(rail.__w) || 0);
+    const height = Math.max(0, Number(rail.__h) || 0);
+    const x = Number(rail.__x) || 0;
+    const y = Number(rail.__y) || 0;
+    const total = Math.max(0, Math.floor(Number(waveTotal) || 0));
+    const clampedWave = total > 0
+      ? Math.max(1, Math.min(total, Math.floor(Number(waveIndex) || 1)))
+      : 0;
+    const hasRail = width > 12 && height > 1 && total > 0;
+    const isBoss = phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE';
+    const isClear = state === 'LEVEL_COMPLETE';
+    const isBriefing = state === 'WAVE_BRIEFING';
+    const pressure = Math.min(1, (Math.max(0, activeEnemies) / 10) + (Math.max(0, activeBullets) / 36));
+    const pulse = 0.5 + Math.sin(Date.now() * 0.012) * 0.5;
+    const activeColor = isBoss
+      ? 0xff55d9
+      : isClear
+        ? 0x75ff8d
+        : isBriefing
+          ? 0xffef7e
+          : pressure > 0.75
+            ? 0xff7a55
+            : 0x66f7ff;
+
+    rail.clear();
+    fill.clear();
+    active.clear();
+    ticks.clear();
+    rail.visible = fill.visible = active.visible = ticks.visible = hasRail;
+    if (!hasRail) {
+      rail._debugMissionProgress = { visible: false, waveTotal: total };
+      return;
+    }
+
+    const completedRatio = isBoss || isClear ? 1 : Math.max(0, Math.min(1, (clampedWave - 1) / total));
+    const activeStart = Math.max(0, Math.min(1, (clampedWave - 1) / total));
+    const activeEnd = Math.max(activeStart, Math.min(1, clampedWave / total));
+    const radius = Math.max(1.5, height / 2);
+
+    rail.roundRect(x, y, width, height, radius);
+    rail.fill({ color: 0x020711, alpha: 0.82 });
+    rail.stroke({ color: 0x66f7ff, width: 1, alpha: 0.24 });
+
+    if (completedRatio > 0) {
+      fill.roundRect(x, y, Math.max(height, width * completedRatio), height, radius);
+      fill.fill({ color: isClear ? 0x75ff8d : (isBoss ? 0xff55d9 : 0x4ce7ff), alpha: isClear ? 0.92 : 0.72 });
+    }
+
+    if (!isBoss && !isClear) {
+      const segmentX = x + width * activeStart;
+      const segmentW = Math.max(height * 1.6, width * Math.max(0.015, activeEnd - activeStart));
+      active.roundRect(segmentX, y - 1, Math.min(segmentW, x + width - segmentX), height + 2, radius + 1);
+      active.fill({ color: activeColor, alpha: 0.34 + pulse * (pressure > 0.5 ? 0.34 : 0.18) });
+      active.stroke({ color: activeColor, width: 1.25, alpha: 0.62 + pulse * 0.22 });
+      const sparkX = Math.min(x + width - 2, segmentX + segmentW * 0.5);
+      active.circle(sparkX, y + height / 2, 2.2 + pressure * 2.2 + pulse * 0.8);
+      active.fill({ color: activeColor, alpha: 0.42 + pressure * 0.22 });
+    } else {
+      active.roundRect(x, y - 1, width, height + 2, radius + 1);
+      active.stroke({ color: activeColor, width: isClear ? 1.8 : 1.4, alpha: isClear ? 0.72 : 0.58 + pulse * 0.24 });
+      if (isClear) {
+        active.circle(x + width - height / 2, y + height / 2, height * 0.95);
+        active.fill({ color: activeColor, alpha: 0.82 });
+      }
+    }
+
+    const tickEvery = Math.max(1, Math.ceil(total / 12));
+    let tickCount = 0;
+    for (let i = 1; i < total; i += 1) {
+      if (i % tickEvery !== 0) continue;
+      const tx = Math.round(x + width * (i / total));
+      ticks.moveTo(tx, y - 1);
+      ticks.lineTo(tx, y + height + 1);
+      tickCount += 1;
+    }
+    if (tickCount) {
+      ticks.stroke({ color: 0xf8fbff, width: 1, alpha: 0.38 });
+    }
+
+    rail._debugMissionProgress = {
+      visible: true,
+      state,
+      phase,
+      waveTotal: total,
+      waveIndex: clampedWave,
+      completedRatio: Number(completedRatio.toFixed(3)),
+      activeStart: Number(activeStart.toFixed(3)),
+      activeEnd: Number(activeEnd.toFixed(3)),
+      pressure: Number(pressure.toFixed(3)),
+      tickCount,
+      color: activeColor
+    };
   }
 
   updateActivePowerup() {
@@ -1176,7 +1324,15 @@ export class HUD {
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
     this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 14 : 12));
     this.missionText.x = missionPanelX + missionPanelWidth / 2;
-    this.missionText.y = missionPanelY + (layout.isMobile ? 27 : (isLargeDesktop ? 37 : 33));
+    this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 36 : 32));
+    if (this.missionProgressBg) {
+      const railPad = Math.round((layout.isMobile ? 10 : 14) * uiScale);
+      const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
+      this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
+      this.missionProgressBg.__y = Math.round(missionPanelY + missionPanelHeight - railHeight - (layout.isMobile ? 4 : 6) * Math.min(uiScale, 1.4));
+      this.missionProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
+      this.missionProgressBg.__h = railHeight;
+    }
 
     this.locationText.x = canvasWidth - margin;
     this.locationText.y = layout.isMobile

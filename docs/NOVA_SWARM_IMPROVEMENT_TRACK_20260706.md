@@ -4,6 +4,8 @@ Goal: implement and verify at least 50 new player-facing improvements while keep
 
 Expanded 2026-07-06 request: continue toward 100 additional improvements after batch 4, still in small rollback-friendly batches.
 
+Expanded 2026-07-07 request: continue toward 300 total improvements, researching genre competitors and translating useful ideas into safe, focused Nova Swarm improvements.
+
 ## Batch 1 - Pilot Orders Loop Clarity
 
 Source target: `codex/main-menu-run-contracts-20260702`
@@ -450,3 +452,22 @@ Safety notes:
 
 - No enemy bullet hitbox, speed, damage, spawn cadence, behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only projectile readability polish with existing projectile screenshot coverage.
+
+## Batch 20 - Mission Progress Rail
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+67. The in-run Mission Status HUD now includes a compact segmented sector-wave progress rail.
+68. The rail marks completed waves separately from the current active wave, so it shows run progress without pretending the current wave is already cleared.
+69. Active wave segments now pulse with a pressure color based on existing hostiles/threats counts, adding readable pressure feedback without changing spawns or damage.
+70. Boss and sector-clear states now fill the mission rail with distinct boss/clear colors, making phase transitions easier to read at a glance.
+
+Verification:
+
+- `npm run check:mission-progress-hud`
+- Screenshot proof: `test-results/mission-progress-hud-2026-07-06T22-13-39-424Z/mission-progress-hud.png`
+
+Safety notes:
+
+- No wave count, enemy spawn, boss timing, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only HUD instrumentation based on existing wave/hostile/threat state.
