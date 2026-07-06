@@ -248,6 +248,7 @@ export class PlayScene {
     this._overrunConfirmPointerTarget = null;
     this.overrunConfirmGamepadWasPressed = false;
     this.gameOverInterlude = null;
+    this.criticalHullOverlay = null;
     this.overrunSealTexture = null;
     this.bossWarningEmblemTextures = [];
     this.bossWarningBossTextures = [];
@@ -415,6 +416,7 @@ export class PlayScene {
     this.decorativeOverlay.eventMode = 'none';
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
+    this.criticalHullOverlay = null;
     this.overrunClearEffects = [];
     this.overrunCelebratedMilestones = new Set();
     this.clearSectorArrivalStinger();
@@ -2188,12 +2190,14 @@ export class PlayScene {
 
       if (this.gameOverInterlude?.active) {
         this.cleanupSkippedFrameVisuals('gameover_interlude');
+        this.updateCriticalHullOverlay(delta);
         measure('gameover_interlude', () => this.updateGameOverInterlude(delta));
         return;
       }
 
       if (this.overrunMilestoneInterlude?.active) {
         this.cleanupSkippedFrameVisuals('overrun_interlude');
+        this.updateCriticalHullOverlay(delta);
         measure('overrun_interlude', () => this.updateOverrunMilestoneInterlude(delta));
         return;
       }
@@ -2222,14 +2226,15 @@ export class PlayScene {
 
       this.handlePauseToggle();
       this.updateControllerPresencePause();
-    if (this.isPaused) {
-      this.cleanupSkippedFrameVisuals('pause');
-      measure('pause_menu', () => {
-        this.pauseMenuFx?.update?.(delta);
-        this.updatePauseMenuControls(delta);
-      });
-      return;
-    }
+      if (this.isPaused) {
+        this.cleanupSkippedFrameVisuals('pause');
+        this.updateCriticalHullOverlay(delta);
+        measure('pause_menu', () => {
+          this.pauseMenuFx?.update?.(delta);
+          this.updatePauseMenuControls(delta);
+        });
+        return;
+      }
 
       // Player update
       measure('player', () => {
@@ -2274,6 +2279,7 @@ export class PlayScene {
       if (this.freezeTimerMs > 0) {
         this.freezeTimerMs -= delta * 16.67;
         this.cleanupSkippedFrameVisuals('freeze');
+        this.updateCriticalHullOverlay(delta);
         this.updateDevOverlay();
         return;
       }
@@ -2522,6 +2528,7 @@ export class PlayScene {
       measure('magnet_pull', () => this.applyMagnetPull(delta));
       measure('orbital_strike', () => this.updateOrbitalStrike(delta));
       measure('random_popups', () => this.updateRandomPopups(delta));
+      measure('critical_hull_overlay', () => this.updateCriticalHullOverlay(delta));
       measure('low_lives', () => this.checkLowLives());
 
       const scoreDelta = this.game.score - this.lastScoreSeen;
@@ -5205,6 +5212,81 @@ export class PlayScene {
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
       AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
     }
+  }
+
+  ensureCriticalHullOverlay() {
+    if (this.criticalHullOverlay && this.criticalHullOverlay.parent) return this.criticalHullOverlay;
+    if (!this.uiOverlay) return null;
+    const overlay = new PIXI.Graphics();
+    overlay.label = 'criticalHullOverlay';
+    overlay.zIndex = 180;
+    overlay.eventMode = 'none';
+    overlay.visible = false;
+    this.uiOverlay.addChild(overlay);
+    this.criticalHullOverlay = overlay;
+    return overlay;
+  }
+
+  updateCriticalHullOverlay(delta = 1) {
+    const overlay = this.ensureCriticalHullOverlay();
+    if (!overlay) return;
+    const lives = Number(this.game?.lives) || 0;
+    const shouldShow = lives === 1 &&
+      !this.isPaused &&
+      !this.introActive &&
+      !this.gameOverInterlude?.active &&
+      !this.overrunMilestoneInterlude?.active &&
+      !this.gameOverSequenceStarted &&
+      !this.game?.gameOverTransitionPending;
+    overlay.clear();
+    if (!shouldShow) {
+      overlay.visible = false;
+      overlay._debugCriticalHull = { visible: false, lives, paused: Boolean(this.isPaused) };
+      return;
+    }
+
+    const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    const edge = Math.max(10, Math.min(34, Math.min(width, height) * 0.024));
+    const pulse = 0.5 + Math.sin(Date.now() * 0.009 + Number(delta || 0) * 0.1) * 0.5;
+    const hotAlpha = 0.12 + pulse * 0.08;
+    const lineAlpha = 0.28 + pulse * 0.18;
+    overlay.rect(0, 0, width, edge);
+    overlay.fill({ color: 0xff315f, alpha: hotAlpha });
+    overlay.rect(0, height - edge, width, edge);
+    overlay.fill({ color: 0xff315f, alpha: hotAlpha * 0.86 });
+    overlay.rect(0, 0, edge * 0.8, height);
+    overlay.fill({ color: 0xff315f, alpha: hotAlpha * 0.72 });
+    overlay.rect(width - edge * 0.8, 0, edge * 0.8, height);
+    overlay.fill({ color: 0xff315f, alpha: hotAlpha * 0.72 });
+
+    const corner = Math.max(34, edge * 2.2);
+    const inset = Math.max(8, edge * 0.42);
+    const strokeWidth = Math.max(1.5, edge * 0.12);
+    const drawCorner = (sx, sy) => {
+      const x = sx < 0 ? width - inset : inset;
+      const y = sy < 0 ? height - inset : inset;
+      overlay.moveTo(x, y + sy * corner);
+      overlay.lineTo(x, y);
+      overlay.lineTo(x + sx * corner, y);
+    };
+    drawCorner(1, 1);
+    drawCorner(-1, 1);
+    drawCorner(1, -1);
+    drawCorner(-1, -1);
+    overlay.stroke({ color: 0xffd15c, width: strokeWidth, alpha: lineAlpha });
+    overlay.rect(inset * 0.62, inset * 0.62, width - inset * 1.24, height - inset * 1.24);
+    overlay.stroke({ color: 0x37f5ff, width: Math.max(1, strokeWidth * 0.55), alpha: 0.08 + pulse * 0.08 });
+    overlay.visible = true;
+    overlay._debugCriticalHull = {
+      visible: true,
+      lives,
+      edge: Math.round(edge),
+      hotAlpha: Number(hotAlpha.toFixed(3)),
+      lineAlpha: Number(lineAlpha.toFixed(3)),
+      width: Math.round(width),
+      height: Math.round(height)
+    };
   }
 
   triggerPlayerDeathFeedback(options = {}) {

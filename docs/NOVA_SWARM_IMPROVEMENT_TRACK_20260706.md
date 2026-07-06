@@ -509,3 +509,21 @@ Safety notes:
 
 - No powerup drop rate, movement speed, lifetime, pickup radius, effect, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only pickup readability cue using existing player/powerup positions.
+
+## Batch 23 - Critical Hull Edge Warning
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+79. Final-hull gameplay now has a continuous edge-only critical hull overlay so last life feels dangerous beyond the one-time warning toast.
+80. The overlay uses red edge bands, warning corner brackets, and a faint inner cockpit frame while keeping the danger zone and center text clear.
+81. The warning hides during pause, intro, game-over, overrun interludes, death, and life recovery so it does not imply danger outside active last-life play.
+82. `check:critical-hull-overlay` proves active, recovered, paused, and dead states with browser screenshot evidence.
+
+Verification:
+
+- `npm run check:critical-hull-overlay`
+
+Safety notes:
+
+- No life count, damage, invulnerability, enemy behavior, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only last-life readability cue drawn on the existing UI overlay.
