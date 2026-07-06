@@ -2,6 +2,8 @@
 
 Goal: implement and verify at least 50 new player-facing improvements while keeping rollback simple and preserving Steam/score/leaderboard/achievement safety boundaries.
 
+Expanded 2026-07-06 request: continue toward 100 additional improvements after batch 4, still in small rollback-friendly batches.
+
 ## Batch 1 - Pilot Orders Loop Clarity
 
 Source target: `codex/main-menu-run-contracts-20260702`
@@ -88,4 +90,26 @@ Verification:
 Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, public branch, or live branch change in the source pass.
+- Rollback should remain one source commit for this batch.
+
+## Batch 5 - Pilot Orders Review Path
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+13. Fresh Pilot Orders now introduce the board as Mayhem tactics training before anything has been cleared.
+14. Once any Pilot Order is cleared, the main-menu board and Ship Hangar dock card point players toward the review/archive path.
+15. Career Intel now summarizes active, queued, and completed Pilot Orders in the archive header.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T18-13-30-768Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.

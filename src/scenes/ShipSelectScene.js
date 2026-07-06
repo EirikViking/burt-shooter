@@ -956,7 +956,17 @@ export class ShipSelectScene {
     count.position.set(width - 18, 10);
     fitDisplayToBox(count, 68, compact ? 18 : 20, { minScale: 0.58 });
 
-    const hint = createText(translateText(PILOT_ORDERS_ARCHIVE_HINT), {
+    const archiveSummaryParts = [
+      activeOrders.length ? `${translateText('ACTIVE')} ${activeOrders.length}` : null,
+      nextOrders.length ? `${translateText('NEXT')} ${nextOrders.length}` : null,
+      completedOrders.length
+        ? `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0))}`
+        : null
+    ].filter(Boolean);
+    const archiveSummary = archiveSummaryParts.length
+      ? archiveSummaryParts.join(' // ')
+      : translateText(PILOT_ORDERS_ARCHIVE_HINT);
+    const hint = createText(archiveSummary, {
       fontFamily: FONT_BODY,
       fontSize: compact ? 9 : 11,
       fontWeight: '800',
@@ -1039,7 +1049,8 @@ export class ShipSelectScene {
       activeCount: activeOrders.length,
       nextCount: nextOrders.length,
       completedCount: review?.completedCount || 0,
-      total: review?.total || 0
+      total: review?.total || 0,
+      summary: archiveSummary
     };
     return panel;
   }
@@ -1117,7 +1128,8 @@ export class ShipSelectScene {
         activeCount: refs.pilotOrdersArchive._pilotOrdersArchive?.activeCount || 0,
         nextCount: refs.pilotOrdersArchive._pilotOrdersArchive?.nextCount || 0,
         completedCount: refs.pilotOrdersArchive._pilotOrdersArchive?.completedCount || 0,
-        total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0
+        total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0,
+        summary: refs.pilotOrdersArchive._pilotOrdersArchive?.summary || ''
       } : null,
       backButton: bounds(refs.close)
     };

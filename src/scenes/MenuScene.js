@@ -1238,7 +1238,12 @@ export class MenuScene {
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
 
-    this.highscoreBtn = this.createButton('SHIP HANGAR', layout, { accent: 0x37f5ff, icon: 'hangar', subLabel: 'UPGRADE & CUSTOMIZE' });
+    this.highscoreBtn = this.createButton('SHIP HANGAR', layout, {
+      accent: 0x37f5ff,
+      icon: 'hangar',
+      subLabel: 'UPGRADE & CUSTOMIZE',
+      dynamicSubLabel: () => this.getHangarButtonSubLabel()
+    });
     this.highscoreBtn.alpha = 0;  // Start invisible
     this.highscoreBtn.on('pointerdown', () => {
       this.openShipSelect();
@@ -2006,6 +2011,18 @@ export class MenuScene {
     const title = translateText(contract.shortTitle || contract.title || contract.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
     return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''}: ${title} ${progress}`.trim();
+  }
+
+  getHangarButtonSubLabel() {
+    const hangarProgress = readHangarProgressState();
+    const missionState = getRunContractMenuState(hangarProgress, {
+      forceCompletionVisible: true,
+      showPilotOrders: true
+    });
+    if ((Number(missionState.completedCount) || 0) > 0) {
+      return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''}`.trim();
+    }
+    return translateText('UPGRADE & CUSTOMIZE');
   }
 
   drawRunModeExplainerPanel(layout, width, height) {
@@ -2875,6 +2892,8 @@ export class MenuScene {
           loaded: Boolean(this.menuIconTextures?.[button?._iconAssetKey]),
           spriteVisible: Boolean(button?._iconSprite?.visible),
           fallbackVisible: Boolean(button?._icon?.visible),
+          label: button?._label?.text || null,
+          sublabel: button?._sublabel?.text || null,
           bounds: boundsForDisplayObject(button?._iconSprite?.visible ? button?._iconSprite : button?._icon),
           tileBounds: button ? {
             x: Math.round(button.x - (button._btnWidth || 0) / 2),

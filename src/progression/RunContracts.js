@@ -1276,7 +1276,7 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
   return {
     version: state.version,
     title: 'PILOT ORDERS',
-    subtitle: 'Review cleared orders in Ship Hangar.',
+    subtitle: completedCount > 0 ? 'Review cleared orders in Ship Hangar.' : 'Learn key Mayhem tactics.',
     status,
     hidden: status === 'hidden',
     disabledBySetting: !showPilotOrders && !allComplete,

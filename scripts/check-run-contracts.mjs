@@ -208,11 +208,13 @@ function runCatalogAndSaveTests() {
   assert.equal(menuState.progressLabel, '0/50');
   assert.equal(menuState.completedCount, 0);
   assert.equal(menuState.total, 50);
-  assert.equal(menuState.subtitle, 'Review cleared orders in Ship Hangar.');
+  assert.equal(menuState.subtitle, 'Learn key Mayhem tactics.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
   assert.equal(menuState.next?.[0]?.id, 'support_hunter', 'menu state should expose the next queued Pilot Order after active slots');
   assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
+  const completedSubtitleState = getRunContractMenuState(completeIds(migrated.runContracts, ['graze_10']));
+  assert.equal(completedSubtitleState.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders should point players to Ship Hangar review');
   const disabledMenuState = getRunContractMenuState(migrated, { showPilotOrders: false });
   assert.equal(disabledMenuState.status, 'hidden', 'settings toggle should hide unfinished Pilot Orders');
   assert.equal(disabledMenuState.disabledBySetting, true, 'hidden unfinished board should identify the toggle as the reason');
@@ -783,7 +785,11 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   }
 
   assert.match(board?.title || '', /^PILOT ORDERS [0-9,]+\/[0-9,]+$/);
-  assert.equal(board?.subtitle, 'Review cleared orders in Ship Hangar.');
+  const freshTrack = /\b0\/50$/.test(board?.title || '');
+  assert.equal(
+    board?.subtitle,
+    freshTrack ? 'Learn key Mayhem tactics.' : 'Review cleared orders in Ship Hangar.'
+  );
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
   for (const row of board.rows) {
@@ -841,6 +847,8 @@ async function runBrowserSmoke() {
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
+    assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Learn key Mayhem tactics.', 'fresh Pilot Orders board should introduce the feature as tactics training');
+    assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
     assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS 0\/50: Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order');
 
     await seedMenuProfile(page, activeState, 1);
@@ -1002,6 +1010,8 @@ async function runBrowserSmoke() {
     });
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
+    assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders board should point to the review location');
+    assert.match(completedProof.state.menu.menuIcons?.shipHangar?.sublabel || '', /PILOT ORDERS 1\/50/, 'Ship Hangar dock card should advertise Pilot Orders review progress');
 
     const completeProof = await captureMenuProof(page, {
       label: 'pilot-orders-complete-state-menu',
@@ -1042,6 +1052,9 @@ async function runBrowserSmoke() {
     assert.equal(archive?.total, RUN_CONTRACT_ORDER_IDS.length, 'Hangar review should expose the full finite order count');
     assert.equal(archive?.activeCount, 1, 'Hangar review should show active unfinished Pilot Orders');
     assert.ok(archive?.nextCount >= 1, 'Hangar review should expose at least one queued Pilot Order');
+    assert.match(archive?.summary || '', /ACTIVE 1/, 'Hangar review header should summarize active Pilot Orders');
+    assert.match(archive?.summary || '', /NEXT [1-9]/, 'Hangar review header should summarize queued Pilot Orders');
+    assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
     assert.match(archive?.text || '', /ACTIVE Graze x10 0\/10/, 'Hangar review should list active Pilot Orders with progress');
     assert.match(archive?.text || '', /NEXT Support Hunter 0\/2/, 'Hangar review should list the next queued Pilot Order');
     assert.match(archive?.text || '', /Boss Breaker/, 'Hangar review should list completed Boss Breaker');
