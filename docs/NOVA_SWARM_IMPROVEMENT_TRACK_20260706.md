@@ -581,3 +581,23 @@ Safety notes:
 
 - No Slow Time duration, enemy time scale, bullet time scale, hazard time scale, player control, powerup drop rate, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only chrono overlay drawn on the existing UI overlay.
+
+## Batch 27 - Pause Resume Context Chips
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+95. The pause command deck now shows four compact resume-context chips instead of only score and sector.
+96. Pause now includes the current lives count in the same quick-scan row.
+97. Last-life pause state gets urgent lives-chip text styling.
+98. Pause now includes the active powerup summary, including compact remaining seconds or charges where available.
+99. The pause debug state now exposes lives and powerup values so pause context is covered by automation.
+100. `check:pause-context-chips` proves score, sector, lives, active Slow Time, and Pilot Orders are all visible in one paused-run screenshot.
+
+Verification:
+
+- `npm run check:pause-context-chips`
+
+Safety notes:
+
+- No pause input behavior, gameplay timing, powerup duration, life count, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- UI-only pause overlay context polish using existing run and player state.

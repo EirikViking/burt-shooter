@@ -46,6 +46,7 @@ import { translateText } from '../i18n/index.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
+import { getPowerupMeta } from '../config/PowerupCatalog.js';
 import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
@@ -4754,41 +4755,67 @@ export class PlayScene {
     status.zIndex = 7;
     overlay.addChild(status);
 
-    const makeChip = (label, value, x, y, color = 0x00eaff) => {
+    const makeChip = (label, value, x, y, color = 0x00eaff, options = {}) => {
+      const chipWidth = Math.max(116, Number(options.width) || 184);
+      const chipHeight = Math.max(34, Number(options.height) || 40);
       const chip = new PIXI.Container();
       chip.label = `ui_pauseChip_${label}`;
       chip.zIndex = 6;
       chip.position.set(x, y);
       const bg = new PIXI.Graphics();
-      bg.roundRect(-92, -20, 184, 40, 7);
+      bg.roundRect(-chipWidth / 2, -chipHeight / 2, chipWidth, chipHeight, 7);
       bg.fill({ color: 0x031321, alpha: 0.82 });
       bg.stroke({ color, width: 1, alpha: 0.58 });
       const top = createText(label, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 10,
+        fontSize: Math.max(8, Math.round((options.labelSize || 10) * Math.min(uiScale, 1.15))),
         fontWeight: 'bold',
         fill: '#8df6ff',
         align: 'center'
       });
       top.anchor.set(0.5);
-      top.y = -8;
+      top.y = -chipHeight * 0.2;
       const bottom = createText(value, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 17,
+        fontSize: Math.max(10, Math.round((options.valueSize || 17) * Math.min(uiScale, 1.12))),
         fontWeight: 'bold',
         fill: '#ffffff',
         align: 'center'
       });
       bottom.anchor.set(0.5);
-      bottom.y = 8;
+      bottom.y = chipHeight * 0.2;
       chip.addChild(bg, top, bottom);
+      const fit = (text) => {
+        if (!text) return;
+        text.scale.set(1);
+        const maxWidth = chipWidth - 14;
+        if (text.width > maxWidth) {
+          const scale = Math.max(0.68, maxWidth / Math.max(1, text.width));
+          text.scale.set(scale);
+        }
+      };
+      fit(top);
+      fit(bottom);
+      chip.fitText = () => {
+        fit(top);
+        fit(bottom);
+      };
       chip.valueText = bottom;
+      chip.topText = top;
+      chip.bg = bg;
+      chip.accentColor = color;
       return chip;
     };
 
-    const scoreChip = makeChip(translateText('SCORE'), Number(this.game.score || 0).toLocaleString('en-US'), centerX - 104, panelY + 150, 0xffd15c);
-    const sectorChip = makeChip(translateText('SECTOR'), String(this.game.level || 1).padStart(2, '0'), centerX + 104, panelY + 150, 0x00eaff);
-    decorLayer.addChild(scoreChip, sectorChip);
+    const chipY = panelY + 150;
+    const chipWidth = Math.min(138 * uiScale, Math.max(118, (panelWidth - 92) / 4));
+    const chipGap = Math.min(14 * uiScale, 16);
+    const chipStep = chipWidth + chipGap;
+    const scoreChip = makeChip(translateText('SCORE'), Number(this.game.score || 0).toLocaleString('en-US'), centerX - chipStep * 1.5, chipY, 0xffd15c, { width: chipWidth, valueSize: 15 });
+    const sectorChip = makeChip(translateText('SECTOR'), String(this.game.level || 1).padStart(2, '0'), centerX - chipStep * 0.5, chipY, 0x00eaff, { width: chipWidth, valueSize: 15 });
+    const livesChip = makeChip(translateText('LIVES'), String(this.game.lives || 0), centerX + chipStep * 0.5, chipY, this.game.lives <= 1 ? 0xff4f6d : 0x7fffd8, { width: chipWidth, valueSize: 15 });
+    const powerupChip = makeChip(translateText('POWERUPS'), this.getPausePowerupSummary(), centerX + chipStep * 1.5, chipY, 0xb39cff, { width: chipWidth, valueSize: 14 });
+    decorLayer.addChild(scoreChip, sectorChip, livesChip, powerupChip);
 
     const pilotOrdersLine = createText(this.getPausePilotOrdersSummary(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -4835,6 +4862,10 @@ export class PlayScene {
       status,
       scoreValue: scoreChip.valueText,
       sectorValue: sectorChip.valueText,
+      livesChip,
+      livesValue: livesChip.valueText,
+      powerupChip,
+      powerupValue: powerupChip.valueText,
       pilotOrdersValue: pilotOrdersLine,
       leftRadar,
       rightRadar,
@@ -4852,7 +4883,36 @@ export class PlayScene {
     if (!decor) return;
     if (decor.scoreValue) decor.scoreValue.text = Number(this.game?.score || 0).toLocaleString('en-US');
     if (decor.sectorValue) decor.sectorValue.text = String(this.game?.level || 1).padStart(2, '0');
+    if (decor.livesValue) {
+      const lives = Math.max(0, Math.floor(Number(this.game?.lives) || 0));
+      decor.livesValue.text = String(lives);
+      decor.livesValue.style.fill = lives <= 1 ? '#ff9aa8' : '#ffffff';
+    }
+    if (decor.powerupValue) {
+      decor.powerupValue.text = this.getPausePowerupSummary();
+      decor.powerupValue.style.fill = this.player?.getActivePowerupStates?.()?.length ? '#efe8ff' : '#8df6ff';
+    }
+    decor.livesChip?.fitText?.();
+    decor.powerupChip?.fitText?.();
     if (decor.pilotOrdersValue) decor.pilotOrdersValue.text = this.getPausePilotOrdersSummary();
+  }
+
+  getPausePowerupSummary(now = Date.now()) {
+    const states = this.player?.getActivePowerupStates?.() || [];
+    const state = states.find((item) => !item.spent) || states[0];
+    if (!state) return '--';
+    const meta = getPowerupMeta(state.type) || {};
+    const label = translateText(meta.shortLabel || state.label || state.type || 'POWERUP');
+    const remaining = Math.max(0, Math.ceil((Number(state.remainingMs) || 0) / 1000));
+    const charges = Number(state.charges || 0);
+    const maxCharges = Number(state.maxCharges || 0);
+    if (state.spent) return `${label} --`;
+    if (remaining > 0) return `${label} ${remaining}s`;
+    if (charges > 0 && maxCharges > 0) return `${label} ${charges}/${maxCharges}`;
+    if (charges > 0) return `${label} ${charges}`;
+    const detail = String(state.detail || '').trim();
+    if (detail) return `${label} ${translateText(detail)}`;
+    return label;
   }
 
   getPauseDebugState() {
@@ -4861,6 +4921,8 @@ export class PlayScene {
       visible: Boolean(this.pauseOverlay?.visible && this.pauseOverlay?.parent),
       score: decor?.scoreValue?.text ?? null,
       sector: decor?.sectorValue?.text ?? null,
+      lives: decor?.livesValue?.text ?? null,
+      powerup: decor?.powerupValue?.text ?? null,
       pilotOrders: decor?.pilotOrdersValue?.text ?? null
     };
   }
