@@ -773,6 +773,7 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     assert.ok(!boundsOverlap(row.detailBounds, row.progressBounds, 2), `${row.id} detail/progress text should not overlap`);
     assert.equal(row.detail, ACTIVE_DESCRIPTIONS[row.id], `${row.id} should show its starter goal description`);
     assert.match(row.progress, /^(COMPLETE|[0-9,]+\/[0-9,]+)$/, `${row.id} should show clear progress`);
+    assert.ok(Number(row.progressRatio) >= 0 && Number(row.progressRatio) <= 1, `${row.id} should expose a bounded visual progress ratio`);
   }
 }
 
@@ -883,6 +884,7 @@ async function runBrowserSmoke() {
       expectedStatus: 'active'
     });
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
+    assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
 
     const completeProof = await captureMenuProof(page, {
       label: 'pilot-orders-complete-state-menu',
@@ -1071,7 +1073,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE, PILOT ORDERS 50\/50, 2500 Enemies/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /Pilot orders: PILOT ORDERS COMPLETE\s+PILOT ORDERS 50\/50\s+2500 Enemies/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 

@@ -4125,6 +4125,7 @@ export class GameOverScene {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
     if (Array.isArray(row.value)) {
+      const separator = row.id === 'pilotOrders' ? '\n' : ', ';
       return row.value.map((value) => {
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
@@ -4137,7 +4138,7 @@ export class GameOverScene {
           return `${translateText('NEXT')}: ${title} ${progress}`;
         }
         return translateText(value);
-      }).join(', ');
+      }).join(separator);
     }
     if (typeof row.value === 'number') {
       return row.value.toLocaleString('en-US');
@@ -4241,19 +4242,22 @@ export class GameOverScene {
         const label = this.getRunReportFieldLabel(entry.id);
         const value = this.formatRunReportValue(entry);
         const rowText = [label, value].join(': ');
+        const isPilotOrdersRow = entry.id === 'pilotOrders';
+        const lineFontSize = isPilotOrdersRow ? Math.max(10, rowSize - 2) : rowSize;
         const line = createText(rowText, {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: rowSize,
+          fontSize: lineFontSize,
           fontWeight: rowIndex === 0 ? 'bold' : 'normal',
           fill: rowIndex === 0 ? '#ffffff' : '#cbeff4',
           stroke: '#031323',
           strokeThickness: 2,
           align: 'left',
           wordWrap: true,
-          wordWrapWidth: sectionWidth - 24
+          wordWrapWidth: sectionWidth - 24,
+          lineHeight: isPilotOrdersRow ? lineFontSize + 1 : rowSize + 3
         });
         line.x = x + 12;
-        line.y = y + 33 + rowIndex * (rowSize + 7);
+        line.y = y + 33 + rowIndex * (rowSize + 7) - (isPilotOrdersRow ? 6 : 0);
         this.runReportPanel.addChild(line);
         textLines.push(line.text);
       });

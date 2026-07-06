@@ -2160,6 +2160,9 @@ export class MenuScene {
       row._progress.text = contract.completed
         ? translateText('COMPLETE')
         : translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
+      row._progressRatio = contract.completed
+        ? 1
+        : clampNumber((Number(contract.progress) || 0) / Math.max(1, Number(contract.target) || 1), 0, 1);
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
@@ -2203,6 +2206,7 @@ export class MenuScene {
       const w = row._width || 0;
       const h = row._height || 0;
       const accent = row._accent || 0x37f5ff;
+      const progressRatio = clampNumber(Number(row._progressRatio) || 0, 0, 1);
       const progressSlotWidth = Math.min(92, Math.max(58, w * 0.28));
       row._bg.clear();
       drawCutPanel(row._bg, 0, 0, w, h, 6, { color: row._completed ? 0x082116 : 0x061b2a, alpha: row._completed ? 0.82 : 0.72 }, { color: accent, width: 1, alpha: row._completed ? 0.48 : 0.28 });
@@ -2210,8 +2214,17 @@ export class MenuScene {
       row._bg.rect(5, 5, 3, Math.max(6, h - 10));
       row._bg.fill({ color: accent, alpha: row._completed ? 0.72 : 0.46 });
       drawCutPanel(row._bg, w - progressSlotWidth - 7, 6, progressSlotWidth, Math.max(15, h * 0.42), 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
+      if (progressRatio > 0) {
+        const fillWidth = Math.max(4, Math.round((progressSlotWidth - 8) * progressRatio));
+        row._bg.roundRect(w - progressSlotWidth - 3, 10, fillWidth, Math.max(5, h * 0.18), 3);
+        row._bg.fill({ color: row._completed ? 0x7dffcc : 0xffef7e, alpha: row._completed ? 0.48 : 0.34 });
+      }
       row._bg.rect(12, h - 6, w - 24, 2);
       row._bg.fill({ color: accent, alpha: 0.16 });
+      if (progressRatio > 0) {
+        row._bg.rect(12, h - 6, Math.max(4, Math.round((w - 24) * progressRatio)), 2);
+        row._bg.fill({ color: row._completed ? 0x7dffcc : 0xffef7e, alpha: row._completed ? 0.62 : 0.46 });
+      }
     }
   }
 
@@ -2808,6 +2821,7 @@ export class MenuScene {
           title: row?._title?.text || null,
           detail: row?._detail?.text || null,
           progress: row?._progress?.text || null,
+          progressRatio: Number(row?._progressRatio) || 0,
           bounds: boundsForDisplayObject(row),
           titleBounds: boundsForDisplayObject(row?._title),
           detailBounds: boundsForDisplayObject(row?._detail),

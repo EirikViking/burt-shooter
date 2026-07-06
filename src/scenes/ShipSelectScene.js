@@ -895,20 +895,29 @@ export class ShipSelectScene {
     const nextOrders = Array.isArray(review?.next) ? review.next : [];
     const activeLines = activeOrders.map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
-      return `${translateText('ACTIVE')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`;
+      return {
+        text: `${translateText('ACTIVE')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`,
+        tone: 'active'
+      };
     });
     const nextLines = nextOrders.slice(0, 1).map((entry) => {
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
-      return `${translateText('NEXT')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`;
+      return {
+        text: `${translateText('NEXT')} ${translateText(entry.shortTitle || entry.title || entry.id)} ${progress}`,
+        tone: 'next'
+      };
     });
-    const completedLines = completedOrders.map((entry) => `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`);
-    const orderedLines = [
+    const completedLines = completedOrders.map((entry) => ({
+      text: `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+      tone: 'done'
+    }));
+    const lineEntries = [
       ...activeLines,
       ...nextLines,
       ...completedLines
     ];
-    const completedText = orderedLines.length
-      ? orderedLines.join('\n')
+    const completedText = lineEntries.length
+      ? lineEntries.map((entry) => entry.text).join('\n')
       : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
     const accent = completedOrders.length || activeOrders.length ? 0x9cfbff : 0x49677a;
 
@@ -970,30 +979,59 @@ export class ShipSelectScene {
     const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
     const columnWidth = Math.floor((width - 36 - columnGap * (columnCount - 1)) / columnCount);
     const columnLists = Array.from({ length: columnCount }, () => []);
-    const displayLines = orderedLines.length ? orderedLines : [completedText];
-    displayLines.forEach((line, index) => {
-      columnLists[index % columnCount].push(line);
+    const displayLines = lineEntries.length ? lineEntries : [{ text: completedText, tone: 'empty' }];
+    const rowsPerColumn = Math.max(1, Math.ceil(displayLines.length / columnCount));
+    displayLines.forEach((entry, index) => {
+      const column = Math.min(columnCount - 1, Math.floor(index / rowsPerColumn));
+      columnLists[column].push(entry);
     });
     const listTop = compact ? 43 : 50;
     const listHeight = Math.max(18, height - listTop - 16);
     const denseArchive = displayLines.length > 30;
     const listFontSize = compact ? (denseArchive ? 7 : 9) : (denseArchive ? 8 : 11);
     const listLineHeight = compact ? (denseArchive ? 8 : 10) : (denseArchive ? 9 : 13);
-    const listTexts = columnLists.map((lines, column) => {
-      const copy = createText(lines.join('\n'), {
+    const toneFill = {
+      active: '#fff3a2',
+      next: '#9cfbff',
+      done: '#d8fbff',
+      empty: '#90aeba'
+    };
+    const listTexts = [];
+    columnLists.forEach((lines, column) => {
+      lines.forEach((entry, rowIndex) => {
+        const copy = createText(entry.text, {
+          fontFamily: FONT_BODY,
+          fontSize: listFontSize,
+          fontWeight: entry.tone === 'active' || entry.tone === 'next' ? '900' : '800',
+          fill: toneFill[entry.tone] || '#d8fbff',
+          wordWrap: false,
+          wordWrapWidth: columnWidth,
+          lineHeight: listLineHeight,
+          letterSpacing: 0
+        });
+        copy.position.set(
+          18 + column * (columnWidth + columnGap),
+          listTop + rowIndex * listLineHeight
+        );
+        fitDisplayToBox(copy, columnWidth, listLineHeight + 2, { minScale: denseArchive ? 0.48 : 0.58 });
+        listTexts.push(copy);
+      });
+    });
+    if (!listTexts.length) {
+      const copy = createText(completedText, {
         fontFamily: FONT_BODY,
         fontSize: listFontSize,
         fontWeight: '800',
-        fill: orderedLines.length ? '#d8fbff' : '#90aeba',
+        fill: '#90aeba',
         wordWrap: true,
         wordWrapWidth: columnWidth,
         lineHeight: listLineHeight,
         letterSpacing: 0
       });
-      copy.position.set(18 + column * (columnWidth + columnGap), listTop);
+      copy.position.set(18, listTop);
       fitDisplayToBox(copy, columnWidth, listHeight, { minScale: denseArchive ? 0.48 : 0.58 });
-      return copy;
-    });
+      listTexts.push(copy);
+    }
     panel.addChild(heading, count, hint, ...listTexts);
 
     panel._pilotOrdersArchive = {

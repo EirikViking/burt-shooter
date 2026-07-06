@@ -43,3 +43,26 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Generic `develop-web-game` Playwright client was attempted but blocked by the local missing Chromium headless-shell install; repo-native Playwright checks passed with local Chrome.
+
+## Batch 3 - Pilot Orders Readability Meters
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+7. Main-menu Pilot Orders rows now include visual progress meters in addition to numeric counters.
+8. Hangar Career Intel Pilot Orders review now color-codes active, next, and completed order lines.
+9. Run Report Pilot Orders summaries now split multi-item summaries across readable lines instead of one dense comma chain.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T16-56-48-857Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Generic `develop-web-game` Playwright client remains blocked by the local missing Chromium headless-shell install; repo-native Playwright checks passed with local Chrome.
