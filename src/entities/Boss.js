@@ -270,14 +270,49 @@ export class Boss {
     this.healthBar.clear();
     const visualRadius = this.getVisualRadius();
     const barWidth = visualRadius * 3;
-    const barHeight = 8;
+    const barHeight = 9;
     const healthPercent = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const bossPhaseThresholds = [0.75, 0.5, 0.4];
+    const lowHealth = healthPercent <= 0.25;
+    const barX = -barWidth / 2;
+    const barY = visualRadius + 10;
+    const barColor = healthPercent <= 0.4
+      ? 0xff4b6b
+      : healthPercent <= 0.75 ? 0xff9f3d : 0xff2e58;
+    const frameColor = lowHealth ? 0xffef7e : healthPercent <= 0.4 ? 0xff8fb0 : 0xff6677;
 
-    this.healthBar.rect(-barWidth / 2, visualRadius + 10, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(barX - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x08070c, alpha: 0.76 });
+    this.healthBar.stroke({ color: frameColor, width: lowHealth ? 1.8 : 1.2, alpha: lowHealth ? 0.86 : 0.64 });
 
-    this.healthBar.rect(-barWidth / 2, visualRadius + 10, barWidth * healthPercent, barHeight);
-    this.healthBar.fill({ color: 0xff0000 });
+    this.healthBar.roundRect(barX, barY, barWidth, barHeight, 3);
+    this.healthBar.fill({ color: 0x311018, alpha: 0.92 });
+
+    const fillWidth = Math.max(0, barWidth * healthPercent);
+    if (fillWidth > 0) {
+      this.healthBar.roundRect(barX, barY, fillWidth, barHeight, 3);
+      this.healthBar.fill({ color: barColor, alpha: 0.96 });
+      const leadX = barX + fillWidth;
+      this.healthBar.moveTo(leadX, barY - 3);
+      this.healthBar.lineTo(leadX, barY + barHeight + 3);
+      this.healthBar.stroke({ color: 0xffffff, width: lowHealth ? 2 : 1.3, alpha: lowHealth ? 0.88 : 0.68 });
+    }
+
+    for (const threshold of bossPhaseThresholds) {
+      const markX = Math.round(barX + barWidth * threshold);
+      const cleared = healthPercent <= threshold;
+      this.healthBar.moveTo(markX, barY - 4);
+      this.healthBar.lineTo(markX, barY + barHeight + 4);
+      this.healthBar.stroke({
+        color: cleared ? 0xffffff : 0xffd166,
+        width: threshold === 0.5 ? 1.4 : 1,
+        alpha: cleared ? 0.78 : 0.58
+      });
+    }
+    if (lowHealth) {
+      this.healthBar.roundRect(barX - 6, barY - 6, barWidth + 12, barHeight + 12, 6);
+      this.healthBar.stroke({ color: 0xffef7e, width: 1.1, alpha: 0.34 });
+    }
 
     // Health text (no decimals)
     const healthText = `${Math.max(0, Math.ceil(this.health))}/${Math.ceil(this.maxHealth)}`;
@@ -287,13 +322,24 @@ export class Boss {
     this.healthText = createText(healthText, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
-      fill: '#ffffff'
+      fontWeight: '900',
+      fill: lowHealth ? '#ffef7e' : '#ffffff',
+      stroke: '#05070c',
+      strokeThickness: 3
     });
     this.healthText.anchor.set(0.5);
-    this.healthText.y = visualRadius + 14;
+    this.healthText.y = visualRadius + 14.5;
     if (this.sprite) {
       this.sprite.addChild(this.healthText);
     }
+    this.healthBar.__debugBossHealthBar = {
+      tickCount: bossPhaseThresholds.length,
+      healthPercent: Number(healthPercent.toFixed(3)),
+      lowHealth,
+      fillColor: barColor,
+      hasLeadEdge: fillWidth > 0,
+      text: healthText
+    };
   }
 
   update(delta, playerX, playerY) {

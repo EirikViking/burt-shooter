@@ -348,3 +348,29 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only high-score chase polish; personal-best lookup and scoring behavior are unchanged.
+
+## Batch 16 - Boss Health Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+51. Boss-local health bars now include phase/half-health threshold ticks at 75%, 50%, and 40% HP.
+52. Boss health fill color now escalates as the boss reaches later health phases.
+53. Boss health bars now show a bright current-health leading edge so damage progress is easier to read during effects.
+54. Boss health text now has stronger weight/stroke plus a low-health frame treatment for late-fight clarity.
+
+Verification:
+
+- `npm run check:boss-healthbar-readability`
+- `npm run check:boss-vfx-clarity`
+- `npm run check:boss-animation`
+- Screenshot proof: `test-results/boss-animation-2026-07-06T21-19-23-023Z/boss-animation-level10.png`
+- `npm run check:boss-telegraph`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+
+Safety notes:
+
+- No boss health, damage, phase timing, attack cadence, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only boss-local health bar polish.
