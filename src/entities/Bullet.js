@@ -33,6 +33,7 @@ export class Bullet {
     this.speed = Math.sqrt(vx * vx + vy * vy);
     this.trail = null;
     this.warningRing = null;
+    this.dangerGlint = null;
     this.core = null;
     this.visualConfig = visualConfig || {};
     this.coreAnimationStyle = !isPlayer ? (this.visualConfig.animationStyle || 'pulse') : 'none';
@@ -194,6 +195,21 @@ export class Bullet {
         hazardMark.__novaHazardReadabilityMark = true;
         this.sprite.addChild(hazardMark);
       }
+
+      const leadDistance = this.radius + (generatedProjectileCore ? 7 : 6);
+      const leadX = Math.cos(this.angle) * leadDistance;
+      const leadY = Math.sin(this.angle) * leadDistance;
+      const normalX = -Math.sin(this.angle);
+      const normalY = Math.cos(this.angle);
+      this.dangerGlint = new PIXI.Graphics();
+      this.dangerGlint.label = 'enemyProjectileDangerGlint';
+      this.dangerGlint.__novaProjectileDangerGlint = true;
+      this.dangerGlint.circle(leadX, leadY, colorAssist ? 3.4 : 2.5);
+      this.dangerGlint.fill({ color: colorAssist ? 0xffffff : 0xfff3a1, alpha: colorAssist ? 0.94 : 0.88 });
+      this.dangerGlint.moveTo(leadX - normalX * 4.5, leadY - normalY * 4.5);
+      this.dangerGlint.lineTo(leadX + normalX * 4.5, leadY + normalY * 4.5);
+      this.dangerGlint.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: colorAssist ? 1.8 : 1.4, alpha: colorAssist ? 0.86 : 0.44 });
+      this.sprite.addChild(this.dangerGlint);
     }
 
     this.sprite.addChild(this.core);
@@ -245,6 +261,11 @@ export class Bullet {
         const warningPulse = 1.1 + Math.sin(this.pulseTimer * 1.7 * pulseRate) * 0.16;
         this.warningRing.scale.set(warningPulse);
         this.warningRing.alpha = 0.58 + Math.sin(this.pulseTimer * 2.2) * 0.22;
+      }
+      if (this.dangerGlint) {
+        const glintPulse = 1 + Math.sin(this.pulseTimer * 2.9 * pulseRate) * 0.18;
+        this.dangerGlint.scale.set(glintPulse);
+        this.dangerGlint.alpha = 0.72 + Math.sin(this.pulseTimer * 3.4 * pulseRate) * 0.2;
       }
     }
 

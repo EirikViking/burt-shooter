@@ -385,6 +385,7 @@ async function stageScenario(page, scenario) {
 
     const activeBullets = bm.enemyBullets.filter((bullet) => bullet?.active !== false);
     const generatedSprites = activeBullets.filter((bullet) => bullet.core?.__novaProjectileSprite).length;
+    const dangerGlints = activeBullets.filter((bullet) => bullet.dangerGlint?.__novaProjectileDangerGlint).length;
     const framedGeneratedSprites = activeBullets.filter((bullet) => (
       bullet.core?.__novaProjectileSprite &&
       (
@@ -407,6 +408,7 @@ async function stageScenario(page, scenario) {
         )
       ),
       radius: bullet.radius,
+      dangerGlint: Boolean(bullet.dangerGlint?.__novaProjectileDangerGlint),
       width: Math.round((bullet.core?.width || 0) * 10) / 10,
       height: Math.round((bullet.core?.height || 0) * 10) / 10
     }));
@@ -415,6 +417,7 @@ async function stageScenario(page, scenario) {
       scenario: scenarioName,
       bulletCount: activeBullets.length,
       generatedSprites,
+      dangerGlints,
       framedGeneratedSprites,
       activeProfiles: [...new Set(activeBullets.map((bullet) => bullet.weaponProfileId).filter(Boolean))],
       arts: [...new Set(activeBullets.map((bullet) => bullet.visualConfig?.projectileArt).filter(Boolean))],
@@ -617,6 +620,9 @@ for (const capture of captures) {
   }
   if (capture.state.framedGeneratedSprites > 0) {
     errors.push(`${capture.scenario} still frames generated enemy projectile sprites ${capture.state.framedGeneratedSprites}/${capture.state.generatedSprites}`);
+  }
+  if (capture.state.bulletCount > 0 && capture.state.dangerGlints < capture.state.bulletCount) {
+    errors.push(`${capture.scenario} is missing enemy projectile danger glints ${capture.state.dangerGlints}/${capture.state.bulletCount}`);
   }
   const tinyGeneratedSprites = capture.state.spriteDetails.filter((detail) => detail.coreSprite && detail.width < 28);
   if (tinyGeneratedSprites.length > 0) {

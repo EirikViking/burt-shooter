@@ -425,3 +425,28 @@ Safety notes:
 
 - No powerup drop rate, lifetime, movement speed, pickup radius, effect, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only pickup readability polish with a focused browser guard.
+
+## Batch 19 - Enemy Projectile Danger Glints
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+63. Enemy bullets now carry a small forward danger glint that marks the leading edge of the projectile.
+64. The danger glint pulses lightly with the projectile without changing hitboxes, speed, damage, or firing patterns.
+65. Generated enemy projectile sprites keep their unframed art treatment while gaining the glint readability cue.
+66. `check:projectile-visuals` now asserts that every active enemy bullet in the visual scenarios has the danger glint.
+
+Verification:
+
+- `npm run check:projectile-visuals`
+- Screenshot proof: `test-results/projectile-visuals-2026-07-06T21-54-10-199Z/dense_missile_wave.png`
+- `npm run check:enemy-weapons`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No enemy bullet hitbox, speed, damage, spawn cadence, behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only projectile readability polish with existing projectile screenshot coverage.
