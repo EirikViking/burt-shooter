@@ -563,3 +563,21 @@ Safety notes:
 
 - No enemy spawn timing, movement, health, damage, hitboxes, firing cadence, score value, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only enemy-local entrance feedback owned by the `Enemy` entity.
+
+## Batch 26 - Slow Time Chrono Field
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+91. Slow Time / Chrono Anchor now draws a subtle full-screen chrono field while active.
+92. The field combines low-alpha edge tinting with player-centered time rings and sweep ticks so the slowdown reads as a world state.
+93. The chrono field hides on pause, intro, game-over, overrun interlude, effect expiry, and transition states.
+94. `check:slow-time-visual-field` proves the field appears/hides correctly and reasserts the strong enemy, bullet, and hazard slowdown scales.
+
+Verification:
+
+- `npm run check:slow-time-visual-field`
+
+Safety notes:
+
+- No Slow Time duration, enemy time scale, bullet time scale, hazard time scale, player control, powerup drop rate, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only chrono overlay drawn on the existing UI overlay.

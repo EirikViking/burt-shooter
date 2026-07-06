@@ -249,6 +249,7 @@ export class PlayScene {
     this.overrunConfirmGamepadWasPressed = false;
     this.gameOverInterlude = null;
     this.criticalHullOverlay = null;
+    this.slowTimeVisualField = null;
     this.overrunSealTexture = null;
     this.bossWarningEmblemTextures = [];
     this.bossWarningBossTextures = [];
@@ -417,6 +418,7 @@ export class PlayScene {
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.criticalHullOverlay = null;
+    this.slowTimeVisualField = null;
     this.overrunClearEffects = [];
     this.overrunCelebratedMilestones = new Set();
     this.clearSectorArrivalStinger();
@@ -2191,6 +2193,7 @@ export class PlayScene {
       if (this.gameOverInterlude?.active) {
         this.cleanupSkippedFrameVisuals('gameover_interlude');
         this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
         measure('gameover_interlude', () => this.updateGameOverInterlude(delta));
         return;
       }
@@ -2198,6 +2201,7 @@ export class PlayScene {
       if (this.overrunMilestoneInterlude?.active) {
         this.cleanupSkippedFrameVisuals('overrun_interlude');
         this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
         measure('overrun_interlude', () => this.updateOverrunMilestoneInterlude(delta));
         return;
       }
@@ -2229,6 +2233,7 @@ export class PlayScene {
       if (this.isPaused) {
         this.cleanupSkippedFrameVisuals('pause');
         this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
         measure('pause_menu', () => {
           this.pauseMenuFx?.update?.(delta);
           this.updatePauseMenuControls(delta);
@@ -2280,6 +2285,7 @@ export class PlayScene {
         this.freezeTimerMs -= delta * 16.67;
         this.cleanupSkippedFrameVisuals('freeze');
         this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
         this.updateDevOverlay();
         return;
       }
@@ -2528,6 +2534,7 @@ export class PlayScene {
       measure('magnet_pull', () => this.applyMagnetPull(delta));
       measure('orbital_strike', () => this.updateOrbitalStrike(delta));
       measure('random_popups', () => this.updateRandomPopups(delta));
+      measure('slow_time_visual_field', () => this.updateSlowTimeVisualField(delta));
       measure('critical_hull_overlay', () => this.updateCriticalHullOverlay(delta));
       measure('low_lives', () => this.checkLowLives());
 
@@ -5286,6 +5293,82 @@ export class PlayScene {
       lineAlpha: Number(lineAlpha.toFixed(3)),
       width: Math.round(width),
       height: Math.round(height)
+    };
+  }
+
+  ensureSlowTimeVisualField() {
+    if (this.slowTimeVisualField && this.slowTimeVisualField.parent) return this.slowTimeVisualField;
+    if (!this.uiOverlay) return null;
+    const field = new PIXI.Graphics();
+    field.label = 'slowTimeVisualField';
+    field.zIndex = 150;
+    field.eventMode = 'none';
+    field.visible = false;
+    field.blendMode = 'add';
+    this.uiOverlay.addChild(field);
+    this.slowTimeVisualField = field;
+    return field;
+  }
+
+  updateSlowTimeVisualField(delta = 1) {
+    const field = this.ensureSlowTimeVisualField();
+    if (!field) return;
+    const active = this.player?.isSlowTimeActive?.() === true;
+    const shouldShow = active &&
+      !this.isPaused &&
+      !this.introActive &&
+      !this.gameOverInterlude?.active &&
+      !this.overrunMilestoneInterlude?.active &&
+      !this.gameOverSequenceStarted &&
+      !this.game?.gameOverTransitionPending;
+    field.clear();
+    if (!shouldShow) {
+      field.visible = false;
+      field._debugSlowTimeField = { visible: false, active, paused: Boolean(this.isPaused) };
+      return;
+    }
+
+    const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    const px = Math.max(0, Math.min(width, Number(this.player?.x) || width / 2));
+    const py = Math.max(0, Math.min(height, Number(this.player?.y) || height / 2));
+    const pulse = 0.5 + Math.sin(Date.now() * 0.006 + Number(delta || 0) * 0.05) * 0.5;
+    const edge = Math.max(16, Math.min(42, Math.min(width, height) * 0.034));
+    const alpha = 0.06 + pulse * 0.035;
+    field.rect(0, 0, width, edge);
+    field.fill({ color: 0x574dff, alpha });
+    field.rect(0, height - edge, width, edge);
+    field.fill({ color: 0x37f5ff, alpha: alpha * 0.82 });
+    field.rect(0, 0, edge * 0.8, height);
+    field.fill({ color: 0x8f6dff, alpha: alpha * 0.72 });
+    field.rect(width - edge * 0.8, 0, edge * 0.8, height);
+    field.fill({ color: 0x37f5ff, alpha: alpha * 0.72 });
+
+    const radiusA = Math.max(48, Math.min(width, height) * 0.088 + pulse * 10);
+    const radiusB = radiusA + Math.max(22, Math.min(width, height) * 0.044);
+    field.circle(px, py, radiusA);
+    field.stroke({ color: 0x37f5ff, width: 2, alpha: 0.34 + pulse * 0.18 });
+    field.circle(px, py, radiusB);
+    field.stroke({ color: 0xb39cff, width: 1.4, alpha: 0.2 + pulse * 0.12 });
+    const tickCount = 12;
+    const spin = Date.now() * 0.0012;
+    for (let i = 0; i < tickCount; i += 1) {
+      const angle = spin + (Math.PI * 2 * i) / tickCount;
+      const inner = radiusA * 0.72;
+      const outer = radiusB + (i % 3 === 0 ? 9 : 3);
+      field.moveTo(px + Math.cos(angle) * inner, py + Math.sin(angle) * inner);
+      field.lineTo(px + Math.cos(angle) * outer, py + Math.sin(angle) * outer);
+    }
+    field.stroke({ color: 0xffffff, width: 1, alpha: 0.16 + pulse * 0.12 });
+    field.visible = true;
+    field._debugSlowTimeField = {
+      visible: true,
+      active: true,
+      edge: Math.round(edge),
+      radius: Number(radiusB.toFixed(1)),
+      alpha: Number(alpha.toFixed(3)),
+      x: Math.round(px),
+      y: Math.round(py)
     };
   }
 
