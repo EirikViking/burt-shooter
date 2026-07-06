@@ -786,6 +786,7 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   }
 
   assert.match(board?.title || '', /^PILOT ORDERS [0-9,]+\/[0-9,]+$/);
+  assert.ok(Number(board?.trackProgressRatio) >= 0 && Number(board?.trackProgressRatio) <= 1, 'Pilot Orders should expose a bounded track progress ratio');
   const freshTrack = /\b0\/50$/.test(board?.title || '');
   assert.equal(
     board?.subtitle,
@@ -850,7 +851,7 @@ async function runBrowserSmoke() {
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
     assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Learn key Mayhem tactics.', 'fresh Pilot Orders board should introduce the feature as tactics training');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
-    assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS 0\/50: Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order');
+    assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS 0\/50 \/\/ Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order');
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -1060,9 +1061,9 @@ async function runBrowserSmoke() {
     assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
     assert.match(archive?.text || '', /ACTIVE 0\/10 \/\/ Graze x10/, 'Hangar review should list active Pilot Orders with progress first');
     assert.match(archive?.text || '', /NEXT 0\/2 \/\/ Support Hunter/, 'Hangar review should list the next queued Pilot Order with progress first');
-    assert.match(archive?.text || '', /Boss Breaker/, 'Hangar review should list completed Boss Breaker');
-    assert.match(archive?.text || '', /1000 Enemies/, 'Hangar review should list completed 1000 Enemies');
-    assert.match(archive?.text || '', /2500 Enemies/, 'Hangar review should list completed 2500 Enemies');
+    assert.match(archive?.text || '', /01 DONE \/\/ Boss Breaker/, 'Hangar review should number completed Boss Breaker');
+    assert.match(archive?.text || '', /02 DONE \/\/ 1000 Enemies/, 'Hangar review should number completed 1000 Enemies');
+    assert.match(archive?.text || '', /03 DONE \/\/ 2500 Enemies/, 'Hangar review should number completed 2500 Enemies');
     assertInside(archive?.bounds, { width: 1280, height: 720 }, 'Pilot Orders archive');
     const hangarReviewScreenshot = path.join(outputDir, 'pilot-orders-hangar-completed-review.png');
     await page.screenshot({ path: hangarReviewScreenshot, fullPage: true });

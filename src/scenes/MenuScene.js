@@ -2010,7 +2010,7 @@ export class MenuScene {
     if (!contract) return null;
     const title = translateText(contract.shortTitle || contract.title || contract.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
-    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''}: ${title} ${progress}`.trim();
+    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''} // ${title} ${progress}`.trim();
   }
 
   getHangarButtonSubLabel() {
@@ -2099,6 +2099,11 @@ export class MenuScene {
     const rows = missionState.active || [];
     const completeState = missionState.status === 'complete';
     const hiddenState = missionState.hidden || missionState.status === 'hidden';
+    const trackProgressRatio = clampNumber(
+      (Number(missionState.completedCount) || 0) / Math.max(1, Number(missionState.total) || 1),
+      0,
+      1
+    );
     const boardHeight = hiddenState
       ? 0
       : Math.round(completeState
@@ -2121,6 +2126,7 @@ export class MenuScene {
       width: boardWidth,
       height: boardHeight,
       headerHeight,
+      trackProgressRatio,
       right: boardX + boardWidth,
       bottom: boardY + boardHeight,
       hidden: hiddenState,
@@ -2217,6 +2223,18 @@ export class MenuScene {
     this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.68 });
     this.missionBoardPanel.rect(x + 18, y + Math.min(height - 16, this.missionBoardBounds.headerHeight || 34), width - 36, 1);
     this.missionBoardPanel.fill({ color: 0xffef7e, alpha: 0.18 });
+    if (this.missionBoardBounds.status === 'active') {
+      const trackY = y + Math.min(height - 13, (this.missionBoardBounds.headerHeight || 34) + 3);
+      const trackW = width - 36;
+      const trackRatio = clampNumber(Number(this.missionBoardBounds.trackProgressRatio) || 0, 0, 1);
+      this.missionBoardPanel.rect(x + 18, trackY, trackW, 3);
+      this.missionBoardPanel.fill({ color: 0x020711, alpha: 0.42 });
+      this.missionBoardPanel.rect(x + 18, trackY, Math.max(3, Math.round(trackW * trackRatio)), 3);
+      this.missionBoardPanel.fill({ color: 0xffef7e, alpha: 0.42 });
+      const sweepX = x + 18 + ((this.animationTime * 42) % Math.max(1, trackW + 60)) - 48;
+      this.missionBoardPanel.rect(clampNumber(sweepX, x + 18, x + 18 + trackW), trackY - 1, Math.min(44, trackW), 1);
+      this.missionBoardPanel.fill({ color: 0xdffcff, alpha: 0.18 });
+    }
 
     for (const row of this.missionBoardRows || []) {
       if (!row?.visible || !row._bg) continue;
@@ -2230,6 +2248,11 @@ export class MenuScene {
       drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: 0.07 });
       row._bg.rect(5, 5, 3, Math.max(6, h - 10));
       row._bg.fill({ color: accent, alpha: row._completed ? 0.72 : 0.46 });
+      for (let tick = 1; tick < 4; tick += 1) {
+        const tx = 12 + ((w - 24) * tick) / 4;
+        row._bg.rect(tx, h - 9, 1, 5);
+        row._bg.fill({ color: 0xdffcff, alpha: 0.12 });
+      }
       drawCutPanel(row._bg, w - progressSlotWidth - 7, 6, progressSlotWidth, Math.max(15, h * 0.42), 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
       if (progressRatio > 0) {
         const fillWidth = Math.max(4, Math.round((progressSlotWidth - 8) * progressRatio));
@@ -2827,6 +2850,7 @@ export class MenuScene {
         completionNoticePending: Boolean(this.missionBoardCompletionNoticePending),
         completionNoticeVisibleMs: Math.round(this.missionBoardCompletionNoticeVisibleMs || 0),
         completionNoticeMinMs: PILOT_ORDERS_COMPLETE_NOTICE_MIN_MS,
+        trackProgressRatio: Number(this.missionBoardBounds?.trackProgressRatio) || 0,
         allCompletedAt: this.missionBoardState?.allCompletedAt || null,
         completionNoticeSeenAt: this.missionBoardState?.completionNoticeSeenAt || null,
         bounds: this.missionBoardBounds || boundsForDisplayObject(this.missionBoardPanel),

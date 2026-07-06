@@ -203,3 +203,26 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 10 - Pilot Orders Instrument Panel Polish
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+28. Main-menu Pilot Orders now draws an overall track progress rail under the board header.
+29. Active Pilot Orders rows now include quarter-tick marks so long goals read as measurable progress lanes.
+30. Hangar Career Intel now numbers completed Pilot Orders for easier review across the full 50-order history.
+31. Mayhem briefing Pilot Orders status now uses the same compact `//` separator as run-start and pause cues.
+
+Verification:
+
+- `npm run check:run-contracts`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.

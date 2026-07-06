@@ -907,8 +907,8 @@ export class ShipSelectScene {
         tone: 'next'
       };
     });
-    const completedLines = completedOrders.map((entry) => ({
-      text: `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+    const completedLines = completedOrders.map((entry, index) => ({
+      text: `${String(index + 1).padStart(2, '0')} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
       tone: 'done'
     }));
     const lineEntries = [
