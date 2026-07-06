@@ -226,3 +226,26 @@ Safety notes:
 
 - No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Rollback should remain one source commit for this batch.
+
+## Batch 11 - Pilot Orders Review Indexing
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+32. RunContracts display entries now expose their designed catalog position so review UI can reference the finite 50-order path directly.
+33. Hangar Career Intel completed-order rows now show catalog slots such as `14/50 DONE`, making sparse completed history easier to understand.
+34. The Ship Hangar dock card now says `PILOT ORDERS DONE x/50` once orders have been cleared, making the completed-order review path more obvious from the main menu.
+
+Verification:
+
+- `npm run check:run-contracts`
+- Screenshot proof: `test-results/run-contracts-2026-07-06T19-43-57-948Z/`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Rollback should remain one source commit for this batch.

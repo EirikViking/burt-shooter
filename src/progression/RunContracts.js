@@ -768,10 +768,13 @@ function buildRunContractDisplayEntry(id, state = {}) {
   if (!contract) return null;
   const completion = state.completed?.[id] || null;
   const savedProgress = state.progress?.[id] || null;
+  const catalogIndex = RUN_CONTRACT_ORDER_IDS.indexOf(id);
   const target = contract.target || 1;
   const completed = Boolean(completion);
   return {
     id,
+    orderIndex: catalogIndex,
+    orderNumber: catalogIndex >= 0 ? catalogIndex + 1 : 0,
     title: contract.title || id,
     shortTitle: contract.shortTitle || contract.title || id,
     description: contract.description || '',

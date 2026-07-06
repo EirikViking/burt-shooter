@@ -492,6 +492,27 @@ function runCatalogAndSaveTests() {
   const completionReview = getRunContractCompletionReviewState(allComplete);
   assert.equal(completionReview.completedCount, RUN_CONTRACT_ORDER_IDS.length, 'completed review should expose every cleared starter order');
   assert.ok(completionReview.completed.some((entry) => entry.id === 'enemy_sweep_2500'), 'completed review should include the 2500 Enemies order');
+  assert.equal(completionReview.completed[0]?.orderNumber, 1, 'review entries should expose their catalog order number');
+  assert.equal(completionReview.completed.at(-1)?.orderNumber, RUN_CONTRACT_ORDER_IDS.length, 'last review entry should expose the final catalog order number');
+  const shuffledCompleteState = normalizeRunContractsState({
+    activeIds: FIRST_THREE,
+    completed: {
+      enemy_sweep_2500: completion('enemy_sweep_2500'),
+      boss_breaker: completion('boss_breaker'),
+      enemy_sweep_1000: completion('enemy_sweep_1000')
+    }
+  });
+  const shuffledReview = getRunContractCompletionReviewState(shuffledCompleteState);
+  assert.deepEqual(
+    shuffledReview.completed.map((entry) => entry.id),
+    ['boss_breaker', 'enemy_sweep_1000', 'enemy_sweep_2500'],
+    'completed review should sort cleared orders by the designed Pilot Orders path'
+  );
+  assert.deepEqual(
+    shuffledReview.completed.map((entry) => entry.orderNumber),
+    [2, 3, 14],
+    'completed review should keep catalog order numbers for sparse completed lists'
+  );
   const allCompleteMenu = getRunContractMenuState(allComplete);
   assert.equal(allCompleteMenu.status, 'complete');
   assert.equal(allCompleteMenu.completionTitle, 'PILOT ORDERS COMPLETE');
@@ -1013,7 +1034,7 @@ async function runBrowserSmoke() {
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
     assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders board should point to the review location');
-    assert.match(completedProof.state.menu.menuIcons?.shipHangar?.sublabel || '', /PILOT ORDERS 1\/50/, 'Ship Hangar dock card should advertise Pilot Orders review progress');
+    assert.match(completedProof.state.menu.menuIcons?.shipHangar?.sublabel || '', /PILOT ORDERS DONE 1\/50/, 'Ship Hangar dock card should advertise completed Pilot Orders review progress');
 
     const completeProof = await captureMenuProof(page, {
       label: 'pilot-orders-complete-state-menu',
@@ -1061,9 +1082,9 @@ async function runBrowserSmoke() {
     assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
     assert.match(archive?.text || '', /ACTIVE 0\/10 \/\/ Graze x10/, 'Hangar review should list active Pilot Orders with progress first');
     assert.match(archive?.text || '', /NEXT 0\/2 \/\/ Support Hunter/, 'Hangar review should list the next queued Pilot Order with progress first');
-    assert.match(archive?.text || '', /01 DONE \/\/ Boss Breaker/, 'Hangar review should number completed Boss Breaker');
-    assert.match(archive?.text || '', /02 DONE \/\/ 1000 Enemies/, 'Hangar review should number completed 1000 Enemies');
-    assert.match(archive?.text || '', /03 DONE \/\/ 2500 Enemies/, 'Hangar review should number completed 2500 Enemies');
+    assert.match(archive?.text || '', /02\/50 DONE \/\/ Boss Breaker/, 'Hangar review should show the catalog slot for completed Boss Breaker');
+    assert.match(archive?.text || '', /03\/50 DONE \/\/ 1000 Enemies/, 'Hangar review should show the catalog slot for completed 1000 Enemies');
+    assert.match(archive?.text || '', /14\/50 DONE \/\/ 2500 Enemies/, 'Hangar review should show the catalog slot for completed 2500 Enemies');
     assertInside(archive?.bounds, { width: 1280, height: 720 }, 'Pilot Orders archive');
     const hangarReviewScreenshot = path.join(outputDir, 'pilot-orders-hangar-completed-review.png');
     await page.screenshot({ path: hangarReviewScreenshot, fullPage: true });

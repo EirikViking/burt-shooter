@@ -2020,7 +2020,7 @@ export class MenuScene {
       showPilotOrders: true
     });
     if ((Number(missionState.completedCount) || 0) > 0) {
-      return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''}`.trim();
+      return `${translateText('PILOT ORDERS')} ${translateText('DONE')} ${missionState.progressLabel || ''}`.trim();
     }
     return translateText('UPGRADE & CUSTOMIZE');
   }

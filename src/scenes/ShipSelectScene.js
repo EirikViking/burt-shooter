@@ -26,7 +26,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
-import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { formatRunContractCount, formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -907,10 +907,15 @@ export class ShipSelectScene {
         tone: 'next'
       };
     });
-    const completedLines = completedOrders.map((entry, index) => ({
-      text: `${String(index + 1).padStart(2, '0')} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
-      tone: 'done'
-    }));
+    const completedLines = completedOrders.map((entry, index) => {
+      const orderNumber = Number(entry.orderNumber) || (index + 1);
+      const totalOrders = Math.max(1, Number(review?.total) || completedOrders.length || 1);
+      const orderLabel = `${String(orderNumber).padStart(2, '0')}/${formatRunContractCount(totalOrders)}`;
+      return {
+        text: `${orderLabel} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
+        tone: 'done'
+      };
+    });
     const lineEntries = [
       ...activeLines,
       ...nextLines,
