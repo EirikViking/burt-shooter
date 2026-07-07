@@ -142,10 +142,11 @@ try {
       player.sprite.y = player.y;
     }
 
-    const makePowerup = (type, x, y) => {
+    const makePowerup = (type, x, y, ageMs = 2400) => {
       manager.spawnSpecific(x, y, type);
       const powerup = manager.powerups[manager.powerups.length - 1];
-      powerup.createdAt = Date.now() - 2400;
+      const resolvedAgeMs = typeof ageMs === 'function' ? ageMs(powerup) : ageMs;
+      powerup.createdAt = Date.now() - Math.max(0, Math.round(Number(resolvedAgeMs) || 0));
       powerup.baseY = y;
       powerup.y = y;
       powerup.sprite.x = x;
@@ -160,7 +161,7 @@ try {
       };
     };
 
-    const near = makePowerup('slow_time', player.x - 54, player.y - 158);
+    const near = makePowerup('slow_time', player.x - 54, player.y - 158, (powerup) => Math.max(2400, (Number(powerup.lifeTime) || 10000) - 2800));
     const far = makePowerup('damage_up', width * 0.17, height * 0.2);
     const inside = makePowerup('shield', player.x + 8, player.y - 7);
 
@@ -184,6 +185,8 @@ try {
   if (!state.near?.visible || !state.near?.guide?.visible) failures.push(`near guide was not visible: ${JSON.stringify(state.near)}`);
   if ((state.near?.guide?.distance || 0) < 100 || (state.near?.guide?.distance || 0) > 230) failures.push(`near guide distance unexpected: ${state.near?.guide?.distance}`);
   if ((state.near?.guide?.dashCount || 0) < 2) failures.push(`near guide did not draw enough dashes: ${state.near?.guide?.dashCount}`);
+  if ((state.near?.guide?.timeUrgency || 0) < 0.35) failures.push(`near guide did not include timeout urgency: ${JSON.stringify(state.near?.guide)}`);
+  if ((state.near?.guide?.timeoutTickCount || 0) < 3) failures.push(`near guide timeout ticks missing: ${JSON.stringify(state.near?.guide)}`);
   if (state.far?.visible || state.far?.guide?.visible || state.far?.guide?.reason !== 'out_of_range') failures.push(`far guide should stay hidden: ${JSON.stringify(state.far)}`);
   if (state.inside?.visible || state.inside?.guide?.visible || state.inside?.guide?.reason !== 'inside_pickup_radius') failures.push(`inside-radius guide should stay hidden: ${JSON.stringify(state.inside)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

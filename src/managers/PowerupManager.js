@@ -546,12 +546,16 @@ class Powerup {
       return;
     }
 
-    const urgency = clamp(1 - ((distance - closeLimit) / Math.max(1, guideRadius - closeLimit)), 0, 1);
+    const distanceUrgency = clamp(1 - ((distance - closeLimit) / Math.max(1, guideRadius - closeLimit)), 0, 1);
+    const remainingMs = Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - Math.max(0, Number(age) || 0));
+    const timeUrgency = clamp(1 - (remainingMs / 5000), 0, 1);
+    const urgency = Math.max(distanceUrgency, timeUrgency * 0.86);
     const angle = Math.atan2(dy, dx) - (this.sprite.rotation || 0);
     const pulse = Math.sin(age * 0.014) * 0.5 + 0.5;
     const color = this.type === 'super_extra_life' ? 0xffe34d : this.color;
     const alpha = 0.22 + urgency * 0.5 + pulse * 0.12;
     const dashCount = urgency > 0.62 ? 3 : 2;
+    let timeoutTickCount = 0;
     const side = Math.PI * 0.5;
     const spread = 4 + urgency * 5;
 
@@ -577,12 +581,30 @@ class Powerup {
       guide.circle(Math.cos(angle) * (pickupRadius + 14), Math.sin(angle) * (pickupRadius + 14), 3.5 + pulse * 1.5);
       guide.fill({ color: 0xffffff, alpha: 0.18 + urgency * 0.18 });
     }
+    if (timeUrgency > 0.42) {
+      timeoutTickCount = timeUrgency > 0.72 ? 4 : 3;
+      const tickRadius = pickupRadius + 9;
+      const tickSpread = 0.2 + timeUrgency * 0.08;
+      for (let i = 0; i < timeoutTickCount; i += 1) {
+        const tickAngle = angle + (i - (timeoutTickCount - 1) / 2) * tickSpread;
+        const cx = Math.cos(tickAngle) * tickRadius;
+        const cy = Math.sin(tickAngle) * tickRadius;
+        const tx = Math.cos(tickAngle + side) * (3.5 + timeUrgency * 2.5);
+        const ty = Math.sin(tickAngle + side) * (3.5 + timeUrgency * 2.5);
+        guide.moveTo(cx - tx, cy - ty);
+        guide.lineTo(cx + tx, cy + ty);
+      }
+      guide.stroke({ width: 1.8, color: 0xffffff, alpha: 0.2 + timeUrgency * 0.34 });
+    }
     guide.visible = true;
     guide.__debugPickupGuide = {
       visible: true,
       distance: Math.round(distance),
       urgency: Number(urgency.toFixed(3)),
+      distanceUrgency: Number(distanceUrgency.toFixed(3)),
+      timeUrgency: Number(timeUrgency.toFixed(3)),
       dashCount,
+      timeoutTickCount,
       angle: Number(angle.toFixed(3))
     };
   }
