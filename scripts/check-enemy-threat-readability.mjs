@@ -120,6 +120,8 @@ try {
     if (!game || !play || !manager) return { ok: false, reason: 'missing play/enemy manager' };
     const { Enemy } = await import('/src/entities/Enemy.js');
     const { getEnemyThreatAction } = await import('/src/config/EnemyThreatActions.js');
+    const { getGeneratedEnemyProfile } = await import('/src/config/GeneratedEnemyProfiles.js');
+    const { GameAssets } = await import('/src/utils/GameAssets.js');
 
     play.introActive = false;
     play.introComplete = true;
@@ -166,6 +168,34 @@ try {
       enemy._threatReadabilityKey = spec.key;
       return enemy;
     });
+
+    const fallbackX = width * 0.12;
+    const fallbackProfile = getGeneratedEnemyProfile('nova_enemy_001', `8|Red|${Math.round(fallbackX)}|${Math.round(y)}`);
+    const missingGeneratedIndex = fallbackProfile?.spriteIndex;
+    if (Number.isFinite(missingGeneratedIndex) && Array.isArray(GameAssets.generatedEnemyTextures)) {
+      const originalTexture = GameAssets.generatedEnemyTextures[missingGeneratedIndex];
+      GameAssets.generatedEnemyTextures[missingGeneratedIndex] = null;
+      try {
+        const enemy = new Enemy(fallbackX, y, 'nova_enemy_001', 8, game, 'Red');
+        enemy.state = 'FORMATION';
+        enemy.waitingForEntry = false;
+        enemy.active = true;
+        enemy.x = fallbackX;
+        enemy.y = y;
+        enemy.spawnCueStartedAt = Date.now() - 2000;
+        enemy.updateHealthBar?.();
+        enemy.updateSpawnCue?.(Date.now());
+        enemy.updateThreatFrame?.(Date.now());
+        enemy.sprite.x = enemy.x;
+        enemy.sprite.y = enemy.y;
+        play.gameContainer.addChild(enemy.sprite);
+        enemy._threatReadabilityKey = 'fallback_generated_missing';
+        enemy._forcedMissingGeneratedTextureIndex = missingGeneratedIndex;
+        enemies.unshift(enemy);
+      } finally {
+        GameAssets.generatedEnemyTextures[missingGeneratedIndex] = originalTexture;
+      }
+    }
     manager.enemies = enemies;
     window.__enemyThreatReadabilityEnemies = enemies;
 
@@ -176,8 +206,13 @@ try {
         type: enemy.type,
         kind: enemy.kind,
         lateMayhem: Boolean(enemy.generatedProfile?.lateMayhem),
+        generatedEnemyIndex: enemy.generatedEnemyIndex ?? null,
+        generatedEnemyTextureFallbackIndex: enemy.generatedEnemyTextureFallbackIndex ?? null,
+        eliteMiddleShipTextureFallbackIndex: enemy.eliteMiddleShipTextureFallbackIndex ?? null,
+        forcedMissingGeneratedTextureIndex: enemy._forcedMissingGeneratedTextureIndex ?? null,
         usingGeneratedEnemyTexture: Boolean(enemy.usingGeneratedEnemyTexture),
         usingEliteMiddleShipTexture: Boolean(enemy.usingEliteMiddleShipTexture),
+        usingFallbackGraphics: Boolean(enemy.usingFallbackGraphics),
         hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
         bodySize: {
           width: Math.round(enemy.body?.width || 0),
@@ -223,6 +258,13 @@ try {
   if (ordinary?.visible || ordinary?.debug?.visible) failures.push(`ordinary enemy should not have a visible frame: ${JSON.stringify(ordinary)}`);
   if (ordinary && !ordinary.usingGeneratedEnemyTexture) failures.push(`ordinary sample did not use real generated enemy texture: ${JSON.stringify(ordinary)}`);
   if (ordinary && (!ordinary.hasBodySpriteTexture || ordinary.bodySize?.width < 20 || ordinary.bodySize?.height < 20)) failures.push(`ordinary sample body texture too small/missing: ${JSON.stringify(ordinary.bodySize)}`);
+  const fallback = state.enemies?.find((item) => item.key === 'fallback_generated_missing');
+  if (!fallback) failures.push('missing generated-texture fallback sample');
+  if (fallback?.usingFallbackGraphics) failures.push(`generated texture fallback sample used simple graphics: ${JSON.stringify(fallback)}`);
+  if (fallback && !fallback.usingGeneratedEnemyTexture) failures.push(`generated texture fallback sample did not borrow real generated art: ${JSON.stringify(fallback)}`);
+  if (fallback && fallback.generatedEnemyTextureFallbackIndex === null) failures.push(`generated texture fallback sample did not record fallback index: ${JSON.stringify(fallback)}`);
+  if (fallback && fallback.generatedEnemyTextureFallbackIndex === fallback.forcedMissingGeneratedTextureIndex) failures.push(`generated texture fallback reused missing index: ${JSON.stringify(fallback)}`);
+  if (fallback && (!fallback.hasBodySpriteTexture || fallback.bodySize?.width < 20 || fallback.bodySize?.height < 20)) failures.push(`generated texture fallback body texture too small/missing: ${JSON.stringify(fallback.bodySize)}`);
   const late = state.enemies?.find((item) => item.key === 'late');
   if (!late?.lateMayhem) failures.push(`late sample is not lateMayhem: ${JSON.stringify(late)}`);
   const threat = state.enemies?.find((item) => item.key === 'threat');
