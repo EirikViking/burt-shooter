@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
+import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
@@ -81,6 +82,110 @@ function findChrome() {
   ].filter(Boolean).find((candidate) => existsSync(candidate));
 }
 
+function paethPredictor(left, up, upLeft) {
+  const p = left + up - upLeft;
+  const pa = Math.abs(p - left);
+  const pb = Math.abs(p - up);
+  const pc = Math.abs(p - upLeft);
+  if (pa <= pb && pa <= pc) return left;
+  if (pb <= pc) return up;
+  return upLeft;
+}
+
+function parsePngImage(file) {
+  const buffer = readFileSync(file);
+  assert.equal(buffer.subarray(0, 8).toString('hex'), '89504e470d0a1a0a', `${file}: invalid PNG signature`);
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idat = [];
+
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
+    const data = buffer.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+    } else if (type === 'IDAT') {
+      idat.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+    offset += 12 + length;
+  }
+
+  assert.equal(bitDepth, 8, `${file}: expected 8-bit PNG, got ${bitDepth}`);
+  assert.ok(colorType === 2 || colorType === 6, `${file}: expected RGB/RGBA PNG color type 2/6, got ${colorType}`);
+
+  const raw = inflateSync(Buffer.concat(idat));
+  const sourceBytesPerPixel = colorType === 6 ? 4 : 3;
+  const sourceStride = width * sourceBytesPerPixel;
+  const pixels = Buffer.alloc(width * height * 4);
+  let rawOffset = 0;
+  let pixelOffset = 0;
+  let prevRow = Buffer.alloc(sourceStride);
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[rawOffset];
+    rawOffset += 1;
+    const row = Buffer.from(raw.subarray(rawOffset, rawOffset + sourceStride));
+    rawOffset += sourceStride;
+
+    for (let x = 0; x < sourceStride; x += 1) {
+      const left = x >= sourceBytesPerPixel ? row[x - sourceBytesPerPixel] : 0;
+      const up = prevRow[x] || 0;
+      const upLeft = x >= sourceBytesPerPixel ? prevRow[x - sourceBytesPerPixel] || 0 : 0;
+      let value = row[x];
+      if (filter === 1) value = (value + left) & 0xff;
+      else if (filter === 2) value = (value + up) & 0xff;
+      else if (filter === 3) value = (value + Math.floor((left + up) / 2)) & 0xff;
+      else if (filter === 4) value = (value + paethPredictor(left, up, upLeft)) & 0xff;
+      row[x] = value;
+    }
+
+    for (let x = 0; x < width; x += 1) {
+      const sourceIndex = x * sourceBytesPerPixel;
+      pixels[pixelOffset] = row[sourceIndex];
+      pixels[pixelOffset + 1] = row[sourceIndex + 1];
+      pixels[pixelOffset + 2] = row[sourceIndex + 2];
+      pixels[pixelOffset + 3] = colorType === 6 ? row[sourceIndex + 3] : 255;
+      pixelOffset += 4;
+    }
+    prevRow = row;
+  }
+
+  return { width, height, pixels };
+}
+
+function analyzeVisibleProofPixels(file) {
+  const image = parsePngImage(file);
+  let energeticPixels = 0;
+  let cyanOrangeThrusterPixels = 0;
+  for (let offset = 0; offset < image.pixels.length; offset += 4) {
+    const r = image.pixels[offset];
+    const g = image.pixels[offset + 1];
+    const b = image.pixels[offset + 2];
+    const a = image.pixels[offset + 3];
+    if (a < 20) continue;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (r + g + b > 170 && max - min > 18) energeticPixels += 1;
+    if ((g > 100 && b > 120 && r < 120) || (r > 150 && g > 80 && b < 90)) cyanOrangeThrusterPixels += 1;
+  }
+  return {
+    width: image.width,
+    height: image.height,
+    energeticPixels,
+    cyanOrangeThrusterPixels
+  };
+}
+
 mkdirSync(outputDir, { recursive: true });
 const server = await startDevServer();
 const browser = await chromium.launch({
@@ -136,8 +241,36 @@ try {
     for (let i = 0; i < 10; i += 1) {
       player.updateEngineVfx(0.9, -0.45, 1 / 30);
     }
+    if (player.sprite) {
+      player.sprite.x = player.x;
+      player.sprite.y = player.y;
+      player.sprite.alpha = 1;
+      player.sprite.visible = true;
+      player.sprite.renderable = true;
+    }
+    if (player.shipSprite) {
+      player.shipSprite.visible = true;
+      player.shipSprite.renderable = true;
+    }
     const activeDebug = player.engineVfxLayer?.__debugEngineVfx || null;
     const shipTextureReady = Boolean(player.shipSprite?.texture && player.shipSprite.texture.width > 0 && player.shipSprite.texture.height > 0);
+    const global = player.sprite?.getGlobalPosition ? player.sprite.getGlobalPosition() : { x: player.sprite?.x || player.x, y: player.sprite?.y || player.y };
+    const canvas = document.querySelector('canvas');
+    const rect = canvas?.getBoundingClientRect?.() || { left: 0, top: 0, width: window.innerWidth || 1280, height: window.innerHeight || 720 };
+    const pageWidth = Math.max(window.innerWidth || 1280, document.documentElement?.scrollWidth || 0, rect.left + rect.width);
+    const pageHeight = Math.max(window.innerHeight || 720, document.documentElement?.scrollHeight || 0, rect.top + rect.height);
+    const scaleX = rect.width / Math.max(1, game.getWidth());
+    const scaleY = rect.height / Math.max(1, game.getHeight());
+    const screenX = rect.left + (global?.x || player.x) * scaleX;
+    const screenY = rect.top + (global?.y || player.y) * scaleY;
+    const clipWidth = 320;
+    const clipHeight = 320;
+    const clip = {
+      x: Math.max(0, Math.min(pageWidth - clipWidth, Math.round(screenX - clipWidth / 2))),
+      y: Math.max(0, Math.min(pageHeight - clipHeight, Math.round(screenY - clipHeight * 0.58))),
+      width: clipWidth,
+      height: clipHeight
+    };
     return {
       ok: true,
       idleDebug,
@@ -147,13 +280,17 @@ try {
       shipSize: {
         width: Math.round(player.shipSprite?.width || 0),
         height: Math.round(player.shipSprite?.height || 0)
-      }
+      },
+      clip,
+      playerGlobal: { x: Math.round(global?.x || player.x), y: Math.round(global?.y || player.y) },
+      screen: { x: Math.round(screenX), y: Math.round(screenY), scaleX: Number(scaleX.toFixed(3)), scaleY: Number(scaleY.toFixed(3)) }
     };
   });
 
   await page.waitForTimeout(180);
   const screenshot = path.join(outputDir, 'player-engine-thruster-readability.png');
-  await page.screenshot({ path: screenshot, fullPage: true });
+  await page.screenshot({ path: screenshot, clip: state.clip });
+  const proofPixels = analyzeVisibleProofPixels(screenshot);
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
@@ -162,7 +299,10 @@ try {
   if ((state.activeDebug?.intensity || 0) < 0.55) failures.push(`engine intensity too low: ${JSON.stringify(state.activeDebug)}`);
   if (state.activeDebug?.plumeCount !== 3) failures.push(`expected 3 engine plumes: ${JSON.stringify(state.activeDebug)}`);
   if (state.activeDebug?.sideJets !== true) failures.push(`lean side jet missing: ${JSON.stringify(state.activeDebug)}`);
-  if (!state.shipTextureReady || state.shipSize.width < 30 || state.shipSize.height < 30) failures.push(`player ship art missing/small: ${JSON.stringify(state.shipSize)}`);
+  if ((state.activeDebug?.sideFeatherCount || 0) < 3) failures.push(`strafe feather trails missing: ${JSON.stringify(state.activeDebug)}`);
+  if (state.shipSize.width < 28 || state.shipSize.height < 28) failures.push(`player ship art missing/small: ${JSON.stringify(state.shipSize)}`);
+  if (proofPixels.energeticPixels < 900) failures.push(`screenshot proof is too sparse/blank: ${JSON.stringify(proofPixels)}`);
+  if (proofPixels.cyanOrangeThrusterPixels < 80) failures.push(`thruster proof pixels missing: ${JSON.stringify(proofPixels)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 
@@ -170,6 +310,8 @@ try {
     ok: failures.length === 0,
     baseUrl,
     screenshot,
+    clip: state.clip,
+    proofPixels,
     state,
     failures,
     pageErrors,

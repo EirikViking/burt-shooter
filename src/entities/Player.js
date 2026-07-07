@@ -527,6 +527,7 @@ export class Player {
     const plumeLength = width * (0.16 + intensity * 0.2 + Math.max(0, -vertical) * 0.06);
     const alpha = 0.2 + intensity * 0.46;
     let plumeCount = 0;
+    let sideFeatherCount = 0;
 
     for (let i = 0; i < 3; i += 1) {
       const offset = (i - 1) * spread;
@@ -553,6 +554,17 @@ export class Player {
       layer.stroke({ color: hotColor, width: 2.4, alpha: 0.3 + intensity * 0.34 });
       layer.circle(jetX + side * (12 + intensity * 7), jetY + 1, 2 + intensity * 1.8);
       layer.fill({ color: coreColor, alpha: 0.28 + intensity * 0.28 });
+      for (let i = 0; i < 3; i += 1) {
+        const offset = (i - 1) * 5.4;
+        const startX = jetX - side * (2 + i * 0.8);
+        const startY = jetY + offset;
+        const endX = jetX + side * (15 + intensity * 12 + i * 3);
+        const endY = jetY + offset * 0.36 + pulse * (i - 1) * 1.5;
+        layer.moveTo(startX, startY);
+        layer.lineTo(endX, endY);
+        sideFeatherCount += 1;
+      }
+      layer.stroke({ color: coreColor, width: 1.2 + intensity * 0.8, alpha: 0.2 + intensity * 0.26 });
     }
 
     layer.visible = true;
@@ -562,7 +574,8 @@ export class Player {
       moveIntent: Number(moveIntent.toFixed(3)),
       firingBoost: Number(firingBoost.toFixed(3)),
       plumeCount,
-      sideJets
+      sideJets,
+      sideFeatherCount
     };
   }
 
