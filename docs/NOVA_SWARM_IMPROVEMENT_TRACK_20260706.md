@@ -761,3 +761,31 @@ Safety notes:
 
 - No enemy fire cadence, projectile speed, bullet count, damage, hitboxes, AI, spawn timing, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only enemy-local shot origin feedback using existing enemy fire events.
+
+## Batch 35 - Invulnerability Window Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+136. Post-hit/respawn invulnerability now has a player-local countdown arc on the hitbox reticle.
+137. The countdown uses six segmented ticks so the remaining safety window reads without text.
+138. The cue shifts amber and pulses when invulnerability is close to expiring.
+139. The cue stays out of the near-miss pip lane by using the lower reticle arc.
+140. `check:invulnerability-window-readability` proves the expiring invulnerability cue and debug state with a browser screenshot.
+
+Verification:
+
+- `npm run check:invulnerability-window-readability`
+- Screenshot proof: `test-results/invulnerability-window-readability-2026-07-07T07-54-02-645Z/invulnerability-window-readability.png`
+- `npm run check:player-ring-alignment`
+- `npm run check:phase-cooldown-readability`
+- `npm run check:hud-readability`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No invulnerability duration, damage logic, respawn timing, dodge behavior, hitbox size, lives, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only player-local survivability feedback using existing invulnerability state.

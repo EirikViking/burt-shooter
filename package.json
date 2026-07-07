@@ -55,6 +55,7 @@
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
     "check:near-miss-streak-clarity": "node scripts/check-near-miss-streak-clarity.mjs",
     "check:phase-cooldown-readability": "node scripts/check-phase-cooldown-readability.mjs",
+    "check:invulnerability-window-readability": "node scripts/check-invulnerability-window-readability.mjs",
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",

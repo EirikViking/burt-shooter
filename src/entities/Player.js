@@ -69,6 +69,7 @@ export class Player {
     this.active = true;
     this.invulnerable = true; // Invulnerable on spawn
     this.invulnerableTime = 2000; // 2s spawn protection
+    this.invulnerabilityVisualDurationMs = 2000;
     this.rankIndex = null;
 
     // Shooting
@@ -546,10 +547,13 @@ export class Player {
     const pulsing = now < (this.hitboxPulseUntil || 0);
     const nearMissRemainingMs = Math.max(0, Math.round((this.nearMissVisualUntil || 0) - now));
     const nearMissActive = nearMissRemainingMs > 0 && (Number(this.nearMissVisualStreak) || 0) > 0;
+    const invulnerabilityRemainingMs = Math.max(0, Math.round(Number(this.invulnerableTime) || 0));
+    const invulnerabilityActive = Boolean(this.invulnerable && !this.isDodging && invulnerabilityRemainingMs > 0);
     const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing || nearMissActive;
     if (!settingEnabled && !contextual) {
       this.hitboxReticle.visible = false;
       this.hitboxReticle.__debugNearMissStreak = { active: false, streak: 0, filledPips: 0, windowProgress: 0 };
+      this.hitboxReticle.__debugInvulnerabilityWindow = { active: false, remainingMs: 0, progress: 0, ticks: 0 };
       return;
     }
 
@@ -615,6 +619,46 @@ export class Player {
         this.hitboxReticle.stroke({ color: nearMissColor, width: 1.6, alpha: 0.18 + pulse * 0.18 });
       }
     }
+    let invulnerabilityProgress = 0;
+    let invulnerabilityTicks = 0;
+    let invulnerabilityExpiring = false;
+    if (invulnerabilityActive) {
+      const visualDuration = Math.max(1, Number(this.invulnerabilityVisualDurationMs) || invulnerabilityRemainingMs || 1);
+      invulnerabilityProgress = Math.max(0, Math.min(1, invulnerabilityRemainingMs / visualDuration));
+      invulnerabilityTicks = 6;
+      invulnerabilityExpiring = invulnerabilityProgress <= 0.35;
+      const invulnColor = invulnerabilityExpiring ? 0xffef7e : 0x7fffd8;
+      const invulnRadius = ringRadius + 34;
+      const arcStart = Math.PI * 0.18;
+      const arcSweep = Math.PI * 0.64;
+      this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep);
+      this.hitboxReticle.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 });
+      this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep * invulnerabilityProgress);
+      this.hitboxReticle.stroke({
+        color: invulnColor,
+        width: invulnerabilityExpiring ? 3.8 : 2.6,
+        alpha: invulnerabilityExpiring ? 0.76 + pulse * 0.18 : 0.5
+      });
+      for (let i = 0; i < invulnerabilityTicks; i += 1) {
+        const ratio = invulnerabilityTicks <= 1 ? 0 : i / (invulnerabilityTicks - 1);
+        const angle = arcStart + arcSweep * ratio;
+        const filled = ratio <= invulnerabilityProgress + 0.001;
+        const inner = invulnRadius - (filled ? 7 : 4);
+        const outer = invulnRadius + (filled ? 10 : 5);
+        this.hitboxReticle.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        this.hitboxReticle.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        this.hitboxReticle.circle(Math.cos(angle) * (outer + 5), Math.sin(angle) * (outer + 5), filled ? 3.4 : 2.2);
+        this.hitboxReticle.fill({
+          color: filled ? invulnColor : 0x12384a,
+          alpha: filled ? (invulnerabilityExpiring ? 0.86 : 0.62) : 0.3
+        });
+      }
+      this.hitboxReticle.stroke({
+        color: invulnColor,
+        width: invulnerabilityExpiring ? 2.2 : 1.5,
+        alpha: invulnerabilityExpiring ? 0.72 : 0.38
+      });
+    }
     this.hitboxReticle.visible = true;
     this.hitboxReticle.__debugNearMissStreak = {
       active: nearMissActive,
@@ -622,6 +666,13 @@ export class Player {
       filledPips,
       windowProgress: Number(windowProgress.toFixed(3)),
       surgeReady
+    };
+    this.hitboxReticle.__debugInvulnerabilityWindow = {
+      active: invulnerabilityActive,
+      remainingMs: invulnerabilityActive ? invulnerabilityRemainingMs : 0,
+      progress: Number(invulnerabilityProgress.toFixed(3)),
+      ticks: invulnerabilityActive ? invulnerabilityTicks : 0,
+      expiring: invulnerabilityExpiring
     };
   }
 
@@ -634,7 +685,8 @@ export class Player {
       phasing: Boolean(this.isDodging || this.invulnerable || this.isGhostActive?.()),
       pulseMs: Math.max(0, Math.round((this.hitboxPulseUntil || 0) - Date.now())),
       pulseReason: this.hitboxPulseReason || null,
-      nearMiss: this.hitboxReticle?.__debugNearMissStreak || { active: false, streak: 0, filledPips: 0, windowProgress: 0 }
+      nearMiss: this.hitboxReticle?.__debugNearMissStreak || { active: false, streak: 0, filledPips: 0, windowProgress: 0 },
+      invulnerability: this.hitboxReticle?.__debugInvulnerabilityWindow || { active: false, remainingMs: 0, progress: 0, ticks: 0 }
     };
   }
 
@@ -2711,6 +2763,7 @@ export class Player {
     if (duration <= 0) return this.invulnerableTime || 0;
     this.invulnerable = true;
     this.invulnerableTime = Math.max(this.invulnerableTime || 0, duration);
+    this.invulnerabilityVisualDurationMs = Math.max(duration, this.invulnerableTime || duration);
     this.lastInvulnerabilityReason = reason;
     return this.invulnerableTime;
   }
