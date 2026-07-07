@@ -622,6 +622,8 @@ export class Player {
     let invulnerabilityProgress = 0;
     let invulnerabilityTicks = 0;
     let invulnerabilityExpiring = false;
+    let invulnerabilityBracketCount = 0;
+    let invulnerabilityCountdownBeads = 0;
     if (invulnerabilityActive) {
       const visualDuration = Math.max(1, Number(this.invulnerabilityVisualDurationMs) || invulnerabilityRemainingMs || 1);
       invulnerabilityProgress = Math.max(0, Math.min(1, invulnerabilityRemainingMs / visualDuration));
@@ -631,6 +633,29 @@ export class Player {
       const invulnRadius = ringRadius + 34;
       const arcStart = Math.PI * 0.18;
       const arcSweep = Math.PI * 0.64;
+      this.hitboxReticle.circle(0, 0, invulnRadius - 13);
+      this.hitboxReticle.fill({ color: invulnColor, alpha: invulnerabilityExpiring ? 0.045 + pulse * 0.025 : 0.035 });
+      const bracketRadius = invulnRadius - 10;
+      for (let i = 0; i < 4; i += 1) {
+        const angle = -Math.PI * 0.25 + i * Math.PI * 0.5;
+        const tx = -Math.sin(angle);
+        const ty = Math.cos(angle);
+        const nx = Math.cos(angle);
+        const ny = Math.sin(angle);
+        const cx = nx * bracketRadius;
+        const cy = ny * bracketRadius;
+        const half = invulnerabilityExpiring ? 8 + pulse * 4 : 7;
+        this.hitboxReticle.moveTo(cx - tx * half, cy - ty * half);
+        this.hitboxReticle.lineTo(cx + tx * half, cy + ty * half);
+        this.hitboxReticle.moveTo(cx + tx * half, cy + ty * half);
+        this.hitboxReticle.lineTo(cx + tx * half - nx * 5, cy + ty * half - ny * 5);
+        invulnerabilityBracketCount += 1;
+      }
+      this.hitboxReticle.stroke({
+        color: invulnColor,
+        width: invulnerabilityExpiring ? 1.8 : 1.2,
+        alpha: invulnerabilityExpiring ? 0.42 + pulse * 0.2 : 0.3
+      });
       this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep);
       this.hitboxReticle.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 });
       this.hitboxReticle.arc(0, 0, invulnRadius, arcStart, arcStart + arcSweep * invulnerabilityProgress);
@@ -658,6 +683,16 @@ export class Player {
         width: invulnerabilityExpiring ? 2.2 : 1.5,
         alpha: invulnerabilityExpiring ? 0.72 : 0.38
       });
+      if (invulnerabilityExpiring) {
+        const endAngle = arcStart + arcSweep * invulnerabilityProgress;
+        for (let i = 0; i < 3; i += 1) {
+          const beadAngle = endAngle - i * 0.055;
+          const beadRadius = invulnRadius + 16 + i * 3;
+          this.hitboxReticle.circle(Math.cos(beadAngle) * beadRadius, Math.sin(beadAngle) * beadRadius, 2.6 + pulse * 1.4);
+          this.hitboxReticle.fill({ color: i === 0 ? 0xffffff : invulnColor, alpha: 0.46 + pulse * 0.22 - i * 0.08 });
+          invulnerabilityCountdownBeads += 1;
+        }
+      }
     }
     this.hitboxReticle.visible = true;
     this.hitboxReticle.__debugNearMissStreak = {
@@ -672,7 +707,9 @@ export class Player {
       remainingMs: invulnerabilityActive ? invulnerabilityRemainingMs : 0,
       progress: Number(invulnerabilityProgress.toFixed(3)),
       ticks: invulnerabilityActive ? invulnerabilityTicks : 0,
-      expiring: invulnerabilityExpiring
+      expiring: invulnerabilityExpiring,
+      bracketCount: invulnerabilityActive ? invulnerabilityBracketCount : 0,
+      countdownBeads: invulnerabilityActive ? invulnerabilityCountdownBeads : 0
     };
   }
 
