@@ -648,6 +648,8 @@ export class Enemy {
     const scale = elite ? 1.12 : 1;
     let pipCount = 0;
     let railCount = 0;
+    let spineCount = 0;
+    let wingBracketCount = 0;
 
     for (let i = 0; i < 3; i += 1) {
       const y = -radius * 0.34 + i * radius * 0.28;
@@ -674,6 +676,30 @@ export class Enemy {
     layer.fill({ color: 0xffffff, alpha: elite ? 0.22 : 0.16 });
     pipCount += 1;
 
+    const noseY = radius * 0.62;
+    const midY = radius * 0.02;
+    const tailY = -radius * 0.54;
+    const spineHalf = radius * (elite ? 0.15 : 0.12) * scale;
+    layer.moveTo(0, noseY);
+    layer.lineTo(-spineHalf, midY);
+    layer.lineTo(0, tailY);
+    layer.lineTo(spineHalf, midY);
+    layer.lineTo(0, noseY);
+    spineCount += 4;
+    layer.stroke({ color: 0xffffff, width: elite ? 1.05 : 0.82, alpha: elite ? 0.2 : 0.16 });
+
+    [-1, 1].forEach((side) => {
+      const shoulderX = side * radius * 0.68 * scale;
+      const innerX = side * radius * 0.28 * scale;
+      const upperY = -radius * 0.2;
+      const lowerY = radius * 0.32;
+      layer.moveTo(innerX, upperY);
+      layer.lineTo(shoulderX, upperY + radius * 0.08);
+      layer.lineTo(shoulderX - side * radius * 0.1, lowerY);
+      wingBracketCount += 1;
+    });
+    layer.stroke({ color: accent, width: elite ? 1.15 : 0.9, alpha: elite ? 0.24 : 0.19 });
+
     if (elite || this.generatedProfile?.lateMayhem) {
       [-1, 1].forEach((side) => {
         layer.circle(side * radius * 0.24, -radius * 0.42, 1.9);
@@ -686,6 +712,8 @@ export class Enemy {
       visible: true,
       pipCount,
       railCount,
+      spineCount,
+      wingBracketCount,
       usingGeneratedEnemyTexture: Boolean(this.usingGeneratedEnemyTexture),
       usingEliteMiddleShipTexture: Boolean(this.usingEliteMiddleShipTexture),
       usingXtraAsset: Boolean(this.usingXtraAsset),
