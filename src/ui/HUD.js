@@ -783,6 +783,36 @@ export class HUD {
       ticks.stroke({ color: 0xf8fbff, width: 1, alpha: 0.38 });
     }
 
+    let heatPipCount = 0;
+    let threatChevronCount = 0;
+    if (!isClear && pressure > 0.2) {
+      const heatCount = Math.max(2, Math.min(6, Math.ceil(pressure * 6)));
+      const heatLeft = x + width * 0.12;
+      const heatRight = x + width * 0.88;
+      const heatWidth = Math.max(1, heatRight - heatLeft);
+      for (let i = 0; i < heatCount; i += 1) {
+        const ratio = heatCount <= 1 ? 0 : i / (heatCount - 1);
+        const pipX = heatLeft + heatWidth * ratio;
+        const pipY = y - 4 - (i % 2);
+        ticks.circle(pipX, pipY, 1.4 + pressure * 0.7);
+        ticks.fill({ color: activeColor, alpha: 0.2 + pressure * 0.34 + pulse * 0.12 });
+        heatPipCount += 1;
+      }
+    }
+
+    if (!isClear && activeBullets > 0) {
+      const chevronCount = Math.max(1, Math.min(5, Math.ceil(activeBullets / 8)));
+      for (let i = 0; i < chevronCount; i += 1) {
+        const cx = x + width - 7 - i * 9;
+        const cy = y + height + 4;
+        ticks.moveTo(cx - 3, cy - 2);
+        ticks.lineTo(cx, cy + 1);
+        ticks.lineTo(cx + 3, cy - 2);
+        threatChevronCount += 1;
+      }
+      ticks.stroke({ color: activeColor, width: 1.05, alpha: 0.34 + pulse * 0.28 });
+    }
+
     rail._debugMissionProgress = {
       visible: true,
       state,
@@ -794,6 +824,8 @@ export class HUD {
       activeEnd: Number(activeEnd.toFixed(3)),
       pressure: Number(pressure.toFixed(3)),
       tickCount,
+      heatPipCount,
+      threatChevronCount,
       color: activeColor
     };
   }

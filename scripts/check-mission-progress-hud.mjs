@@ -126,7 +126,11 @@ try {
       destroy() {}
     }));
     if (play.bulletManager) {
-      play.bulletManager.enemyBullets = [];
+      play.bulletManager.enemyBullets = Array.from({ length: 18 }, () => ({
+        active: true,
+        update() {},
+        destroy() {}
+      }));
     }
     hud.update();
     const activeWave = { ...(hud.missionProgressBg?._debugMissionProgress || {}) };
@@ -140,6 +144,7 @@ try {
       update() {},
       destroy() {}
     }));
+    if (play.bulletManager) play.bulletManager.enemyBullets = [];
     hud.updateMissionStatus();
     const levelText = hud.missionText?.text || '';
 
@@ -168,6 +173,13 @@ try {
       update() {},
       destroy() {}
     }));
+    if (play.bulletManager) {
+      play.bulletManager.enemyBullets = Array.from({ length: 18 }, () => ({
+        active: true,
+        update() {},
+        destroy() {}
+      }));
+    }
     hud.updateMissionStatus();
 
     return {
@@ -195,8 +207,10 @@ try {
   if (state.activeWave?.activeStart !== 0.333) failures.push(`unexpected active start ${state.activeWave?.activeStart}`);
   if (state.activeWave?.activeEnd !== 0.5) failures.push(`unexpected active end ${state.activeWave?.activeEnd}`);
   if ((state.activeWave?.tickCount || 0) < 5) failures.push(`expected visible wave ticks, got ${state.activeWave?.tickCount}`);
-  if ((state.activeWave?.pressure || 0) <= 0.5) failures.push(`expected pressure cue above 0.5, got ${state.activeWave?.pressure}`);
-  if (!/^WAVE: 3\/6 \| HOSTILES: 7 \| THREATS: 0$/.test(state.activeText || '')) failures.push(`mission text did not stay readable in wave state: ${state.activeText}`);
+  if ((state.activeWave?.pressure || 0) <= 0.9) failures.push(`expected pressure cue above 0.9, got ${state.activeWave?.pressure}`);
+  if ((state.activeWave?.heatPipCount || 0) < 5) failures.push(`expected mission heat pips, got ${state.activeWave?.heatPipCount}`);
+  if ((state.activeWave?.threatChevronCount || 0) < 3) failures.push(`expected threat chevrons, got ${state.activeWave?.threatChevronCount}`);
+  if (!/^WAVE: 3\/6 \| HOSTILES: 7 \| THREATS: 18$/.test(state.activeText || '')) failures.push(`mission text did not stay readable in wave state: ${state.activeText}`);
   if (!/^LEVEL: 4 \| HOSTILES: 3 \| THREATS: 0$/.test(state.levelText || '')) failures.push(`level fallback mission text was not separated: ${state.levelText}`);
   if (state.boss?.completedRatio !== 1 || state.boss?.phase !== 'BOSS') failures.push(`boss state did not fill the rail: ${JSON.stringify(state.boss)}`);
   if (!/^BOSS HP 420/.test(state.bossText || '')) failures.push(`boss text did not render expected HP: ${state.bossText}`);
