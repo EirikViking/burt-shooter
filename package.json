@@ -97,6 +97,7 @@
     "check:player-ship-padding": "node scripts/check-player-ship-padding.mjs",
     "check:player-ring-alignment": "node scripts/check-player-ring-alignment.mjs",
     "check:player-engine-thruster-readability": "node scripts/check-player-engine-thruster-readability.mjs",
+    "check:player-damage-direction-cue": "node scripts/check-player-damage-direction-cue.mjs",
     "check:career-intel-layout": "node scripts/check-career-intel-layout.mjs",
     "check:gameover-interlude": "node scripts/check-gameover-interlude.mjs",
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",

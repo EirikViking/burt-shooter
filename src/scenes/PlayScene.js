@@ -3655,7 +3655,9 @@ export class PlayScene {
           if (this.isBossOwnedBullet(bullet)) {
             this.handleBossCausedPlayerHit('boss_bullet', this.enemyManager?.boss, {
               balanceSource: `boss_bullet:${bullet.sourceFireStyle || bullet.weaponProfileId || 'unknown'}`,
-              shieldShake: 4
+              shieldShake: 4,
+              sourceX: bullet.x,
+              sourceY: bullet.y
             });
             return;
           }
@@ -3663,6 +3665,12 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.triggerPlayerDamageDirectionCue({
+                source: 'enemy_bullet',
+                sourceX: bullet.x,
+                sourceY: bullet.y,
+                color: bullet.visualConfig?.color || bullet.color || 0xff6677
+              });
               this.recordBalanceDamage('enemy_bullet');
               this.lastHitAt = Date.now();
               this.game.loseLife({ source: 'enemy_bullet' });
@@ -3701,6 +3709,12 @@ export class PlayScene {
             if (!this.player.invulnerable) {
               const damageTaken = this.player.takeDamage();
               if (damageTaken) {
+                this.triggerPlayerDamageDirectionCue({
+                  source: 'ambient_hazard_contact',
+                  sourceX: bonusDrone.x,
+                  sourceY: bonusDrone.y,
+                  color: 0xffaa00
+                });
                 this.recordBalanceDamage('ambient_hazard_contact');
                 this.lastHitAt = Date.now();
                 this.game.loseLife({ source: 'ambient_hazard_contact' });
@@ -3813,6 +3827,12 @@ export class PlayScene {
           if (!this.player.invulnerable) {
             const damageTaken = this.player.takeDamage();
             if (damageTaken) {
+              this.triggerPlayerDamageDirectionCue({
+                source: 'enemy_contact',
+                sourceX: enemy.x,
+                sourceY: enemy.y,
+                color: enemy.color || enemy.visualVariant?.accent || 0xff6677
+              });
               this.recordBalanceDamage('enemy_contact');
               this.lastHitAt = Date.now();
               this.game.loseLife({ source: 'enemy_contact' });
@@ -5605,6 +5625,173 @@ export class PlayScene {
     };
   }
 
+  triggerPlayerDamageDirectionCue(options = {}) {
+    if (!this.gameContainer || !this.game?.app?.ticker) return false;
+    const playerLayer = this.player?.sprite || null;
+    const targetLayer = playerLayer || this.uiOverlay || this.gameContainer;
+    const toTargetLocalFromGlobal = (point) => {
+      if (!targetLayer?.toLocal) return point;
+      return targetLayer.toLocal(point);
+    };
+    const toTargetLocalFromWorld = (x, y) => {
+      const point = new PIXI.Point(Number(x) || 0, Number(y) || 0);
+      const global = this.gameContainer?.toGlobal ? this.gameContainer.toGlobal(point) : point;
+      return toTargetLocalFromGlobal(global);
+    };
+    let renderedPlayer = null;
+    try {
+      const bounds = this.player?.shipSprite?.getBounds?.();
+      if (!playerLayer && bounds && (Number(bounds.width) || 0) > 0 && (Number(bounds.height) || 0) > 0) {
+        const globalCenter = new PIXI.Point(
+          Number(bounds.x || 0) + Number(bounds.width || 0) / 2,
+          Number(bounds.y || 0) + Number(bounds.height || 0) / 2
+        );
+        const local = toTargetLocalFromGlobal(globalCenter);
+        if (Number.isFinite(Number(local?.x)) && Number.isFinite(Number(local?.y))) {
+          renderedPlayer = { x: Number(local.x), y: Number(local.y) };
+        }
+      }
+    } catch {
+      renderedPlayer = null;
+    }
+    const spriteX = Number(this.player?.sprite?.x);
+    const spriteY = Number(this.player?.sprite?.y);
+    const width = Number(this.game?.getWidth?.()) || this.game?.app?.screen?.width || 1280;
+    const height = Number(this.game?.getHeight?.()) || this.game?.app?.screen?.height || 720;
+    const fallbackWorldX = Number.isFinite(spriteX) ? spriteX : Number.isFinite(Number(this.player?.x)) ? Number(this.player.x) : width / 2;
+    const fallbackWorldY = Number.isFinite(spriteY) ? spriteY : Number.isFinite(Number(this.player?.y)) ? Number(this.player.y) : height * 0.7;
+    const fallbackPlayer = toTargetLocalFromWorld(fallbackWorldX, fallbackWorldY);
+    const impactPoint = playerLayer
+      ? new PIXI.Point(0, 0)
+      : Number.isFinite(Number(options.impactX)) && Number.isFinite(Number(options.impactY))
+        ? toTargetLocalFromWorld(Number(options.impactX), Number(options.impactY))
+        : (renderedPlayer || fallbackPlayer);
+    const fallbackSource = new PIXI.Point(impactPoint.x, impactPoint.y - 1);
+    const sourcePoint = Number.isFinite(Number(options.sourceX)) && Number.isFinite(Number(options.sourceY))
+      ? toTargetLocalFromWorld(Number(options.sourceX), Number(options.sourceY))
+      : fallbackSource;
+    const impactX = Number.isFinite(Number(impactPoint?.x)) ? Number(impactPoint.x) : width / 2;
+    const impactY = Number.isFinite(Number(impactPoint?.y)) ? Number(impactPoint.y) : height * 0.7;
+    const sourceX = Number.isFinite(Number(sourcePoint?.x)) ? Number(sourcePoint.x) : impactX;
+    const sourceY = Number.isFinite(Number(sourcePoint?.y)) ? Number(sourcePoint.y) : impactY - 1;
+    const source = String(options.source || 'unknown');
+    const color = Number.isFinite(Number(options.color)) ? Number(options.color) : 0xff6677;
+    let dx = sourceX - impactX;
+    let dy = sourceY - impactY;
+    let length = Math.hypot(dx, dy);
+    if (length < 1) {
+      dx = 0;
+      dy = -1;
+      length = 1;
+    }
+    const nx = dx / length;
+    const ny = dy / length;
+    const tx = -ny;
+    const ty = nx;
+    const angle = Math.atan2(ny, nx);
+    const chevronCount = 3;
+    const ringCount = 2;
+    const durationMs = 760;
+
+    if (this.playerDamageDirectionCue?.ticker) {
+      this.game.app.ticker.remove(this.playerDamageDirectionCue.ticker);
+      this._activeTickers = (this._activeTickers || []).filter(fn => fn !== this.playerDamageDirectionCue.ticker);
+    }
+    if (this.playerDamageDirectionCue?.layer?.parent) {
+      this.playerDamageDirectionCue.layer.parent.removeChild(this.playerDamageDirectionCue.layer);
+    }
+
+    const layer = new PIXI.Graphics();
+    layer.label = 'playerDamageDirectionCue';
+    layer.x = impactX;
+    layer.y = impactY;
+    layer.zIndex = 99996;
+    layer.blendMode = 'add';
+    targetLayer.addChild(layer);
+    targetLayer.sortChildren?.();
+
+    const setDebug = (visible, elapsedMs = 0) => {
+      layer._debugDamageDirectionCue = {
+        visible,
+        source,
+        sourceX: Math.round(sourceX),
+        sourceY: Math.round(sourceY),
+        impactX: Math.round(impactX),
+        impactY: Math.round(impactY),
+        directionAngle: Number(angle.toFixed(3)),
+        chevronCount: visible ? chevronCount : 0,
+        ringCount: visible ? ringCount : 0,
+        elapsedMs: Math.round(elapsedMs)
+      };
+      this.lastPlayerDamageDirectionCueDebug = { ...layer._debugDamageDirectionCue };
+    };
+
+    const drawCue = (elapsedMs) => {
+      const t = Math.max(0, Math.min(1, elapsedMs / durationMs));
+      const fade = Math.max(0, 1 - t);
+      const pulse = 0.5 + Math.sin(elapsedMs * 0.022) * 0.5;
+      const baseRadius = 34 + t * 16;
+      layer.clear();
+      layer.circle(0, 0, baseRadius);
+      layer.stroke({ color, width: 3.1, alpha: 0.62 * fade });
+      layer.circle(0, 0, baseRadius + 13 + pulse * 3);
+      layer.stroke({ color: 0xffffff, width: 1.6, alpha: 0.34 * fade });
+      layer.arc(0, 0, baseRadius + 24, angle - 0.42, angle + 0.42);
+      layer.stroke({ color: 0xffffff, width: 3.2, alpha: 0.3 * fade });
+      layer.moveTo(nx * (baseRadius + 5), ny * (baseRadius + 5));
+      layer.lineTo(nx * (baseRadius + 76), ny * (baseRadius + 76));
+      layer.stroke({ color, width: 1.25, alpha: 0.2 * fade });
+      for (let i = 0; i < chevronCount; i += 1) {
+        const r = baseRadius + 25 + i * 13 + t * 9;
+        const tipR = r - 14;
+        const spread = 10 + i * 0.8;
+        const wingInset = 3 + i * 1.7;
+        const tipX = nx * tipR;
+        const tipY = ny * tipR;
+        const wingX = nx * (r + wingInset);
+        const wingY = ny * (r + wingInset);
+        layer.poly([
+          tipX, tipY,
+          wingX + tx * spread, wingY + ty * spread,
+          wingX - tx * spread, wingY - ty * spread
+        ]);
+        layer.fill({ color, alpha: (0.12 + i * 0.035) * fade });
+        layer.moveTo(wingX + tx * spread, wingY + ty * spread);
+        layer.lineTo(tipX, tipY);
+        layer.lineTo(wingX - tx * spread, wingY - ty * spread);
+      }
+      layer.stroke({ color, width: 3.2, alpha: 0.92 * fade });
+      layer.circle(nx * (baseRadius + 8), ny * (baseRadius + 8), 4.2 + pulse * 1.4);
+      layer.fill({ color: 0xffffff, alpha: 0.72 * fade });
+      layer.circle(nx * (baseRadius + 42), ny * (baseRadius + 42), 5.6 + pulse * 1.1);
+      layer.stroke({ color: 0xffffff, width: 1.9, alpha: 0.55 * fade });
+      layer.visible = true;
+      setDebug(true, elapsedMs);
+    };
+
+    let elapsedMs = 0;
+    drawCue(0);
+    const ticker = (tick) => {
+      elapsedMs += tick.deltaTime * 16.67;
+      if (elapsedMs >= durationMs) {
+        layer.clear();
+        layer.visible = false;
+        setDebug(false, elapsedMs);
+        if (layer.parent) layer.parent.removeChild(layer);
+        this.game.app.ticker.remove(ticker);
+        this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
+        if (this.playerDamageDirectionCue?.ticker === ticker) this.playerDamageDirectionCue = null;
+        return;
+      }
+      drawCue(elapsedMs);
+    };
+    this.game.app.ticker.add(ticker);
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(ticker);
+    this.playerDamageDirectionCue = { layer, ticker, source, startedAtMs: Date.now(), durationMs };
+    return true;
+  }
+
   triggerPlayerDeathFeedback(options = {}) {
     const finalDeath = Boolean(options.final || this.game?.lives <= 0);
     if (finalDeath && this.finalDeathFeedbackShown) return;
@@ -6147,6 +6334,12 @@ export class PlayScene {
     );
     this.player.grantInvulnerability?.(cooldownMs, 'boss_mercy');
     if (source === 'boss_contact') this.applyBossRecoverySeparation(boss);
+    this.triggerPlayerDamageDirectionCue({
+      source,
+      sourceX: Number.isFinite(Number(options.sourceX)) ? Number(options.sourceX) : boss?.x,
+      sourceY: Number.isFinite(Number(options.sourceY)) ? Number(options.sourceY) : boss?.y,
+      color: boss?.color || 0xff55d9
+    });
     this.triggerCabinetLog('boss-mercy-read', {
       source: 'boss_mercy'
     });
