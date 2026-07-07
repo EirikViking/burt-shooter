@@ -468,76 +468,9 @@ export class Enemy {
     this.sprite.y = this.y;
     this.sprite.sortableChildren = true;
 
-    let tex;
-    // Check for fighter type (player ship variant)
-    if (this.middleShipProfile && Number.isFinite(this.eliteMiddleShipIndex)) {
-      tex = GameAssets.getEliteMiddleShipTexture(this.eliteMiddleShipIndex);
-      this.usingEliteMiddleShipTexture = GameAssets.isValidTexture(tex);
-      if (!this.usingEliteMiddleShipTexture) {
-        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.eliteMiddleShipTextures, this.eliteMiddleShipIndex);
-        if (fallbackIndex !== null) {
-          tex = GameAssets.getEliteMiddleShipTexture(fallbackIndex);
-          this.usingEliteMiddleShipTexture = true;
-          this.eliteMiddleShipTextureFallbackIndex = fallbackIndex;
-        }
-      }
-    } else if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
-      tex = GameAssets.getGeneratedEnemyTexture(this.generatedEnemyIndex);
-      this.usingGeneratedEnemyTexture = GameAssets.isValidTexture(tex);
-      if (!this.usingGeneratedEnemyTexture) {
-        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.generatedEnemyTextures, this.generatedEnemyIndex);
-        if (fallbackIndex !== null) {
-          tex = GameAssets.getGeneratedEnemyTexture(fallbackIndex);
-          this.usingGeneratedEnemyTexture = true;
-          this.generatedEnemyTextureFallbackIndex = fallbackIndex;
-        }
-      }
-    } else if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
-      tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
-      this.usingPlayerShipTexture = true;
-    } else if (this.spriteKey === 'bonus_challenge') {
-      tex = GameAssets.getBonusCoreTexture();
-    } else {
-      // Map Type to Color if not provided
-      let c = this.waveColor;
-      if (!c) {
-        // Default map
-        const map = [null, 'Blue', 'Green', 'Red', 'Black', 'Blue'];
-        c = map[this.xtraType] || 'Blue';
-      }
-      tex = GameAssets.getXtraEnemy(c, this.xtraType);
-
-      if (GameAssets.isValidTexture(tex)) {
-        this.usingXtraAsset = true;
-      } else {
-        // Fallback
-        tex = this.spriteKey ? GameAssets.getEnemyTexture(this.spriteKey) : null;
-      }
-    }
-
+    const tex = this.resolveBodyTexture();
     if (GameAssets.isValidTexture(tex)) {
-      const s = new PIXI.Sprite(tex);
-      s.anchor.set(0.5);
-      const targetWidth = this.middleShipProfile?.targetWidth || this.generatedProfile?.targetWidth || 45;
-      const variantScale = Number.isFinite(this.visualVariant?.scale) ? this.visualVariant.scale : 1;
-      const scale = (targetWidth / tex.width) * variantScale;
-      s.scale.set(scale);
-      s.rotation = Math.PI; // Enemies face downward
-
-      // Fighter enemies (player ships) get subtle tint, xtra assets no tint
-      if (this.usingEliteMiddleShipTexture) {
-        s.tint = this.middleShipProfile?.hullTint || 0xffffff;
-      } else if (this.usingGeneratedEnemyTexture) {
-        s.tint = this.generatedProfile?.hullTint || 0xffffff;
-      } else if (this.usingPlayerShipTexture) {
-        s.tint = this.visualVariant?.tint || this.color;
-      } else {
-        s.tint = this.usingXtraAsset ? (this.visualVariant?.tint || 0xFFFFFF) : (this.visualVariant?.tint || this.color);
-      }
-
-      this.addVariantGlow();
-      this.sprite.addChild(s);
-      this.body = s;
+      this.installBodySprite(tex);
     } else {
       this.createFallbackGraphics();
     }
@@ -586,8 +519,101 @@ export class Enemy {
       this.sprite.addChildAt(this.threatTelegraphLayer, 0);
     }
 
-    // Apply visual enhancements to make enemies look distinct and menacing
-    if (this.usingXtraAsset && this.game?.app) {
+    this.ensureVisualEnhancements();
+  }
+
+  resolveBodyTexture() {
+    let tex;
+    this.usingXtraAsset = false;
+    this.usingGeneratedEnemyTexture = false;
+    this.usingEliteMiddleShipTexture = false;
+    this.usingPlayerShipTexture = false;
+    this.generatedEnemyTextureFallbackIndex = null;
+    this.eliteMiddleShipTextureFallbackIndex = null;
+
+    if (this.middleShipProfile && Number.isFinite(this.eliteMiddleShipIndex)) {
+      tex = GameAssets.getEliteMiddleShipTexture(this.eliteMiddleShipIndex);
+      this.usingEliteMiddleShipTexture = GameAssets.isValidTexture(tex);
+      if (!this.usingEliteMiddleShipTexture) {
+        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.eliteMiddleShipTextures, this.eliteMiddleShipIndex);
+        if (fallbackIndex !== null) {
+          tex = GameAssets.getEliteMiddleShipTexture(fallbackIndex);
+          this.usingEliteMiddleShipTexture = true;
+          this.eliteMiddleShipTextureFallbackIndex = fallbackIndex;
+        }
+      }
+    } else if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
+      tex = GameAssets.getGeneratedEnemyTexture(this.generatedEnemyIndex);
+      this.usingGeneratedEnemyTexture = GameAssets.isValidTexture(tex);
+      if (!this.usingGeneratedEnemyTexture) {
+        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.generatedEnemyTextures, this.generatedEnemyIndex);
+        if (fallbackIndex !== null) {
+          tex = GameAssets.getGeneratedEnemyTexture(fallbackIndex);
+          this.usingGeneratedEnemyTexture = true;
+          this.generatedEnemyTextureFallbackIndex = fallbackIndex;
+        }
+      }
+    } else if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
+      tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
+      this.usingPlayerShipTexture = true;
+    } else if (this.spriteKey === 'bonus_challenge') {
+      tex = GameAssets.getBonusCoreTexture();
+    } else {
+      // Map Type to Color if not provided
+      let c = this.waveColor;
+      if (!c) {
+        // Default map
+        const map = [null, 'Blue', 'Green', 'Red', 'Black', 'Blue'];
+        c = map[this.xtraType] || 'Blue';
+      }
+      tex = GameAssets.getXtraEnemy(c, this.xtraType);
+
+      if (GameAssets.isValidTexture(tex)) {
+        this.usingXtraAsset = true;
+      } else {
+        // Fallback
+        tex = this.spriteKey ? GameAssets.getEnemyTexture(this.spriteKey) : null;
+      }
+    }
+
+    return tex;
+  }
+
+  installBodySprite(tex, insertIndex = null) {
+    if (GameAssets.isValidTexture(tex)) {
+      const s = new PIXI.Sprite(tex);
+      s.anchor.set(0.5);
+      const targetWidth = this.middleShipProfile?.targetWidth || this.generatedProfile?.targetWidth || 45;
+      const variantScale = Number.isFinite(this.visualVariant?.scale) ? this.visualVariant.scale : 1;
+      const scale = (targetWidth / tex.width) * variantScale;
+      s.scale.set(scale);
+      s.rotation = Math.PI; // Enemies face downward
+
+      // Fighter enemies (player ships) get subtle tint, xtra assets no tint
+      if (this.usingEliteMiddleShipTexture) {
+        s.tint = this.middleShipProfile?.hullTint || 0xffffff;
+      } else if (this.usingGeneratedEnemyTexture) {
+        s.tint = this.generatedProfile?.hullTint || 0xffffff;
+      } else if (this.usingPlayerShipTexture) {
+        s.tint = this.visualVariant?.tint || this.color;
+      } else {
+        s.tint = this.usingXtraAsset ? (this.visualVariant?.tint || 0xFFFFFF) : (this.visualVariant?.tint || this.color);
+      }
+
+      this.addVariantGlow();
+      if (Number.isFinite(insertIndex)) {
+        this.sprite.addChildAt(s, Math.max(0, Math.min(insertIndex, this.sprite.children.length)));
+      } else {
+        this.sprite.addChild(s);
+      }
+      this.body = s;
+      this.usingFallbackGraphics = false;
+    }
+  }
+
+  ensureVisualEnhancements() {
+    // Apply visual enhancements to make enemies look distinct and menacing.
+    if (this.usingXtraAsset && this.game?.app && !this.visualEnhancementCleanup) {
       const color = this.waveColor || 'blue';
       const model = this.xtraType || 1;
       this.visualEnhancementCleanup = enhanceEnemyVisuals(
@@ -597,6 +623,37 @@ export class Enemy {
         this.game.app
       );
     }
+  }
+
+  tryUpgradeFallbackGraphics() {
+    if (!this.usingFallbackGraphics || !this.sprite || this.visualsDeactivated || this.destroyed) return false;
+    const tex = this.resolveBodyTexture();
+    if (!GameAssets.isValidTexture(tex)) return false;
+
+    let insertIndex = this.sprite.children.length;
+    if (this.body?.parent === this.sprite) {
+      insertIndex = this.sprite.getChildIndex(this.body);
+      this.sprite.removeChild(this.body);
+      this.body.destroy?.({ children: true });
+    } else if (this.variantGlow?.parent === this.sprite) {
+      insertIndex = this.sprite.getChildIndex(this.variantGlow) + 1;
+    }
+
+    this.installBodySprite(tex, insertIndex);
+    this.ensureVisualEnhancements();
+    this.updateHealthBar?.();
+    this.assetUpgradeDebug = {
+      upgraded: true,
+      type: this.type,
+      generatedEnemyIndex: this.generatedEnemyIndex ?? null,
+      generatedEnemyTextureFallbackIndex: this.generatedEnemyTextureFallbackIndex ?? null,
+      eliteMiddleShipIndex: this.eliteMiddleShipIndex ?? null,
+      eliteMiddleShipTextureFallbackIndex: this.eliteMiddleShipTextureFallbackIndex ?? null,
+      usingGeneratedEnemyTexture: Boolean(this.usingGeneratedEnemyTexture),
+      usingEliteMiddleShipTexture: Boolean(this.usingEliteMiddleShipTexture),
+      usingXtraAsset: Boolean(this.usingXtraAsset)
+    };
+    return true;
   }
 
   findFallbackTextureIndex(textures, preferredIndex) {
@@ -1077,6 +1134,7 @@ export class Enemy {
 
   update(delta, playerX, playerY) {
     if (!this.active && !this.waitingForEntry) return;
+    this.tryUpgradeFallbackGraphics();
 
     if (this.waitingForEntry) {
       if (Date.now() >= this.entryCurve.startTime) {

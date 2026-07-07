@@ -196,6 +196,43 @@ try {
         GameAssets.generatedEnemyTextures[missingGeneratedIndex] = originalTexture;
       }
     }
+
+    const upgradeX = width * 0.14;
+    const upgradeY = y + 145;
+    const upgradeProfile = getGeneratedEnemyProfile('nova_enemy_002', `8|Blue|${Math.round(upgradeX)}|${Math.round(upgradeY)}`);
+    if (Number.isFinite(upgradeProfile?.spriteIndex) && Array.isArray(GameAssets.generatedEnemyTextures)) {
+      const originalTextures = [...GameAssets.generatedEnemyTextures];
+      for (let i = 0; i < GameAssets.generatedEnemyTextures.length; i += 1) {
+        GameAssets.generatedEnemyTextures[i] = null;
+      }
+      let enemy = null;
+      try {
+        enemy = new Enemy(upgradeX, upgradeY, 'nova_enemy_002', 8, game, 'Blue');
+      } finally {
+        for (let i = 0; i < originalTextures.length; i += 1) {
+          GameAssets.generatedEnemyTextures[i] = originalTextures[i];
+        }
+      }
+      if (enemy) {
+        enemy.state = 'FORMATION';
+        enemy.waitingForEntry = false;
+        enemy.active = true;
+        enemy.x = upgradeX;
+        enemy.y = upgradeY;
+        enemy.spawnCueStartedAt = Date.now() - 2000;
+        enemy._threatReadabilityKey = 'fallback_upgrade_after_catalog_restore';
+        enemy._fallbackUpgradeStartedAsGraphics = Boolean(enemy.usingFallbackGraphics);
+        enemy.update(1, width * 0.5, game.getHeight?.() * 0.68 || 490);
+        enemy._fallbackUpgradeSucceeded = Boolean(enemy.assetUpgradeDebug?.upgraded);
+        enemy.updateHealthBar?.();
+        enemy.updateSpawnCue?.(Date.now());
+        enemy.updateThreatFrame?.(Date.now());
+        enemy.sprite.x = enemy.x;
+        enemy.sprite.y = enemy.y;
+        play.gameContainer.addChild(enemy.sprite);
+        enemies.unshift(enemy);
+      }
+    }
     manager.enemies = enemies;
     window.__enemyThreatReadabilityEnemies = enemies;
 
@@ -213,6 +250,9 @@ try {
         usingGeneratedEnemyTexture: Boolean(enemy.usingGeneratedEnemyTexture),
         usingEliteMiddleShipTexture: Boolean(enemy.usingEliteMiddleShipTexture),
         usingFallbackGraphics: Boolean(enemy.usingFallbackGraphics),
+        fallbackUpgradeStartedAsGraphics: Boolean(enemy._fallbackUpgradeStartedAsGraphics),
+        fallbackUpgradeSucceeded: Boolean(enemy._fallbackUpgradeSucceeded),
+        assetUpgradeDebug: enemy.assetUpgradeDebug || null,
         hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
         bodySize: {
           width: Math.round(enemy.body?.width || 0),
@@ -265,6 +305,13 @@ try {
   if (fallback && fallback.generatedEnemyTextureFallbackIndex === null) failures.push(`generated texture fallback sample did not record fallback index: ${JSON.stringify(fallback)}`);
   if (fallback && fallback.generatedEnemyTextureFallbackIndex === fallback.forcedMissingGeneratedTextureIndex) failures.push(`generated texture fallback reused missing index: ${JSON.stringify(fallback)}`);
   if (fallback && (!fallback.hasBodySpriteTexture || fallback.bodySize?.width < 20 || fallback.bodySize?.height < 20)) failures.push(`generated texture fallback body texture too small/missing: ${JSON.stringify(fallback.bodySize)}`);
+  const fallbackUpgrade = state.enemies?.find((item) => item.key === 'fallback_upgrade_after_catalog_restore');
+  if (!fallbackUpgrade) failures.push('missing generated-texture fallback upgrade sample');
+  if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeStartedAsGraphics) failures.push(`fallback upgrade sample did not start as simple graphics: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade?.usingFallbackGraphics) failures.push(`fallback upgrade sample stayed on simple graphics: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeSucceeded) failures.push(`fallback upgrade sample did not report upgrade: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade && !fallbackUpgrade.usingGeneratedEnemyTexture) failures.push(`fallback upgrade sample did not restore generated enemy texture: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade && (!fallbackUpgrade.hasBodySpriteTexture || fallbackUpgrade.bodySize?.width < 20 || fallbackUpgrade.bodySize?.height < 20)) failures.push(`fallback upgrade body texture too small/missing: ${JSON.stringify(fallbackUpgrade.bodySize)}`);
   const late = state.enemies?.find((item) => item.key === 'late');
   if (!late?.lateMayhem) failures.push(`late sample is not lateMayhem: ${JSON.stringify(late)}`);
   const threat = state.enemies?.find((item) => item.key === 'threat');
