@@ -283,6 +283,8 @@ export class Boss {
       ? 0xff4b6b
       : healthPercent <= 0.75 ? 0xff9f3d : 0xff2e58;
     const frameColor = lowHealth ? 0xffef7e : healthPercent <= 0.4 ? 0xff8fb0 : 0xff6677;
+    let lowHealthBraceCount = 0;
+    let lowHealthSparkCount = 0;
 
     this.healthBar.roundRect(barX - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
     this.healthBar.fill({ color: 0x08070c, alpha: 0.76 });
@@ -344,6 +346,32 @@ export class Boss {
       }
       this.healthBar.roundRect(barX - 6, barY - 6, barWidth + 12, barHeight + 12, 6);
       this.healthBar.stroke({ color: 0xffef7e, width: 1.1, alpha: 0.34 });
+      const braceY = barY + barHeight * 0.5;
+      for (const sideX of [barX - 9, barX + barWidth + 9]) {
+        const direction = sideX < 0 ? 1 : -1;
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX, braceY + 8);
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY - 8);
+        this.healthBar.moveTo(sideX, braceY + 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY + 8);
+        lowHealthBraceCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xff4b6b, width: 1.35, alpha: 0.54 });
+
+      const sparkStartX = Math.min(barX + barWidth - 30, barX + Math.max(10, fillWidth) + 8);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.min(barX + barWidth - 8, sparkStartX + index * 10);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 === 0 ? -3 : 3);
+        this.healthBar.poly([
+          sparkX, sparkY - 3,
+          sparkX + 4, sparkY,
+          sparkX, sparkY + 3,
+          sparkX - 4, sparkY
+        ]);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0xffef7e, alpha: 0.38 });
+        lowHealthSparkCount += 1;
+      }
     }
 
     // Health text (no decimals)
@@ -374,6 +402,8 @@ export class Boss {
       phasePipCount: bossPhaseCount,
       currentPhasePip: currentPhase,
       dangerHatchCount: lowHealth ? 7 : 0,
+      lowHealthBraceCount,
+      lowHealthSparkCount,
       text: healthText
     };
   }

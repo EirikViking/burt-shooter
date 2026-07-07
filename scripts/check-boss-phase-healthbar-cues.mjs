@@ -152,6 +152,8 @@ try {
   if (debug.phasePipCount !== 3) failures.push(`phase pip count mismatch: ${JSON.stringify(debug)}`);
   if (debug.currentPhasePip !== 3) failures.push(`current phase pip mismatch: ${JSON.stringify(debug)}`);
   if ((debug.dangerHatchCount || 0) < 7) failures.push(`low-health hatches missing: ${JSON.stringify(debug)}`);
+  if ((debug.lowHealthBraceCount || 0) < 2) failures.push(`low-health braces missing: ${JSON.stringify(debug)}`);
+  if ((debug.lowHealthSparkCount || 0) < 3) failures.push(`low-health sparks missing: ${JSON.stringify(debug)}`);
   if (!debug.lowHealth) failures.push(`low-health state missing: ${JSON.stringify(debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
