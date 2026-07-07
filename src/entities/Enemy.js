@@ -16,6 +16,32 @@ import { AudioManager } from '../audio/AudioManager.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
+function drawThreatFrameTick(graphics, angle, innerRadius, outerRadius) {
+  graphics.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+  graphics.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+}
+
+function getEnemyThreatFrameProfile(enemy) {
+  if (!enemy || enemy.type === 'bonus_challenge') return null;
+  const accent = enemy.visualVariant?.accent || enemy.color || 0xff5d6c;
+  if (enemy.middleShipProfile || enemy.isEliteMiddleShip) {
+    return { tier: 'elite', color: enemy.middleShipProfile?.accent || accent, accent: 0xffffff, markerCount: 6, radiusMult: 2.18 };
+  }
+  if (enemy.kind === 'danger_mid_ship') {
+    return { tier: 'danger_mid', color: enemy.dangerMidShipProfile?.accent || 0xffb84a, accent: 0xfff0a0, markerCount: 5, radiusMult: 2.02 };
+  }
+  if (enemy.generatedProfile?.lateMayhem) {
+    return { tier: 'late_mayhem', color: enemy.generatedProfile.accent || accent, accent: enemy.generatedProfile.tint || 0xffffff, markerCount: 5, radiusMult: 1.9 };
+  }
+  if (enemy.threatActionDefinition) {
+    return { tier: 'threat_action', color: 0xffd36b, accent: accent || 0xff6174, markerCount: 4, radiusMult: 1.82 };
+  }
+  if (enemy.isElite || Number(enemy.maxHealth) >= 8) {
+    return { tier: 'durable', color: 0xffe56d, accent: accent || 0xfff1a8, markerCount: 3, radiusMult: 1.7 };
+  }
+  return null;
+}
+
 function smoothFormationStep(value, sharpness = 2.4) {
   const normalized = Math.max(-1, Math.min(1, Number(value) || 0));
   const scale = Math.tanh(sharpness) || 1;
@@ -66,6 +92,7 @@ export class Enemy {
     this.spawnCueLayer = null;
     this.spawnCueStartedAt = Date.now();
     this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
+    this.threatFrameLayer = null;
 
     // Arcade formation state machine.
     this.state = 'ENTRY';
@@ -510,6 +537,13 @@ export class Enemy {
     this.spawnCueLayer.blendMode = 'add';
     this.spawnCueLayer.visible = true;
     this.sprite.addChild(this.spawnCueLayer);
+
+    this.threatFrameLayer = new PIXI.Graphics();
+    this.threatFrameLayer.label = 'enemyThreatFrame';
+    this.threatFrameLayer.zIndex = -7;
+    this.threatFrameLayer.blendMode = 'add';
+    this.threatFrameLayer.visible = false;
+    this.sprite.addChild(this.threatFrameLayer);
 
     if (this.middleShipProfile) {
       this.eliteVfxLayer = new PIXI.Graphics();
@@ -1019,6 +1053,7 @@ export class Enemy {
     this.updateHitFeedback();
     this.updateMuzzleFlash();
     this.updateSpawnCue();
+    this.updateThreatFrame();
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
@@ -1079,6 +1114,69 @@ export class Enemy {
       progress: Number(progress.toFixed(3)),
       radius: Number(outer.toFixed(1)),
       fade: Number(fade.toFixed(3))
+    };
+  }
+
+  updateThreatFrame(now = Date.now()) {
+    const layer = this.threatFrameLayer;
+    if (!layer) return;
+    layer.clear();
+
+    const profile = getEnemyThreatFrameProfile(this);
+    if (!profile || !this.active || this.visualsDeactivated || this.waitingForEntry) {
+      layer.visible = false;
+      layer._debugThreatFrame = {
+        visible: false,
+        tier: profile?.tier || null
+      };
+      return;
+    }
+
+    const pulse = Math.sin(now * 0.006 + this.idlePhase) * 0.5 + 0.5;
+    const radius = Math.max(22, this.radius * profile.radiusMult);
+    const outer = radius + (profile.tier === 'elite' ? 8 : 5);
+    const markerCount = Math.max(3, profile.markerCount || 3);
+    layer.rotation = -(this.sprite?.rotation || 0);
+
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: profile.color, width: profile.tier === 'elite' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
+    layer.circle(0, 0, outer);
+    layer.stroke({ color: profile.accent, width: 1, alpha: 0.1 + pulse * 0.08 });
+
+    for (let i = 0; i < markerCount; i += 1) {
+      const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+      drawThreatFrameTick(layer, angle, radius - 4, outer + 6);
+    }
+    layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
+
+    if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+        const cx = Math.cos(angle) * (outer + 9);
+        const cy = Math.sin(angle) * (outer + 9);
+        layer.circle(cx, cy, profile.tier === 'elite' ? 2.6 : 2.1);
+      }
+      layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
+    } else if (profile.tier === 'threat_action') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = Math.PI / 4 + i * (Math.PI * 2 / markerCount);
+        drawThreatFrameTick(layer, angle, radius * 0.64, radius * 0.92);
+      }
+      layer.stroke({ color: profile.accent, width: 1.4, alpha: 0.28 + pulse * 0.18 });
+    } else if (profile.tier === 'late_mayhem') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = now * 0.002 + i * (Math.PI * 2 / markerCount);
+        drawThreatFrameTick(layer, angle, radius * 0.78, outer + 4);
+      }
+      layer.stroke({ color: profile.accent, width: 1.3, alpha: 0.26 + pulse * 0.18 });
+    }
+
+    layer.visible = true;
+    layer._debugThreatFrame = {
+      visible: true,
+      tier: profile.tier,
+      markerCount,
+      radius: Number(outer.toFixed(1))
     };
   }
 
@@ -2421,6 +2519,8 @@ export class Enemy {
     if (this.muzzleFlashLayer) this.muzzleFlashLayer.visible = false;
     this.spawnCueLayer?.clear();
     if (this.spawnCueLayer) this.spawnCueLayer.visible = false;
+    this.threatFrameLayer?.clear();
+    if (this.threatFrameLayer) this.threatFrameLayer.visible = false;
     this.threatTelegraphLayer?.clear();
     this.eliteVfxLayer?.clear();
     if (this.visualEnhancementCleanup) {

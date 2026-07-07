@@ -817,3 +817,32 @@ Safety notes:
 
 - No powerup drop rate, lifetime, movement speed, pickup radius, effect, duration, charge count, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only pickup readability layer using existing falling powerup state.
+
+## Batch 37 - Enemy Threat Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+146. Priority enemies now get a restrained local threat frame so players can identify higher-value danger without new text.
+147. Elite middle ships use a stronger six-marker frame tied to their existing elite metadata.
+148. Threat-action normal enemies and late-Mayhem enemies get distinct frame tiers using existing action/generated-profile state.
+149. Durable non-elite enemies get a lighter frame, while ordinary one-hit enemies stay visually quiet.
+150. `check:enemy-threat-readability` proves elite, threat-action, late-Mayhem, durable, and ordinary cases with a browser screenshot.
+
+Verification:
+
+- `npm run check:enemy-threat-readability`
+- Screenshot proof: `test-results/enemy-threat-readability-2026-07-07T08-34-38-816Z/enemy-threat-readability.png`
+- `npm run check:enemy-spawn-cue`
+- `npm run check:enemy-hit-feedback`
+- `npm run check:enemy-weapons`
+- `npm run check:normal-enemy-attack-variety`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui` (passed on rerun after concurrent build/preview churn)
+- `npm run check:controller-flow` (passed on rerun after concurrent build/preview churn)
+- `git diff --check`
+
+Safety notes:
+
+- No enemy health, damage, spawn timing, fire cadence, threat-action assignment, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only enemy-local priority feedback using existing enemy metadata.
