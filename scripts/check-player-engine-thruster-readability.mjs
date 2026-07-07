@@ -288,7 +288,11 @@ try {
   });
 
   await page.waitForTimeout(180);
+  await page.evaluate(() => {
+    window.__game?.app?.renderer?.render?.(window.__game?.app?.stage);
+  });
   const screenshot = path.join(outputDir, 'player-engine-thruster-readability.png');
+  await page.screenshot({ path: path.join(outputDir, 'player-engine-thruster-readability-full.png'), fullPage: true });
   await page.screenshot({ path: screenshot, clip: state.clip });
   const proofPixels = analyzeVisibleProofPixels(screenshot);
 
@@ -300,6 +304,7 @@ try {
   if (state.activeDebug?.plumeCount !== 3) failures.push(`expected 3 engine plumes: ${JSON.stringify(state.activeDebug)}`);
   if (state.activeDebug?.sideJets !== true) failures.push(`lean side jet missing: ${JSON.stringify(state.activeDebug)}`);
   if ((state.activeDebug?.sideFeatherCount || 0) < 3) failures.push(`strafe feather trails missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.velocityWakeCount || 0) < 3) failures.push(`velocity wake trails missing: ${JSON.stringify(state.activeDebug)}`);
   if (state.shipSize.width < 28 || state.shipSize.height < 28) failures.push(`player ship art missing/small: ${JSON.stringify(state.shipSize)}`);
   if (proofPixels.energeticPixels < 900) failures.push(`screenshot proof is too sparse/blank: ${JSON.stringify(proofPixels)}`);
   if (proofPixels.cyanOrangeThrusterPixels < 80) failures.push(`thruster proof pixels missing: ${JSON.stringify(proofPixels)}`);

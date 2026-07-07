@@ -530,6 +530,7 @@ export class Player {
     const alpha = 0.2 + intensity * 0.46;
     let plumeCount = 0;
     let sideFeatherCount = 0;
+    let velocityWakeCount = 0;
 
     for (let i = 0; i < 3; i += 1) {
       const offset = (i - 1) * spread;
@@ -569,6 +570,28 @@ export class Player {
       layer.stroke({ color: coreColor, width: 1.2 + intensity * 0.8, alpha: 0.2 + intensity * 0.26 });
     }
 
+    if (moveIntent > 0.28) {
+      const length = Math.max(0.001, Math.hypot(dx, dy));
+      const wakeX = -(Number(dx) || 0) / length;
+      const wakeY = -(Number(dy) || 0) / length;
+      const tangentX = -wakeY;
+      const tangentY = wakeX;
+      const originY = width * 0.08;
+      for (let i = 0; i < 3; i += 1) {
+        const lane = i - 1;
+        const startX = tangentX * lane * width * 0.12;
+        const startY = originY + tangentY * lane * width * 0.12;
+        const trail = width * (0.2 + intensity * 0.18 + i * 0.035);
+        layer.moveTo(startX, startY);
+        layer.lineTo(
+          startX + wakeX * trail + tangentX * lane * 2.5,
+          startY + wakeY * trail + tangentY * lane * 2.5
+        );
+        velocityWakeCount += 1;
+      }
+      layer.stroke({ color: hotColor, width: 0.95 + intensity * 0.65, alpha: 0.12 + intensity * 0.2 });
+    }
+
     layer.visible = true;
     layer.__debugEngineVfx = {
       visible: true,
@@ -577,7 +600,8 @@ export class Player {
       firingBoost: Number(firingBoost.toFixed(3)),
       plumeCount,
       sideJets,
-      sideFeatherCount
+      sideFeatherCount,
+      velocityWakeCount
     };
   }
 
