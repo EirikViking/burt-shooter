@@ -119,6 +119,7 @@ export class HUD {
     this.comboMeterGroup = new PIXI.Container();
     this.comboMeterBg = new PIXI.Graphics();
     this.comboMeterFill = new PIXI.Graphics();
+    this.comboMeterTicks = new PIXI.Graphics();
     this.comboMeterText = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
@@ -129,6 +130,7 @@ export class HUD {
     });
     this.comboMeterGroup.addChild(this.comboMeterBg);
     this.comboMeterGroup.addChild(this.comboMeterFill);
+    this.comboMeterGroup.addChild(this.comboMeterTicks);
     this.comboMeterGroup.addChild(this.comboMeterText);
     this.comboMeterGroup.visible = false;
     this.hudContainer.addChild(this.comboMeterGroup);
@@ -1231,6 +1233,7 @@ export class HUD {
     if (!this.comboMeterGroup || count < 2 || timerMs <= 0) {
       if (this.comboMeterGroup) {
         this.comboMeterGroup.visible = false;
+        this.comboMeterTicks?.clear?.();
         this.comboMeterGroup._debugComboMeter = { visible: false, count, multiplier, progress: 0 };
       }
       return;
@@ -1255,8 +1258,27 @@ export class HUD {
     this.comboMeterBg.stroke({ color, width: low ? 1.6 : 1.1, alpha: low ? 0.66 + pulse * 0.26 : 0.72 });
 
     this.comboMeterFill.clear();
-    this.comboMeterFill.roundRect(2, height - 5, Math.max(2, (width - 4) * progress), 3, 2);
+    const fillWidth = Math.max(2, (width - 4) * progress);
+    this.comboMeterFill.roundRect(2, height - 5, fillWidth, 3, 2);
     this.comboMeterFill.fill({ color, alpha: low ? 0.74 + pulse * 0.22 : 0.92 });
+
+    this.comboMeterTicks.clear();
+    const glintX = Math.round(2 + fillWidth);
+    this.comboMeterTicks.roundRect(glintX - 2, height - 8, 4, 8, 2);
+    this.comboMeterTicks.fill({ color: 0xffffff, alpha: low ? 0.34 + pulse * 0.3 : 0.42 });
+    const tierPips = Math.max(1, Math.min(4, multiplier));
+    for (let i = 0; i < tierPips; i += 1) {
+      this.comboMeterTicks.circle(width - 8 - i * 7, 6, 2.1);
+      this.comboMeterTicks.fill({ color: i === 0 ? color : 0xffffff, alpha: i === 0 ? 0.9 : 0.46 });
+    }
+    if (low) {
+      const hatchStart = Math.max(6, width - 25);
+      for (let x = hatchStart; x < width - 4; x += 6) {
+        this.comboMeterTicks.moveTo(x, 4);
+        this.comboMeterTicks.lineTo(x + 7, height - 6);
+      }
+      this.comboMeterTicks.stroke({ color: 0xffd166, width: 1.1, alpha: 0.28 + pulse * 0.3 });
+    }
 
     const comboLabel = translateText('COMBO');
     this.comboMeterText.text = [comboLabel, String(count), `x${multiplier}`].join(' ');
@@ -1271,6 +1293,9 @@ export class HUD {
       multiplier,
       progress: Number(progress.toFixed(3)),
       low,
+      tierPips,
+      glintX,
+      lowWarning: low,
       label: this.comboMeterText.text
     };
   }

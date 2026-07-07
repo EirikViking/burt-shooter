@@ -639,3 +639,22 @@ Safety notes:
 
 - No score awards, score formula, leaderboard target retrieval, personal-best persistence, rank, XP, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - HUD-only score-pressure polish using the existing high-score chase state.
+
+## Batch 30 - Combo Meter Urgency
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+111. The combo meter now draws multiplier tier pips so x2/x3/x4 states read visually before the text is parsed.
+112. The meter now draws a bright glint at the active timer edge, making combo decay easier to see.
+113. Low-time combo state now adds a subtle hatch warning on the trailing side of the meter.
+114. Combo debug state now exposes tier pips, glint position, and low-warning status for focused automation.
+115. `check:combo-meter-urgency` proves an x3 low-time combo state with browser screenshot evidence.
+
+Verification:
+
+- `npm run check:combo-meter-urgency`
+
+Safety notes:
+
+- No combo window, combo scoring, milestone bonuses, multiplier thresholds, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- HUD-only combo urgency readability polish using existing combo state.
