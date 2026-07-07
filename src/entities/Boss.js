@@ -135,6 +135,10 @@ export class Boss {
     this.presentationState = 'idle';
     this.presentationStateUntil = 0;
     this.hurtFlashUntil = 0;
+    this.healPulseUntil = 0;
+    this.healPulseStartedAt = 0;
+    this.lastHealAmount = 0;
+    this.lastHealSource = null;
     this.phasePulseUntil = 0;
     this.fireRecoilUntil = 0;
     this.lastHurtFxAt = 0;
@@ -285,6 +289,11 @@ export class Boss {
     const frameColor = lowHealth ? 0xffef7e : healthPercent <= 0.4 ? 0xff8fb0 : 0xff6677;
     let lowHealthBraceCount = 0;
     let lowHealthSparkCount = 0;
+    let healPulseTickCount = 0;
+    let healPulseSparkCount = 0;
+    const now = Date.now();
+    const healPulseRemaining = Math.max(0, (this.healPulseUntil || 0) - now);
+    const healPulseActive = healPulseRemaining > 0 && (Number(this.lastHealAmount) || 0) > 0;
 
     this.healthBar.roundRect(barX - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
     this.healthBar.fill({ color: 0x08070c, alpha: 0.76 });
@@ -301,6 +310,34 @@ export class Boss {
       this.healthBar.moveTo(leadX, barY - 3);
       this.healthBar.lineTo(leadX, barY + barHeight + 3);
       this.healthBar.stroke({ color: 0xffffff, width: lowHealth ? 2 : 1.3, alpha: lowHealth ? 0.88 : 0.68 });
+    }
+
+    if (healPulseActive && fillWidth > 0) {
+      const healedPercent = Math.max(0, Math.min(1, (Number(this.lastHealAmount) || 0) / Math.max(1, this.maxHealth || 1)));
+      const healWidth = Math.max(9, Math.min(fillWidth, barWidth * healedPercent));
+      const healX = Math.max(barX, barX + fillWidth - healWidth);
+      const pulseProgress = Math.max(0, Math.min(1, healPulseRemaining / 940));
+      const pulse = Math.sin(now * 0.026) * 0.5 + 0.5;
+      this.healthBar.roundRect(healX, barY - 1, healWidth, barHeight + 2, 3);
+      this.healthBar.fill({ color: 0x7dffcc, alpha: 0.22 + pulseProgress * 0.3 });
+      this.healthBar.roundRect(healX - 3, barY - 4, healWidth + 6, barHeight + 8, 5);
+      this.healthBar.stroke({ color: 0x7dffcc, width: 1.25 + pulse * 0.85, alpha: 0.28 + pulseProgress * 0.36 });
+      for (let index = 0; index < 4; index += 1) {
+        const ratio = (index + 0.5) / 4;
+        const tickX = healX + healWidth * ratio;
+        this.healthBar.moveTo(tickX, barY - 5);
+        this.healthBar.lineTo(tickX, barY + barHeight + 5);
+        healPulseTickCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xffffff, width: 0.9, alpha: 0.2 + pulseProgress * 0.26 });
+      const sparkBaseX = Math.min(barX + barWidth - 8, barX + fillWidth + 6);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.max(barX + 8, sparkBaseX - index * 9);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 ? 5 : -5);
+        this.healthBar.circle(sparkX, sparkY, 2.4 + pulse * 1.4);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0x7dffcc, alpha: 0.26 + pulseProgress * 0.28 });
+        healPulseSparkCount += 1;
+      }
     }
 
     for (const threshold of bossPhaseThresholds) {
@@ -404,6 +441,11 @@ export class Boss {
       dangerHatchCount: lowHealth ? 7 : 0,
       lowHealthBraceCount,
       lowHealthSparkCount,
+      healPulseActive,
+      healPulseTickCount,
+      healPulseSparkCount,
+      lastHealAmount: Math.round(Number(this.lastHealAmount) || 0),
+      lastHealSource: this.lastHealSource || null,
       text: healthText
     };
   }
@@ -421,6 +463,12 @@ export class Boss {
     }
 
     this.moveTimer += delta;
+    if ((this.healPulseUntil || 0) > Date.now()) {
+      this.updateHealthBar();
+    } else if (this.healPulseUntil) {
+      this.healPulseUntil = 0;
+      this.updateHealthBar();
+    }
 
     // Phase transitions
     if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
@@ -933,6 +981,11 @@ export class Boss {
     this.health = Math.min(this.maxHealth, this.health + value);
     const healed = Math.max(0, this.health - before);
     if (healed <= 0) return 0;
+    const now = Date.now();
+    this.healPulseStartedAt = now;
+    this.healPulseUntil = now + 940;
+    this.lastHealAmount = healed;
+    this.lastHealSource = source;
     this.updateHealthBar();
     const playScene = this.game?.scenes?.play;
     const color = this.profile?.accent || this.color || 0x7dffcc;

@@ -130,13 +130,15 @@ try {
     boss.sprite.x = boss.x;
     boss.sprite.y = boss.y;
     boss.phase = 3;
-    boss.health = Math.max(1, boss.maxHealth * 0.2);
-    boss.updateHealthBar();
+    boss.health = Math.max(1, boss.maxHealth * 0.18);
+    const requestedHeal = Math.max(2, Math.round(boss.maxHealth * 0.045));
+    const healed = boss.heal(requestedHeal, { source: 'boss_fuel_ship' });
     player.invulnerable = true;
     player.invulnerableTime = 20000;
     return {
       ok: true,
       debug: boss.healthBar?._debugBossHealthBar || boss.healthBar?.__debugBossHealthBar || null,
+      heal: { requestedHeal, healed },
       boss: { phase: boss.phase, health: boss.health, maxHealth: boss.maxHealth }
     };
   });
@@ -154,6 +156,11 @@ try {
   if ((debug.dangerHatchCount || 0) < 7) failures.push(`low-health hatches missing: ${JSON.stringify(debug)}`);
   if ((debug.lowHealthBraceCount || 0) < 2) failures.push(`low-health braces missing: ${JSON.stringify(debug)}`);
   if ((debug.lowHealthSparkCount || 0) < 3) failures.push(`low-health sparks missing: ${JSON.stringify(debug)}`);
+  if (!debug.healPulseActive) failures.push(`boss heal pulse missing: ${JSON.stringify(debug)}`);
+  if ((debug.healPulseTickCount || 0) < 4) failures.push(`boss heal pulse ticks missing: ${JSON.stringify(debug)}`);
+  if ((debug.healPulseSparkCount || 0) < 3) failures.push(`boss heal pulse sparks missing: ${JSON.stringify(debug)}`);
+  if ((debug.lastHealAmount || 0) <= 0 || state.heal?.healed <= 0) failures.push(`boss heal amount missing: ${JSON.stringify({ debug, heal: state.heal })}`);
+  if (debug.lastHealSource !== 'boss_fuel_ship') failures.push(`boss heal source missing: ${JSON.stringify(debug)}`);
   if (!debug.lowHealth) failures.push(`low-health state missing: ${JSON.stringify(debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
