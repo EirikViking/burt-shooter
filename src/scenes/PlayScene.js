@@ -106,6 +106,7 @@ const SECTOR_ARRIVAL_STINGER_MS = 2400;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
+const STRAGGLER_BEACON_MAX_TARGETS = 3;
 
 export class PlayScene {
   constructor(game) {
@@ -367,6 +368,8 @@ export class PlayScene {
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
+    this.stragglerBeaconLayer = null;
+    this.lastStragglerBeaconDebug = null;
 
     // TASK: Fix duplicate wave start
     this._lastStartedLevel = -1;
@@ -598,6 +601,12 @@ export class PlayScene {
     this.bossHazardLayer = new PIXI.Graphics();
     this.bossHazardLayer.zIndex = 66;
     this.gameContainer.addChild(this.bossHazardLayer);
+    this.stragglerBeaconLayer = new PIXI.Graphics();
+    this.stragglerBeaconLayer.label = 'stragglerBeaconLayer';
+    this.stragglerBeaconLayer.zIndex = 72;
+    this.stragglerBeaconLayer.blendMode = 'add';
+    this.stragglerBeaconLayer.visible = false;
+    this.gameContainer.addChild(this.stragglerBeaconLayer);
 
     const params = new URLSearchParams(window.location.search);
     const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
@@ -2354,6 +2363,7 @@ export class PlayScene {
       measure('enemies', () => {
         if (this.enemyManager) this.enemyManager.update(delta);
       });
+      measure('straggler_beacon', () => this.updateStragglerBeacon(delta));
       measure('boss_director', () => {
         this.sampleBalanceBoss();
         this.maybeSpawnBossClutchShield();
@@ -4311,6 +4321,12 @@ export class PlayScene {
       this.magnetFieldVisual.destroy();
       this.magnetFieldVisual = null;
     }
+    this.clearStragglerBeacon('destroy');
+    if (this.stragglerBeaconLayer?.parent) {
+      this.stragglerBeaconLayer.parent.removeChild(this.stragglerBeaconLayer);
+    }
+    this.stragglerBeaconLayer?.destroy?.();
+    this.stragglerBeaconLayer = null;
     // Lifecycle hardening
     if (this._deathTimeouts) {
       this._deathTimeouts.forEach(id => clearTimeout(id));
@@ -4615,6 +4631,124 @@ export class PlayScene {
       particles: this.particleManager ? this.particleManager.particles.length : 0,
       children: this.gameContainer ? this.gameContainer.children.length : 0
     };
+  }
+
+  clearStragglerBeacon(reason = 'clear') {
+    if (this.stragglerBeaconLayer) {
+      this.stragglerBeaconLayer.clear();
+      this.stragglerBeaconLayer.visible = false;
+      this.stragglerBeaconLayer._debugStragglerBeacon = {
+        visible: false,
+        reason,
+        targetCount: 0,
+        pipCount: 0,
+        ringCount: 0
+      };
+    }
+    this.lastStragglerBeaconDebug = {
+      visible: false,
+      reason,
+      targetCount: 0,
+      pipCount: 0,
+      ringCount: 0
+    };
+    return this.lastStragglerBeaconDebug;
+  }
+
+  isStragglerBeaconTarget(enemy) {
+    if (!enemy || enemy.active === false || enemy.destroyed === true || enemy.waitingForEntry) return false;
+    if (!Number.isFinite(enemy.x) || !Number.isFinite(enemy.y)) return false;
+    const kind = enemy.kind || 'enemy';
+    if (kind === 'boss' || kind === 'boss_fuel_ship' || kind === 'bonus_drone') return false;
+    return true;
+  }
+
+  updateStragglerBeacon(delta = 1) {
+    const layer = this.stragglerBeaconLayer;
+    const manager = this.enemyManager;
+    if (!layer || !manager) return this.clearStragglerBeacon('missing_layer_or_manager');
+    if (this.isPaused || this.introActive || this.gameOverSequenceStarted || this.gameOverInterlude?.active || this.overrunMilestoneInterlude?.active) {
+      return this.clearStragglerBeacon('inactive_scene_state');
+    }
+    if (this.sectorArrivalStinger?.container?.parent) {
+      return this.clearStragglerBeacon('sector_stinger');
+    }
+    const state = manager.state || 'IDLE';
+    const phase = manager.phase || 'WAVES';
+    if (phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE' || state === 'LEVEL_COMPLETE') {
+      return this.clearStragglerBeacon('boss_or_clear_state');
+    }
+
+    const targets = (manager.enemies || []).filter(enemy => this.isStragglerBeaconTarget(enemy));
+    if (targets.length <= 0) return this.clearStragglerBeacon('no_targets');
+    if (targets.length > STRAGGLER_BEACON_MAX_TARGETS) {
+      return this.clearStragglerBeacon('too_many_targets');
+    }
+
+    const now = Date.now();
+    const safeDelta = Math.max(0, Math.min(3, Number(delta) || 1));
+    const pulse = 0.5 + Math.sin(now * 0.012) * 0.5;
+    const spin = now * 0.0022;
+    const baseAlpha = 0.38 + pulse * 0.28;
+    let pipCount = 0;
+    let ringCount = 0;
+
+    layer.clear();
+    layer.visible = true;
+
+    targets.forEach((enemy, index) => {
+      const x = Number(enemy.x) || 0;
+      const y = Number(enemy.y) || 0;
+      const radius = Math.max(18, Number(enemy.radius) || 15);
+      const isElite = enemy.kind === 'elite_middle_ship' || enemy.isEliteMiddleShip || enemy.middleShipProfile;
+      const isDurable = isElite || Number(enemy.maxHealth || 0) >= 4;
+      const color = isElite
+        ? (enemy.middleShipProfile?.accent || 0xfff07a)
+        : (isDurable ? 0xffd36b : 0x66f7ff);
+      const accent = isElite ? 0xffffff : (enemy.visualVariant?.accent || enemy.color || 0xffffff);
+      const ringRadius = radius * (isElite ? 2.0 : 1.7) + 8 + pulse * 4 + index * 1.5;
+      const outerRadius = ringRadius + 8 + safeDelta * 0.4;
+
+      layer.circle(x, y, ringRadius);
+      layer.stroke({ color, width: isElite ? 2.2 : 1.8, alpha: baseAlpha });
+      layer.circle(x, y, outerRadius);
+      layer.stroke({ color: accent, width: 1, alpha: 0.22 + pulse * 0.16 });
+      ringCount += 2;
+
+      const pipTotal = isElite || isDurable ? 6 : 4;
+      const pipLength = isElite ? 12 : 9;
+      for (let i = 0; i < pipTotal; i += 1) {
+        const angle = spin + (Math.PI * 2 * i) / pipTotal + index * 0.4;
+        const ax = Math.cos(angle);
+        const ay = Math.sin(angle);
+        layer.moveTo(x + ax * (outerRadius + 2), y + ay * (outerRadius + 2));
+        layer.lineTo(x + ax * (outerRadius + pipLength), y + ay * (outerRadius + pipLength));
+        pipCount += 1;
+      }
+      layer.stroke({ color, width: isElite ? 2.4 : 2, alpha: 0.72 });
+
+      const bracketRadius = outerRadius + pipLength + 4;
+      const sweep = isElite ? 0.34 : 0.26;
+      for (let i = 0; i < 2; i += 1) {
+        const angle = spin * 0.7 + Math.PI * i + index * 0.25;
+        layer.arc(x, y, bracketRadius, angle - sweep, angle + sweep);
+      }
+      layer.stroke({ color: 0xffffff, width: isElite ? 1.8 : 1.4, alpha: 0.34 + pulse * 0.2 });
+    });
+
+    const debug = {
+      visible: true,
+      reason: 'active',
+      targetCount: targets.length,
+      targetTypes: targets.map(enemy => enemy.type || enemy.kind || 'enemy'),
+      targetKinds: targets.map(enemy => enemy.kind || 'enemy'),
+      pipCount,
+      ringCount,
+      maxTargets: STRAGGLER_BEACON_MAX_TARGETS
+    };
+    layer._debugStragglerBeacon = debug;
+    this.lastStragglerBeaconDebug = { ...debug };
+    return debug;
   }
 
   logCap(type) {
@@ -10693,6 +10827,7 @@ export class PlayScene {
   cleanupSkippedFrameVisuals(reason = 'skipped_frame') {
     this.enemyManager?.sweepInactiveEnemyVisuals?.(reason);
     this.sweepOrphanEnemyVisuals(reason);
+    if (reason !== 'frame_start') this.clearStragglerBeacon(reason);
     if (Array.isArray(this.ambientBonusDrones) && this.ambientBonusDrones.length > 0) {
       this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
         if (bonusDrone?.active !== false && bonusDrone?.destroyed !== true) return true;

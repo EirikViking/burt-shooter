@@ -196,6 +196,7 @@
     "check:enemy-hit-feedback": "node scripts/check-enemy-hit-feedback.mjs",
     "check:enemy-death-feedback-readability": "node scripts/check-enemy-death-feedback-readability.mjs",
     "check:enemy-threat-readability": "node scripts/check-enemy-threat-readability.mjs",
+    "check:straggler-beacon": "node scripts/check-straggler-beacon.mjs",
     "check:bonus-drone-clarity": "node scripts/check-bonus-drone-clarity.mjs",
     "check:projectile-visuals": "node scripts/check-projectile-visuals.mjs",
     "check:player-projectile-readability": "node scripts/check-player-projectile-readability.mjs",
