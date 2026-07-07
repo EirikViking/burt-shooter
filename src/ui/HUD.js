@@ -861,12 +861,17 @@ export class HUD {
       stroke: '#00111d',
       strokeThickness: 2
     });
+    const categoryAccent = new PIXI.Graphics();
     const barBg = new PIXI.Graphics();
     const barFill = new PIXI.Graphics();
+    const barTicks = new PIXI.Graphics();
+    const chargePips = new PIXI.Graphics();
+    const urgencyChevrons = new PIXI.Graphics();
     const expiryOverlay = new PIXI.Graphics();
     const spentOverlay = new PIXI.Graphics();
 
     container.addChild(bg);
+    container.addChild(categoryAccent);
     container.addChild(iconGlow);
     container.addChild(iconFrame);
     container.addChild(icon);
@@ -874,11 +879,14 @@ export class HUD {
     container.addChild(meta);
     container.addChild(barBg);
     container.addChild(barFill);
+    container.addChild(barTicks);
+    container.addChild(chargePips);
+    container.addChild(urgencyChevrons);
     container.addChild(expiryOverlay);
     container.addChild(spentOverlay);
     this.activePowerupList.addChild(container);
 
-    const row = { container, bg, iconGlow, iconFrame, icon, label, meta, barBg, barFill, expiryOverlay, spentOverlay };
+    const row = { container, bg, categoryAccent, iconGlow, iconFrame, icon, label, meta, barBg, barFill, barTicks, chargePips, urgencyChevrons, expiryOverlay, spentOverlay };
     this.activePowerupRows[index] = row;
     return row;
   }
@@ -890,6 +898,8 @@ export class HUD {
     const progress = this.getPowerupProgress(state);
     const expiring = this.isPowerupExpiring(state);
     const pulse = 0.5 + Math.sin(Date.now() * 0.018) * 0.5;
+    const category = this.getPowerupCategory(state.type, state);
+    const categoryColor = this.getPowerupCategoryColor(category, color);
     const rowColor = spent ? 0xff6677 : expiring ? 0xffd166 : color;
     const iconSize = Math.round((isMobile ? 20 : 23) * uiScale);
     const iconX = Math.round(17 * uiScale);
@@ -899,6 +909,8 @@ export class HUD {
     row.bg.roundRect(0, 0, width, height, 7);
     row.bg.fill({ color: spent ? 0x1e0710 : 0x03101d, alpha: spent ? 0.76 : 0.58 });
     row.bg.stroke({ color: rowColor, width: spent || expiring ? 1.7 : 1, alpha: spent ? 0.95 : expiring ? 0.68 + pulse * 0.25 : 0.65 });
+
+    this.drawPowerupCategoryAccent(row.categoryAccent, category, categoryColor, height, pulse, spent);
 
     row.iconGlow.clear();
     row.iconGlow.circle(iconX, iconY, iconSize * 0.62);
@@ -942,6 +954,9 @@ export class HUD {
       row.barFill.roundRect(barX, barY, fillWidth, 4, 2);
       row.barFill.fill({ color: rowColor, alpha: expiring ? 0.72 + pulse * 0.26 : 0.98 });
     }
+    const timerTickCount = this.drawPowerupTimerTicks(row.barTicks, state, barX, barY, barWidth, spent);
+    const chargeDebug = this.drawPowerupChargePips(row.chargePips, state, width, height, rowColor, spent);
+    const urgencyChevronCount = this.drawPowerupUrgencyChevrons(row.urgencyChevrons, expiring, width, height, pulse);
 
     row.expiryOverlay.clear();
     row.expiryOverlay.visible = expiring;
@@ -974,10 +989,111 @@ export class HUD {
       meta: row.meta.text,
       spent,
       expiring,
+      category,
       progress: Number(progress.toFixed(3)),
+      categoryAccentVisible: Boolean(row.categoryAccent.visible),
+      timerTickCount,
+      chargePipCount: chargeDebug.count,
+      chargePipActive: chargeDebug.active,
+      urgencyChevronCount,
       spentOverlayVisible: Boolean(row.spentOverlay.visible),
       expiryOverlayVisible: Boolean(row.expiryOverlay.visible)
     };
+  }
+
+  drawPowerupCategoryAccent(graphics, category, color, height, pulse = 0, spent = false) {
+    graphics.clear();
+    graphics.visible = Boolean(category);
+    if (!graphics.visible) return;
+
+    const alpha = spent ? 0.42 : 0.66 + pulse * 0.18;
+    graphics.roundRect(2, 5, 4, Math.max(10, height - 10), 2);
+    graphics.fill({ color, alpha });
+
+    const midY = height / 2;
+    const markAlpha = spent ? 0.34 : 0.78;
+    if (category === 'offense') {
+      graphics.poly([7, midY - 7, 14, midY - 3, 7, midY + 1]);
+      graphics.fill({ color, alpha: markAlpha });
+      graphics.poly([7, midY + 2, 14, midY + 6, 7, midY + 10]);
+      graphics.fill({ color, alpha: markAlpha * 0.78 });
+    } else if (category === 'defense') {
+      graphics.circle(10, midY - 4, 3.5);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+      graphics.circle(10, midY + 5, 2.2);
+      graphics.fill({ color, alpha: markAlpha * 0.55 });
+    } else if (category === 'control') {
+      graphics.moveTo(7, midY);
+      graphics.lineTo(15, midY);
+      graphics.moveTo(11, midY - 4);
+      graphics.lineTo(11, midY + 4);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+      graphics.circle(11, midY, 5.5);
+      graphics.stroke({ color, width: 0.8, alpha: markAlpha * 0.48 });
+    } else if (category === 'status') {
+      graphics.moveTo(7, midY - 6);
+      graphics.lineTo(15, midY + 6);
+      graphics.moveTo(15, midY - 6);
+      graphics.lineTo(7, midY + 6);
+      graphics.stroke({ color, width: 1.4, alpha: markAlpha });
+    } else {
+      graphics.poly([11, midY - 6, 16, midY, 11, midY + 6, 6, midY]);
+      graphics.stroke({ color, width: 1.2, alpha: markAlpha });
+    }
+  }
+
+  drawPowerupTimerTicks(graphics, state, barX, barY, barWidth, spent = false) {
+    graphics.clear();
+    const hasTimer = Number(state?.remainingMs || 0) > 0 || Number(state?.durationMs || 0) > 0;
+    graphics.visible = hasTimer;
+    if (!hasTimer) return 0;
+
+    const tickColor = spent ? 0xff8392 : 0xf8fbff;
+    for (let i = 1; i <= 3; i += 1) {
+      const x = barX + barWidth * (i / 4);
+      graphics.moveTo(x, barY - 1);
+      graphics.lineTo(x, barY + 5);
+    }
+    graphics.stroke({ color: tickColor, width: 0.9, alpha: spent ? 0.28 : 0.48 });
+    return 3;
+  }
+
+  drawPowerupChargePips(graphics, state, width, height, color, spent = false) {
+    graphics.clear();
+    const maxCharges = Math.max(0, Math.min(6, Number(state?.maxCharges || 0)));
+    const charges = Math.max(0, Math.min(maxCharges, Number(state?.charges || 0)));
+    graphics.visible = maxCharges > 1;
+    if (!graphics.visible) return { count: 0, active: 0 };
+
+    const pipGap = 7;
+    const startX = Math.max(45, width - 9 - (maxCharges - 1) * pipGap);
+    const y = Math.max(18, height - 16);
+    for (let i = 0; i < maxCharges; i += 1) {
+      const active = i < charges && !spent;
+      const x = startX + i * pipGap;
+      graphics.circle(x, y, active ? 2.5 : 2.1);
+      graphics.fill({ color: active ? color : 0x31465c, alpha: active ? 0.94 : 0.68 });
+      graphics.circle(x, y, active ? 3.7 : 3.1);
+      graphics.stroke({ color: active ? color : 0x7e8da0, width: active ? 0.9 : 0.7, alpha: active ? 0.74 : 0.42 });
+    }
+    return { count: maxCharges, active: spent ? 0 : charges };
+  }
+
+  drawPowerupUrgencyChevrons(graphics, expiring, width, height, pulse = 0) {
+    graphics.clear();
+    graphics.visible = Boolean(expiring);
+    if (!graphics.visible) return 0;
+
+    const color = 0xffd166;
+    const alpha = 0.44 + pulse * 0.34;
+    const baseX = width - 34;
+    const y = height - 22;
+    for (let i = 0; i < 3; i += 1) {
+      const x = baseX + i * 9;
+      graphics.poly([x, y, x + 5, y + 4, x, y + 8]);
+      graphics.fill({ color, alpha: Math.max(0.24, alpha - i * 0.08) });
+    }
+    return 3;
   }
 
   formatPowerupMeta(state) {
@@ -1069,6 +1185,28 @@ export class HUD {
       vampire: 0xff4477
     };
     return colors[type] || 0x00ffff;
+  }
+
+  getPowerupCategory(type, state = {}) {
+    const normalized = String(type || '');
+    if (String(state.category || '') === 'debuff' || normalized.startsWith('debuff_')) return 'status';
+    if (normalized.startsWith('rank_') || normalized.startsWith('synergy_')) return 'utility';
+    if (['shield', 'ghost', 'point_defense', 'vampire', 'super_extra_life'].includes(normalized)) return 'defense';
+    if (['slow_time', 'magnet', 'speed_up', 'vector_boost'].includes(normalized)) return 'control';
+    if (['score_x2', 'drones'].includes(normalized)) return 'utility';
+    if (['rapid_fire', 'double_shot', 'damage_up', 'pierce', 'bomb', 'chain_lightning', 'orbital_strike', 'triple_beam', 'rapid_cabinet', 'overdrive_core', 'row_core'].includes(normalized)) return 'offense';
+    return 'utility';
+  }
+
+  getPowerupCategoryColor(category, fallbackColor = 0x00ffff) {
+    const colors = {
+      defense: 0x66ffff,
+      offense: 0xff9a44,
+      control: 0x9a8cff,
+      utility: 0xffee66,
+      status: 0xff6688
+    };
+    return colors[category] || fallbackColor;
   }
 
   updateTraitMeter() {
