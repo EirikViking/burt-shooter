@@ -11436,6 +11436,38 @@ export class PlayScene {
     scanOverlay.stroke({ color: accentColor, width: 1, alpha: 0.55 });
     poster.addChild(scanOverlay);
 
+    const threatMeter = new PIXI.Graphics();
+    threatMeter.label = 'boss_warning_threat_meter';
+    const threatPipCount = 5;
+    const threatLevel = Math.max(2, Math.min(threatPipCount, Math.ceil(((Number(this.game?.level) || 1) % 10 || 10) / 2)));
+    for (let i = 0; i < threatPipCount; i += 1) {
+      const y = -126 + i * 40;
+      const active = i < threatLevel;
+      threatMeter.roundRect(146, y, 16, 24, 4);
+      threatMeter.fill({ color: active ? (i >= 3 ? primaryColor : accentColor) : 0x07131f, alpha: active ? 0.58 : 0.36 });
+      threatMeter.stroke({ color: active ? 0xffffff : accentColor, width: active ? 1.2 : 0.8, alpha: active ? 0.5 : 0.22 });
+      threatMeter.moveTo(136, y + 12);
+      threatMeter.lineTo(144, y + 12);
+      threatMeter.stroke({ color: active ? 0xffff99 : accentColor, width: 1, alpha: active ? 0.42 : 0.18 });
+    }
+    poster.addChild(threatMeter);
+
+    const approachCue = new PIXI.Graphics();
+    approachCue.label = 'boss_warning_approach_cue';
+    const approachChevronCount = 4;
+    for (let i = 0; i < approachChevronCount; i += 1) {
+      const x = -66 + i * 44;
+      const y = 104;
+      const alpha = 0.28 + i * 0.08;
+      approachCue.moveTo(x - 11, y - 10);
+      approachCue.lineTo(x, y);
+      approachCue.lineTo(x + 11, y - 10);
+      approachCue.stroke({ color: i % 2 ? primaryColor : accentColor, width: 2, alpha });
+      approachCue.circle(x, y + 9, 2.8);
+      approachCue.fill({ color: i % 2 ? primaryColor : accentColor, alpha: alpha + 0.08 });
+    }
+    poster.addChild(approachCue);
+
     const headerLabel = reason === 'boss_spawn'
       ? 'BOSS INCOMING'
       : reason === 'boss_life_lost'
@@ -11515,6 +11547,13 @@ export class PlayScene {
       ? Math.min(height - 210, Math.max(348, height * 0.56))
       : Math.min(height - 230, Math.max(382, height * 0.53));
     poster.rotation = spectacular ? -0.035 : -0.025;
+    poster._debugBossWarningDossier = {
+      threatPipCount,
+      threatLevel,
+      approachChevronCount,
+      spectacular,
+      reason
+    };
 
     this.uiOverlay.addChild(poster);
     console.log('[UI] boss dossier shown uiOnly=true');

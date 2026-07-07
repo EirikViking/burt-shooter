@@ -176,6 +176,9 @@ try {
         childCount: poster.children?.length || 0,
         hasEmblem: hasNode(poster, 'boss_warning_emblem'),
         hasBossArt: hasNode(poster, 'boss_warning_boss_art'),
+        hasThreatMeter: hasNode(poster, 'boss_warning_threat_meter'),
+        hasApproachCue: hasNode(poster, 'boss_warning_approach_cue'),
+        debug: poster._debugBossWarningDossier || null,
         bossArtContained: Boolean(bossArt?.mask || bossArt?.__bossWarningMasked || bossArt?.__bossWarningContained),
         bossArtSource: bossArt?.__bossWarningSource || null
       } : null,
@@ -189,6 +192,11 @@ try {
   assert(report.poster, 'boss warning poster missing');
   assert(report.poster.hasEmblem, 'boss warning emblem missing');
   assert(report.poster.hasBossArt === true, 'boss spawn warning should show one clipped boss portrait');
+  assert(report.poster.hasThreatMeter === true, 'boss spawn warning should show a compact threat meter');
+  assert(report.poster.hasApproachCue === true, 'boss spawn warning should show approach chevrons');
+  assert((report.poster.debug?.threatPipCount || 0) >= 5, `boss warning threat pips missing: ${JSON.stringify(report.poster.debug)}`);
+  assert((report.poster.debug?.threatLevel || 0) >= 2, `boss warning threat level missing: ${JSON.stringify(report.poster.debug)}`);
+  assert((report.poster.debug?.approachChevronCount || 0) >= 4, `boss warning approach chevrons missing: ${JSON.stringify(report.poster.debug)}`);
   assert(report.poster.bossArtContained === true, 'boss spawn warning portrait should stay contained inside the dossier frame');
   assert(/\/bosses\/|boss-warning-emblems|cached_boss_warning_art/i.test(report.poster.bossArtSource || ''), `boss warning should use boss portrait or clean emblem art, got ${report.poster.bossArtSource}`);
   assert(report.texts.includes('BOSS INCOMING'), `boss warning title missing: ${report.texts.join(' | ')}`);
