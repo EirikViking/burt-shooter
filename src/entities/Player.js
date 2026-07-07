@@ -163,6 +163,8 @@ export class Player {
     this.statusVfxPulse = 0;
     this.statusDriftVelocity = { x: 0, y: 0 };
     this.statusEffectLayer = null;
+    this.engineVfxLayer = null;
+    this.engineVfxIntensity = 0;
 
     // New Powerups
     this.chainLightningActive = false;
@@ -304,6 +306,16 @@ export class Player {
     } else if (this.sprite.children[0] !== this.focusRing) {
       this.sprite.removeChild(this.focusRing);
       this.sprite.addChildAt(this.focusRing, 0);
+    }
+
+    if (!this.engineVfxLayer) {
+      this.engineVfxLayer = new PIXI.Graphics();
+      this.engineVfxLayer.label = 'playerEngineThrusterReadability';
+      this.engineVfxLayer.visible = false;
+    }
+    if (this.engineVfxLayer.parent !== this.sprite) {
+      if (this.engineVfxLayer.parent) this.engineVfxLayer.parent.removeChild(this.engineVfxLayer);
+      this.sprite.addChildAt(this.engineVfxLayer, Math.min(1, this.sprite.children.length));
     }
 
     if (!this.hitboxReticle) {
@@ -483,6 +495,74 @@ export class Player {
       color: style.color,
       alt: style.alt,
       ticks: style.ticks
+    };
+  }
+
+  updateEngineVfx(dx = 0, dy = 0, deltaSeconds = 1 / 60) {
+    const layer = this.engineVfxLayer;
+    if (!layer) return;
+    const moveIntent = Math.max(0, Math.min(1, Math.hypot(Number(dx) || 0, Number(dy) || 0)));
+    const firingBoost = this.inputManager?.isFiring?.() ? 0.28 : 0;
+    const dodgeBoost = this.isDodging ? 0.42 : 0;
+    const targetIntensity = Math.max(moveIntent, firingBoost, dodgeBoost);
+    const lerp = Math.max(0.08, Math.min(0.35, deltaSeconds * 12));
+    this.engineVfxIntensity += (targetIntensity - this.engineVfxIntensity) * lerp;
+    const intensity = Math.max(0, Math.min(1, this.engineVfxIntensity));
+    layer.clear();
+    if (!this.active || intensity <= 0.03) {
+      layer.visible = false;
+      layer.__debugEngineVfx = { visible: false, intensity: Number(intensity.toFixed(3)), plumeCount: 0, sideJets: false };
+      return;
+    }
+
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.026) * 0.5;
+    const width = Math.max(48, Number(this.baseShipWidth) || 62);
+    const exhaustY = width * 0.43;
+    const spread = width * 0.16;
+    const lean = Math.max(-1, Math.min(1, Number(dx) || 0));
+    const vertical = Math.max(-1, Math.min(1, Number(dy) || 0));
+    const coreColor = this.visualVariant?.accent || this.baseMuzzleFlashColor || 0x66ffff;
+    const hotColor = this.visualVariant?.glow || 0xffffff;
+    const plumeLength = width * (0.16 + intensity * 0.2 + Math.max(0, -vertical) * 0.06);
+    const alpha = 0.2 + intensity * 0.46;
+    let plumeCount = 0;
+
+    for (let i = 0; i < 3; i += 1) {
+      const offset = (i - 1) * spread;
+      const length = plumeLength * (i === 1 ? 1.12 : 0.86) * (0.86 + pulse * 0.22);
+      const x = offset - lean * (i === 1 ? 3 : 5);
+      layer.moveTo(x - 4.5, exhaustY - 1);
+      layer.lineTo(x + lean * 10, exhaustY + length);
+      layer.lineTo(x + 4.5, exhaustY - 1);
+      layer.closePath();
+      layer.fill({ color: coreColor, alpha: alpha * (i === 1 ? 0.74 : 0.48) });
+      layer.circle(x + lean * 5, exhaustY + length * 0.58, 2.2 + intensity * 2.2);
+      layer.fill({ color: hotColor, alpha: 0.18 + intensity * 0.24 });
+      plumeCount += 1;
+    }
+
+    const sideJets = Math.abs(lean) > 0.12 || this.isDodging;
+    if (sideJets) {
+      const side = lean >= 0 ? -1 : 1;
+      const jetX = side * width * 0.34;
+      const jetY = exhaustY * 0.45;
+      layer.moveTo(jetX, jetY - 4);
+      layer.lineTo(jetX + side * (10 + intensity * 8), jetY + 1);
+      layer.lineTo(jetX, jetY + 6);
+      layer.stroke({ color: hotColor, width: 2.4, alpha: 0.3 + intensity * 0.34 });
+      layer.circle(jetX + side * (12 + intensity * 7), jetY + 1, 2 + intensity * 1.8);
+      layer.fill({ color: coreColor, alpha: 0.28 + intensity * 0.28 });
+    }
+
+    layer.visible = true;
+    layer.__debugEngineVfx = {
+      visible: true,
+      intensity: Number(intensity.toFixed(3)),
+      moveIntent: Number(moveIntent.toFixed(3)),
+      firingBoost: Number(firingBoost.toFixed(3)),
+      plumeCount,
+      sideJets
     };
   }
 
@@ -1321,6 +1401,7 @@ export class Player {
         }
       }
     }
+    this.updateEngineVfx(dx, dy, deltaSeconds);
     this.updateFocusRing(deltaSeconds);
     this.updateStatusEffectVisuals(deltaSeconds);
 
