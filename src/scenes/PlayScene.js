@@ -10040,6 +10040,7 @@ export class PlayScene {
       if (this.magnetFieldVisual) {
         this.magnetFieldVisual.clear();
         this.magnetFieldVisual.visible = false;
+        this.magnetFieldVisual.__debugMagnetField = { visible: false, range: 0, targetCount: 0 };
       }
       return;
     }
@@ -10048,10 +10049,22 @@ export class PlayScene {
     const pull = strength * delta * 15; // MUCH stronger pull (was too weak before)
     const px = this.player.x;
     const py = this.player.y;
+    const fieldType = this.player.activePowerup?.type || this.player.scoreMultiplierType || 'magnet';
+    const palette = fieldType === 'gravity_well'
+      ? { primary: 0xb07cff, secondary: 0x7df9ff }
+      : fieldType === 'jackpot_lens'
+        ? { primary: 0xffd84d, secondary: 0x7df9ff }
+        : fieldType === 'swarm_contract'
+          ? { primary: 0xc6ff3d, secondary: 0x40d6ff }
+          : { primary: 0x99ffcc, secondary: 0xccffee };
+    const pulledTargets = [];
 
     // Draw visual indicator for magnet field
     if (!this.magnetFieldVisual) {
       this.magnetFieldVisual = new PIXI.Graphics();
+      this.magnetFieldVisual.label = 'magnetFieldVisual';
+      this.magnetFieldVisual.blendMode = 'add';
+      this.magnetFieldVisual.zIndex = 4;
       this.gameContainer.addChild(this.magnetFieldVisual);
     }
 
@@ -10060,16 +10073,27 @@ export class PlayScene {
     this.magnetFieldVisual.clear();
     const now = Date.now();
     const pulse = Math.sin(now * 0.005) * 0.5 + 0.5;
-    const alpha = 0.15 + pulse * 0.1;
+    const alpha = 0.14 + pulse * 0.08;
 
     // Outer ring
     this.magnetFieldVisual.circle(px, py, range);
-    this.magnetFieldVisual.stroke({ color: 0x99ffcc, width: 2, alpha: alpha * 0.8 });
-    this.magnetFieldVisual.fill({ color: 0x99ffcc, alpha: alpha * 0.15 });
+    this.magnetFieldVisual.stroke({ color: palette.primary, width: 2.2, alpha: alpha * 0.92 });
+    this.magnetFieldVisual.fill({ color: palette.primary, alpha: alpha * 0.1 });
 
     // Inner ring
     this.magnetFieldVisual.circle(px, py, range * 0.6);
-    this.magnetFieldVisual.stroke({ color: 0xccffee, width: 1, alpha: alpha * 0.5 });
+    this.magnetFieldVisual.stroke({ color: palette.secondary, width: 1.2, alpha: alpha * 0.52 });
+
+    const segmentCount = range >= 220 ? 14 : 10;
+    const spin = now * 0.0018;
+    for (let i = 0; i < segmentCount; i += 1) {
+      const angle = spin + i * (Math.PI * 2 / segmentCount);
+      const inner = range * (0.82 + (i % 2) * 0.05);
+      const outer = range + 7 + pulse * 4;
+      this.magnetFieldVisual.moveTo(px + Math.cos(angle) * inner, py + Math.sin(angle) * inner);
+      this.magnetFieldVisual.lineTo(px + Math.cos(angle) * outer, py + Math.sin(angle) * outer);
+    }
+    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1.4, alpha: 0.16 + pulse * 0.12 });
 
     this.powerupManager?.powerups?.forEach(p => {
       if (!p.active) return;
@@ -10084,6 +10108,9 @@ export class PlayScene {
         p.y += (dy / dist) * pullForce;
         p.sprite.x = p.x;
         p.sprite.y = p.y;
+        if (pulledTargets.length < 8) {
+          pulledTargets.push({ kind: 'powerup', x: p.x, y: p.y, distance: dist, intensity: 1 - dist / range });
+        }
       }
     });
 
@@ -10099,8 +10126,44 @@ export class PlayScene {
         b.y += (dy / dist) * pullForce;
         b.sprite.x = b.x;
         b.sprite.y = b.y;
+        if (pulledTargets.length < 8) {
+          pulledTargets.push({ kind: 'bonus', x: b.x, y: b.y, distance: dist, intensity: 1 - dist / range });
+        }
       }
     });
+
+    let powerupTargetCount = 0;
+    let bonusTargetCount = 0;
+    pulledTargets.forEach((target, index) => {
+      if (target.kind === 'powerup') powerupTargetCount += 1;
+      if (target.kind === 'bonus') bonusTargetCount += 1;
+      const intensity = Math.max(0, Math.min(1, target.intensity || 0));
+      const lineAlpha = 0.16 + intensity * 0.34;
+      const targetColor = target.kind === 'bonus' ? 0xffe56d : palette.secondary;
+      this.magnetFieldVisual.moveTo(target.x, target.y);
+      this.magnetFieldVisual.lineTo(px, py);
+      this.magnetFieldVisual.stroke({ color: targetColor, width: 1 + intensity * 1.2, alpha: lineAlpha });
+      const angle = Math.atan2(py - target.y, px - target.x);
+      const chevronDist = 14 + index * 2;
+      const cx = target.x + Math.cos(angle) * chevronDist;
+      const cy = target.y + Math.sin(angle) * chevronDist;
+      const side = Math.PI * 0.5;
+      this.magnetFieldVisual.moveTo(cx + Math.cos(angle + side) * 4, cy + Math.sin(angle + side) * 4);
+      this.magnetFieldVisual.lineTo(cx + Math.cos(angle) * 9, cy + Math.sin(angle) * 9);
+      this.magnetFieldVisual.lineTo(cx + Math.cos(angle - side) * 4, cy + Math.sin(angle - side) * 4);
+      this.magnetFieldVisual.stroke({ color: targetColor, width: 1.4, alpha: 0.28 + intensity * 0.36 });
+    });
+
+    this.magnetFieldVisual.__debugMagnetField = {
+      visible: true,
+      fieldType,
+      range: Math.round(range),
+      strength: Number(strength.toFixed(3)),
+      segmentCount,
+      targetCount: pulledTargets.length,
+      powerupTargetCount,
+      bonusTargetCount
+    };
   }
 
   updateOrbitalStrike(delta) {

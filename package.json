@@ -207,6 +207,7 @@
     "check:powerup-visuals": "node scripts/check-powerup-visuals.mjs",
     "check:slow-time-visual-field": "node scripts/check-slow-time-visual-field.mjs",
     "check:powerup-intent-readability": "node scripts/check-powerup-intent-readability.mjs",
+    "check:magnet-field-readability": "node scripts/check-magnet-field-readability.mjs",
     "check:powerup-expiry-readability": "node scripts/check-powerup-expiry-readability.mjs",
     "check:powerup-pickup-guides": "node scripts/check-powerup-pickup-guides.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs",

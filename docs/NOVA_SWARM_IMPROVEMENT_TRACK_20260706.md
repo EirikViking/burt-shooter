@@ -871,3 +871,31 @@ Safety notes:
 
 - No runtime gameplay logic, enemy health, damage, spawn timing, fire cadence, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - QA-only hardening so enemy-readability evidence cannot silently fall back to simple placeholder shapes.
+
+## Batch 39 - Magnet Field Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+156. Active pickup-pull powerups now draw a clearer player-local field edge without changing pull radius or strength.
+157. Magnet variants use distinct field palettes for Gravity Well, Jackpot Lens, Swarm Contract, and standard Magnet states.
+158. The field now draws segmented range ticks so the collection boundary reads during movement.
+159. Pulled pickups get faint tether/chevron lines toward the player, while outside-range and magnet-immune pickups stay visually distinct.
+160. `check:magnet-field-readability` proves field visibility, pull-line debug state, outside-range behavior, magnet immunity, and hide-on-expire behavior with a browser screenshot.
+
+Verification:
+
+- `npm run check:magnet-field-readability`
+- Screenshot proof: `test-results/magnet-field-readability-2026-07-07T08-48-14-875Z/magnet-field-readability.png`
+- `npm run check:powerup-effects`
+- `npm run check:powerup-visuals`
+- `npm run check:powerup-pickup-guides`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No magnet radius, magnet strength, pickup movement math, powerup drop rate, pickup radius, lifetime, duration, effect, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only active pickup-pull feedback using the existing magnet pull state.
