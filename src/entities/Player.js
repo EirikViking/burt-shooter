@@ -2911,6 +2911,8 @@ export class Player {
     const readyProgress = coolingDown
       ? Math.max(0.02, Math.min(0.985, 1 - (remainingMs / delayMs)))
       : 1;
+    let cooldownBeadCount = 0;
+    let progressHeadVisible = false;
 
     ring.circle(0, 0, radius);
     ring.stroke({ color: 0x063442, width: 4.5, alpha: 0.48 });
@@ -2920,6 +2922,21 @@ export class Player {
       const end = start + (Math.PI * 2 * readyProgress);
       ring.arc(0, 0, radius, start, end);
       ring.stroke({ color: accent, width: 5.5, alpha: 0.36 + readyProgress * 0.34 });
+      const arcSpan = Math.max(0.01, Math.PI * 2 * readyProgress);
+      const beadCount = readyProgress > 0.78 ? 5 : readyProgress > 0.42 ? 4 : 3;
+      for (let i = 1; i <= beadCount; i += 1) {
+        const beadT = i / (beadCount + 1);
+        const beadAngle = start + arcSpan * beadT;
+        const beadRadius = 2.2 + beadT * 1.1;
+        ring.circle(Math.cos(beadAngle) * radius, Math.sin(beadAngle) * radius, beadRadius);
+        ring.fill({ color: i === beadCount ? 0xffffff : accent, alpha: 0.18 + readyProgress * 0.28 + beadT * 0.08 });
+        cooldownBeadCount += 1;
+      }
+      const headX = Math.cos(end) * radius;
+      const headY = Math.sin(end) * radius;
+      ring.circle(headX, headY, 4.6);
+      ring.fill({ color: 0xffffff, alpha: 0.2 + readyProgress * 0.42 });
+      progressHeadVisible = true;
       for (let i = 0; i < 4; i += 1) {
         const angle = start + (Math.PI * 0.5 * i);
         const inner = radius - 6;
@@ -2954,6 +2971,8 @@ export class Player {
       readyFlashProgress,
       coolingDown,
       readyFlashing,
+      cooldownBeadCount,
+      progressHeadVisible,
       radius
     };
   }

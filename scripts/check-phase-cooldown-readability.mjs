@@ -171,6 +171,8 @@ try {
       state.cooling?.coolingDown &&
       state.cooling?.readyProgress > 0.45 &&
       state.cooling?.readyProgress < 0.55 &&
+      state.cooling?.cooldownBeadCount >= 4 &&
+      state.cooling?.progressHeadVisible === true &&
       state.ready?.visible &&
       state.ready?.readyFlashing &&
       state.ready?.readyFlashProgress >= 0.99 &&
