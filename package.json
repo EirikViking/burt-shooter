@@ -53,6 +53,7 @@
     "check:mission-progress-hud": "node scripts/check-mission-progress-hud.mjs",
     "check:critical-hull-overlay": "node scripts/check-critical-hull-overlay.mjs",
     "check:danger-dodge": "node scripts/check-danger-dodge.mjs",
+    "check:near-miss-streak-clarity": "node scripts/check-near-miss-streak-clarity.mjs",
     "check:phase-cooldown-readability": "node scripts/check-phase-cooldown-readability.mjs",
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",

@@ -704,3 +704,31 @@ Safety notes:
 
 - No boss health, phase thresholds, attack timing, damage, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only boss health instrument polish using existing boss phase/health state.
+
+## Batch 33 - Near-Miss Streak Clarity
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+126. The player hitbox reticle now shows a compact near-miss streak gauge after grazes.
+127. The gauge uses five pips so players can read progress toward each near-miss surge.
+128. Surge-ready streaks shift the player-local cue into the existing gold/magenta danger-dodge language.
+129. The cue includes a small decay arc so the streak window is visible without adding HUD text.
+130. `check:near-miss-streak-clarity` proves the five-pip surge-ready state and debug output with a browser screenshot.
+
+Verification:
+
+- `npm run check:near-miss-streak-clarity`
+- Screenshot proof: `test-results/near-miss-streak-clarity-2026-07-07T00-33-48-148Z/near-miss-streak-clarity.png`
+- `npm run check:danger-dodge`
+- `npm run check:graze-break`
+- `npm run check:low-hanging-fun`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No near-miss scoring, graze timing, Graze Break arming threshold, cooldowns, player hitbox, enemy bullets, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only player-local mastery feedback using existing near-miss streak state.

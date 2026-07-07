@@ -9631,7 +9631,7 @@ export class PlayScene {
     const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
     const appliedScore = this.game.addScore(score);
     this.lastDangerDodgeScore = appliedScore;
-    this.player?.pulseHitboxReticle?.('near_miss', this.dangerDodgeCount >= 3 ? 1250 : 850);
+    this.player?.markNearMissStreakVisual?.(this.dangerDodgeCount, this.dangerDodgeTimerMs || 2200);
     const nearMissLabel = translateText('NEAR MISS');
     const label = this.dangerDodgeCount >= 2
       ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`

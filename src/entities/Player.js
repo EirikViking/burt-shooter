@@ -133,6 +133,10 @@ export class Player {
     this.focusPulse = 0;
     this.hitboxPulseUntil = 0;
     this.hitboxPulseReason = null;
+    this.nearMissVisualUntil = 0;
+    this.nearMissVisualStartedAt = 0;
+    this.nearMissVisualDurationMs = 0;
+    this.nearMissVisualStreak = 0;
     this.damageOverlay = null;
     this.boostAura = null;
     this.baseBoostAuraColor = 0x66ffff;
@@ -524,22 +528,38 @@ export class Player {
     this.hitboxPulseReason = reason;
   }
 
+  markNearMissStreakVisual(streak = 1, durationMs = 2200) {
+    const count = Math.max(1, Math.round(Number(streak) || 1));
+    const duration = Math.max(500, Math.min(2600, Number(durationMs) || 2200));
+    const now = Date.now();
+    this.nearMissVisualStreak = count;
+    this.nearMissVisualStartedAt = now;
+    this.nearMissVisualDurationMs = duration;
+    this.nearMissVisualUntil = now + duration;
+    this.pulseHitboxReticle(count >= 3 ? 'near_miss_streak' : 'near_miss', Math.min(1250, duration));
+  }
+
   updateHitboxReticle(deltaSeconds) {
     if (!this.hitboxReticle) return;
     const now = Date.now();
     const settingEnabled = getPlayerHitboxVisible();
     const pulsing = now < (this.hitboxPulseUntil || 0);
-    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing;
+    const nearMissRemainingMs = Math.max(0, Math.round((this.nearMissVisualUntil || 0) - now));
+    const nearMissActive = nearMissRemainingMs > 0 && (Number(this.nearMissVisualStreak) || 0) > 0;
+    const contextual = this.focusDriftActive || this.isDodging || this.invulnerable || pulsing || nearMissActive;
     if (!settingEnabled && !contextual) {
       this.hitboxReticle.visible = false;
+      this.hitboxReticle.__debugNearMissStreak = { active: false, streak: 0, filledPips: 0, windowProgress: 0 };
       return;
     }
 
     const radius = Math.max(5, Number(this.radius || this.baseHitboxRadius || 10));
     const pulse = (Math.sin((this.focusPulse + deltaSeconds) * 8) + 1) / 2;
     const phaseColor = this.focusDriftActive ? 0xffef7e : this.isDodging || this.invulnerable ? 0x7fffd8 : 0x66f7ff;
-    const color = pulsing && !this.focusDriftActive ? 0xff66ff : phaseColor;
-    const alpha = Math.min(0.95, settingEnabled ? 0.58 : 0.7);
+    const nearMissStreak = Math.max(0, Math.round(Number(this.nearMissVisualStreak) || 0));
+    const nearMissColor = nearMissStreak >= 5 ? 0xff66ff : nearMissStreak >= 3 ? 0xffcc00 : 0x9afcff;
+    const color = nearMissActive ? nearMissColor : pulsing && !this.focusDriftActive ? 0xff66ff : phaseColor;
+    const alpha = Math.min(0.95, (settingEnabled ? 0.58 : 0.7) + (nearMissActive ? 0.12 : 0));
     const strokeWidth = settingEnabled ? 1.5 : 2;
     const ringRadius = radius + (pulsing ? 1.4 + pulse * 1.6 : pulse * 0.8);
     const tickInner = ringRadius + 2;
@@ -559,7 +579,50 @@ export class Player {
     this.hitboxReticle.moveTo(0, tickInner);
     this.hitboxReticle.lineTo(0, tickOuter);
     this.hitboxReticle.stroke({ color, width: strokeWidth, alpha: alpha * 0.92 });
+
+    let filledPips = 0;
+    let windowProgress = 0;
+    let surgeReady = false;
+    if (nearMissActive) {
+      const pipTotal = 5;
+      filledPips = Math.min(pipTotal, ((nearMissStreak - 1) % pipTotal) + 1);
+      surgeReady = nearMissStreak >= 5 && nearMissStreak % 5 === 0;
+      windowProgress = this.nearMissVisualDurationMs > 0
+        ? Math.max(0, Math.min(1, nearMissRemainingMs / this.nearMissVisualDurationMs))
+        : 0;
+      const pipRadius = ringRadius + 15;
+      const arcRadius = pipRadius + 8;
+      const arcStart = -Math.PI * 0.84;
+      const arcSweep = Math.PI * 0.68;
+      this.hitboxReticle.arc(0, 0, arcRadius, arcStart, arcStart + arcSweep * windowProgress);
+      this.hitboxReticle.stroke({ color: nearMissColor, width: 2.4, alpha: 0.2 + windowProgress * 0.46 });
+      for (let i = 0; i < pipTotal; i += 1) {
+        const angle = -Math.PI * 0.78 + i * (Math.PI * 0.14);
+        const x = Math.cos(angle) * pipRadius;
+        const y = Math.sin(angle) * pipRadius;
+        const activePip = i < filledPips;
+        const pipSize = activePip ? (surgeReady ? 3.4 : 2.9) : 2.1;
+        this.hitboxReticle.circle(x, y, pipSize);
+        this.hitboxReticle.fill({
+          color: activePip ? nearMissColor : 0x12384a,
+          alpha: activePip ? (surgeReady ? 0.9 : 0.72) : 0.32
+        });
+        this.hitboxReticle.circle(x, y, pipSize + 2.2);
+        this.hitboxReticle.stroke({ color: activePip ? 0xffffff : nearMissColor, width: 0.8, alpha: activePip ? 0.44 : 0.18 });
+      }
+      if (surgeReady) {
+        this.hitboxReticle.circle(0, 0, arcRadius + 4 + pulse * 3);
+        this.hitboxReticle.stroke({ color: nearMissColor, width: 1.6, alpha: 0.18 + pulse * 0.18 });
+      }
+    }
     this.hitboxReticle.visible = true;
+    this.hitboxReticle.__debugNearMissStreak = {
+      active: nearMissActive,
+      streak: nearMissActive ? nearMissStreak : 0,
+      filledPips,
+      windowProgress: Number(windowProgress.toFixed(3)),
+      surgeReady
+    };
   }
 
   getHitboxReticleDebugState() {
@@ -570,7 +633,8 @@ export class Player {
       focusDriftActive: Boolean(this.focusDriftActive),
       phasing: Boolean(this.isDodging || this.invulnerable || this.isGhostActive?.()),
       pulseMs: Math.max(0, Math.round((this.hitboxPulseUntil || 0) - Date.now())),
-      pulseReason: this.hitboxPulseReason || null
+      pulseReason: this.hitboxPulseReason || null,
+      nearMiss: this.hitboxReticle?.__debugNearMissStreak || { active: false, streak: 0, filledPips: 0, windowProgress: 0 }
     };
   }
 
