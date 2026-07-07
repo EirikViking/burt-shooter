@@ -754,8 +754,61 @@ export class Enemy {
     this.removeHullDetailLayer();
     this.addVariantGlow();
     this.body = new PIXI.Graphics();
-    this.body.circle(0, 0, this.radius);
-    this.body.fill({ color: this.visualVariant?.tint || this.color });
+    this.body.label = 'enemyFallbackHull';
+    this.body.__novaEnemyFallbackShape = 'ship_silhouette';
+    const radius = Math.max(11, Number(this.radius) || 15);
+    const tint = this.visualVariant?.tint || this.color || 0xff66aa;
+    const accent = this.visualVariant?.accent || tint;
+    const wing = radius * 0.92;
+    const noseY = radius * 1.06;
+    const shoulderY = -radius * 0.18;
+    const tailY = -radius * 0.82;
+    const coreY = -radius * 0.5;
+
+    this.body.poly([
+      0, noseY,
+      wing * 0.36, shoulderY + radius * 0.18,
+      wing, shoulderY,
+      wing * 0.34, tailY,
+      wing * 0.13, coreY,
+      0, tailY * 0.64,
+      -wing * 0.13, coreY,
+      -wing * 0.34, tailY,
+      -wing, shoulderY,
+      -wing * 0.36, shoulderY + radius * 0.18
+    ]);
+    this.body.fill({ color: tint, alpha: 0.86 });
+    this.body.stroke({ color: accent, width: 1.7, alpha: 0.78 });
+
+    this.body.poly([
+      0, radius * 0.63,
+      radius * 0.22, -radius * 0.08,
+      0, -radius * 0.38,
+      -radius * 0.22, -radius * 0.08
+    ]);
+    this.body.fill({ color: 0xffffff, alpha: 0.22 });
+
+    this.body.moveTo(-radius * 0.48, -radius * 0.12);
+    this.body.lineTo(radius * 0.48, -radius * 0.12);
+    this.body.moveTo(-radius * 0.3, radius * 0.22);
+    this.body.lineTo(radius * 0.3, radius * 0.22);
+    this.body.moveTo(-radius * 0.18, -radius * 0.58);
+    this.body.lineTo(radius * 0.18, -radius * 0.58);
+    this.body.stroke({ color: 0xffffff, width: 0.95, alpha: 0.26 });
+
+    [-1, 1].forEach((side) => {
+      this.body.circle(side * radius * 0.58, shoulderY + radius * 0.05, 2.2);
+    });
+    this.body.circle(0, noseY - radius * 0.16, 2);
+    this.body.fill({ color: accent, alpha: 0.58 });
+
+    this.body._debugFallbackHull = {
+      shape: 'ship_silhouette',
+      simpleCircle: false,
+      wingSpan: Math.round(wing * 2),
+      railCount: 3,
+      pipCount: 3
+    };
     this.sprite.addChild(this.body);
   }
 

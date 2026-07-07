@@ -230,6 +230,7 @@ try {
         enemy.spawnCueStartedAt = Date.now() - 2000;
         enemy._threatReadabilityKey = 'fallback_upgrade_after_catalog_restore';
         enemy._fallbackUpgradeStartedAsGraphics = Boolean(enemy.usingFallbackGraphics);
+        enemy._fallbackUpgradeInitialFallbackHull = enemy.body?._debugFallbackHull || null;
         enemy.update(1, width * 0.5, game.getHeight?.() * 0.68 || 490);
         enemy._fallbackUpgradeSucceeded = Boolean(enemy.assetUpgradeDebug?.upgraded);
         enemy.updateHealthBar?.();
@@ -276,7 +277,9 @@ try {
         usingFallbackGraphics: Boolean(enemy.usingFallbackGraphics),
         fallbackUpgradeStartedAsGraphics: Boolean(enemy._fallbackUpgradeStartedAsGraphics),
         fallbackUpgradeSucceeded: Boolean(enemy._fallbackUpgradeSucceeded),
+        fallbackUpgradeInitialFallbackHull: enemy._fallbackUpgradeInitialFallbackHull || null,
         assetUpgradeDebug: enemy.assetUpgradeDebug || null,
+        fallbackHull: enemy.body?._debugFallbackHull || null,
         hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
         bodySize: {
           width: Math.round(enemy.body?.width || 0),
@@ -355,8 +358,11 @@ try {
   if (fallback) assertOnScreen(fallback, 'generated texture fallback');
   const fallbackUpgrade = state.enemies?.find((item) => item.key === 'fallback_upgrade_after_catalog_restore');
   if (!fallbackUpgrade) failures.push('missing generated-texture fallback upgrade sample');
-  if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeStartedAsGraphics) failures.push(`fallback upgrade sample did not start as simple graphics: ${JSON.stringify(fallbackUpgrade)}`);
-  if (fallbackUpgrade?.usingFallbackGraphics) failures.push(`fallback upgrade sample stayed on simple graphics: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeStartedAsGraphics) failures.push(`fallback upgrade sample did not start as fallback graphics: ${JSON.stringify(fallbackUpgrade)}`);
+  if (fallbackUpgrade && fallbackUpgrade.fallbackUpgradeInitialFallbackHull?.shape !== 'ship_silhouette') failures.push(`fallback upgrade sample did not start with ship-silhouette fallback: ${JSON.stringify(fallbackUpgrade.fallbackUpgradeInitialFallbackHull)}`);
+  if (fallbackUpgrade && fallbackUpgrade.fallbackUpgradeInitialFallbackHull?.simpleCircle !== false) failures.push(`fallback upgrade sample still used a simple circle fallback: ${JSON.stringify(fallbackUpgrade.fallbackUpgradeInitialFallbackHull)}`);
+  if ((fallbackUpgrade?.fallbackUpgradeInitialFallbackHull?.pipCount || 0) < 3 || (fallbackUpgrade?.fallbackUpgradeInitialFallbackHull?.railCount || 0) < 3) failures.push(`fallback upgrade silhouette too sparse: ${JSON.stringify(fallbackUpgrade?.fallbackUpgradeInitialFallbackHull)}`);
+  if (fallbackUpgrade?.usingFallbackGraphics) failures.push(`fallback upgrade sample stayed on fallback graphics: ${JSON.stringify(fallbackUpgrade)}`);
   if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeSucceeded) failures.push(`fallback upgrade sample did not report upgrade: ${JSON.stringify(fallbackUpgrade)}`);
   if (fallbackUpgrade && !fallbackUpgrade.usingGeneratedEnemyTexture) failures.push(`fallback upgrade sample did not restore generated enemy texture: ${JSON.stringify(fallbackUpgrade)}`);
   if (fallbackUpgrade && (!fallbackUpgrade.hasBodySpriteTexture || fallbackUpgrade.bodySize?.width < 20 || fallbackUpgrade.bodySize?.height < 20)) failures.push(`fallback upgrade body texture too small/missing: ${JSON.stringify(fallbackUpgrade.bodySize)}`);
