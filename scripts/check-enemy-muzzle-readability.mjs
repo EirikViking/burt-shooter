@@ -121,6 +121,16 @@ try {
     play.introActive = false;
     play.introComplete = true;
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    for (const other of play.enemyManager?.enemies || []) {
+      if (other === enemy) continue;
+      other.active = false;
+      if (other.sprite?.parent) other.sprite.parent.removeChild(other.sprite);
+    }
+    if (play.enemyManager) play.enemyManager.enemies = [enemy];
+    if (play.bulletManager) {
+      play.bulletManager.bullets = [];
+      play.bulletManager.enemyBullets = [];
+    }
     enemy.waitingForEntry = false;
     enemy.active = true;
     enemy.visualsDeactivated = false;
@@ -172,6 +182,10 @@ try {
   if (!state.layerVisible || !state.debug?.visible) failures.push(`muzzle layer should be visible: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.shotCount || 0) < 1) failures.push(`debug shot count missing: ${JSON.stringify(state.debug)}`);
   if (!Number.isFinite(state.debug?.angle)) failures.push(`debug angle missing: ${JSON.stringify(state.debug)}`);
+  if (!state.debug?.mouthBracketVisible) failures.push(`muzzle mouth bracket missing: ${JSON.stringify(state.debug)}`);
+  if (!state.debug?.hotCoreVisible) failures.push(`muzzle hot core missing: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.laneBeadCount || 0) !== (state.debug?.shotCount || 0)) failures.push(`muzzle lane beads do not match shot count: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.recoilTickCount || 0) < 2) failures.push(`muzzle recoil ticks missing: ${JSON.stringify(state.debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

@@ -751,6 +751,7 @@ export class Enemy {
     const ny = Math.sin(angle);
     const px = -ny;
     const py = nx;
+    const recoilTickCount = Math.min(4, Math.max(2, shotCount + (this.isEliteMiddleShip ? 1 : 0)));
 
     layer.poly([
       nx * inner + px * spread, ny * inner + py * spread,
@@ -759,10 +760,17 @@ export class Enemy {
     ]);
     layer.fill({ color, alpha: 0.16 + fade * 0.28 });
     layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.16 + fade * 0.28 });
+    layer.moveTo(nx * inner + px * spread * 1.18, ny * inner + py * spread * 1.18);
+    layer.lineTo(nx * inner - px * spread * 1.18, ny * inner - py * spread * 1.18);
+    layer.stroke({ color: 0xffffff, width: 1.4, alpha: 0.26 + fade * 0.34 });
     layer.circle(nx * (radius * 0.28), ny * (radius * 0.28), radius * 0.42 + progress * 3);
     layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 + fade * 0.24 });
     layer.circle(nx * (radius * 0.58), ny * (radius * 0.58), 4 + shotCount * 1.1 + progress * 2);
     layer.stroke({ color, width: 2, alpha: 0.34 + fade * 0.42 });
+    layer.circle(nx * (tip - 2), ny * (tip - 2), 2.6 + shotCount * 0.35 + fade * 1.2);
+    layer.fill({ color: 0xffffff, alpha: 0.34 + fade * 0.34 });
+    layer.circle(nx * (tip - 2), ny * (tip - 2), 4.8 + shotCount * 0.55 + progress * 2);
+    layer.stroke({ color, width: 1.3, alpha: 0.28 + fade * 0.34 });
     for (let i = 0; i < shotCount; i += 1) {
       const lane = i - (shotCount - 1) / 2;
       const start = radius * 0.42;
@@ -772,6 +780,21 @@ export class Enemy {
       layer.lineTo(nx * end + px * offset * 0.6, ny * end + py * offset * 0.6);
     }
     layer.stroke({ color, width: 0.9, alpha: 0.18 + fade * 0.34 });
+    for (let i = 0; i < shotCount; i += 1) {
+      const lane = i - (shotCount - 1) / 2;
+      const offset = lane * 4.2 * 0.6;
+      layer.circle(nx * (tip + 2) + px * offset, ny * (tip + 2) + py * offset, 1.7 + fade * 0.9);
+      layer.fill({ color: i % 2 ? color : 0xffffff, alpha: 0.34 + fade * 0.34 });
+    }
+    for (let i = 0; i < recoilTickCount; i += 1) {
+      const lane = i - (recoilTickCount - 1) / 2;
+      const recoilStart = radius * (0.18 + i * 0.03);
+      const recoilEnd = radius * (0.48 + progress * 0.16);
+      const offset = lane * 5.5;
+      layer.moveTo(-nx * recoilStart + px * offset, -ny * recoilStart + py * offset);
+      layer.lineTo(-nx * recoilEnd + px * offset * 0.66, -ny * recoilEnd + py * offset * 0.66);
+    }
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.12 + fade * 0.24 });
     layer.visible = true;
     layer._debugMuzzleFlash = {
       visible: true,
@@ -779,7 +802,11 @@ export class Enemy {
       fade: Number(fade.toFixed(3)),
       shotCount,
       angle: Number(angle.toFixed(3)),
-      color
+      color,
+      mouthBracketVisible: true,
+      hotCoreVisible: true,
+      laneBeadCount: shotCount,
+      recoilTickCount
     };
   }
 
