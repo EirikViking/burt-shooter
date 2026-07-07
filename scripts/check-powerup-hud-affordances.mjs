@@ -202,16 +202,16 @@ try {
   const bomb = state.rows?.find((row) => row.type === 'bomb');
   const slowTime = state.rows?.find((row) => row.type === 'slow_time');
   const status = state.rows?.find((row) => row.type === 'debuff_weapon_jam');
-  if (shield?.category !== 'defense' || !shield?.categoryAccentVisible || shield?.timerTickCount !== 3) {
+  if (shield?.category !== 'defense' || !shield?.categoryAccentVisible || shield?.categoryRailPipCount !== 3 || shield?.timerTickCount !== 3) {
     failures.push(`shield row missing defense accent/timer ticks: ${JSON.stringify(shield)}`);
   }
-  if (bomb?.category !== 'offense' || bomb?.chargePipCount !== 3 || bomb?.chargePipActive !== 2) {
+  if (bomb?.category !== 'offense' || bomb?.categoryRailPipCount !== 4 || bomb?.chargePipCount !== 3 || bomb?.chargePipActive !== 2) {
     failures.push(`bomb row missing charge pips: ${JSON.stringify(bomb)}`);
   }
-  if (slowTime?.category !== 'control' || !slowTime?.expiring || slowTime?.urgencyChevronCount !== 3 || slowTime?.timerTickCount !== 3) {
+  if (slowTime?.category !== 'control' || slowTime?.categoryRailPipCount !== 3 || !slowTime?.expiring || slowTime?.urgencyChevronCount !== 3 || slowTime?.timerTickCount !== 3) {
     failures.push(`slow-time row missing expiring chevrons/ticks: ${JSON.stringify(slowTime)}`);
   }
-  if (status?.category !== 'status' || !status?.categoryAccentVisible || status?.timerTickCount !== 3) {
+  if (status?.category !== 'status' || !status?.categoryAccentVisible || status?.categoryRailPipCount !== 3 || status?.timerTickCount !== 3) {
     failures.push(`status row missing status accent/timer ticks: ${JSON.stringify(status)}`);
   }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

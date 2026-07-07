@@ -889,6 +889,7 @@ export class HUD {
     const barBg = new PIXI.Graphics();
     const barFill = new PIXI.Graphics();
     const barTicks = new PIXI.Graphics();
+    const categoryRailPips = new PIXI.Graphics();
     const chargePips = new PIXI.Graphics();
     const urgencyChevrons = new PIXI.Graphics();
     const expiryOverlay = new PIXI.Graphics();
@@ -904,13 +905,14 @@ export class HUD {
     container.addChild(barBg);
     container.addChild(barFill);
     container.addChild(barTicks);
+    container.addChild(categoryRailPips);
     container.addChild(chargePips);
     container.addChild(urgencyChevrons);
     container.addChild(expiryOverlay);
     container.addChild(spentOverlay);
     this.activePowerupList.addChild(container);
 
-    const row = { container, bg, categoryAccent, iconGlow, iconFrame, icon, label, meta, barBg, barFill, barTicks, chargePips, urgencyChevrons, expiryOverlay, spentOverlay };
+    const row = { container, bg, categoryAccent, iconGlow, iconFrame, icon, label, meta, barBg, barFill, barTicks, categoryRailPips, chargePips, urgencyChevrons, expiryOverlay, spentOverlay };
     this.activePowerupRows[index] = row;
     return row;
   }
@@ -979,6 +981,7 @@ export class HUD {
       row.barFill.fill({ color: rowColor, alpha: expiring ? 0.72 + pulse * 0.26 : 0.98 });
     }
     const timerTickCount = this.drawPowerupTimerTicks(row.barTicks, state, barX, barY, barWidth, spent);
+    const categoryRailPipCount = this.drawPowerupCategoryRailPips(row.categoryRailPips, category, categoryColor, height, progress, expiring, spent, pulse);
     const chargeDebug = this.drawPowerupChargePips(row.chargePips, state, width, height, rowColor, spent);
     const urgencyChevronCount = this.drawPowerupUrgencyChevrons(row.urgencyChevrons, expiring, width, height, pulse);
 
@@ -1016,6 +1019,7 @@ export class HUD {
       category,
       progress: Number(progress.toFixed(3)),
       categoryAccentVisible: Boolean(row.categoryAccent.visible),
+      categoryRailPipCount,
       timerTickCount,
       chargePipCount: chargeDebug.count,
       chargePipActive: chargeDebug.active,
@@ -1064,6 +1068,47 @@ export class HUD {
       graphics.poly([11, midY - 6, 16, midY, 11, midY + 6, 6, midY]);
       graphics.stroke({ color, width: 1.2, alpha: markAlpha });
     }
+  }
+
+  drawPowerupCategoryRailPips(graphics, category, color, height, progress = 1, expiring = false, spent = false, pulse = 0) {
+    graphics.clear();
+    graphics.visible = Boolean(category);
+    if (!graphics.visible) return 0;
+
+    const countByCategory = { offense: 4, defense: 3, control: 3, utility: 3, status: 3 };
+    const count = countByCategory[category] || 3;
+    const litCount = spent ? 0 : Math.max(1, Math.ceil(Math.max(0, Math.min(1, progress)) * count));
+    const startX = 39;
+    const y = Math.max(18, height - 15);
+    const gap = 7;
+    for (let i = 0; i < count; i += 1) {
+      const active = i < litCount && !spent;
+      const x = startX + i * gap;
+      const alpha = active ? (expiring ? 0.72 + pulse * 0.2 : 0.78) : (spent ? 0.18 : 0.25);
+      if (category === 'offense') {
+        graphics.poly([x - 2, y - 3, x + 3, y, x - 2, y + 3]);
+        graphics.fill({ color, alpha });
+      } else if (category === 'defense') {
+        graphics.circle(x, y, active ? 2.25 : 1.8);
+        graphics.stroke({ color, width: active ? 1 : 0.8, alpha });
+      } else if (category === 'control') {
+        graphics.moveTo(x, y - 3.5);
+        graphics.lineTo(x, y + 3.5);
+        graphics.moveTo(x - 2.5, y);
+        graphics.lineTo(x + 2.5, y);
+        graphics.stroke({ color, width: active ? 1.1 : 0.85, alpha });
+      } else if (category === 'status') {
+        graphics.moveTo(x - 2.5, y - 2.5);
+        graphics.lineTo(x + 2.5, y + 2.5);
+        graphics.moveTo(x + 2.5, y - 2.5);
+        graphics.lineTo(x - 2.5, y + 2.5);
+        graphics.stroke({ color, width: active ? 1.05 : 0.8, alpha });
+      } else {
+        graphics.poly([x, y - 3, x + 3, y, x, y + 3, x - 3, y]);
+        graphics.stroke({ color, width: active ? 1 : 0.8, alpha });
+      }
+    }
+    return count;
   }
 
   drawPowerupTimerTicks(graphics, state, barX, barY, barWidth, spent = false) {
