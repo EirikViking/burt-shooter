@@ -1305,6 +1305,14 @@ export class Enemy {
     const radius = Math.max(14, this.radius * (1.35 + progress * 0.75));
     const outer = radius + 8 + progress * 12;
     const sweep = this.idlePhase + progress * Math.PI * 1.4;
+    const gameWidth = this.game?.getWidth?.() || 1280;
+    const gameHeight = this.game?.getHeight?.() || 720;
+    let inboundAngle = Math.PI / 2;
+    if (this.x < gameWidth * 0.18) inboundAngle = 0;
+    else if (this.x > gameWidth * 0.82) inboundAngle = Math.PI;
+    else if (this.y > gameHeight * 0.55) inboundAngle = -Math.PI / 2;
+    let inboundChevronCount = 0;
+    let entryGateTickCount = 0;
     layer.circle(0, 0, outer);
     layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
     layer.circle(0, 0, radius * 0.66);
@@ -1317,12 +1325,43 @@ export class Enemy {
       layer.lineTo(Math.cos(angle) * tip, Math.sin(angle) * tip);
     }
     layer.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.26 * fade });
+
+    const dirX = Math.cos(inboundAngle);
+    const dirY = Math.sin(inboundAngle);
+    const sideX = Math.cos(inboundAngle + Math.PI * 0.5);
+    const sideY = Math.sin(inboundAngle + Math.PI * 0.5);
+    for (let i = 0; i < 3; i += 1) {
+      const distance = outer + 14 + i * 11;
+      const baseX = -dirX * distance;
+      const baseY = -dirY * distance;
+      const tipX = baseX + dirX * (8 + i * 0.8);
+      const tipY = baseY + dirY * (8 + i * 0.8);
+      const wing = 5 + i * 0.4;
+      layer.moveTo(baseX - sideX * wing, baseY - sideY * wing);
+      layer.lineTo(tipX, tipY);
+      layer.lineTo(baseX + sideX * wing, baseY + sideY * wing);
+      inboundChevronCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 1.6 : 1.25, alpha: 0.24 * fade + 0.1 });
+
+    for (const offset of [-1, 1]) {
+      const gateDistance = outer + 6;
+      const gateCenterX = -dirX * gateDistance + sideX * offset * Math.max(12, radius * 0.44);
+      const gateCenterY = -dirY * gateDistance + sideY * offset * Math.max(12, radius * 0.44);
+      layer.moveTo(gateCenterX - sideX * 5, gateCenterY - sideY * 5);
+      layer.lineTo(gateCenterX + sideX * 5, gateCenterY + sideY * 5);
+      entryGateTickCount += 1;
+    }
+    layer.stroke({ color, width: 1.6, alpha: 0.34 * fade });
     layer.visible = true;
     layer._debugSpawnCue = {
       visible: true,
       progress: Number(progress.toFixed(3)),
       radius: Number(outer.toFixed(1)),
-      fade: Number(fade.toFixed(3))
+      fade: Number(fade.toFixed(3)),
+      inboundChevronCount,
+      entryGateTickCount,
+      inboundAngle: Number(inboundAngle.toFixed(3))
     };
   }
 

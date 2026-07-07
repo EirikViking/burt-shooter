@@ -169,6 +169,8 @@ try {
   if (!active.visible || !active.debug?.visible) failures.push(`spawn cue was not visible: ${JSON.stringify(active)}`);
   if ((active.debug?.radius || 0) <= active.radius) failures.push(`spawn cue radius too small: ${active.debug?.radius} <= ${active.radius}`);
   if ((active.debug?.fade || 0) <= 0.1) failures.push(`spawn cue fade too low: ${active.debug?.fade}`);
+  if ((active.debug?.inboundChevronCount || 0) < 3) failures.push(`spawn cue inbound chevrons missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.entryGateTickCount || 0) < 2) failures.push(`spawn cue entry gate ticks missing: ${JSON.stringify(active.debug)}`);
   if (!active.children?.includes?.('enemySpawnCue')) failures.push(`enemySpawnCue layer missing: ${JSON.stringify(active.children)}`);
   if (!hidden.ok) failures.push(hidden.reason || 'hidden state failed');
   if (hidden.visible || hidden.debug?.visible) failures.push(`spawn cue did not hide after duration: ${JSON.stringify(hidden)}`);
