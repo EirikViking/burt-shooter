@@ -732,3 +732,32 @@ Safety notes:
 
 - No near-miss scoring, graze timing, Graze Break arming threshold, cooldowns, player hitbox, enemy bullets, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only player-local mastery feedback using existing near-miss streak state.
+
+## Batch 34 - Enemy Muzzle Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+131. Normal enemies now flash a short local muzzle cue when they fire.
+132. The cue points in the actual firing direction so projectile origin is easier to read.
+133. Multi-shot/fan patterns draw multiple tiny lanes inside the cue without changing bullet count.
+134. The muzzle cue expires quickly and clears with enemy visual deactivation to avoid lingering clutter.
+135. `check:enemy-muzzle-readability` proves a real enemy firing event exposes the cue and debug state with a browser screenshot.
+
+Verification:
+
+- `npm run check:enemy-muzzle-readability`
+- Screenshot proof: `test-results/enemy-muzzle-readability-2026-07-07T00-48-06-647Z/enemy-muzzle-readability.png`
+- `npm run check:enemy-weapons`
+- `npm run check:enemy-hit-feedback`
+- `npm run check:enemy-spawn-cue`
+- `npm run check:normal-enemy-attack-variety`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No enemy fire cadence, projectile speed, bullet count, damage, hitboxes, AI, spawn timing, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only enemy-local shot origin feedback using existing enemy fire events.

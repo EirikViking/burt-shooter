@@ -57,6 +57,12 @@ export class Enemy {
     this.hitFeedbackDamage = 0;
     this.lastHitSparkAt = 0;
     this.hitFeedbackSparkCount = 0;
+    this.muzzleFlashLayer = null;
+    this.muzzleFlashStartedAt = 0;
+    this.muzzleFlashUntil = 0;
+    this.muzzleFlashAngle = Math.PI / 2;
+    this.muzzleFlashShotCount = 0;
+    this.muzzleFlashColor = 0xff4055;
     this.spawnCueLayer = null;
     this.spawnCueStartedAt = Date.now();
     this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
@@ -491,6 +497,13 @@ export class Enemy {
     this.hitFeedbackLayer.visible = false;
     this.sprite.addChild(this.hitFeedbackLayer);
 
+    this.muzzleFlashLayer = new PIXI.Graphics();
+    this.muzzleFlashLayer.label = 'enemyMuzzleFlash';
+    this.muzzleFlashLayer.zIndex = 8;
+    this.muzzleFlashLayer.blendMode = 'add';
+    this.muzzleFlashLayer.visible = false;
+    this.sprite.addChild(this.muzzleFlashLayer);
+
     this.spawnCueLayer = new PIXI.Graphics();
     this.spawnCueLayer.label = 'enemySpawnCue';
     this.spawnCueLayer.zIndex = -8;
@@ -664,6 +677,75 @@ export class Enemy {
       fade: Number(fade.toFixed(3)),
       radius: Number(radius.toFixed(1)),
       sparkCount: this.hitFeedbackSparkCount || 0
+    };
+  }
+
+  triggerMuzzleFlash(angle = Math.PI / 2, shotCount = 1, color = null, now = Date.now()) {
+    if (!this.muzzleFlashLayer || !this.active || this.visualsDeactivated) return;
+    this.muzzleFlashAngle = Number.isFinite(angle) ? angle : Math.PI / 2;
+    this.muzzleFlashShotCount = Math.max(1, Math.min(5, Math.round(Number(shotCount) || 1)));
+    this.muzzleFlashColor = Number.isFinite(color) ? color : (this.visualVariant?.accent || this.color || 0xff4055);
+    this.muzzleFlashStartedAt = now;
+    this.muzzleFlashUntil = now + (this.isEliteMiddleShip ? 300 : 240);
+    this.updateMuzzleFlash(now);
+  }
+
+  updateMuzzleFlash(now = Date.now()) {
+    const layer = this.muzzleFlashLayer;
+    if (!layer) return;
+    layer.clear();
+    if (!this.active || this.visualsDeactivated || now >= (this.muzzleFlashUntil || 0)) {
+      layer.visible = false;
+      layer._debugMuzzleFlash = {
+        visible: false,
+        shotCount: this.muzzleFlashShotCount || 0
+      };
+      return;
+    }
+
+    const duration = Math.max(1, (this.muzzleFlashUntil || now) - (this.muzzleFlashStartedAt || now - 1));
+    const progress = Math.max(0, Math.min(1, (now - (this.muzzleFlashStartedAt || now)) / duration));
+    const fade = Math.pow(1 - progress, 0.68);
+    const angle = this.muzzleFlashAngle;
+    const shotCount = Math.max(1, Math.min(5, this.muzzleFlashShotCount || 1));
+    const color = this.muzzleFlashColor || this.visualVariant?.accent || this.color || 0xff4055;
+    const radius = Math.max(12, this.radius * (1 + shotCount * 0.04));
+    const inner = radius * 0.34;
+    const tip = radius + 11 + shotCount * 2.4 + progress * 7;
+    const spread = 6 + shotCount * 2;
+    const nx = Math.cos(angle);
+    const ny = Math.sin(angle);
+    const px = -ny;
+    const py = nx;
+
+    layer.poly([
+      nx * inner + px * spread, ny * inner + py * spread,
+      nx * tip, ny * tip,
+      nx * inner - px * spread, ny * inner - py * spread
+    ]);
+    layer.fill({ color, alpha: 0.16 + fade * 0.28 });
+    layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.16 + fade * 0.28 });
+    layer.circle(nx * (radius * 0.28), ny * (radius * 0.28), radius * 0.42 + progress * 3);
+    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 + fade * 0.24 });
+    layer.circle(nx * (radius * 0.58), ny * (radius * 0.58), 4 + shotCount * 1.1 + progress * 2);
+    layer.stroke({ color, width: 2, alpha: 0.34 + fade * 0.42 });
+    for (let i = 0; i < shotCount; i += 1) {
+      const lane = i - (shotCount - 1) / 2;
+      const start = radius * 0.42;
+      const end = tip + 3;
+      const offset = lane * 4.2;
+      layer.moveTo(nx * start + px * offset, ny * start + py * offset);
+      layer.lineTo(nx * end + px * offset * 0.6, ny * end + py * offset * 0.6);
+    }
+    layer.stroke({ color, width: 0.9, alpha: 0.18 + fade * 0.34 });
+    layer.visible = true;
+    layer._debugMuzzleFlash = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      fade: Number(fade.toFixed(3)),
+      shotCount,
+      angle: Number(angle.toFixed(3)),
+      color
     };
   }
 
@@ -935,6 +1017,7 @@ export class Enemy {
     }
     this.updateMayhemVfx(delta);
     this.updateHitFeedback();
+    this.updateMuzzleFlash();
     this.updateSpawnCue();
 
     this.sprite.x = this.x;
@@ -2248,6 +2331,7 @@ export class Enemy {
         );
         bullets.push(bullet);
       }
+      this.triggerMuzzleFlash(baseAngle, bullets.length, weaponProfile?.color || profile.accent || this.color);
       return bullets.length === 1 ? bullets[0] : bullets;
     }
 
@@ -2255,6 +2339,7 @@ export class Enemy {
       const bullets = tacticalAngles.map((shot) =>
         makeBullet(shot, weaponProfile?.color || this.color, tacticalAngles.length > 1 ? 0.9 : 1)
       );
+      this.triggerMuzzleFlash(Math.atan2(vy, vx), bullets.length, weaponProfile?.color || this.color);
       return bullets.length === 1 ? bullets[0] : bullets;
     }
 
@@ -2262,6 +2347,7 @@ export class Enemy {
     bullet.weaponProfileId = weaponProfile?.id || bullet.weaponProfileId;
     bullet.weaponLabel = weaponProfile?.label || bullet.weaponLabel;
     bullet.waveTactic = this.waveTactic?.id || null;
+    this.triggerMuzzleFlash(Math.atan2(vy, vx), 1, weaponProfile?.color || this.color);
     return bullet;
   }
 
@@ -2331,6 +2417,8 @@ export class Enemy {
     if (this.healthBar) this.healthBar.visible = false;
     this.hitFeedbackLayer?.clear();
     if (this.hitFeedbackLayer) this.hitFeedbackLayer.visible = false;
+    this.muzzleFlashLayer?.clear();
+    if (this.muzzleFlashLayer) this.muzzleFlashLayer.visible = false;
     this.spawnCueLayer?.clear();
     if (this.spawnCueLayer) this.spawnCueLayer.visible = false;
     this.threatTelegraphLayer?.clear();
