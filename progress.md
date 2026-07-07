@@ -21,6 +21,7 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Verification direction: run `npm run check:rank-up-clarity`, inspect the screenshot, then run i18n/build/controller/diff checks relevant to the UI/VFX touch.
 - Batch 29 direction: HUD-only high-score chase pressure polish inspired by high-score arcade competitors. The chase panel now pulses near the target, shows 25/50/75/100 markers, draws a progress glint, and gives the surpassed state a stronger gold rail. No score awards, score formula, leaderboard retrieval, personal-best persistence, rank, XP, achievements, Steamworks, package, upload, deploy, or branch-assignment changes.
 - Batch 30 direction: HUD-only combo meter urgency polish. The combo meter now has multiplier pips, a fill-edge glint, and low-time hatch warning while preserving the 3200ms combo window, scoring, milestone bonuses, multiplier thresholds, and all leaderboard/XP behavior.
+- Batch 31 direction: visual-only player projectile readability. Player bullets now get friendly lead glints and wing traces plus debug markers, while enemy danger glints remain enemy-only and projectile damage, radius, speed, lifetime, firing cadence, score, XP, and balance stay unchanged.
 
 ## 2026-07-02 Tractor And Mini-Boss VFX Pass
 

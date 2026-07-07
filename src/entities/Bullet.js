@@ -34,6 +34,8 @@ export class Bullet {
     this.trail = null;
     this.warningRing = null;
     this.dangerGlint = null;
+    this.friendlyGlint = null;
+    this.friendlyWingTrace = null;
     this.core = null;
     this.visualConfig = visualConfig || {};
     this.coreAnimationStyle = !isPlayer ? (this.visualConfig.animationStyle || 'pulse') : 'none';
@@ -210,9 +212,46 @@ export class Bullet {
       this.dangerGlint.lineTo(leadX + normalX * 4.5, leadY + normalY * 4.5);
       this.dangerGlint.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: colorAssist ? 1.8 : 1.4, alpha: colorAssist ? 0.86 : 0.44 });
       this.sprite.addChild(this.dangerGlint);
+    } else {
+      const leadDistance = this.radius + 7;
+      const leadX = Math.cos(this.angle) * leadDistance;
+      const leadY = Math.sin(this.angle) * leadDistance;
+      const normalX = -Math.sin(this.angle);
+      const normalY = Math.cos(this.angle);
+      const backDistance = Math.max(10, this.radius + 5);
+      const wingBackX = -Math.cos(this.angle) * backDistance;
+      const wingBackY = -Math.sin(this.angle) * backDistance;
+
+      this.friendlyWingTrace = new PIXI.Graphics();
+      this.friendlyWingTrace.label = 'playerProjectileWingTrace';
+      this.friendlyWingTrace.__novaPlayerProjectileWingTrace = true;
+      this.friendlyWingTrace.moveTo(wingBackX + normalX * 5, wingBackY + normalY * 5);
+      this.friendlyWingTrace.lineTo(-normalX * 2, -normalY * 2);
+      this.friendlyWingTrace.moveTo(wingBackX - normalX * 5, wingBackY - normalY * 5);
+      this.friendlyWingTrace.lineTo(normalX * 2, normalY * 2);
+      this.friendlyWingTrace.stroke({ color: 0x9ff8ff, width: 1.6, alpha: 0.58 });
+      this.sprite.addChild(this.friendlyWingTrace);
+
+      this.friendlyGlint = new PIXI.Graphics();
+      this.friendlyGlint.label = 'playerProjectileFriendlyGlint';
+      this.friendlyGlint.__novaPlayerProjectileFriendlyGlint = true;
+      this.friendlyGlint.circle(leadX, leadY, 2.7);
+      this.friendlyGlint.fill({ color: 0xffffff, alpha: 0.88 });
+      this.friendlyGlint.moveTo(leadX - normalX * 4, leadY - normalY * 4);
+      this.friendlyGlint.lineTo(leadX + normalX * 4, leadY + normalY * 4);
+      this.friendlyGlint.stroke({ color: 0x9ff8ff, width: 1.2, alpha: 0.66 });
+      this.sprite.addChild(this.friendlyGlint);
     }
 
     this.sprite.addChild(this.core);
+    this.sprite._debugProjectileReadability = {
+      isPlayer: this.isPlayer,
+      friendlyGlint: Boolean(this.friendlyGlint),
+      friendlyWingTrace: Boolean(this.friendlyWingTrace),
+      dangerGlint: Boolean(this.dangerGlint),
+      trailLength: Number(trailLength.toFixed?.(2) || trailLength),
+      trailWidth
+    };
   }
 
   setScreenBounds(width, height) {
@@ -240,9 +279,10 @@ export class Bullet {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
+    this.pulseTimer += delta * 0.1;
+
     // Pulse effect for enemy bullets (more visible)
     if (!this.isPlayer) {
-      this.pulseTimer += delta * 0.1;
       const pulseRate = this.visualConfig.pulseRate || 1;
       const pulseScale = 1 + Math.sin(this.pulseTimer * pulseRate) * 0.1;
       this.sprite.scale.set(pulseScale);
@@ -266,6 +306,13 @@ export class Bullet {
         const glintPulse = 1 + Math.sin(this.pulseTimer * 2.9 * pulseRate) * 0.18;
         this.dangerGlint.scale.set(glintPulse);
         this.dangerGlint.alpha = 0.72 + Math.sin(this.pulseTimer * 3.4 * pulseRate) * 0.2;
+      }
+    } else if (this.friendlyGlint) {
+      const friendlyPulse = 1 + Math.sin(this.pulseTimer * 3.2) * 0.12;
+      this.friendlyGlint.scale.set(friendlyPulse);
+      this.friendlyGlint.alpha = 0.7 + Math.sin(this.pulseTimer * 3.6) * 0.16;
+      if (this.friendlyWingTrace) {
+        this.friendlyWingTrace.alpha = 0.5 + Math.sin(this.pulseTimer * 2.4) * 0.16;
       }
     }
 

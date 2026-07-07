@@ -658,3 +658,22 @@ Safety notes:
 
 - No combo window, combo scoring, milestone bonuses, multiplier thresholds, score formula, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - HUD-only combo urgency readability polish using existing combo state.
+
+## Batch 31 - Player Projectile Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+116. Player bullets now get a small friendly lead glint so outgoing fire separates more clearly from hostile shots.
+117. Player bullets now get a subtle twin wing trace behind the core, improving directional readability.
+118. Friendly projectile glints pulse lightly in motion while preserving projectile velocity, radius, lifetime, and damage.
+119. Projectile debug state now distinguishes friendly markers from enemy danger glints for automated checks.
+120. `check:player-projectile-readability` proves friendly-only markers and existing enemy danger-glint behavior with browser screenshot evidence.
+
+Verification:
+
+- `npm run check:player-projectile-readability`
+
+Safety notes:
+
+- No projectile damage, collision radius, movement speed, lifetime, firing cadence, enemy projectile visuals, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only friendly projectile readability polish in `Bullet`.
