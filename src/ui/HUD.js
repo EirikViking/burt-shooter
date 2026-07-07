@@ -63,6 +63,8 @@ export class HUD {
     this.rankIcon = new PIXI.Sprite();
     this.rankBarBg = new PIXI.Graphics();
     this.rankBarFill = new PIXI.Graphics();
+    this.rankBarGlow = new PIXI.Graphics();
+    this.rankBarTicks = new PIXI.Graphics();
     this.rankText = createText('', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 13,
@@ -92,6 +94,8 @@ export class HUD {
     this.rankGroup.addChild(this.rankTextBg);
     this.rankGroup.addChild(this.rankBarBg);
     this.rankGroup.addChild(this.rankBarFill);
+    this.rankGroup.addChild(this.rankBarGlow);
+    this.rankGroup.addChild(this.rankBarTicks);
     this.rankGroup.addChild(this.rankIcon);
     this.rankGroup.addChild(this.rankText);
     this.hudContainer.addChild(this.rankGroup);
@@ -373,13 +377,46 @@ export class HUD {
     this.rankTextBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.2 });
 
     // XP Bar
-    const progress = this.game.getRankProgress();
+    const progress = Math.max(0, Math.min(1, Number(this.game.getRankProgress?.()) || 0));
     const barW = rankTextMaxWidth + 8;
     const barH = 5 * uiScale;
+    const barX = rankTextX - 4 * uiScale;
+    const barY = 40 * uiScale;
+    const nearRank = progress >= 0.82 && progress < 1;
+    const rankPulse = nearRank ? 0.5 + Math.sin(Date.now() * 0.015) * 0.5 : 0;
+    let tickCount = 0;
+    let readySpark = false;
 
-    this.rankBarBg.clear().roundRect(rankTextX - 4 * uiScale, 40 * uiScale, barW, barH, 3 * uiScale).fill({ color: 0x102238, alpha: 0.94 });
+    this.rankBarBg.clear().roundRect(barX, barY, barW, barH, 3 * uiScale).fill({ color: 0x102238, alpha: 0.94 });
     this.rankBarBg.stroke({ color: 0x75ecff, width: 1, alpha: 0.45 });
-    this.rankBarFill.clear().roundRect(rankTextX - 4 * uiScale, 40 * uiScale, barW * progress, barH, 3 * uiScale).fill({ color: 0xffef7e });
+    this.rankBarFill.clear().roundRect(barX, barY, barW * progress, barH, 3 * uiScale).fill({ color: 0xffef7e });
+    this.rankBarGlow.clear();
+    this.rankBarTicks.clear();
+    [0.25, 0.5, 0.75, 1].forEach((ratio) => {
+      const tickX = barX + barW * ratio;
+      const filled = progress >= ratio - 0.015;
+      this.rankBarTicks.moveTo(tickX, barY - 2 * uiScale);
+      this.rankBarTicks.lineTo(tickX, barY + barH + 2 * uiScale);
+      this.rankBarTicks.stroke({ color: filled ? 0xffef7e : 0x75ecff, width: ratio >= 1 ? 1.25 : 0.85, alpha: filled ? 0.72 : 0.3 });
+      tickCount += 1;
+    });
+    if (nearRank) {
+      const sparkX = barX + barW * progress;
+      const glowW = Math.min(18 * uiScale, Math.max(6 * uiScale, barW * progress));
+      this.rankBarGlow.roundRect(Math.max(barX, sparkX - glowW), barY - 2 * uiScale, glowW, barH + 4 * uiScale, 4 * uiScale);
+      this.rankBarGlow.fill({ color: 0xffffff, alpha: 0.12 + rankPulse * 0.14 });
+      this.rankBarGlow.circle(sparkX, barY + barH / 2, 2.3 * uiScale + rankPulse * 1.1 * uiScale);
+      this.rankBarGlow.fill({ color: 0xffffff, alpha: 0.34 + rankPulse * 0.42 });
+      readySpark = true;
+    }
+    this.rankGroup._debugRankProgress = {
+      progress,
+      nearRank,
+      rankPulse: Number(rankPulse.toFixed(3)),
+      tickCount,
+      readySpark,
+      fillWidth: Math.round(barW * progress)
+    };
 
     this.locationText.text = formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),

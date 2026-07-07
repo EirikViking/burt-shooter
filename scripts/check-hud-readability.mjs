@@ -146,6 +146,7 @@ try {
     play.comboMultiplier = 2;
     play.comboTimerMs = 820;
     play.comboWindowMs = 2000;
+    game.getRankProgress = () => 0.92;
 
     hud.update();
     hud.updateActivePowerup();
@@ -158,6 +159,7 @@ try {
       ok: true,
       livesCritical: Boolean(hud.livesGroup?._debugCritical),
       livesPulse: hud.livesGroup?._debugPulse ?? null,
+      rankProgress: hud.rankGroup?._debugRankProgress || null,
       comboMeter: hud.comboMeterGroup?._debugComboMeter || null,
       status: hud.activePowerupGroup?._debugStatus || null,
       rows,
@@ -181,6 +183,10 @@ try {
     ok: Boolean(
       state.ok &&
       state.livesCritical &&
+      state.rankProgress?.nearRank &&
+      state.rankProgress?.readySpark &&
+      (state.rankProgress?.tickCount || 0) >= 4 &&
+      state.rankProgress?.progress > 0.9 &&
       state.comboMeter?.visible &&
       state.comboMeter?.count === 12 &&
       state.comboMeter?.multiplier === 2 &&
