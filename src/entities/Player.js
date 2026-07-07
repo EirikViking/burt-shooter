@@ -2934,19 +2934,65 @@ export class Player {
   }
 
   updateBombIndicator() {
-    if (!this.bombIndicator || this.bombShotsLeft <= 0) return;
+    if (!this.bombIndicator || this.bombShotsLeft <= 0) {
+      if (this.bombIndicator) {
+        this.bombIndicator.clear();
+        this.bombIndicator.__debugBombIndicator = { visible: false, activeSlots: 0, totalSlots: 0, spentSlots: 0 };
+      }
+      return;
+    }
 
     this.bombIndicator.clear();
-    const size = 8;
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.026) * 0.5;
+    const totalSlots = Math.max(1, Math.min(6, Math.round(Number(this.bombMaxShots || this.bombShotsLeft) || 3)));
+    const activeSlots = Math.max(0, Math.min(totalSlots, Math.round(Number(this.bombShotsLeft) || 0)));
+    const spentSlots = Math.max(0, totalSlots - activeSlots);
+    const size = 7.5;
     const spacing = 12;
-    const startX = -(this.bombShotsLeft - 1) * spacing / 2;
+    const startX = -(totalSlots - 1) * spacing / 2;
+    const y = -35;
+    const railX = startX - spacing * 0.55;
+    const railWidth = Math.max(spacing, (totalSlots - 1) * spacing + spacing * 1.1);
 
-    for (let i = 0; i < this.bombShotsLeft; i++) {
-      this.bombIndicator.circle(startX + i * spacing, -35, size);
-      this.bombIndicator.fill({ color: 0xff3300, alpha: 0.9 });
-      this.bombIndicator.circle(startX + i * spacing, -35, size - 2);
-      this.bombIndicator.stroke({ color: 0xffff00, width: 2, alpha: 0.7 });
+    this.bombIndicator.roundRect(railX, y - 10, railWidth, 20, 10);
+    this.bombIndicator.fill({ color: 0x1a0804, alpha: 0.58 });
+    this.bombIndicator.roundRect(railX + 2, y + 8, Math.max(4, railWidth - 4), 3, 2);
+    this.bombIndicator.fill({ color: 0xffaa00, alpha: 0.18 + pulse * 0.1 });
+
+    let nextHighlightVisible = false;
+    for (let i = 0; i < totalSlots; i++) {
+      const x = startX + i * spacing;
+      const active = i < activeSlots;
+      const isNext = active && i === activeSlots - 1;
+      const fillColor = active ? (this.bombColor || 0xffaa00) : 0x32140d;
+      const rimColor = active ? 0xffff66 : 0xff6844;
+      const alpha = active ? 0.74 + pulse * 0.16 : 0.28;
+      this.bombIndicator.circle(x, y, active ? size : size - 1.5);
+      this.bombIndicator.fill({ color: fillColor, alpha });
+      this.bombIndicator.circle(x, y, size + (isNext ? 3 + pulse * 1.8 : 1.8));
+      this.bombIndicator.stroke({ color: rimColor, width: isNext ? 2.1 : 1.2, alpha: isNext ? 0.78 + pulse * 0.18 : active ? 0.48 : 0.36 });
+      if (!active) {
+        this.bombIndicator.moveTo(x - 4, y - 4);
+        this.bombIndicator.lineTo(x + 4, y + 4);
+        this.bombIndicator.stroke({ color: 0xff6844, width: 1.1, alpha: 0.34 });
+      }
+      if (isNext) {
+        nextHighlightVisible = true;
+        this.bombIndicator.moveTo(x - 5, y + 12);
+        this.bombIndicator.lineTo(x, y + 17 + pulse * 2);
+        this.bombIndicator.lineTo(x + 5, y + 12);
+        this.bombIndicator.stroke({ color: 0xffff66, width: 1.4, alpha: 0.62 + pulse * 0.22 });
+      }
     }
+    this.bombIndicator.__debugBombIndicator = {
+      visible: true,
+      activeSlots,
+      totalSlots,
+      spentSlots,
+      railVisible: true,
+      nextHighlightVisible
+    };
   }
 
   deactivateBomb(options = {}) {

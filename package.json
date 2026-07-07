@@ -209,6 +209,7 @@
     "check:powerup-effects": "node scripts/check-powerup-effects.mjs",
     "check:powerup-visuals": "node scripts/check-powerup-visuals.mjs",
     "check:slow-time-visual-field": "node scripts/check-slow-time-visual-field.mjs",
+    "check:bomb-charge-indicator-readability": "node scripts/check-bomb-charge-indicator-readability.mjs",
     "check:powerup-intent-readability": "node scripts/check-powerup-intent-readability.mjs",
     "check:powerup-hud-affordances": "node scripts/check-powerup-hud-affordances.mjs",
     "check:magnet-field-readability": "node scripts/check-magnet-field-readability.mjs",
