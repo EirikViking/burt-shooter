@@ -164,6 +164,10 @@ try {
       enemy.updateThreatFrame?.(Date.now());
       enemy.sprite.x = enemy.x;
       enemy.sprite.y = enemy.y;
+      enemy.sprite.zIndex = 80;
+      enemy.sprite.visible = true;
+      enemy.sprite.renderable = true;
+      enemy.sprite.alpha = 1;
       play.gameContainer.addChild(enemy.sprite);
       enemy._threatReadabilityKey = spec.key;
       return enemy;
@@ -188,6 +192,10 @@ try {
         enemy.updateThreatFrame?.(Date.now());
         enemy.sprite.x = enemy.x;
         enemy.sprite.y = enemy.y;
+        enemy.sprite.zIndex = 80;
+        enemy.sprite.visible = true;
+        enemy.sprite.renderable = true;
+        enemy.sprite.alpha = 1;
         play.gameContainer.addChild(enemy.sprite);
         enemy._threatReadabilityKey = 'fallback_generated_missing';
         enemy._forcedMissingGeneratedTextureIndex = missingGeneratedIndex;
@@ -229,16 +237,32 @@ try {
         enemy.updateThreatFrame?.(Date.now());
         enemy.sprite.x = enemy.x;
         enemy.sprite.y = enemy.y;
+        enemy.sprite.zIndex = 80;
+        enemy.sprite.visible = true;
+        enemy.sprite.renderable = true;
+        enemy.sprite.alpha = 1;
         play.gameContainer.addChild(enemy.sprite);
         enemies.unshift(enemy);
       }
     }
     manager.enemies = enemies;
     window.__enemyThreatReadabilityEnemies = enemies;
+    play.gameContainer.sortChildren?.();
+    game.app?.renderer?.render?.(game.app.stage);
 
     return {
       ok: true,
       enemies: enemies.map((enemy) => ({
+        spriteVisible: Boolean(enemy.sprite?.visible !== false && enemy.sprite?.renderable !== false && (enemy.sprite?.alpha ?? 1) > 0.1),
+        screenBounds: (() => {
+          const bounds = enemy.sprite?.getBounds?.();
+          return {
+            x: Math.round(bounds?.x || 0),
+            y: Math.round(bounds?.y || 0),
+            width: Math.round(bounds?.width || 0),
+            height: Math.round(bounds?.height || 0)
+          };
+        })(),
         key: enemy._threatReadabilityKey,
         type: enemy.type,
         kind: enemy.kind,
@@ -262,6 +286,8 @@ try {
         maxHealth: enemy.maxHealth,
         visible: Boolean(enemy.threatFrameLayer?.visible),
         debug: { ...(enemy.threatFrameLayer?._debugThreatFrame || {}) },
+        hullDetailVisible: Boolean(enemy.hullDetailLayer?.parent && enemy.hullDetailLayer?.visible !== false),
+        hullDetail: enemy.hullDetailLayer?._debugHullDetail || null,
         children: (enemy.sprite?.children || []).map((child) => child.label || child.constructor?.name || 'node')
       }))
     };
@@ -273,6 +299,22 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
+  const assertHullDetail = (enemy, key) => {
+    if (!enemy?.hullDetailVisible || !enemy.children?.includes?.('enemyHullDetail')) {
+      failures.push(`${key} missing real-hull detail layer: ${JSON.stringify(enemy)}`);
+    }
+    if ((enemy?.hullDetail?.pipCount || 0) < 3 || (enemy?.hullDetail?.railCount || 0) < 5) {
+      failures.push(`${key} hull detail too sparse: ${JSON.stringify(enemy?.hullDetail)}`);
+    }
+  };
+  const assertOnScreen = (enemy, key) => {
+    const bounds = enemy?.screenBounds || {};
+    if (!enemy?.spriteVisible) failures.push(`${key} sprite is not visibly renderable: ${JSON.stringify(enemy)}`);
+    if ((bounds.width || 0) < 18 || (bounds.height || 0) < 18) failures.push(`${key} sprite bounds too small: ${JSON.stringify(bounds)}`);
+    if ((bounds.x || 0) > 1280 || (bounds.y || 0) > 720 || ((bounds.x || 0) + (bounds.width || 0)) < 0 || ((bounds.y || 0) + (bounds.height || 0)) < 0) {
+      failures.push(`${key} sprite bounds are off-screen: ${JSON.stringify(bounds)}`);
+    }
+  };
   const expectedTiers = new Map([
     ['elite', 'elite'],
     ['threat', 'threat_action'],
@@ -292,12 +334,16 @@ try {
     if (key === 'elite' && !enemy.usingEliteMiddleShipTexture) failures.push(`elite sample did not use real elite texture: ${JSON.stringify(enemy)}`);
     if (key !== 'elite' && !enemy.usingGeneratedEnemyTexture) failures.push(`${key} sample did not use real generated enemy texture: ${JSON.stringify(enemy)}`);
     if (!enemy.hasBodySpriteTexture || enemy.bodySize?.width < 20 || enemy.bodySize?.height < 20) failures.push(`${key} sample body texture too small/missing: ${JSON.stringify(enemy.bodySize)}`);
+    assertHullDetail(enemy, key);
+    assertOnScreen(enemy, key);
   }
   const ordinary = state.enemies?.find((item) => item.key === 'ordinary');
   if (!ordinary) failures.push('missing ordinary enemy');
   if (ordinary?.visible || ordinary?.debug?.visible) failures.push(`ordinary enemy should not have a visible frame: ${JSON.stringify(ordinary)}`);
   if (ordinary && !ordinary.usingGeneratedEnemyTexture) failures.push(`ordinary sample did not use real generated enemy texture: ${JSON.stringify(ordinary)}`);
   if (ordinary && (!ordinary.hasBodySpriteTexture || ordinary.bodySize?.width < 20 || ordinary.bodySize?.height < 20)) failures.push(`ordinary sample body texture too small/missing: ${JSON.stringify(ordinary.bodySize)}`);
+  if (ordinary) assertHullDetail(ordinary, 'ordinary');
+  if (ordinary) assertOnScreen(ordinary, 'ordinary');
   const fallback = state.enemies?.find((item) => item.key === 'fallback_generated_missing');
   if (!fallback) failures.push('missing generated-texture fallback sample');
   if (fallback?.usingFallbackGraphics) failures.push(`generated texture fallback sample used simple graphics: ${JSON.stringify(fallback)}`);
@@ -305,6 +351,8 @@ try {
   if (fallback && fallback.generatedEnemyTextureFallbackIndex === null) failures.push(`generated texture fallback sample did not record fallback index: ${JSON.stringify(fallback)}`);
   if (fallback && fallback.generatedEnemyTextureFallbackIndex === fallback.forcedMissingGeneratedTextureIndex) failures.push(`generated texture fallback reused missing index: ${JSON.stringify(fallback)}`);
   if (fallback && (!fallback.hasBodySpriteTexture || fallback.bodySize?.width < 20 || fallback.bodySize?.height < 20)) failures.push(`generated texture fallback body texture too small/missing: ${JSON.stringify(fallback.bodySize)}`);
+  if (fallback) assertHullDetail(fallback, 'generated texture fallback');
+  if (fallback) assertOnScreen(fallback, 'generated texture fallback');
   const fallbackUpgrade = state.enemies?.find((item) => item.key === 'fallback_upgrade_after_catalog_restore');
   if (!fallbackUpgrade) failures.push('missing generated-texture fallback upgrade sample');
   if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeStartedAsGraphics) failures.push(`fallback upgrade sample did not start as simple graphics: ${JSON.stringify(fallbackUpgrade)}`);
@@ -312,6 +360,8 @@ try {
   if (fallbackUpgrade && !fallbackUpgrade.fallbackUpgradeSucceeded) failures.push(`fallback upgrade sample did not report upgrade: ${JSON.stringify(fallbackUpgrade)}`);
   if (fallbackUpgrade && !fallbackUpgrade.usingGeneratedEnemyTexture) failures.push(`fallback upgrade sample did not restore generated enemy texture: ${JSON.stringify(fallbackUpgrade)}`);
   if (fallbackUpgrade && (!fallbackUpgrade.hasBodySpriteTexture || fallbackUpgrade.bodySize?.width < 20 || fallbackUpgrade.bodySize?.height < 20)) failures.push(`fallback upgrade body texture too small/missing: ${JSON.stringify(fallbackUpgrade.bodySize)}`);
+  if (fallbackUpgrade) assertHullDetail(fallbackUpgrade, 'fallback upgrade');
+  if (fallbackUpgrade) assertOnScreen(fallbackUpgrade, 'fallback upgrade');
   const late = state.enemies?.find((item) => item.key === 'late');
   if (!late?.lateMayhem) failures.push(`late sample is not lateMayhem: ${JSON.stringify(late)}`);
   const threat = state.enemies?.find((item) => item.key === 'threat');

@@ -96,6 +96,7 @@ export class Enemy {
     this.muzzleFlashAngle = Math.PI / 2;
     this.muzzleFlashShotCount = 0;
     this.muzzleFlashColor = 0xff4055;
+    this.hullDetailLayer = null;
     this.spawnCueLayer = null;
     this.spawnCueStartedAt = Date.now();
     this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
@@ -608,7 +609,88 @@ export class Enemy {
       }
       this.body = s;
       this.usingFallbackGraphics = false;
+      const bodyIndex = this.sprite.getChildIndex?.(s);
+      this.installHullDetailLayer(Number.isFinite(bodyIndex) ? bodyIndex + 1 : null);
     }
+  }
+
+  installHullDetailLayer(insertIndex = null) {
+    this.removeHullDetailLayer();
+    if (!this.sprite || !this.body?.texture || this.usingFallbackGraphics) return;
+
+    const layer = new PIXI.Graphics();
+    layer.label = 'enemyHullDetail';
+    layer.blendMode = 'add';
+    this.drawHullDetailLayer(layer);
+    if (Number.isFinite(insertIndex)) {
+      this.sprite.addChildAt(layer, Math.max(0, Math.min(insertIndex, this.sprite.children.length)));
+    } else {
+      this.sprite.addChild(layer);
+    }
+    this.hullDetailLayer = layer;
+  }
+
+  removeHullDetailLayer() {
+    if (!this.hullDetailLayer) return;
+    if (this.hullDetailLayer.parent) this.hullDetailLayer.parent.removeChild(this.hullDetailLayer);
+    this.hullDetailLayer.destroy?.({ children: true });
+    this.hullDetailLayer = null;
+  }
+
+  drawHullDetailLayer(layer) {
+    if (!layer) return;
+    layer.clear();
+    const profile = this.middleShipProfile || this.generatedProfile || this.visualVariant || {};
+    const accent = profile.accent || this.visualVariant?.accent || this.color || 0x66d9ff;
+    const tint = profile.hullTint || profile.tint || this.visualVariant?.tint || 0xffffff;
+    const radius = Math.max(14, Number(this.radius) || 14);
+    const elite = Boolean(this.middleShipProfile || this.isEliteMiddleShip);
+    const scale = elite ? 1.12 : 1;
+    let pipCount = 0;
+    let railCount = 0;
+
+    for (let i = 0; i < 3; i += 1) {
+      const y = -radius * 0.34 + i * radius * 0.28;
+      const half = radius * (0.16 + i * 0.035) * scale;
+      layer.moveTo(-half, y);
+      layer.lineTo(half, y);
+      railCount += 1;
+    }
+    layer.stroke({ color: tint, width: elite ? 1.1 : 0.85, alpha: elite ? 0.18 : 0.14 });
+
+    [-1, 1].forEach((side) => {
+      const wingX = side * radius * 0.48 * scale;
+      const wingY = radius * 0.08;
+      layer.circle(wingX, wingY, elite ? 2.8 : 2.2);
+      layer.fill({ color: accent, alpha: elite ? 0.26 : 0.2 });
+      layer.moveTo(wingX - side * radius * 0.1, wingY + radius * 0.18);
+      layer.lineTo(wingX + side * radius * 0.16, wingY + radius * 0.28);
+      pipCount += 1;
+      railCount += 1;
+    });
+    layer.stroke({ color: accent, width: elite ? 1.2 : 0.9, alpha: elite ? 0.2 : 0.15 });
+
+    layer.circle(0, radius * 0.48, elite ? 2.5 : 2);
+    layer.fill({ color: 0xffffff, alpha: elite ? 0.22 : 0.16 });
+    pipCount += 1;
+
+    if (elite || this.generatedProfile?.lateMayhem) {
+      [-1, 1].forEach((side) => {
+        layer.circle(side * radius * 0.24, -radius * 0.42, 1.9);
+        pipCount += 1;
+      });
+      layer.fill({ color: accent, alpha: elite ? 0.22 : 0.16 });
+    }
+
+    layer._debugHullDetail = {
+      visible: true,
+      pipCount,
+      railCount,
+      usingGeneratedEnemyTexture: Boolean(this.usingGeneratedEnemyTexture),
+      usingEliteMiddleShipTexture: Boolean(this.usingEliteMiddleShipTexture),
+      usingXtraAsset: Boolean(this.usingXtraAsset),
+      usingPlayerShipTexture: Boolean(this.usingPlayerShipTexture)
+    };
   }
 
   ensureVisualEnhancements() {
@@ -669,6 +751,7 @@ export class Enemy {
 
   createFallbackGraphics() {
     this.usingFallbackGraphics = true;
+    this.removeHullDetailLayer();
     this.addVariantGlow();
     this.body = new PIXI.Graphics();
     this.body.circle(0, 0, this.radius);
