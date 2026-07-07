@@ -36,6 +36,7 @@ export class Bullet {
     this.dangerGlint = null;
     this.friendlyGlint = null;
     this.friendlyWingTrace = null;
+    this.playerIntentLayer = null;
     this.core = null;
     this.visualConfig = visualConfig || {};
     this.coreAnimationStyle = !isPlayer ? (this.visualConfig.animationStyle || 'pulse') : 'none';
@@ -241,17 +242,148 @@ export class Bullet {
       this.friendlyGlint.lineTo(leadX + normalX * 4, leadY + normalY * 4);
       this.friendlyGlint.stroke({ color: 0x9ff8ff, width: 1.2, alpha: 0.66 });
       this.sprite.addChild(this.friendlyGlint);
+      this.playerIntentLayer = new PIXI.Graphics();
+      this.playerIntentLayer.label = 'playerProjectileIntentMarkers';
+      this.playerIntentLayer.__novaPlayerProjectileIntentMarkers = true;
+      this.playerIntentLayer.blendMode = 'add';
+      this.playerIntentLayer.visible = false;
+      this.sprite.addChild(this.playerIntentLayer);
     }
 
     this.sprite.addChild(this.core);
+    this.refreshPlayerProjectileIntentMarkers();
     this.sprite._debugProjectileReadability = {
       isPlayer: this.isPlayer,
       friendlyGlint: Boolean(this.friendlyGlint),
       friendlyWingTrace: Boolean(this.friendlyWingTrace),
+      playerIntentMarkers: Boolean(this.playerIntentLayer),
+      playerIntentActive: Boolean(this.playerIntentLayer?._debugIntentMarkers?.active),
       dangerGlint: Boolean(this.dangerGlint),
       trailLength: Number(trailLength.toFixed?.(2) || trailLength),
       trailWidth
     };
+  }
+
+  refreshPlayerProjectileIntentMarkers() {
+    if (!this.isPlayer || !this.playerIntentLayer) return;
+    const layer = this.playerIntentLayer;
+    layer.clear();
+    const intents = {
+      bomb: Boolean(this.isBomb || this.powerupType === 'bomb'),
+      critical: Boolean(this.isTraitCriticalShot),
+      piercing: Boolean(this.isTraitPiercingShot || this.piercing),
+      wing: Boolean(this.isTraitWingShot),
+      bonus: Boolean(this.isTraitBonusShot),
+      plasma: Boolean(this.isPlasmaLance || this.powerupType === 'plasma_lance')
+    };
+    const activeKeys = Object.entries(intents).filter(([, active]) => active).map(([key]) => key);
+    if (!activeKeys.length) {
+      layer.visible = false;
+      layer._debugIntentMarkers = {
+        active: false,
+        intents,
+        markerCount: 0
+      };
+      if (this.sprite?._debugProjectileReadability) {
+        this.sprite._debugProjectileReadability.playerIntentActive = false;
+        this.sprite._debugProjectileReadability.intentMarkers = layer._debugIntentMarkers;
+      }
+      return;
+    }
+
+    const angle = this.angle;
+    const forwardX = Math.cos(angle);
+    const forwardY = Math.sin(angle);
+    const normalX = -Math.sin(angle);
+    const normalY = Math.cos(angle);
+    const radius = Math.max(5, Number(this.radius) || 7);
+    let markerCount = 0;
+    const primary = intents.bomb ? 0xffaa00
+      : intents.critical ? 0xfff45c
+        : intents.piercing ? 0xffffff
+          : intents.wing ? 0x66ffff
+            : intents.bonus ? 0x7dffcc
+              : 0x9ff8ff;
+    const accent = intents.bomb ? 0xffef7e
+      : intents.critical ? 0xffffff
+        : intents.piercing ? 0x9ff8ff
+          : intents.wing ? 0xffffff
+            : intents.bonus ? 0xffef7e
+              : 0xffffff;
+
+    if (intents.bomb) {
+      const ring = radius + 8;
+      layer.circle(0, 0, ring);
+      layer.stroke({ color: primary, width: 2.4, alpha: 0.82 });
+      layer.moveTo(0, -ring - 2);
+      layer.lineTo(ring + 2, 0);
+      layer.lineTo(0, ring + 2);
+      layer.lineTo(-ring - 2, 0);
+      layer.lineTo(0, -ring - 2);
+      layer.stroke({ color: accent, width: 1.3, alpha: 0.46 });
+      markerCount += 2;
+    }
+
+    if (intents.critical) {
+      const r = radius + 9;
+      for (let i = 0; i < 4; i += 1) {
+        const a = angle + i * Math.PI * 0.5;
+        layer.moveTo(Math.cos(a) * (r * 0.48), Math.sin(a) * (r * 0.48));
+        layer.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      layer.stroke({ color: primary, width: 1.8, alpha: 0.82 });
+      markerCount += 4;
+    }
+
+    if (intents.piercing || intents.plasma) {
+      const nose = radius + (intents.plasma ? 15 : 10);
+      const tail = -radius - 8;
+      layer.moveTo(forwardX * tail, forwardY * tail);
+      layer.lineTo(forwardX * nose, forwardY * nose);
+      layer.stroke({ color: accent, width: intents.plasma ? 2.5 : 1.6, alpha: intents.plasma ? 0.74 : 0.62 });
+      [-1, 1].forEach((side) => {
+        layer.moveTo(forwardX * (tail * 0.35) + normalX * side * 5, forwardY * (tail * 0.35) + normalY * side * 5);
+        layer.lineTo(forwardX * (nose * 0.72) + normalX * side * 2, forwardY * (nose * 0.72) + normalY * side * 2);
+      });
+      layer.stroke({ color: primary, width: 1.1, alpha: 0.48 });
+      markerCount += 3;
+    }
+
+    if (intents.wing) {
+      [-1, 1].forEach((side) => {
+        const x = normalX * side * (radius + 8);
+        const y = normalY * side * (radius + 8);
+        layer.circle(x, y, 2.8);
+        layer.fill({ color: primary, alpha: 0.82 });
+        layer.moveTo(x - forwardX * 7, y - forwardY * 7);
+        layer.lineTo(x + forwardX * 4, y + forwardY * 4);
+      });
+      layer.stroke({ color: accent, width: 1.1, alpha: 0.5 });
+      markerCount += 4;
+    }
+
+    if (intents.bonus) {
+      for (let i = 0; i < 3; i += 1) {
+        const a = angle + (i - 1) * 0.74 + Math.PI;
+        layer.circle(Math.cos(a) * (radius + 6), Math.sin(a) * (radius + 6), 2);
+        layer.fill({ color: i === 1 ? accent : primary, alpha: 0.74 });
+      }
+      markerCount += 3;
+    }
+
+    layer.visible = true;
+    layer._debugIntentMarkers = {
+      active: true,
+      intents,
+      activeKeys,
+      markerCount,
+      radius,
+      primary
+    };
+    if (this.sprite?._debugProjectileReadability) {
+      this.sprite._debugProjectileReadability.playerIntentActive = true;
+      this.sprite._debugProjectileReadability.intentMarkers = layer._debugIntentMarkers;
+    }
   }
 
   setScreenBounds(width, height) {
@@ -313,6 +445,11 @@ export class Bullet {
       this.friendlyGlint.alpha = 0.7 + Math.sin(this.pulseTimer * 3.6) * 0.16;
       if (this.friendlyWingTrace) {
         this.friendlyWingTrace.alpha = 0.5 + Math.sin(this.pulseTimer * 2.4) * 0.16;
+      }
+      if (this.playerIntentLayer?.visible) {
+        const intentPulse = 1 + Math.sin(this.pulseTimer * 2.8) * 0.08;
+        this.playerIntentLayer.scale.set(intentPulse);
+        this.playerIntentLayer.alpha = 0.7 + Math.sin(this.pulseTimer * 3.1) * 0.18;
       }
     }
 

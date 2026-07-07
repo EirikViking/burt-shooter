@@ -112,7 +112,23 @@ try {
     if (!game || !play || !player || !bm) return { ok: false, reason: 'missing play/player/bullet manager' };
     play.introActive = false;
     play.introComplete = true;
+    play.isPaused = true;
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    play.enemyManager?.enemies?.forEach?.((enemy) => enemy?.deactivateVisuals?.('player_projectile_readability_check'));
+    if (play.enemyManager) play.enemyManager.enemies = [];
+    play.ambientBonusDrones?.forEach?.((drone) => {
+      if (drone?.sprite?.parent) drone.sprite.parent.removeChild(drone.sprite);
+      drone.active = false;
+    });
+    play.ambientBonusDrones = [];
+    if (play.particleManager) {
+      play.particleManager.particles?.forEach?.((particle) => {
+        particle.active = false;
+        if (particle.sprite) particle.sprite.visible = false;
+        if (particle.bitmap) particle.bitmap.visible = false;
+      });
+      play.particleManager.particles = [];
+    }
     const removeSprite = (bullet) => {
       if (bullet?.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
     };
@@ -132,15 +148,35 @@ try {
       trailColor: 0xff4055,
       haloColor: 0xff8a66
     });
+    const makeSpecial = (offsetX, offsetY, color, flags = {}) => {
+      const bullet = new Bullet(player.x + offsetX, player.y + offsetY, 0, -7, 1, color, true);
+      Object.assign(bullet, flags);
+      bullet.refreshPlayerProjectileIntentMarkers?.();
+      bm.addPlayerBullet(bullet);
+      bullet.update(1);
+      return bullet;
+    };
     bm.addPlayerBullet(friendly);
     bm.addEnemyBullet(hostile);
     friendly.update(1);
     hostile.update(1);
+    const bomb = makeSpecial(-198, -98, 0xffaa00, { isBomb: true, powerupType: 'bomb' });
+    const critical = makeSpecial(-132, -132, 0xfff45c, { isTraitCriticalShot: true });
+    const piercing = makeSpecial(132, -132, 0xffffff, { isTraitPiercingShot: true, piercing: true });
+    const wing = makeSpecial(198, -98, 0x66ffff, { isTraitWingShot: true });
+    const bonus = makeSpecial(0, -182, 0x7dffcc, { isTraitBonusShot: true });
 
     return {
       ok: true,
       player: friendly.sprite?._debugProjectileReadability || null,
       enemy: hostile.sprite?._debugProjectileReadability || null,
+      specials: {
+        bomb: bomb.playerIntentLayer?._debugIntentMarkers || null,
+        critical: critical.playerIntentLayer?._debugIntentMarkers || null,
+        piercing: piercing.playerIntentLayer?._debugIntentMarkers || null,
+        wing: wing.playerIntentLayer?._debugIntentMarkers || null,
+        bonus: bonus.playerIntentLayer?._debugIntentMarkers || null
+      },
       counts: {
         playerBullets: bm.playerBullets.length,
         enemyBullets: bm.enemyBullets.length
@@ -148,7 +184,10 @@ try {
       markers: {
         friendlyGlints: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileFriendlyGlint)?.length || 0,
         friendlyWings: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileWingTrace)?.length || 0,
-        enemyDangerGlints: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileDangerGlint)?.length || 0
+        enemyDangerGlints: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileDangerGlint)?.length || 0,
+        specialIntentLayers: [bomb, critical, piercing, wing, bonus]
+          .filter((bullet) => bullet.playerIntentLayer?.visible && bullet.playerIntentLayer?._debugIntentMarkers?.active)
+          .length
       }
     };
   });
@@ -159,15 +198,22 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
-  if (state.counts?.playerBullets !== 1) failures.push(`player bullet count mismatch: ${JSON.stringify(state.counts)}`);
+  if (state.counts?.playerBullets !== 6) failures.push(`player bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (state.counts?.enemyBullets !== 1) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (!state.player?.isPlayer) failures.push(`player debug missing isPlayer: ${JSON.stringify(state.player)}`);
   if (!state.player?.friendlyGlint || !state.player?.friendlyWingTrace) failures.push(`friendly projectile markers missing: ${JSON.stringify(state.player)}`);
+  if (state.player?.playerIntentActive) failures.push(`plain player bullet should not show intent markers: ${JSON.stringify(state.player)}`);
   if (state.player?.dangerGlint) failures.push(`player bullet should not have danger glint: ${JSON.stringify(state.player)}`);
   if (state.enemy?.friendlyGlint || state.enemy?.friendlyWingTrace) failures.push(`enemy bullet should not have friendly markers: ${JSON.stringify(state.enemy)}`);
   if (!state.enemy?.dangerGlint) failures.push(`enemy danger glint missing: ${JSON.stringify(state.enemy)}`);
   if ((state.markers?.friendlyGlints || 0) !== 1 || (state.markers?.friendlyWings || 0) !== 1) failures.push(`friendly marker child counts mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyDangerGlints || 0) !== 1) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.specialIntentLayers || 0) !== 5) failures.push(`special intent marker layer count mismatch: ${JSON.stringify(state.markers)}`);
+  for (const [key, marker] of Object.entries(state.specials || {})) {
+    if (!marker?.active) failures.push(`${key} intent marker inactive: ${JSON.stringify(marker)}`);
+    if (!marker?.intents?.[key === 'critical' ? 'critical' : key]) failures.push(`${key} intent flag missing: ${JSON.stringify(marker)}`);
+    if ((marker?.markerCount || 0) < 2) failures.push(`${key} marker count too low: ${JSON.stringify(marker)}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

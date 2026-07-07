@@ -1412,6 +1412,7 @@ export class Player {
       if (bullet.core) bullet.core.tint = this.visualVariant?.accent || 0x66ffff;
     }
 
+    bullet.refreshPlayerProjectileIntentMarkers?.();
     return bullet;
   }
 
