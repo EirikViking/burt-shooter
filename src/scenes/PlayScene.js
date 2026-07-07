@@ -9015,20 +9015,19 @@ export class PlayScene {
 
   playEnemyDeathFeedback(enemy, options = {}) {
     if (!enemy) return;
-    const profile = enemy.generatedProfile || enemy.dangerMidShipProfile || enemy.middleShipProfile || {};
-    const lateMayhem = Boolean(profile.lateMayhem) && Math.max(1, Number(this.game?.level || enemy.level) || 1) >= 11;
-    const x = Number(enemy.x) || 0;
-    const y = Number(enemy.y) || 0;
-    const palette = Array.isArray(profile.palette) && profile.palette.length
-      ? profile.palette
-      : [options.color, profile.accent, profile.tint, enemy.color].filter(Number.isFinite);
-    const baseColor = Number.isFinite(options.color)
-      ? options.color
-      : (Number.isFinite(palette[0]) ? palette[0] : enemy.color || 0xffaa00);
+    const deathProfile = this.resolveEnemyDeathFeedbackProfile(enemy, options);
+    const profile = deathProfile.sourceProfile || {};
+    const lateMayhem = deathProfile.lateMayhem;
+    const x = deathProfile.x;
+    const y = deathProfile.y;
+    const palette = deathProfile.palette;
+    const baseColor = deathProfile.baseColor;
     const intensity = Number.isFinite(options.intensity)
       ? options.intensity
       : (lateMayhem ? 0.86 : 1);
     this.particleManager?.createExplosion(x, y, baseColor, intensity);
+    deathProfile.intensity = intensity;
+    this.createEnemyDeathClarityBurst(deathProfile);
 
     if (lateMayhem) {
       const burstCount = Math.max(1, Math.min(3, Math.floor(profile.deathBurstCount || 1)));
@@ -9060,6 +9059,166 @@ export class PlayScene {
         minIntervalMs: lateMayhem ? 55 : 35
       });
     }
+  }
+
+  resolveEnemyDeathFeedbackProfile(enemy, options = {}) {
+    const sourceProfile = enemy?.generatedProfile || enemy?.dangerMidShipProfile || enemy?.middleShipProfile || {};
+    const level = Math.max(1, Number(this.game?.level || enemy?.level) || 1);
+    const lateMayhem = Boolean(sourceProfile.lateMayhem) && level >= 11;
+    const palette = Array.isArray(sourceProfile.palette) && sourceProfile.palette.length
+      ? sourceProfile.palette
+      : [options.color, sourceProfile.accent, sourceProfile.tint, enemy?.visualVariant?.accent, enemy?.color].filter(Number.isFinite);
+    const baseColor = Number.isFinite(options.color)
+      ? options.color
+      : (Number.isFinite(palette[0]) ? palette[0] : enemy?.color || 0xffaa00);
+    const accent = Number.isFinite(sourceProfile.accent)
+      ? sourceProfile.accent
+      : (Number.isFinite(palette[1]) ? palette[1] : (enemy?.visualVariant?.accent || 0xffffff));
+    const radius = Math.max(12, Number(enemy?.radius) || 15);
+    const maxHealth = Math.max(1, Number(enemy?.maxHealth) || Number(enemy?.health) || 1);
+    let tier = 'normal';
+    let markerCount = 4;
+    let radiusMult = 1.5;
+    let durationMs = 360;
+    let lineWidth = 1.6;
+    if (enemy?.middleShipProfile || enemy?.isEliteMiddleShip) {
+      tier = 'elite';
+      markerCount = 8;
+      radiusMult = 2.38;
+      durationMs = 560;
+      lineWidth = 2.5;
+    } else if (enemy?.kind === 'danger_mid_ship') {
+      tier = 'danger_mid';
+      markerCount = 7;
+      radiusMult = 2.18;
+      durationMs = 520;
+      lineWidth = 2.25;
+    } else if (lateMayhem) {
+      tier = 'late_mayhem';
+      markerCount = 7;
+      radiusMult = 2.05;
+      durationMs = 500;
+      lineWidth = 2.15;
+    } else if (enemy?.threatActionDefinition) {
+      tier = 'threat_action';
+      markerCount = 6;
+      radiusMult = 1.9;
+      durationMs = 460;
+      lineWidth = 2;
+    } else if (enemy?.isElite || maxHealth >= 8) {
+      tier = 'durable';
+      markerCount = 5;
+      radiusMult = 1.78;
+      durationMs = 430;
+      lineWidth = 1.9;
+    }
+    const healthLift = Math.min(16, Math.max(0, maxHealth - 1) * 1.2);
+    const visualRadius = Math.max(22, Math.min(94, radius * radiusMult + healthLift));
+    const highTier = tier !== 'normal' && tier !== 'durable';
+    return {
+      sourceProfile,
+      lateMayhem,
+      x: Number(enemy?.x) || 0,
+      y: Number(enemy?.y) || 0,
+      palette,
+      baseColor,
+      accent,
+      tier,
+      markerCount,
+      visualRadius,
+      durationMs,
+      lineWidth,
+      highTier,
+      maxHealth,
+      enemyType: enemy?.type || 'unknown'
+    };
+  }
+
+  createEnemyDeathClarityBurst(profile = {}) {
+    const layerTarget = this.gameContainer || this.container;
+    const tickerHost = this.game?.app?.ticker;
+    if (!layerTarget || !tickerHost) {
+      this.lastEnemyDeathFeedbackDebug = {
+        visible: false,
+        reason: 'missing_layer_or_ticker',
+        tier: profile.tier || 'normal',
+        enemyType: profile.enemyType || 'unknown'
+      };
+      return null;
+    }
+
+    const layer = new PIXI.Graphics();
+    layer.label = 'enemyDeathClarityBurst';
+    layer.blendMode = 'add';
+    layer.zIndex = 46;
+    layer.x = Number(profile.x) || 0;
+    layer.y = Number(profile.y) || 0;
+    layerTarget.addChild(layer);
+
+    const durationMs = Math.max(180, Number(profile.durationMs) || 360);
+    const markerCount = Math.max(4, Math.min(10, Math.round(Number(profile.markerCount) || 4)));
+    const visualRadius = Math.max(18, Number(profile.visualRadius) || 28);
+    const baseColor = Number.isFinite(profile.baseColor) ? profile.baseColor : 0xffaa00;
+    const accent = Number.isFinite(profile.accent) ? profile.accent : 0xffffff;
+    const lineWidth = Math.max(1, Number(profile.lineWidth) || 1.6);
+    let elapsedMs = 0;
+
+    const draw = (progress = 0) => {
+      const t = Math.max(0, Math.min(1, progress));
+      const fade = Math.pow(1 - t, 0.78);
+      const ringRadius = visualRadius * (0.64 + t * 0.56);
+      const innerRadius = Math.max(6, ringRadius * 0.46);
+      const tickInner = ringRadius * 0.82;
+      const tickOuter = ringRadius + 7 + (profile.highTier ? 5 : 0);
+      layer.clear();
+      layer.circle(0, 0, ringRadius);
+      layer.stroke({ color: baseColor, width: lineWidth, alpha: 0.46 * fade });
+      layer.circle(0, 0, innerRadius);
+      layer.stroke({ color: accent, width: Math.max(1, lineWidth - 0.45), alpha: 0.22 * fade });
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / markerCount + t * 0.95;
+        layer.moveTo(Math.cos(angle) * tickInner, Math.sin(angle) * tickInner);
+        layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
+      }
+      layer.stroke({ color: accent, width: Math.max(1, lineWidth - 0.2), alpha: 0.5 * fade });
+      if (profile.highTier) {
+        const cross = ringRadius * 0.34;
+        layer.moveTo(-cross, 0);
+        layer.lineTo(cross, 0);
+        layer.moveTo(0, -cross);
+        layer.lineTo(0, cross);
+        layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.2 * fade });
+      }
+      layer._debugEnemyDeathClarity = {
+        visible: true,
+        tier: profile.tier || 'normal',
+        enemyType: profile.enemyType || 'unknown',
+        markerCount,
+        radius: Number(ringRadius.toFixed(1)),
+        visualRadius: Number(visualRadius.toFixed(1)),
+        progress: Number(t.toFixed(3)),
+        highTier: Boolean(profile.highTier)
+      };
+      this.lastEnemyDeathFeedbackDebug = { ...layer._debugEnemyDeathClarity };
+    };
+
+    draw(0);
+    const ticker = (delta) => {
+      const deltaMs = Number(delta?.deltaMS) || ((Number(delta?.deltaTime) || Number(delta) || 1) * 16.67);
+      elapsedMs += deltaMs;
+      const progress = Math.min(1, elapsedMs / durationMs);
+      draw(progress);
+      if (progress >= 1 || this.game?.currentScene !== this) {
+        tickerHost.remove(ticker);
+        if (this._activeTickers) this._activeTickers = this._activeTickers.filter((fn) => fn !== ticker);
+        if (layer.parent) layer.parent.removeChild(layer);
+        layer.destroy?.();
+      }
+    };
+    tickerHost.add(ticker);
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(ticker);
+    return layer;
   }
 
   triggerComboMilestoneFlare(options = {}) {
