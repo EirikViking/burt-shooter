@@ -135,6 +135,8 @@ try {
   if (!state.debug?.lowWarning) failures.push(`low-warning state missing: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.tierPips || 0) !== 3) failures.push(`tier pip count mismatch: ${JSON.stringify(state.debug)}`);
   if (!Number.isFinite(state.debug?.glintX)) failures.push(`fill glint missing: ${JSON.stringify(state.debug)}`);
+  if (!state.debug?.highMomentum) failures.push(`high-momentum state missing: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.momentumPipCount || 0) < 4) failures.push(`momentum pips missing: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.alarmBracketCount || 0) < 2) failures.push(`low-time alarm brackets missing: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.deadlineSparkCount || 0) < 3) failures.push(`low-time deadline sparks missing: ${JSON.stringify(state.debug)}`);
   if (state.debug?.multiplier !== 3) failures.push(`multiplier mismatch: ${JSON.stringify(state.debug)}`);

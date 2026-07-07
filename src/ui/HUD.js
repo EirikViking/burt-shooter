@@ -1473,12 +1473,31 @@ export class HUD {
     const glintX = Math.round(2 + fillWidth);
     let alarmBracketCount = 0;
     let deadlineSparkCount = 0;
+    let momentumPipCount = 0;
+    const highMomentum = count >= 20 || multiplier >= 3;
     this.comboMeterTicks.roundRect(glintX - 2, height - 8, 4, 8, 2);
     this.comboMeterTicks.fill({ color: 0xffffff, alpha: low ? 0.34 + pulse * 0.3 : 0.42 });
     const tierPips = Math.max(1, Math.min(4, multiplier));
     for (let i = 0; i < tierPips; i += 1) {
       this.comboMeterTicks.circle(width - 8 - i * 7, 6, 2.1);
       this.comboMeterTicks.fill({ color: i === 0 ? color : 0xffffff, alpha: i === 0 ? 0.9 : 0.46 });
+    }
+    if (highMomentum) {
+      const pipCount = Math.max(4, Math.min(7, Math.floor(count / 8)));
+      const railLeft = Math.round(width * 0.28);
+      const railRight = Math.max(railLeft + 12, width - 34);
+      const railWidth = Math.max(1, railRight - railLeft);
+      for (let i = 0; i < pipCount; i += 1) {
+        const ratio = pipCount <= 1 ? 0 : i / (pipCount - 1);
+        const x = railLeft + railWidth * ratio;
+        const y = 4 + (i % 2) * 2;
+        this.comboMeterTicks.circle(x, y, i === pipCount - 1 ? 2.4 : 1.7);
+        this.comboMeterTicks.fill({ color: i === pipCount - 1 ? 0xffffff : color, alpha: low ? 0.22 + pulse * 0.22 : 0.34 });
+        momentumPipCount += 1;
+      }
+      this.comboMeterTicks.moveTo(railLeft, 3);
+      this.comboMeterTicks.lineTo(railRight, 3);
+      this.comboMeterTicks.stroke({ color, width: 0.85, alpha: low ? 0.16 + pulse * 0.18 : 0.22 });
     }
     if (low) {
       const hatchStart = Math.max(6, width - 25);
@@ -1527,6 +1546,8 @@ export class HUD {
       low,
       tierPips,
       glintX,
+      highMomentum,
+      momentumPipCount,
       lowWarning: low,
       alarmBracketCount,
       deadlineSparkCount,
