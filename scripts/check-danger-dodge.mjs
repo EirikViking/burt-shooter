@@ -118,14 +118,19 @@ try {
     play.nearMissCooldownAt = 0;
     play.applyNearMiss(fakeBullet);
     await new Promise((resolve) => setTimeout(resolve, 80));
+    fakeBullet.x = player.x + player.radius + 9;
+    fakeBullet.y = player.y;
     play.nearMissCooldownAt = 0;
     play.applyNearMiss(fakeBullet);
     await new Promise((resolve) => setTimeout(resolve, 80));
+    fakeBullet.x = player.x + player.radius + 9;
+    fakeBullet.y = player.y;
     play.nearMissCooldownAt = 0;
     play.applyNearMiss(fakeBullet);
     await new Promise((resolve) => setTimeout(resolve, 120));
 
     const state = JSON.parse(window.render_game_to_text());
+    const reticleDebug = player.getHitboxReticleDebugState?.() || {};
     return {
       ok: true,
       beforeScore,
@@ -135,6 +140,7 @@ try {
       bestDangerDodgeStreak: state.scoring?.bestDangerDodgeStreak || 0,
       lastDangerDodgeScore: state.scoring?.lastDangerDodgeScore || 0,
       particles: state.counts?.particles || 0,
+      reticleDebug,
       beforeToasts,
       idleToasts,
       activeToastMessages: (state.toast?.active || []).map((toast) => toast.message),
@@ -155,6 +161,8 @@ try {
       result.bestDangerDodgeStreak >= 3 &&
       result.lastDangerDodgeScore > 0 &&
       result.particles > 0 &&
+      result.reticleDebug?.nearMiss?.sourceGlintCount >= 1 &&
+      Math.abs(Number(result.reticleDebug?.nearMiss?.sourceAngle) || 0) < 0.35 &&
       result.activeToastMessages.some((message) => /NEAR MISS/i.test(message || '')) &&
       result.scorePopupMessages.some((message) => /NEAR MISS/i.test(message || '')) &&
       !result.idleToasts.some((message) => /NEAR MISS/i.test(message || '')) &&

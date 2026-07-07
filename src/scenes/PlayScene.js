@@ -10522,7 +10522,10 @@ export class PlayScene {
     const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
     const appliedScore = this.game.addScore(score);
     this.lastDangerDodgeScore = appliedScore;
-    this.player?.markNearMissStreakVisual?.(this.dangerDodgeCount, this.dangerDodgeTimerMs || 2200);
+    this.player?.markNearMissStreakVisual?.(this.dangerDodgeCount, this.dangerDodgeTimerMs || 2200, {
+      sourceX: bullet?.x,
+      sourceY: bullet?.y
+    });
     const nearMissLabel = translateText('NEAR MISS');
     const label = this.dangerDodgeCount >= 2
       ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`
@@ -10543,7 +10546,8 @@ export class PlayScene {
       }
     }
     if (this.scorePopupManager && this.player) {
-      this.scorePopupManager.addScorePopup(this.player.x, this.player.y - 34, appliedScore, {
+      const nearMissPopupLift = this.dangerDodgeCount >= 3 ? 62 : 42;
+      this.scorePopupManager.addScorePopup(this.player.x, this.player.y - nearMissPopupLift, appliedScore, {
         comboEligible: false,
         color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00,
         prefix: this.dangerDodgeCount >= 2 ? `${nearMissLabel} x${this.dangerDodgeCount}` : nearMissLabel,

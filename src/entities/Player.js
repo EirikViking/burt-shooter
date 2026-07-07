@@ -138,6 +138,8 @@ export class Player {
     this.nearMissVisualStartedAt = 0;
     this.nearMissVisualDurationMs = 0;
     this.nearMissVisualStreak = 0;
+    this.nearMissSourceAngle = null;
+    this.nearMissSourceUntil = 0;
     this.damageOverlay = null;
     this.boostAura = null;
     this.baseBoostAuraColor = 0x66ffff;
@@ -622,7 +624,7 @@ export class Player {
     this.hitboxPulseReason = reason;
   }
 
-  markNearMissStreakVisual(streak = 1, durationMs = 2200) {
+  markNearMissStreakVisual(streak = 1, durationMs = 2200, source = null) {
     const count = Math.max(1, Math.round(Number(streak) || 1));
     const duration = Math.max(500, Math.min(2600, Number(durationMs) || 2200));
     const now = Date.now();
@@ -630,6 +632,12 @@ export class Player {
     this.nearMissVisualStartedAt = now;
     this.nearMissVisualDurationMs = duration;
     this.nearMissVisualUntil = now + duration;
+    const sourceX = Number(source?.sourceX ?? source?.x);
+    const sourceY = Number(source?.sourceY ?? source?.y);
+    if (Number.isFinite(sourceX) && Number.isFinite(sourceY)) {
+      this.nearMissSourceAngle = Math.atan2(sourceY - this.y, sourceX - this.x);
+      this.nearMissSourceUntil = now + Math.min(900, duration);
+    }
     this.pulseHitboxReticle(count >= 3 ? 'near_miss_streak' : 'near_miss', Math.min(1250, duration));
   }
 
@@ -681,6 +689,8 @@ export class Player {
     let windowProgress = 0;
     let surgeReady = false;
     let surgeSpikeCount = 0;
+    let sourceGlintCount = 0;
+    let sourceAngle = null;
     if (nearMissActive) {
       const pipTotal = 5;
       filledPips = Math.min(pipTotal, ((nearMissStreak - 1) % pipTotal) + 1);
@@ -728,6 +738,37 @@ export class Player {
           surgeSpikeCount += 1;
         }
         this.hitboxReticle.stroke({ color: 0xffffff, width: 1.45, alpha: 0.2 + pulse * 0.28 });
+      }
+
+      const sourceStillFresh = now < (this.nearMissSourceUntil || 0) && Number.isFinite(this.nearMissSourceAngle);
+      if (sourceStillFresh) {
+        sourceAngle = this.nearMissSourceAngle;
+        const nx = Math.cos(sourceAngle);
+        const ny = Math.sin(sourceAngle);
+        const tx = -ny;
+        const ty = nx;
+        const glintProgress = Math.max(0, Math.min(1, ((this.nearMissSourceUntil || 0) - now) / Math.max(1, Math.min(900, this.nearMissVisualDurationMs || 900))));
+        const glintRadius = ringRadius + 25 + pulse * 4;
+        const wing = 5.5 + pulse * 2;
+        const baseX = nx * glintRadius;
+        const baseY = ny * glintRadius;
+        const tipX = nx * (glintRadius + 16);
+        const tipY = ny * (glintRadius + 16);
+        this.hitboxReticle.circle(baseX, baseY, 5.5 + pulse * 2.8);
+        this.hitboxReticle.stroke({ color: nearMissColor, width: 1.2, alpha: 0.22 + glintProgress * 0.34 });
+        this.hitboxReticle.moveTo(baseX - tx * wing, baseY - ty * wing);
+        this.hitboxReticle.lineTo(tipX, tipY);
+        this.hitboxReticle.lineTo(baseX + tx * wing, baseY + ty * wing);
+        this.hitboxReticle.stroke({ color: 0xffffff, width: 1.8, alpha: 0.32 + glintProgress * 0.34 });
+        for (let i = 0; i < 2; i += 1) {
+          this.hitboxReticle.circle(
+            nx * (glintRadius - 10 - i * 6),
+            ny * (glintRadius - 10 - i * 6),
+            2.1 + pulse * 0.9
+          );
+        }
+        this.hitboxReticle.fill({ color: nearMissColor, alpha: 0.28 + glintProgress * 0.22 });
+        sourceGlintCount = 1;
       }
     }
     let invulnerabilityProgress = 0;
@@ -812,7 +853,9 @@ export class Player {
       filledPips,
       windowProgress: Number(windowProgress.toFixed(3)),
       surgeReady,
-      surgeSpikeCount
+      surgeSpikeCount,
+      sourceGlintCount,
+      sourceAngle: Number.isFinite(sourceAngle) ? Number(sourceAngle.toFixed(3)) : null
     };
     this.hitboxReticle.__debugInvulnerabilityWindow = {
       active: invulnerabilityActive,
