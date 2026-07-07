@@ -149,6 +149,8 @@ try {
   if (active.debug?.lives !== 1) failures.push(`critical overlay lives debug mismatch: ${active.debug?.lives}`);
   if ((active.debug?.edge || 0) < 10) failures.push(`critical edge too small: ${active.debug?.edge}`);
   if ((active.debug?.hotAlpha || 0) <= 0.1) failures.push(`critical overlay alpha too low: ${active.debug?.hotAlpha}`);
+  if ((active.debug?.edgePipCount || 0) < 10) failures.push(`critical overlay edge pips missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.beaconTickCount || 0) < 4 || (active.debug?.beaconRadius || 0) < 30) failures.push(`critical player beacon missing: ${JSON.stringify(active.debug)}`);
   if (hideStates.recovered?.visible) failures.push(`overlay should hide after life recovery: ${JSON.stringify(hideStates.recovered)}`);
   if (hideStates.paused?.visible) failures.push(`overlay should hide while paused: ${JSON.stringify(hideStates.paused)}`);
   if (hideStates.dead?.visible) failures.push(`overlay should hide when dead: ${JSON.stringify(hideStates.dead)}`);

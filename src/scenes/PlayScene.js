@@ -5436,6 +5436,39 @@ export class PlayScene {
     overlay.stroke({ color: 0xffd15c, width: strokeWidth, alpha: lineAlpha });
     overlay.rect(inset * 0.62, inset * 0.62, width - inset * 1.24, height - inset * 1.24);
     overlay.stroke({ color: 0x37f5ff, width: Math.max(1, strokeWidth * 0.55), alpha: 0.08 + pulse * 0.08 });
+
+    const edgePipCount = 10;
+    for (let i = 0; i < edgePipCount; i += 1) {
+      const t = (i + 0.5) / edgePipCount;
+      const pipWidth = Math.max(10, edge * 0.55);
+      const x = width * t;
+      overlay.moveTo(x - pipWidth, inset + edge * 0.22);
+      overlay.lineTo(x + pipWidth, inset + edge * 0.22);
+      overlay.moveTo(x - pipWidth, height - inset - edge * 0.22);
+      overlay.lineTo(x + pipWidth, height - inset - edge * 0.22);
+    }
+    overlay.stroke({ color: 0xfff08a, width: Math.max(1, strokeWidth * 0.8), alpha: 0.14 + pulse * 0.2 });
+
+    const px = Math.max(edge, Math.min(width - edge, Number(this.player?.x) || width / 2));
+    const py = Math.max(edge, Math.min(height - edge, Number(this.player?.y) || height / 2));
+    const beaconRadius = Math.max(34, Math.min(width, height) * 0.052 + pulse * 5);
+    overlay.circle(px, py, beaconRadius);
+    overlay.stroke({ color: 0xffd15c, width: 2, alpha: 0.24 + pulse * 0.2 });
+    const beaconTickCount = 4;
+    for (let i = 0; i < beaconTickCount; i += 1) {
+      const angle = pulse * 0.4 + i * Math.PI * 0.5;
+      const tx = Math.cos(angle);
+      const ty = Math.sin(angle);
+      const sx = -Math.sin(angle);
+      const sy = Math.cos(angle);
+      const center = beaconRadius + 7;
+      const cx = px + tx * center;
+      const cy = py + ty * center;
+      overlay.moveTo(cx - sx * 8 - tx * 3, cy - sy * 8 - ty * 3);
+      overlay.lineTo(cx + tx * 6, cy + ty * 6);
+      overlay.lineTo(cx + sx * 8 - tx * 3, cy + sy * 8 - ty * 3);
+    }
+    overlay.stroke({ color: 0xff4040, width: 2.2, alpha: 0.3 + pulse * 0.3 });
     overlay.visible = true;
     overlay._debugCriticalHull = {
       visible: true,
@@ -5443,6 +5476,9 @@ export class PlayScene {
       edge: Math.round(edge),
       hotAlpha: Number(hotAlpha.toFixed(3)),
       lineAlpha: Number(lineAlpha.toFixed(3)),
+      edgePipCount,
+      beaconTickCount,
+      beaconRadius: Number(beaconRadius.toFixed(1)),
       width: Math.round(width),
       height: Math.round(height)
     };
