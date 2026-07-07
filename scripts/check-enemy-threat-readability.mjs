@@ -138,7 +138,7 @@ try {
       { key: 'elite', type: 'nova_elite_tractor_puller', level: 5, x: width * 0.24 },
       { key: 'threat', type: 'nova_enemy_003', level: 5, x: width * 0.38, threatAction: 'pulse_ring_bloom' },
       { key: 'late', type: 'nova_enemy_181', level: 40, x: width * 0.52 },
-      { key: 'durable', type: 'nova_enemy_012', level: 12, x: width * 0.66, health: 10 },
+      { key: 'durable', type: 'nova_enemy_029', level: 12, x: width * 0.66, health: 10 },
       { key: 'ordinary', type: 'nova_enemy_001', level: 1, x: width * 0.8, health: 1 }
     ];
 

@@ -33,6 +33,9 @@ function getEnemyThreatFrameProfile(enemy) {
   if (enemy.generatedProfile?.lateMayhem) {
     return { tier: 'late_mayhem', color: enemy.generatedProfile.accent || accent, accent: enemy.generatedProfile.tint || 0xffffff, markerCount: 5, radiusMult: 1.9 };
   }
+  if (enemy.generatedProfile?.role === 'fast_scout' || enemy.generatedProfile?.movementStyle === 'fastNeedle') {
+    return { tier: 'fast', color: 0x66f7ff, accent: enemy.generatedProfile.accent || accent || 0xffef7e, markerCount: 4, radiusMult: 2.6 };
+  }
   if (enemy.threatActionDefinition) {
     return { tier: 'threat_action', color: 0xffd36b, accent: accent || 0xff6174, markerCount: 4, radiusMult: 1.82 };
   }
@@ -1209,6 +1212,7 @@ export class Enemy {
     const radius = Math.max(22, this.radius * profile.radiusMult);
     const outer = radius + (profile.tier === 'elite' ? 8 : 5);
     const markerCount = Math.max(3, profile.markerCount || 3);
+    let motionTrailCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
 
     layer.circle(0, 0, radius);
@@ -1242,6 +1246,29 @@ export class Enemy {
         drawThreatFrameTick(layer, angle, radius * 0.78, outer + 4);
       }
       layer.stroke({ color: profile.accent, width: 1.3, alpha: 0.26 + pulse * 0.18 });
+    } else if (profile.tier === 'fast') {
+      const trailLean = Math.sin(now * 0.006 + this.idlePhase) * 0.24;
+      for (let i = 0; i < 3; i += 1) {
+        const spread = (i - 1) * radius * 0.34;
+        const y0 = radius * 0.38 + i * 1.5;
+        const y1 = outer + 12 + i * 5;
+        layer.moveTo(spread - 4, y0);
+        layer.lineTo(spread - trailLean * y1, y1);
+        layer.lineTo(spread + 4, y0);
+        layer.closePath();
+        layer.fill({ color: profile.color, alpha: 0.08 + pulse * 0.08 });
+        layer.moveTo(spread, y0);
+        layer.lineTo(spread - trailLean * y1, y1);
+        motionTrailCount += 1;
+      }
+      layer.stroke({ color: profile.color, width: 2.1, alpha: 0.38 + pulse * 0.28 });
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount) + pulse * 0.16;
+        drawThreatFrameTick(layer, angle, radius * 0.82, outer + 5);
+        layer.circle(Math.cos(angle) * (outer + 8), Math.sin(angle) * (outer + 8), 2.4);
+      }
+      layer.fill({ color: profile.accent, alpha: 0.28 + pulse * 0.2 });
+      layer.stroke({ color: profile.accent, width: 1.8, alpha: 0.32 + pulse * 0.24 });
     }
 
     layer.visible = true;
@@ -1249,7 +1276,8 @@ export class Enemy {
       visible: true,
       tier: profile.tier,
       markerCount,
-      radius: Number(outer.toFixed(1))
+      radius: Number(outer.toFixed(1)),
+      motionTrailCount
     };
   }
 

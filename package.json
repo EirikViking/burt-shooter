@@ -244,6 +244,7 @@
     "check:mayhem-collision-hotpath-stress": "node scripts/check-mayhem-collision-hotpath-stress.mjs",
     "check:small-enemy-roster-feel": "node scripts/check-small-enemy-roster-feel.mjs",
     "check:fast-target-readability": "node scripts/check-fast-target-readability.mjs",
+    "check:fast-target-runtime-readability": "node scripts/check-fast-target-runtime-readability.mjs",
     "check:boss-invulnerability-audit": "node scripts/check-boss-invulnerability-audit.mjs",
     "check:combo-flow-mechanics": "node scripts/check-combo-flow-mechanics.mjs",
     "check:keyboard-launches": "node scripts/check-keyboard-launch-paths.mjs",
