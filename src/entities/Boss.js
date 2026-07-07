@@ -274,6 +274,9 @@ export class Boss {
     const healthPercent = Math.max(0, Math.min(1, this.health / this.maxHealth));
     const bossPhaseThresholds = [0.75, 0.5, 0.4];
     const lowHealth = healthPercent <= 0.25;
+    const bossPhaseCount = 3;
+    const currentPhase = Math.max(1, Math.min(bossPhaseCount, Math.round(this.phase || 1)));
+    const phasePipColors = [0x2cff8f, 0xffd166, 0xff4b6b];
     const barX = -barWidth / 2;
     const barY = visualRadius + 10;
     const barColor = healthPercent <= 0.4
@@ -309,7 +312,36 @@ export class Boss {
         alpha: cleared ? 0.78 : 0.58
       });
     }
+    const phasePipY = barY + barHeight + 9;
+    const phasePipSpacing = Math.min(18, Math.max(12, barWidth / 8));
+    const phasePipStartX = -((bossPhaseCount - 1) * phasePipSpacing) / 2;
+    for (let index = 0; index < bossPhaseCount; index += 1) {
+      const phaseNumber = index + 1;
+      const pipX = phasePipStartX + index * phasePipSpacing;
+      const active = phaseNumber <= currentPhase;
+      const current = phaseNumber === currentPhase;
+      const pipColor = phasePipColors[index] || 0xffd166;
+      this.healthBar.poly([
+        pipX, phasePipY - 4,
+        pipX + 5, phasePipY,
+        pipX, phasePipY + 4,
+        pipX - 5, phasePipY
+      ]);
+      this.healthBar.fill({ color: active ? pipColor : 0x152838, alpha: active ? (current ? 0.92 : 0.68) : 0.46 });
+      this.healthBar.stroke({ color: current ? 0xffffff : pipColor, width: current ? 1.2 : 0.8, alpha: current ? 0.86 : 0.46 });
+      if (current) {
+        this.healthBar.circle(pipX, phasePipY, 7);
+        this.healthBar.stroke({ color: pipColor, width: 0.9, alpha: 0.46 });
+      }
+    }
     if (lowHealth) {
+      const hatchCount = 7;
+      for (let index = 0; index < hatchCount; index += 1) {
+        const hatchX = barX + 3 + index * (barWidth / (hatchCount - 0.2));
+        this.healthBar.moveTo(hatchX, barY - 5);
+        this.healthBar.lineTo(hatchX + 10, barY + barHeight + 5);
+        this.healthBar.stroke({ color: 0xffef7e, width: 0.8, alpha: 0.26 });
+      }
       this.healthBar.roundRect(barX - 6, barY - 6, barWidth + 12, barHeight + 12, 6);
       this.healthBar.stroke({ color: 0xffef7e, width: 1.1, alpha: 0.34 });
     }
@@ -338,6 +370,10 @@ export class Boss {
       lowHealth,
       fillColor: barColor,
       hasLeadEdge: fillWidth > 0,
+      currentPhase,
+      phasePipCount: bossPhaseCount,
+      currentPhasePip: currentPhase,
+      dangerHatchCount: lowHealth ? 7 : 0,
       text: healthText
     };
   }

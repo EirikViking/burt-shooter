@@ -131,6 +131,7 @@
     "check:boss-animation": "node scripts/check-boss-animation.mjs",
     "check:boss-vfx-clarity": "node scripts/check-boss-vfx-clarity.mjs",
     "check:boss-healthbar-readability": "node scripts/check-boss-healthbar-readability.mjs",
+    "check:boss-phase-healthbar-cues": "node scripts/check-boss-phase-healthbar-cues.mjs",
     "check:tractor-miniboss-vfx": "node scripts/check-tractor-miniboss-vfx.mjs",
     "check:boss-warning-popup": "node scripts/check-boss-warning-popup.mjs",
     "check:boss-movement-variety": "node scripts/check-boss-movement-variety.mjs",

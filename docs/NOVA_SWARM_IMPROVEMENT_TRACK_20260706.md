@@ -677,3 +677,30 @@ Safety notes:
 
 - No projectile damage, collision radius, movement speed, lifetime, firing cadence, enemy projectile visuals, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only friendly projectile readability polish in `Bullet`.
+
+## Batch 32 - Boss Phase Instrumentation
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+121. Boss-local health bars now include three compact phase pips so escalation state reads without parsing health math.
+122. The current boss phase pip gets a brighter bracket/glow treatment for quick late-fight recognition.
+123. Cleared and inactive boss phase pips use different intensity levels, making phase history and remaining escalation structure easier to scan.
+124. Low-health boss bars now add amber hatch marks inside the existing danger frame.
+125. `check:boss-phase-healthbar-cues` proves phase pips, current-phase emphasis, low-health hatches, and debug state with a browser screenshot.
+
+Verification:
+
+- `npm run check:boss-phase-healthbar-cues`
+- Screenshot proof: `test-results/boss-phase-healthbar-cues-2026-07-07T00-17-04-833Z/boss-phase-healthbar-cues.png`
+- `npm run check:boss-healthbar-readability`
+- `npm run check:boss-vfx-clarity`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No boss health, phase thresholds, attack timing, damage, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only boss health instrument polish using existing boss phase/health state.
