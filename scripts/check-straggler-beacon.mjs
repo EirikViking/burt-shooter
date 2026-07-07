@@ -141,7 +141,7 @@ try {
     if (candidates.length < 4) return { ok: false, reason: `only ${candidates.length} candidates` };
 
     const positions = [
-      [game.getWidth() * 0.30, game.getHeight() * 0.42],
+      [-64, game.getHeight() * 0.42],
       [game.getWidth() * 0.50, game.getHeight() * 0.34],
       [game.getWidth() * 0.70, game.getHeight() * 0.42],
       [game.getWidth() * 0.84, game.getHeight() * 0.50]
@@ -247,7 +247,7 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
-    if (state.fourVisible || state.hiddenWithFour?.visible || state.hiddenWithFour?.reason !== 'too_many_targets') {
+  if (state.fourVisible || state.hiddenWithFour?.visible || state.hiddenWithFour?.reason !== 'too_many_targets') {
     failures.push(`beacon should stay hidden with four targets: ${JSON.stringify(state.hiddenWithFour)}`);
   }
   if (!state.hiddenDuringStinger || state.hiddenDuringStinger.visible || state.hiddenDuringStinger.reason !== 'sector_stinger') {
@@ -255,10 +255,12 @@ try {
   }
   if (!state.active?.visible || state.active?.targetCount !== 3) failures.push(`beacon should activate for three targets: ${JSON.stringify(state.active)}`);
   if ((state.active?.pipCount || 0) < 12 || (state.active?.ringCount || 0) < 6) failures.push(`beacon pips/rings missing: ${JSON.stringify(state.active)}`);
+  if ((state.active?.edgeArrowCount || 0) < 1) failures.push(`beacon edge arrow missing for offscreen target: ${JSON.stringify(state.active)}`);
   if (!state.hiddenInBoss || state.hiddenInBoss.visible || state.hiddenInBoss.reason !== 'boss_or_clear_state') {
     failures.push(`beacon should hide in boss state: ${JSON.stringify(state.hiddenInBoss)}`);
   }
   if (!active.visible || !active.debug?.visible || active.debug?.targetCount !== 3) failures.push(`active layer debug mismatch: ${JSON.stringify(active)}`);
+  if ((active.debug?.edgeArrowCount || 0) < 1) failures.push(`active layer edge arrow missing: ${JSON.stringify(active.debug)}`);
   if ((active.bounds.width || 0) < 250 || (active.bounds.height || 0) < 80) failures.push(`beacon bounds too small: ${JSON.stringify(active.bounds)}`);
   for (const enemy of state.activeEnemies || []) {
     if (!enemy.usingGeneratedEnemyTexture) failures.push(`straggler sample did not use real generated enemy texture: ${JSON.stringify(enemy)}`);

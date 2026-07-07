@@ -4642,7 +4642,8 @@ export class PlayScene {
         reason,
         targetCount: 0,
         pipCount: 0,
-        ringCount: 0
+        ringCount: 0,
+        edgeArrowCount: 0
       };
     }
     this.lastStragglerBeaconDebug = {
@@ -4650,7 +4651,8 @@ export class PlayScene {
       reason,
       targetCount: 0,
       pipCount: 0,
-      ringCount: 0
+      ringCount: 0,
+      edgeArrowCount: 0
     };
     return this.lastStragglerBeaconDebug;
   }
@@ -4690,8 +4692,16 @@ export class PlayScene {
     const pulse = 0.5 + Math.sin(now * 0.012) * 0.5;
     const spin = now * 0.0022;
     const baseAlpha = 0.38 + pulse * 0.28;
+    const width = this.game?.getWidth?.() || this.game?.app?.screen?.width || 1280;
+    const height = this.game?.getHeight?.() || this.game?.app?.screen?.height || 720;
+    const edgeInset = Math.max(30, Math.min(54, Math.min(width, height) * 0.045));
+    const safeLeft = edgeInset;
+    const safeRight = width - edgeInset;
+    const safeTop = Math.max(edgeInset, Math.min(92, height * 0.14));
+    const safeBottom = height - edgeInset;
     let pipCount = 0;
     let ringCount = 0;
+    let edgeArrowCount = 0;
 
     layer.clear();
     layer.visible = true;
@@ -4734,6 +4744,45 @@ export class PlayScene {
         layer.arc(x, y, bracketRadius, angle - sweep, angle + sweep);
       }
       layer.stroke({ color: 0xffffff, width: isElite ? 1.8 : 1.4, alpha: 0.34 + pulse * 0.2 });
+
+      const arrowX = Math.max(safeLeft, Math.min(safeRight, x));
+      const arrowY = Math.max(safeTop, Math.min(safeBottom, y));
+      const needsEdgeArrow = Math.abs(arrowX - x) > 0.5 || Math.abs(arrowY - y) > 0.5;
+      if (needsEdgeArrow) {
+        let dx = x - arrowX;
+        let dy = y - arrowY;
+        let dist = Math.hypot(dx, dy);
+        if (!Number.isFinite(dist) || dist < 0.01) {
+          dx = x < width / 2 ? -1 : 1;
+          dy = 0;
+          dist = 1;
+        }
+        const nx = dx / dist;
+        const ny = dy / dist;
+        const tx = -ny;
+        const ty = nx;
+        const arrowSize = isElite ? 15 : 12;
+        const arrowBack = arrowSize * 1.2;
+        const arrowWing = arrowSize * 0.68;
+        const anchorX = arrowX + nx * (2 + pulse * 2);
+        const anchorY = arrowY + ny * (2 + pulse * 2);
+
+        layer.poly([
+          anchorX + nx * arrowSize, anchorY + ny * arrowSize,
+          anchorX - nx * arrowBack + tx * arrowWing, anchorY - ny * arrowBack + ty * arrowWing,
+          anchorX - nx * arrowBack - tx * arrowWing, anchorY - ny * arrowBack - ty * arrowWing
+        ]);
+        layer.fill({ color, alpha: 0.76 });
+        layer.poly([
+          anchorX + nx * (arrowSize + 5), anchorY + ny * (arrowSize + 5),
+          anchorX - nx * (arrowBack + 5) + tx * (arrowWing + 4), anchorY - ny * (arrowBack + 5) + ty * (arrowWing + 4),
+          anchorX - nx * (arrowBack + 5) - tx * (arrowWing + 4), anchorY - ny * (arrowBack + 5) - ty * (arrowWing + 4)
+        ]);
+        layer.stroke({ color: 0xffffff, width: 1.25, alpha: 0.44 + pulse * 0.16 });
+        layer.circle(anchorX - nx * (arrowBack + 11), anchorY - ny * (arrowBack + 11), 3.2 + pulse * 1.2);
+        layer.fill({ color: 0xffffff, alpha: 0.52 });
+        edgeArrowCount += 1;
+      }
     });
 
     const debug = {
@@ -4744,6 +4793,7 @@ export class PlayScene {
       targetKinds: targets.map(enemy => enemy.kind || 'enemy'),
       pipCount,
       ringCount,
+      edgeArrowCount,
       maxTargets: STRAGGLER_BEACON_MAX_TARGETS
     };
     layer._debugStragglerBeacon = debug;
