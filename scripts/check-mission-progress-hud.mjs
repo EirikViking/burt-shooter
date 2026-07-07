@@ -132,8 +132,20 @@ try {
     const activeWave = { ...(hud.missionProgressBg?._debugMissionProgress || {}) };
     const activeText = hud.missionText?.text || '';
 
+    manager.normalWavesTotal = 0;
+    manager.currentWaveIndex = 0;
+    manager.enemies = Array.from({ length: 3 }, () => ({
+      active: true,
+      kind: 'basic',
+      update() {},
+      destroy() {}
+    }));
+    hud.updateMissionStatus();
+    const levelText = hud.missionText?.text || '';
+
     manager.phase = 'BOSS';
     manager.state = 'BOSS_ACTIVE';
+    manager.normalWavesTotal = 6;
     manager.currentWaveIndex = 6;
     manager.boss = { health: 420 };
     hud.updateMissionStatus();
@@ -162,6 +174,7 @@ try {
       ok: true,
       activeWave,
       activeText,
+      levelText,
       boss,
       bossText,
       clear,
@@ -183,7 +196,8 @@ try {
   if (state.activeWave?.activeEnd !== 0.5) failures.push(`unexpected active end ${state.activeWave?.activeEnd}`);
   if ((state.activeWave?.tickCount || 0) < 5) failures.push(`expected visible wave ticks, got ${state.activeWave?.tickCount}`);
   if ((state.activeWave?.pressure || 0) <= 0.5) failures.push(`expected pressure cue above 0.5, got ${state.activeWave?.pressure}`);
-  if (!/^WAVE 3\/6/.test(state.activeText || '')) failures.push(`mission text did not stay in wave state: ${state.activeText}`);
+  if (!/^WAVE: 3\/6 \| HOSTILES: 7 \| THREATS: 0$/.test(state.activeText || '')) failures.push(`mission text did not stay readable in wave state: ${state.activeText}`);
+  if (!/^LEVEL: 4 \| HOSTILES: 3 \| THREATS: 0$/.test(state.levelText || '')) failures.push(`level fallback mission text was not separated: ${state.levelText}`);
   if (state.boss?.completedRatio !== 1 || state.boss?.phase !== 'BOSS') failures.push(`boss state did not fill the rail: ${JSON.stringify(state.boss)}`);
   if (!/^BOSS HP 420/.test(state.bossText || '')) failures.push(`boss text did not render expected HP: ${state.bossText}`);
   if (state.clear?.completedRatio !== 1 || state.clear?.state !== 'LEVEL_COMPLETE') failures.push(`clear state did not fill the rail: ${JSON.stringify(state.clear)}`);

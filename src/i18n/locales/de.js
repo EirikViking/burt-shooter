@@ -1339,6 +1339,11 @@ const patterns = Object.freeze([
     replace: (match) => keepValue(match, 'PUNKTZAHL')
   },
   {
+    id: 'missionLevel',
+    regex: /^LEVEL:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)HOSTILES:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)THREATS:? ?(.+)$/,
+    replace: (match) => `LEVEL: ${match[1]} | GEGNER: ${match[2]} | GEFAHREN: ${match[3]}`
+  },
+  {
     id: 'level',
     regex: /^LEVEL:? ?(.+)$/,
     replace: (match) => keepValue(match, 'LEVEL')
@@ -1360,8 +1365,8 @@ const patterns = Object.freeze([
   },
   {
     id: 'missionWave',
-    regex: /^WAVE (.+?)  HOSTILES (.+?)  THREATS (.+)$/,
-    replace: (match) => `WELLE ${match[1]}  GEGNER ${match[2]}  GEFAHREN ${match[3]}`
+    regex: /^WAVE:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)HOSTILES:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)THREATS:? ?(.+)$/,
+    replace: (match) => `WELLE: ${match[1]} | GEGNER: ${match[2]} | GEFAHREN: ${match[3]}`
   },
   {
     id: 'wavePrefix',

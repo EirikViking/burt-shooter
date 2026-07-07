@@ -372,7 +372,7 @@ assert.equal(resolveLanguage({
 assert.equal(t('settings.language.system', {}, { locale: 'de' }), 'Systemeinstellung');
 assert.equal(translateTextForLocale('de', 'SETTINGS'), 'EINSTELLUNGEN');
 assert.equal(translateTextForLocale('de', 'SCORE 1,234'), 'PUNKTZAHL 1,234');
-assert.equal(translateTextForLocale('de', 'WAVE 2/5  HOSTILES 8  THREATS 3'), 'WELLE 2/5  GEGNER 8  GEFAHREN 3');
+assert.equal(translateTextForLocale('de', 'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3'), 'WELLE: 2/5 | GEGNER: 8 | GEFAHREN: 3');
 assert.equal(translateTextForLocale('de', 'Reach Level 7'), 'Level 7 erreichen');
 assert.equal(translateTextForLocale('de', 'Rank Up: ACE'), 'Rangaufstieg: ASS');
 assert.equal(translateTextForLocale('de', 'LOCAL BOARD: QUALIFIED\nGLOBAL BOARD: OFFLINE - LOCAL STILL WORKS'), 'LOKALE LISTE: QUALIFIZIERT\nGLOBALE LISTE: OFFLINE - LOKAL FUNKTIONIERT');
@@ -390,7 +390,7 @@ const criticalSamples = {
     'SETTINGS': 'AJUSTES',
     'LAUNCH RUN': 'INICIAR PARTIDA',
     'SCORE 1,234': 'PUNTUACIÓN 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'OLEADA 2/5  ENEMIGOS 8  AMENAZAS 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'OLEADA: 2/5 | ENEMIGOS: 8 | AMENAZAS: 3',
     'GAME OVER': 'FIN DE LA PARTIDA',
     'SUBMIT SCORE': 'ENVIAR PUNTUACIÓN',
     'SCORE SUBMITTED': 'PUNTUACIÓN ENVIADA',
@@ -403,7 +403,7 @@ const criticalSamples = {
     'SETTINGS': 'НАСТРОЙКИ',
     'LAUNCH RUN': 'НАЧАТЬ ЗАБЕГ',
     'SCORE 1,234': 'ОЧКИ 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ВОЛНА 2/5  ВРАГИ 8  УГРОЗЫ 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ВОЛНА: 2/5 | ВРАГИ: 8 | УГРОЗЫ: 3',
     'GAME OVER': 'ИГРА ОКОНЧЕНА',
     'SUBMIT SCORE': 'ОТПРАВИТЬ ОЧКИ',
     'SCORE SUBMITTED': 'ОЧКИ ОТПРАВЛЕНЫ',
@@ -416,7 +416,7 @@ const criticalSamples = {
     'SETTINGS': '设置',
     'LAUNCH RUN': '开始游戏',
     'SCORE 1,234': '分数 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': '波次 2/5  敌人 8  威胁 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': '波次: 2/5 | 敌人: 8 | 威胁: 3',
     'GAME OVER': '游戏结束',
     'SUBMIT SCORE': '提交分数',
     'SCORE SUBMITTED': '分数已提交',
@@ -429,7 +429,7 @@ const criticalSamples = {
     'SETTINGS': 'CONFIGURAÇÕES',
     'LAUNCH RUN': 'INICIAR PARTIDA',
     'SCORE 1,234': 'PONTUAÇÃO 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ONDA 2/5  INIMIGOS 8  AMEAÇAS 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ONDA: 2/5 | INIMIGOS: 8 | AMEAÇAS: 3',
     'GAME OVER': 'FIM DE JOGO',
     'SUBMIT SCORE': 'ENVIAR PONTUAÇÃO',
     'SCORE SUBMITTED': 'PONTUAÇÃO ENVIADA',
@@ -442,7 +442,7 @@ const criticalSamples = {
     'SETTINGS': '설정',
     'LAUNCH RUN': '게임 시작',
     'SCORE 1,234': '점수 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': '웨이브 2/5  적 8  위협 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': '웨이브: 2/5 | 적: 8 | 위협: 3',
     'GAME OVER': '게임 오버',
     'SUBMIT SCORE': '점수 제출',
     'SCORE SUBMITTED': '점수 제출됨',
@@ -455,7 +455,7 @@ const criticalSamples = {
     'SETTINGS': '設定',
     'LAUNCH RUN': 'ゲーム開始',
     'SCORE 1,234': 'スコア 1,234',
-    'WAVE 2/5  HOSTILES 8  THREATS 3': 'ウェーブ 2/5  敵 8  脅威 3',
+    'WAVE: 2/5 | HOSTILES: 8 | THREATS: 3': 'ウェーブ: 2/5 | 敵: 8 | 脅威: 3',
     'GAME OVER': 'ゲームオーバー',
     'SUBMIT SCORE': 'スコア送信',
     'SCORE SUBMITTED': 'スコア送信済み',

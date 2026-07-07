@@ -10,6 +10,11 @@ export function buildArcadePatterns(labels) {
       replace: (match) => keepValue(match, labels.score)
     },
     {
+      id: 'missionLevel',
+      regex: /^LEVEL:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)HOSTILES:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)THREATS:? ?(.+)$/,
+      replace: (match) => `${labels.level}: ${match[1]} | ${labels.hostiles}: ${match[2]} | ${labels.threats}: ${match[3]}`
+    },
+    {
       id: 'level',
       regex: /^LEVEL:? ?(.+)$/,
       replace: (match) => keepValue(match, labels.level)
@@ -31,8 +36,8 @@ export function buildArcadePatterns(labels) {
     },
     {
       id: 'missionWave',
-      regex: /^WAVE (.+?)  HOSTILES (.+?)  THREATS (.+)$/,
-      replace: (match) => `${labels.wave} ${match[1]}  ${labels.hostiles} ${match[2]}  ${labels.threats} ${match[3]}`
+      regex: /^WAVE:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)HOSTILES:? ?(.+?)(?:\s{2}|\s*\/\/\s*|\s*\|\s*)THREATS:? ?(.+)$/,
+      replace: (match) => `${labels.wave}: ${match[1]} | ${labels.hostiles}: ${match[2]} | ${labels.threats}: ${match[3]}`
     },
     {
       id: 'wavePrefix',
