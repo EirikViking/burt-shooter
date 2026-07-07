@@ -129,13 +129,15 @@ try {
         type: drone.type,
         active: drone.active,
         debug: { ...(drone.sprite?._debugBonusClarity || {}) },
+        edgeDebug: { ...(drone.edgeMarker?.__debugBonusEdgeMarker || {}) },
         children: (drone.sprite?.children || []).map((child) => child.label || child.constructor?.name || 'node')
       };
     };
 
     const hazard = place('HAZARD', game.getWidth() * 0.38, game.getHeight() * 0.42, 2.4, 1.7);
     const powerup = place('POWERUP', game.getWidth() * 0.62, game.getHeight() * 0.42, -1.2, 0.8);
-    return { ok: true, hazard, powerup, count: play.ambientBonusDrones.length };
+    const offscreen = place('POWERUP', game.getWidth() * 0.78, -42, -1.1, 0.8);
+    return { ok: true, hazard, powerup, offscreen, count: play.ambientBonusDrones.length };
   });
 
   await page.waitForTimeout(240);
@@ -144,11 +146,15 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
-  if (state.count !== 2) failures.push(`expected two drones, saw ${state.count}`);
+  if (state.count !== 3) failures.push(`expected three drones, saw ${state.count}`);
   if (state.hazard?.debug?.intent !== 'shoot') failures.push(`hazard intent mismatch: ${JSON.stringify(state.hazard)}`);
   if (state.powerup?.debug?.intent !== 'collect') failures.push(`powerup intent mismatch: ${JSON.stringify(state.powerup)}`);
   if (!state.hazard?.debug?.halo || !state.hazard?.debug?.glyph || !state.hazard?.debug?.trail) failures.push(`hazard clarity missing: ${JSON.stringify(state.hazard)}`);
   if (!state.powerup?.debug?.halo || !state.powerup?.debug?.glyph || !state.powerup?.debug?.trail) failures.push(`powerup clarity missing: ${JSON.stringify(state.powerup)}`);
+  if (state.hazard?.debug?.edgeMarker || state.powerup?.debug?.edgeMarker) failures.push(`onscreen drones should not show edge markers: ${JSON.stringify({ hazard: state.hazard, powerup: state.powerup })}`);
+  if (!state.offscreen?.debug?.edgeMarker || state.offscreen?.edgeDebug?.reason !== 'offscreen_edge') failures.push(`offscreen bonus drone edge marker missing: ${JSON.stringify(state.offscreen)}`);
+  if ((state.offscreen?.edgeDebug?.edgeArrowCount || 0) < 1) failures.push(`offscreen bonus drone edge arrow missing: ${JSON.stringify(state.offscreen?.edgeDebug)}`);
+  if ((state.offscreen?.edgeDebug?.anchor?.y || 999) > 100) failures.push(`offscreen bonus drone marker should clamp near top edge: ${JSON.stringify(state.offscreen?.edgeDebug)}`);
   if ((state.hazard?.debug?.trailAlpha || 0) <= 0.1) failures.push(`hazard trail alpha too low: ${state.hazard?.debug?.trailAlpha}`);
   if ((state.powerup?.debug?.trailAlpha || 0) <= 0.1) failures.push(`powerup trail alpha too low: ${state.powerup?.debug?.trailAlpha}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

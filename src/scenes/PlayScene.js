@@ -10863,6 +10863,7 @@ export class PlayScene {
     this.ambientBonusDrones = this.ambientBonusDrones.filter(bonusDrone => {
       // Check if manually removed or destroyed
       if (!bonusDrone.active) {
+        bonusDrone.destroy?.();
         if (bonusDrone.sprite && bonusDrone.sprite.parent) bonusDrone.sprite.parent.removeChild(bonusDrone.sprite);
         if (bonusDrone.type === 'POWERUP' && !bonusDrone.active) this.hasActiveBonusCore = false;
         return false;
