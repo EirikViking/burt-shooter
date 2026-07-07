@@ -271,12 +271,19 @@ tetherProbe.updateBossFuelTether(tetherEnemy, {
     return 92;
   }
 }, 142);
-if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 7 || tetherFills < 10) {
+const tetherDebug = fakeTether._debugBossFuelTether || {};
+if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 13 || tetherFills < 10) {
   fail(`support tether should draw an active heal beam, visible=${fakeTether.visible} renderable=${fakeTether.renderable} strokes=${tetherStrokes} fills=${tetherFills}`);
+}
+if (tetherDebug.directionChevronCount < 5 || tetherDebug.intakeBracketCount < 4) {
+  fail(`support tether should show heal direction and boss intake cues, chevrons=${tetherDebug.directionChevronCount || 0} intake=${tetherDebug.intakeBracketCount || 0}`);
 }
 tetherProbe.clearBossFuelTether(tetherEnemy);
 if (fakeTether.visible || fakeTether.renderable || tetherClears < 2) {
   fail('support tether should clear and hide when the support ship is inactive');
+}
+if (fakeTether._debugBossFuelTether?.visible !== false) {
+  fail('support tether debug state should mark the tether hidden after clear');
 }
 
 const firstSupport = pickBossSupportShipProfile(5, getBossSupportShipEventSeed(5, 0));

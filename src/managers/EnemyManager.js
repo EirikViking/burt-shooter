@@ -3584,6 +3584,7 @@ export class EnemyManager {
     tether.clear?.();
     tether.visible = false;
     tether.renderable = false;
+    tether._debugBossFuelTether = { visible: false };
   }
 
   updateBossFuelTether(enemy, boss, distance = 0) {
@@ -3613,6 +3614,8 @@ export class EnemyManager {
     const tension = Math.max(0.38, Math.min(1, 1 - distance / 620));
     const styleBoost = beamStyle === 'surge' || beamStyle === 'reactor' ? 1.22 : beamStyle === 'towline' ? 0.92 : 1;
     const beamWidth = (8.5 + groupSize * 1.2 + pulse * 1.6) * styleBoost;
+    let directionChevronCount = 0;
+    let intakeBracketCount = 0;
 
     tether.clear();
     tether.visible = true;
@@ -3661,6 +3664,29 @@ export class EnemyManager {
       tether.fill({ color: beamStyle === 'stitch' ? 0xffffff : accentColor, alpha: 0.22 + tension * 0.18 });
     }
 
+    const chevronCount = groupSize >= 3 ? 5 : groupSize === 2 ? 4 : 3;
+    const chevronLength = 11 + groupSize * 1.8 + pulse * 2.8;
+    const chevronSpread = 6.6 + groupSize * 1.1;
+    for (let i = 0; i < chevronCount; i += 1) {
+      const t = (0.18 + (i / chevronCount) * 0.66 + now * 0.00055 + groupSlot * 0.04) % 0.84;
+      const safeT = 0.1 + t;
+      const centerX = startX + (endX - startX) * safeT + px * Math.sin(now * 0.01 + i) * 2.6;
+      const centerY = startY + (endY - startY) * safeT + py * Math.cos(now * 0.01 + i) * 2.6;
+      const tipX = centerX + Math.cos(angle) * chevronLength;
+      const tipY = centerY + Math.sin(angle) * chevronLength;
+      const baseX = centerX - Math.cos(angle) * chevronLength * 0.45;
+      const baseY = centerY - Math.sin(angle) * chevronLength * 0.45;
+      tether.moveTo(baseX + px * (chevronSpread + 1.8), baseY + py * (chevronSpread + 1.8));
+      tether.lineTo(tipX, tipY);
+      tether.lineTo(baseX - px * (chevronSpread + 1.8), baseY - py * (chevronSpread + 1.8));
+      tether.stroke({ color: baseColor, width: 4.5, alpha: 0.12 + tension * 0.14 });
+      tether.moveTo(baseX + px * chevronSpread, baseY + py * chevronSpread);
+      tether.lineTo(tipX, tipY);
+      tether.lineTo(baseX - px * chevronSpread, baseY - py * chevronSpread);
+      tether.stroke({ color: i % 2 ? accentColor : 0xffffff, width: 3.2, alpha: 0.36 + tension * 0.34 });
+      directionChevronCount += 1;
+    }
+
     for (let i = 0; i < 3; i += 1) {
       tether.circle(startX, startY, 4.5 + pulse * 2 + i * 4.2);
       tether.stroke({ color: i % 2 ? accentColor : baseColor, width: 1.5 + i * 0.35, alpha: (0.28 + tension * 0.18) / (1 + i * 0.35) });
@@ -3673,6 +3699,41 @@ export class EnemyManager {
     }
     tether.circle(endX, endY, 3.6 + pulse * 1.4);
     tether.fill({ color: baseColor, alpha: 0.32 + tension * 0.22 });
+
+    const intakeArcRadius = 14 + groupSize * 1.8 + fastPulse * 4;
+    const intakeDepth = 8 + pulse * 3;
+    for (const side of [-1, 1]) {
+      const outerX = endX + px * side * intakeArcRadius;
+      const outerY = endY + py * side * intakeArcRadius;
+      const mouthX = endX + px * side * (intakeArcRadius * 0.56);
+      const mouthY = endY + py * side * (intakeArcRadius * 0.56);
+      const innerX = mouthX + Math.cos(angle) * intakeDepth;
+      const innerY = mouthY + Math.sin(angle) * intakeDepth;
+      tether.moveTo(outerX - Math.cos(angle) * intakeDepth * 0.6, outerY - Math.sin(angle) * intakeDepth * 0.6);
+      tether.lineTo(mouthX, mouthY);
+      tether.lineTo(innerX, innerY);
+      tether.stroke({ color: accentColor, width: 2.4, alpha: 0.3 + tension * 0.28 });
+      intakeBracketCount += 1;
+    }
+    for (let i = 0; i < 2; i += 1) {
+      const bracketOffset = (i ? -1 : 1) * (beamWidth * 0.38 + 4);
+      const baseX = endX - Math.cos(angle) * (8 + i * 4) + px * bracketOffset;
+      const baseY = endY - Math.sin(angle) * (8 + i * 4) + py * bracketOffset;
+      tether.moveTo(baseX - px * bracketOffset * 0.35, baseY - py * bracketOffset * 0.35);
+      tether.lineTo(baseX + Math.cos(angle) * (8 + fastPulse * 4), baseY + Math.sin(angle) * (8 + fastPulse * 4));
+      tether.stroke({ color: 0xffffff, width: 1.8, alpha: 0.22 + tension * 0.24 });
+      intakeBracketCount += 1;
+    }
+
+    tether._debugBossFuelTether = {
+      visible: true,
+      beamStyle,
+      groupSize,
+      packetCount,
+      nodeCount,
+      directionChevronCount,
+      intakeBracketCount
+    };
   }
 
   createBossFuelDeliveryBurst(enemy, boss, healed = 0) {
