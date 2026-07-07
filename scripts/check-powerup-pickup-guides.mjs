@@ -164,6 +164,7 @@ try {
     const near = makePowerup('slow_time', player.x - 54, player.y - 158, (powerup) => Math.max(2400, (Number(powerup.lifeTime) || 10000) - 2800));
     const far = makePowerup('damage_up', width * 0.17, height * 0.2);
     const inside = makePowerup('shield', player.x + 8, player.y - 7);
+    const offscreen = makePowerup('plasma_lance', width + 44, player.y - 72, (powerup) => Math.max(0, (Number(powerup.lifeTime) || 10000) - 2600));
 
     return {
       ok: true,
@@ -171,7 +172,8 @@ try {
       player: { x: Math.round(player.x), y: Math.round(player.y) },
       near,
       far,
-      inside
+      inside,
+      offscreen
     };
   });
 
@@ -181,7 +183,7 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
-  if (state.count !== 3) failures.push(`expected three powerups, got ${state.count}`);
+  if (state.count !== 4) failures.push(`expected four powerups, got ${state.count}`);
   if (!state.near?.visible || !state.near?.guide?.visible) failures.push(`near guide was not visible: ${JSON.stringify(state.near)}`);
   if ((state.near?.guide?.distance || 0) < 100 || (state.near?.guide?.distance || 0) > 230) failures.push(`near guide distance unexpected: ${state.near?.guide?.distance}`);
   if ((state.near?.guide?.dashCount || 0) < 2) failures.push(`near guide did not draw enough dashes: ${state.near?.guide?.dashCount}`);
@@ -189,6 +191,9 @@ try {
   if ((state.near?.guide?.timeoutTickCount || 0) < 3) failures.push(`near guide timeout ticks missing: ${JSON.stringify(state.near?.guide)}`);
   if (state.far?.visible || state.far?.guide?.visible || state.far?.guide?.reason !== 'out_of_range') failures.push(`far guide should stay hidden: ${JSON.stringify(state.far)}`);
   if (state.inside?.visible || state.inside?.guide?.visible || state.inside?.guide?.reason !== 'inside_pickup_radius') failures.push(`inside-radius guide should stay hidden: ${JSON.stringify(state.inside)}`);
+  if (!state.offscreen?.visible || state.offscreen?.guide?.reason !== 'offscreen_edge') failures.push(`offscreen urgent guide should be edge-visible: ${JSON.stringify(state.offscreen)}`);
+  if ((state.offscreen?.guide?.edgeArrowCount || 0) < 1) failures.push(`offscreen urgent guide did not draw edge arrow: ${JSON.stringify(state.offscreen?.guide)}`);
+  if ((state.offscreen?.guide?.anchor?.x || 0) < 1000) failures.push(`offscreen guide anchor should clamp to right edge: ${JSON.stringify(state.offscreen?.guide)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

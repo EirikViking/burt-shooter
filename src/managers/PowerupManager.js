@@ -536,19 +536,43 @@ class Powerup {
     const pickupRadius = Math.max(18, Number(this.radius) || 12);
     const guideRadius = this.type === 'super_extra_life' ? 290 : 230;
     const closeLimit = pickupRadius + 10;
+    const remainingMs = Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - Math.max(0, Number(age) || 0));
+    const timeUrgency = clamp(1 - (remainingMs / 5000), 0, 1);
     if (!Number.isFinite(distance) || distance <= closeLimit || distance > guideRadius) {
+      const edgeGuide = distance > guideRadius
+        ? this.drawPickupEdgeGuide(scene, guide, {
+          age,
+          distance,
+          guideRadius,
+          pickupRadius,
+          timeUrgency
+        })
+        : null;
+      if (edgeGuide?.visible) {
+        guide.visible = true;
+        guide.__debugPickupGuide = {
+          visible: true,
+          reason: 'offscreen_edge',
+          distance: Math.round(Number.isFinite(distance) ? distance : 0),
+          timeUrgency: Number(timeUrgency.toFixed(3)),
+          edgeArrowCount: edgeGuide.edgeArrowCount,
+          edgeGuideEligible: true,
+          anchor: edgeGuide.anchor
+        };
+        return;
+      }
       guide.visible = false;
       guide.__debugPickupGuide = {
         visible: false,
         reason: distance <= closeLimit ? 'inside_pickup_radius' : 'out_of_range',
-        distance: Math.round(Number.isFinite(distance) ? distance : 0)
+        distance: Math.round(Number.isFinite(distance) ? distance : 0),
+        timeUrgency: Number(timeUrgency.toFixed(3)),
+        edgeGuideEligible: Boolean(edgeGuide?.eligible)
       };
       return;
     }
 
     const distanceUrgency = clamp(1 - ((distance - closeLimit) / Math.max(1, guideRadius - closeLimit)), 0, 1);
-    const remainingMs = Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - Math.max(0, Number(age) || 0));
-    const timeUrgency = clamp(1 - (remainingMs / 5000), 0, 1);
     const urgency = Math.max(distanceUrgency, timeUrgency * 0.86);
     const angle = Math.atan2(dy, dx) - (this.sprite.rotation || 0);
     const pulse = Math.sin(age * 0.014) * 0.5 + 0.5;
@@ -605,7 +629,107 @@ class Powerup {
       timeUrgency: Number(timeUrgency.toFixed(3)),
       dashCount,
       timeoutTickCount,
+      edgeArrowCount: 0,
       angle: Number(angle.toFixed(3))
+    };
+  }
+
+  drawPickupEdgeGuide(scene, guide, options = {}) {
+    const game = scene?.game || this.game;
+    const width = Math.max(
+      320,
+      Number(game?.getWidth?.()) ||
+      Number(game?.app?.screen?.width) ||
+      Number(game?.width) ||
+      1280
+    );
+    const height = Math.max(
+      240,
+      Number(game?.getHeight?.()) ||
+      Number(game?.app?.screen?.height) ||
+      Number(game?.height) ||
+      720
+    );
+    const edgeInset = Math.max(24, Math.min(52, Math.min(width, height) * 0.044));
+    const safeLeft = edgeInset;
+    const safeRight = width - edgeInset;
+    const safeTop = Math.max(edgeInset, Math.min(92, height * 0.13));
+    const safeBottom = height - edgeInset;
+    const offscreen = this.x < safeLeft || this.x > safeRight || this.y < safeTop || this.y > safeBottom;
+    const distance = Number(options.distance) || 0;
+    const guideRadius = Math.max(1, Number(options.guideRadius) || 230);
+    const timeUrgency = clamp(Number(options.timeUrgency) || 0, 0, 1);
+    const eligible = offscreen && timeUrgency > 0.42 && distance <= guideRadius * 3.4;
+    if (!eligible) {
+      return {
+        visible: false,
+        eligible,
+        offscreen
+      };
+    }
+
+    const worldX = Math.max(safeLeft, Math.min(safeRight, this.x));
+    const worldY = Math.max(safeTop, Math.min(safeBottom, this.y));
+    let dx = this.x - worldX;
+    let dy = this.y - worldY;
+    let dist = Math.hypot(dx, dy);
+    if (!Number.isFinite(dist) || dist < 0.01) {
+      dx = this.x < width / 2 ? -1 : 1;
+      dy = 0;
+      dist = 1;
+    }
+    const nx = dx / dist;
+    const ny = dy / dist;
+    const rotation = -(Number(this.sprite?.rotation) || 0);
+    const c = Math.cos(rotation);
+    const s = Math.sin(rotation);
+    const localX = c * (worldX - this.x) - s * (worldY - this.y);
+    const localY = s * (worldX - this.x) + c * (worldY - this.y);
+    const localNx = c * nx - s * ny;
+    const localNy = s * nx + c * ny;
+    const tx = -localNy;
+    const ty = localNx;
+    const pulse = Math.sin((Number(options.age) || 0) * 0.018) * 0.5 + 0.5;
+    const major = MAJOR_POWERUP_TYPES.has(this.type);
+    const color = this.type === 'super_extra_life' ? 0xffe34d : this.color;
+    const arrowSize = major || this.type === 'super_extra_life' ? 16 : 13;
+    const arrowBack = arrowSize * 1.18;
+    const arrowWing = arrowSize * 0.68;
+    const anchorX = localX + localNx * (2 + pulse * 3);
+    const anchorY = localY + localNy * (2 + pulse * 3);
+
+    guide.circle(anchorX, anchorY, arrowSize + 10 + pulse * 4);
+    guide.stroke({ width: 1.4, color, alpha: 0.16 + timeUrgency * 0.22 });
+    guide.poly([
+      anchorX + localNx * arrowSize, anchorY + localNy * arrowSize,
+      anchorX - localNx * arrowBack + tx * arrowWing, anchorY - localNy * arrowBack + ty * arrowWing,
+      anchorX - localNx * arrowBack - tx * arrowWing, anchorY - localNy * arrowBack - ty * arrowWing
+    ]);
+    guide.fill({ color, alpha: 0.54 + timeUrgency * 0.26 });
+    guide.poly([
+      anchorX + localNx * (arrowSize + 5), anchorY + localNy * (arrowSize + 5),
+      anchorX - localNx * (arrowBack + 5) + tx * (arrowWing + 4), anchorY - localNy * (arrowBack + 5) + ty * (arrowWing + 4),
+      anchorX - localNx * (arrowBack + 5) - tx * (arrowWing + 4), anchorY - localNy * (arrowBack + 5) - ty * (arrowWing + 4)
+    ]);
+    guide.stroke({ width: 1.2, color: 0xffffff, alpha: 0.26 + timeUrgency * 0.24 });
+
+    const beadBaseX = anchorX - localNx * (arrowBack + 12);
+    const beadBaseY = anchorY - localNy * (arrowBack + 12);
+    for (let i = 0; i < 2; i += 1) {
+      const bead = 2.6 + pulse * 1.2 - i * 0.35;
+      guide.circle(beadBaseX - localNx * i * 8, beadBaseY - localNy * i * 8, bead);
+    }
+    guide.fill({ color: 0xffffff, alpha: 0.22 + timeUrgency * 0.24 });
+
+    return {
+      visible: true,
+      eligible: true,
+      offscreen: true,
+      edgeArrowCount: 1,
+      anchor: {
+        x: Math.round(worldX),
+        y: Math.round(worldY)
+      }
     };
   }
 
