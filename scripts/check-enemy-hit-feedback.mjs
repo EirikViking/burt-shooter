@@ -178,6 +178,8 @@ try {
   if ((state.hitFeedback?.radius || 0) <= 10) failures.push(`feedback radius too small: ${state.hitFeedback?.radius}`);
   if (!state.hitFeedback?.impactNotch || !Number.isFinite(state.hitFeedback?.impactAngle)) failures.push(`impact notch missing: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.hitFeedback?.impactDistance || 0) <= 4) failures.push(`impact distance too small: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.armorCrackCount || 0) < 5) failures.push(`durable armor cracks missing: ${JSON.stringify(state.hitFeedback)}`);
+  if (!Number.isFinite(state.hitFeedback?.healthRatio) || state.hitFeedback.healthRatio >= 1) failures.push(`durable health ratio not recorded after damage: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.sparkCount || 0) < 1 || (state.hitFeedback?.sparkCount || 0) < 1) failures.push(`hit spark was not recorded: ${state.sparkCount}`);
   if (!state.healthBarVisible) failures.push('health bar disappeared after non-lethal hit');
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

@@ -721,6 +721,9 @@ export class Enemy {
     const damageLift = Math.min(1, Math.max(0, Number(this.hitFeedbackDamage) || 0) / Math.max(1, Number(this.maxHealth) || 1));
     const color = this.visualVariant?.accent || this.color || 0x66f7ff;
     const radius = Math.max(10, this.radius * (1.08 + progress * 0.48 + damageLift * 0.18));
+    const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth) || 1)));
+    const showArmorCracks = Number(this.maxHealth) >= 3 && healthRatio < 0.999;
+    let armorCrackCount = 0;
     const tickInner = radius * 0.78;
     const tickOuter = radius + 5 + damageLift * 4;
     const width = this.isEliteMiddleShip ? 2.4 : 1.7;
@@ -750,6 +753,42 @@ export class Enemy {
       layer.circle(ix, iy, this.isEliteMiddleShip ? 4.2 : 3.2);
       layer.fill({ color, alpha: 0.58 + fade * 0.3 });
     }
+    if (showArmorCracks) {
+      const crackCount = healthRatio <= 0.35 ? 5 : healthRatio <= 0.65 ? 4 : 3;
+      const baseAngle = Number.isFinite(this.hitFeedbackImpactAngle) ? this.hitFeedbackImpactAngle : this.idlePhase;
+      for (let i = 0; i < crackCount; i += 1) {
+        const angle = baseAngle + (i - (crackCount - 1) / 2) * 0.42 + Math.sin(this.idlePhase + i) * 0.08;
+        const inner = this.radius * (0.24 + (i % 2) * 0.08);
+        const middle = this.radius * (0.58 + (i % 3) * 0.08);
+        const outer = this.radius * (0.92 + (i % 2) * 0.08);
+        const bend = (i % 2 ? -1 : 1) * (4.6 + damageLift * 2.8);
+        const sx = Math.cos(angle) * inner;
+        const sy = Math.sin(angle) * inner;
+        const mx = Math.cos(angle) * middle - Math.sin(angle) * bend;
+        const my = Math.sin(angle) * middle + Math.cos(angle) * bend;
+        const ex = Math.cos(angle) * outer + Math.sin(angle) * bend * 0.42;
+        const ey = Math.sin(angle) * outer - Math.cos(angle) * bend * 0.42;
+        layer.moveTo(sx, sy);
+        layer.lineTo(mx, my);
+        layer.lineTo(ex, ey);
+        armorCrackCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 2.7 : 2.15, alpha: 0.56 + fade * 0.32 });
+      const tickAngle = baseAngle;
+      const tickSideX = -Math.sin(tickAngle);
+      const tickSideY = Math.cos(tickAngle);
+      for (const side of [-1, 1]) {
+        const center = this.radius * 1.08;
+        const cx = Math.cos(tickAngle) * center + tickSideX * side * this.radius * 0.18;
+        const cy = Math.sin(tickAngle) * center + tickSideY * side * this.radius * 0.18;
+        layer.moveTo(cx - tickSideX * side * 4, cy - tickSideY * side * 4);
+        layer.lineTo(cx + Math.cos(tickAngle) * (6 + damageLift * 4), cy + Math.sin(tickAngle) * (6 + damageLift * 4));
+        armorCrackCount += 1;
+      }
+      layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.9, alpha: 0.42 + fade * 0.28 });
+      layer.circle(0, 0, Math.max(4, this.radius * 0.22));
+      layer.stroke({ color, width: 1.7, alpha: 0.26 + fade * 0.28 });
+    }
     layer.visible = true;
     layer._debugHitFeedback = {
       visible: true,
@@ -759,6 +798,8 @@ export class Enemy {
       impactNotch: hasImpactNotch,
       impactAngle: hasImpactNotch ? Number(this.hitFeedbackImpactAngle.toFixed(3)) : null,
       impactDistance: hasImpactNotch ? Number((this.hitFeedbackImpactDistance || 0).toFixed(1)) : 0,
+      armorCrackCount,
+      healthRatio: Number(healthRatio.toFixed(3)),
       sparkCount: this.hitFeedbackSparkCount || 0
     };
   }
