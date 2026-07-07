@@ -339,6 +339,8 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    this.lastPowerupPickupClaimCue = null;
+    this.powerupPickupClaimCue = null;
     this.lastTraitImpactToastAt = 0;
     this.runContractSession = null;
     this.runContractProgressThisRun = new Map();
@@ -518,6 +520,8 @@ export class PlayScene {
     this.lastGrazeBreak = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
+    this.lastPowerupPickupClaimCue = null;
+    this.powerupPickupClaimCue = null;
     this.clearRunContractStartNudge();
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
@@ -9669,6 +9673,7 @@ export class PlayScene {
       upwardBias: 0.75
     });
     this.triggerShockwave?.(x, y, color);
+    const claimCue = this.triggerPowerupPickupClaimCue(powerup, { color, major, type });
     this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : (major ? 5 : 3), major ? 14 : 9);
 
     this.lastPowerupPickupJuice = {
@@ -9677,10 +9682,165 @@ export class PlayScene {
       durationMs: major ? 950 : 720,
       type,
       major,
+      claimCue: Boolean(claimCue?.triggered),
+      claimPips: claimCue?.pipCount || 0,
+      claimRings: claimCue?.ringCount || 0,
       x: Math.round(x),
       y: Math.round(y)
     };
     return this.lastPowerupPickupJuice;
+  }
+
+  triggerPowerupPickupClaimCue(powerup = {}, options = {}) {
+    const targetLayer = this.gameContainer || this.uiContainer;
+    const tickerHost = this.game?.app?.ticker;
+    if (!targetLayer || !tickerHost || !this.player) return null;
+
+    if (this.powerupPickupClaimCue?.ticker) {
+      tickerHost.remove(this.powerupPickupClaimCue.ticker);
+      this._activeTickers = (this._activeTickers || []).filter(fn => fn !== this.powerupPickupClaimCue.ticker);
+    }
+    if (this.powerupPickupClaimCue?.layer?.parent) {
+      this.powerupPickupClaimCue.layer.parent.removeChild(this.powerupPickupClaimCue.layer);
+    }
+    this.powerupPickupClaimCue?.layer?.destroy?.();
+
+    const type = options.type || powerup?.type || 'powerup';
+    const color = Number.isFinite(options.color)
+      ? options.color
+      : (Number.isFinite(powerup?.color) ? powerup.color : (this.player?.visualVariant?.accent || 0x66ffff));
+    const major = Boolean(options.major);
+    const playerX = Number.isFinite(this.player?.x) ? this.player.x : this.game.getWidth() / 2;
+    const playerY = Number.isFinite(this.player?.y) ? this.player.y : this.game.getHeight() * 0.72;
+    const sourceX = Number.isFinite(powerup?.x) ? powerup.x : playerX;
+    const sourceY = Number.isFinite(powerup?.y) ? powerup.y : playerY - 36;
+    const pipCount = major ? 8 : 6;
+    const ringCount = major ? 3 : 2;
+    const sparkCount = major ? 4 : 3;
+    const durationMs = major ? 880 : 700;
+    const layer = new PIXI.Graphics();
+    layer.label = 'powerupPickupClaimCue';
+    layer.x = playerX;
+    layer.y = playerY;
+    layer.zIndex = 99995;
+    layer.blendMode = 'add';
+    targetLayer.addChild(layer);
+    targetLayer.sortChildren?.();
+
+    const setDebug = (visible, elapsedMs = 0) => {
+      const debug = {
+        triggered: true,
+        visible,
+        type,
+        major,
+        color,
+        pipCount: visible ? pipCount : 0,
+        ringCount: visible ? ringCount : 0,
+        sparkCount: visible ? sparkCount : 0,
+        sourceX: Math.round(sourceX),
+        sourceY: Math.round(sourceY),
+        playerX: Math.round(layer.x),
+        playerY: Math.round(layer.y),
+        sourceDistance: Math.round(Math.hypot(sourceX - layer.x, sourceY - layer.y)),
+        elapsedMs: Math.round(elapsedMs),
+        durationMs
+      };
+      layer._debugPowerupPickupClaimCue = debug;
+      this.lastPowerupPickupClaimCue = { ...debug };
+      return debug;
+    };
+
+    const drawDiamond = (cx, cy, radialX, radialY, tangentX, tangentY, size, fillColor, alpha) => {
+      layer.poly([
+        cx + radialX * size, cy + radialY * size,
+        cx + tangentX * size * 0.72, cy + tangentY * size * 0.72,
+        cx - radialX * size, cy - radialY * size,
+        cx - tangentX * size * 0.72, cy - tangentY * size * 0.72
+      ]);
+      layer.fill({ color: fillColor, alpha });
+    };
+
+    const drawCue = (elapsedMs) => {
+      const currentX = Number.isFinite(this.player?.x) ? this.player.x : playerX;
+      const currentY = Number.isFinite(this.player?.y) ? this.player.y : playerY;
+      layer.x = currentX;
+      layer.y = currentY;
+
+      let dx = sourceX - currentX;
+      let dy = sourceY - currentY;
+      let distance = Math.hypot(dx, dy);
+      if (!Number.isFinite(distance) || distance < 0.01) {
+        dx = 0;
+        dy = -1;
+        distance = 1;
+      }
+      const nx = dx / distance;
+      const ny = dy / distance;
+      const t = Math.max(0, Math.min(1, elapsedMs / durationMs));
+      const intro = Math.min(1, elapsedMs / 120);
+      const fade = Math.max(0, 1 - Math.max(0, t - 0.12) / 0.88);
+      const pulse = 0.5 + Math.sin(elapsedMs * 0.024) * 0.5;
+      const baseRadius = 22 + t * (major ? 22 : 16);
+      layer.clear();
+
+      for (let i = 0; i < ringCount; i += 1) {
+        const radius = baseRadius + i * 10 + pulse * (i === 0 ? 2.4 : 1.2);
+        layer.circle(0, 0, radius);
+        layer.stroke({
+          color: i === 0 ? 0xffffff : color,
+          width: i === 0 ? 1.4 : 2.1,
+          alpha: (i === 0 ? 0.38 : 0.48) * fade * intro
+        });
+      }
+
+      const orbitRadius = baseRadius + 14 + pulse * 4;
+      const orbitSpin = elapsedMs * 0.0045;
+      for (let i = 0; i < pipCount; i += 1) {
+        const angle = orbitSpin + (Math.PI * 2 * i) / pipCount;
+        const rx = Math.cos(angle);
+        const ry = Math.sin(angle);
+        const tx = -Math.sin(angle);
+        const ty = Math.cos(angle);
+        const size = (major ? 4.5 : 3.8) + (i % 2) * 0.8;
+        drawDiamond(rx * orbitRadius, ry * orbitRadius, rx, ry, tx, ty, size, i % 2 ? color : 0xffffff, (i % 2 ? 0.52 : 0.66) * fade * intro);
+      }
+
+      const sourceArcRadius = baseRadius + 28;
+      const sourceAngle = Math.atan2(ny, nx);
+      layer.arc(0, 0, sourceArcRadius, sourceAngle - 0.5, sourceAngle + 0.5);
+      layer.stroke({ color: 0xffffff, width: 2.4, alpha: 0.34 * fade * intro });
+      for (let i = 0; i < sparkCount; i += 1) {
+        const offset = (sourceArcRadius - i * 9) - t * 12;
+        layer.circle(nx * offset, ny * offset, Math.max(1.8, 4.4 - i * 0.7 + pulse));
+        layer.fill({ color: i === 0 ? 0xffffff : color, alpha: (0.68 - i * 0.11) * fade * intro });
+      }
+
+      layer.visible = true;
+      setDebug(true, elapsedMs);
+    };
+
+    let elapsedMs = 0;
+    drawCue(0);
+    const ticker = (tick) => {
+      elapsedMs += tick.deltaTime * 16.67;
+      if (elapsedMs >= durationMs) {
+        layer.clear();
+        layer.visible = false;
+        setDebug(false, elapsedMs);
+        if (layer.parent) layer.parent.removeChild(layer);
+        tickerHost.remove(ticker);
+        this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
+        if (this.powerupPickupClaimCue?.ticker === ticker) this.powerupPickupClaimCue = null;
+        layer.destroy?.();
+        return;
+      }
+      drawCue(elapsedMs);
+    };
+    tickerHost.add(ticker);
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(ticker);
+    this.powerupPickupClaimCue = { layer, ticker, type, startedAtMs: Date.now(), durationMs };
+    return this.lastPowerupPickupClaimCue;
   }
 
   triggerNearMissSurge() {
