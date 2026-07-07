@@ -226,6 +226,7 @@ try {
         friendlyGlints: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileFriendlyGlint)?.length || 0,
         friendlyWings: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileWingTrace)?.length || 0,
         enemyDangerGlints: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileDangerGlint)?.length || 0,
+        enemyWakeBeads: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileWakeBeads)?.length || 0,
         specialIntentLayers: [bomb, critical, piercing, wing, bonus]
           .filter((bullet) => bullet.playerIntentLayer?.visible && bullet.playerIntentLayer?._debugIntentMarkers?.active)
           .length
@@ -252,10 +253,13 @@ try {
   if (!state.player?.friendlyGlint || !state.player?.friendlyWingTrace) failures.push(`friendly projectile markers missing: ${JSON.stringify(state.player)}`);
   if (state.player?.playerIntentActive) failures.push(`plain player bullet should not show intent markers: ${JSON.stringify(state.player)}`);
   if (state.player?.dangerGlint) failures.push(`player bullet should not have danger glint: ${JSON.stringify(state.player)}`);
+  if ((state.player?.dangerWakeBeadCount || 0) !== 0) failures.push(`player bullet should not have danger wake beads: ${JSON.stringify(state.player)}`);
   if (state.enemy?.friendlyGlint || state.enemy?.friendlyWingTrace) failures.push(`enemy bullet should not have friendly markers: ${JSON.stringify(state.enemy)}`);
   if (!state.enemy?.dangerGlint) failures.push(`enemy danger glint missing: ${JSON.stringify(state.enemy)}`);
+  if ((state.enemy?.dangerWakeBeadCount || 0) !== 3) failures.push(`enemy wake bead count mismatch: ${JSON.stringify(state.enemy)}`);
   if ((state.markers?.friendlyGlints || 0) !== 1 || (state.markers?.friendlyWings || 0) !== 1) failures.push(`friendly marker child counts mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyDangerGlints || 0) !== 1) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.enemyWakeBeads || 0) !== 1) failures.push(`enemy wake bead layer count mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.specialIntentLayers || 0) !== 5) failures.push(`special intent marker layer count mismatch: ${JSON.stringify(state.markers)}`);
   if (state.muzzleFlash?.volleyBullets !== 3) failures.push(`volley shoot bullet count mismatch: ${JSON.stringify(state.muzzleFlash)}`);
   if (state.muzzleFlash?.volley?.volleyCount !== 3 || state.muzzleFlash?.volley?.laneCount !== 3) failures.push(`volley muzzle flash lanes missing: ${JSON.stringify(state.muzzleFlash?.volley)}`);

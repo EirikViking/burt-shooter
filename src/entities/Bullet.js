@@ -34,6 +34,7 @@ export class Bullet {
     this.trail = null;
     this.warningRing = null;
     this.dangerGlint = null;
+    this.dangerWakeBeads = null;
     this.friendlyGlint = null;
     this.friendlyWingTrace = null;
     this.playerIntentLayer = null;
@@ -213,6 +214,22 @@ export class Bullet {
       this.dangerGlint.lineTo(leadX + normalX * 4.5, leadY + normalY * 4.5);
       this.dangerGlint.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: colorAssist ? 1.8 : 1.4, alpha: colorAssist ? 0.86 : 0.44 });
       this.sprite.addChild(this.dangerGlint);
+
+      this.dangerWakeBeads = new PIXI.Graphics();
+      this.dangerWakeBeads.label = 'enemyProjectileWakeBeads';
+      this.dangerWakeBeads.__novaProjectileWakeBeads = true;
+      const wakeColor = colorAssist ? 0xffffff : (this.visualConfig.warningColor || this.visualConfig.trailColor || 0xff6655);
+      const beadCount = 3;
+      this.dangerWakeBeads.__novaProjectileWakeBeadCount = beadCount;
+      for (let i = 0; i < beadCount; i += 1) {
+        const distance = this.radius + 8 + i * 7;
+        const x = -Math.cos(this.angle) * distance;
+        const y = -Math.sin(this.angle) * distance;
+        const beadRadius = colorAssist ? 2.6 - i * 0.24 : 2.15 - i * 0.22;
+        this.dangerWakeBeads.circle(x, y, Math.max(1.3, beadRadius));
+        this.dangerWakeBeads.fill({ color: wakeColor, alpha: Math.max(0.22, 0.48 - i * 0.1) });
+      }
+      this.sprite.addChild(this.dangerWakeBeads);
     } else {
       const leadDistance = this.radius + 7;
       const leadX = Math.cos(this.angle) * leadDistance;
@@ -259,6 +276,7 @@ export class Bullet {
       playerIntentMarkers: Boolean(this.playerIntentLayer),
       playerIntentActive: Boolean(this.playerIntentLayer?._debugIntentMarkers?.active),
       dangerGlint: Boolean(this.dangerGlint),
+      dangerWakeBeadCount: this.dangerWakeBeads?.__novaProjectileWakeBeadCount || (this.dangerWakeBeads ? 3 : 0),
       trailLength: Number(trailLength.toFixed?.(2) || trailLength),
       trailWidth
     };
@@ -438,6 +456,9 @@ export class Bullet {
         const glintPulse = 1 + Math.sin(this.pulseTimer * 2.9 * pulseRate) * 0.18;
         this.dangerGlint.scale.set(glintPulse);
         this.dangerGlint.alpha = 0.72 + Math.sin(this.pulseTimer * 3.4 * pulseRate) * 0.2;
+      }
+      if (this.dangerWakeBeads) {
+        this.dangerWakeBeads.alpha = 0.62 + Math.sin(this.pulseTimer * 2.1 * pulseRate) * 0.16;
       }
     } else if (this.friendlyGlint) {
       const friendlyPulse = 1 + Math.sin(this.pulseTimer * 3.2) * 0.12;
