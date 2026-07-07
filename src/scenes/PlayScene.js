@@ -2704,6 +2704,24 @@ export class PlayScene {
     glow.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.58 });
     container.addChild(glow);
 
+    const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
+    const chevronTrail = new PIXI.Container();
+    chevronTrail.label = 'rank_up_chevron_trail';
+    const chevronCount = compact ? 3 : 4;
+    const chevronStartX = rankTexture ? -panelWidth / 2 + 94 : -46;
+    for (let i = 0; i < chevronCount; i++) {
+      const chevron = new PIXI.Graphics();
+      const alpha = 0.34 + i * 0.12;
+      chevron.moveTo(-4, -7);
+      chevron.lineTo(4, 0);
+      chevron.lineTo(-4, 7);
+      chevron.stroke({ color: i % 2 ? 0x66f7ff : 0xffef7e, width: 2, alpha });
+      chevron.x = chevronStartX + i * (compact ? 14 : 16);
+      chevron.y = rankTitle ? -32 : -15;
+      chevronTrail.addChild(chevron);
+    }
+    container.addChild(chevronTrail);
+
     const signalPips = new PIXI.Container();
     signalPips.label = 'rank_up_signal_pips';
     const pipCount = compact ? 4 : 5;
@@ -2718,7 +2736,6 @@ export class PlayScene {
     }
     container.addChild(signalPips);
 
-    const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
     const rankHalo = new PIXI.Graphics();
     rankHalo.label = 'rank_up_rank_halo';
     const haloX = -panelWidth / 2 + 58;
@@ -2810,6 +2827,7 @@ export class PlayScene {
     container._debugRankUpClarity = {
       broadcastBurst: true,
       signalPips: pipCount,
+      chevronTrail: chevronCount,
       rankHalo: Boolean(rankHalo),
       panelWidth,
       panelHeight,
@@ -2828,6 +2846,8 @@ export class PlayScene {
       const shimmer = Math.sin(elapsed * 0.008);
       burstLayer.rotation = shimmer * 0.012;
       burstLayer.alpha = 0.62 + Math.max(0, shimmer) * 0.24;
+      chevronTrail.alpha = 0.58 + Math.max(0, Math.sin(elapsed * 0.014)) * 0.34;
+      chevronTrail.x = Math.sin(elapsed * 0.012) * 2.5;
       signalPips.alpha = 0.74 + Math.max(0, Math.sin(elapsed * 0.012)) * 0.22;
       if (rankHalo) rankHalo.rotation += delta.deltaTime * 0.028;
       if (elapsed < phases.easeIn) {

@@ -136,6 +136,7 @@ try {
   if ((state.badgeCount || 0) < 1) failures.push('rank-up badge did not render');
   if (!state.badgeDebug?.broadcastBurst) failures.push(`rank-up broadcast burst missing: ${JSON.stringify(state.badgeDebug)}`);
   if ((state.badgeDebug?.signalPips || 0) < 4) failures.push(`rank-up signal pips missing: ${JSON.stringify(state.badgeDebug)}`);
+  if ((state.badgeDebug?.chevronTrail || 0) < 3) failures.push(`rank-up chevron trail missing: ${JSON.stringify(state.badgeDebug)}`);
   if (!state.badgeDebug?.rankHalo) failures.push(`rank-up rank halo missing: ${JSON.stringify(state.badgeDebug)}`);
   if (state.rankBoostType !== 'damage') failures.push(`rank boost did not apply damage state: ${state.rankBoostType}`);
   if (!state.auraVisible) failures.push('rank boost aura not visible after update');
