@@ -164,6 +164,7 @@
     "check:rank-progression": "node scripts/check-rank-progression.mjs",
     "check:rank-up-clarity": "node scripts/check-rank-up-clarity.mjs",
     "check:wave-pacing": "node scripts/check-wave-pacing.mjs",
+    "check:wave-clear-effect": "node scripts/check-wave-clear-effect.mjs",
     "check:enemy-spawn-cue": "node scripts/check-enemy-spawn-cue.mjs",
     "check:enemy-muzzle-readability": "node scripts/check-enemy-muzzle-readability.mjs",
     "check:sector10-clear-time-pacing": "node scripts/check-sector10-clear-time-pacing.mjs",

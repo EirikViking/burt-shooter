@@ -2903,7 +2903,34 @@ export class PlayScene {
     effectContainer.alpha = 0;
     effectContainer.scale.set(compact ? 0.55 : 0.3); // Bigger for more wow factor
     effectContainer.zIndex = 9999;
+    effectContainer.label = 'ui_wave_bonus_effect';
     this.uiContainer.addChild(effectContainer);
+
+    const sweepLayer = new PIXI.Graphics();
+    sweepLayer.label = 'waveClearSweepLayer';
+    const sweepBandCount = compact ? 3 : 4;
+    const sweepChevronCount = compact ? 6 : 10;
+    for (let i = 0; i < sweepBandCount; i += 1) {
+      const bandY = (i - (sweepBandCount - 1) / 2) * (compact ? 24 : 28);
+      const bandHeight = compact ? 6 : 8;
+      sweepLayer.roundRect(-width * 0.42, bandY - bandHeight / 2, width * 0.84, bandHeight, bandHeight / 2);
+      sweepLayer.fill({ color: i % 2 ? 0x7ee9ff : 0x00ff66, alpha: compact ? 0.08 : 0.11 });
+      sweepLayer.moveTo(-width * 0.36, bandY + bandHeight * 1.15);
+      sweepLayer.lineTo(width * 0.36, bandY + bandHeight * 1.15);
+      sweepLayer.stroke({ color: i % 2 ? 0xffffff : 0x7ee9ff, width: 1, alpha: compact ? 0.12 : 0.18 });
+    }
+    for (let i = 0; i < sweepChevronCount; i += 1) {
+      const ratio = (i + 0.5) / sweepChevronCount;
+      const side = i % 2 === 0 ? -1 : 1;
+      const x = -width * 0.34 + ratio * width * 0.68;
+      const y = side * (compact ? 45 : 56);
+      const size = compact ? 9 : 12;
+      sweepLayer.moveTo(x - size, y - size * 0.7);
+      sweepLayer.lineTo(x, y);
+      sweepLayer.lineTo(x - size, y + size * 0.7);
+      sweepLayer.stroke({ color: 0xffff66, width: compact ? 1.4 : 1.8, alpha: compact ? 0.34 : 0.48 });
+    }
+    effectContainer.addChild(sweepLayer);
 
     // Outer glow rings for extra wow
     for (let i = 0; i < ringCount; i++) {
@@ -3029,9 +3056,22 @@ export class PlayScene {
     };
     const totalDuration = phases.entry + phases.hold + phases.exit;
     this.reserveMessageFocus(totalDuration + 300, { priority: 3 });
+    effectContainer._debugWaveClearEffect = {
+      compact,
+      panelWidth,
+      panelHeight,
+      ringCount,
+      starCount,
+      sweepBandCount,
+      sweepChevronCount,
+      subtitle: Boolean(options.subtitle)
+    };
 
     const animate = (delta) => {
       elapsed += delta.deltaTime * 16.67;
+      const sweepPulse = Math.sin(elapsed * 0.018) * 0.5 + 0.5;
+      sweepLayer.alpha = 0.72 + sweepPulse * 0.22;
+      sweepLayer.x = Math.sin(elapsed * 0.012) * (compact ? 5 : 8);
 
       if (elapsed < phases.entry) {
         // Explosive entry: scale up with ease-out elastic
