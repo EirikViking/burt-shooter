@@ -114,6 +114,7 @@ try {
     const play = game?.scenes?.play;
     const manager = play?.enemyManager;
     if (!game || !play || !manager) return { ok: false, reason: 'missing play/enemy manager' };
+    const width = game.getWidth?.() || game.app?.screen?.width || 1280;
 
     const { Enemy } = await import('/src/entities/Enemy.js');
     const { pickBossSupportShipProfile, getBossSupportShipEventSeed } = await import('/src/config/BossSupportShips.js');
@@ -149,8 +150,22 @@ try {
       enemy.body.scale.y * supportProfile.spriteScale
     );
     play.gameContainer.addChild(enemy.sprite);
-    manager.enemies = [enemy];
+    const edgeEnemy = new Enemy(width + 58, 260, supportType, 14, game, 'Green');
+    edgeEnemy.radius = supportProfile.radius;
+    edgeEnemy.bossSupportShipProfile = supportProfile;
+    edgeEnemy.bossFuelProfile = {
+      id: supportProfile.id,
+      groupSize: 2,
+      groupSlot: 2,
+      healPercent: supportProfile.healPercent,
+      beamStyle: supportProfile.beamStyle
+    };
+    edgeEnemy.sprite.label = `enemy_visual:${supportProfile.id}:offscreen_tether_readability_check`;
+    play.gameContainer.addChild(edgeEnemy.sprite);
+
+    manager.enemies = [enemy, edgeEnemy];
     manager.attachBossFuelTether(enemy);
+    manager.attachBossFuelTether(edgeEnemy);
     manager.updateBossFuelTether(enemy, {
       active: true,
       x: 815,
@@ -160,6 +175,15 @@ try {
         return 126;
       }
     }, 385);
+    manager.updateBossFuelTether(edgeEnemy, {
+      active: true,
+      x: 815,
+      y: 310,
+      radius: 96,
+      getVisualRadius() {
+        return 126;
+      }
+    }, 560);
 
     return {
       ok: true,
@@ -175,7 +199,9 @@ try {
         height: Math.round(enemy.body?.height || 0)
       },
       tether: enemy.bossFuelTether?._debugBossFuelTether || null,
-      tetherVisible: Boolean(enemy.bossFuelTether?.visible && enemy.bossFuelTether?.renderable)
+      tetherVisible: Boolean(enemy.bossFuelTether?.visible && enemy.bossFuelTether?.renderable),
+      offscreenTether: edgeEnemy.bossFuelTether?._debugBossFuelTether || null,
+      offscreenTetherVisible: Boolean(edgeEnemy.bossFuelTether?.visible && edgeEnemy.bossFuelTether?.renderable)
     };
   });
 
@@ -190,6 +216,8 @@ try {
   if (!state.tetherVisible || !state.tether?.visible) failures.push(`support tether not visible: ${JSON.stringify(state.tether)}`);
   if ((state.tether?.directionChevronCount || 0) < 5) failures.push(`support tether direction cues missing: ${JSON.stringify(state.tether)}`);
   if ((state.tether?.intakeBracketCount || 0) < 4) failures.push(`support tether intake cues missing: ${JSON.stringify(state.tether)}`);
+  if (!state.offscreenTetherVisible || !state.offscreenTether?.visible) failures.push(`offscreen support tether not visible: ${JSON.stringify(state.offscreenTether)}`);
+  if ((state.offscreenTether?.offscreenEdgeMarkerCount || 0) < 1) failures.push(`offscreen support edge marker missing: ${JSON.stringify(state.offscreenTether)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

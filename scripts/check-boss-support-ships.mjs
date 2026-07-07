@@ -278,12 +278,65 @@ if (!fakeTether.visible || !fakeTether.renderable || tetherStrokes < 13 || tethe
 if (tetherDebug.directionChevronCount < 5 || tetherDebug.intakeBracketCount < 4) {
   fail(`support tether should show heal direction and boss intake cues, chevrons=${tetherDebug.directionChevronCount || 0} intake=${tetherDebug.intakeBracketCount || 0}`);
 }
+if ((tetherDebug.offscreenEdgeMarkerCount || 0) !== 0) {
+  fail(`onscreen support tether should not draw edge markers, found ${tetherDebug.offscreenEdgeMarkerCount}`);
+}
 tetherProbe.clearBossFuelTether(tetherEnemy);
 if (fakeTether.visible || fakeTether.renderable || tetherClears < 2) {
   fail('support tether should clear and hide when the support ship is inactive');
 }
 if (fakeTether._debugBossFuelTether?.visible !== false) {
   fail('support tether debug state should mark the tether hidden after clear');
+}
+
+let offscreenTetherStrokes = 0;
+let offscreenTetherFills = 0;
+const offscreenTether = {
+  visible: false,
+  renderable: false,
+  alpha: 0,
+  clear() {},
+  moveTo() {},
+  lineTo() {},
+  stroke() {
+    offscreenTetherStrokes += 1;
+  },
+  circle() {},
+  fill() {
+    offscreenTetherFills += 1;
+  }
+};
+const offscreenProbe = Object.assign(Object.create(EnemyManager.prototype), {
+  game: {
+    getWidth() {
+      return 1280;
+    },
+    getHeight() {
+      return 720;
+    }
+  }
+});
+const offscreenEnemy = {
+  active: true,
+  x: 1345,
+  y: 300,
+  radius: 18,
+  bossSupportShipProfile: { tint: 0x8cfbff, accent: 0xff55d9, beamStyle: 'braid' },
+  bossFuelProfile: { groupSize: 2, groupSlot: 1 },
+  bossFuelTether: offscreenTether
+};
+offscreenProbe.updateBossFuelTether(offscreenEnemy, {
+  active: true,
+  x: 820,
+  y: 310,
+  radius: 74,
+  getVisualRadius() {
+    return 92;
+  }
+}, 560);
+const offscreenTetherDebug = offscreenTether._debugBossFuelTether || {};
+if (!offscreenTether.visible || !offscreenTether.renderable || offscreenTetherDebug.offscreenEdgeMarkerCount < 1 || offscreenTetherStrokes < 16 || offscreenTetherFills < 11) {
+  fail(`offscreen support tether should draw an edge marker, visible=${offscreenTether.visible} marker=${offscreenTetherDebug.offscreenEdgeMarkerCount || 0} strokes=${offscreenTetherStrokes} fills=${offscreenTetherFills}`);
 }
 
 const firstSupport = pickBossSupportShipProfile(5, getBossSupportShipEventSeed(5, 0));

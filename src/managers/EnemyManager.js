@@ -3616,6 +3616,7 @@ export class EnemyManager {
     const beamWidth = (8.5 + groupSize * 1.2 + pulse * 1.6) * styleBoost;
     let directionChevronCount = 0;
     let intakeBracketCount = 0;
+    let offscreenEdgeMarkerCount = 0;
 
     tether.clear();
     tether.visible = true;
@@ -3725,6 +3726,68 @@ export class EnemyManager {
       intakeBracketCount += 1;
     }
 
+    const width = Math.max(
+      320,
+      Number(this.game?.getWidth?.()) ||
+      Number(this.game?.app?.screen?.width) ||
+      Number(this.game?.width) ||
+      1280
+    );
+    const height = Math.max(
+      240,
+      Number(this.game?.getHeight?.()) ||
+      Number(this.game?.app?.screen?.height) ||
+      Number(this.game?.height) ||
+      720
+    );
+    const edgeInset = Math.max(26, Math.min(54, Math.min(width, height) * 0.045));
+    const safeLeft = edgeInset;
+    const safeRight = width - edgeInset;
+    const safeTop = Math.max(edgeInset, Math.min(92, height * 0.14));
+    const safeBottom = height - edgeInset;
+    const edgeX = Math.max(safeLeft, Math.min(safeRight, enemy.x));
+    const edgeY = Math.max(safeTop, Math.min(safeBottom, enemy.y));
+    const needsEdgeMarker = Math.abs(edgeX - enemy.x) > 0.5 || Math.abs(edgeY - enemy.y) > 0.5;
+    if (needsEdgeMarker) {
+      let markerDx = enemy.x - edgeX;
+      let markerDy = enemy.y - edgeY;
+      let markerDist = Math.hypot(markerDx, markerDy);
+      if (!Number.isFinite(markerDist) || markerDist < 0.01) {
+        markerDx = enemy.x < width / 2 ? -1 : 1;
+        markerDy = 0;
+        markerDist = 1;
+      }
+      const nx = markerDx / markerDist;
+      const ny = markerDy / markerDist;
+      const tx = -ny;
+      const ty = nx;
+      const markerPulse = Math.sin(now * 0.026 + groupSlot) * 0.5 + 0.5;
+      const markerRadius = 14 + groupSize * 2.2 + markerPulse * 3.4;
+      const arrowLength = 13 + groupSize * 2 + markerPulse * 2.2;
+      const arrowBack = arrowLength * 0.9;
+      const arrowWing = 7.5 + groupSize * 1.2;
+      const markerX = edgeX + nx * (2 + markerPulse * 2);
+      const markerY = edgeY + ny * (2 + markerPulse * 2);
+
+      tether.circle(markerX, markerY, markerRadius + 8);
+      tether.stroke({ color: baseColor, width: 2.4, alpha: 0.12 + tension * 0.16 });
+      tether.circle(markerX, markerY, markerRadius);
+      tether.stroke({ color: accentColor, width: 1.6, alpha: 0.2 + tension * 0.22 });
+      tether.moveTo(markerX + nx * arrowLength, markerY + ny * arrowLength);
+      tether.lineTo(markerX - nx * arrowBack + tx * arrowWing, markerY - ny * arrowBack + ty * arrowWing);
+      tether.lineTo(markerX - nx * arrowBack - tx * arrowWing, markerY - ny * arrowBack - ty * arrowWing);
+      tether.lineTo(markerX + nx * arrowLength, markerY + ny * arrowLength);
+      tether.stroke({ color: 0xffffff, width: 2.3, alpha: 0.36 + tension * 0.28 });
+      tether.moveTo(markerX - nx * (arrowBack + 8), markerY - ny * (arrowBack + 8));
+      tether.lineTo(markerX - nx * (arrowBack + 24), markerY - ny * (arrowBack + 24));
+      tether.stroke({ color: baseColor, width: 2.8, alpha: 0.28 + tension * 0.28 });
+      for (let i = 0; i < 2; i += 1) {
+        tether.circle(markerX - nx * (arrowBack + 18 + i * 9), markerY - ny * (arrowBack + 18 + i * 9), 2.8 + markerPulse * 1.2);
+      }
+      tether.fill({ color: 0xffffff, alpha: 0.2 + tension * 0.22 });
+      offscreenEdgeMarkerCount += 1;
+    }
+
     tether._debugBossFuelTether = {
       visible: true,
       beamStyle,
@@ -3732,7 +3795,8 @@ export class EnemyManager {
       packetCount,
       nodeCount,
       directionChevronCount,
-      intakeBracketCount
+      intakeBracketCount,
+      offscreenEdgeMarkerCount
     };
   }
 
