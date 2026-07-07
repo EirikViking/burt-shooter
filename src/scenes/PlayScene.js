@@ -5496,6 +5496,16 @@ export class PlayScene {
     field.rect(width - edge * 0.8, 0, edge * 0.8, height);
     field.fill({ color: 0x37f5ff, alpha: alpha * 0.72 });
 
+    const timeSliceCount = 7;
+    for (let i = 0; i < timeSliceCount; i += 1) {
+      const sliceProgress = (i + 1) / (timeSliceCount + 1);
+      const sliceY = (height * sliceProgress + Math.sin(Date.now() * 0.0014 + i * 1.7) * edge * 0.32) % height;
+      const sliceInset = edge * (1.35 + (i % 2) * 0.34);
+      const sliceWidth = Math.max(24, width - sliceInset * 2);
+      field.rect(sliceInset, sliceY, sliceWidth, Math.max(1, edge * 0.045));
+      field.fill({ color: i % 2 ? 0xb39cff : 0x37f5ff, alpha: 0.045 + pulse * 0.035 });
+    }
+
     const radiusA = Math.max(48, Math.min(width, height) * 0.088 + pulse * 10);
     const radiusB = radiusA + Math.max(22, Math.min(width, height) * 0.044);
     field.circle(px, py, radiusA);
@@ -5512,6 +5522,19 @@ export class PlayScene {
       field.lineTo(px + Math.cos(angle) * outer, py + Math.sin(angle) * outer);
     }
     field.stroke({ color: 0xffffff, width: 1, alpha: 0.16 + pulse * 0.12 });
+    const clockTickCount = 16;
+    for (let i = 0; i < clockTickCount; i += 1) {
+      const angle = -spin * 0.55 + (Math.PI * 2 * i) / clockTickCount;
+      const center = radiusB + (i % 4 === 0 ? 11 : 6);
+      const length = i % 4 === 0 ? 9 : 5;
+      const tx = -Math.sin(angle);
+      const ty = Math.cos(angle);
+      const cx = px + Math.cos(angle) * center;
+      const cy = py + Math.sin(angle) * center;
+      field.moveTo(cx - tx * length * 0.5, cy - ty * length * 0.5);
+      field.lineTo(cx + tx * length * 0.5, cy + ty * length * 0.5);
+    }
+    field.stroke({ color: 0xb39cff, width: 1.25, alpha: 0.22 + pulse * 0.14 });
     field.visible = true;
     field._debugSlowTimeField = {
       visible: true,
@@ -5519,6 +5542,8 @@ export class PlayScene {
       edge: Math.round(edge),
       radius: Number(radiusB.toFixed(1)),
       alpha: Number(alpha.toFixed(3)),
+      timeSliceCount,
+      clockTickCount,
       x: Math.round(px),
       y: Math.round(py)
     };

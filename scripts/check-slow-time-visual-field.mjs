@@ -169,6 +169,8 @@ try {
   if ((active.debug?.edge || 0) < 12) failures.push(`slow time edge too small: ${active.debug?.edge}`);
   if ((active.debug?.radius || 0) < 60) failures.push(`slow time player ring too small: ${active.debug?.radius}`);
   if ((active.debug?.alpha || 0) <= 0.05) failures.push(`slow time alpha too low: ${active.debug?.alpha}`);
+  if ((active.debug?.timeSliceCount || 0) < 7) failures.push(`slow time field missing time-slice bands: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.clockTickCount || 0) < 16) failures.push(`slow time field missing player clock ticks: ${JSON.stringify(active.debug)}`);
   if ((active.scales?.enemy || 1) > 0.35) failures.push(`enemy slow scale regressed: ${active.scales?.enemy}`);
   if ((active.scales?.bullet || 1) > 0.35) failures.push(`bullet slow scale regressed: ${active.scales?.bullet}`);
   if ((active.scales?.hazard || 1) > 0.35) failures.push(`hazard slow scale regressed: ${active.scales?.hazard}`);
