@@ -2850,6 +2850,8 @@ export class Player {
     const progress = 1 - Math.max(0, Math.min(1, (this.dodgeDuration || 0) / duration));
     const color = this.visualVariant?.accent || 0xff55d9;
     const pulse = Math.sin(Date.now() * 0.04) * 0.5 + 0.5;
+    let phaseGateBracketCount = 0;
+    let phaseLaneStreakCount = 0;
     if (this.dodgeRing) {
       const radius = Math.max(42, (this.baseShipWidth || 64) * (0.72 + progress * 0.36));
       this.dodgeRing.clear();
@@ -2857,7 +2859,38 @@ export class Player {
       this.dodgeRing.stroke({ color, width: 4, alpha: 0.72 * (1 - progress * 0.45) });
       this.dodgeRing.circle(0, 0, radius * 0.58);
       this.dodgeRing.stroke({ color: 0xffffff, width: 1.6, alpha: 0.42 });
+      const sweep = progress * Math.PI * 0.62;
+      const gateRadius = radius + 11 + pulse * 3;
+      for (const baseAngle of [-Math.PI * 0.5 - sweep, -Math.PI * 0.5 + sweep, Math.PI * 0.5 - sweep, Math.PI * 0.5 + sweep]) {
+        const tx = Math.cos(baseAngle);
+        const ty = Math.sin(baseAngle);
+        const sx = -Math.sin(baseAngle);
+        const sy = Math.cos(baseAngle);
+        const cx = tx * gateRadius;
+        const cy = ty * gateRadius;
+        this.dodgeRing.moveTo(cx - sx * 7, cy - sy * 7);
+        this.dodgeRing.lineTo(cx + sx * 7, cy + sy * 7);
+        this.dodgeRing.moveTo(cx + sx * 7, cy + sy * 7);
+        this.dodgeRing.lineTo(cx + sx * 7 - tx * 5, cy + sy * 7 - ty * 5);
+        phaseGateBracketCount += 1;
+      }
+      this.dodgeRing.stroke({ color: 0xffffff, width: 1.35, alpha: 0.2 + pulse * 0.38 });
+      for (const side of [-1, 1]) {
+        const y = side * (radius * 0.38);
+        this.dodgeRing.moveTo(-radius - 12 - pulse * 5, y);
+        this.dodgeRing.lineTo(-radius * 0.24, y * 0.35);
+        this.dodgeRing.moveTo(radius * 0.24, y * 0.35);
+        this.dodgeRing.lineTo(radius + 12 + pulse * 5, y);
+        phaseLaneStreakCount += 2;
+      }
+      this.dodgeRing.stroke({ color, width: 1.6, alpha: 0.26 + pulse * 0.28 });
       this.dodgeRing.visible = true;
+      this.dodgeRing.__debugPhaseActive = {
+        visible: true,
+        progress: Number(progress.toFixed(3)),
+        phaseGateBracketCount,
+        phaseLaneStreakCount
+      };
     }
     if (this.dodgeText) {
       this.dodgeText.visible = true;
@@ -2981,6 +3014,7 @@ export class Player {
     if (this.dodgeRing) {
       this.dodgeRing.clear();
       this.dodgeRing.visible = false;
+      this.dodgeRing.__debugPhaseActive = { visible: false, phaseGateBracketCount: 0, phaseLaneStreakCount: 0 };
     }
     if (this.dodgeText) {
       this.dodgeText.visible = false;

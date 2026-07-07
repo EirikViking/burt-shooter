@@ -141,7 +141,12 @@ try {
 
     player.isDodging = true;
     player.dodgeCooldown = 700;
+    player.dodgeDurationMax = 333;
+    player.dodgeDuration = 220;
+    player.dodgeFlashMs = 220;
     player.dodgeReadyFlashMs = 0;
+    player.updateDodgeVisual(0);
+    const activeCue = { ...(player.dodgeRing?.__debugPhaseActive || {}) };
     player.updateDodgeCooldownVisual(0);
     const activeHidden = { ...(player.dodgeCooldownRing?.__debugPhaseCooldown || {}) };
 
@@ -155,6 +160,7 @@ try {
       playerPosition: { x: Math.round(player.x), y: Math.round(player.y) },
       cooling,
       ready,
+      activeCue,
       activeHidden,
       ringVisible: Boolean(player.dodgeCooldownRing?.visible)
     };
@@ -176,6 +182,9 @@ try {
       state.ready?.visible &&
       state.ready?.readyFlashing &&
       state.ready?.readyFlashProgress >= 0.99 &&
+      state.activeCue?.visible &&
+      state.activeCue?.phaseGateBracketCount >= 4 &&
+      state.activeCue?.phaseLaneStreakCount >= 4 &&
       state.activeHidden?.visible === false &&
       state.activeHidden?.activePhase &&
       state.ringVisible &&
