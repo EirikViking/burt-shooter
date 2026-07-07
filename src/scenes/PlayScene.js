@@ -6870,6 +6870,15 @@ export class PlayScene {
     const color = hazard.color || 0xfff45c;
     const palette = this.getBossHazardVfxPalette(hazard, color);
     const hotColor = palette.hot;
+    const armingMs = Math.max(0, Number(hazard.armingMs) || 0);
+    const armingProgress = armingMs > 0 ? Math.max(0, Math.min(1, Number(hazard.elapsedMs || 0) / armingMs)) : 1;
+    hazard._debugHazardArming = {
+      visible: false,
+      kind: hazard.kind,
+      armed: armingProgress >= 1,
+      progress: Number(armingProgress.toFixed(3)),
+      gateCount: 0
+    };
 
     if (hazard.kind === 'wall') {
       for (const x of hazard.columns || []) {
@@ -6897,6 +6906,7 @@ export class PlayScene {
       }
       layer.stroke({ color: hotColor, width: 1.8, alpha: 0.44 * alpha });
       this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
+      this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
       return;
     }
 
@@ -6953,6 +6963,7 @@ export class PlayScene {
       }
       layer.stroke({ color: 0xffffff, width: 2, alpha: 0.18 * alpha });
       this.drawBossHazardReleasePulse(layer, hazard, palette, alpha, progress);
+      this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
       return;
     }
 
@@ -7095,6 +7106,93 @@ export class PlayScene {
     layer.fill({ color, alpha: 0.24 * alpha });
     layer.circle(hazard.sourceX, hazard.sourceY, hazard.kind === 'beam' ? 6 + shimmer * 3 : 5 + shimmer * 2);
     layer.fill({ color: 0xffffff, alpha: 0.32 * alpha });
+    this.drawBossHazardArmingGate(layer, hazard, palette, alpha, armingProgress);
+  }
+
+  drawBossHazardArmingGate(layer, hazard, palette, alpha = 1, armingProgress = 1) {
+    if (!layer || !hazard || armingProgress >= 1) {
+      if (hazard?._debugHazardArming) {
+        hazard._debugHazardArming.visible = false;
+        hazard._debugHazardArming.armed = true;
+        hazard._debugHazardArming.progress = 1;
+        hazard._debugHazardArming.gateCount = 0;
+      }
+      return 0;
+    }
+
+    const gateAlpha = (0.22 + (1 - armingProgress) * 0.3) * alpha;
+    const hot = palette?.hot || 0xffffff;
+    const edge = palette?.edge || palette?.base || 0xfff45c;
+    let gateCount = 0;
+
+    if (hazard.kind === 'wall') {
+      for (const x of hazard.columns || []) {
+        const capY = hazard.startY + Math.max(12, (hazard.endY - hazard.startY) * 0.06);
+        const width = Math.max(20, hazard.width * 1.9);
+        layer.roundRect(x - width, capY - 7, width * 2, 14, 7);
+        layer.stroke({ color: edge, width: 1.6, alpha: gateAlpha });
+        layer.roundRect(x - width + 3, capY - 3, Math.max(4, (width * 2 - 6) * armingProgress), 6, 4);
+        layer.fill({ color: hot, alpha: gateAlpha * 0.72 });
+        layer.moveTo(x - width * 0.82, capY + 14);
+        layer.lineTo(x - width * 0.42, capY + 22);
+        layer.moveTo(x + width * 0.82, capY + 14);
+        layer.lineTo(x + width * 0.42, capY + 22);
+        gateCount += 2;
+      }
+      layer.stroke({ color: hot, width: 1.2, alpha: gateAlpha * 0.8 });
+    } else if (hazard.kind === 'ring') {
+      const centerR = (hazard.innerRadius + hazard.outerRadius) * 0.5;
+      const tickCount = 8;
+      for (let i = 0; i < tickCount; i += 1) {
+        const a = hazard.safeAngle + (i % 2 ? hazard.safeWedge : -hazard.safeWedge) + (i - tickCount / 2) * 0.015;
+        const r0 = centerR - 12 - i * 1.4;
+        const r1 = centerR + 12 + i * 1.4;
+        layer.moveTo(hazard.sourceX + Math.cos(a) * r0, hazard.sourceY + Math.sin(a) * r0);
+        layer.lineTo(hazard.sourceX + Math.cos(a) * r1, hazard.sourceY + Math.sin(a) * r1);
+        gateCount += 1;
+      }
+      layer.stroke({ color: edge, width: 2, alpha: gateAlpha });
+      const clockRadius = hazard.innerRadius + (hazard.outerRadius - hazard.innerRadius) * (0.18 + armingProgress * 0.58);
+      layer.arc(hazard.sourceX, hazard.sourceY, clockRadius, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * armingProgress);
+      layer.stroke({ color: hot, width: 3, alpha: gateAlpha * 0.88 });
+    } else {
+      const angle = hazard.angle || 0;
+      const px = -Math.sin(angle);
+      const py = Math.cos(angle);
+      const nx = Math.cos(angle);
+      const ny = Math.sin(angle);
+      const baseDist = hazard.kind === 'beam' ? 44 : 34;
+      const halfWidth = hazard.kind === 'beam' ? Math.max(20, (hazard.radius || 13) * 2.6) : Math.max(24, (hazard.radius || 24) * 1.25);
+      const cx = hazard.sourceX + nx * baseDist;
+      const cy = hazard.sourceY + ny * baseDist;
+      layer.moveTo(cx - px * halfWidth, cy - py * halfWidth);
+      layer.lineTo(cx + px * halfWidth, cy + py * halfWidth);
+      layer.stroke({ color: edge, width: 2.2, alpha: gateAlpha });
+      const fillHalf = Math.max(4, halfWidth * armingProgress);
+      layer.moveTo(cx - px * fillHalf, cy - py * fillHalf);
+      layer.lineTo(cx + px * fillHalf, cy + py * fillHalf);
+      layer.stroke({ color: hot, width: 4, alpha: gateAlpha * 0.58 });
+      for (let i = 0; i < 4; i += 1) {
+        const side = i < 2 ? -1 : 1;
+        const t = i % 2 ? 0.72 : 0.28;
+        const x = cx + px * halfWidth * side;
+        const y = cy + py * halfWidth * side;
+        layer.moveTo(x - nx * (8 + t * 8), y - ny * (8 + t * 8));
+        layer.lineTo(x + nx * (8 + t * 8), y + ny * (8 + t * 8));
+        gateCount += 1;
+      }
+      layer.stroke({ color: hot, width: 1.4, alpha: gateAlpha * 0.82 });
+      gateCount += 2;
+    }
+
+    hazard._debugHazardArming = {
+      visible: true,
+      kind: hazard.kind,
+      armed: false,
+      progress: Number(armingProgress.toFixed(3)),
+      gateCount
+    };
+    return gateCount;
   }
 
   isPlayerInsideBossHazard(hazard) {
