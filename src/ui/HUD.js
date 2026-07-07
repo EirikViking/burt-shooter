@@ -1426,6 +1426,8 @@ export class HUD {
 
     this.comboMeterTicks.clear();
     const glintX = Math.round(2 + fillWidth);
+    let alarmBracketCount = 0;
+    let deadlineSparkCount = 0;
     this.comboMeterTicks.roundRect(glintX - 2, height - 8, 4, 8, 2);
     this.comboMeterTicks.fill({ color: 0xffffff, alpha: low ? 0.34 + pulse * 0.3 : 0.42 });
     const tierPips = Math.max(1, Math.min(4, multiplier));
@@ -1440,6 +1442,29 @@ export class HUD {
         this.comboMeterTicks.lineTo(x + 7, height - 6);
       }
       this.comboMeterTicks.stroke({ color: 0xffd166, width: 1.1, alpha: 0.28 + pulse * 0.3 });
+
+      const bracketInset = 3;
+      const bracketY = Math.round(height * 0.5);
+      for (const sideX of [bracketInset, width - bracketInset]) {
+        const direction = sideX < width * 0.5 ? 1 : -1;
+        this.comboMeterTicks.moveTo(sideX, bracketY - 6);
+        this.comboMeterTicks.lineTo(sideX, bracketY + 6);
+        this.comboMeterTicks.moveTo(sideX, bracketY - 6);
+        this.comboMeterTicks.lineTo(sideX + direction * 7, bracketY - 6);
+        this.comboMeterTicks.moveTo(sideX, bracketY + 6);
+        this.comboMeterTicks.lineTo(sideX + direction * 7, bracketY + 6);
+        alarmBracketCount += 1;
+      }
+      this.comboMeterTicks.stroke({ color: 0xff4b6b, width: 1.45, alpha: 0.42 + pulse * 0.34 });
+
+      const sparkStart = Math.min(width - 33, Math.max(glintX + 8, Math.round(width * 0.34)));
+      for (let i = 0; i < 3; i += 1) {
+        const sparkX = sparkStart + i * 9;
+        if (sparkX >= width - 10) continue;
+        this.comboMeterTicks.circle(sparkX, height - 5, 1.8 + pulse * 0.7);
+        this.comboMeterTicks.fill({ color: i === 0 ? 0xffffff : 0xffd166, alpha: 0.28 + pulse * 0.42 });
+        deadlineSparkCount += 1;
+      }
     }
 
     const comboLabel = translateText('COMBO');
@@ -1458,6 +1483,8 @@ export class HUD {
       tierPips,
       glintX,
       lowWarning: low,
+      alarmBracketCount,
+      deadlineSparkCount,
       label: this.comboMeterText.text
     };
   }
