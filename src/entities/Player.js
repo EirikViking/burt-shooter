@@ -667,6 +667,7 @@ export class Player {
     let filledPips = 0;
     let windowProgress = 0;
     let surgeReady = false;
+    let surgeSpikeCount = 0;
     if (nearMissActive) {
       const pipTotal = 5;
       filledPips = Math.min(pipTotal, ((nearMissStreak - 1) % pipTotal) + 1);
@@ -697,6 +698,23 @@ export class Player {
       if (surgeReady) {
         this.hitboxReticle.circle(0, 0, arcRadius + 4 + pulse * 3);
         this.hitboxReticle.stroke({ color: nearMissColor, width: 1.6, alpha: 0.18 + pulse * 0.18 });
+        const spikeRadius = arcRadius + 12 + pulse * 4;
+        for (let i = 0; i < pipTotal; i += 1) {
+          const angle = -Math.PI / 2 + i * (Math.PI * 2 / pipTotal) + pulse * 0.08;
+          const tx = Math.cos(angle);
+          const ty = Math.sin(angle);
+          const sx = -Math.sin(angle);
+          const sy = Math.cos(angle);
+          const baseX = tx * spikeRadius;
+          const baseY = ty * spikeRadius;
+          const tipX = tx * (spikeRadius + 14);
+          const tipY = ty * (spikeRadius + 14);
+          this.hitboxReticle.moveTo(baseX - sx * 5, baseY - sy * 5);
+          this.hitboxReticle.lineTo(tipX, tipY);
+          this.hitboxReticle.lineTo(baseX + sx * 5, baseY + sy * 5);
+          surgeSpikeCount += 1;
+        }
+        this.hitboxReticle.stroke({ color: 0xffffff, width: 1.45, alpha: 0.2 + pulse * 0.28 });
       }
     }
     let invulnerabilityProgress = 0;
@@ -780,7 +798,8 @@ export class Player {
       streak: nearMissActive ? nearMissStreak : 0,
       filledPips,
       windowProgress: Number(windowProgress.toFixed(3)),
-      surgeReady
+      surgeReady,
+      surgeSpikeCount
     };
     this.hitboxReticle.__debugInvulnerabilityWindow = {
       active: invulnerabilityActive,

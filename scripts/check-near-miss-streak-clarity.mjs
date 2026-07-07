@@ -155,6 +155,7 @@ try {
   if (nearMiss.streak !== 5) failures.push(`near-miss streak mismatch: ${JSON.stringify(nearMiss)}`);
   if (nearMiss.filledPips !== 5) failures.push(`near-miss pips mismatch: ${JSON.stringify(nearMiss)}`);
   if (!nearMiss.surgeReady) failures.push(`surge-ready state missing: ${JSON.stringify(nearMiss)}`);
+  if ((nearMiss.surgeSpikeCount || 0) < 5) failures.push(`surge-ready burst spikes missing: ${JSON.stringify(nearMiss)}`);
   if (!(nearMiss.windowProgress > 0.6 && nearMiss.windowProgress <= 1)) failures.push(`window progress should still be readable: ${JSON.stringify(nearMiss)}`);
   if ((state.scoring?.bestDangerDodgeStreak || 0) < 5) failures.push(`scoring streak did not register: ${JSON.stringify(state.scoring)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
