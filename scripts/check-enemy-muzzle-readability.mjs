@@ -100,6 +100,12 @@ page.on('console', (message) => {
 
 try {
   await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.shipCatalogReady, null, { timeout: 30000 });
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    await play?.shipCatalogReady;
+  });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.shipCatalogLoaded), null, { timeout: 30000 });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state?.scene === 'play' && state?.player?.active && state?.counts?.enemies > 0;
@@ -140,7 +146,17 @@ try {
       shotCount: shotList.length,
       debug: enemy.muzzleFlashLayer?._debugMuzzleFlash || null,
       layerVisible: Boolean(enemy.muzzleFlashLayer?.visible),
-      enemy: { x: Math.round(enemy.x), y: Math.round(enemy.y), type: enemy.type }
+      enemy: {
+        x: Math.round(enemy.x),
+        y: Math.round(enemy.y),
+        type: enemy.type,
+        usingGeneratedEnemyTexture: Boolean(enemy.usingGeneratedEnemyTexture),
+        hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
+        bodySize: {
+          width: Math.round(enemy.body?.width || 0),
+          height: Math.round(enemy.body?.height || 0)
+        }
+      }
     };
   });
 
@@ -151,6 +167,8 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if ((state.shotCount || 0) < 1) failures.push(`enemy did not fire: ${JSON.stringify(state)}`);
+  if (!state.enemy?.usingGeneratedEnemyTexture) failures.push(`muzzle sample did not use a real generated enemy texture: ${JSON.stringify(state.enemy)}`);
+  if (!state.enemy?.hasBodySpriteTexture || state.enemy?.bodySize?.width < 20 || state.enemy?.bodySize?.height < 20) failures.push(`muzzle sample body texture missing/small: ${JSON.stringify(state.enemy?.bodySize)}`);
   if (!state.layerVisible || !state.debug?.visible) failures.push(`muzzle layer should be visible: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.shotCount || 0) < 1) failures.push(`debug shot count missing: ${JSON.stringify(state.debug)}`);
   if (!Number.isFinite(state.debug?.angle)) failures.push(`debug angle missing: ${JSON.stringify(state.debug)}`);

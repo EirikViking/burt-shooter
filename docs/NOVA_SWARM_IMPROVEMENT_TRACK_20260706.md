@@ -846,3 +846,28 @@ Safety notes:
 
 - No enemy health, damage, spawn timing, fire cadence, threat-action assignment, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only enemy-local priority feedback using existing enemy metadata.
+
+## Batch 38 - Enemy Visual Proof Hardening
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+151. Enemy spawn-cue proof now waits for the ship catalog and uses a generated enemy ship asset instead of a legacy placeholder type.
+152. Enemy hit-feedback proof now waits for the ship catalog and uses a generated enemy ship asset instead of a fallback shape.
+153. Enemy muzzle-readability proof now asserts the live firing enemy is a real generated enemy texture.
+154. The affected enemy proof scripts now fail when their sample body texture is missing or too small.
+155. Corrected screenshots prove spawn, hit, and muzzle cues on real enemy ship assets.
+
+Verification:
+
+- `npm run check:enemy-spawn-cue`
+- Screenshot proof: `test-results/enemy-spawn-cue-2026-07-07T08-39-27-057Z/enemy-spawn-cue.png`
+- `npm run check:enemy-hit-feedback`
+- Screenshot proof: `test-results/enemy-hit-feedback-2026-07-07T08-39-27-056Z/enemy-hit-feedback.png`
+- `npm run check:enemy-muzzle-readability`
+- Screenshot proof: `test-results/enemy-muzzle-readability-2026-07-07T08-39-27-057Z/enemy-muzzle-readability.png`
+- `git diff --check`
+
+Safety notes:
+
+- No runtime gameplay logic, enemy health, damage, spawn timing, fire cadence, projectile behavior, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- QA-only hardening so enemy-readability evidence cannot silently fall back to simple placeholder shapes.

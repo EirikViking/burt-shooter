@@ -101,6 +101,13 @@ page.on('console', (message) => {
 try {
   await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.scenes?.play?.gameContainer && window.__game?.scenes?.play?.enemyManager, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.shipCatalogReady, null, { timeout: 30000 });
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    await play?.shipCatalogReady;
+    await play?.prewarmGeneratedEnemyTexturesForLevel?.(12, { aheadLevels: 0 });
+  });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.shipCatalogLoaded), null, { timeout: 30000 });
   await page.waitForTimeout(500);
 
   const state = await page.evaluate(async () => {
@@ -120,7 +127,7 @@ try {
       play.bulletManager.enemyBullets = [];
     }
 
-    const enemy = new Enemy((game.getWidth?.() || 1280) / 2, 205, 'bruiser', 4, game, 'Red');
+    const enemy = new Enemy((game.getWidth?.() || 1280) / 2, 205, 'nova_enemy_012', 12, game, 'Red');
     enemy.health = 5;
     enemy.maxHealth = 5;
     enemy.updateHealthBar?.();
@@ -136,6 +143,12 @@ try {
       afterHealth: enemy.health,
       killed,
       active: enemy.active,
+      usingGeneratedEnemyTexture: Boolean(enemy.usingGeneratedEnemyTexture),
+      hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
+      bodySize: {
+        width: Math.round(enemy.body?.width || 0),
+        height: Math.round(enemy.body?.height || 0)
+      },
       hitFeedback: enemy.hitFeedbackLayer?._debugHitFeedback || null,
       layerVisible: Boolean(enemy.hitFeedbackLayer?.visible),
       sparkCount: enemy.hitFeedbackSparkCount || 0,
@@ -155,6 +168,8 @@ try {
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if (state.killed) failures.push('non-lethal hit killed the test enemy');
   if (!state.active) failures.push('enemy became inactive after non-lethal hit');
+  if (!state.usingGeneratedEnemyTexture) failures.push(`hit feedback sample did not use a real generated enemy texture: ${JSON.stringify(state)}`);
+  if (!state.hasBodySpriteTexture || state.bodySize?.width < 20 || state.bodySize?.height < 20) failures.push(`hit feedback sample body texture missing/small: ${JSON.stringify(state.bodySize)}`);
   if (!(state.afterHealth < state.beforeHealth)) failures.push(`health did not decrease: ${state.beforeHealth} -> ${state.afterHealth}`);
   if (!state.layerVisible || !state.hitFeedback?.visible) failures.push(`hit feedback layer not visible: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.hitFeedback?.radius || 0) <= 10) failures.push(`feedback radius too small: ${state.hitFeedback?.radius}`);

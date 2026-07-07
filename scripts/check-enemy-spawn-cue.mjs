@@ -101,6 +101,13 @@ page.on('console', (message) => {
 try {
   await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.scenes?.play?.gameContainer && window.__game?.scenes?.play?.enemyManager, null, { timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.shipCatalogReady, null, { timeout: 30000 });
+  await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    await play?.shipCatalogReady;
+    await play?.prewarmGeneratedEnemyTexturesForLevel?.(5, { aheadLevels: 0 });
+  });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.shipCatalogLoaded), null, { timeout: 30000 });
   await page.waitForTimeout(500);
 
   const active = await page.evaluate(async () => {
@@ -116,7 +123,7 @@ try {
     manager.enemies?.forEach?.((enemy) => enemy?.deactivateVisuals?.('enemy_spawn_cue_check'));
     manager.enemies = [];
 
-    const enemy = new Enemy((game.getWidth?.() || 1280) / 2, 235, 'striker', 5, game, 'Green');
+    const enemy = new Enemy((game.getWidth?.() || 1280) / 2, 235, 'nova_enemy_003', 5, game, 'Green');
     enemy.state = 'FORMATION';
     enemy.resetSpawnCue(Date.now() - 120);
     enemy.updateSpawnCue(Date.now());
@@ -127,6 +134,12 @@ try {
       ok: true,
       active: enemy.active,
       radius: enemy.radius,
+      usingGeneratedEnemyTexture: Boolean(enemy.usingGeneratedEnemyTexture),
+      hasBodySpriteTexture: Boolean(enemy.body?.texture && enemy.body?.texture?.width > 0 && enemy.body?.texture?.height > 0),
+      bodySize: {
+        width: Math.round(enemy.body?.width || 0),
+        height: Math.round(enemy.body?.height || 0)
+      },
       debug: { ...(enemy.spawnCueLayer?._debugSpawnCue || {}) },
       visible: Boolean(enemy.spawnCueLayer?.visible),
       children: (enemy.sprite?.children || []).map((child) => child.label || child.constructor?.name || 'node')
@@ -151,6 +164,8 @@ try {
   const failures = [];
   if (!active.ok) failures.push(active.reason || 'state setup failed');
   if (!active.active) failures.push('test enemy was not active');
+  if (!active.usingGeneratedEnemyTexture) failures.push(`spawn cue sample did not use a real generated enemy texture: ${JSON.stringify(active)}`);
+  if (!active.hasBodySpriteTexture || active.bodySize?.width < 20 || active.bodySize?.height < 20) failures.push(`spawn cue sample body texture missing/small: ${JSON.stringify(active.bodySize)}`);
   if (!active.visible || !active.debug?.visible) failures.push(`spawn cue was not visible: ${JSON.stringify(active)}`);
   if ((active.debug?.radius || 0) <= active.radius) failures.push(`spawn cue radius too small: ${active.debug?.radius} <= ${active.radius}`);
   if ((active.debug?.fade || 0) <= 0.1) failures.push(`spawn cue fade too low: ${active.debug?.fade}`);
