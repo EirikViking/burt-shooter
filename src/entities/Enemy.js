@@ -83,6 +83,10 @@ export class Enemy {
     this.hitFeedbackDamage = 0;
     this.lastHitSparkAt = 0;
     this.hitFeedbackSparkCount = 0;
+    this.hitFeedbackImpactAngle = null;
+    this.hitFeedbackImpactDistance = 0;
+    this.hitFeedbackImpactLocalX = 0;
+    this.hitFeedbackImpactLocalY = 0;
     this.muzzleFlashLayer = null;
     this.muzzleFlashStartedAt = 0;
     this.muzzleFlashUntil = 0;
@@ -654,17 +658,40 @@ export class Enemy {
     this.healthBar.fill({ color: colorAssist ? 0xfff45c : healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
   }
 
-  triggerHitFeedback(amount = 1, now = Date.now()) {
+  triggerHitFeedback(amount = 1, now = Date.now(), options = {}) {
     if (!this.hitFeedbackLayer || !this.active || this.visualsDeactivated) return;
     const damage = Math.max(0.1, Number(amount) || 0.1);
     this.hitFeedbackDamage = Math.max(this.hitFeedbackDamage * 0.6, Math.min(4, damage));
     this.hitFeedbackStartedAt = now;
-    this.hitFeedbackUntil = Math.max(this.hitFeedbackUntil || 0, now + 170);
+    this.hitFeedbackUntil = Math.max(this.hitFeedbackUntil || 0, now + 210);
+    const impactX = Number(options.impactX);
+    const impactY = Number(options.impactY);
+    const hasImpactPoint = Number.isFinite(impactX) && Number.isFinite(impactY);
+    if (hasImpactPoint) {
+      const localX = impactX - this.x;
+      const localY = impactY - this.y;
+      const distance = Math.hypot(localX, localY);
+      if (distance > 0.25) {
+        const angle = Math.atan2(localY, localX);
+        const impactDistance = Math.max(this.radius * 0.38, Math.min(this.radius * 0.96, distance));
+        this.hitFeedbackImpactAngle = angle;
+        this.hitFeedbackImpactDistance = impactDistance;
+        this.hitFeedbackImpactLocalX = Math.cos(angle) * impactDistance;
+        this.hitFeedbackImpactLocalY = Math.sin(angle) * impactDistance;
+      }
+    } else {
+      this.hitFeedbackImpactAngle = null;
+      this.hitFeedbackImpactDistance = 0;
+      this.hitFeedbackImpactLocalX = 0;
+      this.hitFeedbackImpactLocalY = 0;
+    }
     const sparkIntervalMs = this.isEliteMiddleShip ? 95 : 70;
     if (now - (this.lastHitSparkAt || 0) >= sparkIntervalMs) {
       const color = this.visualVariant?.accent || this.color || 0x66f7ff;
       const scale = this.isEliteMiddleShip ? 1.05 : 0.72;
-      this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, color, scale);
+      const sparkX = Number.isFinite(this.hitFeedbackImpactLocalX) ? this.x + this.hitFeedbackImpactLocalX : this.x;
+      const sparkY = Number.isFinite(this.hitFeedbackImpactLocalY) ? this.y + this.hitFeedbackImpactLocalY : this.y;
+      this.game?.scenes?.play?.particleManager?.createHitSpark?.(sparkX, sparkY, color, scale);
       this.lastHitSparkAt = now;
       this.hitFeedbackSparkCount += 1;
     }
@@ -704,12 +731,31 @@ export class Enemy {
       layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
     }
     layer.stroke({ color: 0xffffff, width: Math.max(1, width - 0.4), alpha: 0.28 + fade * 0.38 });
+    const hasImpactNotch = Number.isFinite(this.hitFeedbackImpactAngle);
+    if (hasImpactNotch) {
+      const angle = this.hitFeedbackImpactAngle;
+      const impactDistance = Math.max(this.radius * 0.38, Math.min(radius * 0.82, this.hitFeedbackImpactDistance || this.radius * 0.62));
+      const ix = Math.cos(angle) * impactDistance;
+      const iy = Math.sin(angle) * impactDistance;
+      const nx = -Math.sin(angle);
+      const ny = Math.cos(angle);
+      const notchWidth = this.isEliteMiddleShip ? 11 : 8.5;
+      layer.moveTo(ix - nx * notchWidth - Math.cos(angle) * 4, iy - ny * notchWidth - Math.sin(angle) * 4);
+      layer.lineTo(ix - Math.cos(angle) * (14 + damageLift * 4), iy - Math.sin(angle) * (14 + damageLift * 4));
+      layer.lineTo(ix + nx * notchWidth - Math.cos(angle) * 4, iy + ny * notchWidth - Math.sin(angle) * 4);
+      layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 2.8 : 2.2, alpha: 0.58 + fade * 0.38 });
+      layer.circle(ix, iy, this.isEliteMiddleShip ? 4.2 : 3.2);
+      layer.fill({ color, alpha: 0.58 + fade * 0.3 });
+    }
     layer.visible = true;
     layer._debugHitFeedback = {
       visible: true,
       progress: Number(progress.toFixed(3)),
       fade: Number(fade.toFixed(3)),
       radius: Number(radius.toFixed(1)),
+      impactNotch: hasImpactNotch,
+      impactAngle: hasImpactNotch ? Number(this.hitFeedbackImpactAngle.toFixed(3)) : null,
+      impactDistance: hasImpactNotch ? Number((this.hitFeedbackImpactDistance || 0).toFixed(1)) : 0,
       sparkCount: this.hitFeedbackSparkCount || 0
     };
   }
@@ -2487,7 +2533,7 @@ export class Enemy {
     }
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, options = {}) {
     let resolvedAmount = amount;
     const now = Date.now();
     if (this.middleShipProfile && now < this.phaseShiftUntil) resolvedAmount *= 0.45;
@@ -2520,7 +2566,7 @@ export class Enemy {
       this.deactivateVisuals('death');
       return true;
     }
-    this.triggerHitFeedback(resolvedAmount, now);
+    this.triggerHitFeedback(resolvedAmount, now, options);
     return false;
   }
 

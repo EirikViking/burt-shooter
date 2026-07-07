@@ -134,7 +134,10 @@ try {
     play.gameContainer.addChild(enemy.sprite);
     manager.enemies = [enemy];
     const beforeHealth = enemy.health;
-    const killed = enemy.takeDamage(1.25);
+    const killed = enemy.takeDamage(1.25, {
+      impactX: enemy.x + enemy.radius * 0.46,
+      impactY: enemy.y + enemy.radius * 0.72
+    });
     enemy.updateHitFeedback(Date.now() + 80);
 
     return {
@@ -173,6 +176,8 @@ try {
   if (!(state.afterHealth < state.beforeHealth)) failures.push(`health did not decrease: ${state.beforeHealth} -> ${state.afterHealth}`);
   if (!state.layerVisible || !state.hitFeedback?.visible) failures.push(`hit feedback layer not visible: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.hitFeedback?.radius || 0) <= 10) failures.push(`feedback radius too small: ${state.hitFeedback?.radius}`);
+  if (!state.hitFeedback?.impactNotch || !Number.isFinite(state.hitFeedback?.impactAngle)) failures.push(`impact notch missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.impactDistance || 0) <= 4) failures.push(`impact distance too small: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.sparkCount || 0) < 1 || (state.hitFeedback?.sparkCount || 0) < 1) failures.push(`hit spark was not recorded: ${state.sparkCount}`);
   if (!state.healthBarVisible) failures.push('health bar disappeared after non-lethal hit');
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

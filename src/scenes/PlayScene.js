@@ -3338,6 +3338,8 @@ export class PlayScene {
           ref: bullet,
           x: Number(bullet.x) || 0,
           y: Number(bullet.y) || 0,
+          vx: Number(bullet.vx) || 0,
+          vy: Number(bullet.vy) || 0,
           radius: this.getCollisionRadius(bullet),
           damage: Math.max(0, Number(bullet.damage) || 0),
           piercing: Boolean(bullet.piercing),
@@ -3436,7 +3438,17 @@ export class PlayScene {
           if ((dx * dx + dy * dy) >= radius * radius) continue;
           collisionStats.playerBulletEnemyHits += 1;
           if (bulletProxy.isPlasmaLance) collisionStats.plasmaLanceHitEvents += 1;
-          hitEvents.push({ bullet, enemy, bulletProxy });
+          const distance = Math.hypot(dx, dy);
+          const fallbackAngle = Math.atan2(bulletProxy.vy || -1, bulletProxy.vx || 0);
+          const impactAngle = distance > 0.25 ? Math.atan2(dy, dx) : fallbackAngle;
+          const contactDistance = Math.max(enemyProxy.radius * 0.38, Math.min(enemyProxy.radius * 0.96, distance || enemyProxy.radius * 0.72));
+          hitEvents.push({
+            bullet,
+            enemy,
+            bulletProxy,
+            impactX: enemyProxy.x + Math.cos(impactAngle) * contactDistance,
+            impactY: enemyProxy.y + Math.sin(impactAngle) * contactDistance
+          });
           if (bulletProxy.isBomb) break;
           if (!bulletProxy.piercing) bullet.active = false;
         }
@@ -3452,7 +3464,10 @@ export class PlayScene {
           this.detonateBombBullet(bullet, 'impact');
           continue;
         }
-        const destroyed = enemy.takeDamage(bulletProxy.damage);
+        const destroyed = enemy.takeDamage(bulletProxy.damage, {
+          impactX: event.impactX,
+          impactY: event.impactY
+        });
         event.destroyed = destroyed;
         this.triggerChainLightning(enemy, bulletProxy.damage);
         this.applyShipTraitBulletImpact(bullet, enemy);
@@ -3495,8 +3510,9 @@ export class PlayScene {
         } else {
           collisionStats.playerBulletEnemyDamageOnly += 1;
           this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
-            x: enemy.x,
-            y: enemy.y,
+            x: event.impactX ?? enemy.x,
+            y: event.impactY ?? enemy.y,
+            color: enemy.visualVariant?.accent || enemy.color || 0x66f7ff,
             intensity: frequentMultiHit ? 0.6 : undefined
           });
           this.queueCollisionSideEffect(sideEffects, 'audio', {
