@@ -525,6 +525,8 @@ export class HUD {
     this.highscoreChaseBarFill.roundRect(barX, barY, barW * progress, 4, 2);
     this.highscoreChaseBarFill.fill({ color: dangerColor, alpha: 0.92 });
     this.highscoreChaseTicks.clear();
+    let targetChevronCount = 0;
+    let victoryBurstCount = 0;
     if (hasTarget) {
       const markerValues = [0.25, 0.5, 0.75, 1];
       for (const mark of markerValues) {
@@ -544,12 +546,32 @@ export class HUD {
       if (nearTarget) {
         this.highscoreChaseTicks.roundRect(barX - 2, barY - 4, barW + 4, 12, 5);
         this.highscoreChaseTicks.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
+        for (let i = 0; i < 3; i += 1) {
+          const x = Math.min(barX + barW - 5, glintX + 8 + i * 8);
+          const y = barY + 2;
+          this.highscoreChaseTicks.moveTo(x - 4, y - 4);
+          this.highscoreChaseTicks.lineTo(x, y);
+          this.highscoreChaseTicks.lineTo(x - 4, y + 4);
+          targetChevronCount += 1;
+        }
+        this.highscoreChaseTicks.stroke({ color: 0xffffff, width: 1.1, alpha: 0.24 + pulse * 0.36 });
       }
       if (surpassed) {
         this.highscoreChaseTicks.roundRect(barX - 2, barY - 4, barW + 4, 12, 5);
         this.highscoreChaseTicks.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.58 });
         this.highscoreChaseTicks.circle(barX + barW, barY + 2, 3.4);
         this.highscoreChaseTicks.fill({ color: 0xffef7e, alpha: 0.88 });
+        const burstX = barX + barW;
+        const burstY = barY + 2;
+        for (let i = 0; i < 6; i += 1) {
+          const angle = (Math.PI * 2 * i) / 6 + pulse * 0.12;
+          const inner = 7;
+          const outer = 13 + pulse * 4;
+          this.highscoreChaseTicks.moveTo(burstX + Math.cos(angle) * inner, burstY + Math.sin(angle) * inner);
+          this.highscoreChaseTicks.lineTo(burstX + Math.cos(angle) * outer, burstY + Math.sin(angle) * outer);
+          victoryBurstCount += 1;
+        }
+        this.highscoreChaseTicks.stroke({ color: 0xffffff, width: 1.1, alpha: 0.2 + pulse * 0.3 });
       }
     }
     this.highscoreChaseGroup._debugChase = {
@@ -559,6 +581,8 @@ export class HUD {
       nearTarget,
       surpassed,
       tickCount: hasTarget ? 4 : 0,
+      targetChevronCount,
+      victoryBurstCount,
       glintX: hasTarget ? Math.round(barX + barW * Math.min(1, progress)) : null,
       pulseBucket
     };

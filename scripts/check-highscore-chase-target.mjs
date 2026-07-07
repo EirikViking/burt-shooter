@@ -267,7 +267,8 @@ try {
   assert.ok(targetCrossingProbe.graphicsClearCalls > 0, 'crossing the target should still redraw the high-score chase widget');
   assert.match(targetCrossingProbe.text || '', /OLD SCORE HUMILIATED/i, 'crossing the target should still show the success line');
   assert.equal(targetCrossingProbe.debug?.surpassed, true, 'crossing the target should expose surpassed high-score chase state');
-  assert.equal(targetCrossingProbe.debug?.tickCount, 3, 'high-score chase should draw target milestone ticks');
+  assert.equal(targetCrossingProbe.debug?.tickCount, 4, 'high-score chase should draw 25/50/75/100 target milestone ticks');
+  assert.ok((targetCrossingProbe.debug?.victoryBurstCount || 0) >= 6, 'crossing the target should draw the target-end victory burst');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });

@@ -156,9 +156,11 @@ try {
   if (near.debug?.surpassed) failures.push(`near-target state incorrectly surpassed: ${JSON.stringify(near.debug)}`);
   if ((near.debug?.tickCount || 0) !== 4) failures.push(`near-target marker count mismatch: ${JSON.stringify(near.debug)}`);
   if (!Number.isFinite(near.debug?.glintX)) failures.push(`near-target glint missing: ${JSON.stringify(near.debug)}`);
+  if ((near.debug?.targetChevronCount || 0) < 3) failures.push(`near-target chevrons missing: ${JSON.stringify(near.debug)}`);
   if (!surpassed.debug?.surpassed) failures.push(`surpassed state did not activate: ${JSON.stringify(surpassed.debug)}`);
   if (surpassed.debug?.nearTarget) failures.push(`surpassed state should not be near-only: ${JSON.stringify(surpassed.debug)}`);
   if ((surpassed.debug?.tickCount || 0) !== 4) failures.push(`surpassed marker count mismatch: ${JSON.stringify(surpassed.debug)}`);
+  if ((surpassed.debug?.victoryBurstCount || 0) < 6) failures.push(`surpassed victory burst missing: ${JSON.stringify(surpassed.debug)}`);
   if (!/OLD SCORE|HUMILIATED/i.test(surpassed.text?.gap || '')) failures.push(`surpassed text mismatch: ${JSON.stringify(surpassed.text)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
