@@ -71,6 +71,7 @@
     "check:menu-scrollbars": "node scripts/check-menu-scrollbars.mjs",
     "check:display-settings": "node scripts/check-display-settings.mjs",
     "check:ui-scale-4k": "node scripts/check-ui-scale-4k.mjs",
+    "check:score-popup-readability": "node scripts/check-score-popup-readability.mjs",
     "check:cinematic-hangar-menu": "node scripts/check-cinematic-hangar-menu.mjs",
     "check:cinematic-hangar-menu-icons": "node scripts/check-cinematic-hangar-menu-icons.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
