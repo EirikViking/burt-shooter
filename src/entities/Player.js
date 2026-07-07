@@ -1502,16 +1502,84 @@ export class Player {
 
   // --- Actions ---
 
-  createMuzzleFlash() {
+  createMuzzleFlash(options = {}) {
     if (!this.sprite) return;
-    const color = Number.isFinite(this.muzzleFlashColor) ? this.muzzleFlashColor : 0xffffff;
+    const offsets = Array.isArray(options.offsets) && options.offsets.length ? options.offsets : [0];
+    const spreadAngles = Array.isArray(options.spreadAngles) && options.spreadAngles.length ? options.spreadAngles : offsets.map(() => 0);
+    const volleyCount = Math.max(1, Math.min(9, Math.max(offsets.length, spreadAngles.length)));
+    const color = Number.isFinite(options.color) ? options.color : (Number.isFinite(this.muzzleFlashColor) ? this.muzzleFlashColor : 0xffffff);
+    const accent = this.visualVariant?.glow || this.visualVariant?.accent || 0xffffff;
+    const bomb = Boolean(options.bomb);
     const flash = new PIXI.Graphics();
-    flash.circle(0, -15, 6);
-    flash.fill({ color, alpha: 0.8 });
+    flash.label = 'playerMuzzleFlashIntent';
+    flash.__novaPlayerMuzzleFlashIntent = true;
+    flash.blendMode = 'add';
+    flash.zIndex = 12;
+
+    const noseY = -22;
+    const length = bomb ? 36 : 24 + Math.min(4, volleyCount - 1) * 4;
+    let laneCount = 0;
+    for (let i = 0; i < volleyCount; i += 1) {
+      const offsetX = Number(offsets[i] ?? offsets[offsets.length - 1] ?? 0) || 0;
+      const angle = Number(spreadAngles[i] ?? 0) || 0;
+      const dx = Math.sin(angle);
+      const dy = -Math.cos(angle);
+      const tipX = offsetX + dx * length;
+      const tipY = noseY + dy * length;
+      const sideX = Math.cos(angle) * (bomb ? 7 : 4.5);
+      const sideY = Math.sin(angle) * (bomb ? 7 : 4.5);
+      flash.moveTo(offsetX - sideX, noseY - sideY);
+      flash.lineTo(tipX, tipY);
+      flash.lineTo(offsetX + sideX, noseY + sideY);
+      flash.closePath();
+      flash.fill({ color, alpha: bomb ? 0.34 : 0.24 });
+      flash.moveTo(offsetX, noseY + 2);
+      flash.lineTo(tipX, tipY - 2);
+      laneCount += 1;
+    }
+    flash.stroke({ color: accent, width: bomb ? 2.6 : 1.8, alpha: bomb ? 0.58 : 0.44 });
+
+    const minOffset = Math.min(...offsets);
+    const maxOffset = Math.max(...offsets);
+    if (volleyCount > 1) {
+      flash.moveTo(minOffset - 8, noseY + 7);
+      flash.lineTo(maxOffset + 8, noseY + 7);
+      flash.moveTo(minOffset - 8, noseY + 7);
+      flash.lineTo(minOffset - 3, noseY + 13);
+      flash.moveTo(maxOffset + 8, noseY + 7);
+      flash.lineTo(maxOffset + 3, noseY + 13);
+      flash.stroke({ color, width: 1.5, alpha: 0.46 });
+    }
+
+    if (bomb) {
+      flash.poly([0, noseY - 38, 10, noseY - 28, 0, noseY - 18, -10, noseY - 28]);
+      flash.stroke({ color: 0xffef7e, width: 2.4, alpha: 0.7 });
+      flash.circle(0, noseY - 28, 5.5);
+      flash.fill({ color: 0xffffff, alpha: 0.36 });
+    } else {
+      flash.circle(0, noseY - 12, 6.5 + Math.min(4, volleyCount));
+      flash.fill({ color: 0xffffff, alpha: 0.2 });
+      flash.circle(0, noseY - 12, 3.5 + Math.min(3, volleyCount * 0.5));
+      flash.fill({ color, alpha: 0.52 });
+    }
+
+    flash.__debugMuzzleFlashIntent = {
+      visible: true,
+      volleyCount,
+      laneCount,
+      bomb,
+      bracketVisible: volleyCount > 1,
+      minOffset,
+      maxOffset,
+      color
+    };
+    this.lastMuzzleFlashDebug = flash.__debugMuzzleFlashIntent;
+    const durationMs = Math.max(40, Math.min(700, Number(options.durationMs) || (bomb ? 140 : 115)));
+    flash.__debugMuzzleFlashIntent.durationMs = durationMs;
     this.sprite.addChild(flash);
     setTimeout(() => {
       if (flash.parent) flash.parent.removeChild(flash);
-    }, 80);
+    }, durationMs);
   }
 
   applyTraitProjectileEffects(bullet, shotCounter, { bonus = false } = {}) {
@@ -1608,7 +1676,7 @@ export class Player {
       }
 
       AudioManager.playSfx(this.weaponSfxKey, { volume: 0.8, force: false });
-      this.createMuzzleFlash();
+      this.createMuzzleFlash({ bomb: true, offsets: [0], spreadAngles: [0], color: this.bombColor });
       return bullets;
     }
 
@@ -1657,14 +1725,8 @@ export class Player {
       this.applyTraitProjectileEffects(bullet, shotCounter);
       bullets.push(bullet);
 
-      const flash = new PIXI.Graphics();
-      flash.circle(offsetX, -15, 6);
-      flash.fill({ color: this.muzzleFlashColor, alpha: 0.8 });
-      this.sprite.addChild(flash);
-      setTimeout(() => {
-        if (flash.parent) this.sprite.removeChild(flash);
-      }, 80);
     });
+    this.createMuzzleFlash({ offsets, spreadAngles, color: this.muzzleFlashColor });
 
     const wingEvery = Number(this.traitCombat?.wingShotEvery || 0);
     if (wingEvery > 0 && shotCounter % wingEvery === 0) {

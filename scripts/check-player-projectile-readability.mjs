@@ -165,6 +165,47 @@ try {
     const piercing = makeSpecial(132, -132, 0xffffff, { isTraitPiercingShot: true, piercing: true });
     const wing = makeSpecial(198, -98, 0x66ffff, { isTraitWingShot: true });
     const bonus = makeSpecial(0, -182, 0x7dffcc, { isTraitBonusShot: true });
+    const clearMuzzleFlashes = () => {
+      [...(player.sprite?.children || [])].forEach((child) => {
+        if (child?.__novaPlayerMuzzleFlashIntent || child?.__debugMuzzleFlashIntent || child?.label === 'playerMuzzleFlashIntent') {
+          if (child.parent) child.parent.removeChild(child);
+          child.destroy?.({ children: true });
+        }
+      });
+    };
+    const originalCombat = player.traitCombat;
+    const originalMultiShot = player.multiShot;
+    const originalRankBoostExtraShots = player.rankBoostExtraShots;
+    const originalBombShotsLeft = player.bombShotsLeft;
+    const originalShootCooldown = player.shootCooldown;
+    const originalPowerupType = player.activePowerup?.type || null;
+    player.traitCombat = {};
+    player.multiShot = 3;
+    player.rankBoostExtraShots = 0;
+    player.bombShotsLeft = 0;
+    if (player.activePowerup) player.activePowerup.type = null;
+    player.shootCooldown = 0;
+    const volleyBullets = player.shoot();
+    const volleyFlash = player.lastMuzzleFlashDebug || null;
+    clearMuzzleFlashes();
+    player.shootCooldown = 0;
+    player.bombShotsLeft = 1;
+    const bombBullets = player.shoot();
+    const bombFlash = player.lastMuzzleFlashDebug || null;
+    clearMuzzleFlashes();
+    player.traitCombat = originalCombat;
+    player.multiShot = originalMultiShot;
+    player.rankBoostExtraShots = originalRankBoostExtraShots;
+    player.bombShotsLeft = originalBombShotsLeft;
+    player.shootCooldown = originalShootCooldown;
+    if (player.activePowerup) player.activePowerup.type = originalPowerupType;
+    player.createMuzzleFlash({
+      offsets: [-14, 0, 14],
+      spreadAngles: [-0.15, 0, 0.15],
+      color: player.muzzleFlashColor,
+      durationMs: 600
+    });
+    const screenshotFlash = player.lastMuzzleFlashDebug || null;
 
     return {
       ok: true,
@@ -188,6 +229,13 @@ try {
         specialIntentLayers: [bomb, critical, piercing, wing, bonus]
           .filter((bullet) => bullet.playerIntentLayer?.visible && bullet.playerIntentLayer?._debugIntentMarkers?.active)
           .length
+      },
+      muzzleFlash: {
+        volleyBullets: volleyBullets.length,
+        volley: volleyFlash,
+        bombBullets: bombBullets.length,
+        bomb: bombFlash,
+        screenshot: screenshotFlash
       }
     };
   });
@@ -209,6 +257,12 @@ try {
   if ((state.markers?.friendlyGlints || 0) !== 1 || (state.markers?.friendlyWings || 0) !== 1) failures.push(`friendly marker child counts mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.enemyDangerGlints || 0) !== 1) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.specialIntentLayers || 0) !== 5) failures.push(`special intent marker layer count mismatch: ${JSON.stringify(state.markers)}`);
+  if (state.muzzleFlash?.volleyBullets !== 3) failures.push(`volley shoot bullet count mismatch: ${JSON.stringify(state.muzzleFlash)}`);
+  if (state.muzzleFlash?.volley?.volleyCount !== 3 || state.muzzleFlash?.volley?.laneCount !== 3) failures.push(`volley muzzle flash lanes missing: ${JSON.stringify(state.muzzleFlash?.volley)}`);
+  if (!state.muzzleFlash?.volley?.bracketVisible) failures.push(`volley muzzle flash bracket missing: ${JSON.stringify(state.muzzleFlash?.volley)}`);
+  if (state.muzzleFlash?.bombBullets !== 1) failures.push(`bomb shoot bullet count mismatch: ${JSON.stringify(state.muzzleFlash)}`);
+  if (!state.muzzleFlash?.bomb?.bomb || state.muzzleFlash?.bomb?.laneCount !== 1) failures.push(`bomb muzzle flash missing bomb cue: ${JSON.stringify(state.muzzleFlash?.bomb)}`);
+  if (state.muzzleFlash?.screenshot?.volleyCount !== 3 || (state.muzzleFlash?.screenshot?.durationMs || 0) < 500) failures.push(`screenshot muzzle flash proof missing: ${JSON.stringify(state.muzzleFlash?.screenshot)}`);
   for (const [key, marker] of Object.entries(state.specials || {})) {
     if (!marker?.active) failures.push(`${key} intent marker inactive: ${JSON.stringify(marker)}`);
     if (!marker?.intents?.[key === 'critical' ? 'critical' : key]) failures.push(`${key} intent flag missing: ${JSON.stringify(marker)}`);
