@@ -789,3 +789,31 @@ Safety notes:
 
 - No invulnerability duration, damage logic, respawn timing, dodge behavior, hitbox size, lives, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
 - Visual-only player-local survivability feedback using existing invulnerability state.
+
+## Batch 36 - Powerup Intent Readability
+
+Source target: `codex/main-menu-run-contracts-20260702`
+
+141. Falling powerups now carry a small intent cue layer so pickups are readable as defense, offense, control, or utility before collection.
+142. Defensive pickups use guard-arc language distinct from offensive crosshair ticks.
+143. Slow/control pickups use a sweep/tick language, while utility/economy pickups use small diamond markers.
+144. Major pickups such as Row Core and Super Extra Life now draw a subtle crown ring so high-value drops stand out without new text.
+145. `check:powerup-intent-readability` proves representative category cues and major-crown debug state with a browser screenshot.
+
+Verification:
+
+- `npm run check:powerup-intent-readability`
+- Screenshot proof: `test-results/powerup-intent-readability-2026-07-07T08-12-32-707Z/powerup-intent-readability.png`
+- `npm run check:powerup-visuals`
+- `npm run check:powerup-pickup-guides`
+- `npm run check:powerup-expiry-readability`
+- `npm run check:i18n`
+- `npm run build:current`
+- `npm run check:i18n-ui`
+- `npm run check:controller-flow`
+- `git diff --check`
+
+Safety notes:
+
+- No powerup drop rate, lifetime, movement speed, pickup radius, effect, duration, charge count, score, XP, leaderboard, achievement API ID, balance, Steamworks metadata, package, upload, public branch, or live branch change.
+- Visual-only pickup readability layer using existing falling powerup state.

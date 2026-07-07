@@ -18,6 +18,37 @@ function randomBetween(min, max) {
   return min + Math.random() * Math.max(0, max - min);
 }
 
+const MAJOR_POWERUP_TYPES = new Set([
+  'bomb',
+  'orbital_strike',
+  'shockwave',
+  'stasis_net',
+  'row_core',
+  'plasma_lance',
+  'void_crown',
+  'mercy_protocol',
+  'super_extra_life'
+]);
+
+function getPowerupIntentProfile(type, effect = {}) {
+  const major = MAJOR_POWERUP_TYPES.has(type);
+  if (effect?.shield || effect?.pointDefense || effect?.ghost || effect?.grantLives || effect?.repairLives || type === 'life') {
+    return { category: 'defense', color: 0x66fff0, accent: 0x1cff9c, major };
+  }
+  if (effect?.slowTime || type === 'stasis_net' || type === 'pulse_refund') {
+    return { category: 'control', color: 0x69f4ff, accent: 0xb486ff, major };
+  }
+  if (effect?.movementBoostMult || effect?.speedMult || effect?.dodgeDelayMult || effect?.magnetRadius || effect?.scoreMultiplier) {
+    return { category: 'utility', color: 0xffdf58, accent: 0x7df9ff, major };
+  }
+  return { category: 'offense', color: 0xff8a38, accent: 0xff3f73, major };
+}
+
+function drawRadialTick(graphics, angle, innerRadius, outerRadius) {
+  graphics.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+  graphics.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+}
+
 class Powerup {
   constructor(x, y, type) {
     this.x = x;
@@ -71,6 +102,9 @@ class Powerup {
     this.readabilityHalo = new PIXI.Graphics();
     this.readabilityHalo.label = 'readabilityHalo';
     this.sprite.addChild(this.readabilityHalo);
+    this.intentCue = new PIXI.Graphics();
+    this.intentCue.label = 'intentCue';
+    this.sprite.addChild(this.intentCue);
     this.pickupGuide = new PIXI.Graphics();
     this.pickupGuide.label = 'pickupGuide';
     this.pickupGuide.visible = false;
@@ -289,6 +323,8 @@ class Powerup {
       this.readabilityHalo.stroke({ width: 2.2, color: this.color, alpha: 0.58 });
     }
 
+    this.updateIntentCue(age);
+
     const screenHeight = Math.max(
       620,
       Number(scene?.game?.app?.screen?.height) ||
@@ -328,6 +364,89 @@ class Powerup {
     if (this.y > screenHeight + offscreenMargin || (age > this.lifeTime && this.y > screenHeight)) {
       this.active = false;
     }
+  }
+
+  updateIntentCue(age) {
+    const cue = this.intentCue;
+    if (!cue) return;
+
+    const profile = getPowerupIntentProfile(this.type, this.effect);
+    const pulse = Math.sin(age * 0.006) * 0.5 + 0.5;
+    const radius = profile.major ? 45 : 39;
+    const baseAlpha = profile.major ? 0.46 : 0.32;
+    cue.clear();
+
+    cue.circle(0, 0, radius);
+    cue.stroke({ width: profile.major ? 2.2 : 1.4, color: profile.color, alpha: baseAlpha + pulse * 0.12 });
+
+    if (profile.category === 'defense') {
+      for (let i = 0; i < 4; i += 1) {
+        const angle = Math.PI * 0.25 + i * Math.PI * 0.5;
+        drawRadialTick(cue, angle, radius - 8, radius + 5);
+      }
+      cue.stroke({ width: 3.2, color: profile.color, alpha: 0.46 + pulse * 0.18 });
+      cue.circle(0, 0, radius - 9);
+      cue.stroke({ width: 1.2, color: profile.accent, alpha: 0.18 + pulse * 0.12 });
+    } else if (profile.category === 'control') {
+      const sweep = (age * 0.008) % (Math.PI * 2);
+      for (let i = 0; i < 6; i += 1) {
+        drawRadialTick(cue, sweep + i * (Math.PI * 2 / 6), radius - 6, radius + 4);
+      }
+      cue.stroke({ width: 1.8, color: profile.color, alpha: 0.34 + pulse * 0.18 });
+      cue.moveTo(Math.cos(sweep) * (radius - 16), Math.sin(sweep) * (radius - 16));
+      cue.lineTo(Math.cos(sweep) * (radius + 7), Math.sin(sweep) * (radius + 7));
+      cue.stroke({ width: 2.4, color: profile.accent, alpha: 0.48 + pulse * 0.16 });
+    } else if (profile.category === 'utility') {
+      for (let i = 0; i < 4; i += 1) {
+        const angle = Math.PI * 0.5 * i;
+        const cx = Math.cos(angle) * (radius + 1);
+        const cy = Math.sin(angle) * (radius + 1);
+        cue.moveTo(cx, cy - 4);
+        cue.lineTo(cx + 4, cy);
+        cue.lineTo(cx, cy + 4);
+        cue.lineTo(cx - 4, cy);
+        cue.lineTo(cx, cy - 4);
+      }
+      cue.stroke({ width: 1.8, color: profile.color, alpha: 0.42 + pulse * 0.16 });
+      cue.circle(0, 0, radius - 12);
+      cue.stroke({ width: 1.3, color: profile.accent, alpha: 0.18 + pulse * 0.14 });
+    } else {
+      for (let i = 0; i < 4; i += 1) {
+        const angle = i * Math.PI * 0.5;
+        drawRadialTick(cue, angle, radius - 5, radius + 8);
+      }
+      cue.stroke({ width: 2.6, color: profile.color, alpha: 0.44 + pulse * 0.18 });
+      for (let i = 0; i < 4; i += 1) {
+        const angle = Math.PI * 0.25 + i * Math.PI * 0.5;
+        drawRadialTick(cue, angle, radius - 3, radius + 3);
+      }
+      cue.stroke({ width: 1.5, color: profile.accent, alpha: 0.34 + pulse * 0.16 });
+    }
+
+    let crownTicks = 0;
+    if (profile.major) {
+      crownTicks = 6;
+      const crownRadius = radius + 8 + pulse * 2;
+      for (let i = 0; i < crownTicks; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / crownTicks);
+        const cx = Math.cos(angle) * crownRadius;
+        const cy = Math.sin(angle) * crownRadius;
+        cue.circle(cx, cy, i === 0 ? 3.2 : 2.4);
+      }
+      cue.fill({ color: 0xfff1a8, alpha: 0.26 + pulse * 0.16 });
+      cue.circle(0, 0, radius + 12 + pulse * 2);
+      cue.stroke({ width: 1.2, color: 0xffe56d, alpha: 0.2 + pulse * 0.18 });
+    }
+
+    cue.visible = true;
+    cue.__debugPowerupIntent = {
+      visible: true,
+      type: this.type,
+      category: profile.category,
+      major: profile.major,
+      radius,
+      crownTicks
+    };
   }
 
   updateExpiryCue(age, screenHeight) {
