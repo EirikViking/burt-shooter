@@ -10488,15 +10488,28 @@ export class PlayScene {
 
     let powerupTargetCount = 0;
     let bonusTargetCount = 0;
+    let captureHaloCount = 0;
+    let funnelBeadCount = 0;
     pulledTargets.forEach((target, index) => {
       if (target.kind === 'powerup') powerupTargetCount += 1;
       if (target.kind === 'bonus') bonusTargetCount += 1;
       const intensity = Math.max(0, Math.min(1, target.intensity || 0));
       const lineAlpha = 0.16 + intensity * 0.34;
       const targetColor = target.kind === 'bonus' ? 0xffe56d : palette.secondary;
+      this.magnetFieldVisual.circle(target.x, target.y, 7 + intensity * 8);
+      this.magnetFieldVisual.stroke({ color: targetColor, width: 1.4 + intensity * 1.2, alpha: 0.18 + intensity * 0.34 });
+      captureHaloCount += 1;
       this.magnetFieldVisual.moveTo(target.x, target.y);
       this.magnetFieldVisual.lineTo(px, py);
       this.magnetFieldVisual.stroke({ color: targetColor, width: 1 + intensity * 1.2, alpha: lineAlpha });
+      for (let bead = 1; bead <= 2; bead += 1) {
+        const t = bead / 3;
+        const bx = target.x + (px - target.x) * t;
+        const by = target.y + (py - target.y) * t;
+        this.magnetFieldVisual.circle(bx, by, 2.2 + intensity * 1.8 + bead * 0.35);
+        this.magnetFieldVisual.fill({ color: bead === 2 ? palette.primary : targetColor, alpha: 0.12 + intensity * 0.26 + pulse * 0.08 });
+        funnelBeadCount += 1;
+      }
       const angle = Math.atan2(py - target.y, px - target.x);
       const chevronDist = 14 + index * 2;
       const cx = target.x + Math.cos(angle) * chevronDist;
@@ -10516,7 +10529,9 @@ export class PlayScene {
       segmentCount,
       targetCount: pulledTargets.length,
       powerupTargetCount,
-      bonusTargetCount
+      bonusTargetCount,
+      captureHaloCount,
+      funnelBeadCount
     };
   }
 

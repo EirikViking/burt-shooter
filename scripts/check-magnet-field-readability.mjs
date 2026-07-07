@@ -216,6 +216,8 @@ try {
   if ((state.debug?.segmentCount || 0) < 12) failures.push(`segment count too low for large field: ${state.debug?.segmentCount}`);
   if ((state.debug?.targetCount || 0) < 2) failures.push(`expected at least two pulled targets: ${state.debug?.targetCount}`);
   if ((state.debug?.powerupTargetCount || 0) < 2) failures.push(`expected two powerup pull lines: ${state.debug?.powerupTargetCount}`);
+  if ((state.debug?.captureHaloCount || 0) < 2) failures.push(`expected capture halos for pulled targets: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.funnelBeadCount || 0) < 4) failures.push(`expected funnel beads along pull lanes: ${JSON.stringify(state.debug)}`);
   if ((state.moved?.shield || 0) <= 0.5 || (state.moved?.scoreFever || 0) <= 0.5) failures.push(`inside powerups did not move enough: ${JSON.stringify(state.moved)}`);
   if ((state.moved?.outside || 0) > 0.1) failures.push(`outside powerup should not move: ${state.moved?.outside}`);
   if ((state.moved?.immune || 0) > 0.1) failures.push(`magnet-immune powerup should not move: ${state.moved?.immune}`);
