@@ -148,6 +148,14 @@ try {
       trailColor: 0xff4055,
       haloColor: 0xff8a66
     });
+    const timedHostile = new Bullet(player.x + 116, player.y - 148, 0, 1.6, 1, 0xffd166, false, {
+      radius: 7,
+      warningColor: 0xffd166,
+      trailColor: 0xff8a3d,
+      haloColor: 0xffd166,
+      behavior: 'split_after_ms',
+      splitAfterMs: 900
+    });
     const makeSpecial = (offsetX, offsetY, color, flags = {}) => {
       const bullet = new Bullet(player.x + offsetX, player.y + offsetY, 0, -7, 1, color, true);
       Object.assign(bullet, flags);
@@ -158,8 +166,10 @@ try {
     };
     bm.addPlayerBullet(friendly);
     bm.addEnemyBullet(hostile);
+    bm.addEnemyBullet(timedHostile);
     friendly.update(1);
     hostile.update(1);
+    timedHostile.update(1);
     const bomb = makeSpecial(-198, -98, 0xffaa00, { isBomb: true, powerupType: 'bomb' });
     const critical = makeSpecial(-132, -132, 0xfff45c, { isTraitCriticalShot: true });
     const piercing = makeSpecial(132, -132, 0xffffff, { isTraitPiercingShot: true, piercing: true });
@@ -211,6 +221,7 @@ try {
       ok: true,
       player: friendly.sprite?._debugProjectileReadability || null,
       enemy: hostile.sprite?._debugProjectileReadability || null,
+      timedEnemy: timedHostile.sprite?._debugProjectileReadability || null,
       specials: {
         bomb: bomb.playerIntentLayer?._debugIntentMarkers || null,
         critical: critical.playerIntentLayer?._debugIntentMarkers || null,
@@ -225,8 +236,9 @@ try {
       markers: {
         friendlyGlints: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileFriendlyGlint)?.length || 0,
         friendlyWings: friendly.sprite?.children?.filter?.((child) => child?.__novaPlayerProjectileWingTrace)?.length || 0,
-        enemyDangerGlints: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileDangerGlint)?.length || 0,
-        enemyWakeBeads: hostile.sprite?.children?.filter?.((child) => child?.__novaProjectileWakeBeads)?.length || 0,
+        enemyDangerGlints: [hostile, timedHostile].reduce((count, bullet) => count + (bullet.sprite?.children?.filter?.((child) => child?.__novaProjectileDangerGlint)?.length || 0), 0),
+        enemyWakeBeads: [hostile, timedHostile].reduce((count, bullet) => count + (bullet.sprite?.children?.filter?.((child) => child?.__novaProjectileWakeBeads)?.length || 0), 0),
+        enemyArmingLayers: [hostile, timedHostile].reduce((count, bullet) => count + (bullet.sprite?.children?.filter?.((child) => child?.__novaProjectileThreatArming)?.length || 0), 0),
         specialIntentLayers: [bomb, critical, piercing, wing, bonus]
           .filter((bullet) => bullet.playerIntentLayer?.visible && bullet.playerIntentLayer?._debugIntentMarkers?.active)
           .length
@@ -248,7 +260,7 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if (state.counts?.playerBullets !== 6) failures.push(`player bullet count mismatch: ${JSON.stringify(state.counts)}`);
-  if (state.counts?.enemyBullets !== 1) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
+  if (state.counts?.enemyBullets !== 2) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (!state.player?.isPlayer) failures.push(`player debug missing isPlayer: ${JSON.stringify(state.player)}`);
   if (!state.player?.friendlyGlint || !state.player?.friendlyWingTrace) failures.push(`friendly projectile markers missing: ${JSON.stringify(state.player)}`);
   if (state.player?.playerIntentActive) failures.push(`plain player bullet should not show intent markers: ${JSON.stringify(state.player)}`);
@@ -257,9 +269,13 @@ try {
   if (state.enemy?.friendlyGlint || state.enemy?.friendlyWingTrace) failures.push(`enemy bullet should not have friendly markers: ${JSON.stringify(state.enemy)}`);
   if (!state.enemy?.dangerGlint) failures.push(`enemy danger glint missing: ${JSON.stringify(state.enemy)}`);
   if ((state.enemy?.dangerWakeBeadCount || 0) !== 3) failures.push(`enemy wake bead count mismatch: ${JSON.stringify(state.enemy)}`);
+  if ((state.enemy?.threatArmingPipCount || 0) !== 0) failures.push(`plain enemy bullet should not have arming pips: ${JSON.stringify(state.enemy)}`);
+  if (!state.timedEnemy?.dangerGlint || (state.timedEnemy?.dangerWakeBeadCount || 0) !== 3) failures.push(`timed enemy danger cue missing: ${JSON.stringify(state.timedEnemy)}`);
+  if ((state.timedEnemy?.threatArmingPipCount || 0) !== 4 || state.timedEnemy?.threatArmingKind !== 'split') failures.push(`timed enemy arming cue missing: ${JSON.stringify(state.timedEnemy)}`);
   if ((state.markers?.friendlyGlints || 0) !== 1 || (state.markers?.friendlyWings || 0) !== 1) failures.push(`friendly marker child counts mismatch: ${JSON.stringify(state.markers)}`);
-  if ((state.markers?.enemyDangerGlints || 0) !== 1) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
-  if ((state.markers?.enemyWakeBeads || 0) !== 1) failures.push(`enemy wake bead layer count mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.enemyDangerGlints || 0) !== 2) failures.push(`enemy danger glint count mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.enemyWakeBeads || 0) !== 2) failures.push(`enemy wake bead layer count mismatch: ${JSON.stringify(state.markers)}`);
+  if ((state.markers?.enemyArmingLayers || 0) !== 1) failures.push(`enemy arming layer count mismatch: ${JSON.stringify(state.markers)}`);
   if ((state.markers?.specialIntentLayers || 0) !== 5) failures.push(`special intent marker layer count mismatch: ${JSON.stringify(state.markers)}`);
   if (state.muzzleFlash?.volleyBullets !== 3) failures.push(`volley shoot bullet count mismatch: ${JSON.stringify(state.muzzleFlash)}`);
   if (state.muzzleFlash?.volley?.volleyCount !== 3 || state.muzzleFlash?.volley?.laneCount !== 3) failures.push(`volley muzzle flash lanes missing: ${JSON.stringify(state.muzzleFlash?.volley)}`);

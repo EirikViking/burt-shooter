@@ -35,6 +35,7 @@ export class Bullet {
     this.warningRing = null;
     this.dangerGlint = null;
     this.dangerWakeBeads = null;
+    this.threatArmingLayer = null;
     this.friendlyGlint = null;
     this.friendlyWingTrace = null;
     this.playerIntentLayer = null;
@@ -230,6 +231,8 @@ export class Bullet {
         this.dangerWakeBeads.fill({ color: wakeColor, alpha: Math.max(0.22, 0.48 - i * 0.1) });
       }
       this.sprite.addChild(this.dangerWakeBeads);
+
+      this.createThreatArmingCue();
     } else {
       const leadDistance = this.radius + 7;
       const leadX = Math.cos(this.angle) * leadDistance;
@@ -277,9 +280,86 @@ export class Bullet {
       playerIntentActive: Boolean(this.playerIntentLayer?._debugIntentMarkers?.active),
       dangerGlint: Boolean(this.dangerGlint),
       dangerWakeBeadCount: this.dangerWakeBeads?.__novaProjectileWakeBeadCount || (this.dangerWakeBeads ? 3 : 0),
+      threatArmingPipCount: this.threatArmingLayer?._debugThreatArming?.pipCount || 0,
+      threatArmingKind: this.threatArmingLayer?._debugThreatArming?.kind || null,
       trailLength: Number(trailLength.toFixed?.(2) || trailLength),
       trailWidth
     };
+  }
+
+  getThreatArmingInfo() {
+    if (this.isPlayer || !this.active) return null;
+    if (this.splitAfterMs && !this.threatSplitTriggered) {
+      return { kind: 'split', durationMs: this.splitAfterMs, progress: Math.max(0, Math.min(1, this.ageMs / Math.max(1, this.splitAfterMs))) };
+    }
+    if (this.behavior === 'brake_then_accelerate' && this.brakeMs && !this.threatReleaseTriggered) {
+      return { kind: 'dash', durationMs: this.brakeMs, progress: Math.max(0, Math.min(1, this.ageMs / Math.max(1, this.brakeMs))) };
+    }
+    if (this.behavior === 'orbit_then_release' && this.releaseAfterMs && !this.threatReleaseTriggered) {
+      return { kind: 'release', durationMs: this.releaseAfterMs, progress: Math.max(0, Math.min(1, this.ageMs / Math.max(1, this.releaseAfterMs))) };
+    }
+    return null;
+  }
+
+  createThreatArmingCue() {
+    const info = this.getThreatArmingInfo();
+    if (!info) return;
+    this.threatArmingLayer = new PIXI.Graphics();
+    this.threatArmingLayer.label = 'enemyProjectileThreatArming';
+    this.threatArmingLayer.__novaProjectileThreatArming = true;
+    this.threatArmingLayer.blendMode = 'add';
+    this.sprite.addChild(this.threatArmingLayer);
+    this.updateThreatArmingCue();
+  }
+
+  updateThreatArmingCue() {
+    if (!this.threatArmingLayer) return;
+    const layer = this.threatArmingLayer;
+    const info = this.getThreatArmingInfo();
+    layer.clear();
+    if (!info) {
+      layer.visible = false;
+      layer._debugThreatArming = { visible: false, pipCount: 0, kind: null, progress: 1 };
+      if (this.sprite?._debugProjectileReadability) {
+        this.sprite._debugProjectileReadability.threatArmingPipCount = 0;
+        this.sprite._debugProjectileReadability.threatArmingKind = null;
+      }
+      return;
+    }
+
+    const progress = Math.max(0, Math.min(1, info.progress));
+    const radius = Math.max(12, this.radius + 12);
+    const color = this.visualConfig.warningColor || this.visualConfig.trailColor || 0xffd166;
+    const hotAlpha = 0.24 + progress * 0.36;
+    const pipCount = 4;
+    const activePips = Math.max(1, Math.ceil((1 - progress) * pipCount));
+    layer.visible = true;
+    layer.circle(0, 0, radius);
+    layer.stroke({ color, width: 1.2, alpha: 0.18 + progress * 0.18 });
+    for (let i = 0; i < pipCount; i += 1) {
+      const angle = -Math.PI / 2 + (Math.PI * 2 * i) / pipCount;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
+      const active = i < activePips;
+      layer.circle(x, y, active ? 2.2 : 1.4);
+      layer.fill({ color, alpha: active ? hotAlpha : 0.16 });
+    }
+    const forward = radius + 4;
+    layer.moveTo(Math.cos(this.angle) * (radius * 0.48), Math.sin(this.angle) * (radius * 0.48));
+    layer.lineTo(Math.cos(this.angle) * forward, Math.sin(this.angle) * forward);
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.18 + progress * 0.22 });
+    layer._debugThreatArming = {
+      visible: true,
+      kind: info.kind,
+      pipCount,
+      activePips,
+      progress: Number(progress.toFixed(3))
+    };
+    if (this.sprite?._debugProjectileReadability) {
+      this.sprite._debugProjectileReadability.threatArmingPipCount = pipCount;
+      this.sprite._debugProjectileReadability.threatArmingKind = info.kind;
+      this.sprite._debugProjectileReadability.threatArmingProgress = Number(progress.toFixed(3));
+    }
   }
 
   refreshPlayerProjectileIntentMarkers() {
@@ -460,6 +540,7 @@ export class Bullet {
       if (this.dangerWakeBeads) {
         this.dangerWakeBeads.alpha = 0.62 + Math.sin(this.pulseTimer * 2.1 * pulseRate) * 0.16;
       }
+      this.updateThreatArmingCue();
     } else if (this.friendlyGlint) {
       const friendlyPulse = 1 + Math.sin(this.pulseTimer * 3.2) * 0.12;
       this.friendlyGlint.scale.set(friendlyPulse);
