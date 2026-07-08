@@ -115,13 +115,18 @@ export class PlayScene {
     this.gameplayGame = game.createGameplayFacade?.() || game;
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
+    this.gameplayViewportMask = new PIXI.Graphics();
     this.decorativeOverlay = new PIXI.Container();
     this.uiContainer = new PIXI.Container();
     this.uiOverlay = new PIXI.Container();
     this.container.addChild(this.gameContainer);
+    this.container.addChild(this.gameplayViewportMask);
     this.container.addChild(this.decorativeOverlay);
     this.container.addChild(this.uiContainer);
     this.container.addChild(this.uiOverlay);
+    this.gameplayViewportMask.eventMode = 'none';
+    this.gameplayViewportMask.renderable = false;
+    this.gameContainer.mask = this.gameplayViewportMask;
 
     this.inputManager = new InputManager();
     this.touchControls = new NullTouchControls();
@@ -200,6 +205,8 @@ export class PlayScene {
     this.isReady = false;
     this.starfieldContainer = null;
     this.starLayers = [];
+    this.ultrawideAmbience = null;
+    this.ultrawideAmbienceDebug = null;
     this.gameplayBackdrop = null;
     this.gameplayStormBackdrop = null;
     this.gameplayBossBackdrop = null;
@@ -430,10 +437,13 @@ export class PlayScene {
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
+    this.gameContainer.mask = this.gameplayViewportMask;
     this.gameContainer.scale.set(1);
     this.gameContainer.position.set(0, 0);
     this.decorativeOverlay.sortableChildren = true;
     this.decorativeOverlay.eventMode = 'none';
+    this.ultrawideAmbience = null;
+    this.ultrawideAmbienceDebug = null;
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
     this.criticalHullOverlay = null;
@@ -452,6 +462,7 @@ export class PlayScene {
 
     // TASK D: Create procedural starfield background
     this.createStarfield();
+    this.createUltrawideSideAmbience();
     this.loadBossDossierTexture();
     this.loadBossWarningTextures();
     this.loadOverrunSealTexture();
@@ -811,13 +822,26 @@ export class PlayScene {
     const rect = this.getActivePlayfieldRect();
     const scale = Math.max(0.01, Number(rect.scale) || 1);
     this.gameContainer.scale.set(scale);
+    this.updateGameplayViewportMask(rect);
     this.screenShake?.setOrigin?.(rect.x, rect.y);
     if (!this.screenShake || this.screenShake.shakeDuration <= 0) {
       this.gameContainer.x = rect.x;
       this.gameContainer.y = rect.y;
     }
+    this.syncUltrawideSideAmbienceLayout(rect);
     this.bulletManager?.setScreenBounds?.(this.gameplayGame.getWidth(), this.gameplayGame.getHeight());
     return rect;
+  }
+
+  updateGameplayViewportMask(rect = this.getActivePlayfieldRect()) {
+    if (!this.gameplayViewportMask || !rect) return;
+    const x = Math.round(Number(rect.x) || 0);
+    const y = Math.round(Number(rect.y) || 0);
+    const width = Math.max(1, Math.round(Number(rect.width) || this.gameplayGame?.getWidth?.() || 1920));
+    const height = Math.max(1, Math.round(Number(rect.height) || this.gameplayGame?.getHeight?.() || 1080));
+    this.gameplayViewportMask.clear();
+    this.gameplayViewportMask.rect(x, y, width, height);
+    this.gameplayViewportMask.fill({ color: 0xffffff, alpha: 1 });
   }
 
   getGameplayContainerOrigin() {
@@ -2681,6 +2705,7 @@ export class PlayScene {
       }
       if (!perfOptions?.noStarfield) {
         measure('starfield', () => this.updateStarfield(delta)); // TASK D: Animate background stars
+        measure('ultrawide_ambience', () => this.updateUltrawideSideAmbience(delta));
       }
       measure('ambient_bonus_drones', () => this.updateAmbientBonusDrones(delta)); // Handles hazard drones and collectible power cores
       measure('magnet_pull', () => this.applyMagnetPull(delta));
@@ -4370,6 +4395,225 @@ export class PlayScene {
         }
       });
     });
+  }
+
+  createUltrawideSideAmbience() {
+    if (!this.decorativeOverlay || getNovaPerformanceFlags().disableDecorativeBackgrounds) {
+      this.ultrawideAmbienceDebug = { visible: false, disabled: true };
+      return null;
+    }
+
+    const container = new PIXI.Container();
+    container.label = 'ultrawideSideAmbience';
+    container.eventMode = 'none';
+    container.sortableChildren = true;
+
+    const nebula = new PIXI.Graphics();
+    nebula.label = 'ultrawideSideNebula';
+    nebula.eventMode = 'none';
+    nebula.zIndex = 0;
+
+    const starLayer = new PIXI.Container();
+    starLayer.label = 'ultrawideSideStarfield';
+    starLayer.eventMode = 'none';
+    starLayer.zIndex = 1;
+
+    const frame = new PIXI.Graphics();
+    frame.label = 'ultrawideCombatZoneFrame';
+    frame.eventMode = 'none';
+    frame.zIndex = 2;
+
+    container.addChild(nebula);
+    container.addChild(starLayer);
+    container.addChild(frame);
+
+    const stars = [];
+    const layerConfigs = [
+      { count: 52, radius: [0.65, 1.05], speed: [12, 24], alpha: [0.12, 0.24], color: 0x8fb9e6 },
+      { count: 34, radius: [0.9, 1.45], speed: [28, 48], alpha: [0.14, 0.28], color: 0xa6d7ff },
+      { count: 18, radius: [1.05, 1.85], speed: [54, 86], alpha: [0.16, 0.32], color: 0xb8ddff }
+    ];
+
+    for (const config of layerConfigs) {
+      for (let i = 0; i < config.count; i += 1) {
+        const star = new PIXI.Graphics();
+        const radius = config.radius[0] + Math.random() * (config.radius[1] - config.radius[0]);
+        star.circle(0, 0, radius);
+        star.fill({ color: config.color, alpha: 1 });
+        star.eventMode = 'none';
+        star._speed = config.speed[0] + Math.random() * (config.speed[1] - config.speed[0]);
+        star._baseAlpha = config.alpha[0] + Math.random() * (config.alpha[1] - config.alpha[0]);
+        star._phase = Math.random() * Math.PI * 2;
+        star._twinkleSpeed = 0.45 + Math.random() * 0.7;
+        star._drift = 2 + Math.random() * 4;
+        star.alpha = star._baseAlpha;
+        starLayer.addChild(star);
+        stars.push(star);
+      }
+    }
+
+    this.ultrawideAmbience = { container, nebula, starLayer, frame, stars, layout: null };
+    this.decorativeOverlay.addChild(container);
+    this.syncUltrawideSideAmbienceLayout(this.getActivePlayfieldRect());
+    return this.ultrawideAmbience;
+  }
+
+  getUltrawideGutterLayout(rect = this.getActivePlayfieldRect()) {
+    const viewportWidth = Math.max(1, Number(this.game?.getViewportWidth?.()) || Number(this.game?.app?.screen?.width) || 1920);
+    const viewportHeight = Math.max(1, Number(this.game?.getViewportHeight?.()) || Number(this.game?.app?.screen?.height) || 1080);
+    const activeX = Math.max(0, Number(rect?.x) || 0);
+    const activeY = Math.max(0, Number(rect?.y) || 0);
+    const activeWidth = Math.max(1, Number(rect?.width) || viewportWidth);
+    const activeHeight = Math.max(1, Number(rect?.height) || viewportHeight);
+    const leftGutterWidth = Math.max(0, activeX);
+    const rightX = activeX + activeWidth;
+    const rightGutterWidth = Math.max(0, viewportWidth - rightX);
+    const gutters = [];
+    if (leftGutterWidth > 2) gutters.push({ side: 'left', x: 0, width: leftGutterWidth });
+    if (rightGutterWidth > 2) gutters.push({ side: 'right', x: rightX, width: rightGutterWidth });
+    return {
+      viewportWidth,
+      viewportHeight,
+      activeRect: { x: activeX, y: activeY, width: activeWidth, height: activeHeight },
+      leftGutterWidth,
+      rightGutterWidth,
+      gutters
+    };
+  }
+
+  drawUltrawideSideAmbience(layout) {
+    const ambience = this.ultrawideAmbience;
+    if (!ambience || !layout) return;
+    const { nebula, frame } = ambience;
+    const { activeRect, viewportHeight, gutters } = layout;
+    nebula.clear();
+    frame.clear();
+
+    for (const gutter of gutters) {
+      const edgeX = gutter.side === 'left' ? gutter.x + gutter.width : gutter.x;
+      const edgeSign = gutter.side === 'left' ? -1 : 1;
+      nebula.rect(gutter.x, 0, gutter.width, viewportHeight);
+      nebula.fill({ color: 0x020714, alpha: 0.58 });
+      nebula.rect(gutter.x, 0, gutter.width, viewportHeight);
+      nebula.fill({ color: 0x09203a, alpha: 0.08 });
+
+      const glowRadius = Math.max(170, Math.min(620, gutter.width * 0.95));
+      const glowX = gutter.side === 'left'
+        ? gutter.x + gutter.width * 0.58
+        : gutter.x + gutter.width * 0.42;
+      nebula.circle(glowX, viewportHeight * 0.28, glowRadius);
+      nebula.fill({ color: 0x255b88, alpha: 0.035 });
+      nebula.circle(glowX + edgeSign * gutter.width * 0.16, viewportHeight * 0.66, glowRadius * 0.78);
+      nebula.fill({ color: 0x7b3a82, alpha: 0.022 });
+
+      const bandWidth = Math.max(10, Math.min(42, gutter.width * 0.08));
+      for (let i = 0; i < 5; i += 1) {
+        const alpha = 0.018 + i * 0.008;
+        const x = gutter.side === 'left'
+          ? edgeX - bandWidth * (i + 1)
+          : edgeX + bandWidth * i;
+        nebula.rect(x, 0, bandWidth, viewportHeight);
+        nebula.fill({ color: 0x6be8ff, alpha });
+      }
+    }
+
+    if (gutters.length > 0) {
+      frame.rect(activeRect.x + 0.5, activeRect.y + 0.5, Math.max(1, activeRect.width - 1), Math.max(1, activeRect.height - 1));
+      frame.stroke({ color: 0x7dffcc, width: 1.5, alpha: 0.14 });
+      frame.rect(activeRect.x + 8.5, activeRect.y + 8.5, Math.max(1, activeRect.width - 17), Math.max(1, activeRect.height - 17));
+      frame.stroke({ color: 0xffec8a, width: 1, alpha: 0.055 });
+    }
+  }
+
+  syncUltrawideSideAmbienceLayout(rect = this.getActivePlayfieldRect()) {
+    const ambience = this.ultrawideAmbience;
+    if (!ambience) {
+      this.ultrawideAmbienceDebug = { visible: false, missing: true };
+      return null;
+    }
+
+    const layout = this.getUltrawideGutterLayout(rect);
+    const visible = layout.gutters.length > 0;
+    ambience.container.visible = visible;
+    ambience.container.renderable = visible;
+    ambience.layout = layout;
+    this.drawUltrawideSideAmbience(layout);
+
+    for (const star of ambience.stars) {
+      if (!visible) {
+        star.visible = false;
+        continue;
+      }
+      const wasInGutter = this.isPointInUltrawideGutter(star.x, layout.gutters);
+      if (!wasInGutter || !Number.isFinite(star.y)) {
+        this.placeUltrawideAmbienceStar(star, layout, true);
+      } else {
+        star.y = Math.max(-12, Math.min(layout.viewportHeight + 12, star.y));
+        star.visible = true;
+      }
+    }
+
+    this.ultrawideAmbienceDebug = {
+      visible,
+      decorativeOnly: true,
+      eventMode: ambience.container.eventMode,
+      decorativeEventMode: this.decorativeOverlay?.eventMode,
+      gameContainerMasked: this.gameContainer?.mask === this.gameplayViewportMask,
+      viewportWidth: Math.round(layout.viewportWidth),
+      viewportHeight: Math.round(layout.viewportHeight),
+      activeRect: {
+        x: Math.round(layout.activeRect.x),
+        y: Math.round(layout.activeRect.y),
+        width: Math.round(layout.activeRect.width),
+        height: Math.round(layout.activeRect.height)
+      },
+      leftGutterWidth: Math.round(layout.leftGutterWidth),
+      rightGutterWidth: Math.round(layout.rightGutterWidth),
+      starCount: visible ? ambience.stars.length : 0,
+      gutterStarCount: visible ? ambience.stars.filter((star) => this.isPointInUltrawideGutter(star.x, layout.gutters)).length : 0,
+      combatFrameVisible: visible,
+      gameplayWidth: this.gameplayGame?.getWidth?.() || null,
+      gameplayHeight: this.gameplayGame?.getHeight?.() || null
+    };
+    return layout;
+  }
+
+  isPointInUltrawideGutter(x, gutters = []) {
+    return gutters.some((gutter) => x >= gutter.x && x <= gutter.x + gutter.width);
+  }
+
+  placeUltrawideAmbienceStar(star, layout, randomY = false) {
+    if (!star || !layout?.gutters?.length) return;
+    const totalWidth = layout.gutters.reduce((sum, gutter) => sum + gutter.width, 0);
+    let pick = Math.random() * Math.max(1, totalWidth);
+    let selected = layout.gutters[0];
+    for (const gutter of layout.gutters) {
+      if (pick <= gutter.width) {
+        selected = gutter;
+        break;
+      }
+      pick -= gutter.width;
+    }
+    star.x = selected.x + Math.random() * selected.width;
+    star.y = randomY ? Math.random() * layout.viewportHeight : -10 - Math.random() * 36;
+    star.visible = true;
+    star.renderable = true;
+  }
+
+  updateUltrawideSideAmbience(delta) {
+    const ambience = this.ultrawideAmbience;
+    const layout = ambience?.layout;
+    if (!ambience?.container?.visible || !layout?.gutters?.length) return;
+    const dtSec = Math.min(0.05, Math.max(0, delta) / 60);
+    for (const star of ambience.stars) {
+      star._phase += dtSec * star._twinkleSpeed;
+      star.y += star._speed * dtSec;
+      star.x += Math.sin(star._phase) * star._drift * dtSec;
+      star.alpha = Math.max(0.06, star._baseAlpha * (0.84 + Math.sin(star._phase) * 0.16));
+      if (star.y > layout.viewportHeight + 12 || !this.isPointInUltrawideGutter(star.x, layout.gutters)) {
+        this.placeUltrawideAmbienceStar(star, layout, false);
+      }
+    }
   }
 
   // TASK 4: Play shooting sound with self-healing health check
