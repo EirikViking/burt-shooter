@@ -1,0 +1,96 @@
+{
+  "type": "steam_upload_evidence",
+  "createdAt": "2026-07-08T01:31:49Z",
+  "purpose": "Full-game QA fixes and packaged Steam candidate upload.",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "57f8fcc52d146738db3509532a34d52ccf370a3f",
+    "commitSummary": "Fix full-game QA regressions before Steam upload"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24100885",
+    "setLive": "",
+    "branchAssigned": false,
+    "metadataChanged": false,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24100885)."
+  },
+  "payload": {
+    "buildVersion": "v2026-07-06_19-43-51",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "1ab2bb30ba7f55523f0ca20940dc9681c4b83b2df79b8069cf5a70f222b2683e",
+    "fileCount": 336,
+    "totalBytes": 916219844,
+    "manifestHash": "176e1877d86c36ec0ffccde027ac1bc05092cb2077cfbea95652436c193ed40b"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "commandShape": "tools\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "failedAttemptLog": "release/steamworks/steam_upload_console_full_qa_20260708_20260708_032911.log",
+    "failedAttemptSummary": "SteamPipe failed before upload while downloading prior depot manifest 3529759967173443563.",
+    "successfulAttemptLog": "release/steamworks/steam_upload_console_full_qa_20260708_retry_20260708_033004.log",
+    "successfulAttemptExitCode": 0
+  },
+  "verification": {
+    "sourceChecks": [
+      "npm run check:run-contracts",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run build:current",
+      "npm run check:release-line",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-rescue-import",
+      "npm run check:steam-electron-bridge",
+      "npm run check:steam-cloud-save",
+      "npm run check:provenance",
+      "npm run check:ship-unlock-reveal",
+      "npm run check:mayhem-collision-hotpath-stress",
+      "npm run check:run-modes",
+      "npm run check:wave-stuck-watchdog",
+      "npm run check:enemy-wave-patterns",
+      "npm run check:controller-flow",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "git diff --check"
+    ],
+    "packagedChecks": [
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run check:desktop-package",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf"
+    ],
+    "evidenceFiles": [
+      "release/steamworks/desktop_package_review_report.json",
+      "release/steamworks/steam_payload_manifest.json",
+      "test-results/full-qa-2026-07-08-static/results.json",
+      "test-results/full-qa-2026-07-08-focused/results.json",
+      "test-results/full-qa-2026-07-08-core-tail/results.json",
+      "test-results/full-qa-2026-07-08-packaged-rerun/results.json",
+      "test-results/mayhem-collision-hotpath-stress-2026-07-08T01-08-41-520Z/report.json",
+      "test-results/release-playtest-2026-07-08T00-53-35-329Z/report.json",
+      "test-results/release-playtest-2026-07-08T00-57-12-247Z/report.json"
+    ]
+  },
+  "knownRisks": [
+    "No Steam branch was assigned by this upload. Manual Steamworks assignment is still required before players receive BuildID 24100885.",
+    "Packaged smoke logs include Steam API init warnings because the executable was launched outside the live Steam client.",
+    "The full 10-minute browser release-playtest bot run remained a bot-survival limitation, not a technical showstopper: it produced no page errors, bad responses, stalls, or watchdog warnings before the bot died."
+  ],
+  "rollback": {
+    "source": "git revert 57f8fcc52d146738db3509532a34d52ccf370a3f",
+    "steam": "No Steam rollback is needed while BuildID 24100885 remains unassigned. If it is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the previous desired BuildID."
+  }
+}
