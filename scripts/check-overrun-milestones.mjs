@@ -598,7 +598,7 @@ try {
         Object.values(held.internals.messageQueues || {}).some(count => Number(count) > 0),
         `${label}: queued messages were not preserved/deferred during interlude`
       );
-      assertTextLayout(held.state, label, viewport, { requireBonus: testCase.sector === 10 });
+      assertTextLayout(held.state, label, viewport, { requireBonus: true });
       const titleNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_title');
       assert.equal(titleNode?.text, testCase.title, `${label}: wrong title text`);
       assert.match(held.state.overrunInterlude?.promptText || '', /.+/, `${label}: empty continue prompt`);

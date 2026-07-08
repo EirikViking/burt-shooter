@@ -8,8 +8,8 @@ const bonusSource = readFileSync('src/game/RunClearScoreBonuses.js', 'utf8');
 const gameOverSource = readFileSync('src/scenes/GameOverScene.js', 'utf8');
 const steamBridgeSource = readFileSync('electron/steamLeaderboardBridge.cjs', 'utf8');
 
-assert.match(gameSource, /awardRunClearScoreBonuses\(\{ clearBonus = 0, livesBonus = 0 \} = \{\}\)/);
-assert.match(gameSource, /return awardRunClearScoreBonuses\(this, \{ clearBonus, livesBonus \}\)/);
+assert.match(gameSource, /awardRunClearScoreBonuses\(\{ clearBonus = 0, livesBonus = 0, awardKey = 'run_clear' \} = \{\}\)/);
+assert.match(gameSource, /return awardRunClearScoreBonuses\(this, \{ clearBonus, livesBonus, awardKey \}\)/);
 assert.match(gameSource, /this\.runClearScoreBonusAward = null/);
 assert.match(bonusSource, /function applyExactScoreBonus\(game, amount, source\)/);
 assert.doesNotMatch(bonusSource, /game\.addScore\(baseClearBonus/);
@@ -25,6 +25,7 @@ let globalCueUpdates = 0;
 const fakeGame = {
   score: 42000,
   runClearScoreBonusAward: null,
+  runClearScoreBonusAwards: {},
   scoreMultiplier: 2,
   scoreBreakdown: {
     baseScore: 42000,
@@ -71,6 +72,7 @@ assert.equal(firstAward.livesBonus, 7500);
 assert.equal(firstAward.appliedClearBonus, 10000);
 assert.equal(firstAward.appliedLivesBonus, 7500);
 assert.equal(firstAward.appliedTotal, 17500);
+assert.equal(firstAward.awardKey, 'run_clear');
 assert.equal(firstAward.scoreAfter, 59500);
 assert.equal(fakeGame.score, 59500);
 assert.equal(fakeGame.scoreBreakdown.runClearBonus, 10000);
@@ -89,9 +91,34 @@ assert.equal(duplicateAward.appliedTotal, 17500);
 assert.equal(fakeGame.score, 59500);
 assert.equal(addScoreCalls, 0);
 
+const sector20Award = awardRunClearScoreBonuses(fakeGame, {
+  clearBonus: 10000,
+  livesBonus: 7500,
+  awardKey: 'overrun_20'
+});
+assert.equal(sector20Award.alreadyApplied, false);
+assert.equal(sector20Award.awardKey, 'overrun_20');
+assert.equal(sector20Award.appliedTotal, 17500);
+assert.equal(fakeGame.score, 77000);
+assert.equal(fakeGame.scoreBreakdown.runClearBonus, 20000);
+assert.equal(fakeGame.scoreBreakdown.remainingLivesBonus, 15000);
+assert.equal(fakeGame.scoreBreakdown.finalScore, 77000);
+assert.equal(addScoreCalls, 0);
+
+const duplicateSector20Award = awardRunClearScoreBonuses(fakeGame, {
+  clearBonus: 10000,
+  livesBonus: 7500,
+  awardKey: 'overrun_20'
+});
+assert.equal(duplicateSector20Award.alreadyApplied, true);
+assert.equal(duplicateSector20Award.appliedTotal, 17500);
+assert.equal(fakeGame.score, 77000);
+assert.equal(addScoreCalls, 0);
+
 const zeroLivesGame = {
   score: 1000,
   runClearScoreBonusAward: null,
+  runClearScoreBonusAwards: {},
   scoreBreakdown: {
     baseScore: 1000,
     remainingLivesBonus: 0,

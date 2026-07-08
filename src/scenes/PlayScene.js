@@ -8349,11 +8349,20 @@ export class PlayScene {
     }
 
     if (!this.game.runCleared) return false;
+    const clearBonus = 10000;
+    const livesBonus = Math.max(0, Number(this.game.lives) || 0) * 2500;
+    const milestoneAward = this.game.awardRunClearScoreBonuses?.({
+      clearBonus,
+      livesBonus,
+      awardKey: `overrun_${milestoneSector}`
+    });
     this.overrunCelebratedMilestones.add(milestoneSector);
     this.triggerOverrunClearCelebration({
       nextSector,
       milestoneSector,
-      eventKind: 'overrun_milestone'
+      eventKind: 'overrun_milestone',
+      clearBonus: milestoneAward?.clearBonus ?? clearBonus,
+      livesBonus: milestoneAward?.livesBonus ?? livesBonus
     });
     return true;
   }
@@ -8624,7 +8633,7 @@ export class PlayScene {
     sectorText.y = compact ? 15 : 18;
     card.addChild(sectorText);
 
-    const bonusLine = eventKind === 'run_clear' && (clearBonus || livesBonus)
+    const bonusLine = (eventKind === 'run_clear' || eventKind === 'overrun_milestone') && (clearBonus || livesBonus)
       ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
         clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
         livesBonus: Number(livesBonus || 0).toLocaleString('en-US')

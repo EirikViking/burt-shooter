@@ -84,6 +84,7 @@ export class Game {
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
     this.runClearScoreBonusAward = null;
+    this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
     this.runSummary = null;
     this.lastRunReport = null;
@@ -305,6 +306,7 @@ export class Game {
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
     this.runClearScoreBonusAward = null;
+    this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
     this.runSummary = null;
     this.lastRunReport = null;
@@ -423,8 +425,8 @@ export class Game {
     return true;
   }
 
-  awardRunClearScoreBonuses({ clearBonus = 0, livesBonus = 0 } = {}) {
-    return awardRunClearScoreBonuses(this, { clearBonus, livesBonus });
+  awardRunClearScoreBonuses({ clearBonus = 0, livesBonus = 0, awardKey = 'run_clear' } = {}) {
+    return awardRunClearScoreBonuses(this, { clearBonus, livesBonus, awardKey });
   }
 
   completeRun(reason = 'target_sector_clear') {

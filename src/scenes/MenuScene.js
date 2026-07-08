@@ -175,6 +175,38 @@ function boundsForDisplayObject(displayObject) {
   }
 }
 
+function boundsForLocalRect(container, rect = {}) {
+  if (!container) return null;
+  const localX = Number(rect.x) || 0;
+  const localY = Number(rect.y) || 0;
+  const localWidth = Number(rect.width) || 0;
+  const localHeight = Number(rect.height) || 0;
+  let x = Math.round((Number(container.x) || 0) + localX);
+  let y = Math.round((Number(container.y) || 0) + localY);
+  let width = Math.round(localWidth);
+  let height = Math.round(localHeight);
+  if (container.toGlobal) {
+    try {
+      const topLeft = container.toGlobal(new PIXI.Point(localX, localY));
+      const bottomRight = container.toGlobal(new PIXI.Point(localX + localWidth, localY + localHeight));
+      x = Math.round(topLeft.x);
+      y = Math.round(topLeft.y);
+      width = Math.round(bottomRight.x - topLeft.x);
+      height = Math.round(bottomRight.y - topLeft.y);
+    } catch {
+      // Fall back to local parent-space bounds above.
+    }
+  }
+  return {
+    x,
+    y,
+    width,
+    height,
+    right: x + width,
+    bottom: y + height
+  };
+}
+
 export class MenuScene {
   constructor(game) {
     this.game = game;
@@ -2196,21 +2228,39 @@ export class MenuScene {
       row._title.style.fontSize = Math.round((isMobileLayout ? 12 : 16) * uiScale);
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
       row._detail.style.wordWrap = false;
-      row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 96 : 118) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
       row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
+      const progressSlotMinWidth = Math.round((contract.completed ? 104 : 82) * uiScale);
+      const progressSlotMaxWidth = Math.max(progressSlotMinWidth, Math.round(row._width * 0.36));
+      const progressSlotWidth = Math.round(clampNumber(
+        row._width * 0.3,
+        progressSlotMinWidth,
+        Math.min(progressSlotMaxWidth, row._width - Math.round(72 * uiScale))
+      ));
+      const progressSlotHeight = Math.round(Math.max(20 * uiScale, rowHeight * 0.56));
+      const progressSlotX = Math.round(row._width - progressSlotWidth - 7 * uiScale);
+      const progressSlotY = Math.round(rowHeight * 0.5 - progressSlotHeight * 0.5);
+      row._progressSlot = {
+        x: progressSlotX,
+        y: progressSlotY,
+        width: progressSlotWidth,
+        height: progressSlotHeight
+      };
       row._title.x = Math.round(13 * uiScale);
       row._title.y = Math.round(rowHeight * 0.5);
       row._detail.x = Math.round(13 * uiScale);
       row._detail.y = Math.round(rowHeight * 0.79);
-      row._progress.x = row._width - Math.round(11 * uiScale);
+      row._progress.x = progressSlotX + progressSlotWidth - Math.round(8 * uiScale);
       row._progress.y = row._title.y;
+      const titleMaxWidth = Math.max(48 * uiScale, progressSlotX - row._title.x - Math.round(10 * uiScale));
+      const progressTextMaxWidth = Math.max(28 * uiScale, progressSlotWidth - Math.round(16 * uiScale));
+      row._detail.style.wordWrapWidth = titleMaxWidth;
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
-      fitTextToWidth(row._title, row._width - Math.round(116 * uiScale), { minScale: 0.68 });
-      fitTextToWidth(row._detail, row._width - Math.round(118 * uiScale), { minScale: 0.72 });
-      fitTextToWidth(row._progress, Math.round(104 * uiScale), { minScale: 0.62 });
+      fitTextToWidth(row._title, titleMaxWidth, { minScale: 0.62 });
+      fitTextToWidth(row._detail, titleMaxWidth, { minScale: 0.72 });
+      fitTextToWidth(row._progress, progressTextMaxWidth, { minScale: 0.48 });
     });
 
     this.drawMissionBoardPanel();
@@ -2246,7 +2296,12 @@ export class MenuScene {
       const h = row._height || 0;
       const accent = row._accent || 0x37f5ff;
       const progressRatio = clampNumber(Number(row._progressRatio) || 0, 0, 1);
-      const progressSlotWidth = Math.min(92, Math.max(58, w * 0.28));
+      const progressSlot = row._progressSlot || {
+        x: w - Math.min(92, Math.max(58, w * 0.28)) - 7,
+        y: 6,
+        width: Math.min(92, Math.max(58, w * 0.28)),
+        height: Math.max(15, h * 0.42)
+      };
       row._bg.clear();
       drawCutPanel(row._bg, 0, 0, w, h, 6, { color: row._completed ? 0x082116 : 0x061b2a, alpha: row._completed ? 0.82 : 0.72 }, { color: accent, width: 1, alpha: row._completed ? 0.48 : 0.28 });
       drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: 0.07 });
@@ -2257,10 +2312,10 @@ export class MenuScene {
         row._bg.rect(tx, h - 9, 1, 5);
         row._bg.fill({ color: 0xdffcff, alpha: 0.12 });
       }
-      drawCutPanel(row._bg, w - progressSlotWidth - 7, 6, progressSlotWidth, Math.max(15, h * 0.42), 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
+      drawCutPanel(row._bg, progressSlot.x, progressSlot.y, progressSlot.width, progressSlot.height, 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
       if (progressRatio > 0) {
-        const fillWidth = Math.max(4, Math.round((progressSlotWidth - 8) * progressRatio));
-        row._bg.roundRect(w - progressSlotWidth - 3, 10, fillWidth, Math.max(5, h * 0.18), 3);
+        const fillWidth = Math.max(4, Math.round((progressSlot.width - 8) * progressRatio));
+        row._bg.roundRect(progressSlot.x + 4, progressSlot.y + 4, fillWidth, Math.max(5, h * 0.18), 3);
         row._bg.fill({ color: row._completed ? 0x7dffcc : 0xffef7e, alpha: row._completed ? 0.48 : 0.34 });
       }
       row._bg.rect(12, h - 6, w - 24, 2);
@@ -2871,7 +2926,8 @@ export class MenuScene {
           bounds: boundsForDisplayObject(row),
           titleBounds: boundsForDisplayObject(row?._title),
           detailBounds: boundsForDisplayObject(row?._detail),
-          progressBounds: boundsForDisplayObject(row?._progress)
+          progressBounds: boundsForDisplayObject(row?._progress),
+          progressSlotBounds: boundsForLocalRect(row, row?._progressSlot)
         }))
       },
       launchDeck: {

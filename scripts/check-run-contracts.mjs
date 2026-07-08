@@ -348,6 +348,14 @@ function runCatalogAndSaveTests() {
 
   const powerupTotal = applyEvents(sessionFor(['powerup_collector_10']), Array.from({ length: 10 }, () => ({ type: 'powerup_collected', powerupType: 'shield', sector: 2 })));
   assert.deepEqual(powerupTotal.completed.map((entry) => entry.id), ['powerup_collector_10']);
+  const inactivePowerups = applyEvents(
+    sessionFor(FIRST_THREE),
+    Array.from({ length: 10 }, () => ({ type: 'powerup_collected', powerupType: 'shield', sector: 2 }))
+  );
+  assert.equal(inactivePowerups.completed.length, 0, 'non-active powerup orders must not complete from powerup pickups');
+  assert.equal(findSessionItem(inactivePowerups.session, 'powerup_collector_10'), undefined, 'non-active powerup orders must not enter the current run session');
+  const inactivePowerupSave = recordRunContractSessionProgress(runContractState(), inactivePowerups.session);
+  assert.equal(inactivePowerupSave.progress.powerup_collector_10, undefined, 'non-active powerup orders must not persist progress');
   const shieldNope = applyRunContractEvent(sessionFor(['shield_pickup']), { type: 'powerup_collected', powerupType: 'bomb', sector: 2 });
   assert.equal(shieldNope.completed.length, 0, 'Shield Check should require a shield pickup');
   const shieldResult = applyRunContractEvent(shieldNope.session, { type: 'powerup_collected', powerupType: 'shield', sector: 2 });
@@ -782,6 +790,15 @@ function boundsOverlap(a, b, pad = 0) {
   );
 }
 
+function assertContained(inner, outer, label, pad = 2) {
+  assert.ok(inner?.width > 0 && inner?.height > 0, `${label}: missing inner bounds`);
+  assert.ok(outer?.width > 0 && outer?.height > 0, `${label}: missing outer bounds`);
+  assert.ok(inner.x >= outer.x - pad, `${label}: left edge outside container`);
+  assert.ok(inner.y >= outer.y - pad, `${label}: top edge outside container`);
+  assert.ok(inner.right <= outer.right + pad, `${label}: right edge outside container`);
+  assert.ok(inner.bottom <= outer.bottom + pad, `${label}: bottom edge outside container`);
+}
+
 function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisabledBySetting = null } = {}) {
   const screen = menu?.screen;
   const board = menu?.missionBoard;
@@ -827,6 +844,8 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     assertInside(row.bounds, screen, `${row.id} row`);
     assertInside(row.titleBounds, screen, `${row.id} title`);
     assertInside(row.progressBounds, screen, `${row.id} progress`);
+    assertInside(row.progressSlotBounds, screen, `${row.id} progress slot`);
+    assertContained(row.progressBounds, row.progressSlotBounds, `${row.id} progress text`);
     assert.ok(!boundsOverlap(row.titleBounds, row.progressBounds, 2), `${row.id} title/progress text should not overlap`);
     assert.ok(!String(row.detail || '').trim(), `${row.id} should keep the main-menu row compact`);
     assert.match(row.progress, /^(COMPLETE|[0-9,]+\/[0-9,]+)$/, `${row.id} should show clear progress`);

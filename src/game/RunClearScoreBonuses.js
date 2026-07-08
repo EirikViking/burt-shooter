@@ -1,6 +1,7 @@
-export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0 } = {}) {
+export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0, awardKey = 'run_clear' } = {}) {
   if (!game) {
     return {
+      awardKey: 'run_clear',
       clearBonus: 0,
       livesBonus: 0,
       appliedClearBonus: 0,
@@ -11,8 +12,15 @@ export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0
     };
   }
 
-  if (game.runClearScoreBonusAward) {
-    return { ...game.runClearScoreBonusAward, alreadyApplied: true };
+  const normalizedAwardKey = String(awardKey || 'run_clear').trim().slice(0, 80) || 'run_clear';
+  if (!game.runClearScoreBonusAwards || typeof game.runClearScoreBonusAwards !== 'object') {
+    game.runClearScoreBonusAwards = {};
+  }
+  if (game.runClearScoreBonusAward && !game.runClearScoreBonusAwards.run_clear) {
+    game.runClearScoreBonusAwards.run_clear = game.runClearScoreBonusAward;
+  }
+  if (game.runClearScoreBonusAwards[normalizedAwardKey]) {
+    return { ...game.runClearScoreBonusAwards[normalizedAwardKey], alreadyApplied: true };
   }
 
   const baseClearBonus = Math.max(0, Math.floor(Number(clearBonus) || 0));
@@ -20,7 +28,8 @@ export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0
   const appliedClearBonus = applyExactScoreBonus(game, baseClearBonus, 'runClearBonus');
   const appliedLivesBonus = applyExactScoreBonus(game, baseLivesBonus, 'remainingLivesBonus');
 
-  game.runClearScoreBonusAward = {
+  const award = {
+    awardKey: normalizedAwardKey,
     clearBonus: baseClearBonus,
     livesBonus: baseLivesBonus,
     appliedClearBonus,
@@ -28,7 +37,11 @@ export function awardRunClearScoreBonuses(game, { clearBonus = 0, livesBonus = 0
     appliedTotal: appliedClearBonus + appliedLivesBonus,
     scoreAfter: game.score
   };
-  return { ...game.runClearScoreBonusAward, alreadyApplied: false };
+  game.runClearScoreBonusAwards[normalizedAwardKey] = award;
+  if (normalizedAwardKey === 'run_clear') {
+    game.runClearScoreBonusAward = award;
+  }
+  return { ...award, alreadyApplied: false };
 }
 
 function applyExactScoreBonus(game, amount, source) {

@@ -98,6 +98,7 @@ function assertScoreInvariant(snapshot, label) {
 mkdirSync(outputDir, { recursive: true });
 let server = null;
 let browser = null;
+let expectedFinalScore = expectedScore;
 const consoleEvents = [];
 
 try {
@@ -147,6 +148,7 @@ try {
     game.runClearReason = null;
     game.runClearLivesRemaining = 0;
     game.runClearScoreBonusAward = null;
+    game.runClearScoreBonusAwards = {};
     game.runFinalized = false;
     game.runSummary = null;
     game.runProgressionResult = null;
@@ -274,6 +276,57 @@ try {
   assert.equal(duplicate.duplicateAward?.alreadyApplied, true, 'duplicate award did not report alreadyApplied');
   assertScoreInvariant(duplicate, 'duplicate guard');
 
+  const overrun20 = await page.evaluate(({ clearBonus, livesBonus, expectedScore }) => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    game.level = 20;
+    game.lives = livesBonus / 2500;
+    game.runCleared = true;
+    game.currentScene = play;
+    game.currentSceneName = 'play';
+    play.gameOverInterlude = null;
+    game.gameOverTransitionPending = false;
+    const triggered = play.maybeTriggerOverrunCelebration({
+      sectorCleared: 20,
+      bossCompletion: true,
+      compactHud: false
+    });
+    const scoreAfterFirst = game.score;
+    const triggeredAgain = play.maybeTriggerOverrunCelebration({
+      sectorCleared: 20,
+      bossCompletion: true,
+      compactHud: false
+    });
+    const duplicateAward = game.awardRunClearScoreBonuses?.({
+      clearBonus,
+      livesBonus,
+      awardKey: 'overrun_20'
+    });
+    return {
+      triggered,
+      triggeredAgain,
+      scoreAfterFirst,
+      gameScore: game.score,
+      runClearAward: game.runClearScoreBonusAward,
+      overrun20Award: game.runClearScoreBonusAwards?.overrun_20,
+      duplicateAward,
+      breakdown: { ...game.scoreBreakdown },
+      expectedOverrunScore: expectedScore + clearBonus + livesBonus
+    };
+  }, { clearBonus, livesBonus, expectedScore });
+  assert.equal(overrun20.triggered, true, 'sector 20 overrun milestone did not trigger');
+  assert.equal(overrun20.triggeredAgain, false, 'sector 20 milestone should not retrigger after celebration');
+  assert.equal(overrun20.overrun20Award?.awardKey, 'overrun_20', 'sector 20 award should use its own guard key');
+  assert.equal(overrun20.overrun20Award?.appliedTotal, clearBonus + livesBonus, 'sector 20 award total mismatch');
+  assert.equal(overrun20.scoreAfterFirst, overrun20.expectedOverrunScore, 'sector 20 score was not applied immediately');
+  assert.equal(overrun20.gameScore, overrun20.expectedOverrunScore, 'sector 20 duplicate guard changed score');
+  assert.equal(overrun20.duplicateAward?.alreadyApplied, true, 'sector 20 duplicate award did not report alreadyApplied');
+  assert.equal(overrun20.runClearAward?.awardKey, 'run_clear', 'sector 20 should not replace the sector 10 run-clear award record');
+  assert.equal(overrun20.breakdown?.runClearBonus, clearBonus * 2, 'sector 20 should add another milestone clear bonus');
+  assert.equal(overrun20.breakdown?.remainingLivesBonus, livesBonus * 2, 'sector 20 should add another spare-hulls bonus');
+  assert.equal(overrun20.breakdown?.finalScore, overrun20.expectedOverrunScore, 'sector 20 final score breakdown mismatch');
+  expectedFinalScore = overrun20.expectedOverrunScore;
+
   await page.evaluate(() => window.__game.gameOver({ fromInterlude: true }));
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -295,14 +348,14 @@ try {
       renderState: JSON.parse(window.render_game_to_text?.() || '{}')
     };
   });
-  assert.equal(gameOver.gameScore, expectedScore, 'game.score changed during game over');
-  assert.equal(gameOver.finalScore, expectedScore, 'GameOver finalScore did not include clear bonuses');
-  assert.equal(gameOver.runSummaryScore, expectedScore, 'run summary score did not include clear bonuses');
-  assert.equal(gameOver.runSummaryFinalScore, expectedScore, 'run summary finalScore did not include clear bonuses');
-  assert.equal(gameOver.progressionBestScore, expectedScore, 'career/profile best score did not include clear bonuses');
-  assert.equal(gameOver.lastLeaderboardResult?.score, expectedScore, 'last leaderboard result did not include clear bonuses');
+  assert.equal(gameOver.gameScore, expectedFinalScore, 'game.score changed during game over');
+  assert.equal(gameOver.finalScore, expectedFinalScore, 'GameOver finalScore did not include overrun milestone bonuses');
+  assert.equal(gameOver.runSummaryScore, expectedFinalScore, 'run summary score did not include overrun milestone bonuses');
+  assert.equal(gameOver.runSummaryFinalScore, expectedFinalScore, 'run summary finalScore did not include overrun milestone bonuses');
+  assert.equal(gameOver.progressionBestScore, expectedFinalScore, 'career/profile best score did not include overrun milestone bonuses');
+  assert.equal(gameOver.lastLeaderboardResult?.score, expectedFinalScore, 'last leaderboard result did not include overrun milestone bonuses');
   assert.ok(gameOver.submissions.length >= 1, 'Steam leaderboard submit path was not exercised');
-  assert.ok(gameOver.submissions.every((entry) => entry.score === expectedScore), 'Steam submission score did not include clear bonuses');
+  assert.ok(gameOver.submissions.every((entry) => entry.score === expectedFinalScore), 'Steam submission score did not include overrun milestone bonuses');
 
   const beforeRetryScore = await page.evaluate(() => window.__game.score);
   await page.evaluate(async () => {
@@ -318,10 +371,10 @@ try {
     submissions: [...(window.__overrunScoreSubmissions || [])],
     lastLeaderboardResult: window.__game.lastLeaderboardResult || null
   }));
-  assert.equal(beforeRetryScore, expectedScore, 'score was wrong before Steam retry');
-  assert.equal(afterRetry.gameScore, expectedScore, 'Steam retry mutated game.score');
-  assert.equal(afterRetry.finalScore, expectedScore, 'Steam retry changed finalScore');
-  assert.ok(afterRetry.submissions.every((entry) => entry.score === expectedScore), 'Steam retry submitted a score without clear bonuses');
+  assert.equal(beforeRetryScore, expectedFinalScore, 'score was wrong before Steam retry');
+  assert.equal(afterRetry.gameScore, expectedFinalScore, 'Steam retry mutated game.score');
+  assert.equal(afterRetry.finalScore, expectedFinalScore, 'Steam retry changed finalScore');
+  assert.ok(afterRetry.submissions.every((entry) => entry.score === expectedFinalScore), 'Steam retry submitted a score without overrun milestone bonuses');
 
   const report = {
     ok: true,
@@ -330,8 +383,10 @@ try {
     clearBonus,
     livesBonus,
     expectedScore,
+    expectedFinalScore,
     immediate,
     duplicate,
+    overrun20,
     gameOver,
     afterRetry,
     consoleEvents
@@ -339,7 +394,7 @@ try {
   writeFileSync(path.join(outputDir, 'overrun-clear-score-runtime-report.json'), JSON.stringify(report, null, 2));
   await page.screenshot({ path: path.join(outputDir, 'overrun-clear-score-runtime-gameover.png'), fullPage: true });
   assert.equal(consoleEvents.length, 0, `browser console/page errors: ${JSON.stringify(consoleEvents)}`);
-  console.log(`[overrun-clear-score-runtime] PASS expectedScore=${expectedScore} outputDir=${outputDir}`);
+  console.log(`[overrun-clear-score-runtime] PASS expectedScore=${expectedFinalScore} outputDir=${outputDir}`);
 } catch (error) {
   const report = {
     ok: false,
@@ -348,6 +403,7 @@ try {
     clearBonus,
     livesBonus,
     expectedScore,
+    expectedFinalScore,
     consoleEvents,
     error: error?.stack || error?.message || String(error)
   };
