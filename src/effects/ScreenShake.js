@@ -10,6 +10,15 @@ export class ScreenShake {
     this.freezeFrames = 0;
   }
 
+  setOrigin(x = 0, y = 0) {
+    this.originalX = Number.isFinite(Number(x)) ? Number(x) : 0;
+    this.originalY = Number.isFinite(Number(y)) ? Number(y) : 0;
+    if (this.shakeDuration <= 0 && this.container && !this.container.destroyed) {
+      this.container.x = this.originalX;
+      this.container.y = this.originalY;
+    }
+  }
+
   shake(intensity, duration = 15) {
     const scale = getScreenShakeScale();
     if (scale <= 0.02) {

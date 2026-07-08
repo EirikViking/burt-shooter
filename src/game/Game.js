@@ -26,6 +26,15 @@ import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import { createRunReport } from './RunReport.js';
 import {
+  LOGICAL_PLAYFIELD_HEIGHT,
+  LOGICAL_PLAYFIELD_WIDTH,
+  clampToLogicalPlayfield,
+  computeActivePlayfieldRect,
+  getLogicalPlayfieldBounds,
+  screenToWorld,
+  worldToScreen
+} from './Playfield.js';
+import {
   RUN_MODES,
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
@@ -83,6 +92,7 @@ export class Game {
     this.contentDirector = null;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
     this.gameOverTransitionPending = false;
+    this.gameplayFacade = null;
 
     this.scenes = {
       intro: new IntroScene(this),
@@ -1123,12 +1133,75 @@ export class Game {
     return syncGameplayCursorVisibility(this);
   }
 
-  getWidth() {
+  getViewportWidth() {
     return this.app.screen.width;
   }
 
-  getHeight() {
+  getViewportHeight() {
     return this.app.screen.height;
+  }
+
+  getGameplayWidth() {
+    return LOGICAL_PLAYFIELD_WIDTH;
+  }
+
+  getGameplayHeight() {
+    return LOGICAL_PLAYFIELD_HEIGHT;
+  }
+
+  getGameplayBounds() {
+    return getLogicalPlayfieldBounds();
+  }
+
+  getActivePlayfieldRect() {
+    return computeActivePlayfieldRect(this.getViewportWidth(), this.getViewportHeight());
+  }
+
+  screenToGameplay(x, y) {
+    return screenToWorld(x, y, this.getViewportWidth(), this.getViewportHeight());
+  }
+
+  gameplayToScreen(x, y) {
+    return worldToScreen(x, y, this.getViewportWidth(), this.getViewportHeight());
+  }
+
+  clampToGameplay(x, y, margin = 0) {
+    return clampToLogicalPlayfield(x, y, margin);
+  }
+
+  createGameplayFacade() {
+    if (this.gameplayFacade) return this.gameplayFacade;
+    const game = this;
+    this.gameplayFacade = new Proxy(this, {
+      get(target, prop, receiver) {
+        if (prop === 'getWidth') return target.getGameplayWidth.bind(target);
+        if (prop === 'getHeight') return target.getGameplayHeight.bind(target);
+        if (prop === 'width') return target.getGameplayWidth();
+        if (prop === 'height') return target.getGameplayHeight();
+        if (prop === 'getViewportWidth') return target.getViewportWidth.bind(target);
+        if (prop === 'getViewportHeight') return target.getViewportHeight.bind(target);
+        if (prop === 'getActivePlayfieldRect') return target.getActivePlayfieldRect.bind(target);
+        if (prop === 'screenToGameplay') return target.screenToGameplay.bind(target);
+        if (prop === 'gameplayToScreen') return target.gameplayToScreen.bind(target);
+        if (prop === 'clampToGameplay') return target.clampToGameplay.bind(target);
+        return Reflect.get(target, prop, receiver);
+      },
+      set(target, prop, value, receiver) {
+        if (receiver === game.gameplayFacade) {
+          return Reflect.set(target, prop, value, target);
+        }
+        return Reflect.set(target, prop, value, receiver);
+      }
+    });
+    return this.gameplayFacade;
+  }
+
+  getWidth() {
+    return this.getViewportWidth();
+  }
+
+  getHeight() {
+    return this.getViewportHeight();
   }
 
   // TASK 2 & 4: Rank title and texture helpers

@@ -189,8 +189,10 @@ class Powerup {
     if (!this.evasiveConfig) return false;
     const screenWidth = Math.max(
       320,
-      Number(scene?.game?.app?.screen?.width) ||
+      Number(scene?.gameplayGame?.getWidth?.()) ||
+      Number(scene?.game?.getGameplayWidth?.()) ||
       Number(scene?.game?.getWidth?.()) ||
+      Number(scene?.game?.app?.screen?.width) ||
       Number(scene?.game?.width) ||
       800
     );
@@ -327,8 +329,10 @@ class Powerup {
 
     const screenHeight = Math.max(
       620,
-      Number(scene?.game?.app?.screen?.height) ||
+      Number(scene?.gameplayGame?.getHeight?.()) ||
+      Number(scene?.game?.getGameplayHeight?.()) ||
       Number(scene?.game?.getHeight?.()) ||
+      Number(scene?.game?.app?.screen?.height) ||
       Number(scene?.game?.height) ||
       620
     );
@@ -635,7 +639,7 @@ class Powerup {
   }
 
   drawPickupEdgeGuide(scene, guide, options = {}) {
-    const game = scene?.game || this.game;
+    const game = scene?.gameplayGame || scene?.game || this.game;
     const width = Math.max(
       320,
       Number(game?.getWidth?.()) ||

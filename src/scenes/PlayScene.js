@@ -20,7 +20,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
-import { getCurrentLayout } from '../ui/responsiveLayout.js';
+import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import {
   MenuFxLayer,
   playMenuBackSfx,
@@ -112,6 +112,7 @@ const STRAGGLER_BEACON_MAX_TARGETS = 3;
 export class PlayScene {
   constructor(game) {
     this.game = game;
+    this.gameplayGame = game.createGameplayFacade?.() || game;
     this.container = new PIXI.Container();
     this.gameContainer = new PIXI.Container();
     this.decorativeOverlay = new PIXI.Container();
@@ -385,6 +386,7 @@ export class PlayScene {
     this.balanceDebug = null;
     this.bossClearRecoveryLevels = new Set();
     this.performanceDiagnostics = null;
+    this.viewportLayoutUnsubscribe = null;
   }
 
   init() {
@@ -413,6 +415,7 @@ export class PlayScene {
       this.inputManager = new InputManager();
     }
     this.inputManager.resetAllKeys();
+    this.gameplayGame = this.game.createGameplayFacade?.() || this.game;
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
     this.pauseOverlay = null;
@@ -427,6 +430,8 @@ export class PlayScene {
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
+    this.gameContainer.scale.set(1);
+    this.gameContainer.position.set(0, 0);
     this.decorativeOverlay.sortableChildren = true;
     this.decorativeOverlay.eventMode = 'none';
     this.uiContainer.sortableChildren = true;
@@ -594,7 +599,8 @@ export class PlayScene {
     }
     this.introOverlay = null;
 
-    const { width, height } = this.game.app.screen;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
 
     // Initialize managers
     const capHandler = this.logCap.bind(this);
@@ -602,8 +608,11 @@ export class PlayScene {
     this.bulletManager.setScreenBounds(width, height);
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
     this.particleManager.prewarm?.(384);
-    this.powerupManager = new PowerupManager(this.gameContainer, this.game);
+    this.powerupManager = new PowerupManager(this.gameContainer, this.gameplayGame);
     this.screenShake = new ScreenShake(this.gameContainer);
+    this.applyGameplayViewportTransform();
+    this.viewportLayoutUnsubscribe?.();
+    this.viewportLayoutUnsubscribe = addResponsiveListener(() => this.applyGameplayViewportTransform());
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
     this.gameContainer.sortableChildren = true;
     this.tractorHijack = null;
@@ -704,7 +713,7 @@ export class PlayScene {
         this.player.sprite.parent.removeChild(this.player.sprite);
       }
     }
-    this.player = new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey);
+    this.player = new Player(width / 2, height - 100, this.inputManager, this.gameplayGame, spriteKey);
     this.gameContainer.addChild(this.player.sprite);
     if (this.player.setRank) {
       this.player.setRank(initialRank, 'init_placeholder');
@@ -712,7 +721,7 @@ export class PlayScene {
     this.applySeasonCosmetics();
 
     // Create enemy manager
-    this.enemyManager = new EnemyManager(this.gameContainer, this.game, capHandler);
+    this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
@@ -786,6 +795,34 @@ export class PlayScene {
 
     console.log(`PlayScene build:${BUILD_ID}`);
     this.isReady = true;
+  }
+
+  getActivePlayfieldRect() {
+    if (typeof this.game?.getActivePlayfieldRect === 'function') {
+      return this.game.getActivePlayfieldRect();
+    }
+    const width = this.game?.getWidth?.() || this.game?.app?.screen?.width || 1920;
+    const height = this.game?.getHeight?.() || this.game?.app?.screen?.height || 1080;
+    return { x: 0, y: 0, width, height, scale: 1 };
+  }
+
+  applyGameplayViewportTransform() {
+    if (!this.gameContainer) return null;
+    const rect = this.getActivePlayfieldRect();
+    const scale = Math.max(0.01, Number(rect.scale) || 1);
+    this.gameContainer.scale.set(scale);
+    this.screenShake?.setOrigin?.(rect.x, rect.y);
+    if (!this.screenShake || this.screenShake.shakeDuration <= 0) {
+      this.gameContainer.x = rect.x;
+      this.gameContainer.y = rect.y;
+    }
+    this.bulletManager?.setScreenBounds?.(this.gameplayGame.getWidth(), this.gameplayGame.getHeight());
+    return rect;
+  }
+
+  getGameplayContainerOrigin() {
+    const rect = this.getActivePlayfieldRect();
+    return { x: rect.x || 0, y: rect.y || 0 };
   }
 
   canUseMaintainerDevtools() {
@@ -997,8 +1034,10 @@ export class PlayScene {
     if (!this.powerupManager || !this.player || !this.game) return false;
     this.game?.markUnrankedRun?.(reason);
     this.debugLevelToolsUsed = true;
-    const x = Math.max(90, Math.min(this.game.getWidth() - 90, this.player.x + (Math.random() < 0.5 ? -150 : 150)));
-    const y = Math.max(88, this.game.getHeight() * 0.24);
+    const gameplayWidth = this.gameplayGame.getWidth();
+    const gameplayHeight = this.gameplayGame.getHeight();
+    const x = Math.max(90, Math.min(gameplayWidth - 90, this.player.x + (Math.random() < 0.5 ? -150 : 150)));
+    const y = Math.max(88, gameplayHeight * 0.24);
     const spawned = this.powerupManager.spawnSpecific(x, y, 'super_extra_life', {
       source: reason
     });
@@ -2568,12 +2607,14 @@ export class PlayScene {
         this.playLevelClearVoice({ bossCompletion });
 
         // Particles
+        const gameplayWidth = this.gameplayGame.getWidth();
+        const gameplayHeight = this.gameplayGame.getHeight();
         for (let i = 0; i < 20; i++) {
           setTimeout(() => {
             if (this.particleManager) {
               this.particleManager.createExplosion(
-                this.game.getWidth() * 0.2 + Math.random() * this.game.getWidth() * 0.6,
-                this.game.getHeight() * 0.2 + Math.random() * this.game.getHeight() * 0.6,
+                gameplayWidth * 0.2 + Math.random() * gameplayWidth * 0.6,
+                gameplayHeight * 0.2 + Math.random() * gameplayHeight * 0.6,
                 0xffff00
               );
             }
@@ -3235,8 +3276,10 @@ export class PlayScene {
 
     const radius = Math.max(110, Number(bullet.blastRadius) || 150);
     const damage = Math.max(1, Number(bullet.damage) || 1);
-    const x = Number.isFinite(bullet.x) ? bullet.x : this.player?.x || this.game.getWidth() / 2;
-    const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || this.game.getHeight() * 0.45;
+    const gameplayWidth = this.gameplayGame.getWidth();
+    const gameplayHeight = this.gameplayGame.getHeight();
+    const x = Number.isFinite(bullet.x) ? bullet.x : this.player?.x || gameplayWidth / 2;
+    const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || gameplayHeight * 0.45;
 
     if (this.particleManager) {
       const burstCount = this.game.getWidth() < 620 ? 9 : 14;
@@ -3424,7 +3467,6 @@ export class PlayScene {
   }
 
   checkCollisions() {
-    const { width, height } = this.game.app.screen;
     const perfDiag = this.performanceDiagnostics;
     const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
     const sideEffects = this.createCollisionSideEffectQueue();
@@ -3492,8 +3534,8 @@ export class PlayScene {
 
     // Bomb detonation check
     measure('collision.bomb_apex', () => {
-    const screenHeight = this.game.app.screen.height;
-    const detonationY = screenHeight * 0.45; // Detonate at 45% of screen height
+    const screenHeight = this.gameplayGame.getHeight();
+    const detonationY = screenHeight * 0.45; // Detonate at 45% of the logical playfield height
     this.bulletManager.playerBullets.forEach(bullet => {
       collisionStats.bombApexChecks += 1;
       if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
@@ -4047,7 +4089,8 @@ export class PlayScene {
     }
 
     const metrics = this.playerMetrics;
-    const { width, height } = this.game.app.screen;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
 
     // Sample every 1s (60 frames approx) to save perf, or just run lightly every frame
     // Let's sample continuously but aggregate
@@ -4096,7 +4139,8 @@ export class PlayScene {
 
   // TASK D: Procedural starfield background with parallax layers
   createStarfield() {
-    const { width, height } = this.game.app.screen;
+    const width = this.gameplayGame?.getWidth?.() || this.game?.getGameplayWidth?.() || this.game.app.screen.width;
+    const height = this.gameplayGame?.getHeight?.() || this.game?.getGameplayHeight?.() || this.game.app.screen.height;
 
     // Create container for starfield (behind everything)
     this.starfieldContainer = new PIXI.Container();
@@ -4309,7 +4353,8 @@ export class PlayScene {
   updateStarfield(delta) {
     if (!this.starLayers || !this.game?.app?.screen) return;
 
-    const { width, height } = this.game.app.screen;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
     const dtSec = Math.min(0.05, delta / 60); // Convert to seconds, clamp for safety
 
     // Update all star layers
@@ -4426,6 +4471,8 @@ export class PlayScene {
     this.clearSectorArrivalStinger();
     this.clearBackgroundLevelEntryWarmup();
     this.removeAutoPauseHandlers();
+    this.viewportLayoutUnsubscribe?.();
+    this.viewportLayoutUnsubscribe = null;
     this.shipIntroToken += 1;
     this.sectorArrivalArtCache?.clear?.();
     this.entryAssetWarmupCache?.clear?.();
@@ -6135,8 +6182,10 @@ export class PlayScene {
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    const impactX = this.player?.x ?? width / 2;
-    const impactY = this.player?.y ?? height * 0.72;
+    const gameplayWidth = this.gameplayGame.getWidth();
+    const gameplayHeight = this.gameplayGame.getHeight();
+    const impactX = this.player?.x ?? gameplayWidth / 2;
+    const impactY = this.player?.y ?? gameplayHeight * 0.72;
 
     this.lastHitStopRequestMs = finalDeath ? 420 : 180;
     this.freezeTimerMs = this.lastHitStopRequestMs;
@@ -6319,7 +6368,7 @@ export class PlayScene {
     // RESPONDER LOGIC
     if (this.player && this.game.lives > 0) {
       this.respawnsThisRun = (Number(this.respawnsThisRun) || 0) + 1;
-      this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+      this.player.forceRespawn(this.gameplayGame.getWidth(), this.gameplayGame.getHeight());
       this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'respawn');
       this.recordBalanceRespawn();
       const clearedHazards = this.clearRespawnHazards('life_lost') +
@@ -6600,8 +6649,8 @@ export class PlayScene {
     if (!this.player || !boss || !this.game) return false;
     const config = BalanceConfig.bossMercy || {};
     const pushback = Math.max(0, Number(config.contactPushbackPx) || 72);
-    const width = this.game.getWidth ? this.game.getWidth() : this.game.app.screen.width;
-    const height = this.game.getHeight ? this.game.getHeight() : this.game.app.screen.height;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
     const margin = Math.max(24, (this.player.radius || 12) + 12);
     let dx = this.player.x - boss.x;
     const baseDy = this.player.y - boss.y;
@@ -6806,7 +6855,7 @@ export class PlayScene {
     this.lastStandReadyAt = now + 35000;
     this.game.lives = 2;
     this.lowLivesShownFor = null;
-    this.player.forceRespawn(this.game.getWidth(), this.game.getHeight());
+    this.player.forceRespawn(this.gameplayGame.getWidth(), this.gameplayGame.getHeight());
     this.player.grantInvulnerability?.(RESPAWN_INVULNERABILITY_MS, 'last_stand');
     this.recordBalanceRespawn();
     const clearedHazards = this.clearRespawnHazards('last_stand');
@@ -7019,8 +7068,8 @@ export class PlayScene {
   triggerTractorHijack({ x, y } = {}) {
     if (!this.player || !this.enemyManager || !this.game) return null;
 
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
     const sourceX = Number.isFinite(x) ? x : width / 2;
     const sourceY = Number.isFinite(y) ? y : height * 0.2;
     const playerX = Number.isFinite(this.player.x) ? this.player.x : width / 2;
@@ -7249,8 +7298,8 @@ export class PlayScene {
   registerBossHazardFromBoss(boss, category = 'regular', details = {}) {
     if (!boss || !this.player || !this.game) return null;
 
-    const width = this.game.getWidth ? this.game.getWidth() : this.game.app.screen.width;
-    const height = this.game.getHeight ? this.game.getHeight() : this.game.app.screen.height;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
     const sourceX = Number.isFinite(details.sourceX) ? details.sourceX : boss.x;
     const sourceY = Number.isFinite(details.sourceY) ? details.sourceY : boss.y + 18;
     const playerX = Number.isFinite(details.playerX) ? details.playerX : this.player.x;
@@ -7945,9 +7994,9 @@ export class PlayScene {
 
   clearRespawnHazards(reason = 'respawn') {
     let cleared = this.clearEnemyBullets(reason);
-    const height = this.game.getHeight();
+    const height = this.gameplayGame.getHeight();
     const dangerY = height * 0.62;
-    const playerX = this.player?.x ?? this.game.getWidth() / 2;
+    const playerX = this.player?.x ?? this.gameplayGame.getWidth() / 2;
     const playerY = this.player?.y ?? height - 100;
     const enemies = this.enemyManager?.enemies || [];
 
@@ -10494,8 +10543,8 @@ export class PlayScene {
     this.firstRunKillCount = (this.firstRunKillCount || 0) + 1;
     if (this.firstRunKillCount < 3 || !this.powerupManager || !this.player) return false;
 
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
     const x = Math.max(width * 0.34, Math.min(width * 0.66, enemy.x || width / 2));
     const y = Math.max(112, Math.min(height * 0.42, (enemy.y || height * 0.2) + 26));
     const spawned = this.powerupManager.spawnSpecific(x, y, 'rapid_fire', {
@@ -11361,7 +11410,7 @@ export class PlayScene {
 
       // Create beam from top
       const beam = new PIXI.Graphics();
-      const screenHeight = this.game.app.screen.height;
+      const screenHeight = this.gameplayGame.getHeight();
       beam.moveTo(targetX, 0);
       beam.lineTo(targetX, screenHeight);
       beam.stroke({ color: 0xffaa00, width: 40, alpha: 0.6 });
@@ -11429,10 +11478,10 @@ export class PlayScene {
   }
 
   spawnAmbientBonusDrone(type) {
-    const x = Math.random() * (this.game.getWidth() - 100) + 50;
+    const x = Math.random() * (this.gameplayGame.getWidth() - 100) + 50;
     const y = -50;
 
-    const bonusDrone = new BonusDrone(x, y, this.game, type);
+    const bonusDrone = new BonusDrone(x, y, this.gameplayGame, type);
     this.gameContainer.addChild(bonusDrone.sprite);
     this.ambientBonusDrones.push(bonusDrone);
   }
@@ -12480,6 +12529,7 @@ export class PlayScene {
     const shipName = (shipMeta ? shipMeta.name : 'UNKNOWN SHIP').toUpperCase();
     const introWidth = this.game.getWidth();
     const introHeight = this.game.getHeight();
+    const introGameplayHeight = this.gameplayGame.getHeight();
     const isNarrowIntro = introWidth < 620;
     const maxTextWidth = Math.max(260, introWidth * 0.9);
 
@@ -12543,8 +12593,8 @@ export class PlayScene {
     this.uiOverlay.addChild(flash);
 
     // Setup Player Sprite State
-    const startY = introHeight + 300;
-    const endY = introHeight - (isNarrowIntro ? 170 : 150);
+    const startY = introGameplayHeight + 300;
+    const endY = introGameplayHeight - (isNarrowIntro ? 170 : 150);
     this.player.sprite.y = startY;
     this.player.y = startY;
     this.player.sprite.scale.set(0.7);
@@ -12617,14 +12667,15 @@ export class PlayScene {
       }
 
       // 5. Impact (at ~80% of fly-in duration, ~1.4s)
+      const gameOrigin = this.getGameplayContainerOrigin();
       if (elapsed > 1400 && elapsed < 1550) {
         flash.alpha = 0.1;
-        this.gameContainer.x = (Math.random() - 0.5) * 6;
-        this.gameContainer.y = (Math.random() - 0.5) * 6;
+        this.gameContainer.x = gameOrigin.x + (Math.random() - 0.5) * 6;
+        this.gameContainer.y = gameOrigin.y + (Math.random() - 0.5) * 6;
       } else {
         flash.alpha = Math.max(0, flash.alpha - 0.02);
-        this.gameContainer.x = 0;
-        this.gameContainer.y = 0;
+        this.gameContainer.x = gameOrigin.x;
+        this.gameContainer.y = gameOrigin.y;
       }
 
       // --- Text Animation ---

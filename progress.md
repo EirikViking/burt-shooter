@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-08 Resolution Fairness Investigation
+
+- Current request: investigate suspected resolution-dependent difficulty/display fairness first, fix only if confirmed, and preserve recent projectile visual readability work.
+- Baseline safety: verified branch `codex/main-menu-run-contracts-20260702`, clean HEAD `b94b689 Record full QA Steam upload evidence`; accepted `b94b689` as a QA/upload-evidence baseline after the user acknowledged the prior HEAD mismatch.
+- Diagnostic finding: the pre-fix `scripts/check-resolution-fairness.mjs` confirmed score-relevant viewport dependence. Legacy metrics made 5120x1440 boss clamp/player range/ARC formation span roughly 2.67x the 1920x1080 space, and 3440x1440 ARC span roughly 1.79x.
+- Implementation direction: introduce a fixed 1920x1080 logical gameplay playfield, scale/center the gameplay container into the actual viewport, and route player/enemy/boss/bullet/powerup/bonus-drone gameplay bounds through the logical facade while keeping HUD/menus/overlays viewport-responsive.
+- Verification: `node scripts/check-resolution-fairness.mjs` passes, reporting invariant 1920x1080 logical metrics across 1280x720, 1600x900, 1920x1080, 2560x1440, 3840x2160, 3440x1440, and 5120x1440; syntax checks passed for touched JS/MJS files; `npm run check:player-projectile-readability`, `npm run check:projectile-visuals`, `npm run check:enemy-weapons`, `npm run check:danger-dodge`, `npm run check:release-line`, `npm run check:i18n`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:controller-flow`, `npm run smoke`, `npm run check:steam-electron-bridge`, and `git diff --check` passed. `npm run desktop:smoke:current` timed out once with Steam API unavailable, then passed on rerun with offline local profile diagnostics. The generic develop-web-game client was attempted but its skill-local Playwright cache lacked `chromium_headless_shell-1208`; no tool-cache install was performed.
+
 ## 2026-07-02 Main-Menu Mission Board / Run Contracts
 
 - Current request: add a small optional Run Contracts / Combat Missions loop, but surface it in the main menu because most players launch from there. Make it very easy to roll back if it does not feel right.
