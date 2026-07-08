@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-08 Pilot Orders Objective Guidance
+
+- Current request: make the main-menu Pilot Orders description tell the player exactly how to complete each order, after the previous visible line still read too much like a label/name.
+- Implementation direction: add an explicit `howTo` guidance string to Pilot Orders display entries and have the main-menu Pilot Orders board show the selected/hovered order's instruction in a larger framed guidance band. Rows remain compact, but pointer hover/tap changes the highlighted order and the instruction sentence. The board stays in the left command lane, with a capped vertical scale so 150% UI scale remains below the mode stack and above the dock.
+- Localization: added translations/fallbacks for the new instructional guidance strings in all supported locale files. The text now explains concrete actions such as flying close to enemy bullets without touching them, surviving to a boss wave and destroying it, pressing Phase as danger hits, and collecting specific powerup capsules.
+- Verification: syntax checks passed for `src/progression/RunContracts.js`, `src/scenes/MenuScene.js`, and `scripts/check-run-contracts.mjs`. Passed `npm run check:i18n`; `npm run check:run-contracts` with visually inspected screenshots `test-results/run-contracts-2026-07-08T18-49-58-211Z/pilot-orders-active-menu.png`, `pilot-orders-hover-detail-menu.png`, and `pilot-orders-1080p-ui150.png`; `npm run build:current`; `npm run check:i18n-ui`; `npm run check:controller-flow`; `npm run smoke`; `npm run check:steam-electron-bridge`; `npm run desktop:smoke:current` on rerun after one transient Electron load timeout; `npm run check:release-line`; and `git diff --check` with CRLF normalization warnings only.
+- Scope notes: no gameplay progression rules, scoring, XP, leaderboard identity, achievements metadata, package dependencies, Steamworks metadata, balance, or public branch assignment changes were made in the source pass.
+
 ## 2026-07-08 Pilot Orders Progress Pill / Overrun Milestone Bonus Fix
 
 - Current request: fix the main-menu Pilot Orders progress text spilling out of its pill, confirm whether inactive Pilot Orders can progress, and investigate missing bonus points after clearing sector 20.

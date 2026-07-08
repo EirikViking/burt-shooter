@@ -797,6 +797,7 @@ function buildRunContractDisplayEntry(id, state = {}) {
     shortTitle: contract.shortTitle || contract.title || id,
     description: contract.description || '',
     shortDescription: contract.shortDescription || contract.description || '',
+    howTo: getRunContractHowTo(contract),
     modeLabel: contract.modeLabel || 'Mayhem',
     target,
     progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
@@ -809,6 +810,59 @@ function buildRunContractDisplayEntry(id, state = {}) {
     lastRunMode: completion?.lastRunMode || null,
     lastSector: completion?.lastSector || null
   };
+}
+
+function getRunContractHowTo(contract = {}) {
+  switch (contract.objective) {
+    case 'grazes':
+      return 'Fly close to enemy bullets without touching them.';
+    case 'boss_defeated':
+    case 'boss_defeats':
+      return 'Survive to a boss wave, then destroy the boss.';
+    case 'enemy_defeats':
+      return 'Destroy enemy ships in Mayhem; progress carries between runs.';
+    case 'boss_support_defeats':
+      return 'During boss fights, shoot the smaller support ships.';
+    case 'phase_through_danger':
+      return 'Press Phase while a dangerous bullet is about to hit you.';
+    case 'powerup_collected':
+      return getPowerupRunContractHowTo(contract);
+    case 'near_miss_streak':
+      return 'Stay close to enemy bullets repeatedly without getting hit.';
+    case 'boss_slow_time_defeat':
+      return 'Activate Slow Time or Chrono Anchor, then finish a boss before it ends.';
+    case 'sector_no_life_loss':
+      return 'Reach the target sector without losing any lives.';
+    case 'blink_drive_survive':
+      return 'Pick up Blink Drive, then stay alive until the timer completes.';
+    case 'sector_reached':
+      return 'Survive Mayhem until the target sector begins.';
+    case 'phase_uses':
+      return 'Press Phase in Mayhem; each use counts.';
+    case 'unique_enemy_defeats':
+      return 'Destroy new enemy types; repeats do not count.';
+    case 'pilot_rank_reached':
+      return 'Earn Career XP from runs until you reach the required pilot rank.';
+    case 'run_starts':
+      return 'Start Mayhem from the main menu; each launch counts.';
+    default:
+      return contract.shortDescription || contract.description || '';
+  }
+}
+
+function getPowerupRunContractHowTo(contract = {}) {
+  const types = Array.isArray(contract.powerupTypes) ? contract.powerupTypes : [];
+  if (!types.length) return 'Pick up glowing powerup capsules in Mayhem.';
+  if (types.includes('shield')) return 'Pick up a Shield powerup capsule in Mayhem.';
+  if (types.includes('bomb')) return 'Pick up a Bomb powerup capsule in Mayhem.';
+  if (types.includes('slow_time')) return 'Pick up a Slow Time powerup capsule in Mayhem.';
+  if (types.includes('chrono_anchor')) return 'Pick up a Chrono Anchor powerup capsule in Mayhem.';
+  if (types.includes('blink_drive')) return 'Pick up a Blink Drive powerup capsule in Mayhem.';
+  if (types.includes('point_defense') || types.includes('aegis_burst')) return 'Pick up a Point Defense powerup capsule in Mayhem.';
+  if (types.includes('shockwave')) return 'Pick up a Shockwave powerup capsule in Mayhem.';
+  if (types.includes('nano_patch') || types.includes('mercy_protocol')) return 'Pick up any repair-style powerup capsule in Mayhem.';
+  if (types.includes('life') || types.includes('super_extra_life')) return 'Pick up an extra-life powerup capsule in Mayhem.';
+  return 'Pick up glowing powerup capsules in Mayhem.';
 }
 
 function getQueuedRunContractEntries(state = {}, limit = RUN_CONTRACT_ACTIVE_LIMIT) {

@@ -116,8 +116,8 @@ const EXPECTED_ORDER_IDS = [
   'boss_hunter_100',
   'support_hunter_100'
 ];
-const ACTIVE_DESCRIPTIONS = Object.fromEntries(
-  getRunContractCatalog().map((contract) => [contract.id, contract.shortDescription])
+const ACTIVE_HOW_TO = Object.fromEntries(
+  getRunContractMenuState(runContractState()).active.map((contract) => [contract.id, contract.howTo])
 );
 
 function timestamp() {
@@ -833,13 +833,17 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
 
   assert.match(board?.title || '', /^PILOT ORDERS [0-9,]+\/[0-9,]+$/);
   assert.ok(Number(board?.trackProgressRatio) >= 0 && Number(board?.trackProgressRatio) <= 1, 'Pilot Orders should expose a bounded track progress ratio');
-  const freshTrack = /\b0\/50$/.test(board?.title || '');
-  assert.equal(
-    board?.subtitle,
-    freshTrack ? 'Learn key Mayhem tactics.' : 'Review cleared orders in Ship Hangar.'
-  );
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
+  const selectedRows = board.rows.filter((row) => row.selected);
+  assert.equal(selectedRows.length, 1, 'Pilot Orders should expose one selected row for the detail strip');
+  const selectedRow = selectedRows[0];
+  const expectedDetail = ACTIVE_HOW_TO[selectedRow.id];
+  assert.equal(board.selectedOrder?.id, selectedRow.id, 'Pilot Orders selected detail should match the highlighted row');
+  assert.equal(board.selectedOrder?.title, selectedRow.title, 'Pilot Orders selected detail should reuse the visible title');
+  assert.equal(board.selectedOrder?.detail, expectedDetail, 'Pilot Orders selected detail should use the catalog guidance');
+  assert.equal(board.subtitle, expectedDetail, 'Pilot Orders subtitle should explain exactly how to progress the selected row');
+  assert.ok(!boundsOverlap(board.subtitleBounds, selectedRow.bounds, 2), 'Pilot Orders detail strip should not overlap the selected row');
   for (const row of board.rows) {
     assertInside(row.bounds, screen, `${row.id} row`);
     assertInside(row.titleBounds, screen, `${row.id} title`);
@@ -894,11 +898,24 @@ async function runBrowserSmoke() {
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
-    assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Learn key Mayhem tactics.', 'fresh Pilot Orders board should introduce the feature as tactics training');
+    assert.equal(activeProof.state.menu.missionBoard.selectedOrder?.id, 'graze_10', 'fresh Pilot Orders board should explain the first active order by default');
+    assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Fly close to enemy bullets without touching them.', 'fresh Pilot Orders board should show exact action guidance');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01/50', '02/50', '03/50'], 'main-menu rows should expose their finite Pilot Orders slots');
     assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^Graze x10$/, 'main-menu row title should stay compact');
     assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS: Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order without catalog or track-count clutter');
+
+    const secondRowBounds = activeProof.state.menu.missionBoard.rows[1]?.bounds;
+    await page.mouse.move(
+      secondRowBounds.x + secondRowBounds.width / 2,
+      secondRowBounds.y + secondRowBounds.height / 2
+    );
+    await page.waitForTimeout(150);
+    const hoverState = await readState(page);
+    assertPilotOrdersLayout(hoverState.menu, 'active');
+    assert.equal(hoverState.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'hovering a Pilot Order row should update the detail strip');
+    assert.equal(hoverState.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'hover detail should explain the hovered order');
+    await page.screenshot({ path: path.join(outputDir, 'pilot-orders-hover-detail-menu.png'), fullPage: true });
 
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -1056,7 +1073,8 @@ async function runBrowserSmoke() {
     });
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
-    assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders board should point to the review location');
+    assert.equal(completedProof.state.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'completed active rows should default the detail strip to the next unfinished order');
+    assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'completed active rows should still explain the next unfinished order');
     assert.match(completedProof.state.menu.menuIcons?.shipHangar?.sublabel || '', /PILOT ORDERS DONE 1\/50/, 'Ship Hangar dock card should advertise completed Pilot Orders review progress');
 
     const completeProof = await captureMenuProof(page, {
