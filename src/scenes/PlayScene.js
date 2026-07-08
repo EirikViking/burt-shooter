@@ -125,8 +125,7 @@ export class PlayScene {
     this.container.addChild(this.uiContainer);
     this.container.addChild(this.uiOverlay);
     this.gameplayViewportMask.eventMode = 'none';
-    this.gameplayViewportMask.renderable = false;
-    this.gameContainer.mask = this.gameplayViewportMask;
+    this.applyGameplayViewportMask();
 
     this.inputManager = new InputManager();
     this.touchControls = new NullTouchControls();
@@ -437,7 +436,7 @@ export class PlayScene {
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
     this.uiOverlay.removeChildren();
-    this.gameContainer.mask = this.gameplayViewportMask;
+    this.applyGameplayViewportMask();
     this.gameContainer.scale.set(1);
     this.gameContainer.position.set(0, 0);
     this.decorativeOverlay.sortableChildren = true;
@@ -842,6 +841,16 @@ export class PlayScene {
     this.gameplayViewportMask.clear();
     this.gameplayViewportMask.rect(x, y, width, height);
     this.gameplayViewportMask.fill({ color: 0xffffff, alpha: 1 });
+    this.gameplayViewportMask.renderable = true;
+    this.gameplayViewportMask.includeInBuild = false;
+  }
+
+  applyGameplayViewportMask() {
+    if (!this.gameContainer || !this.gameplayViewportMask) return;
+    this.gameplayViewportMask.eventMode = 'none';
+    this.gameContainer.mask = this.gameplayViewportMask;
+    this.gameplayViewportMask.renderable = true;
+    this.gameplayViewportMask.includeInBuild = false;
   }
 
   getGameplayContainerOrigin() {
