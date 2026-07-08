@@ -328,7 +328,7 @@ try {
     finalLevel: 50,
     finalScore: 250000,
     expectedCount: 1,
-    expectedVoiceKey: 'mission_control_eirik_viking_unlocked',
+    expectedVoiceKey: 'mission_control_viking_legend_unlocked',
     expectedSummary: 'EIRIK THE VIKING'
   }));
   console.log(`[ship-unlock-reveal] PASS ${JSON.stringify(results)}`);

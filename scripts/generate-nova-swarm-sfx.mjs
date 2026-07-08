@@ -216,7 +216,7 @@ const sounds = [
     prompt_influence: 0.72
   },
   {
-    file: 'nova_boss_death_kurt.mp3',
+    file: 'nova_boss_death_mirror_crack.mp3',
     text: 'A unique boss death sound for Ro ro ro, mirror hive cracks, glassy phase shards, deep alien cabinet thump, brilliant sci-fi sparkle finish, no voice, no melody, three seconds.',
     duration_seconds: 3,
     prompt_influence: 0.72

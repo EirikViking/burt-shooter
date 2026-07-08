@@ -38,10 +38,10 @@ assert.ok(
 );
 
 for (const needle of [
-  'const rankPanelWidth = 164;',
-  'const rankTextMaxWidth = 92;',
+  'const rankPanelWidth = 164 * uiScale;',
+  'const rankTextMaxWidth = 92 * uiScale;',
   'Math.max(0.58, rankTextMaxWidth / this.rankText.width)',
-  'const rankOffset = layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198);'
+  'const rankOffset = Math.round((layout.isMobile ? 186 : (isLargeDesktop ? 204 : 198)) * uiScale);'
 ]) {
   assert.ok(hud.includes(needle), `rank badge overlap guard missing marker: ${needle}`);
 }
@@ -64,7 +64,7 @@ assert.ok(
   'persistent combo HUD should stay removed while every-10 scoring remains'
 );
 assert.ok(
-  playScene.includes('const appliedBonus = this.game.addScore(bonus);'),
+  playScene.includes("const appliedBonus = this.addNormalWaveScore(bonus, 'baseScore', enemy);"),
   'combo bonus scoring must remain intact'
 );
 assert.ok(

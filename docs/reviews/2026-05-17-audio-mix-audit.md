@@ -1,6 +1,6 @@
-# Audio Mix Audit - 2026-06-24
+# Audio Mix Audit - 2026-07-07
 
-Generated: 2026-06-24T18:07:38.933Z
+Generated: 2026-07-07T22:55:00.455Z
 
 This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files, then applies the current default in-game volume multipliers. It is objective release evidence, not a final by-ear approval.
 
@@ -13,11 +13,11 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 ## Coverage
 
-- Measured files: 773
+- Measured files: 1079
 - Music rows: 40
-- SFX rows: 189
-- Voice rows: 611
-- Warnings: 61
+- SFX rows: 199
+- Voice rows: 908
+- Warnings: 64
 - Errors: 0
 
 ## Loudest Effective Peaks
@@ -39,6 +39,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| sfx | super_life_up | nova_life_extend_bloom.mp3 | 0.0 dB | -19.3 dB | -33.3 dB |
+| sfx | super_life_up | nova_bonus_core_jackpot.mp3 | 0.0 dB | -19.3 dB | -32.8 dB |
+| sfx | super_life_up | nova_rank_fanfare.mp3 | 0.0 dB | -19.3 dB | -35.3 dB |
 | sfx | nova_top10_fanfare | nova_top10_fanfare.mp3 | 0.0 dB | -19.3 dB | -31.9 dB |
 | sfx | overrun_clear_coronation | nova_overrun_clear_coronation.mp3 | 0.0 dB | -19.5 dB | -33.2 dB |
 | sfx | overrun_clear_shockwave | nova_overrun_clear_shockwave.mp3 | -0.1 dB | -19.8 dB | -38.6 dB |
@@ -46,22 +49,19 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | boss_explode | lowFrequency_explosion_001.mp3 | -1.1 dB | -20.0 dB | -34.8 dB |
 | sfx | boss_explode | lowFrequency_explosion_000.mp3 | -1.2 dB | -20.1 dB | -37.2 dB |
 | sfx | nova_boss_death_forge | nova_boss_death_forge.mp3 | 0.0 dB | -20.1 dB | -32.3 dB |
-| sfx | nova_boss_death_kurt | nova_boss_death_kurt.mp3 | -0.1 dB | -20.2 dB | -34.5 dB |
-| sfx | nova_boss_death_clock | nova_boss_death_clock.mp3 | -0.1 dB | -20.2 dB | -33.7 dB |
-| sfx | boss_reveal_stinger | boss_reveal_stinger.mp3 | -0.2 dB | -20.3 dB | -29.1 dB |
 
 ### Voice
 
 | Type | Event | File | Raw peak | Effective peak | Effective mean |
 | --- | --- | --- | ---: | ---: | ---: |
+| voice | boss_mayhem_super_storm_warning | boss_mayhem_super_storm_warning_05.mp3 | -0.6 dB | -17.7 dB | -28.5 dB |
+| voice | boss_mayhem_super_storm_warning | boss_mayhem_super_storm_warning_02.mp3 | -0.7 dB | -17.8 dB | -29.1 dB |
 | voice | game_over_taunt | game_over_taunt_037.mp3 | -0.7 dB | -17.8 dB | -42.4 dB |
 | voice | boss_death_agony | boss_death_agony_070.mp3 | -0.4 dB | -17.8 dB | -29.5 dB |
+| voice | boss_mayhem_super_storm_warning | boss_mayhem_super_storm_warning_06.mp3 | -0.8 dB | -17.9 dB | -28.5 dB |
+| voice | boss_mayhem_super_storm_warning | boss_mayhem_super_storm_warning_10.mp3 | -0.8 dB | -17.9 dB | -28.6 dB |
 | voice | game_over_taunt | game_over_taunt_021.mp3 | -0.8 dB | -17.9 dB | -41.2 dB |
-| voice | mission_control_overrun_clear_sector_50 | mission_control_overrun_clear_sector_50_01.mp3 | -1.0 dB | -18.0 dB | -31.4 dB |
-| voice | boss_death_agony | boss_death_agony_029.mp3 | -0.6 dB | -18.0 dB | -30.3 dB |
-| voice | boss_death_agony | boss_death_agony_040.mp3 | -0.6 dB | -18.0 dB | -30.0 dB |
-| voice | boss_death_agony | boss_death_agony_062.mp3 | -0.6 dB | -18.0 dB | -29.2 dB |
-| voice | mission_control_overrun_clear | mission_control_overrun_clear_01.mp3 | -1.1 dB | -18.1 dB | -30.8 dB |
+| voice | boss_mayhem_super_storm_warning | boss_mayhem_super_storm_warning_07.mp3 | -0.9 dB | -18.0 dB | -29.6 dB |
 
 ## Quietest Effective Peaks
 
@@ -74,9 +74,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 | sfx | codex_open | nova_codex_tick.wav | -17.2 dB | -50.5 dB | -61.5 dB |
 | sfx | trait_bonus_hit | nova_combo_tick.mp3 | -5.0 dB | -45.4 dB | -59.9 dB |
 | sfx | enemy_shoot | laserSmall_003.mp3 | -7.9 dB | -41.2 dB | -55.7 dB |
+| sfx | combo_tick | nova_combo_tick.mp3 | -5.0 dB | -38.3 dB | -52.8 dB |
 | sfx | pause_in | nova_pause_in.mp3 | -10.5 dB | -38.3 dB | -62.9 dB |
 | sfx | enemy_threat_soft_warn | forceField_001.mp3 | -1.2 dB | -38.0 dB | -48.7 dB |
-| sfx | enemy_threat_soft_warn | forceField_002.mp3 | -1.2 dB | -38.0 dB | -48.7 dB |
 
 ### Voice
 
@@ -98,6 +98,9 @@ This FFmpeg `volumedetect` pass measures referenced music, SFX, and voice files,
 - sfx:playerHit /audio/sfx/nova-swarm/nova_player_hit_crackle.mp3 - raw peak is very close to full scale (0.0 dB)
 - sfx:levelComplete /audio/sfx/nova-swarm/nova_rank_fanfare.mp3 - raw peak is very close to full scale (0.0 dB)
 - sfx:life_up /audio/sfx/nova-swarm/nova_life_extend_bloom.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:super_life_up /audio/sfx/nova-swarm/nova_life_extend_bloom.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:super_life_up /audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3 - raw peak is very close to full scale (0.0 dB)
+- sfx:super_life_up /audio/sfx/nova-swarm/nova_rank_fanfare.mp3 - raw peak is very close to full scale (0.0 dB)
 - sfx:boss_spawn /audio/sfx/nova-swarm/nova_boss_arrival_alarm.mp3 - raw peak is very close to full scale (0.0 dB)
 - sfx:boss_entrance_impact /audio/sfx/nova-swarm/nova_boss_entrance_impact.mp3 - raw peak is very close to full scale (0.0 dB)
 - sfx:boss_charge_lattice /audio/sfx/nova-swarm/nova_boss_charge_lattice.mp3 - raw peak is very close to full scale (0.0 dB)

@@ -395,7 +395,7 @@ try {
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
   assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
   assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Run');
-  assert.match(settledMenu.menu?.missionBriefing?.title || '', /MISSION BRIEFING.*MAYHEM RUN/i);
+  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM RUN/i);
   assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN RANKED RUN[\s\S]*Start from Sector 1[\s\S]*global leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');

@@ -3342,16 +3342,16 @@ export class GameOverScene {
       exclusiveGroup: 'announcer',
       cooldownMs: 8000,
       eventCooldownMs: 0,
-      duckMs: voiceKey === 'mission_control_eirik_viking_unlocked' ? 4300 : 3200,
-      duckFactor: voiceKey === 'mission_control_eirik_viking_unlocked' ? 0.26 : 0.34,
-      volume: voiceKey === 'mission_control_eirik_viking_unlocked' ? 1.04 : 0.98
+      duckMs: voiceKey === 'mission_control_viking_legend_unlocked' ? 4300 : 3200,
+      duckFactor: voiceKey === 'mission_control_viking_legend_unlocked' ? 0.26 : 0.34,
+      volume: voiceKey === 'mission_control_viking_legend_unlocked' ? 1.04 : 0.98
     });
   }
 
   getShipUnlockVoiceKey() {
     const ships = this.newlyUnlockedShips || [];
     const includesEirik = ships.some(ship => (ship?.baseId || ship?.id || null) === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID);
-    if (includesEirik) return 'mission_control_eirik_viking_unlocked';
+    if (includesEirik) return 'mission_control_viking_legend_unlocked';
     return ships.length === 1
       ? 'mission_control_ship_unlocked'
       : 'mission_control_ships_unlocked';

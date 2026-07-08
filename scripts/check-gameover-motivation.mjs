@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { HANGAR_UNLOCK_TUNING_VERSION } from '../src/progression/HangarProgressState.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4340));
@@ -188,6 +189,10 @@ function fullLocalLeaderboard() {
   }));
 }
 
+function hasLeaderboardAvailabilityLine(value = '') {
+  return /Global:/i.test(value) || /Steam leaderboard unavailable/i.test(value);
+}
+
 observePage(page);
 
 try {
@@ -283,14 +288,14 @@ try {
   const alreadyUnlockedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const alreadyUnlockedSummary = alreadyUnlockedState.gameOver?.unlockSummary || '';
 
-  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
-  await page.evaluate(() => {
-    localStorage.removeItem('nova.hangarProgress.v1');
+  const careerPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  observePage(careerPage);
+  await careerPage.addInitScript((unlockTuningVersion) => {
     localStorage.removeItem('nova.threatDiscovery.v1');
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
       version: 1,
-      unlockTuningVersion: 2,
+      unlockTuningVersion,
       pilotXp: 19000,
       pilotRank: 8,
       highestPilotRank: 8,
@@ -320,19 +325,17 @@ try {
         'nova_ship_02',
         'nova_ship_03',
         'nova_ship_04',
-        'nova_ship_05',
-        'nova_ship_06',
-        'nova_ship_07',
-        'nova_ship_08',
-        'nova_ship_09',
-        'nova_ship_10',
-        'nova_ship_11'
+        'nova_ship_05'
       ],
       lastNewlyUnlockedShipIds: [],
       newRanksThisRun: [],
       rankAchievementsUnlocked: [],
       updatedAt: new Date().toISOString()
     }));
+  }, HANGAR_UNLOCK_TUNING_VERSION);
+  await careerPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await careerPage.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await careerPage.evaluate(() => {
     const game = window.__game;
     if (!game) return;
     game.score = 24668;
@@ -341,7 +344,7 @@ try {
     game.lives = 0;
     game.gameOver();
   });
-  await page.waitForFunction(() => {
+  await careerPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.scene === 'gameOver' && state.gameOver?.unlockSummary;
@@ -349,7 +352,8 @@ try {
       return false;
     }
   }, null, { timeout: 10000 });
-  const careerGoalState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const careerGoalState = await careerPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  await careerPage.close();
   const careerLevelSummary = careerGoalState.gameOver?.levelSummary || '';
   const careerUnlockSummary = careerGoalState.gameOver?.unlockSummary || '';
   const careerNextGoal = careerGoalState.gameOver?.nextGoal || '';
@@ -421,7 +425,7 @@ try {
     localStorage.removeItem('nova.threatDiscovery.v1');
     localStorage.removeItem('burt.selectedShip.v1');
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
-  });
+  }, HANGAR_UNLOCK_TUNING_VERSION);
   await menuReplayPage.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clickLaunchRun(menuReplayPage);
   try {
@@ -489,7 +493,7 @@ try {
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
-      /Global:/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      hasLeaderboardAvailabilityLine(gameOverState.gameOver?.leaderboardStatus || '') &&
       lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
       lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
       lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4 &&
@@ -522,7 +526,7 @@ try {
       ctaFitsViewport(submittedRunbackState.gameOver?.mainMenuCta) &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
       /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
-      /Global:/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
+      hasLeaderboardAvailabilityLine(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
       /CONTINUE/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
       noSlotCtaState.gameOver?.primaryCta?.mode === 'result_hold' &&

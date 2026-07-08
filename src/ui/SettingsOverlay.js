@@ -1563,7 +1563,7 @@ export class SettingsOverlay {
     AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
     if (result.shipId === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID && result.unlocked) {
-      AudioManager.playVoice('mission_control_eirik_viking_unlocked', {
+      AudioManager.playVoice('mission_control_viking_legend_unlocked', {
         force: true,
         stopOtherVoices: true,
         exclusiveGroup: 'announcer',

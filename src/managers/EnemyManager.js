@@ -33,6 +33,9 @@ import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../conf
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
 const WAVE_OBJECTIVE_FAILSAFE_MS = 45000;
+const WAVE_STRAGGLER_PRESSURE_MS = 26000;
+const WAVE_STRAGGLER_PRESSURE_REPEAT_MS = 6500;
+const WAVE_STRAGGLER_RETREAT_MS = 38000;
 const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
 const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
 const BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT = 1.25;
@@ -243,6 +246,9 @@ export class EnemyManager {
     this.cleanupPhase = 'NONE'; // NONE, SLOWING, CLEARING
     this.waveActiveTimer = 0;
     this.waveObjectiveFailsafeTriggered = false;
+    this.waveStragglerPressureLastAt = 0;
+    this.waveStragglerPressureCount = 0;
+    this.waveStragglerRetreatTriggered = false;
 
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
@@ -1011,6 +1017,75 @@ export class EnemyManager {
   resetWaveWatchdog() {
     this.waveActiveTimer = 0;
     this.waveObjectiveFailsafeTriggered = false;
+    this.waveStragglerPressureLastAt = 0;
+    this.waveStragglerPressureCount = 0;
+    this.waveStragglerRetreatTriggered = false;
+  }
+
+  maybePressureStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
+    if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered) return false;
+    const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
+    const pressureStartMs = Math.min(
+      WAVE_STRAGGLER_PRESSURE_MS,
+      Math.max(12000, failsafeMs - 14000)
+    );
+    if (this.waveActiveTimer < pressureStartMs) return false;
+    if (this.waveActiveTimer - (Number(this.waveStragglerPressureLastAt) || 0) < WAVE_STRAGGLER_PRESSURE_REPEAT_MS) return false;
+
+    const playScene = this.game?.scenes?.play;
+    const player = playScene?.player || null;
+    const width = this.game?.getWidth?.() || 1280;
+    const height = this.game?.getHeight?.() || 720;
+    const playerX = Number.isFinite(player?.x) ? player.x : width / 2;
+    const playerY = Number.isFinite(player?.y) ? player.y : height * 0.72;
+    const objectiveEnemies = this.enemies
+      .filter(enemy => this.isObjectiveEnemy(enemy))
+      .filter(enemy => enemy?.kind !== 'boss_fuel_ship' && enemy?.kind !== 'boss_chaos_support');
+    let pressured = 0;
+    for (const enemy of objectiveEnemies.slice(0, 8)) {
+      if (!enemy || enemy.destroyed || enemy.active === false || enemy.waitingForEntry) continue;
+      if (enemy.state === 'RETURN') {
+        enemy.state = 'FORMATION';
+        enemy.sprite && (enemy.sprite.tint = enemy.color || 0xffffff);
+      }
+      if (enemy.state === 'FORMATION' && typeof enemy.startDive === 'function') {
+        const diveStyle = enemy.tacticalMoveStyle === 'split_sweep' || enemy.tacticalMoveStyle === 'sweep'
+          ? 'sweep'
+          : enemy.tacticalMoveStyle === 'feint'
+            ? 'feint'
+            : 'chain';
+        enemy.startDive(playerX, playerY, diveStyle);
+        pressured += 1;
+        continue;
+      }
+      if (enemy.state === 'ENTRY' && Number.isFinite(enemy.y)) {
+        enemy.y = Math.min(enemy.y + 24, height * 0.34);
+        pressured += 1;
+      }
+    }
+    if (pressured <= 0) return false;
+    this.waveStragglerPressureLastAt = this.waveActiveTimer;
+    this.waveStragglerPressureCount = (Number(this.waveStragglerPressureCount) || 0) + 1;
+    return true;
+  }
+
+  maybeRetreatStalledWave(objectiveCount = this.getObjectiveEnemyCount()) {
+    if (objectiveCount <= 0 || this.waveEnding || this.waveObjectiveFailsafeTriggered || this.waveStragglerRetreatTriggered) return false;
+    const retreatableRealEnemy = this.enemies.some(enemy =>
+      this.isObjectiveEnemy(enemy) && typeof enemy?.startDive === 'function'
+    );
+    if ((Number(this.waveStragglerPressureCount) || 0) <= 0 && !retreatableRealEnemy) return false;
+    const failsafeMs = BalanceConfig.difficulty.waveObjectiveFailsafeMs || WAVE_OBJECTIVE_FAILSAFE_MS;
+    const retreatMs = Math.min(WAVE_STRAGGLER_RETREAT_MS, Math.max(16000, failsafeMs - 7000));
+    if (this.waveActiveTimer < retreatMs) return false;
+
+    this.waveStragglerRetreatTriggered = true;
+    this.forceClearAllEnemies();
+    this.waveEnding = true;
+    this.cleanupTimer = 0;
+    this.cleanupPhase = 'NONE';
+    this.game?.scenes?.play?.clearEnemyBullets?.('wave_straggler_retreat');
+    return true;
   }
 
   resetMayhemReinforcementState() {
@@ -1786,7 +1861,10 @@ export class EnemyManager {
           this.cleanupPhase = 'SLOWING';
         } else if (objectiveCount > 0 && !this.waveEnding) {
           this.maybeScheduleMayhemReinforcement(objectiveCount);
-          this.maybeClearStalledWave(objectiveCount);
+          this.maybePressureStalledWave(objectiveCount);
+          if (!this.maybeRetreatStalledWave(objectiveCount)) {
+            this.maybeClearStalledWave(objectiveCount);
+          }
         }
 
         // WAVE FIX: Run cleanup during wave ending

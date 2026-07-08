@@ -289,7 +289,7 @@ export const SFX_MIX = {
     nova_danger_mid_pop: { volume: 0.56, minIntervalMs: 90 },
     nova_boss_death_sonia: { volume: 0.82, minIntervalMs: 900 },
     nova_boss_death_forge: { volume: 0.82, minIntervalMs: 900 },
-    nova_boss_death_kurt: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_mirror_crack: { volume: 0.82, minIntervalMs: 900 },
     nova_boss_death_needle: { volume: 0.8, minIntervalMs: 900 },
     nova_boss_death_vortex: { volume: 0.82, minIntervalMs: 900 },
     nova_boss_death_jester: { volume: 0.78, minIntervalMs: 900 },
@@ -394,7 +394,7 @@ export const VOICE_MIX = {
     mission_control_game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2300, cooldownMs: 4200 },
     mission_control_ship_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3200, cooldownMs: 8000 },
     mission_control_ships_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3400, cooldownMs: 8000 },
-    mission_control_eirik_viking_unlocked: { volume: 1.04, duckFactor: 0.26, duckMs: 4300, cooldownMs: 8000 },
+    mission_control_viking_legend_unlocked: { volume: 1.04, duckFactor: 0.26, duckMs: 4300, cooldownMs: 8000 },
     mission_control_combo: { volume: 0.72, duckFactor: 0.54, duckMs: 900, cooldownMs: 30000 },
     mission_control_local_highscore: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 7000 },
     mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
@@ -434,7 +434,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_game_over: 'mission_control_game_over.mp3',
     mission_control_ship_unlocked: 'mission_control_ship_unlocked_01.mp3',
     mission_control_ships_unlocked: 'mission_control_ships_unlocked_01.mp3',
-    mission_control_eirik_viking_unlocked: 'mission_control_eirik_viking_unlocked_01.mp3',
+    mission_control_viking_legend_unlocked: 'mission_control_viking_legend_unlocked_01.mp3',
     mission_control_combo: 'mission_control_combo_01.mp3',
     mission_control_local_highscore: 'mission_control_local_highscore_01.mp3',
     mission_control_global_highscore: 'mission_control_global_highscore_01.mp3',
@@ -725,8 +725,8 @@ export const SFX_CATALOG = {
     'nova_boss_death_forge': [
         getSfx('nova_boss_death_forge')
     ],
-    'nova_boss_death_kurt': [
-        getSfx('nova_boss_death_kurt')
+    'nova_boss_death_mirror_crack': [
+        getSfx('nova_boss_death_mirror_crack')
     ],
     'nova_boss_death_needle': [
         getSfx('nova_boss_death_needle')
@@ -778,7 +778,7 @@ export const SFX_CATALOG = {
     'mission_control_game_over': missionControlPool('mission_control_game_over'),
     'mission_control_ship_unlocked': numberedVoicePool('mission_control_ship_unlocked', 1),
     'mission_control_ships_unlocked': numberedVoicePool('mission_control_ships_unlocked', 1),
-    'mission_control_eirik_viking_unlocked': numberedVoicePool('mission_control_eirik_viking_unlocked', 1),
+    'mission_control_viking_legend_unlocked': numberedVoicePool('mission_control_viking_legend_unlocked', 1),
     'mission_control_combo': numberedVoicePool('mission_control_combo', 3),
     'mission_control_local_highscore': numberedVoicePool('mission_control_local_highscore', 2),
     'mission_control_global_highscore': numberedVoicePool('mission_control_global_highscore', 2),

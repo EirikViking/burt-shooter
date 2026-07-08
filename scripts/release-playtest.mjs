@@ -607,17 +607,18 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
       const aimPenalty = Math.abs(x - targetX) * aimWeight;
       const movementPenalty = Math.abs(x - playerX) * 0.04 + Math.abs(y - playerY) * 0.03;
       const preferredY = pressure >= 6 || immediateBulletCount > 0
-        ? viewportHeight * 0.55
+        ? viewportHeight * 0.66
         : lowLives
-          ? viewportHeight * 0.59
+          ? viewportHeight * 0.7
         : nearbyBulletCount > 0
-          ? viewportHeight * 0.58
-          : viewportHeight * 0.61;
+          ? viewportHeight * 0.68
+          : viewportHeight * 0.7;
       const verticalPreference = Math.abs(y - preferredY) * 0.08;
       const centerBias = Math.abs(x - viewportWidth * 0.5) * (cleanupTargets ? 0.004 : lowLives ? 0.028 : 0.018);
-      const edgePenalty = Math.max(0, viewportWidth * 0.18 - x) * (lowLives ? 1.8 : 0.9) +
-        Math.max(0, x - viewportWidth * 0.82) * (lowLives ? 1.8 : 0.9);
-      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.58 : highPressure ? 0.62 : 0.66)) * (lowLives ? 2.4 : highPressure ? 1.35 : 0.8);
+      const edgePenalty = Math.max(0, viewportWidth * (lowLives ? 0.24 : 0.2) - x) * (lowLives ? 2.2 : 1.05) +
+        Math.max(0, x - viewportWidth * (lowLives ? 0.76 : 0.8)) * (lowLives ? 2.2 : 1.05);
+      const topPenalty = Math.max(0, viewportHeight * (lowLives ? 0.55 : highPressure ? 0.52 : 0.5) - y) * (lowLives ? 2.2 : highPressure ? 1.35 : 0.8);
+      const bottomPenalty = Math.max(0, y - viewportHeight * (lowLives ? 0.76 : highPressure ? 0.74 : 0.78)) * (lowLives ? 1.1 : highPressure ? 0.7 : 0.45);
       const score = scoreLane(state, x, y, viewportWidth, viewportHeight) +
         scoreMovementPath(state, playerX, playerY, x, y) -
         aimPenalty -
@@ -625,6 +626,7 @@ function chooseIntent(state, viewportWidth, viewportHeight) {
         verticalPreference -
         centerBias -
         edgePenalty -
+        topPenalty -
         bottomPenalty;
       if (score > best.score) best = { x, y, score };
     }
@@ -679,12 +681,14 @@ async function applyIntent(page, currentIntent, nextIntent) {
     if (nextIntent.vertical === 'down') await page.keyboard.down('ArrowDown');
   }
 
-  if (currentIntent.dodge !== nextIntent.dodge) {
-    if (currentIntent.dodge) await page.keyboard.up('ShiftLeft');
-    if (nextIntent.dodge) await page.keyboard.down('ShiftLeft');
+  if (currentIntent.dodge) {
+    await page.keyboard.up('ShiftLeft');
+  }
+  if (nextIntent.dodge) {
+    await page.keyboard.press('ShiftLeft');
   }
 
-  return nextIntent;
+  return { ...nextIntent, dodge: false };
 }
 
 function findSectorClearStalls(timeline, limitMs = 15000) {

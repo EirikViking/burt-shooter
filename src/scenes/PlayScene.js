@@ -104,6 +104,7 @@ const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const SECTOR_ARRIVAL_STINGER_MS = 2400;
 const COLLISION_GRID_CELL_SIZE = 96;
+const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 const STRAGGLER_BEACON_MAX_TARGETS = 3;
@@ -184,7 +185,8 @@ export class PlayScene {
     this.deferredCollisionUiFeedback = {
       toasts: [],
       screenShakes: [],
-      playerExplosions: []
+      playerExplosions: [],
+      comboFlares: []
     };
     this.deferredLiveRankRefreshRequested = false;
     this.deferredScoreCueRefreshRequested = false;
@@ -347,6 +349,11 @@ export class PlayScene {
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     this.runContractStartNudgeTimeout = null;
+    this.runContractPersistenceDirty = false;
+    this.deferredRunContractCompletions = [];
+    this.deferredRunContractEnemyDefeats = [];
+    this.processingDeferredRunContractEvents = false;
+    this.lastRunContractProgressWriteAt = 0;
     this.comboMilestonesReached = new Set(); // Track milestones achieved in current combo
 
     // Powerup mechanics (orbital strike timer tracked in scene)
@@ -397,7 +404,8 @@ export class PlayScene {
     this.deferredCollisionUiFeedback = {
       toasts: [],
       screenShakes: [],
-      playerExplosions: []
+      playerExplosions: [],
+      comboFlares: []
     };
     this.deferredLiveRankRefreshRequested = false;
     this.deferredScoreCueRefreshRequested = false;
@@ -528,36 +536,44 @@ export class PlayScene {
     this.clearRunContractStartNudge();
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
+    this.runContractPersistenceDirty = false;
+    this.deferredRunContractCompletions = [];
+    this.deferredRunContractEnemyDefeats = [];
+    this.processingDeferredRunContractEvents = false;
+    this.lastRunContractProgressWriteAt = 0;
     let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
-    if ((this.game?.runMode || RUN_MODES.RANKED) === RUN_MODES.RANKED) {
+    const runContractsEnabledForRun = (this.game?.runMode || RUN_MODES.RANKED) === RUN_MODES.RANKED;
+    if (runContractsEnabledForRun) {
       const preparedRunContracts = prepareRunContractsForEligibleRun(runContractProgress.runContracts);
       runContractProgress = writeHangarProgressState({
         ...runContractProgress,
         runContracts: preparedRunContracts
       });
       if (this.game) this.game.hangarProgressAtRunStart = runContractProgress;
+      this.runContractSession = startRunContractSession({
+        runMode: this.game?.runMode || RUN_MODES.RANKED,
+        progress: runContractProgress
+      });
+      const currentPilotRankIndex = Math.max(
+        0,
+        Math.floor(Number(runContractProgress?.pilotRank) || 0),
+        Math.floor(Number(runContractProgress?.highestPilotRank) || 0),
+        Math.floor(Number(runContractProgress?.bestRank) || 0)
+      );
+      this.emitRunContractEvent('pilot_rank_reached', {
+        rankIndex: currentPilotRankIndex,
+        displayRank: currentPilotRankIndex + 1,
+        sector: this.game?.level || 1,
+        suppressProgressToast: true
+      });
+      this.emitRunContractEvent('run_started', {
+        sector: this.game?.level || 1,
+        suppressProgressToast: true
+      });
+      this.scheduleRunContractStartNudge();
+    } else {
+      this.runContractSession = null;
     }
-    this.runContractSession = startRunContractSession({
-      runMode: this.game?.runMode || RUN_MODES.RANKED,
-      progress: runContractProgress
-    });
-    const currentPilotRankIndex = Math.max(
-      0,
-      Math.floor(Number(runContractProgress?.pilotRank) || 0),
-      Math.floor(Number(runContractProgress?.highestPilotRank) || 0),
-      Math.floor(Number(runContractProgress?.bestRank) || 0)
-    );
-    this.emitRunContractEvent('pilot_rank_reached', {
-      rankIndex: currentPilotRankIndex,
-      displayRank: currentPilotRankIndex + 1,
-      sector: this.game?.level || 1,
-      suppressProgressToast: true
-    });
-    this.emitRunContractEvent('run_started', {
-      sector: this.game?.level || 1,
-      suppressProgressToast: true
-    });
-    this.scheduleRunContractStartNudge();
     this.blinkDriveOrderStartedAt = null;
     this.blinkDriveOrderCompleted = false;
     this.playerPhaseWasActive = false;
@@ -1193,7 +1209,7 @@ export class PlayScene {
 
   emitRunContractEvent(type, payload = {}) {
     if (!this.runContractSession) return [];
-    const { suppressProgressToast = false, ...eventPayload } = payload || {};
+    const { suppressProgressToast = false, deferPersistence = false, ...eventPayload } = payload || {};
     const previousActive = Array.isArray(this.runContractSession.active)
       ? this.runContractSession.active.map((item) => ({ ...item }))
       : [];
@@ -1209,10 +1225,18 @@ export class PlayScene {
       if (!suppressProgressToast) this.showRunContractProgress(change);
     });
     if (this.shouldPersistRunContractProgress(type, result)) {
-      this.persistRunContractSessionProgress();
+      if (deferPersistence) {
+        this.runContractPersistenceDirty = true;
+      } else {
+        this.persistRunContractSessionProgress();
+      }
     }
     for (const completion of result.completed || []) {
-      this.persistRunContractCompletion(completion);
+      if (deferPersistence) {
+        this.queueDeferredRunContractCompletion(completion);
+      } else {
+        this.persistRunContractCompletion(completion);
+      }
       this.showRunContractCompletion(completion.id);
     }
     return result.completed || [];
@@ -1394,6 +1418,14 @@ export class PlayScene {
   }
 
   persistRunContractCompletion(completion) {
+    if (!completion?.id) return;
+    if (this.isCollisionHotPathActive) {
+      this.queueDeferredRunContractCompletion(completion);
+      return;
+    }
+    if (this.runContractPersistenceDirty || this.deferredRunContractCompletions?.length) {
+      this.flushDeferredRunContractProgress(true);
+    }
     const previous = readHangarProgressState();
     const wasAllComplete = areAllRunContractsComplete(previous.runContracts);
     const runContracts = recordRunContractCompletion(previous.runContracts, completion);
@@ -1410,12 +1442,74 @@ export class PlayScene {
 
   persistRunContractSessionProgress() {
     if (!this.runContractSession) return;
+    if (this.isCollisionHotPathActive) {
+      this.runContractPersistenceDirty = true;
+      return;
+    }
+    if (this.runContractPersistenceDirty || this.deferredRunContractCompletions?.length) {
+      const flushed = this.flushDeferredRunContractProgress(true);
+      if (flushed.flushed) return;
+    }
     const previous = readHangarProgressState();
     const runContracts = recordRunContractSessionProgress(previous.runContracts, this.runContractSession);
     writeHangarProgressState({
       ...previous,
       runContracts
     });
+    this.lastRunContractProgressWriteAt = Date.now();
+  }
+
+  queueDeferredRunContractCompletion(completion = {}) {
+    if (!completion?.id) return;
+    if (!Array.isArray(this.deferredRunContractCompletions)) this.deferredRunContractCompletions = [];
+    const existingIndex = this.deferredRunContractCompletions.findIndex((entry) => entry?.id === completion.id);
+    if (existingIndex >= 0) {
+      this.deferredRunContractCompletions[existingIndex] = {
+        ...this.deferredRunContractCompletions[existingIndex],
+        ...completion
+      };
+    } else {
+      this.deferredRunContractCompletions.push({ ...completion });
+    }
+    this.runContractPersistenceDirty = true;
+  }
+
+  queueDeferredRunContractEnemyDefeat(payload = {}) {
+    if (!Array.isArray(this.deferredRunContractEnemyDefeats)) this.deferredRunContractEnemyDefeats = [];
+    this.deferredRunContractEnemyDefeats.push({ ...payload });
+  }
+
+  flushDeferredRunContractEvents(maxEvents = 100) {
+    const pending = Array.isArray(this.deferredRunContractEnemyDefeats)
+      ? this.deferredRunContractEnemyDefeats
+      : [];
+    if (pending.length === 0) return { flushed: 0, pending: 0 };
+    const limit = Math.max(1, Math.floor(Number(maxEvents) || 100));
+    const batch = pending.splice(0, limit);
+    this.processingDeferredRunContractEvents = true;
+    try {
+      for (const payload of batch) {
+        this.emitRunContractEvent('enemy_defeated', {
+          ...payload,
+          deferPersistence: true
+        });
+      }
+    } finally {
+      this.processingDeferredRunContractEvents = false;
+    }
+    return {
+      flushed: batch.length,
+      pending: pending.length
+    };
+  }
+
+  markRunContractAllCompleteTransition(previousRunContracts, nextRunContracts, completion = {}) {
+    const wasAllComplete = areAllRunContractsComplete(previousRunContracts);
+    const isAllComplete = areAllRunContractsComplete(nextRunContracts);
+    if (!wasAllComplete && isAllComplete && this.runContractSession) {
+      this.runContractSession.allCompleteThisRun = true;
+      this.runContractSession.allCompletedAt = nextRunContracts.allCompletedAt || completion.completedAt || null;
+    }
   }
 
   showRunContractCompletion(contractId) {
@@ -2413,6 +2507,8 @@ export class PlayScene {
         }
         return this.flushDeferredHotPathProgress();
       });
+      measure('deferred_progression.run_contract_events', () => this.flushDeferredRunContractEvents());
+      measure('deferred_progression.run_contracts', () => this.flushDeferredRunContractProgress());
       measure('deferred_progression.threat_defeats', () => {
         if (this.shouldDeferActiveGameplayPersistence()) {
           return {
@@ -3199,12 +3295,17 @@ export class PlayScene {
       powerupSpawns: [],
       toasts: [],
       playerExplosions: [],
-      screenShakes: []
+      screenShakes: [],
+      comboFlares: []
     };
   }
 
   queueCollisionSideEffect(queue, type, payload = {}) {
     if (!queue?.[type]) return false;
+    if (type === 'scorePopups' && queue[type].length >= COLLISION_SCORE_POPUP_QUEUE_BUDGET) {
+      queue.scorePopupsDropped = (Number(queue.scorePopupsDropped) || 0) + 1;
+      return true;
+    }
     queue[type].push(payload);
     return true;
   }
@@ -3216,23 +3317,25 @@ export class PlayScene {
     const skipAllSideEffects = Boolean(diagnosticOptions.rawCollisionOnly || diagnosticOptions.noCollisionSideEffects);
 
     measured('collision.side_effects.score_popups', () => {
+      const overflowDropped = Number(queue.scorePopupsDropped) || 0;
       if (skipAllSideEffects || diagnosticOptions.noScorePopups) {
-        stats.scorePopupQueued = (stats.scorePopupQueued || 0) + queue.scorePopups.length;
-        stats.scorePopupDropped = (stats.scorePopupDropped || 0) + queue.scorePopups.length;
+        stats.scorePopupQueued = (stats.scorePopupQueued || 0) + queue.scorePopups.length + overflowDropped;
+        stats.scorePopupDropped = (stats.scorePopupDropped || 0) + queue.scorePopups.length + overflowDropped;
         return;
       }
       for (const popup of queue.scorePopups) {
         this.scorePopupManager?.queueScorePopup?.(popup.x, popup.y, popup.score, popup.options || {});
       }
-      const flushed = this.scorePopupManager?.flushQueuedPopups?.(3) || {
+      const maxScorePopups = overflowDropped > 0 ? 1 : (queue.scorePopups.length >= 8 ? 2 : 3);
+      const flushed = this.scorePopupManager?.flushQueuedPopups?.(maxScorePopups) || {
         queued: queue.scorePopups.length,
         created: 0,
-        dropped: queue.scorePopups.length,
+        dropped: queue.scorePopups.length + overflowDropped,
         remaining: 0
       };
-      stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued;
+      stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued + overflowDropped;
       stats.scorePopupCreated = (stats.scorePopupCreated || 0) + flushed.created;
-      stats.scorePopupDropped = (stats.scorePopupDropped || 0) + flushed.dropped;
+      stats.scorePopupDropped = (stats.scorePopupDropped || 0) + flushed.dropped + overflowDropped;
       stats.scorePopupPending = flushed.remaining;
     });
 
@@ -3244,8 +3347,9 @@ export class PlayScene {
       }
       let hitSparkCreated = 0;
       let deathFeedbackCreated = 0;
-      const maxHitSparks = 4;
-      const maxDeathFeedback = 1;
+      const massiveBurst = (queue.hitSparks.length + queue.deathFeedback.length) >= 32;
+      const maxHitSparks = massiveBurst ? 2 : 4;
+      const maxDeathFeedback = massiveBurst ? 0 : 1;
       for (const spark of queue.hitSparks.slice(0, maxHitSparks)) {
         if (!this.particleManager || spark?.enabled === false) continue;
         this.particleManager.createHitSpark(spark.x, spark.y, spark.color, spark.intensity);
@@ -3302,6 +3406,7 @@ export class PlayScene {
       this.deferredCollisionUiFeedback.toasts.push(...queue.toasts);
       this.deferredCollisionUiFeedback.screenShakes.push(...queue.screenShakes);
       this.deferredCollisionUiFeedback.playerExplosions.push(...queue.playerExplosions);
+      this.deferredCollisionUiFeedback.comboFlares.push(...queue.comboFlares);
     });
   }
 
@@ -4305,6 +4410,8 @@ export class PlayScene {
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
     this.flushDeferredHotPathProgress();
+    this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
+    this.flushDeferredRunContractProgress(true);
     this.flushDeferredSeasonProgress(true);
     if (this.deferredThreatDefeats?.length) {
       this.processDeferredThreatDefeats(this.deferredThreatDefeats.length);
@@ -6081,6 +6188,8 @@ export class PlayScene {
   beginGameOverSequence() {
     if (this.gameOverSequenceStarted) return true;
     this.gameOverSequenceStarted = true;
+    this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
+    this.flushDeferredRunContractProgress(true);
     this.clearToastState();
     this.triggerPlayerDeathFeedback({ final: true });
     this.showInGameGameOverAnimation();
@@ -9512,6 +9621,58 @@ export class PlayScene {
     this.deferredScoreCueRefreshRequested = true;
   }
 
+  flushDeferredRunContractProgress(force = false) {
+    const pendingCompletions = Array.isArray(this.deferredRunContractCompletions)
+      ? this.deferredRunContractCompletions.filter((entry) => entry?.id)
+      : [];
+    if (!this.runContractPersistenceDirty && pendingCompletions.length === 0) {
+      return { flushed: false, dirty: false };
+    }
+    const now = Date.now();
+    if (!force) {
+      if (this.shouldDeferActiveGameplayPersistence()) {
+        return {
+          flushed: false,
+          dirty: true,
+          completions: pendingCompletions.length,
+          deferred: true
+        };
+      }
+      if (now - this.lastRunContractProgressWriteAt < DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS) {
+        return {
+          flushed: false,
+          dirty: true,
+          completions: pendingCompletions.length,
+          throttled: true
+        };
+      }
+    }
+
+    const previous = readHangarProgressState();
+    let runContracts = previous.runContracts;
+    for (const completion of pendingCompletions) {
+      const beforeCompletion = runContracts;
+      runContracts = recordRunContractCompletion(runContracts, completion);
+      this.markRunContractAllCompleteTransition(beforeCompletion, runContracts, completion);
+    }
+    if (this.runContractSession) {
+      runContracts = recordRunContractSessionProgress(runContracts, this.runContractSession);
+    }
+    writeHangarProgressState({
+      ...previous,
+      runContracts
+    });
+    this.deferredRunContractCompletions = [];
+    this.runContractPersistenceDirty = false;
+    this.lastRunContractProgressWriteAt = now;
+    return {
+      flushed: true,
+      dirty: false,
+      completions: pendingCompletions.length,
+      sessionProgress: Boolean(this.runContractSession)
+    };
+  }
+
   flushDeferredHotPathProgress() {
     const measurePerformance = this.performanceDiagnostics?.measure?.bind(this.performanceDiagnostics) || ((_label, callback) => callback());
     const awards = this.deferredHotPathScoreAwards || {};
@@ -9590,7 +9751,8 @@ export class PlayScene {
     this.deferredCollisionUiFeedback = {
       toasts: [],
       screenShakes: [],
-      playerExplosions: []
+      playerExplosions: [],
+      comboFlares: []
     };
     for (const toast of (feedback.toasts || []).slice(0, 1)) {
       if (toast?.message) this.enqueueToast(toast.message, toast.options || {});
@@ -9607,10 +9769,14 @@ export class PlayScene {
         }
       }
     }
+    for (const flare of (feedback.comboFlares || []).slice(0, 2)) {
+      this.triggerComboMilestoneFlare(flare);
+    }
     return {
       toasts: feedback.toasts?.length || 0,
       screenShakes: feedback.screenShakes?.length || 0,
-      playerExplosions: feedback.playerExplosions?.length || 0
+      playerExplosions: feedback.playerExplosions?.length || 0,
+      comboFlares: feedback.comboFlares?.length || 0
     };
   }
 
@@ -10140,6 +10306,11 @@ export class PlayScene {
         this.screenShake?.shake?.(intensity, duration);
       }
     };
+    const queueComboFlare = (flareOptions) => {
+      if (!this.queueCollisionSideEffect(sideEffects, 'comboFlares', flareOptions)) {
+        this.triggerComboMilestoneFlare(flareOptions);
+      }
+    };
     if (enemy?.kind === 'boss') {
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
@@ -10169,7 +10340,8 @@ export class PlayScene {
       if (enemy?.kind === BOSS_FUEL_SHIP_CODEX_ID) {
         this.emitRunContractEvent('boss_support_defeated', {
           sector: this.game?.level || 1,
-          supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID
+          supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID,
+          deferPersistence: this.isCollisionHotPathActive
         });
       }
       if ((this.runContractSession?.active || []).some((item) => {
@@ -10178,10 +10350,15 @@ export class PlayScene {
           && item.eligible
           && !item.completed;
       })) {
-        this.emitRunContractEvent('enemy_defeated', {
+        const runContractPayload = {
           sector: this.game?.level || 1,
           enemyType: enemy?.type || enemy?.kind || 'enemy'
-        });
+        };
+        if (this.isCollisionHotPathActive) {
+          this.queueDeferredRunContractEnemyDefeat(runContractPayload);
+        } else {
+          this.emitRunContractEvent('enemy_defeated', runContractPayload);
+        }
       }
     }
     this.recordBalanceKill(enemy);
@@ -10213,7 +10390,7 @@ export class PlayScene {
         });
         queuePlayerExplosion(this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
         queueScreenShake(6, 15);
-        this.triggerComboMilestoneFlare({
+        queueComboFlare({
           threshold: milestone.threshold,
           multiplier: this.comboMultiplier,
           reason: 'combo_milestone',
@@ -10234,7 +10411,7 @@ export class PlayScene {
       queueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       queuePlayerExplosion(this.player?.x, this.player?.y, 0x00ffff);
       if (!COMBO_MILESTONES.some((milestone) => milestone.threshold === this.comboCount)) {
-        this.triggerComboMilestoneFlare({
+        queueComboFlare({
           threshold: this.comboCount,
           multiplier: this.comboMultiplier,
           reason: 'combo_multiplier',
@@ -12136,7 +12313,7 @@ export class PlayScene {
     const deathStyles = [
       { id: 'sonia_crownfall', pattern: 'crown', sfx: 'nova_boss_death_sonia', accent: 0xff55d9, spokes: 14, longSpokes: true, spin: -1.1 },
       { id: 'forge_meltdown', pattern: 'forge', sfx: 'nova_boss_death_forge', accent: 0xffd15c, spokes: 9, radius: Math.min(width, height) * 0.19 },
-      { id: 'kurt_mirror_crack', pattern: 'mirror', sfx: 'nova_boss_death_kurt', accent: 0x7fffd8, spokes: 12, spin: 1.4 },
+      { id: 'mirror_crack', pattern: 'mirror', sfx: 'nova_boss_death_mirror_crack', accent: 0x7fffd8, spokes: 12, spin: 1.4 },
       { id: 'needle_shatter', pattern: 'needle', sfx: 'nova_boss_death_needle', accent: 0x37f5ff, spokes: 18, longSpokes: true },
       { id: 'vortex_unwind', pattern: 'spiral', sfx: 'nova_boss_death_vortex', accent: 0xff55d9, spokes: 16, spin: 2.1 },
       { id: 'jester_finale', pattern: 'confetti', sfx: 'nova_boss_death_jester', accent: 0xffe76a, spokes: 11 },

@@ -187,6 +187,9 @@ try {
     const { page, pageErrors } = await preparePage(browser);
     await page.evaluate(() => {
       const game = window.__game;
+      game.scoreMultiplier = 1;
+      if (game.scenes?.play?.player) game.scenes.play.player.scoreMultiplier = 1;
+      if (game.runPressureDirector) game.runPressureDirector.getScoreMultiplier = () => 1;
       game.globalLeaderboardTargets = [
         { score: 50000 }, { score: 42000 }, { score: 36000 }, { score: 30000 },
         { score: 24000 }, { score: 20000 }, { score: 16000 }, { score: 12000 },
@@ -194,9 +197,12 @@ try {
         { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
         { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
-      game.addScore(52000);
-      game.addScore(250000);
-      game.addScore(180000);
+      game.addScore(45217);
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.addScore(217391);
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.addScore(130435);
+      game.updateGlobalLeaderboardVoiceCues?.();
     });
     const cueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()).globalLeaderboardCues);
     assert(cueState.global === true, 'near-global voice cue did not arm');
