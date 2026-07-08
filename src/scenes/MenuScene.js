@@ -17,7 +17,6 @@ import { formatNumber, translateText } from '../i18n/index.js';
 import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
 import {
   acknowledgeRunContractCompletionNotice,
-  formatRunContractOrderSlotLabel,
   formatRunContractProgressValue,
   getDefaultShowPilotOrders,
   getRunContractMenuState
@@ -2011,9 +2010,7 @@ export class MenuScene {
     if (!contract) return null;
     const title = translateText(contract.shortTitle || contract.title || contract.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
-    const orderSlot = contract.orderSlot || formatRunContractOrderSlotLabel(contract, missionState.total);
-    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
-    return `${translateText('PILOT ORDERS')} ${missionState.progressLabel || ''} // ${orderTitle} ${progress}`.trim();
+    return `${translateText('PILOT ORDERS')}: ${title} ${progress}`;
   }
 
   getHangarButtonSubLabel() {
@@ -2064,9 +2061,9 @@ export class MenuScene {
     const padX = Math.round((isMobileLayout ? 10 : 16) * uiScale);
     const padY = Math.round((isShortLayout ? 8 : 10) * boardScale);
     const rowHeight = Math.round(clampNumber(
-      height * 0.047 * boardScale,
-      (isShortLayout ? 32 : 36) * boardScale,
-      (isMobileLayout ? 38 : 40) * boardScale
+      height * 0.052 * boardScale,
+      (isShortLayout ? 38 : 42) * boardScale,
+      (isMobileLayout ? 42 : 46) * boardScale
     ));
     const headerHeight = Math.round((isShortLayout ? 38 : 40) * boardScale);
     let hangarProgress = readHangarProgressState();
@@ -2092,12 +2089,14 @@ export class MenuScene {
       this.missionBoardCompletionNoticeVisibleMs = 0;
     }
     this.missionBoardState = missionState;
-    const desiredBoardWidth = this.launchDeckBounds.width;
     const briefingLeft = Number(this.runModePanel?._briefingBounds?.x) || width;
     const availableBoardWidth = Math.max(
       this.launchDeckBounds.width,
       Math.min(width - this.launchDeckBounds.x - 24, briefingLeft - this.launchDeckBounds.x - 32)
     );
+    const desiredBoardWidth = isMobileLayout
+      ? this.launchDeckBounds.width
+      : Math.max(this.launchDeckBounds.width, Math.min(420 * uiScale, width * 0.34));
     const boardWidth = Math.round(Math.min(desiredBoardWidth, availableBoardWidth));
     const rows = missionState.active || [];
     const completeState = missionState.status === 'complete';
@@ -2181,10 +2180,10 @@ export class MenuScene {
       row._height = rowHeight;
       row._accent = contract.accent || 0x37f5ff;
       row._completed = Boolean(contract.completed);
-      const orderSlot = contract.orderSlot || formatRunContractOrderSlotLabel(contract, missionState.total);
       const titleText = translateText(contract.shortTitle || contract.title);
-      row._title.text = orderSlot ? `${orderSlot} ${titleText}` : titleText;
-      row._detail.text = translateText(contract.shortDescription || contract.description || 'Mayhem only');
+      row._title.text = titleText;
+      row._detail.text = '';
+      row._detail.visible = false;
       row._progress.text = contract.completed
         ? translateText('COMPLETE')
         : translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
@@ -2194,14 +2193,14 @@ export class MenuScene {
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
-      row._title.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
+      row._title.style.fontSize = Math.round((isMobileLayout ? 12 : 16) * uiScale);
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
       row._detail.style.wordWrap = false;
       row._detail.style.wordWrapWidth = row._width - Math.round((isMobileLayout ? 96 : 118) * uiScale);
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
       row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
       row._title.x = Math.round(13 * uiScale);
-      row._title.y = Math.round(rowHeight * 0.28);
+      row._title.y = Math.round(rowHeight * 0.5);
       row._detail.x = Math.round(13 * uiScale);
       row._detail.y = Math.round(rowHeight * 0.79);
       row._progress.x = row._width - Math.round(11 * uiScale);
@@ -2209,7 +2208,7 @@ export class MenuScene {
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
-      fitTextToWidth(row._title, row._width - Math.round(114 * uiScale), { minScale: 0.68 });
+      fitTextToWidth(row._title, row._width - Math.round(116 * uiScale), { minScale: 0.68 });
       fitTextToWidth(row._detail, row._width - Math.round(118 * uiScale), { minScale: 0.72 });
       fitTextToWidth(row._progress, Math.round(104 * uiScale), { minScale: 0.62 });
     });

@@ -319,6 +319,8 @@ const sourceText = Object.freeze({
   "Could not load Steam sector run scores.": "Could not load Steam Sector Run scores.",
   "Loading Steam sector run scores...": "Loading Steam Sector Run scores...",
   "DISPLAY": "화면",
+  "GAMEPLAY": "게임플레이",
+  "ACCESSIBILITY": "접근성",
   "Display Mode": "화면 모드",
   "Window Size": "창 크기",
   "Safe Reset": "안전 초기화",

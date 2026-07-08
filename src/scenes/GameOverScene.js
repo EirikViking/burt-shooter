@@ -109,6 +109,19 @@ function formatUnlockRequirementsProgress(requirements = []) {
   const visible = Array.isArray(requirements) ? requirements.slice(0, 3) : [];
   return visible.length ? visible.map(item => formatUnlockRequirementProgress(item)).join('  ') : '';
 }
+
+function fitDisplayToBox(displayObject, maxWidth, maxHeight, { minScale = 0.58 } = {}) {
+  if (!displayObject || !Number.isFinite(maxWidth) || !Number.isFinite(maxHeight) || maxWidth <= 0 || maxHeight <= 0) return 1;
+  displayObject.scale.set(1);
+  displayObject.updateText?.(false);
+  const measuredWidth = displayObject.width || 0;
+  const measuredHeight = displayObject.height || 0;
+  const scale = measuredWidth > 0 && measuredHeight > 0
+    ? Math.min(1, Math.max(minScale, Math.min(maxWidth / measuredWidth, maxHeight / measuredHeight)))
+    : 1;
+  displayObject.scale.set(scale);
+  return scale;
+}
 const CONTROLLER_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 const CONTROLLER_INITIALS_LENGTH = 3;
 
@@ -4136,20 +4149,17 @@ export class GameOverScene {
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderDone') {
           const title = translateText(value.title || '');
-          const orderSlot = String(value.orderSlot || '').trim();
-          return `${orderSlot ? `${orderSlot} ` : ''}${title}`.trim();
+          return title.trim();
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
-          const orderSlot = String(value.orderSlot || '').trim();
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
-          return `${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
+          return `${title} ${progress}`.trim();
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderNext') {
           const title = translateText(value.title || '');
-          const orderSlot = String(value.orderSlot || '').trim();
           const progress = translateText('{progress}/{target}', formatRunContractProgressValue(value.progress, value.target));
-          return `${translateText('NEXT')}: ${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
+          return `${translateText('NEXT')}: ${title} ${progress}`.trim();
         }
         return translateText(value);
       }).join(separator);
@@ -4181,20 +4191,27 @@ export class GameOverScene {
     }
 
     const safeMargin = layout.safeArea || { top: 0, bottom: 0 };
-    const panelWidth = Math.min(width - 28, layout.isMobile ? width * 0.92 : 660);
-    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, layout.isMobile ? 540 : 470);
-    const columns = layout.isMobile ? 1 : 2;
-    const gap = layout.isMobile ? 12 : 16;
-    const innerPad = layout.isMobile ? 18 : 24;
-    const titleSize = layout.isMobile ? 22 : 26;
-    const sectionTitleSize = layout.isMobile ? 14 : 16;
-    const rowSize = layout.isMobile ? 12 : 14;
-    const closeHeight = layout.isMobile ? 34 : 36;
-    const contentTop = -panelHeight / 2 + innerPad + titleSize + 20;
-    const contentBottom = panelHeight / 2 - innerPad - closeHeight - 18;
-    const sectionAreaHeight = Math.max(180, contentBottom - contentTop);
+    const compact = Boolean(layout.isMobile || width < 760 || height < 680);
+    const panelWidth = Math.min(width - 28, compact ? width * 0.94 : 760);
+    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, compact ? 620 : 560);
+    const columns = compact ? 1 : 2;
+    const gap = compact ? 10 : 14;
+    const innerPad = compact ? 18 : 26;
+    const titleSize = compact ? 22 : 28;
+    const sectionTitleSize = compact ? 13 : 16;
+    const rowSize = compact ? 11 : 14;
+    const closeHeight = compact ? 34 : 36;
+    const pilotOrdersRow = (report.sections || [])
+      .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
+      .find((row) => row?.id === 'pilotOrders') || null;
+    const pilotBandHeight = pilotOrdersRow ? (compact ? 92 : 86) : 0;
+    const contentTop = -panelHeight / 2 + innerPad + titleSize + (compact ? 18 : 26);
+    const closeTop = panelHeight / 2 - innerPad - closeHeight;
+    const pilotBandY = pilotOrdersRow ? closeTop - (compact ? 14 : 18) - pilotBandHeight : null;
+    const sectionAreaBottom = pilotOrdersRow ? pilotBandY - gap : closeTop - (compact ? 12 : 18);
+    const sectionAreaHeight = Math.max(180, sectionAreaBottom - contentTop);
     const sectionWidth = (panelWidth - innerPad * 2 - gap * (columns - 1)) / columns;
-    const sectionHeight = layout.isMobile
+    const sectionHeight = compact
       ? (sectionAreaHeight - gap * 3) / 4
       : (sectionAreaHeight - gap) / 2;
 
@@ -4208,6 +4225,8 @@ export class GameOverScene {
     panelBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.72 });
     panelBg.rect(-panelWidth / 2 + innerPad, -panelHeight / 2 + innerPad + titleSize + 8, panelWidth - innerPad * 2, 2);
     panelBg.fill({ color: 0x37f5ff, alpha: 0.3 });
+    panelBg.rect(-panelWidth / 2 + innerPad, panelHeight / 2 - innerPad - closeHeight - 14, panelWidth - innerPad * 2, 1);
+    panelBg.fill({ color: 0xffd15c, alpha: 0.22 });
     this.runReportPanel.addChild(panelBg);
 
     const title = createText(translateText('RUN REPORT'), {
@@ -4232,9 +4251,11 @@ export class GameOverScene {
       const y = contentTop + row * (sectionHeight + gap);
       const sectionBox = new PIXI.Graphics();
       sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
-      sectionBox.fill({ color: 0x06182a, alpha: 0.78 });
+      sectionBox.fill({ color: 0x06182a, alpha: 0.84 });
       sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
-      sectionBox.stroke({ color: 0x37f5ff, width: 1.1, alpha: 0.32 });
+      sectionBox.stroke({ color: 0x37f5ff, width: 1.1, alpha: 0.38 });
+      sectionBox.rect(x + 10, y + 26, sectionWidth - 20, 1);
+      sectionBox.fill({ color: 0x37f5ff, alpha: 0.18 });
       this.runReportPanel.addChild(sectionBox);
 
       const header = createText(this.getRunReportSectionLabel(section.id), {
@@ -4248,19 +4269,21 @@ export class GameOverScene {
       });
       header.x = x + 12;
       header.y = y + 9;
+      fitDisplayToBox(header, sectionWidth - 24, sectionTitleSize + 8, { minScale: 0.62 });
       this.runReportPanel.addChild(header);
       textLines.push(header.text);
 
-      const rows = (section.rows || []).slice(0, 5);
+      const rows = (section.rows || []).filter((entry) => entry?.id !== 'pilotOrders').slice(0, 5);
+      const rowStep = rows.length
+        ? Math.max(rowSize + 7, Math.floor((sectionHeight - 38) / rows.length))
+        : rowSize + 7;
       rows.forEach((entry, rowIndex) => {
         const label = this.getRunReportFieldLabel(entry.id);
         const value = this.formatRunReportValue(entry);
         const rowText = [label, value].join(': ');
-        const isPilotOrdersRow = entry.id === 'pilotOrders';
-        const lineFontSize = isPilotOrdersRow ? Math.max(10, rowSize - 2) : rowSize;
         const line = createText(rowText, {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: lineFontSize,
+          fontSize: rowSize,
           fontWeight: rowIndex === 0 ? 'bold' : 'normal',
           fill: rowIndex === 0 ? '#ffffff' : '#cbeff4',
           stroke: '#031323',
@@ -4268,14 +4291,62 @@ export class GameOverScene {
           align: 'left',
           wordWrap: true,
           wordWrapWidth: sectionWidth - 24,
-          lineHeight: isPilotOrdersRow ? lineFontSize + 1 : rowSize + 3
+          lineHeight: rowSize + 3
         });
         line.x = x + 12;
-        line.y = y + 33 + rowIndex * (rowSize + 7) - (isPilotOrdersRow ? 6 : 0);
+        line.y = y + 34 + rowIndex * rowStep;
+        fitDisplayToBox(line, sectionWidth - 24, Math.max(rowSize + 7, rowStep - 2), { minScale: 0.64 });
         this.runReportPanel.addChild(line);
         textLines.push(line.text);
       });
     });
+
+    if (pilotOrdersRow) {
+      const x = -panelWidth / 2 + innerPad;
+      const y = pilotBandY;
+      const bandWidth = panelWidth - innerPad * 2;
+      const band = new PIXI.Graphics();
+      band.roundRect(x, y, bandWidth, pilotBandHeight, 8);
+      band.fill({ color: 0x041a26, alpha: 0.9 });
+      band.roundRect(x, y, bandWidth, pilotBandHeight, 8);
+      band.stroke({ color: 0xffef7e, width: 1.3, alpha: 0.62 });
+      band.rect(x, y, 7, pilotBandHeight);
+      band.fill({ color: 0xffef7e, alpha: 0.86 });
+      this.runReportPanel.addChild(band);
+
+      const label = this.getRunReportFieldLabel('pilotOrders');
+      const value = this.formatRunReportValue(pilotOrdersRow);
+      const heading = createText(label, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 12 : 14,
+        fontWeight: 'bold',
+        fill: '#fff3a2',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left'
+      });
+      heading.x = x + 18;
+      heading.y = y + 10;
+      fitDisplayToBox(heading, bandWidth - 36, compact ? 18 : 20, { minScale: 0.64 });
+
+      const body = createText(value, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 11 : 13,
+        fontWeight: 'bold',
+        fill: '#d8fbff',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left',
+        wordWrap: true,
+        wordWrapWidth: bandWidth - 36,
+        lineHeight: compact ? 13 : 16
+      });
+      body.x = x + 18;
+      body.y = y + (compact ? 30 : 32);
+      fitDisplayToBox(body, bandWidth - 36, pilotBandHeight - (compact ? 38 : 40), { minScale: 0.58 });
+      this.runReportPanel.addChild(heading, body);
+      textLines.push(`${label}: ${value}`);
+    }
 
     this.runReportCloseButton = new PIXI.Container();
     this.runReportCloseButton.eventMode = 'static';

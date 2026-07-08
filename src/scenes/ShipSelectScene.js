@@ -26,7 +26,7 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
-import { formatRunContractOrderSlotLabel, formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -125,8 +125,10 @@ export class ShipSelectScene {
     this.hangarMenuOverlay = null;
     this.careerInfoOverlay = null;
     this.careerInfoDebugState = null;
+    this.careerInfoRefs = null;
     this.careerInfoAnimatedNodes = [];
     this.careerInfoTicker = null;
+    this.careerInfoPilotOrdersPage = 0;
     this.careerSignalTicker = null;
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
@@ -794,6 +796,38 @@ export class ShipSelectScene {
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
   }
 
+  rebuildCareerInfoOverlay() {
+    const wasVisible = Boolean(this.careerInfoOverlay?.visible);
+    if (this.careerInfoOverlay?.parent) {
+      this.careerInfoOverlay.parent.removeChild(this.careerInfoOverlay);
+    }
+    this.careerInfoOverlay?.destroy?.({ children: true });
+    this.careerInfoOverlay = null;
+    this.careerInfoRefs = null;
+    this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
+    if (this.careerInfoOverlay) {
+      this.careerInfoOverlay.visible = wasVisible;
+    }
+  }
+
+  setCareerInfoPilotOrdersPage(page) {
+    const pageCount = Math.max(1, Number(this.careerInfoRefs?.pilotOrdersArchive?._pilotOrdersArchive?.pageCount) || 1);
+    const nextPage = Math.max(0, Math.min(pageCount - 1, Math.floor(Number(page) || 0)));
+    if (nextPage === this.careerInfoPilotOrdersPage) return false;
+    this.careerInfoPilotOrdersPage = nextPage;
+    if (this.careerInfoOverlay?.visible) {
+      this.rebuildCareerInfoOverlay();
+      AudioManager.playSfx('thrusterFire', { volume: 0.11, minIntervalMs: 80 });
+    }
+    return true;
+  }
+
+  flipCareerInfoPilotOrdersPage(delta) {
+    const pageCount = Math.max(1, Number(this.careerInfoRefs?.pilotOrdersArchive?._pilotOrdersArchive?.pageCount) || 1);
+    const nextPage = ((this.careerInfoPilotOrdersPage + Math.sign(delta || 1)) % pageCount + pageCount) % pageCount;
+    return this.setCareerInfoPilotOrdersPage(nextPage);
+  }
+
   createCareerStatTile(label, value, x, y, width, height, accent, compact = false, subline = '') {
     const tile = new PIXI.Container();
     tile.label = `ui_careerIntelTile_${label}`;
@@ -893,36 +927,52 @@ export class ShipSelectScene {
     const completedOrders = Array.isArray(review?.completed) ? review.completed : [];
     const activeOrders = Array.isArray(review?.active) ? review.active : [];
     const nextOrders = Array.isArray(review?.next) ? review.next : [];
-    const activeLines = activeOrders.map((entry) => {
+    const pendingOrders = Array.isArray(review?.pending) ? review.pending : [];
+    const activeIds = new Set(activeOrders.map((entry) => entry?.id).filter(Boolean));
+    const nextIds = new Set(nextOrders.map((entry) => entry?.id).filter(Boolean));
+    const orderNumberLabel = (entry, fallbackIndex = 0) => {
+      const orderNumber = Number(entry?.orderNumber);
+      const normalized = Number.isFinite(orderNumber) && orderNumber > 0
+        ? Math.floor(orderNumber)
+        : fallbackIndex + 1;
+      return String(normalized).padStart(2, '0');
+    };
+    const allEntries = [...completedOrders, ...pendingOrders]
+      .filter((entry) => entry?.id)
+      .sort((a, b) => {
+        const aIndex = Number.isFinite(Number(a.orderIndex)) ? Number(a.orderIndex) : Number.MAX_SAFE_INTEGER;
+        const bIndex = Number.isFinite(Number(b.orderIndex)) ? Number(b.orderIndex) : Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return String(a.id).localeCompare(String(b.id));
+      });
+    const lineEntries = allEntries.map((entry, index) => {
+      const title = translateText(entry.shortTitle || entry.title || entry.id);
+      const number = orderNumberLabel(entry, index);
+      if (entry.completed) {
+        return {
+          text: `${number} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${title}`,
+          tone: 'done'
+        };
+      }
       const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
-      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total);
+      if (activeIds.has(entry.id)) {
+        return {
+          text: `${number} ${translateText('ACTIVE')} ${progress} // ${title}`,
+          tone: 'active'
+        };
+      }
+      if (nextIds.has(entry.id)) {
+        return {
+          text: `${number} ${translateText('NEXT')} ${progress} // ${title}`,
+          tone: 'next'
+        };
+      }
       return {
-        text: `${translateText('ACTIVE')} ${progress} // ${orderLabel ? `${orderLabel} ` : ''}${translateText(entry.shortTitle || entry.title || entry.id)}`,
-        tone: 'active'
+        text: `${number} ${progress} // ${title}`,
+        tone: 'pending'
       };
     });
-    const nextLines = nextOrders.slice(0, 1).map((entry) => {
-      const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
-      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total);
-      return {
-        text: `${translateText('NEXT')} ${progress} // ${orderLabel ? `${orderLabel} ` : ''}${translateText(entry.shortTitle || entry.title || entry.id)}`,
-        tone: 'next'
-      };
-    });
-    const completedLines = completedOrders.map((entry, index) => {
-      const orderLabel = formatRunContractOrderSlotLabel(entry, review?.total)
-        || `${String(index + 1).padStart(2, '0')}/${Math.max(1, Number(review?.total) || completedOrders.length || 1)}`;
-      return {
-        text: `${orderLabel} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${translateText(entry.shortTitle || entry.title || entry.id)}`,
-        tone: 'done'
-      };
-    });
-    const lineEntries = [
-      ...activeLines,
-      ...nextLines,
-      ...completedLines
-    ];
-    const completedText = lineEntries.length
+    const fullText = lineEntries.length
       ? lineEntries.map((entry) => entry.text).join('\n')
       : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
     const accent = completedOrders.length || activeOrders.length ? 0x9cfbff : 0x49677a;
@@ -974,44 +1024,100 @@ export class ShipSelectScene {
     const archiveSummary = archiveSummaryParts.length
       ? archiveSummaryParts.join(' // ')
       : translateText(PILOT_ORDERS_ARCHIVE_HINT);
+    const listTop = compact ? 56 : 62;
+    const listHeight = Math.max(18, height - listTop - 18);
+    const columnCount = width >= 980 && height >= 176
+      ? 3
+      : width >= 640
+        ? 2
+        : 1;
+    const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
+    const listLineHeight = compact ? 11 : 14;
+    const rowsPerColumn = Math.max(3, Math.floor(listHeight / listLineHeight));
+    const rowsPerPage = Math.max(1, rowsPerColumn * columnCount);
+    const pageCount = Math.max(1, Math.ceil((lineEntries.length || 1) / rowsPerPage));
+    const currentPage = Math.max(0, Math.min(pageCount - 1, Math.floor(Number(this.careerInfoPilotOrdersPage) || 0)));
+    this.careerInfoPilotOrdersPage = currentPage;
+    const pageStart = currentPage * rowsPerPage;
+    const displayLines = lineEntries.length
+      ? lineEntries.slice(pageStart, pageStart + rowsPerPage)
+      : [{ text: fullText, tone: 'empty' }];
+    const visibleText = displayLines.map((entry) => entry.text).join('\n');
+    const hintWidth = pageCount > 1 ? Math.max(120, width - 188) : width - 36;
     const hint = createText(archiveSummary, {
       fontFamily: FONT_BODY,
       fontSize: compact ? 9 : 11,
       fontWeight: '800',
       fill: '#fff3a2',
       wordWrap: true,
-      wordWrapWidth: width - 36,
+      wordWrapWidth: hintWidth,
       lineHeight: compact ? 10 : 12,
       letterSpacing: 0
     });
     hint.position.set(18, compact ? 28 : 32);
-    fitDisplayToBox(hint, width - 36, compact ? 14 : 17, { minScale: 0.64 });
+    fitDisplayToBox(hint, hintWidth, compact ? 14 : 17, { minScale: 0.64 });
 
-    const columnCount = completedOrders.length > 36 && width >= 720
-      ? 4
-      : completedOrders.length > 18 && width >= 560
-        ? 3
-        : width >= 420 && completedOrders.length > 5
-          ? 2
-          : 1;
-    const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
+    const pageWidgets = [];
+    if (pageCount > 1) {
+      const pageLabel = createText(String(currentPage + 1) + '/' + String(pageCount), {
+        fontFamily: FONT_BODY,
+        fontSize: compact ? 10 : 12,
+        fontWeight: '900',
+        fill: '#ffffff',
+        stroke: '#020711',
+        strokeThickness: 2,
+        align: 'center',
+        letterSpacing: 0
+      });
+      pageLabel.anchor.set(0.5, 0);
+      pageLabel.position.set(width - 72, compact ? 33 : 36);
+      const makePageButton = (label, buttonX, delta) => {
+        const button = new PIXI.Container();
+        button.eventMode = 'static';
+        button.cursor = 'pointer';
+        button.position.set(buttonX, compact ? 40 : 44);
+        button.hitArea = new PIXI.Rectangle(-16, -12, 32, 24);
+        const bg = new PIXI.Graphics();
+        bg.roundRect(-14, -10, 28, 20, 5);
+        bg.fill({ color: 0x071b2a, alpha: 0.96 });
+        bg.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.68 });
+        const copy = createText(label, {
+          fontFamily: FONT_DISPLAY,
+          fontSize: compact ? 12 : 14,
+          fontWeight: '900',
+          fill: '#9cfbff',
+          stroke: '#020711',
+          strokeThickness: 2,
+          letterSpacing: 0
+        });
+        copy.anchor.set(0.5);
+        button.addChild(bg, copy);
+        button.on('pointerdown', (event) => {
+          event.stopPropagation();
+          this.flipCareerInfoPilotOrdersPage(delta);
+        });
+        return button;
+      };
+      pageWidgets.push(
+        makePageButton('<', width - 116, -1),
+        pageLabel,
+        makePageButton('>', width - 28, 1)
+      );
+    }
+
     const columnWidth = Math.floor((width - 36 - columnGap * (columnCount - 1)) / columnCount);
     const columnLists = Array.from({ length: columnCount }, () => []);
-    const displayLines = lineEntries.length ? lineEntries : [{ text: completedText, tone: 'empty' }];
-    const rowsPerColumn = Math.max(1, Math.ceil(displayLines.length / columnCount));
     displayLines.forEach((entry, index) => {
       const column = Math.min(columnCount - 1, Math.floor(index / rowsPerColumn));
       columnLists[column].push(entry);
     });
-    const listTop = compact ? 43 : 50;
-    const listHeight = Math.max(18, height - listTop - 16);
-    const denseArchive = displayLines.length > 30;
-    const listFontSize = compact ? (denseArchive ? 7 : 9) : (denseArchive ? 8 : 11);
-    const listLineHeight = compact ? (denseArchive ? 8 : 10) : (denseArchive ? 9 : 13);
+    const denseArchive = rowsPerPage >= 22;
+    const listFontSize = compact ? (denseArchive ? 9 : 10) : (denseArchive ? 10 : 12);
     const toneFill = {
       active: '#fff3a2',
       next: '#9cfbff',
       done: '#d8fbff',
+      pending: '#8fb5c2',
       empty: '#90aeba'
     };
     const listTexts = [];
@@ -1031,12 +1137,12 @@ export class ShipSelectScene {
           18 + column * (columnWidth + columnGap),
           listTop + rowIndex * listLineHeight
         );
-        fitDisplayToBox(copy, columnWidth, listLineHeight + 2, { minScale: denseArchive ? 0.48 : 0.58 });
+        fitDisplayToBox(copy, columnWidth, listLineHeight + 2, { minScale: denseArchive ? 0.54 : 0.62 });
         listTexts.push(copy);
       });
     });
     if (!listTexts.length) {
-      const copy = createText(completedText, {
+      const copy = createText(fullText, {
         fontFamily: FONT_BODY,
         fontSize: listFontSize,
         fontWeight: '800',
@@ -1050,16 +1156,22 @@ export class ShipSelectScene {
       fitDisplayToBox(copy, columnWidth, listHeight, { minScale: denseArchive ? 0.48 : 0.58 });
       listTexts.push(copy);
     }
-    panel.addChild(heading, count, hint, ...listTexts);
+    panel.addChild(heading, count, hint, ...pageWidgets, ...listTexts);
 
     panel._pilotOrdersArchive = {
       heading: headingLabel,
       countLabel,
-      text: completedText,
+      text: fullText,
+      visibleText,
       activeCount: activeOrders.length,
       nextCount: nextOrders.length,
       completedCount: review?.completedCount || 0,
       total: review?.total || 0,
+      totalRows: lineEntries.length,
+      page: currentPage,
+      pageCount,
+      rowsPerPage,
+      visibleCount: displayLines.length,
       summary: archiveSummary
     };
     return panel;
@@ -1137,10 +1249,16 @@ export class ShipSelectScene {
         heading: refs.pilotOrdersArchive._pilotOrdersArchive?.heading || '',
         countLabel: refs.pilotOrdersArchive._pilotOrdersArchive?.countLabel || '',
         text: refs.pilotOrdersArchive._pilotOrdersArchive?.text || '',
+        visibleText: refs.pilotOrdersArchive._pilotOrdersArchive?.visibleText || '',
         activeCount: refs.pilotOrdersArchive._pilotOrdersArchive?.activeCount || 0,
         nextCount: refs.pilotOrdersArchive._pilotOrdersArchive?.nextCount || 0,
         completedCount: refs.pilotOrdersArchive._pilotOrdersArchive?.completedCount || 0,
         total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0,
+        totalRows: refs.pilotOrdersArchive._pilotOrdersArchive?.totalRows || 0,
+        page: refs.pilotOrdersArchive._pilotOrdersArchive?.page || 0,
+        pageCount: refs.pilotOrdersArchive._pilotOrdersArchive?.pageCount || 1,
+        rowsPerPage: refs.pilotOrdersArchive._pilotOrdersArchive?.rowsPerPage || 0,
+        visibleCount: refs.pilotOrdersArchive._pilotOrdersArchive?.visibleCount || 0,
         summary: refs.pilotOrdersArchive._pilotOrdersArchive?.summary || ''
       } : null,
       backButton: bounds(refs.close)
@@ -2938,6 +3056,11 @@ export class ShipSelectScene {
     // Wheel navigation - scroll one ship at a time
     this.wheelHandler = (e) => {
       e.preventDefault();
+      if (this.careerInfoOverlay?.visible) {
+        if (e.deltaY > 0) this.flipCareerInfoPilotOrdersPage(1);
+        else if (e.deltaY < 0) this.flipCareerInfoPilotOrdersPage(-1);
+        return;
+      }
       if (this.animating) return;
 
       if (e.deltaY > 0) {
@@ -3065,6 +3188,8 @@ export class ShipSelectScene {
         e.key === 'ArrowDown' ||
         e.key === 'ArrowLeft' ||
         e.key === 'ArrowRight' ||
+        e.key === 'PageUp' ||
+        e.key === 'PageDown' ||
         e.key === 'Escape' ||
         e.key === 'Enter' ||
         e.code === 'KeyA' ||
@@ -3176,6 +3301,16 @@ export class ShipSelectScene {
   }
 
   handleCareerInfoKey(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      this.flipCareerInfoPilotOrdersPage(-1);
+      return true;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+      e.preventDefault();
+      this.flipCareerInfoPilotOrdersPage(1);
+      return true;
+    }
     if (
       e.key === 'Escape' ||
       e.code === 'Escape' ||
@@ -3203,6 +3338,14 @@ export class ShipSelectScene {
     }
 
     if (this.careerInfoOverlay?.visible) {
+      if (nav.pressed.left || nav.pressed.up) {
+        this.flipCareerInfoPilotOrdersPage(-1);
+        return;
+      }
+      if (nav.pressed.right || nav.pressed.down) {
+        this.flipCareerInfoPilotOrdersPage(1);
+        return;
+      }
       if (nav.pressed.cancel || nav.pressed.confirm || nav.pressed.menu || nav.pressed.back) {
         this.closeCareerInfoOverlay('controller');
       }

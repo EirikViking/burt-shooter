@@ -140,6 +140,8 @@ export class SettingsOverlay {
       modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
       sizes: DEFAULT_WINDOW_SIZE_OPTIONS
     };
+    this.formCenterX = null;
+    this.formColumnWidth = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -197,21 +199,28 @@ export class SettingsOverlay {
       openVolume: 0.18
     });
 
-    const isCompact = width < 620 || height < 820;
-    const panelWidth = Math.min(680 * this.uiScale, width * 0.9);
-    const panelHeight = Math.min((isCompact ? 820 : 900) * this.uiScale, height * (isCompact ? 0.98 : 0.97));
+    const isCompact = width < 760 || height < 680;
+    const twoColumn = width >= 980 && height >= 660;
+    const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.92), twoColumn ? 1080 : 700);
+    const panelHeight = Math.min(height * (isCompact ? 0.96 : 0.92), twoColumn ? 760 : 860);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.96 });
+    panel.fill({ color: 0x03101f, alpha: 0.975 });
     panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.95 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
+    panel.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
+    panel.rect(panelX + 26, panelY + 70, panelWidth - 52, 2);
+    panel.fill({ color: 0x37f5ff, alpha: 0.24 });
+    panel.rect(panelX + 26, panelY + panelHeight - 72, panelWidth - 52, 1);
+    panel.fill({ color: 0xffd15c, alpha: 0.22 });
     this.container.addChild(panel);
 
     const titleText = createText(this.title, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: Math.round((isCompact ? 28 : 34) * this.uiScale),
+      fontSize: Math.round((isCompact ? 26 : 36) * this.uiScale),
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
@@ -222,80 +231,183 @@ export class SettingsOverlay {
     this.container.addChild(titleText);
 
     const dense = height < 760;
-    const sectionGap = Math.round((dense ? 22 : 26) * this.uiScale);
-    const toggleGap = Math.round((dense ? 30 : (isCompact ? 32 : 34)) * this.uiScale);
-    const testGap = Math.round((dense ? 30 : (isCompact ? 31 : 34)) * this.uiScale);
-    const sliderGap = Math.round((dense ? 31 : (isCompact ? 32 : 34)) * this.uiScale);
+    const sectionGap = Math.round((twoColumn ? 34 : dense ? 26 : 29) * this.uiScale);
+    const rowGap = Math.round((twoColumn ? 38 : dense ? 29 : 32) * this.uiScale);
+    const tighterGap = Math.round((twoColumn ? 34 : dense ? 27 : 30) * this.uiScale);
+    const sliderGap = Math.round((twoColumn ? 32 : dense ? 28 : 30) * this.uiScale);
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
-    let y = panelY + Math.round((dense ? 74 : (isCompact ? 84 : 92)) * this.uiScale);
-    this.addSectionLabel('DISPLAY', y);
-    y += sectionGap;
-    this.addDisplayModeRow('Display Mode', y);
-    y += toggleGap;
-    this.addDisplaySizeRow('Window Size', y);
-    y += testGap;
-    this.addUiScaleRow('UI Scale', y);
-    y += toggleGap;
-    this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
-      id: 'confirm_exit',
-      onButton: (button) => {
-        this.confirmExitButton = button;
-      }
-    });
-    y += toggleGap;
-    this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, y, (enabled) => saveMenuSettings({
-      showPilotOrders: enabled
-    }, {
-      defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
-    }), {
-      id: 'show_pilot_orders',
-      onButton: (button) => {
-        this.pilotOrdersButton = button;
-      }
-    });
-    y += toggleGap;
-    this.addDisplayResetRow('Safe Reset', y);
-    y += sectionGap;
-    this.addSectionLabel('AUDIO', y);
-    y += sectionGap;
-    this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
-    y += testGap;
-    this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
-    y += testGap;
-    this.addAudioTestRow('TEST', y);
-    y += testGap;
-    this.addLanguageRow('LANGUAGE', y);
-    y += toggleGap;
-    this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
-    y += sliderGap;
-    this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
-    y += sliderGap;
-    this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
-      onChange: setScreenShakeScale
-    });
-    y += sliderGap;
-    this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
-      onChange: setPlayerFocusScale
-    });
-    y += toggleGap;
-    this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, {
-      id: 'player_hitbox'
-    });
-    y += toggleGap;
-    this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
-
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
+    const contentTop = panelY + Math.round((isCompact ? 76 : 92) * this.uiScale);
+    const contentBottom = footerY - footerButtonHeight / 2 - Math.round((isCompact ? 20 : 26) * this.uiScale);
+    const columnPad = twoColumn ? 30 : 28;
+    const columnGap = twoColumn ? 26 : 0;
+    const columnWidth = twoColumn
+      ? (panelWidth - columnPad * 2 - columnGap) / 2
+      : panelWidth - columnPad * 2;
+    const leftX = panelX + columnPad;
+    const rightX = twoColumn ? leftX + columnWidth + columnGap : leftX;
+    const setFormColumn = (columnX) => {
+      this.formCenterX = columnX + columnWidth / 2;
+      this.formColumnWidth = columnWidth;
+    };
+
+    if (twoColumn) {
+      const columnHeight = Math.max(120, contentBottom - contentTop);
+      this.drawSettingsSectionFrame(leftX, contentTop, columnWidth, columnHeight, 0x37f5ff);
+      this.drawSettingsSectionFrame(rightX, contentTop, columnWidth, columnHeight, 0xff55d9);
+
+      setFormColumn(leftX);
+      let leftY = contentTop + Math.round(22 * this.uiScale);
+      this.addSectionLabel('DISPLAY', leftY);
+      leftY += sectionGap;
+      this.addDisplayModeRow('Display Mode', leftY);
+      leftY += rowGap;
+      this.addDisplaySizeRow('Window Size', leftY);
+      leftY += rowGap;
+      this.addUiScaleRow('UI Scale', leftY);
+      leftY += rowGap;
+      this.addDisplayResetRow('Safe Reset', leftY);
+      leftY += Math.round(40 * this.uiScale);
+      this.addSectionLabel('GAMEPLAY', leftY);
+      leftY += sectionGap;
+      this.addToggleRow('Confirm Exit', menuSettings.confirmExit, leftY, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+        id: 'confirm_exit',
+        onButton: (button) => {
+          this.confirmExitButton = button;
+        }
+      });
+      leftY += rowGap;
+      this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, leftY, (enabled) => saveMenuSettings({
+        showPilotOrders: enabled
+      }, {
+        defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+      }), {
+        id: 'show_pilot_orders',
+        onButton: (button) => {
+          this.pilotOrdersButton = button;
+        }
+      });
+      leftY += Math.round(40 * this.uiScale);
+      this.addSectionLabel('ACCESSIBILITY', leftY);
+      leftY += sectionGap;
+      this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, leftY, {
+        onChange: setScreenShakeScale
+      });
+      leftY += sliderGap;
+      this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, leftY, {
+        onChange: setPlayerFocusScale
+      });
+      leftY += tighterGap;
+      this.addToggleRow('HITBOX', accessibility.playerHitbox, leftY, setPlayerHitboxVisible, {
+        id: 'player_hitbox'
+      });
+      leftY += tighterGap;
+      this.addToggleRow('COLOR AID', accessibility.colorAssist, leftY, setColorAssistEnabled);
+
+      setFormColumn(rightX);
+      let rightY = contentTop + Math.round(22 * this.uiScale);
+      this.addSectionLabel('AUDIO', rightY);
+      rightY += sectionGap;
+      this.addToggleRow('MUSIC', settings.musicEnabled, rightY, (enabled) => AudioManager.setMusicEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('VOICE', settings.voiceEnabled, rightY, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, rightY, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, rightY, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addMusicPackRow('MUSIC SET', settings.musicPack, rightY);
+      rightY += tighterGap;
+      this.addAudioTestRow('TEST', rightY);
+      rightY += tighterGap;
+      this.addLanguageRow('LANGUAGE', rightY);
+      rightY += rowGap;
+      this.addSliderRow('MASTER', 'master', settings.masterVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, rightY);
+    } else {
+      this.drawSettingsSectionFrame(leftX, contentTop, columnWidth, Math.max(120, contentBottom - contentTop), 0x37f5ff);
+      setFormColumn(leftX);
+      let y = contentTop + Math.round(18 * this.uiScale);
+      this.addSectionLabel('DISPLAY', y);
+      y += sectionGap;
+      this.addDisplayModeRow('Display Mode', y);
+      y += tighterGap;
+      this.addDisplaySizeRow('Window Size', y);
+      y += tighterGap;
+      this.addUiScaleRow('UI Scale', y);
+      y += tighterGap;
+      this.addDisplayResetRow('Safe Reset', y);
+      y += Math.round(32 * this.uiScale);
+      this.addSectionLabel('GAMEPLAY', y);
+      y += sectionGap;
+      this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+        id: 'confirm_exit',
+        onButton: (button) => {
+          this.confirmExitButton = button;
+        }
+      });
+      y += tighterGap;
+      this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, y, (enabled) => saveMenuSettings({
+        showPilotOrders: enabled
+      }, {
+        defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+      }), {
+        id: 'show_pilot_orders',
+        onButton: (button) => {
+          this.pilotOrdersButton = button;
+        }
+      });
+      y += Math.round(32 * this.uiScale);
+      this.addSectionLabel('AUDIO', y);
+      y += sectionGap;
+      this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
+      y += tighterGap;
+      this.addAudioTestRow('TEST', y);
+      y += tighterGap;
+      this.addLanguageRow('LANGUAGE', y);
+      y += tighterGap;
+      this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
+      y += sliderGap;
+      this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
+      y += sliderGap;
+      this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
+      y += sliderGap;
+      this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
+      y += Math.round(30 * this.uiScale);
+      this.addSectionLabel('ACCESSIBILITY', y);
+      y += sectionGap;
+      this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
+        onChange: setScreenShakeScale
+      });
+      y += sliderGap;
+      this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
+        onChange: setPlayerFocusScale
+      });
+      y += tighterGap;
+      this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, {
+        id: 'player_hitbox'
+      });
+      y += tighterGap;
+      this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
+    }
+
+    this.formCenterX = null;
+    this.formColumnWidth = null;
+
     if (panelWidth >= 500) {
       const footerButtonGap = isCompact ? 12 : 16;
       const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
@@ -332,10 +444,31 @@ export class SettingsOverlay {
     });
   }
 
+  getFormCenterX() {
+    return Number.isFinite(this.formCenterX) ? this.formCenterX : this.game.getWidth() / 2;
+  }
+
+  getFormColumnWidth() {
+    return Number.isFinite(this.formColumnWidth) ? this.formColumnWidth : Math.min(560, this.game.getWidth() - 72);
+  }
+
+  drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
+    const frame = new PIXI.Graphics();
+    frame.roundRect(x, y, width, height, 8);
+    frame.fill({ color: 0x041323, alpha: 0.76 });
+    frame.roundRect(x, y, width, height, 8);
+    frame.stroke({ color: accent, width: 1.2, alpha: 0.42 });
+    frame.rect(x, y, 6, height);
+    frame.fill({ color: accent, alpha: 0.58 });
+    frame.rect(x + 18, y + 16, width - 36, 1);
+    frame.fill({ color: accent, alpha: 0.18 });
+    this.container.addChild(frame);
+    return frame;
+  }
+
   addToggleRow(label, initialValue, y, onChange, { id = null, onButton = null } = {}) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -354,7 +487,7 @@ export class SettingsOverlay {
       button._label.text = enabled ? 'ON' : 'OFF';
       button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 132, height: 34 });
+    }, { width: 132, height: 30 });
     button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
     onButton?.(button);
     row.addChild(button);
@@ -370,9 +503,8 @@ export class SettingsOverlay {
   }
 
   addAudioTestRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -383,8 +515,8 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 32 });
-    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 32 });
+    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 30 });
+    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 30 });
     sfxButton.label = 'ui_settingsTestSfx';
     voiceButton.label = 'ui_settingsTestVoice';
     this.audioTestButtons.sfx = sfxButton;
@@ -406,9 +538,8 @@ export class SettingsOverlay {
   }
 
   addLanguageRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -432,7 +563,7 @@ export class SettingsOverlay {
 
     const button = this.createButton(selected().label, 18, 0, () => {
       cycle(1).catch((error) => console.warn('[SettingsOverlay] Language change failed:', error));
-    }, { width: 170, height: 32 });
+    }, { width: 170, height: 30 });
     button.label = 'ui_settingsLanguage';
     this.languageButton = button;
     row.addChild(button);
@@ -471,9 +602,8 @@ export class SettingsOverlay {
   }
 
   addMusicPackRow(label, initialPack, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -486,7 +616,7 @@ export class SettingsOverlay {
 
     let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
     const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
-    const button = this.createButton(selected().label, 18, 0, () => cycleMusicPack(1), { width: 170, height: 32 });
+    const button = this.createButton(selected().label, 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
     fitTextToWidth(button._label, 132);
@@ -529,9 +659,8 @@ export class SettingsOverlay {
   }
 
   addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -542,7 +671,7 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    const trackWidth = 250;
+    const trackWidth = Math.min(250, Math.max(178, this.getFormColumnWidth() - 230));
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
     const focus = new PIXI.Graphics();
@@ -552,7 +681,7 @@ export class SettingsOverlay {
       fill: '#ffffff'
     });
     valueText.anchor.set(0, 0.5);
-    valueText.x = 160;
+    valueText.x = trackWidth / 2 + 34;
     row.addChild(focus, track, knob, valueText);
     let sliderEntry = null;
 
@@ -652,13 +781,14 @@ export class SettingsOverlay {
     });
     text.anchor.set(0.5);
     fitTextToWidth(text, width - 18, { minScale: 0.72 });
+    fitDisplayToBox(text, width - 18, height - 8, { minScale: 0.68 });
     button.addChild(text);
     button._label = text;
 
     const draw = (hovered = false) => {
       focus.clear();
       if (button._focused) {
-        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.roundRect(-width / 2 - 3, -height / 2 - 3, width + 6, height + 6, 7);
         focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
       }
       bg.clear();
@@ -688,7 +818,6 @@ export class SettingsOverlay {
   }
 
   addSectionLabel(label, y) {
-    const width = this.game.getWidth();
     const text = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 14,
@@ -697,8 +826,8 @@ export class SettingsOverlay {
       letterSpacing: 0
     });
     text.anchor.set(0.5);
-    text.position.set(width / 2, y);
-    fitTextToWidth(text, Math.min(420, this.game.getWidth() - 72), { minScale: 0.74 });
+    text.position.set(this.getFormCenterX(), y);
+    fitTextToWidth(text, Math.min(420, this.getFormColumnWidth() - 52), { minScale: 0.74 });
     this.container.addChild(text);
   }
 
@@ -735,7 +864,7 @@ export class SettingsOverlay {
   setDisplayStatus(message, vars = {}) {
     if (!this.displayStatusText) return;
     this.displayStatusText.text = translateText(message, vars);
-    fitTextToWidth(this.displayStatusText, 300, { minScale: 0.65 });
+    fitTextToWidth(this.displayStatusText, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
   }
 
   updateDisplayControls() {
@@ -823,9 +952,8 @@ export class SettingsOverlay {
   }
 
   addDisplayResetRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const buttonX = -Math.round(60 * this.uiScale);
     const buttonWidth = 168;
@@ -843,6 +971,7 @@ export class SettingsOverlay {
     status.anchor.set(0, 0.5);
     status.x = buttonX + (buttonWidth * this.uiScale) / 2 + 24;
     this.displayStatusText = status;
+    fitTextToWidth(status, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
     row.addChild(status);
 
     this.container.addChild(row);
@@ -851,9 +980,8 @@ export class SettingsOverlay {
   }
 
   addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null } = {}) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -868,7 +996,7 @@ export class SettingsOverlay {
     const cycle = (direction = 1) => {
       Promise.resolve(onCycle?.(direction)).catch((error) => console.warn('[SettingsOverlay] Choice update failed:', error));
     };
-    const button = this.createButton(valueLabel, 34, 0, () => cycle(1), { width: buttonWidth, height: 32 });
+    const button = this.createButton(valueLabel, 34, 0, () => cycle(1), { width: buttonWidth, height: 30 });
     button.label = `ui_settings_${id}`;
     row.addChild(button);
     onButton?.(button);

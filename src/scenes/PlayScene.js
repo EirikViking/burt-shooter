@@ -1381,11 +1381,9 @@ export class PlayScene {
     this.runContractProgressToastMarkers?.set(change.id, marker);
     const contract = getRunContractById(change.id);
     const title = translateText(contract?.shortTitle || change.shortTitle || change.title || change.id);
-    const orderSlot = change.orderSlot || formatRunContractOrderSlotLabel(change.id);
-    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
     const progressLabel = this.getRunContractTrackProgressLabel();
     const progressMessage = translateText('ORDER PROGRESS: {title} {progress}/{target}', {
-      title: orderTitle,
+      title,
       ...formatRunContractProgressValue(change.progress, change.target)
     });
     const message = progressLabel
@@ -1401,12 +1399,14 @@ export class PlayScene {
       type: 'runContractProgress',
       priority: 2,
       bypassFocusLock: false,
-      duration: progressLabel ? 3000 : 2600,
+      duration: progressLabel ? 4600 : 4000,
       banner: true,
       title: translateText('PILOT ORDERS'),
+      fontSize: compactHud ? 17 : 18,
+      fill: '#eafcff',
       align: 'left',
       y: Math.min(this.game.getHeight() - 132, Math.max(compactHud ? 154 : 202, this.game.getHeight() * 0.28)),
-      maxWidth: compactHud ? this.game.getWidth() * 0.72 : Math.min(480, this.game.getWidth() * 0.38),
+      maxWidth: compactHud ? this.game.getWidth() * 0.82 : Math.min(620, this.game.getWidth() * 0.46),
       accent: contract?.accent || 0x7fffd8
     });
   }
@@ -1422,10 +1422,9 @@ export class PlayScene {
       .find((item) => item.eligible && !item.completed);
     if (!active) return null;
     const title = translateText(active.shortTitle || active.title || active.id);
-    const orderSlot = active.orderSlot || formatRunContractOrderSlotLabel(active.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(active.progress, active.target));
     return {
-      title: orderSlot ? `${orderSlot} ${title}` : title,
+      title,
       progress,
       trackProgress: this.getRunContractTrackProgressLabel()
     };
@@ -1452,8 +1451,10 @@ export class PlayScene {
         type: 'runContractStart',
         priority: 1,
         bypassFocusLock: false,
-        duration: 3000,
+        duration: 4200,
         banner: true,
+        fontSize: compactHud ? 17 : 19,
+        fill: '#eafcff',
         align: 'center',
         y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
         maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46),
@@ -1588,13 +1589,9 @@ export class PlayScene {
     const contract = getRunContractById(contractId);
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
-    const orderSlot = formatRunContractOrderSlotLabel(contractId);
-    const orderTitle = orderSlot ? `${orderSlot} ${title}` : title;
-    const progressLabel = this.getRunContractTrackProgressLabel();
     const nextSummary = this.getNextRunContractSummary();
     const message = [
-      translateText('ORDER COMPLETE: {title}', { title: orderTitle }),
-      progressLabel ? `${translateText('PILOT ORDERS')} ${progressLabel}` : null,
+      translateText('ORDER COMPLETE: {title}', { title }),
       nextSummary ? `${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}` : null
     ].filter(Boolean).join('\n');
     const compactHud = this.game.getWidth() < 620;
@@ -1609,12 +1606,14 @@ export class PlayScene {
       type: 'runContract',
       priority: 4,
       bypassFocusLock: false,
-      duration: nextSummary ? 4400 : 3600,
+      duration: nextSummary ? 7600 : 6400,
       banner: true,
       title: translateText('PILOT ORDERS'),
+      fontSize: compactHud ? 18 : 20,
+      fill: '#f4fdff',
       align: 'center',
       y: Math.min(height - 132, Math.max(compactHud ? 132 : 158, height * 0.22)),
-      maxWidth: compactHud ? width * 0.86 : Math.min(500, width * 0.42),
+      maxWidth: compactHud ? width * 0.92 : Math.min(680, width * 0.54),
       accent: contract.accent || 0x7fffd8
     });
   }
@@ -1657,10 +1656,9 @@ export class PlayScene {
     const source = state || this.getRunContractDebugState();
     const item = (source?.next || []).find((entry) => entry?.id && !entry.completed);
     if (!item) return null;
-    const orderSlot = item.orderSlot || formatRunContractOrderSlotLabel(item.id);
     const title = translateText(item.shortTitle || item.title || item.id);
     return {
-      title: orderSlot ? `${orderSlot} ${title}` : title,
+      title,
       progress: translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target))
     };
   }
@@ -5708,9 +5706,8 @@ export class PlayScene {
     }
     const item = active[0];
     const title = translateText(item.shortTitle || item.title || item.id);
-    const orderSlot = item.orderSlot || formatRunContractOrderSlotLabel(item.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
-    return `${prefix} // ${orderSlot ? `${orderSlot} ` : ''}${title} ${progress}`;
+    return `${prefix} // ${title} ${progress}`;
   }
 
   openSettingsOverlay() {
@@ -9546,22 +9543,23 @@ export class PlayScene {
         || options.type === 'runContractProgress';
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize,
+        fontWeight: runContractBanner ? '600' : 'bold',
         fill: options.fill || '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 4,
+        stroke: runContractBanner ? '#02131f' : '#000000',
+        strokeThickness: runContractBanner ? 0.75 : 4,
         align: 'left',
         wordWrap: true,
         wordWrapWidth: maxWidth * 0.6,
-        lineHeight: fontSize + 6
+        lineHeight: fontSize + (runContractBanner ? 8 : 6)
       });
       bannerText.anchor.set(0, 0.5);
 
-      const paddingX = 24;
-      const paddingY = 16;
-      const minFontSize = 16;
-      const maxTextHeight = options.type === 'lore' ? 106 : 80;
+      const paddingX = runContractBanner ? 26 : 24;
+      const paddingY = runContractBanner ? 18 : 16;
+      const minFontSize = runContractBanner ? (width < 620 ? 13 : 15) : 16;
+      const maxTextHeight = options.type === 'lore' ? 106 : (runContractBanner ? 132 : 80);
 
       const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
       const requestedAvatar = options.imageAlias && GameAssets.isValidTexture(GameAssets.getCommsPortrait(options.imageAlias))
@@ -9576,7 +9574,7 @@ export class PlayScene {
 
       while (bannerText.height > maxTextHeight && bannerText.style.fontSize > minFontSize) {
         bannerText.style.fontSize -= 2;
-        bannerText.style.lineHeight = bannerText.style.fontSize + 6;
+        bannerText.style.lineHeight = bannerText.style.fontSize + (runContractBanner ? 8 : 6);
         if (bannerText.updateText) bannerText.updateText(false);
       }
 
@@ -9629,12 +9627,12 @@ export class PlayScene {
       // TASK 3: Add Title Label if present
       if (options.title) {
         const titleLabel = createText(String(options.title).toUpperCase(), {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: options.type === 'lore' ? 12 : 14,
+          fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: options.type === 'lore' ? 12 : (runContractBanner ? 11 : 14),
           fill: options.type === 'lore' ? '#7ee9ff' : (runContractBanner ? '#ffef7e' : '#ffff00'),
-          fontWeight: 'bold',
-          stroke: '#000000',
-          strokeThickness: options.type === 'lore' ? 2 : 3
+          fontWeight: runContractBanner ? '600' : 'bold',
+          stroke: runContractBanner ? '#02131f' : '#000000',
+          strokeThickness: options.type === 'lore' ? 2 : (runContractBanner ? 0.75 : 3)
         });
         titleLabel.anchor.set(0, 0.5);
         titleLabel.x = bannerText.x;

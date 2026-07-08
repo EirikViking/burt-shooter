@@ -284,6 +284,8 @@ const sourceText = Object.freeze({
   "Could not load Steam sector run scores.": "No se pudieron cargar puntuaciones de Sector Run de Steam.",
   "Loading Steam sector run scores...": "Cargando puntuaciones de Sector Run de Steam...",
   "DISPLAY": "PANTALLA",
+  "GAMEPLAY": "JUGABILIDAD",
+  "ACCESSIBILITY": "ACCESIBILIDAD",
   "Display Mode": "Modo de pantalla",
   "Window Size": "Tamano de ventana",
   "UI Scale": "Escala de interfaz",

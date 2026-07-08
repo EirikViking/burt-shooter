@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-08 Pilot Orders / Settings / Run Report UI Readability
+
+- Current request: fix Pilot Orders readability across the main menu, in-run completion toasts, Hangar Career Intel, Settings, and Run Report after screenshots showed text/box overlap and a bulky completion toast.
+- Implementation direction: keep the existing Pilot Orders data model while tightening presentation. Main-menu Pilot Orders rows now use compact titles with progress pills and no per-row catalog slot clutter; the Mayhem briefing surfaces the active order without the aggregate track count. In-run completion toasts stay visible longer, use a shorter two-line message, lighter Rajdhani text, less outline weight, and wider responsive banner bounds.
+- Hangar/Career Intel: the Pilot Orders archive now builds the full 50-order catalog and presents it as a paged panel with keyboard, controller, mouse wheel, and pointer paging support so completed, active, and queued orders remain accessible without overlap.
+- Settings and Run Report: Settings was rebuilt into a framed two-column command panel with separated Display, Gameplay, Accessibility, and Audio groups; Run Report now gives Pilot Orders its own full-width band beneath the stat cards.
+- Verification: syntax checks passed for touched scene/UI/check files; `npm run check:run-contracts` passed with inspected screenshots in `test-results/run-contracts-2026-07-08T13-22-30-049Z`; `npm run check:i18n`; `npm run build:current`; `npm run check:i18n-ui`; `npm run check:run-report`; `npm run check:career-intel-layout`; `npm run smoke`; `npm run check:controller-flow`; `npm run check:release-line`; `npm run desktop:smoke:current`; and `git diff --check` passed with CRLF normalization warnings only.
+
 ## 2026-07-08 Resolution Fairness Investigation
 
 - Current request: investigate suspected resolution-dependent difficulty/display fairness first, fix only if confirmed, and preserve recent projectile visual readability work.
