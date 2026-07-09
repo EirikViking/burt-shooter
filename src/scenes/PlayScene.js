@@ -30,7 +30,7 @@ import {
 } from '../ui/MenuFxLayer.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getDefaultShipKey } from '../config/ShipMetadata.js';
-import { createText } from '../utils/pixiText.js';
+import { createText, FONT_BODY, FONT_DISPLAY } from '../utils/pixiText.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
   getAchievementPopup,
@@ -248,6 +248,7 @@ export class PlayScene {
     this.toastTopQueue = [];
     this.toastCornerQueue = [];
     this.activeCenterToast = null;
+    this.activeBossIntroCard = null;
     this.tractorHijack = null;
     this.lastTractorHijack = null;
     this.tractorHijackLayer = null;
@@ -9096,12 +9097,17 @@ export class PlayScene {
     const lockUntil = this.getToastSlotLockUntil(slot);
     const bypassFocusLock = options.bypassFocusLock === true || (options.bypassFocusLock !== false && priority > 3);
     const notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
+    const duplicateKey = this.getToastDuplicateKey(message, type);
+    if (duplicateKey && this.hasActiveDuplicateToast(duplicateKey)) {
+      return;
+    }
     const entry = {
       message,
-      options: { ...options, type, slot, priority, notBefore },
+      options: { ...options, type, slot, priority, notBefore, duplicateKey },
       priority,
       createdAt: now,
-      notBefore
+      notBefore,
+      duplicateKey
     };
 
     if (priority >= 3) {
@@ -9112,16 +9118,15 @@ export class PlayScene {
     const queue = this.getToastQueueForSlot(slot);
     if (!queue) return;
 
-    const duplicate = queue.find(item => item.message === message && item.options?.type === type);
-    if (duplicate && duplicate.priority >= priority) {
-      duplicate.createdAt = entry.createdAt;
-      duplicate.options = { ...duplicate.options, ...entry.options };
-    } else {
-      queue.push(entry);
-      queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
-      const limit = this.getToastQueueLimit(slot);
-      while (queue.length > limit) queue.pop();
+    if (duplicateKey && this.collapseQueuedDuplicateToast(entry)) {
+      this.processToastQueue();
+      return;
     }
+
+    queue.push(entry);
+    queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
+    const limit = this.getToastQueueLimit(slot);
+    while (queue.length > limit) queue.pop();
 
     this.processToastQueue();
   }
@@ -9138,6 +9143,61 @@ export class PlayScene {
     return 4;
   }
 
+  getToastDuplicateKey(message, type = 'generic') {
+    const normalized = String(message || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toUpperCase();
+    if (!normalized) return '';
+    return `${String(type || 'generic').toLowerCase()}::${normalized}`;
+  }
+
+  getActiveToastDisplays() {
+    return [
+      this.activeBossIntroCard,
+      this.activeCenterToast,
+      this.activeTopToast,
+      this.activeCornerToast
+    ].filter(Boolean);
+  }
+
+  hasActiveDuplicateToast(duplicateKey) {
+    if (!duplicateKey) return false;
+    return this.getActiveToastDisplays().some(display => display?.__toastMeta?.duplicateKey === duplicateKey);
+  }
+
+  collapseQueuedDuplicateToast(entry) {
+    if (!entry?.duplicateKey) return false;
+    const queues = [this.toastQueue, this.toastTopQueue, this.toastCornerQueue].filter(Boolean);
+    let collapsed = false;
+    for (const queue of queues) {
+      for (let index = queue.length - 1; index >= 0; index -= 1) {
+        const candidate = queue[index];
+        const candidateKey = candidate?.duplicateKey || candidate?.options?.duplicateKey ||
+          this.getToastDuplicateKey(candidate?.message, candidate?.options?.type || candidate?.type);
+        if (candidateKey !== entry.duplicateKey) continue;
+        if ((candidate.priority || 0) >= (entry.priority || 0)) {
+          candidate.createdAt = entry.createdAt;
+          candidate.notBefore = Math.min(candidate.notBefore || entry.notBefore || 0, entry.notBefore || 0);
+          candidate.priority = Math.max(candidate.priority || 0, entry.priority || 0);
+          candidate.options = {
+            ...candidate.options,
+            ...entry.options,
+            slot: candidate.options?.slot || entry.options?.slot,
+            priority: candidate.priority,
+            notBefore: candidate.notBefore,
+            duplicateKey: entry.duplicateKey
+          };
+          collapsed = true;
+        } else {
+          queue.splice(index, 1);
+        }
+      }
+      queue.sort((a, b) => b.priority - a.priority || (a.notBefore || 0) - (b.notBefore || 0) || a.createdAt - b.createdAt);
+    }
+    return collapsed;
+  }
+
   dropLowerPriorityToastBacklog(priority) {
     this.toastQueue = this.toastQueue.filter(entry => entry.priority >= priority);
     this.toastTopQueue = this.toastTopQueue.filter(entry => entry.priority >= priority);
@@ -9150,6 +9210,7 @@ export class PlayScene {
 
   dismissActiveToastSlotsBelowPriority(slots, priority) {
     [
+      ['center', this.activeBossIntroCard],
       ['center', this.activeCenterToast],
       ['top', this.activeTopToast],
       ['corner', this.activeCornerToast]
@@ -9191,7 +9252,7 @@ export class PlayScene {
     const lockRemaining = ['center', 'top', 'corner']
       .map(slot => Math.max(0, this.getToastSlotLockUntil(slot) - now))
       .reduce((max, value) => Math.max(max, value), 0);
-    const activeRemaining = (this.activeCenterToast || this.activeTopToast) ? minMs : 0;
+    const activeRemaining = (this.activeBossIntroCard || this.activeCenterToast || this.activeTopToast) ? minMs : 0;
     const desired = Math.max(lockRemaining, activeRemaining);
     return Math.max(0, Math.min(Math.max(minMs, maxMs), desired));
   }
@@ -9204,7 +9265,9 @@ export class PlayScene {
     }
     if (display.parent) display.parent.removeChild(display);
 
-    if (slot === 'corner' && this.activeCornerToast === display) {
+    if (this.activeBossIntroCard === display) {
+      this.activeBossIntroCard = null;
+    } else if (slot === 'corner' && this.activeCornerToast === display) {
       this.activeCornerToast = null;
     } else if (slot === 'top' && this.activeTopToast === display) {
       this.activeTopToast = null;
@@ -9217,6 +9280,7 @@ export class PlayScene {
     this.toastQueue = [];
     this.toastTopQueue = [];
     this.toastCornerQueue = [];
+    this.dismissToastDisplay(this.activeBossIntroCard, 'center');
     this.dismissToastDisplay(this.activeCenterToast, 'center');
     this.dismissToastDisplay(this.activeTopToast, 'top');
     this.dismissToastDisplay(this.activeCornerToast, 'corner');
@@ -9261,6 +9325,7 @@ export class PlayScene {
       priority: Math.max(Number(entry.priority) || Number(sourceOptions.priority) || 0, 1),
       createdAt: now,
       notBefore: now,
+      duplicateKey: sourceOptions.duplicateKey || this.getToastDuplicateKey(entry.message, sourceOptions.type || entry.type || 'generic'),
       options: {
         ...sourceOptions,
         slot: 'top',
@@ -9269,9 +9334,12 @@ export class PlayScene {
         fontSize: Math.min(baseFontSize, this.game.getWidth() < 620 ? 15 : 18),
         duration,
         notBefore: now,
-        combatRelocated: true
+        combatRelocated: true,
+        duplicateKey: sourceOptions.duplicateKey || this.getToastDuplicateKey(entry.message, sourceOptions.type || entry.type || 'generic')
       }
     };
+    if (nextEntry.duplicateKey && this.hasActiveDuplicateToast(nextEntry.duplicateKey)) return true;
+    if (nextEntry.duplicateKey && this.collapseQueuedDuplicateToast(nextEntry)) return true;
     this.toastTopQueue.push(nextEntry);
     this.toastTopQueue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
     while (this.toastTopQueue.length > this.getToastQueueLimit('top')) this.toastTopQueue.pop();
@@ -9299,7 +9367,7 @@ export class PlayScene {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
     this.maybeRelocateActiveCenterToastForCombat(now);
-    let centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+    let centerReady = !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
       ? this.peekReadyToast(this.toastQueue, now)
       : null;
     let topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
@@ -9308,7 +9376,7 @@ export class PlayScene {
     if (centerReady && this.shouldRelocateCenterToastForCombat(centerReady)) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.queueCombatRelocatedToast(entry, now);
-      centerReady = !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+      centerReady = !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
         ? this.peekReadyToast(this.toastQueue, now)
         : null;
       topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
@@ -9322,7 +9390,7 @@ export class PlayScene {
         this.delayReadyToast(this.toastQueue, centerReady, 600, now);
       }
     }
-    const activeCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    const activeCenterMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
     if (activeCenterMeta && this.isTransitionToastType(activeCenterMeta.type)) {
       const centerPriority = activeCenterMeta.priority || 0;
       if (topReady && (topReady.priority || 0) < centerPriority) {
@@ -9335,11 +9403,11 @@ export class PlayScene {
         this.delayReadyToast(this.toastCornerQueue, cornerReady, 500, now);
       }
     }
-    if (!this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
+    if (!this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
     }
-    const blockingCenterMeta = this.activeCenterToast?.__toastMeta || null;
+    const blockingCenterMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
     if (blockingCenterMeta && this.isTransitionToastType(blockingCenterMeta.type)) {
       const centerPriority = blockingCenterMeta.priority || 0;
       this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], centerPriority);
@@ -9386,7 +9454,7 @@ export class PlayScene {
   }
 
   isTransitionToastType(type) {
-    return type === 'level_clear' || type === 'level_up' || type === 'boss' || type === 'run_clear';
+    return type === 'level_clear' || type === 'level_up' || type === 'boss' || type === 'boss_intro' || type === 'run_clear';
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -9464,6 +9532,7 @@ export class PlayScene {
       .filter(Boolean);
     return {
       active: [
+        this.describeToastDisplay(this.activeBossIntroCard, getBounds),
         this.describeToastDisplay(this.activeCenterToast, getBounds),
         this.describeToastDisplay(this.activeTopToast, getBounds),
         this.describeToastDisplay(this.activeCornerToast, getBounds)
@@ -9546,7 +9615,7 @@ export class PlayScene {
   canShowLore() {
     const now = Date.now();
     if (now - this.lastLoreAt < this.loreCooldownMs) return false;
-    if (this.activeCenterToast) return false;
+    if (this.activeBossIntroCard || this.activeCenterToast) return false;
     if (this.activeTopToast) return false;
     if (now < this.centerToastLockUntil) return false;
     if (now - this.lastMajorToastAt < this.majorToastCooldownMs) return false;
@@ -9712,36 +9781,117 @@ export class PlayScene {
       display = banner;
       this.uiOverlay.addChild(banner);
     } else {
+      const type = options.type || 'generic';
+      const isMajorSignal = ['boss', 'level_clear', 'level_up', 'rank_up', 'run_clear', 'score_boost', 'unlock'].includes(type);
+      const accentColor = Number.isFinite(Number(options.accent))
+        ? Number(options.accent)
+        : type === 'boss'
+          ? 0xff3d3d
+          : type === 'score_boost'
+            ? 0xfff45c
+            : type === 'repair'
+              ? 0x66ff99
+              : 0x2ff6ff;
+      const accentHex = `#${accentColor.toString(16).padStart(6, '0')}`;
+      const useSignalPlate = slot !== 'corner' && (
+        options.signalPlate === true ||
+        isMajorSignal ||
+        (slot === 'top' && type !== 'generic')
+      );
+      const textMaxWidth = slot === 'corner'
+        ? maxWidth
+        : Math.max(160, maxWidth - (slot === 'top' ? 46 : 58));
       const text = createText(message, {
-        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontFamily: isMajorSignal ? FONT_DISPLAY : FONT_BODY,
         fontSize,
-        fill: options.fill || '#ffffff',
-        stroke: options.stroke,
-        strokeThickness: options.strokeThickness,
+        fontWeight: isMajorSignal ? '900' : '800',
+        fill: options.fill || (isMajorSignal ? '#fff7c4' : '#f1fbff'),
+        stroke: options.stroke || (type === 'boss' ? '#200008' : '#02131f'),
+        strokeThickness: Number.isFinite(Number(options.strokeThickness))
+          ? Number(options.strokeThickness)
+          : (isMajorSignal ? 4 : 3),
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: maxWidth,
-        lineHeight: fontSize + 6
+        wordWrapWidth: textMaxWidth,
+        lineHeight: Math.round(fontSize + (isMajorSignal ? 7 : 6)),
+        dropShadow: true,
+        dropShadowColor: options.dropShadowColor || accentHex,
+        dropShadowBlur: isMajorSignal ? 8 : 5,
+        dropShadowDistance: 0
       });
 
-      if (slot === 'corner') {
+      const minFontSize = slot === 'top' ? 13 : 15;
+      const maxTextHeight = slot === 'top'
+        ? Math.min(84, height * 0.16)
+        : Math.min(122, height * 0.2);
+      while (slot !== 'corner' && text.height > maxTextHeight && text.style.fontSize > minFontSize) {
+        text.style.fontSize -= 1;
+        text.style.lineHeight = Math.round(text.style.fontSize + (isMajorSignal ? 7 : 6));
+        text.style.wordWrapWidth = textMaxWidth;
+        text.updateText?.(false);
+      }
+
+      if (slot === 'corner' || !useSignalPlate) {
         text.anchor.set(1, 0.5);
-        text.x = width - 16;
+        text.x = slot === 'corner' ? width - 16 : width / 2;
         text.y = y;
+        text.alpha = 0;
+        if (slot !== 'corner') text.anchor.set(0.5);
+
+        if (text.width > maxWidth) {
+          const scale = maxWidth / text.width;
+          text.scale.set(scale);
+        }
+
+        this.container.addChild(text);
+        display = text;
       } else {
+        const plate = new PIXI.Container();
+        plate.label = `ui_${slot}_signal_toast`;
+        plate.eventMode = 'none';
+        plate.interactive = false;
+        const paddingX = slot === 'top' ? 23 : 29;
+        const paddingY = slot === 'top' ? 12 : 16;
+        const minPlateWidth = slot === 'top' ? 244 : 322;
+        const panelWidth = Math.min(width - 28, Math.max(minPlateWidth, Math.min(maxWidth, text.width + paddingX * 2)));
+        const panelHeight = Math.max(slot === 'top' ? 48 : 62, text.height + paddingY * 2);
+        const radius = slot === 'top' ? 7 : 9;
+
+        const panel = new PIXI.Graphics();
+        panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, radius);
+        panel.fill({ color: type === 'boss' ? 0x10070b : 0x04101a, alpha: slot === 'top' ? 0.84 : 0.9 });
+        panel.stroke({ color: accentColor, width: isMajorSignal ? 2.4 : 1.8, alpha: isMajorSignal ? 0.9 : 0.72 });
+        panel.roundRect(-panelWidth / 2 + 7, -panelHeight / 2 + 7, panelWidth - 14, panelHeight - 14, Math.max(3, radius - 3));
+        panel.stroke({ color: 0xffffff, width: 0.8, alpha: 0.13 });
+        plate.addChild(panel);
+
+        const rails = new PIXI.Graphics();
+        rails.blendMode = 'add';
+        rails.rect(-panelWidth / 2 + 13, -panelHeight / 2 + 8, panelWidth - 26, 2);
+        rails.fill({ color: accentColor, alpha: isMajorSignal ? 0.46 : 0.32 });
+        rails.rect(-panelWidth / 2 + 13, panelHeight / 2 - 10, panelWidth - 26, 2);
+        rails.fill({ color: type === 'boss' ? 0xfff45c : 0x7ee9ff, alpha: isMajorSignal ? 0.28 : 0.18 });
+        for (const side of [-1, 1]) {
+          const x = side * (panelWidth / 2 - 18);
+          rails.moveTo(x, -panelHeight / 2 + 12);
+          rails.lineTo(x + side * -14, -panelHeight / 2 + 12);
+          rails.moveTo(x, panelHeight / 2 - 12);
+          rails.lineTo(x + side * -14, panelHeight / 2 - 12);
+        }
+        rails.stroke({ color: 0xffffff, width: 1.4, alpha: 0.34 });
+        plate.addChild(rails);
+
         text.anchor.set(0.5);
-        text.x = width / 2;
-        text.y = y;
-      }
-      text.alpha = 0;
+        text.x = 0;
+        text.y = 0;
+        plate.addChild(text);
 
-      if (text.width > maxWidth) {
-        const scale = maxWidth / text.width;
-        text.scale.set(scale);
+        plate.x = width / 2;
+        plate.y = Math.min(height - panelHeight / 2 - 28, Math.max(panelHeight / 2 + 28, y));
+        plate.alpha = 0;
+        display = plate;
+        this.uiOverlay.addChild(plate);
       }
-
-      this.container.addChild(text);
-      display = text;
     }
 
     const duration = options.duration || (slot === 'corner' ? 1800 : 2200);
@@ -9755,6 +9905,7 @@ export class PlayScene {
       title: options.title || null,
       imageAlias: options.imageAlias || null,
       combatRelocated: options.combatRelocated === true,
+      duplicateKey: options.duplicateKey || this.getToastDuplicateKey(message, options.type || 'generic'),
       originalOptions: { ...options },
       createdAt: now
     };
@@ -12608,8 +12759,9 @@ export class PlayScene {
   showBossIntro(name, taunt) {
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
-    const panelWidth = Math.max(300, Math.min(compact ? width - 36 : 680, width * 0.78));
-    const panelHeight = compact ? 176 : 148;
+    const panelWidth = Math.max(300, Math.min(compact ? width - 34 : 640, width * 0.72));
+    const panelHeight = compact ? 164 : 132;
+    const duration = compact ? 1680 : 1780;
     const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
       if (!text) return;
       text.scale.set(1);
@@ -12622,78 +12774,153 @@ export class PlayScene {
       const targetScale = Math.min(1, widthScale, heightScale);
       text.scale.set(targetScale < minScale ? Math.max(0.08, targetScale) : Math.max(minScale, targetScale));
     };
+    this.dismissToastDisplay(this.activeBossIntroCard, 'center');
+    this.reserveMessageFocus(duration + 360, { priority: 4, slots: ['center', 'top', 'corner'] });
+
     const card = new PIXI.Container();
+    card.label = 'ui_boss_intro_signal';
+    card.eventMode = 'none';
+    card.interactive = false;
     card.x = width / 2;
-    const preferredY = compact ? height * 0.44 : height * 0.34;
-    const minimumY = compact ? 192 : 246;
-    const bottomSafeY = height - panelHeight / 2 - (compact ? 74 : 96);
+    const preferredY = compact ? height * 0.43 : height * 0.345;
+    const minimumY = compact ? 190 : 238;
+    const bottomSafeY = height - panelHeight / 2 - (compact ? 82 : 112);
     card.y = Math.min(bottomSafeY, Math.max(minimumY, preferredY));
     card.alpha = 0;
 
+    const accent = 0xff3d2f;
+    const gold = 0xffe66d;
+    const cyan = 0x57f3ff;
+    const glow = new PIXI.Graphics();
+    glow.roundRect(-panelWidth / 2 - 14, -panelHeight / 2 - 10, panelWidth + 28, panelHeight + 20, 14);
+    glow.fill({ color: accent, alpha: 0.12 });
+    glow.roundRect(-panelWidth / 2 - 6, -panelHeight / 2 - 5, panelWidth + 12, panelHeight + 10, 10);
+    glow.stroke({ color: cyan, width: 2, alpha: 0.16 });
+    card.addChild(glow);
+
     const panel = new PIXI.Graphics();
-    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 12);
-    panel.fill({ color: 0x111111, alpha: 0.9 });
-    panel.stroke({ color: 0xff3300, width: 3 });
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x05090f, alpha: 0.94 });
+    panel.stroke({ color: accent, width: 3, alpha: 0.94 });
+    panel.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 5);
+    panel.stroke({ color: cyan, width: 1.2, alpha: 0.42 });
+    panel.rect(-panelWidth / 2 + 10, -panelHeight / 2 + 10, panelWidth - 20, 5);
+    panel.fill({ color: gold, alpha: 0.2 });
+    panel.rect(-panelWidth / 2 + 10, panelHeight / 2 - 15, panelWidth - 20, 3);
+    panel.fill({ color: cyan, alpha: 0.16 });
     card.addChild(panel);
 
+    const signal = new PIXI.Graphics();
+    signal.blendMode = 'add';
+    const tickCount = compact ? 8 : 12;
+    for (let i = 0; i < tickCount; i += 1) {
+      const ratio = tickCount <= 1 ? 0.5 : i / (tickCount - 1);
+      const x = -panelWidth / 2 + 34 + ratio * (panelWidth - 68);
+      const top = -panelHeight / 2 + 19;
+      const bottom = panelHeight / 2 - 19;
+      signal.moveTo(x, top);
+      signal.lineTo(x + (i % 2 ? 7 : -7), top + 9);
+      signal.moveTo(x, bottom);
+      signal.lineTo(x + (i % 2 ? -7 : 7), bottom - 9);
+    }
+    signal.stroke({ color: gold, width: 1.2, alpha: 0.28 });
+    for (const side of [-1, 1]) {
+      const x = side * (panelWidth / 2 - 18);
+      signal.moveTo(x, -panelHeight / 2 + 26);
+      signal.lineTo(x - side * 24, -panelHeight / 2 + 26);
+      signal.moveTo(x, panelHeight / 2 - 26);
+      signal.lineTo(x - side * 24, panelHeight / 2 - 26);
+    }
+    signal.stroke({ color: cyan, width: 2, alpha: 0.38 });
+    card.addChild(signal);
+
     const title = createText(name || 'BOSS', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 20 : 22,
-      fill: '#ff3300',
-      stroke: '#000000',
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 21 : 25,
+      fill: '#ff5c3d',
+      stroke: '#080005',
       strokeThickness: 4,
+      fontWeight: '900',
       align: 'center',
       wordWrap: true,
       wordWrapWidth: panelWidth - 38,
-      lineHeight: compact ? 25 : 29
+      lineHeight: compact ? 25 : 31,
+      dropShadow: true,
+      dropShadowColor: '#ff2f4d',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0
     });
     title.anchor.set(0.5);
-    title.y = compact ? -50 : -34;
-    fitText(title, panelWidth - 38, compact ? 38 : 30, 0.36);
+    title.y = compact ? -47 : -35;
+    fitText(title, panelWidth - 54, compact ? 38 : 34, 0.38);
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontFamily: FONT_BODY,
       fontSize: compact ? 16 : 18,
-      fill: '#ffffff',
-      stroke: '#000000',
+      fill: '#d9f8ff',
+      stroke: '#020711',
       strokeThickness: 3,
+      fontWeight: '800',
       align: 'center',
       wordWrap: true,
       wordWrapWidth: panelWidth - 48,
-      lineHeight: compact ? 18 : 21
+      lineHeight: compact ? 20 : 23,
+      dropShadow: true,
+      dropShadowColor: '#57f3ff',
+      dropShadowBlur: 5,
+      dropShadowDistance: 0
     });
     line.anchor.set(0.5);
-    fitText(line, panelWidth - 48, compact ? 64 : 50, 0.48);
+    fitText(line, panelWidth - 58, compact ? 62 : 48, 0.5);
     const titleBottom = title.y + Math.max(0, title.height || 0) / 2;
     const lineHalfHeight = Math.max(0, line.height || 0) / 2;
     line.y = Math.min(
-      panelHeight / 2 - 24 - lineHalfHeight,
-      Math.max(compact ? 34 : 30, titleBottom + 10 + lineHalfHeight)
+      panelHeight / 2 - 26 - lineHalfHeight,
+      Math.max(compact ? 33 : 28, titleBottom + 12 + lineHalfHeight)
     );
     card.addChild(line);
 
     this.uiOverlay.addChild(card);
+    this.activeBossIntroCard = card;
+    card.__toastMeta = {
+      message: `${name || 'BOSS'}\n${taunt || 'LET\'S GO!'}`,
+      title: name || 'BOSS',
+      type: 'boss_intro',
+      slot: 'center',
+      priority: 4,
+      duration,
+      duplicateKey: this.getToastDuplicateKey(`${name || 'BOSS'}\n${taunt || 'LET\'S GO!'}`, 'boss_intro'),
+      originalOptions: { type: 'boss_intro', slot: 'center', priority: 4 },
+      createdAt: Date.now()
+    };
     this.lastHitStopRequestMs = 250;
     this.freezeTimerMs = this.lastHitStopRequestMs;
     AudioManager.play('menuSelect'); // Calmer sound for boss intro (removed annoying computerNoise)
 
     let elapsed = 0;
-    const duration = 1400;
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
+      const shimmer = Math.sin(elapsed * 0.018) * 0.5 + 0.5;
+      signal.alpha = 0.74 + shimmer * 0.22;
+      glow.alpha = 0.82 + shimmer * 0.12;
       if (elapsed < 200) {
-        card.alpha = elapsed / 200;
+        const t = elapsed / 200;
+        card.alpha = t;
+        card.scale.set(0.96 + t * 0.04);
       } else if (elapsed > duration - 300) {
         card.alpha = Math.max(0, (duration - elapsed) / 300);
       } else {
         card.alpha = 1;
+        card.scale.set(1 + Math.sin(elapsed * 0.01) * 0.006);
       }
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
         if (card.parent) card.parent.removeChild(card);
+        if (this.activeBossIntroCard === card) this.activeBossIntroCard = null;
       }
     };
+    card.__toastTicker = ticker;
     this.game.app.ticker.add(ticker);
   }
 

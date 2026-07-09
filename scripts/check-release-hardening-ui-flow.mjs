@@ -49,7 +49,7 @@ for (const needle of [
 for (const needle of [
   'const safeTop = compact ? 176 : 190;',
   'height * (compact ? 0.34 : 0.3)',
-  'new Player(width / 2, height - 100, this.inputManager, this.game, spriteKey)',
+  'new Player(width / 2, height - 100, this.inputManager, this.gameplayGame, spriteKey)',
   'Create a fresh player for each run so movement reads the current InputManager.'
 ]) {
   assert.ok(playScene.includes(needle), `play scene readability/input guard missing marker: ${needle}`);

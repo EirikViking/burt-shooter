@@ -42,8 +42,12 @@ const BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT = 1.25;
 const BOSS_FUEL_ARMOR_BLEED_DELAY_MS = 3200;
 const BOSS_FUEL_DEFAULT_DELAY_MS = 5200;
 const BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS = 0.22;
+const BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS = 6;
 const BOSS_FUEL_DOUBLE_SUPPORT_ROLL = 0.30;
-const BOSS_FUEL_TRIPLE_SUPPORT_ROLL = 0.10;
+const BOSS_FUEL_TRIPLE_SUPPORT_ROLL = 0.12;
+const BOSS_FUEL_FOUR_SUPPORT_ROLL = 0.03;
+const BOSS_FUEL_FIVE_SUPPORT_ROLL = 0.01;
+const BOSS_FUEL_SIX_SUPPORT_ROLL = 0.003;
 export const MAYHEM_REINFORCEMENT_WAVE_SOUND_ID = 'mission_control_reinforcements_incoming';
 export const MAYHEM_SUPER_STORM_WARNING_SOUND_ID = 'boss_mayhem_super_storm_warning';
 export const MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID = 'boss_mayhem_super_storm_survived';
@@ -3402,23 +3406,23 @@ export class EnemyManager {
   }
 
   getBossFuelShipMaxEvents(level = this.level) {
-    const safeLevel = Math.max(1, Number(level) || 1);
-    if (safeLevel <= 3) return 1;
-    if (safeLevel <= 9) return 2;
-    return 3;
+    return BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS;
   }
 
   getBossFuelShipSupportCount(level = this.level, random = Math.random) {
     const spawned = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
-    const remaining = Math.max(0, 3 - spawned);
+    const maxEvents = Math.max(0, Math.floor(Number(this.getBossFuelShipMaxEvents?.(level)) || BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS));
+    const active = Math.max(0, Math.floor(Number(this.getActiveBossFuelShips?.().length) || 0));
+    const remaining = Math.max(0, Math.min(maxEvents - spawned, BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS - active));
     if (remaining <= 0) return 0;
 
     const roll = typeof random === 'function' ? random() : Math.random();
-    const desired = roll < BOSS_FUEL_TRIPLE_SUPPORT_ROLL
-      ? 3
-      : roll < BOSS_FUEL_DOUBLE_SUPPORT_ROLL
-        ? 2
-        : 1;
+    let desired = 1;
+    if (roll < BOSS_FUEL_SIX_SUPPORT_ROLL) desired = 6;
+    else if (roll < BOSS_FUEL_FIVE_SUPPORT_ROLL) desired = 5;
+    else if (roll < BOSS_FUEL_FOUR_SUPPORT_ROLL) desired = 4;
+    else if (roll < BOSS_FUEL_TRIPLE_SUPPORT_ROLL) desired = 3;
+    else if (roll < BOSS_FUEL_DOUBLE_SUPPORT_ROLL) desired = 2;
     return Math.max(1, Math.min(remaining, desired));
   }
 
@@ -3442,7 +3446,7 @@ export class EnemyManager {
 
     const healthRatio = this.boss.health / Math.max(1, this.boss.maxHealth || 1);
     if (healthRatio > 0.86 || healthRatio <= 0.025) return;
-    if (this.getActiveBossFuelShips().length > 0) return;
+    if (this.getActiveBossFuelShips().length >= BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS) return;
 
     const playScene = this.game?.scenes?.play;
     const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
@@ -3452,6 +3456,7 @@ export class EnemyManager {
     const chance = guaranteedFirstSupport ? 1 : armorBleedActive ? 0.48 : level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
     if (Math.random() > chance) return;
     const supportCount = this.getBossFuelShipSupportCount(level);
+    if (supportCount <= 0) return;
     const spawnedCount = this.spawnBossFuelShipSquad(supportCount);
     if (spawnedCount > 0) {
       this.bossFuelShipsSpawnedThisBoss += spawnedCount;
@@ -3460,7 +3465,7 @@ export class EnemyManager {
   }
 
   spawnBossFuelShipSquad(count = 1) {
-    const desiredCount = Math.max(1, Math.min(3, Math.floor(Number(count) || 1)));
+    const desiredCount = Math.max(1, Math.min(BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS, Math.floor(Number(count) || 1)));
     const baseEventIndex = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
     const formationFlip = Math.random() < 0.5 ? -1 : 1;
     let spawned = 0;

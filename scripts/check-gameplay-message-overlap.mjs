@@ -101,8 +101,9 @@ function validateSample(state, label) {
     }
   }
   const center = active.find(item => item.slot === 'center');
-  if (center && ['boss', 'level_clear', 'level_up', 'run_clear'].includes(center.type)) {
-    const blocked = active.filter(item => item.slot !== 'center' && !['boss', 'level_clear', 'level_up', 'run_clear'].includes(item.type));
+  const transitionTypes = ['boss', 'boss_intro', 'level_clear', 'level_up', 'run_clear'];
+  if (center && transitionTypes.includes(center.type)) {
+    const blocked = active.filter(item => item.slot !== 'center' && !transitionTypes.includes(item.type));
     if (blocked.length > 0) {
       throw new Error(`${label}: low-priority toast visible over transition center ${JSON.stringify({ center, blocked }, null, 2)}`);
     }
@@ -242,12 +243,65 @@ try {
   }
   validateSample(relocationState, 'combat_relocation');
 
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene for boss intro crowding check');
+    play.clearToastState?.();
+    play.introActive = false;
+    play.introComplete = true;
+    play.showBossIntro?.('BULLET METRONOME', 'BOSS - Arcade Control questions the swarm choreography.');
+    play.enqueueToast('ORBITAL STRIKE!', {
+      slot: 'center',
+      type: 'powerup',
+      priority: 1,
+      fontSize: 22,
+      duration: 1400
+    });
+    play.enqueueToast('ORBITAL STRIKE!', {
+      slot: 'center',
+      type: 'powerup',
+      priority: 1,
+      fontSize: 22,
+      duration: 1400
+    });
+    play.enqueueToast('ORBITAL STRIKE!', {
+      slot: 'top',
+      type: 'powerup',
+      priority: 1,
+      fontSize: 18,
+      duration: 1400
+    });
+  });
+  await page.waitForTimeout(240);
+  const bossIntroState = await readState(page);
+  validateSample(bossIntroState, 'boss_intro_crowding');
+  const bossIntroActive = (bossIntroState.toast?.active || []).find((toast) => toast.type === 'boss_intro');
+  if (!bossIntroActive) {
+    throw new Error(`boss intro did not expose a tracked center message: ${JSON.stringify(bossIntroState.toast?.active || [], null, 2)}`);
+  }
+  const activeOrbitals = (bossIntroState.toast?.active || []).filter((toast) => toast.message === 'ORBITAL STRIKE!');
+  if (activeOrbitals.length > 0) {
+    throw new Error(`duplicate/powerup toast crowded boss intro: ${JSON.stringify(bossIntroState.toast?.active || [], null, 2)}`);
+  }
+  const queuedOrbitals = (bossIntroState.toast?.queued?.center || 0) + (bossIntroState.toast?.queued?.top || 0);
+  if (queuedOrbitals > 1) {
+    throw new Error(`duplicate queued toasts were not collapsed: ${JSON.stringify(bossIntroState.toast?.queued || {}, null, 2)}`);
+  }
+  const bossIntroScreenshot = path.join(outputDir, 'boss-intro-message-signal.png');
+  await page.screenshot({ path: bossIntroScreenshot, fullPage: true });
+
   const screenshot = path.join(outputDir, 'gameplay-message-overlap-final.png');
   await page.screenshot({ path: screenshot, fullPage: true });
   const report = {
     status: 'passed',
     baseUrl,
     samples,
+    bossIntro: {
+      active: bossIntroState.toast?.active || [],
+      queued: bossIntroState.toast?.queued || {},
+      screenshot: bossIntroScreenshot
+    },
     screenshot,
     pageErrors,
     consoleEvents

@@ -103,6 +103,7 @@ for (const token of [
   'BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT',
   'BOSS_FUEL_ARMOR_BLEED_DELAY_MS',
   'BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS',
+  'BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS',
   'isFinishPacingActive',
   'singleSupportHealMultiplier',
   'attachBossFuelTether',
@@ -114,37 +115,69 @@ for (const token of [
 }
 
 const countProbe = Object.assign(Object.create(EnemyManager.prototype), {
-  bossFuelShipsSpawnedThisBoss: 0
+  bossFuelShipsSpawnedThisBoss: 0,
+  enemies: []
 });
+if (countProbe.getBossFuelShipMaxEvents(12) !== 6) {
+  fail('boss support cap should allow up to 6 support ships per boss');
+}
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.001) !== 6) {
+  fail('extreme rare support roll should request 6 helpers');
+}
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.005) !== 5) {
+  fail('rare support roll below 1% should request 5 helpers');
+}
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.02) !== 4) {
+  fail('rare support roll below 3% should request 4 helpers');
+}
 if (countProbe.getBossFuelShipSupportCount(12, () => 0.05) !== 3) {
-  fail('late boss support roll below 10% should request 3 helpers');
+  fail('support roll below 12% should request 3 helpers');
 }
 if (countProbe.getBossFuelShipSupportCount(12, () => 0.2) !== 2) {
-  fail('late boss support roll between 10% and 30% should request 2 helpers');
+  fail('support roll between 12% and 30% should request 2 helpers');
 }
 if (countProbe.getBossFuelShipSupportCount(12, () => 0.8) !== 1) {
   fail('late boss support roll above 30% should request 1 helper');
 }
-if (countProbe.getBossFuelShipSupportCount(1, () => 0.05) !== 3) {
-  fail('early boss support event should still be able to roll 3 helpers');
+if (countProbe.getBossFuelShipSupportCount(1, () => 0.001) !== 6) {
+  fail('early boss support event should still respect the requested 6-helper maximum');
 }
-countProbe.bossFuelShipsSpawnedThisBoss = 2;
-if (countProbe.getBossFuelShipSupportCount(12, () => 0.02) !== 1) {
-  fail('support squad count should clamp to the absolute three-helper cap');
+countProbe.bossFuelShipsSpawnedThisBoss = 4;
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.001) !== 2) {
+  fail('support squad count should clamp to the remaining six-helper cap');
 }
 countProbe.bossFuelShipsSpawnedThisBoss = 0;
+countProbe.enemies = Array.from({ length: 5 }, () => ({ kind: 'boss_fuel_ship', active: true }));
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.001) !== 1) {
+  fail('support squad count should clamp when five support ships are already active');
+}
+countProbe.enemies = Array.from({ length: 6 }, () => ({ kind: 'boss_fuel_ship', active: true }));
+if (countProbe.getBossFuelShipSupportCount(12, () => 0.001) !== 0) {
+  fail('support squad count should return 0 when six support ships are already active');
+}
+countProbe.bossFuelShipsSpawnedThisBoss = 0;
+countProbe.enemies = [];
 let rolledOne = 0;
 let rolledTwo = 0;
 let rolledThree = 0;
-for (let i = 0; i < 100; i += 1) {
-  const roll = (i + 0.5) / 100;
+let rolledFour = 0;
+let rolledFive = 0;
+let rolledSix = 0;
+for (let i = 0; i < 1000; i += 1) {
+  const roll = (i + 0.5) / 1000;
   const count = countProbe.getBossFuelShipSupportCount(12, () => roll);
   if (count === 1) rolledOne += 1;
   if (count === 2) rolledTwo += 1;
   if (count === 3) rolledThree += 1;
+  if (count === 4) rolledFour += 1;
+  if (count === 5) rolledFive += 1;
+  if (count === 6) rolledSix += 1;
 }
-if (rolledTwo !== 20 || rolledThree !== 10 || rolledOne !== 70) {
-  fail(`support squad distribution should be 70/20/10 over percentile rolls, got ${rolledOne}/${rolledTwo}/${rolledThree}`);
+if (rolledOne !== 700 || rolledTwo !== 180 || rolledThree !== 90 || rolledFour !== 20 || rolledFive !== 7 || rolledSix !== 3) {
+  fail(`support squad distribution should be 700/180/90/20/7/3 over percentile rolls, got ${rolledOne}/${rolledTwo}/${rolledThree}/${rolledFour}/${rolledFive}/${rolledSix}`);
+}
+if ((rolledFour + rolledFive + rolledSix) !== 30) {
+  fail(`support rolls above 3 should remain rare at 3%, got ${rolledFour + rolledFive + rolledSix}/1000`);
 }
 
 const spawnProbe = Object.assign(Object.create(EnemyManager.prototype), {

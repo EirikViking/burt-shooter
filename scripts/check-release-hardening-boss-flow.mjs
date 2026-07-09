@@ -26,9 +26,9 @@ const earlyBoss = new Boss(640, 160, 1, makeGame());
 const midBoss = new Boss(640, 160, 8, makeGame());
 const lateBoss = new Boss(640, 160, 30, makeGame());
 
-assert.ok(earlyBoss.minimumFightMs >= 5200, `first boss fast-kill lock should be at least 5200ms, got ${earlyBoss.minimumFightMs}`);
+assert.ok(earlyBoss.armorBleedGuideMs >= 7000, `first boss armor-bleed guide should be at least 7000ms, got ${earlyBoss.armorBleedGuideMs}`);
 assert.ok(midBoss.minimumFightMs > earlyBoss.minimumFightMs, 'boss minimum fight should grow gently after the first boss');
-assert.ok(lateBoss.minimumFightMs <= 7200, `boss armor-bleed pacing should cap at 7200ms, got ${lateBoss.minimumFightMs}`);
+assert.ok(lateBoss.armorBleedGuideMs <= 9000, `boss armor-bleed guide should cap at 9000ms, got ${lateBoss.armorBleedGuideMs}`);
 assert.ok(
   earlyBoss.getRegularAttackIntervalMs() >= 3200,
   `first boss regular attack interval should not get shorter, got ${earlyBoss.getRegularAttackIntervalMs()}`
@@ -49,12 +49,15 @@ assert.ok(!playScene.includes("else AudioManager.playSfx('powerup', { force: tru
 
 const bossSource = readFileSync('src/entities/Boss.js', 'utf8');
 const balanceSource = readFileSync('src/config/BalanceConfig.js', 'utf8');
-assert.ok(bossSource.includes('BOSS_FAST_KILL_LOCK_MS = 5200'), 'boss should explicitly block sub-5-second kills');
+assert.ok(bossSource.includes('BOSS_FAST_KILL_GUIDE_MS = 7000'), 'boss should use a 7s armor-bleed guide instead of a hard kill lock');
+assert.ok(!bossSource.includes('fastKillLockUntilMs'), 'boss should not restore a hard final kill lock');
+assert.ok(!/pacingFloor|incomingHealth <=/.test(bossSource), 'boss should not clamp final HP to a hard floor');
 assert.ok(bossSource.includes('BossArmorBleed'), 'boss should use visible armor-bleed pacing instead of long hard invulnerability');
+assert.ok(bossSource.includes('fullDamageBeforeBleed + bleedDamage * damageScale'), 'armor bleed should soften only the final band so huge overkill can still kill');
 assert.ok(bossSource.includes('regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500)'), 'armor-bleed pacing should avoid extra boss bullet pressure');
 assert.ok(balanceSource.includes('ringSafeWedgeEarly: 0.74'), 'first boss ring safe wedge should stay wider than later boss rings');
 assert.ok(balanceSource.includes('signatureRingTelegraphEarlyMs: 1500'), 'first boss ring telegraph should stay more readable');
 assert.ok(balanceSource.includes('contactRadiusScalarEarly: 0.5'), 'first boss contact radius should stay readable against large boss art');
 assert.ok(bossSource.includes('if (this.level <= 1) scalar = 0.58'), 'first boss pressure scalar should stay softened while the fight lasts longer');
 
-console.log(`[release-hardening-boss-flow] PASS minFightMs first=${earlyBoss.minimumFightMs} mid=${midBoss.minimumFightMs} cap=${lateBoss.minimumFightMs}`);
+console.log(`[release-hardening-boss-flow] PASS armorBleedGuideMs first=${earlyBoss.armorBleedGuideMs} mid=${midBoss.armorBleedGuideMs} cap=${lateBoss.armorBleedGuideMs}`);

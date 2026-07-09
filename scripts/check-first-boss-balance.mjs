@@ -141,6 +141,26 @@ async function recoverScriptedPilot(page) {
   });
 }
 
+async function guideScriptedPilotTowardBoss(page) {
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    const boss = play?.enemyManager?.boss;
+    if (!game || !player || !boss?.active) return;
+    const width = Number(game.getWidth?.()) || 1920;
+    const height = Number(game.getHeight?.()) || 1080;
+    const targetX = Math.max(width * 0.16, Math.min(width * 0.84, Number(boss.x) || width / 2));
+    const targetY = height * 0.78;
+    player.x = targetX;
+    player.y = targetY;
+    if (player.sprite) {
+      player.sprite.x = player.x;
+      player.sprite.y = player.y;
+    }
+  });
+}
+
 function scoreCandidate(state, x, y, width, height) {
   let score = -Math.abs(x - (state.boss?.x ?? width / 2)) * 0.42;
   for (const bullet of state.enemyBullets || []) {
@@ -212,6 +232,10 @@ function chooseIntent(state, width, height) {
       if (score > best.score) best = { x, y, score };
     }
   }
+
+  const firingLaneMinX = Math.max(width * 0.14, targetX - 260);
+  const firingLaneMaxX = Math.min(width * 0.86, targetX + 260);
+  best.x = Math.max(firingLaneMinX, Math.min(firingLaneMaxX, best.x));
 
   return {
     horizontal: best.x < playerX - 24 ? 'left' : best.x > playerX + 24 ? 'right' : 'none',
@@ -338,6 +362,7 @@ async function runCombatProbe(browser) {
         lastLives = state.lives;
       }
       if (state.scene !== 'play' || state.lives <= 0 || state.waveState === 'LEVEL_COMPLETE' || !state.boss) break;
+      await guideScriptedPilotTowardBoss(page);
       intent = await applyIntent(page, intent, chooseIntent(
         state,
         Number(state.screen?.width) || 1366,
@@ -423,3 +448,5 @@ try {
   await browser.close().catch(() => {});
   if (server) server.kill();
 }
+
+process.exit(process.exitCode || 0);

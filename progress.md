@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-09 Soft Boss Armor / Support Cap / Gameplay Message Polish
+
+- Current request: replace hard-feeling boss invulnerability with a softer pacing solution guided by roughly seven seconds, allow truly huge overkill to still kill early, raise simultaneous boss support ships to six while keeping more than three rare, beautify gameplay text/messages/toasts, remove message crowding/duplicates, and deploy the finished patch to Steam.
+- Implementation direction: boss final-band damage now uses a soft armor-bleed guide instead of a hard HP floor or hard final kill lock. Ordinary early burst is damped near the end of the boss health bar, but huge overkill remains lethal. Boss support ships can now reach six active helpers in rare cases, with rolls above three capped to 3% of support events. Gameplay message presentation now gives major center/top notices a compact sci-fi signal plate, restyles the boss intro card, tracks the boss intro in the toast debug/overlap system, reserves message lanes while it is active, and collapses duplicate queued/active notices rather than crowding the screen.
+- Verification so far: syntax checks passed for touched PlayScene and overlap-check files. Passed `npm run check:gameplay-message-overlap` with visually inspected boss intro proof `test-results/gameplay-message-overlap-2026-07-09T13-28-04-669Z/boss-intro-message-signal.png`; duplicate `ORBITAL STRIKE!` attempts were collapsed/queued instead of stacking over the boss intro. Passed `npm run check:first-boss-balance` after stabilizing the scripted pilot lane and explicit script exit, with report `test-results/first-boss-balance-2026-07-09T13-34-14-692Z/report.json`.
+- Scope notes so far: no new player-facing copy was added; the text pass reuses existing strings and phrase-pool output. Steam deploy is still pending the full required checks and package/upload lane.
+
 ## 2026-07-09 Boss Armor Bleed / Run Modes Cleanup
 
 - Current request: remove the Pilot Orders line from the Run Modes / Mayhem Run description, replace long boss invulnerability stretches with a less silly anti-burst solution, make bosses impossible or very hard to kill in under five seconds, ensure Steam F12 screenshots are not intercepted, and deploy the finished patch to Steam.

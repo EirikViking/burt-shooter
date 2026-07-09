@@ -252,6 +252,7 @@
     "check:fast-target-readability": "node scripts/check-fast-target-readability.mjs",
     "check:fast-target-runtime-readability": "node scripts/check-fast-target-runtime-readability.mjs",
     "check:boss-invulnerability-audit": "node scripts/check-boss-invulnerability-audit.mjs",
+    "check:boss-armor-bleed-runtime": "node scripts/check-boss-armor-bleed-runtime.mjs",
     "check:combo-flow-mechanics": "node scripts/check-combo-flow-mechanics.mjs",
     "check:keyboard-launches": "node scripts/check-keyboard-launch-paths.mjs",
     "check:live-deployment": "node scripts/check-live-deployment.mjs",
