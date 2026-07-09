@@ -4512,7 +4512,7 @@ export class EnemyManager {
         stroke: '#00111d',
         strokeThickness: 4,
         y: compactHud ? this.game.getHeight() * 0.25 : 112,
-        duration: 1050,
+        duration: 2800,
         slot: 'top',
         type: 'level_up',
         priority: 2,

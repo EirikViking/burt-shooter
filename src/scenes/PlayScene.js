@@ -1892,7 +1892,9 @@ export class PlayScene {
       ? this.getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120
       : 0;
     measurePerformance('incoming_wave_banner.sector_arrival', () => this.showSectorArrivalStinger({ postBoss: postBossLevelIntro }));
-    measurePerformance('incoming_wave_banner.level_intro', () => this.showLevelIntro({ postBoss: postBossLevelIntro }));
+    if (!showArrivalStinger) {
+      measurePerformance('incoming_wave_banner.level_intro', () => this.showLevelIntro({ postBoss: postBossLevelIntro }));
+    }
     this.scheduleEnemyStartForLevel(this.game.level, {
       startAtBoss,
       delayMs: enemyStartDelayMs,
@@ -13242,7 +13244,7 @@ export class PlayScene {
       fill: '#ffff00',
       stroke: '#330000',
       strokeThickness: compactHud ? 3 : 5,
-      duration: 2300,
+      duration: 3600,
       slot: 'center',
       type: 'boss',
       priority: 4,
