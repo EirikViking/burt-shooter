@@ -494,6 +494,8 @@ try {
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
       hasLeaderboardAvailabilityLine(gameOverState.gameOver?.leaderboardStatus || '') &&
+      /Counter:/i.test(gameOverState.gameOver?.ceremonyComment || '') &&
+      Boolean(gameOverState.gameOver?.deathCoach?.advice) &&
       lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
       lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
       lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4 &&

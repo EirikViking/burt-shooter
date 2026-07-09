@@ -33,6 +33,7 @@ import { formatRunContractProgressValue } from '../progression/RunContracts.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
+import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
@@ -91,6 +92,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   respawns: 'Respawns',
   extraLives: 'Extra lives earned',
   finalHit: 'Final hit',
+  deathCoach: 'Counter',
   powerups: 'Powerups',
   careerXp: 'Career XP',
   newRanks: 'New ranks',
@@ -591,7 +593,7 @@ export class GameOverScene {
     this.container.addChild(this.nextGoalGroup);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
-    this.comment = createText(this.getCeremonyComment(), {
+    this.comment = createText(this.getCeremonyCommentWithCoach(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: bodySize,
       fill: '#aaaaaa',
@@ -1513,6 +1515,24 @@ export class GameOverScene {
     return getGameOverComment(this.finalScore, this.finalLevel);
   }
 
+  getDeathCoachAdvice() {
+    return getRunDeathCoachAdvice(this.game?.runSummary?.finalDeathSource || this.game?.runSummary?.lastLifeLossSource);
+  }
+
+  getDeathCoachLine() {
+    if (!this.isRankedRun || this.game?.runSummary?.runCleared) return '';
+    const advice = this.getDeathCoachAdvice();
+    const text = String(advice?.advice || '').trim();
+    return text ? `${translateText('Counter')}: ${translateText(text)}` : '';
+  }
+
+  getCeremonyCommentWithCoach(baseComment = this.getCeremonyComment()) {
+    return [
+      baseComment,
+      this.getDeathCoachLine()
+    ].filter(Boolean).join('\n');
+  }
+
   updateCeremonyPresentation() {
     if (this.state === 'submitting' || this.state === 'submitted_hold' || this.state === 'result_hold' || this.state === 'runback') {
       this.syncResultStagePresentation();
@@ -1522,7 +1542,7 @@ export class GameOverScene {
     const placement = this.globalPlacement;
     this.refreshNextGoalFromLeaderboard();
     this.title.text = this.getCeremonyTitle();
-    this.comment.text = this.getCeremonyComment();
+    this.comment.text = this.getCeremonyCommentWithCoach();
     if (placement?.numberOne) {
       this.title.style.fill = '#fff8b8';
       this.title.style.stroke = { color: '#6b3200', width: 4 };
@@ -4137,6 +4157,7 @@ export class GameOverScene {
   formatRunReportValue(row = {}) {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
+    if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
     if (Array.isArray(row.value)) {
       const separator = row.id === 'pilotOrders' ? '\n' : ', ';
       return row.value.map((value) => {
@@ -4149,7 +4170,11 @@ export class GameOverScene {
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderDone') {
           const title = translateText(value.title || '');
-          return title.trim();
+          const rewardXp = Math.max(0, Math.floor(Number(value.reward?.pilotXp ?? value.rewardXp) || 0));
+          const reward = rewardXp > 0
+            ? translateText('+{xp} XP', { xp: rewardXp.toLocaleString('en-US') })
+            : '';
+          return [title.trim(), reward].filter(Boolean).join(' ');
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderProgress') {
           const title = translateText(value.title || '');
@@ -4880,6 +4905,7 @@ export class GameOverScene {
     return {
       localOnly: Boolean(report.localOnly),
       summary: report.summary || null,
+      deathCoach: report.summary?.deathCoach || this.getDeathCoachAdvice(),
       sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : [],
       overlay: this.getRunReportOverlayDebugState()
     };

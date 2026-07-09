@@ -3,7 +3,10 @@ import { RUN_MODES, normalizeRunMode } from '../game/RunMode.js';
 
 export const RUN_CONTRACTS_VERSION = 8;
 export const RUN_CONTRACT_ACTIVE_LIMIT = 3;
-export const RUN_CONTRACT_REWARDS_ENABLED = false;
+export const RUN_CONTRACT_REWARDS_ENABLED = true;
+export const RUN_CONTRACT_REWARD_XP_BASE = 175;
+export const RUN_CONTRACT_REWARD_XP_STEP = 5;
+export const RUN_CONTRACT_REWARD_XP_CAP = 420;
 
 const MAYHEM_MODES = Object.freeze([RUN_MODES.RANKED]);
 
@@ -696,6 +699,43 @@ function getContractGroup(contractOrId) {
   return clampText(contract?.group || contract?.id || contractOrId, 80);
 }
 
+export function getRunContractReward(contractOrId = '') {
+  if (!RUN_CONTRACT_REWARDS_ENABLED) return null;
+  const contract = typeof contractOrId === 'object' && contractOrId
+    ? contractOrId
+    : getRunContractById(contractOrId);
+  if (!contract?.id) return null;
+  const orderNumber = Math.max(1, getRunContractOrderNumber(contract.id) || 1);
+  const pilotXp = Math.min(
+    RUN_CONTRACT_REWARD_XP_CAP,
+    RUN_CONTRACT_REWARD_XP_BASE + (orderNumber - 1) * RUN_CONTRACT_REWARD_XP_STEP
+  );
+  return {
+    type: 'careerXp',
+    pilotXp,
+    label: `+${formatRunContractCount(pilotXp)} Career XP`
+  };
+}
+
+export function getRunContractRewardXp(entryOrId = '') {
+  if (!RUN_CONTRACT_REWARDS_ENABLED) return 0;
+  const explicit = Math.floor(Number(entryOrId?.reward?.pilotXp ?? entryOrId?.pilotXp));
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return Math.max(0, Math.floor(Number(getRunContractReward(entryOrId?.id || entryOrId)?.pilotXp) || 0));
+}
+
+export function getRunContractRewardXpForRun(runContracts = null) {
+  if (!RUN_CONTRACT_REWARDS_ENABLED) return 0;
+  const completed = Array.isArray(runContracts?.completedThisRun) ? runContracts.completedThisRun : [];
+  const seen = new Set();
+  return completed.reduce((total, entry) => {
+    const id = clampText(entry?.id, 80);
+    if (!id || seen.has(id)) return total;
+    seen.add(id);
+    return total + getRunContractRewardXp(entry);
+  }, 0);
+}
+
 function orderedCompletedIds(completed = {}, extraIds = []) {
   const valid = new Set([
     ...Object.keys(completed || {}),
@@ -800,6 +840,7 @@ function buildRunContractDisplayEntry(id, state = {}) {
     howTo: getRunContractHowTo(contract),
     modeLabel: contract.modeLabel || 'Mayhem',
     target,
+    reward: getRunContractReward(contract),
     progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
     objective: contract.objective || 'unknown',
     group: getContractGroup(contract),
@@ -1246,7 +1287,8 @@ export function applyRunContractEvent(session, event = {}) {
           completedAt: nextItem.completedAt,
           lastRunMode: nextSession.runMode,
           lastSector: Math.max(1, floor(event.sector, 1)),
-          buildVersion: BUILD_ID || null
+          buildVersion: BUILD_ID || null,
+          reward: getRunContractReward(contract)
         };
         if (contract.objective === 'unique_enemy_defeats') {
           completion.uniqueIds = uniqueTextIds(nextItem.uniqueIds, {
@@ -1323,7 +1365,8 @@ export function recordRunContractCompletion(state = {}, completion = {}) {
         completedAt: completion.completedAt || nowIso(),
         lastRunMode: completion.lastRunMode || RUN_MODES.RANKED,
         lastSector: completion.lastSector || 1,
-        buildVersion: completion.buildVersion || BUILD_ID || null
+        buildVersion: completion.buildVersion || BUILD_ID || null,
+        reward: completion.reward || getRunContractReward(contract)
       }
     },
     progress: {
@@ -1404,7 +1447,8 @@ function describeCompletion(completion = {}) {
     shortTitle: contract?.shortTitle || contract?.title || completion.id,
     completedAt: completion.completedAt || null,
     lastRunMode: completion.lastRunMode || RUN_MODES.RANKED,
-    lastSector: completion.lastSector || 1
+    lastSector: completion.lastSector || 1,
+    reward: completion.reward || getRunContractReward(contract)
   };
 }
 

@@ -907,6 +907,7 @@ function buildGameTextState(game) {
       lastSectorLeaderboardResult: game?.lastSectorLeaderboardResult || null,
       ceremonyTitle: gameOverScene.title?.text || null,
       ceremonyComment: gameOverScene.comment?.text || null,
+      deathCoach: gameOverScene.getDeathCoachAdvice ? gameOverScene.getDeathCoachAdvice() : null,
       backdropLoaded: Boolean(gameOverScene.backdropLoaded),
       canEnterName: Boolean(gameOverScene.canEnterName),
       globalFanfarePlayed: Boolean(gameOverScene.qualificationFanfarePlayed),

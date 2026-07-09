@@ -1,4 +1,8 @@
-import { formatRunContractOrderSlotLabel } from '../progression/RunContracts.js';
+import {
+  formatRunContractOrderSlotLabel,
+  getRunContractReward,
+  getRunContractRewardXp
+} from '../progression/RunContracts.js';
 
 const RUN_REPORT_VERSION = 1;
 
@@ -36,6 +40,28 @@ function normalizeDeathSource(value) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function normalizeDeathSourceKey(value) {
+  return String(value || 'unknown').trim().toLowerCase().replace(/[\s-]+/g, '_') || 'unknown';
+}
+
+export function getDeathCoachAdvice(value) {
+  const source = normalizeDeathSourceKey(value);
+  const adviceBySource = {
+    enemy_bullet: 'Watch bullet lanes first; dodge through the gap, then resume firing.',
+    boss_bullet: 'During bosses, pick a safe lane before chasing damage again.',
+    enemy_contact: 'Clear small ships before they cross your nose; drift sideways instead of chasing down.',
+    boss_contact: 'Keep one ship length from the boss body; contact is never a safe damage race.',
+    ambient_hazard_contact: 'Orange hazard drones are not pickups; shoot them or give them a wider lane.',
+    hazard_contact: 'Orange hazard drones are not pickups; shoot them or give them a wider lane.',
+    unknown: 'Run it back with one survival pickup in mind: Shield, Ghost, Slow Time, or repair.'
+  };
+  return {
+    source,
+    label: normalizeDeathSource(source),
+    advice: adviceBySource[source] || adviceBySource.unknown
+  };
+}
+
 function getPilotOrdersCompleted(runContracts = null) {
   const completed = Array.isArray(runContracts?.completedThisRun) ? runContracts.completedThisRun : [];
   const progressLabel = String(runContracts?.progressLabel || '').trim();
@@ -47,7 +73,9 @@ function getPilotOrdersCompleted(runContracts = null) {
     .map((entry) => ({
       type: 'pilotOrderDone',
       title: String(entry?.shortTitle || entry?.title || '').trim(),
-      orderSlot: entry?.orderSlot || formatRunContractOrderSlotLabel(entry)
+      orderSlot: entry?.orderSlot || formatRunContractOrderSlotLabel(entry),
+      reward: entry?.reward || getRunContractReward(entry?.id),
+      rewardXp: getRunContractRewardXp(entry)
     }))
     .filter((entry) => entry.title)
     .slice(0, 3);
@@ -123,6 +151,7 @@ export function createRunReport(summary = {}) {
   const lifeLosses = toWholeNumber(summary.lifeLosses);
   const respawns = toWholeNumber(summary.respawns);
   const finalDeathSource = normalizeDeathSource(summary.finalDeathSource || summary.lastLifeLossSource);
+  const deathCoach = getDeathCoachAdvice(summary.finalDeathSource || summary.lastLifeLossSource);
   const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
 
   const report = {
@@ -139,6 +168,7 @@ export function createRunReport(summary = {}) {
       runtimeSeconds,
       runtimeLabel: formatDuration(runtimeSeconds),
       runCleared: Boolean(summary.runCleared),
+      deathCoach,
       pilotOrdersCompleted
     },
     sections: [
@@ -168,7 +198,8 @@ export function createRunReport(summary = {}) {
           { id: 'livesLost', value: lifeLosses },
           { id: 'respawns', value: respawns },
           { id: 'extraLives', value: extraLivesEarned },
-          { id: 'finalHit', value: finalDeathSource, rawValue: summary.finalDeathSource || summary.lastLifeLossSource || null }
+          { id: 'finalHit', value: finalDeathSource, rawValue: summary.finalDeathSource || summary.lastLifeLossSource || null },
+          { id: 'deathCoach', value: deathCoach.advice, rawValue: deathCoach }
         ])
       },
       {

@@ -188,6 +188,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
   assert(state.runReport?.sectorReached >= 6, 'runReport summary should include sector reached.');
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
+  assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
+  assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }
 
 function assertOpenReport(state) {
@@ -197,7 +199,7 @@ function assertOpenReport(state) {
     assert(overlay.sectionIds?.includes(sectionId), `Run Report overlay missing ${sectionId} section.`);
   }
   const text = overlay.text || '';
-  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'Powerups:']) {
+  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'Counter:', 'Powerups:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
 }

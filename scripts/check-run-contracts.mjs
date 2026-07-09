@@ -41,6 +41,7 @@ const {
 } = await import('../src/progression/HangarProgressState.js');
 const {
   DEFAULT_ACTIVE_RUN_CONTRACT_IDS,
+  RUN_CONTRACT_REWARDS_ENABLED,
   RUN_CONTRACTS_VERSION,
   RUN_CONTRACT_ORDER_IDS,
   acknowledgeRunContractCompletionNotice,
@@ -49,6 +50,8 @@ const {
   getRunContractCatalog,
   getRunContractCompletionReviewState,
   getRunContractMenuState,
+  getRunContractReward,
+  getRunContractRewardXpForRun,
   mergeRunContractsState,
   normalizeRunContractsState,
   prepareRunContractsForEligibleRun,
@@ -214,7 +217,12 @@ function runCatalogAndSaveTests() {
   assert.deepEqual(menuState.active.map((entry) => entry.orderSlot), ['01/50', '02/50', '03/50'], 'menu state should expose active order slots');
   assert.equal(menuState.next?.[0]?.id, 'support_hunter', 'menu state should expose the next queued Pilot Order after active slots');
   assert.equal(menuState.next?.[0]?.orderSlot, '04/50', 'menu state should expose queued order slot labels');
-  assert.equal(menuState.rewardsEnabled, false, 'rewards should stay disabled');
+  assert.equal(RUN_CONTRACT_REWARDS_ENABLED, true, 'Pilot Order rewards should be enabled for retention patch');
+  assert.equal(menuState.rewardsEnabled, true, 'menu state should advertise enabled rewards');
+  assert.equal(menuState.active[0]?.reward?.pilotXp, 175, 'first Pilot Order should expose a Career XP reward');
+  assert.equal(menuState.active[1]?.reward?.pilotXp, 180, 'second Pilot Order should scale its Career XP reward');
+  assert.equal(getRunContractReward('graze_10')?.label, '+175 Career XP', 'reward helper should format first order Career XP');
+  assert.equal(getRunContractRewardXpForRun({ completedThisRun: [{ id: 'graze_10' }, { id: 'graze_10' }] }), 175, 'run reward XP should dedupe repeated completion entries');
   const completedSubtitleState = getRunContractMenuState(completeIds(migrated.runContracts, ['graze_10']));
   assert.equal(completedSubtitleState.subtitle, 'Review cleared orders in Ship Hangar.', 'completed Pilot Orders should point players to Ship Hangar review');
   const disabledMenuState = getRunContractMenuState(migrated, { showPilotOrders: false });
@@ -242,6 +250,7 @@ function runCatalogAndSaveTests() {
   assert.equal(findSessionItem(grazePartial.session, 'graze_10').progress, 9);
   const grazeResult = applyRunContractEvent(grazePartial.session, { type: 'near_miss', streak: 10, sector: 1 });
   assert.deepEqual(grazeResult.completed.map((entry) => entry.id), ['graze_10']);
+  assert.equal(grazeResult.completed[0]?.reward?.pilotXp, 175, 'completion payload should carry Career XP reward');
 
   const enemyNope = applyRunContractEvent(sessionFor(['enemy_sweep_1000']), { type: 'near_miss', streak: 3, sector: 1 });
   assert.equal(enemyNope.completed.length, 0, 'enemy kill orders should only advance on enemy defeats');
@@ -439,6 +448,8 @@ function runCatalogAndSaveTests() {
   assert.equal(completionPilotOrdersRow?.value?.[1]?.type, 'pilotOrderDone', 'run report should keep completed order entries structured');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.title, 'Graze x10', 'run report should keep the completed order title');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.orderSlot, '01/50', 'run report should keep completed order catalog slot');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.reward?.pilotXp, 175, 'run report should expose completed order reward XP');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.rewardXp, 175, 'run report should expose completed order reward XP as a numeric summary');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.type, 'pilotOrderNext', 'run report should reserve room for the next queued order after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.title, 'Support Hunter');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.orderSlot, '04/50', 'run report should keep next-order catalog slot after a completion');
@@ -954,6 +965,10 @@ async function runBrowserSmoke() {
       'non-final completion toast should name the completed order'
     );
     assert.ok(
+      nonFinalCompletionResult.toastMessages.some((message) => message.includes('REWARD: +175 Career XP')),
+      'non-final completion toast should expose the Career XP reward'
+    );
+    assert.ok(
       nonFinalCompletionResult.toastMessages.some((message) => message.includes('NEXT: Support Hunter 0/2')),
       'non-final completion toast should point to the next queued order'
     );
@@ -976,7 +991,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const nonFinalReportState = await readState(page);
-    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+Graze x10\s+NEXT: Support Hunter 0\/2/);
+    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+Graze x10 \+175 XP\s+NEXT: Support Hunter 0\/2/);
     const nonFinalReportScreenshot = path.join(outputDir, 'pilot-orders-next-run-report.png');
     await page.screenshot({ path: nonFinalReportScreenshot, fullPage: true });
 
@@ -1262,6 +1277,10 @@ async function runBrowserSmoke() {
       completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 2500 Enemies')),
       'completion toast should be visible through text state'
     );
+    assert.ok(
+      completionResult.toastMessages.some((message) => message.includes('REWARD: +240 Career XP')),
+      'completion toast should expose the final order Career XP reward'
+    );
     const orderToast = completionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
     assert.equal(orderToast?.slot, 'top', 'completion toast should use the top queue instead of the crowded corner');
     assert.equal(orderToast?.type, 'runContract', 'completion toast should expose the runContract type');
@@ -1285,7 +1304,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+2500 Enemies/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+2500 Enemies \+240 XP/);
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 

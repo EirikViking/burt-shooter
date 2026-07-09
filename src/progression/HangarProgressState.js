@@ -11,7 +11,7 @@ import {
 } from '../shared/RankPolicy.js';
 import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { BUILD_ID } from '../buildInfo.js';
-import { normalizeRunContractsState } from './RunContracts.js';
+import { getRunContractRewardXpForRun, normalizeRunContractsState } from './RunContracts.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
@@ -638,7 +638,8 @@ export function calculatePilotXpForRun(summary = {}) {
   const clearXp = summary.runCleared ? xp.runClear : 0;
   const clearLivesRemaining = floor(summary.clearLivesRemaining ?? summary.livesRemaining);
   const livesXp = summary.runCleared ? clearLivesRemaining * xp.clearWithLivesRemaining : 0;
-  return Math.max(0, Math.floor(scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp));
+  const pilotOrderXp = getRunContractRewardXpForRun(summary.runContracts);
+  return Math.max(0, Math.floor(scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp + pilotOrderXp));
 }
 
 export function previewRunProgression(summary = {}, baseProgress = readHangarProgressState()) {

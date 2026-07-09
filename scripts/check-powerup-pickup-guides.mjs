@@ -115,8 +115,12 @@ try {
     const manager = play?.powerupManager;
     const player = play?.player;
     if (!game || !play || !manager || !player) return { ok: false, reason: 'missing powerup manager/player' };
-    const width = game.getWidth();
-    const height = game.getHeight();
+    const viewWidth = game.getWidth();
+    const viewHeight = game.getHeight();
+    const gameplayWidth = Number(play.gameplayGame?.getWidth?.()) || viewWidth;
+    const gameplayHeight = Number(play.gameplayGame?.getHeight?.()) || viewHeight;
+    const width = gameplayWidth;
+    const height = gameplayHeight;
 
     play.introActive = false;
     play.introComplete = true;
@@ -135,7 +139,7 @@ try {
     });
     manager.powerups = [];
 
-    player.x = width * 0.52;
+    player.x = width * 0.68;
     player.y = height * 0.72;
     if (player.sprite) {
       player.sprite.x = player.x;
@@ -164,12 +168,13 @@ try {
     const near = makePowerup('slow_time', player.x - 54, player.y - 158, (powerup) => Math.max(2400, (Number(powerup.lifeTime) || 10000) - 2800));
     const far = makePowerup('damage_up', width * 0.17, height * 0.2);
     const inside = makePowerup('shield', player.x + 8, player.y - 7);
-    const offscreen = makePowerup('plasma_lance', width + 44, player.y - 72, (powerup) => Math.max(0, (Number(powerup.lifeTime) || 10000) - 2600));
+    const offscreen = makePowerup('plasma_lance', gameplayWidth + 44, player.y - 72, (powerup) => Math.max(0, (Number(powerup.lifeTime) || 10000) - 2600));
 
     return {
       ok: true,
       count: manager.powerups.length,
       player: { x: Math.round(player.x), y: Math.round(player.y) },
+      gameplayWidth: Math.round(gameplayWidth),
       near,
       far,
       inside,
@@ -186,11 +191,13 @@ try {
   if (state.count !== 4) failures.push(`expected four powerups, got ${state.count}`);
   if (!state.near?.visible || !state.near?.guide?.visible) failures.push(`near guide was not visible: ${JSON.stringify(state.near)}`);
   if ((state.near?.guide?.distance || 0) < 100 || (state.near?.guide?.distance || 0) > 230) failures.push(`near guide distance unexpected: ${state.near?.guide?.distance}`);
+  if ((state.near?.guide?.pickupAssistRadius || 0) < 24) failures.push(`near guide should expose the forgiving pickup assist radius: ${JSON.stringify(state.near?.guide)}`);
   if ((state.near?.guide?.dashCount || 0) < 2) failures.push(`near guide did not draw enough dashes: ${state.near?.guide?.dashCount}`);
   if ((state.near?.guide?.timeUrgency || 0) < 0.35) failures.push(`near guide did not include timeout urgency: ${JSON.stringify(state.near?.guide)}`);
   if ((state.near?.guide?.timeoutTickCount || 0) < 3) failures.push(`near guide timeout ticks missing: ${JSON.stringify(state.near?.guide)}`);
   if (state.far?.visible || state.far?.guide?.visible || state.far?.guide?.reason !== 'out_of_range') failures.push(`far guide should stay hidden: ${JSON.stringify(state.far)}`);
   if (state.inside?.visible || state.inside?.guide?.visible || state.inside?.guide?.reason !== 'inside_pickup_radius') failures.push(`inside-radius guide should stay hidden: ${JSON.stringify(state.inside)}`);
+  if ((state.inside?.guide?.pickupAssistRadius || 0) < 24) failures.push(`inside-radius guide should use the forgiving pickup assist radius: ${JSON.stringify(state.inside?.guide)}`);
   if (!state.offscreen?.visible || state.offscreen?.guide?.reason !== 'offscreen_edge') failures.push(`offscreen urgent guide should be edge-visible: ${JSON.stringify(state.offscreen)}`);
   if ((state.offscreen?.guide?.edgeArrowCount || 0) < 1) failures.push(`offscreen urgent guide did not draw edge arrow: ${JSON.stringify(state.offscreen?.guide)}`);
   if ((state.offscreen?.guide?.anchor?.x || 0) < 1000) failures.push(`offscreen guide anchor should clamp to right edge: ${JSON.stringify(state.offscreen?.guide)}`);

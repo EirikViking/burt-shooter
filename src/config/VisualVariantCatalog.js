@@ -44,10 +44,14 @@ export const SHIP_VISUAL_VARIANTS = SHIP_VARIANT_SETS.map(([name, tint, accent, 
 const SHIP_TRAIT_PROFILES = {
   ion: {
     label: 'ION DASH',
-    description: 'Quicker bolts and crisp handling.',
-    speedMult: 1.04,
+    description: 'Quicker bolts, crisp handling, and a forgiving dodge pulse.',
+    speedMult: 1.05,
     bulletSpeedMult: 1.12,
-    fireRateMult: 0.98
+    fireRateMult: 0.96,
+    combatOverrides: {
+      dodgePulseRadius: 54,
+      nearMissScoreMult: 1.16
+    }
   },
   solar: {
     label: 'SOLAR HAMMER',
@@ -65,17 +69,31 @@ const SHIP_TRAIT_PROFILES = {
   },
   mint: {
     label: 'MINT BOOST',
-    description: 'High-speed dodging with lighter damage.',
+    description: 'High-speed near-miss skating with a larger dodge pulse and lighter damage.',
     speedMult: 1.14,
     damageMult: 0.9,
-    bulletSpeedMult: 1.05
+    bulletSpeedMult: 1.05,
+    combatOverrides: {
+      bonusShotEvery: 0,
+      bonusShotDamageMult: 0,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0,
+      dodgePulseRadius: 84,
+      nearMissScoreMult: 1.38
+    }
   },
   crimson: {
     label: 'CRIMSON BITE',
-    description: 'Close-range punch, wider hull.',
+    description: 'Close-range punch, wider hull, and heavier critical bites.',
     damageMult: 1.12,
     fireRateMult: 1.04,
-    hitboxMult: 1.06
+    hitboxMult: 1.06,
+    combatOverrides: {
+      projectileRadiusMult: 1.14,
+      critEvery: 4,
+      critDamageMult: 1.5
+    }
   },
   quartz: {
     label: 'QUARTZ NEEDLE',
@@ -180,17 +198,29 @@ const SHIP_TRAIT_PROFILES = {
   },
   vector: {
     label: 'VECTOR LINE',
-    description: 'Straight precision and fast projectiles.',
+    description: 'Straight precision, smaller projectiles, and piercing rail lines.',
     bulletSpeedMult: 1.18,
     spreadDelta: -0.045,
-    damageMult: 1.02
+    damageMult: 1.02,
+    combatOverrides: {
+      projectileRadiusMult: 0.9,
+      pierceEvery: 4,
+      pierceDamageMult: 0.76
+    }
   },
   signal: {
     label: 'SIGNAL PING',
-    description: 'Quick reload and nimble drift.',
+    description: 'Quick reload, nimble drift, and an extra ping shot every fifth shot.',
     fireRateMult: 0.9,
     speedMult: 1.06,
-    damageMult: 0.92
+    damageMult: 0.92,
+    combatOverrides: {
+      bonusShotEvery: 5,
+      bonusShotDamageMult: 0.46,
+      wingShotEvery: 0,
+      wingShotDamageMult: 0,
+      wingShotAngle: 0
+    }
   },
   nova: {
     label: 'NOVA OVERDRIVE',

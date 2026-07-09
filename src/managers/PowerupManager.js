@@ -30,6 +30,9 @@ const MAJOR_POWERUP_TYPES = new Set([
   'super_extra_life'
 ]);
 
+const BASE_PICKUP_ASSIST_RADIUS = 24;
+const MAJOR_PICKUP_ASSIST_RADIUS = 28;
+
 function getPowerupIntentProfile(type, effect = {}) {
   const major = MAJOR_POWERUP_TYPES.has(type);
   if (effect?.shield || effect?.pointDefense || effect?.ghost || effect?.grantLives || effect?.repairLives || type === 'life') {
@@ -69,6 +72,11 @@ class Powerup {
     if (Number.isFinite(Number(this.movement.pickupRadius))) {
       this.radius = Math.max(6, Number(this.movement.pickupRadius));
     }
+    const pickupAssistFloor = MAJOR_POWERUP_TYPES.has(type) || type === 'super_extra_life'
+      ? MAJOR_PICKUP_ASSIST_RADIUS
+      : BASE_PICKUP_ASSIST_RADIUS;
+    this.pickupAssistRadius = Math.max(this.radius, pickupAssistFloor);
+    this.collectionRadius = this.pickupAssistRadius;
     if (Number.isFinite(Number(this.movement.verticalSpeed))) {
       this.vy = Number(this.movement.verticalSpeed);
     }
@@ -605,7 +613,7 @@ class Powerup {
     const dx = playerX - this.x;
     const dy = playerY - this.y;
     const distance = Math.hypot(dx, dy);
-    const pickupRadius = Math.max(18, Number(this.radius) || 12);
+    const pickupRadius = Math.max(18, Number(this.pickupAssistRadius) || Number(this.radius) || 12);
     const guideRadius = this.type === 'super_extra_life' ? 290 : 230;
     const closeLimit = pickupRadius + 10;
     const remainingMs = Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - Math.max(0, Number(age) || 0));
@@ -627,6 +635,7 @@ class Powerup {
           reason: 'offscreen_edge',
           distance: Math.round(Number.isFinite(distance) ? distance : 0),
           timeUrgency: Number(timeUrgency.toFixed(3)),
+          pickupAssistRadius: Math.round(pickupRadius),
           edgeArrowCount: edgeGuide.edgeArrowCount,
           edgeGuideEligible: true,
           anchor: edgeGuide.anchor
@@ -639,6 +648,7 @@ class Powerup {
         reason: distance <= closeLimit ? 'inside_pickup_radius' : 'out_of_range',
         distance: Math.round(Number.isFinite(distance) ? distance : 0),
         timeUrgency: Number(timeUrgency.toFixed(3)),
+        pickupAssistRadius: Math.round(pickupRadius),
         edgeGuideEligible: Boolean(edgeGuide?.eligible)
       };
       return;
@@ -699,6 +709,7 @@ class Powerup {
       urgency: Number(urgency.toFixed(3)),
       distanceUrgency: Number(distanceUrgency.toFixed(3)),
       timeUrgency: Number(timeUrgency.toFixed(3)),
+      pickupAssistRadius: Math.round(pickupRadius),
       dashCount,
       timeoutTickCount,
       edgeArrowCount: 0,

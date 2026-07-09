@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-09 Retention First Patch
+
+- Current request: use the Steamworks/player-data diagnosis to make the game itself retain players better, then deploy the finished patch to Steam. Marketing/store changes are out of scope.
+- Implementation direction: make Pilot Orders pay visible Career XP rewards, add reward lines to completion toasts and Run Report, add death-source-specific `Counter` coaching on Game Over and local Run Report, make powerup pickups more forgiving with an invisible assist radius, and sharpen the first five ship trait identities so early unlocks feel meaningfully different.
+- Verification: source checks passed for syntax, `git diff --check` with CRLF warnings only, `npm run check:ship-traits`, `npm run check:ship-trait-explanations`, `npm run check:i18n`, `npm run check:run-contracts` with inspected reward toast/report screenshots, `npm run check:run-report`, `npm run check:gameover-motivation`, `npm run check:powerup-pickup-guides`, `npm run check:powerup-pickup-confirmation`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:controller-flow`, `npm run smoke`, `npm run desktop:smoke:current`, `npm run check:steam-electron-bridge`, and `npm run check:release-line`. Steam packaging and upload evidence are pending.
+- Scope notes: Steamworks metadata, leaderboard identity, achievement API IDs, price/store metadata, and SetLive/public branch assignment are not changed by the source patch.
+
 ## 2026-07-08 Pilot Orders Objective Guidance
 
 - Current request: make the main-menu Pilot Orders description tell the player exactly how to complete each order, after the previous visible line still read too much like a label/name.

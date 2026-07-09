@@ -92,6 +92,23 @@ if (unlockedAtStart.length !== 1) {
   fail(`expected one starter ship, found ${unlockedAtStart.length}`);
 }
 
+const shipById = new Map(ships.map(ship => [ship.id, ship]));
+const firstFiveIdentityChecks = [
+  ['nova_ship_01', (ship) => (ship.trait?.effects?.combat?.dodgePulseRadius || 0) >= 50, 'starter should carry a forgiving dodge pulse'],
+  ['nova_ship_02', (ship) => (ship.trait?.effects?.combat?.bonusShotEvery || 0) === 5 && !(ship.trait?.effects?.combat?.wingShotEvery), 'courier should stand out as the early bonus-shot ship'],
+  ['nova_ship_03', (ship) => (ship.trait?.effects?.combat?.pierceEvery || 0) === 4 && ship.weapon?.bullets === 1, 'needle should stand out as the single-shot piercing ship'],
+  ['nova_ship_04', (ship) => (ship.trait?.effects?.combat?.dodgePulseRadius || 0) >= 80 && (ship.trait?.effects?.combat?.nearMissScoreMult || 1) >= 1.3, 'skater should stand out as the dodge and near-miss ship'],
+  ['nova_ship_05', (ship) => (ship.trait?.effects?.combat?.critEvery || 0) === 4 && (ship.trait?.effects?.combat?.projectileRadiusMult || 1) >= 1.12, 'biter should stand out as the heavy critical ship']
+];
+for (const [id, predicate, message] of firstFiveIdentityChecks) {
+  const ship = shipById.get(id);
+  if (!ship) {
+    fail(`${id} missing from selectable ships`);
+  } else if (!predicate(ship)) {
+    fail(`${id} identity regression: ${message}`);
+  }
+}
+
 const totalSignatures = new Set(ships.map(signature)).size;
 if (totalSignatures < 25) {
   fail(`expected at least 25 distinct ship combat signatures, found ${totalSignatures}`);

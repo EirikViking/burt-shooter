@@ -75,6 +75,7 @@ import {
   formatRunContractProgressValue,
   getRunContractById,
   getRunContractMenuState,
+  getRunContractReward,
   getRunContractSessionState,
   prepareRunContractsForEligibleRun,
   recordRunContractCompletion,
@@ -1590,8 +1591,13 @@ export class PlayScene {
     if (!contract) return;
     const title = translateText(contract.shortTitle || contract.title);
     const nextSummary = this.getNextRunContractSummary();
+    const reward = getRunContractReward(contract);
+    const rewardLine = reward?.pilotXp
+      ? translateText('REWARD: +{xp} Career XP', { xp: Number(reward.pilotXp).toLocaleString('en-US') })
+      : null;
     const message = [
       translateText('ORDER COMPLETE: {title}', { title }),
+      rewardLine,
       nextSummary ? `${translateText('NEXT')}: ${nextSummary.title} ${nextSummary.progress}` : null
     ].filter(Boolean).join('\n');
     const compactHud = this.game.getWidth() < 620;
@@ -3513,6 +3519,10 @@ export class PlayScene {
 
   getCollisionRadius(entity) {
     const radius = Number(entity?.radius) || 10;
+    const pickupAssistRadius = Number(entity?.pickupAssistRadius ?? entity?.collectionRadius);
+    if (entity?.effect && Number.isFinite(pickupAssistRadius) && pickupAssistRadius > radius) {
+      return pickupAssistRadius;
+    }
     if (entity?.kind === 'boss') {
       const fairness = BalanceConfig.difficulty?.bossFairness || {};
       const level = Number(entity.level) || Number(this.game?.level) || 1;
