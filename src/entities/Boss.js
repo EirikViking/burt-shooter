@@ -1153,7 +1153,7 @@ export class Boss {
       rage,
       presentationState
     });
-    this.drawBossAuraLayers(rig, t, {
+    const auraPrestige = this.drawBossAuraLayers(rig, t, {
       intensity,
       telegraphProgress,
       phaseProgress,
@@ -1193,6 +1193,11 @@ export class Boss {
       gameplayRadius: Math.round(this.radius || 0),
       visualGameplayRadiusRatio: Number((this.getVisualRadius() / Math.max(1, this.radius || 1)).toFixed(3)),
       aura: Number((Math.min(1, 0.22 + rage * 0.22 + telegraphProgress * 0.26 + phaseProgress * 0.18 + entryEnergy * 0.2 + impactProgress * 0.22)).toFixed(3)),
+      auraWakeRibbonCount: auraPrestige?.auraWakeRibbonCount || 0,
+      weaponChargeRayCount: auraPrestige?.weaponChargeRayCount || 0,
+      panelServoSparkCount: auraPrestige?.panelServoSparkCount || 0,
+      phaseGlyphCount: auraPrestige?.phaseGlyphCount || 0,
+      rageInstabilityCount: auraPrestige?.rageInstabilityCount || 0,
       polishVersion: BOSS_POLISH_VERSION,
       phase: this.phase
     };
@@ -1369,7 +1374,15 @@ export class Boss {
       threatLayer,
       chargeLayer
     } = rig || {};
-    if (!auraLayer || !silhouetteLayer || !threatLayer || !chargeLayer) return;
+    if (!auraLayer || !silhouetteLayer || !threatLayer || !chargeLayer) {
+      return {
+        auraWakeRibbonCount: 0,
+        weaponChargeRayCount: 0,
+        panelServoSparkCount: 0,
+        phaseGlyphCount: 0,
+        rageInstabilityCount: 0
+      };
+    }
 
     auraLayer.clear();
     silhouetteLayer.clear();
@@ -1396,6 +1409,11 @@ export class Boss {
     const auraAlpha = Math.min(0.72, 0.16 + rage * 0.16 + telegraphProgress * 0.22 + phaseProgress * 0.18 + entryEnergy * 0.16 + impactProgress * 0.2 + deathProgress * 0.24);
     const pulse = 1 + Math.sin(t * 1.4) * 0.018 * intensity;
     const slowSpin = t * (this.profile?.archetype === 'clock' ? 0.55 : 0.28);
+    let auraWakeRibbonCount = 0;
+    let weaponChargeRayCount = 0;
+    let panelServoSparkCount = 0;
+    let phaseGlyphCount = 0;
+    let rageInstabilityCount = 0;
 
     auraLayer.circle(0, 0, radius * (1.1 + rage * 0.12 + charge * 0.22) * pulse);
     auraLayer.fill({ color: palette, alpha: auraAlpha * 0.16 });
@@ -1403,6 +1421,17 @@ export class Boss {
     auraLayer.stroke({ color: accent, width: 3, alpha: auraAlpha * 0.34 });
     auraLayer.circle(0, 0, radius * (1.58 + Math.cos(t * 0.52) * 0.045 + phaseProgress * 0.18));
     auraLayer.stroke({ color: 0xffffff, width: 1.5, alpha: auraAlpha * 0.16 });
+    for (let i = 0; i < 4; i += 1) {
+      const a = -slowSpin * 0.9 + i * Math.PI * 0.5;
+      const inner = radius * (1.04 + charge * 0.08);
+      const mid = radius * (1.28 + charge * 0.16);
+      const outer = radius * (1.5 + charge * 0.22);
+      auraLayer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      auraLayer.lineTo(Math.cos(a + 0.16) * mid, Math.sin(a + 0.16) * mid);
+      auraLayer.lineTo(Math.cos(a + 0.28) * outer, Math.sin(a + 0.28) * outer);
+      auraWakeRibbonCount += 1;
+    }
+    auraLayer.stroke({ color: accent, width: 1.2 + charge * 0.7, alpha: auraAlpha * 0.28 });
 
     const shadowScale = 1.08 + rage * 0.08 + impactProgress * 0.16 + deathProgress * 0.2;
     silhouetteLayer.circle(0, radius * 0.06, radius * shadowScale);
@@ -1419,6 +1448,47 @@ export class Boss {
       threatLayer.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
     }
     threatLayer.stroke({ color: accent, width: 1.6 + charge * 1.4, alpha: auraAlpha * (0.3 + charge * 0.24) });
+
+    const glyphCount = this.phase >= 3 ? 6 : 4;
+    for (let i = 0; i < glyphCount; i += 1) {
+      const a = slowSpin * 1.7 + i * (Math.PI * 2 / glyphCount);
+      const r = radius * (1.22 + charge * 0.1 + (i % 2) * 0.06);
+      const tx = -Math.sin(a);
+      const ty = Math.cos(a);
+      const rx = Math.cos(a);
+      const ry = Math.sin(a);
+      const cx = rx * r;
+      const cy = ry * r;
+      const size = 3.5 + charge * 3 + (this.phase - 1);
+      threatLayer.poly([
+        cx + rx * size, cy + ry * size,
+        cx + tx * size * 0.62, cy + ty * size * 0.62,
+        cx - rx * size, cy - ry * size,
+        cx - tx * size * 0.62, cy - ty * size * 0.62
+      ]);
+      phaseGlyphCount += 1;
+    }
+    threatLayer.fill({ color: 0xffffff, alpha: auraAlpha * 0.18 + phaseProgress * 0.1 });
+
+    if (charge > 0.08) {
+      for (const node of rig.weaponNodes || []) {
+        chargeLayer.moveTo(node.x * 0.2, node.y * 0.2);
+        chargeLayer.lineTo(node.x * 0.92, node.y * 0.92);
+        weaponChargeRayCount += 1;
+      }
+      chargeLayer.stroke({ color: 0xffffff, width: 0.9 + charge * 1.1, alpha: 0.12 + charge * 0.2 });
+    }
+
+    const servoAlpha = Math.max(charge * 0.22, hurtProgress * 0.26, rage * 0.08);
+    if (servoAlpha > 0.03) {
+      for (const panel of rig.sidePanels || []) {
+        const x = panel.x + (panel.side || 1) * radius * 0.08;
+        const y = panel.y + Math.sin(t + (panel.index || 0)) * radius * 0.018;
+        chargeLayer.circle(x, y, 1.8 + charge * 2.2 + ((panel.index || 0) % 2) * 0.4);
+        panelServoSparkCount += 1;
+      }
+      chargeLayer.fill({ color: accent, alpha: servoAlpha });
+    }
 
     if (charge > 0.04 || presentationState === 'death') {
       const ringCount = presentationState === 'death' ? 4 : 3;
@@ -1457,6 +1527,22 @@ export class Boss {
       threatLayer.stroke({ color: 0xffffff, width: 2.2, alpha: 0.22 + flash * 0.34 });
     }
 
+    if (rage > 0.38 || presentationState === 'death') {
+      const staticCount = presentationState === 'death' ? 10 : 6;
+      for (let i = 0; i < staticCount; i += 1) {
+        const a = slowSpin * -1.2 + i * (Math.PI * 2 / staticCount);
+        const r = radius * (0.76 + (i % 3) * 0.16 + rage * 0.18);
+        const tx = -Math.sin(a) * (4 + rage * 6);
+        const ty = Math.cos(a) * (4 + rage * 6);
+        const cx = Math.cos(a) * r;
+        const cy = Math.sin(a) * r;
+        threatLayer.moveTo(cx - tx, cy - ty);
+        threatLayer.lineTo(cx + tx, cy + ty);
+        rageInstabilityCount += 1;
+      }
+      threatLayer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.1 + rage * 0.18 + deathProgress * 0.18 });
+    }
+
     if (entryProgress < 1 || impactProgress > 0 || deathProgress > 0) {
       const entryAlpha = Math.max(entryEnergy, impactProgress) * 0.42;
       const deathAlpha = deathProgress * (1 - deathProgress * 0.45) * 0.48;
@@ -1465,6 +1551,14 @@ export class Boss {
       chargeLayer.circle(0, 0, radius * (1.1 + entryEnergy * 0.35 + deathProgress * 0.48));
       chargeLayer.stroke({ color: 0xffffff, width: 2 + deathProgress * 2, alpha: Math.max(entryAlpha * 0.72, deathAlpha * 0.7) });
     }
+
+    return {
+      auraWakeRibbonCount,
+      weaponChargeRayCount,
+      panelServoSparkCount,
+      phaseGlyphCount,
+      rageInstabilityCount
+    };
   }
 
   getAnimationDebugState() {

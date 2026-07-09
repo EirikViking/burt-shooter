@@ -179,6 +179,11 @@ try {
   if (!state.hitFeedback?.impactNotch || !Number.isFinite(state.hitFeedback?.impactAngle)) failures.push(`impact notch missing: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.hitFeedback?.impactDistance || 0) <= 4) failures.push(`impact distance too small: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.hitFeedback?.armorCrackCount || 0) < 5) failures.push(`durable armor cracks missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.impactSliceCount || 0) < 3) failures.push(`impact slices missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.ricochetBeadCount || 0) < 4) failures.push(`ricochet beads missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.hitDirectionChevronCount || 0) < 2) failures.push(`hit direction chevrons missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.shieldSawToothCount || 0) < 6) failures.push(`shield saw teeth missing: ${JSON.stringify(state.hitFeedback)}`);
+  if ((state.hitFeedback?.woundedSmokeHashCount || 0) < 3) failures.push(`wounded hash marks missing: ${JSON.stringify(state.hitFeedback)}`);
   if (!Number.isFinite(state.hitFeedback?.healthRatio) || state.hitFeedback.healthRatio >= 1) failures.push(`durable health ratio not recorded after damage: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.sparkCount || 0) < 1 || (state.hitFeedback?.sparkCount || 0) < 1) failures.push(`hit spark was not recorded: ${state.sparkCount}`);
   if (!state.healthBarVisible) failures.push('health bar disappeared after non-lethal hit');

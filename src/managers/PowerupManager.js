@@ -382,6 +382,11 @@ class Powerup {
 
     cue.circle(0, 0, radius);
     cue.stroke({ width: profile.major ? 2.2 : 1.4, color: profile.color, alpha: baseAlpha + pulse * 0.12 });
+    let orbitPetalCount = 0;
+    let categoryChordCount = 0;
+    let innerSparkCount = 0;
+    let majorPetalCount = 0;
+    let signalTailCount = 0;
 
     if (profile.category === 'defense') {
       for (let i = 0; i < 4; i += 1) {
@@ -427,6 +432,44 @@ class Powerup {
       cue.stroke({ width: 1.5, color: profile.accent, alpha: 0.34 + pulse * 0.16 });
     }
 
+    const orbitCount = profile.major ? 8 : 6;
+    const orbitRadius = radius + 7 + pulse * 2;
+    const spin = age * (profile.major ? 0.006 : 0.0045);
+    for (let i = 0; i < orbitCount; i += 1) {
+      const angle = spin + i * (Math.PI * 2 / orbitCount);
+      const cx = Math.cos(angle) * orbitRadius;
+      const cy = Math.sin(angle) * orbitRadius;
+      cue.circle(cx, cy, profile.major ? 2.4 : 1.8);
+      orbitPetalCount += 1;
+    }
+    cue.fill({ color: profile.accent, alpha: 0.18 + pulse * 0.1 });
+
+    const chordCount = profile.category === 'control' ? 3 : 2;
+    for (let i = 0; i < chordCount; i += 1) {
+      const angle = spin * 0.45 + i * Math.PI / chordCount;
+      cue.moveTo(Math.cos(angle) * (radius - 18), Math.sin(angle) * (radius - 18));
+      cue.lineTo(Math.cos(angle + Math.PI) * (radius - 7), Math.sin(angle + Math.PI) * (radius - 7));
+      categoryChordCount += 1;
+    }
+    cue.stroke({ width: 0.9, color: 0xffffff, alpha: 0.1 + pulse * 0.1 });
+
+    for (let i = 0; i < 3; i += 1) {
+      const angle = -spin + i * Math.PI * 2 / 3;
+      cue.circle(Math.cos(angle) * (radius * 0.24), Math.sin(angle) * (radius * 0.24), 1.5 + pulse * 0.8);
+      innerSparkCount += 1;
+    }
+    cue.fill({ color: 0xffffff, alpha: 0.18 + pulse * 0.16 });
+
+    for (let i = 0; i < (profile.major ? 4 : 2); i += 1) {
+      const angle = Math.PI / 2 + (i - 1.5) * 0.22;
+      const inner = radius + 4 + i * 2;
+      const outer = radius + 17 + i * 3;
+      cue.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      cue.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      signalTailCount += 1;
+    }
+    cue.stroke({ width: 1.2, color: profile.color, alpha: 0.18 + pulse * 0.16 });
+
     let crownTicks = 0;
     if (profile.major) {
       crownTicks = 6;
@@ -440,6 +483,14 @@ class Powerup {
       cue.fill({ color: 0xfff1a8, alpha: 0.26 + pulse * 0.16 });
       cue.circle(0, 0, radius + 12 + pulse * 2);
       cue.stroke({ width: 1.2, color: 0xffe56d, alpha: 0.2 + pulse * 0.18 });
+      const petalRadius = radius + 17 + pulse * 2;
+      for (let i = 0; i < 8; i += 1) {
+        const angle = spin * 0.72 + i * Math.PI / 4;
+        cue.moveTo(Math.cos(angle) * (petalRadius - 4), Math.sin(angle) * (petalRadius - 4));
+        cue.lineTo(Math.cos(angle) * (petalRadius + 7), Math.sin(angle) * (petalRadius + 7));
+        majorPetalCount += 1;
+      }
+      cue.stroke({ width: 1, color: 0xffffff, alpha: 0.16 + pulse * 0.12 });
     }
 
     cue.visible = true;
@@ -449,7 +500,12 @@ class Powerup {
       category: profile.category,
       major: profile.major,
       radius,
-      crownTicks
+      crownTicks,
+      orbitPetalCount,
+      categoryChordCount,
+      innerSparkCount,
+      majorPetalCount,
+      signalTailCount
     };
   }
 
@@ -472,7 +528,8 @@ class Powerup {
         timeUrgency,
         bottomUrgency,
         remainingMs,
-        alpha: this.sprite.alpha
+        alpha: this.sprite.alpha,
+        urgentSparkCount: 0
       };
       return;
     }
@@ -482,6 +539,7 @@ class Powerup {
     const radius = 36 + urgency * 8 + pulse * (urgent ? 4 : 2);
     const segmentCount = 8;
     const litSegments = Math.max(1, Math.ceil(segmentCount * urgency));
+    let urgentSparkCount = 0;
 
     this.expiryCue.circle(0, 0, radius);
     this.expiryCue.stroke({ width: 2.2, color, alpha: 0.2 + urgency * 0.28 });
@@ -504,6 +562,15 @@ class Powerup {
     if (urgent) {
       this.expiryCue.circle(0, 0, radius + 8 + pulse * 3);
       this.expiryCue.stroke({ width: 1.6, color: 0xffffff, alpha: 0.14 + urgency * 0.16 });
+      for (let i = 0; i < 4; i += 1) {
+        const angle = age * 0.009 + i * Math.PI * 0.5;
+        const inner = radius + 3;
+        const outer = radius + 15 + pulse * 4;
+        this.expiryCue.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        this.expiryCue.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        urgentSparkCount += 1;
+      }
+      this.expiryCue.stroke({ width: 1.2, color: 0xffffff, alpha: 0.2 + urgency * 0.24 });
     }
 
     this.expiryCue.visible = true;
@@ -516,7 +583,8 @@ class Powerup {
       remainingMs,
       alpha: this.sprite.alpha,
       litSegments,
-      urgent
+      urgent,
+      urgentSparkCount
     };
   }
 

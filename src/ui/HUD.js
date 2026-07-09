@@ -312,7 +312,7 @@ export class HUD {
     this.hudContainer.addChild(this.locationText);
   }
 
-  update() {
+  update(options = {}) {
     this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
     if (mult > 1) {
@@ -427,7 +427,11 @@ export class HUD {
     this.updateTraitMeter();
     const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
     const measure = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
-    measure('hud.highscore_chase_realtime', () => this.updateHighscoreChase());
+    if (options.skipHighscoreChase !== true) {
+      measure('hud.highscore_chase_realtime', () => this.updateHighscoreChase());
+    } else if (this.highscoreChaseGroup) {
+      this.highscoreChaseGroup._debugSkippedRealtime = true;
+    }
   }
 
   formatScore(score) {

@@ -513,7 +513,18 @@ export class Player {
     layer.clear();
     if (!this.active || intensity <= 0.03) {
       layer.visible = false;
-      layer.__debugEngineVfx = { visible: false, intensity: Number(intensity.toFixed(3)), plumeCount: 0, sideJets: false };
+      layer.__debugEngineVfx = {
+        visible: false,
+        intensity: Number(intensity.toFixed(3)),
+        plumeCount: 0,
+        sideJets: false,
+        bankRibbonCount: 0,
+        noseLanceCount: 0,
+        afterburnerBeadCount: 0,
+        heatPipCount: 0,
+        dodgeCrescentCount: 0,
+        driftSkidCount: 0
+      };
       return;
     }
 
@@ -531,6 +542,12 @@ export class Player {
     let plumeCount = 0;
     let sideFeatherCount = 0;
     let velocityWakeCount = 0;
+    let bankRibbonCount = 0;
+    let noseLanceCount = 0;
+    let afterburnerBeadCount = 0;
+    let heatPipCount = 0;
+    let dodgeCrescentCount = 0;
+    let driftSkidCount = 0;
 
     for (let i = 0; i < 3; i += 1) {
       const offset = (i - 1) * spread;
@@ -544,6 +561,40 @@ export class Player {
       layer.circle(x + lean * 5, exhaustY + length * 0.58, 2.2 + intensity * 2.2);
       layer.fill({ color: hotColor, alpha: 0.18 + intensity * 0.24 });
       plumeCount += 1;
+    }
+
+    const beadLanes = intensity > 0.12 ? 4 : 0;
+    for (let i = 0; i < beadLanes; i += 1) {
+      const offset = (i - 1.5) * spread * 0.72 - lean * (1.5 + i);
+      const beadY = exhaustY + plumeLength * (0.45 + i * 0.18) + pulse * 5;
+      layer.circle(offset, beadY, Math.max(1.3, 2.2 + intensity * 1.3 - i * 0.22));
+      afterburnerBeadCount += 1;
+    }
+    if (afterburnerBeadCount > 0) {
+      layer.fill({ color: coreColor, alpha: 0.14 + intensity * 0.2 });
+    }
+
+    for (let i = 0; i < 4; i += 1) {
+      const angle = -Math.PI * 0.9 + i * (Math.PI * 0.6 / 3) + lean * 0.12;
+      const pipRadius = width * (0.28 + (i % 2) * 0.045);
+      const x = Math.cos(angle) * pipRadius;
+      const y = exhaustY * 0.48 + Math.sin(angle) * pipRadius * 0.44;
+      layer.circle(x, y, 1.5 + intensity * 1.25 + (i === 1 ? pulse * 0.7 : 0));
+      heatPipCount += 1;
+    }
+    layer.fill({ color: hotColor, alpha: 0.13 + intensity * 0.16 });
+
+    if (firingBoost > 0.01) {
+      const noseY = -width * 0.52;
+      const lance = width * (0.18 + intensity * 0.2);
+      const half = 3.8 + pulse * 1.2;
+      layer.moveTo(-half, noseY + 8);
+      layer.lineTo(0, noseY - lance);
+      layer.lineTo(half, noseY + 8);
+      layer.stroke({ color: hotColor, width: 1.55 + intensity * 0.9, alpha: 0.24 + intensity * 0.24 });
+      layer.circle(0, noseY - lance * 0.72, 2.2 + intensity * 1.1);
+      layer.fill({ color: coreColor, alpha: 0.26 + intensity * 0.22 });
+      noseLanceCount = 1;
     }
 
     const sideJets = Math.abs(lean) > 0.12 || this.isDodging;
@@ -568,6 +619,18 @@ export class Player {
         sideFeatherCount += 1;
       }
       layer.stroke({ color: coreColor, width: 1.2 + intensity * 0.8, alpha: 0.2 + intensity * 0.26 });
+
+      for (let i = 0; i < 2; i += 1) {
+        const ribbonY = -width * 0.08 + i * width * 0.18;
+        const startX = side * width * (0.18 + i * 0.08);
+        const midX = side * width * (0.36 + intensity * 0.08);
+        const endX = side * width * (0.55 + intensity * 0.12);
+        layer.moveTo(startX, ribbonY);
+        layer.lineTo(midX, ribbonY - side * lean * width * 0.08 + pulse * 2);
+        layer.lineTo(endX, ribbonY + side * lean * width * 0.12);
+        bankRibbonCount += 1;
+      }
+      layer.stroke({ color: hotColor, width: 1.25 + intensity * 0.45, alpha: 0.12 + intensity * 0.19 });
     }
 
     if (moveIntent > 0.28) {
@@ -590,6 +653,29 @@ export class Player {
         velocityWakeCount += 1;
       }
       layer.stroke({ color: hotColor, width: 0.95 + intensity * 0.65, alpha: 0.12 + intensity * 0.2 });
+
+      for (let i = 0; i < 2; i += 1) {
+        const lane = i === 0 ? -1 : 1;
+        const startX = tangentX * lane * width * 0.2 + wakeX * width * 0.04;
+        const startY = originY + tangentY * lane * width * 0.2 + wakeY * width * 0.04;
+        const endX = startX + wakeX * width * (0.28 + intensity * 0.24);
+        const endY = startY + wakeY * width * (0.28 + intensity * 0.24);
+        layer.moveTo(startX - tangentX * lane * 3, startY - tangentY * lane * 3);
+        layer.lineTo(endX, endY);
+        layer.lineTo(startX + tangentX * lane * 3, startY + tangentY * lane * 3);
+        driftSkidCount += 1;
+      }
+      layer.stroke({ color: coreColor, width: 1.1 + intensity * 0.5, alpha: 0.11 + intensity * 0.16 });
+    }
+
+    if (this.isDodging) {
+      const crescentRadius = width * (0.54 + intensity * 0.08);
+      const side = lean >= 0 ? -1 : 1;
+      layer.arc(0, width * 0.03, crescentRadius, side > 0 ? -0.92 : Math.PI + 0.92, side > 0 ? 0.92 : Math.PI - 0.92);
+      layer.stroke({ color: hotColor, width: 2.6, alpha: 0.3 + intensity * 0.28 });
+      layer.arc(0, width * 0.03, crescentRadius + 7, side > 0 ? -0.6 : Math.PI + 0.6, side > 0 ? 0.6 : Math.PI - 0.6);
+      layer.stroke({ color: coreColor, width: 1.5, alpha: 0.22 + intensity * 0.2 });
+      dodgeCrescentCount = 2;
     }
 
     layer.visible = true;
@@ -601,7 +687,13 @@ export class Player {
       plumeCount,
       sideJets,
       sideFeatherCount,
-      velocityWakeCount
+      velocityWakeCount,
+      bankRibbonCount,
+      noseLanceCount,
+      afterburnerBeadCount,
+      heatPipCount,
+      dodgeCrescentCount,
+      driftSkidCount
     };
   }
 

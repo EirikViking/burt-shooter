@@ -333,6 +333,8 @@ try {
     if (!enemy.visible || !enemy.debug?.visible) failures.push(`${key} frame was hidden: ${JSON.stringify(enemy)}`);
     if (enemy.debug?.tier !== tier) failures.push(`${key} tier ${enemy.debug?.tier} !== ${tier}`);
     if ((enemy.debug?.markerCount || 0) < 3) failures.push(`${key} marker count too low: ${enemy.debug?.markerCount}`);
+    if ((enemy.debug?.orbitalPipCount || 0) < 4) failures.push(`${key} orbital pips missing: ${JSON.stringify(enemy.debug)}`);
+    if ((enemy.debug?.warningBracketCount || 0) < 4) failures.push(`${key} warning brackets missing: ${JSON.stringify(enemy.debug)}`);
     if (!enemy.children?.includes?.('enemyThreatFrame')) failures.push(`${key} missing enemyThreatFrame layer`);
     if (key === 'elite' && !enemy.usingEliteMiddleShipTexture) failures.push(`elite sample did not use real elite texture: ${JSON.stringify(enemy)}`);
     if (key !== 'elite' && !enemy.usingGeneratedEnemyTexture) failures.push(`${key} sample did not use real generated enemy texture: ${JSON.stringify(enemy)}`);

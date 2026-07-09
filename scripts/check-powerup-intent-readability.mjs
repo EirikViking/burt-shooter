@@ -184,6 +184,11 @@ try {
     if (actual.cue?.major !== expected.major) failures.push(`${expected.type} major ${actual.cue?.major} !== ${expected.major}`);
     if (expected.major && actual.cue?.crownTicks !== 6) failures.push(`${expected.type} major crown missing: ${actual.cue?.crownTicks}`);
     if (!expected.major && actual.cue?.crownTicks !== 0) failures.push(`${expected.type} non-major crown should be hidden: ${actual.cue?.crownTicks}`);
+    if ((actual.cue?.orbitPetalCount || 0) < (expected.major ? 8 : 6)) failures.push(`${expected.type} orbit petals missing: ${JSON.stringify(actual.cue)}`);
+    if ((actual.cue?.categoryChordCount || 0) < 2) failures.push(`${expected.type} category chords missing: ${JSON.stringify(actual.cue)}`);
+    if ((actual.cue?.innerSparkCount || 0) < 3) failures.push(`${expected.type} inner sparks missing: ${JSON.stringify(actual.cue)}`);
+    if ((actual.cue?.signalTailCount || 0) < (expected.major ? 4 : 2)) failures.push(`${expected.type} signal tails missing: ${JSON.stringify(actual.cue)}`);
+    if (expected.major && (actual.cue?.majorPetalCount || 0) < 8) failures.push(`${expected.type} major petals missing: ${JSON.stringify(actual.cue)}`);
   }
   const categories = new Set(state.samples?.map((sample) => sample.cue?.category));
   for (const category of ['defense', 'offense', 'control', 'utility']) {

@@ -179,6 +179,11 @@ try {
   if ((active.debug?.pipCount || 0) < 6) failures.push(`claim cue pips missing: ${JSON.stringify(active.debug)}`);
   if ((active.debug?.ringCount || 0) < 2) failures.push(`claim cue rings missing: ${JSON.stringify(active.debug)}`);
   if ((active.debug?.sparkCount || 0) < 3) failures.push(`claim cue source sparks missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.tetherLineCount || 0) < 1) failures.push(`claim cue tether missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.cometStreakCount || 0) < 3) failures.push(`claim cue comet streaks missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.claimDiamondCount || 0) < 4) failures.push(`claim cue diamonds missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.sourceAnchorRingCount || 0) < 1) failures.push(`claim cue source anchor ring missing: ${JSON.stringify(active.debug)}`);
+  if ((active.debug?.landingTickCount || 0) < 4) failures.push(`claim cue landing ticks missing: ${JSON.stringify(active.debug)}`);
   if ((active.debug?.sourceDistance || 0) < 50) failures.push(`claim cue source distance too small: ${JSON.stringify(active.debug)}`);
   if ((active.bounds.width || 0) < 70 || (active.bounds.height || 0) < 70) failures.push(`claim cue bounds too small: ${JSON.stringify(active.bounds)}`);
   if (faded.currentCue || faded.oldLayerParent || faded.lastDebug?.visible) failures.push(`claim cue did not fade/clean up: ${JSON.stringify(faded)}`);

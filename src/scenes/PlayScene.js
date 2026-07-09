@@ -2699,7 +2699,12 @@ export class PlayScene {
 
       if (!perfOptions?.hudLite) {
         measure('hud', () => {
-          this.hud?.update?.();
+          const skipHighscoreChase = this.player?.activePowerup?.type === 'plasma_lance'
+            && (
+              (this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0) >= 32
+              || (this.bulletManager?.enemyBullets?.length || 0) >= 80
+            );
+          this.hud?.update?.({ skipHighscoreChase });
           if (this.hud?.highscoreChaseGroup) {
             const showHighscoreChase = !perfOptions?.hideHighscoreChase;
             this.hud.highscoreChaseGroup.visible = showHighscoreChase;
@@ -3390,6 +3395,14 @@ export class PlayScene {
     const measured = measure || ((_label, callback) => callback());
     const diagnosticOptions = this.performanceDiagnostics?.options || {};
     const skipAllSideEffects = Boolean(diagnosticOptions.rawCollisionOnly || diagnosticOptions.noCollisionSideEffects);
+    const activeParticles = this.particleManager?.particles?.length || 0;
+    const activeCombatText = (this.scorePopupManager?.popups?.length || 0)
+      + (this.scorePopupManager?.pendingPopups?.length || 0);
+    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
+    const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance'
+      && (activeEnemyCount >= 32 || queue.deathFeedback.length > 0 || queue.scorePopups.length >= 2);
+    const denseVisualLoad = activeParticles >= 500 || activeCombatText >= 20;
+    const extremeVisualLoad = activeParticles >= 585 || activeCombatText >= 28;
 
     measured('collision.side_effects.score_popups', () => {
       const overflowDropped = Number(queue.scorePopupsDropped) || 0;
@@ -3398,19 +3411,29 @@ export class PlayScene {
         stats.scorePopupDropped = (stats.scorePopupDropped || 0) + queue.scorePopups.length + overflowDropped;
         return;
       }
-      for (const popup of queue.scorePopups) {
+      const visiblePopupEntries = plasmaSweepLoad
+        ? queue.scorePopups.slice(0, 1)
+        : queue.scorePopups;
+      const visuallyDroppedPopups = Math.max(0, queue.scorePopups.length - visiblePopupEntries.length);
+      for (const popup of visiblePopupEntries) {
         this.scorePopupManager?.queueScorePopup?.(popup.x, popup.y, popup.score, popup.options || {});
       }
-      const maxScorePopups = overflowDropped > 0 ? 1 : (queue.scorePopups.length >= 8 ? 2 : 3);
+      const scorePopupBudget = plasmaSweepLoad
+        ? 6
+        : (denseVisualLoad || activeCombatText >= 18 ? 16 : 24);
+      this.scorePopupManager?.setActiveBudget?.(scorePopupBudget);
+      const maxScorePopups = overflowDropped > 0 || plasmaSweepLoad || activeCombatText >= 8
+        ? 1
+        : (queue.scorePopups.length >= 8 ? 2 : 3);
       const flushed = this.scorePopupManager?.flushQueuedPopups?.(maxScorePopups) || {
-        queued: queue.scorePopups.length,
+        queued: visiblePopupEntries.length,
         created: 0,
-        dropped: queue.scorePopups.length + overflowDropped,
+        dropped: visiblePopupEntries.length,
         remaining: 0
       };
-      stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued + overflowDropped;
+      stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued + overflowDropped + visuallyDroppedPopups;
       stats.scorePopupCreated = (stats.scorePopupCreated || 0) + flushed.created;
-      stats.scorePopupDropped = (stats.scorePopupDropped || 0) + flushed.dropped + overflowDropped;
+      stats.scorePopupDropped = (stats.scorePopupDropped || 0) + flushed.dropped + overflowDropped + visuallyDroppedPopups;
       stats.scorePopupPending = flushed.remaining;
     });
 
@@ -3423,8 +3446,8 @@ export class PlayScene {
       let hitSparkCreated = 0;
       let deathFeedbackCreated = 0;
       const massiveBurst = (queue.hitSparks.length + queue.deathFeedback.length) >= 32;
-      const maxHitSparks = massiveBurst ? 2 : 4;
-      const maxDeathFeedback = massiveBurst ? 0 : 1;
+      const maxHitSparks = extremeVisualLoad ? 1 : (massiveBurst || denseVisualLoad || plasmaSweepLoad ? 2 : 4);
+      const maxDeathFeedback = (massiveBurst || extremeVisualLoad || plasmaSweepLoad) ? 0 : 1;
       for (const spark of queue.hitSparks.slice(0, maxHitSparks)) {
         if (!this.particleManager || spark?.enabled === false) continue;
         this.particleManager.createHitSpark(spark.x, spark.y, spark.color, spark.intensity);
@@ -3432,7 +3455,10 @@ export class PlayScene {
       }
       for (const entry of queue.deathFeedback.slice(0, maxDeathFeedback)) {
         if (!entry?.enemy) continue;
-        this.playEnemyDeathFeedback(entry.enemy, entry.options || {});
+        this.playEnemyDeathFeedback(entry.enemy, {
+          ...(entry.options || {}),
+          performanceLite: plasmaSweepLoad || denseVisualLoad || extremeVisualLoad || entry.options?.performanceLite === true
+        });
         deathFeedbackCreated += 1;
       }
       stats.hitSparkQueued = (stats.hitSparkQueued || 0) + queue.hitSparks.length;
@@ -3466,7 +3492,7 @@ export class PlayScene {
         return;
       }
       let spawned = 0;
-      const maxPowerupSpawns = COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET;
+      const maxPowerupSpawns = plasmaSweepLoad ? 1 : COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET;
       for (const entry of queue.powerupSpawns.slice(0, maxPowerupSpawns)) {
         this.powerupManager?.spawn?.(entry.x, entry.y);
         spawned += 1;
@@ -10057,6 +10083,8 @@ export class PlayScene {
 
   flushDeferredCollisionUiFeedback() {
     const feedback = this.deferredCollisionUiFeedback || {};
+    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
+    const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance' && activeEnemyCount >= 32;
     this.deferredCollisionUiFeedback = {
       toasts: [],
       screenShakes: [],
@@ -10066,10 +10094,10 @@ export class PlayScene {
     for (const toast of (feedback.toasts || []).slice(0, 1)) {
       if (toast?.message) this.enqueueToast(toast.message, toast.options || {});
     }
-    for (const shake of (feedback.screenShakes || []).slice(0, 3)) {
+    for (const shake of (feedback.screenShakes || []).slice(0, plasmaSweepLoad ? 1 : 3)) {
       this.screenShake?.shake?.(shake.intensity, shake.duration);
     }
-    if (!this.performanceDiagnostics?.options?.noParticles) {
+    if (!plasmaSweepLoad && !this.performanceDiagnostics?.options?.noParticles) {
       for (const entry of (feedback.playerExplosions || []).slice(0, 1)) {
         const x = Number.isFinite(entry?.x) ? entry.x : this.player?.x;
         const y = Number.isFinite(entry?.y) ? entry.y : this.player?.y;
@@ -10078,7 +10106,7 @@ export class PlayScene {
         }
       }
     }
-    for (const flare of (feedback.comboFlares || []).slice(0, 2)) {
+    for (const flare of (feedback.comboFlares || []).slice(0, plasmaSweepLoad ? 0 : 2)) {
       this.triggerComboMilestoneFlare(flare);
     }
     return {
@@ -10116,11 +10144,27 @@ export class PlayScene {
     const intensity = Number.isFinite(options.intensity)
       ? options.intensity
       : (lateMayhem ? 0.86 : 1);
-    this.particleManager?.createExplosion(x, y, baseColor, intensity);
-    deathProfile.intensity = intensity;
+    const activeParticles = this.particleManager?.particles?.length || 0;
+    const activeCombatText = (this.scorePopupManager?.popups?.length || 0)
+      + (this.scorePopupManager?.pendingPopups?.length || 0);
+    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((target) => target?.active !== false).length || 0;
+    const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance'
+      && (activeEnemyCount >= 32 || activeCombatText >= 6);
+    const performanceLite = options.performanceLite === true
+      || activeParticles >= 500
+      || activeCombatText >= 20
+      || plasmaSweepLoad;
+    const resolvedIntensity = performanceLite
+      ? Math.min(intensity, lateMayhem ? 0.46 : 0.48)
+      : intensity;
+    this.particleManager?.createExplosion(x, y, baseColor, resolvedIntensity);
+    deathProfile.intensity = resolvedIntensity;
+    deathProfile.performanceLite = performanceLite;
+    deathProfile.particlePressure = activeParticles;
+    deathProfile.combatTextPressure = activeCombatText;
     this.createEnemyDeathClarityBurst(deathProfile);
 
-    if (lateMayhem) {
+    if (lateMayhem && !performanceLite) {
       const burstCount = Math.max(1, Math.min(3, Math.floor(profile.deathBurstCount || 1)));
       const sparkCount = Math.max(8, Math.min(18, Math.floor(profile.deathSparkCount || 10)));
       for (let i = 0; i < burstCount; i += 1) {
@@ -10246,12 +10290,23 @@ export class PlayScene {
     layer.y = Number(profile.y) || 0;
     layerTarget.addChild(layer);
 
-    const durationMs = Math.max(180, Number(profile.durationMs) || 360);
-    const markerCount = Math.max(4, Math.min(10, Math.round(Number(profile.markerCount) || 4)));
-    const visualRadius = Math.max(18, Number(profile.visualRadius) || 28);
+    const performanceLite = Boolean(profile.performanceLite);
+    const durationMs = Math.max(
+      performanceLite ? 140 : 180,
+      (Number(profile.durationMs) || 360) * (performanceLite ? 0.62 : 1)
+    );
+    const markerCount = performanceLite
+      ? Math.max(4, Math.min(6, Math.round(Number(profile.markerCount) || 4)))
+      : Math.max(4, Math.min(10, Math.round(Number(profile.markerCount) || 4)));
+    const visualRadius = Math.max(18, (Number(profile.visualRadius) || 28) * (performanceLite ? 0.82 : 1));
     const baseColor = Number.isFinite(profile.baseColor) ? profile.baseColor : 0xffaa00;
     const accent = Number.isFinite(profile.accent) ? profile.accent : 0xffffff;
-    const lineWidth = Math.max(1, Number(profile.lineWidth) || 1.6);
+    const lineWidth = Math.max(1, (Number(profile.lineWidth) || 1.6) * (performanceLite ? 0.86 : 1));
+    const gridRingCount = performanceLite ? 1 : (profile.highTier ? 3 : 2);
+    const debrisSpokeCount = performanceLite ? Math.max(4, markerCount - 1) : Math.max(5, markerCount);
+    const implosionDiamondCount = performanceLite ? (profile.highTier ? 4 : 3) : (profile.highTier ? 6 : 4);
+    const echoBandCount = performanceLite ? 1 : (profile.highTier ? 3 : 2);
+    const killWakeCount = performanceLite ? 2 : (profile.highTier ? 5 : 3);
     let elapsedMs = 0;
 
     const draw = (progress = 0) => {
@@ -10262,6 +10317,11 @@ export class PlayScene {
       const tickInner = ringRadius * 0.82;
       const tickOuter = ringRadius + 7 + (profile.highTier ? 5 : 0);
       layer.clear();
+      for (let i = 0; i < gridRingCount; i += 1) {
+        const gridRadius = visualRadius * (0.34 + i * 0.24 + t * 0.24);
+        layer.circle(0, 0, gridRadius);
+      }
+      layer.stroke({ color: 0xffffff, width: 0.8, alpha: 0.08 * fade });
       layer.circle(0, 0, ringRadius);
       layer.stroke({ color: baseColor, width: lineWidth, alpha: 0.46 * fade });
       layer.circle(0, 0, innerRadius);
@@ -10272,6 +10332,44 @@ export class PlayScene {
         layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
       }
       layer.stroke({ color: accent, width: Math.max(1, lineWidth - 0.2), alpha: 0.5 * fade });
+      for (let i = 0; i < debrisSpokeCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / debrisSpokeCount - t * 0.65;
+        const inner = innerRadius * (0.6 + (i % 2) * 0.18);
+        const outer = ringRadius * (1.02 + (i % 3) * 0.08 + t * 0.16);
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      layer.stroke({ color: baseColor, width: 0.9, alpha: 0.2 * fade });
+      const diamondRadius = Math.max(8, ringRadius * (0.34 - t * 0.12));
+      for (let i = 0; i < implosionDiamondCount; i += 1) {
+        const angle = t * 1.2 + i * (Math.PI * 2 / implosionDiamondCount);
+        const cx = Math.cos(angle) * diamondRadius;
+        const cy = Math.sin(angle) * diamondRadius;
+        const tangent = angle + Math.PI * 0.5;
+        const size = 3.5 + (i % 2) * 0.8;
+        layer.poly([
+          cx + Math.cos(angle) * size, cy + Math.sin(angle) * size,
+          cx + Math.cos(tangent) * size * 0.72, cy + Math.sin(tangent) * size * 0.72,
+          cx - Math.cos(angle) * size, cy - Math.sin(angle) * size,
+          cx - Math.cos(tangent) * size * 0.72, cy - Math.sin(tangent) * size * 0.72
+        ]);
+      }
+      layer.fill({ color: 0xffffff, alpha: 0.2 * fade });
+      for (let i = 0; i < echoBandCount; i += 1) {
+        const p = (t + i * 0.22) % 1;
+        const echoRadius = visualRadius * (0.5 + p * 0.75);
+        layer.circle(0, 0, echoRadius);
+        layer.stroke({ color: i % 2 ? accent : baseColor, width: Math.max(0.8, lineWidth - i * 0.35), alpha: (0.16 - i * 0.025) * fade });
+      }
+      for (let i = 0; i < killWakeCount; i += 1) {
+        const lane = i - (killWakeCount - 1) / 2;
+        const x = lane * visualRadius * 0.14;
+        const startY = -ringRadius * 0.36;
+        const endY = ringRadius * (0.72 + t * 0.24);
+        layer.moveTo(x, startY);
+        layer.lineTo(x + Math.sin(t * 3 + i) * 6, endY);
+      }
+      layer.stroke({ color: 0xffffff, width: 0.8, alpha: 0.09 * fade });
       if (profile.highTier) {
         const cross = ringRadius * 0.34;
         layer.moveTo(-cross, 0);
@@ -10288,7 +10386,15 @@ export class PlayScene {
         radius: Number(ringRadius.toFixed(1)),
         visualRadius: Number(visualRadius.toFixed(1)),
         progress: Number(t.toFixed(3)),
-        highTier: Boolean(profile.highTier)
+        highTier: Boolean(profile.highTier),
+        performanceLite,
+        particlePressure: Number(profile.particlePressure) || 0,
+        combatTextPressure: Number(profile.combatTextPressure) || 0,
+        gridRingCount,
+        debrisSpokeCount,
+        implosionDiamondCount,
+        echoBandCount,
+        killWakeCount
       };
       this.lastEnemyDeathFeedbackDebug = { ...layer._debugEnemyDeathClarity };
     };
@@ -10416,6 +10522,12 @@ export class PlayScene {
     const pipCount = major ? 8 : 6;
     const ringCount = major ? 3 : 2;
     const sparkCount = major ? 4 : 3;
+    const tetherLineCount = 1;
+    const cometStreakCount = major ? 4 : 3;
+    const claimDiamondCount = major ? 6 : 4;
+    const petalCount = major ? 8 : 0;
+    const sourceAnchorRingCount = 1;
+    const landingTickCount = 4;
     const durationMs = major ? 880 : 700;
     const layer = new PIXI.Graphics();
     layer.label = 'powerupPickupClaimCue';
@@ -10436,6 +10548,12 @@ export class PlayScene {
         pipCount: visible ? pipCount : 0,
         ringCount: visible ? ringCount : 0,
         sparkCount: visible ? sparkCount : 0,
+        tetherLineCount: visible ? tetherLineCount : 0,
+        cometStreakCount: visible ? cometStreakCount : 0,
+        claimDiamondCount: visible ? claimDiamondCount : 0,
+        petalCount: visible ? petalCount : 0,
+        sourceAnchorRingCount: visible ? sourceAnchorRingCount : 0,
+        landingTickCount: visible ? landingTickCount : 0,
         sourceX: Math.round(sourceX),
         sourceY: Math.round(sourceY),
         playerX: Math.round(layer.x),
@@ -10506,12 +10624,65 @@ export class PlayScene {
 
       const sourceArcRadius = baseRadius + 28;
       const sourceAngle = Math.atan2(ny, nx);
+      const sourceLocalX = sourceX - currentX;
+      const sourceLocalY = sourceY - currentY;
+      layer.circle(sourceLocalX, sourceLocalY, major ? 17 + pulse * 2 : 13 + pulse * 1.5);
+      layer.stroke({ color, width: major ? 1.8 : 1.3, alpha: 0.18 * fade * intro });
+      for (let i = 0; i < landingTickCount; i += 1) {
+        const angle = orbitSpin * 0.35 + i * Math.PI * 0.5;
+        const inner = baseRadius - 6;
+        const outer = baseRadius + 5;
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      layer.stroke({ color: 0xffffff, width: 1, alpha: 0.16 * fade * intro });
+      layer.moveTo(sourceLocalX * 0.22, sourceLocalY * 0.22);
+      layer.lineTo(sourceLocalX * 0.86, sourceLocalY * 0.86);
+      layer.stroke({ color: color, width: major ? 2.2 : 1.6, alpha: 0.16 * fade * intro });
+      layer.moveTo(sourceLocalX * 0.32, sourceLocalY * 0.32);
+      layer.lineTo(sourceLocalX * 0.72, sourceLocalY * 0.72);
+      layer.stroke({ color: 0xffffff, width: 0.9, alpha: 0.18 * fade * intro });
       layer.arc(0, 0, sourceArcRadius, sourceAngle - 0.5, sourceAngle + 0.5);
       layer.stroke({ color: 0xffffff, width: 2.4, alpha: 0.34 * fade * intro });
       for (let i = 0; i < sparkCount; i += 1) {
         const offset = (sourceArcRadius - i * 9) - t * 12;
         layer.circle(nx * offset, ny * offset, Math.max(1.8, 4.4 - i * 0.7 + pulse));
         layer.fill({ color: i === 0 ? 0xffffff : color, alpha: (0.68 - i * 0.11) * fade * intro });
+      }
+
+      for (let i = 0; i < cometStreakCount; i += 1) {
+        const track = (i + 1) / (cometStreakCount + 1);
+        const wobble = Math.sin(elapsedMs * 0.012 + i) * (major ? 7 : 5);
+        const cx = sourceLocalX * (1 - track * 0.7) + nx * wobble;
+        const cy = sourceLocalY * (1 - track * 0.7) + ny * wobble;
+        layer.moveTo(cx - nx * (7 + i * 2), cy - ny * (7 + i * 2));
+        layer.lineTo(cx + nx * (6 + pulse * 5), cy + ny * (6 + pulse * 5));
+      }
+      layer.stroke({ color: color, width: major ? 1.8 : 1.35, alpha: 0.2 * fade * intro + 0.08 });
+
+      const diamondRadius = baseRadius + 7 + pulse * 3;
+      for (let i = 0; i < claimDiamondCount; i += 1) {
+        const angle = -orbitSpin * 0.7 + (Math.PI * 2 * i) / claimDiamondCount;
+        const rx = Math.cos(angle);
+        const ry = Math.sin(angle);
+        const tx = -Math.sin(angle);
+        const ty = Math.cos(angle);
+        drawDiamond(rx * diamondRadius, ry * diamondRadius, rx, ry, tx, ty, major ? 3.8 : 3.1, i % 2 ? color : 0xffffff, 0.24 * fade * intro);
+      }
+
+      if (petalCount > 0) {
+        const petalRadius = baseRadius + 24 + pulse * 3;
+        for (let i = 0; i < petalCount; i += 1) {
+          const angle = orbitSpin * 0.42 + (Math.PI * 2 * i) / petalCount;
+          const rx = Math.cos(angle);
+          const ry = Math.sin(angle);
+          const tx = -Math.sin(angle);
+          const ty = Math.cos(angle);
+          layer.moveTo(rx * (petalRadius - 5) - tx * 3, ry * (petalRadius - 5) - ty * 3);
+          layer.lineTo(rx * (petalRadius + 7), ry * (petalRadius + 7));
+          layer.lineTo(rx * (petalRadius - 5) + tx * 3, ry * (petalRadius - 5) + ty * 3);
+        }
+        layer.stroke({ color: 0xffffff, width: 1, alpha: 0.16 * fade * intro });
       }
 
       layer.visible = true;
@@ -12427,8 +12598,8 @@ export class PlayScene {
   showBossIntro(name, taunt) {
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
-    const panelWidth = Math.max(300, Math.min(compact ? width - 36 : 540, width * 0.72));
-    const panelHeight = compact ? 154 : 148;
+    const panelWidth = Math.max(300, Math.min(compact ? width - 36 : 680, width * 0.78));
+    const panelHeight = compact ? 176 : 148;
     const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
       if (!text) return;
       text.scale.set(1);
@@ -12438,11 +12609,15 @@ export class PlayScene {
       text.updateText?.(false);
       const widthScale = maxWidth / Math.max(1, text.width || maxWidth);
       const heightScale = maxHeight / Math.max(1, text.height || maxHeight);
-      text.scale.set(Math.max(minScale, Math.min(1, widthScale, heightScale)));
+      const targetScale = Math.min(1, widthScale, heightScale);
+      text.scale.set(targetScale < minScale ? Math.max(0.08, targetScale) : Math.max(minScale, targetScale));
     };
     const card = new PIXI.Container();
     card.x = width / 2;
-    card.y = height * 0.28;
+    const preferredY = compact ? height * 0.44 : height * 0.34;
+    const minimumY = compact ? 192 : 246;
+    const bottomSafeY = height - panelHeight / 2 - (compact ? 74 : 96);
+    card.y = Math.min(bottomSafeY, Math.max(minimumY, preferredY));
     card.alpha = 0;
 
     const panel = new PIXI.Graphics();
@@ -12453,7 +12628,7 @@ export class PlayScene {
 
     const title = createText(name || 'BOSS', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 26,
+      fontSize: compact ? 20 : 22,
       fill: '#ff3300',
       stroke: '#000000',
       strokeThickness: 4,
@@ -12463,8 +12638,8 @@ export class PlayScene {
       lineHeight: compact ? 25 : 29
     });
     title.anchor.set(0.5);
-    title.y = -24;
-    fitText(title, panelWidth - 38, 56, 0.6);
+    title.y = compact ? -50 : -34;
+    fitText(title, panelWidth - 38, compact ? 38 : 30, 0.36);
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
@@ -12479,8 +12654,13 @@ export class PlayScene {
       lineHeight: compact ? 18 : 21
     });
     line.anchor.set(0.5);
-    line.y = 28;
-    fitText(line, panelWidth - 48, 54, 0.68);
+    fitText(line, panelWidth - 48, compact ? 64 : 50, 0.48);
+    const titleBottom = title.y + Math.max(0, title.height || 0) / 2;
+    const lineHalfHeight = Math.max(0, line.height || 0) / 2;
+    line.y = Math.min(
+      panelHeight / 2 - 24 - lineHalfHeight,
+      Math.max(compact ? 34 : 30, titleBottom + 10 + lineHalfHeight)
+    );
     card.addChild(line);
 
     this.uiOverlay.addChild(card);

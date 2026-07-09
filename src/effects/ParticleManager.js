@@ -96,6 +96,9 @@ export class ParticleManager {
     this.particles = [];
     this.pool = [];
     this.maxParticles = 640;
+    this.softParticleBudget = 520;
+    this.pressureSpawnCounter = 0;
+    this.lastPressureTrimCount = 0;
     this.onCap = onCap;
   }
 
@@ -120,6 +123,9 @@ export class ParticleManager {
       if (this.onCap) this.onCap('particles');
       return null;
     }
+    if (this.shouldSkipPressureSpawn(texture)) {
+      return null;
+    }
 
     const particle = this.pool.pop() || new Particle();
     particle.reset(x, y, vx, vy, color, size, lifetime, texture);
@@ -128,6 +134,31 @@ export class ParticleManager {
     this.attachParticleDisplay(particle);
 
     return particle;
+  }
+
+  shouldSkipPressureSpawn(texture = null) {
+    const activeCount = this.particles.length;
+    const softBudget = Math.max(0, Math.floor(Number(this.softParticleBudget) || 0));
+    if (softBudget <= 0 || activeCount < softBudget) return false;
+
+    const hardBudget = Math.max(softBudget + 1, Math.floor(Number(this.maxParticles) || softBudget + 1));
+    const pressure = Math.min(1, Math.max(0, (activeCount - softBudget) / (hardBudget - softBudget)));
+    const stride = pressure >= 0.75 ? 3 : 2;
+    this.pressureSpawnCounter = (this.pressureSpawnCounter + 1) % stride;
+
+    if (texture && activeCount >= softBudget - 8) {
+      return this.pressureSpawnCounter !== 0;
+    }
+    return pressure >= 0.75
+      ? this.pressureSpawnCounter !== 0
+      : this.pressureSpawnCounter === 0;
+  }
+
+  retireParticle(particle) {
+    if (!particle) return;
+    particle.active = false;
+    if (particle.sprite) particle.sprite.visible = false;
+    if (particle.bitmap) particle.bitmap.visible = false;
   }
 
   createExplosion(x, y, color, intensity = 1) {
@@ -375,7 +406,33 @@ export class ParticleManager {
   }
 
   update(delta) {
+    const softBudget = Math.max(0, Math.floor(Number(this.softParticleBudget) || 0));
+    const overflow = softBudget > 0 ? Math.max(0, this.particles.length - softBudget) : 0;
+    const trimTarget = overflow > 0 ? Math.min(overflow, Math.ceil(this.particles.length * 0.18)) : 0;
+    let trimmed = 0;
+    if (trimTarget > 0) {
+      for (const particle of this.particles) {
+        if (trimmed >= trimTarget) break;
+        const lifetime = Math.max(1, Number(particle?.lifetime) || 1);
+        const lifePercent = Math.max(0, Math.min(1, (Number(particle?.age) || 0) / lifetime));
+        if (lifePercent < 0.42) continue;
+        this.retireParticle(particle);
+        trimmed += 1;
+      }
+      for (const particle of this.particles) {
+        if (trimmed >= trimTarget) break;
+        if (!particle?.active || particle?.isDebris) continue;
+        this.retireParticle(particle);
+        trimmed += 1;
+      }
+    }
+    this.lastPressureTrimCount = trimmed;
+
     this.particles = this.particles.filter(particle => {
+      if (!particle.active) {
+        this.pool.push(particle);
+        return false;
+      }
       particle.update(delta);
       if (!particle.active) {
         this.pool.push(particle);

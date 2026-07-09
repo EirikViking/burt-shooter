@@ -223,6 +223,14 @@ try {
   if ((byTier.get('normal')?.markerCount || 0) < 4) failures.push(`normal marker count too low: ${JSON.stringify(byTier.get('normal'))}`);
   if ((byTier.get('durable')?.markerCount || 0) < 5) failures.push(`durable marker count too low: ${JSON.stringify(byTier.get('durable'))}`);
   if ((byTier.get('elite')?.markerCount || 0) < 8) failures.push(`elite marker count too low: ${JSON.stringify(byTier.get('elite'))}`);
+  for (const tier of ['normal', 'durable', 'elite']) {
+    const layer = byTier.get(tier);
+    if ((layer?.gridRingCount || 0) < 2) failures.push(`${tier} death grid rings missing: ${JSON.stringify(layer)}`);
+    if ((layer?.debrisSpokeCount || 0) < (layer?.markerCount || 4)) failures.push(`${tier} death debris spokes missing: ${JSON.stringify(layer)}`);
+    if ((layer?.implosionDiamondCount || 0) < 4) failures.push(`${tier} death implosion diamonds missing: ${JSON.stringify(layer)}`);
+    if ((layer?.echoBandCount || 0) < 2) failures.push(`${tier} death echo bands missing: ${JSON.stringify(layer)}`);
+    if ((layer?.killWakeCount || 0) < 3) failures.push(`${tier} death wake trails missing: ${JSON.stringify(layer)}`);
+  }
   if (!((byTier.get('elite')?.visualRadius || 0) > (byTier.get('normal')?.visualRadius || 0))) {
     failures.push(`elite visual radius should exceed normal: ${JSON.stringify(layers)}`);
   }

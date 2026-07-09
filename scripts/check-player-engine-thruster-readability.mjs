@@ -238,6 +238,9 @@ try {
     player.updateEngineVfx(0, 0, 1 / 60);
     const idleDebug = player.engineVfxLayer?.__debugEngineVfx || null;
 
+    if (player.inputManager) {
+      player.inputManager.isFiring = () => true;
+    }
     for (let i = 0; i < 10; i += 1) {
       player.updateEngineVfx(0.9, -0.45, 1 / 30);
     }
@@ -305,6 +308,11 @@ try {
   if (state.activeDebug?.sideJets !== true) failures.push(`lean side jet missing: ${JSON.stringify(state.activeDebug)}`);
   if ((state.activeDebug?.sideFeatherCount || 0) < 3) failures.push(`strafe feather trails missing: ${JSON.stringify(state.activeDebug)}`);
   if ((state.activeDebug?.velocityWakeCount || 0) < 3) failures.push(`velocity wake trails missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.bankRibbonCount || 0) < 2) failures.push(`bank ribbon trails missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.noseLanceCount || 0) < 1) failures.push(`firing nose lance missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.afterburnerBeadCount || 0) < 4) failures.push(`afterburner beads missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.heatPipCount || 0) < 4) failures.push(`engine heat pips missing: ${JSON.stringify(state.activeDebug)}`);
+  if ((state.activeDebug?.driftSkidCount || 0) < 2) failures.push(`drift skid trails missing: ${JSON.stringify(state.activeDebug)}`);
   if (state.shipSize.width < 28 || state.shipSize.height < 28) failures.push(`player ship art missing/small: ${JSON.stringify(state.shipSize)}`);
   if (proofPixels.energeticPixels < 900) failures.push(`screenshot proof is too sparse/blank: ${JSON.stringify(proofPixels)}`);
   if (proofPixels.cyanOrangeThrusterPixels < 80) failures.push(`thruster proof pixels missing: ${JSON.stringify(proofPixels)}`);

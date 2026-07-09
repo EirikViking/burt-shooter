@@ -572,14 +572,15 @@ class MayhemPerformanceDiagnostics {
     this.samples.push(sample);
     this.lastCounts = sample.counts;
     if (this.samples.length > 900) this.samples.shift();
-    const frameCost = Math.max(elapsed, Number(sample.preFrameGapMs) || 0);
+    const frameCost = elapsed;
+    const gapCost = Number(sample.preFrameGapMs) || 0;
     if (frameCost >= SLOW_FRAME_MS) this.longFrameBuckets.over20Ms += 1;
     if (frameCost >= IMPORTANT_SLOW_FRAME_MS) this.longFrameBuckets.over33Ms += 1;
     if (frameCost >= SEVERE_SLOW_FRAME_MS) this.longFrameBuckets.over50Ms += 1;
     if (elapsed >= SLOW_FRAME_MS || sample.preFrameGapMs >= SLOW_FRAME_MS) {
       this.slowFrames.push(sample);
       if (this.slowFrames.length > 120) this.slowFrames.shift();
-      this.scheduleReportWrite(getSlowFrameCost(sample) >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
+      this.scheduleReportWrite(Math.max(frameCost, gapCost) >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
     }
     this.currentFrame = null;
     this.updateOverlay(false);

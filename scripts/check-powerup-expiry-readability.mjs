@@ -184,6 +184,7 @@ try {
       state.urgent?.cue?.visible &&
       state.urgent?.cue?.urgent &&
       state.urgent?.cue?.urgency > 0.85 &&
+      state.urgent?.cue?.urgentSparkCount >= 4 &&
       state.urgent?.alpha < 0.95 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0

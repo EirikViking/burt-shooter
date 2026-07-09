@@ -201,13 +201,26 @@ export class ScorePopupManager {
     this.container = container;
     this.popups = [];
     this.pendingPopups = [];
-    this.maxActivePopups = 24;
+    this.defaultMaxActivePopups = 24;
+    this.maxActivePopups = this.defaultMaxActivePopups;
 
     // Combo system
     this.comboCount = 0;
     this.comboTimer = 0;
     this.comboWindow = 2000; // 2 seconds to maintain combo
     this.lastKillTime = 0;
+  }
+
+  setActiveBudget(maxActivePopups = this.defaultMaxActivePopups) {
+    const nextBudget = Math.max(1, Math.min(this.defaultMaxActivePopups, Math.floor(Number(maxActivePopups) || this.defaultMaxActivePopups)));
+    this.maxActivePopups = nextBudget;
+    while (this.popups.length > this.maxActivePopups) {
+      const stale = this.popups.shift();
+      stale?.destroy?.();
+    }
+    if (this.pendingPopups.length > this.maxActivePopups) {
+      this.pendingPopups.splice(0, this.pendingPopups.length - this.maxActivePopups);
+    }
   }
 
   addScorePopup(x, y, score, options = {}) {

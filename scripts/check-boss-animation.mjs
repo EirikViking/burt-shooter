@@ -190,6 +190,11 @@ try {
       nodeCount: firstDebug?.nodeCount || 0,
       sidePanelCount: firstDebug?.sidePanelCount || 0,
       shutterOpen: firstDebug?.shutterOpen || 0,
+      auraWakeRibbonCount: firstDebug?.auraWakeRibbonCount || 0,
+      weaponChargeRayCount: firstDebug?.weaponChargeRayCount || 0,
+      panelServoSparkCount: firstDebug?.panelServoSparkCount || 0,
+      phaseGlyphCount: firstDebug?.phaseGlyphCount || 0,
+      rageInstabilityCount: firstDebug?.rageInstabilityCount || 0,
       polishVersion: firstDebug?.polishVersion || null,
       visualGameplayRadiusRatio: firstDebug?.visualGameplayRadiusRatio || 0,
       bodyPulseSpan: Number(bodyPulseSpan.toFixed(4)),
@@ -207,6 +212,10 @@ try {
         (firstDebug?.nodeCount || 0) >= 3 &&
         (firstDebug?.sidePanelCount || 0) >= 6 &&
         (firstDebug?.shutterOpen || 0) >= 0.3 &&
+        (firstDebug?.auraWakeRibbonCount || 0) >= 4 &&
+        (firstDebug?.weaponChargeRayCount || 0) >= 3 &&
+        (firstDebug?.panelServoSparkCount || 0) >= 6 &&
+        (firstDebug?.phaseGlyphCount || 0) >= 4 &&
         (firstDebug?.visualGameplayRadiusRatio || 0) >= 1.1 &&
         bodyPulseSpan >= 0.005 &&
         finSpan >= 0.055 &&

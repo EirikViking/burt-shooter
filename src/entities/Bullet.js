@@ -38,6 +38,7 @@ export class Bullet {
     this.threatArmingLayer = null;
     this.friendlyGlint = null;
     this.friendlyWingTrace = null;
+    this.friendlySpeedRibbon = null;
     this.playerIntentLayer = null;
     this.core = null;
     this.visualConfig = visualConfig || {};
@@ -168,11 +169,10 @@ export class Bullet {
         this.sprite.addChild(this.warningRing);
       }
       if (this.visualConfig.haloColor && (!generatedProjectileCore || colorAssist || this.visualConfig.forceProjectileHalo === true)) {
-        const halo = new PIXI.Graphics();
-        halo.circle(0, 0, this.radius + 9);
-        halo.fill({ color: this.visualConfig.haloColor, alpha: 0.1 });
-        this.sprite.addChildAt(halo, 0);
-        this.halo = halo;
+        this.trail.circle(0, 0, this.radius + 9);
+        this.trail.fill({ color: this.visualConfig.haloColor, alpha: 0.1 });
+        this.trail.__novaProjectileHalo = true;
+        this.halo = this.trail;
       }
       if (colorAssist) {
         const cross = new PIXI.Graphics();
@@ -184,7 +184,7 @@ export class Bullet {
         cross.stroke({ color: 0x10131c, width: 2, alpha: 0.82 });
         this.sprite.addChild(cross);
       } else if (drawProjectileFrame) {
-        const hazardMark = new PIXI.Graphics();
+        const hazardMark = this.warningRing || new PIXI.Graphics();
         const r = this.radius + 8;
         hazardMark.moveTo(-r, -r * 0.58);
         hazardMark.lineTo(-r * 0.58, -r);
@@ -198,7 +198,7 @@ export class Bullet {
         hazardMark.circle(0, 0, Math.max(1.5, this.radius * 0.22));
         hazardMark.fill({ color: 0xff3030, alpha: 0.74 });
         hazardMark.__novaHazardReadabilityMark = true;
-        this.sprite.addChild(hazardMark);
+        if (hazardMark !== this.warningRing) this.sprite.addChild(hazardMark);
       }
 
       const leadDistance = this.radius + (generatedProjectileCore ? 7 : 6);
@@ -214,31 +214,31 @@ export class Bullet {
       this.dangerGlint.moveTo(leadX - normalX * 4.5, leadY - normalY * 4.5);
       this.dangerGlint.lineTo(leadX + normalX * 4.5, leadY + normalY * 4.5);
       this.dangerGlint.stroke({ color: colorAssist ? 0x10131c : 0xffffff, width: colorAssist ? 1.8 : 1.4, alpha: colorAssist ? 0.86 : 0.44 });
-      this.sprite.addChild(this.dangerGlint);
-
-      this.dangerWakeBeads = new PIXI.Graphics();
-      this.dangerWakeBeads.label = 'enemyProjectileWakeBeads';
-      this.dangerWakeBeads.__novaProjectileWakeBeads = true;
+      this.dangerGlint.__novaProjectileWakeBeads = true;
       const wakeColor = colorAssist ? 0xffffff : (this.visualConfig.warningColor || this.visualConfig.trailColor || 0xff6655);
       const beadCount = 3;
-      this.dangerWakeBeads.__novaProjectileWakeBeadCount = beadCount;
+      this.dangerGlint.__novaProjectileWakeBeadCount = beadCount;
       for (let i = 0; i < beadCount; i += 1) {
         const distance = this.radius + 8 + i * 7;
         const x = -Math.cos(this.angle) * distance;
         const y = -Math.sin(this.angle) * distance;
         const beadRadius = colorAssist ? 2.6 - i * 0.24 : 2.15 - i * 0.22;
-        this.dangerWakeBeads.circle(x, y, Math.max(1.3, beadRadius));
-        this.dangerWakeBeads.fill({ color: wakeColor, alpha: Math.max(0.22, 0.48 - i * 0.1) });
+        this.dangerGlint.circle(x, y, Math.max(1.3, beadRadius));
+        this.dangerGlint.fill({ color: wakeColor, alpha: Math.max(0.22, 0.48 - i * 0.1) });
       }
-      this.sprite.addChild(this.dangerWakeBeads);
+      this.dangerWakeBeads = this.dangerGlint;
+      this.sprite.addChild(this.dangerGlint);
 
       this.createThreatArmingCue();
     } else {
       const leadDistance = this.radius + 7;
-      const leadX = Math.cos(this.angle) * leadDistance;
-      const leadY = Math.sin(this.angle) * leadDistance;
+      const forwardX = Math.cos(this.angle);
+      const forwardY = Math.sin(this.angle);
+      const leadX = forwardX * leadDistance;
+      const leadY = forwardY * leadDistance;
       const normalX = -Math.sin(this.angle);
       const normalY = Math.cos(this.angle);
+      const playerRadius = Math.max(5, Number(this.radius) || 7);
       const backDistance = Math.max(10, this.radius + 5);
       const wingBackX = -Math.cos(this.angle) * backDistance;
       const wingBackY = -Math.sin(this.angle) * backDistance;
@@ -246,11 +246,54 @@ export class Bullet {
       this.friendlyWingTrace = new PIXI.Graphics();
       this.friendlyWingTrace.label = 'playerProjectileWingTrace';
       this.friendlyWingTrace.__novaPlayerProjectileWingTrace = true;
+      let friendlyWingTraceLaneCount = 0;
+      let friendlyTailChevronCount = 0;
+      let friendlyRibbonCount = 0;
+      let friendlyBeadCount = 0;
       this.friendlyWingTrace.moveTo(wingBackX + normalX * 5, wingBackY + normalY * 5);
       this.friendlyWingTrace.lineTo(-normalX * 2, -normalY * 2);
       this.friendlyWingTrace.moveTo(wingBackX - normalX * 5, wingBackY - normalY * 5);
       this.friendlyWingTrace.lineTo(normalX * 2, normalY * 2);
+      friendlyWingTraceLaneCount += 2;
+      for (let i = 0; i < 3; i += 1) {
+        const lane = i - 1;
+        const start = backDistance + i * 5;
+        const end = Math.max(3, backDistance * 0.25 + i * 2);
+        this.friendlyWingTrace.moveTo(-forwardX * start + normalX * lane * 3.4, -forwardY * start + normalY * lane * 3.4);
+        this.friendlyWingTrace.lineTo(-forwardX * end + normalX * lane * 1.2, -forwardY * end + normalY * lane * 1.2);
+        friendlyWingTraceLaneCount += 1;
+      }
       this.friendlyWingTrace.stroke({ color: 0x9ff8ff, width: 1.6, alpha: 0.58 });
+      for (let i = 0; i < 2; i += 1) {
+        const center = backDistance + 8 + i * 7;
+        const wing = 3.5 + i;
+        this.friendlyWingTrace.moveTo(-forwardX * center + normalX * wing, -forwardY * center + normalY * wing);
+        this.friendlyWingTrace.lineTo(-forwardX * (center + 5), -forwardY * (center + 5));
+        this.friendlyWingTrace.lineTo(-forwardX * center - normalX * wing, -forwardY * center - normalY * wing);
+        friendlyTailChevronCount += 1;
+      }
+      this.friendlyWingTrace.stroke({ color: 0xffffff, width: 1, alpha: 0.34 });
+
+      for (let i = 0; i < 2; i += 1) {
+        const side = i === 0 ? -1 : 1;
+        const start = -backDistance * 0.9;
+        const mid = -backDistance * 0.28;
+        this.friendlyWingTrace.moveTo(forwardX * start + normalX * side * 8, forwardY * start + normalY * side * 8);
+        this.friendlyWingTrace.lineTo(forwardX * mid + normalX * side * 4, forwardY * mid + normalY * side * 4);
+        this.friendlyWingTrace.lineTo(forwardX * (playerRadius * 0.3) + normalX * side * 6, forwardY * (playerRadius * 0.3) + normalY * side * 6);
+        friendlyRibbonCount += 1;
+      }
+      this.friendlyWingTrace.stroke({ color: 0x66ffff, width: 1.05, alpha: 0.34 });
+      for (let i = 0; i < 3; i += 1) {
+        const beadDistance = -backDistance - 5 - i * 5.5;
+        this.friendlyWingTrace.circle(forwardX * beadDistance, forwardY * beadDistance, Math.max(1.4, 2.3 - i * 0.3));
+        friendlyBeadCount += 1;
+      }
+      this.friendlyWingTrace.fill({ color: 0xffffff, alpha: 0.28 });
+      this.friendlyWingTrace.__novaPlayerProjectileWingTraceLaneCount = friendlyWingTraceLaneCount;
+      this.friendlyWingTrace.__novaPlayerProjectileTailChevronCount = friendlyTailChevronCount;
+      this.friendlyWingTrace.__novaPlayerProjectileRibbonCount = friendlyRibbonCount;
+      this.friendlyWingTrace.__novaPlayerProjectileBeadCount = friendlyBeadCount;
       this.sprite.addChild(this.friendlyWingTrace);
 
       this.friendlyGlint = new PIXI.Graphics();
@@ -261,13 +304,10 @@ export class Bullet {
       this.friendlyGlint.moveTo(leadX - normalX * 4, leadY - normalY * 4);
       this.friendlyGlint.lineTo(leadX + normalX * 4, leadY + normalY * 4);
       this.friendlyGlint.stroke({ color: 0x9ff8ff, width: 1.2, alpha: 0.66 });
+      this.friendlyGlint.moveTo(leadX - forwardX * 5, leadY - forwardY * 5);
+      this.friendlyGlint.lineTo(leadX + forwardX * 6, leadY + forwardY * 6);
+      this.friendlyGlint.stroke({ color: 0xffffff, width: 0.9, alpha: 0.42 });
       this.sprite.addChild(this.friendlyGlint);
-      this.playerIntentLayer = new PIXI.Graphics();
-      this.playerIntentLayer.label = 'playerProjectileIntentMarkers';
-      this.playerIntentLayer.__novaPlayerProjectileIntentMarkers = true;
-      this.playerIntentLayer.blendMode = 'add';
-      this.playerIntentLayer.visible = false;
-      this.sprite.addChild(this.playerIntentLayer);
     }
 
     this.sprite.addChild(this.core);
@@ -276,6 +316,11 @@ export class Bullet {
       isPlayer: this.isPlayer,
       friendlyGlint: Boolean(this.friendlyGlint),
       friendlyWingTrace: Boolean(this.friendlyWingTrace),
+      friendlySpeedRibbon: Boolean(this.friendlyWingTrace),
+      friendlyWingTraceLaneCount: this.friendlyWingTrace?.__novaPlayerProjectileWingTraceLaneCount || 0,
+      friendlyTailChevronCount: this.friendlyWingTrace?.__novaPlayerProjectileTailChevronCount || 0,
+      friendlyRibbonCount: this.friendlyWingTrace?.__novaPlayerProjectileRibbonCount || 0,
+      friendlyBeadCount: this.friendlyWingTrace?.__novaPlayerProjectileBeadCount || 0,
       playerIntentMarkers: Boolean(this.playerIntentLayer),
       playerIntentActive: Boolean(this.playerIntentLayer?._debugIntentMarkers?.active),
       dangerGlint: Boolean(this.dangerGlint),
@@ -362,10 +407,19 @@ export class Bullet {
     }
   }
 
+  ensurePlayerIntentLayer() {
+    if (this.playerIntentLayer) return this.playerIntentLayer;
+    this.playerIntentLayer = new PIXI.Graphics();
+    this.playerIntentLayer.label = 'playerProjectileIntentMarkers';
+    this.playerIntentLayer.__novaPlayerProjectileIntentMarkers = true;
+    this.playerIntentLayer.blendMode = 'add';
+    this.playerIntentLayer.visible = false;
+    this.sprite.addChild(this.playerIntentLayer);
+    return this.playerIntentLayer;
+  }
+
   refreshPlayerProjectileIntentMarkers() {
-    if (!this.isPlayer || !this.playerIntentLayer) return;
-    const layer = this.playerIntentLayer;
-    layer.clear();
+    if (!this.isPlayer) return;
     const intents = {
       bomb: Boolean(this.isBomb || this.powerupType === 'bomb'),
       critical: Boolean(this.isTraitCriticalShot),
@@ -376,18 +430,29 @@ export class Bullet {
     };
     const activeKeys = Object.entries(intents).filter(([, active]) => active).map(([key]) => key);
     if (!activeKeys.length) {
-      layer.visible = false;
-      layer._debugIntentMarkers = {
+      const emptyDebug = {
         active: false,
         intents,
-        markerCount: 0
+        markerCount: 0,
+        orbitBeadCount: 0,
+        chargeRingCount: 0,
+        lanceStripeCount: 0,
+        chordCount: 0
       };
+      if (this.playerIntentLayer) {
+        this.playerIntentLayer.clear();
+        this.playerIntentLayer.visible = false;
+        this.playerIntentLayer._debugIntentMarkers = emptyDebug;
+      }
       if (this.sprite?._debugProjectileReadability) {
         this.sprite._debugProjectileReadability.playerIntentActive = false;
-        this.sprite._debugProjectileReadability.intentMarkers = layer._debugIntentMarkers;
+        this.sprite._debugProjectileReadability.intentMarkers = emptyDebug;
       }
       return;
     }
+
+    const layer = this.ensurePlayerIntentLayer();
+    layer.clear();
 
     const angle = this.angle;
     const forwardX = Math.cos(angle);
@@ -408,6 +473,33 @@ export class Bullet {
           : intents.wing ? 0xffffff
             : intents.bonus ? 0xffef7e
               : 0xffffff;
+    let orbitBeadCount = 0;
+    let chargeRingCount = 0;
+    let lanceStripeCount = 0;
+    let chordCount = 0;
+
+    const chargeRadius = radius + 12 + Math.min(6, activeKeys.length * 1.4);
+    layer.circle(0, 0, chargeRadius);
+    layer.stroke({ color: primary, width: 0.9, alpha: 0.22 });
+    chargeRingCount += 1;
+
+    const orbitCount = Math.max(3, Math.min(7, activeKeys.length + 3));
+    for (let i = 0; i < orbitCount; i += 1) {
+      const a = angle + (Math.PI * 2 * i) / orbitCount + activeKeys.length * 0.18;
+      const r = chargeRadius + (i % 2) * 2.5;
+      layer.circle(Math.cos(a) * r, Math.sin(a) * r, i % 2 ? 1.8 : 2.35);
+      orbitBeadCount += 1;
+    }
+    layer.fill({ color: accent, alpha: 0.28 });
+
+    for (let i = 0; i < Math.min(3, activeKeys.length); i += 1) {
+      const lane = i - (Math.min(3, activeKeys.length) - 1) / 2;
+      const yOff = lane * 4;
+      layer.moveTo(forwardX * (-radius - 10) + normalX * yOff, forwardY * (-radius - 10) + normalY * yOff);
+      layer.lineTo(forwardX * (radius + 12) + normalX * yOff * 0.36, forwardY * (radius + 12) + normalY * yOff * 0.36);
+      chordCount += 1;
+    }
+    layer.stroke({ color: accent, width: 0.85, alpha: 0.2 + activeKeys.length * 0.04 });
 
     if (intents.bomb) {
       const ring = radius + 8;
@@ -444,6 +536,14 @@ export class Bullet {
         layer.lineTo(forwardX * (nose * 0.72) + normalX * side * 2, forwardY * (nose * 0.72) + normalY * side * 2);
       });
       layer.stroke({ color: primary, width: 1.1, alpha: 0.48 });
+      for (let i = 0; i < (intents.plasma ? 3 : 2); i += 1) {
+        const lane = i - ((intents.plasma ? 3 : 2) - 1) / 2;
+        const offset = lane * 3.4;
+        layer.moveTo(forwardX * (tail * 0.72) + normalX * offset, forwardY * (tail * 0.72) + normalY * offset);
+        layer.lineTo(forwardX * (nose + 5) + normalX * offset * 0.22, forwardY * (nose + 5) + normalY * offset * 0.22);
+        lanceStripeCount += 1;
+      }
+      layer.stroke({ color: intents.plasma ? 0xffffff : primary, width: 0.8, alpha: intents.plasma ? 0.36 : 0.24 });
       markerCount += 3;
     }
 
@@ -475,10 +575,15 @@ export class Bullet {
       intents,
       activeKeys,
       markerCount,
+      orbitBeadCount,
+      chargeRingCount,
+      lanceStripeCount,
+      chordCount,
       radius,
       primary
     };
     if (this.sprite?._debugProjectileReadability) {
+      this.sprite._debugProjectileReadability.playerIntentMarkers = true;
       this.sprite._debugProjectileReadability.playerIntentActive = true;
       this.sprite._debugProjectileReadability.intentMarkers = layer._debugIntentMarkers;
     }
@@ -538,7 +643,9 @@ export class Bullet {
         this.dangerGlint.alpha = 0.72 + Math.sin(this.pulseTimer * 3.4 * pulseRate) * 0.2;
       }
       if (this.dangerWakeBeads) {
-        this.dangerWakeBeads.alpha = 0.62 + Math.sin(this.pulseTimer * 2.1 * pulseRate) * 0.16;
+        if (this.dangerWakeBeads !== this.dangerGlint) {
+          this.dangerWakeBeads.alpha = 0.62 + Math.sin(this.pulseTimer * 2.1 * pulseRate) * 0.16;
+        }
       }
       this.updateThreatArmingCue();
     } else if (this.friendlyGlint) {

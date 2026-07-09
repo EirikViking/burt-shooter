@@ -964,7 +964,12 @@ export class Enemy {
       layer.visible = false;
       layer._debugHitFeedback = {
         visible: false,
-        sparkCount: this.hitFeedbackSparkCount || 0
+        sparkCount: this.hitFeedbackSparkCount || 0,
+        impactSliceCount: 0,
+        ricochetBeadCount: 0,
+        woundedSmokeHashCount: 0,
+        shieldSawToothCount: 0,
+        hitDirectionChevronCount: 0
       };
       return;
     }
@@ -979,6 +984,11 @@ export class Enemy {
     const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth) || 1)));
     const showArmorCracks = Number(this.maxHealth) >= 3 && healthRatio < 0.999;
     let armorCrackCount = 0;
+    let impactSliceCount = 0;
+    let ricochetBeadCount = 0;
+    let woundedSmokeHashCount = 0;
+    let shieldSawToothCount = 0;
+    let hitDirectionChevronCount = 0;
     const tickInner = radius * 0.78;
     const tickOuter = radius + 5 + damageLift * 4;
     const width = this.isEliteMiddleShip ? 2.4 : 1.7;
@@ -1007,6 +1017,34 @@ export class Enemy {
       layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 2.8 : 2.2, alpha: 0.58 + fade * 0.38 });
       layer.circle(ix, iy, this.isEliteMiddleShip ? 4.2 : 3.2);
       layer.fill({ color, alpha: 0.58 + fade * 0.3 });
+      for (let i = 0; i < 3; i += 1) {
+        const spread = (i - 1) * 0.26;
+        const sliceAngle = angle + spread;
+        const inner = impactDistance * (0.72 + i * 0.04);
+        const outer = Math.min(radius + 12, impactDistance + 18 + i * 5);
+        layer.moveTo(Math.cos(sliceAngle) * inner, Math.sin(sliceAngle) * inner);
+        layer.lineTo(Math.cos(sliceAngle) * outer, Math.sin(sliceAngle) * outer);
+        impactSliceCount += 1;
+      }
+      layer.stroke({ color: this.visualVariant?.glow || 0xffffff, width: this.isEliteMiddleShip ? 1.7 : 1.25, alpha: 0.3 + fade * 0.32 });
+      for (let i = 0; i < 4; i += 1) {
+        const beadAngle = angle + Math.PI + (i - 1.5) * 0.18;
+        const beadDistance = radius * (0.38 + i * 0.11);
+        layer.circle(Math.cos(beadAngle) * beadDistance, Math.sin(beadAngle) * beadDistance, Math.max(1.3, 2.6 - i * 0.22));
+        ricochetBeadCount += 1;
+      }
+      layer.fill({ color: 0xffffff, alpha: 0.18 + fade * 0.18 });
+      for (let i = 0; i < 2; i += 1) {
+        const chevronDistance = impactDistance + 10 + i * 8;
+        const chevronWidth = 5 + i * 1.4;
+        const cx = Math.cos(angle) * chevronDistance;
+        const cy = Math.sin(angle) * chevronDistance;
+        layer.moveTo(cx - nx * chevronWidth - Math.cos(angle) * 4, cy - ny * chevronWidth - Math.sin(angle) * 4);
+        layer.lineTo(cx + Math.cos(angle) * 5, cy + Math.sin(angle) * 5);
+        layer.lineTo(cx + nx * chevronWidth - Math.cos(angle) * 4, cy + ny * chevronWidth - Math.sin(angle) * 4);
+        hitDirectionChevronCount += 1;
+      }
+      layer.stroke({ color, width: 1.3, alpha: 0.28 + fade * 0.26 });
     }
     if (showArmorCracks) {
       const crackCount = healthRatio <= 0.35 ? 5 : healthRatio <= 0.65 ? 4 : 3;
@@ -1043,6 +1081,28 @@ export class Enemy {
       layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.9, alpha: 0.42 + fade * 0.28 });
       layer.circle(0, 0, Math.max(4, this.radius * 0.22));
       layer.stroke({ color, width: 1.7, alpha: 0.26 + fade * 0.28 });
+      const sawCount = healthRatio <= 0.35 ? 8 : 6;
+      for (let i = 0; i < sawCount; i += 1) {
+        const angle = baseAngle + Math.PI * 0.5 + (i - (sawCount - 1) / 2) * 0.16;
+        const inner = this.radius * (0.72 + (i % 2) * 0.08);
+        const outer = this.radius * (0.98 + (i % 2) * 0.12);
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        shieldSawToothCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + fade * 0.22 });
+      for (let i = 0; i < 3; i += 1) {
+        const hashAngle = baseAngle + Math.PI + (i - 1) * 0.38;
+        const hashRadius = this.radius * (0.58 + i * 0.12);
+        const cx = Math.cos(hashAngle) * hashRadius;
+        const cy = Math.sin(hashAngle) * hashRadius;
+        const tx = -Math.sin(hashAngle) * (4 + i);
+        const ty = Math.cos(hashAngle) * (4 + i);
+        layer.moveTo(cx - tx, cy - ty);
+        layer.lineTo(cx + tx, cy + ty);
+        woundedSmokeHashCount += 1;
+      }
+      layer.stroke({ color, width: 1, alpha: 0.2 + fade * 0.18 });
     }
     layer.visible = true;
     layer._debugHitFeedback = {
@@ -1054,6 +1114,11 @@ export class Enemy {
       impactAngle: hasImpactNotch ? Number(this.hitFeedbackImpactAngle.toFixed(3)) : null,
       impactDistance: hasImpactNotch ? Number((this.hitFeedbackImpactDistance || 0).toFixed(1)) : 0,
       armorCrackCount,
+      impactSliceCount,
+      ricochetBeadCount,
+      woundedSmokeHashCount,
+      shieldSawToothCount,
+      hitDirectionChevronCount,
       healthRatio: Number(healthRatio.toFixed(3)),
       sparkCount: this.hitFeedbackSparkCount || 0
     };
@@ -1477,10 +1542,21 @@ export class Enemy {
     else if (this.y > gameHeight * 0.55) inboundAngle = -Math.PI / 2;
     let inboundChevronCount = 0;
     let entryGateTickCount = 0;
+    let entryGhostLaneCount = 0;
+    let braidChevronCount = 0;
+    let formationBracketCount = 0;
+    let entryLockPipCount = 0;
+    let approachSparkCount = 0;
     layer.circle(0, 0, outer);
     layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
     layer.circle(0, 0, radius * 0.66);
     layer.stroke({ color: 0xffffff, width: 1, alpha: 0.18 * fade });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = sweep * 0.35 + i * Math.PI * 0.5;
+      layer.circle(Math.cos(angle) * (outer + 5), Math.sin(angle) * (outer + 5), this.isEliteMiddleShip ? 2.4 : 1.8);
+      entryLockPipCount += 1;
+    }
+    layer.fill({ color: 0xffffff, alpha: 0.14 * fade + 0.06 });
     for (let i = 0; i < 4; i += 1) {
       const angle = sweep + i * Math.PI * 0.5;
       const inner = radius * 0.5;
@@ -1508,6 +1584,38 @@ export class Enemy {
     }
     layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 1.6 : 1.25, alpha: 0.24 * fade + 0.1 });
 
+    for (let i = 0; i < 3; i += 1) {
+      const lane = i - 1;
+      const startDistance = outer + 42 + i * 10;
+      const endDistance = outer + 8 + i * 3;
+      const laneOffsetX = sideX * lane * (9 + progress * 3);
+      const laneOffsetY = sideY * lane * (9 + progress * 3);
+      layer.moveTo(-dirX * startDistance + laneOffsetX, -dirY * startDistance + laneOffsetY);
+      layer.lineTo(-dirX * endDistance + laneOffsetX * 0.28, -dirY * endDistance + laneOffsetY * 0.28);
+      entryGhostLaneCount += 1;
+    }
+    layer.stroke({ color, width: 1.05, alpha: 0.12 * fade + 0.08 });
+
+    for (let i = 0; i < 2; i += 1) {
+      const distance = outer + 28 + i * 15;
+      for (const braidSide of [-1, 1]) {
+        const baseX = -dirX * distance + sideX * braidSide * (7 + i * 2);
+        const baseY = -dirY * distance + sideY * braidSide * (7 + i * 2);
+        layer.moveTo(baseX - sideX * braidSide * 3, baseY - sideY * braidSide * 3);
+        layer.lineTo(baseX + dirX * (8 + progress * 4), baseY + dirY * (8 + progress * 4));
+        layer.lineTo(baseX + sideX * braidSide * 3, baseY + sideY * braidSide * 3);
+        braidChevronCount += 1;
+      }
+    }
+    layer.stroke({ color: 0x37f5ff, width: 1, alpha: 0.2 * fade + 0.06 });
+
+    for (let i = 0; i < 3; i += 1) {
+      const distance = outer + 18 + i * 13 - progress * 10;
+      layer.circle(-dirX * distance + sideX * (i - 1) * 3, -dirY * distance + sideY * (i - 1) * 3, Math.max(1.4, 2.6 - i * 0.28));
+      approachSparkCount += 1;
+    }
+    layer.fill({ color: color, alpha: 0.18 * fade + 0.1 });
+
     for (const offset of [-1, 1]) {
       const gateDistance = outer + 6;
       const gateCenterX = -dirX * gateDistance + sideX * offset * Math.max(12, radius * 0.44);
@@ -1517,6 +1625,16 @@ export class Enemy {
       entryGateTickCount += 1;
     }
     layer.stroke({ color, width: 1.6, alpha: 0.34 * fade });
+    for (const offset of [-1, 1]) {
+      const bracketRadius = radius * 0.78;
+      const cx = sideX * offset * bracketRadius - dirX * radius * 0.18;
+      const cy = sideY * offset * bracketRadius - dirY * radius * 0.18;
+      layer.moveTo(cx - dirX * 5, cy - dirY * 5);
+      layer.lineTo(cx + sideX * offset * 8, cy + sideY * offset * 8);
+      layer.lineTo(cx + dirX * 5 + sideX * offset * 8, cy + dirY * 5 + sideY * offset * 8);
+      formationBracketCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 * fade + 0.08 });
     layer.visible = true;
     layer._debugSpawnCue = {
       visible: true,
@@ -1525,6 +1643,11 @@ export class Enemy {
       fade: Number(fade.toFixed(3)),
       inboundChevronCount,
       entryGateTickCount,
+      entryGhostLaneCount,
+      braidChevronCount,
+      formationBracketCount,
+      entryLockPipCount,
+      approachSparkCount,
       inboundAngle: Number(inboundAngle.toFixed(3))
     };
   }
@@ -1539,7 +1662,10 @@ export class Enemy {
       layer.visible = false;
       layer._debugThreatFrame = {
         visible: false,
-        tier: profile?.tier || null
+        tier: profile?.tier || null,
+        orbitalPipCount: 0,
+        warningBracketCount: 0,
+        vectorArrowCount: 0
       };
       return;
     }
@@ -1549,6 +1675,9 @@ export class Enemy {
     const outer = radius + (profile.tier === 'elite' ? 8 : 5);
     const markerCount = Math.max(3, profile.markerCount || 3);
     let motionTrailCount = 0;
+    let orbitalPipCount = 0;
+    let warningBracketCount = 0;
+    let vectorArrowCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
 
     layer.circle(0, 0, radius);
@@ -1561,6 +1690,27 @@ export class Enemy {
       drawThreatFrameTick(layer, angle, radius - 4, outer + 6);
     }
     layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
+
+    const orbitalRadius = outer + 13 + pulse * 2;
+    const orbitalCount = profile.tier === 'elite' ? markerCount + 2 : Math.max(4, markerCount);
+    for (let i = 0; i < orbitalCount; i += 1) {
+      const angle = now * 0.0018 + this.idlePhase * 0.18 + i * (Math.PI * 2 / orbitalCount);
+      layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' ? 2.4 : 1.8);
+      orbitalPipCount += 1;
+    }
+    layer.fill({ color: profile.accent, alpha: 0.12 + pulse * 0.1 });
+
+    for (const angle of [-Math.PI / 4, Math.PI / 4, Math.PI * 0.75, Math.PI * 1.25]) {
+      const r = outer + 2;
+      const tangent = angle + Math.PI * 0.5;
+      const cx = Math.cos(angle) * r;
+      const cy = Math.sin(angle) * r;
+      layer.moveTo(cx - Math.cos(tangent) * 5, cy - Math.sin(tangent) * 5);
+      layer.lineTo(cx + Math.cos(angle) * 5, cy + Math.sin(angle) * 5);
+      layer.lineTo(cx + Math.cos(tangent) * 5, cy + Math.sin(tangent) * 5);
+      warningBracketCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.14 + pulse * 0.12 });
 
     if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
       for (let i = 0; i < markerCount; i += 1) {
@@ -1605,6 +1755,15 @@ export class Enemy {
       }
       layer.fill({ color: profile.accent, alpha: 0.28 + pulse * 0.2 });
       layer.stroke({ color: profile.accent, width: 1.8, alpha: 0.32 + pulse * 0.24 });
+      for (let i = 0; i < 2; i += 1) {
+        const y = outer + 18 + i * 8;
+        const spread = 5 + i * 2;
+        layer.moveTo(-spread, y);
+        layer.lineTo(0, y + 8 + pulse * 4);
+        layer.lineTo(spread, y);
+        vectorArrowCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + pulse * 0.2 });
     }
 
     layer.visible = true;
@@ -1613,7 +1772,10 @@ export class Enemy {
       tier: profile.tier,
       markerCount,
       radius: Number(outer.toFixed(1)),
-      motionTrailCount
+      motionTrailCount,
+      orbitalPipCount,
+      warningBracketCount,
+      vectorArrowCount
     };
   }
 

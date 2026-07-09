@@ -263,6 +263,10 @@ try {
   if (state.counts?.enemyBullets !== 2) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (!state.player?.isPlayer) failures.push(`player debug missing isPlayer: ${JSON.stringify(state.player)}`);
   if (!state.player?.friendlyGlint || !state.player?.friendlyWingTrace) failures.push(`friendly projectile markers missing: ${JSON.stringify(state.player)}`);
+  if (!state.player?.friendlySpeedRibbon) failures.push(`friendly projectile speed ribbon missing: ${JSON.stringify(state.player)}`);
+  if ((state.player?.friendlyWingTraceLaneCount || 0) < 5) failures.push(`friendly wing trace lanes too sparse: ${JSON.stringify(state.player)}`);
+  if ((state.player?.friendlyTailChevronCount || 0) < 2) failures.push(`friendly tail chevrons missing: ${JSON.stringify(state.player)}`);
+  if ((state.player?.friendlyRibbonCount || 0) < 2 || (state.player?.friendlyBeadCount || 0) < 3) failures.push(`friendly speed ribbon debug missing: ${JSON.stringify(state.player)}`);
   if (state.player?.playerIntentActive) failures.push(`plain player bullet should not show intent markers: ${JSON.stringify(state.player)}`);
   if (state.player?.dangerGlint) failures.push(`player bullet should not have danger glint: ${JSON.stringify(state.player)}`);
   if ((state.player?.dangerWakeBeadCount || 0) !== 0) failures.push(`player bullet should not have danger wake beads: ${JSON.stringify(state.player)}`);
@@ -287,6 +291,10 @@ try {
     if (!marker?.active) failures.push(`${key} intent marker inactive: ${JSON.stringify(marker)}`);
     if (!marker?.intents?.[key === 'critical' ? 'critical' : key]) failures.push(`${key} intent flag missing: ${JSON.stringify(marker)}`);
     if ((marker?.markerCount || 0) < 2) failures.push(`${key} marker count too low: ${JSON.stringify(marker)}`);
+    if ((marker?.orbitBeadCount || 0) < 4) failures.push(`${key} orbit beads missing: ${JSON.stringify(marker)}`);
+    if ((marker?.chargeRingCount || 0) < 1) failures.push(`${key} charge ring missing: ${JSON.stringify(marker)}`);
+    if ((marker?.chordCount || 0) < 1) failures.push(`${key} chord marker missing: ${JSON.stringify(marker)}`);
+    if (key === 'piercing' && (marker?.lanceStripeCount || 0) < 2) failures.push(`${key} lance stripes missing: ${JSON.stringify(marker)}`);
   }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
