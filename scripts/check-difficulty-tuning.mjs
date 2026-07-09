@@ -156,8 +156,8 @@ if (BalanceConfig.DIFFICULTY_MULTIPLIER !== 0.7524) {
 if (BalanceConfig.difficulty.pressureScalar !== 0.72675) {
   fail(`global fire/projectile pressure scalar should be reduced by a further 5% to 0.72675, got ${BalanceConfig.difficulty.pressureScalar}`);
 }
-if (SCORE_REWARD_MULTIPLIER !== 1.15) {
-  fail(`score reward multiplier should be 1.15 for the requested 15% score increase, got ${SCORE_REWARD_MULTIPLIER}`);
+if (SCORE_REWARD_MULTIPLIER !== 1.265) {
+  fail(`score reward multiplier should be 1.265 after the requested 10% overall score lift, got ${SCORE_REWARD_MULTIPLIER}`);
 }
 
 assertRange('levels 1 to 2 conservative opening', summaryByLabel.get('levels 1 to 2').increasePct / 100, [0.03, 0.07]);

@@ -103,7 +103,8 @@ const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
-const SECTOR_ARRIVAL_STINGER_MS = 2400;
+const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
+const SECTOR_ARRIVAL_STINGER_MS = 2400 + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
@@ -1955,18 +1956,28 @@ export class PlayScene {
     });
     const compactHud = this.game.getWidth() < 620;
     const fontSize = compactHud ? (postBoss ? 21 : 25) : (postBoss ? 34 : 42);
-    this.reserveMessageFocus(postBoss ? 1550 : 800, {
-      priority: 2,
-      slots: ['center', 'top', 'corner']
+    const baseDuration = postBoss ? 1450 : 2000;
+    const readableDuration = baseDuration + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
+    const priority = postBoss ? 5 : 2;
+    if (postBoss) {
+      this.deferActiveToastDisplay(this.activeTopToast, 'top', readableDuration + 180, { minRemainingMs: 1400 });
+      this.deferActiveToastDisplay(this.activeCornerToast, 'corner', readableDuration + 180, { minRemainingMs: 1200 });
+    }
+    this.reserveMessageFocus(readableDuration + 220, {
+      priority,
+      slots: postBoss ? ['center', 'top', 'corner'] : ['center']
     });
     this.showToast(localizedMessage, {
       fontSize,
-      fill: '#ffff00',
-      stroke: '#ff8800',
-      strokeThickness: compactHud ? 2 : 3,
-      duration: postBoss ? 1450 : 2000,
+      fill: '#fff06a',
+      stroke: '#05070f',
+      strokeThickness: compactHud ? 3 : 6,
+      accent: 0xffd24d,
+      dropShadowColor: '#ff9d22',
+      dropShadowBlur: compactHud ? 3 : 5,
+      duration: baseDuration,
       type: 'level_up',
-      priority: 2,
+      priority,
       bypassFocusLock: true,
       transition: true,
       slot: 'center',
@@ -9276,6 +9287,48 @@ export class PlayScene {
     }
   }
 
+  deferActiveToastDisplay(display, slot, delayMs = 0, { minRemainingMs = 900 } = {}) {
+    const meta = display?.__toastMeta;
+    if (!display || !meta?.message) return false;
+    const now = Date.now();
+    const priority = Number.isFinite(meta.priority) ? meta.priority : 0;
+    const elapsed = Math.max(0, now - (meta.createdAt || now));
+    const originalDuration = Math.max(0, Number(meta.duration) || 0);
+    const remaining = Math.max(
+      Math.max(0, Number(minRemainingMs) || 0),
+      Math.max(0, originalDuration - elapsed)
+    );
+    const notBefore = now + Math.max(0, Number(delayMs) || 0);
+    const type = meta.type || meta.originalOptions?.type || 'generic';
+    const duplicateKey = meta.duplicateKey || this.getToastDuplicateKey(meta.message, type);
+    const entry = {
+      message: meta.message,
+      priority,
+      createdAt: now,
+      notBefore,
+      duplicateKey,
+      options: {
+        ...(meta.originalOptions || {}),
+        slot,
+        type,
+        priority,
+        duration: remaining,
+        extraReadTimeMs: 0,
+        notBefore,
+        duplicateKey
+      }
+    };
+
+    this.dismissToastDisplay(display, slot);
+    const queue = this.getToastQueueForSlot(slot);
+    if (!queue) return false;
+    if (duplicateKey && this.collapseQueuedDuplicateToast(entry)) return true;
+    queue.push(entry);
+    queue.sort((a, b) => b.priority - a.priority || (a.notBefore || 0) - (b.notBefore || 0) || a.createdAt - b.createdAt);
+    while (queue.length > this.getToastQueueLimit(slot)) queue.pop();
+    return true;
+  }
+
   clearToastState() {
     this.toastQueue = [];
     this.toastTopQueue = [];
@@ -9319,7 +9372,11 @@ export class PlayScene {
     if (!entry?.message) return false;
     const sourceOptions = entry.options || entry.originalOptions || {};
     const baseFontSize = Number(sourceOptions.fontSize) || (this.game.getWidth() < 620 ? 16 : 20);
-    const duration = Math.max(500, Math.min(Number(remainingMs) || Number(sourceOptions.duration) || 1300, 1500));
+    const hasRemainingMs = Number.isFinite(Number(remainingMs));
+    const duration = Math.max(500, Math.min(
+      hasRemainingMs ? Number(remainingMs) : (Number(sourceOptions.duration) || 1300),
+      hasRemainingMs ? 1200 + GAMEPLAY_MESSAGE_EXTRA_READ_MS : 1500
+    ));
     const nextEntry = {
       message: entry.message,
       priority: Math.max(Number(entry.priority) || Number(sourceOptions.priority) || 0, 1),
@@ -9333,6 +9390,7 @@ export class PlayScene {
         priority: Math.max(Number(entry.priority) || Number(sourceOptions.priority) || 0, 1),
         fontSize: Math.min(baseFontSize, this.game.getWidth() < 620 ? 15 : 18),
         duration,
+        extraReadTimeMs: hasRemainingMs ? 0 : sourceOptions.extraReadTimeMs,
         notBefore: now,
         combatRelocated: true,
         duplicateKey: sourceOptions.duplicateKey || this.getToastDuplicateKey(entry.message, sourceOptions.type || entry.type || 'generic')
@@ -9351,7 +9409,10 @@ export class PlayScene {
     const meta = display?.__toastMeta;
     if (!display || !meta || !this.shouldRelocateCenterToastForCombat(meta)) return false;
     const elapsed = Math.max(0, now - (meta.createdAt || now));
-    const remaining = Math.max(550, Math.min((meta.duration || 1200) - elapsed, 1200));
+    const remaining = Math.max(550, Math.min(
+      (meta.duration || 1200) - elapsed,
+      1200 + GAMEPLAY_MESSAGE_EXTRA_READ_MS
+    ));
     const relocated = this.queueCombatRelocatedToast({
       message: meta.message,
       type: meta.type,
@@ -9816,7 +9877,9 @@ export class PlayScene {
         lineHeight: Math.round(fontSize + (isMajorSignal ? 7 : 6)),
         dropShadow: true,
         dropShadowColor: options.dropShadowColor || accentHex,
-        dropShadowBlur: isMajorSignal ? 8 : 5,
+        dropShadowBlur: Number.isFinite(Number(options.dropShadowBlur))
+          ? Number(options.dropShadowBlur)
+          : (isMajorSignal ? 8 : 5),
         dropShadowDistance: 0
       });
 
@@ -9894,7 +9957,13 @@ export class PlayScene {
       }
     }
 
-    const duration = options.duration || (slot === 'corner' ? 1800 : 2200);
+    const baseDuration = Number.isFinite(Number(options.duration))
+      ? Number(options.duration)
+      : (slot === 'corner' ? 1800 : 2200);
+    const extraReadTimeMs = Number.isFinite(Number(options.extraReadTimeMs))
+      ? Number(options.extraReadTimeMs)
+      : GAMEPLAY_MESSAGE_EXTRA_READ_MS;
+    const duration = Math.max(0, baseDuration + Math.max(0, extraReadTimeMs));
     const now = Date.now();
     display.__toastMeta = {
       message,
@@ -12761,7 +12830,7 @@ export class PlayScene {
     const compact = width < 720;
     const panelWidth = Math.max(300, Math.min(compact ? width - 34 : 640, width * 0.72));
     const panelHeight = compact ? 164 : 132;
-    const duration = compact ? 1680 : 1780;
+    const duration = (compact ? 1680 : 1780) + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
     const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
       if (!text) return;
       text.scale.set(1);

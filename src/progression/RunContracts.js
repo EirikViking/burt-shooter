@@ -975,8 +975,9 @@ export function getDefaultShowPilotOrders(progress = {}) {
   return !isMaturePilotOrdersProfile(progress);
 }
 
-function shouldPreserveRunProgress(id) {
-  return getRunContractById(id)?.persistAcrossRuns === true;
+function shouldSeedRunProgress(id) {
+  const contract = getRunContractById(id);
+  return Boolean(contract?.persistAcrossRuns) || floor(contract?.target) > 1;
 }
 
 function getPilotRankDisplay(progress = {}) {
@@ -1047,7 +1048,7 @@ export function prepareRunContractsForEligibleRun(state = {}) {
   const activeIds = selectActiveIds(normalized.activeIds, normalized.completed, { rotateCompleted: true });
   const progress = {};
   for (const id of activeIds) {
-    if (shouldPreserveRunProgress(id) && normalized.progress[id] && !normalized.completed[id]) {
+    if (shouldSeedRunProgress(id) && normalized.progress[id] && !normalized.completed[id]) {
       progress[id] = normalized.progress[id];
     }
   }
@@ -1168,7 +1169,7 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
       const savedProgress = state.progress?.[id] || null;
       const progressValue = contract?.objective === 'pilot_rank_reached'
         ? Math.min(contract.target || 1, Math.max(floor(savedProgress?.progress), getPilotRankDisplay(progress)))
-        : contract?.persistAcrossRuns
+        : shouldSeedRunProgress(id)
           ? Math.min(contract.target || 1, floor(savedProgress?.progress))
           : 0;
       const uniqueIds = contract?.objective === 'unique_enemy_defeats'
@@ -1307,7 +1308,7 @@ export function applyRunContractEvent(session, event = {}) {
 
 export function recordRunContractSessionProgress(state = {}, session = {}) {
   const normalized = normalizeRunContractsState(state);
-  const progress = {};
+  const progress = { ...normalized.progress };
   for (const item of Array.isArray(session.active) ? session.active : []) {
     const contract = getRunContractById(item.id);
     if (!contract || normalized.completed[item.id]) continue;
@@ -1326,7 +1327,8 @@ export function recordRunContractSessionProgress(state = {}, session = {}) {
       });
       entry.progress = Math.min(contract.target || 1, Math.max(entry.progress, entry.uniqueIds.length));
     }
-    progress[item.id] = entry;
+    const merged = mergeProgressEntry(entry, normalized.progress?.[item.id], item.id);
+    if (merged) progress[merged.id] = merged;
   }
   return normalizeRunContractsState({
     ...normalized,

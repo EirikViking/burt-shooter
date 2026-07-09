@@ -357,9 +357,9 @@ function validateProgression() {
 
 function validateScoreAndLeaderboards() {
   if (SCORE_NORMALIZATION_FACTOR !== 0.1) fail(`score normalization factor is ${SCORE_NORMALIZATION_FACTOR}, expected 0.1`);
-  if (SCORE_REWARD_MULTIPLIER !== 1.15) fail(`score reward multiplier is ${SCORE_REWARD_MULTIPLIER}, expected 1.15`);
+  if (SCORE_REWARD_MULTIPLIER !== 1.265) fail(`score reward multiplier is ${SCORE_REWARD_MULTIPLIER}, expected 1.265`);
   if (SCORE_NORMALIZATION_ROUNDING !== 'Math.round') fail(`score rounding is ${SCORE_NORMALIZATION_ROUNDING}, expected Math.round`);
-  if (normalizeScoreDelta(100000) !== 11500) fail(`100000 should normalize to 11500 with reward multiplier, got ${normalizeScoreDelta(100000)}`);
+  if (normalizeScoreDelta(100000) !== 12650) fail(`100000 should normalize to 12650 with reward multiplier, got ${normalizeScoreDelta(100000)}`);
   if (normalizeLegacyScoreForReset(553006) !== 55301) {
     fail(`553006 should normalize to 55301, got ${normalizeLegacyScoreForReset(553006)}`);
   }

@@ -352,6 +352,87 @@ function runCatalogAndSaveTests() {
   const nearMissTenResult = applyRunContractEvent(sessionFor(['near_miss_streak_10']), { type: 'near_miss', streak: 10, sector: 1 });
   assert.deepEqual(nearMissTenResult.completed.map((entry) => entry.id), ['near_miss_streak_10']);
 
+  const savedPartialOrders = normalizeRunContractsState({
+    activeIds: ['near_miss_streak', 'support_hunter', 'enemy_sweep_2500'],
+    progress: {
+      near_miss_streak: {
+        id: 'near_miss_streak',
+        progress: 3,
+        target: 5,
+        updatedAt: '2026-07-09T12:00:00.000Z',
+        lastRunMode: RUN_MODES.RANKED,
+        lastSector: 1
+      },
+      support_hunter: {
+        id: 'support_hunter',
+        progress: 1,
+        target: 2,
+        updatedAt: '2026-07-09T12:00:00.000Z',
+        lastRunMode: RUN_MODES.RANKED,
+        lastSector: 2
+      },
+      enemy_sweep_2500: {
+        id: 'enemy_sweep_2500',
+        progress: 723,
+        target: 2500,
+        updatedAt: '2026-07-09T12:00:00.000Z',
+        lastRunMode: RUN_MODES.RANKED,
+        lastSector: 4
+      }
+    }
+  });
+  const savedNearMissMenuEntry = getRunContractMenuState(savedPartialOrders).active.find((entry) => entry.id === 'near_miss_streak');
+  assert.equal(savedNearMissMenuEntry.progress, 3, 'near-miss saved menu progress should start at 3/5');
+  const seededPartialSession = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: { runContracts: savedPartialOrders }
+  });
+  assert.equal(findSessionItem(seededPartialSession, 'near_miss_streak').progress, 3, 'near-miss session progress should seed from the menu value');
+  assert.equal(findSessionItem(seededPartialSession, 'support_hunter').progress, 1, 'saved multi-count orders should seed from the menu value');
+  const lowerNearMissSession = {
+    ...seededPartialSession,
+    active: seededPartialSession.active.map((item) => (
+      item.id === 'near_miss_streak' ? { ...item, progress: 1, lastSector: 1 } :
+        item.id === 'support_hunter' ? { ...item, progress: 0, lastSector: 1 } :
+          item
+    ))
+  };
+  const recordedNearMiss = recordRunContractSessionProgress(savedPartialOrders, lowerNearMissSession);
+  assert.equal(
+    getRunContractMenuState(recordedNearMiss).active.find((entry) => entry.id === 'near_miss_streak').progress,
+    3,
+    'near-miss saved menu progress must not regress from 3/5 to 1/5 after a run'
+  );
+  assert.equal(
+    getRunContractMenuState(recordedNearMiss).active.find((entry) => entry.id === 'support_hunter').progress,
+    1,
+    'saved multi-count order progress must not regress when a later session reports a lower value'
+  );
+  const lowerCountSession = {
+    ...seededPartialSession,
+    active: seededPartialSession.active.map((item) => (
+      item.id === 'enemy_sweep_2500' ? { ...item, progress: 728, lastSector: 5 } : item
+    ))
+  };
+  const recordedCount = recordRunContractSessionProgress(savedPartialOrders, lowerCountSession);
+  assert.equal(
+    getRunContractMenuState(recordedCount).active.find((entry) => entry.id === 'enemy_sweep_2500').progress,
+    728,
+    'counting orders should still advance when the current run exceeds the saved value'
+  );
+  const staleCountSession = {
+    ...seededPartialSession,
+    active: seededPartialSession.active.map((item) => (
+      item.id === 'enemy_sweep_2500' ? { ...item, progress: 700, lastSector: 5 } : item
+    ))
+  };
+  const recordedStaleCount = recordRunContractSessionProgress(savedPartialOrders, staleCountSession);
+  assert.equal(
+    getRunContractMenuState(recordedStaleCount).active.find((entry) => entry.id === 'enemy_sweep_2500').progress,
+    723,
+    'saved counting order progress must not regress when a stale session reports a lower value'
+  );
+
   const blinkResult = applyRunContractEvent(sessionFor(['blink_control']), { type: 'blink_drive_survived', survivedSeconds: 6, sector: 1 });
   assert.deepEqual(blinkResult.completed.map((entry) => entry.id), ['blink_control']);
 
