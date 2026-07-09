@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-07-09T17:53:10.000Z",
+  "status": "uploaded_private_unassigned",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24132596",
+  "sourceCommit": "4268eb6 Tune sector and combat message timing",
+  "buildStamp": "v2026-07-09_19-41-50",
+  "setLive": "",
+  "setLiveBlank": true,
+  "steamworksSettingsTouched": false,
+  "publicBranchAssigned": false,
+  "contentRoot": "..\\\\desktop\\\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_message_timing_surgical_20260709.log",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916313073,
+    "manifestHash": "b14c18b345511960d97916250dd401fe3c519d24cb326115542c007eb0f5c75c",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "4847ca4563a102275e873365c7d40789888844ef44f6f8a1344b60cb79eab7df",
+      "modifiedAt": "2026-07-09T17:48:31.530Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-09 19:52:44]: Successfully finished AppID 4765070 build (BuildID 24132596).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true
+  },
+  "verification": {
+    "sourceCommit": "4268eb6",
+    "gitDiffCheck": "passed",
+    "i18n": "passed",
+    "sectorArrivalStingerStaticCheck": "passed",
+    "releaseLine": "passed before package and during VDF generation",
+    "packageSteamWin": "passed",
+    "steamPackageRuntime": "passed during package and VDF generation",
+    "payloadManifest": "passed",
+    "vdfSetLiveBlank": "passed",
+    "smokeTests": "skipped by explicit user request"
+  },
+  "notes": [
+    "SteamCMD upload only; no Steamworks site, branch assignment, metadata, pricing, achievements, leaderboard identity, or cloud settings changed.",
+    "Build remains private/unassigned until manually assigned in Steamworks.",
+    "Smoke tests were intentionally skipped because the user requested no smoke test and direct Steam deploy."
+  ]
+}

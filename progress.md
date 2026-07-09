@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-09 Surgical Message Timing Hotfix
+
+- Current request: remove the redundant in-play sector announcement that appears just after the sector transition screen, keep the wave/tactic banner such as `WAVE 6/6: DIVE CHAIN / ... STAGGERED WING` readable longer, also keep the `BOSS DEFEATED` message readable longer, skip smoke tests, and deploy directly to Steam.
+- Implementation direction: `startLevel()` now skips `showLevelIntro()` whenever the full-screen sector arrival stinger is shown, so the same sector is not announced twice. Wave briefing toast base duration increased from `1050ms` to `2800ms` before the shared extra read-time budget, and the boss defeated toast base duration increased from `2300ms` to `3600ms` before the shared extra read-time budget.
+- Verification: passed `git diff --check`, `npm run check:i18n`, `node scripts/check-sector-arrival-stinger.mjs`, `npm run check:release-line`, `npm run package:steam:win`, payload manifest, VDF generation with blank `SetLive`, and SteamCMD upload. Smoke tests, packaged smoke, and desktop smoke were intentionally skipped by explicit user request.
+- Steam package/upload evidence: source commit `4268eb6 Tune sector and combat message timing` packaged as `v2026-07-09_19-41-50`; payload manifest recorded 336 files / 916,313,073 bytes with manifest hash `b14c18b345511960d97916250dd401fe3c519d24cb326115542c007eb0f5c75c`; VDF verified AppID `4765070`, depot `4765071`, `ContentRoot "..\\desktop\\win-unpacked"`, and `SetLive ""`; SteamCMD cached login uploaded private unassigned BuildID `24132596`. Evidence recorded in `release/steamworks/steam_upload_evidence_message_timing_surgical_20260709_24132596.json`. No Steam branch, public/default assignment, store metadata, AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud paths, price metadata, or live branch settings changed.
+- Scope notes: no new player-facing copy was added, so locale files were unchanged and no untranslated text remains from this pass. The uploaded BuildID is private/unassigned until manually assigned in Steamworks.
+
 ## 2026-07-09 Readable Gameplay Messages / Score Lift / Pilot Orders Counter Fix
 
 - Current request: keep boss/gameplay messages on-screen one extra second, increase overall leaderboard score output by 10%, brighten the sector announcement font, fix Pilot Orders counters that could regress after launching Mayhem, and deploy the finished patch to Steam.
