@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-07-09T16:33:20.000Z",
+  "status": "uploaded_private_unassigned",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24131435",
+  "sourceCommit": "e84509b Fix pilot order counters and readable gameplay messages",
+  "buildStamp": "v2026-07-09_18-20-01",
+  "setLive": "",
+  "setLiveBlank": true,
+  "steamworksSettingsTouched": false,
+  "publicBranchAssigned": false,
+  "contentRoot": "..\\\\desktop\\\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_readable_messages_score_pilot_orders_20260709.log",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916313070,
+    "manifestHash": "50773f42d9b011e50970c0b7e5169a4621c34261a52e5f740ca1a056e668efc1",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "161c14de7b0acf9c702d19f0afdb6630768361d96e980d1778282912d5acba51",
+      "modifiedAt": "2026-07-09T16:24:21.776Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-09 18:30:11]: Successfully finished AppID 4765070 build (BuildID 24131435).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true
+  },
+  "verification": {
+    "sourceCommit": "e84509b",
+    "releaseLine": "passed before package and during VDF generation",
+    "packageSteamWin": "passed",
+    "steamPackageRuntime": "passed during package and VDF generation",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-07-09T16-24-43-138Z/report.json",
+    "packagedControls": "test-results/packaged-control-smoke-2026-07-09T16-24-43-186Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-07-09T16-25-35-105Z/report.json",
+    "currentDesktopSmoke": "test-results/electron-smoke-2026-07-09T16-32-08-602Z/report.json",
+    "payloadManifest": "passed",
+    "desktopPackageReview": "passed",
+    "vdfSetLiveBlank": "passed"
+  },
+  "notes": [
+    "SteamCMD upload only; no Steamworks site, branch assignment, metadata, pricing, achievements, leaderboard identity, or cloud settings changed.",
+    "Build remains private/unassigned until manually assigned in Steamworks."
+  ]
+}
