@@ -914,7 +914,7 @@ async function runBrowserSmoke() {
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01/50', '02/50', '03/50'], 'main-menu rows should expose their finite Pilot Orders slots');
     assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^Graze x10$/, 'main-menu row title should stay compact');
-    assert.match(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS: Graze x10 0\/10/, 'Mayhem briefing should surface the next active Pilot Order without catalog or track-count clutter');
+    assert.doesNotMatch(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS/i, 'Run Modes briefing should not duplicate Pilot Orders progress');
 
     const secondRowBounds = activeProof.state.menu.missionBoard.rows[1]?.bounds;
     await page.mouse.move(

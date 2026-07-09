@@ -28,6 +28,11 @@ const BOSS_PHASE_PLANS = {
 const BOSS_HURT_FLASH_MS = 220;
 const BOSS_FIRE_RECOIL_MS = 300;
 const BOSS_PHASE_PULSE_MS = 1080;
+const BOSS_SPAWN_INVULNERABLE_MS = 800;
+const BOSS_FAST_KILL_LOCK_MS = 5200;
+const BOSS_ARMOR_BLEED_START_RATIO = 0.18;
+const BOSS_ARMOR_BLEED_MIN_SCALE = 0.18;
+const BOSS_ARMOR_BLEED_MAX_SCALE = 0.52;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -124,11 +129,14 @@ export class Boss {
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
     this.regularAttackReadyAt = this.spawnedAtMs + this.getOpeningAttackDelayMs();
-    this.invulnerableUntilMs = this.spawnedAtMs + 800;
-    this.minimumFightMs = Math.max(9000, Math.min(12600, 9400 + Math.max(0, level - 1) * 170));
+    this.invulnerableUntilMs = this.spawnedAtMs + BOSS_SPAWN_INVULNERABLE_MS;
+    this.minimumFightMs = Math.max(BOSS_FAST_KILL_LOCK_MS + 200, Math.min(7200, 5400 + Math.max(0, level - 1) * 55));
+    this.fastKillLockUntilMs = this.spawnedAtMs + BOSS_FAST_KILL_LOCK_MS;
     this.finishGateUntilMs = 0;
     this.finishGateFxAt = 0;
     this.finishGateLogged = false;
+    this.finishGateDamageScale = 1;
+    this.finishGateLastDamageAt = 0;
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
@@ -2732,46 +2740,83 @@ export class Boss {
     return bullets;
   }
 
+  getPacingFloor(elapsedMs = 0, minFightMs = this.minimumFightMs) {
+    const maxHealth = Math.max(1, Number(this.maxHealth) || 1);
+    const elapsed = Math.max(0, Number(elapsedMs) || 0);
+    const minFight = Math.max(BOSS_FAST_KILL_LOCK_MS + 1, Number(minFightMs) || this.minimumFightMs || BOSS_FAST_KILL_LOCK_MS + 1);
+    let floorRatio = 0.006;
+    if (elapsed < BOSS_FAST_KILL_LOCK_MS) {
+      const lockProgress = clamp(elapsed / BOSS_FAST_KILL_LOCK_MS, 0, 1);
+      floorRatio = 0.075 + (0.035 - 0.075) * lockProgress;
+    } else {
+      const bleedProgress = clamp((elapsed - BOSS_FAST_KILL_LOCK_MS) / Math.max(1, minFight - BOSS_FAST_KILL_LOCK_MS), 0, 1);
+      floorRatio = 0.035 + (0.006 - 0.035) * bleedProgress;
+    }
+    return Math.max(1, Math.ceil(maxHealth * floorRatio));
+  }
+
+  getArmorBleedDamageScale(elapsedMs = 0, minFightMs = this.minimumFightMs) {
+    const minFight = Math.max(1, Number(minFightMs) || this.minimumFightMs || 1);
+    const progress = clamp((Number(elapsedMs) || 0) / minFight, 0, 1);
+    return clamp(
+      BOSS_ARMOR_BLEED_MIN_SCALE + progress * (BOSS_ARMOR_BLEED_MAX_SCALE - BOSS_ARMOR_BLEED_MIN_SCALE),
+      BOSS_ARMOR_BLEED_MIN_SCALE,
+      BOSS_ARMOR_BLEED_MAX_SCALE
+    );
+  }
+
+  isFinishPacingActive(now = Date.now()) {
+    return Number(now) < (this.finishGateUntilMs || 0);
+  }
+
   takeDamage(amount) {
     const now = Date.now();
     const invuln = now < this.invulnerableUntilMs;
     if (invuln) return false;
+    const rawDamage = Math.max(0, Number(amount) || 0);
+    if (rawDamage <= 0) return false;
     const hpBefore = this.health;
     const elapsed = now - (this.spawnedAtMs || now);
     const gateActive = now < this.finishGateUntilMs;
     const minFightMs = Math.max(0, Number(this.minimumFightMs) || 0);
-    const incomingHealth = this.health - amount;
-    if (incomingHealth <= 0 && elapsed < minFightMs) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.min(Math.max(floor, this.health), Math.max(floor, this.maxHealth));
+    const pacingActive = elapsed < minFightMs;
+    const healthRatio = this.health / Math.max(1, this.maxHealth || 1);
+    const pacingFloor = pacingActive ? this.getPacingFloor(elapsed, minFightMs) : 0;
+    const projectedFullDamageHealth = this.health - rawDamage;
+    const shouldArmorBleed = pacingActive && (
+      gateActive ||
+      healthRatio <= BOSS_ARMOR_BLEED_START_RATIO ||
+      projectedFullDamageHealth <= Math.max(pacingFloor, Math.ceil((this.maxHealth || 1) * BOSS_ARMOR_BLEED_START_RATIO))
+    );
+    const damageScale = shouldArmorBleed ? this.getArmorBleedDamageScale(elapsed, minFightMs) : 1;
+    const effectiveDamage = shouldArmorBleed
+      ? Math.max(1, rawDamage * damageScale)
+      : rawDamage;
+    const incomingHealth = this.health - effectiveDamage;
+    if (shouldArmorBleed) {
       this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, (this.spawnedAtMs || now) + minFightMs);
+      this.finishGateDamageScale = damageScale;
+      this.finishGateLastDamageAt = now;
       this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
       this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
       this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
-      this.telegraph = null;
-      this.regularTelegraph = null;
-      this.clearTelegraphVisual();
-      this.clearRegularAttackTelegraphVisual();
-      this.updateHealthBar();
-      this.triggerHurtPresentation(amount);
-      this.triggerFinishGatePresentation(this.finishGateUntilMs);
       if (!this.finishGateLogged) {
         this.finishGateLogged = true;
-        console.log(`[BossDamageGate] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${floor}`);
+        console.log(`[BossArmorBleed] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${pacingFloor} scale=${damageScale.toFixed(2)}`);
       }
-      return false;
+      this.triggerFinishGatePresentation(this.finishGateUntilMs);
     }
-    if (gateActive) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.max(floor, incomingHealth);
+    if (pacingActive && incomingHealth <= pacingFloor) {
+      this.health = Math.max(pacingFloor, Math.min(this.health, incomingHealth));
       this.updateHealthBar();
+      this.triggerHurtPresentation(effectiveDamage);
       this.triggerFinishGatePresentation(this.finishGateUntilMs);
       return false;
     }
     this.health = incomingHealth;
     this.updateHealthBar();
-    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
-    this.triggerHurtPresentation(amount);
+    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${rawDamage} effective=${Number(effectiveDamage.toFixed(2))} hpAfter=${this.health} invuln=${invuln} armorBleed=${shouldArmorBleed}`);
+    this.triggerHurtPresentation(effectiveDamage);
 
     if (this.health <= 0) {
       this.triggerDefeatPresentation();

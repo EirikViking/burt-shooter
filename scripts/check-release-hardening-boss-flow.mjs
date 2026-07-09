@@ -26,9 +26,9 @@ const earlyBoss = new Boss(640, 160, 1, makeGame());
 const midBoss = new Boss(640, 160, 8, makeGame());
 const lateBoss = new Boss(640, 160, 30, makeGame());
 
-assert.ok(earlyBoss.minimumFightMs >= 9000, `first boss minimum fight should be at least 9000ms, got ${earlyBoss.minimumFightMs}`);
+assert.ok(earlyBoss.minimumFightMs >= 5200, `first boss fast-kill lock should be at least 5200ms, got ${earlyBoss.minimumFightMs}`);
 assert.ok(midBoss.minimumFightMs > earlyBoss.minimumFightMs, 'boss minimum fight should grow gently after the first boss');
-assert.ok(lateBoss.minimumFightMs <= 12600, `boss minimum fight should cap at 12600ms, got ${lateBoss.minimumFightMs}`);
+assert.ok(lateBoss.minimumFightMs <= 7200, `boss armor-bleed pacing should cap at 7200ms, got ${lateBoss.minimumFightMs}`);
 assert.ok(
   earlyBoss.getRegularAttackIntervalMs() >= 3200,
   `first boss regular attack interval should not get shorter, got ${earlyBoss.getRegularAttackIntervalMs()}`
@@ -49,8 +49,9 @@ assert.ok(!playScene.includes("else AudioManager.playSfx('powerup', { force: tru
 
 const bossSource = readFileSync('src/entities/Boss.js', 'utf8');
 const balanceSource = readFileSync('src/config/BalanceConfig.js', 'utf8');
-assert.ok(bossSource.includes('regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500)'), 'damage gate should keep boss fire suppressed until after the hold');
-assert.ok(bossSource.includes('return false;'), 'damage gate should preserve non-lethal hold behavior');
+assert.ok(bossSource.includes('BOSS_FAST_KILL_LOCK_MS = 5200'), 'boss should explicitly block sub-5-second kills');
+assert.ok(bossSource.includes('BossArmorBleed'), 'boss should use visible armor-bleed pacing instead of long hard invulnerability');
+assert.ok(bossSource.includes('regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500)'), 'armor-bleed pacing should avoid extra boss bullet pressure');
 assert.ok(balanceSource.includes('ringSafeWedgeEarly: 0.74'), 'first boss ring safe wedge should stay wider than later boss rings');
 assert.ok(balanceSource.includes('signatureRingTelegraphEarlyMs: 1500'), 'first boss ring telegraph should stay more readable');
 assert.ok(balanceSource.includes('contactRadiusScalarEarly: 0.5'), 'first boss contact radius should stay readable against large boss art');

@@ -76,6 +76,24 @@ const checks = [
   requireText('node_modules/steamworks-ffi-node/README.md', 'prebuilds/<platform>/steam-overlay.node', 'overlay native addon packaging guidance')
 ];
 
+const f12ClaimPattern = /(?:event|e|input)\.code\s*===\s*['"]F12['"]|keyCode\s*===\s*123|globalShortcut\.register\s*\(\s*['"]F12['"]|before-input-event[\s\S]{0,300}F12/;
+const f12SourceFiles = [
+  'electron/main.cjs',
+  'src/main.js',
+  'src/input/InputManager.js',
+  'src/scenes/MenuScene.js',
+  'src/scenes/PlayScene.js',
+  'src/scenes/GameOverScene.js',
+  'src/scenes/ShipSelectScene.js',
+  'src/scenes/HighscoreScene.js',
+  'src/ui/SettingsOverlay.js'
+];
+const f12Checks = f12SourceFiles.map((file) => {
+  const claimed = f12ClaimPattern.test(read(file));
+  if (claimed) errors.push(`Steam screenshot hotkey F12 appears to be claimed by ${file}`);
+  return { label: 'Steam F12 screenshot hotkey unclaimed', file, ok: !claimed };
+});
+
 const mainSource = read('electron/main.cjs');
 const builderSource = read('electron-builder.json');
 if (/disableHardwareAcceleration|disable-gpu|in-process-gpu|software-raster/i.test(mainSource + builderSource)) {
@@ -118,6 +136,14 @@ const report = {
   optionalDependencyPath: optionalDependencyPath() ? rel(optionalDependencyPath()) : null,
   packageRoot: rel(packageRoot),
   checks,
+  steamScreenshotHotkey: {
+    key: 'F12',
+    appClaimsHotkey: f12Checks.some((check) => !check.ok),
+    checks: f12Checks,
+    conclusion: f12Checks.every((check) => check.ok)
+      ? 'The app does not claim F12 on the main input surfaces, leaving the Steam client free to use F12 for screenshots.'
+      : 'At least one app input surface appears to claim F12; Steam screenshot behavior is at risk.'
+  },
   packagedFiles,
   packagedSmoke,
   overlayConclusion: errors.length === 0

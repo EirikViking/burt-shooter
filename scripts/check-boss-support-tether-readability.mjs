@@ -115,6 +115,7 @@ try {
     const manager = play?.enemyManager;
     if (!game || !play || !manager) return { ok: false, reason: 'missing play/enemy manager' };
     const width = game.getWidth?.() || game.app?.screen?.width || 1280;
+    const visualWidth = Math.max(width, game.app?.screen?.width || 0, window.innerWidth || 0, 1280);
 
     const { Enemy } = await import('/src/entities/Enemy.js');
     const { pickBossSupportShipProfile, getBossSupportShipEventSeed } = await import('/src/config/BossSupportShips.js');
@@ -150,7 +151,14 @@ try {
       enemy.body.scale.y * supportProfile.spriteScale
     );
     play.gameContainer.addChild(enemy.sprite);
-    const edgeEnemy = new Enemy(width + 58, 260, supportType, 14, game, 'Green');
+    const offscreenProbeX = Math.max(width, visualWidth, 1920) + 96;
+    const edgeEnemy = new Enemy(offscreenProbeX, 260, supportType, 14, game, 'Green');
+    edgeEnemy.x = offscreenProbeX;
+    edgeEnemy.y = 260;
+    if (edgeEnemy.sprite) {
+      edgeEnemy.sprite.x = edgeEnemy.x;
+      edgeEnemy.sprite.y = edgeEnemy.y;
+    }
     edgeEnemy.radius = supportProfile.radius;
     edgeEnemy.bossSupportShipProfile = supportProfile;
     edgeEnemy.bossFuelProfile = {
@@ -197,6 +205,15 @@ try {
       bodySize: {
         width: Math.round(enemy.body?.width || 0),
         height: Math.round(enemy.body?.height || 0)
+      },
+      dimensions: {
+        width,
+        visualWidth,
+        appWidth: game.app?.screen?.width || null,
+        innerWidth: window.innerWidth || null,
+        offscreenProbeX,
+        edgeEnemyX: edgeEnemy.x,
+        edgeEnemySpriteX: edgeEnemy.sprite?.x || null
       },
       tether: enemy.bossFuelTether?._debugBossFuelTether || null,
       tetherVisible: Boolean(enemy.bossFuelTether?.visible && enemy.bossFuelTether?.renderable),

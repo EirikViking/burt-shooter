@@ -101,6 +101,9 @@ for (const token of [
   'getBossFuelShipSupportCount',
   'spawnBossFuelShipSquad',
   'BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT',
+  'BOSS_FUEL_ARMOR_BLEED_DELAY_MS',
+  'BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS',
+  'isFinishPacingActive',
   'singleSupportHealMultiplier',
   'attachBossFuelTether',
   'updateBossFuelTether',
@@ -182,6 +185,36 @@ try {
   spawnProbe.maybeSpawnBossFuelShip();
   if (spawned !== 1) {
     fail('later boss support events should remain chance-gated after the guaranteed first helper');
+  }
+
+  const armorBleedSpawnProbe = Object.assign(Object.create(EnemyManager.prototype), {
+    state: 'BOSS_ACTIVE',
+    level: 5,
+    bossDefeatedThisLevel: false,
+    bossSpawnedAtMs: 1000,
+    bossFuelShipsSpawnedThisBoss: 0,
+    bossFuelShipCooldownUntilMs: 0,
+    bossFuelShipNextCheckAtMs: 0,
+    enemies: [],
+    boss: { active: true, health: 17, maxHealth: 100, x: 360, spawnedAtMs: 1000, isFinishPacingActive: () => true },
+    game: {
+      scenes: {
+        play: {
+          bulletManager: { enemyBullets: [] }
+        }
+      }
+    }
+  });
+  let armorBleedSpawned = 0;
+  armorBleedSpawnProbe.spawnBossFuelShipSquad = (count) => {
+    armorBleedSpawned += count;
+    return count;
+  };
+  Date.now = () => 5000;
+  Math.random = () => 0.99;
+  armorBleedSpawnProbe.maybeSpawnBossFuelShip();
+  if (armorBleedSpawned !== 1 || armorBleedSpawnProbe.bossFuelShipsSpawnedThisBoss !== 1) {
+    fail('armor-bleed boss should get early unarmed support before the old default delay');
   }
 } finally {
   Date.now = originalDateNow;

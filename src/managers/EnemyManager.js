@@ -39,6 +39,9 @@ const WAVE_STRAGGLER_RETREAT_MS = 38000;
 const BOSS_FUEL_TETHER_COLOR = 0x7dffcc;
 const BOSS_FUEL_TETHER_ACCENT = 0xffec8a;
 const BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT = 1.25;
+const BOSS_FUEL_ARMOR_BLEED_DELAY_MS = 3200;
+const BOSS_FUEL_DEFAULT_DELAY_MS = 5200;
+const BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS = 0.22;
 const BOSS_FUEL_DOUBLE_SUPPORT_ROLL = 0.30;
 const BOSS_FUEL_TRIPLE_SUPPORT_ROLL = 0.10;
 export const MAYHEM_REINFORCEMENT_WAVE_SOUND_ID = 'mission_control_reinforcements_incoming';
@@ -3431,20 +3434,22 @@ export class EnemyManager {
     const maxEvents = this.getBossFuelShipMaxEvents(level);
     if (this.bossFuelShipsSpawnedThisBoss >= maxEvents) return;
     const now = Date.now();
-    if (now < (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now) + 6500) return;
+    const armorBleedActive = Boolean(this.boss?.isFinishPacingActive?.(now));
+    const supportDelayMs = armorBleedActive ? BOSS_FUEL_ARMOR_BLEED_DELAY_MS : BOSS_FUEL_DEFAULT_DELAY_MS;
+    if (now < (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now) + supportDelayMs) return;
     if (now < this.bossFuelShipCooldownUntilMs || now < this.bossFuelShipNextCheckAtMs) return;
     this.bossFuelShipNextCheckAtMs = now + 2800 + Math.random() * 1800;
 
     const healthRatio = this.boss.health / Math.max(1, this.boss.maxHealth || 1);
-    if (healthRatio > 0.86 || healthRatio <= 0.08) return;
+    if (healthRatio > 0.86 || healthRatio <= 0.025) return;
     if (this.getActiveBossFuelShips().length > 0) return;
 
     const playScene = this.game?.scenes?.play;
     const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
     if (activeBullets > (level <= 6 ? 18 : 28)) return;
 
-    const guaranteedFirstSupport = this.bossFuelShipsSpawnedThisBoss === 0 && healthRatio <= 0.82;
-    const chance = guaranteedFirstSupport ? 1 : level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
+    const guaranteedFirstSupport = this.bossFuelShipsSpawnedThisBoss === 0 && (healthRatio <= 0.82 || armorBleedActive);
+    const chance = guaranteedFirstSupport ? 1 : armorBleedActive ? 0.48 : level <= 3 ? 0.2 : level <= 9 ? 0.28 : 0.34;
     if (Math.random() > chance) return;
     const supportCount = this.getBossFuelShipSupportCount(level);
     const spawnedCount = this.spawnBossFuelShipSquad(supportCount);
@@ -3484,6 +3489,7 @@ export class EnemyManager {
       level,
       getBossSupportShipEventSeed(level, eventIndex)
     );
+    const armorBleedActive = Boolean(this.boss?.isFinishPacingActive?.());
     const screenW = this.game.getWidth();
     const side = groupSize === 1
       ? (Math.random() < 0.5 ? -1 : 1)
@@ -3507,7 +3513,7 @@ export class EnemyManager {
       healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier),
       baseHealPercent: Math.min(baseHealCap, baseHealPercent),
       singleSupportHealMultiplier,
-      speed: supportProfile.speed + Math.min(0.28, level * 0.01),
+      speed: supportProfile.speed + Math.min(0.28, level * 0.01) + (armorBleedActive ? BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS : 0),
       groupSize,
       groupSlot,
       eventIndex,

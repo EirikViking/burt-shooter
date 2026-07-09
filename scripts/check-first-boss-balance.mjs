@@ -97,6 +97,10 @@ async function collectState(page) {
     const boss = textState.visibleEnemies?.find(enemy => enemy.kind === 'boss') || null;
     return {
       scene: textState.scene || game?.currentSceneName || null,
+      screen: {
+        width: Number(game?.getWidth?.()) || 1280,
+        height: Number(game?.getHeight?.()) || 720
+      },
       score: Number(game?.score) || 0,
       level: Number(game?.level) || 0,
       lives: Number(game?.lives) || 0,
@@ -160,6 +164,35 @@ function chooseIntent(state, width, height) {
   const playerX = Number(state.player?.x) || width / 2;
   const playerY = Number(state.player?.y) || height * 0.8;
   const targetX = Number(state.boss?.x) || width / 2;
+  const urgentBullet = (state.enemyBullets || []).some((bullet) => {
+    const dx = Math.abs((Number(bullet.x) || 0) - playerX);
+    const dy = Math.abs((Number(bullet.y) || 0) - playerY);
+    return dx < 78 && dy < 210;
+  });
+
+  if (!urgentBullet) {
+    const targetY = height * 0.78;
+    const aimX = Math.max(width * 0.14, Math.min(width * 0.86, targetX));
+    return {
+      horizontal: aimX < playerX - 18 ? 'left' : aimX > playerX + 18 ? 'right' : 'none',
+      vertical: targetY < playerY - 18 ? 'up' : targetY > playerY + 18 ? 'down' : 'none',
+      dodge: false
+    };
+  }
+
+  const dodgeReady = !(state.player?.invulnerable) &&
+    !(state.player?.shieldActive) &&
+    (Number(state.player?.dodgeCooldown) || 0) <= 0;
+  if (dodgeReady) {
+    const targetY = height * 0.78;
+    const aimX = Math.max(width * 0.14, Math.min(width * 0.86, targetX));
+    return {
+      horizontal: aimX < playerX - 18 ? 'left' : aimX > playerX + 18 ? 'right' : 'none',
+      vertical: targetY < playerY - 18 ? 'up' : targetY > playerY + 18 ? 'down' : 'none',
+      dodge: true
+    };
+  }
+
   const xs = [
     playerX,
     targetX - 170,
@@ -179,12 +212,6 @@ function chooseIntent(state, width, height) {
       if (score > best.score) best = { x, y, score };
     }
   }
-
-  const urgentBullet = (state.enemyBullets || []).some((bullet) => {
-    const dx = Math.abs((Number(bullet.x) || 0) - playerX);
-    const dy = Math.abs((Number(bullet.y) || 0) - playerY);
-    return dx < 78 && dy < 210;
-  });
 
   return {
     horizontal: best.x < playerX - 24 ? 'left' : best.x > playerX + 24 ? 'right' : 'none',
@@ -311,7 +338,11 @@ async function runCombatProbe(browser) {
         lastLives = state.lives;
       }
       if (state.scene !== 'play' || state.lives <= 0 || state.waveState === 'LEVEL_COMPLETE' || !state.boss) break;
-      intent = await applyIntent(page, intent, chooseIntent(state, 1366, 768));
+      intent = await applyIntent(page, intent, chooseIntent(
+        state,
+        Number(state.screen?.width) || 1366,
+        Number(state.screen?.height) || 768
+      ));
       await page.waitForTimeout(120);
     }
   } finally {
@@ -332,8 +363,9 @@ async function runCombatProbe(browser) {
   const livesLost = Math.max(0, livesAtBossStart - livesAfterBoss);
   const bossDefeated = finalState.waveState === 'LEVEL_COMPLETE' || !finalState.boss;
   const bossHpDamage = Math.max(0, (Number(bossAtStart?.maxHealth) || 0) - (Number(finalState.boss?.health) || 0));
+  const meaningfulProgressDamage = Math.max(8, (Number(bossAtStart?.maxHealth) || 44) * 0.35);
   const meaningfulProgress = bossDefeated ||
-    bossHpDamage >= Math.max(16, (Number(bossAtStart?.maxHealth) || 44) * 0.35);
+    bossHpDamage >= meaningfulProgressDamage;
 
   return {
     screenshot,
@@ -342,6 +374,7 @@ async function runCombatProbe(browser) {
     livesLost,
     bossHpDamage,
     bossDefeated,
+    meaningfulProgressDamage,
     survived: finalState.lives > 0,
     bossDurationSec: Number((combatElapsedMs / 1000).toFixed(1)),
     bossAtStart,
