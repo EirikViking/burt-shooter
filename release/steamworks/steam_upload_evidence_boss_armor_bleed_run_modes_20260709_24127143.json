@@ -1,0 +1,178 @@
+{
+    "buildId":  "24127143",
+    "uploadedAtLocal":  "2026-07-09T13:51:30+02:00",
+    "steamAppId":  "4765070",
+    "steamDepotId":  "4765071",
+    "steamUser":  "gaunziman",
+    "sourceCommit":  "a53115a",
+    "sourceCommitSubject":  "Improve boss pacing and run modes copy",
+    "packagedBuild":  "v2026-07-09_13-40-44",
+    "package":  {
+                    "contentRoot":  "release/desktop/win-unpacked",
+                    "executable":  "release/desktop/win-unpacked/Nova Swarm.exe",
+                    "executableBytes":  226698752,
+                    "executableSha256":  "4f703371e63f8203699d774acbde6c64c9e79f25727b196f2fd67c9a33d3475c",
+                    "fileCount":  336,
+                    "totalBytes":  916305326,
+                    "manifestHash":  "03f3641a6b803673edecdd19c2761d6a4a89d0d45d8b30464c65c3e25c78c3d8",
+                    "payloadManifest":  "release/steamworks/steam_payload_manifest.json",
+                    "desktopPackageReview":  "release/steamworks/desktop_package_review_report.json"
+                },
+    "vdf":  {
+                "path":  "release/steamworks/app_build_LOCAL.vdf",
+                "absolutePath":  "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+                "desc":  "Nova Swarm boss armor bleed and run modes cleanup v2026-07-09_13-40-44",
+                "contentRoot":  "..\\\\desktop\\\\win-unpacked",
+                "setLive":  "",
+                "setLiveEvidence":  "\"SetLive\" \"\"",
+                "verifiedBlankSetLive":  true
+            },
+    "commands":  [
+                     {
+                         "command":  "git fetch --all --prune",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "git status --short --untracked-files=all / branch / log / git diff --check",
+                         "status":  "passed",
+                         "summary":  "branch codex/main-menu-run-contracts-20260702, baseline 7cf0be7 before edits, source commit a53115a before packaging"
+                     },
+                     {
+                         "command":  "npm run check:i18n",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run check:release-line",
+                         "status":  "passed",
+                         "note":  "Verified latest localization, achievements, Steam Cloud, fullscreen, and marketing hotkey markers."
+                     },
+                     {
+                         "command":  "npm run check:boss-invulnerability-audit",
+                         "status":  "passed",
+                         "report":  "test-results/boss-invulnerability-audit-2026-07-09T11-33-11-164Z/report.json"
+                     },
+                     {
+                         "command":  "npm run check:boss-support-ships",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "node scripts/check-release-hardening-boss-flow.mjs",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run check:run-contracts",
+                         "status":  "passed",
+                         "report":  "test-results/run-contracts-2026-07-09T11-33-12-569Z"
+                     },
+                     {
+                         "command":  "npm run check:steam-overlay-hook",
+                         "status":  "passed",
+                         "report":  "test-results/steam-overlay-hook-2026-07-09T11-33-11-216Z/report.json"
+                     },
+                     {
+                         "command":  "npm run check:first-boss-balance",
+                         "status":  "passed",
+                         "report":  "test-results/first-boss-balance-2026-07-09T11-27-53-781Z/report.json"
+                     },
+                     {
+                         "command":  "npm run check:gameplay-followups",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run build:current",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run check:i18n-ui",
+                         "status":  "passed",
+                         "report":  "test-results/i18n-ui-2026-07-09T11-35-16-314Z"
+                     },
+                     {
+                         "command":  "npm run check:controller-flow",
+                         "status":  "passed",
+                         "report":  "test-results/controller-only-flow-2026-07-09T11-35-16-315Z"
+                     },
+                     {
+                         "command":  "npm run smoke",
+                         "status":  "passed",
+                         "report":  "test-results/smoke-2026-07-09T11-35-16-360Z/report.json"
+                     },
+                     {
+                         "command":  "npm run check:steam-electron-bridge",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run desktop:smoke:current",
+                         "status":  "passed",
+                         "report":  "test-results/electron-smoke-2026-07-09T11-46-32-701Z/report.json",
+                         "summary":  "gitSha=a53115a build=v2026-07-09_13-40-44"
+                     },
+                     {
+                         "command":  "npm run check:boss-telegraph",
+                         "status":  "passed",
+                         "report":  "test-results/boss-telegraph-2026-07-09T11-35-16-326Z/boss-regular-telegraph.png"
+                     },
+                     {
+                         "command":  "npm run check:boss-support-tether-readability",
+                         "status":  "passed",
+                         "report":  "test-results/boss-support-tether-readability-2026-07-09T11-38-02-457Z/boss-support-tether-readability.png"
+                     },
+                     {
+                         "command":  "develop-web-game skill client",
+                         "status":  "blocked",
+                         "note":  "Local Playwright cache missing chromium_headless_shell-1208; repo-native browser/Electron checks supplied visual proof."
+                     },
+                     {
+                         "command":  "npm run package:steam:win",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run desktop:smoke:packaged",
+                         "status":  "passed",
+                         "report":  "test-results/packaged-exe-smoke-2026-07-09T11-45-17-585Z/report.json"
+                     },
+                     {
+                         "command":  "npm run desktop:controls:packaged",
+                         "status":  "passed",
+                         "report":  "test-results/packaged-control-smoke-2026-07-09T11-46-06-814Z/report.json"
+                     },
+                     {
+                         "command":  "npm run desktop:perf:packaged",
+                         "status":  "passed",
+                         "report":  "test-results/packaged-perf-smoke-2026-07-09T11-46-06-824Z/report.json",
+                         "summary":  "minFps=59,9 avgFps=60,0 errors=0 warnings=0"
+                     },
+                     {
+                         "command":  "npm run check:desktop-package",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "npm run steamworks:payload-manifest",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm boss armor bleed and run modes cleanup v2026-07-09_13-40-44\" npm run steamworks:write-vdf",
+                         "status":  "passed"
+                     },
+                     {
+                         "command":  "tools/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit",
+                         "status":  "passed",
+                         "buildId":  "24127143"
+                     }
+                 ],
+    "steamCmdResult":  {
+                           "exitCode":  0,
+                           "successLine":  "Successfully finished AppID 4765070 build (BuildID 24127143).",
+                           "cachedLogin":  true,
+                           "uploadLogPath":  "release/steamworks/steam_upload_console_boss_armor_bleed_run_modes_20260709.log",
+                           "uploadLogSha256":  "c4434e69fe716e865e853484ca47a331e1e15328d3c9abe0798d3b7412434b1f"
+                       },
+    "branchAssignment":  {
+                             "setLiveBlank":  true,
+                             "changedSteamBranch":  false,
+                             "note":  "The VDF kept SetLive blank, so this upload did not assign BuildID 24127143 to public/default or any beta branch."
+                         },
+    "steamworksSettingsChanged":  false,
+    "deployPerformed":  true,
+    "deployScope":  "Private SteamPipe upload only; no Steam branch assignment."
+}
