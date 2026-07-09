@@ -1,0 +1,140 @@
+{
+  "buildId": "24124515",
+  "uploadedAtLocal": "2026-07-09T10:54:22+02:00",
+  "steamAppId": "4765070",
+  "steamDepotId": "4765071",
+  "steamUser": "gaunziman",
+  "sourceCommit": "dabb3c5",
+  "sourceCommitSubject": "Improve counter advice readability",
+  "packagedBuild": "v2026-07-09_10-44-35",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "55a84297f96c337c154747fd9ce68c52bb20180b8949daf74318104f4bc23790",
+    "fileCount": 336,
+    "totalBytes": 916304737,
+    "manifestHash": "f6ee34c072a528d71f1f6f6a6dc4819556770b05143c8c666922210ac2251b25",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "absolutePath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm counter advice readability v2026-07-09_10-44-35",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": "",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "commands": [
+    {
+      "command": "git fetch --all --prune",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:i18n",
+      "status": "passed"
+    },
+    {
+      "command": "npm run build:current",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:run-report",
+      "status": "passed",
+      "report": "test-results/run-report-2026-07-09T08-38-20-655Z/report.json"
+    },
+    {
+      "command": "npm run check:gameover-motivation",
+      "status": "passed",
+      "report": "test-results/gameover-motivation-2026-07-09T08-38-20-851Z/gameover-motivation.png"
+    },
+    {
+      "command": "npm run check:i18n-ui",
+      "status": "passed",
+      "report": "test-results/i18n-ui-2026-07-09T08-39-15-246Z"
+    },
+    {
+      "command": "npm run check:controller-flow",
+      "status": "passed",
+      "report": "test-results/controller-only-flow-2026-07-09T08-40-39-421Z"
+    },
+    {
+      "command": "npm run smoke",
+      "status": "passed",
+      "report": "test-results/smoke-2026-07-09T08-40-39-545Z/report.json"
+    },
+    {
+      "command": "npm run check:steam-electron-bridge",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "status": "passed",
+      "report": "test-results/electron-smoke-2026-07-09T08-42-22-615Z/report.json"
+    },
+    {
+      "command": "npm run check:release-line",
+      "status": "passed",
+      "note": "Verified latest localization, achievements, Steam Cloud, fullscreen, and marketing hotkey markers."
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-07-09T08-48-29-417Z/report.json"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-07-09T08-49-11-263Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-07-09T08-49-26-028Z/report.json",
+      "summary": "minFps=59.5 avgFps=60.0 errors=0 warnings=0"
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "status": "passed",
+      "report": "test-results/electron-smoke-2026-07-09T08-50-54-692Z/report.json",
+      "summary": "gitSha=dabb3c5 build=v2026-07-09_10-44-35"
+    },
+    {
+      "command": "npm run check:desktop-package",
+      "status": "passed"
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm counter advice readability v2026-07-09_10-44-35\" npm run steamworks:write-vdf",
+      "status": "passed"
+    },
+    {
+      "command": "tools/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit",
+      "status": "passed",
+      "buildId": "24124515"
+    }
+  ],
+  "steamCmdResult": {
+    "exitCode": 0,
+    "successLine": "Successfully finished AppID 4765070 build (BuildID 24124515).",
+    "cachedLogin": true,
+    "uploadLogPath": "release/steamworks/steam_upload_console_counter_advice_readability_20260709.log",
+    "uploadLogSha256": "405ad7e730e5b4aeb8ce13bf505a5a7c35bb2660f945f3e25619eeee8da869f6"
+  },
+  "branchAssignment": {
+    "setLiveBlank": true,
+    "changedSteamBranch": false,
+    "note": "The VDF kept SetLive blank, so this upload did not assign BuildID 24124515 to public/default or any beta branch."
+  },
+  "steamworksSettingsChanged": false,
+  "deployPerformed": true,
+  "deployScope": "Private SteamPipe upload only; no Steam branch assignment."
+}
