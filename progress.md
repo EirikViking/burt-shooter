@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-09 Counter Advice Readability
+
+- Current request: counter advice was barely readable in the Run Report and the Run Report button itself was too small and buried below the main Game Over actions.
+- Implementation direction: promote death-source counter advice into its own readable Game Over card labeled `COUNTER ADVICE: LAST DEATH`, move the Run Report action above the secondary navigation row with normal action-button sizing and a `Counter advice` hint, and render the same advice as a full-width callout inside the Run Report instead of a tiny stat row.
+- Verification: syntax checks passed for touched scene/check files. Passed `npm run check:i18n`, `npm run build:current`, `npm run check:run-report` with inspected screenshot `test-results/run-report-2026-07-09T08-38-20-655Z/run-report-open.png`, `npm run check:gameover-motivation` with inspected screenshot `test-results/gameover-motivation-2026-07-09T08-38-20-851Z/gameover-runback.png`, `npm run check:i18n-ui`, `npm run check:controller-flow`, `npm run smoke`, `npm run check:steam-electron-bridge`, `npm run desktop:smoke:current`, and `git diff --check` with CRLF normalization warnings only.
+- Scope notes: source/UI-only pass; no score, XP, balance, leaderboard identity, achievements metadata, Steamworks settings, package/upload, or branch assignment changes intended.
+
 ## 2026-07-09 Retention First Patch
 
 - Current request: use the Steamworks/player-data diagnosis to make the game itself retain players better, then deploy the finished patch to Steam. Marketing/store changes are out of scope.

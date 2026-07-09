@@ -92,7 +92,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   respawns: 'Respawns',
   extraLives: 'Extra lives earned',
   finalHit: 'Final hit',
-  deathCoach: 'Counter',
+  deathCoach: 'COUNTER ADVICE: LAST DEATH',
   powerups: 'Powerups',
   careerXp: 'Career XP',
   newRanks: 'New ranks',
@@ -196,6 +196,13 @@ export class GameOverScene {
     this.nextGoalBg = null;
     this.nextGoalText = null;
     this.comment = null;
+    this.counterAdviceCard = null;
+    this.counterAdviceCardBg = null;
+    this.counterAdviceLabel = null;
+    this.counterAdviceBody = null;
+    this.counterAdviceCardWidth = 0;
+    this.counterAdviceCardHeight = 0;
+    this.counterAdviceCardDebug = null;
     this.leaderboardStatusText = null;
     this.leaderboardStatusBg = null;
     this.notQualifiedText = null;
@@ -273,6 +280,7 @@ export class GameOverScene {
     this.runReportButton = null;
     this.runReportButtonBg = null;
     this.runReportButtonLabel = null;
+    this.runReportButtonHint = null;
     this.runReportOverlay = null;
     this.runReportOverlayBg = null;
     this.runReportPanel = null;
@@ -372,6 +380,7 @@ export class GameOverScene {
     this.reportShownAt = Date.now();
     this.runReportOpen = false;
     this.runReportOverlayDebug = null;
+    this.counterAdviceCardDebug = null;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
     this.resultHoldContinueReadyAt = 0;
@@ -593,7 +602,7 @@ export class GameOverScene {
     this.container.addChild(this.nextGoalGroup);
 
     const bodySize = getResponsiveFontSize(layout, 'body');
-    this.comment = createText(this.getCeremonyCommentWithCoach(), {
+    this.comment = createText(this.getCeremonyComment(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: bodySize,
       fill: '#aaaaaa',
@@ -604,6 +613,9 @@ export class GameOverScene {
     });
     this.comment.anchor.set(0.5);
     this.container.addChild(this.comment);
+
+    this.createCounterAdviceCard(layout);
+    this.container.addChild(this.counterAdviceCard);
 
     this.leaderboardStatusBg = new PIXI.Graphics();
     this.leaderboardStatusBg.zIndex = 1;
@@ -704,8 +716,8 @@ export class GameOverScene {
     const smallSize = getResponsiveFontSize(layout, 'small');
     const levelVisible = this.levelText?.visible !== false;
     const unlockVisible = this.unlockText?.visible !== false;
-    const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
-    const commentVisible = this.comment?.visible !== false;
+    let nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
+    let commentVisible = this.comment?.visible !== false;
     const leaderboardStatusVisible = this.leaderboardStatusText?.visible !== false;
     const promptVisible = this.promptText?.visible !== false;
     const nameVisible = this.nameDisplay?.visible !== false;
@@ -1370,6 +1382,7 @@ export class GameOverScene {
         this.comment.text = '';
         this.comment.visible = false;
       }
+      if (this.counterAdviceCard) this.counterAdviceCard.visible = false;
       if (this.leaderboardStatusText) {
         this.leaderboardStatusText.text = this.getHoldStatusText();
         this.leaderboardStatusText.visible = true;
@@ -1409,6 +1422,7 @@ export class GameOverScene {
       this.comment.text = finalLines.leaderboard;
       this.comment.visible = true;
     }
+    if (this.counterAdviceCard) this.counterAdviceCard.visible = this.shouldShowCounterAdviceCard();
     if (this.nextGoal) this.nextGoal = { text: finalLines.nextGoal, tone: 'leaderboard' };
     if (this.nextGoalText) this.nextGoalText.text = finalLines.nextGoal;
     if (this.nextGoalGroup) this.nextGoalGroup.visible = Boolean(finalLines.nextGoal);
@@ -1523,7 +1537,19 @@ export class GameOverScene {
     if (!this.isRankedRun || this.game?.runSummary?.runCleared) return '';
     const advice = this.getDeathCoachAdvice();
     const text = String(advice?.advice || '').trim();
-    return text ? `${translateText('Counter')}: ${translateText(text)}` : '';
+    return text ? `${translateText('COUNTER ADVICE: LAST DEATH')}: ${translateText(text)}` : '';
+  }
+
+  getCounterAdviceText() {
+    if (!this.isRankedRun || this.game?.runSummary?.runCleared) return '';
+    const advice = this.getDeathCoachAdvice();
+    const text = String(advice?.advice || '').trim();
+    return text ? translateText(text) : '';
+  }
+
+  shouldShowCounterAdviceCard() {
+    if (this.state === 'submitting' || this.state === 'submitted_hold' || this.state === 'result_hold') return false;
+    return this.isResultActionStage() && Boolean(this.getCounterAdviceText());
   }
 
   getCeremonyCommentWithCoach(baseComment = this.getCeremonyComment()) {
@@ -1542,7 +1568,7 @@ export class GameOverScene {
     const placement = this.globalPlacement;
     this.refreshNextGoalFromLeaderboard();
     this.title.text = this.getCeremonyTitle();
-    this.comment.text = this.getCeremonyCommentWithCoach();
+    this.comment.text = this.getCeremonyComment();
     if (placement?.numberOne) {
       this.title.style.fill = '#fff8b8';
       this.title.style.stroke = { color: '#6b3200', width: 4 };
@@ -1692,8 +1718,8 @@ export class GameOverScene {
     const unlockVisible = this.unlockText?.visible !== false;
     const rankProgressVisible = this.rankProgressText?.visible !== false;
     const shipProgressVisible = this.shipUnlockProgressText?.visible !== false;
-    const nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
-    const commentVisible = this.comment?.visible !== false;
+    let nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
+    let commentVisible = this.comment?.visible !== false;
     const leaderboardStatusVisible = this.leaderboardStatusText?.visible !== false;
     const promptVisible = this.promptText?.visible !== false;
     const nameVisible = this.nameDisplay?.visible !== false;
@@ -1747,6 +1773,8 @@ export class GameOverScene {
     this.instructions.style.stroke = { color: '#031323', width: layout.isMobile ? 2 : 3 };
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
+    this.drawCounterAdviceCard(layout);
+    const counterAdviceVisible = Boolean(this.counterAdviceCard?.visible);
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
@@ -1754,6 +1782,15 @@ export class GameOverScene {
     this.drawRunReportButton(layout);
     this.drawNextGoalStrip(layout);
     this.drawShipUnlockReveal(layout);
+    if (counterAdviceVisible && this.state === 'runback' && (layout.isMobile || height < 820)) {
+      if (this.comment) this.comment.visible = false;
+      if (this.nextGoalGroup) this.nextGoalGroup.visible = false;
+      commentVisible = false;
+      nextGoalVisible = false;
+    } else {
+      nextGoalVisible = Boolean(this.nextGoalGroup?.visible);
+      commentVisible = this.comment?.visible !== false;
+    }
     [
       this.title,
       this.scoreText,
@@ -1763,6 +1800,8 @@ export class GameOverScene {
       this.shipUnlockProgressText,
       this.nextGoalText,
       this.comment,
+      this.counterAdviceLabel,
+      this.counterAdviceBody,
       this.leaderboardStatusText,
       this.promptText,
       this.notQualifiedText,
@@ -1787,6 +1826,7 @@ export class GameOverScene {
     const shipProgressHeight = shipProgressVisible ? Math.max(layout.isMobile ? 50 : 58, this.shipUnlockProgressText.height || 0) : 0;
     const nextGoalHeight = nextGoalVisible ? Math.max(this.nextGoalGroup.height || 0, layout.isMobile ? 32 : 38) : 0;
     const commentHeight = commentVisible ? Math.max(bodySize * 1.4, this.comment.height || 0) : 0;
+    const counterAdviceHeight = counterAdviceVisible ? Math.max(this.counterAdviceCardHeight || 0, layout.isMobile ? 68 : 76) : 0;
     const leaderboardStatusHeight = leaderboardStatusVisible ? Math.max(layout.isMobile ? 52 : 62, leaderboardStatusSize * 1.5, this.leaderboardStatusText.height || 0) : 0;
     const promptHeight = promptVisible ? Math.max(promptSize * 1.2, this.promptText.height || 0) : 0;
     const nameHeight = nameVisible ? Math.max(nameSize * 1.2, this.nameDisplay.height || 0) : 0;
@@ -1800,7 +1840,11 @@ export class GameOverScene {
     const rawLeaderboardHeight = this.leaderboardButtonHeight || (layout.isMobile ? 42 : 48);
     const rawHangarHeight = this.hangarButtonHeight || (layout.isMobile ? 42 : 48);
     const rawMainMenuHeight = this.mainMenuButtonHeight || (layout.isMobile ? 42 : 48);
-    const rawRunReportHeight = this.runReportButtonHeight || (layout.isMobile ? 32 : 34);
+    const rawRunReportHeight = this.runReportButtonHeight || (layout.isMobile ? 48 : 54);
+    const runReportBesideCounter = Boolean(runReportVisible && counterAdviceVisible && !layout.isMobile && width >= 980);
+    const counterAdviceRowHeight = counterAdviceVisible
+      ? Math.max(counterAdviceHeight, runReportBesideCounter ? rawRunReportHeight : 0)
+      : 0;
     const secondaryRowHeight = secondaryButtonsShareRow
       ? Math.max(rawLeaderboardHeight, rawHangarHeight, rawMainMenuHeight)
       : 0;
@@ -1809,9 +1853,9 @@ export class GameOverScene {
       : 0;
     const hangarHeight = hangarVisible && !secondaryButtonsShareRow ? rawHangarHeight : 0;
     const mainMenuHeight = mainMenuVisible && !secondaryButtonsShareRow ? rawMainMenuHeight : 0;
-    const runReportHeight = runReportVisible ? rawRunReportHeight : 0;
+    const runReportHeight = runReportVisible && !runReportBesideCounter ? rawRunReportHeight : 0;
 
-    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + runReportHeight + nameHeight + spacing * (secondaryVisibleCount || runReportVisible ? 12 : 9) + sectionGap * 2;
+    const totalHeight = titleHeight + scoreHeight + levelHeight + unlockHeight + rankProgressHeight + shipProgressHeight + unlockRevealHeight + nextGoalHeight + commentHeight + counterAdviceRowHeight + leaderboardStatusHeight + promptHeight + retryHeight + leaderboardHeight + hangarHeight + mainMenuHeight + runReportHeight + nameHeight + spacing * (secondaryVisibleCount || runReportVisible ? 12 : 9) + (counterAdviceVisible ? spacing : 0) + sectionGap * 2;
 
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
@@ -1828,6 +1872,26 @@ export class GameOverScene {
     };
     const addStackGap = (amount) => {
       stackY += amount;
+    };
+    const placeCounterAdviceRow = (spacingAfter, fallbackHeight) => {
+      const rowY = placeCenteredElement(this.counterAdviceCard, spacingAfter, fallbackHeight);
+      if (runReportBesideCounter && this.runReportButton) {
+        const gap = 16;
+        const cardWidth = this.counterAdviceCardWidth || this.counterAdviceCard.width || 0;
+        const reportWidth = this.runReportButtonWidth || this.runReportButton.width || 0;
+        const rowWidth = cardWidth + reportWidth + gap;
+        let cursorX = width / 2 - rowWidth / 2;
+        this.counterAdviceCard.x = cursorX + cardWidth / 2;
+        this.counterAdviceCard.y = rowY;
+        cursorX += cardWidth + gap;
+        this.runReportButton.visible = true;
+        this.runReportButton.x = cursorX + reportWidth / 2;
+        this.runReportButton.y = rowY;
+      } else {
+        this.counterAdviceCard.x = width / 2;
+        this.counterAdviceCard.y = rowY;
+      }
+      return rowY;
     };
 
     this.title.x = width / 2;
@@ -1886,6 +1950,10 @@ export class GameOverScene {
         this.comment.y = placeCenteredElement(this.comment, layout.isMobile ? 14 : 18, commentHeight);
       }
 
+      if (counterAdviceVisible) {
+        placeCounterAdviceRow(layout.isMobile ? 14 : 18, counterAdviceRowHeight);
+      }
+
       if (nextGoalVisible) {
         this.nextGoalGroup.x = width / 2;
         this.nextGoalGroup.y = placeCenteredElement(this.nextGoalGroup, spacing * 1.15, nextGoalHeight);
@@ -1899,6 +1967,10 @@ export class GameOverScene {
       if (commentVisible) {
         this.comment.x = width / 2;
         this.comment.y = placeCenteredElement(this.comment, spacing, commentHeight);
+      }
+
+      if (counterAdviceVisible) {
+        placeCounterAdviceRow(spacing, counterAdviceRowHeight);
       }
     }
 
@@ -1920,6 +1992,17 @@ export class GameOverScene {
       : (layout.isMobile ? 8 : 18));
     this.retryButton.x = width / 2;
     this.retryButton.y = placeCenteredElement(this.retryButton, compactRunbackDesktop ? 0 : spacing, retryHeight);
+
+    if (this.runReportButton && !runReportBesideCounter) {
+      this.runReportButton.visible = runReportVisible;
+      if (runReportVisible) {
+        this.runReportButton.x = width / 2;
+        this.runReportButton.y = placeCenteredElement(this.runReportButton, compactRunbackDesktop ? spacing * 0.4 : spacing * 0.85, rawRunReportHeight);
+      } else {
+        this.runReportButton.x = width / 2;
+        this.runReportButton.y = this.retryButton.y;
+      }
+    }
 
     const secondaryButtons = [
       { node: this.leaderboardButton, visible: leaderboardVisible, width: this.leaderboardButtonWidth || 0, height: rawLeaderboardHeight },
@@ -1949,17 +2032,6 @@ export class GameOverScene {
         entry.node.x = width / 2;
         entry.node.y = placeCenteredElement(entry.node, spacing * 0.8, entry.height);
       });
-    }
-
-    if (this.runReportButton) {
-      this.runReportButton.visible = runReportVisible;
-      if (runReportVisible) {
-        this.runReportButton.x = width / 2;
-        this.runReportButton.y = placeCenteredElement(this.runReportButton, spacing * 0.55, rawRunReportHeight);
-      } else {
-        this.runReportButton.x = width / 2;
-        this.runReportButton.y = this.retryButton.y;
-      }
     }
 
     if (nameVisible) {
@@ -2578,6 +2650,7 @@ export class GameOverScene {
     if (!this.game?.app?.screen || !this.retryButton) return;
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height, getCurrentLayout());
+    this.drawCounterAdviceCard(layout);
     this.drawRetryButton(layout);
     this.drawLeaderboardButton(layout);
     this.drawHangarButton(layout);
@@ -4015,6 +4088,108 @@ export class GameOverScene {
     }
   }
 
+  createCounterAdviceCard(layout) {
+    this.counterAdviceCard = new PIXI.Container();
+    this.counterAdviceCard.zIndex = 7;
+
+    this.counterAdviceCardBg = new PIXI.Graphics();
+    this.counterAdviceLabel = createText(translateText('COUNTER ADVICE: LAST DEATH'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 13 : 15,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'left',
+      letterSpacing: 0
+    });
+    this.counterAdviceLabel.anchor.set(0, 0);
+
+    this.counterAdviceBody = createText('', {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 14 : 17,
+      fontWeight: 'bold',
+      fill: '#e8fbff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'left',
+      wordWrap: true,
+      lineHeight: layout.isMobile ? 17 : 21,
+      letterSpacing: 0
+    });
+    this.counterAdviceBody.anchor.set(0, 0);
+
+    this.counterAdviceCard.addChild(this.counterAdviceCardBg, this.counterAdviceLabel, this.counterAdviceBody);
+    this.drawCounterAdviceCard(layout);
+  }
+
+  drawCounterAdviceCard(layout) {
+    if (!this.counterAdviceCard || !this.counterAdviceCardBg || !this.counterAdviceLabel || !this.counterAdviceBody) return;
+    const visible = this.shouldShowCounterAdviceCard();
+    const cardWidth = Math.min(layout.width * (layout.isMobile ? 0.88 : 0.5), layout.isMobile ? 500 : 560);
+    const padX = layout.isMobile ? 16 : 20;
+    const padTop = layout.isMobile ? 11 : 12;
+    const labelSize = layout.isMobile ? 13 : 15;
+    const bodySize = layout.isMobile ? 14 : 17;
+    const adviceText = visible ? this.getCounterAdviceText() : '';
+    const labelText = translateText('COUNTER ADVICE: LAST DEATH').toLocaleUpperCase();
+
+    this.counterAdviceLabel.text = labelText;
+    this.counterAdviceLabel.style.fontSize = labelSize;
+    this.counterAdviceLabel.x = -cardWidth / 2 + padX;
+    this.counterAdviceLabel.y = 0;
+
+    this.counterAdviceBody.text = adviceText;
+    this.counterAdviceBody.style.fontSize = bodySize;
+    this.counterAdviceBody.style.wordWrap = true;
+    this.counterAdviceBody.style.wordWrapWidth = Math.max(180, cardWidth - padX * 2 - 10);
+    this.counterAdviceBody.style.lineHeight = Math.round(bodySize * 1.24);
+    this.counterAdviceBody.x = -cardWidth / 2 + padX;
+    this.counterAdviceBody.y = padTop + labelSize + (layout.isMobile ? 4 : 5);
+
+    this.counterAdviceLabel.updateText?.(false);
+    this.counterAdviceBody.updateText?.(false);
+    const bodyHeight = adviceText ? (this.counterAdviceBody.height || bodySize) : 0;
+    const cardHeight = visible
+      ? Math.max(layout.isMobile ? 68 : 76, padTop * 2 + labelSize + (layout.isMobile ? 6 : 8) + bodyHeight)
+      : 0;
+    const halfWidth = cardWidth / 2;
+    const halfHeight = cardHeight / 2;
+
+    this.counterAdviceCardWidth = cardWidth;
+    this.counterAdviceCardHeight = cardHeight;
+    this.counterAdviceCard.visible = visible;
+    this.counterAdviceCard.alpha = visible ? 0.98 : 0;
+
+    this.counterAdviceLabel.y = -halfHeight + padTop;
+    this.counterAdviceBody.y = -halfHeight + padTop + labelSize + (layout.isMobile ? 4 : 5);
+    fitDisplayToBox(this.counterAdviceBody, cardWidth - padX * 2 - 10, Math.max(bodySize + 4, cardHeight - padTop * 2 - labelSize - 6), { minScale: 0.7 });
+
+    this.counterAdviceCardBg.clear();
+    if (visible) {
+      const radius = layout.isMobile ? 8 : 10;
+      this.counterAdviceCardBg.roundRect(-halfWidth - 7, -halfHeight - 5, cardWidth + 14, cardHeight + 10, radius + 4);
+      this.counterAdviceCardBg.fill({ color: 0xffd15c, alpha: 0.1 });
+      this.counterAdviceCardBg.roundRect(-halfWidth, -halfHeight, cardWidth, cardHeight, radius);
+      this.counterAdviceCardBg.fill({ color: 0x041323, alpha: 0.92 });
+      this.counterAdviceCardBg.roundRect(-halfWidth, -halfHeight, cardWidth, cardHeight, radius);
+      this.counterAdviceCardBg.stroke({ color: 0xffef7e, width: 1.6, alpha: 0.78 });
+      this.counterAdviceCardBg.rect(-halfWidth, -halfHeight, 7, cardHeight);
+      this.counterAdviceCardBg.fill({ color: 0xffef7e, alpha: 0.86 });
+      this.counterAdviceCardBg.rect(-halfWidth + padX, -halfHeight + padTop + labelSize + 4, cardWidth - padX * 2, 1);
+      this.counterAdviceCardBg.fill({ color: 0xffef7e, alpha: 0.24 });
+    }
+
+    this.counterAdviceCardDebug = {
+      visible,
+      label: this.counterAdviceLabel.text || null,
+      text: adviceText,
+      source: this.getDeathCoachAdvice()?.source || null,
+      width: Math.round(cardWidth),
+      height: Math.round(cardHeight)
+    };
+  }
+
   getRunReport() {
     return this.game?.lastRunReport || null;
   }
@@ -4032,19 +4207,30 @@ export class GameOverScene {
     this.runReportButtonBg = new PIXI.Graphics();
     this.runReportButtonLabel = createText(translateText('RUN REPORT'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 14 : 16,
+      fontSize: layout.isMobile ? 18 : 22,
       fontWeight: 'bold',
-      fill: '#b9faff',
+      fill: '#fff3a2',
       stroke: '#031323',
-      strokeThickness: 2,
+      strokeThickness: layout.isMobile ? 2 : 3,
       align: 'center',
       dropShadow: true,
-      dropShadowColor: '#37f5ff',
-      dropShadowBlur: 3
+      dropShadowColor: '#ffd15c',
+      dropShadowBlur: 4
     });
     this.runReportButtonLabel.anchor.set(0.5);
 
-    this.runReportButton.addChild(this.runReportButtonBg, this.runReportButtonLabel);
+    this.runReportButtonHint = createText(translateText('Counter advice'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: layout.isMobile ? 10 : 12,
+      fontWeight: 'bold',
+      fill: '#9cfbff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.runReportButtonHint.anchor.set(0.5);
+
+    this.runReportButton.addChild(this.runReportButtonBg, this.runReportButtonLabel, this.runReportButtonHint);
     this.runReportButton.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.toggleRunReport();
@@ -4057,27 +4243,40 @@ export class GameOverScene {
   drawRunReportButton(layout) {
     if (!this.runReportButton || !this.runReportButtonBg || !this.runReportButtonLabel) return;
     const visible = this.shouldShowRunReportButton();
-    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.52 : 0.18), layout.isMobile ? 220 : 210);
-    const buttonHeight = layout.isMobile ? 32 : 34;
+    const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
+    const buttonWidth = Math.min(layout.width * (layout.isMobile ? 0.72 : 0.34), layout.isMobile ? 280 : 340);
+    const buttonHeight = layout.isMobile ? 48 : compactRunbackDesktop ? 46 : 54;
     const halfWidth = buttonWidth / 2;
     const halfHeight = buttonHeight / 2;
+    const radius = layout.isMobile ? 8 : 10;
     this.runReportButtonWidth = buttonWidth;
     this.runReportButtonHeight = buttonHeight;
     this.runReportButton.hitArea = new PIXI.Rectangle(-halfWidth, -halfHeight, buttonWidth, buttonHeight);
     this.runReportButton.visible = visible;
-    this.runReportButton.alpha = visible ? 0.78 : 0;
+    this.runReportButton.alpha = visible ? 0.94 : 0;
     this.runReportButton.cursor = visible ? 'pointer' : 'default';
     this.runReportButton.eventMode = visible ? 'static' : 'none';
 
     this.runReportButtonBg.clear();
-    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, layout.isMobile ? 7 : 8);
-    this.runReportButtonBg.fill({ color: 0x03101c, alpha: 0.74 });
-    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, layout.isMobile ? 7 : 8);
-    this.runReportButtonBg.stroke({ color: 0x37f5ff, width: 1.25, alpha: visible ? 0.5 : 0 });
+    this.runReportButtonBg.roundRect(-halfWidth - 7, -halfHeight - 5, buttonWidth + 14, buttonHeight + 10, radius + 4);
+    this.runReportButtonBg.fill({ color: 0xffd15c, alpha: visible ? 0.1 : 0 });
+    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.runReportButtonBg.fill({ color: 0x041323, alpha: 0.92 });
+    this.runReportButtonBg.roundRect(-halfWidth, -halfHeight, buttonWidth, buttonHeight, radius);
+    this.runReportButtonBg.stroke({ color: 0xffef7e, width: 1.8, alpha: visible ? 0.82 : 0 });
+    this.runReportButtonBg.rect(-halfWidth + 14, -halfHeight + 7, buttonWidth - 28, 2);
+    this.runReportButtonBg.fill({ color: 0xffef7e, alpha: visible ? 0.28 : 0 });
+    this.runReportButtonBg.rect(-halfWidth + 18, halfHeight - 8, buttonWidth - 36, 1);
+    this.runReportButtonBg.fill({ color: 0x37f5ff, alpha: visible ? 0.24 : 0 });
 
     this.runReportButtonLabel.text = translateText('RUN REPORT');
-    this.runReportButtonLabel.style.fontSize = layout.isMobile ? 14 : 16;
-    this.runReportButtonLabel.y = 0;
+    this.runReportButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
+    this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
+    if (this.runReportButtonHint) {
+      this.runReportButtonHint.text = translateText('Counter advice');
+      this.runReportButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
+      this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
+    }
   }
 
   createRunReportOverlay(layout) {
@@ -4218,7 +4417,7 @@ export class GameOverScene {
     const safeMargin = layout.safeArea || { top: 0, bottom: 0 };
     const compact = Boolean(layout.isMobile || width < 760 || height < 680);
     const panelWidth = Math.min(width - 28, compact ? width * 0.94 : 760);
-    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, compact ? 620 : 560);
+    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, compact ? 660 : 640);
     const columns = compact ? 1 : 2;
     const gap = compact ? 10 : 14;
     const innerPad = compact ? 18 : 26;
@@ -4226,14 +4425,25 @@ export class GameOverScene {
     const sectionTitleSize = compact ? 13 : 16;
     const rowSize = compact ? 11 : 14;
     const closeHeight = compact ? 34 : 36;
+    const deathCoachRow = (report.sections || [])
+      .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
+      .find((row) => row?.id === 'deathCoach') || null;
     const pilotOrdersRow = (report.sections || [])
       .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
       .find((row) => row?.id === 'pilotOrders') || null;
+    const counterBandHeight = deathCoachRow ? (compact ? 76 : 78) : 0;
     const pilotBandHeight = pilotOrdersRow ? (compact ? 92 : 86) : 0;
     const contentTop = -panelHeight / 2 + innerPad + titleSize + (compact ? 18 : 26);
     const closeTop = panelHeight / 2 - innerPad - closeHeight;
     const pilotBandY = pilotOrdersRow ? closeTop - (compact ? 14 : 18) - pilotBandHeight : null;
-    const sectionAreaBottom = pilotOrdersRow ? pilotBandY - gap : closeTop - (compact ? 12 : 18);
+    const counterBandY = deathCoachRow
+      ? (pilotOrdersRow ? pilotBandY - gap - counterBandHeight : closeTop - (compact ? 14 : 18) - counterBandHeight)
+      : null;
+    const sectionAreaBottom = deathCoachRow
+      ? counterBandY - gap
+      : pilotOrdersRow
+        ? pilotBandY - gap
+        : closeTop - (compact ? 12 : 18);
     const sectionAreaHeight = Math.max(180, sectionAreaBottom - contentTop);
     const sectionWidth = (panelWidth - innerPad * 2 - gap * (columns - 1)) / columns;
     const sectionHeight = compact
@@ -4298,7 +4508,9 @@ export class GameOverScene {
       this.runReportPanel.addChild(header);
       textLines.push(header.text);
 
-      const rows = (section.rows || []).filter((entry) => entry?.id !== 'pilotOrders').slice(0, 5);
+      const rows = (section.rows || [])
+        .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach')
+        .slice(0, compact ? 4 : 5);
       const rowStep = rows.length
         ? Math.max(rowSize + 7, Math.floor((sectionHeight - 38) / rows.length))
         : rowSize + 7;
@@ -4325,6 +4537,57 @@ export class GameOverScene {
         textLines.push(line.text);
       });
     });
+
+    if (deathCoachRow) {
+      const x = -panelWidth / 2 + innerPad;
+      const y = counterBandY;
+      const bandWidth = panelWidth - innerPad * 2;
+      const band = new PIXI.Graphics();
+      band.roundRect(x, y, bandWidth, counterBandHeight, 8);
+      band.fill({ color: 0x041323, alpha: 0.94 });
+      band.roundRect(x, y, bandWidth, counterBandHeight, 8);
+      band.stroke({ color: 0xffef7e, width: 1.5, alpha: 0.72 });
+      band.rect(x, y, 7, counterBandHeight);
+      band.fill({ color: 0xffef7e, alpha: 0.9 });
+      band.rect(x + 18, y + (compact ? 29 : 32), bandWidth - 36, 1);
+      band.fill({ color: 0xffef7e, alpha: 0.24 });
+      this.runReportPanel.addChild(band);
+
+      const label = this.getRunReportFieldLabel('deathCoach');
+      const value = this.formatRunReportValue(deathCoachRow);
+      const heading = createText(label, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 13 : 16,
+        fontWeight: '900',
+        fill: '#fff3a2',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left',
+        letterSpacing: 0
+      });
+      heading.x = x + 18;
+      heading.y = y + (compact ? 9 : 10);
+      fitDisplayToBox(heading, bandWidth - 36, compact ? 18 : 22, { minScale: 0.64 });
+
+      const body = createText(value, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 13 : 16,
+        fontWeight: 'bold',
+        fill: '#e8fbff',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left',
+        wordWrap: true,
+        wordWrapWidth: bandWidth - 36,
+        lineHeight: compact ? 16 : 20,
+        letterSpacing: 0
+      });
+      body.x = x + 18;
+      body.y = y + (compact ? 36 : 39);
+      fitDisplayToBox(body, bandWidth - 36, counterBandHeight - (compact ? 42 : 46), { minScale: 0.66 });
+      this.runReportPanel.addChild(heading, body);
+      textLines.push(`${label}: ${value}`);
+    }
 
     if (pilotOrdersRow) {
       const x = -panelWidth / 2 + innerPad;
@@ -4856,9 +5119,33 @@ export class GameOverScene {
     }
   }
 
+  getCounterAdviceCardDebugState() {
+    const advice = this.getDeathCoachAdvice();
+    const fallback = {
+      label: this.counterAdviceLabel?.text || translateText('COUNTER ADVICE: LAST DEATH'),
+      text: this.counterAdviceBody?.text || this.getCounterAdviceText(),
+      source: advice?.source || null,
+      visible: Boolean(this.counterAdviceCard?.visible && this.counterAdviceCard?.parent)
+    };
+    try {
+      if (!this.counterAdviceCard?.getBounds) return fallback;
+      const bounds = this.counterAdviceCard.getBounds();
+      return {
+        ...fallback,
+        x: Math.round(bounds.x || 0),
+        y: Math.round(bounds.y || 0),
+        width: Math.round(bounds.width || this.counterAdviceCardWidth || 0),
+        height: Math.round(bounds.height || this.counterAdviceCardHeight || 0)
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
   getRunReportCtaDebugState() {
     const fallback = {
       label: this.runReportButtonLabel?.text || null,
+      hint: this.runReportButtonHint?.text || null,
       visible: Boolean(this.runReportButton?.visible && this.runReportButton?.parent),
       hasReport: Boolean(this.getRunReport())
     };

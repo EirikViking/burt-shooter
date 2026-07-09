@@ -20,6 +20,8 @@ const sourceText = Object.freeze({
   "REWARD: +{xp} Career XP": "HOSHU: +{xp} kyaria XP",
   "+{xp} XP": "+{xp} XP",
   "Counter": "Taisaku",
+  "COUNTER ADVICE: LAST DEATH": "COUNTER ADVICE: ZENKAI DEATH",
+  "Counter advice": "Counter advice",
   "Watch bullet lanes first; dodge through the gap, then resume firing.": "Mazu danmaku no retsu wo miru; sukima wo nukete kara mata utsu.",
   "During bosses, pick a safe lane before chasing damage again.": "Boss sen de wa anzen na lane wo kimete kara damage wo oi naosu.",
   "Clear small ships before they cross your nose; drift sideways instead of chasing down.": "Chiisana fune ga mae wo yokogiru mae ni kesu; oi kakeru yori yoko ni nagareyo.",

@@ -20,6 +20,8 @@ const sourceText = Object.freeze({
   "REWARD: +{xp} Career XP": "JIANG LI: +{xp} shengya XP",
   "+{xp} XP": "+{xp} XP",
   "Counter": "Yingdui",
+  "COUNTER ADVICE: LAST DEATH": "FANZHI JIANYI: SHANGCI SIWANG",
+  "Counter advice": "Fanzhi jianyi",
   "Watch bullet lanes first; dodge through the gap, then resume firing.": "Xian kan bullet luxian; cong kongdang shanbi, ranhou zai kaihuo.",
   "During bosses, pick a safe lane before chasing damage again.": "Boss zhan xian xuan anquan hangxian, zai zhuishang shanghai.",
   "Clear small ships before they cross your nose; drift sideways instead of chasing down.": "Xian qingxiao xiaoxing direnjian, buyao rang ta chuan guo ji tou; hengxiang yi dong.",

@@ -30,6 +30,8 @@ const sourceText = Object.freeze({
   "REWARD: +{xp} Career XP": "RECOMPENSA: +{xp} XP de carreira",
   "+{xp} XP": "+{xp} XP",
   "Counter": "Resposta",
+  "COUNTER ADVICE: LAST DEATH": "DICA DE RESPOSTA: ULTIMA MORTE",
+  "Counter advice": "Dica de resposta",
   "Watch bullet lanes first; dodge through the gap, then resume firing.": "Olhe primeiro as faixas de tiros; desvie pela abertura e volte a atirar.",
   "During bosses, pick a safe lane before chasing damage again.": "Nos chefes, escolha uma faixa segura antes de voltar a buscar dano.",
   "Clear small ships before they cross your nose; drift sideways instead of chasing down.": "Limpe naves pequenas antes que cruzem sua frente; deslize de lado em vez de perseguir.",

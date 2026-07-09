@@ -868,6 +868,7 @@ function buildGameTextState(game) {
       leaderboardCta: gameOverScene.getLeaderboardCtaDebugState ? gameOverScene.getLeaderboardCtaDebugState() : null,
       hangarCta: gameOverScene.getHangarCtaDebugState ? gameOverScene.getHangarCtaDebugState() : null,
       mainMenuCta: gameOverScene.getMainMenuCtaDebugState ? gameOverScene.getMainMenuCtaDebugState() : null,
+      counterAdviceCard: gameOverScene.getCounterAdviceCardDebugState ? gameOverScene.getCounterAdviceCardDebugState() : null,
       runReportCta: gameOverScene.getRunReportCtaDebugState ? gameOverScene.getRunReportCtaDebugState() : null,
       runReportOverlay: gameOverScene.getRunReportOverlayDebugState ? gameOverScene.getRunReportOverlayDebugState() : null,
       runReport: gameOverScene.getRunReportDebugState ? gameOverScene.getRunReportDebugState() : null,

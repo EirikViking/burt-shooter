@@ -20,6 +20,8 @@ const sourceText = Object.freeze({
   "REWARD: +{xp} Career XP": "NAGRADA: +{xp} karernogo XP",
   "+{xp} XP": "+{xp} XP",
   "Counter": "Sovet",
+  "COUNTER ADVICE: LAST DEATH": "SOVET-KONTRA: POSLEDNYAYA SMERT",
+  "Counter advice": "Sovet-kontra",
   "Watch bullet lanes first; dodge through the gap, then resume firing.": "Snachala smotri na linii pul; uvernysya cherez proem, potom snova streliai.",
   "During bosses, pick a safe lane before chasing damage again.": "Na bossah snachala vybiri bezopasnuyu polosu, potom snova goni uron.",
   "Clear small ships before they cross your nose; drift sideways instead of chasing down.": "Zachishchai malye korabli, poka oni ne peresekli nos; smeshchaisya v storonu vmesto pogoni.",

@@ -183,6 +183,11 @@ function assertDefaultGameOver(state) {
   assert(/ONE MORE|RUN|RELAUNCH/i.test(state.gameOver?.primaryCta?.label || ''), 'Primary CTA should still be the restart flow.');
   assert(state.gameOver?.leaderboardCta?.visible, 'Leaderboard action should remain visible by default.');
   assert(state.gameOver?.runReportCta?.visible, 'Run Report CTA should be visible.');
+  assert(Number(state.gameOver?.runReportCta?.width) >= 280, 'Run Report CTA should be prominent enough to notice.');
+  assert(Number(state.gameOver?.runReportCta?.height) >= 46, 'Run Report CTA should use the normal action-button height.');
+  assert(/Counter advice/i.test(state.gameOver?.runReportCta?.hint || ''), 'Run Report CTA should advertise counter advice.');
+  assert(state.gameOver?.counterAdviceCard?.visible === true, 'Counter advice card should be visible on Game Over.');
+  assert(Number(state.gameOver?.counterAdviceCard?.height) >= 60, 'Counter advice card should be readable.');
   assert(state.gameOver?.runReportOverlay?.visible === false, 'Run Report overlay must be hidden by default.');
   assert(state.runReport?.localOnly === true, 'render_game_to_text should expose a local-only runReport summary.');
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
@@ -199,7 +204,7 @@ function assertOpenReport(state) {
     assert(overlay.sectionIds?.includes(sectionId), `Run Report overlay missing ${sectionId} section.`);
   }
   const text = overlay.text || '';
-  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'Counter:', 'Powerups:']) {
+  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
 }
@@ -275,6 +280,7 @@ try {
       gameOver: {
         primaryCta: defaultState.gameOver.primaryCta,
         leaderboardCta: defaultState.gameOver.leaderboardCta,
+        counterAdviceCard: defaultState.gameOver.counterAdviceCard,
         runReportCta: defaultState.gameOver.runReportCta,
         runReportOverlay: defaultState.gameOver.runReportOverlay
       }

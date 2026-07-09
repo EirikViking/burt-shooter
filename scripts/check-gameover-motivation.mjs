@@ -494,7 +494,6 @@ try {
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
       hasLeaderboardAvailabilityLine(gameOverState.gameOver?.leaderboardStatus || '') &&
-      /Counter:/i.test(gameOverState.gameOver?.ceremonyComment || '') &&
       Boolean(gameOverState.gameOver?.deathCoach?.advice) &&
       lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
       lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
@@ -523,9 +522,12 @@ try {
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       submittedRunbackState.gameOver?.mainMenuCta?.visible === true &&
       submittedRunbackState.gameOver?.mainMenuCta?.label === 'BACK TO MAIN MENU' &&
+      submittedRunbackState.gameOver?.counterAdviceCard?.visible === true &&
+      /Watch|lane|dodge|safe|clear|ship|hazard|pickup/i.test(submittedRunbackState.gameOver?.counterAdviceCard?.text || '') &&
       ctaFitsViewport(submittedRunbackState.gameOver?.leaderboardCta) &&
       ctaFitsViewport(submittedRunbackState.gameOver?.hangarCta) &&
       ctaFitsViewport(submittedRunbackState.gameOver?.mainMenuCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.runReportCta) &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
       /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       hasLeaderboardAvailabilityLine(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
@@ -539,9 +541,12 @@ try {
       noSlotRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       noSlotRunbackState.gameOver?.state === 'runback' &&
       noSlotRunbackState.gameOver?.mainMenuCta?.visible === true &&
+      noSlotRunbackState.gameOver?.counterAdviceCard?.visible === true &&
+      /Watch|lane|dodge|safe|clear|ship|hazard|pickup/i.test(noSlotRunbackState.gameOver?.counterAdviceCard?.text || '') &&
       ctaFitsViewport(noSlotRunbackState.gameOver?.leaderboardCta) &&
       ctaFitsViewport(noSlotRunbackState.gameOver?.hangarCta) &&
       ctaFitsViewport(noSlotRunbackState.gameOver?.mainMenuCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.runReportCta) &&
       retryCtaRestartedState.scene === 'play' &&
       retryCtaRestartedState.score === 0 &&
       firstMenuLaunchState.scene === 'play' &&

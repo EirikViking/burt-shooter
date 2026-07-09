@@ -20,6 +20,8 @@ const sourceText = Object.freeze({
   "REWARD: +{xp} Career XP": "BOSANG: +{xp} keorieo XP",
   "+{xp} XP": "+{xp} XP",
   "Counter": "Daechek",
+  "COUNTER ADVICE: LAST DEATH": "COUNTER ADVICE: JINAN DEATH",
+  "Counter advice": "Counter advice",
   "Watch bullet lanes first; dodge through the gap, then resume firing.": "Meonjeo bullet lane-eul bogo; teum sairo pihae dashi balssa.",
   "During bosses, pick a safe lane before chasing damage again.": "Boss jeon-eseon anjeon lane-eul meonjeo jabgo dashi damage-reul chujok.",
   "Clear small ships before they cross your nose; drift sideways instead of chasing down.": "Jageun hamseon-i ap-eul jireugi jeon-e jeongri; ttaragaji malgo yeopeuro heulleo.",
