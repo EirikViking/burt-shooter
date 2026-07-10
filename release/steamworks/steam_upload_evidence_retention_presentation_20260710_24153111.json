@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-07-10T20:00:00.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24153111",
+  "sourceCommit": "7eca822fb0d493c7d48119c649fdf3b03eba8737 Improve retention presentation from Steam playtest",
+  "buildStamp": "v2026-07-10_21-41-14",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24151444",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_retention_presentation_20260710.log",
+  "consoleLogSha256": "9a287299b4ed26dfc90f81af8d7a089d119dbaf5162659715197ee503c619ba3",
+  "payloadManifestSha256": "d9d7c77bd6b908f597d06d36f45a9ddf3af2ac90084929402c5d53e3f4264984",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916335691,
+    "manifestHash": "d43f808543a2849b78703e000cb921421a689ac2cf0b53db8f8ca89e437b53e8",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "f7292296b32e041d4b3e04c93049e1a0b362e2df04045d01ee4e2189b477e3f8",
+      "modifiedAt": "2026-07-10T19:44:26.3532062Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-10 21:59:49]: Successfully finished AppID 4765070 build (BuildID 24153111).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "preflight": "passed: clean worktree before source work, branch codex/current-build-first-session-retention-20260709, HEAD e165d57, diff-check clean",
+    "sourceCommit": "7eca822",
+    "releaseLine": "passed before packaging and VDF upload generation",
+    "packageSteamWin": "passed",
+    "packagedSmoke": "passed",
+    "packagedControls": "passed",
+    "packagedPerformance": "passed: 59.8216 average FPS, 58.4795 minimum FPS, no warnings or errors",
+    "desktopPackage": "passed",
+    "freshProfileIsolation": "passed",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "This is an intermediate checkpoint upload; it is not the final build for the active autonomous 30-improvement goal.",
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "No score formula, XP formula, enemy stats, boss balance, leaderboard logic, or achievement logic changed in this upload pass.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24151444."
+  ]
+}
