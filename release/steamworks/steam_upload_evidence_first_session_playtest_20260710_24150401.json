@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-07-10T16:35:00.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24150401",
+  "sourceCommit": "1aaf146285d199052b89a64ad38910de03dad381 Refine first-session flow from Steam playtest",
+  "buildStamp": "v2026-07-10_14-35-57",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24148259",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_first_session_playtest_20260710.log",
+  "consoleLogSha256": "3e1950af3756a70b57c155369a1530c1db7c17998a1e30c7eae97648ecfcf276",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916335465,
+    "manifestSha256": "0518ac264a89fd1a652bb2816e30ee2c94e273d5083cf277440e972e2087cb0d",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "815ac314b5418a4ae806e18af080e1e23d1a3f48605c12f59dd6a29ebb886149",
+      "modifiedAt": "2026-07-10T16:28:05.594Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-10 18:33:34]: Successfully finished AppID 4765070 build (BuildID 24150401).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "releaseLine": "passed before packaging and during VDF generation",
+    "packageSteamWinCurrent": "passed",
+    "steamPackageRuntime": "passed during packaging and VDF generation",
+    "packagedSmoke": "passed",
+    "packagedControls": "passed",
+    "packagedPerformance": "passed with 60.077 average FPS, 59.880 minimum FPS, and no warnings or errors",
+    "packagedFreshProfile": "passed with Steam leaderboard and achievement writes isolated",
+    "desktopPackageReview": "passed",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "No score formula, XP formula, enemy stats, or boss balance changed in this upload pass.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24148259."
+  ]
+}

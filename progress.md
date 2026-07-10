@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-10 First-Session Steam Playtest Upload
+
+- Current request: upload the latest committed first-session playtest build to Steam for test-branch validation after the video-analysis follow-up work.
+- Steam test upload evidence: source commit `1aaf146 Refine first-session flow from Steam playtest`, package stamp `v2026-07-10_14-35-57`, payload `336 files / 916335465 bytes`, manifest SHA256 `0518ac264a89fd1a652bb2816e30ee2c94e273d5083cf277440e972e2087cb0d`, VDF `SetLive "sector-continue-test"`, and successful SteamCMD BuildID `24150401`. Evidence: `release/steamworks/steam_upload_evidence_first_session_playtest_20260710_24150401.json`; success log: `release/steamworks/steam_upload_console_first_session_playtest_20260710.log`.
+- Verification: passed `git fetch --all --prune`, `git status --short --untracked-files=all`, `git branch --show-current`, `git log -1 --oneline`, `git diff --check`, `git worktree list --porcelain`, `npm run check:release-line`, `npm run package:steam:win:current`, `npm run desktop:smoke:packaged`, `npm run desktop:controls:packaged`, `npm run desktop:perf:packaged`, `npm run check:desktop-package`, `npm run check:fresh-profile-steam-isolation`, payload manifest generation, VDF generation, and SteamCMD upload.
+- Scope notes: Steamworks site/browser was not opened. Public/default remains BuildID `24132596`; only the test branch `sector-continue-test` was targeted. No game code, score formula, XP formula, leaderboard identity, achievement definition/ID, enemy stat, boss balance, Steamworks metadata, store metadata, pricing, AppID, depot ID, or Steam Cloud setting was changed in this upload pass. Test-branch rollback target is BuildID `24148259`.
+
 ## 2026-07-09 Public-Baseline First-Session Stabilization
 
 - Current request: treat public/default Steam BuildID `24132596` as the baseline, account for roughly 500 recent improvements, validate the current first session rather than judging it from old retention data, and implement only the highest-confidence game-side fixes without publishing.
