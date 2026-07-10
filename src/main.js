@@ -654,6 +654,7 @@ function buildGameTextState(game) {
       levelJumpAvailable: isMaintainerDevtoolsEnabled() && typeof playScene.debugJumpToLevel === 'function'
     } : null,
     toast: playScene?.getToastDebugState ? playScene.getToastDebugState(getBoundsDebug) : null,
+    shipIntro: playScene?.getShipIntroDebugState ? playScene.getShipIntroDebugState() : null,
     gameOverInterlude: playScene?.getGameOverInterludeDebugState
       ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
       : { active: false, visible: false },

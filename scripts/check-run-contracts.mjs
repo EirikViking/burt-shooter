@@ -1278,6 +1278,7 @@ async function runBrowserSmoke() {
     assert.match(firstRunNudge?.message || '', /WASD\/Arrows: Move.*Space: Shoot.*Shift: Phase/, 'first ranked run should teach core controls before Pilot Orders');
     assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'runContractStart'), false, 'first ranked run should not stack the Pilot Orders banner over controls');
     assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'level_up' && toast.slot === 'corner'), false, 'first ranked run should suppress ambient opening quips while controls are visible');
+    assert.equal(firstRunNudgeState.shipIntro?.timing?.totalMs, 3200, 'first ranked run should preserve the full ship introduction');
     assert.equal(firstRunNudgeState.toast?.achievement?.id || null, null, 'first-run achievement should wait until the controls lesson is complete');
     await page.evaluate(() => window.__game?.handleAchievementUnlocked?.({
       id: 'ACH_EARLY_PILOT',
@@ -1375,14 +1376,23 @@ async function runBrowserSmoke() {
 
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return (state.toast?.active || []).some((toast) => toast.type === 'runContractStart');
+      return state.shipIntro?.complete === true && state.shipIntro?.returningPilot === true;
     }, null, { timeout: 7000 });
+    await page.waitForTimeout(2400);
     const startNudgeState = await readState(page);
-    const startNudge = (startNudgeState.toast?.active || []).find((toast) => toast.type === 'runContractStart');
-    assert.match(startNudge?.message || '', /PILOT ORDERS 49\/50 \/\/ 2500 Enemies 0\/2,500/, 'run start should nudge the first active Pilot Order with track progress');
-    const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-run-start-nudge.png');
+    assert.equal(
+      (startNudgeState.toast?.active || []).some((toast) => toast.type === 'runContractStart'),
+      false,
+      'returning runs should not cover opening combat with a repeated Pilot Orders banner'
+    );
+    assert.equal(
+      (startNudgeState.toast?.active || []).some((toast) => toast.type === 'level_up' && toast.slot === 'corner'),
+      false,
+      'returning runs should not stack randomized opening quips over combat'
+    );
+    assert.equal(startNudgeState.shipIntro?.timing?.totalMs, 1600, 'returning desktop runs should use the shorter ship intro');
+    const startNudgeScreenshot = path.join(outputDir, 'pilot-orders-returning-run-clean-start.png');
     await page.screenshot({ path: startNudgeScreenshot, fullPage: true });
-    await page.waitForTimeout(2700);
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;

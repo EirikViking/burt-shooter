@@ -3375,8 +3375,9 @@ export class EnemyManager {
       });
     }
     if (!marketingDebug && playScene?.showBossIntro) {
-      const taunt = playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro');
-      playScene.showBossIntro(boss.name, taunt);
+      const descriptor = boss.profile?.title
+        || (playScene.getBossTauntCaption ? playScene.getBossTauntCaption('boss_spawn') : getMicroMessage('bossIntro'));
+      playScene.showBossIntro(boss.name, descriptor);
     }
     if (!marketingDebug) {
       AudioManager.playMusicContext('boss', { resetPlaylist: true });

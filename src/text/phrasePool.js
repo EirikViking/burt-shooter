@@ -731,19 +731,19 @@ export function getMicroMessage(type) {
   const labels = localizedLabels[getCurrentLanguage()];
   switch (type) {
     case 'levelStart':
-      return buildCombo();
+      return labels?.newWave || 'NEW WAVE';
     case 'pause':
-      return `${labels?.pause || 'PAUSE'} - ${buildShortBurst()}`;
+      return labels?.pause || 'PAUSE';
     case 'resume':
-      return `${labels?.resume || 'RESUME'} - ${buildShortBurst()}`;
+      return labels?.resume || 'RESUME';
     case 'lowHealth':
-      return labels ? `${labels.lowHealth} - ${buildShortBurst()}` : `LOW LIFE - ${buildShortBurst()}`;
+      return labels?.lowHealth || 'LOW LIFE';
     case 'lifeLost':
-      return labels?.lifeLost || `SHIP DOWN - ${buildShortBurst()}`;
+      return labels?.lifeLost || 'SHIP DOWN - HITBOX HIT!';
     case 'newWave':
-      return `${labels?.newWave || 'NEW WAVE'} - ${buildShortBurst()}`;
+      return labels?.newWave || 'NEW WAVE';
     case 'bossIntro':
-      return `BOSS - ${buildCombo()}`;
+      return 'BOSS';
     default:
       return buildShortBurst();
   }

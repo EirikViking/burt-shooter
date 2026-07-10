@@ -325,7 +325,7 @@ try {
     play.clearToastState?.();
     play.introActive = false;
     play.introComplete = true;
-    play.showBossIntro?.('BULLET METRONOME', 'BOSS - Arcade Control questions the swarm choreography.');
+    play.showBossIntro?.('BULLET METRONOME', 'CLOCKWORK SWARM');
     play.enqueueToast('ORBITAL STRIKE!', {
       slot: 'center',
       type: 'powerup',
@@ -354,6 +354,9 @@ try {
   const bossIntroActive = (bossIntroState.toast?.active || []).find((toast) => toast.type === 'boss_intro');
   if (!bossIntroActive) {
     throw new Error(`boss intro did not expose a tracked center message: ${JSON.stringify(bossIntroState.toast?.active || [], null, 2)}`);
+  }
+  if (/boss entrance|pew-pew|coin slot|swarm choreography|panic button/i.test(bossIntroActive.message || '')) {
+    throw new Error(`boss intro leaked generated arcade filler: ${JSON.stringify(bossIntroActive, null, 2)}`);
   }
   const activeOrbitals = (bossIntroState.toast?.active || []).filter((toast) => toast.message === 'ORBITAL STRIKE!');
   if (activeOrbitals.length > 0) {

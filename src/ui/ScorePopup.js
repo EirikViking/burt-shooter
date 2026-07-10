@@ -3,6 +3,7 @@
  */
 import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
+import { isFloatingComboMilestone } from '../config/RetentionPresentation.js';
 
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false, options = {}) {
@@ -15,18 +16,19 @@ export class ScorePopup {
     this.isCombo = Boolean(isCombo);
     this.isNearMiss = this.type === 'nearMiss' || this.type === 'near_miss';
     this.isMajor = Boolean(isCombo || this.isNearMiss || options.major || Number(score) >= 500);
-    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || (this.isMajor ? 980 : 820));
+    this.isFramed = Boolean(this.isMajor || options.framed === true);
+    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || (this.isMajor ? 980 : 560));
     this.vx = Number(options.vx) || 0;
     this.vy = Number(options.vy) || (this.isMajor ? -1.55 : -1.85);
     this.clusterIndex = Math.max(0, Math.round(Number(options.clusterIndex) || 0));
     this.sourceX = Number.isFinite(options.sourceX) ? options.sourceX : x;
     this.sourceY = Number.isFinite(options.sourceY) ? options.sourceY : y;
-    this.baseScale = this.isMajor ? 1.05 : 1;
+    this.baseScale = this.isMajor ? 1.05 : 0.92;
     this.numericScore = Math.max(0, Math.round(Number(score) || 0));
     this.comboSignalPipCount = this.isCombo ? Math.max(3, Math.min(6, Math.ceil(this.numericScore / 4))) : 0;
     this.majorValueBarCount = this.isMajor && !this.isCombo ? Math.max(3, Math.min(5, Math.ceil(this.numericScore / 220))) : 0;
 
-    const fontSize = Number(options.fontSize) || (isCombo ? 24 : 18);
+    const fontSize = Number(options.fontSize) || (isCombo ? 24 : (this.isFramed ? 18 : 15));
     const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
     const text = options.text
       ? String(options.text)
@@ -38,7 +40,7 @@ export class ScorePopup {
     this.sprite.__novaScorePopupText = text;
     this.sprite.__novaScorePopupType = this.type;
     this.sprite.__debugScorePopup = {
-      framed: true,
+      framed: this.isFramed,
       type: this.type,
       combo: Boolean(isCombo),
       major: this.isMajor,
@@ -47,23 +49,28 @@ export class ScorePopup {
       clusterIndex: this.clusterIndex
     };
 
-    this.backplate = new PIXI.Graphics();
-    this.backplate.label = 'scorePopupBackplate';
-    this.backplate.blendMode = 'normal';
-    this.tickLayer = new PIXI.Graphics();
-    this.tickLayer.label = 'scorePopupTicks';
-    this.tickLayer.blendMode = 'add';
+    this.backplate = this.isFramed ? new PIXI.Graphics() : null;
+    if (this.backplate) {
+      this.backplate.label = 'scorePopupBackplate';
+      this.backplate.blendMode = 'normal';
+    }
+    this.tickLayer = this.isFramed ? new PIXI.Graphics() : null;
+    if (this.tickLayer) {
+      this.tickLayer.label = 'scorePopupTicks';
+      this.tickLayer.blendMode = 'add';
+    }
     this.textNode = createText(text, {
       fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
       fontSize: fontSize,
       fill: color,
       stroke: '#000000',
-      strokeThickness: this.isMajor ? 4 : 3,
+      strokeThickness: this.isMajor ? 4 : 2,
       fontWeight: 'bold'
     });
 
     this.textNode.anchor.set(0.5);
-    this.sprite.addChild(this.backplate, this.tickLayer, this.textNode);
+    if (this.backplate && this.tickLayer) this.sprite.addChild(this.backplate, this.tickLayer);
+    this.sprite.addChild(this.textNode);
     this.frameColor = color;
     this.accentColor = Number.isFinite(options.accent)
       ? options.accent
@@ -79,6 +86,7 @@ export class ScorePopup {
   }
 
   drawFrame(progress = 0) {
+    if (!this.isFramed || !this.backplate || !this.tickLayer) return;
     const pulse = Math.sin(progress * Math.PI);
     const width = this.frameWidth;
     const height = this.frameHeight;
@@ -167,7 +175,7 @@ export class ScorePopup {
     }
 
     this.sprite.__debugScorePopup = {
-      framed: true,
+      framed: this.isFramed,
       type: this.type,
       combo: this.isCombo,
       nearMiss: this.isNearMiss,
@@ -201,7 +209,7 @@ export class ScorePopupManager {
     this.container = container;
     this.popups = [];
     this.pendingPopups = [];
-    this.defaultMaxActivePopups = 24;
+    this.defaultMaxActivePopups = 14;
     this.maxActivePopups = this.defaultMaxActivePopups;
 
     // Combo system
@@ -224,7 +232,7 @@ export class ScorePopupManager {
   }
 
   addScorePopup(x, y, score, options = {}) {
-    const comboEligible = options.comboEligible !== false;
+    const comboEligible = options.comboEligible === true;
     const now = Date.now();
     const timeSinceLastKill = now - this.lastKillTime;
 
@@ -240,7 +248,7 @@ export class ScorePopupManager {
     }
 
     // Determine if this is a combo popup
-    const isCombo = comboEligible && this.comboCount >= 3;
+    const isCombo = comboEligible && isFloatingComboMilestone(this.comboCount);
     const displayScore = isCombo ? this.comboCount : score;
     const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
     const position = this.resolvePopupPosition(x, y, options);
@@ -259,12 +267,54 @@ export class ScorePopupManager {
       vx: position.vx,
       vy: options.vy
     });
+    this.separatePopupFromActive(popup);
     this.popups.push(popup);
     this.container.addChild(popup.sprite);
     if (this.popups.length > this.maxActivePopups) {
       const stale = this.popups.shift();
       stale?.destroy?.();
     }
+  }
+
+  separatePopupFromActive(popup) {
+    if (!popup) return;
+    const active = this.popups.filter((candidate) => candidate?.active);
+    if (!active.length) return;
+    const originX = popup.x;
+    const originY = popup.y;
+    const offsets = [
+      [0, 0],
+      [0, -92],
+      [154, -62],
+      [-154, -62],
+      [184, 54],
+      [-184, 54],
+      [124, 142],
+      [-124, 142],
+      [0, 214]
+    ];
+    const getSize = (candidate) => ({
+      width: Math.max(28, Number(candidate?.frameWidth) || Number(candidate?.textNode?.width) || 28)
+        * Math.max(1, (Number(candidate?.baseScale) || 1) + (candidate?.isMajor ? 0.28 : 0.18)),
+      height: Math.max(18, Number(candidate?.frameHeight) || Number(candidate?.textNode?.height) || 18)
+        * Math.max(1, (Number(candidate?.baseScale) || 1) + (candidate?.isMajor ? 0.28 : 0.18))
+    });
+    const popupSize = getSize(popup);
+    const overlaps = (x, y, candidate) => {
+      const candidateSize = getSize(candidate);
+      return Math.abs(x - candidate.x) < (popupSize.width + candidateSize.width) / 2 + 10
+        && Math.abs(y - candidate.y) < (popupSize.height + candidateSize.height) / 2 + 10;
+    };
+    const openOffset = offsets.find(([dx, dy]) => {
+      const x = originX + dx;
+      const y = Math.max(popup.minY, originY + dy);
+      return active.every((candidate) => !overlaps(x, y, candidate));
+    });
+    if (!openOffset) return;
+    popup.x = originX + openOffset[0];
+    popup.y = Math.max(popup.minY, originY + openOffset[1]);
+    popup.sprite.x = popup.x;
+    popup.sprite.y = popup.y;
   }
 
   resolvePopupPosition(x, y, options = {}) {

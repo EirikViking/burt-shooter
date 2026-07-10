@@ -33,7 +33,6 @@ import { getDefaultShipKey } from '../config/ShipMetadata.js';
 import { createText, FONT_BODY, FONT_DISPLAY } from '../utils/pixiText.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
-  getAchievementPopup,
   getEnemyTaunt,
   getMicroMessage,
   getAllNewPhrases,
@@ -53,6 +52,7 @@ import {
   sampleGameplayBackdropMotion
 } from '../config/GameplayBackdropMotion.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
+import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
 import {
   getOverrunMilestoneCelebration,
@@ -312,6 +312,8 @@ export class PlayScene {
     this.introOverlay = null;
     this.shipIntroToken = 0;
     this.introStartTime = 0;
+    this.shipIntroTiming = null;
+    this.shipIntroReturningPilot = false;
     this.shipCatalogReady = Promise.resolve();
     this.shipCatalogLoaded = false;
     this.shipIntroAssetGatePending = false;
@@ -623,7 +625,6 @@ export class PlayScene {
         sector: this.game?.level || 1,
         suppressProgressToast: true
       });
-      if (this.firstRunOnboardingComplete) this.scheduleRunContractStartNudge();
     } else {
       this.runContractSession = null;
     }
@@ -641,6 +642,9 @@ export class PlayScene {
     this._lastStartedLevel = -1;
     this.introActive = false;
     this.introComplete = false;
+    this.introStartTime = 0;
+    this.shipIntroTiming = null;
+    this.shipIntroReturningPilot = false;
     this.shipIntroToken += 1;
     if (this.introOverlay?.parent) {
       this.introOverlay.parent.removeChild(this.introOverlay);
@@ -1472,19 +1476,6 @@ export class PlayScene {
     }
   }
 
-  getRunContractStartNudgeSummary() {
-    const active = (this.getRunContractDebugState()?.active || [])
-      .find((item) => item.eligible && !item.completed);
-    if (!active) return null;
-    const title = translateText(active.shortTitle || active.title || active.id);
-    const progress = translateText('{progress}/{target}', formatRunContractProgressValue(active.progress, active.target));
-    return {
-      title,
-      progress,
-      trackProgress: this.getRunContractTrackProgressLabel()
-    };
-  }
-
   getFirstRunControlsNudge() {
     const progress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
     if ((Number(progress?.totalRuns) || 0) > 0) return null;
@@ -1497,71 +1488,45 @@ export class PlayScene {
   scheduleRunContractStartNudge({ delayMs = null, onFirstRunControlsShown = null } = {}) {
     this.clearRunContractStartNudge();
     const firstRunControls = this.getFirstRunControlsNudge();
-    if (!firstRunControls && !this.getRunContractStartNudgeSummary()) return;
+    if (!firstRunControls) return;
     this.runContractStartNudgeTimeout = setTimeout(() => {
       this.runContractStartNudgeTimeout = null;
       if (this.gameOverSequenceStarted) return;
       const controls = this.getFirstRunControlsNudge();
-      if (controls) {
-        const compactHud = this.game.getWidth() < 620;
-        this.enqueueToast(controls, {
-          fontSize: compactHud ? 14 : 18,
-          fill: '#eafcff',
-          stroke: '#031321',
-          strokeThickness: compactHud ? 3 : 4,
-          slot: 'top',
-          type: 'firstRunControls',
-          priority: 1,
-          bypassFocusLock: false,
-          duration: FIRST_RUN_CONTROLS_DURATION_MS,
-          minVisibleMs: FIRST_RUN_CONTROLS_MIN_VISIBLE_MS,
-          banner: true,
-          align: 'center',
-          y: Math.max(compactHud ? 154 : 184, this.game.getHeight() * 0.17),
-          maxWidth: compactHud ? this.game.getWidth() * 0.84 : Math.min(760, this.game.getWidth() * 0.58),
-          accent: 0xffd15c,
-          onShown: ({ shownAt }) => {
-            this.firstRunControlsShownAt = shownAt;
-            this.firstRunOnboardingUntil = shownAt + FIRST_RUN_CONTROLS_TOTAL_MS;
-            this.reserveMessageFocus(FIRST_RUN_CONTROLS_TOTAL_MS, {
-              priority: 2,
-              slots: ['corner']
-            });
-            this.clearFirstRunOnboardingCompletion();
-            this.firstRunOnboardingCompletionTimeout = setTimeout(
-              () => this.completeFirstRunOnboarding(),
-              FIRST_RUN_CONTROLS_TOTAL_MS + 160
-            );
-            onFirstRunControlsShown?.({ shownAt });
-          }
-        });
-        return;
-      }
-      const summary = this.getRunContractStartNudgeSummary();
-      if (!summary) return;
+      if (!controls) return;
       const compactHud = this.game.getWidth() < 620;
-      const prefix = summary.trackProgress
-        ? `${translateText('PILOT ORDERS')} ${summary.trackProgress}`
-        : translateText('PILOT ORDERS');
-      this.enqueueToast(`${prefix} // ${summary.title} ${summary.progress}`, {
-        fontSize: compactHud ? 16 : 20,
-        fill: '#dffcff',
+      this.enqueueToast(controls, {
+        fontSize: compactHud ? 14 : 18,
+        fill: '#eafcff',
         stroke: '#031321',
         strokeThickness: compactHud ? 3 : 4,
         slot: 'top',
-        type: 'runContractStart',
+        type: 'firstRunControls',
         priority: 1,
         bypassFocusLock: false,
-        duration: 4200,
+        duration: FIRST_RUN_CONTROLS_DURATION_MS,
+        minVisibleMs: FIRST_RUN_CONTROLS_MIN_VISIBLE_MS,
         banner: true,
-        fontSize: compactHud ? 17 : 19,
-        fill: '#eafcff',
         align: 'center',
-        y: Math.max(compactHud ? 118 : 132, this.game.getHeight() * 0.15),
-        maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46),
-        accent: 0x7fffd8
+        y: Math.max(compactHud ? 154 : 184, this.game.getHeight() * 0.17),
+        maxWidth: compactHud ? this.game.getWidth() * 0.84 : Math.min(760, this.game.getWidth() * 0.58),
+        accent: 0xffd15c,
+        onShown: ({ shownAt }) => {
+          this.firstRunControlsShownAt = shownAt;
+          this.firstRunOnboardingUntil = shownAt + FIRST_RUN_CONTROLS_TOTAL_MS;
+          this.reserveMessageFocus(FIRST_RUN_CONTROLS_TOTAL_MS, {
+            priority: 2,
+            slots: ['corner']
+          });
+          this.clearFirstRunOnboardingCompletion();
+          this.firstRunOnboardingCompletionTimeout = setTimeout(
+            () => this.completeFirstRunOnboarding(),
+            FIRST_RUN_CONTROLS_TOTAL_MS + 160
+          );
+          onFirstRunControlsShown?.({ shownAt });
+        }
       });
-    }, Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : firstRunControls ? FIRST_RUN_CONTROLS_DELAY_MS : 3500);
+    }, Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : FIRST_RUN_CONTROLS_DELAY_MS);
   }
 
   shouldPersistRunContractProgress(type, result = {}) {
@@ -2021,16 +1986,6 @@ export class PlayScene {
         }
       });
     }
-    const compactHud = this.game.getWidth() < 620;
-    if (!compactHud && !postBossLevelIntro && !showingFirstRunControls) {
-      this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
-      this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
-    }
-
-    if (this.game.level % 5 === 0) {
-      this.showToast(getMicroMessage('bossIntro'), { fontSize: 22, y: this.game.getHeight() * 0.25, slot: 'center', type: 'level_up' });
-    }
-
     this.resetRandomTimers();
     this.ambientBonusDroneTimer = 2000 + Math.random() * 3000;
   }
@@ -3026,7 +2981,7 @@ export class PlayScene {
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
     const panelWidth = Math.min(width - 32, compact ? 304 : 356);
-    const panelHeight = compact ? 124 : 142;
+    const panelHeight = compact ? 112 : 124;
     const container = new PIXI.Container();
     container.label = 'ui_rank_up_badge';
     container.x = compact ? width / 2 : width - panelWidth / 2 - 28;
@@ -3154,7 +3109,7 @@ export class PlayScene {
     });
     rankUpText.anchor.set(textAnchorX, 0.5);
     rankUpText.x = textX;
-    rankUpText.y = rankTitle ? -30 : -12;
+    rankUpText.y = rankTitle ? -22 : 0;
     container.addChild(rankUpText);
 
     if (rankTitle) {
@@ -3171,25 +3126,9 @@ export class PlayScene {
       });
       titleText.anchor.set(textAnchorX, 0.5);
       titleText.x = textX;
-      titleText.y = 0;
+      titleText.y = 14;
       container.addChild(titleText);
     }
-
-    const lore = createText(getAchievementPopup(), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 11 : 13,
-      fill: '#d8fbff',
-      stroke: '#000000',
-      strokeThickness: 2,
-      align: rankTexture ? 'left' : 'center',
-      wordWrap: true,
-      wordWrapWidth: maxTextWidth,
-      lineHeight: compact ? 13 : 15
-    });
-    lore.anchor.set(textAnchorX, 0);
-    lore.x = textX;
-    lore.y = rankTitle ? 22 : 14;
-    container.addChild(lore);
 
     container._debugRankUpClarity = {
       broadcastBurst: true,
@@ -13570,7 +13509,7 @@ export class PlayScene {
 
     const compactHud = this.game.getWidth() < 620;
     const repairLine = repairDelta > 0 ? `\nHULL REPAIR +${repairDelta}` : '';
-    this.showToast(`BOSS DEFEATED! +1000${repairLine}\n${getAchievementPopup()}`, {
+    this.showToast(`BOSS DEFEATED! +1000${repairLine}`, {
       fontSize: compactHud ? 20 : 28,
       fill: '#ffff00',
       stroke: '#330000',
@@ -13610,6 +13549,10 @@ export class PlayScene {
     const introHeight = this.game.getHeight();
     const introGameplayHeight = this.gameplayGame.getHeight();
     const isNarrowIntro = introWidth < 620;
+    const returningPilot = isReturningPilot(this.game?.hangarProgressAtRunStart);
+    const introTiming = getShipIntroTiming({ compact: isNarrowIntro, returningPilot });
+    this.shipIntroReturningPilot = returningPilot;
+    this.shipIntroTiming = introTiming;
     const maxTextWidth = Math.max(260, introWidth * 0.9);
 
     // Create intro overlay
@@ -13689,9 +13632,15 @@ export class PlayScene {
     AudioManager.playSfx('ui_open', { volume: 0.8 });
 
     // Animation Config
-    const duration = isNarrowIntro ? 1500 : 1800;
-    const textDuration = isNarrowIntro ? 2600 : 3200;
-    const startTime = Date.now();
+    const {
+      flightMs,
+      totalMs,
+      fadeInMs,
+      holdUntilMs,
+      impactStartMs,
+      impactEndMs
+    } = introTiming;
+    const startTime = this.introStartTime;
     let midpointLogged = false;
     let gameplayEnabled = false;
 
@@ -13714,7 +13663,7 @@ export class PlayScene {
       const elapsed = now - startTime;
 
       // --- Fly In Animation ---
-      const progress = Math.min(elapsed / duration, 1);
+      const progress = Math.min(elapsed / flightMs, 1);
 
       if (progress >= 0.5 && !midpointLogged) {
         console.log('[Intro] midpoint');
@@ -13745,9 +13694,9 @@ export class PlayScene {
         this.player.sprite.alpha = 1;
       }
 
-      // 5. Impact (at ~80% of fly-in duration, ~1.4s)
+      // 5. Impact near the end of the fly-in.
       const gameOrigin = this.getGameplayContainerOrigin();
-      if (elapsed > 1400 && elapsed < 1550) {
+      if (elapsed > impactStartMs && elapsed < impactEndMs) {
         flash.alpha = 0.1;
         this.gameContainer.x = gameOrigin.x + (Math.random() - 0.5) * 6;
         this.gameContainer.y = gameOrigin.y + (Math.random() - 0.5) * 6;
@@ -13758,16 +13707,16 @@ export class PlayScene {
       }
 
       // --- Text Animation ---
-      // Text Animation (Fade In 0.6s -> Hold -> Fade Out 0.8s)
+      // Text Animation (fade in -> hold -> fade out).
       let tAlpha = 0;
-      if (elapsed < 600) {
-        tAlpha = elapsed / 600;
+      if (elapsed < fadeInMs) {
+        tAlpha = elapsed / fadeInMs;
         nameText.y = (introHeight / 2 - (isNarrowIntro ? 72 : 50)) + (tAlpha * 10);
-      } else if (elapsed < 2800) {
+      } else if (elapsed < holdUntilMs) {
         tAlpha = 1;
         nameText.y = (introHeight / 2 - (isNarrowIntro ? 62 : 40));
       } else {
-        tAlpha = 1 - ((elapsed - 2800) / 800);
+        tAlpha = Math.max(0, 1 - ((elapsed - holdUntilMs) / Math.max(1, totalMs - holdUntilMs)));
         nameText.y = (introHeight / 2 - (isNarrowIntro ? 62 : 40));
       }
       nameText.alpha = tAlpha;
@@ -13778,12 +13727,12 @@ export class PlayScene {
       subText.scale.set(baseSubScale);
 
       // --- Logic Gating ---
-      if (elapsed >= textDuration && !gameplayEnabled) {
+      if (elapsed >= totalMs && !gameplayEnabled) {
         gameplayEnabled = true;
         this.completeShipIntro();
       }
 
-      if (elapsed < textDuration) {
+      if (elapsed < totalMs) {
         requestAnimationFrame(animate);
       } else {
         // Cleanup
@@ -13798,6 +13747,17 @@ export class PlayScene {
     };
 
     animate();
+  }
+
+  getShipIntroDebugState() {
+    const startedAt = Math.max(0, Number(this.introStartTime) || 0);
+    return {
+      active: Boolean(this.introActive),
+      complete: Boolean(this.introComplete),
+      returningPilot: Boolean(this.shipIntroReturningPilot),
+      elapsedMs: startedAt ? Math.max(0, Date.now() - startedAt) : 0,
+      timing: this.shipIntroTiming ? { ...this.shipIntroTiming } : null
+    };
   }
 
   completeShipIntro() {

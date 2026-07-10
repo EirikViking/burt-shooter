@@ -35,6 +35,7 @@ import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
 import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { getRecoverySectorGoal } from '../config/RetentionPresentation.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -3531,6 +3532,13 @@ export class GameOverScene {
     }
 
     const bestSector = Math.max(1, Number(currentProgress.bestSector || currentProgress.bestLevel) || this.finalLevel || 1);
+    const recoverySector = getRecoverySectorGoal({
+      currentSector: this.finalLevel || 1,
+      bestSector
+    });
+    if (recoverySector) {
+      return { text: `NEXT CAREER GOAL: REACH SECTOR ${recoverySector}`, tone: 'level' };
+    }
     const nextSector = this.getNextLevelGoal(bestSector);
     if (nextSector > bestSector) {
       return { text: `NEXT CAREER GOAL: REACH SECTOR ${nextSector}`, tone: 'level' };

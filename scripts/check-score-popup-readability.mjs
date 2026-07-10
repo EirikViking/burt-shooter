@@ -127,9 +127,9 @@ try {
       fontSize: 21,
       maxLifetime: 1050
     });
-    manager.addScorePopup(centerX + 7, centerY + 5, 40);
-    manager.addScorePopup(centerX + 9, centerY + 6, 40);
-    manager.addScorePopup(centerX + 11, centerY + 7, 40);
+    manager.addScorePopup(centerX + 7, centerY + 5, 40, { comboEligible: true });
+    manager.addScorePopup(centerX + 9, centerY + 6, 40, { comboEligible: true });
+    manager.addScorePopup(centerX + 11, centerY + 7, 40, { comboEligible: true });
     manager.update(2);
 
     return {
@@ -166,10 +166,16 @@ try {
   if ((state.popups || []).length < 6) failures.push(`expected 6 popups, saw ${state.popups?.length || 0}`);
   for (const popup of state.popups || []) {
     if (!popup.active) failures.push(`popup inactive too early: ${JSON.stringify(popup)}`);
-    if (!popup.debug?.framed) failures.push(`popup missing framed debug: ${JSON.stringify(popup)}`);
-    if (!popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`popup missing backplate: ${JSON.stringify(popup.childLabels)}`);
-    if (!popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`popup missing ticks: ${JSON.stringify(popup.childLabels)}`);
-    if ((popup.debug?.frameWidth || 0) < 50 || (popup.debug?.frameHeight || 0) < 20) failures.push(`popup frame too small: ${JSON.stringify(popup.debug)}`);
+    if (popup.debug?.major) {
+      if (!popup.debug?.framed) failures.push(`major popup missing framed debug: ${JSON.stringify(popup)}`);
+      if (!popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`major popup missing backplate: ${JSON.stringify(popup.childLabels)}`);
+      if (!popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`major popup missing ticks: ${JSON.stringify(popup.childLabels)}`);
+      if ((popup.debug?.frameWidth || 0) < 50 || (popup.debug?.frameHeight || 0) < 20) failures.push(`major popup frame too small: ${JSON.stringify(popup.debug)}`);
+    } else {
+      if (popup.debug?.framed) failures.push(`routine popup should be lightweight: ${JSON.stringify(popup)}`);
+      if (popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`routine popup should not have a backplate: ${JSON.stringify(popup.childLabels)}`);
+      if (popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`routine popup should not have signal ticks: ${JSON.stringify(popup.childLabels)}`);
+    }
   }
   const major = (state.popups || []).filter((popup) => popup.debug?.major);
   if (major.length < 2) failures.push(`expected at least two major/near-miss/combo popups: ${JSON.stringify(state.popups)}`);
@@ -179,6 +185,8 @@ try {
   if (!nearMiss) failures.push(`near-miss popup did not keep type styling: ${JSON.stringify(state.popups)}`);
   const combo = (state.popups || []).find((popup) => popup.debug?.combo);
   if (!combo) failures.push(`combo popup did not keep combo styling: ${JSON.stringify(state.popups)}`);
+  if (state.comboCount !== 3) failures.push(`focused combo probe should stop at count 3, saw ${state.comboCount}`);
+  if ((state.popups || []).filter((popup) => popup.debug?.combo).length !== 1) failures.push(`only the combo milestone should use a combo frame: ${JSON.stringify(state.popups)}`);
   if ((combo?.debug?.comboSignalPipCount || 0) < 3) failures.push(`combo popup missing signal pips: ${JSON.stringify(combo)}`);
   const clustered = (state.popups || []).filter((popup) => (popup.debug?.clusterIndex || 0) > 0);
   if (clustered.length < 3) failures.push(`cluster de-overlap did not engage enough: ${JSON.stringify(state.popups)}`);

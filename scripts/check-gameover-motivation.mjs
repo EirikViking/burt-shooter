@@ -349,6 +349,35 @@ try {
     }
   }, null, { timeout: 10000 });
   const careerGoalState = await careerPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const distantBestRecoveryGoal = await careerPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene?.createNextGoal) return null;
+    const previousFinalLevel = scene.finalLevel;
+    scene.finalLevel = 3;
+    const goal = scene.createNextGoal(
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 },
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 }
+    );
+    scene.finalLevel = previousFinalLevel;
+    return goal?.text || null;
+  });
+  await careerPage.setViewportSize({ width: 1920, height: 1080 });
+  await careerPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene?.createNextGoal) return;
+    scene.finalLevel = 3;
+    scene.nextGoal = scene.createNextGoal(
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 },
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 }
+    );
+    scene.enterRunbackStage?.('distant_best_recovery_test');
+  });
+  await careerPage.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.gameOver?.state === 'runback' && /REACH SECTOR 5/i.test(state.gameOver?.nextGoal || '');
+  }, null, { timeout: 5000 });
+  const distantBestScreenshot = path.join(outputDir, 'gameover-distant-best-recovery.png');
+  await careerPage.screenshot({ path: distantBestScreenshot, fullPage: true });
   await careerPage.close();
   const careerLevelSummary = careerGoalState.gameOver?.levelSummary || '';
   const careerUnlockSummary = careerGoalState.gameOver?.unlockSummary || '';
@@ -465,6 +494,7 @@ try {
       /\b4\/4\b/i.test(careerUnlockSummary) &&
       !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
       /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 5/i.test(distantBestRecoveryGoal || '') &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
       /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
       hasLeaderboardAvailabilityLine(gameOverState.gameOver?.leaderboardStatus || '') &&
@@ -548,6 +578,8 @@ try {
     nameInput: nameInputState,
     alreadyUnlocked: alreadyUnlockedState.gameOver,
     careerGoal: careerGoalState.gameOver,
+    distantBestRecoveryGoal,
+    distantBestScreenshot,
     pageErrors,
     consoleErrors,
     screenshot,
