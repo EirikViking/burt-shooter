@@ -156,6 +156,11 @@ async function forceRunReportScenario(page) {
     play.respawnsThisRun = 2;
     play.extraLivesEarnedThisRun = 1;
     play.powerupsCollectedThisRun = 5;
+    play.tacticalDraftHistory = [
+      { sectorCleared: 1, id: 'damage_up', name: 'DAMAGE UP', category: 'offense', stacks: 1 },
+      { sectorCleared: 2, id: 'speed_up', name: 'SPEED UP', category: 'mobility', stacks: 1 }
+    ];
+    play.player.runAugmentIds = ['damage_up', 'speed_up'];
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
     play.finalLifeLossSource = 'enemy_bullet';
@@ -193,6 +198,7 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
   assert(state.runReport?.sectorReached >= 6, 'runReport summary should include sector reached.');
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
+  assert(state.runReport?.tacticalDraftPicks?.length === 2, 'runReport summary should preserve tactical draft picks.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }
@@ -204,7 +210,7 @@ function assertOpenReport(state) {
     assert(overlay.sectionIds?.includes(sectionId), `Run Report overlay missing ${sectionId} section.`);
   }
   const text = overlay.text || '';
-  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:']) {
+  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
 }

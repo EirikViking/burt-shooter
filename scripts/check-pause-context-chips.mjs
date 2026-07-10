@@ -128,14 +128,24 @@ try {
       hazardTimeScale: 0.35,
       durationMs: 8000
     };
+    player.applyRunAugment?.('damage_up');
     play.setPaused(true);
     play.refreshPauseOverlayStats();
+    const toBounds = (display) => {
+      const bounds = display?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
     return {
       ok: true,
       debug: play.getPauseDebugState?.(),
       chips: {
         livesColor: play.pauseMenuDecor?.livesValue?.style?.fill || null,
         powerupColor: play.pauseMenuDecor?.powerupValue?.style?.fill || null
+      },
+      bounds: {
+        pilotOrders: toBounds(play.pauseMenuDecor?.pilotOrdersValue),
+        tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
+        resume: toBounds(play.pauseButtons?.[0])
       }
     };
   });
@@ -152,6 +162,10 @@ try {
   if (state.debug?.lives !== '1') failures.push(`lives chip mismatch: ${state.debug?.lives}`);
   if (!/SLOW|TIME/i.test(state.debug?.powerup || '')) failures.push(`powerup chip missing slow time: ${state.debug?.powerup}`);
   if (!state.debug?.pilotOrders) failures.push('pilot orders line missing');
+  if (!/DAMAGE UP/i.test(state.debug?.tacticalDraft || '')) failures.push(`tactical draft line missing selected augment: ${state.debug?.tacticalDraft}`);
+  const overlaps = (a, b, margin = 2) => a && b && a.x < b.x + b.width + margin && a.x + a.width + margin > b.x && a.y < b.y + b.height + margin && a.y + a.height + margin > b.y;
+  if (overlaps(state.bounds?.pilotOrders, state.bounds?.tacticalDraft)) failures.push('pilot orders and tactical draft lines overlap');
+  if (overlaps(state.bounds?.tacticalDraft, state.bounds?.resume)) failures.push('tactical draft line overlaps Resume button');
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 
@@ -164,6 +178,39 @@ try {
     pageErrors,
     consoleErrors
   };
+  await page.setViewportSize({ width: 760, height: 640 });
+  await page.waitForTimeout(220);
+  const compact = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play.setPaused(false);
+    play.destroyPauseOverlay();
+    play.setPaused(true);
+    play.refreshPauseOverlayStats();
+    const toBounds = (display) => {
+      const bounds = display?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
+    return {
+      debug: play.getPauseDebugState(),
+      bounds: {
+        tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
+        resume: toBounds(play.pauseButtons?.[0]),
+        quit: toBounds(play.pauseButtons?.[3])
+      }
+    };
+  });
+  const compactScreenshot = path.join(outputDir, 'pause-context-chips-compact.png');
+  await page.screenshot({ path: compactScreenshot, fullPage: true });
+  if (!/DAMAGE UP/i.test(compact.debug?.tacticalDraft || '')) failures.push('compact tactical loadout missing');
+  if (overlaps(compact.bounds?.tacticalDraft, compact.bounds?.resume)) failures.push('compact tactical loadout overlaps Resume');
+  for (const [label, bounds] of Object.entries(compact.bounds || {})) {
+    if (!bounds || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > 762 || bounds.y + bounds.height > 642) {
+      failures.push(`compact ${label} outside viewport: ${JSON.stringify(bounds)}`);
+    }
+  }
+  report.compact = { screenshot: compactScreenshot, ...compact };
+  report.ok = failures.length === 0;
+  report.failures = failures;
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   assert(report.ok, `[pause-context-chips] ${failures.join('; ')}`);
   console.log(`[pause-context-chips] PASS screenshot=${screenshot}`);

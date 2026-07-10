@@ -15,6 +15,11 @@ import {
   pickTractorDebuff
 } from '../config/TractorDebuffs.js';
 import { BASE_POWERUP_TYPES, getPowerupDurationMode, getPowerupMeta } from '../config/PowerupCatalog.js';
+import {
+  buildTacticalDraftModifiers,
+  getTacticalDraftAugment,
+  summarizeTacticalDraftPicks
+} from '../config/TacticalDraft.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -111,6 +116,9 @@ export class Player {
     this.powerupEffect = null;
     this.powerupMovementBoostMult = 1;
     this.powerupDodgeDelayMult = 1;
+    this.runAugmentIds = [];
+    this.runAugmentModifiers = buildTacticalDraftModifiers();
+    this.lastRunAugmentSectorStart = null;
     this.scoreMultiplierType = null;
     this.bombMaxShots = 3;
     this.bombBlastRadius = 150;
@@ -1603,11 +1611,12 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
+      this.invulnerableTime = Math.max(0, (Number(this.invulnerableTime) || 0) - dt);
       this.sprite.alpha = 0.42; // Visually indicate dodge without making the ship vanish.
       this.updateDodgeVisual(dt);
       if (this.dodgeDuration <= 0) {
         this.isDodging = false;
-        this.invulnerable = false;
+        this.invulnerable = this.invulnerableTime > 0;
         this.clearDodgeVisual();
         if (!this.isGhostActive()) this.sprite.alpha = 1;
       }
@@ -3401,6 +3410,104 @@ export class Player {
 
   // --- Powerups ---
 
+  applyRunAugment(id) {
+    const augment = getTacticalDraftAugment(id);
+    if (!augment) return { applied: false, reason: 'unknown_augment', id };
+    const currentStacks = this.runAugmentIds.filter((candidate) => candidate === id).length;
+    if (currentStacks >= augment.maxStacks) {
+      return { applied: false, reason: 'stack_cap', id, stacks: currentStacks };
+    }
+    this.runAugmentIds.push(id);
+    this.runAugmentModifiers = buildTacticalDraftModifiers(this.runAugmentIds);
+    if (augment.immediate?.repairLives) {
+      this.repairFromPowerup({ repairLives: augment.immediate.repairLives }, `tactical_draft_${id}`);
+    }
+    this.recalculateStats();
+    return {
+      applied: true,
+      id,
+      stacks: currentStacks + 1,
+      selectedIds: this.runAugmentIds.slice(),
+      labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      modifiers: this.runAugmentModifiers
+    };
+  }
+
+  applyRunAugmentModifiers() {
+    const modifiers = this.runAugmentModifiers || buildTacticalDraftModifiers(this.runAugmentIds);
+    this.bulletDamage = Math.max(0.65, this.bulletDamage * modifiers.damageMult);
+    this.shootDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+    this.speed = Math.max(1.5, this.speed * modifiers.speedMult);
+    this.bulletSpeed = Math.max(2.5, this.bulletSpeed * modifiers.bulletSpeedMult);
+    this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
+    this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
+    this.multiShot = Math.max(1, Math.min(8, this.multiShot + Math.round(modifiers.shotBonus || 0)));
+    this.bulletPierce = Boolean(this.bulletPierce || modifiers.pierce);
+    if (modifiers.magnetRadiusBonus > 0) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Number.MAX_SAFE_INTEGER;
+      this.magnetRadius = Math.max(this.magnetRadius, 140 + modifiers.magnetRadiusBonus);
+      this.magnetStrength = Math.max(this.magnetStrength, 0.08 + modifiers.magnetStrengthBonus);
+    }
+    if (modifiers.droneCount > 0) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
+      this.droneCount = Math.max(1, Math.min(2, Math.round(modifiers.droneCount)));
+      if (!this.drones.length && this.sprite) this.createDrones(this.droneCount, 0x66ccff);
+    }
+    if (modifiers.chainMax > 0) {
+      this.chainLightningActive = true;
+      this.chainLightningMaxChains = Math.max(this.chainLightningMaxChains || 0, Math.min(2, Math.round(modifiers.chainMax)));
+    }
+  }
+
+  applyRunAugmentSectorStartEffects(sector = 1) {
+    const effects = this.runAugmentModifiers?.sectorStart || {};
+    const triggered = [];
+    if (effects.shield && !this.shieldActive) {
+      this.activateShield(12000);
+      triggered.push('shield');
+    }
+    if (effects.invulnerabilityMs > 0) {
+      this.grantInvulnerability(Math.min(2400, effects.invulnerabilityMs), 'tactical_draft');
+      triggered.push('invulnerability');
+    }
+    if (effects.pointDefenseMs > 0) {
+      this.pointDefenseActive = true;
+      this.pointDefenseExpiresAt = Date.now() + Math.min(9000, effects.pointDefenseMs);
+      this.createPointDefenseRing();
+      triggered.push('point_defense');
+    }
+    if (effects.bombShots > 0) {
+      this.bombMaxShots = Math.max(this.bombMaxShots || 3, Math.min(5, effects.bombShots));
+      this.bombShotsLeft = Math.max(this.bombShotsLeft || 0, Math.min(5, effects.bombShots));
+      this.bombSpentUntil = 0;
+      this.createBombIndicator();
+      triggered.push('bomb');
+    }
+    if (effects.orbitalCharges > 0) {
+      this.orbitalStrikeActive = true;
+      this.orbitalStrikeCharges = Math.max(this.orbitalStrikeCharges || 0, Math.min(5, effects.orbitalCharges));
+      this.orbitalStrikeCooldown = 0;
+      triggered.push('orbital_strike');
+    }
+    this.lastRunAugmentSectorStart = {
+      sector: Math.max(1, Math.floor(Number(sector) || 1)),
+      triggered,
+      selectedIds: this.runAugmentIds.slice()
+    };
+    return this.lastRunAugmentSectorStart;
+  }
+
+  getRunAugmentDebugState() {
+    return {
+      selectedIds: this.runAugmentIds.slice(),
+      labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      modifiers: this.runAugmentModifiers,
+      lastSectorStart: this.lastRunAugmentSectorStart
+    };
+  }
+
   repairFromPowerup(effect = {}, type = 'powerup') {
     const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
     if (repairLives <= 0 || !this.game) return;
@@ -3857,6 +3964,7 @@ export class Player {
     this.applyRankBoostModifiers();
     this.applySynergyModifiers();
     this.applyStatusEffectModifiers();
+    this.applyRunAugmentModifiers();
   }
 
   applyStatusEffectModifiers() {

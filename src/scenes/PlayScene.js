@@ -55,6 +55,10 @@ import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
 import {
+  buildTacticalDraftOffers,
+  summarizeTacticalDraftPicks
+} from '../config/TacticalDraft.js';
+import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -159,6 +163,7 @@ export class PlayScene {
     this.pauseButtons = [];
     this.pauseFocusedIndex = 0;
     this.pauseGamepadNavigator = new GamepadNavigator();
+    this.tacticalDraftNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
     this.howToPlayOverlay = null;
     this.hadGameplayGamepadConnection = false;
@@ -170,6 +175,9 @@ export class PlayScene {
     this.nativeBlurPauseHandler = null;
     this.levelAdvancePending = false;
     this.levelAdvanceTimeout = null;
+    this.tacticalDraft = null;
+    this.tacticalDraftHistory = [];
+    this.tacticalDraftConfirmTimeout = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -634,6 +642,8 @@ export class PlayScene {
     this.levelAdvancePending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
+    this.clearTacticalDraft('run_reset');
+    this.tacticalDraftHistory = [];
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -664,7 +674,10 @@ export class PlayScene {
     this.screenShake = new ScreenShake(this.gameContainer);
     this.applyGameplayViewportTransform();
     this.viewportLayoutUnsubscribe?.();
-    this.viewportLayoutUnsubscribe = addResponsiveListener(() => this.applyGameplayViewportTransform());
+    this.viewportLayoutUnsubscribe = addResponsiveListener(() => {
+      this.applyGameplayViewportTransform();
+      this.layoutTacticalDraft();
+    });
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
     this.gameContainer.sortableChildren = true;
     this.tractorHijack = null;
@@ -1935,6 +1948,10 @@ export class PlayScene {
     });
     this.applyGameplayBackdropLevel(this.game.level);
     this.powerupManager.checkLevelReset(this.game.level); // Reset powerup caps
+    const augmentSectorStart = this.player?.applyRunAugmentSectorStartEffects?.(this.game.level);
+    if (augmentSectorStart?.triggered?.length) {
+      this.lastTacticalDraftSectorStart = augmentSectorStart;
+    }
     this.recordThreatDiscovery(`sector_${String(this.game.level).padStart(3, '0')}`, 'sectors', {
       name: formatSectorLabel(this.game.level, { sectorWord: translateText('SECTOR'), compact: true }),
       role: 'sector reached',
@@ -2483,6 +2500,14 @@ export class PlayScene {
         return;
       }
 
+      if (this.tacticalDraft?.active) {
+        this.cleanupSkippedFrameVisuals('tactical_draft');
+        this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
+        measure('tactical_draft', () => this.updateTacticalDraft(delta));
+        return;
+      }
+
       this.gameTime += delta / 60;
 
       // Score Boost Timer
@@ -2768,25 +2793,23 @@ export class PlayScene {
           const advanceWhenWarm = this.levelAdvanceWarmupPromise || Promise.resolve(true);
           advanceWhenWarm.finally(() => {
             if (this.game?.currentScene !== this) return;
-            this.levelAdvancePending = false;
-            this.levelAdvanceTimeout = null;
-            this.levelAdvanceWarmupPromise = null;
-            this.postBossLevelIntroPending = bossCompletion;
             const sectorCleared = Number(this.game.level) || 1;
-            this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
-            if (bossCompletion) {
-              this.damageTakenThisSector = 0;
-            }
-            this.game.nextLevel();
-            if (this.player) {
+            const finishAdvance = () => {
+              if (this.game?.currentScene !== this) return;
+              this.levelAdvancePending = false;
+              this.levelAdvanceTimeout = null;
+              this.levelAdvanceWarmupPromise = null;
+              this.postBossLevelIntroPending = bossCompletion;
+              this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
+              if (bossCompletion) this.damageTakenThisSector = 0;
+              this.game.nextLevel();
+              if (!this.player) return;
               const sprite = this.player.sprite;
               if (sprite) {
                 sprite.visible = true;
                 sprite.alpha = 1;
                 sprite.renderable = true;
-                if (!sprite.parent && this.gameContainer) {
-                  this.gameContainer.addChild(sprite);
-                }
+                if (!sprite.parent && this.gameContainer) this.gameContainer.addChild(sprite);
               }
               const shipSprite = this.player.shipSprite;
               const texValid = shipSprite && shipSprite instanceof PIXI.Sprite && GameAssets.isValidTexture(shipSprite.texture);
@@ -2796,7 +2819,9 @@ export class PlayScene {
                 const baseScale = Number.isFinite(this.player.baseScale) ? this.player.baseScale : (shipSprite.scale.x || 1);
                 shipSprite.scale.set(baseScale);
               }
-            }
+            };
+            if (bossCompletion && this.openTacticalDraft({ sectorCleared, onComplete: finishAdvance })) return;
+            finishAdvance();
           });
         };
         this.levelAdvanceTimeout = setTimeout(advanceLevelWhenPresentationReady, BalanceConfig.level.sequenceDuration || 3000);
@@ -4985,6 +5010,7 @@ export class PlayScene {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
+    this.clearTacticalDraft('scene_destroy');
     this.resetGameplayBackdropState();
     this.clearRunContractStartNudge();
     this.clearFirstRunOnboardingCompletion();
@@ -5532,6 +5558,433 @@ export class PlayScene {
     }
   }
 
+  openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
+    if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
+    const offers = buildTacticalDraftOffers({
+      seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
+      sectorCleared,
+      selectedIds: this.player.runAugmentIds || [],
+      lives: Number(this.game?.lives) || 0,
+      maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      activePowerupType: this.player?.activePowerup?.type || null,
+      runTheme: this.game?.contentDirector?.runTheme?.id || null
+    });
+    if (offers.length < 3) return false;
+
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_tactical_draft';
+    overlay.zIndex = 1000005;
+    overlay.sortableChildren = true;
+    overlay.eventMode = 'static';
+    const dim = new PIXI.Graphics();
+    dim.label = 'tactical_draft_dim';
+    dim.eventMode = 'static';
+    const frame = new PIXI.Graphics();
+    frame.label = 'tactical_draft_frame';
+    const eyebrow = createText(translateText('SECTOR {sector} CLEARED', { sector: sectorCleared }), {
+      fontFamily: FONT_BODY,
+      fontSize: 15,
+      fontWeight: '900',
+      fill: '#7dffcc',
+      align: 'center'
+    });
+    eyebrow.anchor.set(0.5);
+    const title = createText(translateText('TACTICAL DRAFT'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 38,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 5,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    const subtitle = createText(translateText('Choose one permanent run upgrade.'), {
+      fontFamily: FONT_BODY,
+      fontSize: 17,
+      fontWeight: '700',
+      fill: '#d8f7ff',
+      align: 'center'
+    });
+    subtitle.anchor.set(0.5);
+    overlay.addChild(dim, frame, eyebrow, title, subtitle);
+
+    const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
+    cards.forEach((card) => overlay.addChild(card));
+    this.tacticalDraft = {
+      active: true,
+      sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
+      offers,
+      focusIndex: 1,
+      confirmedId: null,
+      result: null,
+      overlay,
+      dim,
+      frame,
+      eyebrow,
+      title,
+      subtitle,
+      cards,
+      onComplete: typeof onComplete === 'function' ? onComplete : null,
+      openedAt: Date.now(),
+      inputArmed: false,
+      pulse: 0,
+      compact: false
+    };
+    this.uiOverlay.addChild(overlay);
+    this.layoutTacticalDraft();
+    this.tacticalDraftNavigator.suppressUntilReleased();
+    this.setTacticalDraftFocus(1, { silent: true });
+    AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
+    return true;
+  }
+
+  createTacticalDraftCard(offer, index) {
+    const card = new PIXI.Container();
+    card.label = `tactical_draft_card_${offer.id}`;
+    card.eventMode = 'static';
+    card.cursor = 'pointer';
+    card._draftIndex = index;
+    card._offer = offer;
+    const glow = new PIXI.Graphics();
+    const bg = new PIXI.Graphics();
+    const category = createText(translateText(String(offer.category || 'utility').toUpperCase()), {
+      fontFamily: FONT_BODY,
+      fontSize: 12,
+      fontWeight: '900',
+      fill: '#7ee9ff'
+    });
+    category.anchor.set(0.5);
+    const texture = GameAssets.getPowerupTexture?.(offer.id);
+    const icon = texture && GameAssets.isValidTexture(texture)
+      ? new PIXI.Sprite(texture)
+      : this.createTacticalDraftFallbackIcon(offer);
+    icon.anchor?.set?.(0.5);
+    const name = createText(translateText(offer.name), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 23,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    name.anchor.set(0.5);
+    const description = createText(translateText(offer.description), {
+      fontFamily: FONT_BODY,
+      fontSize: 15,
+      fontWeight: '700',
+      fill: '#d8f7ff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 250
+    });
+    description.anchor.set(0.5);
+    const permanence = createText(translateText('PERMANENT THIS RUN'), {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      align: 'center'
+    });
+    permanence.anchor.set(0.5);
+    const choose = createText(translateText('CHOOSE'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 15,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center'
+    });
+    choose.anchor.set(0.5);
+    card.addChild(glow, bg, category);
+    if (icon) card.addChild(icon);
+    card.addChild(name, description, permanence, choose);
+    card._nodes = { glow, bg, category, icon, name, description, permanence, choose };
+    card.on('pointerover', () => this.setTacticalDraftFocus(index));
+    card.on('pointertap', () => {
+      this.setTacticalDraftFocus(index, { silent: true });
+      this.confirmTacticalDraft(index, 'pointer');
+    });
+    return card;
+  }
+
+  createTacticalDraftFallbackIcon(offer) {
+    const icon = new PIXI.Graphics();
+    const color = Number(offer?.color) || 0x37f5ff;
+    const category = String(offer?.category || 'utility');
+    icon.circle(0, 0, 30);
+    icon.fill({ color: 0x04111f, alpha: 0.96 });
+    icon.circle(0, 0, 27);
+    icon.stroke({ color, width: 2.2, alpha: 0.92 });
+    icon.circle(0, 0, 20);
+    icon.stroke({ color: 0xffffff, width: 1, alpha: 0.28 });
+    if (category === 'offense') {
+      icon.poly([-6, -19, 8, -4, 1, -4, 8, 19, -10, 2, -2, 2]);
+      icon.fill({ color, alpha: 0.94 });
+    } else if (category === 'mobility') {
+      icon.moveTo(-14, -10);
+      icon.lineTo(0, 0);
+      icon.lineTo(-14, 10);
+      icon.moveTo(0, -10);
+      icon.lineTo(14, 0);
+      icon.lineTo(0, 10);
+      icon.stroke({ color, width: 4, alpha: 0.92 });
+    } else if (category === 'defense') {
+      icon.poly([0, -19, 16, -11, 13, 9, 0, 20, -13, 9, -16, -11]);
+      icon.fill({ color, alpha: 0.28 });
+      icon.poly([0, -19, 16, -11, 13, 9, 0, 20, -13, 9, -16, -11]);
+      icon.stroke({ color, width: 2.4, alpha: 0.96 });
+    } else {
+      [[-10, -10], [10, -10], [-10, 10], [10, 10]].forEach(([x, y]) => {
+        icon.circle(x, y, 5);
+        icon.fill({ color, alpha: 0.9 });
+      });
+      icon.circle(0, 0, 6);
+      icon.stroke({ color: 0xffffff, width: 2, alpha: 0.7 });
+    }
+    icon._tacticalDraftFallback = true;
+    return icon;
+  }
+
+  layoutTacticalDraft() {
+    const state = this.tacticalDraft;
+    if (!state?.active) return;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compact = width < 880 || height < 650;
+    state.compact = compact;
+    state.dim.clear();
+    state.dim.rect(0, 0, width, height);
+    state.dim.fill({ color: 0x010711, alpha: 0.82 });
+    state.dim.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    state.frame.clear();
+    state.frame.rect(18, 18, width - 36, height - 36);
+    state.frame.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.36 });
+    state.frame.rect(27, 27, width - 54, height - 54);
+    state.frame.stroke({ color: 0xffd15c, width: 1, alpha: 0.2 });
+    state.eyebrow.style.fontSize = compact ? 12 : 15;
+    state.eyebrow.position.set(width / 2, compact ? 38 : 54);
+    state.title.style.fontSize = compact ? 27 : 38;
+    state.title.position.set(width / 2, compact ? 70 : 92);
+    state.subtitle.style.fontSize = compact ? 13 : 17;
+    state.subtitle.position.set(width / 2, compact ? 98 : 128);
+
+    const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(340, (width - 120) / 3);
+    const cardHeight = compact ? Math.max(106, Math.min(146, (height - 170) / 3 - 10)) : Math.min(365, height - 230);
+    state.cards.forEach((card, index) => {
+      card.position.set(
+        compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
+        compact ? 124 + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
+      );
+      card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
+      card._draftLayout = { width: cardWidth, height: cardHeight, compact };
+      const nodes = card._nodes;
+      if (compact) {
+        nodes.category.anchor.set(0, 0.5);
+        nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 23);
+        if (nodes.icon) {
+          nodes.icon.position.set(-cardWidth / 2 + 46, 0);
+          const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
+          const iconHeight = nodes.icon.texture?.height || nodes.icon.height || 60;
+          nodes.icon.scale.set(Math.min(1, 52 / Math.max(1, iconWidth, iconHeight)));
+        }
+        nodes.name.anchor.set(0, 0.5);
+        nodes.name.style.fontSize = 18;
+        nodes.name.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 48);
+        nodes.description.anchor.set(0, 0.5);
+        nodes.description.style.fontSize = 12;
+        nodes.description.style.align = 'left';
+        nodes.description.style.wordWrapWidth = cardWidth - 190;
+        nodes.description.position.set(-cardWidth / 2 + 86, 16);
+        nodes.permanence.anchor.set(0, 0.5);
+        nodes.permanence.style.fontSize = 9;
+        nodes.permanence.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 18);
+        nodes.choose.position.set(cardWidth / 2 - 48, cardHeight / 2 - 20);
+        nodes.choose.style.fontSize = 12;
+      } else {
+        nodes.category.anchor.set(0.5);
+        nodes.category.position.set(0, -cardHeight / 2 + 25);
+        if (nodes.icon) {
+          nodes.icon.position.set(0, -cardHeight / 2 + 90);
+          const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
+          const iconHeight = nodes.icon.texture?.height || nodes.icon.height || 60;
+          nodes.icon.scale.set(Math.min(1.15, 78 / Math.max(1, iconWidth, iconHeight)));
+        }
+        nodes.name.anchor.set(0.5);
+        nodes.name.style.fontSize = 23;
+        nodes.name.position.set(0, -cardHeight / 2 + 154);
+        nodes.description.anchor.set(0.5);
+        nodes.description.style.fontSize = 15;
+        nodes.description.style.align = 'center';
+        nodes.description.style.wordWrapWidth = cardWidth - 48;
+        nodes.description.position.set(0, 24);
+        nodes.permanence.anchor.set(0.5);
+        nodes.permanence.style.fontSize = 11;
+        nodes.permanence.position.set(0, cardHeight / 2 - 62);
+        nodes.choose.position.set(0, cardHeight / 2 - 27);
+        nodes.choose.style.fontSize = 15;
+      }
+      this.redrawTacticalDraftCard(card);
+    });
+  }
+
+  redrawTacticalDraftCard(card) {
+    const state = this.tacticalDraft;
+    const layout = card?._draftLayout;
+    const nodes = card?._nodes;
+    if (!state?.active || !layout || !nodes) return;
+    const focused = card._draftIndex === state.focusIndex;
+    const confirmed = card._offer?.id === state.confirmedId;
+    const accent = Number(card._offer?.color) || 0x37f5ff;
+    const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
+    nodes.glow.clear();
+    nodes.bg.clear();
+    nodes.glow.roundRect(-layout.width / 2 - 5, -layout.height / 2 - 5, layout.width + 10, layout.height + 10, 8);
+    nodes.glow.fill({ color: confirmed ? 0xffd15c : accent, alpha: confirmed ? 0.28 : focused ? 0.08 + pulse * 0.08 : 0 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
+    nodes.bg.fill({ color: confirmed ? 0x102616 : focused ? 0x071d2f : 0x04111f, alpha: 0.96 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
+    nodes.bg.stroke({ color: confirmed ? 0xffef7e : focused ? 0xffffff : accent, width: confirmed ? 3 : focused ? 2.4 : 1.2, alpha: focused || confirmed ? 0.96 : 0.55 });
+    nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
+    nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
+    nodes.choose.text = confirmed ? translateText('LOCKED IN') : translateText('CHOOSE');
+    nodes.choose.style.fill = confirmed ? '#fff3a0' : focused ? '#ffffff' : '#b7d4df';
+    card.scale.set(focused && !layout.compact ? 1.015 : 1);
+  }
+
+  setTacticalDraftFocus(index, { silent = false } = {}) {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId) return;
+    const next = ((Math.floor(Number(index) || 0) % state.cards.length) + state.cards.length) % state.cards.length;
+    if (state.focusIndex === next && !silent) return;
+    state.focusIndex = next;
+    state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    if (!silent) playMenuFocusSfx(0.2);
+  }
+
+  updateTacticalDraft(delta = 1) {
+    const state = this.tacticalDraft;
+    if (!state?.active) return;
+    state.pulse += Math.max(0, Number(delta) || 0) * 0.075;
+    const nav = this.tacticalDraftNavigator.update();
+    if (!state.inputArmed) {
+      const keyboardHeld = [
+        'Space', 'Enter', 'NumpadEnter',
+        'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'a', 'd', 'w', 's', 'A', 'D', 'W', 'S'
+      ].some((key) => this.inputManager?.isKeyPressed?.(key));
+      const minimumReadGateOpen = Date.now() - state.openedAt >= 280;
+      if (!minimumReadGateOpen || keyboardHeld || nav.active || nav.suppressed) {
+        state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+        return;
+      }
+      state.inputArmed = true;
+      this.inputManager?.resetAllKeys?.();
+      state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+      return;
+    }
+    if (state.confirmedId) {
+      state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+      return;
+    }
+    const left = this.inputManager?.consumeKeyPress?.('ArrowLeft', 'KeyA', 'a', 'A');
+    const right = this.inputManager?.consumeKeyPress?.('ArrowRight', 'KeyD', 'd', 'D');
+    const up = this.inputManager?.consumeKeyPress?.('ArrowUp', 'KeyW', 'w', 'W');
+    const down = this.inputManager?.consumeKeyPress?.('ArrowDown', 'KeyS', 's', 'S');
+    const confirm = this.inputManager?.consumeKeyPress?.('Enter', 'NumpadEnter', 'Space');
+    if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
+    if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
+    if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
+    state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+  }
+
+  confirmTacticalDraft(index = this.tacticalDraft?.focusIndex || 0, source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId) return false;
+    if (!state.inputArmed && source !== 'pointer') return false;
+    const offer = state.offers[index];
+    if (!offer) return false;
+    const result = this.player?.applyRunAugment?.(offer.id);
+    if (!result?.applied) return false;
+    state.confirmedId = offer.id;
+    state.result = result;
+    state.confirmedAt = Date.now();
+    this.tacticalDraftHistory.push({
+      sectorCleared: state.sectorCleared,
+      id: offer.id,
+      name: offer.name,
+      category: offer.category,
+      stacks: result.stacks,
+      source
+    });
+    state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    AudioManager.playSfx(getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
+    const complete = state.onComplete;
+    this.tacticalDraftConfirmTimeout = setTimeout(() => {
+      this.tacticalDraftConfirmTimeout = null;
+      this.clearTacticalDraft('confirmed');
+      this.enqueueToast(`${translateText(offer.name)}  ${translateText('PERMANENT THIS RUN')}`, {
+        fontSize: 18,
+        fill: '#fff3a0',
+        slot: 'top',
+        type: 'tactical_draft',
+        duration: 1500,
+        priority: 5
+      });
+      complete?.();
+    }, 480);
+    return true;
+  }
+
+  clearTacticalDraft(reason = 'clear') {
+    if (this.tacticalDraftConfirmTimeout) {
+      clearTimeout(this.tacticalDraftConfirmTimeout);
+      this.tacticalDraftConfirmTimeout = null;
+    }
+    const state = this.tacticalDraft;
+    if (state?.overlay?.parent) state.overlay.parent.removeChild(state.overlay);
+    state?.overlay?.destroy?.({ children: true });
+    this.lastTacticalDraftCloseReason = reason;
+    this.tacticalDraft = null;
+  }
+
+  getTacticalDraftDebugState() {
+    const state = this.tacticalDraft;
+    const boundsOf = (display) => {
+      if (!display?.getBounds) return null;
+      const bounds = display.getBounds();
+      return { x: Math.round(bounds.x), y: Math.round(bounds.y), width: Math.round(bounds.width), height: Math.round(bounds.height) };
+    };
+    return {
+      active: Boolean(state?.active),
+      sectorCleared: state?.sectorCleared || null,
+      focusIndex: state?.focusIndex ?? null,
+      confirmedId: state?.confirmedId || null,
+      inputArmed: Boolean(state?.inputArmed),
+      compact: Boolean(state?.compact),
+      title: state?.title?.text || null,
+      subtitle: state?.subtitle?.text || null,
+      titleBounds: boundsOf(state?.title),
+      offers: state?.offers?.map((offer, index) => ({
+        id: offer.id,
+        name: offer.name,
+        category: offer.category,
+        descriptionSource: offer.description,
+        focused: index === state.focusIndex,
+        bounds: boundsOf(state.cards?.[index]),
+        nameText: state.cards?.[index]?._nodes?.name?.text || null,
+        descriptionText: state.cards?.[index]?._nodes?.description?.text || null,
+        nameBounds: boundsOf(state.cards?.[index]?._nodes?.name),
+        descriptionBounds: boundsOf(state.cards?.[index]?._nodes?.description)
+      })) || [],
+      selectedIds: this.player?.runAugmentIds?.slice?.() || [],
+      selectedLabels: summarizeTacticalDraftPicks(this.player?.runAugmentIds || []),
+      history: this.tacticalDraftHistory.slice(),
+      player: this.player?.getRunAugmentDebugState?.() || null,
+      closeReason: this.lastTacticalDraftCloseReason || null
+    };
+  }
+
   handlePauseToggle() {
     const pressed = this.inputManager.consumeKeyPress
       ? this.inputManager.consumeKeyPress('KeyP', 'p', 'P', 'Escape')
@@ -5868,15 +6321,29 @@ export class PlayScene {
       wordWrapWidth: panelWidth - 76
     });
     pilotOrdersLine.anchor.set(0.5);
-    pilotOrdersLine.position.set(centerX, panelY + 184 * uiScale);
+    pilotOrdersLine.position.set(centerX, panelY + 172 * uiScale);
     pilotOrdersLine.zIndex = 7;
     overlay.addChild(pilotOrdersLine);
 
+    const tacticalDraftLine = createText(this.getPauseTacticalDraftSummary(), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: Math.round(10 * Math.min(uiScale, 1.2)),
+      fontWeight: 'bold',
+      fill: '#fff3a0',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    tacticalDraftLine.anchor.set(0.5);
+    tacticalDraftLine.position.set(centerX, panelY + 190 * uiScale);
+    tacticalDraftLine.zIndex = 7;
+    overlay.addChild(tacticalDraftLine);
+
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 228 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 280 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 332 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 384 * uiScale, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 238 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 290 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 342 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 394 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.hidePauseOverlay();
@@ -5906,6 +6373,7 @@ export class PlayScene {
       powerupChip,
       powerupValue: powerupChip.valueText,
       pilotOrdersValue: pilotOrdersLine,
+      tacticalDraftValue: tacticalDraftLine,
       leftRadar,
       rightRadar,
       resize: () => {}
@@ -5934,6 +6402,7 @@ export class PlayScene {
     decor.livesChip?.fitText?.();
     decor.powerupChip?.fitText?.();
     if (decor.pilotOrdersValue) decor.pilotOrdersValue.text = this.getPausePilotOrdersSummary();
+    if (decor.tacticalDraftValue) decor.tacticalDraftValue.text = this.getPauseTacticalDraftSummary();
   }
 
   getPausePowerupSummary(now = Date.now()) {
@@ -5962,7 +6431,8 @@ export class PlayScene {
       sector: decor?.sectorValue?.text ?? null,
       lives: decor?.livesValue?.text ?? null,
       powerup: decor?.powerupValue?.text ?? null,
-      pilotOrders: decor?.pilotOrdersValue?.text ?? null
+      pilotOrders: decor?.pilotOrdersValue?.text ?? null,
+      tacticalDraft: decor?.tacticalDraftValue?.text ?? null
     };
   }
 
@@ -5984,6 +6454,15 @@ export class PlayScene {
     const title = translateText(item.shortTitle || item.title || item.id);
     const progress = translateText('{progress}/{target}', formatRunContractProgressValue(item.progress, item.target));
     return `${prefix} // ${title} ${progress}`;
+  }
+
+  getPauseTacticalDraftSummary() {
+    const labels = summarizeTacticalDraftPicks(this.player?.runAugmentIds || []).map((label) => translateText(label));
+    const prefix = translateText('Tactical upgrades');
+    if (!labels.length) return `${prefix}: --`;
+    const visible = labels.slice(-2);
+    const hidden = Math.max(0, labels.length - visible.length);
+    return `${prefix}: ${visible.join(' + ')}${hidden ? ` +${hidden}` : ''}`;
   }
 
   openSettingsOverlay() {
@@ -9975,8 +10454,11 @@ export class PlayScene {
       ? Math.max(96, height * 0.13)
       : Math.max(178, height * 0.28);
     const requestedY = Number.isFinite(options.y) ? options.y : defaultY;
+    const hudSafeY = slot === 'corner' && options.avoidHud !== false
+      ? this.getCornerToastSafeY(message, fontSize)
+      : requestedY;
     const y = slot === 'corner'
-      ? Math.min(height - 80, Math.max(requestedY, 156))
+      ? Math.min(height - 80, Math.max(requestedY, hudSafeY, 156))
       : requestedY;
 
     let display = null;
@@ -10295,6 +10777,31 @@ export class PlayScene {
     display.__toastTicker = ticker;
     this.game.app.ticker.add(ticker);
     return display;
+  }
+
+  getCornerToastSafeY(message = '', fontSize = 16) {
+    const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    const rightHudNodes = [
+      this.hud?.livesGroup,
+      this.hud?.locationText,
+      this.hud?.activePowerupGroup,
+      this.hud?.traitGroup
+    ];
+    let rightHudBottom = 0;
+    for (const node of rightHudNodes) {
+      if (!node || node.visible === false || node.alpha <= 0.05 || !node.getBounds) continue;
+      try {
+        const bounds = node.getBounds();
+        if (bounds.x + bounds.width < width * 0.5) continue;
+        rightHudBottom = Math.max(rightHudBottom, bounds.y + bounds.height);
+      } catch {
+        // A destroyed HUD node should not block the toast queue.
+      }
+    }
+    const lineCount = Math.max(1, String(message || '').split('\n').length);
+    const estimatedHalfHeight = lineCount * (Math.max(10, Number(fontSize) || 16) + 6) * 0.5;
+    return Math.min(height - 80, Math.max(156, rightHudBottom + estimatedHalfHeight + 12));
   }
 
   createSynergyBadge() {

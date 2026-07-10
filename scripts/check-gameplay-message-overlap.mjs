@@ -369,6 +369,46 @@ try {
   const bossIntroScreenshot = path.join(outputDir, 'boss-intro-message-signal.png');
   await page.screenshot({ path: bossIntroScreenshot, fullPage: true });
 
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play) throw new Error('Missing play scene for discovery HUD avoidance check');
+    play.clearToastState?.();
+    play.hud?.updateTraitMeter?.();
+    play.enqueueToast('NEW THREAT SCANNED: PULSE NET\nTHREAT CODEX UPDATED +63', {
+      fontSize: window.__game.getWidth() < 620 ? 14 : 17,
+      fill: '#7dffcc',
+      stroke: '#001616',
+      strokeThickness: 2,
+      slot: 'corner',
+      type: 'discovery',
+      duration: 1800,
+      priority: 1,
+      maxWidth: window.__game.getWidth() * (window.__game.getWidth() < 620 ? 0.72 : 0.38)
+    });
+  });
+  await page.waitForTimeout(120);
+  const discoveryHudAvoidance = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const toBounds = (node) => {
+      if (!node?.getBounds) return null;
+      const bounds = node.getBounds();
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    };
+    return {
+      discovery: toBounds(play?.activeCornerToast),
+      trait: toBounds(play?.hud?.traitGroup),
+      safeY: play?.getCornerToastSafeY?.('NEW THREAT SCANNED: PULSE NET\nTHREAT CODEX UPDATED +63', 17) || null
+    };
+  });
+  if (!discoveryHudAvoidance.discovery || !discoveryHudAvoidance.trait) {
+    throw new Error(`missing discovery or trait bounds: ${JSON.stringify(discoveryHudAvoidance)}`);
+  }
+  if (overlap(discoveryHudAvoidance.discovery, discoveryHudAvoidance.trait, 10)) {
+    throw new Error(`discovery toast overlapped trait HUD: ${JSON.stringify(discoveryHudAvoidance, null, 2)}`);
+  }
+  const discoveryScreenshot = path.join(outputDir, 'discovery-toast-hud-avoidance.png');
+  await page.screenshot({ path: discoveryScreenshot, fullPage: true });
+
   const screenshot = path.join(outputDir, 'gameplay-message-overlap-final.png');
   await page.screenshot({ path: screenshot, fullPage: true });
   const report = {
@@ -387,6 +427,8 @@ try {
       queued: bossIntroState.toast?.queued || {},
       screenshot: bossIntroScreenshot
     },
+    discoveryHudAvoidance,
+    discoveryScreenshot,
     screenshot,
     pageErrors,
     consoleEvents

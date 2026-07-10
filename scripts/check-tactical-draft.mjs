@@ -1,0 +1,341 @@
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { chromium } from 'playwright';
+import {
+  TACTICAL_DRAFT_AUGMENTS,
+  buildTacticalDraftModifiers,
+  buildTacticalDraftOffers
+} from '../src/config/TacticalDraft.js';
+
+const host = '127.0.0.1';
+const port = Number(process.env.CHECK_PORT) || await findAvailablePort(4560);
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/tactical-draft-${timestamp()}`);
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    const available = await new Promise((resolve) => {
+      const server = createServer();
+      server.once('error', () => resolve(false));
+      server.once('listening', () => server.close(() => resolve(true)));
+      server.listen(candidate, host);
+    });
+    if (available) return candidate;
+  }
+  throw new Error('No tactical draft check port available');
+}
+
+function findChrome() {
+  return [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+  ].filter(Boolean).find((candidate) => existsSync(candidate));
+}
+
+async function canFetch(url) {
+  try {
+    return (await fetch(url, { cache: 'no-store' })).ok;
+  } catch {
+    return false;
+  }
+}
+
+async function startPreview() {
+  if (await canFetch(baseUrl)) return null;
+  const vite = path.resolve('node_modules/vite/bin/vite.js');
+  const server = spawn(process.execPath, [vite, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[preview] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[preview] ${chunk}`));
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 15000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  server.kill();
+  throw new Error('Tactical draft preview did not start');
+}
+
+async function readState(page) {
+  return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+async function waitForPlay(page) {
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'play' && state.player?.active === true;
+  }, null, { timeout: 20000 });
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (play) play.debugInvincible = true;
+    play?.player?.grantInvulnerability?.(120000, 'tactical_draft_check');
+  });
+}
+
+function overlap(a, b, margin = 4) {
+  return a.x < b.x + b.width + margin && a.x + a.width + margin > b.x &&
+    a.y < b.y + b.height + margin && a.y + a.height + margin > b.y;
+}
+
+function assertDraftLayout(state, width, height, label) {
+  assert(state.tacticalDraft?.active, `${label}: draft not active`);
+  assert(state.tacticalDraft.offers.length === 3, `${label}: expected three offers`);
+  const ids = state.tacticalDraft.offers.map((offer) => offer.id);
+  assert(new Set(ids).size === 3, `${label}: duplicate offers ${ids.join(', ')}`);
+  const bounds = state.tacticalDraft.offers.map((offer) => offer.bounds);
+  bounds.forEach((box, index) => {
+    assert(box && box.width > 80 && box.height > 80, `${label}: invalid card ${index} bounds`);
+    assert(box.x >= 0 && box.y >= 0 && box.x + box.width <= width + 2 && box.y + box.height <= height + 2, `${label}: card ${index} outside viewport`);
+  });
+  for (let a = 0; a < bounds.length; a += 1) {
+    for (let b = a + 1; b < bounds.length; b += 1) {
+      assert(!overlap(bounds[a], bounds[b]), `${label}: cards ${a} and ${b} overlap`);
+    }
+  }
+  state.tacticalDraft.offers.forEach((offer, index) => {
+    const card = bounds[index];
+    for (const [name, textBounds] of [['name', offer.nameBounds], ['description', offer.descriptionBounds]]) {
+      assert(textBounds && textBounds.width > 0 && textBounds.height > 0, `${label}: ${name} ${index} has invalid bounds`);
+      assert(textBounds.x >= card.x - 2 && textBounds.y >= card.y - 2 && textBounds.x + textBounds.width <= card.x + card.width + 2 && textBounds.y + textBounds.height <= card.y + card.height + 2, `${label}: ${name} ${index} escapes card`);
+    }
+  });
+}
+
+const lowLifeOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 2, lives: 1, maxLives: 3 });
+assert(TACTICAL_DRAFT_AUGMENTS.length >= 19, 'expected at least 19 tactical augment directions');
+assert(lowLifeOffers.length === 3, 'pure draft must return three offers');
+assert(lowLifeOffers.some((offer) => offer.category === 'defense'), 'low-life draft must include defense');
+assert(!lowLifeOffers.some((offer) => offer.id === 'nano_patch') || lowLifeOffers[0].category === 'defense', 'repair must remain in defense lane');
+const followupOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 3, lives: 3, maxLives: 3, selectedIds: [lowLifeOffers[0].id] });
+assert(!followupOffers.some((offer) => offer.id === lowLifeOffers[0].id), 'follow-up draft repeated an already selected augment before pool exhaustion');
+const stacked = buildTacticalDraftModifiers(['damage_up', 'rapid_fire', 'double_shot', 'magnet']);
+assert(stacked.damageMult > 1 && stacked.fireDelayMult < 1 && stacked.shotBonus === 1 && stacked.magnetRadiusBonus > 0, 'stacked modifiers incomplete');
+
+mkdirSync(outputDir, { recursive: true });
+const server = await startPreview();
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: findChrome(),
+  args: ['--autoplay-policy=no-user-gesture-required']
+});
+
+const consoleErrors = [];
+const report = { ok: false, baseUrl, pure: { augmentCount: TACTICAL_DRAFT_AUGMENTS.length, lowLifeOffers: lowLifeOffers.map((offer) => offer.id) } };
+
+try {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  page.on('pageerror', (error) => consoleErrors.push(`pageerror: ${error.message}`));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(`console: ${message.text()}`);
+  });
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlay(page);
+
+  await page.keyboard.down('Space');
+  await page.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 1 }));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === true);
+  await page.waitForTimeout(480);
+  let heldFireState = await readState(page);
+  assert(heldFireState.tacticalDraft.confirmedId === null && heldFireState.tacticalDraft.history.length === 0, 'held fire auto-confirmed a tactical draft choice');
+  assert(heldFireState.tacticalDraft.inputArmed === false, 'draft armed before held fire was released');
+  await page.keyboard.up('Space');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  let state = await readState(page);
+  assertDraftLayout(state, 1280, 720, 'desktop');
+  const frozenTime = state.arcadeRun.runElapsedSeconds;
+  await page.waitForTimeout(450);
+  state = await readState(page);
+  assert(Math.abs(state.arcadeRun.runElapsedSeconds - frozenTime) < 0.02, 'run clock advanced while draft was active');
+  const desktopScreenshot = path.join(outputDir, 'tactical-draft-desktop.png');
+  await page.screenshot({ path: desktopScreenshot });
+
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 0);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+  state = await readState(page);
+  assert(state.tacticalDraft.history.length === 1, 'keyboard selection was not recorded');
+
+  await page.evaluate(() => {
+    window.__game.scenes.play.openTacticalDraft({ sectorCleared: 2 });
+    window.__burtGamepadOverride = { connected: true, axes: [0, 0], buttons: [] };
+  });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === true);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  await page.evaluate(() => { window.__burtGamepadOverride.axes = [1, 0]; });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 2);
+  await page.evaluate(() => { window.__burtGamepadOverride.axes = [0, 0]; });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[0] = { pressed: true, value: 1 }; });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.confirmedId, null, { timeout: 3000 });
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[0] = { pressed: false, value: 0 }; });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+  state = await readState(page);
+  assert(state.tacticalDraft.history.length === 2, 'gamepad selection was not recorded');
+
+  await page.setViewportSize({ width: 760, height: 640 });
+  await page.waitForTimeout(250);
+  await page.evaluate(() => {
+    delete window.__burtGamepadOverride;
+    window.__game.scenes.play.openTacticalDraft({ sectorCleared: 3 });
+  });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.compact === true);
+  state = await readState(page);
+  assertDraftLayout(state, 760, 640, 'compact');
+  const compactScreenshot = path.join(outputDir, 'tactical-draft-compact.png');
+  await page.screenshot({ path: compactScreenshot });
+  const clickTarget = state.tacticalDraft.offers[1].bounds;
+  await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+  state = await readState(page);
+  assert(state.tacticalDraft.history.length === 3, 'pointer selection was not recorded');
+  const summary = await page.evaluate(() => window.__game.buildRunSummary());
+  assert(summary.tacticalDraftPicks.length === 3 && summary.tacticalAugmentIds.length === 3, 'run summary did not preserve draft history');
+  await page.evaluate(() => window.__game.scenes.play.setPaused(true));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).isPaused === true);
+  const pauseState = await readState(page);
+  assert(/Tactical upgrades/i.test(pauseState.pauseOverlay?.tacticalDraft || ''), 'pause menu did not expose tactical loadout');
+  await page.evaluate(() => window.__game.scenes.play.setPaused(false));
+
+  const localeResults = [];
+  for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
+    await page.evaluate((code) => window.__novaI18n.setLanguagePreference(code), locale);
+    await page.waitForTimeout(80);
+    await page.evaluate((sector) => window.__game.scenes.play.openTacticalDraft({ sectorCleared: sector }), 10 + localeResults.length);
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+    const localeState = await readState(page);
+    assertDraftLayout(localeState, 760, 640, `locale-${locale}`);
+    assert(localeState.tacticalDraft.title && localeState.tacticalDraft.title !== 'TACTICAL DRAFT', `locale-${locale}: tactical title remained English`);
+    assert(localeState.tacticalDraft.offers.every((offer) => offer.descriptionText !== offer.descriptionSource), `locale-${locale}: tactical description remained English`);
+    if (locale === 'de' || locale === 'ru' || locale === 'zh-CN') {
+      await page.screenshot({ path: path.join(outputDir, `tactical-draft-${locale.replace('-', '_')}.png`) });
+    }
+    localeResults.push({ locale, title: localeState.tacticalDraft.title, offers: localeState.tacticalDraft.offers.map((offer) => offer.nameText) });
+    await page.evaluate(() => window.__game.scenes.play.clearTacticalDraft('locale_check'));
+  }
+  await page.evaluate(() => window.__novaI18n.setLanguagePreference('en'));
+
+  const runtimePage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await runtimePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlay(runtimePage);
+  const runtime = await runtimePage.evaluate(() => {
+    const game = window.__game;
+    const player = game.scenes.play.player;
+    const baseline = {
+      damage: player.bulletDamage,
+      fireDelay: player.shootDelay,
+      speed: player.speed,
+      bulletSpeed: player.bulletSpeed,
+      shots: player.multiShot,
+      lives: game.lives
+    };
+    player.grantInvulnerability(5000, 'dodge_overlap_check');
+    player.startDodge();
+    player.dodgeDuration = 0;
+    player.update(400);
+    const dodgeOverlap = {
+      invulnerable: player.invulnerable,
+      remainingMs: player.invulnerableTime
+    };
+    ['damage_up', 'rapid_fire', 'speed_up', 'rail_surge', 'double_shot', 'pierce', 'blink_drive', 'magnet', 'drones', 'chain_lightning']
+      .forEach((id) => player.applyRunAugment(id));
+    const boosted = {
+      damage: player.bulletDamage,
+      fireDelay: player.shootDelay,
+      speed: player.speed,
+      bulletSpeed: player.bulletSpeed,
+      shots: player.multiShot,
+      pierce: player.bulletPierce,
+      magnet: player.magnetActive,
+      drones: player.dronesActive,
+      chain: player.chainLightningActive,
+      dodgeDelay: player.dodgeDelay
+    };
+    ['shield', 'ghost', 'point_defense', 'bomb', 'orbital_strike'].forEach((id) => player.applyRunAugment(id));
+    const sectorStart = player.applyRunAugmentSectorStartEffects(2);
+    game.lives = Math.max(1, game.lives - 1);
+    const beforeRepair = game.lives;
+    player.applyRunAugment('nano_patch');
+    return {
+      baseline,
+      boosted,
+      sectorStart,
+      sectorEffects: {
+        shield: player.shieldActive,
+        invulnerable: player.invulnerable,
+        pointDefense: player.pointDefenseActive,
+        bombShots: player.bombShotsLeft,
+        orbitalCharges: player.orbitalStrikeCharges
+      },
+      repair: { before: beforeRepair, after: game.lives },
+      dodgeOverlap,
+      debug: player.getRunAugmentDebugState()
+    };
+  });
+  assert(runtime.boosted.damage > runtime.baseline.damage, 'damage augment did not apply');
+  assert(runtime.boosted.fireDelay < runtime.baseline.fireDelay, 'fire-rate augment did not apply');
+  assert(runtime.boosted.speed > runtime.baseline.speed, 'speed augment did not apply');
+  assert(runtime.boosted.bulletSpeed > runtime.baseline.bulletSpeed, 'projectile-speed augment did not apply');
+  assert(runtime.boosted.shots > runtime.baseline.shots && runtime.boosted.pierce, 'multishot/pierce augments did not apply');
+  assert(runtime.boosted.magnet && runtime.boosted.drones && runtime.boosted.chain, 'utility augments did not persist');
+  assert(runtime.sectorEffects.shield && runtime.sectorEffects.invulnerable && runtime.sectorEffects.pointDefense, 'defensive sector-start effects missing');
+  assert(runtime.sectorEffects.bombShots >= 2 && runtime.sectorEffects.orbitalCharges >= 2, 'offensive sector-start payload missing');
+  assert(runtime.repair.after === runtime.repair.before + 1, 'nano patch did not repair one life');
+  assert(runtime.dodgeOverlap.invulnerable && runtime.dodgeOverlap.remainingMs > 3500, 'dodge end cancelled a longer invulnerability window');
+  await runtimePage.close();
+
+  const flowPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await flowPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlay(flowPage);
+  await flowPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.shouldHoldProgressionPresentation = () => false;
+    play.enemyManager.isLevelComplete = () => true;
+    play.enemyManager.spawning = false;
+    play.enemyManager.bossDefeatedThisLevel = true;
+  });
+  await flowPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === true, null, { timeout: 10000 });
+  const gatedLevel = await flowPage.evaluate(() => window.__game.level);
+  assert(gatedLevel === 1, `sector advanced before tactical choice: ${gatedLevel}`);
+  await flowPage.evaluate(() => window.__game.scenes.play.confirmTacticalDraft(1, 'pointer'));
+  await flowPage.waitForFunction(() => window.__game.level === 2, null, { timeout: 5000 });
+  const flowState = await readState(flowPage);
+  assert(flowState.tacticalDraft.history.length === 1, 'automatic boss-clear draft did not retain its pick');
+  await flowPage.close();
+
+  assert(consoleErrors.length === 0, `browser errors: ${consoleErrors.join(' | ')}`);
+  report.ok = true;
+  report.desktop = { screenshot: desktopScreenshot };
+  report.compact = { screenshot: compactScreenshot };
+  report.interactionHistory = state.tacticalDraft.history;
+  report.runtime = runtime;
+  report.locales = localeResults;
+  report.automaticBossClearGate = { gatedLevel, advancedLevel: flowState.arcadeRun.currentSector };
+  report.consoleErrors = consoleErrors;
+  writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
+  console.log(`[tactical-draft] PASS report=${path.join(outputDir, 'report.json')}`);
+  await page.close();
+} catch (error) {
+  report.error = error.stack || error.message;
+  report.consoleErrors = consoleErrors;
+  writeFileSync(path.join(outputDir, 'failure-report.json'), JSON.stringify(report, null, 2));
+  console.error(`[tactical-draft] FAIL ${error.stack || error.message}`);
+  process.exitCode = 1;
+} finally {
+  await browser.close().catch(() => {});
+  if (server) server.kill();
+}

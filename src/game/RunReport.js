@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 1;
+const RUN_REPORT_VERSION = 2;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -153,6 +153,9 @@ export function createRunReport(summary = {}) {
   const finalDeathSource = normalizeDeathSource(summary.finalDeathSource || summary.lastLifeLossSource);
   const deathCoach = getDeathCoachAdvice(summary.finalDeathSource || summary.lastLifeLossSource);
   const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
+  const tacticalDraftPicks = (Array.isArray(summary.tacticalDraftPicks) ? summary.tacticalDraftPicks : [])
+    .map((entry) => String(entry?.name || '').trim())
+    .filter(Boolean);
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -169,7 +172,8 @@ export function createRunReport(summary = {}) {
       runtimeLabel: formatDuration(runtimeSeconds),
       runCleared: Boolean(summary.runCleared),
       deathCoach,
-      pilotOrdersCompleted
+      pilotOrdersCompleted,
+      tacticalDraftPicks
     },
     sections: [
       {
@@ -207,6 +211,7 @@ export function createRunReport(summary = {}) {
         rows: buildRows([
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
+          { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
           { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
           { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
@@ -228,6 +233,7 @@ export function summarizeRunReport(report = null) {
     sectorReached: report.summary?.sectorReached || 0,
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
+    tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };
 }

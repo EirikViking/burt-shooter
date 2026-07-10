@@ -826,6 +826,17 @@ async function runSmoke() {
     await bossPage.waitForTimeout(900);
     await bossPage.screenshot({ path: path.join(outputDir, '14-boss-defeated.png'), fullPage: true });
     await bossPage.waitForFunction(() => {
+      try {
+        return JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.active === true;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 12000 });
+    await bossPage.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.inputArmed === true, null, { timeout: 5000 });
+    const bossTacticalDraftState = await collectGameState(bossPage);
+    await bossPage.screenshot({ path: path.join(outputDir, '14b-tactical-draft.png'), fullPage: true });
+    await bossPage.evaluate(() => window.__game?.scenes?.play?.confirmTacticalDraft?.(1, 'pointer'));
+    await bossPage.waitForFunction(() => {
       const game = window.__game;
       const enemyManager = game?.scenes?.play?.enemyManager;
       return game?.level >= 2 && enemyManager?.state === 'WAVE_ACTIVE';
@@ -858,6 +869,7 @@ async function runSmoke() {
       waveTransitionState,
       bossActiveState,
       bossDefeatedState,
+      bossTacticalDraftState,
       bossVictoryState,
       routineConsoleEvents,
       consoleEvents,
