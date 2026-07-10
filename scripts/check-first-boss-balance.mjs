@@ -363,6 +363,7 @@ async function runCombatProbe(browser) {
       }
       if (state.scene !== 'play' || state.lives <= 0 || state.waveState === 'LEVEL_COMPLETE' || !state.boss) break;
       await guideScriptedPilotTowardBoss(page);
+      state = await collectState(page);
       intent = await applyIntent(page, intent, chooseIntent(
         state,
         Number(state.screen?.width) || 1366,

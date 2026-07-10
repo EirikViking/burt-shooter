@@ -1,6 +1,5 @@
-const { app, BrowserWindow, ipcMain, screen, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, net, protocol, screen, shell } = require('electron');
 const fs = require('node:fs');
-const http = require('node:http');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { createSteamLeaderboardBridge } = require('./steamLeaderboardBridge.cjs');
@@ -24,11 +23,24 @@ const isControlSmoke = process.argv.includes('--control-smoke') || process.env.N
 const isPerfSmoke = process.argv.includes('--perf-smoke') || process.env.NOVA_SWARM_ELECTRON_PERF_SMOKE === '1';
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
+const isFreshProfile = process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
+const FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
 const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
 const smokeMode = isSmoke ? 'smoke' : isControlSmoke ? 'control-smoke' : isPerfSmoke ? 'perf-smoke' : null;
 const maintainerDevtoolsState = getMaintainerDevtoolsState(process.argv);
 const distDir = path.resolve(__dirname, '..', 'dist');
+const APP_PROTOCOL = 'nova-swarm';
+protocol.registerSchemesAsPrivileged([{
+  scheme: APP_PROTOCOL,
+  privileges: {
+    standard: true,
+    secure: true,
+    supportFetchAPI: true,
+    corsEnabled: true,
+    stream: true
+  }
+}]);
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -44,15 +56,19 @@ const mimeTypes = {
   '.svg': 'image/svg+xml'
 };
 
-let server = null;
 let baseUrl = null;
 const isolatedUserDataDir = process.env.NOVA_SWARM_USER_DATA_DIR
   ? path.resolve(process.env.NOVA_SWARM_USER_DATA_DIR)
+  : isFreshProfile
+    ? path.join(app.getPath('temp'), 'nova-swarm-fresh-profile')
   : smokeMode
     ? path.resolve(process.cwd(), 'test-results', `electron-${smokeMode}-user-data-${new Date().toISOString().replace(/[:.]/g, '-')}`)
     : null;
 if (isolatedUserDataDir) {
   try {
+    if (isFreshProfile && !process.env.NOVA_SWARM_USER_DATA_DIR && fs.existsSync(isolatedUserDataDir)) {
+      fs.rmSync(isolatedUserDataDir, { recursive: true, force: true });
+    }
     fs.mkdirSync(isolatedUserDataDir, { recursive: true });
     app.setPath('userData', isolatedUserDataDir);
   } catch (error) {
@@ -72,6 +88,15 @@ let steamCloudSave = null;
 let steamProfileContext = { type: 'local', id: 'local-offline', reason: 'not_resolved' };
 
 async function resolveSteamProfileContext() {
+  if (isFreshProfile) {
+    return {
+      type: 'local',
+      id: 'fresh-test-profile',
+      steamId: null,
+      personaName: null,
+      reason: 'explicit_fresh_profile_test'
+    };
+  }
   const initialized = await steamLeaderboardBridge.initialize().catch(() => false);
   const steamId = initialized ? steamLeaderboardBridge.getCurrentSteamId() : null;
   if (steamId) {
@@ -93,7 +118,46 @@ async function resolveSteamProfileContext() {
   };
 }
 
+function getFreshProfileSteamStatus(surface) {
+  return {
+    available: false,
+    reason: FRESH_PROFILE_STEAM_REASON,
+    isolated: true,
+    freshProfile: true,
+    surface,
+    appId: null,
+    sdkPathConfigured: false,
+    nativeModuleLoaded: false
+  };
+}
+
+function getFreshProfileSteamResult(surface, extra = {}) {
+  return {
+    ok: false,
+    success: false,
+    ignored: true,
+    reason: FRESH_PROFILE_STEAM_REASON,
+    isolated: true,
+    freshProfile: true,
+    surface,
+    ...extra
+  };
+}
+
 function registerSteamLeaderboardIpc() {
+  if (isFreshProfile) {
+    ipcMain.handle('nova-steam-leaderboard:isAvailable', () => false);
+    ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => null);
+    ipcMain.handle('nova-steam-leaderboard:getTopScores', () => []);
+    ipcMain.handle('nova-steam-leaderboard:getFriendsScores', () => []);
+    ipcMain.handle('nova-steam-leaderboard:submitScore', () => getFreshProfileSteamResult('leaderboard'));
+    ipcMain.handle('nova-steam-leaderboard:submitScoreDetailed', () => getFreshProfileSteamResult('leaderboard'));
+    ipcMain.handle('nova-steam-leaderboard:requestCurrentStats', () => getFreshProfileSteamResult('leaderboard'));
+    ipcMain.handle('nova-steam-leaderboard:getLastUploadDiagnostics', () => getFreshProfileSteamResult('leaderboard'));
+    ipcMain.handle('nova-steam-leaderboard:getStatus', () => getFreshProfileSteamStatus('leaderboard'));
+    ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo', () => getSteamRuntimeInfo());
+    return;
+  }
   ipcMain.handle('nova-steam-leaderboard:isAvailable', () => steamLeaderboardBridge.isAvailable());
   ipcMain.handle('nova-steam-leaderboard:getPersonaName', () => steamLeaderboardBridge.getPersonaName());
   ipcMain.handle('nova-steam-leaderboard:getTopScores', (_event, payload) => steamLeaderboardBridge.getTopScores(payload));
@@ -107,6 +171,28 @@ function registerSteamLeaderboardIpc() {
 }
 
 function registerSteamAchievementsIpc() {
+  if (isFreshProfile) {
+    ipcMain.handle('nova-steam-achievements:getStatus', () => getFreshProfileSteamStatus('achievements'));
+    ipcMain.handle('nova-steam-achievements:requestCurrentStats', () => getFreshProfileSteamResult('achievements'));
+    ipcMain.handle('nova-steam-achievements:getAchievement', (_event, payload) => getFreshProfileSteamResult('achievements', {
+      achievementId: payload?.id ?? payload ?? null
+    }));
+    ipcMain.handle('nova-steam-achievements:unlockAchievement', (_event, payload) => getFreshProfileSteamResult('achievements', {
+      achievementId: payload?.id ?? payload ?? null
+    }));
+    ipcMain.handle('nova-steam-achievements:clearAchievement', (_event, payload) => getFreshProfileSteamResult('achievements', {
+      achievementId: payload?.id ?? payload ?? null
+    }));
+    ipcMain.handle('nova-steam-achievements:syncUnlockedAchievements', (_event, payload) => getFreshProfileSteamResult('achievements', {
+      requested: Array.isArray(payload?.ids) ? payload.ids : [],
+      synced: [],
+      skipped: [],
+      steamUnlockedIds: []
+    }));
+    ipcMain.handle('nova-steam-achievements:clearAchievements', () => getFreshProfileSteamResult('achievements'));
+    ipcMain.handle('nova-steam-achievements:getUnlockedAchievements', () => []);
+    return;
+  }
   ipcMain.handle('nova-steam-achievements:getStatus', () => steamAchievementsBridge.getStatus());
   ipcMain.handle('nova-steam-achievements:requestCurrentStats', () => steamAchievementsBridge.requestCurrentStats());
   ipcMain.handle('nova-steam-achievements:getAchievement', (_event, payload) => steamAchievementsBridge.getAchievement(payload?.id ?? payload));
@@ -193,12 +279,14 @@ function registerSteamCloudIpc() {
   ipcMain.handle('nova-steam-cloud:mergeRendererState', (_event, payload) => steamCloudSave?.mergeRendererState(payload) || null);
 }
 
-function sendJson(response, status, payload) {
-  response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store'
+function jsonResponse(status, payload) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
   });
-  response.end(JSON.stringify(payload));
 }
 
 function getScorePath() {
@@ -350,19 +438,9 @@ function sortScores(scores) {
   });
 }
 
-async function readRequestJson(request) {
-  const chunks = [];
-  for await (const chunk of request) chunks.push(chunk);
-  const text = Buffer.concat(chunks).toString('utf8');
-  if (!text.trim()) return {};
-  return JSON.parse(text);
-}
-
-async function handleApi(request, response) {
-  const requestUrl = new URL(request.url || '/', 'http://127.0.0.1');
+async function handleLocalApi(request, requestUrl) {
   if (requestUrl.pathname !== '/api/highscores') {
-    sendJson(response, 404, { error: 'Not found' });
-    return;
+    return jsonResponse(404, { error: 'Not found' });
   }
 
   if (request.method === 'GET') {
@@ -371,13 +449,12 @@ async function handleApi(request, response) {
     const scores = (storedScores.length > 0 ? storedScores : getSeedScores())
       .sort((a, b) => (b.score || 0) - (a.score || 0))
       .slice(0, limit);
-    sendJson(response, 200, scores);
-    return;
+    return jsonResponse(200, scores);
   }
 
   if (request.method === 'POST') {
     try {
-      const payload = await readRequestJson(request);
+      const payload = await request.json();
       const scores = readLocalScores();
       const entry = sanitizeScoreEntry(payload);
       const duplicateIndex = entry.submissionId
@@ -388,14 +465,13 @@ async function handleApi(request, response) {
       writeLocalScores(nextScores);
       const savedEntry = duplicateIndex >= 0 ? scores[duplicateIndex] : entry;
       const placement = nextScores.findIndex((scoreEntry) => scoreEntry === savedEntry) + 1;
-      sendJson(response, 200, { ok: true, score: savedEntry, placement, duplicate: duplicateIndex >= 0 });
+      return jsonResponse(200, { ok: true, score: savedEntry, placement, duplicate: duplicateIndex >= 0 });
     } catch (error) {
-      sendJson(response, 400, { error: error?.message || 'Invalid score payload' });
+      return jsonResponse(400, { error: error?.message || 'Invalid score payload' });
     }
-    return;
   }
 
-  sendJson(response, 405, { error: 'Method not allowed' });
+  return jsonResponse(405, { error: 'Method not allowed' });
 }
 
 function resolveStaticPath(urlPath) {
@@ -411,35 +487,43 @@ function resolveStaticPath(urlPath) {
   return candidate;
 }
 
-function serveStatic(request, response) {
-  const filePath = resolveStaticPath(request.url || '/');
+function resolveStaticFile(urlPath) {
+  const filePath = resolveStaticPath(urlPath);
   const resolvedPath = fs.existsSync(filePath) && fs.statSync(filePath).isFile()
     ? filePath
     : path.join(distDir, 'index.html');
-  const ext = path.extname(resolvedPath).toLowerCase();
-  response.writeHead(200, {
-    'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-    'Cache-Control': ext === '.html' ? 'no-store' : 'public, max-age=31536000, immutable'
-  });
-  fs.createReadStream(resolvedPath).pipe(response);
+  return resolvedPath;
 }
 
-function startLocalServer() {
-  return new Promise((resolve, reject) => {
-    server = http.createServer((request, response) => {
-      if ((request.url || '').startsWith('/api/')) {
-        handleApi(request, response).catch((error) => sendJson(response, 500, { error: error?.message || 'Server error' }));
-        return;
-      }
-      serveStatic(request, response);
-    });
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      baseUrl = `http://127.0.0.1:${address.port}`;
-      resolve(baseUrl);
-    });
+async function handleAppProtocol(request) {
+  const requestUrl = new URL(request.url);
+  const urlPath = requestUrl.hostname && requestUrl.hostname !== 'app'
+    ? `/${requestUrl.hostname}${requestUrl.pathname}`
+    : requestUrl.pathname;
+  if (urlPath.startsWith('/api/')) {
+    const apiUrl = new URL(requestUrl.toString());
+    apiUrl.pathname = urlPath;
+    return handleLocalApi(request, apiUrl);
+  }
+  const filePath = resolveStaticFile(urlPath);
+  const response = await net.fetch(pathToFileURL(filePath).toString());
+  const headers = new Headers(response.headers);
+  const ext = path.extname(filePath).toLowerCase();
+  headers.set('Content-Type', mimeTypes[ext] || headers.get('Content-Type') || 'application/octet-stream');
+  headers.set('Cache-Control', ext === '.html' ? 'no-store' : 'public, max-age=31536000, immutable');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
   });
+}
+
+async function registerAppProtocol() {
+  await protocol.handle(APP_PROTOCOL, (request) => handleAppProtocol(request).catch((error) =>
+    jsonResponse(500, { error: error?.message || 'App protocol error' })
+  ));
+  baseUrl = `${APP_PROTOCOL}://app`;
+  return baseUrl;
 }
 
 function createWindow() {
@@ -479,7 +563,9 @@ function createWindow() {
 }
 
 async function getSteamRuntimeInfo() {
-  const currentGameLanguage = await steamLeaderboardBridge.getCurrentGameLanguage?.();
+  const currentGameLanguage = isFreshProfile
+    ? null
+    : await steamLeaderboardBridge.getCurrentGameLanguage?.();
   const steamEnv = {
     SteamAppId: process.env.SteamAppId || null,
     SteamGameId: process.env.SteamGameId || null,
@@ -498,7 +584,11 @@ async function getSteamRuntimeInfo() {
     systemLocale: typeof app.getSystemLocale === 'function' ? app.getSystemLocale() : null,
     launchedBySteamHint: Boolean(steamEnv.SteamAppId || steamEnv.SteamGameId || steamEnv.SteamOverlayGameId),
     steamEnv,
-    achievements: steamAchievementsBridge.getStatus()
+    freshProfile: isFreshProfile,
+    steamIntegrationIsolated: isFreshProfile,
+    achievements: isFreshProfile
+      ? getFreshProfileSteamStatus('achievements')
+      : steamAchievementsBridge.getStatus()
   };
 }
 
@@ -541,12 +631,24 @@ async function runSmoke(window) {
       const intro = window.__game?.scenes?.intro;
       const steamLeaderboardAvailable = await window.__novaSteamLeaderboard?.isAvailable?.().catch(() => false);
       const steamBridgeStatus = await window.__novaSteamBridge?.getStatus?.().catch(error => ({ error: error?.message || String(error) }));
+      const steamAchievementStatus = await window.__novaSteamAchievements?.getStatus?.().catch(error => ({ error: error?.message || String(error) }));
+      const freshProfileSteamIsolated = steamBridgeStatus?.reason === 'fresh_profile_isolated';
+      const freshProfileSubmitProbe = freshProfileSteamIsolated
+        ? await window.__novaSteamLeaderboard?.submitScore?.({ score: 123, details: [1], uploadMethod: 'keep_best' })
+        : null;
+      const freshProfileAchievementProbe = freshProfileSteamIsolated
+        ? await window.__novaSteamAchievements?.unlockAchievement?.('ACH_EARLY_PILOT')
+        : null;
       const steamCloudDiagnostics = await window.__novaSteamCloud?.getDiagnostics?.().catch(error => ({ error: error?.message || String(error) }));
       return {
         title: document.title,
         apiOk: api.ok,
         apiStatus: api.status,
         steamBridgeStatus: steamBridgeStatus || null,
+        steamAchievementStatus: steamAchievementStatus || null,
+        freshProfileSteamIsolated,
+        freshProfileSubmitProbe: freshProfileSubmitProbe || null,
+        freshProfileAchievementProbe: freshProfileAchievementProbe || null,
         steamLeaderboardAvailable: Boolean(steamLeaderboardAvailable),
         steamLeaderboardBridgePresent: Boolean(window.__novaSteamLeaderboard),
         steamCloudDiagnostics,
@@ -1193,7 +1295,7 @@ app.whenReady().then(async () => {
   registerInputIpc();
   registerMaintainerDevtoolsIpc();
   registerSteamCloudIpc();
-  await startLocalServer();
+  await registerAppProtocol();
   const win = createWindow();
   registerDisplayIpc(win);
   const notifyWindowBlur = () => sendWindowBlurToRenderer(win);
@@ -1243,11 +1345,9 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', () => {
-  if (server) server.close();
   if (process.platform !== 'darwin') app.quit();
 });
 
 app.on('before-quit', () => {
-  if (server) server.close();
   steamLeaderboardBridge.shutdown();
 });

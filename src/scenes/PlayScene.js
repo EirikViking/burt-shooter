@@ -45,6 +45,13 @@ import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
+import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
+import {
+  getGameplayBackdropCoverScale,
+  getGameplayBackdropProfile,
+  resolveGameplayBackdropMode,
+  sampleGameplayBackdropMotion
+} from '../config/GameplayBackdropMotion.js';
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
 import {
@@ -105,6 +112,10 @@ const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
 const SECTOR_ARRIVAL_STINGER_MS = 2400 + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
+const FIRST_RUN_CONTROLS_DELAY_MS = 2350;
+const FIRST_RUN_ENEMY_HOLD_MS = 2450;
+const FIRST_RUN_CONTROLS_DURATION_MS = 6200;
+const FIRST_RUN_CONTROLS_TOTAL_MS = FIRST_RUN_CONTROLS_DURATION_MS + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
@@ -212,6 +223,15 @@ export class PlayScene {
     this.gameplayStormBackdrop = null;
     this.gameplayBossBackdrop = null;
     this.gameplayBackdropShade = null;
+    this.gameplayBackdropLoadGeneration = 0;
+    this.gameplayBackdropMode = 'base';
+    this.gameplayBackdropTransition = null;
+    this.gameplayBackdropElapsedMs = 0;
+    this.gameplayBackdropWidth = 0;
+    this.gameplayBackdropHeight = 0;
+    this.firstRunOnboardingComplete = true;
+    this.firstRunOnboardingUntil = 0;
+    this.firstRunOnboardingCompletionTimeout = null;
     this.bossDossierTexture = null;
 
     // Voice throttle
@@ -435,6 +455,7 @@ export class PlayScene {
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
     this.setupAutoPauseHandlers();
+    this.resetGameplayBackdropState();
     this.gameContainer.removeChildren();
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
@@ -552,6 +573,9 @@ export class PlayScene {
     this.lastPowerupPickupClaimCue = null;
     this.powerupPickupClaimCue = null;
     this.clearRunContractStartNudge();
+    this.clearFirstRunOnboardingCompletion();
+    this.firstRunOnboardingUntil = 0;
+    this.firstRunOnboardingComplete = !this.getFirstRunControlsNudge();
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     this.runContractPersistenceDirty = false;
@@ -588,7 +612,7 @@ export class PlayScene {
         sector: this.game?.level || 1,
         suppressProgressToast: true
       });
-      this.scheduleRunContractStartNudge();
+      if (this.firstRunOnboardingComplete) this.scheduleRunContractStartNudge();
     } else {
       this.runContractSession = null;
     }
@@ -1420,6 +1444,23 @@ export class PlayScene {
     this.runContractStartNudgeTimeout = null;
   }
 
+  clearFirstRunOnboardingCompletion() {
+    if (!this.firstRunOnboardingCompletionTimeout) return;
+    clearTimeout(this.firstRunOnboardingCompletionTimeout);
+    this.firstRunOnboardingCompletionTimeout = null;
+  }
+
+  completeFirstRunOnboarding() {
+    this.firstRunOnboardingComplete = true;
+    this.firstRunOnboardingUntil = 0;
+    this.firstRunOnboardingCompletionTimeout = null;
+    this.game?.flushAchievementToasts?.(this);
+    if (!this.activeAchievementToast && this.achievementToastQueue.length > 0) {
+      const next = this.achievementToastQueue.shift();
+      this.showAchievementToastNow(next);
+    }
+  }
+
   getRunContractStartNudgeSummary() {
     const active = (this.getRunContractDebugState()?.active || [])
       .find((item) => item.eligible && !item.completed);
@@ -1433,12 +1474,53 @@ export class PlayScene {
     };
   }
 
-  scheduleRunContractStartNudge() {
+  getFirstRunControlsNudge() {
+    const progress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
+    if ((Number(progress?.totalRuns) || 0) > 0) return null;
+    const usingController = this.game?.runStartInputDevice === 'controller';
+    return translateText(usingController
+      ? 'Stick/D-Pad: Move | LT: Focus | A/RT: Shoot | B/LB: Phase | Start: Pause'
+      : 'WASD/Arrows: Move | Ctrl: Focus | Space: Shoot | Shift: Phase | P/Esc: Pause');
+  }
+
+  scheduleRunContractStartNudge({ delayMs = null } = {}) {
     this.clearRunContractStartNudge();
-    if (!this.getRunContractStartNudgeSummary()) return;
+    const firstRunControls = this.getFirstRunControlsNudge();
+    if (!firstRunControls && !this.getRunContractStartNudgeSummary()) return;
     this.runContractStartNudgeTimeout = setTimeout(() => {
       this.runContractStartNudgeTimeout = null;
       if (this.gameOverSequenceStarted) return;
+      const controls = this.getFirstRunControlsNudge();
+      if (controls) {
+        const compactHud = this.game.getWidth() < 620;
+        this.firstRunOnboardingUntil = Date.now() + FIRST_RUN_CONTROLS_TOTAL_MS;
+        this.reserveMessageFocus(FIRST_RUN_CONTROLS_TOTAL_MS, {
+          priority: 2,
+          slots: ['corner']
+        });
+        this.enqueueToast(controls, {
+          fontSize: compactHud ? 14 : 18,
+          fill: '#eafcff',
+          stroke: '#031321',
+          strokeThickness: compactHud ? 3 : 4,
+          slot: 'top',
+          type: 'firstRunControls',
+          priority: 1,
+          bypassFocusLock: false,
+          duration: FIRST_RUN_CONTROLS_DURATION_MS,
+          banner: true,
+          align: 'center',
+          y: Math.max(compactHud ? 154 : 184, this.game.getHeight() * 0.17),
+          maxWidth: compactHud ? this.game.getWidth() * 0.84 : Math.min(760, this.game.getWidth() * 0.58),
+          accent: 0xffd15c
+        });
+        this.clearFirstRunOnboardingCompletion();
+        this.firstRunOnboardingCompletionTimeout = setTimeout(
+          () => this.completeFirstRunOnboarding(),
+          FIRST_RUN_CONTROLS_TOTAL_MS + 160
+        );
+        return;
+      }
       const summary = this.getRunContractStartNudgeSummary();
       if (!summary) return;
       const compactHud = this.game.getWidth() < 620;
@@ -1463,7 +1545,7 @@ export class PlayScene {
         maxWidth: compactHud ? this.game.getWidth() * 0.78 : Math.min(520, this.game.getWidth() * 0.46),
         accent: 0x7fffd8
       });
-    }, 3500);
+    }, Number.isFinite(Number(delayMs)) ? Math.max(0, Number(delayMs)) : firstRunControls ? FIRST_RUN_CONTROLS_DELAY_MS : 3500);
   }
 
   shouldPersistRunContractProgress(type, result = {}) {
@@ -1888,9 +1970,14 @@ export class PlayScene {
       });
     });
     const showArrivalStinger = this.shouldShowSectorArrivalStinger(this.game.level);
+    const showingFirstRunControls = Boolean(
+      this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
+    );
     const enemyStartDelayMs = showArrivalStinger
       ? this.getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120
-      : 0;
+      : showingFirstRunControls
+        ? FIRST_RUN_ENEMY_HOLD_MS
+        : 0;
     measurePerformance('incoming_wave_banner.sector_arrival', () => this.showSectorArrivalStinger({ postBoss: postBossLevelIntro }));
     if (!showArrivalStinger) {
       measurePerformance('incoming_wave_banner.level_intro', () => this.showLevelIntro({ postBoss: postBossLevelIntro }));
@@ -1904,8 +1991,11 @@ export class PlayScene {
       ahead: 2,
       delayMs: showArrivalStinger ? 1200 : 900
     });
+    if (showingFirstRunControls) {
+      this.scheduleRunContractStartNudge({ delayMs: FIRST_RUN_CONTROLS_DELAY_MS });
+    }
     const compactHud = this.game.getWidth() < 620;
-    if (!compactHud && !postBossLevelIntro) {
+    if (!compactHud && !postBossLevelIntro && !showingFirstRunControls) {
       this.showToast(getMicroMessage('levelStart'), { fontSize: 18, y: this.game.getHeight() * 0.12, slot: 'corner', type: 'level_up' });
       this.showToast(getMicroMessage('newWave'), { fontSize: 18, y: this.game.getHeight() * 0.16, slot: 'corner', type: 'level_up' });
     }
@@ -2393,6 +2483,13 @@ export class PlayScene {
         this.updateCriticalHullOverlay(delta);
         this.updateSlowTimeVisualField(delta);
         measure('gameover_interlude', () => this.updateGameOverInterlude(delta));
+        return;
+      }
+
+      if (this.gameOverSequenceStarted) {
+        this.cleanupSkippedFrameVisuals('gameover_sequence');
+        this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
         return;
       }
 
@@ -4290,43 +4387,44 @@ export class PlayScene {
     const baseBackdrop = AssetManifest.generated?.gameplayArenaBackdrop || AssetManifest.generated?.menuBackdrop;
     if (!baseBackdrop) return;
 
+    const generation = ++this.gameplayBackdropLoadGeneration;
+    const targetContainer = this.starfieldContainer;
+    const loadTexture = (alias, src) => src
+      ? PIXI.Assets.load({ alias, src })
+      : Promise.resolve(null);
+
     try {
-      const texture = await PIXI.Assets.load({
-        alias: 'generated_gameplay_backdrop',
-        src: baseBackdrop
-      });
-      const stormTexture = AssetManifest.generated.stormGameplayBackdrop
-        ? await PIXI.Assets.load({
-            alias: 'generated_storm_gameplay_backdrop',
-            src: AssetManifest.generated.stormGameplayBackdrop
-          })
-        : null;
-      const bossTexture = AssetManifest.generated.bossArenaBackdrop
-        ? await PIXI.Assets.load({
-            alias: 'generated_boss_gameplay_backdrop',
-            src: AssetManifest.generated.bossArenaBackdrop
-          })
-        : null;
-      if (!this.starfieldContainer || !this.starfieldContainer.parent) return;
+      const [texture, stormTexture, bossTexture] = await Promise.all([
+        loadTexture('generated_gameplay_backdrop', baseBackdrop),
+        loadTexture('generated_storm_gameplay_backdrop', AssetManifest.generated.stormGameplayBackdrop),
+        loadTexture('generated_boss_gameplay_backdrop', AssetManifest.generated.bossArenaBackdrop)
+      ]);
+      await Promise.all([
+        texture ? this.prepareTextureForRender(texture, 'generated_gameplay_backdrop') : null,
+        stormTexture ? this.prepareTextureForRender(stormTexture, 'generated_storm_gameplay_backdrop') : null,
+        bossTexture ? this.prepareTextureForRender(bossTexture, 'generated_boss_gameplay_backdrop') : null
+      ]);
+      if (
+        generation !== this.gameplayBackdropLoadGeneration
+        || targetContainer !== this.starfieldContainer
+        || !targetContainer?.parent
+      ) return;
 
       const backdrop = new PIXI.Sprite(texture);
       backdrop.anchor.set(0.5);
       backdrop.label = 'gameplayBackdrop';
-      this.fitBackdropToScreen(backdrop, width, height);
 
       let stormBackdrop = null;
       if (stormTexture) {
         stormBackdrop = new PIXI.Sprite(stormTexture);
         stormBackdrop.anchor.set(0.5);
         stormBackdrop.label = 'gameplayStormBackdrop';
-        this.fitBackdropToScreen(stormBackdrop, width, height);
       }
       let bossBackdrop = null;
       if (bossTexture) {
         bossBackdrop = new PIXI.Sprite(bossTexture);
         bossBackdrop.anchor.set(0.5);
         bossBackdrop.label = 'gameplayBossBackdrop';
-        this.fitBackdropToScreen(bossBackdrop, width, height);
       }
 
       const shade = new PIXI.Graphics();
@@ -4338,11 +4436,18 @@ export class PlayScene {
       this.gameplayStormBackdrop = stormBackdrop;
       this.gameplayBossBackdrop = bossBackdrop;
       this.gameplayBackdropShade = shade;
-      this.starfieldContainer.addChildAt(backdrop, 0);
-      if (stormBackdrop) this.starfieldContainer.addChildAt(stormBackdrop, 1);
-      if (bossBackdrop) this.starfieldContainer.addChildAt(bossBackdrop, stormBackdrop ? 2 : 1);
-      this.starfieldContainer.addChildAt(shade, (stormBackdrop ? 1 : 0) + (bossBackdrop ? 1 : 0) + 1);
-      this.applyGameplayBackdropLevel(this.game?.level || 1);
+      this.gameplayBackdropWidth = width;
+      this.gameplayBackdropHeight = height;
+      targetContainer.addChildAt(backdrop, 0);
+      if (stormBackdrop) targetContainer.addChildAt(stormBackdrop, 1);
+      if (bossBackdrop) targetContainer.addChildAt(bossBackdrop, stormBackdrop ? 2 : 1);
+      targetContainer.addChildAt(shade, (stormBackdrop ? 1 : 0) + (bossBackdrop ? 1 : 0) + 1);
+      const mode = resolveGameplayBackdropMode(this.game?.level || 1, {
+        enemyState: this.enemyManager?.state,
+        bossActive: this.enemyManager?.boss?.active
+      });
+      this.setGameplayBackdropMode(mode, { immediate: true });
+      this.updateGameplayBackdrop(0);
     } catch (error) {
       console.warn('[PlayScene] Generated gameplay backdrop failed to load:', error);
     }
@@ -4407,33 +4512,136 @@ export class PlayScene {
     }
   }
 
-  applyGameplayBackdropLevel(level = 1) {
-    const stormActive = level >= 3;
-    const bossActive = level % 5 === 0 || this.enemyManager?.state === 'BOSS' || this.enemyManager?.boss?.active;
-    if (this.gameplayBackdrop) {
-      this.gameplayBackdrop.alpha = bossActive ? 0.18 : stormActive ? 0.26 : 0.42;
-    }
-    if (this.gameplayStormBackdrop) {
-      this.gameplayStormBackdrop.alpha = bossActive ? 0.16 : stormActive ? 0.34 : 0;
-    }
-    if (this.gameplayBossBackdrop) {
-      this.gameplayBossBackdrop.alpha = bossActive ? 0.4 : 0;
-    }
-    if (this.gameplayBackdropShade) {
-      this.gameplayBackdropShade.alpha = bossActive ? 0.54 : stormActive ? 0.5 : 0.46;
-    }
+  resetGameplayBackdropState() {
+    this.gameplayBackdropLoadGeneration += 1;
+    this.gameplayBackdrop = null;
+    this.gameplayStormBackdrop = null;
+    this.gameplayBossBackdrop = null;
+    this.gameplayBackdropShade = null;
+    this.gameplayBackdropMode = 'base';
+    this.gameplayBackdropTransition = null;
+    this.gameplayBackdropElapsedMs = 0;
+    this.gameplayBackdropWidth = 0;
+    this.gameplayBackdropHeight = 0;
+    this.gameplayBackdropReducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
   }
 
-  fitBackdropToScreen(sprite, width, height) {
-    const textureWidth = sprite.texture?.width || width;
-    const textureHeight = sprite.texture?.height || height;
-    const scale = Math.max(width / textureWidth, height / textureHeight);
+  applyGameplayBackdropAlphas(alphas = getGameplayBackdropProfile(this.gameplayBackdropMode).alphas) {
+    if (this.gameplayBackdrop) {
+      this.gameplayBackdrop.alpha = alphas.base;
+      this.gameplayBackdrop.renderable = alphas.base > 0.005;
+    }
+    if (this.gameplayStormBackdrop) {
+      this.gameplayStormBackdrop.alpha = alphas.storm;
+      this.gameplayStormBackdrop.renderable = alphas.storm > 0.005;
+    }
+    if (this.gameplayBossBackdrop) {
+      this.gameplayBossBackdrop.alpha = alphas.boss;
+      this.gameplayBossBackdrop.renderable = alphas.boss > 0.005;
+    }
+    if (this.gameplayBackdropShade) this.gameplayBackdropShade.alpha = alphas.shade;
+  }
+
+  setGameplayBackdropMode(mode, { immediate = false, durationMs = 1050 } = {}) {
+    const nextMode = getGameplayBackdropProfile(mode) === getGameplayBackdropProfile('base') && mode !== 'base'
+      ? 'base'
+      : mode;
+    if (!immediate && nextMode === this.gameplayBackdropMode && !this.gameplayBackdropTransition) return false;
+    const target = getGameplayBackdropProfile(nextMode).alphas;
+    const current = {
+      base: Number(this.gameplayBackdrop?.alpha ?? target.base),
+      storm: Number(this.gameplayStormBackdrop?.alpha ?? target.storm),
+      boss: Number(this.gameplayBossBackdrop?.alpha ?? target.boss),
+      shade: Number(this.gameplayBackdropShade?.alpha ?? target.shade)
+    };
+    this.gameplayBackdropMode = nextMode;
+    this.layoutGameplayBackdrops();
+    if (immediate || this.gameplayBackdropReducedMotion || !this.gameplayBackdrop) {
+      this.gameplayBackdropTransition = null;
+      this.applyGameplayBackdropAlphas(target);
+      return true;
+    }
+    this.gameplayBackdropTransition = {
+      from: current,
+      to: target,
+      elapsedMs: 0,
+      durationMs: Math.max(120, Number(durationMs) || 1050)
+    };
+    return true;
+  }
+
+  applyGameplayBackdropLevel(level = 1) {
+    const mode = resolveGameplayBackdropMode(level, {
+      enemyState: this.enemyManager?.state,
+      bossActive: this.enemyManager?.boss?.active
+    });
+    if (mode !== this.gameplayBackdropMode) this.setGameplayBackdropMode(mode);
+    return mode;
+  }
+
+  fitBackdropToScreen(sprite, width, height, mode = this.gameplayBackdropMode) {
+    if (!sprite) return;
+    const scale = getGameplayBackdropCoverScale({
+      textureWidth: sprite.texture?.width || width,
+      textureHeight: sprite.texture?.height || height,
+      width,
+      height,
+      mode,
+      reducedMotion: this.gameplayBackdropReducedMotion
+    });
     sprite.scale.set(scale);
     sprite.position.set(width / 2, height / 2);
   }
 
+  layoutGameplayBackdrops() {
+    const width = this.gameplayBackdropWidth || this.gameplayGame?.getWidth?.() || 1920;
+    const height = this.gameplayBackdropHeight || this.gameplayGame?.getHeight?.() || 1080;
+    this.fitBackdropToScreen(this.gameplayBackdrop, width, height);
+    this.fitBackdropToScreen(this.gameplayStormBackdrop, width, height);
+    this.fitBackdropToScreen(this.gameplayBossBackdrop, width, height);
+  }
+
+  updateGameplayBackdrop(delta = 0) {
+    if (!this.gameplayBackdrop) return;
+    const deltaMs = Math.max(0, Math.min(100, (Number(delta) || 0) * 16.67));
+    this.gameplayBackdropElapsedMs += deltaMs;
+    const transition = this.gameplayBackdropTransition;
+    if (transition) {
+      transition.elapsedMs += deltaMs;
+      const progress = Math.min(1, transition.elapsedMs / transition.durationMs);
+      const eased = progress * progress * (3 - 2 * progress);
+      this.applyGameplayBackdropAlphas({
+        base: transition.from.base + (transition.to.base - transition.from.base) * eased,
+        storm: transition.from.storm + (transition.to.storm - transition.from.storm) * eased,
+        boss: transition.from.boss + (transition.to.boss - transition.from.boss) * eased,
+        shade: transition.from.shade + (transition.to.shade - transition.from.shade) * eased
+      });
+      if (progress >= 1) {
+        this.gameplayBackdropTransition = null;
+        this.applyGameplayBackdropAlphas(transition.to);
+      }
+    }
+
+    const motion = sampleGameplayBackdropMotion(this.gameplayBackdropMode, this.gameplayBackdropElapsedMs, {
+      reducedMotion: this.gameplayBackdropReducedMotion
+    });
+    const width = this.gameplayBackdropWidth || this.gameplayGame?.getWidth?.() || 1920;
+    const height = this.gameplayBackdropHeight || this.gameplayGame?.getHeight?.() || 1080;
+    const layers = [
+      [this.gameplayBackdrop, 0.55],
+      [this.gameplayStormBackdrop, 0.78],
+      [this.gameplayBossBackdrop, 1]
+    ];
+    for (const [sprite, depth] of layers) {
+      if (!sprite) continue;
+      sprite.position.set(width / 2 + motion.x * depth, height / 2 + motion.y * depth);
+    }
+  }
+
   updateStarfield(delta) {
     if (!this.starLayers || !this.game?.app?.screen) return;
+
+    this.updateGameplayBackdrop(delta);
 
     const width = this.gameplayGame.getWidth();
     const height = this.gameplayGame.getHeight();
@@ -4767,7 +4975,10 @@ export class PlayScene {
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
+    this.resetGameplayBackdropState();
     this.clearRunContractStartNudge();
+    this.clearFirstRunOnboardingCompletion();
+    this.firstRunOnboardingUntil = 0;
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.clearBackgroundLevelEntryWarmup();
@@ -6539,12 +6750,13 @@ export class PlayScene {
     this.gameOverSequenceStarted = true;
     this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
     this.flushDeferredRunContractProgress(true);
+    this.game.lockFinalScore?.('final_life_lost');
     this.clearToastState();
     this.triggerPlayerDeathFeedback({ final: true });
     this.showInGameGameOverAnimation();
     const id = setTimeout(() => {
       if (this.game?.currentScene === this) {
-        this.game.gameOver();
+        this.game.gameOver({ fromInterlude: true });
       }
     }, 1500);
     if (!this._deathTimeouts) this._deathTimeouts = [];
@@ -6593,7 +6805,8 @@ export class PlayScene {
     title.y = height * 0.43;
     layer.addChild(title);
 
-    const subtitle = createText(`${translateText('SCORE')}: ${Number(this.game.score || 0).toLocaleString('en-US')}  //  ${translateText('SECTOR')} ${this.game.level || 1}`, {
+    const finalScore = typeof this.game.getFinalScore === 'function' ? this.game.getFinalScore() : this.game.score;
+    const subtitle = createText(`${translateText('SCORE')}: ${Number(finalScore || 0).toLocaleString('en-US')}  //  ${translateText('SECTOR')} ${this.game.level || 1}`, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: width < 720 ? 17 : 24,
       fontWeight: '900',
@@ -7201,6 +7414,9 @@ export class PlayScene {
       achievement,
       createdAt: Date.now()
     };
+    if (!this.firstRunOnboardingComplete && this.getFirstRunControlsNudge()) {
+      return false;
+    }
     if (this.activeAchievementToast) {
       this.achievementToastQueue.push(entry);
       return true;
@@ -8812,7 +9028,8 @@ export class PlayScene {
 
   updateOverrunMilestoneInterlude(delta) {
     this.updateOverrunClearCelebrations();
-    this.updateStarfield(delta);
+    const perfOptions = this.performanceDiagnostics?.enabled ? this.performanceDiagnostics.options : null;
+    if (!perfOptions?.noStarfield) this.updateStarfield(delta);
     if (this.screenShake) this.screenShake.update(delta);
     if (this.scorePopupManager) this.scorePopupManager.update(delta);
     if (this.hud) this.hud.update();
@@ -9109,7 +9326,11 @@ export class PlayScene {
     const now = Date.now();
     const lockUntil = this.getToastSlotLockUntil(slot);
     const bypassFocusLock = options.bypassFocusLock === true || (options.bypassFocusLock !== false && priority > 3);
-    const notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
+    let notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
+    const firstRunOnboardingUntil = Math.max(0, Number(this.firstRunOnboardingUntil) || 0);
+    if (slot === 'corner' && firstRunOnboardingUntil > now && priority <= 1) {
+      notBefore = Math.max(notBefore, firstRunOnboardingUntil);
+    }
     const duplicateKey = this.getToastDuplicateKey(message, type);
     if (duplicateKey && this.hasActiveDuplicateToast(duplicateKey)) {
       return;
@@ -9130,6 +9351,15 @@ export class PlayScene {
 
     const queue = this.getToastQueueForSlot(slot);
     if (!queue) return;
+
+    if (
+      slot === 'corner'
+      && type === 'discovery'
+      && firstRunOnboardingUntil > now
+      && queue.some((queued) => queued?.options?.type === 'discovery')
+    ) {
+      return;
+    }
 
     if (duplicateKey && this.collapseQueuedDuplicateToast(entry)) {
       this.processToastQueue();
@@ -9604,10 +9834,17 @@ export class PlayScene {
       scorePopups,
       achievement: this.activeAchievementToast ? {
         id: this.activeAchievementToast.__achievementToastId,
-        queued: this.achievementToastQueue.length
+        queued: this.achievementToastQueue.length,
+        bounds: typeof getBounds === 'function' ? getBounds(this.activeAchievementToast) : this.getToastDisplayBounds(this.activeAchievementToast)
       } : {
         id: null,
-        queued: this.achievementToastQueue.length
+        queued: this.achievementToastQueue.length,
+        bounds: null
+      },
+      firstRunOnboarding: {
+        introActive: Boolean(this.introActive),
+        complete: Boolean(this.firstRunOnboardingComplete),
+        remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now())
       },
       queued: {
         center: this.toastQueue.length,
@@ -9717,7 +9954,8 @@ export class PlayScene {
     if (options.banner) {
       const runContractBanner = options.type === 'runContract'
         || options.type === 'runContractStart'
-        || options.type === 'runContractProgress';
+        || options.type === 'runContractProgress'
+        || options.type === 'firstRunControls';
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
         fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',

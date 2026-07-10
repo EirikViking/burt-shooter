@@ -16,7 +16,8 @@ assert.doesNotMatch(bonusSource, /game\.addScore\(baseClearBonus/);
 assert.doesNotMatch(bonusSource, /game\.addScore\(baseLivesBonus/);
 assert.match(bonusSource, /appliedTotal: appliedClearBonus \+ appliedLivesBonus/);
 assert.match(playSource, /const markedClear = this\.game\.markRunClear\?\.\('target_sector_clear'\);\s*if \(!markedClear\) return false;\s*this\.game\.awardRunClearScoreBonuses\?\.\(\{ clearBonus, livesBonus \}\);/s);
-assert.match(gameOverSource, /this\.finalScore = Number\(this\.game\.score\) \|\| 0/);
+assert.match(gameOverSource, /typeof this\.game\.getFinalScore === 'function'/);
+assert.match(gameOverSource, /this\.game\.getFinalScore\(\)/);
 assert.match(steamBridgeSource, /nova_swarm_global_score_v2/);
 
 let addScoreCalls = 0;

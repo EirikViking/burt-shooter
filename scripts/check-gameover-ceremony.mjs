@@ -158,17 +158,43 @@ async function checkInGameFinalDeathAnimation(browser) {
       play?.gameOverSequenceStarted === true &&
       Boolean(play?.gameOverAnimationLayer?.parent);
   }, null, { timeout: 5000 });
+  const lockedState = await page.evaluate(() => {
+    const game = window.__game;
+    return {
+      blockedAward: game.addScore(999, 'baseScore'),
+      score: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      finalScoreLocked: game.finalScoreLocked
+    };
+  });
+  assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
+  assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
+  assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
+  assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
   await page.waitForTimeout(450);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
   const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const invariant = await page.evaluate(() => {
+    const game = window.__game;
+    return {
+      gameScore: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      breakdownScore: game.scoreBreakdown?.finalScore,
+      summaryScore: game.runSummary?.finalScore,
+      reportScore: game.lastRunReport?.summary?.score,
+      sceneScore: game.scenes?.gameOver?.finalScore
+    };
+  });
   assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
+  assert(Object.values(invariant).every((value) => value === 12345), `final score invariant failed: ${JSON.stringify(invariant)}`);
   assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
   await page.close();
   return {
     scenario: 'in_game_final_death_animation',
     finalScene: state.scene,
-    finalScore: state.gameOver?.score || 0
+    finalScore: state.gameOver?.score || 0,
+    invariant
   };
 }
 

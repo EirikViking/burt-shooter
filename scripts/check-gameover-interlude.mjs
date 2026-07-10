@@ -119,26 +119,28 @@ try {
 
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    const play = window.__game?.scenes?.play;
     return state.scene === 'play' &&
-      state.gameOverInterlude?.active === true &&
-      String(state.gameOverInterlude?.label || '').toUpperCase().includes('GAME OVER');
+      play?.gameOverSequenceStarted === true &&
+      Boolean(play?.gameOverAnimationLayer?.parent) &&
+      state.gameOverInterlude?.active !== true;
   }, null, { timeout: 5000 });
 
   const interludeState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-  assert(interludeState.gameOverInterlude?.sfxKey === 'nova_game_over_drop', 'game-over interlude did not expose the dedicated game-over SFX key', interludeState.gameOverInterlude);
-  assert((interludeState.gameOverInterlude?.cinematicLayers || 0) >= 24, 'game-over interlude is missing the cinematic VFX layer stack', interludeState.gameOverInterlude);
+  const ceremonyLayers = await page.evaluate(() => window.__game?.scenes?.play?.gameOverAnimationLayer?.children?.length || 0);
+  assert(ceremonyLayers >= 4, 'single game-over ceremony is missing its title/score visual stack', { ceremonyLayers });
+  assert(interludeState.gameOverInterlude?.active !== true, 'normal final death started the duplicate legacy interlude', interludeState.gameOverInterlude);
 
-  await page.evaluate(() => window.advanceTime?.(1000));
+  await page.evaluate(() => window.advanceTime?.(700));
   const heldState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
-  assert(heldState.scene === 'play', 'game-over interlude did not hold inside gameplay before transition', heldState);
-  assert(heldState.gameOverInterlude?.active === true, 'game-over interlude disappeared before its hold elapsed', heldState);
+  assert(heldState.scene === 'play', 'single game-over ceremony did not hold briefly inside gameplay', heldState);
+  assert(heldState.gameOverInterlude?.active !== true, 'duplicate game-over interlude appeared during the hold', heldState);
 
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'gameover-interlude.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
-  const remainingInterludeMs = Math.max(0, Number(heldState.gameOverInterlude?.durationMs || 0) - Number(heldState.gameOverInterlude?.elapsedMs || 0));
-  await page.evaluate((ms) => window.advanceTime?.(ms), remainingInterludeMs + 260);
+  await page.evaluate(() => window.advanceTime?.(1100));
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.backdropLoaded === true;
@@ -159,7 +161,7 @@ try {
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   assert(report.ok, 'page errors during game-over interlude check', report);
-  console.log(`[gameover-interlude] PASS screenshot=${screenshot}`);
+  console.log(`[gameover-interlude] PASS single-ceremony screenshot=${screenshot}`);
 } finally {
   await browser.close();
   if (server) server.kill();

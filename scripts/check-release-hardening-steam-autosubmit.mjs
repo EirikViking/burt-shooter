@@ -22,7 +22,8 @@ assert.ok(
   'Steam provider should use the shared leaderboard constant'
 );
 assert.ok(
-  gameOver.includes('this.scheduleSceneTimeout(() => this.submitSteamScore(), 220);') &&
+  gameOver.includes("this.enterRunbackStage('steam_submitting');") &&
+    gameOver.includes('void this.submitSteamScore();') &&
     gameOver.includes('async submitSteamScore()') &&
     gameOver.includes("target: 'steam'"),
   'game over Steam mode must keep automatic score submission'
@@ -36,7 +37,8 @@ assert.ok(
     mockCheck.includes("lastLeaderboardResult?.steamStatus === 'submitted'") &&
     mockCheck.includes('Steam auto-submit flow exposed manual submit copy') &&
     mockCheck.includes('Steam mock exposed manual name entry') &&
-    mockCheck.includes('Steam hold status reused full or stale leaderboard copy') &&
+    mockCheck.includes('Steam result should expose immediate restart without a Continue gate') &&
+    mockCheck.includes('Steam runback reused full or stale leaderboard copy') &&
     mockCheck.includes('Final runback did not report exact local placement') &&
     mockCheck.includes('Steam mock did not report exact global placement') &&
     mockCheck.includes('Final runback did not report exact Steam placement') &&
@@ -49,7 +51,8 @@ assert.ok(
     mockCheck.includes('Low Steam score should be marked best unchanged') &&
     mockCheck.includes('Best: 87,628') &&
     mockCheck.includes('This run: 2,084') &&
-    mockCheck.includes('Low Steam hold status reused full or stale leaderboard copy') &&
+    mockCheck.includes('Low Steam result should expose immediate restart without a Continue gate') &&
+    mockCheck.includes('Low Steam runback reused full or stale leaderboard copy') &&
     mockCheck.includes('Local: Not in local top 40') &&
     mockCheck.includes('Final low-score runback should not show an outside-visible local placement'),
   'Steam leaderboard mock must cover autosubmit without manual name entry'

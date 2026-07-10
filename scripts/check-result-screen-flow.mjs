@@ -111,7 +111,7 @@ async function runSteamGameOver(page, {
   steamScores,
   hangarProgress,
   runSummary
-}, { autoContinue = true } = {}) {
+}) {
   await page.evaluate((scenario) => {
     localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(scenario.localScores));
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(scenario.steamScores));
@@ -148,38 +148,18 @@ async function runSteamGameOver(page, {
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'submitted_hold' &&
+      state.gameOver?.state === 'runback' &&
       state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
 
   await page.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
     if (!scene) return;
-    scene.submittedHoldContinueReadyAt = 0;
-    scene.continueInputArmedAt = 0;
     scene.achievementToastQueue = [];
     scene.removeAchievementToast?.({ showNext: false });
     scene.refreshPrimaryCta?.();
     scene.layoutScreen?.();
   });
-  if (!autoContinue) {
-    await page.waitForTimeout(100);
-    return;
-  }
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 5000 });
-  await page.waitForTimeout(100);
-}
-
-async function continueToRunback(page) {
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 5000 });
   await page.waitForTimeout(100);
 }
 
@@ -503,15 +483,14 @@ try {
       bestLevel: 8
     },
     runSummary: { runElapsedSeconds: 367, pilotXpGained: 1490 }
-  }, { autoContinue: false });
+  });
   const goodHold = await readScenario(goodPage);
   assertNoBadSteamTerms(goodHold.visibleText, 'Good run hold');
   assertNoOverlaps(goodHold, 'Good run hold render');
   assertResultSpacing(goodHold, 'Good run hold render');
   assertCelebrationReadable(goodHold, 'Good run hold render');
   await goodPage.screenshot({ path: path.join(outputDir, 'good-run-status-rank2.png'), fullPage: true });
-  await continueToRunback(goodPage);
-  const goodInitial = await readScenario(goodPage);
+  const goodInitial = goodHold;
   assertGoodRun(goodInitial);
   assertNoOverlaps(goodInitial, 'Good run initial render');
   assertResultSpacing(goodInitial, 'Good run initial render');
@@ -543,15 +522,14 @@ try {
       unlockedShipIds: ['nova_ship_01', 'nova_ship_02', 'nova_ship_04', 'nova_ship_05', 'nova_ship_08']
     },
     runSummary: { runElapsedSeconds: 511, pilotXpGained: 1890 }
-  }, { autoContinue: false });
+  });
   const numberOneHold = await readScenario(numberOnePage);
   assertNoBadSteamTerms(numberOneHold.visibleText, 'Number-one hold');
   assertNoOverlaps(numberOneHold, 'Number-one hold render');
   assertResultSpacing(numberOneHold, 'Number-one hold render');
   assertCelebrationReadable(numberOneHold, 'Number-one hold render');
   await numberOnePage.screenshot({ path: path.join(outputDir, 'great-run-status-number1.png'), fullPage: true });
-  await continueToRunback(numberOnePage);
-  const numberOneInitial = await readScenario(numberOnePage);
+  const numberOneInitial = numberOneHold;
   assertNumberOneRun(numberOneInitial);
   assertNoOverlaps(numberOneInitial, 'Number-one initial render');
   assertResultSpacing(numberOneInitial, 'Number-one initial render');

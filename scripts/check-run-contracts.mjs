@@ -1013,8 +1013,14 @@ async function runBrowserSmoke() {
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
     await page.evaluate(async () => {
+      window.__burtGamepadOverride = {
+        connected: true,
+        id: 'Idle Connected Controller',
+        axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }))
+      };
       window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
-      await window.__game?.startGame?.(undefined, { runMode: 'ranked' });
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked', inputDevice: 'keyboard' });
     });
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -1254,7 +1260,106 @@ async function runBrowserSmoke() {
     assert.equal(autoHiddenProof.state.menu.missionBoard.completionNoticeSeen, true, 'visible completion notice should be marked seen before hiding');
 
     await page.setViewportSize({ width: 1280, height: 720 });
-    await seedMenuProfile(page, finalRunState, 1);
+    await seedMenuProfile(page, activeState, 1, { hangarPatch: { totalRuns: 0 } });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return window.__game?.scenes?.play?.introActive === false
+        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
+    }, null, { timeout: 10000 });
+    await page.waitForTimeout(250);
+    const firstRunNudgeState = await readState(page);
+    const firstRunNudge = (firstRunNudgeState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
+    assert.match(firstRunNudge?.message || '', /WASD\/Arrows: Move.*Space: Shoot.*Shift: Phase/, 'first ranked run should teach core controls before Pilot Orders');
+    assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'runContractStart'), false, 'first ranked run should not stack the Pilot Orders banner over controls');
+    assert.equal((firstRunNudgeState.toast?.active || []).some((toast) => toast.type === 'level_up' && toast.slot === 'corner'), false, 'first ranked run should suppress ambient opening quips while controls are visible');
+    assert.equal(firstRunNudgeState.toast?.achievement?.id || null, null, 'first-run achievement should wait until the controls lesson is complete');
+    await page.evaluate(() => window.__game?.handleAchievementUnlocked?.({
+      id: 'ACH_EARLY_PILOT',
+      unlockedAt: new Date().toISOString()
+    }));
+    const pendingFirstRunAchievements = await page.evaluate(() => window.__game?.pendingAchievementToasts?.length || 0);
+    assert.ok(pendingFirstRunAchievements > 0, 'deferred first-run achievements should remain in the game-level queue');
+    const firstRunOverlap = await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      const controls = play?.activeTopToast?.getBounds?.();
+      const highscore = play?.hud?.highscoreChaseGroup?.getBounds?.();
+      if (!controls) return null;
+      if (!highscore || play?.hud?.highscoreChaseGroup?.visible === false) return false;
+      return !(
+        controls.x + controls.width <= highscore.x
+        || highscore.x + highscore.width <= controls.x
+        || controls.y + controls.height <= highscore.y
+        || highscore.y + highscore.height <= controls.y
+      );
+    });
+    assert.equal(firstRunOverlap, false, 'first-run controls should not overlap the high-score target HUD');
+    const firstRunNudgeScreenshot = path.join(outputDir, 'pilot-orders-first-run-controls.png');
+    await page.screenshot({ path: firstRunNudgeScreenshot, fullPage: true });
+    await page.evaluate(() => {
+      delete window.__burtGamepadOverride;
+      window.__game?.gameOver?.();
+    });
+    await page.waitForFunction(() => {
+      const game = window.__game;
+      return JSON.parse(window.render_game_to_text?.() || '{}').scene === 'gameOver'
+        && Boolean(game?.scenes?.gameOver?.achievementToast);
+    }, null, { timeout: 10000 });
+    const earlyGameOverAchievement = await page.evaluate(() => ({
+      active: Boolean(window.__game?.scenes?.gameOver?.achievementToast),
+      pending: window.__game?.pendingAchievementToasts?.length || 0
+    }));
+    assert.equal(earlyGameOverAchievement.active, true, 'an achievement deferred by onboarding should transfer to an early Game Over scene');
+    assert.equal(earlyGameOverAchievement.pending, 0, 'transferred early-run achievements should leave the game-level queue');
+    await page.screenshot({ path: path.join(outputDir, 'pilot-orders-first-run-early-gameover-achievement.png'), fullPage: true });
+
+    await seedMenuProfile(page, activeState, 1, { hangarPatch: { totalRuns: 0 } });
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+    await waitForMenu(page);
+    await page.evaluate(async () => {
+      window.__burtGamepadOverride = {
+        connected: true,
+        id: 'Nova Virtual Controller',
+        axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }))
+      };
+      window.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+      await window.__game?.startGame?.(undefined, { runMode: 'ranked', inputDevice: 'controller' });
+    });
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return window.__game?.scenes?.play?.introActive === false
+        && (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
+    }, null, { timeout: 10000 });
+    await page.waitForTimeout(250);
+    const controllerFirstRunState = await readState(page);
+    const controllerFirstRunNudge = (controllerFirstRunState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
+    assert.match(controllerFirstRunNudge?.message || '', /Stick\/D-Pad: Move.*A\/RT: Shoot.*B\/LB: Phase/, 'controller first run should teach controller controls after the ship intro');
+    assert.equal(controllerFirstRunState.toast?.achievement?.id || null, null, 'controller first-run achievement should wait until the controls lesson is complete');
+    const controllerFirstRunOverlap = await page.evaluate(() => {
+      const play = window.__game?.scenes?.play;
+      const controls = play?.activeTopToast?.getBounds?.();
+      const highscore = play?.hud?.highscoreChaseGroup?.getBounds?.();
+      if (!controls) return null;
+      if (!highscore || play?.hud?.highscoreChaseGroup?.visible === false) return false;
+      return !(
+        controls.x + controls.width <= highscore.x
+        || highscore.x + highscore.width <= controls.x
+        || controls.y + controls.height <= highscore.y
+        || highscore.y + highscore.height <= controls.y
+      );
+    });
+    assert.equal(controllerFirstRunOverlap, false, 'controller first-run controls should not overlap the high-score target HUD');
+    const controllerFirstRunScreenshot = path.join(outputDir, 'pilot-orders-first-run-controller-controls.png');
+    await page.screenshot({ path: controllerFirstRunScreenshot, fullPage: true });
+    await page.evaluate(() => { delete window.__burtGamepadOverride; });
+
+    await seedMenuProfile(page, finalRunState, 1, { hangarPatch: { totalRuns: 1 } });
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
     await page.waitForTimeout(500);

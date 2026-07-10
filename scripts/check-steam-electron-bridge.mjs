@@ -316,6 +316,17 @@ function checkNoRendererNativeImport() {
   }
 }
 
+function checkFreshProfileSteamIsolationGuard() {
+  const main = readFileSync(path.resolve('electron/main.cjs'), 'utf8');
+  assert.match(main, /const isFreshProfile =/);
+  assert.match(main, /FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated'/);
+  assert.match(main, /function getFreshProfileSteamStatus/);
+  assert.match(main, /function getFreshProfileSteamResult/);
+  assert.match(main, /function registerSteamLeaderboardIpc\(\) \{\s+if \(isFreshProfile\)/);
+  assert.match(main, /function registerSteamAchievementsIpc\(\) \{\s+if \(isFreshProfile\)/);
+  assert.match(main, /steamIntegrationIsolated: isFreshProfile/);
+}
+
 await checkUnavailableWithoutNative();
 checkDefaultNovaSteamAppId();
 await checkMissingAppIdDoesNotInitNative();
@@ -324,5 +335,6 @@ await checkRawUploadFailureDiagnostics();
 await checkUploadInFlightGuard();
 checkPreloadSurface();
 checkNoRendererNativeImport();
+checkFreshProfileSteamIsolationGuard();
 
 console.log('[steam-electron-bridge] PASS native bridge contract, preload surface, renderer isolation');

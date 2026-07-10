@@ -38,6 +38,8 @@ import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
+const STEAM_PLAYER_NAME_TIMEOUT_MS = 1800;
+const LOCAL_SCORE_BACKUP_TIMEOUT_MS = 1800;
 const SUBMITTED_REPORT_MIN_MS = 4800;
 const SUBMITTED_POST_RESULT_MIN_MS = 1200;
 const RESULT_REPORT_MIN_MS = 2600;
@@ -333,6 +335,7 @@ export class GameOverScene {
     this.achievementToast = null;
     this.achievementToastTicker = null;
     this.achievementToastQueue = [];
+    this.steamSubmissionToken = 0;
   }
 
   scheduleSceneTimeout(callback, delayMs) {
@@ -367,6 +370,7 @@ export class GameOverScene {
 
   async init() {
     this.clearSceneTimeouts();
+    this.steamSubmissionToken += 1;
     this.gamepadNavigator.suppressUntilReleased();
     this.container.sortableChildren = true;
     this.container.removeChildren();
@@ -428,7 +432,9 @@ export class GameOverScene {
     this.controllerNameCursor = 0;
 
     // FREEZE final score and level immediately
-    this.finalScore = Number(this.game.score) || 0;
+    this.finalScore = typeof this.game.getFinalScore === 'function'
+      ? this.game.getFinalScore()
+      : Number(this.game.score) || 0;
     this.finalLevel = Number(this.game.level) || 0;
     this.finalLevel = this.getSubmittedLevelReached();
     if (this.isRankedRun) {
@@ -762,14 +768,9 @@ export class GameOverScene {
 
     if (this.steamSubmissionMode) {
       this.globalStatus = 'submitting';
-      this.state = 'submitting';
       this.canEnterName = false;
-      this.updatePromptMessage('SAVING TO STEAM...');
-      this.updateLeaderboardStatusText();
-      this.updateNameDisplay();
-      this.refreshPrimaryCta();
-      this.layoutScreen();
-      this.scheduleSceneTimeout(() => this.submitSteamScore(), 220);
+      this.enterRunbackStage('steam_submitting');
+      void this.submitSteamScore();
       return;
     }
 
@@ -2281,6 +2282,7 @@ export class GameOverScene {
   }
 
   shouldShowLeaderboardButton() {
+    if (this.isSubmitting) return false;
     if (this.game?.runMode === RUN_MODES.SCOUT) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
@@ -2289,11 +2291,11 @@ export class GameOverScene {
   }
 
   shouldShowHangarButton() {
-    return this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
+    return !this.isSubmitting && this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
   }
 
   shouldShowMainMenuButton() {
-    return this.isResultActionStage();
+    return !this.isSubmitting && this.isResultActionStage();
   }
 
   drawLeaderboardButton(layout) {
@@ -2536,12 +2538,14 @@ export class GameOverScene {
       return {
         mode: 'restart',
         label: translateText(getRunModeProfile(this.game?.runMode).oneMoreLabel || 'ONE MORE RUN'),
-        hint: this.isSectorStartChallengeResult()
+        hint: this.isSubmitting
+          ? translateText('SAVING SCORE')
+          : this.isSectorStartChallengeResult()
           ? (this.lastInputDevice === 'controller'
               ? translateText('A: SAME CHECKPOINT  |  B: MENU')
               : translateText('SPACE / CLICK - SAME CHECKPOINT'))
           : (this.lastInputDevice === 'controller' ? 'A: SAME SHIP  |  Y: LEADERBOARD' : 'ENTER / SPACE / CLICK - SAME SHIP'),
-        disabled: false,
+        disabled: this.isSubmitting,
         runback: true
       };
     }
@@ -3237,7 +3241,11 @@ export class GameOverScene {
     const centerX = width * 0.5 + Math.sin(pulse * 0.011) * width * 0.018 * profile.jitter;
     const centerY = height * 0.43 + Math.cos(pulse * 0.014) * height * 0.018 * profile.jitter;
     const maxRadius = Math.hypot(width, height) * 0.42;
-    const dangerAlpha = this.state === 'runback' ? 0.28 : 0.46;
+    const resultStage = this.state === 'runback'
+      || this.state === 'submitted_hold'
+      || this.state === 'result_hold'
+      || this.state === 'submitting';
+    const dangerAlpha = resultStage ? 0.08 : 0.14;
 
     if (this.gameOverAlarmSweep) {
       const sweep = this.gameOverAlarmSweep;
@@ -3248,22 +3256,22 @@ export class GameOverScene {
       sweep.position.set(centerX, centerY);
       sweep.rotation = angle + profile.tilt;
       sweep.rect(-length * 0.5, -thickness * 0.5, length, thickness);
-      sweep.fill({ color: profile.secondary, alpha: dangerAlpha * (0.55 + Math.sin(pulse * 0.045) * 0.18) });
+      sweep.fill({ color: profile.secondary, alpha: dangerAlpha * (0.42 + Math.sin(pulse * 0.045) * 0.12) });
       sweep.rect(-length * 0.5, -1, length, 2);
-      sweep.fill({ color: profile.accent, alpha: 0.7 });
+      sweep.fill({ color: profile.accent, alpha: resultStage ? 0.1 : 0.18 });
     }
 
     for (let index = 0; index < this.gameOverRings.length; index += 1) {
       const ring = this.gameOverRings[index];
-      const visible = index < profile.ringCount;
+      const visible = index < Math.min(profile.ringCount, resultStage ? 3 : 4);
       ring.visible = visible;
       ring.clear();
       if (!visible) continue;
       const phase = ((pulse * profile.ringSpeed + index * 41) % 180) / 180;
       const radius = 42 + phase * maxRadius;
-      const alpha = (1 - phase) * (0.55 + (index % 2) * 0.18);
+      const alpha = (1 - phase) * (0.18 + (index % 2) * 0.05);
       ring.circle(centerX, centerY, radius);
-      ring.stroke({ color: index % 2 ? profile.accent : profile.primary, alpha, width: 2 + (index % 3) });
+      ring.stroke({ color: index % 2 ? profile.accent : profile.primary, alpha, width: 1.2 + (index % 2) * 0.8 });
       ring.circle(centerX, centerY, radius * 0.62);
       ring.stroke({ color: profile.secondary, alpha: alpha * 0.32, width: 1 });
     }
@@ -3280,10 +3288,10 @@ export class GameOverScene {
       const barHeight = 3 + (index % 4) * 2;
       const barWidth = width * (0.18 + (index % 5) * 0.045);
       bar.rect(width * (index % 2 ? 0.58 : 0.08) + xJitter, y, barWidth, barHeight);
-      bar.fill({ color: index % 3 === 0 ? profile.primary : profile.accent, alpha: 0.16 + bandPhase * 0.2 });
+      bar.fill({ color: index % 3 === 0 ? profile.primary : profile.accent, alpha: 0.06 + bandPhase * 0.08 });
       if (index % 2 === 0) {
         bar.rect(width * 0.02, y + barHeight + 5, width * (0.08 + bandPhase * 0.18), 1);
-        bar.fill({ color: profile.secondary, alpha: 0.38 });
+        bar.fill({ color: profile.secondary, alpha: 0.14 });
       }
     }
 
@@ -3648,6 +3656,7 @@ export class GameOverScene {
   }
 
   returnToMenu() {
+    if (this.isSubmitting) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
     AudioManager.playMusicContext('menu', { resetPlaylist: true });
@@ -3660,6 +3669,7 @@ export class GameOverScene {
   }
 
   restartRun() {
+    if (this.isSubmitting) return;
     this.clearSceneTimeouts();
     this.removeInputOverlay();
     this.stopCaretBlink();
@@ -3688,11 +3698,12 @@ export class GameOverScene {
     const restartOptions = this.game?.runMode === RUN_MODES.SECTOR_START && sectorStartCheckpoint
       ? {
           runMode: RUN_MODES.SECTOR_START,
-          startSector: sectorStartCheckpoint
+          startSector: sectorStartCheckpoint,
+          inputDevice: this.lastInputDevice
         }
       : this.game?.runMode === RUN_MODES.SCOUT
-        ? { runMode: RUN_MODES.SCOUT }
-        : {};
+        ? { runMode: RUN_MODES.SCOUT, inputDevice: this.lastInputDevice }
+        : { inputDevice: this.lastInputDevice };
     Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
       console.error('[GameOverScene] Restart failed:', error);
       this.returnToMenu();
@@ -3768,11 +3779,13 @@ export class GameOverScene {
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
     const celebrationMode = Boolean(this.globalPlacement?.qualified || this.globalQualified);
-    const bannerWidth = Math.min(width * (celebrationMode ? 0.72 : 0.86), compact ? 390 : (celebrationMode ? 420 : 520));
+    const bannerWidth = compact
+      ? Math.min(width * 0.86, 390)
+      : Math.min(width * 0.32, 360);
     const bannerHeight = compact ? (celebrationMode ? 56 : 70) : (celebrationMode ? 58 : 78);
     const banner = new PIXI.Container();
     banner.zIndex = 60;
-    banner.x = celebrationMode && !compact
+    banner.x = !compact
       ? width - bannerWidth / 2 - 28
       : width / 2;
     banner.y = celebrationMode
@@ -3791,7 +3804,7 @@ export class GameOverScene {
 
     const title = createText('ACHIEVEMENT UNLOCKED', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? (celebrationMode ? 11 : 14) : (celebrationMode ? 12 : 16),
+      fontSize: compact ? (celebrationMode ? 11 : 14) : 13,
       fontWeight: 'bold',
       fill: '#fff3a2',
       stroke: '#031323',
@@ -3804,7 +3817,7 @@ export class GameOverScene {
 
     const name = createText(achievement.name, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? (celebrationMode ? 15 : 18) : (celebrationMode ? 17 : 22),
+      fontSize: compact ? (celebrationMode ? 15 : 18) : 19,
       fontWeight: 'bold',
       fill: '#9cfbff',
       stroke: '#031323',
@@ -5012,6 +5025,7 @@ export class GameOverScene {
   }
 
   openLeaderboard() {
+    if (this.isSubmitting) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
     if (this.isSectorStartChallengeResult()) {
@@ -5021,6 +5035,7 @@ export class GameOverScene {
   }
 
   openHangar() {
+    if (this.isSubmitting) return;
     if (!this.shouldShowHangarButton()) return;
     this.clearSceneTimeouts();
     AudioManager.stopVoiceGroup('runback');
@@ -5430,6 +5445,8 @@ export class GameOverScene {
     }
 
     const runbackAlreadyVisible = this.state === 'runback';
+    const submissionToken = this.steamSubmissionToken + 1;
+    this.steamSubmissionToken = submissionToken;
     this.isSubmitting = true;
     if (!runbackAlreadyVisible) this.state = 'submitting';
     this.globalStatus = 'submitting';
@@ -5440,7 +5457,12 @@ export class GameOverScene {
     if (!runbackAlreadyVisible) this.updateLeaderboardStatusText();
     this.refreshPrimaryCta();
 
-    const playerName = this.steamPlayerName || await this.leaderboardAdapter.getSteamPlayerName().catch(() => null) || 'STEAM PILOT';
+    const isCurrentSubmission = () => this.steamSubmissionToken === submissionToken && this.isSceneActive();
+    const playerName = this.steamPlayerName || await this.withSubmissionTimeout(
+      this.leaderboardAdapter.getSteamPlayerName(),
+      STEAM_PLAYER_NAME_TIMEOUT_MS,
+      'Steam player name timeout'
+    ).catch(() => null) || 'STEAM PILOT';
     const submittedLevel = this.getSubmittedLevelReached();
     const runResult = this.leaderboardAdapter.createRunResult(this.game, {
       name: playerName,
@@ -5451,34 +5473,82 @@ export class GameOverScene {
       rankIndex: this.game.rankIndex || 0,
       submissionId: this.submissionId
     });
+    let result = null;
+    try {
+      result = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.submitScore(runResult, {
+          target: 'steam',
+          saveLocal: true,
+          name: playerName
+        }),
+        this.getSteamSubmitTimeoutMs(),
+        'Steam submit timeout'
+      );
+      if (!isCurrentSubmission()) return;
 
-    const result = await this.leaderboardAdapter.submitScore(runResult, {
-      target: 'steam',
-      saveLocal: true,
-      name: playerName
-    });
+      this.previousSteamBestScore = this.getSteamPreviousBestScore(result);
+      this.steamBestUnchanged = this.isSteamBestUnchangedResult(result);
+      this.globalStatus = result.steamStatus === 'submitted'
+        ? (this.steamBestUnchanged ? 'steam_best_unchanged' : 'submitted')
+        : 'failed';
+      result.globalStatus = this.globalStatus;
+      result.globalQualified = false;
+      result.localQualified = result.localStatus === 'saved';
+      result.steamSubmissionMode = true;
+      result.updatedAt = new Date().toISOString();
+      this.rememberLocalPlacement(result.localPlacement, 'steam_local_backup');
+      const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
+      if (!isCurrentSubmission()) return;
+      result.globalQualified = Boolean(confirmedPlacement?.qualified);
+      result.globalPlacement = confirmedPlacement || null;
+      result.globalPlacementTier = this.globalPlacementTier;
+      result.globalRank = confirmedPlacement?.placement || null;
+    } catch (error) {
+      const localBackup = await this.withSubmissionTimeout(
+        this.leaderboardAdapter.localProvider?.submitScore?.(runResult, { name: playerName }) || Promise.resolve(null),
+        LOCAL_SCORE_BACKUP_TIMEOUT_MS,
+        'Local score backup timeout'
+      ).catch(() => null);
+      const pending = this.leaderboardAdapter.enqueuePendingSteamSubmission(runResult, {
+        reason: error?.message || 'steam_submit_failed',
+        target: 'global'
+      });
+      result = {
+        name: playerName,
+        score: this.finalScore,
+        level: submittedLevel,
+        levelReached: submittedLevel,
+        rankIndex: this.game.rankIndex || 0,
+        submissionId: this.submissionId,
+        localStatus: localBackup ? 'saved' : 'failed',
+        localPlacement: localBackup?.placement || null,
+        localEntry: localBackup?.entry || null,
+        globalStatus: 'failed',
+        globalProvider: 'steam',
+        globalQualified: false,
+        localQualified: Boolean(localBackup),
+        steamStatus: 'failed',
+        steamError: error?.message || 'unknown',
+        steamPendingQueued: pending.queued,
+        steamPendingCount: pending.pendingCount,
+        steamSubmissionMode: true,
+        updatedAt: new Date().toISOString()
+      };
+      if (!isCurrentSubmission()) return;
+      this.previousSteamBestScore = 0;
+      this.steamBestUnchanged = false;
+      this.globalStatus = 'failed';
+      this.clearGlobalPlacement('failed');
+      this.rememberLocalPlacement(result.localPlacement, 'steam_local_backup');
+    } finally {
+      if (isCurrentSubmission()) this.isSubmitting = false;
+    }
 
-    this.previousSteamBestScore = this.getSteamPreviousBestScore(result);
-    this.steamBestUnchanged = this.isSteamBestUnchangedResult(result);
-    this.globalStatus = result.steamStatus === 'submitted'
-      ? (this.steamBestUnchanged ? 'steam_best_unchanged' : 'submitted')
-      : 'failed';
-    result.globalStatus = this.globalStatus;
-    result.globalQualified = false;
-    result.localQualified = result.localStatus === 'saved';
-    result.steamSubmissionMode = true;
-    result.updatedAt = new Date().toISOString();
-    this.rememberLocalPlacement(result.localPlacement, 'steam_local_backup');
-    const confirmedPlacement = await this.confirmGlobalLeaderboardAchievements(result);
-    result.globalQualified = Boolean(confirmedPlacement?.qualified);
-    result.globalPlacement = confirmedPlacement || null;
-    result.globalPlacementTier = this.globalPlacementTier;
-    result.globalRank = confirmedPlacement?.placement || null;
+    if (!isCurrentSubmission() || !result) return;
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
     this.game.leaderboardView = this.globalStatus === 'failed' ? 'local' : 'global';
     this.game.pendingHighscore = null;
-    this.isSubmitting = false;
     this.removeInputOverlay();
     const reason = this.globalStatus === 'failed'
       ? 'global_failed'
@@ -5498,6 +5568,27 @@ export class GameOverScene {
     this.state = 'submitted';
     this.updateLeaderboardStatusText();
     this.enterRunbackStageAfterReportHold(reason);
+  }
+
+  getSteamSubmitTimeoutMs() {
+    const mockOverride = window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ === true
+      ? Number(window.__NOVA_SWARM_STEAM_SUBMIT_TIMEOUT_MS__)
+      : NaN;
+    return Number.isFinite(mockOverride)
+      ? Math.max(250, Math.min(GLOBAL_SUBMIT_TIMEOUT_MS, mockOverride))
+      : GLOBAL_SUBMIT_TIMEOUT_MS;
+  }
+
+  async withSubmissionTimeout(promise, timeoutMs, message) {
+    let timeoutId = null;
+    try {
+      const timeout = new Promise((_, reject) => {
+        timeoutId = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+      });
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timeoutId) window.clearTimeout(timeoutId);
+    }
   }
 
   ensureHiddenInput() {
@@ -5823,6 +5914,7 @@ export class GameOverScene {
   }
 
   destroy() {
+    this.steamSubmissionToken += 1;
     this.clearSceneTimeouts();
     if (this.promptText && this.promptPointer) {
       this.promptText.off('pointerdown', this.promptPointer);

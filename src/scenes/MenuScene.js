@@ -1250,6 +1250,7 @@ export class MenuScene {
     this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
       this.quickStartRun();
     });
     this.container.addChild(this.startBtn);
@@ -1261,7 +1262,10 @@ export class MenuScene {
     });
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff });
     this.scoutRunBtn.alpha = 0;
-    this.scoutRunBtn.on('pointerdown', () => this.quickStartRun(RUN_MODES.SCOUT));
+    this.scoutRunBtn.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.quickStartRun(RUN_MODES.SCOUT);
+    });
     this.container.addChild(this.scoutRunBtn);
 
     this.sectorStartBtn = this.createButton('SECTOR RUN', layout, {
@@ -1484,6 +1488,9 @@ export class MenuScene {
       this.runModePanel,
       this.runModeBriefingTitle,
       this.runModeExplainer,
+      this.missionBoardTitle,
+      this.missionBoardSubtitle,
+      ...(this.missionBoardRows || []).flatMap((row) => [row?._title, row?._detail, row?._progress]),
       this.disclaimer,
       this.controls,
       this.easter,
@@ -4621,7 +4628,10 @@ export class MenuScene {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.78 });
       AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
-      this.game.startGame(this.getQuickStartShipKey(), { runMode });
+      this.game.startGame(this.getQuickStartShipKey(), {
+        runMode,
+        inputDevice: this.lastInputDevice
+      });
     } catch (e) {
       console.error('[MenuScene] Quick Start Error:', e);
       this.launchingRun = false;
@@ -4720,7 +4730,8 @@ export class MenuScene {
       AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
       Promise.resolve(this.game.startGame(this.getQuickStartShipKey(), {
         runMode: RUN_MODES.SECTOR_START,
-        startSector: checkpoint
+        startSector: checkpoint,
+        inputDevice: this.lastInputDevice
       })).then((started) => {
         if (started !== false) return;
         this.launchingRun = false;

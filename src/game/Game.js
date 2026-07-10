@@ -86,6 +86,9 @@ export class Game {
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
+    this.finalScoreLocked = false;
+    this.finalScoreSnapshot = null;
+    this.finalScoreLockReason = null;
     this.runSummary = null;
     this.lastRunReport = null;
     this.runProgressionResult = null;
@@ -110,6 +113,7 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.runStartInputDevice = 'keyboard';
     this.sectorStartCheckpoint = null;
     this.sectorStartPlaySector = null;
     this.sectorStartHighestReached = null;
@@ -266,6 +270,12 @@ export class Game {
     const candidateSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
     const selectedSpriteKey = isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey();
     const requestedRunMode = normalizeRunMode(options.runMode);
+    const controllerUiActive = typeof document !== 'undefined'
+      && document.documentElement?.classList?.contains('controller-input-active');
+    const requestedInputDevice = options.inputDevice === 'controller'
+      || (options.inputDevice == null && controllerUiActive)
+      ? 'controller'
+      : 'keyboard';
     const startingProgress = readHangarProgressState();
     const sectorStartCheckpoint = requestedRunMode === RUN_MODES.SECTOR_START
       ? resolveSectorStartCheckpoint(options.startSector, startingProgress)
@@ -289,6 +299,7 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = requestedRunMode;
     this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START ? 'sector_start_checkpoint' : null;
+    this.runStartInputDevice = requestedInputDevice;
     this.sectorStartCheckpoint = sectorStartCheckpoint;
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
@@ -308,6 +319,9 @@ export class Game {
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
+    this.finalScoreLocked = false;
+    this.finalScoreSnapshot = null;
+    this.finalScoreLockReason = null;
     this.runSummary = null;
     this.lastRunReport = null;
     this.runProgressionResult = null;
@@ -404,6 +418,23 @@ export class Game {
     this.finalizeRunProgression(progressionOverrides);
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
+  }
+
+  lockFinalScore(reason = 'run_end') {
+    if (this.finalScoreLocked) return this.finalScoreSnapshot;
+    const finalScore = Math.max(0, Number(this.score) || 0);
+    this.score = finalScore;
+    this.finalScoreLocked = true;
+    this.finalScoreSnapshot = finalScore;
+    this.finalScoreLockReason = reason;
+    if (this.scoreBreakdown) this.scoreBreakdown.finalScore = finalScore;
+    return finalScore;
+  }
+
+  getFinalScore() {
+    return this.finalScoreLocked
+      ? Math.max(0, Number(this.finalScoreSnapshot) || 0)
+      : Math.max(0, Number(this.score) || 0);
   }
 
   triggerGameOverInterlude() {
@@ -577,6 +608,7 @@ export class Game {
   }
 
   addScore(points, source = 'baseScore') {
+    if (this.finalScoreLocked) return 0;
     const base = Number(points) || 0;
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playScene = this.scenes?.play;
@@ -882,14 +914,15 @@ export class Game {
 
   buildRunSummary(overrides = {}) {
     const play = this.scenes?.play;
+    const finalScore = this.getFinalScore();
     const discoveryStats = getDiscoveryStats();
     const discoveries = getDiscoveriesThisRun();
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
     const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
     const ship = getShipMetadata(this.selectedShipSpriteKey);
     const summary = {
-      score: this.score,
-      finalScore: this.score,
+      score: finalScore,
+      finalScore,
       levelReached,
       sectorReached: levelReached,
       runElapsedSeconds: Math.max(0, elapsed),
@@ -1007,6 +1040,7 @@ export class Game {
 
   finalizeRunProgression(overrides = {}) {
     if (this.runFinalized) return this.runProgressionResult;
+    const finalScore = this.lockFinalScore('run_finalize');
     this.runFinalized = true;
     this.runSummary = this.buildRunSummary(overrides);
     flushThreatDiscoveryState();
@@ -1038,7 +1072,7 @@ export class Game {
     this.rankIndex = result.next?.pilotRank ?? this.rankIndex;
     this.lastRankIndex = this.rankIndex;
     this.scoreBreakdown.pilotXpGained = result.xpGained || 0;
-    this.scoreBreakdown.finalScore = this.score;
+    this.scoreBreakdown.finalScore = finalScore;
     this.runSummary = {
       ...this.runSummary,
       pilotXpGained: result.xpGained || 0,
@@ -1092,7 +1126,7 @@ export class Game {
       for (const rankIndex of result.newRanksThisRun || []) {
         const unlock = this.unlockRankAchievement(rankIndex, {
           level: this.level,
-          score: this.score,
+          score: finalScore,
           source: 'pilot_rank_progression'
         });
         if (unlock?.id) this.runSummary.rankAchievementsUnlocked.push(unlock.id);
@@ -1105,7 +1139,7 @@ export class Game {
         const achievement = entry.achievement;
         const unlock = this.unlockAchievement(achievement.id, {
           level: this.level,
-          score: this.score,
+          score: finalScore,
           source: 'milestone_progression',
           achievementType: achievement.type,
           metric: entry.metric,

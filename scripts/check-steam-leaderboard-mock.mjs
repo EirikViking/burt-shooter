@@ -185,7 +185,7 @@ try {
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'submitted_hold' &&
+      state.gameOver?.state === 'runback' &&
       state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
   const steamSubmittedState = await state(page);
@@ -203,25 +203,17 @@ try {
   if (steamSubmittedState.gameOver?.state === 'input' || steamSubmittedState.gameOver?.canEnterName) {
     throw new Error(`Steam mock exposed manual name entry: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  const submittedHoldStatus = steamSubmittedState.gameOver?.leaderboardStatus || '';
-  if (/Steamboard|Steam Board|Steam board|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD/i.test(submittedHoldStatus)) {
-    throw new Error(`Steam hold status reused full or stale leaderboard copy: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  if (steamSubmittedState.gameOver?.primaryCta?.mode !== 'restart' || steamSubmittedState.gameOver?.primaryCta?.disabled) {
+    throw new Error(`Steam result should expose immediate restart without a Continue gate: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  if (!/(Steam|New Steam best): #1/i.test(submittedHoldStatus)) {
+  const submittedStatus = steamSubmittedState.gameOver?.leaderboardStatus || '';
+  if (/Steamboard|Steam Board|Steam board|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD/i.test(submittedStatus)) {
+    throw new Error(`Steam runback reused full or stale leaderboard copy: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (!/(Steam|New Steam best): #1/i.test(submittedStatus)) {
     throw new Error(`Steam mock did not report exact global placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'submitted_hold' &&
-      state.gameOver?.submittedHoldReady === true;
-  }, null, { timeout: 8000 });
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 5000 });
-  const gameOverState = await state(page);
+  const gameOverState = steamSubmittedState;
   const finalStatus = gameOverState.gameOver?.leaderboardStatus || '';
   if (!/Local: #\d+/i.test(finalStatus)) {
     throw new Error(`Final runback did not report exact local placement: ${JSON.stringify(gameOverState.gameOver)}`);
@@ -232,6 +224,7 @@ try {
   if (/Steamboard|Steam Board|Steam board|Rank #1 - Top Three|Top Three/i.test(finalStatus)) {
     throw new Error(`Final runback reused stale Steam leaderboard copy: ${JSON.stringify(gameOverState.gameOver)}`);
   }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-immediate-runback.png'), fullPage: true });
   const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
     throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
@@ -272,7 +265,7 @@ try {
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'submitted_hold' &&
+      state.gameOver?.state === 'runback' &&
       state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
   const lowScoreState = await state(page);
@@ -289,21 +282,13 @@ try {
   if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #/i.test(lowStatus)) {
     throw new Error(`Low Steam score reused stale or misleading rank copy: ${JSON.stringify(lowScoreState.gameOver)}`);
   }
-  if (/Local:|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|Steamboard|Steam Board|Steam board/i.test(lowStatus)) {
-    throw new Error(`Low Steam hold status reused full or stale leaderboard copy: ${JSON.stringify(lowScoreState.gameOver)}`);
+  if (/LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|Steamboard|Steam Board|Steam board/i.test(lowStatus)) {
+    throw new Error(`Low Steam runback reused full or stale leaderboard copy: ${JSON.stringify(lowScoreState.gameOver)}`);
   }
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' &&
-      state.gameOver?.state === 'submitted_hold' &&
-      state.gameOver?.submittedHoldReady === true;
-  }, null, { timeout: 8000 });
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 5000 });
-  const lowRunbackState = await state(page);
+  if (lowScoreState.gameOver?.primaryCta?.mode !== 'restart' || lowScoreState.gameOver?.primaryCta?.disabled) {
+    throw new Error(`Low Steam result should expose immediate restart without a Continue gate: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  const lowRunbackState = lowScoreState;
   const lowFinalStatus = lowRunbackState.gameOver?.leaderboardStatus || '';
   if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 87,628/i.test(lowFinalStatus) || !/This run: 2,084/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback did not explain unchanged Steam best: ${JSON.stringify(lowRunbackState.gameOver)}`);
@@ -314,6 +299,7 @@ try {
   if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #|Steamboard|Steam Board|Steam board/i.test(lowFinalStatus)) {
     throw new Error(`Final low-score runback reused stale or misleading rank copy: ${JSON.stringify(lowRunbackState.gameOver)}`);
   }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-best-unchanged-runback.png'), fullPage: true });
   const mockScoresAfterLowScore = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
   if (!mockScoresAfterLowScore.some((entry) => entry.isCurrentPlayer && entry.score === 87628)) {
     throw new Error(`Steam mock keep-best score was overwritten by low score: ${JSON.stringify(mockScoresAfterLowScore)}`);
@@ -426,7 +412,48 @@ try {
   ) {
     throw new Error(`Missing Steam rank should clear stale Top Three placement without final rank pending copy: ${JSON.stringify(missingRankProbe)}`);
   }
-  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
+
+  await page.evaluate(() => {
+    const bridge = window.__novaMockSteamLeaderboardBridge;
+    if (!bridge) throw new Error('Missing mock Steam bridge for timeout probe');
+    bridge.submitScore = () => new Promise(() => {});
+    window.__NOVA_SWARM_STEAM_SUBMIT_TIMEOUT_MS__ = 350;
+    localStorage.removeItem('novaSwarm.pendingSteamLeaderboardSubmits.v1');
+    window.__game.score = 44444;
+    window.__game.level = 4;
+    window.__game.rankIndex = 3;
+    window.__game.switchScene('gameOver');
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    const scene = window.__game?.scenes?.gameOver;
+    return state.scene === 'gameOver'
+      && state.gameOver?.state === 'runback'
+      && state.gameOver?.lastLeaderboardResult?.steamStatus === 'failed'
+      && scene?.isSubmitting === false;
+  }, null, { timeout: 8000 });
+  const timeoutState = await state(page);
+  if (timeoutState.gameOver?.primaryCta?.disabled || timeoutState.gameOver?.primaryCta?.mode !== 'restart') {
+    throw new Error(`Timed-out Steam submit should re-enable One More Run: ${JSON.stringify(timeoutState.gameOver)}`);
+  }
+  if (timeoutState.gameOver?.lastLeaderboardResult?.steamError !== 'Steam submit timeout') {
+    throw new Error(`Timed-out Steam submit should report the timeout: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (timeoutState.gameOver?.lastLeaderboardResult?.localStatus !== 'saved') {
+    throw new Error(`Timed-out Steam submit should retain a local score backup: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (!timeoutState.gameOver?.lastLeaderboardResult?.steamPendingQueued) {
+    throw new Error(`Timed-out Steam submit should queue a retry: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-submit-timeout-runback.png'), fullPage: true });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).scene === 'play', null, { timeout: 8000 });
+  await page.waitForTimeout(750);
+  const timeoutRestartState = await state(page);
+  if (timeoutRestartState.scene !== 'play' || timeoutRestartState.score !== 0) {
+    throw new Error(`Timed-out Steam submit should restart a clean run: ${JSON.stringify(timeoutRestartState)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-timeout-restarted.png'), fullPage: true });
 
   const report = {
     status: 'passed',
@@ -440,6 +467,8 @@ try {
     rank3Probe,
     rank4Probe,
     missingRankProbe,
+    timeoutState: timeoutState.gameOver,
+    timeoutRestartState,
     lowScoreState: lowScoreState.gameOver,
     lowRunbackState: lowRunbackState.gameOver,
     consoleEvents

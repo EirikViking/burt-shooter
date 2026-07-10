@@ -139,7 +139,8 @@ try {
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'play' && window.__game?.scenes?.play?.enemyManager && window.__game?.scenes?.play?.player;
+    const play = window.__game?.scenes?.play;
+    return state.scene === 'play' && play?.isReady === true && play?.enemyManager && play?.player;
   }, null, { timeout: 30000 });
 
   const triggered = await page.evaluate(() => {
@@ -176,12 +177,34 @@ try {
   assert.equal(triggered.overrunInterlude?.variantId, 'clear_gate');
   assert.match(triggered.overrunInterlude?.promptText || '', /ready/i);
 
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.overrunInterlude?.active === true &&
-      state.overrunInterlude?.cardVisible === true &&
-      state.overrunInterlude?.promptVisible === true;
-  }, null, { timeout: 2000 });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.overrunInterlude?.active === true &&
+        state.overrunInterlude?.cardVisible === true &&
+        state.overrunInterlude?.promptVisible === true;
+    }, null, { timeout: 2000 });
+  } catch (error) {
+    const timeoutState = await readState(page);
+    const runtime = await page.evaluate(() => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      const card = play?.overrunMilestoneInterlude?.effect?.interludeCard;
+      return {
+        scene: JSON.parse(window.render_game_to_text?.() || '{}').scene || null,
+        currentSceneIsPlay: game?.currentScene === play,
+        isReady: Boolean(play?.isReady),
+        isPaused: Boolean(play?.isPaused),
+        introActive: Boolean(play?.introActive),
+        gameOverSequenceStarted: Boolean(play?.gameOverSequenceStarted),
+        gameOverInterludeActive: Boolean(play?.gameOverInterlude?.active),
+        tickerStarted: Boolean(game?.app?.ticker?.started),
+        tickerSpeed: Number(game?.app?.ticker?.speed) || 0,
+        cardAlpha: Number(card?.alpha) || 0
+      };
+    });
+    throw new Error(`${error.message}; runtime=${JSON.stringify(runtime)}; overrun=${JSON.stringify(timeoutState.overrunInterlude || null)}; console=${JSON.stringify(consoleErrors)}`);
+  }
   const visible = await readState(page);
   assertOverrunTextLayout(visible, 'visible overrun interlude');
 
