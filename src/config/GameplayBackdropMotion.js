@@ -3,26 +3,26 @@ const TAU = Math.PI * 2;
 export const GAMEPLAY_BACKDROP_PROFILES = Object.freeze({
   base: Object.freeze({
     alphas: Object.freeze({ base: 0.42, storm: 0, boss: 0, shade: 0.46 }),
-    maxOffsetX: 10,
-    maxOffsetY: 6,
-    periodXMs: 43000,
-    periodYMs: 31000,
+    maxOffsetX: 30,
+    maxOffsetY: 72,
+    periodXMs: 84000,
+    periodYMs: 68000,
     phase: 0.35
   }),
   storm: Object.freeze({
     alphas: Object.freeze({ base: 0.26, storm: 0.34, boss: 0, shade: 0.5 }),
-    maxOffsetX: 14,
-    maxOffsetY: 8,
-    periodXMs: 37000,
-    periodYMs: 27000,
+    maxOffsetX: 38,
+    maxOffsetY: 88,
+    periodXMs: 70000,
+    periodYMs: 58000,
     phase: 1.1
   }),
   boss: Object.freeze({
     alphas: Object.freeze({ base: 0.18, storm: 0.16, boss: 0.4, shade: 0.54 }),
-    maxOffsetX: 18,
-    maxOffsetY: 10,
-    periodXMs: 29000,
-    periodYMs: 24000,
+    maxOffsetX: 46,
+    maxOffsetY: 96,
+    periodXMs: 58000,
+    periodYMs: 50000,
     phase: 2.05
   })
 });

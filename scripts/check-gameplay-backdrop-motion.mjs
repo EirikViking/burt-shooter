@@ -28,15 +28,28 @@ for (const [mode, profile] of Object.entries(GAMEPLAY_BACKDROP_PROFILES)) {
     mode
   });
   assert.ok(scale > 1, `${mode} should overscan the source texture`);
+  assert.ok(profile.maxOffsetY >= 72, `${mode} should provide visible vertical camera travel`);
 
+  const samples = [];
   for (let sample = 0; sample <= 120; sample += 1) {
     const elapsedMs = sample * 500;
     const motion = sampleGameplayBackdropMotion(mode, elapsedMs);
+    samples.push(motion);
     assert.ok(Math.abs(motion.x) <= profile.maxOffsetX + 1e-9, `${mode} x drift exceeded profile`);
     assert.ok(Math.abs(motion.y) <= profile.maxOffsetY + 1e-9, `${mode} y drift exceeded profile`);
     assert.ok(scale * 1920 >= 1920 + Math.abs(motion.x) * 2, `${mode} exposed a horizontal edge`);
     assert.ok(scale * 1080 >= 1080 + Math.abs(motion.y) * 2, `${mode} exposed a vertical edge`);
   }
+
+  const verticalSpan = Math.max(...samples.map(({ y }) => y)) - Math.min(...samples.map(({ y }) => y));
+  const strongestFiveSecondTravel = Math.max(
+    ...samples.slice(0, -10).map((motion, index) => Math.hypot(
+      samples[index + 10].x - motion.x,
+      samples[index + 10].y - motion.y
+    ))
+  );
+  assert.ok(verticalSpan >= profile.maxOffsetY * 1.9, `${mode} should traverse nearly the full vertical camera rail`);
+  assert.ok(strongestFiveSecondTravel >= 30, `${mode} camera travel should be perceptible during ordinary play`);
 
   assert.deepEqual(
     sampleGameplayBackdropMotion(mode, 12345, { reducedMotion: true }),
@@ -52,6 +65,7 @@ assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.boss.alphas, { base: 0.18, storm: 0.
 assert.match(playSource, /generation !== this\.gameplayBackdropLoadGeneration/, 'late backdrop loads must be rejected');
 assert.match(playSource, /prepareTextureForRender\(texture, 'generated_gameplay_backdrop'\)/, 'base texture should be prepared before use');
 assert.match(playSource, /this\.updateGameplayBackdrop\(delta\)/, 'backdrop motion should update with the starfield');
+assert.match(playSource, /\[this\.gameplayBackdrop, 0\.55\]/, 'backdrop layers should retain depth-separated parallax');
 assert.match(playSource, /getAccessibilitySettings\(\)\.prefersReducedMotion/, 'backdrop motion should respect reduced motion');
 
-console.log('[gameplay-backdrop-motion] PASS modes, coverage, drift bounds, reduced motion, lifecycle guards');
+console.log('[gameplay-backdrop-motion] PASS modes, visible camera travel, coverage, reduced motion, lifecycle guards');

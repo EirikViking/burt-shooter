@@ -132,16 +132,18 @@ try {
   };
 
   const baseBefore = await snapshot();
+  await page.screenshot({ path: path.join(outputDir, 'base-before.png'), fullPage: true });
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     for (let index = 0; index < 120; index += 1) play.updateGameplayBackdrop(6);
   });
   const baseAfter = await snapshot();
-  assert(baseAfter.mode === 'base', `expected base mode, got ${baseAfter.mode}`);
-  assert(
-    Math.hypot(baseAfter.base.x - baseBefore.base.x, baseAfter.base.y - baseBefore.base.y) > 1,
-    'base backdrop did not move'
+  const baseTravelDistance = Math.hypot(
+    baseAfter.base.x - baseBefore.base.x,
+    baseAfter.base.y - baseBefore.base.y
   );
+  assert(baseAfter.mode === 'base', `expected base mode, got ${baseAfter.mode}`);
+  assert(baseTravelDistance > 24, `base backdrop camera travel was too subtle (${baseTravelDistance.toFixed(1)}px)`);
   assertCoverage(baseAfter, 'base');
   await page.screenshot({ path: path.join(outputDir, 'base-drift.png'), fullPage: true });
 
@@ -186,7 +188,7 @@ try {
   assertCoverage(reduced, 'reduced');
   assert(pageErrors.length === 0, `page errors: ${pageErrors.join('; ')}`);
 
-  const report = { status: 'passed', baseBefore, baseAfter, storm, boss, reduced, pageErrors };
+  const report = { status: 'passed', baseTravelDistance, baseBefore, baseAfter, storm, boss, reduced, pageErrors };
   fs.writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`[gameplay-backdrop-runtime] PASS report=${path.join(outputDir, 'report.json')}`);
 } catch (error) {
