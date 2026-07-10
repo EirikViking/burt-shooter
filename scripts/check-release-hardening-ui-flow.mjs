@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const gameOver = readFileSync('src/scenes/GameOverScene.js', 'utf8');
-const gameOverNormalized = gameOver.replace(/\r\n/g, '\n');
 const hud = readFileSync('src/ui/HUD.js', 'utf8');
 const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
 const highscore = readFileSync('src/scenes/HighScoreScene.js', 'utf8');
@@ -11,30 +10,19 @@ const leaderboardVisualsCheck = readFileSync('scripts/check-leaderboard-visuals.
 const debugUnrankedCheck = readFileSync('scripts/check-debug-run-unranked.mjs', 'utf8');
 
 for (const needle of [
-  "label: translateText('CONTINUE')",
-  "A: ${translateText('CONTINUE')}",
-  "mode: 'submitted_hold'",
-  "mode: 'result_hold'",
-  'continueFromSubmittedHold()',
-  'continueFromResultHold()',
-  'this.continueFromSubmittedHold();',
-  'this.continueFromResultHold();',
-  'SUBMITTED_REPORT_MIN_MS',
-  'RESULT_REPORT_MIN_MS',
-  'CONTINUE_INPUT_ARM_MS'
+  'this.enterRunbackStage(initialReason);',
+  'void this.startGlobalSubmissionWhenReady(name, result).finally(() => {',
+  'this.refreshVisibleRunbackAfterSubmission(finalReason);',
+  "this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');"
 ]) {
-  assert.ok(gameOver.includes(needle), `game-over status hold missing marker: ${needle}`);
+  assert.ok(gameOver.includes(needle), `game-over direct runback missing marker: ${needle}`);
 }
 
 assert.ok(
-  gameOver.includes("this.updatePromptMessage('SCORE SUBMITTED')") &&
-    gameOver.includes('submittedHoldContinueReadyAt') &&
-    gameOver.includes('isSubmittedHoldContinueReady()') &&
-    gameOver.includes('disabled: !this.isSubmittedHoldContinueReady()') &&
-    gameOverNormalized.includes("if (!this.isSubmittedHoldContinueReady()) {\n      this.refreshPrimaryCta();\n      return;\n    }") &&
-    gameoverMotivationCheck.includes('submittedEarlyContinueState') &&
-    gameoverMotivationCheck.includes('submittedReadyHoldState'),
-  'submitted score report should require readable hold plus Continue input before runback'
+  (gameOver.match(/enterRunbackStageAfterReportHold\(/g) || []).length === 1 &&
+    gameoverMotivationCheck.includes('submittedRunbackElapsedMs < 3000') &&
+    !gameoverMotivationCheck.includes('submittedHoldSnapshot'),
+  'local score submit should preserve name entry and proceed directly to runback'
 );
 
 for (const needle of [
@@ -70,9 +58,9 @@ assert.ok(
 assert.ok(
   gameoverMotivationCheck.includes('readGameOverTopLayout') &&
     gameoverMotivationCheck.includes('hasReadableTopStack') &&
-    gameoverMotivationCheck.includes('submittedHoldSnapshot') &&
+    gameoverMotivationCheck.includes('submittedRunbackElapsedMs') &&
     gameoverMotivationCheck.includes('runbackTopLayout'),
-  'game-over visual flow check should cover top-stack spacing and submitted-hold readability'
+  'game-over visual flow check should cover top-stack spacing and direct runback readability'
 );
 for (const needle of [
   'leaderboard-desktop.png',
@@ -96,4 +84,4 @@ assert.ok(
   'high-score state message should not carry duplicated anchor setup'
 );
 
-console.log('[release-hardening-ui-flow] PASS game-over hold, rank badge spacing, and combo text spam guards');
+console.log('[release-hardening-ui-flow] PASS direct game-over runback, rank badge spacing, and combo text spam guards');

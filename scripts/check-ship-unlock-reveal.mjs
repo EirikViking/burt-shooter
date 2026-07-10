@@ -14,6 +14,24 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function contains(outer, inner, pad = 0) {
+  if (!outer || !inner) return false;
+  return inner.x >= outer.x - pad
+    && inner.y >= outer.y - pad
+    && inner.x + inner.width <= outer.x + outer.width + pad
+    && inner.y + inner.height <= outer.y + outer.height + pad;
+}
+
+function overlaps(a, b, pad = 0) {
+  if (!a || !b) return false;
+  return !(
+    a.x + a.width + pad <= b.x
+    || b.x + b.width + pad <= a.x
+    || a.y + a.height + pad <= b.y
+    || b.y + b.height + pad <= a.y
+  );
+}
+
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
     const server = createServer();
@@ -93,7 +111,7 @@ function baseHangarProgress(overrides = {}) {
 }
 
 async function preparePage(browser, scenario) {
-  const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  const page = await browser.newPage({ viewport: scenario.viewport || { width: 1366, height: 768 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
   await page.route('**/api/highscores', async (route) => {
@@ -127,7 +145,9 @@ async function forceGameOver(page, finalLevel, finalScore = finalLevel * 5000, r
     }
     game.score = score;
     game.level = level;
-    game.rankIndex = Math.max(0, level - 1);
+    game.rankIndex = runStats.rankIndex !== undefined
+      ? Math.max(0, Number(runStats.rankIndex) || 0)
+      : Math.max(0, level - 1);
     game.gameOver();
   }, { level: finalLevel, score: finalScore, runStats });
   try {
@@ -216,7 +236,53 @@ async function openHangarAndAssertPresentation(page, scenario) {
   assert(reveal.animated === true, `${scenario.name}: hangar presentation did not animate`);
   assert(reveal.count === scenario.expectedCount, `${scenario.name}: hangar expected ${scenario.expectedCount} unlock(s), got ${reveal.count}`);
   assert(reveal.selectedUnlockFocused === true, `${scenario.name}: hangar did not focus the newly unlocked ship`);
+  assert(reveal.displayedNames?.length === Math.min(scenario.expectedCount, 5), `${scenario.name}: hangar displayed an unexpected name count`);
+  assert(reveal.hiddenNameCount === Math.max(0, scenario.expectedCount - 5), `${scenario.name}: hangar hidden name count was incorrect`);
+  for (const [key, bounds] of Object.entries(reveal.textBounds || {})) {
+    assert(contains(reveal.panelBounds, bounds, 6), `${scenario.name}: hangar ${key} text escaped the panel`);
+  }
+  assert(!overlaps(reveal.textBounds?.names, reveal.textBounds?.role, 2), `${scenario.name}: hangar names overlap the role line`);
+  assert(!overlaps(reveal.textBounds?.role, reveal.textBounds?.hint, 2), `${scenario.name}: hangar role overlaps the continue hint`);
   await page.screenshot({ path: path.join(outputDir, `${scenario.name}-hangar-presentation.png`), fullPage: true });
+  return reveal;
+}
+
+async function runObservedTenUnlockHangarScenario(browser) {
+  const scenario = {
+    name: 'sector-12-observed-10-unlock-layout',
+    expectedCount: 10
+  };
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
+  const pageErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  const unlockedShipIds = Array.from({ length: 10 }, (_, index) => `nova_ship_${String(index + 1).padStart(2, '0')}`);
+  await page.addInitScript((progress) => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+  }, baseHangarProgress({
+    pilotXp: 8829,
+    pilotRank: 5,
+    totalRuns: 1,
+    bestScore: 146599,
+    bestSector: 12,
+    bestLevel: 12,
+    totalBossesDefeated: 11,
+    totalWavesCleared: 63,
+    totalCodexDiscoveries: 80,
+    unlockedShipIds,
+    lastNewlyUnlockedShipIds: unlockedShipIds
+  }));
+  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
+  const reveal = await openHangarAndAssertPresentation(page, scenario);
+  assert(pageErrors.length === 0, `${scenario.name}: page errors: ${pageErrors.join('; ')}`);
+  await page.close();
+  return {
+    scenario: scenario.name,
+    count: reveal.count,
+    displayedNames: reveal.displayedNames,
+    hiddenNameCount: reveal.hiddenNameCount
+  };
 }
 
 async function runScenario(browser, scenario) {
@@ -318,6 +384,7 @@ try {
     expectedVoiceKey: 'mission_control_ships_unlocked',
     expectedSummary: 'SHIPS UNLOCKED'
   }));
+  results.push(await runObservedTenUnlockHangarScenario(browser));
   results.push(await runScenario(browser, {
     name: 'eirik',
     previousProgress: baseHangarProgress({

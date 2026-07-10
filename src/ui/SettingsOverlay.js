@@ -1507,7 +1507,11 @@ export class SettingsOverlay {
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
     const ascendantRoll = rollCreditsAscendantEasterEgg({ random: getCreditsAscendantRandom() });
-    const revealResult = ascendantRoll.unlocked ? ascendantRoll : result;
+    const revealResult = ascendantRoll.unlocked
+      ? ascendantRoll
+      : result.unlocked
+        ? result
+        : null;
     if (this.creditsEggStatusText) {
       this.creditsEggStatusText.text = translateText(
         ascendantRoll.unlocked
@@ -1519,7 +1523,7 @@ export class SettingsOverlay {
       this.creditsEggStatusText.style.fill = '#fff3a2';
     }
     coinButton._drawCoin?.(true);
-    this.showCreditsShipUnlockReveal(revealResult);
+    if (revealResult) this.showCreditsShipUnlockReveal(revealResult);
     this.creditsDebugState = {
       ...(this.creditsDebugState || {}),
       easterEgg: {
@@ -1544,7 +1548,7 @@ export class SettingsOverlay {
   }
 
   showCreditsShipUnlockReveal(result = {}) {
-    if (!this.creditsPanel) return;
+    if (!this.creditsPanel || !result?.unlocked) return false;
     const revealShip = getCreditsRevealShip(result.shipId);
     if (this.creditsRevealTicker) {
       this.game.app.ticker.remove(this.creditsRevealTicker);
@@ -1727,6 +1731,7 @@ export class SettingsOverlay {
     };
     this.creditsRevealTicker = ticker;
     this.game.app.ticker.add(ticker);
+    return true;
   }
 
   startCreditsAnimation() {

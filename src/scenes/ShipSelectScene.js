@@ -1715,6 +1715,7 @@ export class ShipSelectScene {
   createHangarUnlockPresentation(width, height) {
     const ships = this.pendingHangarUnlockShips || [];
     if (!ships.length) return;
+    const displayedShips = ships.slice(0, 5);
 
     const overlay = new PIXI.Container();
     overlay.label = 'ui_hangarUnlockPresentation';
@@ -1791,7 +1792,7 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     nameText.anchor.set(0.5);
-    nameText.position.set(width / 2, panelY + panelHeight - (narrow ? 110 : 118));
+    nameText.position.set(width / 2, panelY + panelHeight - (narrow ? 118 : 126));
 
     const roleText = createText('', {
       fontFamily: FONT_BODY,
@@ -1832,7 +1833,7 @@ export class ShipSelectScene {
     shipStage.position.set(width / 2, panelY + panelHeight * (narrow ? 0.48 : 0.5));
 
     this.hangarUnlockPresentationSprites = [];
-    ships.slice(0, 5).forEach((ship, index) => {
+    displayedShips.forEach((ship, index) => {
       const texture = GameAssets.getRankShipTexture(ship.textureIndex) || PIXI.Texture.EMPTY;
       const sprite = new PIXI.Sprite(texture);
       sprite.anchor.set(0.5);
@@ -1853,16 +1854,16 @@ export class ShipSelectScene {
       shipStage.addChild(sprite);
     });
 
-    const names = ships.map(ship => ship.name).join(' // ');
+    const names = displayedShips.map(ship => ship.name).join(' // ');
     const primaryRole = getShipCombatRole(ships[0], this.statRanges);
     title.text = translateText(ships.length === 1 ? HANGAR_UNLOCK_STRINGS.titleSingle : HANGAR_UNLOCK_STRINGS.titlePlural);
     nameText.text = names;
     roleText.text = [translateText(HANGAR_UNLOCK_STRINGS.rolePrefix), primaryRole].join(': ');
     countText.text = [translateText(HANGAR_UNLOCK_STRINGS.countPrefix), String(ships.length)].join(' ');
-    fitDisplayToBox(title, panelWidth - 112, narrow ? 54 : 72, { minScale: 0.58 });
-    fitDisplayToBox(nameText, panelWidth - 112, narrow ? 42 : 54, { minScale: 0.56 });
-    fitDisplayToBox(roleText, panelWidth - 132, narrow ? 24 : 28, { minScale: 0.62 });
-    fitDisplayToBox(hintText, panelWidth - 128, 22, { minScale: 0.62 });
+    const titleBaseScale = fitDisplayToBox(title, panelWidth - 112, narrow ? 54 : 72, { minScale: 0.58 });
+    const nameBaseScale = fitDisplayToBox(nameText, panelWidth - 112, narrow ? 36 : 44, { minScale: 0.5 });
+    const roleBaseScale = fitDisplayToBox(roleText, panelWidth - 132, narrow ? 24 : 28, { minScale: 0.62 });
+    const hintBaseScale = fitDisplayToBox(hintText, panelWidth - 128, 22, { minScale: 0.62 });
 
     overlay.on('pointerdown', (event) => {
       event.stopPropagation();
@@ -1888,7 +1889,14 @@ export class ShipSelectScene {
       nameText,
       roleText,
       hintText,
-      countText
+      countText,
+      displayedShips,
+      baseScales: {
+        title: titleBaseScale,
+        name: nameBaseScale,
+        role: roleBaseScale,
+        hint: hintBaseScale
+      }
     };
     this.hangarUnlockPresentation = overlay;
     this.container.addChild(overlay);
@@ -1966,7 +1974,8 @@ export class ShipSelectScene {
       nameText,
       roleText,
       hintText,
-      countText
+      countText,
+      baseScales
     } = refs;
     const startedAt = this.hangarUnlockPresentationStartedAt || Date.now();
     const age = Math.max(0, Date.now() - startedAt);
@@ -2017,12 +2026,14 @@ export class ShipSelectScene {
     panel.fill({ color: 0xffffff, alpha: 0.18 + pulse * 0.12 });
 
     const titleScale = 0.78 + easeOutBack(age / 620) * 0.22;
-    title.scale.set(titleScale);
+    title.scale.set((baseScales?.title || 1) * titleScale);
     title.alpha = intro;
     kicker.alpha = 0.65 + pulse * 0.35;
     subtitle.alpha = 0.82 + pulse * 0.18;
     nameText.alpha = intro;
-    nameText.scale.set(1 + pulse * 0.025);
+    nameText.scale.set((baseScales?.name || 1) * (1 + pulse * 0.025));
+    roleText.scale.set(baseScales?.role || 1);
+    hintText.scale.set(baseScales?.hint || 1);
     roleText.alpha = 0.86 + pulse * 0.14;
     hintText.alpha = 0.44 + pulse * 0.56;
     countText.alpha = 0.58 + pulse * 0.42;
@@ -2083,12 +2094,21 @@ export class ShipSelectScene {
       acknowledged: Boolean(this.hangarUnlockPresentationAcked),
       count: ships.length,
       names: ships.map(ship => ship.name),
+      displayedNames: (this.hangarUnlockPresentationRefs?.displayedShips || []).map(ship => ship.name),
+      hiddenNameCount: Math.max(0, ships.length - (this.hangarUnlockPresentationRefs?.displayedShips?.length || 0)),
       spriteKeys: ships.map(ship => ship.spriteKey),
       selectedUnlockFocused: ships.some(ship => ship.spriteKey === this.ships[this.selectedIndex]?.spriteKey),
       animated: Boolean(this.hangarUnlockPresentationStartedAt && (Date.now() - this.hangarUnlockPresentationStartedAt) > 80),
       layout: this.hangarUnlockPresentationRefs?.layout || null,
       bounds: bounds(this.hangarUnlockPresentation),
-      title: this.hangarUnlockPresentationRefs?.title?.text || null
+      panelBounds: this.hangarUnlockPresentationRefs?.layout?.panel || null,
+      title: this.hangarUnlockPresentationRefs?.title?.text || null,
+      textBounds: {
+        title: bounds(this.hangarUnlockPresentationRefs?.title),
+        names: bounds(this.hangarUnlockPresentationRefs?.nameText),
+        role: bounds(this.hangarUnlockPresentationRefs?.roleText),
+        hint: bounds(this.hangarUnlockPresentationRefs?.hintText)
+      }
     };
   }
 

@@ -112,10 +112,12 @@ const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
 const SECTOR_ARRIVAL_STINGER_MS = 2400 + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
-const FIRST_RUN_CONTROLS_DELAY_MS = 2350;
+const FIRST_RUN_CONTROLS_DELAY_MS = 240;
 const FIRST_RUN_ENEMY_HOLD_MS = 2450;
 const FIRST_RUN_CONTROLS_DURATION_MS = 6200;
 const FIRST_RUN_CONTROLS_TOTAL_MS = FIRST_RUN_CONTROLS_DURATION_MS + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
+const FIRST_RUN_CONTROLS_MIN_VISIBLE_MS = 5000;
+const RANK_UP_PRESENTATION_MS = 2610;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
@@ -232,6 +234,7 @@ export class PlayScene {
     this.firstRunOnboardingComplete = true;
     this.firstRunOnboardingUntil = 0;
     this.firstRunOnboardingCompletionTimeout = null;
+    this.firstRunControlsShownAt = 0;
     this.bossDossierTexture = null;
 
     // Voice throttle
@@ -252,6 +255,9 @@ export class PlayScene {
     this._lastRankUpSeen = null;
     this._rankUpCount = 0;
     this._rankUpAnimating = false;
+    this.pendingRankUpPresentation = null;
+    this.activeRankUpPresentation = null;
+    this.activeWaveBonusEffect = null;
 
     // TASK 4: Shooting sound health check
     this.shootSoundHealthCheck = {
@@ -575,7 +581,12 @@ export class PlayScene {
     this.clearRunContractStartNudge();
     this.clearFirstRunOnboardingCompletion();
     this.firstRunOnboardingUntil = 0;
+    this.firstRunControlsShownAt = 0;
     this.firstRunOnboardingComplete = !this.getFirstRunControlsNudge();
+    this._rankUpAnimating = false;
+    this.pendingRankUpPresentation = null;
+    this.activeRankUpPresentation = null;
+    this.activeWaveBonusEffect = null;
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     this.runContractPersistenceDirty = false;
@@ -1483,7 +1494,7 @@ export class PlayScene {
       : 'WASD/Arrows: Move | Ctrl: Focus | Space: Shoot | Shift: Phase | P/Esc: Pause');
   }
 
-  scheduleRunContractStartNudge({ delayMs = null } = {}) {
+  scheduleRunContractStartNudge({ delayMs = null, onFirstRunControlsShown = null } = {}) {
     this.clearRunContractStartNudge();
     const firstRunControls = this.getFirstRunControlsNudge();
     if (!firstRunControls && !this.getRunContractStartNudgeSummary()) return;
@@ -1493,11 +1504,6 @@ export class PlayScene {
       const controls = this.getFirstRunControlsNudge();
       if (controls) {
         const compactHud = this.game.getWidth() < 620;
-        this.firstRunOnboardingUntil = Date.now() + FIRST_RUN_CONTROLS_TOTAL_MS;
-        this.reserveMessageFocus(FIRST_RUN_CONTROLS_TOTAL_MS, {
-          priority: 2,
-          slots: ['corner']
-        });
         this.enqueueToast(controls, {
           fontSize: compactHud ? 14 : 18,
           fill: '#eafcff',
@@ -1508,17 +1514,27 @@ export class PlayScene {
           priority: 1,
           bypassFocusLock: false,
           duration: FIRST_RUN_CONTROLS_DURATION_MS,
+          minVisibleMs: FIRST_RUN_CONTROLS_MIN_VISIBLE_MS,
           banner: true,
           align: 'center',
           y: Math.max(compactHud ? 154 : 184, this.game.getHeight() * 0.17),
           maxWidth: compactHud ? this.game.getWidth() * 0.84 : Math.min(760, this.game.getWidth() * 0.58),
-          accent: 0xffd15c
+          accent: 0xffd15c,
+          onShown: ({ shownAt }) => {
+            this.firstRunControlsShownAt = shownAt;
+            this.firstRunOnboardingUntil = shownAt + FIRST_RUN_CONTROLS_TOTAL_MS;
+            this.reserveMessageFocus(FIRST_RUN_CONTROLS_TOTAL_MS, {
+              priority: 2,
+              slots: ['corner']
+            });
+            this.clearFirstRunOnboardingCompletion();
+            this.firstRunOnboardingCompletionTimeout = setTimeout(
+              () => this.completeFirstRunOnboarding(),
+              FIRST_RUN_CONTROLS_TOTAL_MS + 160
+            );
+            onFirstRunControlsShown?.({ shownAt });
+          }
         });
-        this.clearFirstRunOnboardingCompletion();
-        this.firstRunOnboardingCompletionTimeout = setTimeout(
-          () => this.completeFirstRunOnboarding(),
-          FIRST_RUN_CONTROLS_TOTAL_MS + 160
-        );
         return;
       }
       const summary = this.getRunContractStartNudgeSummary();
@@ -1969,17 +1985,18 @@ export class PlayScene {
         console.warn('[PlayScene] level entry asset prewarm failed:', error);
       });
     });
-    const showArrivalStinger = this.shouldShowSectorArrivalStinger(this.game.level);
     const showingFirstRunControls = Boolean(
       this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
     );
+    const showArrivalStinger = !showingFirstRunControls && this.shouldShowSectorArrivalStinger(this.game.level);
     const enemyStartDelayMs = showArrivalStinger
       ? this.getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120
       : showingFirstRunControls
-        ? FIRST_RUN_ENEMY_HOLD_MS
+        ? FIRST_RUN_CONTROLS_DELAY_MS + FIRST_RUN_CONTROLS_TOTAL_MS
         : 0;
-    measurePerformance('incoming_wave_banner.sector_arrival', () => this.showSectorArrivalStinger({ postBoss: postBossLevelIntro }));
-    if (!showArrivalStinger) {
+    if (showArrivalStinger) {
+      measurePerformance('incoming_wave_banner.sector_arrival', () => this.showSectorArrivalStinger({ postBoss: postBossLevelIntro }));
+    } else if (!showingFirstRunControls) {
       measurePerformance('incoming_wave_banner.level_intro', () => this.showLevelIntro({ postBoss: postBossLevelIntro }));
     }
     this.scheduleEnemyStartForLevel(this.game.level, {
@@ -1992,7 +2009,17 @@ export class PlayScene {
       delayMs: showArrivalStinger ? 1200 : 900
     });
     if (showingFirstRunControls) {
-      this.scheduleRunContractStartNudge({ delayMs: FIRST_RUN_CONTROLS_DELAY_MS });
+      const targetLevel = this.game.level;
+      this.scheduleRunContractStartNudge({
+        delayMs: FIRST_RUN_CONTROLS_DELAY_MS,
+        onFirstRunControlsShown: () => {
+          this.scheduleEnemyStartForLevel(targetLevel, {
+            startAtBoss,
+            delayMs: FIRST_RUN_ENEMY_HOLD_MS,
+            source: `${source}:first_run_controls`
+          });
+        }
+      });
     }
     const compactHud = this.game.getWidth() < 620;
     if (!compactHud && !postBossLevelIntro && !showingFirstRunControls) {
@@ -2713,6 +2740,7 @@ export class PlayScene {
 
       // Level progression
       measure('level_progression', () => {
+      this.flushPendingRankUpPresentation('level_progression');
       if (this.enemyManager.isLevelComplete() && !this.enemyManager.spawning && !this.levelAdvancePending) {
         this.levelAdvancePending = true;
 
@@ -2776,7 +2804,12 @@ export class PlayScene {
             return true;
           });
 
-        this.levelAdvanceTimeout = setTimeout(() => {
+        const advanceLevelWhenPresentationReady = () => {
+          if (this.game?.currentScene !== this) return;
+          if (this.shouldHoldProgressionPresentation()) {
+            this.levelAdvanceTimeout = setTimeout(advanceLevelWhenPresentationReady, 120);
+            return;
+          }
           const advanceWhenWarm = this.levelAdvanceWarmupPromise || Promise.resolve(true);
           advanceWhenWarm.finally(() => {
             if (this.game?.currentScene !== this) return;
@@ -2810,7 +2843,8 @@ export class PlayScene {
               }
             }
           });
-        }, BalanceConfig.level.sequenceDuration || 3000);
+        };
+        this.levelAdvanceTimeout = setTimeout(advanceLevelWhenPresentationReady, BalanceConfig.level.sequenceDuration || 3000);
       }
       });
 
@@ -2907,7 +2941,7 @@ export class PlayScene {
       displayRank: nr + 1,
       sector: this.game?.level || 1
     });
-    this.showRankUp(nr);
+    this.pendingRankUpPresentation = nr;
   }
 
   normalizeRankValue(payload) {
@@ -2921,14 +2955,45 @@ export class PlayScene {
     return NaN;
   }
 
+  shouldHoldProgressionPresentation() {
+    if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return false;
+    return Boolean(
+      this.activeRankUpPresentation?.parent
+      || (
+        this.pendingRankUpPresentation !== null
+        && this.pendingRankUpPresentation !== undefined
+        && Number.isFinite(Number(this.pendingRankUpPresentation))
+      )
+    );
+  }
+
+  flushPendingRankUpPresentation(source = 'unknown') {
+    if (this.pendingRankUpPresentation === null || this.pendingRankUpPresentation === undefined) return false;
+    const rank = Number(this.pendingRankUpPresentation);
+    if (!Number.isFinite(rank) || this._rankUpAnimating || this.activeRankUpPresentation?.parent) return false;
+    if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return false;
+    if (this.activeWaveBonusEffect?.parent || this.hasActiveCombatThreats()) return false;
+    const transitionState = this.enemyManager?.state;
+    if (!['WAVE_BRIEFING', 'BOSS_GATE', 'LEVEL_COMPLETE'].includes(transitionState)) return false;
+    if (this.activeBossIntroCard || this.activeCenterToast) return false;
+    const now = Date.now();
+    const hasMessageLock = ['center', 'top', 'corner'].some((slot) => this.getToastSlotLockUntil(slot) > now);
+    if (hasMessageLock) return false;
+
+    if (!this.showRankUp(rank)) return false;
+    this.pendingRankUpPresentation = null;
+    console.log(`[RankUp] presentation released source=${source} rank=${rank}`);
+    return true;
+  }
+
   showRankUp(newRank) {
     const nr = Number(newRank);
-    if (!Number.isFinite(nr)) return;
+    if (!Number.isFinite(nr)) return false;
 
-    if (this._rankUpAnimating) return;
+    if (this._rankUpAnimating) return false;
     this._rankUpAnimating = true;
     this._showRankUpCount++;
-    this.centerToastLockUntil = Date.now() + 8000; // 8 second cooldown to prevent spam
+    this.reserveMessageFocus(RANK_UP_PRESENTATION_MS + 180, { priority: 3 });
 
     // TASK 4: Enhanced rank up animation with rank sprite and title
     const rank = (newRank !== undefined) ? newRank : this.game.rankIndex;
@@ -2938,7 +3003,7 @@ export class PlayScene {
     AudioManager.playSfx('powerup', { force: true, volume: 1.0 });
 
     // TASK 4: Polished arcade animation
-    this.createRankUpAnimation(rank, rankTitle);
+    this.activeRankUpPresentation = this.createRankUpAnimation(rank, rankTitle);
 
     // Particles
     if (this.player && this.player.active) {
@@ -2954,10 +3019,7 @@ export class PlayScene {
       }, 100);
     }
 
-    // Release Lock after animation
-    setTimeout(() => {
-      this._rankUpAnimating = false;
-    }, 8000); // Match cooldown duration
+    return true;
   }
 
   createRankUpAnimation(rank, rankTitle) {
@@ -3145,6 +3207,8 @@ export class PlayScene {
     const animate = (delta) => {
       if (container.destroyed || !container.scale || !this.game?.app?.ticker) {
         this.game?.app?.ticker?.remove?.(animate);
+        if (this.activeRankUpPresentation === container) this.activeRankUpPresentation = null;
+        this._rankUpAnimating = false;
         return;
       }
       elapsed += delta.deltaTime * 16.67;
@@ -3171,9 +3235,13 @@ export class PlayScene {
         this.game.app.ticker.remove(animate);
         if (container.parent) container.parent.removeChild(container);
         container.destroy?.({ children: true });
+        if (this.activeRankUpPresentation === container) this.activeRankUpPresentation = null;
+        this._rankUpAnimating = false;
+        this.processToastQueue();
       }
     };
     this.game.app.ticker.add(animate);
+    return container;
   }
 
   // Wave bonus WOW effect with premium arcade feel
@@ -3196,6 +3264,7 @@ export class PlayScene {
     effectContainer.zIndex = 9999;
     effectContainer.label = 'ui_wave_bonus_effect';
     this.uiContainer.addChild(effectContainer);
+    this.activeWaveBonusEffect = effectContainer;
 
     const sweepLayer = new PIXI.Graphics();
     sweepLayer.label = 'waveClearSweepLayer';
@@ -3402,6 +3471,8 @@ export class PlayScene {
         }
         // Ensure flash is cleaned up
         effectContainer.destroy({ children: true });
+        if (this.activeWaveBonusEffect === effectContainer) this.activeWaveBonusEffect = null;
+        this.flushPendingRankUpPresentation('wave_bonus_complete');
       }
     };
 
@@ -4979,6 +5050,11 @@ export class PlayScene {
     this.clearRunContractStartNudge();
     this.clearFirstRunOnboardingCompletion();
     this.firstRunOnboardingUntil = 0;
+    this.firstRunControlsShownAt = 0;
+    this._rankUpAnimating = false;
+    this.pendingRankUpPresentation = null;
+    this.activeRankUpPresentation = null;
+    this.activeWaveBonusEffect = null;
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.clearBackgroundLevelEntryWarmup();
@@ -9452,6 +9528,7 @@ export class PlayScene {
   }
 
   dismissActiveToastSlotsBelowPriority(slots, priority) {
+    const now = Date.now();
     [
       ['center', this.activeBossIntroCard],
       ['center', this.activeCenterToast],
@@ -9460,6 +9537,8 @@ export class PlayScene {
     ].forEach(([slot, display]) => {
       if (!slots.includes(slot)) return;
       const activePriority = display?.__toastMeta?.priority ?? 0;
+      const protectedUntil = Number(display?.__toastMeta?.protectedUntil) || 0;
+      if (protectedUntil > now && priority <= 3) return;
       if (display && activePriority < priority) {
         this.dismissToastDisplay(display, slot);
       }
@@ -9785,6 +9864,7 @@ export class PlayScene {
       title: meta.title || null,
       imageAlias: meta.imageAlias || null,
       duration: meta.duration,
+      protectedRemainingMs: Math.max(0, (Number(meta.protectedUntil) || 0) - Date.now()),
       combatRelocated: Boolean(meta.combatRelocated),
       ageMs: Math.max(0, Date.now() - meta.createdAt),
       bounds: typeof getBounds === 'function'
@@ -9844,7 +9924,17 @@ export class PlayScene {
       firstRunOnboarding: {
         introActive: Boolean(this.introActive),
         complete: Boolean(this.firstRunOnboardingComplete),
+        controlsShownAt: Number(this.firstRunControlsShownAt) || 0,
         remainingMs: Math.max(0, (Number(this.firstRunOnboardingUntil) || 0) - Date.now())
+      },
+      progressionPresentation: {
+        pendingRank: this.pendingRankUpPresentation !== null
+          && this.pendingRankUpPresentation !== undefined
+          && Number.isFinite(Number(this.pendingRankUpPresentation))
+          ? Number(this.pendingRankUpPresentation)
+          : null,
+        rankUpActive: Boolean(this.activeRankUpPresentation?.parent),
+        waveBonusActive: Boolean(this.activeWaveBonusEffect?.parent)
       },
       queued: {
         center: this.toastQueue.length,
@@ -10205,6 +10295,7 @@ export class PlayScene {
       : GAMEPLAY_MESSAGE_EXTRA_READ_MS;
     const duration = Math.max(0, baseDuration + Math.max(0, extraReadTimeMs));
     const now = Date.now();
+    const minVisibleMs = Math.max(0, Math.min(duration, Number(options.minVisibleMs) || 0));
     display.__toastMeta = {
       message,
       type: options.type || 'generic',
@@ -10216,8 +10307,10 @@ export class PlayScene {
       combatRelocated: options.combatRelocated === true,
       duplicateKey: options.duplicateKey || this.getToastDuplicateKey(message, options.type || 'generic'),
       originalOptions: { ...options },
-      createdAt: now
+      createdAt: now,
+      protectedUntil: now + minVisibleMs
     };
+    options.onShown?.({ display, shownAt: now, duration });
 
     const majorTypes = ['boss', 'level_clear', 'rank_up', 'level_up', 'rank_boost'];
     if (majorTypes.includes(options.type)) {

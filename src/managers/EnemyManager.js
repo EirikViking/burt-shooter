@@ -1915,6 +1915,9 @@ export class EnemyManager {
         break;
 
       case 'WAVE_BRIEFING':
+        const waveBriefingPlayScene = this.game.scenes.play;
+        waveBriefingPlayScene?.flushPendingRankUpPresentation?.('wave_briefing');
+        if (waveBriefingPlayScene?.shouldHoldProgressionPresentation?.()) break;
         this.waveBriefingTimer += delta * 16.67;
         const diff = BalanceConfig.difficulty;
         const announceMs = diff.waveBriefingAnnounceMs || 650;
@@ -1935,12 +1938,15 @@ export class EnemyManager {
 
       case 'BOSS_GATE':
         // BOSS FIX: Show wanted poster, wait for gate duration, then spawn boss
+        const bossGatePlayScene = this.game.scenes.play;
+        bossGatePlayScene?.flushPendingRankUpPresentation?.('boss_gate');
+        if (bossGatePlayScene?.shouldHoldProgressionPresentation?.()) break;
         this.bossGateTimer += delta * 16.67;
 
         if (!this.bossGateTauntDelayResolved) {
           const playScene = this.game.scenes.play;
           this.bossGateTauntDelayMs = playScene?.getTransitionMessageDelayMs
-            ? playScene.getTransitionMessageDelayMs({ minMs: 900, maxMs: 1400 })
+            ? playScene.getTransitionMessageDelayMs({ minMs: 900, maxMs: 3600 })
             : 900;
           this.bossGateTauntDelayResolved = true;
         }

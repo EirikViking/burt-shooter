@@ -138,6 +138,38 @@ try {
     return state.scene === 'play' && window.__game?.scenes?.play?.player;
   }, null, { timeout: 30000 });
 
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return (state.toast?.active || []).some((toast) => toast.type === 'firstRunControls');
+  }, null, { timeout: 15000 });
+  const firstRunControlsState = await readState(page);
+  const firstRunControls = (firstRunControlsState.toast?.active || []).find((toast) => toast.type === 'firstRunControls');
+  if (!firstRunControls || (firstRunControlsState.counts?.enemies || 0) !== 0) {
+    throw new Error(`first-run controls did not precede hostiles: ${JSON.stringify(firstRunControlsState, null, 2)}`);
+  }
+  const controlsObservedAt = Date.now();
+  await page.evaluate(() => {
+    window.__game?.scenes?.play?.enqueueToast?.('TEST WAVE CLEAR', {
+      slot: 'top',
+      type: 'level_clear',
+      priority: 3,
+      duration: 800
+    });
+  });
+  await page.waitForTimeout(160);
+  const protectedControlsState = await readState(page);
+  if (!(protectedControlsState.toast?.active || []).some((toast) => toast.type === 'firstRunControls')) {
+    throw new Error('first-run controls were dismissed before their protected reading window');
+  }
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return (state.counts?.enemies || 0) > 0;
+  }, null, { timeout: 6000 });
+  const firstHostileElapsedMs = Date.now() - controlsObservedAt;
+  if (firstHostileElapsedMs < 2100) {
+    throw new Error(`first hostiles released too soon after controls: ${firstHostileElapsedMs}ms`);
+  }
+
   await page.evaluate(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
@@ -205,6 +237,49 @@ try {
       queued: state.toast?.queued || {},
       lockedMs: state.toast?.lockedMs || {}
     });
+  }
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    if (!play?.enemyManager) throw new Error('Missing play scene for progression presentation check');
+    play.clearToastState?.();
+    play.enemyManager.forceClearAllEnemies?.();
+    if (play.bulletManager) play.bulletManager.enemyBullets = [];
+    play.enemyManager.state = 'WAVE_BRIEFING';
+    play.enemyManager.pendingWaveConfig = null;
+    play.enemyManager.waveBriefingTimer = 0;
+    play.showWaveBonusEffect(500, 'WAVE CLEARED!', { compact: true, subtitle: 'NEXT WAVE' });
+    play.onRankUp((Number(game.rankIndex) || 0) + 1);
+  });
+  const progressionSamples = [];
+  for (let index = 0; index < 52; index += 1) {
+    await page.waitForTimeout(100);
+    const state = await readState(page);
+    progressionSamples.push(state.toast?.progressionPresentation || {});
+  }
+  if (progressionSamples.some((sample) => sample.waveBonusActive && sample.rankUpActive)) {
+    throw new Error(`rank-up presentation overlapped wave-clear presentation: ${JSON.stringify(progressionSamples, null, 2)}`);
+  }
+  if (!progressionSamples.some((sample) => sample.waveBonusActive && sample.pendingRank !== null)) {
+    throw new Error('rank-up presentation was not queued behind wave clear');
+  }
+  if (!progressionSamples.some((sample) => sample.rankUpActive && !sample.waveBonusActive)) {
+    throw new Error('queued rank-up presentation was not released after wave clear');
+  }
+  const transitionDelayMs = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const until = Date.now() + 3100;
+    play.toastSlotLockUntil = { center: until, top: until, corner: until };
+    play.centerToastLockUntil = until;
+    const delay = play.getTransitionMessageDelayMs({ minMs: 900, maxMs: 3600 });
+    play.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
+    play.centerToastLockUntil = 0;
+    play.enemyManager.state = 'WAVE_ACTIVE';
+    return delay;
+  });
+  if (transitionDelayMs < 3000) {
+    throw new Error(`boss transition did not honor the full message lock: ${transitionDelayMs}ms`);
   }
 
   await page.evaluate(() => {
@@ -296,6 +371,13 @@ try {
   const report = {
     status: 'passed',
     baseUrl,
+    firstRun: {
+      controls: firstRunControls,
+      protectedControls: protectedControlsState.toast?.active || [],
+      firstHostileElapsedMs
+    },
+    progressionSamples,
+    transitionDelayMs,
     samples,
     bossIntro: {
       active: bossIntroState.toast?.active || [],

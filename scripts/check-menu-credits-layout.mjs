@@ -201,12 +201,40 @@ try {
     !eggTrigger.ok ? eggTrigger.reason : null,
     !revealCredits.unlockReveal ? 'credits unlock reveal missing' : null,
     !/CONGRATULATIONS/i.test(String(unlockText.title || '')) ? 'credits unlock reveal title missing congratulations' : null,
-    !/(NEW SHIP|ALREADY UNLOCKED)/i.test(String(unlockText.subtitle || '')) ? 'credits unlock reveal subtitle missing ship unlock result' : null,
+    !/NEW SHIP/i.test(String(unlockText.subtitle || '')) ? 'credits unlock reveal subtitle missing new ship result' : null,
     !/QUASAR FAN/i.test(String(unlockText.ship || '')) ? 'credits unlock reveal ship name missing' : null
   ].filter(Boolean);
 
   const revealScreenshot = path.join(outputDir, `menu-credits-unlock-${viewport.width}x${viewport.height}.png`);
   await page.screenshot({ path: revealScreenshot, fullPage: true });
+
+  const alreadyUnlockedTrigger = await page.evaluate(() => {
+    const overlay = window.__game?.currentScene?.settingsOverlay;
+    const coin = overlay?.creditsPanel?.children?.find((child) => child?.label === 'ui_creditsCabinetSeal');
+    if (!overlay || !coin) return { ok: false, reason: 'credits cabinet seal unavailable for repeat trigger' };
+    if (overlay.creditsRevealTicker) {
+      overlay.game.app.ticker.remove(overlay.creditsRevealTicker);
+      overlay.creditsRevealTicker = null;
+    }
+    if (overlay.creditsUnlockReveal?.parent) {
+      overlay.creditsUnlockReveal.parent.removeChild(overlay.creditsUnlockReveal);
+    }
+    overlay.creditsUnlockReveal = null;
+    overlay.creditsCoinClicks = 0;
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    overlay.triggerCreditsEasterEgg(coin);
+    return {
+      ok: true,
+      revealActive: Boolean(overlay.creditsUnlockReveal?.parent),
+      status: overlay.creditsEggStatusText?.text || ''
+    };
+  });
+  const repeatFailures = [
+    !alreadyUnlockedTrigger.ok ? alreadyUnlockedTrigger.reason : null,
+    alreadyUnlockedTrigger.revealActive ? 'already-unlocked credits trigger opened a duplicate celebration' : null,
+    !/already signed/i.test(String(alreadyUnlockedTrigger.status || '')) ? 'already-unlocked credits trigger lost its inline status' : null
+  ].filter(Boolean);
 
   const report = {
     ok: Boolean(
@@ -216,6 +244,7 @@ try {
       creditsFailures.length === 0 &&
       overlapFailures.length === 0 &&
       revealFailures.length === 0 &&
+      repeatFailures.length === 0 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -230,6 +259,8 @@ try {
     overlapFailures,
     revealCredits,
     revealFailures,
+    alreadyUnlockedTrigger,
+    repeatFailures,
     pageErrors,
     consoleErrors,
     screenshot,

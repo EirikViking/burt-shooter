@@ -774,9 +774,14 @@ export class GameOverScene {
       return;
     }
 
+    if (this.leaderboardRuntime?.cloud) {
+      this.globalQualificationPromise = this.checkGlobalQualification();
+    } else {
+      this.globalQualified = false;
+      this.globalStatus = 'offline';
+    }
     this.updateLeaderboardStatusText();
     this.updateQualificationPromptState();
-    this.globalQualificationPromise = this.checkGlobalQualification();
   }
 
   updateCanEnterName() {
@@ -1646,12 +1651,20 @@ export class GameOverScene {
     this.refreshPrimaryCta();
     this.layoutScreen();
     if (this.state === 'prompt' && this.isRankedRun && !this.canEnterName && this.globalStatus !== 'checking') {
-      this.enterResultHoldStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
+      this.enterRunbackStage(this.globalStatus === 'offline' ? 'offline_no_slot' : 'no_slot');
     }
   }
 
   async checkGlobalQualification() {
     try {
+      if (!this.leaderboardRuntime?.cloud) {
+        this.cachedHighscores = [];
+        this.globalPlacement = null;
+        this.globalPlacementTier = 'none';
+        this.globalQualified = false;
+        this.globalStatus = 'offline';
+        return;
+      }
       const scores = await this.leaderboardAdapter.getGlobalScoresForPlacement({ useCache: false });
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
@@ -4943,6 +4956,21 @@ export class GameOverScene {
     this.enterRunbackStage(nextReason);
   }
 
+  refreshVisibleRunbackAfterSubmission(reason = 'score_saved') {
+    if (!this.isSceneActive() || this.state !== 'runback') return;
+    this.runbackReason = reason;
+    if (this.title) {
+      this.title.text = this.getRunbackTitle();
+      this.title.style.fill = this.globalPlacement?.qualified ? '#fff8b8' : '#fff3a2';
+      this.title.style.dropShadowColor = this.globalPlacement?.qualified ? '#ffd454' : '#ffc94a';
+    }
+    this.syncResultStagePresentation();
+    this.updateCeremonyPresentation();
+    this.updateLeaderboardStatusText();
+    this.refreshPrimaryCta();
+    this.layoutScreen();
+  }
+
   enterRunbackStage(reason = 'runback') {
     if (this.state === 'runback') return;
     this.clearSceneTimeouts();
@@ -5440,7 +5468,7 @@ export class GameOverScene {
     if (!this.steamSubmissionMode || !this.isRankedRun || this.isSubmitting) return;
     if (this.finalScore <= 0) {
       this.game.pendingHighscore = null;
-      if (this.state !== 'runback') this.enterResultHoldStage('no_slot');
+      if (this.state !== 'runback') this.enterRunbackStage('no_slot');
       return;
     }
 
@@ -5567,7 +5595,7 @@ export class GameOverScene {
     }
     this.state = 'submitted';
     this.updateLeaderboardStatusText();
-    this.enterRunbackStageAfterReportHold(reason);
+    this.enterRunbackStage(reason);
   }
 
   getSteamSubmitTimeoutMs() {
@@ -5825,27 +5853,45 @@ export class GameOverScene {
     this.game.leaderboardView = this.localQualified ? 'local' : 'global';
     this.game.pendingHighscore = null;
 
-    if (this.globalQualified || this.globalStatus === 'checking') {
-      await this.startGlobalSubmissionWhenReady(name, result);
-      if (!this.isSceneActive()) return;
-    }
-
     this.isSubmitting = false;
-    this.state = 'submitted';
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.hideHiddenInput();
-    const reason = result.globalStatus === 'failed'
+    const initialReason = result.globalStatus === 'failed'
       ? 'global_failed'
       : result.globalStatus === 'submitted'
         ? 'score_submitted'
         : 'score_saved';
-    this.enterRunbackStageAfterReportHold(reason);
+    this.enterRunbackStage(initialReason);
+
+    const canUseCloud = Boolean(
+      this.leaderboardRuntime?.cloud
+      && this.leaderboardAdapter?.availability?.cloud !== false
+    );
+    if (canUseCloud && (this.globalQualified || this.globalStatus === 'checking')) {
+      void this.startGlobalSubmissionWhenReady(name, result).finally(() => {
+        const finalReason = result.globalStatus === 'failed'
+          ? 'global_failed'
+          : result.globalStatus === 'submitted'
+            ? 'score_submitted'
+            : 'score_saved';
+        this.refreshVisibleRunbackAfterSubmission(finalReason);
+      });
+    }
   }
 
   async startGlobalSubmissionWhenReady(name, result) {
     let timeoutId = null;
     try {
+      if (!this.leaderboardRuntime?.cloud || this.leaderboardAdapter?.availability?.cloud === false) {
+        this.globalQualified = false;
+        this.globalStatus = 'offline';
+        result.globalQualified = false;
+        result.globalStatus = 'offline';
+        result.updatedAt = new Date().toISOString();
+        this.game.lastLeaderboardResult = result;
+        return;
+      }
       if (this.globalStatus === 'checking' && this.globalQualificationPromise) {
         await this.globalQualificationPromise.catch(() => null);
       }

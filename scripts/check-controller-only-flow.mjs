@@ -443,22 +443,15 @@ try {
     scene.refreshPrimaryCta?.();
   });
   await tapButton(page, 0);
-  const submittedHold = await waitForState(page, (state) =>
+  const submitted = await waitForState(page, (state) =>
     state.scene === 'gameOver' &&
-    state.gameOver?.state === 'submitted_hold' &&
-    state.gameOver?.submittedHoldReady,
-  'score submitted hold from controller initials', 15000);
-  checkpoint('game-over-score-submitted-hold', submittedHold, {
-    savedName: submittedHold.gameOver?.lastLeaderboardResult?.name,
+    state.gameOver?.state === 'runback',
+  'score submitted directly to runback from controller initials', 10000);
+  checkpoint('game-over-score-submitted-runback', submitted, {
+    savedName: submitted.gameOver?.lastLeaderboardResult?.name,
     screenshot: await screenshot(page, '15-score-submitted')
   });
-  assert(submittedHold.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
-
-  await tapButton(page, 0);
-  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'submitted score continued to runback by controller A', 10000);
-  checkpoint('game-over-runback-after-continue', submitted, {
-    screenshot: await screenshot(page, '16-runback-after-continue')
-  });
+  assert(submitted.gameOver?.lastLeaderboardResult?.name, 'Controller name entry did not save a leaderboard name');
 
   await tapButton(page, 3);
   const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');

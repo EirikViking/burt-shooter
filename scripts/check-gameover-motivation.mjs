@@ -238,20 +238,16 @@ try {
   }));
   await page.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
-    if (scene) scene.reportShownAt = Date.now();
+    if (!scene) return;
+    scene.reportShownAt = Date.now();
+    scene.globalQualified = false;
+    scene.globalStatus = 'offline';
+    scene.leaderboardRuntime.cloud = false;
+    scene.leaderboardAdapter.availability.cloud = false;
+    scene.leaderboardAdapter.refreshed = true;
+    scene.updateCanEnterName?.();
   });
   const submittedAt = Date.now();
-  await page.keyboard.press('Enter');
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'submitted_hold';
-  }, null, { timeout: 5000 });
-  const submittedHoldSnapshot = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(350);
-  const submittedEarlyContinueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
-  await page.waitForTimeout(5200);
-  const submittedReadyHoldState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -385,28 +381,6 @@ try {
   await retryCtaPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.gameOver?.primaryCta?.mode === 'result_hold';
-    } catch {
-      return false;
-    }
-  }, null, { timeout: 5000 });
-  const noSlotCtaState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
-  await clickPrimaryCta(retryCtaPage);
-  await retryCtaPage.waitForTimeout(350);
-  const noSlotEarlyContinueState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
-  await retryCtaPage.waitForFunction(() => {
-    try {
-      const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.gameOver?.state === 'result_hold' && state.gameOver?.resultHoldReady === true;
-    } catch {
-      return false;
-    }
-  }, null, { timeout: 5000 });
-  const noSlotReadyState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
-  await clickPrimaryCta(retryCtaPage);
-  await retryCtaPage.waitForFunction(() => {
-    try {
-      const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.gameOver?.state === 'runback' && state.gameOver?.primaryCta?.mode === 'restart';
     } catch {
       return false;
@@ -505,18 +479,7 @@ try {
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&
       nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
       nameInputState.hiddenMaxLength === 14 &&
-      submittedHoldSnapshot.scene === 'gameOver' &&
-      submittedHoldSnapshot.gameOver?.state === 'submitted_hold' &&
-      submittedHoldSnapshot.gameOver?.submittedHoldReady === false &&
-      submittedHoldSnapshot.gameOver?.primaryCta?.mode === 'submitted_hold' &&
-      submittedHoldSnapshot.gameOver?.primaryCta?.disabled === true &&
-      lineCount(submittedHoldSnapshot.gameOver?.leaderboardStatus) <= 2 &&
-      !/Local:|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|Steamboard|Steam Board|Steam board/i.test(submittedHoldSnapshot.gameOver?.leaderboardStatus || '') &&
-      submittedEarlyContinueState.gameOver?.state === 'submitted_hold' &&
-      submittedReadyHoldState.gameOver?.state === 'submitted_hold' &&
-      submittedReadyHoldState.gameOver?.submittedHoldReady === true &&
-      submittedReadyHoldState.gameOver?.primaryCta?.disabled === false &&
-      submittedRunbackElapsedMs >= 4800 &&
+      submittedRunbackElapsedMs < 3000 &&
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
@@ -532,12 +495,6 @@ try {
       /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       hasLeaderboardAvailabilityLine(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
-      /CONTINUE/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
-      noSlotCtaState.gameOver?.primaryCta?.mode === 'result_hold' &&
-      noSlotCtaState.gameOver?.primaryCta?.disabled === true &&
-      noSlotCtaState.gameOver?.state === 'result_hold' &&
-      noSlotEarlyContinueState.gameOver?.state === 'result_hold' &&
-      noSlotReadyState.gameOver?.resultHoldReady === true &&
       noSlotRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
       noSlotRunbackState.gameOver?.state === 'runback' &&
       noSlotRunbackState.gameOver?.mainMenuCta?.visible === true &&
@@ -563,10 +520,6 @@ try {
     leaderboardFirst: {
       submittedScene: submittedRunbackState.scene,
       submittedState: submittedRunbackState.gameOver?.state || null,
-      submittedHoldState: submittedHoldSnapshot.gameOver?.state || null,
-      submittedEarlyContinueState: submittedEarlyContinueState.gameOver?.state || null,
-      submittedReadyHoldState: submittedReadyHoldState.gameOver?.state || null,
-      submittedHoldReady: submittedReadyHoldState.gameOver?.submittedHoldReady || false,
       submittedRunbackElapsedMs,
       selectedCtaLine: submittedRunbackState.gameOver?.selectedCtaLine || null,
       primaryCta: gameOverState.gameOver?.primaryCta || null
@@ -576,9 +529,6 @@ try {
       score: retryCtaRestartedState.score,
       level: retryCtaRestartedState.level,
       lives: retryCtaRestartedState.lives,
-      noSlotCta: noSlotCtaState.gameOver?.primaryCta || null,
-      noSlotEarlyContinue: noSlotEarlyContinueState.gameOver || null,
-      noSlotReady: noSlotReadyState.gameOver || null,
       noSlotRunback: noSlotRunbackState.gameOver || null
     },
     returnMenuLaunch: {
