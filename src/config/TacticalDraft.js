@@ -101,7 +101,8 @@ export function buildTacticalDraftOffers({
   lives = 3,
   maxLives = 3,
   activePowerupType = null,
-  runTheme = null
+  runTheme = null,
+  excludedIds = []
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const context = { lives, maxLives, activePowerupType, runTheme };
@@ -111,7 +112,16 @@ export function buildTacticalDraftOffers({
     return Boolean(getPowerupMeta(augment.id));
   });
   const unseenCandidates = candidates.filter((augment) => (counts.get(augment.id) || 0) === 0);
+  const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
+  const allowEvolution = sectorCleared >= 3 && counts.size > 0;
+  const evolutionCandidate = allowEvolution
+    ? candidates
+      .filter((augment) => (counts.get(augment.id) || 0) > 0 && !excluded.has(augment.id))
+      .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))[0] || null
+    : null;
   if (unseenCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = unseenCandidates;
+  const freshCandidates = candidates.filter((augment) => !excluded.has(augment.id));
+  if (freshCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = freshCandidates;
   const used = new Set();
   const offers = [];
   const categoryOrder = lives <= 1
@@ -128,7 +138,21 @@ export function buildTacticalDraftOffers({
     if (offers.length >= TACTICAL_DRAFT_OFFER_COUNT) break;
     offers.push(augment);
   }
-  return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => getTacticalDraftMeta(augment.id));
+  if (evolutionCandidate && offers.length >= TACTICAL_DRAFT_OFFER_COUNT) {
+    const alternatives = [
+      ...offers,
+      ...candidates.slice().sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))
+    ].filter((augment, index, all) => (
+      augment.id !== evolutionCandidate.id
+      && all.findIndex((candidate) => candidate.id === augment.id) === index
+    ));
+    if (alternatives.length >= 2) offers.splice(0, offers.length, alternatives[0], evolutionCandidate, alternatives[1]);
+  }
+  return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => ({
+    ...getTacticalDraftMeta(augment.id),
+    currentStacks: counts.get(augment.id) || 0,
+    nextStack: (counts.get(augment.id) || 0) + 1
+  }));
 }
 
 export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null } = {}) {

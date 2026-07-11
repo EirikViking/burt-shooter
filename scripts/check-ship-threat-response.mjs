@@ -41,8 +41,8 @@ const rows = ships.map((ship) => {
     if (typeof value === 'number') assert(Number.isFinite(value), `${ship.id} ${key} must be finite`);
   }
   assert(base.enemyCountMult === 1, `${ship.id} must preserve enemy count and score opportunity`);
-  assert(base.hardenedFodderChance >= 0 && base.hardenedFodderChance <= 0.91, `${ship.id} hardened chance out of range`);
-  assert(base.bossHealthMult >= 1 && base.bossHealthMult <= 1.91, `${ship.id} bossHealthMult out of range`);
+  assert(base.hardenedFodderChance >= 0 && base.hardenedFodderChance <= 0.59, `${ship.id} hardened chance out of range`);
+  assert(base.bossHealthMult >= 1 && base.bossHealthMult <= 1.66, `${ship.id} bossHealthMult out of range`);
   assert(fivePicks.enemyCountMult >= base.enemyCountMult, `${ship.id} Draft picks reduced enemy count response`);
   assert(fivePicks.bossHealthMult >= base.bossHealthMult, `${ship.id} Draft picks reduced boss response`);
   assert(fivePicks.enemyFireDelayMult <= base.enemyFireDelayMult, `${ship.id} Draft picks reduced fire pressure`);
@@ -77,7 +77,7 @@ if (starterShip && midShip && lateShip && eirik) {
   assert(starter.enemyCountMult === 1, `starter count response should be neutral, found ${starter.enemyCountMult}`);
   assert(eirikBase.responseLevel === 'APEX', `Eirik response should be APEX, found ${eirikBase.responseLevel}`);
   assert(eirikBase.enemyCountMult === 1, `Eirik must preserve the shared enemy-count and score budget, found ${eirikBase.enemyCountMult}`);
-  assert(eirikBase.bossHealthMult >= 1.89, `Eirik should receive about 90% boss health response, found ${eirikBase.bossHealthMult}`);
+  assert(eirikBase.bossHealthMult >= 1.64 && eirikBase.bossHealthMult <= 1.66, `Eirik should receive about 65% boss health response, found ${eirikBase.bossHealthMult}`);
   assert(eirikDraft.bossHealthMult > eirikBase.bossHealthMult, 'five Draft picks should further raise Eirik boss response');
 
   const starterWave = estimateOpeningWaveClearTime(starterShip);
@@ -88,6 +88,12 @@ if (starterShip && midShip && lateShip && eirik) {
     assert(waveRelative >= 0.5, `${label} opening wave clear estimate is still too trivial: ${waveRelative.toFixed(3)}x starter time`);
     assert(bossRelative >= 0.45, `${label} opening boss clear estimate is still too trivial: ${bossRelative.toFixed(3)}x starter time`);
   }
+  const eirikWaveRetention = ratio(starterWave, estimateOpeningWaveClearTime(eirik));
+  const eirikBossRetention = ratio(starterBoss, estimateOpeningBossClearTime(eirik));
+  assert(eirikWaveRetention >= SHIP_THREAT_RESPONSE_TARGETS.minApexFodderPowerRetention,
+    `Threat Response erased too much apex wave power: ${eirikWaveRetention.toFixed(3)}x retained`);
+  assert(eirikBossRetention >= SHIP_THREAT_RESPONSE_TARGETS.minApexBossPowerRetention,
+    `Threat Response erased too much apex boss power: ${eirikBossRetention.toFixed(3)}x retained`);
 }
 
 let accumulator = 0;
@@ -102,8 +108,8 @@ for (let index = 0; index < 300; index += 1) {
     hardenedHealth = result.health;
   }
 }
-assert(hardenedCount >= 252 && hardenedCount <= 256, `APEX deterministic fodder hardening expected about 254/300, found ${hardenedCount}`);
-assert(hardenedHealth === 3, `APEX hardened fodder should take three base hits, found ${hardenedHealth}`);
+assert(hardenedCount >= 149 && hardenedCount <= 151, `APEX deterministic fodder hardening expected about 150/300, found ${hardenedCount}`);
+assert(hardenedHealth === 2, `APEX hardened fodder should take two base hits, found ${hardenedHealth}`);
 
 console.table(rows);
 if (errors.length) {

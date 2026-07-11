@@ -240,7 +240,7 @@ export class TacticalLoadoutOverlay {
     fitText(title, panel.width - pad * 3, 52, 0.62);
     this.container.addChild(title);
 
-    const subtitle = createText(translateText('Tactical upgrades'), {
+    const subtitle = createText(translateText('PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: layout.veryCompact ? 12 : layout.compact ? 15 : 18,
       fontWeight: '900',

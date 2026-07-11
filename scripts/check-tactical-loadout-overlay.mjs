@@ -50,7 +50,7 @@ for (const [width, height, expected] of [
 const port = 4397;
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const viteBin = fileURLToPath(new URL('../node_modules/vite/bin/vite.js', import.meta.url));
-const server = spawn(process.execPath, [viteBin, '--host', '127.0.0.1', '--port', String(port)], {
+const server = spawn(process.execPath, [viteBin, '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
   cwd: repoRoot,
   stdio: ['ignore', 'pipe', 'pipe']
 });

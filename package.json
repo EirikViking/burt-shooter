@@ -61,6 +61,8 @@
     "check:low-hanging-fun": "node scripts/check-low-hanging-fun.mjs",
     "check:retention-presentation": "node scripts/check-retention-presentation.mjs",
     "check:tactical-draft": "node scripts/check-tactical-draft.mjs",
+    "check:tactical-augment-tray": "node scripts/check-tactical-augment-tray.mjs",
+    "check:tactical-loadout-overlay": "node scripts/check-tactical-loadout-overlay.mjs",
     "check:human-retention-run": "node scripts/simulate-human-retention-run.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",

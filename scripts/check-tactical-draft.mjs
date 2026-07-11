@@ -122,7 +122,8 @@ assert(lowLifeOffers.length === 3, 'pure draft must return three offers');
 assert(lowLifeOffers.some((offer) => offer.category === 'defense'), 'low-life draft must include defense');
 assert(!lowLifeOffers.some((offer) => offer.id === 'nano_patch') || lowLifeOffers[0].category === 'defense', 'repair must remain in defense lane');
 const followupOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 3, lives: 3, maxLives: 3, selectedIds: [lowLifeOffers[0].id] });
-assert(!followupOffers.some((offer) => offer.id === lowLifeOffers[0].id), 'follow-up draft repeated an already selected augment before pool exhaustion');
+assert(followupOffers.filter((offer) => offer.currentStacks > 0).length === 1, 'follow-up draft should offer exactly one controlled evolution lane');
+assert(followupOffers.filter((offer) => offer.currentStacks === 0).length === 2, 'follow-up draft should preserve two fresh choices');
 const stacked = buildTacticalDraftModifiers(['damage_up', 'rapid_fire', 'double_shot', 'magnet']);
 assert(stacked.damageMult > 1 && stacked.fireDelayMult < 1 && stacked.shotBonus === 1 && stacked.magnetRadiusBonus > 0, 'stacked modifiers incomplete');
 const doubleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up']);
@@ -130,6 +131,17 @@ assert(doubleDamage.damageMult > 1.12 && doubleDamage.damageMult < 1.12 * 1.12, 
 const matchingTimedPickup = buildTacticalDraftModifiers(['damage_up', 'rapid_fire'], { activePowerupType: 'damage_up' });
 assert(matchingTimedPickup.overlapSuppressedId === 'damage_up', 'matching timed pickup should suppress only its duplicate Draft effect');
 assert(Math.abs(matchingTimedPickup.damageMult - 1) < 0.0001 && matchingTimedPickup.fireDelayMult < 1, 'matching timed pickup suppression affected unrelated Draft effects');
+const evolutionOffers = buildTacticalDraftOffers({
+  seed: 'evolution-proof',
+  sectorCleared: 3,
+  selectedIds: ['damage_up', 'speed_up'],
+  lives: 3,
+  maxLives: 4
+});
+assert(evolutionOffers.filter((offer) => offer.currentStacks === 1 && offer.nextStack === 2).length === 1,
+  `sector-three Draft should contain exactly one evolution offer: ${JSON.stringify(evolutionOffers)}`);
+assert(evolutionOffers.filter((offer) => offer.currentStacks === 0).length === 2,
+  'sector-three Draft should preserve two fresh choices beside the evolution');
 
 mkdirSync(outputDir, { recursive: true });
 const server = await startPreview();
@@ -162,6 +174,14 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
   let state = await readState(page);
   assertDraftLayout(state, 1280, 720, 'desktop');
+  const firstOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
+  assert(state.tacticalDraft.rescansRemaining === 1, 'fresh run should expose one Draft rescan');
+  await page.keyboard.press('r');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.rescansRemaining === 0);
+  state = await readState(page);
+  const rescannedOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
+  assert(rescannedOfferIds.every((id) => !firstOfferIds.includes(id)), `rescan repeated prior offers: ${rescannedOfferIds.join(', ')}`);
+  assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
   const frozenTime = state.arcadeRun.runElapsedSeconds;
   await page.waitForTimeout(450);
   state = await readState(page);
@@ -298,6 +318,10 @@ try {
       bombShots: player.bombShotsLeft,
       orbitalCharges: player.orbitalStrikeCharges
     };
+    const timedStates = player.getActivePowerupStates().map((entry) => ({
+      type: entry.type,
+      remainingMs: entry.remainingMs
+    }));
     return {
       baseline,
       boosted,
@@ -315,6 +339,7 @@ try {
       sectorBeforeOrdinaryPickup,
       overlap,
       restored,
+      timedStates,
       dodgeOverlap,
       debug: player.getRunAugmentDebugState()
     };
@@ -333,6 +358,8 @@ try {
   assert(runtime.overlap.activeType === 'damage_up' && runtime.overlap.suppressedId === 'damage_up', 'matching ordinary pickup did not take temporary priority');
   assert(runtime.overlap.pointDefense && runtime.overlap.bombShots >= 2 && runtime.overlap.orbitalCharges >= 2, 'ordinary pickup cleared Tactical sector-start tools');
   assert(runtime.restored.suppressedId === null, 'Draft effect did not return after ordinary pickup ended');
+  assert(!runtime.timedStates.some((entry) => ['magnet', 'drones', 'chain_lightning'].includes(entry.type) && entry.remainingMs > 86400000),
+    `permanent Draft utility leaked into timed HUD: ${JSON.stringify(runtime.timedStates)}`);
   assert(runtime.dodgeOverlap.invulnerable && runtime.dodgeOverlap.remainingMs > 3500, 'dodge end cancelled a longer invulnerability window');
   await runtimePage.close();
 

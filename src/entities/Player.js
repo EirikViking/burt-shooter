@@ -2915,11 +2915,13 @@ export class Player {
       addTimedState(this.scoreMultiplierType || 'score_x2', this.scoreBoostExpiresAt);
     }
 
-    if (this.magnetActive && !activeEffect.magnetRadius) {
+    const tacticalMagnetActive = Number(this.runAugmentModifiers?.magnetRadiusBonus || 0) > 0;
+    if (this.magnetActive && !activeEffect.magnetRadius && !tacticalMagnetActive) {
       addTimedState('magnet', this.magnetExpiresAt);
     }
 
-    if (this.dronesActive && !activeEffect.droneCount) {
+    const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
+    if (this.dronesActive && !activeEffect.droneCount && !tacticalDronesActive) {
       addTimedState('drones', this.dronesExpiresAt);
     }
 
@@ -2945,7 +2947,8 @@ export class Player {
       });
     }
 
-    if (this.chainLightningActive && !activeEffect.chainMax) {
+    const tacticalChainActive = Number(this.runAugmentModifiers?.chainMax || 0) > 0;
+    if (this.chainLightningActive && !activeEffect.chainMax && !tacticalChainActive) {
       addTimedState('chain_lightning', this.activePowerup?.type === 'chain_lightning' ? this.activePowerup.expiresAt : 0);
     }
 

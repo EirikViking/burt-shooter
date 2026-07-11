@@ -630,8 +630,9 @@ function buildGameTextState(game) {
     isPaused: Boolean(playScene?.isPaused),
     overlays: {
       pause: Boolean(playScene?.pauseOverlay?.visible && playScene?.pauseOverlay?.parent),
-    settings: Boolean(activeSettingsOverlay?.container?.parent),
+      settings: Boolean(activeSettingsOverlay?.container?.parent),
       howToPlay: Boolean(activeHowToPlayOverlay?.container?.parent),
+      tacticalLoadout: Boolean(playScene?.tacticalLoadoutOverlay?.container?.parent),
       credits: Boolean(activeSettingsOverlay?.creditsPanel?.parent),
       fatal: Boolean(document.getElementById('fatal-overlay'))
     },
@@ -641,6 +642,7 @@ function buildGameTextState(game) {
     runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
+    tacticalLoadoutOverlay: playScene?.tacticalLoadoutOverlay?.getDebugState?.() || null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
     display: getDisplaySettings(),
     layout: getCurrentLayout(),

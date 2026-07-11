@@ -20,6 +20,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import { TacticalLoadoutOverlay } from '../ui/TacticalLoadoutOverlay.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import {
   MenuFxLayer,
@@ -167,6 +168,7 @@ export class PlayScene {
     this.tacticalDraftNavigator = new GamepadNavigator();
     this.settingsOverlay = null;
     this.howToPlayOverlay = null;
+    this.tacticalLoadoutOverlay = null;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
     this.controlSmokeMode = false;
@@ -178,6 +180,8 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.tacticalDraft = null;
     this.tacticalDraftHistory = [];
+    this.tacticalDraftRescansRemaining = 1;
+    this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftConfirmTimeout = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
@@ -468,6 +472,7 @@ export class PlayScene {
     this.pauseMenuDecor = null;
     this.settingsOverlay = null;
     this.howToPlayOverlay = null;
+    this.tacticalLoadoutOverlay = null;
     this.pausePressed = false;
     this.hadGameplayGamepadConnection = false;
     this.lastGameplayGamepadConnected = false;
@@ -645,6 +650,8 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.clearTacticalDraft('run_reset');
     this.tacticalDraftHistory = [];
+    this.tacticalDraftRescansRemaining = 1;
+    this.tacticalDraftRescansUsed = 0;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -5623,6 +5630,8 @@ export class PlayScene {
 
     const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
     cards.forEach((card) => overlay.addChild(card));
+    const rescan = this.createTacticalDraftRescanControl();
+    overlay.addChild(rescan);
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
@@ -5637,6 +5646,9 @@ export class PlayScene {
       title,
       subtitle,
       cards,
+      rescan,
+      rescanCount: 0,
+      rescansRemaining: this.tacticalDraftRescansRemaining,
       onComplete: typeof onComplete === 'function' ? onComplete : null,
       openedAt: Date.now(),
       inputArmed: false,
@@ -5660,7 +5672,12 @@ export class PlayScene {
     card._offer = offer;
     const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    const category = createText(translateText(String(offer.category || 'utility').toUpperCase()), {
+    const categoryLabel = translateText(String(offer.category || 'utility').toUpperCase());
+    const category = createText(translateText('{category} // {stack}/{max}', {
+      category: categoryLabel,
+      stack: offer.nextStack,
+      max: offer.maxStacks
+    }), {
       fontFamily: FONT_BODY,
       fontSize: 12,
       fontWeight: '900',
@@ -5692,7 +5709,9 @@ export class PlayScene {
       wordWrapWidth: 250
     });
     description.anchor.set(0.5);
-    const permanence = createText(translateText('PERMANENT THIS RUN'), {
+    const permanence = createText(offer.currentStacks > 0
+      ? translateText('SECOND STACK: 55% EFFECT')
+      : translateText('PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: 11,
       fontWeight: '900',
@@ -5718,6 +5737,28 @@ export class PlayScene {
       this.confirmTacticalDraft(index, 'pointer');
     });
     return card;
+  }
+
+  createTacticalDraftRescanControl() {
+    const control = new PIXI.Container();
+    control.label = 'tactical_draft_rescan';
+    control.eventMode = 'static';
+    control.cursor = 'pointer';
+    const bg = new PIXI.Graphics();
+    const label = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#d8f7ff',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    label.anchor.set(0.5);
+    control.addChild(bg, label);
+    control._nodes = { bg, label };
+    control.on('pointertap', () => this.rescanTacticalDraft('pointer'));
+    return control;
   }
 
   createTacticalDraftFallbackIcon(offer) {
@@ -5780,6 +5821,15 @@ export class PlayScene {
     state.title.position.set(width / 2, compact ? 70 : 92);
     state.subtitle.style.fontSize = compact ? 13 : 17;
     state.subtitle.position.set(width / 2, compact ? 98 : 128);
+
+    if (state.rescan) {
+      const controlWidth = compact ? 148 : 190;
+      const controlHeight = compact ? 28 : 34;
+      state.rescan._draftLayout = { width: controlWidth, height: controlHeight };
+      state.rescan.position.set(compact ? controlWidth / 2 + 24 : width / 2, compact ? 106 : height - 42);
+      state.rescan.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+      this.redrawTacticalDraftRescan();
+    }
 
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(340, (width - 120) / 3);
     const cardHeight = compact ? Math.max(106, Math.min(146, (height - 170) / 3 - 10)) : Math.min(365, height - 230);
@@ -5864,6 +5914,63 @@ export class PlayScene {
     card.scale.set(focused && !layout.compact ? 1.015 : 1);
   }
 
+  redrawTacticalDraftRescan() {
+    const state = this.tacticalDraft;
+    const control = state?.rescan;
+    const layout = control?._draftLayout;
+    const nodes = control?._nodes;
+    if (!state?.active || !layout || !nodes) return;
+    const available = state.rescansRemaining > 0 && !state.confirmedId;
+    nodes.bg.clear();
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.fill({ color: available ? 0x082338 : 0x07111b, alpha: 0.94 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.stroke({ color: available ? 0x37f5ff : 0x536572, width: 1.2, alpha: available ? 0.76 : 0.36 });
+    nodes.label.text = available
+      ? translateText('R / Y  RESCAN ({count})', { count: state.rescansRemaining })
+      : translateText('RESCAN USED');
+    nodes.label.style.fill = available ? '#d8f7ff' : '#71848f';
+    control.alpha = available ? 1 : 0.68;
+    control.cursor = available ? 'pointer' : 'default';
+  }
+
+  rescanTacticalDraft(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || !state.inputArmed || state.rescansRemaining <= 0) return false;
+    const previousIds = state.offers.map((offer) => offer.id);
+    const nextRescanCount = state.rescanCount + 1;
+    const offers = buildTacticalDraftOffers({
+      seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:rescan:${nextRescanCount}`,
+      sectorCleared: state.sectorCleared,
+      selectedIds: this.player?.runAugmentIds || [],
+      lives: Number(this.game?.lives) || 0,
+      maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      activePowerupType: this.player?.activePowerup?.type || null,
+      runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      excludedIds: previousIds
+    });
+    if (offers.length < 3) return false;
+    state.cards.forEach((card) => {
+      if (card.parent) card.parent.removeChild(card);
+      card.destroy?.({ children: true });
+    });
+    state.offers = offers;
+    state.cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
+    state.cards.forEach((card) => state.overlay.addChild(card));
+    state.rescanCount = nextRescanCount;
+    state.rescansRemaining -= 1;
+    this.tacticalDraftRescansRemaining = state.rescansRemaining;
+    this.tacticalDraftRescansUsed += 1;
+    state.focusIndex = 1;
+    state.openedAt = Date.now();
+    this.layoutTacticalDraft();
+    this.setTacticalDraftFocus(1, { silent: true });
+    playMenuConfirmSfx(0.3);
+    this.redrawTacticalDraftRescan();
+    state.lastRescanSource = source;
+    return true;
+  }
+
   setTacticalDraftFocus(index, { silent = false } = {}) {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId) return;
@@ -5904,10 +6011,13 @@ export class PlayScene {
     const up = this.inputManager?.consumeKeyPress?.('ArrowUp', 'KeyW', 'w', 'W');
     const down = this.inputManager?.consumeKeyPress?.('ArrowDown', 'KeyS', 's', 'S');
     const confirm = this.inputManager?.consumeKeyPress?.('Enter', 'NumpadEnter', 'Space');
+    const rescan = this.inputManager?.consumeKeyPress?.('KeyR', 'r', 'R');
     if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
     if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
     if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
+    if (rescan || nav.pressed.y) this.rescanTacticalDraft(nav.pressed.y ? 'gamepad' : 'keyboard');
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    this.redrawTacticalDraftRescan();
   }
 
   confirmTacticalDraft(index = this.tacticalDraft?.focusIndex || 0, source = 'unknown') {
@@ -5976,6 +6086,11 @@ export class PlayScene {
       compact: Boolean(state?.compact),
       title: state?.title?.text || null,
       subtitle: state?.subtitle?.text || null,
+      rescansRemaining: state?.rescansRemaining ?? this.tacticalDraftRescansRemaining,
+      rescansUsed: this.tacticalDraftRescansUsed,
+      rescanCount: state?.rescanCount || 0,
+      rescanLabel: state?.rescan?._nodes?.label?.text || null,
+      rescanBounds: boundsOf(state?.rescan),
       titleBounds: boundsOf(state?.title),
       offers: state?.offers?.map((offer, index) => ({
         id: offer.id,
@@ -6018,6 +6133,8 @@ export class PlayScene {
       AudioManager.playSfx('pause_in', { force: true, volume: 0.45 });
     } else {
       this.closeSettingsOverlay();
+      this.closeHowToPlayOverlay();
+      this.closeTacticalLoadoutOverlay();
       this.hidePauseOverlay();
       AudioManager.setPauseDucked(false);
       AudioManager.playSfx('pause_out', { force: true, volume: 0.34 });
@@ -6128,7 +6245,7 @@ export class PlayScene {
 
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
     const panelWidth = Math.min(620 * uiScale, Math.max(500 * uiScale, width * 0.34 * uiScale));
-    const panelHeight = Math.min(height * 0.86, 430 * uiScale);
+    const panelHeight = Math.min(height * 0.9, 490 * uiScale);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const centerX = width / 2;
@@ -6353,11 +6470,13 @@ export class PlayScene {
 
     this.pauseButtons = [
       this.createPauseButton(translateText('RESUME'), centerX, panelY + 238 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 290 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 342 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 394 * uiScale, () => {
+      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 286 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 334 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 382 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 430 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
+        this.closeTacticalLoadoutOverlay();
         this.hidePauseOverlay();
         this.isPaused = false;
         this.game.switchScene('menu');
@@ -6444,7 +6563,8 @@ export class PlayScene {
       lives: decor?.livesValue?.text ?? null,
       powerup: decor?.powerupValue?.text ?? null,
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
-      tacticalDraft: decor?.tacticalDraftValue?.text ?? null
+      tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
+      tacticalLoadout: this.tacticalLoadoutOverlay?.getDebugState?.() || null
     };
   }
 
@@ -6504,6 +6624,19 @@ export class PlayScene {
       }
     });
     this.uiOverlay.addChild(this.howToPlayOverlay.container);
+  }
+
+  openTacticalLoadoutOverlay() {
+    this.closeTacticalLoadoutOverlay();
+    this.tacticalLoadoutOverlay = new TacticalLoadoutOverlay(this.game, {
+      title: 'Tactical upgrades',
+      selectedIds: this.player?.runAugmentIds || [],
+      onClose: () => {
+        this.tacticalLoadoutOverlay = null;
+        this.pauseGamepadNavigator.suppressUntilReleased();
+      }
+    });
+    this.uiOverlay.addChild(this.tacticalLoadoutOverlay.container);
   }
 
   handleLanguageChanged() {
@@ -6657,6 +6790,11 @@ export class PlayScene {
   }
 
   updatePauseMenuControls(delta) {
+    if (this.tacticalLoadoutOverlay) {
+      this.updatePauseMenuMotion(delta);
+      this.tacticalLoadoutOverlay.update?.(delta);
+      return;
+    }
     if (this.howToPlayOverlay) {
       this.updatePauseMenuMotion(delta);
       this.howToPlayOverlay.update?.(delta);
@@ -6689,6 +6827,7 @@ export class PlayScene {
   }
 
   destroyPauseOverlay() {
+    this.closeTacticalLoadoutOverlay();
     if (this.pauseMenuFx?.container?.parent) {
       this.pauseMenuFx.container.parent.removeChild(this.pauseMenuFx.container);
     }
@@ -6809,6 +6948,13 @@ export class PlayScene {
       this.lowLivesShownFor = lives;
       this.showToast(getMicroMessage('lowHealth'), { fontSize: 22, y: this.game.getHeight() * 0.3 });
       AudioManager.playVoice('mission_control_life_low', { cooldownMs: 18000, duckMs: 1800 });
+    }
+  }
+
+  closeTacticalLoadoutOverlay() {
+    if (this.tacticalLoadoutOverlay) {
+      this.tacticalLoadoutOverlay.close();
+      this.tacticalLoadoutOverlay = null;
     }
   }
 

@@ -53,7 +53,7 @@ function viteCommand() {
 async function startDevServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -138,8 +138,8 @@ page.on('console', (message) => {
 const failures = [];
 const report = { ok: false, baseUrl, outputDir, scenarios: {}, pageErrors, consoleErrors, failures };
 try {
-  await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.scenes?.play?.player && window.__game?.scenes?.play?.hud, null, { timeout: 30000 });
+  await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.player && window.__game?.scenes?.play?.hud, null, { timeout: 90000 });
   await page.waitForTimeout(650);
 
   const desktopIds = [

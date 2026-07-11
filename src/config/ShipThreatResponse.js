@@ -71,14 +71,17 @@ export function buildShipThreatResponse(ship = {}, tacticalPickCount = 0) {
     hullPressure: round(hullPressure),
     tacticalPickCount: picks,
     enemyCountMult: 1,
-    hardenedFodderChance: round(clamp(hullPressure * 0.85 + draftPressure * 0.008, 0, 0.9)),
-    hardenedFodderHealth: hullPressure >= 0.7 ? 3 : 2,
-    durableHealthMult: round(1 + hullPressure * 0.24 + draftPressure * 0.012),
-    enemySpeedMult: round(1 + hullPressure * 0.045),
-    enemyFireDelayMult: round(1 - hullPressure * 0.18 - draftPressure * 0.008),
-    projectileSpeedMult: round(1 + hullPressure * 0.1 + draftPressure * 0.004),
-    bossHealthMult: round(1 + hullPressure * 0.9 + draftPressure * 0.03),
-    bossAttackDangerMult: round(1 + hullPressure * 0.15 + draftPressure * 0.006)
+    // Preserve the fantasy of earning a stronger hull. Response adds enough
+    // resistance to keep encounters interactive, but never matches hull DPS
+    // one-for-one. Most of the added danger comes from tempo, not health sponges.
+    hardenedFodderChance: round(clamp(hullPressure * 0.5 + draftPressure * 0.006, 0, 0.58)),
+    hardenedFodderHealth: 2,
+    durableHealthMult: round(1 + hullPressure * 0.16 + draftPressure * 0.008),
+    enemySpeedMult: round(1 + hullPressure * 0.035),
+    enemyFireDelayMult: round(1 - hullPressure * 0.12 - draftPressure * 0.006),
+    projectileSpeedMult: round(1 + hullPressure * 0.08 + draftPressure * 0.003),
+    bossHealthMult: round(1 + hullPressure * 0.65 + draftPressure * 0.018),
+    bossAttackDangerMult: round(1 + hullPressure * 0.1 + draftPressure * 0.004)
   });
 }
 
@@ -107,5 +110,7 @@ export const SHIP_THREAT_RESPONSE_TARGETS = Object.freeze({
   responseStartDpsRatio: RESPONSE_START_DPS_RATIO,
   apexSustainedDpsRatio: APEX_SUSTAINED_DPS_RATIO,
   maxDirectDraftOutputMult: 1.45,
-  secondStackEffectiveness: 0.55
+  secondStackEffectiveness: 0.55,
+  minApexFodderPowerRetention: 1.65,
+  minApexBossPowerRetention: 1.55
 });

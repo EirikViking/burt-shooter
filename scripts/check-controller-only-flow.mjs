@@ -379,6 +379,12 @@ try {
   checkpoint('pause-open', paused, { screenshot: await screenshot(page, '11-pause-open') });
   await tapButton(page, 13);
   await tapButton(page, 0);
+  const tacticalLoadout = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.tacticalLoadout && state.tacticalLoadoutOverlay?.visible, 'pause tactical loadout opened by controller');
+  checkpoint('pause-tactical-loadout-open', tacticalLoadout, { screenshot: await screenshot(page, '11b-pause-tactical-loadout') });
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.overlays?.pause && !state.overlays?.tacticalLoadout, 'pause tactical loadout closed with controller');
+  await tapButton(page, 13);
+  await tapButton(page, 0);
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
   const pauseLanguageFocused = await steerSettingsFocusTo(page, 'language');

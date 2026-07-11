@@ -116,11 +116,19 @@ const RUN_HELP_ROWS = Object.freeze([
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
     control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
-    tip: 'Choose one augment after each boss. It stays active until the run ends.',
+    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack.',
     accent: 0xffef7e
   },
   {
     code: '13',
+    icon: 'SCAN',
+    label: 'DRAFT RESCAN',
+    control: 'R / GAMEPAD Y: ONE RESCAN PER RUN',
+    tip: 'Spend your one rescan when all three offers miss your build. It replaces the offers, never grants an extra augment.',
+    accent: 0x37f5ff
+  },
+  {
+    code: '14',
     icon: 'SLOT',
     label: 'POWERUP OVERLAP',
     control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
@@ -128,7 +136,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xb285ff
   },
   {
-    code: '14',
+    code: '15',
     icon: 'CAP',
     label: 'STACK LIMITS',
     control: 'FIRST STACK FULL / SECOND STACK 55%',
@@ -136,11 +144,11 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xff8f5a
   },
   {
-    code: '15',
+    code: '16',
     icon: 'SYNC',
     label: 'THREAT RESPONSE',
     control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
-    tip: 'Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.',
+    tip: 'Strong hulls still clear faster. Threat Response adds some hardened targets and attack pressure, but preserves a meaningful power advantage from every late-game hull.',
     accent: 0x66ff9d
   }
 ]);

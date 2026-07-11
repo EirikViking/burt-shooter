@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
-  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
+  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
 };
 
 function timestamp() {
@@ -70,7 +70,7 @@ function viteCommand() {
 async function startPreviewServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -142,10 +142,12 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
   }
   if (expectedPage === 'runs') {
     assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
+    assert(joined.includes('R / GAMEPAD Y: ONE RESCAN PER RUN'), `${label} should explain the one-run rescan`);
+    assert(joined.includes('never grants an extra augment'), `${label} should explain that rescan is choice agency, not extra power`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
     assert(joined.includes('FIRST STACK FULL / SECOND STACK 55%'), `${label} should explain diminishing stacks`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
-    assert(joined.includes('never reacts to moment-to-moment skill'), `${label} should explain static Threat Response`);
+    assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
   }
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
@@ -286,7 +288,7 @@ try {
           await page.waitForTimeout(90);
           const localized = await readState(page);
           assert(localized.howToPlayOverlay?.pageId === 'runs', `${locale} How To Play left the Runs page`);
-          const newRules = new Set(['TACTICAL DRAFT', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
+          const newRules = new Set(['TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
           for (const card of (localized.howToPlayOverlay?.cards || []).filter((entry) => newRules.has(entry.label))) {
             assert(card.translatedLabel !== card.label, `${locale} left How To Play label in English: ${card.label}`);
             assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);

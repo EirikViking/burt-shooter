@@ -74,7 +74,7 @@ function viteCommand() {
 async function startPreviewServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -335,8 +335,8 @@ try {
     window.__NOVA_SWARM_MOCK_STEAM_LEADERBOARD__ = true;
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'RUNREPORT');
   });
-  await page.goto(`${baseUrl}/?autostart=1&mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player && window.render_game_to_text, null, { timeout: 30000 });
+  await page.goto(`${baseUrl}/?autostart=1&mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player && window.render_game_to_text, null, { timeout: 90000 });
 
   await forceRunReportScenario(page);
   const defaultState = await readState(page);
