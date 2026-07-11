@@ -6,6 +6,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
+import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -52,6 +53,7 @@ export class HUD {
     this.missionProgressActive = new PIXI.Graphics();
     this.missionProgressTicks = new PIXI.Graphics();
     this.activePowerupRows = [];
+    this.tacticalAugmentItems = [];
     this.highscoreChaseRenderKey = '';
     this.highscoreChaseDisplayKey = '';
     this.highscoreChaseDisplayScore = 0;
@@ -250,6 +252,14 @@ export class HUD {
     this.activePowerupGroup.visible = false;
     this.hudContainer.addChild(this.activePowerupGroup);
 
+    this.tacticalAugmentGroup = new PIXI.Container();
+    this.tacticalAugmentBackdrop = new PIXI.Graphics();
+    this.tacticalAugmentList = new PIXI.Container();
+    this.tacticalAugmentGroup.addChild(this.tacticalAugmentBackdrop);
+    this.tacticalAugmentGroup.addChild(this.tacticalAugmentList);
+    this.tacticalAugmentGroup.visible = false;
+    this.hudContainer.addChild(this.tacticalAugmentGroup);
+
     this.traitGroup = new PIXI.Container();
     this.traitBg = new PIXI.Graphics();
     this.traitBarBg = new PIXI.Graphics();
@@ -424,6 +434,7 @@ export class HUD {
     });
 
     this.updateActivePowerup();
+    this.updateTacticalAugmentTray();
     this.updateTraitMeter();
     const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
     const measure = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
@@ -931,6 +942,233 @@ export class HUD {
     const groupRight = groupX + groupWidth;
     const overlaps = right >= groupX && left <= groupRight;
     return overlaps ? top + height + 8 : 0;
+  }
+
+  getTacticalAugmentItem(index) {
+    if (this.tacticalAugmentItems[index]) return this.tacticalAugmentItems[index];
+
+    const container = new PIXI.Container();
+    const bg = new PIXI.Graphics();
+    const emblem = new PIXI.Graphics();
+    const icon = new PIXI.Sprite();
+    icon.anchor.set(0.5);
+    const label = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#f8fbff',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
+    const stackBg = new PIXI.Graphics();
+    const stack = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#07111d',
+      align: 'center'
+    });
+    stack.anchor.set(0.5);
+    container.addChild(bg, emblem, icon, label, stackBg, stack);
+    this.tacticalAugmentList.addChild(container);
+
+    const item = { container, bg, emblem, icon, label, stackBg, stack };
+    this.tacticalAugmentItems[index] = item;
+    return item;
+  }
+
+  drawTacticalAugmentEmblem(graphics, category, color, x, y, radius) {
+    graphics.clear();
+    graphics.circle(x, y, radius);
+    graphics.fill({ color: 0x03101d, alpha: 0.96 });
+    graphics.circle(x, y, radius - 1);
+    graphics.stroke({ color, width: 1.25, alpha: 0.88 });
+    const mark = radius * 0.58;
+    if (category === 'offense') {
+      graphics.poly([x - mark * 0.65, y - mark, x + mark, y, x - mark * 0.65, y + mark, x - mark * 0.15, y]);
+      graphics.fill({ color, alpha: 0.9 });
+    } else if (category === 'mobility') {
+      graphics.moveTo(x - mark, y - mark * 0.7);
+      graphics.lineTo(x, y);
+      graphics.lineTo(x - mark, y + mark * 0.7);
+      graphics.moveTo(x, y - mark * 0.7);
+      graphics.lineTo(x + mark, y);
+      graphics.lineTo(x, y + mark * 0.7);
+      graphics.stroke({ color, width: 1.7, alpha: 0.92 });
+    } else if (category === 'defense') {
+      graphics.poly([x, y - mark, x + mark * 0.82, y - mark * 0.45, x + mark * 0.68, y + mark * 0.52, x, y + mark, x - mark * 0.68, y + mark * 0.52, x - mark * 0.82, y - mark * 0.45]);
+      graphics.stroke({ color, width: 1.5, alpha: 0.94 });
+    } else {
+      graphics.circle(x, y, mark * 0.34);
+      graphics.fill({ color, alpha: 0.9 });
+      for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        graphics.circle(x + dx * mark * 0.72, y + dy * mark * 0.72, mark * 0.2);
+        graphics.fill({ color, alpha: 0.7 });
+      }
+    }
+  }
+
+  updateTacticalAugmentItem(item, entry, width, height, compact, overflow = false) {
+    const color = Number(entry?.color) || 0x37f5ff;
+    const iconX = compact ? 13 : 15;
+    const iconY = height / 2;
+    const iconSize = compact ? 17 : 20;
+    item.bg.clear();
+    item.bg.roundRect(0, 0, width, height, 5);
+    item.bg.fill({ color: 0x03101d, alpha: overflow ? 0.72 : 0.64 });
+    item.bg.stroke({ color, width: overflow ? 1.2 : 1, alpha: overflow ? 0.78 : 0.54 });
+
+    item.icon.visible = false;
+    item.emblem.visible = !overflow;
+    if (!overflow) {
+      const texture = GameAssets.getPowerupTexture?.(entry.id);
+      if (texture && GameAssets.isValidTexture?.(texture)) {
+        item.icon.visible = true;
+        item.icon.texture = texture;
+        const scale = Math.min(iconSize / texture.width, iconSize / texture.height);
+        item.icon.scale.set(Number.isFinite(scale) ? scale : 1);
+        item.icon.x = iconX;
+        item.icon.y = iconY;
+        item.emblem.clear();
+        item.emblem.circle(iconX, iconY, iconSize * 0.62);
+        item.emblem.fill({ color: 0x03101d, alpha: 0.82 });
+        item.emblem.circle(iconX, iconY, iconSize * 0.61);
+        item.emblem.stroke({ color, width: 1, alpha: 0.72 });
+      } else {
+        this.drawTacticalAugmentEmblem(item.emblem, entry.category, color, iconX, iconY, iconSize * 0.62);
+      }
+    } else {
+      item.emblem.clear();
+    }
+
+    item.label.text = overflow ? `+${entry.hiddenCount}` : translateText(entry.name || entry.id);
+    item.label.style.fontSize = compact ? 10 : 11;
+    item.label.style.fill = overflow ? '#fff3a0' : '#f8fbff';
+    item.label.scale.set(1);
+    item.label.x = overflow ? 0 : (compact ? 25 : 29);
+    item.label.y = Math.round((height - item.label.height) / 2) - 1;
+    if (overflow) {
+      item.label.anchor.set(0.5, 0);
+      item.label.x = width / 2;
+    } else {
+      item.label.anchor.set(0, 0);
+      this.fitTextToWidth(item.label, width - item.label.x - 5, 0.68);
+    }
+
+    const showStack = !overflow && entry.stacks > 1;
+    item.stackBg.visible = showStack;
+    item.stack.visible = showStack;
+    item.stackBg.clear();
+    if (showStack) {
+      const badgeX = compact ? 7 : 8;
+      const badgeY = compact ? 6 : 7;
+      const badgeRadius = compact ? 6.5 : 7;
+      item.stackBg.circle(badgeX, badgeY, badgeRadius);
+      item.stackBg.fill({ color, alpha: 0.98 });
+      item.stackBg.circle(badgeX, badgeY, badgeRadius);
+      item.stackBg.stroke({ color: 0xffffff, width: 0.8, alpha: 0.66 });
+      item.stack.text = String(entry.stacks);
+      item.stack.x = badgeX;
+      item.stack.y = badgeY - 0.5;
+    }
+    item.container._debugTacticalAugment = overflow
+      ? { overflow: true, hiddenCount: entry.hiddenCount }
+      : { id: entry.id, name: item.label.text, stacks: entry.stacks, category: entry.category, color };
+  }
+
+  updateTacticalAugmentTray() {
+    if (!this.tacticalAugmentGroup) return;
+    const selectedIds = Array.isArray(this.game?.scenes?.play?.player?.runAugmentIds)
+      ? this.game.scenes.play.player.runAugmentIds
+      : [];
+    const grouped = new Map();
+    for (const id of selectedIds) {
+      const meta = getTacticalDraftMeta(id);
+      if (!meta) continue;
+      const current = grouped.get(id);
+      if (current) current.stacks += 1;
+      else grouped.set(id, { id, name: meta.name, category: meta.category, color: meta.color, stacks: 1 });
+    }
+    const entries = [...grouped.values()];
+    if (!entries.length) {
+      this.tacticalAugmentItems.forEach((item) => { item.container.visible = false; });
+      this.tacticalAugmentBackdrop.clear();
+      this.tacticalAugmentGroup.visible = false;
+      this.tacticalAugmentGroup._debugTacticalAugments = {
+        visible: false,
+        selectedCount: selectedIds.length,
+        uniqueCount: 0,
+        entries: [],
+        hiddenCount: 0
+      };
+      return;
+    }
+
+    const layout = getCurrentLayout();
+    const canvasWidth = this.game.getWidth ? this.game.getWidth() : Number(layout?.width) || 0;
+    const canvasHeight = this.game.getHeight ? this.game.getHeight() : Number(layout?.height) || 0;
+    const compact = canvasWidth < 1180 || canvasHeight < 700;
+    const itemWidth = compact ? 84 : 108;
+    const itemHeight = compact ? 26 : 30;
+    const gap = compact ? 4 : 5;
+    const overflowWidth = compact ? 38 : 44;
+    const maxVisibleItems = compact ? 4 : 6;
+    const layoutState = this.tacticalAugmentGroup._layout || {};
+    const maxWidth = Math.max(itemWidth, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 390 : 720));
+    let visibleCount = Math.min(entries.length, maxVisibleItems, Math.max(1, Math.floor((maxWidth + gap) / (itemWidth + gap))));
+    let hiddenCount = entries.length - visibleCount;
+    if (hiddenCount > 0) {
+      visibleCount = Math.max(1, Math.min(visibleCount, Math.floor((maxWidth - overflowWidth) / (itemWidth + gap))));
+      hiddenCount = entries.length - visibleCount;
+    }
+    const visibleEntries = entries.slice(0, visibleCount);
+    let cursorX = 4;
+    visibleEntries.forEach((entry, index) => {
+      const item = this.getTacticalAugmentItem(index);
+      item.container.visible = true;
+      item.container.x = cursorX;
+      item.container.y = 4;
+      this.updateTacticalAugmentItem(item, entry, itemWidth, itemHeight, compact, false);
+      cursorX += itemWidth + gap;
+    });
+    if (hiddenCount > 0) {
+      const item = this.getTacticalAugmentItem(visibleEntries.length);
+      item.container.visible = true;
+      item.container.x = cursorX;
+      item.container.y = 4;
+      this.updateTacticalAugmentItem(item, { hiddenCount, color: 0xffef7e }, overflowWidth, itemHeight, compact, true);
+      cursorX += overflowWidth + gap;
+    }
+    this.tacticalAugmentItems.slice(visibleEntries.length + (hiddenCount > 0 ? 1 : 0)).forEach((item) => {
+      item.container.visible = false;
+    });
+
+    const trayWidth = Math.max(0, cursorX - gap + 4);
+    const trayHeight = itemHeight + 8;
+    this.tacticalAugmentBackdrop.clear();
+    this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 6);
+    this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.34 });
+    this.tacticalAugmentBackdrop.stroke({ color: 0x37f5ff, width: 0.8, alpha: 0.2 });
+    this.tacticalAugmentGroup.x = Number(layoutState.x) || 14;
+    this.tacticalAugmentGroup.y = Number(layoutState.y) || 164;
+    this.tacticalAugmentGroup.visible = true;
+
+    const rightHudLeft = Number(layoutState.rightHudLeft) || canvasWidth;
+    const trayRight = this.tacticalAugmentGroup.x + trayWidth;
+    this.tacticalAugmentGroup._debugTacticalAugments = {
+      visible: true,
+      selectedCount: selectedIds.length,
+      uniqueCount: entries.length,
+      entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category })),
+      visibleEntries: visibleEntries.map((entry) => entry.id),
+      hiddenCount,
+      compact,
+      itemWidth,
+      bounds: { x: this.tacticalAugmentGroup.x, y: this.tacticalAugmentGroup.y, width: trayWidth, height: trayHeight },
+      maxWidth,
+      rightHudLeft,
+      overlapsRightHud: trayRight > rightHudLeft
+    };
   }
 
   getActivePowerupRow(index) {
@@ -1724,6 +1962,15 @@ export class HUD {
       this.traitGroup.y = this.activePowerupGroup?.visible
         ? this.activePowerupGroup.y + this.activePowerupGroup.height + 6
         : this.livesGroup.y + this.livesGroup.height + 6;
+    }
+    if (this.tacticalAugmentGroup) {
+      this.tacticalAugmentGroup._layout = {
+        x: margin,
+        y: margin + leftPanelHeight + Math.round(8 * Math.min(uiScale, 1.4)),
+        maxWidth: Math.max(180, Math.min(canvasWidth - margin * 2, (isLargeDesktop ? 720 : 520) * Math.min(uiScale, 1.25))),
+        rightHudLeft: canvasWidth - margin - rightPanelWidth - 8
+      };
+      this.updateTacticalAugmentTray();
     }
   }
 
