@@ -1,6 +1,23 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "FLIGHT": "비행",
+  "COMBAT": "전투",
+  "AFTER EACH BOSS: CHOOSE 1 OF 3": "보스 처치 후: 3개 중 1개 선택",
+  "Choose one augment after each boss. It stays active until the run ends.": "보스를 처치할 때마다 강화 하나를 선택합니다. 런이 끝날 때까지 유지됩니다.",
+  "POWERUP OVERLAP": "파워업 중복",
+  "SAME NAME: TIMED PICKUP TAKES PRIORITY": "같은 이름: 시간제 픽업 우선",
+  "You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.": "일반 시간제 픽업 슬롯은 하나입니다. 같은 픽업은 시간을 갱신하고 다른 픽업은 교체합니다. 시간제 효과가 끝나면 같은 전술 강화가 돌아옵니다.",
+  "STACK LIMITS": "중첩 제한",
+  "FIRST STACK FULL / SECOND STACK 55%": "첫 중첩 100% / 두 번째 55%",
+  "Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.": "대부분 강화는 두 번까지 중첩됩니다. 전술 선택의 직접 무기 출력은 +45%로 제한되어 도전성을 유지합니다.",
+  "THREAT RESPONSE": "위협 대응",
+  "HULL POWER + DRAFT PICKS SET PRESSURE": "함선 성능과 전술 선택이 압박 결정",
+  "Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.": "강한 함선은 강화된 표적, 더 빠른 공격, 더 강한 보스를 만납니다. 대응은 함선과 선택으로 고정되며 순간 실력에는 반응하지 않습니다.",
+  "DRAFT": "선택",
+  "SLOT": "슬롯",
+  "CAP": "상한",
+  "SYNC": "동기",
   "TACTICAL DRAFT": "전술 선택",
   "Choose one permanent run upgrade.": "이번 런에 영구 적용할 업그레이드 하나를 선택하세요.",
   "SECTOR {sector} CLEARED": "섹터 {sector} 클리어",

@@ -13,6 +13,7 @@ import { getEnemyWeaponProfileById, getEnemyWeaponProfileForEnemy, toBulletVisua
 import { getEnemyThreatAction } from '../config/EnemyThreatActions.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { applyThreatResponseToEnemyHealth } from '../config/ShipThreatResponse.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -432,9 +433,18 @@ export class Enemy {
     const globalMult = BalanceConfig.DIFFICULTY_MULTIPLIER;
 
     this.health = Math.ceil(this.health * hpScale);
+    const threatResponse = this.game?.threatResponse || null;
+    const threatHealth = applyThreatResponseToEnemyHealth(
+      this.health,
+      threatResponse,
+      this.game?.threatResponseHealthAccumulator || 0
+    );
+    this.health = threatHealth.health;
+    this.threatResponseHardened = threatHealth.hardened;
+    if (this.game) this.game.threatResponseHealthAccumulator = threatHealth.accumulator;
     this.maxHealth = this.health;
-    this.speed *= speedScale * globalMult;
-    this.shootDelay = this.shootDelay * fireDelayScale;
+    this.speed *= speedScale * globalMult * Math.max(1, Number(threatResponse?.enemySpeedMult) || 1);
+    this.shootDelay = this.shootDelay * fireDelayScale * Math.max(0.72, Number(threatResponse?.enemyFireDelayMult) || 1);
 
     // Sprite Selection
     if (this.middleShipProfile) {
@@ -2775,7 +2785,8 @@ export class Enemy {
       (tuning.projectileSpeedMult || 1) *
       (tuning.threatProjectileSpeedMult || 1) *
       (this.tacticalThreatProjectileSpeedScalar || 1);
-    return safeSpeed * scale * BalanceConfig.difficulty.pressureScalar;
+    const threatResponseMult = Math.max(1, Number(this.game?.threatResponse?.projectileSpeedMult) || 1);
+    return safeSpeed * scale * threatResponseMult * BalanceConfig.difficulty.pressureScalar;
   }
 
   createThreatBullet(action, angle, speed, options = {}) {
@@ -2948,6 +2959,7 @@ export class Enemy {
       baseProjectileSpeed * getNormalWavePressureTuning(this.level).projectileSpeedMult;
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
+      Math.max(1, Number(this.game?.threatResponse?.projectileSpeedMult) || 1) *
       openingProjectileScalar *
       (this.tacticalProjectileSpeedScalar || 1) *
       ((this.middleShipProfile || this.generatedProfile)?.projectileSpeedMult || 1) *

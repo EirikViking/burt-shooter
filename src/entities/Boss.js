@@ -94,7 +94,8 @@ export class Boss {
       this.earlyDifficultyScalar *
       this.difficultyScalar *
       firstBossHealthScalar *
-      this.getRunModeBossDifficultyMultiplier()
+      this.getRunModeBossDifficultyMultiplier() *
+      Math.max(1, Number(this.game?.threatResponse?.bossHealthMult) || 1)
     ));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
@@ -1704,7 +1705,8 @@ export class Boss {
     const profile = this.game?.getRunModeProfile?.() || null;
     const hpMultiplier = this.getRunModeBossDifficultyMultiplier();
     const attackMultiplier = clamp(finiteNumber(profile?.bossAttackDangerMult, 1), 0.1, 2);
-    return clamp(hpMultiplier * attackMultiplier, 0.1, 2);
+    const threatResponseMultiplier = clamp(finiteNumber(this.game?.threatResponse?.bossAttackDangerMult, 1), 1, 1.2);
+    return clamp(hpMultiplier * attackMultiplier * threatResponseMultiplier, 0.1, 2.2);
   }
 
   getBossProfileRelief() {

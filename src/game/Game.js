@@ -64,6 +64,7 @@ import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
+import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -94,6 +95,8 @@ export class Game {
     this.runProgressionResult = null;
     this.runPressureDirector = null;
     this.contentDirector = null;
+    this.threatResponse = buildShipThreatResponse(getShipMetadata(getDefaultShipKey()), 0);
+    this.threatResponseHealthAccumulator = 0;
     this.scoreBreakdown = this.createEmptyScoreBreakdown();
     this.gameOverTransitionPending = false;
     this.gameplayFacade = null;
@@ -292,6 +295,7 @@ export class Game {
     }
     console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${sectorStartPlaySector || 1}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
+    this.refreshThreatResponse(0);
 
     this.score = 0;
     this.level = sectorStartPlaySector || 1;
@@ -368,6 +372,22 @@ export class Game {
     }
     if (this.isRankedRun()) incrementShipUsage(selectedSpriteKey);
     return true;
+  }
+
+  refreshThreatResponse(tacticalPickCount = 0) {
+    const ship = getShipMetadata(this.selectedShipSpriteKey || getDefaultShipKey())
+      || getShipMetadata(getDefaultShipKey());
+    this.threatResponse = buildShipThreatResponse(ship, tacticalPickCount);
+    if ((Number(tacticalPickCount) || 0) <= 0) this.threatResponseHealthAccumulator = 0;
+    console.log(
+      `[ThreatResponse] ship=${this.threatResponse.shipName}` +
+      ` level=${this.threatResponse.responseLevel}` +
+      ` dpsRatio=${this.threatResponse.dpsRatio}` +
+      ` picks=${this.threatResponse.tacticalPickCount}` +
+      ` count=${this.threatResponse.enemyCountMult}` +
+      ` bossHp=${this.threatResponse.bossHealthMult}`
+    );
+    return this.threatResponse;
   }
 
   markUnrankedRun(reason = 'debug_route') {

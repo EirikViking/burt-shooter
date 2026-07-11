@@ -9,6 +9,8 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/how-to-play-${timestamp()}`);
 const scenarios = [
+  { name: '1280x720-windowed', width: 1280, height: 720, scale: 1 },
+  { name: '760x640-windowed', width: 760, height: 640, scale: 1 },
   { name: '1920x1080-scale100', width: 1920, height: 1080, scale: 1 },
   { name: '1920x1080-scale150', width: 1920, height: 1080, scale: 1.5 },
   { name: '1920x1080-scale175', width: 1920, height: 1080, scale: 1.75 },
@@ -18,18 +20,11 @@ const scenarios = [
   { name: '3840x2160-scale175', width: 3840, height: 2160, scale: 1.75 },
   { name: '3840x2160-scale200', width: 3840, height: 2160, scale: 2 }
 ];
-const expectedRows = [
-  'FOCUS DRIFT',
-  'DODGE / PHASE',
-  'CHAINED DODGE',
-  'GRAZE',
-  'GRAZE BREAK',
-  'COMBOS',
-  'TRACTOR SHIPS',
-  'PICKUPS & BONUS',
-  'RUN MODES',
-  'PILOT ORDERS'
-];
+const expectedRows = {
+  flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
+  combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
+  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
+};
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -124,26 +119,34 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function assertCleanHelpCopy(state, label) {
+function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay?.pageId) {
   const rows = state.howToPlayOverlay?.rows || [];
   const joined = JSON.stringify(state.howToPlayOverlay || {});
-  for (const row of expectedRows) {
+  assert(state.howToPlayOverlay?.pageId === expectedPage, `${label} expected ${expectedPage} page, saw ${state.howToPlayOverlay?.pageId}`);
+  for (const row of expectedRows[expectedPage] || []) {
     assert(rows.includes(row), `${label} missing ${row}`);
   }
   assert(!rows.includes('DODGE'), `${label} still labels the phase protection as DODGE`);
   assert(!rows.includes('NEAR MISSES'), `${label} still uses the old NEAR MISSES card label`);
   assert(!rows.includes('TRACTOR BEAMS'), `${label} still uses the old TRACTOR BEAMS card label`);
-  assert(joined.includes('3 GRAZES ARM YOUR NEXT SHOT'), `${label} should explain Graze Break arming`);
-  assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
-  assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
-  assert(joined.includes('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'), `${label} should show the new training flow`);
-  assert(joined.includes('HOLD CTRL / LT'), `${label} should mention the Focus Drift input`);
-  assert(joined.includes('tight weaving'), `${label} should explain Focus Drift movement use`);
-  assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
-  assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
-  assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should frame Pilot Orders as optional Mayhem drills`);
-  assert(joined.includes('optional combat drills'), `${label} should explain Pilot Orders as optional drills`);
-  assert(joined.includes('Ship Hangar Career Intel'), `${label} should point completed Pilot Orders to Career Intel`);
+  if (expectedPage === 'flight') {
+    assert(joined.includes('HOLD CTRL / LT'), `${label} should mention the Focus Drift input`);
+    assert(joined.includes('tight weaving'), `${label} should explain Focus Drift movement use`);
+    assert(joined.includes('SPACE / LEFT MOUSE / GAMEPAD A'), `${label} should mention left mouse shooting`);
+    assert(joined.includes('LEFT/RIGHT SHIFT / GAMEPAD B'), `${label} should mention both Shift keys for Phase Burst`);
+  }
+  if (expectedPage === 'combat') {
+    assert(joined.includes('3 GRAZES ARM YOUR NEXT SHOT'), `${label} should explain Graze Break arming`);
+    assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
+    assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
+  }
+  if (expectedPage === 'runs') {
+    assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
+    assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
+    assert(joined.includes('FIRST STACK FULL / SECOND STACK 55%'), `${label} should explain diminishing stacks`);
+    assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
+    assert(joined.includes('never reacts to moment-to-moment skill'), `${label} should explain static Threat Response`);
+  }
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
     assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);
@@ -157,7 +160,9 @@ function assertScreenshotAudit(audit, label) {
 function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
-  assert(overlay?.cardCount === 12, `${label} expected 12 help cards, saw ${overlay?.cardCount}`);
+  const expectedCount = expectedRows[overlay?.pageId]?.length || 0;
+  assert(overlay?.pages?.length === 3, `${label} expected three help pages`);
+  assert(overlay?.cardCount === expectedCount, `${label} expected ${expectedCount} help cards, saw ${overlay?.cardCount}`);
   assert(overlay?.heroArt?.motionNodes >= 20, `${label} expected animated hero art nodes, saw ${overlay?.heroArt?.motionNodes}`);
   assert(overlay?.heroArt?.textureSprites >= 6, `${label} expected real hero texture slots, saw ${overlay?.heroArt?.textureSprites}`);
   assert(overlay?.heroArt?.visibleTextureSprites >= 4, `${label} expected loaded hero art sprites, saw ${overlay?.heroArt?.visibleTextureSprites}`);
@@ -260,13 +265,40 @@ try {
       const menuHelp = await waitForState(
         page,
         (state) => state.overlays?.howToPlay &&
-          state.howToPlayOverlay?.rows?.length >= 8 &&
+          state.howToPlayOverlay?.rows?.length >= 4 &&
           state.howToPlayOverlay?.heroArt?.visibleTextureSprites >= 4,
         `${scenario.name} menu help overlay`
       );
       assertOverlayLayout(menuHelp, `${scenario.name} menu help overlay`);
-      assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`);
+      assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`, 'flight');
+      await page.keyboard.press('ArrowRight');
+      const menuCombat = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'combat', `${scenario.name} menu combat page`);
+      assertOverlayLayout(menuCombat, `${scenario.name} menu combat page`);
+      assertCleanHelpCopy(menuCombat, `${scenario.name} menu combat page`, 'combat');
+      await page.keyboard.press('ArrowRight');
+      const menuRuns = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'runs', `${scenario.name} menu runs page`);
+      assertOverlayLayout(menuRuns, `${scenario.name} menu runs page`);
+      assertCleanHelpCopy(menuRuns, `${scenario.name} menu runs page`, 'runs');
       const menuShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play');
+      if (scenario.name === '1280x720-windowed') {
+        for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
+          await page.evaluate((code) => window.__novaI18n?.setLanguagePreference?.(code), locale);
+          await page.waitForTimeout(90);
+          const localized = await readState(page);
+          assert(localized.howToPlayOverlay?.pageId === 'runs', `${locale} How To Play left the Runs page`);
+          const newRules = new Set(['TACTICAL DRAFT', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
+          for (const card of (localized.howToPlayOverlay?.cards || []).filter((entry) => newRules.has(entry.label))) {
+            assert(card.translatedLabel !== card.label, `${locale} left How To Play label in English: ${card.label}`);
+            assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);
+            assert(card.translatedTip !== card.tip, `${locale} left How To Play tip in English: ${card.tip}`);
+          }
+          if (['de', 'ru', 'zh-CN', 'ja'].includes(locale)) {
+            await screenshotWithAudit(page, scenarioDir, `menu-how-to-play-runs-${locale.replace('-', '_')}`);
+          }
+        }
+        await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
+        await page.waitForTimeout(90);
+      }
       await page.keyboard.press('Escape');
       await waitForState(page, (state) => state.scene === 'menu' && !state.overlays?.howToPlay, `${scenario.name} menu help closed`);
 
@@ -382,16 +414,20 @@ try {
         `${scenario.name} pause help overlay`
       );
       assertOverlayLayout(pauseHelp, `${scenario.name} pause help overlay`);
-      assertCleanHelpCopy(pauseHelp, `${scenario.name} pause help overlay`);
+      assertCleanHelpCopy(pauseHelp, `${scenario.name} pause help overlay`, 'flight');
+      await page.evaluate(() => window.__game?.scenes?.play?.howToPlayOverlay?.setPage?.(2));
+      const pauseRuns = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'runs', `${scenario.name} pause runs page`);
+      assertOverlayLayout(pauseRuns, `${scenario.name} pause runs page`);
+      assertCleanHelpCopy(pauseRuns, `${scenario.name} pause runs page`, 'runs');
       const pauseShot = await screenshotWithAudit(page, scenarioDir, 'pause-how-to-play');
 
       scenariosReport.push({
         ...scenario,
         ok: pageErrors.length === 0 && consoleErrors.length === 0,
-        menuRows: menuHelp.howToPlayOverlay?.rows,
-        pauseRows: pauseHelp.howToPlayOverlay?.rows,
-        menuLayout: menuHelp.howToPlayOverlay?.layout,
-        pauseLayout: pauseHelp.howToPlayOverlay?.layout,
+        menuRows: menuRuns.howToPlayOverlay?.rows,
+        pauseRows: pauseRuns.howToPlayOverlay?.rows,
+        menuLayout: menuRuns.howToPlayOverlay?.layout,
+        pauseLayout: pauseRuns.howToPlayOverlay?.layout,
         screenshots: {
           menu: menuShot.file,
           pause: pauseShot.file

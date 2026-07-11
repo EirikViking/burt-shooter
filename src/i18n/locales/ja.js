@@ -1,6 +1,23 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "FLIGHT": "飛行",
+  "COMBAT": "戦闘",
+  "AFTER EACH BOSS: CHOOSE 1 OF 3": "ボス撃破後：3つから1つ選択",
+  "Choose one augment after each boss. It stays active until the run ends.": "ボスを倒すたびに強化を1つ選びます。ラン終了まで有効です。",
+  "POWERUP OVERLAP": "パワーアップの重複",
+  "SAME NAME: TIMED PICKUP TAKES PRIORITY": "同名効果：時間制ピックアップを優先",
+  "You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.": "通常の時間制ピックアップ枠は1つです。同じものは時間を更新し、別のものは置き換えます。時間制効果が終わると同名のドラフト効果が戻ります。",
+  "STACK LIMITS": "スタック上限",
+  "FIRST STACK FULL / SECOND STACK 55%": "1段目100% / 2段目55%",
+  "Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.": "多くの強化は2スタックまでです。ドラフトによる直接武器出力は+45%が上限で、挑戦を残したまま強化できます。",
+  "THREAT RESPONSE": "脅威応答",
+  "HULL POWER + DRAFT PICKS SET PRESSURE": "船体性能とドラフト選択で圧力決定",
+  "Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.": "強い船体ほど強化目標、高速攻撃、手強いボスが現れます。応答は船体と選択で固定され、瞬間的な腕前には反応しません。",
+  "DRAFT": "選択",
+  "SLOT": "枠",
+  "CAP": "上限",
+  "SYNC": "同期",
   "TACTICAL DRAFT": "戦術ドラフト",
   "Choose one permanent run upgrade.": "このラン中ずっと有効なアップグレードを1つ選択。",
   "SECTOR {sector} CLEARED": "セクター {sector} クリア",

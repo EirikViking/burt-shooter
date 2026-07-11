@@ -1,6 +1,23 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "FLIGHT": "VUELO",
+  "COMBAT": "COMBATE",
+  "AFTER EACH BOSS: CHOOSE 1 OF 3": "TRAS CADA JEFE: ELIGE 1 DE 3",
+  "Choose one augment after each boss. It stays active until the run ends.": "Elige una mejora tras cada jefe. Permanece activa hasta que termine la partida.",
+  "POWERUP OVERLAP": "SOLAPE DE POWERUPS",
+  "SAME NAME: TIMED PICKUP TAKES PRIORITY": "MISMO NOMBRE: EL PICKUP TEMPORAL TIENE PRIORIDAD",
+  "You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.": "Tienes un espacio para pickups temporales normales. El mismo renueva su tiempo; uno distinto lo reemplaza. El efecto de Draft correspondiente vuelve al terminar.",
+  "STACK LIMITS": "LIMITES DE ACUMULACION",
+  "FIRST STACK FULL / SECOND STACK 55%": "PRIMERA CARGA COMPLETA / SEGUNDA AL 55%",
+  "Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.": "La mayoria de mejoras admite dos cargas. La potencia directa de armas del Draft se limita a +45% para conservar el desafio.",
+  "THREAT RESPONSE": "RESPUESTA DE AMENAZA",
+  "HULL POWER + DRAFT PICKS SET PRESSURE": "CASCO + ELECCIONES DE DRAFT FIJAN LA PRESION",
+  "Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.": "Los cascos fuertes enfrentan objetivos reforzados, ataques mas rapidos y jefes mas duros. La respuesta depende del casco y tus elecciones, nunca de tu habilidad momentanea.",
+  "DRAFT": "ELECCION",
+  "SLOT": "ESPACIO",
+  "CAP": "LIMITE",
+  "SYNC": "SINC",
   "TACTICAL DRAFT": "ELECCION TACTICA",
   "Choose one permanent run upgrade.": "Elige una mejora permanente para esta partida.",
   "SECTOR {sector} CLEARED": "SECTOR {sector} SUPERADO",

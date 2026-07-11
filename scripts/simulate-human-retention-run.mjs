@@ -3,12 +3,19 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { getSelectableShips } from '../src/config/ShipMetadata.js';
 
 const host = '127.0.0.1';
 const port = Number(process.env.CHECK_PORT) || await findPort(4580);
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/human-retention-run-${stamp()}`);
 const targetSector = Math.max(3, Number(process.env.TARGET_SECTOR) || 3);
+const requestedShipId = process.env.SIM_SHIP_ID || 'nova_ship_01';
+const selectedShip = getSelectableShips().find((ship) => ship.id === requestedShipId);
+if (!selectedShip) throw new Error(`Unknown SIM_SHIP_ID ${requestedShipId}`);
+const allShipIds = getSelectableShips().map((ship) => ship.baseId || ship.id);
+const maxDurationMs = Math.max(180000, Number(process.env.MAX_DURATION_MS) || 240000);
+const invulnerableSimulation = process.env.SIM_INVULNERABLE !== '0';
 
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -72,24 +79,79 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(`console: ${message.text()}`); });
-const report = { ok: false, baseUrl, targetSector, startedAt: new Date().toISOString(), samples: [], draftScreenshots: [] };
+const report = {
+  ok: false,
+  baseUrl,
+  targetSector,
+  ship: { id: selectedShip.id, name: selectedShip.name, spriteKey: selectedShip.spriteKey },
+  startedAt: new Date().toISOString(),
+  samples: [],
+  draftScreenshots: [],
+  invulnerableSimulation
+};
 
 try {
-  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.addInitScript(({ shipId, spriteKey, unlockedShipIds }) => {
+    window.localStorage?.setItem?.('burt.selectedShip.v1', spriteKey);
+    window.localStorage?.setItem?.('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      unlockTuningVersion: 3,
+      pilotXp: 999999,
+      pilotRank: 49,
+      highestPilotRank: 49,
+      totalRuns: 50,
+      totalBossesDefeated: 100,
+      survivedSeconds: 7200,
+      runClears: 10,
+      clearWithLivesRemaining: 10,
+      noHitWaves: 100,
+      noHitSectors: 30,
+      totalCodexDiscoveries: 1000,
+      bestScore: 1000000,
+      bestRank: 49,
+      bestSector: 60,
+      bestLevel: 60,
+      unlockedShipIds,
+      secretShipUnlockIds: [shipId]
+    }));
+  }, { shipId: selectedShip.baseId || selectedShip.id, spriteKey: selectedShip.spriteKey, unlockedShipIds: allShipIds });
+  await page.goto(`${baseUrl}/?skipIntro=1&offlineLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', null, { timeout: 30000 });
+  const started = await page.evaluate((spriteKey) => window.__game?.startGame?.(spriteKey), selectedShip.spriteKey);
+  assert(started === true, `startGame rejected ${selectedShip.name}`);
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  const initialState = await state(page);
+  assert(initialState.selectedShipSpriteKey === selectedShip.spriteKey, `expected ${selectedShip.name}, got ${initialState.selectedShipSpriteKey}`);
+  report.initial = {
+    selectedShipSpriteKey: initialState.selectedShipSpriteKey,
+    threatResponse: initialState.threatResponse
+  };
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.debugInvincible = true;
     play.player.grantInvulnerability(600000, 'human_retention_simulation');
+  }).then(async () => {
+    if (!invulnerableSimulation) {
+      await page.evaluate(() => {
+        const play = window.__game.scenes.play;
+        play.debugInvincible = false;
+        play.player.invulnerable = false;
+        play.player.invulnerableTime = 0;
+      });
+    }
   });
 
   const startedAt = Date.now();
   let direction = 1;
   let lastDraftCount = 0;
   let lastSampleAt = 0;
-  while (Date.now() - startedAt < 180000) {
+  while (Date.now() - startedAt < maxDurationMs) {
     const current = await state(page);
-    if (current.scene === 'gameOver') throw new Error(`simulation reached Game Over in sector ${current.arcadeRun?.currentSector}`);
+    if (current.scene === 'gameOver') {
+      report.gameOver = true;
+      report.gameOverSector = current.arcadeRun?.currentSector || current.level || 1;
+      break;
+    }
     if ((current.arcadeRun?.currentSector || 1) >= targetSector && (current.tacticalDraft?.history?.length || 0) >= targetSector - 1) break;
 
     if (current.tacticalDraft?.active) {
@@ -116,11 +178,11 @@ try {
     }
 
     await page.keyboard.down('Space');
-    const pilot = await page.evaluate(() => {
+    const pilot = await page.evaluate((keepInvulnerable) => {
       const game = window.__game;
       const play = game.scenes.play;
       const player = play.player;
-      player.grantInvulnerability(600000, 'human_retention_simulation');
+      if (keepInvulnerable) player.grantInvulnerability(600000, 'human_retention_simulation');
       const targets = (play.enemyManager?.enemies || [])
         .filter((enemy) => enemy?.active !== false && !enemy.waitingForEntry && Number.isFinite(enemy.x))
         .sort((a, b) => {
@@ -128,15 +190,32 @@ try {
           if (b.kind === 'boss' && a.kind !== 'boss') return 1;
           return (Number(b.y) || 0) - (Number(a.y) || 0);
         });
-      return { playerX: player.x, targetX: targets[0]?.x ?? null };
-    });
+      const enemyBullets = (play.bulletManager?.enemyBullets || [])
+        .filter((bullet) => bullet?.active !== false && Number.isFinite(bullet.x) && Number.isFinite(bullet.y));
+      const candidates = [-180, -90, 0, 90, 180]
+        .map((offset) => Math.max(48, Math.min(game.getGameplayWidth() - 48, player.x + offset)));
+      const dangerScore = (candidateX) => enemyBullets.reduce((minimum, bullet) => {
+        const dx = candidateX - bullet.x;
+        const dy = player.y - bullet.y;
+        return Math.min(minimum, Math.hypot(dx, dy));
+      }, Number.POSITIVE_INFINITY);
+      const nearestBulletDistance = dangerScore(player.x);
+      const safestX = candidates.sort((a, b) => dangerScore(b) - dangerScore(a))[0] ?? player.x;
+      const targetX = nearestBulletDistance < 190 ? safestX : (targets[0]?.x ?? null);
+      return {
+        playerX: player.x,
+        targetX,
+        nearestBulletDistance,
+        shouldPhase: nearestBulletDistance < 92 && player.dodgeCooldown <= 0
+      };
+    }, invulnerableSimulation);
     const deltaX = pilot.targetX === null ? direction * 120 : pilot.targetX - pilot.playerX;
     const movementKey = Math.abs(deltaX) <= 34 ? null : deltaX > 0 ? 'ArrowRight' : 'ArrowLeft';
     if (movementKey) await page.keyboard.down(movementKey);
     await page.waitForTimeout(360);
     if (movementKey) await page.keyboard.up(movementKey);
     if (pilot.targetX === null) direction *= -1;
-    if ((Date.now() - startedAt) % 7000 < 900) {
+    if (pilot.shouldPhase || (Date.now() - startedAt) % 7000 < 900) {
       await page.keyboard.press('ShiftLeft').catch(() => {});
     }
     if (Date.now() - lastSampleAt > 2500) {
@@ -149,6 +228,7 @@ try {
         enemies: sample.wave?.activeEnemies,
         bullets: sample.arcadeRun?.currentEnemyBulletCount,
         score: sample.score,
+        lives: sample.lives,
         draftCount: sample.tacticalDraft?.history?.length || 0,
         selectedIds: sample.tacticalDraft?.selectedIds || []
       });
@@ -159,23 +239,27 @@ try {
   const finalState = await state(page);
   const finalScreenshot = path.join(outputDir, 'sector-three-live-run.png');
   await page.screenshot({ path: finalScreenshot });
-  assert(finalState.arcadeRun?.currentSector >= targetSector, `only reached sector ${finalState.arcadeRun?.currentSector}`);
-  assert(finalState.tacticalDraft?.history?.length >= targetSector - 1, `only completed ${finalState.tacticalDraft?.history?.length || 0} drafts`);
-  assert(finalState.tacticalDraft?.selectedIds?.length >= targetSector - 1, 'selected augments did not persist through real sectors');
+  if (invulnerableSimulation) {
+    assert(finalState.arcadeRun?.currentSector >= targetSector, `only reached sector ${finalState.arcadeRun?.currentSector}`);
+    assert(finalState.tacticalDraft?.history?.length >= targetSector - 1, `only completed ${finalState.tacticalDraft?.history?.length || 0} drafts`);
+    assert(finalState.tacticalDraft?.selectedIds?.length >= targetSector - 1, 'selected augments did not persist through real sectors');
+  }
+  assert(finalState.selectedShipSpriteKey === selectedShip.spriteKey, `expected ${selectedShip.name}, got ${finalState.selectedShipSpriteKey}`);
   assert(errors.length === 0, errors.join(' | '));
   report.ok = true;
   report.durationMs = Date.now() - startedAt;
   report.finalScreenshot = finalScreenshot;
   report.final = {
-    sector: finalState.arcadeRun.currentSector,
+    sector: finalState.arcadeRun?.currentSector || finalState.level || report.gameOverSector || 1,
     score: finalState.score,
     lives: finalState.lives,
     wave: finalState.wave,
-    draft: finalState.tacticalDraft
+    draft: finalState.tacticalDraft,
+    threatResponse: finalState.threatResponse
   };
   report.errors = errors;
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft.history.length} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft?.history?.length || 0} lives=${report.final.lives} gameOver=${Boolean(report.gameOver)} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
 } catch (error) {
   report.error = error.stack || error.message;
   report.errors = errors;

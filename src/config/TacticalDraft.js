@@ -1,4 +1,5 @@
 import { getPowerupMeta } from './PowerupCatalog.js';
+import { SHIP_THREAT_RESPONSE_TARGETS } from './ShipThreatResponse.js';
 
 export const TACTICAL_DRAFT_VERSION = 1;
 export const TACTICAL_DRAFT_OFFER_COUNT = 3;
@@ -130,7 +131,7 @@ export function buildTacticalDraftOffers({
   return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => getTacticalDraftMeta(augment.id));
 }
 
-export function buildTacticalDraftModifiers(selectedIds = []) {
+export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null } = {}) {
   const result = {
     damageMult: 1,
     fireDelayMult: 1,
@@ -152,22 +153,29 @@ export function buildTacticalDraftModifiers(selectedIds = []) {
       orbitalCharges: 0
     }
   };
+  const stackCounts = new Map();
   for (const id of selectedIds) {
     const augment = getTacticalDraftAugment(id);
     if (!augment) continue;
+    const stackIndex = stackCounts.get(id) || 0;
+    stackCounts.set(id, stackIndex + 1);
+    const effectiveness = stackIndex === 0 ? 1 : SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness;
     const modifiers = augment.modifiers || {};
-    result.damageMult *= Number(modifiers.damageMult) || 1;
-    result.fireDelayMult *= Number(modifiers.fireDelayMult) || 1;
-    result.speedMult *= Number(modifiers.speedMult) || 1;
-    result.bulletSpeedMult *= Number(modifiers.bulletSpeedMult) || 1;
-    result.dodgeDelayMult *= Number(modifiers.dodgeDelayMult) || 1;
-    result.dodgeDurationMult *= Number(modifiers.dodgeDurationMult) || 1;
-    result.shotBonus += Number(modifiers.shotBonus) || 0;
-    result.pierce = result.pierce || modifiers.pierce === true;
-    result.magnetRadiusBonus += Number(modifiers.magnetRadiusBonus) || 0;
-    result.magnetStrengthBonus += Number(modifiers.magnetStrengthBonus) || 0;
-    result.droneCount += Number(modifiers.droneCount) || 0;
-    result.chainMax += Number(modifiers.chainMax) || 0;
+    const suppressMatchingTimedEffect = activePowerupType === id;
+    if (!suppressMatchingTimedEffect) {
+      result.damageMult *= Math.pow(Number(modifiers.damageMult) || 1, effectiveness);
+      result.fireDelayMult *= Math.pow(Number(modifiers.fireDelayMult) || 1, effectiveness);
+      result.speedMult *= Math.pow(Number(modifiers.speedMult) || 1, effectiveness);
+      result.bulletSpeedMult *= Math.pow(Number(modifiers.bulletSpeedMult) || 1, effectiveness);
+      result.dodgeDelayMult *= Math.pow(Number(modifiers.dodgeDelayMult) || 1, effectiveness);
+      result.dodgeDurationMult *= Math.pow(Number(modifiers.dodgeDurationMult) || 1, effectiveness);
+      result.shotBonus += (Number(modifiers.shotBonus) || 0) * effectiveness;
+      result.pierce = result.pierce || modifiers.pierce === true;
+      result.magnetRadiusBonus += (Number(modifiers.magnetRadiusBonus) || 0) * effectiveness;
+      result.magnetStrengthBonus += (Number(modifiers.magnetStrengthBonus) || 0) * effectiveness;
+      result.droneCount += (Number(modifiers.droneCount) || 0) * effectiveness;
+      result.chainMax += (Number(modifiers.chainMax) || 0) * effectiveness;
+    }
     const sectorStart = augment.sectorStart || {};
     result.sectorStart.shield = result.sectorStart.shield || sectorStart.shield === true;
     result.sectorStart.invulnerabilityMs += Number(sectorStart.invulnerabilityMs) || 0;
@@ -175,6 +183,9 @@ export function buildTacticalDraftModifiers(selectedIds = []) {
     result.sectorStart.bombShots += Number(sectorStart.bombShots) || 0;
     result.sectorStart.orbitalCharges += Number(sectorStart.orbitalCharges) || 0;
   }
+  result.overlapSuppressedId = activePowerupType && selectedIds.includes(activePowerupType)
+    ? activePowerupType
+    : null;
   return result;
 }
 

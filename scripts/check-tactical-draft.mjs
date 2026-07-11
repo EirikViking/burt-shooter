@@ -8,6 +8,7 @@ import {
   buildTacticalDraftModifiers,
   buildTacticalDraftOffers
 } from '../src/config/TacticalDraft.js';
+import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
 
 const host = '127.0.0.1';
 const port = Number(process.env.CHECK_PORT) || await findAvailablePort(4560);
@@ -124,6 +125,11 @@ const followupOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 
 assert(!followupOffers.some((offer) => offer.id === lowLifeOffers[0].id), 'follow-up draft repeated an already selected augment before pool exhaustion');
 const stacked = buildTacticalDraftModifiers(['damage_up', 'rapid_fire', 'double_shot', 'magnet']);
 assert(stacked.damageMult > 1 && stacked.fireDelayMult < 1 && stacked.shotBonus === 1 && stacked.magnetRadiusBonus > 0, 'stacked modifiers incomplete');
+const doubleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up']);
+assert(doubleDamage.damageMult > 1.12 && doubleDamage.damageMult < 1.12 * 1.12, 'second stack should have diminishing returns');
+const matchingTimedPickup = buildTacticalDraftModifiers(['damage_up', 'rapid_fire'], { activePowerupType: 'damage_up' });
+assert(matchingTimedPickup.overlapSuppressedId === 'damage_up', 'matching timed pickup should suppress only its duplicate Draft effect');
+assert(Math.abs(matchingTimedPickup.damageMult - 1) < 0.0001 && matchingTimedPickup.fireDelayMult < 1, 'matching timed pickup suppression affected unrelated Draft effects');
 
 mkdirSync(outputDir, { recursive: true });
 const server = await startPreview();
@@ -270,6 +276,28 @@ try {
     game.lives = Math.max(1, game.lives - 1);
     const beforeRepair = game.lives;
     player.applyRunAugment('nano_patch');
+    const directOutputRatio = ((boosted.damage * boosted.shots) / boosted.fireDelay) /
+      ((baseline.damage * baseline.shots) / baseline.fireDelay);
+    const sectorBeforeOrdinaryPickup = {
+      pointDefense: player.pointDefenseActive,
+      bombShots: player.bombShotsLeft,
+      orbitalCharges: player.orbitalStrikeCharges
+    };
+    player.applyPowerup('damage_up');
+    const overlap = {
+      activeType: player.activePowerup.type,
+      suppressedId: player.getRunAugmentDebugState().overlapSuppressedId,
+      pointDefense: player.pointDefenseActive,
+      bombShots: player.bombShotsLeft,
+      orbitalCharges: player.orbitalStrikeCharges
+    };
+    player.resetPowerups();
+    const restored = {
+      suppressedId: player.getRunAugmentDebugState().overlapSuppressedId,
+      pointDefense: player.pointDefenseActive,
+      bombShots: player.bombShotsLeft,
+      orbitalCharges: player.orbitalStrikeCharges
+    };
     return {
       baseline,
       boosted,
@@ -282,19 +310,29 @@ try {
         orbitalCharges: player.orbitalStrikeCharges
       },
       repair: { before: beforeRepair, after: game.lives },
+      directOutputRatio,
+      threatResponse: game.threatResponse,
+      sectorBeforeOrdinaryPickup,
+      overlap,
+      restored,
       dodgeOverlap,
       debug: player.getRunAugmentDebugState()
     };
   });
-  assert(runtime.boosted.damage > runtime.baseline.damage, 'damage augment did not apply');
+  assert(runtime.directOutputRatio > 1.1, `combined offensive Draft did not raise direct output enough: ${runtime.directOutputRatio}`);
   assert(runtime.boosted.fireDelay < runtime.baseline.fireDelay, 'fire-rate augment did not apply');
   assert(runtime.boosted.speed > runtime.baseline.speed, 'speed augment did not apply');
   assert(runtime.boosted.bulletSpeed > runtime.baseline.bulletSpeed, 'projectile-speed augment did not apply');
   assert(runtime.boosted.shots > runtime.baseline.shots && runtime.boosted.pierce, 'multishot/pierce augments did not apply');
   assert(runtime.boosted.magnet && runtime.boosted.drones && runtime.boosted.chain, 'utility augments did not persist');
+  assert(runtime.directOutputRatio <= SHIP_THREAT_RESPONSE_TARGETS.maxDirectDraftOutputMult + 0.002, `Draft direct output exceeded cap: ${runtime.directOutputRatio}`);
+  assert(runtime.threatResponse.tacticalPickCount >= 10, 'threat response did not track Draft pick count');
   assert(runtime.sectorEffects.shield && runtime.sectorEffects.invulnerable && runtime.sectorEffects.pointDefense, 'defensive sector-start effects missing');
   assert(runtime.sectorEffects.bombShots >= 2 && runtime.sectorEffects.orbitalCharges >= 2, 'offensive sector-start payload missing');
   assert(runtime.repair.after === runtime.repair.before + 1, 'nano patch did not repair one life');
+  assert(runtime.overlap.activeType === 'damage_up' && runtime.overlap.suppressedId === 'damage_up', 'matching ordinary pickup did not take temporary priority');
+  assert(runtime.overlap.pointDefense && runtime.overlap.bombShots >= 2 && runtime.overlap.orbitalCharges >= 2, 'ordinary pickup cleared Tactical sector-start tools');
+  assert(runtime.restored.suppressedId === null, 'Draft effect did not return after ordinary pickup ended');
   assert(runtime.dodgeOverlap.invulnerable && runtime.dodgeOverlap.remainingMs > 3500, 'dodge end cancelled a longer invulnerability window');
   await runtimePage.close();
 

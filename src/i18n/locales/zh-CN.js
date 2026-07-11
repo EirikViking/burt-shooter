@@ -1,6 +1,23 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "FLIGHT": "飞行",
+  "COMBAT": "战斗",
+  "AFTER EACH BOSS: CHOOSE 1 OF 3": "每个首领后：三选一",
+  "Choose one augment after each boss. It stays active until the run ends.": "击败每个首领后选择一项强化。它会持续到本局结束。",
+  "POWERUP OVERLAP": "强化重叠",
+  "SAME NAME: TIMED PICKUP TAKES PRIORITY": "同名效果：限时拾取物优先",
+  "You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.": "普通限时拾取物只有一个槽位。同类会刷新时间，不同类会替换。限时效果结束后，同名战术强化会恢复。",
+  "STACK LIMITS": "叠加上限",
+  "FIRST STACK FULL / SECOND STACK 55%": "第一层完整 / 第二层55%",
+  "Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.": "大多数强化最多两层。战术选择带来的直接武器输出上限为+45%，提升力量但保留挑战。",
+  "THREAT RESPONSE": "威胁响应",
+  "HULL POWER + DRAFT PICKS SET PRESSURE": "船体强度与战术选择决定压力",
+  "Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.": "强力船体会面对强化目标、更快攻击和更强首领。响应只由船体和选择决定，不会根据即时表现变化。",
+  "DRAFT": "选择",
+  "SLOT": "槽位",
+  "CAP": "上限",
+  "SYNC": "同步",
   "TACTICAL DRAFT": "战术选择",
   "Choose one permanent run upgrade.": "选择一项本局永久升级。",
   "SECTOR {sector} CLEARED": "第 {sector} 区已清除",

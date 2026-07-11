@@ -20,6 +20,8 @@ import {
   getTacticalDraftAugment,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
+import { SHIP_THREAT_RESPONSE_TARGETS } from '../config/ShipThreatResponse.js';
+import { POINT_DEFENSE_RADIUS } from '../game/ProjectileDefenseRules.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -181,6 +183,7 @@ export class Player {
     this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
+    this.tacticalOrbitalStrikeCharges = 0;
     this.orbitalStrikeCooldown = 0;
     this.vampireActive = false;
     this.vampireKillCount = 0;
@@ -194,6 +197,7 @@ export class Player {
     // Point Defense State
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.tacticalPointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
 
     // Row Core instant ritual state.
@@ -214,6 +218,7 @@ export class Player {
 
     // Bomb State
     this.bombShotsLeft = 0;
+    this.tacticalBombShotsLeft = 0;
     this.bombSpentUntil = 0;
     this.bombIndicator = null;
 
@@ -1136,6 +1141,7 @@ export class Player {
       this.activePowerup.expiresAt = 0;
       this.activePowerup.remainingMs = 0;
       this.activePowerup.durationMode = 'wall_clock';
+      this.powerupEffect = null;
       this.recalculateStats();
     }
 
@@ -1464,12 +1470,13 @@ export class Player {
       // Check expiry
       if (now > this.pointDefenseExpiresAt) {
         this.deactivatePointDefense();
+        if (now > this.tacticalPointDefenseExpiresAt) this.tacticalPointDefenseExpiresAt = 0;
       } else {
         // Animate ring
         if (this.pointDefenseRing) {
           const pointDefenseSuppressed = this.isPowerupSuppressed();
           this.pointDefenseRing.clear();
-          const radius = 35 + Math.sin(now * 0.008) * 5;
+          const radius = POINT_DEFENSE_RADIUS + Math.sin(now * 0.008) * 5;
           this.pointDefenseRing.circle(0, 0, radius);
           this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(now * 0.01) * 0.2 });
 
@@ -1838,6 +1845,7 @@ export class Player {
       bullets.push(bomb);
 
       this.bombShotsLeft--;
+      if (this.tacticalBombShotsLeft > 0) this.tacticalBombShotsLeft--;
       this.updateBombIndicator();
       if (this.bombShotsLeft <= 0) {
         this.deactivateBomb({ spentFeedback: true });
@@ -3423,6 +3431,7 @@ export class Player {
       this.repairFromPowerup({ repairLives: augment.immediate.repairLives }, `tactical_draft_${id}`);
     }
     this.recalculateStats();
+    this.game?.refreshThreatResponse?.(this.runAugmentIds.length);
     return {
       applied: true,
       id,
@@ -3434,14 +3443,25 @@ export class Player {
   }
 
   applyRunAugmentModifiers() {
-    const modifiers = this.runAugmentModifiers || buildTacticalDraftModifiers(this.runAugmentIds);
+    const modifiers = buildTacticalDraftModifiers(this.runAugmentIds, {
+      activePowerupType: this.activePowerup?.type || null
+    });
+    this.runAugmentModifiers = modifiers;
+    const directOutputBefore = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
     this.bulletDamage = Math.max(0.65, this.bulletDamage * modifiers.damageMult);
-    this.shootDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+    if (modifiers.fireDelayMult !== 1) {
+      this.shootDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+    }
     this.speed = Math.max(1.5, this.speed * modifiers.speedMult);
     this.bulletSpeed = Math.max(2.5, this.bulletSpeed * modifiers.bulletSpeedMult);
     this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
     this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
     this.multiShot = Math.max(1, Math.min(8, this.multiShot + Math.round(modifiers.shotBonus || 0)));
+    const directOutputAfter = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
+    const directOutputCap = directOutputBefore * SHIP_THREAT_RESPONSE_TARGETS.maxDirectDraftOutputMult;
+    if (directOutputAfter > directOutputCap && directOutputAfter > 0) {
+      this.bulletDamage = Math.max(0.65, this.bulletDamage * (directOutputCap / directOutputAfter));
+    }
     this.bulletPierce = Boolean(this.bulletPierce || modifiers.pierce);
     if (modifiers.magnetRadiusBonus > 0) {
       this.magnetActive = true;
@@ -3474,20 +3494,23 @@ export class Player {
     }
     if (effects.pointDefenseMs > 0) {
       this.pointDefenseActive = true;
-      this.pointDefenseExpiresAt = Date.now() + Math.min(9000, effects.pointDefenseMs);
+      this.tacticalPointDefenseExpiresAt = Date.now() + Math.min(9000, effects.pointDefenseMs);
+      this.pointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt;
       this.createPointDefenseRing();
       triggered.push('point_defense');
     }
     if (effects.bombShots > 0) {
       this.bombMaxShots = Math.max(this.bombMaxShots || 3, Math.min(5, effects.bombShots));
-      this.bombShotsLeft = Math.max(this.bombShotsLeft || 0, Math.min(5, effects.bombShots));
+      this.tacticalBombShotsLeft = Math.min(5, effects.bombShots);
+      this.bombShotsLeft = Math.max(this.bombShotsLeft || 0, this.tacticalBombShotsLeft);
       this.bombSpentUntil = 0;
       this.createBombIndicator();
       triggered.push('bomb');
     }
     if (effects.orbitalCharges > 0) {
       this.orbitalStrikeActive = true;
-      this.orbitalStrikeCharges = Math.max(this.orbitalStrikeCharges || 0, Math.min(5, effects.orbitalCharges));
+      this.tacticalOrbitalStrikeCharges = Math.min(5, effects.orbitalCharges);
+      this.orbitalStrikeCharges = Math.max(this.orbitalStrikeCharges || 0, this.tacticalOrbitalStrikeCharges);
       this.orbitalStrikeCooldown = 0;
       triggered.push('orbital_strike');
     }
@@ -3504,6 +3527,7 @@ export class Player {
       selectedIds: this.runAugmentIds.slice(),
       labels: summarizeTacticalDraftPicks(this.runAugmentIds),
       modifiers: this.runAugmentModifiers,
+      overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
       lastSectorStart: this.lastRunAugmentSectorStart
     };
   }
@@ -3752,6 +3776,12 @@ export class Player {
 
   resetPowerups() {
     const expiredType = this.activePowerup.type;
+    const now = Date.now();
+    const tacticalPointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt > now
+      ? this.tacticalPointDefenseExpiresAt
+      : 0;
+    const tacticalBombShotsLeft = Math.max(0, Math.round(Number(this.tacticalBombShotsLeft) || 0));
+    const tacticalOrbitalStrikeCharges = Math.max(0, Math.round(Number(this.tacticalOrbitalStrikeCharges) || 0));
     // Visuals
     if (this.sprite && !this.isDodging && !this.invulnerable) {
       this.sprite.alpha = 1;
@@ -3789,6 +3819,20 @@ export class Player {
     this.activePowerup.expiresAt = 0;
     this.activePowerup.remainingMs = 0;
     this.activePowerup.durationMode = 'wall_clock';
+    if (tacticalPointDefenseExpiresAt > now) {
+      this.pointDefenseActive = true;
+      this.pointDefenseExpiresAt = tacticalPointDefenseExpiresAt;
+      this.createPointDefenseRing();
+    }
+    if (tacticalBombShotsLeft > 0) {
+      this.bombShotsLeft = tacticalBombShotsLeft;
+      this.bombMaxShots = Math.max(this.bombMaxShots, tacticalBombShotsLeft);
+      this.createBombIndicator();
+    }
+    if (tacticalOrbitalStrikeCharges > 0) {
+      this.orbitalStrikeActive = true;
+      this.orbitalStrikeCharges = tacticalOrbitalStrikeCharges;
+    }
     const before = this.getStatSnapshot();
     this.recalculateStats();
     const after = this.getStatSnapshot();

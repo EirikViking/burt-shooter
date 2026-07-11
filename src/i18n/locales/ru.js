@@ -1,6 +1,23 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "FLIGHT": "ПОЛЕТ",
+  "COMBAT": "БОЙ",
+  "AFTER EACH BOSS: CHOOSE 1 OF 3": "ПОСЛЕ КАЖДОГО БОССА: ВЫБЕРИ 1 ИЗ 3",
+  "Choose one augment after each boss. It stays active until the run ends.": "После каждого босса выбери одно усиление. Оно действует до конца забега.",
+  "POWERUP OVERLAP": "СОВПАДЕНИЕ УСИЛЕНИЙ",
+  "SAME NAME: TIMED PICKUP TAKES PRIORITY": "ОДНО ИМЯ: ВРЕМЕННЫЙ БОНУС В ПРИОРИТЕТЕ",
+  "You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.": "Есть один слот обычного временного бонуса. Тот же бонус обновляет время, другой заменяет его. Совпадающий эффект выбора вернется после окончания бонуса.",
+  "STACK LIMITS": "ПРЕДЕЛЫ СТЕКОВ",
+  "FIRST STACK FULL / SECOND STACK 55%": "ПЕРВЫЙ СТЕК ПОЛНЫЙ / ВТОРОЙ 55%",
+  "Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.": "Большинство усилений имеет два стека. Прямая мощность оружия от выбора ограничена +45%, чтобы сохранить вызов.",
+  "THREAT RESPONSE": "ОТВЕТ УГРОЗЫ",
+  "HULL POWER + DRAFT PICKS SET PRESSURE": "СИЛА КОРПУСА + ВЫБОРЫ ЗАДАЮТ ДАВЛЕНИЕ",
+  "Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.": "Сильные корабли встречают усиленные цели, более быстрые атаки и более стойких боссов. Ответ задают корпус и выборы, а не текущая игра пилота.",
+  "DRAFT": "ВЫБОР",
+  "SLOT": "СЛОТ",
+  "CAP": "ЛИМИТ",
+  "SYNC": "СИНХР",
   "TACTICAL DRAFT": "ТАКТИЧЕСКИЙ ВЫБОР",
   "Choose one permanent run upgrade.": "Выберите одно постоянное улучшение на этот забег.",
   "SECTOR {sector} CLEARED": "СЕКТОР {sector} ЗАЧИЩЕН",

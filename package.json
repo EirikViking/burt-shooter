@@ -28,6 +28,8 @@
     "check:ship-traits": "node scripts/check-ship-traits.mjs",
     "check:ship-trait-explanations": "node scripts/check-ship-trait-explanations.mjs",
     "check:ascendant-ships": "node scripts/check-ascendant-ships.mjs",
+    "check:ship-threat-response": "node scripts/check-ship-threat-response.mjs",
+    "check:projectile-defense-rules": "node scripts/check-projectile-defense-rules.mjs",
     "check:credits-ascendant-easter-egg": "node scripts/check-credits-ascendant-easter-egg.mjs",
     "check:hangar-unlock-integrity": "node scripts/check-hangar-unlock-integrity.mjs",
     "check:generated-rosters": "node scripts/check-generated-rosters.mjs",

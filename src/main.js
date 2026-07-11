@@ -624,6 +624,7 @@ function buildGameTextState(game) {
       : !game?.isDebugRun,
     maintainerDevtools: getMaintainerDevtoolsState(),
     selectedShipSpriteKey: game?.selectedShipSpriteKey || null,
+    threatResponse: game?.threatResponse || null,
     steamUploadDiagnostics: readLastSteamUploadDiagnostics(),
     achievements: game?.getAchievementDebugState ? game.getAchievementDebugState() : null,
     isPaused: Boolean(playScene?.isPaused),

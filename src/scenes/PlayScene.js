@@ -96,6 +96,7 @@ import {
 import { getBossProfile } from '../config/BossRoster.js';
 import { RUN_MODES, getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
+import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
 
 const BOSS_WARNING_JOKES = [
   'Mission Control is hiding under the desk.',
@@ -3871,6 +3872,7 @@ export class PlayScene {
           const dx = bulletProxy.x - enemyProxy.x;
           const dy = bulletProxy.y - enemyProxy.y;
           if ((dx * dx + dy * dy) >= radius * radius) continue;
+          if (!this.claimPlayerBulletTargetHit(bullet, enemy)) continue;
           collisionStats.playerBulletEnemyHits += 1;
           if (bulletProxy.isPlasmaLance) collisionStats.plasmaLanceHitEvents += 1;
           const distance = Math.hypot(dx, dy);
@@ -3977,6 +3979,7 @@ export class PlayScene {
           const hijacker = this.enemyManager.hijacker;
           collisionStats.playerBulletHijackerPairs += 1;
           if (this.checkCollision(bullet, hijacker)) {
+            if (!this.claimPlayerBulletTargetHit(bullet, hijacker)) return;
             collisionStats.playerBulletHijackerHits += 1;
             if (bullet.isBomb) {
               this.detonateBombBullet(bullet, 'hijacker_impact');
@@ -4022,6 +4025,10 @@ export class PlayScene {
           const dy = playerBullet.y - enemyBullet.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const hitRadius = (playerBullet.radius || 4) + (enemyBullet.radius || 6);
+
+          if (pointDefenseActive && !playerBullet.isGrazeBreaker) {
+            if (!isWithinPointDefenseRadius(this.player, enemyBullet)) return;
+          }
 
           if (dist < hitRadius) {
             collisionStats.projectileDefenseHits += 1;
@@ -4155,6 +4162,7 @@ export class PlayScene {
           // Only damage hazard drones, not collectible power cores.
           if (bonusDrone.active && bonusDrone.type === 'HAZARD') collisionStats.playerBulletAmbientPairs += 1;
           if (bonusDrone.active && bonusDrone.type === 'HAZARD' && this.checkCollision(bullet, bonusDrone)) {
+            if (!this.claimPlayerBulletTargetHit(bullet, bonusDrone)) return;
             collisionStats.playerBulletAmbientHits += 1;
             if (!bullet.piercing) bullet.active = false;
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
@@ -4349,6 +4357,10 @@ export class PlayScene {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const minDistance = this.getCollisionRadius(a) + this.getCollisionRadius(b);
     return distance < minDistance;
+  }
+
+  claimPlayerBulletTargetHit(bullet, target) {
+    return claimPiercingTargetHit(bullet, target);
   }
 
   // TASK D: Procedural starfield background with parallax layers
@@ -12822,6 +12834,7 @@ export class PlayScene {
 
     // Decrement charges
     this.player.orbitalStrikeCharges--;
+    if (this.player.tacticalOrbitalStrikeCharges > 0) this.player.tacticalOrbitalStrikeCharges--;
     debug.chargesAfter = this.player.orbitalStrikeCharges;
 
     // Show warning indicator

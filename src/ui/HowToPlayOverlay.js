@@ -108,6 +108,49 @@ const HELP_ROWS = Object.freeze([
   }
 ]);
 
+const RUN_HELP_ROWS = Object.freeze([
+  HELP_ROWS[9],
+  HELP_ROWS[10],
+  {
+    code: '12',
+    icon: 'DRAFT',
+    label: 'TACTICAL DRAFT',
+    control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
+    tip: 'Choose one augment after each boss. It stays active until the run ends.',
+    accent: 0xffef7e
+  },
+  {
+    code: '13',
+    icon: 'SLOT',
+    label: 'POWERUP OVERLAP',
+    control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
+    tip: 'You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.',
+    accent: 0xb285ff
+  },
+  {
+    code: '14',
+    icon: 'CAP',
+    label: 'STACK LIMITS',
+    control: 'FIRST STACK FULL / SECOND STACK 55%',
+    tip: 'Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.',
+    accent: 0xff8f5a
+  },
+  {
+    code: '15',
+    icon: 'SYNC',
+    label: 'THREAT RESPONSE',
+    control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
+    tip: 'Strong hulls face hardened targets, faster attacks, and tougher bosses. The response is fixed by your hull and picks; it never reacts to moment-to-moment skill.',
+    accent: 0x66ff9d
+  }
+]);
+
+const HELP_PAGES = Object.freeze([
+  Object.freeze({ id: 'flight', label: 'FLIGHT', rows: Object.freeze(HELP_ROWS.slice(0, 4)) }),
+  Object.freeze({ id: 'combat', label: 'COMBAT', rows: Object.freeze(HELP_ROWS.slice(4, 9)) }),
+  Object.freeze({ id: 'runs', label: 'RUNS', rows: RUN_HELP_ROWS })
+]);
+
 function rectsOverlap(a, b, pad = 0) {
   if (!a || !b) return false;
   return !(
@@ -172,6 +215,8 @@ export class HowToPlayOverlay {
     this.container.sortableChildren = true;
     this.menuFx = null;
     this.closeButton = null;
+    this.pageIndex = 0;
+    this.pageButtons = [];
     this.keyHandler = null;
     this.debugLayout = null;
     this.heroMotionNodes = [];
@@ -188,6 +233,8 @@ export class HowToPlayOverlay {
     this.heroTextureSprites = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    const helpPage = HELP_PAGES[this.pageIndex] || HELP_PAGES[0];
+    const helpRows = helpPage.rows;
     const compact = width < 900 || height < 700;
     const veryShort = height < 560;
     const shortDesktop = !compact && height < 780;
@@ -200,8 +247,8 @@ export class HowToPlayOverlay {
     const headerHeight = veryShort ? 98 : compact ? 124 : shortDesktop ? 132 : 166;
     const footerHeight = veryShort ? 62 : compact ? 76 : shortDesktop ? 76 : 86;
     const gridGap = veryShort ? 8 : compact ? 10 : shortDesktop ? 10 : 14;
-    const columns = compact ? 1 : 2;
-    const visualRows = compact ? HELP_ROWS.length : Math.ceil(HELP_ROWS.length / columns);
+    const columns = width >= 700 ? 2 : 1;
+    const visualRows = columns === 1 ? helpRows.length : Math.ceil(helpRows.length / columns);
     const gridX = panelX + pad;
     const gridY = panelY + headerHeight;
     const gridWidth = panelWidth - pad * 2;
@@ -321,37 +368,7 @@ export class HowToPlayOverlay {
     fitTextToBox(subtitle, panelWidth - pad * 4, 22, { minScale: 0.62 });
     this.container.addChild(subtitle);
 
-    const chipText = createText(translateText('PILOT LINK // MANUAL OVERRIDE'), {
-      fontFamily: FONT_BODY,
-      fontSize: subtitleSize,
-      fontWeight: '900',
-      fill: '#ffef7e',
-      stroke: '#130a00',
-      strokeThickness: 2,
-      align: 'center'
-    });
-    chipText.anchor.set(0.5);
-    chipText.position.set(width / 2, panelY + (veryShort ? 80 : compact ? 94 : 110));
-    fitTextToBox(chipText, panelWidth - pad * 5, 20, { minScale: 0.58 });
-    this.container.addChild(chipText);
-
-    if (!veryShort) {
-      const skillText = createText(translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'), {
-        fontFamily: FONT_BODY,
-        fontSize: spacious ? 15 : compact ? 12 : 13,
-        fontWeight: '900',
-        fill: '#ffffff',
-        stroke: '#00111d',
-        strokeThickness: 2,
-        align: 'center'
-      });
-      skillText.anchor.set(0.5);
-      skillText.position.set(width / 2, panelY + (compact ? 115 : 134));
-      fitTextToBox(skillText, panelWidth - pad * 5, 22, { minScale: 0.58 });
-      this.container.addChild(skillText);
-    }
-
-    HELP_ROWS.forEach((row, index) => {
+    helpRows.forEach((row, index) => {
       const isWideFinalCard = false;
       const column = columns === 1 ? 0 : index % columns;
       const rowIndex = columns === 1 ? index : Math.floor(index / columns);
@@ -378,6 +395,21 @@ export class HowToPlayOverlay {
         width: Math.round(actualCardWidth),
         height: Math.round(cardHeight)
       });
+    });
+
+    this.pageButtons = HELP_PAGES.map((page, index) => {
+      const tabWidth = Math.min(compact ? 92 : 126, (panelWidth - pad * 3) / HELP_PAGES.length);
+      const gap = compact ? 8 : 12;
+      const totalWidth = tabWidth * HELP_PAGES.length + gap * (HELP_PAGES.length - 1);
+      const x = width / 2 - totalWidth / 2 + tabWidth / 2 + index * (tabWidth + gap);
+      const y = panelY + headerHeight - (veryShort ? 13 : compact ? 17 : 20);
+      const tab = this.createPageTab(page.label, x, y, index === this.pageIndex, () => this.setPage(index), {
+        width: tabWidth,
+        height: veryShort ? 22 : compact ? 26 : 30,
+        fontSize: veryShort ? 10 : compact ? 11 : 13
+      });
+      this.container.addChild(tab);
+      return tab;
     });
 
     const footerY = panelY + panelHeight - footerHeight;
@@ -721,11 +753,15 @@ export class HowToPlayOverlay {
       fontWeight: '900',
       fill: '#f6fbff',
       stroke: '#00111d',
-      strokeThickness: 3
+      strokeThickness: 3,
+      wordWrap: true,
+      breakWords: true,
+      wordWrapWidth: labelMax,
+      lineHeight: Math.round(labelSize * 1.02)
     });
     label.anchor.set(0, 0.5);
     label.position.set(textX, topY);
-    fitTextToBox(label, labelMax, height * 0.36, { minScale: 0.54 });
+    fitTextToBox(label, labelMax, height * 0.38, { minScale: 0.36 });
     this.container.addChild(label);
 
     const control = createText(translateText(row.control), {
@@ -736,12 +772,13 @@ export class HowToPlayOverlay {
       stroke: '#00111d',
       strokeThickness: 3,
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: controlMax,
       lineHeight: Math.round(controlSize * 1.05)
     });
     control.anchor.set(0, 0.5);
     control.position.set(controlX, topY);
-    fitTextToBox(control, controlMax, height * 0.42, { minScale: 0.55 });
+    fitTextToBox(control, controlMax, height * 0.42, { minScale: 0.42 });
     this.container.addChild(control);
 
     const tip = createText(translateText(row.tip), {
@@ -752,6 +789,7 @@ export class HowToPlayOverlay {
       stroke: '#00111d',
       strokeThickness: 2,
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: width - (textX - x) - rightPad,
       lineHeight: Math.round(tipSize * (shortDesktop ? 1.05 : 1.12))
     });
@@ -812,13 +850,63 @@ export class HowToPlayOverlay {
     return button;
   }
 
+  createPageTab(label, x, y, active, onPress, { width = 120, height = 28, fontSize = 12 } = {}) {
+    const tab = new PIXI.Container();
+    tab.eventMode = 'static';
+    tab.cursor = 'pointer';
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-width / 2, -height / 2, width, height, 5);
+    bg.fill({ color: active ? 0x0b6f8f : 0x03121d, alpha: active ? 0.96 : 0.88 });
+    bg.stroke({ color: active ? 0xffef7e : 0x37f5ff, width: active ? 2 : 1, alpha: active ? 0.96 : 0.58 });
+    tab.addChild(bg);
+    const text = createText(translateText(label), {
+      fontFamily: FONT_DISPLAY,
+      fontSize,
+      fontWeight: '900',
+      fill: active ? '#fff3a0' : '#bdefff',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    text.anchor.set(0.5);
+    fitTextToBox(text, width - 16, height - 7, { minScale: 0.62 });
+    tab.addChild(text);
+    tab.position.set(x, y);
+    tab.on('pointerover', () => playMenuFocusSfx(0.08));
+    tab.on('pointertap', () => {
+      playMenuConfirmSfx(0.12);
+      onPress?.();
+    });
+    return tab;
+  }
+
+  setPage(index) {
+    const next = ((Math.floor(Number(index) || 0) % HELP_PAGES.length) + HELP_PAGES.length) % HELP_PAGES.length;
+    if (next === this.pageIndex) return;
+    this.pageIndex = next;
+    destroyMenuFx(this);
+    const children = this.container.removeChildren();
+    children.forEach((child) => child.destroy?.({ children: true }));
+    this.build();
+  }
+
   setupKeyboardNavigation() {
     this.keyHandler = (event) => {
       const key = event.key || event.code;
-      const handled = ['Enter', ' ', 'Escape'].includes(key) || event.code === 'Space' || event.code === 'NumpadEnter';
+      const pageLeft = key === 'ArrowLeft' || key === 'a' || key === 'A';
+      const pageRight = key === 'ArrowRight' || key === 'd' || key === 'D';
+      const handled = pageLeft || pageRight || ['Enter', ' ', 'Escape'].includes(key) || event.code === 'Space' || event.code === 'NumpadEnter';
       if (!handled) return;
       event.preventDefault();
       event.stopPropagation();
+      if (pageLeft) {
+        this.setPage(this.pageIndex - 1);
+        return;
+      }
+      if (pageRight) {
+        this.setPage(this.pageIndex + 1);
+        return;
+      }
       this.close();
     };
     window.addEventListener('keydown', this.keyHandler, true);
@@ -829,16 +917,23 @@ export class HowToPlayOverlay {
     this.updateHeroMotion(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    if (nav.pressed.left) this.setPage(this.pageIndex - 1);
+    if (nav.pressed.right) this.setPage(this.pageIndex + 1);
     if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
       this.close();
     }
   }
 
   getDebugState() {
+    const helpPage = HELP_PAGES[this.pageIndex] || HELP_PAGES[0];
     return {
       visible: Boolean(this.container?.parent),
-      rows: HELP_ROWS.map((row) => row.label),
-      cards: HELP_ROWS.map((row) => ({
+      pageIndex: this.pageIndex,
+      pageId: helpPage.id,
+      pageLabel: helpPage.label,
+      pages: HELP_PAGES.map((page) => ({ id: page.id, label: page.label, cardCount: page.rows.length })),
+      rows: helpPage.rows.map((row) => row.label),
+      cards: helpPage.rows.map((row) => ({
         label: row.label,
         control: row.control,
         tip: row.tip,
@@ -846,7 +941,7 @@ export class HowToPlayOverlay {
         translatedControl: translateText(row.control),
         translatedTip: translateText(row.tip)
       })),
-      cardCount: HELP_ROWS.length,
+      cardCount: helpPage.rows.length,
       trainingFlow: 'GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE',
       translatedTrainingFlow: translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'),
       focusedControl: 'back',
