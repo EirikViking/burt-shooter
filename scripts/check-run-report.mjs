@@ -17,6 +17,29 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
+function rectRight(rect) {
+  return Number(rect?.x) + Number(rect?.width);
+}
+
+function rectBottom(rect) {
+  return Number(rect?.y) + Number(rect?.height);
+}
+
+function assertContains(outer, inner, message) {
+  assert(outer && inner, `${message}: missing bounds.`);
+  assert(Number(inner.x) >= Number(outer.x) - 1, `${message}: left edge escaped.`);
+  assert(Number(inner.y) >= Number(outer.y) - 1, `${message}: top edge escaped.`);
+  assert(rectRight(inner) <= rectRight(outer) + 1, `${message}: right edge escaped.`);
+  assert(rectBottom(inner) <= rectBottom(outer) + 1, `${message}: bottom edge escaped.`);
+}
+
+function rectanglesOverlap(first, second) {
+  return Number(first.x) < rectRight(second)
+    && rectRight(first) > Number(second.x)
+    && Number(first.y) < rectBottom(second)
+    && rectBottom(first) > Number(second.y);
+}
+
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
     const server = createServer();
@@ -156,10 +179,19 @@ async function forceRunReportScenario(page) {
     play.respawnsThisRun = 2;
     play.extraLivesEarnedThisRun = 1;
     play.powerupsCollectedThisRun = 5;
-    play.tacticalDraftHistory = [
-      { sectorCleared: 1, id: 'damage_up', name: 'DAMAGE UP', category: 'offense', stacks: 1 },
-      { sectorCleared: 2, id: 'speed_up', name: 'SPEED UP', category: 'mobility', stacks: 1 }
+    const tacticalNames = [
+      'DAMAGE UP', 'SPEED UP', 'PIERCE', 'CHAIN', 'TARGET POINT', 'DRONES',
+      'DAMAGE UP', 'SPEED UP', 'PIERCE', 'CHAIN', 'TARGET POINT', 'DRONES',
+      'DAMAGE UP', 'SPEED UP', 'DAMAGE UP',
+      'RAPID FIRE', 'PLASMA LIGHTNING', 'MAGNET: PICKUPS', 'BOMB', 'RAIL SURGE', 'SHIELD MATRIX'
     ];
+    play.tacticalDraftHistory = tacticalNames.map((name, index) => ({
+      sectorCleared: index + 1,
+      id: name.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+      name,
+      category: index % 2 === 0 ? 'offense' : 'utility',
+      stacks: 1
+    }));
     play.player.runAugmentIds = ['damage_up', 'speed_up'];
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
@@ -198,12 +230,12 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
   assert(state.runReport?.sectorReached >= 6, 'runReport summary should include sector reached.');
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
-  assert(state.runReport?.tacticalDraftPicks?.length === 2, 'runReport summary should preserve tactical draft picks.');
+  assert(state.runReport?.tacticalDraftPicks?.length === 21, 'runReport summary should preserve every tactical draft pick.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }
 
-function assertOpenReport(state) {
+function assertOpenReport(state, viewport) {
   const overlay = state.gameOver?.runReportOverlay;
   assert(overlay?.visible, 'Run Report overlay should open on command.');
   for (const sectionId of ['run', 'combat', 'survival', 'rewards']) {
@@ -213,6 +245,61 @@ function assertOpenReport(state) {
   for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
+
+  const panel = { x: overlay.x, y: overlay.y, width: overlay.width, height: overlay.height };
+  assert(Number(panel.x) >= 0 && Number(panel.y) >= 0, `Run Report panel escaped ${viewport.width}x${viewport.height}.`);
+  assert(rectRight(panel) <= viewport.width && rectBottom(panel) <= viewport.height, `Run Report panel clipped at ${viewport.width}x${viewport.height}.`);
+
+  const tactical = overlay.tacticalLoadout;
+  assert(tactical?.totalPicks === 21, 'Tactical Loadout should preserve all 21 picks.');
+  assert(tactical?.uniquePicks === 12, 'Tactical Loadout should group 21 picks into 12 unique chips.');
+  assert(tactical?.chips?.length === 12, 'Tactical Loadout should render one chip per grouped upgrade.');
+  assertContains(panel, tactical.bounds, 'Tactical Loadout band');
+
+  const expectedStacks = new Map([
+    ['DAMAGE UP', 4], ['SPEED UP', 3], ['PIERCE', 2], ['CHAIN', 2],
+    ['TARGET POINT', 2], ['DRONES', 2], ['RAPID FIRE', 1], ['PLASMA LIGHTNING', 1],
+    ['MAGNET: PICKUPS', 1], ['BOMB', 1], ['RAIL SURGE', 1], ['SHIELD MATRIX', 1]
+  ]);
+  tactical.chips.forEach((chip, index) => {
+    assertContains(tactical.bounds, chip, `Tactical chip ${chip.label}`);
+    assert(expectedStacks.get(chip.label) === chip.count, `Unexpected grouped stack for ${chip.label}: ${chip.count}.`);
+    for (let otherIndex = index + 1; otherIndex < tactical.chips.length; otherIndex += 1) {
+      assert(!rectanglesOverlap(chip, tactical.chips[otherIndex]), `Tactical chips overlap: ${chip.label} / ${tactical.chips[otherIndex].label}.`);
+    }
+  });
+  for (const [label, count] of expectedStacks) {
+    const expectedText = count > 1 ? `${label} x${count}` : label;
+    assert(text.includes(expectedText), `Tactical Loadout missing readable chip text: ${expectedText}`);
+  }
+
+  for (const section of overlay.sections || []) {
+    assertContains(panel, section, `Report section ${section.id}`);
+    assert(!rectanglesOverlap(section, tactical.bounds), `Report section ${section.id} overlaps Tactical Loadout.`);
+  }
+  assert(!rectanglesOverlap(tactical.bounds, overlay.deathCoachBounds), 'Tactical Loadout overlaps counter advice.');
+  assert(!rectanglesOverlap(overlay.deathCoachBounds, overlay.pilotOrdersBounds), 'Counter advice overlaps Pilot Orders.');
+  assert(!rectanglesOverlap(overlay.pilotOrdersBounds, overlay.closeButtonBounds), 'Pilot Orders overlaps Close button.');
+  for (const bounds of [overlay.deathCoachBounds, overlay.pilotOrdersBounds, overlay.closeButtonBounds]) {
+    assertContains(panel, bounds, 'Run Report lower band');
+  }
+}
+
+async function captureViewport(page, viewport) {
+  await page.setViewportSize(viewport);
+  await page.waitForFunction(({ width, height }) => {
+    const screen = window.__game?.app?.screen;
+    return Math.round(screen?.width || 0) === width && Math.round(screen?.height || 0) === height;
+  }, viewport, { timeout: 5000 });
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    scene?.layoutScreen?.();
+  });
+  const state = await readState(page);
+  assertOpenReport(state, viewport);
+  const screenshotName = `run-report-open-${viewport.width}x${viewport.height}.png`;
+  await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: true });
+  return { viewport, screenshotName, overlay: state.gameOver.runReportOverlay };
 }
 
 function centerOf(bounds) {
@@ -236,7 +323,7 @@ try {
     executablePath,
     args: ['--autoplay-policy=no-user-gesture-required']
   });
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   page.on('console', (message) => {
     if (message.type() === 'error' || message.type() === 'warning') {
       consoleEvents.push({ type: message.type(), text: message.text().slice(0, 500) });
@@ -262,9 +349,15 @@ try {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.gameOver?.runReportOverlay?.visible === true;
   }, null, { timeout: 5000 });
+  const viewportResults = [];
+  for (const viewport of [
+    { width: 1920, height: 1080 },
+    { width: 1280, height: 720 },
+    { width: 960, height: 640 }
+  ]) {
+    viewportResults.push(await captureViewport(page, viewport));
+  }
   const openState = await readState(page);
-  assertOpenReport(openState);
-  await page.screenshot({ path: path.join(outputDir, 'run-report-open.png'), fullPage: true });
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => {
@@ -292,6 +385,7 @@ try {
       }
     },
     openOverlay: openState.gameOver.runReportOverlay,
+    viewportResults,
     closedOverlay: closedState.gameOver.runReportOverlay,
     networkCalls,
     consoleEvents

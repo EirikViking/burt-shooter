@@ -4429,6 +4429,37 @@ export class GameOverScene {
     return String(row.value ?? '');
   }
 
+  getRunReportTacticalLoadout(report = null) {
+    const summaryPicks = Array.isArray(report?.summary?.tacticalDraftPicks)
+      ? report.summary.tacticalDraftPicks
+      : [];
+    const tacticalRow = (report?.sections || [])
+      .flatMap((section) => Array.isArray(section?.rows) ? section.rows : [])
+      .find((row) => row?.id === 'tacticalDrafts');
+    const picks = summaryPicks.length > 0
+      ? summaryPicks
+      : Array.isArray(tacticalRow?.value) ? tacticalRow.value : [];
+    const grouped = new Map();
+
+    picks.forEach((rawPick) => {
+      const sourceName = String(rawPick || '').trim();
+      if (!sourceName) return;
+      const key = sourceName.toLocaleLowerCase();
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.count += 1;
+        return;
+      }
+      grouped.set(key, {
+        sourceName,
+        label: translateText(sourceName),
+        count: 1
+      });
+    });
+
+    return Array.from(grouped.values());
+  }
+
   layoutRunReportOverlay(layout) {
     if (!this.runReportOverlay || !this.runReportOverlayBg || !this.runReportPanel) return;
     const report = this.getRunReport();
@@ -4450,40 +4481,61 @@ export class GameOverScene {
     }
 
     const safeMargin = layout.safeArea || { top: 0, bottom: 0 };
-    const compact = Boolean(layout.isMobile || width < 760 || height < 680);
-    const panelWidth = Math.min(width - 28, compact ? width * 0.94 : 760);
-    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, compact ? 660 : 640);
-    const columns = compact ? 1 : 2;
-    const gap = compact ? 10 : 14;
-    const innerPad = compact ? 18 : 26;
+    const compact = Boolean(width < 1200 || height < 820);
+    const narrow = Boolean(layout.isMobile && width < 720);
+    const panelWidth = Math.min(width - 28, 1120);
+    const panelHeight = Math.min(height - safeMargin.top - safeMargin.bottom - 28, 860);
+    const columns = narrow ? 1 : 2;
+    const gap = compact ? 8 : 14;
+    const innerPad = compact ? 14 : 26;
     const titleSize = compact ? 22 : 28;
     const sectionTitleSize = compact ? 13 : 16;
     const rowSize = compact ? 11 : 14;
-    const closeHeight = compact ? 34 : 36;
+    const closeHeight = compact ? 32 : 36;
+    const tacticalLoadout = this.getRunReportTacticalLoadout(report);
+    const tacticalBandWidth = panelWidth - innerPad * 2;
+    const chipGap = compact ? 6 : 8;
+    const chipHeight = compact ? 22 : 26;
+    const chipMinWidth = compact ? 142 : 160;
+    const chipColumns = tacticalLoadout.length > 0
+      ? Math.max(1, Math.floor((tacticalBandWidth - 24 + chipGap) / (chipMinWidth + chipGap)))
+      : 0;
+    const chipRows = chipColumns > 0 ? Math.ceil(tacticalLoadout.length / chipColumns) : 0;
+    const tacticalBandHeight = tacticalLoadout.length > 0
+      ? (compact ? 42 : 48) + chipRows * chipHeight + Math.max(0, chipRows - 1) * chipGap
+      : 0;
     const deathCoachRow = (report.sections || [])
       .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
       .find((row) => row?.id === 'deathCoach') || null;
     const pilotOrdersRow = (report.sections || [])
       .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
       .find((row) => row?.id === 'pilotOrders') || null;
-    const counterBandHeight = deathCoachRow ? (compact ? 76 : 78) : 0;
-    const pilotBandHeight = pilotOrdersRow ? (compact ? 92 : 86) : 0;
+    const counterBandHeight = deathCoachRow ? (compact ? 62 : 78) : 0;
+    const pilotBandHeight = pilotOrdersRow ? (compact ? 78 : 86) : 0;
     const contentTop = -panelHeight / 2 + innerPad + titleSize + (compact ? 18 : 26);
     const closeTop = panelHeight / 2 - innerPad - closeHeight;
     const pilotBandY = pilotOrdersRow ? closeTop - (compact ? 14 : 18) - pilotBandHeight : null;
     const counterBandY = deathCoachRow
       ? (pilotOrdersRow ? pilotBandY - gap - counterBandHeight : closeTop - (compact ? 14 : 18) - counterBandHeight)
       : null;
-    const sectionAreaBottom = deathCoachRow
-      ? counterBandY - gap
-      : pilotOrdersRow
-        ? pilotBandY - gap
-        : closeTop - (compact ? 12 : 18);
-    const sectionAreaHeight = Math.max(180, sectionAreaBottom - contentTop);
+    const tacticalBandY = tacticalLoadout.length > 0
+      ? (deathCoachRow
+        ? counterBandY - gap - tacticalBandHeight
+        : pilotOrdersRow
+          ? pilotBandY - gap - tacticalBandHeight
+          : closeTop - (compact ? 12 : 18) - tacticalBandHeight)
+      : null;
+    const sectionAreaBottom = tacticalLoadout.length > 0
+      ? tacticalBandY - gap
+      : deathCoachRow
+        ? counterBandY - gap
+        : pilotOrdersRow
+          ? pilotBandY - gap
+          : closeTop - (compact ? 12 : 18);
+    const sectionAreaHeight = Math.max(0, sectionAreaBottom - contentTop);
     const sectionWidth = (panelWidth - innerPad * 2 - gap * (columns - 1)) / columns;
-    const sectionHeight = compact
-      ? (sectionAreaHeight - gap * 3) / 4
-      : (sectionAreaHeight - gap) / 2;
+    const sectionRows = Math.max(1, Math.ceil((report.sections || []).length / columns));
+    const sectionHeight = (sectionAreaHeight - gap * (sectionRows - 1)) / sectionRows;
 
     this.runReportPanel.x = width / 2;
     this.runReportPanel.y = Math.max(safeMargin.top + panelHeight / 2 + 10, height / 2);
@@ -4514,6 +4566,7 @@ export class GameOverScene {
     this.runReportPanel.addChild(title);
 
     const textLines = [];
+    const sectionBounds = [];
     (report.sections || []).forEach((section, index) => {
       const column = columns === 1 ? 0 : index % columns;
       const row = columns === 1 ? index : Math.floor(index / columns);
@@ -4527,6 +4580,13 @@ export class GameOverScene {
       sectionBox.rect(x + 10, y + 26, sectionWidth - 20, 1);
       sectionBox.fill({ color: 0x37f5ff, alpha: 0.18 });
       this.runReportPanel.addChild(sectionBox);
+      sectionBounds.push({
+        id: section.id,
+        x: Math.round(this.runReportPanel.x + x),
+        y: Math.round(this.runReportPanel.y + y),
+        width: Math.round(sectionWidth),
+        height: Math.round(sectionHeight)
+      });
 
       const header = createText(this.getRunReportSectionLabel(section.id), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -4544,10 +4604,9 @@ export class GameOverScene {
       textLines.push(header.text);
 
       const rows = (section.rows || [])
-        .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach')
-        .slice(0, compact ? 4 : 5);
+        .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
       const rowStep = rows.length
-        ? Math.max(rowSize + 7, Math.floor((sectionHeight - 38) / rows.length))
+        ? Math.max(rowSize + 2, (sectionHeight - 38) / rows.length)
         : rowSize + 7;
       rows.forEach((entry, rowIndex) => {
         const label = this.getRunReportFieldLabel(entry.id);
@@ -4567,11 +4626,86 @@ export class GameOverScene {
         });
         line.x = x + 12;
         line.y = y + 34 + rowIndex * rowStep;
-        fitDisplayToBox(line, sectionWidth - 24, Math.max(rowSize + 7, rowStep - 2), { minScale: 0.64 });
+        fitDisplayToBox(line, sectionWidth - 24, Math.max(rowSize + 2, rowStep - 1), { minScale: 0.64 });
         this.runReportPanel.addChild(line);
         textLines.push(line.text);
       });
     });
+
+    const tacticalChipBounds = [];
+    if (tacticalLoadout.length > 0) {
+      const x = -panelWidth / 2 + innerPad;
+      const y = tacticalBandY;
+      const bandWidth = tacticalBandWidth;
+      const band = new PIXI.Graphics();
+      band.roundRect(x, y, bandWidth, tacticalBandHeight, 8);
+      band.fill({ color: 0x061827, alpha: 0.96 });
+      band.roundRect(x, y, bandWidth, tacticalBandHeight, 8);
+      band.stroke({ color: 0x7dffcc, width: 1.4, alpha: 0.7 });
+      band.rect(x, y, 7, tacticalBandHeight);
+      band.fill({ color: 0x7dffcc, alpha: 0.88 });
+      band.rect(x + 18, y + (compact ? 29 : 33), bandWidth - 36, 1);
+      band.fill({ color: 0x7dffcc, alpha: 0.24 });
+      this.runReportPanel.addChild(band);
+
+      const tacticalLabel = this.getRunReportFieldLabel('tacticalDrafts');
+      const heading = createText(tacticalLabel, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 13 : 16,
+        fontWeight: '900',
+        fill: '#7dffcc',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left',
+        letterSpacing: 0
+      });
+      heading.x = x + 18;
+      heading.y = y + (compact ? 8 : 9);
+      fitDisplayToBox(heading, bandWidth - 36, compact ? 18 : 22, { minScale: 0.7 });
+      this.runReportPanel.addChild(heading);
+
+      const chipAreaX = x + 14;
+      const chipAreaY = y + (compact ? 35 : 40);
+      const chipAreaWidth = bandWidth - 28;
+      const chipWidth = (chipAreaWidth - chipGap * (chipColumns - 1)) / chipColumns;
+      tacticalLoadout.forEach((entry, index) => {
+        const column = index % chipColumns;
+        const row = Math.floor(index / chipColumns);
+        const chipX = chipAreaX + column * (chipWidth + chipGap);
+        const chipY = chipAreaY + row * (chipHeight + chipGap);
+        const chip = new PIXI.Graphics();
+        chip.roundRect(chipX, chipY, chipWidth, chipHeight, 5);
+        chip.fill({ color: 0x0a2940, alpha: 0.94 });
+        chip.roundRect(chipX, chipY, chipWidth, chipHeight, 5);
+        chip.stroke({ color: entry.count > 1 ? 0xffef7e : 0x37f5ff, width: 1, alpha: 0.72 });
+
+        const chipText = `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}`;
+        const label = createText(chipText, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: compact ? 11 : 13,
+          fontWeight: 'bold',
+          fill: entry.count > 1 ? '#fff3a2' : '#d8fbff',
+          stroke: '#031323',
+          strokeThickness: 2,
+          align: 'center',
+          letterSpacing: 0
+        });
+        label.anchor.set(0.5);
+        label.x = chipX + chipWidth / 2;
+        label.y = chipY + chipHeight / 2;
+        fitDisplayToBox(label, chipWidth - 12, chipHeight - 4, { minScale: 0.66 });
+        this.runReportPanel.addChild(chip, label);
+        tacticalChipBounds.push({
+          label: entry.label,
+          count: entry.count,
+          x: Math.round(this.runReportPanel.x + chipX),
+          y: Math.round(this.runReportPanel.y + chipY),
+          width: Math.round(chipWidth),
+          height: Math.round(chipHeight)
+        });
+      });
+      textLines.push(`${tacticalLabel}: ${tacticalLoadout.map((entry) => `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}`).join(', ')}`);
+    }
 
     if (deathCoachRow) {
       const x = -panelWidth / 2 + innerPad;
@@ -4697,6 +4831,13 @@ export class GameOverScene {
     this.runReportCloseButton.y = panelHeight / 2 - innerPad - closeHeight / 2;
     this.runReportPanel.addChild(this.runReportCloseButton);
 
+    const toScreenRect = (x, y, rectWidth, rectHeight) => ({
+      x: Math.round(this.runReportPanel.x + x),
+      y: Math.round(this.runReportPanel.y + y),
+      width: Math.round(rectWidth),
+      height: Math.round(rectHeight)
+    });
+
     this.runReportOverlayDebug = {
       visible: Boolean(this.runReportOverlay.visible),
       localOnly: Boolean(report.localOnly),
@@ -4705,7 +4846,24 @@ export class GameOverScene {
       x: Math.round(this.runReportPanel.x - panelWidth / 2),
       y: Math.round(this.runReportPanel.y - panelHeight / 2),
       width: Math.round(panelWidth),
-      height: Math.round(panelHeight)
+      height: Math.round(panelHeight),
+      viewport: { width: Math.round(width), height: Math.round(height) },
+      sections: sectionBounds,
+      tacticalLoadout: {
+        totalPicks: tacticalLoadout.reduce((total, entry) => total + entry.count, 0),
+        uniquePicks: tacticalLoadout.length,
+        bounds: tacticalLoadout.length > 0
+          ? toScreenRect(-panelWidth / 2 + innerPad, tacticalBandY, tacticalBandWidth, tacticalBandHeight)
+          : null,
+        chips: tacticalChipBounds
+      },
+      deathCoachBounds: deathCoachRow
+        ? toScreenRect(-panelWidth / 2 + innerPad, counterBandY, panelWidth - innerPad * 2, counterBandHeight)
+        : null,
+      pilotOrdersBounds: pilotOrdersRow
+        ? toScreenRect(-panelWidth / 2 + innerPad, pilotBandY, panelWidth - innerPad * 2, pilotBandHeight)
+        : null,
+      closeButtonBounds: toScreenRect(-closeWidth / 2, this.runReportCloseButton.y - closeHeight / 2, closeWidth, closeHeight)
     };
   }
 
@@ -5227,11 +5385,8 @@ export class GameOverScene {
     };
     if (this.runReportOverlayDebug) {
       return {
+        ...this.runReportOverlayDebug,
         ...base,
-        x: this.runReportOverlayDebug.x,
-        y: this.runReportOverlayDebug.y,
-        width: this.runReportOverlayDebug.width,
-        height: this.runReportOverlayDebug.height,
         text: this.runReportOverlayDebug.text || base.text
       };
     }
