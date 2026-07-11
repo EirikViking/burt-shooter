@@ -10,6 +10,7 @@ const metadataDir = path.join(root, 'public/audio/generated/tactical-augments');
 const modelId = process.env.ELEVENLABS_SFX_MODEL_ID || 'eleven_text_to_sound_v2';
 const outputFormat = process.env.ELEVENLABS_SFX_OUTPUT_FORMAT || 'mp3_44100_128';
 const force = process.argv.includes('--force');
+const forceRow = process.argv.includes('--force-row');
 
 const assets = [
   ['nova_tactical_phase_reactor.mp3', 0.55, 'Original arcade phase-reactor selection sting: a crystalline spacetime snap immediately charging one bright cannon capacitor, punchy sci-fi UI sound, no voice, no melody.'],
@@ -59,14 +60,48 @@ async function normalize(rawPath, targetPath, loud = false) {
   if (result.status !== 0) throw new Error(`ffmpeg failed for ${path.basename(targetPath)}: ${result.stderr}`);
 }
 
+async function composeVikingRow(targetPath) {
+  const source = (name) => path.join(outputDir, name);
+  const inputs = [
+    source('nova_row_core_horn.mp3'),
+    source('nova_row_core_drum.mp3'),
+    source('nova_row_core_ro_01.mp3'),
+    source('nova_row_core_ro_02.mp3'),
+    source('nova_row_core_ro_big.mp3')
+  ];
+  const missing = inputs.filter((file) => !existsSync(file));
+  if (missing.length) throw new Error(`Missing ElevenLabs Row Core source clips: ${missing.map(path.basename).join(', ')}`);
+  const filter = [
+    '[0:a]volume=1.02,adelay=0|0[horn]',
+    '[1:a]volume=1.18,adelay=600|600[drums]',
+    '[2:a]volume=1.34,adelay=1400|1400[row1]',
+    '[3:a]volume=1.46,adelay=2200|2200[row2]',
+    '[4:a]volume=1.62,adelay=2920|2920[row3]',
+    '[horn][drums][row1][row2][row3]amix=inputs=5:duration=longest:dropout_transition=0,alimiter=limit=0.9,loudnorm=I=-12:TP=-1:LRA=8,apad=pad_dur=0.18,atrim=0:4.35[out]'
+  ].join(';');
+  const args = ['-y', '-hide_banner', '-loglevel', 'error'];
+  inputs.forEach((file) => args.push('-i', file));
+  args.push('-filter_complex', filter, '-map', '[out]', '-ar', '44100', '-codec:a', 'libmp3lame', '-b:a', '128k', targetPath);
+  const result = spawnSync('ffmpeg', args, { encoding: 'utf8' });
+  if (result.status !== 0) throw new Error(`ffmpeg Viking Row composition failed: ${result.stderr}`);
+  return inputs.map((file) => path.basename(file));
+}
+
 async function main() {
   if (!apiKey) throw new Error('ELEVENLABS_API_KEY is required in the environment.');
   await mkdir(outputDir, { recursive: true });
   const results = [];
   for (const asset of assets) {
     const target = path.join(outputDir, asset.file);
-    if (!force && existsSync(target)) {
+    const regenerate = force || (forceRow && asset.file.includes('viking_row'));
+    if (!regenerate && existsSync(target)) {
       results.push({ ...asset, skipped: true });
+      continue;
+    }
+    if (asset.file.includes('viking_row')) {
+      const composedFrom = await composeVikingRow(target);
+      results.push({ ...asset, skipped: false, composedFrom });
+      console.log(`composed ${asset.file}`);
       continue;
     }
     const raw = `${target}.raw`;

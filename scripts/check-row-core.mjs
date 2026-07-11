@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -107,6 +108,14 @@ try {
   }
   assert.match(source.script, /ELEVENLABS_API_KEY \|\| process\.env\.ELEVEN_LABS_API_KEY/, 'generator must read API key from environment only');
   assert.match(source.tacticalAudioScript, /RO! RO! RO!/, 'Viking Row generator must request the recognizable three-shout rowing sequence');
+  for (const timing of ['adelay=1400|1400', 'adelay=2200|2200', 'adelay=2920|2920']) {
+    assert.ok(source.tacticalAudioScript.includes(timing), `Viking Row composition missing shout timing ${timing}`);
+  }
+  const rowDuration = Number(spawnSync('ffprobe', [
+    '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1',
+    path.join(root, 'public/audio/sfx/nova-swarm/nova_row_core_viking_row.mp3')
+  ], { encoding: 'utf8' }).stdout.trim());
+  assert.ok(rowDuration >= 4 && rowDuration <= 4.5, `Viking Row sequence should be a tight four-second ritual, got ${rowDuration}s`);
   assert.doesNotMatch(source.player, /fetch\(/, 'gameplay runtime must not call network APIs');
   assert.match(source.player, /rowCoreActive/, 'Player must track Row Core active state');
   assert.match(source.player, /clearRowCoreTimers/, 'Player must clean Row Core timers');

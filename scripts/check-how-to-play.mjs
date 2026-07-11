@@ -274,7 +274,11 @@ try {
       assertOverlayLayout(menuHelp, `${scenario.name} menu help overlay`);
       assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`, 'flight');
       const firstHelpCard = menuHelp.howToPlayOverlay.layout.cards[0];
-      await page.mouse.click(firstHelpCard.x + firstHelpCard.width / 2, firstHelpCard.y + firstHelpCard.height / 2);
+      if (scenario.name === '1280x720-windowed') {
+        await page.mouse.click(firstHelpCard.x + firstHelpCard.width / 2, firstHelpCard.y + firstHelpCard.height / 2);
+      } else {
+        await page.keyboard.press('Enter');
+      }
       const menuDetail = await waitForState(page, (state) => Boolean(state.howToPlayOverlay?.detail), `${scenario.name} menu detail open`);
       assert(menuDetail.howToPlayOverlay.detail.label === 'MOVE', `${scenario.name} pointer opened the wrong help detail`);
       assert(String(menuDetail.howToPlayOverlay.detail.detail || '').length > 120, `${scenario.name} help detail is too shallow`);

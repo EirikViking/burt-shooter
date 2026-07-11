@@ -22,12 +22,15 @@ const selectedIds = [
   'damage_up', 'damage_up', 'rapid_fire', 'rail_surge', 'double_shot', 'pierce',
   'target_paint', 'plasma_lance', 'chain_lightning', 'speed_up', 'blink_drive',
   'vector_boost', 'shield', 'ghost', 'point_defense', 'nano_patch', 'magnet',
-  'drones', 'drones', 'bomb', 'orbital_strike'
+  'drones', 'drones', 'bomb', 'orbital_strike',
+  'phase_reactor', 'focus_lens', 'inertial_dampers', 'phase_wake', 'slipstream_coils',
+  'emergency_bulkhead', 'impact_foam', 'graze_plating', 'last_light',
+  'combo_anchor', 'salvage_clock', 'power_saver', 'drone_link'
 ];
 
 const consumedIds = ['nano_patch'];
 const grouped = groupTacticalAugments(selectedIds, consumedIds);
-assert.equal(grouped.length, 19, 'duplicates should collapse into unique cards');
+assert.equal(grouped.length, 32, 'duplicates should collapse into the complete curated pool');
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.stacks, 2);
 assert.equal(grouped.find((item) => item.id === 'drones')?.stacks, 2);
 assert.equal(grouped.find((item) => item.id === 'nano_patch')?.consumed, true);
@@ -133,7 +136,7 @@ try {
     }, { selectedIds, consumedIds, viewport });
     const screenshotPath = path.join(tmpdir(), `nova-swarm-tactical-loadout-overlay-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshotPath });
-    assert.equal(state.initial.uniqueCount, 19);
+    assert.equal(state.initial.uniqueCount, 32);
     assert.deepEqual(state.initial.layout.layoutWarnings, [], `${viewport.width}x${viewport.height} layout warnings`);
     assert.ok(state.initial.visibleIds.length <= state.initial.pageSize);
     assert.ok(state.canvasPixels, `${viewport.width}x${viewport.height} should render nonblank pixels`);

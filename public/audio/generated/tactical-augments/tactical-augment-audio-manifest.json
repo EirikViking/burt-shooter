@@ -1,6 +1,6 @@
 {
   "feature": "Tactical augments and Viking Row",
-  "generatedAt": "2026-07-11T12:10:52.867Z",
+  "generatedAt": "2026-07-11T13:00:04.492Z",
   "legalNote": "Original ElevenLabs-generated assets. No real stadium, supporter, broadcast, team, song, or tournament recording was used.",
   "modelId": "eleven_text_to_sound_v2",
   "outputFormat": "mp3_44100_128",
@@ -9,85 +9,92 @@
       "file": "nova_tactical_phase_reactor.mp3",
       "duration_seconds": 0.55,
       "text": "Original arcade phase-reactor selection sting: a crystalline spacetime snap immediately charging one bright cannon capacitor, punchy sci-fi UI sound, no voice, no melody.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_focus_lens.mp3",
       "duration_seconds": 0.55,
       "text": "Original precision lens-lock UI sting: glass aperture closes, clean golden target ping, tiny laser focus shimmer, no voice, no melody.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_inertial_dampers.mp3",
       "duration_seconds": 0.6,
       "text": "Original sci-fi inertial damper selection sound: heavy gyroscope spins once and settles into a smooth magnetic hum, compact arcade UI sting, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_phase_wake.mp3",
       "duration_seconds": 0.6,
       "text": "Original phase wake UI sting: short reversed vacuum sweep, soft dimensional bubble pop, hostile sparks erased, crisp and rewarding, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_slipstream_coils.mp3",
       "duration_seconds": 0.6,
       "text": "Original slipstream coil selection sound: two accelerating electric coils cross and resolve in a fast cyan chirp, compact arcade UI sting, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_emergency_bulkhead.mp3",
       "duration_seconds": 0.7,
       "text": "Original emergency bulkhead UI sting: armored hatch slams shut followed by a clean protective shield bloom, heavy but short, no alarm voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_impact_foam.mp3",
       "duration_seconds": 0.55,
       "text": "Original impact foam selection sound: playful pneumatic pop, expanding safety foam fizz, then a sturdy hull knock, polished sci-fi arcade UI, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_graze_plating.mp3",
       "duration_seconds": 0.8,
       "text": "Original graze plating reward sting: six very fast metallic spark ticks fuse into one bright shield snap, gratifying arcade timing, no voice, no melody.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_last_light.mp3",
       "duration_seconds": 0.65,
       "text": "Original last-light selection sting: one low warning pulse rises into a determined phase-drive charge, tense then hopeful, compact sci-fi arcade UI, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_combo_anchor.mp3",
       "duration_seconds": 0.65,
       "text": "Original combo anchor selection sound: small metal anchor clank, chain catches, digital timer locks in place with a warm arcade ping, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_salvage_clock.mp3",
       "duration_seconds": 0.65,
       "text": "Original salvage clock selection sound: tiny mechanical clock winds backward and releases a bright pickup sparkle, playful sci-fi UI sting, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_power_saver.mp3",
       "duration_seconds": 0.6,
       "text": "Original power saver selection sting: systems briefly power down, conserved energy folds back into a strong green synth resolve, no voice, no melody.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_tactical_drone_link.mp3",
       "duration_seconds": 0.65,
       "text": "Original drone link selection sting: three distinct robotic handshake chirps connect to one strong targeting lock, friendly tactical arcade UI, no voice.",
-      "skipped": false
+      "skipped": true
     },
     {
       "file": "nova_row_core_viking_row.mp3",
       "duration_seconds": 4.8,
       "text": "Original fictional stadium-sized Viking rowing ritual for a sci-fi arcade game. Begin with one loud deep Nordic horn blast, then exactly two massive bass drum hits. A large unified crowd then shouts exactly 'RO! RO! RO!' three times, each shout louder and closer together, with synchronized rowing rhythm and a thunderous final impact. No other words, no song, no real recording, no team or tournament audio.",
-      "skipped": false
+      "skipped": false,
+      "composedFrom": [
+        "nova_row_core_horn.mp3",
+        "nova_row_core_drum.mp3",
+        "nova_row_core_ro_01.mp3",
+        "nova_row_core_ro_02.mp3",
+        "nova_row_core_ro_big.mp3"
+      ]
     }
   ]
 }
