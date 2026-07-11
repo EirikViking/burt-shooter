@@ -373,7 +373,9 @@ class Powerup {
 
     const offscreenMargin = Math.max(90, this.radius * 6);
 
-    if (this.y > screenHeight + offscreenMargin || (age > this.lifeTime && this.y > screenHeight)) {
+    const lifetimeMult = Number(scene?.player?.runAugmentModifiers?.pickupLifetimeMult) || 1;
+    const effectiveLifetime = this.lifeTime * Math.max(1, lifetimeMult);
+    if (this.y > screenHeight + offscreenMargin || age > effectiveLifetime) {
       this.active = false;
     }
   }

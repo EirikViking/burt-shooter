@@ -215,7 +215,7 @@ export class ScorePopupManager {
     // Combo system
     this.comboCount = 0;
     this.comboTimer = 0;
-    this.comboWindow = 2000; // 2 seconds to maintain combo
+    this.comboWindow = 3200;
     this.lastKillTime = 0;
   }
 
@@ -229,6 +229,10 @@ export class ScorePopupManager {
     if (this.pendingPopups.length > this.maxActivePopups) {
       this.pendingPopups.splice(0, this.pendingPopups.length - this.maxActivePopups);
     }
+  }
+
+  setComboWindow(windowMs = 3200) {
+    this.comboWindow = Math.max(1800, Math.min(5000, Number(windowMs) || 3200));
   }
 
   addScorePopup(x, y, score, options = {}) {

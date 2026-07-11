@@ -192,7 +192,16 @@ async function forceRunReportScenario(page) {
       category: index % 2 === 0 ? 'offense' : 'utility',
       stacks: 1
     }));
+    play.tacticalDraftHistory.push({
+      sectorCleared: 22,
+      id: 'nano_patch',
+      name: 'NANO PATCH',
+      category: 'defense',
+      stacks: 1,
+      consumed: true
+    });
     play.player.runAugmentIds = ['damage_up', 'speed_up'];
+    play.player.consumedRunAugmentIds = ['nano_patch'];
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
     play.finalLifeLossSource = 'enemy_bullet';
@@ -230,7 +239,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
   assert(state.runReport?.sectorReached >= 6, 'runReport summary should include sector reached.');
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
-  assert(state.runReport?.tacticalDraftPicks?.length === 21, 'runReport summary should preserve every tactical draft pick.');
+  assert(state.runReport?.tacticalDraftPicks?.length === 22, 'runReport summary should preserve every tactical draft pick.');
+  assert(state.runReport?.tacticalDraftPicks?.some((pick) => pick.id === 'nano_patch' && pick.consumed === true), 'runReport summary should retain consumed tactical state.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }
@@ -251,15 +261,15 @@ function assertOpenReport(state, viewport) {
   assert(rectRight(panel) <= viewport.width && rectBottom(panel) <= viewport.height, `Run Report panel clipped at ${viewport.width}x${viewport.height}.`);
 
   const tactical = overlay.tacticalLoadout;
-  assert(tactical?.totalPicks === 21, 'Tactical Loadout should preserve all 21 picks.');
-  assert(tactical?.uniquePicks === 12, 'Tactical Loadout should group 21 picks into 12 unique chips.');
-  assert(tactical?.chips?.length === 12, 'Tactical Loadout should render one chip per grouped upgrade.');
+  assert(tactical?.totalPicks === 22, 'Tactical Loadout should preserve all 22 picks.');
+  assert(tactical?.uniquePicks === 13, 'Tactical Loadout should group 22 picks into 13 unique chips.');
+  assert(tactical?.chips?.length === 13, 'Tactical Loadout should render one chip per grouped upgrade.');
   assertContains(panel, tactical.bounds, 'Tactical Loadout band');
 
   const expectedStacks = new Map([
     ['DAMAGE UP', 4], ['SPEED UP', 3], ['PIERCE', 2], ['CHAIN', 2],
     ['TARGET POINT', 2], ['DRONES', 2], ['RAPID FIRE', 1], ['PLASMA LIGHTNING', 1],
-    ['MAGNET: PICKUPS', 1], ['BOMB', 1], ['RAIL SURGE', 1], ['SHIELD MATRIX', 1]
+    ['MAGNET: PICKUPS', 1], ['BOMB', 1], ['RAIL SURGE', 1], ['SHIELD MATRIX', 1], ['NANO PATCH', 1]
   ]);
   tactical.chips.forEach((chip, index) => {
     assertContains(tactical.bounds, chip, `Tactical chip ${chip.label}`);
@@ -272,6 +282,9 @@ function assertOpenReport(state, viewport) {
     const expectedText = count > 1 ? `${label} x${count}` : label;
     assert(text.includes(expectedText), `Tactical Loadout missing readable chip text: ${expectedText}`);
   }
+  const consumedNano = tactical.chips.find((chip) => chip.label === 'NANO PATCH');
+  assert(consumedNano?.consumed === true, 'Consumed Nano Patch chip was not flagged in Run Report.');
+  assert(text.includes('NANO PATCH - CONSUMED'), 'Run Report did not render the consumed status text.');
 
   for (const section of overlay.sections || []) {
     assertContains(panel, section, `Report section ${section.id}`);

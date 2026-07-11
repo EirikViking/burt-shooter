@@ -5,6 +5,7 @@ const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/com
 const playScene = readFileSync(new URL('../src/scenes/PlayScene.js', import.meta.url), 'utf8');
 const enemyManager = readFileSync(new URL('../src/managers/EnemyManager.js', import.meta.url), 'utf8');
 const comboConfig = readFileSync(new URL('../src/config/ComboConfig.js', import.meta.url), 'utf8');
+const scorePopup = readFileSync(new URL('../src/ui/ScorePopup.js', import.meta.url), 'utf8');
 const failures = [];
 
 function timestamp() {
@@ -57,6 +58,15 @@ if (!updateComboTimers.includes('this.comboCount = 0')) {
 if (!playScene.includes('playerBulletEnemyDamageOnly += 1')) {
   fail('expected damage-only bullet accounting marker');
 }
+if (!/scorePopups[\s\S]{0,220}options:\s*\{\s*comboEligible:\s*true\s*\}/.test(playScene)) {
+  fail('normal player-bullet kills must feed the floating combo presentation');
+}
+if (!/setComboWindow\(windowMs = 3200\)/.test(scorePopup) || !/Math\.min\(5000/.test(scorePopup)) {
+  fail('ScorePopup must expose a bounded runtime combo window');
+}
+if (!/comboWindowBonusMs/.test(playScene) || !/setComboWindow\?\.\(this\.comboWindowMs\)/.test(playScene)) {
+  fail('Combo Anchor must extend both scoring and floating combo presentation windows');
+}
 if (/playerBulletEnemyDamageOnly[\s\S]{0,350}comboTimerMs\s*=/.test(playScene)) {
   fail('damage-only bullet path appears to refresh the score combo timer');
 }
@@ -72,6 +82,8 @@ const report = {
   summary: {
     comboWindowMs: 3200,
     scoreComboRefreshesOnKills: true,
+    floatingComboReceivesProductionKills: true,
+    comboAnchorPresentationWindowSynced: true,
     damageOnlyHitsRefreshScoreCombo: false,
     waveCleanupAwardsComboKills: false,
     scoringMechanicsChangedByThisCheck: false

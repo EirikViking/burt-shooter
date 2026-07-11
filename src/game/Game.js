@@ -962,6 +962,7 @@ export class Game {
       powerupsCollected: Number(play?.powerupsCollectedThisRun) || 0,
       tacticalDraftPicks: Array.isArray(play?.tacticalDraftHistory) ? play.tacticalDraftHistory.map((entry) => ({ ...entry })) : [],
       tacticalAugmentIds: Array.isArray(play?.player?.runAugmentIds) ? play.player.runAugmentIds.slice() : [],
+      tacticalConsumedAugmentIds: Array.isArray(play?.player?.consumedRunAugmentIds) ? play.player.consumedRunAugmentIds.slice() : [],
       livesRemaining: this.lives,
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
       clearReason: overrides.clearReason || this.runClearReason || null,

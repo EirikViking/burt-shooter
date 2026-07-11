@@ -3932,7 +3932,8 @@ export class PlayScene {
             this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
               x: enemy.x,
               y: enemy.y,
-              score: appliedScore
+              score: appliedScore,
+              options: { comboEligible: true }
             });
           }
           measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy, { sideEffects }));
@@ -6037,15 +6038,24 @@ export class PlayScene {
       name: offer.name,
       category: offer.category,
       stacks: result.stacks,
+      consumed: result.consumed === true,
       source
     });
+    this.comboWindowMs = COMBO_WINDOW_MS + Math.max(0, Number(this.player?.runAugmentModifiers?.comboWindowBonusMs) || 0);
+    this.scorePopupManager?.setComboWindow?.(this.comboWindowMs);
+    this.recordThreatDiscovery(offer.id, 'augments', {
+      name: offer.name,
+      role: offer.category,
+      description: offer.detail || offer.description
+    }, { silent: true, scoreBonus: false });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
-    AudioManager.playSfx(getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
+    AudioManager.playSfx(offer.sfx || getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
     const complete = state.onComplete;
     this.tacticalDraftConfirmTimeout = setTimeout(() => {
       this.tacticalDraftConfirmTimeout = null;
       this.clearTacticalDraft('confirmed');
-      this.enqueueToast(`${translateText(offer.name)}  ${translateText('PERMANENT THIS RUN')}`, {
+      const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
+      this.enqueueToast(`${translateText(offer.name)}  ${status}`, {
         fontSize: 18,
         fill: '#fff3a0',
         slot: 'top',
@@ -6631,6 +6641,7 @@ export class PlayScene {
     this.tacticalLoadoutOverlay = new TacticalLoadoutOverlay(this.game, {
       title: 'Tactical upgrades',
       selectedIds: this.player?.runAugmentIds || [],
+      consumedIds: this.player?.consumedRunAugmentIds || [],
       onClose: () => {
         this.tacticalLoadoutOverlay = null;
         this.pauseGamepadNavigator.suppressUntilReleased();
@@ -9235,12 +9246,16 @@ export class PlayScene {
       this.game.awardRunClearScoreBonuses?.({ clearBonus, livesBonus });
 
       this.overrunCelebratedMilestones.add(milestoneSector);
+      const celebration = getOverrunMilestoneCelebration({ milestoneSector, eventKind: 'run_clear' });
+      const milestoneReward = this.applyOverrunMilestoneReward(celebration);
       this.triggerOverrunClearCelebration({
         nextSector,
         milestoneSector,
         eventKind: 'run_clear',
         clearBonus,
-        livesBonus
+        livesBonus,
+        celebration,
+        milestoneReward
       });
       this.showToast([
         translateText('RUN CLEAR! OVERRUN UNLOCKED'),
@@ -9275,14 +9290,50 @@ export class PlayScene {
       awardKey: `overrun_${milestoneSector}`
     });
     this.overrunCelebratedMilestones.add(milestoneSector);
+    const celebration = getOverrunMilestoneCelebration({ milestoneSector, eventKind: 'overrun_milestone' });
+    const milestoneReward = this.applyOverrunMilestoneReward(celebration);
     this.triggerOverrunClearCelebration({
       nextSector,
       milestoneSector,
       eventKind: 'overrun_milestone',
       clearBonus: milestoneAward?.clearBonus ?? clearBonus,
-      livesBonus: milestoneAward?.livesBonus ?? livesBonus
+      livesBonus: milestoneAward?.livesBonus ?? livesBonus,
+      celebration,
+      milestoneReward
     });
     return true;
+  }
+
+  applyOverrunMilestoneReward(celebration = {}) {
+    const reward = celebration?.reward || {};
+    const applied = [];
+    if (reward.rescan) {
+      this.tacticalDraftRescansRemaining = Math.max(1, Number(this.tacticalDraftRescansRemaining) || 0);
+      applied.push('rescan');
+    }
+    if (reward.shieldMs > 0 && this.player?.activateShield) {
+      this.player.activateShield(reward.shieldMs);
+      applied.push('shield');
+    }
+    if (reward.phaseReady && this.player) {
+      this.player.dodgeCooldown = 0;
+      applied.push('phase');
+    }
+    if (reward.pointDefenseMs > 0 && this.player) {
+      this.player.pointDefenseActive = true;
+      this.player.pointDefenseExpiresAt = Date.now() + reward.pointDefenseMs;
+      this.player.createPointDefenseRing?.();
+      applied.push('point_defense');
+    }
+    if (reward.sfx) {
+      AudioManager.playSfx(reward.sfx, { force: true, volume: 0.86, minIntervalMs: 0 });
+    }
+    this.lastOverrunMilestoneReward = {
+      celebrationId: celebration?.id || null,
+      label: reward.label || '',
+      applied
+    };
+    return this.lastOverrunMilestoneReward;
   }
 
   triggerOverrunClearCelebration({
@@ -9290,13 +9341,15 @@ export class PlayScene {
     milestoneSector = this.game?.level || 10,
     eventKind = 'run_clear',
     clearBonus = 0,
-    livesBonus = 0
+    livesBonus = 0,
+    celebration: suppliedCelebration = null,
+    milestoneReward = null
   } = {}) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const centerX = width * 0.5;
     const centerY = height * (width < 620 ? 0.36 : 0.42);
-    const celebration = getOverrunMilestoneCelebration({ milestoneSector, eventKind });
+    const celebration = suppliedCelebration || getOverrunMilestoneCelebration({ milestoneSector, eventKind });
     const visual = celebration.visual || {};
     const shardPalette = Array.isArray(visual.shardColors) && visual.shardColors.length
       ? visual.shardColors
@@ -9341,7 +9394,8 @@ export class PlayScene {
       eventKind,
       celebration,
       clearBonus,
-      livesBonus
+      livesBonus,
+      milestoneReward
     });
     if (interludeCard) {
       interludeCard.zIndex = 5;
@@ -9365,6 +9419,7 @@ export class PlayScene {
       milestoneSector,
       eventKind,
       variantId: celebration.id,
+      milestoneReward,
       visual,
       container,
       flash,
@@ -9388,6 +9443,7 @@ export class PlayScene {
       milestoneSector,
       nextSector,
       variantId: celebration.id,
+      milestoneReward,
       effect
     };
     effect.requiresConfirm = eventKind === 'run_clear' || eventKind === 'overrun_milestone';
@@ -9426,11 +9482,12 @@ export class PlayScene {
     eventKind,
     celebration,
     clearBonus = 0,
-    livesBonus = 0
+    livesBonus = 0,
+    milestoneReward = null
   }) {
     const compact = width < 720;
     const cardWidth = Math.min(width - 32, compact ? 540 : 820);
-    const cardHeight = Math.min(height * (compact ? 0.72 : 0.64), compact ? 330 : 364);
+    const cardHeight = Math.min(height * (compact ? 0.72 : 0.64), compact ? 330 : 420);
     const visual = celebration?.visual || {};
     const primaryColor = visual.primaryColor || 0xffd15c;
     const accentColor = visual.accentColor || 0x61f6ff;
@@ -9575,6 +9632,25 @@ export class PlayScene {
     bonusText.y = compact ? 43 : 54;
     card.addChild(bonusText);
 
+    const rewardLine = translateText(milestoneReward?.label || celebration?.reward?.label || '');
+    const rewardText = createText(rewardLine, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: compact ? 12 : 16,
+      fill: '#b7ff39',
+      stroke: '#001016',
+      strokeThickness: 3,
+      fontWeight: '900',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: cardWidth - 84,
+      lineHeight: compact ? 14 : 18
+    });
+    rewardText.anchor.set(0.5);
+    rewardText.label = 'ui_overrun_card_reward';
+    rewardText.visible = Boolean(rewardLine);
+    rewardText.y = compact ? 65 : 86;
+    card.addChild(rewardText);
+
     const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 12 : 15,
@@ -9589,7 +9665,7 @@ export class PlayScene {
     });
     warning.anchor.set(0.5);
     warning.label = 'ui_overrun_card_warning';
-    warning.y = compact ? cardHeight / 2 - 92 : cardHeight / 2 - 96;
+    warning.y = cardHeight / 2 - 72;
     card.addChild(warning);
 
     const button = new PIXI.Container();
@@ -9936,6 +10012,7 @@ export class PlayScene {
         bounds: null,
         buttonBounds: null,
         promptBounds: null,
+        milestoneReward: null,
         textNodes: []
       };
     }
@@ -9956,6 +10033,7 @@ export class PlayScene {
       bounds: typeof getBounds === 'function' ? getBounds(card) : null,
       buttonBounds: typeof getBounds === 'function' ? getBounds(confirmButton) : null,
       promptBounds: typeof getBounds === 'function' ? getBounds(confirmPrompt) : null,
+      milestoneReward: interlude.milestoneReward || effect?.milestoneReward || null,
       textNodes
     };
   }
@@ -12390,6 +12468,18 @@ export class PlayScene {
       sourceX: bullet?.x,
       sourceY: bullet?.y
     });
+    const grazePlating = this.player?.recordRunAugmentNearMiss?.(this.game?.level || 1);
+    if (grazePlating?.granted) {
+      this.enqueueToast(translateText('GRAZE PLATING ONLINE'), {
+        fontSize: 18,
+        fill: '#9effe5',
+        slot: 'top',
+        type: 'tactical_draft',
+        priority: 5,
+        duration: 1100
+      });
+      AudioManager.playSfx('tactical_graze_plating', { force: true, volume: 0.76, minIntervalMs: 500 });
+    }
     const nearMissLabel = translateText('NEAR MISS');
     const label = this.dangerDodgeCount >= 2
       ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`

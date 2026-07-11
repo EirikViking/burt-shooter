@@ -1078,9 +1078,12 @@ export class HUD {
 
   updateTacticalAugmentTray() {
     if (!this.tacticalAugmentGroup) return;
-    const selectedIds = Array.isArray(this.game?.scenes?.play?.player?.runAugmentIds)
-      ? this.game.scenes.play.player.runAugmentIds
+    const player = this.game?.scenes?.play?.player;
+    const allSelectedIds = Array.isArray(player?.runAugmentIds)
+      ? player.runAugmentIds
       : [];
+    const consumedIds = new Set(Array.isArray(player?.consumedRunAugmentIds) ? player.consumedRunAugmentIds : []);
+    const selectedIds = allSelectedIds.filter((id) => !consumedIds.has(id));
     const grouped = new Map();
     for (const id of selectedIds) {
       const meta = getTacticalDraftMeta(id);
@@ -1096,7 +1099,9 @@ export class HUD {
       this.tacticalAugmentGroup.visible = false;
       this.tacticalAugmentGroup._debugTacticalAugments = {
         visible: false,
-        selectedCount: selectedIds.length,
+        selectedCount: allSelectedIds.length,
+        activeCount: selectedIds.length,
+        consumedCount: consumedIds.size,
         uniqueCount: 0,
         entries: [],
         hiddenCount: 0
@@ -1112,39 +1117,36 @@ export class HUD {
     const itemHeight = compact ? 26 : 30;
     const gap = compact ? 4 : 5;
     const overflowWidth = compact ? 38 : 44;
-    const maxVisibleItems = compact ? 4 : 6;
+    const columns = 4;
+    const maxVisibleItems = 8;
     const layoutState = this.tacticalAugmentGroup._layout || {};
-    const maxWidth = Math.max(itemWidth, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 390 : 720));
-    let visibleCount = Math.min(entries.length, maxVisibleItems, Math.max(1, Math.floor((maxWidth + gap) / (itemWidth + gap))));
-    let hiddenCount = entries.length - visibleCount;
-    if (hiddenCount > 0) {
-      visibleCount = Math.max(1, Math.min(visibleCount, Math.floor((maxWidth - overflowWidth) / (itemWidth + gap))));
-      hiddenCount = entries.length - visibleCount;
-    }
+    const maxWidth = Math.max(itemWidth * columns, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 430 : 560));
+    const visibleCount = Math.min(entries.length, maxVisibleItems);
+    const hiddenCount = Math.max(0, entries.length - visibleCount);
     const visibleEntries = entries.slice(0, visibleCount);
-    let cursorX = 4;
     visibleEntries.forEach((entry, index) => {
       const item = this.getTacticalAugmentItem(index);
       item.container.visible = true;
-      item.container.x = cursorX;
-      item.container.y = 4;
+      item.container.x = 4 + (index % columns) * (itemWidth + gap);
+      item.container.y = 4 + Math.floor(index / columns) * (itemHeight + gap);
       this.updateTacticalAugmentItem(item, entry, itemWidth, itemHeight, compact, false);
-      cursorX += itemWidth + gap;
     });
     if (hiddenCount > 0) {
       const item = this.getTacticalAugmentItem(visibleEntries.length);
       item.container.visible = true;
-      item.container.x = cursorX;
-      item.container.y = 4;
+      item.container.x = 4 + columns * (itemWidth + gap);
+      item.container.y = 4 + itemHeight + gap;
       this.updateTacticalAugmentItem(item, { hiddenCount, color: 0xffef7e }, overflowWidth, itemHeight, compact, true);
-      cursorX += overflowWidth + gap;
     }
     this.tacticalAugmentItems.slice(visibleEntries.length + (hiddenCount > 0 ? 1 : 0)).forEach((item) => {
       item.container.visible = false;
     });
 
-    const trayWidth = Math.max(0, cursorX - gap + 4);
-    const trayHeight = itemHeight + 8;
+    const visibleColumns = Math.min(columns, visibleEntries.length);
+    const gridWidth = visibleColumns > 0 ? visibleColumns * itemWidth + Math.max(0, visibleColumns - 1) * gap : 0;
+    const trayWidth = 8 + gridWidth + (hiddenCount > 0 ? gap + overflowWidth : 0);
+    const trayRows = Math.max(1, Math.ceil(visibleEntries.length / columns));
+    const trayHeight = 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
     this.tacticalAugmentBackdrop.clear();
     this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 6);
     this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.34 });
@@ -1157,12 +1159,16 @@ export class HUD {
     const trayRight = this.tacticalAugmentGroup.x + trayWidth;
     this.tacticalAugmentGroup._debugTacticalAugments = {
       visible: true,
-      selectedCount: selectedIds.length,
+      selectedCount: allSelectedIds.length,
+      activeCount: selectedIds.length,
+      consumedCount: consumedIds.size,
       uniqueCount: entries.length,
       entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category })),
       visibleEntries: visibleEntries.map((entry) => entry.id),
       hiddenCount,
       compact,
+      columns,
+      rows: trayRows,
       itemWidth,
       bounds: { x: this.tacticalAugmentGroup.x, y: this.tacticalAugmentGroup.y, width: trayWidth, height: trayHeight },
       maxWidth,

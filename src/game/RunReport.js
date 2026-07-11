@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 2;
+const RUN_REPORT_VERSION = 3;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -154,8 +154,15 @@ export function createRunReport(summary = {}) {
   const deathCoach = getDeathCoachAdvice(summary.finalDeathSource || summary.lastLifeLossSource);
   const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
   const tacticalDraftPicks = (Array.isArray(summary.tacticalDraftPicks) ? summary.tacticalDraftPicks : [])
-    .map((entry) => String(entry?.name || '').trim())
-    .filter(Boolean);
+    .map((entry) => ({
+      id: String(entry?.id || '').trim(),
+      name: String(entry?.name || entry?.id || '').trim(),
+      category: String(entry?.category || 'utility').trim(),
+      stacks: Math.max(1, toWholeNumber(entry?.stacks, 1)),
+      consumed: entry?.consumed === true,
+      sectorCleared: Math.max(1, toWholeNumber(entry?.sectorCleared, 1))
+    }))
+    .filter((entry) => entry.name);
 
   const report = {
     version: RUN_REPORT_VERSION,

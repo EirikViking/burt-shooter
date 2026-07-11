@@ -68,9 +68,10 @@ function fitText(text, maxWidth, maxHeight, minScale = 0.62) {
   return scale;
 }
 
-export function groupTacticalAugments(selectedIds = []) {
+export function groupTacticalAugments(selectedIds = [], consumedIds = []) {
   const grouped = [];
   const byId = new Map();
+  const consumed = new Set(Array.isArray(consumedIds) ? consumedIds : []);
   for (const rawId of Array.isArray(selectedIds) ? selectedIds : []) {
     const id = String(rawId || '').trim();
     if (!id) continue;
@@ -86,6 +87,7 @@ export function groupTacticalAugments(selectedIds = []) {
         category: metadata?.category || 'utility',
         color: Number(metadata?.color) || CATEGORY_COLORS.utility,
         maxStacks: positiveInteger(metadata?.maxStacks, 1),
+        consumed: consumed.has(id),
         metadata
       };
       byId.set(id, entry);
@@ -154,7 +156,8 @@ export class TacticalLoadoutOverlay {
     this.onClose = typeof resolved.onClose === 'function' ? resolved.onClose : null;
     this.title = resolved.title || 'TACTICAL LOADOUT';
     this.selectedIds = Array.isArray(resolved.selectedIds) ? resolved.selectedIds.slice() : [];
-    this.items = groupTacticalAugments(this.selectedIds);
+    this.consumedIds = Array.isArray(resolved.consumedIds) ? resolved.consumedIds.slice() : [];
+    this.items = groupTacticalAugments(this.selectedIds, this.consumedIds);
     this.pageIndex = 0;
     this.focusedControl = 'close';
     this.container = new PIXI.Container();
@@ -169,6 +172,9 @@ export class TacticalLoadoutOverlay {
     this.menuFx = null;
     this.cards = [];
     this.controls = {};
+    this.detailItem = null;
+    this.detailContainer = null;
+    this.focusedCardIndex = 0;
     this.debugLayout = null;
     this.closed = false;
     this.build();
@@ -336,7 +342,7 @@ export class TacticalLoadoutOverlay {
     card.label = `tactical_loadout_${item.id}`;
     card.position.set(x, y);
     card.eventMode = 'static';
-    card.cursor = 'default';
+    card.cursor = 'pointer';
     card.hitArea = new PIXI.Rectangle(0, 0, layout.cardWidth, layout.cardHeight);
     card._item = item;
     const accent = Number(item.color) || CATEGORY_COLORS[item.category] || CATEGORY_COLORS.utility;
@@ -385,11 +391,11 @@ export class TacticalLoadoutOverlay {
       wordWrap: true,
       align: layout.veryCompact ? 'left' : 'center'
     });
-    const permanence = createText(translateText('PERMANENT THIS RUN'), {
+    const permanence = createText(translateText(item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: layout.veryCompact ? 8 : 10,
       fontWeight: '900',
-      fill: '#ffe68a'
+      fill: item.consumed ? '#ffad91' : '#ffe68a'
     });
     const stack = createText(String(item.stacks), {
       fontFamily: FONT_DISPLAY,
@@ -447,8 +453,129 @@ export class TacticalLoadoutOverlay {
     card.on('pointerout', () => {
       bg.tint = 0xffffff;
     });
+    card.on('pointertap', () => {
+      playMenuConfirmSfx(0.13);
+      this.openDetail(item);
+    });
     this.cards.push(card);
     this.container.addChild(card);
+  }
+
+  setFocusedCard(index = 0) {
+    if (!this.cards.length) return;
+    this.focusedCardIndex = (Math.floor(Number(index) || 0) + this.cards.length) % this.cards.length;
+    this.cards.forEach((card, cardIndex) => {
+      if (card?._nodes?.bg) card._nodes.bg.tint = cardIndex === this.focusedCardIndex ? 0xbfefff : 0xffffff;
+    });
+  }
+
+  openDetail(item) {
+    if (!item || this.closed) return false;
+    this.closeDetail();
+    this.detailItem = item;
+    const width = this.getWidth();
+    const height = this.getHeight();
+    const compact = width < 960 || height < 680;
+    const panelWidth = Math.min(compact ? 720 : 860, width - 40);
+    const panelHeight = Math.min(compact ? 500 : 570, height - 40);
+    const panelX = (width - panelWidth) / 2;
+    const panelY = (height - panelHeight) / 2;
+    const accent = Number(item.color) || CATEGORY_COLORS[item.category] || CATEGORY_COLORS.utility;
+    const detail = new PIXI.Container();
+    detail.label = `tactical_augment_detail_${item.id}`;
+    detail.zIndex = 50;
+    detail.eventMode = 'static';
+    detail.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x01050d, alpha: 0.88 });
+    detail.addChild(dim);
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x04111f, alpha: 0.99 });
+    panel.stroke({ color: accent, width: 2.2, alpha: 0.94 });
+    panel.roundRect(panelX + 9, panelY + 9, panelWidth - 18, panelHeight - 18, 6);
+    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.26 });
+    detail.addChild(panel);
+
+    const texture = GameAssets.getPowerupTexture?.(item.id);
+    const icon = texture && GameAssets.isValidTexture(texture)
+      ? new PIXI.Sprite(texture)
+      : this.createFallbackIcon(item, compact ? 88 : 112);
+    icon.anchor?.set?.(0.5);
+    if (texture && GameAssets.isValidTexture(texture)) {
+      icon.scale.set((compact ? 88 : 112) / Math.max(1, texture.width || 1, texture.height || 1));
+    }
+    icon.position.set(panelX + (compact ? 76 : 94), panelY + (compact ? 88 : 104));
+    detail.addChild(icon);
+
+    const category = createText(translateText(String(item.category || 'utility').toUpperCase()), {
+      fontFamily: FONT_BODY, fontSize: compact ? 12 : 15, fontWeight: '900', fill: '#8eeeff'
+    });
+    category.position.set(panelX + (compact ? 138 : 174), panelY + 42);
+    detail.addChild(category);
+    const name = createText(translateText(item.name), {
+      fontFamily: FONT_DISPLAY, fontSize: compact ? 28 : 36, fontWeight: '900', fill: '#ffffff', stroke: '#00111d', strokeThickness: 4
+    });
+    name.position.set(panelX + (compact ? 138 : 174), panelY + 62);
+    fitText(name, panelWidth - (compact ? 170 : 210), 54, 0.58);
+    detail.addChild(name);
+
+    const effect = createText(translateText(item.description), {
+      fontFamily: FONT_BODY, fontSize: compact ? 17 : 20, fontWeight: '900', fill: '#ffe891', wordWrap: true,
+      wordWrapWidth: panelWidth - 56, lineHeight: compact ? 20 : 24
+    });
+    effect.position.set(panelX + 28, panelY + (compact ? 156 : 184));
+    fitText(effect, panelWidth - 56, compact ? 54 : 62, 0.64);
+    detail.addChild(effect);
+
+    const body = createText(translateText(item.metadata?.detail || item.description), {
+      fontFamily: FONT_BODY, fontSize: compact ? 16 : 19, fontWeight: '700', fill: '#d7f5ff', wordWrap: true,
+      breakWords: true, wordWrapWidth: panelWidth - 56, lineHeight: compact ? 21 : 25
+    });
+    body.position.set(panelX + 28, panelY + (compact ? 222 : 258));
+    fitText(body, panelWidth - 56, compact ? 170 : 196, 0.62);
+    detail.addChild(body);
+
+    const status = createText(translateText(item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
+      fontFamily: FONT_DISPLAY, fontSize: compact ? 13 : 16, fontWeight: '900', fill: item.consumed ? '#ffad91' : '#7dffcc'
+    });
+    status.anchor.set(0.5);
+    status.position.set(width / 2, panelY + panelHeight - (compact ? 82 : 92));
+    detail.addChild(status);
+
+    const close = new PIXI.Container();
+    close.label = 'tactical_augment_detail_close';
+    close.eventMode = 'static';
+    close.cursor = 'pointer';
+    close.hitArea = new PIXI.Rectangle(-100, -19, 200, 38);
+    close.position.set(width / 2, panelY + panelHeight - 40);
+    const closeBg = new PIXI.Graphics();
+    closeBg.roundRect(-100, -19, 200, 38, 6);
+    closeBg.fill({ color: 0x0a3850, alpha: 0.96 });
+    closeBg.stroke({ color: 0xffe891, width: 1.5, alpha: 0.86 });
+    const closeText = createText(translateText('CLOSE'), { fontFamily: FONT_DISPLAY, fontSize: 16, fontWeight: '900', fill: '#ffffff' });
+    closeText.anchor.set(0.5);
+    close.addChild(closeBg, closeText);
+    close.on('pointertap', () => this.closeDetail());
+    detail.addChild(close);
+
+    detail._debugDetail = {
+      id: item.id,
+      consumed: item.consumed,
+      panel: { x: Math.round(panelX), y: Math.round(panelY), width: Math.round(panelWidth), height: Math.round(panelHeight) }
+    };
+    this.detailContainer = detail;
+    this.container.addChild(detail);
+    return true;
+  }
+
+  closeDetail() {
+    if (this.detailContainer?.parent) this.detailContainer.parent.removeChild(this.detailContainer);
+    this.detailContainer?.destroy?.({ children: true });
+    this.detailContainer = null;
+    this.detailItem = null;
   }
 
   createFallbackIcon(item, size) {
@@ -546,6 +673,7 @@ export class TacticalLoadoutOverlay {
     const next = (this.pageIndex + Math.sign(direction || 1) + totalPages) % totalPages;
     if (next === this.pageIndex) return false;
     this.pageIndex = next;
+    this.focusedCardIndex = 0;
     playMenuFocusSfx(0.1);
     this.rebuild();
     return true;
@@ -557,11 +685,18 @@ export class TacticalLoadoutOverlay {
       const key = event.key || event.code;
       const left = key === 'ArrowLeft' || key === 'a' || key === 'A' || event.code === 'KeyA';
       const right = key === 'ArrowRight' || key === 'd' || key === 'D' || event.code === 'KeyD';
+      const up = key === 'ArrowUp' || key === 'w' || key === 'W' || event.code === 'KeyW';
+      const down = key === 'ArrowDown' || key === 's' || key === 'S' || event.code === 'KeyS';
+      const confirm = key === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
       const close = key === 'Escape';
-      if (!left && !right && !close) return;
+      if (!left && !right && !up && !down && !confirm && !close) return;
       event.preventDefault();
       event.stopPropagation();
-      if (close) this.close();
+      if (this.detailItem) {
+        if (close || confirm) this.closeDetail();
+      } else if (close) this.close();
+      else if (up || down) this.setFocusedCard(this.focusedCardIndex + (up ? -1 : 1));
+      else if (confirm) this.openDetail(this.cards[this.focusedCardIndex]?._item);
       else this.changePage(left ? -1 : 1);
     };
     window.addEventListener('keydown', this.keyHandler, true);
@@ -572,19 +707,23 @@ export class TacticalLoadoutOverlay {
     updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    if (this.detailItem) {
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back || nav.pressed.confirm) this.closeDetail();
+      return;
+    }
     if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
       this.close();
       return;
     }
     if (nav.pressed.left || nav.pressed.lb) this.changePage(-1);
     if (nav.pressed.right || nav.pressed.rb) this.changePage(1);
-    if (nav.pressed.up || nav.pressed.down) this.setFocusedControl('close');
-    if (nav.pressed.confirm) this.controls[this.focusedControl]?._press?.();
+    if (nav.pressed.up || nav.pressed.down) this.setFocusedCard(this.focusedCardIndex + (nav.pressed.up ? -1 : 1));
+    if (nav.pressed.confirm) this.openDetail(this.cards[this.focusedCardIndex]?._item);
   }
 
   setSelectedIds(selectedIds = []) {
     this.selectedIds = Array.isArray(selectedIds) ? selectedIds.slice() : [];
-    this.items = groupTacticalAugments(this.selectedIds);
+    this.items = groupTacticalAugments(this.selectedIds, this.consumedIds);
     this.pageIndex = clamp(this.pageIndex, 0, calculateTacticalLoadoutLayout(this.getWidth(), this.getHeight(), this.items.length).totalPages - 1);
     this.rebuild();
   }
@@ -621,6 +760,7 @@ export class TacticalLoadoutOverlay {
       closed: this.closed,
       selectedIds: this.selectedIds.slice(),
       selectedCount: this.selectedIds.length,
+      consumedIds: this.consumedIds.slice(),
       uniqueCount: this.items.length,
       items: this.items.map((item) => ({
         id: item.id,
@@ -631,6 +771,7 @@ export class TacticalLoadoutOverlay {
         description: item.description,
         translatedDescription: translateText(item.description),
         category: item.category,
+        consumed: item.consumed,
         color: item.color,
         maxStacks: item.maxStacks
       })),
@@ -640,6 +781,8 @@ export class TacticalLoadoutOverlay {
       pageSize: this.debugLayout?.pageSize || 1,
       visibleIds: this.items.slice(start, start + (this.debugLayout?.pageSize || 1)).map((item) => item.id),
       focusedControl: this.focusedControl,
+      focusedCardIndex: this.focusedCardIndex,
+      detail: this.detailContainer?._debugDetail || null,
       layout: this.debugLayout,
       bounds: this.getDebugBounds(),
       menuFx: this.menuFx?.getDebugState?.() || null
@@ -649,6 +792,7 @@ export class TacticalLoadoutOverlay {
   close() {
     if (this.closed) return;
     this.closed = true;
+    this.closeDetail();
     playMenuBackSfx(0.12);
     if (this.keyHandler && typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.keyHandler, true);

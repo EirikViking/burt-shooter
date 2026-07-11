@@ -6,6 +6,16 @@ import { SFX_CATALOG, SFX_MIX } from '../src/audio/SoundCatalog.js';
 import { BalanceConfig } from '../src/config/BalanceConfig.js';
 import { ALL_POWERUP_TYPES, getPowerupMeta } from '../src/config/PowerupCatalog.js';
 
+globalThis.Audio = globalThis.Audio || class AudioStub {
+  addEventListener() {}
+  removeEventListener() {}
+  load() {}
+  pause() {}
+  play() { return Promise.resolve(); }
+};
+
+const { PowerupManager } = await import('../src/managers/PowerupManager.js');
+
 const root = process.cwd();
 const type = 'super_extra_life';
 const meta = getPowerupMeta(type);
@@ -59,6 +69,30 @@ const gameSource = readFileSync(path.join(root, 'src/game/Game.js'), 'utf8');
 assert.match(gameSource, /gainLife\(options = \{\}\)/, 'gainLife should accept count/source options');
 assert.match(gameSource, /grantCount/, 'gainLife should report grantCount');
 
+const removedSprites = [];
+const runtimeManager = new PowerupManager({
+  addChild() {},
+  removeChild(sprite) { removedSprites.push(sprite); }
+}, {
+  getWidth: () => 800,
+  getHeight: () => 620,
+  scenes: { play: {} }
+});
+const runtimeScene = {
+  gameplayGame: { getWidth: () => 800, getHeight: () => 620 },
+  game: { getWidth: () => 800, getHeight: () => 620 },
+  player: { x: 100, y: 500, runAugmentModifiers: {} },
+  particleManager: { spawnParticle() {} }
+};
+const missablePickup = runtimeManager.spawnSpecific(650, 180, type);
+missablePickup.createdAt = Date.now() - missablePickup.lifeTime + 20;
+runtimeManager.update(1, runtimeScene);
+assert.equal(runtimeManager.powerups.length, 1, 'super extra life despawned before its review window ended');
+missablePickup.createdAt = Date.now() - missablePickup.lifeTime - 20;
+runtimeManager.update(1, runtimeScene);
+assert.equal(runtimeManager.powerups.length, 0, 'super extra life waited forever after its lifetime expired on-screen');
+assert.equal(removedSprites.length, 1, 'expired super extra life sprite was not removed');
+
 for (const protectedTerm of [
   'leaderboard',
   'achievement',
@@ -73,4 +107,4 @@ for (const protectedTerm of [
   );
 }
 
-console.log('[super-extra-life-powerup] PASS +2 lives, evasive movement, 20% catch target, rare drop slice, asset and SFX wired');
+console.log('[super-extra-life-powerup] PASS +2 lives, evasive movement, hard on-screen expiry, 20% catch target, rare drop slice, asset and SFX wired');

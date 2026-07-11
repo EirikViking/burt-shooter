@@ -201,6 +201,7 @@ function assertTextLayout(state, label, viewport, { requireBonus = false } = {})
     'ui_overrun_card_flavor',
     'ui_overrun_card_report',
     'ui_overrun_card_sector',
+    'ui_overrun_card_reward',
     'ui_overrun_card_warning',
     'ui_overrun_confirm_prompt'
   ];
@@ -283,9 +284,13 @@ async function stageMilestone(page, testCase) {
     play.scoreBoostTimer = 9876.5;
     play.scoreMultiplier = 2;
     game.scoreMultiplier = 2;
+    play.tacticalDraftRescansRemaining = 0;
     if (play.player) {
       play.player.scoreMultiplier = 2;
       play.player.scoreBoostExpiresAt = Date.now() + 9876;
+      play.player.deactivateShield?.();
+      play.player.deactivatePointDefense?.();
+      play.player.dodgeCooldown = 777;
     }
     if (play.enemyManager) {
       play.enemyManager.waveTimer = 321;
@@ -325,6 +330,13 @@ async function stageMilestone(page, testCase) {
       afterDuplicateCount,
       beforeTriggerState,
       triggerState,
+      rewardState: {
+        reward: play.lastOverrunMilestoneReward,
+        rescansRemaining: play.tacticalDraftRescansRemaining,
+        shieldActive: Boolean(play.player?.shieldActive),
+        pointDefenseActive: Boolean(play.player?.pointDefenseActive),
+        dodgeCooldown: Number(play.player?.dodgeCooldown || 0)
+      },
       level: game.level,
       runCleared: game.runCleared,
       scoreBoostTimer: play.scoreBoostTimer,
@@ -566,6 +578,17 @@ try {
       assert.equal(staged.state.overrunInterlude?.milestoneSector, testCase.sector, `sector ${testCase.sector}: wrong milestone sector`);
       assert.equal(staged.state.overrunInterlude?.variantId, testCase.variantId, `sector ${testCase.sector}: wrong variant`);
       assert.equal(staged.triggerState.overrunInterlude?.active, true, `sector ${testCase.sector}: trigger state missing active interlude`);
+      assert.equal(staged.rewardState.rescansRemaining, 1, `sector ${testCase.sector}: milestone did not restock a tactical rescan`);
+      assert(staged.rewardState.reward?.applied?.includes('rescan'), `sector ${testCase.sector}: reward audit missed rescan`);
+      if (testCase.sector >= 20 && testCase.sector !== 30) {
+        assert.equal(staged.rewardState.shieldActive, true, `sector ${testCase.sector}: milestone shield was not primed`);
+      }
+      if (testCase.sector >= 30) {
+        assert.equal(staged.rewardState.pointDefenseActive, true, `sector ${testCase.sector}: point defense was not primed`);
+      }
+      if (testCase.sector === 30 || testCase.sector >= 50) {
+        assert.equal(staged.rewardState.dodgeCooldown, 0, `sector ${testCase.sector}: phase burst was not readied`);
+      }
 
       await page.waitForFunction(() => {
         const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -600,7 +623,10 @@ try {
       );
       assertTextLayout(held.state, label, viewport, { requireBonus: true });
       const titleNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_title');
+      const rewardNode = held.state.overrunInterlude.textNodes.find(node => node.id === 'ui_overrun_card_reward');
       assert.equal(titleNode?.text, testCase.title, `${label}: wrong title text`);
+      assert.match(rewardNode?.text || '', /CREW DROP:/, `${label}: milestone reward was not readable`);
+      assert.deepEqual(held.state.overrunInterlude?.milestoneReward?.applied, staged.rewardState.reward.applied, `${label}: reward audit drifted`);
       assert.match(held.state.overrunInterlude?.promptText || '', /.+/, `${label}: empty continue prompt`);
       variantIds.add(held.state.overrunInterlude.variantId);
       titles.add(titleNode.text);

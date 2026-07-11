@@ -89,8 +89,8 @@ function overlaps(a, b, margin = 0) {
     && a.y + a.height + margin > b.y;
 }
 
-async function setAugments(page, ids) {
-  return page.evaluate((selectedIds) => {
+async function setAugments(page, ids, consumedIds = []) {
+  return page.evaluate(({ selectedIds, consumedIds: consumed }) => {
     const play = window.__game?.scenes?.play;
     const player = play?.player;
     const hud = play?.hud;
@@ -99,6 +99,7 @@ async function setAugments(page, ids) {
     play.introComplete = true;
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     player.runAugmentIds = [...selectedIds];
+    player.consumedRunAugmentIds = [...consumed];
     hud.update();
     const toBounds = (display) => {
       const bounds = display?.getBounds?.();
@@ -117,7 +118,7 @@ async function setAugments(page, ids) {
         activePowerup: hud.activePowerupGroup?.visible ? toBounds(hud.activePowerupGroup) : null
       }
     };
-  }, ids);
+  }, { selectedIds: ids, consumedIds });
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -175,12 +176,19 @@ try {
   await page.screenshot({ path: compact.screenshot, fullPage: true });
   report.scenarios.compact = compact;
   if (!compact.debug?.visible || !compact.debug?.compact) failures.push(`compact mode not active: ${JSON.stringify(compact.debug)}`);
-  if (compact.debug?.visibleEntries?.length > 4) failures.push(`compact tray exposes too many chips: ${compact.debug?.visibleEntries?.length}`);
+  if (compact.debug?.visibleEntries?.length !== 8) failures.push(`compact tray should expose the requested 2x4 grid: ${compact.debug?.visibleEntries?.length}`);
+  if (compact.debug?.columns !== 4 || compact.debug?.rows !== 2) failures.push(`compact tray grid mismatch: ${JSON.stringify(compact.debug)}`);
   if (!(compact.debug?.hiddenCount > 0)) failures.push('compact tray did not cap with overflow');
   if (compact.debug?.overlapsRightHud || overlaps(compact.bounds?.tray, compact.bounds?.rightPanel)) failures.push('compact tray overlaps right HUD');
   if (overlaps(compact.bounds?.tray, compact.bounds?.leftPanel)) failures.push('compact tray overlaps left status panel');
   if (compact.bounds?.tray?.x < 0 || compact.bounds?.tray?.y < 0 || compact.bounds?.tray?.x + compact.bounds?.tray?.width > 840 || compact.bounds?.tray?.y + compact.bounds?.tray?.height > 640) {
     failures.push(`compact tray outside viewport: ${JSON.stringify(compact.bounds?.tray)}`);
+  }
+
+  const consumed = await setAugments(page, ['nano_patch', 'damage_up'], ['nano_patch']);
+  report.scenarios.consumed = consumed;
+  if (consumed.debug?.visibleEntries?.includes('nano_patch') || consumed.debug?.activeCount !== 1 || consumed.debug?.consumedCount !== 1) {
+    failures.push(`consumed one-shot augment leaked into HUD: ${JSON.stringify(consumed.debug)}`);
   }
 
   const unknownOnly = await setAugments(page, ['not_a_real_augment']);

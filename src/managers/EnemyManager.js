@@ -3991,7 +3991,7 @@ export class EnemyManager {
       this.createBossFuelDeliveryBurst(enemy, boss, healed);
       this.game?.scenes?.play?.particleManager?.createHitSpark?.(enemy.x, enemy.y, supportColor, 1.8);
       this.game?.scenes?.play?.particleManager?.createBossChargeSparks?.(boss.x, boss.y, accentColor, 1.35);
-      this.game?.scenes?.play?.showToast?.(translateText('BOSS REFUELED +{amount} HP', { amount: healed }), {
+      this.game?.scenes?.play?.showToast?.(translateText('BOSS REFUELED +{amount} HP', { amount: Math.max(0, Math.round(healed)) }), {
         fontSize: this.game.getWidth() < 620 ? 14 : 17,
         fill: '#ffec8a',
         stroke: '#241800',

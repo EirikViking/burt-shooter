@@ -159,6 +159,30 @@ const HELP_PAGES = Object.freeze([
   Object.freeze({ id: 'runs', label: 'RUNS', rows: RUN_HELP_ROWS })
 ]);
 
+const HELP_DETAIL_COPY = Object.freeze({
+  MOVE: 'Small corrections beat heroic sightseeing. Enter a lane, solve one threat, then leave before the lane develops opinions. Wide circles look elegant right up until every bullet agrees on your address.',
+  'FOCUS DRIFT': 'Focus does not slow time and it does not improve your tax status. It reduces ship movement so tiny gaps become flyable. Hold it for the difficult weave, release it before your escape route becomes a historical document.',
+  SHOOT: 'The trigger is unlimited; safe attention is not. Sweep fragile lane-blockers first, then burn the expensive target. Firing at everything equally is democracy, not tactics, and the swarm has already counted the votes.',
+  'DODGE / PHASE': 'Phase Burst is a brief permission slip to occupy the same space as danger. It does not move the ship for you. Tap it late, cross the threat, and be somewhere useful when reality notices the paperwork.',
+  'CHAINED DODGE': 'A chain is several near misses before the graze timer expires. The cabinet is impressed by controlled nerve, not random panic. Stay close enough to be brave and far enough to remain employed.',
+  GRAZE: 'A graze happens just outside the hitbox. The bright ring tells you where courage ends and spare parts begin. Graze when the lane is readable; do not rub the ship against every bullet like an unlucky lottery ticket.',
+  'GRAZE BREAK': 'Three quick grazes arm one magenta shot. Fire it into enemy bullets or a crowded threat pocket. The shot clears space, hurts nearby enemies, and proves that reckless proximity can occasionally produce an invoice in your favor.',
+  COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
+  'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
+  'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
+  'RUN MODES': "Mayhem owns the ranked receipt. Scout lets you learn without signing it. Sector Run begins later using unlocked checkpoints. Pick the mode that answers today's question; the leaderboard cannot teach a pattern you never stopped to read.",
+  'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
+  'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
+  'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
+  'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',
+  'STACK LIMITS': 'Most repeatable augments stop at two stacks, and the second contributes only fifty-five percent. This keeps a favorite lane useful without turning one lucky draft into a legally distinct supernova.',
+  'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.'
+});
+
+function getHelpDetail(row) {
+  return HELP_DETAIL_COPY[row?.label] || row?.tip || '';
+}
+
 function rectsOverlap(a, b, pad = 0) {
   if (!a || !b) return false;
   return !(
@@ -225,6 +249,10 @@ export class HowToPlayOverlay {
     this.closeButton = null;
     this.pageIndex = 0;
     this.pageButtons = [];
+    this.cards = [];
+    this.focusedCardIndex = 0;
+    this.detailRow = null;
+    this.detailContainer = null;
     this.keyHandler = null;
     this.debugLayout = null;
     this.heroMotionNodes = [];
@@ -237,6 +265,7 @@ export class HowToPlayOverlay {
   }
 
   build() {
+    this.cards = [];
     this.heroMotionNodes = [];
     this.heroTextureSprites = [];
     const width = this.game.getWidth();
@@ -718,7 +747,23 @@ export class HowToPlayOverlay {
     card.roundRect(x + 12, y + 12, veryShort ? 34 : shortDesktop ? 38 : 44, veryShort ? 24 : shortDesktop ? 28 : 34, 6);
     card.fill({ color: 0x010814, alpha: 0.88 });
     card.stroke({ color: accent, width: 1, alpha: 0.74 });
+    card.eventMode = 'static';
+    card.cursor = 'pointer';
+    card.hitArea = new PIXI.Rectangle(x, y, width, height);
+    card.label = `how_to_card_${String(row.label).toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+    card._helpRow = row;
+    card._accent = accent;
+    card.on('pointerover', () => {
+      card.tint = 0xc8f5ff;
+      playMenuFocusSfx(0.06);
+    });
+    card.on('pointerout', () => { card.tint = 0xffffff; });
+    card.on('pointertap', () => {
+      playMenuConfirmSfx(0.13);
+      this.openDetail(row);
+    });
     this.container.addChild(card);
+    this.cards.push(card);
 
     const code = createText(row.code, {
       fontFamily: FONT_DISPLAY,
@@ -807,6 +852,103 @@ export class HowToPlayOverlay {
     this.container.addChild(tip);
   }
 
+  setFocusedCard(index = 0) {
+    if (!this.cards.length) return;
+    this.focusedCardIndex = (Math.floor(Number(index) || 0) + this.cards.length) % this.cards.length;
+    this.cards.forEach((card, cardIndex) => {
+      card.tint = cardIndex === this.focusedCardIndex ? 0xc8f5ff : 0xffffff;
+    });
+  }
+
+  openDetail(row) {
+    if (!row) return false;
+    this.closeDetail();
+    this.detailRow = row;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compact = width < 900 || height < 680;
+    const panelWidth = Math.min(compact ? 720 : 900, width - 40);
+    const panelHeight = Math.min(compact ? 500 : 590, height - 40);
+    const panelX = (width - panelWidth) / 2;
+    const panelY = (height - panelHeight) / 2;
+    const accent = row.accent || 0x37f5ff;
+    const detail = new PIXI.Container();
+    detail.label = `how_to_detail_${String(row.label).toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+    detail.zIndex = 60;
+    detail.eventMode = 'static';
+    detail.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x01050d, alpha: 0.9 });
+    detail.addChild(dim);
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x04111f, alpha: 0.99 });
+    panel.stroke({ color: accent, width: 2.2, alpha: 0.94 });
+    panel.roundRect(panelX + 9, panelY + 9, panelWidth - 18, panelHeight - 18, 6);
+    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.26 });
+    panel.rect(panelX + 24, panelY + 116, panelWidth - 48, 2);
+    panel.fill({ color: accent, alpha: 0.32 });
+    detail.addChild(panel);
+
+    const code = createText(row.code, { fontFamily: FONT_DISPLAY, fontSize: compact ? 20 : 24, fontWeight: '900', fill: '#ffffff' });
+    code.anchor.set(0.5);
+    code.position.set(panelX + 56, panelY + 58);
+    detail.addChild(code);
+    const label = createText(translateText(row.label), {
+      fontFamily: FONT_DISPLAY, fontSize: compact ? 30 : 40, fontWeight: '900', fill: '#ffffff', stroke: '#00111d', strokeThickness: 4
+    });
+    label.position.set(panelX + 98, panelY + 34);
+    fitTextToBox(label, panelWidth - 128, 58, { minScale: 0.58 });
+    detail.addChild(label);
+    const control = createText(translateText(row.control), {
+      fontFamily: FONT_BODY, fontSize: compact ? 15 : 18, fontWeight: '900', fill: '#ffef7e', wordWrap: true, wordWrapWidth: panelWidth - 128
+    });
+    control.position.set(panelX + 98, panelY + 82);
+    fitTextToBox(control, panelWidth - 128, 30, { minScale: 0.62 });
+    detail.addChild(control);
+
+    const summary = createText(translateText(row.tip), {
+      fontFamily: FONT_BODY, fontSize: compact ? 17 : 20, fontWeight: '900', fill: '#9bf8ff', wordWrap: true,
+      breakWords: true, wordWrapWidth: panelWidth - 56, lineHeight: compact ? 21 : 25
+    });
+    summary.position.set(panelX + 28, panelY + 140);
+    fitTextToBox(summary, panelWidth - 56, compact ? 88 : 102, { minScale: 0.62 });
+    detail.addChild(summary);
+
+    const body = createText(translateText(getHelpDetail(row)), {
+      fontFamily: FONT_BODY, fontSize: compact ? 17 : 20, fontWeight: '700', fill: '#e4f7ff', wordWrap: true,
+      breakWords: true, wordWrapWidth: panelWidth - 56, lineHeight: compact ? 22 : 27
+    });
+    body.position.set(panelX + 28, panelY + (compact ? 248 : 270));
+    fitTextToBox(body, panelWidth - 56, compact ? 150 : 190, { minScale: 0.62 });
+    detail.addChild(body);
+
+    const close = this.createButton(translateText('BACK'), width / 2, panelY + panelHeight - 44, () => this.closeDetail(), {
+      width: 220, height: 38, fontSize: 17
+    });
+    close.label = 'how_to_detail_back';
+    detail.addChild(close);
+    detail._debugDetail = {
+      label: row.label,
+      translatedLabel: translateText(row.label),
+      detail: getHelpDetail(row),
+      translatedDetail: translateText(getHelpDetail(row)),
+      panel: { x: Math.round(panelX), y: Math.round(panelY), width: Math.round(panelWidth), height: Math.round(panelHeight) }
+    };
+    this.detailContainer = detail;
+    this.container.addChild(detail);
+    return true;
+  }
+
+  closeDetail() {
+    if (this.detailContainer?.parent) this.detailContainer.parent.removeChild(this.detailContainer);
+    this.detailContainer?.destroy?.({ children: true });
+    this.detailContainer = null;
+    this.detailRow = null;
+  }
+
   createButton(label, x, y, onPress, { width = 220, height = 38, fontSize = 18 } = {}) {
     const button = new PIXI.Container();
     button.eventMode = 'static';
@@ -892,6 +1034,8 @@ export class HowToPlayOverlay {
     const next = ((Math.floor(Number(index) || 0) % HELP_PAGES.length) + HELP_PAGES.length) % HELP_PAGES.length;
     if (next === this.pageIndex) return;
     this.pageIndex = next;
+    this.focusedCardIndex = 0;
+    this.closeDetail();
     destroyMenuFx(this);
     const children = this.container.removeChildren();
     children.forEach((child) => child.destroy?.({ children: true }));
@@ -903,16 +1047,31 @@ export class HowToPlayOverlay {
       const key = event.key || event.code;
       const pageLeft = key === 'ArrowLeft' || key === 'a' || key === 'A';
       const pageRight = key === 'ArrowRight' || key === 'd' || key === 'D';
-      const handled = pageLeft || pageRight || ['Enter', ' ', 'Escape'].includes(key) || event.code === 'Space' || event.code === 'NumpadEnter';
+      const up = key === 'ArrowUp' || key === 'w' || key === 'W';
+      const down = key === 'ArrowDown' || key === 's' || key === 'S';
+      const confirm = ['Enter', ' '].includes(key) || event.code === 'Space' || event.code === 'NumpadEnter';
+      const handled = pageLeft || pageRight || up || down || confirm || key === 'Escape';
       if (!handled) return;
       event.preventDefault();
       event.stopPropagation();
+      if (this.detailRow) {
+        if (confirm || key === 'Escape') this.closeDetail();
+        return;
+      }
       if (pageLeft) {
         this.setPage(this.pageIndex - 1);
         return;
       }
       if (pageRight) {
         this.setPage(this.pageIndex + 1);
+        return;
+      }
+      if (up || down) {
+        this.setFocusedCard(this.focusedCardIndex + (up ? -1 : 1));
+        return;
+      }
+      if (confirm) {
+        this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
         return;
       }
       this.close();
@@ -925,11 +1084,15 @@ export class HowToPlayOverlay {
     this.updateHeroMotion(delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    if (this.detailRow) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) this.closeDetail();
+      return;
+    }
     if (nav.pressed.left) this.setPage(this.pageIndex - 1);
     if (nav.pressed.right) this.setPage(this.pageIndex + 1);
-    if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
-      this.close();
-    }
+    if (nav.pressed.up || nav.pressed.down) this.setFocusedCard(this.focusedCardIndex + (nav.pressed.up ? -1 : 1));
+    if (nav.pressed.confirm) this.openDetail(this.cards[this.focusedCardIndex]?._helpRow);
+    if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) this.close();
   }
 
   getDebugState() {
@@ -953,6 +1116,8 @@ export class HowToPlayOverlay {
       trainingFlow: 'GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE',
       translatedTrainingFlow: translateText('GRAZE -> CHAIN -> GRAZE BREAK -> SURVIVE'),
       focusedControl: 'back',
+      focusedCardIndex: this.focusedCardIndex,
+      detail: this.detailContainer?._debugDetail || null,
       layout: this.debugLayout,
       heroArt: {
         motionNodes: this.heroMotionNodes?.length || 0,
@@ -965,6 +1130,7 @@ export class HowToPlayOverlay {
   }
 
   close() {
+    this.closeDetail();
     if (this.keyHandler && typeof window !== 'undefined') {
       window.removeEventListener('keydown', this.keyHandler, true);
       this.keyHandler = null;

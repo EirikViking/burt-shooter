@@ -257,6 +257,7 @@ try {
 let deliveredHeal = 0;
 let deliveredSource = null;
 let deactivated = false;
+let deliveryToast = '';
 const deliveryProbe = Object.assign(Object.create(EnemyManager.prototype), {
   boss: {
     active: true,
@@ -267,7 +268,7 @@ const deliveryProbe = Object.assign(Object.create(EnemyManager.prototype), {
     heal(amount, meta = {}) {
       deliveredHeal += amount;
       deliveredSource = meta.source;
-      return amount;
+      return 1.000003;
     }
   },
   game: {
@@ -278,7 +279,7 @@ const deliveryProbe = Object.assign(Object.create(EnemyManager.prototype), {
           createHitSpark() {},
           createBossChargeSparks() {}
         },
-        showToast() {}
+        showToast(message) { deliveryToast = message; }
       }
     }
   }
@@ -296,6 +297,9 @@ deliveryProbe.updateBossFuelShip({
 }, 1);
 if (deliveredHeal !== 8 || deliveredSource !== 'boss_fuel_ship' || !deactivated) {
   fail(`support delivery should heal and deactivate, heal=${deliveredHeal} source=${deliveredSource || 'none'} deactivated=${deactivated}`);
+}
+if (deliveryToast !== 'BOSS REFUELED +1 HP' || deliveryToast.includes('.')) {
+  fail(`support delivery toast should round fractional heals, got ${deliveryToast}`);
 }
 
 let tetherClears = 0;

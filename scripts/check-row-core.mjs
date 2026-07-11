@@ -9,7 +9,8 @@ const source = {
   powerups: read('src/managers/PowerupManager.js'),
   sound: read('src/audio/SoundCatalog.js'),
   manifest: read('src/assets/assetManifest.js'),
-  script: read('scripts/generate-row-core-audio.mjs')
+  script: read('scripts/generate-row-core-audio.mjs'),
+  tacticalAudioScript: read('scripts/generate-tactical-augment-audio.mjs')
 };
 
 globalThis.Audio = globalThis.Audio || class AudioMock {
@@ -41,7 +42,8 @@ const { PowerupManager } = await import('../src/managers/PowerupManager.js');
 
 const originalPlaySfx = AudioManager.playSfx;
 const originalPlayVoice = AudioManager.playVoice;
-AudioManager.playSfx = () => false;
+const playedSfx = [];
+AudioManager.playSfx = (key) => { playedSfx.push(key); return true; };
 AudioManager.playVoice = () => false;
 
 try {
@@ -66,7 +68,8 @@ try {
     'row_core_chant',
     'row_core_chant_big',
     'row_core_wave',
-    'row_core_perfect'
+    'row_core_perfect',
+    'row_core_viking_row'
   ]) {
     assert.ok(SFX_MIX[key], `SFX_MIX missing ${key}`);
     assert.ok(SFX_CATALOG[key]?.length, `SFX_CATALOG missing ${key}`);
@@ -85,6 +88,7 @@ try {
     '/audio/sfx/nova-swarm/nova_row_core_ro_big.mp3',
     '/audio/sfx/nova-swarm/nova_row_core_wave.mp3',
     '/audio/sfx/nova-swarm/nova_row_core_perfect.mp3',
+    '/audio/sfx/nova-swarm/nova_row_core_viking_row.mp3',
     '/audio/voice/mission-control/mission_control_row_core_01.mp3',
     '/audio/voice/mission-control/mission_control_row_core_02.mp3',
     '/audio/voice/mission-control/mission_control_row_core_03.mp3',
@@ -102,6 +106,7 @@ try {
     }
   }
   assert.match(source.script, /ELEVENLABS_API_KEY \|\| process\.env\.ELEVEN_LABS_API_KEY/, 'generator must read API key from environment only');
+  assert.match(source.tacticalAudioScript, /RO! RO! RO!/, 'Viking Row generator must request the recognizable three-shout rowing sequence');
   assert.doesNotMatch(source.player, /fetch\(/, 'gameplay runtime must not call network APIs');
   assert.match(source.player, /rowCoreActive/, 'Player must track Row Core active state');
   assert.match(source.player, /clearRowCoreTimers/, 'Player must clean Row Core timers');
@@ -188,6 +193,13 @@ try {
     enqueueToast() {}
   };
   player.game.scenes.play = playScene;
+
+  const rowStart = player.triggerRowCore();
+  player.clearRowCoreTimers();
+  assert.equal(rowStart.started, true, 'Row Core should start its full sequence');
+  assert.ok(playedSfx.includes('row_core_viking_row'), 'Row Core did not play the combined Viking Row chant');
+  assert.equal(playedSfx.includes('row_core_chant'), false, 'Row Core still used the disconnected old chant clips');
+  player.rowCoreActive = false;
 
   const pulse = player.pulseRowCore(playScene, 0, 6);
   assert.equal(pulse.bulletsCleared, 1, 'pulse should clear bullets inside radius');

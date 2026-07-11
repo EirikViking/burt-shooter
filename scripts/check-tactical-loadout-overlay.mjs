@@ -25,10 +25,12 @@ const selectedIds = [
   'drones', 'drones', 'bomb', 'orbital_strike'
 ];
 
-const grouped = groupTacticalAugments(selectedIds);
+const consumedIds = ['nano_patch'];
+const grouped = groupTacticalAugments(selectedIds, consumedIds);
 assert.equal(grouped.length, 19, 'duplicates should collapse into unique cards');
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.stacks, 2);
 assert.equal(grouped.find((item) => item.id === 'drones')?.stacks, 2);
+assert.equal(grouped.find((item) => item.id === 'nano_patch')?.consumed, true);
 assert.ok(grouped.every((item) => item.known && item.name && item.description));
 
 for (const [width, height, expected] of [
@@ -87,14 +89,14 @@ try {
       body: '<!doctype html><html><body style="margin:0;overflow:hidden;background:#020713"></body></html>'
     }));
     await page.goto(`http://127.0.0.1:${port}/overlay-test.html`, { waitUntil: 'domcontentloaded' });
-    const state = await page.evaluate(async ({ selectedIds, viewport }) => {
+    const state = await page.evaluate(async ({ selectedIds, consumedIds, viewport }) => {
       const { TacticalLoadoutOverlay, TacticalLoadoutPixiRuntime } = await import('/src/ui/TacticalLoadoutOverlay.js');
       const app = new TacticalLoadoutPixiRuntime.Application();
       await app.init({ width: viewport.width, height: viewport.height, backgroundColor: 0x020713 });
       document.body.replaceChildren(app.canvas);
       const game = { getWidth: () => viewport.width, getHeight: () => viewport.height, app };
       let closeCount = 0;
-      const overlay = new TacticalLoadoutOverlay(game, { selectedIds, onClose: () => {
+      const overlay = new TacticalLoadoutOverlay(game, { selectedIds, consumedIds, onClose: () => {
         closeCount += 1;
         window.__tacticalCloseCount = closeCount;
       } });
@@ -111,6 +113,11 @@ try {
       window.__burtGamepadOverride.buttons[5] = { pressed: true, value: 1 };
       overlay.update();
       const controllerPaged = overlay.getDebugState();
+      window.__burtGamepadOverride.buttons = [];
+      overlay.update();
+      overlay.openDetail(overlay.items.find((item) => item.id === 'nano_patch'));
+      app.render();
+      const detailOpen = overlay.getDebugState();
       const extracted = await app.renderer.extract.pixels(app.stage);
       const pixels = extracted?.pixels || extracted;
       window.__tacticalOverlayTest = { overlay, app };
@@ -119,10 +126,11 @@ try {
         keyboardPaged,
         pointerPaged,
         controllerPaged,
+        detailOpen,
         closeCount,
         canvasPixels: Array.from(pixels || []).some((value) => value !== 0)
       };
-    }, { selectedIds, viewport });
+    }, { selectedIds, consumedIds, viewport });
     const screenshotPath = path.join(tmpdir(), `nova-swarm-tactical-loadout-overlay-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshotPath });
     assert.equal(state.initial.uniqueCount, 19);
@@ -132,9 +140,19 @@ try {
     assert.equal(state.keyboardPaged.pageIndex, state.initial.pageCount > 1 ? 1 : 0);
     assert.equal(state.pointerPaged.pageIndex, 0);
     assert.equal(state.controllerPaged.pageIndex, state.initial.pageCount > 1 ? 1 : 0);
+    assert.equal(state.initial.items.find((item) => item.id === 'nano_patch')?.consumed, true);
+    assert.deepEqual(state.detailOpen.detail, {
+      id: 'nano_patch',
+      consumed: true,
+      panel: state.detailOpen.detail.panel
+    });
     const closeState = await page.evaluate(() => {
       const { overlay } = window.__tacticalOverlayTest;
       window.__burtGamepadOverride.buttons = [];
+      overlay.update();
+      window.__burtGamepadOverride.buttons[1] = { pressed: true, value: 1 };
+      overlay.update();
+      window.__burtGamepadOverride.buttons[1] = { pressed: false, value: 0 };
       overlay.update();
       window.__burtGamepadOverride.buttons[1] = { pressed: true, value: 1 };
       overlay.update();

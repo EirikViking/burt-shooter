@@ -273,6 +273,15 @@ try {
       );
       assertOverlayLayout(menuHelp, `${scenario.name} menu help overlay`);
       assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`, 'flight');
+      const firstHelpCard = menuHelp.howToPlayOverlay.layout.cards[0];
+      await page.mouse.click(firstHelpCard.x + firstHelpCard.width / 2, firstHelpCard.y + firstHelpCard.height / 2);
+      const menuDetail = await waitForState(page, (state) => Boolean(state.howToPlayOverlay?.detail), `${scenario.name} menu detail open`);
+      assert(menuDetail.howToPlayOverlay.detail.label === 'MOVE', `${scenario.name} pointer opened the wrong help detail`);
+      assert(String(menuDetail.howToPlayOverlay.detail.detail || '').length > 120, `${scenario.name} help detail is too shallow`);
+      assert(!/as an ai|language model/i.test(menuDetail.howToPlayOverlay.detail.detail), `${scenario.name} help detail broke Nova Swarm voice`);
+      const menuDetailShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-detail');
+      await page.keyboard.press('Escape');
+      await waitForState(page, (state) => state.overlays?.howToPlay && !state.howToPlayOverlay?.detail, `${scenario.name} menu detail closed`);
       await page.keyboard.press('ArrowRight');
       const menuCombat = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'combat', `${scenario.name} menu combat page`);
       assertOverlayLayout(menuCombat, `${scenario.name} menu combat page`);
@@ -294,6 +303,12 @@ try {
             assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);
             assert(card.translatedTip !== card.tip, `${locale} left How To Play tip in English: ${card.tip}`);
           }
+          await page.keyboard.press('Enter');
+          const localizedDetail = await waitForState(page, (state) => Boolean(state.howToPlayOverlay?.detail), `${locale} localized detail open`);
+          assert(localizedDetail.howToPlayOverlay.detail.translatedDetail !== localizedDetail.howToPlayOverlay.detail.detail,
+            `${locale} left detailed How To Play copy in English`);
+          await page.keyboard.press('Escape');
+          await waitForState(page, (state) => !state.howToPlayOverlay?.detail, `${locale} localized detail closed`);
           if (['de', 'ru', 'zh-CN', 'ja'].includes(locale)) {
             await screenshotWithAudit(page, scenarioDir, `menu-how-to-play-runs-${locale.replace('-', '_')}`);
           }
@@ -427,6 +442,8 @@ try {
         ...scenario,
         ok: pageErrors.length === 0 && consoleErrors.length === 0,
         menuRows: menuRuns.howToPlayOverlay?.rows,
+        menuDetail: menuDetail.howToPlayOverlay?.detail,
+        menuDetailShot,
         pauseRows: pauseRuns.howToPlayOverlay?.rows,
         menuLayout: menuRuns.howToPlayOverlay?.layout,
         pauseLayout: pauseRuns.howToPlayOverlay?.layout,

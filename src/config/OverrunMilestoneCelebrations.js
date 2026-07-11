@@ -58,6 +58,11 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: CLEAR GATE SECURED // SCORE {score} // HULLS {lives}',
     warning: 'SECTOR {nextSector} WILL NOT BE POLITE',
     continueText: "I'M READY - BRING THE SWARM",
+    reward: {
+      label: 'CREW DROP: TACTICAL RESCAN RESTOCKED',
+      rescan: true,
+      sfx: 'tactical_power_saver'
+    },
     voiceCue: 'mission_control_overrun_clear_sector_10',
     visual: {
       id: 'clear_gate_coronation',
@@ -84,6 +89,12 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: SECTOR {sector} CLEARED // RANK {rank} // HULLS {lives}',
     warning: 'THE SWARM DOUBLES BACK FROM HERE',
     continueText: 'PUSH INTO SECTOR {nextSector}',
+    reward: {
+      label: 'CREW DROP: RESCAN + SHIELD MATRIX PRIMED',
+      rescan: true,
+      shieldMs: 16000,
+      sfx: 'shield_up'
+    },
     voiceCue: 'mission_control_overrun_clear_sector_20',
     visual: {
       id: 'second_signal_surge',
@@ -110,6 +121,13 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: THIRTY SECTORS LOGGED // SCORE {score} // RANK {rank}',
     warning: 'READ ONCE. MOVE TWICE. KEEP FIRING.',
     continueText: 'CUT THROUGH THE STORM',
+    reward: {
+      label: 'CREW DROP: RESCAN + PHASE + POINT DEFENSE',
+      rescan: true,
+      phaseReady: true,
+      pointDefenseMs: 7000,
+      sfx: 'tactical_phase_wake'
+    },
     voiceCue: 'mission_control_overrun_clear_sector_30',
     visual: {
       id: 'pattern_storm_orbit',
@@ -136,6 +154,13 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: DEEP OVERRUN HOLDING // SECTOR {sector} // HULLS {lives}',
     warning: 'EVERY SAFE LANE IS TEMPORARY',
     continueText: 'TAKE THE DEEP ROUTE',
+    reward: {
+      label: 'CREW DROP: RESCAN + SHIELD + POINT DEFENSE',
+      rescan: true,
+      shieldMs: 18000,
+      pointDefenseMs: 9000,
+      sfx: 'shield_up'
+    },
     voiceCue: 'mission_control_overrun_clear_sector_40',
     visual: {
       id: 'deep_circuit_scan',
@@ -162,6 +187,14 @@ const CELEBRATIONS = Object.freeze({
     statusLine: 'STATUS: FIFTY SECTORS SURVIVED // SCORE {score} // RANK {rank}',
     warning: 'THIS IS LEGEND TERRITORY. STAY HUMAN.',
     continueText: 'ANSWER THE CALL',
+    reward: {
+      label: 'CREW DROP: ALL DEFENSES PRIMED. NO RECEIPT.',
+      rescan: true,
+      shieldMs: 20000,
+      phaseReady: true,
+      pointDefenseMs: 10000,
+      sfx: 'boss_phase_surge'
+    },
     voiceCue: 'mission_control_overrun_clear_sector_50',
     visual: {
       id: 'last_cabinet_call_finale',
@@ -209,6 +242,14 @@ export function getOverrunMilestoneCelebration({
     statusLine: 'STATUS: SECTOR {sector} CLEARED // SCORE {score} // RANK {rank}',
     warning: 'THE RUN IS OFF THE MAP. KEEP THE LINE.',
     continueText: 'PUSH INTO SECTOR {nextSector}',
+    reward: {
+      label: 'CREW DROP: FAR-SIGNAL DEFENSE PACKAGE',
+      rescan: true,
+      shieldMs: 20000,
+      phaseReady: true,
+      pointDefenseMs: 10000,
+      sfx: 'boss_phase_surge'
+    },
     voiceCue: 'mission_control_overrun_clear_far_signal',
     visual
   };

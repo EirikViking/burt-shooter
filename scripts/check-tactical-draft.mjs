@@ -6,7 +6,9 @@ import { chromium } from 'playwright';
 import {
   TACTICAL_DRAFT_AUGMENTS,
   buildTacticalDraftModifiers,
-  buildTacticalDraftOffers
+  buildTacticalDraftOffers,
+  getActiveTacticalAugmentIds,
+  getTacticalDraftMeta
 } from '../src/config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
 
@@ -117,7 +119,33 @@ function assertDraftLayout(state, width, height, label) {
 }
 
 const lowLifeOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 2, lives: 1, maxLives: 3 });
-assert(TACTICAL_DRAFT_AUGMENTS.length >= 19, 'expected at least 19 tactical augment directions');
+assert(TACTICAL_DRAFT_AUGMENTS.length === 32, `expected curated 32-augment pool, got ${TACTICAL_DRAFT_AUGMENTS.length}`);
+for (const category of ['offense', 'mobility', 'defense', 'utility']) {
+  assert(TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.category === category).length === 8,
+    `expected 8 ${category} augments`);
+}
+const newAugmentIds = [
+  'phase_reactor', 'focus_lens', 'inertial_dampers', 'phase_wake', 'slipstream_coils',
+  'emergency_bulkhead', 'impact_foam', 'graze_plating', 'last_light',
+  'combo_anchor', 'salvage_clock', 'power_saver', 'drone_link'
+];
+for (const id of newAugmentIds) {
+  const meta = getTacticalDraftMeta(id);
+  assert(meta?.name && meta?.description && meta?.detail, `${id} missing complete player-facing metadata`);
+  assert(meta?.sfx === `tactical_${id}`, `${id} missing unique tactical SFX alias`);
+  assert(existsSync(path.resolve(`public/art/generated/nova-swarm/augments/nova-augment-${id}-20260711.png`)), `${id} missing generated icon`);
+  assert(existsSync(path.resolve(`public/audio/sfx/nova-swarm/nova_tactical_${id}.mp3`)), `${id} missing generated SFX`);
+}
+const expanded = buildTacticalDraftModifiers(newAugmentIds);
+for (const modifier of [
+  'phaseReload', 'focusDamageMult', 'focusSpeedMult', 'phaseClearRadius', 'movingDodgeRecoveryMult',
+  'lowLifeSectorShieldMs', 'hitInvulnerabilityBonusMs', 'grazeShieldThreshold', 'lowLifeDodgeRecoveryMult',
+  'comboWindowBonusMs', 'pickupLifetimeMult', 'powerupDurationMult', 'droneDamageMult'
+]) {
+  assert(expanded[modifier] !== undefined, `expanded tactical modifiers missing ${modifier}`);
+}
+assert(getActiveTacticalAugmentIds(['damage_up', 'nano_patch'], ['nano_patch']).join(',') === 'damage_up',
+  'consumed augments must be excluded from active modifiers');
 assert(lowLifeOffers.length === 3, 'pure draft must return three offers');
 assert(lowLifeOffers.some((offer) => offer.category === 'defense'), 'low-life draft must include defense');
 assert(!lowLifeOffers.some((offer) => offer.id === 'nano_patch') || lowLifeOffers[0].category === 'defense', 'repair must remain in defense lane');
@@ -295,7 +323,8 @@ try {
     const sectorStart = player.applyRunAugmentSectorStartEffects(2);
     game.lives = Math.max(1, game.lives - 1);
     const beforeRepair = game.lives;
-    player.applyRunAugment('nano_patch');
+    const nanoPatch = player.applyRunAugment('nano_patch');
+    const nanoPatchAgain = player.applyRunAugment('nano_patch');
     const directOutputRatio = ((boosted.damage * boosted.shots) / boosted.fireDelay) /
       ((baseline.damage * baseline.shots) / baseline.fireDelay);
     const sectorBeforeOrdinaryPickup = {
@@ -333,7 +362,7 @@ try {
         bombShots: player.bombShotsLeft,
         orbitalCharges: player.orbitalStrikeCharges
       },
-      repair: { before: beforeRepair, after: game.lives },
+      repair: { before: beforeRepair, after: game.lives, nanoPatch, nanoPatchAgain },
       directOutputRatio,
       threatResponse: game.threatResponse,
       sectorBeforeOrdinaryPickup,
@@ -355,6 +384,9 @@ try {
   assert(runtime.sectorEffects.shield && runtime.sectorEffects.invulnerable && runtime.sectorEffects.pointDefense, 'defensive sector-start effects missing');
   assert(runtime.sectorEffects.bombShots >= 2 && runtime.sectorEffects.orbitalCharges >= 2, 'offensive sector-start payload missing');
   assert(runtime.repair.after === runtime.repair.before + 1, 'nano patch did not repair one life');
+  assert(runtime.repair.nanoPatch.consumed === true, 'nano patch was not flagged consumed');
+  assert(runtime.repair.nanoPatchAgain.applied === false && runtime.repair.nanoPatchAgain.reason === 'stack_cap', 'consumed nano patch could be applied twice');
+  assert(runtime.debug.consumedIds.includes('nano_patch') && !runtime.debug.activeIds.includes('nano_patch'), 'consumed nano patch remained active');
   assert(runtime.overlap.activeType === 'damage_up' && runtime.overlap.suppressedId === 'damage_up', 'matching ordinary pickup did not take temporary priority');
   assert(runtime.overlap.pointDefense && runtime.overlap.bombShots >= 2 && runtime.overlap.orbitalCharges >= 2, 'ordinary pickup cleared Tactical sector-start tools');
   assert(runtime.restored.suppressedId === null, 'Draft effect did not return after ordinary pickup ended');

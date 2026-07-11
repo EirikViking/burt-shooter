@@ -9,6 +9,7 @@ import { DANGER_MID_SHIPS } from './DangerMidShips.js';
 import { BOSS_SUPPORT_SHIPS } from './BossSupportShips.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { POWERUP_CODEX_ENTRIES as CATALOG_POWERUP_CODEX_ENTRIES } from './PowerupCatalog.js';
+import { TACTICAL_DRAFT_AUGMENTS, getTacticalDraftMeta } from './TacticalDraft.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { translateText } from '../i18n/index.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
@@ -70,6 +71,7 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'attackPatterns', label: 'Attack Patterns' },
   { id: 'waveTactics', label: 'Wave Tactics' },
   { id: 'powerups', label: 'Powerups' },
+  { id: 'augments', label: 'Augments' },
   { id: 'sectors', label: 'Sectors' },
   { id: 'elites', label: 'Elites' },
   { id: 'bosses', label: 'Bosses' },
@@ -1382,6 +1384,25 @@ function pilotRankEntry(title, index) {
   };
 }
 
+function tacticalAugmentEntry(augment) {
+  const meta = getTacticalDraftMeta(augment.id) || augment;
+  return {
+    id: augment.id,
+    category: 'augments',
+    name: meta.name,
+    rarity: 'Tactical Augment',
+    role: String(meta.category || 'utility').toUpperCase(),
+    description: meta.detail || meta.description,
+    tip: meta.description,
+    art: AssetManifest.generated.tacticalAugments?.[augment.id]
+      || AssetManifest.generated.powerups?.[augment.id]
+      || AssetManifest.sprites.bonusCore,
+    accent: meta.color,
+    signalClass: 'run-only hardware',
+    codexBodyMode: 'story'
+  };
+}
+
 export function getThreatCodexCatalog() {
   return {
     enemies: [
@@ -1393,6 +1414,7 @@ export function getThreatCodexCatalog() {
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),
     powerups: CATALOG_POWERUP_CODEX_ENTRIES.map(powerupEntry),
+    augments: TACTICAL_DRAFT_AUGMENTS.map(tacticalAugmentEntry),
     sectors: getSectorCodexLevels().map(sectorEntry),
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),

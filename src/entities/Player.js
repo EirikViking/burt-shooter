@@ -17,6 +17,7 @@ import {
 import { BASE_POWERUP_TYPES, getPowerupDurationMode, getPowerupMeta } from '../config/PowerupCatalog.js';
 import {
   buildTacticalDraftModifiers,
+  getActiveTacticalAugmentIds,
   getTacticalDraftAugment,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
@@ -119,7 +120,10 @@ export class Player {
     this.powerupMovementBoostMult = 1;
     this.powerupDodgeDelayMult = 1;
     this.runAugmentIds = [];
+    this.consumedRunAugmentIds = [];
     this.runAugmentModifiers = buildTacticalDraftModifiers();
+    this.runAugmentGrazeShieldSector = 0;
+    this.runAugmentGrazeCount = 0;
     this.lastRunAugmentSectorStart = null;
     this.scoreMultiplierType = null;
     this.bombMaxShots = 3;
@@ -1550,7 +1554,9 @@ export class Player {
     const controlDrift = this.getStatusEffect('control_drift');
     const focusDriftRequested = Boolean(this.inputManager?.isKeyPressed?.('focus'));
     this.focusDriftActive = focusDriftRequested && !this.isDodging && !this.isGhostActive();
-    const focusDriftMultiplier = this.focusDriftActive ? FOCUS_DRIFT_SPEED_MULTIPLIER : 1;
+    const focusDriftMultiplier = this.focusDriftActive
+      ? Math.min(0.82, FOCUS_DRIFT_SPEED_MULTIPLIER * (Number(this.runAugmentModifiers?.focusSpeedMult) || 1))
+      : 1;
     const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1) * focusDriftMultiplier;
     const targetMoveX = dx * this.speed * speedMultiplier;
     const targetMoveY = dy * this.speed * speedMultiplier;
@@ -1650,7 +1656,10 @@ export class Player {
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     const previousDodgeCooldown = Math.max(0, Number(this.dodgeCooldown) || 0);
     if (this.dodgeCooldown > 0) {
-      this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt);
+      const moving = Math.abs(dx) + Math.abs(dy) > 0.1;
+      const movingRecovery = moving ? (Number(this.runAugmentModifiers?.movingDodgeRecoveryMult) || 1) : 1;
+      const lowLifeRecovery = this.game?.lives <= 1 ? (Number(this.runAugmentModifiers?.lowLifeDodgeRecoveryMult) || 1) : 1;
+      this.dodgeCooldown = Math.max(0, this.dodgeCooldown - dt * movingRecovery * lowLifeRecovery);
     }
     if (previousDodgeCooldown > 0 && this.dodgeCooldown <= 0 && !this.isDodging) {
       this.dodgeReadyFlashMs = 650;
@@ -1757,7 +1766,7 @@ export class Player {
     }, durationMs);
   }
 
-  applyTraitProjectileEffects(bullet, shotCounter, { bonus = false } = {}) {
+  applyTraitProjectileEffects(bullet, shotCounter, { bonus = false, drone = false } = {}) {
     if (!bullet) return bullet;
     const combat = this.traitCombat || {};
     bullet.traitSlug = this.shipTrait?.slug || null;
@@ -1803,6 +1812,14 @@ export class Player {
       bullet.damage = Math.max(0.35, bullet.damage * (combat.wingShotDamageMult || 0.42));
       if (bullet.sprite?.scale) bullet.sprite.scale.set(0.78);
       if (bullet.core) bullet.core.tint = this.visualVariant?.accent || 0x66ffff;
+    }
+
+    if (this.focusDriftActive) {
+      bullet.damage = Math.max(0.5, bullet.damage * (Number(this.runAugmentModifiers?.focusDamageMult) || 1));
+    }
+    if (drone) {
+      bullet.damage = Math.max(0.5, bullet.damage * (Number(this.runAugmentModifiers?.droneDamageMult) || 1));
+      bullet.isTacticalDroneShot = true;
     }
 
     bullet.refreshPlayerProjectileIntentMarkers?.();
@@ -1946,7 +1963,7 @@ export class Player {
           { color: 'Blue', index: 7 } // Cyan-ish bullet
         );
         annotatePowerupBullet(bullet);
-        this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true });
+        this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true, drone: true });
         bullets.push(bullet);
       });
     }
@@ -2210,13 +2227,7 @@ export class Player {
     }
 
     AudioManager.playSfx('row_core_pickup', { force: true, volume: 0.78, minIntervalMs: 0 });
-    AudioManager.playSfx('row_core_horn', { force: true, volume: 0.82, minIntervalMs: 0 });
-    AudioManager.playVoice?.('mission_control_row_core', {
-      force: true,
-      cooldownMs: 30000,
-      duckMs: 2200,
-      voicePriority: 5
-    });
+    AudioManager.playSfx('row_core_viking_row', { force: true, volume: 1, minIntervalMs: 0 });
 
     config.pulses.forEach((delayMs, index) => {
       const timeoutId = setTimeout(() => {
@@ -2331,16 +2342,10 @@ export class Player {
     this.rowCoreStats.enemiesHit += enemiesHit;
     this.rowCoreStats.kills += kills;
 
-    AudioManager.playSfx(finalPulse ? 'row_core_chant_big' : 'row_core_chant', {
-      force: true,
-      volume: finalPulse ? 0.95 : 0.82,
-      minIntervalMs: 0
-    });
     AudioManager.playSfx('row_core_wave', {
       volume: finalPulse ? 0.72 : 0.52,
       minIntervalMs: 0
     });
-    if (index === 0) AudioManager.playSfx('row_core_drum', { force: true, volume: 0.72, minIntervalMs: 0 });
 
     const shakeScale = Math.max(0, Number(getAccessibilitySettings().screenShake) || 0);
     if (shakeScale > 0) {
@@ -3017,6 +3022,7 @@ export class Player {
     this.dodgeCooldown = this.dodgeDelay;
     this.dodgeFlashMs = this.dodgeDurationMax;
     this.dodgeReadyFlashMs = 0;
+    if (this.runAugmentModifiers?.phaseReload) this.shootCooldown = 0;
     AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
     this.updateDodgeVisual(0);
     this.triggerTraitDodgePulse();
@@ -3214,7 +3220,10 @@ export class Player {
   }
 
   triggerTraitDodgePulse() {
-    const radius = Number(this.traitCombat?.dodgePulseRadius || 0);
+    const radius = Math.max(
+      Number(this.traitCombat?.dodgePulseRadius || 0),
+      Number(this.runAugmentModifiers?.phaseClearRadius || 0)
+    );
     const playScene = this.game?.scenes?.play;
     if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) return;
 
@@ -3265,7 +3274,7 @@ export class Player {
     }
 
     if (this.invulnerable) return false;
-    this.grantInvulnerability(2000, 'damage');
+    this.grantInvulnerability(2000 + (Number(this.runAugmentModifiers?.hitInvulnerabilityBonusMs) || 0), 'damage');
 
     // Trigger damage flash effect
     this.triggerFlash(0xff0000, 300);
@@ -3429,16 +3438,19 @@ export class Player {
       return { applied: false, reason: 'stack_cap', id, stacks: currentStacks };
     }
     this.runAugmentIds.push(id);
-    this.runAugmentModifiers = buildTacticalDraftModifiers(this.runAugmentIds);
+    if (augment.consumedOnApply && !this.consumedRunAugmentIds.includes(id)) this.consumedRunAugmentIds.push(id);
+    const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
+    this.runAugmentModifiers = buildTacticalDraftModifiers(activeIds);
     if (augment.immediate?.repairLives) {
       this.repairFromPowerup({ repairLives: augment.immediate.repairLives }, `tactical_draft_${id}`);
     }
     this.recalculateStats();
-    this.game?.refreshThreatResponse?.(this.runAugmentIds.length);
+    this.game?.refreshThreatResponse?.(activeIds.length);
     return {
       applied: true,
       id,
       stacks: currentStacks + 1,
+      consumed: augment.consumedOnApply === true,
       selectedIds: this.runAugmentIds.slice(),
       labels: summarizeTacticalDraftPicks(this.runAugmentIds),
       modifiers: this.runAugmentModifiers
@@ -3446,7 +3458,8 @@ export class Player {
   }
 
   applyRunAugmentModifiers() {
-    const modifiers = buildTacticalDraftModifiers(this.runAugmentIds, {
+    const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
+    const modifiers = buildTacticalDraftModifiers(activeIds, {
       activePowerupType: this.activePowerup?.type || null
     });
     this.runAugmentModifiers = modifiers;
@@ -3487,6 +3500,11 @@ export class Player {
   applyRunAugmentSectorStartEffects(sector = 1) {
     const effects = this.runAugmentModifiers?.sectorStart || {};
     const triggered = [];
+    this.runAugmentGrazeCount = 0;
+    if ((Number(this.runAugmentModifiers?.lowLifeSectorShieldMs) || 0) > 0 && this.game?.lives <= 1 && !this.shieldActive) {
+      this.activateShield(this.runAugmentModifiers.lowLifeSectorShieldMs);
+      triggered.push('emergency_bulkhead');
+    }
     if (effects.shield && !this.shieldActive) {
       this.activateShield(12000);
       triggered.push('shield');
@@ -3528,6 +3546,8 @@ export class Player {
   getRunAugmentDebugState() {
     return {
       selectedIds: this.runAugmentIds.slice(),
+      activeIds: getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds),
+      consumedIds: this.consumedRunAugmentIds.slice(),
       labels: summarizeTacticalDraftPicks(this.runAugmentIds),
       modifiers: this.runAugmentModifiers,
       overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
@@ -3537,7 +3557,7 @@ export class Player {
 
   repairFromPowerup(effect = {}, type = 'powerup') {
     const repairLives = Math.max(0, Math.round(Number(effect.repairLives || 0)));
-    if (repairLives <= 0 || !this.game) return;
+    if (repairLives <= 0 || !this.game) return 0;
     const configuredMaxLives = Number(this.game.balanceConfig?.survival?.maxLives)
       || Number(this.game.maxLives)
       || MAX_PLAYER_LIVES;
@@ -3552,6 +3572,22 @@ export class Player {
     if (repaired <= 0 && Number(effect.scoreBonusAtMax || 0) > 0) {
       this.game.addScore?.(Math.round(effect.scoreBonusAtMax), type);
     }
+    return repaired;
+  }
+
+  recordRunAugmentNearMiss(sector = 1) {
+    const threshold = Math.max(0, Math.round(Number(this.runAugmentModifiers?.grazeShieldThreshold) || 0));
+    const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
+    if (threshold <= 0 || this.runAugmentGrazeShieldSector === safeSector) {
+      return { granted: false, count: this.runAugmentGrazeCount, threshold };
+    }
+    this.runAugmentGrazeCount += 1;
+    if (this.runAugmentGrazeCount < threshold) {
+      return { granted: false, count: this.runAugmentGrazeCount, threshold };
+    }
+    this.runAugmentGrazeShieldSector = safeSector;
+    this.activateShield(12000);
+    return { granted: true, count: this.runAugmentGrazeCount, threshold };
   }
 
   applyCatalogPowerupEffect(type, effect = {}, now = Date.now()) {
@@ -3652,7 +3688,7 @@ export class Player {
     const meta = getPowerupMeta(type);
     const effect = meta?.effect || {};
     const now = Date.now();
-    const durationMs = Math.max(0, Number(effect.durationMs || 12000));
+    const durationMs = Math.max(0, Number(effect.durationMs || 12000)) * (Number(this.runAugmentModifiers?.powerupDurationMult) || 1);
     if (type === 'row_core' || effect.rowCore) {
       this.triggerRowCore();
       this.notePowerup(type);

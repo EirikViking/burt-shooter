@@ -4442,18 +4442,21 @@ export class GameOverScene {
     const grouped = new Map();
 
     picks.forEach((rawPick) => {
-      const sourceName = String(rawPick || '').trim();
+      const sourceName = String(rawPick?.name || rawPick || '').trim();
       if (!sourceName) return;
-      const key = sourceName.toLocaleLowerCase();
+      const key = String(rawPick?.id || sourceName).toLocaleLowerCase();
       const existing = grouped.get(key);
       if (existing) {
         existing.count += 1;
+        existing.consumed = existing.consumed || rawPick?.consumed === true;
         return;
       }
       grouped.set(key, {
+        id: rawPick?.id || null,
         sourceName,
         label: translateText(sourceName),
-        count: 1
+        count: 1,
+        consumed: rawPick?.consumed === true
       });
     });
 
@@ -4677,14 +4680,14 @@ export class GameOverScene {
         chip.roundRect(chipX, chipY, chipWidth, chipHeight, 5);
         chip.fill({ color: 0x0a2940, alpha: 0.94 });
         chip.roundRect(chipX, chipY, chipWidth, chipHeight, 5);
-        chip.stroke({ color: entry.count > 1 ? 0xffef7e : 0x37f5ff, width: 1, alpha: 0.72 });
+        chip.stroke({ color: entry.consumed ? 0xff8f6a : entry.count > 1 ? 0xffef7e : 0x37f5ff, width: 1, alpha: 0.72 });
 
-        const chipText = `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}`;
+        const chipText = `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}${entry.consumed ? ` - ${translateText('CONSUMED')}` : ''}`;
         const label = createText(chipText, {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
           fontSize: compact ? 11 : 13,
           fontWeight: 'bold',
-          fill: entry.count > 1 ? '#fff3a2' : '#d8fbff',
+          fill: entry.consumed ? '#ffd0bd' : entry.count > 1 ? '#fff3a2' : '#d8fbff',
           stroke: '#031323',
           strokeThickness: 2,
           align: 'center',
@@ -4698,13 +4701,14 @@ export class GameOverScene {
         tacticalChipBounds.push({
           label: entry.label,
           count: entry.count,
+          consumed: entry.consumed,
           x: Math.round(this.runReportPanel.x + chipX),
           y: Math.round(this.runReportPanel.y + chipY),
           width: Math.round(chipWidth),
           height: Math.round(chipHeight)
         });
       });
-      textLines.push(`${tacticalLabel}: ${tacticalLoadout.map((entry) => `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}`).join(', ')}`);
+      textLines.push(`${tacticalLabel}: ${tacticalLoadout.map((entry) => `${entry.label}${entry.count > 1 ? ` x${entry.count}` : ''}${entry.consumed ? ` - ${translateText('CONSUMED')}` : ''}`).join(', ')}`);
     }
 
     if (deathCoachRow) {

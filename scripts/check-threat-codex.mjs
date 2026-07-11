@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { THREAT_CODEX_CATEGORIES, getSectorCodexLevels, getThreatCodexCatalog } from '../src/config/ThreatCodexCatalog.js';
+import { TACTICAL_DRAFT_AUGMENTS } from '../src/config/TacticalDraft.js';
 import { BOSS_SUPPORT_SHIP_TOTAL } from '../src/config/BossSupportShips.js';
 import { GENERATED_ENEMY_TOTAL } from '../src/config/GeneratedEnemyProfiles.js';
 import { HANGAR_PROGRESS_KEY, LEGACY_UNLOCK_PROGRESS_KEY } from '../src/progression/HangarProgressState.js';
@@ -41,6 +42,14 @@ if ((catalog.enemies?.length || 0) < expectedEnemyCodexMinimum) {
 if ((catalog.attackPatterns?.length || 0) < 40) fail(`expected at least 40 attack pattern codex entries, found ${catalog.attackPatterns?.length || 0}`);
 if ((catalog.waveTactics?.length || 0) < 35) fail(`expected at least 35 wave tactic codex entries, found ${catalog.waveTactics?.length || 0}`);
 if ((catalog.powerups?.length || 0) < 20) fail(`expected at least 20 powerup codex entries, found ${catalog.powerups?.length || 0}`);
+if ((catalog.augments?.length || 0) !== TACTICAL_DRAFT_AUGMENTS.length) {
+  fail(`expected all ${TACTICAL_DRAFT_AUGMENTS.length} tactical augments in Codex, found ${catalog.augments?.length || 0}`);
+}
+const augmentCodexById = new Map((catalog.augments || []).map((entry) => [entry.id, entry]));
+for (const augment of TACTICAL_DRAFT_AUGMENTS) {
+  const entry = augmentCodexById.get(augment.id);
+  if (!entry?.art || !entry?.description || !entry?.tip) fail(`tactical augment Codex entry incomplete: ${augment.id}`);
+}
 if ((catalog.sectors?.length || 0) <= 12) fail(`sector Codex must not be capped at 12 entries, found ${catalog.sectors?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
 if ((catalog.pilotRanks?.length || 0) < 40) fail(`expected at least 40 pilot rank codex entries, found ${catalog.pilotRanks?.length || 0}`);
@@ -227,6 +236,12 @@ if (eliteProbe?.id) {
   }
   resetDiscoveryStateForTests();
 }
+
+const augmentSeen = recordThreatSeen('phase_reactor', 'augments', { name: 'PHASE REACTOR' });
+if (!augmentSeen.isNew || !getThreatCodexState().items?.augments?.phase_reactor) {
+  fail('using a tactical augment should persist it in the Augments Codex category');
+}
+resetDiscoveryStateForTests();
 
 const seen = recordThreatSeen('telegraph_rail_lance', 'attackPatterns', { name: 'Rail Lance' });
 if (!seen.isNew) fail('new discovery should be marked new');
