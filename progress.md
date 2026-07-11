@@ -1,5 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-11 Steam Store Refresh (complete)
+
+- Published Steamworks revision 34 with a rewritten English About section and new short description, plus complete localized About and short-description variants for German, Spanish (Spain), Russian, Simplified Chinese, Brazilian Portuguese, Korean, and Japanese.
+- Published Steamworks revision 35 to correct the public supported-language table from Traditional Chinese to Simplified Chinese, matching the shipped and tested game localization.
+- Verified the public store page for all eight supported languages after publication. Each locale serves the new short description and Tactical Draft-focused About copy.
+- Curated fourteen current 1920x1080 screenshots in gameplay-first order and rendered three current H.264/AAC trailer candidates. Action Cut and Tactical Draft Cut are the recommended Steam pair; Boss Gauntlet remains a reserve.
+- Store refresh handoff: `release/steam-store-refresh-handoff-20260711.md`.
+- Steam builds, branch assignment, SetLive, pricing, achievements, leaderboards, score, XP, and Steam Cloud settings were untouched.
+
 ## 2026-07-11 Tactical Depth, Drilldowns, And Milestone Package (in progress)
 
 - Current request: remove fractional boss-refuel text; add detailed humorous How To Play and Tactical augment drilldowns; hide consumed one-shot augments from the HUD while preserving them in loadout/report; replace the old Longship shouts with the recognizable Viking Row ritual; show a 2x4 HUD augment grid plus overflow from pick nine; expand the Tactical system with genuinely new effects, generated art/SFX, and Codex discovery; restore visible combo gratification; make the +2-life prize truly missable; improve overrun milestone celebrations; then perform extensive human-simulated QA and upload one Steam test build.
