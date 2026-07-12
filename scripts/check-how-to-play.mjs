@@ -148,6 +148,7 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('Holding a new card replaces the old hold'), `${label} should explain how a held offer is replaced`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
     assert(joined.includes('FIRST STACK FULL / SECOND STACK 55%'), `${label} should explain diminishing stacks`);
+    assert(joined.includes('Stack II earns an evolution name'), `${label} should explain Tactical evolution identities`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
     assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
   }

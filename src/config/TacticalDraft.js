@@ -40,25 +40,25 @@ function defineAugment(config) {
 }
 
 export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
-  defineAugment({ id: 'damage_up', category: 'offense', draftDescription: 'Damage +12%', modifiers: { damageMult: 1.12 } }),
-  defineAugment({ id: 'rapid_fire', category: 'offense', draftDescription: 'Fire rate +9%', modifiers: { fireDelayMult: 0.92 } }),
-  defineAugment({ id: 'rail_surge', category: 'offense', draftDescription: 'Damage +5% and bullet speed +14%', modifiers: { damageMult: 1.05, bulletSpeedMult: 1.14 } }),
-  defineAugment({ id: 'double_shot', category: 'offense', draftDescription: 'Extra shot; damage -6%', modifiers: { shotBonus: 1, damageMult: 0.94 } }),
+  defineAugment({ id: 'damage_up', evolutionName: 'WARHEAD AUTHORITY', category: 'offense', draftDescription: 'Damage +12%', modifiers: { damageMult: 1.12 } }),
+  defineAugment({ id: 'rapid_fire', evolutionName: 'REDLINE CYCLER', category: 'offense', draftDescription: 'Fire rate +9%', modifiers: { fireDelayMult: 0.92 } }),
+  defineAugment({ id: 'rail_surge', evolutionName: 'HYPER-RAIL', category: 'offense', draftDescription: 'Damage +5% and bullet speed +14%', modifiers: { damageMult: 1.05, bulletSpeedMult: 1.14 } }),
+  defineAugment({ id: 'double_shot', evolutionName: 'TWIN VERDICT', category: 'offense', draftDescription: 'Extra shot; damage -6%', modifiers: { shotBonus: 1, damageMult: 0.94 } }),
   defineAugment({ id: 'pierce', category: 'offense', draftDescription: 'Piercing shots; damage -3%', modifiers: { pierce: true, damageMult: 0.97 }, maxStacks: 1 }),
-  defineAugment({ id: 'target_paint', category: 'offense', draftDescription: 'Damage +7% and fire rate +4%', modifiers: { damageMult: 1.07, fireDelayMult: 0.96 } }),
-  defineAugment({ id: 'plasma_lance', category: 'offense', draftDescription: 'Damage +14%, bullet speed +8%, fire rate -4%', modifiers: { damageMult: 1.14, fireDelayMult: 1.04, bulletSpeedMult: 1.08 } }),
-  defineAugment({ id: 'chain_lightning', category: 'offense', draftDescription: 'Chain reach +1', modifiers: { chainMax: 1 } }),
-  defineAugment({ id: 'speed_up', category: 'mobility', draftDescription: 'Movement speed +10%', modifiers: { speedMult: 1.1 } }),
-  defineAugment({ id: 'blink_drive', category: 'mobility', draftDescription: 'Movement speed +4% and dodge cooldown -16%', modifiers: { speedMult: 1.04, dodgeDelayMult: 0.84 } }),
-  defineAugment({ id: 'vector_boost', category: 'mobility', draftDescription: 'Movement speed +8% and dodge duration +10%', modifiers: { speedMult: 1.08, dodgeDurationMult: 1.1 } }),
+  defineAugment({ id: 'target_paint', evolutionName: 'KILL WARRANT', category: 'offense', draftDescription: 'Damage +7% and fire rate +4%', modifiers: { damageMult: 1.07, fireDelayMult: 0.96 } }),
+  defineAugment({ id: 'plasma_lance', evolutionName: 'SUNSPEAR', category: 'offense', draftDescription: 'Damage +14%, bullet speed +8%, fire rate -4%', modifiers: { damageMult: 1.14, fireDelayMult: 1.04, bulletSpeedMult: 1.08 } }),
+  defineAugment({ id: 'chain_lightning', evolutionName: 'STORM COURT', category: 'offense', draftDescription: 'Chain reach +1', modifiers: { chainMax: 1 } }),
+  defineAugment({ id: 'speed_up', evolutionName: 'COMET DRIVE', category: 'mobility', draftDescription: 'Movement speed +10%', modifiers: { speedMult: 1.1 } }),
+  defineAugment({ id: 'blink_drive', evolutionName: 'NULLSTEP DRIVE', category: 'mobility', draftDescription: 'Movement speed +4% and dodge cooldown -16%', modifiers: { speedMult: 1.04, dodgeDelayMult: 0.84 } }),
+  defineAugment({ id: 'vector_boost', evolutionName: 'VECTOR CROWN', category: 'mobility', draftDescription: 'Movement speed +8% and dodge duration +10%', modifiers: { speedMult: 1.08, dodgeDurationMult: 1.1 } }),
   defineAugment({ id: 'shield', category: 'defense', draftDescription: 'Start each sector with a shield', sectorStart: { shield: true }, maxStacks: 1 }),
-  defineAugment({ id: 'ghost', category: 'defense', draftDescription: 'Start each sector with 1 second of invulnerability', sectorStart: { invulnerabilityMs: 1000 } }),
-  defineAugment({ id: 'point_defense', category: 'defense', draftDescription: 'Start each sector with 4.5 seconds of point defense', sectorStart: { pointDefenseMs: 4500 } }),
+  defineAugment({ id: 'ghost', evolutionName: 'WRAITH SHELL', category: 'defense', draftDescription: 'Start each sector with 1 second of invulnerability', sectorStart: { invulnerabilityMs: 1000 } }),
+  defineAugment({ id: 'point_defense', evolutionName: 'AEGIS GRID', category: 'defense', draftDescription: 'Start each sector with 4.5 seconds of point defense', sectorStart: { pointDefenseMs: 4500 } }),
   defineAugment({ id: 'nano_patch', category: 'defense', draftDescription: 'Repair 1 life immediately', immediate: { repairLives: 1 }, consumedOnApply: true, maxStacks: 1 }),
-  defineAugment({ id: 'magnet', category: 'utility', draftDescription: 'Pickup radius +90', modifiers: { magnetRadiusBonus: 90, magnetStrengthBonus: 0.03 } }),
-  defineAugment({ id: 'drones', category: 'utility', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 }, maxStacks: 2 }),
-  defineAugment({ id: 'bomb', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
-  defineAugment({ id: 'orbital_strike', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
+  defineAugment({ id: 'magnet', evolutionName: 'GRAVITY WELL', category: 'utility', draftDescription: 'Pickup radius +90', modifiers: { magnetRadiusBonus: 90, magnetStrengthBonus: 0.03 } }),
+  defineAugment({ id: 'drones', evolutionName: 'DRONE WING', category: 'utility', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 }, maxStacks: 2 }),
+  defineAugment({ id: 'bomb', evolutionName: 'SIEGE RACK', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
+  defineAugment({ id: 'orbital_strike', evolutionName: 'SKY TRIBUNAL', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
   defineAugment({ id: 'phase_reactor', name: 'PHASE REACTOR', category: 'mobility', color: 0xff5bd6, sfx: 'tactical_phase_reactor', draftDescription: 'Phase instantly primes your next volley', detail: 'The reactor converts one tasteful violation of spacetime into a fully stamped firing permit. Phase, then shoot. Physics has filed a complaint and is waiting in the wrong queue.', modifiers: { phaseReload: true }, maxStacks: 1 }),
   defineAugment({ id: 'focus_lens', name: 'FOCUS LENS', category: 'mobility', color: 0xffef7e, sfx: 'tactical_focus_lens', draftDescription: 'Focused shots deal +18% damage', detail: 'Holding Focus routes every loose photon through the expensive glass. The beam gets meaner, the ship gets deliberate, and nearby insurance forms begin filling themselves out.', modifiers: { focusDamageMult: 1.18 }, maxStacks: 1 }),
   defineAugment({ id: 'inertial_dampers', name: 'INERTIAL DAMPERS', category: 'mobility', color: 0x63f4ff, sfx: 'tactical_inertial_dampers', draftDescription: 'Focus movement keeps 22% more speed', detail: 'A padded cup holder for momentum. Tight weaving stays precise without making the ship feel like it is towing a municipal moon. The manual insists this was always intentional.', modifiers: { focusSpeedMult: 1.22 }, maxStacks: 1 }),
@@ -132,6 +132,17 @@ export function getTacticalDraftMeta(id) {
   };
 }
 
+export function getTacticalDraftDisplayMeta(id, stacks = 1) {
+  const meta = getTacticalDraftMeta(id);
+  if (!meta) return null;
+  const evolved = Number(stacks) >= 2 && Boolean(meta.evolutionName);
+  return {
+    ...meta,
+    evolved,
+    displayName: evolved ? meta.evolutionName : meta.name
+  };
+}
+
 export function buildTacticalDraftOffers({
   seed = 'nova-swarm-draft',
   sectorCleared = 1,
@@ -193,12 +204,16 @@ export function buildTacticalDraftOffers({
     const replacementIndex = offers.findIndex((augment) => augment.id !== evolutionCandidate?.id);
     offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1, heldCandidate);
   }
-  return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => ({
-    ...getTacticalDraftMeta(augment.id),
-    currentStacks: counts.get(augment.id) || 0,
-    nextStack: (counts.get(augment.id) || 0) + 1,
-    held: augment.id === heldId
-  }));
+  return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => {
+    const currentStacks = counts.get(augment.id) || 0;
+    const nextStack = currentStacks + 1;
+    return {
+      ...getTacticalDraftDisplayMeta(augment.id, nextStack),
+      currentStacks,
+      nextStack,
+      held: augment.id === heldId
+    };
+  });
 }
 
 export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null } = {}) {

@@ -59,7 +59,7 @@ import {
   buildTacticalDraftOffers,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
-import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
+import { analyzeTacticalDoctrine, projectTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
@@ -5583,6 +5583,7 @@ export class PlayScene {
 
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
+    const consumedIds = this.player?.consumedRunAugmentIds || [];
     const offers = buildTacticalDraftOffers({
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
@@ -5592,7 +5593,10 @@ export class PlayScene {
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       heldId: this.tacticalDraftHeldId
-    });
+    }).map((offer) => ({
+      ...offer,
+      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, offer.id)
+    }));
     if (offers.length < 3) return false;
 
     const overlay = new PIXI.Container();
@@ -5638,11 +5642,13 @@ export class PlayScene {
     const rescan = this.createTacticalDraftRescanControl();
     const hold = this.createTacticalDraftHoldControl();
     overlay.addChild(rescan, hold);
+    const recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
       offers,
-      focusIndex: 1,
+      focusIndex: recommendedIndex,
+      recommendedIndex,
       confirmedId: null,
       result: null,
       overlay,
@@ -5666,7 +5672,7 @@ export class PlayScene {
     this.uiOverlay.addChild(overlay);
     this.layoutTacticalDraft();
     this.tacticalDraftNavigator.suppressUntilReleased();
-    this.setTacticalDraftFocus(1, { silent: true });
+    this.setTacticalDraftFocus(recommendedIndex, { silent: true });
     AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
     return true;
   }
@@ -5697,7 +5703,7 @@ export class PlayScene {
       ? new PIXI.Sprite(texture)
       : this.createTacticalDraftFallbackIcon(offer);
     icon.anchor?.set?.(0.5);
-    const name = createText(translateText(offer.name), {
+    const name = createText(translateText(offer.displayName || offer.name), {
       fontFamily: FONT_DISPLAY,
       fontSize: 23,
       fontWeight: '900',
@@ -5718,7 +5724,7 @@ export class PlayScene {
     });
     description.anchor.set(0.5);
     const permanence = createText(offer.currentStacks > 0
-      ? translateText('SECOND STACK: 55% EFFECT')
+      ? translateText('EVOLUTION: 55% EFFECT')
       : translateText('PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: 11,
@@ -5727,6 +5733,14 @@ export class PlayScene {
       align: 'center'
     });
     permanence.anchor.set(0.5);
+    const doctrine = createText(this.getTacticalDoctrinePreviewText(offer), {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: Number(offer.doctrineProjection?.after?.color) || '#7ee9ff',
+      align: 'center'
+    });
+    doctrine.anchor.set(0.5);
     const holdBadge = createText(translateText('HELD'), {
       fontFamily: FONT_BODY,
       fontSize: 10,
@@ -5745,8 +5759,8 @@ export class PlayScene {
     choose.anchor.set(0.5);
     card.addChild(glow, bg, category);
     if (icon) card.addChild(icon);
-    card.addChild(name, description, permanence, holdBadge, choose);
-    card._nodes = { glow, bg, category, icon, name, description, permanence, holdBadge, choose };
+    card.addChild(name, description, doctrine, permanence, holdBadge, choose);
+    card._nodes = { glow, bg, category, icon, name, description, doctrine, permanence, holdBadge, choose };
     card.on('pointerover', () => this.setTacticalDraftFocus(index));
     card.on('pointertap', () => {
       this.setTacticalDraftFocus(index, { silent: true });
@@ -5797,6 +5811,32 @@ export class PlayScene {
     control._nodes = { bg, label };
     control.on('pointertap', () => this.toggleTacticalDraftHold('pointer'));
     return control;
+  }
+
+  getTacticalDoctrinePreviewText(offer = null) {
+    const projection = offer?.doctrineProjection;
+    if (!projection?.valid || projection.consumed || !projection.after) return translateText('ONE-SHOT: NO DOCTRINE SHIFT');
+    const doctrine = translateText(projection.after.name);
+    if (projection.identityChanged) return translateText('BUILDS: {doctrine}', { doctrine });
+    if (projection.stageChanged) {
+      return translateText('{name} // {stage}', { name: doctrine, stage: translateText(projection.after.stage) });
+    }
+    return translateText('REINFORCES: {doctrine}', { doctrine });
+  }
+
+  getRecommendedTacticalDraftIndex(offers = []) {
+    if (!Array.isArray(offers) || !offers.length) return 0;
+    const heldIndex = offers.findIndex((offer) => offer.held);
+    if (heldIndex >= 0) return heldIndex;
+    const evolutionIndex = offers.findIndex((offer) => offer.currentStacks > 0);
+    if (evolutionIndex >= 0) return evolutionIndex;
+    const synthesisIndex = offers.findIndex((offer) => offer.doctrineProjection?.after?.synthesis);
+    if (synthesisIndex >= 0) return synthesisIndex;
+    const reinforceIndex = offers.findIndex((offer) => {
+      const projection = offer.doctrineProjection;
+      return projection?.before?.id && projection.before.id === projection.after?.id;
+    });
+    return reinforceIndex >= 0 ? reinforceIndex : Math.min(1, offers.length - 1);
   }
 
   createTacticalDraftFallbackIcon(offer) {
@@ -5903,6 +5943,9 @@ export class PlayScene {
         nodes.description.style.align = 'left';
         nodes.description.style.wordWrapWidth = cardWidth - 190;
         nodes.description.position.set(-cardWidth / 2 + 86, 16);
+        nodes.doctrine.anchor.set(0, 0.5);
+        nodes.doctrine.style.fontSize = 8;
+        nodes.doctrine.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 34);
         nodes.permanence.anchor.set(0, 0.5);
         nodes.permanence.style.fontSize = 9;
         nodes.permanence.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 18);
@@ -5926,6 +5969,9 @@ export class PlayScene {
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrapWidth = cardWidth - 48;
         nodes.description.position.set(0, 24);
+        nodes.doctrine.anchor.set(0.5);
+        nodes.doctrine.style.fontSize = 10;
+        nodes.doctrine.position.set(0, cardHeight / 2 - 86);
         nodes.permanence.anchor.set(0.5);
         nodes.permanence.style.fontSize = 11;
         nodes.permanence.position.set(0, cardHeight / 2 - 62);
@@ -6033,6 +6079,7 @@ export class PlayScene {
     if (!state?.active || state.confirmedId || !state.inputArmed || state.rescansRemaining <= 0) return false;
     const previousIds = state.offers.map((offer) => offer.id);
     const nextRescanCount = state.rescanCount + 1;
+    const consumedIds = this.player?.consumedRunAugmentIds || [];
     const offers = buildTacticalDraftOffers({
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:rescan:${nextRescanCount}`,
       sectorCleared: state.sectorCleared,
@@ -6043,7 +6090,10 @@ export class PlayScene {
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
       heldId: this.tacticalDraftHeldId
-    });
+    }).map((offer) => ({
+      ...offer,
+      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, offer.id)
+    }));
     if (offers.length < 3) return false;
     state.cards.forEach((card) => {
       if (card.parent) card.parent.removeChild(card);
@@ -6056,10 +6106,11 @@ export class PlayScene {
     state.rescansRemaining -= 1;
     this.tacticalDraftRescansRemaining = state.rescansRemaining;
     this.tacticalDraftRescansUsed += 1;
-    state.focusIndex = 1;
+    state.recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
+    state.focusIndex = state.recommendedIndex;
     state.openedAt = Date.now();
     this.layoutTacticalDraft();
-    this.setTacticalDraftFocus(1, { silent: true });
+    this.setTacticalDraftFocus(state.recommendedIndex, { silent: true });
     playMenuConfirmSfx(0.3);
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
@@ -6142,7 +6193,8 @@ export class PlayScene {
     this.tacticalDraftHistory.push({
       sectorCleared: state.sectorCleared,
       id: offer.id,
-      name: offer.name,
+      name: offer.displayName || offer.name,
+      baseName: offer.name,
       category: offer.category,
       stacks: result.stacks,
       consumed: result.consumed === true,
@@ -6151,7 +6203,7 @@ export class PlayScene {
     this.comboWindowMs = COMBO_WINDOW_MS + Math.max(0, Number(this.player?.runAugmentModifiers?.comboWindowBonusMs) || 0);
     this.scorePopupManager?.setComboWindow?.(this.comboWindowMs);
     this.recordThreatDiscovery(offer.id, 'augments', {
-      name: offer.name,
+      name: offer.displayName || offer.name,
       role: offer.category,
       description: offer.detail || offer.description
     }, { silent: true, scoreBonus: false });
@@ -6162,7 +6214,7 @@ export class PlayScene {
       this.tacticalDraftConfirmTimeout = null;
       this.clearTacticalDraft('confirmed');
       const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
-      this.enqueueToast(`${translateText(offer.name)}  ${status}`, {
+      this.enqueueToast(`${translateText(offer.displayName || offer.name)}  ${status}`, {
         fontSize: 18,
         fill: '#fff3a0',
         slot: 'top',
@@ -6211,6 +6263,7 @@ export class PlayScene {
       active: Boolean(state?.active),
       sectorCleared: state?.sectorCleared || null,
       focusIndex: state?.focusIndex ?? null,
+      recommendedIndex: state?.recommendedIndex ?? null,
       confirmedId: state?.confirmedId || null,
       inputArmed: Boolean(state?.inputArmed),
       compact: Boolean(state?.compact),
@@ -6230,8 +6283,20 @@ export class PlayScene {
       offers: state?.offers?.map((offer, index) => ({
         id: offer.id,
         name: offer.name,
+        displayName: offer.displayName || offer.name,
+        displayNameSource: offer.displayName || offer.name,
         category: offer.category,
         descriptionSource: offer.description,
+        doctrinePreviewText: state.cards?.[index]?._nodes?.doctrine?.text || null,
+        doctrinePreviewBounds: boundsOf(state.cards?.[index]?._nodes?.doctrine),
+        doctrineProjection: offer.doctrineProjection ? {
+          beforeId: offer.doctrineProjection.before?.id || null,
+          afterId: offer.doctrineProjection.after?.id || null,
+          afterStage: offer.doctrineProjection.after?.stage || null,
+          identityChanged: Boolean(offer.doctrineProjection.identityChanged),
+          stageChanged: Boolean(offer.doctrineProjection.stageChanged),
+          consumed: Boolean(offer.doctrineProjection.consumed)
+        } : null,
         held: offer.id === this.tacticalDraftHeldId,
         focused: index === state.focusIndex,
         bounds: boundsOf(state.cards?.[index]),

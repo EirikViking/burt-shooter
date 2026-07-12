@@ -69,6 +69,26 @@ export function getTacticalDoctrineDisplay(doctrine = null) {
   return `${doctrine.name} // ${doctrine.stage}`;
 }
 
+export function projectTacticalDoctrine(selectedIds = [], consumedIds = [], candidateId = null) {
+  const id = String(candidateId || '').trim();
+  const before = analyzeTacticalDoctrine(selectedIds, consumedIds);
+  const meta = getTacticalDraftMeta(id);
+  if (!id || !meta) return Object.freeze({ before, after: before, valid: false, consumed: false, identityChanged: false, stageChanged: false });
+  const nextSelected = [...normalizeIds(selectedIds), id];
+  const nextConsumed = meta.consumedOnApply
+    ? [...normalizeIds(consumedIds), id]
+    : normalizeIds(consumedIds);
+  const after = analyzeTacticalDoctrine(nextSelected, nextConsumed);
+  return Object.freeze({
+    before,
+    after,
+    valid: true,
+    consumed: meta.consumedOnApply === true,
+    identityChanged: before?.id !== after?.id,
+    stageChanged: before?.stage !== after?.stage
+  });
+}
+
 export const TACTICAL_DOCTRINE_NAMES = Object.freeze([
   ...Object.values(PRIMARY_DOCTRINES).map((entry) => entry.name),
   ...Object.values(HYBRID_DOCTRINES).map((entry) => entry.name),

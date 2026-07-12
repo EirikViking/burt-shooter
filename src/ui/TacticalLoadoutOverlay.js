@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import { getTacticalDraftDisplayMeta, getTacticalDraftMeta } from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText, onLanguageChange } from '../i18n/index.js';
@@ -96,7 +96,14 @@ export function groupTacticalAugments(selectedIds = [], consumedIds = []) {
     }
     entry.stacks += 1;
   }
-  return grouped.map((entry) => Object.freeze({ ...entry }));
+  return grouped.map((entry) => {
+    const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
+    return Object.freeze({
+      ...entry,
+      name: display?.displayName || entry.name,
+      evolved: Boolean(display?.evolved)
+    });
+  });
 }
 
 export function calculateTacticalLoadoutLayout(width, height, itemCount = 0) {
@@ -779,7 +786,8 @@ export class TacticalLoadoutOverlay {
         category: item.category,
         consumed: item.consumed,
         color: item.color,
-        maxStacks: item.maxStacks
+        maxStacks: item.maxStacks,
+        evolved: item.evolved
       })),
       pageIndex: this.pageIndex,
       pageNumber: this.pageIndex + 1,

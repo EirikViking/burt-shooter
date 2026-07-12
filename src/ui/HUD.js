@@ -6,7 +6,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
-import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import { getTacticalDraftDisplayMeta, getTacticalDraftMeta } from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
@@ -1102,7 +1102,10 @@ export class HUD {
       if (current) current.stacks += 1;
       else grouped.set(id, { id, name: meta.name, category: meta.category, color: meta.color, stacks: 1 });
     }
-    const entries = [...grouped.values()];
+    const entries = [...grouped.values()].map((entry) => {
+      const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
+      return { ...entry, name: display?.displayName || entry.name, evolved: Boolean(display?.evolved) };
+    });
     const doctrine = analyzeTacticalDoctrine(allSelectedIds, [...consumedIds]);
     if (!entries.length) {
       this.tacticalAugmentItems.forEach((item) => { item.container.visible = false; });
@@ -1190,7 +1193,7 @@ export class HUD {
       activeCount: selectedIds.length,
       consumedCount: consumedIds.size,
       uniqueCount: entries.length,
-      entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category })),
+      entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category, evolved: entry.evolved })),
       doctrine: doctrine ? { ...doctrine, display: translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage) }) } : null,
       visibleEntries: visibleEntries.map((entry) => entry.id),
       hiddenCount,

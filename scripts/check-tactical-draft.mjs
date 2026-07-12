@@ -8,6 +8,7 @@ import {
   buildTacticalDraftModifiers,
   buildTacticalDraftOffers,
   getActiveTacticalAugmentIds,
+  getTacticalDraftDisplayMeta,
   getTacticalDraftMeta
 } from '../src/config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
@@ -119,15 +120,24 @@ function assertDraftLayout(state, width, height, label) {
   }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
-    for (const [name, textBounds] of [['name', offer.nameBounds], ['description', offer.descriptionBounds]]) {
+    for (const [name, textBounds] of [['name', offer.nameBounds], ['description', offer.descriptionBounds], ['doctrine', offer.doctrinePreviewBounds]]) {
       assert(textBounds && textBounds.width > 0 && textBounds.height > 0, `${label}: ${name} ${index} has invalid bounds`);
       assert(textBounds.x >= card.x - 2 && textBounds.y >= card.y - 2 && textBounds.x + textBounds.width <= card.x + card.width + 2 && textBounds.y + textBounds.height <= card.y + card.height + 2, `${label}: ${name} ${index} escapes card`);
     }
+    assert(offer.doctrineProjection?.afterId || offer.doctrineProjection?.consumed, `${label}: offer ${offer.id} missing doctrine forecast`);
+    assert(String(offer.doctrinePreviewText || '').trim(), `${label}: offer ${offer.id} missing doctrine forecast text`);
   });
+  assert(state.tacticalDraft.recommendedIndex === state.tacticalDraft.focusIndex, `${label}: recommended card should receive initial focus`);
 }
 
 const lowLifeOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 2, lives: 1, maxLives: 3 });
 assert(TACTICAL_DRAFT_AUGMENTS.length === 32, `expected curated 32-augment pool, got ${TACTICAL_DRAFT_AUGMENTS.length}`);
+const evolutionAugments = TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.maxStacks === 2);
+assert(evolutionAugments.length === 16, `expected 16 repeatable evolutions, got ${evolutionAugments.length}`);
+assert(evolutionAugments.every((augment) => augment.evolutionName), 'every repeatable augment needs an evolution identity');
+assert(new Set(evolutionAugments.map((augment) => augment.evolutionName)).size === 16, 'evolution identities must remain unique');
+assert(getTacticalDraftDisplayMeta('damage_up', 1)?.displayName === 'DAMAGE UP', 'stack I should keep its base identity');
+assert(getTacticalDraftDisplayMeta('damage_up', 2)?.displayName === 'WARHEAD AUTHORITY', 'stack II should expose its evolution identity');
 for (const category of ['offense', 'mobility', 'defense', 'utility']) {
   assert(TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.category === category).length === 8,
     `expected 8 ${category} augments`);
@@ -178,6 +188,9 @@ assert(evolutionOffers.filter((offer) => offer.currentStacks === 1 && offer.next
   `sector-three Draft should contain exactly one evolution offer: ${JSON.stringify(evolutionOffers)}`);
 assert(evolutionOffers.filter((offer) => offer.currentStacks === 0).length === 2,
   'sector-three Draft should preserve two fresh choices beside the evolution');
+assert(evolutionOffers.find((offer) => offer.currentStacks === 1)?.evolved === true, 'stack-II offer should be marked evolved');
+assert(evolutionOffers.find((offer) => offer.currentStacks === 1)?.displayName !== evolutionOffers.find((offer) => offer.currentStacks === 1)?.name,
+  'stack-II offer should use a distinct evolution name');
 const heldOfferId = lowLifeOffers[1].id;
 const heldOffers = buildTacticalDraftOffers({
   seed: 'held-proof',
@@ -237,6 +250,7 @@ try {
   assert(rescannedOfferIds.filter((id) => id !== keyboardHeldId).every((id) => !firstOfferIds.includes(id)),
     `rescan repeated an unheld prior offer: ${rescannedOfferIds.join(', ')}`);
   assert(state.tacticalDraft.offers.filter((offer) => offer.held).length === 1, 'rescan did not retain exactly one held card');
+  assert(state.tacticalDraft.offers[state.tacticalDraft.recommendedIndex]?.id === keyboardHeldId, 'held offer should receive recommended focus after rescan');
   assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
   const frozenTime = state.arcadeRun.runElapsedSeconds;
   await page.waitForTimeout(450);
@@ -245,8 +259,9 @@ try {
   const desktopScreenshot = path.join(outputDir, 'tactical-draft-desktop.png');
   await page.screenshot({ path: desktopScreenshot });
 
+  const keyboardTargetIndex = (state.tacticalDraft.focusIndex + 1) % state.tacticalDraft.offers.length;
   await page.keyboard.press('ArrowRight');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 2);
+  await page.waitForFunction((target) => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === target, keyboardTargetIndex);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
   state = await readState(page);
@@ -261,15 +276,16 @@ try {
   state = await readState(page);
   assert(state.tacticalDraft.offers.some((offer) => offer.id === keyboardHeldId && offer.held), 'held card did not return in the next Draft');
   await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: true, value: 1 }; });
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.lastHoldSource === 'gamepad');
+  await page.waitForFunction(() => {
+    const draft = JSON.parse(window.render_game_to_text()).tacticalDraft;
+    return draft?.heldId === null && draft?.lastHoldSource === 'gamepad';
+  });
   await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: false, value: 0 }; });
   await page.waitForTimeout(80);
-  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: true, value: 1 }; });
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === null);
-  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: false, value: 0 }; });
-  await page.waitForTimeout(80);
+  state = await readState(page);
+  const gamepadTargetIndex = (state.tacticalDraft.focusIndex + 1) % state.tacticalDraft.offers.length;
   await page.evaluate(() => { window.__burtGamepadOverride.axes = [1, 0]; });
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 2);
+  await page.waitForFunction((target) => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === target, gamepadTargetIndex);
   await page.evaluate(() => { window.__burtGamepadOverride.axes = [0, 0]; });
   await page.waitForTimeout(100);
   await page.evaluate(() => { window.__burtGamepadOverride.buttons[0] = { pressed: true, value: 1 }; });
@@ -320,6 +336,10 @@ try {
     assertDraftLayout(localeState, 760, 640, `locale-${locale}`);
     assert(localeState.tacticalDraft.title && localeState.tacticalDraft.title !== 'TACTICAL DRAFT', `locale-${locale}: tactical title remained English`);
     assert(localeState.tacticalDraft.offers.every((offer) => offer.descriptionText !== offer.descriptionSource), `locale-${locale}: tactical description remained English`);
+    const localizedEvolutions = localeState.tacticalDraft.offers.filter((offer) => offer.displayNameSource !== offer.name);
+    assert(localizedEvolutions.length === 1, `locale-${locale}: expected exactly one evolution offer`);
+    assert(localizedEvolutions.every((offer) => offer.nameText !== offer.displayNameSource), `locale-${locale}: evolution name remained English`);
+    assert(localeState.tacticalDraft.offers.every((offer) => !/BUILDS:|REINFORCES:|ONE-SHOT:/.test(offer.doctrinePreviewText || '')), `locale-${locale}: doctrine forecast remained English`);
     await page.keyboard.press('l');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId);
     const localeHeldState = await readState(page);

@@ -192,6 +192,11 @@ async function forceRunReportScenario(page) {
       category: index % 2 === 0 ? 'offense' : 'utility',
       stacks: 1
     }));
+    const finalDamagePick = [...play.tacticalDraftHistory].reverse().find((pick) => pick.id === 'damage_up');
+    if (finalDamagePick) {
+      finalDamagePick.name = 'WARHEAD AUTHORITY';
+      finalDamagePick.stacks = 2;
+    }
     play.tacticalDraftHistory.push({
       sectorCleared: 22,
       id: 'nano_patch',
@@ -269,7 +274,7 @@ function assertOpenReport(state, viewport) {
   assertContains(panel, tactical.bounds, 'Tactical Loadout band');
 
   const expectedStacks = new Map([
-    ['DAMAGE UP', 4], ['SPEED UP', 3], ['PIERCE', 2], ['CHAIN', 2],
+    ['WARHEAD AUTHORITY', 4], ['SPEED UP', 3], ['PIERCE', 2], ['CHAIN', 2],
     ['TARGET POINT', 2], ['DRONES', 2], ['RAPID FIRE', 1], ['PLASMA LIGHTNING', 1],
     ['MAGNET: PICKUPS', 1], ['BOMB', 1], ['RAIL SURGE', 1], ['SHIELD MATRIX', 1], ['NANO PATCH', 1]
   ]);
@@ -285,6 +290,8 @@ function assertOpenReport(state, viewport) {
     assert(text.includes(expectedText), `Tactical Loadout missing readable chip text: ${expectedText}`);
   }
   const consumedNano = tactical.chips.find((chip) => chip.label === 'NANO PATCH');
+  const evolvedDamage = tactical.chips.find((chip) => chip.label === 'WARHEAD AUTHORITY');
+  assert(evolvedDamage?.count === 4, 'Tactical Loadout should use the latest evolution identity for grouped stacks.');
   assert(consumedNano?.consumed === true, 'Consumed Nano Patch chip was not flagged in Run Report.');
   assert(text.includes('NANO PATCH - CONSUMED'), 'Run Report did not render the consumed status text.');
 

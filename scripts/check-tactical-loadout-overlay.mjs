@@ -32,7 +32,10 @@ const consumedIds = ['nano_patch'];
 const grouped = groupTacticalAugments(selectedIds, consumedIds);
 assert.equal(grouped.length, 32, 'duplicates should collapse into the complete curated pool');
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.stacks, 2);
+assert.equal(grouped.find((item) => item.id === 'damage_up')?.name, 'WARHEAD AUTHORITY');
+assert.equal(grouped.find((item) => item.id === 'damage_up')?.evolved, true);
 assert.equal(grouped.find((item) => item.id === 'drones')?.stacks, 2);
+assert.equal(grouped.find((item) => item.id === 'drones')?.name, 'DRONE WING');
 assert.equal(grouped.find((item) => item.id === 'nano_patch')?.consumed, true);
 assert.ok(grouped.every((item) => item.known && item.name && item.description));
 

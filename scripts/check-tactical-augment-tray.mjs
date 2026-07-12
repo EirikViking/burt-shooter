@@ -159,7 +159,9 @@ try {
   if (desktop.debug?.selectedCount !== desktopIds.length) failures.push(`desktop selected count mismatch: ${desktop.debug?.selectedCount}`);
   if (desktop.debug?.uniqueCount !== 9) failures.push(`desktop unique count mismatch: ${desktop.debug?.uniqueCount}`);
   if (desktop.debug?.entries?.find((entry) => entry.id === 'damage_up')?.stacks !== 2) failures.push('damage stack was not grouped as x2');
+  if (desktop.debug?.entries?.find((entry) => entry.id === 'damage_up')?.name !== 'WARHEAD AUTHORITY') failures.push('damage stack did not use its evolution identity');
   if (desktop.debug?.entries?.find((entry) => entry.id === 'drones')?.stacks !== 2) failures.push('drone stack was not grouped as x2');
+  if (desktop.debug?.entries?.find((entry) => entry.id === 'drones')?.name !== 'DRONE WING') failures.push('drone stack did not use its evolution identity');
   if (!desktop.items?.some((item) => item.id === 'damage_up' && item.stacks === 2)) failures.push('visible damage x2 badge debug state missing');
   if (!desktop.items?.some((item) => item.id === 'drones' && item.stacks === 2)) failures.push('visible drones x2 badge debug state missing');
   if (!(desktop.debug?.hiddenCount > 0) || !desktop.items?.some((item) => item.overflow && item.hiddenCount === desktop.debug.hiddenCount)) {

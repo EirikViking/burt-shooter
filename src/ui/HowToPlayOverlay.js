@@ -148,7 +148,7 @@ const RUN_HELP_ROWS = Object.freeze([
     icon: 'CAP',
     label: 'STACK LIMITS',
     control: 'FIRST STACK FULL / SECOND STACK 55%',
-    tip: 'Most augments cap at two stacks. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.',
+    tip: 'Most augments cap at two stacks. Stack II earns an evolution name while keeping its 55% effect. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.',
     accent: 0xff8f5a
   },
   {

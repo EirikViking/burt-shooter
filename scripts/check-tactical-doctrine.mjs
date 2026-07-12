@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import {
   TACTICAL_DOCTRINE_NAMES,
   analyzeTacticalDoctrine,
-  getTacticalDoctrineDisplay
+  getTacticalDoctrineDisplay,
+  projectTacticalDoctrine
 } from '../src/config/TacticalDoctrine.js';
 
 function doctrine(ids, consumed = []) {
@@ -36,5 +37,18 @@ assert.equal(doctrine(['damage_up', 'rapid_fire', 'speed_up', 'shield', 'magnet'
 assert.equal(doctrine(['damage_up', 'damage_up', 'damage_up', 'speed_up']).id, 'gunship', 'clear category lead should resolve to a pure doctrine');
 assert.equal(doctrine(['damage_up', 'nano_patch'], ['nano_patch']).totalPicks, 1, 'consumed one-shots must not define the active doctrine');
 assert.match(getTacticalDoctrineDisplay(synthesis), /^NOVA SYNTHESIS \/\/ ONLINE$/, 'display should expose identity and maturity');
+const newBuild = projectTacticalDoctrine([], [], 'damage_up');
+assert.equal(newBuild.after.id, 'gunship');
+assert.equal(newBuild.identityChanged, true);
+const hybridShift = projectTacticalDoctrine(['damage_up'], [], 'speed_up');
+assert.equal(hybridShift.after.id, 'strike_vector');
+assert.equal(hybridShift.identityChanged, true);
+const reinforcement = projectTacticalDoctrine(['damage_up', 'rapid_fire'], [], 'rail_surge');
+assert.equal(reinforcement.after.id, 'gunship');
+assert.equal(reinforcement.identityChanged, false);
+assert.equal(reinforcement.stageChanged, true);
+const oneShot = projectTacticalDoctrine(['damage_up'], [], 'nano_patch');
+assert.equal(oneShot.consumed, true);
+assert.equal(oneShot.after.id, 'gunship');
 
 console.log('[tactical-doctrine] PASS identities=11 stages=3 consumed-state=active-only');

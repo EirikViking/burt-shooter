@@ -4449,6 +4449,8 @@ export class GameOverScene {
       if (existing) {
         existing.count += 1;
         existing.consumed = existing.consumed || rawPick?.consumed === true;
+        existing.sourceName = sourceName;
+        existing.label = translateText(sourceName);
         return;
       }
       grouped.set(key, {
