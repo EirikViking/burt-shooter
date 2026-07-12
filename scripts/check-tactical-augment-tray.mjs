@@ -153,6 +153,9 @@ try {
   await page.screenshot({ path: desktop.screenshot, fullPage: true });
   report.scenarios.desktop = desktop;
   if (!desktop.ok || !desktop.debug?.visible) failures.push(`desktop tray missing: ${JSON.stringify(desktop)}`);
+  if (desktop.debug?.doctrine?.id !== 'arsenal_network' || desktop.debug?.doctrine?.stage !== 'ASCENDANT') {
+    failures.push(`desktop doctrine mismatch: ${JSON.stringify(desktop.debug?.doctrine)}`);
+  }
   if (desktop.debug?.selectedCount !== desktopIds.length) failures.push(`desktop selected count mismatch: ${desktop.debug?.selectedCount}`);
   if (desktop.debug?.uniqueCount !== 9) failures.push(`desktop unique count mismatch: ${desktop.debug?.uniqueCount}`);
   if (desktop.debug?.entries?.find((entry) => entry.id === 'damage_up')?.stacks !== 2) failures.push('damage stack was not grouped as x2');
@@ -176,6 +179,7 @@ try {
   await page.screenshot({ path: compact.screenshot, fullPage: true });
   report.scenarios.compact = compact;
   if (!compact.debug?.visible || !compact.debug?.compact) failures.push(`compact mode not active: ${JSON.stringify(compact.debug)}`);
+  if (!compact.debug?.doctrine?.display || compact.debug.doctrine.display === 'ARSENAL NETWORK') failures.push(`compact doctrine display missing stage: ${JSON.stringify(compact.debug?.doctrine)}`);
   if (compact.debug?.visibleEntries?.length !== 8) failures.push(`compact tray should expose the requested 2x4 grid: ${compact.debug?.visibleEntries?.length}`);
   if (compact.debug?.columns !== 4 || compact.debug?.rows !== 2) failures.push(`compact tray grid mismatch: ${JSON.stringify(compact.debug)}`);
   if (!(compact.debug?.hiddenCount > 0)) failures.push('compact tray did not cap with overflow');
@@ -185,11 +189,23 @@ try {
     failures.push(`compact tray outside viewport: ${JSON.stringify(compact.bounds?.tray)}`);
   }
 
+  await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('de'));
+  await page.waitForTimeout(100);
+  const localized = await setAugments(page, desktopIds);
+  localized.screenshot = path.join(outputDir, 'tactical-augment-tray-840x640-de.png');
+  await page.screenshot({ path: localized.screenshot, fullPage: true });
+  report.scenarios.localized = localized;
+  if (!localized.debug?.doctrine?.display || /ARSENAL NETWORK|ASCENDANT/.test(localized.debug.doctrine.display)) {
+    failures.push(`localized doctrine remained English: ${JSON.stringify(localized.debug?.doctrine)}`);
+  }
+  await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
+
   const consumed = await setAugments(page, ['nano_patch', 'damage_up'], ['nano_patch']);
   report.scenarios.consumed = consumed;
   if (consumed.debug?.visibleEntries?.includes('nano_patch') || consumed.debug?.activeCount !== 1 || consumed.debug?.consumedCount !== 1) {
     failures.push(`consumed one-shot augment leaked into HUD: ${JSON.stringify(consumed.debug)}`);
   }
+  if (consumed.debug?.doctrine?.id !== 'gunship' || consumed.debug?.doctrine?.totalPicks !== 1) failures.push(`consumed doctrine mismatch: ${JSON.stringify(consumed.debug?.doctrine)}`);
 
   const unknownOnly = await setAugments(page, ['not_a_real_augment']);
   report.scenarios.unknownOnly = unknownOnly;

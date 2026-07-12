@@ -59,6 +59,7 @@ import {
   buildTacticalDraftOffers,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
+import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
@@ -6125,6 +6126,7 @@ export class PlayScene {
     if (!state.inputArmed && source !== 'pointer') return false;
     const offer = state.offers[index];
     if (!offer) return false;
+    const previousDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
     const result = this.player?.applyRunAugment?.(offer.id);
     if (!result?.applied) return false;
     if (this.tacticalDraftHeldId === offer.id || this.tacticalDraftHeldId === state.heldAtOpenId) {
@@ -6133,6 +6135,10 @@ export class PlayScene {
     state.confirmedId = offer.id;
     state.result = result;
     state.confirmedAt = Date.now();
+    const nextDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
+    state.doctrineChanged = nextDoctrine && (
+      previousDoctrine?.id !== nextDoctrine.id || previousDoctrine?.stage !== nextDoctrine.stage
+    ) ? nextDoctrine : null;
     this.tacticalDraftHistory.push({
       sectorCleared: state.sectorCleared,
       id: offer.id,
@@ -6164,6 +6170,19 @@ export class PlayScene {
         duration: 1500,
         priority: 5
       });
+      if (state.doctrineChanged) {
+        this.enqueueToast(translateText('{name} // {stage}', {
+          name: translateText(state.doctrineChanged.name),
+          stage: translateText(state.doctrineChanged.stage)
+        }), {
+          fontSize: 16,
+          fill: '#d8f7ff',
+          slot: 'top',
+          type: 'tactical_doctrine',
+          duration: 1300,
+          priority: 4
+        });
+      }
       complete?.();
     }, 480);
     return true;
@@ -6710,9 +6729,13 @@ export class PlayScene {
     const labels = summarizeTacticalDraftPicks(this.player?.runAugmentIds || []).map((label) => translateText(label));
     const prefix = translateText('Tactical upgrades');
     if (!labels.length) return `${prefix}: --`;
-    const visible = labels.slice(-2);
-    const hidden = Math.max(0, labels.length - visible.length);
-    return `${prefix}: ${visible.join(' + ')}${hidden ? ` +${hidden}` : ''}`;
+    const doctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
+    const doctrineLabel = doctrine
+      ? translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage) })
+      : '';
+    return doctrineLabel
+      ? `${prefix}: ${doctrineLabel} (${labels.length})`
+      : `${prefix}: ${labels.slice(-2).join(' + ')}`;
   }
 
   openSettingsOverlay() {

@@ -25,6 +25,7 @@ import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import { createRunReport } from './RunReport.js';
+import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
   LOGICAL_PLAYFIELD_HEIGHT,
   LOGICAL_PLAYFIELD_WIDTH,
@@ -940,6 +941,8 @@ export class Game {
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
     const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
     const ship = getShipMetadata(this.selectedShipSpriteKey);
+    const tacticalAugmentIds = Array.isArray(play?.player?.runAugmentIds) ? play.player.runAugmentIds.slice() : [];
+    const tacticalConsumedAugmentIds = Array.isArray(play?.player?.consumedRunAugmentIds) ? play.player.consumedRunAugmentIds.slice() : [];
     const summary = {
       score: finalScore,
       finalScore,
@@ -961,8 +964,9 @@ export class Game {
       finalDeathSource: play?.finalLifeLossSource || null,
       powerupsCollected: Number(play?.powerupsCollectedThisRun) || 0,
       tacticalDraftPicks: Array.isArray(play?.tacticalDraftHistory) ? play.tacticalDraftHistory.map((entry) => ({ ...entry })) : [],
-      tacticalAugmentIds: Array.isArray(play?.player?.runAugmentIds) ? play.player.runAugmentIds.slice() : [],
-      tacticalConsumedAugmentIds: Array.isArray(play?.player?.consumedRunAugmentIds) ? play.player.consumedRunAugmentIds.slice() : [],
+      tacticalAugmentIds,
+      tacticalConsumedAugmentIds,
+      tacticalDoctrine: analyzeTacticalDoctrine(tacticalAugmentIds, tacticalConsumedAugmentIds),
       livesRemaining: this.lives,
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
       clearReason: overrides.clearReason || this.runClearReason || null,

@@ -7,6 +7,7 @@ import { rankManager } from '../managers/RankManager.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -254,8 +255,17 @@ export class HUD {
 
     this.tacticalAugmentGroup = new PIXI.Container();
     this.tacticalAugmentBackdrop = new PIXI.Graphics();
+    this.tacticalDoctrineTitle = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 2
+    });
     this.tacticalAugmentList = new PIXI.Container();
     this.tacticalAugmentGroup.addChild(this.tacticalAugmentBackdrop);
+    this.tacticalAugmentGroup.addChild(this.tacticalDoctrineTitle);
     this.tacticalAugmentGroup.addChild(this.tacticalAugmentList);
     this.tacticalAugmentGroup.visible = false;
     this.hudContainer.addChild(this.tacticalAugmentGroup);
@@ -1093,9 +1103,11 @@ export class HUD {
       else grouped.set(id, { id, name: meta.name, category: meta.category, color: meta.color, stacks: 1 });
     }
     const entries = [...grouped.values()];
+    const doctrine = analyzeTacticalDoctrine(allSelectedIds, [...consumedIds]);
     if (!entries.length) {
       this.tacticalAugmentItems.forEach((item) => { item.container.visible = false; });
       this.tacticalAugmentBackdrop.clear();
+      this.tacticalDoctrineTitle.visible = false;
       this.tacticalAugmentGroup.visible = false;
       this.tacticalAugmentGroup._debugTacticalAugments = {
         visible: false,
@@ -1119,6 +1131,7 @@ export class HUD {
     const overflowWidth = compact ? 38 : 44;
     const columns = 4;
     const maxVisibleItems = 8;
+    const doctrineHeight = doctrine ? (compact ? 19 : 22) : 0;
     const layoutState = this.tacticalAugmentGroup._layout || {};
     const maxWidth = Math.max(itemWidth * columns, Number(layoutState.maxWidth) || Math.min(canvasWidth - 28, compact ? 430 : 560));
     const visibleCount = Math.min(entries.length, maxVisibleItems);
@@ -1128,14 +1141,14 @@ export class HUD {
       const item = this.getTacticalAugmentItem(index);
       item.container.visible = true;
       item.container.x = 4 + (index % columns) * (itemWidth + gap);
-      item.container.y = 4 + Math.floor(index / columns) * (itemHeight + gap);
+      item.container.y = doctrineHeight + 4 + Math.floor(index / columns) * (itemHeight + gap);
       this.updateTacticalAugmentItem(item, entry, itemWidth, itemHeight, compact, false);
     });
     if (hiddenCount > 0) {
       const item = this.getTacticalAugmentItem(visibleEntries.length);
       item.container.visible = true;
       item.container.x = 4 + columns * (itemWidth + gap);
-      item.container.y = 4 + itemHeight + gap;
+      item.container.y = doctrineHeight + 4 + itemHeight + gap;
       this.updateTacticalAugmentItem(item, { hiddenCount, color: 0xffef7e }, overflowWidth, itemHeight, compact, true);
     }
     this.tacticalAugmentItems.slice(visibleEntries.length + (hiddenCount > 0 ? 1 : 0)).forEach((item) => {
@@ -1146,11 +1159,25 @@ export class HUD {
     const gridWidth = visibleColumns > 0 ? visibleColumns * itemWidth + Math.max(0, visibleColumns - 1) * gap : 0;
     const trayWidth = 8 + gridWidth + (hiddenCount > 0 ? gap + overflowWidth : 0);
     const trayRows = Math.max(1, Math.ceil(visibleEntries.length / columns));
-    const trayHeight = 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
+    const trayHeight = doctrineHeight + 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
     this.tacticalAugmentBackdrop.clear();
     this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 6);
     this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.34 });
     this.tacticalAugmentBackdrop.stroke({ color: 0x37f5ff, width: 0.8, alpha: 0.2 });
+    this.tacticalDoctrineTitle.visible = Boolean(doctrine);
+    if (doctrine) {
+      this.tacticalDoctrineTitle.text = translateText('{name} // {stage}', {
+        name: translateText(doctrine.name),
+        stage: translateText(doctrine.stage)
+      });
+      this.tacticalDoctrineTitle.style.fontSize = compact ? 9 : 11;
+      this.tacticalDoctrineTitle.style.fill = doctrine.color;
+      this.tacticalDoctrineTitle.scale.set(1);
+      this.tacticalDoctrineTitle.anchor.set(0.5, 0);
+      this.tacticalDoctrineTitle.x = trayWidth / 2;
+      this.tacticalDoctrineTitle.y = compact ? 3 : 4;
+      this.fitTextToWidth(this.tacticalDoctrineTitle, trayWidth - 12, 0.64);
+    }
     this.tacticalAugmentGroup.x = Number(layoutState.x) || 14;
     this.tacticalAugmentGroup.y = Number(layoutState.y) || 164;
     this.tacticalAugmentGroup.visible = true;
@@ -1164,6 +1191,7 @@ export class HUD {
       consumedCount: consumedIds.size,
       uniqueCount: entries.length,
       entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category })),
+      doctrine: doctrine ? { ...doctrine, display: translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage) }) } : null,
       visibleEntries: visibleEntries.map((entry) => entry.id),
       hiddenCount,
       compact,

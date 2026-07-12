@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 3;
+const RUN_REPORT_VERSION = 4;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -163,6 +163,15 @@ export function createRunReport(summary = {}) {
       sectorCleared: Math.max(1, toWholeNumber(entry?.sectorCleared, 1))
     }))
     .filter((entry) => entry.name);
+  const tacticalDoctrine = summary.tacticalDoctrine?.name
+    ? {
+      id: String(summary.tacticalDoctrine.id || '').trim(),
+      name: String(summary.tacticalDoctrine.name || '').trim(),
+      stage: String(summary.tacticalDoctrine.stage || '').trim(),
+      color: Number(summary.tacticalDoctrine.color) || 0x7dffcc,
+      totalPicks: toWholeNumber(summary.tacticalDoctrine.totalPicks)
+    }
+    : null;
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -180,7 +189,8 @@ export function createRunReport(summary = {}) {
       runCleared: Boolean(summary.runCleared),
       deathCoach,
       pilotOrdersCompleted,
-      tacticalDraftPicks
+      tacticalDraftPicks,
+      tacticalDoctrine
     },
     sections: [
       {
@@ -241,6 +251,7 @@ export function summarizeRunReport(report = null) {
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
+    tacticalDoctrine: report.summary?.tacticalDoctrine || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };
 }

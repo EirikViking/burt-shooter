@@ -116,7 +116,7 @@ const RUN_HELP_ROWS = Object.freeze([
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
     control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
-    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack.',
+    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack. Your mix becomes a named Run Doctrine.',
     accent: 0xffef7e
   },
   {

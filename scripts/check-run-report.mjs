@@ -241,6 +241,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
   assert(state.runReport?.tacticalDraftPicks?.length === 22, 'runReport summary should preserve every tactical draft pick.');
   assert(state.runReport?.tacticalDraftPicks?.some((pick) => pick.id === 'nano_patch' && pick.consumed === true), 'runReport summary should retain consumed tactical state.');
+  assert(state.runReport?.tacticalDoctrine?.id === 'strike_vector', 'runReport summary should preserve the run doctrine.');
+  assert(state.runReport?.tacticalDoctrine?.stage === 'CALIBRATING', 'runReport summary should preserve doctrine maturity.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }

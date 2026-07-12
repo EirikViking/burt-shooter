@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText, onLanguageChange } from '../i18n/index.js';
 import { GameAssets } from '../utils/GameAssets.js';
@@ -158,6 +159,7 @@ export class TacticalLoadoutOverlay {
     this.selectedIds = Array.isArray(resolved.selectedIds) ? resolved.selectedIds.slice() : [];
     this.consumedIds = Array.isArray(resolved.consumedIds) ? resolved.consumedIds.slice() : [];
     this.items = groupTacticalAugments(this.selectedIds, this.consumedIds);
+    this.doctrine = analyzeTacticalDoctrine(this.selectedIds, this.consumedIds);
     this.pageIndex = 0;
     this.focusedControl = 'close';
     this.container = new PIXI.Container();
@@ -246,7 +248,10 @@ export class TacticalLoadoutOverlay {
     fitText(title, panel.width - pad * 3, 52, 0.62);
     this.container.addChild(title);
 
-    const subtitle = createText(translateText('PERMANENT THIS RUN'), {
+    const subtitleSource = this.doctrine
+      ? translateText('{name} // {stage}', { name: translateText(this.doctrine.name), stage: translateText(this.doctrine.stage) })
+      : translateText('PERMANENT THIS RUN');
+    const subtitle = createText(subtitleSource, {
       fontFamily: FONT_BODY,
       fontSize: layout.veryCompact ? 12 : layout.compact ? 15 : 18,
       fontWeight: '900',
@@ -760,6 +765,7 @@ export class TacticalLoadoutOverlay {
       closed: this.closed,
       selectedIds: this.selectedIds.slice(),
       selectedCount: this.selectedIds.length,
+      doctrine: this.doctrine ? { ...this.doctrine, display: translateText('{name} // {stage}', { name: translateText(this.doctrine.name), stage: translateText(this.doctrine.stage) }) } : null,
       consumedIds: this.consumedIds.slice(),
       uniqueCount: this.items.length,
       items: this.items.map((item) => ({

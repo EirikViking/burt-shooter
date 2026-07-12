@@ -4652,7 +4652,14 @@ export class GameOverScene {
       this.runReportPanel.addChild(band);
 
       const tacticalLabel = this.getRunReportFieldLabel('tacticalDrafts');
-      const heading = createText(tacticalLabel, {
+      const doctrine = report.summary?.tacticalDoctrine;
+      const doctrineLabel = doctrine?.name
+        ? translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage || '') })
+        : '';
+      const headingText = doctrineLabel
+        ? translateText('{label} // {doctrine}', { label: tacticalLabel, doctrine: doctrineLabel })
+        : tacticalLabel;
+      const heading = createText(headingText, {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: compact ? 13 : 16,
         fontWeight: '900',

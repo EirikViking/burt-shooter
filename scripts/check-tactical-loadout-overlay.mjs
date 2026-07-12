@@ -134,9 +134,17 @@ try {
         canvasPixels: Array.from(pixels || []).some((value) => value !== 0)
       };
     }, { selectedIds, consumedIds, viewport });
+    await page.evaluate(() => {
+      const { overlay, app } = window.__tacticalOverlayTest;
+      overlay.closeDetail?.();
+      app.render();
+    });
     const screenshotPath = path.join(tmpdir(), `nova-swarm-tactical-loadout-overlay-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshotPath });
     assert.equal(state.initial.uniqueCount, 32);
+    assert.equal(state.initial.doctrine?.id, 'arsenal_network');
+    assert.equal(state.initial.doctrine?.stage, 'ASCENDANT');
+    assert.match(state.initial.doctrine?.display || '', /ARSENAL NETWORK.*ASCENDANT/);
     assert.deepEqual(state.initial.layout.layoutWarnings, [], `${viewport.width}x${viewport.height} layout warnings`);
     assert.ok(state.initial.visibleIds.length <= state.initial.pageSize);
     assert.ok(state.canvasPixels, `${viewport.width}x${viewport.height} should render nonblank pixels`);
