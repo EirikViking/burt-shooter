@@ -14,6 +14,9 @@ import { getEnemyThreatAction } from '../config/EnemyThreatActions.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { applyThreatResponseToEnemyHealth } from '../config/ShipThreatResponse.js';
+import { applyAceBountyToEnemy } from '../config/AceBounties.js';
+import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -25,6 +28,15 @@ function drawThreatFrameTick(graphics, angle, innerRadius, outerRadius) {
 function getEnemyThreatFrameProfile(enemy) {
   if (!enemy || enemy.type === 'bonus_challenge') return null;
   const accent = enemy.visualVariant?.accent || enemy.color || 0xff5d6c;
+  if (enemy.isAce && enemy.aceVariant) {
+    return {
+      tier: 'ace',
+      color: enemy.aceVariant.color || 0xffd15c,
+      accent: enemy.aceVariant.accent || 0xffffff,
+      markerCount: 7,
+      radiusMult: 2.24
+    };
+  }
   if (enemy.middleShipProfile || enemy.isEliteMiddleShip) {
     return { tier: 'elite', color: enemy.middleShipProfile?.accent || accent, accent: 0xffffff, markerCount: 6, radiusMult: 2.18 };
   }
@@ -102,6 +114,7 @@ export class Enemy {
     this.spawnCueStartedAt = Date.now();
     this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
     this.threatFrameLayer = null;
+    this.aceLabel = null;
 
     // Arcade formation state machine.
     this.state = 'ENTRY';
@@ -1252,6 +1265,71 @@ export class Enemy {
     this.tacticalPhase = (this.waveSlot / this.waveSize) * Math.PI * 2 + Math.random() * 0.25;
   }
 
+  applyAceBounty(variantOrId) {
+    const variant = applyAceBountyToEnemy(this, variantOrId);
+    if (!variant) return null;
+    this.updateHealthBar();
+    if (!this.aceLabel) {
+      this.aceLabel = createText('', {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 11,
+        fontWeight: '900',
+        fill: '#fff3a0',
+        stroke: '#120018',
+        strokeThickness: 3,
+        align: 'center'
+      });
+      this.aceLabel.anchor.set(0.5);
+      this.aceLabel.zIndex = 15;
+      this.sprite.addChild(this.aceLabel);
+    }
+    const number = String(variant.number).padStart(4, '0');
+    this.aceLabel.text = translateText('ACE {number} // {reward}', {
+      number,
+      reward: translateText(variant.rewardLabel)
+    });
+    this.aceLabel.scale.set(1);
+    if (this.aceLabel.width > 154) {
+      this.aceLabel.scale.set(Math.max(0.68, 154 / this.aceLabel.width));
+    }
+    this.aceLabel.y = -Math.max(39, this.radius + 24);
+    this.aceLabel.visible = true;
+    return this.getAceDebugState();
+  }
+
+  getAceDebugState() {
+    if (!this.isAce || !this.aceVariant) return null;
+    let labelBounds = null;
+    try {
+      const bounds = this.aceLabel?.getBounds?.();
+      if (bounds) {
+        labelBounds = {
+          x: Math.round(bounds.x),
+          y: Math.round(bounds.y),
+          width: Math.round(bounds.width),
+          height: Math.round(bounds.height)
+        };
+      }
+    } catch {
+      labelBounds = null;
+    }
+    return {
+      id: this.aceVariant.id,
+      number: this.aceVariant.number,
+      chassisId: this.aceVariant.chassisId,
+      flightId: this.aceVariant.flightId,
+      weaponId: this.aceVariant.weaponId,
+      rewardId: this.aceVariant.rewardId,
+      rewardLabel: translateText(this.aceVariant.rewardLabel),
+      effects: { ...this.aceVariant.effects },
+      label: this.aceLabel?.text || null,
+      labelBounds,
+      health: Math.max(0, Number(this.health) || 0),
+      maxHealth: Math.max(0, Number(this.maxHealth) || 0),
+      rewardClaimed: this.aceRewardClaimed === true
+    };
+  }
+
   applyThreatAction(actionOrId = null, context = {}) {
     const action = typeof actionOrId === 'string' ? getEnemyThreatAction(actionOrId) : actionOrId;
     if (!action || this.kind !== 'enemy' || this.middleShipProfile) {
@@ -1682,16 +1760,21 @@ export class Enemy {
 
     const pulse = Math.sin(now * 0.006 + this.idlePhase) * 0.5 + 0.5;
     const radius = Math.max(22, this.radius * profile.radiusMult);
-    const outer = radius + (profile.tier === 'elite' ? 8 : 5);
+    const outer = radius + (profile.tier === 'elite' || profile.tier === 'ace' ? 8 : 5);
     const markerCount = Math.max(3, profile.markerCount || 3);
     let motionTrailCount = 0;
     let orbitalPipCount = 0;
     let warningBracketCount = 0;
     let vectorArrowCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
+    if (this.aceLabel) {
+      // The enemy container turns to face its flight vector. Keep the bounty
+      // contract level so its identity and reward stay readable in motion.
+      this.aceLabel.rotation = -(this.sprite?.rotation || 0);
+    }
 
     layer.circle(0, 0, radius);
-    layer.stroke({ color: profile.color, width: profile.tier === 'elite' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
+    layer.stroke({ color: profile.color, width: profile.tier === 'elite' || profile.tier === 'ace' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
     layer.circle(0, 0, outer);
     layer.stroke({ color: profile.accent, width: 1, alpha: 0.1 + pulse * 0.08 });
 
@@ -1702,10 +1785,10 @@ export class Enemy {
     layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
 
     const orbitalRadius = outer + 13 + pulse * 2;
-    const orbitalCount = profile.tier === 'elite' ? markerCount + 2 : Math.max(4, markerCount);
+    const orbitalCount = profile.tier === 'elite' || profile.tier === 'ace' ? markerCount + 2 : Math.max(4, markerCount);
     for (let i = 0; i < orbitalCount; i += 1) {
       const angle = now * 0.0018 + this.idlePhase * 0.18 + i * (Math.PI * 2 / orbitalCount);
-      layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' ? 2.4 : 1.8);
+      layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' || profile.tier === 'ace' ? 2.4 : 1.8);
       orbitalPipCount += 1;
     }
     layer.fill({ color: profile.accent, alpha: 0.12 + pulse * 0.1 });
@@ -1722,12 +1805,12 @@ export class Enemy {
     }
     layer.stroke({ color: 0xffffff, width: 1, alpha: 0.14 + pulse * 0.12 });
 
-    if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
+    if (profile.tier === 'elite' || profile.tier === 'danger_mid' || profile.tier === 'ace') {
       for (let i = 0; i < markerCount; i += 1) {
         const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
         const cx = Math.cos(angle) * (outer + 9);
         const cy = Math.sin(angle) * (outer + 9);
-        layer.circle(cx, cy, profile.tier === 'elite' ? 2.6 : 2.1);
+        layer.circle(cx, cy, profile.tier === 'elite' || profile.tier === 'ace' ? 2.6 : 2.1);
       }
       layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
     } else if (profile.tier === 'threat_action') {

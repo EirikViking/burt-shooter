@@ -1,4 +1,12 @@
 const sourceText = Object.freeze({
+  "ACE": "ASS",
+  "ACE BOUNTIES": "ASS-KOPFGELDER",
+  "ACE {number} // {reward}": "ASS {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "ASS-KONTAKT: {number} // KOPFGELD: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "ASS ERLEDIGT: {number} // BELOHNUNG: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "1000 ASSE / EINE JAGD PRO SEKTOR",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "Jeder Sektor verbirgt ein markiertes Ass aus Chassis, Flugmuster und Waffenpaket. Jage es fuer die ueber der Huelle gezeigte Hardware; Ass-Abschuesse aendern nie die Punkteregeln.",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "In jedem Sektor erscheint ein markiertes Ass. Seine vierstellige Nummer kennzeichnet eine von eintausend Kombinationen aus Chassis, Flug und Waffen. Lies den goldenen Rahmen, beobachte den Waffenrhythmus und entscheide, ob die versprochene Hardware den ersten Angriff wert ist. Das Ass behaelt seinen normalen Punktwert; das Kopfgeld ist taktische Beute statt einer Ranglistensteuer.",
   "SIDE DIRECTIVE": "NEBENAUFTRAG",
   "SIDE DIRECTIVES": "NEBENAUFTRAEGE",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000 MISSIONEN / BIS ZU 5 BELOHNUNGEN PRO RUN",

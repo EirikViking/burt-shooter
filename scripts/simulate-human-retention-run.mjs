@@ -124,7 +124,8 @@ try {
   assert(initialState.selectedShipSpriteKey === selectedShip.spriteKey, `expected ${selectedShip.name}, got ${initialState.selectedShipSpriteKey}`);
   report.initial = {
     selectedShipSpriteKey: initialState.selectedShipSpriteKey,
-    threatResponse: initialState.threatResponse
+    threatResponse: initialState.threatResponse,
+    aceBounties: initialState.aceBounties
   };
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
@@ -243,6 +244,7 @@ try {
     assert(finalState.arcadeRun?.currentSector >= targetSector, `only reached sector ${finalState.arcadeRun?.currentSector}`);
     assert(finalState.tacticalDraft?.history?.length >= targetSector - 1, `only completed ${finalState.tacticalDraft?.history?.length || 0} drafts`);
     assert(finalState.tacticalDraft?.selectedIds?.length >= targetSector - 1, 'selected augments did not persist through real sectors');
+    assert(finalState.aceBounties?.completedCount >= targetSector - 1, `only completed ${finalState.aceBounties?.completedCount || 0} Ace bounties through normal waves`);
   }
   assert(finalState.selectedShipSpriteKey === selectedShip.spriteKey, `expected ${selectedShip.name}, got ${finalState.selectedShipSpriteKey}`);
   assert(errors.length === 0, errors.join(' | '));
@@ -255,11 +257,12 @@ try {
     lives: finalState.lives,
     wave: finalState.wave,
     draft: finalState.tacticalDraft,
-    threatResponse: finalState.threatResponse
+    threatResponse: finalState.threatResponse,
+    aceBounties: finalState.aceBounties
   };
   report.errors = errors;
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft?.history?.length || 0} lives=${report.final.lives} gameOver=${Boolean(report.gameOver)} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft?.history?.length || 0} aces=${report.final.aceBounties?.completedCount || 0} lives=${report.final.lives} gameOver=${Boolean(report.gameOver)} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
 } catch (error) {
   report.error = error.stack || error.message;
   report.errors = errors;

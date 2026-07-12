@@ -1,6 +1,14 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ACE": "에이스",
+  "ACE BOUNTIES": "에이스 현상금",
+  "ACE {number} // {reward}": "에이스 {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "에이스 포착: {number} // 현상금: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "에이스 격추: {number} // 보상: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "에이스 1000종 / 섹터마다 한 번의 추적",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "각 섹터에는 기체, 비행 패턴, 무기 패키지가 조합된 표식 에이스 한 대가 숨어 있습니다. 선체 위에 표시된 장비를 얻기 위해 추적하세요. 에이스 격추는 점수 규칙을 바꾸지 않습니다.",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "각 섹터에 표식 에이스 한 대가 등장합니다. 네 자리 번호는 기체, 비행, 무기 조합 1000종 중 하나를 뜻합니다. 황금 프레임과 사격 리듬을 읽고 약속된 장비를 먼저 노릴 가치가 있는지 판단하세요. 에이스의 기본 점수는 그대로이므로 현상금은 순위표 부담이 아니라 전술 전리품입니다.",
   "SIDE DIRECTIVE": "보조 지령",
   "SIDE DIRECTIVES": "보조 지령",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000개 임무 / 한 런 최대 5개 보상",

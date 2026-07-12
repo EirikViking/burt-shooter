@@ -166,6 +166,14 @@ const RUN_HELP_ROWS = Object.freeze([
     control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
     tip: 'Strong hulls still clear faster. Threat Response adds some hardened targets and attack pressure, but preserves a meaningful power advantage from every late-game hull.',
     accent: 0x66ff9d
+  },
+  {
+    code: '20',
+    icon: 'ACE',
+    label: 'ACE BOUNTIES',
+    control: '1000 ACES / ONE HUNT PER SECTOR',
+    tip: 'Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.',
+    accent: 0xffd15c
   }
 ]);
 
@@ -194,7 +202,8 @@ const HELP_DETAIL_COPY = Object.freeze({
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',
   'STACK LIMITS': 'Most repeatable augments stop at two stacks, and the second contributes only fifty-five percent. This keeps a favorite lane useful without turning one lucky draft into a legally distinct supernova.',
-  'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.'
+  'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.',
+  'ACE BOUNTIES': 'One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.'
 });
 
 function getHelpDetail(row) {

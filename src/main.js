@@ -641,6 +641,7 @@ function buildGameTextState(game) {
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
     tacticalDirectives: playScene?.getTacticalDirectiveDebugState ? playScene.getTacticalDirectiveDebugState() : null,
+    aceBounties: playScene?.getAceBountyDebugState ? playScene.getAceBountyDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     tacticalLoadoutOverlay: playScene?.tacticalLoadoutOverlay?.getDebugState?.() || null,
@@ -1044,6 +1045,7 @@ function buildGameTextState(game) {
     } : null,
     visibleEnemies: enemies
       .filter(enemy => enemy?.active !== false)
+      .sort((left, right) => Number(Boolean(right?.isAce)) - Number(Boolean(left?.isAce)))
       .slice(0, 8)
       .map(enemy => ({
         x: Math.round(enemy.x || 0),
@@ -1058,6 +1060,7 @@ function buildGameTextState(game) {
           role: enemy.waveRole || null
         } : null,
         threatAction: enemy.getThreatDebugState ? enemy.getThreatDebugState() : null,
+        ace: enemy.getAceDebugState ? enemy.getAceDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,

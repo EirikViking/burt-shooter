@@ -102,6 +102,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   codex: 'Codex discoveries',
   tacticalDrafts: 'Tactical upgrades',
   tacticalDirectives: 'SIDE DIRECTIVES',
+  aceBounties: 'ACE BOUNTIES',
   pilotOrders: 'PILOT ORDERS'
 });
 
@@ -4611,16 +4612,19 @@ export class GameOverScene {
 
       const rows = (section.rows || [])
         .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
+      const sectionRowSize = compact && rows.length > 5 ? Math.max(9, rowSize - 1) : rowSize;
       const rowStep = rows.length
-        ? Math.max(rowSize + 2, (sectionHeight - 38) / rows.length)
-        : rowSize + 7;
+        ? rows.length === 1
+          ? sectionRowSize + 2
+          : Math.max(sectionRowSize + 1, (sectionHeight - 38 - sectionRowSize) / (rows.length - 1))
+        : sectionRowSize + 7;
       rows.forEach((entry, rowIndex) => {
         const label = this.getRunReportFieldLabel(entry.id);
         const value = this.formatRunReportValue(entry);
         const rowText = [label, value].join(': ');
         const line = createText(rowText, {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: rowSize,
+          fontSize: sectionRowSize,
           fontWeight: rowIndex === 0 ? 'bold' : 'normal',
           fill: rowIndex === 0 ? '#ffffff' : '#cbeff4',
           stroke: '#031323',
@@ -4628,11 +4632,11 @@ export class GameOverScene {
           align: 'left',
           wordWrap: true,
           wordWrapWidth: sectionWidth - 24,
-          lineHeight: rowSize + 3
+          lineHeight: sectionRowSize + 3
         });
         line.x = x + 12;
         line.y = y + 34 + rowIndex * rowStep;
-        fitDisplayToBox(line, sectionWidth - 24, Math.max(rowSize + 2, rowStep - 1), { minScale: 0.64 });
+        fitDisplayToBox(line, sectionWidth - 24, Math.max(sectionRowSize + 2, rowStep - 1), { minScale: 0.64 });
         this.runReportPanel.addChild(line);
         textLines.push(line.text);
       });

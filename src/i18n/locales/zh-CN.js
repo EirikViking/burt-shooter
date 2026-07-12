@@ -1,6 +1,14 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ACE": "王牌",
+  "ACE BOUNTIES": "王牌悬赏",
+  "ACE {number} // {reward}": "王牌 {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "发现王牌: {number} // 悬赏: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "王牌击落: {number} // 奖励: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "1000种王牌 / 每个星区一次追猎",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "每个星区都藏有一架由机体、飞行模式和武器套装组合而成的标记王牌。击落它即可获得机体上方显示的装备；王牌击杀不会改变计分规则。",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "每个星区都会出现一架标记王牌。四位编号代表一千种机体、飞行与武器组合中的一种。观察金色边框和射击节奏，判断是否值得优先夺取承诺的装备。王牌仍保持普通分值，因此悬赏提供的是战术战利品，而不是排行榜负担。",
   "SIDE DIRECTIVE": "支线指令",
   "SIDE DIRECTIVES": "支线指令",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000项任务 / 每局最多5份奖励",

@@ -1,6 +1,14 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ACE": "АС",
+  "ACE BOUNTIES": "НАГРАДЫ ЗА АСОВ",
+  "ACE {number} // {reward}": "АС {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "ОБНАРУЖЕН АС: {number} // НАГРАДА: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "АС УНИЧТОЖЕН: {number} // НАГРАДА: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "1000 АСОВ / ОДНА ОХОТА НА СЕКТОР",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "В каждом секторе скрывается отмеченный Ас с особым корпусом, схемой полета и оружием. Уничтожьте его ради оборудования, указанного над корпусом; охота на Асов не меняет правила счета.",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "В каждом секторе появляется отмеченный Ас. Четырехзначный номер обозначает одну из тысячи комбинаций корпуса, полета и оружия. Следите за золотой рамкой и ритмом огня, чтобы решить, стоит ли сначала забрать обещанное оборудование. Ас сохраняет обычную стоимость в очках, поэтому награда дает тактическую добычу, а не налог на таблицу лидеров.",
   "SIDE DIRECTIVE": "ПОБОЧНАЯ ДИРЕКТИВА",
   "SIDE DIRECTIVES": "ПОБОЧНЫЕ ДИРЕКТИВЫ",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000 ЗАДАНИЙ / ДО 5 НАГРАД ЗА ЗАБЕГ",

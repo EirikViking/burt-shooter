@@ -991,6 +991,7 @@ export class Game {
       sectorStartPlaySector: this.sectorStartPlaySector || null,
       runContracts: play?.getRunContractDebugState?.() || null,
       tacticalDirectives: play?.getTacticalDirectiveDebugState?.() || null,
+      aceBounties: play?.getAceBountyDebugState?.() || null,
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },

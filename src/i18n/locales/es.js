@@ -1,6 +1,14 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ACE": "AS",
+  "ACE BOUNTIES": "RECOMPENSAS DE ASES",
+  "ACE {number} // {reward}": "AS {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "CONTACTO AS: {number} // RECOMPENSA: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "AS DERRIBADO: {number} // RECOMPENSA: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "1000 ASES / UNA CACERIA POR SECTOR",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "Cada sector oculta un As marcado, formado por un chasis, un patron de vuelo y un paquete de armas. Cazalo para obtener el equipo que aparece sobre su casco; derribar Ases nunca cambia las reglas de puntuacion.",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "En cada sector aparece un As marcado. Su numero de cuatro digitos identifica una de mil combinaciones de chasis, vuelo y armas. Lee el marco dorado, observa el ritmo de disparo y decide si conviene conseguir primero el equipo prometido. El As conserva su valor de puntos normal, asi que la recompensa es botin tactico y no un impuesto para la clasificacion.",
   "SIDE DIRECTIVE": "DIRECTIVA SECUNDARIA",
   "SIDE DIRECTIVES": "DIRECTIVAS SECUNDARIAS",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000 MISIONES / HASTA 5 RECOMPENSAS POR PARTIDA",

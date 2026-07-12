@@ -68,6 +68,11 @@ import {
   pickTacticalDirective
 } from '../config/TacticalDirectives.js';
 import {
+  ACE_BOUNTY_VARIANT_COUNT,
+  getAceBountyById,
+  planAceBountyEncounter
+} from '../config/AceBounties.js';
+import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -197,6 +202,10 @@ export class PlayScene {
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
     this.lastTacticalDirectiveCompletion = null;
+    this.aceBountyActive = null;
+    this.aceBountyHistory = [];
+    this.aceBountySequence = 0;
+    this.lastAceBountyCompletion = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -671,6 +680,10 @@ export class PlayScene {
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
     this.lastTacticalDirectiveCompletion = null;
+    this.aceBountyActive = null;
+    this.aceBountyHistory = [];
+    this.aceBountySequence = 0;
+    this.lastAceBountyCompletion = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -1505,6 +1518,124 @@ export class PlayScene {
     };
   }
 
+  prepareAceBountyForSector(sector = this.game?.level || 1, options = {}) {
+    const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
+    if (!options.force && this.aceBountyActive?.sector === safeSector) {
+      return this.getAceBountyDebugState();
+    }
+    const previousId = this.aceBountyActive?.id || this.aceBountyHistory.at(-1)?.variantId || null;
+    const seed = this.game?.contentDirector?.seed
+      || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
+    const waveCount = Math.max(1, Math.floor(Number(options.waveCount || this.enemyManager?.normalWavesTotal) || 5));
+    const encounter = planAceBountyEncounter(seed, safeSector, waveCount, {
+      sequence: this.aceBountySequence,
+      excludeId: previousId,
+      variantId: options.variantId,
+      targetWaveIndex: options.targetWaveIndex
+    });
+    this.aceBountySequence += 1;
+    this.aceBountyActive = encounter ? {
+      ...encounter,
+      preparedAt: Date.now(),
+      preparedReason: options.reason || 'sector_start'
+    } : null;
+    return this.getAceBountyDebugState();
+  }
+
+  maybePromoteAceEnemy(enemy, context = {}) {
+    const active = this.aceBountyActive;
+    if (!active || active.spawned || active.completed || !enemy) return false;
+    const sector = Math.max(1, Math.floor(Number(context.sector || this.game?.level) || 1));
+    const waveIndex = Math.max(0, Math.floor(Number(context.waveIndex) || 0));
+    if (sector !== active.sector || waveIndex !== active.targetWaveIndex) return false;
+    if (enemy.kind !== 'enemy' || enemy.middleShipProfile || enemy.dangerMidShipProfile || enemy.isEliteMiddleShip || enemy.isBossMayhemReinforcement) return false;
+    const applied = enemy.applyAceBounty?.(active.id);
+    if (!applied) return false;
+    active.spawned = true;
+    active.spawnedAt = Date.now();
+    active.spawnedWaveIndex = waveIndex;
+    active.enemyType = enemy.type || null;
+    const number = String(active.number).padStart(4, '0');
+    this.enqueueToast(translateText('ACE CONTACT: {number} // BOUNTY: {reward}', {
+      number,
+      reward: translateText(active.rewardLabel)
+    }), {
+      fontSize: this.game.getWidth() < 720 ? 15 : 18,
+      fill: '#fff3a0',
+      slot: 'corner',
+      type: 'aceContact',
+      priority: 4,
+      duration: 1800
+    });
+    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.64, minIntervalMs: 700 });
+    return true;
+  }
+
+  completeAceBounty(enemy) {
+    const variant = enemy?.aceVariant || getAceBountyById(enemy?.aceVariant?.id);
+    if (!enemy?.isAce || !variant || enemy.aceRewardClaimed) return null;
+    enemy.aceRewardClaimed = true;
+    const completion = {
+      variantId: variant.id,
+      number: variant.number,
+      chassisId: variant.chassisId,
+      flightId: variant.flightId,
+      weaponId: variant.weaponId,
+      rewardId: variant.rewardId,
+      rewardLabel: variant.rewardLabel,
+      rewardKind: variant.rewardKind,
+      rewardPowerupType: variant.rewardPowerupType,
+      sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
+      completedAt: Date.now()
+    };
+    if (this.aceBountyActive?.id === variant.id) {
+      this.aceBountyActive.completed = true;
+      this.aceBountyActive.completedAt = completion.completedAt;
+    }
+    this.aceBountyHistory.push(completion);
+    this.lastAceBountyCompletion = completion;
+    const reward = this.applyAceBountyReward(completion, enemy);
+    const number = String(variant.number).padStart(4, '0');
+    this.enqueueToast(translateText('ACE DOWN: {number} // REWARD: {reward}', {
+      number,
+      reward: translateText(variant.rewardLabel)
+    }), {
+      fontSize: this.game.getWidth() < 720 ? 16 : 20,
+      fill: '#88ffb0',
+      slot: 'corner',
+      type: 'aceBounty',
+      priority: 5,
+      duration: 1900
+    });
+    AudioManager.playSfx('achievement', { force: true, volume: 0.76, minIntervalMs: 280 });
+    return { completion, reward };
+  }
+
+  applyAceBountyReward(completion = {}, enemy = null) {
+    if (completion.rewardKind === 'rescan') {
+      this.tacticalDraftRescansRemaining = Math.min(3, Math.max(0, Number(this.tacticalDraftRescansRemaining) || 0) + 1);
+      return { granted: true, kind: 'rescan', remaining: this.tacticalDraftRescansRemaining };
+    }
+    const type = completion.rewardPowerupType;
+    if (!type || !this.powerupManager) return { granted: false, kind: completion.rewardKind || null };
+    const x = Number.isFinite(enemy?.x) ? enemy.x : (this.player?.x || this.game.getWidth() / 2);
+    const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
+    const powerup = this.powerupManager.spawnSpecific(x, y, type, { source: 'ace_bounty' });
+    return { granted: Boolean(powerup), kind: 'powerup', type };
+  }
+
+  getAceBountyDebugState() {
+    const active = this.aceBountyActive ? { ...this.aceBountyActive } : null;
+    return {
+      active,
+      completedCount: this.aceBountyHistory.length,
+      availableVariants: ACE_BOUNTY_VARIANT_COUNT,
+      sequence: this.aceBountySequence,
+      lastCompletion: this.lastAceBountyCompletion ? { ...this.lastAceBountyCompletion } : null,
+      history: this.aceBountyHistory.map((entry) => ({ ...entry }))
+    };
+  }
+
   getRunContractProgressChanges(previousActive = [], nextActive = [], completed = []) {
     const completedIds = new Set((completed || []).map((entry) => entry?.id).filter(Boolean));
     const previousById = new Map(previousActive.map((item) => [item.id, item]));
@@ -2073,6 +2204,7 @@ export class PlayScene {
     this._lastStartedLevel = this.game.level;
     this.emitRunContractEvent('sector_reached', { sector: this.game.level });
     this.emitTacticalDirectiveEvent('sector_reached', { sector: this.game.level });
+    this.prepareAceBountyForSector(this.game.level, { reason: source });
 
     this.levelAdvancePending = false;
     this.resetBossLifeLossCap('level_start');
@@ -6898,6 +7030,7 @@ export class PlayScene {
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
       tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
       tacticalDirective: this.getPauseTacticalDirectiveSummary(),
+      aceBounty: this.getAceBountyDebugState(),
       tacticalLoadout: this.tacticalLoadoutOverlay?.getDebugState?.() || null
     };
   }
@@ -12383,6 +12516,7 @@ export class PlayScene {
         this.triggerComboMilestoneFlare(flareOptions);
       }
     };
+    if (enemy?.isAce) this.completeAceBounty(enemy);
     if (enemy?.kind === 'boss') {
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];

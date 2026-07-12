@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 5;
+const RUN_REPORT_VERSION = 6;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -192,6 +192,25 @@ export function createRunReport(summary = {}) {
     availableVariants: Math.max(0, toWholeNumber(summary.tacticalDirectives?.availableVariants, 1000)),
     history: tacticalDirectiveHistory
   };
+  const aceBountyHistory = (Array.isArray(summary.aceBounties?.history)
+    ? summary.aceBounties.history
+    : [])
+    .map((entry) => ({
+      variantId: String(entry?.variantId || '').trim(),
+      number: Math.max(1, toWholeNumber(entry?.number, 1)),
+      chassisId: String(entry?.chassisId || '').trim(),
+      flightId: String(entry?.flightId || '').trim(),
+      weaponId: String(entry?.weaponId || '').trim(),
+      rewardId: String(entry?.rewardId || '').trim(),
+      rewardLabel: String(entry?.rewardLabel || '').trim(),
+      sector: Math.max(1, toWholeNumber(entry?.sector, 1))
+    }))
+    .filter((entry) => entry.variantId);
+  const aceBounties = {
+    completedCount: aceBountyHistory.length,
+    availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableVariants, 1000)),
+    history: aceBountyHistory
+  };
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -211,7 +230,8 @@ export function createRunReport(summary = {}) {
       pilotOrdersCompleted,
       tacticalDraftPicks,
       tacticalDoctrine,
-      tacticalDirectives
+      tacticalDirectives,
+      aceBounties
     },
     sections: [
       {
@@ -251,6 +271,7 @@ export function createRunReport(summary = {}) {
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
+          { id: 'aceBounties', value: aceBounties.completedCount, rawValue: aceBounties },
           { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
           { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
           { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
@@ -274,6 +295,7 @@ export function summarizeRunReport(report = null) {
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     tacticalDirectives: report.summary?.tacticalDirectives || null,
+    aceBounties: report.summary?.aceBounties || null,
     tacticalDoctrine: report.summary?.tacticalDoctrine || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };

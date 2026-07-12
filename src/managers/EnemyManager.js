@@ -2549,6 +2549,12 @@ export class EnemyManager {
             initialDelayMs: config.threatStartDelayMs
           });
         }
+        this.game?.scenes?.play?.maybePromoteAceEnemy?.(enemy, {
+          sector: this.level,
+          waveIndex: this.currentWaveIndex,
+          slotIndex: i,
+          count
+        });
         if (enemyTactic.forcedDive) {
           enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
         }

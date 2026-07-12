@@ -213,6 +213,11 @@ async function forceRunReportScenario(page) {
       { directiveId: 'combo_peak_t03_drones', objectiveId: 'combo_peak', objectiveLabel: 'COMBO PEAK', target: 10, tier: 3, rewardId: 'drones', rewardLabel: 'DRONES', sector: 4 }
     ];
     play.lastTacticalDirectiveCompletion = play.tacticalDirectiveHistory.at(-1);
+    play.aceBountyHistory = [
+      { variantId: 'bulwark_sweep_precision', number: 1, chassisId: 'bulwark', flightId: 'sweep', weaponId: 'precision', rewardId: 'shield', rewardLabel: 'SHIELD', sector: 1 },
+      { variantId: 'interceptor_pincer_crossfire', number: 112, chassisId: 'interceptor', flightId: 'pincer', weaponId: 'crossfire', rewardId: 'bomb', rewardLabel: 'BOMB', sector: 2 }
+    ];
+    play.lastAceBountyCompletion = play.aceBountyHistory.at(-1);
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
     play.finalLifeLossSource = 'enemy_bullet';
@@ -256,6 +261,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.tacticalDoctrine?.stage === 'CALIBRATING', 'runReport summary should preserve doctrine maturity.');
   assert(state.runReport?.tacticalDirectives?.completedCount === 3, 'runReport summary should preserve completed side directives.');
   assert(state.runReport?.tacticalDirectives?.availableVariants === 1000, 'runReport summary should preserve the 1000-variant catalog size.');
+  assert(state.runReport?.aceBounties?.completedCount === 2, 'runReport summary should preserve completed Ace bounties.');
+  assert(state.runReport?.aceBounties?.availableVariants === 1000, 'runReport summary should preserve the 1000-Ace catalog size.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }

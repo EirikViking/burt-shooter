@@ -1,6 +1,14 @@
 import { buildArcadePatterns } from './patterns.js';
 
 const sourceText = Object.freeze({
+  "ACE": "エース",
+  "ACE BOUNTIES": "エースバウンティ",
+  "ACE {number} // {reward}": "エース {number} // {reward}",
+  "ACE CONTACT: {number} // BOUNTY: {reward}": "エース接触: {number} // 報酬: {reward}",
+  "ACE DOWN: {number} // REWARD: {reward}": "エース撃破: {number} // 報酬: {reward}",
+  "1000 ACES / ONE HUNT PER SECTOR": "1000体のエース / セクターごとに1回の追跡",
+  "Each sector hides one marked Ace built from a chassis, flight pattern, and weapon package. Hunt it for the hardware shown above its hull; Ace kills never alter score rules.": "各セクターには、機体・飛行パターン・武器パッケージを組み合わせたマーク付きエースが1体潜んでいます。船体上に表示された装備を得るために追跡しましょう。エース撃破でスコアルールは変わりません。",
+  "One marked Ace appears during every sector. Its four-digit number identifies one of one thousand chassis, flight, and weapon combinations. Read the gold frame, watch the weapon rhythm, and decide whether the promised hardware is worth solving first. The Ace keeps its ordinary score value, so the bounty is tactical loot rather than a leaderboard tax.": "各セクターにマーク付きエースが1体出現します。4桁の番号は、機体・飛行・武器を組み合わせた1000種類のうち1つを示します。金色のフレームと射撃リズムを読み、約束された装備を先に狙う価値があるか判断してください。エースのスコア価値は通常のままなので、バウンティはランキングへの負担ではなく戦術的な戦利品です。",
   "SIDE DIRECTIVE": "サイド指令",
   "SIDE DIRECTIVES": "サイド指令",
   "1000 MISSIONS / UP TO 5 REWARDS PER RUN": "1000ミッション / 1ラン最大5報酬",

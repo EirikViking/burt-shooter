@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
-  runs: ['PICKUPS & BONUS', 'RUN MODES', 'SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
+  runs: ['PICKUPS & BONUS', 'RUN MODES', 'SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE', 'ACE BOUNTIES']
 };
 
 function timestamp() {
@@ -151,6 +151,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('Stack II earns an evolution name'), `${label} should explain Tactical evolution identities`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
     assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
+    assert(joined.includes('1000 ACES / ONE HUNT PER SECTOR'), `${label} should explain Ace encounter cadence`);
+    assert(joined.includes('Ace kills never alter score rules'), `${label} should explain score-safe Ace rewards`);
   }
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
