@@ -140,15 +140,17 @@ export function buildTacticalDraftOffers({
   maxLives = 3,
   activePowerupType = null,
   runTheme = null,
-  excludedIds = []
+  excludedIds = [],
+  heldId = null
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const context = { lives, maxLives, activePowerupType, runTheme };
-  let candidates = TACTICAL_DRAFT_AUGMENTS.filter((augment) => {
+  const eligibleCandidates = TACTICAL_DRAFT_AUGMENTS.filter((augment) => {
     if ((counts.get(augment.id) || 0) >= augment.maxStacks) return false;
     if (augment.id === 'nano_patch' && lives >= maxLives) return false;
     return Boolean(getTacticalDraftMeta(augment.id));
   });
+  let candidates = eligibleCandidates;
   const unseenCandidates = candidates.filter((augment) => (counts.get(augment.id) || 0) === 0);
   const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
   const allowEvolution = sectorCleared >= 3 && counts.size > 0;
@@ -186,10 +188,16 @@ export function buildTacticalDraftOffers({
     ));
     if (alternatives.length >= 2) offers.splice(0, offers.length, alternatives[0], evolutionCandidate, alternatives[1]);
   }
+  const heldCandidate = eligibleCandidates.find((augment) => augment.id === heldId) || null;
+  if (heldCandidate && !offers.some((augment) => augment.id === heldCandidate.id)) {
+    const replacementIndex = offers.findIndex((augment) => augment.id !== evolutionCandidate?.id);
+    offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1, heldCandidate);
+  }
   return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => ({
     ...getTacticalDraftMeta(augment.id),
     currentStacks: counts.get(augment.id) || 0,
-    nextStack: (counts.get(augment.id) || 0) + 1
+    nextStack: (counts.get(augment.id) || 0) + 1,
+    held: augment.id === heldId
   }));
 }
 

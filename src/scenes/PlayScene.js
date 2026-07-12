@@ -182,6 +182,7 @@ export class PlayScene {
     this.tacticalDraftHistory = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
+    this.tacticalDraftHeldId = null;
     this.tacticalDraftConfirmTimeout = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
@@ -652,6 +653,7 @@ export class PlayScene {
     this.tacticalDraftHistory = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
+    this.tacticalDraftHeldId = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -5587,7 +5589,8 @@ export class PlayScene {
       lives: Number(this.game?.lives) || 0,
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
       activePowerupType: this.player?.activePowerup?.type || null,
-      runTheme: this.game?.contentDirector?.runTheme?.id || null
+      runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      heldId: this.tacticalDraftHeldId
     });
     if (offers.length < 3) return false;
 
@@ -5632,7 +5635,8 @@ export class PlayScene {
     const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
     cards.forEach((card) => overlay.addChild(card));
     const rescan = this.createTacticalDraftRescanControl();
-    overlay.addChild(rescan);
+    const hold = this.createTacticalDraftHoldControl();
+    overlay.addChild(rescan, hold);
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
@@ -5648,6 +5652,8 @@ export class PlayScene {
       subtitle,
       cards,
       rescan,
+      hold,
+      heldAtOpenId: this.tacticalDraftHeldId,
       rescanCount: 0,
       rescansRemaining: this.tacticalDraftRescansRemaining,
       onComplete: typeof onComplete === 'function' ? onComplete : null,
@@ -5720,6 +5726,14 @@ export class PlayScene {
       align: 'center'
     });
     permanence.anchor.set(0.5);
+    const holdBadge = createText(translateText('HELD'), {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      align: 'center'
+    });
+    holdBadge.anchor.set(0.5);
     const choose = createText(translateText('CHOOSE'), {
       fontFamily: FONT_DISPLAY,
       fontSize: 15,
@@ -5730,8 +5744,8 @@ export class PlayScene {
     choose.anchor.set(0.5);
     card.addChild(glow, bg, category);
     if (icon) card.addChild(icon);
-    card.addChild(name, description, permanence, choose);
-    card._nodes = { glow, bg, category, icon, name, description, permanence, choose };
+    card.addChild(name, description, permanence, holdBadge, choose);
+    card._nodes = { glow, bg, category, icon, name, description, permanence, holdBadge, choose };
     card.on('pointerover', () => this.setTacticalDraftFocus(index));
     card.on('pointertap', () => {
       this.setTacticalDraftFocus(index, { silent: true });
@@ -5759,6 +5773,28 @@ export class PlayScene {
     control.addChild(bg, label);
     control._nodes = { bg, label };
     control.on('pointertap', () => this.rescanTacticalDraft('pointer'));
+    return control;
+  }
+
+  createTacticalDraftHoldControl() {
+    const control = new PIXI.Container();
+    control.label = 'tactical_draft_hold';
+    control.eventMode = 'static';
+    control.cursor = 'pointer';
+    const bg = new PIXI.Graphics();
+    const label = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    label.anchor.set(0.5);
+    control.addChild(bg, label);
+    control._nodes = { bg, label };
+    control.on('pointertap', () => this.toggleTacticalDraftHold('pointer'));
     return control;
   }
 
@@ -5823,21 +5859,28 @@ export class PlayScene {
     state.subtitle.style.fontSize = compact ? 13 : 17;
     state.subtitle.position.set(width / 2, compact ? 98 : 128);
 
-    if (state.rescan) {
+    if (state.rescan && state.hold) {
       const controlWidth = compact ? 148 : 190;
       const controlHeight = compact ? 28 : 34;
       state.rescan._draftLayout = { width: controlWidth, height: controlHeight };
-      state.rescan.position.set(compact ? controlWidth / 2 + 24 : width / 2, compact ? 106 : height - 42);
+      state.hold._draftLayout = { width: controlWidth, height: controlHeight };
+      const controlGap = compact ? 24 : 12;
+      const controlsWidth = controlWidth * 2 + controlGap;
+      const controlY = compact ? 124 : height - 42;
+      state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
+      state.hold.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
       state.rescan.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+      state.hold.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
       this.redrawTacticalDraftRescan();
+      this.redrawTacticalDraftHold();
     }
 
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(340, (width - 120) / 3);
-    const cardHeight = compact ? Math.max(106, Math.min(146, (height - 170) / 3 - 10)) : Math.min(365, height - 230);
+    const cardHeight = compact ? Math.max(106, Math.min(134, (height - 170) / 3 - 10)) : Math.min(365, height - 230);
     state.cards.forEach((card, index) => {
       card.position.set(
         compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
-        compact ? 124 + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
+        compact ? 158 + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
@@ -5862,6 +5905,7 @@ export class PlayScene {
         nodes.permanence.anchor.set(0, 0.5);
         nodes.permanence.style.fontSize = 9;
         nodes.permanence.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 18);
+        nodes.holdBadge.position.set(cardWidth / 2 - 35, -cardHeight / 2 + 20);
         nodes.choose.position.set(cardWidth / 2 - 48, cardHeight / 2 - 20);
         nodes.choose.style.fontSize = 12;
       } else {
@@ -5884,6 +5928,7 @@ export class PlayScene {
         nodes.permanence.anchor.set(0.5);
         nodes.permanence.style.fontSize = 11;
         nodes.permanence.position.set(0, cardHeight / 2 - 62);
+        nodes.holdBadge.position.set(cardWidth / 2 - 38, -cardHeight / 2 + 25);
         nodes.choose.position.set(0, cardHeight / 2 - 27);
         nodes.choose.style.fontSize = 15;
       }
@@ -5898,6 +5943,7 @@ export class PlayScene {
     if (!state?.active || !layout || !nodes) return;
     const focused = card._draftIndex === state.focusIndex;
     const confirmed = card._offer?.id === state.confirmedId;
+    const held = card._offer?.id === this.tacticalDraftHeldId;
     const accent = Number(card._offer?.color) || 0x37f5ff;
     const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
     nodes.glow.clear();
@@ -5907,11 +5953,17 @@ export class PlayScene {
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
     nodes.bg.fill({ color: confirmed ? 0x102616 : focused ? 0x071d2f : 0x04111f, alpha: 0.96 });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
-    nodes.bg.stroke({ color: confirmed ? 0xffef7e : focused ? 0xffffff : accent, width: confirmed ? 3 : focused ? 2.4 : 1.2, alpha: focused || confirmed ? 0.96 : 0.55 });
+    nodes.bg.stroke({ color: confirmed ? 0xffef7e : held ? 0xffd15c : focused ? 0xffffff : accent, width: confirmed ? 3 : held ? 2.2 : focused ? 2.4 : 1.2, alpha: focused || confirmed || held ? 0.96 : 0.55 });
     nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
     nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
     nodes.choose.text = confirmed ? translateText('LOCKED IN') : translateText('CHOOSE');
     nodes.choose.style.fill = confirmed ? '#fff3a0' : focused ? '#ffffff' : '#b7d4df';
+    nodes.holdBadge.visible = held;
+    nodes.holdBadge.style.fill = '#fff3a0';
+    if (held) {
+      nodes.holdBadge.text = translateText('HELD');
+      nodes.holdBadge.style.fill = '#fff3a0';
+    }
     card.scale.set(focused && !layout.compact ? 1.015 : 1);
   }
 
@@ -5930,9 +5982,49 @@ export class PlayScene {
     nodes.label.text = available
       ? translateText('R / Y  RESCAN ({count})', { count: state.rescansRemaining })
       : translateText('RESCAN USED');
+    nodes.label.scale.set(1);
+    nodes.label.updateText?.(false);
+    nodes.label.scale.set(Math.min(1, Math.max(0.62, (layout.width - 18) / Math.max(1, nodes.label.width))));
     nodes.label.style.fill = available ? '#d8f7ff' : '#71848f';
     control.alpha = available ? 1 : 0.68;
     control.cursor = available ? 'pointer' : 'default';
+  }
+
+  redrawTacticalDraftHold() {
+    const state = this.tacticalDraft;
+    const control = state?.hold;
+    const layout = control?._draftLayout;
+    const nodes = control?._nodes;
+    if (!state?.active || !layout || !nodes) return;
+    const focusedId = state.offers?.[state.focusIndex]?.id || null;
+    const held = Boolean(focusedId && focusedId === this.tacticalDraftHeldId);
+    const available = Boolean(focusedId && !state.confirmedId && state.inputArmed);
+    nodes.bg.clear();
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.fill({ color: held ? 0x35260b : available ? 0x16263a : 0x07111b, alpha: 0.94 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.stroke({ color: held ? 0xffd15c : available ? 0xffef7e : 0x536572, width: held ? 1.8 : 1.2, alpha: available || held ? 0.82 : 0.36 });
+    nodes.label.text = held ? translateText('HELD') : translateText('L / X  HOLD');
+    nodes.label.scale.set(1);
+    nodes.label.updateText?.(false);
+    nodes.label.scale.set(Math.min(1, Math.max(0.62, (layout.width - 18) / Math.max(1, nodes.label.width))));
+    nodes.label.style.fill = held ? '#fff3a0' : available ? '#f6e7a6' : '#71848f';
+    control.alpha = available || held ? 1 : 0.68;
+    control.cursor = available ? 'pointer' : 'default';
+  }
+
+  toggleTacticalDraftHold(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || !state.inputArmed) return false;
+    const offer = state.offers?.[state.focusIndex];
+    if (!offer) return false;
+    this.tacticalDraftHeldId = this.tacticalDraftHeldId === offer.id ? null : offer.id;
+    state.offers.forEach((entry) => { entry.held = entry.id === this.tacticalDraftHeldId; });
+    state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    this.redrawTacticalDraftHold();
+    state.lastHoldSource = source;
+    playMenuConfirmSfx(0.24);
+    return true;
   }
 
   rescanTacticalDraft(source = 'unknown') {
@@ -5948,7 +6040,8 @@ export class PlayScene {
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
-      excludedIds: previousIds
+      excludedIds: previousIds,
+      heldId: this.tacticalDraftHeldId
     });
     if (offers.length < 3) return false;
     state.cards.forEach((card) => {
@@ -5968,6 +6061,7 @@ export class PlayScene {
     this.setTacticalDraftFocus(1, { silent: true });
     playMenuConfirmSfx(0.3);
     this.redrawTacticalDraftRescan();
+    this.redrawTacticalDraftHold();
     state.lastRescanSource = source;
     return true;
   }
@@ -5979,6 +6073,7 @@ export class PlayScene {
     if (state.focusIndex === next && !silent) return;
     state.focusIndex = next;
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    this.redrawTacticalDraftHold();
     if (!silent) playMenuFocusSfx(0.2);
   }
 
@@ -5991,7 +6086,7 @@ export class PlayScene {
       const keyboardHeld = [
         'Space', 'Enter', 'NumpadEnter',
         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'a', 'd', 'w', 's', 'A', 'D', 'W', 'S'
+        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyL', 'a', 'd', 'w', 's', 'l', 'A', 'D', 'W', 'S', 'L'
       ].some((key) => this.inputManager?.isKeyPressed?.(key));
       const minimumReadGateOpen = Date.now() - state.openedAt >= 280;
       if (!minimumReadGateOpen || keyboardHeld || nav.active || nav.suppressed) {
@@ -6013,12 +6108,15 @@ export class PlayScene {
     const down = this.inputManager?.consumeKeyPress?.('ArrowDown', 'KeyS', 's', 'S');
     const confirm = this.inputManager?.consumeKeyPress?.('Enter', 'NumpadEnter', 'Space');
     const rescan = this.inputManager?.consumeKeyPress?.('KeyR', 'r', 'R');
+    const hold = this.inputManager?.consumeKeyPress?.('KeyL', 'l', 'L');
     if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
     if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
     if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
     if (rescan || nav.pressed.y) this.rescanTacticalDraft(nav.pressed.y ? 'gamepad' : 'keyboard');
+    if (hold || nav.pressed.x) this.toggleTacticalDraftHold(nav.pressed.x ? 'gamepad' : 'keyboard');
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftRescan();
+    this.redrawTacticalDraftHold();
   }
 
   confirmTacticalDraft(index = this.tacticalDraft?.focusIndex || 0, source = 'unknown') {
@@ -6029,6 +6127,9 @@ export class PlayScene {
     if (!offer) return false;
     const result = this.player?.applyRunAugment?.(offer.id);
     if (!result?.applied) return false;
+    if (this.tacticalDraftHeldId === offer.id || this.tacticalDraftHeldId === state.heldAtOpenId) {
+      this.tacticalDraftHeldId = null;
+    }
     state.confirmedId = offer.id;
     state.result = result;
     state.confirmedAt = Date.now();
@@ -6101,18 +6202,25 @@ export class PlayScene {
       rescanCount: state?.rescanCount || 0,
       rescanLabel: state?.rescan?._nodes?.label?.text || null,
       rescanBounds: boundsOf(state?.rescan),
+      heldId: this.tacticalDraftHeldId || null,
+      heldAtOpenId: state?.heldAtOpenId || null,
+      holdLabel: state?.hold?._nodes?.label?.text || null,
+      holdBounds: boundsOf(state?.hold),
+      lastHoldSource: state?.lastHoldSource || null,
       titleBounds: boundsOf(state?.title),
       offers: state?.offers?.map((offer, index) => ({
         id: offer.id,
         name: offer.name,
         category: offer.category,
         descriptionSource: offer.description,
+        held: offer.id === this.tacticalDraftHeldId,
         focused: index === state.focusIndex,
         bounds: boundsOf(state.cards?.[index]),
         nameText: state.cards?.[index]?._nodes?.name?.text || null,
         descriptionText: state.cards?.[index]?._nodes?.description?.text || null,
         nameBounds: boundsOf(state.cards?.[index]?._nodes?.name),
-        descriptionBounds: boundsOf(state.cards?.[index]?._nodes?.description)
+        descriptionBounds: boundsOf(state.cards?.[index]?._nodes?.description),
+        holdBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.holdBadge)
       })) || [],
       selectedIds: this.player?.runAugmentIds?.slice?.() || [],
       selectedLabels: summarizeTacticalDraftPicks(this.player?.runAugmentIds || []),

@@ -109,6 +109,14 @@ function assertDraftLayout(state, width, height, label) {
       assert(!overlap(bounds[a], bounds[b]), `${label}: cards ${a} and ${b} overlap`);
     }
   }
+  const holdBounds = state.tacticalDraft.holdBounds;
+  const rescanBounds = state.tacticalDraft.rescanBounds;
+  assert(holdBounds && rescanBounds, `${label}: missing Draft controls`);
+  assert(!overlap(holdBounds, rescanBounds), `${label}: hold and rescan controls overlap`);
+  for (const box of bounds) {
+    assert(!overlap(holdBounds, box, 0), `${label}: hold control overlaps a card`);
+    assert(!overlap(rescanBounds, box, 0), `${label}: rescan control overlaps a card`);
+  }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
     for (const [name, textBounds] of [['name', offer.nameBounds], ['description', offer.descriptionBounds]]) {
@@ -170,6 +178,18 @@ assert(evolutionOffers.filter((offer) => offer.currentStacks === 1 && offer.next
   `sector-three Draft should contain exactly one evolution offer: ${JSON.stringify(evolutionOffers)}`);
 assert(evolutionOffers.filter((offer) => offer.currentStacks === 0).length === 2,
   'sector-three Draft should preserve two fresh choices beside the evolution');
+const heldOfferId = lowLifeOffers[1].id;
+const heldOffers = buildTacticalDraftOffers({
+  seed: 'held-proof',
+  sectorCleared: 3,
+  lives: 3,
+  maxLives: 4,
+  excludedIds: lowLifeOffers.map((offer) => offer.id),
+  heldId: heldOfferId
+});
+assert(heldOffers.some((offer) => offer.id === heldOfferId && offer.held === true),
+  `held offer did not survive exclusion/rescan: ${JSON.stringify(heldOffers)}`);
+assert(heldOffers.filter((offer) => offer.held).length === 1, 'Draft should expose exactly one held offer');
 
 mkdirSync(outputDir, { recursive: true });
 const server = await startPreview();
@@ -204,11 +224,19 @@ try {
   assertDraftLayout(state, 1280, 720, 'desktop');
   const firstOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
   assert(state.tacticalDraft.rescansRemaining === 1, 'fresh run should expose one Draft rescan');
+  const keyboardHeldId = firstOfferIds[state.tacticalDraft.focusIndex];
+  await page.keyboard.press('l');
+  await page.waitForFunction((id) => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === id, keyboardHeldId);
+  state = await readState(page);
+  assert(/HELD|GEHALTEN|RESERV|СОХРАН|保留|보관/i.test(state.tacticalDraft.holdLabel || ''), 'hold control did not show active state');
   await page.keyboard.press('r');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.rescansRemaining === 0);
   state = await readState(page);
   const rescannedOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
-  assert(rescannedOfferIds.every((id) => !firstOfferIds.includes(id)), `rescan repeated prior offers: ${rescannedOfferIds.join(', ')}`);
+  assert(rescannedOfferIds.includes(keyboardHeldId), `rescan dropped held offer: ${rescannedOfferIds.join(', ')}`);
+  assert(rescannedOfferIds.filter((id) => id !== keyboardHeldId).every((id) => !firstOfferIds.includes(id)),
+    `rescan repeated an unheld prior offer: ${rescannedOfferIds.join(', ')}`);
+  assert(state.tacticalDraft.offers.filter((offer) => offer.held).length === 1, 'rescan did not retain exactly one held card');
   assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
   const frozenTime = state.arcadeRun.runElapsedSeconds;
   await page.waitForTimeout(450);
@@ -217,8 +245,8 @@ try {
   const desktopScreenshot = path.join(outputDir, 'tactical-draft-desktop.png');
   await page.screenshot({ path: desktopScreenshot });
 
-  await page.keyboard.press('ArrowLeft');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 0);
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 2);
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
   state = await readState(page);
@@ -230,6 +258,16 @@ try {
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === true);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  state = await readState(page);
+  assert(state.tacticalDraft.offers.some((offer) => offer.id === keyboardHeldId && offer.held), 'held card did not return in the next Draft');
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: true, value: 1 }; });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.lastHoldSource === 'gamepad');
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: false, value: 0 }; });
+  await page.waitForTimeout(80);
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: true, value: 1 }; });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === null);
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: false, value: 0 }; });
+  await page.waitForTimeout(80);
   await page.evaluate(() => { window.__burtGamepadOverride.axes = [1, 0]; });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === 2);
   await page.evaluate(() => { window.__burtGamepadOverride.axes = [0, 0]; });
@@ -240,6 +278,7 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
   state = await readState(page);
   assert(state.tacticalDraft.history.length === 2, 'gamepad selection was not recorded');
+  assert(state.tacticalDraft.heldId === null, 'held offer was not consumed after its return Draft resolved');
 
   await page.setViewportSize({ width: 760, height: 640 });
   await page.waitForTimeout(250);
@@ -248,10 +287,16 @@ try {
     window.__game.scenes.play.openTacticalDraft({ sectorCleared: 3 });
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.compact === true);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
   state = await readState(page);
   assertDraftLayout(state, 760, 640, 'compact');
   const compactScreenshot = path.join(outputDir, 'tactical-draft-compact.png');
   await page.screenshot({ path: compactScreenshot });
+  const holdTarget = state.tacticalDraft.holdBounds;
+  await page.mouse.click(holdTarget.x + holdTarget.width / 2, holdTarget.y + holdTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId);
+  state = await readState(page);
+  assert(state.tacticalDraft.lastHoldSource === 'pointer', 'pointer hold did not record its input source');
   const clickTarget = state.tacticalDraft.offers[1].bounds;
   await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
@@ -275,6 +320,12 @@ try {
     assertDraftLayout(localeState, 760, 640, `locale-${locale}`);
     assert(localeState.tacticalDraft.title && localeState.tacticalDraft.title !== 'TACTICAL DRAFT', `locale-${locale}: tactical title remained English`);
     assert(localeState.tacticalDraft.offers.every((offer) => offer.descriptionText !== offer.descriptionSource), `locale-${locale}: tactical description remained English`);
+    await page.keyboard.press('l');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId);
+    const localeHeldState = await readState(page);
+    assert(localeHeldState.tacticalDraft.holdLabel !== 'HELD', `locale-${locale}: hold label remained English`);
+    await page.keyboard.press('l');
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === null);
     if (locale === 'de' || locale === 'ru' || locale === 'zh-CN') {
       await page.screenshot({ path: path.join(outputDir, `tactical-draft-${locale.replace('-', '_')}.png`) });
     }

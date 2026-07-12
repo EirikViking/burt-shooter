@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
-  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
+  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
 };
 
 function timestamp() {
@@ -144,6 +144,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
     assert(joined.includes('R / GAMEPAD Y: ONE RESCAN PER RUN'), `${label} should explain the one-run rescan`);
     assert(joined.includes('never grants an extra augment'), `${label} should explain that rescan is choice agency, not extra power`);
+    assert(joined.includes('HOLD ONE OFFER FOR NEXT DRAFT'), `${label} should explain the Draft hold input`);
+    assert(joined.includes('Holding a new card replaces the old hold'), `${label} should explain how a held offer is replaced`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
     assert(joined.includes('FIRST STACK FULL / SECOND STACK 55%'), `${label} should explain diminishing stacks`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);

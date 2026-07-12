@@ -129,6 +129,14 @@ const RUN_HELP_ROWS = Object.freeze([
   },
   {
     code: '14',
+    icon: 'HOLD',
+    label: 'DRAFT HOLD',
+    control: 'L / GAMEPAD X: HOLD ONE OFFER FOR NEXT DRAFT',
+    tip: 'Hold one promising offer for the next boss Draft. Holding a new card replaces the old hold; choosing the held card consumes it.',
+    accent: 0xffd15c
+  },
+  {
+    code: '15',
     icon: 'SLOT',
     label: 'POWERUP OVERLAP',
     control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
@@ -136,7 +144,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xb285ff
   },
   {
-    code: '15',
+    code: '16',
     icon: 'CAP',
     label: 'STACK LIMITS',
     control: 'FIRST STACK FULL / SECOND STACK 55%',
@@ -144,7 +152,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xff8f5a
   },
   {
-    code: '16',
+    code: '17',
     icon: 'SYNC',
     label: 'THREAT RESPONSE',
     control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
@@ -174,6 +182,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
+  'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',
   'STACK LIMITS': 'Most repeatable augments stop at two stacks, and the second contributes only fifty-five percent. This keeps a favorite lane useful without turning one lucky draft into a legally distinct supernova.',
   'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.'
