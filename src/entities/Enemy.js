@@ -15,6 +15,11 @@ import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { applyThreatResponseToEnemyHealth } from '../config/ShipThreatResponse.js';
 import { applyAceBountyToEnemy } from '../config/AceBounties.js';
+import {
+  applyNemesisProtocolToEnemy,
+  maybeActivateNemesisEnrage,
+  resolveNemesisDamage
+} from '../config/NemesisProtocols.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 
@@ -29,12 +34,13 @@ function getEnemyThreatFrameProfile(enemy) {
   if (!enemy || enemy.type === 'bonus_challenge') return null;
   const accent = enemy.visualVariant?.accent || enemy.color || 0xff5d6c;
   if (enemy.isAce && enemy.aceVariant) {
+    const protocol = enemy.nemesisProtocol;
     return {
       tier: 'ace',
-      color: enemy.aceVariant.color || 0xffd15c,
-      accent: enemy.aceVariant.accent || 0xffffff,
-      markerCount: 7,
-      radiusMult: 2.24
+      color: protocol?.color || enemy.aceVariant.color || 0xffd15c,
+      accent: enemy.nemesisEnraged ? (protocol?.accent || 0xff6174) : (enemy.aceVariant.accent || 0xffffff),
+      markerCount: protocol ? 8 : 7,
+      radiusMult: protocol ? 2.36 : 2.24
     };
   }
   if (enemy.middleShipProfile || enemy.isEliteMiddleShip) {
@@ -1277,24 +1283,47 @@ export class Enemy {
         fill: '#fff3a0',
         stroke: '#120018',
         strokeThickness: 3,
-        align: 'center'
+        align: 'center',
+        lineHeight: 12
       });
       this.aceLabel.anchor.set(0.5);
       this.aceLabel.zIndex = 15;
       this.sprite.addChild(this.aceLabel);
     }
-    const number = String(variant.number).padStart(4, '0');
-    this.aceLabel.text = translateText('ACE {number} // {reward}', {
-      number,
-      reward: translateText(variant.rewardLabel)
-    });
-    this.aceLabel.scale.set(1);
-    if (this.aceLabel.width > 154) {
-      this.aceLabel.scale.set(Math.max(0.68, 154 / this.aceLabel.width));
-    }
-    this.aceLabel.y = -Math.max(39, this.radius + 24);
-    this.aceLabel.visible = true;
+    this.updateAceBountyLabel();
     return this.getAceDebugState();
+  }
+
+  applyNemesisProtocol(protocolOrId) {
+    const protocol = applyNemesisProtocolToEnemy(this, protocolOrId);
+    if (!protocol) return null;
+    this.updateHealthBar();
+    this.updateAceBountyLabel();
+    return this.getAceDebugState();
+  }
+
+  updateAceBountyLabel() {
+    if (!this.aceLabel || !this.aceVariant) return;
+    const number = String(this.aceVariant.number).padStart(4, '0');
+    const lines = [translateText('ACE {number} // {reward}', {
+      number,
+      reward: translateText(this.aceVariant.rewardLabel)
+    })];
+    if (this.nemesisProtocol) {
+      lines.push(translateText('NEMESIS {number} // {opening} + {defense}', {
+        number: String(this.nemesisProtocol.number).padStart(5, '0'),
+        opening: translateText(this.nemesisProtocol.openingLabel),
+        defense: translateText(this.nemesisProtocol.defenseLabel)
+      }));
+    }
+    this.aceLabel.text = lines.join('\n');
+    this.aceLabel.scale.set(1);
+    const maxWidth = this.nemesisProtocol ? 196 : 154;
+    if (this.aceLabel.width > maxWidth) {
+      this.aceLabel.scale.set(Math.max(0.62, maxWidth / this.aceLabel.width));
+    }
+    this.aceLabel.y = -Math.max(this.nemesisProtocol ? 52 : 39, this.radius + (this.nemesisProtocol ? 38 : 24));
+    this.aceLabel.visible = true;
   }
 
   getAceDebugState() {
@@ -1322,6 +1351,21 @@ export class Enemy {
       rewardId: this.aceVariant.rewardId,
       rewardLabel: translateText(this.aceVariant.rewardLabel),
       effects: { ...this.aceVariant.effects },
+      protocol: this.nemesisProtocol ? {
+        id: this.nemesisProtocol.id,
+        number: this.nemesisProtocol.number,
+        openingId: this.nemesisProtocol.openingId,
+        openingLabel: translateText(this.nemesisProtocol.openingLabel),
+        defenseId: this.nemesisProtocol.defenseId,
+        defenseLabel: translateText(this.nemesisProtocol.defenseLabel),
+        enrageId: this.nemesisProtocol.enrageId,
+        enrageLabel: translateText(this.nemesisProtocol.enrageLabel),
+        bonusId: this.nemesisProtocol.bonusId,
+        bonusLabel: translateText(this.nemesisProtocol.bonusLabel),
+        enraged: this.nemesisEnraged === true,
+        damageHits: Math.max(0, Number(this.nemesisDamageHitCount) || 0),
+        lastDamageResolution: this.nemesisLastDamageResolution ? { ...this.nemesisLastDamageResolution } : null
+      } : null,
       label: this.aceLabel?.text || null,
       labelBounds,
       health: Math.max(0, Number(this.health) || 0),
@@ -3159,8 +3203,13 @@ export class Enemy {
     const now = Date.now();
     if (this.middleShipProfile && now < this.phaseShiftUntil) resolvedAmount *= 0.45;
     if (this.middleShipProfile && now < this.eliteShieldUntil) resolvedAmount *= 0.6;
+    resolvedAmount = resolveNemesisDamage(this, resolvedAmount);
     this.health -= resolvedAmount;
     this.updateHealthBar();
+    const nemesisEnrage = maybeActivateNemesisEnrage(this);
+    if (nemesisEnrage) {
+      this.game?.scenes?.play?.onNemesisProtocolEnraged?.(this, nemesisEnrage);
+    }
     this.sprite.tint = 0xffffff;
     // Flashing Logic: Restore correct tint
     const profileTint = (this.middleShipProfile || this.generatedProfile)?.hullTint || 0xffffff;

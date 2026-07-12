@@ -245,6 +245,8 @@ try {
     assert(finalState.tacticalDraft?.history?.length >= targetSector - 1, `only completed ${finalState.tacticalDraft?.history?.length || 0} drafts`);
     assert(finalState.tacticalDraft?.selectedIds?.length >= targetSector - 1, 'selected augments did not persist through real sectors');
     assert(finalState.aceBounties?.completedCount >= targetSector - 1, `only completed ${finalState.aceBounties?.completedCount || 0} Ace bounties through normal waves`);
+    assert(finalState.aceBounties?.completedProtocolCount >= targetSector - 1, `only completed ${finalState.aceBounties?.completedProtocolCount || 0} Nemesis protocols through normal waves`);
+    assert(finalState.aceBounties?.history?.slice(0, targetSector - 1).every((entry) => entry.protocolId), 'normal-wave Ace history lost a Nemesis protocol identity');
   }
   assert(finalState.selectedShipSpriteKey === selectedShip.spriteKey, `expected ${selectedShip.name}, got ${finalState.selectedShipSpriteKey}`);
   assert(errors.length === 0, errors.join(' | '));
@@ -262,7 +264,7 @@ try {
   };
   report.errors = errors;
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft?.history?.length || 0} aces=${report.final.aceBounties?.completedCount || 0} lives=${report.final.lives} gameOver=${Boolean(report.gameOver)} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[human-retention-run] PASS sector=${report.final.sector} drafts=${report.final.draft?.history?.length || 0} aces=${report.final.aceBounties?.completedCount || 0} protocols=${report.final.aceBounties?.completedProtocolCount || 0} lives=${report.final.lives} gameOver=${Boolean(report.gameOver)} durationMs=${report.durationMs} report=${path.join(outputDir, 'report.json')}`);
 } catch (error) {
   report.error = error.stack || error.message;
   report.errors = errors;

@@ -66,6 +66,8 @@
     "check:tactical-directive-runtime": "node scripts/check-tactical-directive-runtime.mjs",
     "check:ace-bounties": "node scripts/check-ace-bounties.mjs",
     "check:ace-bounty-runtime": "node scripts/check-ace-bounty-runtime.mjs",
+    "check:nemesis-protocols": "node scripts/check-nemesis-protocols.mjs",
+    "check:nemesis-protocol-runtime": "node scripts/check-ace-bounty-runtime.mjs",
     "check:tactical-augment-tray": "node scripts/check-tactical-augment-tray.mjs",
     "check:tactical-loadout-overlay": "node scripts/check-tactical-loadout-overlay.mjs",
     "check:human-retention-run": "node scripts/simulate-human-retention-run.mjs",

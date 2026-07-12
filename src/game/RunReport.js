@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 6;
+const RUN_REPORT_VERSION = 7;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -203,6 +203,14 @@ export function createRunReport(summary = {}) {
       weaponId: String(entry?.weaponId || '').trim(),
       rewardId: String(entry?.rewardId || '').trim(),
       rewardLabel: String(entry?.rewardLabel || '').trim(),
+      protocolId: String(entry?.protocolId || '').trim(),
+      protocolNumber: Math.max(0, toWholeNumber(entry?.protocolNumber, 0)),
+      openingId: String(entry?.openingId || '').trim(),
+      defenseId: String(entry?.defenseId || '').trim(),
+      enrageId: String(entry?.enrageId || '').trim(),
+      bonusId: String(entry?.bonusId || '').trim(),
+      bonusLabel: String(entry?.bonusLabel || '').trim(),
+      protocolEnraged: entry?.protocolEnraged === true,
       sector: Math.max(1, toWholeNumber(entry?.sector, 1))
     }))
     .filter((entry) => entry.variantId);
@@ -210,6 +218,24 @@ export function createRunReport(summary = {}) {
     completedCount: aceBountyHistory.length,
     availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableVariants, 1000)),
     history: aceBountyHistory
+  };
+  const nemesisProtocolHistory = aceBountyHistory
+    .filter((entry) => entry.protocolId)
+    .map((entry) => ({
+      protocolId: entry.protocolId,
+      protocolNumber: entry.protocolNumber,
+      openingId: entry.openingId,
+      defenseId: entry.defenseId,
+      enrageId: entry.enrageId,
+      bonusId: entry.bonusId,
+      bonusLabel: entry.bonusLabel,
+      protocolEnraged: entry.protocolEnraged,
+      sector: entry.sector
+    }));
+  const nemesisProtocols = {
+    completedCount: nemesisProtocolHistory.length,
+    availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableProtocolVariants, 10000)),
+    history: nemesisProtocolHistory
   };
 
   const report = {
@@ -231,7 +257,8 @@ export function createRunReport(summary = {}) {
       tacticalDraftPicks,
       tacticalDoctrine,
       tacticalDirectives,
-      aceBounties
+      aceBounties,
+      nemesisProtocols
     },
     sections: [
       {
@@ -272,6 +299,7 @@ export function createRunReport(summary = {}) {
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
           { id: 'aceBounties', value: aceBounties.completedCount, rawValue: aceBounties },
+          { id: 'nemesisProtocols', value: nemesisProtocols.completedCount, rawValue: nemesisProtocols },
           { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
           { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
           { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
@@ -296,6 +324,7 @@ export function summarizeRunReport(report = null) {
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     tacticalDirectives: report.summary?.tacticalDirectives || null,
     aceBounties: report.summary?.aceBounties || null,
+    nemesisProtocols: report.summary?.nemesisProtocols || null,
     tacticalDoctrine: report.summary?.tacticalDoctrine || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };

@@ -73,6 +73,11 @@ import {
   planAceBountyEncounter
 } from '../config/AceBounties.js';
 import {
+  NEMESIS_PROTOCOL_VARIANT_COUNT,
+  getNemesisProtocolById,
+  pickNemesisProtocol
+} from '../config/NemesisProtocols.js';
+import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -1524,18 +1529,35 @@ export class PlayScene {
       return this.getAceBountyDebugState();
     }
     const previousId = this.aceBountyActive?.id || this.aceBountyHistory.at(-1)?.variantId || null;
+    const previousProtocolId = this.aceBountyActive?.protocolId || this.aceBountyHistory.at(-1)?.protocolId || null;
     const seed = this.game?.contentDirector?.seed
       || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
     const waveCount = Math.max(1, Math.floor(Number(options.waveCount || this.enemyManager?.normalWavesTotal) || 5));
+    const sequence = this.aceBountySequence;
     const encounter = planAceBountyEncounter(seed, safeSector, waveCount, {
-      sequence: this.aceBountySequence,
+      sequence,
       excludeId: previousId,
       variantId: options.variantId,
       targetWaveIndex: options.targetWaveIndex
     });
+    const protocol = options.protocolId
+      ? getNemesisProtocolById(options.protocolId)
+      : pickNemesisProtocol(seed, sequence, { excludeId: previousProtocolId });
     this.aceBountySequence += 1;
-    this.aceBountyActive = encounter ? {
+    this.aceBountyActive = encounter && protocol ? {
       ...encounter,
+      protocolId: protocol.id,
+      protocolNumber: protocol.number,
+      openingId: protocol.openingId,
+      openingLabel: protocol.openingLabel,
+      defenseId: protocol.defenseId,
+      defenseLabel: protocol.defenseLabel,
+      enrageId: protocol.enrageId,
+      enrageLabel: protocol.enrageLabel,
+      bonusId: protocol.bonusId,
+      bonusLabel: protocol.bonusLabel,
+      bonusKind: protocol.bonusKind,
+      bonusPowerupType: protocol.bonusPowerupType,
       preparedAt: Date.now(),
       preparedReason: options.reason || 'sector_start'
     } : null;
@@ -1551,15 +1573,23 @@ export class PlayScene {
     if (enemy.kind !== 'enemy' || enemy.middleShipProfile || enemy.dangerMidShipProfile || enemy.isEliteMiddleShip || enemy.isBossMayhemReinforcement) return false;
     const applied = enemy.applyAceBounty?.(active.id);
     if (!applied) return false;
+    const protocolApplied = enemy.applyNemesisProtocol?.(active.protocolId);
+    if (!protocolApplied) return false;
     active.spawned = true;
     active.spawnedAt = Date.now();
     active.spawnedWaveIndex = waveIndex;
     active.enemyType = enemy.type || null;
     const number = String(active.number).padStart(4, '0');
-    this.enqueueToast(translateText('ACE CONTACT: {number} // BOUNTY: {reward}', {
+    const contact = translateText('ACE CONTACT: {number} // BOUNTY: {reward}', {
       number,
       reward: translateText(active.rewardLabel)
-    }), {
+    });
+    const protocolContact = translateText('NEMESIS {number} // {opening} + {defense}', {
+      number: String(active.protocolNumber).padStart(5, '0'),
+      opening: translateText(active.openingLabel),
+      defense: translateText(active.defenseLabel)
+    });
+    this.enqueueToast(`${contact}\n${protocolContact}`, {
       fontSize: this.game.getWidth() < 720 ? 15 : 18,
       fill: '#fff3a0',
       slot: 'corner',
@@ -1569,6 +1599,25 @@ export class PlayScene {
     });
     AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.64, minIntervalMs: 700 });
     return true;
+  }
+
+  onNemesisProtocolEnraged(enemy, enrage = enemy?.nemesisProtocol?.enrage) {
+    const protocol = enemy?.nemesisProtocol;
+    if (!protocol || !enrage) return null;
+    const message = translateText('PROTOCOL SURGE: {number} // {enrage}', {
+      number: String(protocol.number).padStart(5, '0'),
+      enrage: translateText(protocol.enrageLabel)
+    });
+    this.enqueueToast(message, {
+      fontSize: this.game.getWidth() < 720 ? 15 : 18,
+      fill: '#ff9d66',
+      slot: 'corner',
+      type: 'nemesisSurge',
+      priority: 4,
+      duration: 1500
+    });
+    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.58, minIntervalMs: 500 });
+    return { protocolId: protocol.id, enrageId: enrage.id };
   }
 
   completeAceBounty(enemy) {
@@ -1585,6 +1634,16 @@ export class PlayScene {
       rewardLabel: variant.rewardLabel,
       rewardKind: variant.rewardKind,
       rewardPowerupType: variant.rewardPowerupType,
+      protocolId: enemy.nemesisProtocol?.id || null,
+      protocolNumber: enemy.nemesisProtocol?.number || 0,
+      openingId: enemy.nemesisProtocol?.openingId || null,
+      defenseId: enemy.nemesisProtocol?.defenseId || null,
+      enrageId: enemy.nemesisProtocol?.enrageId || null,
+      bonusId: enemy.nemesisProtocol?.bonusId || null,
+      bonusLabel: enemy.nemesisProtocol?.bonusLabel || null,
+      bonusKind: enemy.nemesisProtocol?.bonusKind || null,
+      bonusPowerupType: enemy.nemesisProtocol?.bonusPowerupType || null,
+      protocolEnraged: enemy.nemesisEnraged === true,
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
       completedAt: Date.now()
     };
@@ -1595,11 +1654,16 @@ export class PlayScene {
     this.aceBountyHistory.push(completion);
     this.lastAceBountyCompletion = completion;
     const reward = this.applyAceBountyReward(completion, enemy);
+    const protocolReward = this.applyNemesisProtocolReward(completion, enemy);
     const number = String(variant.number).padStart(4, '0');
-    this.enqueueToast(translateText('ACE DOWN: {number} // REWARD: {reward}', {
+    const completionMessage = translateText('ACE DOWN: {number} // REWARD: {reward}', {
       number,
       reward: translateText(variant.rewardLabel)
-    }), {
+    });
+    const protocolBonusMessage = completion.protocolId
+      ? translateText('PROTOCOL BONUS: {reward}', { reward: translateText(completion.bonusLabel) })
+      : '';
+    this.enqueueToast([completionMessage, protocolBonusMessage].filter(Boolean).join('\n'), {
       fontSize: this.game.getWidth() < 720 ? 16 : 20,
       fill: '#88ffb0',
       slot: 'corner',
@@ -1608,7 +1672,7 @@ export class PlayScene {
       duration: 1900
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.76, minIntervalMs: 280 });
-    return { completion, reward };
+    return { completion, reward, protocolReward };
   }
 
   applyAceBountyReward(completion = {}, enemy = null) {
@@ -1624,12 +1688,29 @@ export class PlayScene {
     return { granted: Boolean(powerup), kind: 'powerup', type };
   }
 
+  applyNemesisProtocolReward(completion = {}, enemy = null) {
+    if (!completion.protocolId || enemy?.nemesisBonusRewardClaimed) return null;
+    if (enemy) enemy.nemesisBonusRewardClaimed = true;
+    if (completion.bonusKind === 'rescan') {
+      this.tacticalDraftRescansRemaining = Math.min(3, Math.max(0, Number(this.tacticalDraftRescansRemaining) || 0) + 1);
+      return { granted: true, kind: 'rescan', remaining: this.tacticalDraftRescansRemaining };
+    }
+    const type = completion.bonusPowerupType;
+    if (!type || !this.powerupManager) return { granted: false, kind: completion.bonusKind || null };
+    const x = Number.isFinite(enemy?.x) ? enemy.x + 24 : (this.player?.x || this.game.getWidth() / 2) + 24;
+    const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
+    const powerup = this.powerupManager.spawnSpecific(x, y, type, { source: 'nemesis_protocol' });
+    return { granted: Boolean(powerup), kind: 'powerup', type };
+  }
+
   getAceBountyDebugState() {
     const active = this.aceBountyActive ? { ...this.aceBountyActive } : null;
     return {
       active,
       completedCount: this.aceBountyHistory.length,
       availableVariants: ACE_BOUNTY_VARIANT_COUNT,
+      completedProtocolCount: this.aceBountyHistory.filter((entry) => entry.protocolId).length,
+      availableProtocolVariants: NEMESIS_PROTOCOL_VARIANT_COUNT,
       sequence: this.aceBountySequence,
       lastCompletion: this.lastAceBountyCompletion ? { ...this.lastAceBountyCompletion } : null,
       history: this.aceBountyHistory.map((entry) => ({ ...entry }))

@@ -103,6 +103,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   tacticalDrafts: 'Tactical upgrades',
   tacticalDirectives: 'SIDE DIRECTIVES',
   aceBounties: 'ACE BOUNTIES',
+  nemesisProtocols: 'NEMESIS PROTOCOLS',
   pilotOrders: 'PILOT ORDERS'
 });
 
@@ -4612,7 +4613,11 @@ export class GameOverScene {
 
       const rows = (section.rows || [])
         .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
-      const sectionRowSize = compact && rows.length > 5 ? Math.max(9, rowSize - 1) : rowSize;
+      const sectionRowSize = compact && rows.length > 6
+        ? Math.max(9, rowSize - 2)
+        : compact && rows.length > 5
+          ? Math.max(9, rowSize - 1)
+          : rowSize;
       const rowStep = rows.length
         ? rows.length === 1
           ? sectionRowSize + 2

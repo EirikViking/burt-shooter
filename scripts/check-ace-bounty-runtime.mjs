@@ -71,12 +71,12 @@ async function waitForEnemy(page) {
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.enemies?.some((enemy) => enemy?.kind === 'enemy'), null, { timeout: 90000 });
 }
 
-async function promoteAce(page, variantId, { targetWaveIndex = 0, x = null, y = null } = {}) {
-  return page.evaluate(({ variantId: id, targetWaveIndex: wave, x: targetX, y: targetY }) => {
+async function promoteAce(page, variantId, { protocolId = 'blitz_plating_frenzy_shield', targetWaveIndex = 0, x = null, y = null } = {}) {
+  return page.evaluate(({ variantId: id, protocolId: nemesisId, targetWaveIndex: wave, x: targetX, y: targetY }) => {
     const play = window.__game?.scenes?.play;
     const enemy = play?.enemyManager?.enemies?.find((entry) => entry?.kind === 'enemy' && !entry.isAce && entry.active !== false);
     if (!play || !enemy) return { ok: false, reason: 'missing_play_or_enemy' };
-    play.prepareAceBountyForSector(window.__game.level || 1, { force: true, variantId: id, targetWaveIndex: wave, reason: 'runtime_test' });
+    play.prepareAceBountyForSector(window.__game.level || 1, { force: true, variantId: id, protocolId: nemesisId, targetWaveIndex: wave, reason: 'runtime_test' });
     if (play.player) play.player.shootCooldown = 999999;
     const base = { health: enemy.health, maxHealth: enemy.maxHealth, scoreValue: enemy.scoreValue };
     const promoted = play.maybePromoteAceEnemy(enemy, { sector: window.__game.level || 1, waveIndex: wave, slotIndex: 0, count: 1 });
@@ -108,7 +108,7 @@ async function promoteAce(page, variantId, { targetWaveIndex = 0, x = null, y = 
       threatFrame: structuredClone(enemy.threatFrameLayer?._debugThreatFrame || null),
       labelBounds: bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null
     };
-  }, { variantId, targetWaveIndex, x, y });
+  }, { variantId, protocolId, targetWaveIndex, x, y });
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -137,26 +137,40 @@ try {
   desktop.screenshot = path.join(outputDir, 'ace-bounty-1920x1080.png');
   await page.screenshot({ path: desktop.screenshot, fullPage: true });
   report.scenarios.desktop = desktop;
-  if (!desktop.ok || desktop.encounter?.availableVariants !== 1000) failures.push(`desktop Ace state missing: ${JSON.stringify(desktop)}`);
+  if (!desktop.ok || desktop.encounter?.availableVariants !== 1000 || desktop.encounter?.availableProtocolVariants !== 10000) failures.push(`desktop Ace/Nemesis state missing: ${JSON.stringify(desktop)}`);
   if (desktop.ace?.id !== 'bulwark_sweep_precision' || desktop.ace?.rewardId !== 'shield') failures.push(`desktop Ace identity mismatch: ${JSON.stringify(desktop.ace)}`);
+  if (desktop.ace?.protocol?.id !== 'blitz_plating_frenzy_shield' || desktop.ace?.protocol?.number !== 1) failures.push(`desktop Nemesis identity mismatch: ${JSON.stringify(desktop.ace?.protocol)}`);
   if (desktop.ace?.maxHealth <= desktop.base?.maxHealth) failures.push(`Ace health did not increase: ${JSON.stringify(desktop)}`);
   if (desktop.base?.scoreValue !== (await page.evaluate(() => window.__game?.scenes?.play?.enemyManager?.enemies?.find((enemy) => enemy?.isAce)?.scoreValue))) failures.push('Ace promotion changed score value');
-  if (desktop.threatFrame?.tier !== 'ace' || desktop.threatFrame?.markerCount !== 7) failures.push(`Ace threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
+  if (desktop.threatFrame?.tier !== 'ace' || desktop.threatFrame?.markerCount !== 8) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
   if (!/ACE 0001.*SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
+
+  const enrage = await page.evaluate(() => {
+    const enemy = window.__game.scenes.play.enemyManager.enemies.find((entry) => entry?.isAce && !entry.aceRewardClaimed);
+    const before = { health: enemy.health, maxHealth: enemy.maxHealth, shootDelay: enemy.shootDelay };
+    enemy.takeDamage(enemy.maxHealth * 0.3);
+    enemy.takeDamage(enemy.maxHealth * 0.1);
+    return { before, after: structuredClone(enemy.getAceDebugState()) };
+  });
+  report.scenarios.enrage = enrage;
+  if (!enrage.after?.protocol?.enraged || enrage.after?.protocol?.enrageId !== 'frenzy') failures.push(`Nemesis enrage did not activate: ${JSON.stringify(enrage)}`);
+  if (!enrage.after?.protocol?.lastDamageResolution?.guarded || enrage.after?.protocol?.lastDamageResolution?.mode !== 'flat') failures.push(`Nemesis defense did not resolve damage: ${JSON.stringify(enrage)}`);
+  if (enrage.after?.health >= enrage.before?.health) failures.push(`Nemesis damage state mismatch: ${JSON.stringify(enrage)}`);
 
   const completion = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     const enemy = play.enemyManager.enemies.find((entry) => entry?.isAce && !entry.aceRewardClaimed);
     if (!enemy) throw new Error('promoted Ace missing before completion');
-    const killed = enemy.takeDamage(99999);
-    play.onEnemyKilled(enemy);
+    let killed = false;
+    for (let hit = 0; hit < 8 && !killed; hit += 1) killed = enemy.takeDamage(99999);
+    if (killed) play.onEnemyKilled(enemy);
     const duplicate = play.completeAceBounty(enemy);
     return {
       killed,
       duplicate,
       state: structuredClone(play.getAceBountyDebugState()),
-      rewardSpawned: play.powerupManager?.powerups?.some((powerup) => powerup.type === 'shield' && powerup.active !== false)
+      rewardSpawned: play.powerupManager?.powerups?.filter((powerup) => powerup.type === 'shield' && powerup.active !== false).length >= 2
     };
   });
   report.scenarios.completion = completion;
@@ -170,25 +184,35 @@ try {
     const enemy = play.enemyManager.enemies.find((entry) => entry?.kind === 'enemy' && !entry.isAce && entry.active !== false);
     if (!enemy) throw new Error('missing second enemy for rescan bounty');
     enemy.applyAceBounty('bulwark_sweep_suppressor');
-    enemy.takeDamage(99999);
-    play.onEnemyKilled(enemy);
+    enemy.applyNemesisProtocol('blitz_damage_cap_frenzy_rescan');
+    let killed = false;
+    let hitCount = 0;
+    while (!killed && hitCount < 8) {
+      killed = enemy.takeDamage(99999);
+      hitCount += 1;
+    }
+    if (killed) play.onEnemyKilled(enemy);
+    window.__aceDamageCapRuntime = { killed, hitCount, state: enemy.getAceDebugState() };
   });
   const rescan = await page.evaluate(() => ({
     remaining: window.__game.scenes.play.tacticalDraftRescansRemaining,
-    state: structuredClone(window.__game.scenes.play.getAceBountyDebugState())
+    state: structuredClone(window.__game.scenes.play.getAceBountyDebugState()),
+    damageCap: structuredClone(window.__aceDamageCapRuntime)
   }));
   report.scenarios.rescan = rescan;
-  if (rescan.remaining !== 1 || rescan.state?.lastCompletion?.rewardId !== 'rescan') failures.push(`Ace rescan bounty mismatch: ${JSON.stringify(rescan)}`);
+  if (rescan.remaining !== 2 || rescan.state?.lastCompletion?.rewardId !== 'rescan' || rescan.state?.lastCompletion?.bonusId !== 'rescan') failures.push(`Ace/Nemesis rescan bounty mismatch: ${JSON.stringify(rescan)}`);
+  if (!rescan.damageCap?.killed || rescan.damageCap?.hitCount < 5) failures.push(`Nemesis ablative cap did not require repeated hits: ${JSON.stringify(rescan.damageCap)}`);
 
   await page.setViewportSize({ width: 840, height: 640 });
   await page.waitForTimeout(250);
   await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('de'));
   await page.waitForTimeout(120);
-  const localized = await promoteAce(page, 'phantom_ambush_suppressor', { x: 420, y: 300 });
+  const localized = await promoteAce(page, 'phantom_ambush_suppressor', { protocolId: 'decoy_reserve_orbit_rescan', x: 420, y: 300 });
   localized.screenshot = path.join(outputDir, 'ace-bounty-840x640-de.png');
   await page.screenshot({ path: localized.screenshot, fullPage: true });
   report.scenarios.localized = localized;
   if (!localized.ok || !/ASS 1000/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
+  if (!/NEMESIS 10000/.test(localized.ace?.label || '') || localized.ace?.protocol?.number !== 10000) failures.push(`German Nemesis label mismatch: ${localized.ace?.label}`);
   if (/ACE|BOUNTY|REWARD/.test(localized.ace?.label || '')) failures.push(`German Ace label retained English copy: ${localized.ace?.label}`);
   if (!localized.labelBounds || localized.labelBounds.x < 0 || localized.labelBounds.x + localized.labelBounds.width > 840 || localized.labelBounds.y < 0) failures.push(`compact localized Ace label outside viewport: ${JSON.stringify(localized.labelBounds)}`);
 
@@ -197,15 +221,15 @@ try {
     aceBounties: textState.aceBounties,
     visibleAce: textState.visibleEnemies?.find((enemy) => enemy.ace)?.ace || null
   };
-  if (textState.aceBounties?.availableVariants !== 1000) failures.push(`render_game_to_text missing Ace catalog: ${JSON.stringify(textState.aceBounties)}`);
-  if (!textState.visibleEnemies?.some((enemy) => enemy.ace?.number === 1000)) failures.push('render_game_to_text missing visible Ace identity');
+  if (textState.aceBounties?.availableVariants !== 1000 || textState.aceBounties?.availableProtocolVariants !== 10000) failures.push(`render_game_to_text missing Ace/Nemesis catalogs: ${JSON.stringify(textState.aceBounties)}`);
+  if (!textState.visibleEnemies?.some((enemy) => enemy.ace?.number === 1000 && enemy.ace?.protocol?.number === 10000)) failures.push('render_game_to_text missing visible Ace/Nemesis identity');
 
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
   report.ok = failures.length === 0;
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   if (!report.ok) throw new Error(`[ace-bounty-runtime] ${failures.join('; ')}`);
-  console.log(`[ace-bounty-runtime] PASS output=${outputDir}`);
+  console.log(`[ace-nemesis-runtime] PASS output=${outputDir}`);
 } finally {
   await browser.close();
   if (server) server.kill();

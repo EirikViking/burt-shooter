@@ -2559,7 +2559,8 @@ export class EnemyManager {
           enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
         }
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
-        enemy.startEntry(startX, -50, pos.x, pos.y, entryDurationMs, entryDelayMs);
+        const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
+        enemy.startEntry(startX, -50, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
         this.enemies.push(enemy);
         this.container.addChild(enemy.sprite);
         markWaveSpawnDone();
