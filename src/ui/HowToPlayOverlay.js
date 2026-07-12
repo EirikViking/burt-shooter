@@ -112,7 +112,15 @@ const RUN_HELP_ROWS = Object.freeze([
   HELP_ROWS[9],
   HELP_ROWS[10],
   {
-    code: '12',
+    code: '13',
+    icon: 'TASK',
+    label: 'SIDE DIRECTIVES',
+    control: '1000 MISSIONS / UP TO 5 REWARDS PER RUN',
+    tip: 'Complete optional live objectives for visible rewards. Directives never change score rules and can be ignored when survival needs your full attention.',
+    accent: 0x66ff9d
+  },
+  {
+    code: '14',
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
     control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
@@ -120,7 +128,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xffef7e
   },
   {
-    code: '13',
+    code: '15',
     icon: 'SCAN',
     label: 'DRAFT RESCAN',
     control: 'R / GAMEPAD Y: ONE RESCAN PER RUN',
@@ -128,7 +136,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0x37f5ff
   },
   {
-    code: '14',
+    code: '16',
     icon: 'HOLD',
     label: 'DRAFT HOLD',
     control: 'L / GAMEPAD X: HOLD ONE OFFER FOR NEXT DRAFT',
@@ -136,7 +144,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xffd15c
   },
   {
-    code: '15',
+    code: '17',
     icon: 'SLOT',
     label: 'POWERUP OVERLAP',
     control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
@@ -144,7 +152,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xb285ff
   },
   {
-    code: '16',
+    code: '18',
     icon: 'CAP',
     label: 'STACK LIMITS',
     control: 'FIRST STACK FULL / SECOND STACK 55%',
@@ -152,7 +160,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xff8f5a
   },
   {
-    code: '17',
+    code: '19',
     icon: 'SYNC',
     label: 'THREAT RESPONSE',
     control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
@@ -180,6 +188,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
   'RUN MODES': "Mayhem owns the ranked receipt. Scout lets you learn without signing it. Sector Run begins later using unlocked checkpoints. Pick the mode that answers today's question; the leaderboard cannot teach a pattern you never stopped to read.",
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
+  'SIDE DIRECTIVES': 'Every run draws from one thousand objective, intensity, and reward combinations. Complete up to five for useful hardware, or ignore the clipboard when the bullet lanes demand your full attention. The directive is a side bet, not a tax on survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',

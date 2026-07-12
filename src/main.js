@@ -640,6 +640,7 @@ function buildGameTextState(game) {
     cursor: getGameplayCursorDebugState(game),
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
+    tacticalDirectives: playScene?.getTacticalDirectiveDebugState ? playScene.getTacticalDirectiveDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     tacticalLoadoutOverlay: playScene?.tacticalLoadoutOverlay?.getDebugState?.() || null,

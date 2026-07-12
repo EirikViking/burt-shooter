@@ -61,6 +61,13 @@ import {
 } from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine, projectTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
+  TACTICAL_DIRECTIVE_VARIANT_COUNT,
+  applyTacticalDirectiveEvent,
+  createTacticalDirectiveSession,
+  getTacticalDirectiveState,
+  pickTacticalDirective
+} from '../config/TacticalDirectives.js';
+import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
   resolveOverrunMilestoneVoiceCue
@@ -128,6 +135,7 @@ const RANK_UP_PRESENTATION_MS = 2610;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
+const TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP = 5;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 const STRAGGLER_BEACON_MAX_TARGETS = 3;
 
@@ -185,6 +193,10 @@ export class PlayScene {
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
     this.tacticalDraftConfirmTimeout = null;
+    this.tacticalDirectiveSession = null;
+    this.tacticalDirectiveHistory = [];
+    this.tacticalDirectiveSequence = 0;
+    this.lastTacticalDirectiveCompletion = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -655,6 +667,10 @@ export class PlayScene {
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
+    this.tacticalDirectiveSession = null;
+    this.tacticalDirectiveHistory = [];
+    this.tacticalDirectiveSequence = 0;
+    this.lastTacticalDirectiveCompletion = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -795,6 +811,7 @@ export class PlayScene {
       this.player.setRank(initialRank, 'init_placeholder');
     }
     this.applySeasonCosmetics();
+    this.startNextTacticalDirective('run_start');
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
@@ -1334,6 +1351,10 @@ export class PlayScene {
         powerupType: powerup.type,
         sector: this.game?.level || 1
       });
+      this.emitTacticalDirectiveEvent('powerup_collected', {
+        powerupType: powerup.type,
+        sector: this.game?.level || 1
+      });
       if (powerup.type === 'blink_drive') {
         this.blinkDriveOrderStartedAt = Number(this.gameTime) || 0;
         this.blinkDriveOrderCompleted = false;
@@ -1378,6 +1399,110 @@ export class PlayScene {
       this.showRunContractCompletion(completion.id);
     }
     return result.completed || [];
+  }
+
+  startNextTacticalDirective(reason = 'advance') {
+    if (this.tacticalDirectiveHistory.length >= TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP) {
+      this.tacticalDirectiveSession = null;
+      return null;
+    }
+    const previousId = this.tacticalDirectiveSession?.directiveId
+      || this.tacticalDirectiveHistory.at(-1)?.directiveId
+      || null;
+    const seed = this.game?.contentDirector?.seed
+      || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
+    const maxTier = Math.max(1, Math.min(10,
+      2 + Math.floor(Number(this.game?.level) || 1) + this.tacticalDirectiveHistory.length
+    ));
+    const directive = pickTacticalDirective(seed, this.tacticalDirectiveSequence, {
+      excludeId: previousId,
+      maxTier
+    });
+    this.tacticalDirectiveSequence += 1;
+    this.tacticalDirectiveSession = createTacticalDirectiveSession(directive);
+    if (this.tacticalDirectiveSession) {
+      this.tacticalDirectiveSession.startedInSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+      this.tacticalDirectiveSession.reason = reason;
+    }
+    return this.getTacticalDirectiveDebugState();
+  }
+
+  emitTacticalDirectiveEvent(type, payload = {}) {
+    const before = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    if (!before || before.event !== type || before.completed) return false;
+    const result = applyTacticalDirectiveEvent(this.tacticalDirectiveSession, {
+      ...payload,
+      type,
+      sector: payload.sector || this.game?.level || 1
+    });
+    this.tacticalDirectiveSession = result.session;
+    if (!result.changed) return false;
+    if (!result.completed) return true;
+
+    const completion = {
+      directiveId: before.id,
+      objectiveId: before.objectiveId,
+      objectiveLabel: before.objectiveLabel,
+      target: before.target,
+      tier: before.tier,
+      rewardId: before.rewardId,
+      rewardLabel: before.rewardLabel,
+      rewardKind: before.rewardKind,
+      rewardPowerupType: before.rewardPowerupType,
+      sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
+      completedAt: Date.now()
+    };
+    this.tacticalDirectiveHistory.push(completion);
+    this.lastTacticalDirectiveCompletion = completion;
+    this.applyTacticalDirectiveReward(completion);
+    this.showTacticalDirectiveCompletion(completion);
+    this.startNextTacticalDirective('completion');
+    return true;
+  }
+
+  applyTacticalDirectiveReward(completion = {}) {
+    if (completion.rewardKind === 'rescan') {
+      this.tacticalDraftRescansRemaining = Math.min(3, Math.max(0, Number(this.tacticalDraftRescansRemaining) || 0) + 1);
+      return { granted: true, kind: 'rescan', remaining: this.tacticalDraftRescansRemaining };
+    }
+    const type = completion.rewardPowerupType;
+    if (!type || !this.powerupManager || !this.player) return { granted: false, kind: completion.rewardKind || null };
+    const powerup = this.powerupManager.spawnSpecific(
+      Number(this.player.x) || this.game.getWidth() / 2,
+      Math.max(96, (Number(this.player.y) || this.game.getHeight() * 0.72) - 42),
+      type,
+      { source: 'tactical_directive' }
+    );
+    return { granted: Boolean(powerup), kind: 'powerup', type };
+  }
+
+  showTacticalDirectiveCompletion(completion = {}) {
+    const title = translateText('SIDE DIRECTIVE COMPLETE');
+    const objective = translateText(completion.objectiveLabel || 'SIDE DIRECTIVE');
+    const reward = translateText(completion.rewardLabel || 'EXTRA RESCAN');
+    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}`, {
+      fontSize: this.game.getWidth() < 720 ? 15 : 18,
+      fill: '#fff3a0',
+      slot: 'corner',
+      type: 'tacticalDirective',
+      priority: 4,
+      duration: 1800,
+      accent: 0xffef7e
+    });
+    AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });
+  }
+
+  getTacticalDirectiveDebugState() {
+    const active = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    return {
+      active,
+      completedCount: this.tacticalDirectiveHistory.length,
+      completionCap: TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP,
+      availableVariants: TACTICAL_DIRECTIVE_VARIANT_COUNT,
+      sequence: this.tacticalDirectiveSequence,
+      lastCompletion: this.lastTacticalDirectiveCompletion ? { ...this.lastTacticalDirectiveCompletion } : null,
+      history: this.tacticalDirectiveHistory.map((entry) => ({ ...entry }))
+    };
   }
 
   getRunContractProgressChanges(previousActive = [], nextActive = [], completed = []) {
@@ -1782,6 +1907,11 @@ export class PlayScene {
         dangerous: nearbyBullets > 0,
         nearbyBullets
       });
+      this.emitTacticalDirectiveEvent('phase_used', {
+        sector: this.game?.level || 1,
+        dangerous: nearbyBullets > 0,
+        nearbyBullets
+      });
     }
     this.playerPhaseWasActive = phaseActive;
 
@@ -1942,6 +2072,7 @@ export class PlayScene {
     console.log(`[LevelStart] starting source=${source} level=${this.game.level}`);
     this._lastStartedLevel = this.game.level;
     this.emitRunContractEvent('sector_reached', { sector: this.game.level });
+    this.emitTacticalDirectiveEvent('sector_reached', { sector: this.game.level });
 
     this.levelAdvancePending = false;
     this.resetBossLifeLossCap('level_start');
@@ -6656,7 +6787,7 @@ export class PlayScene {
     pilotOrdersLine.zIndex = 7;
     overlay.addChild(pilotOrdersLine);
 
-    const tacticalDraftLine = createText(this.getPauseTacticalDraftSummary(), {
+    const tacticalDraftLine = createText([this.getPauseTacticalDraftSummary(), this.getPauseTacticalDirectiveSummary()].join('\n'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: Math.round(10 * Math.min(uiScale, 1.2)),
       fontWeight: 'bold',
@@ -6666,16 +6797,16 @@ export class PlayScene {
       align: 'center'
     });
     tacticalDraftLine.anchor.set(0.5);
-    tacticalDraftLine.position.set(centerX, panelY + 190 * uiScale);
+    tacticalDraftLine.position.set(centerX, panelY + 196 * uiScale);
     tacticalDraftLine.zIndex = 7;
     overlay.addChild(tacticalDraftLine);
 
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 238 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 286 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 334 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 382 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 430 * uiScale, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 246 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 294 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 342 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 390 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 438 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.closeTacticalLoadoutOverlay();
@@ -6735,7 +6866,7 @@ export class PlayScene {
     decor.livesChip?.fitText?.();
     decor.powerupChip?.fitText?.();
     if (decor.pilotOrdersValue) decor.pilotOrdersValue.text = this.getPausePilotOrdersSummary();
-    if (decor.tacticalDraftValue) decor.tacticalDraftValue.text = this.getPauseTacticalDraftSummary();
+    if (decor.tacticalDraftValue) decor.tacticalDraftValue.text = [this.getPauseTacticalDraftSummary(), this.getPauseTacticalDirectiveSummary()].join('\n');
   }
 
   getPausePowerupSummary(now = Date.now()) {
@@ -6766,6 +6897,7 @@ export class PlayScene {
       powerup: decor?.powerupValue?.text ?? null,
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
       tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
+      tacticalDirective: this.getPauseTacticalDirectiveSummary(),
       tacticalLoadout: this.tacticalLoadoutOverlay?.getDebugState?.() || null
     };
   }
@@ -6798,9 +6930,28 @@ export class PlayScene {
     const doctrineLabel = doctrine
       ? translateText('{name} // {stage}', { name: translateText(doctrine.name), stage: translateText(doctrine.stage) })
       : '';
+    const recent = labels.slice(-2).join(' + ');
+    const overflow = labels.length > 2 ? ` +${labels.length - 2}` : '';
     return doctrineLabel
-      ? `${prefix}: ${doctrineLabel} (${labels.length})`
-      : `${prefix}: ${labels.slice(-2).join(' + ')}`;
+      ? `${doctrineLabel} // ${recent}${overflow}`
+      : `${prefix}: ${recent}${overflow}`;
+  }
+
+  getPauseTacticalDirectiveSummary() {
+    const state = this.getTacticalDirectiveDebugState();
+    const active = state?.active;
+    if (!active) {
+      return translateText('DIRECTIVES COMPLETE {count}/{cap}', {
+        count: state?.completedCount || 0,
+        cap: state?.completionCap || TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP
+      });
+    }
+    return translateText('{label}: {objective} {progress} // {reward}', {
+      label: translateText('SIDE DIRECTIVE'),
+      objective: translateText(active.objectiveLabel),
+      progress: active.progressLabel,
+      reward: translateText(active.rewardLabel)
+    });
   }
 
   openSettingsOverlay() {
@@ -12264,6 +12415,10 @@ export class PlayScene {
           supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID,
           deferPersistence: this.isCollisionHotPathActive
         });
+        this.emitTacticalDirectiveEvent('boss_support_defeated', {
+          sector: this.game?.level || 1,
+          supportId: enemy?.bossSupportShipProfile?.id || enemy?.bossFuelProfile?.id || BOSS_FUEL_SHIP_CODEX_ID
+        });
       }
       if ((this.runContractSession?.active || []).some((item) => {
         const contract = getRunContractById(item.id);
@@ -12295,6 +12450,14 @@ export class PlayScene {
     this.bestComboCount = Math.max(Number(this.bestComboCount) || 0, this.comboCount);
     this.lastKillAt = now;
     this.comboTimerMs = this.comboWindowMs;
+    if (enemy?.kind !== 'boss') {
+      this.emitTacticalDirectiveEvent('enemy_defeated', {
+        sector: this.game?.level || 1,
+        enemyType: enemy?.type || enemy?.kind || 'enemy',
+        comboCount: this.comboCount,
+        count: 1
+      });
+    }
     this.maybeDropFirstRunPickup(enemy);
 
     // Check for milestone bonuses (5x, 10x, 15x, 20x)
@@ -12651,6 +12814,10 @@ export class PlayScene {
     this.dangerDodgeTimerMs = 2200;
     this.bestDangerDodgeStreak = Math.max(this.bestDangerDodgeStreak, this.dangerDodgeCount);
     this.emitRunContractEvent('near_miss', {
+      sector: this.game?.level || 1,
+      streak: this.dangerDodgeCount
+    });
+    this.emitTacticalDirectiveEvent('near_miss', {
       sector: this.game?.level || 1,
       streak: this.dangerDodgeCount
     });
@@ -14451,6 +14618,10 @@ export class PlayScene {
       bossId,
       slowTimeActive: Boolean(this.player?.isSlowTimeActive?.()),
       powerupType: this.player?.activePowerup?.type || null
+    });
+    this.emitTacticalDirectiveEvent('boss_defeated', {
+      sector: level,
+      bossId
     });
     this.recordThreatDefeat(bossId, 'bosses', {
       name: bossName,

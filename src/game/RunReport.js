@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 4;
+const RUN_REPORT_VERSION = 5;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -172,6 +172,26 @@ export function createRunReport(summary = {}) {
       totalPicks: toWholeNumber(summary.tacticalDoctrine.totalPicks)
     }
     : null;
+  const tacticalDirectiveHistory = (Array.isArray(summary.tacticalDirectives?.history)
+    ? summary.tacticalDirectives.history
+    : [])
+    .map((entry) => ({
+      directiveId: String(entry?.directiveId || '').trim(),
+      objectiveId: String(entry?.objectiveId || '').trim(),
+      objectiveLabel: String(entry?.objectiveLabel || '').trim(),
+      target: Math.max(1, toWholeNumber(entry?.target, 1)),
+      tier: Math.max(1, toWholeNumber(entry?.tier, 1)),
+      rewardId: String(entry?.rewardId || '').trim(),
+      rewardLabel: String(entry?.rewardLabel || '').trim(),
+      sector: Math.max(1, toWholeNumber(entry?.sector, 1))
+    }))
+    .filter((entry) => entry.directiveId);
+  const tacticalDirectives = {
+    completedCount: tacticalDirectiveHistory.length,
+    completionCap: Math.max(0, toWholeNumber(summary.tacticalDirectives?.completionCap, 5)),
+    availableVariants: Math.max(0, toWholeNumber(summary.tacticalDirectives?.availableVariants, 1000)),
+    history: tacticalDirectiveHistory
+  };
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -190,7 +210,8 @@ export function createRunReport(summary = {}) {
       deathCoach,
       pilotOrdersCompleted,
       tacticalDraftPicks,
-      tacticalDoctrine
+      tacticalDoctrine,
+      tacticalDirectives
     },
     sections: [
       {
@@ -229,6 +250,7 @@ export function createRunReport(summary = {}) {
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
+          { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
           { id: 'newRanks', value: Array.isArray(summary.newRanksThisRun) ? summary.newRanksThisRun.length : 0 },
           { id: 'codex', value: toWholeNumber(summary.codexDiscoveries) },
           { id: 'pilotOrders', value: pilotOrdersCompleted, rawValue: pilotOrdersCompleted }
@@ -251,6 +273,7 @@ export function summarizeRunReport(report = null) {
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
+    tacticalDirectives: report.summary?.tacticalDirectives || null,
     tacticalDoctrine: report.summary?.tacticalDoctrine || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };

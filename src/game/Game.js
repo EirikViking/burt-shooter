@@ -990,6 +990,7 @@ export class Game {
       sectorStartCheckpoint: this.sectorStartCheckpoint || null,
       sectorStartPlaySector: this.sectorStartPlaySector || null,
       runContracts: play?.getRunContractDebugState?.() || null,
+      tacticalDirectives: play?.getTacticalDirectiveDebugState?.() || null,
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },

@@ -207,6 +207,12 @@ async function forceRunReportScenario(page) {
     });
     play.player.runAugmentIds = ['damage_up', 'speed_up'];
     play.player.consumedRunAugmentIds = ['nano_patch'];
+    play.tacticalDirectiveHistory = [
+      { directiveId: 'hostile_quota_t01_shield', objectiveId: 'hostile_quota', objectiveLabel: 'HOSTILE QUOTA', target: 10, tier: 1, rewardId: 'shield', rewardLabel: 'SHIELD', sector: 1 },
+      { directiveId: 'graze_count_t02_rescan', objectiveId: 'graze_count', objectiveLabel: 'GRAZE COUNT', target: 3, tier: 2, rewardId: 'rescan', rewardLabel: 'EXTRA RESCAN', sector: 2 },
+      { directiveId: 'combo_peak_t03_drones', objectiveId: 'combo_peak', objectiveLabel: 'COMBO PEAK', target: 10, tier: 3, rewardId: 'drones', rewardLabel: 'DRONES', sector: 4 }
+    ];
+    play.lastTacticalDirectiveCompletion = play.tacticalDirectiveHistory.at(-1);
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
     play.finalLifeLossSource = 'enemy_bullet';
@@ -248,6 +254,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.tacticalDraftPicks?.some((pick) => pick.id === 'nano_patch' && pick.consumed === true), 'runReport summary should retain consumed tactical state.');
   assert(state.runReport?.tacticalDoctrine?.id === 'strike_vector', 'runReport summary should preserve the run doctrine.');
   assert(state.runReport?.tacticalDoctrine?.stage === 'CALIBRATING', 'runReport summary should preserve doctrine maturity.');
+  assert(state.runReport?.tacticalDirectives?.completedCount === 3, 'runReport summary should preserve completed side directives.');
+  assert(state.runReport?.tacticalDirectives?.availableVariants === 1000, 'runReport summary should preserve the 1000-variant catalog size.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }

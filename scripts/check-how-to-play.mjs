@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
-  runs: ['PICKUPS & BONUS', 'RUN MODES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
+  runs: ['PICKUPS & BONUS', 'RUN MODES', 'SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']
 };
 
 function timestamp() {
@@ -304,7 +304,7 @@ try {
           await page.waitForTimeout(90);
           const localized = await readState(page);
           assert(localized.howToPlayOverlay?.pageId === 'runs', `${locale} How To Play left the Runs page`);
-          const newRules = new Set(['TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
+          const newRules = new Set(['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
           for (const card of (localized.howToPlayOverlay?.cards || []).filter((entry) => newRules.has(entry.label))) {
             assert(card.translatedLabel !== card.label, `${locale} left How To Play label in English: ${card.label}`);
             assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);

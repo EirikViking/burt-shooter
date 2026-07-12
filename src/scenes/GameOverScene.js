@@ -101,6 +101,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   newRanks: 'New ranks',
   codex: 'Codex discoveries',
   tacticalDrafts: 'Tactical upgrades',
+  tacticalDirectives: 'SIDE DIRECTIVES',
   pilotOrders: 'PILOT ORDERS'
 });
 

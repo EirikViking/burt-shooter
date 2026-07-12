@@ -53,6 +53,9 @@ export class HUD {
     this.missionProgressFill = new PIXI.Graphics();
     this.missionProgressActive = new PIXI.Graphics();
     this.missionProgressTicks = new PIXI.Graphics();
+    this.directiveProgressBg = new PIXI.Graphics();
+    this.directiveProgressFill = new PIXI.Graphics();
+    this.directiveText = null;
     this.activePowerupRows = [];
     this.tacticalAugmentItems = [];
     this.highscoreChaseRenderKey = '';
@@ -90,6 +93,8 @@ export class HUD {
     this.hudContainer.addChild(this.missionProgressFill);
     this.hudContainer.addChild(this.missionProgressActive);
     this.hudContainer.addChild(this.missionProgressTicks);
+    this.hudContainer.addChild(this.directiveProgressBg);
+    this.hudContainer.addChild(this.directiveProgressFill);
 
     // Rank Group
     this.rankIcon.anchor.set(0.5);
@@ -319,6 +324,19 @@ export class HUD {
     this.missionText.anchor.set(0.5);
     this.hudContainer.addChild(this.missionText);
 
+    this.directiveText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    this.directiveText.anchor.set(0.5);
+    this.directiveText.visible = false;
+    this.hudContainer.addChild(this.directiveText);
+
     // Current sector label.
     this.locationText = createText(formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
@@ -350,6 +368,7 @@ export class HUD {
     this.updateComboMeter();
     this.livesText.text = `LIVES ${this.game.lives}`;
     this.updateMissionStatus();
+    this.updateTacticalDirective();
 
     // TASK 4: Update lives color based on count
     if (this.game.lives === 1) {
@@ -713,6 +732,86 @@ export class HUD {
       activeEnemies,
       activeBullets
     });
+  }
+
+  updateTacticalDirective() {
+    const play = this.game?.scenes?.play;
+    const debugState = play?.getTacticalDirectiveDebugState?.();
+    const active = debugState?.active;
+    const rail = this.directiveProgressBg;
+    const fill = this.directiveProgressFill;
+    if (!this.directiveText || !rail || !fill) return;
+
+    const width = Math.max(0, Number(rail.__w) || 0);
+    const height = Math.max(0, Number(rail.__h) || 0);
+    const x = Number(rail.__x) || 0;
+    const y = Number(rail.__y) || 0;
+    rail.clear();
+    fill.clear();
+
+    if (!active) {
+      const capped = Number(debugState?.completedCount) >= Number(debugState?.completionCap)
+        && Number(debugState?.completionCap) > 0;
+      this.directiveText.visible = capped;
+      rail.visible = fill.visible = capped && width > 0;
+      if (capped) {
+        this.directiveText.text = translateText('DIRECTIVES COMPLETE {count}/{cap}', {
+          count: debugState.completedCount,
+          cap: debugState.completionCap
+        });
+        this.directiveText.style.fill = '#88ffb0';
+        rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+        rail.fill({ color: 0x06141b, alpha: 0.9 });
+        fill.roundRect(x, y, width, height, Math.max(1, height / 2));
+        fill.fill({ color: 0x66ff9d, alpha: 0.92 });
+      }
+      rail._debugDirective = { visible: capped, completed: capped, ratio: capped ? 1 : 0 };
+      return;
+    }
+
+    const objective = translateText(active.objectiveLabel);
+    const reward = translateText(active.rewardLabel);
+    const rewardText = translateText('REWARD: {reward}', { reward });
+    const compact = this.game.getWidth() < 1000;
+    this.directiveText.text = compact
+      ? translateText('{objective} {progress} // {reward}', {
+        objective,
+        progress: active.progressLabel,
+        reward
+      })
+      : translateText('{label}: {objective} {progress} // {reward}', {
+        label: translateText('SIDE DIRECTIVE'),
+        objective,
+        progress: active.progressLabel,
+        reward: rewardText
+      });
+    this.directiveText.style.fill = '#fff3a0';
+    this.directiveText.visible = true;
+    this.directiveText.scale.set(1);
+    this.fitTextToWidth(this.directiveText, Math.max(120, width), compact ? 0.78 : 0.62);
+
+    const ratio = Math.max(0, Math.min(1, Number(active.ratio) || 0));
+    rail.visible = fill.visible = width > 0 && height > 0;
+    rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+    rail.fill({ color: 0x06141b, alpha: 0.92 });
+    rail.stroke({ color: active.accent || 0x66f7ff, width: 0.8, alpha: 0.42 });
+    if (ratio > 0) {
+      const fillWidth = Math.max(height, width * ratio);
+      fill.roundRect(x, y, fillWidth, height, Math.max(1, height / 2));
+      fill.fill({ color: active.rewardAccent || active.accent || 0xffef7e, alpha: 0.9 });
+    }
+    rail._debugDirective = {
+      visible: true,
+      id: active.id,
+      objectiveId: active.objectiveId,
+      rewardId: active.rewardId,
+      progress: active.progress,
+      target: active.target,
+      ratio: Number(ratio.toFixed(3)),
+      label: this.directiveText.text,
+      textBounds: this.directiveText.getBounds?.() || null,
+      railBounds: { x, y, width, height }
+    };
   }
 
   updateMissionProgress({
@@ -1920,7 +2019,7 @@ export class HUD {
     const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
     const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
     const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.56, (isLargeDesktop ? 520 : 440) * uiScale);
-    const missionPanelHeight = Math.round((layout.isMobile ? 38 : (isLargeDesktop ? 58 : 52)) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 62 : (isLargeDesktop ? 82 : 74)) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
     const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
 
@@ -1931,6 +2030,7 @@ export class HUD {
     this.rankText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 15 : 14)) * uiScale);
     this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
     this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
+    this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
 
     this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
     this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
@@ -1972,13 +2072,23 @@ export class HUD {
     this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 14 : 12));
     this.missionText.x = missionPanelX + missionPanelWidth / 2;
     this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 36 : 32));
+    this.directiveText.x = missionPanelX + missionPanelWidth / 2;
+    this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 49 : (isLargeDesktop ? 64 : 58)) * uiScale);
     if (this.missionProgressBg) {
       const railPad = Math.round((layout.isMobile ? 10 : 14) * uiScale);
       const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
       this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
-      this.missionProgressBg.__y = Math.round(missionPanelY + missionPanelHeight - railHeight - (layout.isMobile ? 4 : 6) * Math.min(uiScale, 1.4));
+      this.missionProgressBg.__y = Math.round(missionPanelY + (layout.isMobile ? 35 : (isLargeDesktop ? 49 : 43)) * uiScale);
       this.missionProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
       this.missionProgressBg.__h = railHeight;
+    }
+    if (this.directiveProgressBg) {
+      const railPad = Math.round((layout.isMobile ? 10 : 14) * uiScale);
+      const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
+      this.directiveProgressBg.__x = Math.round(missionPanelX + railPad);
+      this.directiveProgressBg.__y = Math.round(missionPanelY + missionPanelHeight - railHeight - 4 * Math.min(uiScale, 1.4));
+      this.directiveProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
+      this.directiveProgressBg.__h = railHeight;
     }
 
     this.locationText.x = canvasWidth - margin;

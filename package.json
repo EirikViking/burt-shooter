@@ -62,6 +62,8 @@
     "check:retention-presentation": "node scripts/check-retention-presentation.mjs",
     "check:tactical-draft": "node scripts/check-tactical-draft.mjs",
     "check:tactical-doctrine": "node scripts/check-tactical-doctrine.mjs",
+    "check:tactical-directives": "node scripts/check-tactical-directives.mjs",
+    "check:tactical-directive-runtime": "node scripts/check-tactical-directive-runtime.mjs",
     "check:tactical-augment-tray": "node scripts/check-tactical-augment-tray.mjs",
     "check:tactical-loadout-overlay": "node scripts/check-tactical-loadout-overlay.mjs",
     "check:human-retention-run": "node scripts/simulate-human-retention-run.mjs",
