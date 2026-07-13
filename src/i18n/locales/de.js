@@ -1580,6 +1580,14 @@ const sourceText = Object.freeze({
   "SWARM CONTRACT! Read nothing, profit briefly.": "SCHWARMVERTRAG! Nichts lesen, kurz profitieren.",
   "PULSE REFUND! Bullets become paperwork.": "PULSRUECKERSTATTUNG! Kugeln werden Papierkram.",
   "SUPER EXTRA LIFE! +2 LIVES!": "SUPER-EXTRALEBEN! +2 LEBEN!",
+  "NOVA MIRACLE": "NOVA-WUNDER",
+  "MIRACLE": "WUNDER",
+  "instant salvation": "sofortige Rettung",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "entfernt alle Bedrohungen außer dem Boss und alle feindlichen Schüsse vom Feld und gewährt dann ein Extraleben",
+  "the rarest rescue signal in the swarm": "das seltenste Rettungssignal im Schwarm",
+  "the whole board has become a bad place to be": "das ganze Spielfeld zu einem sehr schlechten Aufenthaltsort geworden ist",
+  "Catch it. The miracle handles everything else.": "Fang es. Das Wunder erledigt den Rest.",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "NOVA-WUNDER! FELD BEREINIGT! +1 LEBEN!",
 
 
   'RECRUIT': 'REKRUT',

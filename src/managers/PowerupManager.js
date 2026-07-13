@@ -27,7 +27,8 @@ const MAJOR_POWERUP_TYPES = new Set([
   'plasma_lance',
   'void_crown',
   'mercy_protocol',
-  'super_extra_life'
+  'super_extra_life',
+  'nova_miracle'
 ]);
 
 const BASE_PICKUP_ASSIST_RADIUS = 24;
@@ -78,10 +79,13 @@ class Powerup {
     if (Number.isFinite(Number(this.movement.pickupRadius))) {
       this.radius = Math.max(6, Number(this.movement.pickupRadius));
     }
-    const pickupAssistFloor = MAJOR_POWERUP_TYPES.has(type) || type === 'super_extra_life'
+    const configuredPickupAssistRadius = Number(this.movement.pickupAssistRadius);
+    const pickupAssistFloor = MAJOR_POWERUP_TYPES.has(type)
       ? MAJOR_PICKUP_ASSIST_RADIUS
       : BASE_PICKUP_ASSIST_RADIUS;
-    this.pickupAssistRadius = Math.max(this.radius, pickupAssistFloor);
+    this.pickupAssistRadius = Number.isFinite(configuredPickupAssistRadius)
+      ? Math.max(this.radius, configuredPickupAssistRadius)
+      : Math.max(this.radius, pickupAssistFloor);
     this.collectionRadius = this.pickupAssistRadius;
     if (Number.isFinite(Number(this.movement.verticalSpeed))) {
       this.vy = Number(this.movement.verticalSpeed);
@@ -92,7 +96,7 @@ class Powerup {
     this.evasiveConfig = this.movement.evasive ? this.movement : null;
     this.evasiveVx = (Math.random() < 0.5 ? -1 : 1) * randomBetween(2.8, 5.8);
     this.evasiveTargetX = x;
-    this.nextEvasiveJumpAt = randomBetween(120, 360);
+    this.nextEvasiveJumpAt = randomBetween(70, 180);
 
     // TASK A: Idle animation state
     this.bobPhase = Math.random() * Math.PI * 2;
@@ -135,7 +139,9 @@ class Powerup {
         const iconSprite = new PIXI.Sprite(texture);
         iconSprite.anchor.set(0.5);
         iconSprite.label = 'mainSprite';
-        const maxIconSize = ['orbital_strike', 'shockwave', 'bomb', 'super_extra_life'].includes(this.type) ? 52 : 48;
+        const maxIconSize = this.type === 'nova_miracle'
+          ? 60
+          : (['orbital_strike', 'shockwave', 'bomb', 'super_extra_life'].includes(this.type) ? 52 : 48);
         const scale = maxIconSize / Math.max(texture.width, texture.height);
         iconSprite.scale.set(scale);
 
@@ -147,10 +153,15 @@ class Powerup {
 
         const glow = new PIXI.Graphics();
         glow.circle(0, 0, 25);
-        glow.fill({ color: this.color, alpha: this.type === 'super_extra_life' ? 0.48 : 0.34 });
+        glow.fill({
+          color: this.color,
+          alpha: this.type === 'nova_miracle' ? 0.68 : (this.type === 'super_extra_life' ? 0.48 : 0.34)
+        });
         this.sprite.addChildAt(glow, 1);
         if (this.type === 'super_extra_life') {
           this.createSuperLifeOverlays();
+        } else if (this.type === 'nova_miracle') {
+          this.createNovaMiracleOverlays();
         }
       } else {
         this.createFallbackSprite();
@@ -193,6 +204,16 @@ class Powerup {
     this.sprite.addChild(this.superLifeOrbit);
   }
 
+  createNovaMiracleOverlays() {
+    this.novaMiracleHalo = new PIXI.Graphics();
+    this.novaMiracleHalo.label = 'novaMiracleHalo';
+    this.sprite.addChildAt(this.novaMiracleHalo, 0);
+
+    this.novaMiracleCrown = new PIXI.Graphics();
+    this.novaMiracleCrown.label = 'novaMiracleCrown';
+    this.sprite.addChild(this.novaMiracleCrown);
+  }
+
   scheduleNextEvasiveJump(age) {
     const minMs = Number(this.evasiveConfig?.jumpIntervalMinMs) || 260;
     const maxMs = Math.max(minMs, Number(this.evasiveConfig?.jumpIntervalMaxMs) || 620);
@@ -227,8 +248,12 @@ class Powerup {
         -(Number(this.evasiveConfig.horizontalJitterPx) || 48),
         Number(this.evasiveConfig.horizontalJitterPx) || 48
       );
-      this.evasiveTargetX = clamp(this.x + away * randomBetween(jumpMin, jumpMax) + jitter, minX, maxX);
-      this.evasiveVx += away * randomBetween(2.2, 4.8);
+      const fakeoutChance = clamp(Number(this.evasiveConfig.fakeoutChance) || 0, 0, 0.5);
+      const jumpDirection = Math.random() < fakeoutChance ? -away : away;
+      const requestedTarget = this.x + jumpDirection * randomBetween(jumpMin, jumpMax) + jitter;
+      const boundaryDirection = requestedTarget <= minX || requestedTarget >= maxX ? -jumpDirection : jumpDirection;
+      this.evasiveTargetX = clamp(this.x + boundaryDirection * randomBetween(jumpMin, jumpMax) + jitter, minX, maxX);
+      this.evasiveVx += boundaryDirection * randomBetween(3.8, 7.2);
       this.scheduleNextEvasiveJump(age);
     }
 
@@ -241,7 +266,10 @@ class Powerup {
       const horizontalPressure = Math.max(0, 1 - Math.abs(dx) / dodgeRadius);
       if (horizontalPressure > 0 && verticalPressure > 0) {
         const direction = dx >= 0 ? 1 : -1;
-        acceleration += direction * (Number(this.evasiveConfig.lateralAccel) || 2.2) * 18 * horizontalPressure * verticalPressure;
+        const closeBoost = Math.abs(dy) < 190
+          ? Math.max(1, Number(this.evasiveConfig.closePressureBoost) || 1)
+          : 1;
+        acceleration += direction * (Number(this.evasiveConfig.lateralAccel) || 2.2) * 18 * horizontalPressure * verticalPressure * closeBoost;
       }
     }
 
@@ -285,6 +313,40 @@ class Powerup {
     }
   }
 
+  updateNovaMiracleVisuals(age) {
+    if (!this.novaMiracleHalo && !this.novaMiracleCrown) return;
+    const pulse = Math.sin(age * 0.009) * 0.5 + 0.5;
+    const spin = age * 0.0028;
+    if (this.novaMiracleHalo) {
+      this.novaMiracleHalo.clear();
+      for (let i = 0; i < 3; i += 1) {
+        const radius = 33 + i * 9 + pulse * (5 - i);
+        this.novaMiracleHalo.circle(0, 0, radius);
+        this.novaMiracleHalo.stroke({
+          width: 3.4 - i * 0.7,
+          color: i === 0 ? 0xffffff : (i === 1 ? 0x43f7ff : 0xff45dd),
+          alpha: 0.58 - i * 0.11 + pulse * 0.12
+        });
+      }
+    }
+    if (this.novaMiracleCrown) {
+      this.novaMiracleCrown.clear();
+      for (let i = 0; i < 8; i += 1) {
+        const angle = spin + i * Math.PI / 4;
+        const inner = 44 + pulse * 2;
+        const outer = 58 + pulse * 8 + (i % 2) * 5;
+        this.novaMiracleCrown.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        this.novaMiracleCrown.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      this.novaMiracleCrown.stroke({ width: 2.8, color: 0xfff3a0, alpha: 0.52 + pulse * 0.28 });
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -spin * 1.6 + i * Math.PI / 3;
+        this.novaMiracleCrown.circle(Math.cos(angle) * 49, Math.sin(angle) * 49, 2.4 + pulse * 1.4);
+      }
+      this.novaMiracleCrown.fill({ color: 0xffffff, alpha: 0.55 + pulse * 0.28 });
+    }
+  }
+
   update(delta, scene) {
     if (!this.active) return;
 
@@ -307,6 +369,7 @@ class Powerup {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.updateSuperLifeVisuals(age);
+    this.updateNovaMiracleVisuals(age);
 
     // PART B: Apply pulse to main sprite using stable base scale (no accumulation)
     if (this.mainSprite && this.baseScale !== undefined) {
@@ -315,13 +378,13 @@ class Powerup {
     }
 
     // Gentle rotation
-    this.sprite.rotation += (this.type === 'super_extra_life' ? 0.045 : 0.02) * delta;
+    this.sprite.rotation += (this.type === 'super_extra_life' ? 0.052 : (this.type === 'nova_miracle' ? 0.008 : 0.02)) * delta;
 
     // TASK A: Breathing aura ring (reduced size)
     if (this.aura) {
       const auraPhase = (age * 0.003) % (Math.PI * 2);
-      const auraRadius = (this.type === 'super_extra_life' ? 29 : 24) + Math.sin(auraPhase) * 4;
-      const auraAlpha = (this.type === 'super_extra_life' ? 0.56 : 0.42) + Math.sin(auraPhase) * 0.16;
+      const auraRadius = (this.type === 'nova_miracle' ? 38 : (this.type === 'super_extra_life' ? 29 : 24)) + Math.sin(auraPhase) * 4;
+      const auraAlpha = (this.type === 'nova_miracle' ? 0.72 : (this.type === 'super_extra_life' ? 0.56 : 0.42)) + Math.sin(auraPhase) * 0.16;
 
       this.aura.clear();
       this.aura.circle(0, 0, auraRadius);
@@ -363,13 +426,13 @@ class Powerup {
 
       // Spawn tiny sparkle around powerup (reduced distance)
       const angle = Math.random() * Math.PI * 2;
-      const dist = (this.type === 'super_extra_life' ? 19 : 14) + Math.random() * 13;
+      const dist = (this.type === 'nova_miracle' ? 27 : (this.type === 'super_extra_life' ? 19 : 14)) + Math.random() * 13;
       const sx = this.x + Math.cos(angle) * dist;
       const sy = this.y + Math.sin(angle) * dist;
-      const vx = (Math.random() - 0.5) * (this.type === 'super_extra_life' ? 0.8 : 0.3);
+      const vx = (Math.random() - 0.5) * (this.type === 'nova_miracle' ? 1.1 : (this.type === 'super_extra_life' ? 0.8 : 0.3));
       const vy = (Math.random() - 0.5) * 0.3;
 
-      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, this.type === 'super_extra_life' ? 2.1 : 1.6, 22);
+      scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, this.type === 'nova_miracle' ? 2.8 : (this.type === 'super_extra_life' ? 2.1 : 1.6), 22);
 
       // Decrement count after particle dies
       setTimeout(() => {
@@ -621,8 +684,8 @@ class Powerup {
     const dx = playerX - this.x;
     const dy = playerY - this.y;
     const distance = Math.hypot(dx, dy);
-    const pickupRadius = Math.max(18, Number(this.pickupAssistRadius) || Number(this.radius) || 12);
-    const guideRadius = this.type === 'super_extra_life' ? 290 : 230;
+    const pickupRadius = Math.max(6, Number(this.pickupAssistRadius) || Number(this.radius) || 12);
+    const guideRadius = this.type === 'super_extra_life' ? 200 : (this.type === 'nova_miracle' ? 310 : 230);
     const closeLimit = pickupRadius + 10;
     const remainingMs = Math.max(0, Math.max(1, Number(this.lifeTime) || 1) - Math.max(0, Number(age) || 0));
     const timeUrgency = clamp(1 - (remainingMs / 5000), 0, 1);
@@ -841,6 +904,7 @@ class Powerup {
 
     const lifeGrant = Math.max(0, Math.round(Number(this.effect?.grantLives || (this.type === 'life' ? 1 : 0))));
     const grantsLives = lifeGrant > 0;
+    const triggersBoardClear = this.effect?.boardClear === true;
     const configuredMaxLives = grantsLives
       ? Number(BalanceConfig.survival?.maxLives) || MAX_PLAYER_LIVES
       : null;
@@ -851,7 +915,7 @@ class Powerup {
       && Number.isFinite(maxLives)
       && scene.game.lives < maxLives
       && scene.game.lives + lifeGrant >= maxLives;
-    const voiceOk = reachesMaxLives ? false : AudioManager.playPowerupVoice();
+    const voiceOk = triggersBoardClear ? true : (reachesMaxLives ? false : AudioManager.playPowerupVoice());
     if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     }
@@ -866,9 +930,17 @@ class Powerup {
       if (Number.isFinite(Number(this.effect?.invulnMs))) {
         player?.grantInvulnerability?.(Number(this.effect.invulnMs), this.type);
       }
+      if (triggersBoardClear) {
+        scene?.triggerNovaMiracle?.({
+          type: this.type,
+          x: this.x,
+          y: this.y,
+          color: this.color
+        });
+      }
 
       // Play distinct audio for life gain (not achievement audio per AUDIO_RULES.md)
-      if (scene.game && scene.game.audio) {
+      if (!triggersBoardClear && scene.game && scene.game.audio) {
         scene.game.audio.playSfx(this.type === 'super_extra_life' ? 'nova_rank_fanfare' : 'ui_open'); // Positive, distinct sound
       }
     } else {
@@ -933,9 +1005,13 @@ class Powerup {
 
       if (progress < 1) {
         ring.clear();
-      const radius = 15 + progress * (this.type === 'super_extra_life' ? 46 : 30);
+      const radius = 15 + progress * (this.type === 'nova_miracle' ? 86 : (this.type === 'super_extra_life' ? 46 : 30));
       ring.circle(0, 0, radius);
-      ring.stroke({ width: this.type === 'super_extra_life' ? 4 : 3, color: this.color, alpha: 0.8 * (1 - progress) });
+      ring.stroke({
+        width: this.type === 'nova_miracle' ? 7 : (this.type === 'super_extra_life' ? 4 : 3),
+        color: this.color,
+        alpha: 0.8 * (1 - progress)
+      });
         ring.alpha = 1 - progress;
       } else {
         scene.game.app.ticker.remove(ringTicker);
@@ -956,17 +1032,18 @@ class Powerup {
     const meta = getPowerupMeta(this.type);
     const message = translateText(meta?.pickupMessage || 'POWERUP!');
     if (typeof scene.enqueueToast === 'function') {
+      const isMiracle = this.type === 'nova_miracle';
       scene.enqueueToast(message, {
-        fontSize: this.type === 'super_extra_life' ? 30 : (this.type === 'bomb' || meta?.effect?.charges ? 30 : 24),
+        fontSize: isMiracle ? 38 : (this.type === 'super_extra_life' ? 30 : (this.type === 'bomb' || meta?.effect?.charges ? 30 : 24)),
         fill: this.color,
         stroke: '#000000',
-        strokeThickness: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 5 : 4,
+        strokeThickness: isMiracle ? 7 : (this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 5 : 4),
         slot: 'center',
         type: 'powerup',
-        priority: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 8 : 2,
-        duration: this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 2100 : 1500,
+        priority: isMiracle ? 10 : (this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 8 : 2),
+        duration: isMiracle ? 2800 : (this.type === 'super_extra_life' || this.type === 'bomb' || meta?.effect?.charges ? 2100 : 1500),
         y: height * 0.34,
-        maxWidth: width * 0.62
+        maxWidth: width * (isMiracle ? 0.78 : 0.62)
       });
       return;
     }
@@ -1014,6 +1091,7 @@ export class PowerupManager {
     this.lastExtraLifeLevel = 0;
     this.extraLifeSpawnedThisLevel = false;
     this.pendingGuaranteedExtraLifeLevel = null;
+    this.novaMiracleSpawnedThisRun = false;
 
     this.debugPowerupsEnabled = false;
     this.debugPowerupTimer = 0;
@@ -1026,6 +1104,7 @@ export class PowerupManager {
       if (level === 1) {
         this.dropsThisRun = 0;
         this.lastExtraLifeLevel = 0; // Reset on game start
+        this.novaMiracleSpawnedThisRun = false;
       }
       this.currentLevel = level;
       this.dropsThisLevel = 0;
@@ -1148,14 +1227,23 @@ export class PowerupManager {
       levelsSinceLastLife >= guaranteedLifeLevels &&
       !this.extraLifeSpawnedThisLevel;
 
+    const novaMiracleSlice = extraLifeDropsEnabled && this.canSpawnNovaMiracle()
+      ? ((BalanceConfig.powerups.novaMiracleChance ?? 0) * sustainMult)
+      : 0;
+    const superExtraLifeThreshold = novaMiracleSlice
+      + ((BalanceConfig.powerups.superExtraLifeChance ?? 0) * sustainMult);
+
     if (needsGuaranteedLife) {
       type = 'life';
       console.log(`[PowerupManager] GUARANTEED extra life spawned (${levelsSinceLastLife} levels since last)`);
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
+    } else if (novaMiracleSlice > 0 && rand < novaMiracleSlice) {
+      type = 'nova_miracle';
+      this.novaMiracleSpawnedThisRun = true;
     } else if (extraLifeDropsEnabled &&
       this.canSpawnSuperExtraLife() &&
-      rand < ((BalanceConfig.powerups.superExtraLifeChance ?? 0) * sustainMult)) {
+      rand < superExtraLifeThreshold) {
       type = 'super_extra_life';
       this.lastExtraLifeLevel = this.currentLevel;
       this.extraLifeSpawnedThisLevel = true;
@@ -1266,6 +1354,11 @@ export class PowerupManager {
     return !this.powerups.some((powerup) => powerup.type === 'super_extra_life' && powerup.active);
   }
 
+  canSpawnNovaMiracle() {
+    return this.novaMiracleSpawnedThisRun !== true
+      && !this.powerups.some((powerup) => powerup.type === 'nova_miracle' && powerup.active);
+  }
+
   spawnSpecific(x, y, type, options = {}) {
     const powerup = new Powerup(x, y, type, options);
     this.powerups.push(powerup);
@@ -1277,6 +1370,7 @@ export class PowerupManager {
       if (this.game.scenes.play?.debugStats) {
         this.game.scenes.play.debugStats.bonusPickupsSpawned++;
       }
+      if (type === 'nova_miracle') this.novaMiracleSpawnedThisRun = true;
     }
     const bundleLabel = powerup.bundledPowerupTypes.length
       ? ` bundle=${powerup.bundledPowerupTypes.join('+')}`

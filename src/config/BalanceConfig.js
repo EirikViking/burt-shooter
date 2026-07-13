@@ -21,6 +21,7 @@ export const BalanceConfig = {
         extraLifeDropsEnabled: true,
         extraLifeChance: 0.06,
         superExtraLifeChance: 0.012,
+        novaMiracleChance: 0.0025,
         extraLifeGuaranteedEveryLevels: 8,
         guaranteeWindowStart: 0.2, // 20% progress
         guaranteeWindowEnd: 0.8, // 80% progress

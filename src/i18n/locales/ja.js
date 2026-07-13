@@ -1471,6 +1471,14 @@ const sourceText = Object.freeze({
   "SWARM CONTRACT! Read nothing, profit briefly.": "SUWOMU KEIYAKU!",
   "PULSE REFUND! Bullets become paperwork.": "PARUSU HENKIN!",
   "SUPER EXTRA LIFE! +2 LIVES!": "SUPA EKUSUTORA RAIFU! +2!",
+  "NOVA MIRACLE": "ノヴァ・ミラクル",
+  "MIRACLE": "ミラクル",
+  "instant salvation": "一瞬の救済",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "ボス以外の敵と敵弾を画面から一掃し、ライフを1つ追加する",
+  "the rarest rescue signal in the swarm": "スウォームで最も希少な救難信号",
+  "the whole board has become a bad place to be": "画面全体が危険地帯になったとき",
+  "Catch it. The miracle handles everything else.": "つかめ。あとは奇跡が片づける。",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "ノヴァ・ミラクル！ 画面一掃！ +1ライフ！",
 
 
   'BOOTING ARCADE CABINET...': 'アーケードCabinet起動中...',

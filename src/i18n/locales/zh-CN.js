@@ -1473,6 +1473,14 @@ const sourceText = Object.freeze({
   "SWARM CONTRACT! Read nothing, profit briefly.": "CHONGQUN QIYUE!",
   "PULSE REFUND! Bullets become paperwork.": "MAICHONG TUIKUAN!",
   "SUPER EXTRA LIFE! +2 LIVES!": "CHAOJI EWAI SHENGMING! +2!",
+  "NOVA MIRACLE": "新星奇迹",
+  "MIRACLE": "奇迹",
+  "instant salvation": "瞬间救赎",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "清除场上除首领外的所有敌人和敌方子弹，然后增加一条生命",
+  "the rarest rescue signal in the swarm": "虫群中最稀有的救援信号",
+  "the whole board has become a bad place to be": "整个战场都变得危险时",
+  "Catch it. The miracle handles everything else.": "接住它。剩下的交给奇迹。",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "新星奇迹！战场净化！+1 生命！",
 
 
   'BOOTING ARCADE CABINET...': '正在启动街机 Cabinet...',

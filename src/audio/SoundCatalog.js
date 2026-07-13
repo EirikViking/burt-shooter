@@ -283,6 +283,8 @@ export const SFX_MIX = {
     nova_boss_damage_armor_crack: { volume: 0.36, minIntervalMs: 115 },
     nova_boss_death_cascade: { volume: 0.88, minIntervalMs: 2500 },
     nova_bonus_core_jackpot: { volume: 0.66, minIntervalMs: 180 },
+    nova_miracle_collect: { volume: 0.96, minIntervalMs: 60000 },
+    nova_miracle_purge: { volume: 0.9, minIntervalMs: 60000 },
     nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
     nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
     nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 },
@@ -563,6 +565,8 @@ export const SFX_CATALOG = {
     'shield_up': [getSfx('nova_shield_snap'), getSfx('forceField_000')],
     'life_up': [getSfx('nova_life_extend_bloom'), getSfx('doorOpen_002')],
     'super_life_up': [getSfx('nova_life_extend_bloom'), getSfx('nova_bonus_core_jackpot'), getSfx('nova_rank_fanfare')],
+    'nova_miracle_collect': [getSfx('nova_miracle_collect')],
+    'nova_miracle_purge': [getSfx('nova_miracle_purge')],
     'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
 
     // Refined Categories

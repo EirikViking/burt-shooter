@@ -174,6 +174,20 @@ const eliteMiddleShipSounds = [
 
 const sounds = [
   {
+    file: 'nova_miracle_collect.mp3',
+    text: 'A spectacular ultra-rare jackpot pickup sound for a premium neon arcade space shooter: one deep clean sub impact, a brilliant crystalline heart chime, white-gold energy blooming upward, euphoric choir-like synthesizer sparkle, and a short victorious tail. Extremely gratifying and unmistakably positive, huge but clear in a busy combat mix, original sound design, no voice, no spoken words, no copyrighted melody, four seconds.',
+    duration_seconds: 4,
+    prompt_influence: 0.82,
+    allowCreate: true
+  },
+  {
+    file: 'nova_miracle_purge.mp3',
+    text: 'A cinematic full-board cosmic purge for a neon arcade space shooter: a fast outward white-hot energy sweep, many tiny hostile projectiles vaporizing into glitter, a wide cyan-magenta shockwave, then one warm life-restored pulse. Powerful, clean, euphoric, and readable without harshness, original sound design, no voice, no spoken words, no copyrighted melody, three seconds.',
+    duration_seconds: 3,
+    prompt_influence: 0.8,
+    allowCreate: true
+  },
+  {
     file: 'nova_top10_fanfare.mp3',
     text: 'An original heroic top-ten leaderboard fanfare for a neon arcade space shooter, seven seconds, bright synth brass, crisp trophy drums, shimmering score counter arpeggios, proud but readable, no vocals, no copyrighted melody.',
     duration_seconds: 7,
@@ -828,9 +842,10 @@ function promotionTargetFor(sound, args) {
 
 async function promoteCandidate(sound, candidatePath, args) {
   const target = promotionTargetFor(sound, args);
-  if (!existsSync(target)) {
+  if (!existsSync(target) && sound.allowCreate !== true) {
     throw new Error(`production target does not exist: ${path.relative(rootDir, target)}`);
   }
+  await mkdir(path.dirname(target), { recursive: true });
   await copyFile(candidatePath, target);
   return path.relative(rootDir, target).replaceAll('\\', '/');
 }
@@ -850,7 +865,7 @@ async function generateSound(sound, args) {
     errors: []
   };
 
-  if (!entry.productionExists) {
+  if (!entry.productionExists && sound.allowCreate !== true) {
     entry.status = 'skipped';
     entry.errors.push('production target is missing; refusing to create a new runtime SFX filename');
     return entry;
@@ -903,7 +918,17 @@ async function generateSound(sound, args) {
     }
   }
 
-  const promoted = entry.candidates.find((candidate) => candidate.evaluation?.technicallyClean);
+  const promoted = entry.candidates
+    .filter((candidate) => candidate.evaluation?.technicallyClean)
+    .sort((left, right) => {
+      const warningDelta = (left.evaluation?.warnings?.length || 0) - (right.evaluation?.warnings?.length || 0);
+      if (warningDelta !== 0) return warningDelta;
+      const leftPeak = Number(left.evaluation?.maxDb);
+      const rightPeak = Number(right.evaluation?.maxDb);
+      const leftHeadroomPenalty = Number.isFinite(leftPeak) ? Math.abs(leftPeak + 1.5) : 99;
+      const rightHeadroomPenalty = Number.isFinite(rightPeak) ? Math.abs(rightPeak + 1.5) : 99;
+      return leftHeadroomPenalty - rightHeadroomPenalty;
+    })[0];
   if (args.force && promoted) {
     try {
       const promotedPath = path.resolve(rootDir, promoted.file);
@@ -913,8 +938,8 @@ async function generateSound(sound, args) {
         candidate: promoted.file,
         productionFile: replacedPath
       };
-      entry.status = 'replaced';
-      console.log(`[nova-sfx] replaced ${sound.file} from ${path.basename(promoted.file)}`);
+      entry.status = entry.productionExists ? 'replaced' : 'created';
+      console.log(`[nova-sfx] ${entry.status} ${sound.file} from ${path.basename(promoted.file)}`);
     } catch (error) {
       entry.errors.push(`promotion failed: ${error.message}`);
       entry.status = 'unchanged';

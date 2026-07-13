@@ -1582,6 +1582,14 @@ const sourceText = Object.freeze({
   "SWARM CONTRACT! Read nothing, profit briefly.": "\u00a1CONTRATO ENJAMBRE! No leas nada, gana un rato.",
   "PULSE REFUND! Bullets become paperwork.": "\u00a1REEMBOLSO DE PULSO! Balas a papeleo.",
   "SUPER EXTRA LIFE! +2 LIVES!": "\u00a1SUPER VIDA EXTRA! +2 VIDAS!",
+  "NOVA MIRACLE": "MILAGRO NOVA",
+  "MIRACLE": "MILAGRO",
+  "instant salvation": "salvación instantánea",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "elimina del campo todas las amenazas que no sean jefes y todos los disparos hostiles, y luego otorga una vida extra",
+  "the rarest rescue signal in the swarm": "la señal de rescate más rara del enjambre",
+  "the whole board has become a bad place to be": "el campo entero se ha convertido en un lugar terrible",
+  "Catch it. The miracle handles everything else.": "Atrápalo. El milagro se encarga del resto.",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "\u00a1MILAGRO NOVA! \u00a1CAMPO LIMPIO! +1 VIDA!",
 
 
   'BOOTING ARCADE CABINET...': 'ARRANCANDO CABINET ARCADE...',

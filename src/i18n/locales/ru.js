@@ -1558,6 +1558,14 @@ const sourceText = Object.freeze({
   "VOID CROWN! Briefly, you are the incident.": "KORONA PUSTOTY!",
   "SWARM CONTRACT! Read nothing, profit briefly.": "KONTRAKT ROYA!",
   "SUPER EXTRA LIFE! +2 LIVES!": "SUPER DOP ZHIZN! +2 ZHIZNI!",
+  "NOVA MIRACLE": "ЧУДО НОВЫ",
+  "MIRACLE": "ЧУДО",
+  "instant salvation": "мгновенное спасение",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "убирает с поля всех врагов, кроме босса, и все вражеские снаряды, затем дает одну дополнительную жизнь",
+  "the rarest rescue signal in the swarm": "самый редкий сигнал спасения в рое",
+  "the whole board has become a bad place to be": "все поле превратилось в смертельную ловушку",
+  "Catch it. The miracle handles everything else.": "Поймайте его. Чудо сделает все остальное.",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "ЧУДО НОВЫ! ПОЛЕ ОЧИЩЕНО! +1 ЖИЗНЬ!",
   "PULSE REFUND! Bullets become paperwork.": "IMPULS VOZVRAT!",
 
 

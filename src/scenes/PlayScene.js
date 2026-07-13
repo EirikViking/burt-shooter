@@ -910,6 +910,9 @@ export class PlayScene {
       const forceSuperExtraLife = () => this.debugForceSuperExtraLife('console');
       forceSuperExtraLife.playScene = this;
       window.__novaForceSuperExtraLife = forceSuperExtraLife;
+      const forceNovaMiracle = () => this.debugForceNovaMiracle('console');
+      forceNovaMiracle.playScene = this;
+      window.__novaForceNovaMiracle = forceNovaMiracle;
     }
 
     // Start first level - DEFERRED until intro complete
@@ -1190,6 +1193,31 @@ export class PlayScene {
     this.showToast(spawned ? 'SUPER EXTRA LIFE SPAWNED' : 'SUPER EXTRA LIFE BLOCKED', {
       fontSize: this.game.getWidth() < 620 ? 14 : 18,
       fill: spawned ? '#ff5df7' : '#ffb35c',
+      stroke: '#160006',
+      strokeThickness: 3,
+      type: 'debug',
+      slot: 'top',
+      priority: 7,
+      duration: 1500
+    });
+    return Boolean(spawned);
+  }
+
+  debugForceNovaMiracle(reason = 'debug_nova_miracle') {
+    if (!this.canUseMaintainerDevtools()) return false;
+    if (!this.powerupManager || !this.player || !this.game) return false;
+    this.game?.markUnrankedRun?.(reason);
+    this.debugLevelToolsUsed = true;
+    const gameplayWidth = this.gameplayGame.getWidth();
+    const gameplayHeight = this.gameplayGame.getHeight();
+    const x = Math.max(90, Math.min(gameplayWidth - 90, this.player.x));
+    const y = Math.max(88, gameplayHeight * 0.22);
+    const spawned = this.powerupManager.spawnSpecific(x, y, 'nova_miracle', {
+      source: reason
+    });
+    this.showToast(spawned ? 'NOVA MIRACLE SPAWNED' : 'NOVA MIRACLE BLOCKED', {
+      fontSize: this.game.getWidth() < 620 ? 14 : 18,
+      fill: spawned ? '#fff3a0' : '#ffb35c',
       stroke: '#160006',
       strokeThickness: 3,
       type: 'debug',
@@ -4746,7 +4774,9 @@ export class PlayScene {
           collisionStats.powerupPickups += 1;
           this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
-          AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
+          if (powerup.type !== 'nova_miracle') {
+            AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
+          }
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
           this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
           this.triggerPowerupPickupJuice(powerup);
@@ -5523,6 +5553,9 @@ export class PlayScene {
     }
     if (typeof window !== 'undefined' && window.__novaForceSuperExtraLife?.playScene === this) {
       delete window.__novaForceSuperExtraLife;
+    }
+    if (typeof window !== 'undefined' && window.__novaForceNovaMiracle?.playScene === this) {
+      delete window.__novaForceNovaMiracle;
     }
     if (this.inputManager) {
       this.inputManager.destroy();
@@ -12490,6 +12523,186 @@ export class PlayScene {
     return this.lastComboCelebration;
   }
 
+  triggerNovaMiracle(powerup = {}) {
+    const sourceX = Number.isFinite(powerup?.x)
+      ? powerup.x
+      : (Number.isFinite(this.player?.x) ? this.player.x : this.gameplayGame.getWidth() * 0.5);
+    const sourceY = Number.isFinite(powerup?.y)
+      ? powerup.y
+      : (Number.isFinite(this.player?.y) ? this.player.y : this.gameplayGame.getHeight() * 0.65);
+    const baseColor = Number.isFinite(powerup?.color) ? powerup.color : 0xfff06a;
+    const enemies = Array.isArray(this.enemyManager?.enemies)
+      ? [...this.enemyManager.enemies]
+      : [];
+    let enemiesCleared = 0;
+    let scoreAwarded = 0;
+
+    for (const enemy of enemies) {
+      if (!enemy?.active || enemy.kind === 'boss') continue;
+      const damage = Math.max(100000, (Number(enemy.health) || 1) + (Number(enemy.shieldHealth) || 0) + 1000);
+      try {
+        enemy.takeDamage?.(damage);
+      } catch (error) {
+        console.warn('[NovaMiracle] enemy damage failed', error);
+      }
+      enemy.active = false;
+      enemiesCleared += 1;
+      const scoreValue = Math.max(0, Number(enemy.scoreValue) || 0);
+      if (scoreValue > 0) {
+        scoreAwarded += Number(this.addNormalWaveScore(scoreValue, 'baseScore', enemy)) || scoreValue;
+      }
+      this.onEnemyKilled?.(enemy);
+      if (enemiesCleared <= 24) {
+        this.particleManager?.createExplosion?.(
+          enemy.x,
+          enemy.y,
+          enemiesCleared % 3 === 0 ? 0xffffff : (enemiesCleared % 2 === 0 ? 0x43f7ff : 0xff45dd),
+          0.78
+        );
+        this.particleManager?.createHitSpark?.(enemy.x, enemy.y, baseColor, 1.15);
+      }
+      this.enemyManager?.removeEnemySprite?.(enemy, 'nova_miracle');
+    }
+    if (Array.isArray(this.enemyManager?.enemies)) {
+      this.enemyManager.enemies = this.enemyManager.enemies.filter((enemy) => enemy?.active || enemy?.kind === 'boss');
+    }
+
+    let hijackerCleared = 0;
+    const hijacker = this.enemyManager?.hijacker;
+    if (hijacker?.active && hijacker.kind !== 'boss') {
+      hijacker.active = false;
+      hijackerCleared = 1;
+      this.particleManager?.createExplosion?.(hijacker.x, hijacker.y, 0xff45dd, 0.9);
+      this.enemyManager?.removeEnemySprite?.(hijacker, 'nova_miracle_hijacker');
+      this.enemyManager.hijacker = null;
+    }
+
+    const bulletsCleared = this.clearEnemyBullets('nova_miracle');
+    let pendingBulletsCleared = 0;
+    if (Array.isArray(this.bulletManager?.pendingEnemyBullets)) {
+      for (const bullet of this.bulletManager.pendingEnemyBullets) {
+        if (!bullet) continue;
+        if (bullet.active !== false) pendingBulletsCleared += 1;
+        bullet.active = false;
+        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      }
+      this.bulletManager.pendingEnemyBullets = [];
+    }
+    const bossHazardsCleared = this.clearBossHazards('nova_miracle');
+    let ambientHazardsCleared = 0;
+    for (const drone of this.ambientBonusDrones || []) {
+      if (!drone?.active || drone.type !== 'HAZARD') continue;
+      ambientHazardsCleared += 1;
+      drone.active = false;
+      this.particleManager?.createExplosion?.(drone.x, drone.y, 0xfff06a, 0.68);
+      if (drone.sprite?.parent) drone.sprite.parent.removeChild(drone.sprite);
+    }
+
+    if (scoreAwarded > 0) {
+      this.scorePopupManager?.addScorePopup?.(sourceX, sourceY - 56, scoreAwarded, {
+        prefix: translateText('MIRACLE'),
+        color: '#fff3a0'
+      });
+    }
+
+    this.particleManager?.createRadialBurst?.(sourceX, sourceY, baseColor, {
+      count: this.game.getWidth() < 620 ? 48 : 84,
+      intensity: 1.45,
+      minSpeed: 2.2,
+      maxSpeed: 9.8,
+      size: 3.2,
+      lifetime: 62,
+      alternateColor: 0xffffff,
+      upwardBias: 0.15
+    });
+    this.particleManager?.createRadialBurst?.(sourceX, sourceY, 0x43f7ff, {
+      count: this.game.getWidth() < 620 ? 24 : 42,
+      intensity: 1.05,
+      minSpeed: 1.1,
+      maxSpeed: 6.4,
+      size: 2.4,
+      lifetime: 76,
+      alternateColor: 0xff45dd,
+      upwardBias: 0
+    });
+    this.triggerShockwave?.(sourceX, sourceY, baseColor);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 7 : 13, 30);
+    AudioManager.playSfx('nova_miracle_purge', { force: true, volume: 0.96, minIntervalMs: 0 });
+
+    const layerHost = this.gameContainer || this.container;
+    const tickerHost = this.game?.app?.ticker;
+    const width = this.gameplayGame.getWidth();
+    const height = this.gameplayGame.getHeight();
+    const durationMs = 1350;
+    if (layerHost && tickerHost) {
+      const layer = new PIXI.Graphics();
+      layer.label = 'novaMiracleBoardClear';
+      layer.zIndex = 99994;
+      layer.blendMode = 'add';
+      layerHost.addChild(layer);
+      layerHost.sortChildren?.();
+      let elapsedMs = 0;
+      const draw = () => {
+        const t = Math.max(0, Math.min(1, elapsedMs / durationMs));
+        const intro = Math.min(1, elapsedMs / 120);
+        const fade = Math.max(0, 1 - Math.max(0, t - 0.2) / 0.8);
+        const pulse = 0.5 + Math.sin(elapsedMs * 0.025) * 0.5;
+        const maxRadius = Math.hypot(Math.max(sourceX, width - sourceX), Math.max(sourceY, height - sourceY));
+        const waveRadius = 24 + maxRadius * (1 - Math.pow(1 - t, 3));
+        layer.clear();
+        layer.rect(0, 0, width, height);
+        layer.fill({ color: 0xffffff, alpha: 0.14 * intro * fade });
+        layer.circle(sourceX, sourceY, waveRadius);
+        layer.stroke({ color: 0xffffff, width: 13 - t * 8, alpha: 0.82 * fade });
+        layer.circle(sourceX, sourceY, waveRadius * 0.82);
+        layer.stroke({ color: 0x43f7ff, width: 7 - t * 3, alpha: 0.64 * fade });
+        layer.circle(sourceX, sourceY, waveRadius * 0.65);
+        layer.stroke({ color: 0xff45dd, width: 5 - t * 2, alpha: 0.52 * fade });
+        const rayLength = Math.min(maxRadius, 110 + t * maxRadius);
+        for (let i = 0; i < 16; i += 1) {
+          const angle = i * Math.PI / 8 + elapsedMs * 0.00065;
+          const inner = 28 + pulse * 12;
+          layer.moveTo(sourceX + Math.cos(angle) * inner, sourceY + Math.sin(angle) * inner);
+          layer.lineTo(sourceX + Math.cos(angle) * rayLength, sourceY + Math.sin(angle) * rayLength);
+        }
+        layer.stroke({ color: baseColor, width: 2.2, alpha: 0.34 * fade });
+        for (let i = 0; i < 12; i += 1) {
+          const angle = -elapsedMs * 0.0018 + i * Math.PI / 6;
+          const orbit = 46 + t * 118 + (i % 2) * 18;
+          layer.circle(sourceX + Math.cos(angle) * orbit, sourceY + Math.sin(angle) * orbit, 2.8 + pulse * 1.8);
+        }
+        layer.fill({ color: baseColor, alpha: 0.72 * fade });
+      };
+      const ticker = (tick) => {
+        elapsedMs += (Number(tick?.deltaTime) || Number(tick) || 1) * 16.67;
+        draw();
+        if (elapsedMs < durationMs && this.game?.currentScene === this) return;
+        tickerHost.remove(ticker);
+        this._activeTickers = (this._activeTickers || []).filter((entry) => entry !== ticker);
+        if (layer.parent) layer.parent.removeChild(layer);
+        layer.destroy?.();
+      };
+      draw();
+      tickerHost.add(ticker);
+      if (!this._activeTickers) this._activeTickers = [];
+      this._activeTickers.push(ticker);
+    }
+
+    this.lastNovaMiracle = {
+      triggered: true,
+      startedAt: Date.now(),
+      durationMs,
+      enemiesCleared,
+      hijackerCleared,
+      bulletsCleared,
+      pendingBulletsCleared,
+      bossHazardsCleared,
+      ambientHazardsCleared,
+      scoreAwarded
+    };
+    return this.lastNovaMiracle;
+  }
+
   triggerPowerupPickupJuice(powerup = {}) {
     const type = powerup?.type || 'powerup';
     const x = Number.isFinite(this.player?.x) ? this.player.x : (Number.isFinite(powerup?.x) ? powerup.x : this.game.getWidth() / 2);
@@ -12497,7 +12710,7 @@ export class PlayScene {
     const color = Number.isFinite(powerup?.color)
       ? powerup.color
       : (this.player?.visualVariant?.accent || this.player?.visualVariant?.glow || 0x66ffff);
-    const major = ['super_extra_life', 'bomb', 'row_core', 'plasma_lance', 'shockwave'].includes(type);
+    const major = ['super_extra_life', 'nova_miracle', 'bomb', 'row_core', 'plasma_lance', 'shockwave'].includes(type);
 
     this.particleManager?.createPickupEffect?.(x, y, color);
     this.particleManager?.createRadialBurst?.(x, y, color, {

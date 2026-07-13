@@ -1471,6 +1471,14 @@ const sourceText = Object.freeze({
   "SWARM CONTRACT! Read nothing, profit briefly.": "SEUWOM GYEEYAK!",
   "PULSE REFUND! Bullets become paperwork.": "PEOLSEU HWANBUL!",
   "SUPER EXTRA LIFE! +2 LIVES!": "SYUPEO CHUGA SAENGMYEONG! +2!",
+  "NOVA MIRACLE": "노바 미라클",
+  "MIRACLE": "미라클",
+  "instant salvation": "즉시 구원",
+  "every non-boss threat and hostile shot from the board, then grants one extra life": "보스를 제외한 모든 적과 적탄을 화면에서 지우고 목숨 하나를 추가한다",
+  "the rarest rescue signal in the swarm": "스웜에서 가장 희귀한 구조 신호",
+  "the whole board has become a bad place to be": "화면 전체가 위험 지대가 되었을 때",
+  "Catch it. The miracle handles everything else.": "잡아라. 나머지는 기적이 해결한다.",
+  "NOVA MIRACLE! BOARD PURGED! +1 LIFE!": "노바 미라클! 화면 정화! +1 목숨!",
 
 
   'BOOTING ARCADE CABINET...': '아케이드 Cabinet 부팅 중...',

@@ -15,6 +15,7 @@ globalThis.Audio = globalThis.Audio || class AudioStub {
 };
 
 const { PowerupManager } = await import('../src/managers/PowerupManager.js');
+const { PlayScene } = await import('../src/scenes/PlayScene.js');
 
 const root = process.cwd();
 const type = 'super_extra_life';
@@ -32,11 +33,13 @@ assert.equal(meta.sfx, 'super_life_up');
 const movement = meta.movement || {};
 assert.equal(movement.evasive, true, 'super_extra_life must actively dodge the player');
 assert.equal(movement.magnetImmune, true, 'super_extra_life must ignore magnet pull');
-assert.equal(movement.catchabilityTarget, 0.2, 'super_extra_life catchability target should remain around 20%');
-assert.ok(Number(movement.pickupRadius) <= 10, 'super_extra_life pickup radius should be small');
-assert.ok(Number(movement.maxSpeedX) >= 12, 'super_extra_life should move fast laterally');
-assert.ok(Number(movement.dodgeRadius) >= 170, 'super_extra_life should start dodging before easy contact');
-assert.ok(Number(movement.lifeTimeMs) >= 12000 && Number(movement.lifeTimeMs) <= 18000, 'super_extra_life lifetime should make it hard but reviewable');
+assert.equal(movement.catchabilityTarget, 0.08, 'super_extra_life catchability target should be around 8%');
+assert.ok(Number(movement.pickupRadius) <= 8, 'super_extra_life pickup radius should be tiny');
+assert.ok(Number(movement.pickupAssistRadius) <= 8, 'super_extra_life must not inherit the major-powerup assist radius');
+assert.ok(Number(movement.maxSpeedX) >= 20, 'super_extra_life should move very fast laterally');
+assert.ok(Number(movement.dodgeRadius) >= 280, 'super_extra_life should start dodging well before contact');
+assert.ok(Number(movement.jumpIntervalMaxMs) <= 400, 'super_extra_life should change lanes rapidly');
+assert.ok(Number(movement.lifeTimeMs) >= 8500 && Number(movement.lifeTimeMs) <= 11500, 'super_extra_life lifetime should be brief but reviewable');
 
 const superChance = Number(BalanceConfig.powerups?.superExtraLifeChance);
 const lifeChance = Number(BalanceConfig.powerups?.extraLifeChance);
@@ -56,7 +59,8 @@ assert.ok((SFX_CATALOG.super_life_up || []).length >= 2, 'super_life_up should l
 
 const managerSource = readFileSync(path.join(root, 'src/managers/PowerupManager.js'), 'utf8');
 assert.match(managerSource, /type = 'super_extra_life'/, 'PowerupManager must select super_extra_life');
-assert.match(managerSource, /rand < \(\(BalanceConfig\.powerups\.superExtraLifeChance/, 'super_extra_life must be governed by BalanceConfig.powerups.superExtraLifeChance');
+assert.match(managerSource, /BalanceConfig\.powerups\.superExtraLifeChance/, 'super_extra_life must be governed by BalanceConfig.powerups.superExtraLifeChance');
+assert.match(managerSource, /rand < superExtraLifeThreshold/, 'super_extra_life must use its configured rare selection threshold');
 assert.match(managerSource, /scene\.game\.gainLife\(\{\s*count: lifeGrant,\s*source: this\.type/s, 'super_extra_life should grant lives through the shared gainLife path');
 assert.doesNotMatch(managerSource, /super_extra_life[\s\S]{0,220}addScore/, 'super_extra_life must not award score directly');
 
@@ -85,6 +89,12 @@ const runtimeScene = {
   particleManager: { spawnParticle() {} }
 };
 const missablePickup = runtimeManager.spawnSpecific(650, 180, type);
+assert.equal(missablePickup.pickupAssistRadius, 8, 'runtime pickup assist must honor the explicit 8px contract');
+assert.equal(
+  PlayScene.prototype.getCollisionRadius.call({}, missablePickup),
+  8,
+  'collision code must not silently restore the old 28px major-powerup assist'
+);
 missablePickup.createdAt = Date.now() - missablePickup.lifeTime + 20;
 runtimeManager.update(1, runtimeScene);
 assert.equal(runtimeManager.powerups.length, 1, 'super extra life despawned before its review window ended');
@@ -107,4 +117,4 @@ for (const protectedTerm of [
   );
 }
 
-console.log('[super-extra-life-powerup] PASS +2 lives, evasive movement, hard on-screen expiry, 20% catch target, rare drop slice, asset and SFX wired');
+console.log('[super-extra-life-powerup] PASS +2 lives, 8px collection radius, aggressive evasive movement, hard on-screen expiry, 8% catch target, rare drop slice, asset and SFX wired');

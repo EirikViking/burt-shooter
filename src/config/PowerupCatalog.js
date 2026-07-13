@@ -618,23 +618,46 @@ const NEW_POWERUPS = [
     sfx: 'super_life_up',
     movement: {
       evasive: true,
-      catchabilityTarget: 0.2,
+      catchabilityTarget: 0.08,
       magnetImmune: true,
-      pickupRadius: 10,
-      verticalSpeed: 0.74,
-      lifeTimeMs: 15500,
-      dodgeRadius: 190,
-      maxSpeedX: 13.5,
-      lateralAccel: 2.2,
-      targetEase: 0.18,
-      edgeMarginPx: 56,
-      horizontalJitterPx: 48,
-      jumpIntervalMinMs: 260,
-      jumpIntervalMaxMs: 620,
-      jumpDistanceMinPx: 92,
-      jumpDistanceMaxPx: 188
+      pickupRadius: 8,
+      pickupAssistRadius: 8,
+      verticalSpeed: 0.92,
+      lifeTimeMs: 10500,
+      dodgeRadius: 300,
+      maxSpeedX: 20,
+      lateralAccel: 3.8,
+      targetEase: 0.24,
+      edgeMarginPx: 48,
+      horizontalJitterPx: 70,
+      jumpIntervalMinMs: 150,
+      jumpIntervalMaxMs: 360,
+      jumpDistanceMinPx: 130,
+      jumpDistanceMaxPx: 250,
+      closePressureBoost: 1.45,
+      fakeoutChance: 0.22
     },
     effect: { instant: true, grantLives: 2, invulnMs: 1500 }
+  },
+  {
+    id: 'nova_miracle',
+    name: 'NOVA MIRACLE',
+    shortLabel: 'MIRACLE',
+    color: 0xfff06a,
+    duration: 'instant salvation',
+    effectDescription: 'every non-boss threat and hostile shot from the board, then grants one extra life',
+    read: 'the rarest rescue signal in the swarm',
+    when: 'the whole board has become a bad place to be',
+    tip: 'Catch it. The miracle handles everything else.',
+    pickupMessage: 'NOVA MIRACLE! BOARD PURGED! +1 LIFE!',
+    sfx: 'nova_miracle_collect',
+    movement: {
+      pickupRadius: 14,
+      pickupAssistRadius: 34,
+      verticalSpeed: 0.64,
+      lifeTimeMs: 30000
+    },
+    effect: { instant: true, boardClear: true, grantLives: 1, invulnMs: 2500 }
   }
 ];
 

@@ -66,10 +66,12 @@ if (!existsSync(imagegenNormalizeScript)) {
 
 const imagegenSourceDir = path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260617');
 const sourceDirByPowerup = new Map([
-  ['super_extra_life', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260626')]
+  ['super_extra_life', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260626')],
+  ['nova_miracle', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260713')]
 ]);
 const expectedAssetSuffixByPowerup = new Map([
-  ['super_extra_life', '-20260626.png']
+  ['super_extra_life', '-20260626.png'],
+  ['nova_miracle', '-20260713.png']
 ]);
 
 for (const key of NEW_POWERUP_TYPES) {
