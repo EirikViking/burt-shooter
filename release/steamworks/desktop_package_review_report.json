@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-07-12T18:24:35.048Z",
+  "generatedAt": "2026-07-13T06:45:20.721Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-07-12_20-10-34",
-    "timestamp": "2026-07-12T18:10:34.556Z"
+    "version": "v2026-07-13_08-29-30",
+    "timestamp": "2026-07-13T06:29:30.719Z"
   },
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226698752,
-    "modifiedAt": "2026-07-12T18:16:26.436Z"
+    "modifiedAt": "2026-07-13T06:36:27.705Z"
   },
   "steamApiPayload": {
     "path": "release/desktop/win-unpacked/steam_api64.dll",
@@ -16,10 +16,10 @@
     "modifiedAt": "2026-03-10T23:13:48.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-07-12T18-17-22-103Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-07-12T18-17-22-103Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-07-13T06-39-49-159Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-07-13T06-39-49-159Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-12_20-10-34",
+    "build": "v2026-07-13_08-29-30",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -37,10 +37,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-07-12T18-17-46-674Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-07-12T18-17-46-674Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-07-13T06-37-04-175Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-07-13T06-37-04-175Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-12_20-10-34",
+    "build": "v2026-07-13_08-29-30",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -58,16 +58,16 @@
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/00-control-start.png",
-      "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/00-control-start.png",
+      "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-07-12_20-10-34",
+    "build": "v2026-07-13_08-29-30",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,
@@ -80,12 +80,12 @@
     "errors": []
   },
   "latestPackagedPerfSmoke": {
-    "reportPath": "test-results/packaged-perf-smoke-2026-07-12T18-19-12-894Z/report.json",
-    "screenshotPath": "test-results/packaged-perf-smoke-2026-07-12T18-19-12-894Z/01-electron-perf-final.png",
+    "reportPath": "test-results/packaged-perf-smoke-2026-07-13T06-39-57-509Z/report.json",
+    "screenshotPath": "test-results/packaged-perf-smoke-2026-07-13T06-39-57-509Z/01-electron-perf-final.png",
     "status": "passed",
-    "build": "v2026-07-12_20-10-34",
-    "minFps": 59.17159763313737,
-    "avgFps": 60.015351780753626,
+    "build": "v2026-07-13_08-29-30",
+    "minFps": 59.99999999999999,
+    "avgFps": 59.99999999999999,
     "minRequiredFps": 50,
     "consoleEvents": [],
     "errors": []

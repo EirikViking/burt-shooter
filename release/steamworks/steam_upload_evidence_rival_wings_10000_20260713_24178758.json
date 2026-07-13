@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-07-13T06:46:54.074Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24178758",
+  "sourceCommit": "b4ee0e38e6d6a592508e25af246dc98ddf551de3 Add 10000 Rival Wing variants",
+  "sourceBaseline": "95ca4abca32166d669f52a1030c7c40eb99e3c36",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-13_08-29-30",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24172677",
+  "previousKnownPublicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "7393ea9cffa96eb1f8747ac3b7f51cdafd209c5050a4cffb37515a2c8d485bf1",
+  "consoleLogPath": "release/steamworks/steam_upload_console_rival_wings_10000_20260713.log",
+  "consoleLogSha256": "48aebd3ea3b4bf8950cc7bc5321c33e93c05100107f893361b6d491c21d8b3d3",
+  "payloadManifestSha256": "6b669766094666e1bbf2702f3035725598238ef9be371ebe12f5eba332253815",
+  "desktopPackageReportSha256": "9389409a56fe798e0097dccdc33858529d5622abfcebfc24c62a6eb2c9d90285",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 920561075,
+    "manifestHash": "30d073abb610a2579f862621563c84935509c584af34fe7bc47c9811da5c6685",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "a0c791170762c1ee0eea5573488204d1d9a01a9a62715544d87b052d78a7b1f9"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-13 08:45:03]: Successfully finished AppID 4765070 build (BuildID 24178758).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: branch codex/sales-success-22000-20260713, source HEAD b4ee0e3, tracked clean, only 151 expected release media files untracked",
+    "releaseLine": "passed before packaging and again before VDF generation",
+    "sourceBuild": "passed: v2026-07-13_08-29-30, gitSha b4ee0e3",
+    "rivalWingDoctrines": "passed before packaging: exactly 10000 variants, exhaustive applications and morale activations",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-13T06-37-04-175Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-13T06-37-54-940Z/report.json",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-13T06-38-12-362Z/report.json",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-13T06-39-49-159Z/report.json; gitSha b4ee0e3; zero console events",
+    "desktopPackage": "passed: release/steamworks/desktop_package_review_report.json",
+    "packagedPerformance": "passed: 60.00 average FPS, 60.00 minimum FPS, 12 samples, zero errors; capturePage retry recovered after UnknownVizError",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, score, XP, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24172677.",
+    "Source rollback is git revert b4ee0e3; deployment-evidence rollback is git revert of the evidence commit that records this file."
+  ]
+}
