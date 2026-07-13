@@ -3,6 +3,7 @@ import {
   getRunContractReward,
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
+import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 
 const RUN_REPORT_VERSION = 8;
 
@@ -188,7 +189,7 @@ export function createRunReport(summary = {}) {
     .filter((entry) => entry.directiveId);
   const tacticalDirectives = {
     completedCount: tacticalDirectiveHistory.length,
-    completionCap: Math.max(0, toWholeNumber(summary.tacticalDirectives?.completionCap, 5)),
+    completionCap: Math.max(0, toWholeNumber(summary.tacticalDirectives?.completionCap, TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP)),
     availableVariants: Math.max(0, toWholeNumber(summary.tacticalDirectives?.availableVariants, 1000)),
     history: tacticalDirectiveHistory
   };

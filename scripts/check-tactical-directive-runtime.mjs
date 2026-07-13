@@ -88,6 +88,7 @@ async function forceDirective(page, directiveId, progress = 0) {
       eventCount: 0,
       milestonesShown: [],
       calibrationCount: 0,
+      eligibleFromSector: window.__game?.level || 1,
       startedInSector: window.__game?.level || 1,
       lastProgressSector: window.__game?.level || 1,
       lastCalibrationSector: window.__game?.level || 1,
@@ -140,7 +141,7 @@ try {
   report.scenarios.desktop = desktop;
   if (!desktop.ok || desktop.directive?.availableVariants !== 1000) failures.push(`desktop directive state missing: ${JSON.stringify(desktop)}`);
   if (desktop.directive?.active?.target !== 10 || desktop.directive?.active?.rewardId !== 'shield') failures.push(`desktop directive identity mismatch: ${JSON.stringify(desktop.directive?.active)}`);
-  if (!desktop.hud?.visible || !/SIDE DIRECTIVE.*HOSTILE QUOTA.*0\/10.*REWARD.*SHIELD/.test(desktop.hud?.label || '')) failures.push(`desktop HUD label mismatch: ${desktop.hud?.label}`);
+  if (!desktop.hud?.visible || !/DIRECTIVE 1\/50.*HOSTILE QUOTA.*0\/10.*SHIELD/.test(desktop.hud?.label || '')) failures.push(`desktop HUD label mismatch: ${desktop.hud?.label}`);
   if (!inside(desktop.bounds?.directiveText, desktop.bounds?.missionPanel)) failures.push(`desktop directive text escaped mission panel: ${JSON.stringify(desktop.bounds)}`);
 
   const adaptive = await page.evaluate(() => {
@@ -189,6 +190,29 @@ try {
   if (completion.directive?.completedCount !== 1 || completion.directive?.lastCompletion?.directiveId !== 'hostile_quota_t01_shield') failures.push(`directive completion history mismatch: ${JSON.stringify(completion)}`);
   if (!completion.rewardSpawned) failures.push('shield reward was not spawned on completion');
   if (completion.directive?.active?.id === 'hostile_quota_t01_shield') failures.push('completed directive repeated immediately');
+  if (!completion.directive?.active?.queued || completion.directive?.active?.eligibleFromSector !== 2) failures.push(`next directive did not queue for level 2: ${JSON.stringify(completion.directive?.active)}`);
+
+  const sameSectorGate = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const before = structuredClone(play.getTacticalDirectiveDebugState());
+    const active = before.active;
+    play.emitTacticalDirectiveEvent(active.event, {
+      count: 999,
+      streak: 999,
+      comboCount: 999,
+      enemyType: 'same-sector-gate-probe',
+      sector: 1
+    });
+    play.hud.update();
+    return {
+      before,
+      after: structuredClone(play.getTacticalDirectiveDebugState()),
+      hud: structuredClone(play.hud.directiveProgressBg?._debugDirective || null)
+    };
+  });
+  report.scenarios.sameSectorGate = sameSectorGate;
+  if (sameSectorGate.after?.completedCount !== 1 || sameSectorGate.after?.active?.progress !== 0) failures.push(`queued directive accepted same-level progress: ${JSON.stringify(sameSectorGate)}`);
+  if (!sameSectorGate.hud?.queued || !/DIRECTIVE 2\/50.*LEVEL 2/.test(sameSectorGate.hud?.label || '')) failures.push(`queued HUD state missing: ${JSON.stringify(sameSectorGate.hud)}`);
 
   const rescan = await page.evaluate(() => {
     const play = window.__game.scenes.play;
@@ -224,19 +248,103 @@ try {
   if (/SIDE DIRECTIVE|HOSTILE QUOTA|REWARD/.test(localized.hud?.label || '')) failures.push(`German directive retained English copy: ${localized.hud?.label}`);
   if (!inside(localized.bounds?.directiveText, localized.bounds?.missionPanel)) failures.push(`localized directive text escaped mission panel: ${JSON.stringify(localized.bounds)}`);
 
-  const capped = await page.evaluate(() => {
+  await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
+  await page.waitForTimeout(180);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const levelThirteen = await page.evaluate(() => {
     const play = window.__game.scenes.play;
-    play.tacticalDirectiveHistory = Array.from({ length: 5 }, (_, index) => ({ directiveId: `done-${index}` }));
-    play.tacticalDirectiveSession = null;
+    window.__game.level = 13;
+    play._lastStartedLevel = 13;
+    play.tacticalDirectiveHistory = Array.from({ length: 12 }, (_, index) => ({
+      directiveId: `campaign-${index + 1}`,
+      objectiveId: `objective-${index + 1}`,
+      rewardId: `reward-${index + 1}`,
+      sector: index + 1
+    }));
+    play.tacticalDirectiveSession = {
+      directiveId: 'hostile_quota_t04_shield',
+      progress: 12,
+      target: 22,
+      uniqueValues: [],
+      completed: false,
+      completedAtEvent: null,
+      eventCount: 12,
+      milestonesShown: [0.25, 0.5],
+      calibrationCount: 0,
+      eligibleFromSector: 13,
+      startedInSector: 13,
+      lastProgressSector: 13,
+      lastCalibrationSector: 13,
+      reason: 'level_thirteen_visual'
+    };
     play.hud.update();
+    play.clearToastState?.();
+    play.clearSectorArrivalStinger?.();
+    if (play.activeRankUpPresentation?.parent) {
+      play.activeRankUpPresentation.parent.removeChild(play.activeRankUpPresentation);
+      play.activeRankUpPresentation.destroy?.({ children: true });
+    }
+    play.activeRankUpPresentation = null;
+    play._rankUpAnimating = false;
     return {
       directive: structuredClone(play.getTacticalDirectiveDebugState()),
       hud: structuredClone(play.hud.directiveProgressBg?._debugDirective || null),
       label: play.hud.directiveText?.text || ''
     };
   });
+  await page.waitForTimeout(350);
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play?.player?.clearRankBoost?.();
+    play?.clearToastState?.();
+  });
+  await page.waitForTimeout(50);
+  levelThirteen.screenshot = path.join(outputDir, 'directive-campaign-level-13.png');
+  await page.screenshot({ path: levelThirteen.screenshot, fullPage: true });
+  report.scenarios.levelThirteen = levelThirteen;
+  if (levelThirteen.directive?.completedCount !== 12 || levelThirteen.directive?.currentOrdinal !== 13 || !/DIRECTIVE 13\/50/.test(levelThirteen.label)) failures.push(`level 13 campaign HUD mismatch: ${JSON.stringify(levelThirteen)}`);
+
+  const capped = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    window.__game.level = 49;
+    play.tacticalDirectiveHistory = Array.from({ length: 49 }, (_, index) => ({
+      directiveId: `done-${index + 1}`,
+      objectiveId: `objective-${index + 1}`,
+      rewardId: `reward-${index + 1}`,
+      sector: index + 1
+    }));
+    play.tacticalDirectiveSession = {
+      directiveId: 'hostile_quota_t01_rescan',
+      progress: 0,
+      target: 1,
+      uniqueValues: [],
+      completed: false,
+      completedAtEvent: null,
+      eventCount: 0,
+      milestonesShown: [],
+      calibrationCount: 0,
+      eligibleFromSector: 50,
+      startedInSector: 50,
+      lastProgressSector: 50,
+      lastCalibrationSector: 50,
+      reason: 'final_gate_test'
+    };
+    play.emitTacticalDirectiveEvent('enemy_defeated', { count: 1, enemyType: 'too-early', sector: 49 });
+    const atFortyNine = structuredClone(play.getTacticalDirectiveDebugState());
+    window.__game.level = 50;
+    play.emitTacticalDirectiveEvent('enemy_defeated', { count: 1, enemyType: 'level-fifty', sector: 50 });
+    play.hud.update();
+    return {
+      atFortyNine,
+      directive: structuredClone(play.getTacticalDirectiveDebugState()),
+      hud: structuredClone(play.hud.directiveProgressBg?._debugDirective || null),
+      label: play.hud.directiveText?.text || ''
+    };
+  });
   report.scenarios.capped = capped;
-  if (!capped.hud?.completed || capped.directive?.completedCount !== 5) failures.push(`completion cap HUD mismatch: ${JSON.stringify(capped)}`);
+  if (capped.atFortyNine?.completedCount !== 49 || capped.atFortyNine?.active?.progress !== 0) failures.push(`final directive completed before level 50: ${JSON.stringify(capped.atFortyNine)}`);
+  if (!capped.hud?.completed || capped.directive?.completedCount !== 50 || capped.directive?.active) failures.push(`level 50 completion cap HUD mismatch: ${JSON.stringify(capped)}`);
+  if (!/50\/50/.test(capped.label || '')) failures.push(`level 50 completion label mismatch: ${capped.label}`);
 
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

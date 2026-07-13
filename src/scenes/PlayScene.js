@@ -63,10 +63,14 @@ import {
 import { getTacticalBossBanterEvent } from '../config/TacticalBossBanterLines.js';
 import { analyzeTacticalDoctrine, projectTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
+  TACTICAL_DIRECTIVE_MINIMUM_FINAL_SECTOR,
+  TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP,
   TACTICAL_DIRECTIVE_VARIANT_COUNT,
   applyTacticalDirectiveEvent,
   createTacticalDirectiveSession,
+  getNextTacticalDirectiveEligibleSector,
   getTacticalDirectiveState,
+  getTacticalDirectiveTierCeiling,
   pickTacticalDirective
 } from '../config/TacticalDirectives.js';
 import {
@@ -148,7 +152,6 @@ const RANK_UP_PRESENTATION_MS = 2610;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
-const TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP = 5;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
@@ -1478,25 +1481,25 @@ export class PlayScene {
       this.tacticalDirectiveSession = null;
       return null;
     }
-    const previousId = this.tacticalDirectiveSession?.directiveId
-      || this.tacticalDirectiveHistory.at(-1)?.directiveId
-      || null;
+    const currentSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    const recentHistory = this.tacticalDirectiveHistory.slice(-3);
     const seed = this.game?.contentDirector?.seed
       || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
-    const maxTier = Math.max(1, Math.min(10,
-      2 + Math.floor(Number(this.game?.level) || 1) + this.tacticalDirectiveHistory.length
-    ));
+    const maxTier = getTacticalDirectiveTierCeiling(currentSector, this.tacticalDirectiveHistory.length);
     const directive = pickTacticalDirective(seed, this.tacticalDirectiveSequence, {
-      excludeId: previousId,
+      excludeIds: this.tacticalDirectiveHistory.map((entry) => entry.directiveId),
+      excludeObjectiveIds: recentHistory.map((entry) => entry.objectiveId),
+      excludeRewardIds: recentHistory.slice(-2).map((entry) => entry.rewardId),
       maxTier
     });
     this.tacticalDirectiveSequence += 1;
     this.tacticalDirectiveSession = createTacticalDirectiveSession(directive);
     if (this.tacticalDirectiveSession) {
-      const startedInSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
-      this.tacticalDirectiveSession.startedInSector = startedInSector;
-      this.tacticalDirectiveSession.lastProgressSector = startedInSector;
-      this.tacticalDirectiveSession.lastCalibrationSector = startedInSector;
+      const eligibleFromSector = getNextTacticalDirectiveEligibleSector(this.tacticalDirectiveHistory, currentSector);
+      this.tacticalDirectiveSession.eligibleFromSector = eligibleFromSector;
+      this.tacticalDirectiveSession.startedInSector = eligibleFromSector;
+      this.tacticalDirectiveSession.lastProgressSector = eligibleFromSector;
+      this.tacticalDirectiveSession.lastCalibrationSector = eligibleFromSector;
       this.tacticalDirectiveSession.reason = reason;
     }
     return this.getTacticalDirectiveDebugState();
@@ -1993,11 +1996,20 @@ export class PlayScene {
   }
 
   getTacticalDirectiveDebugState() {
-    const active = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    const currentSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    const baseActive = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    const active = baseActive ? {
+      ...baseActive,
+      queued: Number(baseActive.eligibleFromSector) > currentSector
+    } : null;
     return {
       active,
       completedCount: this.tacticalDirectiveHistory.length,
       completionCap: TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP,
+      currentOrdinal: active ? Math.min(TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP, this.tacticalDirectiveHistory.length + 1) : null,
+      currentSector,
+      minimumFinalSector: TACTICAL_DIRECTIVE_MINIMUM_FINAL_SECTOR,
+      completionsThisSector: this.tacticalDirectiveHistory.filter((entry) => Number(entry?.sector) === currentSector).length,
       availableVariants: TACTICAL_DIRECTIVE_VARIANT_COUNT,
       sequence: this.tacticalDirectiveSequence,
       lastCompletion: this.lastTacticalDirectiveCompletion ? { ...this.lastTacticalDirectiveCompletion } : null,
@@ -7938,8 +7950,16 @@ export class PlayScene {
         cap: state?.completionCap || TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP
       });
     }
-    return translateText('{label}: {objective} {progress} // {reward}', {
-      label: translateText('SIDE DIRECTIVE'),
+    if (active.queued) {
+      return translateText('DIRECTIVE {current}/{cap} QUEUED // LEVEL {level}', {
+        current: state.currentOrdinal,
+        cap: state.completionCap,
+        level: active.eligibleFromSector
+      });
+    }
+    return translateText('DIRECTIVE {current}/{cap}: {objective} {progress} // {reward}', {
+      current: state.currentOrdinal,
+      cap: state.completionCap,
       objective: translateText(active.objectiveLabel),
       progress: active.progressLabel,
       reward: translateText(active.rewardLabel)

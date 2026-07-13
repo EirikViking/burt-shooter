@@ -45,10 +45,10 @@ Every objective/tier pair can award each of these ten rewards:
 
 ## Player-facing behavior
 
-- One directive is active at a time and appears in the Mission Status panel with live progress and the promised reward.
-- A completed directive grants its reward immediately and advances to a new non-repeating directive.
-- A run can complete up to five directives, limiting reward inflation and HUD churn.
-- Early sectors constrain the maximum intensity tier; later runs can draw the full catalog.
+- One directive is active at a time and appears in the Mission Status panel with its campaign position, live progress, and promised reward.
+- A run now offers a fifty-stage chain drawn without exact repeats from the 1000-variant catalog. Recent objective families and rewards also stay out of short freshness windows.
+- A completed directive grants its reward immediately, then queues the next directive for the following level. Only one directive can complete per level, so the fiftieth cannot complete before level 50.
+- Unfinished directives still carry forward and use adaptive recalibration. Intensity opens in ten five-level chapters, reaching the full tier ceiling at level 50.
 - Selection is deterministic from the run seed and sequence, so the system is reproducible and testable.
 - Side directives are optional. They do not alter score, XP, leaderboard identity, achievements, enemy counts, or the existing Tactical Draft math.
 - Pause, How To Play, `render_game_to_text`, Run Summary, and Run Report all expose directive state.
@@ -56,7 +56,7 @@ Every objective/tier pair can award each of these ten rewards:
 
 ## Design intent
 
-Successful survivor-likes repeatedly turn a simple combat loop into short, legible decisions: pursue an objective, accept tactical risk, and earn an immediate build-shaping payoff. Tactical Directives add that optional micro-goal loop without replacing Nova Swarm's movement, threat-reading, or Draft identity. The five-per-run cap keeps it a source of run texture rather than mandatory busywork.
+Successful survivor-likes repeatedly turn a simple combat loop into short, legible decisions: pursue an objective, accept tactical risk, and earn an immediate build-shaping payoff. Tactical Directives add that optional micro-goal loop without replacing Nova Swarm's movement, threat-reading, or Draft identity. The fifty-stage relay now grows with the entire level-50 arc, while one-clear-per-level pacing prevents farming a whole clipboard in an easy wave.
 
 ## Acceptance guards
 
@@ -65,8 +65,9 @@ Successful survivor-likes repeatedly turn a simple combat loop into short, legib
 - Every family contributes 100 variants: ten tiers paired with ten rewards.
 - Every catalog entry reaches completion under its declared event/mode.
 - Count, peak, and unique-value progress modes are all covered.
-- Immediate repeat exclusion and early-tier bounding are covered.
-- Browser runtime covers reward delivery, next-directive selection, completion cap, compact HUD, desktop HUD, German HUD, and debug state.
+- A deterministic fifty-directive sample has no exact repeats, avoids the previous three objective families and previous two rewards, and reaches tier ten at level 50.
+- Pure and browser runtime checks prove same-level progress cannot enter a queued directive and the final directive remains locked through level 49.
+- Browser runtime covers reward delivery, next-directive queuing, level-13 campaign HUD, level-50 completion, compact HUD, desktop HUD, German HUD, and debug state.
 - Run Report serialization is versioned and preserves completed directive history.
 
 Focused commands:

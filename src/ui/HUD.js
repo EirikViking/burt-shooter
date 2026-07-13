@@ -769,22 +769,44 @@ export class HUD {
       return;
     }
 
+    if (active.queued) {
+      this.directiveText.text = translateText('DIRECTIVE {current}/{cap} QUEUED // LEVEL {level}', {
+        current: debugState.currentOrdinal,
+        cap: debugState.completionCap,
+        level: active.eligibleFromSector
+      });
+      this.directiveText.style.fill = '#9cfbff';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.92 });
+      rail.stroke({ color: 0x66f7ff, width: 0.8, alpha: 0.62 });
+      rail._debugDirective = {
+        visible: true,
+        queued: true,
+        currentOrdinal: debugState.currentOrdinal,
+        completionCap: debugState.completionCap,
+        eligibleFromSector: active.eligibleFromSector,
+        ratio: 0,
+        label: this.directiveText.text,
+        textBounds: this.directiveText.getBounds?.() || null,
+        railBounds: { x, y, width, height }
+      };
+      return;
+    }
+
     const objective = translateText(active.objectiveLabel);
     const reward = translateText(active.rewardLabel);
-    const rewardText = translateText('REWARD: {reward}', { reward });
     const compact = this.game.getWidth() < 1000;
-    this.directiveText.text = compact
-      ? translateText('{objective} {progress} // {reward}', {
-        objective,
-        progress: active.progressLabel,
-        reward
-      })
-      : translateText('{label}: {objective} {progress} // {reward}', {
-        label: translateText('SIDE DIRECTIVE'),
-        objective,
-        progress: active.progressLabel,
-        reward: rewardText
-      });
+    this.directiveText.text = translateText('DIRECTIVE {current}/{cap}: {objective} {progress} // {reward}', {
+      current: debugState.currentOrdinal,
+      cap: debugState.completionCap,
+      objective,
+      progress: active.progressLabel,
+      reward
+    });
     this.directiveText.style.fill = '#fff3a0';
     this.directiveText.visible = true;
     this.directiveText.scale.set(1);
@@ -805,6 +827,10 @@ export class HUD {
       id: active.id,
       objectiveId: active.objectiveId,
       rewardId: active.rewardId,
+      currentOrdinal: debugState.currentOrdinal,
+      completionCap: debugState.completionCap,
+      eligibleFromSector: active.eligibleFromSector,
+      queued: false,
       progress: active.progress,
       target: active.target,
       ratio: Number(ratio.toFixed(3)),

@@ -115,7 +115,7 @@ const RUN_HELP_ROWS = Object.freeze([
     code: '13',
     icon: 'TASK',
     label: 'SIDE DIRECTIVES',
-    control: '1000 MISSIONS / UP TO 5 REWARDS PER RUN',
+    control: '1000 MISSIONS / 50-STAGE DIRECTIVE CHAIN',
     tip: 'Complete optional live objectives for visible rewards. Directives never change score rules and can be ignored when survival needs your full attention.',
     accent: 0x66ff9d
   },
@@ -196,7 +196,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
   'RUN MODES': "Mayhem owns the ranked receipt. Scout lets you learn without signing it. Sector Run begins later using unlocked checkpoints. Pick the mode that answers today's question; the leaderboard cannot teach a pattern you never stopped to read.",
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
-  'SIDE DIRECTIVES': 'Every run draws from one thousand objective, intensity, and reward combinations. Complete up to five for useful hardware, or ignore the clipboard when the bullet lanes demand your full attention. The directive is a side bet, not a tax on survival.',
+  'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
