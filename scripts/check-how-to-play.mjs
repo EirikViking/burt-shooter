@@ -151,8 +151,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('Stack II earns an evolution name'), `${label} should explain Tactical evolution identities`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
     assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
-    assert(joined.includes('1000 ACES + 10000 PROTOCOLS'), `${label} should explain the Ace and Nemesis catalogs`);
-    assert(joined.includes('neither system alters score rules'), `${label} should explain score-safe Ace and Nemesis rewards`);
+    assert(joined.includes('1000 ACES + 10000 PROTOCOLS + 10000 WINGS'), `${label} should explain all three encounter catalogs`);
+    assert(joined.includes('without adding enemies or score'), `${label} should explain score-safe Rival Wings`);
   }
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {

@@ -214,8 +214,8 @@ async function forceRunReportScenario(page) {
     ];
     play.lastTacticalDirectiveCompletion = play.tacticalDirectiveHistory.at(-1);
     play.aceBountyHistory = [
-      { variantId: 'bulwark_sweep_precision', number: 1, chassisId: 'bulwark', flightId: 'sweep', weaponId: 'precision', rewardId: 'shield', rewardLabel: 'SHIELD', protocolId: 'blitz_plating_frenzy_shield', protocolNumber: 1, openingId: 'blitz', defenseId: 'plating', enrageId: 'frenzy', bonusId: 'shield', bonusLabel: 'SHIELD', protocolEnraged: true, sector: 1 },
-      { variantId: 'interceptor_pincer_crossfire', number: 112, chassisId: 'interceptor', flightId: 'pincer', weaponId: 'crossfire', rewardId: 'bomb', rewardLabel: 'BOMB', protocolId: 'siege_veil_overdrive_bomb', protocolNumber: 1112, openingId: 'siege', defenseId: 'veil', enrageId: 'overdrive', bonusId: 'bomb', bonusLabel: 'BOMB', protocolEnraged: true, sector: 2 }
+      { variantId: 'bulwark_sweep_precision', number: 1, chassisId: 'bulwark', flightId: 'sweep', weaponId: 'precision', rewardId: 'shield', rewardLabel: 'SHIELD', protocolId: 'blitz_plating_frenzy_shield', protocolNumber: 1, openingId: 'blitz', defenseId: 'plating', enrageId: 'frenzy', bonusId: 'shield', bonusLabel: 'SHIELD', protocolEnraged: true, rivalWingId: 'spearhead_standard_aimed_hold', rivalWingNumber: 1, rivalWingFormationId: 'spearhead', rivalWingDisciplineId: 'standard', rivalWingVolleyId: 'aimed', rivalWingMoraleId: 'hold', sector: 1 },
+      { variantId: 'interceptor_pincer_crossfire', number: 112, chassisId: 'interceptor', flightId: 'pincer', weaponId: 'crossfire', rewardId: 'bomb', rewardLabel: 'BOMB', protocolId: 'siege_veil_overdrive_bomb', protocolNumber: 1112, openingId: 'siege', defenseId: 'veil', enrageId: 'overdrive', bonusId: 'bomb', bonusLabel: 'BOMB', protocolEnraged: true, rivalWingId: 'pincer_armored_crossfire_berserk', rivalWingNumber: 1112, rivalWingFormationId: 'pincer', rivalWingDisciplineId: 'armored', rivalWingVolleyId: 'crossfire', rivalWingMoraleId: 'berserk', sector: 2 }
     ];
     play.lastAceBountyCompletion = play.aceBountyHistory.at(-1);
     play.grazeBreaksThisRun = 2;
@@ -265,6 +265,8 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.aceBounties?.availableVariants === 1000, 'runReport summary should preserve the 1000-Ace catalog size.');
   assert(state.runReport?.nemesisProtocols?.completedCount === 2, 'runReport summary should preserve completed Nemesis protocols.');
   assert(state.runReport?.nemesisProtocols?.availableVariants === 10000, 'runReport summary should preserve the 10000-protocol catalog size.');
+  assert(state.runReport?.rivalWings?.completedCount === 2, 'runReport summary should preserve completed Rival Wings.');
+  assert(state.runReport?.rivalWings?.availableVariants === 10000, 'runReport summary should preserve the 10000-wing catalog size.');
   assert(state.gameOver?.deathCoach?.source === 'enemy_bullet', 'game over debug state should expose death-specific coach advice.');
   assert(state.gameOver?.runReport?.deathCoach?.source === 'enemy_bullet', 'run report debug state should expose death-specific coach advice.');
 }

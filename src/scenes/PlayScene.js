@@ -77,6 +77,7 @@ import {
   getNemesisProtocolById,
   pickNemesisProtocol
 } from '../config/NemesisProtocols.js';
+import { RIVAL_WING_VARIANT_COUNT, getRivalWingDoctrineById, pickRivalWingDoctrine } from '../config/RivalWingDoctrines.js';
 import {
   getOverrunMilestoneCelebration,
   isOverrunMilestoneSector,
@@ -1530,6 +1531,7 @@ export class PlayScene {
     }
     const previousId = this.aceBountyActive?.id || this.aceBountyHistory.at(-1)?.variantId || null;
     const previousProtocolId = this.aceBountyActive?.protocolId || this.aceBountyHistory.at(-1)?.protocolId || null;
+    const previousWingId = this.aceBountyActive?.rivalWingId || this.aceBountyHistory.at(-1)?.rivalWingId || null;
     const seed = this.game?.contentDirector?.seed
       || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
     const waveCount = Math.max(1, Math.floor(Number(options.waveCount || this.enemyManager?.normalWavesTotal) || 5));
@@ -1543,8 +1545,11 @@ export class PlayScene {
     const protocol = options.protocolId
       ? getNemesisProtocolById(options.protocolId)
       : pickNemesisProtocol(seed, sequence, { excludeId: previousProtocolId });
+    const rivalWing = options.rivalWingId
+      ? getRivalWingDoctrineById(options.rivalWingId)
+      : pickRivalWingDoctrine(seed, sequence, { excludeId: previousWingId });
     this.aceBountySequence += 1;
-    this.aceBountyActive = encounter && protocol ? {
+    this.aceBountyActive = encounter && protocol && rivalWing ? {
       ...encounter,
       protocolId: protocol.id,
       protocolNumber: protocol.number,
@@ -1558,6 +1563,16 @@ export class PlayScene {
       bonusLabel: protocol.bonusLabel,
       bonusKind: protocol.bonusKind,
       bonusPowerupType: protocol.bonusPowerupType,
+      rivalWingId: rivalWing.id,
+      rivalWingNumber: rivalWing.number,
+      rivalWingFormationId: rivalWing.formationId,
+      rivalWingFormationLabel: rivalWing.formationLabel,
+      rivalWingDisciplineId: rivalWing.disciplineId,
+      rivalWingVolleyId: rivalWing.volleyId,
+      rivalWingMoraleId: rivalWing.moraleId,
+      rivalWingMoraleLabel: rivalWing.moraleLabel,
+      rivalWingEscortCount: 0,
+      rivalWingMoraleActivated: false,
       preparedAt: Date.now(),
       preparedReason: options.reason || 'sector_start'
     } : null;
@@ -1575,6 +1590,7 @@ export class PlayScene {
     if (!applied) return false;
     const protocolApplied = enemy.applyNemesisProtocol?.(active.protocolId);
     if (!protocolApplied) return false;
+    if (!enemy.attachRivalWingCommand?.(active.rivalWingId)) return false;
     active.spawned = true;
     active.spawnedAt = Date.now();
     active.spawnedWaveIndex = waveIndex;
@@ -1589,7 +1605,12 @@ export class PlayScene {
       opening: translateText(active.openingLabel),
       defense: translateText(active.defenseLabel)
     });
-    this.enqueueToast(`${contact}\n${protocolContact}`, {
+    const wingContact = translateText('RIVAL WING {number} // {formation} + {morale}', {
+      number: String(active.rivalWingNumber).padStart(5, '0'),
+      formation: translateText(active.rivalWingFormationLabel),
+      morale: translateText(active.rivalWingMoraleLabel)
+    });
+    this.enqueueToast(`${contact}\n${protocolContact}\n${wingContact}`, {
       fontSize: this.game.getWidth() < 720 ? 15 : 18,
       fill: '#fff3a0',
       slot: 'corner',
@@ -1601,9 +1622,36 @@ export class PlayScene {
     return true;
   }
 
+  maybeApplyRivalWingEnemy(enemy, context = {}) {
+    const active = this.aceBountyActive;
+    if (!active?.rivalWingId || !enemy || enemy.isAce || enemy.rivalWingDoctrine) return false;
+    const sector = Math.max(1, Math.floor(Number(context.sector || this.game?.level) || 1));
+    const waveIndex = Math.max(0, Math.floor(Number(context.waveIndex) || 0));
+    if (sector !== active.sector || waveIndex !== active.targetWaveIndex) return false;
+    if (!enemy.applyRivalWingDoctrine?.(active.rivalWingId)) return false;
+    active.rivalWingEscortCount += 1;
+    if (active.rivalWingMoraleActivated) enemy.activateRivalWingMorale?.();
+    return true;
+  }
+
+  activateRivalWingMorale(reason = 'nemesis_enrage') {
+    const active = this.aceBountyActive;
+    if (!active?.rivalWingId || active.rivalWingMoraleActivated) return 0;
+    let count = 0;
+    for (const enemy of this.enemyManager?.enemies || []) {
+      if (enemy?.rivalWingDoctrine?.id !== active.rivalWingId || Number(enemy.health) <= 0) continue;
+      if (enemy.activateRivalWingMorale?.()) count += 1;
+    }
+    active.rivalWingMoraleActivated = true;
+    active.rivalWingMoraleReason = reason;
+    active.rivalWingMoraleCount = count;
+    return count;
+  }
+
   onNemesisProtocolEnraged(enemy, enrage = enemy?.nemesisProtocol?.enrage) {
     const protocol = enemy?.nemesisProtocol;
     if (!protocol || !enrage) return null;
+    this.activateRivalWingMorale('nemesis_enrage');
     const message = translateText('PROTOCOL SURGE: {number} // {enrage}', {
       number: String(protocol.number).padStart(5, '0'),
       enrage: translateText(protocol.enrageLabel)
@@ -1644,6 +1692,12 @@ export class PlayScene {
       bonusKind: enemy.nemesisProtocol?.bonusKind || null,
       bonusPowerupType: enemy.nemesisProtocol?.bonusPowerupType || null,
       protocolEnraged: enemy.nemesisEnraged === true,
+      rivalWingId: enemy.rivalWingCommand?.id || null,
+      rivalWingNumber: enemy.rivalWingCommand?.number || 0,
+      rivalWingFormationId: enemy.rivalWingCommand?.formationId || null,
+      rivalWingDisciplineId: enemy.rivalWingCommand?.disciplineId || null,
+      rivalWingVolleyId: enemy.rivalWingCommand?.volleyId || null,
+      rivalWingMoraleId: enemy.rivalWingCommand?.moraleId || null,
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
       completedAt: Date.now()
     };
@@ -1653,6 +1707,7 @@ export class PlayScene {
     }
     this.aceBountyHistory.push(completion);
     this.lastAceBountyCompletion = completion;
+    this.activateRivalWingMorale('ace_down');
     const reward = this.applyAceBountyReward(completion, enemy);
     const protocolReward = this.applyNemesisProtocolReward(completion, enemy);
     const number = String(variant.number).padStart(4, '0');
@@ -1711,6 +1766,8 @@ export class PlayScene {
       availableVariants: ACE_BOUNTY_VARIANT_COUNT,
       completedProtocolCount: this.aceBountyHistory.filter((entry) => entry.protocolId).length,
       availableProtocolVariants: NEMESIS_PROTOCOL_VARIANT_COUNT,
+      completedRivalWingCount: this.aceBountyHistory.filter((entry) => entry.rivalWingId).length,
+      availableRivalWingVariants: RIVAL_WING_VARIANT_COUNT,
       sequence: this.aceBountySequence,
       lastCompletion: this.lastAceBountyCompletion ? { ...this.lastAceBountyCompletion } : null,
       history: this.aceBountyHistory.map((entry) => ({ ...entry }))

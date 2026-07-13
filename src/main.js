@@ -1061,6 +1061,7 @@ function buildGameTextState(game) {
         } : null,
         threatAction: enemy.getThreatDebugState ? enemy.getThreatDebugState() : null,
         ace: enemy.getAceDebugState ? enemy.getAceDebugState() : null,
+        rivalWing: enemy.getRivalWingDebugState ? enemy.getRivalWingDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,

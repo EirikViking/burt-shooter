@@ -20,6 +20,7 @@ import {
   maybeActivateNemesisEnrage,
   resolveNemesisDamage
 } from '../config/NemesisProtocols.js';
+import { activateRivalWingMorale, applyRivalWingToEnemy, getRivalWingDoctrineById } from '../config/RivalWingDoctrines.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 
@@ -42,6 +43,9 @@ function getEnemyThreatFrameProfile(enemy) {
       markerCount: protocol ? 8 : 7,
       radiusMult: protocol ? 2.36 : 2.24
     };
+  }
+  if (enemy.rivalWingDoctrine) {
+    return { tier: 'rival_wing', color: enemy.rivalWingDoctrine.color || 0xffd15c, accent: enemy.rivalWingMoraleActive ? 0xff6174 : 0x7df9ff, markerCount: 4, radiusMult: 1.88 };
   }
   if (enemy.middleShipProfile || enemy.isEliteMiddleShip) {
     return { tier: 'elite', color: enemy.middleShipProfile?.accent || accent, accent: 0xffffff, markerCount: 6, radiusMult: 2.18 };
@@ -1302,6 +1306,34 @@ export class Enemy {
     return this.getAceDebugState();
   }
 
+  attachRivalWingCommand(doctrineOrId) {
+    const doctrine = typeof doctrineOrId === 'string' ? getRivalWingDoctrineById(doctrineOrId) : doctrineOrId;
+    if (!this.isAce || !doctrine) return null;
+    this.rivalWingCommand = doctrine;
+    this.updateAceBountyLabel();
+    return doctrine;
+  }
+
+  applyRivalWingDoctrine(doctrineOrId) {
+    const doctrine = applyRivalWingToEnemy(this, doctrineOrId);
+    if (!doctrine) return null;
+    this.updateHealthBar();
+    return this.getRivalWingDebugState();
+  }
+
+  activateRivalWingMorale() {
+    const morale = activateRivalWingMorale(this);
+    if (!morale) return null;
+    this.updateHealthBar();
+    return morale;
+  }
+
+  getRivalWingDebugState() {
+    const doctrine = this.rivalWingDoctrine;
+    if (!doctrine) return null;
+    return { id: doctrine.id, number: doctrine.number, formationId: doctrine.formationId, disciplineId: doctrine.disciplineId, volleyId: doctrine.volleyId, moraleId: doctrine.moraleId, moraleActive: this.rivalWingMoraleActive === true, scoreValue: this.scoreValue };
+  }
+
   updateAceBountyLabel() {
     if (!this.aceLabel || !this.aceVariant) return;
     const number = String(this.aceVariant.number).padStart(4, '0');
@@ -1316,13 +1348,20 @@ export class Enemy {
         defense: translateText(this.nemesisProtocol.defenseLabel)
       }));
     }
+    if (this.rivalWingCommand) {
+      lines.push(translateText('RIVAL WING {number} // {formation} + {morale}', {
+        number: String(this.rivalWingCommand.number).padStart(5, '0'),
+        formation: translateText(this.rivalWingCommand.formationLabel),
+        morale: translateText(this.rivalWingCommand.moraleLabel)
+      }));
+    }
     this.aceLabel.text = lines.join('\n');
     this.aceLabel.scale.set(1);
-    const maxWidth = this.nemesisProtocol ? 196 : 154;
+    const maxWidth = this.rivalWingCommand ? 214 : this.nemesisProtocol ? 196 : 154;
     if (this.aceLabel.width > maxWidth) {
       this.aceLabel.scale.set(Math.max(0.62, maxWidth / this.aceLabel.width));
     }
-    this.aceLabel.y = -Math.max(this.nemesisProtocol ? 52 : 39, this.radius + (this.nemesisProtocol ? 38 : 24));
+    this.aceLabel.y = -Math.max(this.rivalWingCommand ? 66 : this.nemesisProtocol ? 52 : 39, this.radius + (this.rivalWingCommand ? 52 : this.nemesisProtocol ? 38 : 24));
     this.aceLabel.visible = true;
   }
 
@@ -1366,6 +1405,7 @@ export class Enemy {
         damageHits: Math.max(0, Number(this.nemesisDamageHitCount) || 0),
         lastDamageResolution: this.nemesisLastDamageResolution ? { ...this.nemesisLastDamageResolution } : null
       } : null,
+      rivalWing: this.rivalWingCommand ? { id: this.rivalWingCommand.id, number: this.rivalWingCommand.number, formationId: this.rivalWingCommand.formationId, formationLabel: translateText(this.rivalWingCommand.formationLabel), moraleId: this.rivalWingCommand.moraleId, moraleLabel: translateText(this.rivalWingCommand.moraleLabel) } : null,
       label: this.aceLabel?.text || null,
       labelBounds,
       health: Math.max(0, Number(this.health) || 0),

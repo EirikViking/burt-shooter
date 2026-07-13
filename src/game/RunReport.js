@@ -4,7 +4,7 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 
-const RUN_REPORT_VERSION = 7;
+const RUN_REPORT_VERSION = 8;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -211,6 +211,12 @@ export function createRunReport(summary = {}) {
       bonusId: String(entry?.bonusId || '').trim(),
       bonusLabel: String(entry?.bonusLabel || '').trim(),
       protocolEnraged: entry?.protocolEnraged === true,
+      rivalWingId: String(entry?.rivalWingId || '').trim(),
+      rivalWingNumber: Math.max(0, toWholeNumber(entry?.rivalWingNumber, 0)),
+      rivalWingFormationId: String(entry?.rivalWingFormationId || '').trim(),
+      rivalWingDisciplineId: String(entry?.rivalWingDisciplineId || '').trim(),
+      rivalWingVolleyId: String(entry?.rivalWingVolleyId || '').trim(),
+      rivalWingMoraleId: String(entry?.rivalWingMoraleId || '').trim(),
       sector: Math.max(1, toWholeNumber(entry?.sector, 1))
     }))
     .filter((entry) => entry.variantId);
@@ -237,6 +243,8 @@ export function createRunReport(summary = {}) {
     availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableProtocolVariants, 10000)),
     history: nemesisProtocolHistory
   };
+  const rivalWingHistory = aceBountyHistory.filter((entry) => entry.rivalWingId).map((entry) => ({ rivalWingId: entry.rivalWingId, rivalWingNumber: entry.rivalWingNumber, formationId: entry.rivalWingFormationId, disciplineId: entry.rivalWingDisciplineId, volleyId: entry.rivalWingVolleyId, moraleId: entry.rivalWingMoraleId, sector: entry.sector }));
+  const rivalWings = { completedCount: rivalWingHistory.length, availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableRivalWingVariants, 10000)), history: rivalWingHistory };
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -258,7 +266,8 @@ export function createRunReport(summary = {}) {
       tacticalDoctrine,
       tacticalDirectives,
       aceBounties,
-      nemesisProtocols
+      nemesisProtocols,
+      rivalWings
     },
     sections: [
       {
@@ -325,6 +334,7 @@ export function summarizeRunReport(report = null) {
     tacticalDirectives: report.summary?.tacticalDirectives || null,
     aceBounties: report.summary?.aceBounties || null,
     nemesisProtocols: report.summary?.nemesisProtocols || null,
+    rivalWings: report.summary?.rivalWings || null,
     tacticalDoctrine: report.summary?.tacticalDoctrine || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };
