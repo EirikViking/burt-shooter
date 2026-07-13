@@ -208,15 +208,15 @@ function runCatalogAndSaveTests() {
   assertDistinctActiveGroups(migrated.runContracts, 'default Pilot Orders');
   const menuState = getRunContractMenuState(migrated);
   assert.equal(menuState.title, 'PILOT ORDERS');
-  assert.equal(menuState.progressLabel, '0/50');
+  assert.equal(menuState.progressLabel, '0', 'public Pilot Orders progress should reveal completed orders without exposing the catalog total');
   assert.equal(menuState.completedCount, 0);
   assert.equal(menuState.total, 50);
   assert.equal(menuState.subtitle, 'Learn key Mayhem tactics.');
   assert.equal(menuState.status, 'active');
   assert.equal(menuState.active.length, 3, 'menu state should expose three active orders');
-  assert.deepEqual(menuState.active.map((entry) => entry.orderSlot), ['01/50', '02/50', '03/50'], 'menu state should expose active order slots');
+  assert.deepEqual(menuState.active.map((entry) => entry.orderSlot), ['01', '02', '03'], 'menu state should expose order numbers without the catalog total');
   assert.equal(menuState.next?.[0]?.id, 'support_hunter', 'menu state should expose the next queued Pilot Order after active slots');
-  assert.equal(menuState.next?.[0]?.orderSlot, '04/50', 'menu state should expose queued order slot labels');
+  assert.equal(menuState.next?.[0]?.orderSlot, '04', 'menu state should expose queued order numbers without the catalog total');
   assert.equal(RUN_CONTRACT_REWARDS_ENABLED, true, 'Pilot Order rewards should be enabled for retention patch');
   assert.equal(menuState.rewardsEnabled, true, 'menu state should advertise enabled rewards');
   assert.equal(menuState.active[0]?.reward?.pilotXp, 175, 'first Pilot Order should expose a Career XP reward');
@@ -500,15 +500,15 @@ function runCatalogAndSaveTests() {
     .find((section) => section.id === 'rewards')
     ?.rows.find((row) => row.id === 'pilotOrders');
   assert.equal(pilotOrdersRow?.value?.[0]?.type, 'pilotOrderProgress', 'run report should summarize non-completing Pilot Orders progress');
-  assert.equal(pilotOrdersRow?.value?.[0]?.orderSlot, '03/50', 'run report should keep the progressed order catalog slot');
+  assert.equal(pilotOrdersRow?.value?.[0]?.orderSlot, '03', 'run report should keep the progressed order number without the catalog total');
   assert.equal(pilotOrdersRow?.value?.[0]?.progress, 500);
   assert.equal(pilotOrdersRow?.value?.[1]?.type, 'pilotOrderNext', 'run report should expose the next queued Pilot Order');
   assert.equal(pilotOrdersRow?.value?.[1]?.title, 'Support Hunter');
-  assert.equal(pilotOrdersRow?.value?.[1]?.orderSlot, '04/50', 'run report should keep the next order catalog slot');
+  assert.equal(pilotOrdersRow?.value?.[1]?.orderSlot, '04', 'run report should keep the next order number without the catalog total');
   const completionReport = createRunReport({
     runMode: RUN_MODES.RANKED,
     runContracts: {
-      progressLabel: '1/50',
+      progressLabel: '1',
       completedThisRun: [{
         id: 'graze_10',
         shortTitle: 'Graze x10'
@@ -525,15 +525,15 @@ function runCatalogAndSaveTests() {
     .find((section) => section.id === 'rewards')
     ?.rows.find((row) => row.id === 'pilotOrders');
   assert.equal(completionPilotOrdersRow?.value?.[0]?.type, 'pilotOrderTrack', 'run report should keep structured track progress after a completion');
-  assert.equal(completionPilotOrdersRow?.value?.[0]?.progressLabel, '1/50', 'run report should keep track progress after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[0]?.progressLabel, '1', 'run report should keep the completed count without exposing the catalog total');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.type, 'pilotOrderDone', 'run report should keep completed order entries structured');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.title, 'Graze x10', 'run report should keep the completed order title');
-  assert.equal(completionPilotOrdersRow?.value?.[1]?.orderSlot, '01/50', 'run report should keep completed order catalog slot');
+  assert.equal(completionPilotOrdersRow?.value?.[1]?.orderSlot, '01', 'run report should keep completed order number without the catalog total');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.reward?.pilotXp, 175, 'run report should expose completed order reward XP');
   assert.equal(completionPilotOrdersRow?.value?.[1]?.rewardXp, 175, 'run report should expose completed order reward XP as a numeric summary');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.type, 'pilotOrderNext', 'run report should reserve room for the next queued order after a completion');
   assert.equal(completionPilotOrdersRow?.value?.[2]?.title, 'Support Hunter');
-  assert.equal(completionPilotOrdersRow?.value?.[2]?.orderSlot, '04/50', 'run report should keep next-order catalog slot after a completion');
+  assert.equal(completionPilotOrdersRow?.value?.[2]?.orderSlot, '04', 'run report should keep next-order number without the catalog total');
   const resumedSweep = startRunContractSession({
     runMode: RUN_MODES.RANKED,
     progress: {
@@ -923,7 +923,8 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     return;
   }
 
-  assert.match(board?.title || '', /^PILOT ORDERS [0-9,]+\/[0-9,]+$/);
+  assert.match(board?.title || '', /^PILOT ORDERS \/\/ COMPLETED: [0-9,]+$/);
+  assert.doesNotMatch(board?.title || '', /\/50/, 'Pilot Orders board title must not reveal the catalog total');
   assert.ok(Number(board?.trackProgressRatio) >= 0 && Number(board?.trackProgressRatio) <= 1, 'Pilot Orders should expose a bounded track progress ratio');
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
@@ -993,7 +994,9 @@ async function runBrowserSmoke() {
     assert.equal(activeProof.state.menu.missionBoard.selectedOrder?.id, 'graze_10', 'fresh Pilot Orders board should explain the first active order by default');
     assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Fly close to enemy bullets without touching them.', 'fresh Pilot Orders board should show exact action guidance');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01/50', '02/50', '03/50'], 'main-menu rows should expose their finite Pilot Orders slots');
+    assert.equal(activeProof.state.menu.missionBoard.title, 'PILOT ORDERS // COMPLETED: 0', 'main-menu header should show completed orders without revealing the endpoint');
+    assert.doesNotMatch(activeProof.state.menu.missionBoard.title || '', /\/50/, 'main-menu Pilot Orders header must keep the catalog total hidden');
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01', '02', '03'], 'main-menu rows should expose order numbers without the catalog total');
     assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^Graze x10$/, 'main-menu row title should stay compact');
     assert.doesNotMatch(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS/i, 'Run Modes briefing should not duplicate Pilot Orders progress');
 
@@ -1046,7 +1049,7 @@ async function runBrowserSmoke() {
     });
     assert.equal(nonFinalCompletionResult.runContracts?.completedCount, 1, 'first Pilot Order completion should update track progress');
     assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.id, 'support_hunter', 'non-final completion should expose the next queued order');
-    assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.orderSlot, '04/50', 'non-final completion should expose the next queued order slot');
+    assert.equal(nonFinalCompletionResult.runContracts?.next?.[0]?.orderSlot, '04', 'non-final completion should expose the next queued order number without the catalog total');
     assert.ok(
       nonFinalCompletionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: Graze x10')),
       'non-final completion toast should name the completed order'
@@ -1078,7 +1081,8 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const nonFinalReportState = await readState(page);
-    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: DONE 1\/50\s+Graze x10 \+175 XP\s+NEXT: Support Hunter 0\/2/);
+    assert.match(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETED: 1\s+Graze x10 \+175 XP\s+NEXT: Support Hunter 0\/2/);
+    assert.doesNotMatch(nonFinalReportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS:[^\n]*\/50/, 'run report must keep the Pilot Orders endpoint hidden');
     const nonFinalReportScreenshot = path.join(outputDir, 'pilot-orders-next-run-report.png');
     await page.screenshot({ path: nonFinalReportScreenshot, fullPage: true });
 
@@ -1106,7 +1110,7 @@ async function runBrowserSmoke() {
       return state.isPaused && state.pauseOverlay?.visible === true;
     }, null, { timeout: 5000 });
     const singleSlotPauseState = await readState(page);
-    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 1\/50 \/\/ Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order when the current slot is complete');
+    assert.match(singleSlotPauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS COMPLETED: 1 \/\/ Boss Breaker 0\/1/, 'pause overlay should point to the follow-up order without revealing the endpoint');
     const singleSlotPauseScreenshot = path.join(outputDir, 'pilot-orders-next-pause-line.png');
     await page.screenshot({ path: singleSlotPauseScreenshot, fullPage: true });
 
@@ -1177,7 +1181,7 @@ async function runBrowserSmoke() {
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
     assert.equal(completedProof.state.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'completed active rows should default the detail strip to the next unfinished order');
     assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'completed active rows should still explain the next unfinished order');
-    assert.match(completedProof.state.menu.menuIcons?.shipHangar?.sublabel || '', /PILOT ORDERS DONE 1\/50/, 'Ship Hangar dock card should advertise completed Pilot Orders review progress');
+    assert.equal(completedProof.state.menu.menuIcons?.shipHangar?.sublabel, 'PILOT ORDERS // COMPLETED: 1', 'Ship Hangar dock card should advertise completed orders without revealing the endpoint');
 
     const completeProof = await captureMenuProof(page, {
       label: 'pilot-orders-complete-state-menu',
@@ -1217,12 +1221,13 @@ async function runBrowserSmoke() {
     const archive = hangarReviewState.shipSelect?.careerInfo?.pilotOrdersArchive;
     assert.equal(archive?.total, RUN_CONTRACT_ORDER_IDS.length, 'Hangar review should expose the full finite order count');
     assert.equal(archive?.heading, 'PILOT ORDERS', 'Hangar review should be framed as the full Pilot Orders review');
-    assert.equal(archive?.countLabel, 'DONE 3/50', 'Hangar review should label the completed-order counter');
+    assert.equal(archive?.countLabel, 'COMPLETED: 3', 'Hangar review should label the completed-order counter without revealing the endpoint');
     assert.equal(archive?.activeCount, 1, 'Hangar review should show active unfinished Pilot Orders');
     assert.ok(archive?.nextCount >= 1, 'Hangar review should expose at least one queued Pilot Order');
     assert.match(archive?.summary || '', /ACTIVE 1/, 'Hangar review header should summarize active Pilot Orders');
     assert.match(archive?.summary || '', /NEXT [1-9]/, 'Hangar review header should summarize queued Pilot Orders');
-    assert.match(archive?.summary || '', /DONE 3\/50/, 'Hangar review header should summarize completed Pilot Orders');
+    assert.match(archive?.summary || '', /COMPLETED: 3/, 'Hangar review header should summarize completed Pilot Orders without revealing the endpoint');
+    assert.doesNotMatch(`${archive?.countLabel || ''} ${archive?.summary || ''}`, /\/50/, 'Hangar review counters must keep the catalog total hidden');
     assert.equal(archive?.totalRows, RUN_CONTRACT_ORDER_IDS.length, 'Hangar review should build all 50 Pilot Order rows');
     assert.ok(archive?.pageCount > 1, 'Hangar review should page the full Pilot Orders catalog');
     assert.ok(archive?.visibleCount > 0 && archive.visibleCount < archive.totalRows, 'Hangar review should show a readable page slice');
@@ -1413,11 +1418,11 @@ async function runBrowserSmoke() {
     const progressSweep = progressResult.runContracts?.active?.find((item) => item.id === 'enemy_sweep_2500');
     assert.equal(progressSweep?.progress, 625, 'in-run 2500 Enemies order should show partial progress');
     assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 625, 'partial Pilot Orders progress should be exposed for run report state');
-    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '14/50', 'partial Pilot Orders progress should expose the order slot');
+    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '14', 'partial Pilot Orders progress should expose the order number without the catalog total');
     const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
     assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
     assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
-    assert.match(progressToast?.message || '', /PILOT ORDERS 49\/50/, 'progress toast should include overall Pilot Orders track progress');
+    assert.match(progressToast?.message || '', /PILOT ORDERS COMPLETED: 49/, 'progress toast should include the completed count without revealing the endpoint');
     assert.match(progressToast?.message || '', /ORDER PROGRESS: 2500 Enemies 625\/2,500/, 'progress toast should include the active order');
     assert.ok(progressToast?.duration >= 4000, 'progress toast should stay visible long enough to notice');
     const progressToastScreenshot = path.join(outputDir, 'pilot-order-progress-toast.png');
@@ -1433,7 +1438,7 @@ async function runBrowserSmoke() {
     }, null, { timeout: 5000 });
     const pauseState = await readState(page);
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /2500 Enemies/, 'pause overlay should show the active Pilot Order');
-    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS 49\/50/, 'pause overlay should show Pilot Orders track progress');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS COMPLETED: 49/, 'pause overlay should show completed Pilot Orders without revealing the endpoint');
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500/, 'pause overlay should show active Pilot Order progress');
     const pauseScreenshot = path.join(outputDir, 'pilot-orders-pause-line.png');
     await page.screenshot({ path: pauseScreenshot, fullPage: true });
@@ -1500,7 +1505,8 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+DONE 50\/50\s+2500 Enemies \+240 XP/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+COMPLETED: 50\s+2500 Enemies \+240 XP/);
+    assert.doesNotMatch(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS:[^\n]*\/50/, 'final run report must keep the Pilot Orders endpoint hidden');
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });
 

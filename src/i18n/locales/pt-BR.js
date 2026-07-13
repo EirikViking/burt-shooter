@@ -274,6 +274,7 @@ const sourceText = Object.freeze({
   "{progress}/{target}": "{progress}/{target}",
   "MISSION COMPLETE: {title}": "MISSAO COMPLETA: {title}",
   "PILOT ORDERS": "ORDENS DE PILOTO",
+  "COMPLETED: {count}": "CONCLUIDAS: {count}",
   "Starter combat goals for Mayhem.": "Objetivos iniciais de combate para Mayhem.",
   "Learn key Mayhem tactics.": "Aprenda taticas-chave de Mayhem.",
   "Review cleared orders in Ship Hangar.": "Revise ordens concluidas no Ship Hangar.",

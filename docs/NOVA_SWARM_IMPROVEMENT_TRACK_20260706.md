@@ -11,8 +11,8 @@ Expanded 2026-07-07 request: continue toward 300 total improvements, researching
 Source target: `codex/main-menu-run-contracts-20260702`
 
 1. Mayhem briefing now surfaces the next active Pilot Order before launch.
-2. In-run Pilot Orders start and pause cues now include overall track progress, such as `49/50`.
-3. Pilot Orders completion banners and Run Report now show overall track progress, such as `50/50`.
+2. In-run Pilot Orders start and pause cues show the completed count without revealing the size of the full order catalog.
+3. Pilot Orders completion banners and Run Report preserve clear progress feedback while keeping the remaining order count a surprise.
 
 Verification:
 
@@ -145,7 +145,7 @@ Safety notes:
 Source target: `codex/main-menu-run-contracts-20260702`
 
 19. Hangar Career Intel now labels the Pilot Orders review panel as `PILOT ORDERS` instead of implying it only contains cleared orders.
-20. The archive count now explicitly reads as a completed-order counter, such as `DONE 3/50`.
+20. The archive count explicitly reads as a completed-order counter, such as `COMPLETED: 3`, without advertising the catalog endpoint.
 21. Active and queued archive rows now put progress first, making long review lists faster to scan.
 
 Verification:

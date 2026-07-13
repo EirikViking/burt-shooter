@@ -4403,7 +4403,9 @@ export class GameOverScene {
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderTrack') {
           const progress = String(value.progressLabel || '').trim();
-          return progress ? `${translateText('DONE')} ${progress}` : translateText('DONE');
+          return progress
+            ? translateText('COMPLETED: {count}', { count: progress })
+            : translateText('DONE');
         }
         if (value && typeof value === 'object' && value.type === 'pilotOrderDone') {
           const title = translateText(value.title || '');

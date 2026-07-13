@@ -230,6 +230,7 @@ const sourceText = Object.freeze({
   "{progress}/{target}": "{progress}/{target}",
   "MISSION COMPLETE: {title}": "미션 완료: {title}",
   "PILOT ORDERS": "파일럿 명령",
+  "COMPLETED: {count}": "완료: {count}",
   "Starter combat goals for Mayhem.": "Mayhem 입문 전투 목표.",
   "Learn key Mayhem tactics.": "Mayhem 핵심 전술을 배웁니다.",
   "PILOT ORDERS COMPLETE": "파일럿 명령 완료",

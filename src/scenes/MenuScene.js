@@ -2053,7 +2053,10 @@ export class MenuScene {
       showPilotOrders: true
     });
     if ((Number(missionState.completedCount) || 0) > 0) {
-      return `${translateText('PILOT ORDERS')} ${translateText('DONE')} ${missionState.progressLabel || ''}`.trim();
+      const completionLabel = translateText('COMPLETED: {count}', {
+        count: missionState.progressLabel || '0'
+      });
+      return `${translateText('PILOT ORDERS')} // ${completionLabel}`;
     }
     return translateText('UPGRADE & CUSTOMIZE');
   }
@@ -2185,9 +2188,12 @@ export class MenuScene {
 
     this.missionBoardPanel.visible = true;
     const missionTitle = translateText(completeState ? missionState.completionTitle : missionState.title);
+    const completionLabel = translateText('COMPLETED: {count}', {
+      count: missionState.progressLabel || '0'
+    });
     this.missionBoardTitle.text = completeState
       ? missionTitle
-      : `${missionTitle} ${missionState.progressLabel || ''}`.trim();
+      : `${missionTitle} // ${completionLabel}`;
     this.missionBoardTitle.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;

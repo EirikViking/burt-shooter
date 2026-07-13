@@ -999,7 +999,9 @@ export class ShipSelectScene {
     heading.position.set(18, 10);
     fitDisplayToBox(heading, width - 124, compact ? 18 : 20, { minScale: 0.56 });
 
-    const countLabel = `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0))}`;
+    const countLabel = translateText('COMPLETED: {count}', {
+      count: Math.max(0, Math.floor(Number(review?.completedCount) || 0))
+    });
     const count = createText(countLabel, {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 12 : 14,
@@ -1018,7 +1020,9 @@ export class ShipSelectScene {
       activeOrders.length ? `${translateText('ACTIVE')} ${activeOrders.length}` : null,
       nextOrders.length ? `${translateText('NEXT')} ${nextOrders.length}` : null,
       completedOrders.length
-        ? `${translateText(PILOT_ORDERS_ARCHIVE_DONE)} ${translateText('{progress}/{target}', formatRunContractProgressValue(review?.completedCount || 0, review?.total || 0))}`
+        ? translateText('COMPLETED: {count}', {
+            count: Math.max(0, Math.floor(Number(review?.completedCount) || 0))
+          })
         : null
     ].filter(Boolean);
     const archiveSummary = archiveSummaryParts.length

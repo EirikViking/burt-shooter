@@ -2676,7 +2676,9 @@ export class PlayScene {
       forceCompletionVisible: true,
       showPilotOrders: true
     });
-    return menuState.progressLabel || null;
+    return translateText('COMPLETED: {count}', {
+      count: menuState.progressLabel || '0'
+    });
   }
 
   getNextRunContractSummary(state = null) {

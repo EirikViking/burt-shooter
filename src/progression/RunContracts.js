@@ -649,7 +649,7 @@ export function getRunContractOrderNumber(id = '') {
   return index >= 0 ? index + 1 : 0;
 }
 
-export function formatRunContractOrderSlotLabel(contractOrId = '', total = RUN_CONTRACT_ORDER_IDS.length) {
+export function formatRunContractOrderSlotLabel(contractOrId = '') {
   const id = typeof contractOrId === 'object' && contractOrId
     ? contractOrId.id
     : contractOrId;
@@ -657,8 +657,7 @@ export function formatRunContractOrderSlotLabel(contractOrId = '', total = RUN_C
     ? floor(contractOrId.orderNumber) || getRunContractOrderNumber(id)
     : getRunContractOrderNumber(id);
   if (!orderNumber) return '';
-  const normalizedTotal = Math.max(orderNumber, floor(total, RUN_CONTRACT_ORDER_IDS.length));
-  return `${String(orderNumber).padStart(2, '0')}/${formatRunContractCount(normalizedTotal)}`;
+  return String(orderNumber).padStart(2, '0');
 }
 
 function clampText(value, maxLength = 120) {
@@ -1406,7 +1405,7 @@ export function getRunContractMenuState(progressOrState = {}, options = {}) {
     completionNoticeSeenAt: state.completionNoticeSeenAt || null,
     total,
     completedCount,
-    progressLabel: `${formatRunContractCount(completedCount)}/${formatRunContractCount(total)}`,
+    progressLabel: formatRunContractCount(completedCount),
     completionTitle: 'PILOT ORDERS COMPLETE',
     completionBody: 'All starter combat goals cleared.',
     active: activeIds.map((id) => buildRunContractDisplayEntry(id, state)).filter(Boolean),
