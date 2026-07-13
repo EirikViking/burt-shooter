@@ -6650,6 +6650,10 @@ export class PlayScene {
     dim.eventMode = 'static';
     const frame = new PIXI.Graphics();
     frame.label = 'tactical_draft_frame';
+    const lockInBurst = new PIXI.Graphics();
+    lockInBurst.label = 'tactical_draft_lock_in_burst';
+    lockInBurst.eventMode = 'none';
+    lockInBurst.visible = false;
     const eyebrow = createText(translateText('SECTOR {sector} CLEARED', { sector: sectorCleared }), {
       fontFamily: FONT_BODY,
       fontSize: 15,
@@ -6676,7 +6680,7 @@ export class PlayScene {
       align: 'center'
     });
     subtitle.anchor.set(0.5);
-    overlay.addChild(dim, frame, eyebrow, title, subtitle);
+    overlay.addChild(dim, frame, lockInBurst, eyebrow, title, subtitle);
 
     const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
     cards.forEach((card) => overlay.addChild(card));
@@ -6695,6 +6699,7 @@ export class PlayScene {
       overlay,
       dim,
       frame,
+      lockInBurst,
       eyebrow,
       title,
       subtitle,
@@ -7290,6 +7295,7 @@ export class PlayScene {
     }
     if (state.confirmedId) {
       state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+      this.updateTacticalDraftLockIn();
       return;
     }
     const left = this.inputManager?.consumeKeyPress?.('ArrowLeft', 'KeyA', 'a', 'A');
@@ -7309,6 +7315,60 @@ export class PlayScene {
     this.redrawTacticalDraftHold();
   }
 
+  updateTacticalDraftLockIn() {
+    const state = this.tacticalDraft;
+    const burst = state?.lockInBurst;
+    const confirmedAt = Number(state?.confirmedAt) || 0;
+    const selectedCard = state?.cards?.find((card) => card?._offer?.id === state.confirmedId);
+    if (!state?.active || !state.confirmedId || !burst || !selectedCard || !confirmedAt) return;
+
+    const elapsed = Math.max(0, Date.now() - confirmedAt);
+    const progress = Math.min(1, elapsed / 820);
+    const reveal = Math.min(1, elapsed / 170);
+    const fade = 1 - Math.max(0, (progress - 0.68) / 0.32);
+    const accent = Number(selectedCard._offer?.color) || 0x37f5ff;
+    const centerX = selectedCard.position.x;
+    const centerY = selectedCard.position.y;
+    const cardWidth = Number(selectedCard._draftLayout?.width) || 320;
+    const cardHeight = Number(selectedCard._draftLayout?.height) || 340;
+    const innerRadius = Math.max(cardWidth, cardHeight) * (0.42 + reveal * 0.08);
+    const outerRadius = innerRadius + 66 + reveal * 42;
+
+    burst.visible = true;
+    burst.clear();
+    if (elapsed < 190) {
+      burst.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+      burst.fill({ color: 0xffffff, alpha: (1 - elapsed / 190) * 0.12 });
+    }
+    for (let index = 0; index < 28; index += 1) {
+      const angle = (Math.PI * 2 * index) / 28 + progress * 0.34;
+      const stagger = (index % 4) * 7;
+      const rayInner = innerRadius + stagger;
+      const rayOuter = outerRadius + stagger * 2;
+      burst.moveTo(centerX + Math.cos(angle) * rayInner, centerY + Math.sin(angle) * rayInner);
+      burst.lineTo(centerX + Math.cos(angle) * rayOuter, centerY + Math.sin(angle) * rayOuter);
+    }
+    burst.stroke({ color: accent, width: 2.2, alpha: 0.12 + reveal * fade * 0.64 });
+    burst.circle(centerX, centerY, innerRadius + reveal * 18);
+    burst.stroke({ color: 0xffffff, width: 2, alpha: reveal * fade * 0.56 });
+    burst.circle(centerX, centerY, innerRadius + 26 + reveal * 36);
+    burst.stroke({ color: accent, width: 3, alpha: reveal * fade * 0.46 });
+
+    state.cards.forEach((card) => {
+      const selected = card === selectedCard;
+      card.alpha = selected ? 1 : Math.max(0.08, 1 - reveal * 0.92);
+      if (selected) {
+        const punch = Math.sin(Math.min(1, elapsed / 360) * Math.PI);
+        card.scale.set((state.compact ? 1 : 1.015) + punch * (state.compact ? 0.025 : 0.055));
+      }
+    });
+    state.rescan.alpha = Math.max(0.12, 1 - reveal * 0.88);
+    state.hold.alpha = Math.max(0.12, 1 - reveal * 0.88);
+    state.title.scale.set(1 + Math.sin(Math.min(1, elapsed / 360) * Math.PI) * 0.08);
+    state.subtitle.alpha = 0.72 + fade * 0.28;
+    state.lockInProgress = progress;
+  }
+
   confirmTacticalDraft(index = this.tacticalDraft?.focusIndex || 0, source = 'unknown') {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId) return false;
@@ -7325,6 +7385,8 @@ export class PlayScene {
     state.confirmedId = offer.id;
     state.result = result;
     state.confirmedAt = Date.now();
+    state.title.text = translateText('LOCKED IN');
+    state.subtitle.text = translateText(offer.description);
     const nextDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
     state.doctrineChanged = nextDoctrine && (
       previousDoctrine?.id !== nextDoctrine.id || previousDoctrine?.stage !== nextDoctrine.stage
@@ -7347,6 +7409,8 @@ export class PlayScene {
       description: offer.detail || offer.description
     }, { silent: true, scoreBonus: false });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 3 : 5, 12);
+    this.screenShake?.freezeFrame?.(2);
     AudioManager.playSfx(offer.sfx || getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
     const complete = state.onComplete;
     this.tacticalDraftConfirmTimeout = setTimeout(() => {
@@ -7375,7 +7439,7 @@ export class PlayScene {
         });
       }
       complete?.();
-    }, 480);
+    }, 880);
     return true;
   }
 
@@ -7405,6 +7469,8 @@ export class PlayScene {
       focusIndex: state?.focusIndex ?? null,
       recommendedIndex: state?.recommendedIndex ?? null,
       confirmedId: state?.confirmedId || null,
+      lockInActive: Boolean(state?.confirmedId && state?.lockInBurst?.visible),
+      lockInProgress: Number(state?.lockInProgress) || 0,
       inputArmed: Boolean(state?.inputArmed),
       compact: Boolean(state?.compact),
       title: state?.title?.text || null,
