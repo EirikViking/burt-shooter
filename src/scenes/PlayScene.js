@@ -1708,8 +1708,7 @@ export class PlayScene {
     this.aceBountyHistory.push(completion);
     this.lastAceBountyCompletion = completion;
     this.activateRivalWingMorale('ace_down');
-    const reward = this.applyAceBountyReward(completion, enemy);
-    const protocolReward = this.applyNemesisProtocolReward(completion, enemy);
+    const { reward, protocolReward } = this.applyAceNemesisRewards(completion, enemy);
     const number = String(variant.number).padStart(4, '0');
     const completionMessage = translateText('ACE DOWN: {number} // REWARD: {reward}', {
       number,
@@ -1728,6 +1727,49 @@ export class PlayScene {
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.76, minIntervalMs: 280 });
     return { completion, reward, protocolReward };
+  }
+
+  applyAceNemesisRewards(completion = {}, enemy = null) {
+    const canBundlePhysicalRewards = completion.protocolId
+      && !enemy?.nemesisBonusRewardClaimed
+      && completion.rewardKind === 'powerup'
+      && completion.bonusKind === 'powerup'
+      && completion.rewardPowerupType
+      && completion.bonusPowerupType
+      && this.powerupManager;
+    if (!canBundlePhysicalRewards) {
+      return {
+        reward: this.applyAceBountyReward(completion, enemy),
+        protocolReward: this.applyNemesisProtocolReward(completion, enemy)
+      };
+    }
+
+    if (enemy) enemy.nemesisBonusRewardClaimed = true;
+    const x = Number.isFinite(enemy?.x) ? enemy.x : (this.player?.x || this.game.getWidth() / 2);
+    const y = Number.isFinite(enemy?.y)
+      ? enemy.y
+      : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
+    const duplicateType = completion.rewardPowerupType === completion.bonusPowerupType;
+    const powerup = this.powerupManager.spawnSpecific(x, y, completion.rewardPowerupType, {
+      source: 'ace_nemesis_bundle',
+      bundledPowerupTypes: duplicateType ? [] : [completion.bonusPowerupType]
+    });
+    const granted = Boolean(powerup);
+    return {
+      reward: {
+        granted,
+        kind: 'powerup',
+        type: completion.rewardPowerupType,
+        bundled: true
+      },
+      protocolReward: {
+        granted,
+        kind: 'powerup',
+        type: completion.bonusPowerupType,
+        bundled: true,
+        coalesced: duplicateType
+      }
+    };
   }
 
   applyAceBountyReward(completion = {}, enemy = null) {

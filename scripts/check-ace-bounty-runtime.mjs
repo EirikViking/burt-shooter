@@ -182,17 +182,64 @@ try {
     for (let hit = 0; hit < 8 && !killed; hit += 1) killed = enemy.takeDamage(99999);
     if (killed) play.onEnemyKilled(enemy);
     const duplicate = play.completeAceBounty(enemy);
+    const rewardPickups = play.powerupManager?.powerups?.filter((powerup) => (
+      powerup.active !== false && powerup.spawnSource === 'ace_nemesis_bundle'
+    )) || [];
     return {
       killed,
       duplicate,
       state: structuredClone(play.getAceBountyDebugState()),
-      rewardSpawned: play.powerupManager?.powerups?.filter((powerup) => powerup.type === 'shield' && powerup.active !== false).length >= 2
+      rewardPickups: rewardPickups.map((powerup) => ({
+        type: powerup.type,
+        bundledPowerupTypes: [...(powerup.bundledPowerupTypes || [])]
+      }))
     };
   });
   report.scenarios.completion = completion;
   if (!completion.killed || completion.state?.completedCount !== 1) failures.push(`Ace completion missing: ${JSON.stringify(completion)}`);
-  if (!completion.rewardSpawned) failures.push('Ace shield bounty did not spawn');
+  if (completion.rewardPickups?.length !== 1 || completion.rewardPickups[0]?.type !== 'shield' || completion.rewardPickups[0]?.bundledPowerupTypes?.length !== 0) {
+    failures.push(`Identical Ace/Nemesis rewards were not coalesced into one pickup: ${JSON.stringify(completion.rewardPickups)}`);
+  }
   if (completion.duplicate !== null || completion.state?.history?.length !== 1) failures.push(`Ace bounty claimed more than once: ${JSON.stringify(completion)}`);
+  completion.screenshot = path.join(outputDir, 'ace-reward-single-pickup-1920x1080.png');
+  await page.screenshot({ path: completion.screenshot, fullPage: true });
+
+  const bundledRewards = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const before = play.powerupManager.powerups.length;
+    const enemy = { x: 640, y: 320, nemesisBonusRewardClaimed: false };
+    const pair = play.applyAceNemesisRewards({
+      protocolId: 'blitz_plating_frenzy_bomb',
+      rewardKind: 'powerup',
+      rewardPowerupType: 'shield',
+      bonusKind: 'powerup',
+      bonusPowerupType: 'bomb'
+    }, enemy);
+    const created = play.powerupManager.powerups.slice(before);
+    const appliedTypes = [];
+    const originalApplyPowerup = play.player.applyPowerup;
+    play.player.applyPowerup = (type) => appliedTypes.push(type);
+    try {
+      created[0]?.collect(play.player, play);
+    } finally {
+      play.player.applyPowerup = originalApplyPowerup;
+    }
+    return {
+      physicalPickupCount: created.length,
+      pickupType: created[0]?.type || null,
+      bundledPowerupTypes: [...(created[0]?.bundledPowerupTypes || [])],
+      appliedTypes,
+      reward: pair.reward,
+      protocolReward: pair.protocolReward
+    };
+  });
+  report.scenarios.bundledRewards = bundledRewards;
+  if (bundledRewards.physicalPickupCount !== 1 || bundledRewards.pickupType !== 'shield' || bundledRewards.bundledPowerupTypes?.join(',') !== 'bomb') {
+    failures.push(`Different Ace/Nemesis rewards did not share one pickup: ${JSON.stringify(bundledRewards)}`);
+  }
+  if (bundledRewards.appliedTypes?.join(',') !== 'shield,bomb' || !bundledRewards.reward?.bundled || !bundledRewards.protocolReward?.bundled || bundledRewards.protocolReward?.coalesced) {
+    failures.push(`Bundled pickup did not apply both rewards: ${JSON.stringify(bundledRewards)}`);
+  }
 
   await page.evaluate(() => {
     const play = window.__game.scenes.play;

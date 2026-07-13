@@ -53,10 +53,16 @@ function drawRadialTick(graphics, angle, innerRadius, outerRadius) {
 }
 
 class Powerup {
-  constructor(x, y, type) {
+  constructor(x, y, type, options = {}) {
     this.x = x;
     this.y = y;
     this.type = type;
+    this.spawnSource = options.source || null;
+    this.bundledPowerupTypes = Array.from(new Set(
+      (Array.isArray(options.bundledPowerupTypes) ? options.bundledPowerupTypes : [])
+        .map((entry) => String(entry || ''))
+        .filter((entry) => entry && entry !== type)
+    ));
     this.active = true;
     this.radius = 12;
     this.vy = 1;
@@ -820,11 +826,14 @@ class Powerup {
 
   collect(player, scene) {
     this.active = false;
-    scene?.recordThreatDiscovery?.(this.type, 'powerups', {
-      name: POWERUP_CODEX_NAMES[this.type] || String(this.type || 'powerup').replace(/_/g, ' ').toUpperCase(),
-      role: 'powerup pickup',
-      sector: scene?.game?.level || 1
-    }, { silent: true, scoreBonus: false });
+    const collectedTypes = [this.type, ...this.bundledPowerupTypes];
+    collectedTypes.forEach((type) => {
+      scene?.recordThreatDiscovery?.(type, 'powerups', {
+        name: POWERUP_CODEX_NAMES[type] || String(type || 'powerup').replace(/_/g, ' ').toUpperCase(),
+        role: 'powerup pickup',
+        sector: scene?.game?.level || 1
+      }, { silent: true, scoreBonus: false });
+    });
 
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
@@ -873,12 +882,29 @@ class Powerup {
       }
     }
 
+    for (const bundledType of this.bundledPowerupTypes) {
+      const bundledMeta = getPowerupMeta(bundledType);
+      const bundledEffect = bundledMeta?.effect || {};
+      const bundledLifeGrant = Math.max(0, Math.round(Number(
+        bundledEffect.grantLives || (bundledType === 'life' ? 1 : 0)
+      )));
+      if (bundledLifeGrant > 0) {
+        scene.game.gainLife({ count: bundledLifeGrant, source: bundledType });
+        if (Number.isFinite(Number(bundledEffect.invulnMs))) {
+          player?.grantInvulnerability?.(Number(bundledEffect.invulnMs), bundledType);
+        }
+      } else {
+        player.applyPowerup(bundledType);
+        if (bundledType === 'shockwave') player.lastScene = scene;
+      }
+    }
+
     if (scene.debugStats) {
       scene.debugStats.bonusPickupsCollected++;
     }
     if (scene.debugPowerups) {
-      console.log(`[PowerupTest] pickup type=${this.type}`);
-      console.log(`[PowerupTest] applied type=${this.type} ok=true`);
+      console.log(`[PowerupTest] pickup types=${collectedTypes.join('+')}`);
+      collectedTypes.forEach((type) => console.log(`[PowerupTest] applied type=${type} ok=true`));
     }
     this.showMessage(scene);
   }
@@ -1241,7 +1267,7 @@ export class PowerupManager {
   }
 
   spawnSpecific(x, y, type, options = {}) {
-    const powerup = new Powerup(x, y, type);
+    const powerup = new Powerup(x, y, type, options);
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
     if (options.countDrop) {
@@ -1252,7 +1278,10 @@ export class PowerupManager {
         this.game.scenes.play.debugStats.bonusPickupsSpawned++;
       }
     }
-    console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)} source=${options.source || 'specific'}`);
+    const bundleLabel = powerup.bundledPowerupTypes.length
+      ? ` bundle=${powerup.bundledPowerupTypes.join('+')}`
+      : '';
+    console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)} source=${options.source || 'specific'}${bundleLabel}`);
     return powerup;
   }
 }
