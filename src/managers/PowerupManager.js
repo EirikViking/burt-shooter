@@ -1033,7 +1033,7 @@ class Powerup {
   showMessage(scene) {
     const { width, height } = scene.game.app.screen;
     const meta = getPowerupMeta(this.type);
-    const message = translateText(meta?.pickupMessage || 'POWERUP!');
+    const message = translateText(meta?.pickupMessage || meta?.name || 'POWERUP!');
     if (typeof scene.enqueueToast === 'function') {
       const isMiracle = this.type === 'nova_miracle';
       scene.enqueueToast(message, {
@@ -1260,7 +1260,7 @@ export class PowerupManager {
       type = 'shield'; // 11% uncommon, if no shield
     } else if (rand < 0.28) {
       // BOMB & SHOCKWAVE - 10% dedicated chance for most visible powerups
-      const burstPowerups = ['bomb', 'shockwave', 'stasis_net', 'pulse_refund', 'saw_matrix'];
+      const burstPowerups = ['bomb', 'shockwave', 'stasis_net', 'pulse_refund', 'saw_matrix', 'hull_hymn', 'nova_bloom'];
       type = burstPowerups[Math.floor(Math.random() * burstPowerups.length)];
     } else if (rand < 0.52) {
       // Spectacle powerups - 25% chance pool for high-readability showpieces.
@@ -1272,7 +1272,14 @@ export class PowerupManager {
         'drone_carousel',
         'plasma_lance',
         'void_crown',
-        'swarm_contract'
+        'swarm_contract',
+        'helix_array',
+        'static_bloom',
+        'comet_drill',
+        'packet_storm',
+        'needle_rain',
+        'boss_breaker',
+        'mirror_palace'
       ];
       type = spectaclePowerups[Math.floor(Math.random() * spectaclePowerups.length)];
     } else if (rand < 0.62) {
@@ -1290,7 +1297,13 @@ export class PowerupManager {
         'damage_up',
         'target_paint',
         'nano_patch',
-        'mercy_protocol'
+        'mercy_protocol',
+        'sanctuary_field',
+        'lucky_reactor',
+        'graviton_crown',
+        'scrap_vacuum',
+        'chrono_jackpot',
+        'dead_sun_dividend'
       ];
       type = combatPowerups[Math.floor(Math.random() * combatPowerups.length)];
     } else {
@@ -1307,7 +1320,12 @@ export class PowerupManager {
         'rapid_fire',
         'double_shot',
         'speed_up',
-        'mirror_shots'
+        'mirror_shots',
+        'reactor_redline',
+        'phase_dividend',
+        'black_ice',
+        'second_wind',
+        'afterburner_choir'
       ];
       type = standardPowerups[Math.floor(Math.random() * standardPowerups.length)];
     }

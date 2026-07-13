@@ -23,6 +23,7 @@ import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
 import { RunPressureDirector } from './RunPressureDirector.js';
 import { RunContentDirector } from './RunContentDirector.js';
+import { GLOBAL_SCORE_TUNING_MULTIPLIER } from '../config/ScoreTuning.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import { createRunReport } from './RunReport.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
@@ -636,7 +637,7 @@ export class Game {
     const diagnostics = playScene?.performanceDiagnostics;
     const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const playerMult = playScene?.player?.scoreMultiplier || 1;
-    const preDangerAward = normalizeScoreDelta(base, gameMult * playerMult);
+    const preDangerAward = normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
     const applied = this.getScoreAward(points);
     this.score += applied;
     const breakdownKey = this.scoreBreakdown[source] !== undefined ? source : 'baseScore';
@@ -774,7 +775,7 @@ export class Game {
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playerMult = this.scenes?.play?.player?.scoreMultiplier || 1;
     const pressureMult = this.runPressureDirector?.getScoreMultiplier?.() || 1;
-    const mult = gameMult * playerMult * pressureMult;
+    const mult = GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult * pressureMult;
     return normalizeScoreDelta(base, mult);
   }
 

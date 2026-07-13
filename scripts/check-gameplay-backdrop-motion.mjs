@@ -28,7 +28,8 @@ for (const [mode, profile] of Object.entries(GAMEPLAY_BACKDROP_PROFILES)) {
     mode
   });
   assert.ok(scale > 1, `${mode} should overscan the source texture`);
-  assert.ok(profile.maxOffsetY >= 72, `${mode} should provide visible vertical camera travel`);
+  assert.ok(profile.maxOffsetY >= 124, `${mode} should provide visible vertical camera travel`);
+  assert.ok(profile.periodYMs <= 35000, `${mode} travel should remain visibly active during short waves`);
 
   const samples = [];
   for (let sample = 0; sample <= 120; sample += 1) {
@@ -58,14 +59,16 @@ for (const [mode, profile] of Object.entries(GAMEPLAY_BACKDROP_PROFILES)) {
   );
 }
 
-assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.base.alphas, { base: 0.42, storm: 0, boss: 0, shade: 0.46 });
-assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.storm.alphas, { base: 0.26, storm: 0.34, boss: 0, shade: 0.5 });
-assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.boss.alphas, { base: 0.18, storm: 0.16, boss: 0.4, shade: 0.54 });
+assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.base.alphas, { base: 0.46, storm: 0, boss: 0, shade: 0.42 });
+assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.storm.alphas, { base: 0.25, storm: 0.42, boss: 0, shade: 0.45 });
+assert.deepEqual(GAMEPLAY_BACKDROP_PROFILES.boss.alphas, { base: 0.16, storm: 0.18, boss: 0.48, shade: 0.48 });
 
 assert.match(playSource, /generation !== this\.gameplayBackdropLoadGeneration/, 'late backdrop loads must be rejected');
 assert.match(playSource, /prepareTextureForRender\(texture, 'generated_gameplay_backdrop'\)/, 'base texture should be prepared before use');
 assert.match(playSource, /this\.updateGameplayBackdrop\(delta\)/, 'backdrop motion should update with the starfield');
 assert.match(playSource, /\[this\.gameplayBackdrop, 0\.55\]/, 'backdrop layers should retain depth-separated parallax');
 assert.match(playSource, /getAccessibilitySettings\(\)\.prefersReducedMotion/, 'backdrop motion should respect reduced motion');
+assert.match(playSource, /this\.cosmicTravelLayers\.push\(warpStreaks\)/, 'foreground travel streaks should reinforce speed');
+assert.match(playSource, /this\.cosmicAuroraBands\.push\(band\)/, 'animated aurora bands should add large-scale depth');
 
 console.log('[gameplay-backdrop-motion] PASS modes, visible camera travel, coverage, reduced motion, lifecycle guards');

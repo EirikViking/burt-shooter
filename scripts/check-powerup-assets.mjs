@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { AssetManifest } from '../src/assets/assetManifest.js';
-import { ALL_POWERUP_TYPES, NEW_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
+import {
+  ALL_POWERUP_TYPES,
+  NEW_POWERUP_TYPES,
+  SPECTACLE_EXPANSION_POWERUP_TYPES
+} from '../src/config/PowerupCatalog.js';
 
 const requiredPowerups = [...ALL_POWERUP_TYPES, 'bonus_core'];
 
@@ -65,6 +69,8 @@ if (!existsSync(imagegenNormalizeScript)) {
 }
 
 const imagegenSourceDir = path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260617');
+const spectacleExpansionSourceDir = path.join(root, 'public/art/generated/nova-swarm/powerups/design-source-20260713-spectacle-expansion');
+const spectacleExpansionTypes = new Set(SPECTACLE_EXPANSION_POWERUP_TYPES);
 const sourceDirByPowerup = new Map([
   ['super_extra_life', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260626')],
   ['nova_miracle', path.join(root, 'public/art/generated/nova-swarm/powerups/imagegen-source-20260713')]
@@ -75,7 +81,12 @@ const expectedAssetSuffixByPowerup = new Map([
 ]);
 
 for (const key of NEW_POWERUP_TYPES) {
-  const sourcePath = path.join(sourceDirByPowerup.get(key) || imagegenSourceDir, `${key}.png`);
+  const sourcePath = path.join(
+    spectacleExpansionTypes.has(key)
+      ? spectacleExpansionSourceDir
+      : sourceDirByPowerup.get(key) || imagegenSourceDir,
+    `${key}.png`
+  );
   if (!existsSync(sourcePath)) {
     errors.push(`${key} imagegen source icon missing: ${sourcePath}`);
   }
@@ -83,7 +94,9 @@ for (const key of NEW_POWERUP_TYPES) {
 
 for (const key of NEW_POWERUP_TYPES) {
   const url = generatedPowerups[key] || '';
-  const expectedSuffix = expectedAssetSuffixByPowerup.get(key) || '-20260613.png';
+  const expectedSuffix = spectacleExpansionTypes.has(key)
+    ? '-20260713.png'
+    : expectedAssetSuffixByPowerup.get(key) || '-20260613.png';
   if (!url.endsWith(expectedSuffix)) {
     errors.push(`${key} should stay on the expected powerup asset slot ${expectedSuffix}, got ${url || 'missing'}`);
   }

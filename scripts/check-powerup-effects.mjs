@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { SPECTACLE_EXPANSION_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4363));
@@ -32,7 +33,8 @@ const powerupTypes = [
   'bomb',
   'chain_lightning',
   'orbital_strike',
-  'vampire'
+  'vampire',
+  ...SPECTACLE_EXPANSION_POWERUP_TYPES
 ];
 
 function timestamp() {

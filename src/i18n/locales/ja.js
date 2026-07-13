@@ -1,5 +1,7 @@
 import { buildArcadePatterns } from './patterns.js';
 
+import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
+
 const sourceText = Object.freeze({
   "ACE": "エース",
   "ACE BOUNTIES": "エースバウンティ",
@@ -1742,6 +1744,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja') }),
   patterns
 };

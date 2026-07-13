@@ -114,7 +114,11 @@ try {
       base: read(play.gameplayBackdrop),
       storm: read(play.gameplayStormBackdrop),
       boss: read(play.gameplayBossBackdrop),
-      shadeAlpha: play.gameplayBackdropShade?.alpha ?? null
+      shadeAlpha: play.gameplayBackdropShade?.alpha ?? null,
+      starCount: (play.starLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      travelMoteCount: (play.cosmicTravelLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      auroraBandCount: play.cosmicAuroraBands?.length || 0,
+      textStateBackdrop: JSON.parse(window.render_game_to_text?.() || '{}').gameplayBackdrop || null
     };
   });
 
@@ -144,6 +148,10 @@ try {
   );
   assert(baseAfter.mode === 'base', `expected base mode, got ${baseAfter.mode}`);
   assert(baseTravelDistance > 24, `base backdrop camera travel was too subtle (${baseTravelDistance.toFixed(1)}px)`);
+  assert(baseAfter.starCount === 244, `expected 244 layered stars, got ${baseAfter.starCount}`);
+  assert(baseAfter.travelMoteCount === 64, `expected 64 dust/streak travel cues, got ${baseAfter.travelMoteCount}`);
+  assert(baseAfter.auroraBandCount === 3, `expected 3 aurora bands, got ${baseAfter.auroraBandCount}`);
+  assert(baseAfter.textStateBackdrop?.travelMoteCount === 64, 'render_game_to_text should expose backdrop spectacle counts');
   assertCoverage(baseAfter, 'base');
   await page.screenshot({ path: path.join(outputDir, 'base-drift.png'), fullPage: true });
 
@@ -156,8 +164,8 @@ try {
   });
   const storm = await snapshot();
   assert(storm.mode === 'storm', `expected storm mode, got ${storm.mode}`);
-  assert(Math.abs(storm.base.alpha - 0.26) < 0.01, `wrong storm base alpha ${storm.base.alpha}`);
-  assert(Math.abs(storm.storm.alpha - 0.34) < 0.01, `wrong storm alpha ${storm.storm.alpha}`);
+  assert(Math.abs(storm.base.alpha - 0.25) < 0.01, `wrong storm base alpha ${storm.base.alpha}`);
+  assert(Math.abs(storm.storm.alpha - 0.42) < 0.01, `wrong storm alpha ${storm.storm.alpha}`);
   assertCoverage(storm, 'storm');
   await page.screenshot({ path: path.join(outputDir, 'storm-drift.png'), fullPage: true });
 
@@ -170,8 +178,8 @@ try {
   });
   const boss = await snapshot();
   assert(boss.mode === 'boss', `expected boss mode, got ${boss.mode}`);
-  assert(Math.abs(boss.boss.alpha - 0.4) < 0.01, `wrong boss alpha ${boss.boss.alpha}`);
-  assert(Math.abs(boss.shadeAlpha - 0.54) < 0.01, `wrong boss shade ${boss.shadeAlpha}`);
+  assert(Math.abs(boss.boss.alpha - 0.48) < 0.01, `wrong boss alpha ${boss.boss.alpha}`);
+  assert(Math.abs(boss.shadeAlpha - 0.48) < 0.01, `wrong boss shade ${boss.shadeAlpha}`);
   assertCoverage(boss, 'boss');
   await page.screenshot({ path: path.join(outputDir, 'boss-drift.png'), fullPage: true });
 

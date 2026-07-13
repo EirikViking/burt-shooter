@@ -120,7 +120,10 @@ function assertSourceGuards() {
   const play = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
   const settingsOverlay = fs.readFileSync('src/ui/SettingsOverlay.js', 'utf8');
   const menuSettings = fs.readFileSync('src/config/MenuSettings.js', 'utf8');
+  const exitGame = fs.readFileSync('src/utils/ExitGame.js', 'utf8');
   assert(!main.includes('dialog.showMessageBox'), 'Electron exit bridge must quit without a native confirmation dialog');
+  assert(main.includes('requestDesktopExit') && main.includes('app.exit(0)') && main.includes('desktopExitFallbackTimer'), 'Electron exit bridge must be idempotent and have a forced-close fallback');
+  assert(exitGame.includes('EXIT_REQUEST_TIMEOUT_MS') && exitGame.includes('requestDesktopExitOnce'), 'Renderer exit bridge must recover from a lost IPC response');
   assert(main.includes('nova-app:window-blur'), 'Electron main must send native window blur to renderer');
   assert(main.includes('browser-window-blur'), 'Electron app blur must also notify the renderer');
   assert(preload.includes('nova-app-window-blur'), 'Preload must dispatch native window blur event');

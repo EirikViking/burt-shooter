@@ -271,6 +271,7 @@ export class MenuScene {
     this.exitBtn = null;
     this.exitNotice = null;
     this.exitNoticeTimeout = null;
+    this.exitRequestPending = false;
     this.quitConfirmOpen = false;
     this.quitConfirmFocusIndex = 0;
     this.quitConfirmOverlay = null;
@@ -4956,13 +4957,12 @@ export class MenuScene {
 
   async exitGame({ confirmed = false, source = 'keyboard' } = {}) {
     if (!confirmed) {
+      if (this.game?.isMenuExitGuardActive?.()) return;
       this.openQuitConfirmation({ source });
       return;
     }
-    if (this.game?.isMenuExitGuardActive?.()) {
-      this.closeQuitConfirmation();
-      return;
-    }
+    if (this.exitRequestPending) return;
+    this.exitRequestPending = true;
     try {
       this.closeQuitConfirmation({ silent: true });
       AudioManager.init();
@@ -4972,6 +4972,8 @@ export class MenuScene {
     } catch (e) {
       console.error('[MenuScene] Exit Game Error:', e);
       this.showExitNotice(EXIT_GAME_WEB_MESSAGE);
+    } finally {
+      this.exitRequestPending = false;
     }
   }
 

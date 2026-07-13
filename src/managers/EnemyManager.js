@@ -46,7 +46,11 @@ const BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT = 1.25;
 const BOSS_FUEL_ARMOR_BLEED_DELAY_MS = 3200;
 const BOSS_FUEL_DEFAULT_DELAY_MS = 5200;
 const BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS = 0.22;
-const BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS = 6;
+const BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS = 8;
+const BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE = 8;
+const BOSS_FUEL_EIGHT_SHIP_SWARM_CHANCE = 0.05;
+const BOSS_FUEL_EIGHT_SHIP_SWARM_MIN_LEVEL = 3;
+const BOSS_FUEL_ORDINARY_EVENT_BUDGET = 6;
 const BOSS_FUEL_DOUBLE_SUPPORT_ROLL = 0.30;
 const BOSS_FUEL_TRIPLE_SUPPORT_ROLL = 0.12;
 const BOSS_FUEL_FOUR_SUPPORT_ROLL = 0.03;
@@ -314,6 +318,8 @@ export class EnemyManager {
     this.bossFuelShipCooldownUntilMs = 0;
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
+    this.bossFuelEightShipSwarmPlanned = false;
+    this.bossFuelEightShipSwarmTriggered = false;
     this.bossReinforcementState = null;
     this.bossReinforcementAttemptIndex = 0;
     this.bossReinforcementEventsThisBoss = 0;
@@ -386,6 +392,8 @@ export class EnemyManager {
     this.bossFuelShipCooldownUntilMs = 0;
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
+    this.bossFuelEightShipSwarmPlanned = false;
+    this.bossFuelEightShipSwarmTriggered = false;
 
     // Play Voice
     // Play Voice (TASK 1: Prevent duplicates per level)
@@ -493,6 +501,8 @@ export class EnemyManager {
     this.bossFuelShipCooldownUntilMs = 0;
     this.bossFuelShipNextCheckAtMs = 0;
     this.bossFuelShipsSpawnedThisBoss = 0;
+    this.bossFuelEightShipSwarmPlanned = false;
+    this.bossFuelEightShipSwarmTriggered = false;
     this.bossReinforcementState = null;
     this.bossReinforcementAttemptIndex = 0;
     this.bossReinforcementEventsThisBoss = 0;
@@ -3501,6 +3511,9 @@ export class EnemyManager {
       this.bossReinforcementEventsThisBoss = 0;
       this.bossReinforcementNextCheckAtMs = Date.now() + 1200;
       this.bossReinforcementCooldownUntilMs = 0;
+      this.bossFuelEightShipSwarmPlanned = level >= BOSS_FUEL_EIGHT_SHIP_SWARM_MIN_LEVEL
+        && Math.random() < BOSS_FUEL_EIGHT_SHIP_SWARM_CHANCE;
+      this.bossFuelEightShipSwarmTriggered = false;
     } else {
       this.boss = boss;
     }
@@ -3568,15 +3581,24 @@ export class EnemyManager {
   }
 
   getBossFuelShipMaxEvents(level = this.level) {
-    return BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS;
+    return this.bossFuelEightShipSwarmPlanned
+      ? BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE
+      : BOSS_FUEL_ORDINARY_EVENT_BUDGET;
   }
 
   getBossFuelShipSupportCount(level = this.level, random = Math.random) {
     const spawned = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
     const maxEvents = Math.max(0, Math.floor(Number(this.getBossFuelShipMaxEvents?.(level)) || BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS));
     const active = Math.max(0, Math.floor(Number(this.getActiveBossFuelShips?.().length) || 0));
-    const remaining = Math.max(0, Math.min(maxEvents - spawned, BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS - active));
+    const activeCap = this.bossFuelEightShipSwarmPlanned
+      ? BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS
+      : BOSS_FUEL_ORDINARY_EVENT_BUDGET;
+    const remaining = Math.max(0, Math.min(maxEvents - spawned, activeCap - active));
     if (remaining <= 0) return 0;
+
+    if (this.bossFuelEightShipSwarmPlanned && !this.bossFuelEightShipSwarmTriggered && spawned === 0) {
+      return Math.min(remaining, BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE);
+    }
 
     const roll = typeof random === 'function' ? random() : Math.random();
     let desired = 1;
@@ -3621,6 +3643,19 @@ export class EnemyManager {
     if (supportCount <= 0) return;
     const spawnedCount = this.spawnBossFuelShipSquad(supportCount);
     if (spawnedCount > 0) {
+      if (supportCount === BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE) {
+        this.bossFuelEightShipSwarmTriggered = true;
+        playScene?.showMayhemReinforcementStormWarning?.({
+          groupCount: spawnedCount,
+          boss: true,
+          superStorm: true
+        });
+        AudioManager.playVoice(MAYHEM_SUPER_STORM_WARNING_SOUND_ID, {
+          force: true,
+          cooldownMs: 0,
+          duckMs: 2400
+        });
+      }
       this.bossFuelShipsSpawnedThisBoss += spawnedCount;
       this.bossFuelShipCooldownUntilMs = now + (level <= 5 ? 17500 : 13500) + Math.random() * 4500;
     }
@@ -3648,7 +3683,7 @@ export class EnemyManager {
     if (!this.boss?.active) return false;
     const level = Math.max(1, Number(this.level) || 1);
     const eventIndex = Math.max(0, Math.floor(Number(options.eventIndex ?? this.bossFuelShipsSpawnedThisBoss) || 0));
-    const groupSize = Math.max(1, Math.min(3, Math.floor(Number(options.groupSize) || 1)));
+    const groupSize = Math.max(1, Math.min(BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE, Math.floor(Number(options.groupSize) || 1)));
     const groupSlot = Math.max(0, Math.min(groupSize - 1, Math.floor(Number(options.groupSlot) || 0)));
     const slotOffset = groupSlot - (groupSize - 1) / 2;
     const formationFlip = Number(options.formationFlip) === -1 ? -1 : 1;
@@ -3672,14 +3707,16 @@ export class EnemyManager {
     enemy.kind = 'boss_fuel_ship';
     enemy.bossSupportShipProfile = supportProfile;
     const singleSupportHealMultiplier = groupSize === 1 ? BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT : 1;
+    const swarmHealMultiplier = groupSize >= BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE ? 0.3 : 1;
     const baseHealCap = level <= 4 ? 0.075 : 0.09;
     const baseHealPercent = supportProfile.healPercent + Math.min(0.016, level * 0.0015);
     enemy.bossFuelProfile = {
       id: supportProfile.id,
       displayName: supportProfile.displayName,
-      healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier),
+      healPercent: Math.min(baseHealCap * singleSupportHealMultiplier, baseHealPercent * singleSupportHealMultiplier) * swarmHealMultiplier,
       baseHealPercent: Math.min(baseHealCap, baseHealPercent),
       singleSupportHealMultiplier,
+      swarmHealMultiplier,
       speed: supportProfile.speed + Math.min(0.28, level * 0.01) + (armorBleedActive ? BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS : 0),
       groupSize,
       groupSlot,
@@ -3847,7 +3884,7 @@ export class EnemyManager {
     const baseColor = supportProfile.tint || BOSS_FUEL_TETHER_COLOR;
     const accentColor = supportProfile.accent || BOSS_FUEL_TETHER_ACCENT;
     const beamStyle = supportProfile.beamStyle || enemy.bossFuelProfile?.beamStyle || 'pulse';
-    const groupSize = Math.max(1, Math.min(3, Number(enemy.bossFuelProfile?.groupSize) || 1));
+    const groupSize = Math.max(1, Math.min(BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE, Number(enemy.bossFuelProfile?.groupSize) || 1));
     const groupSlot = Math.max(0, Number(enemy.bossFuelProfile?.groupSlot) || 0);
     const dx = boss.x - enemy.x;
     const dy = boss.y - enemy.y;
@@ -4056,7 +4093,7 @@ export class EnemyManager {
     const supportProfile = enemy.bossSupportShipProfile || {};
     const baseColor = supportProfile.tint || BOSS_FUEL_TETHER_COLOR;
     const accentColor = supportProfile.accent || BOSS_FUEL_TETHER_ACCENT;
-    const groupSize = Math.max(1, Math.min(3, Number(enemy.bossFuelProfile?.groupSize) || 1));
+    const groupSize = Math.max(1, Math.min(BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE, Number(enemy.bossFuelProfile?.groupSize) || 1));
     const burst = new PIXI.Graphics();
     burst.label = 'bossFuelShipDeliveryBurst';
     burst.zIndex = 26;

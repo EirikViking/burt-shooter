@@ -1,3 +1,5 @@
+import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
+
 const sourceText = Object.freeze({
   "ACE": "ASS",
   "ACE BOUNTIES": "ASS-KOPFGELDER",
@@ -2137,6 +2139,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de') }),
   patterns
 };

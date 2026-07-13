@@ -86,6 +86,28 @@ const steamAchievementsBridge = createSteamAchievementsBridge({
 const nativeGamepadBridge = createNativeGamepadBridge();
 let steamCloudSave = null;
 let steamProfileContext = { type: 'local', id: 'local-offline', reason: 'not_resolved' };
+let desktopExitRequested = false;
+let desktopExitFallbackTimer = null;
+
+function requestDesktopExit() {
+  const alreadyRequested = desktopExitRequested;
+  desktopExitRequested = true;
+  setImmediate(() => app.quit());
+  if (!desktopExitFallbackTimer) {
+    desktopExitFallbackTimer = setTimeout(() => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        try {
+          window.destroy();
+        } catch {
+          // The process-level exit below is the final fallback.
+        }
+      }
+      app.exit(0);
+    }, 1600);
+    desktopExitFallbackTimer.unref?.();
+  }
+  return { ok: true, alreadyRequested };
+}
 
 async function resolveSteamProfileContext() {
   if (isFreshProfile) {
@@ -208,8 +230,7 @@ function registerAppIpc() {
     if (smokeMode) {
       return { ok: false, canceled: true, reason: 'smoke_mode' };
     }
-    setImmediate(() => app.quit());
-    return { ok: true };
+    return requestDesktopExit();
   });
 
   ipcMain.handle('nova-performance-diagnostics:writeReport', async (_event, payload = {}) => {
@@ -1350,4 +1371,11 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   steamLeaderboardBridge.shutdown();
+});
+
+app.on('will-quit', () => {
+  if (desktopExitFallbackTimer) {
+    clearTimeout(desktopExitFallbackTimer);
+    desktopExitFallbackTimer = null;
+  }
 });

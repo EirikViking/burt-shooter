@@ -273,6 +273,9 @@ export class PlayScene {
     this.isReady = false;
     this.starfieldContainer = null;
     this.starLayers = [];
+    this.cosmicTravelLayers = [];
+    this.cosmicAuroraBands = [];
+    this.cosmicTravelElapsed = 0;
     this.ultrawideAmbience = null;
     this.ultrawideAmbienceDebug = null;
     this.gameplayBackdrop = null;
@@ -4971,18 +4974,22 @@ export class PlayScene {
     this.gameContainer.sortableChildren = true;
     this.initGameplayBackdrop(width, height);
 
-    // 3 parallax layers: far (slow), mid (medium), near (fast)
+    // Layered travel field: quiet depth at the horizon, obvious velocity near the pilot.
     this.starLayers = [];
+    this.cosmicTravelLayers = [];
+    this.cosmicAuroraBands = [];
+    this.cosmicTravelElapsed = 0;
 
     // Layer 1: Far stars (small, slow, many)
     const farStars = [];
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 140; i++) {
       const star = new PIXI.Graphics();
       star.circle(0, 0, 0.7 + Math.random() * 0.35); // 0.7-1.05 px
       star.fill({ color: 0x8fb9e6, alpha: 0.16 + Math.random() * 0.18 }); // keep white reserved for threats
       star.x = Math.random() * width;
       star.y = Math.random() * height;
-      star._speed = 15 + Math.random() * 10; // 15-25 px/s
+      star._speed = 28 + Math.random() * 18;
+      star._drift = -3 + Math.random() * 6;
       this.starfieldContainer.addChild(star);
       farStars.push(star);
     }
@@ -4990,13 +4997,14 @@ export class PlayScene {
 
     // Layer 2: Mid stars (medium, medium speed)
     const midStars = [];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 70; i++) {
       const star = new PIXI.Graphics();
       star.circle(0, 0, 0.95 + Math.random() * 0.45); // 0.95-1.4 px
       star.fill({ color: 0xa6d7ff, alpha: 0.2 + Math.random() * 0.2 });
       star.x = Math.random() * width;
       star.y = Math.random() * height;
-      star._speed = 40 + Math.random() * 20; // 40-60 px/s
+      star._speed = 70 + Math.random() * 45;
+      star._drift = -7 + Math.random() * 14;
       this.starfieldContainer.addChild(star);
       midStars.push(star);
     }
@@ -5004,17 +5012,55 @@ export class PlayScene {
 
     // Layer 3: Near stars (larger, fast, fewer)
     const nearStars = [];
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 34; i++) {
       const star = new PIXI.Graphics();
-      star.circle(0, 0, 1.1 + Math.random() * 0.7); // 1.1-1.8 px
-      star.fill({ color: 0xb8ddff, alpha: 0.24 + Math.random() * 0.22 });
+      const length = 3 + Math.random() * 8;
+      star.roundRect(-0.65, -length * 0.5, 1.3, length, 0.7);
+      star.fill({ color: Math.random() > 0.25 ? 0x9fe9ff : 0xd59cff, alpha: 0.2 + Math.random() * 0.23 });
       star.x = Math.random() * width;
       star.y = Math.random() * height;
-      star._speed = 80 + Math.random() * 40; // 80-120 px/s
+      star._speed = 170 + Math.random() * 90;
+      star._drift = -12 + Math.random() * 24;
       this.starfieldContainer.addChild(star);
       nearStars.push(star);
     }
     this.starLayers.push(nearStars);
+
+    const travelDust = [];
+    for (let i = 0; i < 46; i++) {
+      const mote = new PIXI.Graphics();
+      const radius = 0.8 + Math.random() * 1.25;
+      mote.circle(0, 0, radius * 2.2);
+      mote.fill({ color: Math.random() > 0.5 ? 0x36dfff : 0xae6cff, alpha: 0.025 + Math.random() * 0.035 });
+      mote.circle(0, 0, radius);
+      mote.fill({ color: Math.random() > 0.35 ? 0x72e9ff : 0xff78dc, alpha: 0.13 + Math.random() * 0.15 });
+      mote.x = Math.random() * width;
+      mote.y = Math.random() * height;
+      mote._speed = 115 + Math.random() * 130;
+      mote._drift = -28 + Math.random() * 56;
+      mote._phase = Math.random() * Math.PI * 2;
+      this.starfieldContainer.addChild(mote);
+      travelDust.push(mote);
+    }
+    this.cosmicTravelLayers.push(travelDust);
+
+    const warpStreaks = [];
+    for (let i = 0; i < 18; i++) {
+      const streak = new PIXI.Graphics();
+      const length = 12 + Math.random() * 28;
+      streak.roundRect(-0.7, -length * 0.5, 1.4, length, 0.7);
+      streak.fill({ color: i % 4 === 0 ? 0xcc75ff : 0x4ce9ff, alpha: 0.1 + Math.random() * 0.12 });
+      streak.circle(0, length * 0.48, 1.25);
+      streak.fill({ color: 0xdaf9ff, alpha: 0.18 });
+      streak.x = Math.random() * width;
+      streak.y = Math.random() * height;
+      streak._speed = 300 + Math.random() * 210;
+      streak._drift = -38 + Math.random() * 76;
+      streak._phase = Math.random() * Math.PI * 2;
+      this.starfieldContainer.addChild(streak);
+      warpStreaks.push(streak);
+    }
+    this.cosmicTravelLayers.push(warpStreaks);
 
     // Optional: Add subtle nebula haze
     const nebula = new PIXI.Graphics();
@@ -5023,6 +5069,20 @@ export class PlayScene {
     nebula.circle(width * 0.7, height * 0.6, 200);
     nebula.fill({ color: 0xff4488, alpha: 0.02 });
     this.starfieldContainer.addChildAt(nebula, 0); // Behind stars
+
+    const auroraPalette = [0x26e6ff, 0xa85cff, 0xff4fc8];
+    for (let i = 0; i < 3; i++) {
+      const band = new PIXI.Graphics();
+      band.moveTo(-width * 0.12, 0);
+      band.bezierCurveTo(width * 0.22, -70 - i * 18, width * 0.58, 78 + i * 24, width * 1.12, -12);
+      band.stroke({ color: auroraPalette[i], width: 28 + i * 17, alpha: 0.018 + i * 0.007 });
+      band.x = 0;
+      band.y = height * (0.2 + i * 0.26);
+      band._phase = i * 2.1;
+      band._baseY = band.y;
+      this.starfieldContainer.addChildAt(band, Math.min(4, this.starfieldContainer.children.length));
+      this.cosmicAuroraBands.push(band);
+    }
   }
 
   async initGameplayBackdrop(width, height) {
@@ -5289,19 +5349,47 @@ export class PlayScene {
     const width = this.gameplayGame.getWidth();
     const height = this.gameplayGame.getHeight();
     const dtSec = Math.min(0.05, delta / 60); // Convert to seconds, clamp for safety
+    const reducedMotion = Boolean(this.gameplayBackdropReducedMotion);
+    const travelScale = reducedMotion ? 0.14 : 1;
+    this.cosmicTravelElapsed += dtSec * travelScale;
 
     // Update all star layers
     this.starLayers.forEach(layer => {
       layer.forEach(star => {
         // Move star downward (forward motion)
-        star.y += star._speed * dtSec;
+        star.y += star._speed * dtSec * travelScale;
+        star.x += (star._drift || 0) * dtSec * travelScale;
 
         // Wrap around when star goes off bottom
         if (star.y > height + 10) {
           star.y = -10;
           star.x = Math.random() * width; // Randomize X for variety
         }
+        if (star.x < -12) star.x = width + 12;
+        if (star.x > width + 12) star.x = -12;
       });
+    });
+
+    this.cosmicTravelLayers.forEach((layer, layerIndex) => {
+      layer.forEach(item => {
+        item.y += item._speed * dtSec * travelScale;
+        item.x += ((item._drift || 0) + Math.sin(this.cosmicTravelElapsed * 1.7 + item._phase) * 8) * dtSec * travelScale;
+        if (item.y > height + 50) {
+          item.y = -50 - Math.random() * 80;
+          item.x = Math.random() * width;
+        }
+        if (item.x < -60) item.x = width + 60;
+        if (item.x > width + 60) item.x = -60;
+        item.alpha = reducedMotion ? 0.35 : 0.72 + Math.sin(this.cosmicTravelElapsed * 2.4 + item._phase + layerIndex) * 0.18;
+      });
+    });
+
+    this.cosmicAuroraBands.forEach((band, index) => {
+      const time = this.cosmicTravelElapsed;
+      band.y = band._baseY + Math.sin(time * (0.32 + index * 0.05) + band._phase) * (reducedMotion ? 3 : 38 + index * 9);
+      band.x = Math.cos(time * 0.21 + band._phase) * (reducedMotion ? 2 : 52);
+      band.rotation = Math.sin(time * 0.17 + band._phase) * (reducedMotion ? 0.001 : 0.018);
+      band.alpha = reducedMotion ? 0.42 : 0.78 + Math.sin(time * 0.43 + band._phase) * 0.16;
     });
   }
 
@@ -15037,7 +15125,7 @@ export class PlayScene {
   }
 
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false } = {}) {
-    const count = Math.max(1, Math.min(6, Math.floor(Number(groupCount) || 1)));
+    const count = Math.max(1, Math.min(8, Math.floor(Number(groupCount) || 1)));
     if (count < 2) return false;
 
     const width = this.game.getWidth();

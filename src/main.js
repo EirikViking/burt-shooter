@@ -649,6 +649,14 @@ function buildGameTextState(game) {
       lastAnnouncement: playScene.lastRareChaosVisitorAnnouncement || null,
       lastDefeat: playScene.lastRareChaosVisitorDefeat || null
     } : null,
+    gameplayBackdrop: playScene ? {
+      mode: playScene.gameplayBackdropMode || 'base',
+      elapsedMs: Math.round(playScene.gameplayBackdropElapsedMs || 0),
+      reducedMotion: Boolean(playScene.gameplayBackdropReducedMotion),
+      starCount: (playScene.starLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      travelMoteCount: (playScene.cosmicTravelLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
+      auroraBandCount: playScene.cosmicAuroraBands?.length || 0
+    } : null,
     aceBounties: playScene?.getAceBountyDebugState ? playScene.getAceBountyDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,

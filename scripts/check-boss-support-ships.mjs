@@ -104,6 +104,10 @@ for (const token of [
   'BOSS_FUEL_ARMOR_BLEED_DELAY_MS',
   'BOSS_FUEL_ARMOR_BLEED_SPEED_BONUS',
   'BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS',
+  'BOSS_FUEL_EIGHT_SHIP_SWARM_CHANCE',
+  'BOSS_FUEL_EIGHT_SHIP_SWARM_MIN_LEVEL',
+  'bossFuelEightShipSwarmPlanned',
+  'swarmHealMultiplier',
   'isFinishPacingActive',
   'singleSupportHealMultiplier',
   'attachBossFuelTether',
@@ -121,6 +125,12 @@ const countProbe = Object.assign(Object.create(EnemyManager.prototype), {
 if (countProbe.getBossFuelShipMaxEvents(12) !== 6) {
   fail('boss support cap should allow up to 6 support ships per boss');
 }
+countProbe.bossFuelEightShipSwarmPlanned = true;
+countProbe.bossFuelEightShipSwarmTriggered = false;
+if (countProbe.getBossFuelShipMaxEvents(12) !== 8 || countProbe.getBossFuelShipSupportCount(12, () => 0.99) !== 8) {
+  fail('the planned five-percent boss event should launch a full eight-ship support swarm');
+}
+countProbe.bossFuelEightShipSwarmPlanned = false;
 if (countProbe.getBossFuelShipSupportCount(12, () => 0.001) !== 6) {
   fail('extreme rare support roll should request 6 helpers');
 }
