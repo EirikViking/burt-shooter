@@ -315,6 +315,8 @@ export class PlayScene {
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
     this.activeWaveBonusEffect = null;
+    this.activePersonalBestCelebration = null;
+    this.lastPersonalBestCelebration = null;
 
     // TASK 4: Shooting sound health check
     this.shootSoundHealthCheck = {
@@ -486,6 +488,8 @@ export class PlayScene {
 
   init() {
     this.isReady = false;
+    this.clearPersonalBestCelebration('scene_init');
+    this.lastPersonalBestCelebration = null;
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = createMayhemPerformanceDiagnostics(this);
     this.deferredThreatDefeats = [];
@@ -649,6 +653,7 @@ export class PlayScene {
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
     this.activeWaveBonusEffect = null;
+    this.clearPersonalBestCelebration('scene_destroy');
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
     this.runContractPersistenceDirty = false;
@@ -1649,6 +1654,341 @@ export class PlayScene {
       this.particleManager?.createExplosion?.(this.player?.x, (this.player?.y || 0) - 36, 0xffef7e, 1.05);
       this.screenShake?.shake?.(3, 12);
     }
+    return true;
+  }
+
+  finishPersonalBestCelebration(reason = 'complete') {
+    const active = this.activePersonalBestCelebration;
+    if (!active) return false;
+    if (active.ticker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(active.ticker);
+      this._activeTickers = (this._activeTickers || []).filter((ticker) => ticker !== active.ticker);
+    }
+    if (active.container?.parent) active.container.parent.removeChild(active.container);
+    active.container?.destroy?.({ children: true });
+    if (this.lastPersonalBestCelebration) {
+      this.lastPersonalBestCelebration.active = false;
+      this.lastPersonalBestCelebration.completed = reason === 'complete';
+      this.lastPersonalBestCelebration.endedReason = reason;
+      this.lastPersonalBestCelebration.endedAt = Date.now();
+    }
+    this.activePersonalBestCelebration = null;
+    return true;
+  }
+
+  clearPersonalBestCelebration(reason = 'cleared') {
+    return this.finishPersonalBestCelebration(reason);
+  }
+
+  getPersonalBestCelebrationDebugState() {
+    const active = this.activePersonalBestCelebration;
+    const last = this.lastPersonalBestCelebration;
+    return {
+      active: Boolean(active?.container?.parent),
+      visible: Boolean(active?.container?.visible && active?.container?.renderable && active?.container?.alpha > 0.02),
+      overlayCount: this.uiOverlay?.children?.filter?.((child) => child?.label === 'ui_personal_best_celebration')?.length || 0,
+      previousScore: last?.previousScore || 0,
+      triggerScore: last?.triggerScore || 0,
+      currentScore: last?.currentScore || 0,
+      delta: last?.delta || 0,
+      source: last?.source || null,
+      completed: Boolean(last?.completed),
+      endedReason: last?.endedReason || null,
+      reducedMotion: Boolean(last?.reducedMotion),
+      scoreNeutral: last?.scoreNeutral !== false,
+      rayCount: last?.rayCount || 0,
+      sparkCount: last?.sparkCount || 0,
+      hasCrown: Boolean(last?.hasCrown),
+      hasLiveCounter: Boolean(last?.hasLiveCounter)
+    };
+  }
+
+  showPersonalBestCelebration({ previousScore = 0, newScore = this.game?.score || 0, source = 'ranked_best_score' } = {}) {
+    const previous = Math.max(0, Math.floor(Number(previousScore) || 0));
+    const triggerScore = Math.max(0, Math.floor(Number(newScore) || 0));
+    if (
+      previous <= 0
+      || triggerScore <= previous
+      || !this.uiOverlay
+      || !this.game?.app?.ticker
+      || this.game?.currentScene !== this
+    ) return false;
+    if (this.activePersonalBestCelebration) return false;
+
+    const width = Math.max(480, Number(this.game.getWidth?.() || this.game.app.screen?.width) || 1280);
+    const height = Math.max(360, Number(this.game.getHeight?.() || this.game.app.screen?.height) || 720);
+    const compact = width < 720;
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const centerX = width / 2;
+    const centerY = height * (compact ? 0.46 : 0.44);
+    const panelWidth = Math.min(width - (compact ? 28 : 80), compact ? 520 : 760);
+    const panelHeight = compact ? 184 : 224;
+    const rayCount = reducedMotion ? 10 : 18;
+    const sparkCount = reducedMotion ? 14 : 38;
+    const durationMs = reducedMotion ? 2700 : 3400;
+
+    const container = new PIXI.Container();
+    container.label = 'ui_personal_best_celebration';
+    container.zIndex = 9850;
+    container.eventMode = 'none';
+    container.alpha = 0;
+
+    const wash = new PIXI.Graphics();
+    wash.rect(0, 0, width, height);
+    wash.fill({ color: 0x020713, alpha: reducedMotion ? 0.18 : 0.3 });
+    container.addChild(wash);
+
+    const flash = new PIXI.Graphics();
+    flash.rect(0, 0, width, height);
+    flash.fill({ color: 0xc8ffff, alpha: 0.18 });
+    flash.blendMode = 'add';
+    container.addChild(flash);
+
+    const frame = new PIXI.Graphics();
+    frame.rect(12, 12, width - 24, height - 24);
+    frame.stroke({ color: 0x4ef8ff, width: compact ? 2 : 3, alpha: 0.8 });
+    frame.rect(20, 20, width - 40, height - 40);
+    frame.stroke({ color: 0xffe66d, width: 1, alpha: 0.42 });
+    frame.blendMode = 'add';
+    container.addChild(frame);
+
+    const burstLayer = new PIXI.Container();
+    burstLayer.position.set(centerX, centerY);
+    for (let index = 0; index < rayCount; index += 1) {
+      const ray = new PIXI.Graphics();
+      const rayLength = Math.max(width, height) * (0.48 + (index % 3) * 0.08);
+      const halfWidth = compact ? 8 : 13;
+      ray.poly([0, -36, -halfWidth, -rayLength, halfWidth, -rayLength]);
+      ray.fill({ color: index % 2 ? 0x4ef8ff : 0xffe66d, alpha: index % 3 === 0 ? 0.18 : 0.1 });
+      ray.rotation = (Math.PI * 2 * index) / rayCount;
+      burstLayer.addChild(ray);
+    }
+    burstLayer.blendMode = 'add';
+    container.addChild(burstLayer);
+
+    const ringLayer = new PIXI.Container();
+    ringLayer.position.set(centerX, centerY);
+    const rings = [];
+    [104, 132, 164].forEach((radius, index) => {
+      const ring = new PIXI.Graphics();
+      ring.circle(0, 0, compact ? radius * 0.8 : radius);
+      ring.stroke({
+        color: index === 1 ? 0xffe66d : 0x4ef8ff,
+        width: index === 1 ? 3 : 2,
+        alpha: index === 1 ? 0.74 : 0.5
+      });
+      ringLayer.addChild(ring);
+      rings.push(ring);
+    });
+    ringLayer.blendMode = 'add';
+    container.addChild(ringLayer);
+
+    const sparkLayer = new PIXI.Container();
+    sparkLayer.position.set(centerX, centerY);
+    const sparks = [];
+    const sparkPalette = [0x4ef8ff, 0xffe66d, 0xff55d9, 0xffffff];
+    for (let index = 0; index < sparkCount; index += 1) {
+      const angle = (Math.PI * 2 * index) / sparkCount + (index % 5) * 0.08;
+      const size = 2 + (index % 4);
+      const spark = new PIXI.Graphics();
+      spark.poly([0, -size, size, 0, 0, size, -size, 0]);
+      spark.fill({ color: sparkPalette[index % sparkPalette.length], alpha: 0.96 });
+      spark.blendMode = 'add';
+      sparkLayer.addChild(spark);
+      sparks.push({
+        display: spark,
+        angle,
+        distance: Math.min(width, height) * (0.2 + (index % 7) * 0.035),
+        orbit: (index % 2 ? 1 : -1) * (0.12 + (index % 5) * 0.025)
+      });
+    }
+    container.addChild(sparkLayer);
+
+    const panel = new PIXI.Container();
+    panel.position.set(centerX, centerY);
+    const panelGlow = new PIXI.Graphics();
+    panelGlow.roundRect(-panelWidth / 2 - 7, -panelHeight / 2 - 7, panelWidth + 14, panelHeight + 14, 24);
+    panelGlow.stroke({ color: 0x4ef8ff, width: 7, alpha: 0.2 });
+    panelGlow.blendMode = 'add';
+    panel.addChild(panelGlow);
+
+    const panelBg = new PIXI.Graphics();
+    panelBg.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 18);
+    panelBg.fill({ color: 0x031421, alpha: 0.94 });
+    panelBg.stroke({ color: 0xffe66d, width: compact ? 3 : 4, alpha: 0.95 });
+    panelBg.roundRect(-panelWidth / 2 + 9, -panelHeight / 2 + 9, panelWidth - 18, panelHeight - 18, 12);
+    panelBg.stroke({ color: 0x4ef8ff, width: 2, alpha: 0.72 });
+    panel.addChild(panelBg);
+
+    const crown = new PIXI.Graphics();
+    crown.poly([-54, 18, -43, -19, -15, 5, 0, -31, 15, 5, 43, -19, 54, 18]);
+    crown.fill({ color: 0xffe66d, alpha: 0.92 });
+    crown.stroke({ color: 0xffffff, width: 2, alpha: 0.84 });
+    crown.position.set(0, -panelHeight / 2 - (compact ? 19 : 25));
+    crown.blendMode = 'add';
+    panel.addChild(crown);
+
+    const title = createText(translateText('NEW PERSONAL BEST'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 29 : 46,
+      fill: '#fff4a3',
+      stroke: '#261400',
+      strokeThickness: compact ? 5 : 7,
+      fontWeight: '900',
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#ffe66d',
+      dropShadowBlur: 12,
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 38
+    });
+    title.anchor.set(0.5);
+    title.position.set(0, compact ? -53 : -65);
+    panel.addChild(title);
+
+    const formatScore = (value) => Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+    const scoreLine = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 16 : 23,
+      fill: '#d9feff',
+      stroke: '#001018',
+      strokeThickness: 4,
+      fontWeight: '800',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 36
+    });
+    scoreLine.anchor.set(0.5);
+    scoreLine.position.set(0, compact ? 0 : 3);
+    panel.addChild(scoreLine);
+
+    const deltaLine = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 16 : 21,
+      fill: '#ff7ee8',
+      stroke: '#190018',
+      strokeThickness: 4,
+      fontWeight: '900',
+      align: 'center'
+    });
+    deltaLine.anchor.set(0.5);
+    deltaLine.position.set(0, compact ? 36 : 48);
+    panel.addChild(deltaLine);
+
+    const footer = createText(translateText('THE CABINET HAS STARTED BRAGGING. KEEP GOING.'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 12 : 16,
+      fill: '#9cfbff',
+      stroke: '#001018',
+      strokeThickness: 3,
+      fontWeight: '700',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 40
+    });
+    footer.anchor.set(0.5);
+    footer.position.set(0, compact ? 68 : 83);
+    panel.addChild(footer);
+
+    const scanLine = new PIXI.Graphics();
+    scanLine.roundRect(-panelWidth * 0.4, -2, panelWidth * 0.8, 4, 2);
+    scanLine.fill({ color: 0xffffff, alpha: 0.7 });
+    scanLine.blendMode = 'add';
+    scanLine.y = -panelHeight * 0.36;
+    panel.addChild(scanLine);
+
+    container.addChild(panel);
+    this.uiOverlay.addChild(container);
+    this.uiOverlay.sortChildren?.();
+    this.reserveMessageFocus(durationMs, { priority: 8, slots: ['center', 'top'] });
+
+    this.lastPersonalBestCelebration = {
+      active: true,
+      completed: false,
+      endedReason: null,
+      previousScore: previous,
+      triggerScore,
+      currentScore: triggerScore,
+      delta: triggerScore - previous,
+      source,
+      reducedMotion,
+      scoreNeutral: true,
+      rayCount,
+      sparkCount,
+      hasCrown: true,
+      hasLiveCounter: true,
+      startedAt: Date.now()
+    };
+
+    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.98, minIntervalMs: 0 });
+    AudioManager.playSfx('achievement', { force: true, volume: 0.68, minIntervalMs: 0 });
+    AudioManager.playVoice('mission_control_personal_best', {
+      force: true,
+      stopOtherVoices: true,
+      exclusiveGroup: 'announcer',
+      cooldownMs: 7000,
+      duckMs: 2300,
+      duckFactor: 0.38,
+      volume: 0.92
+    });
+    if (!reducedMotion) {
+      const playerX = Number(this.player?.x) || centerX;
+      const playerY = Number(this.player?.y) || height * 0.72;
+      this.particleManager?.createExplosion?.(playerX, playerY - 26, 0xffe66d, 1.1);
+      this.particleManager?.createExplosion?.(playerX, playerY - 26, 0x4ef8ff, 0.9);
+      this.screenShake?.shake?.(5, 15);
+    }
+
+    let elapsed = 0;
+    const ticker = (delta) => {
+      if (!container.parent || this.game?.currentScene !== this) {
+        this.finishPersonalBestCelebration('scene_changed');
+        return;
+      }
+      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const intro = Math.min(1, elapsed / 260);
+      const introEase = 1 - Math.pow(1 - intro, 3);
+      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - 620)) / 620));
+      container.alpha = introEase * (1 - outro);
+      panel.scale.set(0.78 + introEase * 0.22 + Math.sin(elapsed * 0.008) * (reducedMotion ? 0.006 : 0.018));
+      flash.alpha = Math.max(0, (1 - elapsed / 520) * (reducedMotion ? 0.22 : 0.7));
+      frame.alpha = 0.58 + Math.sin(elapsed * 0.01) * 0.18;
+      burstLayer.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.0018;
+      burstLayer.alpha = 0.48 + Math.max(0, Math.sin(elapsed * 0.006)) * 0.36;
+      ringLayer.rotation -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.003;
+      rings.forEach((ring, index) => {
+        const pulse = 1 + Math.sin(elapsed * 0.006 + index * 1.4) * (reducedMotion ? 0.012 : 0.055);
+        ring.scale.set(pulse);
+      });
+      const travel = Math.min(1, elapsed / (reducedMotion ? 900 : 1500));
+      const travelEase = 1 - Math.pow(1 - travel, 3);
+      sparks.forEach((spark, index) => {
+        const angle = spark.angle + elapsed * 0.001 * spark.orbit;
+        const distance = spark.distance * travelEase;
+        spark.display.position.set(Math.cos(angle) * distance, Math.sin(angle) * distance);
+        spark.display.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * (0.02 + (index % 3) * 0.01);
+        spark.display.alpha = Math.max(0.1, (1 - outro) * (0.58 + Math.sin(elapsed * 0.012 + index) * 0.36));
+      });
+      scanLine.y = -panelHeight * 0.38 + (panelHeight * 0.76) * ((elapsed % 1250) / 1250);
+
+      const liveScore = Math.max(triggerScore, Math.floor(Number(this.game?.score) || 0));
+      const liveDelta = Math.max(1, liveScore - previous);
+      scoreLine.text = translateText('OLD RECORD {oldScore} // LIVE RECORD {liveScore}', {
+        oldScore: formatScore(previous),
+        liveScore: formatScore(liveScore)
+      });
+      deltaLine.text = translateText('RECORD ADVANTAGE +{score}', { score: formatScore(liveDelta) });
+      if (this.lastPersonalBestCelebration) {
+        this.lastPersonalBestCelebration.currentScore = liveScore;
+        this.lastPersonalBestCelebration.delta = liveDelta;
+      }
+
+      if (elapsed >= durationMs) this.finishPersonalBestCelebration('complete');
+    };
+    this.activePersonalBestCelebration = { container, ticker };
+    this._activeTickers.push(ticker);
+    this.game.app.ticker.add(ticker);
+    ticker({ deltaTime: 0 });
     return true;
   }
 

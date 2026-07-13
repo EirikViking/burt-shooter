@@ -455,7 +455,7 @@ export class GameOverScene {
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
     this.isPersonalBest = this.isRankedRun && this.finalScore > (Number(previousProgress.bestScore) || 0);
     this.qualificationFanfarePlayed = false;
-    this.personalBestVoicePlayed = false;
+    this.personalBestVoicePlayed = Boolean(this.game?.personalBestLiveCelebrated);
     this.nearMissVoicePlayed = false;
     const currentProgress = this.game.runProgressionResult?.next || getShipUnlockProgress();
     this.currentProgressForResult = currentProgress;

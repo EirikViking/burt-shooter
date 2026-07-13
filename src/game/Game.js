@@ -132,6 +132,7 @@ export class Game {
     };
     this.highscoreChase = null;
     this.highscoreChaseTargetPromise = null;
+    this.personalBestLiveCelebrated = false;
     this.sceneInputGuardUntil = 0;
     this.menuExitGuardUntil = 0;
     this.lastSceneSwitchAt = 0;
@@ -316,6 +317,7 @@ export class Game {
       sectorStartCheckpoint
     });
     this.highscoreChaseTargetPromise = null;
+    this.personalBestLiveCelebrated = false;
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -672,6 +674,7 @@ export class Game {
     this.diag.asBefore = previousRank;
     this.diag.asAfter = computedRank;
     if (deferProgress) {
+      measurePerformance('rank_highscore_cue_update.personal_best', () => this.updateHighscoreChaseCues({ personalBestOnly: true }));
       playScene.requestDeferredScoreCueRefresh?.();
     } else {
       measurePerformance('rank_highscore_cue_update.global_leaderboard', () => this.updateGlobalLeaderboardVoiceCues());
@@ -693,6 +696,8 @@ export class Game {
       syncingTarget: runMode === RUN_MODES.RANKED,
       checkpoint: sectorStartCheckpoint || null,
       surpassed: targetScore <= 0,
+      celebrationFired: false,
+      celebrationScore: 0,
       milestones: new Set(),
       lastTauntAtMs: 0,
       tauntIndex: Math.floor(Math.random() * 1000)
@@ -706,6 +711,11 @@ export class Game {
     chase.targetScore = score;
     chase.source = source || chase.source;
     chase.surpassed = score <= 0 || this.score > score;
+    if (!chase.surpassed) {
+      chase.celebrationFired = false;
+      chase.celebrationScore = 0;
+      chase.milestones?.delete?.('100');
+    }
     return true;
   }
 
@@ -718,11 +728,13 @@ export class Game {
         if (this.highscoreChase !== chase || !this.isRankedRun()) return null;
         this.raiseHighscoreChaseTarget(best?.score, best?.source || 'known_personal_best');
         if (this.highscoreChase === chase) chase.syncingTarget = false;
+        this.updateHighscoreChaseCues();
         return this.highscoreChase?.targetScore ?? null;
       })
       .catch((error) => {
         console.warn('[HighscoreChase] Unable to load known personal best', error?.message || error);
         if (this.highscoreChase === chase) chase.syncingTarget = false;
+        this.updateHighscoreChaseCues();
         return null;
       });
     return this.highscoreChaseTargetPromise;
@@ -736,35 +748,65 @@ export class Game {
       syncingTarget: false,
       checkpoint: null,
       surpassed: true,
+      celebrationFired: false,
+      celebrationScore: 0,
       milestones: new Set()
     };
   }
 
-  updateHighscoreChaseCues() {
+  updateHighscoreChaseCues({ personalBestOnly = false } = {}) {
     const chase = this.highscoreChase;
     if (!chase || chase.targetScore <= 0 || !this.currentScene?.enqueueToast) return;
     const score = Math.max(0, Number(this.score) || 0);
     const ratio = score / chase.targetScore;
+    const beatPersonalBest = (
+      chase.runMode === RUN_MODES.RANKED
+      && !chase.syncingTarget
+      && score > chase.targetScore
+    );
+    if (beatPersonalBest && !chase.celebrationFired) {
+      chase.celebrationFired = true;
+      chase.celebrationScore = score;
+      chase.surpassed = true;
+      ['25', '50', '75', '90', '100'].forEach((key) => chase.milestones.add(key));
+      const shown = this.currentScene.showPersonalBestCelebration?.({
+        previousScore: chase.targetScore,
+        newScore: score,
+        source: chase.source
+      }) === true;
+      if (!shown) {
+        AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.9, minIntervalMs: 0 });
+        this.currentScene.enqueueToast(translateText('NEW PERSONAL BEST'), {
+          fontSize: 29,
+          fill: '#fff05c',
+          slot: 'center',
+          type: 'personal_best',
+          duration: 2600,
+          priority: 8
+        });
+      }
+      this.personalBestLiveCelebrated = true;
+      return;
+    }
+    if (personalBestOnly) return;
     const cues = [
       { key: '25', at: 0.25, text: 'That high score is pretending not to sweat.', sfx: 'combo_tick', volume: 0.42 },
       { key: '50', at: 0.5, text: 'Halfway there. The scoreboard has begun legal review.', sfx: 'combo_breakout', volume: 0.6 },
       { key: '75', at: 0.75, text: 'Three quarters in. The old score is making excuses.', sfx: 'boss_phase_surge', volume: 0.48 },
-      { key: '90', at: 0.9, text: 'Close enough to smell the initials. Do not blink.', sfx: 'nova_highscore_chime', volume: 0.62 },
-      { key: '100', at: 1, text: 'HIGH SCORE HUNT COMPLETE. Now embarrass it.', sfx: 'achievement', volume: 0.88 }
+      { key: '90', at: 0.9, text: 'Close enough to smell the initials. Do not blink.', sfx: 'nova_highscore_chime', volume: 0.62 }
     ];
     const nextCue = cues.find((cue) => ratio >= cue.at && !chase.milestones.has(cue.key));
     if (!nextCue) return;
     chase.milestones.add(nextCue.key);
-    if (nextCue.key === '100') chase.surpassed = true;
     const now = Date.now();
     chase.lastTauntAtMs = now;
     AudioManager.playSfx(nextCue.sfx, { force: true, volume: nextCue.volume, minIntervalMs: 0 });
     this.currentScene.enqueueToast(translateText(nextCue.text), {
-      fontSize: nextCue.key === '100' ? 27 : 22,
-      fill: nextCue.key === '100' ? '#fff05c' : '#ff55d9',
+      fontSize: 22,
+      fill: '#ff55d9',
       slot: 'top',
       type: 'highscore_chase',
-      duration: nextCue.key === '100' ? 2100 : 1600,
+      duration: 1600,
       priority: 3
     });
   }

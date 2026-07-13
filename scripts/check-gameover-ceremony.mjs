@@ -223,11 +223,11 @@ try {
         { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
         { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
-      game.addScore(45217);
+      game.score = 100;
       game.updateGlobalLeaderboardVoiceCues?.();
-      game.addScore(217391);
+      game.score = 33000;
       game.updateGlobalLeaderboardVoiceCues?.();
-      game.addScore(130435);
+      game.score = 46000;
       game.updateGlobalLeaderboardVoiceCues?.();
     });
     const cueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()).globalLeaderboardCues);

@@ -657,6 +657,17 @@ function buildGameTextState(game) {
       travelMoteCount: (playScene.cosmicTravelLayers || []).reduce((total, layer) => total + (layer?.length || 0), 0),
       auroraBandCount: playScene.cosmicAuroraBands?.length || 0
     } : null,
+    highscoreChase: game?.highscoreChase ? {
+      targetScore: Math.max(0, Math.floor(Number(game.highscoreChase.targetScore) || 0)),
+      source: game.highscoreChase.source || null,
+      syncingTarget: Boolean(game.highscoreChase.syncingTarget),
+      surpassed: Boolean(game.highscoreChase.surpassed),
+      celebrationFired: Boolean(game.highscoreChase.celebrationFired),
+      celebrationScore: Math.max(0, Math.floor(Number(game.highscoreChase.celebrationScore) || 0))
+    } : null,
+    personalBestCelebration: playScene?.getPersonalBestCelebrationDebugState
+      ? playScene.getPersonalBestCelebrationDebugState()
+      : null,
     aceBounties: playScene?.getAceBountyDebugState ? playScene.getAceBountyDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
