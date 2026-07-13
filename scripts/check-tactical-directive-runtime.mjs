@@ -81,12 +81,16 @@ async function forceDirective(page, directiveId, progress = 0) {
     play.tacticalDirectiveSession = {
       directiveId: id,
       progress: value,
-      target: 1,
+      target: null,
       uniqueValues: [],
       completed: false,
       completedAtEvent: null,
       eventCount: 0,
+      milestonesShown: [],
+      calibrationCount: 0,
       startedInSector: window.__game?.level || 1,
+      lastProgressSector: window.__game?.level || 1,
+      lastCalibrationSector: window.__game?.level || 1,
       reason: 'runtime_test'
     };
     play.tacticalDirectiveHistory = [];
@@ -138,6 +142,30 @@ try {
   if (desktop.directive?.active?.target !== 10 || desktop.directive?.active?.rewardId !== 'shield') failures.push(`desktop directive identity mismatch: ${JSON.stringify(desktop.directive?.active)}`);
   if (!desktop.hud?.visible || !/SIDE DIRECTIVE.*HOSTILE QUOTA.*0\/10.*REWARD.*SHIELD/.test(desktop.hud?.label || '')) failures.push(`desktop HUD label mismatch: ${desktop.hud?.label}`);
   if (!inside(desktop.bounds?.directiveText, desktop.bounds?.missionPanel)) failures.push(`desktop directive text escaped mission panel: ${JSON.stringify(desktop.bounds)}`);
+
+  const adaptive = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.tacticalDirectiveSession.progress = 3;
+    play.tacticalDirectiveSession.startedInSector = 1;
+    play.tacticalDirectiveSession.lastProgressSector = 1;
+    play.tacticalDirectiveSession.lastCalibrationSector = 1;
+    const sector2 = structuredClone(play.adaptTacticalDirectiveForSector(2));
+    const sector3 = structuredClone(play.adaptTacticalDirectiveForSector(3));
+    const sector4 = structuredClone(play.adaptTacticalDirectiveForSector(4));
+    return { sector2, sector3, sector4, session: structuredClone(play.tacticalDirectiveSession) };
+  });
+  report.scenarios.adaptiveCarry = adaptive;
+  if (adaptive.sector2?.id !== 'hostile_quota_t01_shield' || adaptive.sector2?.progress !== 3 || adaptive.sector2?.target !== 10) {
+    failures.push(`directive rotated or calibrated too early in sector 2: ${JSON.stringify(adaptive)}`);
+  }
+  if (adaptive.sector3?.id !== 'hostile_quota_t01_shield' || adaptive.sector3?.progress !== 3 || adaptive.sector3?.target !== 8 || adaptive.sector3?.calibrationCount !== 1) {
+    failures.push(`adaptive carry did not preserve identity/progress in sector 3: ${JSON.stringify(adaptive)}`);
+  }
+  if (adaptive.sector4?.target !== 8 || adaptive.session?.lastCalibrationSector !== 3) {
+    failures.push(`directive recalibrated again before a fresh two-sector drought: ${JSON.stringify(adaptive)}`);
+  }
+
+  await forceDirective(page, 'hostile_quota_t01_shield');
 
   const progress = await page.evaluate(() => {
     const play = window.__game.scenes.play;

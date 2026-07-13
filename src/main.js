@@ -13,6 +13,7 @@ import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettin
 import { getShipUnlockHistoryLine, getShipUnlockProgress, getShipUnlockRequirementLine, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
+import { RARE_CHAOS_VISITOR_VARIANT_COUNT, RARE_CHAOS_VISITOR_WAVE_CHANCE } from './config/RareChaosVisitors.js';
 import {
   getMaintainerDevtoolsState,
   initializeMaintainerDevtools,
@@ -641,6 +642,13 @@ function buildGameTextState(game) {
     menu: menuScene?.getLayoutDebugState ? menuScene.getLayoutDebugState() : null,
     runContracts: playScene?.getRunContractDebugState ? playScene.getRunContractDebugState() : null,
     tacticalDirectives: playScene?.getTacticalDirectiveDebugState ? playScene.getTacticalDirectiveDebugState() : null,
+    rareChaosVisitors: playScene ? {
+      availableVariants: RARE_CHAOS_VISITOR_VARIANT_COUNT,
+      waveChance: RARE_CHAOS_VISITOR_WAVE_CHANCE,
+      stats: playScene.enemyManager?.rareChaosVisitorStats ? { ...playScene.enemyManager.rareChaosVisitorStats } : null,
+      lastAnnouncement: playScene.lastRareChaosVisitorAnnouncement || null,
+      lastDefeat: playScene.lastRareChaosVisitorDefeat || null
+    } : null,
     aceBounties: playScene?.getAceBountyDebugState ? playScene.getAceBountyDebugState() : null,
     settingsOverlay: activeSettingsOverlay?.getDebugState ? activeSettingsOverlay.getDebugState() : null,
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
@@ -1005,6 +1013,9 @@ function buildGameTextState(game) {
       eliteMiddleShips: enemies.filter(enemy =>
         enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry)
       ).length,
+      rareChaosVisitors: enemies.filter(enemy =>
+        enemy?.isRareChaosVisitor && (enemy.active !== false || enemy.waitingForEntry)
+      ).length,
       playerBullets: playerBullets.filter(bullet => bullet?.active !== false).length,
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0
@@ -1064,6 +1075,7 @@ function buildGameTextState(game) {
         rivalWing: enemy.getRivalWingDebugState ? enemy.getRivalWingDebugState() : null,
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
+        rareChaosVisitor: enemy.getRareChaosVisitorDebugState ? enemy.getRareChaosVisitorDebugState() : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,

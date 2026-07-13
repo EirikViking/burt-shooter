@@ -34,6 +34,9 @@ function drawThreatFrameTick(graphics, angle, innerRadius, outerRadius) {
 function getEnemyThreatFrameProfile(enemy) {
   if (!enemy || enemy.type === 'bonus_challenge') return null;
   const accent = enemy.visualVariant?.accent || enemy.color || 0xff5d6c;
+  if (enemy.isRareChaosVisitor && enemy.rareChaosVisitorVariant) {
+    return { tier: 'rare_chaos', color: enemy.rareChaosVisitorVariant.tint, accent: enemy.rareChaosVisitorVariant.accent, markerCount: 11, radiusMult: 2.72 };
+  }
   if (enemy.isAce && enemy.aceVariant) {
     const protocol = enemy.nemesisProtocol;
     return {
@@ -1416,7 +1419,7 @@ export class Enemy {
 
   applyThreatAction(actionOrId = null, context = {}) {
     const action = typeof actionOrId === 'string' ? getEnemyThreatAction(actionOrId) : actionOrId;
-    if (!action || this.kind !== 'enemy' || this.middleShipProfile) {
+    if (!action || (this.kind !== 'enemy' && this.kind !== 'rare_chaos_visitor') || this.middleShipProfile) {
       this.threatActionDefinition = null;
       return;
     }
@@ -1660,6 +1663,7 @@ export class Enemy {
       this.updateThreatAction(delta, playerX, playerY);
     }
     this.updateMayhemVfx(delta);
+    this.updateRareChaosVisitorVisuals(delta);
     this.updateHitFeedback();
     this.updateMuzzleFlash();
     this.updateSpawnCue();
@@ -2733,6 +2737,9 @@ export class Enemy {
         waveSlot: this.waveSlot
       });
       AudioManager.playSfx('enemy_threat_soft_warn', { volume: 0.12, minIntervalMs: 1800 });
+      if (this.isRareChaosVisitor) {
+        AudioManager.playSfx('rare_visitor_laser_charge', { volume: 0.64, minIntervalMs: 850 });
+      }
     }
 
     if (!this.currentThreatAction) {
@@ -2747,6 +2754,9 @@ export class Enemy {
 
     this.currentThreatAction.executed = true;
     this.executeThreatAction(action, this.currentThreatAction.lockedTarget, this.currentThreatAction);
+    if (this.isRareChaosVisitor) {
+      AudioManager.playSfx('rare_visitor_laser_fire', { volume: 0.78, minIntervalMs: 380 });
+    }
     this.threatActionExecutionCount += 1;
     this.nextThreatActionAt = now + this.threatActionCooldown + Math.random() * 1200;
     manager?.releaseThreatAction?.(this, action);
@@ -3227,6 +3237,108 @@ export class Enemy {
     return bullet;
   }
 
+  applyRareChaosVisitor(variant) {
+    if (!variant) return null;
+    this.kind = 'rare_chaos_visitor';
+    this.isRareChaosVisitor = true;
+    this.rareChaosVisitorVariant = variant;
+    this.rareChaosVisitorPhases = new Set();
+    this.scoreValue = 1800 + variant.number * 12;
+    this.health = Math.max(14, Math.ceil((Number(this.maxHealth) || 1) * 4.6 * (variant.healthScalar || 1)));
+    this.maxHealth = this.health;
+    this.radius = Math.max(24, Number(this.radius) * 1.45);
+    this.color = variant.tint;
+    this.visualVariant = {
+      ...(this.visualVariant || {}),
+      tint: variant.tint,
+      accent: variant.accent,
+      scale: Math.max(1.18, Number(this.visualVariant?.scale) || 1),
+      alpha: 0.34
+    };
+    if (this.body) this.body.tint = variant.tint;
+    if (this.sprite) {
+      this.sprite.label = `enemy_visual:rare_chaos_visitor:${variant.id}`;
+      this.sprite.scale.set(this.sprite.scale.x * 1.24, this.sprite.scale.y * 1.24);
+      const aura = new PIXI.Graphics();
+      aura.label = `rareChaosAura:${variant.id}`;
+      aura.zIndex = -10;
+      aura.circle(0, 0, this.radius * 2.2);
+      aura.fill({ color: variant.tint, alpha: 0.12 });
+      aura.circle(0, 0, this.radius * 1.75);
+      aura.stroke({ color: variant.accent, width: 3, alpha: 0.72 });
+      aura.circle(0, 0, this.radius * 2.25);
+      aura.stroke({ color: 0xffffff, width: 1.4, alpha: 0.46 });
+      for (let index = 0; index < 11; index += 1) {
+        const angle = (Math.PI * 2 * index) / 11;
+        drawThreatFrameTick(aura, angle, this.radius * 2.05, this.radius * 2.52);
+      }
+      aura.stroke({ color: variant.accent, width: 2, alpha: 0.64 });
+      const crown = new PIXI.Graphics();
+      crown.label = `rareChaosCrown:${variant.id}`;
+      crown.zIndex = 12;
+      crown.poly([-20, -this.radius - 18, -10, -this.radius - 32, 0, -this.radius - 19, 10, -this.radius - 34, 20, -this.radius - 18]);
+      crown.stroke({ color: 0xffef7e, width: 3, alpha: 0.92 });
+      const label = createText(translateText('RARE CONTACT #{number}', { number: String(variant.number).padStart(2, '0') }), {
+        fontFamily: 'monospace',
+        fontSize: 11,
+        fill: '#fff3a0',
+        stroke: { color: '#120015', width: 3 },
+        align: 'center'
+      });
+      label.anchor.set(0.5);
+      label.y = -this.radius - 50;
+      label.zIndex = 13;
+      this.sprite.addChildAt(aura, 0);
+      this.sprite.addChild(crown);
+      this.sprite.addChild(label);
+      this.ownedVisuals.push(aura, crown, label);
+      this.rareChaosVisitorVisuals = { aura, crown, label, startedAt: Date.now() };
+    }
+    this.updateHealthBar?.();
+    return this.getRareChaosVisitorDebugState();
+  }
+
+  updateRareChaosVisitorVisuals(delta = 1) {
+    const visuals = this.rareChaosVisitorVisuals;
+    if (!this.isRareChaosVisitor || !visuals || !this.active) return;
+    const time = Date.now() - visuals.startedAt;
+    const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth))));
+    visuals.aura.rotation += 0.006 * Math.max(0.5, Number(delta) || 1) * (healthRatio <= 0.25 ? 2.2 : 1);
+    visuals.aura.alpha = 0.72 + Math.sin(time * 0.008) * 0.18;
+    visuals.crown.rotation = Math.sin(time * 0.006) * 0.08;
+    visuals.crown.scale.set(1 + Math.sin(time * 0.012) * 0.08);
+    visuals.label.y = -this.radius - 50 + Math.sin(time * 0.005) * 3;
+    if (healthRatio <= 0.25) {
+      visuals.label.style.fill = '#ff7a9a';
+      this.tacticalFireScalar = Math.max(3.4, Number(this.tacticalFireScalar) || 1);
+    }
+  }
+
+  updateRareChaosVisitorDamagePhase() {
+    if (!this.isRareChaosVisitor || !this.rareChaosVisitorVariant || this.health <= 0) return;
+    const ratio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth))));
+    for (const threshold of [0.75, 0.5, 0.25]) {
+      if (ratio > threshold || this.rareChaosVisitorPhases.has(threshold)) continue;
+      this.rareChaosVisitorPhases.add(threshold);
+      this.game?.scenes?.play?.onRareChaosVisitorPhase?.(this, threshold);
+    }
+  }
+
+  getRareChaosVisitorDebugState() {
+    if (!this.isRareChaosVisitor || !this.rareChaosVisitorVariant) return null;
+    return {
+      id: this.rareChaosVisitorVariant.id,
+      number: this.rareChaosVisitorVariant.number,
+      name: this.rareChaosVisitorVariant.displayName,
+      loadout: this.rareChaosVisitorVariant.loadoutName,
+      health: this.health,
+      maxHealth: this.maxHealth,
+      shot: this.tacticalShotPattern,
+      threatAction: this.threatActionDefinition?.id || null,
+      phases: [...(this.rareChaosVisitorPhases || [])]
+    };
+  }
+
   applyElite() {
     if (this.isElite) return;
     this.isElite = true;
@@ -3246,6 +3358,7 @@ export class Enemy {
     resolvedAmount = resolveNemesisDamage(this, resolvedAmount);
     this.health -= resolvedAmount;
     this.updateHealthBar();
+    this.updateRareChaosVisitorDamagePhase();
     const nemesisEnrage = maybeActivateNemesisEnrage(this);
     if (nemesisEnrage) {
       this.game?.scenes?.play?.onNemesisProtocolEnraged?.(this, nemesisEnrage);

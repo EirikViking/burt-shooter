@@ -1,6 +1,7 @@
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
+import { rareChaosVisitorVoiceLines } from '../config/RareChaosVisitorVoiceLines.js';
 
 export const AssetManifest = {
     generated: {
@@ -294,6 +295,7 @@ export const AssetManifest = {
             '/audio/voice/mission-control/mission_control_wave_clear_alt02.mp3',
             ...Array.from({ length: 100 }, (_, i) => `/audio/voice/mission-control/mission_control_reinforcements_incoming_${String(i + 1).padStart(3, '0')}.mp3`),
             ...mayhemSuperStormVoiceLines.map((line) => `/audio/voice/mayhem-super-storm/${line.id}.mp3`),
+            ...rareChaosVisitorVoiceLines.map((line) => `/audio/voice/rare-chaos-visitors/${line.id}.mp3`),
             '/audio/voice/mission-control/mission_control_row_core_01.mp3',
             '/audio/voice/mission-control/mission_control_row_core_02.mp3',
             '/audio/voice/mission-control/mission_control_row_core_03.mp3',
@@ -456,6 +458,14 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_row_core_wave.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_perfect.mp3',
             '/audio/sfx/nova-swarm/nova_row_core_viking_row.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_arrival.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_theme_sting.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_laser_charge.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_laser_fire.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_barrage.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_armor_crack.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_defeat.mp3',
+            '/audio/sfx/nova-swarm/nova_rare_visitor_reward.mp3',
             '/audio/sfx/nova-swarm/nova_tactical_phase_reactor.mp3',
             '/audio/sfx/nova-swarm/nova_tactical_focus_lens.mp3',
             '/audio/sfx/nova-swarm/nova_tactical_inertial_dampers.mp3',

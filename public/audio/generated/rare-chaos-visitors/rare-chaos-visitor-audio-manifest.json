@@ -1,0 +1,196 @@
+{
+  "feature": "Rare Chaos Visitors",
+  "generatedAt": "2026-07-13T10:46:48.408Z",
+  "legalNote": "Original generated development assets. No celebrity, song, film, broadcast, or third-party recording was requested or used.",
+  "outputFormat": "mp3_44100_128",
+  "voice": {
+    "name": "Misfit Galaxy Male - Boss Agony - Chaos Visitor Announcer",
+    "voiceId": "YO6HUzlgJ0HQvmYejW5c",
+    "modelId": "eleven_v3"
+  },
+  "sfx": {
+    "modelId": "eleven_text_to_sound_v2"
+  },
+  "files": [
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_arrival.mp3",
+      "duration_seconds": 2.4,
+      "text": "Extremely dramatic retro arcade rare-enemy arrival: deep warning horn, rising reactor siren, huge comic orchestral hit, sparkling sci-fi tail, no voice, original sound.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_arrival.mp3",
+      "bytes": 39332,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_theme_sting.mp3",
+      "duration_seconds": 8,
+      "text": "Original eight-second mini boss music sting for a funny dangerous space invader: frantic brass, taiko drums, chiptune arpeggio, laser percussion, heroic absurd climax, no vocals, no recognizable melody.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_theme_sting.mp3",
+      "bytes": 129193,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_laser_charge.mp3",
+      "duration_seconds": 1.3,
+      "text": "Large dangerous alien laser charging with escalating electric coils and a theatrical warning wobble, readable arcade telegraph, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_laser_charge.mp3",
+      "bytes": 21359,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_laser_fire.mp3",
+      "duration_seconds": 0.9,
+      "text": "Huge clean sci-fi laser cannon discharge, bright plasma crack into a deep punch, dangerous but not harsh, polished arcade game sound.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_laser_fire.mp3",
+      "bytes": 15090,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_barrage.mp3",
+      "duration_seconds": 0.8,
+      "text": "Short burst of many tiny alien cannons firing in a comic but dangerous rhythmic volley, crisp arcade bullet barrage, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_barrage.mp3",
+      "bytes": 13836,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_armor_crack.mp3",
+      "duration_seconds": 1.1,
+      "text": "Rare enemy armor cracking open: metal fracture, glassy energy shield snap, delighted synth punctuation, dramatic arcade feedback.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_armor_crack.mp3",
+      "bytes": 18434,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_defeat.mp3",
+      "duration_seconds": 2.6,
+      "text": "Massive gratifying defeat sting for a rare ridiculous enemy ship: layered explosion, brass victory stab, confetti sparkles, crowd-sized synthetic cheer, original sound.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_defeat.mp3",
+      "bytes": 41839,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_reward.mp3",
+      "duration_seconds": 1.8,
+      "text": "Premium rare loot reward bloom: warm power chord, crystalline coin shower, rising shield shimmer, joyful arcade jackpot finish, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_reward.mp3",
+      "bytes": 29301,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_01.mp3",
+      "text": "Unscheduled comedy frigate. It has lasers!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Unscheduled comedy frigate. It has lasers!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_01.mp3",
+      "bytes": 65245,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_02.mp3",
+      "text": "Rare contact! Too many guns and absolutely no adult supervision!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Rare contact! Too many guns and absolutely no adult supervision!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_02.mp3",
+      "bytes": 100772,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_03.mp3",
+      "text": "A party crasher has entered the sector. Violently!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] A party crasher has entered the sector. Violently!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_03.mp3",
+      "bytes": 70261,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_04.mp3",
+      "text": "That ship is not on the guest list. It brought bullet weather!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] That ship is not on the guest list. It brought bullet weather!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_04.mp3",
+      "bytes": 74022,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_05.mp3",
+      "text": "Dramatic warning! The tiny lunatic has a laser tantrum!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Dramatic warning! The tiny lunatic has a laser tantrum!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_05.mp3",
+      "bytes": 79038,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_06.mp3",
+      "text": "Rare visitor incoming. Please dodge the entire sky!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Rare visitor incoming. Please dodge the entire sky!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_06.mp3",
+      "bytes": 80292,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_07.mp3",
+      "text": "The enemy sent a joke ship. The joke is extremely armed!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] The enemy sent a joke ship. The joke is extremely armed!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_07.mp3",
+      "bytes": 76530,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_08.mp3",
+      "text": "Chaos vessel detected. Its safety inspector has resigned!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Chaos vessel detected. Its safety inspector has resigned!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_08.mp3",
+      "bytes": 77784,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_09.mp3",
+      "text": "Something rare, loud, and legally questionable just arrived!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Something rare, loud, and legally questionable just arrived!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_09.mp3",
+      "bytes": 81546,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_10.mp3",
+      "text": "Boss voice update: I hate this ship. It has far too many cannons!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Boss voice update: I hate this ship. It has far too many cannons!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_10.mp3",
+      "bytes": 86979,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_11.mp3",
+      "text": "Party crasher inbound. Confetti appears to be live ammunition!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] Party crasher inbound. Confetti appears to be live ammunition!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_11.mp3",
+      "bytes": 88233,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_12.mp3",
+      "text": "This one brought lasers, mines, and an upsetting amount of confidence!",
+      "generationText": "[extremely dramatic arcade villain announcer, delighted panic, funny but dangerous, deep male voice] This one brought lasers, mines, and an upsetting amount of confidence!",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_12.mp3",
+      "bytes": 81546,
+      "skipped": false
+    }
+  ]
+}

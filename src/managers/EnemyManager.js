@@ -29,6 +29,10 @@ import {
 import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../config/BossSupportShips.js';
+import {
+  getRareChaosVisitorVariant,
+  planRareChaosVisitorSpawn
+} from '../config/RareChaosVisitors.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -237,6 +241,8 @@ export class EnemyManager {
     // Debug Stats
     this.totalEnemiesSpawned = 0;
     this.wavesCompleted = 0;
+    this.rareChaosVisitorStats = { eligibleWaves: 0, spawned: 0, defeated: 0, lastPlan: null, lastSpawn: null };
+    this.rareChaosVisitorSpawnedWaveKeys = new Set();
     this.isBossLevel = false;
     this.adaptation = { diagonalShotBias: 0, spawnYBias: 0 };
     this.currentModifier = null;
@@ -354,7 +360,11 @@ export class EnemyManager {
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
     this.resetWaveWatchdog();
-    if (level <= 1) this.resetMayhemReinforcementRunState();
+    if (level <= 1) {
+      this.resetMayhemReinforcementRunState();
+      this.rareChaosVisitorStats = { eligibleWaves: 0, spawned: 0, defeated: 0, lastPlan: null, lastSpawn: null };
+      this.rareChaosVisitorSpawnedWaveKeys = new Set();
+    }
     this.resetMayhemReinforcementState();
 
     // BOSS FIX: Reset boss state
@@ -2271,7 +2281,8 @@ export class EnemyManager {
       }
 
       // Shooting
-      const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1);
+      const rareFireMultiplier = enemy.isRareChaosVisitor ? 2.15 : 1;
+      const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1) * rareFireMultiplier;
       const shouldShoot = isBoss
         ? enemy.canShoot()
         : enemy.canShoot() && Math.random() < enemyFireChance * timeScale;
@@ -2293,6 +2304,9 @@ export class EnemyManager {
     const angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
     playScene?.particleManager?.createMuzzleFlash(enemy.x, enemy.y, angle, enemy.color || 0xff5544);
     this.maybePlayAlienAttackBark(enemy, playerX, playerY);
+    if (enemy?.isRareChaosVisitor) {
+      AudioManager.playSfx('rare_visitor_barrage', { volume: 0.42, minIntervalMs: 520 });
+    }
 
     // Most enemy fire stays visual-only. The old recurring enemy_shoot chirp
     // became grating; alien barks are rare, diegetic, and globally gated.
@@ -2610,6 +2624,14 @@ export class EnemyManager {
       }, scheduledDelayMs);
       this.waveSpawnTimers.push(timer);
     });
+    this.maybeSpawnRareChaosVisitor(config, {
+      tactic,
+      formation,
+      normalWaveLevel,
+      combatBounds,
+      waveColor,
+      entryDurationMs
+    });
     if (config.eliteMiddleShipId) {
       this.markPerformance('elite_signal_start', { id: config.eliteMiddleShipId, level: this.level });
       this.measurePerformance('elite_signal_start', () => this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
@@ -2686,6 +2708,101 @@ export class EnemyManager {
       setTimeout(runDiscoveryHooks, 0);
     }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
+  }
+
+  getRareChaosVisitorWaveKey(level = this.level, waveIndex = this.currentWaveIndex) {
+    return `${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
+  }
+
+  maybeSpawnRareChaosVisitor(config = {}, context = {}) {
+    const seed = this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm';
+    const plan = planRareChaosVisitorSpawn({ seed, level: this.level, waveIndex: this.currentWaveIndex, config });
+    this.rareChaosVisitorStats.lastPlan = {
+      eligible: plan.eligible,
+      chance: plan.chance,
+      roll: plan.roll,
+      shouldSpawn: plan.shouldSpawn,
+      variantId: plan.variant?.id || null,
+      level: this.level,
+      waveIndex: this.currentWaveIndex
+    };
+    if (plan.eligible) this.rareChaosVisitorStats.eligibleWaves += 1;
+    if (!plan.shouldSpawn) return null;
+    return this.spawnRareChaosVisitor(plan.variant, { ...context, source: 'rare_wave_roll', plan });
+  }
+
+  spawnRareChaosVisitor(variantOrNumber = 1, context = {}) {
+    const variant = typeof variantOrNumber === 'object' ? variantOrNumber : getRareChaosVisitorVariant(variantOrNumber);
+    if (!variant || this.phase !== 'WAVES' || this.state === 'BOSS_ACTIVE') return null;
+    const waveKey = this.getRareChaosVisitorWaveKey();
+    if (!context.force && this.rareChaosVisitorSpawnedWaveKeys.has(waveKey)) return null;
+    if (this.enemies.some((enemy) => enemy?.active && enemy.isRareChaosVisitor)) return null;
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const fromLeft = variant.number % 2 === 0;
+    const startX = fromLeft ? 30 : width - 30;
+    const sideLane = fromLeft ? 0.34 : 0.66;
+    const formationX = Math.max(width * 0.28, Math.min(width * 0.72, width * (sideLane + ((variant.number % 3) - 1) * 0.03)));
+    const formationY = Math.max(210, Math.min(height * 0.36, 228 + (variant.number % 4) * 18));
+    const enemy = new Enemy(startX, -120, variant.enemyType, Math.max(1, Number(context.normalWaveLevel) || this.level), this.game, context.waveColor || 'Red');
+    enemy.applyRareChaosVisitor?.(variant);
+    enemy.applyWaveTactic?.({
+      id: `rare_${variant.weaponId}`,
+      label: variant.loadoutName,
+      move: variant.move,
+      shot: variant.shot,
+      volley: variant.shot === 'fan' ? 'pulse' : 'staggered',
+      fireScalar: variant.fireScalar,
+      fireDelayMult: variant.fireDelayMult,
+      projectileSpeedScalar: variant.projectileSpeedScalar,
+      diveBias: 0.28,
+      entrySpeed: 0.76
+    }, {
+      index: 0,
+      count: 1,
+      formation: context.formation || 'RARE_CONTACT',
+      centerX: formationX,
+      centerY: formationY,
+      side: formationX < width / 2 ? -1 : 1,
+      combatBounds: context.combatBounds || { minX: width * 0.12, maxX: width * 0.88 }
+    });
+    enemy.applyThreatAction?.(getEnemyThreatAction(variant.threatActionId), {
+      index: 0,
+      waveIndex: this.currentWaveIndex,
+      count: 1,
+      initialDelayMult: 0.42,
+      initialDelayMs: 480
+    });
+    enemy.threatActionCooldown = Math.min(enemy.threatActionCooldown || 5200, 5200);
+    enemy.startEntry(startX, -90, formationX, formationY, Math.max(920, Number(context.entryDurationMs) * 0.72 || 1180), 180);
+    this.enemies.push(enemy);
+    this.container.addChild(enemy.sprite);
+    this.rareChaosVisitorSpawnedWaveKeys.add(waveKey);
+    this.rareChaosVisitorStats.spawned += 1;
+    this.rareChaosVisitorStats.lastSpawn = {
+      id: variant.id,
+      number: variant.number,
+      level: this.level,
+      waveIndex: this.currentWaveIndex,
+      source: context.source || 'unknown'
+    };
+    this.game?.scenes?.play?.announceRareChaosVisitor?.(enemy, context.plan || null);
+    console.log(`[RareChaosVisitor] spawned id=${variant.id} number=${variant.number} level=${this.level} wave=${this.currentWaveIndex + 1} source=${context.source || 'unknown'}`);
+    return enemy;
+  }
+
+  debugForceRareChaosVisitor(variantNumber = 1, source = 'console') {
+    const variant = getRareChaosVisitorVariant(variantNumber) || getRareChaosVisitorVariant(1);
+    const enemy = this.spawnRareChaosVisitor(variant, {
+      force: true,
+      source: `debug_${source}`,
+      formation: 'RARE_CONTACT',
+      normalWaveLevel: this.currentNormalWaveDifficultyLevel || this.level,
+      waveColor: 'Red',
+      entryDurationMs: 1080
+    });
+    return enemy?.getRareChaosVisitorDebugState?.() || null;
   }
 
   createThreatActionPlan({ count, formation, tactic, config, level = this.getNormalWaveDifficultyLevel(this.level) } = {}) {
@@ -4389,7 +4506,11 @@ export class EnemyManager {
       playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount;
       if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
         playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
-        playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
+        playScene.flawlessWaveStreak = (Number(playScene.flawlessWaveStreak) || 0) + 1;
+        const noHitBonus = playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
+        playScene.showFlawlessWaveCelebration?.(playScene.flawlessWaveStreak, noHitBonus);
+      } else {
+        playScene.flawlessWaveStreak = 0;
       }
       if (consumedReinforcementWaveIndices.length >= 2) {
         const stormBonus = 600 * consumedReinforcementWaveIndices.length;

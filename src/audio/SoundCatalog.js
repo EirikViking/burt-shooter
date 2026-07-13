@@ -6,6 +6,7 @@ import { MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, MAYHEM_SUPER_STORM_WARNING_VOI
 import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 import { TACTICAL_BOSS_BANTER_EVENT_COUNTS, TACTICAL_BOSS_BANTER_EVENT_IDS } from '../config/TacticalBossBanterLines.js';
+import { RARE_CHAOS_VISITOR_VOICE_COUNT } from '../config/RareChaosVisitorVoiceLines.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -333,6 +334,14 @@ export const SFX_MIX = {
     row_core_wave: { volume: 0.58, minIntervalMs: 150 },
     row_core_perfect: { volume: 0.9, minIntervalMs: 1000 },
     row_core_viking_row: { volume: 1, minIntervalMs: 4500 },
+    rare_visitor_arrival: { volume: 0.92, minIntervalMs: 8000 },
+    rare_visitor_theme_sting: { volume: 0.72, minIntervalMs: 8000 },
+    rare_visitor_laser_charge: { volume: 0.64, minIntervalMs: 850 },
+    rare_visitor_laser_fire: { volume: 0.78, minIntervalMs: 380 },
+    rare_visitor_barrage: { volume: 0.42, minIntervalMs: 520 },
+    rare_visitor_armor_crack: { volume: 0.76, minIntervalMs: 800 },
+    rare_visitor_defeat: { volume: 0.96, minIntervalMs: 5000 },
+    rare_visitor_reward: { volume: 0.84, minIntervalMs: 1800 },
     tactical_phase_reactor: { volume: 0.72, minIntervalMs: 140 },
     tactical_focus_lens: { volume: 0.72, minIntervalMs: 140 },
     tactical_inertial_dampers: { volume: 0.72, minIntervalMs: 140 },
@@ -402,6 +411,7 @@ export const VOICE_MIX = {
     mission_control_reinforcements_incoming: { volume: 0.9, duckFactor: 0.42, duckMs: 1150, cooldownMs: 2200, eventCooldownMs: 2200, priority: 7 },
     boss_mayhem_super_storm_warning: { volume: 1.04, duckFactor: 0.24, duckMs: 2400, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
     boss_mayhem_super_storm_survived: { volume: 1.0, duckFactor: 0.3, duckMs: 2200, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
+    boss_rare_chaos_visitor_warning: { volume: 1.04, duckFactor: 0.24, duckMs: 2800, cooldownMs: 0, eventCooldownMs: 0, priority: 9 },
     mission_control_row_core: { volume: 0.9, duckFactor: 0.36, duckMs: 2200, cooldownMs: 30000, priority: 5 },
     level_clear_flirt: { volume: 0.9, duckFactor: 0.38, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
     game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
@@ -453,6 +463,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming_001.mp3',
     boss_mayhem_super_storm_warning: 'boss_mayhem_super_storm_warning_01.mp3',
     boss_mayhem_super_storm_survived: 'boss_mayhem_super_storm_survived_01.mp3',
+    boss_rare_chaos_visitor_warning: 'boss_rare_chaos_visitor_warning_01.mp3',
     mission_control_row_core: 'mission_control_row_core_01.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
@@ -608,6 +619,14 @@ export const SFX_CATALOG = {
         getSfx('nova_row_core_perfect')
     ],
     'row_core_viking_row': [getSfx('nova_row_core_viking_row')],
+    'rare_visitor_arrival': [getSfx('nova_rare_visitor_arrival')],
+    'rare_visitor_theme_sting': [getSfx('nova_rare_visitor_theme_sting')],
+    'rare_visitor_laser_charge': [getSfx('nova_rare_visitor_laser_charge')],
+    'rare_visitor_laser_fire': [getSfx('nova_rare_visitor_laser_fire')],
+    'rare_visitor_barrage': [getSfx('nova_rare_visitor_barrage')],
+    'rare_visitor_armor_crack': [getSfx('nova_rare_visitor_armor_crack')],
+    'rare_visitor_defeat': [getSfx('nova_rare_visitor_defeat')],
+    'rare_visitor_reward': [getSfx('nova_rare_visitor_reward')],
     'tactical_phase_reactor': [getSfx('nova_tactical_phase_reactor')],
     'tactical_focus_lens': [getSfx('nova_tactical_focus_lens')],
     'tactical_inertial_dampers': [getSfx('nova_tactical_inertial_dampers')],
@@ -813,6 +832,7 @@ export const SFX_CATALOG = {
     'mission_control_reinforcements_incoming': paddedNumberedVoicePool('mission_control_reinforcements_incoming', REINFORCEMENT_VOICE_COUNT, 3),
     'boss_mayhem_super_storm_warning': paddedNumberedVoicePool('boss_mayhem_super_storm_warning', MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT, 2),
     'boss_mayhem_super_storm_survived': paddedNumberedVoicePool('boss_mayhem_super_storm_survived', MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, 2),
+    'boss_rare_chaos_visitor_warning': paddedNumberedVoicePool('boss_rare_chaos_visitor_warning', RARE_CHAOS_VISITOR_VOICE_COUNT, 2),
     'mission_control_row_core': numberedVoicePool('mission_control_row_core', 5),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),

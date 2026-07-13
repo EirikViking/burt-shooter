@@ -141,6 +141,8 @@ async function openCodex(page) {
     sessionStorage.clear();
     localStorage.setItem('nova.threatDiscovery.v1', JSON.stringify(seed));
   }, seededDiscoveryState());
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__game?.showThreatCodex), null, { timeout: 30000 });
   await page.evaluate(() => window.__game.showThreatCodex());
   await page.waitForFunction((categoryCount) => {
     const scene = window.__game?.scenes?.threatCodex;

@@ -7,6 +7,7 @@ import { ENEMY_WEAPON_PROFILES } from './EnemyWeaponProfiles.js';
 import { BOSS_ROSTER } from './BossRoster.js';
 import { DANGER_MID_SHIPS } from './DangerMidShips.js';
 import { BOSS_SUPPORT_SHIPS } from './BossSupportShips.js';
+import { RARE_CHAOS_VISITOR_VARIANTS } from './RareChaosVisitors.js';
 import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { POWERUP_CODEX_ENTRIES as CATALOG_POWERUP_CODEX_ENTRIES } from './PowerupCatalog.js';
 import { TACTICAL_DRAFT_AUGMENTS, getTacticalDraftMeta } from './TacticalDraft.js';
@@ -1230,6 +1231,28 @@ function dangerMidEntry(profile) {
   };
 }
 
+function rareChaosVisitorEntry(variant) {
+  return {
+    id: variant.id,
+    category: 'enemies',
+    name: variant.displayName,
+    rarity: translateText('3% WAVE CONTACT'),
+    role: translateText('RARE CHAOS VISITOR'),
+    description: translateText('{name} is rare chaos visitor variant {number} of 99. Its {loadout} loadout mixes bullet barrages with a dramatic laser system. Read the gold crown, respect the warning geometry, and take the guaranteed prize when it breaks.', {
+      name: variant.displayName,
+      number: variant.number,
+      loadout: variant.loadoutName
+    }),
+    tip: translateText('Clear nearby ships first, move after the laser locks, then focus the rare hull during its cooldown.'),
+    art: AssetManifest.generated.enemies?.[variant.spriteIndex] || null,
+    accent: variant.accent,
+    tint: variant.tint,
+    unlockLevel: 1,
+    signalClass: `rare-chaos-${variant.weaponId}`,
+    codexBodyMode: 'story'
+  };
+}
+
 function bossFuelShipEntry() {
   return {
     id: 'boss_fuel_ship',
@@ -1409,7 +1432,8 @@ export function getThreatCodexCatalog() {
       bossFuelShipEntry(),
       ...BOSS_SUPPORT_SHIPS.map(bossSupportShipEntry),
       ...GENERATED_ENEMY_PROFILES.map(enemyEntry),
-      ...DANGER_MID_SHIPS.map(dangerMidEntry)
+      ...DANGER_MID_SHIPS.map(dangerMidEntry),
+      ...RARE_CHAOS_VISITOR_VARIANTS.map(rareChaosVisitorEntry)
     ],
     attackPatterns: ENEMY_THREAT_ACTIONS.map(actionEntry),
     waveTactics: WAVE_TACTIC_ENTRIES.map(waveEntry),

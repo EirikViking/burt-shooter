@@ -900,7 +900,9 @@ class Powerup {
 
     // TASK 1: Premium powerup pickup effects
     this.showPickupEffect(scene);
-    this.playPickupSFX(scene);
+    // Row Core owns one deliberately mixed four-second ritual. Playing the
+    // ordinary pickup sting here used to cover its horn and first chant.
+    if (this.type !== 'row_core') this.playPickupSFX(scene);
 
     const lifeGrant = Math.max(0, Math.round(Number(this.effect?.grantLives || (this.type === 'life' ? 1 : 0))));
     const grantsLives = lifeGrant > 0;
@@ -915,7 +917,8 @@ class Powerup {
       && Number.isFinite(maxLives)
       && scene.game.lives < maxLives
       && scene.game.lives + lifeGrant >= maxLives;
-    const voiceOk = triggersBoardClear ? true : (reachesMaxLives ? false : AudioManager.playPowerupVoice());
+    const ownsPickupAudio = triggersBoardClear || this.type === 'row_core';
+    const voiceOk = ownsPickupAudio ? true : (reachesMaxLives ? false : AudioManager.playPowerupVoice());
     if (!voiceOk && !reachesMaxLives) {
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     }

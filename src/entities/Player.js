@@ -2226,7 +2226,9 @@ export class Player {
       playScene.showBossCombatNotice?.('boss_row_core', translateText('THE BOSS HEARS THE OARS'));
     }
 
-    AudioManager.playSfx('row_core_pickup', { force: true, volume: 0.78, minIntervalMs: 0 });
+    // This is a premixed horn, drums, and three clearly spaced "RO" shouts.
+    // Keep it singular: any pickup sting or mission-control line would mask
+    // the recognizable opening and made the celebration appear broken.
     AudioManager.playSfx('row_core_viking_row', { force: true, volume: 1, minIntervalMs: 0 });
 
     config.pulses.forEach((delayMs, index) => {

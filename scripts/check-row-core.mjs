@@ -207,6 +207,8 @@ try {
   player.clearRowCoreTimers();
   assert.equal(rowStart.started, true, 'Row Core should start its full sequence');
   assert.ok(playedSfx.includes('row_core_viking_row'), 'Row Core did not play the combined Viking Row chant');
+  assert.equal(playedSfx.filter((key) => key === 'row_core_viking_row').length, 1, 'Row Core ritual must play exactly once');
+  assert.equal(playedSfx.includes('row_core_pickup'), false, 'Row Core pickup sting must not mask the ritual');
   assert.equal(playedSfx.includes('row_core_chant'), false, 'Row Core still used the disconnected old chant clips');
   player.rowCoreActive = false;
 

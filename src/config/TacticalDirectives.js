@@ -89,7 +89,11 @@ export function createTacticalDirectiveSession(directiveOrId) {
     uniqueValues: [],
     completed: false,
     completedAtEvent: null,
-    eventCount: 0
+    eventCount: 0,
+    milestonesShown: [],
+    calibrationCount: 0,
+    lastProgressSector: null,
+    lastCalibrationSector: null
   };
 }
 
@@ -105,6 +109,7 @@ export function applyTacticalDirectiveEvent(session, event = {}) {
     eventCount: Math.max(0, Math.floor(Number(session.eventCount) || 0)) + 1
   };
   const previousProgress = Math.max(0, Number(session.progress) || 0);
+  const adaptiveTarget = Math.max(1, Number(session.target) || directive.target);
 
   if (directive.mode === 'count') {
     next.progress = previousProgress + Math.max(1, Math.floor(Number(event.count) || 1));
@@ -116,8 +121,12 @@ export function applyTacticalDirectiveEvent(session, event = {}) {
     next.progress = next.uniqueValues.length;
   }
 
-  next.progress = Math.min(directive.target, Math.max(0, next.progress));
-  next.completed = next.progress >= directive.target;
+  next.progress = Math.min(adaptiveTarget, Math.max(0, next.progress));
+  next.target = adaptiveTarget;
+  if (next.progress > previousProgress) {
+    next.lastProgressSector = Math.max(1, Math.floor(Number(event.sector) || Number(session.startedInSector) || 1));
+  }
+  next.completed = next.progress >= adaptiveTarget;
   next.completedAtEvent = next.completed ? String(event.type || directive.event) : null;
   return {
     session: next,
@@ -129,14 +138,24 @@ export function applyTacticalDirectiveEvent(session, event = {}) {
 export function getTacticalDirectiveState(session) {
   const directive = getTacticalDirectiveById(session?.directiveId);
   if (!directive || !session) return null;
-  const progress = Math.max(0, Math.min(directive.target, Number(session.progress) || 0));
+  const adaptiveTarget = Math.max(1, Number(session.target) || directive.target);
+  const progress = Math.max(0, Math.min(adaptiveTarget, Number(session.progress) || 0));
   return {
     ...directive,
+    target: adaptiveTarget,
     progress,
-    progressLabel: `${Math.floor(progress)}/${directive.target}`,
-    ratio: directive.target > 0 ? Math.max(0, Math.min(1, progress / directive.target)) : 0,
+    progressLabel: `${Math.floor(progress)}/${adaptiveTarget}`,
+    ratio: adaptiveTarget > 0 ? Math.max(0, Math.min(1, progress / adaptiveTarget)) : 0,
     completed: Boolean(session.completed),
-    eventCount: Math.max(0, Math.floor(Number(session.eventCount) || 0))
+    eventCount: Math.max(0, Math.floor(Number(session.eventCount) || 0)),
+    milestonesShown: [...(session.milestonesShown || [])],
+    calibrationCount: Math.max(0, Math.floor(Number(session.calibrationCount) || 0)),
+    lastProgressSector: session.lastProgressSector != null && Number.isFinite(Number(session.lastProgressSector))
+      ? Number(session.lastProgressSector)
+      : null,
+    lastCalibrationSector: session.lastCalibrationSector != null && Number.isFinite(Number(session.lastCalibrationSector))
+      ? Number(session.lastCalibrationSector)
+      : null
   };
 }
 

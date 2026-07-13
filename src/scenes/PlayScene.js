@@ -55,6 +55,7 @@ import {
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
+import { RARE_CHAOS_VISITOR_VARIANT_COUNT } from '../config/RareChaosVisitors.js';
 import {
   buildTacticalDraftOffers,
   summarizeTacticalDraftPicks
@@ -396,6 +397,7 @@ export class PlayScene {
     this.bossKills = 0;
     this.wavesCleared = 0;
     this.noHitWavesThisRun = 0;
+    this.flawlessWaveStreak = 0;
     this.noHitSectorsThisRun = 0;
     this.damageTakenThisWave = 0;
     this.damageTakenThisSector = 0;
@@ -600,6 +602,7 @@ export class PlayScene {
     this.bossKills = 0;
     this.wavesCleared = 0;
     this.noHitWavesThisRun = 0;
+    this.flawlessWaveStreak = 0;
     this.noHitSectorsThisRun = 0;
     this.bestComboCount = 0;
     this.damageTakenThisWave = 0;
@@ -913,6 +916,9 @@ export class PlayScene {
       const forceNovaMiracle = () => this.debugForceNovaMiracle('console');
       forceNovaMiracle.playScene = this;
       window.__novaForceNovaMiracle = forceNovaMiracle;
+      const forceRareChaosVisitor = (variantNumber = 1) => this.enemyManager?.debugForceRareChaosVisitor?.(variantNumber, 'console');
+      forceRareChaosVisitor.playScene = this;
+      window.__novaForceRareChaosVisitor = forceRareChaosVisitor;
     }
 
     // Start first level - DEFERRED until intro complete
@@ -1479,7 +1485,10 @@ export class PlayScene {
     this.tacticalDirectiveSequence += 1;
     this.tacticalDirectiveSession = createTacticalDirectiveSession(directive);
     if (this.tacticalDirectiveSession) {
-      this.tacticalDirectiveSession.startedInSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+      const startedInSector = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+      this.tacticalDirectiveSession.startedInSector = startedInSector;
+      this.tacticalDirectiveSession.lastProgressSector = startedInSector;
+      this.tacticalDirectiveSession.lastCalibrationSector = startedInSector;
       this.tacticalDirectiveSession.reason = reason;
     }
     return this.getTacticalDirectiveDebugState();
@@ -1495,6 +1504,8 @@ export class PlayScene {
     });
     this.tacticalDirectiveSession = result.session;
     if (!result.changed) return false;
+    const after = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    this.showTacticalDirectiveMomentum(before, after);
     if (!result.completed) return true;
 
     const completion = {
@@ -1510,12 +1521,70 @@ export class PlayScene {
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
       completedAt: Date.now()
     };
+    const sectorsUsed = Math.max(0, completion.sector - Math.max(1, Number(this.tacticalDirectiveSession?.startedInSector) || completion.sector));
+    completion.momentumBonus = sectorsUsed <= 1
+      ? Number(this.addNormalWaveScore(300 + completion.tier * 40, 'directiveMomentumBonus')) || 0
+      : 0;
     this.tacticalDirectiveHistory.push(completion);
     this.lastTacticalDirectiveCompletion = completion;
     this.applyTacticalDirectiveReward(completion);
     this.showTacticalDirectiveCompletion(completion);
     this.startNextTacticalDirective('completion');
     return true;
+  }
+
+  showTacticalDirectiveMomentum(before, after) {
+    if (!before || !after || after.completed) return false;
+    const shown = new Set(this.tacticalDirectiveSession?.milestonesShown || []);
+    const milestone = [0.75, 0.5, 0.25].find((value) => before.ratio < value && after.ratio >= value && !shown.has(value));
+    if (!milestone) return false;
+    shown.add(milestone);
+    this.tacticalDirectiveSession.milestonesShown = [...shown].sort((a, b) => a - b);
+    const percent = Math.round(milestone * 100);
+    this.enqueueToast(`${translateText('DIRECTIVE MOMENTUM')} ${percent}%\n${translateText(after.objectiveLabel)} ${after.progressLabel}`, {
+      fontSize: this.game.getWidth() < 720 ? 14 : 17,
+      fill: milestone >= 0.75 ? '#fff3a0' : '#9cfbff',
+      slot: 'corner',
+      type: 'tacticalDirective',
+      priority: 3,
+      duration: 1100,
+      accent: after.accent
+    });
+    AudioManager.playSfx(milestone >= 0.75 ? 'combo_breakout' : 'combo_tick', { volume: milestone >= 0.75 ? 0.42 : 0.24, minIntervalMs: 0 });
+    return true;
+  }
+
+  adaptTacticalDirectiveForSector(sector = this.game?.level || 1) {
+    const state = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
+    if (!state || state.completed || safeSector <= Number(this.tacticalDirectiveSession?.startedInSector || safeSector)) return state;
+    if (this.tacticalDirectiveSession.lastAdaptedSector === safeSector) return state;
+    this.tacticalDirectiveSession.lastAdaptedSector = safeSector;
+    const startedInSector = Math.max(1, Math.floor(Number(this.tacticalDirectiveSession.startedInSector) || safeSector));
+    const lastProgressSector = Math.max(startedInSector, Math.floor(Number(this.tacticalDirectiveSession.lastProgressSector) || startedInSector));
+    const lastCalibrationSector = Math.max(startedInSector, Math.floor(Number(this.tacticalDirectiveSession.lastCalibrationSector) || startedInSector));
+    const stalledSectors = Math.max(0, safeSector - Math.max(lastProgressSector, lastCalibrationSector));
+    const remaining = Math.max(0, state.target - state.progress);
+    if (stalledSectors < 2 || remaining <= 1) return state;
+
+    const reduction = Math.max(1, Math.ceil(state.target * (state.objectiveId === 'support_hunts' ? 0.28 : 0.16)));
+    const nextTarget = Math.max(state.progress + 1, state.target - reduction);
+    if (nextTarget >= state.target) return state;
+    this.tacticalDirectiveSession.target = nextTarget;
+    this.tacticalDirectiveSession.calibrationCount = Math.max(0, Number(this.tacticalDirectiveSession.calibrationCount) || 0) + 1;
+    this.tacticalDirectiveSession.lastCalibrationSector = safeSector;
+    const adapted = getTacticalDirectiveState(this.tacticalDirectiveSession);
+    this.enqueueToast(`${translateText('DIRECTIVE RECALIBRATED')}\n${translateText('PROGRESS CARRIED {progress}', { progress: adapted.progressLabel })}`, {
+      fontSize: this.game.getWidth() < 720 ? 14 : 17,
+      fill: '#9cfbff',
+      slot: 'corner',
+      type: 'tacticalDirective',
+      priority: 4,
+      duration: 1500,
+      accent: adapted.accent
+    });
+    AudioManager.playSfx('tactical_focus_lens', { volume: 0.5, minIntervalMs: 0 });
+    return adapted;
   }
 
   applyTacticalDirectiveReward(completion = {}) {
@@ -1538,7 +1607,10 @@ export class PlayScene {
     const title = translateText('SIDE DIRECTIVE COMPLETE');
     const objective = translateText(completion.objectiveLabel || 'SIDE DIRECTIVE');
     const reward = translateText(completion.rewardLabel || 'EXTRA RESCAN');
-    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}`, {
+    const momentum = completion.momentumBonus > 0
+      ? `\n${translateText('MOMENTUM BONUS +{score}', { score: Number(completion.momentumBonus).toLocaleString('en-US') })}`
+      : '';
+    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}${momentum}`, {
       fontSize: this.game.getWidth() < 720 ? 15 : 18,
       fill: '#fff3a0',
       slot: 'corner',
@@ -1548,6 +1620,33 @@ export class PlayScene {
       accent: 0xffef7e
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });
+  }
+
+  showFlawlessWaveCelebration(streak = 1, score = 400) {
+    const milestone = streak >= 3 && streak % 3 === 0;
+    const message = milestone
+      ? `${translateText('FLAWLESS STREAK')} x${streak}\n${translateText('NO-HIT BONUS +{score}', { score: Number(score).toLocaleString('en-US') })}`
+      : translateText('FLAWLESS WAVE +{score}', { score: Number(score).toLocaleString('en-US') });
+    this.enqueueToast(message, {
+      fontSize: milestone ? (this.game.getWidth() < 720 ? 18 : 25) : 15,
+      fill: milestone ? '#fff3a0' : '#9cfbff',
+      stroke: '#071019',
+      strokeThickness: milestone ? 5 : 3,
+      slot: milestone ? 'center' : 'corner',
+      type: 'flawlessWave',
+      priority: milestone ? 7 : 2,
+      duration: milestone ? 1800 : 900,
+      accent: milestone ? 0xffef7e : 0x9cfbff
+    });
+    AudioManager.playSfx(milestone ? 'rare_visitor_reward' : 'combo_tick', {
+      volume: milestone ? 0.62 : 0.2,
+      minIntervalMs: milestone ? 800 : 900
+    });
+    if (milestone) {
+      this.particleManager?.createExplosion?.(this.player?.x, (this.player?.y || 0) - 36, 0xffef7e, 1.05);
+      this.screenShake?.shake?.(3, 12);
+    }
+    return true;
   }
 
   getTacticalDirectiveDebugState() {
@@ -2421,6 +2520,7 @@ export class PlayScene {
     }
     console.log(`[LevelStart] starting source=${source} level=${this.game.level}`);
     this._lastStartedLevel = this.game.level;
+    this.adaptTacticalDirectiveForSector(this.game.level);
     this.emitRunContractEvent('sector_reached', { sector: this.game.level });
     this.emitTacticalDirectiveEvent('sector_reached', { sector: this.game.level });
     this.prepareAceBountyForSector(this.game.level, { reason: source });
@@ -13014,6 +13114,128 @@ export class PlayScene {
     return true;
   }
 
+  announceRareChaosVisitor(enemy, plan = null) {
+    const variant = enemy?.rareChaosVisitorVariant;
+    if (!variant) return false;
+    this.recordThreatDiscovery(variant.id, 'enemies', {
+      name: variant.displayName,
+      role: translateText('RARE CHAOS VISITOR'),
+      movementStyle: variant.move,
+      fireStyle: variant.loadoutName,
+      rarity: translateText('3% WAVE CONTACT'),
+      sector: this.game?.level || 1,
+      waveIndex: this.enemyManager?.currentWaveIndex || 0
+    });
+    this.enqueueToast(`${translateText('RARE CONTACT')} // ${translateText('VARIANT {number} OF {total}', {
+      number: String(variant.number).padStart(2, '0'),
+      total: RARE_CHAOS_VISITOR_VARIANT_COUNT
+    })}\n${variant.displayName}\n${variant.loadoutName}`, {
+      fontSize: this.game.getWidth() < 720 ? 17 : 24,
+      fill: '#fff3a0',
+      stroke: '#170016',
+      strokeThickness: 5,
+      slot: 'center',
+      type: 'rareChaosVisitor',
+      priority: 10,
+      duration: 3100,
+      maxWidth: this.game.getWidth() * 0.78,
+      accent: variant.accent
+    });
+    AudioManager.playSfx('rare_visitor_arrival', { force: true, volume: 0.96, minIntervalMs: 0 });
+    setTimeout(() => {
+      if (enemy?.active) AudioManager.playSfx('rare_visitor_theme_sting', { force: true, volume: 0.72, minIntervalMs: 0 });
+    }, 320);
+    if (AudioManager.isBossVoiceEnabled?.() !== false) {
+      AudioManager.playVoice('boss_rare_chaos_visitor_warning', {
+        force: true,
+        bypassGlobalCooldown: true,
+        cooldownMs: 0,
+        eventCooldownMs: 0,
+        duckMs: 2800,
+        duckFactor: 0.24,
+        voicePriority: 9,
+        exclusiveGroup: 'boss_voice'
+      });
+    }
+    this.screenShake?.shake?.(8, 22);
+    for (let index = 0; index < 5; index += 1) {
+      const angle = (Math.PI * 2 * index) / 5;
+      this.particleManager?.createExplosion?.(enemy.x + Math.cos(angle) * (28 + index * 5), enemy.y + Math.sin(angle) * (22 + index * 4), index % 2 ? variant.tint : variant.accent, 0.7 + index * 0.08);
+    }
+    this.lastRareChaosVisitorAnnouncement = {
+      id: variant.id,
+      number: variant.number,
+      chance: plan?.chance ?? 0.03,
+      roll: plan?.roll ?? null,
+      announcedAt: Date.now()
+    };
+    return true;
+  }
+
+  onRareChaosVisitorPhase(enemy, threshold) {
+    const variant = enemy?.rareChaosVisitorVariant;
+    if (!variant) return false;
+    const label = threshold <= 0.25
+      ? translateText('FINAL LASER TANTRUM')
+      : threshold <= 0.5
+        ? translateText('CHAOS VISITOR ENRAGED')
+        : translateText('CHAOS ARMOR CRACKED');
+    this.enqueueToast(label, {
+      fontSize: threshold <= 0.25 ? 24 : 18,
+      fill: threshold <= 0.25 ? '#ff6d92' : '#fff3a0',
+      stroke: '#15000e',
+      strokeThickness: 4,
+      slot: 'top',
+      type: 'rareChaosPhase',
+      priority: 7,
+      duration: 1100,
+      accent: variant.accent
+    });
+    AudioManager.playSfx(threshold <= 0.25 ? 'rare_visitor_laser_charge' : 'rare_visitor_armor_crack', { force: true, volume: 0.8, minIntervalMs: 0 });
+    this.particleManager?.createExplosion?.(enemy.x, enemy.y, threshold <= 0.25 ? 0xff426f : variant.accent, 1.25);
+    this.screenShake?.shake?.(threshold <= 0.25 ? 6 : 3, 14);
+    return true;
+  }
+
+  completeRareChaosVisitor(enemy) {
+    if (!enemy?.isRareChaosVisitor || enemy.rareChaosVisitorRewardClaimed) return false;
+    enemy.rareChaosVisitorRewardClaimed = true;
+    const variant = enemy.rareChaosVisitorVariant;
+    if (this.enemyManager?.rareChaosVisitorStats) this.enemyManager.rareChaosVisitorStats.defeated += 1;
+    const bonus = this.addNormalWaveScore(2400 + variant.number * 20, 'rareChaosVisitorBonus', enemy);
+    const reward = this.powerupManager?.spawnSpecific?.(enemy.x, enemy.y, variant.rewardPowerupType, { source: 'rare_chaos_visitor' });
+    const rewardLabel = translateText(getPowerupMeta(variant.rewardPowerupType)?.name || variant.rewardPowerupType.toUpperCase());
+    this.player?.grantInvulnerability?.(1500, 'rare_chaos_visitor_reward');
+    this.comboTimerMs = Math.max(this.comboWindowMs, Number(this.comboTimerMs) || 0);
+    this.enqueueToast(`${translateText('PARTY CRASHER EJECTED')}\n${translateText('BONUS +{score}', { score: Number(bonus).toLocaleString('en-US') })} // ${translateText('PRIZE: {reward}', { reward: rewardLabel })}`, {
+      fontSize: this.game.getWidth() < 720 ? 18 : 27,
+      fill: '#fff3a0',
+      stroke: '#120014',
+      strokeThickness: 5,
+      slot: 'center',
+      type: 'rareChaosVictory',
+      priority: 10,
+      duration: 2500,
+      maxWidth: this.game.getWidth() * 0.8,
+      accent: variant.accent
+    });
+    AudioManager.playSfx('rare_visitor_defeat', { force: true, volume: 1, minIntervalMs: 0 });
+    setTimeout(() => AudioManager.playSfx('rare_visitor_reward', { force: true, volume: 0.88, minIntervalMs: 0 }), 420);
+    for (let index = 0; index < 12; index += 1) {
+      const angle = (Math.PI * 2 * index) / 12;
+      const radius = 24 + (index % 4) * 18;
+      this.particleManager?.createExplosion?.(
+        enemy.x + Math.cos(angle) * radius,
+        enemy.y + Math.sin(angle) * radius,
+        [variant.tint, variant.accent, 0xffef7e, 0xffffff][index % 4],
+        0.75 + (index % 3) * 0.18
+      );
+    }
+    this.screenShake?.shake?.(10, 26);
+    this.lastRareChaosVisitorDefeat = { id: variant.id, number: variant.number, bonus, rewardSpawned: Boolean(reward), defeatedAt: Date.now() };
+    return true;
+  }
+
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
     const sideEffects = options.sideEffects || null;
@@ -13037,6 +13259,7 @@ export class PlayScene {
         this.triggerComboMilestoneFlare(flareOptions);
       }
     };
+    if (enemy?.isRareChaosVisitor) this.completeRareChaosVisitor(enemy);
     if (enemy?.isAce) this.completeAceBounty(enemy);
     if (enemy?.kind === 'boss') {
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
@@ -13049,16 +13272,22 @@ export class PlayScene {
     } else {
       const isEliteMiddleShip = enemy?.kind === 'elite_middle_ship' || enemy?.isEliteMiddleShip || Boolean(enemy?.middleShipProfile);
       const threatCategory = isEliteMiddleShip ? 'elites' : 'enemies';
-      const threatId = isEliteMiddleShip
-        ? (enemy?.middleShipProfile?.id || enemy?.type)
-        : enemy?.type;
+      const threatId = enemy?.isRareChaosVisitor
+        ? enemy?.rareChaosVisitorVariant?.id
+        : isEliteMiddleShip
+          ? (enemy?.middleShipProfile?.id || enemy?.type)
+          : enemy?.type;
       this.queueThreatDefeat(threatId, threatCategory, {
-        name: isEliteMiddleShip
-          ? (enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId)
-          : (enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId),
-        role: isEliteMiddleShip
-          ? (enemy?.middleShipProfile?.role || 'elite')
-          : (enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'),
+        name: enemy?.isRareChaosVisitor
+          ? (enemy?.rareChaosVisitorVariant?.displayName || threatId)
+          : isEliteMiddleShip
+            ? (enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId)
+            : (enemy?.generatedProfile?.displayName || enemy?.middleShipProfile?.displayName || enemy?.middleShipProfile?.label || threatId),
+        role: enemy?.isRareChaosVisitor
+          ? translateText('RARE CHAOS VISITOR')
+          : isEliteMiddleShip
+            ? (enemy?.middleShipProfile?.role || 'elite')
+            : (enemy?.generatedProfile?.role || enemy?.middleShipProfile?.role || 'enemy'),
         sector: this.game.level
       });
       for (const entry of getBossSupportCodexDefeatEntries(enemy, this.game.level)) {
