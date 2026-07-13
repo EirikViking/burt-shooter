@@ -1,4 +1,5 @@
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
+import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE": "ASS",
@@ -2145,6 +2146,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de') }),
   patterns
 };

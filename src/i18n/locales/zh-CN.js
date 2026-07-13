@@ -1,6 +1,7 @@
 import { buildArcadePatterns } from './patterns.js';
 
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
+import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE": "王牌",
@@ -1751,6 +1752,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN') }),
   patterns
 };

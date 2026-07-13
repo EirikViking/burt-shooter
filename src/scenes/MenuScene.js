@@ -307,6 +307,7 @@ export class MenuScene {
     // PART A: Story rotation
     this.storyTypewriter = null;
     this.storyRotationTimer = null;
+    this.menuHumorLine = '';
     this.skipHandler = null;
     this.keyHandler = null;
     this.menuGamepadActionWasPressed = false;
@@ -529,8 +530,13 @@ export class MenuScene {
     if (!this.flavor) return;
 
     const line = tauntDirector.getRotatingText('start_story');
+    this.menuHumorLine = line;
     this.flavor.text = ''; // Clear for typewriter
     this.storyTypewriter = new TypewriterText(this.flavor, line, { charDelay: 30 });
+    if (this.runModeExplainer) {
+      this.runModeExplainer.text = this.getRunModeExplainerText();
+      this.runModeExplainer.updateText?.(false);
+    }
   }
 
   setupInstallPrompt() {
@@ -1669,7 +1675,7 @@ export class MenuScene {
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
     const runModeBriefing = this.getRunModeBriefing();
     this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + runModeBriefing.title;
-    this.runModeExplainer.text = runModeBriefing.menuBody || runModeBriefing.body;
+    this.runModeExplainer.text = this.getRunModeExplainerText(runModeBriefing);
     this.disclaimer.text = this.getDisclaimerText(layout);
 
     this.title.updateText?.(false);
@@ -1719,7 +1725,7 @@ export class MenuScene {
       height * 0.15 * briefingResponsiveScale,
       (isShortLayout ? 118 : 132) * briefingScale,
       (isShortLayout ? 142 : 164) * briefingScale
-    ));
+    ) + (this.menuHumorLine ? 28 * Math.min(briefingScale, 1.35) : 0));
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
@@ -1981,8 +1987,9 @@ export class MenuScene {
       : translateText('ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK');
   }
 
-  getRunModeExplainerText() {
-    return this.getRunModeBriefing().body;
+  getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
+    const body = briefing.menuBody || briefing.body;
+    return this.menuHumorLine ? `${body}\n// ${this.menuHumorLine}` : body;
   }
 
   getRunModeBriefing() {
@@ -4536,7 +4543,7 @@ export class MenuScene {
     if (this.runModeBriefingTitle || this.runModeExplainer) {
       const briefing = this.getRunModeBriefing();
       if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + briefing.title;
-      if (this.runModeExplainer) this.runModeExplainer.text = briefing.menuBody || briefing.body;
+      if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
     }
     this.drawSectorStartStepperCue();
     this.layoutMenu();

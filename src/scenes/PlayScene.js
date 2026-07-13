@@ -43,6 +43,7 @@ import {
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { translateText } from '../i18n/index.js';
+import { tauntDirector } from '../game/TauntDirector.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
@@ -1618,10 +1619,12 @@ export class PlayScene {
     const title = translateText('SIDE DIRECTIVE COMPLETE');
     const objective = translateText(completion.objectiveLabel || 'SIDE DIRECTIVE');
     const reward = translateText(completion.rewardLabel || 'EXTRA RESCAN');
+    const cabinetQuip = tauntDirector.getRotatingText('directive_complete_quip');
     const momentum = completion.momentumBonus > 0
       ? `\n${translateText('MOMENTUM BONUS +{score}', { score: Number(completion.momentumBonus).toLocaleString('en-US') })}`
       : '';
-    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}${momentum}`, {
+    this.lastDirectiveHumor = tauntDirector.getRotationDebugState();
+    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}\n${cabinetQuip}${momentum}`, {
       fontSize: this.game.getWidth() < 720 ? 15 : 18,
       fill: '#fff3a0',
       slot: 'corner',
@@ -4160,6 +4163,12 @@ export class PlayScene {
   showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!', options = {}) {
     const { width, height } = this.game.app.screen;
     const compact = Boolean(options.compact);
+    const subtitle = Object.prototype.hasOwnProperty.call(options, 'subtitle')
+      ? options.subtitle
+      : tauntDirector.getRotatingText('wave_clear_quip');
+    const humorState = Object.prototype.hasOwnProperty.call(options, 'subtitle')
+      ? null
+      : tauntDirector.getRotationDebugState();
     const panelWidth = compact ? 340 : 400;
     const panelHeight = compact ? 108 : 130;
     const panelRadius = compact ? 8 : 10;
@@ -4272,11 +4281,11 @@ export class PlayScene {
       dropShadowDistance: 4
     });
     bonusText.anchor.set(0.5);
-    bonusText.y = compact && options.subtitle ? 8 : 30;
+    bonusText.y = compact && subtitle ? 8 : 30;
     effectContainer.addChild(bonusText);
 
-    if (options.subtitle) {
-      const subtitleText = createText(String(options.subtitle), {
+    if (subtitle) {
+      const subtitleText = createText(String(subtitle), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: compact ? 15 : 18,
         fill: '#7ee9ff',
@@ -4336,7 +4345,9 @@ export class PlayScene {
       starCount,
       sweepBandCount,
       sweepChevronCount,
-      subtitle: Boolean(options.subtitle)
+      subtitle: Boolean(subtitle),
+      subtitleText: subtitle ? String(subtitle) : '',
+      humor: humorState
     };
 
     const animate = (delta) => {
@@ -7700,7 +7711,9 @@ export class PlayScene {
     title.zIndex = 7;
     overlay.addChild(title);
 
-    const status = createText(translateText('ARCADE PATROL ON HOLD'), {
+    const pauseQuip = tauntDirector.getRotatingText('pause');
+    this.lastPauseHumor = tauntDirector.getRotationDebugState();
+    const status = createText(pauseQuip, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 15,
       fontWeight: 'bold',
@@ -7901,6 +7914,7 @@ export class PlayScene {
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
       tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
       tacticalDirective: this.getPauseTacticalDirectiveSummary(),
+      humor: this.lastPauseHumor ? { ...this.lastPauseHumor } : null,
       aceBounty: this.getAceBountyDebugState(),
       tacticalLoadout: this.tacticalLoadoutOverlay?.getDebugState?.() || null
     };

@@ -15,6 +15,7 @@ import {
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { tauntDirector } from '../game/TauntDirector.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 
@@ -636,9 +637,13 @@ export class HighscoreScene {
     this.activeLeaderboardResult = result;
     this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
     this.entriesNormalized = this.normalizeEntries(this.entries);
-    this.comment.text = translateText(result.message || (this.entries.length > 0
-      ? `${result.sourceLabel || 'Leaderboard'} records loaded.`
-      : `${result.sourceLabel || 'Leaderboard'} has no scores yet.`));
+    const humorCategory = result.status === 'available' && this.entries.length > 0
+      ? 'leaderboard_loaded'
+      : result.status === 'empty'
+        ? 'leaderboard_empty'
+        : 'leaderboard_error';
+    this.comment.text = tauntDirector.getRotatingText(humorCategory);
+    this.lastLeaderboardHumor = tauntDirector.getRotationDebugState();
     const status = result.status === 'available'
       ? 'LOADED'
       : result.status === 'empty'
