@@ -126,7 +126,7 @@ async function testFirstRunPickup(browser) {
   ), null, { timeout: 12000 });
   await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
-    const targets = (play?.enemyManager?.enemies || []).filter((enemy) => enemy?.active).slice(0, 3);
+    const targets = (play?.enemyManager?.enemies || []).filter((enemy) => enemy?.active).slice(0, 2);
     for (const enemy of targets) {
       play.onEnemyKilled(enemy);
       enemy.active = false;
@@ -176,6 +176,44 @@ async function testDodgeAlpha(browser) {
   return { alpha, pageErrors, consoleErrors, screenshot };
 }
 
+async function testBossComboContinuity(browser) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlayReady(page);
+  const result = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const enemyManager = play?.enemyManager;
+    if (!play || !enemyManager) throw new Error('Missing play scene for boss combo continuity check');
+    play.comboCount = 12;
+    play.comboMultiplier = 2;
+    play.comboTimerMs = 900;
+    enemyManager.state = 'BOSS_GATE';
+    play.updateComboTimers(30);
+    const gateTimerMs = play.comboTimerMs;
+    enemyManager.state = 'BOSS_ACTIVE';
+    play.comboTimerMs = 120;
+    const bossHitRefreshed = play.refreshComboFromBossPressure({ kind: 'boss', active: true });
+    const bossHitTimerMs = play.comboTimerMs;
+    const normalHitRefreshed = play.refreshComboFromBossPressure({ kind: 'enemy', active: true });
+    return {
+      gateTimerMs,
+      bossHitRefreshed,
+      bossHitTimerMs,
+      normalHitRefreshed,
+      openingSector1: enemyManager.getOpeningMomentumTuning(1),
+      openingSector4: enemyManager.getOpeningMomentumTuning(4)
+    };
+  });
+  await page.close();
+  return { result, pageErrors, consoleErrors };
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -189,6 +227,7 @@ try {
   const spaceStart = await testMenuKey(browser, 'Space', 'menu-space-start.png');
   const pickup = await testFirstRunPickup(browser);
   const dodge = await testDodgeAlpha(browser);
+  const bossCombo = await testBossComboContinuity(browser);
   const allErrors = [
     ...enterStart.pageErrors,
     ...enterStart.consoleErrors,
@@ -197,16 +236,24 @@ try {
     ...pickup.pageErrors,
     ...pickup.consoleErrors,
     ...dodge.pageErrors,
-    ...dodge.consoleErrors
+    ...dodge.consoleErrors,
+    ...bossCombo.pageErrors,
+    ...bossCombo.consoleErrors
   ];
   const report = {
     ok: Boolean(
       enterStart.state.scene === 'play' &&
       spaceStart.state.scene === 'play' &&
-      pickup.powerups.some((powerup) => powerup.type === 'rapid_fire') &&
+      pickup.powerups.some((powerup) => powerup.type === 'rapid_fire' && powerup.y >= 260) &&
       dodge.alpha.isDodging === true &&
       dodge.alpha.alpha !== null &&
       dodge.alpha.alpha < 0.65 &&
+      bossCombo.result.gateTimerMs === 900 &&
+      bossCombo.result.bossHitRefreshed === true &&
+      bossCombo.result.bossHitTimerMs === 1400 &&
+      bossCombo.result.normalHitRefreshed === false &&
+      bossCombo.result.openingSector1.enabled === true &&
+      bossCombo.result.openingSector4.enabled === false &&
       allErrors.length === 0
     ),
     baseUrl,
@@ -229,6 +276,7 @@ try {
       alpha: dodge.alpha,
       screenshot: dodge.screenshot
     },
+    bossCombo: bossCombo.result,
     errors: allErrors
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

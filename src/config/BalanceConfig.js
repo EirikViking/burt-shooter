@@ -83,6 +83,17 @@ export const BalanceConfig = {
         waveCleanupMs: 680,
         enemyEntryDurationMs: 1460,
         enemyEntryDelayBaseMs: 150,
+        openingMomentum: {
+            enabled: true,
+            maxSourceLevel: 3,
+            waveBriefingMsByLevel: { 1: 520, 2: 600, 3: 680 },
+            waveToastDurationMsByLevel: { 1: 1600, 2: 1900, 3: 2300 },
+            waveCleanupMsByLevel: { 1: 520, 2: 590, 3: 650 },
+            entryDurationMultByLevel: { 1: 0.78, 2: 0.86, 3: 0.93 },
+            entryDelayMultByLevel: { 1: 0.72, 2: 0.82, 3: 0.92 },
+            enemySpeedMultByLevel: { 1: 1.08, 2: 1.05, 3: 1.025 },
+            diveBiasMultByLevel: { 1: 1.18, 2: 1.12, 3: 1.06 }
+        },
         mayhemReinforcements: {
             enabled: true,
             chance: 0.20,

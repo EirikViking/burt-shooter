@@ -207,6 +207,7 @@
     "check:intro-voice": "node scripts/check-intro-voice-exclusivity.mjs",
     "check:voice-cadence": "node scripts/check-voice-cadence.mjs",
     "check:first-30-polish": "node scripts/check-first-30-polish.mjs",
+    "check:opening-fun-pass": "node scripts/check-opening-fun-pass.mjs",
     "check:boss-adds": "node scripts/check-boss-adds.mjs",
     "check:boss-roster": "node scripts/check-boss-roster.mjs",
     "check:enemy-weapons": "node scripts/check-enemy-weapons.mjs",

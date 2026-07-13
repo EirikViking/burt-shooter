@@ -1826,6 +1826,27 @@ export class EnemyManager {
     return scalars[this.currentWaveIndex] ?? 0.74;
   }
 
+  getOpeningMomentumTuning(sourceLevel = this.level) {
+    const config = BalanceConfig.difficulty?.openingMomentum || {};
+    const level = Math.max(1, Math.floor(Number(sourceLevel) || 1));
+    const enabled = config.enabled === true && level <= (Number(config.maxSourceLevel) || 0);
+    const levelValue = (key, fallback = 1) => {
+      const value = Number(config?.[key]?.[level]);
+      return enabled && Number.isFinite(value) && value > 0 ? value : fallback;
+    };
+    return {
+      enabled,
+      sourceLevel: level,
+      waveBriefingMs: levelValue('waveBriefingMsByLevel', BalanceConfig.difficulty.waveDelayMs || 1600),
+      waveToastDurationMs: levelValue('waveToastDurationMsByLevel', 2800),
+      waveCleanupMs: levelValue('waveCleanupMsByLevel', BalanceConfig.difficulty.waveCleanupMs || 2000),
+      entryDurationMult: levelValue('entryDurationMultByLevel'),
+      entryDelayMult: levelValue('entryDelayMultByLevel'),
+      enemySpeedMult: levelValue('enemySpeedMultByLevel'),
+      diveBiasMult: levelValue('diveBiasMultByLevel')
+    };
+  }
+
   update(delta) {
     // 1. Update State Machine
     switch (this.state) {
@@ -1894,7 +1915,7 @@ export class EnemyManager {
             this.cleanupPhase = 'CLEARING';
           }
 
-          const waveCleanupMs = BalanceConfig.difficulty.waveCleanupMs || 2000;
+          const waveCleanupMs = this.getOpeningMomentumTuning().waveCleanupMs;
           if (this.cleanupTimer > waveCleanupMs && this.cleanupPhase === 'CLEARING') {
             const clearedCount = allTargets.length;
             this.measurePerformance('wave_clear.array_cleanup_compaction', () => this.forceClearAllEnemies());
@@ -1921,7 +1942,7 @@ export class EnemyManager {
         this.waveBriefingTimer += delta * 16.67;
         const diff = BalanceConfig.difficulty;
         const announceMs = diff.waveBriefingAnnounceMs || 650;
-        const briefingMs = diff.waveDelayMs || 1600;
+        const briefingMs = this.getOpeningMomentumTuning().waveBriefingMs;
         if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= announceMs) {
           this.measurePerformance('incoming_wave_banner', () => this.announceWaveBriefing());
           this.waveBriefingAnnounced = true;
@@ -2221,7 +2242,9 @@ export class EnemyManager {
       diff.pressureScalar *
       this.getOpeningFireScalar() *
       (1 + tier * 0.1);
-    const enemySpeedMult = pressureDirector?.scaleEnemySpeed?.(1, pressureLevel) || pressureTuning.enemySpeedMult || 1;
+    const openingMomentum = this.getOpeningMomentumTuning();
+    const enemySpeedMult = (pressureDirector?.scaleEnemySpeed?.(1, pressureLevel) || pressureTuning.enemySpeedMult || 1) *
+      openingMomentum.enemySpeedMult;
     const dt = delta * timeScale;
     const playerX = player ? player.x : 400;
     const playerY = player ? player.y : 300;
@@ -2463,8 +2486,9 @@ export class EnemyManager {
 
     const diff = BalanceConfig.difficulty;
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
-    const delayStep = Math.max(55, (diff.enemyEntryDelayBaseMs || 150) / cadence);
-    const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1));
+    const openingMomentum = this.getOpeningMomentumTuning(config.sourceLevel);
+    const delayStep = Math.max(55, ((diff.enemyEntryDelayBaseMs || 150) * openingMomentum.entryDelayMult) / cadence);
+    const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1) * openingMomentum.entryDurationMult);
     const spawnChunkSize = Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
     const spawnChunkDelayMs = Math.max(8, Math.min(24, Math.floor(Number(diff.enemyEntrySpawnChunkDelayMs) || 16)));
     const waveSpawnSerial = this.waveSpawnSerial;
@@ -2793,11 +2817,12 @@ export class EnemyManager {
 
   applyNormalWavePressureToTactic(tactic = {}) {
     const pressureTuning = getNormalWavePressureTuning(this.currentNormalWaveDifficultyLevel || this.getNormalWaveDifficultyLevel(this.level));
+    const openingMomentum = this.getOpeningMomentumTuning();
     return {
       ...tactic,
       fireScalar: (tactic.fireScalar || 1) * (pressureTuning.tacticFireMult || 1),
       fireDelayMult: (tactic.fireDelayMult || 1) * (pressureTuning.tacticFireDelayMult || 1),
-      diveBias: (tactic.diveBias || 1) * (pressureTuning.diveBiasMult || 1),
+      diveBias: (tactic.diveBias || 1) * (pressureTuning.diveBiasMult || 1) * openingMomentum.diveBiasMult,
       entrySpeed: (tactic.entrySpeed || 1) * (pressureTuning.entrySpeedMult || 1),
       normalWavePressureBand: pressureTuning.id
     };
@@ -4524,6 +4549,7 @@ export class EnemyManager {
     return this.measurePerformance('incoming_wave_banner', () => {
     if (this.game.scenes.play) {
       const compactHud = this.game.getWidth() < 620;
+      const openingMomentum = this.getOpeningMomentumTuning();
       const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
       const waveLabel = `WAVE ${this.currentWaveIndex + 1}/${this.normalWavesTotal}`;
       this.game.scenes.play.showToast(`${waveLabel}: ${descriptor}`, {
@@ -4532,7 +4558,7 @@ export class EnemyManager {
         stroke: '#00111d',
         strokeThickness: 4,
         y: compactHud ? this.game.getHeight() * 0.25 : 112,
-        duration: 2800,
+        duration: openingMomentum.waveToastDurationMs,
         slot: 'top',
         type: 'level_up',
         priority: 2,

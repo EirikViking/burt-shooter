@@ -4358,6 +4358,7 @@ export class PlayScene {
           impactX: event.impactX,
           impactY: event.impactY
         });
+        this.refreshComboFromBossPressure(enemy);
         event.destroyed = destroyed;
         this.triggerChainLightning(enemy, bulletProxy.damage);
         this.applyShipTraitBulletImpact(bullet, enemy);
@@ -12878,6 +12879,7 @@ export class PlayScene {
 
   updateComboTimers(delta) {
     if (this.comboCount <= 0) return;
+    if (this.enemyManager?.state === 'BOSS_GATE') return;
     this.comboTimerMs -= delta * 16.67;
     if (this.comboTimerMs <= 0) {
       this.comboCount = 0;
@@ -12887,15 +12889,22 @@ export class PlayScene {
     }
   }
 
+  refreshComboFromBossPressure(enemy) {
+    if (this.comboCount <= 0 || enemy?.kind !== 'boss' || enemy?.active === false) return false;
+    const sustainMs = Math.min(Math.max(0, Number(this.comboWindowMs) || COMBO_WINDOW_MS), 1400);
+    this.comboTimerMs = Math.max(Number(this.comboTimerMs) || 0, sustainMs);
+    return true;
+  }
+
   maybeDropFirstRunPickup(enemy) {
     if (this.firstRunPickupDropped || !enemy || this.game?.level !== 1 || this.enemyManager?.currentWaveIndex !== 0) return false;
     this.firstRunKillCount = (this.firstRunKillCount || 0) + 1;
-    if (this.firstRunKillCount < 3 || !this.powerupManager || !this.player) return false;
+    if (this.firstRunKillCount < 2 || !this.powerupManager || !this.player) return false;
 
     const width = this.gameplayGame.getWidth();
     const height = this.gameplayGame.getHeight();
     const x = Math.max(width * 0.34, Math.min(width * 0.66, enemy.x || width / 2));
-    const y = Math.max(112, Math.min(height * 0.42, (enemy.y || height * 0.2) + 26));
+    const y = Math.max(height * 0.42, Math.min(height * 0.58, (enemy.y || height * 0.2) + 26));
     const spawned = this.powerupManager.spawnSpecific(x, y, 'rapid_fire', {
       countDrop: true,
       source: 'first_run_pickup'
