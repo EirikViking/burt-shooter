@@ -57,6 +57,33 @@ npm run generate:boss-death-voices
 
 The runtime event is `boss_death_agony`, wired through `src/assets/assetManifest.js`, `src/audio/SoundCatalog.js`, and `AudioManager.playVoice(...)` from the boss-death impact path. `npm run check:boss-death-voices` verifies exactly 100 MP3 files, catalog coverage, the forbidden-voice guard, and the PlayScene death hook. This voice pack does not replace or alter music.
 
+## Tactical upgrade boss commentary
+
+The Tactical Draft and the pause-menu Tactical Upgrades inspector share a 297-line ElevenLabs commentary pack:
+
+```text
+public/audio/voice/tactical-boss-banter/
+```
+
+Every one of the 32 Tactical augments has its own relevant event and a shuffled bag of nine or ten silly comments. Focus changes are debounced, a new focus stops the previous comment, active boss-death/level-clear voice locks take priority, and confirming or closing the UI stops the tactical voice group. The existing Boss Voice setting controls the feature. Spoken audio remains English by project policy; no subtitle support is claimed.
+
+The generator imports the current approved boss voice id and model from `src/config/BossDeathVoiceLines.js`, reads the key only from `ELEVENLABS_API_KEY`, and refuses a different voice override. Regenerate missing files with:
+
+```bash
+npm run generate:tactical-boss-banter
+```
+
+Useful safe modes are `--dry-run`, `--only=<line-id>`, and `--force`. Generation writes `tactical-boss-banter-manifest.json` with provider/model/voice provenance, byte counts, SHA-256 hashes, and `aiGeneratedVoiceDisclosure: true`. These performances are AI-generated with ElevenLabs.
+
+Verification:
+
+```bash
+npm run check:tactical-boss-banter
+npm run check:tactical-boss-banter-runtime
+```
+
+The static check requires exactly 297 unique scripts, 297 unique MP3 hashes, complete 32-augment/catalog/manifest coverage, and the approved voice guard. The installed-Chrome runtime check exercises Draft and loadout focus, detail inspection, no-immediate-repeat randomization, rapid-focus debounce, voice priority, and cancellation on confirmation/close.
+
 ## Nova Swarm SFX pack
 
 The current bespoke arcade SFX layer was generated with ElevenLabs Sound Generation and is stored in:

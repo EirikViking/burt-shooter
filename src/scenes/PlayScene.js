@@ -59,6 +59,7 @@ import {
   buildTacticalDraftOffers,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
+import { getTacticalBossBanterEvent } from '../config/TacticalBossBanterLines.js';
 import { analyzeTacticalDoctrine, projectTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
   TACTICAL_DIRECTIVE_VARIANT_COUNT,
@@ -147,6 +148,8 @@ const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP = 5;
+const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
+const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 const STRAGGLER_BEACON_MAX_TARGETS = 3;
 
@@ -204,6 +207,14 @@ export class PlayScene {
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
     this.tacticalDraftConfirmTimeout = null;
+    this.tacticalBossBanterTimer = null;
+    this.tacticalBossBanterToken = 0;
+    this.pendingTacticalBossBanterId = null;
+    this.pendingTacticalBossBanterContext = null;
+    this.lastTacticalBossBanterId = null;
+    this.lastTacticalBossBanterEvent = null;
+    this.lastTacticalBossBanterContext = null;
+    this.lastTacticalBossBanterAt = 0;
     this.tacticalDirectiveSession = null;
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
@@ -6118,6 +6129,7 @@ export class PlayScene {
     this.tacticalDraftNavigator.suppressUntilReleased();
     this.setTacticalDraftFocus(recommendedIndex, { silent: true });
     AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
+    this.scheduleTacticalBossBanter(offers[recommendedIndex]?.id, { delayMs: 760, context: 'draft' });
     return true;
   }
 
@@ -6555,6 +6567,7 @@ export class PlayScene {
     state.openedAt = Date.now();
     this.layoutTacticalDraft();
     this.setTacticalDraftFocus(state.recommendedIndex, { silent: true });
+    this.scheduleTacticalBossBanter(offers[state.recommendedIndex]?.id, { delayMs: 680, context: 'draft' });
     playMenuConfirmSfx(0.3);
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
@@ -6570,7 +6583,102 @@ export class PlayScene {
     state.focusIndex = next;
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftHold();
-    if (!silent) playMenuFocusSfx(0.2);
+    if (!silent) {
+      playMenuFocusSfx(0.2);
+      this.scheduleTacticalBossBanter(state.offers?.[next]?.id, { context: 'draft' });
+    }
+  }
+
+  clearPendingTacticalBossBanter({ stopActive = false } = {}) {
+    if (this.tacticalBossBanterTimer) {
+      clearTimeout(this.tacticalBossBanterTimer);
+      this.tacticalBossBanterTimer = null;
+    }
+    this.pendingTacticalBossBanterId = null;
+    this.pendingTacticalBossBanterContext = null;
+    this.tacticalBossBanterToken += 1;
+    if (stopActive) AudioManager.stopVoiceGroup?.('boss_tactical_inspect');
+  }
+
+  getTacticalBossBanterFocusedId(context = 'draft') {
+    if (context === 'loadout') {
+      const overlay = this.tacticalLoadoutOverlay;
+      return overlay?.detailItem?.id || overlay?.cards?.[overlay.focusedCardIndex]?._item?.id || null;
+    }
+    const state = this.tacticalDraft;
+    return state?.active && !state.confirmedId ? state.offers?.[state.focusIndex]?.id || null : null;
+  }
+
+  scheduleTacticalBossBanter(augmentId, { delayMs = TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS, context = 'draft' } = {}) {
+    const eventName = getTacticalBossBanterEvent(augmentId);
+    if (this.getTacticalBossBanterFocusedId(context) !== augmentId || !eventName || AudioManager.isBossVoiceEnabled?.() === false) return false;
+    this.clearPendingTacticalBossBanter({ stopActive: true });
+    const token = this.tacticalBossBanterToken;
+    this.pendingTacticalBossBanterId = augmentId;
+    this.pendingTacticalBossBanterContext = context;
+    this.tacticalBossBanterTimer = setTimeout(() => {
+      this.tacticalBossBanterTimer = null;
+      this.tryPlayTacticalBossBanter(augmentId, eventName, token, 0, context);
+    }, Math.max(80, Number(delayMs) || TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS));
+    return true;
+  }
+
+  tryPlayTacticalBossBanter(augmentId, eventName, token, retryCount = 0, context = 'draft') {
+    const focusedId = this.getTacticalBossBanterFocusedId(context);
+    if (
+      token !== this.tacticalBossBanterToken
+      || focusedId !== augmentId
+      || AudioManager.isBossVoiceEnabled?.() === false
+    ) {
+      if (token === this.tacticalBossBanterToken) {
+        this.pendingTacticalBossBanterId = null;
+        this.pendingTacticalBossBanterContext = null;
+      }
+      return false;
+    }
+
+    const audioState = AudioManager.getSettings?.() || {};
+    const activeEvents = Array.isArray(audioState.activeVoiceEvents) ? audioState.activeVoiceEvents : [];
+    const busyWithOtherVoice = activeEvents.some((entry) => entry?.group !== 'boss_tactical_inspect');
+    const lockRemainingMs = Math.max(0, Number(audioState.voicePriorityLock?.remainingMs) || 0);
+    if ((busyWithOtherVoice || lockRemainingMs > 0) && retryCount < TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES) {
+      const retryDelayMs = lockRemainingMs > 0
+        ? Math.max(420, Math.min(1600, lockRemainingMs + 120))
+        : 520;
+      this.tacticalBossBanterTimer = setTimeout(() => {
+        this.tacticalBossBanterTimer = null;
+        this.tryPlayTacticalBossBanter(augmentId, eventName, token, retryCount + 1, context);
+      }, retryDelayMs);
+      return false;
+    }
+    if (busyWithOtherVoice || lockRemainingMs > 0) {
+      this.pendingTacticalBossBanterId = null;
+      this.pendingTacticalBossBanterContext = null;
+      return false;
+    }
+
+    AudioManager.init();
+    const played = AudioManager.playDiegeticVoice(eventName, {
+      force: true,
+      bypassGlobalCooldown: true,
+      bypassEventCooldown: true,
+      exclusiveGroup: 'boss_tactical_inspect',
+      cooldownMs: 0,
+      eventCooldownMs: 0,
+      voicePriority: 7,
+      duckMs: 1450,
+      duckFactor: 0.34,
+      volume: 0.94
+    });
+    this.pendingTacticalBossBanterId = null;
+    this.pendingTacticalBossBanterContext = null;
+    if (played) {
+      this.lastTacticalBossBanterId = augmentId;
+      this.lastTacticalBossBanterEvent = eventName;
+      this.lastTacticalBossBanterContext = context;
+      this.lastTacticalBossBanterAt = Date.now();
+    }
+    return played;
   }
 
   updateTacticalDraft(delta = 1) {
@@ -6621,6 +6729,7 @@ export class PlayScene {
     if (!state.inputArmed && source !== 'pointer') return false;
     const offer = state.offers[index];
     if (!offer) return false;
+    this.clearPendingTacticalBossBanter({ stopActive: true });
     const previousDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
     const result = this.player?.applyRunAugment?.(offer.id);
     if (!result?.applied) return false;
@@ -6685,6 +6794,7 @@ export class PlayScene {
   }
 
   clearTacticalDraft(reason = 'clear') {
+    this.clearPendingTacticalBossBanter({ stopActive: true });
     if (this.tacticalDraftConfirmTimeout) {
       clearTimeout(this.tacticalDraftConfirmTimeout);
       this.tacticalDraftConfirmTimeout = null;
@@ -6723,6 +6833,13 @@ export class PlayScene {
       holdLabel: state?.hold?._nodes?.label?.text || null,
       holdBounds: boundsOf(state?.hold),
       lastHoldSource: state?.lastHoldSource || null,
+      pendingBossBanterId: this.pendingTacticalBossBanterId || null,
+      pendingBossBanterContext: this.pendingTacticalBossBanterContext || null,
+      lastBossBanterId: this.lastTacticalBossBanterId || null,
+      lastBossBanterEvent: this.lastTacticalBossBanterEvent || null,
+      lastBossBanterContext: this.lastTacticalBossBanterContext || null,
+      lastBossBanterTrack: AudioManager.getSettings?.().lastVoiceTrack || null,
+      lastBossBanterAt: this.lastTacticalBossBanterAt || 0,
       titleBounds: boundsOf(state?.title),
       offers: state?.offers?.map((offer, index) => ({
         id: offer.id,
@@ -7303,12 +7420,21 @@ export class PlayScene {
       title: 'Tactical upgrades',
       selectedIds: this.player?.runAugmentIds || [],
       consumedIds: this.player?.consumedRunAugmentIds || [],
+      onInspect: (item, { reason } = {}) => {
+        this.scheduleTacticalBossBanter(item?.id, {
+          context: 'loadout',
+          delayMs: reason === 'detail' ? 180 : TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS
+        });
+      },
       onClose: () => {
+        this.clearPendingTacticalBossBanter({ stopActive: true });
         this.tacticalLoadoutOverlay = null;
         this.pauseGamepadNavigator.suppressUntilReleased();
       }
     });
     this.uiOverlay.addChild(this.tacticalLoadoutOverlay.container);
+    const initialItem = this.tacticalLoadoutOverlay.cards?.[this.tacticalLoadoutOverlay.focusedCardIndex]?._item;
+    if (initialItem) this.scheduleTacticalBossBanter(initialItem.id, { context: 'loadout', delayMs: 760 });
   }
 
   handleLanguageChanged() {
@@ -7624,6 +7750,7 @@ export class PlayScene {
   }
 
   closeTacticalLoadoutOverlay() {
+    this.clearPendingTacticalBossBanter({ stopActive: true });
     if (this.tacticalLoadoutOverlay) {
       this.tacticalLoadoutOverlay.close();
       this.tacticalLoadoutOverlay = null;

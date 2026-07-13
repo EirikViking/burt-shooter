@@ -162,6 +162,7 @@ export class TacticalLoadoutOverlay {
     const resolved = normalizeConstructorOptions(options, positionalOnClose);
     this.game = game;
     this.onClose = typeof resolved.onClose === 'function' ? resolved.onClose : null;
+    this.onInspect = typeof resolved.onInspect === 'function' ? resolved.onInspect : null;
     this.title = resolved.title || 'TACTICAL LOADOUT';
     this.selectedIds = Array.isArray(resolved.selectedIds) ? resolved.selectedIds.slice() : [];
     this.consumedIds = Array.isArray(resolved.consumedIds) ? resolved.consumedIds.slice() : [];
@@ -458,12 +459,9 @@ export class TacticalLoadoutOverlay {
 
     card.addChild(icon, category, name, description, permanence, stackBg, stack);
     card._nodes = { bg, icon, category, name, description, permanence, stackBg, stack };
-    card.on('pointerover', () => {
-      bg.tint = 0xbfefff;
-      playMenuFocusSfx(0.06);
-    });
+    card.on('pointerover', () => this.setFocusedCard(index, { reason: 'pointer' }));
     card.on('pointerout', () => {
-      bg.tint = 0xffffff;
+      bg.tint = this.cards[this.focusedCardIndex] === card ? 0xbfefff : 0xffffff;
     });
     card.on('pointertap', () => {
       playMenuConfirmSfx(0.13);
@@ -473,18 +471,26 @@ export class TacticalLoadoutOverlay {
     this.container.addChild(card);
   }
 
-  setFocusedCard(index = 0) {
+  setFocusedCard(index = 0, { silent = false, reason = 'focus' } = {}) {
     if (!this.cards.length) return;
-    this.focusedCardIndex = (Math.floor(Number(index) || 0) + this.cards.length) % this.cards.length;
+    const nextIndex = (Math.floor(Number(index) || 0) + this.cards.length) % this.cards.length;
+    const changed = nextIndex !== this.focusedCardIndex;
+    this.focusedCardIndex = nextIndex;
     this.cards.forEach((card, cardIndex) => {
       if (card?._nodes?.bg) card._nodes.bg.tint = cardIndex === this.focusedCardIndex ? 0xbfefff : 0xffffff;
     });
+    if (changed && !silent) {
+      playMenuFocusSfx(0.06);
+      const item = this.cards[this.focusedCardIndex]?._item;
+      if (item) this.onInspect?.(item, { reason });
+    }
   }
 
   openDetail(item) {
     if (!item || this.closed) return false;
     this.closeDetail();
     this.detailItem = item;
+    this.onInspect?.(item, { reason: 'detail' });
     const width = this.getWidth();
     const height = this.getHeight();
     const compact = width < 960 || height < 680;
@@ -688,6 +694,8 @@ export class TacticalLoadoutOverlay {
     this.focusedCardIndex = 0;
     playMenuFocusSfx(0.1);
     this.rebuild();
+    const item = this.cards[this.focusedCardIndex]?._item;
+    if (item) this.onInspect?.(item, { reason: 'page' });
     return true;
   }
 

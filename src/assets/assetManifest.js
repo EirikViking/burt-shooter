@@ -1,5 +1,6 @@
 import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
+import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
 
 export const AssetManifest = {
     generated: {
@@ -349,6 +350,7 @@ export const AssetManifest = {
             ...Array.from({ length: 50 }, (_, i) => `/audio/voice/cta/one_more_run_${String(i + 1).padStart(2, '0')}.mp3`),
             ...Array.from({ length: 100 }, (_, i) => `/audio/voice/boss-death/boss_death_agony_${String(i + 1).padStart(3, '0')}.mp3`),
             ...menuBossBarkLines.map((line) => `/audio/voice/menu-boss-barks/${line.id}.mp3`),
+            ...tacticalBossBanterLines.map((line) => `/audio/voice/tactical-boss-banter/${line.id}.mp3`),
             ...Array.from({ length: 100 }, (_, i) => `/audio/voice/game-over-taunt/game_over_taunt_${String(i + 1).padStart(3, '0')}.mp3`),
             ...Array.from({ length: 200 }, (_, i) => `/audio/voice/level-clear/level_clear_flirt_${String(i + 1).padStart(3, '0')}.mp3`),
             '/audio/voice/nova-swarm/intro_narrator_01.mp3',

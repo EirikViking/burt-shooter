@@ -323,7 +323,10 @@ try {
   await page.evaluate(() => window.__game.scenes.play.setPaused(true));
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).isPaused === true);
   const pauseState = await readState(page);
-  assert(/Tactical upgrades/i.test(pauseState.pauseOverlay?.tacticalDraft || ''), 'pause menu did not expose tactical loadout');
+  const pauseTacticalSummary = String(pauseState.pauseOverlay?.tacticalDraft || '');
+  const pickedNames = (state.tacticalDraft.history || []).map((entry) => String(entry.name || '').toUpperCase()).filter(Boolean);
+  assert(pauseTacticalSummary.trim() && pickedNames.some((name) => pauseTacticalSummary.toUpperCase().includes(name)),
+    `pause menu did not expose the current tactical build: ${JSON.stringify(pauseState.pauseOverlay)}`);
   await page.evaluate(() => window.__game.scenes.play.setPaused(false));
 
   const localeResults = [];
@@ -337,7 +340,8 @@ try {
     assert(localeState.tacticalDraft.title && localeState.tacticalDraft.title !== 'TACTICAL DRAFT', `locale-${locale}: tactical title remained English`);
     assert(localeState.tacticalDraft.offers.every((offer) => offer.descriptionText !== offer.descriptionSource), `locale-${locale}: tactical description remained English`);
     const localizedEvolutions = localeState.tacticalDraft.offers.filter((offer) => offer.displayNameSource !== offer.name);
-    assert(localizedEvolutions.length === 1, `locale-${locale}: expected exactly one evolution offer`);
+    assert(localizedEvolutions.length === 1,
+      `locale-${locale}: expected exactly one evolution offer: ${JSON.stringify(localeState.tacticalDraft.offers.map((offer) => ({ id: offer.id, name: offer.name, displayNameSource: offer.displayNameSource })))}`);
     assert(localizedEvolutions.every((offer) => offer.nameText !== offer.displayNameSource), `locale-${locale}: evolution name remained English`);
     assert(localeState.tacticalDraft.offers.every((offer) => !/BUILDS:|REINFORCES:|ONE-SHOT:/.test(offer.doctrinePreviewText || '')), `locale-${locale}: doctrine forecast remained English`);
     await page.keyboard.press('l');

@@ -5,6 +5,7 @@ import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
 import { MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT } from '../config/MayhemSuperStormVoiceLines.js';
 import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
+import { TACTICAL_BOSS_BANTER_EVENT_COUNTS, TACTICAL_BOSS_BANTER_EVENT_IDS } from '../config/TacticalBossBanterLines.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -57,6 +58,13 @@ const MENU_BOSS_BARK_CATALOG = Object.fromEntries(
     MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
         eventName,
         paddedNumberedVoicePool(eventName, MENU_BOSS_BARK_EVENT_COUNTS[eventName] || MENU_BOSS_BARK_VARIANTS_PER_EVENT, 3)
+    ])
+);
+
+const TACTICAL_BOSS_BANTER_CATALOG = Object.fromEntries(
+    TACTICAL_BOSS_BANTER_EVENT_IDS.map((eventName) => [
+        eventName,
+        paddedNumberedVoicePool(eventName, TACTICAL_BOSS_BANTER_EVENT_COUNTS[eventName] || 0, 3)
     ])
 );
 
@@ -400,6 +408,10 @@ export const VOICE_MIX = {
     ...Object.fromEntries(MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
         eventName,
         { volume: 0.96, duckFactor: 0.36, duckMs: 1050, cooldownMs: 180, eventCooldownMs: 0, priority: 3 }
+    ])),
+    ...Object.fromEntries(TACTICAL_BOSS_BANTER_EVENT_IDS.map((eventName) => [
+        eventName,
+        { volume: 0.94, duckFactor: 0.34, duckMs: 1450, cooldownMs: 0, eventCooldownMs: 0, priority: 7 }
     ])),
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
     mission_control_lives_max: { volume: 0.82, duckFactor: 0.48, duckMs: 1500, cooldownMs: 30000 },
@@ -830,6 +842,7 @@ export const SFX_CATALOG = {
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
     'boss_death_agony': paddedNumberedVoicePool('boss_death_agony', 100, 3),
     ...MENU_BOSS_BARK_CATALOG,
+    ...TACTICAL_BOSS_BANTER_CATALOG,
     'game_over_taunt': paddedNumberedVoicePool('game_over_taunt', GAME_OVER_TAUNT_VOICE_COUNT, 3),
     'level_clear_flirt': paddedNumberedVoicePool('level_clear_flirt', LEVEL_CLEAR_VOICE_COUNT, 3),
     ...GAME_OVER_CTA_VOICE_CATALOG,
