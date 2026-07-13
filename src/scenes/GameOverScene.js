@@ -373,6 +373,13 @@ export class GameOverScene {
       .filter((value) => Number.isFinite(value) && value > 0));
   }
 
+  getRunLeaderboardQuery() {
+    return this.game?.getRunLeaderboardDescriptor?.() || {
+      view: LeaderboardView.GLOBAL,
+      leaderboardKind: 'global'
+    };
+  }
+
   async init() {
     this.clearSceneTimeouts();
     this.steamSubmissionToken += 1;
@@ -426,13 +433,17 @@ export class GameOverScene {
       : createLeaderboardAdapter();
     await this.leaderboardAdapter.refreshAvailability();
     this.leaderboardRuntime = this.leaderboardAdapter.getRuntimeSummary();
-    this.steamSubmissionMode = Boolean(this.leaderboardAdapter.shouldUseSteamSubmission());
-    this.steamPlayerName = this.steamSubmissionMode
-      ? await this.leaderboardAdapter.getSteamPlayerName().catch(() => null)
-      : null;
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
       : !this.game.isDebugRun;
+    const tacticalSteamLane = this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL;
+    this.steamSubmissionMode = Boolean(
+      this.isRankedRun
+      && (this.leaderboardAdapter.shouldUseSteamSubmission() || tacticalSteamLane)
+    );
+    this.steamPlayerName = this.steamSubmissionMode
+      ? await this.leaderboardAdapter.getSteamPlayerName().catch(() => null)
+      : null;
     this.lastInputDevice = hasConnectedGamepad() ? 'controller' : 'keyboard';
     this.controllerNameCursor = 0;
 
@@ -453,7 +464,8 @@ export class GameOverScene {
       }
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
-    this.isPersonalBest = this.isRankedRun && this.finalScore > (Number(previousProgress.bestScore) || 0);
+    const previousModeBest = Math.max(0, Number(this.game?.previousMayhemModeBestScore) || 0);
+    this.isPersonalBest = this.isRankedRun && this.finalScore > previousModeBest;
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = Boolean(this.game?.personalBestLiveCelebrated);
     this.nearMissVoicePlayed = false;
@@ -1670,7 +1682,10 @@ export class GameOverScene {
         this.globalStatus = 'offline';
         return;
       }
-      const scores = await this.leaderboardAdapter.getGlobalScoresForPlacement({ useCache: false });
+      const scores = await this.leaderboardAdapter.getGlobalScoresForPlacement({
+        useCache: false,
+        ...this.getRunLeaderboardQuery()
+      });
       this.cachedHighscores = Array.isArray(scores) ? [...scores] : [];
       this.cachedHighscores.sort((a, b) => b.score - a.score);
       if (this.cachedHighscores.length === 0) {
@@ -3563,8 +3578,9 @@ export class GameOverScene {
     const rankProgress = getPilotRankProgress(currentProgress.pilotXp || 0);
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
     const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
+    const modeLabel = translateText(getRunModeProfile(this.game?.runMode).resultLabel || 'RUN');
     return [
-      translateText('RUN'),
+      modeLabel,
       `${clearLabel}: ${translateText('SECTOR')} ${this.finalLevel}  ${translateText('TIME')} ${elapsedSeconds}s`,
       `${translateText('RANK')} ${displayRank}: ${rankTitle}  ${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
       `${translateText('BEST SECTOR')} ${bestLevel}${suffix}`
@@ -3728,7 +3744,12 @@ export class GameOverScene {
         }
       : this.game?.runMode === RUN_MODES.SCOUT
         ? { runMode: RUN_MODES.SCOUT, inputDevice: this.lastInputDevice }
-        : { inputDevice: this.lastInputDevice };
+        : {
+            runMode: this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL
+              ? RUN_MODES.MAYHEM_TACTICAL
+              : RUN_MODES.RANKED,
+            inputDevice: this.lastInputDevice
+          };
     Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
       console.error('[GameOverScene] Restart failed:', error);
       this.returnToMenu();
@@ -4933,7 +4954,10 @@ export class GameOverScene {
     if (provider !== 'cloud') return null;
 
     try {
-      const entries = await this.leaderboardAdapter.getGlobalScoresForPlacement({ useCache: false });
+      const entries = await this.leaderboardAdapter.getGlobalScoresForPlacement({
+        useCache: false,
+        ...this.getRunLeaderboardQuery()
+      });
       const placement = getConfirmedGlobalPlacement(this.finalScore, entries);
       result.confirmedGlobalPlacement = placement;
       result.achievementConfirmationStatus = placement.qualified ? 'confirmed' : 'not_qualified_after_submit';
@@ -5764,7 +5788,9 @@ export class GameOverScene {
     if (!isCurrentSubmission() || !result) return;
     this.leaderboardResult = result;
     this.game.lastLeaderboardResult = result;
-    this.game.leaderboardView = this.globalStatus === 'failed' ? 'local' : 'global';
+    this.game.leaderboardView = this.globalStatus === 'failed'
+      ? LeaderboardView.LOCAL
+      : this.getRunLeaderboardQuery().view;
     this.game.pendingHighscore = null;
     this.removeInputOverlay();
     const reason = this.globalStatus === 'failed'

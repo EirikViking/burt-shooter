@@ -8,7 +8,7 @@ import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
 import { translateText } from '../i18n/index.js';
-import { RUN_MODES } from '../game/RunMode.js';
+import { isRankedRunMode } from '../game/RunMode.js';
 import {
   GENERATED_ENEMY_TYPES,
   getGeneratedEnemyProfile,
@@ -1367,7 +1367,7 @@ export class EnemyManager {
     let reasons = [];
 
     if (!config) reasons.push('disabled');
-    if (this.game?.runMode !== RUN_MODES.RANKED) reasons.push('not_mayhem');
+    if (!isRankedRunMode(this.game?.runMode)) reasons.push('not_mayhem');
     if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE') reasons.push('not_normal_wave_phase');
     if (this.boss?.active || this.bossSpawnedThisLevel || this.state === 'BOSS_GATE') reasons.push('boss_active_or_pending');
     if (this.waveEnding || this.spawning || this.pendingWaveConfig) reasons.push('wave_not_stable');
@@ -1702,7 +1702,7 @@ export class EnemyManager {
   maybeScheduleBossMayhemReinforcement() {
     const config = this.getMayhemReinforcementConfig();
     if (!config || config.bossFightChance <= 0 || config.bossFightMaxEvents <= 0) return false;
-    if (this.game?.runMode !== RUN_MODES.RANKED) return false;
+    if (!isRankedRunMode(this.game?.runMode)) return false;
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return false;
     if (this.bossReinforcementState && !this.bossReinforcementState.spawned) return false;
     if (this.bossReinforcementEventsThisBoss >= config.bossFightMaxEvents) return false;

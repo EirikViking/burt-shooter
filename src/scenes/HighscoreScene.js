@@ -10,12 +10,14 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
   LeaderboardView,
   normalizeLeaderboardEntry
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
 import { tauntDirector } from '../game/TauntDirector.js';
+import { RUN_MODES } from '../game/RunMode.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 
@@ -91,6 +93,7 @@ export class HighscoreScene {
     this.backBtn = null;
     this.runAgainBtn = null;
     this.globalBtn = null;
+    this.tacticalBtn = null;
     this.sectorBtn = null;
     this.friendsBtn = null;
     this.localBtn = null;
@@ -302,15 +305,18 @@ export class HighscoreScene {
     this.container.addChild(this.backBtn);
 
     this.runAgainBtn = this.createButton('ONE MORE RUN');
-    this.runAgainBtn.on('pointerdown', () => {
-      this.game.startGame(this.game.selectedShipSpriteKey);
-    });
+    this.runAgainBtn.on('pointerdown', () => this.startRunAgain());
     this.container.addChild(this.runAgainBtn);
 
     this.globalBtn = this.createButton('GLOBAL');
     this.globalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.GLOBAL));
     this.globalBtn.zIndex = 5;
     this.container.addChild(this.globalBtn);
+
+    this.tacticalBtn = this.createButton('TACTICAL');
+    this.tacticalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.TACTICAL));
+    this.tacticalBtn.zIndex = 5;
+    this.container.addChild(this.tacticalBtn);
 
     this.sectorBtn = this.createButton('SECTOR');
     this.sectorBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.SECTOR));
@@ -328,18 +334,20 @@ export class HighscoreScene {
     this.container.addChild(this.localBtn);
     this.tabButtons = {
       [LeaderboardView.GLOBAL]: this.globalBtn,
+      [LeaderboardView.TACTICAL]: this.tacticalBtn,
       [LeaderboardView.SECTOR]: this.sectorBtn,
       [LeaderboardView.FRIENDS]: this.friendsBtn,
       [LeaderboardView.LOCAL]: this.localBtn
     };
     this.focusableControls = [
       { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
+      { id: LeaderboardView.TACTICAL, button: this.tacticalBtn, activate: () => this.setLeaderboardView(LeaderboardView.TACTICAL) },
       { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
       { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
       { id: 'back', button: this.backBtn, activate: () => this.returnToMenu('focus') },
-      { id: 'runAgain', button: this.runAgainBtn, activate: () => this.game.startGame(this.game.selectedShipSpriteKey) }
+      { id: 'runAgain', button: this.runAgainBtn, activate: () => this.startRunAgain() }
     ];
     this.focusableControls.forEach((control) => {
       if (control.button) control.button.activate = control.activate;
@@ -419,7 +427,11 @@ export class HighscoreScene {
     this.game.leaderboardView = nextView;
     playMenuConfirmSfx(0.18);
     this.menuFx?.burst?.(this.game.getWidth() * 0.5, Math.max(120, this.tableMetrics?.y || 120), {
-      color: nextView === LeaderboardView.SECTOR ? 0xffd15c : 0x37f5ff,
+      color: nextView === LeaderboardView.SECTOR
+        ? 0xffd15c
+        : nextView === LeaderboardView.TACTICAL
+          ? 0xff55d9
+          : 0x37f5ff,
       radius: 140,
       durationMs: 520
     });
@@ -449,9 +461,18 @@ export class HighscoreScene {
       const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
       this.subtitle.text = `${translateText('PILOT RANK SIGNAL')} // ${translateText(source)}`;
     }
+    if (this.runAgainBtn?._label) {
+      this.runAgainBtn._label.text = translateText(
+        this.activeLeaderboard === LeaderboardView.TACTICAL
+          ? 'ONE MORE TACTICAL RUN'
+          : 'ONE MORE PURE RUN'
+      );
+    }
     Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
       if (!button) return;
-      button.visible = tabs.some(tab => tab.id === view);
+      const tab = tabs.find((entry) => entry.id === view);
+      button.visible = Boolean(tab);
+      if (tab && button._label) button._label.text = translateText(tab.label);
     });
     this.updateToggleStyles();
   }
@@ -517,7 +538,7 @@ export class HighscoreScene {
     const visibleTabs = (this.leaderboardTabs || []).filter(tab => this.tabButtons?.[tab.id]?.visible !== false);
     if (visibleTabs.length > 0) {
       const buttonW = isMobile
-        ? Math.min(118, Math.max(92, deckWidth / Math.max(3.5, visibleTabs.length + 0.7)))
+        ? Math.min(108, Math.max(68, (deckWidth - 8 * (visibleTabs.length - 1)) / visibleTabs.length))
         : (visibleTabs.length > 2 ? 150 : 172);
       const buttonH = isMobile ? 32 : 38;
       const gap = isMobile ? 8 : 14;
@@ -697,6 +718,8 @@ export class HighscoreScene {
           this.stateMessage.text = translateText('Steam friends who play Nova Swarm and submit scores will appear here.');
         } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
           this.stateMessage.text = translateText('Steam sector run board has no entries yet.');
+        } else if (this.activeLeaderboard === LeaderboardView.TACTICAL) {
+          this.stateMessage.text = translateText('Steam Tactical has no entries yet. The first build is waiting for a pilot.');
         } else {
           this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'No local scores yet. Be the first legend here.'
@@ -710,6 +733,8 @@ export class HighscoreScene {
             ? 'Could not load Steam friends scores.'
             : this.activeLeaderboard === LeaderboardView.SECTOR
               ? 'Could not load Steam sector run scores.'
+            : this.activeLeaderboard === LeaderboardView.TACTICAL
+              ? 'Could not load Steam Tactical scores.'
             : `Global board offline. Local scores are safe.`));
         break;
       default:
@@ -719,6 +744,8 @@ export class HighscoreScene {
             ? 'Loading local board...'
             : this.activeLeaderboard === LeaderboardView.SECTOR
               ? 'Loading Steam sector run scores...'
+            : this.activeLeaderboard === LeaderboardView.TACTICAL
+              ? 'Loading Steam Tactical scores...'
             : `Loading ${sourceLabel.toLowerCase()}...`);
     }
     this.updateLeaderboardChrome();
@@ -729,7 +756,11 @@ export class HighscoreScene {
     const normalized = normalizeLeaderboardEntry(raw, {
       source: this.activeLeaderboard,
       view: this.activeLeaderboard,
-      leaderboardKind: this.activeLeaderboard === LeaderboardView.SECTOR ? 'sector_start' : null
+      leaderboardKind: this.activeLeaderboard === LeaderboardView.SECTOR
+        ? 'sector_start'
+        : this.activeLeaderboard === LeaderboardView.TACTICAL
+          ? 'mayhem_tactical'
+          : null
     });
     if (!normalized) return null;
     return {
@@ -760,6 +791,10 @@ export class HighscoreScene {
       ? (this.game?.lastSectorLeaderboardResult || null)
       : (this.game?.lastLeaderboardResult || null);
     if (!result) return null;
+    const resultIsTactical = result.leaderboardKind === 'mayhem_tactical'
+      || result.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME;
+    if (this.activeLeaderboard === LeaderboardView.TACTICAL && !resultIsTactical) return null;
+    if (this.activeLeaderboard === LeaderboardView.GLOBAL && resultIsTactical) return null;
 
     const localEntry = result.localEntry || null;
     const score = Number(result.score ?? localEntry?.score);
@@ -773,6 +808,13 @@ export class HighscoreScene {
       localStatus: result.localStatus || null,
       steamStatus: result.steamStatus || result.globalStatus || result.sectorSteamStatus || null
     };
+  }
+
+  startRunAgain() {
+    const runMode = this.activeLeaderboard === LeaderboardView.TACTICAL
+      ? RUN_MODES.MAYHEM_TACTICAL
+      : RUN_MODES.RANKED;
+    this.game.startGame(this.game.selectedShipSpriteKey, { runMode });
   }
 
   isFeaturedLeaderboardEntry(entry, index) {

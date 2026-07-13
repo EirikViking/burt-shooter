@@ -2,6 +2,7 @@ import { buildArcadePatterns } from './patterns.js';
 
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
+import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE": "에이스",
@@ -1752,6 +1753,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko') }),
   patterns
 };

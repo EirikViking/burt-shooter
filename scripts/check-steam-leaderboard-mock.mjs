@@ -3,7 +3,11 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { STEAM_LEADERBOARD_NAME, STEAM_SECTOR_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
+import {
+  STEAM_LEADERBOARD_NAME,
+  STEAM_SECTOR_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME
+} from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4370));
@@ -106,12 +110,20 @@ try {
   });
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded' });
   await waitForGame(page);
-  await page.evaluate((sectorLeaderboardName) => {
+  await page.evaluate(({ sectorLeaderboardName, tacticalLeaderboardName }) => {
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'STEAM ACE');
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
       { playerName: 'STEAM ACE', score: 22000, level: 7, isCurrentPlayer: true, source: 'steam' },
       { playerName: 'ORBIT PAL', score: 18000, source: 'steam' },
       { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' },
+      {
+        playerName: 'TACTICAL ACE',
+        score: 19100,
+        level: 6,
+        leaderboardName: tacticalLeaderboardName,
+        leaderboardKind: 'mayhem_tactical',
+        source: 'steam'
+      },
       {
         playerName: 'SECTOR ACE',
         score: 9100,
@@ -129,17 +141,20 @@ try {
     ]));
     window.__game.leaderboardView = 'global';
     window.__game.switchScene('highscore');
-  }, STEAM_SECTOR_LEADERBOARD_NAME);
+  }, {
+    sectorLeaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+    tacticalLeaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME
+  });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'highscore' && state.highscore?.status === 'LOADED';
   }, null, { timeout: 12000 });
   const globalState = await state(page);
-  if (globalState.highscore?.tabs?.join(',') !== 'global,sector,friends,local') {
+  if (globalState.highscore?.tabs?.join(',') !== 'global,tactical,sector,friends,local') {
     throw new Error(`Steam tabs missing: ${globalState.highscore?.tabs}`);
   }
-  if (globalState.highscore?.sourceLabel !== 'Steam Global') {
-    throw new Error(`Expected Steam Global source, got ${globalState.highscore?.sourceLabel}`);
+  if (globalState.highscore?.sourceLabel !== 'Steam Pure') {
+    throw new Error(`Expected Steam Pure source, got ${globalState.highscore?.sourceLabel}`);
   }
   const globalLevelRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
   const estimatedLevelRow = globalLevelRows.find((row) => row.levelSource === 'score_estimate');
@@ -149,6 +164,23 @@ try {
   if (globalLevelRows.some((row) => /\bLV\b/i.test(String(row.levelText || '')))) {
     throw new Error(`Global Steam rows should not label score-derived levels as LV: ${JSON.stringify(globalLevelRows)}`);
   }
+
+  await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('tactical'));
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.highscore?.activeLeaderboard === 'tactical' && state.highscore?.status === 'LOADED';
+  }, null, { timeout: 12000 });
+  const tacticalState = await state(page);
+  if (tacticalState.highscore?.sourceLabel !== 'Steam Tactical') {
+    throw new Error(`Expected Steam Tactical source, got ${tacticalState.highscore?.sourceLabel}`);
+  }
+  if (!tacticalState.highscore?.rows?.some((row) => row.name === 'TACTICAL ACE')) {
+    throw new Error(`Tactical leaderboard did not isolate its Steam rows: ${JSON.stringify(tacticalState.highscore?.rows)}`);
+  }
+  if (tacticalState.highscore?.rows?.some((row) => row.name === 'STEAM ACE')) {
+    throw new Error(`Pure leaderboard entry leaked into Tactical: ${JSON.stringify(tacticalState.highscore?.rows)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-tactical-tab.png'), fullPage: true });
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('sector'));
   await page.waitForFunction(() => {
@@ -460,6 +492,7 @@ try {
     baseUrl,
     outputDir,
     tabs: globalState.highscore.tabs,
+    tacticalRows: tacticalState.highscore.rows.length,
     sectorRows: sectorState.highscore.rows.length,
     friendsRows: friendsState.highscore.rows.length,
     steamSubmittedHold: steamSubmittedState.gameOver.lastLeaderboardResult,

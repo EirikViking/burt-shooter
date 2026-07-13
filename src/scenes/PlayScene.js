@@ -121,7 +121,12 @@ import {
   startRunContractSession
 } from '../progression/RunContracts.js';
 import { getBossProfile } from '../config/BossRoster.js';
-import { RUN_MODES, getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
+import {
+  RUN_MODES,
+  canRunModeUseTacticalDraft,
+  getRunModeNormalWaveScoreXpMultiplier,
+  isRankedRunMode
+} from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
 import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
 
@@ -666,7 +671,7 @@ export class PlayScene {
     this.processingDeferredRunContractEvents = false;
     this.lastRunContractProgressWriteAt = 0;
     let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
-    const runContractsEnabledForRun = (this.game?.runMode || RUN_MODES.RANKED) === RUN_MODES.RANKED;
+    const runContractsEnabledForRun = isRankedRunMode(this.game?.runMode || RUN_MODES.RANKED);
     if (runContractsEnabledForRun) {
       const preparedRunContracts = prepareRunContractsForEligibleRun(runContractProgress.runContracts);
       runContractProgress = writeHangarProgressState({
@@ -3773,7 +3778,11 @@ export class PlayScene {
                 shipSprite.scale.set(baseScale);
               }
             };
-            if (bossCompletion && this.openTacticalDraft({ sectorCleared, onComplete: finishAdvance })) return;
+            if (
+              bossCompletion
+              && canRunModeUseTacticalDraft(this.game?.runMode)
+              && this.openTacticalDraft({ sectorCleared, onComplete: finishAdvance })
+            ) return;
             finishAdvance();
           });
         };
@@ -6623,6 +6632,7 @@ export class PlayScene {
   }
 
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
+    if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
     const consumedIds = this.player?.consumedRunAugmentIds || [];
     const offers = buildTacticalDraftOffers({
@@ -8009,6 +8019,9 @@ export class PlayScene {
   }
 
   getPauseTacticalDraftSummary() {
+    if (!canRunModeUseTacticalDraft(this.game?.runMode)) {
+      return translateText('MAYHEM PURE // TACTICAL UPGRADES OFF');
+    }
     const labels = summarizeTacticalDraftPicks(this.player?.runAugmentIds || []).map((label) => translateText(label));
     const prefix = translateText('Tactical upgrades');
     if (!labels.length) return `${prefix}: --`;

@@ -14,6 +14,7 @@ import { getDefaultShipKey, getShipMetadata, incrementShipUsage, isShipUnlocked,
 import { AudioManager } from '../audio/AudioManager.js';
 import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
+import { getLeaderboardDescriptorForRunMode } from '../leaderboard/LeaderboardTypes.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
 import { EARLY_PILOT_ACHIEVEMENT_ID, getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
@@ -63,6 +64,7 @@ import {
   writeHangarProgressState
 } from '../progression/HangarProgressState.js';
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
+import { getMayhemModeBestScore, recordMayhemModeScore } from '../progression/MayhemModeRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
@@ -414,6 +416,10 @@ export class Game {
     return getRunModeProfile(mode);
   }
 
+  getRunLeaderboardDescriptor(mode = this.runMode) {
+    return getLeaderboardDescriptorForRunMode(mode);
+  }
+
   canUnlockAchievementsForCurrentRun() {
     return canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
   }
@@ -686,14 +692,17 @@ export class Game {
   createHighscoreChaseState({ runMode = this.runMode, progress = null, sectorStartCheckpoint = null } = {}) {
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
     const sectorRecord = isSectorStart ? getSectorStartChallengeRecord(sectorStartCheckpoint) : null;
+    const rankedModeBest = isRankedRunMode(runMode)
+      ? getMayhemModeBestScore(runMode, { legacyPureBest: progress?.bestScore })
+      : 0;
     const targetScore = Math.max(0, Math.floor(Number(
-      isSectorStart ? sectorRecord?.scoreEarned : progress?.bestScore
+      isSectorStart ? sectorRecord?.scoreEarned : rankedModeBest
     ) || 0));
     return {
       targetScore,
       runMode,
-      source: isSectorStart ? 'sector_start_record' : 'ranked_best_score',
-      syncingTarget: runMode === RUN_MODES.RANKED,
+      source: isSectorStart ? 'sector_start_record' : 'mayhem_mode_best_score',
+      syncingTarget: isRankedRunMode(runMode),
       checkpoint: sectorStartCheckpoint || null,
       surpassed: targetScore <= 0,
       celebrationFired: false,
@@ -707,7 +716,7 @@ export class Game {
   raiseHighscoreChaseTarget(targetScore, source = 'known_personal_best') {
     const score = Math.max(0, Math.floor(Number(targetScore) || 0));
     const chase = this.highscoreChase;
-    if (!chase || chase.runMode !== RUN_MODES.RANKED || score <= chase.targetScore) return false;
+    if (!chase || !isRankedRunMode(chase.runMode) || score <= chase.targetScore) return false;
     chase.targetScore = score;
     chase.source = source || chase.source;
     chase.surpassed = score <= 0 || this.score > score;
@@ -722,8 +731,13 @@ export class Game {
   primeHighscoreChaseTarget() {
     if (!this.isRankedRun() || this.highscoreChaseTargetPromise) return this.highscoreChaseTargetPromise;
     const chase = this.highscoreChase;
-    if (!chase || chase.runMode !== RUN_MODES.RANKED) return null;
-    this.highscoreChaseTargetPromise = this.getLeaderboardAdapter().getKnownPersonalBest({ useCache: false })
+    if (!chase || !isRankedRunMode(chase.runMode)) return null;
+    const leaderboard = this.getRunLeaderboardDescriptor(chase.runMode);
+    this.highscoreChaseTargetPromise = this.getLeaderboardAdapter().getKnownPersonalBest({
+      useCache: false,
+      includeLocal: false,
+      ...leaderboard
+    })
       .then((best) => {
         if (this.highscoreChase !== chase || !this.isRankedRun()) return null;
         this.raiseHighscoreChaseTarget(best?.score, best?.source || 'known_personal_best');
@@ -760,7 +774,7 @@ export class Game {
     const score = Math.max(0, Number(this.score) || 0);
     const ratio = score / chase.targetScore;
     const beatPersonalBest = (
-      chase.runMode === RUN_MODES.RANKED
+      isRankedRunMode(chase.runMode)
       && !chase.syncingTarget
       && score > chase.targetScore
     );
@@ -833,7 +847,10 @@ export class Game {
 
   primeGlobalLeaderboardTargets() {
     if (!this.isRankedRun() || this.globalLeaderboardTargetPromise) return this.globalLeaderboardTargetPromise;
-    this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getGlobalScoresForPlacement({ useCache: true })
+    this.globalLeaderboardTargetPromise = this.getLeaderboardAdapter().getGlobalScoresForPlacement({
+      useCache: true,
+      ...this.getRunLeaderboardDescriptor()
+    })
       .then((scores) => {
         this.globalLeaderboardTargets = Array.isArray(scores) ? scores : [];
         this.updateGlobalLeaderboardVoiceCues();
@@ -1115,6 +1132,14 @@ export class Game {
     const finalScore = this.lockFinalScore('run_finalize');
     this.runFinalized = true;
     this.runSummary = this.buildRunSummary(overrides);
+    if (this.isRankedRun()) {
+      this.previousMayhemModeBestScore = getMayhemModeBestScore(this.runMode, {
+        legacyPureBest: this.hangarProgressAtRunStart?.bestScore
+      });
+      recordMayhemModeScore(this.runMode, finalScore, {
+        legacyPureBest: this.hangarProgressAtRunStart?.bestScore
+      });
+    }
     flushThreatDiscoveryState();
     const previousProgress = readHangarProgressState();
     let result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled

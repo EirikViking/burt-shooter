@@ -2,6 +2,7 @@ import { buildArcadePatterns } from './patterns.js';
 
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
+import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE": "AS",
@@ -1777,6 +1778,6 @@ export const es = {
   diagnostics: {
     interfaceLanguage: 'Idioma de interfaz'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es') }),
   patterns
 };

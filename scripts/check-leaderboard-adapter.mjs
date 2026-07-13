@@ -62,6 +62,7 @@ installCloudFetch();
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
 const {
   STEAM_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
   createRunResultFromGame,
   encodeSteamLeaderboardDetails,
@@ -87,6 +88,7 @@ assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.level, 9, 'Steam LV1 fallback without details should estimate from score instead of showing LV1');
 assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.levelSource, 'score_estimate', 'Steam rows without details must not mark fallback levels as encoded');
 assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
+assert.equal(STEAM_TACTICAL_LEADERBOARD_NAME, 'nova_swarm_tactical_score_v1', 'Tactical Mayhem must use its own Steam board');
 assert.equal(STEAM_SECTOR_LEADERBOARD_NAME, 'nova_swarm_sector_start_score_v1', 'Steam sector challenge leaderboard must use the Steamworks-created board');
 const encodedRun = createRunResultFromGame({ score: 12345, level: 12, rankIndex: 4 }, { levelReached: 9 });
 assert.equal(encodedRun.level, 9, 'run result should prefer explicit levelReached');
@@ -167,7 +169,7 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'friends', 'local'], 'Steam tabs should expose global, sector, friends, and local views');
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local'], 'Steam tabs should expose Pure, Tactical, Sector, Friends, and Local views');
 
   win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
     {
@@ -181,7 +183,7 @@ async function checkMockSteamRuntime() {
     }
   ]));
   await adapter.refreshAvailability();
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'sector', 'friends', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local']);
 
   const result = await adapter.submitScore({
     score: 12345,
@@ -211,6 +213,27 @@ async function checkMockSteamRuntime() {
   assert.equal(global.entries[0].level, 5);
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
+
+  const tacticalRun = createRunResultFromGame({
+    score: 8888,
+    level: 6,
+    rankIndex: 5,
+    runMode: 'ranked_tactical'
+  }, {
+    levelReached: 6,
+    submissionId: 'steam-tactical-run-1'
+  });
+  assert.equal(tacticalRun.leaderboardName, STEAM_TACTICAL_LEADERBOARD_NAME);
+  assert.equal(tacticalRun.leaderboardKind, 'mayhem_tactical');
+  const tacticalSubmit = await adapter.submitScore(tacticalRun, { target: 'steam', saveLocal: false });
+  assert.equal(tacticalSubmit.steamStatus, 'submitted');
+  assert.equal(tacticalSubmit.leaderboardName, STEAM_TACTICAL_LEADERBOARD_NAME);
+  const tactical = await adapter.getScores('tactical', { useCache: false });
+  assert.equal(tactical.sourceLabel, 'Steam Tactical');
+  assert.equal(tactical.entries[0].score, 8888);
+  assert.equal(tactical.entries[0].leaderboardKind, 'mayhem_tactical');
+  const pureAfterTactical = await adapter.getScores('global', { useCache: false });
+  assert.equal(pureAfterTactical.entries[0].score, 12345, 'Tactical submit must not overwrite the Pure board');
 
   win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
     { name: 'LOCAL ACE', score: 54321, level: 10, rankIndex: 8, timestamp: '2026-06-01T00:00:00.000Z' }

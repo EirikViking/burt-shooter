@@ -1,6 +1,7 @@
 import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
   LeaderboardView,
   encodeSteamLeaderboardDetails,
@@ -124,9 +125,15 @@ function isSectorLeaderboardName(value) {
   return resolveLeaderboardName(value) === STEAM_SECTOR_LEADERBOARD_NAME;
 }
 
+function isTacticalLeaderboardName(value) {
+  return resolveLeaderboardName(value) === STEAM_TACTICAL_LEADERBOARD_NAME;
+}
+
 function resolveLeaderboardKind({ leaderboardName, leaderboardKind, view } = {}) {
   const rawKind = String(leaderboardKind || view || '').toLowerCase();
   if (rawKind === 'sector_start' || rawKind === LeaderboardView.SECTOR) return 'sector_start';
+  if (rawKind === 'mayhem_tactical' || rawKind === LeaderboardView.TACTICAL) return 'mayhem_tactical';
+  if (isTacticalLeaderboardName(leaderboardName)) return 'mayhem_tactical';
   return isSectorLeaderboardName(leaderboardName) ? 'sector_start' : 'global';
 }
 
@@ -359,7 +366,13 @@ export class SteamLeaderboardProvider {
     const limit = Number(options.limit) || LEADERBOARD_DISPLAY_LIMIT;
     const leaderboardName = resolveLeaderboardName(options.leaderboardName || this.leaderboardName);
     const leaderboardKind = resolveLeaderboardKind({ leaderboardName, leaderboardKind: options.leaderboardKind, view: options.view });
-    const sourceLabel = options.sourceLabel || (leaderboardKind === 'sector_start' ? 'Steam Sector' : 'Steam Global');
+    const sourceLabel = options.sourceLabel || (
+      leaderboardKind === 'sector_start'
+        ? 'Steam Sector'
+        : leaderboardKind === 'mayhem_tactical'
+          ? 'Steam Tactical'
+          : 'Steam Pure'
+    );
     const payload = {
       leaderboardName,
       leaderboardKind,
@@ -378,7 +391,11 @@ export class SteamLeaderboardProvider {
     const entries = normalizeLeaderboardEntries(Array.isArray(raw) ? raw : raw?.entries, {
       source: 'steam',
       leaderboardKind,
-      view: leaderboardKind === 'sector_start' ? LeaderboardView.SECTOR : LeaderboardView.GLOBAL
+      view: leaderboardKind === 'sector_start'
+        ? LeaderboardView.SECTOR
+        : leaderboardKind === 'mayhem_tactical'
+          ? LeaderboardView.TACTICAL
+          : LeaderboardView.GLOBAL
     }).slice(0, limit);
     return {
       status: entries.length > 0 ? 'available' : 'empty',
@@ -386,8 +403,16 @@ export class SteamLeaderboardProvider {
       sourceLabel,
       entries,
       message: entries.length > 0
-        ? (leaderboardKind === 'sector_start' ? 'Steam sector run records loaded.' : 'Steam global records loaded.')
-        : (leaderboardKind === 'sector_start' ? 'Steam sector run board has no entries yet.' : 'Steam global board has no entries yet.')
+        ? (leaderboardKind === 'sector_start'
+            ? 'Steam sector run records loaded.'
+            : leaderboardKind === 'mayhem_tactical'
+              ? 'Steam Tactical records loaded. Every score here used tactical upgrades.'
+              : 'Steam Pure records loaded. No tactical upgrades, no asterisks.')
+        : (leaderboardKind === 'sector_start'
+            ? 'Steam sector run board has no entries yet.'
+            : leaderboardKind === 'mayhem_tactical'
+              ? 'Steam Tactical has no entries yet. The first build is waiting for a pilot.'
+              : 'Steam Pure has no entries yet. Raw skill gets the first chair.')
     };
   }
 
@@ -529,7 +554,11 @@ export class SteamLeaderboardProvider {
     return {
       status: 'submitted',
       source: 'steam',
-      sourceLabel: leaderboardKind === 'sector_start' ? 'Steam Sector' : 'Steam Global',
+      sourceLabel: leaderboardKind === 'sector_start'
+        ? 'Steam Sector'
+        : leaderboardKind === 'mayhem_tactical'
+          ? 'Steam Tactical'
+          : 'Steam Pure',
       playerName: await this.getPlayerName(),
       details,
       levelReached: leaderboardKind === 'sector_start' ? details[1] : details[0],

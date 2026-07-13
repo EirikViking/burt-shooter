@@ -1,6 +1,8 @@
 export const RUN_MODES = Object.freeze({
   MAYHEM: 'ranked',
   RANKED: 'ranked',
+  MAYHEM_TACTICAL: 'ranked_tactical',
+  RANKED_TACTICAL: 'ranked_tactical',
   SCOUT: 'scout',
   UNRANKED: 'unranked',
   SECTOR_START: 'sector_start'
@@ -25,12 +27,36 @@ export const RUN_MODE_PROFILES = Object.freeze({
   [RUN_MODES.RANKED]: Object.freeze({
     id: RUN_MODES.RANKED,
     menuId: 'mayhem',
-    label: 'MAYHEM RUN',
-    shortLabel: 'Mayhem Run',
-    subLabel: 'Ranked · Leaderboards · Achievements',
-    resultLabel: 'MAYHEM RUN',
-    oneMoreLabel: 'ONE MORE MAYHEM RUN',
+    label: 'MAYHEM PURE',
+    shortLabel: 'Mayhem Pure',
+    subLabel: 'Ranked · No tactical upgrades',
+    resultLabel: 'MAYHEM PURE',
+    oneMoreLabel: 'ONE MORE PURE RUN',
     ranked: true,
+    tacticalDraftEnabled: false,
+    submitsGlobalLeaderboard: true,
+    submitsLocalLeaderboard: true,
+    unlocksAchievements: true,
+    unlocksRankedCheckpoints: true,
+    updatesCareerProgress: true,
+    difficultyProfileId: 'accepted_harder_ranked',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: MAYHEM_NORMAL_WAVE_SCORE_XP_MULTIPLIER,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
+  [RUN_MODES.MAYHEM_TACTICAL]: Object.freeze({
+    id: RUN_MODES.MAYHEM_TACTICAL,
+    menuId: 'mayhemTactical',
+    label: 'MAYHEM TACTICAL',
+    shortLabel: 'Mayhem Tactical',
+    subLabel: 'Ranked · Tactical upgrades',
+    resultLabel: 'MAYHEM TACTICAL',
+    oneMoreLabel: 'ONE MORE TACTICAL RUN',
+    ranked: true,
+    tacticalDraftEnabled: true,
     submitsGlobalLeaderboard: true,
     submitsLocalLeaderboard: true,
     unlocksAchievements: true,
@@ -53,6 +79,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     resultLabel: 'SCOUT RUN',
     oneMoreLabel: 'ONE MORE SCOUT RUN',
     ranked: false,
+    tacticalDraftEnabled: true,
     submitsGlobalLeaderboard: false,
     submitsLocalLeaderboard: false,
     unlocksAchievements: false,
@@ -84,6 +111,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     resultLabel: 'SECTOR RUN',
     oneMoreLabel: 'ONE MORE SECTOR RUN',
     ranked: false,
+    tacticalDraftEnabled: true,
     submitsGlobalLeaderboard: false,
     submitsLocalLeaderboard: false,
     unlocksAchievements: false,
@@ -106,6 +134,7 @@ export const RUN_MODE_PROFILES = Object.freeze({
     resultLabel: 'PRACTICE RUN',
     oneMoreLabel: 'ONE MORE PRACTICE RUN',
     ranked: false,
+    tacticalDraftEnabled: true,
     submitsGlobalLeaderboard: false,
     submitsLocalLeaderboard: false,
     unlocksAchievements: false,
@@ -123,7 +152,12 @@ export const RUN_MODE_PROFILES = Object.freeze({
 
 export function normalizeRunMode(value) {
   const mode = String(value || '').trim();
-  if (mode === RUN_MODES.SCOUT || mode === RUN_MODES.UNRANKED || mode === RUN_MODES.SECTOR_START) return mode;
+  if (
+    mode === RUN_MODES.MAYHEM_TACTICAL ||
+    mode === RUN_MODES.SCOUT ||
+    mode === RUN_MODES.UNRANKED ||
+    mode === RUN_MODES.SECTOR_START
+  ) return mode;
   return RUN_MODES.RANKED;
 }
 
@@ -148,6 +182,10 @@ export function canRunModeSubmitGlobalLeaderboard(mode, options = {}) {
 
 export function canRunModeUnlockAchievements(mode, options = {}) {
   return isRankedRunMode(mode, options) && getRunModeProfile(mode).unlocksAchievements === true;
+}
+
+export function canRunModeUseTacticalDraft(mode) {
+  return getRunModeProfile(mode).tacticalDraftEnabled === true;
 }
 
 function floorSector(value, fallback = 1) {

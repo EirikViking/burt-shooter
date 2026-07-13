@@ -9,6 +9,7 @@ import { getAchievementIds } from '../src/achievements/AchievementCatalog.js';
 import { RunPressureDirector } from '../src/game/RunPressureDirector.js';
 import {
   RUN_MODES,
+  canRunModeUseTacticalDraft,
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
   getRunModeProfile,
@@ -16,7 +17,7 @@ import {
   getSectorStartPlaySector,
   isRankedRunMode
 } from '../src/game/RunMode.js';
-import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
+import { STEAM_LEADERBOARD_NAME, STEAM_TACTICAL_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4666));
@@ -206,7 +207,8 @@ async function storageSnapshot(page) {
     sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
     scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
-    shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0'
+    shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
+    mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}')
   }));
 }
 
@@ -254,6 +256,7 @@ function assertLaunchDeckVisible(state, label) {
   assertInside(deck.bounds, screen, `${label}: Launch Deck`);
   const cards = [
     ['mayhem', deck.cards?.mayhem],
+    ['mayhemTactical', deck.cards?.mayhemTactical],
     ['scout', deck.cards?.scout],
     ['sector', deck.cards?.sector]
   ];
@@ -262,18 +265,23 @@ function assertLaunchDeckVisible(state, label) {
     assert.ok(card.bounds.height >= 54 && card.bounds.height <= 104, `${label}: ${name} selector should stay compact`);
     assert.ok(card.bounds.width >= 240 && card.bounds.width <= 560, `${label}: ${name} selector should not become oversized`);
   }
-  assert.equal(deck.cards?.mayhem?.label, 'MAYHEM RUN', `${label}: Mayhem label`);
-  assert.equal(deck.cards?.mayhem?.sublabel, 'RANKED', `${label}: Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhem?.label, 'MAYHEM PURE', `${label}: Pure Mayhem label`);
+  assert.equal(deck.cards?.mayhem?.sublabel, 'RANKED // RAW SKILL', `${label}: Pure Mayhem sublabel`);
   assert.equal(deck.cards?.mayhem?.body || '', '', `${label}: Mayhem card should not carry paragraph body text`);
+  assert.equal(deck.cards?.mayhemTactical?.label, 'MAYHEM TACTICAL', `${label}: Tactical Mayhem label`);
+  assert.equal(deck.cards?.mayhemTactical?.sublabel, 'RANKED // BUILDCRAFT', `${label}: Tactical Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhemTactical?.body || '', '', `${label}: Tactical card should not carry paragraph body text`);
   assert.equal(deck.cards?.scout?.label, 'SCOUT RUN', `${label}: Scout label`);
   assert.equal(deck.cards?.scout?.sublabel, 'PRACTICE', `${label}: Scout sublabel`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should not carry paragraph body text`);
   assert.equal(deck.cards?.sector?.label, 'SECTOR RUN', `${label}: Sector label`);
   assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector sublabel`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should not carry paragraph body text`);
-  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Mayhem/Scout cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.mayhemTactical.bounds.x) < 36, `${label}: Pure/Tactical cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.mayhemTactical.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Tactical/Scout cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
-  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Mayhem/Scout cards overlap vertically`);
+  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.mayhemTactical.bounds.y + 36, `${label}: Pure/Tactical cards overlap vertically`);
+  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Tactical/Scout cards overlap vertically`);
   assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector cards overlap vertically`);
   assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
   assert.ok((state.menu?.panel?.y || 0) > deck.bounds.bottom, `${label}: utility dock should sit below Launch Deck`);
@@ -303,16 +311,23 @@ async function selectSectorSelectorCheckpoint(page, checkpoint) {
 
 function assertStaticRules() {
   assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2');
+  assert.equal(STEAM_TACTICAL_LEADERBOARD_NAME, 'nova_swarm_tactical_score_v1');
   assert.equal(isRankedRunMode(RUN_MODES.RANKED), true);
+  assert.equal(isRankedRunMode(RUN_MODES.MAYHEM_TACTICAL), true);
   assert.equal(isRankedRunMode(RUN_MODES.SCOUT), false);
   assert.equal(isRankedRunMode(RUN_MODES.SECTOR_START), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.MAYHEM_TACTICAL), true);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SECTOR_START), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.RANKED), true);
+  assert.equal(canRunModeUnlockAchievements(RUN_MODES.MAYHEM_TACTICAL), true);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
   assert.equal(getRunModeProfile(RUN_MODES.RANKED).difficultyProfileId, 'accepted_harder_ranked');
+  assert.equal(getRunModeProfile(RUN_MODES.MAYHEM_TACTICAL).difficultyProfileId, 'accepted_harder_ranked');
+  assert.equal(canRunModeUseTacticalDraft(RUN_MODES.RANKED), false);
+  assert.equal(canRunModeUseTacticalDraft(RUN_MODES.MAYHEM_TACTICAL), true);
   assert.equal(getRunModeProfile(RUN_MODES.SCOUT).difficultyProfileId, 'scout_lower_pressure_v1');
   assert.equal(getRunModeProfile(RUN_MODES.RANKED).normalWaveScoreXpMult, 1.2);
   assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveDifficultyLevelOffsetDelta, -3);
@@ -390,13 +405,14 @@ try {
   const menu = await seedProfile(page);
   await page.waitForTimeout(1500);
   const settledMenu = await readState(page);
-  assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Run should be visible');
+  assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Pure should be visible');
+  assert.equal(menu.menu?.items?.tacticalLaunchButton?.width > 0, true, 'Mayhem Tactical should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
   assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
-  assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Run');
-  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM RUN/i);
-  assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN RANKED RUN[\s\S]*Start from Sector 1[\s\S]*global leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Pure');
+  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM PURE/i);
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /RANKED.*RAW SKILL[\s\S]*No tactical drafts[\s\S]*original leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
   assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'PRACTICE');
@@ -425,7 +441,7 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await waitForScene(page, 'menu');
     await page.waitForTimeout(250);
-    for (const mode of ['launch', 'scout', 'sectorStart']) {
+    for (const mode of ['launch', 'launchTactical', 'scout', 'sectorStart']) {
       assertLaunchDeckVisible(await focusMenuOption(page, mode), `${viewport.name} ${mode} briefing`);
     }
   }
@@ -435,15 +451,19 @@ try {
   await focusMenuOption(page, 'launch');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'scout', 'ArrowRight should move Mayhem card focus to Scout');
+  assert.equal((await readState(page)).menu?.focusedOption, 'launchTactical', 'ArrowRight should move Pure focus to Tactical');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'sectorStart', 'ArrowRight should move Scout card focus to Sector Run');
+  assert.equal((await readState(page)).menu?.focusedOption, 'scout', 'ArrowRight should move Tactical focus to Scout');
   const mayhemFocus = await focusMenuOption(page, 'launch');
   assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launch');
-  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /MAIN RANKED RUN[\s\S]*Start from Sector 1[\s\S]*global leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /RANKED.*RAW SKILL[\s\S]*No tactical drafts[\s\S]*original leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
   assert.doesNotMatch(mayhemFocus.menu?.missionBriefing?.body || '', /Sector 1 climb/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
+  const tacticalFocus = await focusMenuOption(page, 'launchTactical');
+  assert.equal(tacticalFocus.menu?.missionBriefing?.mode, 'launchTactical');
+  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /RANKED.*BUILDCRAFT[\s\S]*Bosses offer permanent tactical upgrades[\s\S]*separate Tactical leaderboard/i);
+  await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-tactical-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
   assert.match(scoutFocus.menu?.missionBriefing?.body || '', /UNRANKED PRACTICE[\s\S]*Lower pressure practice[\s\S]*testing ships[\s\S]*learning routes[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
@@ -521,6 +541,14 @@ try {
   assert.equal(mayhemPlay.runModeProfile?.difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(mayhemPlay.scoreSubmissionAllowed, true);
   assert.equal(mayhemPlay.runModeProfile?.unlocksAchievements, true);
+  const pureDraftAttempt = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return {
+      opened: play?.openTacticalDraft?.({ sectorCleared: 5 }) || false,
+      active: Boolean(play?.getTacticalDraftDebugState?.().active)
+    };
+  });
+  assert.deepEqual(pureDraftAttempt, { opened: false, active: false }, 'Mayhem Pure must never open the Tactical Draft');
   await page.screenshot({ path: path.join(outputDir, 'mayhem-focused-ranked.png'), fullPage: false });
   await page.evaluate(() => {
     const game = window.__game;
@@ -539,6 +567,50 @@ try {
   assert.equal(mayhemGameOver.scoreSubmissionAllowed, true);
   assert.doesNotMatch(mayhemResultText, /SCOUT RUN|UNRANKED|NO ACHIEVEMENTS/i);
   await page.screenshot({ path: path.join(outputDir, 'mayhem-result-ranked.png'), fullPage: false });
+
+  const pureStorage = await storageSnapshot(page);
+  assert.equal(pureStorage.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), true, 'Mayhem Pure must keep the current Steam board');
+  assert.equal(pureStorage.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME), false, 'Mayhem Pure must not touch the Tactical board');
+
+  await seedProfile(page);
+  await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'ranked_tactical' }));
+  const tacticalPlay = await waitForScene(page, 'play');
+  assert.equal(tacticalPlay.runMode, RUN_MODES.MAYHEM_TACTICAL);
+  assert.equal(tacticalPlay.scoreSubmissionAllowed, true);
+  assert.equal(tacticalPlay.runModeProfile?.tacticalDraftEnabled, true);
+  const tacticalReinforcementReasons = await page.evaluate(() =>
+    window.__game?.scenes?.play?.enemyManager?.getMayhemReinforcementEligibility?.()?.reasons || []
+  );
+  assert.equal(
+    tacticalReinforcementReasons.includes('not_mayhem'),
+    false,
+    'Mayhem Tactical must retain the same Mayhem reinforcement and super-storm eligibility as Pure'
+  );
+  const tacticalDraftAttempt = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const opened = play?.openTacticalDraft?.({ sectorCleared: 5 }) || false;
+    const debug = play?.getTacticalDraftDebugState?.() || {};
+    return { opened, active: Boolean(debug.active), offerCount: debug.offers?.length || 0 };
+  });
+  assert.equal(tacticalDraftAttempt.opened, true, 'Mayhem Tactical must open the Tactical Draft');
+  assert.equal(tacticalDraftAttempt.active, true);
+  assert.equal(tacticalDraftAttempt.offerCount, 3);
+  await page.screenshot({ path: path.join(outputDir, 'mayhem-tactical-draft.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.play?.clearTacticalDraft?.('qa_close'));
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(225000, 'baseScore');
+    game.level = 6;
+    game.gameOver({ fromInterlude: true });
+  });
+  const tacticalGameOver = await waitForGameOverActionStage(page);
+  assert.equal(tacticalGameOver.runMode, RUN_MODES.MAYHEM_TACTICAL);
+  assert.equal(tacticalGameOver.gameOver?.lastLeaderboardResult?.leaderboardKind, 'mayhem_tactical');
+  const tacticalStorage = await storageSnapshot(page);
+  assert.equal(tacticalStorage.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME), true, 'Mayhem Tactical must submit to its new Steam board');
+  assert.equal(tacticalStorage.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), false, 'Mayhem Tactical must not touch the Pure Steam board');
+  assert.ok(Number(tacticalStorage.mayhemModeRecords.tactical) > 0, 'Tactical personal best must be stored separately');
+  await page.screenshot({ path: path.join(outputDir, 'mayhem-tactical-result.png'), fullPage: false });
 
   await seedProfile(page);
   await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'sector_start', startSector: 30 }));
@@ -580,7 +652,10 @@ try {
     },
     mayhem: {
       difficultyProfile: mayhemPlay.runModeProfile?.difficultyProfileId,
-      scoreSubmissionAllowed: mayhemPlay.scoreSubmissionAllowed
+      scoreSubmissionAllowed: mayhemPlay.scoreSubmissionAllowed,
+      pureDraftBlocked: pureDraftAttempt.opened === false,
+      tacticalDraftOpened: tacticalDraftAttempt.opened,
+      boardsSeparated: true
     },
     sectorRun: {
       checkpoint: sectorPlay.sectorStartChallenge?.checkpoint,

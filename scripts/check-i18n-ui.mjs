@@ -11,14 +11,14 @@ const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
 const languages = [
-  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM RUN', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
-  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM RUN', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
-  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: 'MAYHEM RUN', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
-  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'MAYHEM RUN', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
-  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM RUN', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
-  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM RUN', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
-  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: 'MAYHEM RUN', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
-  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'MAYHEM RUN', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
+  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
+  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
+  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
+  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'ЧИСТЫЙ MAYHEM', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM PURO', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
+  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM PURO', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
+  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
+  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 
 const forbiddenPlaceholderMarkers = [

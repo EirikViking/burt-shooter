@@ -4,6 +4,7 @@ import { SteamLeaderboardProvider } from './SteamLeaderboardProvider.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
   STEAM_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
   STEAM_SECTOR_LEADERBOARD_NAME,
   LeaderboardView,
   createSectorStartRunResultFromGame,
@@ -92,6 +93,7 @@ function sanitizePendingRunResult(runResult = {}) {
     sectorStart: runResult.sectorStart ?? runResult.startSector ?? null,
     highestSectorReached: runResult.highestSectorReached ?? null,
     finalSector: runResult.finalSector ?? null,
+    runMode: runResult.runMode || null,
     leaderboardName: runResult.leaderboardName || null,
     leaderboardKind: runResult.leaderboardKind || null,
     buildId: runResult.buildId || null,
@@ -103,6 +105,9 @@ function pendingBoardKind(runResult = {}) {
   if (runResult.leaderboardKind === 'sector_start' || runResult.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME) {
     return 'sector_start';
   }
+  if (runResult.leaderboardKind === 'mayhem_tactical' || runResult.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME) {
+    return 'mayhem_tactical';
+  }
   return 'global';
 }
 
@@ -112,7 +117,8 @@ function pendingDedupeKey(runResult = {}) {
     const start = Math.max(1, Math.floor(Number(runResult.startSector ?? runResult.sectorStart) || 1));
     return `${STEAM_SECTOR_LEADERBOARD_NAME}:start-${start}`;
   }
-  return `${STEAM_LEADERBOARD_NAME}:global`;
+  const leaderboardName = runResult.leaderboardName || STEAM_LEADERBOARD_NAME;
+  return `${leaderboardName}:${kind}`;
 }
 
 function normalizePendingQueue(raw) {
@@ -222,7 +228,8 @@ export class LeaderboardAdapter {
   getTabs() {
     if (this.availability.steam) {
       return [
-        { id: LeaderboardView.GLOBAL, label: 'GLOBAL', title: 'GLOBAL SCORE DECK', sourceLabel: 'Steam Global' },
+        { id: LeaderboardView.GLOBAL, label: 'PURE', title: 'MAYHEM PURE DECK', sourceLabel: 'Steam Pure' },
+        { id: LeaderboardView.TACTICAL, label: 'TACTICAL', title: 'MAYHEM TACTICAL DECK', sourceLabel: 'Steam Tactical' },
         { id: LeaderboardView.SECTOR, label: 'SECTOR', title: 'SECTOR RUN DECK', sourceLabel: 'Steam Sector' },
         { id: LeaderboardView.FRIENDS, label: 'FRIENDS', title: 'FRIENDS SCORE DECK', sourceLabel: 'Steam Friends' },
         { id: LeaderboardView.LOCAL, label: 'LOCAL', title: 'LOCAL SCORE DECK', sourceLabel: 'Local Memory' }
@@ -291,8 +298,34 @@ export class LeaderboardAdapter {
           sourceLabel: 'Steam Sector'
         });
       }
+      if (normalizedView === LeaderboardView.TACTICAL) {
+        if (!this.availability.steam) {
+          return {
+            status: 'unavailable',
+            source: 'steam',
+            sourceLabel: 'Steam Tactical',
+            entries: [],
+            message: 'Steam Tactical leaderboard unavailable. Your score can retry when Steam reconnects.'
+          };
+        }
+        return await this.steamProvider.getTopScores({
+          ...options,
+          limit,
+          leaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME,
+          leaderboardKind: 'mayhem_tactical',
+          view: LeaderboardView.TACTICAL,
+          sourceLabel: 'Steam Tactical'
+        });
+      }
       if (this.availability.steam) {
-        return await this.steamProvider.getTopScores({ ...options, limit });
+        return await this.steamProvider.getTopScores({
+          ...options,
+          limit,
+          leaderboardName: STEAM_LEADERBOARD_NAME,
+          leaderboardKind: 'global',
+          view: LeaderboardView.GLOBAL,
+          sourceLabel: 'Steam Pure'
+        });
       }
       if (this.availability.cloud) {
         return await this.cloudProvider.getTopScores({ ...options, limit });
@@ -309,6 +342,8 @@ export class LeaderboardAdapter {
           ? 'Steam leaderboard unavailable. Local score is saved.'
           : normalizedView === LeaderboardView.SECTOR
             ? 'Steam leaderboard unavailable. Local score is saved.'
+          : normalizedView === LeaderboardView.TACTICAL
+            ? 'Steam Tactical leaderboard unavailable. Your score can retry when Steam reconnects.'
           : normalizedView === LeaderboardView.GLOBAL
             ? 'Steam leaderboard unavailable. Local score is saved.'
             : 'Could not load local scores.',
@@ -319,7 +354,9 @@ export class LeaderboardAdapter {
 
   async submitScore(runResult = {}, options = {}) {
     await this.ensureAvailability();
-    const target = options.target || (this.availability.steam ? 'steam' : 'cloud');
+    const steamOnlyBoard = runResult.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME
+      || runResult.leaderboardKind === 'mayhem_tactical';
+    const target = options.target || (this.availability.steam || steamOnlyBoard ? 'steam' : 'cloud');
     const levelReached = runResult.levelReached ?? runResult.level;
     const result = {
       name: options.name || runResult.playerName || runResult.name || null,
@@ -328,6 +365,9 @@ export class LeaderboardAdapter {
       levelReached,
       rankIndex: runResult.rankIndex,
       submissionId: runResult.submissionId,
+      runMode: runResult.runMode || null,
+      leaderboardName: runResult.leaderboardName || STEAM_LEADERBOARD_NAME,
+      leaderboardKind: runResult.leaderboardKind || 'global',
       updatedAt: new Date().toISOString()
     };
 
@@ -365,6 +405,8 @@ export class LeaderboardAdapter {
         result.steamPersonalBestBeaten = Boolean(steam.personalBestBeaten);
         result.steamBestUnchanged = Boolean(steam.bestUnchanged);
         result.steamResponse = steam.response || null;
+        result.leaderboardName = steam.leaderboardName || result.leaderboardName;
+        result.leaderboardKind = steam.leaderboardKind || result.leaderboardKind;
       } catch (error) {
         result.globalStatus = 'failed';
         result.globalProvider = 'steam';
@@ -372,12 +414,15 @@ export class LeaderboardAdapter {
         result.steamError = error?.message || 'unknown';
         const pending = this.enqueuePendingSteamSubmission(runResult, {
           reason: result.steamError,
-          target: 'global'
+          target: pendingBoardKind(runResult)
         });
         result.steamPendingQueued = pending.queued;
         result.steamPendingCount = pending.pendingCount;
       }
-      result.steamPostSubmitDownload = await this.getSteamPostSubmitDownloadSnapshot();
+      result.steamPostSubmitDownload = await this.getSteamPostSubmitDownloadSnapshot({
+        leaderboardName: result.leaderboardName,
+        leaderboardKind: result.leaderboardKind
+      });
       mergeSteamUploadDiagnostics({
         source: 'LeaderboardAdapter.submitScore',
         steamSubmissionResult: {
@@ -504,7 +549,12 @@ export class LeaderboardAdapter {
   }
 
   async getGlobalScoresForPlacement(options = {}) {
-    const result = await this.getScores(LeaderboardView.GLOBAL, {
+    const view = options.view === LeaderboardView.TACTICAL
+      || options.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME
+      || options.leaderboardKind === 'mayhem_tactical'
+      ? LeaderboardView.TACTICAL
+      : LeaderboardView.GLOBAL;
+    const result = await this.getScores(view, {
       ...options,
       useCache: options.useCache ?? false
     });
@@ -513,11 +563,12 @@ export class LeaderboardAdapter {
 
   async getKnownPersonalBest(options = {}) {
     await this.ensureAvailability();
-    const reads = [
-      this.localProvider.getPlayerBest()
+    const reads = [];
+    if (options.includeLocal !== false) {
+      reads.push(this.localProvider.getPlayerBest()
         .then((best) => personalBestCandidate('local', best))
-        .catch(() => null)
-    ];
+        .catch(() => null));
+    }
     if (this.availability.steam) {
       reads.push(
         this.steamProvider.getPlayerBest(options)
@@ -538,10 +589,10 @@ export class LeaderboardAdapter {
     return candidates[0] || { source: 'none', score: 0, entry: null };
   }
 
-  async getSteamPostSubmitDownloadSnapshot() {
+  async getSteamPostSubmitDownloadSnapshot(options = {}) {
     const [globalResult, friendsResult] = await Promise.allSettled([
-      this.steamProvider.getTopScores({ limit: 10, useCache: false }),
-      this.steamProvider.getFriendsScores({ limit: 10, useCache: false })
+      this.steamProvider.getTopScores({ limit: 10, useCache: false, ...options }),
+      this.steamProvider.getFriendsScores({ limit: 10, useCache: false, ...options })
     ]);
     return {
       generatedAt: new Date().toISOString(),

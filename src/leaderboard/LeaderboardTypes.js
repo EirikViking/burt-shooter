@@ -5,15 +5,35 @@ import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
 export const LEADERBOARD_DISPLAY_LIMIT = 40;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 export const STEAM_LEADERBOARD_COMMUNITY_NAME = 'Global High Score';
+export const STEAM_TACTICAL_LEADERBOARD_NAME = 'nova_swarm_tactical_score_v1';
+export const STEAM_TACTICAL_LEADERBOARD_COMMUNITY_NAME = 'Tactical Mayhem Score';
 export const STEAM_SECTOR_LEADERBOARD_NAME = 'nova_swarm_sector_start_score_v1';
 export const STEAM_SECTOR_LEADERBOARD_COMMUNITY_NAME = 'Sector Run Score';
 
 export const LeaderboardView = {
   GLOBAL: 'global',
+  TACTICAL: 'tactical',
   SECTOR: 'sector',
   FRIENDS: 'friends',
   LOCAL: 'local'
 };
+
+export function getLeaderboardDescriptorForRunMode(runMode = 'ranked') {
+  if (String(runMode || '') === 'ranked_tactical') {
+    return {
+      leaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME,
+      leaderboardKind: 'mayhem_tactical',
+      view: LeaderboardView.TACTICAL,
+      sourceLabel: 'Steam Tactical'
+    };
+  }
+  return {
+    leaderboardName: STEAM_LEADERBOARD_NAME,
+    leaderboardKind: 'global',
+    view: LeaderboardView.GLOBAL,
+    sourceLabel: 'Steam Pure'
+  };
+}
 
 const BLOCKED_PUBLIC_NAME_TERMS = [
   ['K', 'LAUS'].join(''),
@@ -320,6 +340,8 @@ export function createRunResultFromGame(game, overrides = {}) {
   const selectedShipSpriteKey = game?.selectedShipSpriteKey || null;
   const shipMetadata = getShipMetadata(selectedShipSpriteKey);
   const levelReached = Math.max(1, numericInt(overrides.levelReached ?? overrides.level ?? game?.level, 1));
+  const runMode = overrides.runMode || game?.runMode || 'ranked';
+  const leaderboard = getLeaderboardDescriptorForRunMode(runMode);
   return {
     score: Math.max(0, numericInt(overrides.score ?? game?.score, 0)),
     level: levelReached,
@@ -337,6 +359,9 @@ export function createRunResultFromGame(game, overrides = {}) {
     kills: Math.max(0, numericInt(overrides.kills ?? playScene?.totalKills, 0)),
     bossKills: Math.max(0, numericInt(overrides.bossKills ?? playScene?.bossKills, 0)),
     wavesCleared: Math.max(0, numericInt(overrides.wavesCleared ?? playScene?.wavesCleared, 0)),
+    runMode,
+    leaderboardName: overrides.leaderboardName || leaderboard.leaderboardName,
+    leaderboardKind: overrides.leaderboardKind || leaderboard.leaderboardKind,
     buildId: BUILD_ID,
     source: overrides.source || 'run'
   };

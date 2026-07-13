@@ -49,6 +49,7 @@ const MENU_ICON_ASSET_KEYS = {
 
 const MENU_BOSS_BARK_EVENTS = {
   launch: 'boss_menu_bark_launch',
+  launchTactical: 'boss_menu_bark_launch',
   scout: 'boss_menu_bark_scout',
   sectorStart: 'boss_menu_bark_sector_start',
   hangar: 'boss_menu_bark_hangar',
@@ -236,6 +237,7 @@ export class MenuScene {
     this.launchDeckBounds = null;
     this.disclaimer = null;
     this.startBtn = null;
+    this.tacticalStartBtn = null;
     this.scoutRunBtn = null;
     this.sectorStartBtn = null;
     this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
@@ -1016,6 +1018,7 @@ export class MenuScene {
   getMenuButtonList() {
     return [
       this.startBtn,
+      this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
@@ -1248,19 +1251,32 @@ export class MenuScene {
     this.container.addChild(this.menuPanel);
     this.createSectorSelectorOverlay(layout);
 
-    this.startBtn = this.createButton('MAYHEM RUN', layout, {
+    this.startBtn = this.createButton('MAYHEM PURE', layout, {
       variant: 'primary',
       accent: 0xffd15c,
       icon: 'launch',
-      subLabel: 'RANKED'
+      subLabel: 'RANKED // RAW SKILL'
     });
     this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
-      this.quickStartRun();
+      this.quickStartRun(RUN_MODES.RANKED);
     });
     this.container.addChild(this.startBtn);
+
+    this.tacticalStartBtn = this.createButton('MAYHEM TACTICAL', layout, {
+      accent: 0xff55d9,
+      icon: 'target',
+      subLabel: 'RANKED // BUILDCRAFT'
+    });
+    this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8 });
+    this.tacticalStartBtn.alpha = 0;
+    this.tacticalStartBtn.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL);
+    });
+    this.container.addChild(this.tacticalStartBtn);
 
     this.scoutRunBtn = this.createButton('SCOUT RUN', layout, {
       accent: 0x7fffd8,
@@ -1504,6 +1520,7 @@ export class MenuScene {
       this.buildStamp,
       this.musicBtn?._label,
       this.startBtn?._label,
+      this.tacticalStartBtn?._label,
       this.scoutRunBtn?._label,
       this.sectorStartBtn?._label,
       this.highscoreBtn?._label,
@@ -1690,6 +1707,7 @@ export class MenuScene {
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
       this.startBtn,
+      this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn
     ].filter(Boolean);
@@ -1730,7 +1748,7 @@ export class MenuScene {
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
     const cardHeight = Math.round(clampNumber(height * 0.052 * uiScale, (isShortLayout ? 44 : 50) * uiScale, (isMobileLayout ? 58 : 62) * uiScale));
-    const deckHeight = cardHeight * 3 + cardGap * 2;
+    const deckHeight = cardHeight * runModeCards.length + cardGap * Math.max(0, runModeCards.length - 1);
     const deckX = Math.round(isMobileLayout
       ? (width - cardWidth) / 2
       : clampNumber(width * 0.018, 20, 46));
@@ -1918,6 +1936,7 @@ export class MenuScene {
     const utilityAlpha = 0.34;
     [
       this.startBtn,
+      this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
@@ -2020,17 +2039,30 @@ export class MenuScene {
         body: translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
       };
     }
+    if (focused === 'launchTactical') {
+      return {
+        id: 'launchTactical',
+        title: translateText('MAYHEM TACTICAL'),
+        accent: 0xff55d9,
+        secondary: 0x7fffd8,
+        menuBody: [
+          translateText('RANKED // BUILDCRAFT'),
+          translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
+        ].join('\n'),
+        body: translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
+      };
+    }
     if (focused === 'launch') {
       return {
         id: 'launch',
-        title: translateText('MAYHEM RUN'),
+        title: translateText('MAYHEM PURE'),
         accent: 0xffd15c,
         secondary: 0x7fffd8,
         menuBody: [
-          translateText('MAIN RANKED RUN'),
-          translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
+          translateText('RANKED // RAW SKILL'),
+          translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
         ].join('\n'),
-        body: translateText('Start from Sector 1 and fight as far as you can. Scores go to the global leaderboard. Achievements, career XP, and checkpoint unlocks happen here.')
+        body: translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
       };
     }
     return {
@@ -2039,10 +2071,10 @@ export class MenuScene {
       accent: 0x37f5ff,
       secondary: 0xffd15c,
       menuBody: [
-        translateText('MAYHEM RUN: ranked. SCOUT RUN: practice. SECTOR RUN: checkpoint starts.'),
-        translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
+        translateText('MAYHEM PURE: raw skill. MAYHEM TACTICAL: buildcraft. Both are ranked on separate Steam leaderboards.'),
+        translateText('Pick your kind of chaos. Pure keeps the original board; Tactical gets upgrades and its own board. Scout and Sector remain practice routes.')
       ].join('\n'),
-      body: translateText('Mayhem is ranked. Scout is unranked practice. Sector Run starts from unlocked Mayhem checkpoints.')
+      body: translateText('Pick your kind of chaos. Pure keeps the original board; Tactical gets upgrades and its own board. Scout and Sector remain practice routes.')
     };
   }
 
@@ -2972,6 +3004,7 @@ export class MenuScene {
       disclaimer: this.disclaimer,
       controls: this.controls,
       launchButton: this.startBtn,
+      tacticalLaunchButton: this.tacticalStartBtn,
       scoutRunButton: this.scoutRunBtn,
       sectorStartButton: this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
       hangarButton: this.highscoreBtn,
@@ -3046,6 +3079,13 @@ export class MenuScene {
             body: this.startBtn?._bodyLabel?.text || null,
             focused: Boolean(this.startBtn?._focused),
             bounds: boundsForDisplayObject(this.startBtn)
+          },
+          mayhemTactical: {
+            label: this.tacticalStartBtn?._label?.text || null,
+            sublabel: this.tacticalStartBtn?._sublabel?.text || null,
+            body: this.tacticalStartBtn?._bodyLabel?.text || null,
+            focused: Boolean(this.tacticalStartBtn?._focused),
+            bounds: boundsForDisplayObject(this.tacticalStartBtn)
           },
           scout: {
             label: this.scoutRunBtn?._label?.text || null,
@@ -3922,6 +3962,7 @@ export class MenuScene {
   updateMenuButtonMotion(delta = 0) {
     const buttons = [
       this.startBtn,
+      this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
@@ -4097,14 +4138,16 @@ export class MenuScene {
     const h = container._btnHeight || 138;
     const x = -w / 2;
     const y = -h / 2;
-    const isMayhem = container === this.startBtn;
+    const isPureMayhem = container === this.startBtn;
+    const isTacticalMayhem = container === this.tacticalStartBtn;
+    const isMayhem = isPureMayhem || isTacticalMayhem;
     const accent = container._accent || 0x37f5ff;
     const secondary = container._secondaryAccent || 0x7fffd8;
     const isFocused = Boolean(container._focused && !this.sectorSelectorOpen);
     const active = isHover || isFocused;
     const pulse = 0.5 + Math.sin(this.animationTime * (isMayhem ? 2.6 : 3.3)) * 0.5;
     const sweep = active ? (0.5 + Math.sin(this.animationTime * 4.9) * 0.5) : pulse;
-    const hotAccent = isMayhem ? 0xffef7e : (active ? 0xdffcff : secondary);
+    const hotAccent = isPureMayhem ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary));
 
     focus.clear();
     if (isFocused) {
@@ -4116,12 +4159,14 @@ export class MenuScene {
     bg.clear();
     drawCutPanel(bg, x + 10, y + 12, w, h, 14, { color: 0x000000, alpha: 0.52 });
     drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, 14, { color: accent, alpha: active ? 0.2 : (isMayhem ? 0.13 + pulse * 0.06 : 0.09) }, { color: accent, width: active ? 2 : 1.35, alpha: active ? 0.8 : (isMayhem ? 0.5 + pulse * 0.12 : 0.38) });
-    drawCutPanel(bg, x, y, w, h, 12, { color: isMayhem ? 0x241704 : 0x031321, alpha: 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.2 : 1.4, alpha: active ? 0.9 : 0.52 });
-    drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: isMayhem ? 0x3b2506 : 0x06243a, alpha: active ? 0.6 : 0.46 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.08 });
+    const mayhemBase = isPureMayhem ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
+    const mayhemInner = isPureMayhem ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
+    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.2 : 1.4, alpha: active ? 0.9 : 0.52 });
+    drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.46 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.08 });
     bg.rect(x + 8, y + 8, w - 16, Math.max(34, h * 0.34));
-    bg.fill({ color: isMayhem ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
+    bg.fill({ color: isPureMayhem ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
     bg.rect(x + 12, y + h - 13, w - 24, 4);
-    bg.fill({ color: isMayhem ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
+    bg.fill({ color: isPureMayhem ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
     bg.rect(x + 12, y + 12, 4, h - 24);
     bg.fill({ color: hotAccent, alpha: active ? 0.82 : 0.48 });
     bg.rect(x + w - 16, y + 12, 4, h - 24);
@@ -4429,22 +4474,24 @@ export class MenuScene {
     this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.startBtn, 0.92, 0.4);
-    this.animateElement(this.scoutRunBtn, 1.02, 0.4);
-    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.12, 0.4);
-    this.animateElement(this.highscoreBtn, 1.22, 0.4);
-    this.animateElement(this.storyBtn, 1.32, 0.4);
-    this.animateElement(this.threatCodexBtn, 1.42, 0.4);
-    this.animateElement(this.achievementsBtn, 1.52, 0.4);
-    this.animateElement(this.settingsBtn, 1.62, 0.4);
-    this.animateElement(this.exitBtn, 1.72, 0.4);
-    this.animateElement(this.helpBtn, 1.78, 0.4);
-    this.animateElement(this.disclaimer, 1.84, 0.4);
+    this.animateElement(this.tacticalStartBtn, 1.02, 0.4);
+    this.animateElement(this.scoutRunBtn, 1.12, 0.4);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.22, 0.4);
+    this.animateElement(this.highscoreBtn, 1.32, 0.4);
+    this.animateElement(this.storyBtn, 1.42, 0.4);
+    this.animateElement(this.threatCodexBtn, 1.52, 0.4);
+    this.animateElement(this.achievementsBtn, 1.62, 0.4);
+    this.animateElement(this.settingsBtn, 1.72, 0.4);
+    this.animateElement(this.exitBtn, 1.82, 0.4);
+    this.animateElement(this.helpBtn, 1.88, 0.4);
+    this.animateElement(this.disclaimer, 1.94, 0.4);
   }
 
   buildMenuNavigation() {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
       { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
+      { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL) },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
         ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
@@ -5068,6 +5115,7 @@ export class MenuScene {
     }
     [
       this.startBtn,
+      this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
