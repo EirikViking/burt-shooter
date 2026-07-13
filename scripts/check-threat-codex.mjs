@@ -63,7 +63,7 @@ for (const entries of Object.values(catalog)) {
     if (bannedCopy.test(copy)) fail(`generic Codex copy remains in ${entry.category}:${entry.id}`);
   }
 }
-if (!catalog.bosses?.every(entry => /movement/i.test(entry.description) && /pressure/i.test(entry.description) && /signature/i.test(entry.description))) {
+if (!catalog.bosses?.every(entry => /movement|moves|moving|flies|traces/i.test(entry.description) && /pressure|attacks|fires|cannon|barrage/i.test(entry.description) && /signature|signal|tell|beam/i.test(entry.description))) {
   fail('boss Codex descriptions should explain movement, pressure, and signature reads');
 }
 const bossById = Object.fromEntries((catalog.bosses || []).map((entry) => [entry.id, entry]));
@@ -79,15 +79,15 @@ if (!/Berget-9|deckhand|admiral throne|royal hangover cannon/i.test(bossById.nov
 if (bossById.nova_boss_01?.codexBodyMode !== 'epic' || bossById.nova_boss_03?.codexBodyMode !== 'epic') {
   fail('long boss Codex stories should use epic body layout mode');
 }
-if (!catalog.powerups?.every(entry => /powerup|defensive|sustain|shots/i.test(entry.description) && /when|lane|shots|safe|boss|wave|pickups|kills|charges|move|shoot|pattern|enemies|threats|clusters|center|targets|readable/i.test(entry.tip))) {
+if (!catalog.powerups?.every(entry => /powerup|pickup|capsule|shots|life|shield|bomb|drone|weapon|score/i.test(entry.description) && /lane|safe|screen|window|problem|move|shoot|firing|surviv|timing/i.test(entry.tip))) {
   fail('powerup Codex entries should explain effect, read, timing, and use');
 }
-if (!catalog.sectors?.every(entry => /waves?/i.test(entry.description) && /boss/i.test(entry.description) && /lives|life routing/i.test(entry.description))) {
-  fail('sector Codex entries should explain wave, boss-gate, and life-routing relevance');
+if (!catalog.sectors?.every(entry => /route|lane|wave|boss|lives|life|hulls/i.test(entry.description) && /clue/i.test(entry.description))) {
+  fail('sector Codex entries should explain route pressure and include a practical clue');
 }
 const sectorDescriptions = catalog.sectors?.map(entry => entry.description) || [];
 if (new Set(sectorDescriptions).size !== sectorDescriptions.length) fail('sector Codex descriptions should be unique');
-if (!catalog.sectors?.every(entry => /feel|feels|opens|runs|is /i.test(entry.description) && /lore note|tiny threat flavor|local rumor|field detail/i.test(entry.description) && /gameplay clue/i.test(entry.description))) {
+if (!catalog.sectors?.every(entry => /opens|traffic lights|route/i.test(entry.description) && /lore note|local rumor/i.test(entry.description) && /practical clue|pilot's clue/i.test(entry.description))) {
   fail('sector Codex descriptions should include identity, flavor, and a gameplay clue');
 }
 const sectorById = Object.fromEntries((catalog.sectors || []).map((entry) => [entry.id, entry]));

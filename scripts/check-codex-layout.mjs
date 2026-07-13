@@ -17,15 +17,19 @@ const viewports = [
   { width: 1280, height: 720, name: '1280x720' }
 ];
 const categoryShots = [
+  { categoryId: 'enemies', entryId: 'rare_chaos_visitor_11', label: 'enemies-long-chaos-name' },
   { categoryId: 'powerups', entryId: 'prism_splitter', label: 'powerups-prism-splitter' },
   { categoryId: 'powerups', entryId: 'mercy_protocol', label: 'powerups-mercy-protocol' },
+  { categoryId: 'augments', entryId: 'combo_anchor', label: 'augments-bureaucracy' },
   { categoryId: 'sectors', entryIndex: 0, label: 'sectors' },
   { categoryId: 'sectors', entryId: 'sector_020', label: 'sectors-20' },
   { categoryId: 'sectors', entryId: 'sector_030', label: 'sectors-30' },
   { categoryId: 'sectors', entryId: 'sector_060', label: 'sectors-60-far-signal' },
   { categoryId: 'runThemes', entryIndex: 0, label: 'runThemes' },
   { categoryId: 'bosses', entryId: 'nova_boss_01', label: 'bosses-sonia' },
-  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-ro-ro-ro' }
+  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-ro-ro-ro' },
+  { categoryId: 'cabinetLogs', entryId: 'codex-discovery', label: 'cabinet-new-receipt' },
+  { categoryId: 'pilotRanks', entryId: 'pilot_rank_39', label: 'pilot-rank-heat-death' }
 ];
 
 async function isPortAvailable(candidatePort) {
@@ -123,6 +127,9 @@ async function openCodex(page) {
   await page.evaluate((seed) => {
     localStorage.setItem('nova.threatDiscovery.v1', JSON.stringify(seed));
   }, state);
+  // Threat discovery is cached while the game boots. Reload after seeding so
+  // the scene reads the test fixture instead of the browser profile's old state.
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.showThreatCodex), null, { timeout: 30000 });
   await page.evaluate(() => window.__game.showThreatCodex());
   await page.waitForFunction(() => window.__game?.currentSceneName === 'threatCodex', null, { timeout: 10000 });
@@ -140,6 +147,7 @@ async function selectCategory(page, shot) {
     const entries = scene.getEntriesForCategory?.() || [];
     const foundIndex = entryId ? entries.findIndex((entry) => entry.id === entryId) : -1;
     scene.entryIndex = foundIndex >= 0 ? foundIndex : Math.max(0, Math.min(entries.length - 1, Number(entryIndex) || 0));
+    scene.detailScrollOffset = 0;
     scene.refresh();
   }, { categoryIndex: index, entryId: shot.entryId, entryIndex: shot.entryIndex });
   await page.waitForTimeout(450);

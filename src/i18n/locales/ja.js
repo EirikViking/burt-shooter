@@ -1742,6 +1742,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };

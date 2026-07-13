@@ -1742,6 +1742,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };

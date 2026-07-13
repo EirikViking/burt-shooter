@@ -12,7 +12,8 @@ import { formatSectorLabel, getSectorInfo } from './SectorCatalog.js';
 import { POWERUP_CODEX_ENTRIES as CATALOG_POWERUP_CODEX_ENTRIES } from './PowerupCatalog.js';
 import { TACTICAL_DRAFT_AUGMENTS, getTacticalDraftMeta } from './TacticalDraft.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { translateText } from '../i18n/index.js';
+import { getCurrentLanguage, translateTextForLocale } from '../i18n/index.js';
+import { applyCodexLore, getCodexRuntimeDescription, getCodexRuntimeTip } from '../i18n/codexLore.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
 import {
   getAllRankTitles,
@@ -20,29 +21,6 @@ import {
   getRankLevelThreshold,
   getRankLore
 } from '../shared/RankPolicy.js';
-
-export const CODEX_TEXT_TEMPLATES = Object.freeze({
-  enemyDescription: '{name} is a {role}. It brings {roleDescription}, moves with {movement}, and fires {fire}. Read the hull first, then clear it before the formation uses it to close your lane.',
-  actionDescription: '{name} is an attack pattern with a {telegraph} tell for about {readWindow} ms. It spends {budget} danger budget on the hit, so the right play is to wait for lock, move once, then return fire.',
-  waveDescription: '{name} is a formation script: {role}. It sets entry timing, lane ownership, and synchronized pressure. Break the lead ship or cross the quiet lane before the whole wave starts speaking at once.',
-  eliteDescription: '{name} is an elite middle ship with {movement} movement, {fire} fire, and the {ability} system. Clear nearby cover first, then burn the elite during its cooldown before it turns the wave into a priority puzzle.',
-  bossDescription: '{name} is the {title} boss profile. Expect {movement} movement, {attack} pressure, and {signature} as the read that matters. Survive the signature tell first; damage is only useful once the lane is clean.',
-  themeDescription: '{name} is shaped by the swarm director, the hidden command intelligence that steers each run. This theme leans toward {threats} and wave shapes like {formations}. Watch sector one for that pattern, then {adapt}.',
-  cabinetLogDescription: '{name} is a Cabinet Log from live play: joke, field note, and receipt in one. Treat the line as a tiny reminder to make one calmer decision.',
-  powerupDescription: '{name} is a {duration} powerup. It changes {effect}. Read it as {read}; pick it when {when}.',
-  fuelShipDescription: '{name} is boss support. It is unarmed, fast, bright, and carrying enough fuel to heal the boss if it reaches the hull. Kill it early or route around the boss getting paid.',
-  dangerMidTip: 'Kill {name} before it turns a normal wave into a priority problem.',
-  rankDescription: 'Rank {rank}: {name}. Level marker {level}, career XP marker {xp}. {lore}',
-  sectorDescriptionA: '{name} opens on {feel}. It matters because {stakes}; the waves, boss gate, and spare lives all start from that rhythm. Lore note: {flavor}. Gameplay clue: {clue}.',
-  sectorDescriptionB: '{name} runs through {feel}. This stretch matters because {stakes}; waves, boss pressure, and life routing all punish sloppy positioning. Tiny threat flavor: {flavor}. Gameplay clue: {clue}.',
-  sectorDescriptionC: '{name} feels like {feel}. The run uses it for {stakes}, so every wave cleared cleanly buys safer boss-gate lives later. Local rumor: {flavor}. Gameplay clue: {clue}.',
-  sectorDescriptionD: '{name} is {feel}. It matters because {stakes}; the waves test patience before the boss gate asks what lives you kept. Field detail: {flavor}. Gameplay clue: {clue}.',
-  runtimeDescription: 'The archive has seen this signal, but not enough times to file a clean note. Expect a visible tell, a repeatable behavior, and a sharper entry once the swarm shows it again.'
-});
-
-function codexText(key, vars = {}) {
-  return translateText(CODEX_TEXT_TEMPLATES[key] || '', vars);
-}
 
 const BOSS_EPIC_CODEX_LORE = Object.freeze({
   nova_boss_01: {
@@ -1126,12 +1104,19 @@ function powerupEntry(entry) {
     name: entry.name,
     rarity: entry.duration,
     role: 'Powerup',
-    description: powerupStory(entry),
-    tip: `Pick when safe. ${entry.tip}`,
+    description: '',
+    tip: entry.tip,
     art: AssetManifest.generated.powerups?.[entry.id] || AssetManifest.sprites.bonusCore,
     accent: entry.accent,
     signalClass: 'pickup signal',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      duration: entry.duration,
+      effect: entry.effect,
+      read: entry.read,
+      when: entry.when,
+      originalTip: entry.tip
+    }
   };
 }
 
@@ -1148,8 +1133,8 @@ function sectorEntry(level) {
     name,
     rarity: milestone ? `${band} Milestone` : band,
     role: milestone ? `${band} milestone route` : `${band} - ${pressure}`,
-    description: sectorStory(name, copy, level),
-    tip: translateText(copy.tip),
+    description: '',
+    tip: copy.tip,
     art: getSectorCodexArt(level),
     accent: level >= 60 ? 0xc77dff : level >= 30 ? 0xffe76a : level >= 11 ? 0x7db7ff : level === 10 ? 0x7dffcc : 0x37f5ff,
     signalClass: 'sector signal',
@@ -1157,7 +1142,15 @@ function sectorEntry(level) {
     difficultyBand: band,
     pressureStyle: pressure,
     milestone,
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      level,
+      feel: copy.feel,
+      stakes: copy.stakes,
+      flavor: copy.flavor,
+      clue: copy.clue,
+      originalTip: copy.tip
+    }
   };
 }
 
@@ -1166,24 +1159,22 @@ function cabinetLogEntry(entry) {
     id: entry.id,
     category: 'cabinetLogs',
     name: entry.title || entry.id,
-    rarity: translateText('Cabinet Log'),
-    role: entry.role || translateText('Cabinet Log'),
-    description: entry.description || makeCodexStory({
-      id: entry.id,
-      name: entry.title || entry.id,
-      role: 'cabinet log',
-      category: 'cabinet-log',
-      core: 'It is a joke, field note, and receipt from live play, preserved because the cabinet believes embarrassment is a training tool.',
-      read: 'The line is short because survival advice gets worse when it starts wearing a lecture hat.',
-      payoff: 'Read it, laugh once if you have time, then make one calmer decision.'
-    }),
-    tip: entry.tip || entry.line || translateText('Read the line, then make one calmer decision.'),
+    rarity: 'Cabinet Log',
+    role: entry.role || 'Cabinet Log',
+    description: '',
+    tip: entry.tip || entry.line || 'Read the line, then make one calmer decision.',
     art: entry.imageAlias
       ? AssetManifest.generated.storyComms?.find((src) => src.includes(entry.imageAlias))
       : AssetManifest.generated.menuCredits,
     accent: entry.accent || 0xffd15c,
     signalClass: 'cabinet-log',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      line: entry.line,
+      context: entry.description,
+      originalDescription: entry.description,
+      originalTip: entry.tip || entry.line
+    }
   };
 }
 
@@ -1201,14 +1192,23 @@ function enemyEntry(profile) {
     name,
     rarity,
     role: roleLabel,
-    description: enemyStory({ profile, name, roleLabel, roleDescription, movement, fire }),
+    description: '',
     tip: ROLE_TIPS[profile.role] || 'Destroy it before the formation finishes shaping the lane.',
     art: AssetManifest.generated.enemies?.[profile.spriteIndex] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
     signalClass: profile.tier,
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      kind: 'normal',
+      role: roleLabel,
+      roleDescription,
+      movement,
+      fire,
+      unlock: profile.unlockLevel,
+      originalTip: ROLE_TIPS[profile.role] || 'Destroy it before the formation finishes shaping the lane.'
+    }
   };
 }
 
@@ -1220,14 +1220,22 @@ function dangerMidEntry(profile) {
     name,
     rarity: profile.tier || 'Danger Mid',
     role: titleCaseSignal(profile.role || 'danger mid ship'),
-    description: dangerMidStory(profile, name),
-    tip: codexText('dangerMidTip', { name }),
+    description: '',
+    tip: profile.codexTip || `Kill ${name} before it turns a normal wave into a priority problem.`,
     art: AssetManifest.generated.enemies?.[Number.isFinite(profile.spriteIndex) ? profile.spriteIndex : ((profile.unlockLevel + profile.id.length) % (AssetManifest.generated.enemies?.length || 1))] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
     signalClass: 'danger-mid',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      kind: 'dangerMid',
+      role: profile.role,
+      movement: profile.move,
+      fire: profile.shot,
+      unlock: profile.unlockLevel,
+      originalTip: profile.codexTip
+    }
   };
 }
 
@@ -1236,20 +1244,25 @@ function rareChaosVisitorEntry(variant) {
     id: variant.id,
     category: 'enemies',
     name: variant.displayName,
-    rarity: translateText('3% WAVE CONTACT'),
-    role: translateText('RARE CHAOS VISITOR'),
-    description: translateText('{name} is rare chaos visitor variant {number} of 99. Its {loadout} loadout mixes bullet barrages with a dramatic laser system. Read the gold crown, respect the warning geometry, and take the guaranteed prize when it breaks.', {
-      name: variant.displayName,
-      number: variant.number,
-      loadout: variant.loadoutName
-    }),
-    tip: translateText('Clear nearby ships first, move after the laser locks, then focus the rare hull during its cooldown.'),
+    rarity: '3% WAVE CONTACT',
+    role: 'RARE CHAOS VISITOR',
+    description: '',
+    tip: 'Clear nearby ships first, move after the laser locks, then focus the rare hull during its cooldown.',
     art: AssetManifest.generated.enemies?.[variant.spriteIndex] || null,
     accent: variant.accent,
     tint: variant.tint,
     unlockLevel: 1,
     signalClass: `rare-chaos-${variant.weaponId}`,
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      kind: 'rareChaos',
+      variantNumber: variant.number,
+      loadout: variant.loadoutName,
+      movement: variant.move,
+      fire: variant.shot,
+      reward: titleCaseSignal(variant.rewardPowerupType),
+      originalTip: 'Clear nearby ships first, move after the laser locks, then focus the rare hull during its cooldown.'
+    }
   };
 }
 
@@ -1257,17 +1270,23 @@ function bossFuelShipEntry() {
   return {
     id: 'boss_fuel_ship',
     category: 'enemies',
-    name: translateText('Boss Fuel Ship'),
-    rarity: translateText('Boss Support'),
-    role: translateText('Boss healer'),
-    description: fuelShipStory(translateText('Boss Fuel Ship'), translateText('Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.')),
-    tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
+    name: 'Boss Fuel Ship',
+    rarity: 'Boss Support',
+    role: 'Boss healer',
+    description: '',
+    tip: 'It does not shoot. That is the trick. Shoot it before the boss drinks the tank.',
     art: AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
     accent: 0x7dffcc,
     tint: 0xfff08a,
     unlockLevel: 1,
     signalClass: 'boss-support',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      kind: 'bossSupport',
+      role: 'Boss healer',
+      supportNote: 'Its movement follows a bright lane, never fires, and clears formation space before it reaches the boss.',
+      originalTip: 'It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'
+    }
   };
 }
 
@@ -1277,16 +1296,22 @@ function bossSupportShipEntry(profile) {
     id: profile.id,
     category: 'enemies',
     name,
-    rarity: translateText('Boss Support'),
+    rarity: 'Boss Support',
     role: titleCaseSignal(profile.role || 'boss support'),
-    description: fuelShipStory(name, 'Its repair tank flashes bright enough to be fair and rude enough to be memorable.'),
-    tip: translateText('It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'),
+    description: '',
+    tip: 'It does not shoot. That is the trick. Shoot it before the boss drinks the tank.',
     art: AssetManifest.generated.enemies?.[profile.spriteIndex] || AssetManifest.generated.powerups?.vampire || AssetManifest.sprites.bonusCore,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: 1,
     signalClass: profile.signalClass || 'boss-support',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      kind: 'bossSupport',
+      role: profile.role || 'boss support',
+      supportNote: 'Its repair tank flashes bright enough to be fair and rude enough to be memorable.',
+      originalTip: 'It does not shoot. That is the trick. Shoot it before the boss drinks the tank.'
+    }
   };
 }
 
@@ -1300,13 +1325,19 @@ function actionEntry(action) {
     name: action.label || action.id,
     rarity: action.minLevel <= 2 ? 'Common' : action.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: action.tags?.[0] || 'Attack pattern',
-    description: actionStory(action, readWindow, budget),
+    description: '',
     tip: ACTION_TIPS[action.id] || action.codexTip || 'Read the tell first, then move once with purpose.',
     art: Number.isFinite(weapon?.assetIndex) ? AssetManifest.generated.enemyWeapons?.[weapon.assetIndex] : null,
     accent: weapon?.warningColor || weapon?.color || 0x7dffcc,
     telegraph: action.telegraph,
     signalClass: action.tags?.join(' / ') || 'pattern',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      telegraph: action.telegraph,
+      readWindow,
+      budget,
+      originalTip: ACTION_TIPS[action.id] || action.codexTip || 'Read the tell first, then move once with purpose.'
+    }
   };
 }
 
@@ -1318,12 +1349,16 @@ function waveEntry([id, name, role, tip]) {
     name,
     rarity: 'Common',
     role,
-    description: waveStory(id, name, role),
+    description: '',
     tip,
     art: createWaveTacticArtDataUri(id, name, role),
     accent: 0x37f5ff ^ (seed & 0x3f3fff),
     signalClass: 'formation script',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      role,
+      originalTip: tip
+    }
   };
 }
 
@@ -1336,14 +1371,20 @@ function eliteEntry(profile) {
     name,
     rarity: profile.minLevel <= 8 ? 'Uncommon' : 'Rare',
     role: profile.role || profile.specialAbility || 'Elite',
-    description: eliteStory(profile, name, ability),
+    description: '',
     tip: profile.designNote || 'Clear nearby fodder, then focus the elite during its cooldown.',
     art: profile.asset || AssetManifest.generated.eliteMiddleShips?.[profile.spriteIndex] || null,
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
     signalClass: profile.specialAbility,
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      movement: profile.movementStyle || 'special',
+      fire: profile.fireStyle || 'elite',
+      ability,
+      originalTip: profile.designNote || 'Clear nearby fodder, then focus the elite during its cooldown.'
+    }
   };
 }
 
@@ -1355,13 +1396,22 @@ function bossEntry(profile) {
     name: profile.name,
     rarity: 'Boss',
     role: profile.title,
-    description: epicLore?.description || bossStory(profile),
+    description: '',
     tip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.',
     art: profile.art,
     accent: profile.accent,
     tint: profile.palette,
     signalClass: epicLore?.signalClass || profile.archetype,
-    codexBodyMode: epicLore ? 'epic' : 'story'
+    codexBodyMode: epicLore ? 'epic' : 'story',
+    loreFacts: {
+      title: profile.title,
+      movement: profile.movement,
+      attack: profile.attack,
+      signature: profile.signature,
+      epicDescription: epicLore?.description || '',
+      epicTip: epicLore?.tip || '',
+      originalTip: epicLore?.tip || 'Respect the signature tell first. Damage matters after you have a clean lane and the boss has finished being theatrical.'
+    }
   };
 }
 
@@ -1375,12 +1425,18 @@ function runThemeEntry(theme) {
     name: theme.label,
     rarity: 'Run Theme',
     role: theme.description || 'Content rotation',
-    description: runThemeStory(theme, threats, formations, adapt),
-    tip: translateText(THEME_TIPS[theme.id] || theme.codexTip || 'Use the first sector to identify what this run wants you to respect.'),
+    description: '',
+    tip: THEME_TIPS[theme.id] || theme.codexTip || 'Use the first sector to identify what this run wants you to respect.',
     art: THEME_ART[theme.id] || AssetManifest.generated.gameplayArenaBackdrop,
     accent: 0x7dffcc,
     signalClass: 'director theme',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      threats,
+      formations,
+      adapt,
+      originalTip: THEME_TIPS[theme.id] || theme.codexTip || 'Use the first sector to identify what this run wants you to respect.'
+    }
   };
 }
 
@@ -1392,18 +1448,27 @@ function pilotRankEntry(title, index) {
     id: `pilot_rank_${String(index).padStart(2, '0')}`,
     category: 'pilotRanks',
     name: title,
-    rarity: index >= 20 ? translateText('Hard Rank') : translateText('Pilot Rank'),
-    role: translateText('Rank {rank}', { rank: index + 1 }),
-    description: rankStory(title, index, level, xp, translateText(lore)),
+    rarity: index >= 20 ? 'Hard Rank' : 'Pilot Rank',
+    role: `Rank ${index + 1}`,
+    description: '',
     tip: index >= 20
-      ? translateText('Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.')
-      : translateText('Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.'),
+      ? 'Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.'
+      : 'Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.',
     art: AssetManifest.generated.ranks?.[index] || AssetManifest.generated.leaderboardHall,
     accent: index >= 20 ? 0xffe76a : 0x37f5ff,
     tint: index >= 20 ? 0xfff08a : 0x9cfbff,
     unlockLevel: level,
     signalClass: index >= 20 ? 'hard-rank' : 'rank',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      rank: index + 1,
+      level,
+      xp,
+      rankLore: lore,
+      originalTip: index >= 20
+        ? 'Hard ranks are long-haul bragging rights. Chase them after the clear, not instead of surviving it.'
+        : 'Career XP comes from ranked runs. Keep flying, keep submitting, keep the receipt.'
+    }
   };
 }
 
@@ -1415,19 +1480,25 @@ function tacticalAugmentEntry(augment) {
     name: meta.name,
     rarity: 'Tactical Augment',
     role: String(meta.category || 'utility').toUpperCase(),
-    description: meta.detail || meta.description,
+    description: '',
     tip: meta.description,
     art: AssetManifest.generated.tacticalAugments?.[augment.id]
       || AssetManifest.generated.powerups?.[augment.id]
       || AssetManifest.sprites.bonusCore,
     accent: meta.color,
     signalClass: 'run-only hardware',
-    codexBodyMode: 'story'
+    codexBodyMode: 'story',
+    loreFacts: {
+      augmentCategory: meta.category,
+      effect: meta.description,
+      detail: meta.detail || meta.description,
+      originalTip: meta.description
+    }
   };
 }
 
-export function getThreatCodexCatalog() {
-  return {
+export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
+  const rawCatalog = {
     enemies: [
       bossFuelShipEntry(),
       ...BOSS_SUPPORT_SHIPS.map(bossSupportShipEntry),
@@ -1443,7 +1514,19 @@ export function getThreatCodexCatalog() {
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
     runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),
-    cabinetLogs: getCabinetLogEntries().map(cabinetLogEntry),
+    cabinetLogs: getCabinetLogEntries({}, locale).map(cabinetLogEntry),
     pilotRanks: getAllRankTitles().map(pilotRankEntry)
   };
+  return applyCodexLore(rawCatalog, {
+    locale,
+    translate: (value) => translateTextForLocale(locale, value)
+  });
+}
+
+export function getThreatCodexRuntimeDescription(identity = '', locale = getCurrentLanguage()) {
+  return getCodexRuntimeDescription(locale, identity);
+}
+
+export function getThreatCodexRuntimeTip(identity = '', locale = getCurrentLanguage()) {
+  return getCodexRuntimeTip(locale, identity);
 }

@@ -1743,6 +1743,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };

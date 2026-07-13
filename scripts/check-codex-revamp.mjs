@@ -196,11 +196,11 @@ function checkCatalog() {
 
   const banned = /mysterious|cosmic entity|harnesses energy|delve|formidable foe|ancient secrets|unleash|data-driven|arcade drama|director weights/i;
   const mechanics = {
-    enemies: ['movement', 'fires', 'lane', 'formation', 'clear'],
+    enemies: ['movement', 'moves', 'fire', 'lane', 'formation', 'clear', 'hull', 'route', 'pressure', 'shots', 'wave', 'pattern', 'gun'],
     attackPatterns: ['tell', 'ms', 'danger', 'move'],
     waveTactics: ['entry timing', 'lane', 'formation', 'pressure'],
     powerups: ['powerup', 'changes', 'read', 'pick'],
-    sectors: ['waves', 'boss', 'lives', 'gameplay clue'],
+    sectors: ['route', 'lane', 'boss', 'lives', 'practical clue', "pilot's clue"],
     elites: ['movement', 'fire', 'system', 'cooldown'],
     bosses: ['movement', 'pressure', 'signature', 'lane'],
     runThemes: ['swarm director', 'hidden command intelligence', 'wave shapes', 'sector'],
@@ -222,10 +222,10 @@ function checkCatalog() {
 
   for (let index = 0; index < (catalog.sectors || []).length; index += 1) {
     const entry = catalog.sectors[index];
-    if (!/lore note|tiny threat flavor|local rumor|field detail/i.test(entry.description || '')) {
+    if (!/lore note|local rumor/i.test(entry.description || '')) {
       fail(`sector:${entry.id} lacks a tiny lore or threat flavor detail`);
     }
-    if (!/gameplay clue/i.test(entry.description || '')) {
+    if (!/practical clue|pilot's clue/i.test(entry.description || '')) {
       fail(`sector:${entry.id} lacks an explicit gameplay clue`);
     }
     for (let other = index + 1; other < (catalog.sectors || []).length; other += 1) {

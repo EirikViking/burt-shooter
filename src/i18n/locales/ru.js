@@ -1743,6 +1743,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };

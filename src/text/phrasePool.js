@@ -1029,16 +1029,16 @@ function fillCabinetTemplate(text, context = {}) {
   ));
 }
 
-function currentCabinetLogs() {
-  const localized = localizedCabinetLogs[getCurrentLanguage()] || null;
+function currentCabinetLogs(language = getCurrentLanguage()) {
+  const localized = localizedCabinetLogs[language] || null;
   return cabinetLogsEn.map((entry, index) => ({
     ...entry,
     ...(localized?.[index] || {})
   }));
 }
 
-export function getCabinetLogEntries(context = {}) {
-  return currentCabinetLogs().map((entry) => ({
+export function getCabinetLogEntries(context = {}, language = getCurrentLanguage()) {
+  return currentCabinetLogs(language).map((entry) => ({
     ...entry,
     line: fillCabinetTemplate(entry.line, context),
     description: fillCabinetTemplate(entry.description, context),
@@ -1046,8 +1046,8 @@ export function getCabinetLogEntries(context = {}) {
   }));
 }
 
-export function getCabinetLogEntry(id, context = {}) {
-  const entry = getCabinetLogEntries(context).find((item) => item.id === id);
+export function getCabinetLogEntry(id, context = {}, language = getCurrentLanguage()) {
+  const entry = getCabinetLogEntries(context, language).find((item) => item.id === id);
   return entry ? { ...entry } : null;
 }
 

@@ -1,6 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { CODEX_TEXT_TEMPLATES, THREAT_CODEX_CATEGORIES, getSectorCodexArt, getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
+import { THREAT_CODEX_CATEGORIES, getSectorCodexArt, getThreatCodexCatalog, getThreatCodexRuntimeDescription, getThreatCodexRuntimeTip } from '../config/ThreatCodexCatalog.js';
 import {
   clearThreatCodexUnread,
   getCodexCompletionCounts,
@@ -8,7 +8,8 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { createText } from '../utils/pixiText.js';
-import { translateText } from '../i18n/index.js';
+import { getCurrentLanguage, translateText } from '../i18n/index.js';
+import { getCodexUiText } from '../i18n/codexLore.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
@@ -35,6 +36,10 @@ const CATEGORY_ACCENTS = Object.freeze({
 
 function localize(source) {
   return translateText(source);
+}
+
+function codexUi(key) {
+  return getCodexUiText(key, getCurrentLanguage());
 }
 
 function titleCaseSignal(id = '') {
@@ -392,14 +397,15 @@ export class ThreatCodexScene {
       if (known.has(id)) return;
       const sectorMatch = categoryId === 'sectors' ? String(id).match(/^sector_(\d{3,})$/) : null;
       const sectorNumber = sectorMatch ? Math.max(1, Math.floor(Number(sectorMatch[1]) || 1)) : null;
+      const runtimeName = item.name || titleCaseSignal(id);
       merged.push({
         id,
         category: categoryId,
-        name: item.name || titleCaseSignal(id),
+        name: runtimeName,
         rarity: item.metadata?.rarity || 'Discovered',
         role: item.metadata?.role || 'Runtime signal',
-        description: item.metadata?.description || translateText(CODEX_TEXT_TEMPLATES.runtimeDescription),
-        tip: item.metadata?.tip || 'Watch the first tell, then move once. The scanner believes in you, suspiciously.',
+        description: item.metadata?.description || getThreatCodexRuntimeDescription(runtimeName),
+        tip: item.metadata?.tip || getThreatCodexRuntimeTip(runtimeName),
         art: sectorNumber ? getSectorCodexArt(sectorNumber) : item.metadata?.art || null,
         sectorNumber
       });
@@ -698,7 +704,7 @@ export class ThreatCodexScene {
     title.style.dropShadowDistance = 0;
     title.style.dropShadowBlur = 9;
 
-    addText(header, localize('FIELD NOTES, COUNTERS, AND RUN RECEIPTS'), {
+    addText(header, codexUi('subtitle'), {
       fontSize: compact ? 12 : 15,
       fontWeight: '800',
       fill: '#9cfbff',
@@ -912,6 +918,7 @@ export class ThreatCodexScene {
         fontWeight: '900',
         fill: discovered ? '#f3fdff' : '#8fa6b8',
         wordWrap: true,
+        breakWords: true,
         wordWrapWidth: listW - 118,
         lineHeight: compact ? 14 : 17
       }, rowH - 2, compact ? 9 : 10);
@@ -1116,6 +1123,7 @@ export class ThreatCodexScene {
       stroke: '#001016',
       strokeThickness: 3,
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: textW,
       lineHeight: sideBySide ? 23 : epicBody ? (veryShortEpic ? 20 : shortPanel ? 22 : compact ? 25 : 33) : compact ? 21 : 33
     }, textX, nameY);
@@ -1163,7 +1171,7 @@ export class ThreatCodexScene {
         : chipY + (compact ? 38 : 44);
     const bodyText = discovered
       ? localize(entry.description)
-      : localize('The silhouette is logged, but the behavior needs one more live read. Find this signal in a run to unlock the counter-note.');
+      : codexUi('lockedDescription');
     const tipY = panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
     const bodyFontSize = epicBody
@@ -1191,6 +1199,7 @@ export class ThreatCodexScene {
       fontSize: bodyFontSize,
       fill: '#d8fbff',
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: textW,
       lineHeight: bodyLineHeight
     }, textX, bodyY);
@@ -1276,12 +1285,13 @@ export class ThreatCodexScene {
     panel.addChild(tipBox);
     const tipText = discovered
       ? `${localize('TIP')}: ${localize(entry.tip)}`
-      : `${localize('TIP')}: ${localize('DISCOVER THIS SIGNAL DURING A RUN')}`;
+      : `${localize('TIP')}: ${codexUi('lockedTip')}`;
     addText(panel, tipText, {
       fontSize: compact ? 12 : 15,
       fontWeight: '800',
       fill: discovered ? '#fff3a2' : '#9cfbff',
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: panelW - 62,
       lineHeight: compact ? 15 : 19
     }, 32, tipY);

@@ -1731,7 +1731,7 @@ const overhaulSourceText = Object.freeze({
   "You served the swarm notice. It ate the paper. You kept the receipt.": "Voce notificou o enxame. Ele comeu o papel. Voce guardou o recibo.",
   "You buried static in a shallow grave and heard it singing.": "Voce enterrou a estatica numa cova rasa e ouviu ela cantar.",
   "The void handed you a bill. You paid in boss parts.": "O vazio te entregou uma conta. Voce pagou com partes de chefe.",
-  "Every meteor signed your log. Most used teeth.": "Todo meteoro assinou seu diario. A maioria com dentes.",
+  "Every meteor signed your log. Most used teeth.": "Cada meteoro assinou seu diario. A maioria usou os dentes.",
   "Your hull preached survival. The bullets converted late.": "Seu casco pregou sobrevivencia. As balas se converteram tarde.",
   "Light owes you money. You collect at muzzle speed.": "A luz te deve dinheiro. Voce cobra na velocidade do cano.",
   "The comet came fast. You made it kneel and sparkle.": "O cometa veio rapido. Voce fez ajoelhar e brilhar.",
@@ -1773,6 +1773,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };

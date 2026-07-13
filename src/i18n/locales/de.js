@@ -2137,6 +2137,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText,
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText }),
   patterns
 };
