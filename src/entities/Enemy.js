@@ -127,6 +127,9 @@ export class Enemy {
     this.spawnCueStartedAt = Date.now();
     this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
     this.threatFrameLayer = null;
+    this.aceLabelPlate = null;
+    this.aceLabelBack = null;
+    this.aceLabelRails = null;
     this.aceLabel = null;
 
     // Arcade formation state machine.
@@ -1283,19 +1286,31 @@ export class Enemy {
     if (!variant) return null;
     this.updateHealthBar();
     if (!this.aceLabel) {
+      this.aceLabelPlate = new PIXI.Container();
+      this.aceLabelPlate.label = 'ace_identity_plate';
+      this.aceLabelPlate.eventMode = 'none';
+      this.aceLabelBack = new PIXI.Graphics();
+      this.aceLabelRails = new PIXI.Graphics();
       this.aceLabel = createText('', {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 11,
+        fontSize: 20,
         fontWeight: '900',
-        fill: '#fff3a0',
-        stroke: '#120018',
-        strokeThickness: 3,
+        fill: '#fff7c4',
+        stroke: '#17000c',
+        strokeThickness: 4,
         align: 'center',
-        lineHeight: 12
+        lineHeight: 22,
+        dropShadow: true,
+        dropShadowColor: '#ffb347',
+        dropShadowBlur: 7,
+        dropShadowDistance: 0
       });
       this.aceLabel.anchor.set(0.5);
-      this.aceLabel.zIndex = 15;
-      this.sprite.addChild(this.aceLabel);
+      this.aceLabelPlate.zIndex = 15;
+      this.aceLabelPlate.addChild(this.aceLabelBack);
+      this.aceLabelPlate.addChild(this.aceLabelRails);
+      this.aceLabelPlate.addChild(this.aceLabel);
+      this.sprite.addChild(this.aceLabelPlate);
     }
     this.updateAceBountyLabel();
     return this.getAceDebugState();
@@ -1340,31 +1355,37 @@ export class Enemy {
   updateAceBountyLabel() {
     if (!this.aceLabel || !this.aceVariant) return;
     const number = String(this.aceVariant.number).padStart(4, '0');
-    const lines = [translateText('ACE {number} // {reward}', {
+    const label = translateText('ACE {number} // {reward}', {
       number,
       reward: translateText(this.aceVariant.rewardLabel)
-    })];
-    if (this.nemesisProtocol) {
-      lines.push(translateText('NEMESIS {number} // {opening} + {defense}', {
-        number: String(this.nemesisProtocol.number).padStart(5, '0'),
-        opening: translateText(this.nemesisProtocol.openingLabel),
-        defense: translateText(this.nemesisProtocol.defenseLabel)
-      }));
-    }
-    if (this.rivalWingCommand) {
-      lines.push(translateText('RIVAL WING {number} // {formation} + {morale}', {
-        number: String(this.rivalWingCommand.number).padStart(5, '0'),
-        formation: translateText(this.rivalWingCommand.formationLabel),
-        morale: translateText(this.rivalWingCommand.moraleLabel)
-      }));
-    }
-    this.aceLabel.text = lines.join('\n');
+    });
+    this.aceLabel.text = label;
     this.aceLabel.scale.set(1);
-    const maxWidth = this.rivalWingCommand ? 214 : this.nemesisProtocol ? 196 : 154;
+    const maxWidth = 310;
     if (this.aceLabel.width > maxWidth) {
-      this.aceLabel.scale.set(Math.max(0.62, maxWidth / this.aceLabel.width));
+      this.aceLabel.scale.set(Math.max(0.82, maxWidth / this.aceLabel.width));
     }
-    this.aceLabel.y = -Math.max(this.rivalWingCommand ? 66 : this.nemesisProtocol ? 52 : 39, this.radius + (this.rivalWingCommand ? 52 : this.nemesisProtocol ? 38 : 24));
+    const accent = this.nemesisEnraged
+      ? (this.nemesisProtocol?.accent || 0xff6174)
+      : (this.aceVariant.accent || 0xffd15c);
+    const panelWidth = Math.max(150, Math.ceil(this.aceLabel.width + 30));
+    const panelHeight = Math.max(34, Math.ceil(this.aceLabel.height + 14));
+    this.aceLabelBack?.clear();
+    this.aceLabelBack?.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 7);
+    this.aceLabelBack?.fill({ color: 0x110812, alpha: 0.9 });
+    this.aceLabelBack?.stroke({ color: this.aceVariant.color || 0xffd15c, width: 2.2, alpha: 0.96 });
+    this.aceLabelBack?.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, 4);
+    this.aceLabelBack?.stroke({ color: accent, width: 1, alpha: 0.58 });
+    this.aceLabelRails?.clear();
+    for (const side of [-1, 1]) {
+      const x = side * (panelWidth / 2 + 5);
+      this.aceLabelRails?.moveTo(x, -8);
+      this.aceLabelRails?.lineTo(x + side * 10, 0);
+      this.aceLabelRails?.lineTo(x, 8);
+    }
+    this.aceLabelRails?.stroke({ color: accent, width: 2.4, alpha: 0.9 });
+    this.aceLabelPlate.y = -Math.max(48, this.radius + 38);
+    this.aceLabelPlate.visible = true;
     this.aceLabel.visible = true;
   }
 
@@ -1411,6 +1432,8 @@ export class Enemy {
       rivalWing: this.rivalWingCommand ? { id: this.rivalWingCommand.id, number: this.rivalWingCommand.number, formationId: this.rivalWingCommand.formationId, formationLabel: translateText(this.rivalWingCommand.formationLabel), moraleId: this.rivalWingCommand.moraleId, moraleLabel: translateText(this.rivalWingCommand.moraleLabel) } : null,
       label: this.aceLabel?.text || null,
       labelBounds,
+      labelFontSize: Number(this.aceLabel?.style?.fontSize) || 0,
+      labelScale: Number((this.aceLabel?.scale?.x || 0).toFixed(3)),
       health: Math.max(0, Number(this.health) || 0),
       maxHealth: Math.max(0, Number(this.maxHealth) || 0),
       rewardClaimed: this.aceRewardClaimed === true
@@ -1855,10 +1878,10 @@ export class Enemy {
     let warningBracketCount = 0;
     let vectorArrowCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
-    if (this.aceLabel) {
+    if (this.aceLabelPlate) {
       // The enemy container turns to face its flight vector. Keep the bounty
       // contract level so its identity and reward stay readable in motion.
-      this.aceLabel.rotation = -(this.sprite?.rotation || 0);
+      this.aceLabelPlate.rotation = -(this.sprite?.rotation || 0);
     }
 
     layer.circle(0, 0, radius);

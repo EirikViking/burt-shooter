@@ -5,6 +5,20 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "CABINET SKILL FLIGHT": "CABINET 技巧飞行",
+  "TARGETS {kills}/{total} // {seconds}s": "目标 {kills}/{total} // {seconds}秒",
+  "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "技巧飞行：{pattern}\n在目标逃离前击破它们",
+  "STAR PARADE": "星光巡游",
+  "CROSSCUT": "十字切线",
+  "NEEDLE DANCE": "针舞",
+  "ORBIT WALTZ": "轨道华尔兹",
+  "PINCER POLKA": "钳形波尔卡",
+  "PERFECT FLIGHT!": "完美飞行！",
+  "FLIGHT GRADE A": "飞行评级 A",
+  "FLIGHT GRADE B": "飞行评级 B",
+  "FLIGHT GRADE C": "飞行评级 C",
+  "FLIGHT MISSED": "目标全失",
+  "TARGETS {kills}/{total} // +{score}": "目标 {kills}/{total} // +{score}",
   "ACE": "王牌",
   "ACE BOUNTIES": "王牌悬赏",
   "NEMESIS PROTOCOLS": "复仇协议",

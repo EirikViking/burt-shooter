@@ -5,6 +5,20 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "CABINET SKILL FLIGHT": "ЛЕТНОЕ ИСПЫТАНИЕ CABINET",
+  "TARGETS {kills}/{total} // {seconds}s": "ЦЕЛИ {kills}/{total} // {seconds}с",
+  "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "ЛЕТНОЕ ИСПЫТАНИЕ: {pattern}\nСБЕЙТЕ ЦЕЛИ, ПОКА ОНИ НЕ УШЛИ",
+  "STAR PARADE": "ЗВЕЗДНЫЙ ПАРАД",
+  "CROSSCUT": "ПЕРЕКРЕСТНЫЙ РАЗРЕЗ",
+  "NEEDLE DANCE": "ТАНЕЦ ИГЛ",
+  "ORBIT WALTZ": "ОРБИТАЛЬНЫЙ ВАЛЬС",
+  "PINCER POLKA": "КЛЕЩЕВАЯ ПОЛЬКА",
+  "PERFECT FLIGHT!": "ИДЕАЛЬНЫЙ ПОЛЕТ!",
+  "FLIGHT GRADE A": "ОЦЕНКА ПОЛЕТА A",
+  "FLIGHT GRADE B": "ОЦЕНКА ПОЛЕТА B",
+  "FLIGHT GRADE C": "ОЦЕНКА ПОЛЕТА C",
+  "FLIGHT MISSED": "ПОЛЕТ ПРОВАЛЕН",
+  "TARGETS {kills}/{total} // +{score}": "ЦЕЛИ {kills}/{total} // +{score}",
   "ACE": "АС",
   "ACE BOUNTIES": "НАГРАДЫ ЗА АСОВ",
   "NEMESIS PROTOCOLS": "ПРОТОКОЛЫ НЕМЕЗИДЫ",

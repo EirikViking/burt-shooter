@@ -324,6 +324,8 @@ export class PlayScene {
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
     this.activeWaveBonusEffect = null;
+    this.challengeFlightHud = null;
+    this.lastChallengeFlightPresentation = null;
     this.activePersonalBestCelebration = null;
     this.lastPersonalBestCelebration = null;
 
@@ -662,6 +664,8 @@ export class PlayScene {
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
     this.activeWaveBonusEffect = null;
+    this.clearChallengeFlightHud('scene_create');
+    this.lastChallengeFlightPresentation = null;
     this.clearPersonalBestCelebration('scene_destroy');
     this.runContractProgressThisRun = new Map();
     this.runContractProgressToastMarkers = new Map();
@@ -2097,7 +2101,7 @@ export class PlayScene {
     active.spawnedWaveIndex = waveIndex;
     active.enemyType = enemy.type || null;
     const number = String(active.number).padStart(4, '0');
-    const contact = translateText('ACE CONTACT: {number} // BOUNTY: {reward}', {
+    const contact = translateText('ACE {number} // {reward}', {
       number,
       reward: translateText(active.rewardLabel)
     });
@@ -2111,15 +2115,30 @@ export class PlayScene {
       formation: translateText(active.rivalWingFormationLabel),
       morale: translateText(active.rivalWingMoraleLabel)
     });
-    this.enqueueToast(`${contact}\n${protocolContact}\n${wingContact}`, {
-      fontSize: this.game.getWidth() < 720 ? 15 : 18,
+    const specsContact = [active.chassisLabel, active.flightLabel, active.weaponLabel]
+      .map((label) => translateText(label))
+      .join(' // ');
+    this.enqueueToast(contact, {
+      fontSize: this.game.getWidth() < 720 ? 26 : 38,
       fill: '#fff3a0',
-      slot: 'corner',
+      slot: 'center',
       type: 'aceContact',
-      priority: 4,
-      duration: 1800
+      priority: 5,
+      duration: 3100,
+      minVisibleMs: 2350,
+      extraReadTimeMs: 0,
+      maxWidth: Math.max(420, this.game.getWidth() - 44),
+      accent: active.color || 0xffd15c,
+      secondaryAccent: active.accent || 0x7df9ff,
+      aceDossier: {
+        title: translateText('THREAT DOSSIER'),
+        primary: contact,
+        specs: specsContact,
+        protocol: protocolContact,
+        wing: wingContact
+      }
     });
-    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.64, minIntervalMs: 700 });
+    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.76, minIntervalMs: 700 });
     return true;
   }
 
@@ -4413,6 +4432,225 @@ export class PlayScene {
     this.game.app.ticker.add(animate);
   }
 
+  showChallengeFlightHud(state = {}) {
+    this.clearChallengeFlightHud('replace');
+    if (!this.uiContainer || !this.game?.app?.ticker) return null;
+
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compact = width < 720;
+    const panelWidth = Math.min(width - 28, compact ? 330 : 410);
+    const panelHeight = compact ? 88 : 102;
+    const container = new PIXI.Container();
+    container.x = 18;
+    container.y = height - panelHeight - 18;
+    container.zIndex = 8800;
+    container.label = 'ui_challenge_flight_hud';
+
+    const shadow = new PIXI.Graphics();
+    shadow.roundRect(5, 6, panelWidth, panelHeight, 10);
+    shadow.fill({ color: 0x000000, alpha: 0.46 });
+    container.addChild(shadow);
+
+    const frame = new PIXI.Graphics();
+    frame.roundRect(0, 0, panelWidth, panelHeight, 10);
+    frame.fill({ color: 0x06111c, alpha: 0.94 });
+    frame.stroke({ color: 0xffd85a, width: 3, alpha: 0.96 });
+    frame.roundRect(6, 6, panelWidth - 12, panelHeight - 12, 7);
+    frame.stroke({ color: 0x7ee9ff, width: 1.4, alpha: 0.55 });
+    container.addChild(frame);
+
+    const rail = new PIXI.Graphics();
+    rail.roundRect(12, panelHeight - 14, panelWidth - 24, 5, 2.5);
+    rail.fill({ color: 0x0b2936, alpha: 0.95 });
+    container.addChild(rail);
+
+    const progress = new PIXI.Graphics();
+    progress.label = 'challengeFlightProgress';
+    container.addChild(progress);
+
+    const reticle = new PIXI.Graphics();
+    const reticleRadius = compact ? 15 : 18;
+    const reticleOuter = compact ? 22 : 26;
+    const reticleInner = compact ? 11 : 14;
+    reticle.circle(0, 0, reticleRadius);
+    reticle.stroke({ color: 0xffd85a, width: 2.5, alpha: 0.9 });
+    reticle.moveTo(0, -reticleOuter);
+    reticle.lineTo(0, -reticleInner);
+    reticle.moveTo(0, reticleOuter);
+    reticle.lineTo(0, reticleInner);
+    reticle.moveTo(-reticleOuter, 0);
+    reticle.lineTo(-reticleInner, 0);
+    reticle.moveTo(reticleOuter, 0);
+    reticle.lineTo(reticleInner, 0);
+    reticle.stroke({ color: 0x7ee9ff, width: 2, alpha: 0.85 });
+    reticle.x = compact ? 34 : 39;
+    reticle.y = compact ? 42 : 48;
+    container.addChild(reticle);
+
+    const title = createText(translateText('CABINET SKILL FLIGHT'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 17 : 21,
+      fill: '#fff3a0',
+      stroke: '#160d00',
+      strokeThickness: 3,
+      fontWeight: '800',
+      letterSpacing: 0.7
+    });
+    title.x = compact ? 61 : 72;
+    title.y = compact ? 9 : 11;
+    const titleMaxWidth = panelWidth - title.x - 18;
+    const titleScale = title.width > titleMaxWidth ? titleMaxWidth / title.width : 1;
+    title.scale.set(titleScale);
+    container.addChild(title);
+
+    const pattern = createText(translateText(state.patternLabel || 'STAR PARADE'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 13 : 16,
+      fill: '#7ee9ff',
+      fontWeight: '700'
+    });
+    pattern.x = title.x;
+    pattern.y = compact ? 32 : 39;
+    container.addChild(pattern);
+
+    const status = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 13 : 15,
+      fill: '#ffffff',
+      fontWeight: '700',
+      align: 'right'
+    });
+    status.anchor.set(1, 0);
+    status.x = panelWidth - 15;
+    status.y = compact ? 54 : 63;
+    container.addChild(status);
+
+    this.uiContainer.addChild(container);
+    this.uiContainer.sortChildren?.();
+
+    let elapsed = 0;
+    const animate = (delta) => {
+      if (!container.parent || container.destroyed) {
+        this.game?.app?.ticker?.remove?.(animate);
+        return;
+      }
+      elapsed += delta.deltaTime * 16.67;
+      reticle.rotation += delta.deltaTime * 0.018;
+      const pulse = Math.sin(elapsed * 0.009) * 0.5 + 0.5;
+      frame.alpha = 0.9 + pulse * 0.1;
+      progress.alpha = 0.78 + pulse * 0.22;
+    };
+    this.game.app.ticker.add(animate);
+
+    this.challengeFlightHud = {
+      container,
+      frame,
+      progress,
+      pattern,
+      status,
+      reticle,
+      animate,
+      panelWidth,
+      panelHeight,
+      titleScale,
+      compact,
+      state: null
+    };
+    this.updateChallengeFlightHud(state);
+    return container;
+  }
+
+  updateChallengeFlightHud(state = {}) {
+    const hud = this.challengeFlightHud;
+    if (!hud?.container?.parent) return false;
+    const total = Math.max(1, Math.floor(Number(state.targetCount) || 1));
+    const kills = Math.max(0, Math.min(total, Math.floor(Number(state.kills) || 0)));
+    const seconds = Math.max(0, Math.ceil((Number(state.remainingMs) || 0) / 1000));
+    hud.status.text = translateText('TARGETS {kills}/{total} // {seconds}s', { kills, total, seconds });
+    hud.pattern.text = translateText(state.patternLabel || 'STAR PARADE');
+    hud.progress.clear();
+    const railWidth = hud.panelWidth - 24;
+    const fillWidth = railWidth * (kills / total);
+    if (fillWidth > 0) {
+      hud.progress.roundRect(12, hud.panelHeight - 14, fillWidth, 5, 2.5);
+      hud.progress.fill({ color: kills === total ? 0xffef7e : 0x7ee9ff, alpha: 0.98 });
+    }
+    hud.state = { ...state, targetCount: total, kills, remainingSeconds: seconds };
+    hud.container._debugChallengeFlight = {
+      ...hud.state,
+      title: translateText('CABINET SKILL FLIGHT'),
+      pattern: hud.pattern.text,
+      status: hud.status.text,
+      panelWidth: hud.panelWidth,
+      panelHeight: hud.panelHeight,
+      titleScale: hud.titleScale,
+      compact: hud.compact
+    };
+    return true;
+  }
+
+  clearChallengeFlightHud(reason = 'clear') {
+    const hud = this.challengeFlightHud;
+    if (!hud) return false;
+    this.game?.app?.ticker?.remove?.(hud.animate);
+    if (hud.container?.parent) hud.container.parent.removeChild(hud.container);
+    hud.container?.destroy?.({ children: true });
+    this.challengeFlightHud = null;
+    this.lastChallengeFlightHudClearReason = reason;
+    return true;
+  }
+
+  showChallengeFlightResult(result = {}) {
+    this.clearChallengeFlightHud('result');
+    if (this.activeRankUpPresentation?.parent) {
+      this.pendingRankUpPresentation = Number.isFinite(Number(this.game?.rankIndex))
+        ? Number(this.game.rankIndex)
+        : this.pendingRankUpPresentation;
+      this.activeRankUpPresentation.parent.removeChild(this.activeRankUpPresentation);
+      this.activeRankUpPresentation.destroy?.({ children: true });
+      this.activeRankUpPresentation = null;
+      this._rankUpAnimating = false;
+    }
+    const kills = Math.max(0, Math.floor(Number(result.kills) || 0));
+    const targetCount = Math.max(1, Math.floor(Number(result.targetCount) || 1));
+    const appliedBonus = Math.max(0, Math.round(Number(result.appliedBonus) || 0));
+    const label = translateText(result.label || 'FLIGHT MISSED');
+    const subtitle = translateText('TARGETS {kills}/{total} // +{score}', {
+      kills,
+      total: targetCount,
+      score: appliedBonus.toLocaleString('en-US')
+    });
+    this.showWaveBonusEffect(appliedBonus, label, {
+      compact: result.grade !== 'PERFECT',
+      subtitle,
+      sfxKey: result.grade === 'PERFECT' ? 'levelComplete' : 'nova_wave_clear_sweep'
+    });
+    if (result.grade === 'PERFECT') {
+      const width = this.game.getWidth();
+      const height = this.game.getHeight();
+      [-1, 0, 1].forEach((offset, index) => {
+        this.particleManager?.createExplosion?.(
+          width / 2 + offset * Math.min(140, width * 0.12),
+          height * 0.45 + (index % 2) * 34,
+          index === 1 ? 0xffffff : 0xffef7e,
+          1.1
+        );
+      });
+      this.screenShake?.shake?.(10, 24);
+    }
+    this.lastChallengeFlightPresentation = {
+      ...result,
+      kills,
+      targetCount,
+      appliedBonus,
+      label,
+      subtitle,
+      presentedAt: Date.now()
+    };
+    return this.lastChallengeFlightPresentation;
+  }
+
   showErrorOverlay(e) {
     const div = document.createElement('div');
     div.style.position = 'fixed';
@@ -5181,6 +5419,7 @@ export class PlayScene {
     measure('collision.enemies_player', () => {
     this.enemyManager.enemies.forEach(enemy => {
       if (enemy.active && this.player.active) {
+        if (enemy.challengeFlightTarget) return;
         collisionStats.enemyPlayerChecks += 1;
         if (this.checkCollision(enemy, this.player)) {
           collisionStats.enemyPlayerHits += 1;
@@ -6090,6 +6329,7 @@ export class PlayScene {
     this.pendingRankUpPresentation = null;
     this.activeRankUpPresentation = null;
     this.activeWaveBonusEffect = null;
+    this.clearChallengeFlightHud('scene_destroy');
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.clearBackgroundLevelEntryWarmup();
@@ -11985,6 +12225,7 @@ export class PlayScene {
       protectedRemainingMs: Math.max(0, (Number(meta.protectedUntil) || 0) - Date.now()),
       combatRelocated: Boolean(meta.combatRelocated),
       ageMs: Math.max(0, Date.now() - meta.createdAt),
+      dossier: display.__aceDossierDebug ? { ...display.__aceDossierDebug } : null,
       bounds: typeof getBounds === 'function'
         ? getBounds(display)
         : this.getToastDisplayBounds(display)
@@ -12142,6 +12383,174 @@ export class PlayScene {
     return arr;
   }
 
+  createAceContactDossier(options = {}, layout = {}) {
+    const data = options.aceDossier || {};
+    const width = Math.max(1, Number(layout.width) || this.game.getWidth());
+    const height = Math.max(1, Number(layout.height) || this.game.getHeight());
+    const compact = width < 900 || height < 700;
+    const accentColor = Number.isFinite(Number(options.accent)) ? Number(options.accent) : 0xffd15c;
+    const secondaryAccent = Number.isFinite(Number(options.secondaryAccent)) ? Number(options.secondaryAccent) : 0x7df9ff;
+    const requestedMaxWidth = Math.max(320, Number(layout.maxWidth) || width * 0.82);
+    const panelWidth = Math.min(width - 40, requestedMaxWidth, compact ? width * 0.94 : width * 0.78);
+    const panelHeight = compact ? Math.min(178, height * 0.31) : Math.min(216, height * 0.25);
+    const textWidth = Math.max(220, panelWidth - (compact ? 54 : 92));
+    const dossier = new PIXI.Container();
+    dossier.label = 'ace_contact_dossier';
+    dossier.eventMode = 'none';
+    dossier.interactive = false;
+
+    const burst = new PIXI.Graphics();
+    burst.blendMode = 'add';
+    const burstRadius = Math.min(panelWidth * 0.42, panelHeight * (compact ? 0.7 : 0.92));
+    for (let index = 0; index < 28; index += 1) {
+      const angle = (index / 28) * Math.PI * 2;
+      const inner = panelHeight * (index % 2 === 0 ? 0.24 : 0.31);
+      const outer = burstRadius * (index % 3 === 0 ? 1 : 0.78);
+      burst.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      burst.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    burst.stroke({ color: accentColor, width: compact ? 1.5 : 2.2, alpha: 0.16 });
+    dossier.addChild(burst);
+
+    const outerGlow = new PIXI.Graphics();
+    outerGlow.roundRect(-panelWidth / 2 - 7, -panelHeight / 2 - 7, panelWidth + 14, panelHeight + 14, 17);
+    outerGlow.fill({ color: accentColor, alpha: 0.1 });
+    outerGlow.stroke({ color: secondaryAccent, width: 5, alpha: 0.15 });
+    dossier.addChild(outerGlow);
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 13);
+    panel.fill({ color: 0x070812, alpha: 0.96 });
+    panel.stroke({ color: accentColor, width: compact ? 3 : 4, alpha: 0.98 });
+    panel.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 8);
+    panel.stroke({ color: secondaryAccent, width: 1.4, alpha: 0.68 });
+    dossier.addChild(panel);
+
+    const rails = new PIXI.Graphics();
+    rails.blendMode = 'add';
+    rails.rect(-panelWidth / 2 + 18, -panelHeight / 2 + 11, panelWidth - 36, 3);
+    rails.fill({ color: accentColor, alpha: 0.7 });
+    rails.rect(-panelWidth / 2 + 18, panelHeight / 2 - 14, panelWidth - 36, 3);
+    rails.fill({ color: secondaryAccent, alpha: 0.52 });
+    for (const side of [-1, 1]) {
+      const x = side * (panelWidth / 2 - 22);
+      rails.moveTo(x, -panelHeight / 2 + 26);
+      rails.lineTo(x - side * 15, -panelHeight / 2 + 39);
+      rails.lineTo(x, -panelHeight / 2 + 52);
+      rails.moveTo(x, panelHeight / 2 - 52);
+      rails.lineTo(x - side * 15, panelHeight / 2 - 39);
+      rails.lineTo(x, panelHeight / 2 - 26);
+    }
+    rails.stroke({ color: 0xffffff, width: 2.2, alpha: 0.56 });
+    dossier.addChild(rails);
+
+    const scanline = new PIXI.Graphics();
+    scanline.blendMode = 'add';
+    scanline.rect(-panelWidth / 2 + 12, -1, panelWidth - 24, 2);
+    scanline.fill({ color: secondaryAccent, alpha: 0.34 });
+    dossier.addChild(scanline);
+
+    const fit = (node, maxWidth, minScale = 0.74) => {
+      node.scale.set(1);
+      if (node.width > maxWidth) node.scale.set(Math.max(minScale, maxWidth / node.width));
+      return node;
+    };
+    const addLine = (text, style, y, maxLineWidth = textWidth, minScale = 0.74) => {
+      const node = createText(String(text || ''), style);
+      node.anchor.set(0.5);
+      node.y = y;
+      fit(node, maxLineWidth, minScale);
+      dossier.addChild(node);
+      return node;
+    };
+
+    const titleFontSize = compact ? 13 : 16;
+    const primaryFontSize = compact ? 29 : 40;
+    const specsFontSize = compact ? 16 : 21;
+    const detailFontSize = compact ? 14 : 18;
+    const titleY = -panelHeight / 2 + (compact ? 18 : 22);
+    const primaryY = -panelHeight / 2 + (compact ? 52 : 66);
+    const specsY = -panelHeight / 2 + (compact ? 84 : 108);
+    const protocolY = -panelHeight / 2 + (compact ? 116 : 148);
+    const wingY = -panelHeight / 2 + (compact ? 145 : 181);
+
+    const title = addLine(data.title, {
+      fontFamily: FONT_DISPLAY,
+      fontSize: titleFontSize,
+      fontWeight: '900',
+      fill: '#7ee9ff',
+      letterSpacing: compact ? 1.6 : 2.6,
+      stroke: '#02131f',
+      strokeThickness: 3
+    }, titleY);
+    const primary = addLine(data.primary, {
+      fontFamily: FONT_DISPLAY,
+      fontSize: primaryFontSize,
+      fontWeight: '900',
+      fill: '#fff7c4',
+      stroke: '#24000c',
+      strokeThickness: compact ? 5 : 7,
+      dropShadow: true,
+      dropShadowColor: `#${accentColor.toString(16).padStart(6, '0')}`,
+      dropShadowBlur: compact ? 8 : 13,
+      dropShadowDistance: 0
+    }, primaryY, textWidth, 0.8);
+    const specs = addLine(data.specs, {
+      fontFamily: FONT_BODY,
+      fontSize: specsFontSize,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#02131f',
+      strokeThickness: 4,
+      letterSpacing: compact ? 0.4 : 1.1
+    }, specsY, textWidth, 0.78);
+    const protocol = addLine(data.protocol, {
+      fontFamily: FONT_BODY,
+      fontSize: detailFontSize,
+      fontWeight: '800',
+      fill: '#ffb57e',
+      stroke: '#18050a',
+      strokeThickness: 4
+    }, protocolY, textWidth, 0.76);
+    const wing = addLine(data.wing, {
+      fontFamily: FONT_BODY,
+      fontSize: detailFontSize,
+      fontWeight: '800',
+      fill: '#8ff9ff',
+      stroke: '#02131f',
+      strokeThickness: 4
+    }, wingY, textWidth, 0.76);
+
+    const requestedY = Number(layout.y) || height * 0.28;
+    const bottomSafeMargin = compact ? 8 : 34;
+    dossier.x = width / 2;
+    dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(panelHeight / 2 + (compact ? 178 : 104), requestedY));
+    dossier.alpha = 0;
+    dossier.scale.set(0.88);
+    dossier.__aceDossierFx = { burst, outerGlow, scanline, panelHeight };
+    dossier.__aceDossierDebug = {
+      compact,
+      panelWidth: Math.round(panelWidth),
+      panelHeight: Math.round(panelHeight),
+      title: String(data.title || ''),
+      primary: String(data.primary || ''),
+      specs: String(data.specs || ''),
+      protocol: String(data.protocol || ''),
+      wing: String(data.wing || ''),
+      titleFontSize,
+      primaryFontSize,
+      specsFontSize,
+      detailFontSize,
+      titleScale: Number(title.scale.x.toFixed(3)),
+      primaryScale: Number(primary.scale.x.toFixed(3)),
+      specsScale: Number(specs.scale.x.toFixed(3)),
+      protocolScale: Number(protocol.scale.x.toFixed(3)),
+      wingScale: Number(wing.scale.x.toFixed(3))
+    };
+    this.uiOverlay.addChild(dossier);
+    return dossier;
+  }
+
   showToastNow(message, options, slot) {
     const { width, height } = this.game.app.screen;
     const fontSize = options.fontSize || (slot === 'corner' ? 16 : 24);
@@ -12162,7 +12571,9 @@ export class PlayScene {
       : requestedY;
 
     let display = null;
-    if (options.banner) {
+    if (options.type === 'aceContact' && options.aceDossier) {
+      display = this.createAceContactDossier(options, { width, height, maxWidth, y });
+    } else if (options.banner) {
       const runContractBanner = options.type === 'runContract'
         || options.type === 'runContractStart'
         || options.type === 'runContractProgress'
@@ -12449,11 +12860,21 @@ export class PlayScene {
     const ticker = (delta) => {
       elapsed += delta.deltaTime * 16.67;
 
+      const aceFx = display.__aceDossierFx;
+      if (aceFx) {
+        const pulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
+        aceFx.burst.rotation = elapsed * 0.00016;
+        aceFx.burst.alpha = 0.72 + pulse * 0.28;
+        aceFx.outerGlow.alpha = 0.72 + pulse * 0.28;
+        aceFx.scanline.y = -aceFx.panelHeight / 2 + 14 + ((elapsed % 1050) / 1050) * (aceFx.panelHeight - 28);
+        aceFx.scanline.alpha = 0.22 + pulse * 0.38;
+      }
+
       if (elapsed < 250) {
         display.alpha = elapsed / 250;
-        if (options.banner) {
+        if (options.banner || options.aceDossier) {
           const t = elapsed / 250;
-          display.scale.set(0.9 + t * 0.1);
+          display.scale.set(0.88 + t * 0.12);
         }
       } else if (elapsed > duration - 350) {
         display.alpha = Math.max(0, (duration - elapsed) / 350);
@@ -13781,6 +14202,7 @@ export class PlayScene {
 
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
+    this.enemyManager?.recordChallengeFlightKill?.(enemy);
     const sideEffects = options.sideEffects || null;
     const queueToast = (message, toastOptions) => {
       if (!this.queueCollisionSideEffect(sideEffects, 'toasts', { message, options: toastOptions })) {

@@ -5,6 +5,20 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "CABINET SKILL FLIGHT": "CABINET 기량 비행",
+  "TARGETS {kills}/{total} // {seconds}s": "표적 {kills}/{total} // {seconds}초",
+  "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "기량 비행: {pattern}\n표적이 달아나기 전에 격파하세요",
+  "STAR PARADE": "별빛 퍼레이드",
+  "CROSSCUT": "교차 절단",
+  "NEEDLE DANCE": "바늘 춤",
+  "ORBIT WALTZ": "궤도 왈츠",
+  "PINCER POLKA": "협공 폴카",
+  "PERFECT FLIGHT!": "완벽한 비행!",
+  "FLIGHT GRADE A": "비행 등급 A",
+  "FLIGHT GRADE B": "비행 등급 B",
+  "FLIGHT GRADE C": "비행 등급 C",
+  "FLIGHT MISSED": "비행 실패",
+  "TARGETS {kills}/{total} // +{score}": "표적 {kills}/{total} // +{score}",
   "ACE": "에이스",
   "ACE BOUNTIES": "에이스 현상금",
   "NEMESIS PROTOCOLS": "네메시스 프로토콜",

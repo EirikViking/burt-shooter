@@ -68,12 +68,25 @@ async function readState(page) {
 }
 
 async function waitForEnemy(page) {
-  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.enemies?.some((enemy) => enemy?.kind === 'enemy'), null, { timeout: 90000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.enemies?.some((enemy) => enemy?.kind === 'enemy' && !enemy.isAce && enemy.active !== false), null, { timeout: 90000 });
 }
 
 async function promoteAce(page, variantId, { protocolId = 'blitz_plating_frenzy_shield', rivalWingId = 'spearhead_standard_aimed_hold', targetWaveIndex = 0, x = null, y = null } = {}) {
-  return page.evaluate(({ variantId: id, protocolId: nemesisId, rivalWingId: wingId, targetWaveIndex: wave, x: targetX, y: targetY }) => {
+  const setup = await page.evaluate(({ variantId: id, protocolId: nemesisId, rivalWingId: wingId, targetWaveIndex: wave, x: targetX, y: targetY }) => {
     const play = window.__game?.scenes?.play;
+    play?.clearToastState?.();
+    for (const entry of play?.enemyManager?.enemies || []) {
+      if (entry?.isAce) {
+        entry.isAce = false;
+        entry.aceVariant = null;
+        entry.nemesisProtocol = null;
+        entry.rivalWingCommand = null;
+        entry.aceRewardClaimed = true;
+        if (entry.aceLabelPlate) entry.aceLabelPlate.visible = false;
+      }
+      entry.rivalWingDoctrine = null;
+      entry.rivalWingMoraleActive = false;
+    }
     const enemy = play?.enemyManager?.enemies?.find((entry) => entry?.kind === 'enemy' && !entry.isAce && entry.active !== false);
     if (!play || !enemy) return { ok: false, reason: 'missing_play_or_enemy' };
     play.prepareAceBountyForSector(window.__game.level || 1, { force: true, variantId: id, protocolId: nemesisId, rivalWingId: wingId, targetWaveIndex: wave, reason: 'runtime_test' });
@@ -109,6 +122,17 @@ async function promoteAce(page, variantId, { protocolId = 'blitz_plating_frenzy_
       labelBounds: bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null
     };
   }, { variantId, protocolId, rivalWingId, targetWaveIndex, x, y });
+  if (!setup.ok) return setup;
+  await page.waitForTimeout(520);
+  return page.evaluate((baseResult) => {
+    const play = window.__game?.scenes?.play;
+    const enemy = window.__aceRuntimeEnemy;
+    return {
+      ...baseResult,
+      ace: structuredClone(enemy?.getAceDebugState?.()),
+      toast: structuredClone(play?.getToastDebugState?.()?.active?.find((entry) => entry?.type === 'aceContact') || null)
+    };
+  }, setup);
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -145,7 +169,10 @@ try {
   if (desktop.base?.scoreValue !== (await page.evaluate(() => window.__game?.scenes?.play?.enemyManager?.enemies?.find((enemy) => enemy?.isAce)?.scoreValue))) failures.push('Ace promotion changed score value');
   if (desktop.threatFrame?.tier !== 'ace' || desktop.threatFrame?.markerCount !== 8) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
   if (!/ACE 0001.*SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
+  if ((desktop.ace?.label || '').includes('\n') || desktop.ace?.labelFontSize < 20 || desktop.ace?.labelScale < 0.82) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
+  if (desktop.toast?.type !== 'aceContact' || desktop.toast?.dossier?.primaryFontSize < 38 || desktop.toast?.dossier?.detailFontSize < 18) failures.push(`desktop Ace dossier hierarchy missing: ${JSON.stringify(desktop.toast)}`);
+  if (!desktop.toast?.bounds || desktop.toast.bounds.x < 0 || desktop.toast.bounds.x + desktop.toast.bounds.width > 1920 || desktop.toast.bounds.y < 0 || desktop.toast.bounds.y + desktop.toast.bounds.height > 1080) failures.push(`desktop Ace dossier outside viewport: ${JSON.stringify(desktop.toast?.bounds)}`);
 
   const wingSetup = await page.evaluate(() => {
     const play = window.__game.scenes.play;
@@ -275,10 +302,12 @@ try {
   await page.screenshot({ path: localized.screenshot, fullPage: true });
   report.scenarios.localized = localized;
   if (!localized.ok || !/ASS 1000/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
-  if (!/NEMESIS 10000/.test(localized.ace?.label || '') || localized.ace?.protocol?.number !== 10000) failures.push(`German Nemesis label mismatch: ${localized.ace?.label}`);
-  if (!/RIVALEN-STAFFEL 10000/.test(localized.ace?.label || '') || localized.ace?.rivalWing?.number !== 10000) failures.push(`German Rival Wing label mismatch: ${localized.ace?.label}`);
+  if (!/NEMESIS 10000/.test(localized.toast?.dossier?.protocol || '') || localized.ace?.protocol?.number !== 10000) failures.push(`German Nemesis dossier mismatch: ${localized.toast?.dossier?.protocol}`);
+  if (!/RIVALEN-STAFFEL 10000/.test(localized.toast?.dossier?.wing || '') || localized.ace?.rivalWing?.number !== 10000) failures.push(`German Rival Wing dossier mismatch: ${localized.toast?.dossier?.wing}`);
   if (/ACE|BOUNTY|REWARD/.test(localized.ace?.label || '')) failures.push(`German Ace label retained English copy: ${localized.ace?.label}`);
   if (!localized.labelBounds || localized.labelBounds.x < 0 || localized.labelBounds.x + localized.labelBounds.width > 840 || localized.labelBounds.y < 0) failures.push(`compact localized Ace label outside viewport: ${JSON.stringify(localized.labelBounds)}`);
+  if (localized.toast?.type !== 'aceContact' || localized.toast?.dossier?.primaryFontSize < 28 || localized.toast?.dossier?.detailFontSize < 14) failures.push(`compact localized Ace dossier hierarchy missing: ${JSON.stringify(localized.toast)}`);
+  if (!localized.toast?.bounds || localized.toast.bounds.x < 0 || localized.toast.bounds.x + localized.toast.bounds.width > 840 || localized.toast.bounds.y < 0 || localized.toast.bounds.y + localized.toast.bounds.height > 640) failures.push(`compact localized Ace dossier outside viewport: ${JSON.stringify(localized.toast?.bounds)}`);
 
   const textState = await readState(page);
   report.scenarios.textState = {

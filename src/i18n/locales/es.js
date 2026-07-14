@@ -5,6 +5,20 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "CABINET SKILL FLIGHT": "VUELO DE DESTREZA DEL CABINET",
+  "TARGETS {kills}/{total} // {seconds}s": "OBJETIVOS {kills}/{total} // {seconds}s",
+  "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "VUELO DE DESTREZA: {pattern}\nROMPE LOS OBJETIVOS ANTES DE QUE ESCAPEN",
+  "STAR PARADE": "DESFILE ESTELAR",
+  "CROSSCUT": "CORTE CRUZADO",
+  "NEEDLE DANCE": "BAILE DE AGUJAS",
+  "ORBIT WALTZ": "VALS ORBITAL",
+  "PINCER POLKA": "POLCA DE PINZAS",
+  "PERFECT FLIGHT!": "¡VUELO PERFECTO!",
+  "FLIGHT GRADE A": "NOTA DE VUELO A",
+  "FLIGHT GRADE B": "NOTA DE VUELO B",
+  "FLIGHT GRADE C": "NOTA DE VUELO C",
+  "FLIGHT MISSED": "VUELO FALLIDO",
+  "TARGETS {kills}/{total} // +{score}": "OBJETIVOS {kills}/{total} // +{score}",
   "ACE": "AS",
   "ACE BOUNTIES": "RECOMPENSAS DE ASES",
   "NEMESIS PROTOCOLS": "PROTOCOLOS NÉMESIS",

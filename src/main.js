@@ -792,6 +792,7 @@ function buildGameTextState(game) {
       currentWaveIndex: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex : null,
       currentWaveNumber: Number.isFinite(enemyManager.currentWaveIndex) ? enemyManager.currentWaveIndex + 1 : null,
       totalWaves: enemyManager.normalWavesTotal || 0,
+      challengeFlight: enemyManager.getChallengeFlightDebugState?.() || null,
       briefingMs: Math.round(enemyManager.waveBriefingTimer || 0),
       tactic: enemyManager.currentWaveTactic ? {
         id: enemyManager.currentWaveTactic.id || null,

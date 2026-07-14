@@ -33,6 +33,11 @@ import {
   getRareChaosVisitorVariant,
   planRareChaosVisitorSpawn
 } from '../config/RareChaosVisitors.js';
+import {
+  CHALLENGE_FLIGHT_TARGET_WINDOW_MS,
+  getChallengeFlightPattern,
+  gradeChallengeFlight
+} from '../config/ChallengeFlights.js';
 
 // TASK D: Boss system - always enabled, no gate
 // Bosses are now core gameplay, spawn at end of every level
@@ -270,6 +275,8 @@ export class EnemyManager {
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
     this.currentWaveThreatState = null;
+    this.challengeFlightState = null;
+    this.lastChallengeFlightResult = null;
     this.mayhemReinforcementState = null;
     this.mayhemReinforcementTriggeredWaves = new Set();
     this.mayhemReinforcementConsumedWaveIndices = new Set();
@@ -353,6 +360,7 @@ export class EnemyManager {
     this.pendingWaveConfig = null;
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
+    this.challengeFlightState = null;
 
     // Reset hijacker state for new level
     this.hijacker = null;
@@ -468,6 +476,7 @@ export class EnemyManager {
     this.waveBriefingTimer = 0;
     this.waveBriefingAnnounced = false;
     this.currentWaveTactic = null;
+    this.challengeFlightState = null;
     this.currentModifier = null;
     this.isBossLevel = false;
 
@@ -2279,6 +2288,16 @@ export class EnemyManager {
       const isBoss = enemy.kind === 'boss';
       enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY);
 
+      if (enemy.challengeFlightReticle) {
+        enemy.challengeFlightReticle.rotation += delta * 0.018;
+        enemy.challengeFlightReticle.alpha = 0.72 + (Math.sin(Date.now() * 0.009 + (enemy.x || 0) * 0.01) * 0.5 + 0.5) * 0.28;
+      }
+
+      if (this.expireChallengeFlightTarget(enemy)) {
+        this.removeEnemySprite(enemy, 'challenge_flight_escape');
+        return false;
+      }
+
       if (this.shouldSweepInactiveEnemy(enemy)) {
         this.removeEnemySprite(enemy, 'inactive_update');
         return false;
@@ -2293,7 +2312,9 @@ export class EnemyManager {
       // Shooting
       const rareFireMultiplier = enemy.isRareChaosVisitor ? 2.15 : 1;
       const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1) * rareFireMultiplier;
-      const shouldShoot = isBoss
+      const shouldShoot = enemy.challengeFlightTarget
+        ? false
+        : isBoss
         ? enemy.canShoot()
         : enemy.canShoot() && Math.random() < enemyFireChance * timeScale;
       if (shouldShoot) {
@@ -2307,6 +2328,11 @@ export class EnemyManager {
 
       return true;
     });
+    const challengeNow = Date.now();
+    if (this.challengeFlightState?.active && challengeNow >= (this.challengeFlightState.nextHudUpdateAt || 0)) {
+      this.challengeFlightState.nextHudUpdateAt = challengeNow + 200;
+      this.game?.scenes?.play?.updateChallengeFlightHud?.(this.getChallengeFlightDebugState());
+    }
   }
 
   playEnemyShotFeedback(enemy, playerX, playerY) {
@@ -2392,6 +2418,128 @@ export class EnemyManager {
 
   startNextWave() { }
 
+  beginChallengeFlight(config = {}, targetCount = 0) {
+    const pattern = getChallengeFlightPattern(config.sourceLevel || this.level, this.currentWaveIndex);
+    const now = Date.now();
+    this.challengeFlightState = {
+      active: true,
+      patternId: config.challengeFlightPatternId || pattern.id,
+      patternLabel: config.challengeFlightPatternLabel || pattern.label,
+      targetCount: Math.max(1, Math.floor(Number(targetCount || config.count) || 1)),
+      kills: 0,
+      escaped: 0,
+      resolvedTargetIds: new Set(),
+      startedAt: now,
+      deadlineAt: now + CHALLENGE_FLIGHT_TARGET_WINDOW_MS,
+      nextHudUpdateAt: now,
+      completedAt: 0
+    };
+    this.game?.scenes?.play?.clearEnemyBullets?.('challenge_flight_start');
+    this.game?.scenes?.play?.showChallengeFlightHud?.(this.getChallengeFlightDebugState());
+    return this.challengeFlightState;
+  }
+
+  registerChallengeFlightTarget(enemy, { index = 0, entryDelayMs = 0, entryDurationMs = 0 } = {}) {
+    const state = this.challengeFlightState;
+    if (!state?.active || !enemy) return false;
+    const safeIndex = Math.max(0, Math.floor(Number(index) || 0));
+    enemy.challengeFlightTarget = true;
+    enemy.challengeFlightResolved = false;
+    enemy.challengeFlightTargetId = `${this.level}:${this.currentWaveIndex}:${safeIndex}`;
+    enemy.challengeFlightPatternId = state.patternId;
+    enemy.challengeFlightExitAt = Date.now() + Math.max(0, Number(entryDelayMs) || 0) + Math.max(600, Number(entryDurationMs) || 0) + CHALLENGE_FLIGHT_TARGET_WINDOW_MS;
+    enemy.health = 1;
+    enemy.maxHealth = 1;
+    enemy.shootDelay = Number.MAX_SAFE_INTEGER;
+    enemy.tacticalFireScalar = 0;
+    if (enemy.sprite) {
+      const reticle = new PIXI.Graphics();
+      const radius = Math.max(23, (Number(enemy.radius) || 16) * 1.65);
+      reticle.circle(0, 0, radius);
+      reticle.stroke({ color: 0xffdf66, width: 2.5, alpha: 0.9 });
+      reticle.circle(0, 0, radius + 7);
+      reticle.stroke({ color: 0x7ee9ff, width: 1.4, alpha: 0.62 });
+      for (let marker = 0; marker < 4; marker += 1) {
+        const angle = marker * Math.PI / 2;
+        reticle.moveTo(Math.cos(angle) * (radius + 3), Math.sin(angle) * (radius + 3));
+        reticle.lineTo(Math.cos(angle) * (radius + 13), Math.sin(angle) * (radius + 13));
+      }
+      reticle.stroke({ color: 0xffffff, width: 2, alpha: 0.8 });
+      reticle.label = 'challengeFlightTargetReticle';
+      enemy.sprite.addChildAt(reticle, 0);
+      enemy.ownedVisuals?.push(reticle);
+      enemy.challengeFlightReticle = reticle;
+    }
+    enemy.updateHealthBar?.();
+    state.deadlineAt = Math.max(state.deadlineAt, enemy.challengeFlightExitAt);
+    return true;
+  }
+
+  resolveChallengeFlightTarget(enemy, outcome = 'kill') {
+    const state = this.challengeFlightState;
+    if (!state?.active || !enemy?.challengeFlightTarget || enemy.challengeFlightResolved) return false;
+    const id = enemy.challengeFlightTargetId || `${this.level}:${this.currentWaveIndex}:unknown`;
+    if (state.resolvedTargetIds.has(id)) return false;
+    state.resolvedTargetIds.add(id);
+    enemy.challengeFlightResolved = true;
+    if (outcome === 'kill') state.kills += 1;
+    else state.escaped += 1;
+    this.game?.scenes?.play?.updateChallengeFlightHud?.(this.getChallengeFlightDebugState());
+    return true;
+  }
+
+  recordChallengeFlightKill(enemy) {
+    return this.resolveChallengeFlightTarget(enemy, 'kill');
+  }
+
+  expireChallengeFlightTarget(enemy, now = Date.now()) {
+    if (!enemy?.challengeFlightTarget || enemy.challengeFlightResolved || !enemy.active) return false;
+    if (now < (Number(enemy.challengeFlightExitAt) || Number.POSITIVE_INFINITY)) return false;
+    this.resolveChallengeFlightTarget(enemy, 'escape');
+    enemy.active = false;
+    enemy.deactivateVisuals?.('challenge_flight_escape');
+    return true;
+  }
+
+  finishChallengeFlight() {
+    const state = this.challengeFlightState;
+    if (!state?.active) return this.lastChallengeFlightResult;
+    const unresolved = Math.max(0, state.targetCount - state.kills - state.escaped);
+    state.escaped += unresolved;
+    state.active = false;
+    state.completedAt = Date.now();
+    const performance = gradeChallengeFlight(state.kills, state.targetCount);
+    const result = {
+      ...performance,
+      patternId: state.patternId,
+      patternLabel: state.patternLabel,
+      targetCount: state.targetCount,
+      kills: state.kills,
+      escaped: state.escaped,
+      elapsedMs: Math.max(0, state.completedAt - state.startedAt),
+      completedAt: state.completedAt
+    };
+    this.lastChallengeFlightResult = result;
+    this.game?.scenes?.play?.clearChallengeFlightHud?.('complete');
+    return result;
+  }
+
+  getChallengeFlightDebugState() {
+    const state = this.challengeFlightState;
+    if (!state) return this.lastChallengeFlightResult ? { active: false, lastResult: { ...this.lastChallengeFlightResult } } : null;
+    return {
+      active: Boolean(state.active),
+      patternId: state.patternId,
+      patternLabel: state.patternLabel,
+      targetCount: state.targetCount,
+      kills: state.kills,
+      escaped: state.escaped,
+      unresolved: Math.max(0, state.targetCount - state.kills - state.escaped),
+      remainingMs: Math.max(0, state.deadlineAt - Date.now()),
+      lastResult: this.lastChallengeFlightResult ? { ...this.lastChallengeFlightResult } : null
+    };
+  }
+
   applyDangerMidShipProfile(enemy, profile) {
     if (!enemy || !profile) return;
     enemy.kind = 'danger_mid_ship';
@@ -2459,6 +2607,15 @@ export class EnemyManager {
       this.currentNormalWaveDifficultyLevel = normalWaveLevel;
       tactic = { ...this.resolveWaveTactic(config) };
       positions = this.getFormationPositions(formation, count);
+      if (config.isChallenge) {
+        const height = this.game.getHeight();
+        const safeTop = height < 720 ? 150 : 205;
+        const safeBottom = height * 0.5;
+        positions = positions.map((position, index) => ({
+          ...position,
+          y: Math.min(safeBottom, Math.max(position.y, safeTop + (index % 2) * (height < 720 ? 18 : 24)))
+        }));
+      }
       if (config.isMayhemReinforcement && Number(config.reinforcementGroupCount) > 1) {
         const laneOffset = Number(config.reinforcementLaneOffsetPx) || 0;
         const groupIndex = Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0));
@@ -2513,7 +2670,10 @@ export class EnemyManager {
     const openingMomentum = this.getOpeningMomentumTuning(config.sourceLevel);
     const delayStep = Math.max(55, ((diff.enemyEntryDelayBaseMs || 150) * openingMomentum.entryDelayMult) / cadence);
     const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1) * openingMomentum.entryDurationMult);
-    const spawnChunkSize = Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
+    if (config.isChallenge) this.beginChallengeFlight(config, count);
+    const spawnChunkSize = config.isChallenge
+      ? Math.max(1, positions.length)
+      : Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
     const spawnChunkDelayMs = Math.max(8, Math.min(24, Math.floor(Number(diff.enemyEntrySpawnChunkDelayMs) || 16)));
     const waveSpawnSerial = this.waveSpawnSerial;
     const allowBossReinforcementSpawn = config.isBossMayhemReinforcement === true;
@@ -2565,6 +2725,13 @@ export class EnemyManager {
         const lanePressure = this.getLanePressureForPosition(pos.x, formation);
         const enemyTactic = this.applyLanePressureToTactic(tactic, lanePressure);
         this.applyModifier(enemy);
+        if (config.isChallenge) {
+          enemy.kind = 'enemy';
+          enemy.health = 1;
+          enemy.maxHealth = 1;
+          enemy.shootDelay = Number.MAX_SAFE_INTEGER;
+          enemy.tacticalFireScalar = 0;
+        }
         if (dangerProfile) {
           this.applyDangerMidShipProfile(enemy, dangerProfile);
         }
@@ -2587,7 +2754,7 @@ export class EnemyManager {
           side: pos.x < screenW / 2 ? -1 : 1,
           combatBounds
         });
-        const threatAction = threatPlan.assignmentBySlot.get(i) || null;
+        const threatAction = config.isChallenge ? null : (threatPlan.assignmentBySlot.get(i) || null);
         if (threatAction && !dangerProfile) {
           enemy.applyThreatAction?.(threatAction, {
             index: i,
@@ -2597,24 +2764,33 @@ export class EnemyManager {
             initialDelayMs: config.threatStartDelayMs
           });
         }
-        this.game?.scenes?.play?.maybePromoteAceEnemy?.(enemy, {
-          sector: this.level,
-          waveIndex: this.currentWaveIndex,
-          slotIndex: i,
-          count
-        });
-        this.game?.scenes?.play?.maybeApplyRivalWingEnemy?.(enemy, {
-          sector: this.level,
-          waveIndex: this.currentWaveIndex,
-          slotIndex: i,
-          count
-        });
+        if (!config.isChallenge) {
+          this.game?.scenes?.play?.maybePromoteAceEnemy?.(enemy, {
+            sector: this.level,
+            waveIndex: this.currentWaveIndex,
+            slotIndex: i,
+            count
+          });
+          this.game?.scenes?.play?.maybeApplyRivalWingEnemy?.(enemy, {
+            sector: this.level,
+            waveIndex: this.currentWaveIndex,
+            slotIndex: i,
+            count
+          });
+        }
         if (enemyTactic.forcedDive) {
           enemy.tacticalDiveAt = Date.now() + entryDurationMs + i * (enemyTactic.id === 'dive_chain' ? 260 : 190) + 520;
         }
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
         enemy.startEntry(startX, -50, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
+        if (config.isChallenge) {
+          this.registerChallengeFlightTarget(enemy, {
+            index: i,
+            entryDelayMs,
+            entryDurationMs: resolvedEntryDurationMs
+          });
+        }
         this.enemies.push(enemy);
         this.container.addChild(enemy.sprite);
         markWaveSpawnDone();
@@ -2634,15 +2810,17 @@ export class EnemyManager {
       }, scheduledDelayMs);
       this.waveSpawnTimers.push(timer);
     });
-    this.maybeSpawnRareChaosVisitor(config, {
-      tactic,
-      formation,
-      normalWaveLevel,
-      combatBounds,
-      waveColor,
-      entryDurationMs
-    });
-    if (config.eliteMiddleShipId) {
+    if (!config.isChallenge) {
+      this.maybeSpawnRareChaosVisitor(config, {
+        tactic,
+        formation,
+        normalWaveLevel,
+        combatBounds,
+        waveColor,
+        entryDurationMs
+      });
+    }
+    if (!config.isChallenge && config.eliteMiddleShipId) {
       this.markPerformance('elite_signal_start', { id: config.eliteMiddleShipId, level: this.level });
       this.measurePerformance('elite_signal_start', () => this.spawnEliteMiddleShip(config.eliteMiddleShipId, {
         formation,
@@ -2656,7 +2834,7 @@ export class EnemyManager {
         specialDelayMs: Number.isFinite(Number(config.eliteSpecialDelayMs)) ? Number(config.eliteSpecialDelayMs) : undefined
       }));
     }
-    if (multiEliteIds.length) {
+    if (!config.isChallenge && multiEliteIds.length) {
       this.markPerformance('elite_signal_start', { ids: multiEliteIds, level: this.level });
       this.measurePerformance('elite_signal_start', () => this.spawnMultiEliteMiddleShips(multiEliteIds, {
         formation,
@@ -2712,10 +2890,12 @@ export class EnemyManager {
         });
       });
     };
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(runDiscoveryHooks);
-    } else {
-      setTimeout(runDiscoveryHooks, 0);
+    if (!config.isChallenge) {
+      if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(runDiscoveryHooks);
+      } else {
+        setTimeout(runDiscoveryHooks, 0);
+      }
     }
     console.log(`[WaveTactic] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} tactic=${tactic.id} formation=${formation} count=${count} threats=${threatPlan.assignedIds.join(',') || 'none'}`);
   }
@@ -4541,13 +4721,15 @@ export class EnemyManager {
     if (this.game?.scenes?.play) {
       const playScene = this.game.scenes.play;
       playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount;
-      if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
-        playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
-        playScene.flawlessWaveStreak = (Number(playScene.flawlessWaveStreak) || 0) + 1;
-        const noHitBonus = playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
-        playScene.showFlawlessWaveCelebration?.(playScene.flawlessWaveStreak, noHitBonus);
-      } else {
-        playScene.flawlessWaveStreak = 0;
+      if (!clearedWave?.isChallenge) {
+        if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
+          playScene.noHitWavesThisRun = (Number(playScene.noHitWavesThisRun) || 0) + 1;
+          playScene.flawlessWaveStreak = (Number(playScene.flawlessWaveStreak) || 0) + 1;
+          const noHitBonus = playScene.addNormalWaveScore?.(400, 'noHitBonus') ?? this.game.addScore(400, 'noHitBonus');
+          playScene.showFlawlessWaveCelebration?.(playScene.flawlessWaveStreak, noHitBonus);
+        } else {
+          playScene.flawlessWaveStreak = 0;
+        }
       }
       if (consumedReinforcementWaveIndices.length >= 2) {
         const stormBonus = 600 * consumedReinforcementWaveIndices.length;
@@ -4594,12 +4776,16 @@ export class EnemyManager {
     }
 
     if (clearedWave && clearedWave.isChallenge) {
-      // Challenge Bonus
-      const bonus = 3000;
-      const appliedBonus = this.game.addScore(bonus);
+      const challengeResult = this.finishChallengeFlight();
+      const bonus = Math.max(0, Number(challengeResult?.bonus) || 0);
+      const appliedBonus = this.game.scenes.play?.addNormalWaveScore?.(bonus, 'waveClearBonus') ??
+        this.game.addScore(bonus, 'waveClearBonus');
       if (this.game.scenes.play) {
         this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => {
-          this.game.scenes.play.showWaveBonusEffect(appliedBonus, 'BONUS DRONE RAID CLEAR!');
+          this.game.scenes.play.showChallengeFlightResult?.({
+            ...challengeResult,
+            appliedBonus
+          });
         });
       }
       if (hasUpcomingWave) {
@@ -4655,12 +4841,17 @@ export class EnemyManager {
       if (Math.random() < challengeWaveChance) {
         const wasChallenge = clearedWave && clearedWave.isChallenge;
         if (!wasChallenge) {
-          console.log('[EnemyManager] injecting bonus drone challenge wave');
+          const pattern = getChallengeFlightPattern(normalWaveLevel, this.currentWaveIndex + 1);
+          console.log(`[EnemyManager] injecting Cabinet Skill Flight pattern=${pattern.id}`);
           this.waves.splice(this.currentWaveIndex + 1, 0, {
             type: 'bonus_challenge',
             count: (diff.challengeWaveCount || 24) + (Number(pressureTuning.challengeWaveCountBonus) || 0),
-            formation: pressureTuning.challengeFormation || (normalWaveLevel >= 50 ? 'CROSS_STREAM' : 'GRID'),
-            tactic: pressureTuning.challengeTactic || (normalWaveLevel >= 50 ? 'overrun_turntable' : 'rush_feint'),
+            formation: pattern.formation,
+            tactic: pattern.tactic,
+            entry: pattern.entry,
+            cadence: pattern.cadence,
+            challengeFlightPatternId: pattern.id,
+            challengeFlightPatternLabel: pattern.label,
             sourceLevel: this.level,
             normalWaveDifficultyLevel: normalWaveLevel,
             isChallenge: true
@@ -4708,28 +4899,39 @@ export class EnemyManager {
     if (this.game.scenes.play) {
       const compactHud = this.game.getWidth() < 620;
       const openingMomentum = this.getOpeningMomentumTuning();
+      const isChallenge = Boolean(this.pendingWaveConfig?.isChallenge || this.pendingWaveConfig?.type === 'bonus_challenge');
+      const challengePattern = this.pendingWaveConfig?.challengeFlightPatternLabel ||
+        getChallengeFlightPattern(this.pendingWaveConfig?.sourceLevel || this.level, this.currentWaveIndex).label;
       const descriptor = this.getWaveDescriptor(this.pendingWaveConfig);
-      const waveLabel = `WAVE ${this.currentWaveIndex + 1}/${this.normalWavesTotal}`;
-      this.game.scenes.play.showToast(`${waveLabel}: ${descriptor}`, {
-        fontSize: compactHud ? 15 : 18,
-        fill: '#7ee9ff',
+      const waveLabel = `${translateText('WAVE')} ${this.currentWaveIndex + 1}/${this.normalWavesTotal}`;
+      const message = isChallenge
+        ? translateText('SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT', {
+          pattern: translateText(challengePattern)
+        })
+        : `${waveLabel}: ${descriptor}`;
+      this.game.scenes.play.showToast(message, {
+        fontSize: compactHud ? (isChallenge ? 18 : 15) : (isChallenge ? 25 : 18),
+        fill: isChallenge ? '#fff3a0' : '#7ee9ff',
         stroke: '#00111d',
-        strokeThickness: 4,
-        y: compactHud ? this.game.getHeight() * 0.25 : 112,
-        duration: openingMomentum.waveToastDurationMs,
-        slot: 'top',
-        type: 'level_up',
-        priority: 2,
-        maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.62)
+        strokeThickness: isChallenge ? 5 : 4,
+        y: isChallenge ? this.game.getHeight() * 0.32 : (compactHud ? this.game.getHeight() * 0.25 : 112),
+        duration: isChallenge ? Math.max(1700, openingMomentum.waveToastDurationMs) : openingMomentum.waveToastDurationMs,
+        slot: isChallenge ? 'center' : 'top',
+        type: isChallenge ? 'bonus' : 'level_up',
+        priority: isChallenge ? 7 : 2,
+        maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.7)
       });
-      AudioManager.playSfx('ui_open', { volume: 0.25, minIntervalMs: 500 });
+      AudioManager.playSfx(isChallenge ? 'combo_breakout' : 'ui_open', {
+        volume: isChallenge ? 0.58 : 0.25,
+        minIntervalMs: isChallenge ? 0 : 500
+      });
     }
     });
   }
 
   getWaveDescriptor(config) {
-    if (!config) return 'INCOMING';
-    if (config.isChallenge || config.type === 'bonus_challenge') return 'BONUS DRONE RAID';
+    if (!config) return translateText('INCOMING');
+    if (config.isChallenge || config.type === 'bonus_challenge') return translateText('CABINET SKILL FLIGHT');
     const enemy = String(config.type || 'hostiles').replace(/_/g, ' ').toUpperCase();
     const formation = String(config.formation || 'formation').replace(/_/g, ' ').toUpperCase();
     const tactic = this.resolveWaveTactic(config);
@@ -4871,6 +5073,8 @@ export class EnemyManager {
   }
 
   clearEnemies() {
+    this.game?.scenes?.play?.clearChallengeFlightHud?.('clear_enemies');
+    this.challengeFlightState = null;
     this.clearPendingWaveSpawns();
     this.enemies.forEach(e => {
       this.removeEnemySprite(e, 'clear_enemies');
