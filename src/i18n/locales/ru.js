@@ -5,6 +5,9 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "ACE CONTACT": "\u041a\u041e\u041d\u0422\u0410\u041a\u0422 \u0421 \u0410\u0421\u041e\u041c",
+  "DESTROY THE MARKED SHIP": "\u0423\u041d\u0418\u0427\u0422\u041e\u0416\u042c\u0422\u0415 \u041c\u0415\u0427\u0415\u041d\u042b\u0419 \u041a\u041e\u0420\u0410\u0411\u041b\u042c",
+  "DODGE: {threat}": "\u0423\u041a\u041b\u041e\u041d\u042f\u0419\u0422\u0415\u0421\u042c: {threat}",
   "CABINET SKILL FLIGHT": "ЛЕТНОЕ ИСПЫТАНИЕ CABINET",
   "TARGETS {kills}/{total} // {seconds}s": "ЦЕЛИ {kills}/{total} // {seconds}с",
   "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "ЛЕТНОЕ ИСПЫТАНИЕ: {pattern}\nСБЕЙТЕ ЦЕЛИ, ПОКА ОНИ НЕ УШЛИ",

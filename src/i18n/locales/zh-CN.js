@@ -5,6 +5,9 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
+  "DESTROY THE MARKED SHIP": "\u6467\u6bc1\u6807\u8bb0\u8230\u8239",
+  "DODGE: {threat}": "\u95ea\u907f\uff1a{threat}",
   "CABINET SKILL FLIGHT": "CABINET 技巧飞行",
   "TARGETS {kills}/{total} // {seconds}s": "目标 {kills}/{total} // {seconds}秒",
   "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "技巧飞行：{pattern}\n在目标逃离前击破它们",

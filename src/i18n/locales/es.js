@@ -5,6 +5,9 @@ import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 
 const sourceText = Object.freeze({
+  "ACE CONTACT": "CONTACTO AS",
+  "DESTROY THE MARKED SHIP": "DESTRUYE LA NAVE MARCADA",
+  "DODGE: {threat}": "ESQUIVA: {threat}",
   "CABINET SKILL FLIGHT": "VUELO DE DESTREZA DEL CABINET",
   "TARGETS {kills}/{total} // {seconds}s": "OBJETIVOS {kills}/{total} // {seconds}s",
   "SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT": "VUELO DE DESTREZA: {pattern}\nROMPE LOS OBJETIVOS ANTES DE QUE ESCAPEN",

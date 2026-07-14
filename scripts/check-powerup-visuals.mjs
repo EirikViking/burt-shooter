@@ -176,15 +176,19 @@ try {
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
   const fallbackTextures = state.types?.filter(item => String(item.textureLabel || '').includes('bonus_core')) || [];
   const wrongTextures = state.types?.filter(item => !String(item.textureLabel || '').includes(`nova-powerup-${item.type}-`)) || [];
+  const actionableConsoleEvents = consoleEvents.filter(event => !(
+    event.type === 'warning' && event.text.includes('[SW] Service worker script missing or invalid')
+  ));
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && fallbackTextures.length === 0 && wrongTextures.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && fallbackTextures.length === 0 && wrongTextures.length === 0 && actionableConsoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
     missing,
     fallbackTextures,
     wrongTextures,
-    consoleEvents
+    consoleEvents,
+    actionableConsoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 

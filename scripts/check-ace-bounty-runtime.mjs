@@ -171,7 +171,16 @@ try {
   if (!/ACE 0001.*SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
   if ((desktop.ace?.label || '').includes('\n') || desktop.ace?.labelFontSize < 20 || desktop.ace?.labelScale < 0.82) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
-  if (desktop.toast?.type !== 'aceContact' || desktop.toast?.dossier?.primaryFontSize < 38 || desktop.toast?.dossier?.detailFontSize < 18) failures.push(`desktop Ace dossier hierarchy missing: ${JSON.stringify(desktop.toast)}`);
+  if (
+    desktop.toast?.type !== 'aceContact'
+    || desktop.toast?.dossier?.primaryFontSize < 30
+    || desktop.toast?.dossier?.actionFontSize < 15
+    || desktop.toast?.dossier?.panelWidth > 760
+    || desktop.toast?.dossier?.panelHeight > 150
+    || desktop.toast?.dossier?.screenAreaRatio > 0.06
+    || !/DESTROY/i.test(desktop.toast?.dossier?.action || '')
+    || !/DODGE/i.test(desktop.toast?.dossier?.danger || '')
+  ) failures.push(`desktop Ace action briefing hierarchy missing: ${JSON.stringify(desktop.toast)}`);
   if (!desktop.toast?.bounds || desktop.toast.bounds.x < 0 || desktop.toast.bounds.x + desktop.toast.bounds.width > 1920 || desktop.toast.bounds.y < 0 || desktop.toast.bounds.y + desktop.toast.bounds.height > 1080) failures.push(`desktop Ace dossier outside viewport: ${JSON.stringify(desktop.toast?.bounds)}`);
 
   const wingSetup = await page.evaluate(() => {
@@ -306,7 +315,15 @@ try {
   if (!/RIVALEN-STAFFEL 10000/.test(localized.toast?.dossier?.wing || '') || localized.ace?.rivalWing?.number !== 10000) failures.push(`German Rival Wing dossier mismatch: ${localized.toast?.dossier?.wing}`);
   if (/ACE|BOUNTY|REWARD/.test(localized.ace?.label || '')) failures.push(`German Ace label retained English copy: ${localized.ace?.label}`);
   if (!localized.labelBounds || localized.labelBounds.x < 0 || localized.labelBounds.x + localized.labelBounds.width > 840 || localized.labelBounds.y < 0) failures.push(`compact localized Ace label outside viewport: ${JSON.stringify(localized.labelBounds)}`);
-  if (localized.toast?.type !== 'aceContact' || localized.toast?.dossier?.primaryFontSize < 28 || localized.toast?.dossier?.detailFontSize < 14) failures.push(`compact localized Ace dossier hierarchy missing: ${JSON.stringify(localized.toast)}`);
+  if (
+    localized.toast?.type !== 'aceContact'
+    || localized.toast?.dossier?.primaryFontSize < 24
+    || localized.toast?.dossier?.actionFontSize < 12
+    || localized.toast?.dossier?.panelWidth > 640
+    || localized.toast?.dossier?.panelHeight > 140
+    || localized.toast?.dossier?.screenAreaRatio > 0.17
+    || /DESTROY THE MARKED SHIP|DODGE:/.test(`${localized.toast?.dossier?.action || ''} ${localized.toast?.dossier?.danger || ''}`)
+  ) failures.push(`compact localized Ace action briefing hierarchy missing: ${JSON.stringify(localized.toast)}`);
   if (!localized.toast?.bounds || localized.toast.bounds.x < 0 || localized.toast.bounds.x + localized.toast.bounds.width > 840 || localized.toast.bounds.y < 0 || localized.toast.bounds.y + localized.toast.bounds.height > 640) failures.push(`compact localized Ace dossier outside viewport: ${JSON.stringify(localized.toast?.bounds)}`);
 
   const textState = await readState(page);

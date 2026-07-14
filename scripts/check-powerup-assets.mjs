@@ -63,6 +63,11 @@ if (!existsSync(refreshedBatchReviewSheet)) {
   errors.push('Refreshed 2026-06-13 powerup review sheet missing: public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png');
 }
 
+const spectacleRefreshReviewSheet = path.join(root, 'public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260714-refresh.png');
+if (!existsSync(spectacleRefreshReviewSheet)) {
+  errors.push('Refreshed spectacle powerup review sheet missing: public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260714-refresh.png');
+}
+
 const imagegenNormalizeScript = path.join(root, 'scripts/normalize-powerup-imagegen-icons-20260617.py');
 if (!existsSync(imagegenNormalizeScript)) {
   errors.push('Imagegen powerup normalization script missing: scripts/normalize-powerup-imagegen-icons-20260617.py');
@@ -95,7 +100,7 @@ for (const key of NEW_POWERUP_TYPES) {
 for (const key of NEW_POWERUP_TYPES) {
   const url = generatedPowerups[key] || '';
   const expectedSuffix = spectacleExpansionTypes.has(key)
-    ? '-20260713.png'
+    ? '-20260714.png'
     : expectedAssetSuffixByPowerup.get(key) || '-20260613.png';
   if (!url.endsWith(expectedSuffix)) {
     errors.push(`${key} should stay on the expected powerup asset slot ${expectedSuffix}, got ${url || 'missing'}`);

@@ -353,6 +353,11 @@ export class HUD {
   update(options = {}) {
     this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
+    this.scoreText.scale.set(1);
+    const scoreWidthReserve = mult > 1
+      ? Math.round(42 * Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1)))
+      : 0;
+    this.fitTextToWidth(this.scoreText, Math.max(72, Number(this.scoreText.__maxWidth || 180) - scoreWidthReserve), 0.72);
     if (mult > 1) {
       this.scoreMultiplierText.text = `x${mult}`;
       this.scoreMultiplierText.visible = true;
@@ -1926,11 +1931,12 @@ export class HUD {
     const low = progress <= 0.25;
     const pulse = low ? 0.5 + Math.sin(Date.now() * 0.018) * 0.5 : 0;
     const color = low ? 0xffd166 : multiplier >= 3 ? 0xff66ff : multiplier >= 2 ? 0x66f7ff : 0x75ff8d;
-    const panelRight = Number(this.comboMeterGroup.__panelRight || (this.scoreText.x + this.scoreText.width + width + 10));
-    const anchor = this.scoreMultiplierText?.visible ? this.levelText : this.scoreText;
-    const rawX = (anchor?.x || this.scoreText.x) + (anchor?.width || this.scoreText.width) + Math.round(9 * uiScale);
-    this.comboMeterGroup.x = Math.min(rawX, panelRight - width);
-    this.comboMeterGroup.y = (anchor?.y || this.scoreText.y) + Math.round(2 * uiScale);
+    this.comboMeterGroup.x = Number.isFinite(Number(this.comboMeterGroup.__fixedX))
+      ? Number(this.comboMeterGroup.__fixedX)
+      : this.scoreText.x + this.scoreText.width + Math.round(9 * uiScale);
+    this.comboMeterGroup.y = Number.isFinite(Number(this.comboMeterGroup.__fixedY))
+      ? Number(this.comboMeterGroup.__fixedY)
+      : this.scoreText.y + Math.round(2 * uiScale);
 
     this.comboMeterBg.clear();
     this.comboMeterBg.roundRect(0, 0, width, height, 5);
@@ -2011,6 +2017,24 @@ export class HUD {
     this.comboMeterText.y = Math.max(0, Math.round((height - this.comboMeterText.height) / 2) - 1);
     this.fitTextToWidth(this.comboMeterText, width - Math.round(10 * uiScale), 0.6);
     this.comboMeterGroup.visible = true;
+    const scoreBounds = {
+      x: Math.round(this.scoreText.x),
+      y: Math.round(this.scoreText.y),
+      width: Math.round(this.scoreText.width),
+      height: Math.round(this.scoreText.height)
+    };
+    const comboBounds = {
+      x: Math.round(this.comboMeterGroup.x),
+      y: Math.round(this.comboMeterGroup.y),
+      width,
+      height
+    };
+    const scoreOverlap = !(
+      scoreBounds.x + scoreBounds.width + 3 <= comboBounds.x ||
+      comboBounds.x + comboBounds.width + 3 <= scoreBounds.x ||
+      scoreBounds.y + scoreBounds.height + 3 <= comboBounds.y ||
+      comboBounds.y + comboBounds.height + 3 <= scoreBounds.y
+    );
     this.comboMeterGroup._debugComboMeter = {
       visible: true,
       count,
@@ -2024,7 +2048,11 @@ export class HUD {
       lowWarning: low,
       alarmBracketCount,
       deadlineSparkCount,
-      label: this.comboMeterText.text
+      label: this.comboMeterText.text,
+      placement: this.comboMeterGroup.__placement || 'adaptive',
+      scoreBounds,
+      comboBounds,
+      scoreOverlap
     };
   }
 
@@ -2071,12 +2099,24 @@ export class HUD {
 
     this.scoreText.x = margin + rankOffset;
     this.scoreText.y = margin + 10;
+    this.scoreText.__maxWidth = Math.max(92, margin + leftPanelWidth - 14 - this.scoreText.x);
     this.scoreMultiplierText.x = this.scoreText.x + this.scoreText.width + 10;
     this.scoreMultiplierText.y = this.scoreText.y + 2;
     if (this.comboMeterGroup) {
-      this.comboMeterGroup.__w = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
-      this.comboMeterGroup.__h = Math.round((layout.isMobile ? 19 : 22) * uiScale);
-      this.comboMeterGroup.__panelRight = margin + leftPanelWidth - 14;
+      const comboWidth = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
+      const comboHeight = Math.round((layout.isMobile ? 19 : 22) * uiScale);
+      const adjacentX = margin + leftPanelWidth + Math.round(10 * uiScale);
+      const adjacentRoom = missionPanelX - Math.round(10 * uiScale) - adjacentX;
+      const useAdjacentLane = !layout.isMobile && adjacentRoom >= comboWidth;
+      this.comboMeterGroup.__w = comboWidth;
+      this.comboMeterGroup.__h = comboHeight;
+      this.comboMeterGroup.__fixedX = useAdjacentLane
+        ? adjacentX
+        : Math.round(missionPanelX + (missionPanelWidth - comboWidth) / 2);
+      this.comboMeterGroup.__fixedY = useAdjacentLane
+        ? margin + 10
+        : Math.round(missionPanelY + missionPanelHeight + 7 * uiScale);
+      this.comboMeterGroup.__placement = useAdjacentLane ? 'score-sidecar' : 'mission-underrail';
     }
 
     this.levelText.x = margin + rankOffset;

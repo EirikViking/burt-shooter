@@ -192,6 +192,8 @@ try {
       state.comboMeter?.multiplier === 2 &&
       state.comboMeter?.progress > 0.35 &&
       state.comboMeter?.progress < 0.5 &&
+      state.comboMeter?.scoreOverlap === false &&
+      ['score-sidecar', 'mission-underrail'].includes(state.comboMeter?.placement) &&
       state.activePowerupVisible &&
       state.status?.hasSpent &&
       state.status?.hasExpiring &&

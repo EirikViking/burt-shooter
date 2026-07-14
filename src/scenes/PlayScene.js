@@ -2117,22 +2117,35 @@ export class PlayScene {
     });
     const specsContact = [active.chassisLabel, active.flightLabel, active.weaponLabel]
       .map((label) => translateText(label))
-      .join(' // ');
+      .join('  •  ');
+    const rewardParts = [active.rewardLabel, active.bonusLabel]
+      .filter(Boolean)
+      .map((label) => translateText(label));
+    const rewardContact = translateText('REWARD: {reward}', {
+      reward: rewardParts.join(' + ')
+    });
+    const dangerContact = translateText('DODGE: {threat}', {
+      threat: translateText(active.weaponLabel)
+    });
     this.enqueueToast(contact, {
-      fontSize: this.game.getWidth() < 720 ? 26 : 38,
+      fontSize: this.game.getWidth() < 720 ? 22 : 28,
       fill: '#fff3a0',
       slot: 'center',
       type: 'aceContact',
       priority: 5,
-      duration: 3100,
-      minVisibleMs: 2350,
+      duration: 2600,
+      minVisibleMs: 1900,
       extraReadTimeMs: 0,
-      maxWidth: Math.max(420, this.game.getWidth() - 44),
+      y: Math.max(132, this.game.getHeight() * 0.19),
+      maxWidth: Math.min(720, Math.max(360, this.game.getWidth() - 32)),
       accent: active.color || 0xffd15c,
       secondaryAccent: active.accent || 0x7df9ff,
       aceDossier: {
-        title: translateText('THREAT DOSSIER'),
-        primary: contact,
+        title: translateText('ACE CONTACT'),
+        primary: `#${number}`,
+        action: translateText('DESTROY THE MARKED SHIP'),
+        reward: rewardContact,
+        danger: dangerContact,
         specs: specsContact,
         protocol: protocolContact,
         wing: wingContact
@@ -7573,49 +7586,92 @@ export class PlayScene {
     if (!state?.active || !state.confirmedId || !burst || !selectedCard || !confirmedAt) return;
 
     const elapsed = Math.max(0, Date.now() - confirmedAt);
-    const progress = Math.min(1, elapsed / 820);
-    const reveal = Math.min(1, elapsed / 170);
-    const fade = 1 - Math.max(0, (progress - 0.68) / 0.32);
+    const progress = Math.min(1, elapsed / 560);
+    const revealRaw = Math.min(1, elapsed / 135);
+    const reveal = 1 - Math.pow(1 - revealRaw, 3);
+    const fade = 1 - Math.max(0, (progress - 0.72) / 0.28);
     const accent = Number(selectedCard._offer?.color) || 0x37f5ff;
-    const centerX = selectedCard.position.x;
-    const centerY = selectedCard.position.y;
+    const selectedIndex = state.cards.indexOf(selectedCard);
+    const selectedOrigin = state.lockInCardOrigins?.[selectedIndex];
+    const centerX = Number(selectedOrigin?.x) || selectedCard.position.x;
+    const centerY = (Number(selectedOrigin?.y) || selectedCard.position.y) - reveal * 7;
     const cardWidth = Number(selectedCard._draftLayout?.width) || 320;
     const cardHeight = Number(selectedCard._draftLayout?.height) || 340;
-    const innerRadius = Math.max(cardWidth, cardHeight) * (0.42 + reveal * 0.08);
-    const outerRadius = innerRadius + 66 + reveal * 42;
+    const halfWidth = cardWidth * 0.5 + 8;
+    const halfHeight = cardHeight * 0.5 + 8;
+    const perimeter = Math.max(1, (halfWidth + halfHeight) * 4);
 
     burst.visible = true;
     burst.clear();
-    if (elapsed < 190) {
+    if (elapsed < 90) {
       burst.rect(0, 0, this.game.getWidth(), this.game.getHeight());
-      burst.fill({ color: 0xffffff, alpha: (1 - elapsed / 190) * 0.12 });
+      burst.fill({ color: 0xffffff, alpha: (1 - elapsed / 90) * 0.055 });
     }
-    for (let index = 0; index < 28; index += 1) {
-      const angle = (Math.PI * 2 * index) / 28 + progress * 0.34;
-      const stagger = (index % 4) * 7;
-      const rayInner = innerRadius + stagger;
-      const rayOuter = outerRadius + stagger * 2;
-      burst.moveTo(centerX + Math.cos(angle) * rayInner, centerY + Math.sin(angle) * rayInner);
-      burst.lineTo(centerX + Math.cos(angle) * rayOuter, centerY + Math.sin(angle) * rayOuter);
-    }
-    burst.stroke({ color: accent, width: 2.2, alpha: 0.12 + reveal * fade * 0.64 });
-    burst.circle(centerX, centerY, innerRadius + reveal * 18);
-    burst.stroke({ color: 0xffffff, width: 2, alpha: reveal * fade * 0.56 });
-    burst.circle(centerX, centerY, innerRadius + 26 + reveal * 36);
-    burst.stroke({ color: accent, width: 3, alpha: reveal * fade * 0.46 });
 
-    state.cards.forEach((card) => {
+    burst.roundRect(centerX - halfWidth, centerY - halfHeight, halfWidth * 2, halfHeight * 2, 16);
+    burst.stroke({ color: accent, width: 3.2, alpha: (0.22 + reveal * 0.58) * fade });
+    burst.roundRect(centerX - halfWidth - 7, centerY - halfHeight - 7, halfWidth * 2 + 14, halfHeight * 2 + 14, 20);
+    burst.stroke({ color: 0xffffff, width: 1.2, alpha: reveal * 0.3 * fade });
+
+    const cornerLength = Math.min(34, cardWidth * 0.12);
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const x = centerX + sx * (halfWidth + 13);
+      const y = centerY + sy * (halfHeight + 13);
+      burst.moveTo(x, y - sy * cornerLength);
+      burst.lineTo(x, y);
+      burst.lineTo(x - sx * cornerLength, y);
+    }
+    burst.stroke({ color: accent, width: 4.2, alpha: reveal * fade * 0.78 });
+
+    let traceDistance = (progress * 2.6 * perimeter) % perimeter;
+    let traceX = centerX - halfWidth;
+    let traceY = centerY - halfHeight;
+    const topLength = halfWidth * 2;
+    const sideLength = halfHeight * 2;
+    if (traceDistance <= topLength) {
+      traceX += traceDistance;
+    } else if ((traceDistance -= topLength) <= sideLength) {
+      traceX = centerX + halfWidth;
+      traceY += traceDistance;
+    } else if ((traceDistance -= sideLength) <= topLength) {
+      traceX = centerX + halfWidth - traceDistance;
+      traceY = centerY + halfHeight;
+    } else {
+      traceDistance -= topLength;
+      traceY = centerY + halfHeight - traceDistance;
+    }
+    burst.circle(traceX, traceY, 10 + Math.sin(progress * Math.PI * 7) * 2);
+    burst.fill({ color: accent, alpha: reveal * fade * 0.28 });
+    burst.circle(traceX, traceY, 4.2);
+    burst.fill({ color: 0xffffff, alpha: reveal * fade * 0.96 });
+
+    const sparkRadius = Math.max(halfWidth, halfHeight) + 18 + reveal * 18;
+    for (let index = 0; index < 12; index += 1) {
+      const angle = index * (Math.PI * 2 / 12) + progress * 0.7;
+      const sparkLength = 7 + (index % 3) * 4;
+      burst.moveTo(centerX + Math.cos(angle) * sparkRadius, centerY + Math.sin(angle) * sparkRadius);
+      burst.lineTo(centerX + Math.cos(angle) * (sparkRadius + sparkLength), centerY + Math.sin(angle) * (sparkRadius + sparkLength));
+    }
+    burst.stroke({ color: selectedIndex % 2 === 0 ? accent : 0xffffff, width: 1.6, alpha: reveal * fade * 0.46 });
+
+    state.cards.forEach((card, index) => {
       const selected = card === selectedCard;
-      card.alpha = selected ? 1 : Math.max(0.08, 1 - reveal * 0.92);
+      const origin = state.lockInCardOrigins?.[index];
+      const direction = Math.sign((Number(origin?.x) || card.x) - centerX) || (index < selectedIndex ? -1 : 1);
+      card.x = (Number(origin?.x) || card.x) + (selected ? 0 : direction * reveal * 22);
+      card.y = (Number(origin?.y) || card.y) + (selected ? -reveal * 7 : reveal * 4);
+      card.alpha = selected ? 1 : Math.max(0.16, 1 - reveal * 0.84);
       if (selected) {
-        const punch = Math.sin(Math.min(1, elapsed / 360) * Math.PI);
-        card.scale.set((state.compact ? 1 : 1.015) + punch * (state.compact ? 0.025 : 0.055));
+        const punch = Math.sin(Math.min(1, elapsed / 270) * Math.PI);
+        const baseScaleX = Number(origin?.scaleX) || 1;
+        const baseScaleY = Number(origin?.scaleY) || baseScaleX;
+        card.scale.set(baseScaleX * (1 + punch * 0.045), baseScaleY * (1 + punch * 0.045));
       }
     });
-    state.rescan.alpha = Math.max(0.12, 1 - reveal * 0.88);
-    state.hold.alpha = Math.max(0.12, 1 - reveal * 0.88);
-    state.title.scale.set(1 + Math.sin(Math.min(1, elapsed / 360) * Math.PI) * 0.08);
-    state.subtitle.alpha = 0.72 + fade * 0.28;
+    state.rescan.alpha = Math.max(0.18, 1 - reveal * 0.82);
+    state.hold.alpha = Math.max(0.18, 1 - reveal * 0.82);
+    state.title.scale.set(1 + Math.sin(Math.min(1, elapsed / 270) * Math.PI) * 0.045);
+    state.subtitle.alpha = 0.76 + fade * 0.24;
     state.lockInProgress = progress;
   }
 
@@ -7635,6 +7691,12 @@ export class PlayScene {
     state.confirmedId = offer.id;
     state.result = result;
     state.confirmedAt = Date.now();
+    state.lockInCardOrigins = state.cards.map((card) => ({
+      x: card.x,
+      y: card.y,
+      scaleX: card.scale.x,
+      scaleY: card.scale.y
+    }));
     state.title.text = translateText('LOCKED IN');
     state.subtitle.text = translateText(offer.description);
     const nextDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
@@ -7659,8 +7721,7 @@ export class PlayScene {
       description: offer.detail || offer.description
     }, { silent: true, scoreBonus: false });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
-    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 3 : 5, 12);
-    this.screenShake?.freezeFrame?.(2);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 1.5 : 2.5, 7);
     AudioManager.playSfx(offer.sfx || getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
     const complete = state.onComplete;
     this.tacticalDraftConfirmTimeout = setTimeout(() => {
@@ -7689,7 +7750,7 @@ export class PlayScene {
         });
       }
       complete?.();
-    }, 880);
+    }, 610);
     return true;
   }
 
@@ -12391,9 +12452,11 @@ export class PlayScene {
     const accentColor = Number.isFinite(Number(options.accent)) ? Number(options.accent) : 0xffd15c;
     const secondaryAccent = Number.isFinite(Number(options.secondaryAccent)) ? Number(options.secondaryAccent) : 0x7df9ff;
     const requestedMaxWidth = Math.max(320, Number(layout.maxWidth) || width * 0.82);
-    const panelWidth = Math.min(width - 40, requestedMaxWidth, compact ? width * 0.94 : width * 0.78);
-    const panelHeight = compact ? Math.min(178, height * 0.31) : Math.min(216, height * 0.25);
-    const textWidth = Math.max(220, panelWidth - (compact ? 54 : 92));
+    const panelWidth = Math.min(width - 32, requestedMaxWidth, compact ? 620 : 720);
+    const panelHeight = compact ? 134 : 142;
+    const glyphColumnWidth = compact ? 78 : 96;
+    const textLeft = -panelWidth / 2 + glyphColumnWidth;
+    const textWidth = Math.max(220, panelWidth - glyphColumnWidth - (compact ? 18 : 24));
     const dossier = new PIXI.Container();
     dossier.label = 'ace_contact_dossier';
     dossier.eventMode = 'none';
@@ -12401,53 +12464,50 @@ export class PlayScene {
 
     const burst = new PIXI.Graphics();
     burst.blendMode = 'add';
-    const burstRadius = Math.min(panelWidth * 0.42, panelHeight * (compact ? 0.7 : 0.92));
-    for (let index = 0; index < 28; index += 1) {
-      const angle = (index / 28) * Math.PI * 2;
-      const inner = panelHeight * (index % 2 === 0 ? 0.24 : 0.31);
-      const outer = burstRadius * (index % 3 === 0 ? 1 : 0.78);
-      burst.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-      burst.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    const reticleRadius = compact ? 26 : 32;
+    burst.x = -panelWidth / 2 + (compact ? 40 : 49);
+    burst.y = -4;
+    burst.circle(0, 0, reticleRadius);
+    burst.stroke({ color: secondaryAccent, width: 2, alpha: 0.66 });
+    burst.circle(0, 0, reticleRadius - 8);
+    burst.stroke({ color: accentColor, width: 1.2, alpha: 0.42 });
+    for (let index = 0; index < 4; index += 1) {
+      const angle = index * Math.PI * 0.5;
+      burst.moveTo(Math.cos(angle) * (reticleRadius - 4), Math.sin(angle) * (reticleRadius - 4));
+      burst.lineTo(Math.cos(angle) * (reticleRadius + 8), Math.sin(angle) * (reticleRadius + 8));
     }
-    burst.stroke({ color: accentColor, width: compact ? 1.5 : 2.2, alpha: 0.16 });
-    dossier.addChild(burst);
+    burst.stroke({ color: 0xffffff, width: 2.4, alpha: 0.72 });
 
     const outerGlow = new PIXI.Graphics();
-    outerGlow.roundRect(-panelWidth / 2 - 7, -panelHeight / 2 - 7, panelWidth + 14, panelHeight + 14, 17);
-    outerGlow.fill({ color: accentColor, alpha: 0.1 });
-    outerGlow.stroke({ color: secondaryAccent, width: 5, alpha: 0.15 });
+    outerGlow.roundRect(-panelWidth / 2 - 5, -panelHeight / 2 - 5, panelWidth + 10, panelHeight + 10, 15);
+    outerGlow.fill({ color: accentColor, alpha: 0.07 });
+    outerGlow.stroke({ color: secondaryAccent, width: 3, alpha: 0.13 });
     dossier.addChild(outerGlow);
 
     const panel = new PIXI.Graphics();
-    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 13);
-    panel.fill({ color: 0x070812, alpha: 0.96 });
-    panel.stroke({ color: accentColor, width: compact ? 3 : 4, alpha: 0.98 });
-    panel.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 8);
-    panel.stroke({ color: secondaryAccent, width: 1.4, alpha: 0.68 });
+    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 11);
+    panel.fill({ color: 0x050914, alpha: 0.93 });
+    panel.stroke({ color: accentColor, width: 2.2, alpha: 0.9 });
+    panel.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 7);
+    panel.stroke({ color: secondaryAccent, width: 1, alpha: 0.34 });
     dossier.addChild(panel);
 
     const rails = new PIXI.Graphics();
     rails.blendMode = 'add';
-    rails.rect(-panelWidth / 2 + 18, -panelHeight / 2 + 11, panelWidth - 36, 3);
-    rails.fill({ color: accentColor, alpha: 0.7 });
-    rails.rect(-panelWidth / 2 + 18, panelHeight / 2 - 14, panelWidth - 36, 3);
-    rails.fill({ color: secondaryAccent, alpha: 0.52 });
-    for (const side of [-1, 1]) {
-      const x = side * (panelWidth / 2 - 22);
-      rails.moveTo(x, -panelHeight / 2 + 26);
-      rails.lineTo(x - side * 15, -panelHeight / 2 + 39);
-      rails.lineTo(x, -panelHeight / 2 + 52);
-      rails.moveTo(x, panelHeight / 2 - 52);
-      rails.lineTo(x - side * 15, panelHeight / 2 - 39);
-      rails.lineTo(x, panelHeight / 2 - 26);
-    }
-    rails.stroke({ color: 0xffffff, width: 2.2, alpha: 0.56 });
+    rails.rect(-panelWidth / 2 + 14, -panelHeight / 2 + 7, panelWidth * 0.3, 2);
+    rails.fill({ color: accentColor, alpha: 0.82 });
+    rails.rect(panelWidth / 2 - panelWidth * 0.22 - 14, panelHeight / 2 - 9, panelWidth * 0.22, 2);
+    rails.fill({ color: secondaryAccent, alpha: 0.62 });
+    rails.moveTo(-panelWidth / 2 + glyphColumnWidth - 10, -panelHeight / 2 + 16);
+    rails.lineTo(-panelWidth / 2 + glyphColumnWidth - 10, panelHeight / 2 - 16);
+    rails.stroke({ color: secondaryAccent, width: 1.2, alpha: 0.28 });
     dossier.addChild(rails);
+    dossier.addChild(burst);
 
     const scanline = new PIXI.Graphics();
     scanline.blendMode = 'add';
-    scanline.rect(-panelWidth / 2 + 12, -1, panelWidth - 24, 2);
-    scanline.fill({ color: secondaryAccent, alpha: 0.34 });
+    scanline.rect(-panelWidth / 2 + 8, -1, panelWidth - 16, 1.5);
+    scanline.fill({ color: secondaryAccent, alpha: 0.18 });
     dossier.addChild(scanline);
 
     const fit = (node, maxWidth, minScale = 0.74) => {
@@ -12457,31 +12517,54 @@ export class PlayScene {
     };
     const addLine = (text, style, y, maxLineWidth = textWidth, minScale = 0.74) => {
       const node = createText(String(text || ''), style);
-      node.anchor.set(0.5);
+      node.anchor.set(0, 0.5);
+      node.x = textLeft;
       node.y = y;
       fit(node, maxLineWidth, minScale);
       dossier.addChild(node);
       return node;
     };
+    const addPill = (text, x, y, maxWidth, color) => {
+      const node = createText(String(text || ''), {
+        fontFamily: FONT_BODY,
+        fontSize: compact ? 11 : 12,
+        fontWeight: '900',
+        fill: '#ffffff',
+        stroke: '#020812',
+        strokeThickness: 2
+      });
+      node.anchor.set(0, 0.5);
+      fit(node, Math.max(70, maxWidth - 14), 0.68);
+      node.x = x + 7;
+      node.y = y;
+      const background = new PIXI.Graphics();
+      const pillWidth = Math.min(maxWidth, node.width + 14);
+      background.roundRect(x, y - (compact ? 10 : 11), pillWidth, compact ? 20 : 22, 6);
+      background.fill({ color, alpha: 0.16 });
+      background.stroke({ color, width: 1.1, alpha: 0.62 });
+      dossier.addChild(background, node);
+      return { node, width: pillWidth };
+    };
 
-    const titleFontSize = compact ? 13 : 16;
-    const primaryFontSize = compact ? 29 : 40;
-    const specsFontSize = compact ? 16 : 21;
-    const detailFontSize = compact ? 14 : 18;
-    const titleY = -panelHeight / 2 + (compact ? 18 : 22);
-    const primaryY = -panelHeight / 2 + (compact ? 52 : 66);
-    const specsY = -panelHeight / 2 + (compact ? 84 : 108);
-    const protocolY = -panelHeight / 2 + (compact ? 116 : 148);
-    const wingY = -panelHeight / 2 + (compact ? 145 : 181);
+    const titleFontSize = compact ? 11 : 12;
+    const primaryFontSize = compact ? 26 : 32;
+    const actionFontSize = compact ? 13 : 16;
+    const specsFontSize = compact ? 10 : 11;
+    const detailFontSize = compact ? 11 : 12;
+    const titleY = -panelHeight / 2 + 15;
+    const primaryY = -panelHeight / 2 + (compact ? 37 : 40);
+    const actionY = -panelHeight / 2 + (compact ? 62 : 68);
+    const pillsY = -panelHeight / 2 + (compact ? 89 : 96);
+    const specsY = -panelHeight / 2 + (compact ? 116 : 122);
 
     const title = addLine(data.title, {
       fontFamily: FONT_DISPLAY,
       fontSize: titleFontSize,
       fontWeight: '900',
       fill: '#7ee9ff',
-      letterSpacing: compact ? 1.6 : 2.6,
+      letterSpacing: compact ? 1.2 : 1.8,
       stroke: '#02131f',
-      strokeThickness: 3
+      strokeThickness: 2
     }, titleY);
     const primary = addLine(data.primary, {
       fontFamily: FONT_DISPLAY,
@@ -12489,63 +12572,66 @@ export class PlayScene {
       fontWeight: '900',
       fill: '#fff7c4',
       stroke: '#24000c',
-      strokeThickness: compact ? 5 : 7,
+      strokeThickness: compact ? 4 : 5,
       dropShadow: true,
       dropShadowColor: `#${accentColor.toString(16).padStart(6, '0')}`,
-      dropShadowBlur: compact ? 8 : 13,
+      dropShadowBlur: compact ? 6 : 8,
       dropShadowDistance: 0
-    }, primaryY, textWidth, 0.8);
-    const specs = addLine(data.specs, {
+    }, primaryY, textWidth, 0.82);
+    const action = addLine(data.action, {
       fontFamily: FONT_BODY,
-      fontSize: specsFontSize,
+      fontSize: actionFontSize,
       fontWeight: '900',
       fill: '#ffffff',
       stroke: '#02131f',
-      strokeThickness: 4,
-      letterSpacing: compact ? 0.4 : 1.1
-    }, specsY, textWidth, 0.78);
-    const protocol = addLine(data.protocol, {
+      strokeThickness: 3,
+      letterSpacing: compact ? 0.2 : 0.6
+    }, actionY, textWidth, 0.76);
+    const pillMaxWidth = Math.max(90, (textWidth - 8) / 2);
+    const rewardPill = addPill(data.reward, textLeft, pillsY, pillMaxWidth, accentColor);
+    const dangerPill = addPill(data.danger, textLeft + pillMaxWidth + 8, pillsY, pillMaxWidth, secondaryAccent);
+    const specs = addLine(data.specs, {
       fontFamily: FONT_BODY,
-      fontSize: detailFontSize,
+      fontSize: specsFontSize,
       fontWeight: '800',
-      fill: '#ffb57e',
-      stroke: '#18050a',
-      strokeThickness: 4
-    }, protocolY, textWidth, 0.76);
-    const wing = addLine(data.wing, {
-      fontFamily: FONT_BODY,
-      fontSize: detailFontSize,
-      fontWeight: '800',
-      fill: '#8ff9ff',
+      fill: '#a8cbd4',
       stroke: '#02131f',
-      strokeThickness: 4
-    }, wingY, textWidth, 0.76);
+      strokeThickness: 2
+    }, specsY, textWidth, 0.7);
 
     const requestedY = Number(layout.y) || height * 0.28;
-    const bottomSafeMargin = compact ? 8 : 34;
+    const bottomSafeMargin = compact ? 10 : 28;
+    const topSafeY = panelHeight / 2 + (compact ? 210 : 108);
     dossier.x = width / 2;
-    dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(panelHeight / 2 + (compact ? 178 : 104), requestedY));
+    dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(topSafeY, requestedY));
     dossier.alpha = 0;
-    dossier.scale.set(0.88);
+    dossier.scale.set(0.94);
     dossier.__aceDossierFx = { burst, outerGlow, scanline, panelHeight };
     dossier.__aceDossierDebug = {
       compact,
       panelWidth: Math.round(panelWidth),
       panelHeight: Math.round(panelHeight),
+      screenAreaRatio: Number(((panelWidth * panelHeight) / (width * height)).toFixed(4)),
       title: String(data.title || ''),
       primary: String(data.primary || ''),
+      action: String(data.action || ''),
+      reward: String(data.reward || ''),
+      danger: String(data.danger || ''),
       specs: String(data.specs || ''),
       protocol: String(data.protocol || ''),
       wing: String(data.wing || ''),
+      detailsCollapsed: true,
       titleFontSize,
       primaryFontSize,
+      actionFontSize,
       specsFontSize,
       detailFontSize,
       titleScale: Number(title.scale.x.toFixed(3)),
       primaryScale: Number(primary.scale.x.toFixed(3)),
+      actionScale: Number(action.scale.x.toFixed(3)),
       specsScale: Number(specs.scale.x.toFixed(3)),
-      protocolScale: Number(protocol.scale.x.toFixed(3)),
-      wingScale: Number(wing.scale.x.toFixed(3))
+      rewardScale: Number(rewardPill.node.scale.x.toFixed(3)),
+      dangerScale: Number(dangerPill.node.scale.x.toFixed(3))
     };
     this.uiOverlay.addChild(dossier);
     return dossier;
@@ -12870,11 +12956,13 @@ export class PlayScene {
         aceFx.scanline.alpha = 0.22 + pulse * 0.38;
       }
 
-      if (elapsed < 250) {
-        display.alpha = elapsed / 250;
+      const introDuration = options.aceDossier ? 180 : 250;
+      if (elapsed < introDuration) {
+        display.alpha = elapsed / introDuration;
         if (options.banner || options.aceDossier) {
-          const t = elapsed / 250;
-          display.scale.set(0.88 + t * 0.12);
+          const t = elapsed / introDuration;
+          const startScale = options.aceDossier ? 0.94 : 0.88;
+          display.scale.set(startScale + t * (1 - startScale));
         }
       } else if (elapsed > duration - 350) {
         display.alpha = Math.max(0, (duration - elapsed) / 350);

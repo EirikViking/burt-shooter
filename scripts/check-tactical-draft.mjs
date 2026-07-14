@@ -12,6 +12,7 @@ import {
   getTacticalDraftMeta
 } from '../src/config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
+import { RUN_MODES } from '../src/game/RunMode.js';
 
 const host = '127.0.0.1';
 const port = Number(process.env.CHECK_PORT) || await findAvailablePort(4560);
@@ -83,11 +84,12 @@ async function waitForPlay(page) {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'play' && state.player?.active === true;
   }, null, { timeout: 20000 });
-  await page.evaluate(() => {
+  await page.evaluate((tacticalRunMode) => {
+    window.__game.runMode = tacticalRunMode;
     const play = window.__game?.scenes?.play;
     if (play) play.debugInvincible = true;
     play?.player?.grantInvulnerability?.(120000, 'tactical_draft_check');
-  });
+  }, RUN_MODES.MAYHEM_TACTICAL);
 }
 
 function overlap(a, b, margin = 4) {
