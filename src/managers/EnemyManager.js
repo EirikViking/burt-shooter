@@ -2310,7 +2310,7 @@ export class EnemyManager {
       }
 
       // Shooting
-      const rareFireMultiplier = enemy.isRareChaosVisitor ? 2.15 : 1;
+      const rareFireMultiplier = enemy.isRareChaosVisitor ? 2.45 : 1;
       const enemyFireChance = fireChance * (enemy.getTacticalFireScalar?.() || enemy.tacticalFireScalar || 1) * rareFireMultiplier;
       const shouldShoot = enemy.challengeFlightTarget
         ? false
@@ -2961,11 +2961,11 @@ export class EnemyManager {
       index: 0,
       waveIndex: this.currentWaveIndex,
       count: 1,
-      initialDelayMult: 0.42,
-      initialDelayMs: 480
+      initialDelayMult: 0.58,
+      initialDelayMs: 760
     });
-    enemy.threatActionCooldown = Math.min(enemy.threatActionCooldown || 5200, 5200);
-    enemy.startEntry(startX, -90, formationX, formationY, Math.max(920, Number(context.entryDurationMs) * 0.72 || 1180), 180);
+    enemy.threatActionCooldown = Math.min(enemy.threatActionCooldown || 4400, 4400);
+    enemy.startEntry(startX, -90, formationX, formationY, Math.max(1180, Number(context.entryDurationMs) * 0.8 || 1380), 260);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
     this.rareChaosVisitorSpawnedWaveKeys.add(waveKey);

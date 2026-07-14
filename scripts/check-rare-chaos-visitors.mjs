@@ -22,7 +22,7 @@ const enemySource = readFileSync(path.join(root, 'src/entities/Enemy.js'), 'utf8
 const sceneSource = readFileSync(path.join(root, 'src/scenes/PlayScene.js'), 'utf8');
 const generatorSource = readFileSync(path.join(root, 'scripts/generate-rare-chaos-visitor-audio.mjs'), 'utf8');
 
-assert.equal(RARE_CHAOS_VISITOR_WAVE_CHANCE, 0.03, 'eligible standard waves must use an exact 3% roll');
+assert.equal(RARE_CHAOS_VISITOR_WAVE_CHANCE, 0.004, 'eligible standard waves must use the story-rare 0.4% roll');
 assert.equal(RARE_CHAOS_VISITOR_VARIANT_COUNT, 99);
 assert.equal(RARE_CHAOS_VISITOR_VARIANTS.length, 99);
 assert.equal(new Set(RARE_CHAOS_VISITOR_VARIANTS.map((item) => item.id)).size, 99);
@@ -44,6 +44,7 @@ const rareCodex = getThreatCodexCatalog().enemies.filter((entry) => entry.id.sta
 assert.equal(rareCodex.length, 99, 'all rare variants must have individual Codex entries');
 assert.equal(new Set(rareCodex.map((entry) => entry.id)).size, 99);
 assert.equal(rareChaosVisitorVoiceLines.length, 12);
+assert.ok(rareChaosVisitorVoiceLines.every((line) => /terror|dread/.test(line.generationText) && /no comedy/.test(line.generationText) && !/funny/.test(line.generationText)), 'rare contact voice direction must stay frightening');
 assert.equal(SFX_CATALOG.boss_rare_chaos_visitor_warning.length, 12);
 assert.ok(VOICE_MIX.boss_rare_chaos_visitor_warning?.priority >= 9);
 
@@ -75,12 +76,13 @@ const themeDuration = Number(spawnSync('ffprobe', [
   '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1',
   path.join(root, 'public/audio/sfx/nova-swarm/nova_rare_visitor_theme_sting.mp3')
 ], { encoding: 'utf8' }).stdout.trim());
-assert.ok(themeDuration >= 7.5 && themeDuration <= 8.5, `mini-theme should be about eight seconds, got ${themeDuration}`);
+assert.ok(themeDuration >= 8.5 && themeDuration <= 9.5, `mini-theme should be about nine seconds, got ${themeDuration}`);
 assert.match(generatorSource, /ELEVENLABS_API_KEY \|\| process\.env\.ELEVEN_LABS_API_KEY/);
 assert.doesNotMatch(generatorSource, /xi-api-key['"]?\s*:\s*['"][^'"]+['"]/, 'generator must never hardcode an API key');
 assert.match(managerSource, /planRareChaosVisitorSpawn/);
-assert.match(managerSource, /rareFireMultiplier = enemy\.isRareChaosVisitor \? 2\.15 : 1/);
-assert.match(enemySource, /FINAL LASER TANTRUM|rare_visitor_laser_fire/);
+assert.match(managerSource, /rareFireMultiplier = enemy\.isRareChaosVisitor \? 2\.45 : 1/);
+assert.match(enemySource, /EXTINCTION CONTACT|rare_visitor_laser_fire/);
+assert.match(sceneSource, /SURVIVE THREE ESCALATION PHASES/);
 assert.match(sceneSource, /__novaForceRareChaosVisitor/);
 assert.match(sceneSource, /completeRareChaosVisitor/);
 

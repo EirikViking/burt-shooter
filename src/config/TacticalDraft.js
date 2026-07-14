@@ -1,8 +1,10 @@
 import { getPowerupMeta } from './PowerupCatalog.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from './ShipThreatResponse.js';
 
-export const TACTICAL_DRAFT_VERSION = 1;
+export const TACTICAL_DRAFT_VERSION = 2;
 export const TACTICAL_DRAFT_OFFER_COUNT = 3;
+export const TACTICAL_DRAFT_BAN_COUNT = 2;
+export const TACTICAL_SCORE_ROUTE_SECTOR = 5;
 
 const TACTICAL_AUGMENT_DETAIL_COPY = Object.freeze({
   damage_up: 'The cannon receives twelve percent more confidence and no additional supervision. Excellent for honest damage builds, less useful for pilots who consider aiming a rumor.',
@@ -28,7 +30,7 @@ const TACTICAL_AUGMENT_DETAIL_COPY = Object.freeze({
 
 function defineAugment(config) {
   return Object.freeze({
-    maxStacks: 2,
+    maxStacks: 3,
     category: 'utility',
     consumedOnApply: false,
     modifiers: Object.freeze({}),
@@ -56,7 +58,7 @@ export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
   defineAugment({ id: 'point_defense', evolutionName: 'AEGIS GRID', category: 'defense', draftDescription: 'Start each sector with 4.5 seconds of point defense', sectorStart: { pointDefenseMs: 4500 } }),
   defineAugment({ id: 'nano_patch', category: 'defense', draftDescription: 'Repair 1 life immediately', immediate: { repairLives: 1 }, consumedOnApply: true, maxStacks: 1 }),
   defineAugment({ id: 'magnet', evolutionName: 'GRAVITY WELL', category: 'utility', draftDescription: 'Pickup radius +90', modifiers: { magnetRadiusBonus: 90, magnetStrengthBonus: 0.03 } }),
-  defineAugment({ id: 'drones', evolutionName: 'DRONE WING', category: 'utility', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 }, maxStacks: 2 }),
+  defineAugment({ id: 'drones', evolutionName: 'DRONE WING', category: 'utility', draftDescription: 'Add 1 permanent support drone', modifiers: { droneCount: 1 } }),
   defineAugment({ id: 'bomb', evolutionName: 'SIEGE RACK', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
   defineAugment({ id: 'orbital_strike', evolutionName: 'SKY TRIBUNAL', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
   defineAugment({ id: 'phase_reactor', name: 'PHASE REACTOR', category: 'mobility', color: 0xff5bd6, sfx: 'tactical_phase_reactor', draftDescription: 'Phase instantly primes your next volley', detail: 'The reactor converts one tasteful violation of spacetime into a fully stamped firing permit. Phase, then shoot. Physics has filed a complaint and is waiting in the wrong queue.', modifiers: { phaseReload: true }, maxStacks: 1 }),
@@ -136,9 +138,11 @@ export function getTacticalDraftDisplayMeta(id, stacks = 1) {
   const meta = getTacticalDraftMeta(id);
   if (!meta) return null;
   const evolved = Number(stacks) >= 2 && Boolean(meta.evolutionName);
+  const overdriven = Number(stacks) >= 3 && Boolean(meta.evolutionName);
   return {
     ...meta,
     evolved,
+    overdriven,
     displayName: evolved ? meta.evolutionName : meta.name
   };
 }
@@ -152,11 +156,16 @@ export function buildTacticalDraftOffers({
   activePowerupType = null,
   runTheme = null,
   excludedIds = [],
+  bannedIds = [],
   heldId = null
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const context = { lives, maxLives, activePowerupType, runTheme };
+  const banned = new Set(Array.isArray(bannedIds) ? bannedIds : []);
+  const fixedScoreRoute = Math.max(1, Math.floor(Number(sectorCleared) || 1)) === TACTICAL_SCORE_ROUTE_SECTOR;
   const eligibleCandidates = TACTICAL_DRAFT_AUGMENTS.filter((augment) => {
+    if (banned.has(augment.id)) return false;
+    if (augment.id === 'combo_anchor' && !fixedScoreRoute) return false;
     if ((counts.get(augment.id) || 0) >= augment.maxStacks) return false;
     if (augment.id === 'nano_patch' && lives >= maxLives) return false;
     return Boolean(getTacticalDraftMeta(augment.id));
@@ -204,6 +213,16 @@ export function buildTacticalDraftOffers({
     const replacementIndex = offers.findIndex((augment) => augment.id !== evolutionCandidate?.id);
     offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1, heldCandidate);
   }
+  const scoreRouteCandidate = fixedScoreRoute
+    ? eligibleCandidates.find((augment) => augment.id === 'combo_anchor') || null
+    : null;
+  if (scoreRouteCandidate) {
+    const scoreRouteIndex = offers.findIndex((augment) => augment.id === scoreRouteCandidate.id);
+    if (scoreRouteIndex >= 0) offers.splice(scoreRouteIndex, 1);
+    const replacementIndex = offers.findIndex((augment) => augment.id !== heldCandidate?.id && augment.id !== evolutionCandidate?.id);
+    if (offers.length >= TACTICAL_DRAFT_OFFER_COUNT) offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1);
+    offers.splice(Math.min(1, offers.length), 0, scoreRouteCandidate);
+  }
   return offers.slice(0, TACTICAL_DRAFT_OFFER_COUNT).map((augment) => {
     const currentStacks = counts.get(augment.id) || 0;
     const nextStack = currentStacks + 1;
@@ -211,7 +230,8 @@ export function buildTacticalDraftOffers({
       ...getTacticalDraftDisplayMeta(augment.id, nextStack),
       currentStacks,
       nextStack,
-      held: augment.id === heldId
+      held: augment.id === heldId,
+      fixedScoreRoute: fixedScoreRoute && augment.id === 'combo_anchor'
     };
   });
 }
@@ -257,7 +277,11 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     if (!augment) continue;
     const stackIndex = stackCounts.get(id) || 0;
     stackCounts.set(id, stackIndex + 1);
-    const effectiveness = stackIndex === 0 ? 1 : SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness;
+    const effectiveness = stackIndex === 0
+      ? 1
+      : stackIndex === 1
+        ? SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness
+        : SHIP_THREAT_RESPONSE_TARGETS.thirdStackEffectiveness;
     const modifiers = augment.modifiers || {};
     const suppressMatchingTimedEffect = activePowerupType === id;
     if (!suppressMatchingTimedEffect) {

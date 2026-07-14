@@ -467,6 +467,8 @@ export class HighscoreScene {
           ? 'ONE MORE TACTICAL RUN'
           : 'ONE MORE PURE RUN'
       );
+      this.runAgainBtn._label.style.fontSize = Math.max(12, Math.min(18, (this.runAgainBtn._buttonHeight || 44) * 0.42));
+      fitTextToWidth(this.runAgainBtn._label, (this.runAgainBtn._buttonWidth || 260) - 32, 11);
     }
     Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
       if (!button) return;
@@ -586,7 +588,7 @@ export class HighscoreScene {
     this.retryBtn.visible = this.status === 'ERROR';
 
     const backButtonW = isMobile ? 112 : 140;
-    const runAgainButtonW = isMobile ? Math.min(176, deckWidth * 0.5) : 210;
+    const runAgainButtonW = isMobile ? Math.min(210, deckWidth * 0.56) : Math.min(300, Math.max(260, deckWidth * 0.25));
     this.resizeButton(this.backBtn, backButtonW, isMobile ? 36 : 40);
     this.resizeButton(this.runAgainBtn, runAgainButtonW, isMobile ? 40 : 44);
 
@@ -1910,6 +1912,7 @@ export class HighscoreScene {
     button._buttonHeight = height;
     if (button._label) {
       button._label.style.fontSize = Math.max(12, Math.min(18, height * 0.42));
+      fitTextToWidth(button._label, width - 32, 11);
     }
     this.setButtonActive(button, Boolean(button._active));
   }

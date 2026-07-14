@@ -3266,8 +3266,8 @@ export class Enemy {
     this.isRareChaosVisitor = true;
     this.rareChaosVisitorVariant = variant;
     this.rareChaosVisitorPhases = new Set();
-    this.scoreValue = 1800 + variant.number * 12;
-    this.health = Math.max(14, Math.ceil((Number(this.maxHealth) || 1) * 4.6 * (variant.healthScalar || 1)));
+    this.scoreValue = 4200 + variant.number * 18;
+    this.health = Math.max(24, Math.ceil((Number(this.maxHealth) || 1) * 7.2 * (variant.healthScalar || 1)));
     this.maxHealth = this.health;
     this.radius = Math.max(24, Number(this.radius) * 1.45);
     this.color = variant.tint;
@@ -3286,25 +3286,38 @@ export class Enemy {
       aura.label = `rareChaosAura:${variant.id}`;
       aura.zIndex = -10;
       aura.circle(0, 0, this.radius * 2.2);
-      aura.fill({ color: variant.tint, alpha: 0.12 });
+      aura.fill({ color: 0x020006, alpha: 0.72 });
+      aura.circle(0, 0, this.radius * 1.86);
+      aura.fill({ color: variant.tint, alpha: 0.18 });
       aura.circle(0, 0, this.radius * 1.75);
-      aura.stroke({ color: variant.accent, width: 3, alpha: 0.72 });
+      aura.stroke({ color: variant.accent, width: 4, alpha: 0.9 });
       aura.circle(0, 0, this.radius * 2.25);
-      aura.stroke({ color: 0xffffff, width: 1.4, alpha: 0.46 });
+      aura.stroke({ color: 0xff173f, width: 1.8, alpha: 0.78 });
+      aura.circle(0, 0, this.radius * 2.72);
+      aura.stroke({ color: 0x7f0025, width: 1.2, alpha: 0.58 });
       for (let index = 0; index < 11; index += 1) {
         const angle = (Math.PI * 2 * index) / 11;
         drawThreatFrameTick(aura, angle, this.radius * 2.05, this.radius * 2.52);
       }
       aura.stroke({ color: variant.accent, width: 2, alpha: 0.64 });
+      for (let index = 0; index < 7; index += 1) {
+        const angle = (Math.PI * 2 * index) / 7;
+        const inner = this.radius * 2.34;
+        const outer = this.radius * (index % 2 ? 2.82 : 3.06);
+        aura.moveTo(Math.cos(angle - 0.035) * inner, Math.sin(angle - 0.035) * inner);
+        aura.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        aura.lineTo(Math.cos(angle + 0.035) * inner, Math.sin(angle + 0.035) * inner);
+      }
+      aura.stroke({ color: 0xff315f, width: 2.2, alpha: 0.72 });
       const crown = new PIXI.Graphics();
       crown.label = `rareChaosCrown:${variant.id}`;
       crown.zIndex = 12;
       crown.poly([-20, -this.radius - 18, -10, -this.radius - 32, 0, -this.radius - 19, 10, -this.radius - 34, 20, -this.radius - 18]);
-      crown.stroke({ color: 0xffef7e, width: 3, alpha: 0.92 });
-      const label = createText(translateText('RARE CONTACT #{number}', { number: String(variant.number).padStart(2, '0') }), {
+      crown.stroke({ color: 0xff315f, width: 3.5, alpha: 0.96 });
+      const label = createText(translateText('EXTINCTION CONTACT #{number}', { number: String(variant.number).padStart(2, '0') }), {
         fontFamily: 'monospace',
         fontSize: 11,
-        fill: '#fff3a0',
+        fill: '#ffb0c4',
         stroke: { color: '#120015', width: 3 },
         align: 'center'
       });
@@ -3326,14 +3339,15 @@ export class Enemy {
     if (!this.isRareChaosVisitor || !visuals || !this.active) return;
     const time = Date.now() - visuals.startedAt;
     const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth))));
-    visuals.aura.rotation += 0.006 * Math.max(0.5, Number(delta) || 1) * (healthRatio <= 0.25 ? 2.2 : 1);
-    visuals.aura.alpha = 0.72 + Math.sin(time * 0.008) * 0.18;
+    const phaseScalar = healthRatio <= 0.25 ? 2.8 : healthRatio <= 0.5 ? 1.8 : 1;
+    visuals.aura.rotation += 0.0045 * Math.max(0.5, Number(delta) || 1) * phaseScalar;
+    visuals.aura.alpha = 0.78 + Math.sin(time * 0.011) * 0.2;
     visuals.crown.rotation = Math.sin(time * 0.006) * 0.08;
     visuals.crown.scale.set(1 + Math.sin(time * 0.012) * 0.08);
     visuals.label.y = -this.radius - 50 + Math.sin(time * 0.005) * 3;
     if (healthRatio <= 0.25) {
       visuals.label.style.fill = '#ff7a9a';
-      this.tacticalFireScalar = Math.max(3.4, Number(this.tacticalFireScalar) || 1);
+      this.tacticalFireScalar = Math.max(4.2, Number(this.tacticalFireScalar) || 1);
     }
   }
 
@@ -3356,6 +3370,9 @@ export class Enemy {
       loadout: this.rareChaosVisitorVariant.loadoutName,
       health: this.health,
       maxHealth: this.maxHealth,
+      healthScalar: this.rareChaosVisitorVariant.healthScalar,
+      fireScalar: this.tacticalFireScalar,
+      projectileSpeedScalar: this.tacticalProjectileSpeedScalar,
       shot: this.tacticalShotPattern,
       threatAction: this.threatActionDefinition?.id || null,
       phases: [...(this.rareChaosVisitorPhases || [])]

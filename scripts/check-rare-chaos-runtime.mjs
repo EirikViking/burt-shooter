@@ -163,7 +163,8 @@ try {
   assert(live.aura && live.crown && /42/.test(live.label || ''), 'rare visitor aura/crown/identity label missing');
   assert(live.bounds.x >= 0 && live.bounds.y >= 0 && live.bounds.x + live.bounds.width <= 1920 && live.bounds.y + live.bounds.height <= 1080, `rare visitor visuals escaped viewport: ${JSON.stringify(live.bounds)}`);
   assert(live.audio.lastVoiceEvent === 'boss_rare_chaos_visitor_warning', `boss warning did not play: ${JSON.stringify(live.audio)}`);
-  assert(live.textState?.availableVariants === 99 && live.textState?.waveChance === 0.03, `render text missing rare catalog policy: ${JSON.stringify(live.textState)}`);
+  assert(live.textState?.availableVariants === 99 && live.textState?.waveChance === 0.004, `render text missing story-rare contact policy: ${JSON.stringify(live.textState)}`);
+  assert(live.debug?.maxHealth >= 24 && live.debug?.fireScalar >= 2.5, `rare contact is not dangerous enough: ${JSON.stringify(live.debug)}`);
   assert(live.visibleTextEntry?.rareChaosVisitor?.number === 42, 'render text missing visible rare visitor identity');
   assert(live.enemyBullets > 0 || live.threatExecutions > 0, `rare visitor never fired: ${JSON.stringify(live)}`);
 
@@ -178,7 +179,7 @@ try {
     };
   });
   await page.waitForTimeout(180);
-  report.phase.screenshot = path.join(outputDir, 'rare-chaos-final-tantrum.png');
+  report.phase.screenshot = path.join(outputDir, 'rare-chaos-final-phase.png');
   await page.screenshot({ path: report.phase.screenshot, fullPage: true });
   assert(report.phase.debug?.phases?.length === 3, `all three armor phases did not trigger: ${JSON.stringify(report.phase.debug)}`);
   assert(report.phase.audio.lastSfxEvent === 'rare_visitor_laser_charge', `final phase audio mismatch: ${JSON.stringify(report.phase.audio)}`);

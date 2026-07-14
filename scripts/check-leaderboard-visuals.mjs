@@ -193,6 +193,28 @@ try {
   await page.screenshot({ path: wideShot, fullPage: true });
   results.push({ viewport: 'wide', screenshot: wideShot, state: wide });
 
+  const tacticalRunButton = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.highscore;
+    scene.activeLeaderboard = 'tactical';
+    scene.updateLeaderboardChrome();
+    await scene.layoutHighscore();
+    const bounds = scene.runAgainBtn?._label?.getBounds?.();
+    const width = scene.runAgainBtn?._buttonWidth || 0;
+    const height = scene.runAgainBtn?._buttonHeight || 0;
+    return {
+      text: scene.runAgainBtn?._label?.text || '',
+      frame: {
+        x: scene.runAgainBtn.x - width / 2,
+        y: scene.runAgainBtn.y - height / 2,
+        right: scene.runAgainBtn.x + width / 2,
+        bottom: scene.runAgainBtn.y + height / 2
+      },
+      label: bounds ? { x: bounds.x, y: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height } : null
+    };
+  });
+  const tacticalButtonShot = path.join(outputDir, 'leaderboard-tactical-run-button.png');
+  await page.screenshot({ path: tacticalButtonShot, fullPage: true });
+
   const mobile = await openLeaderboard(page, { width: 390, height: 844 });
   const mobileShot = path.join(outputDir, 'leaderboard-mobile.png');
   await page.screenshot({ path: mobileShot, fullPage: true });
@@ -235,10 +257,12 @@ try {
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),
-    ...consoleErrors.map((message) => `console error: ${message}`)
+    ...consoleErrors.map((message) => `console error: ${message}`),
+    tacticalRunButton.text !== 'ONE MORE TACTICAL RUN' ? 'tactical runback label did not switch' : null,
+    !contains(tacticalRunButton.frame, tacticalRunButton.label, 2) ? 'tactical runback label escapes its button frame' : null
   ].filter(Boolean);
 
-  const report = { ok: failures.length === 0, baseUrl, results, failures, pageErrors, consoleErrors };
+  const report = { ok: failures.length === 0, baseUrl, results, tacticalRunButton, tacticalButtonShot, failures, pageErrors, consoleErrors };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) {
     console.error(JSON.stringify(report, null, 2));

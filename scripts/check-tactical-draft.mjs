@@ -4,7 +4,9 @@ import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import {
+  TACTICAL_DRAFT_BAN_COUNT,
   TACTICAL_DRAFT_AUGMENTS,
+  TACTICAL_SCORE_ROUTE_SECTOR,
   buildTacticalDraftModifiers,
   buildTacticalDraftOffers,
   getActiveTacticalAugmentIds,
@@ -114,11 +116,15 @@ function assertDraftLayout(state, width, height, label) {
   }
   const holdBounds = state.tacticalDraft.holdBounds;
   const rescanBounds = state.tacticalDraft.rescanBounds;
-  assert(holdBounds && rescanBounds, `${label}: missing Draft controls`);
+  const banBounds = state.tacticalDraft.banBounds;
+  assert(holdBounds && rescanBounds && banBounds, `${label}: missing Draft controls`);
   assert(!overlap(holdBounds, rescanBounds), `${label}: hold and rescan controls overlap`);
+  assert(!overlap(holdBounds, banBounds), `${label}: hold and ban controls overlap`);
+  assert(!overlap(rescanBounds, banBounds), `${label}: rescan and ban controls overlap`);
   for (const box of bounds) {
     assert(!overlap(holdBounds, box, 0), `${label}: hold control overlaps a card`);
     assert(!overlap(rescanBounds, box, 0), `${label}: rescan control overlaps a card`);
+    assert(!overlap(banBounds, box, 0), `${label}: ban control overlaps a card`);
   }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
@@ -134,12 +140,22 @@ function assertDraftLayout(state, width, height, label) {
 
 const lowLifeOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 2, lives: 1, maxLives: 3 });
 assert(TACTICAL_DRAFT_AUGMENTS.length === 32, `expected curated 32-augment pool, got ${TACTICAL_DRAFT_AUGMENTS.length}`);
-const evolutionAugments = TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.maxStacks === 2);
-assert(evolutionAugments.length === 16, `expected 16 repeatable evolutions, got ${evolutionAugments.length}`);
+const evolutionAugments = TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.maxStacks === 3);
+assert(evolutionAugments.length === 16, `expected 16 repeatable overdrives, got ${evolutionAugments.length}`);
 assert(evolutionAugments.every((augment) => augment.evolutionName), 'every repeatable augment needs an evolution identity');
 assert(new Set(evolutionAugments.map((augment) => augment.evolutionName)).size === 16, 'evolution identities must remain unique');
 assert(getTacticalDraftDisplayMeta('damage_up', 1)?.displayName === 'DAMAGE UP', 'stack I should keep its base identity');
 assert(getTacticalDraftDisplayMeta('damage_up', 2)?.displayName === 'WARHEAD AUTHORITY', 'stack II should expose its evolution identity');
+assert(getTacticalDraftDisplayMeta('damage_up', 3)?.overdriven === true, 'stack III should expose its diminishing overdrive state');
+assert(TACTICAL_DRAFT_BAN_COUNT === 2, 'each run should provide exactly two upgrade bans');
+const beforeScoreRoute = buildTacticalDraftOffers({ seed: 'score-route', sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR - 1 });
+const scoreRoute = buildTacticalDraftOffers({ seed: 'score-route', sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR });
+const afterScoreRoute = buildTacticalDraftOffers({ seed: 'score-route', sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR + 1 });
+assert(!beforeScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'score route must not be random before its fixed sector');
+assert(scoreRoute.filter((offer) => offer.id === 'combo_anchor' && offer.fixedScoreRoute).length === 1, 'fixed sector must offer one clearly marked scoring choice');
+assert(!afterScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'score route must not randomly reappear after its fixed sector');
+const bannedScoreRoute = buildTacticalDraftOffers({ seed: 'score-route', sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR, bannedIds: ['combo_anchor'] });
+assert(!bannedScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'a banned scoring route must stay removed');
 for (const category of ['offense', 'mobility', 'defense', 'utility']) {
   assert(TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.category === category).length === 8,
     `expected 8 ${category} augments`);
@@ -176,6 +192,17 @@ const stacked = buildTacticalDraftModifiers(['damage_up', 'rapid_fire', 'double_
 assert(stacked.damageMult > 1 && stacked.fireDelayMult < 1 && stacked.shotBonus === 1 && stacked.magnetRadiusBonus > 0, 'stacked modifiers incomplete');
 const doubleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up']);
 assert(doubleDamage.damageMult > 1.12 && doubleDamage.damageMult < 1.12 * 1.12, 'second stack should have diminishing returns');
+const tripleDamage = buildTacticalDraftModifiers(['damage_up', 'damage_up', 'damage_up']);
+assert(tripleDamage.damageMult > doubleDamage.damageMult && tripleDamage.damageMult < doubleDamage.damageMult * 1.12, 'third stack should extend the late pool with stronger diminishing returns');
+const latePoolSelected = TACTICAL_DRAFT_AUGMENTS.flatMap((augment) => Array(Math.min(augment.maxStacks, augment.maxStacks === 3 ? 2 : 1)).fill(augment.id));
+const latePoolOffers = buildTacticalDraftOffers({
+  seed: 'sector-forty-proof',
+  sectorCleared: 40,
+  selectedIds: latePoolSelected,
+  bannedIds: ['damage_up', 'rapid_fire']
+});
+assert(latePoolOffers.length === 3 && latePoolOffers.every((offer) => offer.nextStack === 3),
+  `sector-forty pool should still provide three overdrive choices: ${JSON.stringify(latePoolOffers)}`);
 const matchingTimedPickup = buildTacticalDraftModifiers(['damage_up', 'rapid_fire'], { activePowerupType: 'damage_up' });
 assert(matchingTimedPickup.overlapSuppressedId === 'damage_up', 'matching timed pickup should suppress only its duplicate Draft effect');
 assert(Math.abs(matchingTimedPickup.damageMult - 1) < 0.0001 && matchingTimedPickup.fireDelayMult < 1, 'matching timed pickup suppression affected unrelated Draft effects');
@@ -239,6 +266,7 @@ try {
   assertDraftLayout(state, 1280, 720, 'desktop');
   const firstOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
   assert(state.tacticalDraft.rescansRemaining === 1, 'fresh run should expose one Draft rescan');
+  assert(state.tacticalDraft.bansRemaining === 2, 'fresh run should expose two Draft bans');
   const keyboardHeldId = firstOfferIds[state.tacticalDraft.focusIndex];
   await page.keyboard.press('l');
   await page.waitForFunction((id) => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === id, keyboardHeldId);
@@ -254,6 +282,18 @@ try {
   assert(state.tacticalDraft.offers.filter((offer) => offer.held).length === 1, 'rescan did not retain exactly one held card');
   assert(state.tacticalDraft.offers[state.tacticalDraft.recommendedIndex]?.id === keyboardHeldId, 'held offer should receive recommended focus after rescan');
   assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
+  const banTargetIndex = state.tacticalDraft.offers.findIndex((offer) => offer.id !== keyboardHeldId);
+  await page.keyboard.press(banTargetIndex > state.tacticalDraft.focusIndex ? 'ArrowRight' : 'ArrowLeft');
+  state = await readState(page);
+  const keyboardBannedId = state.tacticalDraft.offers[state.tacticalDraft.focusIndex].id;
+  await page.keyboard.press('b');
+  await page.waitForFunction((id) => {
+    const draft = JSON.parse(window.render_game_to_text()).tacticalDraft;
+    return draft?.lastBannedId === id && draft?.bansRemaining === 1;
+  }, keyboardBannedId);
+  state = await readState(page);
+  assert(!state.tacticalDraft.offers.some((offer) => offer.id === keyboardBannedId), 'keyboard-banned upgrade remained in the Draft');
+  assert(state.tacticalDraft.heldId === keyboardHeldId, 'banning another card discarded the held upgrade');
   const frozenTime = state.arcadeRun.runElapsedSeconds;
   await page.waitForTimeout(450);
   state = await readState(page);
@@ -291,6 +331,13 @@ try {
     return draft?.heldId === null && draft?.lastHoldSource === 'gamepad';
   });
   await page.evaluate(() => { window.__burtGamepadOverride.buttons[2] = { pressed: false, value: 0 }; });
+  await page.waitForTimeout(80);
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[5] = { pressed: true, value: 1 }; });
+  await page.waitForFunction(() => {
+    const draft = JSON.parse(window.render_game_to_text()).tacticalDraft;
+    return draft?.lastBanSource === 'gamepad' && draft?.bansRemaining === 0;
+  });
+  await page.evaluate(() => { window.__burtGamepadOverride.buttons[5] = { pressed: false, value: 0 }; });
   await page.waitForTimeout(80);
   state = await readState(page);
   const gamepadTargetIndex = (state.tacticalDraft.focusIndex + 1) % state.tacticalDraft.offers.length;

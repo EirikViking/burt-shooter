@@ -56,8 +56,12 @@ import {
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
-import { RARE_CHAOS_VISITOR_VARIANT_COUNT } from '../config/RareChaosVisitors.js';
 import {
+  RARE_CHAOS_VISITOR_VARIANT_COUNT,
+  RARE_CHAOS_VISITOR_WAVE_CHANCE
+} from '../config/RareChaosVisitors.js';
+import {
+  TACTICAL_DRAFT_BAN_COUNT,
   buildTacticalDraftOffers,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
@@ -216,6 +220,8 @@ export class PlayScene {
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
+    this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
+    this.tacticalDraftBannedIds = [];
     this.tacticalDraftConfirmTimeout = null;
     this.tacticalBossBanterTimer = null;
     this.tacticalBossBanterToken = 0;
@@ -717,6 +723,8 @@ export class PlayScene {
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
+    this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
+    this.tacticalDraftBannedIds = [];
     this.tacticalDirectiveSession = null;
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
@@ -6896,6 +6904,7 @@ export class PlayScene {
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }).map((offer) => ({
       ...offer,
@@ -6949,7 +6958,8 @@ export class PlayScene {
     cards.forEach((card) => overlay.addChild(card));
     const rescan = this.createTacticalDraftRescanControl();
     const hold = this.createTacticalDraftHoldControl();
-    overlay.addChild(rescan, hold);
+    const ban = this.createTacticalDraftBanControl();
+    overlay.addChild(rescan, hold, ban);
     const recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
     this.tacticalDraft = {
       active: true,
@@ -6969,9 +6979,11 @@ export class PlayScene {
       cards,
       rescan,
       hold,
+      ban,
       heldAtOpenId: this.tacticalDraftHeldId,
       rescanCount: 0,
       rescansRemaining: this.tacticalDraftRescansRemaining,
+      bansRemaining: this.tacticalDraftBansRemaining,
       onComplete: typeof onComplete === 'function' ? onComplete : null,
       openedAt: Date.now(),
       inputArmed: false,
@@ -6996,7 +7008,9 @@ export class PlayScene {
     card._offer = offer;
     const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
-    const categoryLabel = translateText(String(offer.category || 'utility').toUpperCase());
+    const categoryLabel = offer.fixedScoreRoute
+      ? translateText('FIXED SCORE ROUTE')
+      : translateText(String(offer.category || 'utility').toUpperCase());
     const category = createText(translateText('{category} // {stack}/{max}', {
       category: categoryLabel,
       stack: offer.nextStack,
@@ -7033,9 +7047,11 @@ export class PlayScene {
       wordWrapWidth: 250
     });
     description.anchor.set(0.5);
-    const permanence = createText(offer.currentStacks > 0
-      ? translateText('EVOLUTION: 55% EFFECT')
-      : translateText('PERMANENT THIS RUN'), {
+    const permanence = createText(offer.currentStacks >= 2
+      ? translateText('OVERDRIVE: 30% EFFECT')
+      : offer.currentStacks > 0
+        ? translateText('EVOLUTION: 55% EFFECT')
+        : translateText('PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: 11,
       fontWeight: '900',
@@ -7120,6 +7136,28 @@ export class PlayScene {
     control.addChild(bg, label);
     control._nodes = { bg, label };
     control.on('pointertap', () => this.toggleTacticalDraftHold('pointer'));
+    return control;
+  }
+
+  createTacticalDraftBanControl() {
+    const control = new PIXI.Container();
+    control.label = 'tactical_draft_ban';
+    control.eventMode = 'static';
+    control.cursor = 'pointer';
+    const bg = new PIXI.Graphics();
+    const label = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#ffb0c4',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    label.anchor.set(0.5);
+    control.addChild(bg, label);
+    control._nodes = { bg, label };
+    control.on('pointertap', () => this.banTacticalDraftOffer('pointer'));
     return control;
   }
 
@@ -7210,20 +7248,24 @@ export class PlayScene {
     state.subtitle.style.fontSize = compact ? 13 : 17;
     state.subtitle.position.set(width / 2, compact ? 98 : 128);
 
-    if (state.rescan && state.hold) {
-      const controlWidth = compact ? 148 : 190;
+    if (state.rescan && state.hold && state.ban) {
+      const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
       const controlHeight = compact ? 28 : 34;
       state.rescan._draftLayout = { width: controlWidth, height: controlHeight };
       state.hold._draftLayout = { width: controlWidth, height: controlHeight };
-      const controlGap = compact ? 24 : 12;
-      const controlsWidth = controlWidth * 2 + controlGap;
+      state.ban._draftLayout = { width: controlWidth, height: controlHeight };
+      const controlGap = compact ? 8 : 12;
+      const controlsWidth = controlWidth * 3 + controlGap * 2;
       const controlY = compact ? 124 : height - 42;
       state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
-      state.hold.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
+      state.hold.position.set(width / 2, controlY);
+      state.ban.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
       state.rescan.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
       state.hold.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+      state.ban.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
       this.redrawTacticalDraftRescan();
       this.redrawTacticalDraftHold();
+      this.redrawTacticalDraftBan();
     }
 
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(340, (width - 120) / 3);
@@ -7370,6 +7412,78 @@ export class PlayScene {
     control.cursor = available ? 'pointer' : 'default';
   }
 
+  redrawTacticalDraftBan() {
+    const state = this.tacticalDraft;
+    const control = state?.ban;
+    const layout = control?._draftLayout;
+    const nodes = control?._nodes;
+    if (!state?.active || !layout || !nodes) return;
+    const focusedId = state.offers?.[state.focusIndex]?.id || null;
+    const available = Boolean(focusedId && !state.confirmedId && state.inputArmed && state.bansRemaining > 0);
+    nodes.bg.clear();
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.fill({ color: available ? 0x311020 : 0x07111b, alpha: 0.94 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.stroke({ color: available ? 0xff426f : 0x536572, width: 1.2, alpha: available ? 0.82 : 0.36 });
+    nodes.label.text = available
+      ? translateText('B / RB  BAN ({count})', { count: state.bansRemaining })
+      : translateText('BANS USED');
+    nodes.label.scale.set(1);
+    nodes.label.updateText?.(false);
+    nodes.label.scale.set(Math.min(1, Math.max(0.56, (layout.width - 18) / Math.max(1, nodes.label.width))));
+    nodes.label.style.fill = available ? '#ffb0c4' : '#71848f';
+    control.alpha = available ? 1 : 0.68;
+    control.cursor = available ? 'pointer' : 'default';
+  }
+
+  banTacticalDraftOffer(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || !state.inputArmed || state.bansRemaining <= 0) return false;
+    const offer = state.offers?.[state.focusIndex];
+    if (!offer || this.tacticalDraftBannedIds.includes(offer.id)) return false;
+    this.tacticalDraftBannedIds.push(offer.id);
+    if (this.tacticalDraftHeldId === offer.id) this.tacticalDraftHeldId = null;
+    const previousIds = state.offers.map((entry) => entry.id);
+    const consumedIds = this.player?.consumedRunAugmentIds || [];
+    const offers = buildTacticalDraftOffers({
+      seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:ban:${this.tacticalDraftBannedIds.length}`,
+      sectorCleared: state.sectorCleared,
+      selectedIds: this.player?.runAugmentIds || [],
+      lives: Number(this.game?.lives) || 0,
+      maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      activePowerupType: this.player?.activePowerup?.type || null,
+      runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      excludedIds: previousIds,
+      bannedIds: this.tacticalDraftBannedIds,
+      heldId: this.tacticalDraftHeldId
+    }).map((entry) => ({
+      ...entry,
+      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, entry.id)
+    }));
+    if (offers.length < 3) {
+      this.tacticalDraftBannedIds.pop();
+      return false;
+    }
+    state.cards.forEach((card) => {
+      if (card.parent) card.parent.removeChild(card);
+      card.destroy?.({ children: true });
+    });
+    state.offers = offers;
+    state.cards = offers.map((entry, index) => this.createTacticalDraftCard(entry, index));
+    state.cards.forEach((card) => state.overlay.addChild(card));
+    state.bansRemaining -= 1;
+    this.tacticalDraftBansRemaining = state.bansRemaining;
+    state.recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
+    state.focusIndex = state.recommendedIndex;
+    state.lastBannedId = offer.id;
+    state.lastBanSource = source;
+    this.layoutTacticalDraft();
+    this.setTacticalDraftFocus(state.recommendedIndex, { silent: true });
+    this.scheduleTacticalBossBanter(offers[state.recommendedIndex]?.id, { delayMs: 680, context: 'draft' });
+    AudioManager.playSfx('ui_error', { volume: 0.34, minIntervalMs: 80 });
+    return true;
+  }
+
   toggleTacticalDraftHold(source = 'unknown') {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId || !state.inputArmed) return false;
@@ -7399,6 +7513,7 @@ export class PlayScene {
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
+      bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }).map((offer) => ({
       ...offer,
@@ -7425,6 +7540,7 @@ export class PlayScene {
     playMenuConfirmSfx(0.3);
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
+    this.redrawTacticalDraftBan();
     state.lastRescanSource = source;
     return true;
   }
@@ -7437,6 +7553,7 @@ export class PlayScene {
     state.focusIndex = next;
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftHold();
+    this.redrawTacticalDraftBan();
     if (!silent) {
       playMenuFocusSfx(0.2);
       this.scheduleTacticalBossBanter(state.offers?.[next]?.id, { context: 'draft' });
@@ -7544,7 +7661,7 @@ export class PlayScene {
       const keyboardHeld = [
         'Space', 'Enter', 'NumpadEnter',
         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyL', 'a', 'd', 'w', 's', 'l', 'A', 'D', 'W', 'S', 'L'
+        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyL', 'KeyB', 'a', 'd', 'w', 's', 'l', 'b', 'A', 'D', 'W', 'S', 'L', 'B'
       ].some((key) => this.inputManager?.isKeyPressed?.(key));
       const minimumReadGateOpen = Date.now() - state.openedAt >= 280;
       if (!minimumReadGateOpen || keyboardHeld || nav.active || nav.suppressed) {
@@ -7568,14 +7685,17 @@ export class PlayScene {
     const confirm = this.inputManager?.consumeKeyPress?.('Enter', 'NumpadEnter', 'Space');
     const rescan = this.inputManager?.consumeKeyPress?.('KeyR', 'r', 'R');
     const hold = this.inputManager?.consumeKeyPress?.('KeyL', 'l', 'L');
+    const ban = this.inputManager?.consumeKeyPress?.('KeyB', 'b', 'B');
     if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
     if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
     if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
     if (rescan || nav.pressed.y) this.rescanTacticalDraft(nav.pressed.y ? 'gamepad' : 'keyboard');
     if (hold || nav.pressed.x) this.toggleTacticalDraftHold(nav.pressed.x ? 'gamepad' : 'keyboard');
+    if (ban || nav.pressed.rb) this.banTacticalDraftOffer(nav.pressed.rb ? 'gamepad' : 'keyboard');
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
+    this.redrawTacticalDraftBan();
   }
 
   updateTacticalDraftLockIn() {
@@ -7670,6 +7790,7 @@ export class PlayScene {
     });
     state.rescan.alpha = Math.max(0.18, 1 - reveal * 0.82);
     state.hold.alpha = Math.max(0.18, 1 - reveal * 0.82);
+    state.ban.alpha = Math.max(0.18, 1 - reveal * 0.82);
     state.title.scale.set(1 + Math.sin(Math.min(1, elapsed / 270) * Math.PI) * 0.045);
     state.subtitle.alpha = 0.76 + fade * 0.24;
     state.lockInProgress = progress;
@@ -7795,6 +7916,12 @@ export class PlayScene {
       heldAtOpenId: state?.heldAtOpenId || null,
       holdLabel: state?.hold?._nodes?.label?.text || null,
       holdBounds: boundsOf(state?.hold),
+      bansRemaining: state?.bansRemaining ?? this.tacticalDraftBansRemaining,
+      bannedIds: this.tacticalDraftBannedIds.slice(),
+      banLabel: state?.ban?._nodes?.label?.text || null,
+      banBounds: boundsOf(state?.ban),
+      lastBannedId: state?.lastBannedId || null,
+      lastBanSource: state?.lastBanSource || null,
       lastHoldSource: state?.lastHoldSource || null,
       pendingBossBanterId: this.pendingTacticalBossBanterId || null,
       pendingBossBanterContext: this.pendingTacticalBossBanterContext || null,
@@ -7810,6 +7937,10 @@ export class PlayScene {
         displayName: offer.displayName || offer.name,
         displayNameSource: offer.displayName || offer.name,
         category: offer.category,
+        currentStacks: offer.currentStacks,
+        nextStack: offer.nextStack,
+        maxStacks: offer.maxStacks,
+        fixedScoreRoute: Boolean(offer.fixedScoreRoute),
         descriptionSource: offer.description,
         doctrinePreviewText: state.cards?.[index]?._nodes?.doctrine?.text || null,
         doctrinePreviewBounds: boundsOf(state.cards?.[index]?._nodes?.doctrine),
@@ -14171,25 +14302,25 @@ export class PlayScene {
     if (!variant) return false;
     this.recordThreatDiscovery(variant.id, 'enemies', {
       name: variant.displayName,
-      role: translateText('RARE CHAOS VISITOR'),
+      role: translateText('EXTINCTION-CLASS CONTACT'),
       movementStyle: variant.move,
       fireStyle: variant.loadoutName,
-      rarity: translateText('3% WAVE CONTACT'),
+      rarity: translateText('0.4% WAVE CONTACT'),
       sector: this.game?.level || 1,
       waveIndex: this.enemyManager?.currentWaveIndex || 0
     });
-    this.enqueueToast(`${translateText('RARE CONTACT')} // ${translateText('VARIANT {number} OF {total}', {
+    this.enqueueToast(`${translateText('EXTINCTION-CLASS CONTACT')} // ${translateText('VARIANT {number} OF {total}', {
       number: String(variant.number).padStart(2, '0'),
       total: RARE_CHAOS_VISITOR_VARIANT_COUNT
-    })}\n${variant.displayName}\n${variant.loadoutName}`, {
+    })}\n${variant.displayName} // ${variant.loadoutName}\n${translateText('SURVIVE THREE ESCALATION PHASES')}`, {
       fontSize: this.game.getWidth() < 720 ? 17 : 24,
-      fill: '#fff3a0',
+      fill: '#ffb0c4',
       stroke: '#170016',
       strokeThickness: 5,
       slot: 'center',
       type: 'rareChaosVisitor',
       priority: 10,
-      duration: 3100,
+      duration: 3900,
       maxWidth: this.game.getWidth() * 0.78,
       accent: variant.accent
     });
@@ -14209,7 +14340,28 @@ export class PlayScene {
         exclusiveGroup: 'boss_voice'
       });
     }
-    this.screenShake?.shake?.(8, 22);
+    const dreadWash = new PIXI.Graphics();
+    dreadWash.label = 'rare_contact_dread_wash';
+    dreadWash.zIndex = 999990;
+    dreadWash.eventMode = 'none';
+    dreadWash.rect(0, 0, this.game.getWidth(), this.game.getHeight());
+    dreadWash.fill({ color: 0x030006, alpha: 0.64 });
+    dreadWash.rect(8, 8, this.game.getWidth() - 16, this.game.getHeight() - 16);
+    dreadWash.stroke({ color: 0xff1748, width: 6, alpha: 0.78 });
+    this.uiOverlay?.addChild?.(dreadWash);
+    let dreadElapsed = 0;
+    const dreadTicker = (delta) => {
+      dreadElapsed += delta.deltaTime * 16.67;
+      const fadeIn = Math.min(1, dreadElapsed / 90);
+      const fadeOut = Math.max(0, 1 - Math.max(0, dreadElapsed - 720) / 620);
+      dreadWash.alpha = fadeIn * fadeOut;
+      if (dreadElapsed < 1340) return;
+      this.game.app.ticker.remove(dreadTicker);
+      dreadWash.parent?.removeChild?.(dreadWash);
+      dreadWash.destroy?.();
+    };
+    this.game.app.ticker.add(dreadTicker);
+    this.screenShake?.shake?.(10, 28);
     for (let index = 0; index < 5; index += 1) {
       const angle = (Math.PI * 2 * index) / 5;
       this.particleManager?.createExplosion?.(enemy.x + Math.cos(angle) * (28 + index * 5), enemy.y + Math.sin(angle) * (22 + index * 4), index % 2 ? variant.tint : variant.accent, 0.7 + index * 0.08);
@@ -14217,9 +14369,10 @@ export class PlayScene {
     this.lastRareChaosVisitorAnnouncement = {
       id: variant.id,
       number: variant.number,
-      chance: plan?.chance ?? 0.03,
+      chance: plan?.chance ?? RARE_CHAOS_VISITOR_WAVE_CHANCE,
       roll: plan?.roll ?? null,
-      announcedAt: Date.now()
+      announcedAt: Date.now(),
+      presentation: 'extinction_dread'
     };
     return true;
   }
@@ -14228,13 +14381,13 @@ export class PlayScene {
     const variant = enemy?.rareChaosVisitorVariant;
     if (!variant) return false;
     const label = threshold <= 0.25
-      ? translateText('FINAL LASER TANTRUM')
+      ? translateText('FINAL PHASE // TOTAL FIRE')
       : threshold <= 0.5
-        ? translateText('CHAOS VISITOR ENRAGED')
-        : translateText('CHAOS ARMOR CRACKED');
+        ? translateText('PHASE II // HULL FRENZY')
+        : translateText('PHASE I // WEAPONS UNSEALED');
     this.enqueueToast(label, {
       fontSize: threshold <= 0.25 ? 24 : 18,
-      fill: threshold <= 0.25 ? '#ff6d92' : '#fff3a0',
+      fill: threshold <= 0.25 ? '#ff315f' : '#ffb0c4',
       stroke: '#15000e',
       strokeThickness: 4,
       slot: 'top',
@@ -14259,7 +14412,7 @@ export class PlayScene {
     const rewardLabel = translateText(getPowerupMeta(variant.rewardPowerupType)?.name || variant.rewardPowerupType.toUpperCase());
     this.player?.grantInvulnerability?.(1500, 'rare_chaos_visitor_reward');
     this.comboTimerMs = Math.max(this.comboWindowMs, Number(this.comboTimerMs) || 0);
-    this.enqueueToast(`${translateText('PARTY CRASHER EJECTED')}\n${translateText('BONUS +{score}', { score: Number(bonus).toLocaleString('en-US') })} // ${translateText('PRIZE: {reward}', { reward: rewardLabel })}`, {
+    this.enqueueToast(`${translateText('EXTINCTION CONTACT DESTROYED')}\n${translateText('BONUS +{score}', { score: Number(bonus).toLocaleString('en-US') })} // ${translateText('PRIZE: {reward}', { reward: rewardLabel })}`, {
       fontSize: this.game.getWidth() < 720 ? 18 : 27,
       fill: '#fff3a0',
       stroke: '#120014',

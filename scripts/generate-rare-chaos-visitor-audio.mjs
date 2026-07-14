@@ -24,14 +24,14 @@ const dryRun = process.argv.includes('--dry-run');
 const delayMs = Math.max(0, Number(process.env.ELEVENLABS_RARE_CHAOS_DELAY_MS || 700));
 
 const sfx = [
-  ['nova_rare_visitor_arrival.mp3', 2.4, 'Extremely dramatic retro arcade rare-enemy arrival: deep warning horn, rising reactor siren, huge comic orchestral hit, sparkling sci-fi tail, no voice, original sound.'],
-  ['nova_rare_visitor_theme_sting.mp3', 8.0, 'Original eight-second mini boss music sting for a funny dangerous space invader: frantic brass, taiko drums, chiptune arpeggio, laser percussion, heroic absurd climax, no vocals, no recognizable melody.'],
-  ['nova_rare_visitor_laser_charge.mp3', 1.3, 'Large dangerous alien laser charging with escalating electric coils and a theatrical warning wobble, readable arcade telegraph, no voice.'],
-  ['nova_rare_visitor_laser_fire.mp3', 0.9, 'Huge clean sci-fi laser cannon discharge, bright plasma crack into a deep punch, dangerous but not harsh, polished arcade game sound.'],
-  ['nova_rare_visitor_barrage.mp3', 0.8, 'Short burst of many tiny alien cannons firing in a comic but dangerous rhythmic volley, crisp arcade bullet barrage, no voice.'],
-  ['nova_rare_visitor_armor_crack.mp3', 1.1, 'Rare enemy armor cracking open: metal fracture, glassy energy shield snap, delighted synth punctuation, dramatic arcade feedback.'],
-  ['nova_rare_visitor_defeat.mp3', 2.6, 'Massive gratifying defeat sting for a rare ridiculous enemy ship: layered explosion, brass victory stab, confetti sparkles, crowd-sized synthetic cheer, original sound.'],
-  ['nova_rare_visitor_reward.mp3', 1.8, 'Premium rare loot reward bloom: warm power chord, crystalline coin shower, rising shield shimmer, joyful arcade jackpot finish, no voice.']
+  ['nova_rare_visitor_arrival.mp3', 3.2, 'Terrifying extinction-class spacecraft arrival: subsonic pressure wave, distant metal distress siren, reversed reactor breath, three slow seismic impacts, corrupted radio tail, no voice, original cinematic science-fiction horror sound.'],
+  ['nova_rare_visitor_theme_sting.mp3', 9.0, 'Original nine-second cosmic horror mini-boss sting: very low brass clusters, bowed metal groans, irregular war drums, pulsing reactor heartbeat, rising impossible choir texture without words, catastrophic final impact, no recognizable melody.'],
+  ['nova_rare_visitor_laser_charge.mp3', 1.6, 'Lethal alien extinction beam charging: deep magnetic hum, accelerating electrical scream, precise three-step warning pulse, readable arcade telegraph, no voice.'],
+  ['nova_rare_visitor_laser_fire.mp3', 1.0, 'Enormous alien beam discharge: airless vacuum crack, violent plasma rupture, deep hull-shaking impact and short black-hole tail, powerful but not painfully harsh.'],
+  ['nova_rare_visitor_barrage.mp3', 1.0, 'Dense coordinated alien weapon barrage: rapid heavy cannon sequence with predatory rhythm, metallic recoil and distant impact wash, frightening polished arcade combat sound, no voice.'],
+  ['nova_rare_visitor_armor_crack.mp3', 1.4, 'Ancient hostile armor seal rupturing: stressed metal scream, glass-black energy shell fracture, low creature-like reactor inhale, ominous escalation hit, no voice.'],
+  ['nova_rare_visitor_defeat.mp3', 3.4, 'Catastrophic extinction vessel destruction: imploding reactor, layered hull collapse, enormous vacuum shockwave, danger siren dying in pitch, then one clean victorious impact, no voice.'],
+  ['nova_rare_visitor_reward.mp3', 2.0, 'Rare forbidden technology reward reveal: dark energy bloom resolving into a clear premium arcade reward chord, crystalline fragments, relieved upward shimmer, no voice.']
 ].map(([file, duration_seconds, text]) => ({ kind: 'sfx', file, duration_seconds, text }));
 
 const voice = rareChaosVisitorVoiceLines.map((line) => ({

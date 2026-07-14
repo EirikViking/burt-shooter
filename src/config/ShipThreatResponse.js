@@ -111,6 +111,7 @@ export const SHIP_THREAT_RESPONSE_TARGETS = Object.freeze({
   apexSustainedDpsRatio: APEX_SUSTAINED_DPS_RATIO,
   maxDirectDraftOutputMult: 1.45,
   secondStackEffectiveness: 0.55,
+  thirdStackEffectiveness: 0.3,
   minApexFodderPowerRetention: 1.65,
   minApexBossPowerRetention: 1.55
 });

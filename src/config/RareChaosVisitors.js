@@ -1,32 +1,34 @@
 import { getGeneratedEnemyTypeForSpriteIndex } from './GeneratedEnemyProfiles.js';
 
-export const RARE_CHAOS_VISITOR_WAVE_CHANCE = 0.03;
+// A contact should feel like a story players tell, not a routine wave modifier.
+// 0.4% of eligible waves is roughly one appearance per fifty five-sector runs.
+export const RARE_CHAOS_VISITOR_WAVE_CHANCE = 0.004;
 export const RARE_CHAOS_VISITOR_VARIANT_COUNT = 99;
 
 const HULLS = Object.freeze([
-  { id: 'longboat', name: 'Longboat of Questionable Decisions', spriteIndex: 6, tint: 0xff4e91, accent: 0x66f7ff, move: 'sweep', health: 1.05 },
-  { id: 'taxi', name: 'Laser Taxi With No Brakes', spriteIndex: 19, tint: 0xffd34e, accent: 0xff5b87, move: 'feint', health: 0.94 },
-  { id: 'fridge', name: 'Armored Space Fridge', spriteIndex: 33, tint: 0xa8f7ff, accent: 0xffef7e, move: 'anchor', health: 1.22 },
-  { id: 'goose', name: 'Unauthorized Battle Goose', spriteIndex: 47, tint: 0xffffff, accent: 0xff6b49, move: 'pincer', health: 0.98 },
-  { id: 'choir', name: 'The Extremely Loud Choir', spriteIndex: 61, tint: 0xbf74ff, accent: 0x7dffcc, move: 'orbit', health: 1.08 },
-  { id: 'invoice', name: 'Hostile Invoice Department', spriteIndex: 78, tint: 0x7dffcc, accent: 0xff5d7a, move: 'needle', health: 1.14 },
-  { id: 'teapot', name: 'Interstellar Combat Teapot', spriteIndex: 102, tint: 0xff8f4e, accent: 0x66f7ff, move: 'split_sweep', health: 1.02 },
-  { id: 'disco', name: 'Disco Emergency Vehicle', spriteIndex: 126, tint: 0xff58e6, accent: 0xffef72, move: 'weave_wall', health: 0.96 },
-  { id: 'accountant', name: 'The Final Boss Accountant', spriteIndex: 151, tint: 0x6da8ff, accent: 0xff5f8e, move: 'ambush', health: 1.18 }
+  { id: 'longboat', name: 'The Hollow Procession', spriteIndex: 6, tint: 0xb0083e, accent: 0xff315f, move: 'sweep', health: 1.08 },
+  { id: 'taxi', name: 'Black Signal Cutter', spriteIndex: 19, tint: 0x4b0b67, accent: 0xff426f, move: 'feint', health: 0.98 },
+  { id: 'fridge', name: 'Ossuary Carrier', spriteIndex: 33, tint: 0x7a001f, accent: 0xffb0c4, move: 'anchor', health: 1.28 },
+  { id: 'goose', name: 'Carrion Interceptor', spriteIndex: 47, tint: 0x9d1237, accent: 0xff6b49, move: 'pincer', health: 1.04 },
+  { id: 'choir', name: 'The Mourning Choir', spriteIndex: 61, tint: 0x48106f, accent: 0xdf5cff, move: 'orbit', health: 1.14 },
+  { id: 'invoice', name: 'Redacted Collector', spriteIndex: 78, tint: 0x69002f, accent: 0xff3f72, move: 'needle', health: 1.2 },
+  { id: 'teapot', name: 'Ashen Crucible', spriteIndex: 102, tint: 0x8a1609, accent: 0xff6948, move: 'split_sweep', health: 1.1 },
+  { id: 'disco', name: 'The Siren Below', spriteIndex: 126, tint: 0x630b72, accent: 0xff2f8a, move: 'weave_wall', health: 1.02 },
+  { id: 'accountant', name: 'The Final Auditor', spriteIndex: 151, tint: 0x311061, accent: 0xff4f70, move: 'ambush', health: 1.24 }
 ]);
 
 const WEAPON_RIGS = Object.freeze([
-  { id: 'laser_tantrum', name: 'Laser Tantrum', shot: 'fan', action: 'telegraph_rail_lance', fire: 2.5, delay: 0.44, speed: 1.08 },
-  { id: 'bullet_weather', name: 'Bullet Weather', shot: 'net', action: 'pulse_ring_bloom', fire: 2.75, delay: 0.40, speed: 0.92 },
-  { id: 'lane_ownership', name: 'Lane Ownership Dispute', shot: 'needle', action: 'lane_cutter', fire: 2.34, delay: 0.48, speed: 1.22 },
-  { id: 'panic_fan', name: 'Panic Fan Deluxe', shot: 'fan', action: 'shotgun_fan_feint', fire: 2.64, delay: 0.42, speed: 1.02 },
-  { id: 'mine_confetti', name: 'Mine Confetti', shot: 'burst_pair', action: 'mine_drop', fire: 2.42, delay: 0.45, speed: 0.96 },
-  { id: 'boomerang_receipts', name: 'Boomerang Receipts', shot: 'sweep', action: 'boomerang_crescent', fire: 2.52, delay: 0.43, speed: 1.04 },
-  { id: 'crossfire_apology', name: 'Crossfire Apology', shot: 'crossfire', action: 'crossfire_pair', fire: 2.62, delay: 0.41, speed: 1.08 },
-  { id: 'satellite_soup', name: 'Satellite Soup', shot: 'net', action: 'orbiting_satellites', fire: 2.38, delay: 0.47, speed: 0.94 },
-  { id: 'dash_cannon', name: 'Brake Check Cannon', shot: 'needle', action: 'brake_dash_bolt', fire: 2.48, delay: 0.44, speed: 1.18 },
-  { id: 'split_decision', name: 'Poorly Split Decision', shot: 'burst_pair', action: 'splitter_seed', fire: 2.7, delay: 0.39, speed: 1.02 },
-  { id: 'everything_everywhere', name: 'Everything Everywhere Battery', shot: 'fan', action: 'pulse_ring_bloom', fire: 2.9, delay: 0.36, speed: 1.12 }
+  { id: 'laser_tantrum', name: 'Null Lance', shot: 'fan', action: 'telegraph_rail_lance', fire: 2.75, delay: 0.42, speed: 1.14 },
+  { id: 'bullet_weather', name: 'Grief Storm', shot: 'net', action: 'pulse_ring_bloom', fire: 3.0, delay: 0.38, speed: 1.02 },
+  { id: 'lane_ownership', name: 'Lane Erasure', shot: 'needle', action: 'lane_cutter', fire: 2.58, delay: 0.46, speed: 1.26 },
+  { id: 'panic_fan', name: 'Maw Array', shot: 'fan', action: 'shotgun_fan_feint', fire: 2.88, delay: 0.4, speed: 1.1 },
+  { id: 'mine_confetti', name: 'Wake Mines', shot: 'burst_pair', action: 'mine_drop', fire: 2.68, delay: 0.43, speed: 1.04 },
+  { id: 'boomerang_receipts', name: 'Returning Ruin', shot: 'sweep', action: 'boomerang_crescent', fire: 2.78, delay: 0.41, speed: 1.12 },
+  { id: 'crossfire_apology', name: 'Execution Crossfire', shot: 'crossfire', action: 'crossfire_pair', fire: 2.92, delay: 0.39, speed: 1.14 },
+  { id: 'satellite_soup', name: 'Dead Orbit', shot: 'net', action: 'orbiting_satellites', fire: 2.62, delay: 0.45, speed: 1.04 },
+  { id: 'dash_cannon', name: 'Coffin Dash', shot: 'needle', action: 'brake_dash_bolt', fire: 2.74, delay: 0.42, speed: 1.22 },
+  { id: 'split_decision', name: 'Fracture Seed', shot: 'burst_pair', action: 'splitter_seed', fire: 2.96, delay: 0.37, speed: 1.1 },
+  { id: 'everything_everywhere', name: 'Extinction Battery', shot: 'fan', action: 'pulse_ring_bloom', fire: 3.18, delay: 0.34, speed: 1.18 }
 ]);
 
 function hashText(value) {
