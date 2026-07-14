@@ -1364,7 +1364,7 @@ function waveEntry([id, name, role, tip]) {
 
 function eliteEntry(profile) {
   const name = profile.displayName || profile.id;
-  const ability = String(profile.specialAbility || 'elite pressure').replace(/_/g, ' ');
+  const ability = profile.abilityLabel || String(profile.specialAbility || 'elite pressure').replace(/_/g, ' ');
   return {
     id: profile.id,
     category: 'elites',
@@ -1377,7 +1377,7 @@ function eliteEntry(profile) {
     accent: profile.accent,
     tint: profile.tint,
     unlockLevel: profile.unlockLevel,
-    signalClass: profile.specialAbility,
+    signalClass: profile.abilityLabel || profile.specialAbility,
     codexBodyMode: 'story',
     loreFacts: {
       movement: profile.movementStyle || 'special',

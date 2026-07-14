@@ -2,6 +2,10 @@ import { menuBossBarkLines } from '../config/MenuBossBarkLines.js';
 import { mayhemSuperStormVoiceLines } from '../config/MayhemSuperStormVoiceLines.js';
 import { tacticalBossBanterLines } from '../config/TacticalBossBanterLines.js';
 import { rareChaosVisitorVoiceLines } from '../config/RareChaosVisitorVoiceLines.js';
+import {
+    ELITE_MIDDLE_SHIP_EXPANSION_ASSETS,
+    ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS
+} from '../config/EliteMiddleShipExpansion.js';
 
 export const AssetManifest = {
     generated: {
@@ -57,7 +61,8 @@ export const AssetManifest = {
             '/art/generated/nova-swarm/elites/nova-elite-middle-17-pulse-emp-ship-20260523.png',
             '/art/generated/nova-swarm/elites/nova-elite-middle-18-anchor-turret-ship-20260523.png',
             '/art/generated/nova-swarm/elites/nova-elite-middle-19-escort-commander-20260523.png',
-            '/art/generated/nova-swarm/elites/nova-elite-middle-20-late-game-elite-hunter-20260523.png'
+            '/art/generated/nova-swarm/elites/nova-elite-middle-20-late-game-elite-hunter-20260523.png',
+            ...ELITE_MIDDLE_SHIP_EXPANSION_ASSETS
         ],
         enemyWeapons: [
             '/art/generated/nova-swarm/projectiles/nova-basic-enemy-bolt-20260624.png',
@@ -554,7 +559,8 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_elite_pulse_emp_active.mp3',
             '/audio/sfx/nova-swarm/nova_elite_anchor_turret_active.mp3',
             '/audio/sfx/nova-swarm/nova_elite_escort_commander_active.mp3',
-            '/audio/sfx/nova-swarm/nova_elite_hunter_active.mp3'
+            '/audio/sfx/nova-swarm/nova_elite_hunter_active.mp3',
+            ...ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.map((key) => `/audio/sfx/nova-swarm/nova_${key}.mp3`)
         ]
     },
 

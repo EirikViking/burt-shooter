@@ -2147,6 +2147,46 @@ export class Enemy {
       case 'elite_hunter':
         this.fireElitePattern('hunter', playerX, playerY);
         break;
+      case 'prism_barrage':
+        this.fireElitePattern('prism', playerX, playerY);
+        break;
+      case 'meteor_bloom':
+        this.fireElitePattern('meteor', playerX, playerY);
+        break;
+      case 'hunter_dash':
+        this.phaseShiftUntil = now + Math.min(760, this.middleShipProfile.specialActiveMs || 760);
+        this.x = Math.max(this.radius + 18, Math.min(
+          (this.game?.getWidth?.() || 800) - this.radius - 18,
+          this.x + Math.sign(this.x - playerX || 1) * (22 + (this.middleShipProfile.abilityVariant || 0) * 10)
+        ));
+        this.fireElitePattern('dash', playerX, playerY);
+        break;
+      case 'satellite_ring':
+        this.fireElitePattern('satellite', playerX, playerY);
+        break;
+      case 'stasis_lattice':
+        this.applyLocalCooldownPulse(112 + (this.middleShipProfile.abilityVariant || 0) * 28);
+        break;
+      case 'siphon_tether':
+        this.health = Math.min(this.maxHealth, this.health + Math.max(1, this.maxHealth * (0.05 + (this.middleShipProfile.abilityVariant || 0) * 0.02)));
+        this.updateHealthBar?.();
+        this.repairNearbyAllies();
+        break;
+      case 'resonance_command':
+        this.commandNearbyAllies();
+        this.fireElitePattern('resonance', playerX, playerY);
+        break;
+      case 'warp_ambush':
+        this.phaseShiftUntil = now + (this.middleShipProfile.specialActiveMs || 1100);
+        this.spawnMirrorDecoys();
+        this.fireElitePattern('warp', playerX, playerY);
+        break;
+      case 'ion_shear':
+        this.fireElitePattern('shear', playerX, playerY);
+        break;
+      case 'siege_beacon':
+        this.fireElitePattern('siege', playerX, playerY);
+        break;
       default:
         break;
     }
@@ -2158,6 +2198,10 @@ export class Enemy {
       this.applyEliteTractorPull(delta, playerX, playerY);
     } else if (ability === 'vortex_gravity') {
       this.applyEliteVortexPull(delta, playerX, playerY);
+    } else if (ability === 'stasis_lattice') {
+      this.applyEliteVortexPull(delta, playerX, playerY, 0.42);
+    } else if (ability === 'siphon_tether') {
+      this.applyEliteTractorPull(delta, playerX, playerY, 0.7);
     }
   }
 
@@ -2279,6 +2323,10 @@ export class Enemy {
     }
     if (ability === 'drone_carrier') {
       this.drawEliteCarrierSignature(layer, { progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    if (['prism_barrage', 'meteor_bloom', 'hunter_dash', 'satellite_ring', 'stasis_lattice', 'siphon_tether', 'resonance_command', 'warp_ambush', 'ion_shear', 'siege_beacon'].includes(ability)) {
+      this.drawEliteExpansionSignature(layer, { ability, profile, relX, relY, progress, active, color: accent, tint, now, pulse, radius });
       return;
     }
     this.drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color: accent, tint, now, pulse, radius });
@@ -2472,6 +2520,213 @@ export class Enemy {
     this.drawEliteArc(layer, 0, radius * 0.34, radius * 1.04, radius * 0.28, now * 0.005, now * 0.005 + Math.PI, color, active ? 2.4 : 1.4, alpha);
   }
 
+  drawEliteExpansionSignature(layer, { ability, profile, relX, relY, progress, active, color, tint, now, pulse, radius }) {
+    const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+    const alpha = active ? 0.62 : 0.16 + progress * 0.38;
+    const whiteAlpha = active ? 0.34 : 0.08 + progress * 0.22;
+
+    if (ability === 'prism_barrage') {
+      const count = 3 + variant * 2;
+      const targetY = Math.max(160, relY);
+      const spread = 54 + variant * 22;
+      for (let index = 0; index < count; index += 1) {
+        const lane = count === 1 ? 0 : index / (count - 1) - 0.5;
+        const targetX = relX + lane * spread * 2;
+        layer.moveTo(lane * radius * 0.36, radius * 0.3);
+        layer.lineTo(targetX, targetY);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.8 : 1.35, alpha: alpha * (0.72 + (index % 3) * 0.1) });
+        const shardY = radius * (0.72 + (index % 2) * 0.24);
+        const shardX = lane * radius * 1.36;
+        layer.moveTo(shardX, shardY - 8 - pulse * 3);
+        layer.lineTo(shardX + 5, shardY);
+        layer.lineTo(shardX, shardY + 8 + pulse * 3);
+        layer.lineTo(shardX - 5, shardY);
+        layer.closePath();
+        layer.fill({ color: index % 2 ? tint : color, alpha: alpha * 0.5 });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, targetY, 18 + variant * 4, 0xffffff, whiteAlpha, now);
+      return;
+    }
+
+    if (ability === 'meteor_bloom') {
+      const count = 3 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const lane = index - (count - 1) / 2;
+        const x = lane * (24 - variant * 2);
+        const y = radius * 0.86 + 28 + (index % 2) * 18;
+        const forecast = 12 + variant * 2 + pulse * 4;
+        layer.circle(x, y, forecast);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.4, alpha });
+        layer.circle(x, y, 3.5 + pulse * 2);
+        layer.fill({ color: 0xffffff, alpha: whiteAlpha });
+        layer.moveTo(x, radius * 0.22);
+        layer.lineTo(x, y - forecast);
+      }
+      layer.stroke({ color, width: active ? 2.2 : 1.1, alpha: alpha * 0.56 });
+      this.drawEliteArc(layer, 0, 0, radius * (1.02 + pulse * 0.08), radius * 0.6, Math.PI, Math.PI * 2, tint, active ? 3 : 1.6, alpha);
+      return;
+    }
+
+    if (ability === 'hunter_dash') {
+      const angle = Math.atan2(relY, relX);
+      const length = Math.max(190, Math.hypot(relX, relY));
+      const normal = angle + Math.PI / 2;
+      const corridor = 12 + variant * 4;
+      [-1, 1].forEach((side) => {
+        layer.moveTo(Math.cos(normal) * corridor * side, Math.sin(normal) * corridor * side);
+        layer.lineTo(Math.cos(angle) * length + Math.cos(normal) * corridor * side, Math.sin(angle) * length + Math.sin(normal) * corridor * side);
+      });
+      layer.stroke({ color, width: active ? 3 : 1.5, alpha });
+      for (let index = 1; index <= 4 + variant; index += 1) {
+        const t = index / (5 + variant);
+        const x = Math.cos(angle) * length * t;
+        const y = Math.sin(angle) * length * t;
+        layer.moveTo(x - Math.cos(angle) * 10 + Math.cos(normal) * 7, y - Math.sin(angle) * 10 + Math.sin(normal) * 7);
+        layer.lineTo(x, y);
+        layer.lineTo(x - Math.cos(angle) * 10 - Math.cos(normal) * 7, y - Math.sin(angle) * 10 - Math.sin(normal) * 7);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 2 : 1.1, alpha: whiteAlpha });
+      this.drawEliteCaptureBrackets(layer, relX, relY, 17 + variant * 3, tint, alpha, now);
+      return;
+    }
+
+    if (ability === 'satellite_ring') {
+      const count = 6 + variant * 2;
+      const ringR = radius * (1.08 + variant * 0.08);
+      for (let index = 0; index < count; index += 1) {
+        const angle = now * (0.003 + variant * 0.0005) + index * Math.PI * 2 / count;
+        const x = Math.cos(angle) * ringR;
+        const y = Math.sin(angle) * ringR * 0.62;
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: index % 2 ? color : tint, alpha: alpha * 0.72 });
+        layer.moveTo(x, y);
+        layer.lineTo(Math.cos(angle + Math.PI) * radius * 0.22, Math.sin(angle + Math.PI) * radius * 0.14);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: whiteAlpha });
+      this.drawEliteArc(layer, 0, 0, ringR * 1.08, ringR * 0.67, -now * 0.004, -now * 0.004 + Math.PI * 1.7, color, active ? 2.8 : 1.5, alpha);
+      return;
+    }
+
+    if (ability === 'stasis_lattice') {
+      const rings = 2 + variant;
+      for (let ring = 0; ring < rings; ring += 1) {
+        const r = radius * (0.72 + ring * 0.24 + pulse * 0.04);
+        layer.circle(0, 0, r);
+        layer.stroke({ color: ring % 2 ? tint : color, width: active ? 2.4 : 1.3, alpha: alpha * (1 - ring * 0.12) });
+      }
+      const ticks = 8 + variant * 4;
+      for (let index = 0; index < ticks; index += 1) {
+        const angle = index * Math.PI * 2 / ticks - Math.PI / 2;
+        const inner = radius * 0.52;
+        const outer = radius * (0.94 + (index % 3 === 0 ? 0.17 : 0.05));
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 2 : 1, alpha: whiteAlpha });
+      const hand = now * 0.004 * (variant + 1);
+      layer.moveTo(0, 0);
+      layer.lineTo(Math.cos(hand) * radius * 0.78, Math.sin(hand) * radius * 0.78);
+      layer.stroke({ color: tint, width: 2.4, alpha });
+      return;
+    }
+
+    if (ability === 'siphon_tether') {
+      const targetY = Math.max(150, relY);
+      const strands = 2 + variant;
+      for (let index = 0; index < strands; index += 1) {
+        const offset = (index - (strands - 1) / 2) * 13;
+        const sway = Math.sin(now * 0.008 + index) * (8 + variant * 3);
+        layer.moveTo(offset * 0.35, radius * 0.42);
+        layer.lineTo(relX * 0.5 + sway, targetY * 0.5);
+        layer.lineTo(relX + offset, targetY);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.3, alpha });
+      }
+      for (let index = 0; index < 5 + variant; index += 1) {
+        const angle = -now * 0.005 + index * Math.PI * 2 / (5 + variant);
+        layer.circle(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62, 3 + pulse * 2);
+        layer.fill({ color: index % 2 ? 0xffffff : tint, alpha: alpha * 0.64 });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, targetY, 20 + variant * 3, color, whiteAlpha, now);
+      return;
+    }
+
+    if (ability === 'resonance_command') {
+      const notes = 6 + variant * 2;
+      for (let index = 0; index < notes; index += 1) {
+        const angle = now * 0.003 + index * Math.PI * 2 / notes;
+        const r = radius * (0.88 + (index % 2) * 0.24 + pulse * 0.05);
+        const x = Math.cos(angle) * r;
+        const y = Math.sin(angle) * r * 0.62;
+        layer.moveTo(x, y + 7);
+        layer.lineTo(x, y - 7);
+        layer.lineTo(x + 7, y - 10);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.4 : 1.3, alpha });
+      }
+      for (let ring = 0; ring < 3; ring += 1) {
+        this.drawEliteArc(layer, 0, 0, radius * (0.68 + ring * 0.26 + pulse * 0.04), radius * (0.34 + ring * 0.13), now * 0.003 + ring, now * 0.003 + ring + Math.PI * 1.45, ring % 2 ? tint : 0xffffff, active ? 2.5 : 1.3, alpha * (1 - ring * 0.15));
+      }
+      return;
+    }
+
+    if (ability === 'warp_ambush') {
+      const echoes = 2 + variant;
+      for (let index = 0; index < echoes; index += 1) {
+        const side = index % 2 ? 1 : -1;
+        const tier = Math.floor(index / 2) + 1;
+        const x = side * radius * (0.62 + tier * 0.28 + pulse * 0.06);
+        const y = Math.sin(now * 0.01 + index) * 10;
+        layer.ellipse(x, y, radius * 0.42, radius * 0.76);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.5 : 1.25, alpha: alpha * (0.78 - tier * 0.1) });
+      }
+      layer.moveTo(0, -radius * 1.25);
+      layer.lineTo(radius * 0.18, -radius * 0.3);
+      layer.lineTo(-radius * 0.14, radius * 0.28);
+      layer.lineTo(0, radius * 1.25);
+      layer.stroke({ color: 0xffffff, width: active ? 3 : 1.5, alpha: whiteAlpha });
+      this.drawEliteCaptureBrackets(layer, relX, relY, 18 + variant * 3, color, alpha, now);
+      return;
+    }
+
+    if (ability === 'ion_shear') {
+      const length = Math.max(190, Math.hypot(relX, relY));
+      const angle = Math.atan2(relY, relX);
+      const shear = 0.48 - variant * 0.05;
+      [-shear, shear].forEach((offset, index) => {
+        const a = angle + offset;
+        layer.moveTo(Math.cos(a + Math.PI) * radius * 0.44, Math.sin(a + Math.PI) * radius * 0.44);
+        layer.lineTo(Math.cos(a) * length, Math.sin(a) * length);
+        layer.stroke({ color: index ? tint : color, width: active ? 3.2 : 1.5, alpha });
+      });
+      if (variant >= 1) {
+        layer.moveTo(0, radius * 0.35);
+        layer.lineTo(relX, relY);
+        layer.stroke({ color: 0xffffff, width: active ? 2.2 : 1.1, alpha: whiteAlpha });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, relY, 22 + variant * 3, tint, alpha, now);
+      return;
+    }
+
+    if (ability === 'siege_beacon') {
+      const grid = 2 + variant;
+      const targetY = Math.max(170, relY);
+      for (let index = 0; index < grid; index += 1) {
+        const lane = index - (grid - 1) / 2;
+        const x = relX + lane * 44;
+        const size = 18 + (index % 2) * 4 + pulse * 2;
+        layer.rect(x - size, targetY - size, size * 2, size * 2);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.3, alpha });
+        layer.moveTo(lane * radius * 0.4, radius * 0.5);
+        layer.lineTo(x, targetY - size);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: whiteAlpha });
+      [-1, 1].forEach((side) => {
+        layer.rect(side * radius * 0.68 - 7, -radius * 0.12, 14, radius * 0.92);
+        layer.fill({ color: side > 0 ? color : tint, alpha: active ? 0.14 : 0.04 + progress * 0.08 });
+        layer.stroke({ color: 0xffffff, width: 1.2, alpha: whiteAlpha });
+      });
+    }
+  }
+
   drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color, tint, now, pulse, radius }) {
     const alpha = active ? 0.58 : 0.18 + progress * 0.34;
     const isLane = ability === 'lane_blocker';
@@ -2556,7 +2811,7 @@ export class Enemy {
     layer.stroke({ color, width, alpha });
   }
 
-  applyEliteTractorPull(delta, playerX, playerY) {
+  applyEliteTractorPull(delta, playerX, playerY, strengthMult = 1) {
     const player = this.game?.scenes?.play?.player;
     if (!player?.active) return;
     const relX = player.x - this.x;
@@ -2568,12 +2823,13 @@ export class Enemy {
     const frameScale = Math.max(0.5, Math.min(2.2, delta));
     const playerRadius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
-    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale));
-    player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale);
+    const safeStrength = Math.max(0.2, Math.min(1.4, Number(strengthMult) || 1));
+    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale * safeStrength));
+    player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale * safeStrength);
     player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
   }
 
-  applyEliteVortexPull(delta) {
+  applyEliteVortexPull(delta, _playerX, _playerY, strengthMult = 1) {
     const player = this.game?.scenes?.play?.player;
     if (!player?.active) return;
     const dx = this.x - player.x;
@@ -2581,7 +2837,8 @@ export class Enemy {
     const dist = Math.hypot(dx, dy);
     if (dist <= 1 || dist > 260) return;
     const frameScale = Math.max(0.4, Math.min(2.0, delta));
-    const strength = Math.max(0, 1 - dist / 260) * 0.72 * frameScale;
+    const safeStrength = Math.max(0.2, Math.min(1.4, Number(strengthMult) || 1));
+    const strength = Math.max(0, 1 - dist / 260) * 0.72 * frameScale * safeStrength;
     const radius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
     const height = this.game?.getHeight?.() || 600;
@@ -2614,6 +2871,63 @@ export class Enemy {
       [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.9, 1, { radius: 7 + (index === 2 ? 2 : 0), assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 1.05, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 34, pulseRate: 0.9, warningColor: 0xff3355, trailColor: 0xff6a3a, haloColor: 0xff2438 }));
     } else if (pattern === 'hunter') {
       [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.9, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 46, accel: 0.0012, warningColor: 0x00ff99, trailColor: 0x00ff99, haloColor: 0x00ff99 }));
+    } else if (pattern === 'prism') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 3 + variant * 2;
+      const step = 0.18 - variant * 0.018;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * step;
+        add(baseAngle + offset, 2.55 + variant * 0.18, 0.92 + variant * 0.06, { radius: 5, assetIndex: 3, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.55 + index * 0.04, animationAmp: 0.08, alphaPulse: 0.13, trailLength: 34 + variant * 6, spin: (index % 2 ? -1 : 1) * 0.06, warningColor: index % 2 ? 0xff4fe5 : 0x55eaff, trailColor: index % 2 ? 0xff4fe5 : 0x55eaff, haloColor: 0xffffff });
+      }
+    } else if (pattern === 'meteor') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 3 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * (0.2 - variant * 0.02);
+        add(Math.PI / 2 + offset, 1.08 + (index % 2) * 0.13 + variant * 0.08, 1.05 + variant * 0.08, { radius: 10 + (index % 3), assetIndex: 1, projectileArt: 'heavy_enemy_orb', animationStyle: 'orb', animationRate: 0.8 + index * 0.07, animationAmp: 0.12, alphaPulse: 0.14, pulseRate: 0.62 + index * 0.08, spin: (index % 2 ? -1 : 1) * 0.035, warningColor: 0xffd166, trailColor: 0xff6b4a, haloColor: color });
+      }
+    } else if (pattern === 'dash') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 2 + variant;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * 0.14;
+        add(baseAngle + offset, 3.25 + variant * 0.2, 1, { radius: 5, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 2.05, animationAmp: 0.07, alphaPulse: 0.12, trailLength: 54 + variant * 7, accel: 0.0015, warningColor: 0xff4778, trailColor: color, haloColor: 0x7c8cff });
+      }
+    } else if (pattern === 'satellite') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 6 + variant * 2;
+      const rotation = baseAngle + Math.PI / 2;
+      for (let index = 0; index < count; index += 1) {
+        const angle = rotation + index * Math.PI * 2 / count;
+        add(angle, 1.72 + variant * 0.12, 0.88 + variant * 0.05, { radius: 6, assetIndex: 9, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.48, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 30, spin: (index % 2 ? -1 : 1) * 0.07, warningColor: index % 2 ? color : 0xffd66b, trailColor: color, haloColor: 0xffffff });
+      }
+    } else if (pattern === 'resonance') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 4 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * (0.16 - variant * 0.015);
+        add(baseAngle + offset, 2.05 + variant * 0.12, 0.92, { radius: 7, assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 1.25, animationAmp: 0.09, alphaPulse: 0.14, pulseRate: 0.84, warningColor: 0xffd45c, trailColor: color, haloColor: 0x72e8ff });
+      }
+    } else if (pattern === 'warp') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const offsets = variant === 0 ? [-0.18, 0.18] : variant === 1 ? [-0.28, 0, 0.28] : [-0.36, -0.12, 0.12, 0.36];
+      offsets.forEach((offset, index) => add(baseAngle + offset, 2.95 + variant * 0.16, 1, { radius: 5, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.95, animationAmp: 0.09, alphaPulse: 0.14, trailLength: 48, wobble: index % 2 ? 0.035 : -0.035, warningColor: 0xb06cff, trailColor: color, haloColor: 0x57f4ff }));
+    } else if (pattern === 'shear') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const offsets = variant === 0 ? [-0.46, 0.46] : variant === 1 ? [-0.42, 0, 0.42] : [-0.48, -0.16, 0.16, 0.48];
+      offsets.forEach((offset, index) => add(baseAngle + offset, 2.42 + variant * 0.14, 1, { radius: 6, assetIndex: 6, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.78, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 44, warningColor: index % 2 ? 0xff6bd5 : 0x4deaff, trailColor: color, haloColor: 0xffffff }));
+    } else if (pattern === 'siege') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const missileCount = 2 + variant;
+      for (let index = 0; index < missileCount; index += 1) {
+        const offset = (index - (missileCount - 1) / 2) * 0.18;
+        add(baseAngle + offset, 1.58 + variant * 0.09, 1.08 + variant * 0.08, { radius: 9, assetIndex: 7, projectileArt: 'enemy_fireball', animationStyle: 'fireball', animationRate: 1.2, animationAmp: 0.11, alphaPulse: 0.13, trailLength: 52, accel: 0.0024, warningColor: 0xff3d55, trailColor: 0xff6b4a, haloColor: 0xffd05c });
+      }
+      const mineCount = 1 + variant;
+      for (let index = 0; index < mineCount; index += 1) {
+        const offset = (index - (mineCount - 1) / 2) * 0.24;
+        add(Math.PI / 2 + offset, 0.95 + index * 0.08, 1, { radius: 11, assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 0.92, animationAmp: 0.1, alphaPulse: 0.13, pulseRate: 0.7, warningColor: 0xffd05c, trailColor: 0xff3d55, haloColor: color });
+      }
     }
   }
 
@@ -2719,6 +3033,9 @@ export class Enemy {
       name: this.middleShipProfile.displayName,
       role: this.middleShipProfile.role,
       ability: this.middleShipProfile.specialAbility,
+      abilityVariant: this.middleShipProfile.abilityVariant ?? null,
+      vfx: this.middleShipProfile.vfx || [],
+      activeSfx: this.middleShipProfile.sfx?.active || null,
       abilityState: this.eliteAbility?.state || null,
       abilityRemainingMs: this.eliteAbility?.state === 'cooldown'
         ? Math.max(0, (this.eliteAbility.nextAt || 0) - now)

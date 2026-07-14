@@ -7,6 +7,7 @@ import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_V
 import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
 import { TACTICAL_BOSS_BANTER_EVENT_COUNTS, TACTICAL_BOSS_BANTER_EVENT_IDS } from '../config/TacticalBossBanterLines.js';
 import { RARE_CHAOS_VISITOR_VOICE_COUNT } from '../config/RareChaosVisitorVoiceLines.js';
+import { ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS } from '../config/EliteMiddleShipExpansion.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -37,6 +38,17 @@ const getVoiceFile = (filename) => {
 };
 
 const getVoicePool = (...filenames) => filenames.map(getVoiceFile).filter(Boolean);
+
+const ELITE_EXPANSION_SFX_MIX = Object.freeze(Object.fromEntries(
+    ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.map((key, index) => [key, {
+        volume: 0.46 + (index % 4) * 0.02,
+        minIntervalMs: 650
+    }])
+));
+
+const ELITE_EXPANSION_SFX_CATALOG = Object.freeze(Object.fromEntries(
+    ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.map((key) => [key, [getSfx(`nova_${key}`)]])
+));
 
 const missionControlPool = (base, alternateCount = 2) => getVoicePool(
     `${base}.mp3`,
@@ -387,6 +399,7 @@ export const SFX_MIX = {
     elite_anchor_turret_active: { volume: 0.52, minIntervalMs: 650 },
     elite_escort_commander_active: { volume: 0.46, minIntervalMs: 650 },
     elite_hunter_active: { volume: 0.52, minIntervalMs: 650 },
+    ...ELITE_EXPANSION_SFX_MIX,
     boss_beam_telegraph: { volume: 0.56, minIntervalMs: 700 },
     boss_beam_fire: { volume: 0.72, minIntervalMs: 700 },
     boss_web_telegraph: { volume: 0.48, minIntervalMs: 700 },
@@ -749,6 +762,7 @@ export const SFX_CATALOG = {
     'elite_hunter_active': [
         getSfx('nova_elite_hunter_active')
     ],
+    ...ELITE_EXPANSION_SFX_CATALOG,
     'boss_beam_telegraph': [
         getSfx('nova_boss_beam_telegraph')
     ],

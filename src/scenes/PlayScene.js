@@ -4,6 +4,7 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import { getEliteMiddleShipsForLevel } from '../config/EliteMiddleShips.js';
 import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
 import { EnemyManager } from '../managers/EnemyManager.js';
@@ -3185,10 +3186,12 @@ export class PlayScene {
       }
     }
 
-    const eliteCount = AssetManifest.generated?.eliteMiddleShips?.length || 0;
-    for (let index = 0; index < eliteCount; index += 1) {
+    const eligibleEliteProfiles = getEliteMiddleShipsForLevel(safeLevel + aheadCount);
+    eligibleEliteProfiles.forEach((profile) => {
+      if (!Number.isFinite(profile?.spriteIndex)) return;
+      const index = Math.max(0, Math.floor(profile.spriteIndex));
       addTexture(GameAssets.getEliteMiddleShipTexture(index), `elite_middle:${index}`);
-    }
+    });
 
     if (!textures.length) return Promise.resolve(true);
     return Promise.allSettled(

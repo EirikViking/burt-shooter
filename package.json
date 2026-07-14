@@ -321,6 +321,7 @@
     "generate:reinforcement-voices": "node scripts/generate-reinforcement-voice-warnings.mjs",
     "generate:mayhem-super-storm-voices": "node scripts/generate-mayhem-super-storm-voices.mjs",
     "generate:row-core-audio": "node scripts/generate-row-core-audio.mjs",
+    "generate:elite-expansion-audio": "node scripts/generate-elite-expansion-audio.mjs",
     "generate:menu-boss-barks": "node scripts/generate-menu-boss-barks.mjs",
     "generate:tactical-boss-banter": "node scripts/generate-tactical-boss-banter.mjs",
     "generate:local-announcer-voicepack": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-local-announcer-voicepack.ps1",

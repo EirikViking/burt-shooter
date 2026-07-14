@@ -1,7 +1,8 @@
 import { getNormalWavePressureTuning } from './BalanceConfig.js';
+import { ELITE_MIDDLE_SHIP_EXPANSION } from './EliteMiddleShipExpansion.js';
 
 export const ELITE_MIDDLE_SHIP_FULL_UNLOCK_LEVEL = 40;
-export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 20;
+export const ELITE_MIDDLE_SHIP_ASSET_COUNT = 50;
 
 const assetPath = (index, slug) =>
   `/art/generated/nova-swarm/elites/nova-elite-middle-${String(index).padStart(2, '0')}-${slug}-20260523.png`;
@@ -766,7 +767,8 @@ export const ELITE_MIDDLE_SHIPS = [
     },
     vfx: ['hunterLock', 'greenPredatorDash'],
     designNote: 'Late-game priority hunter with fast readable volleys, still far below boss durability.'
-  }
+  },
+  ...ELITE_MIDDLE_SHIP_EXPANSION
 ];
 
 export const ELITE_MIDDLE_SHIP_IDS = ELITE_MIDDLE_SHIPS.map((profile) => profile.id);
