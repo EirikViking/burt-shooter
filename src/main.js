@@ -785,6 +785,7 @@ function buildGameTextState(game) {
       shipUnlockProgressSummary: hangarProgressSummary
     },
     tacticalDraft: playScene?.getTacticalDraftDebugState?.() || null,
+    tacticalAugments: player?.getRunAugmentDebugState?.() || null,
     runReport: summarizeRunReport(game?.lastRunReport || null),
     wave: enemyManager ? {
       phase: enemyManager.phase || null,

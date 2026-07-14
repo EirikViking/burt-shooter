@@ -30,7 +30,8 @@ const selectedIds = [
 
 const consumedIds = ['nano_patch'];
 const grouped = groupTacticalAugments(selectedIds, consumedIds);
-assert.equal(grouped.length, 32, 'duplicates should collapse into the complete curated pool');
+assert.equal(grouped.length, 36, 'duplicates should collapse into 32 augments plus four active Fusion Protocols');
+assert.equal(grouped.filter((item) => item.category === 'fusion').length, 4);
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.stacks, 2);
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.name, 'WARHEAD AUTHORITY');
 assert.equal(grouped.find((item) => item.id === 'damage_up')?.evolved, true);
@@ -144,7 +145,8 @@ try {
     });
     const screenshotPath = path.join(tmpdir(), `nova-swarm-tactical-loadout-overlay-${viewport.width}x${viewport.height}.png`);
     await page.screenshot({ path: screenshotPath });
-    assert.equal(state.initial.uniqueCount, 32);
+    assert.equal(state.initial.uniqueCount, 36);
+    assert.equal(state.initial.items.filter((item) => item.category === 'fusion').length, 4);
     assert.equal(state.initial.doctrine?.id, 'arsenal_network');
     assert.equal(state.initial.doctrine?.stage, 'ASCENDANT');
     assert.match(state.initial.doctrine?.display || '', /ARSENAL NETWORK.*ASCENDANT/);

@@ -145,6 +145,14 @@ const TACTICS_HELP_ROWS = Object.freeze([
     accent: 0xffef7e
   },
   {
+    code: 'F1',
+    icon: 'FUSE',
+    label: 'FUSION PROTOCOLS',
+    control: 'OWN BOTH LISTED AUGMENTS // NO SCORE MULTIPLIER',
+    tip: 'Pair complementary augments to unlock a Fusion Protocol. It changes how both systems work together, appears first in the HUD, and never adds a score multiplier.',
+    accent: 0xff55d9
+  },
+  {
     code: '17',
     icon: 'ROUTE',
     label: 'SCORE ROUTE & BANS',
@@ -154,19 +162,11 @@ const TACTICS_HELP_ROWS = Object.freeze([
   },
   {
     code: '18',
-    icon: 'SCAN',
-    label: 'DRAFT RESCAN',
-    control: 'R / GAMEPAD Y: ONE RESCAN PER RUN',
-    tip: 'Spend your one rescan when all three offers miss your build. It replaces the offers, never grants an extra augment.',
+    icon: 'TOOLS',
+    label: 'DRAFT TOOLS',
+    control: 'R / GAMEPAD Y: RESCAN ONCE // L / GAMEPAD X: HOLD ONE',
+    tip: 'Use your single rescan when all three offers miss. Hold one promising card for the next boss; a new hold replaces the old one, and taking the held card consumes it.',
     accent: 0x37f5ff
-  },
-  {
-    code: '19',
-    icon: 'HOLD',
-    label: 'DRAFT HOLD',
-    control: 'L / GAMEPAD X: HOLD ONE OFFER FOR NEXT DRAFT',
-    tip: 'Hold one promising offer for the next boss Draft. Holding a new card replaces the old hold; choosing the held card consumes it.',
-    accent: 0xffd15c
   },
   {
     code: '20',
@@ -299,7 +299,9 @@ const HELP_DETAIL_COPY = Object.freeze({
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
+  'FUSION PROTOCOLS': 'Fusion Protocols unlock only when you own both listed augments. Rift Reprisal returns Phase-cleared bullets; Drone Constellation creates every-fourth-volley crossfire; Aegis Reactor turns shield break into a purge; Sky Verdict routes orbital charges through bomb markers. Inspect active protocols in Tactical upgrades.',
   'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Choosing it means passing on survival hardware. You also receive two permanent bans per run; ban an offer to remove that augment from later Drafts.',
+  'DRAFT TOOLS': 'Rescan replaces all three offers once per run and never grants an extra augment. Hold preserves one card for the next boss Draft while you choose another; holding a new card replaces the old hold, and taking the held card consumes it. Use both to shape a build instead of inflating it.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',

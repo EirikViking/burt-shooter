@@ -18,6 +18,7 @@ import { BASE_POWERUP_TYPES, getPowerupDurationMode, getPowerupMeta } from '../c
 import {
   buildTacticalDraftModifiers,
   getActiveTacticalAugmentIds,
+  getActiveTacticalFusionProtocols,
   getTacticalDraftAugment,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
@@ -125,6 +126,13 @@ export class Player {
     this.runAugmentGrazeShieldSector = 0;
     this.runAugmentGrazeCount = 0;
     this.lastRunAugmentSectorStart = null;
+    this.lastTacticalFusionEvent = null;
+    this.tacticalFusionStats = {
+      riftShardsFired: 0,
+      constellationVolleys: 0,
+      aegisPurges: 0,
+      skyVerdicts: 0
+    };
     this.scoreMultiplierType = null;
     this.bombMaxShots = 3;
     this.bombBlastRadius = 150;
@@ -1946,7 +1954,8 @@ export class Player {
     }
 
     if (this.dronesActive && this.drones.length) {
-      this.drones.forEach((drone) => {
+      const constellationVolley = Boolean(this.runAugmentModifiers?.droneConstellation) && shotCounter % 4 === 0;
+      this.drones.forEach((drone, droneIndex) => {
         // Convert drone local position to world position
         const worldX = this.x + drone.x;
         const worldY = this.y + drone.y - 10;
@@ -1965,7 +1974,42 @@ export class Player {
         annotatePowerupBullet(bullet);
         this.applyTraitProjectileEffects(bullet, shotCounter, { bonus: true, drone: true });
         bullets.push(bullet);
+
+        if (constellationVolley) {
+          const droneCount = Math.max(1, this.drones.length);
+          const slot = droneIndex - (droneCount - 1) / 2;
+          const inward = slot === 0 ? 1 : -Math.sign(slot);
+          const angles = droneCount === 1 ? [-0.24, 0.24] : [inward * (0.2 + Math.abs(slot) * 0.035)];
+          angles.forEach((angle, angleIndex) => {
+            const fusionShot = new Bullet(
+              worldX,
+              worldY,
+              Math.sin(angle) * this.bulletSpeed * 1.05,
+              -Math.cos(angle) * this.bulletSpeed * 1.05,
+              Math.max(0.7, this.bulletDamage * 0.56),
+              angleIndex % 2 === 0 ? 0xff62dc : 0x62efff,
+              true,
+              { color: angleIndex % 2 === 0 ? 'Red' : 'Blue', index: angleIndex % 2 === 0 ? 15 : 8 }
+            );
+            fusionShot.isTacticalFusionShot = true;
+            fusionShot.tacticalFusionId = 'drone_constellation';
+            fusionShot.trailLength = 42;
+            fusionShot.pulseRate = 0.9;
+            this.applyTraitProjectileEffects(fusionShot, shotCounter, { bonus: true, drone: true });
+            bullets.push(fusionShot);
+          });
+        }
       });
+      if (constellationVolley) {
+        this.tacticalFusionStats.constellationVolleys += 1;
+        this.lastTacticalFusionEvent = {
+          id: 'drone_constellation',
+          at: Date.now(),
+          volley: this.tacticalFusionStats.constellationVolleys,
+          projectileCount: bullets.filter((bullet) => bullet?.tacticalFusionId === 'drone_constellation').length
+        };
+        AudioManager.playSfx('chain_lightning_arc', { volume: 0.26, minIntervalMs: 320 });
+      }
     }
 
     const bonusEvery = Number(this.traitCombat?.bonusShotEvery || 0);
@@ -3230,12 +3274,14 @@ export class Player {
     if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) return;
 
     let cleared = 0;
+    const clearedPositions = [];
     playScene.bulletManager.enemyBullets.forEach((bullet) => {
       if (!bullet?.active) return;
       const dist = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
       if (dist > radius) return;
       bullet.active = false;
       cleared += 1;
+      if (clearedPositions.length < 5) clearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
       if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
       if (playScene.particleManager) {
         playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
@@ -3247,6 +3293,38 @@ export class Player {
       AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
       if (playScene.enqueueToast) {
         playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
+      }
+      if (this.runAugmentModifiers?.riftReprisal) {
+        const shardCount = clearedPositions.length;
+        clearedPositions.forEach((position, index) => {
+          const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.09;
+          const shard = new Bullet(
+            position.x,
+            position.y,
+            Math.sin(spread) * this.bulletSpeed * 1.28,
+            -Math.cos(spread) * this.bulletSpeed * 1.28,
+            Math.max(0.8, this.bulletDamage * 0.52),
+            index % 2 === 0 ? 0xd86bff : 0x66ffff,
+            true,
+            { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8 }
+          );
+          shard.radius = 5;
+          shard.isTacticalFusionShot = true;
+          shard.isTacticalRiftShard = true;
+          shard.tacticalFusionId = 'rift_reprisal';
+          shard.trailLength = 46;
+          shard.pulseRate = 1.05;
+          playScene.bulletManager.addPlayerBullet(shard);
+        });
+        this.tacticalFusionStats.riftShardsFired += shardCount;
+        this.lastTacticalFusionEvent = {
+          id: 'rift_reprisal',
+          at: Date.now(),
+          cleared,
+          projectileCount: shardCount,
+          totalProjectiles: this.tacticalFusionStats.riftShardsFired
+        };
+        AudioManager.playSfx('tactical_phase_reactor', { force: true, volume: 0.5, minIntervalMs: 180 });
       }
     }
 
@@ -3272,6 +3350,7 @@ export class Player {
     if (this.shieldActive && !this.isDefenseSuppressed()) {
       this.deactivateShield({ spentFeedback: true });
       this.triggerShieldBreakFeedback();
+      if (this.runAugmentModifiers?.aegisReactor) this.triggerAegisReactor();
       return false; // DAMAGE ABSORBED
     }
 
@@ -3322,6 +3401,51 @@ export class Player {
     playScene?.screenShake?.shake?.(5, 14);
     playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x66ffff, 1.45);
     playScene?.particleManager?.createHitSpark?.(this.x, this.y - 18, 0xffffff, 0.9);
+  }
+
+  triggerAegisReactor() {
+    const playScene = this.game?.scenes?.play;
+    const bullets = playScene?.bulletManager?.enemyBullets;
+    if (!Array.isArray(bullets)) return { cleared: 0, durationMs: 0 };
+    const radius = Math.max(POINT_DEFENSE_RADIUS + 54, 170);
+    const durationMs = 2400;
+    let cleared = 0;
+    bullets.forEach((bullet) => {
+      if (!bullet?.active || cleared >= 18) return;
+      if (Math.hypot((Number(bullet.x) || 0) - this.x, (Number(bullet.y) || 0) - this.y) > radius) return;
+      bullet.active = false;
+      cleared += 1;
+      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, cleared % 2 ? 0x74ffd4 : 0xffffff);
+    });
+    playScene.bulletManager.enemyBullets = bullets.filter((bullet) => bullet?.active !== false);
+    this.pointDefenseActive = true;
+    this.pointDefenseExpiresAt = Math.max(Number(this.pointDefenseExpiresAt) || 0, Date.now() + durationMs);
+    this.createPointDefenseRing();
+
+    const ring = new PIXI.Graphics();
+    ring.circle(this.x, this.y, radius);
+    ring.stroke({ color: 0x74ffd4, width: 5, alpha: 0.86 });
+    ring.circle(this.x, this.y, radius - 18);
+    ring.stroke({ color: 0xffffff, width: 2, alpha: 0.48 });
+    ring.blendMode = 'add';
+    playScene.gameContainer?.addChild?.(ring);
+    setTimeout(() => {
+      if (ring.parent) ring.parent.removeChild(ring);
+      ring.destroy?.();
+    }, 220);
+
+    this.tacticalFusionStats.aegisPurges += 1;
+    this.lastTacticalFusionEvent = {
+      id: 'aegis_reactor',
+      at: Date.now(),
+      cleared,
+      radius,
+      durationMs,
+      purge: this.tacticalFusionStats.aegisPurges
+    };
+    AudioManager.playSfx('tactical_point_defense', { force: true, volume: 0.62, minIntervalMs: 180 });
+    return { cleared, durationMs };
   }
 
   createPointDefenseRing() {
@@ -3439,6 +3563,9 @@ export class Player {
     if (currentStacks >= augment.maxStacks) {
       return { applied: false, reason: 'stack_cap', id, stacks: currentStacks };
     }
+    const previousFusionIds = new Set(getActiveTacticalFusionProtocols(
+      getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds)
+    ).map((fusion) => fusion.id));
     this.runAugmentIds.push(id);
     if (augment.consumedOnApply && !this.consumedRunAugmentIds.includes(id)) this.consumedRunAugmentIds.push(id);
     const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
@@ -3448,6 +3575,8 @@ export class Player {
     }
     this.recalculateStats();
     this.game?.refreshThreatResponse?.(activeIds.length);
+    const activeFusions = getActiveTacticalFusionProtocols(activeIds);
+    const newFusions = activeFusions.filter((fusion) => !previousFusionIds.has(fusion.id));
     return {
       applied: true,
       id,
@@ -3455,6 +3584,9 @@ export class Player {
       consumed: augment.consumedOnApply === true,
       selectedIds: this.runAugmentIds.slice(),
       labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      fusionIds: activeFusions.map((fusion) => fusion.id),
+      newFusionIds: newFusions.map((fusion) => fusion.id),
+      newFusions,
       modifiers: this.runAugmentModifiers
     };
   }
@@ -3551,6 +3683,11 @@ export class Player {
       activeIds: getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds),
       consumedIds: this.consumedRunAugmentIds.slice(),
       labels: summarizeTacticalDraftPicks(this.runAugmentIds),
+      fusionIds: getActiveTacticalFusionProtocols(
+        getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds)
+      ).map((fusion) => fusion.id),
+      lastFusionEvent: this.lastTacticalFusionEvent,
+      fusionStats: { ...this.tacticalFusionStats },
       modifiers: this.runAugmentModifiers,
       overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
       lastSectorStart: this.lastRunAugmentSectorStart

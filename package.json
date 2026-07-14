@@ -75,6 +75,7 @@
     "check:rival-wing-doctrines": "node scripts/check-rival-wing-doctrines.mjs",
     "check:tactical-augment-tray": "node scripts/check-tactical-augment-tray.mjs",
     "check:tactical-loadout-overlay": "node scripts/check-tactical-loadout-overlay.mjs",
+    "check:tactical-fusions": "node scripts/check-tactical-fusion-protocols.mjs",
     "check:human-retention-run": "node scripts/simulate-human-retention-run.mjs",
     "check:graze-break": "node scripts/check-graze-break.mjs",
     "check:gameover-motivation": "node scripts/check-gameover-motivation.mjs",

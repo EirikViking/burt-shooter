@@ -157,7 +157,8 @@ try {
     failures.push(`desktop doctrine mismatch: ${JSON.stringify(desktop.debug?.doctrine)}`);
   }
   if (desktop.debug?.selectedCount !== desktopIds.length) failures.push(`desktop selected count mismatch: ${desktop.debug?.selectedCount}`);
-  if (desktop.debug?.uniqueCount !== 9) failures.push(`desktop unique count mismatch: ${desktop.debug?.uniqueCount}`);
+  if (desktop.debug?.uniqueCount !== 10 || desktop.debug?.fusionCount !== 1) failures.push(`desktop augment/fusion count mismatch: ${JSON.stringify(desktop.debug)}`);
+  if (desktop.debug?.visibleEntries?.[0] !== 'sky_verdict') failures.push('active Fusion Protocol was not prioritized in the HUD tray');
   if (desktop.debug?.entries?.find((entry) => entry.id === 'damage_up')?.stacks !== 2) failures.push('damage stack was not grouped as x2');
   if (desktop.debug?.entries?.find((entry) => entry.id === 'damage_up')?.name !== 'WARHEAD AUTHORITY') failures.push('damage stack did not use its evolution identity');
   if (desktop.debug?.entries?.find((entry) => entry.id === 'drones')?.stacks !== 2) failures.push('drone stack was not grouped as x2');

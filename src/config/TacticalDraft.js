@@ -76,7 +76,58 @@ export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
   defineAugment({ id: 'drone_link', name: 'DRONE LINK', category: 'utility', color: 0x5ca7ff, sfx: 'tactical_drone_link', draftDescription: 'Tactical drone shots deal +18% damage', detail: 'The support drones finally share targeting data instead of restaurant recommendations. Their shots hit harder. Their restaurant recommendations remain alarmingly specific.', modifiers: { droneDamageMult: 1.18 }, maxStacks: 1 })
 ]);
 
+function defineFusion(config) {
+  return Object.freeze({
+    category: 'fusion',
+    color: 0xff5bd6,
+    sfx: 'achievement',
+    requiredIds: Object.freeze([]),
+    ...config,
+    requiredIds: Object.freeze([...(config.requiredIds || [])])
+  });
+}
+
+export const TACTICAL_FUSION_PROTOCOLS = Object.freeze([
+  defineFusion({
+    id: 'rift_reprisal',
+    name: 'RIFT REPRISAL',
+    color: 0xd86bff,
+    sfx: 'tactical_phase_reactor',
+    requiredIds: ['phase_reactor', 'phase_wake'],
+    description: 'Phase-cleared bullets return as up to five rift shards.',
+    detail: 'PHASE REACTOR + PHASE WAKE. Phase no longer merely erases nearby fire. The first five cleared shots are recast into fast return-fire shards. The counterattack grants no score by itself; it still has to hit something.'
+  }),
+  defineFusion({
+    id: 'drone_constellation',
+    name: 'DRONE CONSTELLATION',
+    color: 0x58e8ff,
+    sfx: 'tactical_drone_link',
+    requiredIds: ['drones', 'drone_link'],
+    description: 'Every fourth volley sends converging drone crossfire.',
+    detail: 'DRONES + DRONE LINK. Every fourth trigger pull turns the support wing into a brief crossfire formation. The angled drone shots converge above the ship, rewarding pilots who line the formation up before firing.'
+  }),
+  defineFusion({
+    id: 'aegis_reactor',
+    name: 'AEGIS REACTOR',
+    color: 0x74ffd4,
+    sfx: 'tactical_point_defense',
+    requiredIds: ['shield', 'point_defense'],
+    description: 'Shield break purges nearby bullets and arms 2.4s point defense.',
+    detail: 'SHIELD + POINT DEFENSE. A broken shield dumps its remaining charge into the interception grid. Nearby hostile fire is purged immediately and the point-defense ring stays online for a short counterattack window.'
+  }),
+  defineFusion({
+    id: 'sky_verdict',
+    name: 'SKY VERDICT',
+    color: 0xffb34f,
+    sfx: 'tactical_orbital_strike',
+    requiredIds: ['bomb', 'orbital_strike'],
+    description: 'Bomb impacts spend orbital charges at the blast marker.',
+    detail: 'BOMB + ORBITAL STRIKE. Orbital charges stop choosing random targets. Each bomb detonation spends one charge and calls the beam onto that exact blast marker, turning two automatic systems into one deliberate verdict.'
+  })
+]);
+
 const AUGMENT_BY_ID = new Map(TACTICAL_DRAFT_AUGMENTS.map((augment) => [augment.id, augment]));
+const FUSION_BY_ID = new Map(TACTICAL_FUSION_PROTOCOLS.map((fusion) => [fusion.id, fusion]));
 
 function hashString(value) {
   const text = String(value || 'nova-swarm-draft');
@@ -117,6 +168,15 @@ function pickBest(candidates, category, used, seed, sectorCleared, context) {
 
 export function getTacticalDraftAugment(id) {
   return AUGMENT_BY_ID.get(id) || null;
+}
+
+export function getTacticalFusionProtocol(id) {
+  return FUSION_BY_ID.get(id) || null;
+}
+
+export function getActiveTacticalFusionProtocols(selectedIds = []) {
+  const selected = new Set(Array.isArray(selectedIds) ? selectedIds : []);
+  return TACTICAL_FUSION_PROTOCOLS.filter((fusion) => fusion.requiredIds.every((id) => selected.has(id)));
 }
 
 export function getTacticalDraftMeta(id) {
@@ -263,6 +323,11 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     pickupLifetimeMult: 1,
     powerupDurationMult: 1,
     droneDamageMult: 1,
+    fusionIds: [],
+    riftReprisal: false,
+    droneConstellation: false,
+    aegisReactor: false,
+    skyVerdict: false,
     sectorStart: {
       shield: false,
       invulnerabilityMs: 0,
@@ -321,6 +386,11 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
   result.overlapSuppressedId = activePowerupType && selectedIds.includes(activePowerupType)
     ? activePowerupType
     : null;
+  result.fusionIds = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => fusion.id);
+  result.riftReprisal = result.fusionIds.includes('rift_reprisal');
+  result.droneConstellation = result.fusionIds.includes('drone_constellation');
+  result.aegisReactor = result.fusionIds.includes('aegis_reactor');
+  result.skyVerdict = result.fusionIds.includes('sky_verdict');
   return result;
 }
 

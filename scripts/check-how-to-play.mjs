@@ -24,7 +24,7 @@ const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUPS & BONUS'],
   modes: ['MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
-  tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'SCORE ROUTE & BANS', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
+  tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'FUSION PROTOCOLS', 'SCORE ROUTE & BANS', 'DRAFT TOOLS', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
   intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
   career: ['PILOT ORDERS', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
 };
@@ -151,12 +151,12 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
   }
   if (expectedPage === 'tactics') {
     assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
+    assert(joined.includes('OWN BOTH LISTED AUGMENTS // NO SCORE MULTIPLIER'), `${label} should explain how Fusion Protocols unlock without changing score rules`);
+    assert(joined.includes('never adds a score multiplier'), `${label} should explain Fusion Protocol score fairness`);
     assert(joined.includes('SECTOR 5 SCORE CHOICE // 2 PERMANENT BANS'), `${label} should explain the fixed score choice and two bans`);
     assert(joined.includes('Combo Anchor is always offered'), `${label} should explain score-route fairness`);
-    assert(joined.includes('R / GAMEPAD Y: ONE RESCAN PER RUN'), `${label} should explain the one-run rescan`);
-    assert(joined.includes('never grants an extra augment'), `${label} should explain that rescan is choice agency, not extra power`);
-    assert(joined.includes('HOLD ONE OFFER FOR NEXT DRAFT'), `${label} should explain the Draft hold input`);
-    assert(joined.includes('Holding a new card replaces the old hold'), `${label} should explain how a held offer is replaced`);
+    assert(joined.includes('R / GAMEPAD Y: RESCAN ONCE // L / GAMEPAD X: HOLD ONE'), `${label} should explain both Draft agency tools`);
+    assert(joined.includes('taking the held card consumes it'), `${label} should explain how Rescan and Hold remain bounded`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
     assert(joined.includes('STACK I 100% // II 55% // III 30%'), `${label} should explain all three stack values`);
     assert(joined.includes('Sixteen repeatable augments can reach Stack III'), `${label} should explain Tactical evolution and Overdrive identities`);
@@ -326,6 +326,7 @@ try {
       const menuTactics = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'tactics', `${scenario.name} menu tactics page`);
       assertOverlayLayout(menuTactics, `${scenario.name} menu tactics page`);
       assertCleanHelpCopy(menuTactics, `${scenario.name} menu tactics page`, 'tactics');
+      const menuTacticsShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-tactics');
       await page.keyboard.press('ArrowRight');
       const menuIntel = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'intel', `${scenario.name} menu intel page`);
       assertOverlayLayout(menuIntel, `${scenario.name} menu intel page`);
@@ -495,10 +496,12 @@ try {
         pauseLayout: pauseCareer.howToPlayOverlay?.layout,
         screenshots: {
           menu: menuShot.file,
+          tactics: menuTacticsShot.file,
           pause: pauseShot.file
         },
         audits: {
           menu: menuShot.audit,
+          tactics: menuTacticsShot.audit,
           pause: pauseShot.audit
         },
         pageErrors,

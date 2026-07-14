@@ -1,5 +1,9 @@
 import * as PIXI from 'pixi.js';
-import { getTacticalDraftDisplayMeta, getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import {
+  getActiveTacticalFusionProtocols,
+  getTacticalDraftDisplayMeta,
+  getTacticalDraftMeta
+} from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText, onLanguageChange } from '../i18n/index.js';
@@ -20,7 +24,8 @@ const CATEGORY_COLORS = Object.freeze({
   offense: 0xff6d8f,
   mobility: 0x57e8ff,
   defense: 0x70ffb1,
-  utility: 0xffd56a
+  utility: 0xffd56a,
+  fusion: 0xff5bd6
 });
 
 function clamp(value, min, max) {
@@ -96,7 +101,7 @@ export function groupTacticalAugments(selectedIds = [], consumedIds = []) {
     }
     entry.stacks += 1;
   }
-  return grouped.map((entry) => {
+  const augmentItems = grouped.map((entry) => {
     const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
     return Object.freeze({
       ...entry,
@@ -104,6 +109,22 @@ export function groupTacticalAugments(selectedIds = [], consumedIds = []) {
       evolved: Boolean(display?.evolved)
     });
   });
+  const activeIds = grouped.filter((entry) => !entry.consumed).map((entry) => entry.id);
+  const fusionItems = getActiveTacticalFusionProtocols(activeIds).map((fusion) => Object.freeze({
+    id: fusion.id,
+    stacks: 1,
+    known: true,
+    name: fusion.name,
+    description: fusion.description,
+    category: 'fusion',
+    color: fusion.color,
+    maxStacks: 1,
+    consumed: false,
+    evolved: false,
+    fusion: true,
+    metadata: fusion
+  }));
+  return [...augmentItems, ...fusionItems];
 }
 
 export function calculateTacticalLoadoutLayout(width, height, itemCount = 0) {
@@ -404,7 +425,7 @@ export class TacticalLoadoutOverlay {
       wordWrap: true,
       align: layout.veryCompact ? 'left' : 'center'
     });
-    const permanence = createText(translateText(item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
+    const permanence = createText(translateText(item.fusion ? 'FUSION PROTOCOL' : item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: layout.veryCompact ? 8 : 10,
       fontWeight: '900',
@@ -556,7 +577,7 @@ export class TacticalLoadoutOverlay {
     fitText(body, panelWidth - 56, compact ? 170 : 196, 0.62);
     detail.addChild(body);
 
-    const status = createText(translateText(item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
+    const status = createText(translateText(item.fusion ? 'FUSION PROTOCOL' : item.consumed ? 'CONSUMED' : 'PERMANENT THIS RUN'), {
       fontFamily: FONT_DISPLAY, fontSize: compact ? 13 : 16, fontWeight: '900', fill: item.consumed ? '#ffad91' : '#7dffcc'
     });
     status.anchor.set(0.5);
@@ -623,6 +644,14 @@ export class TacticalLoadoutOverlay {
       icon.fill({ color, alpha: 0.28 });
       icon.poly([0, -radius * 0.62, radius * 0.5, -radius * 0.36, radius * 0.4, radius * 0.35, 0, radius * 0.65, -radius * 0.4, radius * 0.35, -radius * 0.5, -radius * 0.36]);
       icon.stroke({ color, width: 2, alpha: 0.96 });
+    } else if (category === 'fusion') {
+      for (let index = 0; index < 4; index += 1) {
+        const angle = index * Math.PI / 2 + Math.PI / 4;
+        icon.circle(Math.cos(angle) * radius * 0.42, Math.sin(angle) * radius * 0.42, Math.max(3, radius * 0.12));
+        icon.fill({ color: index % 2 ? 0x66efff : color, alpha: 0.94 });
+      }
+      icon.poly([0, -radius * 0.42, radius * 0.42, 0, 0, radius * 0.42, -radius * 0.42, 0]);
+      icon.stroke({ color: 0xffffff, width: 2, alpha: 0.82 });
     } else {
       for (const [x, y] of [[-0.3, -0.3], [0.3, -0.3], [-0.3, 0.3], [0.3, 0.3]]) {
         icon.circle(x * radius, y * radius, Math.max(3, radius * 0.12));

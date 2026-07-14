@@ -283,7 +283,14 @@ try {
   assert(state.tacticalDraft.offers[state.tacticalDraft.recommendedIndex]?.id === keyboardHeldId, 'held offer should receive recommended focus after rescan');
   assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
   const banTargetIndex = state.tacticalDraft.offers.findIndex((offer) => offer.id !== keyboardHeldId);
-  await page.keyboard.press(banTargetIndex > state.tacticalDraft.focusIndex ? 'ArrowRight' : 'ArrowLeft');
+  const banNavigationSteps = (banTargetIndex - state.tacticalDraft.focusIndex + state.tacticalDraft.offers.length) % state.tacticalDraft.offers.length;
+  for (let step = 0; step < banNavigationSteps; step += 1) {
+    const previousFocus = state.tacticalDraft.focusIndex;
+    await page.keyboard.press('ArrowRight');
+    await page.waitForFunction((focus) => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex !== focus, previousFocus);
+    state = await readState(page);
+  }
+  assert(state.tacticalDraft.focusIndex === banTargetIndex, `keyboard navigation missed ban target ${banTargetIndex}: ${state.tacticalDraft.focusIndex}`);
   state = await readState(page);
   const keyboardBannedId = state.tacticalDraft.offers[state.tacticalDraft.focusIndex].id;
   await page.keyboard.press('b');

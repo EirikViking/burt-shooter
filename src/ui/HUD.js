@@ -6,7 +6,11 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { rankManager } from '../managers/RankManager.js';
 import { formatNumber, translateText } from '../i18n/index.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
-import { getTacticalDraftDisplayMeta, getTacticalDraftMeta } from '../config/TacticalDraft.js';
+import {
+  getActiveTacticalFusionProtocols,
+  getTacticalDraftDisplayMeta,
+  getTacticalDraftMeta
+} from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
@@ -1138,6 +1142,14 @@ export class HUD {
     } else if (category === 'defense') {
       graphics.poly([x, y - mark, x + mark * 0.82, y - mark * 0.45, x + mark * 0.68, y + mark * 0.52, x, y + mark, x - mark * 0.68, y + mark * 0.52, x - mark * 0.82, y - mark * 0.45]);
       graphics.stroke({ color, width: 1.5, alpha: 0.94 });
+    } else if (category === 'fusion') {
+      for (let index = 0; index < 4; index += 1) {
+        const angle = index * Math.PI / 2 + Math.PI / 4;
+        graphics.circle(x + Math.cos(angle) * mark * 0.58, y + Math.sin(angle) * mark * 0.58, mark * 0.18);
+        graphics.fill({ color: index % 2 ? 0x66efff : color, alpha: 0.92 });
+      }
+      graphics.poly([x, y - mark * 0.46, x + mark * 0.46, y, x, y + mark * 0.46, x - mark * 0.46, y]);
+      graphics.stroke({ color: 0xffffff, width: 1.35, alpha: 0.82 });
     } else {
       graphics.circle(x, y, mark * 0.34);
       graphics.fill({ color, alpha: 0.9 });
@@ -1232,10 +1244,20 @@ export class HUD {
       if (current) current.stacks += 1;
       else grouped.set(id, { id, name: meta.name, category: meta.category, color: meta.color, stacks: 1 });
     }
-    const entries = [...grouped.values()].map((entry) => {
+    const augmentEntries = [...grouped.values()].map((entry) => {
       const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
       return { ...entry, name: display?.displayName || entry.name, evolved: Boolean(display?.evolved) };
     });
+    const fusionEntries = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => ({
+      id: fusion.id,
+      name: fusion.name,
+      category: 'fusion',
+      color: fusion.color,
+      stacks: 1,
+      evolved: false,
+      fusion: true
+    }));
+    const entries = [...fusionEntries, ...augmentEntries];
     const doctrine = analyzeTacticalDoctrine(allSelectedIds, [...consumedIds]);
     if (!entries.length) {
       this.tacticalAugmentItems.forEach((item) => { item.container.visible = false; });
@@ -1247,6 +1269,7 @@ export class HUD {
         selectedCount: allSelectedIds.length,
         activeCount: selectedIds.length,
         consumedCount: consumedIds.size,
+        fusionCount: 0,
         uniqueCount: 0,
         entries: [],
         hiddenCount: 0
@@ -1321,6 +1344,7 @@ export class HUD {
       visible: true,
       selectedCount: allSelectedIds.length,
       activeCount: selectedIds.length,
+      fusionCount: fusionEntries.length,
       consumedCount: consumedIds.size,
       uniqueCount: entries.length,
       entries: entries.map((entry) => ({ id: entry.id, name: translateText(entry.name), stacks: entry.stacks, category: entry.category, evolved: entry.evolved })),

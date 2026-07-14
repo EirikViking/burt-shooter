@@ -4749,6 +4749,10 @@ export class PlayScene {
     }
 
     console.log(`[BombPowerup] detonated reason=${reason} x=${Math.round(x)} y=${Math.round(y)} radius=${Math.round(radius)}`);
+    if (this.player?.runAugmentModifiers?.skyVerdict && this.player?.orbitalStrikeCharges > 0) {
+      this.orbitalStrikeTimer = 0;
+      this.triggerOrbitalStrike({ targetX: x, targetY: y, fusionId: 'sky_verdict' });
+    }
     return true;
   }
 
@@ -7875,8 +7879,169 @@ export class PlayScene {
           priority: 4
         });
       }
+      if (result.newFusions?.length) this.showTacticalFusionUnlock(result.newFusions[0]);
       complete?.();
     }, 610);
+    return true;
+  }
+
+  clearTacticalFusionUnlock(reason = 'cleared') {
+    const active = this.activeTacticalFusionUnlock;
+    if (!active) return false;
+    if (active.ticker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(active.ticker);
+      this._activeTickers = (this._activeTickers || []).filter((ticker) => ticker !== active.ticker);
+    }
+    if (active.container?.parent) active.container.parent.removeChild(active.container);
+    active.container?.destroy?.({ children: true });
+    if (this.lastTacticalFusionUnlock) {
+      this.lastTacticalFusionUnlock.active = false;
+      this.lastTacticalFusionUnlock.endedReason = reason;
+    }
+    this.activeTacticalFusionUnlock = null;
+    return true;
+  }
+
+  showTacticalFusionUnlock(fusion) {
+    if (!fusion || !this.uiOverlay || !this.game?.app?.ticker) return false;
+    this.clearTacticalFusionUnlock('replaced');
+    const width = Math.max(480, Number(this.game.getWidth?.() || this.game.app.screen?.width) || 1280);
+    const height = Math.max(360, Number(this.game.getHeight?.() || this.game.app.screen?.height) || 720);
+    const compact = width < 760 || height < 560;
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const durationMs = reducedMotion ? 1500 : 2050;
+    const panelWidth = Math.min(width - (compact ? 28 : 96), compact ? 520 : 690);
+    const panelHeight = compact ? 126 : 148;
+    const centerX = width / 2;
+    const centerY = Math.max(compact ? 160 : 192, height * 0.36);
+    const accent = Number(fusion.color) || 0xff5bd6;
+
+    const container = new PIXI.Container();
+    container.label = 'tactical_fusion_unlock';
+    container.zIndex = 9880;
+    container.eventMode = 'none';
+    container.alpha = 0;
+
+    const burst = new PIXI.Container();
+    burst.position.set(centerX, centerY);
+    const rayCount = reducedMotion ? 8 : 16;
+    for (let index = 0; index < rayCount; index += 1) {
+      const ray = new PIXI.Graphics();
+      const rayLength = panelWidth * (0.48 + (index % 3) * 0.07);
+      ray.poly([0, -26, -5, -rayLength, 5, -rayLength]);
+      ray.fill({ color: index % 2 ? accent : 0x66efff, alpha: index % 3 === 0 ? 0.16 : 0.08 });
+      ray.rotation = (Math.PI * 2 * index) / rayCount;
+      burst.addChild(ray);
+    }
+    burst.blendMode = 'add';
+    container.addChild(burst);
+
+    const panel = new PIXI.Container();
+    panel.position.set(centerX, centerY);
+    const glow = new PIXI.Graphics();
+    glow.roundRect(-panelWidth / 2 - 5, -panelHeight / 2 - 5, panelWidth + 10, panelHeight + 10, 14);
+    glow.stroke({ color: accent, width: 7, alpha: 0.22 });
+    glow.blendMode = 'add';
+    panel.addChild(glow);
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 12);
+    bg.fill({ color: 0x030812, alpha: 0.94 });
+    bg.stroke({ color: accent, width: compact ? 2.5 : 3.5, alpha: 0.96 });
+    bg.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 8);
+    bg.stroke({ color: 0x66efff, width: 1.3, alpha: 0.62 });
+    panel.addChild(bg);
+
+    const core = new PIXI.Graphics();
+    for (const radius of compact ? [25, 34] : [30, 42]) {
+      core.circle(0, 0, radius);
+      core.stroke({ color: radius % 2 ? accent : 0x66efff, width: 2, alpha: 0.66 });
+    }
+    core.poly([0, -18, 16, 0, 0, 18, -16, 0]);
+    core.stroke({ color: 0xffffff, width: 2, alpha: 0.86 });
+    core.position.set(-panelWidth / 2 + (compact ? 54 : 66), 0);
+    core.blendMode = 'add';
+    panel.addChild(core);
+
+    const label = createText(translateText('FUSION PROTOCOL ONLINE'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 12 : 15,
+      fill: '#8df7ff',
+      fontWeight: '900',
+      letterSpacing: 1.4
+    });
+    label.position.set(-panelWidth / 2 + (compact ? 96 : 124), -panelHeight / 2 + (compact ? 16 : 19));
+    panel.addChild(label);
+    const name = createText(translateText(fusion.name), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 25 : 34,
+      fill: '#fff3a8',
+      stroke: '#170019',
+      strokeThickness: compact ? 4 : 5,
+      fontWeight: '900'
+    });
+    name.position.set(label.x, compact ? -28 : -34);
+    name.scale.set(Math.min(1, (panelWidth - name.x - 24) / Math.max(1, name.width)));
+    panel.addChild(name);
+    const description = createText(translateText(fusion.description), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 13 : 16,
+      fill: '#e0faff',
+      fontWeight: '700',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - (compact ? 126 : 160),
+      lineHeight: compact ? 15 : 18
+    });
+    description.position.set(label.x, compact ? 17 : 22);
+    panel.addChild(description);
+    container.addChild(panel);
+
+    this.uiOverlay.addChild(container);
+    this.uiOverlay.sortChildren?.();
+    this.reserveMessageFocus(durationMs, { priority: 8, slots: ['center'] });
+    this.lastTacticalFusionUnlock = {
+      active: true,
+      id: fusion.id,
+      name: fusion.name,
+      description: fusion.description,
+      reducedMotion,
+      rayCount,
+      scoreNeutral: true,
+      bounds: {
+        x: Math.round(centerX - panelWidth / 2),
+        y: Math.round(centerY - panelHeight / 2),
+        width: Math.round(panelWidth),
+        height: Math.round(panelHeight)
+      }
+    };
+
+    AudioManager.playSfx(fusion.sfx || 'achievement', { force: true, volume: 0.82, minIntervalMs: 0 });
+    AudioManager.playSfx('achievement', { force: true, volume: 0.56, minIntervalMs: 0 });
+    if (!reducedMotion) {
+      this.particleManager?.createExplosion?.(this.player?.x, (this.player?.y || centerY) - 30, accent, 1.0);
+      this.particleManager?.createExplosion?.(this.player?.x, (this.player?.y || centerY) - 30, 0x66efff, 0.72);
+      this.screenShake?.shake?.(4, 13);
+    }
+
+    let elapsed = 0;
+    const ticker = (delta) => {
+      if (!container.parent || this.game?.currentScene !== this) {
+        this.clearTacticalFusionUnlock('scene_changed');
+        return;
+      }
+      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const intro = Math.min(1, elapsed / 230);
+      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - 420)) / 420));
+      const eased = 1 - Math.pow(1 - intro, 3);
+      container.alpha = eased * (1 - outro);
+      panel.scale.set(0.78 + eased * 0.22 + Math.sin(elapsed * 0.012) * (reducedMotion ? 0.004 : 0.014));
+      burst.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.004;
+      core.rotation -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.018;
+      if (elapsed >= durationMs) this.clearTacticalFusionUnlock('complete');
+    };
+    this.activeTacticalFusionUnlock = { container, ticker };
+    this._activeTickers.push(ticker);
+    this.game.app.ticker.add(ticker);
+    ticker({ deltaTime: 0 });
     return true;
   }
 
@@ -7902,6 +8067,7 @@ export class PlayScene {
     };
     return {
       active: Boolean(state?.active),
+      fusionUnlock: this.lastTacticalFusionUnlock ? { ...this.lastTacticalFusionUnlock } : null,
       sectorCleared: state?.sectorCleared || null,
       focusIndex: state?.focusIndex ?? null,
       recommendedIndex: state?.recommendedIndex ?? null,
@@ -8534,6 +8700,7 @@ export class PlayScene {
       selectedIds: this.player?.runAugmentIds || [],
       consumedIds: this.player?.consumedRunAugmentIds || [],
       onInspect: (item, { reason } = {}) => {
+        if (item?.fusion) return;
         this.scheduleTacticalBossBanter(item?.id, {
           context: 'loadout',
           delayMs: reason === 'detail' ? 180 : TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS
@@ -8545,9 +8712,12 @@ export class PlayScene {
         this.pauseGamepadNavigator.suppressUntilReleased();
       }
     });
-    this.uiOverlay.addChild(this.tacticalLoadoutOverlay.container);
+    // Modal inspection must sit above transient gameplay toasts. Corner toasts
+    // are intentionally hosted on the scene root, so nesting this modal under
+    // uiOverlay allowed an older toast to cover an upgrade card while paused.
+    this.container.addChild(this.tacticalLoadoutOverlay.container);
     const initialItem = this.tacticalLoadoutOverlay.cards?.[this.tacticalLoadoutOverlay.focusedCardIndex]?._item;
-    if (initialItem) this.scheduleTacticalBossBanter(initialItem.id, { context: 'loadout', delayMs: 760 });
+    if (initialItem && !initialItem.fusion) this.scheduleTacticalBossBanter(initialItem.id, { context: 'loadout', delayMs: 760 });
   }
 
   handleLanguageChanged() {
@@ -15502,6 +15672,7 @@ export class PlayScene {
     if (!this.player?.orbitalStrikeActive || !this.player?.orbitalStrikeCharges || this.player.orbitalStrikeCharges <= 0) {
       return;
     }
+    if (this.player?.runAugmentModifiers?.skyVerdict) return;
 
     // Initialize timer if not set
     if (!this.orbitalStrikeTimer) {
@@ -15517,18 +15688,28 @@ export class PlayScene {
     }
   }
 
-  triggerOrbitalStrike() {
+  triggerOrbitalStrike(options = {}) {
     // Find a random active enemy to target
     const activeEnemies = this.enemyManager.enemies.filter(e => e.active);
-    if (activeEnemies.length === 0) return;
+    if (activeEnemies.length === 0) return false;
 
-    const target = activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
-    const targetX = target.x;
-    const targetY = target.y;
+    const requestedX = Number(options.targetX);
+    const requestedY = Number(options.targetY);
+    const hasRequestedTarget = Number.isFinite(requestedX) && Number.isFinite(requestedY);
+    const target = options.target?.active
+      ? options.target
+      : hasRequestedTarget
+        ? activeEnemies.slice().sort((a, b) => Math.hypot(a.x - requestedX, a.y - requestedY) - Math.hypot(b.x - requestedX, b.y - requestedY))[0]
+        : activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+    const targetX = hasRequestedTarget ? requestedX : target.x;
+    const targetY = hasRequestedTarget ? requestedY : target.y;
+    const fusionId = options.fusionId || null;
+    const strikeColor = fusionId === 'sky_verdict' ? 0xffb34f : 0xff6600;
     const debug = {
       targetX: Math.round(targetX || 0),
       targetY: Math.round(targetY || 0),
       chargesBefore: this.player?.orbitalStrikeCharges || 0,
+      fusionId,
       damageEvents: [],
       completed: false
     };
@@ -15542,9 +15723,9 @@ export class PlayScene {
     // Show warning indicator
     const warning = new PIXI.Graphics();
     warning.circle(0, 0, 60);
-    warning.stroke({ color: 0xff6600, width: 3, alpha: 0.8 });
+    warning.stroke({ color: strikeColor, width: fusionId ? 5 : 3, alpha: 0.8 });
     warning.circle(0, 0, 40);
-    warning.stroke({ color: 0xff6600, width: 2, alpha: 0.5 });
+    warning.stroke({ color: fusionId ? 0xff62dc : 0xff6600, width: 2, alpha: 0.5 });
     warning.position.set(targetX, targetY);
     this.gameContainer.addChild(warning);
 
@@ -15568,12 +15749,12 @@ export class PlayScene {
       const screenHeight = this.gameplayGame.getHeight();
       beam.moveTo(targetX, 0);
       beam.lineTo(targetX, screenHeight);
-      beam.stroke({ color: 0xffaa00, width: 40, alpha: 0.6 });
+      beam.stroke({ color: strikeColor, width: fusionId ? 52 : 40, alpha: 0.6 });
 
       // Add glow effect
       beam.moveTo(targetX, 0);
       beam.lineTo(targetX, screenHeight);
-      beam.stroke({ color: 0xffff00, width: 20, alpha: 0.8 });
+      beam.stroke({ color: fusionId ? 0xffffff : 0xffff00, width: fusionId ? 24 : 20, alpha: 0.8 });
 
       this.gameContainer.addChild(beam);
 
@@ -15613,10 +15794,21 @@ export class PlayScene {
       };
 
       this.enemyManager.enemies.forEach(enemy => applyStrikeDamage(enemy, false));
-      if (target?.active && !damagedEnemies.has(target)) {
+      if (!fusionId && target?.active && !damagedEnemies.has(target)) {
         applyStrikeDamage(target, true);
       }
       debug.completed = true;
+      if (fusionId === 'sky_verdict' && this.player?.tacticalFusionStats) {
+        this.player.tacticalFusionStats.skyVerdicts += 1;
+        this.player.lastTacticalFusionEvent = {
+          id: 'sky_verdict',
+          at: Date.now(),
+          targetX: Math.round(targetX),
+          targetY: Math.round(targetY),
+          damageEvents: debug.damageEvents.length,
+          verdict: this.player.tacticalFusionStats.skyVerdicts
+        };
+      }
 
       // Screen shake and sound
       this.screenShake.shake(4);
@@ -15630,6 +15822,7 @@ export class PlayScene {
         if (beam.parent) beam.parent.removeChild(beam);
       }, 150);
     }, 500); // 0.5 second warning
+    return true;
   }
 
   spawnAmbientBonusDrone(type) {
