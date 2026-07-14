@@ -1,0 +1,74 @@
+{
+  "generatedAt": "2026-07-14T21:13:00Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24208763",
+  "sourceCommit": "b5bcc9856a5cb5743de8574bd194de86b49011a1",
+  "sourceBranch": "codex/gameplay-experience-pass-20260714",
+  "sourceBaseline": "09ea0388acb2800b01d0102830438397b05c73f2",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-14_22-51-54",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24207299",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "9f6e124fa186c4f95c743e49ba7e08a866a9efdeeb9e897fcafdfd944a1f13e0",
+  "consoleLogPath": "release/steamworks/steam_upload_console_reinforcement_swarm_wow_20260714.log",
+  "consoleLogSha256": "78bb4a2124f8d93202bdc4eb6a94ed199606ac3a6a35e590f854108bbda41d48",
+  "payloadManifestSha256": "6c24f6833030278a13f68604c6fe3be3458e37a2058883cb1e327f4ce328b0a1",
+  "desktopReviewSha256": "1ce726c109324a116f5f6a080cc686b543fea7051b24d3b03972fe14bb85ac7c",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 955614154,
+    "manifestHash": "c77abc667667052d3793650a63cbf22c2525c53a8f773e69cf5522fd66b1dab6",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "510bbf36f3214d1cae5939401c54dc0a62e59706075bb0f7349bee036ba48707"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-14 23:11:15]: Successfully finished AppID 4765070 build (BuildID 24208763).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: source HEAD b5bcc98, source baseline 09ea038 and authoritative lock b80059a are ancestors, and tracked state was clean before build and upload",
+    "releaseLine": "passed before packaging and again during VDF generation; German localization, top-3 localization polish, Steam Cloud, fullscreen, and temporary marketing hotkey markers present",
+    "sourceBuild": "passed: v2026-07-14_22-51-54, gitSha b5bcc98, reinforcement warning/entry/survival presentation and real three-group Super Storm voice gates present",
+    "packagedRuntime": "passed: Steam runtime files, AppID 4765070, native module, and nova_swarm_global_score_v2 contract present",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-14T21-06-56-141Z/report.json; build v2026-07-14_22-51-54; gitSha b5bcc98; zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-14T21-01-39-576Z/report.json; build v2026-07-14_22-51-54; gitSha b5bcc98; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-14T21-01-48-477Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed on isolated rerun: test-results/packaged-perf-smoke-2026-07-14T21-03-57-236Z/report.json; 60.0 average and minimum FPS, 11 samples, zero errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-14T21-05-32-881Z/report.json",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports all match v2026-07-14_22-51-54",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all improvements and content from Steam test BuildID 24207299, including the complete localized How to Play manual, visual clarity pass, Extinction Contact, fair Tactical scoring, Tactical leaderboard repair, and 50-elite roster",
+    "HUD-safe three-lane reinforcement breach forecast with animated warp gates, scan sweeps, lane traces, edge alarms, particles, and Reduced Motion behavior",
+    "synchronized per-group warp-entry bursts with SFX, impact pulses, sparks, controlled shake, and formation energy streaks",
+    "larger storm-survival payoff with collapse rings, radial rays, flash, dual particle blooms, wave-clear audio, and score celebration",
+    "fixed real three-group Super Storm warning and survival voice playback, replacing the impossible five-group presentation threshold"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The first performance run inside a chained desktop test sequence recorded one external zero-FPS sample after six 60-FPS samples; an immediate isolated full 11-sample rerun held 60 FPS minimum and average with zero game errors.",
+    "The passing performance rerun recovered one screenshot capture after UnknownVizError; the report, gameplay samples, final capture, and package review passed."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24207299.",
+    "Source rollback for the reinforcement presentation change is git revert b5bcc9856a5cb5743de8574bd194de86b49011a1."
+  ]
+}
