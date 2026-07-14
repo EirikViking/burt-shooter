@@ -75,7 +75,8 @@ const enemyManagerSource = fs.readFileSync(path.join(rootDir, 'src/managers/Enem
 for (const snippet of [
   `MAYHEM_SUPER_STORM_WARNING_SOUND_ID = '${warningEvent}'`,
   `MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID = '${survivedEvent}'`,
-  'const useSuperStormVoice = state.isSuperStorm === true && groupCount >= 5',
+  'const useSuperStormVoice = state.isSuperStorm === true',
+  'const survivedMayhemSuperStorm = superStormGroupCount > 0',
   'useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID',
   'AudioManager.playVoice(MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID',
   'mayhemSuperStormSurvivalWaveCounts'

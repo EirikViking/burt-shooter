@@ -1620,11 +1620,12 @@ export class EnemyManager {
         Math.min(3, Number(state.reinforcementWaveIndices?.length) || 0) ||
         1)
     );
-    const useSuperStormVoice = state.isSuperStorm === true && groupCount >= 5;
+    const useSuperStormVoice = state.isSuperStorm === true;
     playScene?.showMayhemReinforcementStormWarning?.({
       groupCount,
       boss: this.state === 'BOSS_ACTIVE',
-      superStorm: state.isSuperStorm === true
+      superStorm: state.isSuperStorm === true,
+      warningMs: state.warningMs
     });
     AudioManager.playVoice(useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
       force: true,
@@ -2643,6 +2644,16 @@ export class EnemyManager {
     tactic = this.applyNormalWavePressureToTactic(tactic);
     this.currentWaveTactic = tactic;
     const screenW = this.game.getWidth();
+    if (config.isMayhemReinforcement) {
+      this.game?.scenes?.play?.showMayhemReinforcementEntryBurst?.({
+        groupIndex: Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0)),
+        groupCount: Math.max(1, Math.floor(Number(config.reinforcementGroupCount) || 1)),
+        laneOffsetPx: Number(config.reinforcementLaneOffsetPx) || 0,
+        boss: config.isBossMayhemReinforcement === true,
+        superStorm: config.isMayhemSuperStorm === true,
+        delayMs: Math.max(0, Number(config.reinforcementEntryDelayMs) || 0)
+      });
+    }
     const startLeft = Math.random() < 0.5;
     const combatBounds = this.getCombatBoundsForPositions(positions, formation);
     const center = positions.reduce((acc, pos) => ({
@@ -4716,7 +4727,7 @@ export class EnemyManager {
     const consumedReinforcementWaveIndex = consumedReinforcementWaveIndices[0] ?? null;
     const clearedWaveCount = 1 + consumedReinforcementWaveIndices.length;
     const superStormGroupCount = this.mayhemSuperStormSurvivalWaveCounts?.get(clearedWaveIndex) || 0;
-    const survivedMayhemSuperStorm = superStormGroupCount >= 5;
+    const survivedMayhemSuperStorm = superStormGroupCount > 0;
     if (survivedMayhemSuperStorm) this.mayhemSuperStormSurvivalWaveCounts.delete(clearedWaveIndex);
     if (this.game?.scenes?.play) {
       const playScene = this.game.scenes.play;
@@ -4735,20 +4746,27 @@ export class EnemyManager {
         const stormBonus = 600 * consumedReinforcementWaveIndices.length;
         const appliedStormBonus = playScene.addNormalWaveScore?.(stormBonus, 'reinforcementStormSurvived') ??
           this.game.addScore(stormBonus, 'reinforcementStormSurvived');
-        playScene.enqueueToast?.(translateText('STORM SURVIVED +{score}', {
-          score: Number(appliedStormBonus || stormBonus).toLocaleString('en-US')
-        }), {
-          fontSize: this.game.getWidth() < 620 ? 16 : 20,
-          fill: '#ffef7e',
-          stroke: '#160006',
-          strokeThickness: 3,
-          slot: 'top',
-          type: 'bonus',
-          priority: 5,
-          duration: 1500,
-          maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.86 : 0.58)
+        const presentationShown = playScene.showMayhemReinforcementStormSurvived?.({
+          groupCount: consumedReinforcementWaveIndices.length,
+          score: Number(appliedStormBonus || stormBonus),
+          superStorm: survivedMayhemSuperStorm
         });
-        AudioManager.playSfx('combo_breakout', { volume: 0.5, minIntervalMs: 0 });
+        if (!presentationShown) {
+          playScene.enqueueToast?.(translateText('STORM SURVIVED +{score}', {
+            score: Number(appliedStormBonus || stormBonus).toLocaleString('en-US')
+          }), {
+            fontSize: this.game.getWidth() < 620 ? 16 : 20,
+            fill: '#ffef7e',
+            stroke: '#160006',
+            strokeThickness: 3,
+            slot: 'top',
+            type: 'bonus',
+            priority: 5,
+            duration: 1500,
+            maxWidth: this.game.getWidth() * (this.game.getWidth() < 620 ? 0.86 : 0.58)
+          });
+          AudioManager.playSfx('combo_breakout', { volume: 0.5, minIntervalMs: 0 });
+        }
       }
       if (survivedMayhemSuperStorm) {
         AudioManager.playVoice(MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID, {

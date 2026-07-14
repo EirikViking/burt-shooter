@@ -101,6 +101,7 @@
     "check:scout-codex-persistence": "node scripts/check-scout-codex-persistence.mjs",
     "check:mayhem-scout-difficulty-delta": "node scripts/check-mayhem-scout-difficulty-delta.mjs",
     "check:mayhem-reinforcement-waves": "node scripts/check-mayhem-reinforcement-waves.mjs",
+    "check:reinforcement-wow": "node scripts/check-reinforcement-wow.mjs",
     "check:mayhem-super-storm-voices": "node scripts/check-mayhem-super-storm-voices.mjs",
     "check:row-core": "node scripts/check-row-core.mjs",
     "check:rare-chaos-visitors": "node scripts/check-rare-chaos-visitors.mjs",

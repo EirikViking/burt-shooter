@@ -649,6 +649,7 @@ function buildGameTextState(game) {
       lastAnnouncement: playScene.lastRareChaosVisitorAnnouncement || null,
       lastDefeat: playScene.lastRareChaosVisitorDefeat || null
     } : null,
+    reinforcementPresentation: playScene?.getMayhemReinforcementPresentationDebugState?.() || null,
     gameplayBackdrop: playScene ? {
       mode: playScene.gameplayBackdropMode || 'base',
       elapsedMs: Math.round(playScene.gameplayBackdropElapsedMs || 0),

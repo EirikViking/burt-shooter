@@ -109,7 +109,7 @@ if (!canSpawnWithAboutSixtyPercentLeft({ expected: 14, objectiveCount: 8 })) {
 }
 
 const requiredSourceSnippets = [
-  'RUN_MODES.RANKED',
+  'isRankedRunMode',
   "reasons.push('not_mayhem')",
   "this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE'",
   'boss_active_or_pending',
@@ -171,7 +171,7 @@ const requiredSourceSnippets = [
   "config.isBossMayhemReinforcement",
   'reinforcementGroupCount',
   'Math.min(3',
-  'const useSuperStormVoice = state.isSuperStorm === true && groupCount >= 5',
+  'const useSuperStormVoice = state.isSuperStorm === true',
   'groupIndex * 1200',
   'index * 1200',
   'allowConcurrentSpawn: isSuperStorm || index > 0',
@@ -210,6 +210,10 @@ for (const snippet of requiredSourceSnippets) {
 for (const snippet of [
   'debugForceMayhemSuperStorm',
   'window.__novaForceMayhemSuperStorm',
+  'showMayhemReinforcementStormWarning',
+  'showMayhemReinforcementEntryBurst',
+  'showMayhemReinforcementStormSurvived',
+  'getMayhemReinforcementPresentationDebugState',
   "this.game?.markUnrankedRun?.(reason)",
   "key === 'KeyM'",
   'e.shiftKey'
