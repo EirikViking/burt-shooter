@@ -1,0 +1,84 @@
+{
+  "generatedAt": "2026-07-14T17:52:07.4196888Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24206097",
+  "sourceCommit": "0b6f9a78450351512aa6ca7785542224f18ac10a",
+  "sourceBranch": "codex/elite-expansion-20260714",
+  "sourceBaseline": "9b1422cb76a1ce9221b9cd88ea99502585ffc106",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-14_19-31-51",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24197600",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "4d774d4f5f2c61eb90e29bdb2b0514f321f719b8f3253fb5ca3b086891166f5e",
+  "consoleLogPath": "release/steamworks/steam_upload_console_elite_expansion_20260714.log",
+  "consoleLogSha256": "b4ef2daaebb0123a04ef4fc63d41eab6ba8101dd4ba4e23da8d91182aa7c877d",
+  "payloadManifestSha256": "409fb9ded68346194ae6f5febc5c12dc8ad18f60cc84d026ec332f1c89796677",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 955552960,
+    "manifestHash": "5462223042ed95329aabad5c6225f4ab76ba9b5cd4814b7ca1e3c5f6ce7e3491",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "6a901d81f70e777730c50ca60ceaa25f8d7d4db599266d9caaebdc9d754ad300"
+    },
+    "eliteExpansion": {
+      "profiles": 30,
+      "totalEliteProfiles": 50,
+      "newSpritesInAsar": 30,
+      "eliteActivationSfxInAsar": 50
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-14 19:50:27]: Successfully finished AppID 4765070 build (BuildID 24206097).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: source HEAD 0b6f9a7, baseline and authoritative lock are ancestors, tracked and untracked state clean before packaging and upload",
+    "releaseLine": "passed before build, packaging, and VDF generation; German, top-3 localization polish, Steam Cloud, fullscreen, and marketing hotkey markers present",
+    "sourceBuild": "passed: v2026-07-14_19-31-51, gitSha 0b6f9a7, 50 elite profiles, 1222 sprites, 1466 audio assets, and 353 audio keys",
+    "localizationAndUi": "passed before packaging: check:i18n and check:i18n-ui across en, de, zh-CN, ru, es, pt-BR, ko, and ja",
+    "eliteRuntime": "passed before packaging: 50-profile contract and five deterministic expansion encounters covering all ten new combat families",
+    "packagedRuntime": "passed: Steam runtime files, AppID 4765070, native module, and nova_swarm_global_score_v2 contract present",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-14T17-44-44-280Z/report.json; build v2026-07-14_19-31-51; gitSha 0b6f9a7; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-14T17-44-51-397Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-14T17-45-03-586Z/report.json; 60.0 average and minimum FPS, 11 samples, zero errors",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "packagingRecovery": {
+    "initialState": "The isolated worktree reused node_modules through a junction and did not contain the physical steam_sdk path required by Electron Builder. The first package was rejected by check:steam-package-runtime before any upload.",
+    "resolution": "Removed only the junction while preserving its target, installed local dependencies with npm ci, copied the verified SDK redistributables into the ignored local steam_sdk path, rebuilt, and reran all packaged gates successfully.",
+    "steamUploadBeforeResolution": false
+  },
+  "includedImprovementGroups": [
+    "all improvements from Steam test BuildID 24197600",
+    "Tactical Draft lock-in animation, score and combo lane separation, compact Ace Contact brief, and targeted powerup sprite refresh",
+    "Extinction Contact rarity, danger, bespoke audio, and clearer survival warnings",
+    "working Tactical leaderboard definition and separate fair-scoring Tactical upgrade route with two bans and controlled overdrive stacks",
+    "thirty new elite ships across ten combat families with thirty new sprites, thirty unique activation sounds, VFX, counterplay, and localized Threat Codex identities"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "npm ci reported 3 moderate and 7 high dependency audit findings; dependency versions were intentionally not changed during deployment.",
+    "One packaged screenshot capture retry recovered after UnknownVizError.",
+    "The optional source performance diagnostic still isolates two long frames to the existing sector fly-in path; normal combat and packaged performance passed at 60 FPS."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24197600.",
+    "Source rollback is git revert 0b6f9a78450351512aa6ca7785542224f18ac10a."
+  ]
+}
