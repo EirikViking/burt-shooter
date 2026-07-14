@@ -4,6 +4,7 @@ import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js'
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
+import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
@@ -1784,6 +1785,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN') }),
   patterns
 };

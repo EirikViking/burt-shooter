@@ -4,6 +4,7 @@ import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js'
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
+import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u30a8\u30fc\u30b9\u63a5\u89e6",
@@ -1783,6 +1784,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getEliteExpansionSourceText('ja') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja') }),
   patterns
 };

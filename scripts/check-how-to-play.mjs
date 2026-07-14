@@ -22,8 +22,11 @@ const scenarios = [
 ];
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
-  combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS'],
-  runs: ['PICKUPS & BONUS', 'RUN MODES', 'SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE', 'ACE BOUNTIES']
+  combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUPS & BONUS'],
+  modes: ['MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
+  tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'SCORE ROUTE & BANS', 'DRAFT RESCAN', 'DRAFT HOLD', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
+  intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
+  career: ['PILOT ORDERS', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
 };
 
 function timestamp() {
@@ -140,20 +143,40 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
     assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
   }
-  if (expectedPage === 'runs') {
+  if (expectedPage === 'modes') {
+    assert(joined.includes('RANKED // NO TACTICAL UPGRADES'), `${label} should identify Mayhem Pure as ranked raw skill`);
+    assert(joined.includes('RANKED // BOSS DRAFTS ACTIVE'), `${label} should identify Mayhem Tactical as ranked buildcraft`);
+    assert(joined.includes('No leaderboard submission, achievements, career XP, or checkpoint unlocks'), `${label} should explain Scout progression limits`);
+    assert(joined.includes('local records only, no leaderboard or career changes'), `${label} should explain Sector Run progression limits`);
+  }
+  if (expectedPage === 'tactics') {
     assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
+    assert(joined.includes('SECTOR 5 SCORE CHOICE // 2 PERMANENT BANS'), `${label} should explain the fixed score choice and two bans`);
+    assert(joined.includes('Combo Anchor is always offered'), `${label} should explain score-route fairness`);
     assert(joined.includes('R / GAMEPAD Y: ONE RESCAN PER RUN'), `${label} should explain the one-run rescan`);
     assert(joined.includes('never grants an extra augment'), `${label} should explain that rescan is choice agency, not extra power`);
     assert(joined.includes('HOLD ONE OFFER FOR NEXT DRAFT'), `${label} should explain the Draft hold input`);
     assert(joined.includes('Holding a new card replaces the old hold'), `${label} should explain how a held offer is replaced`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
-    assert(joined.includes('FIRST STACK FULL / SECOND STACK 55%'), `${label} should explain diminishing stacks`);
-    assert(joined.includes('Stack II earns an evolution name'), `${label} should explain Tactical evolution identities`);
+    assert(joined.includes('STACK I 100% // II 55% // III 30%'), `${label} should explain all three stack values`);
+    assert(joined.includes('Sixteen repeatable augments can reach Stack III'), `${label} should explain Tactical evolution and Overdrive identities`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
     assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
+  }
+  if (expectedPage === 'intel') {
     assert(joined.includes('1000 ACES + 10000 PROTOCOLS + 10000 WINGS'), `${label} should explain all three encounter catalogs`);
     assert(joined.includes('without adding enemies or score'), `${label} should explain score-safe Rival Wings`);
+    assert(joined.includes('0.4% WAVE CONTACT'), `${label} should identify the true Extinction Contact rarity`);
+    assert(joined.includes('50 ELITES // READ SHAPE, COLOR, SOUND'), `${label} should explain the full elite roster and warning language`);
+    assert(joined.includes('misses do not break no-hit status'), `${label} should explain Skill Flight safety`);
   }
+  if (expectedPage === 'career') {
+    assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should explain Pilot Orders`);
+    assert(joined.includes('CAREER XP // HULLS, TRAITS, LOADOUTS'), `${label} should explain Hangar progression`);
+    assert(joined.includes('DISCOVERIES // PATTERNS // COUNTERS'), `${label} should explain Codex intel`);
+    assert(joined.includes('PURE + TACTICAL STEAM // SECTOR LOCAL'), `${label} should distinguish ranked and local record lanes`);
+  }
+  assert(!joined.includes('Most augments cap at two stacks'), `${label} still contains the obsolete two-stack limit`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);
   for (const oldPhrase of ['doorbell', 'paperwork', 'spicy geometry', 'training wheels', 'legal theft']) {
     assert(!joined.includes(oldPhrase), `${label} still contains old joke copy: ${oldPhrase}`);
@@ -168,7 +191,7 @@ function assertOverlayLayout(state, label) {
   const overlay = state.howToPlayOverlay;
   const layout = overlay?.layout;
   const expectedCount = expectedRows[overlay?.pageId]?.length || 0;
-  assert(overlay?.pages?.length === 3, `${label} expected three help pages`);
+  assert(overlay?.pages?.length === 6, `${label} expected six help pages`);
   assert(overlay?.cardCount === expectedCount, `${label} expected ${expectedCount} help cards, saw ${overlay?.cardCount}`);
   assert(overlay?.heroArt?.motionNodes >= 20, `${label} expected animated hero art nodes, saw ${overlay?.heroArt?.motionNodes}`);
   assert(overlay?.heroArt?.textureSprites >= 6, `${label} expected real hero texture slots, saw ${overlay?.heroArt?.textureSprites}`);
@@ -296,30 +319,44 @@ try {
       assertOverlayLayout(menuCombat, `${scenario.name} menu combat page`);
       assertCleanHelpCopy(menuCombat, `${scenario.name} menu combat page`, 'combat');
       await page.keyboard.press('ArrowRight');
-      const menuRuns = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'runs', `${scenario.name} menu runs page`);
-      assertOverlayLayout(menuRuns, `${scenario.name} menu runs page`);
-      assertCleanHelpCopy(menuRuns, `${scenario.name} menu runs page`, 'runs');
+      const menuModes = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'modes', `${scenario.name} menu modes page`);
+      assertOverlayLayout(menuModes, `${scenario.name} menu modes page`);
+      assertCleanHelpCopy(menuModes, `${scenario.name} menu modes page`, 'modes');
+      await page.keyboard.press('ArrowRight');
+      const menuTactics = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'tactics', `${scenario.name} menu tactics page`);
+      assertOverlayLayout(menuTactics, `${scenario.name} menu tactics page`);
+      assertCleanHelpCopy(menuTactics, `${scenario.name} menu tactics page`, 'tactics');
+      await page.keyboard.press('ArrowRight');
+      const menuIntel = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'intel', `${scenario.name} menu intel page`);
+      assertOverlayLayout(menuIntel, `${scenario.name} menu intel page`);
+      assertCleanHelpCopy(menuIntel, `${scenario.name} menu intel page`, 'intel');
+      await page.keyboard.press('ArrowRight');
+      const menuCareer = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'career', `${scenario.name} menu career page`);
+      assertOverlayLayout(menuCareer, `${scenario.name} menu career page`);
+      assertCleanHelpCopy(menuCareer, `${scenario.name} menu career page`, 'career');
       const menuShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play');
       if (scenario.name === '1280x720-windowed') {
         for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
           await page.evaluate((code) => window.__novaI18n?.setLanguagePreference?.(code), locale);
           await page.waitForTimeout(90);
-          const localized = await readState(page);
-          assert(localized.howToPlayOverlay?.pageId === 'runs', `${locale} How To Play left the Runs page`);
-          const newRules = new Set(['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'DRAFT RESCAN', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE']);
-          for (const card of (localized.howToPlayOverlay?.cards || []).filter((entry) => newRules.has(entry.label))) {
-            assert(card.translatedLabel !== card.label, `${locale} left How To Play label in English: ${card.label}`);
-            assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);
-            assert(card.translatedTip !== card.tip, `${locale} left How To Play tip in English: ${card.tip}`);
+          for (const [pageIndex, pageId] of [[2, 'modes'], [3, 'tactics'], [4, 'intel'], [5, 'career']]) {
+            await page.evaluate((index) => window.__game?.currentScene?.howToPlayOverlay?.setPage?.(index), pageIndex);
+            const localized = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === pageId, `${locale} localized ${pageId} page`);
+            assertOverlayLayout(localized, `${locale} localized ${pageId} page`);
+            assertCleanHelpCopy(localized, `${locale} localized ${pageId} page`, pageId);
+            for (const card of localized.howToPlayOverlay?.cards || []) {
+              assert(card.translatedControl !== card.control, `${locale} left How To Play control in English: ${card.control}`);
+              assert(card.translatedTip !== card.tip, `${locale} left How To Play tip in English: ${card.tip}`);
+            }
+            await page.keyboard.press('Enter');
+            const localizedDetail = await waitForState(page, (state) => Boolean(state.howToPlayOverlay?.detail), `${locale} localized ${pageId} detail open`);
+            assert(localizedDetail.howToPlayOverlay.detail.translatedDetail !== localizedDetail.howToPlayOverlay.detail.detail,
+              `${locale} left detailed ${pageId} How To Play copy in English`);
+            await page.keyboard.press('Escape');
+            await waitForState(page, (state) => !state.howToPlayOverlay?.detail, `${locale} localized ${pageId} detail closed`);
           }
-          await page.keyboard.press('Enter');
-          const localizedDetail = await waitForState(page, (state) => Boolean(state.howToPlayOverlay?.detail), `${locale} localized detail open`);
-          assert(localizedDetail.howToPlayOverlay.detail.translatedDetail !== localizedDetail.howToPlayOverlay.detail.detail,
-            `${locale} left detailed How To Play copy in English`);
-          await page.keyboard.press('Escape');
-          await waitForState(page, (state) => !state.howToPlayOverlay?.detail, `${locale} localized detail closed`);
           if (['de', 'ru', 'zh-CN', 'ja'].includes(locale)) {
-            await screenshotWithAudit(page, scenarioDir, `menu-how-to-play-runs-${locale.replace('-', '_')}`);
+            await screenshotWithAudit(page, scenarioDir, `menu-how-to-play-career-${locale.replace('-', '_')}`);
           }
         }
         await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('en'));
@@ -441,21 +478,21 @@ try {
       );
       assertOverlayLayout(pauseHelp, `${scenario.name} pause help overlay`);
       assertCleanHelpCopy(pauseHelp, `${scenario.name} pause help overlay`, 'flight');
-      await page.evaluate(() => window.__game?.scenes?.play?.howToPlayOverlay?.setPage?.(2));
-      const pauseRuns = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'runs', `${scenario.name} pause runs page`);
-      assertOverlayLayout(pauseRuns, `${scenario.name} pause runs page`);
-      assertCleanHelpCopy(pauseRuns, `${scenario.name} pause runs page`, 'runs');
+      await page.evaluate(() => window.__game?.scenes?.play?.howToPlayOverlay?.setPage?.(5));
+      const pauseCareer = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'career', `${scenario.name} pause career page`);
+      assertOverlayLayout(pauseCareer, `${scenario.name} pause career page`);
+      assertCleanHelpCopy(pauseCareer, `${scenario.name} pause career page`, 'career');
       const pauseShot = await screenshotWithAudit(page, scenarioDir, 'pause-how-to-play');
 
       scenariosReport.push({
         ...scenario,
         ok: pageErrors.length === 0 && consoleErrors.length === 0,
-        menuRows: menuRuns.howToPlayOverlay?.rows,
+        menuRows: menuCareer.howToPlayOverlay?.rows,
         menuDetail: menuDetail.howToPlayOverlay?.detail,
         menuDetailShot,
-        pauseRows: pauseRuns.howToPlayOverlay?.rows,
-        menuLayout: menuRuns.howToPlayOverlay?.layout,
-        pauseLayout: pauseRuns.howToPlayOverlay?.layout,
+        pauseRows: pauseCareer.howToPlayOverlay?.rows,
+        menuLayout: menuCareer.howToPlayOverlay?.layout,
+        pauseLayout: pauseCareer.howToPlayOverlay?.layout,
         screenshots: {
           menu: menuShot.file,
           pause: pauseShot.file

@@ -9,7 +9,7 @@ import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, upd
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 
-const HELP_ROWS = Object.freeze([
+const CORE_HELP_ROWS = Object.freeze([
   {
     code: '01',
     icon: 'NAV',
@@ -90,29 +90,46 @@ const HELP_ROWS = Object.freeze([
     tip: 'Collect bright pickup icons. Shoot bonus drones for extra score and watch for the BONUS popup.',
     accent: 0xb285ff
   },
+]);
+
+const MODE_HELP_ROWS = Object.freeze([
   {
     code: '11',
-    icon: 'MODE',
-    label: 'RUN MODES',
-    control: 'MAYHEM / SCOUT / SECTOR RUN',
-    tip: 'Mayhem is the ranked climb. Scout is practice. Sector Run lets you practice unlocked later starts.',
-    accent: 0xff8f5a
+    icon: 'PURE',
+    label: 'MAYHEM PURE',
+    control: 'RANKED // NO TACTICAL UPGRADES',
+    tip: 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
+    accent: 0x37f5ff
   },
   {
     code: '12',
-    icon: 'ORDER',
-    label: 'PILOT ORDERS',
-    control: 'OPTIONAL MAYHEM DRILLS',
-    tip: 'Use main-menu Pilot Orders as optional combat drills. Review cleared orders in Ship Hangar Career Intel.',
-    accent: 0x7fffd8
+    icon: 'BUILD',
+    label: 'MAYHEM TACTICAL',
+    control: 'RANKED // BOSS DRAFTS ACTIVE',
+    tip: 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
+    accent: 0xffef7e
+  },
+  {
+    code: '13',
+    icon: 'SCOUT',
+    label: 'SCOUT RUN',
+    control: 'UNRANKED // LOWER PRESSURE PRACTICE',
+    tip: 'Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+    accent: 0x66ff9d
+  },
+  {
+    code: '14',
+    icon: 'SECTOR',
+    label: 'SECTOR RUN',
+    control: 'UNRANKED // UNLOCKED CHECKPOINT STARTS',
+    tip: 'SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.',
+    accent: 0xb285ff
   }
 ]);
 
-const RUN_HELP_ROWS = Object.freeze([
-  HELP_ROWS[9],
-  HELP_ROWS[10],
+const TACTICS_HELP_ROWS = Object.freeze([
   {
-    code: '13',
+    code: '15',
     icon: 'TASK',
     label: 'SIDE DIRECTIVES',
     control: '1000 MISSIONS / 50-STAGE DIRECTIVE CHAIN',
@@ -120,7 +137,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0x66ff9d
   },
   {
-    code: '14',
+    code: '16',
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
     control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
@@ -128,7 +145,15 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xffef7e
   },
   {
-    code: '15',
+    code: '17',
+    icon: 'ROUTE',
+    label: 'SCORE ROUTE & BANS',
+    control: 'SECTOR 5 SCORE CHOICE // 2 PERMANENT BANS',
+    tip: 'Combo Anchor is always offered as the marked Score Route in Sector 5. Each run also has two permanent bans, so score ambition is a choice and unwanted upgrades stay out.',
+    accent: 0xffa84d
+  },
+  {
+    code: '18',
     icon: 'SCAN',
     label: 'DRAFT RESCAN',
     control: 'R / GAMEPAD Y: ONE RESCAN PER RUN',
@@ -136,7 +161,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0x37f5ff
   },
   {
-    code: '16',
+    code: '19',
     icon: 'HOLD',
     label: 'DRAFT HOLD',
     control: 'L / GAMEPAD X: HOLD ONE OFFER FOR NEXT DRAFT',
@@ -144,7 +169,7 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xffd15c
   },
   {
-    code: '17',
+    code: '20',
     icon: 'SLOT',
     label: 'POWERUP OVERLAP',
     control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
@@ -152,35 +177,108 @@ const RUN_HELP_ROWS = Object.freeze([
     accent: 0xb285ff
   },
   {
-    code: '18',
+    code: '21',
     icon: 'CAP',
     label: 'STACK LIMITS',
-    control: 'FIRST STACK FULL / SECOND STACK 55%',
-    tip: 'Most augments cap at two stacks. Stack II earns an evolution name while keeping its 55% effect. Direct Draft weapon output is capped at +45%, so choices add power without removing the challenge.',
+    control: 'STACK I 100% // II 55% // III 30%',
+    tip: 'Sixteen repeatable augments can reach Stack III. Stack II gains an Evolution name at 55% effect; Stack III becomes Overdrive at 30%. Direct Draft weapon output remains capped at +45%.',
     accent: 0xff8f5a
   },
   {
-    code: '19',
+    code: '22',
     icon: 'SYNC',
     label: 'THREAT RESPONSE',
     control: 'HULL POWER + DRAFT PICKS SET PRESSURE',
     tip: 'Strong hulls still clear faster. Threat Response adds some hardened targets and attack pressure, but preserves a meaningful power advantage from every late-game hull.',
     accent: 0x66ff9d
-  },
+  }
+]);
+
+const INTEL_HELP_ROWS = Object.freeze([
   {
-    code: '20',
+    code: '23',
     icon: 'ACE',
     label: 'ACE BOUNTIES',
     control: '1000 ACES + 10000 PROTOCOLS + 10000 WINGS',
     tip: 'The Ace wave also forms one Rival Wing from formation, discipline, volley, and morale. Escorts transform with the Ace phase without adding enemies or score.',
     accent: 0xffd15c
+  },
+  {
+    code: '24',
+    icon: 'VOID',
+    label: 'EXTINCTION-CLASS CONTACT',
+    control: '0.4% WAVE CONTACT',
+    tip: 'This is not a bonus guest. Survive three escalating phases, obey the warning geometry, and attack only when its weapon storm gives you room.',
+    accent: 0xff3b71
+  },
+  {
+    code: '25',
+    icon: 'ELITE',
+    label: 'ELITE SIGNALS',
+    control: '50 ELITES // READ SHAPE, COLOR, SOUND',
+    tip: 'Elite entry, charge, and active sounds are warnings. Read the telegraph, clear cover, then punish the cooldown; not every elite should be rushed.',
+    accent: 0xff55d9
+  },
+  {
+    code: '26',
+    icon: 'SKILL',
+    label: 'CABINET SKILL FLIGHT',
+    control: 'SAFE TARGET DRILL // GRADED BONUS',
+    tip: 'A harmless one-hit target choreography tests aim during a live run. Break targets before they exit for a grade and bounded bonus score; misses do not break no-hit status.',
+    accent: 0x66ffdd
+  },
+  {
+    code: '27',
+    icon: 'BOSS',
+    label: 'BOSS WAVES',
+    control: 'CLEAR SUPPORT // PUNISH OPENINGS',
+    tip: 'Bosses can arrive with healers, escorts, or phase hazards. Clear support, read the telegraph, and spend damage in the opening. Tactical victories lead to a Draft.',
+    accent: 0xff8f5a
+  }
+]);
+
+const CAREER_HELP_ROWS = Object.freeze([
+  {
+    code: '28',
+    icon: 'ORDER',
+    label: 'PILOT ORDERS',
+    control: 'OPTIONAL MAYHEM DRILLS',
+    tip: 'Use main-menu Pilot Orders as optional combat drills. Review cleared orders in Ship Hangar Career Intel.',
+    accent: 0x7fffd8
+  },
+  {
+    code: '29',
+    icon: 'HULL',
+    label: 'SHIP HANGAR',
+    control: 'CAREER XP // HULLS, TRAITS, LOADOUTS',
+    tip: 'Ranked Mayhem runs grow Career XP and unlock ships. Inspect each hull, trait, starting loadout, unlock condition, and cleared Pilot Order in the Hangar.',
+    accent: 0x37f5ff
+  },
+  {
+    code: '30',
+    icon: 'CODEX',
+    label: 'THREAT CODEX',
+    control: 'DISCOVERIES // PATTERNS // COUNTERS',
+    tip: 'Open the Codex to review discovered enemies, attack patterns, wave tactics, powerups, augments, sectors, elites, bosses, run themes, logs, and pilot ranks.',
+    accent: 0xb285ff
+  },
+  {
+    code: '31',
+    icon: 'SCORE',
+    label: 'RECORDS & LEADERBOARDS',
+    control: 'PURE + TACTICAL STEAM // SECTOR LOCAL',
+    tip: 'Pure and Tactical submit to separate Steam leaderboards. Sector Run keeps separate local checkpoint records; Scout is pressure-free practice.',
+    accent: 0xffef7e
   }
 ]);
 
 const HELP_PAGES = Object.freeze([
-  Object.freeze({ id: 'flight', label: 'FLIGHT', rows: Object.freeze(HELP_ROWS.slice(0, 4)) }),
-  Object.freeze({ id: 'combat', label: 'COMBAT', rows: Object.freeze(HELP_ROWS.slice(4, 9)) }),
-  Object.freeze({ id: 'runs', label: 'RUNS', rows: RUN_HELP_ROWS })
+  Object.freeze({ id: 'flight', label: 'FLIGHT', rows: Object.freeze(CORE_HELP_ROWS.slice(0, 4)) }),
+  Object.freeze({ id: 'combat', label: 'COMBAT', rows: Object.freeze(CORE_HELP_ROWS.slice(4, 10)) }),
+  Object.freeze({ id: 'modes', label: 'MODES', rows: MODE_HELP_ROWS }),
+  Object.freeze({ id: 'tactics', label: 'TACTICS', rows: TACTICS_HELP_ROWS }),
+  Object.freeze({ id: 'intel', label: 'INTEL', rows: INTEL_HELP_ROWS }),
+  Object.freeze({ id: 'career', label: 'CAREER', rows: CAREER_HELP_ROWS })
 ]);
 
 const HELP_DETAIL_COPY = Object.freeze({
@@ -194,16 +292,27 @@ const HELP_DETAIL_COPY = Object.freeze({
   COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
   'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
   'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
-  'RUN MODES': "Mayhem owns the ranked receipt. Scout lets you learn without signing it. Sector Run begins later using unlocked checkpoints. Pick the mode that answers today's question; the leaderboard cannot teach a pattern you never stopped to read.",
+  'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
+  'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
+  'SCOUT RUN': 'Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+  'SECTOR RUN': 'SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
+  'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Choosing it means passing on survival hardware. You also receive two permanent bans per run; ban an offer to remove that augment from later Drafts.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',
-  'STACK LIMITS': 'Most repeatable augments stop at two stacks, and the second contributes only fifty-five percent. This keeps a favorite lane useful without turning one lucky draft into a legally distinct supernova.',
+  'STACK LIMITS': 'Sixteen repeatable augments can reach three stacks. Stack I gives the full base effect, Stack II adds fifty-five percent and an Evolution identity, and Stack III adds thirty percent and an Overdrive identity. Direct Draft weapon output still stops at plus forty-five percent.',
   'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.',
-  'ACE BOUNTIES': 'One marked Ace appears during every sector. Its four-digit Ace number identifies one of one thousand chassis, flight, and weapon combinations. A five-digit Nemesis number adds one of ten thousand personal protocols. The Ace wave also draws one of ten thousand Rival Wings: formation, discipline, synchronized volley, and morale response. The framed escorts transform with the Ace phase, but enemy count, score value, and leaderboard rules stay unchanged.'
+  'ACE BOUNTIES': 'One marked Ace appears during every sector. Its four-digit Ace number identifies one of one thousand chassis, flight, and weapon combinations. A five-digit Nemesis number adds one of ten thousand personal protocols. The Ace wave also draws one of ten thousand Rival Wings: formation, discipline, synchronized volley, and morale response. The framed escorts transform with the Ace phase, but enemy count, score value, and leaderboard rules stay unchanged.',
+  'EXTINCTION-CLASS CONTACT': 'The 0.4 percent contact is a survival emergency, not a treasure break. Its voice, siren, warning geometry, and three escalation phases announce increasingly lethal patterns. Clear space before each lock, move after the telegraph commits, and punish the rare cooldown. The reward is strong; staying alive is stronger.',
+  'ELITE SIGNALS': 'Nova Swarm fields fifty elite hulls, including thirty expanded specialists across ten combat families. Their entry flash, charge sound, colored geometry, and active effect reveal the problem before it lands. Solve the system first: leave the marked lane, break the tether, clear satellites, or destroy the beacon—then focus the hull.',
+  'CABINET SKILL FLIGHT': 'A Skill Flight temporarily introduces a deterministic formation of harmless one-hit targets. The targets do not shoot, collide, or compromise no-hit integrity. Read the choreography, lead your shots, and clear as many as possible before they exit for a PERFECT, A, B, C, or MISS grade and a bounded score bonus.',
+  'BOSS WAVES': 'Boss danger often comes from the room around the health bar. Remove healers and support ships, respect phase telegraphs, then commit damage during the safe opening. In Mayhem Tactical, defeating the boss pauses the fight for a three-card Draft. In Mayhem Pure, the battle continues without upgrades.',
+  'SHIP HANGAR': 'The Hangar is the roster and career desk. Compare hull stats, traits, starting hardware, and exact unlock conditions before launching. Ranked Mayhem score, sectors, bosses, discoveries, clean waves, and completed runs feed Career XP; Scout and Sector practice do not change the profile.',
+  'THREAT CODEX': 'The Codex records what you have actually encountered. Use its categories to study enemy silhouettes, elite systems, attack patterns, wave tactics, boss behavior, powerups, augments, sectors, themes, Cabinet logs, and rank milestones. Unknown entries remain unknown until you meet them.',
+  'RECORDS & LEADERBOARDS': 'Mayhem Pure and Mayhem Tactical are both ranked, but each submits to its own Steam leaderboard so raw-skill and buildcraft scores remain comparable. Sector Run stores checkpoint-specific local records. Scout is unranked practice and does not submit a score or change career progress.'
 });
 
 function getHelpDetail(row) {
@@ -462,8 +571,9 @@ export class HowToPlayOverlay {
     });
 
     this.pageButtons = HELP_PAGES.map((page, index) => {
-      const tabWidth = Math.min(compact ? 92 : 126, (panelWidth - pad * 3) / HELP_PAGES.length);
       const gap = compact ? 8 : 12;
+      const availableWidth = panelWidth - pad * 2 - gap * (HELP_PAGES.length - 1);
+      const tabWidth = Math.min(compact ? 92 : 126, availableWidth / HELP_PAGES.length);
       const totalWidth = tabWidth * HELP_PAGES.length + gap * (HELP_PAGES.length - 1);
       const x = width / 2 - totalWidth / 2 + tabWidth / 2 + index * (tabWidth + gap);
       const y = panelY + headerHeight - (veryShort ? 13 : compact ? 17 : 20);
