@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { requireOptionalPackagedModule } = require('./unpackedModuleResolver.cjs');
 
 const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
 const DEFAULT_STEAM_APP_ID = 4765070;
@@ -100,18 +101,13 @@ function resolveSdkPath(rootDir) {
 }
 
 function requireNativeSteamworks() {
-  try {
-    return require('steamworks-ffi-node');
-  } catch (error) {
-    if (error?.code === 'MODULE_NOT_FOUND') return null;
-    throw error;
-  }
+  return requireOptionalPackagedModule('steamworks-ffi-node');
 }
 
 function requireKoffi() {
   if (koffiModule !== undefined) return koffiModule;
   try {
-    koffiModule = require('koffi');
+    koffiModule = requireOptionalPackagedModule('koffi');
   } catch {
     koffiModule = null;
   }

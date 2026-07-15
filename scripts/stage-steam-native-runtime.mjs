@@ -11,6 +11,9 @@ const root = process.cwd();
 const sourceNodeModules = path.resolve(
   process.env.NOVA_SWARM_STEAM_RUNTIME_SOURCE || path.join(root, 'node_modules')
 );
+const sourceSteamSdk = path.resolve(
+  process.env.NOVA_SWARM_STEAM_SDK_SOURCE || path.join(root, 'steam_sdk')
+);
 const packageRoot = path.resolve(
   process.env.NOVA_SWARM_STEAM_PACKAGE_ROOT || path.join(root, 'release', 'desktop', 'win-unpacked')
 );
@@ -19,6 +22,12 @@ const packagedNodeModules = path.join(
   'resources',
   'app.asar.unpacked',
   'node_modules'
+);
+const packagedSteamSdk = path.join(
+  packageRoot,
+  'resources',
+  'app.asar.unpacked',
+  'steam_sdk'
 );
 
 const packages = [
@@ -97,4 +106,12 @@ for (const packageSpec of packages) {
   assertFiles(destination, packageSpec.required, `packaged ${packageSpec.name}`);
 }
 
-console.log(`[stage-steam-native-runtime] PASS package=${path.relative(root, packageRoot).replaceAll(path.sep, '/')} modules=${packages.map(({ name }) => name).join(',')}`);
+const sdkRequired = [
+  path.join('sdk', 'redistributable_bin', 'win64', 'steam_api64.dll'),
+  path.join('sdk', 'redistributable_bin', 'steam_api.dll')
+];
+assertFiles(sourceSteamSdk, sdkRequired, 'source Steam SDK');
+copyRuntimePackage(sourceSteamSdk, packagedSteamSdk);
+assertFiles(packagedSteamSdk, sdkRequired, 'packaged Steam SDK');
+
+console.log(`[stage-steam-native-runtime] PASS package=${path.relative(root, packageRoot).replaceAll(path.sep, '/')} modules=${packages.map(({ name }) => name).join(',')} sdk=steam_sdk`);
