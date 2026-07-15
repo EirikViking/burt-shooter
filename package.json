@@ -147,6 +147,7 @@
     "check:i18n-ui": "node scripts/check-i18n-ui.mjs",
     "check:steam-sdk-ready": "node scripts/check-steam-sdk-ready.mjs",
     "check:steam-package-runtime": "node scripts/check-steam-package-runtime.mjs",
+    "stage:steam-native-runtime": "node scripts/stage-steam-native-runtime.mjs",
     "check:packaged-steam-runtime-gate": "node scripts/check-packaged-steam-runtime-gate.mjs",
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
     "check:profile-isolation": "node scripts/check-profile-isolation.mjs",
@@ -344,8 +345,8 @@
     "desktop:smoke:packaged": "node scripts/smoke-packaged-desktop.mjs",
     "desktop:perf:packaged": "node scripts/smoke-packaged-perf.mjs",
     "desktop:controls:packaged": "node scripts/smoke-packaged-controls.mjs",
-    "package:steam:win": "npm run check:release-line && npm run check:steam-sdk-ready && npm run build && electron-builder --win dir --x64 --config electron-builder.json && npm run check:steam-package-runtime",
-    "package:steam:win:current": "npm run check:release-line && npm run check:steam-sdk-ready && electron-builder --win dir --x64 --config electron-builder.json && npm run check:steam-package-runtime",
+    "package:steam:win": "npm run check:release-line && npm run check:steam-sdk-ready && npm run build && electron-builder --win dir --x64 --config electron-builder.json && npm run stage:steam-native-runtime && npm run check:steam-package-runtime",
+    "package:steam:win:current": "npm run check:release-line && npm run check:steam-sdk-ready && electron-builder --win dir --x64 --config electron-builder.json && npm run stage:steam-native-runtime && npm run check:steam-package-runtime",
     "deploy": "npm run build && wrangler pages deploy dist"
   },
   "dependencies": {

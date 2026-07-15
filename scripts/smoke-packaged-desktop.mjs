@@ -14,6 +14,8 @@ const outputDir = path.resolve(
 );
 const reportPath = path.join(outputDir, 'report.json');
 const versionPath = path.resolve(root, 'public/version.json');
+const configuredTimeoutMs = Number(process.env.NOVA_SWARM_PACKAGED_SMOKE_TIMEOUT_MS || 150000);
+const timeoutMs = Math.max(60000, Math.min(300000, Number.isFinite(configuredTimeoutMs) ? configuredTimeoutMs : 150000));
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
@@ -35,7 +37,7 @@ const result = spawnSync(exePath, ['--smoke'], {
   },
   windowsHide: true,
   encoding: 'utf8',
-  timeout: 60000
+  timeout: timeoutMs
 });
 
 if (result.error) {

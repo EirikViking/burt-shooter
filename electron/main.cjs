@@ -684,6 +684,11 @@ function waitForWindowLoad(window, timeoutMs, label) {
   });
 }
 
+function smokeLoadTimeoutMs() {
+  const configured = Number(process.env.NOVA_SWARM_ELECTRON_SMOKE_LOAD_TIMEOUT_MS || 60000);
+  return Math.max(20000, Math.min(120000, Number.isFinite(configured) ? configured : 60000));
+}
+
 async function runSmoke(window) {
   const outputDir = path.resolve(
     process.env.NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR || path.join(process.cwd(), 'test-results', `electron-smoke-${new Date().toISOString().replace(/[:.]/g, '-')}`)
@@ -696,7 +701,7 @@ async function runSmoke(window) {
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
-  await waitForWindowLoad(window, 20000, 'Electron smoke');
+  await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron smoke');
   const readyState = await waitForRenderedScene(window);
   await window.webContents.executeJavaScript('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
   await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1073,7 +1078,7 @@ async function runControlSmoke(window) {
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
-  await waitForWindowLoad(window, 20000, 'Electron control smoke');
+  await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron control smoke');
   await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
@@ -1183,7 +1188,7 @@ async function runPerfSmoke(window) {
     if (level >= 2) consoleEvents.push({ level, message: text.slice(0, 500) });
   });
 
-  await waitForWindowLoad(window, 20000, 'Electron perf smoke');
+  await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron perf smoke');
   await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&perf=1`);
   const startState = await waitForPlay(window);
   await window.webContents.executeJavaScript(`

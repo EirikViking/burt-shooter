@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-16 Steam leaderboard package recovery
+
+- BuildID `24226288` was diagnosed as a defective Steam package: `steamworks-ffi-node` was incomplete and `koffi` was absent, so the renderer selected the Cloud Global fallback and hid the existing Steam boards. The leaderboard definitions and stored scores were not deleted or changed.
+- The exact known-good payload was re-uploaded to `sector-continue-test` as emergency BuildID `24226934`, depot manifest `5580543771637302882`. Independent SteamCMD `app_info_print` verification confirmed the defective build is no longer assigned; public remains unchanged on BuildID `24218172`.
+- A direct probe using the repaired package's own native modules opened `nova_swarm_global_score_v2` and downloaded 20 existing entries, proving Steam initialization, native module loading, board identity, and score visibility.
+- Steam packaging now stages the complete `steamworks-ffi-node` and `koffi` trees explicitly after electron-builder, then applies the hardened package-runtime gate. Smoke-only cold starts have a bounded extended load window so Windows security scanning cannot create a false package failure; normal gameplay startup is unchanged.
+
 ## 2026-07-15 Packaged Steam runtime release gate hotfix
 
 - Root cause: packaged smoke and desktop package review only gated scene/API/console health, so a report with `steamBridgeStatus.available=false`, `nativeModuleLoaded=false`, and `steamLeaderboardAvailable=false` could still pass and silently select the Cloud Global fallback.
