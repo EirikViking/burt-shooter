@@ -11,7 +11,8 @@ import {
   buildTacticalDraftOffers,
   getActiveTacticalAugmentIds,
   getTacticalDraftDisplayMeta,
-  getTacticalDraftMeta
+  getTacticalDraftMeta,
+  getTacticalFusionBlueprints
 } from '../src/config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
 import { RUN_MODES } from '../src/game/RunMode.js';
@@ -134,6 +135,21 @@ function assertDraftLayout(state, width, height, label) {
     }
     assert(offer.doctrineProjection?.afterId || offer.doctrineProjection?.consumed, `${label}: offer ${offer.id} missing doctrine forecast`);
     assert(String(offer.doctrinePreviewText || '').trim(), `${label}: offer ${offer.id} missing doctrine forecast text`);
+    if (offer.fusionBlueprint) {
+      for (const [name, textBounds] of [
+        ['fusion badge', offer.fusionBadgeBounds],
+        ['fusion label', offer.fusionLabelBounds],
+        ['fusion name', offer.fusionNameBounds],
+        ['fusion hint', offer.fusionHintBounds]
+      ]) {
+        assert(textBounds && textBounds.width > 0 && textBounds.height > 0, `${label}: ${name} ${index} has invalid bounds`);
+        assert(textBounds.x >= card.x - 2 && textBounds.y >= card.y - 2 && textBounds.x + textBounds.width <= card.x + card.width + 2 && textBounds.y + textBounds.height <= card.y + card.height + 2,
+          `${label}: ${name} ${index} escapes card`);
+      }
+      assert(['blueprint', 'completes'].includes(offer.fusionBlueprint.status), `${label}: invalid Fusion forecast status for ${offer.id}`);
+      assert(String(offer.fusionLabelText || '').trim() && String(offer.fusionNameText || '').trim() && String(offer.fusionHintText || '').trim(),
+        `${label}: Fusion forecast for ${offer.id} is missing player-facing copy`);
+    }
   });
   assert(state.tacticalDraft.recommendedIndex === state.tacticalDraft.focusIndex, `${label}: recommended card should receive initial focus`);
 }
@@ -232,6 +248,37 @@ const heldOffers = buildTacticalDraftOffers({
 assert(heldOffers.some((offer) => offer.id === heldOfferId && offer.held === true),
   `held offer did not survive exclusion/rescan: ${JSON.stringify(heldOffers)}`);
 assert(heldOffers.filter((offer) => offer.held).length === 1, 'Draft should expose exactly one held offer');
+
+const phaseBlueprint = getTacticalFusionBlueprints('phase_reactor', []);
+assert(phaseBlueprint.length === 1 && phaseBlueprint[0].id === 'rift_reprisal', 'Phase Reactor should expose the Rift Reprisal blueprint');
+assert(phaseBlueprint[0].status === 'blueprint' && phaseBlueprint[0].missingPartnerIds.includes('phase_wake'),
+  `unpaired Phase Reactor should name Phase Wake as missing: ${JSON.stringify(phaseBlueprint)}`);
+const phaseCompletion = getTacticalFusionBlueprints('phase_reactor', ['phase_wake']);
+assert(phaseCompletion.length === 1 && phaseCompletion[0].status === 'completes' && phaseCompletion[0].completesOnPick,
+  `Phase Reactor should forecast a completed Fusion when Phase Wake is owned: ${JSON.stringify(phaseCompletion)}`);
+assert(getTacticalFusionBlueprints('phase_reactor', ['phase_reactor', 'phase_wake']).length === 0,
+  'already-active Fusions should not keep advertising a Draft blueprint');
+for (const [offerId, partnerId, fusionId] of [
+  ['drones', 'drone_link', 'drone_constellation'],
+  ['shield', 'point_defense', 'aegis_reactor'],
+  ['bomb', 'orbital_strike', 'sky_verdict']
+]) {
+  const forecast = getTacticalFusionBlueprints(offerId, [partnerId]);
+  assert(forecast.length === 1 && forecast[0].id === fusionId && forecast[0].completesOnPick,
+    `${offerId} did not forecast ${fusionId} with ${partnerId} owned`);
+}
+
+function findFusionOfferCase(targetId, selectedIds, sectorCleared) {
+  for (let index = 0; index < 800; index += 1) {
+    const seed = `fusion-blueprint-${targetId}-${index}`;
+    const offers = buildTacticalDraftOffers({ seed, sectorCleared, selectedIds, lives: 3, maxLives: 4 });
+    if (offers.some((offer) => offer.id === targetId)) return { seed, sectorCleared, selectedIds, offerIds: offers.map((offer) => offer.id) };
+  }
+  throw new Error(`Unable to find deterministic Draft case for ${targetId}`);
+}
+
+const phaseBlueprintCase = findFusionOfferCase('phase_reactor', [], 1);
+const phaseCompletionCase = findFusionOfferCase('phase_reactor', ['phase_wake'], 2);
 
 mkdirSync(outputDir, { recursive: true });
 const server = await startPreview();
@@ -428,6 +475,71 @@ try {
   }
   await page.evaluate(() => window.__novaI18n.setLanguagePreference('en'));
 
+  const fusionPage = await browser.newPage({ viewport: { width: 760, height: 640 } });
+  fusionPage.on('pageerror', (error) => consoleErrors.push(`fusion pageerror: ${error.message}`));
+  fusionPage.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(`fusion console: ${message.text()}`);
+  });
+  await fusionPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlay(fusionPage);
+  const openFusionCase = async (testCase, locale = 'en') => {
+    await fusionPage.evaluate(({ seed, sectorCleared, selectedIds, locale }) => {
+      const game = window.__game;
+      const play = game.scenes.play;
+      play.clearTacticalDraft('fusion_case_reset');
+      play.tacticalDraftBannedIds = [];
+      play.tacticalDraftBansRemaining = 2;
+      play.tacticalDraftHeldId = null;
+      play.player.runAugmentIds = selectedIds.slice();
+      play.player.consumedRunAugmentIds = [];
+      play.player.recomputeRunAugmentModifiers?.();
+      game.contentDirector.seed = seed;
+      window.__novaI18n.setLanguagePreference(locale);
+      play.openTacticalDraft({ sectorCleared });
+    }, { ...testCase, locale });
+    await fusionPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+    return readState(fusionPage);
+  };
+
+  let fusionBlueprintState = await openFusionCase(phaseBlueprintCase);
+  assertDraftLayout(fusionBlueprintState, 760, 640, 'fusion-blueprint-compact');
+  const blueprintOffer = fusionBlueprintState.tacticalDraft.offers.find((offer) => offer.id === 'phase_reactor');
+  assert(blueprintOffer?.fusionBlueprint?.status === 'blueprint', `compact card did not expose its Fusion blueprint: ${JSON.stringify(blueprintOffer)}`);
+  assert(blueprintOffer.fusionHintText.includes('PHASE WAKE'), `blueprint did not name its missing partner: ${blueprintOffer.fusionHintText}`);
+  const fusionBlueprintScreenshot = path.join(outputDir, 'tactical-draft-fusion-blueprint-compact.png');
+  await fusionPage.screenshot({ path: fusionBlueprintScreenshot });
+
+  await fusionPage.setViewportSize({ width: 1280, height: 720 });
+  await fusionPage.waitForTimeout(180);
+  let fusionCompletionState = await openFusionCase(phaseCompletionCase);
+  assertDraftLayout(fusionCompletionState, 1280, 720, 'fusion-completion-desktop');
+  let completionOffer = fusionCompletionState.tacticalDraft.offers.find((offer) => offer.id === 'phase_reactor');
+  assert(completionOffer?.fusionBlueprint?.status === 'completes' && completionOffer.fusionBlueprint.completesOnPick,
+    `Draft card did not identify its completed Fusion: ${JSON.stringify(completionOffer)}`);
+  assert(completionOffer.fusionLabelText === 'COMPLETES FUSION', `completion label was unclear: ${completionOffer.fusionLabelText}`);
+  assert(completionOffer.fusionHintText.includes('PHASE WAKE'), `completion forecast did not name the owned partner: ${completionOffer.fusionHintText}`);
+  const fusionCompletionScreenshot = path.join(outputDir, 'tactical-draft-fusion-completion-desktop.png');
+  await fusionPage.screenshot({ path: fusionCompletionScreenshot });
+
+  const germanCompletionState = await openFusionCase(phaseCompletionCase, 'de');
+  assertDraftLayout(germanCompletionState, 1280, 720, 'fusion-completion-de');
+  const germanCompletionOffer = germanCompletionState.tacticalDraft.offers.find((offer) => offer.id === 'phase_reactor');
+  assert(germanCompletionOffer?.fusionLabelText !== 'COMPLETES FUSION', 'German completion label remained English');
+  assert(!String(germanCompletionOffer?.fusionHintText || '').includes('PARTNER ONLINE'), 'German Fusion partner hint remained English');
+  const fusionGermanScreenshot = path.join(outputDir, 'tactical-draft-fusion-completion-de.png');
+  await fusionPage.screenshot({ path: fusionGermanScreenshot });
+
+  fusionCompletionState = await openFusionCase(phaseCompletionCase);
+  completionOffer = fusionCompletionState.tacticalDraft.offers.find((offer) => offer.id === 'phase_reactor');
+  await fusionPage.evaluate((index) => window.__game.scenes.play.setTacticalDraftFocus(index),
+    fusionCompletionState.tacticalDraft.offers.findIndex((offer) => offer.id === 'phase_reactor'));
+  await fusionPage.keyboard.press('Enter');
+  await fusionPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.fusionUnlock?.active === true, null, { timeout: 5000 });
+  const fusionActivatedState = await readState(fusionPage);
+  assert(fusionActivatedState.tacticalDraft.player?.fusionIds?.includes('rift_reprisal'),
+    `choosing the completion card did not activate Rift Reprisal: ${JSON.stringify(fusionActivatedState.tacticalDraft.player)}`);
+  await fusionPage.close();
+
   const runtimePage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   await runtimePage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForPlay(runtimePage);
@@ -567,6 +679,13 @@ try {
   report.lockInScreenshot = lockInScreenshot;
   report.runtime = runtime;
   report.locales = localeResults;
+  report.fusionBlueprints = {
+    pure: { phaseBlueprint, phaseCompletion, phaseBlueprintCase, phaseCompletionCase },
+    compactScreenshot: fusionBlueprintScreenshot,
+    completionScreenshot: fusionCompletionScreenshot,
+    germanCompletionScreenshot: fusionGermanScreenshot,
+    activatedFusionIds: fusionActivatedState.tacticalDraft.player?.fusionIds || []
+  };
   report.automaticBossClearGate = { gatedLevel, advancedLevel: flowState.arcadeRun.currentSector };
   report.consoleErrors = consoleErrors;
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

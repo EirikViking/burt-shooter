@@ -64,6 +64,7 @@ import {
 import {
   TACTICAL_DRAFT_BAN_COUNT,
   buildTacticalDraftOffers,
+  getTacticalFusionBlueprints,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
 import { getTacticalBossBanterEvent } from '../config/TacticalBossBanterLines.js';
@@ -6901,11 +6902,20 @@ export class PlayScene {
     }
   }
 
+  decorateTacticalDraftOffers(offers = []) {
+    const selectedIds = this.player?.runAugmentIds || [];
+    const consumedIds = this.player?.consumedRunAugmentIds || [];
+    return offers.map((offer) => ({
+      ...offer,
+      doctrineProjection: projectTacticalDoctrine(selectedIds, consumedIds, offer.id),
+      fusionBlueprints: getTacticalFusionBlueprints(offer.id, selectedIds)
+    }));
+  }
+
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
     if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
-    const consumedIds = this.player?.consumedRunAugmentIds || [];
-    const offers = buildTacticalDraftOffers({
+    const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
       selectedIds: this.player.runAugmentIds || [],
@@ -6915,9 +6925,6 @@ export class PlayScene {
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
-    }).map((offer) => ({
-      ...offer,
-      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, offer.id)
     }));
     if (offers.length < 3) return false;
 
@@ -7056,6 +7063,47 @@ export class PlayScene {
       wordWrapWidth: 250
     });
     description.anchor.set(0.5);
+    const fusionBlueprint = offer.fusionBlueprints?.[0] || null;
+    const fusionBadge = new PIXI.Graphics();
+    fusionBadge.label = `tactical_fusion_blueprint_${offer.id}`;
+    const fusionLabel = createText(fusionBlueprint?.completesOnPick
+      ? translateText('COMPLETES FUSION')
+      : translateText('FUSION BLUEPRINT'), {
+      fontFamily: FONT_BODY,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: fusionBlueprint?.completesOnPick ? '#fff3a0' : '#8df7ff',
+      align: 'center',
+      letterSpacing: 1
+    });
+    fusionLabel.anchor.set(0.5);
+    const fusionName = createText(fusionBlueprint ? translateText(fusionBlueprint.name) : '', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 12,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    fusionName.anchor.set(0.5);
+    const fusionPartnerName = fusionBlueprint?.partnerNames?.[0]
+      ? translateText(fusionBlueprint.partnerNames[0])
+      : '';
+    const fusionHint = createText(fusionBlueprint?.completesOnPick
+      ? translateText('PARTNER ONLINE: {augment}', { augment: fusionPartnerName })
+      : translateText('PAIR WITH {augment}', { augment: fusionPartnerName }), {
+      fontFamily: FONT_BODY,
+      fontSize: 8,
+      fontWeight: '900',
+      fill: '#c8f7ff',
+      align: 'center'
+    });
+    fusionHint.anchor.set(0.5);
+    fusionBadge.visible = Boolean(fusionBlueprint);
+    fusionLabel.visible = Boolean(fusionBlueprint);
+    fusionName.visible = Boolean(fusionBlueprint);
+    fusionHint.visible = Boolean(fusionBlueprint);
     const permanence = createText(offer.currentStacks >= 2
       ? translateText('OVERDRIVE: 30% EFFECT')
       : offer.currentStacks > 0
@@ -7094,8 +7142,23 @@ export class PlayScene {
     choose.anchor.set(0.5);
     card.addChild(glow, bg, category);
     if (icon) card.addChild(icon);
-    card.addChild(name, description, doctrine, permanence, holdBadge, choose);
-    card._nodes = { glow, bg, category, icon, name, description, doctrine, permanence, holdBadge, choose };
+    card.addChild(name, description, fusionBadge, fusionLabel, fusionName, fusionHint, doctrine, permanence, holdBadge, choose);
+    card._nodes = {
+      glow,
+      bg,
+      category,
+      icon,
+      name,
+      description,
+      fusionBadge,
+      fusionLabel,
+      fusionName,
+      fusionHint,
+      doctrine,
+      permanence,
+      holdBadge,
+      choose
+    };
     card.on('pointerover', () => this.setTacticalDraftFocus(index));
     card.on('pointertap', () => {
       this.setTacticalDraftFocus(index, { silent: true });
@@ -7287,6 +7350,13 @@ export class PlayScene {
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
       const nodes = card._nodes;
+      const hasFusionBlueprint = Boolean(card._offer?.fusionBlueprints?.length);
+      const fitTextWidth = (node, maxWidth, minimumScale = 0.55) => {
+        if (!node) return;
+        node.scale.set(1);
+        node.updateText?.(false);
+        node.scale.set(Math.min(1, Math.max(minimumScale, maxWidth / Math.max(1, node.width))));
+      };
       if (compact) {
         nodes.category.anchor.set(0, 0.5);
         nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 23);
@@ -7313,6 +7383,26 @@ export class PlayScene {
         nodes.holdBadge.position.set(cardWidth / 2 - 35, -cardHeight / 2 + 20);
         nodes.choose.position.set(cardWidth / 2 - 48, cardHeight / 2 - 20);
         nodes.choose.style.fontSize = 12;
+        if (hasFusionBlueprint) {
+          const badgeWidth = Math.min(208, Math.max(156, cardWidth * 0.34));
+          const badgeHeight = 50;
+          const badgeX = cardWidth / 2 - badgeWidth / 2 - 12;
+          const badgeY = -cardHeight / 2 + badgeHeight / 2 + 10;
+          nodes.fusionBadge.position.set(badgeX, badgeY);
+          nodes.fusionBadge._fusionLayout = { width: badgeWidth, height: badgeHeight, compact: true };
+          nodes.fusionLabel.style.fontSize = 8;
+          nodes.fusionLabel.position.set(badgeX, badgeY - 15);
+          nodes.fusionName.style.fontSize = 11;
+          nodes.fusionName.position.set(badgeX, badgeY);
+          nodes.fusionHint.style.fontSize = 8;
+          nodes.fusionHint.position.set(badgeX, badgeY + 15);
+          fitTextWidth(nodes.name, badgeX - badgeWidth / 2 - nodes.name.x - 12, 0.62);
+          fitTextWidth(nodes.fusionLabel, badgeWidth - 16, 0.62);
+          fitTextWidth(nodes.fusionName, badgeWidth - 16, 0.58);
+          fitTextWidth(nodes.fusionHint, badgeWidth - 16, 0.5);
+        } else {
+          fitTextWidth(nodes.name, cardWidth - 190, 0.62);
+        }
       } else {
         nodes.category.anchor.set(0.5);
         nodes.category.position.set(0, -cardHeight / 2 + 25);
@@ -7325,20 +7415,38 @@ export class PlayScene {
         nodes.name.anchor.set(0.5);
         nodes.name.style.fontSize = 23;
         nodes.name.position.set(0, -cardHeight / 2 + 154);
+        fitTextWidth(nodes.name, cardWidth - 36, 0.62);
         nodes.description.anchor.set(0.5);
         nodes.description.style.fontSize = 15;
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrapWidth = cardWidth - 48;
-        nodes.description.position.set(0, 24);
+        nodes.description.position.set(0, hasFusionBlueprint ? 16 : 24);
         nodes.doctrine.anchor.set(0.5);
         nodes.doctrine.style.fontSize = 10;
-        nodes.doctrine.position.set(0, cardHeight / 2 - 86);
+        nodes.doctrine.position.set(0, cardHeight / 2 - (hasFusionBlueprint ? 76 : 86));
         nodes.permanence.anchor.set(0.5);
         nodes.permanence.style.fontSize = 11;
-        nodes.permanence.position.set(0, cardHeight / 2 - 62);
+        nodes.permanence.position.set(0, cardHeight / 2 - (hasFusionBlueprint ? 54 : 62));
         nodes.holdBadge.position.set(cardWidth / 2 - 38, -cardHeight / 2 + 25);
         nodes.choose.position.set(0, cardHeight / 2 - 27);
         nodes.choose.style.fontSize = 15;
+        if (hasFusionBlueprint) {
+          const badgeWidth = cardWidth - 40;
+          const badgeHeight = 50;
+          const badgeX = 0;
+          const badgeY = cardHeight / 2 - 114;
+          nodes.fusionBadge.position.set(badgeX, badgeY);
+          nodes.fusionBadge._fusionLayout = { width: badgeWidth, height: badgeHeight, compact: false };
+          nodes.fusionLabel.style.fontSize = 9;
+          nodes.fusionLabel.position.set(badgeX, badgeY - 15);
+          nodes.fusionName.style.fontSize = 12;
+          nodes.fusionName.position.set(badgeX, badgeY);
+          nodes.fusionHint.style.fontSize = 8;
+          nodes.fusionHint.position.set(badgeX, badgeY + 15);
+          fitTextWidth(nodes.fusionLabel, badgeWidth - 24, 0.62);
+          fitTextWidth(nodes.fusionName, badgeWidth - 24, 0.58);
+          fitTextWidth(nodes.fusionHint, badgeWidth - 24, 0.5);
+        }
       }
       this.redrawTacticalDraftCard(card);
     });
@@ -7352,7 +7460,10 @@ export class PlayScene {
     const focused = card._draftIndex === state.focusIndex;
     const confirmed = card._offer?.id === state.confirmedId;
     const held = card._offer?.id === this.tacticalDraftHeldId;
-    const accent = Number(card._offer?.color) || 0x37f5ff;
+    const fusionBlueprint = card._offer?.fusionBlueprints?.[0] || null;
+    const completesFusion = Boolean(fusionBlueprint?.completesOnPick);
+    const fusionAccent = Number(fusionBlueprint?.color) || 0xff5bd6;
+    const accent = completesFusion ? fusionAccent : Number(card._offer?.color) || 0x37f5ff;
     const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
     nodes.glow.clear();
     nodes.bg.clear();
@@ -7364,6 +7475,39 @@ export class PlayScene {
     nodes.bg.stroke({ color: confirmed ? 0xffef7e : held ? 0xffd15c : focused ? 0xffffff : accent, width: confirmed ? 3 : held ? 2.2 : focused ? 2.4 : 1.2, alpha: focused || confirmed || held ? 0.96 : 0.55 });
     nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
     nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
+    nodes.fusionBadge.visible = Boolean(fusionBlueprint);
+    nodes.fusionLabel.visible = Boolean(fusionBlueprint);
+    nodes.fusionName.visible = Boolean(fusionBlueprint);
+    nodes.fusionHint.visible = Boolean(fusionBlueprint);
+    nodes.fusionBadge.clear();
+    if (fusionBlueprint && nodes.fusionBadge._fusionLayout) {
+      const fusionLayout = nodes.fusionBadge._fusionLayout;
+      const badgeWidth = fusionLayout.width;
+      const badgeHeight = fusionLayout.height;
+      const badgeAlpha = completesFusion ? 0.95 : focused ? 0.88 : 0.76;
+      nodes.fusionBadge.roundRect(-badgeWidth / 2, -badgeHeight / 2, badgeWidth, badgeHeight, 6);
+      nodes.fusionBadge.fill({ color: completesFusion ? 0x24122e : 0x071d2f, alpha: 0.96 });
+      nodes.fusionBadge.roundRect(-badgeWidth / 2, -badgeHeight / 2, badgeWidth, badgeHeight, 6);
+      nodes.fusionBadge.stroke({
+        color: completesFusion ? 0xffef7e : fusionAccent,
+        width: completesFusion ? 2.2 + pulse * 0.8 : focused ? 1.8 : 1.2,
+        alpha: Math.min(1, badgeAlpha + pulse * 0.12)
+      });
+      const nodeX = badgeWidth / 2 - 11;
+      nodes.fusionBadge.moveTo(-nodeX + 5, 0);
+      nodes.fusionBadge.lineTo(-badgeWidth / 2 + 3, 0);
+      nodes.fusionBadge.moveTo(nodeX - 5, 0);
+      nodes.fusionBadge.lineTo(badgeWidth / 2 - 3, 0);
+      nodes.fusionBadge.stroke({ color: fusionAccent, width: 1.2, alpha: 0.72 });
+      for (const x of [-nodeX, nodeX]) {
+        nodes.fusionBadge.circle(x, 0, completesFusion ? 4.2 : 3.2);
+        nodes.fusionBadge.fill({ color: completesFusion ? 0xffef7e : fusionAccent, alpha: 0.96 });
+        nodes.fusionBadge.circle(x, 0, completesFusion ? 7.4 : 6.2);
+        nodes.fusionBadge.stroke({ color: fusionAccent, width: 1, alpha: 0.52 + pulse * 0.22 });
+      }
+      nodes.fusionLabel.style.fill = completesFusion ? '#fff3a0' : '#8df7ff';
+      nodes.fusionHint.style.fill = completesFusion ? '#d8ffc8' : '#c8f7ff';
+    }
     nodes.choose.text = confirmed ? translateText('LOCKED IN') : translateText('CHOOSE');
     nodes.choose.style.fill = confirmed ? '#fff3a0' : focused ? '#ffffff' : '#b7d4df';
     nodes.holdBadge.visible = held;
@@ -7453,8 +7597,7 @@ export class PlayScene {
     this.tacticalDraftBannedIds.push(offer.id);
     if (this.tacticalDraftHeldId === offer.id) this.tacticalDraftHeldId = null;
     const previousIds = state.offers.map((entry) => entry.id);
-    const consumedIds = this.player?.consumedRunAugmentIds || [];
-    const offers = buildTacticalDraftOffers({
+    const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:ban:${this.tacticalDraftBannedIds.length}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
@@ -7465,9 +7608,6 @@ export class PlayScene {
       excludedIds: previousIds,
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
-    }).map((entry) => ({
-      ...entry,
-      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, entry.id)
     }));
     if (offers.length < 3) {
       this.tacticalDraftBannedIds.pop();
@@ -7512,8 +7652,7 @@ export class PlayScene {
     if (!state?.active || state.confirmedId || !state.inputArmed || state.rescansRemaining <= 0) return false;
     const previousIds = state.offers.map((offer) => offer.id);
     const nextRescanCount = state.rescanCount + 1;
-    const consumedIds = this.player?.consumedRunAugmentIds || [];
-    const offers = buildTacticalDraftOffers({
+    const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:rescan:${nextRescanCount}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
@@ -7524,9 +7663,6 @@ export class PlayScene {
       excludedIds: previousIds,
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
-    }).map((offer) => ({
-      ...offer,
-      doctrineProjection: projectTacticalDoctrine(this.player?.runAugmentIds || [], consumedIds, offer.id)
     }));
     if (offers.length < 3) return false;
     state.cards.forEach((card) => {
@@ -8113,6 +8249,23 @@ export class PlayScene {
         maxStacks: offer.maxStacks,
         fixedScoreRoute: Boolean(offer.fixedScoreRoute),
         descriptionSource: offer.description,
+        fusionBlueprint: offer.fusionBlueprints?.[0] ? {
+          id: offer.fusionBlueprints[0].id,
+          nameSource: offer.fusionBlueprints[0].name,
+          status: offer.fusionBlueprints[0].status,
+          completesOnPick: Boolean(offer.fusionBlueprints[0].completesOnPick),
+          partnerIds: offer.fusionBlueprints[0].partnerIds.slice(),
+          partnerNameSources: offer.fusionBlueprints[0].partnerNames.slice(),
+          ownedPartnerIds: offer.fusionBlueprints[0].ownedPartnerIds.slice(),
+          missingPartnerIds: offer.fusionBlueprints[0].missingPartnerIds.slice()
+        } : null,
+        fusionLabelText: state.cards?.[index]?._nodes?.fusionLabel?.text || null,
+        fusionNameText: state.cards?.[index]?._nodes?.fusionName?.text || null,
+        fusionHintText: state.cards?.[index]?._nodes?.fusionHint?.text || null,
+        fusionBadgeBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionBadge) : null,
+        fusionLabelBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionLabel) : null,
+        fusionNameBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionName) : null,
+        fusionHintBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionHint) : null,
         doctrinePreviewText: state.cards?.[index]?._nodes?.doctrine?.text || null,
         doctrinePreviewBounds: boundsOf(state.cards?.[index]?._nodes?.doctrine),
         doctrineProjection: offer.doctrineProjection ? {

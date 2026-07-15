@@ -21,7 +21,11 @@ const SOURCE = Object.freeze([
   'SHIELD + POINT DEFENSE. A broken shield dumps its remaining charge into the interception grid. Nearby hostile fire is purged immediately and the point-defense ring stays online for a short counterattack window.',
   'SKY VERDICT',
   'Bomb impacts spend orbital charges at the blast marker.',
-  'BOMB + ORBITAL STRIKE. Orbital charges stop choosing random targets. Each bomb detonation spends one charge and calls the beam onto that exact blast marker, turning two automatic systems into one deliberate verdict.'
+  'BOMB + ORBITAL STRIKE. Orbital charges stop choosing random targets. Each bomb detonation spends one charge and calls the beam onto that exact blast marker, turning two automatic systems into one deliberate verdict.',
+  'FUSION BLUEPRINT',
+  'COMPLETES FUSION',
+  'PAIR WITH {augment}',
+  'PARTNER ONLINE: {augment}'
 ]);
 
 const TRANSLATIONS = Object.freeze({
@@ -48,7 +52,11 @@ const TRANSLATIONS = Object.freeze({
     'SCHILD + PUNKTVERTEIDIGUNG. Ein gebrochener Schild speist seine Restladung ins Abfangnetz. Nahes Feindfeuer wird sofort gelöscht und der Punktverteidigungsring bleibt für ein kurzes Konterfenster online.',
     'HIMMELSURTEIL',
     'Bombentreffer verbrauchen Orbitalladungen an der Explosionsmarke.',
-    'BOMBE + ORBITALSCHLAG. Orbitalladungen wählen keine Zufallsziele mehr. Jede Bombendetonation verbraucht eine Ladung und ruft den Strahl exakt auf die Explosionsmarke, sodass zwei automatische Systeme zu einem bewussten Urteil werden.'
+    'BOMBE + ORBITALSCHLAG. Orbitalladungen wählen keine Zufallsziele mehr. Jede Bombendetonation verbraucht eine Ladung und ruft den Strahl exakt auf die Explosionsmarke, sodass zwei automatische Systeme zu einem bewussten Urteil werden.',
+    'FUSIONSBAUPLAN',
+    'FUSION WIRD VOLLENDET',
+    'MIT {augment} KOMBINIEREN',
+    'PARTNER AKTIV: {augment}'
   ]),
   es: Object.freeze([
     'PROTOCOLO DE FUSIÓN ACTIVO',
@@ -73,7 +81,11 @@ const TRANSLATIONS = Object.freeze({
     'ESCUDO + DEFENSA PUNTUAL. Un escudo roto vierte su carga restante en la red de intercepción. El fuego hostil cercano se purga al instante y el anillo defensivo sigue activo durante una breve ventana de contraataque.',
     'VEREDICTO CELESTE',
     'Los impactos de bomba gastan cargas orbitales en la marca de explosión.',
-    'BOMBA + ATAQUE ORBITAL. Las cargas orbitales dejan de elegir objetivos al azar. Cada detonación gasta una carga y llama el rayo sobre esa marca exacta, convirtiendo dos sistemas automáticos en un veredicto deliberado.'
+    'BOMBA + ATAQUE ORBITAL. Las cargas orbitales dejan de elegir objetivos al azar. Cada detonación gasta una carga y llama el rayo sobre esa marca exacta, convirtiendo dos sistemas automáticos en un veredicto deliberado.',
+    'PLANO DE FUSIÓN',
+    'COMPLETA LA FUSIÓN',
+    'COMBINA CON {augment}',
+    'SOCIO ACTIVO: {augment}'
   ]),
   'pt-BR': Object.freeze([
     'PROTOCOLO DE FUSÃO ATIVO',
@@ -98,7 +110,11 @@ const TRANSLATIONS = Object.freeze({
     'ESCUDO + DEFESA PONTUAL. Um escudo quebrado despeja a carga restante na rede de interceptação. O fogo hostil próximo é eliminado na hora e o anel defensivo fica ativo por uma breve janela de contra-ataque.',
     'VEREDITO CELESTE',
     'Impactos de bomba gastam cargas orbitais na marca da explosão.',
-    'BOMBA + ATAQUE ORBITAL. As cargas orbitais param de escolher alvos aleatórios. Cada detonação gasta uma carga e chama o feixe exatamente sobre a marca da explosão, unindo dois sistemas automáticos em um veredito deliberado.'
+    'BOMBA + ATAQUE ORBITAL. As cargas orbitais param de escolher alvos aleatórios. Cada detonação gasta uma carga e chama o feixe exatamente sobre a marca da explosão, unindo dois sistemas automáticos em um veredito deliberado.',
+    'PROJETO DE FUSÃO',
+    'COMPLETA A FUSÃO',
+    'COMBINE COM {augment}',
+    'PARCEIRO ATIVO: {augment}'
   ]),
   ru: Object.freeze([
     'ПРОТОКОЛ СЛИЯНИЯ АКТИВЕН',
@@ -123,7 +139,11 @@ const TRANSLATIONS = Object.freeze({
     'ЩИТ + ТОЧЕЧНАЯ ЗАЩИТА. Разбитый щит отдает остаток заряда сети перехвата. Вражеский огонь рядом сразу исчезает, а защитное кольцо остается включенным для короткой контратаки.',
     'НЕБЕСНЫЙ ПРИГОВОР',
     'Взрыв бомбы тратит орбитальный заряд точно на отметке удара.',
-    'БОМБА + ОРБИТАЛЬНЫЙ УДАР. Орбитальные заряды больше не выбирают случайные цели. Каждый взрыв бомбы тратит один заряд и вызывает луч точно на отметку взрыва, объединяя две автоматические системы в один осознанный приговор.'
+    'БОМБА + ОРБИТАЛЬНЫЙ УДАР. Орбитальные заряды больше не выбирают случайные цели. Каждый взрыв бомбы тратит один заряд и вызывает луч точно на отметку взрыва, объединяя две автоматические системы в один осознанный приговор.',
+    'СХЕМА СЛИЯНИЯ',
+    'ЗАВЕРШАЕТ СЛИЯНИЕ',
+    'СОЧЕТАТЬ С {augment}',
+    'ПАРТНЁР АКТИВЕН: {augment}'
   ]),
   'zh-CN': Object.freeze([
     '融合协议已上线',
@@ -148,7 +168,11 @@ const TRANSLATIONS = Object.freeze({
     '护盾 + 点防御。破裂的护盾会把剩余能量注入拦截网。附近敌方火力会立即被清除，点防御环则会继续运行，提供短暂的反击窗口。',
     '天穹裁决',
     '炸弹命中会在爆点标记处消耗轨道充能。',
-    '炸弹 + 轨道打击。轨道充能不再随机选择目标。每次炸弹爆炸都会消耗一层充能，并将光束召至精确爆点，让两套自动系统合为一次主动裁决。'
+    '炸弹 + 轨道打击。轨道充能不再随机选择目标。每次炸弹爆炸都会消耗一层充能，并将光束召至精确爆点，让两套自动系统合为一次主动裁决。',
+    '融合蓝图',
+    '完成融合',
+    '与 {augment} 组合',
+    '搭档已上线：{augment}'
   ]),
   ko: Object.freeze([
     '융합 프로토콜 가동',
@@ -173,7 +197,11 @@ const TRANSLATIONS = Object.freeze({
     '방어막 + 근접 방어. 깨진 방어막이 남은 전력을 요격망에 쏟습니다. 주변 적 탄환을 즉시 제거하고, 짧은 반격 시간 동안 근접 방어 고리를 유지합니다.',
     '천공의 판결',
     '폭탄이 터진 지점에서 궤도 충전을 소모합니다.',
-    '폭탄 + 궤도 타격. 궤도 충전이 더는 무작위 표적을 고르지 않습니다. 폭탄 폭발마다 충전 하나를 소모해 정확한 폭발 지점에 광선을 호출하며, 두 자동 체계를 하나의 의도적인 판결로 결합합니다.'
+    '폭탄 + 궤도 타격. 궤도 충전이 더는 무작위 표적을 고르지 않습니다. 폭탄 폭발마다 충전 하나를 소모해 정확한 폭발 지점에 광선을 호출하며, 두 자동 체계를 하나의 의도적인 판결로 결합합니다.',
+    '융합 설계도',
+    '융합 완성',
+    '{augment}와 조합',
+    '파트너 가동: {augment}'
   ]),
   ja: Object.freeze([
     'フュージョン・プロトコル起動',
@@ -198,7 +226,11 @@ const TRANSLATIONS = Object.freeze({
     'シールド + ポイント防御。破壊されたシールドが残存電力を迎撃網へ流し込みます。周囲の敵弾を即座に消し、短い反撃時間だけポイント防御リングを維持します。',
     'スカイ・ヴァーディクト',
     '爆弾の着弾地点で軌道チャージを消費します。',
-    '爆弾 + 軌道攻撃。軌道チャージはランダムな標的を選ばなくなります。爆弾が爆発するたびにチャージを1つ消費し、その正確な爆心へビームを呼び、2つの自動システムを1つの意図的な裁定へ変えます。'
+    '爆弾 + 軌道攻撃。軌道チャージはランダムな標的を選ばなくなります。爆弾が爆発するたびにチャージを1つ消費し、その正確な爆心へビームを呼び、2つの自動システムを1つの意図的な裁定へ変えます。',
+    'フュージョン設計図',
+    'フュージョン完成',
+    '{augment} と組み合わせる',
+    'パートナー稼働中: {augment}'
   ])
 });
 

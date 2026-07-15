@@ -179,6 +179,36 @@ export function getActiveTacticalFusionProtocols(selectedIds = []) {
   return TACTICAL_FUSION_PROTOCOLS.filter((fusion) => fusion.requiredIds.every((id) => selected.has(id)));
 }
 
+export function getTacticalFusionBlueprints(augmentId, selectedIds = []) {
+  const selected = new Set(Array.isArray(selectedIds) ? selectedIds : []);
+  return TACTICAL_FUSION_PROTOCOLS
+    .filter((fusion) => fusion.requiredIds.includes(augmentId))
+    .map((fusion) => {
+      const partnerIds = fusion.requiredIds.filter((id) => id !== augmentId);
+      const ownedPartnerIds = partnerIds.filter((id) => selected.has(id));
+      const missingPartnerIds = partnerIds.filter((id) => !selected.has(id));
+      const alreadyActive = fusion.requiredIds.every((id) => selected.has(id));
+      const completesOnPick = !alreadyActive
+        && !selected.has(augmentId)
+        && partnerIds.every((id) => selected.has(id));
+      return Object.freeze({
+        id: fusion.id,
+        name: fusion.name,
+        color: fusion.color,
+        requiredIds: fusion.requiredIds,
+        partnerIds: Object.freeze(partnerIds),
+        partnerNames: Object.freeze(partnerIds.map((id) => getTacticalDraftMeta(id)?.name || id)),
+        ownedPartnerIds: Object.freeze(ownedPartnerIds),
+        missingPartnerIds: Object.freeze(missingPartnerIds),
+        alreadyActive,
+        completesOnPick,
+        status: alreadyActive ? 'active' : completesOnPick ? 'completes' : 'blueprint'
+      });
+    })
+    .filter((blueprint) => !blueprint.alreadyActive)
+    .sort((a, b) => Number(b.completesOnPick) - Number(a.completesOnPick));
+}
+
 export function getTacticalDraftMeta(id) {
   const augment = getTacticalDraftAugment(id);
   const powerup = getPowerupMeta(id);
