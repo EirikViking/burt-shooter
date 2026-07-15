@@ -55,6 +55,7 @@ const {
 const THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 const ACHIEVEMENTS_KEY = 'nova_swarm_achievements_v1';
 const SECTOR_RECORDS_KEY = 'novaSwarm.sectorStartChallengeRecords.v1';
+const DAILY_SIGNAL_RECORDS_KEY = 'novaSwarm.dailySignalRecords.v1';
 
 function setStorage(storage) {
   globalThis.window.localStorage = storage;
@@ -118,6 +119,16 @@ function seedUnscopedLegacy(storage) {
       30: { startSector: 30, scoreEarned: 31000, highestSectorReached: 32 }
     }
   }));
+  storage.rawSet(DAILY_SIGNAL_RECORDS_KEY, JSON.stringify({
+    version: 2,
+    bestAttempts: {
+      '2026-07-15:DCS1-TEST': { dailyKey: '2026-07-15', rulesHash: 'DCS1-TEST', score: 7200, sectorReached: 7, runCleared: false }
+    },
+    bestClears: {},
+    attemptCounts: {
+      '2026-07-15:DCS1-TEST': { count: 2 }
+    }
+  }));
 }
 
 function assertScopedCopy(storage, profile, rawKey, label) {
@@ -136,6 +147,7 @@ function runUnscopedMigrationClaimTest() {
   assert.equal(installed.legacyMigration.copiedKeys.includes(HANGAR_PROGRESS_KEY), true, 'hangar progress should migrate');
   assert.equal(installed.legacyMigration.copiedKeys.includes(THREAT_DISCOVERY_KEY), true, 'Codex progress should migrate');
   assert.equal(installed.legacyMigration.copiedKeys.includes(SECTOR_RECORDS_KEY), true, 'Sector Run records should migrate');
+  assert.equal(installed.legacyMigration.copiedKeys.includes(DAILY_SIGNAL_RECORDS_KEY), true, 'Daily Signal records should migrate');
   assert.equal(installed.legacyMigration.copiedKeys.includes(ACHIEVEMENTS_KEY), true, 'local achievement mirror should migrate');
 
   const scopedHangar = assertScopedCopy(storage, mainProfile, HANGAR_PROGRESS_KEY, 'main profile');
@@ -148,6 +160,9 @@ function runUnscopedMigrationClaimTest() {
   assert.equal(scopedThreats.items.powerups.prism_splitter.name, 'Prism Splitter');
   const scopedRecords = assertScopedCopy(storage, mainProfile, SECTOR_RECORDS_KEY, 'main profile');
   assert.equal(scopedRecords.byCheckpoint['30'].highestSectorReached, 32);
+  const scopedDailyRecords = assertScopedCopy(storage, mainProfile, DAILY_SIGNAL_RECORDS_KEY, 'main profile');
+  assert.equal(scopedDailyRecords.bestAttempts['2026-07-15:DCS1-TEST'].sectorReached, 7);
+  assert.equal(scopedDailyRecords.attemptCounts['2026-07-15:DCS1-TEST'].count, 2);
   const scopedAchievements = assertScopedCopy(storage, mainProfile, ACHIEVEMENTS_KEY, 'main profile');
   assert.equal(scopedAchievements.unlocked.includes('ACH_EARLY_PILOT'), true, 'First Ranked Run mirror should survive migration');
 
@@ -156,6 +171,7 @@ function runUnscopedMigrationClaimTest() {
   assert.equal(secondInstalled.legacyMigration.skipped, true, 'legacy unscoped import should be claimed once');
   assert.equal(secondInstalled.legacyMigration.reason, 'legacy_unscoped_already_claimed');
   assert.equal(storage.rawGet(getProfileScopedStorageKey(HANGAR_PROGRESS_KEY, secondProfile)), null, 'second Steam profile must not inherit claimed legacy progress');
+  assert.equal(storage.rawGet(getProfileScopedStorageKey(DAILY_SIGNAL_RECORDS_KEY, secondProfile)), null, 'second Steam profile must not inherit claimed Daily records');
   assert.equal(readHangarProgressState().bestSector, 1, 'second Steam profile should read safe fresh defaults');
 }
 

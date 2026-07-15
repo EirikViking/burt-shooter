@@ -409,6 +409,12 @@ async function captureLanguage(page, language, index) {
 
   await page.evaluate(() => {
     const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    menu.dailySignalBestClear = {
+      score: 123456,
+      runElapsedSeconds: 599,
+      runCleared: true
+    };
+    menu.dailySignalBest = menu.dailySignalBestClear;
     menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 10000 });

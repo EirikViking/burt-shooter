@@ -1083,22 +1083,27 @@ export class GameOverScene {
     const reached = Math.max(1, Math.floor(Number(summary.sectorReached || summary.levelReached || this.finalLevel || 1) || 1));
     const lines = [];
     if (summary.runCleared) {
-      lines.push(summary.dailySignalNewClearBest
-        ? translateText('NEW BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear?.score || this.finalScore) })
-        : translateText('BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear?.score || this.finalScore) }));
-      lines.push(translateText('THIS RUN: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) }));
+      if (bestClear) {
+        const bestClearLine = summary.dailySignalNewClearBest
+          ? translateText('NEW BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear.score) })
+          : translateText('BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear.score) });
+        lines.push(`${bestClearLine} // ${translateText('TIME')} ${this.formatElapsedTime(bestClear.runElapsedSeconds)}`);
+      }
+      lines.push(`${translateText('THIS RUN: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) })} // ${translateText('TIME')} ${this.formatElapsedTime(attempt?.runElapsedSeconds ?? summary.runElapsedSeconds)}`);
       lines.push(translateText('CONTRACT CLEARED // SECTOR {sector}', { sector: contract.finishSector || reached }));
     } else {
-      const bestAttemptSector = Math.max(1, Math.floor(Number(bestAttempt?.sectorReached || attempt?.sectorReached || reached) || 1));
-      lines.push(summary.dailySignalNewAttemptBest
-        ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', {
-          sector: bestAttemptSector,
-          score: this.formatScoreNumber(bestAttempt?.score || this.finalScore)
-        })
-        : translateText('BEST ATTEMPT: S{sector} // {score}', {
-          sector: bestAttemptSector,
-          score: this.formatScoreNumber(bestAttempt?.score || attempt?.score || 0)
-        }));
+      if (bestAttempt) {
+        const bestAttemptSector = Math.max(1, Math.floor(Number(bestAttempt.sectorReached) || 1));
+        lines.push(summary.dailySignalNewAttemptBest
+          ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', {
+            sector: bestAttemptSector,
+            score: this.formatScoreNumber(bestAttempt.score)
+          })
+          : translateText('BEST ATTEMPT: S{sector} // {score}', {
+            sector: bestAttemptSector,
+            score: this.formatScoreNumber(bestAttempt.score)
+          }));
+      }
       lines.push(translateText('THIS RUN: S{sector} // {score}', {
         sector: reached,
         score: this.formatScoreNumber(this.finalScore || summary.score || 0)
@@ -4581,9 +4586,13 @@ export class GameOverScene {
     }
     if (row.id === 'dailyBestClear') {
       const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
-      return row.rawValue?.newBest
+      const bestLine = row.rawValue?.newBest
         ? translateText('NEW BEST CLEAR: {score}', { score })
         : translateText('BEST CLEAR: {score}', { score });
+      const bestTime = Math.max(0, Math.floor(Number(row.rawValue?.time) || 0));
+      return bestTime > 0
+        ? `${bestLine} // ${translateText('TIME')} ${this.formatElapsedTime(bestTime)}`
+        : bestLine;
     }
     if (row.id === 'dailyFlightLog') {
       const statuses = Array.isArray(row.rawValue?.statuses) ? row.rawValue.statuses : [];

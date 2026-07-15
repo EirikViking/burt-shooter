@@ -2100,10 +2100,10 @@ export class MenuScene {
       const bestClear = this.dailySignalBestClear || getDailySignalBestClear(contract);
       const flightLog = this.dailySignalFlightLog || getDailySignalFlightLog();
       const recordLine = bestClear
-        ? translateText('BEST CLEAR {score} // RESET IN {time}', {
+        ? `${translateText('BEST CLEAR {score} // RESET IN {time}', {
           score: this.formatDailySignalScore(bestClear.score),
           time: this.formatDailySignalResetTime(contract)
-        })
+        })} // ${translateText('TIME')} ${this.formatDailySignalRunTime(bestClear.runElapsedSeconds)}`
         : bestAttempt
           ? translateText('BEST ATTEMPT S{sector} // {score} // RESET IN {time}', {
             sector: bestAttempt.sectorReached,
@@ -4920,6 +4920,13 @@ export class MenuScene {
 
   formatDailySignalScore(value) {
     return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+  }
+
+  formatDailySignalRunTime(value) {
+    const totalSeconds = Math.max(0, Math.floor(Number(value) || 0));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
   }
 
   formatDailySignalResetTime(contract = this.dailySignalContract) {

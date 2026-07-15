@@ -661,6 +661,7 @@ function buildGameTextState(game) {
     highscoreChase: game?.highscoreChase ? {
       targetScore: Math.max(0, Math.floor(Number(game.highscoreChase.targetScore) || 0)),
       targetSector: Math.max(0, Math.floor(Number(game.highscoreChase.targetSector) || 0)),
+      targetTimeSeconds: Math.max(0, Math.floor(Number(game.highscoreChase.targetTimeSeconds) || 0)),
       goalMode: game.highscoreChase.goalMode || 'score',
       bestAttemptSector: Math.max(0, Math.floor(Number(game.highscoreChase.bestAttemptSector) || 0)),
       hasDailyClear: Boolean(game.highscoreChase.hasDailyClear),

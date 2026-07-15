@@ -487,6 +487,13 @@ export class HUD {
     return formatNumber(score);
   }
 
+  formatRunTime(seconds) {
+    const totalSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainder = totalSeconds % 60;
+    return `${minutes}:${String(remainder).padStart(2, '0')}`;
+  }
+
   updateHighscoreChase() {
     if (!this.highscoreChaseGroup) return;
     const chase = this.game?.getHighscoreChaseState?.() || null;
@@ -494,6 +501,7 @@ export class HUD {
     const rawScore = Math.max(0, Math.floor(Number(this.game?.score) || 0));
     const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
     const targetSector = Math.max(1, Math.floor(Number(chase?.targetSector) || 1));
+    const targetTimeSeconds = Math.max(0, Math.floor(Number(chase?.targetTimeSeconds) || 0));
     const isDailyClearGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'daily_clear';
     const isDailyScoreGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'score';
     const syncingTarget = Boolean(chase?.syncingTarget);
@@ -504,6 +512,7 @@ export class HUD {
       chase?.goalMode || 'score',
       target,
       targetSector,
+      targetTimeSeconds,
       syncingTarget ? 1 : 0,
       sectorKey,
       rawScore
@@ -540,6 +549,7 @@ export class HUD {
       chase?.goalMode || 'score',
       target,
       targetSector,
+      targetTimeSeconds,
       score,
       sectorKey,
       syncingTarget ? 1 : 0,
@@ -570,6 +580,8 @@ export class HUD {
       })
       : isDailyScoreGoal && surpassed
         ? translateText('SCORE READY // CLEAR SECTOR {sector}', { sector: targetSector })
+      : isDailyScoreGoal && targetTimeSeconds > 0
+        ? `= ${this.formatScore(target)} // ${translateText('TIME')} < ${this.formatRunTime(targetTimeSeconds)}`
       : surpassed
         ? translateText('OLD SCORE HUMILIATED')
         : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });

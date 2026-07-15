@@ -673,7 +673,10 @@ try {
     const play = game?.scenes?.play;
     game.addScore(50000, 'baseScore');
     game.level = 10;
-    if (play) play.bossKills = 10;
+    if (play) {
+      play.bossKills = 10;
+      play.gameTime = 90;
+    }
     const started = play?.beginDailySignalFinish?.({ sectorCleared: 10 }) || false;
     const interlude = play?.overrunMilestoneInterlude;
     if (interlude) {
@@ -727,15 +730,64 @@ try {
     summarizeThreatDiscoveryProgress(clearedDailyStorage.threatDiscovery),
     summarizeThreatDiscoveryProgress(beforeDaily.threatDiscovery)
   );
+  assert.match(clearedDaily.gameOver?.leaderboardStatus || '', /BEST CLEAR:[^\n]*TIME\s+\d+:/i, 'clear result must expose the completion-time tie-break');
+  const unsavedDailyCopy = await page.evaluate(() => {
+    const game = window.__game;
+    const scene = game?.scenes?.gameOver;
+    const original = game?.runSummary;
+    const unsaved = {
+      ...original,
+      dailySignalBest: null,
+      dailySignalBestAttempt: null,
+      dailySignalBestClear: null,
+      dailySignalNewBest: false,
+      dailySignalNewAttemptBest: false,
+      dailySignalNewClearBest: false,
+      dailySignalRecordSaveFailed: true
+    };
+    game.runSummary = { ...unsaved, runCleared: false, sectorReached: 4, levelReached: 4 };
+    const failed = scene?.getDailySignalResultLines?.().join('\n') || '';
+    game.runSummary = { ...unsaved, runCleared: true, sectorReached: 10, levelReached: 10 };
+    const cleared = scene?.getDailySignalResultLines?.().join('\n') || '';
+    game.runSummary = original;
+    return { failed, cleared };
+  });
+  assert.doesNotMatch(unsavedDailyCopy.failed, /BEST ATTEMPT|BEST CLEAR/i, 'an unsaved failed run must not be labeled as a stored best');
+  assert.doesNotMatch(unsavedDailyCopy.cleared, /BEST ATTEMPT|BEST CLEAR/i, 'an unsaved clear must not be labeled as a stored best');
+  assert.match(unsavedDailyCopy.failed, /THIS RUN:[\s\S]*SAVE FAILED/i);
+  assert.match(unsavedDailyCopy.cleared, /THIS RUN:[\s\S]*SAVE FAILED/i);
   await page.screenshot({ path: path.join(outputDir, 'daily-signal-cleared-sector-10.png'), fullPage: false });
 
-  await page.waitForTimeout(500);
-  await page.keyboard.press('Enter');
+  await page.evaluate(() => window.__game?.showMenu?.());
+  await waitForScene(page, 'menu');
+  await page.evaluate(() => {
+    const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
+  });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 15000 });
+  const clearedDailyMenu = await readState(page);
+  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /BEST CLEAR[\s\S]*TIME\s+1:30/i, 'stored clear menu briefing must expose the time tie-break');
+  await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-cleared.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
   const improveDaily = await waitForScene(page, 'play');
   assert.equal(improveDaily.runMode, RUN_MODES.DAILY_SIGNAL);
   assert.equal(improveDaily.highscoreChase?.goalMode, 'score', 'after the first clear, Daily HUD should switch to the best-clear score chase');
   assert.equal(improveDaily.highscoreChase?.hasDailyClear, true);
   assert.equal(improveDaily.highscoreChase?.targetScore, clearedDailySummary.summary?.dailySignalBestClear?.score);
+  assert.equal(improveDaily.highscoreChase?.targetTimeSeconds, clearedDailySummary.summary?.dailySignalBestClear?.runElapsedSeconds);
+  const tieBreakState = await page.evaluate(() => {
+    const game = window.__game;
+    const hud = game?.scenes?.play?.hud;
+    game.score = Math.max(0, Number(game.highscoreChase?.targetScore) || 0);
+    hud?.updateHighscoreChase?.();
+    return {
+      target: hud?.highscoreChaseTarget?.text || '',
+      gap: hud?.highscoreChaseGap?.text || ''
+    };
+  });
+  assert.match(tieBreakState.target, /BEAT/i);
+  assert.match(tieBreakState.gap, /=\s*[\d,]+.*TIME\s*</i, 'equal-score Daily clears must expose the faster-time tie-break');
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-tie-break-hud.png'), fullPage: false });
   const scoreReadyState = await page.evaluate(() => {
     const game = window.__game;
     const hud = game?.scenes?.play?.hud;

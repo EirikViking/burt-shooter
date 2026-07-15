@@ -779,10 +779,14 @@ export class Game {
     const targetSector = isDailySignal
       ? Math.max(1, Math.floor(Number(dailySignalContract?.finishSector) || 10))
       : null;
+    const targetTimeSeconds = isDailySignal && dailyBestClear
+      ? Math.max(0, Math.floor(Number(dailyBestClear.runElapsedSeconds) || 0))
+      : null;
     const goalMode = isDailySignal && !dailyBestClear ? 'daily_clear' : 'score';
     return {
       targetScore,
       targetSector,
+      targetTimeSeconds,
       goalMode,
       bestAttemptSector: isDailySignal ? Math.max(0, Math.floor(Number(dailyBestAttempt?.sectorReached) || 0)) : null,
       hasDailyClear: Boolean(dailyBestClear),
@@ -848,6 +852,7 @@ export class Game {
     return this.highscoreChase || {
       targetScore: 0,
       targetSector: null,
+      targetTimeSeconds: null,
       goalMode: 'score',
       bestAttemptSector: null,
       hasDailyClear: false,

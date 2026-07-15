@@ -387,14 +387,15 @@ export function getDailySignalFlightLog({
   const archiveClears = new Set([...clearsByDay.keys()]).size;
   let streak = 0;
   let atRisk = false;
-  let streakIndex = entries.length - 1;
-  if (entries[streakIndex]?.status !== 'cleared' && entries[streakIndex - 1]?.status === 'cleared') {
+  const dailyKeyAtOffset = (offset) => new Date(endMs - offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let streakOffset = 0;
+  if (!clearsByDay.has(endKey) && clearsByDay.has(dailyKeyAtOffset(1))) {
     atRisk = true;
-    streakIndex -= 1;
+    streakOffset = 1;
   }
-  while (streakIndex >= 0 && entries[streakIndex]?.status === 'cleared') {
+  while (streakOffset < DAILY_SIGNAL_RECORD_RETENTION_DAYS && clearsByDay.has(dailyKeyAtOffset(streakOffset))) {
     streak += 1;
-    streakIndex -= 1;
+    streakOffset += 1;
   }
   return {
     days: dayCount,
