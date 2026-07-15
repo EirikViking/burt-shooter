@@ -75,6 +75,7 @@ const GAME_OVER_EFFECT_PROFILES = Array.from({ length: GAME_OVER_EFFECT_COUNT },
 
 const RUN_REPORT_SECTION_LABELS = Object.freeze({
   run: 'Run',
+  dailySignal: 'Daily Signal Contract',
   combat: 'Combat',
   survival: 'Survival',
   rewards: 'Run Progress'
@@ -104,7 +105,12 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   tacticalDirectives: 'SIDE DIRECTIVES',
   aceBounties: 'ACE BOUNTIES',
   nemesisProtocols: 'NEMESIS PROTOCOLS',
-  pilotOrders: 'PILOT ORDERS'
+  pilotOrders: 'PILOT ORDERS',
+  dailyDate: 'UTC Date',
+  dailyRules: 'Rules fingerprint',
+  dailyTemplate: 'Route directive',
+  dailyFinish: 'Finish sector',
+  dailyRecord: 'Daily local best'
 });
 
 function formatUnlockRequirementProgress(item) {
@@ -360,6 +366,23 @@ export class GameOverScene {
   }
 
   getSubmittedLevelReached() {
+    if (this.isDailySignalResult()) {
+      const summary = this.game?.runSummary || {};
+      if (summary.runCleared) {
+        return Math.max(1, Math.floor(Number(
+          summary.dailySignalFinishSector ||
+          summary.dailySignalContract?.finishSector ||
+          this.game?.dailySignalContract?.finishSector ||
+          summary.sectorReached ||
+          this.game?.level ||
+          10
+        ) || 10));
+      }
+      const failedRunValues = [summary.sectorReached, summary.levelReached, this.finalLevel, this.game?.level]
+        .map((value) => Math.floor(Number(value)))
+        .filter((value) => Number.isFinite(value) && value > 0);
+      return Math.max(1, ...failedRunValues);
+    }
     const play = this.game?.scenes?.play || null;
     const values = [
       this.game?.runSummary?.levelReached,
@@ -431,7 +454,9 @@ export class GameOverScene {
     this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
       ? this.game.getLeaderboardAdapter()
       : createLeaderboardAdapter();
-    await this.leaderboardAdapter.refreshAvailability();
+    if (!this.isDailySignalResult()) {
+      await this.leaderboardAdapter.refreshAvailability();
+    }
     this.leaderboardRuntime = this.leaderboardAdapter.getRuntimeSummary();
     this.isRankedRun = typeof this.game.isScoreSubmissionAllowed === 'function'
       ? this.game.isScoreSubmissionAllowed()
@@ -479,7 +504,9 @@ export class GameOverScene {
     this.runbackProgressSummary = this.createRunbackProgressSummary(currentProgress);
 
     // Generate unique submissionId for this run (reused across retries)
-    this.submissionId = generateUUID();
+    this.submissionId = this.isDailySignalResult()
+      ? (this.game?.runSummary?.dailySignalAttemptId || this.game?.dailySignalAttemptId || generateUUID())
+      : generateUUID();
     console.log('[GameOver] Generated submissionId:', this.submissionId);
 
     const { width, height } = this.game.app.screen;
@@ -936,11 +963,18 @@ export class GameOverScene {
     return !this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START;
   }
 
+  isDailySignalResult() {
+    return this.game?.runSummary?.runMode === RUN_MODES.DAILY_SIGNAL || this.game?.runMode === RUN_MODES.DAILY_SIGNAL;
+  }
+
   isResultActionStage() {
     return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
   }
 
   getLocalPlacementLine() {
+    if (this.isDailySignalResult()) {
+      return this.getDailySignalResultLines()[0] || translateText('DAILY SIGNAL // LOCAL RECORD');
+    }
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN');
     }
@@ -964,6 +998,7 @@ export class GameOverScene {
   }
 
   getGlobalPlacementLine() {
+    if (this.isDailySignalResult()) return translateText('PUBLIC DAILY BOARD: NOT ENABLED');
     if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
     if (!this.isRankedRun) return translateText('Global: Scout unranked - no submission');
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
@@ -1010,6 +1045,9 @@ export class GameOverScene {
   }
 
   getLeaderboardPlacementLines() {
+    if (this.isDailySignalResult()) {
+      return this.getDailySignalResultLines();
+    }
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeResultLines();
     }
@@ -1023,9 +1061,36 @@ export class GameOverScene {
   }
 
   getUnrankedScoreBlockedText() {
-    return this.game?.runMode === RUN_MODES.SECTOR_START
+    return this.isDailySignalResult()
+      ? translateText('DAILY SIGNAL - LOCAL UTC CHALLENGE - NO PUBLIC SUBMISSION')
+      : this.game?.runMode === RUN_MODES.SECTOR_START
       ? translateText('SECTOR RUN - MAIN SCORE NOT LOGGED - NO ACHIEVEMENTS')
       : translateText('SCOUT RUN - UNRANKED LOCAL SCORE ONLY');
+  }
+
+  getDailySignalResultLines() {
+    const summary = this.game?.runSummary || {};
+    const contract = summary.dailySignalContract || this.game?.dailySignalContract || {};
+    const attempt = summary.dailySignalAttempt || null;
+    const best = summary.dailySignalBest || null;
+    const reached = Math.max(1, Math.floor(Number(summary.sectorReached || summary.levelReached || this.finalLevel || 1) || 1));
+    const lines = [
+      summary.dailySignalNewBest
+        ? translateText('NEW DAILY SIGNAL BEST: {score}', { score: this.formatScoreNumber(best?.score || this.finalScore) })
+        : translateText('DAILY SIGNAL BEST: {score}', { score: this.formatScoreNumber(best?.score || 0) }),
+      translateText('THIS RUN: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) }),
+      summary.runCleared
+        ? translateText('CONTRACT CLEARED // SECTOR {sector}', { sector: contract.finishSector || reached })
+        : translateText('REACHED SECTOR {sector}', { sector: reached }),
+      translateText('LOCAL UTC RECORD // NO PUBLIC SUBMISSION')
+    ];
+    if (!summary.dailySignalContractValid) {
+      lines.push(translateText('PRACTICE RESULT // CONTRACT VALIDITY FAILED'));
+    }
+    if (summary.dailySignalRecordSaveFailed) {
+      lines.push(translateText('LOCAL RECORD SAVE FAILED // THIS RUN WAS NOT STORED'));
+    }
+    return lines;
   }
 
   getScoutRunBestLine() {
@@ -1306,6 +1371,14 @@ export class GameOverScene {
   getRunbackRunSummaryText() {
     const summary = this.game?.runSummary || {};
     const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
+    if (this.isDailySignalResult()) {
+      const contract = summary.dailySignalContract || {};
+      return [
+        translateText('DAILY SIGNAL // {date}', { date: contract.dailyKey || 'UTC' }),
+        `${translateText('LOANER')}: ${contract.loanerShipName || summary.shipName || ''}`,
+        `${translateText('SECTOR')} ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)}`
+      ].filter(Boolean).join('\n');
+    }
     if (this.isSectorStartChallengeResult()) {
       const checkpoint = summary.sectorStartCheckpoint || this.game?.sectorStartCheckpoint || this.finalLevel || 1;
       return [
@@ -1334,6 +1407,7 @@ export class GameOverScene {
   }
 
   createRunbackRankProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isDailySignalResult()) return translateText('DAILY SIGNAL: NO CAREER XP OR RANKED PROGRESS');
     if (this.isSectorStartChallengeResult()) return '';
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
       return translateText('SCOUT RUN: NO CAREER XP OR RANKED PROGRESS');
@@ -1347,6 +1421,7 @@ export class GameOverScene {
   }
 
   createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isDailySignalResult()) return '';
     if (this.isSectorStartChallengeResult()) return '';
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return '';
     return this.createShipUnlockProgressLines(currentProgress, {
@@ -1363,6 +1438,12 @@ export class GameOverScene {
   }
 
   getRunbackNextGoalText() {
+    if (this.isDailySignalResult()) {
+      const summary = this.game?.runSummary || {};
+      return summary.runCleared
+        ? translateText('NEXT GOAL: BEAT TODAY\'S SCORE')
+        : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: summary.dailySignalContract?.finishSector || 10 });
+    }
     if (this.isSectorStartChallengeResult()) return '';
     const rank = this.getGlobalPlacementRank();
     if (rank && rank > 1) return 'Next goal: Climb one global rank';
@@ -1485,6 +1566,9 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
+    if (this.isDailySignalResult()) {
+      return translateText(this.game?.runSummary?.runCleared ? 'DAILY SIGNAL CLEARED' : 'DAILY SIGNAL ENDED');
+    }
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN COMPLETE');
     if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
@@ -1504,6 +1588,12 @@ export class GameOverScene {
 
   getCeremonyComment() {
     if (!this.isRankedRun) {
+      if (this.isDailySignalResult()) {
+        const contract = this.game?.runSummary?.dailySignalContract || {};
+        const resultText = this.getDailySignalResultLines().join('\n');
+        const base = translateText('Today\'s UTC contract used one loaner ship, one route theme, and one local record. Career progress and Steam leaderboards stayed untouched.');
+        return [base, contract.templateLabel ? translateText(contract.templateLabel) : '', resultText].filter(Boolean).join('\n');
+      }
       if (this.game?.runMode === RUN_MODES.SECTOR_START) {
         const resultText = this.getSectorStartChallengeResultLines().join('\n');
         const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched. Sector board records are separate.');
@@ -2316,7 +2406,7 @@ export class GameOverScene {
 
   shouldShowLeaderboardButton() {
     if (this.isSubmitting) return false;
-    if (this.game?.runMode === RUN_MODES.SCOUT) return false;
+    if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult()) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
       Boolean(this.leaderboardAdapter?.isSteamAvailable?.())
@@ -2573,6 +2663,10 @@ export class GameOverScene {
         label: translateText(getRunModeProfile(this.game?.runMode).oneMoreLabel || 'ONE MORE RUN'),
         hint: this.isSubmitting
           ? translateText('SAVING SCORE')
+          : this.isDailySignalResult()
+          ? (this.lastInputDevice === 'controller'
+              ? translateText('A: SAME DAILY CONTRACT  |  B: MENU')
+              : translateText('ENTER / SPACE / CLICK - RETRY TODAY'))
           : this.isSectorStartChallengeResult()
           ? (this.lastInputDevice === 'controller'
               ? translateText('A: SAME CHECKPOINT  |  B: MENU')
@@ -3541,6 +3635,14 @@ export class GameOverScene {
 
   createNextGoal(previousProgress = {}, currentProgress = {}) {
     if (!this.isRankedRun) {
+      if (this.isDailySignalResult()) {
+        return {
+          text: this.game?.runSummary?.runCleared
+            ? translateText('NEXT GOAL: BEAT TODAY\'S SCORE')
+            : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: this.game?.runSummary?.dailySignalContract?.finishSector || 10 }),
+          tone: 'daily'
+        };
+      }
       return { text: 'NEXT GOAL: RUN RANKED FOR THE BOARDS', tone: 'practice' };
     }
 
@@ -3568,6 +3670,18 @@ export class GameOverScene {
 
   createLevelSummary(previousProgress = {}, currentProgress = {}) {
     const summary = this.game?.runSummary || {};
+    if (this.isDailySignalResult()) {
+      const contract = summary.dailySignalContract || {};
+      const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
+      return [
+        translateText('DAILY CABINET SIGNAL'),
+        translateText(summary.runCleared ? 'CONTRACT CLEARED // SECTOR {sector}' : 'REACHED SECTOR {sector}', {
+          sector: summary.runCleared ? (contract.finishSector || this.finalLevel || 10) : (this.finalLevel || 1)
+        }),
+        `${translateText('TIME')} ${this.formatElapsedTime(elapsedSeconds)}  //  ${translateText('LOCAL ONLY')}`,
+        `${translateText('LOANER')}: ${contract.loanerShipName || summary.shipName || ''}`
+      ].filter(Boolean).join('\n');
+    }
     const previousBestLevel = Math.max(1, Math.floor(Number(previousProgress.bestSector || previousProgress.bestLevel) || 1));
     const bestLevel = Math.max(1, Math.floor(Number(currentProgress.bestSector || currentProgress.bestLevel) || this.finalLevel || 1));
     const newBest = bestLevel > previousBestLevel && this.finalLevel >= bestLevel;
@@ -3742,6 +3856,12 @@ export class GameOverScene {
           startSector: sectorStartCheckpoint,
           inputDevice: this.lastInputDevice
         }
+      : this.isDailySignalResult()
+        ? {
+            runMode: RUN_MODES.DAILY_SIGNAL,
+            dailySignalContract: summary.dailySignalContract || this.game?.dailySignalContract,
+            inputDevice: this.lastInputDevice
+          }
       : this.game?.runMode === RUN_MODES.SCOUT
         ? { runMode: RUN_MODES.SCOUT, inputDevice: this.lastInputDevice }
         : {
@@ -3750,10 +3870,14 @@ export class GameOverScene {
               : RUN_MODES.RANKED,
             inputDevice: this.lastInputDevice
           };
-    Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions)).catch((error) => {
-      console.error('[GameOverScene] Restart failed:', error);
-      this.returnToMenu();
-    });
+    Promise.resolve(this.game.startGame(this.game.selectedShipSpriteKey, restartOptions))
+      .then((started) => {
+        if (started === false) this.returnToMenu();
+      })
+      .catch((error) => {
+        console.error('[GameOverScene] Restart failed:', error);
+        this.returnToMenu();
+      });
   }
 
   playGlobalQualificationFanfare() {
@@ -4407,15 +4531,25 @@ export class GameOverScene {
     const mode = String(rawValue || '').trim().toLowerCase();
     if (mode === 'scout') return 'Scout Run';
     if (mode === 'sector_start') return 'Sector Run';
+    if (mode === 'daily_signal') return 'Daily Cabinet Signal';
     if (mode === 'unranked') return 'Practice Run';
-    if (mode === 'ranked') return 'Mayhem Run';
-    return fallback || 'Mayhem Run';
+    if (mode === 'ranked_tactical') return 'Mayhem Tactical';
+    if (mode === 'ranked') return 'Mayhem Pure';
+    return fallback || 'Mayhem Pure';
   }
 
   formatRunReportValue(row = {}) {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
     if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
+    if (row.id === 'dailyTemplate') return translateText(row.value || '');
+    if (row.id === 'dailyFinish') return translateText('SECTOR {sector}', { sector: row.value || 10 });
+    if (row.id === 'dailyRecord') {
+      const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
+      return row.rawValue?.newBest
+        ? translateText('NEW DAILY SIGNAL BEST: {score}', { score })
+        : translateText('DAILY SIGNAL BEST: {score}', { score });
+    }
     if (Array.isArray(row.value)) {
       const separator = row.id === 'pilotOrders' ? '\n' : ', ';
       return row.value.map((value) => {
@@ -5036,6 +5170,7 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
+    if (this.isDailySignalResult()) return this.getCeremonyTitle();
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';

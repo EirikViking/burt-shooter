@@ -94,6 +94,14 @@ const CORE_HELP_ROWS = Object.freeze([
 
 const MODE_HELP_ROWS = Object.freeze([
   {
+    code: 'D1',
+    icon: 'DAILY',
+    label: 'DAILY CABINET SIGNAL',
+    control: 'LOCAL UTC CHALLENGE // LOANER // FINISH SECTOR 10',
+    tip: 'Every UTC day sets one loaner ship, one route theme, and one Sector 10 finish. Tactical drafts are active. Your daily best is local until fully deterministic public scoring is ready.',
+    accent: 0x7dffcc
+  },
+  {
     code: '11',
     icon: 'PURE',
     label: 'MAYHEM PURE',
@@ -113,16 +121,16 @@ const MODE_HELP_ROWS = Object.freeze([
     code: '13',
     icon: 'SCOUT',
     label: 'SCOUT RUN',
-    control: 'UNRANKED // LOWER PRESSURE PRACTICE',
-    tip: 'Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+    control: 'UNRANKED PRACTICE // TACTICAL DRAFTS',
+    tip: 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',
     accent: 0x66ff9d
   },
   {
     code: '14',
     icon: 'SECTOR',
     label: 'SECTOR RUN',
-    control: 'UNRANKED // UNLOCKED CHECKPOINT STARTS',
-    tip: 'SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.',
+    control: 'SECTOR LEADERBOARD // CHECKPOINT STARTS',
+    tip: 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
     accent: 0xb285ff
   }
 ]);
@@ -266,8 +274,8 @@ const CAREER_HELP_ROWS = Object.freeze([
     code: '31',
     icon: 'SCORE',
     label: 'RECORDS & LEADERBOARDS',
-    control: 'PURE + TACTICAL STEAM // SECTOR LOCAL',
-    tip: 'Pure and Tactical submit to separate Steam leaderboards. Sector Run keeps separate local checkpoint records; Scout is pressure-free practice.',
+    control: 'PURE + TACTICAL + SECTOR STEAM',
+    tip: 'Pure, Tactical, and Sector use separate Steam leaderboard lanes. Daily Signal keeps a local UTC record for now; Scout remains unranked practice.',
     accent: 0xffef7e
   }
 ]);
@@ -292,10 +300,11 @@ const HELP_DETAIL_COPY = Object.freeze({
   COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
   'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
   'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
+  'DAILY CABINET SIGNAL': 'The contract rotates at 00:00 UTC and forces its listed loaner even if that ship is not unlocked in your career. Reach and clear Sector 10 before the run ends. The rule fingerprint keeps unlike days apart, while career XP, achievements, checkpoints, and existing Steam boards remain untouched.',
   'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
-  'SCOUT RUN': 'Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
-  'SECTOR RUN': 'SECTOR START: unlocks after Sector 5. Then it is checkpoint practice: local records only, no leaderboard or career changes.',
+  'SCOUT RUN': 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',
+  'SECTOR RUN': 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
@@ -314,7 +323,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'BOSS WAVES': 'Boss danger often comes from the room around the health bar. Remove healers and support ships, respect phase telegraphs, then commit damage during the safe opening. In Mayhem Tactical, defeating the boss pauses the fight for a three-card Draft. In Mayhem Pure, the battle continues without upgrades.',
   'SHIP HANGAR': 'The Hangar is the roster and career desk. Compare hull stats, traits, starting hardware, and exact unlock conditions before launching. Ranked Mayhem score, sectors, bosses, discoveries, clean waves, and completed runs feed Career XP; Scout and Sector practice do not change the profile.',
   'THREAT CODEX': 'The Codex records what you have actually encountered. Use its categories to study enemy silhouettes, elite systems, attack patterns, wave tactics, boss behavior, powerups, augments, sectors, themes, Cabinet logs, and rank milestones. Unknown entries remain unknown until you meet them.',
-  'RECORDS & LEADERBOARDS': 'Mayhem Pure and Mayhem Tactical are both ranked, but each submits to its own Steam leaderboard so raw-skill and buildcraft scores remain comparable. Sector Run stores checkpoint-specific local records. Scout is unranked practice and does not submit a score or change career progress.'
+  'RECORDS & LEADERBOARDS': 'Mayhem Pure, Mayhem Tactical, and Sector Run each use separate Steam leaderboards. Daily Signal stores one local UTC record; Scout remains unranked practice. Daily and Scout do not change career progress.'
 });
 
 function getHelpDetail(row) {

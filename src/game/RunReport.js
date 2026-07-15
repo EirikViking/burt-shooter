@@ -5,7 +5,7 @@ import {
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 
-const RUN_REPORT_VERSION = 8;
+const RUN_REPORT_VERSION = 9;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -28,8 +28,10 @@ function normalizeRunModeLabel(value) {
   const mode = String(value || 'ranked').trim().toLowerCase();
   if (mode === 'scout') return 'Scout Run';
   if (mode === 'sector_start') return 'Sector Run';
+  if (mode === 'daily_signal') return 'Daily Cabinet Signal';
   if (mode === 'unranked') return 'Practice Run';
-  return 'Mayhem Run';
+  if (mode === 'ranked_tactical') return 'Mayhem Tactical';
+  return 'Mayhem Pure';
 }
 
 function normalizeDeathSource(value) {
@@ -246,6 +248,23 @@ export function createRunReport(summary = {}) {
   };
   const rivalWingHistory = aceBountyHistory.filter((entry) => entry.rivalWingId).map((entry) => ({ rivalWingId: entry.rivalWingId, rivalWingNumber: entry.rivalWingNumber, formationId: entry.rivalWingFormationId, disciplineId: entry.rivalWingDisciplineId, volleyId: entry.rivalWingVolleyId, moraleId: entry.rivalWingMoraleId, sector: entry.sector }));
   const rivalWings = { completedCount: rivalWingHistory.length, availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableRivalWingVariants, 10000)), history: rivalWingHistory };
+  const dailyContract = runMode === 'daily_signal' && summary.dailySignalContract
+    ? {
+        dailyKey: String(summary.dailySignalContract.dailyKey || '').trim(),
+        rulesVersion: Math.max(1, toWholeNumber(summary.dailySignalContract.rulesVersion, 1)),
+        rulesHash: String(summary.dailySignalContract.rulesHash || '').trim(),
+        templateId: String(summary.dailySignalContract.templateId || '').trim(),
+        templateLabel: String(summary.dailySignalContract.templateLabel || '').trim(),
+        loanerShipKey: String(summary.dailySignalContract.loanerShipKey || shipId || '').trim(),
+        loanerShipName: String(summary.dailySignalContract.loanerShipName || shipName || '').trim(),
+        finishSector: Math.max(1, toWholeNumber(summary.dailySignalContract.finishSector, 10)),
+        attemptId: String(summary.dailySignalAttemptId || '').trim(),
+        valid: summary.dailySignalContractValid === true,
+        invalidReason: String(summary.dailySignalInvalidReason || '').trim() || null,
+        newBest: summary.dailySignalNewBest === true,
+        bestScore: toWholeNumber(summary.dailySignalBest?.score ?? summary.dailySignalAttempt?.score)
+      }
+    : null;
 
   const report = {
     version: RUN_REPORT_VERSION,
@@ -268,7 +287,8 @@ export function createRunReport(summary = {}) {
       tacticalDirectives,
       aceBounties,
       nemesisProtocols,
-      rivalWings
+      rivalWings,
+      dailySignal: dailyContract
     },
     sections: [
       {
@@ -281,6 +301,16 @@ export function createRunReport(summary = {}) {
           { id: 'time', value: formatDuration(runtimeSeconds), rawValue: runtimeSeconds }
         ])
       },
+      ...(dailyContract ? [{
+        id: 'dailySignal',
+        rows: buildRows([
+          { id: 'dailyDate', value: dailyContract.dailyKey },
+          { id: 'dailyRules', value: `${dailyContract.rulesHash} // V${dailyContract.rulesVersion}`, rawValue: dailyContract },
+          { id: 'dailyTemplate', value: dailyContract.templateLabel, rawValue: dailyContract.templateId },
+          { id: 'dailyFinish', value: dailyContract.finishSector },
+          { id: 'dailyRecord', value: dailyContract.bestScore, rawValue: { newBest: dailyContract.newBest, score: dailyContract.bestScore } }
+        ])
+      }] : []),
       {
         id: 'combat',
         rows: buildRows([
@@ -337,6 +367,7 @@ export function summarizeRunReport(report = null) {
     nemesisProtocols: report.summary?.nemesisProtocols || null,
     rivalWings: report.summary?.rivalWings || null,
     tacticalDoctrine: report.summary?.tacticalDoctrine || null,
+    dailySignal: report.summary?.dailySignal || null,
     sectionIds: Array.isArray(report.sections) ? report.sections.map((section) => section.id) : []
   };
 }

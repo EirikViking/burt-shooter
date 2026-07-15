@@ -356,7 +356,7 @@ const UPDATED_TRANSLATIONS = Object.freeze({
     scoutCopy: '낮은 압박과 보스 Draft로 기체를 시험하고 경로를 익히는 연습 모드입니다. 순위표 제출, 도전 과제, 커리어 XP, Pilot Orders, 체크포인트 해금은 없습니다.',
     sectorControl: '섹터 순위표 // 체크포인트 시작',
     sectorCopy: 'Mayhem에서 체크포인트를 해금한 뒤 보스 Draft와 함께 더 깊은 경로를 연습하세요. 각 체크포인트는 별도 기록을 보관하고 Steam의 별도 Sector 순위표에 제출하며 커리어와 도전 과제에는 영향을 주지 않습니다.',
-    recordsControl: 'PURE + TACTICAL + SECTOR STEAM',
+    recordsControl: 'PURE + TACTICAL + SECTOR STEAM 순위표',
     recordsCopy: 'Pure, Tactical, Sector는 각각 별도의 Steam 순위표를 사용합니다. 일일 신호는 현재 로컬 UTC 기록만 저장하며 Scout는 계속 비랭크 연습 모드입니다.'
   }),
   ja: Object.freeze({
@@ -364,7 +364,7 @@ const UPDATED_TRANSLATIONS = Object.freeze({
     scoutCopy: '低いプレッシャーとボス後のDraftで、機体のテストやルート練習を行います。ランキング送信、実績、キャリアXP、Pilot Orders、チェックポイント解放はありません。',
     sectorControl: 'セクターランキング // チェックポイント開始',
     sectorCopy: 'Mayhemでチェックポイントを解放し、ボス後のDraftを使って深いルートを練習します。各チェックポイントは個別記録を保持し、Steamの別枠Sectorランキングへ送信されます。キャリアと実績には影響しません。',
-    recordsControl: 'PURE + TACTICAL + SECTOR STEAM',
+    recordsControl: 'PURE + TACTICAL + SECTOR STEAMランキング',
     recordsCopy: 'Pure、Tactical、Sectorは別々のSteamランキングを使用します。デイリーシグナルは当面ローカルUTC記録のみを保持し、Scoutは引き続き非ランク練習です。'
   })
 });

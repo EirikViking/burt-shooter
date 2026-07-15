@@ -54,10 +54,13 @@ export class RunContentDirector {
       RunContentDirectorConfig.enabled !== false;
   }
 
-  startRun({ seed = this.seed } = {}) {
+  startRun({ seed = this.seed, runThemeId = null } = {}) {
     this.seed = seed;
     this.random = mulberry32(hashString(seed));
-    this.runTheme = this.pickRunTheme();
+    const requestedTheme = runThemeId
+      ? RunContentDirectorConfig.runThemes.find((theme) => theme.id === runThemeId) || null
+      : null;
+    this.runTheme = requestedTheme || this.pickRunTheme();
     if (this.runTheme && this.game?.isRankedRun?.()) {
       recordRunThemeSeen(this.runTheme.id, {
         name: this.runTheme.label,

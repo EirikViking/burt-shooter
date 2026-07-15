@@ -8,7 +8,11 @@ import { getMicroMessage } from '../text/phrasePool.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
 import { translateText } from '../i18n/index.js';
-import { isRankedRunMode } from '../game/RunMode.js';
+import { canRunModeUseMayhemReinforcements } from '../game/RunMode.js';
+import {
+  isDailySignalReinforcementSector,
+  isDailySignalSuperStormSector
+} from '../config/DailyCabinetSignal.js';
 import {
   GENERATED_ENEMY_TYPES,
   getGeneratedEnemyProfile,
@@ -287,6 +291,8 @@ export class EnemyManager {
     this.mayhemSuperStormRunMissedWaveKeys = new Set();
     this.mayhemSuperStormEligibleMisses = 0;
     this.mayhemSuperStormRunSpawned = 0;
+    this.dailySignalForcedReinforcementSectors = new Set();
+    this.dailySignalForcedSuperStormSectors = new Set();
     this.bossReinforcementState = null;
     this.bossReinforcementAttemptIndex = 0;
     this.bossReinforcementEventsThisBoss = 0;
@@ -1149,6 +1155,8 @@ export class EnemyManager {
     this.mayhemSuperStormRunMissedWaveKeys = new Set();
     this.mayhemSuperStormEligibleMisses = 0;
     this.mayhemSuperStormRunSpawned = 0;
+    this.dailySignalForcedReinforcementSectors = new Set();
+    this.dailySignalForcedSuperStormSectors = new Set();
   }
 
   getMayhemReinforcementConfig() {
@@ -1373,10 +1381,19 @@ export class EnemyManager {
     const roll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex) : 1;
     const extraWaveRoll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex, 'mayhem-reinforcement-fourth-wave') : 1;
     const superStormRoll = config ? this.getStableReinforcementRoll(this.level, currentWaveIndex, 'mayhem-reinforcement-super-storm') : 1;
+    const dailySignalContract = this.game?.dailySignalContract || null;
+    const dailySignalReinforcementForced = Boolean(
+      isDailySignalReinforcementSector(dailySignalContract, level) &&
+      !this.dailySignalForcedReinforcementSectors?.has(level)
+    );
+    const dailySignalSuperStormForced = Boolean(
+      isDailySignalSuperStormSector(dailySignalContract, level) &&
+      !this.dailySignalForcedSuperStormSectors?.has(level)
+    );
     let reasons = [];
 
     if (!config) reasons.push('disabled');
-    if (!isRankedRunMode(this.game?.runMode)) reasons.push('not_mayhem');
+    if (!canRunModeUseMayhemReinforcements(this.game?.runMode)) reasons.push('not_mayhem');
     if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE') reasons.push('not_normal_wave_phase');
     if (this.boss?.active || this.bossSpawnedThisLevel || this.state === 'BOSS_GATE') reasons.push('boss_active_or_pending');
     if (this.waveEnding || this.spawning || this.pendingWaveConfig) reasons.push('wave_not_stable');
@@ -1386,7 +1403,7 @@ export class EnemyManager {
     if (this.mayhemReinforcementTriggeredWaves?.has(currentWaveIndex)) reasons.push('already_triggered_for_wave');
     if (nextWaveIndex < (config?.minNextWaveIndex || 0)) reasons.push('too_early_in_sector');
     const superStormGateReasons = [...reasons];
-    if (config && level < config.superStormMinLevel) superStormGateReasons.push('super_storm_level_gated');
+    if (config && level < config.superStormMinLevel && !dailySignalSuperStormForced) superStormGateReasons.push('super_storm_level_gated');
     const superStormNaturalHit = Boolean(
       config &&
       level >= config.superStormMinLevel &&
@@ -1398,7 +1415,7 @@ export class EnemyManager {
       config.superStormChance > 0 &&
       this.shouldForceMayhemSuperStormByPity(config)
     );
-    const superStormCandidate = Boolean(superStormNaturalHit || superStormPityForced);
+    const superStormCandidate = Boolean(dailySignalSuperStormForced || superStormNaturalHit || superStormPityForced);
     if (!superStormCandidate) {
       if (nextWaveIndex >= this.normalWavesTotal) reasons.push('no_next_wave');
       if (!nextWave || nextWave.type === 'BOSS' || nextWave.type === 'bonus_challenge' || nextWave.isChallenge) reasons.push('next_wave_not_normal');
@@ -1411,7 +1428,7 @@ export class EnemyManager {
 
     const reinforcementWaveIndices = this.getNormalMayhemReinforcementWaveIndices({ config, currentWaveIndex, extraWaveRoll });
     if (!superStormCandidate) {
-      if (config && level < config.normalMultiWaveMinLevel) reasons.push('multi_wave_gated');
+      if (config && level < config.normalMultiWaveMinLevel && !dailySignalReinforcementForced) reasons.push('multi_wave_gated');
       if (config && reinforcementWaveIndices.length < config.normalMinWaveCount) reasons.push('not_enough_future_waves');
     }
     const superStormPlan = superStormCandidate && reasons.length === 0
@@ -1444,7 +1461,7 @@ export class EnemyManager {
       reasons = reasons.filter((reason) => !MAYHEM_REINFORCEMENT_SOFT_REASONS.has(reason));
     }
     const pityForced = Boolean(config && !superStormCandidate && reasons.length === 0 && roll >= config.chance && this.shouldForceMayhemReinforcementByPity(config));
-    if (config && !superStormCandidate && roll >= config.chance && !pityForced) reasons.push('roll_failed');
+    if (config && !superStormCandidate && roll >= config.chance && !pityForced && !dailySignalReinforcementForced) reasons.push('roll_failed');
 
     const result = {
       eligible: reasons.length === 0,
@@ -1471,6 +1488,9 @@ export class EnemyManager {
       superStormWaveCount: config?.superStormWaveCount || 0,
       superStormNaturalHit,
       superStormPityForced,
+      dailySignalReinforcementForced,
+      dailySignalSuperStormForced,
+      dailySignalForced: dailySignalReinforcementForced || dailySignalSuperStormForced,
       canRecordSuperStormMiss,
       isSuperStorm: Boolean(superStormPlan),
       reinforcementWaveIndices: superStormPlan
@@ -1520,6 +1540,11 @@ export class EnemyManager {
       spawned: false
     };
     this.mayhemReinforcementTriggeredWaves.add(eligibility.currentWaveIndex);
+    if (eligibility.dailySignalSuperStormForced) {
+      this.dailySignalForcedSuperStormSectors.add(Math.max(1, Math.floor(Number(this.level) || 1)));
+    } else if (eligibility.dailySignalReinforcementForced) {
+      this.dailySignalForcedReinforcementSectors.add(Math.max(1, Math.floor(Number(this.level) || 1)));
+    }
     this.mayhemReinforcementStats.scheduled += 1;
     if (eligibility.isSuperStorm) this.mayhemReinforcementStats.superStorms += 1;
     this.mayhemReinforcementStats.lastPityForced = eligibility.pityForced;
@@ -1712,7 +1737,7 @@ export class EnemyManager {
   maybeScheduleBossMayhemReinforcement() {
     const config = this.getMayhemReinforcementConfig();
     if (!config || config.bossFightChance <= 0 || config.bossFightMaxEvents <= 0) return false;
-    if (!isRankedRunMode(this.game?.runMode)) return false;
+    if (!canRunModeUseMayhemReinforcements(this.game?.runMode)) return false;
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return false;
     if (this.bossReinforcementState && !this.bossReinforcementState.spawned) return false;
     if (this.bossReinforcementEventsThisBoss >= config.bossFightMaxEvents) return false;

@@ -3,6 +3,7 @@ export const RUN_MODES = Object.freeze({
   RANKED: 'ranked',
   MAYHEM_TACTICAL: 'ranked_tactical',
   RANKED_TACTICAL: 'ranked_tactical',
+  DAILY_SIGNAL: 'daily_signal',
   SCOUT: 'scout',
   UNRANKED: 'unranked',
   SECTOR_START: 'sector_start'
@@ -68,6 +69,31 @@ export const RUN_MODE_PROFILES = Object.freeze({
     bossAttackDangerMult: 1,
     normalWaveAggressionMult: 1,
     normalWaveScoreXpMult: MAYHEM_NORMAL_WAVE_SCORE_XP_MULTIPLIER,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
+  [RUN_MODES.DAILY_SIGNAL]: Object.freeze({
+    id: RUN_MODES.DAILY_SIGNAL,
+    menuId: 'dailySignal',
+    label: 'DAILY CABINET SIGNAL',
+    shortLabel: 'Daily Signal',
+    subLabel: 'Local daily challenge · Shared UTC rules',
+    resultLabel: 'DAILY CABINET SIGNAL',
+    oneMoreLabel: 'RETRY TODAY\'S SIGNAL',
+    ranked: false,
+    tacticalDraftEnabled: true,
+    mayhemReinforcementsEnabled: true,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    submitsDailyLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: false,
+    difficultyProfileId: 'accepted_harder_ranked',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1,
+    normalWaveScoreXpMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
   [RUN_MODES.SCOUT]: Object.freeze({
@@ -154,6 +180,7 @@ export function normalizeRunMode(value) {
   const mode = String(value || '').trim();
   if (
     mode === RUN_MODES.MAYHEM_TACTICAL ||
+    mode === RUN_MODES.DAILY_SIGNAL ||
     mode === RUN_MODES.SCOUT ||
     mode === RUN_MODES.UNRANKED ||
     mode === RUN_MODES.SECTOR_START
@@ -186,6 +213,11 @@ export function canRunModeUnlockAchievements(mode, options = {}) {
 
 export function canRunModeUseTacticalDraft(mode) {
   return getRunModeProfile(mode).tacticalDraftEnabled === true;
+}
+
+export function canRunModeUseMayhemReinforcements(mode) {
+  const profile = getRunModeProfile(mode);
+  return profile.ranked === true || profile.mayhemReinforcementsEnabled === true;
 }
 
 function floorSector(value, fallback = 1) {

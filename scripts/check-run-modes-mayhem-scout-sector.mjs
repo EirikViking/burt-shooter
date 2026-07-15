@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -8,8 +8,14 @@ import { AchievementManager } from '../src/achievements/AchievementManager.js';
 import { getAchievementIds } from '../src/achievements/AchievementCatalog.js';
 import { RunPressureDirector } from '../src/game/RunPressureDirector.js';
 import {
+  DAILY_CABINET_SIGNAL_FINISH_SECTOR,
+  deriveDailySignalContract,
+  validateDailySignalContract
+} from '../src/config/DailyCabinetSignal.js';
+import {
   RUN_MODES,
   canRunModeUseTacticalDraft,
+  canRunModeUseMayhemReinforcements,
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
   getRunModeProfile,
@@ -206,10 +212,33 @@ async function storageSnapshot(page) {
     mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
     sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
     scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
+    dailySignalRecords: JSON.parse(localStorage.getItem('novaSwarm.dailySignalRecords.v1') || '{"records":{}}'),
+    threatDiscovery: JSON.parse(localStorage.getItem('nova.threatDiscovery.v1') || '{"items":{},"discoveriesThisRun":[],"unreadIds":[]}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
     shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
     mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}')
   }));
+}
+
+function summarizeThreatDiscoveryProgress(state = {}) {
+  const entries = [];
+  for (const [category, bucket] of Object.entries(state.items || {})) {
+    for (const [id, item] of Object.entries(bucket || {})) {
+      entries.push({
+        category,
+        id,
+        timesSeen: Number(item?.timesSeen) || 0,
+        timesDefeated: Number(item?.timesDefeated) || 0,
+        timesSurvived: Number(item?.timesSurvived) || 0,
+        timesKilledPlayer: Number(item?.timesKilledPlayer) || 0
+      });
+    }
+  }
+  entries.sort((left, right) => `${left.category}:${left.id}`.localeCompare(`${right.category}:${right.id}`));
+  return {
+    entries,
+    unreadIds: [...(state.unreadIds || [])].sort()
+  };
 }
 
 async function focusMenuOption(page, optionId) {
@@ -254,6 +283,12 @@ function assertLaunchDeckVisible(state, label) {
   const deck = state.menu?.launchDeck;
   assert.ok(deck?.bounds?.width > 0, `${label}: Launch Deck bounds missing`);
   assertInside(deck.bounds, screen, `${label}: Launch Deck`);
+  const daily = deck.featuredDailySignal;
+  assertInside(daily?.bounds, screen, `${label}: Daily Signal feature`);
+  assert.equal(daily?.label, 'DAILY SIGNAL', `${label}: Daily Signal label`);
+  assert.match(daily?.sublabel || '', /LOANER .*RESET \d{2}:\d{2}/i, `${label}: Daily Signal should explain the loaner and UTC reset`);
+  assert.ok(daily.bounds.bottom <= deck.bounds.y + 2, `${label}: Daily Signal must remain above the four-card deck`);
+  assert.equal(Object.keys(deck.cards || {}).length, 4, `${label}: Launch Deck must still contain exactly four standard run cards`);
   const cards = [
     ['mayhem', deck.cards?.mayhem],
     ['mayhemTactical', deck.cards?.mayhemTactical],
@@ -291,7 +326,10 @@ function assertLaunchDeckVisible(state, label) {
   assert.ok(briefing.panelBounds.x > screen.width * 0.58, `${label}: Mission Briefing should sit on the right side`);
   assert.ok(briefing.panelBounds.x > deck.bounds.right + 48, `${label}: Mission Briefing should not overlap Launch Deck`);
   assert.ok(briefing.panelBounds.bottom < (state.menu?.panel?.y || screen.height), `${label}: Mission Briefing should stay above utility dock`);
-  assert.ok((briefing.bodyBounds?.bottom || 0) <= briefing.panelBounds.bottom + 4, `${label}: Mission Briefing body should stay inside frame`);
+  assert.ok(
+    (briefing.bodyBounds?.bottom || 0) <= briefing.panelBounds.bottom + 4,
+    `${label}: Mission Briefing body should stay inside frame body=${JSON.stringify(briefing.bodyBounds)} panel=${JSON.stringify(briefing.panelBounds)}`
+  );
 }
 
 async function selectSectorSelectorCheckpoint(page, checkpoint) {
@@ -314,20 +352,37 @@ function assertStaticRules() {
   assert.equal(STEAM_TACTICAL_LEADERBOARD_NAME, 'nova_swarm_tactical_score_v1');
   assert.equal(isRankedRunMode(RUN_MODES.RANKED), true);
   assert.equal(isRankedRunMode(RUN_MODES.MAYHEM_TACTICAL), true);
+  assert.equal(isRankedRunMode(RUN_MODES.DAILY_SIGNAL), false);
   assert.equal(isRankedRunMode(RUN_MODES.SCOUT), false);
   assert.equal(isRankedRunMode(RUN_MODES.SECTOR_START), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.MAYHEM_TACTICAL), true);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.DAILY_SIGNAL), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.SECTOR_START), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.RANKED), true);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.MAYHEM_TACTICAL), true);
+  assert.equal(canRunModeUnlockAchievements(RUN_MODES.DAILY_SIGNAL), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SCOUT), false);
   assert.equal(canRunModeUnlockAchievements(RUN_MODES.SECTOR_START), false);
   assert.equal(getRunModeProfile(RUN_MODES.RANKED).difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(getRunModeProfile(RUN_MODES.MAYHEM_TACTICAL).difficultyProfileId, 'accepted_harder_ranked');
   assert.equal(canRunModeUseTacticalDraft(RUN_MODES.RANKED), false);
   assert.equal(canRunModeUseTacticalDraft(RUN_MODES.MAYHEM_TACTICAL), true);
+  assert.equal(canRunModeUseTacticalDraft(RUN_MODES.DAILY_SIGNAL), true);
+  assert.equal(canRunModeUseMayhemReinforcements(RUN_MODES.DAILY_SIGNAL), true);
+  assert.equal(getRunModeProfile(RUN_MODES.DAILY_SIGNAL).updatesCareerProgress, false);
+  assert.equal(getRunModeProfile(RUN_MODES.DAILY_SIGNAL).difficultyProfileId, 'accepted_harder_ranked');
+  const dailyContract = deriveDailySignalContract();
+  assert.equal(validateDailySignalContract(dailyContract).valid, true);
+  assert.equal(dailyContract.finishSector, DAILY_CABINET_SIGNAL_FINISH_SECTOR);
+  assert.equal(dailyContract.onlineCompetitive, false);
+  const playSceneSource = readFileSync(path.resolve('src/scenes/PlayScene.js'), 'utf8');
+  const dailyFinishGateIndex = playSceneSource.indexOf('const dailySignalFinish =');
+  const gatedLevelVoiceIndex = playSceneSource.indexOf('if (!dailySignalFinish) this.playLevelClearVoice');
+  const dailyFinishBranchIndex = playSceneSource.indexOf('if (dailySignalFinish) {', gatedLevelVoiceIndex);
+  assert.ok(dailyFinishGateIndex >= 0 && gatedLevelVoiceIndex > dailyFinishGateIndex && dailyFinishBranchIndex > gatedLevelVoiceIndex,
+    'terminal Daily sector must suppress the delayed generic level-clear voice before entering its dedicated clear presentation');
   assert.equal(getRunModeProfile(RUN_MODES.SCOUT).difficultyProfileId, 'scout_lower_pressure_v1');
   assert.equal(getRunModeProfile(RUN_MODES.RANKED).normalWaveScoreXpMult, 1.2);
   assert.equal(getRunModeProfile(RUN_MODES.SCOUT).normalWaveDifficultyLevelOffsetDelta, -3);
@@ -405,6 +460,7 @@ try {
   const menu = await seedProfile(page);
   await page.waitForTimeout(1500);
   const settledMenu = await readState(page);
+  assert.equal(menu.menu?.items?.dailySignalButton?.width > 0, true, 'Daily Signal should be visible');
   assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Pure should be visible');
   assert.equal(menu.menu?.items?.tacticalLaunchButton?.width > 0, true, 'Mayhem Tactical should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
@@ -441,13 +497,18 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await waitForScene(page, 'menu');
     await page.waitForTimeout(250);
-    for (const mode of ['launch', 'launchTactical', 'scout', 'sectorStart']) {
+    for (const mode of ['dailySignal', 'launch', 'launchTactical', 'scout', 'sectorStart']) {
       assertLaunchDeckVisible(await focusMenuOption(page, mode), `${viewport.name} ${mode} briefing`);
     }
   }
 
   await page.setViewportSize({ width: 1366, height: 768 });
   await waitForScene(page, 'menu');
+  const dailyFocus = await focusMenuOption(page, 'dailySignal');
+  assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /ONE LOANER[\s\S]*FIXED UTC CONTRACT[\s\S]*FINISH SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*no public daily score[\s\S]*NO ACHIEVEMENTS[\s\S]*CAREER XP[\s\S]*CHECKPOINT UNLOCKS[\s\S]*RESET IN/i);
+  assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
+  await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused.png'), fullPage: false });
   await focusMenuOption(page, 'launch');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
@@ -485,6 +546,140 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'sector-run-selector-every-5-sectors.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.closeSectorSelector?.());
   await waitForScene(page, 'menu');
+
+  const expiredDailyRejected = await page.evaluate(async () => {
+    const game = window.__game;
+    const menuScene = game?.scenes?.menu || game?.currentScene;
+    const current = menuScene?.dailySignalContract;
+    const expired = {
+      ...current,
+      reinforcementSectors: [...(current?.reinforcementSectors || [])],
+      superStormSectors: [...(current?.superStormSectors || [])],
+      validFrom: '2000-01-01T00:00:00.000Z',
+      validUntil: '2000-01-02T00:00:00.000Z'
+    };
+    const started = await game.startGame(undefined, { runMode: 'daily_signal', dailySignalContract: expired });
+    return { started, scene: game.currentSceneName };
+  });
+  assert.equal(expiredDailyRejected.started, false, 'an expired captured Daily contract must be rejected instead of silently rolling to today');
+  assert.equal(expiredDailyRejected.scene, 'menu');
+
+  const beforeDaily = await storageSnapshot(page);
+  const menuDailyContract = (await readState(page)).menu?.launchDeck?.featuredDailySignal?.contract;
+  await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
+  const dailyPlay = await waitForScene(page, 'play');
+  const firstDailyAttempt = await page.evaluate(() => ({
+    attemptId: window.__game?.dailySignalAttemptId,
+    contract: window.__game?.dailySignalContract,
+    valid: window.__game?.dailySignalContractValidation?.valid === true,
+    runTheme: window.__game?.contentDirector?.runTheme?.id || null,
+    tacticalDraftEnabled: window.__game?.getRunModeProfile?.()?.tacticalDraftEnabled === true,
+    reinforcementReasons: window.__game?.scenes?.play?.enemyManager?.getMayhemReinforcementEligibility?.()?.reasons || [],
+    codexProbe: window.__game?.scenes?.play?.recordThreatDiscovery?.('daily_signal_qa_probe', 'enemies', { name: 'QA PROBE' }) || null
+  }));
+  assert.equal(dailyPlay.runMode, RUN_MODES.DAILY_SIGNAL);
+  assert.equal(dailyPlay.scoreSubmissionAllowed, false);
+  assert.equal(dailyPlay.selectedShipSpriteKey, menuDailyContract.loanerShipKey, 'Daily must use the fixed loaner even when it is not unlocked');
+  assert.equal(firstDailyAttempt.valid, true);
+  assert.ok(firstDailyAttempt.attemptId, 'Daily attempt must receive a stable ID before play starts');
+  assert.equal(firstDailyAttempt.contract.rulesHash, menuDailyContract.rulesHash);
+  assert.equal(firstDailyAttempt.runTheme, firstDailyAttempt.contract.runThemeId, 'Daily route theme must be pinned by the contract');
+  assert.equal(firstDailyAttempt.tacticalDraftEnabled, true);
+  assert.equal(firstDailyAttempt.reinforcementReasons.includes('not_mayhem'), false, 'Daily must keep reinforcement swarm eligibility');
+  assert.equal(firstDailyAttempt.codexProbe?.skipped, 'daily_signal_no_codex_progress', 'Daily must not advance persistent Threat Codex state');
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-loaner-play.png'), fullPage: false });
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(5000, 'baseScore');
+    game.level = 4;
+    const play = game?.scenes?.play;
+    if (play) play.bossKills = 3;
+    game.gameOver({ fromInterlude: true });
+  });
+  const failedDaily = await waitForScene(page, 'gameOver');
+  assert.equal(failedDaily.runMode, RUN_MODES.DAILY_SIGNAL);
+  assert.equal(failedDaily.gameOver?.level, 4, 'failed Daily must report the actual reached sector, not the Sector 10 finish target');
+  assert.match(failedDaily.gameOver?.ceremonyTitle || '', /DAILY SIGNAL ENDED/i);
+  assert.equal(failedDaily.gameOver?.leaderboardCta?.visible, false, 'Daily must not expose a public leaderboard CTA before deterministic online verification');
+  assert.equal(failedDaily.gameOver?.primaryCta?.label, "RETRY TODAY'S SIGNAL");
+  const failedDailyStorage = await storageSnapshot(page);
+  const failedDailyRecords = Object.values(failedDailyStorage.dailySignalRecords.records || {});
+  assert.equal(failedDailyRecords.length, 1);
+  assert.equal(failedDailyRecords[0].sectorReached, 4);
+  assert.equal(failedDailyRecords[0].runCleared, false);
+  assert.deepEqual(failedDailyStorage.hangar, beforeDaily.hangar, 'Daily must not update hangar career progress');
+  assert.deepEqual(failedDailyStorage.achievements, beforeDaily.achievements, 'Daily must not unlock achievements');
+  assert.deepEqual(failedDailyStorage.mockSteamLeaderboard, [], 'Daily must not submit to a Steam leaderboard');
+  assert.deepEqual(
+    summarizeThreatDiscoveryProgress(failedDailyStorage.threatDiscovery),
+    summarizeThreatDiscoveryProgress(beforeDaily.threatDiscovery),
+    'Daily must not discover or advance persistent Codex entries'
+  );
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-failed-sector-4.png'), fullPage: false });
+
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Enter');
+  const dailyRetry = await waitForScene(page, 'play');
+  const retryIdentity = await page.evaluate(() => ({
+    attemptId: window.__game?.dailySignalAttemptId,
+    dailyKey: window.__game?.dailySignalContract?.dailyKey,
+    rulesHash: window.__game?.dailySignalContract?.rulesHash
+  }));
+  assert.equal(dailyRetry.runMode, RUN_MODES.DAILY_SIGNAL);
+  assert.equal(retryIdentity.dailyKey, firstDailyAttempt.contract.dailyKey, 'retry must preserve the captured UTC day');
+  assert.equal(retryIdentity.rulesHash, firstDailyAttempt.contract.rulesHash, 'retry must preserve the exact rules contract');
+  assert.notEqual(retryIdentity.attemptId, firstDailyAttempt.attemptId, 'retry must receive a fresh attempt ID');
+
+  const dailyFinishStarted = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    game.addScore(50000, 'baseScore');
+    game.level = 10;
+    if (play) play.bossKills = 10;
+    const started = play?.beginDailySignalFinish?.({ sectorCleared: 10 }) || false;
+    const interlude = play?.overrunMilestoneInterlude;
+    if (interlude) {
+      interlude.confirmed = true;
+      interlude.startedAt = Date.now() - interlude.durationMs - 20;
+      if (interlude.effect) {
+        interlude.effect.confirmed = true;
+        interlude.effect.startedAt = Date.now() - interlude.effect.durationMs - 20;
+      }
+      play.updateOverrunMilestoneInterlude?.(16);
+    }
+    return started;
+  });
+  assert.equal(dailyFinishStarted, true, 'Sector 10 must enter the Daily clear presentation');
+  const clearedDaily = await waitForScene(page, 'gameOver');
+  assert.equal(clearedDaily.runMode, RUN_MODES.DAILY_SIGNAL);
+  assert.equal(clearedDaily.gameOver?.level, 10);
+  assert.match(clearedDaily.gameOver?.ceremonyTitle || '', /DAILY SIGNAL CLEARED/i);
+  assert.equal(clearedDaily.gameOver?.leaderboardCta?.visible, false);
+  const clearedDailySummary = await page.evaluate(() => ({
+    summary: window.__game?.runSummary,
+    report: window.__game?.lastRunReport
+  }));
+  assert.equal(clearedDailySummary.summary?.runCleared, true);
+  assert.equal(clearedDailySummary.summary?.sectorReached, 10);
+  assert.equal(clearedDailySummary.summary?.levelReached, 10);
+  assert.equal(clearedDailySummary.summary?.dailySignalFinishSector, 10);
+  assert.equal(clearedDailySummary.summary?.dailySignalContractValid, true);
+  assert.equal(clearedDailySummary.summary?.dailySignalStored, true);
+  assert.equal(clearedDailySummary.report?.summary?.dailySignal?.rulesHash, firstDailyAttempt.contract.rulesHash);
+  const clearedDailyStorage = await storageSnapshot(page);
+  const clearedDailyRecords = Object.values(clearedDailyStorage.dailySignalRecords.records || {});
+  assert.equal(clearedDailyRecords.length, 1);
+  assert.equal(clearedDailyRecords[0].runCleared, true, 'a clear must outrank the earlier failed Daily attempt');
+  assert.equal(clearedDailyRecords[0].sectorReached, 10);
+  assert.deepEqual(clearedDailyStorage.hangar, beforeDaily.hangar);
+  assert.deepEqual(clearedDailyStorage.achievements, beforeDaily.achievements);
+  assert.deepEqual(clearedDailyStorage.mockSteamLeaderboard, []);
+  assert.deepEqual(
+    summarizeThreatDiscoveryProgress(clearedDailyStorage.threatDiscovery),
+    summarizeThreatDiscoveryProgress(beforeDaily.threatDiscovery)
+  );
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-cleared-sector-10.png'), fullPage: false });
 
   const beforeScout = await storageSnapshot(page);
   await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'scout' }));
@@ -656,6 +851,15 @@ try {
       pureDraftBlocked: pureDraftAttempt.opened === false,
       tacticalDraftOpened: tacticalDraftAttempt.opened,
       boardsSeparated: true
+    },
+    dailySignal: {
+      dailyKey: firstDailyAttempt.contract.dailyKey,
+      rulesHash: firstDailyAttempt.contract.rulesHash,
+      loanerShipKey: firstDailyAttempt.contract.loanerShipKey,
+      failedSectorReported: failedDaily.gameOver?.level,
+      clearSectorReported: clearedDaily.gameOver?.level,
+      localOnly: true,
+      retryPreservedContract: retryIdentity.rulesHash === firstDailyAttempt.contract.rulesHash
     },
     sectorRun: {
       checkpoint: sectorPlay.sectorStartChallenge?.checkpoint,

@@ -99,6 +99,8 @@
     "check:cinematic-hangar-menu-icons": "node scripts/check-cinematic-hangar-menu-icons.mjs",
     "check:sector-progression": "node scripts/check-sector-progression.mjs",
     "check:run-modes": "node scripts/check-run-modes-mayhem-scout-sector.mjs",
+    "check:daily-signal-contract": "node scripts/check-daily-signal-contract.mjs",
+    "check:daily-signal-records": "node scripts/check-daily-signal-records.mjs",
     "check:scout-local-best": "node scripts/check-scout-local-best.mjs",
     "check:scout-codex-persistence": "node scripts/check-scout-codex-persistence.mjs",
     "check:mayhem-scout-difficulty-delta": "node scripts/check-mayhem-scout-difficulty-delta.mjs",

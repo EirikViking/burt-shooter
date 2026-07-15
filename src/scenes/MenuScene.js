@@ -22,6 +22,8 @@ import {
   getRunContractMenuState
 } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
+import { getDailySignalBest } from '../progression/DailySignalRecords.js';
+import { deriveDailySignalContract, getDailySignalResetSeconds } from '../config/DailyCabinetSignal.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
 // PART A: Dynamic story rotation
@@ -48,6 +50,7 @@ const MENU_ICON_ASSET_KEYS = {
 };
 
 const MENU_BOSS_BARK_EVENTS = {
+  dailySignal: 'boss_menu_bark_launch',
   launch: 'boss_menu_bark_launch',
   launchTactical: 'boss_menu_bark_launch',
   scout: 'boss_menu_bark_scout',
@@ -235,6 +238,11 @@ export class MenuScene {
     this.missionBoardSelectionManual = false;
     this.missionBoardSelectedDetail = null;
     this.launchDeckBounds = null;
+    this.dailySignalBtn = null;
+    this.dailySignalBounds = null;
+    this.dailySignalContract = null;
+    this.dailySignalBest = null;
+    this.dailySignalRefreshAt = 0;
     this.disclaimer = null;
     this.startBtn = null;
     this.tacticalStartBtn = null;
@@ -314,6 +322,7 @@ export class MenuScene {
     this.keyHandler = null;
     this.menuGamepadActionWasPressed = false;
     this.launchingRun = false;
+    this.refreshDailySignalMenuState({ force: true });
     this.menuOptions = [];
     this.focusedMenuIndex = 0;
     this.lastBossMenuBarkAt = 0;
@@ -341,6 +350,7 @@ export class MenuScene {
     this.heroBonusCore2 = null;
     this.animationTime = 0;
     this.launchingRun = false;
+    this.refreshDailySignalMenuState({ force: true });
     this.menuGamepadActionWasPressed = false;
     this.clearPendingBossMenuBark();
     this.menuGamepadNavigator.suppressUntilReleased();
@@ -1017,6 +1027,7 @@ export class MenuScene {
 
   getMenuButtonList() {
     return [
+      this.dailySignalBtn,
       this.startBtn,
       this.tacticalStartBtn,
       this.scoutRunBtn,
@@ -1250,6 +1261,23 @@ export class MenuScene {
     this.menuPanel.alpha = 0;
     this.container.addChild(this.menuPanel);
     this.createSectorSelectorOverlay(layout);
+
+    this.dailySignalBtn = this.createButton('DAILY SIGNAL', layout, {
+      variant: 'primary',
+      accent: 0x7dffcc,
+      icon: 'target',
+      subLabel: 'TODAY // LOCAL UTC CHALLENGE',
+      dynamicSubLabel: () => this.getDailySignalMenuSubLabel(),
+      labelMinScale: 0.66
+    });
+    this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xff55d9 });
+    this.dailySignalBtn._isDailySignalFeature = true;
+    this.dailySignalBtn.alpha = 0;
+    this.dailySignalBtn.on('pointerdown', () => {
+      this.setInputDevice('keyboard');
+      this.startDailySignalRun();
+    });
+    this.container.addChild(this.dailySignalBtn);
 
     this.startBtn = this.createButton('MAYHEM PURE', layout, {
       variant: 'primary',
@@ -1519,6 +1547,7 @@ export class MenuScene {
       this.easter,
       this.buildStamp,
       this.musicBtn?._label,
+      this.dailySignalBtn?._label,
       this.startBtn?._label,
       this.tacticalStartBtn?._label,
       this.scoutRunBtn?._label,
@@ -1749,17 +1778,46 @@ export class MenuScene {
     const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
     const cardHeight = Math.round(clampNumber(height * 0.052 * uiScale, (isShortLayout ? 44 : 50) * uiScale, (isMobileLayout ? 58 : 62) * uiScale));
     const deckHeight = cardHeight * runModeCards.length + cardGap * Math.max(0, runModeCards.length - 1);
+    const dailySignalHeight = Math.round(clampNumber(height * 0.05 * uiScale, (isShortLayout ? 42 : 48) * uiScale, (isMobileLayout ? 54 : 58) * uiScale));
+    const dailySignalGap = Math.round(clampNumber(height * 0.009, 6, 10));
+    const launchStackHeight = dailySignalHeight + dailySignalGap + deckHeight;
     const deckX = Math.round(isMobileLayout
       ? (width - cardWidth) / 2
       : clampNumber(width * 0.018, 20, 46));
     const minimumDeckTop = titleClearForDeck + clampNumber(height * 0.055, 34, 58);
     const highScaleDeckLift = Math.round(Math.max(0, uiScale - 1) * clampNumber(height * 0.085, 36, 74));
     const preferredDeckTop = safeMargin.top + clampNumber(height * 0.34, isMobileLayout ? 200 : 246, isMobileLayout ? 272 : 326) - highScaleDeckLift;
-    const cardTop = Math.round(clampNumber(
+    const launchStackTop = Math.round(clampNumber(
       preferredDeckTop,
       minimumDeckTop,
-      Math.max(safeMargin.top + 120, dockTop - deckHeight - clampNumber(height * 0.022, 14, 24))
+      Math.max(safeMargin.top + 120, dockTop - launchStackHeight - clampNumber(height * 0.022, 14, 24))
     ));
+    const cardTop = launchStackTop + dailySignalHeight + dailySignalGap;
+    if (this.dailySignalBtn) {
+      this.dailySignalBtn.visible = true;
+      this.dailySignalBtn._btnWidth = cardWidth;
+      this.dailySignalBtn._btnHeight = dailySignalHeight;
+      this.dailySignalBtn._variant = 'primary';
+      this.dailySignalBtn._dockIndex = null;
+      this.dailySignalBtn._launchDeckIndex = null;
+      this.dailySignalBtn._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.052, 13 * uiScale, 17 * uiScale));
+      this.dailySignalBtn._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.03, 8 * uiScale, 10 * uiScale));
+      this.refreshButtonCopy(this.dailySignalBtn, { forceGpuRefresh: forceLabelGpuRefresh });
+      this.dailySignalBtn.x = deckX + cardWidth / 2;
+      this.dailySignalBtn.y = launchStackTop + dailySignalHeight / 2;
+      this.dailySignalBtn._layoutY = this.dailySignalBtn.y;
+      this.dailySignalBtn._motionY = this.dailySignalBtn.y;
+      if (!Number.isFinite(this.dailySignalBtn._motionScale)) this.dailySignalBtn._motionScale = 1;
+      this.drawMenuButton(this.dailySignalBtn, false);
+      this.dailySignalBounds = {
+        x: deckX,
+        y: launchStackTop,
+        width: cardWidth,
+        height: dailySignalHeight,
+        right: deckX + cardWidth,
+        bottom: launchStackTop + dailySignalHeight
+      };
+    }
     this.launchDeckBounds = {
       x: deckX,
       y: Math.round(cardTop),
@@ -1855,6 +1913,14 @@ export class MenuScene {
     this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.24);
     this.runModeExplainer.x = briefingX + briefingPadX;
     this.runModeExplainer.y = briefingY + briefingPadY + Math.round((isShortLayout ? 26 : 31) * briefingScale);
+    this.runModeExplainer.scale.set(1);
+    refreshTextTexture(this.runModeExplainer);
+    const briefingBodyMaxHeight = Math.max(48, briefingHeight - (this.runModeExplainer.y - briefingY) - 6);
+    if ((this.runModeExplainer.height || 0) > briefingBodyMaxHeight) {
+      const bodyScale = Math.max(0.82, briefingBodyMaxHeight / this.runModeExplainer.height);
+      this.runModeExplainer.scale.set(bodyScale);
+      refreshTextTexture(this.runModeExplainer);
+    }
     this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
     this.runModePanel.alpha = this.runModePanel.alpha || 1;
     this.runModePanel._briefingBounds = {
@@ -2008,11 +2074,38 @@ export class MenuScene {
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
     const body = briefing.menuBody || briefing.body;
-    return this.menuHumorLine ? `${body}\n// ${this.menuHumorLine}` : body;
+    const humorLine = briefing.id === 'dailySignal' ? '' : this.menuHumorLine;
+    return humorLine ? `${body}\n// ${humorLine}` : body;
   }
 
   getRunModeBriefing() {
     const focused = this.getSelectedMenuOptionId();
+    if (focused === 'dailySignal') {
+      const contract = this.dailySignalContract || deriveDailySignalContract();
+      const best = this.dailySignalBest || getDailySignalBest(contract);
+      return {
+        id: 'dailySignal',
+        title: translateText('DAILY CABINET SIGNAL'),
+        accent: 0x7dffcc,
+        secondary: 0xff55d9,
+        menuBody: [
+          translateText('ONE LOANER // FIXED UTC CONTRACT // FINISH SECTOR {sector}', { sector: contract.finishSector }),
+          translateText('{ship} flies today\'s {route} route. Tactical drafts are active. Your best is stored locally; no public daily score is submitted yet.', {
+            ship: contract.loanerShipName,
+            route: translateText(contract.templateLabel)
+          }),
+          translateText('LOCAL RECORD ONLY // NO ACHIEVEMENTS, CAREER XP, OR CHECKPOINT UNLOCKS'),
+          translateText('BEST {score} // RESET IN {time}', {
+            score: this.formatDailySignalScore(best?.score || 0),
+            time: this.formatDailySignalResetTime(contract)
+          })
+        ].join('\n'),
+        body: translateText('{ship} flies today\'s fixed route to Sector {sector}. Tactical drafts are active and the record stays local.', {
+          ship: contract.loanerShipName,
+          sector: contract.finishSector
+        })
+      };
+    }
     if (focused === 'scout') {
       return {
         id: 'scout',
@@ -2124,16 +2217,21 @@ export class MenuScene {
     const isShortLayout = Boolean(metrics.isShortLayout);
     const isMobileLayout = Boolean(metrics.isMobileLayout);
     const dockTop = Number(metrics.dockTop) || height;
+    const briefingBounds = this.runModePanel?._briefingBounds || null;
+    const useRightRail = Boolean(
+      !isMobileLayout && briefingBounds && (width < 1450 || height < 820 || uiScale > 1.2)
+    );
+    const compactBoard = useRightRail || height < 650;
     const boardScale = Math.min(uiScale, isMobileLayout ? 1.18 : 1.15);
-    const gap = Math.round(clampNumber(height * 0.006, 5, 8) * boardScale);
-    const padX = Math.round((isMobileLayout ? 10 : 16) * uiScale);
-    const padY = Math.round((isShortLayout ? 8 : 10) * boardScale);
+    const gap = Math.round((compactBoard ? 4 : clampNumber(height * 0.006, 5, 8)) * boardScale);
+    const padX = Math.round((compactBoard ? 9 : (isMobileLayout ? 10 : 16)) * Math.min(uiScale, 1.2));
+    const padY = Math.round((compactBoard ? 6 : (isShortLayout ? 8 : 10)) * boardScale);
     const rowHeight = Math.round(clampNumber(
-      height * 0.052 * boardScale,
-      (isShortLayout ? 38 : 42) * boardScale,
-      (isMobileLayout ? 42 : 46) * boardScale
+      height * (compactBoard ? 0.044 : 0.052) * boardScale,
+      (compactBoard ? 30 : (isShortLayout ? 38 : 42)) * boardScale,
+      (compactBoard ? 34 : (isMobileLayout ? 42 : 46)) * boardScale
     ));
-    const headerHeight = Math.round((isShortLayout ? 56 : 60) * boardScale);
+    const headerHeight = Math.round((compactBoard ? 44 : (isShortLayout ? 56 : 60)) * boardScale);
     let hangarProgress = readHangarProgressState();
     const menuSettings = getMenuSettings({
       defaultShowPilotOrders: getDefaultShowPilotOrders(hangarProgress)
@@ -2157,7 +2255,7 @@ export class MenuScene {
       this.missionBoardCompletionNoticeVisibleMs = 0;
     }
     this.missionBoardState = missionState;
-    const briefingLeft = Number(this.runModePanel?._briefingBounds?.x) || width;
+    const briefingLeft = Number(briefingBounds?.x) || width;
     const availableBoardWidth = Math.max(
       this.launchDeckBounds.width,
       Math.min(width - this.launchDeckBounds.x - 24, briefingLeft - this.launchDeckBounds.x - 32)
@@ -2165,7 +2263,9 @@ export class MenuScene {
     const desiredBoardWidth = isMobileLayout
       ? this.launchDeckBounds.width
       : Math.max(this.launchDeckBounds.width, Math.min(480 * uiScale, width * 0.37));
-    const boardWidth = Math.round(Math.min(desiredBoardWidth, availableBoardWidth));
+    const boardWidth = Math.round(useRightRail
+      ? briefingBounds.width
+      : Math.min(desiredBoardWidth, availableBoardWidth));
     const rows = missionState.active || [];
     const completeState = missionState.status === 'complete';
     const hiddenState = missionState.hidden || missionState.status === 'hidden';
@@ -2182,15 +2282,19 @@ export class MenuScene {
       : Math.round(completeState
         ? padY * 2 + Math.round((isMobileLayout ? 54 : 62) * boardScale)
         : padY * 2 + headerHeight + rowHeight * 3 + gap * 2);
-    const boardX = Math.round(this.launchDeckBounds.x);
+    const boardX = Math.round(useRightRail ? briefingBounds.x : this.launchDeckBounds.x);
     const stackToBoardGap = Math.round(
       clampNumber(height * 0.022, isMobileLayout ? 12 : 16, isMobileLayout ? 22 : 30) *
       Math.min(uiScale, 1.2)
     );
-    let boardY = Math.round(this.launchDeckBounds.bottom + stackToBoardGap);
+    let boardY = Math.round(useRightRail
+      ? briefingBounds.bottom + Math.max(8, Math.round(10 * Math.min(uiScale, 1.15)))
+      : this.launchDeckBounds.bottom + stackToBoardGap);
     const maxBoardY = Math.round(dockTop - boardHeight - clampNumber(height * 0.014, 8, 16));
     if (boardY > maxBoardY) {
-      boardY = Math.max(Math.round(this.launchDeckBounds.y), maxBoardY);
+      boardY = useRightRail
+        ? Math.max(Math.round(briefingBounds.bottom + 6), maxBoardY)
+        : Math.max(Math.round(this.launchDeckBounds.y), maxBoardY);
     }
     boardY = Math.max(Math.round((metrics.safeTop || 0) + 68), boardY);
     this.missionBoardBounds = {
@@ -2203,7 +2307,9 @@ export class MenuScene {
       right: boardX + boardWidth,
       bottom: boardY + boardHeight,
       hidden: hiddenState,
-      status: missionState.status
+      status: missionState.status,
+      placement: useRightRail ? 'rightRail' : 'belowDeck',
+      compact: compactBoard
     };
 
     if (hiddenState) {
@@ -2226,7 +2332,7 @@ export class MenuScene {
     this.missionBoardTitle.text = completeState
       ? missionTitle
       : `${missionTitle} // ${completionLabel}`;
-    this.missionBoardTitle.style.fontSize = Math.round((isMobileLayout ? 11 : 14) * uiScale);
+    this.missionBoardTitle.style.fontSize = Math.round((compactBoard ? 11 : (isMobileLayout ? 11 : 14)) * Math.min(uiScale, 1.25));
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;
     this.missionBoardTitle.alpha = this.missionBoardTitle.alpha || 1;
@@ -2238,7 +2344,7 @@ export class MenuScene {
       ? translateText(missionState.completionBody)
       : this.getMissionBoardDetailText(rows[selectedIndex]) || translateText(missionState.subtitle);
     this.missionBoardSubtitle.style.fontFamily = completeState ? FONT_MONO : FONT_ARCADE;
-    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 10 : (isMobileLayout ? 12 : 15)) * uiScale);
+    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 10 : (compactBoard ? 10 : (isMobileLayout ? 12 : 15))) * Math.min(uiScale, 1.25));
     this.missionBoardSubtitle.style.fontWeight = completeState ? '800' : '900';
     this.missionBoardSubtitle.style.fill = completeState ? '#9feeff' : '#f6fbff';
     this.missionBoardSubtitle.style.strokeThickness = completeState ? 2 : 3;
@@ -2280,11 +2386,11 @@ export class MenuScene {
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
-      row._title.style.fontSize = Math.round((isMobileLayout ? 12 : 16) * uiScale);
+      row._title.style.fontSize = Math.round((compactBoard ? 12 : (isMobileLayout ? 12 : 16)) * Math.min(uiScale, 1.25));
       row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
       row._detail.style.wordWrap = false;
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
-      row._progress.style.fontSize = Math.round((isMobileLayout ? 10 : 11) * uiScale);
+      row._progress.style.fontSize = Math.round((compactBoard ? 10 : (isMobileLayout ? 10 : 11)) * Math.min(uiScale, 1.25));
       const progressSlotMinWidth = Math.round((contract.completed ? 104 : 82) * uiScale);
       const progressSlotMaxWidth = Math.max(progressSlotMinWidth, Math.round(row._width * 0.36));
       const progressSlotWidth = Math.round(clampNumber(
@@ -3003,6 +3109,7 @@ export class MenuScene {
       runModeExplainer: this.runModeExplainer,
       disclaimer: this.disclaimer,
       controls: this.controls,
+      dailySignalButton: this.dailySignalBtn,
       launchButton: this.startBtn,
       tacticalLaunchButton: this.tacticalStartBtn,
       scoutRunButton: this.scoutRunBtn,
@@ -3072,6 +3179,23 @@ export class MenuScene {
       },
       launchDeck: {
         bounds: this.launchDeckBounds,
+        featuredDailySignal: {
+          label: this.dailySignalBtn?._label?.text || null,
+          sublabel: this.dailySignalBtn?._sublabel?.text || null,
+          focused: Boolean(this.dailySignalBtn?._focused),
+          bounds: this.dailySignalBounds || boundsForDisplayObject(this.dailySignalBtn),
+          contract: this.dailySignalContract ? {
+            dailyKey: this.dailySignalContract.dailyKey,
+            rulesHash: this.dailySignalContract.rulesHash,
+            loanerShipKey: this.dailySignalContract.loanerShipKey,
+            loanerShipName: this.dailySignalContract.loanerShipName,
+            templateId: this.dailySignalContract.templateId,
+            finishSector: this.dailySignalContract.finishSector,
+            localOnly: !this.dailySignalContract.onlineCompetitive
+          } : null,
+          bestScore: Number(this.dailySignalBest?.score) || 0,
+          resetTime: this.formatDailySignalResetTime()
+        },
         cards: {
           mayhem: {
             label: this.startBtn?._label?.text || null,
@@ -4473,6 +4597,7 @@ export class MenuScene {
     this.animateElement(this.missionBoardSubtitle, 0.86, 0.42);
     this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
+    this.animateElement(this.dailySignalBtn, 0.86, 0.4);
     this.animateElement(this.startBtn, 0.92, 0.4);
     this.animateElement(this.tacticalStartBtn, 1.02, 0.4);
     this.animateElement(this.scoutRunBtn, 1.12, 0.4);
@@ -4490,6 +4615,7 @@ export class MenuScene {
   buildMenuNavigation() {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
+      { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
       { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL) },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
@@ -4563,7 +4689,8 @@ export class MenuScene {
       option.button.activate = option.activate;
     });
     const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
-    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : 0);
+    const launchIndex = this.menuOptions.findIndex((option) => option.id === 'launch');
+    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : Math.max(0, launchIndex));
   }
 
   getSelectedMenuOptionId() {
@@ -4697,6 +4824,67 @@ export class MenuScene {
       console.error('[MenuScene] Quick Start Error:', e);
       this.launchingRun = false;
     }
+  }
+
+  startDailySignalRun() {
+    if (this.launchingRun) return;
+    this.refreshDailySignalMenuState({ force: true });
+    const contract = this.dailySignalContract || deriveDailySignalContract();
+    this.launchingRun = true;
+    try {
+      AudioManager.init();
+      AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.82 });
+      AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
+      Promise.resolve(this.game.startGame(contract.loanerShipKey, {
+        runMode: RUN_MODES.DAILY_SIGNAL,
+        dailySignalContract: contract,
+        inputDevice: this.lastInputDevice
+      })).then((started) => {
+        if (!started && this.game?.currentScene === this) this.launchingRun = false;
+      }).catch((error) => {
+        console.error('[MenuScene] Daily Signal start failed:', error);
+        this.launchingRun = false;
+      });
+    } catch (error) {
+      console.error('[MenuScene] Daily Signal start failed:', error);
+      this.launchingRun = false;
+    }
+  }
+
+  refreshDailySignalMenuState({ force = false } = {}) {
+    const contract = deriveDailySignalContract(new Date());
+    const dayChanged = contract.dailyKey !== this.dailySignalContract?.dailyKey;
+    this.dailySignalContract = contract;
+    this.dailySignalBest = getDailySignalBest(contract);
+    this.dailySignalRefreshAt = Date.now() + 1000;
+    if (this.dailySignalBtn) {
+      this.refreshButtonCopy(this.dailySignalBtn, { forceGpuRefresh: force || dayChanged });
+    }
+    if ((force || dayChanged) && this.getSelectedMenuOptionId() === 'dailySignal') {
+      const briefing = this.getRunModeBriefing();
+      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = [translateText('RUN MODES'), briefing.title].join(' // ');
+      if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+    }
+    return contract;
+  }
+
+  formatDailySignalScore(value) {
+    return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+  }
+
+  formatDailySignalResetTime(contract = this.dailySignalContract) {
+    const totalSeconds = getDailySignalResetSeconds(contract);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  }
+
+  getDailySignalMenuSubLabel() {
+    const contract = this.dailySignalContract || deriveDailySignalContract();
+    return translateText('LOANER {ship} // RESET {time}', {
+      ship: contract.loanerShipName,
+      time: this.formatDailySignalResetTime(contract)
+    });
   }
 
   refreshSectorStartState() {
@@ -5232,6 +5420,7 @@ export class MenuScene {
     this.updateCodexSignalCue(delta);
     this.updateMenuButtonMotion(delta);
     this.updateMissionBoardCompletionNotice(delta);
+    if (Date.now() >= (this.dailySignalRefreshAt || 0)) this.refreshDailySignalMenuState();
     this.drawSectorStartStepperCue();
     if (this.sectorSelectorOpen) {
       this.sectorSelectorOpenAge = Math.min(1, (this.sectorSelectorOpenAge || 0) + delta * 0.016 / 0.34);

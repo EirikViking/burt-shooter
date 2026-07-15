@@ -216,6 +216,7 @@ export class PlayScene {
     this.blurPauseHandler = null;
     this.nativeBlurPauseHandler = null;
     this.levelAdvancePending = false;
+    this.dailySignalFinishPending = false;
     this.levelAdvanceTimeout = null;
     this.tacticalDraft = null;
     this.tacticalDraftHistory = [];
@@ -720,6 +721,7 @@ export class PlayScene {
     this.blinkDriveOrderCompleted = false;
     this.playerPhaseWasActive = false;
     this.levelAdvancePending = false;
+    this.dailySignalFinishPending = false;
     this.postBossLevelIntroPending = false;
     this.levelAdvanceTimeout = null;
     this.clearTacticalDraft('run_reset');
@@ -1855,7 +1857,7 @@ export class PlayScene {
     crown.blendMode = 'add';
     panel.addChild(crown);
 
-    const title = createText(translateText('NEW PERSONAL BEST'), {
+    const title = createText(translateText(source === 'daily_signal_local_best' ? 'NEW DAILY SIGNAL BEST' : 'NEW PERSONAL BEST'), {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 29 : 46,
       fill: '#fff4a3',
@@ -3745,6 +3747,8 @@ export class PlayScene {
           });
         }
         const compactHud = this.game.getWidth() < 620;
+        const completedSector = Math.max(1, Math.floor(Number(this.game.level) || 1));
+        const dailySignalFinish = this.game.shouldFinishDailySignal?.(completedSector, bossCompletion) === true;
         const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
         const repairDelta = repairTarget > 0
           ? this.applyLifeRepair(repairTarget, rewardConfig.repairInvulnerabilityMs || 0)
@@ -3764,7 +3768,7 @@ export class PlayScene {
             maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
           });
         }
-        this.playLevelClearVoice({ bossCompletion });
+        if (!dailySignalFinish) this.playLevelClearVoice({ bossCompletion });
 
         // Particles
         const gameplayWidth = this.gameplayGame.getWidth();
@@ -3779,6 +3783,11 @@ export class PlayScene {
               );
             }
           }, i * 100);
+        }
+
+        if (dailySignalFinish) {
+          this.beginDailySignalFinish({ sectorCleared: completedSector, compactHud });
+          return;
         }
 
         const nextSectorLevel = Math.max(1, Math.floor(Number(this.game.level) || 1) + 1);
@@ -11452,6 +11461,69 @@ export class PlayScene {
     console.log(`[Powerup] pickup type=SCORE_X2 durationMs=${durationMs} source=${source}`);
   }
 
+  beginDailySignalFinish({ sectorCleared = this.game?.level || 10, compactHud = this.game.getWidth() < 620 } = {}) {
+    if (this.dailySignalFinishPending || this.game?.runFinalized || this.game?.currentScene !== this) return false;
+    const finishSector = Math.max(1, Math.floor(Number(this.game?.dailySignalContract?.finishSector) || 10));
+    const completedSector = Math.max(1, Math.floor(Number(sectorCleared) || finishSector));
+    if (completedSector < finishSector) return false;
+
+    this.dailySignalFinishPending = true;
+    if (this.levelAdvanceTimeout) clearTimeout(this.levelAdvanceTimeout);
+    this.levelAdvanceTimeout = null;
+    this.levelAdvanceWarmupPromise = null;
+    const clearBonus = 10000;
+    const livesBonus = Math.max(0, Number(this.game?.lives) || 0) * 2500;
+    this.game.markRunClear?.('daily_signal_sector_10_clear');
+    const award = this.game.awardRunClearScoreBonuses?.({
+      clearBonus,
+      livesBonus,
+      awardKey: 'daily_signal_finish_v1'
+    }) || { clearBonus, livesBonus };
+    const celebration = {
+      id: 'daily_signal_complete_v1',
+      title: 'DAILY SIGNAL CLEARED',
+      flavor: 'TEN SECTORS. ONE LOANER. YOUR SCORE IS NOW THE TARGET.',
+      statusLine: 'LOCAL CABINET RECORD // {score}',
+      warning: 'TODAY\'S CONTRACT COMPLETE // {lives} HULLS RETURNED',
+      footerWarning: 'LOCAL ONLY // PUBLIC DAILY BOARD AWAITS DETERMINISTIC VERIFICATION',
+      continueText: 'LOCK SCORE & OPEN REPORT',
+      voiceCue: 'mission_control_overrun_clear_sector_10',
+      visual: {
+        motif: 'deep_scan',
+        primaryColor: 0x7dffcc,
+        accentColor: 0x37f5ff,
+        secondaryColor: 0xffd15c,
+        frameColor: 0xff55d9,
+        backgroundColor: 0x020914,
+        flashColor: 0xb8fff3,
+        ringCount: compactHud ? 4 : 6,
+        rayCount: compactHud ? 20 : 30,
+        shardSpeed: 1.08,
+        sealScale: 1.04,
+        pulseRate: 0.014,
+        shardColors: [0x7dffcc, 0x37f5ff, 0xff55d9, 0xffd15c]
+      }
+    };
+    this.triggerOverrunClearCelebration({
+      nextSector: completedSector,
+      milestoneSector: completedSector,
+      eventKind: 'daily_signal_complete',
+      clearBonus: award.clearBonus ?? clearBonus,
+      livesBonus: award.livesBonus ?? livesBonus,
+      celebration,
+      onComplete: () => {
+        if (this.game?.currentScene !== this || this.game?.runFinalized) return;
+        this.game.completeRun?.('daily_signal_sector_10_clear', {
+          levelReached: completedSector,
+          sectorReached: completedSector,
+          dailySignalFinishSector: finishSector
+        });
+      }
+    });
+    this.reserveMessageFocus(OVERRUN_INTERLUDE_MS + 900, { priority: 10, slots: ['center', 'top', 'corner'] });
+    return true;
+  }
+
   maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud = this.game.getWidth() < 620 } = {}) {
     if (!bossCompletion) return false;
     if (this.gameOverInterlude?.active || this.game?.gameOverTransitionPending || this.gameOverSequenceStarted) return false;
@@ -11567,7 +11639,8 @@ export class PlayScene {
     clearBonus = 0,
     livesBonus = 0,
     celebration: suppliedCelebration = null,
-    milestoneReward = null
+    milestoneReward = null,
+    onComplete = null
   } = {}) {
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -11659,7 +11732,7 @@ export class PlayScene {
       active: true,
       startedAt: Date.now(),
       durationMs: OVERRUN_INTERLUDE_MS,
-      requiresConfirm: eventKind === 'run_clear' || eventKind === 'overrun_milestone',
+      requiresConfirm: eventKind === 'run_clear' || eventKind === 'overrun_milestone' || eventKind === 'daily_signal_complete',
       confirmReadyAt: Date.now() + 1250,
       confirmed: false,
       confirmedBy: null,
@@ -11668,9 +11741,10 @@ export class PlayScene {
       nextSector,
       variantId: celebration.id,
       milestoneReward,
+      onComplete: typeof onComplete === 'function' ? onComplete : null,
       effect
     };
-    effect.requiresConfirm = eventKind === 'run_clear' || eventKind === 'overrun_milestone';
+    effect.requiresConfirm = eventKind === 'run_clear' || eventKind === 'overrun_milestone' || eventKind === 'daily_signal_complete';
     effect.confirmed = false;
     if (effect.requiresConfirm) {
       this.installOverrunConfirmationHandlers();
@@ -11832,7 +11906,7 @@ export class PlayScene {
     sectorText.y = compact ? 15 : 18;
     card.addChild(sectorText);
 
-    const bonusLine = (eventKind === 'run_clear' || eventKind === 'overrun_milestone') && (clearBonus || livesBonus)
+    const bonusLine = (eventKind === 'run_clear' || eventKind === 'overrun_milestone' || eventKind === 'daily_signal_complete') && (clearBonus || livesBonus)
       ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
         clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
         livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
@@ -11875,7 +11949,7 @@ export class PlayScene {
     rewardText.y = compact ? 65 : 86;
     card.addChild(rewardText);
 
-    const warning = createText(translateText('STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
+    const warning = createText(translateText(celebration?.footerWarning || 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 12 : 15,
       fill: '#fff3a2',
@@ -12016,9 +12090,12 @@ export class PlayScene {
     }
     if (waitingForConfirm) return;
     if (rawProgress >= 1) {
+      const onComplete = interlude.onComplete;
+      interlude.onComplete = null;
       interlude.active = false;
       this.overrunMilestoneInterlude = null;
       this.clearOverrunConfirmationHandlers();
+      onComplete?.();
     }
   }
 
@@ -13502,6 +13579,9 @@ export class PlayScene {
 
   recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    if (this.game?.isDailySignalRun?.()) {
+      return { item: null, isNew: false, skipped: 'daily_signal_no_codex_progress' };
+    }
     const isRankedRun = Boolean(this.game?.isRankedRun?.());
     const result = recordThreatSeen(id, category, metadata);
     if (!result?.isNew) return result;

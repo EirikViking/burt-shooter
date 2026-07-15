@@ -109,7 +109,7 @@ if (!canSpawnWithAboutSixtyPercentLeft({ expected: 14, objectiveCount: 8 })) {
 }
 
 const requiredSourceSnippets = [
-  'isRankedRunMode',
+  'canRunModeUseMayhemReinforcements',
   "reasons.push('not_mayhem')",
   "this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE'",
   'boss_active_or_pending',

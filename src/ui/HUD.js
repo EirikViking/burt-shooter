@@ -520,7 +520,9 @@ export class HUD {
     const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
     const label = chase?.runMode === 'sector_start'
       ? translateText('SECTOR RECORD TARGET')
-      : translateText('HIGH SCORE TARGET');
+      : chase?.runMode === 'daily_signal'
+        ? translateText('DAILY SIGNAL BEST')
+        : translateText('HIGH SCORE TARGET');
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 52;
     const renderKey = [

@@ -66,9 +66,12 @@ import {
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getMayhemModeBestScore, recordMayhemModeScore } from '../progression/MayhemModeRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
+import { getDailySignalBest, recordDailySignalRun } from '../progression/DailySignalRecords.js';
+import { deriveDailySignalContract, validateDailySignalContract } from '../config/DailyCabinetSignal.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
 import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
+import { generateUUID } from '../utils/uuid.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -125,6 +128,11 @@ export class Game {
     this.sectorStartPlaySector = null;
     this.sectorStartHighestReached = null;
     this.lastSectorStartChallengeRecord = null;
+    this.dailySignalContract = null;
+    this.dailySignalContractValidation = null;
+    this.dailySignalInvalidReason = null;
+    this.dailySignalAttemptId = null;
+    this.lastDailySignalRecord = null;
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
     this.globalLeaderboardCueState = {
@@ -275,9 +283,30 @@ export class Game {
 
   async startGame(spriteKey, options = {}) {
     this.prepareGameplayInputFocus();
-    const candidateSpriteKey = isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey();
-    const selectedSpriteKey = isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey();
     const requestedRunMode = normalizeRunMode(options.runMode);
+    let dailySignalContract = null;
+    let dailySignalContractValidation = null;
+    if (requestedRunMode === RUN_MODES.DAILY_SIGNAL) {
+      const suppliedContract = options.dailySignalContract || null;
+      const requestedContract = suppliedContract || deriveDailySignalContract();
+      dailySignalContractValidation = validateDailySignalContract(requestedContract);
+      if (!dailySignalContractValidation.valid) {
+        console.warn('[DailySignal] Rejected invalid or expired contract', {
+          errors: dailySignalContractValidation.errors,
+          requestedDay: requestedContract?.dailyKey || null,
+          currentDay: deriveDailySignalContract().dailyKey,
+          supplied: Boolean(suppliedContract)
+        });
+        return false;
+      }
+      dailySignalContract = requestedContract;
+    }
+    const candidateSpriteKey = requestedRunMode === RUN_MODES.DAILY_SIGNAL
+      ? dailySignalContract.loanerShipKey
+      : (isValidShipKey(spriteKey) ? spriteKey : getDefaultShipKey());
+    const selectedSpriteKey = requestedRunMode === RUN_MODES.DAILY_SIGNAL
+      ? candidateSpriteKey
+      : (isShipUnlocked(candidateSpriteKey) ? candidateSpriteKey : getDefaultShipKey());
     const controllerUiActive = typeof document !== 'undefined'
       && document.documentElement?.classList?.contains('controller-input-active');
     const requestedInputDevice = options.inputDevice === 'controller'
@@ -307,16 +336,26 @@ export class Game {
     this.lives = 3;
     this.isDebugRun = false;
     this.runMode = requestedRunMode;
-    this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START ? 'sector_start_checkpoint' : null;
+    this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START
+      ? 'sector_start_checkpoint'
+      : requestedRunMode === RUN_MODES.DAILY_SIGNAL
+        ? 'daily_signal_local_challenge'
+        : null;
     this.runStartInputDevice = requestedInputDevice;
     this.sectorStartCheckpoint = sectorStartCheckpoint;
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
     this.lastSectorStartChallengeRecord = null;
+    this.dailySignalContract = dailySignalContract;
+    this.dailySignalContractValidation = dailySignalContractValidation;
+    this.dailySignalInvalidReason = null;
+    this.dailySignalAttemptId = requestedRunMode === RUN_MODES.DAILY_SIGNAL ? generateUUID() : null;
+    this.lastDailySignalRecord = null;
     this.highscoreChase = this.createHighscoreChaseState({
       runMode: requestedRunMode,
       progress: startingProgress,
-      sectorStartCheckpoint
+      sectorStartCheckpoint,
+      dailySignalContract
     });
     this.highscoreChaseTargetPromise = null;
     this.personalBestLiveCelebrated = false;
@@ -333,7 +372,6 @@ export class Game {
     this.finalScoreSnapshot = null;
     this.finalScoreLockReason = null;
     this.runSummary = null;
-    this.lastRunReport = null;
     this.runProgressionResult = null;
     this.liveRankProgression = null;
     this.liveRankBaseProgress = null;
@@ -345,15 +383,22 @@ export class Game {
     this.liveRankBaseProgress = this.hangarProgressAtRunStart;
     this.runPressureDirector = new RunPressureDirector(this);
     this.contentDirector = new RunContentDirector(this, {
-      seed: `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
+      seed: dailySignalContract?.seed || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
-    if ((this.isRankedRun() || requestedRunMode === RUN_MODES.SCOUT) && RunPacingConfig.threatCodexEnabled) {
+    if (
+      (this.isRankedRun() || requestedRunMode === RUN_MODES.SCOUT || requestedRunMode === RUN_MODES.DAILY_SIGNAL)
+      && RunPacingConfig.threatCodexEnabled
+    ) {
       startThreatDiscoveryRun();
     }
-    if (RunPacingConfig.contentDirectorEnabled) this.contentDirector.startRun();
+    if (RunPacingConfig.contentDirectorEnabled) {
+      this.contentDirector.startRun({ runThemeId: dailySignalContract?.runThemeId || null });
+    }
 
     // Rank System (cross-run pilot career)
-    const initialRank = Number(this.hangarProgressAtRunStart?.pilotRank) || 0;
+    const initialRank = requestedRunMode === RUN_MODES.DAILY_SIGNAL
+      ? 0
+      : (Number(this.hangarProgressAtRunStart?.pilotRank) || 0);
     this.rankIndex = initialRank;
     this.lastRankIndex = this.rankIndex;
     // Pilot XP is saved after the run, but the visible rank previews that same XP live during play.
@@ -398,6 +443,13 @@ export class Game {
 
   markUnrankedRun(reason = 'debug_route') {
     this.isDebugRun = true;
+    if (this.runMode === RUN_MODES.DAILY_SIGNAL) {
+      this.dailySignalInvalidReason = reason;
+      this.runModeReason = reason;
+      this.pendingHighscore = null;
+      console.log(`[Game] daily signal marked local-invalid reason=${reason}`);
+      return;
+    }
     this.runMode = RUN_MODES.UNRANKED;
     this.runModeReason = reason;
     this.pendingHighscore = null;
@@ -410,6 +462,16 @@ export class Game {
 
   isRankedRun() {
     return isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+  }
+
+  isDailySignalRun() {
+    return this.runMode === RUN_MODES.DAILY_SIGNAL;
+  }
+
+  shouldFinishDailySignal(sectorCleared, bossCompletion = true) {
+    if (!this.isDailySignalRun() || !bossCompletion || this.runFinalized) return false;
+    const finishSector = Math.max(1, Math.floor(Number(this.dailySignalContract?.finishSector) || 10));
+    return Math.max(1, Math.floor(Number(sectorCleared) || 1)) >= finishSector;
   }
 
   getRunModeProfile(mode = this.runMode) {
@@ -490,13 +552,14 @@ export class Game {
     return awardRunClearScoreBonuses(this, { clearBonus, livesBonus, awardKey });
   }
 
-  completeRun(reason = 'target_sector_clear') {
+  completeRun(reason = 'target_sector_clear', overrides = {}) {
     if (this.runFinalized) return;
     this.markRunClear(reason);
     this.finalizeRunProgression({
       runCleared: true,
       clearReason: this.runClearReason || reason,
-      clearLivesRemaining: this.runClearLivesRemaining || 0
+      clearLivesRemaining: this.runClearLivesRemaining || 0,
+      ...overrides
     });
     this.state = GameState.GAME_OVER;
     this.switchScene('gameOver');
@@ -689,19 +752,30 @@ export class Game {
     return applied;
   }
 
-  createHighscoreChaseState({ runMode = this.runMode, progress = null, sectorStartCheckpoint = null } = {}) {
+  createHighscoreChaseState({
+    runMode = this.runMode,
+    progress = null,
+    sectorStartCheckpoint = null,
+    dailySignalContract = this.dailySignalContract
+  } = {}) {
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
+    const isDailySignal = runMode === RUN_MODES.DAILY_SIGNAL;
     const sectorRecord = isSectorStart ? getSectorStartChallengeRecord(sectorStartCheckpoint) : null;
+    const dailyRecord = isDailySignal ? getDailySignalBest(dailySignalContract) : null;
     const rankedModeBest = isRankedRunMode(runMode)
       ? getMayhemModeBestScore(runMode, { legacyPureBest: progress?.bestScore })
       : 0;
     const targetScore = Math.max(0, Math.floor(Number(
-      isSectorStart ? sectorRecord?.scoreEarned : rankedModeBest
+      isSectorStart ? sectorRecord?.scoreEarned : isDailySignal ? dailyRecord?.score : rankedModeBest
     ) || 0));
     return {
       targetScore,
       runMode,
-      source: isSectorStart ? 'sector_start_record' : 'mayhem_mode_best_score',
+      source: isSectorStart
+        ? 'sector_start_record'
+        : isDailySignal
+          ? 'daily_signal_local_best'
+          : 'mayhem_mode_best_score',
       syncingTarget: isRankedRunMode(runMode),
       checkpoint: sectorStartCheckpoint || null,
       surpassed: targetScore <= 0,
@@ -774,7 +848,7 @@ export class Game {
     const score = Math.max(0, Number(this.score) || 0);
     const ratio = score / chase.targetScore;
     const beatPersonalBest = (
-      isRankedRunMode(chase.runMode)
+      (isRankedRunMode(chase.runMode) || chase.runMode === RUN_MODES.DAILY_SIGNAL)
       && !chase.syncingTarget
       && score > chase.targetScore
     );
@@ -790,7 +864,9 @@ export class Game {
       }) === true;
       if (!shown) {
         AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.9, minIntervalMs: 0 });
-        this.currentScene.enqueueToast(translateText('NEW PERSONAL BEST'), {
+        this.currentScene.enqueueToast(translateText(
+          chase.runMode === RUN_MODES.DAILY_SIGNAL ? 'NEW DAILY SIGNAL BEST' : 'NEW PERSONAL BEST'
+        ), {
           fontSize: 29,
           fill: '#fff05c',
           slot: 'center',
@@ -1049,6 +1125,18 @@ export class Game {
       shipPowerRating: Number.isFinite(ship?.powerRating) ? ship.powerRating : 1,
       sectorStartCheckpoint: this.sectorStartCheckpoint || null,
       sectorStartPlaySector: this.sectorStartPlaySector || null,
+      dailySignalContract: this.dailySignalContract ? {
+        ...this.dailySignalContract,
+        reinforcementSectors: [...(this.dailySignalContract.reinforcementSectors || [])],
+        superStormSectors: [...(this.dailySignalContract.superStormSectors || [])]
+      } : null,
+      dailySignalAttemptId: this.dailySignalAttemptId || null,
+      dailySignalContractValid: this.dailySignalContractValidation?.valid === true && !this.dailySignalInvalidReason,
+      dailySignalContractErrors: [
+        ...(this.dailySignalContractValidation?.errors || []),
+        ...(this.dailySignalInvalidReason ? [this.dailySignalInvalidReason] : [])
+      ],
+      dailySignalInvalidReason: this.dailySignalInvalidReason || null,
       runContracts: play?.getRunContractDebugState?.() || null,
       tacticalDirectives: play?.getTacticalDirectiveDebugState?.() || null,
       aceBounties: play?.getAceBountyDebugState?.() || null,
@@ -1217,6 +1305,22 @@ export class Game {
         scoutRunPreviousBest: scoutRecord.previousRecord,
         scoutRunBest: scoutRecord.bestRecord,
         scoutRunNewBest: scoutRecord.isNewBest
+      };
+    }
+    if (this.runMode === RUN_MODES.DAILY_SIGNAL && this.dailySignalContract) {
+      const dailyRecord = recordDailySignalRun(this.runSummary, {
+        contract: this.dailySignalContract,
+        attemptId: this.dailySignalAttemptId
+      });
+      this.lastDailySignalRecord = dailyRecord;
+      this.runSummary = {
+        ...this.runSummary,
+        dailySignalAttempt: dailyRecord.attemptRecord,
+        dailySignalPreviousBest: dailyRecord.previousRecord,
+        dailySignalBest: dailyRecord.bestRecord,
+        dailySignalNewBest: dailyRecord.isNewBest,
+        dailySignalStored: dailyRecord.stored,
+        dailySignalRecordSaveFailed: dailyRecord.saveFailed === true
       };
     }
     if (this.isRankedRun()) {

@@ -954,10 +954,27 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   assertInside(board.bounds, screen, 'Pilot Orders');
   assertInside(board.titleBounds, screen, 'Pilot Orders title');
   assertInside(board.subtitleBounds, screen, 'Pilot Orders subtitle');
-  assert.ok(Math.abs(board.bounds.x - menu.launchDeck.bounds.x) <= 2, 'Pilot Orders should align with launch deck x');
-  assert.ok(board.bounds.width >= menu.launchDeck.bounds.width - 8, 'Pilot Orders should be at least as wide as the launch deck');
-  assert.ok(board.bounds.width <= screen.width * 0.38, 'Pilot Orders should stay in the left command lane');
-  assert.ok(board.bounds.y >= menu.launchDeck.bounds.bottom - 6, 'Pilot Orders should sit below the launch deck');
+  const placement = board.bounds?.placement || 'belowDeck';
+  assert.ok(['belowDeck', 'rightRail'].includes(placement), 'Pilot Orders should expose a supported placement');
+  if (placement === 'rightRail') {
+    const briefing = menu?.missionBriefing?.panelBounds;
+    assert.ok(briefing, 'right-rail Pilot Orders require briefing bounds');
+    assert.ok(Math.abs(board.bounds.x - briefing.x) <= 2, 'right-rail Pilot Orders should align with briefing x');
+    assert.ok(Math.abs(board.bounds.width - briefing.width) <= 4, 'right-rail Pilot Orders should match briefing width');
+    assert.ok(board.bounds.y >= briefing.bottom + 4, 'right-rail Pilot Orders should sit below the briefing');
+    assert.ok(!boundsOverlap(board.bounds, menu.launchDeck.bounds, 2), 'right-rail Pilot Orders must not overlap the launch deck');
+  } else {
+    assert.ok(Math.abs(board.bounds.x - menu.launchDeck.bounds.x) <= 2, 'below-deck Pilot Orders should align with launch deck x');
+    assert.ok(board.bounds.width >= menu.launchDeck.bounds.width - 8, 'below-deck Pilot Orders should be at least as wide as the launch deck');
+    assert.ok(board.bounds.width <= screen.width * 0.38, 'below-deck Pilot Orders should stay in the left command lane');
+    assert.ok(board.bounds.y >= menu.launchDeck.bounds.bottom - 6, 'below-deck Pilot Orders should sit below the launch deck');
+  }
+  const featuredDaily = menu?.launchDeck?.featuredDailySignal?.bounds;
+  if (featuredDaily) {
+    assertInside(featuredDaily, screen, 'Daily Signal feature');
+    assert.ok(featuredDaily.bottom <= menu.launchDeck.bounds.y + 2, 'Daily Signal feature should remain above the four-card deck');
+    assert.ok(!boundsOverlap(featuredDaily, board.bounds, 2), 'Daily Signal feature must not overlap Pilot Orders');
+  }
   assert.ok(board.bounds.bottom <= menu.panel.y + 6, 'Pilot Orders should stay above the utility dock');
 
   if (expectedStatus === 'complete') {
