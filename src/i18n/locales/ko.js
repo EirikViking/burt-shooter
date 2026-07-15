@@ -608,7 +608,7 @@ const sourceText = Object.freeze({
   'SCOUT RUN COMPLETE': 'SCOUT RUN WANRYO',
   'NO CAREER XP': 'CAREER XP EOPSEUM',
   'SCOUT RUN: NO CAREER XP OR RANKED PROGRESS': 'SCOUT RUN: CAREER XPNA RANK JINDO EOPSEUM',
-  'SECTOR RUN': 'SECTOR RUN',
+  'SECTOR RUN': '섹터 런',
   'MAYHEM RUN: main ranked game mode. Submits to the global leaderboard and unlocks achievements.': 'MAYHEM RUN: main rank game mode. Global rideobodeue jeonsonghago achievementreul haegeum.',
   'SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.': 'SCOUT RUN: rank eomneun nat-eun apbak yeonseup. Giche testwa route hagseube johda. Rideobodeu, achievement, Mayhem checkpoint eopseum.',
   'SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.': 'SECTOR RUN: haegeumdoen rank checkpoint sayong. Achievement eopseum. Sae sijakjeomeun Mayhem Runeseo 5 sector mada haegeum.',

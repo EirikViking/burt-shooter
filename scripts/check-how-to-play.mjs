@@ -308,6 +308,7 @@ try {
       assertCleanHelpCopy(menuHelp, `${scenario.name} menu help overlay`, 'flight');
       const firstHelpCard = menuHelp.howToPlayOverlay.layout.cards[0];
       if (scenario.name === '1280x720-windowed') {
+        await page.waitForTimeout(180);
         await page.mouse.click(firstHelpCard.x + firstHelpCard.width / 2, firstHelpCard.y + firstHelpCard.height / 2);
       } else {
         await page.keyboard.press('Enter');

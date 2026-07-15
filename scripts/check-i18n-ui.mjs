@@ -244,7 +244,9 @@ async function snapshot(page) {
       scene: state.scene,
       menu: {
         launch: game?.scenes?.menu?.startBtn?._label?.text || null,
-        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null
+        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null,
+        missionBriefing: state.menu?.missionBriefing || null,
+        launchDeck: state.menu?.launchDeck || null
       },
       settings: {
         language: settings?.languageButton?._label?.text || null,
@@ -294,6 +296,14 @@ async function snapshot(page) {
 function boxesOverlap(a, b, gap = 0) {
   if (!a || !b || a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false;
   return !(a.right + gap <= b.x || b.right + gap <= a.x || a.bottom + gap <= b.y || b.bottom + gap <= a.y);
+}
+
+function boxContains(outer, inner, tolerance = 3) {
+  if (!outer || !inner || outer.width <= 0 || outer.height <= 0 || inner.width <= 0 || inner.height <= 0) return false;
+  return inner.x >= outer.x - tolerance
+    && inner.y >= outer.y - tolerance
+    && inner.right <= outer.right + tolerance
+    && inner.bottom <= outer.bottom + tolerance;
 }
 
 async function screenshot(page, name) {
@@ -396,6 +406,18 @@ async function captureLanguage(page, language, index) {
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
   assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
+
+  await page.evaluate(() => {
+    const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
+  });
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 10000 });
+  snaps.dailyMenu = await snapshot(page);
+  assertSnapshotClean(snaps.dailyMenu, language, `${language.slug}.dailyMenu`);
+  shots.dailyMenu = await screenshot(page, `${prefix}-daily-signal-menu.png`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.titleBounds), `${language.slug} Daily title escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.bodyBounds), `${language.slug} Daily body escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(snaps.dailyMenu.menu?.launchDeck?.featuredDailySignal?.flightLog?.symbols?.length > 0, `${language.slug} Daily Flight Log was not exposed`);
 
   await page.evaluate(() => window.__game?.startGame?.());
   await waitForScene(page, 'play');

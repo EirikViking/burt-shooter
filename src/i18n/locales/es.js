@@ -716,7 +716,7 @@ const sourceText = Object.freeze({
   'SCOUT RUN COMPLETE': 'SCOUT RUN COMPLETADA',
   'NO CAREER XP': 'SIN XP DE CARRERA',
   'SCOUT RUN: NO CAREER XP OR RANKED PROGRESS': 'SCOUT RUN: SIN XP DE CARRERA NI PROGRESO CLASIFICADO',
-  'SECTOR RUN': 'SECTOR RUN',
+  'SECTOR RUN': 'CARRERA DE SECTOR',
   'MAYHEM RUN: main ranked game mode. Submits to the global leaderboard and unlocks achievements.': 'MAYHEM RUN: modo clasificado principal. Envia a la tabla global y desbloquea logros.',
   'SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.': 'SCOUT RUN: practica sin ranking y con menos presion para probar naves y aprender rutas. Sin tabla, logros ni checkpoints de Mayhem.',
   'SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.': 'SECTOR RUN: usa checkpoints clasificados desbloqueados. Sin logros. Nuevos inicios cada 5 sectores en Mayhem Run.',

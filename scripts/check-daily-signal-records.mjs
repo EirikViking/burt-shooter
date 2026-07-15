@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { deriveDailySignalContract } from '../src/config/DailyCabinetSignal.js';
 import {
+  DAILY_SIGNAL_RECORDS_KEY,
+  formatDailySignalFlightLogSymbols,
   getDailySignalBest,
+  getDailySignalBestAttempt,
+  getDailySignalBestClear,
+  getDailySignalAttemptCount,
+  getDailySignalFlightLog,
   isBetterDailySignalRecord,
   readDailySignalRecords,
   recordDailySignalRun
@@ -38,6 +44,7 @@ const first = recordDailySignalRun(baseSummary, { targetStorage, completedAt: '2
 assert.equal(first.isNewBest, true);
 assert.equal(first.stored, true);
 assert.equal(getDailySignalBest(contract, { targetStorage })?.score, 15000);
+assert.equal(getDailySignalAttemptCount(contract, { targetStorage }), 1);
 
 const invalid = recordDailySignalRun({
   ...baseSummary,
@@ -50,13 +57,25 @@ const invalid = recordDailySignalRun({
 assert.equal(invalid.stored, false, 'invalid or debug Daily attempts must never overwrite the cabinet record');
 assert.equal(invalid.isNewBest, false);
 assert.equal(getDailySignalBest(contract, { targetStorage })?.attemptId, 'attempt-a');
+assert.equal(getDailySignalAttemptCount(contract, { targetStorage }), 1, 'invalid attempts must not increment the valid attempt count');
+
+const deeperAttempt = recordDailySignalRun({
+  ...baseSummary,
+  dailySignalAttemptId: 'attempt-deeper',
+  score: 9000,
+  finalScore: 9000,
+  sectorReached: 8,
+  levelReached: 8
+}, { targetStorage, completedAt: '2026-07-15T12:20:00.000Z' });
+assert.equal(deeperAttempt.isNewAttemptBest, true, 'deeper failed progress outranks a higher score from an earlier sector');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper');
 
 const lower = recordDailySignalRun({ ...baseSummary, dailySignalAttemptId: 'attempt-b', score: 14000, finalScore: 14000 }, {
   targetStorage,
   completedAt: '2026-07-15T12:30:00.000Z'
 });
 assert.equal(lower.isNewBest, false);
-assert.equal(getDailySignalBest(contract, { targetStorage })?.attemptId, 'attempt-a');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper');
 
 const clear = recordDailySignalRun({
   ...baseSummary,
@@ -71,6 +90,8 @@ const clear = recordDailySignalRun({
 }, { targetStorage, completedAt: '2026-07-15T13:00:00.000Z' });
 assert.equal(clear.isNewBest, true, 'a completed contract outranks a higher-score failed attempt');
 assert.equal(getDailySignalBest(contract, { targetStorage })?.runCleared, true);
+assert.equal(getDailySignalBestClear(contract, { targetStorage })?.attemptId, 'attempt-c');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper', 'clears and failed attempts retain separate records');
 
 const fasterClear = recordDailySignalRun({
   ...baseSummary,
@@ -99,6 +120,7 @@ const exactTie = recordDailySignalRun({
 }, { targetStorage, completedAt: '2026-07-15T14:00:00.000Z' });
 assert.equal(exactTie.isNewBest, false, 'a later timestamp must not turn an identical performance into a new best');
 assert.equal(getDailySignalBest(contract, { targetStorage })?.attemptId, 'attempt-d');
+assert.equal(getDailySignalAttemptCount(contract, { targetStorage }), 6, 'every valid saved run increments the attempt count');
 
 const unavailableStorage = recordDailySignalRun({
   ...baseSummary,
@@ -128,6 +150,52 @@ const otherDay = deriveDailySignalContract('2026-07-16');
 assert.equal(getDailySignalBest(otherDay, { targetStorage }), null, 'daily records must not leak across contracts');
 assert.equal(Object.keys(readDailySignalRecords({ targetStorage }).records).length, 1);
 assert.equal(isBetterDailySignalRecord(fasterClear.attemptRecord, clear.attemptRecord), true);
+
+const flightStorage = createStorage();
+const logDays = ['2026-07-09', '2026-07-10', '2026-07-11', '2026-07-12', '2026-07-13', '2026-07-14', '2026-07-15'];
+for (const [index, day] of logDays.entries()) {
+  if (index === 1 || index === 4) continue;
+  const dayContract = deriveDailySignalContract(day);
+  recordDailySignalRun({
+    ...baseSummary,
+    dailySignalContract: dayContract,
+    dailySignalAttemptId: `flight-${day}`,
+    score: 5000 + index * 100,
+    finalScore: 5000 + index * 100,
+    sectorReached: index === 2 || index >= 5 ? 10 : 6 + index,
+    levelReached: index === 2 || index >= 5 ? 10 : 6 + index,
+    runCleared: index === 2 || index >= 5
+  }, {
+    targetStorage: flightStorage,
+    contract: dayContract,
+    completedAt: `${day}T12:00:00.000Z`
+  });
+}
+const flightLog = getDailySignalFlightLog({
+  now: new Date('2026-07-15T18:00:00.000Z'),
+  targetStorage: flightStorage
+});
+assert.deepEqual(flightLog.entries.map((entry) => entry.status), [
+  'attempted', 'unopened', 'cleared', 'attempted', 'unopened', 'cleared', 'cleared'
+]);
+assert.equal(flightLog.clears, 3);
+assert.equal(flightLog.attemptedDays, 5);
+assert.equal(flightLog.streak, 2);
+assert.equal(flightLog.atRisk, false);
+assert.equal(formatDailySignalFlightLogSymbols(flightLog), '◇ · ◆ ◇ · ◆ ◆');
+
+const migrationStorage = createStorage();
+migrationStorage.setItem(DAILY_SIGNAL_RECORDS_KEY, JSON.stringify({
+  version: 1,
+  records: {
+    legacy: first.attemptRecord
+  }
+}));
+const migrated = readDailySignalRecords({ targetStorage: migrationStorage });
+const migratedKey = `${contract.dailyKey}:${contract.rulesHash}`;
+assert.equal(migrated.bestAttempts[migratedKey]?.attemptId, 'attempt-a');
+assert.equal(migrated.bestClears[migratedKey], undefined);
+assert.equal(migrated.attemptCounts[migratedKey]?.count, 1);
 
 console.log('[check-daily-signal-records] PASS', {
   rulesHash: contract.rulesHash,

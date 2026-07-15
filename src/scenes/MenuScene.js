@@ -22,7 +22,13 @@ import {
   getRunContractMenuState
 } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
-import { getDailySignalBest } from '../progression/DailySignalRecords.js';
+import {
+  formatDailySignalFlightLogSymbols,
+  getDailySignalBest,
+  getDailySignalBestAttempt,
+  getDailySignalBestClear,
+  getDailySignalFlightLog
+} from '../progression/DailySignalRecords.js';
 import { deriveDailySignalContract, getDailySignalResetSeconds } from '../config/DailyCabinetSignal.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
@@ -242,6 +248,9 @@ export class MenuScene {
     this.dailySignalBounds = null;
     this.dailySignalContract = null;
     this.dailySignalBest = null;
+    this.dailySignalBestAttempt = null;
+    this.dailySignalBestClear = null;
+    this.dailySignalFlightLog = null;
     this.dailySignalRefreshAt = 0;
     this.disclaimer = null;
     this.startBtn = null;
@@ -1172,6 +1181,7 @@ export class MenuScene {
       strokeThickness: 3,
       align: 'left',
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
       lineHeight: Math.round(runModeSize * 1.18)
     });
@@ -1189,6 +1199,7 @@ export class MenuScene {
       strokeThickness: 3,
       align: 'left',
       wordWrap: true,
+      breakWords: true,
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
       lineHeight: Math.round(runModeSize * 1.32)
     });
@@ -1768,11 +1779,14 @@ export class MenuScene {
     };
     const briefingScale = Math.max(1, Math.min(2, uiScale));
     const briefingResponsiveScale = Math.min(briefingScale, isMobileLayout ? 1.25 : 1.6);
-    const briefingHeight = Math.round(clampNumber(
+    let briefingHeight = Math.round(clampNumber(
       height * 0.15 * briefingResponsiveScale,
       (isShortLayout ? 118 : 132) * briefingScale,
       (isShortLayout ? 142 : 164) * briefingScale
     ) + (this.menuHumorLine ? 28 * Math.min(briefingScale, 1.35) : 0));
+    if (runModeBriefing.id === 'dailySignal') {
+      briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
+    }
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
@@ -1917,7 +1931,7 @@ export class MenuScene {
     refreshTextTexture(this.runModeExplainer);
     const briefingBodyMaxHeight = Math.max(48, briefingHeight - (this.runModeExplainer.y - briefingY) - 6);
     if ((this.runModeExplainer.height || 0) > briefingBodyMaxHeight) {
-      const bodyScale = Math.max(0.82, briefingBodyMaxHeight / this.runModeExplainer.height);
+      const bodyScale = Math.max(runModeBriefing.id === 'dailySignal' ? 0.68 : 0.82, briefingBodyMaxHeight / this.runModeExplainer.height);
       this.runModeExplainer.scale.set(bodyScale);
       refreshTextTexture(this.runModeExplainer);
     }
@@ -2082,7 +2096,23 @@ export class MenuScene {
     const focused = this.getSelectedMenuOptionId();
     if (focused === 'dailySignal') {
       const contract = this.dailySignalContract || deriveDailySignalContract();
-      const best = this.dailySignalBest || getDailySignalBest(contract);
+      const bestAttempt = this.dailySignalBestAttempt || getDailySignalBestAttempt(contract);
+      const bestClear = this.dailySignalBestClear || getDailySignalBestClear(contract);
+      const flightLog = this.dailySignalFlightLog || getDailySignalFlightLog();
+      const recordLine = bestClear
+        ? translateText('BEST CLEAR {score} // RESET IN {time}', {
+          score: this.formatDailySignalScore(bestClear.score),
+          time: this.formatDailySignalResetTime(contract)
+        })
+        : bestAttempt
+          ? translateText('BEST ATTEMPT S{sector} // {score} // RESET IN {time}', {
+            sector: bestAttempt.sectorReached,
+            score: this.formatDailySignalScore(bestAttempt.score),
+            time: this.formatDailySignalResetTime(contract)
+          })
+          : translateText('NO ATTEMPT YET // RESET IN {time}', {
+            time: this.formatDailySignalResetTime(contract)
+          });
       return {
         id: 'dailySignal',
         title: translateText('DAILY CABINET SIGNAL'),
@@ -2094,13 +2124,14 @@ export class MenuScene {
             ship: contract.loanerShipName,
             route: translateText(contract.templateLabel)
           }),
+          translateText('7-DAY FLIGHT LOG // {signals} // {clears}/7 CLEARED', {
+            signals: formatDailySignalFlightLogSymbols(flightLog),
+            clears: flightLog.clears
+          }),
+          recordLine,
           translateText('LOCAL RECORD ONLY // NO ACHIEVEMENTS, CAREER XP, OR CHECKPOINT UNLOCKS'),
-          translateText('BEST {score} // RESET IN {time}', {
-            score: this.formatDailySignalScore(best?.score || 0),
-            time: this.formatDailySignalResetTime(contract)
-          })
         ].join('\n'),
-        body: translateText('{ship} flies today\'s fixed route to Sector {sector}. Tactical drafts are active and the record stays local.', {
+        body: translateText('{ship} flies today\'s shared route theme to Sector {sector}. Tactical drafts are active and the record stays local.', {
           ship: contract.loanerShipName,
           sector: contract.finishSector
         })
@@ -3194,6 +3225,22 @@ export class MenuScene {
             localOnly: !this.dailySignalContract.onlineCompetitive
           } : null,
           bestScore: Number(this.dailySignalBest?.score) || 0,
+          bestAttempt: this.dailySignalBestAttempt ? {
+            score: this.dailySignalBestAttempt.score,
+            sectorReached: this.dailySignalBestAttempt.sectorReached
+          } : null,
+          bestClear: this.dailySignalBestClear ? {
+            score: this.dailySignalBestClear.score,
+            runElapsedSeconds: this.dailySignalBestClear.runElapsedSeconds
+          } : null,
+          flightLog: this.dailySignalFlightLog ? {
+            symbols: formatDailySignalFlightLogSymbols(this.dailySignalFlightLog),
+            clears: this.dailySignalFlightLog.clears,
+            attemptedDays: this.dailySignalFlightLog.attemptedDays,
+            attempts: this.dailySignalFlightLog.attempts,
+            streak: this.dailySignalFlightLog.streak,
+            atRisk: this.dailySignalFlightLog.atRisk
+          } : null,
           resetTime: this.formatDailySignalResetTime()
         },
         cards: {
@@ -4855,7 +4902,10 @@ export class MenuScene {
     const contract = deriveDailySignalContract(new Date());
     const dayChanged = contract.dailyKey !== this.dailySignalContract?.dailyKey;
     this.dailySignalContract = contract;
-    this.dailySignalBest = getDailySignalBest(contract);
+    this.dailySignalBestAttempt = getDailySignalBestAttempt(contract);
+    this.dailySignalBestClear = getDailySignalBestClear(contract);
+    this.dailySignalBest = this.dailySignalBestClear || this.dailySignalBestAttempt || getDailySignalBest(contract);
+    this.dailySignalFlightLog = getDailySignalFlightLog();
     this.dailySignalRefreshAt = Date.now() + 1000;
     if (this.dailySignalBtn) {
       this.refreshButtonCopy(this.dailySignalBtn, { forceGpuRefresh: force || dayChanged });
@@ -4881,7 +4931,20 @@ export class MenuScene {
 
   getDailySignalMenuSubLabel() {
     const contract = this.dailySignalContract || deriveDailySignalContract();
-    return translateText('LOANER {ship} // RESET {time}', {
+    if (this.dailySignalBestClear) {
+      return translateText('IMPROVE // {ship} // RESET {time}', {
+        ship: contract.loanerShipName,
+        time: this.formatDailySignalResetTime(contract)
+      });
+    }
+    if (this.dailySignalBestAttempt) {
+      return translateText('OPEN S{sector} // {ship} // RESET {time}', {
+        sector: this.dailySignalBestAttempt.sectorReached,
+        ship: contract.loanerShipName,
+        time: this.formatDailySignalResetTime(contract)
+      });
+    }
+    return translateText('OPEN // {ship} // RESET {time}', {
       ship: contract.loanerShipName,
       time: this.formatDailySignalResetTime(contract)
     });

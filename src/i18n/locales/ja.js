@@ -617,7 +617,7 @@ const sourceText = Object.freeze({
   'SCOUT RUN COMPLETE': 'SCOUT RUN KANRYO',
   'NO CAREER XP': 'CAREER XP NASHI',
   'SCOUT RUN: NO CAREER XP OR RANKED PROGRESS': 'SCOUT RUN: CAREER XP TO RANK SHINCHOKU NASHI',
-  'SECTOR RUN': 'SECTOR RUN',
+  'SECTOR RUN': 'セクターラン',
   'MAYHEM RUN: main ranked game mode. Submits to the global leaderboard and unlocks achievements.': 'MAYHEM RUN: main rank mode. Global ranking ni soushin shi, jisseki wo kaihou shimasu.',
   'SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.': 'SCOUT RUN: rank nashi no yasashime renshuu. Ship test ya route oboe ni. Ranking, jisseki, Mayhem checkpoint nashi.',
   'SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.': 'SECTOR RUN: kaihouzumi rank checkpoint wo shiyou. Jisseki nashi. Atarashii start wa Mayhem Run de 5 sector goto ni kaihou.',

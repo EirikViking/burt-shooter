@@ -66,7 +66,12 @@ import {
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
 import { getMayhemModeBestScore, recordMayhemModeScore } from '../progression/MayhemModeRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
-import { getDailySignalBest, recordDailySignalRun } from '../progression/DailySignalRecords.js';
+import {
+  getDailySignalBestAttempt,
+  getDailySignalBestClear,
+  getDailySignalFlightLog,
+  recordDailySignalRun
+} from '../progression/DailySignalRecords.js';
 import { deriveDailySignalContract, validateDailySignalContract } from '../config/DailyCabinetSignal.js';
 import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
@@ -640,6 +645,7 @@ export class Game {
   }
 
   displayAchievementToast(toast) {
+    if (!canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun })) return false;
     const scene = this.currentScene;
     if (scene && typeof scene.showAchievementToast === 'function') {
       try {
@@ -652,6 +658,7 @@ export class Game {
   }
 
   flushAchievementToasts(scene = this.currentScene) {
+    if (!canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun })) return [];
     if (!scene || typeof scene.showAchievementToast !== 'function') return [];
     const pending = this.pendingAchievementToasts.splice(0);
     pending.forEach((toast) => {
@@ -761,15 +768,24 @@ export class Game {
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
     const isDailySignal = runMode === RUN_MODES.DAILY_SIGNAL;
     const sectorRecord = isSectorStart ? getSectorStartChallengeRecord(sectorStartCheckpoint) : null;
-    const dailyRecord = isDailySignal ? getDailySignalBest(dailySignalContract) : null;
+    const dailyBestAttempt = isDailySignal ? getDailySignalBestAttempt(dailySignalContract) : null;
+    const dailyBestClear = isDailySignal ? getDailySignalBestClear(dailySignalContract) : null;
     const rankedModeBest = isRankedRunMode(runMode)
       ? getMayhemModeBestScore(runMode, { legacyPureBest: progress?.bestScore })
       : 0;
     const targetScore = Math.max(0, Math.floor(Number(
-      isSectorStart ? sectorRecord?.scoreEarned : isDailySignal ? dailyRecord?.score : rankedModeBest
+      isSectorStart ? sectorRecord?.scoreEarned : isDailySignal ? dailyBestClear?.score : rankedModeBest
     ) || 0));
+    const targetSector = isDailySignal
+      ? Math.max(1, Math.floor(Number(dailySignalContract?.finishSector) || 10))
+      : null;
+    const goalMode = isDailySignal && !dailyBestClear ? 'daily_clear' : 'score';
     return {
       targetScore,
+      targetSector,
+      goalMode,
+      bestAttemptSector: isDailySignal ? Math.max(0, Math.floor(Number(dailyBestAttempt?.sectorReached) || 0)) : null,
+      hasDailyClear: Boolean(dailyBestClear),
       runMode,
       source: isSectorStart
         ? 'sector_start_record'
@@ -778,7 +794,7 @@ export class Game {
           : 'mayhem_mode_best_score',
       syncingTarget: isRankedRunMode(runMode),
       checkpoint: sectorStartCheckpoint || null,
-      surpassed: targetScore <= 0,
+      surpassed: goalMode === 'daily_clear' ? false : targetScore <= 0,
       celebrationFired: false,
       celebrationScore: 0,
       milestones: new Set(),
@@ -831,6 +847,10 @@ export class Game {
   getHighscoreChaseState() {
     return this.highscoreChase || {
       targetScore: 0,
+      targetSector: null,
+      goalMode: 'score',
+      bestAttemptSector: null,
+      hasDailyClear: false,
       runMode: this.runMode,
       source: 'none',
       syncingTarget: false,
@@ -848,7 +868,7 @@ export class Game {
     const score = Math.max(0, Number(this.score) || 0);
     const ratio = score / chase.targetScore;
     const beatPersonalBest = (
-      (isRankedRunMode(chase.runMode) || chase.runMode === RUN_MODES.DAILY_SIGNAL)
+      isRankedRunMode(chase.runMode)
       && !chase.syncingTarget
       && score > chase.targetScore
     );
@@ -1319,6 +1339,14 @@ export class Game {
         dailySignalPreviousBest: dailyRecord.previousRecord,
         dailySignalBest: dailyRecord.bestRecord,
         dailySignalNewBest: dailyRecord.isNewBest,
+        dailySignalPreviousBestAttempt: dailyRecord.previousBestAttempt,
+        dailySignalPreviousBestClear: dailyRecord.previousBestClear,
+        dailySignalBestAttempt: dailyRecord.bestAttempt,
+        dailySignalBestClear: dailyRecord.bestClear,
+        dailySignalAttemptCount: dailyRecord.attemptCount,
+        dailySignalNewAttemptBest: dailyRecord.isNewAttemptBest,
+        dailySignalNewClearBest: dailyRecord.isNewClearBest,
+        dailySignalFlightLog: getDailySignalFlightLog(),
         dailySignalStored: dailyRecord.stored,
         dailySignalRecordSaveFailed: dailyRecord.saveFailed === true
       };

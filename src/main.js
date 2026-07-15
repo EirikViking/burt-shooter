@@ -660,6 +660,10 @@ function buildGameTextState(game) {
     } : null,
     highscoreChase: game?.highscoreChase ? {
       targetScore: Math.max(0, Math.floor(Number(game.highscoreChase.targetScore) || 0)),
+      targetSector: Math.max(0, Math.floor(Number(game.highscoreChase.targetSector) || 0)),
+      goalMode: game.highscoreChase.goalMode || 'score',
+      bestAttemptSector: Math.max(0, Math.floor(Number(game.highscoreChase.bestAttemptSector) || 0)),
+      hasDailyClear: Boolean(game.highscoreChase.hasDailyClear),
       source: game.highscoreChase.source || null,
       syncingTarget: Boolean(game.highscoreChase.syncingTarget),
       surpassed: Boolean(game.highscoreChase.surpassed),

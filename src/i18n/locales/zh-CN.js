@@ -617,7 +617,7 @@ const sourceText = Object.freeze({
   'SCOUT RUN COMPLETE': 'SCOUT RUN WANCHENG',
   'NO CAREER XP': 'WU CAREER XP',
   'SCOUT RUN: NO CAREER XP OR RANKED PROGRESS': 'SCOUT RUN: WU CAREER XP HUO PAIMING JINDU',
-  'SECTOR RUN': 'SECTOR RUN',
+  'SECTOR RUN': '区域挑战',
   'MAYHEM RUN: main ranked game mode. Submits to the global leaderboard and unlocks achievements.': 'MAYHEM RUN: zhu paiming moshi. Tijiao dao quanju bangdan bing jiesuo chengjiu.',
   'SCOUT RUN: unranked lower-pressure practice for testing ships and learning routes. No leaderboard, achievements, or Mayhem checkpoints.': 'SCOUT RUN: wu paiming, di yali lianxi, yongyu ceshi feichuan he xuexi luxian. Wu bangdan, wu chengjiu, wu Mayhem checkpoint.',
   'SECTOR RUN: uses unlocked ranked checkpoints. No achievements. New starts unlock every 5 sectors in Mayhem Run.': 'SECTOR RUN: shiyong yi jiesuo de paiming checkpoint. Wu chengjiu. Xin qidian zai Mayhem Run mei 5 ge shanqu jiesuo.',

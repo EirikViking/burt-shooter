@@ -493,16 +493,22 @@ export class HUD {
     const target = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
     const rawScore = Math.max(0, Math.floor(Number(this.game?.score) || 0));
     const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
+    const targetSector = Math.max(1, Math.floor(Number(chase?.targetSector) || 1));
+    const isDailyClearGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'daily_clear';
+    const isDailyScoreGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'score';
     const syncingTarget = Boolean(chase?.syncingTarget);
-    const hasTarget = target > 0 && !syncingTarget;
+    const hasScoreTarget = target > 0 && !syncingTarget;
+    const hasTarget = isDailyClearGoal || hasScoreTarget;
     const displayKey = [
       chase?.runMode || 'none',
+      chase?.goalMode || 'score',
       target,
+      targetSector,
       syncingTarget ? 1 : 0,
       sectorKey,
       rawScore
     ].join('|');
-    const crossedTarget = hasTarget &&
+    const crossedTarget = hasScoreTarget &&
       rawScore > target &&
       Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0)) <= target;
     if (displayKey !== this.highscoreChaseDisplayKey || crossedTarget) {
@@ -511,23 +517,29 @@ export class HUD {
     }
     const score = Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0));
     const remaining = Math.max(0, target - score);
-    const ratio = hasTarget ? Math.min(1.25, score / target) : 0;
-    const surpassed = hasTarget && score > target;
+    const ratio = isDailyClearGoal
+      ? Math.min(1, sectorKey / targetSector)
+      : hasScoreTarget ? Math.min(1.25, score / target) : 0;
+    const surpassed = isDailyClearGoal ? Boolean(this.game?.runCleared) : hasScoreTarget && score > target;
     const nearTarget = hasTarget && !surpassed && ratio >= 0.9;
     const chaseIsHot = nearTarget || surpassed;
     const pulse = chaseIsHot ? (Math.sin(Date.now() * 0.009) + 1) / 2 : 0.5;
     const pulseBucket = chaseIsHot ? Math.floor(Date.now() / 140) % 16 : 0;
     const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
-    const label = chase?.runMode === 'sector_start'
+    const label = isDailyClearGoal
+      ? translateText('DAILY OBJECTIVE')
+      : chase?.runMode === 'sector_start'
       ? translateText('SECTOR RECORD TARGET')
       : chase?.runMode === 'daily_signal'
-        ? translateText('DAILY SIGNAL BEST')
+        ? translateText('BEST CLEAR')
         : translateText('HIGH SCORE TARGET');
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 52;
     const renderKey = [
       chase?.runMode || 'none',
+      chase?.goalMode || 'score',
       target,
+      targetSector,
       score,
       sectorKey,
       syncingTarget ? 1 : 0,
@@ -544,14 +556,23 @@ export class HUD {
     this.highscoreChaseRenderKey = renderKey;
 
     this.highscoreChaseTitle.text = label;
-    this.highscoreChaseTarget.text = hasTarget
+    this.highscoreChaseTarget.text = isDailyClearGoal
+      ? translateText('CLEAR SECTOR {sector}', { sector: targetSector })
+      : hasScoreTarget
       ? `${translateText('BEAT')} ${this.formatScore(target)}`
       : syncingTarget
         ? translateText('CHECKING BOARD')
         : translateText('BEAT THE EMPTY THRONE');
-    this.highscoreChaseGap.text = surpassed
-      ? translateText('OLD SCORE HUMILIATED')
-      : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
+    this.highscoreChaseGap.text = isDailyClearGoal
+      ? translateText('SECTOR {current} OF {target}', {
+        current: Math.min(sectorKey, targetSector),
+        target: targetSector
+      })
+      : isDailyScoreGoal && surpassed
+        ? translateText('SCORE READY // CLEAR SECTOR {sector}', { sector: targetSector })
+      : surpassed
+        ? translateText('OLD SCORE HUMILIATED')
+        : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
     this.highscoreChaseGap.visible = hasTarget;
 
     this.highscoreChaseTitle.style.fill = surpassed ? '#fff05c' : '#ffef7e';
@@ -668,6 +689,9 @@ export class HUD {
     }
     this.highscoreChaseGroup._debugChase = {
       hasTarget,
+      goalMode: isDailyClearGoal ? 'daily_clear' : 'score',
+      currentSector: isDailyClearGoal ? sectorKey : null,
+      targetSector: isDailyClearGoal ? targetSector : null,
       ratio: Number(ratio.toFixed(3)),
       progress: Number(progress.toFixed(3)),
       nearTarget,

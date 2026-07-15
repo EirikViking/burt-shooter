@@ -36,6 +36,7 @@ import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
 import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getRecoverySectorGoal } from '../config/RetentionPresentation.js';
+import { formatDailySignalFlightLogSymbols } from '../progression/DailySignalRecords.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -110,7 +111,11 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   dailyRules: 'Rules fingerprint',
   dailyTemplate: 'Route directive',
   dailyFinish: 'Finish sector',
-  dailyRecord: 'Daily local best'
+  dailyRecord: 'Daily local best',
+  dailyAttempts: 'Valid attempts',
+  dailyBestAttempt: 'Best attempt',
+  dailyBestClear: 'Best clear',
+  dailyFlightLog: '7-day flight log'
 });
 
 function formatUnlockRequirementProgress(item) {
@@ -1072,18 +1077,41 @@ export class GameOverScene {
     const summary = this.game?.runSummary || {};
     const contract = summary.dailySignalContract || this.game?.dailySignalContract || {};
     const attempt = summary.dailySignalAttempt || null;
-    const best = summary.dailySignalBest || null;
+    const bestAttempt = summary.dailySignalBestAttempt || (!summary.dailySignalBest?.runCleared ? summary.dailySignalBest : null);
+    const bestClear = summary.dailySignalBestClear || (summary.dailySignalBest?.runCleared ? summary.dailySignalBest : null);
+    const flightLog = summary.dailySignalFlightLog || null;
     const reached = Math.max(1, Math.floor(Number(summary.sectorReached || summary.levelReached || this.finalLevel || 1) || 1));
-    const lines = [
-      summary.dailySignalNewBest
-        ? translateText('NEW DAILY SIGNAL BEST: {score}', { score: this.formatScoreNumber(best?.score || this.finalScore) })
-        : translateText('DAILY SIGNAL BEST: {score}', { score: this.formatScoreNumber(best?.score || 0) }),
-      translateText('THIS RUN: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) }),
-      summary.runCleared
-        ? translateText('CONTRACT CLEARED // SECTOR {sector}', { sector: contract.finishSector || reached })
-        : translateText('REACHED SECTOR {sector}', { sector: reached }),
-      translateText('LOCAL UTC RECORD // NO PUBLIC SUBMISSION')
-    ];
+    const lines = [];
+    if (summary.runCleared) {
+      lines.push(summary.dailySignalNewClearBest
+        ? translateText('NEW BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear?.score || this.finalScore) })
+        : translateText('BEST CLEAR: {score}', { score: this.formatScoreNumber(bestClear?.score || this.finalScore) }));
+      lines.push(translateText('THIS RUN: {score}', { score: this.formatScoreNumber(this.finalScore || summary.score || 0) }));
+      lines.push(translateText('CONTRACT CLEARED // SECTOR {sector}', { sector: contract.finishSector || reached }));
+    } else {
+      const bestAttemptSector = Math.max(1, Math.floor(Number(bestAttempt?.sectorReached || attempt?.sectorReached || reached) || 1));
+      lines.push(summary.dailySignalNewAttemptBest
+        ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', {
+          sector: bestAttemptSector,
+          score: this.formatScoreNumber(bestAttempt?.score || this.finalScore)
+        })
+        : translateText('BEST ATTEMPT: S{sector} // {score}', {
+          sector: bestAttemptSector,
+          score: this.formatScoreNumber(bestAttempt?.score || attempt?.score || 0)
+        }));
+      lines.push(translateText('THIS RUN: S{sector} // {score}', {
+        sector: reached,
+        score: this.formatScoreNumber(this.finalScore || summary.score || 0)
+      }));
+      lines.push(translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: contract.finishSector || 10 }));
+    }
+    if (flightLog) {
+      lines.push(translateText('7-DAY FLIGHT LOG // {signals} // {clears}/7 CLEARED', {
+        signals: formatDailySignalFlightLogSymbols(flightLog),
+        clears: flightLog.clears
+      }));
+    }
+    lines.push(translateText('LOCAL UTC RECORD // NO PUBLIC SUBMISSION'));
     if (!summary.dailySignalContractValid) {
       lines.push(translateText('PRACTICE RESULT // CONTRACT VALIDITY FAILED'));
     }
@@ -1441,7 +1469,7 @@ export class GameOverScene {
     if (this.isDailySignalResult()) {
       const summary = this.game?.runSummary || {};
       return summary.runCleared
-        ? translateText('NEXT GOAL: BEAT TODAY\'S SCORE')
+        ? translateText('NEXT GOAL: BEAT BEST CLEAR')
         : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: summary.dailySignalContract?.finishSector || 10 });
     }
     if (this.isSectorStartChallengeResult()) return '';
@@ -3638,7 +3666,7 @@ export class GameOverScene {
       if (this.isDailySignalResult()) {
         return {
           text: this.game?.runSummary?.runCleared
-            ? translateText('NEXT GOAL: BEAT TODAY\'S SCORE')
+            ? translateText('NEXT GOAL: BEAT BEST CLEAR')
             : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: this.game?.runSummary?.dailySignalContract?.finishSector || 10 }),
           tone: 'daily'
         };
@@ -4544,6 +4572,26 @@ export class GameOverScene {
     if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
     if (row.id === 'dailyTemplate') return translateText(row.value || '');
     if (row.id === 'dailyFinish') return translateText('SECTOR {sector}', { sector: row.value || 10 });
+    if (row.id === 'dailyBestAttempt') {
+      const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
+      const sector = Math.max(1, Math.floor(Number(row.rawValue?.sector) || 1));
+      return row.rawValue?.newBest
+        ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', { sector, score })
+        : translateText('BEST ATTEMPT: S{sector} // {score}', { sector, score });
+    }
+    if (row.id === 'dailyBestClear') {
+      const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
+      return row.rawValue?.newBest
+        ? translateText('NEW BEST CLEAR: {score}', { score })
+        : translateText('BEST CLEAR: {score}', { score });
+    }
+    if (row.id === 'dailyFlightLog') {
+      const statuses = Array.isArray(row.rawValue?.statuses) ? row.rawValue.statuses : [];
+      return translateText('{signals} // {clears}/7 CLEARED', {
+        signals: formatDailySignalFlightLogSymbols({ entries: statuses.map((status) => ({ status })) }),
+        clears: Math.max(0, Math.floor(Number(row.rawValue?.clears) || 0))
+      });
+    }
     if (row.id === 'dailyRecord') {
       const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
       return row.rawValue?.newBest

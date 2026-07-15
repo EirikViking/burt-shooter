@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-15 Daily Flight Log And Scoring Trust Pass (in progress)
+
+- Added a visible seven-day Daily Flight Log to the launch briefing and result flow. Each UTC day now reads as unopened, attempted, or cleared, while the cabinet tracks today's attempt count, recent clear rhythm, archive clears, and an honest current streak without adding a public leaderboard claim.
+- Split the old one-record model into best attempt and best clear. Failed runs now rank by deepest sector before score, clears rank by score before time, and the HUD asks pilots to clear Sector 10 before it asks them to chase score. A high score earned before the finish is held as `SCORE READY` rather than celebrated as a completed Daily best.
+- Made Daily records profile-scoped and migration-safe. Existing v1 records remain readable, invalid/debug attempts remain excluded, every valid attempt is counted, and storage failures cannot manufacture a new record. Daily, Scout, and Sector runs also defer queued ranked achievement toasts until the player returns to an eligible ranked mode.
+- Refined Daily menu, HUD, Game Over, and Run Report language across all eight supported locales. The copy now says `shared route theme` instead of implying fully deterministic enemy routing, and How to Play explains the clear-first scoring contract and Flight Log.
+- Focused regression coverage now exercises record migration/order/counting, failed and cleared Daily summaries, post-clear score chasing, achievement-toast deferral, the Daily Run Report, compact layout, and localized Daily briefing screenshots. Full release and Steam test-branch verification remain pending.
+
 ## 2026-07-15 Daily Cabinet Signal (complete)
 
 - Added one prominent UTC Daily Cabinet Signal above the standard launch deck. Every pilot receives the same dated contract, loaner ship, route theme, Tactical Draft rules, and Sector 10 finish for that day; the menu briefing explains the exact challenge before launch and scales cleanly at compact resolutions.

@@ -3,6 +3,7 @@ export const PROFILE_SCOPED_STORAGE_KEYS = Object.freeze([
   'nova.threatDiscovery.v1',
   'novaSwarm.sectorStartChallengeRecords.v1',
   'novaSwarm.scoutRunRecords.v1',
+  'novaSwarm.dailySignalRecords.v1',
   'nova_swarm_achievements_v1',
   'novaSwarm.localLeaderboard.v2',
   'novaSwarm.pendingSteamLeaderboardSubmits.v1',

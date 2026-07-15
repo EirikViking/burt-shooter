@@ -5,7 +5,7 @@ import {
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 
-const RUN_REPORT_VERSION = 9;
+const RUN_REPORT_VERSION = 10;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -262,7 +262,24 @@ export function createRunReport(summary = {}) {
         valid: summary.dailySignalContractValid === true,
         invalidReason: String(summary.dailySignalInvalidReason || '').trim() || null,
         newBest: summary.dailySignalNewBest === true,
-        bestScore: toWholeNumber(summary.dailySignalBest?.score ?? summary.dailySignalAttempt?.score)
+        newAttemptBest: summary.dailySignalNewAttemptBest === true,
+        newClearBest: summary.dailySignalNewClearBest === true,
+        bestScore: toWholeNumber(summary.dailySignalBest?.score ?? summary.dailySignalAttempt?.score),
+        bestAttemptScore: summary.dailySignalBestAttempt ? toWholeNumber(summary.dailySignalBestAttempt.score) : null,
+        bestAttemptSector: Math.max(0, toWholeNumber(summary.dailySignalBestAttempt?.sectorReached)),
+        bestClearScore: summary.dailySignalBestClear ? toWholeNumber(summary.dailySignalBestClear.score) : null,
+        bestClearTime: toWholeNumber(summary.dailySignalBestClear?.runElapsedSeconds),
+        attemptCount: toWholeNumber(summary.dailySignalAttemptCount),
+        flightLog: summary.dailySignalFlightLog ? {
+          days: toWholeNumber(summary.dailySignalFlightLog.days, 7),
+          clears: toWholeNumber(summary.dailySignalFlightLog.clears),
+          attemptedDays: toWholeNumber(summary.dailySignalFlightLog.attemptedDays),
+          attempts: toWholeNumber(summary.dailySignalFlightLog.attempts),
+          streak: toWholeNumber(summary.dailySignalFlightLog.streak),
+          atRisk: summary.dailySignalFlightLog.atRisk === true,
+          statuses: (Array.isArray(summary.dailySignalFlightLog.entries) ? summary.dailySignalFlightLog.entries : [])
+            .map((entry) => String(entry?.status || 'unopened'))
+        } : null
       }
     : null;
 
@@ -308,7 +325,18 @@ export function createRunReport(summary = {}) {
           { id: 'dailyRules', value: `${dailyContract.rulesHash} // V${dailyContract.rulesVersion}`, rawValue: dailyContract },
           { id: 'dailyTemplate', value: dailyContract.templateLabel, rawValue: dailyContract.templateId },
           { id: 'dailyFinish', value: dailyContract.finishSector },
-          { id: 'dailyRecord', value: dailyContract.bestScore, rawValue: { newBest: dailyContract.newBest, score: dailyContract.bestScore } }
+          { id: 'dailyAttempts', value: dailyContract.attemptCount },
+          { id: 'dailyBestAttempt', value: dailyContract.bestAttemptScore, rawValue: {
+            newBest: dailyContract.newAttemptBest,
+            score: dailyContract.bestAttemptScore,
+            sector: dailyContract.bestAttemptSector
+          } },
+          { id: 'dailyBestClear', value: dailyContract.bestClearScore, rawValue: {
+            newBest: dailyContract.newClearBest,
+            score: dailyContract.bestClearScore,
+            time: dailyContract.bestClearTime
+          } },
+          { id: 'dailyFlightLog', value: dailyContract.flightLog?.clears, rawValue: dailyContract.flightLog }
         ])
       }] : []),
       {

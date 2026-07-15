@@ -286,7 +286,7 @@ function assertLaunchDeckVisible(state, label) {
   const daily = deck.featuredDailySignal;
   assertInside(daily?.bounds, screen, `${label}: Daily Signal feature`);
   assert.equal(daily?.label, 'DAILY SIGNAL', `${label}: Daily Signal label`);
-  assert.match(daily?.sublabel || '', /LOANER .*RESET \d{2}:\d{2}/i, `${label}: Daily Signal should explain the loaner and UTC reset`);
+  assert.match(daily?.sublabel || '', /(?:OPEN|IMPROVE).*RESET \d{2}:\d{2}/i, `${label}: Daily Signal should expose its current state and UTC reset`);
   assert.ok(daily.bounds.bottom <= deck.bounds.y + 2, `${label}: Daily Signal must remain above the four-card deck`);
   assert.equal(Object.keys(deck.cards || {}).length, 4, `${label}: Launch Deck must still contain exactly four standard run cards`);
   const cards = [
@@ -338,7 +338,7 @@ async function selectSectorSelectorCheckpoint(page, checkpoint) {
     const index = menu?.sectorSelectorSectors?.findIndex((entry) => entry?.sector === sector);
     if (index >= 0) {
       menu.selectedSectorSelectorIndex = index;
-      menu.updateSectorSelectorSelection?.();
+      menu.drawSectorSelectorOverlay?.();
     }
   }, checkpoint);
   await page.waitForTimeout(150);
@@ -506,7 +506,8 @@ try {
   await waitForScene(page, 'menu');
   const dailyFocus = await focusMenuOption(page, 'dailySignal');
   assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
-  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /ONE LOANER[\s\S]*FIXED UTC CONTRACT[\s\S]*FINISH SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*no public daily score[\s\S]*NO ACHIEVEMENTS[\s\S]*CAREER XP[\s\S]*CHECKPOINT UNLOCKS[\s\S]*RESET IN/i);
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /ONE LOANER[\s\S]*FIXED UTC CONTRACT[\s\S]*FINISH SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*no public daily score[\s\S]*7-DAY FLIGHT LOG[\s\S]*NO ATTEMPT YET[\s\S]*NO ACHIEVEMENTS[\s\S]*CAREER XP[\s\S]*CHECKPOINT UNLOCKS/i);
+  assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /fixed route/i, 'Daily briefing must not overclaim full route determinism');
   assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused.png'), fullPage: false });
   await focusMenuOption(page, 'launch');
@@ -565,6 +566,12 @@ try {
   assert.equal(expiredDailyRejected.scene, 'menu');
 
   const beforeDaily = await storageSnapshot(page);
+  await page.evaluate(() => {
+    window.__game?.pendingAchievementToasts?.push?.({
+      id: 'qa-stale-ranked-achievement',
+      achievement: { id: 'qa-stale-ranked-achievement', name: 'First Ranked Run' }
+    });
+  });
   const menuDailyContract = (await readState(page)).menu?.launchDeck?.featuredDailySignal?.contract;
   await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
   const dailyPlay = await waitForScene(page, 'play');
@@ -587,6 +594,20 @@ try {
   assert.equal(firstDailyAttempt.tacticalDraftEnabled, true);
   assert.equal(firstDailyAttempt.reinforcementReasons.includes('not_mayhem'), false, 'Daily must keep reinforcement swarm eligibility');
   assert.equal(firstDailyAttempt.codexProbe?.skipped, 'daily_signal_no_codex_progress', 'Daily must not advance persistent Threat Codex state');
+  assert.equal(dailyPlay.highscoreChase?.goalMode, 'daily_clear', 'Daily HUD must target the Sector 10 clear before a clear record exists');
+  assert.equal(dailyPlay.highscoreChase?.targetSector, 10);
+  const staleAchievementState = await page.evaluate(() => ({
+    active: window.__game?.scenes?.play?.activeAchievementToast?.__achievementToastId || null,
+    sceneQueued: window.__game?.scenes?.play?.achievementToastQueue?.length || 0,
+    pending: (window.__game?.pendingAchievementToasts || []).map((entry) => entry?.id || null)
+  }));
+  assert.equal(staleAchievementState.active, null, 'stale ranked achievement toast must not appear during Daily');
+  assert.equal(staleAchievementState.sceneQueued, 0, 'stale ranked achievement toast must not queue inside Daily');
+  assert.equal(staleAchievementState.pending.includes('qa-stale-ranked-achievement'), true, 'blocked toast should remain deferred for a future ranked scene');
+  await page.evaluate(() => {
+    window.__game.pendingAchievementToasts = (window.__game.pendingAchievementToasts || [])
+      .filter((entry) => entry?.id !== 'qa-stale-ranked-achievement');
+  });
   await page.screenshot({ path: path.join(outputDir, 'daily-signal-loaner-play.png'), fullPage: false });
 
   await page.evaluate(() => {
@@ -605,9 +626,15 @@ try {
   assert.equal(failedDaily.gameOver?.primaryCta?.label, "RETRY TODAY'S SIGNAL");
   const failedDailyStorage = await storageSnapshot(page);
   const failedDailyRecords = Object.values(failedDailyStorage.dailySignalRecords.records || {});
+  const failedDailyAttempts = Object.values(failedDailyStorage.dailySignalRecords.bestAttempts || {});
+  const failedDailyClears = Object.values(failedDailyStorage.dailySignalRecords.bestClears || {});
   assert.equal(failedDailyRecords.length, 1);
+  assert.equal(failedDailyAttempts.length, 1);
+  assert.equal(failedDailyClears.length, 0);
   assert.equal(failedDailyRecords[0].sectorReached, 4);
   assert.equal(failedDailyRecords[0].runCleared, false);
+  assert.match(failedDaily.gameOver?.leaderboardStatus || '', /NEW BEST ATTEMPT:\s*S4/i);
+  assert.doesNotMatch(failedDaily.gameOver?.leaderboardStatus || '', /NEW DAILY SIGNAL BEST/i);
   assert.deepEqual(failedDailyStorage.hangar, beforeDaily.hangar, 'Daily must not update hangar career progress');
   assert.deepEqual(failedDailyStorage.achievements, beforeDaily.achievements, 'Daily must not unlock achievements');
   assert.deepEqual(failedDailyStorage.mockSteamLeaderboard, [], 'Daily must not submit to a Steam leaderboard');
@@ -617,6 +644,16 @@ try {
     'Daily must not discover or advance persistent Codex entries'
   );
   await page.screenshot({ path: path.join(outputDir, 'daily-signal-failed-sector-4.png'), fullPage: false });
+
+  await page.evaluate(() => window.__game?.scenes?.gameOver?.openRunReport?.());
+  await page.waitForTimeout(250);
+  const failedDailyReport = await readState(page);
+  assert.equal(failedDailyReport.gameOver?.runReportOverlay?.visible, true);
+  assert.equal(failedDailyReport.gameOver?.runReportOverlay?.sectionIds?.includes('dailySignal'), true);
+  assert.match(failedDailyReport.gameOver?.runReportOverlay?.text || '', /Valid attempts:[\s\S]*Best attempt:[\s\S]*7-day flight log:/i);
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-run-report.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.gameOver?.closeRunReport?.());
+  await page.waitForTimeout(150);
 
   await page.waitForTimeout(500);
   await page.keyboard.press('Enter');
@@ -666,10 +703,21 @@ try {
   assert.equal(clearedDailySummary.summary?.dailySignalFinishSector, 10);
   assert.equal(clearedDailySummary.summary?.dailySignalContractValid, true);
   assert.equal(clearedDailySummary.summary?.dailySignalStored, true);
+  assert.equal(clearedDailySummary.summary?.dailySignalNewClearBest, true);
+  assert.equal(clearedDailySummary.summary?.dailySignalBestAttempt?.sectorReached, 4);
+  assert.equal(clearedDailySummary.summary?.dailySignalBestClear?.runCleared, true);
+  assert.equal(clearedDailySummary.summary?.dailySignalAttemptCount, 2);
+  assert.equal(clearedDailySummary.summary?.dailySignalFlightLog?.clears, 1);
   assert.equal(clearedDailySummary.report?.summary?.dailySignal?.rulesHash, firstDailyAttempt.contract.rulesHash);
+  assert.equal(clearedDailySummary.report?.summary?.dailySignal?.bestAttemptSector, 4);
+  assert.equal(clearedDailySummary.report?.summary?.dailySignal?.attemptCount, 2);
   const clearedDailyStorage = await storageSnapshot(page);
   const clearedDailyRecords = Object.values(clearedDailyStorage.dailySignalRecords.records || {});
+  const clearedDailyAttempts = Object.values(clearedDailyStorage.dailySignalRecords.bestAttempts || {});
+  const clearedDailyClears = Object.values(clearedDailyStorage.dailySignalRecords.bestClears || {});
   assert.equal(clearedDailyRecords.length, 1);
+  assert.equal(clearedDailyAttempts.length, 1);
+  assert.equal(clearedDailyClears.length, 1);
   assert.equal(clearedDailyRecords[0].runCleared, true, 'a clear must outrank the earlier failed Daily attempt');
   assert.equal(clearedDailyRecords[0].sectorReached, 10);
   assert.deepEqual(clearedDailyStorage.hangar, beforeDaily.hangar);
@@ -680,6 +728,31 @@ try {
     summarizeThreatDiscoveryProgress(beforeDaily.threatDiscovery)
   );
   await page.screenshot({ path: path.join(outputDir, 'daily-signal-cleared-sector-10.png'), fullPage: false });
+
+  await page.waitForTimeout(500);
+  await page.keyboard.press('Enter');
+  const improveDaily = await waitForScene(page, 'play');
+  assert.equal(improveDaily.runMode, RUN_MODES.DAILY_SIGNAL);
+  assert.equal(improveDaily.highscoreChase?.goalMode, 'score', 'after the first clear, Daily HUD should switch to the best-clear score chase');
+  assert.equal(improveDaily.highscoreChase?.hasDailyClear, true);
+  assert.equal(improveDaily.highscoreChase?.targetScore, clearedDailySummary.summary?.dailySignalBestClear?.score);
+  const scoreReadyState = await page.evaluate(() => {
+    const game = window.__game;
+    const hud = game?.scenes?.play?.hud;
+    game.score = Math.max(1, Number(game.highscoreChase?.targetScore) || 0) + 250;
+    hud?.updateHighscoreChase?.();
+    return {
+      title: hud?.highscoreChaseTitle?.text || '',
+      target: hud?.highscoreChaseTarget?.text || '',
+      gap: hud?.highscoreChaseGap?.text || '',
+      personalBestCelebration: Boolean(game?.scenes?.play?.personalBestCelebration)
+    };
+  });
+  assert.match(scoreReadyState.title, /BEST CLEAR/i);
+  assert.match(scoreReadyState.target, /BEAT/i);
+  assert.match(scoreReadyState.gap, /SCORE READY.*CLEAR SECTOR 10/i, 'beating the score early must still require the contract clear');
+  assert.equal(scoreReadyState.personalBestCelebration, false, 'Daily must not announce a best clear before Sector 10 is completed');
+  await page.screenshot({ path: path.join(outputDir, 'daily-signal-best-clear-hud.png'), fullPage: false });
 
   const beforeScout = await storageSnapshot(page);
   await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'scout' }));
