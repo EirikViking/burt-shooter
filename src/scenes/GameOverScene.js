@@ -1094,7 +1094,7 @@ export class GameOverScene {
     } else {
       if (bestAttempt) {
         const bestAttemptSector = Math.max(1, Math.floor(Number(bestAttempt.sectorReached) || 1));
-        lines.push(summary.dailySignalNewAttemptBest
+        const bestAttemptLine = summary.dailySignalNewAttemptBest
           ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', {
             sector: bestAttemptSector,
             score: this.formatScoreNumber(bestAttempt.score)
@@ -1102,12 +1102,13 @@ export class GameOverScene {
           : translateText('BEST ATTEMPT: S{sector} // {score}', {
             sector: bestAttemptSector,
             score: this.formatScoreNumber(bestAttempt.score)
-          }));
+          });
+        lines.push(`${bestAttemptLine} // ${translateText('TIME')} ${this.formatElapsedTime(bestAttempt.runElapsedSeconds)}`);
       }
-      lines.push(translateText('THIS RUN: S{sector} // {score}', {
+      lines.push(`${translateText('THIS RUN: S{sector} // {score}', {
         sector: reached,
         score: this.formatScoreNumber(this.finalScore || summary.score || 0)
-      }));
+      })} // ${translateText('TIME')} ${this.formatElapsedTime(attempt?.runElapsedSeconds ?? summary.runElapsedSeconds)}`);
       lines.push(translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: contract.finishSector || 10 }));
     }
     if (flightLog) {
@@ -4580,9 +4581,11 @@ export class GameOverScene {
     if (row.id === 'dailyBestAttempt') {
       const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);
       const sector = Math.max(1, Math.floor(Number(row.rawValue?.sector) || 1));
-      return row.rawValue?.newBest
+      const bestLine = row.rawValue?.newBest
         ? translateText('NEW BEST ATTEMPT: S{sector} // {score}', { sector, score })
         : translateText('BEST ATTEMPT: S{sector} // {score}', { sector, score });
+      const bestTime = Math.max(0, Math.floor(Number(row.rawValue?.time) || 0));
+      return `${bestLine} // ${translateText('TIME')} ${this.formatElapsedTime(bestTime)}`;
     }
     if (row.id === 'dailyBestClear') {
       const score = this.formatScoreNumber(row.rawValue?.score ?? row.value);

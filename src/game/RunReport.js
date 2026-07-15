@@ -5,7 +5,7 @@ import {
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 
-const RUN_REPORT_VERSION = 10;
+const RUN_REPORT_VERSION = 11;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -267,6 +267,7 @@ export function createRunReport(summary = {}) {
         bestScore: toWholeNumber(summary.dailySignalBest?.score ?? summary.dailySignalAttempt?.score),
         bestAttemptScore: summary.dailySignalBestAttempt ? toWholeNumber(summary.dailySignalBestAttempt.score) : null,
         bestAttemptSector: Math.max(0, toWholeNumber(summary.dailySignalBestAttempt?.sectorReached)),
+        bestAttemptTime: toWholeNumber(summary.dailySignalBestAttempt?.runElapsedSeconds),
         bestClearScore: summary.dailySignalBestClear ? toWholeNumber(summary.dailySignalBestClear.score) : null,
         bestClearTime: toWholeNumber(summary.dailySignalBestClear?.runElapsedSeconds),
         attemptCount: toWholeNumber(summary.dailySignalAttemptCount),
@@ -329,7 +330,8 @@ export function createRunReport(summary = {}) {
           { id: 'dailyBestAttempt', value: dailyContract.bestAttemptScore, rawValue: {
             newBest: dailyContract.newAttemptBest,
             score: dailyContract.bestAttemptScore,
-            sector: dailyContract.bestAttemptSector
+            sector: dailyContract.bestAttemptSector,
+            time: dailyContract.bestAttemptTime
           } },
           { id: 'dailyBestClear', value: dailyContract.bestClearScore, rawValue: {
             newBest: dailyContract.newClearBest,

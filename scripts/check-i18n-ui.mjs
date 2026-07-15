@@ -407,16 +407,19 @@ async function captureLanguage(page, language, index) {
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
   assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
 
-  await page.evaluate(() => {
+  await page.evaluate((showAttempt) => {
     const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
-    menu.dailySignalBestClear = {
+    const syntheticRecord = {
       score: 123456,
+      sectorReached: 9,
       runElapsedSeconds: 599,
-      runCleared: true
+      runCleared: !showAttempt
     };
-    menu.dailySignalBest = menu.dailySignalBestClear;
+    menu.dailySignalBestAttempt = showAttempt ? syntheticRecord : null;
+    menu.dailySignalBestClear = showAttempt ? null : syntheticRecord;
+    menu.dailySignalBest = syntheticRecord;
     menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
-  });
+  }, index % 2 === 1);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 10000 });
   snaps.dailyMenu = await snapshot(page);
   assertSnapshotClean(snaps.dailyMenu, language, `${language.slug}.dailyMenu`);

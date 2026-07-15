@@ -2105,11 +2105,11 @@ export class MenuScene {
           time: this.formatDailySignalResetTime(contract)
         })} // ${translateText('TIME')} ${this.formatDailySignalRunTime(bestClear.runElapsedSeconds)}`
         : bestAttempt
-          ? translateText('BEST ATTEMPT S{sector} // {score} // RESET IN {time}', {
+          ? `${translateText('BEST ATTEMPT S{sector} // {score} // RESET IN {time}', {
             sector: bestAttempt.sectorReached,
             score: this.formatDailySignalScore(bestAttempt.score),
             time: this.formatDailySignalResetTime(contract)
-          })
+          })} // ${translateText('TIME')} ${this.formatDailySignalRunTime(bestAttempt.runElapsedSeconds)}`
           : translateText('NO ATTEMPT YET // RESET IN {time}', {
             time: this.formatDailySignalResetTime(contract)
           });
@@ -3227,7 +3227,8 @@ export class MenuScene {
           bestScore: Number(this.dailySignalBest?.score) || 0,
           bestAttempt: this.dailySignalBestAttempt ? {
             score: this.dailySignalBestAttempt.score,
-            sectorReached: this.dailySignalBestAttempt.sectorReached
+            sectorReached: this.dailySignalBestAttempt.sectorReached,
+            runElapsedSeconds: this.dailySignalBestAttempt.runElapsedSeconds
           } : null,
           bestClear: this.dailySignalBestClear ? {
             score: this.dailySignalBestClear.score,

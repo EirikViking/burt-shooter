@@ -633,7 +633,7 @@ try {
   assert.equal(failedDailyClears.length, 0);
   assert.equal(failedDailyRecords[0].sectorReached, 4);
   assert.equal(failedDailyRecords[0].runCleared, false);
-  assert.match(failedDaily.gameOver?.leaderboardStatus || '', /NEW BEST ATTEMPT:\s*S4/i);
+  assert.match(failedDaily.gameOver?.leaderboardStatus || '', /NEW BEST ATTEMPT:\s*S4[^\n]*TIME\s+\d+:\d{2}/i, 'failed Daily result must expose the survival-time tie-break');
   assert.doesNotMatch(failedDaily.gameOver?.leaderboardStatus || '', /NEW DAILY SIGNAL BEST/i);
   assert.deepEqual(failedDailyStorage.hangar, beforeDaily.hangar, 'Daily must not update hangar career progress');
   assert.deepEqual(failedDailyStorage.achievements, beforeDaily.achievements, 'Daily must not unlock achievements');
@@ -650,7 +650,7 @@ try {
   const failedDailyReport = await readState(page);
   assert.equal(failedDailyReport.gameOver?.runReportOverlay?.visible, true);
   assert.equal(failedDailyReport.gameOver?.runReportOverlay?.sectionIds?.includes('dailySignal'), true);
-  assert.match(failedDailyReport.gameOver?.runReportOverlay?.text || '', /Valid attempts:[\s\S]*Best attempt:[\s\S]*7-day flight log:/i);
+  assert.match(failedDailyReport.gameOver?.runReportOverlay?.text || '', /Valid attempts:[\s\S]*Best attempt:[^\n]*TIME\s+\d+:\d{2}[\s\S]*7-day flight log:/i, 'Daily Run Report must expose the failed-attempt survival-time tie-break');
   await page.screenshot({ path: path.join(outputDir, 'daily-signal-run-report.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.gameOver?.closeRunReport?.());
   await page.waitForTimeout(150);

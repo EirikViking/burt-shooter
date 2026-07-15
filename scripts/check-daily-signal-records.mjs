@@ -75,12 +75,24 @@ const deeperAttempt = recordDailySignalRun({
 assert.equal(deeperAttempt.isNewAttemptBest, true, 'deeper failed progress outranks a higher score from an earlier sector');
 assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper');
 
+const longerTieAttempt = recordDailySignalRun({
+  ...baseSummary,
+  dailySignalAttemptId: 'attempt-longer-tie',
+  score: 9000,
+  finalScore: 9000,
+  sectorReached: 8,
+  levelReached: 8,
+  runElapsedSeconds: 900
+}, { targetStorage, completedAt: completedAt('12:25') });
+assert.equal(longerTieAttempt.isNewAttemptBest, true, 'equal-sector and equal-score failures use longer survival time as the tie-break');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-longer-tie');
+
 const lower = recordDailySignalRun({ ...baseSummary, dailySignalAttemptId: 'attempt-b', score: 14000, finalScore: 14000 }, {
   targetStorage,
   completedAt: completedAt('12:30')
 });
 assert.equal(lower.isNewBest, false);
-assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-longer-tie');
 
 const clear = recordDailySignalRun({
   ...baseSummary,
@@ -96,7 +108,7 @@ const clear = recordDailySignalRun({
 assert.equal(clear.isNewBest, true, 'a completed contract outranks a higher-score failed attempt');
 assert.equal(getDailySignalBest(contract, { targetStorage })?.runCleared, true);
 assert.equal(getDailySignalBestClear(contract, { targetStorage })?.attemptId, 'attempt-c');
-assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-deeper', 'clears and failed attempts retain separate records');
+assert.equal(getDailySignalBestAttempt(contract, { targetStorage })?.attemptId, 'attempt-longer-tie', 'clears and failed attempts retain separate records');
 
 const fasterClear = recordDailySignalRun({
   ...baseSummary,
@@ -125,7 +137,7 @@ const exactTie = recordDailySignalRun({
 }, { targetStorage, completedAt: completedAt('14:00') });
 assert.equal(exactTie.isNewBest, false, 'a later timestamp must not turn an identical performance into a new best');
 assert.equal(getDailySignalBest(contract, { targetStorage })?.attemptId, 'attempt-d');
-assert.equal(getDailySignalAttemptCount(contract, { targetStorage }), 6, 'every valid saved run increments the attempt count');
+assert.equal(getDailySignalAttemptCount(contract, { targetStorage }), 7, 'every valid saved run increments the attempt count');
 
 const unavailableStorage = recordDailySignalRun({
   ...baseSummary,
