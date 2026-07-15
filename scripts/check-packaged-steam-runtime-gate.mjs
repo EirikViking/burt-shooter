@@ -3,11 +3,24 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import {
   resolvePackagedSmokeMode,
   validatePackagedSteamRuntime
 } from './lib/packaged-steam-runtime-gate.mjs';
+
+const require = createRequire(import.meta.url);
+const { normalizeSdkPathForSteamworksFfi } = require('../electron/steamLeaderboardBridge.cjs');
+
+assert.equal(
+  normalizeSdkPathForSteamworksFfi('C:\\Nova\\resources\\app.asar.unpacked\\steam_sdk\\sdk'),
+  'C:\\Nova\\resources\\app.asar\\steam_sdk\\sdk'
+);
+assert.equal(
+  normalizeSdkPathForSteamworksFfi('C:\\Nova\\steam_sdk\\sdk'),
+  'C:\\Nova\\steam_sdk\\sdk'
+);
 
 const readyState = {
   steamBridgeStatus: {

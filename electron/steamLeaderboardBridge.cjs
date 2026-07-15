@@ -71,6 +71,14 @@ function readSteamAppId(rootDir) {
   return DEFAULT_STEAM_APP_ID;
 }
 
+function normalizeSdkPathForSteamworksFfi(candidate) {
+  if (!candidate) return candidate;
+  // steamworks-ffi-node maps every path containing `.asar` to `.asar.unpacked`
+  // before loading the redistributable. Passing an already-unpacked path would
+  // therefore become `app.asar.unpacked.unpacked` and make SteamAPI_Init fail.
+  return String(candidate).replace(/\.asar\.unpacked(?=[\\/])/i, '.asar');
+}
+
 function resolveSdkPath(rootDir) {
   const explicit = process.env.NOVA_SWARM_STEAMWORKS_SDK_PATH || process.env.STEAMWORKS_SDK_PATH;
   const exeDir = process.execPath ? path.dirname(process.execPath) : null;
@@ -91,13 +99,14 @@ function resolveSdkPath(rootDir) {
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steam_sdk') : null,
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steamworks_sdk') : null
   ].filter(Boolean);
-  return candidates.find(candidate => {
+  const resolved = candidates.find(candidate => {
     try {
       return fs.existsSync(candidate);
     } catch {
       return false;
     }
   }) || explicit || null;
+  return normalizeSdkPathForSteamworksFfi(resolved);
 }
 
 function requireNativeSteamworks() {
@@ -1164,6 +1173,7 @@ module.exports = {
   STEAM_BACKEND_REJECTED_UNKNOWN_REASON_MESSAGE,
   SteamLeaderboardBridge,
   createSteamLeaderboardBridge,
+  normalizeSdkPathForSteamworksFfi,
   sanitizeDetails,
   stringifySteamId
 };

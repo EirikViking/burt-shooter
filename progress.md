@@ -6,6 +6,7 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - The exact known-good payload was re-uploaded to `sector-continue-test` as emergency BuildID `24226934`, depot manifest `5580543771637302882`. Independent SteamCMD `app_info_print` verification confirmed the defective build is no longer assigned; public remains unchanged on BuildID `24218172`.
 - A direct probe using the repaired package's own native modules opened `nova_swarm_global_score_v2` and downloaded 20 existing entries, proving Steam initialization, native module loading, board identity, and score visibility.
 - Steam packaging now stages the complete `steamworks-ffi-node` and `koffi` trees explicitly after electron-builder, then applies the hardened package-runtime gate. Smoke-only cold starts have a bounded extended load window so Windows security scanning cannot create a false package failure; normal gameplay startup is unchanged.
+- A fresh packaged smoke exposed one final packaging-only path defect before upload: `steamworks-ffi-node` rewrites any `.asar` SDK path to `.asar.unpacked`, so giving it the already-unpacked staged path produced `app.asar.unpacked.unpacked` and `SteamAPI_Init()` returned false. The bridge now hands the library its expected virtual `app.asar` path after first verifying the real staged SDK exists; focused coverage locks this normalization while leaving normal development SDK paths unchanged.
 
 ## 2026-07-15 Packaged Steam runtime release gate hotfix
 
