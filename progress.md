@@ -1,13 +1,20 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-15 Daily Cabinet Signal (verified, deploy pending)
+## 2026-07-15 Daily Cabinet Signal (complete)
 
 - Added one prominent UTC Daily Cabinet Signal above the standard launch deck. Every pilot receives the same dated contract, loaner ship, route theme, Tactical Draft rules, and Sector 10 finish for that day; the menu briefing explains the exact challenge before launch and scales cleanly at compact resolutions.
 - Built three authored challenge families: Reinforcement Siege, Crossfire Blackout, and Minefield Audit. Reinforcement sectors and Super Storm sectors are contract fields, the loaner can be used even when it is not yet unlocked, and Retry preserves the captured contract while issuing a fresh attempt ID. Expired retries fail visibly instead of silently rolling into a different daily.
 - Added a separate local Daily record keyed by date and rules hash. Clears outrank failures, then score, sector, and time break ties. Invalid/debug runs, exact ties, missing storage, and quota failures cannot create a false best. Failed runs report the sector actually reached; a Sector 10 clear ends before Sector 11 prewarm, draft, or progression can begin.
 - Kept the scoring promise honest: Daily uses no public Steam leaderboard until the remaining gameplay RNG is fully deterministic. It also cannot grant Career/Checkpoint/Pilot Order progress, achievements, general leaderboard entries, or persistent Threat Codex discovery. The result screen and How to Play state these boundaries directly.
 - Refined surrounding UI truth and readability: Daily gets a dedicated result identity and clear celebration, the Pilot Orders rail fits the expanded launch deck, the How to Play mode/record descriptions match actual Pure, Tactical, Scout, Sector, and Daily behavior, and Korean/Japanese Steam leaderboard labels are localized rather than English fallbacks.
-- Focused verification passes contract tamper/expiry/rotation checks, record ordering and storage-failure checks, all Daily start/fail/retry/clear flows, standard run-mode regression, Tactical Draft visuals, run contracts, Pilot Orders, How to Play across ten layouts, controller-only flow, all-eight-language i18n/UI, Steam/Electron bridge, browser smoke, current Electron smoke, and source build. The locked baseline remains an ancestor; Steamworks settings are untouched. Packaging and upload remain gated on the final release-line check.
+- Focused verification passes contract tamper/expiry/rotation checks, record ordering and storage-failure checks, all Daily start/fail/retry/clear flows, standard run-mode regression, Tactical Draft visuals, run contracts, Pilot Orders, How to Play across ten layouts, controller-only flow, all-eight-language i18n/UI, Steam/Electron bridge, browser smoke, current Electron smoke, and source build. The locked baseline remains an ancestor; Steamworks settings are untouched.
+
+## 2026-07-15 Daily Cabinet Signal deployed to Steam test
+
+- Built source commit `655e48c915cf5cdfd7faea72981d61ac9d21b81b` as `v2026-07-15_07-51-09`, packaged a 329-file / 952,915,140-byte Windows payload, and uploaded it successfully as Steam BuildID `24214776` with depot manifest `2450258030557688080`.
+- The verified VDF targeted exactly `sector-continue-test`. The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, Steam Cloud settings, and every other Steamworks surface were untouched. Test-branch rollback target: BuildID `24212964`.
+- Release-line, full source build, Daily contract/record/runtime guards, all-eight-language UI, How to Play, Tactical Draft, run contracts, browser smoke, controller-only flow, Steam/Electron bridge, package runtime, current and packaged Electron smoke, packaged keyboard/gamepad controls, fresh-profile Steam isolation, desktop package review, and isolated packaged performance all passed. The payload held 58.82 minimum / 59.88 average FPS across 12 samples with zero warnings or errors.
+- This build preserves the Maximum-WOW reinforcement presentation and every prior improvement, then adds the honest local Daily Cabinet Signal, three authored route themes, fixed loaner/finish rules, exact-contract retry, fail-closed daily records, dedicated results, fitted launch UI, and corrected localized run-mode guidance.
 
 ## 2026-07-15 Tactical Pilot Orders Eligibility Fix
 
