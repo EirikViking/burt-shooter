@@ -301,11 +301,88 @@ const TRANSLATIONS = Object.freeze({
   ])
 });
 
+const UPDATED_SOURCE = Object.freeze({
+  scoutControl: 'UNRANKED PRACTICE // TACTICAL DRAFTS',
+  scoutCopy: 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',
+  sectorControl: 'SECTOR LEADERBOARD // CHECKPOINT STARTS',
+  sectorCopy: 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
+  recordsControl: 'PURE + TACTICAL + SECTOR STEAM',
+  recordsCopy: 'Pure, Tactical, and Sector use separate Steam leaderboard lanes. Daily Signal keeps a local UTC record for now; Scout remains unranked practice.'
+});
+
+const UPDATED_TRANSLATIONS = Object.freeze({
+  de: Object.freeze({
+    scoutControl: 'UNGEWERTETES TRAINING // TAKTISCHE DRAFTS',
+    scoutCopy: 'Training mit weniger Druck und Boss-Drafts zum Testen von Schiffen und Routen. Keine Ranglistenübermittlung, Erfolge, Karriere-XP, Pilot Orders oder Checkpoint-Freischaltungen.',
+    sectorControl: 'SEKTOR-RANGLISTE // CHECKPOINT-STARTS',
+    sectorCopy: 'Schalte Checkpoints in Mayhem frei und trainiere dann tiefere Routen mit Boss-Drafts. Jeder Checkpoint führt einen eigenen Rekord und übermittelt an die separate Steam-Sektor-Rangliste; Karriere und Erfolge bleiben unberührt.',
+    recordsControl: 'PURE + TACTICAL + SECTOR AUF STEAM',
+    recordsCopy: 'Pure, Tactical und Sector verwenden getrennte Steam-Ranglisten. Das tägliche Signal führt vorerst einen lokalen UTC-Rekord; Scout bleibt ungewertetes Training.'
+  }),
+  es: Object.freeze({
+    scoutControl: 'PRÁCTICA NO CLASIFICADA // DRAFTS TÁCTICOS',
+    scoutCopy: 'Práctica con menos presión y Drafts de jefe para probar naves y aprender rutas. Sin envío a clasificaciones, logros, XP de carrera, Pilot Orders ni desbloqueos de puntos de control.',
+    sectorControl: 'CLASIFICACIÓN DE SECTOR // PUNTOS DE CONTROL',
+    sectorCopy: 'Desbloquea puntos de control en Mayhem y practica rutas más profundas con Drafts de jefe. Cada punto conserva su propio récord y lo envía a la clasificación de Sector separada de Steam; la carrera y los logros no cambian.',
+    recordsControl: 'PURE + TACTICAL + SECTOR EN STEAM',
+    recordsCopy: 'Pure, Tactical y Sector usan clasificaciones de Steam separadas. La Señal diaria conserva por ahora un récord UTC local; Scout sigue siendo práctica no clasificada.'
+  }),
+  'pt-BR': Object.freeze({
+    scoutControl: 'TREINO NÃO RANQUEADO // DRAFTS TÁTICOS',
+    scoutCopy: 'Treino com menos pressão e Drafts de chefe para testar naves e aprender rotas. Sem envio ao placar, conquistas, XP de carreira, Pilot Orders ou desbloqueio de checkpoints.',
+    sectorControl: 'PLACAR DE SETOR // INÍCIOS EM CHECKPOINTS',
+    sectorCopy: 'Desbloqueie checkpoints em Mayhem e pratique rotas mais profundas com Drafts de chefe. Cada checkpoint mantém seu próprio recorde e o envia ao placar separado de Setor da Steam; carreira e conquistas não mudam.',
+    recordsControl: 'PURE + TACTICAL + SECTOR NA STEAM',
+    recordsCopy: 'Pure, Tactical e Sector usam placares separados da Steam. O Sinal diário mantém, por enquanto, um recorde UTC local; Scout continua sendo treino não ranqueado.'
+  }),
+  ru: Object.freeze({
+    scoutControl: 'НЕРЕЙТИНГОВАЯ ТРЕНИРОВКА // ТАКТИЧЕСКИЕ ДРАФТЫ',
+    scoutCopy: 'Тренировка с пониженным давлением и драфтами после боссов для проверки кораблей и изучения маршрутов. Без отправки в таблицу, достижений, опыта карьеры, Pilot Orders и открытия контрольных точек.',
+    sectorControl: 'ТАБЛИЦА СЕКТОРА // СТАРТЫ С КОНТРОЛЬНЫХ ТОЧЕК',
+    sectorCopy: 'Открывайте контрольные точки в Mayhem и тренируйте глубокие маршруты с драфтами после боссов. У каждой точки свой рекорд, который отправляется в отдельную таблицу Sector в Steam; карьера и достижения не меняются.',
+    recordsControl: 'PURE + TACTICAL + SECTOR В STEAM',
+    recordsCopy: 'Pure, Tactical и Sector используют отдельные таблицы Steam. Ежедневный сигнал пока хранит локальный UTC-рекорд; Scout остаётся нерейтинговой тренировкой.'
+  }),
+  'zh-CN': Object.freeze({
+    scoutControl: '非排位练习 // 战术 DRAFT',
+    scoutCopy: '在较低压力下通过 Boss Draft 测试战机并熟悉路线。不提交排行榜，不获得成就、生涯 XP、Pilot Orders 或检查点解锁。',
+    sectorControl: '区域排行榜 // 检查点起跑',
+    sectorCopy: '在 Mayhem 中解锁检查点，再通过 Boss Draft 练习更深路线。每个检查点保留独立纪录，并提交至单独的 Steam Sector 排行榜；生涯与成就不受影响。',
+    recordsControl: 'PURE + TACTICAL + SECTOR STEAM 榜',
+    recordsCopy: 'Pure、Tactical 和 Sector 分别使用独立的 Steam 排行榜。每日信号目前保留本地 UTC 纪录；Scout 仍为非排位练习。'
+  }),
+  ko: Object.freeze({
+    scoutControl: '비랭크 연습 // 전술 DRAFT',
+    scoutCopy: '낮은 압박과 보스 Draft로 기체를 시험하고 경로를 익히는 연습 모드입니다. 순위표 제출, 도전 과제, 커리어 XP, Pilot Orders, 체크포인트 해금은 없습니다.',
+    sectorControl: '섹터 순위표 // 체크포인트 시작',
+    sectorCopy: 'Mayhem에서 체크포인트를 해금한 뒤 보스 Draft와 함께 더 깊은 경로를 연습하세요. 각 체크포인트는 별도 기록을 보관하고 Steam의 별도 Sector 순위표에 제출하며 커리어와 도전 과제에는 영향을 주지 않습니다.',
+    recordsControl: 'PURE + TACTICAL + SECTOR STEAM',
+    recordsCopy: 'Pure, Tactical, Sector는 각각 별도의 Steam 순위표를 사용합니다. 일일 신호는 현재 로컬 UTC 기록만 저장하며 Scout는 계속 비랭크 연습 모드입니다.'
+  }),
+  ja: Object.freeze({
+    scoutControl: '非ランク練習 // タクティカルDRAFT',
+    scoutCopy: '低いプレッシャーとボス後のDraftで、機体のテストやルート練習を行います。ランキング送信、実績、キャリアXP、Pilot Orders、チェックポイント解放はありません。',
+    sectorControl: 'セクターランキング // チェックポイント開始',
+    sectorCopy: 'Mayhemでチェックポイントを解放し、ボス後のDraftを使って深いルートを練習します。各チェックポイントは個別記録を保持し、Steamの別枠Sectorランキングへ送信されます。キャリアと実績には影響しません。',
+    recordsControl: 'PURE + TACTICAL + SECTOR STEAM',
+    recordsCopy: 'Pure、Tactical、Sectorは別々のSteamランキングを使用します。デイリーシグナルは当面ローカルUTC記録のみを保持し、Scoutは引き続き非ランク練習です。'
+  })
+});
+
 export function getHowToPlayCompleteSourceText(locale = 'en') {
   const localized = TRANSLATIONS[locale];
   if (!localized) return Object.freeze({});
   if (localized.length !== SOURCE.length) {
     throw new Error(`How To Play translation count mismatch for ${locale}: ${localized.length}/${SOURCE.length}`);
   }
-  return Object.freeze(Object.fromEntries(SOURCE.map((source, index) => [source, localized[index]])));
+  const updated = UPDATED_TRANSLATIONS[locale];
+  const updatedKeys = Object.keys(UPDATED_SOURCE);
+  const missing = updatedKeys.filter((key) => typeof updated?.[key] !== 'string' || !updated[key].trim());
+  if (missing.length) {
+    throw new Error(`How To Play updated translations missing for ${locale}: ${missing.join(', ')}`);
+  }
+  return Object.freeze({
+    ...Object.fromEntries(SOURCE.map((source, index) => [source, localized[index]])),
+    ...Object.fromEntries(updatedKeys.map((key) => [UPDATED_SOURCE[key], updated[key]]))
+  });
 }

@@ -6,6 +6,7 @@ import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
+import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u041a\u041e\u041d\u0422\u0410\u041a\u0422 \u0421 \u0410\u0421\u041e\u041c",
@@ -1786,6 +1787,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru') }),
   patterns
 };

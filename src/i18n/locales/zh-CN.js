@@ -6,6 +6,7 @@ import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
+import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
@@ -1786,6 +1787,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN') }),
   patterns
 };
