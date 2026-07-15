@@ -231,6 +231,50 @@ function runCatalogAndSaveTests() {
   assert.equal(getDefaultShowPilotOrders({ bestSector: 1, totalRuns: 0 }), true, 'fresh profiles should show Pilot Orders by default');
   assert.equal(getDefaultShowPilotOrders({ bestSector: 10 }), false, 'mature profiles should hide Pilot Orders by default');
 
+  const modeEligibilityState = runContractState({
+    activeIds: FIRST_THREE,
+    completedIds: ['graze_10']
+  });
+  for (const runMode of [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL]) {
+    const eligibleSession = startRunContractSession({
+      runMode,
+      progress: { runContracts: modeEligibilityState }
+    });
+    assert.equal(
+      eligibleSession.active.some((item) => item.id === 'graze_10'),
+      false,
+      `${runMode} should rotate cleared Pilot Orders before the run starts`
+    );
+    const bossOrder = findSessionItem(eligibleSession, 'boss_breaker');
+    assert.equal(bossOrder?.eligible, true, `${runMode} should make Pilot Orders eligible`);
+    const bossResult = applyRunContractEvent(eligibleSession, { type: 'boss_defeated', sector: 2 });
+    assert.deepEqual(
+      bossResult.completed.map((entry) => entry.id),
+      ['boss_breaker'],
+      `${runMode} should progress and complete eligible Pilot Orders`
+    );
+  }
+  for (const runMode of [RUN_MODES.SCOUT, RUN_MODES.SECTOR_START]) {
+    const excludedSession = startRunContractSession({
+      runMode,
+      progress: { runContracts: modeEligibilityState }
+    });
+    assert.equal(
+      excludedSession.active.some((item) => item.id === 'graze_10'),
+      true,
+      `${runMode} should not prepare or rotate Pilot Orders`
+    );
+    const bossOrder = findSessionItem(excludedSession, 'boss_breaker');
+    assert.equal(bossOrder?.eligible, false, `${runMode} should keep Pilot Orders ineligible`);
+    const bossResult = applyRunContractEvent(excludedSession, { type: 'boss_defeated', sector: 2 });
+    assert.equal(bossResult.completed.length, 0, `${runMode} should not progress Pilot Orders`);
+    assert.equal(
+      findSessionItem(bossResult.session, 'boss_breaker')?.progress,
+      0,
+      `${runMode} should leave excluded Pilot Order progress unchanged`
+    );
+  }
+
   const dedupedEnemyOrders = normalizeRunContractsState({
     activeIds: ['near_miss_streak', 'enemy_sweep_1000', 'enemy_sweep_2500']
   });

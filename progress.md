@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-15 Tactical Pilot Orders Eligibility Fix
+
+- Diagnostic finding: both Mayhem Pure and Mayhem Tactical are ranked modes with Career Progress enabled, but Pilot Orders only prepared and progressed in Pure. Tactical players therefore saw the same broad Pilot Orders presentation while their main retention track silently stalled.
+- Implementation: Pilot Orders now treat Mayhem Pure and Mayhem Tactical as the same eligible Mayhem family. Both ranked modes rotate cleared orders before launch, accept objective events, and pay each order's existing one-time Career XP reward. Scout and Sector Run remain explicitly excluded, so practice modes still cannot advance the track.
+- Focused regression coverage: `check:run-contract-mode-eligibility` and the logic portion of `check:run-contracts` prove preparation, eligibility, event progression, and completion in both Pure and Tactical, plus no preparation or progress in Scout and Sector Run. No player-facing copy, save schema, score rule, leaderboard behavior, achievement rule, balance value, or Steamworks surface changed.
+- Verification: syntax checks, `check:run-contract-mode-eligibility`, `check:run-modes`, `check:i18n`, `build:current`, `check:i18n-ui`, and `git diff --check` pass. The full `check:run-contracts` reaches its browser phase after the new logic assertions, then reproduces a pre-existing 1280x720 menu-layout failure (`Pilot Orders should sit below the launch deck`); the captured board overlaps the four-card run-mode stack in untouched `MenuScene` code, so that separate UI defect is recorded for the next focused pass rather than hidden or bundled into this progression fix.
+
 ## 2026-07-15 Reinforcement Swarm Maximum-WOW Pass (complete)
 
 - Current request: keep the loved reinforcement-swarm mechanic intact, but make its warning, arrival, ship entry, audio, and compact-window presentation feel dramatically more spectacular.

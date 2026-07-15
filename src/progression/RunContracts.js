@@ -8,7 +8,10 @@ export const RUN_CONTRACT_REWARD_XP_BASE = 175;
 export const RUN_CONTRACT_REWARD_XP_STEP = 5;
 export const RUN_CONTRACT_REWARD_XP_CAP = 420;
 
-const MAYHEM_MODES = Object.freeze([RUN_MODES.RANKED]);
+const MAYHEM_MODES = Object.freeze([
+  RUN_MODES.RANKED,
+  RUN_MODES.MAYHEM_TACTICAL
+]);
 
 function defineContract(config = {}) {
   return Object.freeze({
@@ -1155,7 +1158,7 @@ export function mergeRunContractsState(localState = {}, cloudState = {}) {
 export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress = {} } = {}) {
   const mode = normalizeRunMode(runMode);
   const baseState = normalizeRunContractsState(progress?.runContracts || progress || {});
-  const state = mode === RUN_MODES.RANKED ? prepareRunContractsForEligibleRun(baseState) : baseState;
+  const state = MAYHEM_MODES.includes(mode) ? prepareRunContractsForEligibleRun(baseState) : baseState;
   const activeIds = areAllRunContractsComplete(state) ? [] : state.activeIds;
   return {
     version: RUN_CONTRACTS_VERSION,

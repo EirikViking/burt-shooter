@@ -86,6 +86,7 @@
     "check:nova-humor": "node scripts/check-nova-humor-everywhere.mjs",
     "check:nova-humor-runtime": "node scripts/check-nova-humor-runtime.mjs",
     "check:run-contracts": "node scripts/check-run-contracts.mjs",
+    "check:run-contract-mode-eligibility": "node scripts/check-run-contract-mode-eligibility.mjs",
     "check:ship-unlock-reveal": "node scripts/check-ship-unlock-reveal.mjs",
     "check:hangar-unlock-presentation": "node scripts/check-hangar-unlock-presentation.mjs",
     "check:hangar-profile-repair-notice": "node scripts/check-hangar-profile-repair-notice.mjs",
