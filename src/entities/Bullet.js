@@ -35,6 +35,8 @@ export class Bullet {
     this.warningRing = null;
     this.dangerGlint = null;
     this.dangerWakeBeads = null;
+    this.enemySpectacleBack = null;
+    this.enemySpectacleFront = null;
     this.threatArmingLayer = null;
     this.friendlyGlint = null;
     this.friendlyWingTrace = null;
@@ -229,6 +231,8 @@ export class Bullet {
       this.dangerWakeBeads = this.dangerGlint;
       this.sprite.addChild(this.dangerGlint);
 
+      this.createEnemyProjectileSpectacle({ colorAssist, trailLength, trailWidth });
+
       this.createThreatArmingCue();
     } else {
       const leadDistance = this.radius + 7;
@@ -325,11 +329,179 @@ export class Bullet {
       playerIntentActive: Boolean(this.playerIntentLayer?._debugIntentMarkers?.active),
       dangerGlint: Boolean(this.dangerGlint),
       dangerWakeBeadCount: this.dangerWakeBeads?.__novaProjectileWakeBeadCount || (this.dangerWakeBeads ? 3 : 0),
+      enemySpectacle: Boolean(this.enemySpectacleBack && this.enemySpectacleFront),
+      enemySpectacleStyle: this.enemySpectacleFront?._debugEnemyProjectileSpectacle?.style || null,
+      enemySpectacleRenderMode: this.enemySpectacleFront?._debugEnemyProjectileSpectacle?.renderMode || null,
+      enemySpectacleWakeEchoCount: this.enemySpectacleBack?._debugEnemyProjectileSpectacle?.wakeEchoCount || 0,
+      enemySpectacleAuraEchoCount: this.enemySpectacleFront?._debugEnemyProjectileSpectacle?.auraEchoCount || 0,
+      enemySpectacleSignatureEchoCount: this.enemySpectacleFront?._debugEnemyProjectileSpectacle?.signatureEchoCount || 0,
       threatArmingPipCount: this.threatArmingLayer?._debugThreatArming?.pipCount || 0,
       threatArmingKind: this.threatArmingLayer?._debugThreatArming?.kind || null,
       trailLength: Number(trailLength.toFixed?.(2) || trailLength),
       trailWidth
     };
+  }
+
+  createEnemyProjectileSpectacle({ colorAssist = false, trailLength = 32 } = {}) {
+    if (this.isPlayer || !this.core?.__novaProjectileSprite || !this.core?.texture) return;
+
+    const profileId = this.weaponProfileId || 'fallback_enemy_projectile';
+    const style = this.coreAnimationStyle || 'pulse';
+    const variant = Number.isFinite(this.visualConfig.assetIndex) ? this.visualConfig.assetIndex : 0;
+    const primary = colorAssist ? 0xffffff : (this.visualConfig.trailColor || this.color || 0xff6655);
+    const secondary = colorAssist ? 0xfff45c : (this.visualConfig.haloColor || this.visualConfig.warningColor || primary);
+    const hot = colorAssist ? 0xffffff : (this.visualConfig.warningColor || 0xffffff);
+    const radius = Math.max(4, Number(this.radius) || 5);
+    const forwardX = Math.cos(this.angle);
+    const forwardY = Math.sin(this.angle);
+    const normalX = -Math.sin(this.angle);
+    const normalY = Math.cos(this.angle);
+    const baseScale = Math.max(0.01, Number(this.baseScale) || 1);
+
+    let wakeEchoCount = 3;
+    let wakeSpacing = Math.max(9, trailLength * 0.27);
+    let wakeLateral = 2.5;
+    let auraScale = 1.5;
+    let flareRotation = 0.16;
+    switch (profileId) {
+      case 'amber_plasma_orb':
+        wakeLateral = 5;
+        auraScale = 1.72;
+        flareRotation = Math.PI / 2;
+        break;
+      case 'cyan_rail_needle':
+        wakeEchoCount = 4;
+        wakeSpacing = Math.max(13, trailLength * 0.29);
+        wakeLateral = 0.8;
+        auraScale = 1.3;
+        flareRotation = 0;
+        break;
+      case 'magenta_crescent':
+        wakeLateral = 4;
+        auraScale = 1.56;
+        flareRotation = 0.34;
+        break;
+      case 'toxic_splinter_seed':
+        wakeLateral = 5;
+        auraScale = 1.42;
+        flareRotation = -0.45;
+        break;
+      case 'violet_star_mine':
+        wakeEchoCount = 2;
+        wakeSpacing = 9;
+        wakeLateral = 7;
+        auraScale = 1.86;
+        flareRotation = Math.PI / 4;
+        break;
+      case 'white_comet_lance':
+        wakeEchoCount = 4;
+        wakeSpacing = Math.max(14, trailLength * 0.3);
+        wakeLateral = 0;
+        auraScale = 1.48;
+        flareRotation = 0;
+        break;
+      case 'orange_molten_slug':
+        wakeLateral = 3;
+        auraScale = 1.66;
+        flareRotation = -0.18;
+        break;
+      case 'teal_fork_dart':
+        wakeEchoCount = 4;
+        wakeLateral = 5;
+        auraScale = 1.42;
+        flareRotation = 0.22;
+        break;
+      case 'pink_spiral_disruptor':
+        wakeLateral = 6;
+        auraScale = 1.58;
+        flareRotation = 0.54;
+        break;
+      case 'lime_saw_disc':
+        wakeEchoCount = 2;
+        wakeSpacing = 9;
+        wakeLateral = 4;
+        auraScale = 1.72;
+        flareRotation = 0.31;
+        break;
+      case 'purple_boss_spear':
+        wakeEchoCount = 4;
+        wakeSpacing = Math.max(12, trailLength * 0.28);
+        wakeLateral = 3;
+        auraScale = 1.82;
+        flareRotation = 0;
+        break;
+      default:
+        break;
+    }
+
+    const configureEcho = (sprite, {
+      x = 0,
+      y = 0,
+      scale = baseScale,
+      alpha = 0.2,
+      tint = primary,
+      rotation = this.core.rotation
+    } = {}) => {
+      sprite.anchor.set(0.5);
+      sprite.position.set(x, y);
+      sprite.scale.set(scale);
+      sprite.alpha = alpha;
+      sprite.tint = tint;
+      sprite.rotation = rotation;
+      sprite.blendMode = 'add';
+      sprite.eventMode = 'none';
+      return sprite;
+    };
+
+    const back = new PIXI.Container();
+    back.label = `enemyProjectileSpectacleBack:${profileId}`;
+    back.__novaEnemyProjectileSpectacle = true;
+    for (let i = 0; i < wakeEchoCount; i += 1) {
+      const distance = radius + 10 + (i + 1) * wakeSpacing;
+      const lateral = Math.sin((i + 1) * 1.72 + variant * 0.43) * wakeLateral;
+      const fade = Math.max(0.055, 0.2 - i * 0.038);
+      const scale = baseScale * Math.max(0.48, 1.02 - i * 0.13);
+      back.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
+        x: -forwardX * distance + normalX * lateral,
+        y: -forwardY * distance + normalY * lateral,
+        scale,
+        alpha: fade,
+        tint: i === 0 ? hot : primary
+      }));
+    }
+
+    const front = new PIXI.Container();
+    front.label = `enemyProjectileSpectacleFront:${profileId}`;
+    front.__novaEnemyProjectileSpectacle = true;
+    front.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
+      scale: baseScale * auraScale,
+      alpha: colorAssist ? 0.2 : 0.16,
+      tint: secondary
+    }));
+    front.addChild(configureEcho(new PIXI.Sprite(this.core.texture), {
+      scale: baseScale * (auraScale + 0.32),
+      alpha: colorAssist ? 0.12 : 0.075,
+      tint: hot,
+      rotation: this.core.rotation + flareRotation
+    }));
+
+    const debug = {
+      profileId,
+      style,
+      variant,
+      renderMode: 'batched_sprite_echoes',
+      wakeEchoCount,
+      auraEchoCount: 2,
+      signatureEchoCount: 2,
+      collisionRadius: radius,
+      wakeLength: Number((wakeEchoCount * wakeSpacing).toFixed(2))
+    };
+    back._debugEnemyProjectileSpectacle = debug;
+    front._debugEnemyProjectileSpectacle = debug;
+    this.enemySpectacleBack = back;
+    this.enemySpectacleFront = front;
+    this.sprite.addChildAt(back, 0);
+    this.sprite.addChild(front);
   }
 
   getThreatArmingInfo() {
@@ -647,6 +819,7 @@ export class Bullet {
           this.dangerWakeBeads.alpha = 0.62 + Math.sin(this.pulseTimer * 2.1 * pulseRate) * 0.16;
         }
       }
+      this.updateEnemyProjectileSpectacle(delta);
       this.updateThreatArmingCue();
     } else if (this.friendlyGlint) {
       const friendlyPulse = 1 + Math.sin(this.pulseTimer * 3.2) * 0.12;
@@ -729,6 +902,31 @@ export class Bullet {
 
     this.core.scale.set(Math.max(0.01, sx), Math.max(0.01, sy));
     this.core.alpha = Math.max(0.72, Math.min(1, alpha));
+  }
+
+  updateEnemyProjectileSpectacle() {
+    if (this.isPlayer || !this.enemySpectacleBack || !this.enemySpectacleFront) return;
+    const rate = this.coreAnimationRate || 1;
+    const phase = this.pulseTimer * rate + this.behaviorPhase * 0.16;
+    const wave = Math.sin(phase * 2.15);
+    const wave2 = Math.cos(phase * 1.42 + 0.65);
+    const style = this.coreAnimationStyle || 'pulse';
+
+    this.enemySpectacleBack.alpha = 0.8 + wave * 0.12;
+    this.enemySpectacleBack.scale.set(1 + Math.max(0, wave2) * 0.026, 1 + wave * 0.018);
+
+    const frontPulse = style === 'orb' || style === 'fireball' ? 0.09 : 0.055;
+    const frontScale = 1 + wave * frontPulse;
+    this.enemySpectacleFront.scale.set(frontScale);
+    this.enemySpectacleFront.alpha = 0.76 + wave2 * 0.2;
+
+    const debug = this.enemySpectacleFront._debugEnemyProjectileSpectacle;
+    if (debug) {
+      debug.animated = true;
+      debug.backAlpha = Number(this.enemySpectacleBack.alpha.toFixed(3));
+      debug.frontAlpha = Number(this.enemySpectacleFront.alpha.toFixed(3));
+      debug.frontRotation = Number(this.enemySpectacleFront.rotation.toFixed(4));
+    }
   }
 
   handleTimedThreatBehavior() {

@@ -11,6 +11,7 @@ const host = process.env.PROJECTILE_VISUAL_HOST || '127.0.0.1';
 const port = process.env.PROJECTILE_VISUAL_URL ? null : (Number(process.env.PROJECTILE_VISUAL_PORT) || await findAvailablePort(4492));
 const baseUrl = process.env.PROJECTILE_VISUAL_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.PROJECTILE_VISUAL_OUTPUT_DIR || `test-results/projectile-visuals-${timestamp()}`);
+const devServerTimeoutMs = Number(process.env.PROJECTILE_VISUAL_SERVER_TIMEOUT_MS) || 180000;
 const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 const scenarioOrder = [
@@ -75,12 +76,12 @@ async function startDevServer() {
   server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
 
   const start = Date.now();
-  while (Date.now() - start < 20000) {
+  while (Date.now() - start < devServerTimeoutMs) {
     if (await canFetch(baseUrl)) return server;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   server.kill();
-  throw new Error(`Vite dev server did not become ready at ${baseUrl}`);
+  throw new Error(`Vite dev server did not become ready at ${baseUrl} within ${devServerTimeoutMs}ms`);
 }
 
 function findChrome() {
@@ -386,6 +387,10 @@ async function stageScenario(page, scenario) {
     const activeBullets = bm.enemyBullets.filter((bullet) => bullet?.active !== false);
     const generatedSprites = activeBullets.filter((bullet) => bullet.core?.__novaProjectileSprite).length;
     const dangerGlints = activeBullets.filter((bullet) => bullet.dangerGlint?.__novaProjectileDangerGlint).length;
+    const spectacleBullets = activeBullets.filter((bullet) => (
+      bullet.enemySpectacleBack?.__novaEnemyProjectileSpectacle &&
+      bullet.enemySpectacleFront?.__novaEnemyProjectileSpectacle
+    )).length;
     const framedGeneratedSprites = activeBullets.filter((bullet) => (
       bullet.core?.__novaProjectileSprite &&
       (
@@ -409,6 +414,17 @@ async function stageScenario(page, scenario) {
       ),
       radius: bullet.radius,
       dangerGlint: Boolean(bullet.dangerGlint?.__novaProjectileDangerGlint),
+      spectacle: Boolean(
+        bullet.enemySpectacleBack?.__novaEnemyProjectileSpectacle &&
+        bullet.enemySpectacleFront?.__novaEnemyProjectileSpectacle
+      ),
+      spectacleStyle: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.style || null,
+      spectacleRenderMode: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.renderMode || null,
+      wakeEchoes: bullet.enemySpectacleBack?._debugEnemyProjectileSpectacle?.wakeEchoCount || 0,
+      auraEchoes: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.auraEchoCount || 0,
+      signatureEchoes: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.signatureEchoCount || 0,
+      spectacleCollisionRadius: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.collisionRadius ?? null,
+      collisionRadiusMatch: bullet.enemySpectacleFront?._debugEnemyProjectileSpectacle?.collisionRadius === bullet.radius,
       width: Math.round((bullet.core?.width || 0) * 10) / 10,
       height: Math.round((bullet.core?.height || 0) * 10) / 10
     }));
@@ -418,6 +434,7 @@ async function stageScenario(page, scenario) {
       bulletCount: activeBullets.length,
       generatedSprites,
       dangerGlints,
+      spectacleBullets,
       framedGeneratedSprites,
       activeProfiles: [...new Set(activeBullets.map((bullet) => bullet.weaponProfileId).filter(Boolean))],
       arts: [...new Set(activeBullets.map((bullet) => bullet.visualConfig?.projectileArt).filter(Boolean))],
@@ -440,12 +457,18 @@ async function measureAnimation(page) {
       sx: Number(bullet.core?.scale?.x || 0),
       sy: Number(bullet.core?.scale?.y || 0),
       alpha: Number(bullet.core?.alpha || 0),
-      rotation: Number(bullet.core?.rotation || 0)
+      rotation: Number(bullet.core?.rotation || 0),
+      spectacleBackAlpha: Number(bullet.enemySpectacleBack?.alpha || 0),
+      spectacleBackScaleX: Number(bullet.enemySpectacleBack?.scale?.x || 0),
+      spectacleFrontAlpha: Number(bullet.enemySpectacleFront?.alpha || 0),
+      spectacleFrontScaleX: Number(bullet.enemySpectacleFront?.scale?.x || 0),
+      spectacleFrontRotation: Number(bullet.enemySpectacleFront?.rotation || 0)
     }));
     const before = sample();
     await new Promise((resolve) => setTimeout(resolve, 280));
     const after = sample();
     let changed = 0;
+    let spectacleChanged = 0;
     for (let i = 0; i < Math.min(before.length, after.length); i += 1) {
       const a = before[i];
       const b = after[i];
@@ -457,8 +480,17 @@ async function measureAnimation(page) {
       ) {
         changed += 1;
       }
+      if (
+        Math.abs(a.spectacleBackAlpha - b.spectacleBackAlpha) > 0.0005 ||
+        Math.abs(a.spectacleBackScaleX - b.spectacleBackScaleX) > 0.0005 ||
+        Math.abs(a.spectacleFrontAlpha - b.spectacleFrontAlpha) > 0.0005 ||
+        Math.abs(a.spectacleFrontScaleX - b.spectacleFrontScaleX) > 0.0005 ||
+        Math.abs(a.spectacleFrontRotation - b.spectacleFrontRotation) > 0.0005
+      ) {
+        spectacleChanged += 1;
+      }
     }
-    return { sampled: before.length, changed };
+    return { sampled: before.length, changed, spectacleChanged };
   });
 }
 
@@ -624,12 +656,29 @@ for (const capture of captures) {
   if (capture.state.bulletCount > 0 && capture.state.dangerGlints < capture.state.bulletCount) {
     errors.push(`${capture.scenario} is missing enemy projectile danger glints ${capture.state.dangerGlints}/${capture.state.bulletCount}`);
   }
+  if (capture.state.bulletCount > 0 && capture.state.spectacleBullets < capture.state.bulletCount) {
+    errors.push(`${capture.scenario} is missing layered enemy projectile spectacle ${capture.state.spectacleBullets}/${capture.state.bulletCount}`);
+  }
+  const weakSpectacle = capture.state.spriteDetails.filter((detail) => (
+    !detail.spectacle ||
+    detail.spectacleRenderMode !== 'batched_sprite_echoes' ||
+    detail.wakeEchoes < 2 ||
+    detail.auraEchoes < 2 ||
+    detail.signatureEchoes < 2 ||
+    !detail.collisionRadiusMatch
+  ));
+  if (weakSpectacle.length > 0) {
+    errors.push(`${capture.scenario} has incomplete spectacle layers: ${weakSpectacle.map((detail) => `${detail.profile}[mode=${detail.spectacleRenderMode},wake=${detail.wakeEchoes},auras=${detail.auraEchoes},signature=${detail.signatureEchoes},radius=${detail.spectacleCollisionRadius}/${detail.radius}]`).join(', ')}`);
+  }
   const tinyGeneratedSprites = capture.state.spriteDetails.filter((detail) => detail.coreSprite && detail.width < 28);
   if (tinyGeneratedSprites.length > 0) {
     errors.push(`${capture.scenario} has generated enemy projectile sprites that are too small after unframing: ${tinyGeneratedSprites.map((detail) => `${detail.profile}:${detail.width}x${detail.height}`).join(', ')}`);
   }
   if (capture.state.bulletCount > 0 && capture.animation.changed < Math.min(5, capture.animation.sampled)) {
     errors.push(`${capture.scenario} did not animate enough projectile samples`);
+  }
+  if (capture.state.bulletCount > 0 && capture.animation.spectacleChanged < Math.min(5, capture.animation.sampled)) {
+    errors.push(`${capture.scenario} did not animate enough spectacle samples`);
   }
   if (capture.state.projectileTextureCount < 10) errors.push(`${capture.scenario} did not preload all projectile textures`);
   if (capture.state.enemyWeaponTextureCount < 12) errors.push(`${capture.scenario} did not preload all enemy weapon textures`);
@@ -647,6 +696,17 @@ if (!densePerformance) {
 if (!denseAnimation || denseAnimation.changed < Math.min(12, denseAnimation.sampled)) {
   errors.push('dense projectile animation sample did not change enough bullets');
 }
+if (!denseAnimation || denseAnimation.spectacleChanged < Math.min(12, denseAnimation.sampled)) {
+  errors.push('dense projectile spectacle sample did not change enough bullets');
+}
+const spectacleProfileCoverage = [...new Set(captures.flatMap((capture) => (
+  capture.state.spriteDetails.filter((detail) => detail.spectacle).map((detail) => detail.profile)
+)))].filter(Boolean).sort();
+const expectedSpectacleProfiles = ENEMY_WEAPON_PROFILES.map((profile) => profile.id).sort();
+const missingSpectacleProfiles = expectedSpectacleProfiles.filter((profileId) => !spectacleProfileCoverage.includes(profileId));
+if (missingSpectacleProfiles.length > 0) {
+  errors.push(`missing spectacle profile coverage: ${missingSpectacleProfiles.join(', ')}`);
+}
 if (pageErrors.length > 0) errors.push(`page errors: ${pageErrors.join('; ')}`);
 if (badResponses.length > 0) errors.push(`bad responses: ${badResponses.map((item) => `${item.status} ${item.url}`).join('; ')}`);
 if (consoleEvents.length > 0) errors.push(`console warnings/errors: ${consoleEvents.map((item) => item.text).slice(0, 5).join('; ')}`);
@@ -663,6 +723,7 @@ const report = {
   captures,
   densePerformance,
   denseAnimation,
+  spectacleProfileCoverage,
   manifestErrors,
   consoleEvents,
   pageErrors,
