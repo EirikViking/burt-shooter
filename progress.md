@@ -1,13 +1,21 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-15 Enemy Projectile Spectacle deployed to Steam test
+
+- Built release integration commit `2980f5f922cf59f911a32551de8e2306f6e83ad5` as `v2026-07-15_20-35-49`, packaged a 220-file / 914,755,350-byte Windows payload, and uploaded it successfully as Steam BuildID `24226288` with depot manifest `6434473859557816080`.
+- The verified VDF targeted exactly `sector-continue-test`. Public/default, the Steamworks website, store metadata, pricing, leaderboard and achievement definitions, Steam Cloud settings, and every other Steamworks surface were untouched. Test-branch rollback target: BuildID `24222462`.
+- Release-line, full source build, all-eight-language i18n/UI, browser smoke, controller flow, Steam/Electron bridge, enemy-weapon and projectile-visual guards, current Electron smoke/performance, package runtime, packaged EXE smoke, packaged keyboard/gamepad controls, fresh-profile Steam isolation, desktop package review, and packaged performance all passed. The packaged build held 59.52 minimum / 59.95 average FPS across 12 samples with zero warnings or errors.
+- The payload preserves every improvement in BuildID `24222462` and adds individually tuned wakes, aura depth, flare language, and animation for all twelve generated hostile projectile families without changing collision radii, damage, speed, score, saves, leaderboards, achievements, progression, or Steamworks definitions.
+- Steam payload evidence: `release/steamworks/steam_upload_evidence_enemy_projectile_spectacle_20260715_24226288.json`. Strict improvement count remains 15/1000; release packaging and deployment are evidence, not additional player-facing improvements.
+
 ## 2026-07-15 Genre-best improvement program — tranche 1 (15/1000 verified)
 
 - Authoritative counting baseline: `b660a20f3e4705421b02f81198f8c775ccde182d`. Only independently identifiable outcomes with `verified` status in `docs/improvement-ledger-20260715.jsonl` count. Existing content counts, locale multiplication, files, commits, and combinatorial variants do not.
 - Rebuilt all twelve generated hostile projectile families with tuned batched sprite echoes, profile-colored wakes, dual aura depth, and animated pulse. Each family keeps its own texture and separately tuned spacing, lateral motion, aura scale, and flare angle so rail needles, plasma orbs, mines, lances, slugs, darts, disruptors, saws, shards, and boss spears no longer collapse into the same silhouette.
 - Preserved gameplay truth: collision radii, damage, speed, behavior, spawn patterns, score, saves, achievements, leaderboards, and Steamworks settings are unchanged.
-- Deterministic visual evidence covers six scenarios and all twelve profiles. The 96-projectile stress field passed at `28.50ms p95 / 33.80ms max`, with zero frames over `50ms`, zero active texture generation, complete animation coverage, and collision-radius parity.
+- Deterministic visual evidence covers six scenarios and all twelve profiles. The final integrated 96-projectile stress field passed at `28.80ms p95 / 35.60ms max`, with zero frames over `50ms`, zero active texture generation, complete animation coverage, and collision-radius parity.
 - Verification passed: `npm run check:enemy-weapons`, `npm run check:projectile-visuals`, `npm run check:player-projectile-readability`, `npm run build:current`, `npm run smoke`, syntax checks, and `git diff --check`. The required generic develop-web-game client was attempted and is still blocked by missing Playwright `chromium_headless_shell-1208`; the repo-native installed-Chrome visual and smoke suites passed.
-- Runtime commit: `25e35348dd7aed1272281e7900f91d48a5af7dab`. Visual artifact: `test-results/projectile-visuals-2026-07-15T17-02-55-238Z`. Release packaging and Steam upload are the next gated step.
+- Feature commit: `25e35348dd7aed1272281e7900f91d48a5af7dab`; release integration: `2980f5f922cf59f911a32551de8e2306f6e83ad5`. Final integrated visual artifact: `test-results/projectile-visuals-2026-07-15T17-48-08-005Z`. Steam test BuildID: `24226288`.
 
 ## 2026-07-15 Daily Signal share card (complete)
 
