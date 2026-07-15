@@ -10,6 +10,14 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Separate diagnostic: the global `check:gameplay-performance-analysis` was repeated and consistently flags two cold frames over `50ms` in four Sector 20 transition variants. Those scenarios never activate reinforcement code, while their steady combat samples remain about `60 FPS`; this pass therefore records the independent sector-transition issue without expanding scope into unrelated asset-loading code.
 - Scope: no new player-facing copy or untranslated text was added; the presentation reuses existing localized reinforcement strings. Steamworks settings were untouched, and no package, upload, branch assignment, or deploy was performed.
 
+## 2026-07-15 Reinforcement Swarm Maximum-WOW deployed to Steam test
+
+- Built source commit `90083d104a51eaa7489f853ce16b4ae7d9c6550c` as `v2026-07-15_04-55-27`, packaged a 336-file / 955,666,607-byte Windows payload, and uploaded it successfully as Steam BuildID `24212964`.
+- The verified VDF targeted exactly `sector-continue-test`. The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, Steam Cloud settings, and every other Steamworks surface were untouched. Test-branch rollback target: BuildID `24211566`.
+- Release-line, full source build, stamped Reinforcement Maximum-WOW runtime, Steam package runtime, current and packaged Electron smoke, packaged keyboard/gamepad controls, fresh-profile Steam isolation, desktop package review, and isolated packaged performance all passed. The payload held 59.52 minimum / 60.11 average FPS across 12 samples with zero warnings or errors.
+- The final stamped reinforcement runtime proves all three real ship previews and HUD-safe gates, all three widely separated arrival lanes and layered audio, 46 integrated reinforcement ships, extended wakes, score neutrality, compact placement, and four clean screenshots. Its full breach sampled 44 frames at 17.05 ms average / 16.8 ms p95 / 33.3 ms maximum with zero frames over 50 ms.
+- This build preserves every improvement from BuildID `24211566` and adds the compact fleet-signal plate, real threat previews, wider multi-lane breach staging, lightning and atmospheric buildup, much larger portal impacts, first-impact hit pause, richer audio layering, stronger launch trails, and persistent per-ship reinforcement wakes.
+
 ## 2026-07-11 Steam Store Refresh (complete)
 
 - Published Steamworks revision 34 with a rewritten English About section and new short description, plus complete localized About and short-description variants for German, Spanish (Spain), Russian, Simplified Chinese, Brazilian Portuguese, Korean, and Japanese.
