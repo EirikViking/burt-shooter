@@ -1,5 +1,16 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-15 Daily Signal share card (complete)
+
+- Competition, retention, and RNG audits ranked a local-only Daily result card ahead of deeper Daily route determinism. The latter changes the rules fingerprint and is reserved for a UTC reset boundary.
+- Added a sanitized 1200x675 Cabinet Signal Receipt model and renderer. It includes UTC date, clear/ended state, score, actual finish/reached sector, time, loaner, route directive, attempt number, seven-day Flight Log, and a compact rules fingerprint while explicitly omitting attempt ID, Steam identity, diagnostics, full rules hash, and public-rank claims.
+- Daily Game Over keeps Retry dominant. Its secondary action is now Flight Report; the report footer adds Save Signal Card and Copy Caption with pointer, keyboard S/C, and gamepad X/Y input. Browser download and narrow validated Electron save/clipboard bridges are implemented with PNG signature/size checks and a user-controlled save dialog.
+- Added complete player-facing copy in all eight locales and updated Daily How to Play guidance. Run Report is now version 12 so card trust state includes whether the local record was stored or failed to save.
+- Reframed the confusing menu identity from Daily Signal to Daily Challenge. The briefing now leads with today's goal, the assigned challenge, why to replay, current result, Flight Log, and an explicit personal/local status with no public leaderboard yet; How to Play gives the same purpose-first explanation in all eight locales.
+- Focused visual/runtime coverage passes sanitized-model checks, real browser PNG download, Electron bridge mocks, keyboard/controller actions, all eight locales, 1920x1080, 1366x768, and 960x540 layouts, with zero page/console errors. Screenshot review caught and fixed a cleared Sector 10 card incorrectly inheriting the prewarmed Sector 11 counter.
+- Required i18n, all-eight-language UI, full build, How to Play, Run Report, run-mode, Daily record, Steam/Electron bridge, controller-only, browser smoke, and refreshed share-card visual checks pass. Current Electron source smoke still reproduces the same native/custom-protocol hang on the previously deployed clean baseline, so packaged desktop smoke remains the release gate rather than treating that baseline/environment issue as a share-card regression.
+- Next: exact-commit independent review, then release-line/package/test-branch upload if every packaged gate stays green.
+
 ## 2026-07-15 Daily Flight Log And Scoring Trust Pass (complete)
 
 - Added a visible seven-day Daily Flight Log to the launch briefing and result flow. Each UTC day now reads as unopened, attempted, or cleared, while the cabinet tracks today's attempt count, recent clear rhythm, archive clears, and an honest current streak without adding a public leaderboard claim.

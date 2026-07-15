@@ -8,6 +8,7 @@ import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import {
   getSelectableShips,
+  getShipMetadata,
   getShipUnlockHistoryReason,
   getShipUnlockProgress,
   getShipUnlockProgressDetails,
@@ -37,6 +38,14 @@ import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getRecoverySectorGoal } from '../config/RetentionPresentation.js';
 import { formatDailySignalFlightLogSymbols } from '../progression/DailySignalRecords.js';
+import {
+  copyDailySignalCaption,
+  createDailySignalCardCopy,
+  createDailySignalCardModel,
+  getDailySignalCardFilename,
+  renderDailySignalCard,
+  saveDailySignalCard
+} from '../ui/DailySignalCard.js';
 
 const INPUT_PROMPT = 'ENTER PILOT NAME AND SUBMIT';
 const GLOBAL_SUBMIT_TIMEOUT_MS = 9000;
@@ -304,6 +313,9 @@ export class GameOverScene {
     this.runReportPanel = null;
     this.runReportCloseButton = null;
     this.runReportOverlayDebug = null;
+    this.dailySignalShareBusy = false;
+    this.dailySignalShareStatus = null;
+    this.dailySignalShareDebug = null;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -424,6 +436,9 @@ export class GameOverScene {
     this.reportShownAt = Date.now();
     this.runReportOpen = false;
     this.runReportOverlayDebug = null;
+    this.dailySignalShareBusy = false;
+    this.dailySignalShareStatus = null;
+    this.dailySignalShareDebug = null;
     this.counterAdviceCardDebug = null;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
@@ -3104,6 +3119,16 @@ export class GameOverScene {
       this.setInputDevice('keyboard');
 
       if (this.runReportOpen) {
+        if (this.isDailySignalResult() && (e.code === 'KeyS' || e.key === 's' || e.key === 'S')) {
+          e.preventDefault();
+          if (!e.repeat) void this.saveDailySignalShareCard();
+          return;
+        }
+        if (this.isDailySignalResult() && (e.code === 'KeyC' || e.key === 'c' || e.key === 'C')) {
+          e.preventDefault();
+          if (!e.repeat) void this.copyDailySignalShareCaption();
+          return;
+        }
         if (isEscape || isSubmitKey || isRestartKey) {
           e.preventDefault();
           this.closeRunReport();
@@ -3278,7 +3303,11 @@ export class GameOverScene {
 
   handleGamepadNavigation(nav) {
     if (this.runReportOpen) {
-      if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu || nav.pressed.confirm) {
+      if (this.isDailySignalResult() && nav.pressed.x) {
+        void this.saveDailySignalShareCard();
+      } else if (this.isDailySignalResult() && nav.pressed.y) {
+        void this.copyDailySignalShareCaption();
+      } else if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu || nav.pressed.confirm) {
         this.closeRunReport();
       }
       return;
@@ -4486,11 +4515,12 @@ export class GameOverScene {
     this.runReportButtonBg.rect(-halfWidth + 18, halfHeight - 8, buttonWidth - 36, 1);
     this.runReportButtonBg.fill({ color: 0x37f5ff, alpha: visible ? 0.24 : 0 });
 
-    this.runReportButtonLabel.text = translateText('RUN REPORT');
+    const dailySignal = this.isDailySignalResult();
+    this.runReportButtonLabel.text = translateText(dailySignal ? 'FLIGHT REPORT' : 'RUN REPORT');
     this.runReportButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
     this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
     if (this.runReportButtonHint) {
-      this.runReportButtonHint.text = translateText('Counter advice');
+      this.runReportButtonHint.text = translateText(dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
       this.runReportButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
     }
@@ -4540,6 +4570,106 @@ export class GameOverScene {
       this.runReportOverlay.eventMode = 'none';
     }
     this.runReportOverlayDebug = this.getRunReportOverlayDebugState();
+  }
+
+  getDailySignalShareModel() {
+    return createDailySignalCardModel(this.getRunReport());
+  }
+
+  getDailySignalShareAssetUrls(model = this.getDailySignalShareModel()) {
+    const metadata = model?.shipId ? getShipMetadata(model.shipId) : null;
+    const textureIndex = Math.max(0, Math.floor(Number(metadata?.textureIndex) || 0));
+    return {
+      backdropUrl: AssetManifest.generated?.gameOverCeremony || AssetManifest.generated?.menuBackdrop || null,
+      shipUrl: AssetManifest.generated?.playerShips?.[textureIndex] || AssetManifest.generated?.playerShips?.[0] || null
+    };
+  }
+
+  setDailySignalShareStatus(source, tone = 'info') {
+    this.dailySignalShareStatus = source ? { source, tone } : null;
+    if (this.runReportOpen) {
+      this.layoutRunReportOverlay(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+    }
+  }
+
+  async saveDailySignalShareCard() {
+    const model = this.getDailySignalShareModel();
+    if (!model || this.dailySignalShareBusy) return null;
+    this.dailySignalShareBusy = true;
+    this.setDailySignalShareStatus('BUILDING SIGNAL CARD...', 'info');
+    const copy = createDailySignalCardCopy(model, translateText);
+    const filename = getDailySignalCardFilename(model);
+    try {
+      const canvas = await renderDailySignalCard(model, copy, this.getDailySignalShareAssetUrls(model));
+      const result = await saveDailySignalCard(canvas, filename);
+      if (result?.canceled) {
+        this.setDailySignalShareStatus('SIGNAL CARD SAVE CANCELED', 'muted');
+      } else if (result?.ok === true) {
+        this.setDailySignalShareStatus(result.downloaded ? 'SIGNAL CARD DOWNLOAD STARTED' : 'SIGNAL CARD SAVED', 'success');
+      } else {
+        throw new Error(result?.error || 'signal_card_save_failed');
+      }
+      this.dailySignalShareDebug = {
+        action: 'save',
+        ok: result?.ok === true,
+        canceled: result?.canceled === true,
+        downloaded: result?.downloaded === true,
+        filename,
+        model
+      };
+      return result;
+    } catch (error) {
+      console.warn('[DailySignalCard] Save failed:', error?.message || String(error));
+      this.setDailySignalShareStatus('SIGNAL CARD SAVE FAILED', 'error');
+      this.dailySignalShareDebug = {
+        action: 'save',
+        ok: false,
+        filename,
+        error: error?.message || String(error),
+        model
+      };
+      return { ok: false, error: error?.message || String(error) };
+    } finally {
+      this.dailySignalShareBusy = false;
+      if (this.runReportOpen) {
+        this.layoutRunReportOverlay(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+      }
+    }
+  }
+
+  async copyDailySignalShareCaption() {
+    const model = this.getDailySignalShareModel();
+    if (!model || this.dailySignalShareBusy) return null;
+    const copy = createDailySignalCardCopy(model, translateText);
+    this.dailySignalShareBusy = true;
+    this.setDailySignalShareStatus('COPYING CAPTION...', 'info');
+    try {
+      const result = await copyDailySignalCaption(copy.caption);
+      if (result?.ok !== true) throw new Error(result?.error || 'signal_caption_copy_failed');
+      this.setDailySignalShareStatus('CAPTION COPIED', 'success');
+      this.dailySignalShareDebug = {
+        action: 'copy',
+        ok: true,
+        captionLength: copy.caption.length,
+        model
+      };
+      return result;
+    } catch (error) {
+      console.warn('[DailySignalCard] Caption copy failed:', error?.message || String(error));
+      this.setDailySignalShareStatus('CAPTION COPY FAILED', 'error');
+      this.dailySignalShareDebug = {
+        action: 'copy',
+        ok: false,
+        error: error?.message || String(error),
+        model
+      };
+      return { ok: false, error: error?.message || String(error) };
+    } finally {
+      this.dailySignalShareBusy = false;
+      if (this.runReportOpen) {
+        this.layoutRunReportOverlay(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
+      }
+    }
   }
 
   getRunReportSectionLabel(sectionId) {
@@ -4716,7 +4846,10 @@ export class GameOverScene {
     const titleSize = compact ? 22 : 28;
     const sectionTitleSize = compact ? 13 : 16;
     const rowSize = compact ? 11 : 14;
-    const closeHeight = compact ? 32 : 36;
+    const dailyShareModel = createDailySignalCardModel(report);
+    const dailyShareAvailable = Boolean(dailyShareModel);
+    const closeHeight = dailyShareAvailable ? (compact ? 42 : 46) : (compact ? 32 : 36);
+    const shareStatusHeight = dailyShareAvailable ? (compact ? 18 : 22) : 0;
     const tacticalLoadout = this.getRunReportTacticalLoadout(report);
     const tacticalBandWidth = panelWidth - innerPad * 2;
     const chipGap = compact ? 6 : 8;
@@ -4738,7 +4871,8 @@ export class GameOverScene {
     const counterBandHeight = deathCoachRow ? (compact ? 62 : 78) : 0;
     const pilotBandHeight = pilotOrdersRow ? (compact ? 78 : 86) : 0;
     const contentTop = -panelHeight / 2 + innerPad + titleSize + (compact ? 18 : 26);
-    const closeTop = panelHeight / 2 - innerPad - closeHeight;
+    const footerButtonTop = panelHeight / 2 - innerPad - closeHeight;
+    const closeTop = footerButtonTop - shareStatusHeight;
     const pilotBandY = pilotOrdersRow ? closeTop - (compact ? 14 : 18) - pilotBandHeight : null;
     const counterBandY = deathCoachRow
       ? (pilotOrdersRow ? pilotBandY - gap - counterBandHeight : closeTop - (compact ? 14 : 18) - counterBandHeight)
@@ -4772,11 +4906,11 @@ export class GameOverScene {
     panelBg.stroke({ color: 0x37f5ff, width: 2, alpha: 0.72 });
     panelBg.rect(-panelWidth / 2 + innerPad, -panelHeight / 2 + innerPad + titleSize + 8, panelWidth - innerPad * 2, 2);
     panelBg.fill({ color: 0x37f5ff, alpha: 0.3 });
-    panelBg.rect(-panelWidth / 2 + innerPad, panelHeight / 2 - innerPad - closeHeight - 14, panelWidth - innerPad * 2, 1);
+    panelBg.rect(-panelWidth / 2 + innerPad, closeTop - 14, panelWidth - innerPad * 2, 1);
     panelBg.fill({ color: 0xffd15c, alpha: 0.22 });
     this.runReportPanel.addChild(panelBg);
 
-    const title = createText(translateText('RUN REPORT'), {
+    const title = createText(translateText(dailyShareAvailable ? 'FLIGHT REPORT' : 'RUN REPORT'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: titleSize,
       fontWeight: 'bold',
@@ -5045,31 +5179,140 @@ export class GameOverScene {
       textLines.push(`${label}: ${value}`);
     }
 
-    this.runReportCloseButton = new PIXI.Container();
-    this.runReportCloseButton.eventMode = 'static';
-    this.runReportCloseButton.cursor = 'pointer';
-    this.runReportCloseButton.on('pointerdown', () => this.closeRunReport());
-    const closeWidth = layout.isMobile ? 142 : 150;
-    const closeBg = new PIXI.Graphics();
-    closeBg.roundRect(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight, 8);
-    closeBg.fill({ color: 0x07192b, alpha: 0.96 });
-    closeBg.roundRect(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight, 8);
-    closeBg.stroke({ color: 0xffd15c, width: 1.5, alpha: 0.82 });
-    const closeLabel = createText(translateText('CLOSE'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: layout.isMobile ? 14 : 16,
-      fontWeight: 'bold',
-      fill: '#fff3a2',
-      stroke: '#031323',
-      strokeThickness: 2,
-      align: 'center'
+    const footerGap = compact ? 8 : 12;
+    const footerSpecs = dailyShareAvailable
+      ? [
+          {
+            id: 'save',
+            label: 'SAVE SIGNAL CARD',
+            hint: 'S / X',
+            preferredWidth: 230,
+            accent: 0x37f5ff,
+            fill: '#d8fbff',
+            activate: () => void this.saveDailySignalShareCard()
+          },
+          {
+            id: 'copy',
+            label: 'COPY CAPTION',
+            hint: 'C / Y',
+            preferredWidth: 205,
+            accent: 0x7dffcc,
+            fill: '#d8fff0',
+            activate: () => void this.copyDailySignalShareCaption()
+          },
+          {
+            id: 'close',
+            label: 'CLOSE',
+            hint: 'ENTER / A',
+            preferredWidth: 150,
+            accent: 0xffd15c,
+            fill: '#fff3a2',
+            activate: () => this.closeRunReport()
+          }
+        ]
+      : [{
+          id: 'close',
+          label: 'CLOSE',
+          hint: null,
+          preferredWidth: layout.isMobile ? 142 : 150,
+          accent: 0xffd15c,
+          fill: '#fff3a2',
+          activate: () => this.closeRunReport()
+        }];
+    const footerAvailableWidth = panelWidth - innerPad * 2;
+    const footerPreferredButtonWidth = footerSpecs.reduce((total, spec) => total + spec.preferredWidth, 0);
+    const footerGapWidth = footerGap * Math.max(0, footerSpecs.length - 1);
+    const footerScale = Math.min(1, Math.max(0.4, (footerAvailableWidth - footerGapWidth) / Math.max(1, footerPreferredButtonWidth)));
+    const footerWidths = footerSpecs.map((spec) => Math.max(92, spec.preferredWidth * footerScale));
+    const footerTotalWidth = footerWidths.reduce((total, value) => total + value, 0)
+      + footerGap * Math.max(0, footerSpecs.length - 1);
+    let footerX = -footerTotalWidth / 2;
+    const footerButtonY = footerButtonTop + closeHeight / 2;
+    const footerActionBounds = {};
+
+    footerSpecs.forEach((spec, index) => {
+      const buttonWidth = footerWidths[index];
+      const button = new PIXI.Container();
+      const disabled = this.dailySignalShareBusy && spec.id !== 'close';
+      button.eventMode = disabled ? 'none' : 'static';
+      button.cursor = disabled ? 'default' : 'pointer';
+      button.on('pointerdown', spec.activate);
+
+      const background = new PIXI.Graphics();
+      background.roundRect(-buttonWidth / 2, -closeHeight / 2, buttonWidth, closeHeight, 8);
+      background.fill({ color: 0x07192b, alpha: disabled ? 0.72 : 0.96 });
+      background.roundRect(-buttonWidth / 2, -closeHeight / 2, buttonWidth, closeHeight, 8);
+      background.stroke({ color: spec.accent, width: 1.5, alpha: disabled ? 0.34 : 0.82 });
+
+      const label = createText(translateText(spec.label), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: layout.isMobile ? 13 : compact ? 14 : 16,
+        fontWeight: 'bold',
+        fill: spec.fill,
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'center'
+      });
+      label.anchor.set(0.5);
+      label.y = spec.hint ? -5 : 0;
+      fitDisplayToBox(label, buttonWidth - 18, spec.hint ? closeHeight * 0.54 : closeHeight - 8, { minScale: 0.58 });
+      button.addChild(background, label);
+
+      if (spec.hint) {
+        const hint = createText(spec.hint, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: compact ? 9 : 10,
+          fontWeight: 'bold',
+          fill: '#8fd8e7',
+          stroke: '#031323',
+          strokeThickness: 2,
+          align: 'center'
+        });
+        hint.anchor.set(0.5);
+        hint.y = closeHeight * 0.27;
+        button.addChild(hint);
+      }
+
+      button.hitArea = new PIXI.Rectangle(-buttonWidth / 2, -closeHeight / 2, buttonWidth, closeHeight);
+      button.x = footerX + buttonWidth / 2;
+      button.y = footerButtonY;
+      this.runReportPanel.addChild(button);
+      footerActionBounds[spec.id] = {
+        x: button.x - buttonWidth / 2,
+        y: button.y - closeHeight / 2,
+        width: buttonWidth,
+        height: closeHeight
+      };
+      if (spec.id === 'close') this.runReportCloseButton = button;
+      footerX += buttonWidth + footerGap;
     });
-    closeLabel.anchor.set(0.5);
-    this.runReportCloseButton.addChild(closeBg, closeLabel);
-    this.runReportCloseButton.hitArea = new PIXI.Rectangle(-closeWidth / 2, -closeHeight / 2, closeWidth, closeHeight);
-    this.runReportCloseButton.x = 0;
-    this.runReportCloseButton.y = panelHeight / 2 - innerPad - closeHeight / 2;
-    this.runReportPanel.addChild(this.runReportCloseButton);
+
+    if (dailyShareAvailable) {
+      const statusSource = this.dailySignalShareStatus?.source || 'LOCAL SIGNAL // NO PUBLIC RANK';
+      const tone = this.dailySignalShareStatus?.tone || 'info';
+      const statusColor = tone === 'success'
+        ? '#7dffcc'
+        : tone === 'error'
+          ? '#ff8b9b'
+          : tone === 'muted'
+            ? '#9ab4bf'
+            : '#9cfbff';
+      const status = createText(translateText(statusSource), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 11 : 13,
+        fontWeight: 'bold',
+        fill: statusColor,
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'center'
+      });
+      status.anchor.set(0.5);
+      status.x = 0;
+      status.y = footerButtonTop - shareStatusHeight / 2;
+      fitDisplayToBox(status, footerAvailableWidth, shareStatusHeight, { minScale: 0.66 });
+      this.runReportPanel.addChild(status);
+      textLines.push(status.text);
+    }
 
     const toScreenRect = (x, y, rectWidth, rectHeight) => ({
       x: Math.round(this.runReportPanel.x + x),
@@ -5103,7 +5346,25 @@ export class GameOverScene {
       pilotOrdersBounds: pilotOrdersRow
         ? toScreenRect(-panelWidth / 2 + innerPad, pilotBandY, panelWidth - innerPad * 2, pilotBandHeight)
         : null,
-      closeButtonBounds: toScreenRect(-closeWidth / 2, this.runReportCloseButton.y - closeHeight / 2, closeWidth, closeHeight)
+      dailySignalShare: dailyShareAvailable ? {
+        available: true,
+        busy: this.dailySignalShareBusy,
+        status: translateText(this.dailySignalShareStatus?.source || 'LOCAL SIGNAL // NO PUBLIC RANK'),
+        filename: getDailySignalCardFilename(dailyShareModel),
+        saveButtonLabel: translateText('SAVE SIGNAL CARD'),
+        copyButtonLabel: translateText('COPY CAPTION'),
+        model: dailyShareModel,
+        saveButtonBounds: footerActionBounds.save
+          ? toScreenRect(footerActionBounds.save.x, footerActionBounds.save.y, footerActionBounds.save.width, footerActionBounds.save.height)
+          : null,
+        copyButtonBounds: footerActionBounds.copy
+          ? toScreenRect(footerActionBounds.copy.x, footerActionBounds.copy.y, footerActionBounds.copy.width, footerActionBounds.copy.height)
+          : null,
+        lastAction: this.dailySignalShareDebug
+      } : { available: false },
+      closeButtonBounds: footerActionBounds.close
+        ? toScreenRect(footerActionBounds.close.x, footerActionBounds.close.y, footerActionBounds.close.width, footerActionBounds.close.height)
+        : null
     };
   }
 

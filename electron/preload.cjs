@@ -14,7 +14,9 @@ const CHANNELS = {
 };
 
 const APP_CHANNELS = {
-  exitGame: 'nova-app:exitGame'
+  exitGame: 'nova-app:exitGame',
+  saveSignalCard: 'nova-app:saveSignalCard',
+  copyText: 'nova-app:copyText'
 };
 
 const PERFORMANCE_DIAGNOSTICS_CHANNELS = {
@@ -108,7 +110,9 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
-  exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload)
+  exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload),
+  saveSignalCard: (payload) => invoke(APP_CHANNELS.saveSignalCard, payload),
+  copyText: (payload) => invoke(APP_CHANNELS.copyText, payload)
 }));
 
 contextBridge.exposeInMainWorld('__novaPerformanceDiagnostics', Object.freeze({

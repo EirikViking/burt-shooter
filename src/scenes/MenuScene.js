@@ -1273,11 +1273,11 @@ export class MenuScene {
     this.container.addChild(this.menuPanel);
     this.createSectorSelectorOverlay(layout);
 
-    this.dailySignalBtn = this.createButton('DAILY SIGNAL', layout, {
+    this.dailySignalBtn = this.createButton('DAILY CHALLENGE', layout, {
       variant: 'primary',
       accent: 0x7dffcc,
       icon: 'target',
-      subLabel: 'TODAY // LOCAL UTC CHALLENGE',
+      subLabel: 'CLEAR S10 // BEAT YOUR BEST',
       dynamicSubLabel: () => this.getDailySignalMenuSubLabel(),
       labelMinScale: 0.66
     });
@@ -2100,41 +2100,41 @@ export class MenuScene {
       const bestClear = this.dailySignalBestClear || getDailySignalBestClear(contract);
       const flightLog = this.dailySignalFlightLog || getDailySignalFlightLog();
       const recordLine = bestClear
-        ? `${translateText('BEST CLEAR {score} // RESET IN {time}', {
+        ? translateText('TODAY: CLEARED // BEST {score} // TIME {runTime} // RESET IN {time}', {
           score: this.formatDailySignalScore(bestClear.score),
+          runTime: this.formatDailySignalRunTime(bestClear.runElapsedSeconds),
           time: this.formatDailySignalResetTime(contract)
-        })} // ${translateText('TIME')} ${this.formatDailySignalRunTime(bestClear.runElapsedSeconds)}`
+        })
         : bestAttempt
-          ? `${translateText('BEST ATTEMPT S{sector} // {score} // RESET IN {time}', {
+          ? translateText('TODAY: NOT CLEARED // BEST S{sector} // {score} // TIME {runTime} // RESET IN {time}', {
             sector: bestAttempt.sectorReached,
             score: this.formatDailySignalScore(bestAttempt.score),
+            runTime: this.formatDailySignalRunTime(bestAttempt.runElapsedSeconds),
             time: this.formatDailySignalResetTime(contract)
-          })} // ${translateText('TIME')} ${this.formatDailySignalRunTime(bestAttempt.runElapsedSeconds)}`
-          : translateText('NO ATTEMPT YET // RESET IN {time}', {
+          })
+          : translateText('TODAY: NOT ATTEMPTED // RESET IN {time}', {
             time: this.formatDailySignalResetTime(contract)
           });
       return {
         id: 'dailySignal',
-        title: translateText('DAILY CABINET SIGNAL'),
+        title: translateText('DAILY CHALLENGE'),
         accent: 0x7dffcc,
         secondary: 0xff55d9,
         menuBody: [
-          translateText('ONE LOANER // FIXED UTC CONTRACT // FINISH SECTOR {sector}', { sector: contract.finishSector }),
-          translateText('{ship} flies today\'s {route} route. Tactical drafts are active. Your best is stored locally; no public daily score is submitted yet.', {
+          translateText("TODAY'S GOAL // CLEAR SECTOR {sector}", { sector: contract.finishSector }),
+          translateText("Fly {ship} through today's {route} challenge. Tactical drafts are active.", {
             ship: contract.loanerShipName,
             route: translateText(contract.templateLabel)
           }),
+          translateText("Clear it to light today's Flight Log entry. Replay after a clear to beat your best clear score."),
+          recordLine,
           translateText('7-DAY FLIGHT LOG // {signals} // {clears}/7 CLEARED', {
             signals: formatDailySignalFlightLogSymbols(flightLog),
             clears: flightLog.clears
           }),
-          recordLine,
-          translateText('LOCAL RECORD ONLY // NO ACHIEVEMENTS, CAREER XP, OR CHECKPOINT UNLOCKS'),
+          translateText('PERSONAL CHALLENGE // LOCAL BEST ONLY // NO PUBLIC LEADERBOARD YET'),
         ].join('\n'),
-        body: translateText('{ship} flies today\'s shared route theme to Sector {sector}. Tactical drafts are active and the record stays local.', {
-          ship: contract.loanerShipName,
-          sector: contract.finishSector
-        })
+        body: translateText("Clear it to light today's Flight Log entry. Replay after a clear to beat your best clear score.")
       };
     }
     if (focused === 'scout') {
@@ -4940,19 +4940,20 @@ export class MenuScene {
   getDailySignalMenuSubLabel() {
     const contract = this.dailySignalContract || deriveDailySignalContract();
     if (this.dailySignalBestClear) {
-      return translateText('IMPROVE // {ship} // RESET {time}', {
-        ship: contract.loanerShipName,
+      return translateText('CLEARED // BEAT {score} // RESET {time}', {
+        score: this.formatDailySignalScore(this.dailySignalBestClear.score),
         time: this.formatDailySignalResetTime(contract)
       });
     }
     if (this.dailySignalBestAttempt) {
-      return translateText('OPEN S{sector} // {ship} // RESET {time}', {
+      return translateText('GOAL S{finishSector} // BEST ATTEMPT S{sector} // RESET IN {time}', {
+        finishSector: contract.finishSector,
         sector: this.dailySignalBestAttempt.sectorReached,
-        ship: contract.loanerShipName,
         time: this.formatDailySignalResetTime(contract)
       });
     }
-    return translateText('OPEN // {ship} // RESET {time}', {
+    return translateText('GOAL S{sector} // {ship} // RESET IN {time}', {
+      sector: contract.finishSector,
       ship: contract.loanerShipName,
       time: this.formatDailySignalResetTime(contract)
     });

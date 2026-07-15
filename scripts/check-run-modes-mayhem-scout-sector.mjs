@@ -285,8 +285,8 @@ function assertLaunchDeckVisible(state, label) {
   assertInside(deck.bounds, screen, `${label}: Launch Deck`);
   const daily = deck.featuredDailySignal;
   assertInside(daily?.bounds, screen, `${label}: Daily Signal feature`);
-  assert.equal(daily?.label, 'DAILY SIGNAL', `${label}: Daily Signal label`);
-  assert.match(daily?.sublabel || '', /(?:OPEN|IMPROVE).*RESET \d{2}:\d{2}/i, `${label}: Daily Signal should expose its current state and UTC reset`);
+  assert.equal(daily?.label, 'DAILY CHALLENGE', `${label}: Daily Challenge label`);
+  assert.match(daily?.sublabel || '', /(?:GOAL S10|CLEARED).*RESET (?:IN )?\d{2}:\d{2}/i, `${label}: Daily Challenge should expose its goal and UTC reset`);
   assert.ok(daily.bounds.bottom <= deck.bounds.y + 2, `${label}: Daily Signal must remain above the four-card deck`);
   assert.equal(Object.keys(deck.cards || {}).length, 4, `${label}: Launch Deck must still contain exactly four standard run cards`);
   const cards = [
@@ -506,7 +506,7 @@ try {
   await waitForScene(page, 'menu');
   const dailyFocus = await focusMenuOption(page, 'dailySignal');
   assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
-  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /ONE LOANER[\s\S]*FIXED UTC CONTRACT[\s\S]*FINISH SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*no public daily score[\s\S]*7-DAY FLIGHT LOG[\s\S]*NO ATTEMPT YET[\s\S]*NO ACHIEVEMENTS[\s\S]*CAREER XP[\s\S]*CHECKPOINT UNLOCKS/i);
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY'S GOAL[\s\S]*CLEAR SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*light today's Flight Log entry[\s\S]*TODAY: NOT ATTEMPTED[\s\S]*7-DAY FLIGHT LOG[\s\S]*PERSONAL CHALLENGE[\s\S]*NO PUBLIC LEADERBOARD YET/i);
   assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /fixed route/i, 'Daily briefing must not overclaim full route determinism');
   assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused.png'), fullPage: false });
@@ -766,7 +766,7 @@ try {
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 15000 });
   const clearedDailyMenu = await readState(page);
-  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /BEST CLEAR[\s\S]*TIME\s+1:30/i, 'stored clear menu briefing must expose the time tie-break');
+  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /TODAY: CLEARED[\s\S]*BEST[\s\S]*TIME\s+1:30/i, 'stored clear menu briefing must expose the time tie-break');
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-cleared.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
   const improveDaily = await waitForScene(page, 'play');

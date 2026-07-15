@@ -5,7 +5,7 @@ import {
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 
-const RUN_REPORT_VERSION = 11;
+const RUN_REPORT_VERSION = 12;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -146,8 +146,11 @@ function buildRows(entries) {
 export function createRunReport(summary = {}) {
   const runtimeSeconds = toWholeNumber(summary.runElapsedSeconds);
   const score = toWholeNumber(summary.finalScore ?? summary.score);
-  const sectorReached = Math.max(1, toWholeNumber(summary.sectorReached ?? summary.levelReached, 1));
   const runMode = String(summary.runMode || 'ranked');
+  const reportedSectorReached = Math.max(1, toWholeNumber(summary.sectorReached ?? summary.levelReached, 1));
+  const sectorReached = runMode === 'daily_signal' && summary.runCleared === true
+    ? Math.max(1, toWholeNumber(summary.dailySignalContract?.finishSector, reportedSectorReached))
+    : reportedSectorReached;
   const shipId = summary.shipId || summary.selectedShipSpriteKey || null;
   const shipName = summary.shipName || shipId || 'Unknown Ship';
   const extraLivesEarned = toWholeNumber(summary.extraLivesEarned);
@@ -264,6 +267,8 @@ export function createRunReport(summary = {}) {
         newBest: summary.dailySignalNewBest === true,
         newAttemptBest: summary.dailySignalNewAttemptBest === true,
         newClearBest: summary.dailySignalNewClearBest === true,
+        recordStored: summary.dailySignalStored === true,
+        recordSaveFailed: summary.dailySignalRecordSaveFailed === true,
         bestScore: toWholeNumber(summary.dailySignalBest?.score ?? summary.dailySignalAttempt?.score),
         bestAttemptScore: summary.dailySignalBestAttempt ? toWholeNumber(summary.dailySignalBestAttempt.score) : null,
         bestAttemptSector: Math.max(0, toWholeNumber(summary.dailySignalBestAttempt?.sectorReached)),

@@ -96,9 +96,9 @@ const MODE_HELP_ROWS = Object.freeze([
   {
     code: 'D1',
     icon: 'DAILY',
-    label: 'DAILY CABINET SIGNAL',
-    control: 'LOCAL UTC CHALLENGE // LOANER // FINISH SECTOR 10',
-    tip: 'Every UTC day sets one loaner ship, one route theme, and one Sector 10 finish. Tactical drafts are active. The seven-day Flight Log marks clears, attempts, and unopened days. Your daily best stays local until fully deterministic public scoring is ready.',
+    label: 'DAILY CHALLENGE',
+    control: 'CLEAR S10 // BEAT YOUR BEST',
+    tip: "Daily Challenge is a personal score mission that changes at 00:00 UTC. Clear Sector 10 with the assigned ship to light today's Flight Log entry, then replay to beat your best clear score. Results stay local; there is no public Daily leaderboard yet.",
     accent: 0x7dffcc
   },
   {
@@ -300,7 +300,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
   'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
   'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
-  'DAILY CABINET SIGNAL': 'The contract rotates at 00:00 UTC and forces its listed loaner even if that ship is not unlocked in your career. Before your first clear, the HUD targets Sector 10; after a clear, it targets your best clear score. The rule fingerprint keeps unlike days apart, while career XP, achievements, checkpoints, and existing Steam boards remain untouched.',
+  'DAILY CHALLENGE': 'Everyone receives the same loaner ship, route theme, and rules for that UTC day, while combat events still vary. Tactical drafts remain active. Career XP, achievements, checkpoints, and existing Steam boards stay unchanged. Flight Report can save a local PNG or copy the share caption.',
   'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
   'SCOUT RUN': 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',

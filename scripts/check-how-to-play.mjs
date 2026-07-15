@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUPS & BONUS'],
-  modes: ['DAILY CABINET SIGNAL', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
+  modes: ['DAILY CHALLENGE', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
   tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'FUSION PROTOCOLS', 'SCORE ROUTE & BANS', 'DRAFT TOOLS', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
   intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
   career: ['PILOT ORDERS', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
@@ -144,9 +144,9 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
   }
   if (expectedPage === 'modes') {
-    assert(joined.includes('LOCAL UTC CHALLENGE // LOANER // FINISH SECTOR 10'), `${label} should explain the Daily Signal finish contract`);
-    assert(joined.includes('one route theme'), `${label} should describe the honest stage-one Daily contract`);
-    assert(joined.includes('fully deterministic public scoring is ready'), `${label} should explain why the Daily record is still local`);
+    assert(joined.includes('CLEAR S10 // BEAT YOUR BEST'), `${label} should explain the Daily Challenge goal`);
+    assert(joined.includes('personal score mission'), `${label} should explain the purpose of the Daily Challenge`);
+    assert(joined.includes('there is no public Daily leaderboard yet'), `${label} should explain why the Daily result is still local`);
     assert(joined.includes('RANKED // NO TACTICAL UPGRADES'), `${label} should identify Mayhem Pure as ranked raw skill`);
     assert(joined.includes('RANKED // BOSS DRAFTS ACTIVE'), `${label} should identify Mayhem Tactical as ranked buildcraft`);
     assert(joined.includes('No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks'), `${label} should explain Scout progression limits`);

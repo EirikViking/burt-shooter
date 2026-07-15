@@ -293,6 +293,7 @@ function checkPreloadSurface() {
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaSteamLeaderboard'/);
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaDisplay'/);
   assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaPerformanceDiagnostics'/);
+  assert.match(preload, /contextBridge\.exposeInMainWorld\('__novaApp'/);
   assert.doesNotMatch(preload, /fs\.|child_process|shell|process\.env/);
   for (const method of ['isAvailable', 'getPersonaName', 'getTopScores', 'getFriendsScores', 'submitScore', 'submitScoreDetailed', 'requestCurrentStats', 'getLastUploadDiagnostics', 'getRuntimeInfo']) {
     assert.match(preload, new RegExp(`${method}:`));
@@ -301,6 +302,19 @@ function checkPreloadSurface() {
     assert.match(preload, new RegExp(`${method}:`));
   }
   assert.match(preload, /writeReport:/);
+  assert.match(preload, /saveSignalCard:/);
+  assert.match(preload, /copyText:/);
+}
+
+function checkDailySignalCardIpcGuard() {
+  const main = readFileSync(path.resolve('electron/main.cjs'), 'utf8');
+  assert.match(main, /nova-app:saveSignalCard/);
+  assert.match(main, /MAX_SIGNAL_CARD_BYTES/);
+  assert.match(main, /invalid_png_signature/);
+  assert.match(main, /sanitizeSignalCardFilename/);
+  assert.match(main, /showSaveDialog/);
+  assert.match(main, /nova-app:copyText/);
+  assert.match(main, /text\.length > 4096/);
 }
 
 function checkNoRendererNativeImport() {
@@ -334,6 +348,7 @@ await checkNativeBridgeHappyPath();
 await checkRawUploadFailureDiagnostics();
 await checkUploadInFlightGuard();
 checkPreloadSurface();
+checkDailySignalCardIpcGuard();
 checkNoRendererNativeImport();
 checkFreshProfileSteamIsolationGuard();
 

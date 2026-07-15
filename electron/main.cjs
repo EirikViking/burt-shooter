@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, net, protocol, screen, shell } = require('electron');
+const { app, BrowserWindow, clipboard, dialog, ipcMain, net, protocol, screen, shell } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -88,6 +88,27 @@ let steamCloudSave = null;
 let steamProfileContext = { type: 'local', id: 'local-offline', reason: 'not_resolved' };
 let desktopExitRequested = false;
 let desktopExitFallbackTimer = null;
+const MAX_SIGNAL_CARD_BYTES = 10 * 1024 * 1024;
+
+function sanitizeSignalCardFilename(value) {
+  const safe = String(value || 'nova-swarm-daily-signal.png')
+    .replace(/[^a-z0-9._-]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120) || 'nova-swarm-daily-signal.png';
+  return safe.toLowerCase().endsWith('.png') ? safe : `${safe}.png`;
+}
+
+function decodeSignalCardPng(dataUrl) {
+  const match = String(dataUrl || '').match(/^data:image\/png;base64,([a-z0-9+/=]+)$/i);
+  if (!match) throw new Error('invalid_png_data');
+  const bytes = Buffer.from(match[1], 'base64');
+  if (!bytes.length || bytes.length > MAX_SIGNAL_CARD_BYTES) throw new Error('invalid_png_size');
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (bytes.length < signature.length || !bytes.subarray(0, signature.length).equals(signature)) {
+    throw new Error('invalid_png_signature');
+  }
+  return bytes;
+}
 
 function requestDesktopExit() {
   const alreadyRequested = desktopExitRequested;
@@ -231,6 +252,41 @@ function registerAppIpc() {
       return { ok: false, canceled: true, reason: 'smoke_mode' };
     }
     return requestDesktopExit();
+  });
+
+  ipcMain.handle('nova-app:saveSignalCard', async (event, payload = {}) => {
+    try {
+      const bytes = decodeSignalCardPng(payload.dataUrl);
+      const filename = sanitizeSignalCardFilename(payload.filename);
+      const options = {
+        defaultPath: path.join(app.getPath('pictures'), filename),
+        filters: [{ name: 'PNG', extensions: ['png'] }],
+        properties: ['createDirectory', 'showOverwriteConfirmation']
+      };
+      const owner = BrowserWindow.fromWebContents(event.sender);
+      const selection = owner
+        ? await dialog.showSaveDialog(owner, options)
+        : await dialog.showSaveDialog(options);
+      if (selection.canceled || !selection.filePath) return { ok: false, canceled: true };
+      const outputPath = selection.filePath.toLowerCase().endsWith('.png')
+        ? selection.filePath
+        : `${selection.filePath}.png`;
+      fs.writeFileSync(outputPath, bytes, { flag: 'w' });
+      return { ok: true, saved: true, filename: path.basename(outputPath) };
+    } catch (error) {
+      return { ok: false, error: error?.message || String(error) };
+    }
+  });
+
+  ipcMain.handle('nova-app:copyText', async (_event, payload = {}) => {
+    try {
+      const text = String(payload.text || '').replace(/[\u0000\u0008\u000b\u000c\u000e-\u001f\u007f]+/g, '').trim();
+      if (!text || text.length > 4096) return { ok: false, error: 'invalid_text' };
+      clipboard.writeText(text);
+      return { ok: true, copied: true };
+    } catch (error) {
+      return { ok: false, error: error?.message || String(error) };
+    }
   });
 
   ipcMain.handle('nova-performance-diagnostics:writeReport', async (_event, payload = {}) => {
