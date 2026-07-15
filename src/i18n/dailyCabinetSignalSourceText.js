@@ -26,6 +26,7 @@ const SOURCE = Object.freeze({
   contractCleared: 'CONTRACT CLEARED // SECTOR {sector}',
   reachedSector: 'REACHED SECTOR {sector}',
   localRecordNoSubmission: 'LOCAL UTC RECORD // NO PUBLIC SUBMISSION',
+  localSaveFailed: 'LOCAL RECORD SAVE FAILED // THIS RUN WAS NOT STORED',
   invalidPracticeResult: 'PRACTICE RESULT // CONTRACT VALIDITY FAILED',
   dailyDate: 'DAILY SIGNAL // {date}',
   loaner: 'LOANER',
@@ -34,7 +35,7 @@ const SOURCE = Object.freeze({
   clearSectorGoal: 'NEXT GOAL: CLEAR SECTOR {sector}',
   signalCleared: 'DAILY SIGNAL CLEARED',
   signalEnded: 'DAILY SIGNAL ENDED',
-  ceremonySummary: "Today's UTC contract used one loaner ship, one fixed route, and one local record. Career progress and Steam leaderboards stayed untouched.",
+  ceremonySummary: "Today's UTC contract used one loaner ship, one route theme, and one local record. Career progress and Steam leaderboards stayed untouched.",
   controllerRetry: 'A: SAME DAILY CONTRACT  |  B: MENU',
   keyboardRetry: 'ENTER / SPACE / CLICK - RETRY TODAY',
   localOnly: 'LOCAL ONLY',
@@ -54,9 +55,9 @@ const SOURCE = Object.freeze({
   finishContinue: 'LOCK SCORE & OPEN REPORT',
   howToPlayIcon: 'DAILY',
   howToPlayControl: 'LOCAL UTC CHALLENGE // LOANER // FINISH SECTOR 10',
-  howToPlayTip: 'Every UTC day sets one loaner ship, one fixed route, and one Sector 10 finish. Tactical drafts are active. Your daily best is local until deterministic public scoring is ready.',
+  howToPlayTip: 'Every UTC day sets one loaner ship, one route theme, and one Sector 10 finish. Tactical drafts are active. Your daily best is local until fully deterministic public scoring is ready.',
   howToPlayDetail: 'The contract rotates at 00:00 UTC and forces its listed loaner even if that ship is not unlocked in your career. Reach and clear Sector 10 before the run ends. The rule fingerprint keeps unlike days apart, while career XP, achievements, checkpoints, and existing Steam boards remain untouched.',
-  howToPlayRecordsTip: 'Pure, Tactical, and Sector use separate Steam leaderboard lanes. Daily Signal keeps a local UTC record for now; Scout remains unranked practice.'
+  howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical, and Sector Run each use separate Steam leaderboards. Daily Signal stores one local UTC record; Scout remains unranked practice. Daily and Scout do not change career progress.'
 });
 
 const TRANSLATIONS = Object.freeze({
@@ -88,6 +89,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: 'VERTRAG ERFÜLLT // SEKTOR {sector}',
     reachedSector: 'SEKTOR {sector} ERREICHT',
     localRecordNoSubmission: 'LOKALER UTC-REKORD // KEINE ÖFFENTLICHE ÜBERMITTLUNG',
+    localSaveFailed: 'LOKALER REKORD KONNTE NICHT GESPEICHERT WERDEN // DIESER RUN WURDE NICHT GESPEICHERT',
     invalidPracticeResult: 'TRAININGSERGEBNIS // VERTRAGSPRÜFUNG FEHLGESCHLAGEN',
     dailyDate: 'TÄGLICHES SIGNAL // {date}',
     loaner: 'LEIHSCHIFF',
@@ -96,7 +98,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: 'NÄCHSTES ZIEL: SEKTOR {sector} ABSCHLIESSEN',
     signalCleared: 'TÄGLICHES SIGNAL ABGESCHLOSSEN',
     signalEnded: 'TÄGLICHES SIGNAL BEENDET',
-    ceremonySummary: 'Der heutige UTC-Vertrag nutzte ein Leihschiff, eine feste Route und einen lokalen Rekord. Karrierefortschritt und Steam-Ranglisten blieben unberührt.',
+    ceremonySummary: 'Der heutige UTC-Vertrag nutzte ein Leihschiff, ein Routenthema und einen lokalen Rekord. Karrierefortschritt und Steam-Ranglisten blieben unberührt.',
     controllerRetry: 'A: GLEICHER TAGESVERTRAG  |  B: MENÜ',
     keyboardRetry: 'ENTER / LEERTASTE / KLICK - HEUTE ERNEUT VERSUCHEN',
     localOnly: 'NUR LOKAL',
@@ -116,9 +118,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: 'PUNKTSTAND SPERREN & BERICHT ÖFFNEN',
     howToPlayIcon: 'TÄGLICH',
     howToPlayControl: 'LOKALE UTC-HERAUSFORDERUNG // LEIHSCHIFF // ZIEL SEKTOR 10',
-    howToPlayTip: 'Jeder UTC-Tag legt ein Leihschiff, eine feste Route und Sektor 10 als Ziel fest. Taktische Drafts sind aktiv. Dein Tagesbestwert bleibt lokal, bis die deterministische öffentliche Wertung bereit ist.',
+    howToPlayTip: 'Jeder UTC-Tag legt ein Leihschiff, ein Routenthema und Sektor 10 als Ziel fest. Taktische Drafts sind aktiv. Dein Tagesbestwert bleibt lokal, bis die vollständig deterministische öffentliche Wertung bereit ist.',
     howToPlayDetail: 'Der Vertrag wechselt um 00:00 UTC und erzwingt das aufgeführte Leihschiff, auch wenn es in deiner Karriere noch nicht freigeschaltet ist. Erreiche und schließe Sektor 10 ab, bevor der Run endet. Der Regel-Fingerabdruck trennt unterschiedliche Tage; Karriere-XP, Erfolge, Checkpoints und bestehende Steam-Ranglisten bleiben unberührt.',
-    howToPlayRecordsTip: 'Pure, Tactical und Sector verwenden getrennte Steam-Ranglisten. Das tägliche Signal führt vorerst einen lokalen UTC-Rekord; Scout bleibt ungewertetes Training.'
+    howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical und Sector Run verwenden jeweils separate Steam-Ranglisten. Das tägliche Signal speichert einen lokalen UTC-Rekord; Scout bleibt ungewertetes Training. Das tägliche Signal und Scout verändern den Karrierefortschritt nicht.'
   }),
   es: Object.freeze({
     dailySignalCaps: 'SEÑAL DIARIA',
@@ -148,6 +150,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: 'CONTRATO CUMPLIDO // SECTOR {sector}',
     reachedSector: 'SECTOR {sector} ALCANZADO',
     localRecordNoSubmission: 'RÉCORD UTC LOCAL // SIN ENVÍO PÚBLICO',
+    localSaveFailed: 'FALLÓ EL GUARDADO DEL RÉCORD LOCAL // ESTA PARTIDA NO SE GUARDÓ',
     invalidPracticeResult: 'RESULTADO DE PRÁCTICA // FALLÓ LA VALIDEZ DEL CONTRATO',
     dailyDate: 'SEÑAL DIARIA // {date}',
     loaner: 'NAVE PRESTADA',
@@ -156,7 +159,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: 'SIGUIENTE OBJETIVO: COMPLETAR EL SECTOR {sector}',
     signalCleared: 'SEÑAL DIARIA COMPLETADA',
     signalEnded: 'SEÑAL DIARIA TERMINADA',
-    ceremonySummary: 'El contrato UTC de hoy usó una nave prestada, una ruta fija y un récord local. El progreso de carrera y las clasificaciones de Steam no cambiaron.',
+    ceremonySummary: 'El contrato UTC de hoy usó una nave prestada, una temática de ruta y un récord local. El progreso de carrera y las clasificaciones de Steam no cambiaron.',
     controllerRetry: 'A: MISMO CONTRATO DIARIO  |  B: MENÚ',
     keyboardRetry: 'ENTER / ESPACIO / CLIC - REINTENTAR HOY',
     localOnly: 'SOLO LOCAL',
@@ -176,9 +179,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: 'FIJAR PUNTUACIÓN Y ABRIR INFORME',
     howToPlayIcon: 'DIARIA',
     howToPlayControl: 'DESAFÍO UTC LOCAL // NAVE PRESTADA // META: SECTOR 10',
-    howToPlayTip: 'Cada día UTC fija una nave prestada, una ruta y el Sector 10 como meta. Los Drafts tácticos están activos. Tu mejor marca diaria permanece local hasta que esté lista la puntuación pública determinista.',
+    howToPlayTip: 'Cada día UTC fija una nave prestada, una temática de ruta y el Sector 10 como meta. Los Drafts tácticos están activos. Tu mejor marca diaria permanece local hasta que esté lista una puntuación pública totalmente determinista.',
     howToPlayDetail: 'El contrato rota a las 00:00 UTC y obliga a usar la nave prestada indicada aunque no esté desbloqueada en tu carrera. Alcanza y supera el Sector 10 antes de que termine la partida. La huella de reglas separa los días distintos; la XP de carrera, los logros, los puntos de control y las clasificaciones de Steam existentes no cambian.',
-    howToPlayRecordsTip: 'Pure, Tactical y Sector usan clasificaciones de Steam separadas. La Señal diaria conserva por ahora un récord UTC local; Scout sigue siendo práctica no clasificada.'
+    howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical y Sector Run usan clasificaciones de Steam separadas. La Señal diaria guarda un récord UTC local; Scout sigue siendo práctica no clasificada. La Señal diaria y Scout no cambian el progreso de carrera.'
   }),
   'pt-BR': Object.freeze({
     dailySignalCaps: 'SINAL DIÁRIO',
@@ -208,6 +211,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: 'CONTRATO CUMPRIDO // SETOR {sector}',
     reachedSector: 'SETOR {sector} ALCANÇADO',
     localRecordNoSubmission: 'RECORDE UTC LOCAL // SEM ENVIO PÚBLICO',
+    localSaveFailed: 'FALHA AO SALVAR O RECORDE LOCAL // ESTA PARTIDA NÃO FOI SALVA',
     invalidPracticeResult: 'RESULTADO DE TREINO // VALIDADE DO CONTRATO FALHOU',
     dailyDate: 'SINAL DIÁRIO // {date}',
     loaner: 'NAVE EMPRESTADA',
@@ -216,7 +220,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: 'PRÓXIMO OBJETIVO: CONCLUIR O SETOR {sector}',
     signalCleared: 'SINAL DIÁRIO CONCLUÍDO',
     signalEnded: 'SINAL DIÁRIO ENCERRADO',
-    ceremonySummary: 'O contrato UTC de hoje usou uma nave emprestada, uma rota fixa e um recorde local. O progresso de carreira e os placares da Steam permaneceram intactos.',
+    ceremonySummary: 'O contrato UTC de hoje usou uma nave emprestada, um tema de rota e um recorde local. O progresso de carreira e os placares da Steam permaneceram intactos.',
     controllerRetry: 'A: MESMO CONTRATO DIÁRIO  |  B: MENU',
     keyboardRetry: 'ENTER / ESPAÇO / CLIQUE - TENTAR DE NOVO HOJE',
     localOnly: 'SOMENTE LOCAL',
@@ -236,9 +240,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: 'TRAVAR PONTUAÇÃO E ABRIR RELATÓRIO',
     howToPlayIcon: 'DIÁRIO',
     howToPlayControl: 'DESAFIO UTC LOCAL // NAVE EMPRESTADA // META: SETOR 10',
-    howToPlayTip: 'Cada dia UTC define uma nave emprestada, uma rota fixa e o Setor 10 como meta. Os Drafts táticos estão ativos. Sua melhor marca diária fica local até a pontuação pública determinística estar pronta.',
+    howToPlayTip: 'Cada dia UTC define uma nave emprestada, um tema de rota e o Setor 10 como meta. Os Drafts táticos estão ativos. Sua melhor marca diária fica local até a pontuação pública totalmente determinística estar pronta.',
     howToPlayDetail: 'O contrato muda às 00:00 UTC e obriga o uso da nave emprestada indicada, mesmo que ela ainda não esteja desbloqueada na carreira. Alcance e conclua o Setor 10 antes do fim da partida. A impressão digital das regras separa dias diferentes; XP de carreira, conquistas, checkpoints e placares existentes da Steam permanecem intactos.',
-    howToPlayRecordsTip: 'Pure, Tactical e Sector usam placares separados da Steam. O Sinal diário mantém, por enquanto, um recorde UTC local; Scout continua sendo treino não ranqueado.'
+    howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical e Sector Run usam placares separados da Steam. O Sinal diário armazena um recorde UTC local; Scout continua sendo treino não ranqueado. O Sinal diário e Scout não alteram o progresso de carreira.'
   }),
   ru: Object.freeze({
     dailySignalCaps: 'ЕЖЕДНЕВНЫЙ СИГНАЛ',
@@ -268,6 +272,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: 'КОНТРАКТ ВЫПОЛНЕН // СЕКТОР {sector}',
     reachedSector: 'ДОСТИГНУТ СЕКТОР {sector}',
     localRecordNoSubmission: 'ЛОКАЛЬНЫЙ UTC-РЕКОРД // БЕЗ ПУБЛИЧНОЙ ОТПРАВКИ',
+    localSaveFailed: 'НЕ УДАЛОСЬ СОХРАНИТЬ ЛОКАЛЬНЫЙ РЕКОРД // ЭТА ПОПЫТКА НЕ СОХРАНЕНА',
     invalidPracticeResult: 'ТРЕНИРОВОЧНЫЙ РЕЗУЛЬТАТ // КОНТРАКТ НЕ ПРОШЁЛ ПРОВЕРКУ',
     dailyDate: 'ЕЖЕДНЕВНЫЙ СИГНАЛ // {date}',
     loaner: 'АРЕНДОВАННЫЙ КОРАБЛЬ',
@@ -276,7 +281,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: 'СЛЕДУЮЩАЯ ЦЕЛЬ: ПРОЙТИ СЕКТОР {sector}',
     signalCleared: 'ЕЖЕДНЕВНЫЙ СИГНАЛ ПРОЙДЕН',
     signalEnded: 'ЕЖЕДНЕВНЫЙ СИГНАЛ ЗАВЕРШЁН',
-    ceremonySummary: 'В сегодняшнем UTC-контракте были один арендованный корабль, один фиксированный маршрут и один локальный рекорд. Карьерный прогресс и таблицы Steam не изменились.',
+    ceremonySummary: 'В сегодняшнем UTC-контракте были один арендованный корабль, одна тема маршрута и один локальный рекорд. Карьерный прогресс и таблицы Steam не изменились.',
     controllerRetry: 'A: ТОТ ЖЕ КОНТРАКТ  |  B: МЕНЮ',
     keyboardRetry: 'ENTER / ПРОБЕЛ / ЩЕЛЧОК - ПОВТОРИТЬ СЕГОДНЯ',
     localOnly: 'ТОЛЬКО ЛОКАЛЬНО',
@@ -296,9 +301,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: 'ЗАФИКСИРОВАТЬ СЧЁТ И ОТКРЫТЬ ОТЧЁТ',
     howToPlayIcon: 'ЕЖЕДНЕВНО',
     howToPlayControl: 'ЛОКАЛЬНОЕ UTC-ИСПЫТАНИЕ // АРЕНДОВАННЫЙ КОРАБЛЬ // ФИНИШ: СЕКТОР 10',
-    howToPlayTip: 'Каждый день UTC задаёт один арендованный корабль, фиксированный маршрут и финиш в секторе 10. Тактические драфты активны. Рекорд дня остаётся локальным, пока не будет готова детерминированная публичная система подсчёта.',
+    howToPlayTip: 'Каждый день UTC задаёт один арендованный корабль, тему маршрута и финиш в секторе 10. Тактические драфты активны. Рекорд дня остаётся локальным, пока не будет готова полностью детерминированная публичная система подсчёта.',
     howToPlayDetail: 'Контракт меняется в 00:00 UTC и заставляет использовать указанный арендованный корабль, даже если он ещё не открыт в карьере. Дойдите до сектора 10 и пройдите его до окончания попытки. Отпечаток правил разделяет разные дни; опыт карьеры, достижения, контрольные точки и существующие таблицы Steam не меняются.',
-    howToPlayRecordsTip: 'Pure, Tactical и Sector используют отдельные таблицы Steam. Ежедневный сигнал пока хранит локальный UTC-рекорд; Scout остаётся нерейтинговой тренировкой.'
+    howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical и Sector Run используют отдельные таблицы Steam. Ежедневный сигнал хранит один локальный UTC-рекорд; Scout остаётся нерейтинговой тренировкой. Ежедневный сигнал и Scout не изменяют карьерный прогресс.'
   }),
   'zh-CN': Object.freeze({
     dailySignalCaps: '每日信号',
@@ -328,6 +333,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: '合约完成 // 第 {sector} 区',
     reachedSector: '到达第 {sector} 区',
     localRecordNoSubmission: '本地 UTC 纪录 // 不公开提交',
+    localSaveFailed: '本地纪录保存失败 // 本次挑战未保存',
     invalidPracticeResult: '练习结果 // 合约有效性验证失败',
     dailyDate: '每日信号 // {date}',
     loaner: '租借战机',
@@ -336,7 +342,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: '下一目标：通关第 {sector} 区',
     signalCleared: '每日信号已完成',
     signalEnded: '每日信号已结束',
-    ceremonySummary: '今日 UTC 合约使用一架租借战机、一条固定路线和一项本地纪录。生涯进度与 Steam 排行榜均未改变。',
+    ceremonySummary: '今日 UTC 合约使用一架租借战机、一个路线主题和一项本地纪录。生涯进度与 Steam 排行榜均未改变。',
     controllerRetry: 'A：相同每日合约  |  B：菜单',
     keyboardRetry: 'ENTER / 空格 / 点击 - 重试今日挑战',
     localOnly: '仅限本地',
@@ -356,9 +362,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: '锁定得分并打开报告',
     howToPlayIcon: '每日',
     howToPlayControl: '本地 UTC 挑战 // 租借战机 // 终点：第 10 区',
-    howToPlayTip: '每个 UTC 日都会指定一架租借战机、一条固定路线，并以第 10 区为终点。战术 Draft 已启用。在确定性公开计分准备完成前，你的每日最佳仅保存在本地。',
+    howToPlayTip: '每个 UTC 日都会指定一架租借战机、一个路线主题，并以第 10 区为终点。战术 Draft 已启用。在完全确定性的公开计分准备完成前，你的每日最佳仅保存在本地。',
     howToPlayDetail: '合约会在 UTC 00:00 轮换，并强制使用指定的租借战机，即使你的生涯尚未解锁它。请在本次挑战结束前抵达并通关第 10 区。规则指纹会区分不同日期；生涯 XP、成就、检查点及现有 Steam 排行榜均不会改变。',
-    howToPlayRecordsTip: 'Pure、Tactical 和 Sector 分别使用独立的 Steam 排行榜。每日信号目前保留本地 UTC 纪录；Scout 仍为非排位练习。'
+    howToPlayRecordsTip: 'Mayhem Pure、Mayhem Tactical 和 Sector Run 各自使用独立的 Steam 排行榜。每日信号保存一项本地 UTC 纪录；Scout 仍为非排位练习。每日信号和 Scout 均不改变生涯进度。'
   }),
   ko: Object.freeze({
     dailySignalCaps: '일일 신호',
@@ -388,6 +394,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: '계약 완료 // 섹터 {sector}',
     reachedSector: '섹터 {sector} 도달',
     localRecordNoSubmission: '로컬 UTC 기록 // 공개 제출 없음',
+    localSaveFailed: '로컬 기록 저장 실패 // 이번 플레이는 저장되지 않았습니다',
     invalidPracticeResult: '연습 결과 // 계약 유효성 검사 실패',
     dailyDate: '일일 신호 // {date}',
     loaner: '대여 기체',
@@ -396,7 +403,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: '다음 목표: 섹터 {sector} 클리어',
     signalCleared: '일일 신호 클리어',
     signalEnded: '일일 신호 종료',
-    ceremonySummary: '오늘의 UTC 계약은 대여 기체 한 대, 고정 경로 하나, 로컬 기록 하나를 사용했습니다. 커리어 진행도와 Steam 순위표는 변경되지 않았습니다.',
+    ceremonySummary: '오늘의 UTC 계약은 대여 기체 한 대, 경로 테마 하나, 로컬 기록 하나를 사용했습니다. 커리어 진행도와 Steam 순위표는 변경되지 않았습니다.',
     controllerRetry: 'A: 같은 일일 계약  |  B: 메뉴',
     keyboardRetry: 'ENTER / 스페이스 / 클릭 - 오늘 다시 도전',
     localOnly: '로컬 전용',
@@ -416,9 +423,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: '점수 확정 후 보고서 열기',
     howToPlayIcon: '일일',
     howToPlayControl: '로컬 UTC 도전 // 대여 기체 // 최종 섹터 10',
-    howToPlayTip: 'UTC 날짜마다 대여 기체 한 대, 고정 경로 하나, 섹터 10 종착점이 정해집니다. 전술 Draft가 활성화됩니다. 결정론적 공개 점수 시스템이 준비될 때까지 일일 최고 기록은 로컬에 저장됩니다.',
+    howToPlayTip: 'UTC 날짜마다 대여 기체 한 대, 경로 테마 하나, 섹터 10 종착점이 정해집니다. 전술 Draft가 활성화됩니다. 완전히 결정론적인 공개 점수 시스템이 준비될 때까지 일일 최고 기록은 로컬에 저장됩니다.',
     howToPlayDetail: '계약은 UTC 00:00에 교체되며 커리어에서 아직 해금하지 못한 기체라도 지정된 대여 기체를 강제로 사용합니다. 도전이 끝나기 전에 섹터 10에 도달해 클리어하세요. 규칙 지문은 서로 다른 날짜를 구분하며 커리어 XP, 도전 과제, 체크포인트, 기존 Steam 순위표는 변경되지 않습니다.',
-    howToPlayRecordsTip: 'Pure, Tactical, Sector는 각각 별도의 Steam 순위표를 사용합니다. 일일 신호는 현재 로컬 UTC 기록만 저장하며 Scout는 계속 비랭크 연습 모드입니다.'
+    howToPlayRecordsTip: 'Mayhem Pure, Mayhem Tactical, Sector Run은 각각 별도의 Steam 순위표를 사용합니다. 일일 신호는 로컬 UTC 기록 하나를 저장하며 Scout는 계속 비랭크 연습 모드입니다. 일일 신호와 Scout는 커리어 진행도를 변경하지 않습니다.'
   }),
   ja: Object.freeze({
     dailySignalCaps: 'デイリーシグナル',
@@ -448,6 +455,7 @@ const TRANSLATIONS = Object.freeze({
     contractCleared: '契約達成 // セクター{sector}',
     reachedSector: 'セクター{sector}到達',
     localRecordNoSubmission: 'ローカルUTC記録 // 公開送信なし',
+    localSaveFailed: 'ローカル記録の保存に失敗 // 今回のランは保存されませんでした',
     invalidPracticeResult: '練習結果 // 契約の有効性確認に失敗',
     dailyDate: 'デイリーシグナル // {date}',
     loaner: '貸与機',
@@ -456,7 +464,7 @@ const TRANSLATIONS = Object.freeze({
     clearSectorGoal: '次の目標: セクター{sector}をクリア',
     signalCleared: 'デイリーシグナル クリア',
     signalEnded: 'デイリーシグナル終了',
-    ceremonySummary: '本日のUTC契約では、貸与機1機、固定ルート1つ、ローカル記録1つを使用しました。キャリア進行とSteamランキングは変更されていません。',
+    ceremonySummary: '本日のUTC契約では、貸与機1機、ルートテーマ1つ、ローカル記録1つを使用しました。キャリア進行とSteamランキングは変更されていません。',
     controllerRetry: 'A: 同じデイリー契約  |  B: メニュー',
     keyboardRetry: 'ENTER / SPACE / クリック - 本日分を再挑戦',
     localOnly: 'ローカルのみ',
@@ -476,9 +484,9 @@ const TRANSLATIONS = Object.freeze({
     finishContinue: 'スコアを確定してレポートを開く',
     howToPlayIcon: 'デイリー',
     howToPlayControl: 'ローカルUTCチャレンジ // 貸与機 // セクター10で終了',
-    howToPlayTip: 'UTC日付ごとに貸与機1機、固定ルート1つ、セクター10のゴールが設定されます。タクティカルDraftは有効です。決定論的な公開スコア機能が整うまで、デイリーベストはローカルに保存されます。',
+    howToPlayTip: 'UTC日付ごとに貸与機1機、ルートテーマ1つ、セクター10のゴールが設定されます。タクティカルDraftは有効です。完全に決定論的な公開スコア機能が整うまで、デイリーベストはローカルに保存されます。',
     howToPlayDetail: '契約はUTC 00:00に切り替わり、キャリアで未解放でも指定された貸与機を強制使用します。ラン終了前にセクター10へ到達し、クリアしてください。ルール識別情報が異なる日を分け、キャリアXP、実績、チェックポイント、既存のSteamランキングには影響しません。',
-    howToPlayRecordsTip: 'Pure、Tactical、Sectorは別々のSteamランキングを使用します。デイリーシグナルは当面ローカルUTC記録のみを保持し、Scoutは引き続き非ランク練習です。'
+    howToPlayRecordsTip: 'Mayhem Pure、Mayhem Tactical、Sector Runはそれぞれ別のSteamランキングを使用します。デイリーシグナルはローカルUTC記録を1件保存し、Scoutは引き続き非ランク練習です。デイリーシグナルとScoutはキャリア進行に影響しません。'
   })
 });
 
