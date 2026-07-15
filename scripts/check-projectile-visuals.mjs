@@ -12,6 +12,7 @@ const port = process.env.PROJECTILE_VISUAL_URL ? null : (Number(process.env.PROJ
 const baseUrl = process.env.PROJECTILE_VISUAL_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.PROJECTILE_VISUAL_OUTPUT_DIR || `test-results/projectile-visuals-${timestamp()}`);
 const devServerTimeoutMs = Number(process.env.PROJECTILE_VISUAL_SERVER_TIMEOUT_MS) || 180000;
+const navigationTimeoutMs = Number(process.env.PROJECTILE_VISUAL_NAVIGATION_TIMEOUT_MS) || 120000;
 const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 const scenarioOrder = [
@@ -98,7 +99,7 @@ async function waitForPlay(page) {
     debugBossToken: 'NOVA_DEBUG_2026',
     'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startLevel: '12'
-  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  }), { waitUntil: 'domcontentloaded', timeout: navigationTimeoutMs });
 
   await page.waitForFunction(() => {
     try {
@@ -109,7 +110,7 @@ async function waitForPlay(page) {
     } catch {
       return false;
     }
-  }, { timeout: 30000 });
+  }, { timeout: navigationTimeoutMs });
 
   await page.evaluate(async () => {
     const play = window.__game?.scenes?.play;
