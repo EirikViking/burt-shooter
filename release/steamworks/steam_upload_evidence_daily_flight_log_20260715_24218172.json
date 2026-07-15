@@ -1,0 +1,106 @@
+{
+  "generatedAt": "2026-07-15T10:21:45Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24218172",
+  "sourceRuntimeCommit": "b6aa8a007de0fea713879a70685711709f288ddc",
+  "packageEvidenceCommit": "bb602c637b10505109e330e0cdf2192aebd5c9a2",
+  "sourceBranch": "codex/daily-flight-log-20260715",
+  "sourceBaseline": "b8d7cb104f7fe08226e2843f82931194b735a88a",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-15_12-01-29",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24214776",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "4aff653f57769a3e8a14afda729837c02e00817fee29455b9f57242c60c20420",
+  "consoleLogPath": "release/steamworks/steam_upload_console_daily_flight_log_20260715.log",
+  "consoleLogSha256": "ee633954cf5869f7a0d082220941f7f5b57ba0ec0f589462015d828e26606686",
+  "desktopReviewSha256": "774d2098bf9ac6581624074e9af7ae98d8f1e68618a566d66e6edee089c331ad",
+  "payload": {
+    "fileCount": 329,
+    "totalBytes": 952937997,
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "5d938732b1f26e9eb79af4598614a3ca340a09bbcd00ea03b4b115732f5b1096"
+    },
+    "appAsar": {
+      "path": "resources/app.asar",
+      "bytes": 556234149,
+      "sha256": "73094b3d71199a92a6f2b8f07e3d3fbf7a1448333c1e15adb697e5aee52363fa"
+    },
+    "steamApi64": {
+      "path": "steam_api64.dll",
+      "bytes": 317080,
+      "sha256": "eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-15 12:16:53]: Successfully finished AppID 4765070 build (BuildID 24218172).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "5568c51d35dae87b286f2e50ec122cf3c096f0cf67d8788be022251f6aba3e59",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "363d645c8271d03b9c37709a6f0467adb963b7da554c40c5cc587da74d421775",
+    "depotBuildVdfPath": "release/steam-build-output/depot_build_4765071.vdf",
+    "depotBuildVdfSha256": "5366bcf77b6d40e0e606fea424719347b05d013d4641e8719e4d53ce3cb4e141",
+    "depotManifestId": "8091511179624093249",
+    "baselineManifestId": "5836813496342355256",
+    "newChunksUploaded": 11,
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: isolated source branch was tracked-clean before release generation; baseline b8d7cb1 and authoritative lock b80059a remain ancestors",
+    "independentReview": "passed: exact clean detached runtime source b6aa8a0; no remaining P0, P1, or P2 findings",
+    "releaseLine": "passed immediately before packaging, during packaging, and during VDF generation; German, top-language polish, Steam Cloud, fullscreen, and temporary marketing-hotkey markers present",
+    "sourceBuild": "passed: full build v2026-07-15_12-01-29 from gitSha b6aa8a0; all content, i18n, achievement, audio, roster, powerup, Tactical, and reinforcement guards passed",
+    "dailyRecords": "passed: best attempt versus best clear, sector/score/time ordering, long streak history, exact ties, invalid attempts, and storage-failure fail-closed behavior",
+    "dailyRuntime": "passed: test-results/run-modes-mayhem-scout-sector-2026-07-15T09-53-02-744Z/report.json; fail, retry, clear, score chase, time tie-break, unsaved-result truth, menu briefing, and standard run-mode regression",
+    "runReport": "passed: test-results/run-report-2026-07-15T10-20-27-508Z/report.json; Run Report v11 and Daily time fields render cleanly",
+    "saveAndProfileIsolation": "passed: Daily v1 migration, profile-scoped Daily records, one-time legacy claim, and second-Steam-profile isolation",
+    "howToPlay": "passed: test-results/how-to-play-2026-07-15T09-38-47-209Z/report.json; all ten layout scenarios and current run-mode guidance",
+    "localizedUi": "passed: test-results/i18n-ui-2026-07-15T09-56-21-990Z; all eight interface languages, both clear and failed-attempt Daily time variants, zero placeholders, English leaks, console errors, or page errors",
+    "browserSmoke": "passed: test-results/smoke-2026-07-15T09-43-30-099Z/report.json; full menu, Settings, gameplay, gamepad, pause, story, Game Over, mobile, transition, and boss coverage with zero warnings or errors",
+    "controllerFlow": "passed: test-results/controller-only-flow-2026-07-15T09-42-11-339Z",
+    "steamBridge": "passed: native bridge contract, preload surface, renderer isolation, AppID 4765070, and nova_swarm_global_score_v2 identity",
+    "steamSdk": "passed: test-results/steam-sdk-ready-2026-07-15T10-01-28-576Z/report.json",
+    "packagedRuntime": "passed: test-results/steam-package-runtime-2026-07-15T10-11-48-573Z/report.json",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-15T10-07-17-945Z/report.json; build v2026-07-15_12-01-29, gitSha b6aa8a0, Steam identity ready, zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-15T10-07-26-149Z/report.json; build v2026-07-15_12-01-29, zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-15T10-08-34-542Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-15T10-08-45-427Z/report.json",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-15T10-08-50-350Z/report.json; 58.48 minimum FPS, 59.66 average FPS, 12 samples, zero warnings, and zero errors",
+    "desktopPackageReview": "passed: release/steamworks/desktop_package_review_report.json; source, packaged, controls, and performance evidence all match v2026-07-15_12-01-29",
+    "vdfSetLiveTestBranch": "passed: exact SetLive value sector-continue-test; public/default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all content and improvements in prior Steam test BuildID 24214776",
+    "the complete Maximum-WOW reinforcement breach presentation with fleet rifts, real ship previews, multi-lane impacts, layered VFX/SFX/voices, stronger wakes, and HUD-safe readability",
+    "a seven-day Daily Flight Log with unopened, attempted, and cleared states, archive clears, attempt count, current streak, and at-risk status",
+    "separate best-attempt and best-clear records with clear-first goals and visible sector, score, and time tie-breaks",
+    "a post-clear score chase that keeps score visible, shows the faster-time target on equal scores, and waits for Sector 10 before celebrating a record",
+    "profile-scoped and migration-safe Daily storage with fail-closed record messaging and no false best on storage failure",
+    "Daily menu, HUD, Game Over, Run Report v11, and How to Play guidance across English, German, Spanish, Brazilian Portuguese, Russian, Simplified Chinese, Korean, and Japanese",
+    "honest competitive boundaries: local Daily records only until full gameplay determinism is proven; no public Daily leaderboard or unintended Career, checkpoint, achievement, or Codex progress"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "Electron and Node emitted existing tooling deprecation advisories; packaged performance contained zero game warnings and zero game errors.",
+    "The first desktop-package review was intentionally run before current controls/performance evidence existed; those exact-build checks were generated and the review then passed.",
+    "Two SteamCMD launch attempts stopped before upload because the isolated worktree lacked its own ignored executable and then because SteamCMD resolved a relative VDF from its install directory; the final absolute-VDF invocation uploaded successfully with exit code 0."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed by this deployment.",
+    "Test-branch rollback target is BuildID 24214776.",
+    "Source runtime rollback is git revert b6aa8a007de0fea713879a70685711709f288ddc f91ccb981bc0f3f5814f9861bdfab5b9048f4cd2 0eea0bcfe0425d53c382606853aa6ffd394be82b in reverse dependency order, or branch reset in a disposable worktree to baseline b8d7cb104f7fe08226e2843f82931194b735a88a."
+  ]
+}

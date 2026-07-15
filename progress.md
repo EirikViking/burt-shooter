@@ -1,13 +1,20 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-15 Daily Flight Log And Scoring Trust Pass (in progress)
+## 2026-07-15 Daily Flight Log And Scoring Trust Pass (complete)
 
 - Added a visible seven-day Daily Flight Log to the launch briefing and result flow. Each UTC day now reads as unopened, attempted, or cleared, while the cabinet tracks today's attempt count, recent clear rhythm, archive clears, and an honest current streak without adding a public leaderboard claim.
 - Split the old one-record model into best attempt and best clear. Failed runs now rank by deepest sector before score, clears rank by score before time, and the HUD asks pilots to clear Sector 10 before it asks them to chase score. A high score earned before the finish is held as `SCORE READY` rather than celebrated as a completed Daily best.
 - Made Daily records profile-scoped and migration-safe. Existing v1 records remain readable, invalid/debug attempts remain excluded, every valid attempt is counted, and storage failures cannot manufacture a new record. Daily, Scout, and Sector runs also defer queued ranked achievement toasts until the player returns to an eligible ranked mode.
 - Refined Daily menu, HUD, Game Over, and Run Report language across all eight supported locales. The copy now says `shared route theme` instead of implying fully deterministic enemy routing, and How to Play explains the clear-first scoring contract and Flight Log.
 - Independent review hardened the trust contract further: streaks use the full retained 45-day archive instead of stopping at the seven visible pips; storage failure can never label an unsaved attempt or clear as a record; and score/time tie-breaks are now visible across the menu, HUD, result, and Run Report for both clears and failed attempts.
-- Focused regression coverage now exercises record migration/order/counting, failed and cleared Daily summaries, post-clear score chasing, achievement-toast deferral, the Daily Run Report, compact layout, and localized Daily briefing screenshots. Full release and Steam test-branch verification remain pending.
+- Focused regression coverage now exercises record migration/order/counting, failed and cleared Daily summaries, post-clear score chasing, achievement-toast deferral, the Daily Run Report, compact layout, and localized Daily briefing screenshots. Independent re-review of exact source commit `b6aa8a007de0fea713879a70685711709f288ddc` found no remaining P0/P1/P2 issues.
+
+## 2026-07-15 Daily Flight Log And Scoring Trust deployed to Steam test
+
+- Built runtime source commit `b6aa8a007de0fea713879a70685711709f288ddc` as `v2026-07-15_12-01-29`, packaged a 329-file / 952,937,997-byte Windows payload, and uploaded it successfully as Steam BuildID `24218172` with depot manifest `8091511179624093249`.
+- The verified VDF targeted exactly `sector-continue-test`. Public/default, the Steamworks website, store metadata, pricing, leaderboard and achievement definitions, and Steam Cloud settings were untouched. Test-branch rollback target: BuildID `24214776`.
+- Release-line, full source build, Daily record/runtime guards, all-eight-language UI, How to Play, Run Report, browser and Electron smoke, controller flow, Steam/Electron bridge, package runtime, packaged keyboard/gamepad controls, fresh-profile isolation, desktop package review, and isolated packaged performance all passed. The packaged build held 58.48 minimum / 59.66 average FPS across 12 samples with zero warnings or errors.
+- This upload keeps the complete Maximum-WOW reinforcement pass and every earlier improvement, then adds the seven-day Flight Log, clear-first score chase, separate best attempt/best clear records, honest score/time tie-breaks, profile-safe migration, fail-closed storage messaging, and localized Daily guidance.
 
 ## 2026-07-15 Daily Cabinet Signal (complete)
 
