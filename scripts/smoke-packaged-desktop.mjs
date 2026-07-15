@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  resolvePackagedSmokeMode,
+  validatePackagedSteamRuntime
+} from './lib/packaged-steam-runtime-gate.mjs';
 
 const root = process.cwd();
 const exePath = path.resolve(process.env.NOVA_SWARM_PACKAGED_EXE || 'release/desktop/win-unpacked/Nova Swarm.exe');
@@ -49,6 +53,16 @@ if (!existsSync(reportPath)) {
 const report = readJson(reportPath);
 const currentBuild = existsSync(versionPath) ? readJson(versionPath) : null;
 const errors = [];
+let steamValidation;
+
+try {
+  steamValidation = validatePackagedSteamRuntime(report.state, {
+    mode: resolvePackagedSmokeMode()
+  });
+  errors.push(...steamValidation.errors);
+} catch (error) {
+  errors.push(error?.message || String(error));
+}
 
 if (report.status !== 'passed') errors.push(`status=${report.status || 'missing'}`);
 if (currentBuild?.version && report.state?.build !== currentBuild.version) {
@@ -63,4 +77,7 @@ if (errors.length) {
   process.exit(1);
 }
 
+if (steamValidation?.required === false) {
+  console.warn('[packaged-smoke] Steam runtime gate skipped by explicit NOVA_SWARM_PACKAGED_SMOKE_MODE=local');
+}
 console.log(`[packaged-smoke] ok: ${path.relative(root, reportPath).replaceAll(path.sep, '/')}`);

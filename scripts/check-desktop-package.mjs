@@ -1,5 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import {
+  resolvePackagedSmokeMode,
+  validatePackagedSteamRuntime
+} from './lib/packaged-steam-runtime-gate.mjs';
 
 const root = process.cwd();
 const outputPath = path.resolve(root, 'release/steamworks/desktop_package_review_report.json');
@@ -10,6 +14,13 @@ const smokeRoot = path.resolve(root, 'test-results');
 
 const errors = [];
 const warnings = [];
+let packagedSmokeMode = 'steam';
+
+try {
+  packagedSmokeMode = resolvePackagedSmokeMode();
+} catch (error) {
+  errors.push(error?.message || String(error));
+}
 
 function rel(file) {
   return path.relative(root, file).replaceAll(path.sep, '/');
@@ -40,6 +51,7 @@ function findLatestSmokeReport(prefix) {
 
 function checkSmokeReport(label, latestSmoke) {
   let report = null;
+  let steamRuntimeValidation = null;
   const labelName = label === 'packaged executable' ? 'packaged executable smoke' : `${label} smoke`;
   if (!latestSmoke) {
     errors.push(`Missing ${labelName} report in test-results/${label === 'Electron' ? 'electron-smoke' : 'packaged-exe-smoke'}-*/report.json`);
@@ -69,13 +81,22 @@ function checkSmokeReport(label, latestSmoke) {
   if (currentBuild?.version && report.state?.build !== currentBuild.version) {
     errors.push(`Latest ${labelName} build ${report.state?.build || 'unknown'} does not match current build ${currentBuild.version}`);
   }
+  if (label === 'packaged executable') {
+    steamRuntimeValidation = validatePackagedSteamRuntime(report.state, { mode: packagedSmokeMode });
+    for (const error of steamRuntimeValidation.errors) {
+      errors.push(`${labelName} ${error}`);
+    }
+    if (steamRuntimeValidation.required === false) {
+      warnings.push('Packaged Steam runtime validation skipped by explicit NOVA_SWARM_PACKAGED_SMOKE_MODE=local');
+    }
+  }
 
   const ageHours = (Date.now() - statSync(latestSmoke.report).mtimeMs) / 36e5;
   if (ageHours > 72) {
     warnings.push(`Latest ${labelName} report is ${ageHours.toFixed(1)} hours old`);
   }
 
-  return { report };
+  return { report, steamRuntimeValidation };
 }
 
 function fileInfo(relativePath) {
@@ -109,7 +130,10 @@ const latestPackagedSmoke = findLatestSmokeReport('packaged-exe-smoke-');
 const latestPackagedControlSmoke = findLatestSmokeReport('packaged-control-smoke-');
 const latestPackagedPerfSmoke = findLatestSmokeReport('packaged-perf-smoke-');
 const { report: smokeReport } = checkSmokeReport('Electron', latestSmoke);
-const { report: packagedSmokeReport } = checkSmokeReport('packaged executable', latestPackagedSmoke);
+const {
+  report: packagedSmokeReport,
+  steamRuntimeValidation: packagedSteamRuntimeValidation
+} = checkSmokeReport('packaged executable', latestPackagedSmoke);
 
 function checkControlSmokeReport(latestSmoke) {
   if (!latestSmoke) {
@@ -192,7 +216,7 @@ function checkPerfSmokeReport(latestSmoke) {
 
 const packagedPerfSmokeReport = checkPerfSmokeReport(latestPackagedPerfSmoke);
 
-function smokeSummary(latest, smokeReport) {
+function smokeSummary(latest, smokeReport, steamRuntimeValidation = null) {
   return latest ? {
     reportPath: rel(latest.report),
     screenshotPath: rel(path.join(latest.dir, '01-electron-menu.png')),
@@ -206,6 +230,7 @@ function smokeSummary(latest, smokeReport) {
       status: smokeReport?.state?.apiStatus || null
     },
     readyState: smokeReport?.state?.readyState || null,
+    steamRuntimeValidation,
     consoleEvents: smokeReport?.consoleEvents || []
   } : null;
 }
@@ -251,10 +276,11 @@ const report = {
     version: currentBuild.version || null,
     timestamp: currentBuild.timestamp || null
   } : null,
+  packagedSmokeMode,
   desktopPayload: payload,
   steamApiPayload: steamApiPayloadInfo,
   latestElectronSmoke: smokeSummary(latestSmoke, smokeReport),
-  latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport),
+  latestPackagedExeSmoke: smokeSummary(latestPackagedSmoke, packagedSmokeReport, packagedSteamRuntimeValidation),
   latestPackagedControlsSmoke: controlSmokeSummary(latestPackagedControlSmoke, packagedControlSmokeReport),
   latestPackagedPerfSmoke: perfSmokeSummary(latestPackagedPerfSmoke, packagedPerfSmokeReport),
   errors,

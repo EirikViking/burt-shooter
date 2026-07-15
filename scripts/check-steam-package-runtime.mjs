@@ -32,7 +32,12 @@ function requiredPackageFiles() {
     path.join(packageRoot, 'steam_api.dll'),
     path.join(packageRoot, 'resources', 'app.asar.unpacked', 'steam_sdk', 'sdk', 'redistributable_bin', 'win64', 'steam_api64.dll'),
     path.join(packageRoot, 'resources', 'app.asar.unpacked', 'steam_sdk', 'sdk', 'redistributable_bin', 'steam_api.dll'),
-    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'steamworks-ffi-node', 'prebuilds', 'win32-x64', 'steam-overlay.node')
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'steamworks-ffi-node', 'package.json'),
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'steamworks-ffi-node', 'dist', 'index.js'),
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'steamworks-ffi-node', 'prebuilds', 'win32-x64', 'steam-overlay.node'),
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'koffi', 'package.json'),
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'koffi', 'index.js'),
+    path.join(packageRoot, 'resources', 'app.asar.unpacked', 'node_modules', 'koffi', 'build', 'koffi', 'win32_x64', 'koffi.node')
   ];
 }
 
@@ -53,7 +58,6 @@ const files = requiredPackageFiles().map(fileReport);
 const errors = [];
 
 if (!existsSync(packageRoot)) errors.push(`missing package root: ${rel(packageRoot)}`);
-if (!optionalDependencyPath()) errors.push('steamworks-ffi-node optional dependency is not installed in this worktree');
 for (const file of files) {
   if (!file.exists) errors.push(`missing packaged Steam runtime file: ${file.path}`);
 }

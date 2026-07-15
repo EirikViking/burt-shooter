@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-15 Packaged Steam runtime release gate hotfix
+
+- Root cause: packaged smoke and desktop package review only gated scene/API/console health, so a report with `steamBridgeStatus.available=false`, `nativeModuleLoaded=false`, and `steamLeaderboardAvailable=false` could still pass and silently select the Cloud Global fallback.
+- Normal packaged validation now requires the native Steam bridge and Steam leaderboard to be available. Intentional non-Steam QA remains possible only through the explicit `NOVA_SWARM_PACKAGED_SMOKE_MODE=local` opt-out, which is reported as a skipped Steam gate.
+- The static package-runtime check now requires the packaged `steamworks-ffi-node` entrypoint plus its `koffi` JavaScript/native runtime, not only the standalone overlay addon.
+- Focused deterministic coverage proves the defective package state fails, a ready Steam package passes, missing status fails closed, invalid modes fail closed, and the explicit local mode remains supported. No player-facing text, gameplay, score, saves, leaderboards, Steamworks settings, or deployment changed.
+- Verification passed `check:packaged-steam-runtime-gate`, `check:release-line`, syntax checks, and `git diff --check`; the known-good BuildID 24222462 payload passes the hardened static gate while the defective BuildID 24226288 payload fails on its missing packaged `koffi` runtime. `check:steam-electron-bridge` independently remains red on the unchanged bridge test's expected raw-upload diagnostic (`expected SteamAPI_ISteamUserStats_UploadLeaderboardScore`, received `uploadScore`); this hotfix does not alter that bridge path.
+
 ## 2026-07-15 Enemy Projectile Spectacle deployed to Steam test
 
 - Built release integration commit `2980f5f922cf59f911a32551de8e2306f6e83ad5` as `v2026-07-15_20-35-49`, packaged a 220-file / 914,755,350-byte Windows payload, and uploaded it successfully as Steam BuildID `24226288` with depot manifest `6434473859557816080`.
