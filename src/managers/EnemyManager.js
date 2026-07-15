@@ -1598,8 +1598,22 @@ export class EnemyManager {
     this.mayhemReinforcementStats.lastWarningLeadMs = Math.max(0, state.spawnAt - Date.now());
 
     const playScene = this.game?.scenes?.play;
-    if (playScene?.showToast) {
-      const compactHud = this.game.getWidth() < 620;
+    const groupCount = Math.max(
+      1,
+      Math.floor(Number(state.reinforcementGroupCount) ||
+        Math.min(3, Number(state.reinforcementWaveConfigs?.length) || 0) ||
+        Math.min(3, Number(state.reinforcementWaveIndices?.length) || 0) ||
+        1)
+    );
+    const useSuperStormVoice = state.isSuperStorm === true;
+    const specializedPresentationShown = playScene?.showMayhemReinforcementStormWarning?.({
+      groupCount,
+      boss: this.state === 'BOSS_ACTIVE',
+      superStorm: state.isSuperStorm === true,
+      warningMs: state.warningMs
+    });
+    if (!specializedPresentationShown && playScene?.showToast) {
+      const compactHud = this.game.getWidth() < 1100 || this.game.getHeight() < 700;
       playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
         fontSize: compactHud ? 17 : 22,
         fill: '#ffef7e',
@@ -1613,20 +1627,6 @@ export class EnemyManager {
         maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.64)
       });
     }
-    const groupCount = Math.max(
-      1,
-      Math.floor(Number(state.reinforcementGroupCount) ||
-        Math.min(3, Number(state.reinforcementWaveConfigs?.length) || 0) ||
-        Math.min(3, Number(state.reinforcementWaveIndices?.length) || 0) ||
-        1)
-    );
-    const useSuperStormVoice = state.isSuperStorm === true;
-    playScene?.showMayhemReinforcementStormWarning?.({
-      groupCount,
-      boss: this.state === 'BOSS_ACTIVE',
-      superStorm: state.isSuperStorm === true,
-      warningMs: state.warningMs
-    });
     AudioManager.playVoice(useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
       force: true,
       bypassGlobalCooldown: true,
@@ -2723,6 +2723,8 @@ export class EnemyManager {
           enemy.isMayhemReinforcement = true;
           enemy.reinforcementGroupIndex = Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0));
           enemy.reinforcementGroupCount = Math.max(1, Math.floor(Number(config.reinforcementGroupCount) || 1));
+          enemy.isMayhemSuperStorm = config.isMayhemSuperStorm === true;
+          enemy.isReinforcementSwarmEntry = enemy.reinforcementGroupCount > 1;
           const scoreMultiplier = Math.max(1, Number(config.reinforcementScoreMultiplier) || 1);
           if (scoreMultiplier > 1) {
             enemy.scoreValue = Math.max(1, Math.round((enemy.scoreValue || 0) * scoreMultiplier));
@@ -3897,6 +3899,11 @@ export class EnemyManager {
     const enemy = new Enemy(startX, -96, type, level, this.game, 'Green');
     enemy.kind = 'boss_fuel_ship';
     enemy.bossSupportShipProfile = supportProfile;
+    enemy.isMayhemReinforcement = groupSize > 1;
+    enemy.reinforcementGroupIndex = groupSlot;
+    enemy.reinforcementGroupCount = groupSize;
+    enemy.isMayhemSuperStorm = groupSize >= BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE;
+    enemy.isReinforcementSwarmEntry = groupSize > 1;
     const singleSupportHealMultiplier = groupSize === 1 ? BOSS_FUEL_SINGLE_SUPPORT_HEAL_MULT : 1;
     const swarmHealMultiplier = groupSize >= BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE ? 0.3 : 1;
     const baseHealCap = level <= 4 ? 0.075 : 0.09;
@@ -4004,6 +4011,15 @@ export class EnemyManager {
       centerY: targetY,
       side: startLeft ? -1 : 1
     });
+    if (groupSize > 1) {
+      this.game?.scenes?.play?.showMayhemReinforcementEntryBurst?.({
+        groupIndex: groupSlot,
+        groupCount: groupSize,
+        boss: true,
+        superStorm: groupSize >= BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE,
+        delayMs: groupSlot * (groupSize >= BOSS_FUEL_EIGHT_SHIP_SWARM_SIZE ? 70 : 95)
+      });
+    }
     enemy.startEntry(startX, -70, targetX + supportProfile.routeDrift * 26, targetY, supportProfile.entryMs, 0);
     this.enemies.push(enemy);
     this.container.addChild(enemy.sprite);
@@ -4024,17 +4040,19 @@ export class EnemyManager {
       rarity: translateText('Boss Support'),
       sector: level
     });
-    this.game?.scenes?.play?.showToast?.(translateText('FUEL SHIP INBOUND'), {
-      fontSize: this.game.getWidth() < 620 ? 15 : 18,
-      fill: `#${supportProfile.tint.toString(16).padStart(6, '0')}`,
-      stroke: '#032015',
-      strokeThickness: 4,
-      duration: 1250,
-      slot: 'top',
-      type: 'boss',
-      priority: 5,
-      maxWidth: this.game.getWidth() * 0.76
-    });
+    if (groupSlot === 0) {
+      this.game?.scenes?.play?.showToast?.(translateText('FUEL SHIP INBOUND'), {
+        fontSize: this.game.getWidth() < 1100 || this.game.getHeight() < 700 ? 15 : 18,
+        fill: `#${supportProfile.tint.toString(16).padStart(6, '0')}`,
+        stroke: '#032015',
+        strokeThickness: 4,
+        duration: 1250,
+        slot: 'top',
+        type: 'boss',
+        priority: 5,
+        maxWidth: this.game.getWidth() * 0.76
+      });
+    }
     AudioManager.playSfx('nova_fuel_ship_spawn', { volume: 0.68, minIntervalMs: 900 });
     return true;
   }

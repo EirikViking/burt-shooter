@@ -10316,7 +10316,7 @@ export class PlayScene {
     if (!achievement?.name || !this.uiOverlay || !this.game?.app?.ticker) return false;
 
     const { width, height } = this.game.app.screen;
-    const compact = width < 620;
+    const compact = width < 1100 || height < 700;
     const panelWidth = Math.min(compact ? width - 28 : 470, width * 0.82);
     const panelHeight = compact ? 78 : 86;
     const banner = new PIXI.Container();
@@ -16593,6 +16593,24 @@ export class PlayScene {
     });
   }
 
+  getMayhemReinforcementPreviewTextures(count = 1) {
+    const desiredCount = Math.max(1, Math.min(8, Math.floor(Number(count) || 1)));
+    const profiles = getGeneratedEnemyProfilesForLevel(Math.max(1, Number(this.game?.level) || 1));
+    const textures = [];
+    const usedSpriteIndices = new Set();
+    for (let index = 0; index < profiles.length && textures.length < desiredCount; index += 1) {
+      const profile = profiles[index];
+      if (!Number.isFinite(profile?.spriteIndex)) continue;
+      const spriteIndex = Math.max(0, Math.floor(profile.spriteIndex));
+      if (usedSpriteIndices.has(spriteIndex)) continue;
+      const texture = GameAssets.getGeneratedEnemyTexture(spriteIndex);
+      if (!GameAssets.isValidTexture(texture)) continue;
+      usedSpriteIndices.add(spriteIndex);
+      textures.push(texture);
+    }
+    return textures;
+  }
+
   getMayhemReinforcementPresentationDebugState() {
     const last = this.lastMayhemReinforcementPresentation;
     if (!last) return null;
@@ -16604,6 +16622,16 @@ export class PlayScene {
       boss: Boolean(last.boss),
       superStorm: Boolean(last.superStorm),
       score: Math.max(0, Number(last.score) || 0),
+      scoreNeutral: last.scoreNeutral !== false,
+      gateCount: Math.max(0, Number(last.gateCount) || 0),
+      previewShipCount: Math.max(0, Number(last.previewShipCount) || 0),
+      signalPlateVisible: Boolean(last.signalPlateVisible && Date.now() < (Number(last.activeUntil) || 0)),
+      signalPlateBounds: last.signalPlateBounds ? { ...last.signalPlateBounds } : null,
+      hudSafe: last.hudSafe !== false,
+      gatePositions: Array.isArray(last.gatePositions) ? [...last.gatePositions] : [],
+      entryPositions: Array.isArray(last.entryPositions) ? [...last.entryPositions] : [],
+      entryImpactCount: Math.max(0, Number(last.entryImpactCount) || 0),
+      arrivalAudioLayerCount: Math.max(0, Number(last.arrivalAudioLayerCount) || 0),
       active: Date.now() < (Number(last.activeUntil) || 0),
       remainingMs: Math.max(0, Math.round((Number(last.activeUntil) || 0) - Date.now()))
     };
@@ -16613,28 +16641,31 @@ export class PlayScene {
     const count = Math.max(1, Math.min(8, Math.floor(Number(groupCount) || 1)));
     const width = this.game.getWidth();
     const height = this.game.getHeight();
-    const compactHud = width < 620;
+    const compactHud = width < 1100 || height < 700;
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
     const duration = Math.max(1500, Math.min(2800, Math.floor(Number(warningMs) || 2000)));
     const primary = superStorm ? 0xff45f4 : boss ? 0xff5577 : 0xffdf63;
     const secondary = 0x43efff;
-    const gateY = compactHud ? Math.max(102, height * 0.19) : Math.min(208, height * 0.205);
+    const plateWidth = Math.max(360, Math.min(compactHud ? 480 : 540, width * (compactHud ? 0.5 : 0.34)));
+    const plateHeight = compactHud ? 58 : 64;
+    const plateY = compactHud
+      ? Math.min(168, Math.max(132, height * 0.245))
+      : Math.min(170, Math.max(142, height * 0.135));
+    const gateY = compactHud
+      ? Math.min(height * 0.5, Math.max(220, height * 0.4))
+      : Math.min(height * 0.38, Math.max(260, height * 0.255));
     const startedAt = Date.now();
-
-    if (count >= 2) {
-      this.enqueueToast(`${translateText('REINFORCEMENT STORM')} x${count}`, {
-        fontSize: compactHud ? 18 : 24,
-        fill: superStorm ? '#ff5df7' : boss ? '#ff8f9c' : '#ffef7e',
-        stroke: '#160006',
-        strokeThickness: compactHud ? 3 : 4,
-        slot: 'top',
-        type: 'warning',
-        priority: 6,
-        duration: Math.min(1900, duration),
-        y: compactHud ? height * 0.24 : 96,
-        maxWidth: width * (compactHud ? 0.86 : 0.62)
-      });
-    }
+    const previewTextures = this.getMayhemReinforcementPreviewTextures(count);
+    const gatePositions = [];
+    const signalPlateBounds = {
+      x: Math.round(width / 2 - plateWidth / 2),
+      y: Math.round(plateY - plateHeight / 2),
+      width: Math.round(plateWidth),
+      height: Math.round(plateHeight)
+    };
+    const hudSafe = signalPlateBounds.y >= (compactHud ? 100 : 108) &&
+      signalPlateBounds.x >= width * 0.2 &&
+      signalPlateBounds.x + signalPlateBounds.width <= width * 0.8;
 
     this.lastMayhemReinforcementPresentation = {
       phase: 'warning',
@@ -16644,6 +16675,16 @@ export class PlayScene {
       boss,
       superStorm,
       score: 0,
+      scoreNeutral: true,
+      gateCount: count,
+      previewShipCount: previewTextures.length ? count : 0,
+      signalPlateVisible: true,
+      signalPlateBounds,
+      hudSafe,
+      gatePositions,
+      entryPositions: [],
+      entryImpactCount: 0,
+      arrivalAudioLayerCount: 0,
       startedAt,
       activeUntil: startedAt + duration
     };
@@ -16664,6 +16705,89 @@ export class PlayScene {
     overlay.eventMode = 'none';
     overlay.zIndex = 9200;
     layer.addChild(overlay);
+
+    const signalPlate = new PIXI.Container();
+    signalPlate.label = 'ui_mayhem_reinforcement_signal_plate';
+    signalPlate.position.set(width / 2, plateY);
+    signalPlate.eventMode = 'none';
+    signalPlate.zIndex = 9900;
+    signalPlate.alpha = 0;
+
+    const plateGlow = new PIXI.Graphics();
+    plateGlow.roundRect(-plateWidth / 2 - 8, -plateHeight / 2 - 6, plateWidth + 16, plateHeight + 12, 10);
+    plateGlow.fill({ color: primary, alpha: 0.12 });
+    plateGlow.blendMode = 'add';
+    signalPlate.addChild(plateGlow);
+
+    const plate = new PIXI.Graphics();
+    plate.roundRect(-plateWidth / 2, -plateHeight / 2, plateWidth, plateHeight, 7);
+    plate.fill({ color: 0x040914, alpha: 0.94 });
+    plate.stroke({ color: primary, width: compactHud ? 2 : 3, alpha: 0.94 });
+    plate.roundRect(-plateWidth / 2 + 6, -plateHeight / 2 + 6, plateWidth - 12, plateHeight - 12, 5);
+    plate.stroke({ color: secondary, width: 1.2, alpha: 0.52 });
+    signalPlate.addChild(plate);
+
+    const plateRails = new PIXI.Graphics();
+    plateRails.moveTo(-plateWidth / 2 + 18, -plateHeight / 2 + 10);
+    plateRails.lineTo(plateWidth / 2 - 18, -plateHeight / 2 + 10);
+    plateRails.moveTo(-plateWidth / 2 + 18, plateHeight / 2 - 9);
+    plateRails.lineTo(plateWidth / 2 - 18, plateHeight / 2 - 9);
+    plateRails.stroke({ color: secondary, width: 1.5, alpha: 0.34 });
+    signalPlate.addChild(plateRails);
+
+    const title = createText(translateText('INCOMING REINFORCEMENTS'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compactHud ? 18 : 22,
+      fill: superStorm ? '#ff83fb' : boss ? '#ff8f9c' : '#fff09a',
+      stroke: '#100008',
+      strokeThickness: compactHud ? 3 : 4,
+      fontWeight: '900',
+      letterSpacing: compactHud ? 0.6 : 1.2,
+      dropShadow: true,
+      dropShadowColor: superStorm ? '#ff45f4' : '#ffcc4d',
+      dropShadowBlur: 8,
+      dropShadowDistance: 0
+    });
+    title.anchor.set(0.5);
+    title.y = compactHud ? -8 : -9;
+    if (title.width > plateWidth - 66) title.scale.set((plateWidth - 66) / title.width);
+    signalPlate.addChild(title);
+
+    const subtitle = createText(translateText('REINFORCEMENT STORM') + ' ×' + count, {
+      fontFamily: FONT_BODY,
+      fontSize: compactHud ? 11 : 13,
+      fill: '#72f5ff',
+      stroke: '#021018',
+      strokeThickness: 2,
+      fontWeight: '900',
+      letterSpacing: 0.8
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.y = compactHud ? 12 : 14;
+    if (subtitle.width > plateWidth - 82) subtitle.scale.set((plateWidth - 82) / subtitle.width);
+    signalPlate.addChild(subtitle);
+
+    const platePips = new PIXI.Graphics();
+    const pipGap = compactHud ? 10 : 12;
+    const pipStart = -((count - 1) * pipGap) / 2;
+    for (let index = 0; index < count; index += 1) {
+      platePips.poly([
+        pipStart + index * pipGap, plateHeight / 2 - 13,
+        pipStart + index * pipGap + 3, plateHeight / 2 - 10,
+        pipStart + index * pipGap, plateHeight / 2 - 7,
+        pipStart + index * pipGap - 3, plateHeight / 2 - 10
+      ]);
+    }
+    platePips.fill({ color: primary, alpha: 0.9 });
+    signalPlate.addChild(platePips);
+
+    const plateScan = new PIXI.Graphics();
+    plateScan.rect(-plateWidth / 2 + 8, -plateHeight / 2 + 8, compactHud ? 34 : 48, plateHeight - 16);
+    plateScan.fill({ color: secondary, alpha: 0.12 });
+    plateScan.blendMode = 'add';
+    signalPlate.addChild(plateScan);
+    this.uiOverlay?.addChild?.(signalPlate);
+    this.uiOverlay?.sortChildren?.();
 
     const wash = new PIXI.Graphics();
     wash.rect(0, 0, width, height);
@@ -16693,14 +16817,31 @@ export class PlayScene {
     overlay.addChild(edge);
 
     const laneWidth = width / (count + 1);
-    const gateRadius = Math.max(28, Math.min(compactHud ? 38 : 55, laneWidth * 0.28));
+    const gateRadius = Math.max(30, Math.min(compactHud ? 46 : 64, laneWidth * 0.27));
+    const fleetHorizon = new PIXI.Graphics();
+    fleetHorizon.blendMode = 'add';
+    fleetHorizon.moveTo(width * 0.06, gateY + gateRadius * 1.85);
+    for (let segment = 1; segment <= 18; segment += 1) {
+      const ratio = segment / 18;
+      const x = width * (0.06 + ratio * 0.88);
+      const curve = Math.sin(ratio * Math.PI) * gateRadius * 0.56;
+      fleetHorizon.lineTo(x, gateY + gateRadius * 1.85 + curve);
+    }
+    fleetHorizon.stroke({ color: secondary, width: compactHud ? 2 : 3, alpha: 0.22 });
+    fleetHorizon.moveTo(width * 0.12, gateY + gateRadius * 2.16);
+    fleetHorizon.lineTo(width * 0.88, gateY + gateRadius * 2.16);
+    fleetHorizon.stroke({ color: primary, width: 1.5, alpha: 0.18 });
+    overlay.addChild(fleetHorizon);
+
     const gates = [];
     for (let index = 0; index < count; index += 1) {
       const gate = new PIXI.Container();
       gate.position.set(laneWidth * (index + 1), gateY + (index % 2 ? 9 : -7));
-      gate.blendMode = 'add';
+      gate.sortableChildren = true;
+      gatePositions.push(Math.round(gate.x));
 
       const halo = new PIXI.Graphics();
+      halo.blendMode = 'add';
       halo.circle(0, 0, gateRadius * 1.28);
       halo.stroke({ color: index % 2 ? secondary : primary, width: compactHud ? 4 : 7, alpha: 0.24 });
       halo.circle(0, 0, gateRadius * 0.84);
@@ -16708,6 +16849,7 @@ export class PlayScene {
       gate.addChild(halo);
 
       const rotor = new PIXI.Graphics();
+      rotor.blendMode = 'add';
       rotor.circle(0, 0, gateRadius);
       rotor.stroke({ color: secondary, width: compactHud ? 2 : 3, alpha: 0.74 });
       for (let spoke = 0; spoke < 8; spoke += 1) {
@@ -16720,18 +16862,45 @@ export class PlayScene {
       }
       gate.addChild(rotor);
 
-      const core = new PIXI.Graphics();
-      core.poly([
-        -gateRadius * 0.28, gateRadius * 0.18,
-        0, -gateRadius * 0.5,
-        gateRadius * 0.28, gateRadius * 0.18,
-        0, gateRadius * 0.5
-      ]);
-      core.fill({ color: index % 2 ? primary : secondary, alpha: 0.92 });
-      core.stroke({ color: 0xffffff, width: 1.4, alpha: 0.8 });
-      gate.addChild(core);
+      let ship = null;
+      const ghosts = [];
+      const texture = previewTextures[index % Math.max(1, previewTextures.length)] || null;
+      if (texture) {
+        const textureSize = Math.max(1, Number(texture.width) || 0, Number(texture.height) || 0);
+        const shipScale = (gateRadius * (compactHud ? 1.38 : 1.5)) / textureSize;
+        for (let ghostIndex = 2; ghostIndex >= 1; ghostIndex -= 1) {
+          const ghost = new PIXI.Sprite(texture);
+          ghost.anchor.set(0.5);
+          ghost.scale.set(shipScale * (1 - ghostIndex * 0.09));
+          ghost.y = -gateRadius * ghostIndex * 0.42;
+          ghost.alpha = 0.09 + ghostIndex * 0.035;
+          ghost.tint = ghostIndex % 2 ? secondary : primary;
+          ghost.blendMode = 'add';
+          gate.addChild(ghost);
+          ghosts.push(ghost);
+        }
+        ship = new PIXI.Sprite(texture);
+        ship.anchor.set(0.5);
+        ship.scale.set(shipScale);
+        ship.alpha = 0.96;
+        ship.zIndex = 3;
+        gate.addChild(ship);
+      } else {
+        ship = new PIXI.Graphics();
+        ship.poly([
+          -gateRadius * 0.28, gateRadius * 0.18,
+          0, -gateRadius * 0.5,
+          gateRadius * 0.28, gateRadius * 0.18,
+          0, gateRadius * 0.5
+        ]);
+        ship.fill({ color: index % 2 ? primary : secondary, alpha: 0.92 });
+        ship.stroke({ color: 0xffffff, width: 1.4, alpha: 0.8 });
+        ship.zIndex = 3;
+        gate.addChild(ship);
+      }
 
       const chevrons = new PIXI.Graphics();
+      chevrons.blendMode = 'add';
       for (let chevron = 0; chevron < 3; chevron += 1) {
         const y = gateRadius * (1.45 + chevron * 0.42);
         chevrons.moveTo(-gateRadius * 0.36, y - gateRadius * 0.18);
@@ -16741,7 +16910,7 @@ export class PlayScene {
       }
       gate.addChild(chevrons);
       overlay.addChild(gate);
-      gates.push({ gate, halo, rotor, core, chevrons, x: gate.x, y: gate.y, phase: index * 0.74 });
+      gates.push({ gate, halo, rotor, ship, ghosts, chevrons, x: gate.x, y: gate.y, phase: index * 0.74 });
     }
 
     const motion = new PIXI.Graphics();
@@ -16756,6 +16925,8 @@ export class PlayScene {
       this.game?.app?.ticker?.remove?.(ticker);
       if (overlay.parent) overlay.parent.removeChild(overlay);
       overlay.destroy?.({ children: true });
+      if (signalPlate.parent) signalPlate.parent.removeChild(signalPlate);
+      signalPlate.destroy?.({ children: true });
       if (this.activeMayhemReinforcementWarning?.overlay === overlay) {
         this.activeMayhemReinforcementWarning = null;
       }
@@ -16767,6 +16938,10 @@ export class PlayScene {
       const fade = t > 0.78 ? Math.max(0, (1 - t) / 0.22) : 1;
       const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.012) + 1) * 0.5;
       overlay.alpha = fade;
+      signalPlate.alpha = intro * fade;
+      signalPlate.scale.set(0.9 + intro * 0.1 + (reducedMotion ? 0 : pulse * 0.012));
+      plateGlow.alpha = 0.45 + pulse * 0.55;
+      plateScan.x = -plateWidth * 0.44 + ((elapsed % 760) / 760) * plateWidth * 0.88;
       wash.alpha = (0.28 + pulse * 0.38) * intro;
       edge.alpha = (0.58 + pulse * 0.42) * intro;
       motion.clear();
@@ -16775,6 +16950,22 @@ export class PlayScene {
       motion.moveTo(0, sweepY);
       motion.lineTo(width, sweepY + (superStorm ? 24 : 8));
       motion.stroke({ color: secondary, width: compactHud ? 3 : 5, alpha: 0.1 + pulse * 0.16 });
+
+      const atmosphereStreakCount = reducedMotion ? 8 : 18;
+      for (let streak = 0; streak < atmosphereStreakCount; streak += 1) {
+        const x = width * ((streak + 0.45) / atmosphereStreakCount);
+        const travel = (elapsed * (0.19 + (streak % 5) * 0.018) + streak * 73) % (height * 0.72);
+        const y = gateY - gateRadius * 2 + travel;
+        const length = compactHud ? 18 + (streak % 3) * 7 : 28 + (streak % 4) * 12;
+        motion.moveTo(x, y);
+        motion.lineTo(x + (streak % 2 ? 5 : -5), y + length);
+        motion.stroke({
+          color: streak % 3 === 0 ? primary : streak % 3 === 1 ? secondary : 0xffffff,
+          width: streak % 4 === 0 ? 2.4 : 1.1,
+          alpha: (streak % 4 === 0 ? 0.28 : 0.13) * intro * fade
+        });
+      }
+
       gates.forEach((entry, index) => {
         const gatePulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.01 + entry.phase) + 1) * 0.5;
         const gateScale = (0.62 + intro * 0.38) * (1 + gatePulse * (reducedMotion ? 0.018 : 0.08));
@@ -16783,7 +16974,13 @@ export class PlayScene {
         entry.rotor.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * (index % 2 ? -0.018 : 0.022);
         entry.halo.scale.set(0.88 + gatePulse * 0.24);
         entry.halo.alpha = 0.44 + gatePulse * 0.56;
-        entry.core.alpha = 0.58 + gatePulse * 0.42;
+        entry.ship.alpha = 0.72 + gatePulse * 0.28;
+        entry.ship.y = reducedMotion ? 0 : Math.sin(elapsed * 0.006 + entry.phase) * 3;
+        entry.ghosts.forEach((ghost, ghostIndex) => {
+          ghost.alpha = (0.08 + ghostIndex * 0.05) * (0.58 + gatePulse * 0.42);
+          ghost.y -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * (0.08 + ghostIndex * 0.035);
+          if (ghost.y < -gateRadius * 1.5) ghost.y = -gateRadius * (0.42 + ghostIndex * 0.34);
+        });
         entry.chevrons.y = reducedMotion ? 0 : ((elapsed * 0.045 + index * 11) % 18);
 
         motion.moveTo(entry.x, 0);
@@ -16802,18 +16999,51 @@ export class PlayScene {
         }
       });
 
+      if (gates.length > 1) {
+        for (let index = 0; index < gates.length - 1; index += 1) {
+          const from = gates[index];
+          const to = gates[index + 1];
+          motion.moveTo(from.x + gateRadius * 0.72, from.y);
+          const segments = 6;
+          for (let segment = 1; segment <= segments; segment += 1) {
+            const ratio = segment / segments;
+            const jitter = segment === segments
+              ? 0
+              : Math.sin(elapsed * 0.02 + segment * 4.3 + index) * gateRadius * 0.16;
+            motion.lineTo(
+              from.x + gateRadius * 0.72 + (to.x - from.x - gateRadius * 1.44) * ratio,
+              from.y + (to.y - from.y) * ratio + jitter
+            );
+          }
+          motion.stroke({
+            color: index % 2 ? primary : secondary,
+            width: superStorm ? 3.2 : 2,
+            alpha: 0.16 + pulse * 0.22
+          });
+        }
+      }
+
       if (superStorm && !reducedMotion) {
-        const stormRadius = Math.min(width, height) * (0.24 + pulse * 0.04);
-        motion.circle(width / 2, gateY, stormRadius);
-        motion.stroke({ color: primary, width: 2 + pulse * 4, alpha: 0.12 + pulse * 0.18 });
+        const arcRadius = Math.min(width * 0.42, height * 0.46);
+        const arcY = gateY + gateRadius * 2.2;
+        for (let point = 0; point <= 24; point += 1) {
+          const ratio = point / 24;
+          const angle = Math.PI + ratio * Math.PI;
+          const x = width / 2 + Math.cos(angle) * arcRadius;
+          const y = arcY + Math.sin(angle) * arcRadius * 0.34;
+          if (point === 0) motion.moveTo(x, y);
+          else motion.lineTo(x, y);
+        }
+        motion.stroke({ color: primary, width: 2 + pulse * 3, alpha: 0.1 + pulse * 0.17 });
       }
       if (t >= 1 || this.game?.currentScene !== this) {
         cleanup();
       }
     };
     this.game.app.ticker.add(ticker);
-    this.activeMayhemReinforcementWarning = { overlay, cleanup };
+    this.activeMayhemReinforcementWarning = { overlay, signalPlate, cleanup };
 
+    AudioManager.playSfx('intro_panel_whoosh', { force: count >= 3, volume: superStorm ? 0.72 : 0.52, minIntervalMs: 0 });
     AudioManager.playSfx(count >= 3 ? 'swarm_chatter_stinger' : 'enemy_threat_soft_warn', {
       force: count >= 3,
       volume: count >= 3 ? (superStorm ? 0.84 : 0.72) : 0.38
@@ -16842,10 +17072,15 @@ export class PlayScene {
     const startDelay = Math.max(0, Math.floor(Number(delayMs) || 0));
     const primary = superStorm ? 0xff45f4 : boss ? 0xff5577 : 0xffdf63;
     const secondary = 0x43efff;
-    const x = Math.max(52, Math.min(width - 52, width / 2 + (Number(laneOffsetPx) || 0)));
-    const y = compact ? Math.max(92, height * 0.16) : Math.min(176, height * 0.18);
-    const radius = compact ? 34 : 52;
-    const activeDuration = reducedMotion ? 650 : 980;
+    const laneX = (width / (count + 1)) * (index + 1);
+    const x = Math.max(52, Math.min(width - 52, laneX + (Number(laneOffsetPx) || 0) * 0.12));
+    const y = compact
+      ? Math.min(height * 0.5, Math.max(220, height * 0.4))
+      : Math.min(height * 0.38, Math.max(260, height * 0.255));
+    const radius = compact ? 46 : 66;
+    const activeDuration = reducedMotion ? 720 : 1180;
+    const previewTexture = this.getMayhemReinforcementPreviewTextures(count)[index] ||
+      this.getMayhemReinforcementPreviewTextures(1)[0] || null;
 
     const root = new PIXI.Container();
     root.label = `mayhem_reinforcement_entry_${index + 1}_of_${count}`;
@@ -16855,12 +17090,24 @@ export class PlayScene {
     root.blendMode = 'add';
     layer.addChild(root);
 
+    const screenFlash = new PIXI.Graphics();
+    screenFlash.rect(-x, -y, width, height);
+    screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.12 });
+    root.addChild(screenFlash);
+
+    const impactField = new PIXI.Graphics();
+    root.addChild(impactField);
+
+    const portal = new PIXI.Container();
+    portal.sortableChildren = true;
+    root.addChild(portal);
+
     const halo = new PIXI.Graphics();
     halo.circle(0, 0, radius * 1.45);
     halo.stroke({ color: secondary, width: compact ? 8 : 12, alpha: 0.16 });
     halo.circle(0, 0, radius);
     halo.stroke({ color: primary, width: compact ? 3 : 5, alpha: 0.78 });
-    root.addChild(halo);
+    portal.addChild(halo);
 
     const rotor = new PIXI.Graphics();
     rotor.circle(0, 0, radius * 0.72);
@@ -16871,12 +17118,23 @@ export class PlayScene {
       rotor.lineTo(Math.cos(angle) * radius * (spoke % 2 ? 0.9 : 1.08), Math.sin(angle) * radius * (spoke % 2 ? 0.9 : 1.08));
       rotor.stroke({ color: spoke % 2 ? primary : secondary, width: spoke % 2 ? 2.4 : 1.4, alpha: 0.78 });
     }
-    root.addChild(rotor);
+    portal.addChild(rotor);
 
     const tear = new PIXI.Graphics();
-    root.addChild(tear);
+    portal.addChild(tear);
     const streaks = new PIXI.Graphics();
     root.addChild(streaks);
+
+    let previewShip = null;
+    if (previewTexture) {
+      const textureSize = Math.max(1, Number(previewTexture.width) || 0, Number(previewTexture.height) || 0);
+      previewShip = new PIXI.Sprite(previewTexture);
+      previewShip.anchor.set(0.5);
+      previewShip.scale.set((radius * 1.42) / textureSize);
+      previewShip.alpha = 0;
+      previewShip.zIndex = 4;
+      portal.addChild(previewShip);
+    }
 
     let elapsed = 0;
     let fired = false;
@@ -16887,7 +17145,13 @@ export class PlayScene {
       if (!fired) {
         fired = true;
         root.visible = true;
+        if (this.activeMayhemReinforcementWarning?.signalPlate) {
+          this.activeMayhemReinforcementWarning.signalPlate.visible = false;
+        }
         const last = this.lastMayhemReinforcementPresentation || {};
+        const entryPositions = Array.isArray(last.entryPositions) ? [...last.entryPositions] : [];
+        entryPositions[index] = Math.round(x);
+        const arrivalAudioLayerCount = index === 0 ? 3 : 1;
         this.lastMayhemReinforcementPresentation = {
           ...last,
           phase: 'entry',
@@ -16896,11 +17160,36 @@ export class PlayScene {
           lastEntryGroup: index,
           boss: Boolean(last.boss || boss),
           superStorm: Boolean(last.superStorm || superStorm),
+          scoreNeutral: true,
+          signalPlateVisible: false,
+          entryPositions,
+          entryImpactCount: Math.max(Number(last.entryImpactCount) || 0, index + 1),
+          arrivalAudioLayerCount: Math.max(Number(last.arrivalAudioLayerCount) || 0, arrivalAudioLayerCount),
           activeUntil: Date.now() + activeDuration
         };
-        AudioManager.playSfx('coin_portal_open', { volume: superStorm ? 0.52 : 0.38, minIntervalMs: superStorm ? 180 : 540 });
-        if (!reducedMotion) this.screenShake?.shake?.(index === 0 ? (superStorm ? 5 : 3.5) : 2.2, index === 0 ? 12 : 8);
+        AudioManager.playSfx('coin_portal_open', {
+          force: index === 0,
+          volume: superStorm ? 0.7 : 0.52,
+          minIntervalMs: index === 0 ? 0 : 140
+        });
+        if (index === 0) {
+          AudioManager.playSfx('nova_boss_entrance_impact', {
+            force: true,
+            volume: superStorm ? 0.82 : 0.64,
+            minIntervalMs: 0
+          });
+          AudioManager.playSfx('intro_panel_whoosh', {
+            force: true,
+            volume: superStorm ? 0.66 : 0.48,
+            minIntervalMs: 0
+          });
+        }
+        if (!reducedMotion) {
+          this.screenShake?.shake?.(index === 0 ? (superStorm ? 9 : 6) : 3.2, index === 0 ? 18 : 10);
+          if (index === 0 && superStorm) this.screenShake?.freezeFrame?.(2);
+        }
         this.particleManager?.createExplosion?.(x, y + radius * 0.35, primary, superStorm ? 0.74 : 0.56);
+        this.particleManager?.createExplosion?.(x, y + radius * 0.2, secondary, superStorm ? 0.66 : 0.44);
       }
 
       const t = Math.min(1, (elapsed - startDelay) / activeDuration);
@@ -16908,10 +17197,45 @@ export class PlayScene {
       const fade = Math.pow(Math.max(0, 1 - t), 0.8);
       const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.018 + index) + 1) * 0.5;
       root.alpha = fade;
-      root.scale.set((0.42 + impact * 0.78) * (1 + pulse * (reducedMotion ? 0.02 : 0.1)));
+      portal.scale.set((0.34 + impact * 0.86) * (1 + pulse * (reducedMotion ? 0.02 : 0.1)));
       rotor.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * (index % 2 ? -0.045 : 0.05);
       halo.scale.set(0.72 + impact * 0.48 + pulse * 0.12);
       halo.alpha = 0.48 + pulse * 0.52;
+      screenFlash.alpha = Math.max(0, 1 - t / 0.2) * (reducedMotion ? 0.16 : superStorm ? 0.78 : 0.5);
+
+      if (previewShip) {
+        const shipTravel = Math.min(1, Math.max(0, (t - 0.06) / 0.58));
+        previewShip.alpha = Math.sin(Math.min(1, shipTravel) * Math.PI) * (superStorm ? 0.92 : 0.8);
+        previewShip.y = radius * (-0.2 + shipTravel * 2.1);
+        previewShip.scale.y = Math.abs(previewShip.scale.x) * (0.62 + shipTravel * 0.58);
+      }
+
+      impactField.clear();
+      const shockwaveCount = reducedMotion ? 2 : 4;
+      for (let ring = 0; ring < shockwaveCount; ring += 1) {
+        const phase = Math.min(1, Math.max(0, t * 1.45 - ring * 0.11));
+        const ringRadius = radius * (0.72 + phase * (3.1 + ring * 0.25));
+        impactField.circle(0, 0, ringRadius);
+        impactField.stroke({
+          color: ring % 2 ? secondary : primary,
+          width: Math.max(1, (compact ? 6 : 9) * (1 - phase)),
+          alpha: (0.58 - ring * 0.08) * (1 - phase) * fade
+        });
+      }
+      const rayCount = reducedMotion ? 8 : 20;
+      for (let ray = 0; ray < rayCount; ray += 1) {
+        const angle = (Math.PI * 2 * ray) / rayCount + index * 0.31;
+        const rayTravel = Math.min(1, t * (1.7 + (ray % 4) * 0.08));
+        const inner = radius * (0.82 + rayTravel * 0.3);
+        const outer = radius * (1.35 + rayTravel * (2.4 + (ray % 5) * 0.38));
+        impactField.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        impactField.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        impactField.stroke({
+          color: ray % 3 === 0 ? primary : ray % 3 === 1 ? secondary : 0xffffff,
+          width: ray % 4 === 0 ? (compact ? 3 : 5) : 1.4,
+          alpha: (ray % 4 === 0 ? 0.5 : 0.24) * fade
+        });
+      }
 
       tear.clear();
       const slitHeight = radius * (0.2 + impact * 1.8);
@@ -16924,18 +17248,18 @@ export class PlayScene {
 
       streaks.clear();
       const travel = Math.min(1, t / 0.72);
-      const streakCount = reducedMotion ? 4 : 9;
+      const streakCount = reducedMotion ? 6 : 15;
       for (let streak = 0; streak < streakCount; streak += 1) {
         const side = streak - (streakCount - 1) / 2;
-        const startX = side * radius * 0.22;
-        const endY = radius * (1.2 + travel * (4.5 + (streak % 3) * 0.65));
-        const bend = side * radius * (0.18 + travel * 0.22);
+        const startX = side * radius * 0.16;
+        const endY = radius * (1.2 + travel * (5.4 + (streak % 4) * 0.72));
+        const bend = side * radius * (0.14 + travel * 0.2);
         streaks.moveTo(startX, radius * 0.34);
         streaks.lineTo(startX + bend, endY);
         streaks.stroke({
           color: streak % 3 === 0 ? primary : streak % 3 === 1 ? secondary : 0xffffff,
-          width: compact ? 2 + (streak % 2) : 3 + (streak % 3),
-          alpha: (0.2 + (streak % 3) * 0.12) * fade
+          width: compact ? 2 + (streak % 2) : 2.5 + (streak % 4),
+          alpha: (0.18 + (streak % 3) * 0.13) * fade
         });
       }
 

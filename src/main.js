@@ -1098,6 +1098,14 @@ function buildGameTextState(game) {
         variant: enemy.visualVariant?.slug || null,
         eliteMiddleShip: enemy.getEliteDebugState ? enemy.getEliteDebugState() : null,
         rareChaosVisitor: enemy.getRareChaosVisitorDebugState ? enemy.getRareChaosVisitorDebugState() : null,
+        reinforcement: enemy.isMayhemReinforcement ? {
+          groupIndex: Math.max(0, Math.floor(Number(enemy.reinforcementGroupIndex) || 0)),
+          groupCount: Math.max(1, Math.floor(Number(enemy.reinforcementGroupCount) || 1)),
+          superStorm: Boolean(enemy.isMayhemSuperStorm),
+          swarmEntry: Boolean(enemy.isReinforcementSwarmEntry),
+          spawnCueDurationMs: Math.max(0, Math.round(Number(enemy.spawnCueDurationMs) || 0)),
+          spawnCue: enemy.spawnCueLayer?._debugSpawnCue ? { ...enemy.spawnCueLayer._debugSpawnCue } : null
+        } : null,
         health: Number.isFinite(enemy.health) ? Math.max(0, Math.round(enemy.health)) : null,
         maxHealth: Number.isFinite(enemy.maxHealth) ? Math.max(0, Math.round(enemy.maxHealth)) : null,
         phase: Number.isFinite(enemy.phase) ? enemy.phase : null,

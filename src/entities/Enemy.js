@@ -1701,7 +1701,13 @@ export class Enemy {
 
   resetSpawnCue(now = Date.now()) {
     this.spawnCueStartedAt = now;
-    this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
+    this.spawnCueDurationMs = this.isMayhemSuperStorm
+      ? 1520
+      : this.isReinforcementSwarmEntry || this.isMayhemReinforcement
+        ? 1260
+        : this.isEliteMiddleShip
+          ? 1100
+          : 860;
     if (this.spawnCueLayer) {
       this.spawnCueLayer.visible = true;
       this.spawnCueLayer._debugSpawnCue = {
@@ -1730,6 +1736,9 @@ export class Enemy {
 
     const fade = Math.pow(1 - progress, 0.72);
     const color = this.visualVariant?.accent || this.visualVariant?.tint || this.color || 0x66f7ff;
+    const reinforcementSwarm = Boolean(this.isReinforcementSwarmEntry || this.isMayhemReinforcement);
+    const superStorm = Boolean(this.isMayhemSuperStorm);
+    const reinforcementAccent = superStorm ? 0xff55f6 : 0xffe56d;
     const radius = Math.max(14, this.radius * (1.35 + progress * 0.75));
     const outer = radius + 8 + progress * 12;
     const sweep = this.idlePhase + progress * Math.PI * 1.4;
@@ -1746,6 +1755,7 @@ export class Enemy {
     let formationBracketCount = 0;
     let entryLockPipCount = 0;
     let approachSparkCount = 0;
+    let reinforcementWakeCount = 0;
     layer.circle(0, 0, outer);
     layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
     layer.circle(0, 0, radius * 0.66);
@@ -1794,6 +1804,45 @@ export class Enemy {
       entryGhostLaneCount += 1;
     }
     layer.stroke({ color, width: 1.05, alpha: 0.12 * fade + 0.08 });
+
+    if (reinforcementSwarm) {
+      const wakeCount = superStorm ? 7 : 5;
+      for (let wake = 0; wake < wakeCount; wake += 1) {
+        const centeredWake = wake - (wakeCount - 1) / 2;
+        const lateral = centeredWake * (superStorm ? 5.2 : 4.4);
+        const startDistance = outer + 58 + (wake % 3) * 15 + progress * 18;
+        const endDistance = outer + 5 + Math.abs(centeredWake) * 2;
+        const wave = Math.sin(progress * Math.PI * 6 + wake * 0.88) * (superStorm ? 4.5 : 3);
+        const startX = -dirX * startDistance + sideX * (lateral + wave);
+        const startY = -dirY * startDistance + sideY * (lateral + wave);
+        const midDistance = (startDistance + endDistance) * 0.52;
+        const midX = -dirX * midDistance + sideX * (lateral * 0.62 - wave * 0.4);
+        const midY = -dirY * midDistance + sideY * (lateral * 0.62 - wave * 0.4);
+        const endX = -dirX * endDistance + sideX * lateral * 0.18;
+        const endY = -dirY * endDistance + sideY * lateral * 0.18;
+        layer.moveTo(startX, startY);
+        layer.lineTo(midX, midY);
+        layer.lineTo(endX, endY);
+        reinforcementWakeCount += 1;
+      }
+      layer.stroke({
+        color: reinforcementAccent,
+        width: superStorm ? 2.2 : 1.7,
+        alpha: (superStorm ? 0.38 : 0.3) * fade + 0.08
+      });
+
+      for (const wakeSide of [-1, 1]) {
+        const distance = outer + 34 + progress * 16;
+        const span = radius * (superStorm ? 0.88 : 0.7);
+        const baseX = -dirX * distance + sideX * wakeSide * span;
+        const baseY = -dirY * distance + sideY * wakeSide * span;
+        layer.moveTo(baseX - dirX * 16, baseY - dirY * 16);
+        layer.lineTo(baseX + sideX * -wakeSide * span * 0.52, baseY + sideY * -wakeSide * span * 0.52);
+        layer.lineTo(baseX + dirX * 8, baseY + dirY * 8);
+        reinforcementWakeCount += 1;
+      }
+      layer.stroke({ color: 0x37f5ff, width: superStorm ? 2 : 1.4, alpha: 0.3 * fade + 0.08 });
+    }
 
     for (let i = 0; i < 2; i += 1) {
       const distance = outer + 28 + i * 15;
@@ -1847,6 +1896,9 @@ export class Enemy {
       formationBracketCount,
       entryLockPipCount,
       approachSparkCount,
+      reinforcementWakeCount,
+      reinforcementSwarm,
+      superStorm,
       inboundAngle: Number(inboundAngle.toFixed(3))
     };
   }

@@ -106,6 +106,9 @@ try {
     }
   }, { timeout: 30000 });
   await page.waitForTimeout(2800);
+  await page.waitForFunction(() => (
+    window.__game?.scenes?.play?.getMayhemReinforcementPreviewTextures?.(3)?.length >= 3
+  ), { timeout: 30000 });
 
   const forced = await page.evaluate(() => {
     const game = window.__game;
@@ -146,11 +149,30 @@ try {
   if (warningPresentation?.phase !== 'warning' || warningPresentation?.groupCount !== 3 || !warningPresentation?.superStorm) {
     fail(`warning presentation state is wrong: ${JSON.stringify(warningPresentation)}`);
   }
+  if (warningPresentation.gateCount !== 3 || warningPresentation.previewShipCount !== 3) {
+    fail(`warning must preview a real ship in every gate: ${JSON.stringify(warningPresentation)}`);
+  }
+  if (!warningPresentation.scoreNeutral || !warningPresentation.hudSafe || !warningPresentation.signalPlateVisible) {
+    fail(`warning must be score-neutral and HUD-safe: ${JSON.stringify(warningPresentation)}`);
+  }
+  if (warningPresentation.gatePositions?.length !== 3 ||
+    warningPresentation.gatePositions[2] - warningPresentation.gatePositions[0] < 800) {
+    fail(`warning gates must span the playfield: ${JSON.stringify(warningPresentation.gatePositions)}`);
+  }
   const warningPlacement = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     const effect = play?.decorativeOverlay?.children?.find((child) => child?.label === 'mayhem_reinforcement_storm_warning');
+    const signalPlate = play?.uiOverlay?.children?.find((child) => child?.label === 'ui_mayhem_reinforcement_signal_plate');
+    const plateBounds = signalPlate?.getBounds?.();
     return {
       inDecorativeLayer: Boolean(effect),
+      signalPlateVisible: Boolean(signalPlate?.visible),
+      plateBounds: plateBounds ? {
+        x: Math.round(plateBounds.x),
+        y: Math.round(plateBounds.y),
+        width: Math.round(plateBounds.width),
+        height: Math.round(plateBounds.height)
+      } : null,
       decorativeLayerIndex: play?.container?.getChildIndex?.(play.decorativeOverlay) ?? -1,
       uiLayerIndex: play?.container?.getChildIndex?.(play.uiContainer) ?? -1
     };
@@ -158,22 +180,77 @@ try {
   if (!warningPlacement.inDecorativeLayer || warningPlacement.decorativeLayerIndex >= warningPlacement.uiLayerIndex) {
     fail(`warning must render beneath the HUD: ${JSON.stringify(warningPlacement)}`);
   }
+  if (!warningPlacement.signalPlateVisible || warningPlacement.plateBounds?.y < 100 ||
+    warningPlacement.plateBounds?.x < 420 ||
+    warningPlacement.plateBounds?.x + warningPlacement.plateBounds?.width > 1500) {
+    fail(`signal plate overlaps the permanent desktop HUD: ${JSON.stringify(warningPlacement)}`);
+  }
 
   await page.evaluate(() => {
+    const frameSample = { active: true, last: null, deltas: [] };
+    window.__reinforcementWowFrameSample = frameSample;
+    const sampleFrame = (timestamp) => {
+      if (!frameSample.active) return;
+      if (frameSample.last !== null) frameSample.deltas.push(timestamp - frameSample.last);
+      frameSample.last = timestamp;
+      window.requestAnimationFrame(sampleFrame);
+    };
+    window.requestAnimationFrame(sampleFrame);
     const manager = window.__game?.scenes?.play?.enemyManager;
     manager.mayhemReinforcementState.spawnAt = Date.now() - 1;
     manager.updateMayhemReinforcement();
   });
   await page.waitForTimeout(720);
+  const entryFramePerformance = await page.evaluate(() => {
+    const frameSample = window.__reinforcementWowFrameSample;
+    if (frameSample) frameSample.active = false;
+    const deltas = [...(frameSample?.deltas || [])].sort((left, right) => left - right);
+    const percentile = (ratio) => deltas[Math.min(deltas.length - 1, Math.floor(deltas.length * ratio))] || 0;
+    return {
+      frames: deltas.length,
+      averageMs: deltas.length ? Number((deltas.reduce((total, value) => total + value, 0) / deltas.length).toFixed(2)) : 0,
+      p95Ms: Number(percentile(0.95).toFixed(2)),
+      maxMs: Number((deltas[deltas.length - 1] || 0).toFixed(2)),
+      framesOver50Ms: deltas.filter((value) => value > 50).length
+    };
+  });
+  report.states.entryFramePerformance = entryFramePerformance;
+  if (entryFramePerformance.frames < 24 || entryFramePerformance.p95Ms > 30 || entryFramePerformance.framesOver50Ms > 1) {
+    fail(`reinforcement arrival stuttered under full VFX load: ${JSON.stringify(entryFramePerformance)}`);
+  }
   report.states.entry = await readState(page);
   report.screenshots.entry = await capture(page, '02-entry-desktop.png');
   const entryPresentation = report.states.entry.reinforcementPresentation;
   if (entryPresentation?.phase !== 'entry' || entryPresentation?.entryBursts < 3 || entryPresentation?.lastEntryGroup !== 2) {
     fail(`entry burst sequence is incomplete: ${JSON.stringify(entryPresentation)}`);
   }
+  if (entryPresentation.signalPlateVisible || entryPresentation.entryImpactCount < 3 || entryPresentation.arrivalAudioLayerCount < 3) {
+    fail(`entry must replace the warning plate with layered impacts: ${JSON.stringify(entryPresentation)}`);
+  }
+  const sortedEntryPositions = [...(entryPresentation.entryPositions || [])].sort((left, right) => left - right);
+  if (sortedEntryPositions.length !== 3 || sortedEntryPositions[2] - sortedEntryPositions[0] < 800 ||
+    sortedEntryPositions[1] - sortedEntryPositions[0] < 350 ||
+    sortedEntryPositions[2] - sortedEntryPositions[1] < 350) {
+    fail(`entry impacts must hit three distinct lanes: ${JSON.stringify(sortedEntryPositions)}`);
+  }
   const reinforcementEnemies = await page.evaluate(() => window.__game?.scenes?.play?.enemyManager?.enemies
     ?.filter((enemy) => enemy?.isMayhemReinforcement).length || 0);
   if (reinforcementEnemies <= 0) fail('integrated super storm did not spawn reinforcement enemies');
+  const reinforcementWakeAudit = await page.evaluate(() => {
+    const reinforcements = window.__game?.scenes?.play?.enemyManager?.enemies
+      ?.filter((enemy) => enemy?.isMayhemReinforcement) || [];
+    return {
+      superStormShips: reinforcements.filter((enemy) => enemy?.isMayhemSuperStorm).length,
+      swarmEntryShips: reinforcements.filter((enemy) => enemy?.isReinforcementSwarmEntry).length,
+      longCueShips: reinforcements.filter((enemy) => Number(enemy?.spawnCueDurationMs) >= 1500).length,
+      visibleWakeShips: reinforcements.filter((enemy) => Number(enemy?.spawnCueLayer?._debugSpawnCue?.reinforcementWakeCount) >= 7).length
+    };
+  });
+  report.states.reinforcementWakeAudit = reinforcementWakeAudit;
+  if (reinforcementWakeAudit.superStormShips <= 0 || reinforcementWakeAudit.swarmEntryShips <= 0 ||
+    reinforcementWakeAudit.longCueShips <= 0 || reinforcementWakeAudit.visibleWakeShips <= 0) {
+    fail(`reinforcement ships lost their super-storm wake: ${JSON.stringify(reinforcementWakeAudit)}`);
+  }
 
   await page.waitForTimeout(900);
   await page.evaluate(() => {
@@ -202,6 +279,9 @@ try {
   await compactPage.goto(withQuery(baseUrl, { autostart: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await compactPage.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 30000 });
   await compactPage.waitForTimeout(2800);
+  await compactPage.waitForFunction(() => (
+    window.__game?.scenes?.play?.getMayhemReinforcementPreviewTextures?.(3)?.length >= 3
+  ), { timeout: 30000 });
   await compactPage.evaluate(() => {
     const play = window.__game?.scenes?.play;
     play.shipIntroToken = (Number(play.shipIntroToken) || 0) + 1;
@@ -222,7 +302,16 @@ try {
   report.states.compact = await readState(compactPage);
   report.screenshots.compact = path.join(outputDir, '04-warning-compact.png');
   await compactPage.screenshot({ path: report.screenshots.compact, fullPage: false });
-  if (report.states.compact.reinforcementPresentation?.groupCount !== 3) fail('compact warning lost its three-group signature');
+  const compactPresentation = report.states.compact.reinforcementPresentation;
+  if (compactPresentation?.groupCount !== 3 || compactPresentation?.previewShipCount !== 3) {
+    fail(`compact warning lost its three-ship signature: ${JSON.stringify(compactPresentation)}`);
+  }
+  if (!compactPresentation.hudSafe || !compactPresentation.signalPlateVisible ||
+    compactPresentation.signalPlateBounds?.y < 100 ||
+    compactPresentation.signalPlateBounds?.x < 190 ||
+    compactPresentation.signalPlateBounds?.x + compactPresentation.signalPlateBounds?.width > 770) {
+    fail(`compact warning overlaps the permanent HUD: ${JSON.stringify(compactPresentation)}`);
+  }
   await compactPage.close();
   if (pageErrors.length) fail(`runtime page errors: ${pageErrors.join(' | ')}`);
 
