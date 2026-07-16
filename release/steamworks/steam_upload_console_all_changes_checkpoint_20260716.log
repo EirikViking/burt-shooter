@@ -1,0 +1,30 @@
+Nova Swarm all-changes Steam checkpoint upload evidence
+Generated: 2026-07-16T08:04:04.6472075Z
+
+Source:
+- branch: codex/competition-retention-20260716
+- HEAD: dfbabc5e19cd4232823253711694a643c0caf43e
+- build stamp: v2026-07-16_09-31-33
+
+Preflight app-info:
+- public BuildID: 24218172
+- sector-continue-test BuildID: 24234529
+- sector-continue-test depot GID: 6554196712868931758
+
+Upload:
+[2026-07-16 09:58:25]: Starting AppID 4765070 build (flags 0x0).
+[2026-07-16 09:58:25]: Building depot 4765071.
+[2026-07-16 09:59:27]: Success! New manifestID 7892944537156448795 created and 7 new chunks uploaded.
+[2026-07-16 09:59:28]: Successfully finished AppID 4765070 build (BuildID 24235175).
+
+Independent post-upload app-info:
+- public BuildID: 24218172
+- public depot GID: 8091511179624093249
+- sector-continue-test BuildID: 24235175
+- sector-continue-test depot GID: 7892944537156448795
+- sector-continue-test size: 957586120 bytes
+
+Steam client handling:
+- No Steam game process was active.
+- The shared Steam client was closed cleanly before SteamCMD.
+- The Steam client was restarted successfully after independent branch verification.

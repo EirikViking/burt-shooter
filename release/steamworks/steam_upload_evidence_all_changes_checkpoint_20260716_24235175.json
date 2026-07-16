@@ -1,0 +1,94 @@
+{
+  "generatedAt": "2026-07-16T08:04:04.6472075Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "purpose": "manual_test_checkpoint_with_all_committed_changes",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24235175",
+  "depotManifestId": "7892944537156448795",
+  "sourceCommit": "dfbabc5e19cd4232823253711694a643c0caf43e",
+  "sourceBranch": "codex/competition-retention-20260716",
+  "sourceBaseline": "dfbabc5e19cd4232823253711694a643c0caf43e",
+  "authoritativeLockTag": "nova-swarm-lock-20260716-named-rival-ladder",
+  "authoritativeLockCommit": "dfbabc5e19cd4232823253711694a643c0caf43e",
+  "buildStamp": "v2026-07-16_09-31-33",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24234529",
+  "rollbackBuildId": "24234529",
+  "publicBuildIdBefore": "24218172",
+  "publicBuildIdAfter": "24218172",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "4aa4f49451cbf325c5b945d7c85289ca264e80f58412b9633a16a4570f063a9e",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "922227b9ebf35a0173deccf2653ca8616c316dda14481ebac01cc30af4c03fb9",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "a56ea342fe1aa698434747ae8c590e195eee8d6580171258279981e16ba9c9a8",
+  "payload": {
+    "fileCount": 417,
+    "totalBytes": 957586120,
+    "manifestHash": "b40cbdef643dde1ac4ab20b4fafcc81a32e236c8cb8c46549f6a6e6d0804362f",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "5684e5ce25d2aca8ae2d34027f283917a829d8ba3bd7a62c4c9b1c75493bd05c"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-16 09:59:28]: Successfully finished AppID 4765070 build (BuildID 24235175).",
+    "consoleLogPath": "release/steamworks/steam_upload_console_all_changes_checkpoint_20260716.log",
+    "consoleLogSha256": "7e1ebf6ea7ea8669b1817658c399e7b9f9b38ed8cc037ae85078a7b7db74ece0",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "25528da80b3253809d5424e78ea06954bb062ba85e5b4f7e0dffcd2aed5e50cc",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "16fb11ac4974e33b8c7caf3e750eb260603a4fe77c4b83a336d6d7e6dd2c3025",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print before and after upload",
+    "testBranchBuildId": "24235175",
+    "testBranchDepotGid": "7892944537156448795",
+    "testBranchSize": 957586120,
+    "publicBuildId": "24218172",
+    "publicDepotGid": "8091511179624093249",
+    "publicUnchanged": true
+  },
+  "verification": {
+    "sourcePreflight": "passed: fetched, exact branch and tagged HEAD verified, tracked worktree clean, and diff check clean before packaging",
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload",
+    "sdkReady": "passed: test-results/steam-sdk-ready-2026-07-16T07-31-33-265Z/report.json",
+    "packagedRuntimeGate": "passed: test-results/steam-package-runtime-2026-07-16T07-55-00-979Z/report.json",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T07-46-04-316Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T07-46-53-395Z/report.json",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T07-47-45-035Z/report.json",
+    "packagedPerformance": "passed on fresh rerun: test-results/packaged-perf-smoke-2026-07-16T07-50-33-378Z/report.json; 58.82 minimum and 60.05 average FPS, zero warnings or errors",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-16T07-52-24-327Z/report.json",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports match v2026-07-16_09-31-33",
+    "leaderboardIntegrity": "passed: test-results/steam-leaderboard-live-2026-07-16T07-53-26-824Z/report.json; 80 entries, Global and Friends readable, no submission",
+    "vdfSetLiveTestBranch": "passed: exact SetLive sector-continue-test; public/default targets absent"
+  },
+  "includedState": [
+    "all tracked changes through the Named Rival Ladder release evidence commit",
+    "Named Rival Ladder gameplay and all eight supported locale translations",
+    "all earlier locked combat continuity, leaderboard recovery, VFX, UI, content, audio, run-mode, save, achievement, and controller improvements present in that commit ancestry"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The first packaged performance launch was rejected because the test window entered pause before measurement; a completely fresh rerun passed with zero runtime warnings or errors."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, saves, Steam Cloud settings, and existing scores were not changed.",
+    "Test-branch rollback target is BuildID 24234529.",
+    "The package source is the prior evidence commit itself; no new gameplay code was introduced between BuildID 24234529 and this explicit all-changes checkpoint."
+  ]
+}

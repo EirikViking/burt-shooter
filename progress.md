@@ -1,5 +1,12 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-16 All-changes Steam checkpoint
+
+- Rebuilt the complete tracked state at evidence HEAD `dfbabc5e19cd4232823253711694a643c0caf43e` as `v2026-07-16_09-31-33`, so the manual-test package includes the full Named Rival Ladder source plus its committed release records.
+- Release-line, SDK readiness, native Steam package runtime, strict packaged failure behavior, packaged menu smoke, keyboard/gamepad controls, fresh-profile Steam isolation, current Electron smoke, desktop-package review, and live read-only `nova_swarm_global_score_v2` verification passed. The board still reports 80 entries and no score was submitted.
+- The first packaged performance launch encountered a transient test-window pause before measurement and was rejected. A clean fresh-profile rerun passed at 58.82 FPS minimum and 60.05 FPS average across 12 samples with zero warnings or errors.
+- SteamCMD uploaded the checkpoint only to `sector-continue-test` as BuildID `24235175`, depot manifest `7892944537156448795`. Independent post-upload app-info verification confirmed public/default unchanged on BuildID `24218172`. Immediate test-branch rollback is BuildID `24234529`.
+
 ## 2026-07-16 Named Rival Ladder major update (deployed to Steam test)
 
 - Current competitor research and a separate code audit converged on specificity rather than another game system: leading score-attack games repeatedly turn the next run into a concrete target, while Nova Swarm already had personal-best chase, mode-specific boards, global threshold cues, and result ceremony but never named the pilot directly ahead.
