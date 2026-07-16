@@ -6,7 +6,7 @@ import {
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 
-const RUN_REPORT_VERSION = 13;
+const RUN_REPORT_VERSION = 14;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -298,6 +298,7 @@ export function createRunReport(summary = {}) {
       sectorReached,
       runtimeSeconds,
       runtimeLabel: formatDuration(runtimeSeconds),
+      pointDefenseIntercepts: toWholeNumber(summary.pointDefenseIntercepts),
       runCleared: Boolean(summary.runCleared),
       deathCoach,
       pilotOrdersCompleted,
@@ -349,7 +350,8 @@ export function createRunReport(summary = {}) {
           { id: 'bossKills', value: toWholeNumber(summary.bossesKilled) },
           { id: 'waves', value: toWholeNumber(summary.wavesCleared) },
           { id: 'nearMissSurges', value: toWholeNumber(summary.nearMissSurges) },
-          { id: 'grazeBreaks', value: toWholeNumber(summary.grazeBreaks) }
+          { id: 'grazeBreaks', value: toWholeNumber(summary.grazeBreaks) },
+          { id: 'pointDefenseIntercepts', value: toWholeNumber(summary.pointDefenseIntercepts) }
         ])
       },
       {
@@ -394,6 +396,7 @@ export function summarizeRunReport(report = null) {
     score: report.summary?.score || 0,
     sectorReached: report.summary?.sectorReached || 0,
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
+    pointDefenseIntercepts: report.summary?.pointDefenseIntercepts || 0,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     tacticalDirectives: report.summary?.tacticalDirectives || null,

@@ -4945,11 +4945,15 @@ export class PlayScene {
 
     let intercepted = 0;
     let visibleFeedback = 0;
+    let firstIntercept = null;
     for (const bullet of bullets) {
       if (!bullet?.active) continue;
       if (collisionStats) collisionStats.projectileDefensePairs += 1;
       if (!isWithinPointDefenseRadius(this.player, bullet)) continue;
 
+      if (!firstIntercept) {
+        firstIntercept = { x: Number(bullet.x) || this.player.x, y: Number(bullet.y) || this.player.y };
+      }
       this.bulletManager.deactivateBullet?.(bullet, 'point_defense');
       intercepted += 1;
       if (collisionStats) collisionStats.projectileDefenseHits += 1;
@@ -4966,15 +4970,15 @@ export class PlayScene {
 
     if (intercepted > 0) {
       this.bulletManager.pruneInactiveBullets?.('enemy', 'point_defense');
-      this.player.pointDefenseInterceptCount = Math.max(0, Number(this.player.pointDefenseInterceptCount) || 0) + intercepted;
-      this.player.lastPointDefenseIntercept = {
-        at: this.getGameplayClockMs(),
-        count: intercepted,
-        total: this.player.pointDefenseInterceptCount
-      };
+      this.player.notePointDefenseIntercept?.({
+        x: firstIntercept?.x,
+        y: firstIntercept?.y,
+        count: intercepted
+      });
       AudioManager.playSfx('tactical_point_defense', {
-        volume: intercepted >= 4 ? 0.42 : 0.3,
-        minIntervalMs: 110
+        volume: intercepted >= 4 ? 0.5 : 0.36,
+        playbackRate: intercepted >= 4 ? 0.94 : 1.04,
+        minIntervalMs: 90
       });
     }
     return intercepted;
@@ -11933,9 +11937,11 @@ export class PlayScene {
       applied.push('phase');
     }
     if (reward.pointDefenseMs > 0 && this.player) {
-      this.player.pointDefenseActive = true;
-      this.player.pointDefenseExpiresAt = this.getGameplayClockMs() + reward.pointDefenseMs;
-      this.player.createPointDefenseRing?.();
+      this.player.activatePointDefense?.(reward.pointDefenseMs, {
+        now: this.getGameplayClockMs(),
+        playSfx: false,
+        source: 'overrun_milestone'
+      });
       applied.push('point_defense');
     }
     if (reward.sfx) {
@@ -15511,8 +15517,12 @@ export class PlayScene {
 
   updateGrazeBreakFireIntent(firePressed = false) {
     const pressed = Boolean(firePressed);
+    const justPressed = pressed && !this.fireInputWasPressed;
     if (this.grazeBreakReady && this.grazeBreakNeedsFireRelease && this.fireInputWasPressed && !pressed) {
       this.primeGrazeBreakAfterRelease();
+    }
+    if (justPressed) {
+      this.player?.queueBombTriggerIntent?.(this.getGameplayClockMs());
     }
     this.currentFirePressed = pressed;
     this.fireInputWasPressed = pressed;

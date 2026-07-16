@@ -3,6 +3,7 @@ import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
 import { summarizeRunReport } from './game/RunReport.js';
+import { POINT_DEFENSE_RADIUS } from './game/ProjectileDefenseRules.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { BootWatchdog } from './utils/BootWatchdog.js';
 import { installConsoleLogFilter } from './utils/Logger.js';
@@ -1022,6 +1023,28 @@ function buildGameTextState(game) {
       stats: player.getStatSnapshot ? player.getStatSnapshot() : null,
       powerup: player.activePowerup?.type || null,
       powerups: player.getActivePowerupStates ? player.getActivePowerupStates() : [],
+      pointDefense: {
+        active: Boolean(player.pointDefenseActive),
+        radius: player.pointDefenseActive ? POINT_DEFENSE_RADIUS : 0,
+        remainingMs: player.pointDefenseActive
+          ? Math.max(0, Math.round((Number(player.pointDefenseExpiresAt) || 0) - (Number(playScene?.getGameplayClockMs?.()) || 0)))
+          : 0,
+        interceptTotal: Math.max(0, Number(player.pointDefenseInterceptCount) || 0),
+        lastIntercept: player.lastPointDefenseIntercept ? { ...player.lastPointDefenseIntercept } : null,
+        ring: player.pointDefenseRing?.__debugPointDefense || null
+      },
+      bombIntent: {
+        charges: Math.max(0, Number(player.bombShotsLeft) || 0),
+        armedAt: Math.max(0, Number(player.bombArmedAt) || 0),
+        triggerQueued: Boolean(player.bombTriggerQueued),
+        commit: player.lastBombCommitState ? {
+          ready: Boolean(player.lastBombCommitState.ready),
+          reason: player.lastBombCommitState.reason || null,
+          clusterCount: player.lastBombCommitState.clusterCount || 0
+        } : null,
+        lastTrigger: player.lastBombTriggerIntent ? { ...player.lastBombTriggerIntent } : null,
+        indicator: player.bombIndicator?.__debugBombIndicator || null
+      },
       statusEffects: player.getActiveStatusEffects ? player.getActiveStatusEffects() : [],
       hitboxReticle: player.getHitboxReticleDebugState ? player.getHitboxReticleDebugState() : null,
       tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null

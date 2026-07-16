@@ -1295,6 +1295,7 @@ export class Game {
       bestDangerDodgeStreak: Number(play?.bestDangerDodgeStreak) || 0,
       nearMissSurges: Number(play?.nearMissSurgesThisRun) || 0,
       grazeBreaks: Number(play?.grazeBreaksThisRun) || 0,
+      pointDefenseIntercepts: Number(play?.player?.pointDefenseInterceptCount) || 0,
       lifeLosses: Number(play?.lifeLossesThisRun) || 0,
       respawns: Number(play?.respawnsThisRun) || 0,
       extraLivesEarned: Number(play?.extraLivesEarnedThisRun) || 0,

@@ -7,6 +7,7 @@ import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
+import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "ASS-KONTAKT",
@@ -2199,6 +2200,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de') }),
   patterns
 };

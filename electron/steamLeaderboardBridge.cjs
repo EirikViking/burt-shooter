@@ -340,6 +340,10 @@ class SteamLeaderboardBridge {
     this.callbackTimer = null;
     this.lastUploadDiagnostics = null;
     this.uploadInFlight = false;
+    this.captureSurfaceStatus = {
+      enabled: false,
+      reason: 'not_initialized'
+    };
   }
 
   getStatus() {
@@ -355,6 +359,10 @@ class SteamLeaderboardBridge {
 
   getLastUploadDiagnostics() {
     return this.lastUploadDiagnostics;
+  }
+
+  getCaptureSurfaceStatus() {
+    return { ...this.captureSurfaceStatus };
   }
 
   loadNativeModule() {
@@ -425,6 +433,10 @@ class SteamLeaderboardBridge {
       }
       this.initialized = true;
       this.statusReason = 'ready';
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'not_attached'
+      };
       this.startCallbackPolling();
       return true;
     } catch (error) {
@@ -444,6 +456,90 @@ class SteamLeaderboardBridge {
       }
     }, CALLBACK_POLL_MS);
     this.callbackTimer.unref?.();
+  }
+
+  attachElectronCaptureSurface(browserWindow, options = {}) {
+    if (!this.initialized || !this.steam) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: this.statusReason || 'steam_not_ready'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+    if (!browserWindow || browserWindow.isDestroyed?.()) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'browser_window_unavailable'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+    if (
+      typeof this.steam.isOverlayAvailable !== 'function'
+      || typeof this.steam.addElectronSteamOverlay !== 'function'
+    ) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'electron_overlay_api_missing'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+
+    try {
+      if (!this.steam.isOverlayAvailable()) {
+        this.captureSurfaceStatus = {
+          enabled: false,
+          reason: 'electron_overlay_unavailable'
+        };
+        return this.getCaptureSurfaceStatus();
+      }
+      // Keep Steam in charge of its screenshot hotkey. The helper surface only
+      // mirrors Chromium frames into a native graphics window that Steam can hook.
+      this.steam.screenshots?.hookScreenshots?.(false);
+      const enabled = Boolean(this.steam.addElectronSteamOverlay(browserWindow, {
+        title: options.title || 'Nova Swarm - Steam Capture Surface',
+        fps: Math.max(30, Math.min(60, Number(options.fps) || 60)),
+        vsync: options.vsync !== false
+      }));
+      this.captureSurfaceStatus = {
+        enabled,
+        reason: enabled ? 'attached' : 'attach_failed'
+      };
+    } catch (error) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: `attach_failed: ${error?.message || error}`
+      };
+      this.logger.warn?.('[SteamLeaderboardBridge] Electron capture surface failed:', error?.message || error);
+    }
+    return this.getCaptureSurfaceStatus();
+  }
+
+  triggerSteamScreenshot() {
+    if (!this.initialized || !this.steam) {
+      return {
+        ok: false,
+        reason: this.statusReason || 'steam_not_ready'
+      };
+    }
+    if (typeof this.steam.screenshots?.triggerScreenshot !== 'function') {
+      return {
+        ok: false,
+        reason: 'steam_screenshot_api_missing'
+      };
+    }
+    try {
+      this.steam.screenshots.hookScreenshots?.(false);
+      this.steam.screenshots.triggerScreenshot();
+      return {
+        ok: true,
+        reason: 'requested'
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: `request_failed: ${error?.message || error}`
+      };
+    }
   }
 
   async isAvailable() {
@@ -1159,6 +1255,10 @@ class SteamLeaderboardBridge {
     }
     this.initialized = false;
     this.statusReason = this.statusReason === 'ready' ? 'shutdown' : this.statusReason;
+    this.captureSurfaceStatus = {
+      enabled: false,
+      reason: 'shutdown'
+    };
   }
 }
 

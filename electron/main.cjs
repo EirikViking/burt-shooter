@@ -23,10 +23,11 @@ const isControlSmoke = process.argv.includes('--control-smoke') || process.env.N
 const isPerfSmoke = process.argv.includes('--perf-smoke') || process.env.NOVA_SWARM_ELECTRON_PERF_SMOKE === '1';
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
+const isSteamCaptureProbe = process.argv.includes('--steam-capture-probe') || process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE === '1';
 const isFreshProfile = process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
 const FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
-const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isWindowed;
+const shouldStartFullscreen = !isSmoke && !isControlSmoke && !isPerfSmoke && !isSteamLeaderboardProbe && !isSteamCloudDiagnostics && !isSteamCaptureProbe && !isWindowed;
 const smokeMode = isSmoke ? 'smoke' : isControlSmoke ? 'control-smoke' : isPerfSmoke ? 'perf-smoke' : null;
 const maintainerDevtoolsState = getMaintainerDevtoolsState(process.argv);
 const distDir = path.resolve(__dirname, '..', 'dist');
@@ -629,6 +630,27 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs')
     }
   });
+
+  const hasSteamLaunchHint = Boolean(
+    process.env.SteamAppId
+    || process.env.SteamGameId
+    || process.env.SteamOverlayGameId
+  );
+  const shouldAttachSteamCaptureSurface = !isFreshProfile
+    && !isSmoke
+    && !isControlSmoke
+    && !isPerfSmoke
+    && !isSteamLeaderboardProbe
+    && !isSteamCloudDiagnostics
+    && (app.isPackaged || hasSteamLaunchHint);
+  if (shouldAttachSteamCaptureSurface) {
+    const captureSurface = steamLeaderboardBridge.attachElectronCaptureSurface(win, {
+      title: 'Nova Swarm - Steam Capture Surface',
+      fps: 60,
+      vsync: true
+    });
+    console.log(`[NovaSwarm] Steam capture surface enabled=${captureSurface.enabled} reason=${captureSurface.reason}`);
+  }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
@@ -1368,6 +1390,39 @@ async function waitForRenderedScene(window) {
   return lastState || { ready: false };
 }
 
+async function runSteamCaptureProbe(window) {
+  const rendered = await waitForRenderedScene(window);
+  // Steam first hooks the helper's small native surface, then resizes it to the
+  // BrowserWindow output bounds. Triggering while that handoff is in flight can
+  // be accepted by ISteamScreenshots but produce no file, so let the render
+  // stream settle before taking the repeatable proof shot.
+  const settleMs = Math.max(
+    3000,
+    Math.min(10000, Number(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_SETTLE_MS) || 4800)
+  );
+  await new Promise((resolve) => setTimeout(resolve, settleMs));
+  const captureSurface = steamLeaderboardBridge.getCaptureSurfaceStatus();
+  const screenshot = steamLeaderboardBridge.triggerSteamScreenshot();
+  const report = {
+    status: captureSurface.enabled && screenshot.ok ? 'passed' : 'failed',
+    rendered,
+    captureSurface,
+    screenshot,
+    runtimeInfo: await getSteamRuntimeInfo()
+  };
+  const outputDir = process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR
+    ? path.resolve(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR)
+    : null;
+  if (outputDir) {
+    fs.mkdirSync(outputDir, { recursive: true });
+    fs.writeFileSync(path.join(outputDir, 'runtime-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  }
+  console.log(`[NovaSwarmSteamCaptureProbe] ${JSON.stringify(report)}`);
+  const holdMs = Math.max(4000, Math.min(15000, Number(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_HOLD_MS) || 7200));
+  await new Promise((resolve) => setTimeout(resolve, holdMs));
+  return report;
+}
+
 app.whenReady().then(async () => {
   if (!fs.existsSync(path.join(distDir, 'index.html'))) {
     throw new Error(`Missing build output at ${distDir}. Run npm run build first.`);
@@ -1399,7 +1454,18 @@ app.whenReady().then(async () => {
   app.on('browser-window-blur', (_event, blurredWindow) => {
     if (blurredWindow === win) notifyWindowBlur();
   });
-  if (isSteamLeaderboardProbe) {
+  if (isSteamCaptureProbe) {
+    try {
+      const report = await runSteamCaptureProbe(win);
+      if (!report.captureSurface?.enabled || !report.screenshot?.ok) {
+        throw new Error(`Steam capture probe failed: ${JSON.stringify(report)}`);
+      }
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isSteamLeaderboardProbe) {
     try {
       await runSteamLeaderboardRuntimeProbe({
         window: win,

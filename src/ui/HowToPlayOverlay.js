@@ -85,9 +85,9 @@ const CORE_HELP_ROWS = Object.freeze([
   {
     code: '10',
     icon: 'LOOT',
-    label: 'PICKUPS & BONUS',
-    control: 'BRIGHT ICONS ARE SAFE',
-    tip: 'Collect bright pickup icons. Shoot bonus drones for extra score and watch for the BONUS popup.',
+    label: 'PICKUP INTENT',
+    control: 'P-DEF AUTO-INTERCEPTS // BOMBS TAP FIRE',
+    tip: 'Point Defense destroys hostile shots inside its cyan ring. Bomb charges stay banked until you release fire and tap again on a locked boss or cluster.',
     accent: 0xb285ff
   },
 ]);
@@ -299,7 +299,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'GRAZE BREAK': 'Three quick grazes arm one magenta shot. Fire it into enemy bullets or a crowded threat pocket. The shot clears space, hurts nearby enemies, and proves that reckless proximity can occasionally produce an invoice in your favor.',
   COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
   'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
-  'PICKUPS & BONUS': 'Bright capsules help. Orange hazard hardware does not. Rare prizes may drift, dodge, or expire because the universe has confused loot with a job interview. Cut off the route instead of chasing the icon from behind.',
+  'PICKUP INTENT': 'Point Defense automatically destroys hostile shots inside the cyan ring and never damages enemies. Bomb charges do not expire or auto-spend: release fire, line up a boss or tight cluster, then tap fire to launch one.',
   'DAILY CHALLENGE': 'Everyone receives the same loaner ship, route theme, and rules for that UTC day, while combat events still vary. Tactical drafts remain active. Career XP, achievements, checkpoints, and existing Steam boards stay unchanged. Flight Report can save a local PNG or copy the share caption.',
   'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',

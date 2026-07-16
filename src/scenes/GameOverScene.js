@@ -107,6 +107,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   waves: 'Waves cleared',
   nearMissSurges: 'Near-miss surges',
   grazeBreaks: 'Graze breaks',
+  pointDefenseIntercepts: 'Shots intercepted',
   livesLost: 'Lives lost',
   respawns: 'Respawns',
   extraLives: 'Extra lives earned',

@@ -212,6 +212,12 @@ export class Player {
     this.pointDefenseExpiresAt = 0;
     this.tacticalPointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
+    this.pointDefenseStartedAt = 0;
+    this.pointDefenseDurationMs = 0;
+    this.pointDefenseInterceptCount = 0;
+    this.lastPointDefenseIntercept = null;
+    this.pointDefensePulseUntil = 0;
+    this.pointDefenseExpiryVisualUntil = 0;
 
     // Row Core instant ritual state.
     this.rowCoreActive = false;
@@ -234,6 +240,8 @@ export class Player {
     this.tacticalBombShotsLeft = 0;
     this.bombSpentUntil = 0;
     this.bombArmedAt = 0;
+    this.bombTriggerQueued = false;
+    this.lastBombTriggerIntent = null;
     this.lastBombCommitState = null;
     this.bombIndicator = null;
 
@@ -278,32 +286,64 @@ export class Player {
     if (this.bombShotsLeft <= 0) {
       return { ready: false, reason: 'empty', target: null, clusterCount: 0 };
     }
+    const playScene = this.getPlayScene();
+    const enemyState = playScene?.enemyManager?.state || '';
+    const activeCombatState = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
+    if (!this.isGameplayClockAdvancing() || !activeCombatState) {
+      return {
+        ready: false,
+        reason: 'combat_unavailable',
+        target: null,
+        clusterCount: 0,
+        triggerQueued: Boolean(this.bombTriggerQueued)
+      };
+    }
     if (now < this.bombArmedAt) {
       return {
         ready: false,
         reason: 'arming',
         target: null,
         clusterCount: 0,
-        remainingArmingMs: Math.max(0, this.bombArmedAt - now)
+        remainingArmingMs: Math.max(0, this.bombArmedAt - now),
+        triggerQueued: Boolean(this.bombTriggerQueued)
       };
     }
 
-    const playScene = this.getPlayScene();
     const match = findBombCommitTarget({
       player: this,
       enemies: playScene?.enemyManager?.enemies || [],
       boss: playScene?.enemyManager?.boss || null,
       blastRadius: this.bombBlastRadius,
-      shotDamage: this.bulletDamage * this.bombDamageMult
+      shotDamage: this.bulletDamage * this.bombDamageMult,
+      viewportWidth: this.game?.getWidth?.(),
+      viewportHeight: this.game?.getHeight?.(),
+      nowMs: Date.now()
     });
     return {
       ...match,
-      ready: Boolean(match.target)
+      ready: Boolean(match.target),
+      triggerQueued: Boolean(this.bombTriggerQueued)
     };
+  }
+
+  queueBombTriggerIntent(now = this.getGameplayClockMs()) {
+    const state = this.getBombCommitState(now);
+    const queued = this.bombShotsLeft > 0 && state.ready;
+    this.bombTriggerQueued = queued;
+    this.lastBombCommitState = state;
+    this.lastBombTriggerIntent = {
+      at: now,
+      queued,
+      reason: state.reason,
+      targetKind: state.target?.kind || null,
+      clusterCount: state.clusterCount || 0
+    };
+    return queued;
   }
 
   armBombTargetingWindow(now = this.getGameplayClockMs()) {
     this.bombArmedAt = now + BOMB_ARMING_MS;
+    this.bombTriggerQueued = false;
     this.lastBombCommitState = {
       ready: false,
       reason: 'arming',
@@ -1504,7 +1544,11 @@ export class Player {
 
     // Powerup Expiry
     if (this.activePowerup.type && !this.hasUnspentChargePowerup() && this.getActivePowerupRemainingMs(now) <= 0) {
+      const pointDefenseExpired = this.pointDefenseActive && Boolean(this.getCurrentPowerupEffect()?.pointDefense);
       this.resetPowerups();
+      if (pointDefenseExpired && !this.pointDefenseActive) {
+        this.deactivatePointDefense({ expired: true });
+      }
     }
     if (this.rankBoost.type && now > this.rankBoost.expiresAt) {
       this.clearRankBoost();
@@ -1550,25 +1594,103 @@ export class Player {
     if (this.pointDefenseActive) {
       // Check expiry
       if (now > this.pointDefenseExpiresAt) {
-        this.deactivatePointDefense();
+        this.deactivatePointDefense({ expired: true });
         if (now > this.tacticalPointDefenseExpiresAt) this.tacticalPointDefenseExpiresAt = 0;
       } else {
-        // Animate ring
         if (this.pointDefenseRing) {
           const pointDefenseSuppressed = this.isPowerupSuppressed();
           this.pointDefenseRing.clear();
-          const radius = POINT_DEFENSE_RADIUS + Math.sin(visualNow * 0.008) * 5;
+          const remainingMs = Math.max(0, this.pointDefenseExpiresAt - now);
+          const durationMs = Math.max(1, this.pointDefenseDurationMs || remainingMs);
+          const remainingRatio = Math.max(0, Math.min(1, remainingMs / durationMs));
+          const impactPulse = Math.max(0, Math.min(1, (this.pointDefensePulseUntil - visualNow) / 220));
+          const radius = POINT_DEFENSE_RADIUS + Math.sin(visualNow * 0.008) * 3 + impactPulse * 6;
+          const alphaScale = pointDefenseSuppressed ? 0.24 : 1;
           this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(visualNow * 0.01) * 0.2 });
-
-          // Inner ring
-          const innerRadius = radius - 8;
+          this.pointDefenseRing.stroke({
+            color: impactPulse > 0 ? 0xffffff : 0x00ddff,
+            width: 2.4 + impactPulse * 2.2,
+            alpha: (0.58 + Math.sin(visualNow * 0.01) * 0.12 + impactPulse * 0.22) * alphaScale
+          });
+          const innerRadius = radius - 9;
           this.pointDefenseRing.circle(0, 0, innerRadius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 1, alpha: pointDefenseSuppressed ? 0.1 : 0.4 });
+          this.pointDefenseRing.stroke({ color: 0x8ffaff, width: 1.2, alpha: (0.34 + impactPulse * 0.22) * alphaScale });
+
+          const countdownRadius = radius + 8;
+          if (remainingRatio > 0.002) {
+            this.pointDefenseRing.arc(
+              0,
+              0,
+              countdownRadius,
+              -Math.PI / 2,
+              -Math.PI / 2 + Math.PI * 2 * remainingRatio
+            );
+            this.pointDefenseRing.stroke({
+              color: remainingRatio <= 0.25 ? 0xffd166 : 0x7df9ff,
+              width: remainingRatio <= 0.25 ? 3.4 : 2.3,
+              alpha: (0.58 + Math.sin(visualNow * 0.018) * 0.12) * alphaScale
+            });
+          }
+
+          const tickRotation = visualNow * 0.00018;
+          for (let tick = 0; tick < 12; tick += 1) {
+            const angle = tickRotation + (Math.PI * 2 * tick) / 12;
+            const start = radius - (tick % 3 === 0 ? 12 : 8);
+            const end = radius + (tick % 3 === 0 ? 5 : 2);
+            this.pointDefenseRing.moveTo(Math.cos(angle) * start, Math.sin(angle) * start);
+            this.pointDefenseRing.lineTo(Math.cos(angle) * end, Math.sin(angle) * end);
+          }
+          this.pointDefenseRing.stroke({ color: 0xb8fbff, width: 1.2, alpha: 0.38 * alphaScale });
+
+          const interceptAge = now - (Number(this.lastPointDefenseIntercept?.at) || -10000);
+          if (interceptAge >= 0 && interceptAge < 460) {
+            const cueProgress = 1 - interceptAge / 460;
+            const angle = Number(this.lastPointDefenseIntercept?.angle) || 0;
+            const cueRadius = radius * (0.7 + cueProgress * 0.14);
+            this.pointDefenseRing.moveTo(Math.cos(angle) * radius * 0.28, Math.sin(angle) * radius * 0.28);
+            this.pointDefenseRing.lineTo(Math.cos(angle) * cueRadius, Math.sin(angle) * cueRadius);
+            this.pointDefenseRing.stroke({ color: 0xffffff, width: 2.2, alpha: cueProgress * 0.78 * alphaScale });
+            const cueX = Math.cos(angle) * cueRadius;
+            const cueY = Math.sin(angle) * cueRadius;
+            const diamond = 4 + cueProgress * 3;
+            this.pointDefenseRing.poly([
+              cueX, cueY - diamond,
+              cueX + diamond, cueY,
+              cueX, cueY + diamond,
+              cueX - diamond, cueY
+            ]);
+            this.pointDefenseRing.stroke({ color: 0x7df9ff, width: 1.5, alpha: cueProgress * alphaScale });
+          }
+          this.pointDefenseRing.__debugPointDefense = {
+            visible: true,
+            active: true,
+            suppressed: pointDefenseSuppressed,
+            radius: POINT_DEFENSE_RADIUS,
+            remainingMs: Math.round(remainingMs),
+            remainingRatio: Number(remainingRatio.toFixed(3)),
+            interceptTotal: this.pointDefenseInterceptCount,
+            lastIntercept: this.lastPointDefenseIntercept ? { ...this.lastPointDefenseIntercept } : null
+          };
         }
       }
     } else {
-      if (this.pointDefenseRing) this.pointDefenseRing.visible = false;
+      if (this.pointDefenseRing && visualNow < this.pointDefenseExpiryVisualUntil) {
+        const remaining = Math.max(0, this.pointDefenseExpiryVisualUntil - visualNow);
+        const progress = remaining / 260;
+        this.pointDefenseRing.visible = true;
+        this.pointDefenseRing.clear();
+        this.pointDefenseRing.circle(0, 0, POINT_DEFENSE_RADIUS * (0.82 + progress * 0.18));
+        this.pointDefenseRing.stroke({ color: 0x7df9ff, width: 2 + progress * 2, alpha: progress * 0.58 });
+        this.pointDefenseRing.__debugPointDefense = {
+          visible: true,
+          active: false,
+          expiring: true,
+          remainingVisualMs: Math.round(remaining)
+        };
+      } else if (this.pointDefenseRing) {
+        this.pointDefenseRing.visible = false;
+        this.pointDefenseRing.__debugPointDefense = { visible: false, active: false };
+      }
     }
     if (this.bombShotsLeft > 0) this.updateBombIndicator();
 
@@ -1920,7 +2042,9 @@ export class Player {
     // Check if firing bomb
     const bombCommitState = this.getBombCommitState();
     this.lastBombCommitState = bombCommitState;
-    if (this.bombShotsLeft > 0 && bombCommitState.ready) {
+    const shouldFireBomb = this.bombShotsLeft > 0 && this.bombTriggerQueued && bombCommitState.ready;
+    this.bombTriggerQueued = false;
+    if (shouldFireBomb) {
       const bomb = new Bullet(
         this.x,
         this.y - 20,
@@ -2976,7 +3100,7 @@ export class Player {
         return {
           charges: Math.max(0, this.bombShotsLeft || 0),
           maxCharges: this.bombMaxShots || Math.max(1, Math.round(Number(activeEffect.bombShots) || 3)),
-          detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
+          detail: this.getBombHudDetail(now)
         };
       }
       switch (type) {
@@ -2984,8 +3108,10 @@ export class Player {
           return {
             charges: Math.max(0, this.bombShotsLeft || 0),
             maxCharges: this.bombMaxShots || 3,
-            detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
+            detail: this.getBombHudDetail(now)
           };
+        case 'point_defense':
+          return { label: 'P-DEF', detail: 'AUTO-INTERCEPTS' };
         case 'orbital_strike':
           return {
             charges: Math.max(0, this.orbitalStrikeCharges || 0),
@@ -3053,7 +3179,10 @@ export class Player {
     }
 
     if (this.pointDefenseActive && !activeEffect.pointDefense) {
-      addTimedState('point_defense', this.pointDefenseExpiresAt);
+      addTimedState('point_defense', this.pointDefenseExpiresAt, {
+        label: 'P-DEF',
+        detail: 'AUTO-INTERCEPTS'
+      });
     }
 
     if (this.bombShotsLeft > 0 && !activeEffect.bombShots) {
@@ -3061,7 +3190,7 @@ export class Player {
         remainingMs: 0,
         charges: this.bombShotsLeft,
         maxCharges: this.bombMaxShots || 3,
-        detail: `${this.bombShotsLeft} SHOTS`
+        detail: this.getBombHudDetail(now)
       });
     } else if (this.bombShotsLeft <= 0 && this.bombSpentUntil > now) {
       addTimedState('bomb', now, {
@@ -3493,9 +3622,7 @@ export class Player {
       playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, cleared % 2 ? 0x74ffd4 : 0xffffff);
     });
     playScene.bulletManager.pruneInactiveBullets?.('enemy', 'aegis_reactor');
-    this.pointDefenseActive = true;
-    this.pointDefenseExpiresAt = Math.max(Number(this.pointDefenseExpiresAt) || 0, this.getGameplayClockMs() + durationMs);
-    this.createPointDefenseRing();
+    this.activatePointDefense(durationMs, { extend: true, playSfx: false, source: 'aegis_reactor' });
 
     const ring = new PIXI.Graphics();
     ring.circle(this.x, this.y, radius);
@@ -3523,19 +3650,76 @@ export class Player {
   }
 
   createPointDefenseRing() {
-    // Create a pulsing ring effect around the player
     if (!this.pointDefenseRing) {
       this.pointDefenseRing = new PIXI.Graphics();
+      this.pointDefenseRing.blendMode = 'add';
       this.sprite.addChild(this.pointDefenseRing);
     }
     this.pointDefenseRing.visible = true;
   }
 
-  deactivatePointDefense() {
+  activatePointDefense(durationMs = 10000, options = {}) {
+    const now = Number.isFinite(Number(options.now)) ? Number(options.now) : this.getGameplayClockMs();
+    const requestedExpiry = Number.isFinite(Number(options.expiresAt))
+      ? Number(options.expiresAt)
+      : now + Math.max(0, Number(durationMs) || 0);
+    const expiresAt = options.extend
+      ? Math.max(Number(this.pointDefenseExpiresAt) || 0, requestedExpiry)
+      : requestedExpiry;
+    const wasActive = this.pointDefenseActive;
+    this.pointDefenseActive = true;
+    this.pointDefenseStartedAt = wasActive && options.extend
+      ? Math.min(Number(this.pointDefenseStartedAt) || now, now)
+      : now;
+    this.pointDefenseExpiresAt = expiresAt;
+    this.pointDefenseDurationMs = Math.max(
+      1,
+      expiresAt - this.pointDefenseStartedAt,
+      Number(durationMs) || 0
+    );
+    this.pointDefenseExpiryVisualUntil = 0;
+    this.pointDefensePulseUntil = Date.now() + 320;
+    this.createPointDefenseRing();
+    if (options.playSfx !== false) {
+      AudioManager.playSfx('forceField', {
+        force: true,
+        volume: options.volume ?? 0.72,
+        minIntervalMs: 90
+      });
+    }
+    return this.pointDefenseExpiresAt;
+  }
+
+  notePointDefenseIntercept({ x = this.x, y = this.y, count = 1 } = {}) {
+    const safeCount = Math.max(1, Math.round(Number(count) || 1));
+    this.pointDefenseInterceptCount = Math.max(0, Number(this.pointDefenseInterceptCount) || 0) + safeCount;
+    this.pointDefensePulseUntil = Date.now() + 220;
+    this.lastPointDefenseIntercept = {
+      at: this.getGameplayClockMs(),
+      count: safeCount,
+      total: this.pointDefenseInterceptCount,
+      angle: Math.atan2((Number(y) || this.y) - this.y, (Number(x) || this.x) - this.x)
+    };
+    return this.lastPointDefenseIntercept;
+  }
+
+  deactivatePointDefense(options = {}) {
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.pointDefenseStartedAt = 0;
+    this.pointDefenseDurationMs = 0;
+    if (options.expired) {
+      this.pointDefenseExpiryVisualUntil = Date.now() + 260;
+      AudioManager.playSfx('tactical_point_defense', {
+        volume: 0.22,
+        playbackRate: 0.78,
+        minIntervalMs: 140
+      });
+    } else {
+      this.pointDefenseExpiryVisualUntil = 0;
+    }
     if (this.pointDefenseRing) {
-      this.pointDefenseRing.visible = false;
+      this.pointDefenseRing.visible = Boolean(options.expired);
     }
   }
 
@@ -3559,9 +3743,9 @@ export class Player {
     }
 
     this.bombIndicator.clear();
-    const now = Date.now();
-    const commitState = this.getBombCommitState();
-    const pulse = 0.5 + Math.sin(now * 0.026) * 0.5;
+    const visualNow = Date.now();
+    const commitState = this.getBombCommitState(this.getGameplayClockMs());
+    const pulse = 0.5 + Math.sin(visualNow * 0.026) * 0.5;
     const totalSlots = Math.max(1, Math.min(6, Math.round(Number(this.bombMaxShots || this.bombShotsLeft) || 3)));
     const activeSlots = Math.max(0, Math.min(totalSlots, Math.round(Number(this.bombShotsLeft) || 0)));
     const spentSlots = Math.max(0, totalSlots - activeSlots);
@@ -3611,13 +3795,25 @@ export class Player {
       nextHighlightVisible,
       commitReady: commitState.ready,
       commitReason: commitState.reason,
-      commitClusterCount: commitState.clusterCount || 0
+      commitClusterCount: commitState.clusterCount || 0,
+      triggerQueued: Boolean(this.bombTriggerQueued),
+      lastTriggerIntent: this.lastBombTriggerIntent ? { ...this.lastBombTriggerIntent } : null
     };
+  }
+
+  getBombHudDetail(now = this.getGameplayClockMs()) {
+    const state = this.getBombCommitState(now);
+    if (state.reason === 'combat_unavailable') return 'BANKED // COMBAT PAUSED';
+    if (state.reason === 'arming') return 'BANKED // ARMING';
+    if (this.bombTriggerQueued) return 'TRIGGER QUEUED';
+    if (state.ready) return 'TAP FIRE // TARGET LOCKED';
+    return 'BANKED // AIM AT BOSS / CLUSTER';
   }
 
   deactivateBomb(options = {}) {
     this.bombShotsLeft = 0;
     this.bombArmedAt = 0;
+    this.bombTriggerQueued = false;
     this.lastBombCommitState = null;
     if (options.spentFeedback) {
       this.bombSpentUntil = this.getGameplayClockMs() + BOMB_SPENT_FEEDBACK_MS;
@@ -3728,10 +3924,12 @@ export class Player {
       triggered.push('invulnerability');
     }
     if (effects.pointDefenseMs > 0) {
-      this.pointDefenseActive = true;
       this.tacticalPointDefenseExpiresAt = this.getGameplayClockMs() + Math.min(9000, effects.pointDefenseMs);
-      this.pointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt;
-      this.createPointDefenseRing();
+      this.activatePointDefense(0, {
+        expiresAt: this.tacticalPointDefenseExpiresAt,
+        playSfx: true,
+        source: 'tactical_sector_start'
+      });
       triggered.push('point_defense');
     }
     if (effects.bombShots > 0) {
@@ -3831,10 +4029,12 @@ export class Player {
     }
 
     if (effect.pointDefense) {
-      this.pointDefenseActive = true;
-      this.pointDefenseExpiresAt = now + (durationMs || 10000);
-      this.createPointDefenseRing();
-      AudioManager.playSfx('forceField', { force: true, volume: 0.8 });
+      this.activatePointDefense(durationMs || 10000, {
+        now,
+        playSfx: true,
+        volume: 0.8,
+        source: type
+      });
     }
 
     if (effect.bombShots) {
@@ -3921,7 +4121,14 @@ export class Player {
       if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
       if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
       if (this.dronesActive) this.dronesExpiresAt = this.activePowerup.expiresAt;
-      if (this.pointDefenseActive) this.pointDefenseExpiresAt = this.activePowerup.expiresAt;
+      if (this.pointDefenseActive) {
+        this.activatePointDefense(0, {
+          now,
+          expiresAt: this.activePowerup.expiresAt,
+          playSfx: false,
+          source: 'refresh'
+        });
+      }
       console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
       return;
     }
@@ -3976,10 +4183,12 @@ export class Player {
         }
         break;
       case 'point_defense':
-        this.pointDefenseActive = true;
-        this.pointDefenseExpiresAt = now + 10000; // 10 seconds of playable combat
-        this.createPointDefenseRing();
-        AudioManager.playSfx('forceField', { force: true, volume: 0.8 }); // Activation sound
+        this.activatePointDefense(10000, {
+          now,
+          playSfx: true,
+          volume: 0.8,
+          source: 'point_defense'
+        });
         break;
       case 'bomb':
         this.bombShotsLeft = 3; // Next 3 shots are bombs
@@ -4081,9 +4290,12 @@ export class Player {
     this.activePowerup.remainingMs = 0;
     this.activePowerup.durationMode = 'wall_clock';
     if (tacticalPointDefenseExpiresAt > now) {
-      this.pointDefenseActive = true;
-      this.pointDefenseExpiresAt = tacticalPointDefenseExpiresAt;
-      this.createPointDefenseRing();
+      this.activatePointDefense(0, {
+        now,
+        expiresAt: tacticalPointDefenseExpiresAt,
+        playSfx: false,
+        source: 'tactical_restore'
+      });
     }
     if (tacticalBombShotsLeft > 0) {
       this.bombShotsLeft = tacticalBombShotsLeft;

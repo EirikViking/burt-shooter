@@ -9,6 +9,7 @@ import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
+import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "CONTATO AS",
@@ -1835,6 +1836,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR') }),
   patterns
 };

@@ -27,6 +27,22 @@ function createFakeSteamNative({ initResult = true, uploadResult = null, rawUplo
     shutdown() {
       calls.push(['shutdown']);
     },
+    isOverlayAvailable() {
+      calls.push(['isOverlayAvailable']);
+      return true;
+    },
+    addElectronSteamOverlay(browserWindow, options) {
+      calls.push(['addElectronSteamOverlay', Boolean(browserWindow), options]);
+      return true;
+    },
+    screenshots: {
+      hookScreenshots(enabled) {
+        calls.push(['hookScreenshots', enabled]);
+      },
+      triggerScreenshot() {
+        calls.push(['triggerScreenshot']);
+      }
+    },
     getStatus() {
       return { steamId: '76561198000000001' };
     },
@@ -175,6 +191,13 @@ async function checkNativeBridgeHappyPath() {
 
   assert.equal(await bridge.isAvailable(), true);
   assert.equal(await bridge.getPersonaName(), 'Steam Native Ace');
+  const captureWindow = { isDestroyed: () => false };
+  const captureSurface = bridge.attachElectronCaptureSurface(captureWindow, { fps: 60, vsync: true });
+  assert.deepEqual(captureSurface, { enabled: true, reason: 'attached' });
+  assert.equal(bridge.triggerSteamScreenshot().ok, true);
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'addElectronSteamOverlay' && call[2]?.fps === 60));
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'hookScreenshots' && call[1] === false));
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'triggerScreenshot'));
 
   const globalScores = await bridge.getTopScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,

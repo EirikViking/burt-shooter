@@ -220,6 +220,7 @@ async function forceRunReportScenario(page) {
     play.lastAceBountyCompletion = play.aceBountyHistory.at(-1);
     play.grazeBreaksThisRun = 2;
     play.nearMissSurgesThisRun = 4;
+    play.player.pointDefenseInterceptCount = 17;
     play.finalLifeLossSource = 'enemy_bullet';
     play.lastLifeLossSource = 'enemy_bullet';
     game.gameOver({ fromInterlude: true });
@@ -254,6 +255,7 @@ function assertDefaultGameOver(state) {
   assert(state.runReport?.localOnly === true, 'render_game_to_text should expose a local-only runReport summary.');
   assert(state.runReport?.score === 54321, 'runReport summary should include score.');
   assert(state.runReport?.sectorReached >= 6, 'runReport summary should include sector reached.');
+  assert(state.runReport?.pointDefenseIntercepts === 17, 'runReport summary should include point-defense interceptions.');
   assert(state.runReport?.sectionIds?.includes('combat'), 'runReport summary should include section ids.');
   assert(state.runReport?.tacticalDraftPicks?.length === 22, 'runReport summary should preserve every tactical draft pick.');
   assert(state.runReport?.tacticalDraftPicks?.some((pick) => pick.id === 'nano_patch' && pick.consumed === true), 'runReport summary should retain consumed tactical state.');
@@ -278,7 +280,7 @@ function assertOpenReport(state, viewport) {
     assert(overlay.sectionIds?.includes(sectionId), `Run Report overlay missing ${sectionId} section.`);
   }
   const text = overlay.text || '';
-  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
+  for (const expected of ['Score:', 'Ship:', 'Kills:', 'Shots intercepted: 17', 'Lives lost:', 'COUNTER ADVICE: LAST DEATH:', 'Powerups:', 'Tactical upgrades:']) {
     assert(text.includes(expected), `Run Report overlay missing core field: ${expected}`);
   }
 

@@ -66,6 +66,10 @@ const checks = [
   requireText('electron/steamLeaderboardBridge.cjs', 'const didInit = this.steam.init(initOptions);', 'SteamAPI_Init equivalent call'),
   requireText('electron/steamLeaderboardBridge.cjs', 'this.startCallbackPolling();', 'Steam callbacks polling after init'),
   requireText('electron/main.cjs', 'const steamLeaderboardBridge = createSteamLeaderboardBridge', 'Electron Steam bridge creation'),
+  requireText('electron/main.cjs', 'steamLeaderboardBridge.attachElectronCaptureSurface(win', 'Steam capture surface attached to the game window'),
+  requireText('electron/main.cjs', '--steam-capture-probe', 'repeatable Steam capture runtime probe'),
+  requireText('electron/steamLeaderboardBridge.cjs', 'this.steam.addElectronSteamOverlay(browserWindow', 'native Electron overlay/capture helper'),
+  requireText('electron/steamLeaderboardBridge.cjs', 'this.steam.screenshots.triggerScreenshot();', 'Steam screenshot API probe'),
   requireOrderedText('electron/main.cjs', 'steamProfileContext = await resolveSteamProfileContext();', 'const win = createWindow();', 'Steam init/profile resolution before BrowserWindow creation'),
   requireText('electron/main.cjs', "ipcMain.handle('nova-steam-leaderboard:getRuntimeInfo'", 'runtime info IPC'),
   requireText('electron/main.cjs', 'launchedBySteamHint', 'Steam-client launch hint in runtime info'),
@@ -126,7 +130,7 @@ const packagedSmoke = {
   reason: 'Covered later by npm run desktop:smoke:packaged after the new package is built; this check stays focused on overlay prerequisites and hook/init evidence.'
 };
 
-warnings.push('True Shift+Tab overlay behavior cannot be proven by this headless/local check; launch the uploaded build from the Steam client and press Shift+Tab.');
+warnings.push('True Shift+Tab, physical F12, and Steam Game Recording playback still require the Steam-client manual QA procedure in docs/qa/steam-capture-manual.md.');
 
 const report = {
   ok: errors.length === 0,
@@ -147,10 +151,10 @@ const report = {
   packagedFiles,
   packagedSmoke,
   overlayConclusion: errors.length === 0
-    ? 'Packaged runtime includes Steam API DLLs, unpacked Steamworks native module, steam-overlay.node, and initializes Steam before BrowserWindow creation. Manual Steam-client Shift+Tab verification is still required.'
+    ? 'The Electron runtime now mirrors Chromium frames into the native Steam overlay surface, preserves Steam ownership of F12, and includes an API-driven capture probe. Manual physical-hotkey and Game Recording playback verification remains required.'
     : 'Overlay prerequisites are incomplete or unproven.',
-  fixedInCode: false,
-  deferredReason: 'Enabling the experimental Electron native overlay bridge would add a new capture/overlay window path late in release; current safe action is prerequisite proof plus manual Steam-client verification.',
+  fixedInCode: true,
+  manualProcedure: 'docs/qa/steam-capture-manual.md',
   warnings,
   errors
 };

@@ -22,7 +22,7 @@ const scenarios = [
 ];
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
-  combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUPS & BONUS'],
+  combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUP INTENT'],
   modes: ['DAILY CHALLENGE', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
   tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'FUSION PROTOCOLS', 'SCORE ROUTE & BANS', 'DRAFT TOOLS', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
   intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
@@ -142,6 +142,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('3 GRAZES ARM YOUR NEXT SHOT'), `${label} should explain Graze Break arming`);
     assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
     assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
+    assert(joined.includes('P-DEF AUTO-INTERCEPTS // BOMBS TAP FIRE'), `${label} should explain Point Defense and bomb controls`);
+    assert(joined.includes('Bomb charges stay banked'), `${label} should explain intentional bomb spending`);
   }
   if (expectedPage === 'modes') {
     assert(joined.includes('CLEAR S10 // BEAT YOUR BEST'), `${label} should explain the Daily Challenge goal`);

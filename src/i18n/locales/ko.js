@@ -9,6 +9,7 @@ import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
+import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
@@ -1804,6 +1805,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko') }),
   patterns
 };

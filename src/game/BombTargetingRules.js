@@ -1,7 +1,36 @@
 export const BOMB_ARMING_MS = 650;
 
-function isActiveTarget(target) {
-  return Boolean(target && target.active !== false && target.destroyed !== true);
+function isActiveTarget(target, {
+  viewportWidth = Number.POSITIVE_INFINITY,
+  viewportHeight = Number.POSITIVE_INFINITY,
+  nowMs = Date.now()
+} = {}) {
+  if (!target || target.active === false || target.destroyed === true || target.waitingForEntry === true) {
+    return false;
+  }
+  if (
+    target.visible === false
+    || target.renderable === false
+    || target.sprite?.visible === false
+    || target.sprite?.renderable === false
+    || (Number.isFinite(Number(target.sprite?.alpha)) && Number(target.sprite.alpha) <= 0)
+  ) {
+    return false;
+  }
+  if (
+    target.invulnerable === true
+    || (Number.isFinite(Number(target.invulnerableUntilMs)) && nowMs < Number(target.invulnerableUntilMs))
+  ) {
+    return false;
+  }
+
+  const x = Number(target.x);
+  const y = Number(target.y);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  const margin = Math.max(36, getTargetRadius(target) * 1.25);
+  if (Number.isFinite(viewportWidth) && (x < -margin || x > viewportWidth + margin)) return false;
+  if (Number.isFinite(viewportHeight) && (y < -margin || y > viewportHeight + margin)) return false;
+  return true;
 }
 
 function getTargetRadius(target) {
@@ -23,15 +52,23 @@ export function findBombCommitTarget({
   enemies = [],
   boss = null,
   blastRadius = 150,
-  shotDamage = 5
+  shotDamage = 5,
+  viewportWidth = Number.POSITIVE_INFINITY,
+  viewportHeight = Number.POSITIVE_INFINITY,
+  nowMs = Date.now()
 } = {}) {
   if (!player) return { target: null, reason: 'no_player', clusterCount: 0 };
 
   const safeBlastRadius = Math.max(40, Number(blastRadius) || 150);
+  const targetOptions = { viewportWidth, viewportHeight, nowMs };
   const activeEnemies = (Array.isArray(enemies) ? enemies : [])
-    .filter((target) => isActiveTarget(target) && isAheadOfPlayer(player, target));
+    .filter((target) => isActiveTarget(target, targetOptions) && isAheadOfPlayer(player, target));
 
-  if (isActiveTarget(boss) && isAheadOfPlayer(player, boss) && isInsideBombLane(player, boss, safeBlastRadius)) {
+  if (
+    isActiveTarget(boss, targetOptions)
+    && isAheadOfPlayer(player, boss)
+    && isInsideBombLane(player, boss, safeBlastRadius)
+  ) {
     return {
       target: boss,
       reason: 'boss',

@@ -193,6 +193,8 @@ try {
       player.scoreMultiplier = 1;
       player.scoreBoostExpiresAt = 0;
       player.shootCooldown = 0;
+      play.currentFirePressed = false;
+      play.fireInputWasPressed = false;
       player.invulnerable = true;
       player.invulnerableTime = 600000;
       player.x = game.getWidth() * 0.5;
@@ -269,6 +271,11 @@ try {
       const bullets = player.shoot();
       addPlayerBullets(bullets);
       return bullets;
+    };
+    const tapFire = () => {
+      play.updateGrazeBreakFireIntent(false);
+      play.updateGrazeBreakFireIntent(true);
+      return shootNow();
     };
     const spawnEnemyAt = (x, y, { health = 8, radius = 18 } = {}) => {
       const waves = play.enemyManager.generateWaves(1);
@@ -586,6 +593,10 @@ try {
         }
         case 'point_defense': {
           assert(player.pointDefenseActive && player.pointDefenseRing?.visible !== false, `${type}: point-defense ring missing`);
+          player.update(1);
+          const initialRing = player.pointDefenseRing?.__debugPointDefense;
+          assert(initialRing?.active === true && initialRing?.radius >= 100 && initialRing?.remainingMs > 0,
+            `${type}: point-defense countdown/range feedback missing`, initialRing);
           const insideBullet = dummyEnemyBullet(player.x + 24, player.y - 28);
           const outsideBullet = dummyEnemyBullet(player.x + 220, player.y - 28);
           play.bulletManager.enemyBullets = [insideBullet, outsideBullet];
@@ -596,6 +607,11 @@ try {
             outsideBullet: outsideBullet.active
           });
           assert(activePlayerBullets().length === playerBulletCount, `${type}: autonomous interception consumed a player shot`);
+          player.update(1);
+          assert(player.pointDefenseInterceptCount >= 1 && player.lastPointDefenseIntercept?.total === player.pointDefenseInterceptCount,
+            `${type}: interception state/run counter missing`, player.lastPointDefenseIntercept);
+          assert(player.pointDefenseRing?.__debugPointDefense?.lastIntercept?.total === player.pointDefenseInterceptCount,
+            `${type}: ring did not expose interception targeting feedback`, player.pointDefenseRing?.__debugPointDefense);
           note('intercepted', { autonomous: true, total: player.pointDefenseInterceptCount });
           break;
         }
@@ -605,15 +621,27 @@ try {
           assert(player.bombShotsLeft === expectedCharges && player.bombIndicator?.visible !== false && hasState(type), `${type}: bomb charges/indicator missing`);
           player.bombArmedAt = player.getGameplayClockMs();
           const heldCharges = player.bombShotsLeft;
-          const ordinaryVolley = shootNow();
+          const ordinaryVolley = tapFire();
           assert(!ordinaryVolley.some(bullet => bullet.isBomb) && player.bombShotsLeft === heldCharges,
-            `${type}: bomb charge should stay banked without a worthwhile target`);
+            `${type}: fresh fire press without a worthwhile target should preserve the banked charge`);
           clearSprites(play.bulletManager?.playerBullets);
           play.bulletManager.playerBullets = [];
           const enemy = spawnEnemyAt(player.x, player.y - 120, { health: 60, radius: 20 });
+
+          play.enemyManager.state = 'WAVE_COMPLETE';
+          const transitionVolley = tapFire();
+          assert(!transitionVolley.some(bullet => bullet.isBomb) && player.bombShotsLeft === heldCharges,
+            `${type}: transition fire press should not spend or queue a bomb`);
+          play.enemyManager.state = 'WAVE_ACTIVE';
+          const heldVolley = shootNow();
+          assert(!heldVolley.some(bullet => bullet.isBomb) && player.bombShotsLeft === heldCharges,
+            `${type}: held fire should not auto-spend a bomb after combat resumes`);
+          clearSprites(play.bulletManager?.playerBullets);
+          play.bulletManager.playerBullets = [];
+
           player.shootCooldown = 0;
-          const bomb = shootNow().find(bullet => bullet.isBomb);
-          assert(bomb, `${type}: shot did not create bomb bullet`);
+          const bomb = tapFire().find(bullet => bullet.isBomb);
+          assert(bomb, `${type}: fresh fire press on a valid target did not create a bomb bullet`);
           enemy.x = bomb.x;
           enemy.y = bomb.y;
           enemy.health = 2;
@@ -641,7 +669,8 @@ try {
             health: 999,
             radius: 24
           }];
-          for (let shot = 1; shot < expectedCharges; shot += 1) shootNow();
+          play.enemyManager.state = 'WAVE_ACTIVE';
+          for (let shot = 1; shot < expectedCharges; shot += 1) tapFire();
           const spentState = findState('bomb');
           assert(player.bombShotsLeft === 0, `${type}: bomb charges did not empty`);
           assert(player.bombIndicator?.visible === false, `${type}: bomb charge pips stayed visible after empty`);
