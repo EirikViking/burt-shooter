@@ -459,6 +459,7 @@ function buildGameTextState(game) {
   const hangarProgressSummary = getHangarProgressSummary();
   const threatCodexCatalog = getThreatCodexCatalog();
   const sector = getSectorInfo(game?.level || 1);
+  const globalRivalProjection = game?.getGlobalRivalChaseState?.() || null;
   const getBoundsDebug = (displayObject) => {
     try {
       if (!displayObject?.getBounds) return null;
@@ -670,6 +671,16 @@ function buildGameTextState(game) {
       surpassed: Boolean(game.highscoreChase.surpassed),
       celebrationFired: Boolean(game.highscoreChase.celebrationFired),
       celebrationScore: Math.max(0, Math.floor(Number(game.highscoreChase.celebrationScore) || 0))
+    } : null,
+    globalRivalProjection: globalRivalProjection ? {
+      targetKind: globalRivalProjection.targetKind,
+      targetName: globalRivalProjection.targetName || null,
+      targetRank: globalRivalProjection.targetRank || null,
+      targetScore: globalRivalProjection.targetScore || 0,
+      scoreToPass: globalRivalProjection.scoreToPass || 0,
+      projectedPlacement: globalRivalProjection.projectedPlacement || null,
+      projectedNumberOne: Boolean(globalRivalProjection.projectedNumberOne),
+      snapshotOnly: true
     } : null,
     personalBestCelebration: playScene?.getPersonalBestCelebrationDebugState
       ? playScene.getPersonalBestCelebrationDebugState()

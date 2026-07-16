@@ -65,6 +65,8 @@ export class HUD {
     this.highscoreChaseRenderKey = '';
     this.highscoreChaseDisplayKey = '';
     this.highscoreChaseDisplayScore = 0;
+    this.globalRivalFlash = null;
+    this.globalRivalFlashUntil = 0;
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -494,30 +496,58 @@ export class HUD {
     return `${minutes}:${String(remainder).padStart(2, '0')}`;
   }
 
+  showGlobalRivalPass({ passedTarget = null, nextProjection = null } = {}) {
+    if (!passedTarget || passedTarget.targetKind === 'number_one') return;
+    this.globalRivalFlash = {
+      passedKind: passedTarget.targetKind || 'next_rival',
+      passedName: String(passedTarget.targetName || '').trim(),
+      nextRank: nextProjection?.targetRank || (nextProjection?.projectedNumberOne ? 1 : null),
+      projectedNumberOne: Boolean(nextProjection?.projectedNumberOne)
+    };
+    this.globalRivalFlashUntil = Date.now() + 1100;
+    this.highscoreChaseRenderKey = '';
+  }
+
   updateHighscoreChase() {
     if (!this.highscoreChaseGroup) return;
     const chase = this.game?.getHighscoreChaseState?.() || null;
-    const target = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
     const rawScore = Math.max(0, Math.floor(Number(this.game?.score) || 0));
+    const personalTarget = Math.max(0, Math.floor(Number(chase?.targetScore) || 0));
+    const rivalProjection = this.game?.getGlobalRivalChaseState?.({ score: rawScore }) || null;
+    const isRivalTarget = Boolean(rivalProjection?.targetKind && rivalProjection.targetKind !== 'number_one');
+    const isRivalNumberOne = Boolean(rivalProjection?.projectedNumberOne);
+    const isRivalMode = isRivalTarget || isRivalNumberOne;
+    const target = isRivalTarget
+      ? Math.max(0, Math.floor(Number(rivalProjection?.targetScore) || 0))
+      : personalTarget;
     const sectorKey = Math.max(1, Math.floor(Number(this.game?.level) || 1));
     const targetSector = Math.max(1, Math.floor(Number(chase?.targetSector) || 1));
     const targetTimeSeconds = Math.max(0, Math.floor(Number(chase?.targetTimeSeconds) || 0));
     const isDailyClearGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'daily_clear';
     const isDailyScoreGoal = chase?.runMode === 'daily_signal' && chase?.goalMode === 'score';
-    const syncingTarget = Boolean(chase?.syncingTarget);
+    const syncingTarget = !isRivalMode && Boolean(chase?.syncingTarget);
     const hasScoreTarget = target > 0 && !syncingTarget;
-    const hasTarget = isDailyClearGoal || hasScoreTarget;
+    const hasTarget = isDailyClearGoal || hasScoreTarget || isRivalNumberOne;
+    const now = Date.now();
+    const rivalFlashActive = isRivalMode && this.globalRivalFlashUntil > now && Boolean(this.globalRivalFlash);
+    if (!rivalFlashActive && this.globalRivalFlashUntil > 0) {
+      this.globalRivalFlash = null;
+      this.globalRivalFlashUntil = 0;
+    }
     const displayKey = [
       chase?.runMode || 'none',
       chase?.goalMode || 'score',
       target,
+      rivalProjection?.targetKind || 'personal',
+      rivalProjection?.targetRank || 0,
+      rivalProjection?.targetName || '',
       targetSector,
       targetTimeSeconds,
       syncingTarget ? 1 : 0,
       sectorKey,
       rawScore
     ].join('|');
-    const crossedTarget = hasScoreTarget &&
+    const crossedTarget = !isRivalMode && hasScoreTarget &&
       rawScore > target &&
       Math.max(0, Math.floor(Number(this.highscoreChaseDisplayScore) || 0)) <= target;
     if (displayKey !== this.highscoreChaseDisplayKey || crossedTarget) {
@@ -528,26 +558,43 @@ export class HUD {
     const remaining = Math.max(0, target - score);
     const ratio = isDailyClearGoal
       ? Math.min(1, sectorKey / targetSector)
-      : hasScoreTarget ? Math.min(1.25, score / target) : 0;
-    const surpassed = isDailyClearGoal ? Boolean(this.game?.runCleared) : hasScoreTarget && score > target;
+      : isRivalNumberOne
+        ? 1
+        : hasScoreTarget ? Math.min(1.25, score / target) : 0;
+    const surpassed = isRivalNumberOne || (isDailyClearGoal ? Boolean(this.game?.runCleared) : hasScoreTarget && score > target);
     const nearTarget = hasTarget && !surpassed && ratio >= 0.9;
-    const chaseIsHot = nearTarget || surpassed;
-    const pulse = chaseIsHot ? (Math.sin(Date.now() * 0.009) + 1) / 2 : 0.5;
-    const pulseBucket = chaseIsHot ? Math.floor(Date.now() / 140) % 16 : 0;
-    const dangerColor = surpassed ? 0xffef7e : (ratio >= 0.9 ? 0xff55d9 : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff));
-    const label = isDailyClearGoal
-      ? translateText('DAILY OBJECTIVE')
-      : chase?.runMode === 'sector_start'
-      ? translateText('SECTOR RECORD TARGET')
-      : chase?.runMode === 'daily_signal'
-        ? translateText('BEST CLEAR')
-        : translateText('HIGH SCORE TARGET');
+    const chaseIsHot = rivalFlashActive || nearTarget || surpassed;
+    const pulse = chaseIsHot ? (Math.sin(now * 0.009) + 1) / 2 : 0.5;
+    const pulseBucket = chaseIsHot ? Math.floor(now / 140) % 16 : 0;
+    const dangerColor = rivalFlashActive || surpassed
+      ? 0xffef7e
+      : (ratio >= 0.9 ? 0xff55d9 : (isRivalMode ? 0x37f5ff : (ratio >= 0.5 ? 0x7fffd8 : 0x37f5ff)));
+    const label = rivalFlashActive
+      ? translateText(this.globalRivalFlash?.passedKind === 'board_gate' ? 'TOP 40 BREACHED' : 'RIVAL PASSED')
+      : isRivalNumberOne
+        ? translateText('PROJECTED #1')
+        : rivalProjection?.targetKind === 'board_gate'
+          ? translateText('TOP 40 GATE')
+          : isRivalTarget
+            ? translateText('RIVAL TARGET #{rank}', { rank: rivalProjection.targetRank })
+            : isDailyClearGoal
+              ? translateText('DAILY OBJECTIVE')
+              : chase?.runMode === 'sector_start'
+                ? translateText('SECTOR RECORD TARGET')
+                : chase?.runMode === 'daily_signal'
+                  ? translateText('BEST CLEAR')
+                  : translateText('HIGH SCORE TARGET');
     const w = this.highscoreChaseGroup.__w || 178;
     const h = this.highscoreChaseGroup.__h || 52;
     const renderKey = [
       chase?.runMode || 'none',
       chase?.goalMode || 'score',
       target,
+      rivalProjection?.targetKind || 'personal',
+      rivalProjection?.targetRank || 0,
+      rivalProjection?.targetName || '',
+      rivalFlashActive ? 1 : 0,
+      this.globalRivalFlash?.passedName || '',
       targetSector,
       targetTimeSeconds,
       score,
@@ -566,40 +613,62 @@ export class HUD {
     this.highscoreChaseRenderKey = renderKey;
 
     this.highscoreChaseTitle.text = label;
-    this.highscoreChaseTarget.text = isDailyClearGoal
-      ? translateText('CLEAR SECTOR {sector}', { sector: targetSector })
-      : hasScoreTarget
-      ? `${translateText('BEAT')} ${this.formatScore(target)}`
-      : syncingTarget
-        ? translateText('CHECKING BOARD')
-        : translateText('BEAT THE EMPTY THRONE');
-    this.highscoreChaseGap.text = isDailyClearGoal
-      ? translateText('SECTOR {current} OF {target}', {
-        current: Math.min(sectorKey, targetSector),
-        target: targetSector
-      })
-      : isDailyScoreGoal && surpassed
-        ? translateText('SCORE READY // CLEAR SECTOR {sector}', { sector: targetSector })
-      : isDailyScoreGoal && targetTimeSeconds > 0
-        ? `= ${this.formatScore(target)} // ${translateText('TIME')} < ${this.formatRunTime(targetTimeSeconds)}`
-      : surpassed
-        ? translateText('OLD SCORE HUMILIATED')
-        : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
+    this.highscoreChaseTarget.text = rivalFlashActive
+      ? (this.globalRivalFlash?.passedName || translateText('TARGET CLEARED'))
+      : isRivalNumberOne
+        ? translateText('BOARD SNAPSHOT CLEARED')
+        : isRivalTarget
+          ? translateText('#{rank} {name} // {score}', {
+            rank: rivalProjection.targetRank,
+            name: rivalProjection.targetName,
+            score: this.formatScore(rivalProjection.targetEntryScore)
+          })
+          : isDailyClearGoal
+            ? translateText('CLEAR SECTOR {sector}', { sector: targetSector })
+            : hasScoreTarget
+              ? `${translateText('BEAT')} ${this.formatScore(target)}`
+              : syncingTarget
+                ? translateText('CHECKING BOARD')
+                : translateText('BEAT THE EMPTY THRONE');
+    this.highscoreChaseGap.text = rivalFlashActive
+      ? (this.globalRivalFlash?.projectedNumberOne
+        ? translateText('PROJECTED #1')
+        : translateText('NEXT TARGET #{rank}', { rank: this.globalRivalFlash?.nextRank || '?' }))
+      : isRivalNumberOne
+        ? translateText('SUBMIT TO CONFIRM')
+        : isRivalTarget
+          ? translateText('{score} TO PASS', { score: this.formatScore(rivalProjection.scoreToPass) })
+          : isDailyClearGoal
+            ? translateText('SECTOR {current} OF {target}', {
+              current: Math.min(sectorKey, targetSector),
+              target: targetSector
+            })
+            : isDailyScoreGoal && surpassed
+              ? translateText('SCORE READY // CLEAR SECTOR {sector}', { sector: targetSector })
+              : isDailyScoreGoal && targetTimeSeconds > 0
+                ? `= ${this.formatScore(target)} // ${translateText('TIME')} < ${this.formatRunTime(targetTimeSeconds)}`
+                : surpassed
+                  ? translateText('OLD SCORE HUMILIATED')
+                  : translateText('{score} TO MAKE IT CRY', { score: this.formatScore(remaining + 1) });
     this.highscoreChaseGap.visible = hasTarget;
 
-    this.highscoreChaseTitle.style.fill = surpassed ? '#fff05c' : '#ffef7e';
-    this.highscoreChaseGap.style.fill = surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
+    this.highscoreChaseTitle.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (isRivalMode ? '#87f8ff' : '#ffef7e');
+    this.highscoreChaseGap.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
     this.highscoreChaseGroup.alpha = hasTarget ? 0.86 + pulse * 0.14 : 0.78;
     this.highscoreChaseGroup.scale.set(1);
 
     const barW = Math.max(48, w - 22);
-    const progress = hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08;
+    const progress = isRivalNumberOne ? 1 : (hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08);
     this.highscoreChaseTitle.updateText?.(false);
     this.highscoreChaseTarget.updateText?.(false);
     this.highscoreChaseGap.updateText?.(false);
     const narrow = w < 248;
     const padX = 14;
-    const targetMaxWidth = narrow ? w - padX * 2 : Math.min(132, Math.max(92, w * 0.36));
+    const targetMaxWidth = narrow
+      ? w - padX * 2
+      : isRivalMode
+        ? Math.min(214, Math.max(136, w * 0.56))
+        : Math.min(132, Math.max(92, w * 0.36));
     this.highscoreChaseTitle.x = padX;
     this.highscoreChaseTitle.y = narrow ? 5 : 6;
     this.highscoreChaseTitle.scale.set(1);
@@ -631,7 +700,13 @@ export class HUD {
     this.highscoreChaseBg.fill({ color: dangerColor, alpha: 0.72 });
     this.highscoreChaseBg.rect(w - 9, 5, 3, h - 10);
     this.highscoreChaseBg.fill({ color: 0xff55d9, alpha: 0.52 });
-    if (nearTarget) {
+    if (rivalFlashActive) {
+      this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
+      this.highscoreChaseBg.stroke({ color: 0xffef7e, width: 2.2, alpha: 0.54 + pulse * 0.4 });
+      const sweepX = 10 + ((now % 900) / 900) * Math.max(1, w - 20);
+      this.highscoreChaseBg.rect(sweepX - 7, 4, 14, h - 8);
+      this.highscoreChaseBg.fill({ color: 0xffffff, alpha: 0.05 + pulse * 0.05 });
+    } else if (nearTarget) {
       this.highscoreChaseBg.roundRect(3, 3, w - 6, h - 6, 5);
       this.highscoreChaseBg.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.22 + pulse * 0.24 });
     } else if (surpassed) {
@@ -712,7 +787,14 @@ export class HUD {
       targetChevronCount,
       victoryBurstCount,
       glintX: hasTarget ? Math.round(barX + barW * Math.min(1, progress)) : null,
-      pulseBucket
+      pulseBucket,
+      targetKind: rivalProjection?.targetKind || 'personal_best',
+      targetName: rivalProjection?.targetName || null,
+      targetRank: rivalProjection?.targetRank || null,
+      targetScore: isRivalTarget ? rivalProjection.targetScore : personalTarget,
+      scoreToPass: isRivalTarget ? rivalProjection.scoreToPass : null,
+      projectedNumberOne: isRivalNumberOne,
+      rivalFlashActive
     };
   }
 

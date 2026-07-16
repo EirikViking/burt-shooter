@@ -137,6 +137,7 @@
     "check:leaderboard-adapter": "node scripts/check-leaderboard-adapter.mjs",
     "check:leaderboard-pending-steam": "node scripts/check-leaderboard-pending-steam.mjs",
     "check:highscore-chase-target": "node scripts/check-highscore-chase-target.mjs",
+    "check:global-rival-ladder": "node scripts/check-global-rival-ladder.mjs",
     "check:score-normalization": "node scripts/check-score-normalization.mjs",
     "check:global-score-tuning": "node scripts/check-global-score-tuning.mjs",
     "check:steam-leaderboard-mock": "node scripts/check-steam-leaderboard-mock.mjs",

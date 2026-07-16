@@ -15,7 +15,11 @@ import {
   isShipUnlocked
 } from '../config/ShipMetadata.js';
 import { GameAssets } from '../utils/GameAssets.js';
-import { analyzeGlobalLeaderboardScore, normalizeGlobalScores } from '../shared/GlobalLeaderboardPlacement.js';
+import {
+  analyzeGlobalLeaderboardScore,
+  analyzeGlobalRivalProjection,
+  normalizeGlobalScores
+} from '../shared/GlobalLeaderboardPlacement.js';
 import {
   GAME_OVER_CTA_RECENT_HISTORY_KEY,
   GAME_OVER_CTA_RECENT_HISTORY_SIZE,
@@ -1494,6 +1498,8 @@ export class GameOverScene {
         : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: summary.dailySignalContract?.finishSector || 10 });
     }
     if (this.isSectorStartChallengeResult()) return '';
+    const rivalGoal = this.getGlobalRivalNextGoalText();
+    if (rivalGoal) return rivalGoal;
     const rank = this.getGlobalPlacementRank();
     if (rank && rank > 1) return 'Next goal: Climb one global rank';
     if (rank === 1) return 'Next goal: Defend #1';
@@ -1768,7 +1774,10 @@ export class GameOverScene {
   refreshNextGoalFromLeaderboard() {
     const placement = this.globalPlacement;
     if (!placement || !this.isRankedRun) return;
-    if (placement.nearNumberOne && placement.scoreToNumberOne > 0) {
+    const rivalGoal = this.getGlobalRivalNextGoalText();
+    if (rivalGoal) {
+      this.nextGoal = { text: rivalGoal, tone: 'leaderboard' };
+    } else if (placement.nearNumberOne && placement.scoreToNumberOne > 0) {
       this.nextGoal = { text: `NUMBER ONE: ${this.formatGoalNumber(placement.scoreToNumberOne)} MORE`, tone: 'leaderboard' };
     } else if (placement.nearTop3 && placement.scoreToTop3 > 0) {
       this.nextGoal = { text: `TOP THREE: ${this.formatGoalNumber(placement.scoreToTop3)} MORE`, tone: 'leaderboard' };
@@ -1783,6 +1792,26 @@ export class GameOverScene {
       this.nextGoal = { text: 'NEXT GOAL: CLIMB ONE GLOBAL RANK', tone: 'leaderboard' };
     }
     if (this.nextGoalText) this.nextGoalText.text = this.nextGoal?.text || '';
+  }
+
+  getGlobalRivalProjection() {
+    if (!this.isRankedRun || !Array.isArray(this.cachedHighscores) || this.cachedHighscores.length === 0) return null;
+    return analyzeGlobalRivalProjection(this.finalScore, this.cachedHighscores, {
+      maxEntries: LEADERBOARD_DISPLAY_LIMIT
+    });
+  }
+
+  getGlobalRivalNextGoalText() {
+    const projection = this.getGlobalRivalProjection();
+    if (!projection || projection.targetKind === 'number_one' || !projection.targetRank || !projection.targetName) return '';
+    const values = {
+      rank: projection.targetRank,
+      name: projection.targetName,
+      score: this.formatGoalNumber(projection.scoreToPass)
+    };
+    return projection.targetKind === 'board_gate'
+      ? translateText('TOP 40 GATE: #{rank} {name} // {score} MORE', values)
+      : translateText('NEXT RIVAL #{rank}: {name} // {score} MORE', values);
   }
 
   updateQualificationPromptState() {

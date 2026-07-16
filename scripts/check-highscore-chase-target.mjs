@@ -120,10 +120,28 @@ try {
     }));
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(staleProgressState));
     localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify([bestEntry]));
+    localStorage.setItem('novaSwarm.mayhemModeRecords.v1', JSON.stringify({
+      version: 1,
+      pure: bestEntry.score,
+      tactical: 0,
+      updatedAt: bestEntry.timestamp
+    }));
     await window.__game.startGame();
   }, { staleProgressState: staleProgress, bestEntry: realBest });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.hud, null, { timeout: 30000 });
-  await page.waitForFunction((expected) => window.__game?.getHighscoreChaseState?.()?.targetScore === expected, realBest.score, { timeout: 10000 });
+  try {
+    await page.waitForFunction((expected) => window.__game?.getHighscoreChaseState?.()?.targetScore === expected, realBest.score, { timeout: 10000 });
+  } catch (error) {
+    const targetDiagnostics = await page.evaluate(() => ({
+      scene: window.__game?.currentSceneName || null,
+      runMode: window.__game?.runMode || null,
+      chase: window.__game?.getHighscoreChaseState?.() || null,
+      localScores: localStorage.getItem('novaSwarm.localLeaderboard.v2'),
+      mayhemRecords: localStorage.getItem('novaSwarm.mayhemModeRecords.v1')
+    })).catch(() => null);
+    error.message = `${error.message} diagnostics=${JSON.stringify(targetDiagnostics)}`;
+    throw error;
+  }
   const finalState = await page.evaluate(() => {
     const game = window.__game;
     const hud = game?.scenes?.play?.hud;
@@ -279,8 +297,8 @@ try {
   await page.close();
 } catch (error) {
   mkdirSync(outputDir, { recursive: true });
-  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: false, baseUrl, error: error.message }, null, 2)}\n`);
-  console.error(`[highscore-chase-target] FAIL ${error.message}`);
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify({ ok: false, baseUrl, error: error.message, stack: error.stack || null }, null, 2)}\n`);
+  console.error(`[highscore-chase-target] FAIL ${error.stack || error.message}`);
   process.exitCode = 1;
 } finally {
   await browser.close();

@@ -12,7 +12,10 @@ import { ThreatCodexScene } from '../scenes/ThreatCodexScene.js';
 import { rankManager } from '../managers/RankManager.js';
 import { getDefaultShipKey, getShipMetadata, incrementShipUsage, isShipUnlocked, isValidShipKey } from '../config/ShipMetadata.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { analyzeGlobalLeaderboardScore } from '../shared/GlobalLeaderboardPlacement.js';
+import {
+  analyzeGlobalLeaderboardScore,
+  analyzeGlobalRivalProjection
+} from '../shared/GlobalLeaderboardPlacement.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { getLeaderboardDescriptorForRunMode } from '../leaderboard/LeaderboardTypes.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
@@ -140,10 +143,13 @@ export class Game {
     this.lastDailySignalRecord = null;
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
+    this.globalRivalProjectionCache = null;
     this.globalLeaderboardCueState = {
       global: false,
       top3: false,
-      number1: false
+      number1: false,
+      rivalKey: null,
+      rivalTarget: null
     };
     this.highscoreChase = null;
     this.highscoreChaseTargetPromise = null;
@@ -939,11 +945,84 @@ export class Game {
   resetGlobalLeaderboardCues() {
     this.globalLeaderboardTargets = null;
     this.globalLeaderboardTargetPromise = null;
+    this.globalRivalProjectionCache = null;
     this.globalLeaderboardCueState = {
       global: false,
       top3: false,
-      number1: false
+      number1: false,
+      rivalKey: null,
+      rivalTarget: null
     };
+  }
+
+  getGlobalRivalChaseState({ score = this.score } = {}) {
+    if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets) || this.globalLeaderboardTargets.length === 0) {
+      return null;
+    }
+    const chase = this.highscoreChase;
+    if (!chase || chase.goalMode !== 'score' || chase.syncingTarget) return null;
+    const currentScore = Math.max(0, Math.floor(Number(score) || 0));
+    const personalBest = Math.max(0, Math.floor(Number(chase.targetScore) || 0));
+    const personalTargetCleared = personalBest > 0 ? currentScore > personalBest : currentScore > 0;
+    if (!personalTargetCleared) return null;
+    const cache = this.globalRivalProjectionCache;
+    if (
+      cache?.entries === this.globalLeaderboardTargets
+      && cache?.score === currentScore
+      && cache?.personalBest === personalBest
+      && cache?.runMode === this.runMode
+    ) {
+      return cache.projection;
+    }
+    const projection = analyzeGlobalRivalProjection(currentScore, this.globalLeaderboardTargets);
+    this.globalRivalProjectionCache = {
+      entries: this.globalLeaderboardTargets,
+      score: currentScore,
+      personalBest,
+      runMode: this.runMode,
+      projection
+    };
+    return projection;
+  }
+
+  updateGlobalRivalCue() {
+    const projection = this.getGlobalRivalChaseState();
+    if (!projection) {
+      this.globalLeaderboardCueState.rivalKey = null;
+      this.globalLeaderboardCueState.rivalTarget = null;
+      return null;
+    }
+    const nextKey = projection.targetKind === 'number_one'
+      ? 'number_one'
+      : [
+        projection.targetKind,
+        projection.targetRank || 0,
+        projection.targetEntryScore || 0,
+        projection.targetName || ''
+      ].join('|');
+    const previousKey = this.globalLeaderboardCueState.rivalKey;
+    const previousTarget = this.globalLeaderboardCueState.rivalTarget;
+    if (previousKey && previousKey !== nextKey) {
+      this.scenes?.play?.hud?.showGlobalRivalPass?.({
+        passedTarget: previousTarget,
+        nextProjection: projection
+      });
+      AudioManager.playSfx('nova_highscore_chime', {
+        force: true,
+        volume: 0.74,
+        minIntervalMs: 320
+      });
+    }
+    this.globalLeaderboardCueState.rivalKey = nextKey;
+    this.globalLeaderboardCueState.rivalTarget = projection.targetKind === 'number_one'
+      ? { targetKind: 'number_one', targetName: '', targetRank: 1, targetEntryScore: 0 }
+      : {
+        targetKind: projection.targetKind,
+        targetName: projection.targetName,
+        targetRank: projection.targetRank,
+        targetEntryScore: projection.targetEntryScore
+      };
+    return projection;
   }
 
   primeGlobalLeaderboardTargets() {
@@ -968,6 +1047,7 @@ export class Game {
   updateGlobalLeaderboardVoiceCues() {
     if (!this.isRankedRun() || !Array.isArray(this.globalLeaderboardTargets)) return;
     const placement = analyzeGlobalLeaderboardScore(this.score, this.globalLeaderboardTargets);
+    this.updateGlobalRivalCue();
     if ((placement.qualified || placement.nearGlobal) && !this.globalLeaderboardCueState.global) {
       this.globalLeaderboardCueState.global = true;
       AudioManager.playVoice('mission_control_global_close', {

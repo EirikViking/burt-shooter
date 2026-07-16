@@ -63,3 +63,77 @@ export function analyzeGlobalLeaderboardScore(score, entries = [], options = {})
     scoresCount: scores.length
   };
 }
+
+function normalizeRivalEntries(entries = []) {
+  return (Array.isArray(entries) ? entries : [])
+    .map((entry, index) => {
+      const entryScore = Math.max(0, Math.floor(Number(entry?.score) || 0));
+      if (entryScore <= 0) return null;
+      const rawRank = Number(entry?.rank);
+      return {
+        entry,
+        score: entryScore,
+        rank: Number.isFinite(rawRank) && rawRank > 0 ? Math.floor(rawRank) : index + 1,
+        name: String(entry?.name || entry?.playerName || '').trim(),
+        isCurrentPlayer: Boolean(entry?.isCurrentPlayer)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.rank - b.rank || b.score - a.score || a.name.localeCompare(b.name));
+}
+
+/**
+ * Builds a read-only target from the downloaded leaderboard snapshot.
+ * This intentionally does not participate in qualification, score submission,
+ * achievements, or stored leaderboard state.
+ */
+export function analyzeGlobalRivalProjection(score, entries = [], options = {}) {
+  const maxEntries = Math.max(1, Math.floor(Number(options.maxEntries) || DEFAULT_MAX_ENTRIES));
+  const currentScore = Math.max(0, Math.floor(Number(score) || 0));
+  const normalized = normalizeRivalEntries(entries);
+  if (normalized.length === 0) return null;
+
+  const boardFull = normalized.length >= maxEntries;
+  const visibleBoard = normalized.slice(0, maxEntries);
+  const nonSelfEntries = visibleBoard.filter((entry) => !entry.isCurrentPlayer);
+  const cutoffEntry = visibleBoard[visibleBoard.length - 1] || null;
+  const cutoffScore = Math.max(0, Number(cutoffEntry?.score) || 0);
+  const outsideDownloadedBoard = boardFull && currentScore <= cutoffScore;
+
+  let target = null;
+  let targetKind = 'number_one';
+  if (outsideDownloadedBoard) {
+    target = cutoffEntry?.isCurrentPlayer
+      ? [...nonSelfEntries].reverse().find((entry) => entry.score >= currentScore) || null
+      : cutoffEntry;
+    targetKind = target ? 'board_gate' : 'number_one';
+  } else {
+    target = nonSelfEntries
+      .filter((entry) => entry.score >= currentScore)
+      .sort((a, b) => a.score - b.score || a.rank - b.rank || a.name.localeCompare(b.name))[0] || null;
+    targetKind = target ? 'next_rival' : 'number_one';
+  }
+
+  const targetScore = target ? target.score + 1 : 0;
+  const projectedPlacement = outsideDownloadedBoard
+    ? null
+    : nonSelfEntries.filter((entry) => entry.score >= currentScore).length + 1;
+
+  return {
+    available: true,
+    currentScore,
+    targetKind,
+    target: target ? target.entry : null,
+    targetName: target?.name || '',
+    targetRank: target?.rank || null,
+    targetEntryScore: target?.score || 0,
+    targetScore,
+    scoreToPass: Math.max(0, targetScore - currentScore),
+    projectedPlacement,
+    projectedNumberOne: targetKind === 'number_one',
+    boardFull,
+    boardCount: visibleBoard.length,
+    cutoffScore,
+    snapshotOnly: true
+  };
+}
