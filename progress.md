@@ -1,6 +1,6 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-16 Combat continuity major update (verified; Steam packaging pending)
+## 2026-07-16 Combat continuity major update (deployed to Steam test)
 
 - Continued from the tracked-clean leaderboard runtime recovery lock `85f74e21fc8a223b5179e09d20cd14f22939d886` on isolated branch `codex/genre-improvement-20260716`. No leaderboard identity, score rule, stored score, save schema, achievement, Steam Cloud, or public/default Steam state was changed.
 - Charge-only weapons no longer disappear after the legacy 12-second timer. Bomb, Saw Matrix, and Nova Bloom keep exactly 3, 5, and 7 shots until actually fired; their stored-charge HUD state remains visible and recollecting the same weapon deliberately refills it.
@@ -10,6 +10,9 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Removed the complete 2,408-entry Threat Codex and procedural-art build from the live sector-transition hot path. The same full Sector 20 matrix improved from two frames over 50 ms with a roughly 267 ms maximum to zero frames over 50 ms, 16.9 ms p95, and 17.4 ms maximum; every diagnostic variant also remained below 17.6 ms.
 - Focused verification passes the compact sector contract, all 44 powerup effect cases, exact charge lifetime/counts, pickup lifecycle cleanup, bomb indicator readability, pickup confirmation, expiry readability, 48-sample gameplay-message overlap, the full sector-performance matrix, and installed-Chrome visual/control QA. The required generic web-game client was attempted with its reference action payload but remains blocked by the missing bundled `chromium_headless_shell-1208`; the repository's installed-Chrome fallback passed movement, firing, state, visual, and console checks.
 - Broad verification passes `check:i18n`, `build:current`, all-eight-language `check:i18n-ui`, browser smoke, controller-only flow, Steam/Electron bridge contract, current Electron smoke, and `git diff --check`. No new player-facing source string was added, and no untranslated fallback remains from this update.
+- Final source commit `9a3a39c912afc40391f1dc700ea8cc6e86949b37` was built as `v2026-07-16_05-19-47` and packaged as 417 files / 957,574,405 bytes. The executable is 226,698,752 bytes with SHA-256 `1f62578cc29e62cebfa7e78980d69afa53f52aa1b52f3f5f5f2ac813eea20733`.
+- The strict packaged Steam smoke recovered from an external `Session Replaced` client logout after a controlled client restart. A read-only probe then reopened `nova_swarm_global_score_v2`, confirmed 80 entries, read Global and Friends, and submitted no score. Packaged Steam smoke, keyboard/gamepad controls, fresh-profile Steam isolation, desktop package review, and packaged performance all passed; packaged performance held 60 FPS across all 11 samples.
+- Uploaded only to `sector-continue-test` as Steam BuildID `24232499`, depot manifest `7125559705317351331`. Independent SteamCMD app-info verification confirmed the test branch on the new build and public/default unchanged on BuildID `24218172`. Previous test BuildID `24230448` remains the immediate rollback target. No leaderboard definition, stored score, save, achievement, Steam Cloud setting, store metadata, pricing, or public/default state was changed.
 
 ## 2026-07-16 Steam leaderboard package recovery
 
