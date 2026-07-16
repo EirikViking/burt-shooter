@@ -991,7 +991,9 @@ class Powerup {
     // Use existing particle system for pickup burst
     scene.particleManager.createPickupEffect(this.x, this.y, this.color);
 
-    // Create expanding ring effect
+    // Draw once and animate transforms only. Rebuilding Graphics every frame
+    // created avoidable render stalls, while a scene-owned cleanup record keeps
+    // interrupted or paused pickup rings from persisting.
     const ring = new PIXI.Graphics();
     ring.label = `powerup-pickup-ring-${this.type}`;
     ring.__novaPickupEffect = true;
@@ -999,28 +1001,43 @@ class Powerup {
     ring.x = this.x;
     ring.y = this.y;
     ring.alpha = 0.8;
+    const maxRadius = this.type === 'nova_miracle' ? 101 : (this.type === 'super_extra_life' ? 61 : 45);
+    ring.circle(0, 0, maxRadius);
+    ring.stroke({
+      width: this.type === 'nova_miracle' ? 7 : (this.type === 'super_extra_life' ? 4 : 3),
+      color: this.color,
+      alpha: 0.8
+    });
+    ring.scale.set(15 / maxRadius);
     scene.container.addChild(ring);
 
-    let ringTime = 0;
-    const ringTicker = (delta) => {
-      ringTime += delta.deltaTime * 16.67;
-      const progress = ringTime / 400;
-
-      if (progress < 1) {
-        ring.clear();
-      const radius = 15 + progress * (this.type === 'nova_miracle' ? 86 : (this.type === 'super_extra_life' ? 46 : 30));
-      ring.circle(0, 0, radius);
-      ring.stroke({
-        width: this.type === 'nova_miracle' ? 7 : (this.type === 'super_extra_life' ? 4 : 3),
-        color: this.color,
-        alpha: 0.8 * (1 - progress)
-      });
-        ring.alpha = 1 - progress;
-      } else {
-        scene.game.app.ticker.remove(ringTicker);
-        scene.container.removeChild(ring);
-      }
+    const startedAt = performance.now();
+    let cleaned = false;
+    let ringTicker = null;
+    const effectRecord = { ring, ticker: null, cleanup: null };
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      scene.game?.app?.ticker?.remove?.(ringTicker);
+      if (ring.parent) ring.parent.removeChild(ring);
+      ring.destroy?.();
+      scene.activePickupEffects?.delete?.(effectRecord);
     };
+    ringTicker = () => {
+      if (!ring.parent || ring.destroyed || scene.game?.currentScene !== scene) {
+        cleanup();
+        return;
+      }
+      const progress = Math.min(1, (performance.now() - startedAt) / 400);
+      const radius = 15 + progress * (maxRadius - 15);
+      ring.scale.set(radius / maxRadius);
+      ring.alpha = 1 - progress;
+      if (progress >= 1) cleanup();
+    };
+    effectRecord.ticker = ringTicker;
+    effectRecord.cleanup = cleanup;
+    scene.activePickupEffects ||= new Set();
+    scene.activePickupEffects.add(effectRecord);
     scene.game.app.ticker.add(ringTicker);
   }
 

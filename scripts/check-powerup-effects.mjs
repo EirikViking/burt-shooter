@@ -34,6 +34,7 @@ const powerupTypes = [
   'chain_lightning',
   'orbital_strike',
   'vampire',
+  'saw_matrix',
   ...SPECTACLE_EXPANSION_POWERUP_TYPES
 ];
 
@@ -173,6 +174,7 @@ try {
     const activeEnemyBullets = () => play.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false) || [];
     const configuredMaxLives = Number(game.balanceConfig?.survival?.maxLives);
     const maxLives = Number.isFinite(configuredMaxLives) ? Math.max(1, configuredMaxLives) : null;
+    const chargeExpectations = { bomb: 3, saw_matrix: 5, nova_bloom: 7 };
 
     const clearSprites = (items) => {
       for (const item of items || []) {
@@ -383,6 +385,21 @@ try {
 
       const pickup = collect(type);
       assert(pickup.pickupVisual, `${type}: pickup did not create visible particles/message/ring`, pickup);
+      const expectedCharges = chargeExpectations[type] || 0;
+      if (expectedCharges > 0) {
+        player.activePowerup.expiresAt = Date.now() - 1;
+        player.activePowerup.remainingMs = 0;
+        player.update(1);
+        assert(player.activePowerup.type === type, `${type}: unspent charges expired before use`, {
+          activeType: player.activePowerup.type,
+          charges: player.bombShotsLeft
+        });
+        assert(player.bombShotsLeft === expectedCharges, `${type}: idle expiry changed charge count`, {
+          expectedCharges,
+          actualCharges: player.bombShotsLeft
+        });
+        assert(findState(type)?.charges === expectedCharges, `${type}: stored charge HUD state disappeared after legacy timeout`, findState(type));
+      }
       const after = statSnapshot();
       const result = {
         type,
@@ -580,8 +597,10 @@ try {
           note('intercepted', true);
           break;
         }
-        case 'bomb': {
-          assert(player.bombShotsLeft === 3 && player.bombIndicator?.visible !== false && hasState('bomb'), `${type}: bomb charges/indicator missing`);
+        case 'bomb':
+        case 'saw_matrix':
+        case 'nova_bloom': {
+          assert(player.bombShotsLeft === expectedCharges && player.bombIndicator?.visible !== false && hasState(type), `${type}: bomb charges/indicator missing`);
           const bomb = shootNow().find(bullet => bullet.isBomb);
           assert(bomb, `${type}: shot did not create bomb bullet`);
           const enemy = spawnEnemyAt(bomb.x, bomb.y, { health: 2, radius: 20 });
@@ -597,15 +616,15 @@ try {
           });
           assert((audit.staleVisibleCount || 0) === 0 && (audit.orphanedVisibleCount || 0) === 0, `${type}: bomb left dead enemy visuals`, audit);
           assert(game.score > beforeScore, `${type}: bomb kill did not award score`, { beforeScore, score: game.score });
-          shootNow();
-          shootNow();
+          for (let shot = 1; shot < expectedCharges; shot += 1) shootNow();
           const spentState = findState('bomb');
           assert(player.bombShotsLeft === 0, `${type}: bomb charges did not empty`);
           assert(player.bombIndicator?.visible === false, `${type}: bomb charge pips stayed visible after empty`);
-          assert(player.activePowerup?.type !== 'bomb', `${type}: bomb active timer stayed live after charges emptied`);
+          assert(player.activePowerup?.type !== type, `${type}: bomb active state stayed live after charges emptied`);
           assert(spentState?.spent === true && spentState?.charges === 0, `${type}: spent bomb HUD state missing`, spentState);
           player.bombSpentUntil = Date.now() - 1;
           assert(!findState('bomb'), `${type}: spent bomb HUD state did not clear`);
+          note('exactChargeCount', expectedCharges);
           note('detonatedClean', audit);
           break;
         }
@@ -673,10 +692,41 @@ try {
       results.push(result);
     }
 
+    resetScene();
+    play.gameTime = 42;
+    play.introActive = true;
+    play.pendingEnemyStartTimeout = null;
+    play.update(1);
+    assert(play.gameTime === 42, 'run clock advanced during ship intro', { gameTime: play.gameTime });
+    play.introActive = false;
+    play.pendingEnemyStartTimeout = 1;
+    play.update(1);
+    assert(play.gameTime === 42, 'run clock advanced during sector-entry hold', { gameTime: play.gameTime });
+    play.pendingEnemyStartTimeout = null;
+    play.update(1);
+    assert(play.gameTime > 42, 'run clock did not advance after combat control returned', { gameTime: play.gameTime });
+    const runClockProbe = { heldAt: 42, resumedAt: play.gameTime };
+
+    resetScene();
+    collect('shield');
+    const pickupEffectsBeforeCleanup = Number(play.activePickupEffects?.size) || 0;
+    assert(pickupEffectsBeforeCleanup > 0, 'pickup effect was not registered for lifecycle cleanup');
+    play.cleanupSkippedFrameVisuals?.('pause');
+    const pickupEffectsAfterCleanup = Number(play.activePickupEffects?.size) || 0;
+    const persistentPickupRings = (play.container?.children || []).filter(child => child?.__novaPickupEffect).length;
+    assert(pickupEffectsAfterCleanup === 0 && persistentPickupRings === 0, 'interrupted pickup effect persisted', {
+      pickupEffectsBeforeCleanup,
+      pickupEffectsAfterCleanup,
+      persistentPickupRings
+    });
+    const pickupCleanupProbe = { pickupEffectsBeforeCleanup, pickupEffectsAfterCleanup, persistentPickupRings };
+
     return {
       status: 'passed',
       testedTypes: types,
       results,
+      runClockProbe,
+      pickupCleanupProbe,
       finalState: renderState()
     };
   }, powerupTypes);

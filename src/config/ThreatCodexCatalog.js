@@ -1030,6 +1030,30 @@ function sectorPressureStyle(level) {
   return styles[Math.abs(level - 1) % styles.length];
 }
 
+function sectorAccent(level) {
+  return level >= 60
+    ? 0xc77dff
+    : level >= 30
+      ? 0xffe76a
+      : level >= 11
+        ? 0x7db7ff
+        : level === 10
+          ? 0x7dffcc
+          : 0x37f5ff;
+}
+
+// Lightweight gameplay signal. Building the complete Threat Codex here would
+// also materialize thousands of unrelated entries and procedural art during a
+// live sector transition.
+export function getSectorArrivalSignal(level = 1) {
+  const safeLevel = normalizeSectorLevel(level) || 1;
+  return {
+    sectorNumber: safeLevel,
+    pressureStyle: sectorPressureStyle(safeLevel),
+    accent: sectorAccent(safeLevel)
+  };
+}
+
 function generatedSectorCopy(level, sector) {
   const band = sectorBand(level).toLowerCase();
   const style = sectorPressureStyle(level);
@@ -1136,7 +1160,7 @@ function sectorEntry(level) {
     description: '',
     tip: copy.tip,
     art: getSectorCodexArt(level),
-    accent: level >= 60 ? 0xc77dff : level >= 30 ? 0xffe76a : level >= 11 ? 0x7db7ff : level === 10 ? 0x7dffcc : 0x37f5ff,
+    accent: sectorAccent(level),
     signalClass: 'sector signal',
     sectorNumber: level,
     difficultyBand: band,

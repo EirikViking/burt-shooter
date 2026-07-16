@@ -1434,7 +1434,7 @@ export class Player {
     this.updateActivePowerupDuration(now, dt);
 
     // Powerup Expiry
-    if (this.activePowerup.type && this.getActivePowerupRemainingMs(now) <= 0) {
+    if (this.activePowerup.type && !this.hasUnspentChargePowerup() && this.getActivePowerupRemainingMs(now) <= 0) {
       this.resetPowerups();
     }
     if (this.rankBoost.type && now > this.rankBoost.expiresAt) {
@@ -2885,6 +2885,11 @@ export class Player {
     this.activePowerup.expiresAt = now + remainingMs;
   }
 
+  hasUnspentChargePowerup() {
+    const effect = this.getCurrentPowerupEffect() || {};
+    return effect.charges === true && Boolean(effect.bombShots) && this.bombShotsLeft > 0;
+  }
+
   getActivePowerupStates() {
     const now = Date.now();
     const states = [];
@@ -2903,6 +2908,13 @@ export class Player {
       });
     };
     const getPrimaryStateDetail = (type) => {
+      if (activeEffect.charges === true && activeEffect.bombShots) {
+        return {
+          charges: Math.max(0, this.bombShotsLeft || 0),
+          maxCharges: this.bombMaxShots || Math.max(1, Math.round(Number(activeEffect.bombShots) || 3)),
+          detail: `${Math.max(0, this.bombShotsLeft || 0)} SHOTS`
+        };
+      }
       switch (type) {
         case 'bomb':
           return {
@@ -3834,7 +3846,7 @@ export class Player {
       this.ensureRenderable('applyPowerup:' + type);
       return;
     }
-    if (type !== 'shield' && this.activePowerup.type === type) {
+    if (type !== 'shield' && this.activePowerup.type === type && effect.charges !== true) {
       this.setActivePowerupDuration(type, durationMs, now);
       if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
       if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;

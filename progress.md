@@ -1,5 +1,16 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-16 Combat continuity major update (verified; Steam packaging pending)
+
+- Continued from the tracked-clean leaderboard runtime recovery lock `85f74e21fc8a223b5179e09d20cd14f22939d886` on isolated branch `codex/genre-improvement-20260716`. No leaderboard identity, score rule, stored score, save schema, achievement, Steam Cloud, or public/default Steam state was changed.
+- Charge-only weapons no longer disappear after the legacy 12-second timer. Bomb, Saw Matrix, and Nova Bloom keep exactly 3, 5, and 7 shots until actually fired; their stored-charge HUD state remains visible and recollecting the same weapon deliberately refills it.
+- Run time now measures playable combat rather than ship introductions or guarded sector-entry holds. Runtime proof held the clock at 42.000 through both non-playable states and resumed it at 42.0167 only after control returned.
+- Pickup rings now draw once, animate by transform, and register an idempotent scene-owned cleanup. Pause/interruption proof reduced one active ring to zero registered and zero persistent visuals instead of leaving a stuck ring behind.
+- Replaced the dominant full-screen sector dossier with a compact localized top radar signal that states the sector and its immediate pressure read. The inspected 1920x1080 Sector 20 signal measured 469x54 pixels, remained separated from Mission Status, preserved the score lane, and left the combat field visible.
+- Removed the complete 2,408-entry Threat Codex and procedural-art build from the live sector-transition hot path. The same full Sector 20 matrix improved from two frames over 50 ms with a roughly 267 ms maximum to zero frames over 50 ms, 16.9 ms p95, and 17.4 ms maximum; every diagnostic variant also remained below 17.6 ms.
+- Focused verification passes the compact sector contract, all 44 powerup effect cases, exact charge lifetime/counts, pickup lifecycle cleanup, bomb indicator readability, pickup confirmation, expiry readability, 48-sample gameplay-message overlap, the full sector-performance matrix, and installed-Chrome visual/control QA. The required generic web-game client was attempted with its reference action payload but remains blocked by the missing bundled `chromium_headless_shell-1208`; the repository's installed-Chrome fallback passed movement, firing, state, visual, and console checks.
+- Broad verification passes `check:i18n`, `build:current`, all-eight-language `check:i18n-ui`, browser smoke, controller-only flow, Steam/Electron bridge contract, current Electron smoke, and `git diff --check`. No new player-facing source string was added, and no untranslated fallback remains from this update.
+
 ## 2026-07-16 Steam leaderboard package recovery
 
 - BuildID `24226288` was diagnosed as a defective Steam package: `steamworks-ffi-node` was incomplete and `koffi` was absent, so the renderer selected the Cloud Global fallback and hid the existing Steam boards. The leaderboard definitions and stored scores were not deleted or changed.

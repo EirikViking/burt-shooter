@@ -8,33 +8,49 @@ function fail(message) {
   errors.push(message);
 }
 
-if (!source.includes('SECTOR_ARRIVAL_STINGER_MS = 2400')) {
-  fail('sector arrival stinger should stay punchy at 2400ms');
+if (!source.includes('SECTOR_ARRIVAL_STINGER_MS = 1100 + GAMEPLAY_MESSAGE_EXTRA_READ_MS')) {
+  fail('sector arrival stinger should use the compact 2100ms readable window');
 }
 
 if (!source.includes('showSectorArrivalStinger({ postBoss: postBossLevelIntro })')) {
   fail('startLevel should show the sector arrival stinger before the normal sector toast');
 }
 
-if (!source.includes('this.uiContainer.addChild(root)')) {
-  fail('sector arrival stinger should render in uiContainer so the HUD remains above it');
-}
-
-if (!source.includes("root.zIndex = -20")) {
-  fail('sector arrival stinger should stay behind the HUD layer');
-}
-
-if (!source.includes('getSectorCodexArt(safeLevel)') || !source.includes('getThreatCodexCatalog()')) {
-  fail('sector arrival stinger should reuse sector Codex art and metadata');
+if (!source.includes('getSectorArrivalEntry(level)') || !source.includes('getSectorArrivalSignal(safeLevel)')) {
+  fail('sector arrival stinger should reuse the lightweight Threat Codex sector signal');
 }
 
 const stingerStart = source.indexOf('showSectorArrivalStinger({ postBoss = false } = {})');
-const stingerEnd = source.indexOf('const shade = new PIXI.Graphics();', stingerStart);
-const stingerSetupSource = stingerStart >= 0 && stingerEnd > stingerStart
+const stingerEnd = source.indexOf('\n  update(delta) {', stingerStart);
+const stingerSource = stingerStart >= 0 && stingerEnd > stingerStart
   ? source.slice(stingerStart, stingerEnd)
   : '';
-if (!source.includes('preloadSectorArrivalArt') || stingerSetupSource.includes('PIXI.Assets.load(')) {
-  fail('sector arrival stinger art should be preloaded through the warm cache, not loaded cold during display');
+
+if (!stingerSource) {
+  fail('sector arrival stinger implementation was not found');
+} else {
+  const requiredCompactTokens = [
+    'this.enqueueToast(',
+    '`${sectorLabel} // ${pressure}`',
+    "slot: 'top'",
+    "type: 'sector_arrival'",
+    'extraReadTimeMs: GAMEPLAY_MESSAGE_EXTRA_READ_MS',
+    'transition: true'
+  ];
+  requiredCompactTokens.forEach((token) => {
+    if (!stingerSource.includes(token)) fail(`compact sector arrival stinger is missing ${token}`);
+  });
+  const forbiddenHotPathTokens = [
+    'PIXI.Assets.load(',
+    'preloadSectorArrivalArt(',
+    'new PIXI.Container(',
+    'new PIXI.Graphics(',
+    'createText(',
+    'ticker.add('
+  ];
+  forbiddenHotPathTokens.forEach((token) => {
+    if (stingerSource.includes(token)) fail(`sector arrival hot path should not include ${token}`);
+  });
 }
 
 if (!source.includes('RUN_MODES.SECTOR_START') ||
@@ -44,60 +60,51 @@ if (!source.includes('RUN_MODES.SECTOR_START') ||
   fail('sector arrival stinger should skip sector 1 and the initial Sector Start challenge sector');
 }
 
-if (!source.includes('prepare.upload(texture)')) {
-  fail('sector arrival stinger should prepare textures for render to avoid first-use GPU upload hitches');
-}
-
 const startPrewarmIndex = source.indexOf('this.prewarmLevelEntryAssets(this.game.level, { ahead: 2 })');
 const scheduledEnemyStartIndex = source.indexOf('this.scheduleEnemyStartForLevel(this.game.level, {');
 if (startPrewarmIndex < 0 || scheduledEnemyStartIndex < 0 || startPrewarmIndex > scheduledEnemyStartIndex) {
-  fail('level entry assets should begin prewarming before enemyManager.startLevel spawns the first wave');
-}
-
-const showArrivalIndex = source.indexOf('this.showSectorArrivalStinger({ postBoss: postBossLevelIntro })');
-if (
-  !source.includes('pendingEnemyStartTimeout') ||
-  !source.includes('getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120') ||
-  !source.includes('this.enemyManager?.beginLevelEntryHold?.(targetLevel)') ||
-  showArrivalIndex < 0 ||
-  scheduledEnemyStartIndex < 0 ||
-  showArrivalIndex > scheduledEnemyStartIndex
-) {
-  fail('enemy wave release should be delayed until the visible sector arrival stinger is finished');
-}
-
-const holdIndex = source.indexOf('this.enemyManager?.beginLevelEntryHold?.(targetLevel)');
-const releaseIndex = source.indexOf('this.pendingEnemyStartTimeout = setTimeout(startEnemies, delayMs)');
-if (holdIndex < 0 || releaseIndex < 0 || holdIndex > releaseIndex) {
-  fail('delayed sector entry should put EnemyManager into a non-complete hold before the timeout starts');
-}
-
-if (!enemyManagerSource.includes('beginLevelEntryHold(level)') ||
-  !enemyManagerSource.includes("this.state = 'LEVEL_ENTRY_HOLD'") ||
-  !enemyManagerSource.includes("this.phase = 'ENTRY_HOLD'")) {
-  fail('EnemyManager should expose a non-complete level entry hold state for delayed arrivals');
-}
-
-if (!source.includes('scheduleEnemyStartForLevel(level') ||
-  !source.includes('this.enemyManager.startLevel(targetLevel)') ||
-  !source.includes('this.enemyManager.forceBossStart(targetLevel)')) {
-  fail('delayed enemy release should keep normal and explicit debug boss starts behind one guarded helper');
+  fail('incoming generated enemy textures should begin prewarming before the first wave');
 }
 
 if (!source.includes('getGeneratedEnemyProfilesForLevel') || !source.includes('GameAssets.getGeneratedEnemyTexture(index)')) {
   fail('level entry warmup should include generated enemy ship textures for the incoming sector');
 }
 
-if (!source.includes("translateText('NEON RADAR LOCK')") || !source.includes("translateText('THREAT DOSSIER: {hint}', { hint })")) {
-  fail('sector arrival stinger labels should use localized existing strings');
+const showArrivalIndex = source.indexOf('this.showSectorArrivalStinger({ postBoss: postBossLevelIntro })');
+if (!source.includes('pendingEnemyStartTimeout') ||
+  !source.includes('getSectorArrivalStingerDuration({ postBoss: postBossLevelIntro }) + 120') ||
+  !source.includes('this.enemyManager?.beginLevelEntryHold?.(targetLevel)') ||
+  showArrivalIndex < 0 ||
+  scheduledEnemyStartIndex < 0 ||
+  showArrivalIndex > scheduledEnemyStartIndex) {
+  fail('enemy wave release should remain delayed until the compact sector signal finishes');
 }
 
-if (!source.includes('this.clearSectorArrivalStinger();')) {
+const holdIndex = source.indexOf('this.enemyManager?.beginLevelEntryHold?.(targetLevel)');
+const releaseIndex = source.indexOf('this.pendingEnemyStartTimeout = setTimeout(startEnemies, delayMs)');
+if (holdIndex < 0 || releaseIndex < 0 || holdIndex > releaseIndex) {
+  fail('delayed sector entry should put EnemyManager into a guarded hold before its timeout');
+}
+
+if (!enemyManagerSource.includes('beginLevelEntryHold(level)') ||
+  !enemyManagerSource.includes("this.state = 'LEVEL_ENTRY_HOLD'") ||
+  !enemyManagerSource.includes("this.phase = 'ENTRY_HOLD'")) {
+  fail('EnemyManager should expose a non-complete level entry hold state');
+}
+
+if (!source.includes('scheduleEnemyStartForLevel(level') ||
+  !source.includes('this.enemyManager.startLevel(targetLevel)') ||
+  !source.includes('this.enemyManager.forceBossStart(targetLevel)')) {
+  fail('normal and debug boss starts should remain behind one guarded helper');
+}
+
+if (!source.includes('if (!this.introActive && !this.pendingEnemyStartTimeout)') ||
+  !source.includes('this.gameTime += delta / 60')) {
+  fail('run clock should advance only after intro and sector-entry holds finish');
+}
+
+if (!source.includes('this.clearSectorArrivalStinger();') || !source.includes('if (stinger.timeout) clearTimeout(stinger.timeout)')) {
   fail('sector arrival stinger should clean up during scene lifecycle');
-}
-
-if (!source.includes('backdropBaseScale.value * (1 + progress * 0.035)')) {
-  fail('sector arrival stinger should preserve cover scale while animating the art');
 }
 
 if (errors.length) {
@@ -106,4 +113,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[sector-arrival-stinger] PASS punchy full-screen sector art stinger wired behind HUD');
+console.log('[sector-arrival-stinger] PASS compact performance-safe radar signal wired behind HUD');
