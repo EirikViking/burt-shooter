@@ -821,8 +821,22 @@ async function waitForPlay(window) {
   const startedAt = Date.now();
   let lastState = null;
   let introSettled = false;
+  let runStartRequested = false;
   while (Date.now() - startedAt < 20000) {
     lastState = await readPlayState(window);
+    if (!runStartRequested && lastState?.scene === 'menu') {
+      runStartRequested = await window.webContents.executeJavaScript(`
+        (async () => {
+          const game = window.__game;
+          if (!game || game.currentSceneName !== 'menu' || typeof game.startGame !== 'function') return false;
+          return Boolean(await game.startGame());
+        })()
+      `, true).catch(() => false);
+      if (runStartRequested) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        continue;
+      }
+    }
     const playerReady = Boolean(lastState?.player?.active && Number.isFinite(lastState?.player?.x) && Number.isFinite(lastState?.player?.y));
     const controlsReady = Boolean(
       lastState?.scene === 'play' &&
@@ -1079,7 +1093,7 @@ async function runControlSmoke(window) {
   });
 
   await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron control smoke');
-  await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&controlSmoke=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await captureControlScreenshot(window, outputDir, '00-control-start.png', capturedScreenshots, screenshotWarnings);
 
@@ -1189,7 +1203,7 @@ async function runPerfSmoke(window) {
   });
 
   await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron perf smoke');
-  await window.loadURL(`${baseUrl}/?desktop=1&autostart=1&perf=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&perf=1`);
   const startState = await waitForPlay(window);
   await window.webContents.executeJavaScript(`
     (() => {
