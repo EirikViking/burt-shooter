@@ -13,6 +13,7 @@ import { PowerupManager } from '../managers/PowerupManager.js';
 import { rankManager } from '../managers/RankManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
+import { SpectacleDirector } from '../effects/SpectacleDirector.js';
 import { ScorePopupManager } from '../ui/ScorePopup.js';
 import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
@@ -197,6 +198,7 @@ export class PlayScene {
     this.powerupManager = null;
     this.particleManager = null;
     this.screenShake = null;
+    this.spectacleDirector = null;
     this.hud = null;
     this.isPaused = false;
     this.pauseOverlay = null;
@@ -564,6 +566,8 @@ export class PlayScene {
     this.lastGameplayGamepadConnected = false;
     this.setupAutoPauseHandlers();
     this.resetGameplayBackdropState();
+    this.spectacleDirector?.destroy?.();
+    this.spectacleDirector = null;
     this.gameContainer.removeChildren();
     this.decorativeOverlay.removeChildren();
     this.uiContainer.removeChildren();
@@ -577,6 +581,13 @@ export class PlayScene {
     this.ultrawideAmbienceDebug = null;
     this.uiContainer.sortableChildren = true;
     this.uiOverlay.sortableChildren = true;
+    this.spectacleDirector = new SpectacleDirector({
+      container: this.decorativeOverlay,
+      ticker: this.game?.app?.ticker,
+      getWidth: () => this.game.getWidth(),
+      getHeight: () => this.game.getHeight(),
+      getAccessibilitySettings
+    });
     this.criticalHullOverlay = null;
     this.slowTimeVisualField = null;
     this.overrunClearEffects = [];
@@ -4379,6 +4390,17 @@ export class PlayScene {
       volume: compact ? 0.52 : 0.72,
       minIntervalMs: 620
     });
+    this.emitSpectacle('wave', {
+      x: width * 0.5,
+      y: effectY,
+      color: 0x00ff66,
+      accent: 0xffff66,
+      intensity: compact ? 0.72 : 1.08,
+      audioIntensity: compact ? 0.68 : 1,
+      audioVolume: compact ? 0.58 : 0.84,
+      pitchScale: 1.04,
+      force: true
+    });
 
     // Animation sequence: explosive entry, hold, smooth exit
     let elapsed = 0;
@@ -6381,6 +6403,8 @@ export class PlayScene {
     }
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = null;
+    this.spectacleDirector?.destroy?.();
+    this.spectacleDirector = null;
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.destroyPauseOverlay();
@@ -14241,6 +14265,19 @@ export class PlayScene {
     deathProfile.particlePressure = activeParticles;
     deathProfile.combatTextPressure = activeCombatText;
     this.createEnemyDeathClarityBurst(deathProfile);
+    if (deathProfile.highTier) {
+      this.emitSpectacle('elite', {
+        x,
+        y,
+        color: baseColor,
+        accent: deathProfile.accent,
+        intensity: deathProfile.tier === 'elite' ? 1.16 : 0.96,
+        audioIntensity: deathProfile.tier === 'elite' ? 1.08 : 0.9,
+        audioVolume: 0.82,
+        pitchScale: Math.max(0.84, Math.min(1.14, 1.08 - Math.min(18, deathProfile.maxHealth) * 0.012)),
+        performanceLite
+      });
+    }
 
     if (lateMayhem && !performanceLite) {
       const burstCount = Math.max(1, Math.min(3, Math.floor(profile.deathBurstCount || 1)));
@@ -14523,6 +14560,17 @@ export class PlayScene {
       volume: highTier ? 0.58 : 0.44,
       minIntervalMs: 160
     });
+    this.emitSpectacle('combo', {
+      x,
+      y,
+      color,
+      accent,
+      intensity: highTier ? 1.24 : 0.88,
+      audioIntensity: highTier ? 1.14 : 0.82,
+      audioVolume: highTier ? 0.92 : 0.68,
+      pitchScale: highTier ? 0.94 : 1.08,
+      force: true
+    });
 
     this.lastComboCelebration = {
       triggered: true,
@@ -14633,6 +14681,17 @@ export class PlayScene {
     this.triggerShockwave?.(sourceX, sourceY, baseColor);
     this.screenShake?.shake?.(this.game.getWidth() < 620 ? 7 : 13, 30);
     AudioManager.playSfx('nova_miracle_purge', { force: true, volume: 0.96, minIntervalMs: 0 });
+    this.emitSpectacle('miracle', {
+      x: sourceX,
+      y: sourceY,
+      color: baseColor,
+      accent: 0x43f7ff,
+      intensity: 1.36,
+      audioIntensity: 1.2,
+      audioVolume: 0.94,
+      pitchScale: 1.02,
+      force: true
+    });
 
     const layerHost = this.gameContainer || this.container;
     const tickerHost = this.game?.app?.ticker;
@@ -14731,6 +14790,19 @@ export class PlayScene {
     this.triggerShockwave?.(x, y, color);
     const claimCue = this.triggerPowerupPickupClaimCue(powerup, { color, major, type });
     this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : (major ? 5 : 3), major ? 14 : 9);
+    if (major && type !== 'nova_miracle') {
+      this.emitSpectacle('pickup', {
+        x,
+        y,
+        color,
+        accent: 0xffffff,
+        intensity: type === 'super_extra_life' ? 1.18 : 0.98,
+        audioIntensity: type === 'super_extra_life' ? 1.08 : 0.9,
+        audioVolume: 0.76,
+        pitchScale: type === 'row_core' ? 0.82 : 1.04,
+        force: true
+      });
+    }
 
     this.lastPowerupPickupJuice = {
       triggered: true,
@@ -17696,8 +17768,13 @@ export class PlayScene {
     layer.addChild(root);
 
     const screenFlash = new PIXI.Graphics();
-    screenFlash.rect(-x, -y, width, height);
-    screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.12 });
+    if (index === 0) {
+      screenFlash.rect(-x, -y, width, height);
+      screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.12 });
+    } else {
+      screenFlash.circle(0, 0, radius * 1.76);
+      screenFlash.fill({ color: superStorm ? 0xff6bfa : boss ? 0xff6d82 : 0xffef9a, alpha: 0.075 });
+    }
     root.addChild(screenFlash);
 
     const impactField = new PIXI.Graphics();
@@ -17789,6 +17866,20 @@ export class PlayScene {
             minIntervalMs: 0
           });
         }
+        this.emitSpectacle('reinforcement', {
+          x,
+          y,
+          color: primary,
+          accent: secondary,
+          intensity: superStorm ? 1.18 : (index === 0 ? 0.98 : 0.78),
+          audioIntensity: superStorm ? 1.08 : 0.88,
+          audioVolume: 0.74,
+          pitchScale: 0.96 + index * 0.035,
+          force: true,
+          audio: index === 0,
+          performanceLite: count >= 3 && index > 0,
+          seed: index + count * 0.37
+        });
         if (!reducedMotion) {
           this.screenShake?.shake?.(index === 0 ? (superStorm ? 9 : 6) : 3.2, index === 0 ? 18 : 10);
           if (index === 0 && superStorm) this.screenShake?.freezeFrame?.(2);
@@ -17816,7 +17907,10 @@ export class PlayScene {
       }
 
       impactField.clear();
-      const shockwaveCount = reducedMotion ? 2 : 4;
+      const crowdedArrival = count >= 3;
+      const shockwaveCount = reducedMotion
+        ? 1
+        : (crowdedArrival ? (index === 0 ? 2 : 1) : 3);
       for (let ring = 0; ring < shockwaveCount; ring += 1) {
         const phase = Math.min(1, Math.max(0, t * 1.45 - ring * 0.11));
         const ringRadius = radius * (0.72 + phase * (3.1 + ring * 0.25));
@@ -17827,7 +17921,9 @@ export class PlayScene {
           alpha: (0.58 - ring * 0.08) * (1 - phase) * fade
         });
       }
-      const rayCount = reducedMotion ? 8 : 20;
+      const rayCount = reducedMotion
+        ? 6
+        : (crowdedArrival ? (index === 0 ? 10 : 7) : 16);
       for (let ray = 0; ray < rayCount; ray += 1) {
         const angle = (Math.PI * 2 * ray) / rayCount + index * 0.31;
         const rayTravel = Math.min(1, t * (1.7 + (ray % 4) * 0.08));
@@ -17853,7 +17949,7 @@ export class PlayScene {
 
       streaks.clear();
       const travel = Math.min(1, t / 0.72);
-      const streakCount = reducedMotion ? 6 : 15;
+      const streakCount = reducedMotion ? 5 : (count >= 3 ? 8 : 13);
       for (let streak = 0; streak < streakCount; streak += 1) {
         const side = streak - (streakCount - 1) / 2;
         const startX = side * radius * 0.16;
@@ -17987,6 +18083,17 @@ export class PlayScene {
     if (!reducedMotion) this.screenShake?.shake?.(superStorm ? 7 : 5, superStorm ? 18 : 14);
     AudioManager.playSfx('combo_breakout', { force: true, volume: superStorm ? 0.72 : 0.58, minIntervalMs: 0 });
     AudioManager.playSfx('nova_wave_clear_sweep', { force: true, volume: superStorm ? 0.72 : 0.56, minIntervalMs: 0 });
+    this.emitSpectacle('reinforcement', {
+      x: centerX,
+      y: centerY,
+      color: primary,
+      accent: secondary,
+      intensity: superStorm ? 1.24 : 0.96,
+      audioIntensity: superStorm ? 1.08 : 0.86,
+      audioVolume: 0.72,
+      pitchScale: 1.06,
+      force: true
+    });
     return true;
   }
 
@@ -18158,6 +18265,44 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
   }
 
+  emitSpectacle(kind = 'kill', options = {}) {
+    const width = Math.max(1, Number(this.game?.getWidth?.()) || 1);
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || 1);
+    const x = Number.isFinite(options.x)
+      ? options.x
+      : (Number.isFinite(this.player?.x) ? this.player.x : width * 0.5);
+    const y = Number.isFinite(options.y)
+      ? options.y
+      : (Number.isFinite(this.player?.y) ? this.player.y : height * 0.55);
+    const result = this.spectacleDirector?.emit?.({
+      kind,
+      x,
+      y,
+      color: Number.isFinite(options.color) ? options.color : 0x43efff,
+      accent: Number.isFinite(options.accent) ? options.accent : 0xff5df7,
+      intensity: Number.isFinite(options.intensity) ? options.intensity : 1,
+      durationMs: options.durationMs,
+      force: options.force === true,
+      performanceLite: options.performanceLite === true,
+      seed: options.seed
+    });
+    if (!result || options.audio === false) return result;
+
+    const pan = Math.max(-0.78, Math.min(0.78, ((x / width) - 0.5) * 1.42));
+    AudioManager.playSpectacleAccent?.(kind, {
+      pan,
+      intensity: Number.isFinite(options.audioIntensity)
+        ? options.audioIntensity
+        : (Number.isFinite(options.intensity) ? options.intensity : 1),
+      volume: Number.isFinite(options.audioVolume) ? options.audioVolume : 1,
+      pitchScale: Number.isFinite(options.pitchScale) ? options.pitchScale : 1,
+      force: options.audioForce === true || options.force === true,
+      minIntervalMs: options.audioMinIntervalMs,
+      cooldownKey: options.audioCooldownKey
+    });
+    return result;
+  }
+
   triggerShockwave(x, y, color = 0xffff00) {
     const ring = new PIXI.Graphics();
     ring.circle(0, 0, 10);
@@ -18291,6 +18436,18 @@ export class PlayScene {
     const burstCount = 12 + (seed % 5) + (style.pattern === 'confetti' ? 5 : 0);
     const ringCount = 3 + (seed % 3) + (style.pattern === 'vortex' || style.pattern === 'spiral' ? 2 : 0);
 
+    this.emitSpectacle('boss_death', {
+      x: bossX,
+      y: bossY,
+      color: baseColor,
+      accent: style.accent,
+      intensity: 1.42,
+      audioIntensity: 1.22,
+      audioVolume: 0.94,
+      pitchScale: 0.92 + (bossIndex % 5) * 0.025,
+      force: true,
+      seed
+    });
     this.createBossDeathFlash(baseColor);
     this.createBossDeathSigil(bossX, bossY, style, palette);
     this.screenShake?.shake(22, 34);
@@ -18371,6 +18528,17 @@ export class PlayScene {
     this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 1.0 });
+    this.emitSpectacle('boss_phase', {
+      x: boss.x,
+      y: boss.y,
+      color: phase === 2 ? 0xffaa00 : 0xff3300,
+      accent: phase === 2 ? 0x43efff : 0xff5df7,
+      intensity: phase === 2 ? 1.12 : 1.3,
+      audioIntensity: phase === 2 ? 1 : 1.15,
+      audioVolume: 0.86,
+      pitchScale: phase === 2 ? 1.04 : 0.92,
+      force: true
+    });
     this.showBossTaunt(phase === 2 ? 'boss_half' : 'boss_phase2');
   }
 

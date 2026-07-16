@@ -249,6 +249,7 @@
     "check:straggler-beacon": "node scripts/check-straggler-beacon.mjs",
     "check:bonus-drone-clarity": "node scripts/check-bonus-drone-clarity.mjs",
     "check:projectile-visuals": "node scripts/check-projectile-visuals.mjs",
+    "check:sensory-overhaul": "node scripts/check-sensory-overhaul.mjs",
     "check:player-projectile-readability": "node scripts/check-player-projectile-readability.mjs",
     "check:enemy-wave-patterns": "node scripts/check-enemy-wave-patterns.mjs",
     "check:normal-enemy-attack-variety": "node scripts/check-normal-enemy-attack-variety.mjs",

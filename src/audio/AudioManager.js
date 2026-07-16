@@ -3,6 +3,81 @@ import * as Features from '../config/Features.js';
 import { SFX_CATALOG, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS, getMusicPlaylists, normalizeMusicPack } from './SoundCatalog.js';
 import { BUILD_ID } from '../buildInfo.js';
 
+const SPECTACLE_ACCENT_PROFILES = Object.freeze({
+  kill: Object.freeze({
+    rootHz: 92,
+    sparkleHz: 760,
+    durationSeconds: 0.24,
+    volume: 0.34,
+    noise: 0.16,
+    minIntervalMs: 80
+  }),
+  elite: Object.freeze({
+    rootHz: 64,
+    sparkleHz: 540,
+    durationSeconds: 0.42,
+    volume: 0.48,
+    noise: 0.24,
+    minIntervalMs: 130
+  }),
+  combo: Object.freeze({
+    rootHz: 108,
+    sparkleHz: 930,
+    durationSeconds: 0.5,
+    volume: 0.42,
+    noise: 0.16,
+    minIntervalMs: 160
+  }),
+  pickup: Object.freeze({
+    rootHz: 176,
+    sparkleHz: 1180,
+    durationSeconds: 0.48,
+    volume: 0.38,
+    noise: 0.1,
+    minIntervalMs: 150
+  }),
+  wave: Object.freeze({
+    rootHz: 48,
+    sparkleHz: 680,
+    durationSeconds: 0.74,
+    volume: 0.54,
+    noise: 0.2,
+    minIntervalMs: 520
+  }),
+  reinforcement: Object.freeze({
+    rootHz: 42,
+    sparkleHz: 430,
+    durationSeconds: 0.66,
+    volume: 0.5,
+    noise: 0.28,
+    minIntervalMs: 260
+  }),
+  boss_phase: Object.freeze({
+    rootHz: 44,
+    sparkleHz: 510,
+    durationSeconds: 0.82,
+    volume: 0.58,
+    noise: 0.24,
+    minIntervalMs: 520
+  }),
+  boss_death: Object.freeze({
+    rootHz: 32,
+    sparkleHz: 390,
+    durationSeconds: 1.08,
+    volume: 0.66,
+    noise: 0.34,
+    minIntervalMs: 1400
+  }),
+  miracle: Object.freeze({
+    rootHz: 38,
+    sparkleHz: 1320,
+    durationSeconds: 1.12,
+    volume: 0.62,
+    noise: 0.26,
+    minIntervalMs: 5000
+  })
+});
+
 class AudioController {
   constructor() {
     this.context = null;
@@ -70,6 +145,9 @@ class AudioController {
     this.lastSfxTrack = null;
     this.alienBarkCooldownUntil = 0;
     this.lastAlienBarkVariant = -1;
+    this.spectacleAccentCooldowns = {};
+    this.spectacleNoiseBuffer = null;
+    this.lastSpectacleAccent = null;
     this.lastVoiceEvent = null;
     this.lastVoiceTrack = null;
     this.sfxAssetHealth = new Map();
@@ -286,6 +364,10 @@ class AudioController {
     try {
       audio.currentTime = 0;
     } catch { }
+    try {
+      audio.playbackRate = 1;
+      if ('preservesPitch' in audio) audio.preservesPitch = true;
+    } catch { }
     return audio;
   }
 
@@ -390,6 +472,16 @@ class AudioController {
     const audio = this.getSfxAudio(eventName, src, options);
     const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
     audio.volume = this.clampUnit(this.masterVolume * this.sfxVolume * volumeMultiplier);
+    const authoredRate = this.readMixNumber(options.playbackRate, mix.playbackRate ?? 1);
+    const rateMin = this.readMixNumber(options.playbackRateMin, mix.playbackRateMin ?? authoredRate);
+    const rateMax = this.readMixNumber(options.playbackRateMax, mix.playbackRateMax ?? authoredRate);
+    const lowRate = Math.max(0.55, Math.min(1.8, Math.min(rateMin, rateMax)));
+    const highRate = Math.max(lowRate, Math.min(1.8, Math.max(rateMin, rateMax)));
+    const playbackRate = lowRate + Math.random() * (highRate - lowRate);
+    try {
+      audio.playbackRate = playbackRate;
+      if ('preservesPitch' in audio) audio.preservesPitch = options.preservePitch === true;
+    } catch { }
     audio.play().catch(e => {
       this.handleSfxPlayFailure(eventName, audio.src, e);
     });
@@ -399,6 +491,156 @@ class AudioController {
     if (frameCounters) {
       frameCounters.sfxPlayed = (Number(frameCounters.sfxPlayed) || 0) + 1;
       frameCounters.lastSfxEvent = eventName;
+    }
+    return true;
+  }
+
+  getSpectacleNoiseBuffer() {
+    const ctx = this.context;
+    if (!ctx) return null;
+    if (this.spectacleNoiseBuffer?.sampleRate === ctx.sampleRate) return this.spectacleNoiseBuffer;
+    const durationSeconds = 1.2;
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * durationSeconds)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let previous = 0;
+    for (let index = 0; index < data.length; index += 1) {
+      const white = Math.random() * 2 - 1;
+      previous = previous * 0.72 + white * 0.28;
+      data[index] = previous;
+    }
+    this.spectacleNoiseBuffer = buffer;
+    return buffer;
+  }
+
+  playSpectacleAccent(kind = 'kill', options = {}) {
+    if (!this.enabled || !this.context) return false;
+    const profile = SPECTACLE_ACCENT_PROFILES[kind] || SPECTACLE_ACCENT_PROFILES.kill;
+    const now = Date.now();
+    const cooldownKey = String(options.cooldownKey || kind);
+    const minIntervalMs = Math.max(0, this.readMixNumber(options.minIntervalMs, profile.minIntervalMs));
+    if (options.force !== true && now < (Number(this.spectacleAccentCooldowns[cooldownKey]) || 0)) {
+      return false;
+    }
+    this.spectacleAccentCooldowns[cooldownKey] = now + minIntervalMs;
+
+    const ctx = this.context;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+    const intensity = Math.max(0.25, Math.min(1.55, this.readMixNumber(options.intensity, 1)));
+    const durationSeconds = Math.max(
+      0.16,
+      Math.min(1.4, this.readMixNumber(options.durationSeconds, profile.durationSeconds))
+    );
+    const rootScale = Math.max(0.72, Math.min(1.38, Number(options.pitchScale) || 1));
+    const rootHz = profile.rootHz * rootScale;
+    const sparkleHz = profile.sparkleHz * rootScale;
+    const busVolume = this.clampUnit(
+      this.masterVolume *
+      this.sfxVolume *
+      profile.volume *
+      intensity *
+      Math.max(0, this.readMixNumber(options.volume, 1))
+    );
+    if (busVolume <= 0) return false;
+
+    const startAt = Math.max(ctx.currentTime + 0.008, ctx.currentTime);
+    const stopAt = startAt + durationSeconds + 0.12;
+    const output = ctx.createGain();
+    output.gain.setValueAtTime(0.0001, startAt);
+    output.gain.exponentialRampToValueAtTime(Math.max(0.0002, busVolume), startAt + 0.018);
+    output.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, startAt);
+    compressor.knee.setValueAtTime(16, startAt);
+    compressor.ratio.setValueAtTime(5.5, startAt);
+    compressor.attack.setValueAtTime(0.004, startAt);
+    compressor.release.setValueAtTime(0.16, startAt);
+
+    const panner = typeof ctx.createStereoPanner === 'function' ? ctx.createStereoPanner() : null;
+    const pan = Math.max(-0.78, Math.min(0.78, Number(options.pan) || 0));
+    if (panner) {
+      panner.pan.setValueAtTime(pan, startAt);
+      output.connect(panner);
+      panner.connect(compressor);
+    } else {
+      output.connect(compressor);
+    }
+    compressor.connect(ctx.destination);
+
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = kind === 'pickup' || kind === 'combo' ? 'triangle' : 'sine';
+    sub.frequency.setValueAtTime(Math.max(24, rootHz * 1.7), startAt);
+    sub.frequency.exponentialRampToValueAtTime(Math.max(22, rootHz * 0.68), startAt + durationSeconds * 0.84);
+    subGain.gain.setValueAtTime(0.0001, startAt);
+    subGain.gain.exponentialRampToValueAtTime(0.86, startAt + 0.012);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.92);
+    sub.connect(subGain);
+    subGain.connect(output);
+
+    const sparkle = ctx.createOscillator();
+    const sparkleFilter = ctx.createBiquadFilter();
+    const sparkleGain = ctx.createGain();
+    sparkle.type = kind === 'boss_death' || kind === 'reinforcement' ? 'sawtooth' : 'triangle';
+    sparkle.frequency.setValueAtTime(sparkleHz * 0.82, startAt);
+    sparkle.frequency.exponentialRampToValueAtTime(
+      sparkleHz * (kind === 'pickup' || kind === 'combo' ? 1.42 : 0.58),
+      startAt + durationSeconds * 0.72
+    );
+    sparkle.detune.setValueAtTime(-12 + Math.random() * 24, startAt);
+    sparkleFilter.type = 'bandpass';
+    sparkleFilter.frequency.setValueAtTime(Math.max(240, sparkleHz), startAt);
+    sparkleFilter.Q.setValueAtTime(4.8, startAt);
+    sparkleGain.gain.setValueAtTime(0.0001, startAt);
+    sparkleGain.gain.exponentialRampToValueAtTime(kind === 'pickup' ? 0.34 : 0.22, startAt + 0.014);
+    sparkleGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.72);
+    sparkle.connect(sparkleFilter);
+    sparkleFilter.connect(sparkleGain);
+    sparkleGain.connect(output);
+
+    const noiseBuffer = this.getSpectacleNoiseBuffer();
+    let noise = null;
+    if (noiseBuffer && profile.noise > 0) {
+      noise = ctx.createBufferSource();
+      const noiseFilter = ctx.createBiquadFilter();
+      const noiseGain = ctx.createGain();
+      noise.buffer = noiseBuffer;
+      noiseFilter.type = kind === 'pickup' || kind === 'combo' ? 'highpass' : 'bandpass';
+      noiseFilter.frequency.setValueAtTime(
+        kind === 'pickup' || kind === 'combo' ? 1450 : Math.max(120, rootHz * 5.4),
+        startAt
+      );
+      noiseFilter.Q.setValueAtTime(kind === 'pickup' || kind === 'combo' ? 0.7 : 2.6, startAt);
+      noiseGain.gain.setValueAtTime(0.0001, startAt);
+      noiseGain.gain.exponentialRampToValueAtTime(profile.noise * intensity, startAt + 0.008);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.46);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(output);
+    }
+
+    sub.start(startAt);
+    sparkle.start(startAt);
+    noise?.start?.(startAt);
+    sub.stop(stopAt);
+    sparkle.stop(stopAt);
+    noise?.stop?.(stopAt);
+
+    this.lastSpectacleAccent = {
+      kind,
+      pan: Number(pan.toFixed(2)),
+      intensity: Number(intensity.toFixed(2)),
+      rootHz: Math.round(rootHz),
+      sparkleHz: Math.round(sparkleHz),
+      durationMs: Math.round(durationSeconds * 1000),
+      playedAt: now,
+      compressor: true,
+      synthetic: true
+    };
+    const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
+    if (frameCounters) {
+      frameCounters.spectacleAccentsPlayed = (Number(frameCounters.spectacleAccentsPlayed) || 0) + 1;
+      frameCounters.lastSpectacleAccent = kind;
     }
     return true;
   }
@@ -844,6 +1086,7 @@ class AudioController {
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
       lastSfxTrack: this.lastSfxTrack,
+      lastSpectacleAccent: this.lastSpectacleAccent,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
       voicePriorityLock: this.getActiveVoiceLock() ? {

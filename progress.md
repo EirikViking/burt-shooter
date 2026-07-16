@@ -1,5 +1,15 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-16 Sensory spectacle overhaul (source complete; release QA in progress)
+
+- Audited fresh gameplay, boss, projectile, powerup, enemy-death, combo, reinforcement, compact-layout, and reduced-motion screenshots plus the complete audio catalog/mix. The existing authored art was already strong; the clearest remaining gaps were repeated combat-SFX sameness, weak screen-wide connective spectacle between headline moments, and a severe reinforcement-arrival frame spike.
+- Added one bounded additive `SpectacleDirector` with chromatic rings, segmented arcs, rays, shards, orbital glints, screen sweeps, portal curtains, edge bloom, reduced-motion limits, and performance-lite budgets. It is integrated into elite kills, combo peaks, major pickups, Nova Miracle, wave clears, reinforcement arrival/survival, boss phases, and boss deaths without adding player-facing copy or changing gameplay rules.
+- Added compressed procedural WebAudio accents with screen-position stereo panning and event-specific sub/sparkle/noise profiles. Repeated explosion, hit, pickup, enemy-fire, portal, elite, chain-lightning, combo, and boss-impact sounds now receive narrow authored playback-rate variation, with pooled audio reset before reuse.
+- Reworked the three-portal reinforcement arrival so secondary portals use local flashes and adaptive draw budgets instead of multiplying full-screen work. Fresh proof improved the same scenario from `50.2 ms p95 / 83 ms max / 2 frames over 50 ms` to `16.9 ms p95 / 33.3 ms max / 0 frames over 50 ms`.
+- Added `npm run check:sensory-overhaul`, which verifies gameplay hooks, procedural audio/compression, pitch ranges, a ten-pulse hard cap, a five-pulse reduced-motion cap, screenshots, console cleanliness, and a 120-frame stress run. It passes at `18.2 ms p95`.
+- Focused browser checks pass for enemy-death readability, combo urgency, powerup pickup confirmation, projectile visuals (`29.7 ms p95`), reinforcement WOW, boss VFX, boss hit clarity, boss-death voice runtime, all eight localized UIs, controller-only flow, and the full gameplay smoke matrix. Current Electron smoke also passes. The required generic web-game client was attempted but remains blocked by its missing bundled `chromium_headless_shell-1208`; repository-native installed-Chrome coverage is green.
+- Release packaging and the explicitly requested private Steam upload remain pending. Steamworks settings, branch assignments, leaderboard definitions/scores, saves, achievements, store metadata, and public/default state are untouched at this checkpoint.
+
 ## 2026-07-16 Complete takeover audit and preservation checkpoint
 
 - Established the actually published July 13 patch-note boundary (`Aces, Nemesis Protocols & Rival Wings`, BuildID `24178758`, strongest source-content mapping `b4ee0e3`) while recording that the published text itself says test-branch-only and that exact public/default source promotion remains uncertain.
