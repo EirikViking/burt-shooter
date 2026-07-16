@@ -1,0 +1,104 @@
+{
+  "generatedAt": "2026-07-16T00:56:52.5421896Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24230448",
+  "depotManifestId": "1716889926300884628",
+  "sourceCommit": "f8cfda3b1802c05f35a2262b1c2814702a96977f",
+  "sourceBranch": "codex/release-bullet-vfx-20260715",
+  "sourceBaseline": "82fb515bf6289480b875b1961e4890babcb7a10e",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-16_02-29-16",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "defectiveBuildId": "24226288",
+  "emergencyRecoveryBuildId": "24226934",
+  "previousTestBranchBuildId": "24226934",
+  "rollbackBuildId": "24226934",
+  "publicBuildIdBefore": "24218172",
+  "publicBuildIdAfter": "24218172",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "da04d8f667ec8640869378bf52604eaad2afacbaa425e246faf3c985f1ad9644",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "ebd5a396a2907bcfc060d0bcc51b0262accc0c90571a7215ad79201c5e8839a1",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "1d961c998c0ffef1a07e43b42ff9e865f422fc1199f5d32e5b2fd4381ddb1d84",
+  "payload": {
+    "fileCount": 417,
+    "totalBytes": 947220954,
+    "manifestHash": "c6fedbe992849ca7f0a52ef9aa982a6a4a5e143339dd483e7d44b23799719e8c",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "e26a0b2c9b6a558a2540e3959f53d7989e30e2392554ca779a9f7aafce0bd0c2"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-16 02:49:15]: Successfully finished AppID 4765070 build (BuildID 24230448).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "cbfe1b7128cf4e8045426abd1a4c4d128c825d73057ff0b64c5252aa2875273a",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "fd8b33667f915cd343308a800ffe6da2ce200098b3dc4ba228dad12549379e2a",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print after upload",
+    "testBranchBuildId": "24230448",
+    "testBranchDepotGid": "1716889926300884628",
+    "testBranchSize": 947220954,
+    "publicBuildId": "24218172",
+    "publicUnchanged": true
+  },
+  "rootCause": {
+    "playerSymptom": "Global Score Deck showed the Cloud Global empty fallback instead of the existing Steam leaderboard.",
+    "defect": "The defective package omitted the complete steamworks-ffi-node and koffi runtime. A later staged-SDK candidate also handed steamworks-ffi-node an already-unpacked ASAR path, which the library rewrote to a nonexistent app.asar.unpacked.unpacked path.",
+    "dataImpact": "No leaderboard definition or score data was deleted or changed.",
+    "recovery": "The known-good payload was restored immediately as BuildID 24226934, then packaging was hardened and the fully repaired major build was uploaded as BuildID 24230448."
+  },
+  "verification": {
+    "sourcePreflight": "passed: isolated branch and worktree verified; authoritative lock commit is an ancestor; tracked state was clean before recovery edits",
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload",
+    "contentAndLocalization": "passed before the final smoke-only harness commit: full build:current content matrix including check:i18n; no player-facing text changed in the recovery",
+    "packagedRuntimeGate": "passed: test-results/steam-package-runtime-2026-07-16T00-42-37-365Z/report.json; complete native module, Koffi runtime, Steam SDK redistributables, AppID, and leaderboard identity present",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T00-34-36-711Z/report.json; build v2026-07-16_02-29-16, gitSha f8cfda3, Steam ready, native module loaded, nova_swarm_global_score_v2 available, zero console events",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-16T00-39-44-037Z/report.json; Steam identity Tiny Foundry ready, leaderboard and achievements ready, zero console events",
+    "liveLeaderboardRead": "passed read-only proof: packaged Electron opened Steam handle 19997814 for nova_swarm_global_score_v2 and downloaded the global top ten; the packaged performance run subsequently completed multiple live board reads. No score submit path was invoked.",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T00-35-36-238Z/report.json; keyboard and gamepad movement, fire, and pause; screenshots visually inspected",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-16T00-36-32-053Z/report.json; 55.25 minimum FPS, 56.31 average FPS, 12 samples, zero warnings, zero errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T00-38-16-562Z/report.json",
+    "desktopPackageReview": "passed: release/steamworks/desktop_package_review_report.json; current, packaged, controls, and performance reports all match v2026-07-16_02-29-16",
+    "steamElectronBridge": "passed: native bridge contract, preload surface, and renderer isolation",
+    "vdfSetLiveTestBranch": "passed: exact SetLive value sector-continue-test; public/default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all player-facing gameplay, menu, Daily Signal, reinforcement, Tactical, elite, How to Play, and enemy-projectile improvements already integrated in source baseline 82fb515",
+    "complete packaged steamworks-ffi-node and koffi runtime staging plus Steam SDK redistributables",
+    "packaged native-module resolver for Electron ASAR-unpacked dependencies",
+    "correct Steam SDK virtual-ASAR path handoff so steamworks-ffi-node resolves the staged redistributable exactly once",
+    "strict static and live packaged gates that fail closed when the native Steam bridge or Steam leaderboard is unavailable",
+    "deterministic smoke-only gameplay start for keyboard, gamepad, and performance release verification"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "Electron-builder reports the pre-existing junctioned dependency-tree ELSPROBLEMS diagnostic; explicit native staging and the static/live package gates pass the materialized payload.",
+    "A read-only packaged leaderboard diagnostic completed the global top-ten read but timed out later in its friends-read wrapper; packaged Steam smoke, actual global reads, and runtime gates passed.",
+    "The generic develop-web-game client remains unavailable because its bundled chromium_headless_shell-1208 is missing; repo-native Electron control, screenshot, and performance suites passed."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, saves, Steam Cloud settings, and existing scores were not changed.",
+    "Test-branch rollback target is emergency known-good BuildID 24226934.",
+    "Source rollback is: git revert f8cfda3 1901fbc 20b33e9 3c15605 6f9681e"
+  ]
+}
