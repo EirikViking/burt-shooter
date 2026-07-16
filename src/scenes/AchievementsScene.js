@@ -88,6 +88,7 @@ export class AchievementsScene {
     this.backBtn = null;
     this.rows = [];
     this.rowDebug = [];
+    this.catalogIntegrity = null;
     this.focusedIndex = 0;
     this.scrollOffset = 0;
     this.columns = 1;
@@ -112,7 +113,8 @@ export class AchievementsScene {
 
   init() {
     this.suppressGamepadUntilReleased();
-    this.container.removeChildren();
+    destroyMenuFx(this);
+    this.cleanupDisplayObjects();
     this.container.sortableChildren = true;
     this.rows = this.buildRows();
     this.focusedIndex = clamp(this.focusedIndex, 0, Math.max(0, this.rows.length - 1));
@@ -140,10 +142,53 @@ export class AchievementsScene {
 
   buildRows() {
     const manager = this.game?.achievementManager;
-    return ACHIEVEMENTS.map((achievement) => ({
-      achievement,
-      unlocked: Boolean(manager?.isUnlocked?.(achievement.id))
-    }));
+    const seenIds = new Set();
+    const duplicateIds = [];
+    const rows = [];
+    for (const achievement of ACHIEVEMENTS) {
+      if (!achievement?.id || seenIds.has(achievement.id)) {
+        if (achievement?.id) duplicateIds.push(achievement.id);
+        continue;
+      }
+      seenIds.add(achievement.id);
+      rows.push({
+        achievement,
+        unlocked: Boolean(manager?.isUnlocked?.(achievement.id))
+      });
+    }
+    this.catalogIntegrity = {
+      sourceCount: ACHIEVEMENTS.length,
+      rowCount: rows.length,
+      uniqueIdCount: seenIds.size,
+      duplicateIds,
+      duplicatesDropped: duplicateIds.length
+    };
+    return rows;
+  }
+
+  clearRenderedRows() {
+    if (!this.rowsContainer) return;
+    const children = this.rowsContainer.removeChildren();
+    children.forEach((child) => child?.destroy?.({ children: true }));
+  }
+
+  cleanupDisplayObjects() {
+    this.clearRenderedRows();
+    const children = this.container.removeChildren();
+    children.forEach((child) => {
+      if (child === this.rowsContainer) return;
+      child?.destroy?.({ children: true });
+    });
+    this.backdrop = null;
+    this.backdropShade = null;
+    this.panel = null;
+    this.title = null;
+    this.summary = null;
+    this.hint = null;
+    this.scrollRail = null;
+    this.scrollThumb = null;
+    this.pageText = null;
+    this.backBtn = null;
   }
 
   createBackdrop() {
@@ -401,7 +446,7 @@ export class AchievementsScene {
   }
 
   drawRows() {
-    this.rowsContainer.removeChildren();
+    this.clearRenderedRows();
     this.rowDebug = [];
     const visibleRows = this.rows.slice(this.scrollOffset, this.scrollOffset + this.visibleCapacity);
     visibleRows.forEach((row, visibleIndex) => {
@@ -754,6 +799,11 @@ export class AchievementsScene {
     return {
       ...managerState,
       focusedId: this.rows[this.focusedIndex]?.achievement?.id || null,
+      rowCount: this.rows.length,
+      uniqueRowCount: new Set(this.rows.map((row) => row.achievement?.id).filter(Boolean)).size,
+      renderedRowCount: this.rowsContainer?.children?.length || 0,
+      renderedUniqueRowCount: new Set(this.rowDebug.map((row) => row.id).filter(Boolean)).size,
+      catalogIntegrity: this.catalogIntegrity ? { ...this.catalogIntegrity } : null,
       scrollOffset: this.scrollOffset,
       visibleCapacity: this.visibleCapacity,
       scrollbar: this.scrollBarDebug,
@@ -778,6 +828,6 @@ export class AchievementsScene {
     }
     this.endScrollbarDrag();
     destroyMenuFx(this);
-    this.rowsContainer.removeChildren();
+    this.cleanupDisplayObjects();
   }
 }

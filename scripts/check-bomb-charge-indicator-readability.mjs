@@ -137,7 +137,7 @@ try {
       visible: Boolean(player.bombIndicator?.visible),
       debug: player.bombIndicator?.__debugBombIndicator || null,
       bombShotsLeft: player.bombShotsLeft,
-      spentFeedback: player.bombSpentUntil > Date.now()
+      spentFeedback: player.bombSpentUntil > player.getGameplayClockMs()
     };
 
     player.bombMaxShots = 3;

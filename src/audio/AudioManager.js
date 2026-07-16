@@ -75,6 +75,7 @@ class AudioController {
     this.sfxAssetHealth = new Map();
     this.pooledSfxKeys = new Set([
       'shoot_small',
+      'shoot_railbreaker',
       'hit',
       'impactMetal',
       'enemy_explode',

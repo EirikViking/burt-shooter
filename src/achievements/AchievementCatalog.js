@@ -1,8 +1,10 @@
 import { NUM_RANKS, getRankTitle } from '../shared/RankPolicy.js';
 
 export const GLOBAL_LEADERBOARD_ACHIEVEMENT_ID = 'ACH_GLOBAL_LEADERBOARD';
-export const GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID = 'ACH_GLOBAL_NUMBER_ONE';
+export const SWARM_ELITE_ACHIEVEMENT_ID = 'ACH_GLOBAL_NUMBER_ONE';
+export const GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID = SWARM_ELITE_ACHIEVEMENT_ID;
 export const EARLY_PILOT_ACHIEVEMENT_ID = 'ACH_EARLY_PILOT';
+export const SWARM_ELITE_SCORE_GATE = 750000;
 export const LEGEND_SCORE_GATE = 100000;
 export const LEGEND_COMPOUND_SCORE_GATE = 250000;
 
@@ -560,10 +562,12 @@ export const ACHIEVEMENTS = Object.freeze([
     hidden: false
   },
   {
-    id: GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID,
-    name: 'Top Of The Swarm',
-    description: 'Reach #1 on the global leaderboard.',
+    id: SWARM_ELITE_ACHIEVEMENT_ID,
+    name: 'Swarm Elite',
+    description: 'Submit a 750,000-point ranked run.',
     type: 'leaderboard',
+    metric: 'acceptedRankedScore',
+    target: SWARM_ELITE_SCORE_GATE,
     hidden: false
   },
   ...MILESTONE_ACHIEVEMENTS,

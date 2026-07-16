@@ -104,6 +104,19 @@ async function getUsageLine(page, spriteKey) {
   return usageLine;
 }
 
+async function showShipSelect(page, spriteKey) {
+  await page.evaluate(async (key) => {
+    window.__game.shipSelectReturnSpriteKey = key;
+    await window.__game.showShipSelect();
+  }, spriteKey);
+  await waitForScene(page, 'shipSelect');
+  await page.waitForFunction((key) => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.shipSelect?.spriteKey === key;
+  }, spriteKey, { timeout: 12000 });
+  return page.evaluate(() => JSON.parse(window.render_game_to_text()).shipSelect);
+}
+
 mkdirSync(outputDir, { recursive: true });
 
 const server = await startDevServer();
@@ -179,8 +192,121 @@ try {
   const canonicalDetailsLine = await getUsageLine(page, 'nova-player-ship-24.png');
   assert.match(canonicalDetailsLine, /YOUR LAUNCHES:\s*7\s*\/\/\s*LOCAL PROFILE/);
 
-  const screenshot = path.join(outputDir, 'ship-usage-details.png');
-  await page.screenshot({ path: screenshot, fullPage: true });
+  const firstFlightShip = 'nova-player-ship-02.png';
+  await page.evaluate(() => {
+    localStorage.setItem('burt.shipUsage.v1', JSON.stringify({
+      nova_ship_01: 4,
+      'row2_ship_1.png': 3,
+      nova_ship_24: 7
+    }));
+    localStorage.setItem('burt.shipUsageTotal.v1', '11');
+  });
+
+  const firstFlightInitial = await showShipSelect(page, firstFlightShip);
+  await page.waitForTimeout(650);
+  assert.equal(firstFlightInitial.usageCount, 0);
+  assert.equal(firstFlightInitial.firstFlight?.eligible, true);
+  assert.equal(firstFlightInitial.firstFlight?.badgeVisible, true);
+  assert.equal(firstFlightInitial.firstFlight?.badgeText, 'FIRST FLIGHT');
+  assert.ok(firstFlightInitial.firstFlight?.badgeBounds?.width > 80);
+
+  const firstFlightBeforeReference = path.join(outputDir, 'ship-first-flight-before-reference.png');
+  const firstFlightVisualState = await page.evaluate(() => {
+    const scene = window.__game?.currentScene;
+    const card = scene?.shipCards?.[scene.selectedIndex];
+    const state = {
+      badgeVisible: Boolean(card?.firstFlightBadge?.visible),
+      selectionText: scene?.selectionInfoText?.text || '',
+      unlockText: scene?.rightIntel?.unlock?.text || ''
+    };
+    if (card?.firstFlightBadge) card.firstFlightBadge.visible = false;
+    if (scene?.selectionInfoText) {
+      scene.selectionInfoText.text = state.selectionText.replace(/\|\s*FIRST FLIGHT\s*$/, '|  READY');
+    }
+    if (scene?.rightIntel?.unlock) {
+      const [, ...historyLines] = state.unlockText.split('\n');
+      scene.rightIntel.unlock.text = ['STATUS: READY FOR LAUNCH', ...historyLines].join('\n');
+    }
+    return state;
+  });
+  await page.waitForTimeout(420);
+  await page.screenshot({ path: firstFlightBeforeReference, fullPage: true });
+  await page.evaluate((state) => {
+    const scene = window.__game?.currentScene;
+    const card = scene?.shipCards?.[scene.selectedIndex];
+    if (card?.firstFlightBadge) card.firstFlightBadge.visible = state.badgeVisible;
+    if (scene?.selectionInfoText) scene.selectionInfoText.text = state.selectionText;
+    if (scene?.rightIntel?.unlock) scene.rightIntel.unlock.text = state.unlockText;
+  }, firstFlightVisualState);
+  await page.waitForTimeout(420);
+
+  const firstFlightScreenshot = path.join(outputDir, 'ship-first-flight-badge.png');
+  await page.screenshot({ path: firstFlightScreenshot, fullPage: true });
+
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('blur'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('focus'));
+  });
+  const firstFlightAfterFocusCycle = JSON.parse(await page.evaluate(() => window.render_game_to_text())).shipSelect;
+  assert.equal(firstFlightAfterFocusCycle.usageCount, 0);
+  assert.equal(firstFlightAfterFocusCycle.firstFlight?.badgeVisible, true);
+
+  const firstFlightDetailsLine = await getUsageLine(page, firstFlightShip);
+  assert.match(firstFlightDetailsLine, /YOUR LAUNCHES:\s*0\s*\/\/\s*LOCAL PROFILE/);
+  const firstFlightAfterDetails = await showShipSelect(page, firstFlightShip);
+  assert.equal(firstFlightAfterDetails.usageCount, 0);
+  assert.equal(firstFlightAfterDetails.firstFlight?.badgeVisible, true);
+
+  const invalidLaunch = await page.evaluate(async (key) => {
+    const before = JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}');
+    const started = await window.__game.startGame(key, {
+      runMode: 'daily_signal',
+      dailySignalContract: { dailyKey: 'invalid' }
+    });
+    const after = JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}');
+    return { started, before, after };
+  }, firstFlightShip);
+  assert.equal(invalidLaunch.started, false);
+  assert.deepEqual(invalidLaunch.after, invalidLaunch.before);
+
+  const suppressedLaunch = await page.evaluate(async (key) => {
+    const started = await window.__game.startGame(key, {
+      runMode: 'scout',
+      countShipUsage: false
+    });
+    return {
+      started,
+      usage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}')
+    };
+  }, firstFlightShip);
+  assert.equal(suppressedLaunch.started, true);
+  await waitForScene(page, 'play');
+  assert.equal(suppressedLaunch.usage.nova_ship_02 || 0, 0);
+
+  const firstFlightAfterSuppressedLaunch = await showShipSelect(page, firstFlightShip);
+  assert.equal(firstFlightAfterSuppressedLaunch.usageCount, 0);
+  assert.equal(firstFlightAfterSuppressedLaunch.firstFlight?.badgeVisible, true);
+
+  const scoutLaunch = await page.evaluate(async (key) => {
+    const started = await window.__game.startGame(key, { runMode: 'scout' });
+    return {
+      started,
+      usage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}')
+    };
+  }, firstFlightShip);
+  assert.equal(scoutLaunch.started, true);
+  await waitForScene(page, 'play');
+  assert.equal(scoutLaunch.usage.nova_ship_02, 1);
+
+  const firstFlightAfterRealLaunch = await showShipSelect(page, firstFlightShip);
+  assert.equal(firstFlightAfterRealLaunch.usageCount, 1);
+  assert.equal(firstFlightAfterRealLaunch.firstFlight?.eligible, false);
+  assert.equal(firstFlightAfterRealLaunch.firstFlight?.badgeVisible, false);
+
+  const detailsScreenshot = path.join(outputDir, 'ship-usage-details.png');
+  await getUsageLine(page, 'nova-player-ship-24.png');
+  await page.screenshot({ path: detailsScreenshot, fullPage: true });
 
   report.status = 'passed';
   report.legacyBeforeLaunch = legacyBeforeLaunch;
@@ -189,15 +315,29 @@ try {
   report.afterLaunchUsage = afterLaunchUsage;
   report.cloudSyncBeforeLaunch = cloudSyncBeforeLaunch;
   report.cloudSyncAfterLaunch = cloudSyncAfterLaunch;
+  report.firstFlight = {
+    ship: firstFlightShip,
+    initial: firstFlightInitial,
+    afterFocusCycle: firstFlightAfterFocusCycle,
+    detailsLine: firstFlightDetailsLine,
+    afterDetails: firstFlightAfterDetails,
+    invalidLaunch,
+    suppressedLaunch,
+    afterSuppressedLaunch: firstFlightAfterSuppressedLaunch,
+    scoutLaunch,
+    afterRealLaunch: firstFlightAfterRealLaunch,
+    beforeReferenceScreenshot: firstFlightBeforeReference,
+    screenshot: firstFlightScreenshot
+  };
   report.pageErrors = pageErrors;
   report.consoleErrors = consoleErrors;
-  report.screenshot = screenshot;
+  report.screenshot = detailsScreenshot;
 
   assert.equal(pageErrors.length, 0);
   assert.equal(consoleErrors.length, 0);
 
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[ship-usage-counter] PASS legacy="${legacyBeforeLaunch}" launched="${starterAfterLaunch}" canonical="${canonicalDetailsLine}" cloudSyncDelta=${cloudSyncAfterLaunch - cloudSyncBeforeLaunch} screenshot=${screenshot}`);
+  console.log(`[ship-usage-counter] PASS legacy="${legacyBeforeLaunch}" launched="${starterAfterLaunch}" firstFlight=0->1 scout=true suppressed=true cloudSyncDelta=${cloudSyncAfterLaunch - cloudSyncBeforeLaunch} screenshot=${firstFlightScreenshot}`);
 } catch (error) {
   report.status = 'failed';
   report.error = error?.stack || error?.message || String(error);
@@ -206,6 +346,7 @@ try {
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   throw error;
 } finally {
+  await page.close({ runBeforeUnload: false }).catch(() => {});
   await browser.close();
   if (server) server.kill();
 }

@@ -12,7 +12,7 @@ import { getSectorStartPlaySector } from '../src/game/RunMode.js';
 import { STEAM_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const EXPECTED_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
-const EXPECTED_BOSS_BODY_HASH = '07dbfa617171650ef8efa9cb78305984401764ebd9a931e2e09671d3eec6db72';
+const EXPECTED_BOSS_BODY_HASH = 'd176c11fa649be954d636f883aa5271570d0686f7f804b39fbb091a692624860';
 const EXPECTED_WAVES_PER_BOSS_BASE = 5;
 const EXPECTED_MIN_WAVES_BETWEEN_BOSSES = 5;
 

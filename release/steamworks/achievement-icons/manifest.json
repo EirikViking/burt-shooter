@@ -328,8 +328,8 @@
     },
     {
       "apiName": "ACH_GLOBAL_NUMBER_ONE",
-      "displayName": "Top Of The Swarm",
-      "description": "Reach #1 on the global leaderboard.",
+      "displayName": "Swarm Elite",
+      "description": "Submit a 750,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_GLOBAL_NUMBER_ONE-achieved.jpg",
       "lockedIcon": "ACH_GLOBAL_NUMBER_ONE-locked.jpg"

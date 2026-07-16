@@ -150,6 +150,11 @@ try {
     }
 
     const armedState = JSON.parse(window.render_game_to_text());
+    play.setPaused(true);
+    const pausedBefore = JSON.parse(window.render_game_to_text());
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const pausedAfter = JSON.parse(window.render_game_to_text());
+    play.setPaused(false);
     player.shootCooldown = 0;
     const heldBullets = player.shoot();
     const heldCharged = play.markGrazeBreakShot(heldBullets);
@@ -188,6 +193,11 @@ try {
         grazeBreakNeedsFireRelease: armedState.scoring?.grazeBreakNeedsFireRelease || false,
         grazeBreakReleasePrimed: armedState.scoring?.grazeBreakReleasePrimed || false
       },
+      pausedTimer: {
+        beforeMs: pausedBefore.scoring?.grazeBreakReadyMs || 0,
+        afterMs: pausedAfter.scoring?.grazeBreakReadyMs || 0,
+        remainedReady: pausedAfter.scoring?.grazeBreakReady || false
+      },
       heldShotMarked: Boolean(heldCharged?.isGrazeBreaker),
       afterHeldState: {
         grazeBreakReady: afterHeldState.scoring?.grazeBreakReady || false,
@@ -218,6 +228,8 @@ try {
       result.armedState?.dangerDodgeCount >= 3 &&
       result.armedState?.grazeBreakReady === true &&
       result.armedState?.grazeBreakNeedsFireRelease === true &&
+      result.pausedTimer?.remainedReady === true &&
+      Math.abs((result.pausedTimer?.afterMs || 0) - (result.pausedTimer?.beforeMs || 0)) <= 40 &&
       result.heldShotMarked === false &&
       result.afterHeldState?.grazeBreakReady === true &&
       result.afterHeldState?.grazeBreakNeedsFireRelease === true &&
@@ -226,6 +238,10 @@ try {
       last.triggered === true &&
       last.bulletsCleared >= 3 &&
       last.bonusScore >= 775 &&
+      last.visualScale >= 2.8 &&
+      last.visualSparkleCount >= 14 &&
+      last.visualRingCount >= 3 &&
+      last.visual?.active === true &&
       result.scoreGain > 0 &&
       result.remainingEnemyBullets <= 2 &&
       pageErrors.length === 0 &&

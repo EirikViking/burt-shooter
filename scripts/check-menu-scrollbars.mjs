@@ -121,6 +121,13 @@ page.on('console', (message) => {
 });
 
 try {
+  await page.addInitScript(() => {
+    localStorage.setItem('nova_swarm_achievements_v1', JSON.stringify({
+      version: 1,
+      unlocked: ['ACH_EARLY_PILOT', 'ACH_EARLY_PILOT', 'ACH_RANK_01', 'ACH_RANK_01'],
+      updatedAt: '2026-07-16T00:00:00.000Z'
+    }));
+  });
   await openCodex(page);
   const codexBefore = await readState(page);
   const codexBar = codexBefore.threatCodexScreen?.entryScrollbar;
@@ -142,6 +149,26 @@ try {
   const achievementBar = achievementsBefore.achievementsScreen?.scrollbar;
   assert.equal(achievementsBefore.scene, 'achievements');
   assert.ok(achievementBar?.interactive, 'Achievements scrollbar should be interactive');
+  assert.equal(
+    achievementsBefore.achievementsScreen?.rowCount,
+    achievementsBefore.achievementsScreen?.uniqueRowCount,
+    'Achievement catalog rows should be unique by stable ID'
+  );
+  assert.equal(
+    achievementsBefore.achievementsScreen?.catalogIntegrity?.duplicatesDropped,
+    0,
+    'Production achievement catalog should not require runtime duplicate removal'
+  );
+  assert.equal(
+    achievementsBefore.achievementsScreen?.renderedRowCount,
+    achievementsBefore.achievementsScreen?.renderedUniqueRowCount,
+    'Visible achievement rows should not duplicate during rendering'
+  );
+  assert.equal(
+    new Set(achievementsBefore.achievementsScreen?.unlocked || []).size,
+    (achievementsBefore.achievementsScreen?.unlocked || []).length,
+    'Duplicate IDs in an existing save should normalize to one unlocked achievement each'
+  );
   await page.screenshot({ path: path.join(outputDir, '03-achievements-before-drag.png') });
   await dragBar(page, achievementBar);
   const achievementsAfter = await readState(page);
@@ -150,6 +177,26 @@ try {
     (achievementsAfter.achievementsScreen?.scrollOffset || 0) > (achievementsBefore.achievementsScreen?.scrollOffset || 0),
     'Achievements scrollbar drag should increase scrollOffset'
   );
+  const achievementReopens = [];
+  for (let index = 0; index < 3; index += 1) {
+    await page.evaluate(() => window.__game.showAchievements());
+    await page.waitForFunction(() => window.__game?.currentSceneName === 'achievements', null, { timeout: 10000 });
+    await page.waitForTimeout(240);
+    const state = await readState(page);
+    const screen = state.achievementsScreen;
+    assert.equal(screen?.rowCount, screen?.uniqueRowCount, `Achievement reopen ${index + 1} duplicated catalog rows`);
+    assert.equal(screen?.renderedRowCount, screen?.renderedUniqueRowCount, `Achievement reopen ${index + 1} duplicated visible rows`);
+    assert.equal(screen?.catalogIntegrity?.duplicatesDropped, 0, `Achievement reopen ${index + 1} saw a duplicate production definition`);
+    achievementReopens.push({
+      index: index + 1,
+      rowCount: screen?.rowCount,
+      renderedRowCount: screen?.renderedRowCount,
+      uniqueRowCount: screen?.uniqueRowCount,
+      renderedUniqueRowCount: screen?.renderedUniqueRowCount,
+      unlocked: screen?.unlocked
+    });
+  }
+  await page.screenshot({ path: path.join(outputDir, '05-achievements-after-reopens.png') });
 
   assert.deepEqual(pageErrors, [], `Page errors: ${pageErrors.join('; ')}`);
   assert.deepEqual(consoleErrors, [], `Console errors: ${consoleErrors.join('; ')}`);
@@ -172,6 +219,7 @@ try {
         scrollOffset: achievementsAfter.achievementsScreen?.scrollOffset,
         focusedId: achievementsAfter.achievementsScreen?.focusedId
       },
+      reopens: achievementReopens,
       scrollbar: achievementBar
     }
   };

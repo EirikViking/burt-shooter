@@ -140,7 +140,17 @@ const runtimeScene = Object.assign(Object.create(PlayScene.prototype), {
     hijacker: null,
     removeEnemySprite(enemy) { enemy.active = false; return true; }
   },
-  bulletManager: { enemyBullets: [enemyBullet], pendingEnemyBullets: [pendingBullet] },
+  bulletManager: {
+    enemyBullets: [enemyBullet],
+    pendingEnemyBullets: [pendingBullet],
+    clearEnemyBullets() {
+      const bullets = [...this.enemyBullets, ...this.pendingEnemyBullets];
+      for (const bullet of bullets) bullet.active = false;
+      this.enemyBullets.length = 0;
+      this.pendingEnemyBullets.length = 0;
+      return bullets.length;
+    }
+  },
   bossHazards: [{ active: true }],
   bossHazardLayer: { clear() {} },
   ambientBonusDrones: [hazardDrone],

@@ -249,6 +249,7 @@ export const SFX_MIX = {
     shoot_small: { volume: 0.78, minIntervalMs: 42 },
     shoot_alt: { volume: 0.7, minIntervalMs: 50 },
     shoot_heavy: { volume: 0.82, minIntervalMs: 80 },
+    shoot_railbreaker: { volume: 0.66, minIntervalMs: 145 },
     enemy_explode: { volume: 0.68, minIntervalMs: 35 },
     boss_explode: { volume: 0.95, minIntervalMs: 300 },
     hit: { volume: 0.48, minIntervalMs: 45 },
@@ -523,6 +524,9 @@ export const SFX_CATALOG = {
     ],
     'shoot_heavy': [
         getSfx('laserLarge_000'), getSfx('laserLarge_001'), getSfx('laserLarge_002'), getSfx('laserLarge_003'), getSfx('laserLarge_004')
+    ],
+    'shoot_railbreaker': [
+        getSfx('laserSmall_004')
     ],
     'enemy_explode': [
         getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002'), getSfx('explosionCrunch_003'), getSfx('explosionCrunch_004')

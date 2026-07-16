@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u041a\u041e\u041d\u0422\u0410\u041a\u0422 \u0421 \u0410\u0421\u041e\u041c",
@@ -1414,6 +1416,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': 'Ранг пилота — твой долгосрочный карьерный сигнал. XP дается за счет, сектора, боссов, открытия, чистые волны и завершенные забеги.\n\nXP до следующего показывает, насколько этот локальный профиль близок к новому рангу. Сканы Кодекса — угрозы, которые ты лично обнаружил. Лучший счет — твой лучший забег в этом профиле.\n\nРазблокировка кораблей использует эти карьерные вехи, так что даже неудачный забег может продвинуть ангар.',
   'RANK': 'РАНГ',
   'YOUR LAUNCHES': 'ТВОИ ЗАПУСКИ',
+  'FIRST FLIGHT': 'ПЕРВЫЙ ВЫЛЕТ',
   'MAX RANK': 'МАКСИМАЛЬНЫЙ РАНГ',
   'MAX': 'МАКС',
   'TO': 'ДО',
@@ -1469,8 +1472,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': 'ДОСТИЖЕНИЕ ОТКРЫТО',
   'Callsign On The Board': 'Позывной в таблице',
   'Qualify for the global leaderboard.': 'Попади в глобальную таблицу лидеров.',
-  'Top Of The Swarm': 'Вершина роя',
-  'Reach #1 on the global leaderboard.': 'Займи первое место в глобальной таблице.',
+  'Swarm Elite': 'Элита роя',
+  'Submit a 750,000-point ranked run.': 'Отправь результат 750 000 очков в рейтинговом забеге.',
+  'Legacy Ranked Run': 'Старый рейтинговый забег',
+  'Unknown Run Mode': 'Неизвестный режим',
   'First Ranked Run': 'Pervyy reytingovyy zabeg',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Zavershi lyuboy reytingovyy zabeg. Practice i Sector Start ne zaschityvayutsya.',
   'Past The Warmup': 'Разминка окончена',
@@ -1800,6 +1805,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru') }),
   patterns
 };

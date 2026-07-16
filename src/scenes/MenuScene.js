@@ -217,6 +217,20 @@ function boundsForLocalRect(container, rect = {}) {
   };
 }
 
+function boundsForMenuButtonLayout(button) {
+  const width = Number(button?._btnWidth) || 0;
+  const height = Number(button?._btnHeight) || 0;
+  if (!button?.parent || width <= 0 || height <= 0) return boundsForDisplayObject(button);
+  const centerX = Number(button.x) || 0;
+  const centerY = Number.isFinite(button._layoutY) ? button._layoutY : (Number(button.y) || 0);
+  return boundsForLocalRect(button.parent, {
+    x: centerX - width / 2,
+    y: centerY - height / 2,
+    width,
+    height
+  });
+}
+
 export class MenuScene {
   constructor(game) {
     this.game = game;
@@ -1036,9 +1050,9 @@ export class MenuScene {
 
   getMenuButtonList() {
     return [
-      this.dailySignalBtn,
-      this.startBtn,
       this.tacticalStartBtn,
+      this.startBtn,
+      this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
@@ -1274,14 +1288,13 @@ export class MenuScene {
     this.createSectorSelectorOverlay(layout);
 
     this.dailySignalBtn = this.createButton('DAILY CHALLENGE', layout, {
-      variant: 'primary',
       accent: 0x7dffcc,
       icon: 'target',
-      subLabel: 'CLEAR S10 // BEAT YOUR BEST',
+      subLabel: 'CLEAR S10 · NEW ROUTE DAILY',
       dynamicSubLabel: () => this.getDailySignalMenuSubLabel(),
       labelMinScale: 0.66
     });
-    this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xff55d9 });
+    this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xff55d9, role: 'activity' });
     this.dailySignalBtn._isDailySignalFeature = true;
     this.dailySignalBtn.alpha = 0;
     this.dailySignalBtn.on('pointerdown', () => {
@@ -1291,12 +1304,11 @@ export class MenuScene {
     this.container.addChild(this.dailySignalBtn);
 
     this.startBtn = this.createButton('MAYHEM PURE', layout, {
-      variant: 'primary',
       accent: 0xffd15c,
-      icon: 'launch',
-      subLabel: 'RANKED // RAW SKILL'
+      icon: 'target',
+      subLabel: 'ALTERNATIVE RANKED MODE'
     });
-    this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e });
+    this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e, role: 'alternative' });
     this.startBtn.alpha = 0;  // Start invisible
     this.startBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
@@ -1305,11 +1317,12 @@ export class MenuScene {
     this.container.addChild(this.startBtn);
 
     this.tacticalStartBtn = this.createButton('MAYHEM TACTICAL', layout, {
+      variant: 'primary',
       accent: 0xff55d9,
-      icon: 'target',
-      subLabel: 'RANKED // BUILDCRAFT'
+      icon: 'launch',
+      subLabel: 'MAIN MODE · RECOMMENDED · RANKED'
     });
-    this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8 });
+    this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8, role: 'main' });
     this.tacticalStartBtn.alpha = 0;
     this.tacticalStartBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
@@ -1322,7 +1335,7 @@ export class MenuScene {
       icon: 'hangar',
       subLabel: 'PRACTICE'
     });
-    this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff });
+    this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff, role: 'practice' });
     this.scoutRunBtn.alpha = 0;
     this.scoutRunBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
@@ -1335,7 +1348,7 @@ export class MenuScene {
       icon: 'target',
       subLabel: 'CHECKPOINT PUSH'
     });
-    this.configureRunModeCard(this.sectorStartBtn, { id: 'sector', secondary: 0xffd15c });
+    this.configureRunModeCard(this.sectorStartBtn, { id: 'sector', secondary: 0xffd15c, role: 'checkpoint' });
     this.sectorStartBtn.alpha = 0;
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
@@ -1624,7 +1637,7 @@ export class MenuScene {
     }
     if (button._isRunModeCard) {
       const w = button._btnWidth || 320;
-      const compactCard = (button._btnHeight || 0) < 92;
+      const compactCard = button !== this.tacticalStartBtn;
       const labelMaxWidth = Math.max(compactCard ? 148 : 160, w - (compactCard ? 78 : 128));
       this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: compactCard ? 0.58 : 0.7, forceGpuRefresh });
       this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: compactCard ? 0.5 : 0.62, forceGpuRefresh });
@@ -1731,7 +1744,7 @@ export class MenuScene {
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
     const runModeBriefing = this.getRunModeBriefing();
-    this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + runModeBriefing.title;
+    this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + runModeBriefing.title;
     this.runModeExplainer.text = this.getRunModeExplainerText(runModeBriefing);
     this.disclaimer.text = this.getDisclaimerText(layout);
 
@@ -1746,8 +1759,9 @@ export class MenuScene {
     this.refreshSectorStartState();
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
-      this.startBtn,
       this.tacticalStartBtn,
+      this.startBtn,
+      this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn
     ].filter(Boolean);
@@ -1789,12 +1803,19 @@ export class MenuScene {
     }
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
-    const cardWidth = Math.round(clampNumber(width * 0.17 * uiScale, (isMobileLayout ? 238 : 246) * uiScale, (isMobileLayout ? 300 : 320) * uiScale));
-    const cardHeight = Math.round(clampNumber(height * 0.052 * uiScale, (isShortLayout ? 44 : 50) * uiScale, (isMobileLayout ? 58 : 62) * uiScale));
-    const deckHeight = cardHeight * runModeCards.length + cardGap * Math.max(0, runModeCards.length - 1);
-    const dailySignalHeight = Math.round(clampNumber(height * 0.05 * uiScale, (isShortLayout ? 42 : 48) * uiScale, (isMobileLayout ? 54 : 58) * uiScale));
-    const dailySignalGap = Math.round(clampNumber(height * 0.009, 6, 10));
-    const launchStackHeight = dailySignalHeight + dailySignalGap + deckHeight;
+    const cardWidth = Math.round(clampNumber(width * 0.176 * uiScale, (isMobileLayout ? 238 : 252) * uiScale, (isMobileLayout ? 310 : 350) * uiScale));
+    const secondaryCardHeight = Math.round(clampNumber(height * 0.05 * uiScale, (isShortLayout ? 43 : 49) * uiScale, (isMobileLayout ? 56 : 60) * uiScale));
+    const tacticalCardHeight = Math.round(clampNumber(
+      secondaryCardHeight * 1.46,
+      (isShortLayout ? 64 : 70) * uiScale,
+      (isMobileLayout ? 82 : 88) * uiScale
+    ));
+    const cardHeights = runModeCards.map((button) => (
+      button === this.tacticalStartBtn ? tacticalCardHeight : secondaryCardHeight
+    ));
+    const deckHeight = cardHeights.reduce((sum, value) => sum + value, 0)
+      + cardGap * Math.max(0, runModeCards.length - 1);
+    const launchStackHeight = deckHeight;
     const deckX = Math.round(isMobileLayout
       ? (width - cardWidth) / 2
       : clampNumber(width * 0.018, 20, 46));
@@ -1806,61 +1827,61 @@ export class MenuScene {
       minimumDeckTop,
       Math.max(safeMargin.top + 120, dockTop - launchStackHeight - clampNumber(height * 0.022, 14, 24))
     ));
-    const cardTop = launchStackTop + dailySignalHeight + dailySignalGap;
-    if (this.dailySignalBtn) {
-      this.dailySignalBtn.visible = true;
-      this.dailySignalBtn._btnWidth = cardWidth;
-      this.dailySignalBtn._btnHeight = dailySignalHeight;
-      this.dailySignalBtn._variant = 'primary';
-      this.dailySignalBtn._dockIndex = null;
-      this.dailySignalBtn._launchDeckIndex = null;
-      this.dailySignalBtn._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.052, 13 * uiScale, 17 * uiScale));
-      this.dailySignalBtn._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.03, 8 * uiScale, 10 * uiScale));
-      this.refreshButtonCopy(this.dailySignalBtn, { forceGpuRefresh: forceLabelGpuRefresh });
-      this.dailySignalBtn.x = deckX + cardWidth / 2;
-      this.dailySignalBtn.y = launchStackTop + dailySignalHeight / 2;
-      this.dailySignalBtn._layoutY = this.dailySignalBtn.y;
-      this.dailySignalBtn._motionY = this.dailySignalBtn.y;
-      if (!Number.isFinite(this.dailySignalBtn._motionScale)) this.dailySignalBtn._motionScale = 1;
-      this.drawMenuButton(this.dailySignalBtn, false);
-      this.dailySignalBounds = {
-        x: deckX,
-        y: launchStackTop,
-        width: cardWidth,
-        height: dailySignalHeight,
-        right: deckX + cardWidth,
-        bottom: launchStackTop + dailySignalHeight
-      };
-    }
     this.launchDeckBounds = {
       x: deckX,
-      y: Math.round(cardTop),
+      y: Math.round(launchStackTop),
       width: cardWidth,
       height: Math.round(deckHeight),
       right: Math.round(deckX + cardWidth),
-      bottom: Math.round(cardTop + deckHeight)
+      bottom: Math.round(launchStackTop + deckHeight)
     };
+    let cardCursorY = launchStackTop;
     runModeCards.forEach((button, index) => {
       if (!button) return;
+      const buttonHeight = cardHeights[index] || secondaryCardHeight;
+      const isMainMode = button === this.tacticalStartBtn;
+      const buttonWidth = isMainMode ? cardWidth : Math.round(cardWidth * 0.94);
+      const buttonX = isMainMode
+        ? deckX + cardWidth / 2
+        : deckX + cardWidth - buttonWidth / 2;
       button.visible = true;
-      button._btnWidth = cardWidth;
-      button._btnHeight = cardHeight;
-      button._variant = button === this.startBtn ? 'primary' : 'secondary';
+      button._btnWidth = buttonWidth;
+      button._btnHeight = buttonHeight;
+      button._variant = isMainMode ? 'primary' : 'secondary';
       button._dockIndex = null;
       button._launchDeckIndex = index;
-      button._label.style.fontSize = Math.round(clampNumber(cardWidth * 0.05, 13 * uiScale, 17 * uiScale));
-      button._sublabel.style.fontSize = Math.round(clampNumber(cardWidth * 0.031, 8 * uiScale, 10 * uiScale));
+      button._label.style.fontSize = Math.round(clampNumber(
+        cardWidth * (isMainMode ? 0.056 : 0.048),
+        (isMainMode ? 15 : 12) * uiScale,
+        (isMainMode ? 20 : 16) * uiScale
+      ));
+      button._sublabel.style.fontSize = Math.round(clampNumber(
+        cardWidth * (isMainMode ? 0.032 : 0.029),
+        (isMainMode ? 9 : 8) * uiScale,
+        (isMainMode ? 12 : 10) * uiScale
+      ));
       if (button._bodyLabel) {
         button._bodyLabel.text = '';
         button._bodyLabel.visible = false;
       }
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
-      button.x = deckX + cardWidth / 2;
-      button.y = cardTop + index * (cardHeight + cardGap) + cardHeight / 2;
+      button.x = buttonX;
+      button.y = cardCursorY + buttonHeight / 2;
       button._layoutY = button.y;
       button._motionY = button.y;
       if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
       this.drawMenuButton(button, false);
+      if (button === this.dailySignalBtn) {
+        this.dailySignalBounds = {
+          x: Math.round(buttonX - buttonWidth / 2),
+          y: Math.round(cardCursorY),
+          width: buttonWidth,
+          height: buttonHeight,
+          right: Math.round(buttonX + buttonWidth / 2),
+          bottom: Math.round(cardCursorY + buttonHeight)
+        };
+      }
+      cardCursorY += buttonHeight + cardGap;
     });
 
     const remainingWidth = dockWidth - gap * (dockButtons.length - 1);
@@ -2015,6 +2036,7 @@ export class MenuScene {
     const dockAlpha = 0.42;
     const utilityAlpha = 0.34;
     [
+      this.dailySignalBtn,
       this.startBtn,
       this.tacticalStartBtn,
       this.scoutRunBtn,
@@ -2100,41 +2122,37 @@ export class MenuScene {
       const bestClear = this.dailySignalBestClear || getDailySignalBestClear(contract);
       const flightLog = this.dailySignalFlightLog || getDailySignalFlightLog();
       const recordLine = bestClear
-        ? translateText('TODAY: CLEARED // BEST {score} // TIME {runTime} // RESET IN {time}', {
+        ? translateText('CLEARED · BEST {score} · {runTime}', {
           score: this.formatDailySignalScore(bestClear.score),
-          runTime: this.formatDailySignalRunTime(bestClear.runElapsedSeconds),
-          time: this.formatDailySignalResetTime(contract)
+          runTime: this.formatDailySignalRunTime(bestClear.runElapsedSeconds)
         })
         : bestAttempt
-          ? translateText('TODAY: NOT CLEARED // BEST S{sector} // {score} // TIME {runTime} // RESET IN {time}', {
+          ? translateText('NOT CLEARED · BEST S{sector} · {score} · {runTime}', {
             sector: bestAttempt.sectorReached,
             score: this.formatDailySignalScore(bestAttempt.score),
-            runTime: this.formatDailySignalRunTime(bestAttempt.runElapsedSeconds),
-            time: this.formatDailySignalResetTime(contract)
+            runTime: this.formatDailySignalRunTime(bestAttempt.runElapsedSeconds)
           })
-          : translateText('TODAY: NOT ATTEMPTED // RESET IN {time}', {
-            time: this.formatDailySignalResetTime(contract)
-          });
+          : translateText('NOT ATTEMPTED');
       return {
         id: 'dailySignal',
         title: translateText('DAILY CHALLENGE'),
         accent: 0x7dffcc,
         secondary: 0xff55d9,
         menuBody: [
-          translateText("TODAY'S GOAL // CLEAR SECTOR {sector}", { sector: contract.finishSector }),
-          translateText("Fly {ship} through today's {route} challenge. Tactical drafts are active.", {
+          translateText('TODAY: CLEAR SECTOR {sector}', { sector: contract.finishSector }),
+          translateText('{ship} · {route} · TACTICAL DRAFTS', {
             ship: contract.loanerShipName,
             route: translateText(contract.templateLabel)
           }),
-          translateText("Clear it to light today's Flight Log entry. Replay after a clear to beat your best clear score."),
           recordLine,
-          translateText('7-DAY FLIGHT LOG // {signals} // {clears}/7 CLEARED', {
+          translateText('WEEK: {signals} · {clears}/7 CLEARED', {
             signals: formatDailySignalFlightLogSymbols(flightLog),
             clears: flightLog.clears
           }),
-          translateText('PERSONAL CHALLENGE // LOCAL BEST ONLY // NO PUBLIC LEADERBOARD YET'),
+          translateText('LOCAL RECORD ONLY · NO PUBLIC DAILY LEADERBOARD'),
+          translateText('RESETS IN {time}', { time: this.formatDailySignalResetTime(contract) })
         ].join('\n'),
-        body: translateText("Clear it to light today's Flight Log entry. Replay after a clear to beat your best clear score.")
+        body: translateText('Clear Sector {sector}, then replay to improve your local best.', { sector: contract.finishSector })
       };
     }
     if (focused === 'scout') {
@@ -2144,8 +2162,9 @@ export class MenuScene {
         accent: 0x7fffd8,
         secondary: 0x37f5ff,
         menuBody: [
-          translateText('UNRANKED PRACTICE'),
-          translateText('Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
+          translateText('PRACTICE · UNRANKED'),
+          translateText('Lower-pressure combat for learning routes and testing ships.'),
+          translateText('No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
         ].join('\n'),
         body: translateText('Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
       };
@@ -2157,8 +2176,9 @@ export class MenuScene {
         accent: 0x37f5ff,
         secondary: 0xffd15c,
         menuBody: [
-          translateText('CHECKPOINT PUSH'),
-          translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
+          translateText('CHECKPOINT PRACTICE · UNRANKED'),
+          translateText('Start from checkpoints unlocked in Mayhem and practice later sectors.'),
+          translateText('No leaderboard submission or achievements. Sector records stay local.')
         ].join('\n'),
         body: translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
       };
@@ -2170,8 +2190,10 @@ export class MenuScene {
         accent: 0xff55d9,
         secondary: 0x7fffd8,
         menuBody: [
-          translateText('RANKED // BUILDCRAFT'),
-          translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
+          translateText('MAIN MODE · RECOMMENDED'),
+          translateText('Draft one permanent tactical upgrade after each boss.'),
+          translateText('RANKED · TACTICAL LEADERBOARD'),
+          translateText('Push deeper, score higher, and shape a spectacular build.')
         ].join('\n'),
         body: translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
       };
@@ -2183,8 +2205,10 @@ export class MenuScene {
         accent: 0xffd15c,
         secondary: 0x7fffd8,
         menuBody: [
-          translateText('RANKED // RAW SKILL'),
-          translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
+          translateText('ALTERNATIVE RANKED MODE'),
+          translateText('No tactical drafts. Pure ship mastery on the original Mayhem ruleset.'),
+          translateText('RANKED · PURE LEADERBOARD'),
+          translateText('Achievements, career XP, and checkpoint unlocks stay active.')
         ].join('\n'),
         body: translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
       };
@@ -2195,8 +2219,8 @@ export class MenuScene {
       accent: 0x37f5ff,
       secondary: 0xffd15c,
       menuBody: [
-        translateText('MAYHEM PURE: raw skill. MAYHEM TACTICAL: buildcraft. Both are ranked on separate Steam leaderboards.'),
-        translateText('Pick your kind of chaos. Pure keeps the original board; Tactical gets upgrades and its own board. Scout and Sector remain practice routes.')
+        translateText('MAYHEM TACTICAL is the recommended main mode.'),
+        translateText('Mayhem Pure is the alternative ranked ruleset. Daily, Scout, and Sector are side activities and practice routes.')
       ].join('\n'),
       body: translateText('Pick your kind of chaos. Pure keeps the original board; Tactical gets upgrades and its own board. Scout and Sector remain practice routes.')
     };
@@ -3210,11 +3234,13 @@ export class MenuScene {
       },
       launchDeck: {
         bounds: this.launchDeckBounds,
+        hierarchy: ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart'],
         featuredDailySignal: {
           label: this.dailySignalBtn?._label?.text || null,
           sublabel: this.dailySignalBtn?._sublabel?.text || null,
+          role: this.dailySignalBtn?._runModeRole || null,
           focused: Boolean(this.dailySignalBtn?._focused),
-          bounds: this.dailySignalBounds || boundsForDisplayObject(this.dailySignalBtn),
+          bounds: this.dailySignalBounds || boundsForMenuButtonLayout(this.dailySignalBtn),
           contract: this.dailySignalContract ? {
             dailyKey: this.dailySignalContract.dailyKey,
             rulesHash: this.dailySignalContract.rulesHash,
@@ -3249,29 +3275,41 @@ export class MenuScene {
             label: this.startBtn?._label?.text || null,
             sublabel: this.startBtn?._sublabel?.text || null,
             body: this.startBtn?._bodyLabel?.text || null,
+            role: this.startBtn?._runModeRole || null,
             focused: Boolean(this.startBtn?._focused),
-            bounds: boundsForDisplayObject(this.startBtn)
+            bounds: boundsForMenuButtonLayout(this.startBtn)
           },
           mayhemTactical: {
             label: this.tacticalStartBtn?._label?.text || null,
             sublabel: this.tacticalStartBtn?._sublabel?.text || null,
             body: this.tacticalStartBtn?._bodyLabel?.text || null,
+            role: this.tacticalStartBtn?._runModeRole || null,
             focused: Boolean(this.tacticalStartBtn?._focused),
-            bounds: boundsForDisplayObject(this.tacticalStartBtn)
+            bounds: boundsForMenuButtonLayout(this.tacticalStartBtn)
+          },
+          daily: {
+            label: this.dailySignalBtn?._label?.text || null,
+            sublabel: this.dailySignalBtn?._sublabel?.text || null,
+            body: this.dailySignalBtn?._bodyLabel?.text || null,
+            role: this.dailySignalBtn?._runModeRole || null,
+            focused: Boolean(this.dailySignalBtn?._focused),
+            bounds: this.dailySignalBounds || boundsForMenuButtonLayout(this.dailySignalBtn)
           },
           scout: {
             label: this.scoutRunBtn?._label?.text || null,
             sublabel: this.scoutRunBtn?._sublabel?.text || null,
             body: this.scoutRunBtn?._bodyLabel?.text || null,
+            role: this.scoutRunBtn?._runModeRole || null,
             focused: Boolean(this.scoutRunBtn?._focused),
-            bounds: boundsForDisplayObject(this.scoutRunBtn)
+            bounds: boundsForMenuButtonLayout(this.scoutRunBtn)
           },
           sector: {
             label: this.sectorStartBtn?._label?.text || null,
             sublabel: this.sectorStartBtn?._sublabel?.text || null,
             body: this.sectorStartBtn?._bodyLabel?.text || null,
+            role: this.sectorStartBtn?._runModeRole || null,
             focused: Boolean(this.sectorStartBtn?._focused),
-            bounds: boundsForDisplayObject(this.sectorStartBtn?.visible ? this.sectorStartBtn : null)
+            bounds: boundsForMenuButtonLayout(this.sectorStartBtn?.visible ? this.sectorStartBtn : null)
           }
         }
       },
@@ -3762,10 +3800,11 @@ export class MenuScene {
     return container;
   }
 
-  configureRunModeCard(button, { id, secondary = 0x7fffd8 } = {}) {
+  configureRunModeCard(button, { id, secondary = 0x7fffd8, role = 'secondary' } = {}) {
     if (!button) return button;
     button._isRunModeCard = true;
     button._runModeCardId = id || button._runModeCardId || 'runMode';
+    button._runModeRole = role;
     button._secondaryAccent = secondary;
     if (button._bodyLabel) button._bodyLabel.visible = false;
     return button;
@@ -4133,8 +4172,9 @@ export class MenuScene {
 
   updateMenuButtonMotion(delta = 0) {
     const buttons = [
-      this.startBtn,
       this.tacticalStartBtn,
+      this.startBtn,
+      this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.highscoreBtn,
@@ -4151,7 +4191,7 @@ export class MenuScene {
     buttons.forEach((button) => {
       if (!Number.isFinite(button._layoutY)) return;
       const focused = Boolean(button._focused && !modalOpen);
-      const primary = button === this.startBtn;
+      const primary = button === this.tacticalStartBtn;
       const utility = button._variant === 'utility' || button._variant === 'utilityDanger';
       const breathe = primary && !modalOpen ? Math.sin(this.animationTime * 2.25) * 0.018 : 0;
       const targetScale = focused ? (utility ? 1.04 : 1.056) : (primary ? 1 + breathe : 1);
@@ -4312,12 +4352,13 @@ export class MenuScene {
     const y = -h / 2;
     const isPureMayhem = container === this.startBtn;
     const isTacticalMayhem = container === this.tacticalStartBtn;
+    const isPrimaryMode = isTacticalMayhem;
     const isMayhem = isPureMayhem || isTacticalMayhem;
     const accent = container._accent || 0x37f5ff;
     const secondary = container._secondaryAccent || 0x7fffd8;
     const isFocused = Boolean(container._focused && !this.sectorSelectorOpen);
     const active = isHover || isFocused;
-    const pulse = 0.5 + Math.sin(this.animationTime * (isMayhem ? 2.6 : 3.3)) * 0.5;
+    const pulse = 0.5 + Math.sin(this.animationTime * (isPrimaryMode ? 2.35 : (isMayhem ? 2.6 : 3.3))) * 0.5;
     const sweep = active ? (0.5 + Math.sin(this.animationTime * 4.9) * 0.5) : pulse;
     const hotAccent = isPureMayhem ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary));
 
@@ -4326,14 +4367,16 @@ export class MenuScene {
       drawCutPanel(focus, x - 8, y - 8, w + 16, h + 16, 12, { color: hotAccent, alpha: 0.05 + pulse * 0.035 }, { color: hotAccent, width: 2, alpha: 0.78 + pulse * 0.16 });
       focus.rect(x + w * 0.18, y - 7, w * 0.64, 2);
       focus.fill({ color: hotAccent, alpha: 0.28 + pulse * 0.12 });
+    } else if (isPrimaryMode) {
+      drawCutPanel(focus, x - 6, y - 6, w + 12, h + 12, 12, { color: 0xff55d9, alpha: 0.025 + pulse * 0.025 }, { color: 0x7fffd8, width: 1.35, alpha: 0.24 + pulse * 0.12 });
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 10, y + 12, w, h, 14, { color: 0x000000, alpha: 0.52 });
-    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, 14, { color: accent, alpha: active ? 0.2 : (isMayhem ? 0.13 + pulse * 0.06 : 0.09) }, { color: accent, width: active ? 2 : 1.35, alpha: active ? 0.8 : (isMayhem ? 0.5 + pulse * 0.12 : 0.38) });
+    drawCutPanel(bg, x + 10, y + 12, w, h, 14, { color: 0x000000, alpha: isPrimaryMode ? 0.62 : 0.52 });
+    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, 14, { color: accent, alpha: active ? 0.2 : (isPrimaryMode ? 0.18 + pulse * 0.08 : (isMayhem ? 0.13 + pulse * 0.06 : 0.09)) }, { color: accent, width: active ? 2.2 : (isPrimaryMode ? 1.8 : 1.35), alpha: active ? 0.86 : (isPrimaryMode ? 0.62 + pulse * 0.16 : (isMayhem ? 0.5 + pulse * 0.12 : 0.38)) });
     const mayhemBase = isPureMayhem ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
     const mayhemInner = isPureMayhem ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
-    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.2 : 1.4, alpha: active ? 0.9 : 0.52 });
+    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: isPrimaryMode ? 0.94 : 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.35 : (isPrimaryMode ? 1.85 : 1.4), alpha: active ? 0.94 : (isPrimaryMode ? 0.7 : 0.52) });
     drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.46 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.08 });
     bg.rect(x + 8, y + 8, w - 16, Math.max(34, h * 0.34));
     bg.fill({ color: isPureMayhem ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
@@ -4352,7 +4395,7 @@ export class MenuScene {
     const label = container._label;
     const sublabel = container._sublabel;
     const body = container._bodyLabel;
-    const compactCard = h < 92;
+    const compactCard = !isPrimaryMode;
     const icon = container._icon;
     const iconSprite = container._iconSprite;
     const assetKey = container._iconAssetKey;
@@ -4373,7 +4416,7 @@ export class MenuScene {
       label.visible = true;
       label.anchor.set(0, 0.5);
       label.style.align = 'left';
-      label.style.fill = isMayhem ? '#ffe584' : '#dffcff';
+      label.style.fill = isPrimaryMode ? '#ffffff' : (isPureMayhem ? '#ffe584' : '#dffcff');
       label.style.strokeThickness = 4;
       label.x = x + (compactCard ? 66 : 82);
       label.y = compactCard ? (y + h * 0.38) : (y + 32);
@@ -4382,7 +4425,7 @@ export class MenuScene {
       sublabel.visible = true;
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
-      sublabel.style.fill = isMayhem ? '#fff3b6' : '#9feeff';
+      sublabel.style.fill = isPrimaryMode ? '#7fffd8' : (isPureMayhem ? '#fff3b6' : '#9feeff');
       sublabel.alpha = sublabel.text ? (active ? 1 : 0.84) : 0;
       sublabel.x = x + (compactCard ? 66 : 82);
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
@@ -4645,11 +4688,11 @@ export class MenuScene {
     this.animateElement(this.missionBoardSubtitle, 0.86, 0.42);
     this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
-    this.animateElement(this.dailySignalBtn, 0.86, 0.4);
-    this.animateElement(this.startBtn, 0.92, 0.4);
-    this.animateElement(this.tacticalStartBtn, 1.02, 0.4);
-    this.animateElement(this.scoutRunBtn, 1.12, 0.4);
-    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.22, 0.4);
+    this.animateElement(this.tacticalStartBtn, 0.86, 0.42);
+    this.animateElement(this.startBtn, 0.98, 0.38);
+    this.animateElement(this.dailySignalBtn, 1.08, 0.38);
+    this.animateElement(this.scoutRunBtn, 1.18, 0.38);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.28, 0.38);
     this.animateElement(this.highscoreBtn, 1.32, 0.4);
     this.animateElement(this.storyBtn, 1.42, 0.4);
     this.animateElement(this.threatCodexBtn, 1.52, 0.4);
@@ -4663,9 +4706,9 @@ export class MenuScene {
   buildMenuNavigation() {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
-      { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
-      { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
       { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL) },
+      { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
+      { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
         ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
@@ -4737,8 +4780,8 @@ export class MenuScene {
       option.button.activate = option.activate;
     });
     const restoredIndex = this.menuOptions.findIndex((option) => option.id === previousFocusedId);
-    const launchIndex = this.menuOptions.findIndex((option) => option.id === 'launch');
-    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : Math.max(0, launchIndex));
+    const tacticalIndex = this.menuOptions.findIndex((option) => option.id === 'launchTactical');
+    this.setMenuFocus(restoredIndex >= 0 ? restoredIndex : Math.max(0, tacticalIndex));
   }
 
   getSelectedMenuOptionId() {
@@ -4770,7 +4813,7 @@ export class MenuScene {
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
     if (this.runModeBriefingTitle || this.runModeExplainer) {
       const briefing = this.getRunModeBriefing();
-      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODES') + ' // ' + briefing.title;
+      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
       if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
     }
     this.drawSectorStartStepperCue();
@@ -4913,7 +4956,7 @@ export class MenuScene {
     }
     if ((force || dayChanged) && this.getSelectedMenuOptionId() === 'dailySignal') {
       const briefing = this.getRunModeBriefing();
-      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = [translateText('RUN MODES'), briefing.title].join(' // ');
+      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = [translateText('RUN MODES'), briefing.title].join(' · ');
       if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
     }
     return contract;
@@ -4940,22 +4983,19 @@ export class MenuScene {
   getDailySignalMenuSubLabel() {
     const contract = this.dailySignalContract || deriveDailySignalContract();
     if (this.dailySignalBestClear) {
-      return translateText('CLEARED // BEAT {score} // RESET {time}', {
-        score: this.formatDailySignalScore(this.dailySignalBestClear.score),
-        time: this.formatDailySignalResetTime(contract)
+      return translateText('CLEARED · BEAT {score}', {
+        score: this.formatDailySignalScore(this.dailySignalBestClear.score)
       });
     }
     if (this.dailySignalBestAttempt) {
-      return translateText('GOAL S{finishSector} // BEST ATTEMPT S{sector} // RESET IN {time}', {
+      return translateText('CLEAR S{finishSector} · BEST S{sector}', {
         finishSector: contract.finishSector,
-        sector: this.dailySignalBestAttempt.sectorReached,
-        time: this.formatDailySignalResetTime(contract)
+        sector: this.dailySignalBestAttempt.sectorReached
       });
     }
-    return translateText('GOAL S{sector} // {ship} // RESET IN {time}', {
+    return translateText('CLEAR S{sector} · {route}', {
       sector: contract.finishSector,
-      ship: contract.loanerShipName,
-      time: this.formatDailySignalResetTime(contract)
+      route: translateText(contract.templateLabel)
     });
   }
 
@@ -5374,6 +5414,7 @@ export class MenuScene {
       this.musicBtn._label.text = translateText(AudioManager.getSettings().musicEnabled ? 'MUSIC: ON' : 'MUSIC: OFF');
     }
     [
+      this.dailySignalBtn,
       this.startBtn,
       this.tacticalStartBtn,
       this.scoutRunBtn,

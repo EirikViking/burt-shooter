@@ -18,6 +18,7 @@ import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
 import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { SFX_MIX } from '../audio/SoundCatalog.js';
 import { HUD } from '../ui/HUD.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
@@ -226,6 +227,8 @@ export class PlayScene {
     this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
     this.tacticalDraftBannedIds = [];
     this.tacticalDraftConfirmTimeout = null;
+    this.tacticalScoreRouteRestrictionTimeout = null;
+    this.tacticalScoreRouteDecision = null;
     this.tacticalBossBanterTimer = null;
     this.tacticalBossBanterToken = 0;
     this.pendingTacticalBossBanterId = null;
@@ -346,6 +349,11 @@ export class PlayScene {
       lastShotTime: 0,
       lastSoundTime: 0,
       lastSoundKey: 'shoot_small',
+      lastRequestIntervalMs: 0,
+      totalVolleys: 0,
+      totalRequests: 0,
+      totalPlayed: 0,
+      totalSuppressed: 0,
       recoveredLogged: false,
       lastRecoveryAttempt: 0,
       recoveryAttempts: 0
@@ -377,7 +385,9 @@ export class PlayScene {
     this.bossWarningArtTextures = [];
     this.bossHazards = [];
     this.bossHazardLayer = null;
+    this.bossHazardLayerHasGeometry = false;
     this.lastBossHazardHit = null;
+    this.lastBossHazardCleanup = null;
     this.sectorArrivalStinger = null;
     this.activePickupEffects = new Set();
     this.sectorArrivalArtCache = new Map();
@@ -461,6 +471,8 @@ export class PlayScene {
     this.fireInputWasPressed = false;
     this.grazeBreaksThisRun = 0;
     this.lastGrazeBreak = null;
+    this.activeGrazeBreakVisual = null;
+    this.lastGrazeBreakVisualDebug = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
     this.lastPowerupPickupClaimCue = null;
@@ -664,7 +676,9 @@ export class PlayScene {
     this.grazeBreakReleasePrimed = false;
     this.currentFirePressed = false;
     this.fireInputWasPressed = false;
+    this.clearGrazeBreakVisual('scene_init');
     this.lastGrazeBreak = null;
+    this.lastGrazeBreakVisualDebug = null;
     this.lastComboCelebration = null;
     this.lastPowerupPickupJuice = null;
     this.lastPowerupPickupClaimCue = null;
@@ -734,6 +748,7 @@ export class PlayScene {
     this.tacticalDraftHeldId = null;
     this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
     this.tacticalDraftBannedIds = [];
+    this.tacticalScoreRouteDecision = null;
     this.tacticalDirectiveSession = null;
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
@@ -786,6 +801,8 @@ export class PlayScene {
     this.gameContainer.addChild(this.tractorHijackLayer);
     this.bossHazards = [];
     this.lastBossHazardHit = null;
+    this.lastBossHazardCleanup = null;
+    this.bossHazardLayerHasGeometry = false;
     this.bossHazardLayer = new PIXI.Graphics();
     this.bossHazardLayer.zIndex = 66;
     this.gameContainer.addChild(this.bossHazardLayer);
@@ -1130,18 +1147,7 @@ export class PlayScene {
   }
 
   clearDebugProjectiles() {
-    const removeBullets = (bullets = []) => {
-      bullets.forEach((bullet) => {
-        bullet.active = false;
-        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
-      });
-    };
-    removeBullets(this.bulletManager?.playerBullets || []);
-    removeBullets(this.bulletManager?.enemyBullets || []);
-    if (this.bulletManager) {
-      this.bulletManager.playerBullets = [];
-      this.bulletManager.enemyBullets = [];
-    }
+    return this.bulletManager?.clearAll?.('debug_projectile_clear') || 0;
   }
 
   debugJumpToLevel(level, reason = 'debug_level_jump') {
@@ -1162,8 +1168,7 @@ export class PlayScene {
     }
     this.clearPendingEnemyStart();
     this.clearDebugProjectiles();
-    this.bossHazards = [];
-    this.lastBossHazardHit = null;
+    this.clearBossHazards('debug_level_jump');
     this.bossMercyUntilMs = 0;
     this.resetBossLifeLossCap('debug_level_jump');
     this.resetBossWipeoutGuard('debug_level_jump');
@@ -1541,6 +1546,7 @@ export class PlayScene {
     this.showTacticalDirectiveMomentum(before, after);
     if (!result.completed) return true;
 
+    const completedAt = Date.now();
     const completion = {
       directiveId: before.id,
       objectiveId: before.objectiveId,
@@ -1552,7 +1558,8 @@ export class PlayScene {
       rewardKind: before.rewardKind,
       rewardPowerupType: before.rewardPowerupType,
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
-      completedAt: Date.now()
+      completedAt,
+      rewardSpawnKey: `tactical_directive:${this.game?.runStartedAtMs || 0}:${this.tacticalDirectiveHistory.length}:${before.id}:${completedAt}`
     };
     const sectorsUsed = Math.max(0, completion.sector - Math.max(1, Number(this.tacticalDirectiveSession?.startedInSector) || completion.sector));
     completion.momentumBonus = sectorsUsed <= 1
@@ -1631,7 +1638,10 @@ export class PlayScene {
       Number(this.player.x) || this.game.getWidth() / 2,
       Math.max(96, (Number(this.player.y) || this.game.getHeight() * 0.72) - 42),
       type,
-      { source: 'tactical_directive' }
+      {
+        source: 'tactical_directive',
+        spawnKey: completion.rewardSpawnKey || null
+      }
     );
     return { granted: Boolean(powerup), kind: 'powerup', type };
   }
@@ -1684,7 +1694,7 @@ export class PlayScene {
     return true;
   }
 
-  finishPersonalBestCelebration(reason = 'complete') {
+  finishPersonalBestCelebration(reason = 'complete', { preserveCarry = false } = {}) {
     const active = this.activePersonalBestCelebration;
     if (!active) return false;
     if (active.ticker && this.game?.app?.ticker) {
@@ -1698,6 +1708,11 @@ export class PlayScene {
       this.lastPersonalBestCelebration.completed = reason === 'complete';
       this.lastPersonalBestCelebration.endedReason = reason;
       this.lastPersonalBestCelebration.endedAt = Date.now();
+      this.lastPersonalBestCelebration.elapsedMs = Math.max(0, Number(active.elapsedMs) || 0);
+      this.lastPersonalBestCelebration.durationMs = Math.max(0, Number(active.durationMs) || 0);
+    }
+    if (!preserveCarry && reason === 'complete' && this.game) {
+      this.game.personalBestCelebrationCarry = null;
     }
     this.activePersonalBestCelebration = null;
     return true;
@@ -1705,6 +1720,34 @@ export class PlayScene {
 
   clearPersonalBestCelebration(reason = 'cleared') {
     return this.finishPersonalBestCelebration(reason);
+  }
+
+  preparePersonalBestCelebrationCarry(reason = 'game_over_transition') {
+    const active = this.activePersonalBestCelebration;
+    const last = this.lastPersonalBestCelebration;
+    if (!active || !last || !this.game) return false;
+    const previousScore = Math.max(0, Math.floor(Number(last.previousScore) || 0));
+    const triggerScore = Math.max(previousScore + 1, Math.floor(Number(last.triggerScore) || 0));
+    const currentScore = Math.max(triggerScore, Math.floor(Number(this.game.score) || 0));
+    const remainingMs = Math.max(0, (Number(active.durationMs) || 0) - (Number(active.elapsedMs) || 0));
+    const carryDurationMs = Math.max(4200, Math.min(5200, remainingMs || 4200));
+    this.game.personalBestCelebrationCarry = {
+      previousScore,
+      triggerScore,
+      currentScore,
+      delta: Math.max(1, currentScore - previousScore),
+      source: last.source || 'ranked_best_score',
+      reducedMotion: Boolean(last.reducedMotion),
+      scoreNeutral: true,
+      durationMs: carryDurationMs,
+      handoffReason: reason,
+      preparedAt: Date.now()
+    };
+    last.currentScore = currentScore;
+    last.delta = Math.max(1, currentScore - previousScore);
+    last.carryPrepared = true;
+    last.carryDurationMs = carryDurationMs;
+    return this.finishPersonalBestCelebration(reason, { preserveCarry: true });
   }
 
   getPersonalBestCelebrationDebugState() {
@@ -1723,6 +1766,13 @@ export class PlayScene {
       endedReason: last?.endedReason || null,
       reducedMotion: Boolean(last?.reducedMotion),
       scoreNeutral: last?.scoreNeutral !== false,
+      elapsedMs: Math.round(Math.max(0, Number(active?.elapsedMs ?? last?.elapsedMs) || 0)),
+      durationMs: Math.round(Math.max(0, Number(active?.durationMs ?? last?.durationMs) || 0)),
+      remainingMs: Math.round(Math.max(0, (Number(active?.durationMs) || 0) - (Number(active?.elapsedMs) || 0))),
+      phase: active?.phase || last?.phase || null,
+      settled: Boolean(active?.settled || last?.settled),
+      carryPrepared: Boolean(last?.carryPrepared),
+      carryDurationMs: Math.round(Math.max(0, Number(last?.carryDurationMs) || 0)),
       rayCount: last?.rayCount || 0,
       sparkCount: last?.sparkCount || 0,
       hasCrown: Boolean(last?.hasCrown),
@@ -1752,7 +1802,13 @@ export class PlayScene {
     const panelHeight = compact ? 184 : 224;
     const rayCount = reducedMotion ? 10 : 18;
     const sparkCount = reducedMotion ? 14 : 38;
-    const durationMs = reducedMotion ? 2700 : 3400;
+    const durationMs = reducedMotion ? 6200 : 7600;
+    const impactMs = reducedMotion ? 720 : 920;
+    const settleEndMs = reducedMotion ? 1320 : 1780;
+    const outroMs = reducedMotion ? 720 : 920;
+    const settledPanelY = height * (compact ? 0.25 : 0.275);
+    const settledPanelScale = compact ? 0.68 : 0.6;
+    this.game.personalBestCelebrationCarry = null;
 
     const container = new PIXI.Container();
     container.label = 'ui_personal_best_celebration';
@@ -1944,6 +2000,11 @@ export class PlayScene {
       sparkCount,
       hasCrown: true,
       hasLiveCounter: true,
+      elapsedMs: 0,
+      durationMs,
+      phase: 'impact',
+      settled: false,
+      carryPrepared: false,
       startedAt: Date.now()
     };
 
@@ -1966,23 +2027,52 @@ export class PlayScene {
       this.screenShake?.shake?.(5, 15);
     }
 
-    let elapsed = 0;
+    const active = {
+      container,
+      ticker: null,
+      elapsedMs: 0,
+      durationMs,
+      phase: 'impact',
+      settled: false
+    };
     const ticker = (delta) => {
       if (!container.parent || this.game?.currentScene !== this) {
         this.finishPersonalBestCelebration('scene_changed');
         return;
       }
-      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const deltaFrames = Number(delta?.deltaTime) || Number(delta) || 0;
+      const advancing = this.isGameplayClockAdvancing();
+      if (advancing) {
+        active.elapsedMs += deltaFrames * 16.67;
+      }
+      const animationDeltaFrames = advancing ? deltaFrames : 0;
+      const elapsed = active.elapsedMs;
       const intro = Math.min(1, elapsed / 260);
       const introEase = 1 - Math.pow(1 - intro, 3);
-      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - 620)) / 620));
+      const settle = Math.max(0, Math.min(1, (elapsed - impactMs) / Math.max(1, settleEndMs - impactMs)));
+      const settleEase = 1 - Math.pow(1 - settle, 3);
+      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - outroMs)) / outroMs));
+      active.phase = elapsed < impactMs
+        ? 'impact'
+        : elapsed < settleEndMs
+          ? 'settle'
+          : elapsed < durationMs - outroMs
+            ? 'hold'
+            : 'outro';
+      active.settled = settle >= 1;
       container.alpha = introEase * (1 - outro);
-      panel.scale.set(0.78 + introEase * 0.22 + Math.sin(elapsed * 0.008) * (reducedMotion ? 0.006 : 0.018));
+      const impactScale = 0.78 + introEase * 0.22;
+      const settledScale = impactScale + (settledPanelScale - impactScale) * settleEase;
+      panel.scale.set(settledScale + Math.sin(elapsed * 0.008) * (reducedMotion ? 0.003 : 0.009) * (1 - settleEase * 0.55));
+      panel.position.set(centerX, centerY + (settledPanelY - centerY) * settleEase);
+      crown.alpha = 1 - settleEase * 0.58;
       flash.alpha = Math.max(0, (1 - elapsed / 520) * (reducedMotion ? 0.22 : 0.7));
-      frame.alpha = 0.58 + Math.sin(elapsed * 0.01) * 0.18;
-      burstLayer.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.0018;
-      burstLayer.alpha = 0.48 + Math.max(0, Math.sin(elapsed * 0.006)) * 0.36;
-      ringLayer.rotation -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.003;
+      wash.alpha = Math.max(0.14, 1 - settleEase * 0.86);
+      frame.alpha = (0.58 + Math.sin(elapsed * 0.01) * 0.18) * (1 - settleEase * 0.58);
+      burstLayer.rotation += reducedMotion ? 0 : animationDeltaFrames * 0.0018;
+      burstLayer.alpha = (0.48 + Math.max(0, Math.sin(elapsed * 0.006)) * 0.36) * (1 - settleEase * 0.72);
+      ringLayer.rotation -= reducedMotion ? 0 : animationDeltaFrames * 0.003;
+      ringLayer.alpha = 1 - settleEase * 0.58;
       rings.forEach((ring, index) => {
         const pulse = 1 + Math.sin(elapsed * 0.006 + index * 1.4) * (reducedMotion ? 0.012 : 0.055);
         ring.scale.set(pulse);
@@ -1993,8 +2083,8 @@ export class PlayScene {
         const angle = spark.angle + elapsed * 0.001 * spark.orbit;
         const distance = spark.distance * travelEase;
         spark.display.position.set(Math.cos(angle) * distance, Math.sin(angle) * distance);
-        spark.display.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * (0.02 + (index % 3) * 0.01);
-        spark.display.alpha = Math.max(0.1, (1 - outro) * (0.58 + Math.sin(elapsed * 0.012 + index) * 0.36));
+        spark.display.rotation += reducedMotion ? 0 : animationDeltaFrames * (0.02 + (index % 3) * 0.01);
+        spark.display.alpha = Math.max(0.04, (1 - outro) * (1 - settleEase * 0.62) * (0.58 + Math.sin(elapsed * 0.012 + index) * 0.36));
       });
       scanLine.y = -panelHeight * 0.38 + (panelHeight * 0.76) * ((elapsed % 1250) / 1250);
 
@@ -2008,11 +2098,16 @@ export class PlayScene {
       if (this.lastPersonalBestCelebration) {
         this.lastPersonalBestCelebration.currentScore = liveScore;
         this.lastPersonalBestCelebration.delta = liveDelta;
+        this.lastPersonalBestCelebration.elapsedMs = elapsed;
+        this.lastPersonalBestCelebration.durationMs = durationMs;
+        this.lastPersonalBestCelebration.phase = active.phase;
+        this.lastPersonalBestCelebration.settled = active.settled;
       }
 
       if (elapsed >= durationMs) this.finishPersonalBestCelebration('complete');
     };
-    this.activePersonalBestCelebration = { container, ticker };
+    active.ticker = ticker;
+    this.activePersonalBestCelebration = active;
     this._activeTickers.push(ticker);
     this.game.app.ticker.add(ticker);
     ticker({ deltaTime: 0 });
@@ -2140,18 +2235,20 @@ export class PlayScene {
       threat: translateText(active.weaponLabel)
     });
     this.enqueueToast(contact, {
-      fontSize: this.game.getWidth() < 720 ? 22 : 28,
+      fontSize: this.game.getWidth() < 720 ? 20 : 24,
       fill: '#fff3a0',
-      slot: 'center',
+      slot: 'top',
       type: 'aceContact',
       priority: 5,
-      duration: 2600,
-      minVisibleMs: 1900,
+      duration: 2100,
+      minVisibleMs: 1500,
       extraReadTimeMs: 0,
-      y: Math.max(132, this.game.getHeight() * 0.19),
-      maxWidth: Math.min(720, Math.max(360, this.game.getWidth() - 32)),
+      y: Math.max(176, this.game.getHeight() * 0.25),
+      maxWidth: Math.min(540, Math.max(360, this.game.getWidth() - 32)),
       accent: active.color || 0xffd15c,
       secondaryAccent: active.accent || 0x7df9ff,
+      edgeAligned: this.game.getWidth() >= 720,
+      placement: this.game.getWidth() >= 720 ? 'left-edge' : 'upper-center-edge-safe',
       aceDossier: {
         title: translateText('ACE CONTACT'),
         primary: `#${number}`,
@@ -2163,7 +2260,7 @@ export class PlayScene {
         wing: wingContact
       }
     });
-    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.76, minIntervalMs: 700 });
+    AudioManager.playSfx('elite_spawn_alert', { force: true, volume: 0.64, minIntervalMs: 700 });
     return true;
   }
 
@@ -2217,6 +2314,7 @@ export class PlayScene {
     const variant = enemy?.aceVariant || getAceBountyById(enemy?.aceVariant?.id);
     if (!enemy?.isAce || !variant || enemy.aceRewardClaimed) return null;
     enemy.aceRewardClaimed = true;
+    const completedAt = Date.now();
     const completion = {
       variantId: variant.id,
       number: variant.number,
@@ -2244,7 +2342,8 @@ export class PlayScene {
       rivalWingVolleyId: enemy.rivalWingCommand?.volleyId || null,
       rivalWingMoraleId: enemy.rivalWingCommand?.moraleId || null,
       sector: Math.max(1, Math.floor(Number(this.game?.level) || 1)),
-      completedAt: Date.now()
+      completedAt,
+      rewardSpawnKey: `ace_reward:${this.game?.runStartedAtMs || 0}:${this.aceBountyHistory.length}:${variant.id}:${enemy.nemesisProtocol?.id || 'none'}:${completedAt}`
     };
     if (this.aceBountyActive?.id === variant.id) {
       this.aceBountyActive.completed = true;
@@ -2297,6 +2396,7 @@ export class PlayScene {
     const duplicateType = completion.rewardPowerupType === completion.bonusPowerupType;
     const powerup = this.powerupManager.spawnSpecific(x, y, completion.rewardPowerupType, {
       source: 'ace_nemesis_bundle',
+      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:bundle` : null,
       bundledPowerupTypes: duplicateType ? [] : [completion.bonusPowerupType]
     });
     const granted = Boolean(powerup);
@@ -2326,7 +2426,10 @@ export class PlayScene {
     if (!type || !this.powerupManager) return { granted: false, kind: completion.rewardKind || null };
     const x = Number.isFinite(enemy?.x) ? enemy.x : (this.player?.x || this.game.getWidth() / 2);
     const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
-    const powerup = this.powerupManager.spawnSpecific(x, y, type, { source: 'ace_bounty' });
+    const powerup = this.powerupManager.spawnSpecific(x, y, type, {
+      source: 'ace_bounty',
+      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:ace` : null
+    });
     return { granted: Boolean(powerup), kind: 'powerup', type };
   }
 
@@ -2341,7 +2444,10 @@ export class PlayScene {
     if (!type || !this.powerupManager) return { granted: false, kind: completion.bonusKind || null };
     const x = Number.isFinite(enemy?.x) ? enemy.x + 24 : (this.player?.x || this.game.getWidth() / 2) + 24;
     const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
-    const powerup = this.powerupManager.spawnSpecific(x, y, type, { source: 'nemesis_protocol' });
+    const powerup = this.powerupManager.spawnSpecific(x, y, type, {
+      source: 'nemesis_protocol',
+      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:nemesis` : null
+    });
     return { granted: Boolean(powerup), kind: 'powerup', type };
   }
 
@@ -3019,6 +3125,22 @@ export class PlayScene {
     return postBoss ? SECTOR_ARRIVAL_STINGER_MS + 320 : SECTOR_ARRIVAL_STINGER_MS;
   }
 
+  isGameplayClockAdvancing() {
+    return Boolean(
+      this.game?.currentScene === this
+      && !this.introActive
+      && !this.pendingEnemyStartTimeout
+      && !this.isPaused
+      && !this.tacticalDraft?.active
+      && !(this.freezeTimerMs > 0)
+      && (this.game?.lives || 0) > 0
+    );
+  }
+
+  getGameplayClockMs() {
+    return Math.max(0, Number(this.gameTime) || 0) * 1000;
+  }
+
   scheduleEnemyStartForLevel(level, { startAtBoss = false, delayMs = 0, source = 'unknown' } = {}) {
     const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
     const startEnemies = () => {
@@ -3376,7 +3498,7 @@ export class PlayScene {
       }
 
       // Score Boost Timer
-      if (this.scoreBoostTimer > 0) {
+      if (this.scoreBoostTimer > 0 && this.isGameplayClockAdvancing()) {
         this.scoreBoostTimer -= delta * 16.67;
         if (this.scoreBoostTimer <= 0) {
           this.scoreMultiplier = 1;
@@ -3459,7 +3581,7 @@ export class PlayScene {
 
       // Run time measures playable combat. Ship intros and guarded sector-entry
       // holds must not tax a score run before the player has agency.
-      if (!this.introActive && !this.pendingEnemyStartTimeout) {
+      if (this.isGameplayClockAdvancing()) {
         this.gameTime += delta / 60;
       }
 
@@ -4570,7 +4692,7 @@ export class PlayScene {
   detonateBombBullet(bullet, reason = 'unknown') {
     if (!bullet?.active || !bullet.isBomb || bullet.bombDetonated) return false;
     bullet.bombDetonated = true;
-    bullet.active = false;
+    this.bulletManager?.deactivateBullet?.(bullet, `bomb_${reason}`);
 
     const radius = Math.max(110, Number(bullet.blastRadius) || 150);
     const damage = Math.max(1, Number(bullet.damage) || 1);
@@ -4793,6 +4915,49 @@ export class PlayScene {
     return radius;
   }
 
+  interceptPointDefenseBullets(collisionStats = null) {
+    const bullets = this.bulletManager?.enemyBullets;
+    if (!Array.isArray(bullets) || !this.player?.pointDefenseActive || this.player.isPowerupSuppressed?.()) {
+      return 0;
+    }
+
+    let intercepted = 0;
+    let visibleFeedback = 0;
+    for (const bullet of bullets) {
+      if (!bullet?.active) continue;
+      if (collisionStats) collisionStats.projectileDefensePairs += 1;
+      if (!isWithinPointDefenseRadius(this.player, bullet)) continue;
+
+      this.bulletManager.deactivateBullet?.(bullet, 'point_defense');
+      intercepted += 1;
+      if (collisionStats) collisionStats.projectileDefenseHits += 1;
+      if (visibleFeedback < 8) {
+        this.particleManager?.createHitSpark?.(
+          bullet.x,
+          bullet.y,
+          visibleFeedback % 2 === 0 ? 0x7df9ff : 0xffffff,
+          visibleFeedback === 0 ? 1.1 : 0.78
+        );
+        visibleFeedback += 1;
+      }
+    }
+
+    if (intercepted > 0) {
+      this.bulletManager.pruneInactiveBullets?.('enemy', 'point_defense');
+      this.player.pointDefenseInterceptCount = Math.max(0, Number(this.player.pointDefenseInterceptCount) || 0) + intercepted;
+      this.player.lastPointDefenseIntercept = {
+        at: this.getGameplayClockMs(),
+        count: intercepted,
+        total: this.player.pointDefenseInterceptCount
+      };
+      AudioManager.playSfx('tactical_point_defense', {
+        volume: intercepted >= 4 ? 0.42 : 0.3,
+        minIntervalMs: 110
+      });
+    }
+    return intercepted;
+  }
+
   checkCollisions() {
     const perfDiag = this.performanceDiagnostics;
     const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
@@ -4999,7 +5164,7 @@ export class PlayScene {
             impactY: enemyProxy.y + Math.sin(impactAngle) * contactDistance
           });
           if (bulletProxy.isBomb) break;
-          if (!bulletProxy.piercing) bullet.active = false;
+          if (!bulletProxy.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_enemy_hit');
         }
       }
       collisionStats.playerBulletEnemyHitEvents = hitEvents.length;
@@ -5099,7 +5264,7 @@ export class PlayScene {
               this.detonateBombBullet(bullet, 'hijacker_impact');
               return;
             }
-            if (!bullet.piercing) bullet.active = false;
+            if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_hijacker_hit');
             const destroyed = hijacker.takeDamage(bullet.damage);
 
             if (destroyed) {
@@ -5119,19 +5284,22 @@ export class PlayScene {
     }
     });
 
-    // Point Defense and Graze Break: Player bullets vs enemy bullets
+    // Point Defense autonomously intercepts hostile shots inside its ring.
+    // Graze Break remains a deliberate player-bullet collision.
     measure('collision.projectile_defense', () => {
     const hasGrazeBreaker = this.bulletManager.playerBullets.some(playerBullet =>
       playerBullet?.active !== false && playerBullet.isGrazeBreaker
     );
     const pointDefenseActive = this.player.pointDefenseActive && !this.player.isPowerupSuppressed?.();
-    if (pointDefenseActive || hasGrazeBreaker) {
+    if (pointDefenseActive) {
+      this.interceptPointDefenseBullets(collisionStats);
+    }
+    if (hasGrazeBreaker) {
       this.bulletManager.playerBullets.forEach(playerBullet => {
-        if (!playerBullet.active) return;
+        if (!playerBullet.active || !playerBullet.isGrazeBreaker) return;
 
         this.bulletManager.enemyBullets.forEach(enemyBullet => {
           if (!enemyBullet.active) return;
-          if (!pointDefenseActive && !playerBullet.isGrazeBreaker) return;
           collisionStats.projectileDefensePairs += 1;
 
           // Check collision between player bullet and enemy bullet
@@ -5140,28 +5308,9 @@ export class PlayScene {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const hitRadius = (playerBullet.radius || 4) + (enemyBullet.radius || 6);
 
-          if (pointDefenseActive && !playerBullet.isGrazeBreaker) {
-            if (!isWithinPointDefenseRadius(this.player, enemyBullet)) return;
-          }
-
           if (dist < hitRadius) {
             collisionStats.projectileDefenseHits += 1;
-            if (playerBullet.isGrazeBreaker) {
-              this.triggerGrazeBreak(playerBullet, enemyBullet);
-              return;
-            }
-
-            // Destroy both projectiles
-            playerBullet.active = false;
-            enemyBullet.active = false;
-
-            // Subtle hit sound (NOT annoying blip blop)
-            AudioManager.playSfx('impactMetal', { volume: 0.15 });
-
-            // Small visual feedback
-            if (this.particleManager) {
-              this.particleManager.createHitSpark(enemyBullet.x, enemyBullet.y, 0x00ddff);
-            }
+            this.triggerGrazeBreak(playerBullet, enemyBullet);
           }
         });
       });
@@ -5187,7 +5336,7 @@ export class PlayScene {
           // Feature: Ghost Ship prevents hit
           if (this.player.isGhostActive?.()) return;
 
-          bullet.active = false;
+          this.bulletManager?.deactivateBullet?.(bullet, 'enemy_bullet_player_hit');
           if (this.isBossOwnedBullet(bullet)) {
             this.handleBossCausedPlayerHit('boss_bullet', this.enemyManager?.boss, {
               balanceSource: `boss_bullet:${bullet.sourceFireStyle || bullet.weaponProfileId || 'unknown'}`,
@@ -5278,7 +5427,7 @@ export class PlayScene {
           if (bonusDrone.active && bonusDrone.type === 'HAZARD' && this.checkCollision(bullet, bonusDrone)) {
             if (!this.claimPlayerBulletTargetHit(bullet, bonusDrone)) return;
             collisionStats.playerBulletAmbientHits += 1;
-            if (!bullet.piercing) bullet.active = false;
+            if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_ambient_hit');
             const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
@@ -6135,21 +6284,29 @@ export class PlayScene {
     const now = Date.now();
     const check = this.shootSoundHealthCheck;
     const sfxKey = this.player?.getShootSfxKey ? this.player.getShootSfxKey() : 'shoot_small';
+    const mix = SFX_MIX[sfxKey] || SFX_MIX.shoot_small || {};
+    const requestIntervalMs = Math.max(35, Number(mix.minIntervalMs) || 80);
     check.lastSoundKey = sfxKey;
+    check.lastRequestIntervalMs = requestIntervalMs;
 
     // Track shot
     check.shotsFired++;
+    check.totalVolleys++;
     check.lastShotTime = now;
 
-    // Try to play sound with a minimum interval to avoid choking the pool
+    // Respect each weapon's authored cadence so long samples do not stack into fatigue.
     let played = false;
-    if (now - check.lastSoundTime >= 80) {
-      played = AudioManager.playSfx(sfxKey, { pool: true, minIntervalMs: 60 }) === true;
+    if (now - check.lastSoundTime >= requestIntervalMs) {
+      check.totalRequests++;
+      played = AudioManager.playSfx(sfxKey, { pool: true }) === true;
       if (played) {
+        check.totalPlayed++;
         check.lastSoundTime = now;
         check.shotsFired = 0;
         check.recoveryAttempts = 0;
         check.recoveredLogged = false;
+      } else {
+        check.totalSuppressed++;
       }
     }
 
@@ -6167,7 +6324,10 @@ export class PlayScene {
 
     // Fail-safe: if firing but no sound request has landed in >500ms, force recover once.
     if (!played && now - check.lastSoundTime > 500) {
-      AudioManager.playSfx(sfxKey, { force: true, pool: true, volume: 0.8 });
+      check.totalRequests++;
+      const recovered = AudioManager.playSfx(sfxKey, { force: true, pool: true }) === true;
+      if (recovered) check.totalPlayed++;
+      else check.totalSuppressed++;
       check.lastSoundTime = now;
       check.shotsFired = 0;
       check.recoveredLogged = true;
@@ -6238,6 +6398,15 @@ export class PlayScene {
     this.clearPendingEnemyStart();
     this.clearSectorArrivalStinger();
     this.clearPickupEffects('scene_destroy');
+    this.clearGrazeBreakVisual('scene_destroy');
+    this.bulletManager?.clearAll?.('scene_destroy');
+    this.clearBossHazards('scene_destroy');
+    if (this.bossHazardLayer?.parent) {
+      this.bossHazardLayer.parent.removeChild(this.bossHazardLayer);
+    }
+    this.bossHazardLayer?.destroy?.();
+    this.bossHazardLayer = null;
+    this.bossHazardLayerHasGeometry = false;
     this.clearBackgroundLevelEntryWarmup();
     this.removeAutoPauseHandlers();
     this.viewportLayoutUnsubscribe?.();
@@ -6802,6 +6971,7 @@ export class PlayScene {
       heldId: this.tacticalDraftHeldId
     }));
     if (offers.length < 3) return false;
+    const scoreRouteOffer = offers.find((offer) => offer.fixedScoreRoute) || null;
 
     const overlay = new PIXI.Container();
     overlay.label = 'ui_tactical_draft';
@@ -6817,7 +6987,9 @@ export class PlayScene {
     lockInBurst.label = 'tactical_draft_lock_in_burst';
     lockInBurst.eventMode = 'none';
     lockInBurst.visible = false;
-    const eyebrow = createText(translateText('SECTOR {sector} CLEARED', { sector: sectorCleared }), {
+    const eyebrow = createText(scoreRouteOffer
+      ? translateText('SECTOR {sector} SCORE ROUTE', { sector: sectorCleared })
+      : translateText('SECTOR {sector} CLEARED', { sector: sectorCleared }), {
       fontFamily: FONT_BODY,
       fontSize: 15,
       fontWeight: '900',
@@ -6825,7 +6997,7 @@ export class PlayScene {
       align: 'center'
     });
     eyebrow.anchor.set(0.5);
-    const title = createText(translateText('TACTICAL DRAFT'), {
+    const title = createText(translateText(scoreRouteOffer ? 'NOW OR NEVER' : 'TACTICAL DRAFT'), {
       fontFamily: FONT_DISPLAY,
       fontSize: 38,
       fontWeight: '900',
@@ -6835,12 +7007,17 @@ export class PlayScene {
       align: 'center'
     });
     title.anchor.set(0.5);
-    const subtitle = createText(translateText('Choose one permanent run upgrade.'), {
+    const subtitle = createText(scoreRouteOffer
+      ? translateText('Take COMBO ANCHOR now or close this score route for the run.')
+      : translateText('Choose one permanent run upgrade.'), {
       fontFamily: FONT_BODY,
       fontSize: 17,
       fontWeight: '700',
       fill: '#d8f7ff',
-      align: 'center'
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: 900,
+      lineHeight: 20
     });
     subtitle.anchor.set(0.5);
     overlay.addChild(dim, frame, lockInBurst, eyebrow, title, subtitle);
@@ -6871,6 +7048,11 @@ export class PlayScene {
       rescan,
       hold,
       ban,
+      scoreRouteOfferId: scoreRouteOffer?.id || null,
+      scoreRouteDecision: scoreRouteOffer ? 'pending' : null,
+      scoreRouteDefaultSubtitle: scoreRouteOffer
+        ? translateText('Take COMBO ANCHOR now or close this score route for the run.')
+        : null,
       heldAtOpenId: this.tacticalDraftHeldId,
       rescanCount: 0,
       rescansRemaining: this.tacticalDraftRescansRemaining,
@@ -6885,7 +7067,21 @@ export class PlayScene {
     this.layoutTacticalDraft();
     this.tacticalDraftNavigator.suppressUntilReleased();
     this.setTacticalDraftFocus(recommendedIndex, { silent: true });
-    AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
+    if (scoreRouteOffer) {
+      this.tacticalScoreRouteDecision = {
+        sector: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
+        offerId: scoreRouteOffer.id,
+        status: 'pending',
+        openedAt: Date.now()
+      };
+      AudioManager.playSfx(scoreRouteOffer.sfx || 'tactical_combo_anchor', {
+        force: true,
+        volume: 0.62,
+        minIntervalMs: 0
+      });
+    } else {
+      AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
+    }
     this.scheduleTacticalBossBanter(offers[recommendedIndex]?.id, { delayMs: 760, context: 'draft' });
     return true;
   }
@@ -6900,7 +7096,7 @@ export class PlayScene {
     const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
     const categoryLabel = offer.fixedScoreRoute
-      ? translateText('FIXED SCORE ROUTE')
+      ? translateText('ONE-TIME SCORE ROUTE')
       : translateText(String(offer.category || 'utility').toUpperCase());
     const category = createText(translateText('{category} // {stack}/{max}', {
       category: categoryLabel,
@@ -6913,6 +7109,23 @@ export class PlayScene {
       fill: '#7ee9ff'
     });
     category.anchor.set(0.5);
+    const scoreRouteBadge = new PIXI.Container();
+    scoreRouteBadge.label = `tactical_score_route_badge_${offer.id}`;
+    scoreRouteBadge.eventMode = 'none';
+    const scoreRouteBadgeBg = new PIXI.Graphics();
+    const scoreRouteBadgeText = createText(translateText('NOW OR NEVER'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#1b0800',
+      strokeThickness: 2,
+      align: 'center',
+      letterSpacing: 0.6
+    });
+    scoreRouteBadgeText.anchor.set(0.5);
+    scoreRouteBadge.addChild(scoreRouteBadgeBg, scoreRouteBadgeText);
+    scoreRouteBadge.visible = Boolean(offer.fixedScoreRoute);
     const texture = GameAssets.getPowerupTexture?.(offer.id);
     const icon = texture && GameAssets.isValidTexture(texture)
       ? new PIXI.Sprite(texture)
@@ -6979,11 +7192,13 @@ export class PlayScene {
     fusionLabel.visible = Boolean(fusionBlueprint);
     fusionName.visible = Boolean(fusionBlueprint);
     fusionHint.visible = Boolean(fusionBlueprint);
-    const permanence = createText(offer.currentStacks >= 2
-      ? translateText('OVERDRIVE: 30% EFFECT')
-      : offer.currentStacks > 0
-        ? translateText('EVOLUTION: 55% EFFECT')
-        : translateText('PERMANENT THIS RUN'), {
+    const permanence = createText(offer.fixedScoreRoute
+      ? translateText('ONE CHANCE // WILL NOT RETURN')
+      : offer.currentStacks >= 2
+        ? translateText('OVERDRIVE: 30% EFFECT')
+        : offer.currentStacks > 0
+          ? translateText('EVOLUTION: 55% EFFECT')
+          : translateText('PERMANENT THIS RUN'), {
       fontFamily: FONT_BODY,
       fontSize: 11,
       fontWeight: '900',
@@ -7007,7 +7222,7 @@ export class PlayScene {
       align: 'center'
     });
     holdBadge.anchor.set(0.5);
-    const choose = createText(translateText('CHOOSE'), {
+    const choose = createText(translateText(offer.fixedScoreRoute ? 'TAKE SCORE ROUTE' : 'CHOOSE'), {
       fontFamily: FONT_DISPLAY,
       fontSize: 15,
       fontWeight: '900',
@@ -7015,13 +7230,16 @@ export class PlayScene {
       align: 'center'
     });
     choose.anchor.set(0.5);
-    card.addChild(glow, bg, category);
+    card.addChild(glow, bg, category, scoreRouteBadge);
     if (icon) card.addChild(icon);
     card.addChild(name, description, fusionBadge, fusionLabel, fusionName, fusionHint, doctrine, permanence, holdBadge, choose);
     card._nodes = {
       glow,
       bg,
       category,
+      scoreRouteBadge,
+      scoreRouteBadgeBg,
+      scoreRouteBadgeText,
       icon,
       name,
       description,
@@ -7121,6 +7339,8 @@ export class PlayScene {
 
   getRecommendedTacticalDraftIndex(offers = []) {
     if (!Array.isArray(offers) || !offers.length) return 0;
+    const scoreRouteIndex = offers.findIndex((offer) => offer.fixedScoreRoute);
+    if (scoreRouteIndex >= 0) return scoreRouteIndex;
     const heldIndex = offers.findIndex((offer) => offer.held);
     if (heldIndex >= 0) return heldIndex;
     const evolutionIndex = offers.findIndex((offer) => offer.currentStacks > 0);
@@ -7193,6 +7413,9 @@ export class PlayScene {
     state.title.style.fontSize = compact ? 27 : 38;
     state.title.position.set(width / 2, compact ? 70 : 92);
     state.subtitle.style.fontSize = compact ? 13 : 17;
+    state.subtitle.style.wordWrapWidth = Math.max(260, width - (compact ? 48 : 120));
+    state.subtitle.style.lineHeight = compact ? 16 : 21;
+    state.subtitle.updateText?.(false);
     state.subtitle.position.set(width / 2, compact ? 98 : 128);
 
     if (state.rescan && state.hold && state.ban) {
@@ -7203,7 +7426,7 @@ export class PlayScene {
       state.ban._draftLayout = { width: controlWidth, height: controlHeight };
       const controlGap = compact ? 8 : 12;
       const controlsWidth = controlWidth * 3 + controlGap * 2;
-      const controlY = compact ? 124 : height - 42;
+      const controlY = compact ? (state.scoreRouteOfferId ? 132 : 124) : height - 42;
       state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
       state.hold.position.set(width / 2, controlY);
       state.ban.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
@@ -7220,7 +7443,7 @@ export class PlayScene {
     state.cards.forEach((card, index) => {
       card.position.set(
         compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
-        compact ? 158 + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
+        compact ? (state.scoreRouteOfferId ? 168 : 158) + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
@@ -7235,6 +7458,9 @@ export class PlayScene {
       if (compact) {
         nodes.category.anchor.set(0, 0.5);
         nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 23);
+        nodes.scoreRouteBadge.position.set(cardWidth / 2 - 58, -cardHeight / 2 + 21);
+        nodes.scoreRouteBadgeText.style.fontSize = 8;
+        fitTextWidth(nodes.category, cardWidth - 226, 0.58);
         if (nodes.icon) {
           nodes.icon.position.set(-cardWidth / 2 + 46, 0);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
@@ -7256,7 +7482,8 @@ export class PlayScene {
         nodes.permanence.style.fontSize = 9;
         nodes.permanence.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 18);
         nodes.holdBadge.position.set(cardWidth / 2 - 35, -cardHeight / 2 + 20);
-        nodes.choose.position.set(cardWidth / 2 - 48, cardHeight / 2 - 20);
+        nodes.choose.anchor.set(1, 0.5);
+        nodes.choose.position.set(cardWidth / 2 - 16, cardHeight / 2 - 20);
         nodes.choose.style.fontSize = 12;
         if (hasFusionBlueprint) {
           const badgeWidth = Math.min(208, Math.max(156, cardWidth * 0.34));
@@ -7279,8 +7506,17 @@ export class PlayScene {
           fitTextWidth(nodes.name, cardWidth - 190, 0.62);
         }
       } else {
-        nodes.category.anchor.set(0.5);
-        nodes.category.position.set(0, -cardHeight / 2 + 25);
+        nodes.choose.anchor.set(0.5);
+        if (card._offer?.fixedScoreRoute) {
+          nodes.category.anchor.set(0, 0.5);
+          nodes.category.position.set(-cardWidth / 2 + 18, -cardHeight / 2 + 25);
+          fitTextWidth(nodes.category, cardWidth - 158, 0.58);
+        } else {
+          nodes.category.anchor.set(0.5);
+          nodes.category.position.set(0, -cardHeight / 2 + 25);
+        }
+        nodes.scoreRouteBadge.position.set(cardWidth / 2 - 64, -cardHeight / 2 + 26);
+        nodes.scoreRouteBadgeText.style.fontSize = 10;
         if (nodes.icon) {
           nodes.icon.position.set(0, -cardHeight / 2 + 90);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
@@ -7335,19 +7571,30 @@ export class PlayScene {
     const focused = card._draftIndex === state.focusIndex;
     const confirmed = card._offer?.id === state.confirmedId;
     const held = card._offer?.id === this.tacticalDraftHeldId;
+    const scoreRoute = Boolean(card._offer?.fixedScoreRoute);
     const fusionBlueprint = card._offer?.fusionBlueprints?.[0] || null;
     const completesFusion = Boolean(fusionBlueprint?.completesOnPick);
     const fusionAccent = Number(fusionBlueprint?.color) || 0xff5bd6;
-    const accent = completesFusion ? fusionAccent : Number(card._offer?.color) || 0x37f5ff;
+    const accent = scoreRoute ? 0xffa84d : completesFusion ? fusionAccent : Number(card._offer?.color) || 0x37f5ff;
     const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
     nodes.glow.clear();
     nodes.bg.clear();
     nodes.glow.roundRect(-layout.width / 2 - 5, -layout.height / 2 - 5, layout.width + 10, layout.height + 10, 8);
-    nodes.glow.fill({ color: confirmed ? 0xffd15c : accent, alpha: confirmed ? 0.28 : focused ? 0.08 + pulse * 0.08 : 0 });
+    nodes.glow.fill({
+      color: confirmed ? 0xffd15c : accent,
+      alpha: confirmed ? 0.28 : focused ? (scoreRoute ? 0.14 + pulse * 0.12 : 0.08 + pulse * 0.08) : scoreRoute ? 0.045 : 0
+    });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
-    nodes.bg.fill({ color: confirmed ? 0x102616 : focused ? 0x071d2f : 0x04111f, alpha: 0.96 });
+    nodes.bg.fill({
+      color: confirmed ? 0x102616 : scoreRoute ? (focused ? 0x241609 : 0x160f08) : focused ? 0x071d2f : 0x04111f,
+      alpha: 0.96
+    });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
-    nodes.bg.stroke({ color: confirmed ? 0xffef7e : held ? 0xffd15c : focused ? 0xffffff : accent, width: confirmed ? 3 : held ? 2.2 : focused ? 2.4 : 1.2, alpha: focused || confirmed || held ? 0.96 : 0.55 });
+    nodes.bg.stroke({
+      color: confirmed ? 0xffef7e : held ? 0xffd15c : scoreRoute ? 0xffa84d : focused ? 0xffffff : accent,
+      width: confirmed ? 3 : held ? 2.2 : scoreRoute ? (focused ? 3.2 : 2.2) : focused ? 2.4 : 1.2,
+      alpha: focused || confirmed || held || scoreRoute ? 0.96 : 0.55
+    });
     nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
     nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
     nodes.fusionBadge.visible = Boolean(fusionBlueprint);
@@ -7383,9 +7630,41 @@ export class PlayScene {
       nodes.fusionLabel.style.fill = completesFusion ? '#fff3a0' : '#8df7ff';
       nodes.fusionHint.style.fill = completesFusion ? '#d8ffc8' : '#c8f7ff';
     }
-    nodes.choose.text = confirmed ? translateText('LOCKED IN') : translateText('CHOOSE');
+    nodes.scoreRouteBadge.visible = scoreRoute;
+    nodes.scoreRouteBadgeBg.clear();
+    if (scoreRoute) {
+      const badgeWidth = layout.compact ? 104 : 118;
+      const badgeHeight = layout.compact ? 20 : 24;
+      nodes.scoreRouteBadgeBg.roundRect(-badgeWidth / 2, -badgeHeight / 2, badgeWidth, badgeHeight, 5);
+      nodes.scoreRouteBadgeBg.fill({ color: 0x2a1406, alpha: 0.96 });
+      nodes.scoreRouteBadgeBg.stroke({
+        color: focused ? 0xffef7e : 0xffa84d,
+        width: focused ? 1.8 : 1.2,
+        alpha: 0.9
+      });
+      for (let index = 0; index < 4; index += 1) {
+        const x = -badgeWidth / 2 + 9 + index * 5;
+        nodes.scoreRouteBadgeBg.circle(x, 0, index === 0 ? 2.2 : 1.4);
+        nodes.scoreRouteBadgeBg.fill({ color: index % 2 ? 0xffd15c : 0xffffff, alpha: 0.72 + pulse * 0.22 });
+      }
+      nodes.scoreRouteBadgeText.style.fill = focused ? '#ffffff' : '#fff3a0';
+      nodes.scoreRouteBadgeText.scale.set(1);
+      nodes.scoreRouteBadgeText.updateText?.(false);
+      nodes.scoreRouteBadgeText.scale.set(Math.min(1, (badgeWidth - 38) / Math.max(1, nodes.scoreRouteBadgeText.width)));
+    }
+    nodes.category.style.fill = scoreRoute ? '#ffcf86' : '#7ee9ff';
+    nodes.permanence.style.fill = scoreRoute ? '#ffd15c' : '#fff3a0';
+    nodes.choose.text = confirmed
+      ? translateText('LOCKED IN')
+      : translateText(scoreRoute ? 'TAKE SCORE ROUTE' : 'CHOOSE');
     nodes.choose.style.fill = confirmed ? '#fff3a0' : focused ? '#ffffff' : '#b7d4df';
-    nodes.holdBadge.visible = held;
+    nodes.choose.scale.set(1);
+    nodes.choose.updateText?.(false);
+    const chooseMaxWidth = layout.compact
+      ? Math.min(190, layout.width * 0.36)
+      : layout.width - 36;
+    nodes.choose.scale.set(Math.min(1, Math.max(0.52, chooseMaxWidth / Math.max(1, nodes.choose.width))));
+    nodes.holdBadge.visible = held && !scoreRoute;
     nodes.holdBadge.style.fill = '#fff3a0';
     if (held) {
       nodes.holdBadge.text = translateText('HELD');
@@ -7417,26 +7696,62 @@ export class PlayScene {
     control.cursor = available ? 'pointer' : 'default';
   }
 
+  showTacticalScoreRouteRestriction(action = 'hold') {
+    const state = this.tacticalDraft;
+    const offer = state?.offers?.[state.focusIndex];
+    if (!state?.active || !offer?.fixedScoreRoute || state.confirmedId) return false;
+    const message = translateText(action === 'ban'
+      ? 'This one-time score route cannot be banned. Choose it now or leave it behind.'
+      : 'This one-time score route cannot be held. Choose it now or leave it behind.');
+    state.subtitle.text = message;
+    state.lastScoreRouteRestriction = {
+      action,
+      message,
+      at: Date.now()
+    };
+    if (this.tacticalScoreRouteRestrictionTimeout) {
+      clearTimeout(this.tacticalScoreRouteRestrictionTimeout);
+    }
+    this.tacticalScoreRouteRestrictionTimeout = setTimeout(() => {
+      this.tacticalScoreRouteRestrictionTimeout = null;
+      if (this.tacticalDraft === state && state.active && !state.confirmedId && state.scoreRouteDefaultSubtitle) {
+        state.subtitle.text = state.scoreRouteDefaultSubtitle;
+      }
+    }, 1600);
+    AudioManager.playSfx('ui_error', { volume: 0.34, minIntervalMs: 80 });
+    return false;
+  }
+
   redrawTacticalDraftHold() {
     const state = this.tacticalDraft;
     const control = state?.hold;
     const layout = control?._draftLayout;
     const nodes = control?._nodes;
     if (!state?.active || !layout || !nodes) return;
-    const focusedId = state.offers?.[state.focusIndex]?.id || null;
+    const focusedOffer = state.offers?.[state.focusIndex] || null;
+    const focusedId = focusedOffer?.id || null;
+    const scoreRoute = Boolean(focusedOffer?.fixedScoreRoute);
     const held = Boolean(focusedId && focusedId === this.tacticalDraftHeldId);
-    const available = Boolean(focusedId && !state.confirmedId && state.inputArmed);
+    const available = Boolean(focusedId && !scoreRoute && !state.confirmedId && state.inputArmed);
     nodes.bg.clear();
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.fill({ color: held ? 0x35260b : available ? 0x16263a : 0x07111b, alpha: 0.94 });
+    nodes.bg.fill({ color: scoreRoute ? 0x241609 : held ? 0x35260b : available ? 0x16263a : 0x07111b, alpha: 0.94 });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.stroke({ color: held ? 0xffd15c : available ? 0xffef7e : 0x536572, width: held ? 1.8 : 1.2, alpha: available || held ? 0.82 : 0.36 });
-    nodes.label.text = held ? translateText('HELD') : translateText('L / X  HOLD');
+    nodes.bg.stroke({
+      color: scoreRoute ? 0xffa84d : held ? 0xffd15c : available ? 0xffef7e : 0x536572,
+      width: scoreRoute || held ? 1.8 : 1.2,
+      alpha: scoreRoute || available || held ? 0.82 : 0.36
+    });
+    nodes.label.text = scoreRoute
+      ? translateText('CANNOT HOLD')
+      : held
+        ? translateText('HELD')
+        : translateText('L / X  HOLD');
     nodes.label.scale.set(1);
     nodes.label.updateText?.(false);
     nodes.label.scale.set(Math.min(1, Math.max(0.62, (layout.width - 18) / Math.max(1, nodes.label.width))));
-    nodes.label.style.fill = held ? '#fff3a0' : available ? '#f6e7a6' : '#71848f';
-    control.alpha = available || held ? 1 : 0.68;
+    nodes.label.style.fill = scoreRoute ? '#ffcf86' : held ? '#fff3a0' : available ? '#f6e7a6' : '#71848f';
+    control.alpha = scoreRoute || available || held ? 1 : 0.68;
     control.cursor = available ? 'pointer' : 'default';
   }
 
@@ -7446,28 +7761,38 @@ export class PlayScene {
     const layout = control?._draftLayout;
     const nodes = control?._nodes;
     if (!state?.active || !layout || !nodes) return;
-    const focusedId = state.offers?.[state.focusIndex]?.id || null;
-    const available = Boolean(focusedId && !state.confirmedId && state.inputArmed && state.bansRemaining > 0);
+    const focusedOffer = state.offers?.[state.focusIndex] || null;
+    const focusedId = focusedOffer?.id || null;
+    const scoreRoute = Boolean(focusedOffer?.fixedScoreRoute);
+    const available = Boolean(focusedId && !scoreRoute && !state.confirmedId && state.inputArmed && state.bansRemaining > 0);
     nodes.bg.clear();
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.fill({ color: available ? 0x311020 : 0x07111b, alpha: 0.94 });
+    nodes.bg.fill({ color: scoreRoute ? 0x241609 : available ? 0x311020 : 0x07111b, alpha: 0.94 });
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
-    nodes.bg.stroke({ color: available ? 0xff426f : 0x536572, width: 1.2, alpha: available ? 0.82 : 0.36 });
-    nodes.label.text = available
-      ? translateText('B / RB  BAN ({count})', { count: state.bansRemaining })
-      : translateText('BANS USED');
+    nodes.bg.stroke({
+      color: scoreRoute ? 0xffa84d : available ? 0xff426f : 0x536572,
+      width: scoreRoute ? 1.8 : 1.2,
+      alpha: scoreRoute || available ? 0.82 : 0.36
+    });
+    nodes.label.text = scoreRoute
+      ? translateText('CANNOT BAN')
+      : available
+        ? translateText('B / RB  BAN ({count})', { count: state.bansRemaining })
+        : translateText('BANS USED');
     nodes.label.scale.set(1);
     nodes.label.updateText?.(false);
     nodes.label.scale.set(Math.min(1, Math.max(0.56, (layout.width - 18) / Math.max(1, nodes.label.width))));
-    nodes.label.style.fill = available ? '#ffb0c4' : '#71848f';
-    control.alpha = available ? 1 : 0.68;
+    nodes.label.style.fill = scoreRoute ? '#ffcf86' : available ? '#ffb0c4' : '#71848f';
+    control.alpha = scoreRoute || available ? 1 : 0.68;
     control.cursor = available ? 'pointer' : 'default';
   }
 
   banTacticalDraftOffer(source = 'unknown') {
     const state = this.tacticalDraft;
-    if (!state?.active || state.confirmedId || !state.inputArmed || state.bansRemaining <= 0) return false;
+    if (!state?.active || state.confirmedId || !state.inputArmed) return false;
     const offer = state.offers?.[state.focusIndex];
+    if (offer?.fixedScoreRoute) return this.showTacticalScoreRouteRestriction('ban');
+    if (state.bansRemaining <= 0) return false;
     if (!offer || this.tacticalDraftBannedIds.includes(offer.id)) return false;
     this.tacticalDraftBannedIds.push(offer.id);
     if (this.tacticalDraftHeldId === offer.id) this.tacticalDraftHeldId = null;
@@ -7513,6 +7838,7 @@ export class PlayScene {
     if (!state?.active || state.confirmedId || !state.inputArmed) return false;
     const offer = state.offers?.[state.focusIndex];
     if (!offer) return false;
+    if (offer.fixedScoreRoute) return this.showTacticalScoreRouteRestriction('hold');
     this.tacticalDraftHeldId = this.tacticalDraftHeldId === offer.id ? null : offer.id;
     state.offers.forEach((entry) => { entry.held = entry.id === this.tacticalDraftHeldId; });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
@@ -7826,6 +8152,18 @@ export class PlayScene {
     const previousDoctrine = analyzeTacticalDoctrine(this.player?.runAugmentIds || [], this.player?.consumedRunAugmentIds || []);
     const result = this.player?.applyRunAugment?.(offer.id);
     if (!result?.applied) return false;
+    const scoreRouteOffer = state.offers.find((entry) => entry.fixedScoreRoute) || null;
+    if (scoreRouteOffer) {
+      const status = offer.id === scoreRouteOffer.id ? 'taken' : 'closed';
+      state.scoreRouteDecision = status;
+      this.tacticalScoreRouteDecision = {
+        sector: state.sectorCleared,
+        offerId: scoreRouteOffer.id,
+        selectedId: offer.id,
+        status,
+        decidedAt: Date.now()
+      };
+    }
     if (this.tacticalDraftHeldId === offer.id || this.tacticalDraftHeldId === state.heldAtOpenId) {
       this.tacticalDraftHeldId = null;
     }
@@ -7852,6 +8190,8 @@ export class PlayScene {
       category: offer.category,
       stacks: result.stacks,
       consumed: result.consumed === true,
+      fixedScoreRoute: Boolean(offer.fixedScoreRoute),
+      scoreRouteDecision: state.scoreRouteDecision || null,
       source
     });
     this.comboWindowMs = COMBO_WINDOW_MS + Math.max(0, Number(this.player?.runAugmentModifiers?.comboWindowBonusMs) || 0);
@@ -7877,6 +8217,17 @@ export class PlayScene {
         duration: 1500,
         priority: 5
       });
+      if (state.scoreRouteDecision === 'closed') {
+        this.enqueueToast(translateText('SCORE ROUTE CLOSED FOR THIS RUN'), {
+          fontSize: 16,
+          fill: '#ffcf86',
+          slot: 'top',
+          type: 'tactical_score_route',
+          duration: 1500,
+          priority: 6,
+          accent: 0xffa84d
+        });
+      }
       if (state.doctrineChanged) {
         this.enqueueToast(translateText('{name} // {stage}', {
           name: translateText(state.doctrineChanged.name),
@@ -8062,6 +8413,10 @@ export class PlayScene {
       clearTimeout(this.tacticalDraftConfirmTimeout);
       this.tacticalDraftConfirmTimeout = null;
     }
+    if (this.tacticalScoreRouteRestrictionTimeout) {
+      clearTimeout(this.tacticalScoreRouteRestrictionTimeout);
+      this.tacticalScoreRouteRestrictionTimeout = null;
+    }
     const state = this.tacticalDraft;
     if (state?.overlay?.parent) state.overlay.parent.removeChild(state.overlay);
     state?.overlay?.destroy?.({ children: true });
@@ -8088,7 +8443,14 @@ export class PlayScene {
       inputArmed: Boolean(state?.inputArmed),
       compact: Boolean(state?.compact),
       title: state?.title?.text || null,
+      eyebrow: state?.eyebrow?.text || null,
       subtitle: state?.subtitle?.text || null,
+      scoreRouteOfferId: state?.scoreRouteOfferId || null,
+      scoreRouteDecision: state?.scoreRouteDecision || this.tacticalScoreRouteDecision?.status || null,
+      scoreRouteState: this.tacticalScoreRouteDecision ? { ...this.tacticalScoreRouteDecision } : null,
+      lastScoreRouteRestriction: state?.lastScoreRouteRestriction
+        ? { ...state.lastScoreRouteRestriction }
+        : null,
       rescansRemaining: state?.rescansRemaining ?? this.tacticalDraftRescansRemaining,
       rescansUsed: this.tacticalDraftRescansUsed,
       rescanCount: state?.rescanCount || 0,
@@ -8123,6 +8485,10 @@ export class PlayScene {
         nextStack: offer.nextStack,
         maxStacks: offer.maxStacks,
         fixedScoreRoute: Boolean(offer.fixedScoreRoute),
+        scoreRouteBadgeText: state.cards?.[index]?._nodes?.scoreRouteBadgeText?.text || null,
+        scoreRouteBadgeBounds: offer.fixedScoreRoute
+          ? boundsOf(state.cards?.[index]?._nodes?.scoreRouteBadge)
+          : null,
         descriptionSource: offer.description,
         fusionBlueprint: offer.fusionBlueprints?.[0] ? {
           id: offer.fusionBlueprints[0].id,
@@ -8158,6 +8524,7 @@ export class PlayScene {
         descriptionText: state.cards?.[index]?._nodes?.description?.text || null,
         nameBounds: boundsOf(state.cards?.[index]?._nodes?.name),
         descriptionBounds: boundsOf(state.cards?.[index]?._nodes?.description),
+        chooseBounds: boundsOf(state.cards?.[index]?._nodes?.choose),
         holdBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.holdBadge)
       })) || [],
       selectedIds: this.player?.runAugmentIds?.slice?.() || [],
@@ -10159,6 +10526,64 @@ export class PlayScene {
     return minMs + Math.random() * (maxMs - minMs);
   }
 
+  showSpecialEnemySignal({
+    title,
+    message,
+    type = 'special_enemy',
+    accent = 0xffd15c,
+    duration = 1500,
+    priority = 6,
+    y = null,
+    maxWidth = null
+  } = {}) {
+    if (!message) return false;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const compact = width < 720;
+    const resolvedY = Number.isFinite(y)
+      ? y
+      : compact
+        ? Math.min(height - 86, Math.max(250, height * 0.35))
+        : Math.max(188, height * 0.27);
+    const resolvedMaxWidth = Number.isFinite(maxWidth)
+      ? maxWidth
+      : compact
+        ? Math.min(width - 32, 430)
+        : Math.min(440, width * 0.36);
+    const align = 'left';
+    this.lastSpecialEnemySignal = {
+      title: String(title || ''),
+      message: String(message),
+      type,
+      accent,
+      align,
+      edgeAligned: true,
+      duration,
+      shownAt: Date.now()
+    };
+    this.enqueueToast(message, {
+      fontSize: compact ? 15 : 17,
+      fill: '#f5fbff',
+      slot: 'top',
+      type,
+      priority,
+      duration,
+      minVisibleMs: Math.min(duration, 1050),
+      extraReadTimeMs: 0,
+      y: resolvedY,
+      maxWidth: resolvedMaxWidth,
+      accent,
+      banner: true,
+      title: title || null,
+      align,
+      showAvatar: false,
+      specialEnemySignal: true,
+      edgeAligned: true,
+      placement: 'left-edge'
+    });
+    return true;
+  }
+
   showToast(message, options = {}) {
     this.enqueueToast(message, options);
   }
@@ -10409,12 +10834,11 @@ export class PlayScene {
 
     bullets.forEach(({ bullet }) => {
       bonusScore += 25;
-      bullet.active = false;
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      this.bulletManager?.deactivateBullet?.(bullet, 'tractor_hijack');
       this.particleManager?.createHitSpark(bullet.x, bullet.y, 0x66ffff);
     });
     if (bullets.length > 0 && this.bulletManager) {
-      this.bulletManager.enemyBullets = this.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+      this.bulletManager.pruneInactiveBullets?.('enemy', 'tractor_hijack');
     }
 
     let appliedBonusScore = 0;
@@ -10684,6 +11108,7 @@ export class PlayScene {
     const layer = this.bossHazardLayer;
     if (!layer) return;
     layer.clear();
+    this.bossHazardLayerHasGeometry = false;
     if (!Array.isArray(this.bossHazards) || this.bossHazards.length === 0) return;
 
     const now = Date.now();
@@ -10817,6 +11242,7 @@ export class PlayScene {
   drawBossHazard(hazard, progress) {
     const layer = this.bossHazardLayer;
     if (!layer) return;
+    this.bossHazardLayerHasGeometry = true;
     const now = Date.now();
     const alpha = Math.max(0, Math.sin((1 - progress) * Math.PI)) * 0.82;
     const pulse = 1 + Math.sin(now * 0.05) * 0.08;
@@ -11241,17 +11667,7 @@ export class PlayScene {
   }
 
   clearEnemyBullets(reason = 'cleanup') {
-    const bullets = this.bulletManager?.enemyBullets;
-    if (!Array.isArray(bullets) || bullets.length === 0) return 0;
-
-    let cleared = 0;
-    for (const bullet of bullets) {
-      if (!bullet) continue;
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
-      if (bullet.active !== false) cleared += 1;
-      bullet.active = false;
-    }
-    this.bulletManager.enemyBullets = [];
+    const cleared = this.bulletManager?.clearEnemyBullets?.(reason) || 0;
     if (cleared > 0 && this.debugPowerups) {
       console.log(`[BulletCleanup] reason=${reason} cleared=${cleared}`);
     }
@@ -11261,9 +11677,20 @@ export class PlayScene {
   clearBossHazards(reason = 'cleanup') {
     const hazards = Array.isArray(this.bossHazards) ? this.bossHazards : [];
     const cleared = hazards.length;
+    const layer = this.bossHazardLayer;
+    const renderedBefore = Boolean(this.bossHazardLayerHasGeometry);
     this.bossHazards = [];
     this.lastBossHazardHit = null;
-    this.bossHazardLayer?.clear?.();
+    layer?.clear?.();
+    this.bossHazardLayerHasGeometry = false;
+    this.lastBossHazardCleanup = {
+      reason,
+      cleared,
+      renderedBefore,
+      renderedAfter: Boolean(this.bossHazardLayerHasGeometry),
+      gameplayClockMs: Math.round(this.getGameplayClockMs?.() || 0),
+      at: Date.now()
+    };
     if (cleared > 0 && this.debugPowerups) {
       console.log(`[BossHazardCleanup] reason=${reason} cleared=${cleared}`);
     }
@@ -11271,7 +11698,7 @@ export class PlayScene {
   }
 
   clearRespawnHazards(reason = 'respawn') {
-    let cleared = this.clearEnemyBullets(reason);
+    let cleared = this.clearEnemyBullets(reason) + this.clearBossHazards(reason);
     const height = this.gameplayGame.getHeight();
     const dangerY = height * 0.62;
     const playerX = this.player?.x ?? this.gameplayGame.getWidth() / 2;
@@ -11320,7 +11747,7 @@ export class PlayScene {
     this.game.scoreMultiplier = mult;
     if (this.player) {
       this.player.scoreMultiplier = mult;
-      this.player.scoreBoostExpiresAt = Date.now() + durationMs;
+      this.player.scoreBoostExpiresAt = this.getGameplayClockMs() + durationMs;
     }
     if (this.player?.noteScoreMultiplier) this.player.noteScoreMultiplier();
     this.showToast(`SCORE x${mult}`, { fontSize: 34, fill: '#ffff00', duration: 1800, slot: 'center', type: 'score_boost' });
@@ -11483,7 +11910,7 @@ export class PlayScene {
     }
     if (reward.pointDefenseMs > 0 && this.player) {
       this.player.pointDefenseActive = true;
-      this.player.pointDefenseExpiresAt = Date.now() + reward.pointDefenseMs;
+      this.player.pointDefenseExpiresAt = this.getGameplayClockMs() + reward.pointDefenseMs;
       this.player.createPointDefenseRing?.();
       applied.push('point_defense');
     }
@@ -12687,8 +13114,11 @@ export class PlayScene {
       duration: meta.duration,
       protectedRemainingMs: Math.max(0, (Number(meta.protectedUntil) || 0) - Date.now()),
       combatRelocated: Boolean(meta.combatRelocated),
+      edgeAligned: Boolean(meta.edgeAligned),
+      placement: meta.placement || null,
       ageMs: Math.max(0, Date.now() - meta.createdAt),
       dossier: display.__aceDossierDebug ? { ...display.__aceDossierDebug } : null,
+      specialSignal: display.__specialEnemySignalDebug ? { ...display.__specialEnemySignalDebug } : null,
       bounds: typeof getBounds === 'function'
         ? getBounds(display)
         : this.getToastDisplayBounds(display)
@@ -12851,12 +13281,13 @@ export class PlayScene {
     const width = Math.max(1, Number(layout.width) || this.game.getWidth());
     const height = Math.max(1, Number(layout.height) || this.game.getHeight());
     const compact = width < 900 || height < 700;
+    const edgeAligned = options.edgeAligned === true && !compact;
     const accentColor = Number.isFinite(Number(options.accent)) ? Number(options.accent) : 0xffd15c;
     const secondaryAccent = Number.isFinite(Number(options.secondaryAccent)) ? Number(options.secondaryAccent) : 0x7df9ff;
     const requestedMaxWidth = Math.max(320, Number(layout.maxWidth) || width * 0.82);
-    const panelWidth = Math.min(width - 32, requestedMaxWidth, compact ? 620 : 720);
-    const panelHeight = compact ? 134 : 142;
-    const glyphColumnWidth = compact ? 78 : 96;
+    const panelWidth = Math.min(width - 32, requestedMaxWidth, compact ? 500 : 520);
+    const panelHeight = compact ? 126 : 132;
+    const glyphColumnWidth = compact ? 70 : 82;
     const textLeft = -panelWidth / 2 + glyphColumnWidth;
     const textWidth = Math.max(220, panelWidth - glyphColumnWidth - (compact ? 18 : 24));
     const dossier = new PIXI.Container();
@@ -12948,9 +13379,9 @@ export class PlayScene {
       return { node, width: pillWidth };
     };
 
-    const titleFontSize = compact ? 11 : 12;
-    const primaryFontSize = compact ? 26 : 32;
-    const actionFontSize = compact ? 13 : 16;
+    const titleFontSize = compact ? 10 : 11;
+    const primaryFontSize = compact ? 24 : 28;
+    const actionFontSize = compact ? 12 : 14;
     const specsFontSize = compact ? 10 : 11;
     const detailFontSize = compact ? 11 : 12;
     const titleY = -panelHeight / 2 + 15;
@@ -13003,8 +13434,8 @@ export class PlayScene {
 
     const requestedY = Number(layout.y) || height * 0.28;
     const bottomSafeMargin = compact ? 10 : 28;
-    const topSafeY = panelHeight / 2 + (compact ? 210 : 108);
-    dossier.x = width / 2;
+    const topSafeY = panelHeight / 2 + (compact ? 160 : 108);
+    dossier.x = edgeAligned ? panelWidth / 2 + 18 : width / 2;
     dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(topSafeY, requestedY));
     dossier.alpha = 0;
     dossier.scale.set(0.94);
@@ -13014,6 +13445,10 @@ export class PlayScene {
       panelWidth: Math.round(panelWidth),
       panelHeight: Math.round(panelHeight),
       screenAreaRatio: Number(((panelWidth * panelHeight) / (width * height)).toFixed(4)),
+      edgeAligned,
+      placement: edgeAligned ? 'left-edge' : 'upper-center-edge-safe',
+      x: Math.round(dossier.x),
+      y: Math.round(dossier.y),
       title: String(data.title || ''),
       primary: String(data.primary || ''),
       action: String(data.action || ''),
@@ -13066,14 +13501,15 @@ export class PlayScene {
         || options.type === 'runContractStart'
         || options.type === 'runContractProgress'
         || options.type === 'firstRunControls';
+      const specialEnemySignal = options.specialEnemySignal === true;
       const banner = new PIXI.Container();
       const bannerText = createText(message, {
         fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize,
-        fontWeight: runContractBanner ? '600' : 'bold',
+        fontWeight: runContractBanner ? '600' : specialEnemySignal ? '800' : 'bold',
         fill: options.fill || '#ffffff',
-        stroke: runContractBanner ? '#02131f' : '#000000',
-        strokeThickness: runContractBanner ? 0.75 : 4,
+        stroke: runContractBanner || specialEnemySignal ? '#02131f' : '#000000',
+        strokeThickness: runContractBanner ? 0.75 : specialEnemySignal ? 2 : 4,
         align: 'left',
         wordWrap: true,
         wordWrapWidth: maxWidth * 0.6,
@@ -13081,16 +13517,17 @@ export class PlayScene {
       });
       bannerText.anchor.set(0, 0.5);
 
-      const paddingX = runContractBanner ? 26 : 24;
-      const paddingY = runContractBanner ? 18 : 16;
-      const minFontSize = runContractBanner ? (width < 620 ? 13 : 15) : 16;
-      const maxTextHeight = options.type === 'lore' ? 106 : (runContractBanner ? 132 : 80);
+      const paddingX = runContractBanner ? 26 : specialEnemySignal ? 20 : 24;
+      const paddingY = runContractBanner ? 18 : specialEnemySignal ? 13 : 16;
+      const minFontSize = runContractBanner ? (width < 620 ? 13 : 15) : specialEnemySignal ? 13 : 16;
+      const maxTextHeight = options.type === 'lore' ? 106 : (runContractBanner ? 132 : specialEnemySignal ? 74 : 80);
 
       const commsPortraits = Object.keys(GameAssets.commsPortraits || {});
       const requestedAvatar = options.imageAlias && GameAssets.isValidTexture(GameAssets.getCommsPortrait(options.imageAlias))
         ? options.imageAlias
         : null;
-      const hasAvatar = Boolean(requestedAvatar) || commsPortraits.length > 0;
+      const allowAvatar = options.showAvatar !== false;
+      const hasAvatar = allowAvatar && (Boolean(requestedAvatar) || commsPortraits.length > 0);
       const avatarSize = options.type === 'lore' ? 54 : 44;
       const avatarSlot = hasAvatar ? avatarSize + 16 : 0;
       const contentWidth = Math.max(140, maxWidth - paddingX * 2 - avatarSlot);
@@ -13118,23 +13555,27 @@ export class PlayScene {
       const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot);
       const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
       const panel = new PIXI.Graphics();
-      panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 14);
+      panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, specialEnemySignal ? 8 : 14);
       panel.fill({
-        color: options.type === 'lore' ? 0x05121c : (runContractBanner ? 0x031321 : 0x111111),
-        alpha: options.type === 'lore' ? 0.78 : (runContractBanner ? 0.94 : 0.88)
+        color: options.type === 'lore' ? 0x05121c : (runContractBanner || specialEnemySignal ? 0x031321 : 0x111111),
+        alpha: options.type === 'lore' ? 0.78 : (runContractBanner ? 0.94 : specialEnemySignal ? 0.9 : 0.88)
       });
       panel.stroke({
-        color: options.type === 'lore' || runContractBanner ? (options.accent || 0x6fe7ff) : 0xffff00,
-        width: options.type === 'lore' ? 1.5 : (runContractBanner ? 3.5 : 3),
+        color: options.type === 'lore' || runContractBanner || specialEnemySignal ? (options.accent || 0x6fe7ff) : 0xffff00,
+        width: options.type === 'lore' ? 1.5 : (runContractBanner ? 3.5 : specialEnemySignal ? 2.2 : 3),
         alpha: options.type === 'lore' ? 0.78 : 1
       });
 
       const accent = new PIXI.Graphics();
-      accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, 10);
-      accent.stroke({ color: runContractBanner ? 0xffef7e : 0xff66cc, width: runContractBanner ? 1.4 : 1, alpha: runContractBanner ? 0.82 : 0.7 });
+      accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, specialEnemySignal ? 5 : 10);
+      accent.stroke({
+        color: runContractBanner ? 0xffef7e : specialEnemySignal ? 0x7ee9ff : 0xff66cc,
+        width: runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1,
+        alpha: runContractBanner ? 0.82 : specialEnemySignal ? 0.46 : 0.7
+      });
 
       const noise = new PIXI.Graphics();
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < (specialEnemySignal ? 8 : 24); i++) {
         const nx = -panelWidth / 2 + 10 + Math.random() * (panelWidth - 20);
         const ny = -panelHeight / 2 + 10 + Math.random() * (panelHeight - 20);
         noise.circle(nx, ny, 1.2);
@@ -13153,8 +13594,8 @@ export class PlayScene {
       if (options.title) {
         const titleLabel = createText(String(options.title).toUpperCase(), {
           fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: options.type === 'lore' ? 12 : (runContractBanner ? 11 : 14),
-          fill: options.type === 'lore' ? '#7ee9ff' : (runContractBanner ? '#ffef7e' : '#ffff00'),
+          fontSize: options.type === 'lore' ? 12 : (runContractBanner ? 11 : specialEnemySignal ? 11 : 14),
+          fill: options.type === 'lore' ? '#7ee9ff' : (runContractBanner ? '#ffef7e' : specialEnemySignal ? `#${(Number(options.accent) || 0xffd15c).toString(16).padStart(6, '0')}` : '#ffff00'),
           fontWeight: runContractBanner ? '600' : 'bold',
           stroke: runContractBanner ? '#02131f' : '#000000',
           strokeThickness: options.type === 'lore' ? 2 : (runContractBanner ? 0.75 : 3)
@@ -13189,6 +13630,18 @@ export class PlayScene {
       }
       banner.y = y;
       banner.alpha = 0;
+      if (specialEnemySignal) {
+        banner.__specialEnemySignalDebug = {
+          edgeAligned: options.edgeAligned === true,
+          placement: options.placement || null,
+          align: options.align || 'center',
+          panelWidth: Math.round(panelWidth),
+          panelHeight: Math.round(panelHeight),
+          avatarVisible: hasAvatar,
+          title: String(options.title || ''),
+          message: String(message)
+        };
+      }
       display = banner;
       this.uiOverlay.addChild(banner);
     } else {
@@ -13325,6 +13778,8 @@ export class PlayScene {
       title: options.title || null,
       imageAlias: options.imageAlias || null,
       combatRelocated: options.combatRelocated === true,
+      edgeAligned: options.edgeAligned === true,
+      placement: options.placement || null,
       duplicateKey: options.duplicateKey || this.getToastDuplicateKey(message, options.type || 'generic'),
       originalOptions: { ...options },
       createdAt: now,
@@ -14134,17 +14589,10 @@ export class PlayScene {
       this.enemyManager.hijacker = null;
     }
 
-    const bulletsCleared = this.clearEnemyBullets('nova_miracle');
-    let pendingBulletsCleared = 0;
-    if (Array.isArray(this.bulletManager?.pendingEnemyBullets)) {
-      for (const bullet of this.bulletManager.pendingEnemyBullets) {
-        if (!bullet) continue;
-        if (bullet.active !== false) pendingBulletsCleared += 1;
-        bullet.active = false;
-        if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
-      }
-      this.bulletManager.pendingEnemyBullets = [];
-    }
+    const pendingBulletsCleared = (this.bulletManager?.pendingEnemyBullets || [])
+      .filter((bullet) => bullet?.active !== false).length;
+    const totalEnemyProjectilesCleared = this.clearEnemyBullets('nova_miracle');
+    const bulletsCleared = Math.max(0, totalEnemyProjectilesCleared - pendingBulletsCleared);
     const bossHazardsCleared = this.clearBossHazards('nova_miracle');
     let ambientHazardsCleared = 0;
     for (const drone of this.ambientBonusDrones || []) {
@@ -14583,22 +15031,21 @@ export class PlayScene {
       sector: this.game?.level || 1,
       waveIndex: this.enemyManager?.currentWaveIndex || 0
     });
-    this.enqueueToast(`${translateText('EXTINCTION-CLASS CONTACT')} // ${translateText('VARIANT {number} OF {total}', {
-      number: String(variant.number).padStart(2, '0'),
-      total: RARE_CHAOS_VISITOR_VARIANT_COUNT
-    })}\n${variant.displayName} // ${variant.loadoutName}\n${translateText('SURVIVE THREE ESCALATION PHASES')}`, {
-      fontSize: this.game.getWidth() < 720 ? 17 : 24,
-      fill: '#ffb0c4',
-      stroke: '#170016',
-      strokeThickness: 5,
-      slot: 'center',
+    this.showSpecialEnemySignal({
+      title: translateText('EXTINCTION CONTACT {number}/{total}', {
+        number: String(variant.number).padStart(2, '0'),
+        total: RARE_CHAOS_VISITOR_VARIANT_COUNT
+      }),
+      message: `${variant.displayName} // ${variant.loadoutName}\n${translateText('THREE PHASES // WATCH THE FRAME')}`,
       type: 'rareChaosVisitor',
       priority: 10,
-      duration: 3900,
-      maxWidth: this.game.getWidth() * 0.78,
+      duration: 2300,
+      maxWidth: this.game.getWidth() < 720
+        ? Math.min(this.game.getWidth() - 32, 470)
+        : Math.min(500, this.game.getWidth() * 0.4),
       accent: variant.accent
     });
-    AudioManager.playSfx('rare_visitor_arrival', { force: true, volume: 0.96, minIntervalMs: 0 });
+    AudioManager.playSfx('rare_visitor_arrival', { force: true, volume: 0.82, minIntervalMs: 0 });
     setTimeout(() => {
       if (enemy?.active) AudioManager.playSfx('rare_visitor_theme_sting', { force: true, volume: 0.72, minIntervalMs: 0 });
     }, 320);
@@ -14608,8 +15055,8 @@ export class PlayScene {
         bypassGlobalCooldown: true,
         cooldownMs: 0,
         eventCooldownMs: 0,
-        duckMs: 2800,
-        duckFactor: 0.24,
+        duckMs: 2200,
+        duckFactor: 0.3,
         voicePriority: 9,
         exclusiveGroup: 'boss_voice'
       });
@@ -14619,23 +15066,23 @@ export class PlayScene {
     dreadWash.zIndex = 999990;
     dreadWash.eventMode = 'none';
     dreadWash.rect(0, 0, this.game.getWidth(), this.game.getHeight());
-    dreadWash.fill({ color: 0x030006, alpha: 0.64 });
+    dreadWash.fill({ color: 0x030006, alpha: 0.22 });
     dreadWash.rect(8, 8, this.game.getWidth() - 16, this.game.getHeight() - 16);
-    dreadWash.stroke({ color: 0xff1748, width: 6, alpha: 0.78 });
+    dreadWash.stroke({ color: 0xff1748, width: 3, alpha: 0.58 });
     this.uiOverlay?.addChild?.(dreadWash);
     let dreadElapsed = 0;
     const dreadTicker = (delta) => {
       dreadElapsed += delta.deltaTime * 16.67;
-      const fadeIn = Math.min(1, dreadElapsed / 90);
-      const fadeOut = Math.max(0, 1 - Math.max(0, dreadElapsed - 720) / 620);
+      const fadeIn = Math.min(1, dreadElapsed / 80);
+      const fadeOut = Math.max(0, 1 - Math.max(0, dreadElapsed - 280) / 440);
       dreadWash.alpha = fadeIn * fadeOut;
-      if (dreadElapsed < 1340) return;
+      if (dreadElapsed < 720) return;
       this.game.app.ticker.remove(dreadTicker);
       dreadWash.parent?.removeChild?.(dreadWash);
       dreadWash.destroy?.();
     };
     this.game.app.ticker.add(dreadTicker);
-    this.screenShake?.shake?.(10, 28);
+    this.screenShake?.shake?.(6, 18);
     for (let index = 0; index < 5; index += 1) {
       const angle = (Math.PI * 2 * index) / 5;
       this.particleManager?.createExplosion?.(enemy.x + Math.cos(angle) * (28 + index * 5), enemy.y + Math.sin(angle) * (22 + index * 4), index % 2 ? variant.tint : variant.accent, 0.7 + index * 0.08);
@@ -14646,7 +15093,7 @@ export class PlayScene {
       chance: plan?.chance ?? RARE_CHAOS_VISITOR_WAVE_CHANCE,
       roll: plan?.roll ?? null,
       announcedAt: Date.now(),
-      presentation: 'extinction_dread'
+      presentation: 'edge_signal'
     };
     return true;
   }
@@ -14742,6 +15189,7 @@ export class PlayScene {
     if (enemy?.isRareChaosVisitor) this.completeRareChaosVisitor(enemy);
     if (enemy?.isAce) this.completeAceBounty(enemy);
     if (enemy?.kind === 'boss') {
+      this.clearBossHazards('boss_defeated');
       const bossId = enemy?.profile?.id || enemy?.bossType || `boss_${this.game.level}`;
       this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
       this.queueThreatDefeat(bossId, 'bosses', {
@@ -14982,7 +15430,7 @@ export class PlayScene {
   }
 
   updateGrazeBreakTimer() {
-    if (this.grazeBreakReady && Date.now() > this.grazeBreakExpiresAt) {
+    if (this.grazeBreakReady && this.getGameplayClockMs() > this.grazeBreakExpiresAt) {
       this.grazeBreakReady = false;
       this.grazeBreakNeedsFireRelease = false;
       this.grazeBreakReleasePrimed = false;
@@ -15000,7 +15448,7 @@ export class PlayScene {
 
   primeGrazeBreakAfterRelease() {
     if (!this.grazeBreakReady || !this.grazeBreakNeedsFireRelease) return false;
-    if (Date.now() > this.grazeBreakExpiresAt) {
+    if (this.getGameplayClockMs() > this.grazeBreakExpiresAt) {
       this.grazeBreakReady = false;
       this.grazeBreakNeedsFireRelease = false;
       this.grazeBreakReleasePrimed = false;
@@ -15024,7 +15472,7 @@ export class PlayScene {
   }
 
   armGrazeBreak() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     if (this.grazeBreakReady || now < this.grazeBreakCooldownAt) return false;
 
     this.grazeBreakReady = true;
@@ -15049,7 +15497,7 @@ export class PlayScene {
   }
 
   markGrazeBreakShot(bullets = []) {
-    if (!this.grazeBreakReady || Date.now() > this.grazeBreakExpiresAt || !Array.isArray(bullets) || !bullets.length) {
+    if (!this.grazeBreakReady || this.getGameplayClockMs() > this.grazeBreakExpiresAt || !Array.isArray(bullets) || !bullets.length) {
       this.grazeBreakReady = false;
       this.grazeBreakNeedsFireRelease = false;
       this.grazeBreakReleasePrimed = false;
@@ -15080,6 +15528,202 @@ export class PlayScene {
     return eligible;
   }
 
+  clearGrazeBreakVisual(reason = 'cleared') {
+    const active = this.activeGrazeBreakVisual;
+    if (!active) return false;
+    if (active.ticker && this.game?.app?.ticker) {
+      this.game.app.ticker.remove(active.ticker);
+      this._activeTickers = (this._activeTickers || []).filter((ticker) => ticker !== active.ticker);
+    }
+    if (active.layer?.parent) active.layer.parent.removeChild(active.layer);
+    active.layer?.destroy?.({ children: true });
+    if (this.lastGrazeBreakVisualDebug) {
+      this.lastGrazeBreakVisualDebug.active = false;
+      this.lastGrazeBreakVisualDebug.endedReason = reason;
+      this.lastGrazeBreakVisualDebug.elapsedMs = Math.round(Math.max(0, Number(active.elapsedMs) || 0));
+    }
+    this.activeGrazeBreakVisual = null;
+    return true;
+  }
+
+  createGrazeBreakSpectacle(x, y, mechanicalRadius = 110) {
+    const host = this.gameContainer || this.container;
+    const tickerHost = this.game?.app?.ticker;
+    if (!host || !tickerHost) return null;
+    this.clearGrazeBreakVisual('replaced');
+
+    const width = Math.max(1, Number(this.gameplayGame?.getWidth?.() || this.game?.getWidth?.()) || 1280);
+    const height = Math.max(1, Number(this.gameplayGame?.getHeight?.() || this.game?.getHeight?.()) || 720);
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const radius = Math.max(1, Number(mechanicalRadius) || 110);
+    const visualRadius = Math.max(radius, Math.min(Math.max(width, height) * 0.42, radius * 3));
+    const visualScale = visualRadius / radius;
+    const ringCount = reducedMotion ? 3 : 5;
+    const sparkleCount = reducedMotion ? 14 : (width < 620 ? 22 : 32);
+    const filamentCount = reducedMotion ? 8 : 16;
+    const durationMs = reducedMotion ? 900 : 1180;
+    const sparkleProfiles = Array.from({ length: sparkleCount }, (_, index) => ({
+      angle: (Math.PI * 2 * index) / sparkleCount + (index % 5) * 0.07,
+      lane: 0.48 + (index % 6) * 0.09,
+      phase: index * 1.73,
+      size: 2.8 + (index % 4) * 0.85
+    }));
+
+    const layer = new PIXI.Container();
+    layer.label = 'grazeBreakSpectacle';
+    layer.position.set(x, y);
+    layer.zIndex = 54;
+    layer.eventMode = 'none';
+
+    const graphics = new PIXI.Graphics();
+    graphics.blendMode = 'add';
+    layer.addChild(graphics);
+    host.addChild(layer);
+    host.sortChildren?.();
+
+    const active = {
+      layer,
+      graphics,
+      ticker: null,
+      elapsedMs: 0,
+      durationMs,
+      mechanicalRadius: radius,
+      visualRadius,
+      visualScale,
+      ringCount,
+      sparkleCount,
+      filamentCount,
+      reducedMotion
+    };
+
+    const drawDiamond = (cx, cy, angle, size, color, alpha) => {
+      const radialX = Math.cos(angle);
+      const radialY = Math.sin(angle);
+      const tangentX = -radialY;
+      const tangentY = radialX;
+      graphics.poly([
+        cx + radialX * size, cy + radialY * size,
+        cx + tangentX * size * 0.72, cy + tangentY * size * 0.72,
+        cx - radialX * size, cy - radialY * size,
+        cx - tangentX * size * 0.72, cy - tangentY * size * 0.72
+      ]);
+      graphics.fill({ color, alpha });
+    };
+
+    const draw = () => {
+      const t = Math.max(0, Math.min(1, active.elapsedMs / durationMs));
+      const intro = Math.min(1, t / 0.12);
+      const fade = Math.pow(1 - t, 0.72);
+      const expansion = 1 - Math.pow(1 - Math.min(1, t * 1.12), 3);
+      const pulse = reducedMotion ? 0 : Math.sin(active.elapsedMs * 0.018) * 0.5 + 0.5;
+      const coreFade = Math.max(0, 1 - t / 0.22);
+      const outerRadius = visualRadius * (0.16 + expansion * 0.84);
+      graphics.clear();
+
+      if (coreFade > 0) {
+        graphics.circle(0, 0, Math.max(8, radius * (0.22 + intro * 0.18)));
+        graphics.fill({ color: 0xffffff, alpha: 0.7 * coreFade * intro });
+        graphics.circle(0, 0, Math.max(14, radius * (0.44 + intro * 0.16)));
+        graphics.stroke({ color: 0xff55dd, width: 5, alpha: 0.86 * coreFade * intro });
+      }
+
+      for (let index = 0; index < ringCount; index += 1) {
+        const ringProgress = Math.max(0, Math.min(1, expansion + index * 0.055));
+        const ringRadius = visualRadius * (0.18 + ringProgress * (0.72 + index * 0.025));
+        graphics.circle(0, 0, ringRadius);
+        graphics.stroke({
+          color: index % 3 === 0 ? 0xffffff : index % 2 === 0 ? 0x42f6ff : 0xff55dd,
+          width: Math.max(1.2, 4.2 - index * 0.58),
+          alpha: (0.48 - index * 0.055) * fade * intro
+        });
+      }
+
+      const filamentSpin = reducedMotion ? 0 : active.elapsedMs * 0.0024;
+      for (let index = 0; index < filamentCount; index += 1) {
+        const angle = filamentSpin + (Math.PI * 2 * index) / filamentCount;
+        const inner = outerRadius * (0.24 + (index % 3) * 0.045);
+        const outer = outerRadius * (0.74 + (index % 4) * 0.065);
+        const bend = angle + (index % 2 ? 0.12 : -0.12);
+        graphics.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        graphics.lineTo(Math.cos(bend) * outer, Math.sin(bend) * outer);
+      }
+      graphics.stroke({ color: 0xff79e8, width: reducedMotion ? 1.2 : 1.8, alpha: 0.22 * fade * intro });
+
+      for (let index = 0; index < sparkleProfiles.length; index += 1) {
+        const profile = sparkleProfiles[index];
+        const angle = profile.angle + (reducedMotion ? 0 : active.elapsedMs * 0.0018 * (index % 2 ? 1 : -1));
+        const sparkleRadius = outerRadius * profile.lane + Math.sin(active.elapsedMs * 0.015 + profile.phase) * (reducedMotion ? 0 : 8);
+        const size = profile.size * (0.72 + pulse * 0.42) * Math.max(0.42, fade);
+        drawDiamond(
+          Math.cos(angle) * sparkleRadius,
+          Math.sin(angle) * sparkleRadius,
+          angle,
+          size,
+          index % 4 === 0 ? 0xffffff : index % 2 === 0 ? 0x42f6ff : 0xff55dd,
+          (0.5 + (index % 3) * 0.1) * fade * intro
+        );
+      }
+
+      graphics.circle(0, 0, Math.max(radius * 0.72, outerRadius * 0.34));
+      graphics.stroke({ color: 0xffd45c, width: 1.6, alpha: 0.2 * fade * intro });
+
+      this.lastGrazeBreakVisualDebug = {
+        active: true,
+        visible: Boolean(layer.parent && fade > 0.02),
+        endedReason: null,
+        mechanicalRadius: Math.round(radius),
+        visualRadius: Math.round(visualRadius),
+        visualScale: Number(visualScale.toFixed(2)),
+        ringCount,
+        sparkleCount,
+        filamentCount,
+        reducedMotion,
+        dangerCoreVisible: coreFade > 0.02,
+        elapsedMs: Math.round(active.elapsedMs),
+        durationMs
+      };
+    };
+
+    const ticker = (delta) => {
+      if (!layer.parent || this.game?.currentScene !== this) {
+        this.clearGrazeBreakVisual('scene_changed');
+        return;
+      }
+      if (!this.isGameplayClockAdvancing()) return;
+      active.elapsedMs += (Number(delta?.deltaTime) || Number(delta) || 0) * 16.67;
+      draw();
+      if (active.elapsedMs >= durationMs) this.clearGrazeBreakVisual('complete');
+    };
+    active.ticker = ticker;
+    this.activeGrazeBreakVisual = active;
+    if (!this._activeTickers) this._activeTickers = [];
+    this._activeTickers.push(ticker);
+    tickerHost.add(ticker);
+    draw();
+
+    this.particleManager?.createRadialBurst?.(x, y, 0xff55dd, {
+      count: reducedMotion ? 24 : 52,
+      intensity: reducedMotion ? 0.82 : 1.1,
+      minSpeed: 1.8,
+      maxSpeed: 7.2,
+      size: reducedMotion ? 2.2 : 2.9,
+      lifetime: reducedMotion ? 38 : 58,
+      alternateColor: 0xffffff,
+      upwardBias: 0
+    });
+    this.particleManager?.createRadialBurst?.(x, y, 0x42f6ff, {
+      count: reducedMotion ? 14 : 30,
+      intensity: reducedMotion ? 0.68 : 0.88,
+      minSpeed: 0.8,
+      maxSpeed: 4.6,
+      size: reducedMotion ? 1.6 : 2.1,
+      lifetime: reducedMotion ? 44 : 68,
+      alternateColor: 0xffd45c,
+      upwardBias: 0
+    });
+    return { ...this.lastGrazeBreakVisualDebug };
+  }
+
   triggerGrazeBreak(playerBullet, enemyBullet) {
     if (!playerBullet?.active || !enemyBullet?.active) return null;
 
@@ -15088,23 +15732,20 @@ export class PlayScene {
     const radius = Math.max(92, Math.min(150, this.game.getWidth() * 0.13));
     const token = playerBullet.grazeBreakToken || 0;
 
-    playerBullet.active = false;
-    enemyBullet.active = false;
-    if (playerBullet.sprite?.parent) playerBullet.sprite.parent.removeChild(playerBullet.sprite);
-    if (enemyBullet.sprite?.parent) enemyBullet.sprite.parent.removeChild(enemyBullet.sprite);
-    this.bulletManager.playerBullets = this.bulletManager.playerBullets.filter(bullet => bullet?.active !== false);
+    this.bulletManager.deactivateBullet?.(playerBullet, 'graze_break_trigger');
+    this.bulletManager.deactivateBullet?.(enemyBullet, 'graze_break_trigger');
+    this.bulletManager.pruneInactiveBullets?.('player', 'graze_break_trigger');
 
     const cleared = [{ x: Math.round(enemyBullet.x), y: Math.round(enemyBullet.y) }];
     for (const bullet of this.bulletManager.enemyBullets || []) {
       if (!bullet || bullet === enemyBullet || bullet.active === false) continue;
       const dist = Math.hypot((bullet.x || 0) - impactX, (bullet.y || 0) - impactY);
       if (dist > radius + (bullet.radius || 6)) continue;
-      bullet.active = false;
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
+      this.bulletManager.deactivateBullet?.(bullet, 'graze_break_radius');
       cleared.push({ x: Math.round(bullet.x), y: Math.round(bullet.y) });
       this.particleManager?.createHitSpark(bullet.x, bullet.y, 0xff66ff);
     }
-    this.bulletManager.enemyBullets = this.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+    this.bulletManager.pruneInactiveBullets?.('enemy', 'graze_break_radius');
 
     let enemiesHit = 0;
     let enemiesDestroyed = 0;
@@ -15145,9 +15786,11 @@ export class PlayScene {
       duration: 1200
     });
     this.triggerShockwave?.(impactX, impactY, 0xff66ff);
+    const spectacle = this.createGrazeBreakSpectacle(impactX, impactY, radius);
     this.particleManager?.createNearMissEffect(impactX, impactY, Math.max(4, this.dangerDodgeCount + 2));
     this.screenShake?.shake(this.game.getWidth() < 620 ? 5 : 8, 16);
-    AudioManager.playSfx('combo_breakout', { force: true, volume: 0.82, minIntervalMs: 220 });
+    AudioManager.playSfx('combo_breakout', { force: true, volume: 0.92, minIntervalMs: 220 });
+    AudioManager.playSfx('nova_highscore_chime', { force: true, volume: 0.34, minIntervalMs: 0 });
     AudioManager.playSfx('impactMetal', { volume: 0.34, minIntervalMs: 90 });
 
     this.lastGrazeBreak = {
@@ -15158,6 +15801,11 @@ export class PlayScene {
       x: Math.round(impactX),
       y: Math.round(impactY),
       radius: Math.round(radius),
+      visualRadius: spectacle?.visualRadius || Math.round(radius),
+      visualScale: spectacle?.visualScale || 1,
+      visualRingCount: spectacle?.ringCount || 0,
+      visualSparkleCount: spectacle?.sparkleCount || 0,
+      visualFilamentCount: spectacle?.filamentCount || 0,
       bulletsCleared: cleared.length,
       enemiesHit,
       enemiesDestroyed,
@@ -15170,7 +15818,7 @@ export class PlayScene {
       bulletsCleared: cleared.length,
       enemiesDestroyed
     });
-    this.grazeBreakCooldownAt = Date.now() + 5200;
+    this.grazeBreakCooldownAt = this.getGameplayClockMs() + 5200;
     return this.lastGrazeBreak;
   }
 
@@ -15298,7 +15946,7 @@ export class PlayScene {
       if (this.particleManager) this.particleManager.createHitSpark(sourceEnemy.x, sourceEnemy.y, 0xffffff);
       AudioManager.playSfx('trait_pierce_hit', { volume: 0.58 });
       if (bullet.traitPierceHits >= 3) {
-        bullet.active = false;
+        this.bulletManager?.deactivateBullet?.(bullet, 'trait_pierce_limit');
       }
     }
 
@@ -15586,6 +16234,7 @@ export class PlayScene {
       this.powerupManager.powerups = this.powerupManager.powerups.filter(powerup => {
         if (powerup?.active !== false && powerup?.destroyed !== true) return true;
         if (powerup?.sprite?.parent) powerup.sprite.parent.removeChild(powerup.sprite);
+        powerup?.sprite?.destroy?.({ children: true });
         return false;
       });
     }

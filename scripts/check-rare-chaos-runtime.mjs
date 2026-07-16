@@ -91,7 +91,12 @@ try {
 
   report.rowCore = await page.evaluate(() => {
     const play = window.__game.scenes.play;
+    play.introActive = false;
+    play.introComplete = true;
+    if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    play.game.lives = Math.max(3, Number(play.game.lives) || 0);
     play.player.invulnerable = true;
+    play.player.invulnerableTime = 60000;
     const events = [];
     const originalPlay = HTMLMediaElement.prototype.play;
     HTMLMediaElement.prototype.play = function patchedRareQaPlay() {
@@ -122,9 +127,25 @@ try {
 
   report.rareVisitor = await page.evaluate(() => {
     const play = window.__game.scenes.play;
+    const manager = play.enemyManager;
+    play.introActive = false;
+    play.introComplete = true;
+    if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    play.setPaused?.(false);
     play.player.invulnerable = true;
-    const enemy = play.enemyManager.debugForceRareChaosVisitor(42, 'runtime_qa');
-    window.__rareChaosQaEnemy = play.enemyManager.enemies.find((candidate) => candidate?.isRareChaosVisitor && candidate.rareChaosVisitorVariant?.number === 42);
+    play.player.invulnerableTime = 60000;
+    for (const existing of manager.enemies) {
+      if (!existing?.isRareChaosVisitor) continue;
+      existing.active = false;
+      manager.removeEnemySprite?.(existing, 'rare_runtime_qa_reset');
+    }
+    manager.enemies = manager.enemies.filter((candidate) => !candidate?.isRareChaosVisitor);
+    manager.rareChaosVisitorSpawnedWaveKeys.clear();
+    manager.phase = 'WAVES';
+    manager.state = 'WAVE_ACTIVE';
+    const enemy = manager.debugForceRareChaosVisitor(42, 'runtime_qa');
+    window.__rareChaosQaEnemy = manager.enemies.find((candidate) => candidate?.isRareChaosVisitor && candidate.rareChaosVisitorVariant?.number === 42);
+    if (!enemy || !window.__rareChaosQaEnemy) throw new Error('Rare Chaos Visitor #42 failed to spawn for runtime QA');
     return { enemy, announcement: structuredClone(play.lastRareChaosVisitorAnnouncement || null) };
   });
   await page.waitForFunction(() => {

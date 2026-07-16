@@ -153,7 +153,7 @@ function assert(condition, message) {
 }
 
 async function steerMenuTo(page, optionId) {
-  const fallbackOrder = ['launch', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'exit', 'howToPlay', 'music'];
+  const fallbackOrder = ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'music', 'howToPlay', 'exit'];
   for (let i = 0; i < 12; i += 1) {
     const state = await readState(page);
     if (state.menu?.focusedOption === optionId) return state;
@@ -241,7 +241,7 @@ try {
   });
 
   await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launch', 'menu launch focus', 30000);
+  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launchTactical', 'menu Tactical focus', 30000);
   checkpoint('menu-initial', menuInitial, { screenshot: await screenshot(page, '01-menu-initial') });
 
   await steerMenuTo(page, 'settings');

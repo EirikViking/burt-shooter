@@ -26,6 +26,10 @@ export class Bullet {
     this.behaviorPhase = Math.random() * Math.PI * 2;
 
     this.sprite = new PIXI.Container();
+    this.sprite.label = isPlayer ? 'player_projectile_visual' : 'enemy_projectile_visual';
+    this.sprite.__novaManagedProjectile = true;
+    this.sprite.__novaProjectileKind = isPlayer ? 'player' : 'enemy';
+    this.sprite.__novaProjectileOwner = this;
     this.sprite.x = x;
     this.sprite.y = y;
     this.sprite.zIndex = isPlayer ? 100 : 90;

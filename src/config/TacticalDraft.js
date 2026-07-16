@@ -254,8 +254,8 @@ export function buildTacticalDraftOffers({
   const banned = new Set(Array.isArray(bannedIds) ? bannedIds : []);
   const fixedScoreRoute = Math.max(1, Math.floor(Number(sectorCleared) || 1)) === TACTICAL_SCORE_ROUTE_SECTOR;
   const eligibleCandidates = TACTICAL_DRAFT_AUGMENTS.filter((augment) => {
-    if (banned.has(augment.id)) return false;
     if (augment.id === 'combo_anchor' && !fixedScoreRoute) return false;
+    if (augment.id !== 'combo_anchor' && banned.has(augment.id)) return false;
     if ((counts.get(augment.id) || 0) >= augment.maxStacks) return false;
     if (augment.id === 'nano_patch' && lives >= maxLives) return false;
     return Boolean(getTacticalDraftMeta(augment.id));

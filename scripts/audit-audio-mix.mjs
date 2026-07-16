@@ -412,6 +412,7 @@ function addSfxWarning(row) {
   const criticalSfx = new Set([
     'shoot_small',
     'shoot_heavy',
+    'shoot_railbreaker',
     'enemy_explode',
     'boss_explode',
     'playerHit',

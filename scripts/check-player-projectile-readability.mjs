@@ -187,6 +187,7 @@ try {
     const originalMultiShot = player.multiShot;
     const originalRankBoostExtraShots = player.rankBoostExtraShots;
     const originalBombShotsLeft = player.bombShotsLeft;
+    const originalBombArmedAt = player.bombArmedAt;
     const originalShootCooldown = player.shootCooldown;
     const originalPowerupType = player.activePowerup?.type || null;
     player.traitCombat = {};
@@ -200,13 +201,25 @@ try {
     clearMuzzleFlashes();
     player.shootCooldown = 0;
     player.bombShotsLeft = 1;
+    player.bombArmedAt = player.getGameplayClockMs() - 1;
+    play.enemyManager.enemies = [{
+      active: true,
+      destroyed: false,
+      kind: 'enemy',
+      x: player.x,
+      y: player.y - 180,
+      radius: 22,
+      health: 40
+    }];
     const bombBullets = player.shoot();
     const bombFlash = player.lastMuzzleFlashDebug || null;
     clearMuzzleFlashes();
+    play.enemyManager.enemies = [];
     player.traitCombat = originalCombat;
     player.multiShot = originalMultiShot;
     player.rankBoostExtraShots = originalRankBoostExtraShots;
     player.bombShotsLeft = originalBombShotsLeft;
+    player.bombArmedAt = originalBombArmedAt;
     player.shootCooldown = originalShootCooldown;
     if (player.activePowerup) player.activePowerup.type = originalPowerupType;
     player.createMuzzleFlash({

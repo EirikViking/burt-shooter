@@ -223,8 +223,97 @@ try {
 
   const screenshot = path.join(outputDir, 'personal-best-celebration.png');
   await page.screenshot({ path: screenshot, fullPage: true });
-  await page.waitForTimeout(3600);
+  await page.waitForFunction(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState().phase === 'hold', null, {
+    timeout: 4000
+  });
+  const settled = await page.evaluate(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState());
+  const settledScreenshot = path.join(outputDir, 'personal-best-settled-hold.png');
+  await page.screenshot({ path: settledScreenshot, fullPage: true });
+
+  const pauseBefore = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.setPaused(true);
+    return play.getPersonalBestCelebrationDebugState();
+  });
+  await page.waitForTimeout(1100);
+  const pauseHeld = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const state = play.getPersonalBestCelebrationDebugState();
+    play.setPaused(false);
+    return state;
+  });
+  await page.evaluate(() => {
+    const active = window.__game.scenes.play.activePersonalBestCelebration;
+    active.elapsedMs = Math.max(active.elapsedMs, active.durationMs - 120);
+  });
+  await page.waitForFunction(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState().active === false, null, {
+    timeout: 3000
+  });
   const completed = await page.evaluate(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState());
+
+  const transitionTarget = 70000;
+  const transitionKick = await page.evaluate((target) => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    play.clearToastState?.();
+    game.score = target;
+    game.finalScoreLocked = false;
+    game.finalScoreSnapshot = null;
+    game.finalScoreLockReason = null;
+    game.runFinalized = false;
+    game.runSummary = null;
+    game.runProgressionResult = null;
+    game.personalBestLiveCelebrated = false;
+    game.highscoreChase = {
+      targetScore: target,
+      runMode: 'ranked',
+      source: 'test_personal_best_transition',
+      syncingTarget: false,
+      checkpoint: null,
+      surpassed: false,
+      celebrationFired: false,
+      celebrationScore: 0,
+      milestones: new Set(['25', '50', '75', '90']),
+      lastTauntAtMs: 0,
+      tauntIndex: 0
+    };
+    game.addScore(25, 'baseScore');
+    return {
+      score: game.score,
+      celebration: play.getPersonalBestCelebrationDebugState()
+    };
+  }, transitionTarget);
+  await page.waitForFunction(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState().active === true, null, {
+    timeout: 3000
+  });
+  await page.waitForTimeout(520);
+  const transitionStarted = await page.evaluate(() => window.__game.scenes.play.getPersonalBestCelebrationDebugState());
+  await page.evaluate(() => {
+    globalThis.__NOVA_SWARM_SKIP_GAMEOVER_INTERLUDE__ = true;
+    const game = window.__game;
+    game.level = 6;
+    game.gameOver();
+  });
+  await page.waitForFunction(() => (
+    window.__game?.currentSceneName === 'gameOver'
+    && window.__game?.scenes?.gameOver?.getPersonalBestCarryDebugState?.().active === true
+  ), null, { timeout: 20000 });
+  const transitionCarry = await page.evaluate(() => JSON.parse(window.render_game_to_text()).gameOver.personalBestCarry);
+  const transitionScreenshot = path.join(outputDir, 'personal-best-gameover-carry.png');
+  await page.screenshot({ path: transitionScreenshot, fullPage: true });
+  await page.waitForTimeout(850);
+  const carryAfterHold = await page.evaluate(() => window.__game.scenes.gameOver.getPersonalBestCarryDebugState());
+  await page.evaluate(() => {
+    const state = window.__game.scenes.gameOver.personalBestCarryState;
+    state.elapsedMs = Math.max(state.elapsedMs, state.durationMs - 100);
+  });
+  await page.waitForFunction(() => window.__game.scenes.gameOver.getPersonalBestCarryDebugState().active === false, null, {
+    timeout: 3000
+  });
+  const carryCompleted = await page.evaluate(() => ({
+    banner: window.__game.scenes.gameOver.getPersonalBestCarryDebugState(),
+    gameCarry: window.__game.personalBestCelebrationCarry
+  }));
 
   assert.equal(setup.ok, true, 'personal-best setup should attach to the live PlayScene');
   assert.equal(setup.equality.active, false, 'matching the old score must not trigger the celebration');
@@ -247,9 +336,26 @@ try {
   assert.equal(liveCounter.celebration.delta, 1789, 'live record advantage should track the current lead');
   assert.equal(liveCounter.textState.highscoreChase.celebrationFired, true, 'render_game_to_text should expose the one-shot trigger');
   assert.equal(liveCounter.textState.personalBestCelebration.active, true, 'render_game_to_text should expose the visible celebration');
+  assert.ok(liveCounter.celebration.durationMs >= 6200, 'celebration should linger long enough to read');
+  assert.equal(settled.settled, true, 'celebration should settle into its compact gameplay-safe hold');
+  assert.equal(settled.phase, 'hold', 'celebration should expose a stable hold phase');
+  assert.equal(pauseBefore.active, true, 'celebration should remain active when pause opens');
+  assert.equal(pauseHeld.active, true, 'celebration should remain active throughout pause');
+  assert.ok(Math.abs(pauseHeld.elapsedMs - pauseBefore.elapsedMs) <= 50, `pause advanced celebration time by ${pauseHeld.elapsedMs - pauseBefore.elapsedMs}ms`);
   assert.equal(completed.active, false, 'celebration should clean itself up');
   assert.equal(completed.overlayCount, 0, 'celebration overlay should be removed after completion');
   assert.equal(completed.completed, true, 'debug state should record natural completion');
+  assert.equal(transitionStarted.active, true, 'second personal-best crossing should start a transition test celebration');
+  assert.equal(transitionCarry.active, true, 'Game Over should receive the active personal-best celebration');
+  assert.equal(transitionCarry.visible, true, 'Game Over personal-best carry should be visible');
+  assert.equal(transitionCarry.previousScore, transitionTarget, 'Game Over carry should preserve the old record');
+  assert.equal(transitionCarry.currentScore, transitionKick.score, 'Game Over carry should preserve the final live record');
+  assert.equal(transitionCarry.handoffReason, 'game_over_transition', 'Game Over carry should report an intentional handoff');
+  assert.ok(transitionCarry.durationMs >= 4200, 'Game Over carry should linger for at least 4.2 seconds');
+  assert.ok(transitionCarry.bounds?.width > 300, 'Game Over carry should expose a readable compact banner');
+  assert.ok(carryAfterHold.elapsedMs > transitionCarry.elapsedMs, 'Game Over carry should advance while visible');
+  assert.equal(carryCompleted.banner.active, false, 'Game Over carry should clean itself up');
+  assert.equal(carryCompleted.gameCarry, null, 'Game Over carry state should clear after completion');
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
   assert.equal(consoleErrors.length, 0, `console errors: ${consoleErrors.join('; ')}`);
 
@@ -261,8 +367,18 @@ try {
     syncingGate,
     crossing,
     liveCounter,
+    settled,
+    pauseBefore,
+    pauseHeld,
     completed,
+    transitionKick,
+    transitionStarted,
+    transitionCarry,
+    carryAfterHold,
+    carryCompleted,
     screenshot,
+    settledScreenshot,
+    transitionScreenshot,
     pageErrors,
     consoleErrors
   };

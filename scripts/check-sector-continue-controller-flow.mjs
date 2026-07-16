@@ -181,7 +181,7 @@ async function loadProfile(page, progress) {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForGame(page);
   await setGamepad(page);
-  return waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launch', 'menu launch focus', 30000);
+  return waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launchTactical', 'menu Tactical focus', 30000);
 }
 
 mkdirSync(outputDir, { recursive: true });
@@ -214,7 +214,7 @@ try {
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
   assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 CHALLENGE/);
 
-  await tapButton(page, 13);
+  for (let index = 0; index < 4; index += 1) await tapButton(page, 13);
   const focused = await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused by D-pad down');
   assert.equal(focused.menu?.sectorStart?.selectedCheckpoint, 15);
   assert.equal(focused.menu?.sectorStart?.arrowCueVisible, true, 'controller focus should show checkpoint switch arrows');
@@ -229,8 +229,8 @@ try {
   assert.equal(cycledRight.menu?.focusedOption, 'sectorStart');
 
   await tapButton(page, 12);
-  const returnedToLaunch = await waitForState(page, (state) => state.menu?.focusedOption === 'launch', 'controller can move back out of sector start focus');
-  assert.equal(returnedToLaunch.menu?.sectorStart?.selectedCheckpoint, 15);
+  const returnedToScout = await waitForState(page, (state) => state.menu?.focusedOption === 'scout', 'controller can move back out of sector start focus');
+  assert.equal(returnedToScout.menu?.sectorStart?.selectedCheckpoint, 15);
 
   await tapButton(page, 13);
   await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start refocused before launch');

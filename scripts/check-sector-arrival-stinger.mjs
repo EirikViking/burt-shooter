@@ -98,7 +98,14 @@ if (!source.includes('scheduleEnemyStartForLevel(level') ||
   fail('normal and debug boss starts should remain behind one guarded helper');
 }
 
-if (!source.includes('if (!this.introActive && !this.pendingEnemyStartTimeout)') ||
+const gameplayClockStart = source.indexOf('isGameplayClockAdvancing()');
+const gameplayClockEnd = source.indexOf('\n  getGameplayClockMs()', gameplayClockStart);
+const gameplayClockSource = gameplayClockStart >= 0 && gameplayClockEnd > gameplayClockStart
+  ? source.slice(gameplayClockStart, gameplayClockEnd)
+  : '';
+if (!gameplayClockSource.includes('!this.introActive') ||
+  !gameplayClockSource.includes('!this.pendingEnemyStartTimeout') ||
+  !source.includes('if (this.isGameplayClockAdvancing()) {') ||
   !source.includes('this.gameTime += delta / 60')) {
   fail('run clock should advance only after intro and sector-entry holds finish');
 }

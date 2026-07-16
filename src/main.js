@@ -10,7 +10,7 @@ import { getLoadingLines } from './text/phrasePool.js';
 import { applyResponsiveLayout, addResponsiveListener, getCurrentLayout } from './ui/responsiveLayout.js';
 import { getAccessibilitySettings } from './config/AccessibilitySettings.js';
 import { applyDisplaySettings, getDisplaySettings } from './config/DisplaySettings.js';
-import { getShipUnlockHistoryLine, getShipUnlockProgress, getShipUnlockRequirementLine, isShipUnlocked } from './config/ShipMetadata.js';
+import { getShipUnlockHistoryLine, getShipUnlockProgress, getShipUnlockRequirementLine, getShipUsage, isShipUnlocked } from './config/ShipMetadata.js';
 import { getSectorInfo } from './config/SectorCatalog.js';
 import { getRunPacingDebugState } from './config/RunPacingConfig.js';
 import { RARE_CHAOS_VISITOR_VARIANT_COUNT, RARE_CHAOS_VISITOR_WAVE_CHANCE } from './config/RareChaosVisitors.js';
@@ -690,6 +690,14 @@ function buildGameTextState(game) {
     howToPlayOverlay: activeHowToPlayOverlay?.getDebugState ? activeHowToPlayOverlay.getDebugState() : null,
     tacticalLoadoutOverlay: playScene?.tacticalLoadoutOverlay?.getDebugState?.() || null,
     audio: AudioManager.getSettings ? AudioManager.getSettings() : null,
+    shootAudio: playScene?.shootSoundHealthCheck ? {
+      key: playScene.shootSoundHealthCheck.lastSoundKey || null,
+      requestIntervalMs: playScene.shootSoundHealthCheck.lastRequestIntervalMs || 0,
+      totalVolleys: playScene.shootSoundHealthCheck.totalVolleys || 0,
+      totalRequests: playScene.shootSoundHealthCheck.totalRequests || 0,
+      totalPlayed: playScene.shootSoundHealthCheck.totalPlayed || 0,
+      totalSuppressed: playScene.shootSoundHealthCheck.totalSuppressed || 0
+    } : null,
     display: getDisplaySettings(),
     layout: getCurrentLayout(),
     accessibility: getAccessibilitySettings(),
@@ -746,8 +754,8 @@ function buildGameTextState(game) {
           (playScene.lastPowerupPickupJuice.startedAt + playScene.lastPowerupPickupJuice.durationMs) - Date.now()
         ))
       } : null,
-      grazeBreakReady: Boolean(playScene.grazeBreakReady && Date.now() <= (playScene.grazeBreakExpiresAt || 0)),
-      grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - Date.now())),
+      grazeBreakReady: Boolean(playScene.grazeBreakReady && playScene.getGameplayClockMs() <= (playScene.grazeBreakExpiresAt || 0)),
+      grazeBreakReadyMs: Math.max(0, Math.round((playScene.grazeBreakExpiresAt || 0) - playScene.getGameplayClockMs())),
       grazeBreakNeedsFireRelease: Boolean(playScene.grazeBreakNeedsFireRelease),
       grazeBreakReleasePrimed: Boolean(playScene.grazeBreakReleasePrimed),
       firePressed: Boolean(playScene.currentFirePressed),
@@ -759,8 +767,14 @@ function buildGameTextState(game) {
         enemiesDestroyed: playScene.lastGrazeBreak.enemiesDestroyed || 0,
         bonusScore: playScene.lastGrazeBreak.bonusScore || 0,
         radius: playScene.lastGrazeBreak.radius || 0,
+        visualRadius: playScene.lastGrazeBreak.visualRadius || 0,
+        visualScale: playScene.lastGrazeBreak.visualScale || 1,
+        visualRingCount: playScene.lastGrazeBreak.visualRingCount || 0,
+        visualSparkleCount: playScene.lastGrazeBreak.visualSparkleCount || 0,
+        visualFilamentCount: playScene.lastGrazeBreak.visualFilamentCount || 0,
+        visual: playScene.lastGrazeBreakVisualDebug ? { ...playScene.lastGrazeBreakVisualDebug } : null,
         remainingMs: Math.max(0, Math.round(
-          (playScene.lastGrazeBreak.startedAt + playScene.lastGrazeBreak.durationMs) - Date.now()
+          (playScene.activeGrazeBreakVisual?.durationMs || 0) - (playScene.activeGrazeBreakVisual?.elapsedMs || 0)
         ))
       } : null
     } : null,
@@ -782,6 +796,7 @@ function buildGameTextState(game) {
       livesGainedThisRun: playScene?.repairsGrantedThisRun || 0,
       repairsGrantedThisRun: playScene?.repairsGrantedThisRun || 0,
       extraLifeDropsThisRun: playScene?.powerupManager?.powerups?.filter?.(powerup => powerup?.type === 'life')?.length || 0,
+      pickupSpawns: playScene?.powerupManager?.getDebugState?.() || null,
       bossesKilled: playScene?.bossKills || 0,
       wavesCleared: playScene?.wavesCleared || 0,
       runCleared: Boolean(game?.runCleared || game?.runSummary?.runCleared),
@@ -861,6 +876,14 @@ function buildGameTextState(game) {
       unlock: selectedShip.unlock || null,
       unlockHistoryText: getShipUnlockHistoryLine(selectedShip.spriteKey, getShipUnlockProgress(), { translate: translateText }),
       unlockDetailsText: shipSelectScene.rightIntel?.unlock?.text || null,
+      usageCount: getShipUsage(selectedShip.spriteKey),
+      firstFlight: {
+        eligible: Boolean(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightEligible),
+        badgeVisible: Boolean(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadge?.visible),
+        badgeText: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadgeText?.text || null,
+        badgeBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadge),
+        eligibleShipCount: (shipSelectScene.shipCards || []).filter(card => card?.firstFlightEligible).length
+      },
       careerSignal: shipSelectScene.leftIntel ? {
         count: shipSelectScene.leftIntel.count?.text || null,
         progress: shipSelectScene.leftIntel.progress?.text || null,
@@ -925,6 +948,7 @@ function buildGameTextState(game) {
       runReportCta: gameOverScene.getRunReportCtaDebugState ? gameOverScene.getRunReportCtaDebugState() : null,
       runReportOverlay: gameOverScene.getRunReportOverlayDebugState ? gameOverScene.getRunReportOverlayDebugState() : null,
       runReport: gameOverScene.getRunReportDebugState ? gameOverScene.getRunReportDebugState() : null,
+      personalBestCarry: gameOverScene.getPersonalBestCarryDebugState ? gameOverScene.getPersonalBestCarryDebugState() : null,
       state: gameOverScene.state || null,
       submittedHoldReady: typeof gameOverScene.isSubmittedHoldContinueReady === 'function'
         ? gameOverScene.isSubmittedHoldContinueReady()
@@ -1058,6 +1082,7 @@ function buildGameTextState(game) {
       enemyBullets: enemyBullets.filter(bullet => bullet?.active !== false).length,
       particles: playScene?.particleManager?.particles?.length || 0
     },
+    projectileLifecycle: playScene?.bulletManager?.getDebugState?.() || null,
     enemyVisualAudit: createEnemyVisualAudit(),
     enemyWeapons: {
       activeProfiles: [...new Set(enemyBullets
@@ -1090,7 +1115,9 @@ function buildGameTextState(game) {
           hit: Boolean(hazard.hit),
           remainingMs: Math.max(0, Math.round((hazard.startedAt + hazard.durationMs) - Date.now()))
         })),
-      lastHit: playScene.lastBossHazardHit || null
+      lastHit: playScene.lastBossHazardHit || null,
+      lastCleanup: playScene.lastBossHazardCleanup || null,
+      layerHasGeometry: Boolean(playScene.bossHazardLayerHasGeometry)
     } : null,
     visibleEnemies: enemies
       .filter(enemy => enemy?.active !== false)
@@ -1701,7 +1728,7 @@ async function init() {
     if (isAutoStartEnabled() && !autoStartTriggered) {
       autoStartTriggered = true;
       setTimeout(() => {
-        game.startGame();
+        game.startGame(undefined, { countShipUsage: false });
       }, 100);
     }
   });

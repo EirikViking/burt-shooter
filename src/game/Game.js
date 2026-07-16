@@ -20,7 +20,13 @@ import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { getLeaderboardDescriptorForRunMode } from '../leaderboard/LeaderboardTypes.js';
 import { normalizeScoreDelta } from '../shared/ScorePolicy.js';
 import { AchievementManager } from '../achievements/AchievementManager.js';
-import { EARLY_PILOT_ACHIEVEMENT_ID, getAchievementById, getRankAchievementId } from '../achievements/AchievementCatalog.js';
+import {
+  EARLY_PILOT_ACHIEVEMENT_ID,
+  SWARM_ELITE_ACHIEVEMENT_ID,
+  getAchievementById,
+  getRankAchievementId
+} from '../achievements/AchievementCatalog.js';
+import { evaluateSwarmEliteEligibility } from '../achievements/SwarmEliteAchievement.js';
 import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange, translateText } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
@@ -154,10 +160,14 @@ export class Game {
     this.highscoreChase = null;
     this.highscoreChaseTargetPromise = null;
     this.personalBestLiveCelebrated = false;
+    this.personalBestCelebrationCarry = null;
     this.sceneInputGuardUntil = 0;
     this.menuExitGuardUntil = 0;
     this.lastSceneSwitchAt = 0;
-    this.leaderboardAdapter = createLeaderboardAdapter();
+    this.swarmEliteBackfillPromise = null;
+    this.leaderboardAdapter = createLeaderboardAdapter({
+      onAcceptedPendingSteamSubmission: (submission) => this.handleAcceptedPendingSteamSubmission(submission)
+    });
     this.pendingAchievementToasts = [];
     this.achievementManager = new AchievementManager({
       getRunState: () => ({
@@ -173,6 +183,7 @@ export class Game {
     this.switchScene('menu');
     this.achievementManager?.syncWithSteam?.().catch?.(() => {});
     this.backfillEarlyPilotAchievement();
+    this.backfillSwarmEliteAchievement().catch?.(() => {});
   }
 
   showIntro() {
@@ -239,6 +250,9 @@ export class Game {
     if (sceneName === 'menu' && hadCurrentScene) {
       const menuExitGuardMs = options.menuExitGuardMs ?? MENU_EXIT_GUARD_MS;
       this.menuExitGuardUntil = Math.max(this.menuExitGuardUntil || 0, now + Math.max(0, Number(menuExitGuardMs) || 0));
+    }
+    if (sceneName === 'gameOver') {
+      this.currentScene?.preparePersonalBestCelebrationCarry?.('game_over_transition');
     }
     this.teardownCurrentScene();
 
@@ -370,6 +384,7 @@ export class Game {
     });
     this.highscoreChaseTargetPromise = null;
     this.personalBestLiveCelebrated = false;
+    this.personalBestCelebrationCarry = null;
     this.resetGlobalLeaderboardCues();
     this.runStartedAtMs = Date.now();
     this.runElapsedSeconds = 0;
@@ -432,7 +447,7 @@ export class Game {
       this.primeHighscoreChaseTarget();
       this.primeGlobalLeaderboardTargets();
     }
-    if (this.isRankedRun()) incrementShipUsage(selectedSpriteKey);
+    if (options.countShipUsage !== false) incrementShipUsage(selectedSpriteKey);
     return true;
   }
 
@@ -618,6 +633,87 @@ export class Game {
     }) || null;
   }
 
+  unlockSwarmEliteFromEligibility(eligibility, payload = {}) {
+    if (!eligibility?.eligible) return null;
+    return this.achievementManager?.unlock(SWARM_ELITE_ACHIEVEMENT_ID, {
+      source: payload.source || 'accepted_ranked_submission',
+      ignoreRunGate: payload.ignoreRunGate === true,
+      score: eligibility.acceptedScore,
+      acceptedScore: eligibility.acceptedScore,
+      runMode: eligibility.runMode,
+      globalProvider: payload.globalProvider || null,
+      leaderboardName: payload.leaderboardName || null,
+      leaderboardKind: payload.leaderboardKind || null,
+      submissionStatus: payload.submissionStatus || 'accepted',
+      validationSource: payload.validationSource || eligibility.scoreSource || 'accepted_submission',
+      historicalBackfill: payload.historicalBackfill === true
+    }) || null;
+  }
+
+  handleAcceptedPendingSteamSubmission({ entry = null, runResult = null, steam = null } = {}) {
+    const acceptedRun = runResult || entry?.runResult || {};
+    const eligibility = evaluateSwarmEliteEligibility({
+      score: acceptedRun.score,
+      runMode: acceptedRun.runMode,
+      isDebugRun: acceptedRun.isDebugRun === true,
+      allowAchievements: acceptedRun.eligibleForAchievements !== false,
+      eligibleRun: acceptedRun.eligibleForSubmission !== false,
+      submissionAccepted: true
+    });
+    return this.unlockSwarmEliteFromEligibility(eligibility, {
+      source: 'accepted_pending_steam_submission',
+      ignoreRunGate: true,
+      globalProvider: 'steam',
+      leaderboardName: acceptedRun.leaderboardName || steam?.leaderboardName || null,
+      leaderboardKind: acceptedRun.leaderboardKind || steam?.leaderboardKind || null,
+      submissionStatus: 'accepted_after_queue',
+      validationSource: 'steam_pending_retry'
+    });
+  }
+
+  async backfillSwarmEliteAchievement() {
+    if (this.achievementManager?.isUnlocked?.(SWARM_ELITE_ACHIEVEMENT_ID)) return null;
+    if (this.swarmEliteBackfillPromise) return this.swarmEliteBackfillPromise;
+
+    const modes = [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL];
+    this.swarmEliteBackfillPromise = Promise.all(modes.map(async (runMode) => {
+      const leaderboard = this.getRunLeaderboardDescriptor(runMode);
+      const best = await this.getLeaderboardAdapter().getKnownPersonalBest({
+        useCache: false,
+        includeLocal: false,
+        ...leaderboard
+      });
+      return { runMode, leaderboard, best };
+    }))
+      .then((candidates) => candidates
+        .filter((candidate) => String(candidate.best?.source || '').startsWith('steam_'))
+        .sort((first, second) => (Number(second.best?.score) || 0) - (Number(first.best?.score) || 0))[0] || null)
+      .then((candidate) => {
+        if (!candidate) return null;
+        const eligibility = evaluateSwarmEliteEligibility({
+          runMode: candidate.runMode,
+          historicalAccepted: true,
+          historicalAcceptedScore: candidate.best?.score
+        });
+        return this.unlockSwarmEliteFromEligibility(eligibility, {
+          source: 'steam_ranked_score_backfill',
+          ignoreRunGate: true,
+          globalProvider: 'steam',
+          leaderboardName: candidate.leaderboard.leaderboardName,
+          leaderboardKind: candidate.leaderboard.leaderboardKind,
+          submissionStatus: 'historical_accepted',
+          validationSource: candidate.best?.source || 'steam_player_best',
+          historicalBackfill: true
+        });
+      })
+      .catch((error) => {
+        console.warn('[Achievements] Swarm Elite historical backfill unavailable:', error?.message || error);
+        return null;
+      });
+
+    return this.swarmEliteBackfillPromise;
+  }
+
   unlockRankAchievement(rankIndex, payload = {}) {
     const id = getRankAchievementId(rankIndex);
     if (!id) return null;
@@ -690,7 +786,9 @@ export class Game {
 
   getLeaderboardAdapter() {
     if (!this.leaderboardAdapter) {
-      this.leaderboardAdapter = createLeaderboardAdapter();
+      this.leaderboardAdapter = createLeaderboardAdapter({
+        onAcceptedPendingSteamSubmission: (submission) => this.handleAcceptedPendingSteamSubmission(submission)
+      });
     }
     return this.leaderboardAdapter;
   }

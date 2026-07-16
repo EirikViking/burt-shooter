@@ -28,10 +28,11 @@ import {
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import { LEADERBOARD_DISPLAY_LIMIT, LeaderboardView, getPilotNameValidation } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator, hasConnectedGamepad } from '../input/GamepadNavigator.js';
+import { GLOBAL_LEADERBOARD_ACHIEVEMENT_ID } from '../achievements/AchievementCatalog.js';
 import {
-  GLOBAL_LEADERBOARD_ACHIEVEMENT_ID,
-  GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID
-} from '../achievements/AchievementCatalog.js';
+  evaluateSwarmEliteEligibility,
+  isAcceptedLeaderboardSubmission
+} from '../achievements/SwarmEliteAchievement.js';
 import { translateText } from '../i18n/index.js';
 import { CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID } from '../progression/HangarProgressState.js';
 import { formatRunContractProgressValue } from '../progression/RunContracts.js';
@@ -367,6 +368,12 @@ export class GameOverScene {
     this.achievementToast = null;
     this.achievementToastTicker = null;
     this.achievementToastQueue = [];
+    this.personalBestCarryBanner = null;
+    this.personalBestCarryState = null;
+    this.personalBestCarryBg = null;
+    this.personalBestCarryTitle = null;
+    this.personalBestCarryScore = null;
+    this.personalBestCarryDelta = null;
     this.steamSubmissionToken = 0;
   }
 
@@ -426,6 +433,7 @@ export class GameOverScene {
 
   async init() {
     this.clearSceneTimeouts();
+    this.removePersonalBestCarry({ clearGameCarry: false, relayout: false });
     this.steamSubmissionToken += 1;
     this.gamepadNavigator.suppressUntilReleased();
     this.container.sortableChildren = true;
@@ -808,6 +816,7 @@ export class GameOverScene {
     this.instructions.anchor.set(0.5);
     this.container.addChild(this.instructions);
 
+    this.createPersonalBestCarryBanner();
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutScreen());
     this.layoutScreen();
@@ -1895,6 +1904,191 @@ export class GameOverScene {
     }
   }
 
+  createPersonalBestCarryBanner() {
+    const carry = this.game?.personalBestCelebrationCarry;
+    if (
+      !carry
+      || Math.max(0, Number(carry.previousScore) || 0) <= 0
+      || Math.max(0, Number(carry.currentScore) || 0) <= Math.max(0, Number(carry.previousScore) || 0)
+    ) return false;
+
+    const previousScore = Math.max(0, Math.floor(Number(carry.previousScore) || 0));
+    const currentScore = Math.max(previousScore + 1, Math.floor(Number(carry.currentScore) || 0));
+    const durationMs = Math.max(4200, Math.min(5200, Number(carry.durationMs) || 4200));
+    const source = carry.source || 'ranked_best_score';
+    const formatScore = (value) => Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+
+    const banner = new PIXI.Container();
+    banner.label = 'ui_personal_best_carry';
+    banner.zIndex = 9800;
+    banner.eventMode = 'none';
+    banner.alpha = 0;
+
+    const bg = new PIXI.Graphics();
+    banner.addChild(bg);
+
+    const title = createText(translateText(source === 'daily_signal_local_best' ? 'NEW DAILY SIGNAL BEST' : 'NEW PERSONAL BEST'), {
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+      fontSize: 20,
+      fontWeight: '900',
+      fill: '#fff4a3',
+      stroke: '#261400',
+      strokeThickness: 4,
+      align: 'center',
+      dropShadow: true,
+      dropShadowColor: '#ffe66d',
+      dropShadowBlur: 7
+    });
+    title.anchor.set(0.5);
+    banner.addChild(title);
+
+    const score = createText(translateText('OLD RECORD {oldScore} // LIVE RECORD {liveScore}', {
+      oldScore: formatScore(previousScore),
+      liveScore: formatScore(currentScore)
+    }), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 13,
+      fontWeight: '800',
+      fill: '#d9feff',
+      stroke: '#001018',
+      strokeThickness: 3,
+      align: 'center',
+      wordWrap: true
+    });
+    score.anchor.set(0.5);
+    banner.addChild(score);
+
+    const delta = createText(translateText('RECORD ADVANTAGE +{score}', {
+      score: formatScore(currentScore - previousScore)
+    }), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 15,
+      fontWeight: '900',
+      fill: '#ff7ee8',
+      stroke: '#190018',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    delta.anchor.set(0.5);
+    banner.addChild(delta);
+
+    this.personalBestCarryBanner = banner;
+    this.personalBestCarryBg = bg;
+    this.personalBestCarryTitle = title;
+    this.personalBestCarryScore = score;
+    this.personalBestCarryDelta = delta;
+    this.personalBestCarryState = {
+      previousScore,
+      currentScore,
+      delta: currentScore - previousScore,
+      source,
+      reducedMotion: Boolean(carry.reducedMotion),
+      scoreNeutral: carry.scoreNeutral !== false,
+      handoffReason: carry.handoffReason || 'game_over_transition',
+      elapsedMs: 0,
+      durationMs,
+      phase: 'intro'
+    };
+    this.container.addChild(banner);
+    this.container.sortChildren?.();
+    return true;
+  }
+
+  layoutPersonalBestCarryBanner(width = this.game.app.screen.width, height = this.game.app.screen.height, layout = getCurrentLayout()) {
+    const banner = this.personalBestCarryBanner;
+    if (!banner || !this.personalBestCarryState) return;
+    const mobile = Boolean(layout.isMobile || width < 720);
+    const bannerWidth = Math.min(width - (mobile ? 20 : 48), mobile ? 520 : 344);
+    const bannerHeight = mobile ? 92 : 104;
+    const safeTop = Math.max(0, Number(layout.safeArea?.top) || 0);
+    banner.__layoutWidth = bannerWidth;
+    banner.__layoutHeight = bannerHeight;
+    banner.x = mobile ? width / 2 : 24 + bannerWidth / 2;
+    banner.y = safeTop + (mobile ? 10 : 20) + bannerHeight / 2;
+
+    this.personalBestCarryBg.clear();
+    this.personalBestCarryBg.roundRect(-bannerWidth / 2 - 5, -bannerHeight / 2 - 5, bannerWidth + 10, bannerHeight + 10, 14);
+    this.personalBestCarryBg.stroke({ color: 0x4ef8ff, width: 5, alpha: 0.16 });
+    this.personalBestCarryBg.roundRect(-bannerWidth / 2, -bannerHeight / 2, bannerWidth, bannerHeight, 11);
+    this.personalBestCarryBg.fill({ color: 0x031421, alpha: 0.96 });
+    this.personalBestCarryBg.stroke({ color: 0xffe66d, width: 3, alpha: 0.94 });
+    this.personalBestCarryBg.rect(-bannerWidth / 2 + 15, -bannerHeight / 2 + 8, bannerWidth - 30, 2);
+    this.personalBestCarryBg.fill({ color: 0x4ef8ff, alpha: 0.62 });
+
+    this.personalBestCarryTitle.style.fontSize = mobile ? 18 : 20;
+    this.personalBestCarryTitle.style.wordWrap = true;
+    this.personalBestCarryTitle.style.wordWrapWidth = bannerWidth - 30;
+    this.personalBestCarryTitle.position.set(0, mobile ? -27 : -31);
+
+    this.personalBestCarryScore.style.fontSize = mobile ? 11 : 13;
+    this.personalBestCarryScore.style.wordWrap = true;
+    this.personalBestCarryScore.style.wordWrapWidth = bannerWidth - 24;
+    this.personalBestCarryScore.position.set(0, mobile ? 2 : 1);
+
+    this.personalBestCarryDelta.style.fontSize = mobile ? 13 : 15;
+    this.personalBestCarryDelta.position.set(0, mobile ? 29 : 32);
+  }
+
+  updatePersonalBestCarry(delta = 1) {
+    const banner = this.personalBestCarryBanner;
+    const state = this.personalBestCarryState;
+    if (!banner || !state) return;
+    const deltaFrames = Number(delta?.deltaTime) || Number(delta) || 0;
+    state.elapsedMs += deltaFrames * 16.67;
+    const intro = Math.min(1, state.elapsedMs / 260);
+    const outro = Math.max(0, Math.min(1, (state.elapsedMs - (state.durationMs - 620)) / 620));
+    state.phase = intro < 1 ? 'intro' : outro > 0 ? 'outro' : 'hold';
+    banner.alpha = (1 - Math.pow(1 - intro, 3)) * (1 - outro);
+    const pulse = state.reducedMotion ? 1 : 1 + Math.sin(state.elapsedMs * 0.008) * 0.006;
+    banner.scale.set(pulse);
+    if (state.elapsedMs >= state.durationMs) {
+      this.removePersonalBestCarry({ clearGameCarry: true, relayout: true });
+    }
+  }
+
+  removePersonalBestCarry({ clearGameCarry = true, relayout = false } = {}) {
+    const hadBanner = Boolean(this.personalBestCarryBanner);
+    if (this.personalBestCarryBanner?.parent) {
+      this.personalBestCarryBanner.parent.removeChild(this.personalBestCarryBanner);
+    }
+    this.personalBestCarryBanner?.destroy?.({ children: true });
+    this.personalBestCarryBanner = null;
+    this.personalBestCarryBg = null;
+    this.personalBestCarryTitle = null;
+    this.personalBestCarryScore = null;
+    this.personalBestCarryDelta = null;
+    this.personalBestCarryState = null;
+    if (clearGameCarry && this.game) this.game.personalBestCelebrationCarry = null;
+    if (hadBanner && relayout && this.game?.currentScene === this && this.title) {
+      this.layoutScreen();
+    }
+  }
+
+  getPersonalBestCarryDebugState() {
+    const banner = this.personalBestCarryBanner;
+    const state = this.personalBestCarryState;
+    return {
+      active: Boolean(banner?.parent && state),
+      visible: Boolean(banner?.visible && banner?.renderable && banner?.alpha > 0.02),
+      previousScore: state?.previousScore || 0,
+      currentScore: state?.currentScore || 0,
+      delta: state?.delta || 0,
+      source: state?.source || null,
+      scoreNeutral: state?.scoreNeutral !== false,
+      handoffReason: state?.handoffReason || null,
+      elapsedMs: Math.round(Math.max(0, Number(state?.elapsedMs) || 0)),
+      durationMs: Math.round(Math.max(0, Number(state?.durationMs) || 0)),
+      remainingMs: Math.round(Math.max(0, (Number(state?.durationMs) || 0) - (Number(state?.elapsedMs) || 0))),
+      phase: state?.phase || null,
+      bounds: banner ? {
+        x: Math.round(banner.x - (Number(banner.__layoutWidth) || 0) / 2),
+        y: Math.round(banner.y - (Number(banner.__layoutHeight) || 0) / 2),
+        width: Math.round(Number(banner.__layoutWidth) || 0),
+        height: Math.round(Number(banner.__layoutHeight) || 0)
+      } : null
+    };
+  }
+
   layoutScreen() {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
@@ -1975,6 +2169,7 @@ export class GameOverScene {
     this.instructions.style.stroke = { color: '#031323', width: layout.isMobile ? 2 : 3 };
     this.layoutBackdrop(width, height);
     this.layoutCeremonyVisuals(width, height, layout);
+    this.layoutPersonalBestCarryBanner(width, height, responsiveLayout);
     this.drawCounterAdviceCard(layout);
     const counterAdviceVisible = Boolean(this.counterAdviceCard?.visible);
     this.drawRetryButton(layout);
@@ -2062,7 +2257,14 @@ export class GameOverScene {
     // Calculate starting Y for vertical centering with safe margin
     const footerSpace = layout.isMobile ? 40 : 50;
     const availableHeight = height - footerSpace - safeMargin.top;
-    const startY = Math.max(safeMargin.top, safeMargin.top + (availableHeight - totalHeight) / 2 * (layout.isMobile ? 0.5 : 0.7));
+    const personalBestCarryBottom = layout.isMobile && this.personalBestCarryBanner
+      ? this.personalBestCarryBanner.y + (Number(this.personalBestCarryBanner.__layoutHeight) || 0) / 2 + 8
+      : safeMargin.top;
+    const startY = Math.max(
+      safeMargin.top,
+      personalBestCarryBottom,
+      safeMargin.top + (availableHeight - totalHeight) / 2 * (layout.isMobile ? 0.5 : 0.7)
+    );
 
     let stackY = startY;
     const elementHeight = (element, fallback = spacing) => Math.max(1, element?.height || element?.style?.fontSize || fallback);
@@ -3289,6 +3491,7 @@ export class GameOverScene {
   update(delta = 1) {
     updateMenuFx(this, delta);
     this.updateCeremonyEffects();
+    this.updatePersonalBestCarry(delta);
     if (this.shipUnlockReveal?.visible) {
       this.drawShipUnlockReveal(createTextLayout(this.game.app.screen.width, this.game.app.screen.height, getCurrentLayout()));
     }
@@ -4141,9 +4344,45 @@ export class GameOverScene {
       level: this.finalLevel
     };
     this.game.unlockAchievement?.(GLOBAL_LEADERBOARD_ACHIEVEMENT_ID, payload);
-    if (placement.numberOne) {
-      this.game.unlockAchievement?.(GLOBAL_NUMBER_ONE_ACHIEVEMENT_ID, payload);
-    }
+  }
+
+  unlockSwarmEliteForAcceptedSubmission(result, provider) {
+    const accepted = isAcceptedLeaderboardSubmission(result, provider);
+    const previousBestScore = provider === 'steam' && accepted
+      ? this.getSteamPreviousBestScore(result)
+      : 0;
+    const runMode = result?.runMode ?? this.game?.runSummary?.runMode ?? this.game?.runMode ?? null;
+    const eligibility = evaluateSwarmEliteEligibility({
+      score: result?.score ?? this.finalScore,
+      runMode,
+      isDebugRun: result?.isDebugRun ?? this.game?.isDebugRun === true,
+      allowAchievements: result?.eligibleForAchievements ?? this.game?.canUnlockAchievementsForCurrentRun?.() ?? false,
+      eligibleRun: result?.eligibleForSubmission ?? this.game?.isScoreSubmissionAllowed?.() ?? false,
+      submissionAccepted: accepted,
+      historicalAccepted: accepted && previousBestScore > 0,
+      historicalAcceptedScore: previousBestScore,
+      queued: result?.steamPendingQueued === true,
+      rejected: Boolean(result?.steamError || result?.globalError)
+    });
+    result.swarmEliteEligibility = {
+      eligible: eligibility.eligible,
+      reason: eligibility.reason,
+      acceptedScore: eligibility.acceptedScore,
+      scoreSource: eligibility.scoreSource || null,
+      runMode: eligibility.runMode
+    };
+    if (!eligibility.eligible) return null;
+    return this.game?.unlockSwarmEliteFromEligibility?.(eligibility, {
+      source: eligibility.scoreSource === 'historical_accepted_score'
+        ? 'steam_accepted_historical_best'
+        : 'accepted_ranked_submission',
+      globalProvider: provider,
+      leaderboardName: result?.leaderboardName || null,
+      leaderboardKind: result?.leaderboardKind || null,
+      submissionStatus: result?.globalStatus || result?.steamStatus || 'accepted',
+      validationSource: provider === 'steam' ? 'steam_upload_callback' : 'cloud_submit_response',
+      historicalBackfill: eligibility.scoreSource === 'historical_accepted_score'
+    }) || null;
   }
 
   applyConfirmedGlobalPlacement(placement, provider = 'global') {
@@ -4728,7 +4967,7 @@ export class GameOverScene {
     if (mode === 'unranked') return 'Practice Run';
     if (mode === 'ranked_tactical') return 'Mayhem Tactical';
     if (mode === 'ranked') return 'Mayhem Pure';
-    return fallback || 'Mayhem Pure';
+    return fallback || (mode ? 'Unknown Run Mode' : 'Legacy Ranked Run');
   }
 
   formatRunReportValue(row = {}) {
@@ -5399,9 +5638,10 @@ export class GameOverScene {
 
   async confirmGlobalLeaderboardAchievements(result) {
     if (!this.isRankedRun || this.game?.runMode === 'unranked' || this.game?.isDebugRun) return null;
-    if (result?.globalStatus !== 'submitted') return null;
-
     const provider = result.globalProvider || (this.steamSubmissionMode ? 'steam' : null);
+    if (!isAcceptedLeaderboardSubmission(result, provider)) return null;
+    this.unlockSwarmEliteForAcceptedSubmission(result, provider);
+
     if (provider === 'steam') {
       if (this.isSteamBestUnchangedResult(result)) {
         const previousBestScore = this.getSteamPreviousBestScore(result);
@@ -6514,6 +6754,10 @@ export class GameOverScene {
       levelReached: submittedLevel,
       rankIndex: this.game.rankIndex || 0,
       submissionId: this.submissionId,
+      runMode: this.game?.runSummary?.runMode ?? this.game?.runMode ?? null,
+      isDebugRun: this.game?.isDebugRun === true,
+      eligibleForSubmission: this.game?.isScoreSubmissionAllowed?.() === true,
+      eligibleForAchievements: this.game?.canUnlockAchievementsForCurrentRun?.() === true,
       localQualified: this.localQualified,
       globalQualified: this.globalQualified,
       localStatus: this.localQualified ? 'saving' : 'not_qualified',
@@ -6685,6 +6929,7 @@ export class GameOverScene {
     this.removeInputOverlay();
     this.stopCaretBlink();
     this.removeAchievementToast();
+    this.removePersonalBestCarry({ clearGameCarry: true, relayout: false });
     this.achievementToastQueue = [];
     AudioManager.stopVoiceGroup('runback');
     destroyMenuFx(this);

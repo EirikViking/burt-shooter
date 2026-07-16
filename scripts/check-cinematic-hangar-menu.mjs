@@ -306,7 +306,7 @@ function assertHorizontalDock(state, label) {
   assert.ok(panel.y > screen.height * 0.72, `${label}: dock panel should live at the bottom`);
   assert.ok(panel.width > screen.width * 0.86, `${label}: dock panel should span most of the screen`);
   assert.ok(panel.height >= 70 && panel.height <= 150, `${label}: dock panel height should feel like a dock`);
-  assert.deepEqual(menu.optionOrder.slice(0, 8), ['launch', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings'], `${label}: wrong navigation order`);
+  assert.deepEqual(menu.optionOrder.slice(0, 10), ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings'], `${label}: wrong navigation order`);
 
   for (const [name, bounds] of buttons) assertInside(bounds, screen, `${label}: ${name} tile`);
   const [hangar, highscores, threatCodex, achievements, settings] = buttons.map(([, bounds]) => bounds);
@@ -328,7 +328,9 @@ function assertLaunchDeck(state, label) {
   assert.ok(deck.bounds.y > menu.items.subtitle.bottom + 40, `${label}: Launch Deck should sit below the title block`);
   assert.ok(deck.bounds.bottom < menu.panel.y, `${label}: Launch Deck should stay above the utility dock`);
   const cards = [
+    ['mayhemTactical', deck.cards?.mayhemTactical],
     ['mayhem', deck.cards?.mayhem],
+    ['daily', deck.cards?.daily],
     ['scout', deck.cards?.scout],
     ['sector', deck.cards?.sector]
   ];
@@ -337,16 +339,22 @@ function assertLaunchDeck(state, label) {
     assert.ok(card.bounds.height >= 42 && card.bounds.height <= 94, `${label}: ${name} should stay compact`);
     assert.ok(card.bounds.width >= 220 && card.bounds.width <= 560, `${label}: ${name} should not become oversized`);
   }
-  assert.equal(deck.cards?.mayhem?.sublabel, 'RANKED', `${label}: Mayhem card protocol`);
+  assert.equal(deck.cards?.mayhemTactical?.sublabel, 'MAIN MODE · RECOMMENDED · RANKED', `${label}: Tactical card protocol`);
+  assert.equal(deck.cards?.mayhem?.sublabel, 'ALTERNATIVE RANKED MODE', `${label}: Pure card protocol`);
   assert.equal(deck.cards?.scout?.sublabel, 'PRACTICE', `${label}: Scout card protocol`);
   assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector card protocol`);
+  assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.mayhem.bounds.height * 1.25, `${label}: Tactical should be the largest mode card`);
   assert.equal(deck.cards?.mayhem?.body || '', '', `${label}: Mayhem card should stay paragraph-free`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should stay paragraph-free`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should stay paragraph-free`);
   assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
-  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Mayhem/Scout cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.mayhemTactical.bounds.x - deck.cards.mayhem.bounds.x) < 36, `${label}: Tactical/Pure cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.daily.bounds.x) < 36, `${label}: Pure/Daily cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.daily.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Daily/Scout cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
-  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Mayhem/Scout card overlap`);
+  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.mayhem.bounds.y + 36, `${label}: Tactical/Pure card overlap`);
+  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.daily.bounds.y + 36, `${label}: Pure/Daily card overlap`);
+  assert.ok(deck.cards.daily.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Daily/Scout card overlap`);
   assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector card overlap`);
 
   const briefing = menu.missionBriefing;
@@ -372,7 +380,7 @@ function assertUtilityCluster(state, label) {
   }
   assert.ok(music.y < help.y && help.y < exit.y, `${label}: utility stack should read Music, How To Play, Exit`);
   assert.ok(exit.height <= 58, `${label}: exit utility should remain compact`);
-  assert.deepEqual(menu.optionOrder.slice(8), ['music', 'howToPlay', 'exit'], `${label}: wrong utility navigation order`);
+  assert.deepEqual(menu.optionOrder.slice(10), ['music', 'howToPlay', 'exit'], `${label}: wrong utility navigation order`);
 }
 
 function assertMenuState(state, viewport) {
@@ -397,7 +405,11 @@ function assertMenuState(state, viewport) {
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR RUN', `${viewport.name}: sector tile visual label`);
   assert.equal(menu.sectorStart.buttonText, 'SECTOR RUN', `${viewport.name}: sector dock label should stay stable`);
   assert.equal(menu.sectorStart.buttonSubtext, 'CHECKPOINT PUSH', `${viewport.name}: sector card should summarize checkpoint purpose`);
-  assert.match(menu.missionBriefing?.body || '', /MAIN RANKED RUN[\s\S]*Start from Sector 1[\s\S]*global leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i, `${viewport.name}: mission briefing should explain the focused run mode`);
+  assert.match(
+    menu.missionBriefing?.body || '',
+    /MAIN MODE.*RECOMMENDED[\s\S]*Draft one permanent tactical upgrade after each boss[\s\S]*RANKED.*TACTICAL LEADERBOARD[\s\S]*Push deeper[\s\S]*spectacular build/i,
+    `${viewport.name}: mission briefing should explain the focused Tactical run mode`
+  );
   assert.doesNotMatch(JSON.stringify(menu), /Sector 1 climb/i, `${viewport.name}: old Sector 1 climb wording should not be player-facing`);
   assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31|BEST|CHECKPOINT 30/, `${viewport.name}: dock tile should not carry overrun start detail`);
   assert.equal(menu.sectorStart.arrowCueVisible, false, `${viewport.name}: sector tile should not show dock stepper arrows`);

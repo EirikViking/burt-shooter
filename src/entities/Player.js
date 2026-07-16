@@ -24,6 +24,7 @@ import {
 } from '../config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../config/ShipThreatResponse.js';
 import { POINT_DEFENSE_RADIUS } from '../game/ProjectileDefenseRules.js';
+import { BOMB_ARMING_MS, findBombCommitTarget } from '../game/BombTargetingRules.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -232,6 +233,8 @@ export class Player {
     this.bombShotsLeft = 0;
     this.tacticalBombShotsLeft = 0;
     this.bombSpentUntil = 0;
+    this.bombArmedAt = 0;
+    this.lastBombCommitState = null;
     this.bombIndicator = null;
 
     // Touch input (set externally by PlayScene)
@@ -245,6 +248,70 @@ export class Player {
 
   canShoot() {
     return this.shootCooldown <= 0 && !this.hasStatusEffect?.('weapon_jam');
+  }
+
+  getPlayScene() {
+    return this.game?.scenes?.play || null;
+  }
+
+  getGameplayClockMs() {
+    const playScene = this.getPlayScene();
+    const gameTimeSeconds = Number(playScene?.gameTime);
+    if (Number.isFinite(gameTimeSeconds)) return Math.max(0, gameTimeSeconds * 1000);
+    return Date.now();
+  }
+
+  isGameplayClockAdvancing() {
+    const playScene = this.getPlayScene();
+    if (typeof playScene?.isGameplayClockAdvancing === 'function') {
+      return playScene.isGameplayClockAdvancing();
+    }
+    return true;
+  }
+
+  getGameplayTimedDeltaMs(delta = 0) {
+    if (!this.isGameplayClockAdvancing()) return 0;
+    return Math.max(0, Number(delta) || 0) * 16.67;
+  }
+
+  getBombCommitState(now = this.getGameplayClockMs()) {
+    if (this.bombShotsLeft <= 0) {
+      return { ready: false, reason: 'empty', target: null, clusterCount: 0 };
+    }
+    if (now < this.bombArmedAt) {
+      return {
+        ready: false,
+        reason: 'arming',
+        target: null,
+        clusterCount: 0,
+        remainingArmingMs: Math.max(0, this.bombArmedAt - now)
+      };
+    }
+
+    const playScene = this.getPlayScene();
+    const match = findBombCommitTarget({
+      player: this,
+      enemies: playScene?.enemyManager?.enemies || [],
+      boss: playScene?.enemyManager?.boss || null,
+      blastRadius: this.bombBlastRadius,
+      shotDamage: this.bulletDamage * this.bombDamageMult
+    });
+    return {
+      ...match,
+      ready: Boolean(match.target)
+    };
+  }
+
+  armBombTargetingWindow(now = this.getGameplayClockMs()) {
+    this.bombArmedAt = now + BOMB_ARMING_MS;
+    this.lastBombCommitState = {
+      ready: false,
+      reason: 'arming',
+      target: null,
+      clusterCount: 0,
+      remainingArmingMs: BOMB_ARMING_MS
+    };
+    return this.bombArmedAt;
   }
 
   createSprite() {
@@ -1427,11 +1494,13 @@ export class Player {
     if (!this.active) return;
     if (!this.sprite) return; // Guard: Sprite might be missing/destroyed during update
 
-    const now = Date.now();
+    const visualNow = Date.now();
+    const now = this.getGameplayClockMs();
     const dt = delta * 16.67;
+    const timedDt = this.getGameplayTimedDeltaMs(delta);
     const deltaSeconds = dt / 1000;
 
-    this.updateActivePowerupDuration(now, dt);
+    this.updateActivePowerupDuration(now, timedDt);
 
     // Powerup Expiry
     if (this.activePowerup.type && !this.hasUnspentChargePowerup() && this.getActivePowerupRemainingMs(now) <= 0) {
@@ -1454,7 +1523,7 @@ export class Player {
       this.scoreMultiplierType = null;
       this.scoreBoostExpiresAt = 0;
     }
-    this.updateStatusEffects(now, deltaSeconds);
+    this.updateStatusEffects(now, timedDt / 1000);
 
     // Shield Logic
     if (this.shieldActive) {
@@ -1466,11 +1535,11 @@ export class Player {
         // Visuals
         if (this.shieldSprite) {
           this.shieldSprite.visible = true;
-          this.shieldSprite.scale.set(1 + Math.sin(now * 0.005) * (shieldSuppressed ? 0.16 : 0.05));
+          this.shieldSprite.scale.set(1 + Math.sin(visualNow * 0.005) * (shieldSuppressed ? 0.16 : 0.05));
           this.shieldSprite.rotation += deltaSeconds * 0.5;
           this.shieldSprite.alpha = shieldSuppressed
-            ? 0.16 + Math.max(0, Math.sin(now * 0.04)) * 0.24
-            : 0.8 + Math.sin(now * 0.01) * 0.2;
+            ? 0.16 + Math.max(0, Math.sin(visualNow * 0.04)) * 0.24
+            : 0.8 + Math.sin(visualNow * 0.01) * 0.2;
         }
       }
     } else {
@@ -1488,9 +1557,9 @@ export class Player {
         if (this.pointDefenseRing) {
           const pointDefenseSuppressed = this.isPowerupSuppressed();
           this.pointDefenseRing.clear();
-          const radius = POINT_DEFENSE_RADIUS + Math.sin(now * 0.008) * 5;
+          const radius = POINT_DEFENSE_RADIUS + Math.sin(visualNow * 0.008) * 5;
           this.pointDefenseRing.circle(0, 0, radius);
-          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(now * 0.01) * 0.2 });
+          this.pointDefenseRing.stroke({ color: 0x00ddff, width: 2, alpha: pointDefenseSuppressed ? 0.18 : 0.6 + Math.sin(visualNow * 0.01) * 0.2 });
 
           // Inner ring
           const innerRadius = radius - 8;
@@ -1501,6 +1570,7 @@ export class Player {
     } else {
       if (this.pointDefenseRing) this.pointDefenseRing.visible = false;
     }
+    if (this.bombShotsLeft > 0) this.updateBombIndicator();
 
     // Spawn Fade-In
     if (this.sprite.alpha < 1 && !this.isDodging && !this.isGhostActive()) {
@@ -1632,7 +1702,7 @@ export class Player {
 
     if (this.isDodging) {
       this.dodgeDuration -= dt;
-      this.invulnerableTime = Math.max(0, (Number(this.invulnerableTime) || 0) - dt);
+      this.invulnerableTime = Math.max(0, (Number(this.invulnerableTime) || 0) - timedDt);
       this.sprite.alpha = 0.42; // Visually indicate dodge without making the ship vanish.
       this.updateDodgeVisual(dt);
       if (this.dodgeDuration <= 0) {
@@ -1645,7 +1715,7 @@ export class Player {
       // Invulnerable blinking
       // Invulnerable blinking (Strobe effect: 150ms interval)
       if (this.invulnerable) {
-        this.invulnerableTime -= dt;
+        this.invulnerableTime -= timedDt;
 
         // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
         const period = 150;
@@ -1848,7 +1918,9 @@ export class Player {
     };
 
     // Check if firing bomb
-    if (this.bombShotsLeft > 0) {
+    const bombCommitState = this.getBombCommitState();
+    this.lastBombCommitState = bombCommitState;
+    if (this.bombShotsLeft > 0 && bombCommitState.ready) {
       const bomb = new Bullet(
         this.x,
         this.y - 20,
@@ -1865,6 +1937,8 @@ export class Player {
       bomb.trailLength = Math.max(bomb.trailLength || 0, 42);
       bomb.pulseRate = Math.max(bomb.pulseRate || 0, 0.82);
       bomb.haloColor = this.bombColor;
+      bomb.commitReason = bombCommitState.reason;
+      bomb.commitClusterCount = bombCommitState.clusterCount || 0;
       annotatePowerupBullet(bomb);
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);
@@ -2130,15 +2204,9 @@ export class Player {
 
     // Clear all enemy bullets
     if (playScene.bulletManager) {
-      const cleared = playScene.bulletManager.enemyBullets.length;
+      const cleared = playScene.bulletManager.clearEnemyBullets?.('shockwave')
+        ?? playScene.bulletManager.enemyBullets.length;
       clearedBullets = cleared;
-      playScene.bulletManager.enemyBullets.forEach(b => {
-        b.active = false;
-        if (b.sprite && b.sprite.parent) {
-          b.sprite.parent.removeChild(b.sprite);
-        }
-      });
-      playScene.bulletManager.enemyBullets = [];
       console.log(`[Shockwave] Cleared ${cleared} enemy bullets`);
       if (scorePerBullet > 0 && cleared > 0) {
         const paidBullets = scoreBulletCap > 0 ? Math.min(cleared, scoreBulletCap) : cleared;
@@ -2249,7 +2317,7 @@ export class Player {
     }
 
     this.rowCoreActive = true;
-    this.rowCoreStartedAt = Date.now();
+    this.rowCoreStartedAt = this.getGameplayClockMs();
     this.rowCorePulseStats = [];
     this.clearRowCoreTimers();
     this.rowCoreStats.uses += 1;
@@ -2304,20 +2372,16 @@ export class Player {
     let kills = 0;
 
     if (playScene?.bulletManager && Array.isArray(playScene.bulletManager.enemyBullets)) {
-      const remainingBullets = [];
       for (const bullet of playScene.bulletManager.enemyBullets) {
         if (!bullet?.active) continue;
         const distance = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
         if (distance <= radius) {
-          bullet.active = false;
+          playScene.bulletManager.deactivateBullet?.(bullet, 'row_core_pulse');
           bulletsCleared += 1;
-          if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
           playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, pulseColor, finalPulse ? 1.25 : 0.85);
-        } else {
-          remainingBullets.push(bullet);
         }
       }
-      playScene.bulletManager.enemyBullets = remainingBullets;
+      playScene.bulletManager.pruneInactiveBullets?.('enemy', 'row_core_pulse');
     }
 
     const enemyTargets = Array.isArray(playScene?.enemyManager?.enemies)
@@ -2586,7 +2650,7 @@ export class Player {
   }
 
   getActiveStatusEffects() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     return [...(this.statusEffects?.values?.() || [])]
       .filter((effect) => effect && effect.expiresAt > now)
       .map((effect) => ({
@@ -2603,7 +2667,7 @@ export class Player {
   }
 
   getTractorDebuffState() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     return {
       immune: now < this.tractorDebuffImmunityUntil,
       immunityRemainingMs: Math.max(0, this.tractorDebuffImmunityUntil - now),
@@ -2660,7 +2724,7 @@ export class Player {
   }
 
   applyTractorDebuff({ source = 'tractor', x = this.x, y = this.y, random = Math.random } = {}) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     if (now < this.tractorDebuffImmunityUntil) {
       return {
         applied: false,
@@ -2716,7 +2780,7 @@ export class Player {
     return { applied: true, effect };
   }
 
-  updateStatusEffects(now = Date.now(), deltaSeconds = 1 / 60) {
+  updateStatusEffects(now = this.getGameplayClockMs(), deltaSeconds = 1 / 60) {
     if (!this.statusEffects?.size) return;
     let expired = false;
     this.statusEffects.forEach((effect, id) => {
@@ -2844,7 +2908,7 @@ export class Player {
     return getPowerupMeta(type)?.name || String(type || '').replace(/_/g, ' ').toUpperCase();
   }
 
-  getActivePowerupRemainingMs(now = Date.now()) {
+  getActivePowerupRemainingMs(now = this.getGameplayClockMs()) {
     if (!this.activePowerup?.type) return 0;
     if (this.activePowerup.durationMode === 'while_firing') {
       return Math.max(0, Number(this.activePowerup.remainingMs) || 0);
@@ -2852,7 +2916,7 @@ export class Player {
     return Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
   }
 
-  setActivePowerupDuration(type, durationMs, now = Date.now()) {
+  setActivePowerupDuration(type, durationMs, now = this.getGameplayClockMs()) {
     const safeDuration = Math.max(0, Number(durationMs) || 0);
     const durationMode = getPowerupDurationMode(type);
     this.activePowerup.durationMode = durationMode;
@@ -2867,7 +2931,7 @@ export class Player {
     return Boolean(this.inputManager?.isFiring?.());
   }
 
-  updateActivePowerupDuration(now = Date.now(), dt = 0) {
+  updateActivePowerupDuration(now = this.getGameplayClockMs(), dt = 0) {
     if (!this.activePowerup?.type) return;
     if (this.activePowerup.durationMode !== 'while_firing') {
       this.activePowerup.remainingMs = Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
@@ -2891,7 +2955,7 @@ export class Player {
   }
 
   getActivePowerupStates() {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const states = [];
     const seen = new Set();
     const activeEffect = this.getCurrentPowerupEffect() || {};
@@ -3291,17 +3355,16 @@ export class Player {
       if (!bullet?.active) return;
       const dist = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
       if (dist > radius) return;
-      bullet.active = false;
+      playScene.bulletManager.deactivateBullet?.(bullet, 'trait_dodge_pulse');
       cleared += 1;
       if (clearedPositions.length < 5) clearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
       if (playScene.particleManager) {
         playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
       }
     });
 
     if (cleared > 0) {
-      playScene.bulletManager.enemyBullets = playScene.bulletManager.enemyBullets.filter(bullet => bullet?.active !== false);
+      playScene.bulletManager.pruneInactiveBullets?.('enemy', 'trait_dodge_pulse');
       AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
       if (playScene.enqueueToast) {
         playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
@@ -3388,7 +3451,7 @@ export class Player {
 
   activateShield(durationMs = 15000) {
     this.shieldActive = true;
-    this.shieldExpiresAt = Date.now() + Math.max(1000, Number(durationMs) || 15000);
+    this.shieldExpiresAt = this.getGameplayClockMs() + Math.max(1000, Number(durationMs) || 15000);
     this.shieldSpentUntil = 0;
     if (this.shieldSprite) this.shieldSprite.visible = true;
     // CRITICAL: Ensure player remains visible after shield activation
@@ -3399,7 +3462,7 @@ export class Player {
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
     if (options.spentFeedback) {
-      this.shieldSpentUntil = Date.now() + SHIELD_SPENT_FEEDBACK_MS;
+      this.shieldSpentUntil = this.getGameplayClockMs() + SHIELD_SPENT_FEEDBACK_MS;
     }
     if (this.shieldSprite) this.shieldSprite.visible = false;
     // CRITICAL: Ensure player remains visible after shield breaks
@@ -3425,14 +3488,13 @@ export class Player {
     bullets.forEach((bullet) => {
       if (!bullet?.active || cleared >= 18) return;
       if (Math.hypot((Number(bullet.x) || 0) - this.x, (Number(bullet.y) || 0) - this.y) > radius) return;
-      bullet.active = false;
+      playScene.bulletManager.deactivateBullet?.(bullet, 'aegis_reactor');
       cleared += 1;
-      if (bullet.sprite?.parent) bullet.sprite.parent.removeChild(bullet.sprite);
       playScene.particleManager?.createHitSpark?.(bullet.x, bullet.y, cleared % 2 ? 0x74ffd4 : 0xffffff);
     });
-    playScene.bulletManager.enemyBullets = bullets.filter((bullet) => bullet?.active !== false);
+    playScene.bulletManager.pruneInactiveBullets?.('enemy', 'aegis_reactor');
     this.pointDefenseActive = true;
-    this.pointDefenseExpiresAt = Math.max(Number(this.pointDefenseExpiresAt) || 0, Date.now() + durationMs);
+    this.pointDefenseExpiresAt = Math.max(Number(this.pointDefenseExpiresAt) || 0, this.getGameplayClockMs() + durationMs);
     this.createPointDefenseRing();
 
     const ring = new PIXI.Graphics();
@@ -3498,6 +3560,7 @@ export class Player {
 
     this.bombIndicator.clear();
     const now = Date.now();
+    const commitState = this.getBombCommitState();
     const pulse = 0.5 + Math.sin(now * 0.026) * 0.5;
     const totalSlots = Math.max(1, Math.min(6, Math.round(Number(this.bombMaxShots || this.bombShotsLeft) || 3)));
     const activeSlots = Math.max(0, Math.min(totalSlots, Math.round(Number(this.bombShotsLeft) || 0)));
@@ -3520,8 +3583,8 @@ export class Player {
       const active = i < activeSlots;
       const isNext = active && i === activeSlots - 1;
       const fillColor = active ? (this.bombColor || 0xffaa00) : 0x32140d;
-      const rimColor = active ? 0xffff66 : 0xff6844;
-      const alpha = active ? 0.74 + pulse * 0.16 : 0.28;
+      const rimColor = active ? (commitState.ready ? 0x9dffef : 0xffff66) : 0xff6844;
+      const alpha = active ? (commitState.ready ? 0.86 + pulse * 0.1 : 0.66 + pulse * 0.13) : 0.28;
       this.bombIndicator.circle(x, y, active ? size : size - 1.5);
       this.bombIndicator.fill({ color: fillColor, alpha });
       this.bombIndicator.circle(x, y, size + (isNext ? 3 + pulse * 1.8 : 1.8));
@@ -3545,14 +3608,19 @@ export class Player {
       totalSlots,
       spentSlots,
       railVisible: true,
-      nextHighlightVisible
+      nextHighlightVisible,
+      commitReady: commitState.ready,
+      commitReason: commitState.reason,
+      commitClusterCount: commitState.clusterCount || 0
     };
   }
 
   deactivateBomb(options = {}) {
     this.bombShotsLeft = 0;
+    this.bombArmedAt = 0;
+    this.lastBombCommitState = null;
     if (options.spentFeedback) {
-      this.bombSpentUntil = Date.now() + BOMB_SPENT_FEEDBACK_MS;
+      this.bombSpentUntil = this.getGameplayClockMs() + BOMB_SPENT_FEEDBACK_MS;
     }
     if (this.bombIndicator) {
       this.bombIndicator.visible = false;
@@ -3661,7 +3729,7 @@ export class Player {
     }
     if (effects.pointDefenseMs > 0) {
       this.pointDefenseActive = true;
-      this.tacticalPointDefenseExpiresAt = Date.now() + Math.min(9000, effects.pointDefenseMs);
+      this.tacticalPointDefenseExpiresAt = this.getGameplayClockMs() + Math.min(9000, effects.pointDefenseMs);
       this.pointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt;
       this.createPointDefenseRing();
       triggered.push('point_defense');
@@ -3671,6 +3739,7 @@ export class Player {
       this.tacticalBombShotsLeft = Math.min(5, effects.bombShots);
       this.bombShotsLeft = Math.max(this.bombShotsLeft || 0, this.tacticalBombShotsLeft);
       this.bombSpentUntil = 0;
+      this.armBombTargetingWindow();
       this.createBombIndicator();
       triggered.push('bomb');
     }
@@ -3741,7 +3810,7 @@ export class Player {
     return { granted: true, count: this.runAugmentGrazeCount, threshold };
   }
 
-  applyCatalogPowerupEffect(type, effect = {}, now = Date.now()) {
+  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs()) {
     const durationMs = Math.max(0, Number(effect.durationMs || 0));
     const expiresAt = durationMs > 0 ? now + durationMs : this.activePowerup.expiresAt;
 
@@ -3775,6 +3844,7 @@ export class Player {
       this.bombBlastRadius = Math.max(40, Number(effect.bombBlastRadius || 150));
       this.bombDamageMult = Math.max(1, Number(effect.bombDamageMult || 5));
       this.bombColor = Number.isFinite(effect.bombColor) ? effect.bombColor : (getPowerupMeta(type)?.color || 0xffaa00);
+      this.armBombTargetingWindow(now);
       this.createBombIndicator();
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
     }
@@ -3838,7 +3908,7 @@ export class Player {
   applyPowerup(type) {
     const meta = getPowerupMeta(type);
     const effect = meta?.effect || {};
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const durationMs = Math.max(0, Number(effect.durationMs || 12000)) * (Number(this.runAugmentModifiers?.powerupDurationMult) || 1);
     if (type === 'row_core' || effect.rowCore) {
       this.triggerRowCore();
@@ -3873,11 +3943,11 @@ export class Player {
         break;
       case 'magnet':
         this.magnetActive = true;
-        this.magnetExpiresAt = Date.now() + 8000;
+        this.magnetExpiresAt = now + 8000;
         break;
       case 'drones':
         this.dronesActive = true;
-        this.dronesExpiresAt = Date.now() + 8000;
+        this.dronesExpiresAt = now + 8000;
         this.createDrones();
         break;
       case 'rapid_fire':
@@ -3907,20 +3977,21 @@ export class Player {
         break;
       case 'point_defense':
         this.pointDefenseActive = true;
-        this.pointDefenseExpiresAt = Date.now() + 10000; // 10 seconds
+        this.pointDefenseExpiresAt = now + 10000; // 10 seconds of playable combat
         this.createPointDefenseRing();
         AudioManager.playSfx('forceField', { force: true, volume: 0.8 }); // Activation sound
         break;
       case 'bomb':
         this.bombShotsLeft = 3; // Next 3 shots are bombs
         this.bombSpentUntil = 0;
+        this.armBombTargetingWindow(now);
         this.createBombIndicator();
         AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
         break;
       case 'score_x2':
         this.scoreMultiplier = 2;
         this.scoreMultiplierType = 'score_x2';
-        this.scoreBoostExpiresAt = Date.now() + 10000; // 10 seconds
+        this.scoreBoostExpiresAt = now + 10000; // 10 seconds of playable combat
         this.setActivePowerupDuration(type, 10000);
         break;
       case 'shockwave':
@@ -3966,7 +4037,7 @@ export class Player {
 
   resetPowerups() {
     const expiredType = this.activePowerup.type;
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const tacticalPointDefenseExpiresAt = this.tacticalPointDefenseExpiresAt > now
       ? this.tacticalPointDefenseExpiresAt
       : 0;
@@ -4017,6 +4088,7 @@ export class Player {
     if (tacticalBombShotsLeft > 0) {
       this.bombShotsLeft = tacticalBombShotsLeft;
       this.bombMaxShots = Math.max(this.bombMaxShots, tacticalBombShotsLeft);
+      this.armBombTargetingWindow(now);
       this.createBombIndicator();
     }
     if (tacticalOrbitalStrikeCharges > 0) {
@@ -4035,7 +4107,7 @@ export class Player {
 
   notePowerup(type) {
     if (!type) return;
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const previous = this.lastPowerupType;
     const previousAt = this.lastPowerupAt;
     this.lastPowerupType = type;
@@ -4048,7 +4120,7 @@ export class Player {
   }
 
   tryActivateSynergy(type, previous, previousAt) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const recentOk = previous && (now - previousAt < 8000);
     const playScene = this.game?.scenes?.play;
     const activate = (key, label) => {
@@ -4273,7 +4345,7 @@ export class Player {
   }
 
   applyRankBoost(type, durationMs) {
-    const now = Date.now();
+    const now = this.getGameplayClockMs();
     const before = {
       shootDelay: this.shootDelay,
       speed: this.speed,

@@ -206,6 +206,10 @@ export class Enemy {
       activeUntil: 0,
       lastTriggeredAt: 0
     } : null;
+    this.arrivalGuardDamageMultiplier = this.isEliteMiddleShip ? 0.4 : 1;
+    this.arrivalCombatReadyAt = 0;
+    this.entryCompletedAt = 0;
+    this.lastArrivalGuardDamage = null;
     this.eliteStatusUntil = 0;
     this.eliteShieldUntil = 0;
     this.phaseShiftUntil = 0;
@@ -1481,6 +1485,11 @@ export class Enemy {
     this.formationY = endY;
     this.state = 'ENTRY';
     this.formationSwayRampMs = 0;
+    if (this.isEliteMiddleShip) {
+      this.arrivalCombatReadyAt = 0;
+      this.entryCompletedAt = 0;
+      this.lastArrivalGuardDamage = null;
+    }
 
     // Randomized Control Point based on side
     const curvePull = Math.max(260, Math.min(460, width * 0.2));
@@ -1929,6 +1938,8 @@ export class Enemy {
     let orbitalPipCount = 0;
     let warningBracketCount = 0;
     let vectorArrowCount = 0;
+    let arrivalGuardArcCount = 0;
+    let arrivalGuardPipCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
     if (this.aceLabelPlate) {
       // The enemy container turns to face its flight vector. Keep the bounty
@@ -1967,6 +1978,28 @@ export class Enemy {
       warningBracketCount += 1;
     }
     layer.stroke({ color: 0xffffff, width: 1, alpha: 0.14 + pulse * 0.12 });
+
+    const arrivalGuardActive = profile.tier === 'elite' && this.state === 'ENTRY';
+    if (arrivalGuardActive) {
+      const guardRadius = outer + 12;
+      const guardSweep = 0.74 + pulse * 0.12;
+      for (let index = 0; index < 4; index += 1) {
+        const center = -Math.PI / 2 + index * Math.PI / 2 + now * 0.0008;
+        layer.arc(0, 0, guardRadius + (index % 2) * 3, center - guardSweep / 2, center + guardSweep / 2);
+        arrivalGuardArcCount += 1;
+      }
+      layer.stroke({ color: profile.color, width: 3.2, alpha: 0.58 + pulse * 0.24 });
+      for (let index = 0; index < 8; index += 1) {
+        const angle = now * -0.0015 + index * Math.PI / 4;
+        const pipRadius = guardRadius + 8 + (index % 2) * 3;
+        layer.circle(Math.cos(angle) * pipRadius, Math.sin(angle) * pipRadius, index % 2 ? 2.2 : 3.1);
+        layer.fill({
+          color: index % 2 ? profile.accent : profile.color,
+          alpha: 0.32 + pulse * 0.18
+        });
+        arrivalGuardPipCount += 1;
+      }
+    }
 
     if (profile.tier === 'elite' || profile.tier === 'danger_mid' || profile.tier === 'ace') {
       for (let i = 0; i < markerCount; i += 1) {
@@ -2031,7 +2064,11 @@ export class Enemy {
       motionTrailCount,
       orbitalPipCount,
       warningBracketCount,
-      vectorArrowCount
+      vectorArrowCount,
+      arrivalGuardActive,
+      arrivalGuardArcCount,
+      arrivalGuardPipCount,
+      arrivalGuardDamageMultiplier: arrivalGuardActive ? this.arrivalGuardDamageMultiplier : 1
     };
   }
 
@@ -2059,6 +2096,14 @@ export class Enemy {
       this.state = nextState;
       if (nextState === 'FORMATION') {
         this.formationSwayRampMs = 0;
+        if (this.isEliteMiddleShip) {
+          const now = Date.now();
+          this.entryCompletedAt = now;
+          this.arrivalCombatReadyAt = Math.max(this.arrivalCombatReadyAt || 0, now + 900);
+          if (this.eliteAbility) {
+            this.eliteAbility.nextAt = Math.max(this.eliteAbility.nextAt || 0, this.arrivalCombatReadyAt);
+          }
+        }
       }
       return;
     }
@@ -2088,6 +2133,13 @@ export class Enemy {
       this.state = nextState;
       if (nextState === 'FORMATION') {
         this.formationSwayRampMs = 0;
+        if (this.isEliteMiddleShip) {
+          this.entryCompletedAt = now;
+          this.arrivalCombatReadyAt = Math.max(this.arrivalCombatReadyAt || 0, now + 900);
+          if (this.eliteAbility) {
+            this.eliteAbility.nextAt = Math.max(this.eliteAbility.nextAt || 0, this.arrivalCombatReadyAt);
+          }
+        }
       }
     }
   }
@@ -3092,6 +3144,14 @@ export class Enemy {
       abilityRemainingMs: this.eliteAbility?.state === 'cooldown'
         ? Math.max(0, (this.eliteAbility.nextAt || 0) - now)
         : Math.max(0, ((this.eliteAbility.activeUntil || this.eliteAbility.startedAt || now) - now)),
+      arrivalGuardActive: this.state === 'ENTRY' && !this.waitingForEntry,
+      arrivalGuardVisible: Boolean(this.threatFrameLayer?._debugThreatFrame?.arrivalGuardActive),
+      arrivalGuardDamageMultiplier: this.arrivalGuardDamageMultiplier,
+      arrivalGuardArcCount: this.threatFrameLayer?._debugThreatFrame?.arrivalGuardArcCount || 0,
+      arrivalGuardPipCount: this.threatFrameLayer?._debugThreatFrame?.arrivalGuardPipCount || 0,
+      combatReadyRemainingMs: Math.max(0, (this.arrivalCombatReadyAt || 0) - now),
+      entryCompletedAt: this.entryCompletedAt || 0,
+      lastArrivalGuardDamage: this.lastArrivalGuardDamage ? { ...this.lastArrivalGuardDamage } : null,
       shielded: now < (this.eliteShieldUntil || 0),
       phased: now < (this.phaseShiftUntil || 0)
     };
@@ -3454,7 +3514,10 @@ export class Enemy {
   }
 
   canShoot() {
-    return !this.currentThreatAction && this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
+    const arrivalLocked = this.isEliteMiddleShip && (
+      this.state === 'ENTRY' || Date.now() < (this.arrivalCombatReadyAt || 0)
+    );
+    return !arrivalLocked && !this.currentThreatAction && this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
   }
 
   getTacticalFireScalar() {
@@ -3762,6 +3825,16 @@ export class Enemy {
   takeDamage(amount, options = {}) {
     let resolvedAmount = amount;
     const now = Date.now();
+    if (this.isEliteMiddleShip && this.state === 'ENTRY' && !this.waitingForEntry) {
+      const incoming = Math.max(0, Number(resolvedAmount) || 0);
+      resolvedAmount = incoming * this.arrivalGuardDamageMultiplier;
+      this.lastArrivalGuardDamage = {
+        incoming,
+        applied: resolvedAmount,
+        multiplier: this.arrivalGuardDamageMultiplier,
+        at: now
+      };
+    }
     if (this.middleShipProfile && now < this.phaseShiftUntil) resolvedAmount *= 0.45;
     if (this.middleShipProfile && now < this.eliteShieldUntil) resolvedAmount *= 0.6;
     resolvedAmount = resolveNemesisDamage(this, resolvedAmount);

@@ -1,6 +1,11 @@
 import { BUILD_ID } from '../buildInfo.js';
 import { MAX_RANK_INDEX, getRankFromLevel } from '../shared/RankPolicy.js';
 import { getSelectableShips, getShipMetadata } from '../config/ShipMetadata.js';
+import {
+  canRunModeSubmitGlobalLeaderboard,
+  canRunModeUnlockAchievements,
+  parseRunMode
+} from '../game/RunMode.js';
 
 export const LEADERBOARD_DISPLAY_LIMIT = 40;
 export const STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
@@ -340,8 +345,20 @@ export function createRunResultFromGame(game, overrides = {}) {
   const selectedShipSpriteKey = game?.selectedShipSpriteKey || null;
   const shipMetadata = getShipMetadata(selectedShipSpriteKey);
   const levelReached = Math.max(1, numericInt(overrides.levelReached ?? overrides.level ?? game?.level, 1));
-  const runMode = overrides.runMode || game?.runMode || 'ranked';
-  const leaderboard = getLeaderboardDescriptorForRunMode(runMode);
+  const runModeSource = overrides.runMode ?? game?.runSummary?.runMode ?? game?.runMode ?? null;
+  const canonicalRunMode = parseRunMode(runModeSource);
+  const runMode = canonicalRunMode || (String(runModeSource ?? '').trim() || null);
+  const isDebugRun = overrides.isDebugRun ?? game?.isDebugRun === true;
+  const submissionEligible = canRunModeSubmitGlobalLeaderboard(canonicalRunMode, { isDebugRun });
+  const achievementEligible = canRunModeUnlockAchievements(canonicalRunMode, { isDebugRun });
+  const leaderboard = submissionEligible
+    ? getLeaderboardDescriptorForRunMode(canonicalRunMode)
+    : {
+        leaderboardName: null,
+        leaderboardKind: 'ineligible',
+        view: null,
+        sourceLabel: null
+      };
   return {
     score: Math.max(0, numericInt(overrides.score ?? game?.score, 0)),
     level: levelReached,
@@ -360,6 +377,11 @@ export function createRunResultFromGame(game, overrides = {}) {
     bossKills: Math.max(0, numericInt(overrides.bossKills ?? playScene?.bossKills, 0)),
     wavesCleared: Math.max(0, numericInt(overrides.wavesCleared ?? playScene?.wavesCleared, 0)),
     runMode,
+    runModeSource: runModeSource == null ? null : String(runModeSource),
+    isDebugRun,
+    eligibleForSubmission: submissionEligible,
+    eligibleForAchievements: achievementEligible,
+    submissionEligibilityVersion: 1,
     leaderboardName: overrides.leaderboardName || leaderboard.leaderboardName,
     leaderboardKind: overrides.leaderboardKind || leaderboard.leaderboardKind,
     buildId: BUILD_ID,

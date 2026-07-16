@@ -5,6 +5,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "ASS-KONTAKT",
@@ -1424,6 +1426,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': 'Der Pilotenrang ist dein langfristiges Karriere-Signal. XP bekommst du für Punkte, Sektoren, Bosse, Entdeckungen, saubere Wellen und abgeschlossene Runs.\n\nXP bis zum nächsten zeigt, wie nah dieses lokale Profil am nächsten Rang ist. Codex-Scans sind Bedrohungen, die du persönlich entdeckt hast. Bestpunktzahl ist dein eigener bester Run auf diesem Profil.\n\nSchiffsfreischaltungen nutzen diese Karriere-Meilensteine, damit auch gescheiterte Runs den Hangar voranbringen.',
   'RANK': 'RANG',
   'YOUR LAUNCHES': 'DEINE STARTS',
+  'FIRST FLIGHT': 'ERSTER EINSATZ',
   'MAX RANK': 'MAXIMALER RANG',
   'MAX': 'MAX',
   'TO': 'ZU',
@@ -1490,8 +1493,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': 'ERFOLG FREIGESCHALTET',
   'Callsign On The Board': 'Rufzeichen auf der Liste',
   'Qualify for the global leaderboard.': 'Qualifiziere dich für die globale Bestenliste.',
-  'Top Of The Swarm': 'Spitze des Schwarms',
-  'Reach #1 on the global leaderboard.': 'Erreiche Platz 1 der globalen Bestenliste.',
+  'Swarm Elite': 'Schwarm-Elite',
+  'Submit a 750,000-point ranked run.': 'Reiche einen gewerteten Run mit 750.000 Punkten ein.',
+  'Legacy Ranked Run': 'Älterer gewerteter Run',
+  'Unknown Run Mode': 'Unbekannter Run-Modus',
   'First Ranked Run': 'Erster gewerteter Run',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Beende einen gewerteten Run. Practice und Sector Start zaehlen nicht.',
   'Past The Warmup': 'Aufwärmphase vorbei',
@@ -2194,6 +2199,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de') }),
   patterns
 };

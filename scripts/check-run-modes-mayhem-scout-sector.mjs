@@ -23,6 +23,7 @@ import {
   getSectorStartPlaySector,
   isRankedRunMode
 } from '../src/game/RunMode.js';
+import { getShipUsageKey } from '../src/config/ShipMetadata.js';
 import { STEAM_LEADERBOARD_NAME, STEAM_TACTICAL_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
@@ -286,37 +287,57 @@ function assertLaunchDeckVisible(state, label) {
   const daily = deck.featuredDailySignal;
   assertInside(daily?.bounds, screen, `${label}: Daily Signal feature`);
   assert.equal(daily?.label, 'DAILY CHALLENGE', `${label}: Daily Challenge label`);
-  assert.match(daily?.sublabel || '', /(?:GOAL S10|CLEARED).*RESET (?:IN )?\d{2}:\d{2}/i, `${label}: Daily Challenge should expose its goal and UTC reset`);
-  assert.ok(daily.bounds.bottom <= deck.bounds.y + 2, `${label}: Daily Signal must remain above the four-card deck`);
-  assert.equal(Object.keys(deck.cards || {}).length, 4, `${label}: Launch Deck must still contain exactly four standard run cards`);
+  assert.match(daily?.sublabel || '', /(?:CLEAR S10|CLEARED)/i, `${label}: Daily Challenge should explain today's activity`);
+  assert.equal(daily?.role, 'activity', `${label}: Daily Challenge should be identified as a side activity`);
+  assert.deepEqual(deck.hierarchy, ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart'], `${label}: mode hierarchy`);
+  assert.equal(Object.keys(deck.cards || {}).length, 5, `${label}: Launch Deck must contain all five run cards`);
   const cards = [
-    ['mayhem', deck.cards?.mayhem],
     ['mayhemTactical', deck.cards?.mayhemTactical],
+    ['mayhem', deck.cards?.mayhem],
+    ['daily', deck.cards?.daily],
     ['scout', deck.cards?.scout],
     ['sector', deck.cards?.sector]
   ];
   for (const [name, card] of cards) {
     assertInside(card?.bounds, screen, `${label}: ${name} card`);
-    assert.ok(card.bounds.height >= 54 && card.bounds.height <= 104, `${label}: ${name} selector should stay compact`);
-    assert.ok(card.bounds.width >= 240 && card.bounds.width <= 560, `${label}: ${name} selector should not become oversized`);
+    const minimumHeight = name === 'mayhemTactical' ? 60 : 40;
+    const maximumHeight = name === 'mayhemTactical' ? 120 : 104;
+    assert.ok(
+      card.bounds.height >= minimumHeight && card.bounds.height <= maximumHeight,
+      `${label}: ${name} selector should stay compact; bounds=${JSON.stringify(card.bounds)}`
+    );
+    assert.ok(
+      card.bounds.width >= 220 && card.bounds.width <= 560,
+      `${label}: ${name} selector should not become oversized; bounds=${JSON.stringify(card.bounds)}`
+    );
   }
   assert.equal(deck.cards?.mayhem?.label, 'MAYHEM PURE', `${label}: Pure Mayhem label`);
-  assert.equal(deck.cards?.mayhem?.sublabel, 'RANKED // RAW SKILL', `${label}: Pure Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhem?.sublabel, 'ALTERNATIVE RANKED MODE', `${label}: Pure Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhem?.role, 'alternative', `${label}: Pure Mayhem role`);
   assert.equal(deck.cards?.mayhem?.body || '', '', `${label}: Mayhem card should not carry paragraph body text`);
   assert.equal(deck.cards?.mayhemTactical?.label, 'MAYHEM TACTICAL', `${label}: Tactical Mayhem label`);
-  assert.equal(deck.cards?.mayhemTactical?.sublabel, 'RANKED // BUILDCRAFT', `${label}: Tactical Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhemTactical?.sublabel, 'MAIN MODE · RECOMMENDED · RANKED', `${label}: Tactical Mayhem sublabel`);
+  assert.equal(deck.cards?.mayhemTactical?.role, 'main', `${label}: Tactical Mayhem role`);
   assert.equal(deck.cards?.mayhemTactical?.body || '', '', `${label}: Tactical card should not carry paragraph body text`);
+  assert.equal(deck.cards?.daily?.label, 'DAILY CHALLENGE', `${label}: Daily label`);
+  assert.equal(deck.cards?.daily?.role, 'activity', `${label}: Daily role`);
   assert.equal(deck.cards?.scout?.label, 'SCOUT RUN', `${label}: Scout label`);
   assert.equal(deck.cards?.scout?.sublabel, 'PRACTICE', `${label}: Scout sublabel`);
+  assert.equal(deck.cards?.scout?.role, 'practice', `${label}: Scout role`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should not carry paragraph body text`);
   assert.equal(deck.cards?.sector?.label, 'SECTOR RUN', `${label}: Sector label`);
   assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector sublabel`);
+  assert.equal(deck.cards?.sector?.role, 'checkpoint', `${label}: Sector role`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should not carry paragraph body text`);
+  assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.mayhem.bounds.height * 1.25, `${label}: Tactical card should be materially taller than Pure`);
+  assert.ok(deck.cards.mayhemTactical.bounds.width > deck.cards.mayhem.bounds.width, `${label}: Tactical card should be wider than secondary modes`);
   assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.mayhemTactical.bounds.x) < 36, `${label}: Pure/Tactical cards should share the left command stack`);
-  assert.ok(Math.abs(deck.cards.mayhemTactical.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Tactical/Scout cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.daily.bounds.x) < 36, `${label}: Pure/Daily cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.daily.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Daily/Scout cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
-  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.mayhemTactical.bounds.y + 36, `${label}: Pure/Tactical cards overlap vertically`);
-  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Tactical/Scout cards overlap vertically`);
+  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.mayhem.bounds.y + 36, `${label}: Tactical/Pure cards overlap vertically`);
+  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.daily.bounds.y + 36, `${label}: Pure/Daily cards overlap vertically`);
+  assert.ok(deck.cards.daily.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Daily/Scout cards overlap vertically`);
   assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector cards overlap vertically`);
   assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
   assert.ok((state.menu?.panel?.y || 0) > deck.bounds.bottom, `${label}: utility dock should sit below Launch Deck`);
@@ -466,9 +487,10 @@ try {
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
   assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
-  assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launch', 'Mission briefing should default to Mayhem Pure');
-  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM PURE/i);
-  assert.match(settledMenu.menu?.missionBriefing?.body || '', /RANKED.*RAW SKILL[\s\S]*No tactical drafts[\s\S]*original leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.equal(settledMenu.menu?.focusedOption, 'launchTactical', 'Mayhem Tactical should receive default focus');
+  assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launchTactical', 'Mission briefing should default to Mayhem Tactical');
+  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM TACTICAL/i);
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*spectacular build/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
   assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'PRACTICE');
@@ -479,10 +501,18 @@ try {
   await page.waitForTimeout(500);
   assertLaunchDeckVisible(await readState(page), '1920x1080 menu');
   await page.screenshot({ path: path.join(outputDir, 'menu-launch-deck-1920x1080.png'), fullPage: false });
+  await focusMenuOption(page, 'dailySignal');
+  await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused-1920x1080.png'), fullPage: false });
+  await focusMenuOption(page, 'launchTactical');
   await page.setViewportSize({ width: 1366, height: 768 });
   await waitForScene(page, 'menu');
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1366x768.png'), fullPage: false });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await waitForScene(page, 'menu');
+  await page.waitForTimeout(500);
+  assertLaunchDeckVisible(await readState(page), '1280x720 menu');
+  await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1280x720.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 800 });
   await waitForScene(page, 'menu');
   await page.waitForTimeout(500);
@@ -492,6 +522,7 @@ try {
   for (const viewport of [
     { width: 1920, height: 1080, name: '1920x1080' },
     { width: 1366, height: 768, name: '1366x768' },
+    { width: 1280, height: 720, name: '1280x720' },
     { width: 1280, height: 800, name: '1280x800' }
   ]) {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
@@ -506,33 +537,33 @@ try {
   await waitForScene(page, 'menu');
   const dailyFocus = await focusMenuOption(page, 'dailySignal');
   assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
-  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY'S GOAL[\s\S]*CLEAR SECTOR 10[\s\S]*Tactical drafts are active[\s\S]*light today's Flight Log entry[\s\S]*TODAY: NOT ATTEMPTED[\s\S]*7-DAY FLIGHT LOG[\s\S]*PERSONAL CHALLENGE[\s\S]*NO PUBLIC LEADERBOARD YET/i);
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY: CLEAR SECTOR 10[\s\S]*TACTICAL DRAFTS[\s\S]*NOT ATTEMPTED[\s\S]*WEEK:[\s\S]*LOCAL RECORD ONLY[\s\S]*NO PUBLIC DAILY LEADERBOARD[\s\S]*RESETS IN/i);
   assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /fixed route/i, 'Daily briefing must not overclaim full route determinism');
   assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused.png'), fullPage: false });
-  await focusMenuOption(page, 'launch');
+  await focusMenuOption(page, 'launchTactical');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'launchTactical', 'ArrowRight should move Pure focus to Tactical');
+  assert.equal((await readState(page)).menu?.focusedOption, 'launch', 'ArrowRight should move Tactical focus to Pure');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'scout', 'ArrowRight should move Tactical focus to Scout');
+  assert.equal((await readState(page)).menu?.focusedOption, 'dailySignal', 'ArrowRight should move Pure focus to Daily Challenge');
   const mayhemFocus = await focusMenuOption(page, 'launch');
   assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launch');
-  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /RANKED.*RAW SKILL[\s\S]*No tactical drafts[\s\S]*original leaderboard[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /ALTERNATIVE RANKED MODE[\s\S]*No tactical drafts[\s\S]*original Mayhem ruleset[\s\S]*PURE LEADERBOARD[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
   assert.doesNotMatch(mayhemFocus.menu?.missionBriefing?.body || '', /Sector 1 climb/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
   const tacticalFocus = await focusMenuOption(page, 'launchTactical');
   assert.equal(tacticalFocus.menu?.missionBriefing?.mode, 'launchTactical');
-  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /RANKED.*BUILDCRAFT[\s\S]*Bosses offer permanent tactical upgrades[\s\S]*separate Tactical leaderboard/i);
+  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*spectacular build/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-tactical-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
-  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /UNRANKED PRACTICE[\s\S]*Lower pressure practice[\s\S]*testing ships[\s\S]*learning routes[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /PRACTICE.*UNRANKED[\s\S]*Lower-pressure combat[\s\S]*learning routes[\s\S]*testing ships[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
   const sectorFocus = await focusMenuOption(page, 'sectorStart');
   assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
-  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /CHECKPOINT PUSH[\s\S]*Jump to checkpoints unlocked in Mayhem[\s\S]*Push deeper[\s\S]*without replaying the early sectors[\s\S]*No achievements[\s\S]*Sector records are separate/i);
+  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /CHECKPOINT PRACTICE.*UNRANKED[\s\S]*Start from checkpoints unlocked in Mayhem[\s\S]*practice later sectors[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*Sector records stay local/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
   await page.waitForTimeout(250);
@@ -766,7 +797,7 @@ try {
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 15000 });
   const clearedDailyMenu = await readState(page);
-  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /TODAY: CLEARED[\s\S]*BEST[\s\S]*TIME\s+1:30/i, 'stored clear menu briefing must expose the time tie-break');
+  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /CLEARED[\s\S]*BEST[\s\S]*1:30/i, 'stored clear menu briefing must expose the time tie-break');
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-cleared.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
   const improveDaily = await waitForScene(page, 'play');
@@ -846,8 +877,17 @@ try {
   assert.match(scoutResultText, /New Scout Best/i, 'Scout result should celebrate a new Scout best');
   assert.match(scoutResultText, /No leaderboard submission/i, 'Scout result should explicitly block leaderboard submission');
   assert.equal(afterScout.mockSteamLeaderboard.some((entry) => entry.leaderboardName === STEAM_LEADERBOARD_NAME), false, 'Scout must not submit to global Steam leaderboard');
-  assert.deepEqual(afterScout.shipUsage, {}, 'Scout must not increment ship usage');
-  assert.equal(afterScout.shipUsageTotal, '0', 'Scout must not increment total ship usage');
+  const scoutShipKey = getShipUsageKey(scoutPlay.selectedShipSpriteKey);
+  const expectedScoutUsage = {
+    ...beforeScout.shipUsage,
+    [scoutShipKey]: (Number(beforeScout.shipUsage?.[scoutShipKey]) || 0) + 1
+  };
+  assert.deepEqual(afterScout.shipUsage, expectedScoutUsage, 'a valid Scout launch must increment the selected ship once');
+  assert.equal(
+    afterScout.shipUsageTotal,
+    String((Number(beforeScout.shipUsageTotal) || 0) + 1),
+    'a valid Scout launch must increment total ship usage once'
+  );
   await page.screenshot({ path: path.join(outputDir, 'scout-result-unranked.png'), fullPage: false });
 
   await page.keyboard.press('Enter');

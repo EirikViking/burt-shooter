@@ -939,7 +939,11 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   const screen = menu?.screen;
   const board = menu?.missionBoard;
   assert.ok(screen?.width > 0 && screen?.height > 0, 'menu screen bounds should be exposed');
-  assert.match(menu?.missionBriefing?.title || '', /^RUN MODES \/\/ /, 'run mode panel should avoid Mission wording repetition');
+  assert.match(
+    menu?.missionBriefing?.title || '',
+    /^RUN MODES(?: \/\/| ·) /,
+    'run mode panel should avoid Mission wording repetition'
+  );
   assert.equal(board?.status, expectedStatus);
   if (expectedDisabledBySetting !== null) {
     assert.equal(board?.disabledBySetting, expectedDisabledBySetting, 'Pilot Orders hidden reason should match expectation');
@@ -972,7 +976,8 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   const featuredDaily = menu?.launchDeck?.featuredDailySignal?.bounds;
   if (featuredDaily) {
     assertInside(featuredDaily, screen, 'Daily Signal feature');
-    assert.ok(featuredDaily.bottom <= menu.launchDeck.bounds.y + 2, 'Daily Signal feature should remain above the four-card deck');
+    assert.ok(featuredDaily.y >= menu.launchDeck.bounds.y - 2, 'Daily Challenge should be integrated into the launch deck');
+    assert.ok(featuredDaily.bottom <= menu.launchDeck.bounds.bottom + 2, 'Daily Challenge should stay inside the launch deck');
     assert.ok(!boundsOverlap(featuredDaily, board.bounds, 2), 'Daily Signal feature must not overlap Pilot Orders');
   }
   assert.ok(board.bounds.bottom <= menu.panel.y + 6, 'Pilot Orders should stay above the utility dock');

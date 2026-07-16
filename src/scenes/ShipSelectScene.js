@@ -9,6 +9,7 @@ import {
   getShipUnlockProgressDetails,
   getShipUnlockProgress,
   getShipUnlockRequirementLine,
+  getShipUsage,
   isShipUnlocked,
   isValidShipKey,
   resolveShipKey
@@ -2302,6 +2303,8 @@ export class ShipSelectScene {
     container.shipIndex = index;
     const variant = ship.visuals?.variant || null;
     const locked = !isShipUnlocked(ship.spriteKey, this.unlockProgress);
+    const usageCount = getShipUsage(ship.spriteKey);
+    const firstFlight = !locked && usageCount === 0;
     const accent = variant?.accent || 0x00ffff;
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
@@ -2441,6 +2444,35 @@ export class ShipSelectScene {
       container.tierBadge = badge;
     }
 
+    if (firstFlight) {
+      const badgeWidth = this.layout.isMobile ? 116 : 138;
+      const badgeHeight = this.layout.isMobile ? 24 : 28;
+      const badge = new PIXI.Container();
+      badge.position.set(-badgeWidth / 2, heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.66));
+      const badgeGlow = new PIXI.Graphics();
+      badgeGlow.roundRect(-4, -4, badgeWidth + 8, badgeHeight + 8, 9);
+      badgeGlow.fill({ color: 0xffef7e, alpha: 0.11 });
+      const badgeBg = new PIXI.Graphics();
+      badgeBg.roundRect(0, 0, badgeWidth, badgeHeight, 7);
+      badgeBg.fill({ color: 0x13061f, alpha: 0.96 });
+      badgeBg.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.96 });
+      const badgeText = createText(translateText('FIRST FLIGHT'), {
+        fontFamily: FONT_DISPLAY,
+        fontSize: this.layout.isMobile ? 10 : 12,
+        fill: '#ffef7e',
+        align: 'center',
+        fontWeight: '900',
+        stroke: '#000000',
+        strokeThickness: 2
+      });
+      badgeText.anchor.set(0.5);
+      badgeText.position.set(badgeWidth / 2, badgeHeight / 2);
+      badge.addChild(badgeGlow, badgeBg, badgeText);
+      container.addChild(badge);
+      container.firstFlightBadge = badge;
+      container.firstFlightBadgeText = badgeText;
+    }
+
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
       fontFamily: FONT_DISPLAY,
@@ -2509,6 +2541,8 @@ export class ShipSelectScene {
 
     container.shipData = ship;
     container.locked = locked;
+    container.usageCount = usageCount;
+    container.firstFlightEligible = firstFlight;
     return container;
   }
 
@@ -2566,6 +2600,7 @@ export class ShipSelectScene {
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
+      if (shipContainer.firstFlightBadge) shipContainer.firstFlightBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
@@ -2812,7 +2847,10 @@ export class ShipSelectScene {
     const ship = this.ships[this.selectedIndex];
     const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
     const modelTotal = Math.max(1, this.baseOrder.length);
-    const status = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress) ? 'READY' : getShipUnlockLabel(ship?.spriteKey);
+    const unlocked = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress);
+    const status = unlocked
+      ? (getShipUsage(ship.spriteKey) === 0 ? translateText('FIRST FLIGHT') : translateText('READY'))
+      : getShipUnlockLabel(ship?.spriteKey);
     this.selectionInfoText.text = `HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}`;
     this.updateRecommendationBanner();
   }
@@ -2826,6 +2864,8 @@ export class ShipSelectScene {
     const roleLine = tierLabel ? `${tierLabel} // ${role}` : role;
     const weapon = this.getWeaponSummary(ship);
     const unlockDetails = getShipUnlockProgressDetails(ship.spriteKey, this.unlockProgress);
+    const usageCount = getShipUsage(ship.spriteKey);
+    const firstFlight = unlocked && usageCount === 0;
     const progressLine = !unlocked && Array.isArray(unlockDetails.requirements) && unlockDetails.requirements.length
       ? unlockDetails.requirements
         .slice(0, 2)
@@ -2834,7 +2874,9 @@ export class ShipSelectScene {
       : '';
     const unlock = unlocked
       ? [
-        translateText('STATUS: READY FOR LAUNCH'),
+        firstFlight
+          ? `${translateText('FIRST FLIGHT')} // ${translateText('YOUR LAUNCHES')}: 0`
+          : translateText('STATUS: READY FOR LAUNCH'),
         getShipUnlockHistoryLine(ship.spriteKey, this.unlockProgress, { translate: translateText })
       ].join('\n')
       : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
@@ -2913,7 +2955,9 @@ export class ShipSelectScene {
     }
 
     if (this.compactIntel) {
-      const compactStatus = unlocked ? translateText('READY') : getShipUnlockLabel(ship.spriteKey);
+      const compactStatus = unlocked
+        ? (firstFlight ? translateText('FIRST FLIGHT') : translateText('READY'))
+        : getShipUnlockLabel(ship.spriteKey);
       this.compactIntel.role.text = [roleLine, compactStatus].join(' | ');
       this.compactIntel.weapon.text = weapon;
     }

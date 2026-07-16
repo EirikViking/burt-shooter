@@ -1,7 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ACHIEVEMENTS, LEGEND_ACHIEVEMENTS, LEGEND_SCORE_GATE } from '../src/achievements/AchievementCatalog.js';
+import {
+  ACHIEVEMENTS,
+  LEGEND_ACHIEVEMENTS,
+  LEGEND_SCORE_GATE,
+  SWARM_ELITE_SCORE_GATE
+} from '../src/achievements/AchievementCatalog.js';
 
 const errors = [];
 
@@ -76,6 +81,21 @@ if (!ids.includes('ACH_GLOBAL_LEADERBOARD')) {
 
 if (!ids.includes('ACH_GLOBAL_NUMBER_ONE')) {
   fail('Missing ACH_GLOBAL_NUMBER_ONE.');
+}
+
+const swarmElite = ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_GLOBAL_NUMBER_ONE');
+if (!swarmElite) {
+  fail('Missing stable-ID Swarm Elite achievement.');
+} else {
+  if (swarmElite.name !== 'Swarm Elite') {
+    fail(`ACH_GLOBAL_NUMBER_ONE display name should be "Swarm Elite"; saw "${swarmElite.name}".`);
+  }
+  if (swarmElite.description !== 'Submit a 750,000-point ranked run.') {
+    fail(`Swarm Elite description drifted: "${swarmElite.description}".`);
+  }
+  if (Number(swarmElite.target) !== SWARM_ELITE_SCORE_GATE || SWARM_ELITE_SCORE_GATE !== 750000) {
+    fail(`Swarm Elite score gate must be exactly 750000; saw ${swarmElite.target}.`);
+  }
 }
 
 const earlyPilot = ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_EARLY_PILOT');

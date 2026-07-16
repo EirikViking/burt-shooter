@@ -309,11 +309,11 @@ try {
   await page.waitForTimeout(150);
   const menuState = await readState(page);
   assert.equal(menuState.menu?.launchDeck?.featuredDailySignal?.label, 'DAILY CHALLENGE');
-  assert.match(menuState.menu?.launchDeck?.featuredDailySignal?.sublabel || '', /GOAL S10|CLEARED/i);
+  assert.match(menuState.menu?.launchDeck?.featuredDailySignal?.sublabel || '', /CLEAR S10|CLEARED/i);
   assert.match(menuState.menu?.missionBriefing?.title || '', /DAILY CHALLENGE/);
-  assert.match(menuState.menu?.missionBriefing?.body || '', /TODAY'S GOAL \/\/ CLEAR SECTOR 10/);
-  assert.match(menuState.menu?.missionBriefing?.body || '', /Replay after a clear to beat your best clear score/i);
-  assert.match(menuState.menu?.missionBriefing?.body || '', /NO PUBLIC LEADERBOARD YET/);
+  assert.match(menuState.menu?.missionBriefing?.body || '', /TODAY: CLEAR SECTOR 10/);
+  assert.match(menuState.menu?.missionBriefing?.body || '', /TACTICAL DRAFTS/i);
+  assert.match(menuState.menu?.missionBriefing?.body || '', /NO PUBLIC DAILY LEADERBOARD/);
   await page.screenshot({ path: path.join(outputDir, 'daily-challenge-menu-1920x1080.png'), fullPage: false });
   report.screenshots.push('daily-challenge-menu-1920x1080.png');
   await page.setViewportSize({ width: 1366, height: 768 });

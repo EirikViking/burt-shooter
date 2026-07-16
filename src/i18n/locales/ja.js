@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u30a8\u30fc\u30b9\u63a5\u89e6",
@@ -1347,6 +1349,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': 'パイロットランクは長期的なキャリア信号です。スコア、セクター、ボス、発見、ノーヒットウェーブ、ランクリアでXPを獲得します。\n\n次までのXPは、このローカルプロフィールが次のランクにどれだけ近いかを示します。コーデックススキャンは、あなた自身が発見した脅威です。ベストスコアはこのプロフィールでの最高ランスコアです。\n\n船のアンロックはこれらのキャリア到達点を使うため、失敗したランでもハンガーを前進させられます。',
   'RANK': 'ランク',
   'YOUR LAUNCHES': 'あなたの出撃',
+  'FIRST FLIGHT': '初出撃',
   'MAX RANK': '最高ランク',
   'MAX': '最大',
   'TO': 'へ',
@@ -1402,8 +1405,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': '実績解除',
   'Callsign On The Board': 'ランキングのコールサイン',
   'Qualify for the global leaderboard.': 'グローバルランキングに入る。',
-  'Top Of The Swarm': '群れの頂点',
-  'Reach #1 on the global leaderboard.': 'グローバルランキング1位に到達。',
+  'Swarm Elite': 'スウォーム・エリート',
+  'Submit a 750,000-point ranked run.': 'ランク戦で750,000点のスコアを送信する。',
+  'Legacy Ranked Run': '旧バージョンのランクラン',
+  'Unknown Run Mode': '不明なランモード',
   'First Ranked Run': 'Hatsu ranku ran',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Nin-i no ranku ran o kanryo. Practice to Sector Start wa taishogai.',
   'Past The Warmup': 'ウォームアップ通過',
@@ -1799,6 +1804,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja'), ...getMenuHierarchySourceText('ja'), ...getForumFollowupSourceText('ja') }),
   patterns
 };

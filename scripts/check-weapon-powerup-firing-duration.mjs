@@ -259,7 +259,7 @@ try {
         player.inputManager.previousGamepadButtons = {};
       }
     };
-    const armPowerup = (type, remainingMs = 8000, now = Date.now()) => {
+    const armPowerup = (type, remainingMs = 8000, now = player.getGameplayClockMs()) => {
       resetInputs();
       player.resetPowerups?.();
       player.applyPowerup?.(type);

@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "CONTATO AS",
@@ -1433,6 +1435,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': 'O rank do piloto é o seu sinal de carreira de longo prazo. Você ganha XP por pontuação, setores, chefes, descobertas, ondas limpas e conclusões de run.\n\nXP até o próximo mostra a distância deste perfil local para o próximo rank. Varreduras do Códex são ameaças que você descobriu pessoalmente. Melhor pontuação é a sua melhor run neste perfil.\n\nDesbloqueios de naves usam esses marcos de carreira, então até uma run perdida pode avançar o hangar.',
   'RANK': 'RANK',
   'YOUR LAUNCHES': 'SEUS LANÇAMENTOS',
+  'FIRST FLIGHT': 'PRIMEIRO VOO',
   'MAX RANK': 'RANK MÁXIMO',
   'MAX': 'MÁX',
   'TO': 'PARA',
@@ -1498,8 +1501,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': 'CONQUISTA DESBLOQUEADA',
   'Callsign On The Board': 'Codinome no ranking',
   'Qualify for the global leaderboard.': 'Classifique-se no ranking global.',
-  'Top Of The Swarm': 'Topo do enxame',
-  'Reach #1 on the global leaderboard.': 'Alcance o 1º lugar no ranking global.',
+  'Swarm Elite': 'Elite do enxame',
+  'Submit a 750,000-point ranked run.': 'Envie uma run ranqueada de 750.000 pontos.',
+  'Legacy Ranked Run': 'Run ranqueada antiga',
+  'Unknown Run Mode': 'Modo de run desconhecido',
   'First Ranked Run': 'Primeira run ranqueada',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Termine qualquer run ranqueada. Practice e Sector Start nao contam.',
   'Past The Warmup': 'Passou do aquecimento',
@@ -1830,6 +1835,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR') }),
   patterns
 };

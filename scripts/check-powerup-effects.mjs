@@ -387,7 +387,7 @@ try {
       assert(pickup.pickupVisual, `${type}: pickup did not create visible particles/message/ring`, pickup);
       const expectedCharges = chargeExpectations[type] || 0;
       if (expectedCharges > 0) {
-        player.activePowerup.expiresAt = Date.now() - 1;
+        player.activePowerup.expiresAt = player.getGameplayClockMs() - 1;
         player.activePowerup.remainingMs = 0;
         player.update(1);
         assert(player.activePowerup.type === type, `${type}: unspent charges expired before use`, {
@@ -514,10 +514,10 @@ try {
           assert(player.shieldActive === false, `${type}: shield stayed active after absorbing a hit`);
           assert(player.shieldSprite?.visible === false, `${type}: shield sprite stayed visible after absorb`);
           assert(findState('shield')?.spent === true, `${type}: spent shield HUD state missing`);
-          player.shieldSpentUntil = Date.now() - 1;
+          player.shieldSpentUntil = player.getGameplayClockMs() - 1;
           assert(!findState('shield'), `${type}: spent shield HUD state did not clear`);
           player.activateShield(1000);
-          player.shieldExpiresAt = Date.now() - 1;
+          player.shieldExpiresAt = player.getGameplayClockMs() - 1;
           player.update(1);
           assert(player.shieldActive === false && !findState('shield'), `${type}: shield timeout should clear without spent warning`);
           note('shieldSpentFeedback', true);
@@ -586,24 +586,41 @@ try {
         }
         case 'point_defense': {
           assert(player.pointDefenseActive && player.pointDefenseRing?.visible !== false, `${type}: point-defense ring missing`);
-          const playerBullet = shootNow()[0];
-          const enemyBullet = dummyEnemyBullet(playerBullet.x, playerBullet.y);
-          play.bulletManager.enemyBullets = [enemyBullet];
+          const insideBullet = dummyEnemyBullet(player.x + 24, player.y - 28);
+          const outsideBullet = dummyEnemyBullet(player.x + 220, player.y - 28);
+          play.bulletManager.enemyBullets = [insideBullet, outsideBullet];
+          const playerBulletCount = activePlayerBullets().length;
           play.checkCollisions();
-          assert(playerBullet.active === false && enemyBullet.active === false, `${type}: projectile interception failed`, {
-            playerBullet: playerBullet.active,
-            enemyBullet: enemyBullet.active
+          assert(insideBullet.active === false && outsideBullet.active === true, `${type}: autonomous ring interception failed`, {
+            insideBullet: insideBullet.active,
+            outsideBullet: outsideBullet.active
           });
-          note('intercepted', true);
+          assert(activePlayerBullets().length === playerBulletCount, `${type}: autonomous interception consumed a player shot`);
+          note('intercepted', { autonomous: true, total: player.pointDefenseInterceptCount });
           break;
         }
         case 'bomb':
         case 'saw_matrix':
         case 'nova_bloom': {
           assert(player.bombShotsLeft === expectedCharges && player.bombIndicator?.visible !== false && hasState(type), `${type}: bomb charges/indicator missing`);
+          player.bombArmedAt = player.getGameplayClockMs();
+          const heldCharges = player.bombShotsLeft;
+          const ordinaryVolley = shootNow();
+          assert(!ordinaryVolley.some(bullet => bullet.isBomb) && player.bombShotsLeft === heldCharges,
+            `${type}: bomb charge should stay banked without a worthwhile target`);
+          clearSprites(play.bulletManager?.playerBullets);
+          play.bulletManager.playerBullets = [];
+          const enemy = spawnEnemyAt(player.x, player.y - 120, { health: 60, radius: 20 });
+          player.shootCooldown = 0;
           const bomb = shootNow().find(bullet => bullet.isBomb);
           assert(bomb, `${type}: shot did not create bomb bullet`);
-          const enemy = spawnEnemyAt(bomb.x, bomb.y, { health: 2, radius: 20 });
+          enemy.x = bomb.x;
+          enemy.y = bomb.y;
+          enemy.health = 2;
+          if (enemy.sprite) {
+            enemy.sprite.x = bomb.x;
+            enemy.sprite.y = bomb.y;
+          }
           const beforeScore = game.score;
           play.checkCollisions();
           play.cleanupSkippedFrameVisuals?.('bomb_effect_check');
@@ -616,13 +633,21 @@ try {
           });
           assert((audit.staleVisibleCount || 0) === 0 && (audit.orphanedVisibleCount || 0) === 0, `${type}: bomb left dead enemy visuals`, audit);
           assert(game.score > beforeScore, `${type}: bomb kill did not award score`, { beforeScore, score: game.score });
+          play.enemyManager.enemies = [{
+            active: true,
+            destroyed: false,
+            x: player.x,
+            y: player.y - 180,
+            health: 999,
+            radius: 24
+          }];
           for (let shot = 1; shot < expectedCharges; shot += 1) shootNow();
           const spentState = findState('bomb');
           assert(player.bombShotsLeft === 0, `${type}: bomb charges did not empty`);
           assert(player.bombIndicator?.visible === false, `${type}: bomb charge pips stayed visible after empty`);
           assert(player.activePowerup?.type !== type, `${type}: bomb active state stayed live after charges emptied`);
           assert(spentState?.spent === true && spentState?.charges === 0, `${type}: spent bomb HUD state missing`, spentState);
-          player.bombSpentUntil = Date.now() - 1;
+          player.bombSpentUntil = player.getGameplayClockMs() - 1;
           assert(!findState('bomb'), `${type}: spent bomb HUD state did not clear`);
           note('exactChargeCount', expectedCharges);
           note('detonatedClean', audit);
@@ -708,6 +733,55 @@ try {
     const runClockProbe = { heldAt: 42, resumedAt: play.gameTime };
 
     resetScene();
+    play.gameTime = 100;
+    play.introActive = false;
+    play.pendingEnemyStartTimeout = 1;
+    player.applyPowerup('speed_up');
+    player.activateShield(5000);
+    const heldSpeedBefore = player.getActivePowerupRemainingMs();
+    const heldShieldBefore = player.shieldExpiresAt - player.getGameplayClockMs();
+    player.update(600);
+    const heldSpeedAfter = player.getActivePowerupRemainingMs();
+    const heldShieldAfter = player.shieldExpiresAt - player.getGameplayClockMs();
+    assert(Math.abs(heldSpeedAfter - heldSpeedBefore) < 2, 'timed powerup drained during sector-entry hold', {
+      heldSpeedBefore,
+      heldSpeedAfter
+    });
+    assert(Math.abs(heldShieldAfter - heldShieldBefore) < 2 && player.shieldActive,
+      'shield drained during sector-entry hold', { heldShieldBefore, heldShieldAfter, shieldActive: player.shieldActive });
+    play.pendingEnemyStartTimeout = null;
+    play.gameTime += 6;
+    player.update(1);
+    assert(!player.shieldActive && player.activePowerup.type === 'speed_up',
+      'gameplay-clock effects did not resume independently after control returned');
+
+    resetScene();
+    play.gameTime = 200;
+    play.pendingEnemyStartTimeout = 1;
+    player.applyPowerup('rapid_fire');
+    window.__burtKeyboardOverride = { Space: true };
+    const firingHoldBefore = player.getActivePowerupRemainingMs();
+    player.update(60);
+    const firingHoldAfter = player.getActivePowerupRemainingMs();
+    assert(Math.abs(firingHoldAfter - firingHoldBefore) < 2,
+      'while-firing powerup drained during non-playable hold', { firingHoldBefore, firingHoldAfter });
+    play.pendingEnemyStartTimeout = null;
+    player.update(60);
+    const firingActiveAfter = player.getActivePowerupRemainingMs();
+    assert(firingActiveAfter < firingHoldAfter - 900,
+      'while-firing powerup did not resume draining in playable combat', { firingHoldAfter, firingActiveAfter });
+    window.__burtKeyboardOverride = null;
+    const gameplayTimerProbe = {
+      heldSpeedBefore,
+      heldSpeedAfter,
+      heldShieldBefore,
+      heldShieldAfter,
+      firingHoldBefore,
+      firingHoldAfter,
+      firingActiveAfter
+    };
+
+    resetScene();
     collect('shield');
     const pickupEffectsBeforeCleanup = Number(play.activePickupEffects?.size) || 0;
     assert(pickupEffectsBeforeCleanup > 0, 'pickup effect was not registered for lifecycle cleanup');
@@ -726,6 +800,7 @@ try {
       testedTypes: types,
       results,
       runClockProbe,
+      gameplayTimerProbe,
       pickupCleanupProbe,
       finalState: renderState()
     };

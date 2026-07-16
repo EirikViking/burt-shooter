@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "CONTACTO AS",
@@ -1427,6 +1429,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': 'El rango de piloto es tu señal de carrera a largo plazo. Ganas XP por puntuación, sectores, jefes, descubrimientos, oleadas limpias y carreras completadas.\n\nXP al siguiente muestra lo cerca que está este perfil local del próximo rango. Los escaneos del Códex son amenazas que has descubierto personalmente. Mejor puntuación es tu mejor carrera en este perfil.\n\nLos desbloqueos de naves usan estos hitos, así que una carrera fallida aún puede hacer avanzar el hangar.',
   'RANK': 'RANGO',
   'YOUR LAUNCHES': 'TUS LANZAMIENTOS',
+  'FIRST FLIGHT': 'PRIMER VUELO',
   'MAX RANK': 'RANGO MÁXIMO',
   'MAX': 'MÁX',
   'TO': 'A',
@@ -1492,8 +1495,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': 'LOGRO DESBLOQUEADO',
   'Callsign On The Board': 'Indicativo en la tabla',
   'Qualify for the global leaderboard.': 'Clasifícate para la tabla global.',
-  'Top Of The Swarm': 'Cima del enjambre',
-  'Reach #1 on the global leaderboard.': 'Alcanza el puesto 1 en la clasificación global.',
+  'Swarm Elite': 'Élite del enjambre',
+  'Submit a 750,000-point ranked run.': 'Envía una partida clasificada de 750.000 puntos.',
+  'Legacy Ranked Run': 'Partida clasificada anterior',
+  'Unknown Run Mode': 'Modo de partida desconocido',
   'First Ranked Run': 'Primera partida clasificada',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Termina cualquier partida clasificada. Practice y Sector Start no cuentan.',
   'Past The Warmup': 'Pasado el calentamiento',
@@ -1824,6 +1829,6 @@ export const es = {
   diagnostics: {
     interfaceLanguage: 'Idioma de interfaz'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es') }),
   patterns
 };

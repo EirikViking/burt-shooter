@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
@@ -1347,6 +1349,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': '파일럿 랭크는 장기 커리어 신호입니다. 점수, 섹터, 보스, 발견, 노히트 웨이브, 런 클리어로 XP를 얻습니다.\n\n다음까지 XP는 이 로컬 프로필이 다음 랭크에 얼마나 가까운지 보여줍니다. 코덱스 스캔은 직접 발견한 위협입니다. 최고 점수는 이 프로필의 최고 런 점수입니다.\n\n함선 해금은 이런 커리어 이정표를 사용하므로 실패한 런도 격납고를 전진시킬 수 있습니다.',
   'RANK': '랭크',
   'YOUR LAUNCHES': '내 출격',
+  'FIRST FLIGHT': '첫 출격',
   'MAX RANK': '최대 랭크',
   'MAX': '최대',
   'TO': '까지',
@@ -1402,8 +1405,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': '업적 달성',
   'Callsign On The Board': '순위표의 콜사인',
   'Qualify for the global leaderboard.': '글로벌 순위표에 진입하세요.',
-  'Top Of The Swarm': '무리의 정상',
-  'Reach #1 on the global leaderboard.': '글로벌 순위표 1위 달성.',
+  'Swarm Elite': '스웜 엘리트',
+  'Submit a 750,000-point ranked run.': '랭크 런에서 750,000점 기록을 제출하세요.',
+  'Legacy Ranked Run': '이전 랭크 런',
+  'Unknown Run Mode': '알 수 없는 런 모드',
   'First Ranked Run': 'Cheot raengkeu reon',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Amu raengkeu reon-ina machiseyo. Practice-wa Sector Start-neun je-oedoemnida.',
   'Past The Warmup': '워밍업 통과',
@@ -1799,6 +1804,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko') }),
   patterns
 };

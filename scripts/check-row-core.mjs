@@ -5,6 +5,18 @@ import path from 'node:path';
 
 const root = path.resolve('.');
 const read = (file) => readFileSync(path.join(root, file), 'utf8');
+const resolveFfprobe = () => {
+  const candidates = [
+    process.env.FFPROBE_PATH,
+    'ffprobe',
+    process.platform === 'win32' ? 'C:/Program Files/Shotcut/ffprobe.exe' : null
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    const result = spawnSync(candidate, ['-version'], { encoding: 'utf8', windowsHide: true });
+    if (result.status === 0) return candidate;
+  }
+  throw new Error('ffprobe is required for check-row-core; set FFPROBE_PATH or install ffprobe on PATH');
+};
 const source = {
   player: read('src/entities/Player.js'),
   powerups: read('src/managers/PowerupManager.js'),
@@ -111,14 +123,19 @@ try {
   for (const timing of ['adelay=1400|1400', 'adelay=2200|2200', 'adelay=2920|2920']) {
     assert.ok(source.tacticalAudioScript.includes(timing), `Viking Row composition missing shout timing ${timing}`);
   }
-  const rowDuration = Number(spawnSync('ffprobe', [
+  const ffprobe = resolveFfprobe();
+  const durationProbe = spawnSync(ffprobe, [
     '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1',
     path.join(root, 'public/audio/sfx/nova-swarm/nova_row_core_viking_row.mp3')
-  ], { encoding: 'utf8' }).stdout.trim());
+  ], { encoding: 'utf8', windowsHide: true });
+  assert.equal(durationProbe.status, 0, `ffprobe failed for Viking Row: ${durationProbe.stderr || durationProbe.error?.message || ''}`);
+  const rowDuration = Number(String(durationProbe.stdout || '').trim());
   assert.ok(rowDuration >= 4 && rowDuration <= 4.5, `Viking Row sequence should be a tight four-second ritual, got ${rowDuration}s`);
   assert.doesNotMatch(source.player, /fetch\(/, 'gameplay runtime must not call network APIs');
   assert.match(source.player, /rowCoreActive/, 'Player must track Row Core active state');
   assert.match(source.player, /clearRowCoreTimers/, 'Player must clean Row Core timers');
+  assert.match(source.player, /this\.rowCoreStartedAt = this\.getGameplayClockMs\(\)/,
+    'Row Core HUD duration must use the gameplay clock');
   assert.match(source.player, /getAccessibilitySettings\(\)\.screenShake/, 'Row Core pulses should respect screen-shake scale');
 
   let scoreTotal = 0;
@@ -194,7 +211,27 @@ try {
     sprite: {}
   };
   const playScene = {
-    bulletManager: { enemyBullets: [insideBullet, outsideBullet] },
+    bulletManager: {
+      enemyBullets: [insideBullet, outsideBullet],
+      deactivateBullet(bullet) {
+        if (!bullet?.active) return false;
+        bullet.active = false;
+        bullet.sprite?.parent?.removeChild?.(bullet.sprite);
+        return true;
+      },
+      pruneInactiveBullets() {
+        let writeIndex = 0;
+        for (let readIndex = 0; readIndex < this.enemyBullets.length; readIndex += 1) {
+          const bullet = this.enemyBullets[readIndex];
+          if (!bullet?.active) continue;
+          this.enemyBullets[writeIndex] = bullet;
+          writeIndex += 1;
+        }
+        const removed = this.enemyBullets.length - writeIndex;
+        this.enemyBullets.length = writeIndex;
+        return removed;
+      }
+    },
     enemyManager: { enemies: [insideEnemy, outsideEnemy], removeEnemySprite() {} },
     particleManager: { createHitSpark() {}, createExplosion() {} },
     screenShake: { shake() {} },

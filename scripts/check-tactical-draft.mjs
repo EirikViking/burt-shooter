@@ -171,7 +171,8 @@ assert(!beforeScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'score ro
 assert(scoreRoute.filter((offer) => offer.id === 'combo_anchor' && offer.fixedScoreRoute).length === 1, 'fixed sector must offer one clearly marked scoring choice');
 assert(!afterScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'score route must not randomly reappear after its fixed sector');
 const bannedScoreRoute = buildTacticalDraftOffers({ seed: 'score-route', sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR, bannedIds: ['combo_anchor'] });
-assert(!bannedScoreRoute.some((offer) => offer.id === 'combo_anchor'), 'a banned scoring route must stay removed');
+assert(bannedScoreRoute.some((offer) => offer.id === 'combo_anchor' && offer.fixedScoreRoute),
+  'the one-time scoring route must ignore stale bans and remain available at Sector 5');
 for (const category of ['offense', 'mobility', 'defense', 'utility']) {
   assert(TACTICAL_DRAFT_AUGMENTS.filter((augment) => augment.category === category).length === 8,
     `expected 8 ${category} augments`);

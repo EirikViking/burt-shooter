@@ -69,6 +69,7 @@ const SHIP_BLUEPRINTS = [
         fantasy: 'A precision cannon ship that turns boss gates into damage races.',
         weakness: 'Tight lanes and slower handling make dense swarms harder.',
         recommendedBuildTags: ['boss', 'pierce', 'precision'],
+        shootSfx: 'shoot_railbreaker',
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-22.png', note: 'Final Railbreaker art needed.' }
     }],
     ['Drone Sovereign', 'sovereign', 'Command the swarm back. Drone-style side pressure and magnet control turn density into opportunity.', 'drone-sovereign', 40, 6.15, 94, 0.96, 12.2, 4, 0.21, 12, {
@@ -180,7 +181,7 @@ export const ShipData = SHIP_BLUEPRINTS.map(([
     weapon: {
         bullets,
         spread,
-        shootSfx: damage >= 1.5 ? 'shoot_heavy' : 'shoot_small'
+        shootSfx: metadata.shootSfx || (damage >= 1.5 ? 'shoot_heavy' : 'shoot_small')
     },
     visuals: {
         scale: 0.15,

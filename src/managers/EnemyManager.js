@@ -3276,16 +3276,13 @@ export class EnemyManager {
       role: profile.role || 'elite',
       sector: this.level
     });
-    playScene?.showToast?.(`ELITE SIGNAL: ${profile.displayName}`, {
-      fontSize: this.game.getWidth() < 620 ? 14 : 18,
-      fill: '#ffd166',
-      stroke: '#1c0b00',
-      strokeThickness: 4,
-      duration: 1500,
-      slot: 'top',
+    playScene?.showSpecialEnemySignal?.({
+      title: translateText('ELITE ARRIVAL'),
+      message: `${profile.displayName}\n${translateText('ARRIVAL GUARD ACTIVE')}`,
       type: 'elite_middle_ship',
       priority: 4,
-      maxWidth: this.game.getWidth() * 0.76
+      duration: 1450,
+      accent: profile.accent || 0xffd166
     });
     console.log(`[EliteMiddleShipSpawn] level=${this.level} wave=${this.currentWaveIndex + 1}/${this.normalWavesTotal} id=${profile.id} role=${profile.role} marketing=${marketingDebug}`);
     return enemy;
@@ -3335,16 +3332,13 @@ export class EnemyManager {
 
     const playScene = this.game?.scenes?.play;
     if (spawned.length >= 2) {
-      playScene?.showToast?.(translateText(spawned.length >= 3 ? 'ELITE TRIO INBOUND!' : 'ELITE DUO INBOUND!'), {
-        fontSize: this.game.getWidth() < 620 ? 15 : 19,
-        fill: '#ffd166',
-        stroke: '#1c0b00',
-        strokeThickness: 4,
-        duration: 1500,
-        slot: 'top',
+      playScene?.showSpecialEnemySignal?.({
+        title: translateText('ELITE ARRIVAL'),
+        message: `${translateText(spawned.length >= 3 ? 'ELITE TRIO INBOUND!' : 'ELITE DUO INBOUND!')}\n${translateText('ARRIVAL GUARD ACTIVE')}`,
         type: 'elite_middle_ship',
         priority: 4,
-        maxWidth: this.game.getWidth() * 0.76
+        duration: 1550,
+        accent: 0xffd166
       });
     }
     console.log(`[MultiEliteWave] level=${this.level} wave=${this.currentWaveIndex + 1} elites=${spawned.length} compensation=${JSON.stringify({
@@ -3772,16 +3766,7 @@ export class EnemyManager {
     }
     if (!marketingDebug && playScene && playScene.bulletManager) {
       const bm = playScene.bulletManager;
-      bm.playerBullets.forEach(b => {
-        b.active = false;
-        if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
-      });
-      bm.enemyBullets.forEach(b => {
-        b.active = false;
-        if (b.sprite && b.sprite.parent) b.sprite.parent.removeChild(b.sprite);
-      });
-      bm.playerBullets = [];
-      bm.enemyBullets = [];
+      bm.clearAll?.('boss_spawn');
       bulletsCleared = true;
     }
     console.log(`[BossSpawnProof] level=${level} hp=${boss.health} x=${Math.round(boss.x)} y=${Math.round(boss.y)} invulnMs=${boss.invulnerableUntilMs - boss.spawnedAtMs} bulletsCleared=${bulletsCleared} marketing=${marketingDebug}`);

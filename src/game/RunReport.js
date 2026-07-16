@@ -4,8 +4,9 @@ import {
   getRunContractRewardXp
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
+import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 
-const RUN_REPORT_VERSION = 12;
+const RUN_REPORT_VERSION = 13;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -22,16 +23,6 @@ function formatDuration(seconds) {
   const remainder = totalSeconds % 60;
   if (minutes <= 0) return `${remainder}s`;
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
-}
-
-function normalizeRunModeLabel(value) {
-  const mode = String(value || 'ranked').trim().toLowerCase();
-  if (mode === 'scout') return 'Scout Run';
-  if (mode === 'sector_start') return 'Sector Run';
-  if (mode === 'daily_signal') return 'Daily Cabinet Signal';
-  if (mode === 'unranked') return 'Practice Run';
-  if (mode === 'ranked_tactical') return 'Mayhem Tactical';
-  return 'Mayhem Pure';
 }
 
 function normalizeDeathSource(value) {
@@ -139,16 +130,18 @@ function buildRows(entries) {
     .map((entry) => ({
       id: entry.id,
       value: entry.value,
-      rawValue: entry.rawValue ?? entry.value
+      rawValue: Object.prototype.hasOwnProperty.call(entry, 'rawValue') ? entry.rawValue : entry.value
     }));
 }
 
 export function createRunReport(summary = {}) {
   const runtimeSeconds = toWholeNumber(summary.runElapsedSeconds);
   const score = toWholeNumber(summary.finalScore ?? summary.score);
-  const runMode = String(summary.runMode || 'ranked');
+  const runModeIdentity = getRunModeReportIdentity(summary.runMode);
+  const runMode = runModeIdentity.id || runModeIdentity.rawValue;
+  const canonicalRunMode = runModeIdentity.id;
   const reportedSectorReached = Math.max(1, toWholeNumber(summary.sectorReached ?? summary.levelReached, 1));
-  const sectorReached = runMode === 'daily_signal' && summary.runCleared === true
+  const sectorReached = canonicalRunMode === RUN_MODES.DAILY_SIGNAL && summary.runCleared === true
     ? Math.max(1, toWholeNumber(summary.dailySignalContract?.finishSector, reportedSectorReached))
     : reportedSectorReached;
   const shipId = summary.shipId || summary.selectedShipSpriteKey || null;
@@ -251,7 +244,7 @@ export function createRunReport(summary = {}) {
   };
   const rivalWingHistory = aceBountyHistory.filter((entry) => entry.rivalWingId).map((entry) => ({ rivalWingId: entry.rivalWingId, rivalWingNumber: entry.rivalWingNumber, formationId: entry.rivalWingFormationId, disciplineId: entry.rivalWingDisciplineId, volleyId: entry.rivalWingVolleyId, moraleId: entry.rivalWingMoraleId, sector: entry.sector }));
   const rivalWings = { completedCount: rivalWingHistory.length, availableVariants: Math.max(0, toWholeNumber(summary.aceBounties?.availableRivalWingVariants, 10000)), history: rivalWingHistory };
-  const dailyContract = runMode === 'daily_signal' && summary.dailySignalContract
+  const dailyContract = canonicalRunMode === RUN_MODES.DAILY_SIGNAL && summary.dailySignalContract
     ? {
         dailyKey: String(summary.dailySignalContract.dailyKey || '').trim(),
         rulesVersion: Math.max(1, toWholeNumber(summary.dailySignalContract.rulesVersion, 1)),
@@ -295,7 +288,10 @@ export function createRunReport(summary = {}) {
     createdAt: new Date().toISOString(),
     summary: {
       runMode,
-      runModeLabel: normalizeRunModeLabel(runMode),
+      runModeCanonical: canonicalRunMode,
+      runModeSourceValue: runModeIdentity.rawValue,
+      runModeCompatibility: runModeIdentity.compatibility,
+      runModeLabel: runModeIdentity.label,
       shipId,
       shipName,
       score,
@@ -317,7 +313,7 @@ export function createRunReport(summary = {}) {
       {
         id: 'run',
         rows: buildRows([
-          { id: 'mode', value: normalizeRunModeLabel(runMode), rawValue: runMode },
+          { id: 'mode', value: runModeIdentity.label, rawValue: runMode },
           { id: 'ship', value: shipName, rawValue: shipId || shipName },
           { id: 'score', value: score },
           { id: 'sector', value: sectorReached },
@@ -391,6 +387,9 @@ export function summarizeRunReport(report = null) {
   return {
     localOnly: Boolean(report.localOnly),
     runMode: report.summary?.runMode || null,
+    runModeCanonical: report.summary?.runModeCanonical || null,
+    runModeCompatibility: report.summary?.runModeCompatibility || null,
+    runModeLabel: report.summary?.runModeLabel || null,
     shipName: report.summary?.shipName || null,
     score: report.summary?.score || 0,
     sectorReached: report.summary?.sectorReached || 0,

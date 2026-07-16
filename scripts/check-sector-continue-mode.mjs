@@ -385,10 +385,8 @@ try {
   assert.equal(afterSectorStart.threatDiscoveryRaw, beforeSectorStart.threatDiscoveryRaw, 'sector_start must not write Threat Codex discoveries');
 
   const keyboardMenu = await loadProfile(page, sectorProgress);
-  assert.equal(keyboardMenu.menu?.focusedOption, 'launch');
-  await page.keyboard.press('ArrowDown');
-  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).menu?.focusedOption === 'scout', { timeout: 8000 });
-  await page.keyboard.press('ArrowDown');
+  assert.equal(keyboardMenu.menu?.focusedOption, 'launchTactical');
+  for (let index = 0; index < 4; index += 1) await page.keyboard.press('ArrowDown');
   const keyboardFocused = await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.menu?.focusedOption === 'sectorStart' ? state : null;
@@ -405,10 +403,10 @@ try {
   assert.equal(keyboardPlay.sectorStartChallenge?.playSector, 11);
 
   const rankedMenu = await loadProfile(page, makeProgress({ bestSector: 17, bestLevel: 17, pilotXp: 2200, bestScore: 11111 }));
-  assert.equal(rankedMenu.menu?.focusedOption, 'launch');
+  assert.equal(rankedMenu.menu?.focusedOption, 'launchTactical');
   await page.keyboard.press('Enter');
   const rankedPlay = await waitForScene(page, 'play');
-  assert.equal(rankedPlay.runMode, 'ranked');
+  assert.equal(rankedPlay.runMode, 'ranked_tactical');
   assert.equal(rankedPlay.level, 1);
   assert.equal(rankedPlay.scoreSubmissionAllowed, true);
   const rankedUsage = await storageSnapshot(page);

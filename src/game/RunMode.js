@@ -176,16 +176,73 @@ export const RUN_MODE_PROFILES = Object.freeze({
   })
 });
 
+const RUN_MODE_ALIASES = Object.freeze({
+  ranked: RUN_MODES.RANKED,
+  mayhem: RUN_MODES.RANKED,
+  pure: RUN_MODES.RANKED,
+  mayhem_pure: RUN_MODES.RANKED,
+  ranked_pure: RUN_MODES.RANKED,
+  ranked_tactical: RUN_MODES.MAYHEM_TACTICAL,
+  tactical: RUN_MODES.MAYHEM_TACTICAL,
+  mayhem_tactical: RUN_MODES.MAYHEM_TACTICAL,
+  tactical_mayhem: RUN_MODES.MAYHEM_TACTICAL,
+  daily_signal: RUN_MODES.DAILY_SIGNAL,
+  daily: RUN_MODES.DAILY_SIGNAL,
+  daily_challenge: RUN_MODES.DAILY_SIGNAL,
+  daily_cabinet_signal: RUN_MODES.DAILY_SIGNAL,
+  scout: RUN_MODES.SCOUT,
+  scout_run: RUN_MODES.SCOUT,
+  unranked: RUN_MODES.UNRANKED,
+  practice: RUN_MODES.UNRANKED,
+  practice_run: RUN_MODES.UNRANKED,
+  debug: RUN_MODES.UNRANKED,
+  debug_practice: RUN_MODES.UNRANKED,
+  sector_start: RUN_MODES.SECTOR_START,
+  sector_run: RUN_MODES.SECTOR_START,
+  sector_continue: RUN_MODES.SECTOR_START
+});
+
+function normalizeRunModeToken(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_');
+}
+
+export function parseRunMode(value) {
+  const token = normalizeRunModeToken(value);
+  return token ? RUN_MODE_ALIASES[token] || null : null;
+}
+
 export function normalizeRunMode(value) {
-  const mode = String(value || '').trim();
-  if (
-    mode === RUN_MODES.MAYHEM_TACTICAL ||
-    mode === RUN_MODES.DAILY_SIGNAL ||
-    mode === RUN_MODES.SCOUT ||
-    mode === RUN_MODES.UNRANKED ||
-    mode === RUN_MODES.SECTOR_START
-  ) return mode;
-  return RUN_MODES.RANKED;
+  return parseRunMode(value) || RUN_MODES.RANKED;
+}
+
+export function getRunModeReportIdentity(value) {
+  const rawValue = String(value ?? '').trim();
+  const id = parseRunMode(rawValue);
+  if (id) {
+    return {
+      id,
+      rawValue: rawValue || id,
+      label: RUN_MODE_PROFILES[id]?.shortLabel || id,
+      compatibility: normalizeRunModeToken(rawValue) === id ? 'canonical' : 'legacy_alias'
+    };
+  }
+  if (!rawValue) {
+    return {
+      id: null,
+      rawValue: null,
+      label: 'Legacy Ranked Run',
+      compatibility: 'missing_legacy_mode'
+    };
+  }
+  return {
+    id: null,
+    rawValue,
+    label: 'Unknown Run Mode',
+    compatibility: 'unknown_mode'
+  };
 }
 
 export function getRunModeProfile(mode) {
@@ -200,15 +257,24 @@ export function getRunModeNormalWaveScoreXpMultiplier(mode) {
 }
 
 export function isRankedRunMode(mode, { isDebugRun = false } = {}) {
-  return getRunModeProfile(mode).ranked === true && isDebugRun !== true;
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode !== null
+    && RUN_MODE_PROFILES[canonicalMode]?.ranked === true
+    && isDebugRun !== true;
 }
 
 export function canRunModeSubmitGlobalLeaderboard(mode, options = {}) {
-  return isRankedRunMode(mode, options) && getRunModeProfile(mode).submitsGlobalLeaderboard === true;
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode !== null
+    && isRankedRunMode(canonicalMode, options)
+    && RUN_MODE_PROFILES[canonicalMode]?.submitsGlobalLeaderboard === true;
 }
 
 export function canRunModeUnlockAchievements(mode, options = {}) {
-  return isRankedRunMode(mode, options) && getRunModeProfile(mode).unlocksAchievements === true;
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode !== null
+    && isRankedRunMode(canonicalMode, options)
+    && RUN_MODE_PROFILES[canonicalMode]?.unlocksAchievements === true;
 }
 
 export function canRunModeUseTacticalDraft(mode) {

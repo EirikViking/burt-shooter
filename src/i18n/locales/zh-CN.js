@@ -7,6 +7,8 @@ import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
 import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText.js';
+import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
+import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
@@ -1328,6 +1330,7 @@ const sourceText = Object.freeze({
   'CAREER INTEL BODY': '飞行员军衔是你的长期生涯信号。分数、扇区、首领、发现、无伤波次和通关都会提供 XP。\n\n距下一军衔 XP 表示这个本地档案离下一级还有多近。图鉴扫描是你亲自发现过的威胁。最高分是此档案中的最佳单局成绩。\n\n舰船解锁会读取这些生涯里程碑，所以失败的出击也能推进机库进度。',
   'RANK': '军衔',
   'YOUR LAUNCHES': '你的出击次数',
+  'FIRST FLIGHT': '首次出击',
   'MAX RANK': '最高军衔',
   'MAX': '最高',
   'TO': '到',
@@ -1383,8 +1386,10 @@ const sourceText = Object.freeze({
   'ACHIEVEMENT UNLOCKED': '成就已解锁',
   'Callsign On The Board': '呼号上榜',
   'Qualify for the global leaderboard.': '进入全球排行榜。',
-  'Top Of The Swarm': '虫群之巅',
-  'Reach #1 on the global leaderboard.': '登上全球排行榜第 1 名。',
+  'Swarm Elite': '虫群精英',
+  'Submit a 750,000-point ranked run.': '提交一场 750,000 分的排名出击。',
+  'Legacy Ranked Run': '旧版排名出击',
+  'Unknown Run Mode': '未知出击模式',
   'First Ranked Run': 'Shouci paiming chuji',
   'Finish any ranked run. Practice and Sector Start runs do not count.': 'Wancheng renyi paiming chuji. Practice he Sector Start bu ji ru.',
   'Past The Warmup': '热身结束',
@@ -1800,6 +1805,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN') }),
   patterns
 };

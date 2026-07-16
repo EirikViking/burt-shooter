@@ -211,7 +211,7 @@ try {
   });
 
   await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launch', 'menu launch focus', 30000);
+  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launchTactical', 'menu Tactical focus', 30000);
   checkpoint('menu-initial', menuInitial);
   await page.evaluate(() => {
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({

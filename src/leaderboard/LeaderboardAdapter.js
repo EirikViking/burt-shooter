@@ -11,6 +11,10 @@ import {
   createRunResultFromGame,
   normalizeLeaderboardEntries
 } from './LeaderboardTypes.js';
+import {
+  canRunModeSubmitGlobalLeaderboard,
+  canRunModeUnlockAchievements
+} from '../game/RunMode.js';
 
 const STEAM_UPLOAD_DIAGNOSTICS_KEY = 'novaSwarm.lastSteamUploadDiagnostics.v1';
 export const PENDING_STEAM_SUBMISSIONS_KEY = 'novaSwarm.pendingSteamLeaderboardSubmits.v1';
@@ -73,6 +77,8 @@ function clampScore(value) {
 }
 
 function sanitizePendingRunResult(runResult = {}) {
+  const runMode = runResult.runMode || null;
+  const isDebugRun = runResult.isDebugRun === true;
   return {
     name: runResult.playerName || runResult.name || null,
     playerName: runResult.playerName || runResult.name || null,
@@ -93,7 +99,12 @@ function sanitizePendingRunResult(runResult = {}) {
     sectorStart: runResult.sectorStart ?? runResult.startSector ?? null,
     highestSectorReached: runResult.highestSectorReached ?? null,
     finalSector: runResult.finalSector ?? null,
-    runMode: runResult.runMode || null,
+    runMode,
+    runModeSource: runResult.runModeSource || null,
+    isDebugRun,
+    eligibleForSubmission: runResult.eligibleForSubmission ?? canRunModeSubmitGlobalLeaderboard(runMode, { isDebugRun }),
+    eligibleForAchievements: runResult.eligibleForAchievements ?? canRunModeUnlockAchievements(runMode, { isDebugRun }),
+    submissionEligibilityVersion: Math.max(0, Math.floor(Number(runResult.submissionEligibilityVersion) || 0)),
     leaderboardName: runResult.leaderboardName || null,
     leaderboardKind: runResult.leaderboardKind || null,
     buildId: runResult.buildId || null,
@@ -170,10 +181,13 @@ function mergeSteamUploadDiagnostics(extra = {}) {
 }
 
 export class LeaderboardAdapter {
-  constructor() {
+  constructor(options = {}) {
     this.localProvider = new LocalLeaderboardProvider();
     this.cloudProvider = new CloudLeaderboardProvider();
     this.steamProvider = new SteamLeaderboardProvider();
+    this.onAcceptedPendingSteamSubmission = typeof options.onAcceptedPendingSteamSubmission === 'function'
+      ? options.onAcceptedPendingSteamSubmission
+      : null;
     this.availability = {
       steam: false,
       steamFriends: false,
@@ -366,8 +380,15 @@ export class LeaderboardAdapter {
       rankIndex: runResult.rankIndex,
       submissionId: runResult.submissionId,
       runMode: runResult.runMode || null,
-      leaderboardName: runResult.leaderboardName || STEAM_LEADERBOARD_NAME,
-      leaderboardKind: runResult.leaderboardKind || 'global',
+      isDebugRun: runResult.isDebugRun === true,
+      eligibleForSubmission: runResult.eligibleForSubmission !== false,
+      eligibleForAchievements: runResult.eligibleForAchievements !== false,
+      leaderboardName: runResult.eligibleForSubmission === false
+        ? null
+        : runResult.leaderboardName || STEAM_LEADERBOARD_NAME,
+      leaderboardKind: runResult.eligibleForSubmission === false
+        ? 'ineligible'
+        : runResult.leaderboardKind || 'global',
       updatedAt: new Date().toISOString()
     };
 
@@ -388,6 +409,13 @@ export class LeaderboardAdapter {
     }
 
     if (target === 'local') return result;
+
+    if (result.eligibleForSubmission === false) {
+      result.globalStatus = 'blocked';
+      result.globalProvider = target;
+      result.submissionBlockedReason = 'ineligible_run_mode';
+      return result;
+    }
 
     if (target === 'steam') {
       try {
@@ -683,8 +711,17 @@ export class LeaderboardAdapter {
     const remaining = [];
     for (const entry of queue) {
       try {
-        await this.steamProvider.submitScore(entry.runResult);
+        const steam = await this.steamProvider.submitScore(entry.runResult);
         submitted += 1;
+        try {
+          this.onAcceptedPendingSteamSubmission?.({
+            entry,
+            runResult: entry.runResult,
+            steam
+          });
+        } catch (error) {
+          console.warn('[LeaderboardAdapter] accepted pending Steam callback failed:', error?.message || error);
+        }
       } catch (error) {
         remaining.push({
           ...entry,
@@ -712,6 +749,6 @@ export class LeaderboardAdapter {
   }
 }
 
-export function createLeaderboardAdapter() {
-  return new LeaderboardAdapter();
+export function createLeaderboardAdapter(options = {}) {
+  return new LeaderboardAdapter(options);
 }

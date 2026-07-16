@@ -173,11 +173,13 @@ try {
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
   if (
     desktop.toast?.type !== 'aceContact'
-    || desktop.toast?.dossier?.primaryFontSize < 30
-    || desktop.toast?.dossier?.actionFontSize < 15
-    || desktop.toast?.dossier?.panelWidth > 760
-    || desktop.toast?.dossier?.panelHeight > 150
-    || desktop.toast?.dossier?.screenAreaRatio > 0.06
+    || desktop.toast?.dossier?.primaryFontSize < 28
+    || desktop.toast?.dossier?.actionFontSize < 14
+    || desktop.toast?.dossier?.panelWidth > 540
+    || desktop.toast?.dossier?.panelHeight > 135
+    || desktop.toast?.dossier?.screenAreaRatio > 0.04
+    || desktop.toast?.dossier?.edgeAligned !== true
+    || desktop.toast?.dossier?.placement !== 'left-edge'
     || !/DESTROY/i.test(desktop.toast?.dossier?.action || '')
     || !/DODGE/i.test(desktop.toast?.dossier?.danger || '')
   ) failures.push(`desktop Ace action briefing hierarchy missing: ${JSON.stringify(desktop.toast)}`);
@@ -277,6 +279,52 @@ try {
     failures.push(`Bundled pickup did not apply both rewards: ${JSON.stringify(bundledRewards)}`);
   }
 
+  const spawnOwnership = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const manager = play.powerupManager;
+    const before = manager.powerups.length;
+    const first = manager.spawnSpecific(700, 300, 'ghost', {
+      source: 'spawn_ownership_test',
+      spawnKey: 'runtime:ghost-reward:one'
+    });
+    const duplicate = manager.spawnSpecific(720, 300, 'ghost', {
+      source: 'spawn_ownership_test',
+      spawnKey: 'runtime:ghost-reward:one'
+    });
+    const legitimateSecond = manager.spawnSpecific(740, 300, 'ghost', {
+      source: 'spawn_ownership_test',
+      spawnKey: 'runtime:ghost-reward:two'
+    });
+    const created = manager.powerups.slice(before);
+    const debug = structuredClone(manager.getDebugState());
+    created.forEach((powerup) => {
+      powerup.active = false;
+    });
+    play.cleanupSkippedFrameVisuals('spawn_ownership_test');
+    return {
+      firstCreated: Boolean(first),
+      duplicateBlocked: duplicate === null,
+      legitimateSecondCreated: Boolean(legitimateSecond),
+      physicalPickupCount: created.length,
+      spawnIds: created.map((powerup) => powerup.spawnId),
+      spawnKeys: created.map((powerup) => powerup.spawnKey),
+      duplicateBlockedCount: debug.duplicateBlockedCount,
+      blockedDuplicates: debug.blockedDuplicates
+    };
+  });
+  report.scenarios.spawnOwnership = spawnOwnership;
+  if (
+    !spawnOwnership.firstCreated
+    || !spawnOwnership.duplicateBlocked
+    || !spawnOwnership.legitimateSecondCreated
+    || spawnOwnership.physicalPickupCount !== 2
+    || new Set(spawnOwnership.spawnIds || []).size !== 2
+    || spawnOwnership.spawnKeys?.join(',') !== 'runtime:ghost-reward:one,runtime:ghost-reward:two'
+    || spawnOwnership.duplicateBlockedCount < 1
+  ) {
+    failures.push(`logical pickup spawn ownership mismatch: ${JSON.stringify(spawnOwnership)}`);
+  }
+
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.tacticalDraftRescansRemaining = 0;
@@ -319,9 +367,10 @@ try {
     localized.toast?.type !== 'aceContact'
     || localized.toast?.dossier?.primaryFontSize < 24
     || localized.toast?.dossier?.actionFontSize < 12
-    || localized.toast?.dossier?.panelWidth > 640
-    || localized.toast?.dossier?.panelHeight > 140
-    || localized.toast?.dossier?.screenAreaRatio > 0.17
+    || localized.toast?.dossier?.panelWidth > 520
+    || localized.toast?.dossier?.panelHeight > 130
+    || localized.toast?.dossier?.screenAreaRatio > 0.13
+    || localized.toast?.dossier?.placement !== 'upper-center-edge-safe'
     || /DESTROY THE MARKED SHIP|DODGE:/.test(`${localized.toast?.dossier?.action || ''} ${localized.toast?.dossier?.danger || ''}`)
   ) failures.push(`compact localized Ace action briefing hierarchy missing: ${JSON.stringify(localized.toast)}`);
   if (!localized.toast?.bounds || localized.toast.bounds.x < 0 || localized.toast.bounds.x + localized.toast.bounds.width > 840 || localized.toast.bounds.y < 0 || localized.toast.bounds.y + localized.toast.bounds.height > 640) failures.push(`compact localized Ace dossier outside viewport: ${JSON.stringify(localized.toast?.bounds)}`);

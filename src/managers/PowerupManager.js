@@ -58,6 +58,8 @@ class Powerup {
     this.x = x;
     this.y = y;
     this.type = type;
+    this.spawnId = options.spawnId || null;
+    this.spawnKey = options.spawnKey || null;
     this.spawnSource = options.source || null;
     this.bundledPowerupTypes = Array.from(new Set(
       (Array.isArray(options.bundledPowerupTypes) ? options.bundledPowerupTypes : [])
@@ -1102,6 +1104,10 @@ export class PowerupManager {
     this.container = container;
     this.game = game;
     this.powerups = [];
+    this.nextSpawnSequence = 1;
+    this.spawnedEventKeys = new Map();
+    this.spawnHistory = [];
+    this.duplicateSpawnAttempts = [];
     this.dropsThisLevel = 0;
     this.dropsThisRun = 0; // Track total drops this run
     this.currentLevel = 1;
@@ -1180,9 +1186,11 @@ export class PowerupManager {
       return;
     }
 
-    const powerup = new Powerup(safeX, safeY, 'life');
-    this.powerups.push(powerup);
-    this.container.addChild(powerup.sprite);
+    const powerup = this.createPowerup(safeX, safeY, 'life', {
+      source: 'guaranteed_extra_life',
+      spawnKey: `guaranteed_extra_life:${this.currentLevel}`
+    });
+    if (!powerup) return;
 
     this.lastExtraLifeLevel = this.currentLevel;
     this.extraLifeSpawnedThisLevel = true;
@@ -1347,9 +1355,8 @@ export class PowerupManager {
       type = standardPowerups[Math.floor(Math.random() * standardPowerups.length)];
     }
 
-    const powerup = new Powerup(x, y, type);
-    this.powerups.push(powerup);
-    this.container.addChild(powerup.sprite);
+    const powerup = this.createPowerup(x, y, type, { source: 'random_drop' });
+    if (!powerup) return;
 
     console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)}. Chance: ${(cappedChance * 100).toFixed(1)}%`);
 
@@ -1367,6 +1374,7 @@ export class PowerupManager {
       powerup.update(delta, scene);
       if (!powerup.active) {
         this.container.removeChild(powerup.sprite);
+        powerup.sprite?.destroy?.({ children: true });
         return false;
       }
       return true;
@@ -1397,10 +1405,54 @@ export class PowerupManager {
       && !this.powerups.some((powerup) => powerup.type === 'nova_miracle' && powerup.active);
   }
 
-  spawnSpecific(x, y, type, options = {}) {
-    const powerup = new Powerup(x, y, type, options);
+  normalizeSpawnKey(value) {
+    const key = String(value || '').trim();
+    return key || null;
+  }
+
+  createPowerup(x, y, type, options = {}) {
+    const spawnKey = this.normalizeSpawnKey(options.spawnKey);
+    if (spawnKey && this.spawnedEventKeys.has(spawnKey)) {
+      const blocked = {
+        spawnKey,
+        source: options.source || 'specific',
+        type,
+        existingSpawnId: this.spawnedEventKeys.get(spawnKey),
+        blockedAt: Date.now()
+      };
+      this.duplicateSpawnAttempts.push(blocked);
+      if (this.duplicateSpawnAttempts.length > 24) this.duplicateSpawnAttempts.shift();
+      console.warn(`[PowerupManager] BLOCKED duplicate logical spawn key=${spawnKey} type=${type} source=${blocked.source}`);
+      return null;
+    }
+
+    const spawnId = `pickup-${this.nextSpawnSequence}`;
+    this.nextSpawnSequence += 1;
+    const powerup = new Powerup(x, y, type, {
+      ...options,
+      spawnId,
+      spawnKey
+    });
     this.powerups.push(powerup);
     this.container.addChild(powerup.sprite);
+    if (spawnKey) this.spawnedEventKeys.set(spawnKey, spawnId);
+    this.spawnHistory.push({
+      spawnId,
+      spawnKey,
+      source: powerup.spawnSource || 'specific',
+      type,
+      bundledPowerupTypes: [...powerup.bundledPowerupTypes],
+      x: Math.round(x),
+      y: Math.round(y),
+      spawnedAt: powerup.createdAt
+    });
+    if (this.spawnHistory.length > 64) this.spawnHistory.shift();
+    return powerup;
+  }
+
+  spawnSpecific(x, y, type, options = {}) {
+    const powerup = this.createPowerup(x, y, type, options);
+    if (!powerup) return null;
     if (options.countDrop) {
       this.lastSpawnTime = Date.now();
       this.dropsThisLevel++;
@@ -1415,5 +1467,25 @@ export class PowerupManager {
       : '';
     console.log(`[PowerupManager] SPAWNED ${type} at ${Math.round(x)},${Math.round(y)} source=${options.source || 'specific'}${bundleLabel}`);
     return powerup;
+  }
+
+  getDebugState() {
+    return {
+      activeCount: this.powerups.filter((powerup) => powerup?.active !== false).length,
+      duplicateBlockedCount: this.duplicateSpawnAttempts.length,
+      active: this.powerups
+        .filter((powerup) => powerup?.active !== false)
+        .map((powerup) => ({
+          spawnId: powerup.spawnId,
+          spawnKey: powerup.spawnKey,
+          source: powerup.spawnSource,
+          type: powerup.type,
+          bundledPowerupTypes: [...(powerup.bundledPowerupTypes || [])],
+          x: Math.round(Number(powerup.x) || 0),
+          y: Math.round(Number(powerup.y) || 0)
+        })),
+      recentSpawns: this.spawnHistory.slice(-16).map((entry) => ({ ...entry })),
+      blockedDuplicates: this.duplicateSpawnAttempts.slice(-8).map((entry) => ({ ...entry }))
+    };
   }
 }
