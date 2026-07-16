@@ -1,0 +1,35 @@
+Steam Console Client (c) Valve Corporation - version 1782532820
+-- type 'quit' to exit --
+Loading Steam API...OK
+Logging in using cached credentials.
+Logging in user 'gaunziman' [U:1:993727780] to Steam Public...OK
+Waiting for client config...OK
+Waiting for user info...OK
+[2026-07-17 01:01:07]: Starting AppID 4765070 build (flags 0x0).
+[2026-07-17 01:01:07]: Building depot 4765071...
+
+Building file mapping...
+Scanning content
+............. 115.7MB (12%)
+.............. 233.3MB (24%)
+.................. 385.9MB (40%)
+................ 515.9MB (53%)
+............. 623.1MB (65%)
+............... 754.8MB (78%)
+............. 861.4MB (89%)
+............ 957.8MB (100%)
+Uploading content...
+ 2.1MB (11%)
+ 4.2MB (23%)
+ 7.1MB (39%)
+. 9.2MB (51%)
+ 12.1MB (67%)
+ 14.2MB (78%)
+. 17.0MB (94%)
+
+[2026-07-17 01:01:32]: Successfully finished AppID 4765070 build (BuildID 24249013).
+Unloading Steam API...OK
+Redirecting stderr to 'C:\steamcmd\logs\stderr.txt'
+Logging directory: 'C:\steamcmd/logs'
+[  0%] Checking for available updates...
+[----] Verifying installation...

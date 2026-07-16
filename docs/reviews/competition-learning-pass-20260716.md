@@ -91,4 +91,6 @@ The How To Play suite covers 1280x720, 1920x1080, 760x640, and 3840x2160 at 100%
 
 ## Release boundary
 
-The intended deployment target is only the private Steam branch `sector-continue-test`. Public/default, Steamworks settings, store metadata, pricing, community posts, leaderboard identities/routing, score and XP formulas, achievement IDs, save identity/version, and Steam Cloud paths are outside this pass.
+The deployed target is only the private Steam branch `sector-continue-test`: BuildID `24249013`, depot manifest `7112821787605154596`. Independent SteamCMD snapshots prove public/default remained on BuildID `24245709`.
+
+Steamworks settings, store metadata, pricing, community posts, leaderboard identities/routing, score and XP formulas, achievement IDs, save identity/version, and Steam Cloud paths remained outside this pass.
