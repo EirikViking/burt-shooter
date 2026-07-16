@@ -1,12 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-16 Named Rival Ladder major update (verification in progress)
+## 2026-07-16 Named Rival Ladder major update (deployed to Steam test)
 
 - Current competitor research and a separate code audit converged on specificity rather than another game system: leading score-attack games repeatedly turn the next run into a concrete target, while Nova Swarm already had personal-best chase, mode-specific boards, global threshold cues, and result ceremony but never named the pilot directly ahead.
 - The existing high-score card now hands off to a read-only, mode-correct leaderboard snapshot after the personal best is beaten, or after scoring begins when no personal best exists. Outside a full downloaded top 40 it truthfully says `TOP 40 GATE`; once inside it names the exact next rival and +1 tie-breaking gap; above the snapshot it says `PROJECTED #1` and requires submission to confirm.
 - Passing the gate or a named rival triggers a compact gold in-panel sweep and the existing high-score chime, then immediately locks the next target. Game Over reuses the same exact named gate/rival goal instead of the generic `climb one global rank`. No additional HUD panel, network request, board, run mode, save field, or progression system was added.
 - The existing placement/qualification analyzer remains unchanged. The new projection is read-only, excludes `isCurrentPlayer`, handles ties, unsorted rows, empty/offline state, top-40 truncation, and Pure/Tactical board selection through the existing adapter. Daily, Scout, and Sector behavior remain unchanged.
-- All new copy is translated in all eight supported locales. Focused projection logic, syntax, `check:i18n`, `build:current`, all-eight-language `check:i18n-ui`, HUD/Game Over target and bounds checks, leaderboard QA, achievement guards, controller flow, run-mode coverage, gameplay smoke, UI/HUD readability, Electron smoke/performance, Steam Cloud isolation, and Steam bridge checks pass. The isolated worktree now has the verified official SDK runtime; strict packaged gates and the Steam test upload remain pending.
+- All new copy is translated in all eight supported locales. Focused projection logic, syntax, `check:i18n`, `build:current`, all-eight-language `check:i18n-ui`, HUD/Game Over target and bounds checks, leaderboard QA, achievement guards, controller flow, run-mode coverage, gameplay smoke, UI/HUD readability, Electron smoke/performance, Steam Cloud isolation, and Steam bridge checks pass.
+- Source commit `8ccc0b7756af316dff61852645ba24867c00e44b` packaged as `v2026-07-16_08-34-41`. Strict native runtime, packaged smoke, controls, fresh-profile isolation, performance, desktop-package review, and a live read-only `nova_swarm_global_score_v2` probe passed. The board reported 80 entries and the probe submitted no score.
+- SteamCMD uploaded BuildID `24234529`, depot manifest `6554196712868931758`, to `sector-continue-test`. Independent post-upload app-info verification confirmed that test branch while public/default remained BuildID `24218172`. Test-branch rollback is BuildID `24232499`; source rollback is `git revert 8ccc0b7756af316dff61852645ba24867c00e44b`.
 
 ## 2026-07-16 Combat continuity major update (deployed to Steam test)
 
