@@ -137,6 +137,15 @@ import {
 } from '../game/RunMode.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
 import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
+import {
+  createCombatTelemetryState,
+  getCombatDamageSourceLabel,
+  getCombatDamageSourceForBullet,
+  getCombatTelemetrySummary,
+  recordCombatDamage,
+  recordCombatProjectileHit,
+  recordCombatVolley
+} from '../game/CombatTelemetry.js';
 
 const BOSS_WARNING_JOKES = [
   'Mission Control is hiding under the desk.',
@@ -192,6 +201,7 @@ export class PlayScene {
     this.inputManager = new InputManager();
     this.touchControls = new NullTouchControls();
     this.player = null;
+    this.combatTelemetry = createCombatTelemetryState();
     this.companionShip = null; // Double ship powerup from hijacker rescue
     this.enemyManager = null;
     this.bulletManager = null;
@@ -651,6 +661,7 @@ export class PlayScene {
     };
 
     this.gameTime = 0;
+    this.combatTelemetry = createCombatTelemetryState();
     this.shownCabinetLogIds.clear();
     this.lastCabinetLog = null;
     this.totalKills = 0;
@@ -3638,7 +3649,8 @@ export class PlayScene {
           if (!this.player.canShoot()) return;
           const bullets = this.player.shoot();
           this.markGrazeBreakShot(bullets);
-          bullets.forEach(bullet => this.bulletManager.addPlayerBullet(bullet));
+          const launchedBullets = bullets.filter((bullet) => this.bulletManager.addPlayerBullet(bullet));
+          recordCombatVolley(this.combatTelemetry, launchedBullets);
 
           // TASK 4: Shooting sound with health check
           this.playShootSoundWithHealthCheck();
@@ -4745,7 +4757,8 @@ export class PlayScene {
       if (!enemy?.active) return;
       const dist = Math.hypot((enemy.x || 0) - x, (enemy.y || 0) - y);
       if (dist > radius + (enemy.radius || 16)) return;
-      const destroyed = enemy.takeDamage(damage);
+      this.recordCombatProjectileHit(bullet);
+      const destroyed = this.applyCombatDamage(enemy, damage, 'bomb');
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xffaa00);
       if (destroyed) {
         this.addNormalWaveScore(enemy.scoreValue || 0, 'baseScore', enemy);
@@ -4761,7 +4774,8 @@ export class PlayScene {
     if (hijacker?.active) {
       const dist = Math.hypot((hijacker.x || 0) - x, (hijacker.y || 0) - y);
       if (dist <= radius + (hijacker.radius || 18)) {
-        const destroyed = hijacker.takeDamage(damage);
+        this.recordCombatProjectileHit(bullet);
+        const destroyed = this.applyCombatDamage(hijacker, damage, 'bomb');
         this.particleManager?.createHitSpark(hijacker.x, hijacker.y, 0xffaa00);
         if (destroyed) this.particleManager?.createExplosion(hijacker.x, hijacker.y, 0xff9900);
       }
@@ -5204,7 +5218,8 @@ export class PlayScene {
           this.detonateBombBullet(bullet, 'impact');
           continue;
         }
-        const destroyed = enemy.takeDamage(bulletProxy.damage, {
+        this.recordCombatProjectileHit(bullet);
+        const destroyed = this.applyCombatDamage(enemy, bulletProxy.damage, getCombatDamageSourceForBullet(bullet), {
           impactX: event.impactX,
           impactY: event.impactY
         });
@@ -5291,7 +5306,8 @@ export class PlayScene {
               return;
             }
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_hijacker_hit');
-            const destroyed = hijacker.takeDamage(bullet.damage);
+            this.recordCombatProjectileHit(bullet);
+            const destroyed = this.applyCombatDamage(hijacker, bullet.damage, getCombatDamageSourceForBullet(bullet));
 
             if (destroyed) {
               // Hijacker explosion
@@ -5454,7 +5470,8 @@ export class PlayScene {
             if (!this.claimPlayerBulletTargetHit(bullet, bonusDrone)) return;
             collisionStats.playerBulletAmbientHits += 1;
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_ambient_hit');
-            const destroyed = bonusDrone.takeDamage(bullet.damage || 1);
+            this.recordCombatProjectileHit(bullet);
+            const destroyed = this.applyCombatDamage(bonusDrone, bullet.damage || 1, getCombatDamageSourceForBullet(bullet));
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
               let appliedScore = 0;
@@ -5653,6 +5670,38 @@ export class PlayScene {
 
   claimPlayerBulletTargetHit(bullet, target) {
     return claimPiercingTargetHit(bullet, target);
+  }
+
+  recordCombatProjectileHit(bullet) {
+    return recordCombatProjectileHit(this.combatTelemetry, bullet);
+  }
+
+  recordCombatVolley(bullets = []) {
+    return recordCombatVolley(this.combatTelemetry, bullets);
+  }
+
+  applyCombatDamage(target, amount, sourceId = 'other', options = undefined) {
+    if (!target || typeof target.takeDamage !== 'function') return false;
+    const requestedDamage = Math.max(0, Number(amount) || 0);
+    const healthBefore = Number(target.health ?? target.hp);
+    const destroyed = target.takeDamage(requestedDamage, options);
+    const healthAfter = Number(target.health ?? target.hp);
+    let effectiveDamage = 0;
+    if (Number.isFinite(healthBefore) && Number.isFinite(healthAfter)) {
+      effectiveDamage = Math.max(0, healthBefore - Math.max(0, healthAfter));
+    } else if (destroyed === true) {
+      effectiveDamage = requestedDamage;
+    }
+    recordCombatDamage(this.combatTelemetry, {
+      sourceId,
+      amount: effectiveDamage,
+      elapsedSeconds: this.gameTime
+    });
+    return destroyed;
+  }
+
+  getCombatTelemetrySummary() {
+    return getCombatTelemetrySummary(this.combatTelemetry, this.gameTime);
   }
 
   // TASK D: Procedural starfield background with parallax layers
@@ -8907,9 +8956,26 @@ export class PlayScene {
     pilotOrdersLine.zIndex = 7;
     overlay.addChild(pilotOrdersLine);
 
-    const tacticalDraftLine = createText([this.getPauseTacticalDraftSummary(), this.getPauseTacticalDirectiveSummary()].join('\n'), {
+    const combatTelemetryLine = createText(this.getPauseCombatTelemetrySummary(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: Math.round(10 * Math.min(uiScale, 1.2)),
+      fontSize: Math.round(9 * Math.min(uiScale, 1.2)),
+      fontWeight: 'bold',
+      fill: '#8df6ff',
+      stroke: '#031323',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    combatTelemetryLine.anchor.set(0.5);
+    combatTelemetryLine.position.set(centerX, panelY + 192 * uiScale);
+    combatTelemetryLine.zIndex = 7;
+    overlay.addChild(combatTelemetryLine);
+
+    const tacticalDraftLine = createText([
+      this.getPauseTacticalDraftSummary(),
+      this.getPauseTacticalDirectiveSummary()
+    ].join('\n'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: Math.round(9 * Math.min(uiScale, 1.2)),
       fontWeight: 'bold',
       fill: '#fff3a0',
       stroke: '#031323',
@@ -8917,16 +8983,16 @@ export class PlayScene {
       align: 'center'
     });
     tacticalDraftLine.anchor.set(0.5);
-    tacticalDraftLine.position.set(centerX, panelY + 196 * uiScale);
+    tacticalDraftLine.position.set(centerX, panelY + 216 * uiScale);
     tacticalDraftLine.zIndex = 7;
     overlay.addChild(tacticalDraftLine);
 
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 246 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 294 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 342 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 390 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 438 * uiScale, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 268 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 316 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 364 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 412 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 460 * uiScale, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.closeTacticalLoadoutOverlay();
@@ -8957,6 +9023,7 @@ export class PlayScene {
       powerupChip,
       powerupValue: powerupChip.valueText,
       pilotOrdersValue: pilotOrdersLine,
+      combatTelemetryValue: combatTelemetryLine,
       tacticalDraftValue: tacticalDraftLine,
       leftRadar,
       rightRadar,
@@ -8986,7 +9053,11 @@ export class PlayScene {
     decor.livesChip?.fitText?.();
     decor.powerupChip?.fitText?.();
     if (decor.pilotOrdersValue) decor.pilotOrdersValue.text = this.getPausePilotOrdersSummary();
-    if (decor.tacticalDraftValue) decor.tacticalDraftValue.text = [this.getPauseTacticalDraftSummary(), this.getPauseTacticalDirectiveSummary()].join('\n');
+    if (decor.combatTelemetryValue) decor.combatTelemetryValue.text = this.getPauseCombatTelemetrySummary();
+    if (decor.tacticalDraftValue) decor.tacticalDraftValue.text = [
+      this.getPauseTacticalDraftSummary(),
+      this.getPauseTacticalDirectiveSummary()
+    ].join('\n');
   }
 
   getPausePowerupSummary(now = Date.now()) {
@@ -9007,6 +9078,19 @@ export class PlayScene {
     return label;
   }
 
+  getPauseCombatTelemetrySummary() {
+    const telemetry = this.getCombatTelemetrySummary();
+    const damage = Math.round(telemetry.totalDamage).toLocaleString('en-US');
+    const average = Math.round(telemetry.averageDps).toLocaleString('en-US');
+    const peak = Math.round(telemetry.peakDps).toLocaleString('en-US');
+    const accuracy = Math.round(telemetry.accuracyPercent);
+    const source = translateText(getCombatDamageSourceLabel(telemetry.topSourceId));
+    return translateText(
+      'DAMAGE {damage} // AVG {average} DPS // PEAK {peak} // ACC {accuracy}% // TOP {source}',
+      { damage, average, peak, accuracy, source }
+    );
+  }
+
   getPauseDebugState() {
     const decor = this.pauseMenuDecor;
     return {
@@ -9016,8 +9100,10 @@ export class PlayScene {
       lives: decor?.livesValue?.text ?? null,
       powerup: decor?.powerupValue?.text ?? null,
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
+      combatTelemetryText: decor?.combatTelemetryValue?.text ?? null,
       tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
       tacticalDirective: this.getPauseTacticalDirectiveSummary(),
+      combatTelemetry: this.getCombatTelemetrySummary(),
       humor: this.lastPauseHumor ? { ...this.lastPauseHumor } : null,
       aceBounty: this.getAceBountyDebugState(),
       tacticalLoadout: this.tacticalLoadoutOverlay?.getDebugState?.() || null
@@ -14607,7 +14693,7 @@ export class PlayScene {
       if (!enemy?.active || enemy.kind === 'boss') continue;
       const damage = Math.max(100000, (Number(enemy.health) || 1) + (Number(enemy.shieldHealth) || 0) + 1000);
       try {
-        enemy.takeDamage?.(damage);
+        this.applyCombatDamage(enemy, damage, 'other');
       } catch (error) {
         console.warn('[NovaMiracle] enemy damage failed', error);
       }
@@ -15808,6 +15894,7 @@ export class PlayScene {
 
   triggerGrazeBreak(playerBullet, enemyBullet) {
     if (!playerBullet?.active || !enemyBullet?.active) return null;
+    this.recordCombatProjectileHit(playerBullet);
 
     const impactX = Number.isFinite(enemyBullet.x) ? enemyBullet.x : playerBullet.x;
     const impactY = Number.isFinite(enemyBullet.y) ? enemyBullet.y : playerBullet.y;
@@ -15836,7 +15923,11 @@ export class PlayScene {
       const dist = Math.hypot((enemy.x || 0) - impactX, (enemy.y || 0) - impactY);
       if (dist > radius + (enemy.radius || 16)) continue;
       enemiesHit += 1;
-      const destroyed = enemy.takeDamage(Math.max(1.25, Number(playerBullet.damage || 1) * 1.25));
+      const destroyed = this.applyCombatDamage(
+        enemy,
+        Math.max(1.25, Number(playerBullet.damage || 1) * 1.25),
+        'graze_break'
+      );
       this.particleManager?.createHitSpark(enemy.x, enemy.y, 0xff66ff);
       if (destroyed) {
         enemiesDestroyed += 1;
@@ -16002,7 +16093,7 @@ export class PlayScene {
         if (dist > radius) return;
 
         enemy.__traitImpactSource = true;
-        const destroyed = enemy.takeDamage(splashDamage);
+        const destroyed = this.applyCombatDamage(enemy, splashDamage, 'ship_trait');
         enemy.__traitImpactSource = false;
         splashed += 1;
         if (this.particleManager) this.particleManager.createHitSpark(enemy.x, enemy.y, accent);
@@ -16113,7 +16204,7 @@ export class PlayScene {
 
       // Deal damage
       const chainDamage = baseDamage * damageMultiplier;
-      const destroyed = nearest.takeDamage(chainDamage);
+      const destroyed = this.applyCombatDamage(nearest, chainDamage, 'chain_lightning');
 
       if (destroyed) {
         // Award score
@@ -16609,7 +16700,11 @@ export class PlayScene {
         if (forceTarget || dist <= damageRadius + (enemy.radius || 0)) {
           damagedEnemies.add(enemy);
           const hpBefore = Number(enemy.health) || 0;
-          const destroyed = enemy.takeDamage(damage);
+          const destroyed = this.applyCombatDamage(
+            enemy,
+            damage,
+            fusionId === 'sky_verdict' ? 'tactical_fusion' : 'orbital_strike'
+          );
           debug.damageEvents.push({
             kind: enemy.kind || 'enemy',
             type: enemy.type || enemy.profile?.id || null,

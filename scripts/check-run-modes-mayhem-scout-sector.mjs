@@ -322,7 +322,7 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(deck.cards?.daily?.label, 'DAILY CHALLENGE', `${label}: Daily label`);
   assert.equal(deck.cards?.daily?.role, 'activity', `${label}: Daily role`);
   assert.equal(deck.cards?.scout?.label, 'SCOUT RUN', `${label}: Scout label`);
-  assert.equal(deck.cards?.scout?.sublabel, 'PRACTICE', `${label}: Scout sublabel`);
+  assert.match(deck.cards?.scout?.sublabel || '', /^ANOMALY: (CALIBRATION|BULLET SCHOOL|BOSS LAB)$/, `${label}: Scout anomaly sublabel`);
   assert.equal(deck.cards?.scout?.role, 'practice', `${label}: Scout role`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should not carry paragraph body text`);
   assert.equal(deck.cards?.sector?.label, 'SECTOR RUN', `${label}: Sector label`);
@@ -493,7 +493,11 @@ try {
   assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*spectacular build/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
-  assert.equal(settledMenu.menu?.scoutRun?.buttonSubtext, 'PRACTICE');
+  assert.match(
+    settledMenu.menu?.scoutRun?.buttonSubtext || '',
+    /^ANOMALY: (CALIBRATION|BULLET SCHOOL|BOSS LAB)$/,
+    'Scout launch card should expose the selected anomaly'
+  );
   assert.equal(settledMenu.menu?.sectorStart?.buttonText, 'SECTOR RUN');
   assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'CHECKPOINT PUSH');
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -559,8 +563,35 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-tactical-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
-  assert.match(scoutFocus.menu?.missionBriefing?.body || '', /PRACTICE.*UNRANKED[\s\S]*Lower-pressure combat[\s\S]*learning routes[\s\S]*testing ships[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  assert.match(
+    scoutFocus.menu?.missionBriefing?.body || '',
+    /PRACTICE.*UNRANKED[\s\S]*ANOMALY: CALIBRATION[\s\S]*Lower-pressure route and hull practice[\s\S]*Scout pressure.*Scout bosses[\s\S]*LEFT\/RIGHT: CHANGE ANOMALY[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i
+  );
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', {
+    key: 'ArrowRight',
+    code: 'ArrowRight',
+    bubbles: true,
+    cancelable: true
+  })));
+  await page.waitForTimeout(180);
+  const bulletSchoolFocus = await readState(page);
+  assert.equal(bulletSchoolFocus.menu?.focusedOption, 'scout', 'cycling an anomaly should keep Scout focused');
+  assert.equal(bulletSchoolFocus.menu?.scoutRun?.anomaly?.id, 'bullet_school');
+  assert.equal(bulletSchoolFocus.menu?.scoutRun?.buttonSubtext, 'ANOMALY: BULLET SCHOOL');
+  assert.match(
+    bulletSchoolFocus.menu?.missionBriefing?.body || '',
+    /ANOMALY: BULLET SCHOOL[\s\S]*Ranked-speed shots and firing pressure with Scout sustain/i
+  );
+  await page.screenshot({ path: path.join(outputDir, 'menu-scout-bullet-school.png'), fullPage: false });
+  await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', {
+    key: 'ArrowLeft',
+    code: 'ArrowLeft',
+    bubbles: true,
+    cancelable: true
+  })));
+  await page.waitForTimeout(180);
+  assert.equal((await readState(page)).menu?.scoutRun?.anomaly?.id, 'calibration', 'Scout anomaly should cycle back deterministically');
   const sectorFocus = await focusMenuOption(page, 'sectorStart');
   assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
   assert.match(sectorFocus.menu?.missionBriefing?.body || '', /CHECKPOINT PRACTICE.*UNRANKED[\s\S]*Start from checkpoints unlocked in Mayhem[\s\S]*practice later sectors[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*Sector records stay local/i);
@@ -841,7 +872,8 @@ try {
   await page.evaluate(() => window.__game.startGame(undefined, { runMode: 'scout' }));
   const scoutPlay = await waitForScene(page, 'play');
   assert.equal(scoutPlay.runMode, RUN_MODES.SCOUT);
-  assert.equal(scoutPlay.runModeProfile?.difficultyProfileId, 'scout_lower_pressure_v1');
+  assert.equal(scoutPlay.scoutAnomaly?.id, 'calibration');
+  assert.equal(scoutPlay.runModeProfile?.difficultyProfileId, 'scout_lower_pressure_v1:calibration');
   assert.equal(scoutPlay.scoreSubmissionAllowed, false);
   assert.equal(scoutPlay.runModeProfile?.unlocksAchievements, false);
   await page.evaluate(() => {

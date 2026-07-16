@@ -10,6 +10,7 @@ import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
+import { getCompetitionLearningSourceText } from '../competitionLearningSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
@@ -1806,6 +1807,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN') }),
   patterns
 };

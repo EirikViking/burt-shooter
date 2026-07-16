@@ -114,6 +114,7 @@ try {
     game.score = 123456;
     game.level = 7;
     game.lives = 1;
+    game.runMode = 'ranked_tactical';
     player.activePowerup = {
       type: 'slow_time',
       expiresAt: Date.now() + 6500,
@@ -144,6 +145,7 @@ try {
       },
       bounds: {
         pilotOrders: toBounds(play.pauseMenuDecor?.pilotOrdersValue),
+        combatTelemetry: toBounds(play.pauseMenuDecor?.combatTelemetryValue),
         tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
         resume: toBounds(play.pauseButtons?.[0])
       }
@@ -176,7 +178,8 @@ try {
     failures.push(`full tactical loadout did not expose every grouped augment: ${JSON.stringify(loadout.tacticalLoadout)}`);
   }
   const overlaps = (a, b, margin = 2) => a && b && a.x < b.x + b.width + margin && a.x + a.width + margin > b.x && a.y < b.y + b.height + margin && a.y + a.height + margin > b.y;
-  if (overlaps(state.bounds?.pilotOrders, state.bounds?.tacticalDraft)) failures.push('pilot orders and tactical draft lines overlap');
+  if (overlaps(state.bounds?.pilotOrders, state.bounds?.combatTelemetry)) failures.push('pilot orders and combat telemetry lines overlap');
+  if (overlaps(state.bounds?.combatTelemetry, state.bounds?.tacticalDraft)) failures.push('combat telemetry and tactical draft lines overlap');
   if (overlaps(state.bounds?.tacticalDraft, state.bounds?.resume)) failures.push('tactical draft line overlaps Resume button');
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
@@ -207,6 +210,7 @@ try {
     return {
       debug: play.getPauseDebugState(),
       bounds: {
+        combatTelemetry: toBounds(play.pauseMenuDecor?.combatTelemetryValue),
         tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
         resume: toBounds(play.pauseButtons?.[0]),
         quit: toBounds(play.pauseButtons?.[4])
@@ -216,6 +220,7 @@ try {
   const compactScreenshot = path.join(outputDir, 'pause-context-chips-compact.png');
   await page.screenshot({ path: compactScreenshot, fullPage: true });
   if (!/MAGNET/i.test(compact.debug?.tacticalDraft || '') || !/\+4/.test(compact.debug?.tacticalDraft || '')) failures.push('compact tactical loadout summary missing');
+  if (overlaps(compact.bounds?.combatTelemetry, compact.bounds?.tacticalDraft)) failures.push('compact combat telemetry overlaps tactical loadout');
   if (overlaps(compact.bounds?.tacticalDraft, compact.bounds?.resume)) failures.push('compact tactical loadout overlaps Resume');
   for (const [label, bounds] of Object.entries(compact.bounds || {})) {
     if (!bounds || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > 762 || bounds.y + bounds.height > 642) {

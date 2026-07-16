@@ -65,6 +65,9 @@ export function normalizeScoutRunRecord(raw = {}) {
     bossesKilled: floor(raw.bossesKilled, 0),
     wavesCleared: floor(raw.wavesCleared, 0),
     runCleared: Boolean(raw.runCleared),
+    scoutAnomalyId: normalizeShipText(raw.scoutAnomalyId),
+    scoutAnomalyName: normalizeShipText(raw.scoutAnomalyName),
+    scoutAnomalyRuleSummary: normalizeShipText(raw.scoutAnomalyRuleSummary),
     source: 'scout_local_best'
   };
 }
@@ -110,7 +113,10 @@ export function createScoutRunRecord(summary = {}, {
     runElapsedSeconds: summary.runElapsedSeconds,
     bossesKilled: summary.bossesKilled,
     wavesCleared: summary.wavesCleared,
-    runCleared: summary.runCleared
+    runCleared: summary.runCleared,
+    scoutAnomalyId: summary.scoutAnomalyId,
+    scoutAnomalyName: summary.scoutAnomalyName,
+    scoutAnomalyRuleSummary: summary.scoutAnomalyRuleSummary
   });
 }
 

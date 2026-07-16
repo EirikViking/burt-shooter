@@ -12,6 +12,10 @@ import {
 import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getRunContractRewardXpForRun, normalizeRunContractsState } from './RunContracts.js';
+import {
+  normalizeShipMasteryMap,
+  recordShipMasteryRun
+} from './ShipMastery.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
@@ -322,7 +326,7 @@ export function normalizeHangarProgress(raw = {}) {
     noHitSectors: floor(raw.noHitSectors),
     clearWithLivesRemaining: floor(raw.clearWithLivesRemaining),
     highestScoreMultiplier: Math.max(1, Number(raw.highestScoreMultiplier) || 1),
-    shipSpecificMilestones: raw.shipSpecificMilestones && typeof raw.shipSpecificMilestones === 'object' ? { ...raw.shipSpecificMilestones } : {},
+    shipSpecificMilestones: normalizeShipMasteryMap(raw.shipSpecificMilestones),
     discoveredThreatIds: Array.isArray(raw.discoveredThreatIds) ? [...new Set(raw.discoveredThreatIds.map(String))] : [],
     defeatedBossIds: Array.isArray(raw.defeatedBossIds) ? [...new Set(raw.defeatedBossIds.map(String))] : [],
     runThemesSurvived: Array.isArray(raw.runThemesSurvived) ? [...new Set(raw.runThemesSurvived.map(String))] : [],
@@ -676,6 +680,7 @@ export function applyRunProgression(summary = {}) {
   const xpGained = calculatePilotXpForRun(summary);
   const nextXp = previous.pilotXp + xpGained;
   const nextRank = getRankFromPilotXp(nextXp);
+  const shipMastery = recordShipMasteryRun(previous.shipSpecificMilestones, summary);
   const newRanksThisRun = [];
   for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
     newRanksThisRun.push(rank);
@@ -701,6 +706,7 @@ export function applyRunProgression(summary = {}) {
     discoveredThreatIds: Array.isArray(summary.discoveredThreatIds) ? summary.discoveredThreatIds : [],
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],
     runThemesSurvived: summary.runTheme ? [summary.runTheme] : [],
+    shipSpecificMilestones: shipMastery.milestones,
     newRanksThisRun
   }, {
     preserveLastUnlocks: false,
@@ -723,7 +729,8 @@ export function applyRunProgression(summary = {}) {
     xpGained,
     newRanksThisRun,
     newlyUnlockedShipIds: next.lastNewlyUnlockedShipIds,
-    rankProgress: next.rankProgress
+    rankProgress: next.rankProgress,
+    shipMastery
   };
 }
 

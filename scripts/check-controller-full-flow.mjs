@@ -68,7 +68,7 @@ expectText('scripts/check-controller-only-flow.mjs', 'pause opened by controller
 expectText('scripts/check-controller-only-flow.mjs', 'game resumed by controller B', 'resume controller assertion');
 expectText('scripts/check-controller-only-flow.mjs', 'controller disconnect auto-paused gameplay', 'controller disconnect pause guard');
 expectText('scripts/check-controller-only-flow.mjs', 'controller initials entry', 'game over controller initials assertion');
-expectText('scripts/check-controller-only-flow.mjs', 'submitted score continued to runback by controller A', 'result/runback controller assertion');
+expectText('scripts/check-controller-only-flow.mjs', 'score submitted directly to runback from controller initials', 'result/runback controller assertion');
 expectText('scripts/check-controller-only-flow.mjs', 'highscores opened by controller Y', 'leaderboard controller assertion');
 
 expectText('scripts/check-hangar-controller-details.mjs', 'controller focused visible Details action', 'visible Details action focus assertion');

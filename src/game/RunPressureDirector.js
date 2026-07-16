@@ -36,7 +36,7 @@ export class RunPressureDirector {
   }
 
   getMultipliers() {
-    const profileMultipliers = getRunModeProfile(this.game?.runMode).pressureMultipliers || {};
+    const profileMultipliers = this.getRunModeProfile().pressureMultipliers || {};
     if (!this.enabled) {
       return {
         fireChanceMult: finite(profileMultipliers.fireChanceMult),
@@ -59,7 +59,7 @@ export class RunPressureDirector {
   }
 
   getRunModeProfile() {
-    return getRunModeProfile(this.game?.runMode);
+    return this.game?.getRunModeProfile?.() || getRunModeProfile(this.game?.runMode);
   }
 
   getNormalWaveDifficultyLevel(level = this.game?.level || 1) {

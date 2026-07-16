@@ -86,6 +86,11 @@ import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
 import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
 import { generateUUID } from '../utils/uuid.js';
+import {
+  applyScoutAnomalyToProfile,
+  getScoutAnomaly,
+  readScoutAnomalySelection
+} from './ScoutAnomalies.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -137,6 +142,8 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.scoutAnomalyId = null;
+    this.scoutAnomaly = null;
     this.runStartInputDevice = 'keyboard';
     this.sectorStartCheckpoint = null;
     this.sectorStartPlaySector = null;
@@ -309,6 +316,9 @@ export class Game {
   async startGame(spriteKey, options = {}) {
     this.prepareGameplayInputFocus();
     const requestedRunMode = normalizeRunMode(options.runMode);
+    const scoutAnomaly = requestedRunMode === RUN_MODES.SCOUT
+      ? getScoutAnomaly(options.scoutAnomalyId || readScoutAnomalySelection().id)
+      : null;
     let dailySignalContract = null;
     let dailySignalContractValidation = null;
     if (requestedRunMode === RUN_MODES.DAILY_SIGNAL) {
@@ -365,7 +375,11 @@ export class Game {
       ? 'sector_start_checkpoint'
       : requestedRunMode === RUN_MODES.DAILY_SIGNAL
         ? 'daily_signal_local_challenge'
-        : null;
+        : scoutAnomaly
+          ? `scout_anomaly:${scoutAnomaly.id}`
+          : null;
+    this.scoutAnomalyId = scoutAnomaly?.id || null;
+    this.scoutAnomaly = scoutAnomaly;
     this.runStartInputDevice = requestedInputDevice;
     this.sectorStartCheckpoint = sectorStartCheckpoint;
     this.sectorStartPlaySector = sectorStartPlaySector;
@@ -501,7 +515,10 @@ export class Game {
   }
 
   getRunModeProfile(mode = this.runMode) {
-    return getRunModeProfile(mode);
+    const profile = getRunModeProfile(mode);
+    return normalizeRunMode(mode) === RUN_MODES.SCOUT
+      ? applyScoutAnomalyToProfile(profile, this.scoutAnomalyId)
+      : profile;
   }
 
   getRunLeaderboardDescriptor(mode = this.runMode) {
@@ -1322,6 +1339,9 @@ export class Game {
       highestScoreMultiplier: Math.max(1, Number(this.runPressureDirector?.getScoreMultiplier?.()) || 1),
       runMode: this.runMode,
       runModeReason: this.runModeReason,
+      scoutAnomalyId: this.scoutAnomaly?.id || null,
+      scoutAnomalyName: this.scoutAnomaly?.name || null,
+      scoutAnomalyRuleSummary: this.scoutAnomaly?.ruleSummary || null,
       selectedShipSpriteKey: this.selectedShipSpriteKey || null,
       shipId: ship?.id || this.selectedShipSpriteKey || null,
       shipName: ship?.name || null,
@@ -1347,6 +1367,7 @@ export class Game {
       discoveriesThisRun: discoveries,
       codexCompletionCounts: getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },
+      combatTelemetry: play?.getCombatTelemetrySummary?.() || null,
       pacing: getRunPacingDebugState(this),
       contentDirectorState: this.contentDirector?.getDebugState?.() || null
     };
@@ -1473,6 +1494,9 @@ export class Game {
       rankAchievementsUnlocked: [],
       milestoneAchievementsUnlocked: [],
       newlyUnlockedShips: result.newlyUnlockedShipIds || [],
+      shipMastery: result.shipMastery?.current || null,
+      shipMasteryPrevious: result.shipMastery?.previous || null,
+      newShipMasteryTier: result.shipMastery?.newTier || null,
       hangarProgress: getHangarProgressSummary(result.next)
     };
     if (this.runMode === RUN_MODES.SECTOR_START && this.sectorStartCheckpoint) {

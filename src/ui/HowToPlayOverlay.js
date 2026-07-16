@@ -121,8 +121,8 @@ const MODE_HELP_ROWS = Object.freeze([
     code: '13',
     icon: 'SCOUT',
     label: 'SCOUT RUN',
-    control: 'UNRANKED PRACTICE // TACTICAL DRAFTS',
-    tip: 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',
+    control: '3 ANOMALIES // UNRANKED PRACTICE',
+    tip: 'Choose Calibration, Bullet School, or Boss Lab before launch. Every Scout anomaly stays unranked and leaves boards, achievements, career XP, Pilot Orders, and checkpoints untouched.',
     accent: 0x66ff9d
   },
   {
@@ -258,8 +258,8 @@ const CAREER_HELP_ROWS = Object.freeze([
     code: '29',
     icon: 'HULL',
     label: 'SHIP HANGAR',
-    control: 'CAREER XP // HULLS, TRAITS, LOADOUTS',
-    tip: 'Ranked Mayhem runs grow Career XP and unlock ships. Inspect each hull, trait, starting loadout, unlock condition, and cleared Pilot Order in the Hangar.',
+    control: 'HULLS // TRAITS // MASTERY MEDALS',
+    tip: 'Ranked Mayhem runs now earn per-ship Bronze, Silver, and Gold mastery medals. Inspect each hull, trait, starting loadout, medal goal, unlock condition, and cleared Pilot Order in the Hangar.',
     accent: 0x37f5ff
   },
   {
@@ -274,8 +274,8 @@ const CAREER_HELP_ROWS = Object.freeze([
     code: '31',
     icon: 'SCORE',
     label: 'RECORDS & LEADERBOARDS',
-    control: 'PURE + TACTICAL + SECTOR STEAM',
-    tip: 'Pure, Tactical, and Sector use separate Steam leaderboard lanes. Daily Signal keeps a local UTC record for now; Scout remains unranked practice.',
+    control: 'STEAM BOARDS // LOCAL FLIGHT TELEMETRY',
+    tip: 'Leaderboard lanes stay separate. Pause and Flight Report show effective damage, average and peak DPS, shot accuracy, and your top damage source without changing score.',
     accent: 0xffef7e
   }
 ]);
@@ -303,7 +303,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'DAILY CHALLENGE': 'Everyone receives the same loaner ship, route theme, and rules for that UTC day, while combat events still vary. Tactical drafts remain active. Career XP, achievements, checkpoints, and existing Steam boards stay unchanged. Flight Report can save a local PNG or copy the share caption.',
   'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
-  'SCOUT RUN': 'Lower pressure practice with boss Drafts for testing ships and learning routes. No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks.',
+  'SCOUT RUN': 'Choose Calibration for the original Scout rules, Bullet School for ranked-speed projectile pressure with Scout sustain, or Boss Lab for full-strength bosses after Scout waves. Change anomaly with Left/Right before launch. Every preset remains unranked.',
   'SECTOR RUN': 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
@@ -321,9 +321,9 @@ const HELP_DETAIL_COPY = Object.freeze({
   'ELITE SIGNALS': 'Nova Swarm fields fifty elite hulls, including thirty expanded specialists across ten combat families. Their entry flash, charge sound, colored geometry, and active effect reveal the problem before it lands. Solve the system first: leave the marked lane, break the tether, clear satellites, or destroy the beacon—then focus the hull.',
   'CABINET SKILL FLIGHT': 'A Skill Flight temporarily introduces a deterministic formation of harmless one-hit targets. The targets do not shoot, collide, or compromise no-hit integrity. Read the choreography, lead your shots, and clear as many as possible before they exit for a PERFECT, A, B, C, or MISS grade and a bounded score bonus.',
   'BOSS WAVES': 'Boss danger often comes from the room around the health bar. Remove healers and support ships, respect phase telegraphs, then commit damage during the safe opening. In Mayhem Tactical, defeating the boss pauses the fight for a three-card Draft. In Mayhem Pure, the battle continues without upgrades.',
-  'SHIP HANGAR': 'The Hangar is the roster and career desk. Compare hull stats, traits, starting hardware, and exact unlock conditions before launching. Ranked Mayhem score, sectors, bosses, discoveries, clean waves, and completed runs feed Career XP; Scout and Sector practice do not change the profile.',
+  'SHIP HANGAR': 'The Hangar is the roster and career desk. Each hull now has its own ranked Mayhem mastery track: reach Sector 3 for Bronze, Sector 6 for Silver, and clear a run for Gold. Scout, Sector, and Daily runs never advance these medals.',
   'THREAT CODEX': 'The Codex records what you have actually encountered. Use its categories to study enemy silhouettes, elite systems, attack patterns, wave tactics, boss behavior, powerups, augments, sectors, themes, Cabinet logs, and rank milestones. Unknown entries remain unknown until you meet them.',
-  'RECORDS & LEADERBOARDS': 'Mayhem Pure, Mayhem Tactical, and Sector Run each use separate Steam leaderboards. Daily Signal stores one local UTC record; Scout remains unranked practice. Daily and Scout do not change career progress.'
+  'RECORDS & LEADERBOARDS': 'Mayhem Pure, Mayhem Tactical, and Sector Run keep their existing separate Steam lanes. Combat telemetry is local feedback only: effective damage, average and peak DPS, projectile accuracy, and top damage source appear in pause and Flight Report without altering score, XP, or submissions.'
 });
 
 function getHelpDetail(row) {

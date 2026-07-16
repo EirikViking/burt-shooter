@@ -5,8 +5,9 @@ import {
 } from '../progression/RunContracts.js';
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
+import { getCombatDamageSourceLabel } from './CombatTelemetry.js';
 
-const RUN_REPORT_VERSION = 14;
+const RUN_REPORT_VERSION = 15;
 
 function toNumber(value, fallback = 0) {
   const number = Number(value);
@@ -151,6 +152,41 @@ export function createRunReport(summary = {}) {
   const respawns = toWholeNumber(summary.respawns);
   const finalDeathSource = normalizeDeathSource(summary.finalDeathSource || summary.lastLifeLossSource);
   const deathCoach = getDeathCoachAdvice(summary.finalDeathSource || summary.lastLifeLossSource);
+  const combatTelemetry = {
+    totalDamage: toNumber(summary.combatTelemetry?.totalDamage),
+    averageDps: toNumber(summary.combatTelemetry?.averageDps),
+    recentDps: toNumber(summary.combatTelemetry?.recentDps),
+    peakDps: toNumber(summary.combatTelemetry?.peakDps),
+    accuracyPercent: Math.max(0, Math.min(100, toNumber(summary.combatTelemetry?.accuracyPercent))),
+    projectilesHit: toWholeNumber(summary.combatTelemetry?.projectilesHit),
+    projectilesFired: toWholeNumber(summary.combatTelemetry?.projectilesFired),
+    topSourceId: String(summary.combatTelemetry?.topSourceId || 'primary').trim() || 'primary',
+    topSourcePercent: Math.max(0, Math.min(100, toNumber(summary.combatTelemetry?.topSourcePercent))),
+    topSourceDamage: toNumber(summary.combatTelemetry?.topSourceDamage)
+  };
+  const shipMastery = summary.shipMastery?.tier?.id
+    ? {
+        tierId: String(summary.shipMastery.tier.id),
+        tierLabel: String(summary.shipMastery.tier.label || summary.shipMastery.tier.id),
+        tierRank: toWholeNumber(summary.shipMastery.tier.rank),
+        bestSector: Math.max(1, toWholeNumber(summary.shipMastery.bestSector, 1)),
+        runs: toWholeNumber(summary.shipMastery.runs),
+        clears: toWholeNumber(summary.shipMastery.clears),
+        newTier: summary.newShipMasteryTier?.id
+          ? {
+              id: String(summary.newShipMasteryTier.id),
+              label: String(summary.newShipMasteryTier.label || summary.newShipMasteryTier.id)
+            }
+          : null
+      }
+    : null;
+  const scoutAnomaly = canonicalRunMode === RUN_MODES.SCOUT && summary.scoutAnomalyId
+    ? {
+        id: String(summary.scoutAnomalyId),
+        name: String(summary.scoutAnomalyName || summary.scoutAnomalyId),
+        ruleSummary: String(summary.scoutAnomalyRuleSummary || '')
+      }
+    : null;
   const pilotOrdersCompleted = getPilotOrdersCompleted(summary.runContracts);
   const tacticalDraftPicks = (Array.isArray(summary.tacticalDraftPicks) ? summary.tacticalDraftPicks : [])
     .map((entry) => ({
@@ -299,6 +335,9 @@ export function createRunReport(summary = {}) {
       runtimeSeconds,
       runtimeLabel: formatDuration(runtimeSeconds),
       pointDefenseIntercepts: toWholeNumber(summary.pointDefenseIntercepts),
+      combatTelemetry,
+      shipMastery,
+      scoutAnomaly,
       runCleared: Boolean(summary.runCleared),
       deathCoach,
       pilotOrdersCompleted,
@@ -318,7 +357,8 @@ export function createRunReport(summary = {}) {
           { id: 'ship', value: shipName, rawValue: shipId || shipName },
           { id: 'score', value: score },
           { id: 'sector', value: sectorReached },
-          { id: 'time', value: formatDuration(runtimeSeconds), rawValue: runtimeSeconds }
+          { id: 'time', value: formatDuration(runtimeSeconds), rawValue: runtimeSeconds },
+          ...(scoutAnomaly ? [{ id: 'scoutAnomaly', value: scoutAnomaly.name, rawValue: scoutAnomaly }] : [])
         ])
       },
       ...(dailyContract ? [{
@@ -351,7 +391,15 @@ export function createRunReport(summary = {}) {
           { id: 'waves', value: toWholeNumber(summary.wavesCleared) },
           { id: 'nearMissSurges', value: toWholeNumber(summary.nearMissSurges) },
           { id: 'grazeBreaks', value: toWholeNumber(summary.grazeBreaks) },
-          { id: 'pointDefenseIntercepts', value: toWholeNumber(summary.pointDefenseIntercepts) }
+          { id: 'pointDefenseIntercepts', value: toWholeNumber(summary.pointDefenseIntercepts) },
+          { id: 'damage', value: toWholeNumber(combatTelemetry.totalDamage) },
+          { id: 'dps', value: toWholeNumber(combatTelemetry.averageDps), rawValue: combatTelemetry },
+          { id: 'accuracy', value: Math.round(combatTelemetry.accuracyPercent), rawValue: combatTelemetry },
+          {
+            id: 'topDamageSource',
+            value: getCombatDamageSourceLabel(combatTelemetry.topSourceId),
+            rawValue: combatTelemetry
+          }
         ])
       },
       {
@@ -369,6 +417,7 @@ export function createRunReport(summary = {}) {
         rows: buildRows([
           { id: 'powerups', value: toWholeNumber(summary.powerupsCollected) },
           { id: 'careerXp', value: toWholeNumber(summary.pilotXpGained) },
+          ...(shipMastery ? [{ id: 'shipMastery', value: shipMastery.tierLabel, rawValue: shipMastery }] : []),
           { id: 'tacticalDrafts', value: tacticalDraftPicks, rawValue: tacticalDraftPicks },
           { id: 'tacticalDirectives', value: tacticalDirectives.completedCount, rawValue: tacticalDirectives },
           { id: 'aceBounties', value: aceBounties.completedCount, rawValue: aceBounties },
@@ -397,6 +446,9 @@ export function summarizeRunReport(report = null) {
     sectorReached: report.summary?.sectorReached || 0,
     runtimeSeconds: report.summary?.runtimeSeconds || 0,
     pointDefenseIntercepts: report.summary?.pointDefenseIntercepts || 0,
+    combatTelemetry: report.summary?.combatTelemetry || null,
+    shipMastery: report.summary?.shipMastery || null,
+    scoutAnomaly: report.summary?.scoutAnomaly || null,
     pilotOrdersCompleted: Array.isArray(report.summary?.pilotOrdersCompleted) ? report.summary.pilotOrdersCompleted : [],
     tacticalDraftPicks: Array.isArray(report.summary?.tacticalDraftPicks) ? report.summary.tacticalDraftPicks : [],
     tacticalDirectives: report.summary?.tacticalDirectives || null,

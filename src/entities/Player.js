@@ -2347,7 +2347,11 @@ export class Player {
         const dist = Math.sqrt(dx * dx + dy * dy);
 
         if (dist < shockwaveRadius) {
-          enemy.takeDamage(shockwaveDamage);
+          if (typeof playScene.applyCombatDamage === 'function') {
+            playScene.applyCombatDamage(enemy, shockwaveDamage, 'shockwave');
+          } else {
+            enemy.takeDamage(shockwaveDamage);
+          }
           hitCount++;
           // Visual feedback
           if (playScene.particleManager) {
@@ -2538,7 +2542,9 @@ export class Player {
 
       let destroyed = false;
       try {
-        destroyed = typeof enemy.takeDamage === 'function' ? enemy.takeDamage(damage) : false;
+        destroyed = typeof playScene?.applyCombatDamage === 'function'
+          ? playScene.applyCombatDamage(enemy, damage, 'row_core')
+          : (typeof enemy.takeDamage === 'function' ? enemy.takeDamage(damage) : false);
       } catch (error) {
         console.warn('[RowCore] enemy damage failed', error);
       }
@@ -3518,7 +3524,9 @@ export class Player {
           shard.tacticalFusionId = 'rift_reprisal';
           shard.trailLength = 46;
           shard.pulseRate = 1.05;
-          playScene.bulletManager.addPlayerBullet(shard);
+          if (playScene.bulletManager.addPlayerBullet(shard)) {
+            playScene.recordCombatVolley?.([shard]);
+          }
         });
         this.tacticalFusionStats.riftShardsFired += shardCount;
         this.lastTacticalFusionEvent = {

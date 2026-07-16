@@ -611,7 +611,9 @@ function buildGameTextState(game) {
     lives: game?.lives ?? 0,
     runMode: game?.runMode || (game?.isDebugRun ? 'unranked' : 'ranked'),
     runModeReason: game?.runModeReason || null,
-    runModeProfile: getRunModeProfile(game?.runMode),
+    runModeProfile: game?.getRunModeProfile?.() || getRunModeProfile(game?.runMode),
+    scoutAnomaly: game?.scoutAnomaly ? { ...game.scoutAnomaly } : null,
+    combatTelemetry: playScene?.getCombatTelemetrySummary?.() || null,
     sectorStartChallenge: (game?.runMode === RUN_MODES.SECTOR_START || game?.runSummary?.sectorStartChallengeAttempt) ? {
       checkpoint: game?.sectorStartCheckpoint || game?.runSummary?.sectorStartCheckpoint || null,
       playSector: game?.sectorStartPlaySector || game?.runSummary?.sectorStartPlaySector || null,

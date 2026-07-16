@@ -108,6 +108,10 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   nearMissSurges: 'Near-miss surges',
   grazeBreaks: 'Graze breaks',
   pointDefenseIntercepts: 'Shots intercepted',
+  damage: 'Effective damage',
+  dps: 'Damage per second',
+  accuracy: 'Shot accuracy',
+  topDamageSource: 'Top damage source',
   livesLost: 'Lives lost',
   respawns: 'Respawns',
   extraLives: 'Extra lives earned',
@@ -115,6 +119,7 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   deathCoach: 'COUNTER ADVICE: LAST DEATH',
   powerups: 'Powerups',
   careerXp: 'Career XP',
+  shipMastery: 'Ship mastery',
   newRanks: 'New ranks',
   codex: 'Codex discoveries',
   tacticalDrafts: 'Tactical upgrades',
@@ -130,7 +135,8 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   dailyAttempts: 'Valid attempts',
   dailyBestAttempt: 'Best attempt',
   dailyBestClear: 'Best clear',
-  dailyFlightLog: '7-day flight log'
+  dailyFlightLog: '7-day flight log',
+  scoutAnomaly: 'Scout anomaly'
 });
 
 function formatUnlockRequirementProgress(item) {
@@ -3989,11 +3995,24 @@ export class GameOverScene {
     const rankTitle = String(rankProgress.title || getRankTitle(currentProgress.pilotRank || 0)).toUpperCase();
     const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
     const modeLabel = translateText(getRunModeProfile(this.game?.runMode).resultLabel || 'RUN');
+    const mastery = summary.shipMastery;
+    const masteryTier = mastery?.tier?.label ? translateText(mastery.tier.label) : null;
+    const masteryLine = masteryTier
+      ? translateText(
+          summary.newShipMasteryTier
+            ? 'SHIP MASTERY: {tier} // NEW // BEST SECTOR {sector}'
+            : 'SHIP MASTERY: {tier} // BEST SECTOR {sector}',
+          {
+            tier: masteryTier,
+            sector: Math.max(1, Math.floor(Number(mastery.bestSector) || this.finalLevel || 1))
+          }
+        )
+      : `${translateText('BEST SECTOR')} ${bestLevel}${suffix}`;
     return [
       modeLabel,
       `${clearLabel}: ${translateText('SECTOR')} ${this.finalLevel}  ${translateText('TIME')} ${elapsedSeconds}s`,
       `${translateText('RANK')} ${displayRank}: ${rankTitle}  ${translateText('CAREER XP')}: +${gained.toLocaleString('en-US')}`,
-      `${translateText('BEST SECTOR')} ${bestLevel}${suffix}`
+      masteryLine
     ].join('\n');
   }
 
@@ -4159,7 +4178,11 @@ export class GameOverScene {
             inputDevice: this.lastInputDevice
           }
       : this.game?.runMode === RUN_MODES.SCOUT
-        ? { runMode: RUN_MODES.SCOUT, inputDevice: this.lastInputDevice }
+        ? {
+            runMode: RUN_MODES.SCOUT,
+            scoutAnomalyId: summary.scoutAnomalyId || this.game?.scoutAnomalyId,
+            inputDevice: this.lastInputDevice
+          }
         : {
             runMode: this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL
               ? RUN_MODES.MAYHEM_TACTICAL
@@ -4975,6 +4998,40 @@ export class GameOverScene {
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
     if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
+    if (row.id === 'dps') {
+      return translateText('AVG {average} // PEAK {peak}', {
+        average: Math.round(Number(row.rawValue?.averageDps) || 0).toLocaleString('en-US'),
+        peak: Math.round(Number(row.rawValue?.peakDps) || 0).toLocaleString('en-US')
+      });
+    }
+    if (row.id === 'accuracy') {
+      return translateText('{accuracy}% // {hits}/{shots} PROJECTILES', {
+        accuracy: Math.round(Number(row.rawValue?.accuracyPercent) || 0),
+        hits: Math.max(0, Math.floor(Number(row.rawValue?.projectilesHit) || 0)).toLocaleString('en-US'),
+        shots: Math.max(0, Math.floor(Number(row.rawValue?.projectilesFired) || 0)).toLocaleString('en-US')
+      });
+    }
+    if (row.id === 'topDamageSource') {
+      return translateText('{source} // {percent}%', {
+        source: translateText(row.value || 'Other damage'),
+        percent: Math.round(Number(row.rawValue?.topSourcePercent) || 0)
+      });
+    }
+    if (row.id === 'shipMastery') {
+      const tier = translateText(row.rawValue?.tierLabel || row.value || 'NO MEDAL');
+      const sector = Math.max(1, Math.floor(Number(row.rawValue?.bestSector) || 1));
+      return translateText(
+        row.rawValue?.newTier
+          ? '{tier} // NEW // BEST S{sector}'
+          : '{tier} // BEST S{sector}',
+        { tier, sector }
+      );
+    }
+    if (row.id === 'scoutAnomaly') {
+      const name = translateText(row.rawValue?.name || row.value || 'CALIBRATION');
+      const rule = translateText(row.rawValue?.ruleSummary || '');
+      return [name, rule].filter(Boolean).join(' // ');
+    }
     if (row.id === 'dailyTemplate') return translateText(row.value || '');
     if (row.id === 'dailyFinish') return translateText('SECTOR {sector}', { sector: row.value || 10 });
     if (row.id === 'dailyBestAttempt') {

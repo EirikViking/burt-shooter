@@ -17,6 +17,7 @@ import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -140,6 +141,7 @@ export class ShipDetailsScene {
         usageText.position.set(panelWidth / 2, yOffset);
         contentContainer.addChild(usageText);
         yOffset += 24;
+        yOffset = this.createShipMasterySection(contentContainer, panelWidth, yOffset, isMobile);
 
         const unlockLine = locked
             ? getShipUnlockRequirementLine(this.spriteKey, { translate: translateText })
@@ -249,6 +251,77 @@ export class ShipDetailsScene {
         container.addChild(traitBody);
 
         return yOffset + traitBody.height + 16;
+    }
+
+    createShipMasterySection(container, panelWidth, yOffset, isMobile) {
+        const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[this.ship.id]);
+        const row = new PIXI.Container();
+        row.label = 'ui_shipMasteryMedals';
+        row.position.set(panelWidth / 2, yOffset);
+        container.addChild(row);
+
+        const title = createText(translateText('SHIP MASTERY'), {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 12 : 14,
+            fill: '#d8fbff',
+            fontWeight: '800'
+        });
+        title.anchor.set(1, 0.5);
+        title.position.set(-42, 10);
+        row.addChild(title);
+
+        const tiers = [
+            SHIP_MASTERY_TIERS.bronze,
+            SHIP_MASTERY_TIERS.silver,
+            SHIP_MASTERY_TIERS.gold
+        ];
+        tiers.forEach((tier, index) => {
+            const earned = mastery.tier.rank >= tier.rank;
+            const medal = new PIXI.Graphics();
+            const x = index * 34;
+            medal.circle(x, 10, 11);
+            medal.fill({ color: earned ? tier.color : 0x142433, alpha: earned ? 0.96 : 0.72 });
+            medal.stroke({ color: earned ? 0xffffff : 0x4c6578, width: earned ? 2 : 1, alpha: earned ? 0.82 : 0.48 });
+            medal.moveTo(x - 6, 18);
+            medal.lineTo(x - 2, 28);
+            medal.lineTo(x + 1, 19);
+            medal.lineTo(x + 6, 28);
+            medal.lineTo(x + 7, 18);
+            medal.stroke({ color: earned ? tier.color : 0x4c6578, width: 3, alpha: earned ? 0.88 : 0.42 });
+            row.addChild(medal);
+        });
+
+        const tierLabel = createText(translateText(mastery.tier.label), {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 12 : 14,
+            fill: mastery.tier.id === 'none' ? '#8298aa' : `#${mastery.tier.color.toString(16).padStart(6, '0')}`,
+            fontWeight: '900'
+        });
+        tierLabel.anchor.set(0, 0.5);
+        tierLabel.position.set(110, 10);
+        row.addChild(tierLabel);
+
+        const goal = mastery.maxed
+            ? translateText('MASTERY COMPLETE')
+            : mastery.nextGoal.id === 'clear_run'
+                ? translateText('CLEAR A RANKED RUN FOR {tier}', {
+                    tier: translateText(mastery.nextGoal.targetTier.label)
+                })
+                : translateText('REACH SECTOR {sector} FOR {tier}', {
+                    sector: mastery.nextGoal.target,
+                    tier: translateText(mastery.nextGoal.targetTier.label)
+                });
+        const goalText = createText(goal, {
+            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+            fontSize: isMobile ? 10 : 12,
+            fill: '#91b7c7',
+            align: 'center'
+        });
+        goalText.anchor.set(0.5, 0);
+        goalText.position.set(34, 31);
+        row.addChild(goalText);
+
+        return yOffset + 51;
     }
 
     createLoreSection(container, panelWidth, yOffset, isMobile, maxHeight = Infinity) {

@@ -32,6 +32,13 @@ import {
 import { deriveDailySignalContract, getDailySignalResetSeconds } from '../config/DailyCabinetSignal.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
+import {
+  applyScoutAnomalyToProfile,
+  cycleScoutAnomaly,
+  getScoutAnomaly,
+  readScoutAnomalySelection,
+  writeScoutAnomalySelection
+} from '../game/ScoutAnomalies.js';
 // PART A: Dynamic story rotation
 import { tauntDirector } from '../game/TauntDirector.js';
 import { TypewriterText } from '../utils/TypewriterText.js';
@@ -270,6 +277,7 @@ export class MenuScene {
     this.startBtn = null;
     this.tacticalStartBtn = null;
     this.scoutRunBtn = null;
+    this.scoutAnomaly = readScoutAnomalySelection();
     this.sectorStartBtn = null;
     this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
     this.selectedSectorStartIndex = 0;
@@ -366,6 +374,7 @@ export class MenuScene {
 
   init() {
     this.container.removeChildren();
+    this.scoutAnomaly = readScoutAnomalySelection();
     this.stars = [];
     this.deckGlints = [];
     this.floatingBonusCores = [];
@@ -523,9 +532,9 @@ export class MenuScene {
       } else if (isMoveDown) {
         this.moveMenuFocus(event.shiftKey ? -1 : 1);
       } else if (isMoveLeft) {
-        this.moveMenuFocus(-1);
+        if (!this.cycleScoutAnomalySelection(-1)) this.moveMenuFocus(-1);
       } else if (isMoveRight) {
-        this.moveMenuFocus(1);
+        if (!this.cycleScoutAnomalySelection(1)) this.moveMenuFocus(1);
       } else if (isCancel) {
         this.playBossMenuBark('exit', { target: this.exitBtn, intent: 'activate', force: true });
         this.openQuitConfirmation({ source: 'keyboard' });
@@ -1333,12 +1342,23 @@ export class MenuScene {
     this.scoutRunBtn = this.createButton('SCOUT RUN', layout, {
       accent: 0x7fffd8,
       icon: 'hangar',
-      subLabel: 'PRACTICE'
+      subLabel: 'PRACTICE',
+      dynamicSubLabel: () => translateText('ANOMALY: {name}', {
+        name: translateText(this.scoutAnomaly?.name || 'CALIBRATION')
+      })
     });
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff, role: 'practice' });
+    this.attachScoutAnomalyCue(this.scoutRunBtn);
     this.scoutRunBtn.alpha = 0;
-    this.scoutRunBtn.on('pointerdown', () => {
+    this.scoutRunBtn.on('pointerdown', (event) => {
       this.setInputDevice('keyboard');
+      this.setMenuFocusByButton(this.scoutRunBtn);
+      const local = event?.getLocalPosition?.(this.scoutRunBtn);
+      const width = Number(this.scoutRunBtn?._btnWidth) || 0;
+      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
+        this.cycleScoutAnomalySelection(local.x < 0 ? -1 : 1, { force: true });
+        return;
+      }
       this.quickStartRun(RUN_MODES.SCOUT);
     });
     this.container.addChild(this.scoutRunBtn);
@@ -2103,6 +2123,11 @@ export class MenuScene {
         ? translateText('D-PAD/STICK: SELECT // A: START // B: BACK')
         : translateText('ARROWS: SELECT // ENTER/SPACE: START // ESC: BACK');
     }
+    if (this.getSelectedMenuOptionId() === 'scout') {
+      return this.lastInputDevice === 'controller'
+        ? translateText('LEFT/RIGHT: ANOMALY // A: START // B: BACK')
+        : translateText('LEFT/RIGHT: ANOMALY // ENTER/SPACE: START // ESC: BACK');
+    }
     return this.lastInputDevice === 'controller'
       ? translateText('D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK')
       : translateText('ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK');
@@ -2156,6 +2181,7 @@ export class MenuScene {
       };
     }
     if (focused === 'scout') {
+      const anomaly = getScoutAnomaly(this.scoutAnomaly?.id);
       return {
         id: 'scout',
         title: translateText('SCOUT RUN'),
@@ -2163,10 +2189,19 @@ export class MenuScene {
         secondary: 0x37f5ff,
         menuBody: [
           translateText('PRACTICE · UNRANKED'),
-          translateText('Lower-pressure combat for learning routes and testing ships.'),
+          translateText('ANOMALY: {name}', { name: translateText(anomaly.name) }),
+          translateText(anomaly.description),
+          translateText(anomaly.ruleSummary),
+          translateText('LEFT/RIGHT: CHANGE ANOMALY'),
           translateText('No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
         ].join('\n'),
-        body: translateText('Lower pressure practice for testing ships and learning routes. No leaderboard submission, achievements, career XP, or checkpoint unlocks.')
+        body: translateText(
+          '{name}: {description} No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+          {
+            name: translateText(anomaly.name),
+            description: translateText(anomaly.description)
+          }
+        )
       };
     }
     if (focused === 'sectorStart') {
@@ -3389,7 +3424,8 @@ export class MenuScene {
         buttonText: this.scoutRunBtn?._label?.text || null,
         buttonSubtext: this.scoutRunBtn?._sublabel?.text || null,
         buttonBounds: boundsForDisplayObject(this.scoutRunBtn?.visible ? this.scoutRunBtn : null),
-        profile: getRunModeProfile(RUN_MODES.SCOUT)
+        anomaly: this.scoutAnomaly ? { ...this.scoutAnomaly } : null,
+        profile: applyScoutAnomalyToProfile(getRunModeProfile(RUN_MODES.SCOUT), this.scoutAnomaly?.id)
       },
       menuFx: this.menuFx?.getDebugState?.() || null,
       exitNoticeText: this.exitNotice?.text || '',
@@ -4059,6 +4095,41 @@ export class MenuScene {
     button.addChild(cue);
   }
 
+  attachScoutAnomalyCue(button) {
+    if (!button || button._scoutAnomalyCue) return;
+    const cue = new PIXI.Graphics();
+    cue.label = 'ui_scoutAnomalyArrows';
+    cue.eventMode = 'none';
+    button._scoutAnomalyCue = cue;
+    button.addChild(cue);
+  }
+
+  drawScoutAnomalyCue(button = this.scoutRunBtn) {
+    const cue = button?._scoutAnomalyCue;
+    if (!cue) return;
+    const width = Number(button._btnWidth) || 286;
+    const height = Number(button._btnHeight) || 58;
+    const focused = Boolean(button._focused);
+    const pulse = 0.5 + Math.sin(this.animationTime * 6) * 0.5;
+    const color = focused ? 0xffef7e : 0x7fffd8;
+    cue.visible = Boolean(button.visible && !this.sectorSelectorOpen);
+    cue.clear();
+    if (!cue.visible) return;
+    for (const side of [-1, 1]) {
+      const x = side * (width / 2 - Math.max(18, height * 0.32));
+      const pointX = x + side * 6;
+      const backX = x - side * 6;
+      cue.moveTo(backX, -7);
+      cue.lineTo(pointX, 0);
+      cue.lineTo(backX, 7);
+      cue.stroke({
+        color,
+        width: focused ? 2.4 : 1.7,
+        alpha: focused ? 0.76 + pulse * 0.2 : 0.46
+      });
+    }
+  }
+
   drawSectorStartStepperCue(button = this.sectorStartBtn) {
     const cue = button?._stepperCue;
     if (!cue) return;
@@ -4472,6 +4543,7 @@ export class MenuScene {
     }
 
     container.hitArea = new PIXI.Rectangle(x, y, w, h);
+    if (container?._scoutAnomalyCue) this.drawScoutAnomalyCue(container);
     if (container?._stepperCue) {
       container._stepperCue.visible = false;
       container._stepperCue.clear();
@@ -4826,6 +4898,24 @@ export class MenuScene {
     this.playBossMenuBarkForOption(this.menuOptions[this.focusedMenuIndex], { intent: 'focus' });
   }
 
+  cycleScoutAnomalySelection(delta, { force = false } = {}) {
+    if (!force && this.getSelectedMenuOptionId() !== 'scout') return false;
+    this.scoutAnomaly = writeScoutAnomalySelection(
+      cycleScoutAnomaly(this.scoutAnomaly?.id, delta).id
+    );
+    this.refreshButtonCopy(this.scoutRunBtn, { forceGpuRefresh: true });
+    this.drawMenuButton(this.scoutRunBtn, false);
+    if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
+    const briefing = this.getRunModeBriefing();
+    if (this.runModeBriefingTitle) {
+      this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
+    }
+    if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+    playMenuFocusSfx(0.12);
+    this.layoutMenu();
+    return true;
+  }
+
   activateFocusedMenuOption() {
     const option = this.menuOptions[this.focusedMenuIndex] || this.menuOptions[0];
     this.playBossMenuBarkForOption(option, { intent: 'activate', force: true });
@@ -4865,8 +4955,8 @@ export class MenuScene {
       }
       return;
     }
-    if (nav.pressed.left) this.moveMenuFocus(-1);
-    if (nav.pressed.right) this.moveMenuFocus(1);
+    if (nav.pressed.left && !this.cycleScoutAnomalySelection(-1)) this.moveMenuFocus(-1);
+    if (nav.pressed.right && !this.cycleScoutAnomalySelection(1)) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -4909,6 +4999,7 @@ export class MenuScene {
       AudioManager.playMusicContext('gameplay', { resetForNewRun: true });
       this.game.startGame(this.getQuickStartShipKey(), {
         runMode,
+        scoutAnomalyId: runMode === RUN_MODES.SCOUT ? this.scoutAnomaly?.id : null,
         inputDevice: this.lastInputDevice
       });
     } catch (e) {

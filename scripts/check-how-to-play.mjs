@@ -151,7 +151,7 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('there is no public Daily leaderboard yet'), `${label} should explain why the Daily result is still local`);
     assert(joined.includes('RANKED // NO TACTICAL UPGRADES'), `${label} should identify Mayhem Pure as ranked raw skill`);
     assert(joined.includes('RANKED // BOSS DRAFTS ACTIVE'), `${label} should identify Mayhem Tactical as ranked buildcraft`);
-    assert(joined.includes('No leaderboard submission, achievements, career XP, Pilot Orders, or checkpoint unlocks'), `${label} should explain Scout progression limits`);
+    assert(joined.includes('leaves boards, achievements, career XP, Pilot Orders, and checkpoints untouched'), `${label} should explain Scout progression limits`);
     assert(joined.includes('separate Steam Sector leaderboard'), `${label} should explain the Sector Run leaderboard lane`);
     assert(joined.includes('career and achievements stay untouched'), `${label} should explain Sector Run progression limits`);
   }
@@ -178,10 +178,12 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
   }
   if (expectedPage === 'career') {
     assert(joined.includes('OPTIONAL MAYHEM DRILLS'), `${label} should explain Pilot Orders`);
-    assert(joined.includes('CAREER XP // HULLS, TRAITS, LOADOUTS'), `${label} should explain Hangar progression`);
+    assert(joined.includes('HULLS // TRAITS // MASTERY MEDALS'), `${label} should explain ship mastery`);
+    assert(joined.includes('Bronze, Silver, and Gold mastery medals'), `${label} should explain mastery goals`);
     assert(joined.includes('DISCOVERIES // PATTERNS // COUNTERS'), `${label} should explain Codex intel`);
-    assert(joined.includes('PURE + TACTICAL + SECTOR STEAM'), `${label} should distinguish the three Steam leaderboard lanes`);
-    assert(joined.includes('Daily Signal keeps a local UTC record'), `${label} should explain the local Daily record lane`);
+    assert(joined.includes('STEAM BOARDS // LOCAL FLIGHT TELEMETRY'), `${label} should distinguish boards from local telemetry`);
+    assert(joined.includes('Leaderboard lanes stay separate'), `${label} should preserve leaderboard separation`);
+    assert(joined.includes('without changing score'), `${label} should explain telemetry fairness`);
   }
   assert(!joined.includes('Most augments cap at two stacks'), `${label} still contains the obsolete two-stack limit`);
   assert(!joined.includes('hijack enemies'), `${label} should not promise visible enemy hijacking`);

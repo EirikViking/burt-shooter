@@ -34,6 +34,7 @@ import {
   recalculateUnlockedShipIds
 } from './progression/HangarProgressState.js';
 import { mergeRunContractsState } from './progression/RunContracts.js';
+import { mergeShipMasteryMaps } from './progression/ShipMastery.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
@@ -301,6 +302,7 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     noHitSectors: mergeNumberMax(local, cloud, 'noHitSectors'),
     clearWithLivesRemaining: mergeNumberMax(local, cloud, 'clearWithLivesRemaining'),
     highestScoreMultiplier: Math.max(Number(local.highestScoreMultiplier) || 1, Number(cloud.highestScoreMultiplier) || 1),
+    shipSpecificMilestones: mergeShipMasteryMaps(local.shipSpecificMilestones, cloud.shipSpecificMilestones),
     discoveredThreatIds: mergeArrayUnique(local, cloud, 'discoveredThreatIds'),
     defeatedBossIds: mergeArrayUnique(local, cloud, 'defeatedBossIds'),
     runThemesSurvived: mergeArrayUnique(local, cloud, 'runThemesSurvived'),
