@@ -1,0 +1,112 @@
+{
+  "generatedAt": "2026-07-16T18:50:41.9837425Z",
+  "status": "uploaded_private_unassigned",
+  "purpose": "sensory_spectacle_visual_sfx_overhaul",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24245709",
+  "depotManifestId": "4910553840876218469",
+  "sourceCommit": "759a75dda96e94ae309a0f40a0a83427354df532",
+  "sourceBranch": "codex/sensory-overhaul-20260716",
+  "sourceBaseline": "6795b27518bae325ed4e89b463e153e78c7bf6f4",
+  "preChangeSnapshotTag": "snapshot/pre-sensory-overhaul-20260716",
+  "buildStamp": "v2026-07-16_20-27-02",
+  "setLive": "",
+  "publicBuildIdBefore": "24218172",
+  "publicBuildIdAfter": "24218172",
+  "testBranch": "sector-continue-test",
+  "testBranchBuildIdBefore": "24235175",
+  "testBranchBuildIdAfter": "24235175",
+  "publicBranchTouched": false,
+  "testBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "0cc11e91d3de3ca016ab3e4c8bacee589dd8acc10b590236a27a2be04d323a11",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "664ae28c2e9254ab5eaa9eae14fe8f75cba5a5e6ac7e597720ae17e6f5e0c2da",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "7750c10075498f5ee2eb6e601c0eb0002993321a4732e1358ba487ca67b7685f",
+  "payload": {
+    "fileCount": 417,
+    "directoryCount": 65,
+    "steamPipeMappingEntries": 482,
+    "totalBytes": 947329012,
+    "manifestHash": "1904216af73da62e5a2623e257b1d46a5de0ad6ec28cdb7b17c525a9c71aeab7",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "7aa3af467c947948ec91c079ed0d43b9d5a6bd9e363615de7a565b91c97fc389"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-16 20:46:15]: Successfully finished AppID 4765070 build (BuildID 24245709).",
+    "consoleLogPath": "release/steamworks/steam_upload_console_sensory_spectacle_20260716.log",
+    "consoleLogSha256": "bfbf3ccf0f89a4926fd9c6c84dd49679b554875f72f1303864d87c8af56796f4",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "bf6bfeee39e56d189f254da978ebcffa167db7aae2047279184ca212a40f6b6b",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "fb2a5caff6031b6bcbe02c73d63a0b800ce8b607bf28d763824cdc2a4631eac2",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print before and after upload",
+    "publicBuildIdBefore": "24218172",
+    "publicBuildIdAfter": "24218172",
+    "testBranchBuildIdBefore": "24235175",
+    "testBranchBuildIdAfter": "24235175",
+    "publicUnchanged": true,
+    "testBranchUnchanged": true,
+    "newBuildUnassigned": true,
+    "beforeLogPath": "test-results/steam-app-info-before-sensory-overhaul.log",
+    "beforeLogSha256": "75f48b26d0e9d28db8dd0aa1bdd432a25cde6a3130cca5e87f7b291129910b39",
+    "afterLogPath": "test-results/steam-app-info-after-sensory-overhaul.log",
+    "afterLogSha256": "87e3762e0c96ee91bd9990fe9c193b85ebfbc6528965b37fa0ab1bddaec1a977"
+  },
+  "verification": {
+    "releaseLine": "passed immediately before packaging, during VDF generation, and immediately before upload",
+    "sensoryOverhaul": "passed: test-results/sensory-overhaul-2026-07-16T17-59-59-423Z/report.json; 18.20 ms p95 stress, ten-pulse hard cap, five-pulse reduced-motion cap",
+    "reinforcementPerformance": "passed: test-results/reinforcement-wow; 16.9 ms p95, 33.3 ms max, zero frames over 50 ms",
+    "projectileVisuals": "passed: test-results/projectile-visuals-2026-07-16T18-10-26-662Z; 29.70 ms p95, 33.30 ms max",
+    "localization": "passed: check:i18n and test-results/i18n-ui-2026-07-16T18-18-02-516Z; all eight locales, no placeholders or English leaks",
+    "browserSmoke": "passed: test-results/smoke-2026-07-16T18-20-28-034Z/report.json; zero warnings, errors, page errors, or failed responses",
+    "controllerFlow": "passed: test-results/controller-only-flow-2026-07-16T18-15-24-946Z",
+    "packagedRuntimeGate": "passed: test-results/steam-package-runtime-2026-07-16T18-42-23-418Z/report.json",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T18-37-53-363Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T18-38-53-651Z/report.json",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T18-38-34-912Z/report.json",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-16T18-39-17-613Z/report.json; 59.52 minimum and 60.01 average FPS, zero warnings or errors",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-16T18-41-18-957Z/report.json",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports match v2026-07-16_20-27-02",
+    "leaderboardIntegrity": "passed after controlled Steam client restart: test-results/steam-leaderboard-live-2026-07-16T18-49-53-405Z/report.json; 81 entries, Global and Friends readable, explicit --no-submit",
+    "leaderboardIntegritySha256": "5978faf9f35596592dd2f13f114327d57bfe1d59ad3861cd159b129328fc2f4f"
+  },
+  "includedState": [
+    "bounded shared screen-wide spectacle layer for elite kills, combo peaks, major pickups, Nova Miracle, wave clears, reinforcements, boss phases, and boss deaths",
+    "compressed procedural stereo spectacle accents with event-specific sub, sparkle, and noise profiles",
+    "narrow authored playback-rate variation for repeated combat SFX",
+    "performance repair for multi-portal reinforcement arrival",
+    "all prior tracked Nova Swarm gameplay, content, localization, leaderboard, save, achievement, controller, and packaging improvements in source ancestry"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The required generic develop-web-game client remains blocked by missing bundled chromium_headless_shell-1208; repository-native installed-Chrome checks pass.",
+    "The first post-upload no-submit leaderboard probe observed steam_user_not_logged_on because SteamCMD replaced the desktop client session; a controlled restart and exact rerun passed."
+  ],
+  "rollback": {
+    "source": "git revert 759a75dda96e94ae309a0f40a0a83427354df532",
+    "preChangeSnapshot": "snapshot/pre-sensory-overhaul-20260716",
+    "steam": "BuildID 24245709 is unassigned because SetLive was empty; no branch rollback is required. If manually assigned later, reassign that branch to its previous desired BuildID in Steamworks."
+  },
+  "notes": [
+    "SteamCMD uploaded the payload without assigning it to public, sector-continue-test, test-build, or any other branch.",
+    "The Steamworks website, store metadata, pricing, leaderboard and achievement definitions, Steam Cloud settings, existing saves, and existing scores were not changed.",
+    "No player-facing text was added, so no untranslated fallback was introduced."
+  ]
+}

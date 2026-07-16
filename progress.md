@@ -1,6 +1,6 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-16 Sensory spectacle overhaul (source complete; release QA in progress)
+## 2026-07-16 Sensory spectacle overhaul (complete and privately uploaded)
 
 - Audited fresh gameplay, boss, projectile, powerup, enemy-death, combo, reinforcement, compact-layout, and reduced-motion screenshots plus the complete audio catalog/mix. The existing authored art was already strong; the clearest remaining gaps were repeated combat-SFX sameness, weak screen-wide connective spectacle between headline moments, and a severe reinforcement-arrival frame spike.
 - Added one bounded additive `SpectacleDirector` with chromatic rings, segmented arcs, rays, shards, orbital glints, screen sweeps, portal curtains, edge bloom, reduced-motion limits, and performance-lite budgets. It is integrated into elite kills, combo peaks, major pickups, Nova Miracle, wave clears, reinforcement arrival/survival, boss phases, and boss deaths without adding player-facing copy or changing gameplay rules.
@@ -8,7 +8,11 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Reworked the three-portal reinforcement arrival so secondary portals use local flashes and adaptive draw budgets instead of multiplying full-screen work. Fresh proof improved the same scenario from `50.2 ms p95 / 83 ms max / 2 frames over 50 ms` to `16.9 ms p95 / 33.3 ms max / 0 frames over 50 ms`.
 - Added `npm run check:sensory-overhaul`, which verifies gameplay hooks, procedural audio/compression, pitch ranges, a ten-pulse hard cap, a five-pulse reduced-motion cap, screenshots, console cleanliness, and a 120-frame stress run. It passes at `18.2 ms p95`.
 - Focused browser checks pass for enemy-death readability, combo urgency, powerup pickup confirmation, projectile visuals (`29.7 ms p95`), reinforcement WOW, boss VFX, boss hit clarity, boss-death voice runtime, all eight localized UIs, controller-only flow, and the full gameplay smoke matrix. Current Electron smoke also passes. The required generic web-game client was attempted but remains blocked by its missing bundled `chromium_headless_shell-1208`; repository-native installed-Chrome coverage is green.
-- Release packaging and the explicitly requested private Steam upload remain pending. Steamworks settings, branch assignments, leaderboard definitions/scores, saves, achievements, store metadata, and public/default state are untouched at this checkpoint.
+- Source commit `759a75dda96e94ae309a0f40a0a83427354df532` was stamped as `v2026-07-16_20-27-02` and packaged as 417 regular files / 947,329,012 bytes. The executable is 226,698,752 bytes with SHA-256 `7aa3af467c947948ec91c079ed0d43b9d5a6bd9e363615de7a565b91c97fc389`.
+- Strict native Steam package smoke, packaged keyboard/gamepad controls, fresh-profile isolation, current Electron smoke, desktop package review, and packaged performance all pass. The packaged run held `59.52` minimum / `60.01` average FPS across 12 samples with zero warnings or game errors.
+- SteamCMD uploaded private, unassigned BuildID `24245709` with depot manifest `4910553840876218469`. The inspected VDF used AppID `4765070`, depot `4765071`, and exact `SetLive ""`; independent app-info reads prove public/default remained `24218172` and `sector-continue-test` remained `24235175`.
+- SteamCMD replaced the desktop Steam client session during upload. A controlled client restart restored it, and the final explicit `--no-submit` live probe opened `nova_swarm_global_score_v2`, reported 81 entries, read Global and Friends, and submitted no score. No Steamworks setting, branch assignment, leaderboard definition/score, save, achievement, Steam Cloud setting, store metadata, pricing, or public/default state was changed.
+- Durable upload evidence is recorded in `release/steamworks/steam_upload_evidence_sensory_spectacle_20260716_24245709.json`. Source rollback is `git revert 759a75dda96e94ae309a0f40a0a83427354df532`; the Steam build is unassigned, so no branch rollback is required.
 
 ## 2026-07-16 Complete takeover audit and preservation checkpoint
 
