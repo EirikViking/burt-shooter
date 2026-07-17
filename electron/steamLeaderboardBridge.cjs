@@ -344,6 +344,8 @@ class SteamLeaderboardBridge {
       enabled: false,
       reason: 'not_initialized'
     };
+    this.screenshotSequence = 0;
+    this.screenshotInputBinding = null;
   }
 
   getStatus() {
@@ -458,7 +460,7 @@ class SteamLeaderboardBridge {
     this.callbackTimer.unref?.();
   }
 
-  attachElectronCaptureSurface(browserWindow, options = {}) {
+  enableElectronScreenshotCapture(browserWindow, options = {}) {
     if (!this.initialized || !this.steam) {
       this.captureSurfaceStatus = {
         enabled: false,
@@ -473,73 +475,120 @@ class SteamLeaderboardBridge {
       };
       return this.getCaptureSurfaceStatus();
     }
+    const screenshots = this.steam.screenshots;
     if (
-      typeof this.steam.isOverlayAvailable !== 'function'
-      || typeof this.steam.addElectronSteamOverlay !== 'function'
+      typeof screenshots?.hookScreenshots !== 'function'
+      || typeof screenshots?.addScreenshotToLibrary !== 'function'
     ) {
       this.captureSurfaceStatus = {
         enabled: false,
-        reason: 'electron_overlay_api_missing'
+        reason: 'steam_screenshot_api_missing'
       };
       return this.getCaptureSurfaceStatus();
     }
 
     try {
-      if (!this.steam.isOverlayAvailable()) {
-        this.captureSurfaceStatus = {
-          enabled: false,
-          reason: 'electron_overlay_unavailable'
-        };
-        return this.getCaptureSurfaceStatus();
+      if (this.screenshotInputBinding) {
+        const { webContents, handler } = this.screenshotInputBinding;
+        webContents.removeListener?.('before-input-event', handler);
       }
-      // Keep Steam in charge of its screenshot hotkey. The helper surface only
-      // mirrors Chromium frames into a native graphics window that Steam can hook.
-      this.steam.screenshots?.hookScreenshots?.(false);
-      const enabled = Boolean(this.steam.addElectronSteamOverlay(browserWindow, {
-        title: options.title || 'Nova Swarm - Steam Capture Surface',
-        fps: Math.max(30, Math.min(60, Number(options.fps) || 60)),
-        vsync: options.vsync !== false
-      }));
+      screenshots.hookScreenshots(true);
+      const handler = (event, input) => {
+        if (input?.type !== 'keyDown' || input?.key !== 'F12' || input?.isAutoRepeat) return;
+        event.preventDefault();
+        this.captureElectronScreenshot(browserWindow, {
+          outputDir: options.outputDir,
+          source: 'f12'
+        }).then((result) => {
+          if (!result.ok) {
+            this.logger.warn?.('[SteamLeaderboardBridge] F12 screenshot failed:', result.reason);
+          }
+        }).catch((error) => {
+          this.logger.warn?.('[SteamLeaderboardBridge] F12 screenshot failed:', error?.message || error);
+        });
+      };
+      browserWindow.webContents.on('before-input-event', handler);
+      this.screenshotInputBinding = {
+        webContents: browserWindow.webContents,
+        handler
+      };
       this.captureSurfaceStatus = {
-        enabled,
-        reason: enabled ? 'attached' : 'attach_failed'
+        enabled: true,
+        reason: 'on_demand_ready',
+        mode: 'f12_on_demand',
+        continuousMirror: false
       };
     } catch (error) {
       this.captureSurfaceStatus = {
         enabled: false,
-        reason: `attach_failed: ${error?.message || error}`
+        reason: `on_demand_setup_failed: ${error?.message || error}`
       };
-      this.logger.warn?.('[SteamLeaderboardBridge] Electron capture surface failed:', error?.message || error);
+      this.logger.warn?.('[SteamLeaderboardBridge] Electron screenshot capture setup failed:', error?.message || error);
     }
     return this.getCaptureSurfaceStatus();
   }
 
-  triggerSteamScreenshot() {
+  async captureElectronScreenshot(browserWindow, options = {}) {
     if (!this.initialized || !this.steam) {
       return {
         ok: false,
         reason: this.statusReason || 'steam_not_ready'
       };
     }
-    if (typeof this.steam.screenshots?.triggerScreenshot !== 'function') {
+    if (
+      typeof this.steam.screenshots?.addScreenshotToLibrary !== 'function'
+      || !browserWindow
+      || browserWindow.isDestroyed?.()
+    ) {
       return {
         ok: false,
-        reason: 'steam_screenshot_api_missing'
+        reason: 'steam_screenshot_capture_unavailable'
       };
     }
     try {
-      this.steam.screenshots.hookScreenshots?.(false);
-      this.steam.screenshots.triggerScreenshot();
+      const image = await browserWindow.webContents.capturePage();
+      const size = image.getSize();
+      if (!size.width || !size.height) {
+        return {
+          ok: false,
+          reason: 'empty_electron_capture'
+        };
+      }
+      const outputDir = path.resolve(
+        options.outputDir
+          || path.join(this.rootDir, 'test-results', 'steam-screenshots-on-demand')
+      );
+      await fs.promises.mkdir(outputDir, { recursive: true });
+      this.screenshotSequence += 1;
+      const filename = `nova-swarm-${Date.now()}-${process.pid}-${this.screenshotSequence}.png`;
+      const screenshotPath = path.join(outputDir, filename);
+      await fs.promises.writeFile(screenshotPath, image.toPNG());
+      const handle = this.steam.screenshots.addScreenshotToLibrary(
+        screenshotPath,
+        null,
+        size.width,
+        size.height
+      );
+      const ok = handle !== 0 && handle !== 0n && handle != null;
       return {
-        ok: true,
-        reason: 'requested'
+        ok,
+        reason: ok ? 'added_to_library' : 'invalid_screenshot_handle',
+        handle: handle == null ? null : String(handle),
+        source: options.source || 'probe',
+        file: screenshotPath,
+        width: size.width,
+        height: size.height
       };
     } catch (error) {
       return {
         ok: false,
-        reason: `request_failed: ${error?.message || error}`
+        reason: `capture_failed: ${error?.message || error}`
       };
     }
+  }
+
+  triggerSteamScreenshot(browserWindow, options = {}) {
+    return this.captureElectronScreenshot(browserWindow, options);
   }
 
   async isAvailable() {
@@ -1244,6 +1293,11 @@ class SteamLeaderboardBridge {
   }
 
   shutdown() {
+    if (this.screenshotInputBinding) {
+      const { webContents, handler } = this.screenshotInputBinding;
+      webContents.removeListener?.('before-input-event', handler);
+      this.screenshotInputBinding = null;
+    }
     if (this.callbackTimer) {
       clearInterval(this.callbackTimer);
       this.callbackTimer = null;

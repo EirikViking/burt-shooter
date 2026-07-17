@@ -140,7 +140,8 @@ if (existsSync(runtimeReportPath)) {
 } else {
   errors.push('Electron capture probe did not write runtime-report.json');
 }
-if (runtimeReport?.captureSurface?.enabled !== true) errors.push('native Electron Steam capture surface was not attached');
+if (runtimeReport?.captureSurface?.enabled !== true) errors.push('on-demand Electron Steam screenshot capture was not ready');
+if (runtimeReport?.captureSurface?.continuousMirror !== false) errors.push('continuous Electron capture mirroring was not disabled');
 if (runtimeReport?.screenshot?.ok !== true) errors.push('Steam screenshot request was not accepted');
 if (runtimeReport?.rendered?.ready !== true) errors.push('game scene was not rendered before capture');
 if (result.error) errors.push(`Electron launch failed: ${result.error.message}`);

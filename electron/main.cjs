@@ -24,6 +24,7 @@ const isPerfSmoke = process.argv.includes('--perf-smoke') || process.env.NOVA_SW
 const isSteamLeaderboardProbe = process.argv.includes('--steam-leaderboard-probe') || process.env.NOVA_SWARM_STEAM_LEADERBOARD_PROBE === '1';
 const isSteamCloudDiagnostics = process.argv.includes('--steam-cloud-diagnostics') || process.env.NOVA_SWARM_STEAM_CLOUD_DIAGNOSTICS === '1';
 const isSteamCaptureProbe = process.argv.includes('--steam-capture-probe') || process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE === '1';
+const isFramePacingProbe = process.argv.includes('--frame-pacing-probe') || process.env.NOVA_SWARM_FRAME_PACING_PROBE === '1';
 const isFreshProfile = process.argv.includes('--nova-fresh-profile') || process.env.NOVA_SWARM_FRESH_PROFILE === '1';
 const FRESH_PROFILE_STEAM_REASON = 'fresh_profile_isolated';
 const isWindowed = process.argv.includes('--windowed') || process.env.NOVA_SWARM_WINDOWED === '1';
@@ -636,20 +637,18 @@ function createWindow() {
     || process.env.SteamGameId
     || process.env.SteamOverlayGameId
   );
-  const shouldAttachSteamCaptureSurface = !isFreshProfile
+  const shouldEnableSteamScreenshotCapture = !isFreshProfile
     && !isSmoke
     && !isControlSmoke
     && !isPerfSmoke
     && !isSteamLeaderboardProbe
     && !isSteamCloudDiagnostics
     && (app.isPackaged || hasSteamLaunchHint);
-  if (shouldAttachSteamCaptureSurface) {
-    const captureSurface = steamLeaderboardBridge.attachElectronCaptureSurface(win, {
-      title: 'Nova Swarm - Steam Capture Surface',
-      fps: 60,
-      vsync: true
+  if (shouldEnableSteamScreenshotCapture) {
+    const captureSurface = steamLeaderboardBridge.enableElectronScreenshotCapture(win, {
+      outputDir: path.join(app.getPath('temp'), 'nova-swarm-steam-screenshots')
     });
-    console.log(`[NovaSwarm] Steam capture surface enabled=${captureSurface.enabled} reason=${captureSurface.reason}`);
+    console.log(`[NovaSwarm] Steam screenshot capture enabled=${captureSurface.enabled} reason=${captureSurface.reason} continuousMirror=${captureSurface.continuousMirror === true}`);
   }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -657,7 +656,11 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  win.loadURL(baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString());
+  const gameUrl = baseUrl ? `${baseUrl}/?desktop=1` : pathToFileURL(path.join(distDir, 'index.html')).toString();
+  const framePacingProbeUrl = baseUrl
+    ? `${baseUrl}/frame-pacing-probe.html`
+    : pathToFileURL(path.join(distDir, 'frame-pacing-probe.html')).toString();
+  win.loadURL(isFramePacingProbe ? framePacingProbeUrl : gameUrl);
   return win;
 }
 
@@ -1392,34 +1395,122 @@ async function waitForRenderedScene(window) {
 
 async function runSteamCaptureProbe(window) {
   const rendered = await waitForRenderedScene(window);
-  // Steam first hooks the helper's small native surface, then resizes it to the
-  // BrowserWindow output bounds. Triggering while that handoff is in flight can
-  // be accepted by ISteamScreenshots but produce no file, so let the render
-  // stream settle before taking the repeatable proof shot.
   const settleMs = Math.max(
-    3000,
-    Math.min(10000, Number(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_SETTLE_MS) || 4800)
+    500,
+    Math.min(5000, Number(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_SETTLE_MS) || 1000)
   );
   await new Promise((resolve) => setTimeout(resolve, settleMs));
   const captureSurface = steamLeaderboardBridge.getCaptureSurfaceStatus();
-  const screenshot = steamLeaderboardBridge.triggerSteamScreenshot();
+  const outputDir = process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR
+    ? path.resolve(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR)
+    : path.join(app.getPath('temp'), 'nova-swarm-steam-screenshots');
+  const screenshot = await steamLeaderboardBridge.triggerSteamScreenshot(window, {
+    outputDir,
+    source: 'automated_probe'
+  });
   const report = {
-    status: captureSurface.enabled && screenshot.ok ? 'passed' : 'failed',
+    status: captureSurface.enabled && captureSurface.continuousMirror === false && screenshot.ok ? 'passed' : 'failed',
     rendered,
     captureSurface,
     screenshot,
     runtimeInfo: await getSteamRuntimeInfo()
   };
-  const outputDir = process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR
-    ? path.resolve(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_OUTPUT_DIR)
-    : null;
-  if (outputDir) {
-    fs.mkdirSync(outputDir, { recursive: true });
-    fs.writeFileSync(path.join(outputDir, 'runtime-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-  }
+  fs.mkdirSync(outputDir, { recursive: true });
+  fs.writeFileSync(path.join(outputDir, 'runtime-report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
   console.log(`[NovaSwarmSteamCaptureProbe] ${JSON.stringify(report)}`);
   const holdMs = Math.max(4000, Math.min(15000, Number(process.env.NOVA_SWARM_STEAM_CAPTURE_PROBE_HOLD_MS) || 7200));
   await new Promise((resolve) => setTimeout(resolve, holdMs));
+  return report;
+}
+
+async function runFramePacingProbe(window) {
+  const outputDir = path.resolve(
+    process.env.NOVA_SWARM_FRAME_PACING_PROBE_OUTPUT_DIR
+      || path.join(process.cwd(), 'test-results', `frame-pacing-runtime-${new Date().toISOString().replace(/[:.]/g, '-')}`)
+  );
+  fs.mkdirSync(outputDir, { recursive: true });
+  const durationMs = Math.max(
+    10000,
+    Math.min(60000, Number(process.env.NOVA_SWARM_FRAME_PACING_PROBE_DURATION_MS) || 30000)
+  );
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < 20000) {
+    const ready = await window.webContents.executeJavaScript('Boolean(window.__novaFramePacingProbe?.ready)').catch(() => false);
+    if (ready) break;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  const ready = await window.webContents.executeJavaScript('Boolean(window.__novaFramePacingProbe?.ready)').catch(() => false);
+  if (!ready) throw new Error('Frame pacing probe page did not become ready');
+
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await window.webContents.executeJavaScript('window.__novaFramePacingProbe.reset()');
+  const appMetricsBefore = app.getAppMetrics();
+  await new Promise((resolve) => setTimeout(resolve, durationMs));
+  const page = await window.webContents.executeJavaScript('window.__novaFramePacingProbe.getReport()');
+  const appMetricsAfter = app.getAppMetrics();
+  const gpuFeatureStatus = app.getGPUFeatureStatus();
+  const gpuInfo = await app.getGPUInfo('basic').catch((error) => ({
+    unavailable: true,
+    reason: error?.message || String(error)
+  }));
+  await window.webContents.executeJavaScript(
+    'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+  );
+  const screenshot = await window.webContents.capturePage();
+  fs.writeFileSync(path.join(outputDir, 'frame-pacing-probe-final.png'), screenshot.toPNG());
+
+  const timing = page.timing?.requestAnimationFrame || {};
+  const errors = [
+    ...(page.rates?.requestAnimationFrameHz >= 55 ? [] : [`requestAnimationFrame rate ${page.rates?.requestAnimationFrameHz || 0} Hz below 55 Hz`]),
+    ...(page.rates?.fixedSimulationStepHz >= 59 && page.rates?.fixedSimulationStepHz <= 61
+      ? []
+      : [`fixed simulation rate ${page.rates?.fixedSimulationStepHz || 0} Hz outside 59-61 Hz`]),
+    ...(page.rates?.renderInvocationHz >= 55 ? [] : [`render invocation rate ${page.rates?.renderInvocationHz || 0} Hz below 55 Hz`]),
+    ...(timing.p95Ms <= 20 ? [] : [`rAF p95 ${timing.p95Ms ?? 'missing'} ms above 20 ms`]),
+    ...(timing.p99Ms <= (1000 / 30) ? [] : [`rAF p99 ${timing.p99Ms ?? 'missing'} ms above 33.3 ms`]),
+    ...(Math.abs(page.wallClockDriftPercent) <= 0.5 ? [] : [`wall-clock drift ${page.wallClockDriftPercent}% above 0.5%`]),
+    ...(page.display?.documentVisibility === 'visible' ? [] : [`document visibility was ${page.display?.documentVisibility || 'unknown'}`])
+  ];
+  const report = {
+    status: errors.length ? 'failed' : 'passed',
+    generatedAt: new Date().toISOString(),
+    outputDir,
+    durationMs,
+    runtime: {
+      appIsPackaged: app.isPackaged,
+      executable: process.execPath,
+      chromium: process.versions.chrome,
+      electron: process.versions.electron,
+      node: process.versions.node,
+      platform: process.platform,
+      arch: process.arch,
+      windowFocused: window.isFocused(),
+      windowVisible: window.isVisible(),
+      fullscreen: window.isFullScreen(),
+      captureSurface: steamLeaderboardBridge.getCaptureSurfaceStatus(),
+      gpuFeatureStatus,
+      gpuInfo
+    },
+    page,
+    cpu: {
+      appMetricsBefore,
+      appMetricsAfter
+    },
+    screenshot: path.join(outputDir, 'frame-pacing-probe-final.png'),
+    errors
+  };
+  fs.writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  console.log(`[NovaSwarmFramePacingProbe] ${JSON.stringify({
+    status: report.status,
+    outputDir,
+    rafHz: page.rates?.requestAnimationFrameHz,
+    renderHz: page.rates?.renderInvocationHz,
+    fixedStepHz: page.rates?.fixedSimulationStepHz,
+    p95Ms: timing.p95Ms,
+    p99Ms: timing.p99Ms,
+    maxMs: timing.maxMs,
+    errors
+  })}`);
   return report;
 }
 
@@ -1454,10 +1545,25 @@ app.whenReady().then(async () => {
   app.on('browser-window-blur', (_event, blurredWindow) => {
     if (blurredWindow === win) notifyWindowBlur();
   });
-  if (isSteamCaptureProbe) {
+  if (isFramePacingProbe) {
+    try {
+      const report = await runFramePacingProbe(win);
+      if (report.status !== 'passed') {
+        throw new Error(`Frame pacing probe failed: ${JSON.stringify(report.errors)}`);
+      }
+      app.quit();
+    } catch (error) {
+      console.error(error);
+      app.exit(1);
+    }
+  } else if (isSteamCaptureProbe) {
     try {
       const report = await runSteamCaptureProbe(win);
-      if (!report.captureSurface?.enabled || !report.screenshot?.ok) {
+      if (
+        !report.captureSurface?.enabled
+        || report.captureSurface?.continuousMirror !== false
+        || !report.screenshot?.ok
+      ) {
         throw new Error(`Steam capture probe failed: ${JSON.stringify(report)}`);
       }
       app.quit();

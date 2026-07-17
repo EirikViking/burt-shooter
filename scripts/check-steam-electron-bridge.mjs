@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire } from 'node:module';
+import { EventEmitter } from 'node:events';
 import path from 'node:path';
 
 const require = createRequire(import.meta.url);
@@ -41,6 +43,10 @@ function createFakeSteamNative({ initResult = true, uploadResult = null, rawUplo
       },
       triggerScreenshot() {
         calls.push(['triggerScreenshot']);
+      },
+      addScreenshotToLibrary(filename, thumbnailFilename, width, height) {
+        calls.push(['addScreenshotToLibrary', filename, thumbnailFilename, width, height]);
+        return 42;
       }
     },
     getStatus() {
@@ -191,13 +197,55 @@ async function checkNativeBridgeHappyPath() {
 
   assert.equal(await bridge.isAvailable(), true);
   assert.equal(await bridge.getPersonaName(), 'Steam Native Ace');
-  const captureWindow = { isDestroyed: () => false };
-  const captureSurface = bridge.attachElectronCaptureSurface(captureWindow, { fps: 60, vsync: true });
-  assert.deepEqual(captureSurface, { enabled: true, reason: 'attached' });
-  assert.equal(bridge.triggerSteamScreenshot().ok, true);
-  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'addElectronSteamOverlay' && call[2]?.fps === 60));
-  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'hookScreenshots' && call[1] === false));
-  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'triggerScreenshot'));
+  const webContents = new EventEmitter();
+  webContents.capturePage = async () => ({
+    getSize: () => ({ width: 1920, height: 1080 }),
+    toPNG: () => Buffer.from('fake-png')
+  });
+  const captureWindow = {
+    isDestroyed: () => false,
+    webContents
+  };
+  const screenshotOutputDir = mkdtempSync(path.join(tmpdir(), 'nova-swarm-screenshot-test-'));
+  const captureSurface = bridge.enableElectronScreenshotCapture(captureWindow, {
+    outputDir: screenshotOutputDir
+  });
+  assert.deepEqual(captureSurface, {
+    enabled: true,
+    reason: 'on_demand_ready',
+    mode: 'f12_on_demand',
+    continuousMirror: false
+  });
+  const screenshot = await bridge.triggerSteamScreenshot(captureWindow, {
+    outputDir: screenshotOutputDir,
+    source: 'unit_test'
+  });
+  assert.equal(screenshot.ok, true);
+  assert.equal(screenshot.handle, '42');
+  assert.equal(screenshot.width, 1920);
+  assert.equal(screenshot.height, 1080);
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'hookScreenshots' && call[1] === true));
+  assert.ok(nativeModule.fakeSteam.calls.some(call => call[0] === 'addScreenshotToLibrary' && call[3] === 1920 && call[4] === 1080));
+  let prevented = false;
+  webContents.emit('before-input-event', {
+    preventDefault() {
+      prevented = true;
+    }
+  }, {
+    type: 'keyDown',
+    key: 'F12',
+    isAutoRepeat: false
+  });
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(prevented, true);
+  assert.equal(
+    nativeModule.fakeSteam.calls.filter(call => call[0] === 'addScreenshotToLibrary').length,
+    2,
+    'physical F12 should capture exactly one frame'
+  );
+  assert.equal(nativeModule.fakeSteam.calls.some(call => call[0] === 'addElectronSteamOverlay'), false);
+  assert.equal(nativeModule.fakeSteam.calls.some(call => call[0] === 'triggerScreenshot'), false);
+  rmSync(screenshotOutputDir, { recursive: true, force: true });
 
   const globalScores = await bridge.getTopScores({
     leaderboardName: STEAM_LEADERBOARD_NAME,
