@@ -170,8 +170,9 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('preserves a meaningful power advantage'), `${label} should explain that Threat Response preserves hull progression`);
   }
   if (expectedPage === 'intel') {
-    assert(joined.includes('1000 ACES + 10000 PROTOCOLS + 10000 WINGS'), `${label} should explain all three encounter catalogs`);
-    assert(joined.includes('without adding enemies or score'), `${label} should explain score-safe Rival Wings`);
+    assert(joined.includes('DESTROY GOLD ACE / CLAIM SHOWN REWARD'), `${label} should lead with the Ace action and payoff`);
+    assert(joined.includes('Destroy the gold-marked Ace to claim the reward shown above it.'), `${label} should explain the Ace contract in plain language`);
+    assert(joined.includes('The Ace keeps its normal score value.'), `${label} should explain that the contract does not alter scoring`);
     assert(joined.includes('0.4% WAVE CONTACT'), `${label} should identify the true Extinction Contact rarity`);
     assert(joined.includes('50 ELITES // READ SHAPE, COLOR, SOUND'), `${label} should explain the full elite roster and warning language`);
     assert(joined.includes('misses do not break no-hit status'), `${label} should explain Skill Flight safety`);
@@ -341,6 +342,7 @@ try {
       const menuIntel = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'intel', `${scenario.name} menu intel page`);
       assertOverlayLayout(menuIntel, `${scenario.name} menu intel page`);
       assertCleanHelpCopy(menuIntel, `${scenario.name} menu intel page`, 'intel');
+      const menuIntelShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-intel');
       await page.keyboard.press('ArrowRight');
       const menuCareer = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'career', `${scenario.name} menu career page`);
       assertOverlayLayout(menuCareer, `${scenario.name} menu career page`);
@@ -507,11 +509,13 @@ try {
         screenshots: {
           menu: menuShot.file,
           tactics: menuTacticsShot.file,
+          intel: menuIntelShot.file,
           pause: pauseShot.file
         },
         audits: {
           menu: menuShot.audit,
           tactics: menuTacticsShot.audit,
+          intel: menuIntelShot.audit,
           pause: pauseShot.audit
         },
         pageErrors,

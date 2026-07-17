@@ -655,6 +655,7 @@ function buildGameTextState(game) {
     } : null,
     reinforcementPresentation: playScene?.getMayhemReinforcementPresentationDebugState?.() || null,
     spectacle: playScene?.spectacleDirector?.getDebugState?.() || null,
+    cabinetWonders: playScene?.getCabinetWonderDebugState?.() || null,
     gameplayBackdrop: playScene ? {
       mode: playScene.gameplayBackdropMode || 'base',
       elapsedMs: Math.round(playScene.gameplayBackdropElapsedMs || 0),

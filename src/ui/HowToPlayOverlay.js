@@ -207,8 +207,8 @@ const INTEL_HELP_ROWS = Object.freeze([
     code: '23',
     icon: 'ACE',
     label: 'ACE BOUNTIES',
-    control: '1000 ACES + 10000 PROTOCOLS + 10000 WINGS',
-    tip: 'The Ace wave also forms one Rival Wing from formation, discipline, volley, and morale. Escorts transform with the Ace phase without adding enemies or score.',
+    control: 'DESTROY GOLD ACE / CLAIM SHOWN REWARD',
+    tip: 'Destroy the gold-marked Ace to claim the reward shown above it. The Ace keeps its normal score value.',
     accent: 0xffd15c
   },
   {

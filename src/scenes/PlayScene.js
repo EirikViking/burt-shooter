@@ -135,6 +135,10 @@ import {
   getRunModeNormalWaveScoreXpMultiplier,
   isRankedRunMode
 } from '../game/RunMode.js';
+import {
+  CABINET_WONDER_VARIANT_COUNT,
+  evaluateCabinetWonder
+} from '../game/CabinetWonders.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
 import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
 import {
@@ -179,6 +183,12 @@ const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 const STRAGGLER_BEACON_MAX_TARGETS = 3;
+const ACE_REWARD_PICKUP_OPTIONS = Object.freeze({
+  rewardClaim: true,
+  lifeTimeMs: 42000,
+  verticalSpeed: 0.42,
+  pickupAssistRadius: 40
+});
 
 export class PlayScene {
   constructor(game) {
@@ -257,6 +267,10 @@ export class PlayScene {
     this.aceBountyHistory = [];
     this.aceBountySequence = 0;
     this.lastAceBountyCompletion = null;
+    this.activeCabinetWonder = null;
+    this.cabinetWonderHistory = [];
+    this.cabinetWonderEligibleChecks = 0;
+    this.cabinetWonderLastDecision = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -576,6 +590,7 @@ export class PlayScene {
     this.lastGameplayGamepadConnected = false;
     this.setupAutoPauseHandlers();
     this.resetGameplayBackdropState();
+    this.clearCabinetWonder('scene_init');
     this.spectacleDirector?.destroy?.();
     this.spectacleDirector = null;
     this.gameContainer.removeChildren();
@@ -779,6 +794,9 @@ export class PlayScene {
     this.aceBountyHistory = [];
     this.aceBountySequence = 0;
     this.lastAceBountyCompletion = null;
+    this.cabinetWonderHistory = [];
+    this.cabinetWonderEligibleChecks = 0;
+    this.cabinetWonderLastDecision = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -2213,6 +2231,24 @@ export class PlayScene {
     return this.getAceBountyDebugState();
   }
 
+  getAceRewardPresentation(encounter = {}) {
+    const primaryLabel = encounter.rewardLabel ? translateText(encounter.rewardLabel) : '';
+    const bonusLabel = encounter.bonusLabel ? translateText(encounter.bonusLabel) : '';
+    const duplicateReward = Boolean(
+      primaryLabel
+      && bonusLabel
+      && encounter.rewardKind === encounter.bonusKind
+      && (
+        (encounter.rewardKind === 'powerup' && encounter.rewardPowerupType === encounter.bonusPowerupType)
+        || (encounter.rewardKind === 'rescan' && encounter.rewardId === encounter.bonusId)
+      )
+    );
+    const summary = duplicateReward
+      ? translateText('2X {reward}', { reward: primaryLabel })
+      : [primaryLabel, bonusLabel].filter(Boolean).join(' + ');
+    return { primaryLabel, bonusLabel, duplicateReward, summary };
+  }
+
   maybePromoteAceEnemy(enemy, context = {}) {
     const active = this.aceBountyActive;
     if (!active || active.spawned || active.completed || !enemy) return false;
@@ -2230,9 +2266,10 @@ export class PlayScene {
     active.spawnedWaveIndex = waveIndex;
     active.enemyType = enemy.type || null;
     const number = String(active.number).padStart(4, '0');
-    const contact = translateText('ACE {number} // {reward}', {
+    const rewardPresentation = this.getAceRewardPresentation(active);
+    const contact = translateText('DESTROY ACE {number} // {reward}', {
       number,
-      reward: translateText(active.rewardLabel)
+      reward: rewardPresentation.summary
     });
     const protocolContact = translateText('NEMESIS {number} // {opening} + {defense}', {
       number: String(active.protocolNumber).padStart(5, '0'),
@@ -2244,16 +2281,10 @@ export class PlayScene {
       formation: translateText(active.rivalWingFormationLabel),
       morale: translateText(active.rivalWingMoraleLabel)
     });
-    const specsContact = [active.chassisLabel, active.flightLabel, active.weaponLabel]
-      .map((label) => translateText(label))
-      .join('  •  ');
-    const rewardParts = [active.rewardLabel, active.bonusLabel]
-      .filter(Boolean)
-      .map((label) => translateText(label));
     const rewardContact = translateText('REWARD: {reward}', {
-      reward: rewardParts.join(' + ')
+      reward: rewardPresentation.summary
     });
-    const dangerContact = translateText('DODGE: {threat}', {
+    const dangerContact = translateText('ATTACK: {threat}', {
       threat: translateText(active.weaponLabel)
     });
     this.enqueueToast(contact, {
@@ -2262,8 +2293,8 @@ export class PlayScene {
       slot: 'top',
       type: 'aceContact',
       priority: 5,
-      duration: 2100,
-      minVisibleMs: 1500,
+      duration: 3900,
+      minVisibleMs: 3300,
       extraReadTimeMs: 0,
       y: Math.max(176, this.game.getHeight() * 0.25),
       maxWidth: Math.min(540, Math.max(360, this.game.getWidth() - 32)),
@@ -2272,12 +2303,11 @@ export class PlayScene {
       edgeAligned: this.game.getWidth() >= 720,
       placement: this.game.getWidth() >= 720 ? 'left-edge' : 'upper-center-edge-safe',
       aceDossier: {
-        title: translateText('ACE CONTACT'),
+        title: translateText('ACE CONTRACT'),
         primary: `#${number}`,
-        action: translateText('DESTROY THE MARKED SHIP'),
+        action: translateText('DESTROY THE GOLD-MARKED ACE'),
         reward: rewardContact,
         danger: dangerContact,
-        specs: specsContact,
         protocol: protocolContact,
         wing: wingContact
       }
@@ -2374,16 +2404,14 @@ export class PlayScene {
     this.aceBountyHistory.push(completion);
     this.lastAceBountyCompletion = completion;
     this.activateRivalWingMorale('ace_down');
+    const rewardPresentation = this.getAceRewardPresentation(completion);
     const { reward, protocolReward } = this.applyAceNemesisRewards(completion, enemy);
     const number = String(variant.number).padStart(4, '0');
     const completionMessage = translateText('ACE DOWN: {number} // REWARD: {reward}', {
       number,
-      reward: translateText(variant.rewardLabel)
+      reward: rewardPresentation.summary
     });
-    const protocolBonusMessage = completion.protocolId
-      ? translateText('PROTOCOL BONUS: {reward}', { reward: translateText(completion.bonusLabel) })
-      : '';
-    this.enqueueToast([completionMessage, protocolBonusMessage].filter(Boolean).join('\n'), {
+    this.enqueueToast(completionMessage, {
       fontSize: this.game.getWidth() < 720 ? 16 : 20,
       fill: '#88ffb0',
       slot: 'corner',
@@ -2416,10 +2444,44 @@ export class PlayScene {
       ? enemy.y
       : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
     const duplicateType = completion.rewardPowerupType === completion.bonusPowerupType;
+    if (duplicateType) {
+      const screenWidth = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
+      const offset = 48;
+      const pairCenterX = Math.max(52 + offset, Math.min(screenWidth - 52 - offset, x));
+      const first = this.powerupManager.spawnSpecific(pairCenterX - offset, y, completion.rewardPowerupType, {
+        ...ACE_REWARD_PICKUP_OPTIONS,
+        source: 'ace_nemesis_pair',
+        spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:ace` : null
+      });
+      const second = this.powerupManager.spawnSpecific(pairCenterX + offset, y, completion.bonusPowerupType, {
+        ...ACE_REWARD_PICKUP_OPTIONS,
+        source: 'ace_nemesis_pair',
+        spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:nemesis` : null,
+        // The second physical reward is new. Give its cosmetic motion a local RNG
+        // so paying the promised duplicate does not perturb later gameplay rolls.
+        visualSeed: `${completion.rewardSpawnKey || 'ace-nemesis-pair'}:${completion.bonusPowerupType}:${pairCenterX}:${y}`
+      });
+      return {
+        reward: {
+          granted: Boolean(first),
+          kind: 'powerup',
+          type: completion.rewardPowerupType,
+          duplicatePair: true
+        },
+        protocolReward: {
+          granted: Boolean(second),
+          kind: 'powerup',
+          type: completion.bonusPowerupType,
+          duplicatePair: true,
+          coalesced: false
+        }
+      };
+    }
     const powerup = this.powerupManager.spawnSpecific(x, y, completion.rewardPowerupType, {
+      ...ACE_REWARD_PICKUP_OPTIONS,
       source: 'ace_nemesis_bundle',
       spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:bundle` : null,
-      bundledPowerupTypes: duplicateType ? [] : [completion.bonusPowerupType]
+      bundledPowerupTypes: [completion.bonusPowerupType]
     });
     const granted = Boolean(powerup);
     return {
@@ -2434,7 +2496,7 @@ export class PlayScene {
         kind: 'powerup',
         type: completion.bonusPowerupType,
         bundled: true,
-        coalesced: duplicateType
+        coalesced: false
       }
     };
   }
@@ -2449,6 +2511,7 @@ export class PlayScene {
     const x = Number.isFinite(enemy?.x) ? enemy.x : (this.player?.x || this.game.getWidth() / 2);
     const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
     const powerup = this.powerupManager.spawnSpecific(x, y, type, {
+      ...ACE_REWARD_PICKUP_OPTIONS,
       source: 'ace_bounty',
       spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:ace` : null
     });
@@ -2467,6 +2530,7 @@ export class PlayScene {
     const x = Number.isFinite(enemy?.x) ? enemy.x + 24 : (this.player?.x || this.game.getWidth() / 2) + 24;
     const y = Number.isFinite(enemy?.y) ? enemy.y : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
     const powerup = this.powerupManager.spawnSpecific(x, y, type, {
+      ...ACE_REWARD_PICKUP_OPTIONS,
       source: 'nemesis_protocol',
       spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:nemesis` : null
     });
@@ -2486,6 +2550,304 @@ export class PlayScene {
       sequence: this.aceBountySequence,
       lastCompletion: this.lastAceBountyCompletion ? { ...this.lastAceBountyCompletion } : null,
       history: this.aceBountyHistory.map((entry) => ({ ...entry }))
+    };
+  }
+
+  maybeShowCabinetWonder(context = {}) {
+    const debugForce = context.debugForce === true;
+    if (debugForce) {
+      this.game?.markUnrankedRun?.('debug_cabinet_wonder');
+      this.debugLevelToolsUsed = true;
+    }
+    const eligibleChecks = this.cabinetWonderEligibleChecks + (debugForce ? 0 : 1);
+    const seed = this.game?.contentDirector?.seed
+      || `${BUILD_ID || 'nova-swarm'}:${this.game?.runStartedAtMs || 0}:${this.game?.selectedShipSpriteKey || 'ship'}`;
+    const decision = evaluateCabinetWonder(seed, {
+      ...context,
+      eligibleChecks,
+      alreadyShown: this.cabinetWonderHistory.length > 0
+    });
+    if (decision.eligible && !debugForce) this.cabinetWonderEligibleChecks = eligibleChecks;
+    this.cabinetWonderLastDecision = {
+      ...decision,
+      variantId: decision.variant?.id || null,
+      variant: undefined
+    };
+    if (!decision.triggered || !decision.variant) return false;
+    return this.showCabinetWonder(decision);
+  }
+
+  debugForceCabinetWonder(variantId = 'ghost_fleet_salute') {
+    if (!this.canUseMaintainerDevtools()) return false;
+    return this.maybeShowCabinetWonder({
+      debugForce: true,
+      forceVariantId: variantId,
+      sector: this.game?.level || 1,
+      waveNumber: Math.max(2, (this.enemyManager?.currentWaveIndex || 0) + 1),
+      hasUpcomingWave: true
+    });
+  }
+
+  createCabinetWonderVisual(variant, width, height, reducedMotion) {
+    const root = new PIXI.Container();
+    root.label = `cabinet_wonder_${variant.id}`;
+    root.zIndex = -500;
+    root.eventMode = 'none';
+    root.interactive = false;
+    const palette = variant.palette || [0x7df9ff, 0xff70d7, 0xffef9a];
+    let elementCount = 0;
+    let authoredBounds = { x: width * 0.12, y: height * 0.15, width: width * 0.76, height: height * 0.3 };
+    let animate = () => {};
+
+    if (variant.id === 'ghost_fleet_salute') {
+      const fleet = new PIXI.Container();
+      fleet.label = 'cabinet_wonder_ghost_fleet';
+      for (let index = 0; index < 6; index += 1) {
+        const ship = new PIXI.Graphics();
+        const size = Math.max(20, Math.min(32, width * (0.018 + index * 0.001)));
+        const color = palette[index % palette.length];
+        ship.circle(-size * 0.1, 0, size * 1.35);
+        ship.fill({ color, alpha: 0.065 + index * 0.008 });
+        ship.moveTo(-size * 3.8, 0);
+        ship.lineTo(-size * 0.7, 0);
+        ship.stroke({ color, width: Math.max(2, size * 0.13), alpha: 0.4 + index * 0.035 });
+        ship.moveTo(-size * 2.8, -size * 0.24);
+        ship.lineTo(-size * 0.74, -size * 0.08);
+        ship.moveTo(-size * 2.8, size * 0.24);
+        ship.lineTo(-size * 0.74, size * 0.08);
+        ship.stroke({ color: 0xffffff, width: 1, alpha: 0.18 });
+        ship.poly([size, 0, -size * 0.72, -size * 0.64, -size * 0.34, 0, -size * 0.72, size * 0.64]);
+        ship.fill({ color, alpha: 0.38 + index * 0.025 });
+        ship.stroke({ color: 0xffffff, width: Math.max(1.3, size * 0.075), alpha: 0.86 });
+        ship.circle(-size * 0.44, 0, Math.max(1.5, size * 0.12));
+        ship.fill({ color, alpha: 0.8 });
+        ship.x = width * (0.16 + index * 0.135);
+        ship.y = height * (0.31 + (index % 3) * 0.06);
+        ship.rotation = -0.08 + index * 0.018;
+        ship.blendMode = 'add';
+        fleet.addChild(ship);
+        elementCount += 1;
+      }
+      root.addChild(fleet);
+      authoredBounds = { x: width * 0.08, y: height * 0.22, width: width * 0.84, height: height * 0.28 };
+      animate = (progress, elapsedMs) => {
+        root.x = reducedMotion ? 0 : width * (-0.07 + progress * 0.14);
+        root.y = reducedMotion ? 0 : Math.sin(elapsedMs * 0.003) * 3;
+      };
+    } else if (variant.id === 'starwhale_constellation') {
+      const scale = Math.max(0.62, Math.min(1.15, Math.min(width / 1280, height / 720)));
+      const centerX = width * 0.54;
+      const centerY = height * 0.29;
+      const points = [
+        [-220, -12], [-178, -52], [-112, -72], [-38, -68], [38, -48], [112, -14],
+        [162, 18], [212, -12], [188, 34], [132, 58], [52, 70], [-34, 62],
+        [-108, 42], [-166, 18], [-226, -38], [-278, -72], [-244, -10]
+      ].map(([x, y]) => [centerX + x * scale, centerY + y * scale]);
+      const glowLines = new PIXI.Graphics();
+      glowLines.moveTo(points[0][0], points[0][1]);
+      for (let index = 1; index < points.length; index += 1) glowLines.lineTo(points[index][0], points[index][1]);
+      glowLines.stroke({ color: palette[1], width: Math.max(5, 9 * scale), alpha: 0.07 });
+      glowLines.blendMode = 'add';
+      root.addChild(glowLines);
+      const lines = new PIXI.Graphics();
+      lines.moveTo(points[0][0], points[0][1]);
+      for (let index = 1; index < points.length; index += 1) lines.lineTo(points[index][0], points[index][1]);
+      lines.stroke({ color: palette[0], width: Math.max(1.3, 2.1 * scale), alpha: 0.54 });
+      lines.blendMode = 'add';
+      root.addChild(lines);
+      for (let index = 0; index < points.length; index += 1) {
+        const star = new PIXI.Graphics();
+        const radius = Math.max(1.8, (index % 5 === 0 ? 4.6 : 2.8) * scale);
+        star.circle(points[index][0], points[index][1], radius * 2.2);
+        star.fill({ color: palette[index % palette.length], alpha: 0.18 });
+        star.circle(points[index][0], points[index][1], radius);
+        star.fill({ color: index % 5 === 0 ? 0xffffff : palette[index % palette.length], alpha: 0.96 });
+        star.blendMode = 'add';
+        root.addChild(star);
+        elementCount += 1;
+      }
+      const eye = new PIXI.Graphics();
+      eye.circle(centerX + 103 * scale, centerY - 18 * scale, 3.4 * scale);
+      eye.fill({ color: palette[2], alpha: 0.95 });
+      eye.blendMode = 'add';
+      root.addChild(eye);
+      elementCount += 1;
+      authoredBounds = { x: width * 0.2, y: height * 0.15, width: width * 0.68, height: height * 0.3 };
+      animate = (_progress, elapsedMs) => {
+        root.x = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0018) * 10;
+        root.y = reducedMotion ? 0 : Math.cos(elapsedMs * 0.0021) * 4;
+        const pulse = reducedMotion ? 0 : Math.sin(elapsedMs * 0.004) * 0.006;
+        root.scale.set(1 + pulse);
+      };
+    } else {
+      for (let index = 0; index < 5; index += 1) {
+        const glow = new PIXI.Graphics();
+        const y = height * (0.24 + index * 0.032);
+        glow.moveTo(width * 0.13, y + index * 2);
+        glow.bezierCurveTo(
+          width * 0.34,
+          y - height * (0.085 + index * 0.005),
+          width * 0.62,
+          y + height * (0.095 - index * 0.004),
+          width * 0.87,
+          y - height * 0.025
+        );
+        glow.stroke({ color: palette[index % palette.length], width: 17 - index * 1.5, alpha: 0.1 + index * 0.018 });
+        glow.blendMode = 'add';
+        const ribbon = new PIXI.Graphics();
+        ribbon.moveTo(width * 0.13, y + index * 2);
+        ribbon.bezierCurveTo(
+          width * 0.34,
+          y - height * (0.085 + index * 0.005),
+          width * 0.62,
+          y + height * (0.095 - index * 0.004),
+          width * 0.87,
+          y - height * 0.025
+        );
+        ribbon.stroke({ color: palette[index % palette.length], width: Math.max(1.6, 4.2 - index * 0.4), alpha: 0.42 + index * 0.06 });
+        ribbon.blendMode = 'add';
+        root.addChild(glow, ribbon);
+        elementCount += 2;
+      }
+      const crown = new PIXI.Graphics();
+      const crownX = width * 0.52;
+      const crownY = height * 0.245;
+      const crownW = Math.min(150, width * 0.12);
+      const crownH = Math.min(58, height * 0.075);
+      crown.poly([
+        crownX - crownW * 0.5, crownY + crownH * 0.4,
+        crownX - crownW * 0.34, crownY - crownH * 0.22,
+        crownX - crownW * 0.12, crownY + crownH * 0.12,
+        crownX, crownY - crownH * 0.5,
+        crownX + crownW * 0.12, crownY + crownH * 0.12,
+        crownX + crownW * 0.34, crownY - crownH * 0.22,
+        crownX + crownW * 0.5, crownY + crownH * 0.4
+      ]);
+      crown.stroke({ color: 0xffffff, width: 1.5, alpha: 0.42 });
+      crown.blendMode = 'add';
+      root.addChild(crown);
+      elementCount += 1;
+      animate = (_progress, elapsedMs) => {
+        const pulse = reducedMotion ? 0 : Math.sin(elapsedMs * 0.006) * 0.008;
+        root.scale.set(1 + pulse);
+      };
+    }
+
+    return { root, elementCount, authoredBounds, animate };
+  }
+
+  showCabinetWonder(decision = {}) {
+    if (!decision.variant || this.activeCabinetWonder || this.cabinetWonderHistory.length > 0 || !this.gameContainer) return false;
+    const width = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
+    const height = Math.max(240, Number(this.game?.getHeight?.()) || 720);
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const durationMs = reducedMotion ? 1200 : 1700;
+    const visual = this.createCabinetWonderVisual(decision.variant, width, height, reducedMotion);
+    visual.root.alpha = 0;
+    this.gameContainer.addChild(visual.root);
+    this.gameContainer.sortChildren?.();
+    AudioManager.init();
+    const audioPlayed = AudioManager.playSpectacleAccent('wonder', {
+      force: true,
+      cooldownKey: 'cabinet_wonder',
+      minIntervalMs: 0,
+      intensity: reducedMotion ? 0.5 : 0.64,
+      volume: 0.72,
+      pitchScale: decision.variant.pitchScale || 1,
+      durationSeconds: reducedMotion ? 0.62 : 0.92
+    });
+    const historyEntry = {
+      id: decision.variant.id,
+      sector: decision.sector,
+      waveNumber: decision.waveNumber,
+      chance: decision.chance,
+      roll: decision.roll,
+      reason: decision.reason,
+      scoreNeutral: true,
+      gameplayNeutral: true,
+      reducedMotion,
+      durationMs,
+      elementCount: visual.elementCount,
+      authoredBounds: { ...visual.authoredBounds },
+      audioProfile: 'wonder',
+      audioPlayed,
+      layer: 'gameplay_background',
+      active: true,
+      completed: false,
+      startedAt: Date.now()
+    };
+    this.cabinetWonderHistory.push(historyEntry);
+    const active = {
+      root: visual.root,
+      ticker: null,
+      elapsedMs: 0,
+      durationMs,
+      animate: visual.animate,
+      historyEntry
+    };
+    const ticker = (delta) => {
+      if (!active.root?.parent || this.game?.currentScene !== this) {
+        this.clearCabinetWonder('scene_changed');
+        return;
+      }
+      active.elapsedMs += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const progress = Math.min(1, active.elapsedMs / durationMs);
+      const intro = Math.min(1, progress / 0.18);
+      const outro = Math.max(0, (progress - 0.72) / 0.28);
+      active.root.alpha = (1 - Math.pow(1 - intro, 3)) * (1 - outro);
+      active.animate(progress, active.elapsedMs);
+      if (active.elapsedMs >= durationMs) this.clearCabinetWonder('complete');
+    };
+    active.ticker = ticker;
+    this.activeCabinetWonder = active;
+    this.game?.app?.ticker?.add?.(ticker);
+    this._activeTickers ||= [];
+    this._activeTickers.push(ticker);
+    return true;
+  }
+
+  clearCabinetWonder(reason = 'cleared') {
+    const active = this.activeCabinetWonder;
+    if (!active) return false;
+    if (active.ticker && this.game?.app?.ticker) this.game.app.ticker.remove(active.ticker);
+    this._activeTickers = (this._activeTickers || []).filter((ticker) => ticker !== active.ticker);
+    if (active.root?.parent) active.root.parent.removeChild(active.root);
+    active.root?.destroy?.({ children: true });
+    active.historyEntry.active = false;
+    active.historyEntry.completed = reason === 'complete';
+    active.historyEntry.endedReason = reason;
+    active.historyEntry.elapsedMs = Math.round(active.elapsedMs);
+    active.historyEntry.endedAt = Date.now();
+    this.activeCabinetWonder = null;
+    return true;
+  }
+
+  getCabinetWonderDebugState() {
+    const active = this.activeCabinetWonder;
+    const last = this.cabinetWonderHistory.at(-1) || null;
+    const screenHeight = Math.max(240, Number(this.game?.getHeight?.()) || 720);
+    return {
+      availableVariants: CABINET_WONDER_VARIANT_COUNT,
+      shownCount: this.cabinetWonderHistory.length,
+      eligibleChecks: this.cabinetWonderEligibleChecks,
+      onePerRun: true,
+      scoreNeutral: true,
+      gameplayNeutral: true,
+      active: active ? {
+        id: active.historyEntry.id,
+        elapsedMs: Math.round(active.elapsedMs),
+        durationMs: active.durationMs,
+        reducedMotion: active.historyEntry.reducedMotion,
+        elementCount: active.historyEntry.elementCount,
+        audioProfile: active.historyEntry.audioProfile,
+        layer: active.historyEntry.layer,
+        authoredBounds: { ...active.historyEntry.authoredBounds },
+        upperFieldSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * 0.5
+      } : null,
+      overlayCount: this.gameContainer?.children?.filter?.((child) => String(child?.label || '').startsWith('cabinet_wonder_')).length || 0,
+      lastDecision: this.cabinetWonderLastDecision ? { ...this.cabinetWonderLastDecision } : null,
+      last: last ? { ...last, authoredBounds: { ...last.authoredBounds } } : null,
+      history: this.cabinetWonderHistory.map((entry) => ({ ...entry, authoredBounds: { ...entry.authoredBounds } }))
     };
   }
 
@@ -6456,6 +6818,7 @@ export class PlayScene {
     }
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = null;
+    this.clearCabinetWonder('scene_destroy');
     this.spectacleDirector?.destroy?.();
     this.spectacleDirector = null;
     this.closeSettingsOverlay();
@@ -13401,9 +13764,9 @@ export class PlayScene {
     const accentColor = Number.isFinite(Number(options.accent)) ? Number(options.accent) : 0xffd15c;
     const secondaryAccent = Number.isFinite(Number(options.secondaryAccent)) ? Number(options.secondaryAccent) : 0x7df9ff;
     const requestedMaxWidth = Math.max(320, Number(layout.maxWidth) || width * 0.82);
-    const panelWidth = Math.min(width - 32, requestedMaxWidth, compact ? 500 : 520);
-    const panelHeight = compact ? 126 : 132;
-    const glyphColumnWidth = compact ? 70 : 82;
+    const panelWidth = Math.min(width - 32, requestedMaxWidth, compact ? 460 : 500);
+    const panelHeight = compact ? 108 : 114;
+    const glyphColumnWidth = compact ? 64 : 74;
     const textLeft = -panelWidth / 2 + glyphColumnWidth;
     const textWidth = Math.max(220, panelWidth - glyphColumnWidth - (compact ? 18 : 24));
     const dossier = new PIXI.Container();
@@ -13413,8 +13776,8 @@ export class PlayScene {
 
     const burst = new PIXI.Graphics();
     burst.blendMode = 'add';
-    const reticleRadius = compact ? 26 : 32;
-    burst.x = -panelWidth / 2 + (compact ? 40 : 49);
+    const reticleRadius = compact ? 23 : 28;
+    burst.x = -panelWidth / 2 + (compact ? 36 : 44);
     burst.y = -4;
     burst.circle(0, 0, reticleRadius);
     burst.stroke({ color: secondaryAccent, width: 2, alpha: 0.66 });
@@ -13453,12 +13816,6 @@ export class PlayScene {
     dossier.addChild(rails);
     dossier.addChild(burst);
 
-    const scanline = new PIXI.Graphics();
-    scanline.blendMode = 'add';
-    scanline.rect(-panelWidth / 2 + 8, -1, panelWidth - 16, 1.5);
-    scanline.fill({ color: secondaryAccent, alpha: 0.18 });
-    dossier.addChild(scanline);
-
     const fit = (node, maxWidth, minScale = 0.74) => {
       node.scale.set(1);
       if (node.width > maxWidth) node.scale.set(Math.max(minScale, maxWidth / node.width));
@@ -13496,15 +13853,12 @@ export class PlayScene {
     };
 
     const titleFontSize = compact ? 10 : 11;
-    const primaryFontSize = compact ? 24 : 28;
-    const actionFontSize = compact ? 12 : 14;
-    const specsFontSize = compact ? 10 : 11;
-    const detailFontSize = compact ? 11 : 12;
-    const titleY = -panelHeight / 2 + 15;
-    const primaryY = -panelHeight / 2 + (compact ? 37 : 40);
-    const actionY = -panelHeight / 2 + (compact ? 62 : 68);
-    const pillsY = -panelHeight / 2 + (compact ? 89 : 96);
-    const specsY = -panelHeight / 2 + (compact ? 116 : 122);
+    const primaryFontSize = compact ? 23 : 27;
+    const actionFontSize = compact ? 12 : 13;
+    const titleY = -panelHeight / 2 + 14;
+    const primaryY = -panelHeight / 2 + (compact ? 35 : 37);
+    const actionY = -panelHeight / 2 + (compact ? 58 : 61);
+    const pillsY = -panelHeight / 2 + (compact ? 84 : 89);
 
     const title = addLine(data.title, {
       fontFamily: FONT_DISPLAY,
@@ -13539,15 +13893,6 @@ export class PlayScene {
     const pillMaxWidth = Math.max(90, (textWidth - 8) / 2);
     const rewardPill = addPill(data.reward, textLeft, pillsY, pillMaxWidth, accentColor);
     const dangerPill = addPill(data.danger, textLeft + pillMaxWidth + 8, pillsY, pillMaxWidth, secondaryAccent);
-    const specs = addLine(data.specs, {
-      fontFamily: FONT_BODY,
-      fontSize: specsFontSize,
-      fontWeight: '800',
-      fill: '#a8cbd4',
-      stroke: '#02131f',
-      strokeThickness: 2
-    }, specsY, textWidth, 0.7);
-
     const requestedY = Number(layout.y) || height * 0.28;
     const bottomSafeMargin = compact ? 10 : 28;
     const topSafeY = panelHeight / 2 + (compact ? 160 : 108);
@@ -13555,7 +13900,7 @@ export class PlayScene {
     dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(topSafeY, requestedY));
     dossier.alpha = 0;
     dossier.scale.set(0.94);
-    dossier.__aceDossierFx = { burst, outerGlow, scanline, panelHeight };
+    dossier.__aceDossierFx = { burst, outerGlow };
     dossier.__aceDossierDebug = {
       compact,
       panelWidth: Math.round(panelWidth),
@@ -13570,19 +13915,15 @@ export class PlayScene {
       action: String(data.action || ''),
       reward: String(data.reward || ''),
       danger: String(data.danger || ''),
-      specs: String(data.specs || ''),
       protocol: String(data.protocol || ''),
       wing: String(data.wing || ''),
       detailsCollapsed: true,
       titleFontSize,
       primaryFontSize,
       actionFontSize,
-      specsFontSize,
-      detailFontSize,
       titleScale: Number(title.scale.x.toFixed(3)),
       primaryScale: Number(primary.scale.x.toFixed(3)),
       actionScale: Number(action.scale.x.toFixed(3)),
-      specsScale: Number(specs.scale.x.toFixed(3)),
       rewardScale: Number(rewardPill.node.scale.x.toFixed(3)),
       dangerScale: Number(dangerPill.node.scale.x.toFixed(3))
     };
@@ -13922,11 +14263,8 @@ export class PlayScene {
       const aceFx = display.__aceDossierFx;
       if (aceFx) {
         const pulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
-        aceFx.burst.rotation = elapsed * 0.00016;
-        aceFx.burst.alpha = 0.72 + pulse * 0.28;
-        aceFx.outerGlow.alpha = 0.72 + pulse * 0.28;
-        aceFx.scanline.y = -aceFx.panelHeight / 2 + 14 + ((elapsed % 1050) / 1050) * (aceFx.panelHeight - 28);
-        aceFx.scanline.alpha = 0.22 + pulse * 0.38;
+        aceFx.burst.alpha = 0.76 + pulse * 0.16;
+        aceFx.outerGlow.alpha = 0.78 + pulse * 0.12;
       }
 
       const introDuration = options.aceDossier ? 180 : 250;

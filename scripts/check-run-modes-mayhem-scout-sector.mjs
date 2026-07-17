@@ -541,7 +541,8 @@ try {
   await waitForScene(page, 'menu');
   const dailyFocus = await focusMenuOption(page, 'dailySignal');
   assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
-  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY: CLEAR SECTOR 10[\s\S]*TACTICAL DRAFTS[\s\S]*NOT ATTEMPTED[\s\S]*WEEK:[\s\S]*LOCAL RECORD ONLY[\s\S]*NO PUBLIC DAILY LEADERBOARD[\s\S]*RESETS IN/i);
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY: CLEAR SECTOR 10[\s\S]*TACTICAL DRAFTS[\s\S]*NOT ATTEMPTED[\s\S]*WEEKLY CLEARS: 0 \/ 7[\s\S]*LOCAL RECORD ONLY[\s\S]*NO PUBLIC DAILY LEADERBOARD[\s\S]*RESETS IN/i);
+  assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /[◆◇]/, 'Daily menu briefing must use words and numbers instead of symbolic status glyphs');
   assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /fixed route/i, 'Daily briefing must not overclaim full route determinism');
   assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-focused.png'), fullPage: false });

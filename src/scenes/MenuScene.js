@@ -63,10 +63,13 @@ const MENU_ICON_ASSET_KEYS = {
 };
 
 const MENU_BOSS_BARK_EVENTS = {
+  mayhem: 'boss_menu_bark_launch',
+  mayhemTactical: 'boss_menu_bark_launch',
   dailySignal: 'boss_menu_bark_launch',
   launch: 'boss_menu_bark_launch',
   launchTactical: 'boss_menu_bark_launch',
   scout: 'boss_menu_bark_scout',
+  sector: 'boss_menu_bark_sector_start',
   sectorStart: 'boss_menu_bark_sector_start',
   hangar: 'boss_menu_bark_hangar',
   highscores: 'boss_menu_bark_leaderboard',
@@ -2170,8 +2173,7 @@ export class MenuScene {
             route: translateText(contract.templateLabel)
           }),
           recordLine,
-          translateText('WEEK: {signals} · {clears}/7 CLEARED', {
-            signals: formatDailySignalFlightLogSymbols(flightLog),
+          translateText('WEEKLY CLEARS: {clears} / 7', {
             clears: flightLog.clears
           }),
           translateText('LOCAL RECORD ONLY · NO PUBLIC DAILY LEADERBOARD'),
@@ -3607,6 +3609,7 @@ export class MenuScene {
     }
     if (isActivate) this.clearPendingBossMenuBark();
     const now = Date.now();
+    const isRunModeFocus = !isActivate && target?._isRunModeCard === true;
     const minCooldown = isActivate ? 420 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS;
     const sameCooldown = isActivate ? 420 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS;
     if (!force && now - this.lastBossMenuBarkAt < minCooldown) {
@@ -3627,12 +3630,15 @@ export class MenuScene {
       const played = AudioManager.playVoice(eventName, {
         force,
         bypassGlobalCooldown: isActivate,
-        bypassEventCooldown: isActivate,
+        // Several run modes intentionally share one launch event. Their scene-level
+        // cooldown still limits chatter, but the shared event must not silence the
+        // next distinct card the player deliberately hovers.
+        bypassEventCooldown: isActivate || isRunModeFocus,
         bypassVoiceLock: isActivate,
         // Focus barks wait before starting, but click barks must be able to cut a hover bark cleanly.
         exclusiveGroup: 'boss_menu_bark',
         cooldownMs: isActivate ? 0 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
-        eventCooldownMs: isActivate ? 0 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS,
+        eventCooldownMs: isActivate || isRunModeFocus ? 0 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS,
         delayIfVoiceLocked: !isActivate,
         duckMs: intent === 'activate' ? 1250 : 950,
         duckFactor: intent === 'activate' ? 0.28 : 0.38,

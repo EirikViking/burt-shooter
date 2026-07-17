@@ -14,6 +14,13 @@ import { getCompetitionLearningSourceText } from '../competitionLearningSourceTe
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\u30a8\u30fc\u30b9\u63a5\u89e6",
+  "ACE CONTRACT": "\u30a8\u30fc\u30b9\u5951\u7d04",
+  "DESTROY THE GOLD-MARKED ACE": "\u91d1\u8272\u3067\u30de\u30fc\u30af\u3055\u308c\u305f\u30a8\u30fc\u30b9\u3092\u6483\u7834\u305b\u3088",
+  "ATTACK: {threat}": "\u653b\u6483: {threat}",
+  "DESTROY ACE {number} // {reward}": "\u30a8\u30fc\u30b9 {number} \u6483\u7834 // {reward}",
+  "2X {reward}": "{reward} X2",
+  "DESTROY GOLD ACE / CLAIM SHOWN REWARD": "\u91d1\u8272\u30a8\u30fc\u30b9\u3092\u6483\u7834 / \u8868\u793a\u5831\u916c\u3092\u7372\u5f97",
+  "Destroy the gold-marked Ace to claim the reward shown above it. The Ace keeps its normal score value.": "\u91d1\u8272\u3067\u30de\u30fc\u30af\u3055\u308c\u305f\u30a8\u30fc\u30b9\u3092\u6483\u7834\u3057\u3001\u4e0a\u306b\u8868\u793a\u3055\u308c\u305f\u5831\u916c\u3092\u7372\u5f97\u3057\u3088\u3046\u3002\u30a8\u30fc\u30b9\u306e\u901a\u5e38\u30b9\u30b3\u30a2\u5024\u306f\u5909\u308f\u308a\u307e\u305b\u3093\u3002",
   "DESTROY THE MARKED SHIP": "\u30de\u30fc\u30af\u3055\u308c\u305f\u8266\u3092\u6483\u7834\u305b\u3088",
   "DODGE: {threat}": "\u56de\u907f\uff1a{threat}",
   "CABINET SKILL FLIGHT": "CABINET スキルフライト",

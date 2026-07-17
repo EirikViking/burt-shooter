@@ -1359,9 +1359,19 @@ export class Enemy {
   updateAceBountyLabel() {
     if (!this.aceLabel || !this.aceVariant) return;
     const number = String(this.aceVariant.number).padStart(4, '0');
-    const label = translateText('ACE {number} // {reward}', {
+    const baseReward = translateText(this.aceVariant.rewardLabel);
+    const duplicateReward = Boolean(
+      this.nemesisProtocol
+      && this.nemesisProtocol.bonusKind === this.aceVariant.rewardKind
+      && (
+        (this.aceVariant.rewardKind === 'powerup' && this.nemesisProtocol.bonusPowerupType === this.aceVariant.rewardPowerupType)
+        || (this.aceVariant.rewardKind === 'rescan' && this.nemesisProtocol.bonusId === this.aceVariant.rewardId)
+      )
+    );
+    const reward = duplicateReward ? translateText('2X {reward}', { reward: baseReward }) : baseReward;
+    const label = translateText('DESTROY ACE {number} // {reward}', {
       number,
-      reward: translateText(this.aceVariant.rewardLabel)
+      reward
     });
     this.aceLabel.text = label;
     this.aceLabel.scale.set(1);

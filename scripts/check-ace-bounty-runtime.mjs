@@ -168,20 +168,24 @@ try {
   if (desktop.ace?.maxHealth <= desktop.base?.maxHealth) failures.push(`Ace health did not increase: ${JSON.stringify(desktop)}`);
   if (desktop.base?.scoreValue !== (await page.evaluate(() => window.__game?.scenes?.play?.enemyManager?.enemies?.find((enemy) => enemy?.isAce)?.scoreValue))) failures.push('Ace promotion changed score value');
   if (desktop.threatFrame?.tier !== 'ace' || desktop.threatFrame?.markerCount !== 8) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
-  if (!/ACE 0001.*SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
+  if (!/DESTROY ACE 0001.*2X SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
   if ((desktop.ace?.label || '').includes('\n') || desktop.ace?.labelFontSize < 20 || desktop.ace?.labelScale < 0.82) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
   if (
     desktop.toast?.type !== 'aceContact'
-    || desktop.toast?.dossier?.primaryFontSize < 28
-    || desktop.toast?.dossier?.actionFontSize < 14
-    || desktop.toast?.dossier?.panelWidth > 540
-    || desktop.toast?.dossier?.panelHeight > 135
+    || desktop.toast?.duration < 3900
+    || desktop.toast?.protectedRemainingMs < 2500
+    || desktop.toast?.dossier?.primaryFontSize < 27
+    || desktop.toast?.dossier?.actionFontSize < 13
+    || desktop.toast?.dossier?.panelWidth > 500
+    || desktop.toast?.dossier?.panelHeight > 114
     || desktop.toast?.dossier?.screenAreaRatio > 0.04
     || desktop.toast?.dossier?.edgeAligned !== true
     || desktop.toast?.dossier?.placement !== 'left-edge'
-    || !/DESTROY/i.test(desktop.toast?.dossier?.action || '')
-    || !/DODGE/i.test(desktop.toast?.dossier?.danger || '')
+    || desktop.toast?.dossier?.title !== 'ACE CONTRACT'
+    || desktop.toast?.dossier?.action !== 'DESTROY THE GOLD-MARKED ACE'
+    || desktop.toast?.dossier?.reward !== 'REWARD: 2X SHIELD'
+    || !/ATTACK: PRECISION/i.test(desktop.toast?.dossier?.danger || '')
   ) failures.push(`desktop Ace action briefing hierarchy missing: ${JSON.stringify(desktop.toast)}`);
   if (!desktop.toast?.bounds || desktop.toast.bounds.x < 0 || desktop.toast.bounds.x + desktop.toast.bounds.width > 1920 || desktop.toast.bounds.y < 0 || desktop.toast.bounds.y + desktop.toast.bounds.height > 1080) failures.push(`desktop Ace dossier outside viewport: ${JSON.stringify(desktop.toast?.bounds)}`);
 
@@ -221,7 +225,7 @@ try {
     if (killed) play.onEnemyKilled(enemy);
     const duplicate = play.completeAceBounty(enemy);
     const rewardPickups = play.powerupManager?.powerups?.filter((powerup) => (
-      powerup.active !== false && powerup.spawnSource === 'ace_nemesis_bundle'
+      powerup.active !== false && powerup.spawnSource === 'ace_nemesis_pair'
     )) || [];
     return {
       killed,
@@ -229,17 +233,35 @@ try {
       state: structuredClone(play.getAceBountyDebugState()),
       rewardPickups: rewardPickups.map((powerup) => ({
         type: powerup.type,
-        bundledPowerupTypes: [...(powerup.bundledPowerupTypes || [])]
+        bundledPowerupTypes: [...(powerup.bundledPowerupTypes || [])],
+        rewardClaim: powerup.rewardClaim,
+        rngIsolated: powerup.rngIsolated,
+        lifeTimeMs: powerup.lifeTime,
+        verticalSpeed: powerup.vy,
+        pickupAssistRadius: powerup.pickupAssistRadius,
+        x: powerup.x
       }))
     };
   });
   report.scenarios.completion = completion;
   if (!completion.killed || completion.state?.completedCount !== 1) failures.push(`Ace completion missing: ${JSON.stringify(completion)}`);
-  if (completion.rewardPickups?.length !== 1 || completion.rewardPickups[0]?.type !== 'shield' || completion.rewardPickups[0]?.bundledPowerupTypes?.length !== 0) {
-    failures.push(`Identical Ace/Nemesis rewards were not coalesced into one pickup: ${JSON.stringify(completion.rewardPickups)}`);
+  if (
+    completion.rewardPickups?.length !== 2
+    || completion.rewardPickups.some((pickup) => (
+      pickup.type !== 'shield'
+      || pickup.bundledPowerupTypes?.length !== 0
+      || pickup.rewardClaim !== true
+      || pickup.lifeTimeMs < 42000
+      || pickup.verticalSpeed > 0.42
+      || pickup.pickupAssistRadius < 40
+    ))
+    || completion.rewardPickups.filter((pickup) => pickup.rngIsolated).length !== 1
+    || Math.abs(completion.rewardPickups[0]?.x - completion.rewardPickups[1]?.x) < 80
+  ) {
+    failures.push(`Identical Ace/Nemesis rewards did not pay two claimable pickups: ${JSON.stringify(completion.rewardPickups)}`);
   }
   if (completion.duplicate !== null || completion.state?.history?.length !== 1) failures.push(`Ace bounty claimed more than once: ${JSON.stringify(completion)}`);
-  completion.screenshot = path.join(outputDir, 'ace-reward-single-pickup-1920x1080.png');
+  completion.screenshot = path.join(outputDir, 'ace-reward-double-pickup-1920x1080.png');
   await page.screenshot({ path: completion.screenshot, fullPage: true });
 
   const bundledRewards = await page.evaluate(() => {
@@ -277,6 +299,49 @@ try {
   }
   if (bundledRewards.appliedTypes?.join(',') !== 'shield,bomb' || !bundledRewards.reward?.bundled || !bundledRewards.protocolReward?.bundled || bundledRewards.protocolReward?.coalesced) {
     failures.push(`Bundled pickup did not apply both rewards: ${JSON.stringify(bundledRewards)}`);
+  }
+
+  const duplicateRewardRng = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const manager = play.powerupManager;
+    const before = manager.powerups.length;
+    const originalRandom = Math.random;
+    let globalRandomCalls = 0;
+    Math.random = () => {
+      globalRandomCalls += 1;
+      return 0.5;
+    };
+    let pair;
+    try {
+      pair = play.applyAceNemesisRewards({
+        protocolId: 'rng-isolation-protocol',
+        rewardKind: 'powerup',
+        rewardPowerupType: 'shield',
+        bonusKind: 'powerup',
+        bonusPowerupType: 'shield',
+        rewardSpawnKey: 'runtime:rng-isolation'
+      }, { x: 700, y: 320, nemesisBonusRewardClaimed: false });
+      const created = manager.powerups.slice(before);
+      created.forEach((powerup) => powerup.update(1, play));
+      return {
+        globalRandomCalls,
+        pair,
+        rngIsolation: created.map((powerup) => powerup.rngIsolated)
+      };
+    } finally {
+      Math.random = originalRandom;
+      manager.powerups.slice(before).forEach((powerup) => { powerup.active = false; });
+      play.cleanupSkippedFrameVisuals('ace_rng_isolation_test');
+    }
+  });
+  report.scenarios.duplicateRewardRng = duplicateRewardRng;
+  if (
+    duplicateRewardRng.globalRandomCalls !== 5
+    || duplicateRewardRng.rngIsolation?.join(',') !== 'false,true'
+    || !duplicateRewardRng.pair?.reward?.duplicatePair
+    || !duplicateRewardRng.pair?.protocolReward?.duplicatePair
+  ) {
+    failures.push(`second duplicate reward perturbed gameplay RNG: ${JSON.stringify(duplicateRewardRng)}`);
   }
 
   const spawnOwnership = await page.evaluate(() => {
@@ -358,20 +423,24 @@ try {
   localized.screenshot = path.join(outputDir, 'ace-bounty-840x640-de.png');
   await page.screenshot({ path: localized.screenshot, fullPage: true });
   report.scenarios.localized = localized;
-  if (!localized.ok || !/ASS 1000/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
+  if (!localized.ok || !/ZERSTOERE ASS 1000.*2-FACH EXTRA-NEUSCAN/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
   if (!/NEMESIS 10000/.test(localized.toast?.dossier?.protocol || '') || localized.ace?.protocol?.number !== 10000) failures.push(`German Nemesis dossier mismatch: ${localized.toast?.dossier?.protocol}`);
   if (!/RIVALEN-STAFFEL 10000/.test(localized.toast?.dossier?.wing || '') || localized.ace?.rivalWing?.number !== 10000) failures.push(`German Rival Wing dossier mismatch: ${localized.toast?.dossier?.wing}`);
   if (/ACE|BOUNTY|REWARD/.test(localized.ace?.label || '')) failures.push(`German Ace label retained English copy: ${localized.ace?.label}`);
   if (!localized.labelBounds || localized.labelBounds.x < 0 || localized.labelBounds.x + localized.labelBounds.width > 840 || localized.labelBounds.y < 0) failures.push(`compact localized Ace label outside viewport: ${JSON.stringify(localized.labelBounds)}`);
   if (
     localized.toast?.type !== 'aceContact'
-    || localized.toast?.dossier?.primaryFontSize < 24
+    || localized.toast?.duration < 3900
+    || localized.toast?.dossier?.primaryFontSize < 23
     || localized.toast?.dossier?.actionFontSize < 12
-    || localized.toast?.dossier?.panelWidth > 520
-    || localized.toast?.dossier?.panelHeight > 130
+    || localized.toast?.dossier?.panelWidth > 460
+    || localized.toast?.dossier?.panelHeight > 108
     || localized.toast?.dossier?.screenAreaRatio > 0.13
     || localized.toast?.dossier?.placement !== 'upper-center-edge-safe'
-    || /DESTROY THE MARKED SHIP|DODGE:/.test(`${localized.toast?.dossier?.action || ''} ${localized.toast?.dossier?.danger || ''}`)
+    || localized.toast?.dossier?.title !== 'ASS-AUFTRAG'
+    || localized.toast?.dossier?.action !== 'ZERSTOERE DAS GOLDMARKIERTE ASS'
+    || !/ANGRIFF:/.test(localized.toast?.dossier?.danger || '')
+    || /ACE CONTRACT|DESTROY|ATTACK:/.test(`${localized.toast?.dossier?.title || ''} ${localized.toast?.dossier?.action || ''} ${localized.toast?.dossier?.danger || ''}`)
   ) failures.push(`compact localized Ace action briefing hierarchy missing: ${JSON.stringify(localized.toast)}`);
   if (!localized.toast?.bounds || localized.toast.bounds.x < 0 || localized.toast.bounds.x + localized.toast.bounds.width > 840 || localized.toast.bounds.y < 0 || localized.toast.bounds.y + localized.toast.bounds.height > 640) failures.push(`compact localized Ace dossier outside viewport: ${JSON.stringify(localized.toast?.bounds)}`);
 

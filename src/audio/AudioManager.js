@@ -44,6 +44,14 @@ const SPECTACLE_ACCENT_PROFILES = Object.freeze({
     noise: 0.2,
     minIntervalMs: 520
   }),
+  wonder: Object.freeze({
+    rootHz: 132,
+    sparkleHz: 1320,
+    durationSeconds: 0.92,
+    volume: 0.32,
+    noise: 0.04,
+    minIntervalMs: 12000
+  }),
   reinforcement: Object.freeze({
     rootHz: 42,
     sparkleHz: 430,
@@ -147,6 +155,7 @@ class AudioController {
     this.lastAlienBarkVariant = -1;
     this.spectacleAccentCooldowns = {};
     this.spectacleNoiseBuffer = null;
+    this.spectacleAccentSequence = 0;
     this.lastSpectacleAccent = null;
     this.lastVoiceEvent = null;
     this.lastVoiceTrack = null;
@@ -503,8 +512,10 @@ class AudioController {
     const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * durationSeconds)), ctx.sampleRate);
     const data = buffer.getChannelData(0);
     let previous = 0;
+    let noiseState = (0x9e3779b9 ^ ctx.sampleRate) >>> 0;
     for (let index = 0; index < data.length; index += 1) {
-      const white = Math.random() * 2 - 1;
+      noiseState = (Math.imul(noiseState, 1664525) + 1013904223) >>> 0;
+      const white = (noiseState / 0x100000000) * 2 - 1;
       previous = previous * 0.72 + white * 0.28;
       data[index] = previous;
     }
@@ -525,6 +536,8 @@ class AudioController {
 
     const ctx = this.context;
     if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+    this.spectacleAccentSequence = (Number(this.spectacleAccentSequence) || 0) + 1;
+    const accentJitter = ((Math.imul(this.spectacleAccentSequence, 1103515245) + 12345) >>> 0) / 0x100000000;
     const intensity = Math.max(0.25, Math.min(1.55, this.readMixNumber(options.intensity, 1)));
     const durationSeconds = Math.max(
       0.16,
@@ -587,7 +600,7 @@ class AudioController {
       sparkleHz * (kind === 'pickup' || kind === 'combo' ? 1.42 : 0.58),
       startAt + durationSeconds * 0.72
     );
-    sparkle.detune.setValueAtTime(-12 + Math.random() * 24, startAt);
+    sparkle.detune.setValueAtTime(-12 + accentJitter * 24, startAt);
     sparkleFilter.type = 'bandpass';
     sparkleFilter.frequency.setValueAtTime(Math.max(240, sparkleHz), startAt);
     sparkleFilter.Q.setValueAtTime(4.8, startAt);

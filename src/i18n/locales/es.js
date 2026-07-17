@@ -14,6 +14,13 @@ import { getCompetitionLearningSourceText } from '../competitionLearningSourceTe
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "CONTACTO AS",
+  "ACE CONTRACT": "CONTRATO DE AS",
+  "DESTROY THE GOLD-MARKED ACE": "DESTRUYE EL AS MARCADO EN DORADO",
+  "ATTACK: {threat}": "ATAQUE: {threat}",
+  "DESTROY ACE {number} // {reward}": "DESTRUYE AS {number} // {reward}",
+  "2X {reward}": "{reward} X2",
+  "DESTROY GOLD ACE / CLAIM SHOWN REWARD": "DESTRUYE EL AS DORADO / RECLAMA LA RECOMPENSA",
+  "Destroy the gold-marked Ace to claim the reward shown above it. The Ace keeps its normal score value.": "Destruye el As marcado en dorado para reclamar la recompensa que aparece sobre el. El As conserva su valor de puntos normal.",
   "DESTROY THE MARKED SHIP": "DESTRUYE LA NAVE MARCADA",
   "DODGE: {threat}": "ESQUIVA: {threat}",
   "CABINET SKILL FLIGHT": "VUELO DE DESTREZA DEL CABINET",

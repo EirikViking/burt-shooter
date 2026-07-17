@@ -14,6 +14,13 @@ import { getCompetitionLearningSourceText } from '../competitionLearningSourceTe
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
+  "ACE CONTRACT": "\uc5d0\uc774\uc2a4 \uacc4\uc57d",
+  "DESTROY THE GOLD-MARKED ACE": "\uae08\uc0c9 \ud45c\uc2dd\uc758 \uc5d0\uc774\uc2a4\ub97c \uaca9\ud30c\ud558\uc138\uc694",
+  "ATTACK: {threat}": "\uacf5\uaca9: {threat}",
+  "DESTROY ACE {number} // {reward}": "\uc5d0\uc774\uc2a4 {number} \uaca9\ud30c // {reward}",
+  "2X {reward}": "{reward} X2",
+  "DESTROY GOLD ACE / CLAIM SHOWN REWARD": "\uae08\uc0c9 \uc5d0\uc774\uc2a4 \uaca9\ud30c / \ud45c\uc2dc \ubcf4\uc0c1 \ud68d\ub4dd",
+  "Destroy the gold-marked Ace to claim the reward shown above it. The Ace keeps its normal score value.": "\uae08\uc0c9 \ud45c\uc2dd\uc758 \uc5d0\uc774\uc2a4\ub97c \uaca9\ud30c\ud574 \uc704\uc5d0 \ud45c\uc2dc\ub41c \ubcf4\uc0c1\uc744 \ud68d\ub4dd\ud558\uc138\uc694. \uc5d0\uc774\uc2a4\uc758 \uae30\ubcf8 \uc810\uc218\ub294 \uadf8\ub300\ub85c\uc785\ub2c8\ub2e4.",
   "DESTROY THE MARKED SHIP": "\ud45c\uc2dc\ub41c \ud568\uc120\uc744 \uaca9\ud30c\ud558\uc138\uc694",
   "DODGE: {threat}": "\ud68c\ud53c: {threat}",
   "CABINET SKILL FLIGHT": "CABINET 기량 비행",

@@ -94,6 +94,7 @@ page.on('console', (message) => {
 
 await page.addInitScript(() => {
   window.__fakeAudioPlayLog = [];
+  window.__fakeAudioInstances = [];
   class FakeAudio {
     constructor(src = '') {
       this.src = src;
@@ -104,6 +105,7 @@ await page.addInitScript(() => {
       this.paused = true;
       this.readyState = 4;
       this._listeners = new Map();
+      window.__fakeAudioInstances.push(this);
     }
 
     addEventListener(type, listener) {
@@ -127,6 +129,15 @@ await page.addInitScript(() => {
       this.paused = true;
     }
 
+    _emit(type) {
+      for (const listener of [...(this._listeners.get(type) || [])]) listener.call(this);
+    }
+
+    finish() {
+      this.paused = true;
+      this._emit('ended');
+    }
+
     load() {}
   }
 
@@ -136,6 +147,39 @@ await page.addInitScript(() => {
 try {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', { timeout: 30000 });
+
+  const runModeCards = [
+    ['tacticalStartBtn', 'launchTactical', 'boss_menu_bark_launch'],
+    ['startBtn', 'launch', 'boss_menu_bark_launch'],
+    ['dailySignalBtn', 'dailySignal', 'boss_menu_bark_launch'],
+    ['scoutRunBtn', 'scout', 'boss_menu_bark_scout'],
+    ['sectorStartBtn', 'sectorStart', 'boss_menu_bark_sector_start']
+  ];
+  const runModeHover = [];
+  for (const [buttonKey, expectedMenuId, expectedEvent] of runModeCards) {
+    await page.evaluate((key) => {
+      const scene = window.__game?.currentScene;
+      scene?.[key]?.emit?.('pointerover');
+    }, buttonKey);
+    await page.waitForTimeout(460);
+    const state = await readState(page);
+    runModeHover.push({
+      buttonKey,
+      expectedMenuId,
+      focusedOption: state.menu?.focusedOption || null,
+      expectedEvent,
+      activeEvent: state.audio?.activeVoiceGroups?.boss_menu_bark?.eventName || null,
+      activeVoiceCount: state.audio?.activeVoiceCount || 0
+    });
+    await page.evaluate((key) => {
+      const scene = window.__game?.currentScene;
+      scene?.[key]?.emit?.('pointerout');
+      for (const audio of window.__fakeAudioInstances || []) {
+        if (!audio.loop && !audio.paused) audio.finish?.();
+      }
+    }, buttonKey);
+    await page.waitForTimeout(1900);
+  }
 
   const before = await page.evaluate(() => {
     const scene = window.__game?.currentScene;
@@ -187,6 +231,12 @@ try {
   const pendingAudio = afterPendingClick.state?.audio || {};
   const report = {
     ok: Boolean(
+      runModeHover.length === runModeCards.length &&
+      runModeHover.every((entry) => (
+        entry.focusedOption === entry.expectedMenuId &&
+        entry.activeEvent === entry.expectedEvent &&
+        entry.activeVoiceCount === 1
+      )) &&
       beforeAudio.activeVoiceCount === 1 &&
       beforeAudio.activeVoiceGroups?.boss_menu_bark?.eventName === 'boss_menu_bark_launch' &&
       afterClickAudio.activeVoiceCount === 1 &&
@@ -199,6 +249,7 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
+    runModeHover,
     beforeAudio,
     afterClickAudio,
     afterPendingClick,

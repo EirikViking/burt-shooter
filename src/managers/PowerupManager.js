@@ -14,8 +14,17 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function randomBetween(min, max) {
-  return min + Math.random() * Math.max(0, max - min);
+function createSeededRandom(seed) {
+  let state = 2166136261;
+  for (const char of String(seed || 'nova-swarm-pickup')) {
+    state ^= char.charCodeAt(0);
+    state = Math.imul(state, 16777619);
+  }
+  state >>>= 0;
+  return () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 0x100000000;
+  };
 }
 
 const MAJOR_POWERUP_TYPES = new Set([
@@ -61,6 +70,9 @@ class Powerup {
     this.spawnId = options.spawnId || null;
     this.spawnKey = options.spawnKey || null;
     this.spawnSource = options.source || null;
+    this.rewardClaim = options.rewardClaim === true;
+    this.rngIsolated = Boolean(options.visualSeed);
+    this.randomUnit = this.rngIsolated ? createSeededRandom(options.visualSeed) : Math.random;
     this.bundledPowerupTypes = Array.from(new Set(
       (Array.isArray(options.bundledPowerupTypes) ? options.bundledPowerupTypes : [])
         .map((entry) => String(entry || ''))
@@ -95,19 +107,33 @@ class Powerup {
     if (Number.isFinite(Number(this.movement.lifeTimeMs))) {
       this.lifeTime = Math.max(4000, Number(this.movement.lifeTimeMs));
     }
+    if (Number.isFinite(Number(options.pickupAssistRadius))) {
+      this.pickupAssistRadius = Math.max(this.radius, Number(options.pickupAssistRadius));
+      this.collectionRadius = this.pickupAssistRadius;
+    }
+    if (Number.isFinite(Number(options.verticalSpeed))) {
+      this.vy = Number(options.verticalSpeed);
+    }
+    if (Number.isFinite(Number(options.lifeTimeMs))) {
+      this.lifeTime = Math.max(4000, Number(options.lifeTimeMs));
+    }
     this.evasiveConfig = this.movement.evasive ? this.movement : null;
-    this.evasiveVx = (Math.random() < 0.5 ? -1 : 1) * randomBetween(2.8, 5.8);
+    this.evasiveVx = (this.randomUnit() < 0.5 ? -1 : 1) * this.randomBetween(2.8, 5.8);
     this.evasiveTargetX = x;
-    this.nextEvasiveJumpAt = randomBetween(70, 180);
+    this.nextEvasiveJumpAt = this.randomBetween(70, 180);
 
     // TASK A: Idle animation state
-    this.bobPhase = Math.random() * Math.PI * 2;
+    this.bobPhase = this.randomUnit() * Math.PI * 2;
     this.pulsePhase = 0;
     this.sparkleTimer = 0;
     this.baseY = y;
     this.particleCount = 0; // Track particles per powerup
 
     this.createSprite();
+  }
+
+  randomBetween(min, max) {
+    return min + this.randomUnit() * Math.max(0, max - min);
   }
 
   createSprite() {
@@ -219,7 +245,7 @@ class Powerup {
   scheduleNextEvasiveJump(age) {
     const minMs = Number(this.evasiveConfig?.jumpIntervalMinMs) || 260;
     const maxMs = Math.max(minMs, Number(this.evasiveConfig?.jumpIntervalMaxMs) || 620);
-    this.nextEvasiveJumpAt = age + randomBetween(minMs, maxMs);
+    this.nextEvasiveJumpAt = age + this.randomBetween(minMs, maxMs);
   }
 
   updateEvasiveMovement(delta, scene, age) {
@@ -246,16 +272,16 @@ class Powerup {
       const away = hasPlayer && playerX > this.x ? -1 : 1;
       const jumpMin = Number(this.evasiveConfig.jumpDistanceMinPx) || 92;
       const jumpMax = Math.max(jumpMin, Number(this.evasiveConfig.jumpDistanceMaxPx) || 188);
-      const jitter = randomBetween(
+      const jitter = this.randomBetween(
         -(Number(this.evasiveConfig.horizontalJitterPx) || 48),
         Number(this.evasiveConfig.horizontalJitterPx) || 48
       );
       const fakeoutChance = clamp(Number(this.evasiveConfig.fakeoutChance) || 0, 0, 0.5);
-      const jumpDirection = Math.random() < fakeoutChance ? -away : away;
-      const requestedTarget = this.x + jumpDirection * randomBetween(jumpMin, jumpMax) + jitter;
+      const jumpDirection = this.randomUnit() < fakeoutChance ? -away : away;
+      const requestedTarget = this.x + jumpDirection * this.randomBetween(jumpMin, jumpMax) + jitter;
       const boundaryDirection = requestedTarget <= minX || requestedTarget >= maxX ? -jumpDirection : jumpDirection;
-      this.evasiveTargetX = clamp(this.x + boundaryDirection * randomBetween(jumpMin, jumpMax) + jitter, minX, maxX);
-      this.evasiveVx += boundaryDirection * randomBetween(3.8, 7.2);
+      this.evasiveTargetX = clamp(this.x + boundaryDirection * this.randomBetween(jumpMin, jumpMax) + jitter, minX, maxX);
+      this.evasiveVx += boundaryDirection * this.randomBetween(3.8, 7.2);
       this.scheduleNextEvasiveJump(age);
     }
 
@@ -420,19 +446,19 @@ class Powerup {
 
     // TASK A: Ambient sparkles (spawn every 200-300ms, reduced distance)
     this.sparkleTimer += delta * 16.67;
-    const sparkleInterval = 200 + Math.random() * 100;
+    const sparkleInterval = 200 + this.randomUnit() * 100;
 
     if (this.sparkleTimer > sparkleInterval && this.particleCount < 3 && scene && scene.particleManager) {
       this.sparkleTimer = 0;
       this.particleCount++;
 
       // Spawn tiny sparkle around powerup (reduced distance)
-      const angle = Math.random() * Math.PI * 2;
-      const dist = (this.type === 'nova_miracle' ? 27 : (this.type === 'super_extra_life' ? 19 : 14)) + Math.random() * 13;
+      const angle = this.randomUnit() * Math.PI * 2;
+      const dist = (this.type === 'nova_miracle' ? 27 : (this.type === 'super_extra_life' ? 19 : 14)) + this.randomUnit() * 13;
       const sx = this.x + Math.cos(angle) * dist;
       const sy = this.y + Math.sin(angle) * dist;
-      const vx = (Math.random() - 0.5) * (this.type === 'nova_miracle' ? 1.1 : (this.type === 'super_extra_life' ? 0.8 : 0.3));
-      const vy = (Math.random() - 0.5) * 0.3;
+      const vx = (this.randomUnit() - 0.5) * (this.type === 'nova_miracle' ? 1.1 : (this.type === 'super_extra_life' ? 0.8 : 0.3));
+      const vy = (this.randomUnit() - 0.5) * 0.3;
 
       scene.particleManager.spawnParticle(sx, sy, vx, vy, this.color, this.type === 'nova_miracle' ? 2.8 : (this.type === 'super_extra_life' ? 2.1 : 1.6), 22);
 
@@ -1442,6 +1468,11 @@ export class PowerupManager {
       source: powerup.spawnSource || 'specific',
       type,
       bundledPowerupTypes: [...powerup.bundledPowerupTypes],
+      rewardClaim: powerup.rewardClaim,
+      rngIsolated: powerup.rngIsolated,
+      lifeTimeMs: powerup.lifeTime,
+      verticalSpeed: powerup.vy,
+      pickupAssistRadius: powerup.pickupAssistRadius,
       x: Math.round(x),
       y: Math.round(y),
       spawnedAt: powerup.createdAt
@@ -1481,6 +1512,11 @@ export class PowerupManager {
           source: powerup.spawnSource,
           type: powerup.type,
           bundledPowerupTypes: [...(powerup.bundledPowerupTypes || [])],
+          rewardClaim: powerup.rewardClaim,
+          rngIsolated: powerup.rngIsolated,
+          lifeTimeMs: powerup.lifeTime,
+          verticalSpeed: powerup.vy,
+          pickupAssistRadius: powerup.pickupAssistRadius,
           x: Math.round(Number(powerup.x) || 0),
           y: Math.round(Number(powerup.y) || 0)
         })),

@@ -4909,6 +4909,14 @@ export class EnemyManager {
       }
     }
 
+    this.game?.scenes?.play?.maybeShowCabinetWonder?.({
+      sector: this.level,
+      waveNumber: transitionWaveIndex + 1,
+      hasUpcomingWave,
+      isChallenge: Boolean(clearedWave?.isChallenge || this.waves[transitionWaveIndex + 1]?.isChallenge),
+      busyTransition: survivedMayhemSuperStorm || consumedReinforcementWaveIndices.length > 0
+    });
+
     if (transitionWaveIndex < this.normalWavesTotal - 1) {
       this.currentWaveIndex = transitionWaveIndex + 1;
       this.mayhemReinforcementState = null;

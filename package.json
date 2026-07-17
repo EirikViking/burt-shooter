@@ -72,6 +72,8 @@
     "check:tactical-directive-runtime": "node scripts/check-tactical-directive-runtime.mjs",
     "check:ace-bounties": "node scripts/check-ace-bounties.mjs",
     "check:ace-bounty-runtime": "node scripts/check-ace-bounty-runtime.mjs",
+    "check:cabinet-wonders": "node scripts/check-cabinet-wonders.mjs",
+    "check:cabinet-wonders-runtime": "node scripts/check-cabinet-wonders-runtime.mjs",
     "check:challenge-flight": "node scripts/check-challenge-flight.mjs",
     "check:challenge-flight-runtime": "node scripts/check-challenge-flight-runtime.mjs",
     "check:nemesis-protocols": "node scripts/check-nemesis-protocols.mjs",
