@@ -359,14 +359,14 @@ const report = {
   whileFiring: expectedWhileFiring,
   wallClockTimed,
   chargeOrInstant,
-  ambiguousKeptWallClock: ambiguousWallClock,
+  gameplayClockLocked: expectedGameplayClock,
   balanceSamples,
   dynamicChecks,
   notes: [
     'while_firing drains while unified fire input is held, not only on exact bullet spawn frames.',
     'This covers keyboard Space/shoot, pointer or mouse fire through touchFireActive, and controller firing buttons through gamepad.firing.',
     'Pause and wave gaps do not drain weapon upgrades unless Player.update runs while firing is held; existing pause flow does not advance Player.update.',
-    'Mixed powerups with substantial non-weapon value remain wall_clock to avoid preserving slow-time, score, or movement buffs for free.'
+    'Mixed powerups with substantial non-weapon value use the gameplay clock to prevent banking autonomous, score, sustain, or movement benefits by releasing fire.'
   ]
 };
 
