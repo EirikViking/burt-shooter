@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { getRunModeNarrationSpec } from '../src/config/RunModeNarration.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4390));
@@ -149,37 +150,207 @@ try {
   await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', { timeout: 30000 });
 
   const runModeCards = [
-    ['tacticalStartBtn', 'launchTactical', 'boss_menu_bark_launch'],
-    ['startBtn', 'launch', 'boss_menu_bark_launch'],
-    ['dailySignalBtn', 'dailySignal', 'boss_menu_bark_launch'],
-    ['scoutRunBtn', 'scout', 'boss_menu_bark_scout'],
-    ['sectorStartBtn', 'sectorStart', 'boss_menu_bark_sector_start']
+    ['tacticalStartBtn', 'launchTactical'],
+    ['startBtn', 'launch'],
+    ['dailySignalBtn', 'dailySignal'],
+    ['scoutRunBtn', 'scout'],
+    ['sectorStartBtn', 'sectorStart']
   ];
-  const runModeHover = [];
-  for (const [buttonKey, expectedMenuId, expectedEvent] of runModeCards) {
-    await page.evaluate((key) => {
-      const scene = window.__game?.currentScene;
-      scene?.[key]?.emit?.('pointerover');
-    }, buttonKey);
-    await page.waitForTimeout(460);
+  const finishVoices = async () => page.evaluate(() => {
+    for (const audio of window.__fakeAudioInstances || []) {
+      if (!audio.loop && !audio.paused) audio.finish?.();
+    }
+  });
+  const pointOut = async (buttonKey) => page.evaluate((key) => {
+    window.__game?.currentScene?.[key]?.emit?.('pointerout');
+  }, buttonKey);
+  const readPlayCount = async () => page.evaluate(() => (
+    window.__fakeAudioPlayLog?.filter((src) => (
+      String(src).includes('/audio/voice/menu-boss-barks/boss_menu_bark_mode_')
+    )).length || 0
+  ));
+  const captureNarration = async (buttonKey, expectedMenuId, label) => {
+    const narration = getRunModeNarrationSpec(expectedMenuId);
     const state = await readState(page);
-    runModeHover.push({
+    return {
+      label,
       buttonKey,
       expectedMenuId,
       focusedOption: state.menu?.focusedOption || null,
-      expectedEvent,
+      inputDevice: state.menu?.inputDevice || null,
+      expectedEvent: narration?.event || null,
+      expectedText: narration?.transcriptSource || null,
       activeEvent: state.audio?.activeVoiceGroups?.boss_menu_bark?.eventName || null,
-      activeVoiceCount: state.audio?.activeVoiceCount || 0
-    });
+      activeVoiceCount: state.audio?.activeVoiceCount || 0,
+      dispatch: state.menu?.modeNarration?.lastDispatch || null,
+      playCount: await readPlayCount()
+    };
+  };
+  const hoverCard = async (buttonKey, expectedMenuId, label, { finish = true } = {}) => {
     await page.evaluate((key) => {
-      const scene = window.__game?.currentScene;
-      scene?.[key]?.emit?.('pointerout');
-      for (const audio of window.__fakeAudioInstances || []) {
-        if (!audio.loop && !audio.paused) audio.finish?.();
-      }
+      window.__game?.currentScene?.[key]?.emit?.('pointerover');
     }, buttonKey);
-    await page.waitForTimeout(1900);
+    await page.waitForTimeout(460);
+    const result = await captureNarration(buttonKey, expectedMenuId, label);
+    await pointOut(buttonKey);
+    if (finish) await finishVoices();
+    await page.waitForTimeout(60);
+    return result;
+  };
+  const runHoverSequence = async (cards, label) => {
+    const startPlayCount = await readPlayCount();
+    const entries = [];
+    for (const [buttonKey, expectedMenuId] of cards) {
+      entries.push(await hoverCard(buttonKey, expectedMenuId, label));
+    }
+    return {
+      label,
+      startPlayCount,
+      endPlayCount: await readPlayCount(),
+      entries
+    };
+  };
+  const isCorrectNarration = (entry) => (
+    entry.focusedOption === entry.expectedMenuId &&
+    entry.activeEvent === entry.expectedEvent &&
+    entry.activeVoiceCount === 1 &&
+    entry.dispatch?.menuId === entry.expectedMenuId &&
+    entry.dispatch?.narrationId === entry.expectedEvent &&
+    entry.dispatch?.sourceTranscript === entry.expectedText &&
+    entry.dispatch?.played === true
+  );
+
+  const forwardSequence = await runHoverSequence(runModeCards, 'forward');
+  // Reverse begins on the same card that ended the forward pass, so explicitly
+  // clear the documented same-card cooldown before proving re-entry.
+  await page.waitForTimeout(3300);
+  const reverseSequence = await runHoverSequence([...runModeCards].reverse(), 'reverse');
+  const randomCards = [
+    runModeCards[2],
+    runModeCards[0],
+    runModeCards[4],
+    runModeCards[1],
+    runModeCards[3]
+  ];
+  const randomSequence = await runHoverSequence(randomCards, 'random');
+
+  const replacementStartPlayCount = await readPlayCount();
+  const replacementFirst = await hoverCard(...runModeCards[0], 'active-replacement-first', { finish: false });
+  const replacementSecond = await hoverCard(...runModeCards[2], 'active-replacement-second', { finish: false });
+  const activeReplacement = {
+    startPlayCount: replacementStartPlayCount,
+    endPlayCount: await readPlayCount(),
+    first: replacementFirst,
+    second: replacementSecond
+  };
+  await finishVoices();
+
+  const scrubStartPlayCount = await readPlayCount();
+  for (let index = 0; index < runModeCards.length; index += 1) {
+    const [buttonKey] = runModeCards[index];
+    if (index > 0) await pointOut(runModeCards[index - 1][0]);
+    await page.evaluate((key) => {
+      window.__game?.currentScene?.[key]?.emit?.('pointerover');
+    }, buttonKey);
+    await page.waitForTimeout(70);
   }
+  await page.waitForTimeout(460);
+  const quickScrub = {
+    startPlayCount: scrubStartPlayCount,
+    endPlayCount: await readPlayCount(),
+    final: await captureNarration(...runModeCards[4], 'quick-scrub-final')
+  };
+  await pointOut(runModeCards[4][0]);
+  await finishVoices();
+
+  const reentryStartPlayCount = await readPlayCount();
+  const reentryFirst = await hoverCard(...runModeCards[1], 'same-card-first');
+  await page.waitForTimeout(3300);
+  const reentrySecond = await hoverCard(...runModeCards[1], 'same-card-second', { finish: false });
+  const sameCardReentry = {
+    startPlayCount: reentryStartPlayCount,
+    endPlayCount: await readPlayCount(),
+    first: reentryFirst,
+    second: reentrySecond
+  };
+
+  const movementStartPlayCount = await readPlayCount();
+  await page.evaluate((key) => {
+    const target = window.__game?.currentScene?.[key];
+    target?.emit?.('pointermove', { global: { x: 196, y: 366 } });
+    target?.emit?.('pointermove', { global: { x: 214, y: 374 } });
+    target?.emit?.('pointermove', { global: { x: 232, y: 382 } });
+  }, runModeCards[1][0]);
+  await page.waitForTimeout(500);
+  const withinCardMovement = {
+    startPlayCount: movementStartPlayCount,
+    endPlayCount: await readPlayCount(),
+    state: await captureNarration(...runModeCards[1], 'within-card-movement')
+  };
+  await finishVoices();
+
+  await page.evaluate(() => {
+    const scene = window.__game?.currentScene;
+    scene?.setMenuFocusByButton?.(scene?.dailySignalBtn);
+    scene?.setInputDevice?.('keyboard');
+  });
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(460);
+  const keyboardNavigation = await captureNarration(...runModeCards[3], 'keyboard-arrow-down');
+  await finishVoices();
+
+  await page.evaluate(() => {
+    window.__burtGamepadOverride = {
+      id: 'menu-narration-test-pad',
+      index: 0,
+      connected: true,
+      axes: [0, 0, 0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }))
+    };
+  });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons[13] = { pressed: true, value: 1 };
+  });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons[13] = { pressed: false, value: 0 };
+  });
+  await page.waitForTimeout(460);
+  const controllerNavigation = await captureNarration(...runModeCards[4], 'controller-dpad-down');
+  await finishVoices();
+
+  await page.evaluate(() => {
+    window.__burtGamepadOverride = null;
+  });
+  const mouseSwitchFirst = await hoverCard(...runModeCards[3], 'mouse-before-controller', { finish: false });
+  await page.evaluate(() => {
+    window.__burtGamepadOverride = {
+      id: 'menu-narration-test-pad',
+      index: 0,
+      connected: true,
+      axes: [0, 0, 0, 0],
+      buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }))
+    };
+  });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons[13] = { pressed: true, value: 1 };
+  });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => {
+    window.__burtGamepadOverride.buttons[13] = { pressed: false, value: 0 };
+  });
+  await page.waitForTimeout(460);
+  const mouseSwitchSecond = await captureNarration(...runModeCards[4], 'controller-after-mouse');
+  const mouseToControllerSwitch = {
+    first: mouseSwitchFirst,
+    second: mouseSwitchSecond
+  };
+  await finishVoices();
+  await page.evaluate(() => {
+    window.__burtGamepadOverride = null;
+  });
 
   const before = await page.evaluate(() => {
     const scene = window.__game?.currentScene;
@@ -231,16 +402,34 @@ try {
   const pendingAudio = afterPendingClick.state?.audio || {};
   const report = {
     ok: Boolean(
-      runModeHover.length === runModeCards.length &&
-      runModeHover.every((entry) => (
-        entry.focusedOption === entry.expectedMenuId &&
-        entry.activeEvent === entry.expectedEvent &&
-        entry.activeVoiceCount === 1
+      [forwardSequence, reverseSequence, randomSequence].every((sequence) => (
+        sequence.entries.length === runModeCards.length &&
+        sequence.endPlayCount - sequence.startPlayCount === runModeCards.length &&
+        sequence.entries.every(isCorrectNarration)
       )) &&
+      activeReplacement.endPlayCount - activeReplacement.startPlayCount === 2 &&
+      isCorrectNarration(activeReplacement.first) &&
+      isCorrectNarration(activeReplacement.second) &&
+      activeReplacement.second.activeEvent === getRunModeNarrationSpec('dailySignal')?.event &&
+      quickScrub.endPlayCount - quickScrub.startPlayCount === 1 &&
+      isCorrectNarration(quickScrub.final) &&
+      sameCardReentry.endPlayCount - sameCardReentry.startPlayCount === 2 &&
+      isCorrectNarration(sameCardReentry.first) &&
+      isCorrectNarration(sameCardReentry.second) &&
+      withinCardMovement.endPlayCount === withinCardMovement.startPlayCount &&
+      isCorrectNarration(withinCardMovement.state) &&
+      keyboardNavigation.inputDevice === 'keyboard' &&
+      isCorrectNarration(keyboardNavigation) &&
+      controllerNavigation.inputDevice === 'controller' &&
+      isCorrectNarration(controllerNavigation) &&
+      mouseToControllerSwitch.first.inputDevice === 'keyboard' &&
+      isCorrectNarration(mouseToControllerSwitch.first) &&
+      mouseToControllerSwitch.second.inputDevice === 'controller' &&
+      isCorrectNarration(mouseToControllerSwitch.second) &&
       beforeAudio.activeVoiceCount === 1 &&
-      beforeAudio.activeVoiceGroups?.boss_menu_bark?.eventName === 'boss_menu_bark_launch' &&
+      beforeAudio.activeVoiceGroups?.boss_menu_bark?.eventName === getRunModeNarrationSpec('launch')?.event &&
       afterClickAudio.activeVoiceCount === 1 &&
-      afterClickAudio.activeVoiceGroups?.boss_menu_bark?.eventName === 'boss_menu_bark_launch' &&
+      afterClickAudio.activeVoiceGroups?.boss_menu_bark?.eventName === getRunModeNarrationSpec('launch')?.event &&
       afterPendingClick.pendingBeforeClick === true &&
       afterPendingClick.pendingAfterDelay === false &&
       pendingAudio.activeVoiceCount === 1 &&
@@ -249,7 +438,16 @@ try {
       consoleErrors.length === 0
     ),
     baseUrl,
-    runModeHover,
+    forwardSequence,
+    reverseSequence,
+    randomSequence,
+    activeReplacement,
+    quickScrub,
+    sameCardReentry,
+    withinCardMovement,
+    keyboardNavigation,
+    controllerNavigation,
+    mouseToControllerSwitch,
     beforeAudio,
     afterClickAudio,
     afterPendingClick,

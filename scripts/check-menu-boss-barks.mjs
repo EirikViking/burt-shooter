@@ -12,6 +12,10 @@ import {
   menuBossBarkGroups,
   menuBossBarkLines
 } from '../src/config/MenuBossBarkLines.js';
+import {
+  RUN_MODE_NARRATION_EVENT_IDS,
+  RUN_MODE_NARRATION_SPECS
+} from '../src/config/RunModeNarration.js';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const publicDir = path.join(rootDir, 'public');
@@ -38,12 +42,31 @@ const ids = new Set();
 const texts = new Set();
 for (const group of menuBossBarkGroups) {
   if (!group.event?.startsWith('boss_menu_bark_')) fail(`bad menu boss bark event: ${group.event}`);
-  const expectedCount = group.id === 'idle' ? 30 : MENU_BOSS_BARK_VARIANTS_PER_EVENT;
+  const expectedCount = group.isRunModeNarration
+    ? 1
+    : group.id === 'idle'
+      ? 30
+      : MENU_BOSS_BARK_VARIANTS_PER_EVENT;
   if (group.lines.length !== expectedCount) {
     fail(`${group.id} expected ${expectedCount} variants, got ${group.lines.length}`);
   }
   if (MENU_BOSS_BARK_EVENT_COUNTS[group.event] !== group.lines.length) {
     fail(`${group.event} count map mismatch`);
+  }
+}
+
+const modeNarrationGroups = menuBossBarkGroups.filter((group) => group.isRunModeNarration);
+if (modeNarrationGroups.length !== RUN_MODE_NARRATION_SPECS.length) {
+  fail(`expected ${RUN_MODE_NARRATION_SPECS.length} dedicated mode narration groups, got ${modeNarrationGroups.length}`);
+}
+if (new Set(RUN_MODE_NARRATION_EVENT_IDS).size !== RUN_MODE_NARRATION_SPECS.length) {
+  fail('every selectable run mode must use a unique narration event');
+}
+for (const spec of RUN_MODE_NARRATION_SPECS) {
+  const group = modeNarrationGroups.find((entry) => entry.event === spec.event);
+  if (!group) fail(`missing dedicated mode narration group for ${spec.modeId}: ${spec.event}`);
+  if (group?.lines?.[0] !== spec.transcriptSource) {
+    fail(`mode narration transcript mismatch for ${spec.modeId}`);
   }
 }
 
@@ -83,7 +106,7 @@ for (const url of expectedUrls) {
 
 for (const group of menuBossBarkGroups) {
   const catalog = SFX_CATALOG[group.event] || [];
-  const expectedCount = MENU_BOSS_BARK_EVENT_COUNTS[group.event] || MENU_BOSS_BARK_VARIANTS_PER_EVENT;
+  const expectedCount = MENU_BOSS_BARK_EVENT_COUNTS[group.event] || 0;
   if (catalog.length !== expectedCount) {
     fail(`SFX_CATALOG.${group.event} expected ${expectedCount}, got ${catalog.length}`);
   }

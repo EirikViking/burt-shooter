@@ -1,11 +1,20 @@
 import { BOSS_DEATH_DEFAULT_VOICE_ID, BOSS_DEATH_DEFAULT_VOICE_NAME, BOSS_DEATH_MODEL_ID } from './BossDeathVoiceLines.js';
+import { RUN_MODE_NARRATION_SPECS } from './RunModeNarration.js';
 
 export const MENU_BOSS_BARK_VARIANTS_PER_EVENT = 17;
 export const MENU_BOSS_BARK_DEFAULT_VOICE_ID = BOSS_DEATH_DEFAULT_VOICE_ID;
 export const MENU_BOSS_BARK_DEFAULT_VOICE_NAME = `${BOSS_DEATH_DEFAULT_VOICE_NAME} - Menu Bark`;
 export const MENU_BOSS_BARK_MODEL_ID = BOSS_DEATH_MODEL_ID;
 
+const runModeNarrationGroups = RUN_MODE_NARRATION_SPECS.map((spec) => ({
+  id: `mode_${spec.modeId}`,
+  event: spec.event,
+  isRunModeNarration: true,
+  lines: [spec.transcriptSource]
+}));
+
 export const menuBossBarkGroups = [
+  ...runModeNarrationGroups,
   {
     id: 'launch',
     event: 'boss_menu_bark_launch',
@@ -354,7 +363,9 @@ export const menuBossBarkLines = menuBossBarkGroups.flatMap((group) =>
     event: group.event,
     groupId: group.id,
     text,
-    generationText: `[huge theatrical alien boss voice, amused and commanding, shouted menu bark] ${text}`
+    generationText: group.isRunModeNarration
+      ? `[huge theatrical alien boss voice, commanding but crystal clear, concise mode briefing, emphasize the mode name and ranked status] ${text}`
+      : `[huge theatrical alien boss voice, amused and commanding, shouted menu bark] ${text}`
   }))
 );
 

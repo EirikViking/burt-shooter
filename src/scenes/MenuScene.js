@@ -31,6 +31,10 @@ import {
 } from '../progression/DailySignalRecords.js';
 import { deriveDailySignalContract, getDailySignalResetSeconds } from '../config/DailyCabinetSignal.js';
 import { getSectorInfo } from '../config/SectorCatalog.js';
+import {
+  RUN_MODE_NARRATION_SPECS,
+  getRunModeNarrationSpec
+} from '../config/RunModeNarration.js';
 import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
 import {
   applyScoutAnomalyToProfile,
@@ -62,15 +66,12 @@ const MENU_ICON_ASSET_KEYS = {
   exit: 'exit'
 };
 
+const RUN_MODE_NARRATION_EVENTS = Object.freeze(Object.fromEntries(
+  RUN_MODE_NARRATION_SPECS.flatMap((spec) => spec.menuIds.map((menuId) => [menuId, spec.event]))
+));
+
 const MENU_BOSS_BARK_EVENTS = {
-  mayhem: 'boss_menu_bark_launch',
-  mayhemTactical: 'boss_menu_bark_launch',
-  dailySignal: 'boss_menu_bark_launch',
-  launch: 'boss_menu_bark_launch',
-  launchTactical: 'boss_menu_bark_launch',
-  scout: 'boss_menu_bark_scout',
-  sector: 'boss_menu_bark_sector_start',
-  sectorStart: 'boss_menu_bark_sector_start',
+  ...RUN_MODE_NARRATION_EVENTS,
   hangar: 'boss_menu_bark_hangar',
   highscores: 'boss_menu_bark_leaderboard',
   leaderboard: 'boss_menu_bark_leaderboard',
@@ -361,6 +362,8 @@ export class MenuScene {
     this.focusedMenuIndex = 0;
     this.lastBossMenuBarkAt = 0;
     this.lastBossMenuBarkId = null;
+    this.lastModeNarrationDispatch = null;
+    this.modeNarrationDispatchLog = [];
     this.pendingBossMenuBarkTimer = null;
     this.pendingBossMenuBarkToken = 0;
     this.pendingBossMenuBarkRequest = null;
@@ -3234,6 +3237,30 @@ export class MenuScene {
         titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
         bodyBounds: boundsForDisplayObject(this.runModeExplainer)
       },
+      modeNarration: {
+        focusDelayMs: MENU_BOSS_BARK_FOCUS_DELAY_MS,
+        focusCooldownMs: MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
+        sameModeCooldownMs: MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS,
+        matrix: RUN_MODE_NARRATION_SPECS.map((spec) => ({
+          modeId: spec.modeId,
+          menuIds: [...spec.menuIds],
+          displayTitle: translateText(spec.displayTitle),
+          narrationKey: spec.narrationKey,
+          event: spec.event,
+          resolvedText: translateText(spec.transcriptSource),
+          sourceTranscript: spec.transcriptSource,
+          rankedStatus: spec.rankedStatus,
+          mechanicSummary: spec.mechanicSummary
+        })),
+        pending: this.pendingBossMenuBarkRequest ? {
+          menuId: this.pendingBossMenuBarkRequest.menuId,
+          intent: this.pendingBossMenuBarkRequest.intent,
+          requireHover: this.pendingBossMenuBarkRequest.requireHover,
+          startedAt: this.pendingBossMenuBarkRequest.startedAt
+        } : null,
+        lastDispatch: this.lastModeNarrationDispatch,
+        dispatchLog: this.modeNarrationDispatchLog.slice(-24)
+      },
       missionBoard: {
         title: this.missionBoardTitle?.text || null,
         subtitle: this.missionBoardSubtitle?.text || null,
@@ -3519,6 +3546,39 @@ export class MenuScene {
     return MENU_BOSS_BARK_EVENTS[menuId] || null;
   }
 
+  recordModeNarrationDispatch(menuId, eventName, {
+    decision,
+    intent = 'focus',
+    played = false,
+    reason = null,
+    timestamp = Date.now()
+  } = {}) {
+    const spec = getRunModeNarrationSpec(menuId);
+    if (!spec) return null;
+    const entry = Object.freeze({
+      modeId: spec.modeId,
+      menuId,
+      displayTitle: translateText(spec.displayTitle),
+      narrationKey: spec.narrationKey,
+      narrationId: eventName || spec.event,
+      sourceTranscript: spec.transcriptSource,
+      resolvedText: translateText(spec.transcriptSource),
+      rankedStatus: spec.rankedStatus,
+      intent,
+      decision: decision || (played ? 'played' : 'not_played'),
+      played: Boolean(played),
+      reason,
+      timestamp,
+      timestampIso: new Date(timestamp).toISOString()
+    });
+    this.lastModeNarrationDispatch = entry;
+    this.modeNarrationDispatchLog.push(entry);
+    if (this.modeNarrationDispatchLog.length > 48) {
+      this.modeNarrationDispatchLog.splice(0, this.modeNarrationDispatchLog.length - 48);
+    }
+    return entry;
+  }
+
   showBossMenuBarkVfx(target, { intent = 'focus', color = null } = {}) {
     if (!this.menuFx?.burst) return;
     const width = Number(target?._btnWidth) || 160;
@@ -3588,12 +3648,28 @@ export class MenuScene {
   scheduleBossMenuBark(menuId, { target = null, intent = 'focus', requireHover = false } = {}) {
     this.clearPendingBossMenuBark();
     const token = this.pendingBossMenuBarkToken;
-    this.pendingBossMenuBarkRequest = { menuId, target, intent, requireHover, startedAt: Date.now() };
+    const startedAt = Date.now();
+    this.pendingBossMenuBarkRequest = { menuId, target, intent, requireHover, startedAt };
+    this.recordModeNarrationDispatch(menuId, this.getBossMenuBarkEvent(menuId), {
+      decision: 'scheduled_dwell',
+      intent,
+      played: false,
+      reason: `focus_dwell_${MENU_BOSS_BARK_FOCUS_DELAY_MS}ms`,
+      timestamp: startedAt
+    });
     this.pendingBossMenuBarkTimer = setTimeout(() => {
       if (token !== this.pendingBossMenuBarkToken) return;
       this.pendingBossMenuBarkTimer = null;
       this.pendingBossMenuBarkRequest = null;
-      if (!this.isBossMenuBarkTargetCurrent(menuId, target, { requireHover })) return;
+      if (!this.isBossMenuBarkTargetCurrent(menuId, target, { requireHover })) {
+        this.recordModeNarrationDispatch(menuId, this.getBossMenuBarkEvent(menuId), {
+          decision: 'cancelled_stale_target',
+          intent,
+          played: false,
+          reason: requireHover ? 'pointer_left_before_dwell' : 'focus_changed_before_dwell'
+        });
+        return;
+      }
       this.playBossMenuBark(menuId, { target, intent, immediate: true });
     }, MENU_BOSS_BARK_FOCUS_DELAY_MS);
     return false;
@@ -3610,17 +3686,39 @@ export class MenuScene {
     if (isActivate) this.clearPendingBossMenuBark();
     const now = Date.now();
     const isRunModeFocus = !isActivate && target?._isRunModeCard === true;
+    const isDistinctRunModeFocus = isRunModeFocus && this.lastBossMenuBarkId !== menuId;
     const minCooldown = isActivate ? 420 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS;
     const sameCooldown = isActivate ? 420 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS;
-    if (!force && now - this.lastBossMenuBarkAt < minCooldown) {
+    if (!force && !isDistinctRunModeFocus && now - this.lastBossMenuBarkAt < minCooldown) {
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: 'suppressed_scene_cooldown',
+        intent,
+        played: false,
+        reason: `remaining_${Math.max(0, minCooldown - (now - this.lastBossMenuBarkAt))}ms`,
+        timestamp: now
+      });
       if (isActivate) this.showBossMenuBarkVfx(target, { intent });
       return false;
     }
     if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < sameCooldown) {
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: 'suppressed_same_mode_cooldown',
+        intent,
+        played: false,
+        reason: `remaining_${Math.max(0, sameCooldown - (now - this.lastBossMenuBarkAt))}ms`,
+        timestamp: now
+      });
       if (isActivate) this.showBossMenuBarkVfx(target, { intent });
       return false;
     }
-    if (!isActivate && this.hasActiveMenuBossBarkVoice()) {
+    if (!isActivate && !isRunModeFocus && this.hasActiveMenuBossBarkVoice()) {
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: 'suppressed_active_voice',
+        intent,
+        played: false,
+        reason: 'exclusive_boss_menu_bark_group_active',
+        timestamp: now
+      });
       return false;
     }
     this.lastBossMenuBarkId = menuId;
@@ -3629,12 +3727,14 @@ export class MenuScene {
       AudioManager.init();
       const played = AudioManager.playVoice(eventName, {
         force,
-        bypassGlobalCooldown: isActivate,
-        // Several run modes intentionally share one launch event. Their scene-level
-        // cooldown still limits chatter, but the shared event must not silence the
-        // next distinct card the player deliberately hovers.
+        // The dwell gate already proves deliberate focus. Distinct run-mode
+        // cards must not be dropped by AudioManager's broader voice cooldown.
+        bypassGlobalCooldown: isActivate || isRunModeFocus,
+        // Run-mode dwell already filters pointer scrubbing. Once that dwell succeeds,
+        // a deliberate mode change gets its own event and may replace the prior mode
+        // briefing instead of being silenced by event-level duplicate suppression.
         bypassEventCooldown: isActivate || isRunModeFocus,
-        bypassVoiceLock: isActivate,
+        bypassVoiceLock: isActivate || isRunModeFocus,
         // Focus barks wait before starting, but click barks must be able to cut a hover bark cleanly.
         exclusiveGroup: 'boss_menu_bark',
         cooldownMs: isActivate ? 0 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
@@ -3645,9 +3745,23 @@ export class MenuScene {
         volume: intent === 'activate' ? 1.04 : 0.92,
         voicePriority: intent === 'activate' ? 4 : 2
       });
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: played ? 'played' : 'audio_rejected',
+        intent,
+        played,
+        reason: played ? null : 'audio_manager_returned_false',
+        timestamp: now
+      });
       if (played || isActivate) this.showBossMenuBarkVfx(target, { intent });
       return played;
     } catch (error) {
+      this.recordModeNarrationDispatch(menuId, eventName, {
+        decision: 'audio_error',
+        intent,
+        played: false,
+        reason: error?.message || String(error),
+        timestamp: now
+      });
       console.warn('[MenuScene] Boss menu bark failed:', error?.message || error);
       return false;
     }

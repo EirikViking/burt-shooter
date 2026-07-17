@@ -3525,12 +3525,31 @@ export class PlayScene {
     return Math.max(0, Number(this.gameTime) || 0) * 1000;
   }
 
+  isEnemyStartBlocked() {
+    return Boolean(
+      this.introActive
+      || this.isPaused
+      || this.tacticalDraft?.active
+      || this.overrunMilestoneInterlude?.active
+      || this.gameOverInterlude?.active
+      || this.gameOverSequenceStarted
+      || this.game?.gameOverTransitionPending
+    );
+  }
+
   scheduleEnemyStartForLevel(level, { startAtBoss = false, delayMs = 0, source = 'unknown' } = {}) {
     const targetLevel = Math.max(1, Math.floor(Number(level) || 1));
     const startEnemies = () => {
       this.pendingEnemyStartTimeout = null;
       if (this.game?.currentScene !== this || !this.enemyManager) return;
       if (this._lastStartedLevel !== targetLevel || this.game?.level !== targetLevel) return;
+      // Wall-clock entry timers continue even while the simulation is held.
+      // Keep the next wave behind every no-agency screen instead of allowing
+      // enemies, projectiles, or guaranteed pickups to begin underneath it.
+      if (this.isEnemyStartBlocked()) {
+        this.pendingEnemyStartTimeout = setTimeout(startEnemies, 100);
+        return;
+      }
       this.enemyManager.startLevel(targetLevel);
       if (startAtBoss) {
         this.enemyManager.forceBossStart(targetLevel);

@@ -341,7 +341,7 @@ function assertLaunchDeck(state, label) {
   }
   assert.equal(deck.cards?.mayhemTactical?.sublabel, 'MAIN MODE · RECOMMENDED · RANKED', `${label}: Tactical card protocol`);
   assert.equal(deck.cards?.mayhem?.sublabel, 'ALTERNATIVE RANKED MODE', `${label}: Pure card protocol`);
-  assert.equal(deck.cards?.scout?.sublabel, 'PRACTICE', `${label}: Scout card protocol`);
+  assert.match(deck.cards?.scout?.sublabel || '', /^ANOMALY: /, `${label}: Scout card should expose the selected practice anomaly`);
   assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector card protocol`);
   assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.mayhem.bounds.height * 1.25, `${label}: Tactical should be the largest mode card`);
   assert.equal(deck.cards?.mayhem?.body || '', '', `${label}: Mayhem card should stay paragraph-free`);

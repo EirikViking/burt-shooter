@@ -188,8 +188,11 @@ try {
     const originalRankBoostExtraShots = player.rankBoostExtraShots;
     const originalBombShotsLeft = player.bombShotsLeft;
     const originalBombArmedAt = player.bombArmedAt;
+    const originalBombTriggerQueued = player.bombTriggerQueued;
     const originalShootCooldown = player.shootCooldown;
     const originalPowerupType = player.activePowerup?.type || null;
+    const originalEnemyState = play.enemyManager?.state;
+    const originalIsGameplayClockAdvancing = play.isGameplayClockAdvancing;
     player.traitCombat = {};
     player.multiShot = 3;
     player.rankBoostExtraShots = 0;
@@ -211,15 +214,21 @@ try {
       radius: 22,
       health: 40
     }];
+    play.enemyManager.state = 'WAVE_ACTIVE';
+    play.isGameplayClockAdvancing = () => true;
+    player.queueBombTriggerIntent(player.getGameplayClockMs());
     const bombBullets = player.shoot();
     const bombFlash = player.lastMuzzleFlashDebug || null;
     clearMuzzleFlashes();
     play.enemyManager.enemies = [];
+    play.enemyManager.state = originalEnemyState;
+    play.isGameplayClockAdvancing = originalIsGameplayClockAdvancing;
     player.traitCombat = originalCombat;
     player.multiShot = originalMultiShot;
     player.rankBoostExtraShots = originalRankBoostExtraShots;
     player.bombShotsLeft = originalBombShotsLeft;
     player.bombArmedAt = originalBombArmedAt;
+    player.bombTriggerQueued = originalBombTriggerQueued;
     player.shootCooldown = originalShootCooldown;
     if (player.activePowerup) player.activePowerup.type = originalPowerupType;
     player.createMuzzleFlash({

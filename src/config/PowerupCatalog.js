@@ -838,16 +838,8 @@ export const POWERUP_DURATION_MODES = Object.freeze({
   mirror_shots: 'while_firing',
   target_paint: 'while_firing',
   helix_array: 'while_firing',
-  reactor_redline: 'while_firing',
-  static_bloom: 'while_firing',
   comet_drill: 'while_firing',
-  lucky_reactor: 'while_firing',
-  packet_storm: 'while_firing',
   needle_rain: 'while_firing',
-  boss_breaker: 'while_firing',
-  mirror_palace: 'while_firing',
-  afterburner_choir: 'while_firing',
-  dead_sun_dividend: 'while_firing'
 });
 
 export const POWERUP_DEFINITIONS = Object.freeze([...BASE_POWERUPS, ...NEW_POWERUPS, ...SPECTACLE_EXPANSION_POWERUPS]);

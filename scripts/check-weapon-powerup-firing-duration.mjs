@@ -35,9 +35,17 @@ const expectedWhileFiring = [
   'target_paint'
 ];
 
-const ambiguousWallClock = [
+const expectedGameplayClock = [
   'chrono_anchor',
-  'void_crown'
+  'void_crown',
+  'reactor_redline',
+  'static_bloom',
+  'lucky_reactor',
+  'packet_storm',
+  'boss_breaker',
+  'mirror_palace',
+  'afterburner_choir',
+  'dead_sun_dividend'
 ];
 
 function timestamp() {
@@ -169,8 +177,8 @@ for (const row of rows) {
   if (row.durationMode === 'while_firing' && row.nonWeaponTimedModifier && !expectedWhileFiring.includes(row.type)) {
     fail(`${row.type} has mixed non-weapon timing and was not explicitly approved for while_firing`);
   }
-  if (ambiguousWallClock.includes(row.type) && row.durationMode !== 'wall_clock') {
-    fail(`${row.type} is an ambiguous mixed powerup and should stay wall_clock in this pass`);
+  if (expectedGameplayClock.includes(row.type) && row.durationMode !== 'wall_clock') {
+    fail(`${row.type} has mixed or autonomous benefits and must use the gameplay clock`);
   }
 }
 

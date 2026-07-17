@@ -328,8 +328,8 @@ try {
   const gameSource = await import('node:fs').then((fs) => fs.readFileSync('src/game/Game.js', 'utf8'));
   assert.match(
     gameSource,
-    /if \(\(this\.isRankedRun\(\) \|\| requestedRunMode === RUN_MODES\.SCOUT\) && RunPacingConfig\.threatCodexEnabled\) \{\s*startThreatDiscoveryRun\(\);/,
-    'Mayhem and Scout should start a fresh Codex discovery window'
+    /if \(\s*\(this\.isRankedRun\(\) \|\| requestedRunMode === RUN_MODES\.SCOUT \|\| requestedRunMode === RUN_MODES\.DAILY_SIGNAL\)\s*&& RunPacingConfig\.threatCodexEnabled\s*\) \{\s*startThreatDiscoveryRun\(\);/,
+    'Mayhem, Scout, and Daily should start a fresh Codex discovery window'
   );
 
   console.log(`[scout-codex-persistence] PASS save=${getPaths(userData, { steamId: '76561198953993508' }).cloudSavePath}`);

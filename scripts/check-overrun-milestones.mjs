@@ -596,7 +596,9 @@ try {
           state.overrunInterlude?.cardVisible === true &&
           state.overrunInterlude?.promptVisible === true;
       }, null, { timeout: 3000 });
-      await page.waitForTimeout(1450);
+      // Hold longer than the normal 2.22s sector-entry timer. This proves the
+      // wall-clock callback cannot release combat beneath the manual interlude.
+      await page.waitForTimeout(2450);
 
       const held = await readRuntimeSnapshot(page);
       const label = `sector ${testCase.sector} ${viewport.width}x${viewport.height}`;
