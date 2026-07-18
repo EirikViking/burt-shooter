@@ -1,6 +1,6 @@
 # Direct reply to Tyrian
 
-Status: ready to post, not posted.
+Status: ready to post.
 
 Target thread:
 
@@ -8,23 +8,28 @@ Target thread:
 
 ## Reply
 
-Tyrian, thank you again for taking the time to give us concrete examples. We treated your follow-up as a focused development pass, reproduced the reported behavior, and uploaded the resulting build to Steam. It is currently staged privately, so I do not want to claim that every change is already live in your copy.
+Tyrian, thank you again for taking the time to give us concrete examples. We treated your feedback as a focused development pass, reproduced the reported behavior, and uploaded the resulting build to Steam. It is currently staged privately, so I do not want to claim that every change is already live in your copy.
 
-Here is what changed directly from your feedback:
+Dodge Pulse now activates when the phase ends instead of when the dodge begins. This preserves the invulnerable graze window. A Dodge Pulse ship paired with Phase Wake now receives a modest combined benefit instead of making one of those choices feel wasted. Rift Reprisal shards are also preserved.
 
-- Dodge Pulse now resolves when the phase ends instead of when the dodge begins. That preserves the invulnerable graze window, and a Dodge Pulse ship paired with Phase Wake now gets a modest combined benefit instead of making one choice feel wasted. Rift Reprisal shards are preserved.
-- We reproduced the Double Shot problem with a permanent four-shot Tactical build. The timed pickup could reduce it instead of helping. It now goes from four shots to five while active and restores exactly to four on expiry.
-- Focus Lens still gives its focused-damage bonus, but Focus now also tightens shot spread by 25%. This gives narrow, standard, and naturally wide weapons a real precision option without adding another Draft card.
-- The game no longer follows a life loss with a sarcastic compliment or celebratory wave-clear quip. Necessary clear information, score, progression, and boss/sector transitions still happen normally.
-- The Tractor/Hijacker can now participate in Chain Lightning as both a source and a target. Its ordinary-hit and lightning-hit feedback are clearer, and its health bar has been moved into a safer HUD lane.
-- Tactical offers now surface an eligible missing Fusion partner before crowding the Draft with a third stack. Unseen valid choices also take priority over Stack III, while Doctrines remain descriptive and never lock a build out of future offers.
+We reproduced the Double Shot problem using a permanent four shot Tactical build. The timed pickup could reduce the active shot count instead of improving it. It now changes four shots into five while active and restores exactly four when it expires.
+
+Focus Lens still provides its focused damage bonus. Holding Focus now also tightens weapon spread by 25 percent. This works with narrow, standard and naturally wide weapons without adding another card to the Draft pool.
+
+The game will no longer respond to a lost life with a sarcastic compliment or celebratory wave clear quip. Important completion information, score, progression and boss or sector transitions still happen normally.
+
+The Tractor can now participate in Chain Lightning as both a source and a target. Ordinary damage and lightning damage are easier to see, and the health bar has been moved into a safer part of the screen.
+
+Tactical offers now surface an eligible missing Fusion partner before filling the Draft with a third stack. Unseen valid choices also receive priority. Run Doctrines remain descriptive and never prevent future choices from appearing.
 
 The Steam screenshot and Game Recording capture fix is included from the current build line and was left intact during this pass.
 
-We did not sneak in a Bomb-control redesign. We documented the two serious options—player-triggered stored charges versus context-aware automatic deployment—but that needs a separate decision and testing pass. Screen-edge wrapping was also left unchanged.
+We did not quietly add a Bomb control redesign. We documented two serious options, player triggered stored charges and context aware automatic deployment, but that deserves a separate decision and testing pass. Screen edge wrapping was also left unchanged.
 
 None of this changes score formulas, leaderboard identities or stored scores, achievement IDs, unlock requirements, save data, or Steam Cloud paths.
 
-Your feedback was specific enough that we could turn it into reproducible cases and permanent automated checks rather than guesses. That was genuinely useful. Thank you.
+Your feedback was specific enough that we could turn it into reproducible cases and permanent automated checks instead of guessing. That was genuinely useful.
+
+Thank you.
 
 Tiny Foundry

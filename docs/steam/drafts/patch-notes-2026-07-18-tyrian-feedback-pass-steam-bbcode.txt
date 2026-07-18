@@ -1,22 +1,41 @@
 Hi pilots,
 
-This is a focused feedback patch built directly from recent player testing. It makes dodge builds less self-defeating, prevents Double Shot from becoming a downgrade, adds a tighter firing option, and improves several moments where the game was technically working but communicating the wrong thing.
+This is a focused update built directly from recent player feedback.
 
-[h2]What changed[/h2]
+[h2]Hangar launches[/h2]
 
-[list]
-[*][b]Dodge Pulse now fires at phase exit.[/b] The invulnerable dodge and graze window stays intact, while Dodge Pulse and Phase Wake now combine into one bounded clear instead of competing with each other. Rift Reprisal still creates shards from eligible Phase Wake clears.
-[*][b]Double Shot always adds firepower.[/b] The timed pickup now adds one shot to the current permanent build instead of replacing it. A four-shot build becomes five shots while active, then returns exactly to four when it expires.
-[*][b]Focus Lens now tightens spread.[/b] Holding Focus keeps the existing focused-damage bonus and also narrows the current ship's firing spread by 25%, without changing projectile count or unfocused firing.
-[*][b]No celebratory sarcasm after losing a life.[/b] Positive wave-clear compliments and celebratory quips are suppressed when a life was lost during that wave or immediately beforehand. Score, progression, and clear-state information are unchanged.
-[*][b]The Tractor joins Chain Lightning.[/b] An active Tractor/Hijacker can now be a Chain Lightning source or target, with clearer ordinary-hit and lightning-hit feedback and a more readable health bar.
-[*][b]Tactical offers respect build direction.[/b] Eligible Fusion-completing choices and unseen valid augments are prioritized ahead of third stacks. Run Doctrines remain descriptive only and never restrict future offers.
-[/list]
+Starting a ship from the Hangar or Ship Details now enters Mayhem Tactical, matching the recommended main mode. Mayhem Pure remains available from the main menu.
 
-The Steam screenshot and Game Recording capture fix from the current build line is included unchanged.
+[h2]Dodge Pulse[/h2]
 
-Score formulas, leaderboard identities and stored scores, achievement IDs and requirements, save data, Steam Cloud paths, and Steamworks settings were not changed.
+Dodge Pulse now activates when the phase ends instead of when the dodge begins. This preserves the full invulnerable dodge and graze window. Dodge Pulse and Phase Wake can now work together without making either choice feel wasted, while Rift Reprisal still creates shards from eligible clears.
 
-Special thanks to Tyrian for the detailed testing and concrete examples. The swarm gets better when feedback gives us something precise to reproduce.
+[h2]Double Shot[/h2]
+
+We reproduced a problem where collecting the timed Double Shot pickup could make a permanent four shot build weaker. Double Shot now adds one shot to the current build. Four shots become five while the pickup is active, then return exactly to four when it expires.
+
+[h2]Focus Lens[/h2]
+
+Focus Lens now provides a real precision option. Holding Focus keeps the existing damage bonus and also tightens the current weapon spread by 25 percent. Projectile count and normal unfocused firing remain unchanged.
+
+[h2]Wave clear voices[/h2]
+
+The game will no longer follow a lost life with a sarcastic compliment or celebratory wave clear quip. Score, progression and important completion information still appear normally.
+
+[h2]Tractor feedback[/h2]
+
+The Tractor can now participate in Chain Lightning as both a source and a target. Its damage feedback is clearer, and its health bar is easier to read without covering important messages or HUD information.
+
+[h2]Tactical choices[/h2]
+
+Tactical Drafts now prioritize eligible Fusion partners and unseen choices before offering a third stack. Run Doctrines remain descriptive. They never restrict which augments can appear later.
+
+The Steam screenshot and Game Recording capture fix from the current build line is also included unchanged.
+
+Score formulas, leaderboard identities, stored scores, achievement requirements, save data, Steam Cloud paths and Steamworks settings were not changed.
+
+BuildID 24274850 has been uploaded to Steam and is currently staged privately.
+
+Special thanks to Tyrian for the detailed testing and concrete examples. Feedback like this gives us something precise to reproduce and improve.
 
 Tiny Foundry

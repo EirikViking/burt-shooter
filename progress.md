@@ -12,6 +12,10 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - The generic web game harness also reached gameplay in `ranked_tactical` with movement and firing active and no page or console errors. Its WebGL canvas screenshot was black, so the repo native full page Chrome capture remains the authoritative visual evidence.
 - Updated the broader controller flow check to assert the Hangar launch is Tactical, then use Mayhem Pure only for its separate manual controller initials subtest. This preserves both launch mode and initials entry coverage because Tactical correctly uses Steam persona auto submission.
 - Focused and adjacent checks passed: release line, current build, ship selector start, run mode identity, run modes, Hangar controller details, controller flow, keyboard launches, browser smoke, current desktop smoke, and Steam Electron bridge.
+- Packaged source commit `4c27594136aa0b74f1c55ca98a20a1a6fe25af44` as `v2026-07-18_17-04-21`. Packaged local smoke, controls, performance, native runtime, and strict runtime policy checks passed.
+- Uploaded Steam BuildID `24274850` to AppID `4765070`, depot `4765071`, with `SetLive ""`. No Steam branch or Steamworks setting changed.
+- Rewrote the prepared Steam announcement and direct Tyrian reply with no hyphen or dash characters and updated the announcement for the Hangar Tactical fix and private BuildID.
+- Public posting remains blocked before UI control. Both Computer Use and Chrome depend on the same Node control kernel, which failed twice with `failed to write kernel assets: Systemet finner ikke angitt bane. (os error 3)`. Neither public message was posted or verified.
 
 ## 2026-07-17 Player comprehension and Cabinet Wonders pass (complete, not deployed)
 
