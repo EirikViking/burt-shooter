@@ -6,6 +6,7 @@
 import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { NOVA_HUMOR_POOLS } from '../i18n/novaHumorSourceText.js';
 
 class TauntDirector {
     constructor() {
@@ -13,7 +14,9 @@ class TauntDirector {
         this.globalCooldown = 0;
         this.categoryCooldowns = new Map();
         this.recentTaunts = [];
+        this.recentTauntsByCategory = new Map();
         this.maxRecent = 3;
+        this.lastRotation = null;
         this.activeTickers = [];
         this._destroyed = false;
 
@@ -63,21 +66,13 @@ class TauntDirector {
                 'FOCUS THE HITBOX!',
                 'DO NOT BLINK!'
             ],
-            start_story: [
-                'The alien formation union has filed a complaint.',
-                'Arcade Control is counting quarters.',
-                'The swarm rehearsed. You improvised.',
-                'Boss music is waiting in the wings.',
-                'Tiny ship. Enormous paperwork.',
-                'Classic cabinet danger, modern panic.'
-            ],
-            highscore_banner: [
-                'The scoreboard is awake!',
-                'Initials become legends!',
-                'Cabinet royalty detected!',
-                'The swarm remembers!',
-                'High-score orbit achieved!'
-            ],
+            start_story: [...NOVA_HUMOR_POOLS.start_story],
+            pause: [...NOVA_HUMOR_POOLS.pause],
+            wave_clear_quip: [...NOVA_HUMOR_POOLS.wave_clear_quip],
+            directive_complete_quip: [...NOVA_HUMOR_POOLS.directive_complete_quip],
+            leaderboard_empty: [...NOVA_HUMOR_POOLS.leaderboard_empty],
+            leaderboard_error: [...NOVA_HUMOR_POOLS.leaderboard_error],
+            leaderboard_loaded: [...NOVA_HUMOR_POOLS.leaderboard_loaded],
             highscore_comment: [
                 'One more run fixes everything.',
                 'The cabinet wants a rematch.',
@@ -121,21 +116,33 @@ class TauntDirector {
         const pool = this.pools[category];
         if (!pool || pool.length === 0) return '';
 
+        const recentForCategory = this.recentTauntsByCategory.get(category) || [];
         let attempts = 0;
         let text = '';
         while (attempts < 5) {
             const selected = pool[Math.floor(Math.random() * pool.length)];
             text = typeof selected === 'function' ? selected(ctx) : selected;
-            if (!this.recentTaunts.includes(text)) break;
+            if (!recentForCategory.includes(text)) break;
             attempts += 1;
         }
 
+        recentForCategory.push(text);
+        if (recentForCategory.length > Math.min(this.maxRecent, Math.max(1, pool.length - 1))) {
+            recentForCategory.shift();
+        }
+        this.recentTauntsByCategory.set(category, recentForCategory);
         this.recentTaunts.push(text);
         if (this.recentTaunts.length > this.maxRecent) {
             this.recentTaunts.shift();
         }
 
-        return translateText(text);
+        const translated = translateText(text);
+        this.lastRotation = { category, source: text, text: translated };
+        return translated;
+    }
+
+    getRotationDebugState() {
+        return this.lastRotation ? { ...this.lastRotation } : null;
     }
 
     emit(category, customText = null) {

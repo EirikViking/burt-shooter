@@ -1,0 +1,111 @@
+{
+  "generatedAt": "2026-07-15T18:57:43Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24226288",
+  "depotManifestId": "6434473859557816080",
+  "sourceRuntimeCommit": "2980f5f922cf59f911a32551de8e2306f6e83ad5",
+  "packageEvidenceCommit": "f7f48ab00cb73ce011dbc1ab269abec31a33fbba",
+  "featureCommit": "25e35348dd7aed1272281e7900f91d48a5af7dab",
+  "integrationFeatureCommit": "fe9968b",
+  "sourceBranch": "codex/release-bullet-vfx-20260715",
+  "countingBaseline": "b660a20f3e4705421b02f81198f8c775ccde182d",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "releaseLockTag": "nova-swarm-lock-20260715-enemy-projectile-spectacle",
+  "buildStamp": "v2026-07-15_20-35-49",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24222462",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "fc7cff58697b8d72361e9125d58551dffe315bdd888b6a579ebe0596fe21d310",
+  "consoleLogPath": "release/steamworks/steam_upload_console_enemy_projectile_spectacle_20260715.log",
+  "consoleLogSha256": "21cca725f2e1f73d07942f8c9e0a42cbc768f2bf721c62208bc3eb1df643b858",
+  "desktopReviewSha256": "a37185eafa6618efdf4e0d54976c6027a9cbe309488ec77514c40069664b9d7c",
+  "payload": {
+    "fileCount": 220,
+    "totalBytes": 914755350,
+    "manifestHash": "06d14745373411fc175cecca072c6efc520b76d0a9d35aa6154be132a6365c75",
+    "manifestFileSha256": "831530550a0cc9ff248bab5304b8a172868df85c754d410b0dad30dbf8ff05dd",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "77516c1e056c0e4cea6e9ec9b53f8267229b152f2ad65ed7c395b151f9f74a0d"
+    },
+    "appAsar": {
+      "path": "resources/app.asar",
+      "bytes": 545913368,
+      "sha256": "262ffaca59a275929daf8a6d031daf9beadf228c6942235d5bfc383baeb97d86"
+    },
+    "steamApi64": {
+      "path": "steam_api64.dll",
+      "bytes": 317080,
+      "sha256": "eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-15 20:54:55]: Successfully finished AppID 4765070 build (BuildID 24226288).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "49775d99a2004d57e5700cffa52550b3f8e0b4240f2edb9b7b8e1c7a0c0a30e5",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "a2911df1e9603078988ecdd76b3caaef479cc9535ccb27f5c6f7b6bf19486d59",
+    "depotBuildVdfPath": "release/steam-build-output/depot_build_4765071.vdf",
+    "depotBuildVdfSha256": "03903969ee86ee032f6cf64737bf4bb66040c2812c588ca2b67dd7ddcc115c00",
+    "baselineManifestId": "8091511179624093249",
+    "newChunksUploaded": 13,
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "repositoryPreflight": "passed: fetch, clean release branch, exact HEAD, worktree inventory, authoritative-tag ancestry, and diff check",
+    "releaseLine": "passed immediately before packaging and VDF generation; German, top-language polish, Steam Cloud, fullscreen, and temporary marketing-hotkey markers present",
+    "sourceBuild": "passed: full build v2026-07-15_20-35-49 from gitSha 2980f5f with all prebuild guards",
+    "localizedUi": "passed: all eight interface languages, zero placeholders, English leaks, console errors, or page errors",
+    "browserSmoke": "passed",
+    "controllerFlow": "passed",
+    "steamBridge": "passed: AppID 4765070, native SDK loaded, achievements ready, leaderboard nova_swarm_global_score_v2 ready",
+    "enemyWeapons": "passed: all twelve generated hostile weapon profiles and assets",
+    "projectileVisuals": "passed: test-results/projectile-visuals-2026-07-15T17-48-08-005Z; all twelve profiles, collision parity, animation, zero active texture generation, 28.80 ms p95, 35.60 ms max, zero frames over 50 ms",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-15T18-42-21-376Z/report.json; exact build and SHA, Steam identity ready, zero console events",
+    "currentElectronPerformance": "passed: 59.88 minimum / 60.01 average FPS, zero warnings or errors",
+    "packageRuntime": "passed after the official SDK redistributables were hash-verified into both required packaged runtime locations",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-15T18-42-57-970Z/report.json; exact build, zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-15T18-43-47-039Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-15T18-46-34-922Z/report.json; no score or achievement submission and no inherited progress",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-15T18-44-36-475Z/report.json; 59.52 minimum / 59.95 average FPS, zero warnings or errors",
+    "desktopPackageReview": "passed: source, packaged, controls, and performance evidence all match v2026-07-15_20-35-49",
+    "vdfSetLiveTestBranch": "passed: exact SetLive value sector-continue-test; blank, public, and default targets absent"
+  },
+  "improvementLedger": {
+    "path": "docs/improvement-ledger-20260715.jsonl",
+    "verifiedEntries": 15,
+    "countingBaseline": "b660a20f3e4705421b02f81198f8c775ccde182d",
+    "releaseBuildId": "24226288",
+    "note": "Packaging, verification, deployment, and evidence do not increment the player-facing improvement count."
+  },
+  "includedImprovementGroups": [
+    "all improvements and content already present in Steam test BuildID 24222462",
+    "twelve individually tuned hostile projectile silhouettes with profile-specific batched echo spacing, lateral wake, aura scale, and flare angle",
+    "animated dual-depth wake and aura treatment across every generated hostile projectile family",
+    "collision-radius invariants for all twelve profiles",
+    "a deterministic 96-projectile dense-field performance and runtime-texture regression guard"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "Electron and Node emitted existing tooling deprecation advisories; current and packaged runtime reports contained zero game warnings or errors.",
+    "The clean release worktree exposed two process issues before upload: missing generated build metadata and a junction that did not stage the two app.asar.unpacked Steam SDK copies. The unstamped package was rejected, a full stamped build was produced, official DLL hashes were verified, and every exact-build packaged gate was rerun before SteamPipe.",
+    "The generic develop-web-game client remains blocked on this machine by a missing chromium_headless_shell-1208 executable; repo-native installed-Chrome browser checks and Electron checks passed."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed by this deployment.",
+    "Test-branch rollback target is BuildID 24222462.",
+    "Source change rollback is git revert 2980f5f922cf59f911a32551de8e2306f6e83ad5 3523b22 fe9968b."
+  ]
+}

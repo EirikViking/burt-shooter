@@ -1,0 +1,101 @@
+{
+  "title": "Nova Swarm boss 2 early pressure relief private SteamPipe upload",
+  "createdAt": "2026-06-20T16:50:40.538Z",
+  "branch": "codex/boss2-early-pressure-relief-20260620",
+  "sourceCommit": "8bc195ec4965e75a5351faa34feca5e8c8f1161f",
+  "previousSteamEvidenceCommit": "9455ffe2f7de774118d6ae0a963e4dd29bd2f56b",
+  "sourceSummary": {
+    "change": "Scoped sector 2 Sam the Misfit relief after private BuildID 23836473 playtest.",
+    "boss2Relief": {
+      "profileId": "nova_boss_02",
+      "maxLevel": 2,
+      "pressureScalarMult": 0.82,
+      "openingAttackDelayMs": 2200,
+      "regularAttackIntervalMult": 1.25,
+      "regularTelegraphMult": 1.22,
+      "signatureTelegraphMult": 1.18,
+      "ringSafeWedgeBonus": 0.16,
+      "burstShotsPhase2": 3,
+      "burstShotsPhase3": 4
+    },
+    "protectedBehavior": [
+      "Sector 22 NOVA DEVOURER remains on the existing late-boss Forge curve.",
+      "No leaderboard identity change.",
+      "No Steamworks metadata change.",
+      "No save format, achievement metadata, score formula, powerup art, Prism Splitter art, display settings, live save, Steam Cloud save, or profile rescue change."
+    ]
+  },
+  "packagedBuild": {
+    "version": "v2026-06-20_18-38-41",
+    "packagedGitSha": "8bc195e",
+    "matchesSourceCommitPrefix": true,
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "b077e87353e9edd30b1aa4a68bf141b96843080b36b46d8754d3afbdde5890a1",
+    "payloadManifestFileSha256": "9588A66A02F21232F672D7BEA667E373C4D93BA0D4FDB46C7D6B973D5F96A2D8",
+    "fileCount": 336,
+    "totalBytes": 879599475
+  },
+  "steamPipe": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23836712",
+    "depotManifestId": "4317846078582693608",
+    "setLive": "",
+    "steamBranchAssignment": "none",
+    "publicOrDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "uploadLog": "test-results/steam-upload-boss2-early-pressure-relief-20260620-184733/steamcmd-upload.log"
+  },
+  "checks": {
+    "sourceVerification": [
+      "git diff --check",
+      "npm run check:i18n",
+      "npm run check:boss-fairness-cadence-wall",
+      "npm run check:early-boss-difficulty-relief",
+      "npm run check:boss-mercy",
+      "npm run check:mayhem-scout-difficulty-delta",
+      "npm run check:steam-achievements-mock",
+      "npm run check:steam-electron-bridge",
+      "npm run check:run-modes",
+      "npm run build:current"
+    ],
+    "releaseVerification": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run desktop:perf:current",
+      "npm run smoke"
+    ],
+    "smokeResult": {
+      "npmRunSmoke": "passed",
+      "currentDesktopSteamInit": "steam_init_returned_false in local smoke launch, app remained stable with local-offline temp profile",
+      "blockingFailures": 0
+    }
+  },
+  "artifacts": {
+    "bossFairnessReport": "test-results/boss-fairness-cadence-wall-2026-06-20T16-33-43-887Z/report.json",
+    "mayhemScoutDifficultyReport": "test-results/mayhem-scout-difficulty-delta-2026-06-20T16-33-42-742Z/report.json",
+    "runModesReport": "test-results/run-modes-mayhem-scout-sector-2026-06-20T16-33-57-429Z/report.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-20T16-43-32-547Z/report.json",
+    "currentSmokeReport": "test-results/electron-smoke-2026-06-20T16-44-14-261Z/report.json",
+    "currentPerfReport": "test-results/electron-perf-smoke-2026-06-20T16-44-18-341Z/report.json",
+    "browserSmokeReport": "test-results/smoke-2026-06-20T16-45-39-966Z/report.json"
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23836712 to the intended private test branch in Steamworks.",
+    "Install/update the private test branch.",
+    "Start Mayhem and play to boss 2, Sam the Misfit.",
+    "Verify Sam's first danger has more readable runway, phase 2 burst is three shots, and repeated deaths do not feel like instant chain traps.",
+    "Start Scout and verify boss 2 is meaningfully calmer than Mayhem.",
+    "Verify Mayhem leaderboard identity remains nova_swarm_global_score_v2 and no Steam branch was assigned by this upload."
+  ],
+  "rollback": {
+    "git": "git revert 8bc195ec4965e75a5351faa34feca5e8c8f1161f",
+    "steamworks": "Do not assign BuildID 23836712; keep or reassign the previous private test BuildID."
+  }
+}

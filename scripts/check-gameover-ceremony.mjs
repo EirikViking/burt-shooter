@@ -13,7 +13,9 @@ fs.mkdirSync(outputDir, { recursive: true });
 
 const board = [
   50000, 42000, 36000, 30000, 24000, 20000, 16000, 12000, 9000, 8000,
-  7600, 7300, 7000, 6800, 6600, 6400, 6250, 6150, 6050, 6000
+  7900, 7800, 7700, 7600, 7500, 7400, 7300, 7200, 7100, 7000,
+  6900, 6800, 6700, 6600, 6500, 6400, 6350, 6300, 6250, 6200,
+  6180, 6160, 6140, 6120, 6100, 6080, 6060, 6040, 6020, 6000
 ].map((score, index) => ({
   name: `GLB${index + 1}`,
   score,
@@ -140,6 +142,62 @@ async function checkCeremony(browser, { score, expectedTier, titlePattern, shotN
   };
 }
 
+async function checkInGameFinalDeathAnimation(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.score = 12345;
+    game.level = 6;
+    game.lives = 1;
+    game.loseLife();
+  });
+  await page.waitForFunction(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    return game?.currentSceneName === 'play' &&
+      play?.gameOverSequenceStarted === true &&
+      Boolean(play?.gameOverAnimationLayer?.parent);
+  }, null, { timeout: 5000 });
+  const lockedState = await page.evaluate(() => {
+    const game = window.__game;
+    return {
+      blockedAward: game.addScore(999, 'baseScore'),
+      score: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      finalScoreLocked: game.finalScoreLocked
+    };
+  });
+  assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
+  assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
+  assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
+  assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
+  await page.waitForTimeout(450);
+  await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
+  const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const invariant = await page.evaluate(() => {
+    const game = window.__game;
+    return {
+      gameScore: game.score,
+      finalScoreSnapshot: game.finalScoreSnapshot,
+      breakdownScore: game.scoreBreakdown?.finalScore,
+      summaryScore: game.runSummary?.finalScore,
+      reportScore: game.lastRunReport?.summary?.score,
+      sceneScore: game.scenes?.gameOver?.finalScore
+    };
+  });
+  assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
+  assert(Object.values(invariant).every((value) => value === 12345), `final score invariant failed: ${JSON.stringify(invariant)}`);
+  assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
+  await page.close();
+  return {
+    scenario: 'in_game_final_death_animation',
+    finalScene: state.scene,
+    finalScore: state.gameOver?.score || 0,
+    invariant
+  };
+}
+
 const server = await startPreviewServer();
 console.log(`[gameover-ceremony] preview ready ${baseUrl}`);
 const browser = await chromium.launch({
@@ -155,6 +213,9 @@ try {
     const { page, pageErrors } = await preparePage(browser);
     await page.evaluate(() => {
       const game = window.__game;
+      game.scoreMultiplier = 1;
+      if (game.scenes?.play?.player) game.scenes.play.player.scoreMultiplier = 1;
+      if (game.runPressureDirector) game.runPressureDirector.getScoreMultiplier = () => 1;
       game.globalLeaderboardTargets = [
         { score: 50000 }, { score: 42000 }, { score: 36000 }, { score: 30000 },
         { score: 24000 }, { score: 20000 }, { score: 16000 }, { score: 12000 },
@@ -162,9 +223,12 @@ try {
         { score: 7000 }, { score: 6800 }, { score: 6600 }, { score: 6400 },
         { score: 6250 }, { score: 6150 }, { score: 6050 }, { score: 6000 }
       ];
-      game.addScore(52000);
-      game.addScore(250000);
-      game.addScore(180000);
+      game.score = 100;
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.score = 33000;
+      game.updateGlobalLeaderboardVoiceCues?.();
+      game.score = 46000;
+      game.updateGlobalLeaderboardVoiceCues?.();
     });
     const cueState = await page.evaluate(() => JSON.parse(window.render_game_to_text()).globalLeaderboardCues);
     assert(cueState.global === true, 'near-global voice cue did not arm');
@@ -174,6 +238,9 @@ try {
     results.push({ scenario: 'live_cues', cueState });
     await page.close();
   }
+
+  console.log('[gameover-ceremony] checking in-game final death animation');
+  results.push(await checkInGameFinalDeathAnimation(browser));
 
   console.log('[gameover-ceremony] checking number-one ceremony');
   results.push(await checkCeremony(browser, {
@@ -186,7 +253,7 @@ try {
   results.push(await checkCeremony(browser, {
     score: 39000,
     expectedTier: 'top3',
-    titlePattern: /TOP THREE/i,
+    titlePattern: /Steam Global Leaderboard #3/i,
     shotName: 'top-three.png'
   }));
   console.log('[gameover-ceremony] checking global-slot ceremony');

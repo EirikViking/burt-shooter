@@ -4,6 +4,7 @@ import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const INTRO_SEEN_KEY = 'nova_swarm_intro_seen_v1';
 
@@ -72,6 +73,7 @@ export class IntroScene {
     this.textGroup = null;
     this.panelWaitsForVoice = false;
     this.panelVoiceWasActive = false;
+    this.menuFx = null;
     this.gamepadNavigator = new GamepadNavigator();
     this.lastInputDevice = 'keyboard';
   }
@@ -99,6 +101,17 @@ export class IntroScene {
     this.backdrop.anchor.set(0.5);
     this.backdrop.zIndex = 0;
     this.container.addChild(this.backdrop);
+    installMenuFx(this, {
+      label: 'ui_menuFxIntro',
+      zIndex: 2,
+      accent: 0x7ee9ff,
+      secondary: 0xff55d9,
+      gold: 0xffef7e,
+      intensity: 0.66,
+      density: 0.74,
+      alpha: 0.42,
+      openVolume: 0.18
+    });
 
     this.shade = new PIXI.Graphics();
     this.shade.zIndex = 1;
@@ -244,9 +257,11 @@ export class IntroScene {
 
   handlePrimaryAction() {
     if (!this.started) {
+      playMenuConfirmSfx(0.18);
       this.beginNarration();
       return;
     }
+    playMenuConfirmSfx(0.14);
     this.advancePanel();
   }
 
@@ -271,6 +286,11 @@ export class IntroScene {
     this.panelVoiceWasActive = false;
     const texture = this.panelTextures.get(panel.image);
     if (texture) this.backdrop.texture = texture;
+    this.menuFx?.burst?.(this.game.getWidth() * 0.68, this.game.getHeight() * 0.44, {
+      color: index % 2 ? 0xff55d9 : 0x7ee9ff,
+      radius: 180,
+      durationMs: 620
+    });
     this.eyebrow.text = panel.eyebrow;
     this.title.text = panel.title;
     this.caption.text = panel.caption;
@@ -330,6 +350,7 @@ export class IntroScene {
     const height = this.game.getHeight();
     const layout = getCurrentLayout();
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    resizeMenuFx(this, width, height);
     fitCover(this.backdrop, width, height);
 
     this.shade.clear();
@@ -390,6 +411,7 @@ export class IntroScene {
   }
 
   update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (nav.connected && nav.active) {
       this.setInputDevice('controller');
@@ -439,6 +461,7 @@ export class IntroScene {
       window.removeEventListener('keydown', this.keyHandler);
       this.keyHandler = null;
     }
+    destroyMenuFx(this);
     if (this.pointerHandler) {
       this.container.off('pointerdown', this.pointerHandler);
       this.pointerHandler = null;

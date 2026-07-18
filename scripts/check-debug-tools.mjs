@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4346));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/debug-tools-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -110,10 +111,35 @@ page.on('console', (message) => {
 });
 
 try {
-  await page.goto(withQuery(baseUrl, {
+  const blockedPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await blockedPage.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
     startLevel: '3'
+  }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await blockedPage.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.scene === 'play' && state?.player?.active;
+  }, { timeout: 30000 });
+  const blockedState = await blockedPage.evaluate(() => {
+    const before = JSON.parse(window.render_game_to_text?.() || '{}');
+    const jumpResult = window.__game?.scenes?.play?.debugJumpToLevel?.(9, 'blocked_devtools_probe');
+    const after = JSON.parse(window.render_game_to_text?.() || '{}');
+    return { before, after, jumpResult };
+  });
+  assert(blockedState.before?.maintainerDevtools?.enabled === false, 'old debug token opened maintainer devtools without hash');
+  assert(blockedState.before?.runMode === 'ranked', 'old debug token marked run unranked without hash');
+  assert(blockedState.before?.level === 1, `old debug token changed level without hash: ${blockedState.before?.level}`);
+  assert(blockedState.before?.debugTools?.levelJumpAvailable === false, 'debug level jump was available without hash');
+  assert(blockedState.jumpResult === false, 'direct debugJumpToLevel returned true without hash');
+  assert(blockedState.after?.level === 1, `direct debugJumpToLevel changed level without hash: ${blockedState.after?.level}`);
+  await blockedPage.close();
+
+  await page.goto(withQuery(baseUrl, {
+    autostart: '1',
+    debugBossToken: 'NOVA_DEBUG_2026',
+    startLevel: '3',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
   await page.waitForFunction(() => {

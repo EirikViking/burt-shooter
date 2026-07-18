@@ -1,0 +1,43 @@
+[img]{STEAM_CLAN_IMAGE}/46138701/5ab99c26121ec70560f8242ea7d41169110f4951.png[/img]
+
+[h1]Nova Swarm Early Pilot Update[/h1]
+
+Hi everyone,
+
+Thanks for the early feedback since launch. This update focuses on the things players called out most: clearer menus, better run flow, more readable boss fights, stronger Codex coverage, and more variety during runs.
+
+[h2]Run Flow And UI[/h2]
+
+Launch Run is clearer as the ranked climb for progression, unlocks, achievements, and leaderboards. Sector Start is clearer as checkpoint practice with local records only.
+
+The Hangar now recommends the best unlocked ship before a run, so unlocked ships are easier to notice and use.
+
+Also cleaned up:
+
+[list]
+[*]Removed the fullscreen option from Settings.
+[*]Removed the Windows exit dialog.
+[*]Removed the duplicate combo score readout.
+[*]Improved the How To Play screen layout and readability.
+[*]Fixed Sector Start "One more run" so it restarts from the same sector.
+[/list]
+
+[h2]Boss And Enemy Updates[/h2]
+
+Boss fights now include readable support ships that can help bosses survive. They are meant to be clear priority targets, not hidden punishment.
+
+Boss 1 is now Sonia. Boss 3 is now KurtBossEdgar. Their Codex entries have been expanded, and boss death effects now have more distinct visual and audio feedback.
+
+Enemy variety has also been expanded across the game, with additional mid-tier and late-run ships designed to add more movement and color while keeping attacks readable.
+
+[h2]Leaderboards, Ranks, And Codex[/h2]
+
+Leaderboards now support Top 40 where available, while showing fewer entries when fewer players exist.
+
+Pilot progression now reaches 40 ranks, with new Codex coverage for ranks, boss support ships, enemies, Sonia, and KurtBossEdgar.
+
+[h2]Audio And Polish[/h2]
+
+There are new sound effects and voice variations for several game moments. Music was not replaced or altered.
+
+Thanks again for the feedback and for playing. This update is a cleanup and expansion pass, and we will keep tuning Nova Swarm from real player notes.

@@ -203,7 +203,7 @@
 - [ ] All audio uses AudioManager with guards
 - [ ] All lore uses phrasePool.js (no hardcoded text)
 - [ ] All assets reference assetManifest.js
-- [ ] Rank system remains at 20 ranks (0-19)
+- [x] Rank system upgraded to 40 ranks (0-39)
 - [ ] Each phase builds and commits before next
 - [ ] RESCUE diffs saved at key points
 - [ ] Final push to branch

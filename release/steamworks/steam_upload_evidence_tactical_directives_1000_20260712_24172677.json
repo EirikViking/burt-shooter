@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-07-12T18:26:10.326Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24172677",
+  "sourceCommit": "8ebe48a5e99a0f5510540dbd2926346b8a9ab25a feat: add 1000 tactical directives",
+  "sourceBaseline": "dba215a7e50cc55899a9914cfac9f6692e7bdf16",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-12_20-10-34",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24169564",
+  "previousKnownPublicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_tactical_directives_1000_20260712.log",
+  "consoleLogSha256": "feab266d276ff433e7b0860b7c838e557258c1130e0fe7b7b7e8b37914c413ce",
+  "payloadManifestSha256": "1a4c9978834ea9210c924fd4ab6c9d71e96e0008d63dcda68ae23a208e258055",
+  "desktopPackageReportSha256": "746cedd2d64830f343d9fff3a0bfceffc31b0fa3fa3a2aa5531d0eca3d90cd47",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 920475751,
+    "manifestHash": "449ed44f7b441a4c0e5160b9f4b38cffaa360e5eef74af91d80f480244a9cf00",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "6d2513d083a26086c17a71f1571f4b6158b891cb3446a95659ce06418e24a89b"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-12 20:23:59]: Successfully finished AppID 4765070 build (BuildID 24172677).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: branch codex/sales-success-1000-20260712, source HEAD 8ebe48a, tracked clean, only 151 expected release media files untracked",
+    "releaseLine": "passed before packaging and VDF generation",
+    "sourceBuild": "passed: v2026-07-12_20-10-34, gitSha 8ebe48a",
+    "tacticalDirectives": "passed: exactly 1000 variants and 1000 exhaustive completions",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-12T18-17-46-674Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-12T18-18-25-694Z/report.json",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-12T18-18-33-180Z/report.json",
+    "desktopPackage": "passed: release/steamworks/desktop_package_review_report.json",
+    "packagedPerformance": "passed: 60.02 average FPS, 59.17 minimum FPS, 12 samples, no warnings or errors",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24169564.",
+    "Source rollback is git revert 8ebe48a."
+  ]
+}

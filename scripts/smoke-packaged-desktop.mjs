@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import {
+  resolvePackagedSmokeMode,
+  validatePackagedSteamRuntime
+} from './lib/packaged-steam-runtime-gate.mjs';
 
 const root = process.cwd();
 const exePath = path.resolve(process.env.NOVA_SWARM_PACKAGED_EXE || 'release/desktop/win-unpacked/Nova Swarm.exe');
@@ -10,6 +14,8 @@ const outputDir = path.resolve(
 );
 const reportPath = path.join(outputDir, 'report.json');
 const versionPath = path.resolve(root, 'public/version.json');
+const configuredTimeoutMs = Number(process.env.NOVA_SWARM_PACKAGED_SMOKE_TIMEOUT_MS || 150000);
+const timeoutMs = Math.max(60000, Math.min(300000, Number.isFinite(configuredTimeoutMs) ? configuredTimeoutMs : 150000));
 
 function readJson(file) {
   return JSON.parse(readFileSync(file, 'utf8'));
@@ -26,11 +32,12 @@ const result = spawnSync(exePath, ['--smoke'], {
   cwd: root,
   env: {
     ...process.env,
-    NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR: outputDir
+    NOVA_SWARM_ELECTRON_SMOKE_OUTPUT_DIR: outputDir,
+    NOVA_SWARM_USER_DATA_DIR: path.join(outputDir, 'userData')
   },
   windowsHide: true,
   encoding: 'utf8',
-  timeout: 60000
+  timeout: timeoutMs
 });
 
 if (result.error) {
@@ -48,6 +55,16 @@ if (!existsSync(reportPath)) {
 const report = readJson(reportPath);
 const currentBuild = existsSync(versionPath) ? readJson(versionPath) : null;
 const errors = [];
+let steamValidation;
+
+try {
+  steamValidation = validatePackagedSteamRuntime(report.state, {
+    mode: resolvePackagedSmokeMode()
+  });
+  errors.push(...steamValidation.errors);
+} catch (error) {
+  errors.push(error?.message || String(error));
+}
 
 if (report.status !== 'passed') errors.push(`status=${report.status || 'missing'}`);
 if (currentBuild?.version && report.state?.build !== currentBuild.version) {
@@ -62,4 +79,7 @@ if (errors.length) {
   process.exit(1);
 }
 
+if (steamValidation?.required === false) {
+  console.warn('[packaged-smoke] Steam runtime gate skipped by explicit NOVA_SWARM_PACKAGED_SMOKE_MODE=local');
+}
 console.log(`[packaged-smoke] ok: ${path.relative(root, reportPath).replaceAll(path.sep, '/')}`);

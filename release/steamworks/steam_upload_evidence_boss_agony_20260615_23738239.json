@@ -1,0 +1,52 @@
+{
+  "uploadedAt": "2026-06-15T09:07:41Z",
+  "steamBuildId": "23738239",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "steamUser": "gaunziman",
+  "branch": "codex/hard-achievements-20260612",
+  "codeCommit": "e35d7d290b2f399aa8c67c8158c22feca14fd9f6",
+  "startingCommit": "1b0bfbfe47323e22d330f727a2948ff670384f86",
+  "snapshotTag": "snap/pre-steam-deploy-boss-agony-20260615-104729",
+  "buildVersion": "v2026-06-15_11-00-15",
+  "description": "Private SteamPipe upload for the male boss agony voice build plus a packaged-runtime Pixi warning cleanup. Live branch was not changed.",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamcmd": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe"
+  },
+  "qa": [
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run check:steam-electron-bridge",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf",
+    "steamcmd +login gaunziman +run_app_build app_build_LOCAL.vdf +quit"
+  ],
+  "evidence": {
+    "steamSdkReadyReport": "test-results/steam-sdk-ready-2026-06-15T09-02-34-739Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-15T09-05-53-920Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-15T09-03-52-088Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-15T09-04-03-315Z/report.json",
+    "steamPayloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "steamBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "qaHighlights": {
+    "bossDeathVoices": "100 voices verified for event boss_death_agony",
+    "packagedSmoke": "passed with appId 4765070 and leaderboard nova_swarm_global_score_v2",
+    "packagedPerf": "passed with minFps 58.8235294117647, avgFps 59.88807124228697, warnings 0, errors 0"
+  },
+  "steamcmdResult": {
+    "exitCode": 0,
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23738239)."
+  },
+  "manualSteamworksSteps": [],
+  "steamworksTouched": false,
+  "liveBranchChanged": false
+}

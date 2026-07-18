@@ -1,0 +1,94 @@
+{
+  "title": "Nova Swarm boss fairness cadence wall private SteamPipe upload",
+  "createdAt": "2026-06-20T16:13:20.809Z",
+  "branch": "codex/boss-fairness-cadence-wipeout-guard-20260620",
+  "startingCommit": "ffadcf2db331a7bbb3864c7eb802a8ea7e42d261",
+  "sourceCommit": "feea47c1082a5d87c832db6ef75089e3085e240f",
+  "packagedBuild": {
+    "version": "v2026-06-20_18-01-17",
+    "packagedGitSha": "feea47c",
+    "matchesSourceCommitPrefix": true,
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "c5625df095cf4b82abeefbf55bbc884d58890544f90167eced0b8525c7ae1ecb",
+    "payloadManifestFileSha256": "FC97EE62007ADE68137DBFF5F083C082E2FA55708572A14101DED1F49E992C4A",
+    "fileCount": 336,
+    "totalBytes": 879598020
+  },
+  "steamPipe": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23836473",
+    "depotManifestId": "5855000159673232083",
+    "setLive": "",
+    "steamBranchAssignment": "none",
+    "publicOrDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "uploadLog": "test-results/steam-upload-boss-fairness-cadence-wall-20260620-181010/steamcmd-upload.log"
+  },
+  "checks": {
+    "sourceVerification": [
+      "git diff --check",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:run-modes",
+      "npm run check:boss-fairness-cadence-wall",
+      "npm run check:boss-mercy",
+      "npm run check:early-boss-difficulty-relief",
+      "npm run check:mayhem-scout-difficulty-delta",
+      "npm run check:normal-wave-difficulty-shift",
+      "npm run check:sector10-clear-time-pacing",
+      "npm run check:steam-electron-bridge",
+      "npm run check:steam-achievements-mock",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-isolation",
+      "npm run check:scout-codex-persistence",
+      "npm run check:scout-local-best",
+      "npm run build:current"
+    ],
+    "releaseVerification": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run desktop:perf:current",
+      "npm run smoke"
+    ],
+    "smokePolicy": {
+      "npmRunSmoke": "non-blocking known timeout only",
+      "knownTimeout": "scripts/smoke-playtest.mjs:764:26 after level 3 debug start capture",
+      "blockingFailures": 0
+    }
+  },
+  "artifacts": {
+    "bossFairnessReport": "test-results/boss-fairness-cadence-wall-2026-06-20T15-56-18-550Z/report.json",
+    "mayhemScoutDifficultyReport": "test-results/mayhem-scout-difficulty-delta-2026-06-20T15-52-42-629Z/report.json",
+    "runModesReport": "test-results/run-modes-mayhem-scout-sector-2026-06-20T15-54-11-047Z/report.json",
+    "i18nUiReport": "test-results/i18n-ui-2026-06-20T15-58-44-311Z/report.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-20T16-06-27-013Z/report.json",
+    "currentSmokeReport": "test-results/electron-smoke-2026-06-20T16-07-08-560Z/report.json",
+    "currentPerfReport": "test-results/electron-perf-smoke-2026-06-20T16-07-08-564Z/report.json"
+  },
+  "notes": [
+    "Boss 2 is Sam the Misfit: forge / burst / ring.",
+    "Sector 21 is adjacent but not the same cadence family; sector 22 repeats the forge / burst / ring family at higher pressure.",
+    "The fix adds same-boss wipeout recovery, clears boss hazards after boss-caused death, and pauses queued boss attacks after respawn.",
+    "No boss HP, boss damage, Mayhem balance, Scout balance, save format, score formula, leaderboard identity, achievements metadata, Steamworks metadata, AppID, depot ID, display settings, powerup art, Prism Splitter art, live saves, Steam Cloud saves, or profile rescue behavior was changed.",
+    "No Steam branch was assigned; SetLive remained blank. The user manually assigns the BuildID in Steamworks."
+  ],
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23836473 to the intended private test branch in Steamworks.",
+    "Install/update the private test branch and confirm main menu loads.",
+    "Start Mayhem and use debug or normal play to reach boss 2; verify boss remains dangerous but respawn does not chain-kill instantly.",
+    "Reach or debug-start sector 22; after repeated boss-caused deaths, verify boss hazards clear and attacks pause long enough to regain control.",
+    "Confirm Mayhem leaderboard identity remains nova_swarm_global_score_v2.",
+    "Confirm Scout still keeps local best/Codex persistence and remains excluded from leaderboard, career XP, checkpoints, and achievements."
+  ],
+  "rollback": {
+    "git": "git revert feea47c1082a5d87c832db6ef75089e3085e240f",
+    "steamworks": "Do not assign BuildID 23836473; keep or reassign the previous private test BuildID."
+  }
+}

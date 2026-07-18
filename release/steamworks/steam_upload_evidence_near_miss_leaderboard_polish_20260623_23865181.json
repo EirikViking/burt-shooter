@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-06-23T01:45:00+02:00",
+  "branch": "codex/near-miss-readability-leaderboard-polish-20260623",
+  "sourceCommit": "f4c9410209eba8bc3dcbddc045c439c481e44978",
+  "package": {
+    "version": "v2026-06-23_01-27-58",
+    "packagedGitSha": "f4c9410",
+    "packagedGitShaProof": [
+      "test-results/packaged-exe-smoke-2026-06-22T23-31-05-241Z/report.json",
+      "test-results/packaged-perf-smoke-2026-06-22T23-31-05-242Z/report.json"
+    ]
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23865181",
+    "setLiveBlank": true,
+    "assignedPublicOrDefaultBranch": false,
+    "uploadLog": "release/steamworks/steam_upload_console_20260623_near_miss_leaderboard_polish.log"
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 879707893,
+    "manifestHash": "bcf4e172d1c69a76f64b7c29789c6d67440ec2be5163b51350c0f3c44704fb8f",
+    "sha256": "8B3DC418CF44A5FB507D435DAC41D36B10EA443FBEF61860C13348D5B91366AE"
+  },
+  "vdfProof": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "runtimeProof": {
+    "packageRuntime": "test-results/steam-package-runtime-2026-06-22T23-33-04-303Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-22T23-31-05-241Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-22T23-31-05-242Z/report.json"
+  },
+  "scopeGuard": {
+    "changedSteamworksMetadata": false,
+    "changedAppId": false,
+    "changedDepotId": false,
+    "changedLeaderboardIdentity": false,
+    "changedAchievementsMetadata": false,
+    "changedSteamCloudSettings": false,
+    "changedSaveFormat": false,
+    "changedGameplayBalance": false,
+    "changedScoreFormula": false,
+    "changedXpFormula": false
+  }
+}

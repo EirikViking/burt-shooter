@@ -233,9 +233,9 @@ const cabinetLogsEn = Object.freeze([
     id: 'max-lives-read',
     title: 'CABINET LOG: HULL SURPLUS',
     role: 'Sustain read',
-    line: 'Max lives reached. Excellent. Now spend that confidence on reading patterns, not auditioning for the next explosion.',
-    description: 'Filed when the player reaches the life cap. It turns a reward moment into a reminder that sustain is breathing room, not permission to ignore patterns.',
-    tip: 'At max lives, keep collecting score safely. The extra buffer is for mistakes, not for standing still.',
+    line: 'Extra life banked. Excellent. Spend that confidence on reading patterns, not auditioning for the next explosion.',
+    description: 'Filed for the old capped-life reward moment. Retained only for legacy copy references.',
+    tip: 'Extra lives are breathing room for mistakes, not permission to stand still.',
     imageAlias: 'nova-swarm-story-comms-02-20260519',
     accent: 0x7dffcc
   }
@@ -731,19 +731,19 @@ export function getMicroMessage(type) {
   const labels = localizedLabels[getCurrentLanguage()];
   switch (type) {
     case 'levelStart':
-      return buildCombo();
+      return labels?.newWave || 'NEW WAVE';
     case 'pause':
-      return `${labels?.pause || 'PAUSE'} - ${buildShortBurst()}`;
+      return labels?.pause || 'PAUSE';
     case 'resume':
-      return `${labels?.resume || 'RESUME'} - ${buildShortBurst()}`;
+      return labels?.resume || 'RESUME';
     case 'lowHealth':
-      return labels ? `${labels.lowHealth} - ${buildShortBurst()}` : `LOW LIFE - ${buildShortBurst()}`;
+      return labels?.lowHealth || 'LOW LIFE';
     case 'lifeLost':
-      return labels?.lifeLost || `SHIP DOWN - ${buildShortBurst()}`;
+      return labels?.lifeLost || 'SHIP DOWN - HITBOX HIT!';
     case 'newWave':
-      return `${labels?.newWave || 'NEW WAVE'} - ${buildShortBurst()}`;
+      return labels?.newWave || 'NEW WAVE';
     case 'bossIntro':
-      return `BOSS - ${buildCombo()}`;
+      return 'BOSS';
     default:
       return buildShortBurst();
   }
@@ -1029,16 +1029,16 @@ function fillCabinetTemplate(text, context = {}) {
   ));
 }
 
-function currentCabinetLogs() {
-  const localized = localizedCabinetLogs[getCurrentLanguage()] || null;
+function currentCabinetLogs(language = getCurrentLanguage()) {
+  const localized = localizedCabinetLogs[language] || null;
   return cabinetLogsEn.map((entry, index) => ({
     ...entry,
     ...(localized?.[index] || {})
   }));
 }
 
-export function getCabinetLogEntries(context = {}) {
-  return currentCabinetLogs().map((entry) => ({
+export function getCabinetLogEntries(context = {}, language = getCurrentLanguage()) {
+  return currentCabinetLogs(language).map((entry) => ({
     ...entry,
     line: fillCabinetTemplate(entry.line, context),
     description: fillCabinetTemplate(entry.description, context),
@@ -1046,8 +1046,8 @@ export function getCabinetLogEntries(context = {}) {
   }));
 }
 
-export function getCabinetLogEntry(id, context = {}) {
-  const entry = getCabinetLogEntries(context).find((item) => item.id === id);
+export function getCabinetLogEntry(id, context = {}, language = getCurrentLanguage()) {
+  const entry = getCabinetLogEntries(context, language).find((item) => item.id === id);
   return entry ? { ...entry } : null;
 }
 

@@ -1,0 +1,1 @@
+export const GLOBAL_SCORE_TUNING_MULTIPLIER = 1.15;

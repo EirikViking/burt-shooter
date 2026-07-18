@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-06-06T08:50:30.000Z",
+  "purpose": "Private Steam test build for focused Codex polish follow-up: soft Codex tick, sector copy variety, and run-theme internal-token cleanup.",
+  "worktree": "D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineHead": "3d7ae2375c62306719643c1d01ac5747add3241d",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "leaderboard": "nova_swarm_global_score_v2",
+  "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+  "codexSfx": {
+    "path": "public/audio/sfx/nova-swarm/nova_codex_tick.wav",
+    "durationMs": 70,
+    "provenance": "Local synthesized mono WAV tick; Codex-only alias for codex_open, codex_move, and codex_back."
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm Codex polish 2026-06-06 private test final",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "buildOutput": "..\\steam-build-output",
+    "setLive": ""
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "version": "v2026-06-06_10-45-22",
+    "fileCount": 336,
+    "totalBytes": 723578126,
+    "manifestHash": "5e886f9261bd52a20c192957aa5e2e9a73e7555f601d458af95d5106f5050c81"
+  },
+  "upload": {
+    "account": "gaunziman",
+    "buildId": "23598635",
+    "finishedAtLocal": "2026-06-06 10:50:30",
+    "result": "success",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "verification": [
+    "npm run check:codex-revamp",
+    "npm run check:threat-codex",
+    "npm run check:i18n",
+    "npm run check:codex-layout",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run check:release-line",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf"
+  ],
+  "steamworksSettings": {
+    "storeMetadataChanged": false,
+    "appVisibilityChanged": false,
+    "liveBranchChanged": false,
+    "setLiveEmpty": true,
+    "dummyScoresSubmitted": false
+  }
+}

@@ -5,6 +5,7 @@ import {
   isValidAchievementId
 } from './AchievementCatalog.js';
 import { createSteamAchievementSync } from './SteamAchievementSync.js';
+import { isRankedRunMode } from '../game/RunMode.js';
 
 export const ACHIEVEMENT_STORAGE_KEY = 'nova_swarm_achievements_v1';
 
@@ -36,8 +37,14 @@ function compactPayload(payload = {}) {
     'rankTitle',
     'level',
     'score',
+    'acceptedScore',
     'runMode',
     'globalProvider',
+    'leaderboardName',
+    'leaderboardKind',
+    'submissionStatus',
+    'validationSource',
+    'historicalBackfill',
     'placement',
     'numberOne',
     'achievementType',
@@ -45,7 +52,9 @@ function compactPayload(payload = {}) {
     'progressValue',
     'target',
     'runCleared',
-    'livesRemaining'
+    'livesRemaining',
+    'clearLivesRemaining',
+    'minimumScore'
   ];
   return Object.fromEntries(
     allowed
@@ -74,8 +83,9 @@ export class AchievementManager {
 
   canUnlockFromCurrentRun(payload = {}) {
     if (payload.ignoreRunGate === true) return true;
+    if (payload.allowAchievements === false) return false;
 
-    if (payload.runMode === 'unranked' || payload.isDebugRun === true) {
+    if (!isRankedRunMode(payload.runMode, { isDebugRun: payload.isDebugRun })) {
       return false;
     }
 
@@ -86,7 +96,7 @@ export class AchievementManager {
       runState = null;
     }
 
-    if (runState?.runMode === 'unranked' || runState?.isDebugRun === true) {
+    if (!isRankedRunMode(runState?.runMode, { isDebugRun: runState?.isDebugRun })) {
       return false;
     }
 

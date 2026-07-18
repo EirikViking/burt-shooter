@@ -84,7 +84,7 @@ function lowGlobalScores() {
 }
 
 function highGlobalScores() {
-  return Array.from({ length: 20 }, (_, index) => ({
+  return Array.from({ length: 40 }, (_, index) => ({
     name: `PRO${index}`,
     score: 999999 - index * 1000,
     level: 9,
@@ -139,9 +139,28 @@ async function submitInitials(page, initials, expectPost = false) {
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' &&
+      (
+        state.gameOver?.state === 'runback' ||
+        (state.gameOver?.state === 'submitted_hold' && state.gameOver?.submittedHoldReady)
+      );
   }, null, { timeout: 15000 });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' && (
+      state.gameOver?.state === 'runback' ||
+      (state.gameOver?.state === 'submitted_hold' && state.gameOver?.submittedHoldReady)
+    );
+  }, null, { timeout: 5000 });
   if (postPromise) await postPromise;
+  const submittedState = await readTextState(page);
+  if (submittedState.gameOver?.state === 'submitted_hold') {
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    }, null, { timeout: 10000 });
+  }
 }
 
 async function readLocalScores(page) {
@@ -178,6 +197,7 @@ try {
       return state.gameOver?.localQualified === true && state.gameOver?.globalQualified === true;
     }, null, { timeout: 10000 });
     const qualifiedState = await readTextState(page);
+    const finalScore = Number(qualifiedState.gameOver?.score) || 12000;
     assert(qualifiedState.gameOver.globalFanfarePlayed === true, 'global fanfare did not fire for global qualification');
     await submitInitials(page, 'ACE', true);
     const localScores = await readLocalScores(page);
@@ -186,7 +206,7 @@ try {
       rawLocal: localStorage.getItem(storageKey),
       text: JSON.parse(window.render_game_to_text?.() || '{}')
     }), localKey);
-    assert(localScores.some((entry) => entry.name === 'ACE' && entry.score === 12000), `same-run local score was not saved: ${JSON.stringify({ localScores, debugState })}`);
+    assert(localScores.some((entry) => entry.name === 'ACE' && entry.score === finalScore), `same-run local score was not saved: ${JSON.stringify({ finalScore, localScores, debugState })}`);
     assert(postCount === 1, `expected one global POST, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in both-qualified scenario: ${pageErrors.join('; ')}`);
     results.push({ scenario: 'local_and_global', ok: true, postCount, localCount: localScores.length });
@@ -209,6 +229,7 @@ try {
       return state.gameOver?.localQualified === true && state.gameOver?.globalStatus === 'missed';
     }, null, { timeout: 10000 });
     const qualifiedState = await readTextState(page);
+    const finalScore = Number(qualifiedState.gameOver?.score) || 12000;
     assert(qualifiedState.gameOver.globalFanfarePlayed === false, 'global fanfare fired for local-only qualification');
     await submitInitials(page, 'LOC', false);
     await page.waitForTimeout(700);
@@ -216,7 +237,7 @@ try {
     await page.keyboard.press('KeyL');
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'highscore', null, { timeout: 10000 });
     const activeView = await page.evaluate(() => window.__game?.scenes?.highscore?.activeLeaderboard);
-    assert(localScores.some((entry) => entry.name === 'LOC' && entry.score === 12000), `local-only score was not saved: ${JSON.stringify(localScores)}`);
+    assert(localScores.some((entry) => entry.name === 'LOC' && entry.score === finalScore), `local-only score was not saved: ${JSON.stringify({ finalScore, localScores })}`);
     assert(activeView === 'local', `expected local leaderboard view, got ${activeView}`);
     assert(postCount === 0, `expected no global POST for local-only qualification, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in local-only scenario: ${pageErrors.join('; ')}`);
@@ -240,11 +261,12 @@ try {
       return state.gameOver?.localQualified === true && state.gameOver?.globalStatus === 'offline';
     }, null, { timeout: 15000 });
     const offlineState = await readTextState(page);
+    const finalScore = Number(offlineState.gameOver?.score) || 13000;
     assert(offlineState.gameOver.globalFanfarePlayed === false, 'global fanfare fired while global board was offline');
     await submitInitials(page, 'OFF', false);
     await page.waitForTimeout(700);
     const localScores = await readLocalScores(page);
-    assert(localScores.some((entry) => entry.name === 'OFF' && entry.score === 13000), `offline local score was not preserved: ${JSON.stringify(localScores)}`);
+    assert(localScores.some((entry) => entry.name === 'OFF' && entry.score === finalScore), `offline local score was not preserved: ${JSON.stringify({ finalScore, localScores })}`);
     assert(postCount === 0, `expected no global POST when global qualification fetch failed, got ${postCount}`);
     assert(pageErrors.length === 0, `page errors in offline scenario: ${pageErrors.join('; ')}`);
     results.push({ scenario: 'global_offline_local_saved', ok: true, postCount });

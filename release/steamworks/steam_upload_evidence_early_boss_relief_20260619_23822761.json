@@ -1,0 +1,79 @@
+{
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm private test - early boss relief",
+  "createdAt": "2026-06-19T14:07:00Z",
+  "branch": "codex/build-forward-from-early-wave-pacing-accepted-20260619",
+  "sourceCommit": "0aad2d87782c10168579a5c089c90dd8d7c93950",
+  "startingCommit": "4a225dbaa8631395c1b408992969f2468500c93f",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23822761",
+    "depotManifest": "3998297278931999212",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignment": null,
+    "noBranchAssignmentFromVdf": true,
+    "uploadLog": "test-results/steam-upload-early-boss-relief-csteamcmd-20260619-160413/steamcmd.log",
+    "firstAttemptLog": "test-results/steam-upload-early-boss-relief-20260619-160330/steamcmd.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "package": {
+    "build": "v2026-06-19_15-53-16",
+    "packagedGitSha": "0aad2d8",
+    "packagedGitShaProof": "test-results/packaged-exe-smoke-2026-06-19T13-59-30-784Z/report.json",
+    "fileCount": 336,
+    "totalBytes": 879495554,
+    "exeSha256": "d1e58193d28597d445516b4b626f902ddadda7279cf11294a8afe4be9c032b6b",
+    "asarSha256": "803eee812d30dfdef870628a518e12c73bed206ed0bcadd9e61582dab79b92ca"
+  },
+  "vdfVerification": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "desc": "Nova Swarm early boss relief private test 2026-06-19"
+  },
+  "changeSummary": {
+    "bossEarlyDifficultyMaxLevel": 11,
+    "bossEarlyDifficultyScalar": 0.9,
+    "bossLevelsAffected": "1-11",
+    "bossLevelsUnaffectedByEarlyRelief": "12+",
+    "normalWaveDifficultyLevelOffset": 9,
+    "MIN_WAVES_BETWEEN_BOSSES": 5,
+    "wavesPerBossBase": 5,
+    "leaderboard": "nova_swarm_global_score_v2"
+  },
+  "checks": {
+    "checkReleaseLine": "passed",
+    "checkEarlyBossDifficultyRelief": "passed",
+    "checkBossPostFirstDifficulty": "passed",
+    "checkFirstBossBalance": "passed",
+    "checkBossMercy": "passed",
+    "checkNormalWaveDifficultyShift": "passed",
+    "checkSector10ClearTimePacing": "passed",
+    "checkWavePacing": "passed",
+    "checkSectorStartCheckpointUnlocks": "passed",
+    "checkSectorChallengeSelector": "passed",
+    "checkDisplaySettings": "passed",
+    "checkSteamElectronBridge": "passed",
+    "checkI18n": "passed",
+    "checkI18nUi": "passed",
+    "checkControllerFlow": "passed",
+    "buildCurrent": "passed",
+    "packageSteamWin": "passed",
+    "steamworksWriteVdf": "passed_with_explicit_app_and_depot_ids",
+    "desktopSmokePackaged": "passed_after_sequential_rerun",
+    "desktopSmokeCurrent": "passed_after_sequential_rerun",
+    "desktopPerfCurrent": "passed_after_sequential_rerun",
+    "smoke": "non_blocking_known_timeout_after_level3_capture_at_scripts_smoke_playtest_mjs_764_26"
+  },
+  "notes": [
+    "Steam upload used cached credentials from C:\\\\steamcmd for gaunziman; no MFA was required.",
+    "The sibling SDK SteamCMD copy had no cached credentials after updating and failed before upload with Invalid Password; the successful upload used C:\\\\steamcmd.",
+    "The VDF kept SetLive blank, so the upload created a private unassigned build for manual branch assignment.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, store visibility, public/default branch, sector-continue-test branch, or live branch was changed by Codex."
+  ]
+}

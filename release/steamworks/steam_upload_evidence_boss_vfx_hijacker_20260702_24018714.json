@@ -1,0 +1,60 @@
+{
+  "status": "uploaded_private_unassigned",
+  "steamBuildId": "24018714",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "sourceCommit": "bed2daf19a45bf42c90d05eb4d4300b4dcf1e05f",
+  "sourceCommitShort": "bed2daf",
+  "branch": "codex/elite-codex-destroyed-fix-20260702",
+  "build": {
+    "version": "v2026-07-02_12-38-33",
+    "timestamp": "2026-07-02T10:38:33.054Z"
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915900869,
+    "manifestHash": "6021b0eb2659ee46709340125e56e095d24b63a2f0c37960de1c347f25668702",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": "",
+    "desc": "Nova Swarm boss VFX, hijacker voice, elite codex fix bed2daf"
+  },
+  "steamcmd": {
+    "path": "tools/steamcmd/steamcmd.exe",
+    "login": "gaunziman",
+    "consoleLog": "release/steamworks/steam_upload_console_20260702_boss_vfx_hijacker.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24018714)."
+  },
+  "checks": [
+    "git diff --check",
+    "npm run check:threat-codex",
+    "npm run check:hijacker-voice-exclusivity",
+    "npm run check:hijacker-tractor",
+    "npm run check:tractor-hijack",
+    "npm run check:boss-animation",
+    "npm run check:boss-special-hazards",
+    "npm run check:boss-telegraph",
+    "npm run capture:boss-vfx-polish",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run desktop:smoke:current",
+    "npm run check:desktop-package",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+  ],
+  "notes": [
+    "SteamCMD uploaded a private unassigned build only.",
+    "The generated VDF kept SetLive blank, so no public/default/test branch was assigned by this upload.",
+    "No Steamworks store metadata, AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud settings, save format, score formula, XP formula, price metadata, or live branch settings were changed."
+  ]
+}

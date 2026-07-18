@@ -1,0 +1,876 @@
+const BASE_POWERUPS = [
+  {
+    id: 'triple_beam',
+    name: 'TRIPLE BEAM',
+    shortLabel: 'TRIPLE',
+    color: 0xffaa00,
+    duration: '12 second',
+    effectDescription: 'your main gun to at least three lanes',
+    read: 'lane coverage, not raw burst damage',
+    when: 'a wave spreads wide or pins both sides',
+    tip: 'Hold center lanes and let the side beams clean stragglers.',
+    pickupMessage: 'TRIPLE BEAM! Triple Shot!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 12000, shotsMin: 3 }
+  },
+  {
+    id: 'vector_boost',
+    name: 'VECTOR BOOST',
+    shortLabel: 'VECTOR',
+    color: 0xff6666,
+    duration: '12 second',
+    effectDescription: 'movement speed by 50 percent while the profile is active',
+    read: 'a reposition tool',
+    when: 'you need to cross a boss lane or escape a bad corner',
+    tip: 'Move with intent; the boost also makes over-dodging easier.',
+    pickupMessage: 'VECTOR BOOST! Speed Up!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 12000, movementBoostMult: 1.5 }
+  },
+  {
+    id: 'rapid_cabinet',
+    name: 'RAPID CABINET',
+    shortLabel: 'RAPID',
+    color: 0xff00ff,
+    duration: '12 second',
+    effectDescription: 'reload speed and main-shot damage, with damage floored at 3',
+    read: 'a short burn window',
+    when: 'an elite or boss is exposed',
+    tip: 'Commit damage while the lane is clean; the timer is the whole deal.',
+    pickupMessage: 'RAPID CABINET! Rapid Fire!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 12000, fireRateMult: 0.5, damageMin: 3 }
+  },
+  {
+    id: 'overdrive_core',
+    name: 'OVERDRIVE CORE',
+    shortLabel: 'OVERDRIVE',
+    color: 0x00ff00,
+    duration: '12 second',
+    effectDescription: 'your gun to at least five shots and damage to at least 2',
+    read: 'the loudest screen-control pickup',
+    when: 'the wave is dense and you can stay alive long enough to cash it in',
+    tip: 'Do not chase every target. Park in a safe lane and erase the shape.',
+    pickupMessage: 'OVERDRIVE CORE! Ultimate Power!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 12000, shotsMin: 5, damageMin: 2 }
+  },
+  {
+    id: 'slow_time',
+    name: 'SLOW TIME',
+    shortLabel: 'SLOW',
+    color: 0x00cccc,
+    duration: '8 second',
+    effectDescription: 'the global play speed while your ship keeps readable control',
+    read: 'a bullet-pattern reset',
+    when: 'shots are already on screen and the next dodge matters',
+    tip: 'Use the slow window to choose a lane, not to drift across the whole board.',
+    pickupMessage: 'SLOW MOTION!',
+    sfx: 'time_slow_warp',
+    effect: { durationMs: 8000, slowTime: true, enemyTimeScale: 0.33, enemyBulletScale: 0.35, hazardTimeScale: 0.35 }
+  },
+  {
+    id: 'ghost',
+    name: 'GHOST MODE',
+    shortLabel: 'GHOST',
+    color: 0xeeeeee,
+    duration: '8 second',
+    effectDescription: 'invincibility with a faded ship sprite',
+    read: 'a safe passage through danger',
+    when: 'you are boxed in or need to pass through a boss pattern',
+    tip: 'Ghost buys survival. It does not clear the wave for you.',
+    pickupMessage: 'GHOST MODE! Invincible!',
+    sfx: 'ghost_phase_shift',
+    effect: { durationMs: 8000, ghost: true }
+  },
+  {
+    id: 'shield',
+    name: 'SHIELD',
+    shortLabel: 'SHIELD',
+    color: 0x00aaaa,
+    duration: 'instant defensive',
+    effectDescription: 'a shield layer that absorbs the next hit',
+    read: 'insurance, not a damage buff',
+    when: 'you can afford to trade the current timed pickup for safety',
+    tip: 'Shield is strongest before an elite or boss gate, when one mistake would end the run.',
+    pickupMessage: 'SHIELD UP!',
+    sfx: 'shield_up',
+    effect: { instant: true, shield: true, shieldDurationMs: 15000 }
+  },
+  {
+    id: 'life',
+    name: 'EXTRA LIFE',
+    shortLabel: 'LIFE',
+    color: 0xff0000,
+    duration: 'instant sustain',
+    effectDescription: 'one extra life added to the current run',
+    read: 'run survival first and score value second',
+    when: 'the overrun push needs another hull',
+    tip: 'Extra lives now keep stacking, so a safe pickup can become the buffer that saves a deep run.',
+    pickupMessage: 'EXTRA LIFE!',
+    sfx: 'life_up',
+    effect: { instant: true }
+  },
+  {
+    id: 'rapid_fire',
+    name: 'RAPID FIRE',
+    shortLabel: 'RAPID',
+    color: 0xffcc00,
+    duration: '8 second',
+    effectDescription: 'reload time by half',
+    read: 'more shots, same lane discipline',
+    when: 'small enemies need to disappear before they form a wall',
+    tip: 'Rapid Fire stacks well in your hands, not in the save file; keep shooting.',
+    pickupMessage: 'RAPID FIRE!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, fireRateMult: 0.5 }
+  },
+  {
+    id: 'double_shot',
+    name: 'DOUBLE SHOT',
+    shortLabel: 'DOUBLE',
+    color: 0x66ccff,
+    duration: '8 second',
+    effectDescription: 'your gun to at least two bullets per volley',
+    read: 'simple coverage you can trust',
+    when: 'the wave is narrow enough that every shot will matter',
+    tip: 'Aim the center shot path and let the second lane do honest work.',
+    pickupMessage: 'DOUBLE SHOT!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, shotsMin: 2 }
+  },
+  {
+    id: 'damage_up',
+    name: 'DAMAGE UP',
+    shortLabel: 'DMG+',
+    color: 0xff6666,
+    duration: '8 second',
+    effectDescription: 'main weapon damage by roughly sixty percent',
+    read: 'target priority made louder',
+    when: 'a durable enemy is holding the formation together',
+    tip: 'Shoot the thing that makes the wave worse, not the nearest sparkle.',
+    pickupMessage: 'DAMAGE UP!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, damageMult: 1.6, damageMin: 2 }
+  },
+  {
+    id: 'speed_up',
+    name: 'SPEED UP',
+    shortLabel: 'SPEED',
+    color: 0x66ff66,
+    duration: '8 second',
+    effectDescription: 'ship speed by thirty percent',
+    read: 'a dodge helper',
+    when: 'the screen asks for quick lane swaps',
+    tip: 'Feather the movement. Speed is a scalpel until you panic.',
+    pickupMessage: 'SPEED UP!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, speedMult: 1.3 }
+  },
+  {
+    id: 'pierce',
+    name: 'PIERCE',
+    shortLabel: 'PIERCE',
+    color: 0xcc66ff,
+    duration: '7 second',
+    effectDescription: 'shots that pass through targets',
+    read: 'formation punishment',
+    when: 'enemies stack in a column or screen the boss',
+    tip: 'Line up targets before firing. Piercing hates wasted angles.',
+    pickupMessage: 'PIERCING SHOTS!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 7000, pierce: true }
+  },
+  {
+    id: 'score_x2',
+    name: 'SCORE x2',
+    shortLabel: 'x2',
+    color: 0xffff00,
+    duration: '10 second',
+    effectDescription: 'score awards for a short greed window',
+    read: 'a reason to play clean, not reckless',
+    when: 'you can farm a wave without throwing the run away',
+    tip: 'Greed is legal. Dying is still embarrassing.',
+    pickupMessage: 'SCORE x2!',
+    sfx: 'achievement',
+    effect: { durationMs: 10000, scoreMultiplier: 2 }
+  },
+  {
+    id: 'magnet',
+    name: 'MAGNET: PICKUPS',
+    shortLabel: 'MAGNET',
+    color: 0x99ffcc,
+    duration: '8 second',
+    effectDescription: 'a pickup-pull field around the player',
+    read: 'safe collection support',
+    when: 'the good stuff falls through danger lanes',
+    tip: 'Keep firing. The magnet does errands; you do survival.',
+    pickupMessage: 'MAGNET FIELD: PULLS PICKUPS',
+    sfx: 'magnet_pull',
+    effect: { durationMs: 8000, magnetRadius: 140, magnetStrength: 0.08 }
+  },
+  {
+    id: 'drones',
+    name: 'DRONES',
+    shortLabel: 'DRONES',
+    color: 0x66ccff,
+    duration: '8 second',
+    effectDescription: 'two side drones that add light support fire',
+    read: 'extra coverage without extra steering',
+    when: 'small enemies are leaking past your main lane',
+    tip: 'Drones are assistants, not babysitters. Aim the ship first.',
+    pickupMessage: 'SIDE DRONES!',
+    sfx: 'drone_launch_blip',
+    effect: { durationMs: 8000, droneCount: 2, droneColor: 0x66ccff }
+  },
+  {
+    id: 'shockwave',
+    name: 'SHOCKWAVE',
+    shortLabel: 'WAVE',
+    color: 0xff9966,
+    duration: 'instant blast',
+    effectDescription: 'enemy bullets and nearby enemies in one expanding blast',
+    read: 'a panic button with a real bill',
+    when: 'the screen is already bad',
+    tip: 'Do not save Shockwave for perfect. Perfect screens do not need it.',
+    pickupMessage: 'SHOCKWAVE!',
+    sfx: 'powerup',
+    effect: { instant: true, shockwave: true, shockwaveRadius: 250, shockwaveDamage: 5, shockwaveColor: 0xffaa00 }
+  },
+  {
+    id: 'point_defense',
+    name: 'POINT DEFENSE',
+    shortLabel: 'P-DEF',
+    color: 0x00ddff,
+    duration: '10 second',
+    effectDescription: 'a cyan ring that auto-intercepts hostile shots',
+    read: 'an automatic bullet screen around the hull',
+    when: 'hostile shot patterns are closing around you',
+    tip: 'The cyan ring destroys hostile shots inside it. It does not damage enemies.',
+    pickupMessage: 'POINT DEFENSE // AUTO-INTERCEPT ONLINE',
+    sfx: 'forceField',
+    effect: { durationMs: 10000, pointDefense: true }
+  },
+  {
+    id: 'bomb',
+    name: 'BOMB',
+    shortLabel: 'BOMB',
+    color: 0xff3300,
+    duration: '3 banked charges',
+    effectDescription: 'three heavy bombs you fire deliberately',
+    read: 'stored area damage that waits for your trigger',
+    when: 'a boss or tight cluster is lined up',
+    tip: 'Bombs stay banked. Release fire, then tap again on a locked boss or cluster.',
+    pickupMessage: 'BOMB BANKED // TAP FIRE ON A LOCK',
+    sfx: 'powerup',
+    effect: { charges: true, bombShots: 3, bombDamageMult: 5, bombBlastRadius: 150 }
+  },
+  {
+    id: 'chain_lightning',
+    name: 'CHAIN LIGHTNING',
+    shortLabel: 'CHAIN',
+    color: 0xffff00,
+    duration: '12 second',
+    effectDescription: 'kills into electric arcs that jump through nearby enemies',
+    read: 'cluster punishment',
+    when: 'waves bunch up and invite bad decisions',
+    tip: 'Pop the first enemy in the cluster, then let the lightning gossip.',
+    pickupMessage: 'CHAIN LIGHTNING!',
+    sfx: 'chain_lightning_arc',
+    effect: { durationMs: 12000, chainMax: 3 }
+  },
+  {
+    id: 'orbital_strike',
+    name: 'ORBITAL STRIKE',
+    shortLabel: 'ORBITAL',
+    color: 0xff00ff,
+    duration: '15 second',
+    effectDescription: 'five timed orbital charges against priority targets',
+    read: 'remote boss and elite pressure',
+    when: 'you need damage while holding a safer lane',
+    tip: 'Let the strike solve priority targets while your ship solves not dying.',
+    pickupMessage: 'ORBITAL STRIKE!',
+    sfx: 'orbital_strike_charge',
+    effect: { durationMs: 15000, orbitalCharges: 5 }
+  },
+  {
+    id: 'vampire',
+    name: 'VAMPIRE DRAIN',
+    shortLabel: 'VAMP',
+    color: 0xff0066,
+    duration: '20 second',
+    effectDescription: 'a sustain bonus after enough kills',
+    read: 'survival paid for by aggression',
+    when: 'you can keep clearing without eating bullets',
+    tip: 'Vampire rewards clean violence. Messy violence is just paperwork.',
+    pickupMessage: 'VAMPIRE DRAIN!',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 20000, vampire: true }
+  }
+];
+
+const NEW_POWERUPS = [
+  {
+    id: 'prism_splitter',
+    name: 'PRISM SPLITTER',
+    shortLabel: 'PRISM',
+    color: 0xff77ff,
+    duration: '9 second',
+    effectDescription: 'your shot pattern into four bright lanes with faster bolts',
+    read: 'wide screen control with classy violence',
+    when: 'the swarm arrives in columns and refuses to use manners',
+    tip: 'Stay near center. The prism makes the side lanes pay rent.',
+    pickupMessage: 'PRISM SPLITTER! Four lanes, zero manners.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 9000, shotsMin: 4, bulletSpeedMult: 1.08 }
+  },
+  {
+    id: 'rail_surge',
+    name: 'RAIL SURGE',
+    shortLabel: 'RAIL',
+    color: 0x66e0ff,
+    duration: '9 second',
+    effectDescription: 'damage, bullet speed, and piercing into a brief railgun mood',
+    read: 'straight-line punishment',
+    when: 'a formation lines up like it signed the wrong contract',
+    tip: 'Put enemies in one sentence and underline them with plasma.',
+    pickupMessage: 'RAIL SURGE! The lane signed a waiver.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 9000, damageMult: 1.55, bulletSpeedMult: 1.25, pierce: true }
+  },
+  {
+    id: 'chrono_anchor',
+    name: 'CHRONO ANCHOR',
+    shortLabel: 'CHRONO',
+    color: 0x63ffe8,
+    duration: '7 second',
+    effectDescription: 'time drag plus a steadier firing rhythm',
+    read: 'a calm room inside a bad room',
+    when: 'bullets are arguing faster than your eyes',
+    tip: 'Anchor first, dodge once, then make the wave regret being scheduled.',
+    pickupMessage: 'CHRONO ANCHOR! Time sits down.',
+    sfx: 'time_slow_warp',
+    effect: { durationMs: 7000, slowTime: true, enemyTimeScale: 0.33, enemyBulletScale: 0.35, hazardTimeScale: 0.35, fireRateMult: 0.82 }
+  },
+  {
+    id: 'blink_drive',
+    name: 'BLINK DRIVE',
+    shortLabel: 'BLINK',
+    color: 0x7df9ff,
+    duration: '9 second',
+    effectDescription: 'movement, dodge recovery, and a short safety flicker',
+    read: 'surgical repositioning',
+    when: 'the safe lane is elsewhere and laughing',
+    tip: 'Blink through pressure, then stop moving before confidence becomes comedy.',
+    pickupMessage: 'BLINK DRIVE! Your ship found a shortcut.',
+    sfx: 'ghost_phase_shift',
+    effect: { durationMs: 9000, movementBoostMult: 1.34, speedMult: 1.04, dodgeDelayMult: 0.68, invulnMs: 650 }
+  },
+  {
+    id: 'nano_patch',
+    name: 'NANO PATCH',
+    shortLabel: 'PATCH',
+    color: 0x8dff8d,
+    duration: 'instant repair',
+    effectDescription: 'one emergency hull repair added to the current run',
+    read: 'a tiny mechanic with heroic billing',
+    when: 'your ship is smoking and pretending it is style',
+    tip: 'Grab it when hurt or when a deep push needs one more mistake buffer.',
+    pickupMessage: 'NANO PATCH! The hull stops whining.',
+    sfx: 'life_up',
+    effect: { instant: true, repairLives: 1, invulnMs: 1200 }
+  },
+  {
+    id: 'score_fever',
+    name: 'SCORE FEVER',
+    shortLabel: 'FEVER',
+    color: 0xffea33,
+    duration: '8 second',
+    effectDescription: 'score gain to triple value for one greedy little window',
+    read: 'a dare from the scoreboard',
+    when: 'you have targets, space, and poor financial judgment',
+    tip: 'Chase points, not bullets. The distinction matters to your next of kin.',
+    pickupMessage: 'SCORE FEVER! The scoreboard is flirting.',
+    sfx: 'achievement',
+    effect: { durationMs: 8000, scoreMultiplier: 3 }
+  },
+  {
+    id: 'gravity_well',
+    name: 'GRAVITY WELL',
+    shortLabel: 'GRAV',
+    color: 0xb07cff,
+    duration: '9 second',
+    effectDescription: 'a huge pickup magnet with stronger pull',
+    read: 'economy by astronomy',
+    when: 'powerups and score bits are falling through hostile lanes',
+    tip: 'Let gravity steal the loot while you keep the cockpit attached.',
+    pickupMessage: 'GRAVITY WELL! Loot has no civil rights.',
+    sfx: 'magnet_pull',
+    effect: { durationMs: 9000, magnetRadius: 280, magnetStrength: 0.16 }
+  },
+  {
+    id: 'drone_carousel',
+    name: 'DRONE CAROUSEL',
+    shortLabel: 'CAROUSEL',
+    color: 0x40d6ff,
+    duration: '10 second',
+    effectDescription: 'four rotating support drones around the hull',
+    read: 'friendly chaos with a safety badge',
+    when: 'small ships leak around both shoulders',
+    tip: 'The carousel helps with cleanup. It is not licensed to do panic.',
+    pickupMessage: 'DRONE CAROUSEL! Tiny staff meeting online.',
+    sfx: 'drone_launch_blip',
+    effect: { durationMs: 10000, droneCount: 4, droneColor: 0x40d6ff }
+  },
+  {
+    id: 'plasma_lance',
+    name: 'PLASMA LANCE',
+    shortLabel: 'LANCE',
+    color: 0xff4b4b,
+    duration: '8 second',
+    effectDescription: 'heavy piercing shots with slower but brutal cadence',
+    read: 'boss surgery',
+    when: 'one big target needs a very rude opinion',
+    tip: 'Aim before firing. The lance is not here to spray and pray.',
+    pickupMessage: 'PLASMA LANCE! The boss felt that.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, damageMult: 2, fireRateMult: 1.15, bulletSpeedMult: 1.2, pierce: true }
+  },
+  {
+    id: 'stasis_net',
+    name: 'STASIS NET',
+    shortLabel: 'STASIS',
+    color: 0x8aefff,
+    duration: 'instant control',
+    effectDescription: 'a cold blast that clears bullets and dents nearby threats',
+    read: 'a reset button wearing gloves',
+    when: 'the pattern is already inside your personal space',
+    tip: 'Stasis makes a gap. Use the gap before it gets promoted to memory.',
+    pickupMessage: 'STASIS NET! Everyone be normal for one second.',
+    sfx: 'time_slow_warp',
+    effect: { instant: true, shockwave: true, shockwaveRadius: 290, shockwaveDamage: 3, shockwaveColor: 0x8aefff }
+  },
+  {
+    id: 'row_core',
+    name: 'ROW CORE',
+    shortLabel: 'ROW',
+    color: 0xff2244,
+    duration: '4.2 second ritual',
+    effectDescription: 'six rhythmic Longship Protocol pulses that clear bullets, push enemies, and pay score',
+    read: 'a crowd-powered panic window that still asks you to steer',
+    when: 'bullet hell gets dense and you want the cabinet to row with you',
+    tip: 'Stay near danger without face-tanking it. Every useful pulse pushes the Perfect Row bonus closer.',
+    pickupMessage: 'ROW CORE! OARS OUT!',
+    sfx: 'row_core_pickup',
+    effect: { instant: true, rowCore: true }
+  },
+  {
+    id: 'aegis_burst',
+    name: 'AEGIS BURST',
+    shortLabel: 'AEGIS',
+    color: 0x33ffee,
+    duration: '9 second',
+    effectDescription: 'shield coverage and point-defense interception together',
+    read: 'defense with a glowing ego',
+    when: 'you need one mistake forgiven and the next bullet handled',
+    tip: 'Aegis is a window. Shoot through it before the bill arrives.',
+    pickupMessage: 'AEGIS BURST! Insurance got lasers.',
+    sfx: 'shield_up',
+    effect: { durationMs: 9000, shield: true, shieldDurationMs: 9000, pointDefense: true }
+  },
+  {
+    id: 'jackpot_lens',
+    name: 'JACKPOT LENS',
+    shortLabel: 'JACKPOT',
+    color: 0xffd84d,
+    duration: '7 second',
+    effectDescription: 'score value and pickup pull into one greedy optic',
+    read: 'controlled robbery',
+    when: 'the board is rich and your escape lane is clean',
+    tip: 'Take the money. Leave the bullets. This is basic accounting.',
+    pickupMessage: 'JACKPOT LENS! The coins look nervous.',
+    sfx: 'achievement',
+    effect: { durationMs: 7000, scoreMultiplier: 2.5, magnetRadius: 220, magnetStrength: 0.13 }
+  },
+  {
+    id: 'ion_dash',
+    name: 'ION DASH',
+    shortLabel: 'ION',
+    color: 0x58ff9d,
+    duration: '8 second',
+    effectDescription: 'faster ship speed, faster dodge recovery, and brief invulnerability',
+    read: 'aggressive lane theft',
+    when: 'a boss pattern thinks it owns the whole screen',
+    tip: 'Dash into safety, not into a heroic obituary.',
+    pickupMessage: 'ION DASH! The lane is yours now.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, speedMult: 1.35, dodgeDelayMult: 0.5, invulnMs: 900 }
+  },
+  {
+    id: 'saw_matrix',
+    name: 'SAW MATRIX',
+    shortLabel: 'SAW',
+    color: 0xff8c22,
+    duration: '5 charged shots',
+    effectDescription: 'five compact saw-bombs with quick area damage',
+    read: 'small explosions for crowded arguments',
+    when: 'enemies bunch up but full bombs would be overkill',
+    tip: 'Paint the cluster, not the wallpaper.',
+    pickupMessage: 'SAW MATRIX! Five tiny bad decisions.',
+    sfx: 'powerup',
+    effect: { charges: true, bombShots: 5, bombDamageMult: 4, bombBlastRadius: 125, bombColor: 0xff8c22 }
+  },
+  {
+    id: 'mirror_shots',
+    name: 'MIRROR SHOTS',
+    shortLabel: 'MIRROR',
+    color: 0x9ee8ff,
+    duration: '9 second',
+    effectDescription: 'extra side shots and a slightly faster trigger',
+    read: 'coverage by duplication',
+    when: 'side lanes keep whispering threats',
+    tip: 'Hold a clean center. The mirror handles rude guests.',
+    pickupMessage: 'MIRROR SHOTS! You brought witnesses.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 9000, shotBonus: 2, shotsMin: 3, fireRateMult: 0.92 }
+  },
+  {
+    id: 'mercy_protocol',
+    name: 'MERCY PROTOCOL',
+    shortLabel: 'MERCY',
+    color: 0x7effa8,
+    duration: 'instant rescue',
+    effectDescription: 'emergency repair, shield, and a short safety blink',
+    read: 'the cabinet briefly grows a conscience',
+    when: 'the run is too good to die from one filthy mistake',
+    tip: 'Do not waste mercy at full health. Even miracles hate paperwork.',
+    pickupMessage: 'MERCY PROTOCOL! The cabinet blinked first.',
+    sfx: 'life_up',
+    effect: { instant: true, repairLives: 1, shield: true, shieldDurationMs: 9000, invulnMs: 1600 }
+  },
+  {
+    id: 'target_paint',
+    name: 'TARGET PAINT',
+    shortLabel: 'TARGET',
+    color: 0xff5fbf,
+    duration: '10 second',
+    effectDescription: 'damage and fire speed through a hostile targeting wash',
+    read: 'focus-fire discipline',
+    when: 'one priority target keeps surviving like it has a lawyer',
+    tip: 'Pick the important target and stay mean until it stops existing.',
+    pickupMessage: 'TARGET PAINT! Everything has a receipt.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 10000, damageMult: 1.35, fireRateMult: 0.78 }
+  },
+  {
+    id: 'void_crown',
+    name: 'VOID CROWN',
+    shortLabel: 'VOID',
+    color: 0xbd64ff,
+    duration: '8 second',
+    effectDescription: 'shots, damage, speed, and score in one risky royal package',
+    read: 'a temporary promotion to problem',
+    when: 'the screen is dense and you can still steer like royalty',
+    tip: 'The crown is not armor. It is permission to be dangerous.',
+    pickupMessage: 'VOID CROWN! Briefly, you are the incident.',
+    sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, shotsMin: 3, damageMult: 1.35, speedMult: 1.2, scoreMultiplier: 2 }
+  },
+  {
+    id: 'swarm_contract',
+    name: 'SWARM CONTRACT',
+    shortLabel: 'SWARM',
+    color: 0xc6ff3d,
+    duration: '10 second',
+    effectDescription: 'drones, small chain arcs, and pickup pull under one bad contract',
+    read: 'outsourced chaos',
+    when: 'waves are messy and the loot is falling in public',
+    tip: 'Let the contract do side jobs while you stay alive enough to sign the next one.',
+    pickupMessage: 'SWARM CONTRACT! Read nothing, profit briefly.',
+    sfx: 'drone_launch_blip',
+    effect: { durationMs: 10000, droneCount: 3, droneColor: 0xc6ff3d, chainMax: 2, magnetRadius: 190, magnetStrength: 0.11 }
+  },
+  {
+    id: 'pulse_refund',
+    name: 'PULSE REFUND',
+    shortLabel: 'REFUND',
+    color: 0x4dffcf,
+    duration: 'instant cleanse',
+    effectDescription: 'enemy bullets into a capped score refund',
+    read: 'turning panic into accounting',
+    when: 'the screen is full of hostile invoices',
+    tip: 'Refund bullets before dodging through them. Finance finally helps.',
+    pickupMessage: 'PULSE REFUND! Bullets become paperwork.',
+    sfx: 'powerup',
+    effect: { instant: true, shockwave: true, shockwaveRadius: 230, shockwaveDamage: 0, shockwaveColor: 0x4dffcf, scorePerBullet: 75, scoreBulletCap: 18 }
+  },
+  {
+    id: 'super_extra_life',
+    name: 'SUPER EXTRA LIFE',
+    shortLabel: '2 LIFE',
+    color: 0xff36c9,
+    duration: 'instant double sustain',
+    effectDescription: 'two extra lives if you can catch the evasive pickup',
+    read: 'a double-life jackpot that actively dodges your ship',
+    when: 'you can cut off its lane instead of chasing its tail',
+    tip: 'Anticipate the next side jump. It ignores magnet pull and punishes lazy chasing.',
+    pickupMessage: 'SUPER EXTRA LIFE! +2 LIVES!',
+    sfx: 'super_life_up',
+    movement: {
+      evasive: true,
+      catchabilityTarget: 0.08,
+      magnetImmune: true,
+      pickupRadius: 8,
+      pickupAssistRadius: 8,
+      verticalSpeed: 0.92,
+      lifeTimeMs: 10500,
+      dodgeRadius: 300,
+      maxSpeedX: 20,
+      lateralAccel: 3.8,
+      targetEase: 0.24,
+      edgeMarginPx: 48,
+      horizontalJitterPx: 70,
+      jumpIntervalMinMs: 150,
+      jumpIntervalMaxMs: 360,
+      jumpDistanceMinPx: 130,
+      jumpDistanceMaxPx: 250,
+      closePressureBoost: 1.45,
+      fakeoutChance: 0.22
+    },
+    effect: { instant: true, grantLives: 2, invulnMs: 1500 }
+  },
+  {
+    id: 'nova_miracle',
+    name: 'NOVA MIRACLE',
+    shortLabel: 'MIRACLE',
+    color: 0xfff06a,
+    duration: 'instant salvation',
+    effectDescription: 'every non-boss threat and hostile shot from the board, then grants one extra life',
+    read: 'the rarest rescue signal in the swarm',
+    when: 'the whole board has become a bad place to be',
+    tip: 'Catch it. The miracle handles everything else.',
+    pickupMessage: 'NOVA MIRACLE! BOARD PURGED! +1 LIFE!',
+    sfx: 'nova_miracle_collect',
+    movement: {
+      pickupRadius: 14,
+      pickupAssistRadius: 34,
+      verticalSpeed: 0.64,
+      lifeTimeMs: 30000
+    },
+    effect: { instant: true, boardClear: true, grantLives: 1, invulnMs: 2500 }
+  }
+];
+
+const SPECTACLE_EXPANSION_POWERUPS = [
+  {
+    id: 'helix_array', name: 'HELIX ARRAY', shortLabel: 'HELIX', color: 0x54eaff,
+    duration: '9 second', effectDescription: 'five fast bolts braided into a rotating lane fan',
+    read: 'a corkscrew can opener for formations', when: 'the swarm arrives stacked and smug',
+    tip: 'Hold the middle. The helix does its best work before you start chasing crumbs.',
+    pickupMessage: 'HELIX ARRAY! Space has threads now.', sfx: 'powerup_pickup',
+    effect: { durationMs: 9000, shotsMin: 5, bulletSpeedMult: 1.18 }
+  },
+  {
+    id: 'reactor_redline', name: 'REACTOR REDLINE', shortLabel: 'REDLINE', color: 0xff485f,
+    duration: '8 second', effectDescription: 'damage, firing rhythm, and ship speed pushed past the polite markings',
+    read: 'a controlled engine-room tantrum', when: 'hesitation is currently more dangerous than heat',
+    tip: 'Spend the whole redline. It expires before the warranty department arrives.',
+    pickupMessage: 'REACTOR REDLINE! Gauges are decorative.', sfx: 'boss_phase_surge',
+    effect: { durationMs: 8000, damageMult: 1.45, fireRateMult: 0.72, speedMult: 1.12 }
+  },
+  {
+    id: 'static_bloom', name: 'STATIC BLOOM', shortLabel: 'BLOOM', color: 0xc96cff,
+    duration: '9 second', effectDescription: 'three-lane volleys that fork lightning through clustered hulls',
+    read: 'botany performed with illegal voltage', when: 'enemies insist on standing close together',
+    tip: 'Water nothing. Aim at the fattest cluster and enjoy the weather.',
+    pickupMessage: 'STATIC BLOOM! The garden bites.', sfx: 'chain_lightning_arc',
+    effect: { durationMs: 9000, shotsMin: 3, chainMax: 4 }
+  },
+  {
+    id: 'sanctuary_field', name: 'SANCTUARY FIELD', shortLabel: 'SANCTUARY', color: 0x65ffd2,
+    duration: '10 second', effectDescription: 'a shield, point defense, and loot pull inside one glowing shelter',
+    read: 'safety with chores assigned', when: 'bullets and prizes occupy the same terrible address',
+    tip: 'The field handles small trouble. Keep steering around the large, expensive trouble.',
+    pickupMessage: 'SANCTUARY FIELD! Shoes off, guns on.', sfx: 'shield_up',
+    effect: { durationMs: 10000, shield: true, shieldDurationMs: 10000, pointDefense: true, magnetRadius: 150, magnetStrength: 0.09 }
+  },
+  {
+    id: 'comet_drill', name: 'COMET DRILL', shortLabel: 'DRILL', color: 0xff9b3d,
+    duration: '8 second', effectDescription: 'high-speed piercing rounds with enough damage to punch daylight through a column',
+    read: 'one straight answer to several bad ships', when: 'targets line up behind armor or a boss',
+    tip: 'Build the line first. A drill fired sideways is just an expensive opinion.',
+    pickupMessage: 'COMET DRILL! Please remain in one line.', sfx: 'powerup_pickup',
+    effect: { durationMs: 8000, damageMult: 1.8, bulletSpeedMult: 1.4, pierce: true }
+  },
+  {
+    id: 'lucky_reactor', name: 'LUCKY REACTOR', shortLabel: 'LUCKY', color: 0xffe557,
+    duration: '8 second', effectDescription: 'double-score heat with a quicker trigger and suspiciously good timing',
+    read: 'a slot machine wired to the main gun', when: 'the board is crowded enough to pay out',
+    tip: 'Shoot what is safe to cash. Luck does not cover collision damage.',
+    pickupMessage: 'LUCKY REACTOR! The house looks worried.', sfx: 'achievement',
+    effect: { durationMs: 8000, scoreMultiplier: 2.25, fireRateMult: 0.78 }
+  },
+  {
+    id: 'packet_storm', name: 'PACKET STORM', shortLabel: 'PACKETS', color: 0x78ff8c,
+    duration: '10 second', effectDescription: 'four drones, chain arcs, and faster fire in a badly supervised network',
+    read: 'distributed violence with excellent uptime', when: 'small targets are leaking through every lane',
+    tip: 'You are still the server. Stay alive or the entire tiny office goes home.',
+    pickupMessage: 'PACKET STORM! Nobody read the firewall.', sfx: 'drone_launch_blip',
+    effect: { durationMs: 10000, droneCount: 4, droneColor: 0x78ff8c, chainMax: 3, fireRateMult: 0.9 }
+  },
+  {
+    id: 'graviton_crown', name: 'GRAVITON CROWN', shortLabel: 'GRAVITON', color: 0xa873ff,
+    duration: '8 second', effectDescription: 'a giant loot field wrapped around a slow-motion royal decree',
+    read: 'the universe briefly leaning your way', when: 'the screen contains both treasure and nonsense',
+    tip: 'Let the crown fetch the loot. Royalty should not crawl under lasers for loose change.',
+    pickupMessage: 'GRAVITON CROWN! Physics has a favorite.', sfx: 'time_slow_warp',
+    effect: { durationMs: 8000, slowTime: true, enemyTimeScale: 0.55, enemyBulletScale: 0.58, hazardTimeScale: 0.58, magnetRadius: 300, magnetStrength: 0.18 }
+  },
+  {
+    id: 'needle_rain', name: 'NEEDLE RAIN', shortLabel: 'NEEDLES', color: 0x9be9ff,
+    duration: '7 second', effectDescription: 'six narrow firing lanes delivered at an indecent cadence',
+    read: 'precision becoming a weather event', when: 'thin targets fill more screen than they deserve',
+    tip: 'Sweep gently. This much needlework turns panic movement into modern art.',
+    pickupMessage: 'NEEDLE RAIN! Forecast: extremely pointed.', sfx: 'powerup_pickup',
+    effect: { durationMs: 7000, shotsMin: 6, fireRateMult: 0.68, damageMult: 0.92 }
+  },
+  {
+    id: 'phase_dividend', name: 'PHASE DIVIDEND', shortLabel: 'DIVIDEND', color: 0xd7f4ff,
+    duration: '7 second', effectDescription: 'ghost passage, extra speed, and doubled score while reality looks away',
+    read: 'profit earned between solid objects', when: 'the rich lane is also the impossible lane',
+    tip: 'Phase through the danger, collect the dividend, become matter before doing anything clever.',
+    pickupMessage: 'PHASE DIVIDEND! Reality waived the fee.', sfx: 'ghost_phase_shift',
+    effect: { durationMs: 7000, ghost: true, speedMult: 1.15, scoreMultiplier: 2 }
+  },
+  {
+    id: 'hull_hymn', name: 'HULL HYMN', shortLabel: 'HYMN', color: 0x80ffd8,
+    duration: 'instant defensive', effectDescription: 'a shielded shockwave and a clean breath of invulnerability',
+    read: 'the ship remembering a very loud prayer', when: 'the cockpit needs space more than damage',
+    tip: 'Use the silence after the hymn. The choir does not perform encores.',
+    pickupMessage: 'HULL HYMN! The armor knows this verse.', sfx: 'shield_up',
+    effect: { instant: true, shield: true, shieldDurationMs: 12000, shockwave: true, shockwaveRadius: 250, shockwaveDamage: 2, shockwaveColor: 0x80ffd8, invulnMs: 900 }
+  },
+  {
+    id: 'scrap_vacuum', name: 'SCRAP VACUUM', shortLabel: 'VACUUM', color: 0x96ffbd,
+    duration: '10 second', effectDescription: 'two salvage drones and a greedy pickup funnel around the ship',
+    read: 'janitorial work at combat speed', when: 'useful debris is scattered across unsafe lanes',
+    tip: 'Keep fighting. The vacuum has no dignity and therefore fears no loose currency.',
+    pickupMessage: 'SCRAP VACUUM! The floor owes you money.', sfx: 'magnet_pull',
+    effect: { durationMs: 10000, droneCount: 2, droneColor: 0x96ffbd, magnetRadius: 250, magnetStrength: 0.15 }
+  },
+  {
+    id: 'black_ice', name: 'BLACK ICE', shortLabel: 'ICE', color: 0x5e8dff,
+    duration: '8 second', effectDescription: 'slowed hostile motion and piercing rounds across a frozen firing solution',
+    read: 'a traffic accident waiting for the swarm', when: 'patterns move too fast and enemies hide behind enemies',
+    tip: 'Pick a lane while time is frozen. Sliding everywhere defeats the name.',
+    pickupMessage: 'BLACK ICE! The vacuum forgot traction.', sfx: 'time_slow_warp',
+    effect: { durationMs: 8000, slowTime: true, enemyTimeScale: 0.42, enemyBulletScale: 0.44, hazardTimeScale: 0.46, pierce: true }
+  },
+  {
+    id: 'boss_breaker', name: 'BOSS BREAKER', shortLabel: 'BREAKER', color: 0xff654c,
+    duration: '3 charged strikes', effectDescription: 'three orbital charges backed by harder, piercing main-gun fire',
+    read: 'an argument reserved for very large management', when: 'a boss phase needs to end before its next idea',
+    tip: 'Mark the boss, not its interns. Orbital paperwork is expensive.',
+    pickupMessage: 'BOSS BREAKER! Management has been notified.', sfx: 'orbital_lock',
+    effect: { durationMs: 9000, orbitalCharges: 3, damageMult: 1.5, pierce: true }
+  },
+  {
+    id: 'nova_bloom', name: 'NOVA BLOOM', shortLabel: 'NOVA', color: 0xff5aa8,
+    duration: '7 charged shots', effectDescription: 'seven compact plasma blossoms that detonate through crowded pockets',
+    read: 'a bouquet with a blast radius', when: 'the formation bunches up around something important',
+    tip: 'Plant blossoms in crowds. Space is too large for decorative gardening.',
+    pickupMessage: 'NOVA BLOOM! Something beautiful explodes.', sfx: 'powerup',
+    effect: { charges: true, bombShots: 7, bombDamageMult: 3.5, bombBlastRadius: 115, bombColor: 0xff5aa8 }
+  },
+  {
+    id: 'second_wind', name: 'SECOND WIND', shortLabel: 'WIND', color: 0x6fffb7,
+    duration: '8 second', effectDescription: 'a fast escape profile with a brief invulnerable opening',
+    read: 'the run inhaling through clenched teeth', when: 'you survived the mistake but not the lane around it',
+    tip: 'Use the opening to leave. A second wind is not a second argument.',
+    pickupMessage: 'SECOND WIND! Breathe later, move now.', sfx: 'ghost_phase_shift',
+    effect: { durationMs: 8000, speedMult: 1.42, dodgeDelayMult: 0.55, invulnMs: 1700 }
+  },
+  {
+    id: 'mirror_palace', name: 'MIRROR PALACE', shortLabel: 'PALACE', color: 0x7fcfff,
+    duration: '8 second', effectDescription: 'seven firing lanes escorted by two crystalline drones',
+    read: 'too many reflections carrying live ammunition', when: 'the entire width of the board needs an answer',
+    tip: 'Stay centered and let the palace face outward. Chasing ruins the architecture.',
+    pickupMessage: 'MIRROR PALACE! Every reflection is armed.', sfx: 'drone_launch_blip',
+    effect: { durationMs: 8000, shotsMin: 7, droneCount: 2, droneColor: 0x7fcfff }
+  },
+  {
+    id: 'chrono_jackpot', name: 'CHRONO JACKPOT', shortLabel: 'TIME$', color: 0xffd85c,
+    duration: '7 second', effectDescription: 'slower danger, triple-value scoring, and a strong loot pull',
+    read: 'a casino operating outside normal time', when: 'the screen is rich enough to justify criminal physics',
+    tip: 'Cash the safe targets first. The clock is slow, not charitable.',
+    pickupMessage: 'CHRONO JACKPOT! Time pays interest.', sfx: 'achievement',
+    effect: { durationMs: 7000, slowTime: true, enemyTimeScale: 0.58, enemyBulletScale: 0.6, hazardTimeScale: 0.62, scoreMultiplier: 3, magnetRadius: 210, magnetStrength: 0.13 }
+  },
+  {
+    id: 'afterburner_choir', name: 'AFTERBURNER CHOIR', shortLabel: 'CHOIR', color: 0xffa243,
+    duration: '9 second', effectDescription: 'faster flight and firing with two drones singing hot exhaust harmony',
+    read: 'an engine solo with backup weapons', when: 'the fight needs momentum more than subtlety',
+    tip: 'Conduct with small movements. The choir is already loud enough.',
+    pickupMessage: 'AFTERBURNER CHOIR! All engines, no indoor voice.', sfx: 'boss_phase_surge',
+    effect: { durationMs: 9000, speedMult: 1.4, fireRateMult: 0.75, droneCount: 2, droneColor: 0xffa243 }
+  },
+  {
+    id: 'dead_sun_dividend', name: 'DEAD SUN DIVIDEND', shortLabel: 'DEAD SUN', color: 0xff7d45,
+    duration: '9 second', effectDescription: 'triple score, harder shots, and clean-kill sustain borrowed from a dead star',
+    read: 'compound interest with a body count', when: 'you can keep the kill chain alive without trading hull',
+    tip: 'Stay aggressive and clean. The dead sun charges ruinous late fees.',
+    pickupMessage: 'DEAD SUN DIVIDEND! The corpse still pays.', sfx: 'achievement',
+    effect: { durationMs: 9000, scoreMultiplier: 3, damageMult: 1.35, vampire: true }
+  }
+];
+
+export const POWERUP_DURATION_MODES = Object.freeze({
+  triple_beam: 'while_firing',
+  rapid_cabinet: 'while_firing',
+  overdrive_core: 'while_firing',
+  rapid_fire: 'while_firing',
+  double_shot: 'while_firing',
+  damage_up: 'while_firing',
+  pierce: 'while_firing',
+  prism_splitter: 'while_firing',
+  rail_surge: 'while_firing',
+  plasma_lance: 'while_firing',
+  mirror_shots: 'while_firing',
+  target_paint: 'while_firing',
+  helix_array: 'while_firing',
+  comet_drill: 'while_firing',
+  needle_rain: 'while_firing',
+});
+
+export const POWERUP_DEFINITIONS = Object.freeze([...BASE_POWERUPS, ...NEW_POWERUPS, ...SPECTACLE_EXPANSION_POWERUPS]);
+export const BASE_POWERUP_TYPES = Object.freeze(BASE_POWERUPS.map((powerup) => powerup.id));
+export const SPECTACLE_EXPANSION_POWERUP_TYPES = Object.freeze(SPECTACLE_EXPANSION_POWERUPS.map((powerup) => powerup.id));
+export const NEW_POWERUP_TYPES = Object.freeze([...NEW_POWERUPS, ...SPECTACLE_EXPANSION_POWERUPS].map((powerup) => powerup.id));
+export const ALL_POWERUP_TYPES = Object.freeze(POWERUP_DEFINITIONS.map((powerup) => powerup.id));
+export const POWERUP_META = Object.freeze(Object.fromEntries(POWERUP_DEFINITIONS.map((powerup) => [powerup.id, powerup])));
+export const POWERUP_CODEX_ENTRIES = Object.freeze(POWERUP_DEFINITIONS.map((powerup) => Object.freeze({
+  id: powerup.id,
+  name: powerup.name,
+  duration: powerup.duration,
+  effect: powerup.effectDescription,
+  read: powerup.read,
+  when: powerup.when,
+  tip: powerup.tip,
+  accent: powerup.color
+})));
+
+export function getPowerupMeta(type) {
+  return POWERUP_META[type] || null;
+}
+
+export function getPowerupEffect(type) {
+  return getPowerupMeta(type)?.effect || null;
+}
+
+export function getPowerupDurationMode(type) {
+  return POWERUP_DURATION_MODES[type] || 'wall_clock';
+}
+
+export function isWeaponPowerupDurationMode(type) {
+  return getPowerupDurationMode(type) === 'while_firing';
+}

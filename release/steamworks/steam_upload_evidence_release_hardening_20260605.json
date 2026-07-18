@@ -1,0 +1,36 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build after overnight release hardening",
+  "timestampUtc": "2026-06-04T22:35:52Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "commit": "1ef939cccae00a5e49db5a0c550ce3b788f76ebc",
+  "baselineCommit": "cdcdcc4375a89354944d405b46798656752e4eeb",
+  "packageVersion": "v2026-06-05_00-32-00",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23574918",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-05_00-32-00 private Steam test - release hardening",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output"
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run package:steam:win",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "releaseHardening": "passed 23 checks",
+    "packageRuntime": "passed app=4765070 leaderboard=nova_swarm_global_score_v2",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23574918).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "deployPerformed": false
+  }
+}

@@ -1,0 +1,50 @@
+{
+    "generatedAt":  "2026-07-09T14:17:23.2236104Z",
+    "status":  "uploaded_private_unassigned",
+    "appId":  "4765070",
+    "depotId":  "4765071",
+    "buildId":  "24129303",
+    "sourceCommit":  "f3b85e9 Tune boss pacing and gameplay messages",
+    "buildStamp":  "v2026-07-09_16-02-47",
+    "setLive":  "",
+    "setLiveBlank":  true,
+    "steamworksSettingsTouched":  false,
+    "publicBranchAssigned":  false,
+    "contentRoot":  "..\\\\desktop\\\\win-unpacked",
+    "vdfPath":  "release/steamworks/app_build_LOCAL.vdf",
+    "consoleLogPath":  "release/steamworks/steam_upload_console_soft_boss_support_messages_20260709.log",
+    "payloadManifestPath":  "release/steamworks/steam_payload_manifest.json",
+    "payload":  {
+                    "fileCount":  336,
+                    "totalBytes":  916311452,
+                    "manifestHash":  "4d0e20172549b1618bf4ab78fb7517eebd42502cfddbd9edad46f34a1503034e",
+                    "executable":  {
+                                       "path":  "Nova Swarm.exe",
+                                       "bytes":  226698752,
+                                       "sha256":  "06b4e39dca0bfe57f9ea2ecc29c2f64b3daf0665fdc8dc5e89ec7658e6fd80a3",
+                                       "modifiedAt":  "2026-07-09T14:09:25.004Z"
+                                   }
+                },
+    "uploadProof":  {
+                        "successLine":  "[2026-07-09 16:16:35]: Successfully finished AppID 4765070 build (BuildID 24129303).",
+                        "consoleContainsSuccess":  true,
+                        "consoleContainsCachedLogin":  true
+                    },
+    "verification":  {
+                         "sourceCommit":  "f3b85e9",
+                         "releaseLine":  "passed during package and VDF generation",
+                         "packageSteamWin":  "passed",
+                         "steamPackageRuntime":  "passed during package and VDF generation",
+                         "packagedSmoke":  "test-results/packaged-exe-smoke-2026-07-09T14-09-51-909Z/report.json",
+                         "packagedControls":  "test-results/packaged-control-smoke-2026-07-09T14-10-42-878Z/report.json",
+                         "packagedPerf":  "test-results/packaged-perf-smoke-2026-07-09T14-11-00-438Z/report.json",
+                         "currentDesktopSmoke":  "test-results/electron-smoke-2026-07-09T14-12-41-933Z",
+                         "payloadManifest":  "passed",
+                         "desktopPackageReview":  "passed",
+                         "vdfSetLiveBlank":  "passed"
+                     },
+    "notes":  [
+                  "SteamCMD upload only; no Steamworks site, branch assignment, metadata, pricing, achievements, leaderboard identity, or cloud settings changed.",
+                  "Build remains private/unassigned until manually assigned in Steamworks."
+              ]
+}

@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-06-16T12:37:13.2447100+02:00",
+  "steamBuild": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23760429",
+    "branchAssignment": "not assigned by Codex",
+    "setLive": "",
+    "steamworksUser": "gaunziman",
+    "description": "Nova Swarm upload-only 2026-06-16 voice overlap 03f8c59 v2026-06-16_10-21-23"
+  },
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/hard-achievements-20260612",
+    "head": "03f8c59e84baecb1d6c72e004ff261456ad1173a",
+    "remoteSync": "origin/codex/hard-achievements-20260612 0 ahead / 0 behind",
+    "buildVersion": "v2026-06-16_10-21-23"
+  },
+  "protectedBoundaries": {
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdsChanged": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "achievementsChanged": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2"
+  },
+  "package": {
+    "vdf": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+    "vdfSetLive": "",
+    "vdfSha256": "CE7243054A63C81A4B02BEACA68C5B4BD17B7DCF5E789C6F54056EAA86209D5F",
+    "contentRoot": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\desktop\\win-unpacked",
+    "executableSha256": "622FC38DB313C6FC4D155171C5B5DD05D5E5037900D7674DB99FCDC193723821",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestSha256": "E029E0F103DBEC80B68F5CC0F4D6CB1ED26C27D626039307D6BAFB46B4882C5A",
+    "payloadFileCount": 336,
+    "payloadBytes": 787211573,
+    "payloadContentHash": "caccdabe8a16b47b2fca95162e913ae99708eadb607677c943cbd43824042056"
+  },
+  "validation": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "git rev-parse HEAD",
+    "git rev-list --left-right --count @{u}...HEAD",
+    "git worktree list",
+    "npm run check:achievements",
+    "npm run check:steam-achievements-mock",
+    "npm run check:steam-store",
+    "npm run check:release-line",
+    "npm run check:release-hardening",
+    "npm run build:current",
+    "npm run smoke",
+    "npm run desktop:smoke:current",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf"
+  ],
+  "testReports": {
+    "releaseHardening": "test-results/release-hardening/latest-report.json",
+    "smoke": "test-results/smoke-2026-06-16T10-18-28-727Z/report.json",
+    "desktopSmokeCurrent": "test-results/electron-smoke-2026-06-16T10-21-08-210Z/report.json",
+    "steamSdkReady": "test-results/steam-sdk-ready-2026-06-16T10-21-51-872Z/report.json",
+    "steamPackageRuntime": "test-results/steam-package-runtime-2026-06-16T10-36-30-050Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-16T10-24-48-244Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-16T10-25-27-145Z/report.json",
+    "packagedControls": "test-results/packaged-control-smoke-2026-06-16T10-27-39-459Z/report.json"
+  },
+  "steamcmd": {
+    "path": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+    "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "uploadResult": "Successfully finished AppID 4765070 build (BuildID 23760429).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "publicDefault": {
+    "status": "not assigned by Codex",
+    "requestedOwnerAction": "User will assign BuildID 23760429 to public/default manually in Steamworks.",
+    "notes": [
+      "The successful upload used SetLive blank, so it did not publish or change public/default.",
+      "A later SteamPipe SetLive default attempt failed during commit; Steam documentation says default/public assignment must be done through App Admin or publisher Web API confirmation for released apps.",
+      "Final local app_build_LOCAL.vdf was restored to SetLive blank after the user clarified upload-only."
+    ]
+  },
+  "rollback": {
+    "instructions": "No public/default rollback is needed for this upload-only build because Codex did not assign it live. If BuildID 23760429 is later assigned manually and needs rollback, use Steamworks > App Admin > SteamPipe > Builds for AppID 4765070 to reassign the default branch to the previous desired BuildID."
+  }
+}

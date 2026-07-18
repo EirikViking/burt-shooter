@@ -80,11 +80,15 @@ function seededScores() {
     'NOVA ACE', 'ORBIT QUEEN', 'LASER PILOT', 'STAR RUNNER', 'SWARM BREAKER',
     'PILOT41', 'COMBO ROYAL', 'SKY VECTOR', 'PILOT35', 'PILOT37',
     'CABINET ACE', 'VOID SPARK', 'NEON RUNNER', 'ORBITAL KID', 'LASER SAGE',
-    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT'
+    'BOSS BAITER', 'NOVA PRIME', 'STAR CLERK', 'SWARM PILOT', 'PIXEL KNIGHT',
+    'RIFT TAXI', 'COMET JUDGE', 'ASTRO BOLT', 'LUNAR WRENCH', 'STATIC DUKE',
+    'ION NERD', 'PLASMA VICAR', 'SUN GHOST', 'METEOR BOSS', 'LASER COOK',
+    'STAR HAGGLER', 'ORBIT MOTH', 'VOID CLERK', 'NOVA TELLER', 'SWARM DENT',
+    'BULLET POET', 'HULL MONK', 'RANK KNIFE', 'SCORE VICE', 'FINAL COIN'
   ];
-  return Array.from({ length: 20 }, (_, index) => ({
+  return Array.from({ length: 40 }, (_, index) => ({
     name: names[index],
-    score: 240000 - index * 9100,
+    score: 240000 - index * 4200,
     level: Math.max(3, 12 - Math.floor(index / 2)),
     rank_index: Math.max(0, 12 - index),
     isCurrentPlayer: index === currentPlayerIndex
@@ -189,6 +193,28 @@ try {
   await page.screenshot({ path: wideShot, fullPage: true });
   results.push({ viewport: 'wide', screenshot: wideShot, state: wide });
 
+  const tacticalRunButton = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.highscore;
+    scene.activeLeaderboard = 'tactical';
+    scene.updateLeaderboardChrome();
+    await scene.layoutHighscore();
+    const bounds = scene.runAgainBtn?._label?.getBounds?.();
+    const width = scene.runAgainBtn?._buttonWidth || 0;
+    const height = scene.runAgainBtn?._buttonHeight || 0;
+    return {
+      text: scene.runAgainBtn?._label?.text || '',
+      frame: {
+        x: scene.runAgainBtn.x - width / 2,
+        y: scene.runAgainBtn.y - height / 2,
+        right: scene.runAgainBtn.x + width / 2,
+        bottom: scene.runAgainBtn.y + height / 2
+      },
+      label: bounds ? { x: bounds.x, y: bounds.y, right: bounds.x + bounds.width, bottom: bounds.y + bounds.height } : null
+    };
+  });
+  const tacticalButtonShot = path.join(outputDir, 'leaderboard-tactical-run-button.png');
+  await page.screenshot({ path: tacticalButtonShot, fullPage: true });
+
   const mobile = await openLeaderboard(page, { width: 390, height: 844 });
   const mobileShot = path.join(outputDir, 'leaderboard-mobile.png');
   await page.screenshot({ path: mobileShot, fullPage: true });
@@ -205,7 +231,7 @@ try {
       /\b(roast|taunt|mock|boss bait|fixes everything|damage)\b/i.test(result.state.comment) ? `${result.viewport}: taunting comment text is still present` : null,
       result.state.rowChildren < 20 ? `${result.viewport}: row chrome did not render` : null,
       result.state.title !== 'LOCAL SCORE DECK' ? `${result.viewport}: title did not switch to local score deck` : null,
-      result.viewport !== 'mobile' && result.state.rows?.length !== 20 ? `${result.viewport}: desktop leaderboard did not render top 20` : null,
+      result.viewport !== 'mobile' && result.state.rows?.length !== 40 ? `${result.viewport}: desktop leaderboard did not render top 40` : null,
       result.viewport === 'mobile' && result.state.rows?.length !== 10 ? `${result.viewport}: mobile leaderboard should keep 10 visible rows` : null,
       !result.state.highlightedRows?.includes(currentPlayerIndex) ? `${result.viewport}: current player row was not highlighted` : null,
       (() => {
@@ -227,14 +253,16 @@ try {
         row.scoreGroup && intersects(row.name, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} pilot name crowds score group` : null,
         row.scoreGroup && intersects(row.rankTitle, row.scoreGroup, 2) ? `${result.viewport}: row ${index + 1} rank title crowds score group` : null,
         rows[index + 1] && intersects(row.rankTitle, rows[index + 1].name, 2) ? `${result.viewport}: row ${index + 1} rank title overlaps next pilot name` : null,
-        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : 166) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
+        row.scoreGroup && row.scoreGroup.width < (result.viewport === 'mobile' ? 120 : (result.state.rows?.length >= 30 ? 96 : 166)) ? `${result.viewport}: row ${index + 1} score group is too cramped` : null
       ]))
     ]),
     ...pageErrors.map((message) => `page error: ${message}`),
-    ...consoleErrors.map((message) => `console error: ${message}`)
+    ...consoleErrors.map((message) => `console error: ${message}`),
+    tacticalRunButton.text !== 'ONE MORE TACTICAL RUN' ? 'tactical runback label did not switch' : null,
+    !contains(tacticalRunButton.frame, tacticalRunButton.label, 2) ? 'tactical runback label escapes its button frame' : null
   ].filter(Boolean);
 
-  const report = { ok: failures.length === 0, baseUrl, results, failures, pageErrors, consoleErrors };
+  const report = { ok: failures.length === 0, baseUrl, results, tacticalRunButton, tacticalButtonShot, failures, pageErrors, consoleErrors };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
   if (failures.length) {
     console.error(JSON.stringify(report, null, 2));

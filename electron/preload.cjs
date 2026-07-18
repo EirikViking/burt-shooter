@@ -14,7 +14,23 @@ const CHANNELS = {
 };
 
 const APP_CHANNELS = {
-  exitGame: 'nova-app:exitGame'
+  exitGame: 'nova-app:exitGame',
+  saveSignalCard: 'nova-app:saveSignalCard',
+  copyText: 'nova-app:copyText'
+};
+
+const PERFORMANCE_DIAGNOSTICS_CHANNELS = {
+  writeReport: 'nova-performance-diagnostics:writeReport'
+};
+
+const DISPLAY_CHANNELS = {
+  getSettings: 'nova-display:getSettings',
+  getInfo: 'nova-display:getInfo',
+  applySettings: 'nova-display:applySettings'
+};
+
+const MAINTAINER_DEVTOOLS_CHANNELS = {
+  getState: 'nova-maintainer-devtools:getState'
 };
 
 const INPUT_CHANNELS = {
@@ -22,6 +38,7 @@ const INPUT_CHANNELS = {
 };
 
 const STEAM_CLOUD_CHANNELS = {
+  getProfileContext: 'nova-steam-cloud:getProfileContext',
   getDiagnostics: 'nova-steam-cloud:getDiagnostics',
   readSave: 'nova-steam-cloud:readSave',
   getPersistenceSummary: 'nova-steam-cloud:getPersistenceSummary',
@@ -93,10 +110,35 @@ contextBridge.exposeInMainWorld('__novaSteamBridge', Object.freeze({
 }));
 
 contextBridge.exposeInMainWorld('__novaApp', Object.freeze({
-  exitGame: () => invoke(APP_CHANNELS.exitGame)
+  exitGame: (payload) => invoke(APP_CHANNELS.exitGame, payload),
+  saveSignalCard: (payload) => invoke(APP_CHANNELS.saveSignalCard, payload),
+  copyText: (payload) => invoke(APP_CHANNELS.copyText, payload)
+}));
+
+contextBridge.exposeInMainWorld('__novaPerformanceDiagnostics', Object.freeze({
+  writeReport: (payload) => invoke(PERFORMANCE_DIAGNOSTICS_CHANNELS.writeReport, payload)
+}));
+
+contextBridge.exposeInMainWorld('__novaDisplay', Object.freeze({
+  getSettings: () => invoke(DISPLAY_CHANNELS.getSettings),
+  getInfo: () => invoke(DISPLAY_CHANNELS.getInfo),
+  applySettings: (payload) => invoke(DISPLAY_CHANNELS.applySettings, payload)
+}));
+
+ipcRenderer.on('nova-app:window-blur', () => {
+  try {
+    window.dispatchEvent(new Event('nova-app-window-blur'));
+  } catch {
+    // Best-effort focus-loss bridge for gameplay auto-pause.
+  }
+});
+
+contextBridge.exposeInMainWorld('__novaMaintainerDevtools', Object.freeze({
+  getState: () => invoke(MAINTAINER_DEVTOOLS_CHANNELS.getState)
 }));
 
 contextBridge.exposeInMainWorld('__novaSteamCloud', Object.freeze({
+  getProfileContext: () => invoke(STEAM_CLOUD_CHANNELS.getProfileContext),
   getDiagnostics: () => invoke(STEAM_CLOUD_CHANNELS.getDiagnostics),
   readSave: () => invoke(STEAM_CLOUD_CHANNELS.readSave),
   getPersistenceSummary: () => invoke(STEAM_CLOUD_CHANNELS.getPersistenceSummary),

@@ -1,0 +1,25 @@
+Nova Swarm Named Rival Ladder Steam test upload evidence
+Generated: 2026-07-16T07:12:43.6403064Z
+
+Preflight app-info:
+- public BuildID: 24218172
+- sector-continue-test BuildID: 24232499
+- sector-continue-test depot GID: 7125559705317351331
+
+Upload:
+[2026-07-16 09:03:42]: Starting AppID 4765070 build (flags 0x0).
+[2026-07-16 09:03:42]: Building depot 4765071.
+[2026-07-16 09:04:45]: Success! New manifestID 6554196712868931758 created and 11 new chunks uploaded.
+[2026-07-16 09:04:46]: Successfully finished AppID 4765070 build (BuildID 24234529).
+
+Independent post-upload app-info:
+- public BuildID: 24218172
+- public depot GID: 8091511179624093249
+- sector-continue-test BuildID: 24234529
+- sector-continue-test depot GID: 6554196712868931758
+- sector-continue-test size: 957586120 bytes
+
+Steam client handling:
+- No Steam game process was active.
+- The shared Steam client was closed cleanly before SteamCMD to avoid Session Replaced.
+- The Steam client was restarted successfully after independent branch verification.

@@ -1,0 +1,49 @@
+{
+  "purpose": "Hangar unlock integrity hotfix for legacy Codex-rescue over-unlock profiles",
+  "uploadedAtLocal": "2026-06-24T23:35:54+02:00",
+  "source": {
+    "branch": "codex/ascendant-ships-20260624",
+    "commit": "fa7d524a4d88fa1b9502bb0d6e80dfad017045aa",
+    "shortCommit": "fa7d524"
+  },
+  "package": {
+    "buildId": "v2026-06-24_23-27-36",
+    "packagedGitSha": "fa7d524",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-24T21-32-53-926Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-24T21-33-44-241Z/report.json"
+  },
+  "checks": [
+    "npm run check:hangar-unlock-integrity",
+    "npm run check:steam-cloud-save",
+    "npm run check:profile-isolation",
+    "npm run check:save-profile-migration",
+    "npm run check:profile-rescue-import",
+    "npm run check:ship-unlocks",
+    "npm run check:unlock-rank-pacing",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:write-vdf"
+  ],
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "branchAssignment": "none",
+    "buildId": "23901336",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "steamCmdPath": "tools/steamcmd/steamcmd.exe",
+    "steamCmdUploadLog": "test-results/steam-upload-hangar-unlock-integrity-20260624-20260624-233353/steamcmd-upload.log",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23901336)."
+  },
+  "guardrails": [
+    "SetLive was blank, so no public/default/private Steam branch was assigned by Codex.",
+    "Steam AppID, depot ID, leaderboard identity, achievements metadata, Steam Cloud settings, and Steamworks metadata were not changed.",
+    "No live leaderboard scores or live Steam Cloud saves were written by this upload."
+  ],
+  "rollback": {
+    "source": "git revert fa7d524a4d88fa1b9502bb0d6e80dfad017045aa",
+    "steam": "Do not assign BuildID 23901336, or if it is later assigned manually, reassign that Steam branch back to the previous desired BuildID."
+  }
+}

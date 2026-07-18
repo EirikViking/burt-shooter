@@ -1,0 +1,40 @@
+{
+  "uploadedAt": "2026-06-24T12:07:29+02:00",
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm weapon powerup firing-duration private Steam upload",
+  "branch": "codex/weapon-powerup-firing-duration-20260624",
+  "startingCommit": "30a8443528ef55380a01169e46c8d0ce7a4b7a6d",
+  "sourceCommit": "39d40fbb9f89d91fc357995c93573ac6c1758712",
+  "build": {
+    "steamBuildId": "23891168",
+    "version": "v2026-06-24_11-56-39",
+    "packagedGitSha": "39d40fb"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "leaderboardIdentity": "nova_swarm_global_score_v2",
+    "setLive": "",
+    "assignedBranch": null,
+    "steamworksMetadataChanged": false
+  },
+  "packageEvidence": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "7b0809981590d27db3c33389c187d37a0158eff70a84db2ff9c6c02385c97397",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-24T10-01-46-566Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-24T10-02-08-959Z/report.json",
+    "steamCmdLog": "test-results/steam-upload-weapon-powerup-firing-duration-20260624-20260624-120523/steamcmd-upload.log",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23891168)."
+  },
+  "vdfVerification": {
+    "appId": "\"AppID\" \"4765070\"",
+    "depotId": "\"4765071\"",
+    "setLive": "\"SetLive\" \"\""
+  },
+  "notes": [
+    "Private unassigned SteamPipe upload only.",
+    "The VDF kept SetLive blank, so no public/default/private Steam branch was assigned by Codex.",
+    "No Steamworks store metadata, achievements metadata, leaderboard identity, Steam Cloud settings, AppID, or depot IDs were changed."
+  ]
+}

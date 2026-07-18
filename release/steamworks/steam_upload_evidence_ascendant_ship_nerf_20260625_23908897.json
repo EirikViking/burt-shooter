@@ -1,0 +1,83 @@
+{
+  "uploadedAt": "2026-06-25T11:05:32+02:00",
+  "purpose": "Private unassigned Steam build for Ascendant ship damage-output nerf.",
+  "branch": "codex/ascendant-ship-nerf-20260625",
+  "sourceCommit": "27b2b3fc47af4f331e210fd7afa30bf5ed2f0488",
+  "sourceShortSha": "27b2b3f",
+  "buildVersion": "v2026-06-25_10-55-43",
+  "steamBuildId": "23908897",
+  "steamcmdExitCode": 0,
+  "steamcmdLog": "test-results/steam-upload-ascendant-ship-nerf-20260625-110337/steamcmd-upload.log",
+  "steamcmdLogSha256": "223c7f1b7fdb59191d401b8f0ed6475f6b1f0df1d7911265b9aa01e4bc0cfe5b",
+  "steamcmdProofLine": "[2026-06-25 11:05:32]: Successfully finished AppID 4765070 build (BuildID 23908897).",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "sha256": "fd2282a3969f650b25d00e2f4486e07f0e09eb5e2c097e8eed1653150ef34607",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "description": "Nova Swarm Ascendant ship nerf 27b2b3f",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked"
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestFileSha256": "eef7ae0c462d8ac5300bf763ef856c22610eb4148f5105fcce869078bd333bc4",
+    "fileCount": 336,
+    "totalBytes": 891439969,
+    "manifestHash": "a3aecfe9a01c6c71cb3731918effab85491f36f72b857792bc92cd3552e90fa2",
+    "executableSha256": "6d577b69f2bc67ebc73c658d80cc729e9663eb5f2be4941acefa355aaecdca4c",
+    "appAsarSha256": "07fd5bf45aec29d3e2af672e3587fb972390b3c46d7dc93ee02ae8e35632a899"
+  },
+  "packagedGitShaProof": {
+    "path": "test-results/packaged-gitsha-proof-2026-06-25T09-02-44-410Z/packaged-gitsha-proof.json",
+    "sha256": "582fd4ee44ce9ca81084fa5981ab52548436094bf24b3c4c5790d0d213fe8334",
+    "sourceCommit": "27b2b3fc47af4f331e210fd7afa30bf5ed2f0488",
+    "sourceShortSha": "27b2b3f",
+    "containsSourceShortSha": true,
+    "matchingAsset": "dist/assets/index-KoDzvM27.js"
+  },
+  "balanceEvidence": {
+    "check": "npm run check:ascendant-ships",
+    "topNormalEpi": 6.368,
+    "ascendantRatios": {
+      "nova_ship_26": 1.103,
+      "nova_ship_27": 1.123,
+      "nova_ship_28": 1.136,
+      "nova_ship_29": 1.162,
+      "nova_ship_30": 1.188
+    },
+    "target": "Ascendant ships remain about 10-20% stronger than the best normal hull."
+  },
+  "checksRun": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "npm run check:ascendant-ships",
+    "git diff --check",
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "npm run steamworks:write-vdf",
+    "packaged git SHA proof extraction",
+    "steamcmd +login gaunziman +run_app_build D:\\\\vibe-coding-e\\\\nova-swarm-sector-continue-prototype\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "guardrails": {
+    "setLiveBlank": true,
+    "publicBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudChanged": false,
+    "saveFormatChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "shipUnlocksChanged": false,
+    "fullSmokeRun": false
+  },
+  "rollback": {
+    "source": "git revert 27b2b3fc47af4f331e210fd7afa30bf5ed2f0488",
+    "steam": "Do not assign BuildID 23908897, or reassign the private test branch back to the previous desired BuildID."
+  }
+}

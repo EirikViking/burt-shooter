@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-07-14T08:06:14.442Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24197600",
+  "sourceCommit": "a7e6c95d11050b495f2cf04b1f621e828ff32138 feat: add Ace dossiers and Cabinet Skill Flights",
+  "sourceBaseline": "c06c4a32f50226fd1b041569af270d33860bbf98",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockTagObject": "c788f79cc2f35df2920f8e752e5c968c7ebaab6d",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-14_09-45-09",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24179978",
+  "previousKnownPublicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "0247ed4972dc63019c859ea0ee67753b5afdb6baa9aa4fa6242ed118225c9ac9",
+  "consoleLogPath": "release/steamworks/steam_upload_console_all_improvements_20260714.log",
+  "consoleLogSha256": "99eb7063ee113bf75eb5665f1af6419cb5e9af50321affe86d152ca2f1bd999f",
+  "payloadManifestSha256": "3d6d753a5a24b95be457f809760b0f7c86b6a9d71e1a9bcc3ee741cafe38c0fe",
+  "desktopPackageReportSha256": "f5d3e5d7330a20db8a5de21b3cd7f630cce539793936a409dab102e8c5bb062e",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 949124424,
+    "manifestHash": "e95180c84b7e74f3f7372c002cbe2d1b2e566d2d68bdcc04956e613134c4a7bd",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "5b2081755f0bed06e673433a564536051603e33d0b77d65fc067924f4f1e8418"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-14 10:05:13]: Successfully finished AppID 4765070 build (BuildID 24197600).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: branch codex/all-improvements-20260714, source HEAD a7e6c95, authoritative lock is an ancestor, tracked and untracked state clean before build",
+    "releaseLine": "passed before packaging, during final packaging, and again before VDF generation",
+    "sourceBuild": "passed: v2026-07-14_09-45-09, gitSha a7e6c95, full prebuild catalog suite passed",
+    "localizationAndUi": "passed: check:i18n and check:i18n-ui across en, de, zh-CN, ru, es, pt-BR, ko, and ja with zero placeholders, English leaks, console errors, or page errors",
+    "sourceGameplay": "passed: controller-only flow, full browser smoke, Cabinet Skill Flight contract/runtime, and Ace/Nemesis runtime",
+    "packagedRuntime": "passed: Steam runtime files, AppID 4765070, native module, and nova_swarm_global_score_v2 contract present",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-14T07-59-56-162Z/report.json; gitSha a7e6c95",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-14T08-00-03-654Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-14T08-00-38-609Z/report.json",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-14T08-00-49-547Z/report.json; gitSha a7e6c95; zero console events",
+    "desktopPackage": "passed: release/steamworks/desktop_package_review_report.json",
+    "packagedPerformance": "passed: 60.0 average FPS, 60.0 minimum FPS, 11 samples, zero errors",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "packagingRecovery": {
+    "initialState": "The clean worktree initially reused ignored node_modules and steam_sdk junctions. Electron packaging was rejected before upload because SDK files inside app.asar.unpacked were missing.",
+    "resolution": "Replaced both junctions with npm-ci-installed local dependencies and a physical ignored SDK copy, then rebuilt. The final Steam package runtime check and all packaged gates passed before upload.",
+    "steamUploadBeforeResolution": false
+  },
+  "includedImprovementGroups": [
+    "Tactical Draft with 32 augments, hold, rescan, doctrines, forecasts, evolutions, and lock-in presentation",
+    "1000 directives and 50-stage campaign progression",
+    "1000 Aces, 10000 Nemesis identities, 10000 Rival Wings, threat dossiers, and deduplicated rewards",
+    "opening-session combat momentum, catchable +2 life, Nova Miracle, 99 Rare Chaos visitors, adaptive directives, and reward polish",
+    "2378-entry Codex rewrite, visual spectacle, 15 percent score tuning, 20 powerups, eight-ship boss support, personal best celebration, Nova humor, and exit reliability",
+    "dual Mayhem Pure and Tactical contracts plus separate leaderboard routing code",
+    "Cabinet Skill Flights with five patterns, localized grading, safe targets, and atomic eight-target registration"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "npm ci reported 3 moderate and 7 high dependency audit findings; dependency versions were intentionally not changed during deployment.",
+    "One packaged screenshot capture retry recovered after UnknownVizError.",
+    "Direct local Electron launches reported steam_init_returned_false and correctly used an isolated offline profile; packaged Steam files and native bridge contracts passed."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, score, XP, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "The tactical leaderboard code references nova_swarm_tactical_score_v1, but this deployment did not create or modify that Steamworks leaderboard definition.",
+    "Test-branch rollback target is BuildID 24179978.",
+    "A source branch at the locked baseline can be created with: git switch -c codex/rollback-to-lock-20260714 nova-swarm-lock-20260712-tactical-store-refresh"
+  ]
+}

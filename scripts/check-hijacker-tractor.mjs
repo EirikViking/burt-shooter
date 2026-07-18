@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4330));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/hijacker-tractor-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -96,6 +97,7 @@ try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startLevel: '2',
     controlSmoke: '1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -144,6 +146,7 @@ try {
   await page.waitForTimeout(500);
   const pulledState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const scoreBeforeBreak = pulledState.score;
+  const expectedBreakScore = await page.evaluate(() => window.__game?.getScoreAward?.(1700) || 1700);
 
   await page.evaluate(() => {
     const hijacker = window.__game?.scenes?.play?.enemyManager?.hijacker;
@@ -166,7 +169,7 @@ try {
       Number.isFinite(yBeforePull) &&
       Number.isFinite(yAfterPull) &&
       yAfterPull < yBeforePull &&
-      brokenState.score >= scoreBeforeBreak + 1700 &&
+      brokenState.score >= scoreBeforeBreak + expectedBreakScore &&
       pageErrors.length === 0 &&
       consoleWarningsOrErrors.length === 0,
     baseUrl,
@@ -174,6 +177,7 @@ try {
     yAfterPull,
     scoreBeforeBreak,
     scoreAfterBreak: brokenState.score,
+    expectedBreakScore,
     tractor: activeState.hijacker?.tractor || null,
     pageErrors,
     consoleWarningsOrErrors,

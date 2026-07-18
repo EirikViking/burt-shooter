@@ -3,35 +3,13 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { ALL_POWERUP_TYPES } from '../src/config/PowerupCatalog.js';
 
 const host = process.env.POWERUP_VISUAL_HOST || '127.0.0.1';
 const port = Number(process.env.POWERUP_VISUAL_PORT || await findAvailablePort(4190));
 const baseUrl = process.env.POWERUP_VISUAL_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.POWERUP_VISUAL_OUTPUT_DIR || `test-results/powerup-visuals-${timestamp()}`);
-const powerupTypes = [
-  'triple_beam',
-  'vector_boost',
-  'rapid_cabinet',
-  'overdrive_core',
-  'slow_time',
-  'ghost',
-  'life',
-  'shield',
-  'rapid_fire',
-  'double_shot',
-  'damage_up',
-  'speed_up',
-  'pierce',
-  'score_x2',
-  'magnet',
-  'drones',
-  'shockwave',
-  'point_defense',
-  'bomb',
-  'chain_lightning',
-  'orbital_strike',
-  'vampire'
-];
+const powerupTypes = ALL_POWERUP_TYPES;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -126,6 +104,10 @@ try {
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
   await page.waitForFunction(() => window.__game?.scenes?.play?.powerupManager && window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.powerupAssetsReady), null, { timeout: 15000 });
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.powerupAssetsReady;
+  });
   await page.waitForFunction(() => {
     const play = window.__game?.scenes?.play;
     return Boolean(play?.introActive || play?.introComplete);
@@ -192,13 +174,21 @@ try {
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const missing = state.types?.filter(item => !item.hasMainSprite || item.width < 28 || item.height < 28) || [];
+  const fallbackTextures = state.types?.filter(item => String(item.textureLabel || '').includes('bonus_core')) || [];
+  const wrongTextures = state.types?.filter(item => !String(item.textureLabel || '').includes(`nova-powerup-${item.type}-`)) || [];
+  const actionableConsoleEvents = consoleEvents.filter(event => !(
+    event.type === 'warning' && event.text.includes('[SW] Service worker script missing or invalid')
+  ));
   const report = {
-    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && consoleEvents.length === 0 ? 'passed' : 'failed',
+    status: state.ok && state.count === powerupTypes.length && missing.length === 0 && fallbackTextures.length === 0 && wrongTextures.length === 0 && actionableConsoleEvents.length === 0 ? 'passed' : 'failed',
     baseUrl,
     screenshot,
     state,
     missing,
-    consoleEvents
+    fallbackTextures,
+    wrongTextures,
+    consoleEvents,
+    actionableConsoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 

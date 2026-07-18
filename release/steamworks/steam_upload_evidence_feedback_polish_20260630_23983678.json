@@ -1,0 +1,92 @@
+{
+  "kind": "steam_private_upload_evidence",
+  "task": "feedback polish pass",
+  "recordedAt": "2026-06-30T12:32:28Z",
+  "repo": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype",
+  "branch": "codex/feedback-polish-20260630",
+  "sourceCommit": "e4cd7db8ed9a6e1d0bc14ea54b9a76d7283c79a9",
+  "build": {
+    "version": "v2026-06-30_14-21-55",
+    "timestamp": "2026-06-30T12:21:55.735Z",
+    "packagedExe": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "packagedExeBytes": 226698752,
+    "packagedExeSha256": "992f7374f59c0fe5dceec87a9dadae0b8af97088ab0796381d5fa2b7124395ff"
+  },
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "leaderboardName": "nova_swarm_global_score_v2",
+    "setLive": "",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "branchAssignedByVdf": false
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 915871413,
+    "manifestHash": "0426bebae5004e3c7c0f795add8b71920b0f580db1c9b04372765d6e4c1dcfae",
+    "fileSha256": "f10b78505fc1afd8cd8acae20ed1d75ab51bb2ba96fe0aa2990e1af358d04722"
+  },
+  "verification": [
+    {
+      "command": "npm run check:release-line",
+      "status": "passed"
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-30T12-27-50-103Z/report.json"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-06-30T12-27-50-150Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-06-30T12-27-50-103Z/report.json",
+      "minFps": 59.523809523799216,
+      "avgFps": 59.9142038251704,
+      "warnings": [
+        "ignored 1 WaveStallWatchdog perf telemetry event(s)"
+      ]
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+      "status": "passed",
+      "report": "test-results/steam-package-runtime-2026-06-30T12-30-06-685Z/report.json"
+    }
+  ],
+  "steamcmd": {
+    "commandShape": "C:/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build <repo>/release/steamworks/app_build_LOCAL.vdf +quit",
+    "status": "passed",
+    "privateBuildId": "23983678",
+    "log": "test-results/steam-upload-feedback-polish-20260630-143051/steamcmd.log"
+  },
+  "unchanged": [
+    "No Steam branch assignment",
+    "No public/default SetLive assignment",
+    "No store metadata change",
+    "No AppID or depot ID change",
+    "No leaderboard identity change",
+    "No achievements metadata change",
+    "No Steam Cloud settings change",
+    "No save format change",
+    "No score identity change",
+    "No deploy"
+  ],
+  "rollback": {
+    "source": "git revert e4cd7db8ed9a6e1d0bc14ea54b9a76d7283c79a9",
+    "steam": "SetLive was blank, so no Steam branch was changed by this upload. If BuildID 23983678 is manually assigned later, reassign the target branch to the previous intended BuildID in Steamworks."
+  }
+}

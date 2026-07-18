@@ -1,0 +1,2096 @@
+{
+  "generatedAt": "2026-07-13T09:16:25.511Z",
+  "generator": "scripts/generate-tactical-boss-banter.mjs",
+  "provider": "ElevenLabs",
+  "modelId": "eleven_v3",
+  "voiceId": "YO6HUzlgJ0HQvmYejW5c",
+  "voiceName": "Misfit Galaxy Male - Boss Agony - Tactical Inspector",
+  "outputFormat": "mp3_44100_128",
+  "expectedCount": 297,
+  "presentCount": 297,
+  "generatedThisRun": 108,
+  "skippedThisRun": 189,
+  "sourceCharacterCount": 44234,
+  "aiGeneratedVoiceDisclosure": true,
+  "files": [
+    {
+      "id": "boss_tactical_inspect_damage_up_001",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_001.mp3",
+      "bytes": 52288,
+      "sha256": "ff81ef47d7bc9b5afe8367624aec51520dd6134e62c290c57e510c1aaa9947ab"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_002",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_002.mp3",
+      "bytes": 82799,
+      "sha256": "25cff3054b2c71652360991a14ed93c2e14f03e0ef55b0e07498998e2c05a73a"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_003",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_003.mp3",
+      "bytes": 58558,
+      "sha256": "8d94ea6f194f5eba7f3bce82a6a01a1e9770b1f6d12cadd22148fbbf0c537795"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_004",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_004.mp3",
+      "bytes": 103279,
+      "sha256": "c4395be61312a3607620fab774737a2defd66fa7f9c5ccedcae2ef53ba920444"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_005",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_005.mp3",
+      "bytes": 61066,
+      "sha256": "8b9691f07d44b126dda79d6efd4a9daa047ac0beb6ff509bf56a7c3df798546d"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_006",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_006.mp3",
+      "bytes": 67753,
+      "sha256": "253748eb459f9bed15ab041063c99e9554c0435cb5a2115d508a3b47afd8805c"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_007",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_007.mp3",
+      "bytes": 61066,
+      "sha256": "e6b91e3460b9398853ce470b1b64b7093aeb93a3d8d82eaebb3e24824c0232c6"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_008",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_008.mp3",
+      "bytes": 95756,
+      "sha256": "2d11d2e5fff64f76e53c2167e4caa47355347d05c92b77a4f262fbfa425c1711"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_009",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_009.mp3",
+      "bytes": 49781,
+      "sha256": "5e4f3e5997ace4bf3472538412e742beb0ede5930ca1108f045a589df4f1c760"
+    },
+    {
+      "id": "boss_tactical_inspect_damage_up_010",
+      "augmentId": "damage_up",
+      "file": "boss_tactical_inspect_damage_up_010.mp3",
+      "bytes": 74022,
+      "sha256": "48b27f6302a64f98d33905563f639547bb3015e319231987763d032de8299c4a"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_001",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_001.mp3",
+      "bytes": 77784,
+      "sha256": "0cec3bdb7be7d679912814acb07b30d45f28b330274ca76a35d39070bdaaf608"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_002",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_002.mp3",
+      "bytes": 69007,
+      "sha256": "cea2477dd0d38455dc14c15b7dc5f489273415a571a5ce5bf8d835c274451727"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_003",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_003.mp3",
+      "bytes": 59812,
+      "sha256": "503c352fbfac11f423087edb59ab137d5ef35220fd52e5608672fcd1e2b5cc5d"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_004",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_004.mp3",
+      "bytes": 91995,
+      "sha256": "c9f9f1eec5997d7e95d7a11fbd936bb4f9335c173f7ba29aa55eae91ceec4fdb"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_005",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_005.mp3",
+      "bytes": 62319,
+      "sha256": "f56114b9f0e82a0cd69758e176245eb677ea85681dc14c3a01b5f4b914cbf4cd"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_006",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_006.mp3",
+      "bytes": 77784,
+      "sha256": "a7ed7202ce6f961fa84fda01e89fb1117fe551b92360bf0318a316abb6ec3248"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_007",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_007.mp3",
+      "bytes": 38078,
+      "sha256": "38483e3566aba3cb362c04cc3645e2a22eff4d1482244e566c229799462e69ee"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_008",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_008.mp3",
+      "bytes": 99518,
+      "sha256": "f39eeb2477c215a396b922b1b2381f02ad8a5c44737f93b4e8345a5aacb13742"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_009",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_009.mp3",
+      "bytes": 44765,
+      "sha256": "847f233871ea1490317d5123d7eea714216790970c18c2bf2ed0c94b3babc66f"
+    },
+    {
+      "id": "boss_tactical_inspect_rapid_fire_010",
+      "augmentId": "rapid_fire",
+      "file": "boss_tactical_inspect_rapid_fire_010.mp3",
+      "bytes": 82799,
+      "sha256": "adb17857cdf220faab37b268bf7add9b11146a9764922bfdb8a9564648c121f7"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_001",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_001.mp3",
+      "bytes": 66499,
+      "sha256": "65475b6398fa0684670ab8640f14f8079e3efd49bde5e8d06d773af6943a6d16"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_002",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_002.mp3",
+      "bytes": 91995,
+      "sha256": "dc400132e3071d523990133aa71e9ea1147327da0851aa44289ea8e1c454c1e8"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_003",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_003.mp3",
+      "bytes": 53542,
+      "sha256": "d30b9ff8d11c57ed5ca1fc72e59f0c740ea384636c0c6d52da05e9115fc9e873"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_004",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_004.mp3",
+      "bytes": 95756,
+      "sha256": "b7a0043ac10afbfc94a44fb2e249841818420b0a3097c42a79283fe4e43d633e"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_005",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_005.mp3",
+      "bytes": 61066,
+      "sha256": "0a7a390f39a95a8567b991411b32ae883dcd732e4e930422cccea0a89a23e637"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_006",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_006.mp3",
+      "bytes": 81546,
+      "sha256": "43fe9ececa65d1c3142003bb46b2565aead673702a4913fbfe6aa1d797ec08cb"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_007",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_007.mp3",
+      "bytes": 63991,
+      "sha256": "2922420055cddbccaf8cd676cb0f833164eac4c78fd237fc34f5ff9565ed06b9"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_008",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_008.mp3",
+      "bytes": 94502,
+      "sha256": "399b40e21c8f01cf3ded42a92faf9abd47aa075838961090f8281618349a5046"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_009",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_009.mp3",
+      "bytes": 59812,
+      "sha256": "450bc0c76c1ce6b5e760f99b5e241a5460e08acabb2f8e8750cb8487cbf27d79"
+    },
+    {
+      "id": "boss_tactical_inspect_rail_surge_010",
+      "augmentId": "rail_surge",
+      "file": "boss_tactical_inspect_rail_surge_010.mp3",
+      "bytes": 85725,
+      "sha256": "918e6cf1fe4c3370c0f13e9695f8fe5d300d28782c2f875ba8582f60ade1afbe"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_001",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_001.mp3",
+      "bytes": 74022,
+      "sha256": "ca2bc2cf32be430c7ef2cf9176ff2967e0ca9af5cbf9b541d834a68b761fe467"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_002",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_002.mp3",
+      "bytes": 91995,
+      "sha256": "2e4fd77747ddbc10dbbce83bbe1fdf0cdaba0a7de0304d714cdbcd308ec194e9"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_003",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_003.mp3",
+      "bytes": 52288,
+      "sha256": "1e34093e9c53b645760c2554bf2d2acf70bf2fcb21512dff7e83a64d4f76ba46"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_004",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_004.mp3",
+      "bytes": 107459,
+      "sha256": "fd8db5899e115835eb668fc9a6d5ee5d6035d3ad080ea3a8a2f3d3fc108afdd0"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_005",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_005.mp3",
+      "bytes": 54796,
+      "sha256": "0073ec3baef7198d951bd3121d05f0a6226c4ba0f45c727cdeae5b03e5b028ca"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_006",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_006.mp3",
+      "bytes": 54796,
+      "sha256": "6c83a95eae89a84b7fdee05b0fd84d4097e16e36262a270a9440e7c116e3e383"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_007",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_007.mp3",
+      "bytes": 69007,
+      "sha256": "8f87ea0165e0ed2f570a6642f6ef07138a7ac5efadebb80193239b3ee8069135"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_008",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_008.mp3",
+      "bytes": 97010,
+      "sha256": "5964c058b4ea95ea1137a9a935cb0973f57d9f8fea6329948fda4bc2cdb545ae"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_009",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_009.mp3",
+      "bytes": 41839,
+      "sha256": "aa5b762bc10d6fb4478342c7662295aa6767c83383d9b5066b1e801990dc6c7d"
+    },
+    {
+      "id": "boss_tactical_inspect_double_shot_010",
+      "augmentId": "double_shot",
+      "file": "boss_tactical_inspect_double_shot_010.mp3",
+      "bytes": 70261,
+      "sha256": "1dc793385d8adfe0f3c295be847eae2c4dc391e96dad18221d7cf352c13025b0"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_001",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_001.mp3",
+      "bytes": 59812,
+      "sha256": "c1873a49a929525394fdb9cd81ff91cbabe456dbd32785a801070352967d6c87"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_002",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_002.mp3",
+      "bytes": 97010,
+      "sha256": "326f2363ea399662111ac72cef6b3cf2f4dcf098ee54a0f96b590d3451d4f3b3"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_003",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_003.mp3",
+      "bytes": 57304,
+      "sha256": "baca86e4c0ca0ef7db6ed2b645be9fdbf656f916556194b242a8cbb017127645"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_004",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_004.mp3",
+      "bytes": 91995,
+      "sha256": "bb13713e63009c29034804a6eb5e790a7b880c7368b6083358946eb887875186"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_005",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_005.mp3",
+      "bytes": 56050,
+      "sha256": "e8f35921584550dd8a566733831b873a3288462228b630a19bb00f293d7578d4"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_006",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_006.mp3",
+      "bytes": 43511,
+      "sha256": "aa9da88740b1fc9e8fce91bfe51b4b7024d67af5b94cd17a3692f905c994041c"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_007",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_007.mp3",
+      "bytes": 76530,
+      "sha256": "dd71e55164191657c90a3e8437bf3f3ca575de2a7ea1a41b37be7381aa2f7ed5"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_008",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_008.mp3",
+      "bytes": 103279,
+      "sha256": "a846cb81fe85e5c6335a5a48d615b1e2cbfbced99fb7cd7fa96dc8bfca538774"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_009",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_009.mp3",
+      "bytes": 61066,
+      "sha256": "43ab3bc3dc82ceca116cb36aa10a84bc2a7f58fd0b1d72fb96689579710e1e44"
+    },
+    {
+      "id": "boss_tactical_inspect_pierce_010",
+      "augmentId": "pierce",
+      "file": "boss_tactical_inspect_pierce_010.mp3",
+      "bytes": 57304,
+      "sha256": "91a89102c9e537dfde495e8aae9920f09d19234a1692bab4a60d7a38f2367cf5"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_001",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_001.mp3",
+      "bytes": 76530,
+      "sha256": "f9a1bf8176143dde31686fe912b16676a57fc70348ab99f06cdf7f930e5dba92"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_002",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_002.mp3",
+      "bytes": 93248,
+      "sha256": "b7e766fd211552067f9fcc8742eb92efd815f1736acc3a51ecd4a55d7c5d8433"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_003",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_003.mp3",
+      "bytes": 53542,
+      "sha256": "45d277ae812934ec3cadf62e5ccf8175a70b1a89ffda729cd7a956a14fdcb495"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_004",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_004.mp3",
+      "bytes": 99518,
+      "sha256": "8be68515a8c3d9d896b2a7183f724a5f1c303ff8348cc1146858a572b6c627fd"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_005",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_005.mp3",
+      "bytes": 56050,
+      "sha256": "1c815423640da842f7221b7283c53e4927609efc9aa274e0e8093e86c3b14d2d"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_006",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_006.mp3",
+      "bytes": 70261,
+      "sha256": "d2476256f8a7703eb7e11a634c8c4472fd62f770653d7f273105bb5fe7616b38"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_007",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_007.mp3",
+      "bytes": 71515,
+      "sha256": "4207f338750e17a1e9348eaca5e24c2efa0e20ac0025a2393936314fea39fe33"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_008",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_008.mp3",
+      "bytes": 90741,
+      "sha256": "e75df785d3a575be18e8e1d690359c0d31291b94269ce6018804e1547e9144b2"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_009",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_009.mp3",
+      "bytes": 54796,
+      "sha256": "8cf7f84aa858fb205d129049066ec362c721ffb38f934a0bbb62d8a5bf19dbda"
+    },
+    {
+      "id": "boss_tactical_inspect_target_paint_010",
+      "augmentId": "target_paint",
+      "file": "boss_tactical_inspect_target_paint_010.mp3",
+      "bytes": 88233,
+      "sha256": "cf0bd8fbe79188ea1fb4bdfe12e8869dc2188d2ea2278e6c0baa98b961cf2da3"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_001",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_001.mp3",
+      "bytes": 95756,
+      "sha256": "4ffbc5bf9b2061edc3c8a921cafd673af5318731a41220a19c3edca9a9e3b343"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_002",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_002.mp3",
+      "bytes": 111221,
+      "sha256": "72d0ce25cc17d07f2719be559990002e37adffaca7e0943ec9deed8b4e3032cb"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_003",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_003.mp3",
+      "bytes": 69007,
+      "sha256": "e41e968981ccdacf2a6c1604b59b3a3d27cecd5ca0025733249089999d77e6ec"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_004",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_004.mp3",
+      "bytes": 91995,
+      "sha256": "43aae1d7102f5d1866338bfa3f8e698337684fd3a2cdba9b1aab41192c3a9647"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_005",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_005.mp3",
+      "bytes": 66499,
+      "sha256": "86f6d0e6d25621d8f114cd51fb8b19139fcc5274bb673e30361867b92846a966"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_006",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_006.mp3",
+      "bytes": 71515,
+      "sha256": "869a1cd6ecd9e14dc7f1a3a1b3e3fe08d65d9b88ea4f92b2d85d69d6ea1bf602"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_007",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_007.mp3",
+      "bytes": 71515,
+      "sha256": "373c1c2bb04f9cbef176782cbb8bbbeacb3d5de7e1d0e53377c3cef215b0f1d3"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_008",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_008.mp3",
+      "bytes": 91995,
+      "sha256": "92b19736fa2a39c2c91eaebf4a947eee84b11b506293a9e2cf29c668e27505ac"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_009",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_009.mp3",
+      "bytes": 47273,
+      "sha256": "5ec604f3e8c3ed0ea133ce92d865a41cf2234d3a8c47b36ab87f20f32d0ecd53"
+    },
+    {
+      "id": "boss_tactical_inspect_plasma_lance_010",
+      "augmentId": "plasma_lance",
+      "file": "boss_tactical_inspect_plasma_lance_010.mp3",
+      "bytes": 82799,
+      "sha256": "f4a5246144c8c7554afa597917b549e020e71119daa6e82f97846ad53cd653ec"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_001",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_001.mp3",
+      "bytes": 94502,
+      "sha256": "03d3a89a2faebf00550522e710899aee27d7467c6580133f5db59366fab591bc"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_002",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_002.mp3",
+      "bytes": 97010,
+      "sha256": "ab44a2bbc1510939b6385a74fb1f6c3341b011a470d8c82dbe32cd74c2b309fd"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_003",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_003.mp3",
+      "bytes": 46019,
+      "sha256": "4b6e1ce04a55657b32f48f295ef1fd456a1fc66b02c098d8e77035a8cde5d2f8"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_004",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_004.mp3",
+      "bytes": 112475,
+      "sha256": "2a199ef9af3acdb7d119925ed177caf7609b25d8cbc78a12420b074df1858fbc"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_005",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_005.mp3",
+      "bytes": 69007,
+      "sha256": "0ba8e2ab309a049824daf222751a5721c60acf9552b752e8bb0335b300379597"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_006",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_006.mp3",
+      "bytes": 76530,
+      "sha256": "779b81d56c99d219c187bde60d6512e764fb3649d6b12f55777ee9dabe17aea7"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_007",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_007.mp3",
+      "bytes": 53542,
+      "sha256": "f674eae9de67ed7fa466193b12bc8907b1b6bb749f01ad94e8457eefe0d54545"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_008",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_008.mp3",
+      "bytes": 103279,
+      "sha256": "f424f4548d9397b45e2941d2be23d7ebfd521125dbba0266497a2828a0927275"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_009",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_009.mp3",
+      "bytes": 63991,
+      "sha256": "36bbaafc786e2f2f8fdad7d99fc81c0782e145e6797244973f521bc0784044b5"
+    },
+    {
+      "id": "boss_tactical_inspect_chain_lightning_010",
+      "augmentId": "chain_lightning",
+      "file": "boss_tactical_inspect_chain_lightning_010.mp3",
+      "bytes": 74022,
+      "sha256": "f050ebabd90f7223dd08d3b29f7631a60a7ee4e31aedf414454ee74ee568f9db"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_001",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_001.mp3",
+      "bytes": 58558,
+      "sha256": "0e7dccef903828f53ec55f844c16b22af17f5c0301e865ccd28a60dfc942568c"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_002",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_002.mp3",
+      "bytes": 98264,
+      "sha256": "88845e9bb946a9af7b7cbc4b55f499f7fcd8ae84dc404016554eb2156fc761d1"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_003",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_003.mp3",
+      "bytes": 75276,
+      "sha256": "75b52bf4590a4aaaf2a7ef3d8ee18d74cf5179c46b574b8677bb02d11d42d345"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_004",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_004.mp3",
+      "bytes": 102026,
+      "sha256": "e0928aeaea8a362e1c4773465ea800819a7b95b706637b0bd51a4b9b18343918"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_005",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_005.mp3",
+      "bytes": 57304,
+      "sha256": "9fdeb9c8381fb5980ff2802bcb26c86a1d0b0025ea87f2f72502e3336585c37c"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_006",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_006.mp3",
+      "bytes": 56050,
+      "sha256": "0f73afc7d169993cf55b4eaa84e883dc7ef6f2cee77e15a9778d864af62316ed"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_007",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_007.mp3",
+      "bytes": 56050,
+      "sha256": "9a66d7c5e072692db570292b1797e134332bc8173419fae2fcbd15ecae56ed5d"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_008",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_008.mp3",
+      "bytes": 102026,
+      "sha256": "c0433720ab6ae0fd399d79aad6973afb71987f6050d97c86def8f73b2a69ec3e"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_009",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_009.mp3",
+      "bytes": 54796,
+      "sha256": "f8853eda46093a704bf705e974fa706075665e6ee91dbb9f0fd079b7e0d2d4f1"
+    },
+    {
+      "id": "boss_tactical_inspect_speed_up_010",
+      "augmentId": "speed_up",
+      "file": "boss_tactical_inspect_speed_up_010.mp3",
+      "bytes": 71515,
+      "sha256": "a7fbec9ac5b77efe4d958c49fa7f3ed5f834d2a4251e65d0c43cc6101be90a13"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_001",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_001.mp3",
+      "bytes": 70261,
+      "sha256": "69a146499a0e722e59124e5a2eb507de97db6eea2f31c76cf8911a51dc4a7fc5"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_002",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_002.mp3",
+      "bytes": 108713,
+      "sha256": "d7f05df6d8644e32d4bba5c10d034a9ea593fd76495d26056194ffbab273a549"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_003",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_003.mp3",
+      "bytes": 63991,
+      "sha256": "008daaa85a2cd18e4c3871f2115eb8929aca2b1fa54ba86e168f9f937ca17e9c"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_004",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_004.mp3",
+      "bytes": 108713,
+      "sha256": "ce916dc93bbacfe5d4c2cd95d8ffb2ba0f27f36c539ac3862389ccec7b8a10e3"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_005",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_005.mp3",
+      "bytes": 80292,
+      "sha256": "70f10c0c8e012ac3b18252ad80e43df7fd64d5d3c0d483ae28e681d993ec710a"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_006",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_006.mp3",
+      "bytes": 67753,
+      "sha256": "fe8c5081c4703239a88658f36321ee32f804cb40813a126d704afaa116dad93f"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_007",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_007.mp3",
+      "bytes": 72768,
+      "sha256": "4a6ae7c5c90de738b77e0c744b229afa34522d2b28ce0f9c8eb53218e4af52c2"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_008",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_008.mp3",
+      "bytes": 112475,
+      "sha256": "6414c506d81c983805a4fcfccc229957fdad80eb0db1543c06a16b2d2d8e605e"
+    },
+    {
+      "id": "boss_tactical_inspect_blink_drive_009",
+      "augmentId": "blink_drive",
+      "file": "boss_tactical_inspect_blink_drive_009.mp3",
+      "bytes": 43511,
+      "sha256": "9aee90a0ee7ce28915f3e4ce1a5ce8e87504ba6950a67b585b788eca315e34b3"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_001",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_001.mp3",
+      "bytes": 81546,
+      "sha256": "7593b5aca3d466ce56e6f8d5af440461018d01153ea97f9d8d59c4c1cb940097"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_002",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_002.mp3",
+      "bytes": 97010,
+      "sha256": "889aeb3b5db72b2b4d9080aadf648ce8a38fd6856ad3493eb176c2156a85edce"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_003",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_003.mp3",
+      "bytes": 57304,
+      "sha256": "7352a844fa6d7aefb2d7b3cb66d88b9c342a761e178d46d24506a4c6e0771e29"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_004",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_004.mp3",
+      "bytes": 108713,
+      "sha256": "7e303b43d41d115bbbc7f37c9f54bf9aa65aa3d4f95922f55e4fa31228a7cb42"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_005",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_005.mp3",
+      "bytes": 58558,
+      "sha256": "50eb5938f456f4d7d1984f02573fcd8637be14a46d26b9e5dd1f0b2d9c834e54"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_006",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_006.mp3",
+      "bytes": 59812,
+      "sha256": "f68103a99914b422431b417a2e1f0597faab8f8593706ecc65ae6b51ab4fb332"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_007",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_007.mp3",
+      "bytes": 59812,
+      "sha256": "98297f2384a25ec2bc9506e4e9b72f9fb0c772d2676d996fdeb250a6dccf3385"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_008",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_008.mp3",
+      "bytes": 125431,
+      "sha256": "72988324f3ccf98317872a181cca57f8075bdceeb2b613454d0e020ebd30bb88"
+    },
+    {
+      "id": "boss_tactical_inspect_vector_boost_009",
+      "augmentId": "vector_boost",
+      "file": "boss_tactical_inspect_vector_boost_009.mp3",
+      "bytes": 34316,
+      "sha256": "77496cca66ea2f7dc2b67cdf3cbbf30cba22729fc9cafb86dfd082b2947c0da8"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_001",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_001.mp3",
+      "bytes": 70261,
+      "sha256": "346abd081303ede1dbc0ac876d6f9c66d2f9c412e26235bf3decd96c336d80cc"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_002",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_002.mp3",
+      "bytes": 85725,
+      "sha256": "d0308f49e1053e48b3bdf90250921340323c9fd74a48fccdb1ba045c678183e9"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_003",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_003.mp3",
+      "bytes": 71515,
+      "sha256": "b428b95ca689667000962c57f9ee9ea16044b3a0022368dbe03389ca45087722"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_004",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_004.mp3",
+      "bytes": 108713,
+      "sha256": "41ddda0a06e04e0ff9a67dc5e9fe99e811bdd9baa5d9e903ca3eacdda9c8a0c2"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_005",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_005.mp3",
+      "bytes": 71515,
+      "sha256": "fcf9f7714455aebd6e1143f4dcf40e95636c48a7c6766bf05f2a94733cb0f0db"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_006",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_006.mp3",
+      "bytes": 62319,
+      "sha256": "0f77fe9782ed8f57a5fbd229ca10326292302f2d156fe123c9e12192314f4232"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_007",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_007.mp3",
+      "bytes": 67753,
+      "sha256": "015a781cf711001965b35996bc7b8df784a7ec8eab8971d33a30610c7612df9d"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_008",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_008.mp3",
+      "bytes": 109967,
+      "sha256": "40b6d73e69675a55888d60fe7d1be65559b563d6a8aaddb36c997b798b4e0c64"
+    },
+    {
+      "id": "boss_tactical_inspect_shield_009",
+      "augmentId": "shield",
+      "file": "boss_tactical_inspect_shield_009.mp3",
+      "bytes": 49781,
+      "sha256": "2046402a135b61c0171ddd18d1b3c3224b2325d21524a6766b2d273250df1ff2"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_001",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_001.mp3",
+      "bytes": 85725,
+      "sha256": "bd03b8911ee330273325ad7e3ff9e4e707b68f80a79f8313637dd5a5222a93d9"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_002",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_002.mp3",
+      "bytes": 106205,
+      "sha256": "1ce9a73e706d3219086aa0de61d66c44eaa6b418c67a47ab207b14cd99ff6d8a"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_003",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_003.mp3",
+      "bytes": 76530,
+      "sha256": "92ccf860d6c19b3aa7f46aa81e89252e99733c46219fd4c53e170e3c835ddd9e"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_004",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_004.mp3",
+      "bytes": 93248,
+      "sha256": "7d6edaa2ffbb7eae5840d9a51ed47b79f26dfb6449daf88101ea7abf840d7202"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_005",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_005.mp3",
+      "bytes": 71515,
+      "sha256": "135f16ded4195295c53f370c8edfc711e7cab6cbfb69bfcdbf19180ee50d31bd"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_006",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_006.mp3",
+      "bytes": 56050,
+      "sha256": "7850a1f1081752f00bab7b7536a2737b9349b3507220efe7669db564d12f8235"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_007",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_007.mp3",
+      "bytes": 63991,
+      "sha256": "152616a0c2e8f61e7bdfd3d55fb29502f269f4aba4808763d4f74d84fefe2ccd"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_008",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_008.mp3",
+      "bytes": 91995,
+      "sha256": "deaf9010432b2ff2b8fd9acda4716f1ff2224f5088ad62a79fced2c4156bf877"
+    },
+    {
+      "id": "boss_tactical_inspect_ghost_009",
+      "augmentId": "ghost",
+      "file": "boss_tactical_inspect_ghost_009.mp3",
+      "bytes": 40586,
+      "sha256": "b97bdc1e327a044ca3e2e028a3eeb7a55e87f8c642801e0dfe66a6e7a93cea37"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_001",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_001.mp3",
+      "bytes": 95756,
+      "sha256": "a7cb56a8fb7a1d5a51a9954fdd922ec92a7f572d7591406d00645034ee886de1"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_002",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_002.mp3",
+      "bytes": 107459,
+      "sha256": "0103650d64aa78546c6185c94de09bcbc0cd4a43c6a4a249ce19cf31b3997d95"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_003",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_003.mp3",
+      "bytes": 74022,
+      "sha256": "cfffe9ec83d6f963f0d17e4c752436f95b2c9c07a87a0994905cbe7cd4178328"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_004",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_004.mp3",
+      "bytes": 100772,
+      "sha256": "1af4b3f27fa2a1c78bef304ed8f7826cfc4c2411fdf4e6ab1fdaec85f351d730"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_005",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_005.mp3",
+      "bytes": 63991,
+      "sha256": "4fd51324acef7066ac3616c370137254f6a6f0e67ba2176a1b8f71402b1da076"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_006",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_006.mp3",
+      "bytes": 89487,
+      "sha256": "024907820202d26dc0b3dac032c314af53098874f9feac91ec1120ce119e3676"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_007",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_007.mp3",
+      "bytes": 72768,
+      "sha256": "e73b03c3b0737b44a2d0136efb5c188779ab83f9139c56f19b013d3da43eef82"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_008",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_008.mp3",
+      "bytes": 103279,
+      "sha256": "36209b3fddb77535afdc2efe4cc22d87db132e80ea4deb37127f42f75ba94613"
+    },
+    {
+      "id": "boss_tactical_inspect_point_defense_009",
+      "augmentId": "point_defense",
+      "file": "boss_tactical_inspect_point_defense_009.mp3",
+      "bytes": 44765,
+      "sha256": "a1391cea7e7de9c3f6fc00f902ff5582f03bba70c06eb2da32b813b74d57cd22"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_001",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_001.mp3",
+      "bytes": 62319,
+      "sha256": "d78735514619994d7a56c8368e72fb2bc787fd42dabdb62fd245adf3bf8676e6"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_002",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_002.mp3",
+      "bytes": 106205,
+      "sha256": "68b76e7c69ea6741383964549860a88a99e9ecb811c7070e4458ae353c26445b"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_003",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_003.mp3",
+      "bytes": 72768,
+      "sha256": "c7ba35d502cb3df7a4fc6e8d54d7fdf43925292e222b45c1a6c7da3f3c58799b"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_004",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_004.mp3",
+      "bytes": 102026,
+      "sha256": "fc1f8c2b1179ea62b63405dac2adb7849000987ecb2c335d79fa25a247e3c897"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_005",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_005.mp3",
+      "bytes": 48527,
+      "sha256": "ecd345566e89149aead23b074b34bae5327901e0629d06de370a71ae7850fc35"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_006",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_006.mp3",
+      "bytes": 79038,
+      "sha256": "f0e5ad58882b4469765dd5bc064a35a8df05fa0cb0bc3023db2e51fd6c47b4d4"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_007",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_007.mp3",
+      "bytes": 82799,
+      "sha256": "ae80cf57801c79bb23a199b45d0475b8daf4edeadd6793d680763909d89cefdf"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_008",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_008.mp3",
+      "bytes": 103279,
+      "sha256": "bce4cbd924dbb99706a65a5a45b75344d4b56bcdd00fb16ee5f94d1e80e6db9b"
+    },
+    {
+      "id": "boss_tactical_inspect_nano_patch_009",
+      "augmentId": "nano_patch",
+      "file": "boss_tactical_inspect_nano_patch_009.mp3",
+      "bytes": 53542,
+      "sha256": "0a1971b6ac19e9b6d2252a6d8341fcb01f9e089e641943f1543fcade7187752e"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_001",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_001.mp3",
+      "bytes": 76530,
+      "sha256": "b17b0f70a86c53ced52582e7958d51e3a1a7e5202c14a844200e6e18ba6c0613"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_002",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_002.mp3",
+      "bytes": 104951,
+      "sha256": "0aec03d1a53a36d74f12ee846073fa1fb1ffda4e4bb0372e8b5d245bbd813453"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_003",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_003.mp3",
+      "bytes": 72768,
+      "sha256": "4796a70abd74f1775c24db903ca1bd41a263d6fc24906e66de5602ce0698e1c3"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_004",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_004.mp3",
+      "bytes": 108713,
+      "sha256": "4337816e7904e8e3db63b892d72b8427bd2659bbd4f6bb5756648880a3ba8714"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_005",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_005.mp3",
+      "bytes": 59812,
+      "sha256": "ba13a0dfa23b95f5218edc707079f01a528b31e78c38efda7d2fba7178aeff81"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_006",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_006.mp3",
+      "bytes": 69007,
+      "sha256": "35a07708f483e8f064bde871c89626ca08b760dadf122550fb7e6fcd3273ba22"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_007",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_007.mp3",
+      "bytes": 71515,
+      "sha256": "df9807c83099e62ba0acc5fd3d126acad3dbe534c857aefd4dc7fc1b657a9171"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_008",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_008.mp3",
+      "bytes": 118744,
+      "sha256": "6518b1f5915063afeef84ae46d7a7fb9ebbb69f256f12fbc3180491f56b9c90a"
+    },
+    {
+      "id": "boss_tactical_inspect_magnet_009",
+      "augmentId": "magnet",
+      "file": "boss_tactical_inspect_magnet_009.mp3",
+      "bytes": 48527,
+      "sha256": "41a36a7327d5e12f18096e7039c5f5161654e8c540202a61c76c4a0a8a37972f"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_001",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_001.mp3",
+      "bytes": 67753,
+      "sha256": "9f1e113853989183a91e7a150892868579e4cb8a725cf992acd2afe70d61b0b7"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_002",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_002.mp3",
+      "bytes": 126685,
+      "sha256": "9647909d84a528574d8c6a8a96bf7aac027088743e564c1b47502d1d480114ac"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_003",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_003.mp3",
+      "bytes": 72768,
+      "sha256": "71316a8d23ddd7120a49545fda615d7d62d699028386f72c59b003968d66d5c5"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_004",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_004.mp3",
+      "bytes": 117490,
+      "sha256": "2550e719776f80f0039925a33510f31d9d9f37888721808117b848fbf6d9e217"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_005",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_005.mp3",
+      "bytes": 59812,
+      "sha256": "1a2b5ceb92e17c02bb587fb4414c10c36d14de941b2dca21ccd52543cfd85d15"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_006",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_006.mp3",
+      "bytes": 81546,
+      "sha256": "634c65c6737a5008353747720b27e0f2e67cd286a5728d8ee2d0658d6ad1e697"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_007",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_007.mp3",
+      "bytes": 71515,
+      "sha256": "56b0c9ba4f0a3c42cba402cb2e78464e17fccf57321771d2b376a918d146c62c"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_008",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_008.mp3",
+      "bytes": 125431,
+      "sha256": "963b335b35833505fec8df43dc9907ca93593e156b6afcf2e8b2d7f7f15e48d1"
+    },
+    {
+      "id": "boss_tactical_inspect_drones_009",
+      "augmentId": "drones",
+      "file": "boss_tactical_inspect_drones_009.mp3",
+      "bytes": 57304,
+      "sha256": "e7719002a694f5402ec2323b1170cb6ef6692d37349018feb012da32f346d8bc"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_001",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_001.mp3",
+      "bytes": 82799,
+      "sha256": "20e89a7d9dbc84c332b63c42f01d3027214d534addfefb486bae405921a00fce"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_002",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_002.mp3",
+      "bytes": 129193,
+      "sha256": "1b31ac58af7eae232e96af32a0846d4ed24c0eecfc7f903572a51df091274d36"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_003",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_003.mp3",
+      "bytes": 71515,
+      "sha256": "2788637473803cc082b7a9a2efab3d10f62a744a844de6fab2af42b86c49d79d"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_004",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_004.mp3",
+      "bytes": 109967,
+      "sha256": "6b7df9cb54bae053f67f470cd417a7f487d62f7f019224f487af43864d017107"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_005",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_005.mp3",
+      "bytes": 69007,
+      "sha256": "80c576b9fb1d52f75980906698434e7dd0ab64da5d657605217f4cb39c9acb40"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_006",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_006.mp3",
+      "bytes": 66499,
+      "sha256": "6aad284392b66f6f843eb73b6961fbf1835abafc0f829ee58148fc02e6e5db6a"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_007",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_007.mp3",
+      "bytes": 74022,
+      "sha256": "ea0f37ba35c9daa4ebdeb9aeb6a2438c9e9338ef7262b1972b484f909ea9259f"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_008",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_008.mp3",
+      "bytes": 131701,
+      "sha256": "70c11df73e25f8ec452500324de2452dbd9fb0cd21e1558f6322bcbe17f2decc"
+    },
+    {
+      "id": "boss_tactical_inspect_bomb_009",
+      "augmentId": "bomb",
+      "file": "boss_tactical_inspect_bomb_009.mp3",
+      "bytes": 43511,
+      "sha256": "640d52a3df49a86d69f215c9f64c9801e0c64ac3a82bda31e2ca14cad8df91bd"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_001",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_001.mp3",
+      "bytes": 86979,
+      "sha256": "3352740bd3023225dca65dd3ae2e42731ba52b8685f4ae4d03f99ef342b214a8"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_002",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_002.mp3",
+      "bytes": 91995,
+      "sha256": "b626dbe56d294ca3ec64a0150d6dfd68f8d739a4c6eb4e62293083e30a652787"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_003",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_003.mp3",
+      "bytes": 65245,
+      "sha256": "75829e2ff04a4d6be58d7c207a6d92233ac8226eab72222066bd078be5bea2f1"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_004",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_004.mp3",
+      "bytes": 103279,
+      "sha256": "02c3436b947e8fc98e5b8debb7d6f3fcee522addd4dd1ca159d92bd49268d1c5"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_005",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_005.mp3",
+      "bytes": 75276,
+      "sha256": "250f6f4c98fc50d2b943a504dc36fc6db12123dcef9921fce191cb6925578b34"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_006",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_006.mp3",
+      "bytes": 72768,
+      "sha256": "540a213c1aec6bcd9305bb0927351b6c0772c29d623106423872705054e8bb74"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_007",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_007.mp3",
+      "bytes": 65245,
+      "sha256": "7adbd94b21fb408626798d610fa76633474eba73eed79fc50ff7169cb8f5df31"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_008",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_008.mp3",
+      "bytes": 121252,
+      "sha256": "208245ead7b204ea8069bf1e4870577650203a82c6be1b7ff778f62953d59a9f"
+    },
+    {
+      "id": "boss_tactical_inspect_orbital_strike_009",
+      "augmentId": "orbital_strike",
+      "file": "boss_tactical_inspect_orbital_strike_009.mp3",
+      "bytes": 38078,
+      "sha256": "297b463477bcae6ca5917cc48724c4377504f3bcc53a879421bc802cc52855a2"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_001",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_001.mp3",
+      "bytes": 74022,
+      "sha256": "0fb542f8fb59ddeee1a472f08d45b8fe4d87b78a1628da6e75d57aa8b0114093"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_002",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_002.mp3",
+      "bytes": 94502,
+      "sha256": "89eb79234acde6a1f0db67a5744c28294229b6f9ecc9231c979fadd3580a7d71"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_003",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_003.mp3",
+      "bytes": 81546,
+      "sha256": "ed7fb87a3e7d03604b65828f4aea40178ac352420b43a7b78b3a81cc550b445c"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_004",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_004.mp3",
+      "bytes": 106205,
+      "sha256": "dfcd3a4319daf53cab089dc57c07bc678d772a1cb3cfac26602eab12c5542d04"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_005",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_005.mp3",
+      "bytes": 67753,
+      "sha256": "29ee41e26dc0c0b2e06d730ac7298fcf62b07c1467a74892818eced7a4a94a02"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_006",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_006.mp3",
+      "bytes": 80292,
+      "sha256": "19462c24f9de73a7f1cd5fd0a9e5a83ab11a7b9819e78bb5e8764e17ab72fa57"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_007",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_007.mp3",
+      "bytes": 66499,
+      "sha256": "bc0bb7f3ed42817bac41e630ebcb5511b716e737e76889386a7b4ce8ce754d92"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_008",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_008.mp3",
+      "bytes": 109967,
+      "sha256": "d8726b4eae256d797ec426f3711ddf50d4a8bd4f871fea4e7863cce5be07973d"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_reactor_009",
+      "augmentId": "phase_reactor",
+      "file": "boss_tactical_inspect_phase_reactor_009.mp3",
+      "bytes": 53542,
+      "sha256": "ae231ea8c16cc6304bf50bf5d3c64979c0e166322e4fa7e813ab61d3b6eb85cb"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_001",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_001.mp3",
+      "bytes": 72768,
+      "sha256": "8c7dfd21caa279496851ba58f994485cf11dfd37f63829d99e71b4a79da08480"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_002",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_002.mp3",
+      "bytes": 111221,
+      "sha256": "14051a7f0d3c89f2a51ccf76bed70a0fbef50cff820d5121917687b12dfa12fb"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_003",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_003.mp3",
+      "bytes": 52288,
+      "sha256": "7f7b2a45d3ac25fb14e65a6ef7145862992d1110f8af8cad6f7bbc086343f5e3"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_004",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_004.mp3",
+      "bytes": 100772,
+      "sha256": "8190d7fa57ff3dc1330095604b50664672757dd97fd440bfd3757d1685985687"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_005",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_005.mp3",
+      "bytes": 58558,
+      "sha256": "4bfbe044bc559ddc28ec3dcffa0f6d301e28c57c0c7544fbb4e08666db908962"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_006",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_006.mp3",
+      "bytes": 69007,
+      "sha256": "02b11136a38666f843cdb280ebb3f1dd61ffb2c39c4dda22512915d9a3867e34"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_007",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_007.mp3",
+      "bytes": 65245,
+      "sha256": "9553b33aa83a35b87aca5e9f64af422f825b32a3344cf359632da71f47f2d84c"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_008",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_008.mp3",
+      "bytes": 119998,
+      "sha256": "98bbafcd978f7084d74abfedac2f740ebf30512065e3ebc9190f8ae610b4699a"
+    },
+    {
+      "id": "boss_tactical_inspect_focus_lens_009",
+      "augmentId": "focus_lens",
+      "file": "boss_tactical_inspect_focus_lens_009.mp3",
+      "bytes": 39332,
+      "sha256": "dbe30238a826359df5974d412656c18f3e96c8a76ac24bccf56178021e727999"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_001",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_001.mp3",
+      "bytes": 82799,
+      "sha256": "f3b15c095800735503806181b2946dee1b000c0eb39611d6d7833e808cef86fb"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_002",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_002.mp3",
+      "bytes": 137970,
+      "sha256": "7b3360381fe176fc81abd1df1b0a2049fead8e260b02cebc119ca5966fe976f7"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_003",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_003.mp3",
+      "bytes": 61066,
+      "sha256": "4287aa1e7f048dbf18c8220984ba147312417bf4579b6a72ddd7c4da08e581db"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_004",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_004.mp3",
+      "bytes": 108713,
+      "sha256": "fca54fdcc2b80af758a4a905cfb8006fa0b9c6af961703073963f5ada625c5c1"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_005",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_005.mp3",
+      "bytes": 63991,
+      "sha256": "9b399b769aa3c83b87f2a9296475ae78d3a9e7b04bda5352c645d5cd991729e3"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_006",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_006.mp3",
+      "bytes": 82799,
+      "sha256": "7a6f827c3507597c8e025ac04fa23378a3ff8e87985cb57f62efea41c1599bad"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_007",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_007.mp3",
+      "bytes": 88233,
+      "sha256": "99d027afc1c337e24ac727b3dc40c5249ad06f13612c7276d3fbb83523012086"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_008",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_008.mp3",
+      "bytes": 122506,
+      "sha256": "daed938ba6af82670973c87500396989cad338b1fba785ad21ba1bca63c831d7"
+    },
+    {
+      "id": "boss_tactical_inspect_inertial_dampers_009",
+      "augmentId": "inertial_dampers",
+      "file": "boss_tactical_inspect_inertial_dampers_009.mp3",
+      "bytes": 49781,
+      "sha256": "6cf7c8ee7179a20dab3ca0f1a638c472195dd9f7efc2080bbf9f1524479c4d64"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_001",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_001.mp3",
+      "bytes": 84471,
+      "sha256": "6623b4bb9b73a8d9e585744c82d3c816b59ac300bdae0396053680c374d28208"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_002",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_002.mp3",
+      "bytes": 118744,
+      "sha256": "02a1327bb92b37642ecf926dd3c0e35a2ced2663e1bbf54e4e9c2227238dacfd"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_003",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_003.mp3",
+      "bytes": 51035,
+      "sha256": "48589fda8f5431d6ef78b57302d621078875acd10700a384f0f2b4f7106db536"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_004",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_004.mp3",
+      "bytes": 109967,
+      "sha256": "4e1bdc1f9ff5cc9527a5cac1a0dc6301c6befab243d0260912f080b98228d8f2"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_005",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_005.mp3",
+      "bytes": 63991,
+      "sha256": "9d03ad5f07aed390934edfbcf957c95c7daa19484d1843298c5787082a6e0f92"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_006",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_006.mp3",
+      "bytes": 66499,
+      "sha256": "02d1e2fc172d7c5ac5eb312d0a6fb2d7159c5b805e6c0c4852a753151c9a057b"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_007",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_007.mp3",
+      "bytes": 93248,
+      "sha256": "6e3e0a375157d923e6a9f1e655ccb47a9d7bab8743f4d4fcd241ecdb758718f9"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_008",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_008.mp3",
+      "bytes": 103279,
+      "sha256": "996c94ea77c6d48c14ce69fd64a607f13bafa163a1b69a087579e6729cd58bf0"
+    },
+    {
+      "id": "boss_tactical_inspect_phase_wake_009",
+      "augmentId": "phase_wake",
+      "file": "boss_tactical_inspect_phase_wake_009.mp3",
+      "bytes": 41839,
+      "sha256": "7457384e6cc323c37f859760a14bbfddc57ecff1742e43a8cd8f71485e14ecb3"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_001",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_001.mp3",
+      "bytes": 82799,
+      "sha256": "8f14a313b66be6a2ec12b4867253b9d8bf4992d5e0686b42d815747560a8c984"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_002",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_002.mp3",
+      "bytes": 102026,
+      "sha256": "c0817baf2da13da4e7b10f54a621528c4625fbd45f8ba852913ab792bfed364f"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_003",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_003.mp3",
+      "bytes": 57304,
+      "sha256": "8795fe68d3dee25629798534677b015afc24a792baca9e1d3ea8cbd4b74ce450"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_004",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_004.mp3",
+      "bytes": 102026,
+      "sha256": "95c07c11fd4da8ec842649022f0db9b651d93262bd90bd293cf8f7de504f315a"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_005",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_005.mp3",
+      "bytes": 49781,
+      "sha256": "9466aa276263cd471c86af68bde865b020923b73afb5652467d3c076762410b6"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_006",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_006.mp3",
+      "bytes": 102026,
+      "sha256": "f4e9549d1375416a1e02ea5d6fae2eb9c36021978922758505ccb268deabbdd3"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_007",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_007.mp3",
+      "bytes": 62319,
+      "sha256": "1bb00ec9c38d97c8a614614b27222685255a07535b452c342d532dcef31ed813"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_008",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_008.mp3",
+      "bytes": 99518,
+      "sha256": "22935bc59e90b06e062fe44a95a832e2e57602a089b217c881ee519c87bce64e"
+    },
+    {
+      "id": "boss_tactical_inspect_slipstream_coils_009",
+      "augmentId": "slipstream_coils",
+      "file": "boss_tactical_inspect_slipstream_coils_009.mp3",
+      "bytes": 59812,
+      "sha256": "67fc02d43eaba089f56a1962a379b8b137c62750c760f08390a610083b1f6487"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_001",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_001.mp3",
+      "bytes": 95756,
+      "sha256": "19a9b1393ae29d2e458c898f5a5d99cb7cd01bd9dcba4e14519681defc35744b"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_002",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_002.mp3",
+      "bytes": 116236,
+      "sha256": "48118d2fabcd097b281c33712c8f09bec158b28724372ffae03a19722ac53937"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_003",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_003.mp3",
+      "bytes": 47273,
+      "sha256": "1d620ea7815900fd35df85d9b8f02f6472102bc97b8d64ade3866316ffdc3cf3"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_004",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_004.mp3",
+      "bytes": 121252,
+      "sha256": "6fcddd5db9188bcf0aeed91129a2be0120d1ce3f1a0f4a677a9351aa5df05187"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_005",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_005.mp3",
+      "bytes": 84471,
+      "sha256": "dbd3b9de6a27e282c3c9e190e3aa8a395140502703daea247498a0d392e6fb28"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_006",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_006.mp3",
+      "bytes": 80292,
+      "sha256": "c0a0cfa962a684624f8d82658e7c9ebc9d848ca68fd466f00cecc724e724593e"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_007",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_007.mp3",
+      "bytes": 81546,
+      "sha256": "019e3d302aee3f325f010414d4b83760040a3e5ad33cef3ca00a0c66df975fde"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_008",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_008.mp3",
+      "bytes": 106205,
+      "sha256": "a16b30d4389d9fddd0f510da76193c4333f4b9bee3b51eb05b24ddf540592383"
+    },
+    {
+      "id": "boss_tactical_inspect_emergency_bulkhead_009",
+      "augmentId": "emergency_bulkhead",
+      "file": "boss_tactical_inspect_emergency_bulkhead_009.mp3",
+      "bytes": 65245,
+      "sha256": "824c8a7102dec4ee8d942dc657dfd4c8a67fdc47d7fa688d1cf0444416d0b9c6"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_001",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_001.mp3",
+      "bytes": 72768,
+      "sha256": "a0adc637028566041c19ddd393e56cd2c37b9ba21955391dc43e7881f0f690c8"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_002",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_002.mp3",
+      "bytes": 121252,
+      "sha256": "aa953ad5233dd4fa2ed81256be38f44d2f906de88b07d8d747bb105f3379a867"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_003",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_003.mp3",
+      "bytes": 65245,
+      "sha256": "c2265e7f1d957ebd669780a59cdfb08deeed16d4355b5446c11bd6c04b5543ab"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_004",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_004.mp3",
+      "bytes": 109967,
+      "sha256": "adb14f675e44adfb02a5035ad8edf61a331c79bbee31b4c485c43b5a9cadde73"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_005",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_005.mp3",
+      "bytes": 77784,
+      "sha256": "8d0678f2efe791dba64087b14a510918df8967d35beee05f5ef1bfd6e28dc36a"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_006",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_006.mp3",
+      "bytes": 82799,
+      "sha256": "4dc70d0f58078b059e050d985ad58230c59e169dada5e1226ffdeee5d3ef364f"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_007",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_007.mp3",
+      "bytes": 67753,
+      "sha256": "71fd1397355881358cdbc022146a5c8984bf9e57e40580e34d2f7025a8ae03b3"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_008",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_008.mp3",
+      "bytes": 112475,
+      "sha256": "71468225840936993562e61a14add1f46c2dbaae36d600e6ce53a07a9e4c55a6"
+    },
+    {
+      "id": "boss_tactical_inspect_impact_foam_009",
+      "augmentId": "impact_foam",
+      "file": "boss_tactical_inspect_impact_foam_009.mp3",
+      "bytes": 48527,
+      "sha256": "394d864796cbbaa79843b6e1f4bc13bd4e7a9cdecdd1d83cc4d78c729170d83c"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_001",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_001.mp3",
+      "bytes": 107459,
+      "sha256": "07e8e65752a0d0e74543add30faf0c4ef3863ce88f6cc7b2dfa3abc268fcb128"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_002",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_002.mp3",
+      "bytes": 126685,
+      "sha256": "8f8e1875e40e4bc75110cd4e80b5df0e03002fb6d88cb1b1f71addf8f7244511"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_003",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_003.mp3",
+      "bytes": 71515,
+      "sha256": "cb1914a438d1d1d40b41b55b7b48f7d5cdb3585fd07f2ca77cf37b40b260560d"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_004",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_004.mp3",
+      "bytes": 113728,
+      "sha256": "3577b177b7957c33a56239268e5cf0f4c79dd41a13b7d36963b78a4ad7580ba0"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_005",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_005.mp3",
+      "bytes": 74022,
+      "sha256": "35ced17b04bf6bf8f1b8b10502e45f636aa3a23a1c924d5d84b32e8007e15a59"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_006",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_006.mp3",
+      "bytes": 67753,
+      "sha256": "9fa788726d48a1cb8463438f74a5c05114958dec3528b2cfb603d0d736851ca9"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_007",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_007.mp3",
+      "bytes": 75276,
+      "sha256": "a276361a41976c665e2fe533ed24651a03dfb87d3bf2676027989803dff7f52b"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_008",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_008.mp3",
+      "bytes": 123759,
+      "sha256": "89d6c0e047c8729733339dac1a1b349671fe9669e9c499555c025a2f3885ec0c"
+    },
+    {
+      "id": "boss_tactical_inspect_graze_plating_009",
+      "augmentId": "graze_plating",
+      "file": "boss_tactical_inspect_graze_plating_009.mp3",
+      "bytes": 35570,
+      "sha256": "a9617afe073af5a5af0507f1b710ce89083731b27270219f7c8b9aa504905435"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_001",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_001.mp3",
+      "bytes": 82799,
+      "sha256": "e7c04d09f28065400113b86328e23032291a69df2204778ed37d4c9a5c225ac6"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_002",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_002.mp3",
+      "bytes": 97010,
+      "sha256": "985a10a16559ad361ae47b32cd7f89f51ba827dc6da9d25fa17ed9f00e2105a0"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_003",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_003.mp3",
+      "bytes": 76530,
+      "sha256": "51cd0d17ef2ef581e90c1a9f19512748ae3a1eeb4af588d9eff9997cb1a246a0"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_004",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_004.mp3",
+      "bytes": 108713,
+      "sha256": "14a1df6f0024ba4843afbc0458404fd099d6e85c1d7d7f8f847a6a7a6cef1b56"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_005",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_005.mp3",
+      "bytes": 57304,
+      "sha256": "752700b568d95a34fcbaa15bd92dcabf0bae9c788a19809ae3440aeea208cbe1"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_006",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_006.mp3",
+      "bytes": 75276,
+      "sha256": "9e7d91db947e0a00b51a2f0f8b6a6bbfdafc9871ae004618eb97f2e6627f4e98"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_007",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_007.mp3",
+      "bytes": 67753,
+      "sha256": "211498f4fbab25b22788bf5090188a2db3ff5b27b5406684fea85b7ca55c813a"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_008",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_008.mp3",
+      "bytes": 108713,
+      "sha256": "a6787170bd91f9dd706d0db443aa05cb3e8a3d481d2852425d858572a7ca26f0"
+    },
+    {
+      "id": "boss_tactical_inspect_last_light_009",
+      "augmentId": "last_light",
+      "file": "boss_tactical_inspect_last_light_009.mp3",
+      "bytes": 48527,
+      "sha256": "2e8112b69464bf4b51b38fb4ffd668214967a1922b44575289c135186cbb69aa"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_001",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_001.mp3",
+      "bytes": 89487,
+      "sha256": "e2c81a4d02a0141701df77675e76a7f28ead244dc0d32136e2e03f6021d1d18b"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_002",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_002.mp3",
+      "bytes": 100772,
+      "sha256": "9861296aea4405cd9f43b108990070c24a679536ed5af3cc92a6ef8b1e09442e"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_003",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_003.mp3",
+      "bytes": 58558,
+      "sha256": "61cc791bffed219a14dfc2b4e7b4d773e5cbb08bd42794009f35cb69a6757b5f"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_004",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_004.mp3",
+      "bytes": 114982,
+      "sha256": "d4af857a297cf880a8538b545d4e73fb6374f0e32904fa29e5685c80cfabc1f6"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_005",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_005.mp3",
+      "bytes": 57304,
+      "sha256": "5977b96610a182389284bb8f792f9e8a1753dadaf5d9aae9a5aeaaeb89b5dd25"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_006",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_006.mp3",
+      "bytes": 67753,
+      "sha256": "7cc668e666f83a5e8e89fd0c2f74d247e7d4d36b6890445813429f30817a6d5b"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_007",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_007.mp3",
+      "bytes": 58558,
+      "sha256": "9e866cfc9d6d63042f26dfbfb6a3c8e60cb60b77ac6c25700befa8d4396c4d88"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_008",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_008.mp3",
+      "bytes": 104951,
+      "sha256": "a7f27ec03f3bb397c08da3ba659f004593440c48333d8524b154c83360c6220f"
+    },
+    {
+      "id": "boss_tactical_inspect_combo_anchor_009",
+      "augmentId": "combo_anchor",
+      "file": "boss_tactical_inspect_combo_anchor_009.mp3",
+      "bytes": 44765,
+      "sha256": "19bb7fb81ead7da2aef8bb69f449dee9b5ee217b6a97ab9f15075c995fd76848"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_001",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_001.mp3",
+      "bytes": 67753,
+      "sha256": "4608bb4b4ca70fb2433d84e963a02e95004631a3b4e960fa202adb57351b4935"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_002",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_002.mp3",
+      "bytes": 126685,
+      "sha256": "a7888ade8a55559f0685008b121bcc3d5fd2a7f1609742b4682318bb436586d8"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_003",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_003.mp3",
+      "bytes": 59812,
+      "sha256": "a734b6f26b713dbc688cb08f8af3215cfb9729bd94dfb4e8e081b7e8c834f43e"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_004",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_004.mp3",
+      "bytes": 112475,
+      "sha256": "4cbb0fece93a68be300c8efaf690ae33c75efcdfd986dd40f66d7623df66591a"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_005",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_005.mp3",
+      "bytes": 69007,
+      "sha256": "f44d91f6854a98e7c4fa5bf99a3a4dfb2cdec44b170c0fe6d71dbbdd289a4534"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_006",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_006.mp3",
+      "bytes": 70261,
+      "sha256": "efd10489b1806349923b77e0201ad7d9a8611a7b95065a87a288cb13db132403"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_007",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_007.mp3",
+      "bytes": 82799,
+      "sha256": "438152592e9e4511070064bd85f1e778f5461252f784d129e373e0b01b0cb3db"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_008",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_008.mp3",
+      "bytes": 119998,
+      "sha256": "e268288dc8f87f634784dac4052d5bf9ea86186e86c890793572c18fb157fbba"
+    },
+    {
+      "id": "boss_tactical_inspect_salvage_clock_009",
+      "augmentId": "salvage_clock",
+      "file": "boss_tactical_inspect_salvage_clock_009.mp3",
+      "bytes": 53542,
+      "sha256": "ba043548f7d5115648720adb7e4421288a159d9289a133e8d930dc85770790d7"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_001",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_001.mp3",
+      "bytes": 81546,
+      "sha256": "ee4297c61a1988f8ee11f87fc9a7191dcc75623abfa42e3c6df2b0a48d06455b"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_002",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_002.mp3",
+      "bytes": 123759,
+      "sha256": "06807b8664fe475d1ddce0e341c58de7d334cbecd876c7bcdf68b8c0e83ce3d3"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_003",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_003.mp3",
+      "bytes": 69007,
+      "sha256": "8fade422627bd3eb89c4ab40da3f0f99475756061e53fe05bae520cd435d7530"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_004",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_004.mp3",
+      "bytes": 113728,
+      "sha256": "a1838b64bf0ab7a855f2b82d207e97e3ce57ccf9a1ebe20bd2306417b7974c86"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_005",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_005.mp3",
+      "bytes": 54796,
+      "sha256": "6312fce1c5e05d9c2217179f78d983fe38a807cc0883f8cf5662488bca93f585"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_006",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_006.mp3",
+      "bytes": 75276,
+      "sha256": "650137f6bdc6698d9687c4672273b5b3bde6510039c5464086844948334f4240"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_007",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_007.mp3",
+      "bytes": 79038,
+      "sha256": "7dc7b720791b2e764d6cc588f46a0f5644a233f498e70b54c6013aac04649dd7"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_008",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_008.mp3",
+      "bytes": 132955,
+      "sha256": "eb036adc592b44a0a107e20d497e29b59e7c2c3abe57ead91ca91c2d3d95e509"
+    },
+    {
+      "id": "boss_tactical_inspect_power_saver_009",
+      "augmentId": "power_saver",
+      "file": "boss_tactical_inspect_power_saver_009.mp3",
+      "bytes": 33062,
+      "sha256": "7cdd7524a4224657b7cf12f0e69998b52881cd2f5dd123a7930aab6a8125d27d"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_001",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_001.mp3",
+      "bytes": 72768,
+      "sha256": "326912015aeee823cc3e5255632b2bad15784e0a157b0b5f5b3ea0ec460ef48c"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_002",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_002.mp3",
+      "bytes": 117490,
+      "sha256": "ea46fec5e49fae538ea16fd55bcd8e31cad8465e4987da42e3fff19d452c6d09"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_003",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_003.mp3",
+      "bytes": 86979,
+      "sha256": "1f672f65879d15426ee3d1eba5ecf862163c0bbdf9723f2965a570500754054e"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_004",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_004.mp3",
+      "bytes": 104951,
+      "sha256": "2ef5b65f8dbcd6755724830a71c0309122e35e8b02802974ffbaa60c5e67d84f"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_005",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_005.mp3",
+      "bytes": 77784,
+      "sha256": "13dbd0ce2986f90ac6c2f37a2473229bb7ac4061cc793ba5c3ad1b3c777fed1c"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_006",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_006.mp3",
+      "bytes": 85725,
+      "sha256": "69df7e2f4e65166aaea80a2c26b89af5dcd91690dbbf3c7f736a6c00e3c94878"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_007",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_007.mp3",
+      "bytes": 80292,
+      "sha256": "687098ab04702d2cce85047a95e3ff1254a83b04c0246cc5ce8e0dad6dba03ea"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_008",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_008.mp3",
+      "bytes": 118744,
+      "sha256": "4c383937770be6ceff20bfead7575762015c42a1a17d4f952eb95bc85fccccae"
+    },
+    {
+      "id": "boss_tactical_inspect_drone_link_009",
+      "augmentId": "drone_link",
+      "file": "boss_tactical_inspect_drone_link_009.mp3",
+      "bytes": 59812,
+      "sha256": "2ffbb39498f64cadf5dac3226f3e37b25a20a8121fb8238db23f858a62b720ed"
+    }
+  ]
+}

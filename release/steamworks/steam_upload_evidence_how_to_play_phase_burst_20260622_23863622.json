@@ -1,0 +1,57 @@
+{
+  "task": "how-to-play-clarity-phase-burst",
+  "uploadedAt": "2026-06-22T21:30:21Z",
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "buildId": 23863622,
+    "setLive": "",
+    "assignedPublicOrDefaultBranch": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2"
+  },
+  "source": {
+    "branch": "codex/how-to-play-clarity-phase-burst-20260622",
+    "commit": "24dc7bf56f2ff06c2db687226c5c21c19479556a",
+    "startingCommit": "cf77c07bdb008260b73bf3b6640dae6a82134e63"
+  },
+  "package": {
+    "version": "v2026-06-22_23-22-17",
+    "packagedGitSha": "24dc7bf",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-22T21-25-48-560Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-22T21-26-27-604Z/report.json",
+    "packageRuntimeReport": "test-results/steam-package-runtime-2026-06-22T21-28-09-385Z/report.json",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "e6e4490c4b486916a4e08771f866c22d7234a92f7d5b3780aedcbf73b628cd68",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 879693648,
+    "executableSha256": "e919e1c358eefc4b47bdcfdf42f476171bad897b1aa34fc1c6aedc25f32b9df8"
+  },
+  "vdfProof": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdVerified": true,
+    "depotIdVerified": true,
+    "setLiveBlankVerified": true,
+    "publicOrDefaultAssignmentPresent": false
+  },
+  "upload": {
+    "steamCmd": "C:/steamcmd/steamcmd.exe",
+    "consoleLog": "release/steamworks/steam_upload_console_20260622_how_to_play_phase_burst.log",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23863622)."
+  },
+  "focusedEvidence": {
+    "howToPlayReport": "test-results/how-to-play-2026-06-22T21-11-03-471Z/report.json",
+    "uiScale4kReport": "test-results/ui-scale-4k-2026-06-22T21-15-17-534Z/report.json",
+    "menu4k200Screenshot": "test-results/how-to-play-2026-06-22T21-11-03-471Z/3840x2160-scale200/menu-how-to-play.png",
+    "pause4k200Screenshot": "test-results/how-to-play-2026-06-22T21-11-03-471Z/3840x2160-scale200/pause-how-to-play.png"
+  },
+  "scopeGuard": {
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudSettingsChanged": false,
+    "saveFormatChanged": false,
+    "gameplayBalanceChanged": false
+  }
+}

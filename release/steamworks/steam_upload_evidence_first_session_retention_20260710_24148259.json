@@ -1,0 +1,64 @@
+{
+  "generatedAt": "2026-07-10T14:12:51.7779637Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24148259",
+  "sourceCommit": "0e8d325 Improve first-session retention and result flow",
+  "buildStamp": "v2026-07-10_14-35-57",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24136260",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_retention_video_followup_absolute_20260710.log",
+  "consoleLogSha256": "b604166fe401b9a9f424dd5495549ceb9d87d36c1cdde40ab367e4338b614e6e",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916329487,
+    "manifestSha256": "2dcee8045ae7a6cfe9e3a103b2850f110e1adfbdf931ffb5f9f7a64f7c7a4091",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "9fb0bb4b0d51cadc684df5ea3e1ee39dc9913c4a9c400e2749f7e89a0243a4b1",
+      "modifiedAt": "2026-07-10T14:04:08.0872562Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-10 16:11:50]: Successfully finished AppID 4765070 build (BuildID 24148259).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "releaseHardening": "passed 40/40 in 817 seconds",
+    "releaseLine": "passed before packaging and during VDF generation",
+    "packageSteamWinCurrent": "passed after rebuilding the interrupted partial package",
+    "steamPackageRuntime": "passed during packaging and VDF generation",
+    "packagedSmoke": "passed",
+    "packagedControls": "passed",
+    "packagedPerformance": "passed at 60 FPS average/minimum with no errors",
+    "packagedFreshProfile": "passed with Steam leaderboard and achievement writes isolated",
+    "desktopPackageReview": "passed",
+    "i18n": "passed for en, de, zh-CN, ru, es, pt-BR, ko, and ja",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "preflightFailure": {
+    "status": "stopped_before_upload",
+    "reason": "SteamCMD resolved the relative VDF path from its own directory",
+    "exitCode": 6,
+    "buildIdCreated": false,
+    "consoleLogPath": "release/steamworks/steam_upload_console_retention_video_followup_20260710.log"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "No score formula, XP formula, enemy stats, or boss balance changed in this retention pass.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24136260."
+  ]
+}

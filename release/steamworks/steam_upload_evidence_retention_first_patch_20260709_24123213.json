@@ -1,0 +1,96 @@
+{
+  "buildId": "24123213",
+  "uploadedAtLocal": "2026-07-09T09:17:06+02:00",
+  "steamAppId": "4765070",
+  "steamDepotId": "4765071",
+  "steamUser": "gaunziman",
+  "sourceCommit": "50bd2bb",
+  "sourceCommitSubject": "Improve early retention rewards and feedback",
+  "packagedBuild": "v2026-07-09_09-07-53",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "246b7dadb43eaf443f0b6814c916503de3cb86cb3456e212296c2a4746e6e457",
+    "fileCount": 336,
+    "totalBytes": 916296070,
+    "manifestHash": "1bd9247420c017392eb8551ab8c4066455d0bba7c65caa5d3e96a81f5f4cc62a",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "absolutePath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm retention first patch v2026-07-09_09-07-53",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": "",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "commands": [
+    {
+      "command": "git fetch --all --prune",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:release-line",
+      "status": "passed",
+      "note": "Verified latest locale files, achievements, Steam Cloud, fullscreen, and marketing hotkey markers."
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-07-09T07-11-34-344Z/report.json"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-07-09T07-12-15-678Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-07-09T07-12-29-640Z/report.json",
+      "summary": "minFps=57.8 avgFps=59.8 errors=0 consoleEvents=0"
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "status": "passed",
+      "report": "test-results/electron-smoke-2026-07-09T07-14-18-413Z/report.json",
+      "summary": "gitSha=50bd2bb build=v2026-07-09_09-07-53"
+    },
+    {
+      "command": "npm run check:desktop-package",
+      "status": "passed"
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm retention first patch v2026-07-09_09-07-53\" npm run steamworks:write-vdf",
+      "status": "passed"
+    },
+    {
+      "command": "tools/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit",
+      "status": "passed",
+      "buildId": "24123213"
+    }
+  ],
+  "steamCmdResult": {
+    "exitCode": 0,
+    "successLine": "Successfully finished AppID 4765070 build (BuildID 24123213).",
+    "cachedLogin": true
+  },
+  "branchAssignment": {
+    "setLiveBlank": true,
+    "changedSteamBranch": false,
+    "note": "The VDF kept SetLive blank, so this upload did not assign BuildID 24123213 to public/default or any beta branch."
+  },
+  "steamworksSettingsChanged": false,
+  "deployPerformed": true,
+  "deployScope": "Private SteamPipe upload only; no Steam branch assignment."
+}

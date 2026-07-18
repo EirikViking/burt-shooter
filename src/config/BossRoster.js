@@ -92,12 +92,12 @@ const ARCHETYPES = [
 ];
 
 const CALLSIGNS = [
-  'NULL CROWN',
-  'ORBITAL HECKLER',
-  'VECTOR EMPEROR',
+  'Sonia',
+  'Sam the Misfit',
+  'Ro ro ro',
   'LANE EATER',
   'NEON WARDEN',
-  'ARCADE REQUIEM',
+  'Misfit Galaxy',
   'BOSS MUSIC PRIME',
   'THE BIG RECTANGLE',
   'HYPERGLYPH',

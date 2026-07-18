@@ -1,0 +1,54 @@
+﻿{
+    "status":  "uploaded_private_unassigned",
+    "uploadedAt":  "2026-07-08T19:27:10Z",
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "24115418",
+                  "setLive":  "",
+                  "branchAssignment":  "none",
+                  "steamworksSettingsChanged":  false,
+                  "steamCmdUser":  "gaunziman",
+                  "resultLine":  "[2026-07-08 21:27:10]: Successfully finished AppID 4765070 build (BuildID 24115418)."
+              },
+    "source":  {
+                   "branch":  "codex/main-menu-run-contracts-20260702",
+                   "commit":  "2d2b7843741d3d27c0ef40053595caaee24ef560",
+                   "summary":  "Clarify Pilot Orders objective guidance"
+               },
+    "build":  {
+                  "version":  "v2026-07-08_21-12-14",
+                  "timestamp":  "2026-07-08T19:12:14.653Z",
+                  "vdf":  "release/steamworks/app_build_LOCAL.vdf",
+                  "description":  "Nova Swarm Pilot Orders objective clarity v2026-07-08_21-12-14",
+                  "contentRoot":  "..\\\\desktop\\\\win-unpacked"
+              },
+    "payload":  {
+                    "manifest":  "release/steamworks/steam_payload_manifest.json",
+                    "fileCount":  336,
+                    "totalBytes":  916266232,
+                    "manifestHash":  "1aa0fb978a63200ac0b6b3c0e77d06f4aa8c9a92b85e1c4d206821f04a403317",
+                    "executable":  {
+                                       "path":  "release/desktop/win-unpacked/Nova Swarm.exe",
+                                       "bytes":  226698752,
+                                       "sha256":  "550e221abe9d8500747d188d00c7109678aae840116166f1967f3c1eb833f692"
+                                   }
+                },
+    "verification":  {
+                         "releaseLine":  "npm run check:release-line",
+                         "package":  "npm run package:steam:win",
+                         "packageRuntimeReport":  "test-results/steam-package-runtime-2026-07-08T19-23-57-134Z/report.json",
+                         "desktopPackageReview":  "release/steamworks/desktop_package_review_report.json",
+                         "packagedExeSmoke":  "test-results/packaged-exe-smoke-2026-07-08T19-18-01-610Z/report.json",
+                         "packagedControlsSmoke":  "test-results/packaged-control-smoke-2026-07-08T19-19-11-971Z/report.json",
+                         "packagedPerfSmoke":  "test-results/packaged-perf-smoke-2026-07-08T19-20-13-059Z/report.json",
+                         "currentElectronSmoke":  "test-results/electron-smoke-2026-07-08T19-22-42-935Z/report.json",
+                         "desktopPackageCheck":  "npm run check:desktop-package",
+                         "pilotOrdersVisualProof":  "test-results/run-contracts-2026-07-08T18-49-58-211Z/pilot-orders-active-menu.png"
+                     },
+    "notes":  [
+                  "SteamCMD upload used cached credentials and completed successfully.",
+                  "The VDF kept SetLive blank, so this upload did not assign the build to a public/default Steam branch.",
+                  "No Steamworks store metadata, leaderboard identity, achievement metadata, package dependencies, score identity, XP identity, or balance changes were made as part of this upload."
+              ]
+}

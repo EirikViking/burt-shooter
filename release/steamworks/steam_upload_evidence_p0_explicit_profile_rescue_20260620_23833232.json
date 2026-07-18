@@ -1,0 +1,65 @@
+{
+  "purpose": "P0 explicit profile rescue import private Steam test build",
+  "createdAt": "2026-06-20T07:40:00.000Z",
+  "branch": "codex/p0-explicit-profile-rescue-import-20260620",
+  "sourceCommit": "633bdfc09243c292d7b7b228df0aff335e8f5e48",
+  "packagedBuild": {
+    "version": "v2026-06-20_09-03-33",
+    "gitSha": "633bdfc",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "fff272193067cc1915ab20216063ab3d201df8cd36ecc0514ebb510eb92a3f21",
+    "fileCount": 336,
+    "totalBytes": 879558629
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23833232",
+    "depotManifest": "5050694905640380306",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssigned": false,
+    "sectorContinueTestAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appBuildVdf": "release/steamworks/app_build_LOCAL.vdf",
+    "uploadLog": "test-results/steam-upload-p0-explicit-profile-rescue-20260620/steamcmd-upload.log",
+    "resultLine": "[2026-06-20 09:38:36]: Successfully finished AppID 4765070 build (BuildID 23833232)."
+  },
+  "vdfVerification": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveBlank": true,
+    "containsPublicDefaultBranch": false,
+    "containsSectorContinueTestBranch": false,
+    "containsAnyBranchAssignment": false
+  },
+  "checks": [
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "artifact": "test-results/packaged-exe-smoke-2026-06-20T07-30-21-270Z/report.json" },
+    { "command": "npm run desktop:smoke:current", "status": "passed", "artifact": "test-results/electron-smoke-2026-06-20T07-31-21-152Z/report.json" },
+    { "command": "npm run desktop:perf:current", "status": "passed", "artifact": "test-results/electron-perf-smoke-2026-06-20T07-31-31-357Z/report.json" },
+    { "command": "npm run smoke", "status": "passed", "artifact": "test-results/smoke-2026-06-20T07-32-53-731Z/report.json" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "npm run steamworks:write-vdf", "status": "passed" }
+  ],
+  "notes": [
+    "Packaged smoke was rerun successfully after closing the Steam client, so the packaged app was tested in outside-Steam local fallback mode.",
+    "Current Electron smoke separately proved the Steam bridge ready for AppID 4765070, SteamID 76561198953993508, and leaderboard nova_swarm_global_score_v2.",
+    "A prior packaged smoke attempt while the Steam client was running outside Steam timed out during Steamworks-enabled load; no upload was attempted until the clean packaged fallback smoke, current Steam bridge smoke, current perf smoke, and browser smoke passed.",
+    "No Steam branch was assigned. The user must manually assign BuildID 23833232 in Steamworks if desired."
+  ],
+  "manualSteamworksTestSteps": [
+    "Find BuildID 23833232 under Steamworks App Admin > SteamPipe > Builds for AppID 4765070.",
+    "Leave it unassigned unless intentionally selecting it for a private test branch.",
+    "Install that BuildID in the Steam client.",
+    "Launch Nova Swarm and confirm build v2026-06-20_09-03-33 and gitSha 633bdfc in diagnostics/smoke text.",
+    "Run the explicit profile rescue dry-run, review the audit, then apply only after confirming source steam-76561198692310517 and target steam-76561198953993508."
+  ],
+  "rollback": {
+    "source": "git switch codex/p0-progress-reset-save-migration-20260619",
+    "steam": "No Steam rollback is required while BuildID 23833232 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+  }
+}

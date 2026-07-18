@@ -1,0 +1,78 @@
+{
+  "upload": {
+    "purpose": "Sector Start Challenge polish private Steam upload",
+    "branch": "feature/sector-continue-prototype-v1",
+    "commit": "0fc4ba8ebfbbf4dfcface07f616135a8bd5999b8",
+    "steamAppId": "4765070",
+    "windowsDepotId": "4765071",
+    "buildId": "23628976",
+    "setLive": "",
+    "setLiveStatus": "blank; build was uploaded privately and not set live",
+    "steamworksSettingsChanged": false,
+    "steamcmdUser": "gaunziman",
+    "steamcmdPath": "C:\\steamcmd\\steamcmd.exe",
+    "steamcmdCompletedAtLocal": "2026-06-08 22:00:29 Europe/Oslo"
+  },
+  "package": {
+    "version": "v2026-06-08_21-55-59",
+    "timestamp": "2026-06-08T19:55:59.893Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 724421564,
+    "payloadManifestHash": "554a1d96f9af5ea5688aead9fcaec8a6c8170e72d78fa579307caaf9bc25129f",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "ee04c61d3a9ab026a1bb9b8f3701b21ce25a9e6bbe7aa73af1034cbbfc8b9cd6"
+    }
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Sector Start Challenge polish 0fc4ba8",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": ""
+  },
+  "verification": {
+    "preflight": [
+      "git fetch --all --prune",
+      "git status --short --branch",
+      "git branch --show-current",
+      "git log -1 --oneline",
+      "git worktree list --porcelain"
+    ],
+    "checksRun": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' STEAM_BUILD_DESC='Sector Start Challenge polish 0fc4ba8' npm run steamworks:write-vdf",
+      "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "packageRuntime": {
+      "status": "passed",
+      "appId": "4765070",
+      "leaderboard": "nova_swarm_global_score_v2",
+      "report": "test-results/steam-package-runtime-2026-06-08T19-59-22-098Z/report.json"
+    },
+    "packagedSmoke": {
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-08T19-58-57-283Z/report.json",
+      "gitSha": "0fc4ba8",
+      "build": "v2026-06-08_21-55-59"
+    },
+    "steamcmdResult": "Successfully finished AppID 4765070 build (BuildID 23628976)."
+  },
+  "boundaries": {
+    "deployedLive": false,
+    "setLiveBlank": true,
+    "steamworksSettingsChanged": false,
+    "defaultBranchChanged": false,
+    "testBuildBranchChanged": false,
+    "mainLeaderboardChanged": false,
+    "mainLeaderboardName": "nova_swarm_global_score_v2",
+    "releaseReposTouched": false,
+    "steamTagsMoved": false
+  }
+}

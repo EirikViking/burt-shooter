@@ -1,0 +1,29 @@
+{
+  "purpose": "Private Steam build upload after resume fix pass",
+  "branch": "codex/hard-achievements-20260612",
+  "gitSha": "8c830d8",
+  "packageVersion": "v2026-06-13_19-46-50",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "leaderboard": "nova_swarm_global_score_v2",
+  "setLive": "",
+  "steamBuildId": 23726374,
+  "uploadedAtLocal": "2026-06-14 15:16:33 +02:00",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm Windows release candidate",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "path": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+    "resultLine": "Successfully finished AppID 4765070 build (BuildID 23726374).",
+    "command": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "verification": [
+    "npm run check:release-line",
+    "npm run build:current",
+    "npm run package:steam:win:current",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 npm run steamworks:write-vdf",
+    "steamcmd private upload with SetLive \"\""
+  ]
+}

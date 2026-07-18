@@ -1,0 +1,98 @@
+{
+  "generatedAt": "2026-07-16T07:12:43.6403064Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24234529",
+  "depotManifestId": "6554196712868931758",
+  "sourceCommit": "8ccc0b7756af316dff61852645ba24867c00e44b",
+  "sourceBranch": "codex/competition-retention-20260716",
+  "sourceBaseline": "bc20ea17ff9576e9e50b24a60437f11b27e087b7",
+  "authoritativeLockTag": "nova-swarm-lock-20260716-combat-continuity",
+  "authoritativeLockCommit": "bc20ea17ff9576e9e50b24a60437f11b27e087b7",
+  "buildStamp": "v2026-07-16_08-34-41",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24232499",
+  "rollbackBuildId": "24232499",
+  "publicBuildIdBefore": "24218172",
+  "publicBuildIdAfter": "24218172",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "76879fce60bf0e538abc0d3b60a5d025795105aa506409d666a7efcfa55852f5",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "05671708e86c967acfed49e96c3a4d959ddf470ae6aff215e60e1cf338b2d624",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "7208cc0f5275309e83d448e128e13acb7a5e575a862af00229becdd6767d1e6a",
+  "payload": {
+    "fileCount": 417,
+    "totalBytes": 957586120,
+    "manifestHash": "8f807682b9685645b5c6e30942b6d3afc097e3880acdc66d4f26b4ed0ff124b8",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "740788d1a1b3b22f37ab044e0bb337cd27107f12dc79bea9e5b86fe6a31b6750"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-16 09:04:46]: Successfully finished AppID 4765070 build (BuildID 24234529).",
+    "consoleLogPath": "release/steamworks/steam_upload_console_named_rival_ladder_20260716.log",
+    "consoleLogSha256": "dd6a36260c60202d58e1acb4eb296ed02ac091e11a7de7d766c619be25ae45a4",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "44d432919dd381552e38771dc16b864275fe06e68fd5b09222791ed557bd312a",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "6c839fd16b1716e743b6a393dffa1c46a424af82fce631353f0b6986b4821203",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print before and after upload",
+    "testBranchBuildId": "24234529",
+    "testBranchDepotGid": "6554196712868931758",
+    "testBranchSize": 957586120,
+    "publicBuildId": "24218172",
+    "publicDepotGid": "8091511179624093249",
+    "publicUnchanged": true
+  },
+  "verification": {
+    "sourcePreflight": "passed: fetched, isolated worktree, branch, authoritative tag ancestry, and tracked-clean baseline verified before edits",
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload",
+    "rivalProjection": "passed: empty board, unsorted entries, ties, current-player exclusion, full top-40 gate, exact next rival, and projected number one",
+    "localization": "passed: check:i18n, build:current, and all-eight-language check:i18n-ui; no new untranslated fallback",
+    "visualAndFlow": "passed: target handoff, score non-overlap, viewport bounds, pass flash, projected number one, and exact Game Over next goal",
+    "leaderboardIntegrity": "passed: live read-only nova_swarm_global_score_v2 probe opened 80 entries, read Global and Friends, and submitted no score",
+    "packagedRuntimeGate": "passed: test-results/steam-package-runtime-2026-07-16T06-58-44-036Z/report.json",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T06-40-10-708Z/report.json; Steam native bridge, achievements, Cloud, and nova_swarm_global_score_v2 ready",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T06-41-23-524Z/report.json",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T06-42-04-860Z/report.json",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-16T06-43-08-957Z/report.json; 59.52 minimum and 60.05 average FPS, zero warnings or errors",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-16T06-45-32-447Z/report.json; Steam leaderboard and achievements ready",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports match v2026-07-16_08-34-41",
+    "vdfSetLiveTestBranch": "passed: exact SetLive sector-continue-test; public/default targets absent"
+  },
+  "includedImprovementGroups": [
+    "personal-best card hands off to an honest mode-correct global rival snapshot",
+    "top-40 gate, named next rival, exact one-point tie-breaking gap, and projected-number-one states",
+    "compact in-panel rival-pass sweep and existing high-score chime",
+    "exact named rival or top-40 gate goal on Game Over",
+    "all-eight-language copy and automated visual bounds coverage"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The generic develop-web-game client is unavailable because chromium_headless_shell-1208 is missing; installed-Chrome and Electron suites passed.",
+    "The Electron no-submit wrapper produced a successful read-only report but did not terminate before its 90-second launcher timeout; the direct Steam bridge no-submit probe then passed cleanly with the same leaderboard and no write."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, saves, Steam Cloud settings, and existing scores were not changed.",
+    "Test-branch rollback target is BuildID 24232499.",
+    "Source rollback is: git revert 8ccc0b7756af316dff61852645ba24867c00e44b"
+  ]
+}

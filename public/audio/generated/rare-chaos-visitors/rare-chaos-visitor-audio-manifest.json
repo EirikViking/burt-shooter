@@ -1,0 +1,196 @@
+{
+  "feature": "Rare Chaos Visitors",
+  "generatedAt": "2026-07-14T11:14:57.291Z",
+  "legalNote": "Original generated development assets. No celebrity, song, film, broadcast, or third-party recording was requested or used.",
+  "outputFormat": "mp3_44100_128",
+  "voice": {
+    "name": "Misfit Galaxy Male - Boss Agony - Chaos Visitor Announcer",
+    "voiceId": "YO6HUzlgJ0HQvmYejW5c",
+    "modelId": "eleven_v3"
+  },
+  "sfx": {
+    "modelId": "eleven_text_to_sound_v2"
+  },
+  "files": [
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_arrival.mp3",
+      "duration_seconds": 3.2,
+      "text": "Terrifying extinction-class spacecraft arrival: subsonic pressure wave, distant metal distress siren, reversed reactor breath, three slow seismic impacts, corrupted radio tail, no voice, original cinematic science-fiction horror sound.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_arrival.mp3",
+      "bytes": 52288,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_theme_sting.mp3",
+      "duration_seconds": 9,
+      "text": "Original nine-second cosmic horror mini-boss sting: very low brass clusters, bowed metal groans, irregular war drums, pulsing reactor heartbeat, rising impossible choir texture without words, catastrophic final impact, no recognizable melody.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_theme_sting.mp3",
+      "bytes": 145075,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_laser_charge.mp3",
+      "duration_seconds": 1.6,
+      "text": "Lethal alien extinction beam charging: deep magnetic hum, accelerating electrical scream, precise three-step warning pulse, readable arcade telegraph, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_laser_charge.mp3",
+      "bytes": 26793,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_laser_fire.mp3",
+      "duration_seconds": 1,
+      "text": "Enormous alien beam discharge: airless vacuum crack, violent plasma rupture, deep hull-shaking impact and short black-hole tail, powerful but not painfully harsh.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_laser_fire.mp3",
+      "bytes": 17180,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_barrage.mp3",
+      "duration_seconds": 1,
+      "text": "Dense coordinated alien weapon barrage: rapid heavy cannon sequence with predatory rhythm, metallic recoil and distant impact wash, frightening polished arcade combat sound, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_barrage.mp3",
+      "bytes": 17180,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_armor_crack.mp3",
+      "duration_seconds": 1.4,
+      "text": "Ancient hostile armor seal rupturing: stressed metal scream, glass-black energy shell fracture, low creature-like reactor inhale, ominous escalation hit, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_armor_crack.mp3",
+      "bytes": 23031,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_defeat.mp3",
+      "duration_seconds": 3.4,
+      "text": "Catastrophic extinction vessel destruction: imploding reactor, layered hull collapse, enormous vacuum shockwave, danger siren dying in pitch, then one clean victorious impact, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_defeat.mp3",
+      "bytes": 55632,
+      "skipped": false
+    },
+    {
+      "kind": "sfx",
+      "file": "nova_rare_visitor_reward.mp3",
+      "duration_seconds": 2,
+      "text": "Rare forbidden technology reward reveal: dark energy bloom resolving into a clear premium arcade reward chord, crystalline fragments, relieved upward shimmer, no voice.",
+      "path": "public/audio/sfx/nova-swarm/nova_rare_visitor_reward.mp3",
+      "bytes": 33062,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_01.mp3",
+      "text": "Rare contact. Extinction signature confirmed.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Rare contact. Extinction signature confirmed.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_01.mp3",
+      "bytes": 123759,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_02.mp3",
+      "text": "Do not chase it. Do not let it face you.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Do not chase it. Do not let it face you.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_02.mp3",
+      "bytes": 121252,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_03.mp3",
+      "text": "Unknown vessel. Every weapon system is awake.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Unknown vessel. Every weapon system is awake.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_03.mp3",
+      "bytes": 109967,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_04.mp3",
+      "text": "Pilot, this contact has erased entire sectors.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Pilot, this contact has erased entire sectors.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_04.mp3",
+      "bytes": 118744,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_05.mp3",
+      "text": "The signal is inside our warning channel.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] The signal is inside our warning channel.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_05.mp3",
+      "bytes": 106205,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_06.mp3",
+      "text": "Three armor seals. Each one contains something worse.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Three armor seals. Each one contains something worse.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_06.mp3",
+      "bytes": 152181,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_07.mp3",
+      "text": "It is counting your shots. Break line of fire.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] It is counting your shots. Break line of fire.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_07.mp3",
+      "bytes": 70261,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_08.mp3",
+      "text": "Rare contact inbound. Survive the escalation.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Rare contact inbound. Survive the escalation.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_08.mp3",
+      "bytes": 127939,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_09.mp3",
+      "text": "No registry. No crew. Only the weapons answered.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] No registry. No crew. Only the weapons answered.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_09.mp3",
+      "bytes": 86979,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_10.mp3",
+      "text": "The hull is opening. Pilot, move now.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] The hull is opening. Pilot, move now.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_10.mp3",
+      "bytes": 71515,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_11.mp3",
+      "text": "Final phase approaching. Do not stop firing.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Final phase approaching. Do not stop firing.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_11.mp3",
+      "bytes": 80292,
+      "skipped": false
+    },
+    {
+      "kind": "voice",
+      "file": "boss_rare_chaos_visitor_warning_12.mp3",
+      "text": "Extinction contact. This is not a drill.",
+      "generationText": "[deep restrained military emergency announcer, slow and intimate, controlled terror, ominous pauses, no comedy, cinematic science-fiction dread] Extinction contact. This is not a drill.",
+      "path": "public/audio/voice/rare-chaos-visitors/boss_rare_chaos_visitor_warning_12.mp3",
+      "bytes": 109967,
+      "skipped": false
+    }
+  ]
+}

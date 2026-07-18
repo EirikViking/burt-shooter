@@ -43,15 +43,15 @@ function assertRequirementsUseSupportedKeys(entry) {
   }
 }
 
-assert.equal(ships.length, 25, 'ship roster should stay at 25 ships');
-assert.equal(ShipUnlockConfig.length, 25, 'ship unlock config should cover all 25 ships');
+assert.equal(ships.length, 30, 'ship roster should include 30 ships');
+assert.equal(ShipUnlockConfig.length, 30, 'ship unlock config should cover all 30 ships');
 ShipUnlockConfig.forEach(assertRequirementsUseSupportedKeys);
 
 const legacyLevels = ShipUnlockConfig.map((entry) => Number(entry.legacyLevel));
 assert.deepEqual(legacyLevels, [
   1, 2, 3, 4, 5, 7, 9, 11, 14, 17,
   20, 23, 26, 29, 32, 35, 38, 41, 44, 47,
-  50, 53, 56, 58, 60
+  50, 53, 56, 58, 60, 30, 35, 40, 45, 50
 ], 'legacy level mapping should remain stable for save migration');
 
 const fresh = createDefaultHangarProgress();
@@ -100,46 +100,87 @@ assert(migratedFastProfile.unlockedShipIds.length <= 3, `old over-fast profile s
 
 const midCareer = unlockedFor({
   totalRuns: 10,
-  bestSector: 8,
+  bestSector: 12,
   bestScore: 175000,
-  pilotRank: 8,
+  pilotRank: 9,
   totalBossesDefeated: 18,
   totalWavesCleared: 45,
   totalCodexDiscoveries: 75,
   survivedSeconds: 900,
-  noHitWaves: 1
+  noHitWaves: 1,
+  runClears: 1
 });
-assert(midCareer.length >= 16 && midCareer.length < 23, `mid-career profile should unlock a broad but incomplete hangar, got ${midCareer.length}`);
-['nova_ship_11', 'nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_17'].forEach((shipId) => {
-  assert(midCareer.includes(shipId), `mid-career profile should unlock ${shipId}`);
+assert(midCareer.length >= 10 && midCareer.length <= 12, `rank-9 sector-12 profile should unlock roughly 10-12 ships, got ${midCareer.length}`);
+['nova_ship_08', 'nova_ship_09', 'nova_ship_11', 'nova_ship_17'].forEach((shipId) => {
+  assert(midCareer.includes(shipId), `rank-9 sector-12 profile should unlock ${shipId}`);
+});
+['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
+  assert(!midCareer.includes(shipId), `rank-9 sector-12 profile should not already unlock ${shipId}`);
+});
+
+const eirikRetuneProfile = unlockedFor({
+  totalRuns: 10,
+  bestSector: 12,
+  bestScore: 58273,
+  pilotRank: 10,
+  totalBossesDefeated: 18,
+  totalWavesCleared: 60,
+  totalCodexDiscoveries: 118,
+  survivedSeconds: 900,
+  noHitWaves: 3,
+  runClears: 1,
+  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse']
+});
+assert(eirikRetuneProfile.length >= 10 && eirikRetuneProfile.length <= 12, `rank-10 codex-118 profile should unlock about 10-12 ships, got ${eirikRetuneProfile.length}`);
+['nova_ship_14', 'nova_ship_16', 'nova_ship_19', 'nova_ship_22', 'nova_ship_23'].forEach((shipId) => {
+  assert(!eirikRetuneProfile.includes(shipId), `rank-10 codex-118 profile should not already unlock ${shipId}`);
+});
+
+const lateCareer = unlockedFor({
+  totalRuns: 28,
+  bestSector: 16,
+  bestScore: 300000,
+  pilotRank: 14,
+  totalBossesDefeated: 35,
+  totalWavesCleared: 120,
+  totalCodexDiscoveries: 160,
+  survivedSeconds: 1500,
+  noHitWaves: 8,
+  runClears: 3,
+  runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine']
+});
+assert(lateCareer.length >= 20 && lateCareer.length < 30, `late-career profile should feel rich but not complete, got ${lateCareer.length}`);
+['nova_ship_12', 'nova_ship_14', 'nova_ship_16', 'nova_ship_21', 'nova_ship_23'].forEach((shipId) => {
+  assert(lateCareer.includes(shipId), `late-career profile should unlock ${shipId}`);
 });
 
 const mastery = unlockedFor({
   totalRuns: 50,
-  bestSector: 10,
+  bestSector: 50,
   bestScore: 550000,
   pilotRank: MAX_RANK_INDEX,
   totalBossesDefeated: 40,
   totalWavesCleared: 160,
-  totalCodexDiscoveries: 145,
-  runClears: 1,
-  noHitWaves: 5,
+  totalCodexDiscoveries: 180,
+  runClears: 3,
+  noHitWaves: 8,
   noHitSectors: 1,
   survivedSeconds: 1800,
   runThemesSurvived: ['swarm_lattice', 'hunter_wing', 'minefield_protocol', 'orbit_collapse', 'crossfire_doctrine', 'glitch_parade'],
   clearWithLivesRemaining: 2,
   highestScoreMultiplier: 2
 });
-assert.equal(mastery.length, 25, `mastery profile should complete the hangar, got ${mastery.length}`);
+assert.equal(mastery.length, 30, `mastery profile should complete the hangar, got ${mastery.length}`);
 
 assert.equal(getRankFromPilotXp(0), 0, '0 pilot XP should be Cadet');
 assert.equal(getRankTitle(getRankFromPilotXp(0)), 'Cadet');
 assert.equal(getRankFromPilotXp(pilotXpThresholds[6]), 6, 'rank 6 should be reachable from pilot XP thresholds');
 assert.equal(getRankTitle(getRankFromPilotXp(pilotXpThresholds[6])), 'Combo Courier');
 assert.equal(getRankFromPilotXp(pilotXpThresholds.at(-1)), MAX_RANK_INDEX, 'top pilot XP threshold should award max rank');
-assert.equal(getRankTitle(MAX_RANK_INDEX), 'Arcade Legend');
+assert.equal(getRankTitle(19), 'Arcade Legend');
+assert.equal(getRankTitle(MAX_RANK_INDEX), 'Heat-Death Champion');
 for (let index = 1; index < pilotXpThresholds.length; index += 1) {
   assert(pilotXpThresholds[index] > pilotXpThresholds[index - 1], `pilot XP threshold ${index} should increase`);
 }
 
-console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} midCareer=${midCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);
+console.log(`[unlock-rank-pacing] PASS fresh=1 firstSession=${firstSession.length} rank9=${midCareer.length} rank10Codex118=${eirikRetuneProfile.length} lateCareer=${lateCareer.length} mastery=${mastery.length} topRank=${getRankTitle(MAX_RANK_INDEX)}`);

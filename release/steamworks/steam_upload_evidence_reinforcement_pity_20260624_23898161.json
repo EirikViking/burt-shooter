@@ -1,0 +1,63 @@
+{
+  "task": "mayhem reinforcement visibility tuning",
+  "uploadedAt": "2026-06-24T19:42:14+02:00",
+  "branch": "codex/reinforcement-pity-tuning-20260624",
+  "sourceCommit": "22dbdded6dddee0a498fb97be89aaaed79db8a1a",
+  "build": {
+    "version": "v2026-06-24_19-30-54",
+    "packagedGitSha": "22dbdde",
+    "packagedGitShaProof": "test-results/packaged-exe-smoke-2026-06-24T17-38-50-554Z/report.json"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "buildId": "23898161",
+    "branchAssignment": "none",
+    "uploadLog": "test-results/steam-upload-reinforcement-pity-20260624-194012/steamcmd-upload.log",
+    "successLine": "[2026-06-24 19:42:14]: Successfully finished AppID 4765070 build (BuildID 23898161)."
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 893258343,
+    "manifestHash": "c4f7c84e08d7f70b801027c65582256e58b96e5de74588204bdafb7775682753",
+    "manifestFileSha256": "c5197b9172d617f7f9219eb953a6d4c288d875a134354caf7df74d273558b932",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "checks": {
+    "focusedReinforcement": "passed",
+    "reinforcementVoices": "passed",
+    "releaseLine": "passed",
+    "gitDiffCheck": "passed",
+    "nodeSyntaxCheck": "passed",
+    "bundleBuild": "passed via Vite JS API with explicit build id and public asset sync",
+    "packageSteamWinCurrent": "passed",
+    "steamPackageRuntime": {
+      "status": "passed",
+      "report": "test-results/steam-package-runtime-2026-06-24T17-38-41-416Z/report.json"
+    },
+    "packagedSmoke": {
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-24T17-38-50-554Z/report.json"
+    }
+  },
+  "guardrails": {
+    "setLiveBlank": true,
+    "publicBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudChanged": false,
+    "saveFormatChanged": false,
+    "projectileOrEnemyStatsChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false
+  },
+  "rollback": {
+    "source": "git revert 22dbdded6dddee0a498fb97be89aaaed79db8a1a",
+    "steam": "Do not assign BuildID 23898161, or reassign the private test branch back to the previous desired BuildID."
+  }
+}

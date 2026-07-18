@@ -1,3 +1,44 @@
+import { readLeaderboardLevel } from './leaderboard/LeaderboardTypes.js';
+import {
+  SECTOR_START_CHALLENGE_RECORDS_KEY,
+  isBetterSectorStartChallengeRecord,
+  normalizeSectorStartChallengeRecord
+} from './progression/SectorStartChallengeRecords.js';
+import {
+  SCOUT_RUN_RECORDS_KEY,
+  isBetterScoutRunRecord,
+  normalizeScoutRunRecord
+} from './progression/ScoutRunRecords.js';
+import {
+  DISPLAY_MODE_KEY,
+  DISPLAY_WINDOW_SIZE_KEY,
+  UI_SCALE_KEY,
+  getDisplaySettings,
+  normalizeDisplaySettings,
+  normalizeUiScale
+} from './config/DisplaySettings.js';
+import {
+  CONFIRM_EXIT_KEY,
+  SHOW_PILOT_ORDERS_KEY,
+  getMenuSettings,
+  normalizeConfirmExit,
+  normalizeShowPilotOrders
+} from './config/MenuSettings.js';
+import {
+  getCodexDiscoverySignature,
+  invalidateThreatDiscoveryStateCache
+} from './progression/ThreatDiscoveryState.js';
+import {
+  SHIP_UNLOCK_HISTORY_REASON_KEYS,
+  normalizeShipUnlockHistory,
+  recalculateUnlockedShipIds
+} from './progression/HangarProgressState.js';
+import { mergeRunContractsState } from './progression/RunContracts.js';
+import { mergeShipMasteryMaps } from './progression/ShipMastery.js';
+import { getPilotXpThreshold } from './shared/RankPolicy.js';
+
+export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
+
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
 export const CLOUD_ACHIEVEMENT_KEY = 'nova_swarm_achievements_v1';
@@ -5,6 +46,10 @@ export const CLOUD_SELECTED_SHIP_KEY = 'burt.selectedShip.v1';
 export const CLOUD_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
 export const CLOUD_HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const CLOUD_THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
+export const CLOUD_SHIP_USAGE_KEY = 'burt.shipUsage.v1';
+export const CLOUD_SHIP_USAGE_TOTAL_KEY = 'burt.shipUsageTotal.v1';
+export const CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY = SECTOR_START_CHALLENGE_RECORDS_KEY;
+export const CLOUD_SCOUT_RUN_RECORDS_KEY = SCOUT_RUN_RECORDS_KEY;
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -16,6 +61,7 @@ const AUDIO_KEYS = Object.freeze({
   voiceVolume: 'burt_volume_voice',
   musicEnabled: 'burt_music_enabled',
   voiceEnabled: 'burt_voice_enabled',
+  bossVoiceEnabled: 'burt_boss_voice_enabled',
   ctaVoiceEnabled: 'burt_cta_voice_enabled',
   musicPack: 'burt_music_pack'
 });
@@ -79,9 +125,9 @@ function normalizeLanguagePreference(value) {
 function normalizeScoreEntry(entry = {}, fallbackIndex = 0) {
   if (!entry || typeof entry !== 'object') return null;
   const score = Math.max(0, Math.floor(Number(entry.score) || 0));
-  const level = Math.max(1, Math.floor(Number(entry.level) || 1));
+  const level = readLeaderboardLevel(entry, 1);
   const rawRankIndex = Number(entry.rankIndex ?? entry.rank_index);
-  const rankIndex = Math.max(0, Math.min(19, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
+  const rankIndex = Math.max(0, Math.min(39, Number.isFinite(rawRankIndex) ? Math.floor(rawRankIndex) : 0));
   const name = String(entry.name || `PILOT${String(fallbackIndex).slice(-2).padStart(2, '0')}`)
     .toUpperCase()
     .replace(/[^A-Z0-9 ]/g, '')
@@ -172,6 +218,60 @@ function mergeArrayUnique(local, cloud, key) {
   ].map(String).filter(Boolean))];
 }
 
+function normalizeUsageMap(rawUsage = {}) {
+  if (!rawUsage || typeof rawUsage !== 'object' || Array.isArray(rawUsage)) return {};
+  const usage = {};
+  for (const [rawKey, rawValue] of Object.entries(rawUsage)) {
+    const key = String(rawKey || '').trim().slice(0, 160);
+    const value = Math.max(0, Math.floor(Number(rawValue) || 0));
+    if (!key || value <= 0) continue;
+    usage[key] = Math.max(usage[key] || 0, value);
+  }
+  return usage;
+}
+
+function sumUsageMap(usage = {}) {
+  return Object.values(normalizeUsageMap(usage))
+    .reduce((total, value) => total + value, 0);
+}
+
+function mergeShipUsage(localUsage = {}, cloudUsage = {}) {
+  const local = normalizeUsageMap(localUsage);
+  const cloud = normalizeUsageMap(cloudUsage);
+  const keys = [...new Set([...Object.keys(local), ...Object.keys(cloud)])];
+  return Object.fromEntries(keys
+    .map((key) => [key, Math.max(local[key] || 0, cloud[key] || 0)])
+    .filter(([, value]) => value > 0));
+}
+
+function chooseShipUnlockHistoryEntry(localEntry = null, cloudEntry = null) {
+  const localSpecific = localEntry && ![
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown
+  ].includes(localEntry.reasonKey);
+  const cloudSpecific = cloudEntry && ![
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy,
+    SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown
+  ].includes(cloudEntry.reasonKey);
+  if (localSpecific && !cloudSpecific) return localEntry;
+  if (cloudSpecific && !localSpecific) return cloudEntry;
+  if (localEntry && cloudEntry) {
+    const localTime = Date.parse(localEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    const cloudTime = Date.parse(cloudEntry.unlockedAt || '') || Number.POSITIVE_INFINITY;
+    return localTime <= cloudTime ? localEntry : cloudEntry;
+  }
+  return localEntry || cloudEntry || null;
+}
+
+function mergeShipUnlockHistory(localHistory = {}, cloudHistory = {}) {
+  const local = normalizeShipUnlockHistory(localHistory);
+  const cloud = normalizeShipUnlockHistory(cloudHistory);
+  const ids = [...new Set([...Object.keys(local), ...Object.keys(cloud)])];
+  return Object.fromEntries(ids
+    .map((shipId) => [shipId, chooseShipUnlockHistoryEntry(local[shipId], cloud[shipId])])
+    .filter(([, entry]) => entry));
+}
+
 function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
   const local = localProgress && typeof localProgress === 'object' ? localProgress : {};
   const cloud = cloudProgress && typeof cloudProgress === 'object' ? cloudProgress : {};
@@ -183,8 +283,14 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     highestPilotRank: mergeNumberMax(local, cloud, 'highestPilotRank'),
     totalRuns: mergeNumberMax(local, cloud, 'totalRuns'),
     bestScore: mergeNumberMax(local, cloud, 'bestScore'),
-    bestSector: mergeNumberMax(local, cloud, 'bestSector', 1),
-    bestLevel: mergeNumberMax(local, cloud, 'bestLevel', 1),
+    bestSector: Math.max(
+      mergeNumberMax(local, cloud, 'bestSector', 1),
+      mergeNumberMax(local, cloud, 'bestLevel', 1)
+    ),
+    bestLevel: Math.max(
+      mergeNumberMax(local, cloud, 'bestLevel', 1),
+      mergeNumberMax(local, cloud, 'bestSector', 1)
+    ),
     bestRank: mergeNumberMax(local, cloud, 'bestRank'),
     bestRunTimeSeconds: mergeNumberMax(local, cloud, 'bestRunTimeSeconds'),
     survivedSeconds: mergeNumberMax(local, cloud, 'survivedSeconds'),
@@ -196,12 +302,391 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     noHitSectors: mergeNumberMax(local, cloud, 'noHitSectors'),
     clearWithLivesRemaining: mergeNumberMax(local, cloud, 'clearWithLivesRemaining'),
     highestScoreMultiplier: Math.max(Number(local.highestScoreMultiplier) || 1, Number(cloud.highestScoreMultiplier) || 1),
+    shipSpecificMilestones: mergeShipMasteryMaps(local.shipSpecificMilestones, cloud.shipSpecificMilestones),
     discoveredThreatIds: mergeArrayUnique(local, cloud, 'discoveredThreatIds'),
     defeatedBossIds: mergeArrayUnique(local, cloud, 'defeatedBossIds'),
     runThemesSurvived: mergeArrayUnique(local, cloud, 'runThemesSurvived'),
     unlockedShipIds: mergeArrayUnique(local, cloud, 'unlockedShipIds'),
+    shipUnlockHistory: mergeShipUnlockHistory(local.shipUnlockHistory, cloud.shipUnlockHistory),
+    runContracts: mergeRunContractsState(local.runContracts, cloud.runContracts),
     lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : []
   };
+}
+
+function countThreatDiscoveryItems(discovery = {}) {
+  const items = discovery?.items && typeof discovery.items === 'object' ? discovery.items : {};
+  return Object.values(items)
+    .reduce((sum, bucket) => sum + (bucket && typeof bucket === 'object' ? Object.keys(bucket).length : 0), 0);
+}
+
+function getThreatDiscoveryIds(discovery = {}) {
+  const items = discovery?.items && typeof discovery.items === 'object' ? discovery.items : {};
+  return Object.values(items)
+    .flatMap((bucket) => (bucket && typeof bucket === 'object' ? Object.keys(bucket) : []))
+    .map(String)
+    .filter(Boolean);
+}
+
+function getHighestDiscoveredSector(discovery = {}) {
+  const sectors = discovery?.items?.sectors && typeof discovery.items.sectors === 'object' ? discovery.items.sectors : {};
+  return Object.keys(sectors)
+    .map((id) => Number(String(id).match(/^sector_(\d{3,})$/)?.[1] || 0))
+    .filter(Number.isFinite)
+    .reduce((max, sector) => Math.max(max, Math.floor(sector)), 0);
+}
+
+function getHighestDiscoveredPilotRank(discovery = {}) {
+  const ranks = discovery?.items?.pilotRanks && typeof discovery.items.pilotRanks === 'object' ? discovery.items.pilotRanks : {};
+  return Object.keys(ranks)
+    .map((id) => Number(String(id).match(/^pilot_rank_(\d{2,})$/)?.[1] ?? -1))
+    .filter(Number.isFinite)
+    .reduce((max, rank) => Math.max(max, Math.floor(rank)), -1);
+}
+
+function rankedRunEvidenceFromScores(scores = []) {
+  const normalized = normalizeScores(scores);
+  const evidence = {
+    runCount: normalized.length,
+    bestScore: 0,
+    bestLevel: 1,
+    bestBosses: 0,
+    bestWaves: 0,
+    bestRunTimeSeconds: 0,
+    runClears: 0,
+    noHitWaves: 0,
+    noHitSectors: 0,
+    clearWithLivesRemaining: 0,
+    highestScoreMultiplier: 1
+  };
+  for (const entry of normalized) {
+    evidence.bestScore = Math.max(evidence.bestScore, Math.floor(Number(entry.score) || 0));
+    evidence.bestLevel = Math.max(evidence.bestLevel, readLeaderboardLevel(entry, 1));
+    evidence.bestBosses = Math.max(
+      evidence.bestBosses,
+      Math.floor(Number(entry.bossKills ?? entry.bossesKilled) || 0)
+    );
+    evidence.bestWaves = Math.max(evidence.bestWaves, Math.floor(Number(entry.wavesCleared) || 0));
+    evidence.bestRunTimeSeconds = Math.max(
+      evidence.bestRunTimeSeconds,
+      Math.floor(Number(entry.runTimeSeconds ?? entry.runElapsedSeconds) || 0)
+    );
+    evidence.noHitWaves = Math.max(evidence.noHitWaves, Math.floor(Number(entry.noHitWaves) || 0));
+    evidence.noHitSectors = Math.max(evidence.noHitSectors, Math.floor(Number(entry.noHitSectors) || 0));
+    evidence.clearWithLivesRemaining = Math.max(
+      evidence.clearWithLivesRemaining,
+      Math.floor(Number(entry.clearWithLivesRemaining ?? entry.livesRemaining) || 0)
+    );
+    evidence.highestScoreMultiplier = Math.max(
+      evidence.highestScoreMultiplier,
+      Number(entry.highestScoreMultiplier) || 1
+    );
+    if (entry.runCleared === true) evidence.runClears += 1;
+  }
+  return evidence;
+}
+
+function shipIdFromAny(value) {
+  const text = String(value || '').trim();
+  if (/^nova_ship_\d{2}$/i.test(text)) return text.toLowerCase();
+  const match = text.match(/nova-player-ship-(\d{1,2})/i);
+  return match ? `nova_ship_${String(Number(match[1])).padStart(2, '0')}` : null;
+}
+
+function collectEvidencedShipIds({
+  selectedShipKey = null,
+  localHighscores = [],
+  sectorStartChallengeRecords = {},
+  scoutRunRecords = {},
+  shipUsage = {}
+} = {}) {
+  const ids = new Set();
+  const add = (value) => {
+    const id = shipIdFromAny(value);
+    if (id) ids.add(id);
+  };
+  add(selectedShipKey);
+  for (const entry of normalizeScores(localHighscores)) {
+    add(entry.shipId);
+    add(entry.selectedShipSpriteKey);
+    add(entry.shipKey);
+  }
+  for (const record of Object.values(normalizeSectorStartChallengeRecordsPayload(sectorStartChallengeRecords).byCheckpoint || {})) {
+    add(record.shipId);
+    add(record.selectedShipSpriteKey);
+  }
+  const scoutBest = normalizeScoutRunRecordsPayload(scoutRunRecords).best;
+  if (scoutBest) {
+    add(scoutBest.shipId);
+    add(scoutBest.selectedShipSpriteKey);
+  }
+  for (const key of Object.keys(normalizeUsageMap(shipUsage))) add(key);
+  return [...ids];
+}
+
+function shouldApplyCodexHangarRescue(progress = {}, discovery = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  const discoveryCount = countThreatDiscoveryItems(discovery);
+  const highestSector = getHighestDiscoveredSector(discovery);
+  const highestRank = getHighestDiscoveredPilotRank(discovery);
+  if (discoveryCount < 50 || highestSector < 10 || highestRank < 4) return false;
+  const baseCodex = Math.floor(Number(base.totalCodexDiscoveries) || 0);
+  const baseSector = Math.max(1, Math.floor(Number(base.bestSector ?? base.bestLevel) || 1));
+  const baseXp = Math.floor(Number(base.pilotXp) || 0);
+  const rankFloorXp = getPilotXpThreshold(highestRank);
+  return baseCodex <= Math.max(5, Math.floor(discoveryCount * 0.1)) &&
+    baseSector < Math.max(5, Math.floor(highestSector * 0.5)) &&
+    baseXp <= Math.floor(rankFloorXp * 0.25);
+}
+
+function shouldMarkLegacyRescuePreserved(progress = {}, { threatDiscovery = {}, localHighscores = [] } = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  const savedUnlocks = Array.isArray(base.unlockedShipIds) ? base.unlockedShipIds : [];
+  const history = normalizeShipUnlockHistory(base.shipUnlockHistory);
+  const historyEntries = Object.values(history);
+  const legacyHistoryCount = historyEntries
+    .filter((entry) => entry?.reasonKey === SHIP_UNLOCK_HISTORY_REASON_KEYS.legacy).length;
+  if (savedUnlocks.length < 12 || legacyHistoryCount < 8) return false;
+
+  const evidence = rankedRunEvidenceFromScores(localHighscores);
+  if (evidence.runCount <= 0) return false;
+
+  const bestSector = Math.max(
+    1,
+    Math.floor(Number(base.bestSector ?? base.bestLevel) || 1),
+    Math.floor(Number(base.bestLevel ?? base.bestSector) || 1)
+  );
+  const discoveredSector = getHighestDiscoveredSector(threatDiscovery);
+  const discoveredRank = getHighestDiscoveredPilotRank(threatDiscovery);
+  const bestScore = Math.max(Math.floor(Number(base.bestScore) || 0), evidence.bestScore);
+
+  return bestSector >= 50 &&
+    discoveredSector >= Math.max(50, bestSector) &&
+    discoveredRank >= 18 &&
+    evidence.bestLevel < bestSector - 12 &&
+    bestScore < 220000;
+}
+
+function markLegacyRescuePreservedHangar(progress = {}, context = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  if (!shouldMarkLegacyRescuePreserved(base, context)) return base;
+
+  return {
+    ...base,
+    integrityRepairVersion: 2,
+    integrityRepairReason: 'legacy_codex_rescue_preserved'
+  };
+}
+
+function recoverPreviouslyClampedLegacyRescue(progress = {}, {
+  progression = {},
+  threatDiscovery = {},
+  localHighscores = []
+} = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  if (base.integrityRepairReason !== 'legacy_codex_rescue_inflation') return base;
+
+  const evidence = rankedRunEvidenceFromScores(localHighscores);
+  const discoveryCount = countThreatDiscoveryItems(threatDiscovery);
+  const discoveredRank = Math.max(0, getHighestDiscoveredPilotRank(threatDiscovery));
+  const discoveredLevel = Math.max(1, getHighestDiscoveredSector(threatDiscovery));
+  const progressionBestScore = Math.max(0, Math.floor(Number(progression?.bestScore) || 0));
+  const progressionBestRank = Math.max(0, Math.floor(Number(progression?.bestRank) || 0));
+  const progressionBestLevel = Math.max(1, Math.floor(Number(progression?.bestLevel) || 1));
+  if (
+    progressionBestRank <= Math.max(
+      Math.floor(Number(base.pilotRank) || 0),
+      Math.floor(Number(base.highestPilotRank) || 0),
+      Math.floor(Number(base.bestRank) || 0)
+    ) &&
+    progressionBestLevel <= Math.max(
+      Math.floor(Number(base.bestSector) || 1),
+      Math.floor(Number(base.bestLevel) || 1)
+    ) &&
+    discoveredRank <= Math.max(
+      Math.floor(Number(base.pilotRank) || 0),
+      Math.floor(Number(base.highestPilotRank) || 0),
+      Math.floor(Number(base.bestRank) || 0)
+    ) &&
+    discoveredLevel <= Math.max(
+      Math.floor(Number(base.bestSector) || 1),
+      Math.floor(Number(base.bestLevel) || 1)
+    ) &&
+    discoveryCount <= Math.floor(Number(base.totalCodexDiscoveries) || 0)
+  ) {
+    return base;
+  }
+
+  const recoveredRank = Math.max(0, Math.min(
+    39,
+    Math.max(
+      Math.floor(Number(base.pilotRank) || 0),
+      Math.floor(Number(base.highestPilotRank) || 0),
+      Math.floor(Number(base.bestRank) || 0),
+      progressionBestRank,
+      discoveredRank
+    )
+  ));
+  const recoveredLevel = Math.max(
+    1,
+    Math.floor(Number(base.bestSector) || 1),
+    Math.floor(Number(base.bestLevel) || 1),
+    progressionBestLevel,
+    discoveredLevel,
+    evidence.bestLevel
+  );
+  const recovered = {
+    ...base,
+    pilotXp: Math.max(Math.floor(Number(base.pilotXp) || 0), getPilotXpThreshold(recoveredRank)),
+    pilotRank: recoveredRank,
+    highestPilotRank: Math.max(Math.floor(Number(base.highestPilotRank) || 0), recoveredRank),
+    bestRank: Math.max(Math.floor(Number(base.bestRank) || 0), recoveredRank),
+    bestScore: Math.max(Math.floor(Number(base.bestScore) || 0), progressionBestScore, evidence.bestScore),
+    bestSector: recoveredLevel,
+    bestLevel: recoveredLevel,
+    totalBossesDefeated: Math.max(Math.floor(Number(base.totalBossesDefeated) || 0), evidence.bestBosses),
+    totalWavesCleared: Math.max(Math.floor(Number(base.totalWavesCleared) || 0), evidence.bestWaves),
+    totalCodexDiscoveries: Math.max(Math.floor(Number(base.totalCodexDiscoveries) || 0), discoveryCount),
+    runClears: Math.max(Math.floor(Number(base.runClears) || 0), evidence.runClears),
+    noHitWaves: Math.max(Math.floor(Number(base.noHitWaves) || 0), evidence.noHitWaves),
+    noHitSectors: Math.max(Math.floor(Number(base.noHitSectors) || 0), evidence.noHitSectors),
+    clearWithLivesRemaining: Math.max(
+      Math.floor(Number(base.clearWithLivesRemaining) || 0),
+      evidence.clearWithLivesRemaining
+    ),
+    survivedSeconds: Math.max(Math.floor(Number(base.survivedSeconds) || 0), evidence.bestRunTimeSeconds),
+    highestScoreMultiplier: Math.max(
+      Number(base.highestScoreMultiplier) || 1,
+      Number(evidence.highestScoreMultiplier) || 1
+    ),
+    discoveredThreatIds: [...new Set([
+      ...(Array.isArray(base.discoveredThreatIds) ? base.discoveredThreatIds : []),
+      ...getThreatDiscoveryIds(threatDiscovery)
+    ].map(String).filter(Boolean))],
+    integrityRepairVersion: 2,
+    integrityRepairReason: 'legacy_codex_rescue_preserved'
+  };
+  recovered.unlockedShipIds = recalculateUnlockedShipIds(recovered);
+  return recovered;
+}
+
+function repairHangarProgressFromPersistence(progress = {}, {
+  threatDiscovery = {},
+  localHighscores = [],
+  progression = {},
+  selectedShipKey = null,
+  sectorStartChallengeRecords = {},
+  scoutRunRecords = {},
+  shipUsage = {}
+} = {}) {
+  const base = progress && typeof progress === 'object' ? progress : {};
+  const recoveredBase = recoverPreviouslyClampedLegacyRescue(base, {
+    progression,
+    threatDiscovery,
+    localHighscores
+  });
+  if (recoveredBase !== base) return recoveredBase;
+  if (!shouldApplyCodexHangarRescue(base, threatDiscovery)) {
+    return markLegacyRescuePreservedHangar(base, { threatDiscovery, localHighscores });
+  }
+  const evidence = rankedRunEvidenceFromScores(localHighscores);
+  const discoveryCount = countThreatDiscoveryItems(threatDiscovery);
+  const discoveredIds = getThreatDiscoveryIds(threatDiscovery);
+  const bestScore = Math.max(
+    Math.floor(Number(base.bestScore) || 0),
+    Math.floor(Number(progression?.bestScore) || 0),
+    evidence.bestScore
+  );
+  const bestLevel = Math.max(
+    Math.floor(Number(base.bestLevel) || 1),
+    Math.floor(Number(base.bestSector) || 1),
+    Math.floor(Number(progression?.bestLevel) || 1),
+    evidence.bestLevel
+  );
+  const bestRank = Math.max(
+    Math.floor(Number(base.bestRank) || 0),
+    Math.floor(Number(progression?.bestRank) || 0)
+  );
+  return markLegacyRescuePreservedHangar(mergeHangarProgress(base, {
+    pilotXp: Math.floor(Number(base.pilotXp) || 0),
+    pilotRank: Math.floor(Number(base.pilotRank) || 0),
+    highestPilotRank: Math.floor(Number(base.highestPilotRank) || 0),
+    bestScore,
+    bestSector: bestLevel,
+    bestLevel,
+    bestRank,
+    totalCodexDiscoveries: Math.max(Math.floor(Number(base.totalCodexDiscoveries) || 0), discoveryCount),
+    discoveredThreatIds: discoveredIds,
+    unlockedShipIds: collectEvidencedShipIds({
+      selectedShipKey,
+      localHighscores,
+      sectorStartChallengeRecords,
+      scoutRunRecords,
+      shipUsage
+    })
+  }), { threatDiscovery, localHighscores });
+}
+
+function mergeThreatDiscoveryItem(localItem = {}, cloudItem = {}, fallback = {}) {
+  const local = localItem && typeof localItem === 'object' ? localItem : {};
+  const cloud = cloudItem && typeof cloudItem === 'object' ? cloudItem : {};
+  return {
+    ...local,
+    ...cloud,
+    id: String(cloud.id || local.id || fallback.id || ''),
+    category: String(cloud.category || local.category || fallback.category || ''),
+    name: String(cloud.name || local.name || fallback.name || cloud.id || local.id || fallback.id || 'Unknown Signal'),
+    firstSeenAt: local.firstSeenAt || cloud.firstSeenAt || new Date().toISOString(),
+    lastSeenAt: cloud.lastSeenAt || local.lastSeenAt || new Date().toISOString(),
+    timesSeen: Math.max(0, Math.floor(Number(local.timesSeen) || 0), Math.floor(Number(cloud.timesSeen) || 0)),
+    timesDefeated: Math.max(0, Math.floor(Number(local.timesDefeated) || 0), Math.floor(Number(cloud.timesDefeated) || 0)),
+    timesSurvived: Math.max(0, Math.floor(Number(local.timesSurvived) || 0), Math.floor(Number(cloud.timesSurvived) || 0)),
+    timesKilledPlayer: Math.max(0, Math.floor(Number(local.timesKilledPlayer) || 0), Math.floor(Number(cloud.timesKilledPlayer) || 0)),
+    bestClearTimeAgainst: Number.isFinite(Number(local.bestClearTimeAgainst)) && Number.isFinite(Number(cloud.bestClearTimeAgainst))
+      ? Math.min(Number(local.bestClearTimeAgainst), Number(cloud.bestClearTimeAgainst))
+      : (Number.isFinite(Number(local.bestClearTimeAgainst)) ? Number(local.bestClearTimeAgainst) : (Number.isFinite(Number(cloud.bestClearTimeAgainst)) ? Number(cloud.bestClearTimeAgainst) : null)),
+    highestScoreDuringEncounter: Math.max(
+      0,
+      Math.floor(Number(local.highestScoreDuringEncounter) || 0),
+      Math.floor(Number(cloud.highestScoreDuringEncounter) || 0)
+    ),
+    metadata: {
+      ...(local.metadata && typeof local.metadata === 'object' ? local.metadata : {}),
+      ...(cloud.metadata && typeof cloud.metadata === 'object' ? cloud.metadata : {})
+    }
+  };
+}
+
+function filterUnreadThreatIds(unreadIds = [], items = {}) {
+  const discovered = new Set();
+  for (const [category, bucket] of Object.entries(items || {})) {
+    if (!bucket || typeof bucket !== 'object') continue;
+    for (const id of Object.keys(bucket)) {
+      if (id) discovered.add(`${category}:${id}`);
+    }
+  }
+  return [...new Set((Array.isArray(unreadIds) ? unreadIds : []).map(String).filter(Boolean))]
+    .filter((id) => discovered.has(id));
+}
+
+function normalizeCodexViewMarker(state = {}) {
+  const signature = String(state?.lastViewedCodexDiscoverySignature || '').trim().slice(0, 120);
+  if (!signature) return null;
+  const at = state?.lastViewedCodexAt ? String(state.lastViewedCodexAt).slice(0, 80) : null;
+  return {
+    lastViewedCodexDiscoverySignature: signature,
+    lastViewedCodexDiscoveryCount: Math.max(0, Math.floor(Number(state?.lastViewedCodexDiscoveryCount) || 0)),
+    lastViewedCodexAt: at
+  };
+}
+
+function pickLatestCodexViewMarker(localState = {}, cloudState = {}) {
+  const candidates = [normalizeCodexViewMarker(localState), normalizeCodexViewMarker(cloudState)].filter(Boolean);
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => {
+    const aTime = Date.parse(a.lastViewedCodexAt || '') || 0;
+    const bTime = Date.parse(b.lastViewedCodexAt || '') || 0;
+    return bTime - aTime;
+  })[0];
 }
 
 function mergeThreatDiscovery(localState = {}, cloudState = {}) {
@@ -213,11 +698,21 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
   ])];
   const items = {};
   for (const category of categories) {
-    items[category] = {
-      ...(local.items?.[category] || {}),
-      ...(cloud.items?.[category] || {})
-    };
+    const localBucket = local.items?.[category] && typeof local.items[category] === 'object' ? local.items[category] : {};
+    const cloudBucket = cloud.items?.[category] && typeof cloud.items[category] === 'object' ? cloud.items[category] : {};
+    items[category] = {};
+    for (const id of [...new Set([...Object.keys(localBucket), ...Object.keys(cloudBucket)])]) {
+      items[category][id] = mergeThreatDiscoveryItem(localBucket[id], cloudBucket[id], { id, category });
+    }
   }
+  const viewedMarker = pickLatestCodexViewMarker(local, cloud);
+  const currentSignature = getCodexDiscoverySignature(items);
+  const unreadIds = viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+    ? []
+    : filterUnreadThreatIds([
+      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
+      ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
+    ], items);
   return {
     ...local,
     ...cloud,
@@ -227,10 +722,65 @@ function mergeThreatDiscovery(localState = {}, cloudState = {}) {
       ...(Array.isArray(local.recentRunThemes) ? local.recentRunThemes : []),
       ...(Array.isArray(cloud.recentRunThemes) ? cloud.recentRunThemes : [])
     ])].slice(-8),
-    unreadIds: [...new Set([
-      ...(Array.isArray(local.unreadIds) ? local.unreadIds : []),
-      ...(Array.isArray(cloud.unreadIds) ? cloud.unreadIds : [])
-    ])]
+    ...(viewedMarker || {}),
+    ...(viewedMarker?.lastViewedCodexDiscoverySignature === currentSignature.signature
+      ? { lastViewedCodexDiscoveryCount: currentSignature.count }
+      : {}),
+    unreadIds
+  };
+}
+
+function normalizeSectorStartChallengeRecordsPayload(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  const candidates = Array.isArray(raw)
+    ? raw
+    : Object.values(raw.byCheckpoint ?? raw.records ?? raw);
+  const byCheckpoint = {};
+  for (const candidate of candidates) {
+    const record = normalizeSectorStartChallengeRecord(candidate);
+    if (!record) continue;
+    byCheckpoint[String(record.startSector)] = record;
+  }
+  return {
+    version: Math.max(1, Math.floor(Number(raw.version) || 1)),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : null,
+    byCheckpoint
+  };
+}
+
+function mergeSectorStartChallengeRecords(localRecords = {}, cloudRecords = {}) {
+  const local = normalizeSectorStartChallengeRecordsPayload(localRecords);
+  const cloud = normalizeSectorStartChallengeRecordsPayload(cloudRecords);
+  const byCheckpoint = { ...local.byCheckpoint };
+  for (const [checkpoint, record] of Object.entries(cloud.byCheckpoint)) {
+    if (isBetterSectorStartChallengeRecord(record, byCheckpoint[checkpoint])) {
+      byCheckpoint[checkpoint] = record;
+    }
+  }
+  return {
+    version: Math.max(local.version, cloud.version, 1),
+    updatedAt: cloud.updatedAt || local.updatedAt || new Date().toISOString(),
+    byCheckpoint
+  };
+}
+
+function normalizeScoutRunRecordsPayload(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  return {
+    version: Math.max(1, Math.floor(Number(raw.version) || 1)),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : null,
+    best: normalizeScoutRunRecord(raw.best ?? raw.personalBest ?? raw) || null
+  };
+}
+
+function mergeScoutRunRecords(localRecords = {}, cloudRecords = {}) {
+  const local = normalizeScoutRunRecordsPayload(localRecords);
+  const cloud = normalizeScoutRunRecordsPayload(cloudRecords);
+  const best = isBetterScoutRunRecord(cloud.best, local.best) ? cloud.best : local.best;
+  return {
+    version: Math.max(local.version, cloud.version, 1),
+    updatedAt: cloud.updatedAt || local.updatedAt || new Date().toISOString(),
+    best: best || null
   };
 }
 
@@ -255,6 +805,7 @@ function collectAudioSettings(storage) {
   if (has(AUDIO_KEYS.voiceVolume)) audio.voiceVolume = clampUnit(readStorage(storage, AUDIO_KEYS.voiceVolume), 0.45);
   if (has(AUDIO_KEYS.musicEnabled)) audio.musicEnabled = readStorage(storage, AUDIO_KEYS.musicEnabled) !== 'false';
   if (has(AUDIO_KEYS.voiceEnabled)) audio.voiceEnabled = readStorage(storage, AUDIO_KEYS.voiceEnabled) !== 'false';
+  if (has(AUDIO_KEYS.bossVoiceEnabled)) audio.bossVoiceEnabled = readStorage(storage, AUDIO_KEYS.bossVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.ctaVoiceEnabled)) audio.ctaVoiceEnabled = readStorage(storage, AUDIO_KEYS.ctaVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.musicPack)) audio.musicPack = String(readStorage(storage, AUDIO_KEYS.musicPack) || '').slice(0, 64);
   return audio;
@@ -266,7 +817,7 @@ function restoreAudioSettings(storage, audio = {}) {
   for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'voiceVolume']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], clampUnit(audio[key], 1))) changed += 1;
   }
-  for (const key of ['musicEnabled', 'voiceEnabled', 'ctaVoiceEnabled']) {
+  for (const key of ['musicEnabled', 'voiceEnabled', 'bossVoiceEnabled', 'ctaVoiceEnabled']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], Boolean(audio[key]))) changed += 1;
   }
   if (audio.musicPack !== undefined && writeStorage(storage, AUDIO_KEYS.musicPack, String(audio.musicPack).slice(0, 64))) {
@@ -285,6 +836,28 @@ export function collectSteamCloudPersistenceState({
 } = {}) {
   const selectedShipKey = readStorage(storage, CLOUD_SELECTED_SHIP_KEY) || game?.selectedShipSpriteKey || null;
   const achievementPayload = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
+  const localHighscores = normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, []));
+  const progression = normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {}));
+  const threatDiscovery = readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {});
+  const sectorStartChallengeRecords = normalizeSectorStartChallengeRecordsPayload(
+    readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {})
+  );
+  const scoutRunRecords = normalizeScoutRunRecordsPayload(
+    readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {})
+  );
+  const shipUsage = normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}));
+  const rawHangarProgress = typeof getShipUnlockProgress === 'function'
+    ? getShipUnlockProgress()
+    : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {});
+  const hangarProgress = repairHangarProgressFromPersistence(rawHangarProgress, {
+    threatDiscovery,
+    localHighscores,
+    progression,
+    selectedShipKey,
+    sectorStartChallengeRecords,
+    scoutRunRecords,
+    shipUsage
+  });
   const settings = typeof getAccessibilitySettings === 'function'
     ? getAccessibilitySettings()
     : {
@@ -302,21 +875,31 @@ export function collectSteamCloudPersistenceState({
       ),
       current: typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : null
     },
-    localHighscores: normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, [])),
+    localHighscores,
     achievements: achievementPayload,
     selectedShipKey,
-    progression: typeof getShipUnlockProgress === 'function'
-      ? normalizeProgression(getShipUnlockProgress())
-      : normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {})),
-    hangarProgress: typeof getShipUnlockProgress === 'function'
-      ? getShipUnlockProgress()
-      : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
-    threatDiscovery: readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
+    progression: normalizeProgression({
+      ...progression,
+      bestScore: Math.max(progression.bestScore || 0, hangarProgress.bestScore || 0),
+      bestRank: Math.max(progression.bestRank || 0, hangarProgress.bestRank || 0),
+      bestLevel: Math.max(progression.bestLevel || 1, hangarProgress.bestLevel || 1, hangarProgress.bestSector || 1)
+    }),
+    hangarProgress,
+    threatDiscovery,
+    sectorStartChallengeRecords,
+    scoutRunRecords,
+    shipUsage,
+    shipUsageTotal: Math.max(
+      Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
+      sumUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}))
+    ),
     settings: {
       screenShake: clampUnit(settings.screenShake, 1),
       playerFocus: clampUnit(settings.playerFocus, 0.72),
       colorAssist: Boolean(settings.colorAssist),
-      audio: collectAudioSettings(storage)
+      audio: collectAudioSettings(storage),
+      display: getDisplaySettings({ storage }),
+      menu: getMenuSettings({ storage })
     }
   };
 }
@@ -331,6 +914,10 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     achievements: 0,
     selectedShipKey: null,
     progression: null,
+    shipUsage: 0,
+    shipUsageTotal: 0,
+    sectorStartChallengeRecords: 0,
+    scoutRunBest: 0,
     settings: 0
   };
   if (!storage || !save || typeof save !== 'object') return summary;
@@ -377,10 +964,26 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = writeStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, JSON.stringify(mergedProgression)) || summary.restored;
   }
 
-  if (save.hangarProgress) {
-    const mergedHangar = mergeHangarProgress(
-      readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
-      save.hangarProgress
+  const localDiscovery = readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {});
+  const mergedDiscovery = save.threatDiscovery
+    ? mergeThreatDiscovery(localDiscovery, save.threatDiscovery)
+    : localDiscovery;
+
+  if (save.hangarProgress || save.threatDiscovery) {
+    const mergedHangar = repairHangarProgressFromPersistence(
+      mergeHangarProgress(
+        readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {}),
+        save.hangarProgress || {}
+      ),
+      {
+        threatDiscovery: mergedDiscovery,
+        localHighscores: save.localHighscores || [],
+        progression: save.progression || save.unlockProgress || {},
+        selectedShipKey: save.selectedShipKey,
+        sectorStartChallengeRecords: save.sectorStartChallengeRecords || save.sectorStartRecords || {},
+        scoutRunRecords: save.scoutRunRecords || save.scoutBest || save.scoutRunBest || {},
+        shipUsage: save.shipUsage || save.shipUsageByShip || {}
+      }
     );
     summary.hangarProgress = mergedHangar;
     summary.restored = writeStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, JSON.stringify(mergedHangar)) || summary.restored;
@@ -392,12 +995,51 @@ export function restoreSteamCloudPersistenceToStorage(save, {
   }
 
   if (save.threatDiscovery) {
-    const mergedDiscovery = mergeThreatDiscovery(
-      readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {}),
-      save.threatDiscovery
-    );
     summary.threatDiscovery = true;
     summary.restored = writeStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, JSON.stringify(mergedDiscovery)) || summary.restored;
+    invalidateThreatDiscoveryStateCache();
+  }
+
+  if (save.shipUsage || save.shipUsageByShip) {
+    const mergedUsage = mergeShipUsage(
+      readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}),
+      save.shipUsage || save.shipUsageByShip
+    );
+    const total = Math.max(
+      Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
+      Math.floor(Number(save.shipUsageTotal) || 0),
+      sumUsageMap(mergedUsage)
+    );
+    summary.shipUsage = Object.keys(mergedUsage).length;
+    summary.shipUsageTotal = total;
+    summary.restored = writeStorage(storage, CLOUD_SHIP_USAGE_KEY, JSON.stringify(mergedUsage)) || summary.restored;
+    summary.restored = writeStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY, String(total)) || summary.restored;
+  }
+
+  if (save.sectorStartChallengeRecords || save.sectorStartRecords) {
+    const mergedRecords = mergeSectorStartChallengeRecords(
+      readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {}),
+      save.sectorStartChallengeRecords || save.sectorStartRecords
+    );
+    summary.sectorStartChallengeRecords = Object.keys(mergedRecords.byCheckpoint).length;
+    summary.restored = writeStorage(
+      storage,
+      CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY,
+      JSON.stringify(mergedRecords)
+    ) || summary.restored;
+  }
+
+  if (save.scoutRunRecords || save.scoutBest || save.scoutRunBest) {
+    const mergedScout = mergeScoutRunRecords(
+      readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {}),
+      save.scoutRunRecords || { best: save.scoutBest || save.scoutRunBest }
+    );
+    summary.scoutRunBest = mergedScout.best?.score || 0;
+    summary.restored = writeStorage(
+      storage,
+      CLOUD_SCOUT_RUN_RECORDS_KEY,
+      JSON.stringify(mergedScout)
+    ) || summary.restored;
   }
 
   const settings = save.settings || {};
@@ -414,6 +1056,24 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = true;
   }
   summary.settings += restoreAudioSettings(storage, settings.audio || save.audioSettings);
+  if (settings.display !== undefined) {
+    const display = normalizeDisplaySettings(settings.display);
+    const wroteMode = writeStorage(storage, DISPLAY_MODE_KEY, display.mode);
+    const wroteSize = writeStorage(storage, DISPLAY_WINDOW_SIZE_KEY, JSON.stringify(display.windowSize));
+    const wroteUiScale = writeStorage(storage, UI_SCALE_KEY, normalizeUiScale(display.uiScale));
+    if (wroteMode || wroteSize || wroteUiScale) {
+      summary.settings += 1;
+      summary.restored = true;
+    }
+  }
+  if (settings.menu?.confirmExit !== undefined && writeStorage(storage, CONFIRM_EXIT_KEY, normalizeConfirmExit(settings.menu.confirmExit) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.menu?.showPilotOrders !== undefined && writeStorage(storage, SHOW_PILOT_ORDERS_KEY, normalizeShowPilotOrders(settings.menu.showPilotOrders) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
   if (summary.settings > 0) summary.restored = true;
 
   return summary;
@@ -430,6 +1090,12 @@ export function summarizeSteamCloudPersistence(save = {}) {
     selectedShipKey: save?.selectedShipKey || null,
     progression: normalizeProgression(save?.progression || save?.unlockProgress || {}),
     hangarPilotXp: Math.max(0, Math.floor(Number(save?.hangarProgress?.pilotXp) || 0)),
-    threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length
+    shipUsageShips: Object.keys(normalizeUsageMap(save?.shipUsage || save?.shipUsageByShip || {})).length,
+    shipUsageTotal: Math.max(Math.floor(Number(save?.shipUsageTotal) || 0), sumUsageMap(save?.shipUsage || save?.shipUsageByShip || {})),
+    scoutRunBestScore: normalizeScoutRunRecordsPayload(save?.scoutRunRecords || { best: save?.scoutBest || save?.scoutRunBest }).best?.score || 0,
+    threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length,
+    sectorStartChallengeCheckpoints: Object.keys(
+      normalizeSectorStartChallengeRecordsPayload(save?.sectorStartChallengeRecords || save?.sectorStartRecords || {}).byCheckpoint
+    ).length
   };
 }

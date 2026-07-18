@@ -1,0 +1,163 @@
+{
+  "uploadedAt": "2026-06-26T15:10:17Z",
+  "steamBuildId": 23933784,
+  "steamworksUser": "gaunziman",
+  "branch": "codex/boss-full-reinforcement-waves-20260626",
+  "sourceCommit": "ca32ac3b760c9932b10686cbbd1b19911dfcbca1",
+  "sourceCommitShort": "ca32ac3",
+  "sourceCommitMessage": "Add Mayhem storm and super life action",
+  "evidenceCommitBeforeUpload": "18301d880f1e6383571552d61dfbb0e2cd253d0d",
+  "build": {
+    "version": "v2026-06-26_16-57-25",
+    "timestamp": "2026-06-26T14:57:25.270Z"
+  },
+  "steamworks": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "setLive": "",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Nova Swarm Mayhem storm and super life 20260626",
+    "branchAssignmentEvidence": "The generated VDF has SetLive blank; SteamCMD output reports private build creation only, with no branch assignment."
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915848930,
+    "manifestHash": "7512eea34c1af0090f96f6b1debde498432a7bd7813870b4a5a155b0c7426e23",
+    "manifestFileSha256": "9C2E88E4BC7530F8BE704AF9DFD60F55C7AB83E485EF209819BB759E831D3188",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "f7abdafa0c286d4fc7e3d751e31f95bf867fed3a0ccad074575a0caedd57efbd"
+    }
+  },
+  "validation": {
+    "preUploadChecks": [
+      {
+        "command": "git fetch --all --prune",
+        "status": "passed"
+      },
+      {
+        "command": "git status --short --branch",
+        "status": "passed_clean_before_upload"
+      },
+      {
+        "command": "git worktree list",
+        "status": "passed"
+      },
+      {
+        "command": "git diff --check",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:release-line",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:i18n",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:mayhem-reinforcement-waves",
+        "status": "passed",
+        "notes": "normalChance=0.2, normalWaves=3-4, superStormChance=0.05, superStormWaves=5, bossObserved=0.2005, bossDoubleChance=0.16, bossTripleChance=0.1"
+      },
+      {
+        "command": "node scripts/analyze-mayhem-reinforcement-waves.mjs",
+        "status": "passed",
+        "report": "test-results/mayhem-reinforcement-wave-analysis-20260624.json"
+      },
+      {
+        "command": "npm run check:mayhem-super-storm-voices",
+        "status": "passed",
+        "notes": "20 warning and 20 survived voice clips verified"
+      },
+      {
+        "command": "npm run check:super-extra-life-powerup",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:row-core",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:audio",
+        "status": "passed"
+      },
+      {
+        "command": "npm run build:current",
+        "status": "passed"
+      },
+      {
+        "command": "npm run check:i18n-ui",
+        "status": "passed",
+        "report": "test-results/i18n-ui-2026-06-26T14-48-52-619Z/report.json"
+      },
+      {
+        "command": "npm run build",
+        "status": "passed",
+        "notes": "Fresh build stamp v2026-06-26_16-57-25 generated after source commit."
+      },
+      {
+        "command": "npm run package:steam:win:current",
+        "status": "passed",
+        "notes": "Includes release-line, Steam SDK, Electron package, and package runtime checks."
+      },
+      {
+        "command": "npm run desktop:smoke:packaged",
+        "status": "passed",
+        "report": "test-results/packaged-exe-smoke-2026-06-26T15-02-38-021Z/report.json",
+        "gitSha": "ca32ac3",
+        "build": "v2026-06-26_16-57-25",
+        "consoleEvents": 0
+      },
+      {
+        "command": "npm run desktop:perf:packaged",
+        "status": "passed_on_sequential_rerun",
+        "report": "test-results/packaged-perf-smoke-2026-06-26T15-03-20-957Z/report.json",
+        "build": "v2026-06-26_16-57-25",
+        "minFps": 59.880239520968516,
+        "avgFps": 59.9891126837244,
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "command": "npm run steamworks:payload-manifest",
+        "status": "passed",
+        "report": "release/steamworks/steam_payload_manifest.json"
+      },
+      {
+        "command": "$env:STEAM_APP_ID='4765070'; $env:STEAM_DEPOT_ID='4765071'; $env:STEAM_SET_LIVE=''; $env:STEAM_BUILD_DESC='Nova Swarm Mayhem storm and super life 20260626'; npm run steamworks:write-vdf",
+        "status": "passed"
+      }
+    ],
+    "notes": [
+      "A first check:i18n-ui run failed against stale dist before the post-commit rebuild; rerun after build:current passed.",
+      "A first packaged perf run was attempted concurrently with packaged smoke and failed to reach the controllable play state; rerunning packaged perf alone passed cleanly.",
+      "The final packaged smoke report confirms build v2026-06-26_16-57-25 and gitSha ca32ac3."
+    ]
+  },
+  "steamcmd": {
+    "path": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/tools/steamcmd/steamcmd.exe",
+    "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "exitCode": 0,
+    "result": "Successfully finished AppID 4765070 build (BuildID 23933784).",
+    "depotSummary": "0 files added, 2 files changed, 0 files removed; new manifestID 1735432060725794198."
+  },
+  "protectedInvariants": {
+    "steamAppIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardNameChanged": false,
+    "achievementIdsChanged": false,
+    "steamCloudPathChanged": false,
+    "saveFormatChanged": false,
+    "scoringChangedByDeploy": false,
+    "xpChangedByDeploy": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "releaseBranchAssigned": false,
+    "setLiveBlank": true
+  }
+}

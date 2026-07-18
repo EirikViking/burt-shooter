@@ -1,0 +1,75 @@
+Hi pilots,
+
+Tactical Draft gave every run a build. This update gives the battlefield something new to do with it.
+
+Nova Swarm now layers optional Side Directives, marked Ace hunts, Nemesis Protocols, and coordinated Rival Wings into the existing arcade run. Together they add exactly [b]22,000 deterministic tactical variants[/b] without adding filler enemies or changing what a destroyed enemy is worth.
+
+{{STEAM_IMAGE_ACE_NEMESIS_WING}}
+
+[h2]1,000 Tactical Directives[/h2]
+
+One optional Side Directive is active at a time, with live progress and the promised reward visible in Mission Status.
+
+[list]
+[*]10 objective families, from hostile quotas and combo peaks to grazes, Phase uses, support hunts, and boss hunts.
+[*]10 intensity tiers that open up as the run gets deeper.
+[*]10 reward programs, including shields, Drones, Point Defense, speed, firepower, and extra Tactical Draft rescans.
+[*]Up to five completed directives per run, with deterministic selection and no immediate repeats.
+[/list]
+
+They are optional micro-goals: take the risk when it fits your build, ignore it when staying alive is the better plan.
+
+[h2]1,000 marked Ace Bounties[/h2]
+
+Every sector can promote one existing enemy into a marked Ace. Aces carry a gold threat frame, a four-digit identity, a distinct chassis/flight/weapon package, and a visible hardware reward contract.
+
+The catalog combines 10 chassis, 10 flight patterns, and 10 weapon packages for [b]1,000 mechanically distinct Ace Bounties[/b]. The Ace replaces an ordinary enemy rather than adding another target, and it preserves that enemy's original score value exactly.
+
+[h2]10,000 Nemesis Protocols[/h2]
+
+An Ace can now arrive with a five-digit Nemesis Protocol built from four real combat axes:
+
+[list]
+[*]10 openings that change how it enters the wave.
+[*]10 defenses that alter how its armor answers damage.
+[*]10 enrage phases with visible hull thresholds and different movement or weapon transformations.
+[*]10 bonus rewards that drop alongside the original Ace contract.
+[/list]
+
+That creates [b]10,000 Nemesis Protocols[/b]. Damage guards are bounded, enrages trigger only once, and bonus rewards add no score or XP.
+
+[h2]10,000 coordinated Rival Wing Doctrines[/h2]
+
+The Ace's surviving escorts are no longer a loose crowd. They can receive a shared Rival Wing Doctrine with a formation, combat discipline, synchronized volley, and morale response.
+
+Spearheads, pincers, orbiting formations, crossfire, staggered lances, revenge rushes, fighting retreats, and shield-wall responses now create [b]10,000 coordinated wing doctrines[/b]. If morale changes while an escort is still entering, it inherits the active response instead of arriving on the wrong page of the battle plan.
+
+Across the Ace, Nemesis, and Wing catalogs, the system supports [b]100 billion possible complete elite set-pieces[/b]. The important part is not the number by itself: the identity, behavior, danger, and reward are all visible while you play.
+
+{{STEAM_IMAGE_LATE_SWARM}}
+
+[h2]Tactical Draft got smarter[/h2]
+
+[list]
+[*]Hold one offer for the next boss Draft when the current timing is wrong.
+[*]Run Doctrines now name the identity your build is becoming, from focused archetypes to hybrid builds and Nova Synthesis.
+[*]Draft cards forecast whether a choice builds, reinforces, evolves, or leaves the current doctrine unchanged.
+[*]Repeatable augments gain unique Stack-II evolution identities while preserving the existing bounded stack math.
+[/list]
+
+[h2]Readable, persistent, and localized[/h2]
+
+[list]
+[*]Mission Status, pause, How To Play, Run Summary, Game Over, and Run Report all expose the new systems.
+[*]Run Report v8 records completed Directives, Ace contracts, Nemesis Protocols, and Rival Wing history.
+[*]Threat frames, identity labels, rewards, surge warnings, and morale states remain visible in accessible text state.
+[*]All player-facing copy is localized in English, German, Spanish, Brazilian Portuguese, Russian, Japanese, Korean, and Simplified Chinese.
+[/list]
+
+[h2]Fairness and compatibility[/h2]
+
+This update does not change score or XP formulas, leaderboard identity, achievement IDs, enemy-count score opportunity, save identity, or Steam Cloud paths. Aces and Wings transform existing encounters; they do not manufacture extra scoring targets.
+
+The goal is simple: more runs worth remembering, more tactical stories inside the arcade rhythm, and more reasons to make one dangerous decision before Mission Control notices.
+
+Tiny Foundry

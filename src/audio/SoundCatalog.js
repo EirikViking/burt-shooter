@@ -1,5 +1,13 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import { gameOverCtaVoiceLines } from '../config/GameOverCtaVoiceLines.js';
+import { GAME_OVER_TAUNT_VOICE_COUNT } from '../config/GameOverTauntVoiceLines.js';
+import { LEVEL_CLEAR_VOICE_COUNT } from '../config/LevelClearVoiceLines.js';
+import { MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT } from '../config/MayhemSuperStormVoiceLines.js';
+import { MENU_BOSS_BARK_EVENT_COUNTS, MENU_BOSS_BARK_EVENT_IDS, MENU_BOSS_BARK_VARIANTS_PER_EVENT } from '../config/MenuBossBarkLines.js';
+import { REINFORCEMENT_VOICE_COUNT } from '../config/ReinforcementVoiceLines.js';
+import { TACTICAL_BOSS_BANTER_EVENT_COUNTS, TACTICAL_BOSS_BANTER_EVENT_IDS } from '../config/TacticalBossBanterLines.js';
+import { RARE_CHAOS_VISITOR_VOICE_COUNT } from '../config/RareChaosVisitorVoiceLines.js';
+import { ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS } from '../config/EliteMiddleShipExpansion.js';
 
 // Safe lookup helpers
 const getMusic = (partial) => {
@@ -31,6 +39,17 @@ const getVoiceFile = (filename) => {
 
 const getVoicePool = (...filenames) => filenames.map(getVoiceFile).filter(Boolean);
 
+const ELITE_EXPANSION_SFX_MIX = Object.freeze(Object.fromEntries(
+    ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.map((key, index) => [key, {
+        volume: 0.46 + (index % 4) * 0.02,
+        minIntervalMs: 650
+    }])
+));
+
+const ELITE_EXPANSION_SFX_CATALOG = Object.freeze(Object.fromEntries(
+    ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.map((key) => [key, [getSfx(`nova_${key}`)]])
+));
+
 const missionControlPool = (base, alternateCount = 2) => getVoicePool(
     `${base}.mp3`,
     ...Array.from({ length: alternateCount }, (_, index) => `${base}_alt${String(index + 1).padStart(2, '0')}.mp3`)
@@ -40,8 +59,26 @@ const numberedVoicePool = (base, count) => getVoicePool(
     ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(2, '0')}.mp3`)
 );
 
+const paddedNumberedVoicePool = (base, count, width = 3) => getVoicePool(
+    ...Array.from({ length: count }, (_, index) => `${base}_${String(index + 1).padStart(width, '0')}.mp3`)
+);
+
 const GAME_OVER_CTA_VOICE_CATALOG = Object.fromEntries(
     gameOverCtaVoiceLines.map((line) => [line.id, [getVoiceFile(`${line.id}.mp3`)].filter(Boolean)])
+);
+
+const MENU_BOSS_BARK_CATALOG = Object.fromEntries(
+    MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
+        eventName,
+        paddedNumberedVoicePool(eventName, MENU_BOSS_BARK_EVENT_COUNTS[eventName] || MENU_BOSS_BARK_VARIANTS_PER_EVENT, 3)
+    ])
+);
+
+const TACTICAL_BOSS_BANTER_CATALOG = Object.fromEntries(
+    TACTICAL_BOSS_BANTER_EVENT_IDS.map((eventName) => [
+        eventName,
+        paddedNumberedVoicePool(eventName, TACTICAL_BOSS_BANTER_EVENT_COUNTS[eventName] || 0, 3)
+    ])
 );
 
 const GENERATED_MENU_POOL = [
@@ -63,6 +100,42 @@ const GENERATED_GAMEPLAY_POOL = [
     getMusic('nova_swarm_gameplay_comet_chase'),
     getMusic('nova_swarm_gameplay_orbit_breaker'),
     getMusic('nova_swarm_gameplay_bonus_heat')
+];
+
+const OVERDRIVE_TRACKS = [
+    getMusic('nova_swarm_overdrive_quarterstorm'),
+    getMusic('nova_swarm_overdrive_vector_riot'),
+    getMusic('nova_swarm_overdrive_boss_singularity')
+];
+
+const OVERDRIVE_MENU_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_SCOREBOARD_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[2]
+];
+
+const OVERDRIVE_GAMEPLAY_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_BOSS_POOL = [
+    OVERDRIVE_TRACKS[2],
+    OVERDRIVE_TRACKS[1]
+];
+
+const OVERDRIVE_GAME_OVER_POOL = [
+    OVERDRIVE_TRACKS[2],
+    OVERDRIVE_TRACKS[0]
+];
+
+const OVERDRIVE_VICTORY_POOL = [
+    OVERDRIVE_TRACKS[0],
+    OVERDRIVE_TRACKS[1]
 ];
 
 const GENERATED_BOSS_POOL = [
@@ -114,8 +187,15 @@ const CLASSIC_VICTORY_POOL = [
 
 export const MUSIC_PACKS = {
     generated: 'generated',
-    classic: 'classic'
+    classic: 'classic',
+    overdrive: 'overdrive'
 };
+
+export const MUSIC_PACK_OPTIONS = [
+    { id: MUSIC_PACKS.classic, label: 'CLASSIC', hint: 'DEFAULT' },
+    { id: MUSIC_PACKS.generated, label: 'NEW MIX', hint: 'OPTIONAL MIX' },
+    { id: MUSIC_PACKS.overdrive, label: 'OVERDRIVE', hint: 'NEW SONGS' }
+];
 
 export const MUSIC_PLAYLISTS_BY_PACK = {
     generated: {
@@ -135,11 +215,20 @@ export const MUSIC_PLAYLISTS_BY_PACK = {
         boss: CLASSIC_BOSS_POOL,
         gameover: CLASSIC_GAME_OVER_POOL,
         victory: CLASSIC_VICTORY_POOL
+    },
+    overdrive: {
+        intro: OVERDRIVE_MENU_POOL,
+        menu: OVERDRIVE_MENU_POOL,
+        scoreboard: OVERDRIVE_SCOREBOARD_POOL,
+        gameplay: OVERDRIVE_GAMEPLAY_POOL,
+        boss: OVERDRIVE_BOSS_POOL,
+        gameover: OVERDRIVE_GAME_OVER_POOL,
+        victory: OVERDRIVE_VICTORY_POOL
     }
 };
 
 export function normalizeMusicPack(pack) {
-    return pack === MUSIC_PACKS.generated ? MUSIC_PACKS.generated : MUSIC_PACKS.classic;
+    return Object.values(MUSIC_PACKS).includes(pack) ? pack : MUSIC_PACKS.classic;
 }
 
 export function getMusicPlaylists(pack = MUSIC_PACKS.classic) {
@@ -147,36 +236,42 @@ export function getMusicPlaylists(pack = MUSIC_PACKS.classic) {
 }
 
 export const MUSIC_PLAYLISTS = {
-    intro: [...GENERATED_INTRO_POOL, ...CLASSIC_INTRO_POOL],
-    menu: [...GENERATED_MENU_POOL, ...CLASSIC_MENU_POOL],
-    scoreboard: [...GENERATED_SCOREBOARD_POOL, ...CLASSIC_SCOREBOARD_POOL],
-    gameplay: [...GENERATED_GAMEPLAY_POOL, ...CLASSIC_GAMEPLAY_POOL],
-    boss: [...GENERATED_BOSS_POOL, ...CLASSIC_BOSS_POOL],
-    gameover: [...GENERATED_GAME_OVER_POOL, ...CLASSIC_GAME_OVER_POOL],
-    victory: [...GENERATED_VICTORY_POOL, ...CLASSIC_VICTORY_POOL]
+    intro: [...GENERATED_INTRO_POOL, ...CLASSIC_INTRO_POOL, ...OVERDRIVE_MENU_POOL],
+    menu: [...GENERATED_MENU_POOL, ...CLASSIC_MENU_POOL, ...OVERDRIVE_MENU_POOL],
+    scoreboard: [...GENERATED_SCOREBOARD_POOL, ...CLASSIC_SCOREBOARD_POOL, ...OVERDRIVE_SCOREBOARD_POOL],
+    gameplay: [...GENERATED_GAMEPLAY_POOL, ...CLASSIC_GAMEPLAY_POOL, ...OVERDRIVE_GAMEPLAY_POOL],
+    boss: [...GENERATED_BOSS_POOL, ...CLASSIC_BOSS_POOL, ...OVERDRIVE_BOSS_POOL],
+    gameover: [...GENERATED_GAME_OVER_POOL, ...CLASSIC_GAME_OVER_POOL, ...OVERDRIVE_GAME_OVER_POOL],
+    victory: [...GENERATED_VICTORY_POOL, ...CLASSIC_VICTORY_POOL, ...OVERDRIVE_VICTORY_POOL]
 };
 
 export const SFX_MIX = {
     shoot_small: { volume: 0.78, minIntervalMs: 42 },
     shoot_alt: { volume: 0.7, minIntervalMs: 50 },
     shoot_heavy: { volume: 0.82, minIntervalMs: 80 },
-    enemy_explode: { volume: 0.68, minIntervalMs: 35 },
-    boss_explode: { volume: 0.95, minIntervalMs: 300 },
-    hit: { volume: 0.48, minIntervalMs: 45 },
-    impactMetal: { volume: 0.42, minIntervalMs: 60 },
+    shoot_railbreaker: { volume: 0.66, minIntervalMs: 145 },
+    enemy_explode: { volume: 0.68, minIntervalMs: 35, playbackRateMin: 0.9, playbackRateMax: 1.08 },
+    boss_explode: { volume: 0.95, minIntervalMs: 300, playbackRateMin: 0.94, playbackRateMax: 1.03 },
+    hit: { volume: 0.48, minIntervalMs: 45, playbackRateMin: 0.96, playbackRateMax: 1.07 },
+    impactMetal: { volume: 0.42, minIntervalMs: 60, playbackRateMin: 0.92, playbackRateMax: 1.04 },
     shield: { volume: 0.52, minIntervalMs: 140 },
     ui_open: { volume: 0.28, minIntervalMs: 120 },
     ui_close: { volume: 0.24, minIntervalMs: 120 },
-    pickup: { volume: 0.62, minIntervalMs: 90 },
+    codex_open: { volume: 0.18, minIntervalMs: 180 },
+    codex_move: { volume: 0.12, minIntervalMs: 120 },
+    codex_back: { volume: 0.16, minIntervalMs: 180 },
+    pickup: { volume: 0.62, minIntervalMs: 90, playbackRateMin: 0.98, playbackRateMax: 1.06 },
     achievement: { volume: 0.68, minIntervalMs: 450 },
-    enemy_shoot: { volume: 0.18, minIntervalMs: 90 },
+    enemy_shoot: { volume: 0.18, minIntervalMs: 90, playbackRateMin: 0.94, playbackRateMax: 1.08 },
+    enemy_threat_soft_warn: { volume: 0.12, minIntervalMs: 1800 },
     computerNoise: { volume: 0.22, minIntervalMs: 350 },
     thrusterFire: { volume: 0.18, minIntervalMs: 240 },
     doorClose: { volume: 0.24, minIntervalMs: 120 },
     spaceEngine: { volume: 0.18, minIntervalMs: 350 },
     shoot: { volume: 0.72, minIntervalMs: 55 },
-    explosion: { volume: 0.75, minIntervalMs: 80 },
+    explosion: { volume: 0.75, minIntervalMs: 80, playbackRateMin: 0.91, playbackRateMax: 1.05 },
     powerup: { volume: 0.72, minIntervalMs: 150 },
+    powerup_pickup: { volume: 0.56, minIntervalMs: 120, playbackRateMin: 0.98, playbackRateMax: 1.04 },
     menuSelect: { volume: 0.3, minIntervalMs: 120 },
     playerHit: { volume: 0.78, minIntervalMs: 220 },
     levelComplete: { volume: 0.45, minIntervalMs: 700 },
@@ -184,41 +279,95 @@ export const SFX_MIX = {
     shield_up: { volume: 0.55, minIntervalMs: 140 },
     spawn_special: { volume: 0.55, minIntervalMs: 600 },
     life_up: { volume: 0.7, minIntervalMs: 700 },
-    explosionCrunch: { volume: 0.74, minIntervalMs: 80 },
-    boss_spawn: { volume: 0.75, minIntervalMs: 800 }
-    ,
+    super_life_up: { volume: 0.9, minIntervalMs: 900 },
+    explosionCrunch: { volume: 0.74, minIntervalMs: 80, playbackRateMin: 0.9, playbackRateMax: 1.06 },
+    boss_spawn: { volume: 0.75, minIntervalMs: 800 },
+    boss_entrance_impact: { volume: 0.78, minIntervalMs: 1200 },
+    boss_charge_lattice: { volume: 0.5, minIntervalMs: 760 },
+    boss_damage_armor_crack: { volume: 0.36, minIntervalMs: 115 },
+    boss_death_cascade: { volume: 0.88, minIntervalMs: 2500 },
     intro_panel_whoosh: { volume: 0.58, minIntervalMs: 350 },
-    coin_portal_open: { volume: 0.74, minIntervalMs: 900 },
+    coin_portal_open: { volume: 0.74, minIntervalMs: 900, playbackRateMin: 0.97, playbackRateMax: 1.05 },
     swarm_chatter_stinger: { volume: 0.58, minIntervalMs: 700 },
     boss_reveal_stinger: { volume: 0.82, minIntervalMs: 1200 },
     start_game_confirm: { volume: 0.7, minIntervalMs: 500 },
     nova_boss_arrival_alarm: { volume: 0.72, minIntervalMs: 1200 },
+    nova_boss_entrance_impact: { volume: 0.78, minIntervalMs: 1200 },
+    nova_boss_charge_lattice: { volume: 0.5, minIntervalMs: 760 },
+    nova_boss_damage_armor_crack: { volume: 0.36, minIntervalMs: 115 },
+    nova_boss_death_cascade: { volume: 0.88, minIntervalMs: 2500 },
     nova_bonus_core_jackpot: { volume: 0.66, minIntervalMs: 180 },
+    nova_miracle_collect: { volume: 0.96, minIntervalMs: 60000 },
+    nova_miracle_purge: { volume: 0.9, minIntervalMs: 60000 },
     nova_shield_snap: { volume: 0.54, minIntervalMs: 140 },
     nova_rank_fanfare: { volume: 0.62, minIntervalMs: 800 },
     nova_highscore_chime: { volume: 0.62, minIntervalMs: 500 },
     nova_global_near_fanfare: { volume: 0.68, minIntervalMs: 900 },
     nova_global_slot_fanfare: { volume: 0.84, minIntervalMs: 900 },
+    nova_top10_fanfare: { volume: 0.9, minIntervalMs: 900 },
     nova_top3_fanfare: { volume: 0.96, minIntervalMs: 900 },
     nova_number_one_fanfare: { volume: 1.05, minIntervalMs: 900 },
+    nova_fuel_ship_spawn: { volume: 0.66, minIntervalMs: 900 },
+    nova_fuel_ship_heal: { volume: 0.72, minIntervalMs: 500 },
+    nova_fuel_ship_pop: { volume: 0.62, minIntervalMs: 80, playbackRateMin: 0.92, playbackRateMax: 1.08 },
+    nova_danger_mid_pop: { volume: 0.56, minIntervalMs: 90, playbackRateMin: 0.9, playbackRateMax: 1.1 },
+    nova_boss_death_sonia: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_forge: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_mirror_crack: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_needle: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_vortex: { volume: 0.82, minIntervalMs: 900 },
+    nova_boss_death_jester: { volume: 0.78, minIntervalMs: 900 },
+    nova_boss_death_carrier: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_monolith: { volume: 0.84, minIntervalMs: 900 },
+    nova_boss_death_choir: { volume: 0.8, minIntervalMs: 900 },
+    nova_boss_death_clock: { volume: 0.82, minIntervalMs: 900 },
     overrun_clear_coronation: { volume: 0.88, minIntervalMs: 60000 },
     overrun_clear_shockwave: { volume: 0.86, minIntervalMs: 60000 },
     nova_player_hit_crackle: { volume: 0.72, minIntervalMs: 220 },
     nova_life_extend_bloom: { volume: 0.66, minIntervalMs: 700 },
     nova_wave_clear_sweep: { volume: 0.54, minIntervalMs: 700 },
     nova_game_over_drop: { volume: 0.62, minIntervalMs: 1000 },
-    combo_tick: { volume: 0.42, minIntervalMs: 180 },
-    combo_breakout: { volume: 0.68, minIntervalMs: 650 },
+    combo_tick: { volume: 0.18, minIntervalMs: 900, playbackRateMin: 1, playbackRateMax: 1.08 },
+    combo_breakout: { volume: 0.3, minIntervalMs: 900 },
     boss_phase_surge: { volume: 0.76, minIntervalMs: 900 },
     level_clear_medal: { volume: 0.62, minIntervalMs: 700 },
     menu_tick: { volume: 0.2, minIntervalMs: 70 },
     pause_in: { volume: 0.34, minIntervalMs: 250 },
     pause_out: { volume: 0.3, minIntervalMs: 250 },
     ship_lock_chime: { volume: 0.56, minIntervalMs: 500 },
-    chain_lightning_arc: { volume: 0.45, minIntervalMs: 160 },
+    chain_lightning_arc: { volume: 0.45, minIntervalMs: 160, playbackRateMin: 0.94, playbackRateMax: 1.06 },
     magnet_pull: { volume: 0.5, minIntervalMs: 260 },
     ghost_phase_shift: { volume: 0.48, minIntervalMs: 450 },
     time_slow_warp: { volume: 0.48, minIntervalMs: 450 },
+    row_core_pickup: { volume: 0.78, minIntervalMs: 900 },
+    row_core_horn: { volume: 0.82, minIntervalMs: 2500 },
+    row_core_drum: { volume: 0.72, minIntervalMs: 300 },
+    row_core_chant: { volume: 0.84, minIntervalMs: 220 },
+    row_core_chant_big: { volume: 0.95, minIntervalMs: 700 },
+    row_core_wave: { volume: 0.58, minIntervalMs: 150 },
+    row_core_perfect: { volume: 0.9, minIntervalMs: 1000 },
+    row_core_viking_row: { volume: 1, minIntervalMs: 4500 },
+    rare_visitor_arrival: { volume: 0.92, minIntervalMs: 8000 },
+    rare_visitor_theme_sting: { volume: 0.72, minIntervalMs: 8000 },
+    rare_visitor_laser_charge: { volume: 0.64, minIntervalMs: 850 },
+    rare_visitor_laser_fire: { volume: 0.78, minIntervalMs: 380 },
+    rare_visitor_barrage: { volume: 0.42, minIntervalMs: 520 },
+    rare_visitor_armor_crack: { volume: 0.76, minIntervalMs: 800 },
+    rare_visitor_defeat: { volume: 0.96, minIntervalMs: 5000 },
+    rare_visitor_reward: { volume: 0.84, minIntervalMs: 1800 },
+    tactical_phase_reactor: { volume: 0.72, minIntervalMs: 140 },
+    tactical_focus_lens: { volume: 0.72, minIntervalMs: 140 },
+    tactical_inertial_dampers: { volume: 0.72, minIntervalMs: 140 },
+    tactical_phase_wake: { volume: 0.72, minIntervalMs: 140 },
+    tactical_slipstream_coils: { volume: 0.72, minIntervalMs: 140 },
+    tactical_emergency_bulkhead: { volume: 0.72, minIntervalMs: 140 },
+    tactical_impact_foam: { volume: 0.72, minIntervalMs: 140 },
+    tactical_graze_plating: { volume: 0.72, minIntervalMs: 140 },
+    tactical_last_light: { volume: 0.72, minIntervalMs: 140 },
+    tactical_combo_anchor: { volume: 0.72, minIntervalMs: 140 },
+    tactical_salvage_clock: { volume: 0.72, minIntervalMs: 140 },
+    tactical_power_saver: { volume: 0.72, minIntervalMs: 140 },
+    tactical_drone_link: { volume: 0.72, minIntervalMs: 140 },
     drone_launch_blip: { volume: 0.46, minIntervalMs: 220 },
     orbital_strike_charge: { volume: 0.56, minIntervalMs: 600 },
     tractor_lock_charge: { volume: 0.5, minIntervalMs: 700 },
@@ -230,7 +379,7 @@ export const SFX_MIX = {
     elite_spawn_alert: { volume: 0.62, minIntervalMs: 1400 },
     elite_special_charge: { volume: 0.46, minIntervalMs: 700 },
     elite_special_active: { volume: 0.48, minIntervalMs: 650 },
-    elite_death: { volume: 0.58, minIntervalMs: 180 },
+    elite_death: { volume: 0.58, minIntervalMs: 180, playbackRateMin: 0.9, playbackRateMax: 1.08 },
     elite_tractor_puller_active: { volume: 0.48, minIntervalMs: 650 },
     elite_shield_projector_active: { volume: 0.48, minIntervalMs: 650 },
     elite_drone_carrier_active: { volume: 0.48, minIntervalMs: 650 },
@@ -251,13 +400,14 @@ export const SFX_MIX = {
     elite_anchor_turret_active: { volume: 0.52, minIntervalMs: 650 },
     elite_escort_commander_active: { volume: 0.46, minIntervalMs: 650 },
     elite_hunter_active: { volume: 0.52, minIntervalMs: 650 },
+    ...ELITE_EXPANSION_SFX_MIX,
     boss_beam_telegraph: { volume: 0.56, minIntervalMs: 700 },
     boss_beam_fire: { volume: 0.72, minIntervalMs: 700 },
     boss_web_telegraph: { volume: 0.48, minIntervalMs: 700 },
     boss_web_fire: { volume: 0.62, minIntervalMs: 700 },
     boss_net_telegraph: { volume: 0.5, minIntervalMs: 700 },
     boss_net_fire: { volume: 0.66, minIntervalMs: 700 },
-    boss_hazard_impact: { volume: 0.58, minIntervalMs: 180 },
+    boss_hazard_impact: { volume: 0.58, minIntervalMs: 180, playbackRateMin: 0.92, playbackRateMax: 1.05 },
     trait_bonus_hit: { volume: 0.08, minIntervalMs: 650 },
     trait_wing_hit: { volume: 0.34, minIntervalMs: 120 },
     trait_pierce_hit: { volume: 0.32, minIntervalMs: 120 },
@@ -272,7 +422,23 @@ export const VOICE_MIX = {
     mission_control_launch: { volume: 0.86, duckFactor: 0.42, duckMs: 1900, cooldownMs: 2600, eventCooldownMs: 45000 },
     mission_control_level_start: { volume: 0.7, duckFactor: 0.58, duckMs: 1250, cooldownMs: 18000 },
     mission_control_wave_clear: { volume: 0.76, duckFactor: 0.52, duckMs: 1300, cooldownMs: 30000 },
+    mission_control_reinforcements_incoming: { volume: 0.9, duckFactor: 0.42, duckMs: 1150, cooldownMs: 2200, eventCooldownMs: 2200, priority: 7 },
+    boss_mayhem_super_storm_warning: { volume: 1.04, duckFactor: 0.24, duckMs: 2400, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
+    boss_mayhem_super_storm_survived: { volume: 1.0, duckFactor: 0.3, duckMs: 2200, cooldownMs: 0, eventCooldownMs: 0, priority: 8 },
+    boss_rare_chaos_visitor_warning: { volume: 1.04, duckFactor: 0.24, duckMs: 2800, cooldownMs: 0, eventCooldownMs: 0, priority: 9 },
+    mission_control_row_core: { volume: 0.9, duckFactor: 0.36, duckMs: 2200, cooldownMs: 30000, priority: 5 },
+    level_clear_flirt: { volume: 0.9, duckFactor: 0.38, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
+    game_over_taunt: { volume: 1.04, duckFactor: 0.28, duckMs: 3200, cooldownMs: 0, eventCooldownMs: 0 },
     mission_control_boss_inbound: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 14000 },
+    boss_death_agony: { volume: 1.0, duckFactor: 0.42, duckMs: 1700, cooldownMs: 0, eventCooldownMs: 0 },
+    ...Object.fromEntries(MENU_BOSS_BARK_EVENT_IDS.map((eventName) => [
+        eventName,
+        { volume: 0.96, duckFactor: 0.36, duckMs: 1050, cooldownMs: 180, eventCooldownMs: 0, priority: 3 }
+    ])),
+    ...Object.fromEntries(TACTICAL_BOSS_BANTER_EVENT_IDS.map((eventName) => [
+        eventName,
+        { volume: 0.94, duckFactor: 0.34, duckMs: 1450, cooldownMs: 0, eventCooldownMs: 0, priority: 7 }
+    ])),
     mission_control_life_low: { volume: 0.88, duckFactor: 0.42, duckMs: 1800, cooldownMs: 18000 },
     mission_control_lives_max: { volume: 0.82, duckFactor: 0.48, duckMs: 1500, cooldownMs: 30000 },
     mission_control_powerup: { volume: 0.72, duckFactor: 0.52, duckMs: 900, cooldownMs: 28000 },
@@ -280,6 +446,7 @@ export const VOICE_MIX = {
     mission_control_game_over: { volume: 0.84, duckFactor: 0.44, duckMs: 2300, cooldownMs: 4200 },
     mission_control_ship_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3200, cooldownMs: 8000 },
     mission_control_ships_unlocked: { volume: 0.98, duckFactor: 0.34, duckMs: 3400, cooldownMs: 8000 },
+    mission_control_viking_legend_unlocked: { volume: 1.04, duckFactor: 0.26, duckMs: 4300, cooldownMs: 8000 },
     mission_control_combo: { volume: 0.72, duckFactor: 0.54, duckMs: 900, cooldownMs: 30000 },
     mission_control_local_highscore: { volume: 0.82, duckFactor: 0.46, duckMs: 2200, cooldownMs: 7000 },
     mission_control_global_highscore: { volume: 0.96, duckFactor: 0.32, duckMs: 3400, cooldownMs: 9000 },
@@ -294,6 +461,12 @@ export const VOICE_MIX = {
     mission_control_hijacker: { volume: 0.76, duckFactor: 0.54, duckMs: 1500, cooldownMs: 24000 },
     mission_control_tractor_hijack: { volume: 0.8, duckFactor: 0.48, duckMs: 1300, cooldownMs: 26000 },
     mission_control_overrun_clear: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_10: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_20: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_30: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_40: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_sector_50: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
+    mission_control_overrun_clear_far_signal: { volume: 1.05, duckFactor: 0.28, duckMs: 4200, cooldownMs: 60000 },
     mission_control_credits: { volume: 0.9, duckFactor: 0.34, duckMs: 3600, cooldownMs: 0 }
 };
 
@@ -301,6 +474,11 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_launch: 'mission_control_launch.mp3',
     mission_control_level_start: 'mission_control_level_start.mp3',
     mission_control_wave_clear: 'mission_control_wave_clear.mp3',
+    mission_control_reinforcements_incoming: 'mission_control_reinforcements_incoming_001.mp3',
+    boss_mayhem_super_storm_warning: 'boss_mayhem_super_storm_warning_01.mp3',
+    boss_mayhem_super_storm_survived: 'boss_mayhem_super_storm_survived_01.mp3',
+    boss_rare_chaos_visitor_warning: 'boss_rare_chaos_visitor_warning_01.mp3',
+    mission_control_row_core: 'mission_control_row_core_01.mp3',
     mission_control_boss_inbound: 'mission_control_boss_inbound.mp3',
     mission_control_life_low: 'mission_control_life_low.mp3',
     mission_control_lives_max: 'mission_control_lives_max.mp3',
@@ -309,6 +487,7 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_game_over: 'mission_control_game_over.mp3',
     mission_control_ship_unlocked: 'mission_control_ship_unlocked_01.mp3',
     mission_control_ships_unlocked: 'mission_control_ships_unlocked_01.mp3',
+    mission_control_viking_legend_unlocked: 'mission_control_viking_legend_unlocked_01.mp3',
     mission_control_combo: 'mission_control_combo_01.mp3',
     mission_control_local_highscore: 'mission_control_local_highscore_01.mp3',
     mission_control_global_highscore: 'mission_control_global_highscore_01.mp3',
@@ -323,6 +502,12 @@ export const VOICE_EVENT_FALLBACKS = {
     mission_control_hijacker: 'mission_control_hijacker_01.mp3',
     mission_control_tractor_hijack: 'mission_control_tractor_hijack_01.mp3',
     mission_control_overrun_clear: 'mission_control_overrun_clear_01.mp3',
+    mission_control_overrun_clear_sector_10: 'mission_control_overrun_clear_sector_10_01.mp3',
+    mission_control_overrun_clear_sector_20: 'mission_control_overrun_clear_sector_20_01.mp3',
+    mission_control_overrun_clear_sector_30: 'mission_control_overrun_clear_sector_30_01.mp3',
+    mission_control_overrun_clear_sector_40: 'mission_control_overrun_clear_sector_40_01.mp3',
+    mission_control_overrun_clear_sector_50: 'mission_control_overrun_clear_sector_50_01.mp3',
+    mission_control_overrun_clear_far_signal: 'mission_control_overrun_clear_far_signal_01.mp3',
     mission_control_credits: 'mission_control_credits_01.mp3',
     intro_narrator_01: 'intro_narrator_01.mp3',
     intro_narrator_02: 'intro_narrator_02.mp3',
@@ -340,6 +525,9 @@ export const SFX_CATALOG = {
     'shoot_heavy': [
         getSfx('laserLarge_000'), getSfx('laserLarge_001'), getSfx('laserLarge_002'), getSfx('laserLarge_003'), getSfx('laserLarge_004')
     ],
+    'shoot_railbreaker': [
+        getSfx('laserSmall_004')
+    ],
     'enemy_explode': [
         getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002'), getSfx('explosionCrunch_003'), getSfx('explosionCrunch_004')
     ],
@@ -356,12 +544,20 @@ export const SFX_CATALOG = {
         getSfx('forceField_000'), getSfx('forceField_001'), getSfx('forceField_002'), getSfx('forceField_003'), getSfx('forceField_004')
     ],
     'ui_open': [
-        getSfx('nova_menu_tick'),
         getSfx('doorOpen_000'), getSfx('doorOpen_001')
     ],
     'ui_close': [
         getSfx('nova_pause_out'),
         getSfx('doorClose_000'), getSfx('doorClose_001'), getSfx('doorClose_002')
+    ],
+    'codex_open': [
+        getSfx('nova_codex_tick')
+    ],
+    'codex_move': [
+        getSfx('nova_codex_tick')
+    ],
+    'codex_back': [
+        getSfx('nova_codex_tick')
     ],
     'pickup': [
         getSfx('nova_bonus_core_jackpot'),
@@ -376,6 +572,9 @@ export const SFX_CATALOG = {
     'enemy_shoot': [
         getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
     ],
+    'enemy_threat_soft_warn': [
+        getSfx('forceField_001'), getSfx('forceField_002')
+    ],
     // Direct matches from manifest
     'computerNoise': [getSfx('computerNoise_000')],
     'thrusterFire': [getSfx('thrusterFire_000')],
@@ -385,14 +584,17 @@ export const SFX_CATALOG = {
     // Mappings and Aliases
     'shoot': [getSfx('laserSmall_000')],
     'explosion': [getSfx('explosionCrunch_000')],
-    'menuSelect': [getSfx('nova_menu_tick'), getSfx('doorOpen_000')],
+    'menuSelect': [getSfx('doorOpen_000')],
     'playerHit': [getSfx('nova_player_hit_crackle'), getSfx('impactMetal_000')],
-    'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_wave_clear_sweep'), getSfx('nova_rank_fanfare')],
+    'levelComplete': [getSfx('nova_level_clear_medal'), getSfx('nova_rank_fanfare')],
 
     // Aliases for inconsistent call sites
     'forceField': [getSfx('nova_shield_snap'), getSfx('forceField_000')], // Alias for shield/pickup reuse
     'shield_up': [getSfx('nova_shield_snap'), getSfx('forceField_000')],
     'life_up': [getSfx('nova_life_extend_bloom'), getSfx('doorOpen_002')],
+    'super_life_up': [getSfx('nova_life_extend_bloom'), getSfx('nova_bonus_core_jackpot'), getSfx('nova_rank_fanfare')],
+    'nova_miracle_collect': [getSfx('nova_miracle_collect')],
+    'nova_miracle_purge': [getSfx('nova_miracle_purge')],
     'explosionCrunch': [getSfx('explosionCrunch_000'), getSfx('explosionCrunch_001'), getSfx('explosionCrunch_002')],
 
     // Refined Categories
@@ -402,11 +604,59 @@ export const SFX_CATALOG = {
         getSfx('forceField_002')
     ],
     'powerup': [
-        getSfx('nova_bonus_core_jackpot'),
         getSfx('forceField_001'), // Sharp
         getSfx('forceField_002'), // Resonant
         getSfx('forceField_003')  // High pitch
     ],
+    'powerup_pickup': [
+        getSfx('nova_bonus_core_jackpot'),
+        getSfx('doorOpen_002')
+    ],
+    'row_core_pickup': [
+        getSfx('nova_row_core_pickup')
+    ],
+    'row_core_horn': [
+        getSfx('nova_row_core_horn')
+    ],
+    'row_core_drum': [
+        getSfx('nova_row_core_drum')
+    ],
+    'row_core_chant': [
+        getSfx('nova_row_core_ro_01'),
+        getSfx('nova_row_core_ro_02'),
+        getSfx('nova_row_core_ro_03')
+    ],
+    'row_core_chant_big': [
+        getSfx('nova_row_core_ro_big')
+    ],
+    'row_core_wave': [
+        getSfx('nova_row_core_wave')
+    ],
+    'row_core_perfect': [
+        getSfx('nova_row_core_perfect')
+    ],
+    'row_core_viking_row': [getSfx('nova_row_core_viking_row')],
+    'rare_visitor_arrival': [getSfx('nova_rare_visitor_arrival')],
+    'rare_visitor_theme_sting': [getSfx('nova_rare_visitor_theme_sting')],
+    'rare_visitor_laser_charge': [getSfx('nova_rare_visitor_laser_charge')],
+    'rare_visitor_laser_fire': [getSfx('nova_rare_visitor_laser_fire')],
+    'rare_visitor_barrage': [getSfx('nova_rare_visitor_barrage')],
+    'rare_visitor_armor_crack': [getSfx('nova_rare_visitor_armor_crack')],
+    'rare_visitor_defeat': [getSfx('nova_rare_visitor_defeat')],
+    'rare_visitor_reward': [getSfx('nova_rare_visitor_reward')],
+    'tactical_phase_reactor': [getSfx('nova_tactical_phase_reactor')],
+    'tactical_focus_lens': [getSfx('nova_tactical_focus_lens')],
+    'tactical_inertial_dampers': [getSfx('nova_tactical_inertial_dampers')],
+    'tactical_phase_wake': [getSfx('nova_tactical_phase_wake')],
+    'tactical_slipstream_coils': [getSfx('nova_tactical_slipstream_coils')],
+    'tactical_emergency_bulkhead': [getSfx('nova_tactical_emergency_bulkhead')],
+    'tactical_impact_foam': [getSfx('nova_tactical_impact_foam')],
+    'tactical_graze_plating': [getSfx('nova_tactical_graze_plating')],
+    'tactical_last_light': [getSfx('nova_tactical_last_light')],
+    'tactical_combo_anchor': [getSfx('nova_tactical_combo_anchor')],
+    'tactical_salvage_clock': [getSfx('nova_tactical_salvage_clock')],
+    'tactical_power_saver': [getSfx('nova_tactical_power_saver')],
+    'tactical_drone_link': [getSfx('nova_tactical_drone_link')],
     'chain_lightning_arc': [
         getSfx('nova_chain_lightning_arc')
     ],
@@ -516,6 +766,7 @@ export const SFX_CATALOG = {
     'elite_hunter_active': [
         getSfx('nova_elite_hunter_active')
     ],
+    ...ELITE_EXPANSION_SFX_CATALOG,
     'boss_beam_telegraph': [
         getSfx('nova_boss_beam_telegraph')
     ],
@@ -537,6 +788,48 @@ export const SFX_CATALOG = {
     'boss_hazard_impact': [
         getSfx('nova_boss_hazard_impact')
     ],
+    'boss_entrance_impact': [
+        getSfx('nova_boss_entrance_impact')
+    ],
+    'boss_charge_lattice': [
+        getSfx('nova_boss_charge_lattice')
+    ],
+    'boss_damage_armor_crack': [
+        getSfx('nova_boss_damage_armor_crack')
+    ],
+    'boss_death_cascade': [
+        getSfx('nova_boss_death_cascade')
+    ],
+    'nova_boss_death_sonia': [
+        getSfx('nova_boss_death_sonia')
+    ],
+    'nova_boss_death_forge': [
+        getSfx('nova_boss_death_forge')
+    ],
+    'nova_boss_death_mirror_crack': [
+        getSfx('nova_boss_death_mirror_crack')
+    ],
+    'nova_boss_death_needle': [
+        getSfx('nova_boss_death_needle')
+    ],
+    'nova_boss_death_vortex': [
+        getSfx('nova_boss_death_vortex')
+    ],
+    'nova_boss_death_jester': [
+        getSfx('nova_boss_death_jester')
+    ],
+    'nova_boss_death_carrier': [
+        getSfx('nova_boss_death_carrier')
+    ],
+    'nova_boss_death_monolith': [
+        getSfx('nova_boss_death_monolith')
+    ],
+    'nova_boss_death_choir': [
+        getSfx('nova_boss_death_choir')
+    ],
+    'nova_boss_death_clock': [
+        getSfx('nova_boss_death_clock')
+    ],
     'trait_bonus_hit': [
         getSfx('nova_combo_tick')
     ],
@@ -554,6 +847,11 @@ export const SFX_CATALOG = {
     'mission_control_launch': missionControlPool('mission_control_launch'),
     'mission_control_level_start': missionControlPool('mission_control_level_start'),
     'mission_control_wave_clear': missionControlPool('mission_control_wave_clear'),
+    'mission_control_reinforcements_incoming': paddedNumberedVoicePool('mission_control_reinforcements_incoming', REINFORCEMENT_VOICE_COUNT, 3),
+    'boss_mayhem_super_storm_warning': paddedNumberedVoicePool('boss_mayhem_super_storm_warning', MAYHEM_SUPER_STORM_WARNING_VOICE_COUNT, 2),
+    'boss_mayhem_super_storm_survived': paddedNumberedVoicePool('boss_mayhem_super_storm_survived', MAYHEM_SUPER_STORM_SURVIVED_VOICE_COUNT, 2),
+    'boss_rare_chaos_visitor_warning': paddedNumberedVoicePool('boss_rare_chaos_visitor_warning', RARE_CHAOS_VISITOR_VOICE_COUNT, 2),
+    'mission_control_row_core': numberedVoicePool('mission_control_row_core', 5),
     'mission_control_boss_inbound': missionControlPool('mission_control_boss_inbound'),
     'mission_control_life_low': missionControlPool('mission_control_life_low'),
     'mission_control_lives_max': missionControlPool('mission_control_lives_max', 0),
@@ -562,6 +860,7 @@ export const SFX_CATALOG = {
     'mission_control_game_over': missionControlPool('mission_control_game_over'),
     'mission_control_ship_unlocked': numberedVoicePool('mission_control_ship_unlocked', 1),
     'mission_control_ships_unlocked': numberedVoicePool('mission_control_ships_unlocked', 1),
+    'mission_control_viking_legend_unlocked': numberedVoicePool('mission_control_viking_legend_unlocked', 1),
     'mission_control_combo': numberedVoicePool('mission_control_combo', 3),
     'mission_control_local_highscore': numberedVoicePool('mission_control_local_highscore', 2),
     'mission_control_global_highscore': numberedVoicePool('mission_control_global_highscore', 2),
@@ -576,7 +875,18 @@ export const SFX_CATALOG = {
     'mission_control_hijacker': numberedVoicePool('mission_control_hijacker', 2),
     'mission_control_tractor_hijack': numberedVoicePool('mission_control_tractor_hijack', 3),
     'mission_control_overrun_clear': numberedVoicePool('mission_control_overrun_clear', 1),
+    'mission_control_overrun_clear_sector_10': numberedVoicePool('mission_control_overrun_clear_sector_10', 1),
+    'mission_control_overrun_clear_sector_20': numberedVoicePool('mission_control_overrun_clear_sector_20', 1),
+    'mission_control_overrun_clear_sector_30': numberedVoicePool('mission_control_overrun_clear_sector_30', 1),
+    'mission_control_overrun_clear_sector_40': numberedVoicePool('mission_control_overrun_clear_sector_40', 1),
+    'mission_control_overrun_clear_sector_50': numberedVoicePool('mission_control_overrun_clear_sector_50', 1),
+    'mission_control_overrun_clear_far_signal': numberedVoicePool('mission_control_overrun_clear_far_signal', 1),
     'mission_control_credits': numberedVoicePool('mission_control_credits', 1),
+    'boss_death_agony': paddedNumberedVoicePool('boss_death_agony', 100, 3),
+    ...MENU_BOSS_BARK_CATALOG,
+    ...TACTICAL_BOSS_BANTER_CATALOG,
+    'game_over_taunt': paddedNumberedVoicePool('game_over_taunt', GAME_OVER_TAUNT_VOICE_COUNT, 3),
+    'level_clear_flirt': paddedNumberedVoicePool('level_clear_flirt', LEVEL_CLEAR_VOICE_COUNT, 3),
     ...GAME_OVER_CTA_VOICE_CATALOG,
     'boss_spawn': [
         getSfx('nova_boss_arrival_alarm'),
@@ -601,6 +911,18 @@ export const SFX_CATALOG = {
     'nova_boss_arrival_alarm': [
         getSfx('nova_boss_arrival_alarm')
     ],
+    'nova_boss_entrance_impact': [
+        getSfx('nova_boss_entrance_impact')
+    ],
+    'nova_boss_charge_lattice': [
+        getSfx('nova_boss_charge_lattice')
+    ],
+    'nova_boss_damage_armor_crack': [
+        getSfx('nova_boss_damage_armor_crack')
+    ],
+    'nova_boss_death_cascade': [
+        getSfx('nova_boss_death_cascade')
+    ],
     'nova_bonus_core_jackpot': [
         getSfx('nova_bonus_core_jackpot')
     ],
@@ -619,11 +941,26 @@ export const SFX_CATALOG = {
     'nova_global_slot_fanfare': [
         getSfx('nova_global_slot_fanfare')
     ],
+    'nova_top10_fanfare': [
+        getSfx('nova_top10_fanfare')
+    ],
     'nova_top3_fanfare': [
         getSfx('nova_top3_fanfare')
     ],
     'nova_number_one_fanfare': [
         getSfx('nova_number_one_fanfare')
+    ],
+    'nova_fuel_ship_spawn': [
+        getSfx('nova_fuel_ship_spawn')
+    ],
+    'nova_fuel_ship_heal': [
+        getSfx('nova_fuel_ship_heal')
+    ],
+    'nova_fuel_ship_pop': [
+        getSfx('nova_fuel_ship_pop')
+    ],
+    'nova_danger_mid_pop': [
+        getSfx('nova_danger_mid_pop')
     ],
     'overrun_clear_coronation': [
         getSfx('nova_overrun_clear_coronation')

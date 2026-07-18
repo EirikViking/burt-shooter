@@ -1,0 +1,76 @@
+{
+  "kind": "steam_upload_evidence",
+  "feature": "pilot_order_run_feedback_polish",
+  "recordedAt": "2026-07-06T12:06:30Z",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "30511c2624b6fad818098aedd979163957affa30",
+    "commitSummary": "Polish pilot order run feedback"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24072383",
+    "buildVersion": "v2026-07-06_13-59-13",
+    "buildDescription": "Nova Swarm v2026-07-06_13-59-13 pilot order feedback",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignedByUpload": false,
+    "publicDefaultAssignedByUpload": false,
+    "manualPublishRequired": true
+  },
+  "artifacts": {
+    "packageRoot": "release/desktop/win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "b3d5361ee2e0e4765fca8edb78be954251b6d346d31c9f3296cf981631c6ffa8",
+    "consoleLog": "release/steamworks/steam_upload_console_pilot_orders_feedback_20260706_20260706_140420.log",
+    "consoleLogSha256": "4c1635a1382b115ffb8a2561c94210b3a37bc8aa36474b945daebea3f2f6b0c4",
+    "failedAttemptLog": "release/steamworks/steam_upload_console_pilot_orders_feedback_20260706_20260706_140355.log",
+    "failedAttemptLogSha256": "ed23d36f546ed9fdd518aaa0558a73032bb1cedfd3815d35e04ba4290c404a08",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "package": {
+    "fileCount": 336,
+    "totalBytes": 916078147,
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "e21cd3d593df6d4605daa8aa5fd267be3df857bf1590f0387c0b05ce7f868533"
+    }
+  },
+  "checks": [
+    { "command": "npm run check:run-contracts", "status": "passed", "note": "Includes browser proof for progress toast, pause readout, completion toast, and Run Report." },
+    { "command": "npm run check:i18n", "status": "passed" },
+    { "command": "npm run check:i18n-ui", "status": "passed" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "git diff --check", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run build", "status": "passed", "note": "Refreshed build metadata to v2026-07-06_13-59-13 before packaging." },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "tools/steamcmd/steamcmd.exe +login gaunziman +run_app_build release\\steamworks\\app_build_LOCAL.vdf +quit", "status": "failed", "note": "SteamCMD resolved the relative VDF path from its own folder; no upload started." },
+    { "command": "tools/steamcmd/steamcmd.exe +login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit", "status": "passed" }
+  ],
+  "screenshots": {
+    "progressToast": "test-results/run-contracts-2026-07-06T11-47-56-099Z/pilot-order-progress-toast.png",
+    "pauseOrdersLine": "test-results/run-contracts-2026-07-06T11-47-56-099Z/pilot-orders-pause-line.png",
+    "completionToast": "test-results/run-contracts-2026-07-06T11-47-56-099Z/pilot-order-complete-play.png",
+    "runReport": "test-results/run-contracts-2026-07-06T11-47-56-099Z/pilot-orders-run-report.png"
+  },
+  "steamCmd": {
+    "path": "tools\\steamcmd\\steamcmd.exe",
+    "exitCode": 0,
+    "login": "cached gaunziman",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24072383)."
+  },
+  "notes": [
+    "The VDF kept SetLive blank, so this upload did not assign BuildID 24072383 to public/default or any beta branch.",
+    "No Steamworks metadata, branch assignment, public/default release change, AppID, depot, leaderboard identity, score formula, XP formula, or achievement API ID change was made by the upload.",
+    "Manual publication/branch assignment remains required before players receive this build.",
+    "If BuildID 24072383 is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the target branch to the previous desired BuildID."
+  ]
+}

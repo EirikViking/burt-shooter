@@ -1,0 +1,86 @@
+{
+  "type": "steam_upload_evidence",
+  "workstream": "p0_progress_reset_save_migration",
+  "generatedAt": "2026-06-20T00:27:32+02:00",
+  "branch": "codex/p0-progress-reset-save-migration-20260619",
+  "sourceCommit": "cf1c51f81308bc10cc7773bfb66632f273566fe1",
+  "preRunSnapshot": "7bf879e",
+  "build": {
+    "version": "v2026-06-20_00-13-45",
+    "timestamp": "2026-06-19T22:13:45.671Z",
+    "packagedGitSha": "cf1c51f",
+    "packagedGitShaMatchesSourceCommit": true
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23829231",
+    "depotManifestId": "3317994067601287117",
+    "baselineDepotManifestId": "2093552943102439710",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "setLiveBlank": true,
+    "assignedSteamBranch": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 879558629,
+    "manifestHash": "11707ca5e37369e7822a6c10599774ea5417fab20329b8a8bce09c70ab4b38b1",
+    "executableSha256": "7bd5abb67a5f5d41dc340f6145d24235c5aabff21794fa5d816d754e15340f21"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "buildOutputLine": "\"BuildOutput\" \"..\\\\steam-build-output\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "forbiddenSetLiveTargetsAbsent": [
+      "public",
+      "default",
+      "sector-continue-test"
+    ]
+  },
+  "checks": [
+    { "command": "git status --short --branch", "status": "clean before packaging" },
+    { "command": "git fetch --all --tags", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "report": "test-results/packaged-exe-smoke-2026-06-19T22-18-27-374Z/report.json" },
+    { "command": "npm run desktop:smoke:current", "status": "passed", "report": "test-results/electron-smoke-2026-06-19T22-19-25-864Z/report.json" },
+    { "command": "npm run desktop:perf:current", "status": "initial transient failure: min FPS 48.1 below 50" },
+    { "command": "npm run desktop:perf:current", "status": "passed on rerun", "report": "test-results/electron-perf-smoke-2026-06-19T22-21-00-066Z/report.json", "minFps": 58.8235294117647, "avgFps": 59.8196803878289 },
+    { "command": "npm run smoke", "status": "known non-blocking timeout after level 3 capture", "failure": "scripts/smoke-playtest.mjs:764:26 after 10-level3-gameplay.png" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "SteamCMD +run_app_build release/steamworks/app_build_LOCAL.vdf", "status": "passed", "log": "test-results/steam-upload-p0-progress-migration-20260620-002524/steamcmd.log" }
+  ],
+  "steamcmd": {
+    "tool": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+    "login": "gaunziman",
+    "usedCachedCredentials": true,
+    "mfaRequired": false,
+    "log": "test-results/steam-upload-p0-progress-migration-20260620-002524/steamcmd.log",
+    "successLine": "[2026-06-20 00:27:32]: Successfully finished AppID 4765070 build (BuildID 23829231).",
+    "depotManifestLine": "[2026-06-20 00:27:31]: Success! New manifestID 3317994067601287117 created and 8 new chunks uploaded."
+  },
+  "manualSteamworksTestSteps": [
+    "In Steamworks, manually assign BuildID 23829231 to the intended private test branch.",
+    "Launch from Steam with the account that should own the high-progress profile.",
+    "Verify Hangar, Codex, achievements mirror, and Sector Run checkpoints are visible.",
+    "Verify no Scout or Sector Run achievement unlocks occur.",
+    "Do not assign public/default unless separately approved."
+  ],
+  "notes": [
+    "The upload was private/unassigned because SetLive was blank.",
+    "No Steam branch assignment occurred during SteamPipe upload.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, achievement metadata, or Steam Cloud settings were changed.",
+    "The P0 fix preserves profile isolation and does not silently merge different explicit Steam profiles."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "status": "uploaded_private_build",
+  "generatedAt": "2026-06-12T14:33:00.000Z",
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "buildId": 23703559,
+    "setLive": "",
+    "liveBranchChanged": false,
+    "storeMetadataChanged": false,
+    "leaderboardNamePreserved": "nova_swarm_global_score_v2"
+  },
+  "package": {
+    "sourceCommit": "9292654bd30993827de10c87a02e0937807dea34",
+    "version": "v2026-06-12_16-26-09",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "fileCount": 336,
+    "totalBytes": 751483511,
+    "manifestHash": "b2412c753fb9542e50193bc71f133e8b249dc472b7c9340b4a320f755e24faa0",
+    "executableSha256": "51b88031160341ded2e3b69b14f0878171e8745d5a399696b0cfff12c051da7f"
+  },
+  "commands": {
+    "package": "npm run package:steam:win",
+    "payloadManifest": "npm run steamworks:payload-manifest",
+    "writeVdf": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' STEAM_BUILD_DESC='Nova Swarm 2026-06-12 menu FX voice private test' npm run steamworks:write-vdf",
+    "upload": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "evidence": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "steamcmdLog": "test-results/steam-upload-menu-fx-20260612-1631/steamcmd-upload.log",
+    "packageRuntimeReport": "test-results/steam-package-runtime-2026-06-12T14-28-56-296Z/report.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-12T14-30-34-434Z/report.json",
+    "menuFxVisualReport": "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/report.json",
+    "suggestedScreenshots": [
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/01-main-menu.png",
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/02-how-to-play-overlay.png",
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/04-leaderboard.png",
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/08-ship-details.png",
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/10-pause-menu.png",
+      "test-results/menu-fx-desktop-2026-06-12T14-22-40-017Z/11-game-over.png"
+    ]
+  }
+}

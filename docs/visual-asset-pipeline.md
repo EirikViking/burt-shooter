@@ -162,6 +162,20 @@ Prompt summary:
 
 > Premium Nova Swarm arcade powerup icon atlas with distinct collectible icons for triple beam, vector boost, rapid cabinet, overdrive core, slow time, ghost phase, extra life, shield, rapid fire, double shot, damage up, speed up, pierce shot, score x2, magnet field, side drones, shockwave, chain lightning, orbital strike, vampire drain, plus supplemental bomb, point-defense, and bonus-core icons; flat chroma-key backgrounds, no text, no logos, no old UFO/saucer art, readable at small gameplay sizes.
 
+## 2026-06-17 Latest Powerup Icon Refresh
+
+- Runtime assets: `public/art/generated/nova-swarm/powerups/nova-powerup-*-20260613.png` for the 20 latest powerups.
+- Review sheet: `public/art/generated/nova-swarm/powerups/nova-powerups-contact-sheet-20260617-new-batch.png`.
+- Imagegen sources: `public/art/generated/nova-swarm/powerups/imagegen-source-20260617/*.png`.
+- Repro script: `scripts/normalize-powerup-imagegen-icons-20260617.py`.
+- Optimization: internal Codex imagegen outputs were preserved as source PNGs, then edge-connected dark/key backgrounds were removed locally, trimmed, padded, and saved as `192x192` transparent item-art icons under the existing manifest slots. This supersedes the earlier circular-badge generator because the Codex still looked like old placeholder art.
+- Usage: `src/assets/assetManifest.js` keeps the existing 2026-06-13 paths, while `src/utils/GameAssets.js` now preloads powerup art directly so early gameplay and debug/capture flows do not fall back to the bonus-core texture.
+- Verification: `npm run check:powerup-assets`, `npm run build:current`, `npm run check:powerup-visuals`, and `npm run check:codex-layout`.
+
+Prompt summary:
+
+> Twenty distinct Nova Swarm neon sci-fi arcade powerup item icons: prism splitter, rail surge, chrono anchor, blink drive, nano patch, score fever, gravity well, drone carousel, plasma lance, stasis net, aegis burst, jackpot lens, ion dash, saw matrix, mirror shots, mercy protocol, target paint, void crown, swarm contract, and pulse refund. High-detail object silhouettes, no simple circular HUD medal template, no text, no words, no letters, no numerals, no plus-sign Mercy Protocol icon, no labels, no watermarks, readable in Codex and gameplay at small size.
+
 ## 2026-05-19 Generated Credits Artwork
 
 - Source: `public/art/generated/nova-swarm/source/nova-swarm-credits-20260519-source.png`

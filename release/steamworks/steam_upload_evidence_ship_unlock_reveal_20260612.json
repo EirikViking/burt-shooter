@@ -1,0 +1,64 @@
+{
+  "uploadedAt": "2026-06-12T07:33:55.000Z",
+  "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+  "branch": "feature/sector-continue-prototype-v1",
+  "sourceHead": "c034ccf27a887a2002c35a1cc3178b2ee1b8b846",
+  "packageVersion": "v2026-06-12_09-26-16",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23696628",
+    "setLive": "",
+    "targetBranch": null,
+    "description": "Nova Swarm ship unlock reveal c034ccf private",
+    "defaultBranchTargeted": false,
+    "testBuildBranchTargeted": false,
+    "mainLeaderboard": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724632749,
+    "manifestHash": "3a9925365e8b4de0e12b00952b8ef36f2d6a4d004f188554f401772b24a03b3e",
+    "executableSha256": "0e53f4ff714751a0c8a8034102b385e07bf4716b1b2832b53e5b537340d6df58",
+    "depotManifestId": "838345279849684582"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": ""
+  },
+  "commands": {
+    "releaseLine": "npm run check:release-line",
+    "focusedRevealCheck": "npm run check:ship-unlock-reveal",
+    "i18nUi": "npm run check:i18n-ui",
+    "resultScreenFlow": "npm run check:result-screen-flow",
+    "smoke": "npm run smoke",
+    "package": "npm run package:steam:win",
+    "payloadManifest": "npm run steamworks:payload-manifest",
+    "packagedSmoke": "npm run desktop:smoke:packaged",
+    "writeVdf": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" STEAM_BUILD_DESC=\"Nova Swarm ship unlock reveal c034ccf private\" npm run steamworks:write-vdf",
+    "uploadRedacted": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "results": {
+    "releaseLine": "PASS",
+    "steamSdkReady": "PASS",
+    "build": "PASS",
+    "steamPackageRuntime": "PASS",
+    "focusedRevealCheck": "PASS",
+    "i18nUi": "PASS",
+    "resultScreenFlow": "PASS",
+    "smoke": "PASS",
+    "payloadManifest": "PASS",
+    "packagedSmoke": "PASS",
+    "steamcmdUpload": "PASS"
+  },
+  "notes": [
+    "Includes commit c034ccf Show animated ships on unlock results.",
+    "Uploaded as a private SteamPipe build with SetLive empty.",
+    "No default, test-build, beta, or live branch was named in the VDF.",
+    "Steam store metadata, app visibility, AppID, depot ID, pricing, achievements, and leaderboard settings were not changed."
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "type": "steam_upload_evidence",
+  "title": "Nova Swarm private test - five wave pacing",
+  "createdAt": "2026-06-19T12:50:00Z",
+  "branch": "codex/sector10-clear-time-pacing-20260619",
+  "sourceCommit": "b7c8d7eafcb63c223cf2e21ee44aa776cd058dd1",
+  "startingCommit": "a8a9e997fd9afe6911960e1876070ba9ccbd85c6",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23821577",
+    "depotManifest": "3807309952473057445",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignment": null,
+    "noBranchAssignmentFromVdf": true,
+    "uploadLog": "test-results/steam-upload-sector10-pacing-20260619-144345/steamcmd.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "package": {
+    "build": "v2026-06-19_14-33-55",
+    "packagedGitSha": "b7c8d7e",
+    "packagedGitShaProof": "test-results/packaged-exe-smoke-2026-06-19T12-38-35-491Z/report.json",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "0783c1cf698617580456451f613567597dce7e16a1595b36b78abbb8db58a516",
+    "fileCount": 336,
+    "totalBytes": 879495058,
+    "exeSha256": "7d37f511fb652b6e458f9d554326f3ba33aa4086e15394a7a100709376ea2979"
+  },
+  "vdfVerification": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "desc": "Nova Swarm private test - five wave pacing 2026-06-19"
+  },
+  "changeSummary": {
+    "MIN_WAVES_BETWEEN_BOSSES": "6 -> 5",
+    "wavesPerBossBase": "6 -> 5",
+    "normalWaveDifficultyLevelOffset": 9,
+    "bossBodyMetricHash": "39175994f789ad9578741f72138e0a22ae49dcc7bfa51308fc7c6a7a0d00e2a3",
+    "leaderboard": "nova_swarm_global_score_v2"
+  },
+  "checks": {
+    "gitDiffCheck": "passed",
+    "checkSector10ClearTimePacing": "passed",
+    "checkNormalWaveDifficultyShift": "passed",
+    "checkWavePacing": "passed",
+    "checkDifficultyTuning": "passed",
+    "checkI18n": "passed",
+    "checkI18nUi": "passed",
+    "checkSectorChallengeSelector": "passed",
+    "checkSectorStartCheckpointUnlocks": "passed",
+    "checkControllerFlow": "passed",
+    "checkSteamElectronBridge": "passed",
+    "checkPowerupAssets": "passed",
+    "checkPowerupVisuals": "passed",
+    "checkCodexLayout": "passed",
+    "checkThreatCodex": "passed",
+    "checkEliteShips": "passed",
+    "buildCurrent": "passed",
+    "packageSteamWin": "passed",
+    "packageSteamWinCurrent": "passed",
+    "desktopSmokePackaged": "passed",
+    "desktopSmokeCurrent": "passed",
+    "desktopPerfCurrent": "passed",
+    "smoke": "non_blocking_known_timeout_after_level3_capture_at_scripts_smoke_playtest_mjs_764_26"
+  },
+  "notes": [
+    "Steam upload used cached credentials for gaunziman; no MFA was required.",
+    "The VDF kept SetLive blank, so the upload created a private unassigned build for manual branch assignment.",
+    "No Steamworks metadata, AppID, depot ID, leaderboard identity, store visibility, or live branch was changed by this evidence."
+  ]
+}

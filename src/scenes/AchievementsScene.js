@@ -5,6 +5,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, getResponsiveFontSize } from '../ui/textLayout.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
@@ -75,6 +76,7 @@ export class AchievementsScene {
     this.container = new PIXI.Container();
     this.backdrop = null;
     this.backdropShade = null;
+    this.menuFx = null;
     this.panel = null;
     this.title = null;
     this.summary = null;
@@ -86,6 +88,7 @@ export class AchievementsScene {
     this.backBtn = null;
     this.rows = [];
     this.rowDebug = [];
+    this.catalogIntegrity = null;
     this.focusedIndex = 0;
     this.scrollOffset = 0;
     this.columns = 1;
@@ -100,13 +103,18 @@ export class AchievementsScene {
     this.layoutUnsubscribe = null;
     this.keyHandler = null;
     this.wheelHandler = null;
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
+    this.scrollBarDebug = null;
     this.gamepadPrevious = {};
     this.gamepadSuppressActiveInput = true;
   }
 
   init() {
     this.suppressGamepadUntilReleased();
-    this.container.removeChildren();
+    destroyMenuFx(this);
+    this.cleanupDisplayObjects();
     this.container.sortableChildren = true;
     this.rows = this.buildRows();
     this.focusedIndex = clamp(this.focusedIndex, 0, Math.max(0, this.rows.length - 1));
@@ -114,6 +122,17 @@ export class AchievementsScene {
     this.rowDebug = [];
 
     this.createBackdrop();
+    installMenuFx(this, {
+      label: 'ui_menuFxAchievements',
+      zIndex: -8,
+      accent: 0xffd15c,
+      secondary: 0x37f5ff,
+      gold: 0xffef7e,
+      intensity: 0.72,
+      density: 0.76,
+      alpha: 0.5,
+      openVolume: 0.22
+    });
     this.createElements();
     this.setupKeyboard();
     this.layoutUnsubscribe?.();
@@ -123,10 +142,53 @@ export class AchievementsScene {
 
   buildRows() {
     const manager = this.game?.achievementManager;
-    return ACHIEVEMENTS.map((achievement) => ({
-      achievement,
-      unlocked: Boolean(manager?.isUnlocked?.(achievement.id))
-    }));
+    const seenIds = new Set();
+    const duplicateIds = [];
+    const rows = [];
+    for (const achievement of ACHIEVEMENTS) {
+      if (!achievement?.id || seenIds.has(achievement.id)) {
+        if (achievement?.id) duplicateIds.push(achievement.id);
+        continue;
+      }
+      seenIds.add(achievement.id);
+      rows.push({
+        achievement,
+        unlocked: Boolean(manager?.isUnlocked?.(achievement.id))
+      });
+    }
+    this.catalogIntegrity = {
+      sourceCount: ACHIEVEMENTS.length,
+      rowCount: rows.length,
+      uniqueIdCount: seenIds.size,
+      duplicateIds,
+      duplicatesDropped: duplicateIds.length
+    };
+    return rows;
+  }
+
+  clearRenderedRows() {
+    if (!this.rowsContainer) return;
+    const children = this.rowsContainer.removeChildren();
+    children.forEach((child) => child?.destroy?.({ children: true }));
+  }
+
+  cleanupDisplayObjects() {
+    this.clearRenderedRows();
+    const children = this.container.removeChildren();
+    children.forEach((child) => {
+      if (child === this.rowsContainer) return;
+      child?.destroy?.({ children: true });
+    });
+    this.backdrop = null;
+    this.backdropShade = null;
+    this.panel = null;
+    this.title = null;
+    this.summary = null;
+    this.hint = null;
+    this.scrollRail = null;
+    this.scrollThumb = null;
+    this.pageText = null;
+    this.backBtn = null;
   }
 
   createBackdrop() {
@@ -195,10 +257,16 @@ export class AchievementsScene {
 
     this.scrollRail = new PIXI.Graphics();
     this.scrollRail.zIndex = 12;
+    this.scrollRail.eventMode = 'static';
+    this.scrollRail.cursor = 'pointer';
+    this.scrollRail.on('pointerdown', (event) => this.beginScrollbarDrag(event));
     this.container.addChild(this.scrollRail);
 
     this.scrollThumb = new PIXI.Graphics();
     this.scrollThumb.zIndex = 13;
+    this.scrollThumb.eventMode = 'static';
+    this.scrollThumb.cursor = 'pointer';
+    this.scrollThumb.on('pointerdown', (event) => this.beginScrollbarDrag(event));
     this.container.addChild(this.scrollThumb);
 
     this.pageText = createText('', {
@@ -241,8 +309,15 @@ export class AchievementsScene {
     button._label = text;
     button.addChild(bg, text);
     this.drawButton(button, false);
-    button.on('pointerover', () => this.drawButton(button, true));
+    button.on('pointerover', () => {
+      playMenuFocusSfx(0.1);
+      this.drawButton(button, true);
+    });
     button.on('pointerout', () => this.drawButton(button, false));
+    button.on('pointerdown', () => {
+      playMenuConfirmSfx(0.16);
+      this.menuFx?.burst?.(button.x, button.y, { color: 0xffd15c, radius: 84, durationMs: 420 });
+    });
     return button;
   }
 
@@ -267,6 +342,7 @@ export class AchievementsScene {
     const { width, height } = this.game.app.screen;
     const responsiveLayout = getCurrentLayout();
     const layout = createTextLayout(width, height, responsiveLayout);
+    resizeMenuFx(this, width, height);
     const safe = responsiveLayout.safeArea;
     const bottomInset = Math.max(0, height - (safe.bottom ?? height));
     const mobile = layout.isMobile || width < 760;
@@ -370,7 +446,7 @@ export class AchievementsScene {
   }
 
   drawRows() {
-    this.rowsContainer.removeChildren();
+    this.clearRenderedRows();
     this.rowDebug = [];
     const visibleRows = this.rows.slice(this.scrollOffset, this.scrollOffset + this.visibleCapacity);
     visibleRows.forEach((row, visibleIndex) => {
@@ -517,6 +593,18 @@ export class AchievementsScene {
     const thumbY = maxOffset <= 0
       ? railY
       : railY + (railHeight - thumbHeight) * (this.scrollOffset / maxOffset);
+    this.scrollBarDebug = {
+      x: railX - 12,
+      y: railY,
+      width: 31,
+      height: railHeight,
+      thumbY,
+      thumbHeight,
+      total,
+      visible,
+      maxOffset,
+      interactive: total > visible
+    };
     this.scrollRail.clear();
     this.scrollThumb.clear();
     this.scrollRail.roundRect(railX, railY, 7, railHeight, 4);
@@ -534,6 +622,52 @@ export class AchievementsScene {
     this.pageText.visible = total > visible;
     this.scrollRail.visible = total > visible;
     this.scrollThumb.visible = total > visible;
+    this.scrollRail.hitArea = new PIXI.Rectangle(railX - 12, railY, 31, railHeight);
+    this.scrollThumb.hitArea = new PIXI.Rectangle(railX - 12, railY, 31, railHeight);
+    this.scrollRail.eventMode = total > visible ? 'static' : 'none';
+    this.scrollThumb.eventMode = total > visible ? 'static' : 'none';
+  }
+
+  beginScrollbarDrag(event) {
+    if (!this.scrollBarDebug?.interactive) return;
+    event.stopPropagation?.();
+    this.endScrollbarDrag();
+    this.scrollDrag = { bounds: this.scrollBarDebug };
+    this.scrollDragMoveHandler = (moveEvent) => {
+      moveEvent.preventDefault?.();
+      this.setScrollFromY(Number(moveEvent.clientY) || 0);
+    };
+    this.scrollDragEndHandler = () => this.endScrollbarDrag();
+    window.addEventListener('pointermove', this.scrollDragMoveHandler, { passive: false });
+    window.addEventListener('pointerup', this.scrollDragEndHandler, { passive: true });
+    window.addEventListener('pointercancel', this.scrollDragEndHandler, { passive: true });
+    this.setScrollFromY(Number(event.global?.y) || this.scrollBarDebug.y);
+  }
+
+  endScrollbarDrag() {
+    if (this.scrollDragMoveHandler) {
+      window.removeEventListener('pointermove', this.scrollDragMoveHandler);
+    }
+    if (this.scrollDragEndHandler) {
+      window.removeEventListener('pointerup', this.scrollDragEndHandler);
+      window.removeEventListener('pointercancel', this.scrollDragEndHandler);
+    }
+    this.scrollDrag = null;
+    this.scrollDragMoveHandler = null;
+    this.scrollDragEndHandler = null;
+  }
+
+  setScrollFromY(y) {
+    const bounds = this.scrollDrag?.bounds || this.scrollBarDebug;
+    if (!bounds?.interactive || bounds.maxOffset <= 0) return false;
+    const ratio = clamp((Number(y) - bounds.y) / Math.max(1, bounds.height), 0, 1);
+    const nextOffset = clamp(Math.round(ratio * bounds.maxOffset), 0, bounds.maxOffset);
+    if (nextOffset === this.scrollOffset && this.focusedIndex === nextOffset) return false;
+    this.scrollOffset = nextOffset;
+    this.focusedIndex = clamp(nextOffset, 0, Math.max(0, this.rows.length - 1));
+    this.drawRows();
+    playMenuFocusSfx(0.09);
+    return true;
   }
 
   moveFocus(delta) {
@@ -541,6 +675,7 @@ export class AchievementsScene {
     this.focusedIndex = clamp(this.focusedIndex + delta, 0, this.rows.length - 1);
     this.ensureFocusedVisible();
     this.drawRows();
+    playMenuFocusSfx(0.09);
   }
 
   setupKeyboard() {
@@ -549,6 +684,7 @@ export class AchievementsScene {
       const key = event.key;
       if (key === 'Escape' || key === 'Backspace') {
         event.preventDefault();
+        event.stopImmediatePropagation?.();
         this.returnToMenu();
         return;
       }
@@ -596,6 +732,7 @@ export class AchievementsScene {
   }
 
   returnToMenu() {
+    playMenuConfirmSfx(0.14);
     this.game.showMenu();
   }
 
@@ -641,7 +778,8 @@ export class AchievementsScene {
     return { connected: true, active, pressed };
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.readGamepadNavigation();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.up) this.moveFocus(-1);
@@ -661,10 +799,17 @@ export class AchievementsScene {
     return {
       ...managerState,
       focusedId: this.rows[this.focusedIndex]?.achievement?.id || null,
+      rowCount: this.rows.length,
+      uniqueRowCount: new Set(this.rows.map((row) => row.achievement?.id).filter(Boolean)).size,
+      renderedRowCount: this.rowsContainer?.children?.length || 0,
+      renderedUniqueRowCount: new Set(this.rowDebug.map((row) => row.id).filter(Boolean)).size,
+      catalogIntegrity: this.catalogIntegrity ? { ...this.catalogIntegrity } : null,
       scrollOffset: this.scrollOffset,
       visibleCapacity: this.visibleCapacity,
+      scrollbar: this.scrollBarDebug,
       rows: this.rowDebug,
-      backButton: getBoundsDebug(this.backBtn)
+      backButton: getBoundsDebug(this.backBtn),
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
@@ -681,6 +826,8 @@ export class AchievementsScene {
       window.removeEventListener('wheel', this.wheelHandler, true);
       this.wheelHandler = null;
     }
-    this.rowsContainer.removeChildren();
+    this.endScrollbarDrag();
+    destroyMenuFx(this);
+    this.cleanupDisplayObjects();
   }
 }

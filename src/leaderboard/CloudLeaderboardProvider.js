@@ -58,10 +58,11 @@ export class CloudLeaderboardProvider {
       options.name || runResult.playerName || runResult.name || 'PILOT',
       runResult.score
     );
+    const levelReached = runResult.levelReached ?? runResult.level;
     const response = await API.submitScore(
       name,
       runResult.score,
-      runResult.level,
+      levelReached,
       runResult.rankIndex,
       runResult.submissionId
     );

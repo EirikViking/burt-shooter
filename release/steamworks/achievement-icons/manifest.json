@@ -1,9 +1,9 @@
 {
   "appId": 4765070,
-  "generatedAt": "2026-05-25T22:54:38.862Z",
+  "generatedAt": "2026-06-15T12:45:28.054Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
-  "sourceSheet": "nova-swarm-achievement-icons-sheet-20260525.png",
-  "sourceGenerator": "Codex imagegen skill; original 7x3 launch contact sheet plus 2026-05-26 3x3 milestone sheet",
+  "sourceSheet": "nova-swarm-achievement-icons-sheet-20260615-legendary-unique.png",
+  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and First Ranked Run icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs.",
   "iconSize": "256x256 jpg",
   "icons": [
     {
@@ -159,6 +159,166 @@
       "lockedIcon": "ACH_RANK_19-locked.jpg"
     },
     {
+      "apiName": "ACH_RANK_20",
+      "displayName": "Rank Up: Black-Star Bailiff",
+      "description": "Reach the Black-Star Bailiff rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_20-achieved.jpg",
+      "lockedIcon": "ACH_RANK_20-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_21",
+      "displayName": "Rank Up: Static Undertaker",
+      "description": "Reach the Static Undertaker rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_21-achieved.jpg",
+      "lockedIcon": "ACH_RANK_21-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_22",
+      "displayName": "Rank Up: Void Receipt",
+      "description": "Reach the Void Receipt rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_22-achieved.jpg",
+      "lockedIcon": "ACH_RANK_22-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_23",
+      "displayName": "Rank Up: Meteor Notary",
+      "description": "Reach the Meteor Notary rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_23-achieved.jpg",
+      "lockedIcon": "ACH_RANK_23-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_24",
+      "displayName": "Rank Up: Hull Sermonizer",
+      "description": "Reach the Hull Sermonizer rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_24-achieved.jpg",
+      "lockedIcon": "ACH_RANK_24-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_25",
+      "displayName": "Rank Up: Photon Debt King",
+      "description": "Reach the Photon Debt King rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_25-achieved.jpg",
+      "lockedIcon": "ACH_RANK_25-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_26",
+      "displayName": "Rank Up: Comet Knife Saint",
+      "description": "Reach the Comet Knife Saint rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_26-achieved.jpg",
+      "lockedIcon": "ACH_RANK_26-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_27",
+      "displayName": "Rank Up: Redline Ghost",
+      "description": "Reach the Redline Ghost rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_27-achieved.jpg",
+      "lockedIcon": "ACH_RANK_27-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_28",
+      "displayName": "Rank Up: Grudge Astronaut",
+      "description": "Reach the Grudge Astronaut rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_28-achieved.jpg",
+      "lockedIcon": "ACH_RANK_28-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_29",
+      "displayName": "Rank Up: Zero-G Bastard",
+      "description": "Reach the Zero-G Bastard rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_29-achieved.jpg",
+      "lockedIcon": "ACH_RANK_29-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_30",
+      "displayName": "Rank Up: Cabinet War Pope",
+      "description": "Reach the Cabinet War Pope rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_30-achieved.jpg",
+      "lockedIcon": "ACH_RANK_30-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_31",
+      "displayName": "Rank Up: Starvektor Baron",
+      "description": "Reach the Starvektor Baron rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_31-achieved.jpg",
+      "lockedIcon": "ACH_RANK_31-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_32",
+      "displayName": "Rank Up: Boss-Mouth Doctor",
+      "description": "Reach the Boss-Mouth Doctor rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_32-achieved.jpg",
+      "lockedIcon": "ACH_RANK_32-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_33",
+      "displayName": "Rank Up: Laser Coffin Clerk",
+      "description": "Reach the Laser Coffin Clerk rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_33-achieved.jpg",
+      "lockedIcon": "ACH_RANK_33-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_34",
+      "displayName": "Rank Up: Swarm Tax Marshal",
+      "description": "Reach the Swarm Tax Marshal rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_34-achieved.jpg",
+      "lockedIcon": "ACH_RANK_34-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_35",
+      "displayName": "Rank Up: Nova Ash Colonel",
+      "description": "Reach the Nova Ash Colonel rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_35-achieved.jpg",
+      "lockedIcon": "ACH_RANK_35-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_36",
+      "displayName": "Rank Up: Dead-Sun Mechanic",
+      "description": "Reach the Dead-Sun Mechanic rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_36-achieved.jpg",
+      "lockedIcon": "ACH_RANK_36-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_37",
+      "displayName": "Rank Up: Black Box Prophet",
+      "description": "Reach the Black Box Prophet rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_37-achieved.jpg",
+      "lockedIcon": "ACH_RANK_37-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_38",
+      "displayName": "Rank Up: Final Coin Tyrant",
+      "description": "Reach the Final Coin Tyrant rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_38-achieved.jpg",
+      "lockedIcon": "ACH_RANK_38-locked.jpg"
+    },
+    {
+      "apiName": "ACH_RANK_39",
+      "displayName": "Rank Up: Heat-Death Champion",
+      "description": "Reach the Heat-Death Champion rank.",
+      "hidden": false,
+      "achievedIcon": "ACH_RANK_39-achieved.jpg",
+      "lockedIcon": "ACH_RANK_39-locked.jpg"
+    },
+    {
       "apiName": "ACH_GLOBAL_LEADERBOARD",
       "displayName": "Callsign On The Board",
       "description": "Qualify for the global leaderboard.",
@@ -168,11 +328,19 @@
     },
     {
       "apiName": "ACH_GLOBAL_NUMBER_ONE",
-      "displayName": "Top Of The Swarm",
-      "description": "Reach #1 on the global leaderboard.",
+      "displayName": "Swarm Elite",
+      "description": "Submit a 750,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_GLOBAL_NUMBER_ONE-achieved.jpg",
       "lockedIcon": "ACH_GLOBAL_NUMBER_ONE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_EARLY_PILOT",
+      "displayName": "First Ranked Run",
+      "description": "Finish any ranked run. Practice and Sector Start runs do not count.",
+      "hidden": false,
+      "achievedIcon": "ACH_EARLY_PILOT-achieved.jpg",
+      "lockedIcon": "ACH_EARLY_PILOT-locked.jpg"
     },
     {
       "apiName": "ACH_SECTOR_FIVE",
@@ -185,7 +353,7 @@
     {
       "apiName": "ACH_FINAL_CLIMAX",
       "displayName": "Final Climax Signal",
-      "description": "Reach the final climax sector.",
+      "description": "Reach Sector 10 in a ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_FINAL_CLIMAX-achieved.jpg",
       "lockedIcon": "ACH_FINAL_CLIMAX-locked.jpg"
@@ -193,7 +361,7 @@
     {
       "apiName": "ACH_ARCADE_CLEAR",
       "displayName": "Cabinet Survived",
-      "description": "Clear the current arcade run.",
+      "description": "Clear a ranked Mayhem run.",
       "hidden": false,
       "achievedIcon": "ACH_ARCADE_CLEAR-achieved.jpg",
       "lockedIcon": "ACH_ARCADE_CLEAR-locked.jpg"
@@ -201,7 +369,7 @@
     {
       "apiName": "ACH_TWO_LIVES_CLEAR",
       "displayName": "Spare Hull Ceremony",
-      "description": "Clear the run with at least 2 lives remaining.",
+      "description": "Clear a ranked Mayhem run with at least 2 lives remaining.",
       "hidden": false,
       "achievedIcon": "ACH_TWO_LIVES_CLEAR-achieved.jpg",
       "lockedIcon": "ACH_TWO_LIVES_CLEAR-locked.jpg"
@@ -245,10 +413,247 @@
       "hidden": false,
       "achievedIcon": "ACH_HANGAR_TWELVE-achieved.jpg",
       "lockedIcon": "ACH_HANGAR_TWELVE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SIX_FIGURE_SIGNAL",
+      "displayName": "Six-Figure Signal",
+      "description": "Score 100,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SIX_FIGURE_SIGNAL-achieved.jpg",
+      "lockedIcon": "ACH_SIX_FIGURE_SIGNAL-locked.jpg"
+    },
+    {
+      "apiName": "ACH_NEON_TAX_BRACKET",
+      "displayName": "Neon Tax Bracket",
+      "description": "Score 150,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_NEON_TAX_BRACKET-achieved.jpg",
+      "lockedIcon": "ACH_NEON_TAX_BRACKET-locked.jpg"
+    },
+    {
+      "apiName": "ACH_CABINET_JACKPOT",
+      "displayName": "Cabinet Jackpot",
+      "description": "Score 500,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_CABINET_JACKPOT-achieved.jpg",
+      "lockedIcon": "ACH_CABINET_JACKPOT-locked.jpg"
+    },
+    {
+      "apiName": "ACH_MILLION_POINT_MUTINY",
+      "displayName": "Million-Point Mutiny",
+      "description": "Score 1,000,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_MILLION_POINT_MUTINY-achieved.jpg",
+      "lockedIcon": "ACH_MILLION_POINT_MUTINY-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SECTOR_STORMRIDER",
+      "displayName": "Sector Stormrider",
+      "description": "Reach Sector 12 with at least 250,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SECTOR_STORMRIDER-achieved.jpg",
+      "lockedIcon": "ACH_SECTOR_STORMRIDER-locked.jpg"
+    },
+    {
+      "apiName": "ACH_OVERRUN_CARTOGRAPHER",
+      "displayName": "Overrun Cartographer",
+      "description": "Reach Sector 20 with at least 250,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_OVERRUN_CARTOGRAPHER-achieved.jpg",
+      "lockedIcon": "ACH_OVERRUN_CARTOGRAPHER-locked.jpg"
+    },
+    {
+      "apiName": "ACH_BOSS_PAROLE_DENIED",
+      "displayName": "Boss Parole Denied",
+      "description": "Defeat 3 bosses in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_BOSS_PAROLE_DENIED-achieved.jpg",
+      "lockedIcon": "ACH_BOSS_PAROLE_DENIED-locked.jpg"
+    },
+    {
+      "apiName": "ACH_FIVE_BOSS_FEVER",
+      "displayName": "Five-Boss Fever",
+      "description": "Defeat 5 bosses in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_FIVE_BOSS_FEVER-achieved.jpg",
+      "lockedIcon": "ACH_FIVE_BOSS_FEVER-locked.jpg"
+    },
+    {
+      "apiName": "ACH_CLEAN_ROOM_RIOT",
+      "displayName": "Clean Room Riot",
+      "description": "Clear 3 no-hit sectors in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_CLEAN_ROOM_RIOT-achieved.jpg",
+      "lockedIcon": "ACH_CLEAN_ROOM_RIOT-locked.jpg"
+    },
+    {
+      "apiName": "ACH_PERFECT_PRESSURE",
+      "displayName": "Perfect Pressure",
+      "description": "Clear 8 no-hit waves in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_PERFECT_PRESSURE-achieved.jpg",
+      "lockedIcon": "ACH_PERFECT_PRESSURE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_FIFTY_HIT_STATIC",
+      "displayName": "Fifty-Hit Static",
+      "description": "Reach a 50-hit combo in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_FIFTY_HIT_STATIC-achieved.jpg",
+      "lockedIcon": "ACH_FIFTY_HIT_STATIC-locked.jpg"
+    },
+    {
+      "apiName": "ACH_DANGER_DANCE_CERTIFICATE",
+      "displayName": "Danger Dance Certificate",
+      "description": "Chain 6 danger dodges in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_DANGER_DANCE_CERTIFICATE-achieved.jpg",
+      "lockedIcon": "ACH_DANGER_DANCE_CERTIFICATE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_GRAZE_BREAKER_DELUXE",
+      "displayName": "Graze Breaker Deluxe",
+      "description": "Trigger 3 Graze Breaks in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_GRAZE_BREAKER_DELUXE-achieved.jpg",
+      "lockedIcon": "ACH_GRAZE_BREAKER_DELUXE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_NO_REPAIR_RECEIPTS",
+      "displayName": "No Repair Receipts",
+      "description": "Clear a 250,000-point ranked run without losing a life.",
+      "hidden": false,
+      "achievedIcon": "ACH_NO_REPAIR_RECEIPTS-achieved.jpg",
+      "lockedIcon": "ACH_NO_REPAIR_RECEIPTS-locked.jpg"
+    },
+    {
+      "apiName": "ACH_FULL_HULL_FIREWORKS",
+      "displayName": "Full-Hull Fireworks",
+      "description": "Clear a ranked run with 3 lives remaining and at least 250,000 points.",
+      "hidden": false,
+      "achievedIcon": "ACH_FULL_HULL_FIREWORKS-achieved.jpg",
+      "lockedIcon": "ACH_FULL_HULL_FIREWORKS-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SWARM_TAXONOMIST",
+      "displayName": "Swarm Taxonomist",
+      "description": "Discover 100 Threat Codex signals, then finish a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SWARM_TAXONOMIST-achieved.jpg",
+      "lockedIcon": "ACH_SWARM_TAXONOMIST-locked.jpg"
+    },
+    {
+      "apiName": "ACH_BLACK_BOX_ARCHIVIST",
+      "displayName": "Black Box Archivist",
+      "description": "Earn 6 new Codex discoveries in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_BLACK_BOX_ARCHIVIST-achieved.jpg",
+      "lockedIcon": "ACH_BLACK_BOX_ARCHIVIST-locked.jpg"
+    },
+    {
+      "apiName": "ACH_HANGAR_AFTERPARTY",
+      "displayName": "Hangar Afterparty",
+      "description": "Unlock 15 playable ships, then finish a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_HANGAR_AFTERPARTY-achieved.jpg",
+      "lockedIcon": "ACH_HANGAR_AFTERPARTY-locked.jpg"
+    },
+    {
+      "apiName": "ACH_BOSS_ROSTER_STAMPED",
+      "displayName": "Boss Roster Stamped",
+      "description": "Defeat 8 unique boss signals across your career, then finish a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_BOSS_ROSTER_STAMPED-achieved.jpg",
+      "lockedIcon": "ACH_BOSS_ROSTER_STAMPED-locked.jpg"
+    },
+    {
+      "apiName": "ACH_THEME_PARK_PANIC",
+      "displayName": "Theme Park Panic",
+      "description": "Survive 6 different run themes, then finish a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_THEME_PARK_PANIC-achieved.jpg",
+      "lockedIcon": "ACH_THEME_PARK_PANIC-locked.jpg"
+    },
+    {
+      "apiName": "ACH_TWO_MILLION_REACTOR",
+      "displayName": "Two-Million Reactor",
+      "description": "Score 2,000,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_TWO_MILLION_REACTOR-achieved.jpg",
+      "lockedIcon": "ACH_TWO_MILLION_REACTOR-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SECTOR_THIRTY_BLACKOUT",
+      "displayName": "Sector 30 Blackout",
+      "description": "Reach Sector 30 with at least 250,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SECTOR_THIRTY_BLACKOUT-achieved.jpg",
+      "lockedIcon": "ACH_SECTOR_THIRTY_BLACKOUT-locked.jpg"
+    },
+    {
+      "apiName": "ACH_SECTOR_FIFTY_ENDLESS",
+      "displayName": "Sector 50 Endless",
+      "description": "Reach Sector 50 with at least 250,000 points in a ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_SECTOR_FIFTY_ENDLESS-achieved.jpg",
+      "lockedIcon": "ACH_SECTOR_FIFTY_ENDLESS-locked.jpg"
+    },
+    {
+      "apiName": "ACH_TEN_BOSS_TRIBUNAL",
+      "displayName": "Ten-Boss Tribunal",
+      "description": "Defeat 10 bosses in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_TEN_BOSS_TRIBUNAL-achieved.jpg",
+      "lockedIcon": "ACH_TEN_BOSS_TRIBUNAL-locked.jpg"
+    },
+    {
+      "apiName": "ACH_CLEAN_TEN_STATUTE",
+      "displayName": "Clean Ten Statute",
+      "description": "Clear 10 no-hit sectors in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_CLEAN_TEN_STATUTE-achieved.jpg",
+      "lockedIcon": "ACH_CLEAN_TEN_STATUTE-locked.jpg"
+    },
+    {
+      "apiName": "ACH_THIRTY_WAVE_GHOST",
+      "displayName": "Thirty-Wave Ghost",
+      "description": "Clear 30 no-hit waves in one 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_THIRTY_WAVE_GHOST-achieved.jpg",
+      "lockedIcon": "ACH_THIRTY_WAVE_GHOST-locked.jpg"
+    },
+    {
+      "apiName": "ACH_TWO_HUNDRED_HIT_COMET",
+      "displayName": "Two-Hundred Hit Comet",
+      "description": "Reach a 200-hit combo in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_TWO_HUNDRED_HIT_COMET-achieved.jpg",
+      "lockedIcon": "ACH_TWO_HUNDRED_HIT_COMET-locked.jpg"
+    },
+    {
+      "apiName": "ACH_DANGER_DODGE_PROPHET",
+      "displayName": "Danger Dodge Prophet",
+      "description": "Chain 20 danger dodges in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_DANGER_DODGE_PROPHET-achieved.jpg",
+      "lockedIcon": "ACH_DANGER_DODGE_PROPHET-locked.jpg"
+    },
+    {
+      "apiName": "ACH_GRAZE_STORM_CROWN",
+      "displayName": "Graze Storm Crown",
+      "description": "Trigger 12 Graze Breaks in a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_GRAZE_STORM_CROWN-achieved.jpg",
+      "lockedIcon": "ACH_GRAZE_STORM_CROWN-locked.jpg"
+    },
+    {
+      "apiName": "ACH_FULL_HANGAR_OMEGA",
+      "displayName": "Full Hangar Omega",
+      "description": "Unlock all 25 playable ships, then finish a 250,000-point ranked run.",
+      "hidden": false,
+      "achievedIcon": "ACH_FULL_HANGAR_OMEGA-achieved.jpg",
+      "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"
     }
   ],
-  "sourceSheets": [
-    "nova-swarm-achievement-icons-sheet-20260525.png",
-    "nova-swarm-achievement-icons-sheet-20260526.png"
-  ]
+  "sourceFiles": []
 }

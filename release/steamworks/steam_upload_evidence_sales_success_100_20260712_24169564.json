@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-07-12T10:59:30.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24169564",
+  "sourceCommit": "828a407d5c4d59b129b38eb9576058b07b1d0957 Forecast and evolve Tactical builds",
+  "sourceBaseline": "b80059ae255499e379283bef4e762c5b5901f944 nova-swarm-lock-20260712-tactical-store-refresh",
+  "buildStamp": "v2026-07-12_12-44-35",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24161600",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_sales_success_100_20260712.log",
+  "consoleLogSha256": "756118ef9a0800af4700405369374456dfb4a6855bb28e75cd0efa639a5a6cb4",
+  "payloadManifestSha256": "1560ac795ebbc535afeb5afa0d43d0c11e9c92acbff0273a0411e1b6638545b5",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 920448588,
+    "manifestHash": "2cb91c5b4509ab787c51f111e982d5e6bd1ca9802f7402154eea760696a8f57a",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "8907e6e1932076ccc405f1f25a25b97457d65856ae841f423a07c6d39e2f7ba9"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-12 12:59:07]: Successfully finished AppID 4765070 build (BuildID 24169564).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: exact lock tag baseline b80059a, dedicated branch codex/sales-success-100-20260712, tracked clean before edits",
+    "improvementLedger": "passed: 100 tracked improvements/guards across Draft Hold, Run Doctrines, Doctrine Forecast, and Tactical Evolutions",
+    "releaseLine": "passed before packaging and VDF generation",
+    "sourceBuild": "passed: v2026-07-12_12-44-35, gitSha 828a407",
+    "localization": "passed: complete eight-language copy and i18n UI coverage with no placeholders or English leaks",
+    "tacticalSystems": "passed: Draft hold, doctrine identity, card forecasts, 16 evolved identities, HUD/loadout/report persistence",
+    "humanSimulationStarter": "passed: Sector 3, two Drafts, 187.4 seconds, three lives, no Game Over",
+    "browserSmoke": "passed: test-results/smoke-2026-07-12T10-32-56-090Z/report.json",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-12T10-52-36-341Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-12T10-53-16-360Z/report.json",
+    "packagedPerformance": "passed: 60.18 average FPS, 59.52 minimum FPS, 12 samples, no warnings or errors",
+    "desktopSmoke": "passed: build v2026-07-12_12-44-35, gitSha 828a407, zero console events",
+    "desktopPackage": "passed",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-12T10-55-57-691Z/report.json",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24161600.",
+    "Source rollback is git revert 828a407 0d855be e044ff0 in that order from this branch."
+  ]
+}

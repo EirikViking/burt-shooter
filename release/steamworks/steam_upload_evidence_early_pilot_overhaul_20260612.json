@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-06-12T16:59:36Z",
+  "purpose": "Private SteamPipe upload evidence for the Early Pilot overhaul build.",
+  "git": {
+    "branch": "codex/hard-achievements-20260612",
+    "head": "cd592f903c99ef60c78454991f5e893e01a09834"
+  },
+  "build": {
+    "version": "v2026-06-12_18-53-24",
+    "timestamp": "2026-06-12T16:53:24.926Z",
+    "steamBuildId": "23706033",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifestId": "1288743706869170803",
+    "baselineDepotManifestId": "3346409970397958539",
+    "setLive": "",
+    "visibility": "private build only"
+  },
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "752a307604bb07d6cb8a0f694ec80c735bf576976e4e316f93d3e3ec9a86ebd4",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadBytes": 756950052,
+    "payloadManifestHash": "b3ddc896e5e855e8625cf599674c3918d45feea0facda1be89bf766da001536d"
+  },
+  "steamPipe": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "steamcmdPath": "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+    "steamcmdUploadLog": "test-results/steam-upload-early-pilot-overhaul-20260612-185708/steamcmd-upload.log",
+    "observedResult": "SteamCMD completed with exit code 0 using cached gaunziman credentials. ContentBuilder logs report successful AppID 4765070 build completion, BuildID 23706033, and depot manifest 1288743706869170803. SetLive remained empty, so no live branch was set.",
+    "appLogProof": [
+      "Starting AppID 4765070 build (flags 0x0).",
+      "Successfully finished AppID 4765070 build (BuildID 23706033)."
+    ],
+    "depotLogProof": [
+      "Found 398 files (721 MB) for depot 4765071",
+      "Success! New manifestID 1288743706869170803 created and 21 new chunks uploaded."
+    ]
+  },
+  "checks": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run check:steam-package-runtime",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf",
+    "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit"
+  ],
+  "protectedSteamFields": {
+    "steamAppIdChanged": false,
+    "depotIdsChanged": false,
+    "leaderboardIdentityChanged": false,
+    "storeMetadataChanged": false,
+    "pricingChanged": false,
+    "releaseVisibilityChanged": false,
+    "liveBranchChanged": false
+  },
+  "manualFollowUp": [
+    "Confirm BuildID 23706033 in Steamworks before any branch promotion.",
+    "Keep SetLive empty unless the user explicitly approves setting a live branch.",
+    "Configure ACH_EARLY_PILOT manually in Steamworks if it is not already present."
+  ]
+}

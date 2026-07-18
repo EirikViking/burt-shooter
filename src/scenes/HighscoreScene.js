@@ -3,18 +3,22 @@ import { BUILD_ID } from '../buildInfo.js';
 import { addResponsiveListener } from '../ui/responsiveLayout.js';
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { BonusAsset } from '../utils/BonusAsset.js';
-import { getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
+import { MAX_RANK_INDEX, getRankFromLevel, getRankTitle } from '../shared/RankPolicy.js';
 import { RankAssets } from '../utils/RankAssets.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { createLeaderboardAdapter } from '../leaderboard/LeaderboardAdapter.js';
 import {
   LEADERBOARD_DISPLAY_LIMIT,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
   LeaderboardView,
   normalizeLeaderboardEntry
 } from '../leaderboard/LeaderboardTypes.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
+import { tauntDirector } from '../game/TauntDirector.js';
+import { RUN_MODES } from '../game/RunMode.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 
 
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
@@ -52,6 +56,28 @@ function fitTextToWidth(textObject, maxWidth, minFontSize = 9) {
   }
 }
 
+function hasLeaderboardLevelColumn(view = LeaderboardView.GLOBAL) {
+  return view === LeaderboardView.SECTOR || view === LeaderboardView.LOCAL;
+}
+
+function getLeaderboardScoreHeader(view = LeaderboardView.GLOBAL) {
+  if (view === LeaderboardView.SECTOR) return 'SCORE / START';
+  if (view === LeaderboardView.LOCAL) return 'SCORE / LEVEL';
+  return 'SCORE';
+}
+
+function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
+  if (view === LeaderboardView.SECTOR) {
+    const sector = Math.max(0, Math.floor(Number(entry.sectorStart ?? entry.startSector ?? entry.level) || 0));
+    return `${translateText('S')} ${sector || '?'}`;
+  }
+  if (!hasLeaderboardLevelColumn(view)) return '';
+  const label = translateText('LV');
+  if (entry.levelSource === 'score_estimate') return `${label} ?`;
+  const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
+  return `${label} ${level}`;
+}
+
 export class HighscoreScene {
   constructor(game) {
     this.game = game;
@@ -67,6 +93,8 @@ export class HighscoreScene {
     this.backBtn = null;
     this.runAgainBtn = null;
     this.globalBtn = null;
+    this.tacticalBtn = null;
+    this.sectorBtn = null;
     this.friendsBtn = null;
     this.localBtn = null;
     this.tabButtons = {};
@@ -88,6 +116,7 @@ export class HighscoreScene {
     this.focusableControls = [];
     this.focusedControlIndex = 0;
     this.keyHandler = null;
+    this.leavingScene = false;
 
     // Trophy Room Assets
     this.bonusDronesContainer = new PIXI.Container();
@@ -95,6 +124,7 @@ export class HighscoreScene {
     this.largeBonusDronesContainer = new PIXI.Container();
     this.confettiContainer = new PIXI.Container();
     this.scanlineOverlay = null;
+    this.menuFx = null;
     this.animationTicker = null;
     this.bonusDrones = [];
     this.largeBonusDrones = [];
@@ -128,6 +158,7 @@ export class HighscoreScene {
     this.playerHighlightEffects = [];
     this.entries = [];
     this.entriesNormalized = [];
+    this.leavingScene = false;
     this.activeLeaderboardResult = null;
     this.status = 'LOADING';
     this.lastError = 'none';
@@ -248,7 +279,6 @@ export class HighscoreScene {
       wordWrapWidth: clampTextWidth(width * 0.8, layout)
     });
     this.stateMessage.anchor.set(0.5);
-    this.stateMessage.anchor.set(0.5);
     this.stateMessage.zIndex = 12;
     this.container.addChild(this.stateMessage);
 
@@ -267,21 +297,31 @@ export class HighscoreScene {
     this.container.addChild(this.retryBtn);
 
     this.backBtn = this.createButton('BACK');
-    this.backBtn.on('pointerdown', () => {
-      this.game.switchScene('menu');
+    this.backBtn.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      event?.preventDefault?.();
+      this.returnToMenu('button');
     });
     this.container.addChild(this.backBtn);
 
     this.runAgainBtn = this.createButton('ONE MORE RUN');
-    this.runAgainBtn.on('pointerdown', () => {
-      this.game.startGame(this.game.selectedShipSpriteKey);
-    });
+    this.runAgainBtn.on('pointerdown', () => this.startRunAgain());
     this.container.addChild(this.runAgainBtn);
 
     this.globalBtn = this.createButton('GLOBAL');
     this.globalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.GLOBAL));
     this.globalBtn.zIndex = 5;
     this.container.addChild(this.globalBtn);
+
+    this.tacticalBtn = this.createButton('TACTICAL');
+    this.tacticalBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.TACTICAL));
+    this.tacticalBtn.zIndex = 5;
+    this.container.addChild(this.tacticalBtn);
+
+    this.sectorBtn = this.createButton('SECTOR');
+    this.sectorBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.SECTOR));
+    this.sectorBtn.zIndex = 5;
+    this.container.addChild(this.sectorBtn);
 
     this.friendsBtn = this.createButton('FRIENDS');
     this.friendsBtn.on('pointerdown', () => this.setLeaderboardView(LeaderboardView.FRIENDS));
@@ -294,16 +334,20 @@ export class HighscoreScene {
     this.container.addChild(this.localBtn);
     this.tabButtons = {
       [LeaderboardView.GLOBAL]: this.globalBtn,
+      [LeaderboardView.TACTICAL]: this.tacticalBtn,
+      [LeaderboardView.SECTOR]: this.sectorBtn,
       [LeaderboardView.FRIENDS]: this.friendsBtn,
       [LeaderboardView.LOCAL]: this.localBtn
     };
     this.focusableControls = [
       { id: LeaderboardView.GLOBAL, button: this.globalBtn, activate: () => this.setLeaderboardView(LeaderboardView.GLOBAL) },
+      { id: LeaderboardView.TACTICAL, button: this.tacticalBtn, activate: () => this.setLeaderboardView(LeaderboardView.TACTICAL) },
+      { id: LeaderboardView.SECTOR, button: this.sectorBtn, activate: () => this.setLeaderboardView(LeaderboardView.SECTOR) },
       { id: LeaderboardView.FRIENDS, button: this.friendsBtn, activate: () => this.setLeaderboardView(LeaderboardView.FRIENDS) },
       { id: LeaderboardView.LOCAL, button: this.localBtn, activate: () => this.setLeaderboardView(LeaderboardView.LOCAL) },
       { id: 'retry', button: this.retryBtn, activate: () => this.fetchHighscores() },
-      { id: 'back', button: this.backBtn, activate: () => this.game.switchScene('menu') },
-      { id: 'runAgain', button: this.runAgainBtn, activate: () => this.game.startGame(this.game.selectedShipSpriteKey) }
+      { id: 'back', button: this.backBtn, activate: () => this.returnToMenu('focus') },
+      { id: 'runAgain', button: this.runAgainBtn, activate: () => this.startRunAgain() }
     ];
     this.focusableControls.forEach((control) => {
       if (control.button) control.button.activate = control.activate;
@@ -327,6 +371,17 @@ export class HighscoreScene {
 
     // Enable sortable children for zIndex
     this.container.sortableChildren = true;
+    installMenuFx(this, {
+      label: 'ui_menuFxLeaderboard',
+      zIndex: -3,
+      accent: 0x00f6ff,
+      secondary: 0xff55d9,
+      gold: 0xffd15c,
+      intensity: 0.72,
+      density: 0.82,
+      alpha: 0.52,
+      openVolume: 0.22
+    });
 
     // Start animation loop
     this.startAnimationLoop();
@@ -370,6 +425,16 @@ export class HighscoreScene {
     if (this.activeLeaderboard === nextView && this.status !== 'ERROR') return;
     this.activeLeaderboard = nextView;
     this.game.leaderboardView = nextView;
+    playMenuConfirmSfx(0.18);
+    this.menuFx?.burst?.(this.game.getWidth() * 0.5, Math.max(120, this.tableMetrics?.y || 120), {
+      color: nextView === LeaderboardView.SECTOR
+        ? 0xffd15c
+        : nextView === LeaderboardView.TACTICAL
+          ? 0xff55d9
+          : 0x37f5ff,
+      radius: 140,
+      durationMs: 520
+    });
     this.loadActiveLeaderboard();
   }
 
@@ -396,9 +461,20 @@ export class HighscoreScene {
       const source = (activeTab?.sourceLabel || this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Score Signal').toUpperCase();
       this.subtitle.text = `${translateText('PILOT RANK SIGNAL')} // ${translateText(source)}`;
     }
+    if (this.runAgainBtn?._label) {
+      this.runAgainBtn._label.text = translateText(
+        this.activeLeaderboard === LeaderboardView.TACTICAL
+          ? 'ONE MORE TACTICAL RUN'
+          : 'ONE MORE PURE RUN'
+      );
+      this.runAgainBtn._label.style.fontSize = Math.max(12, Math.min(18, (this.runAgainBtn._buttonHeight || 44) * 0.42));
+      fitTextToWidth(this.runAgainBtn._label, (this.runAgainBtn._buttonWidth || 260) - 32, 11);
+    }
     Object.entries(this.tabButtons || {}).forEach(([view, button]) => {
       if (!button) return;
-      button.visible = tabs.some(tab => tab.id === view);
+      const tab = tabs.find((entry) => entry.id === view);
+      button.visible = Boolean(tab);
+      if (tab && button._label) button._label.text = translateText(tab.label);
     });
     this.updateToggleStyles();
   }
@@ -412,6 +488,7 @@ export class HighscoreScene {
   async layoutHighscore() {
     const { width, height } = this.game.app.screen;
     const layout = createTextLayout(width, height);
+    resizeMenuFx(this, width, height);
     this.layoutBackdrop(this.backdropSprite, width, height);
     this.drawBackdropShade(width, height);
 
@@ -463,7 +540,7 @@ export class HighscoreScene {
     const visibleTabs = (this.leaderboardTabs || []).filter(tab => this.tabButtons?.[tab.id]?.visible !== false);
     if (visibleTabs.length > 0) {
       const buttonW = isMobile
-        ? Math.min(118, Math.max(92, deckWidth / Math.max(3.5, visibleTabs.length + 0.7)))
+        ? Math.min(108, Math.max(68, (deckWidth - 8 * (visibleTabs.length - 1)) / visibleTabs.length))
         : (visibleTabs.length > 2 ? 150 : 172);
       const buttonH = isMobile ? 32 : 38;
       const gap = isMobile ? 8 : 14;
@@ -511,7 +588,7 @@ export class HighscoreScene {
     this.retryBtn.visible = this.status === 'ERROR';
 
     const backButtonW = isMobile ? 112 : 140;
-    const runAgainButtonW = isMobile ? Math.min(176, deckWidth * 0.5) : 210;
+    const runAgainButtonW = isMobile ? Math.min(210, deckWidth * 0.56) : Math.min(300, Math.max(260, deckWidth * 0.25));
     this.resizeButton(this.backBtn, backButtonW, isMobile ? 36 : 40);
     this.resizeButton(this.runAgainBtn, runAgainButtonW, isMobile ? 40 : 44);
 
@@ -583,9 +660,13 @@ export class HighscoreScene {
     this.activeLeaderboardResult = result;
     this.entries = Array.isArray(result.entries) ? result.entries.slice(0, LEADERBOARD_DISPLAY_LIMIT) : [];
     this.entriesNormalized = this.normalizeEntries(this.entries);
-    this.comment.text = translateText(result.message || (this.entries.length > 0
-      ? `${result.sourceLabel || 'Leaderboard'} records loaded.`
-      : `${result.sourceLabel || 'Leaderboard'} has no scores yet.`));
+    const humorCategory = result.status === 'available' && this.entries.length > 0
+      ? 'leaderboard_loaded'
+      : result.status === 'empty'
+        ? 'leaderboard_empty'
+        : 'leaderboard_error';
+    this.comment.text = tauntDirector.getRotatingText(humorCategory);
+    this.lastLeaderboardHumor = tauntDirector.getRotationDebugState();
     const status = result.status === 'available'
       ? 'LOADED'
       : result.status === 'empty'
@@ -619,12 +700,15 @@ export class HighscoreScene {
     const lastResult = this.game.lastLeaderboardResult || null;
     const globalResult = lastResult?.globalStatus ? String(lastResult.globalStatus).replace(/_/g, ' ').toUpperCase() : null;
     const sourceLabel = this.leaderboardAdapter?.getSourceLabel?.(this.activeLeaderboard) || 'Leaderboard';
+    const resultMessage = this.activeLeaderboardResult?.message || null;
     switch (newState) {
       case 'LOADED':
         if (this.activeLeaderboard === LeaderboardView.LOCAL) {
           this.stateMessage.text = globalResult
             ? translateText('Local board loaded. Global: {status}.', { status: globalResult })
             : translateText('Local board loaded.');
+        } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
+          this.stateMessage.text = translateText('{source} loaded.', { source: translateText(sourceLabel) });
         } else {
           this.stateMessage.text = globalResult
             ? translateText('{source} loaded. Last run: {status}.', { source: translateText(sourceLabel), status: globalResult })
@@ -633,7 +717,11 @@ export class HighscoreScene {
         break;
       case 'EMPTY':
         if (this.activeLeaderboard === LeaderboardView.FRIENDS) {
-          this.stateMessage.text = translateText('No friends scores yet.');
+          this.stateMessage.text = translateText('Steam friends who play Nova Swarm and submit scores will appear here.');
+        } else if (this.activeLeaderboard === LeaderboardView.SECTOR) {
+          this.stateMessage.text = translateText('Steam sector run board has no entries yet.');
+        } else if (this.activeLeaderboard === LeaderboardView.TACTICAL) {
+          this.stateMessage.text = translateText('Steam Tactical has no entries yet. The first build is waiting for a pilot.');
         } else {
           this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'No local scores yet. Be the first legend here.'
@@ -641,17 +729,25 @@ export class HighscoreScene {
         }
         break;
       case 'ERROR':
-        this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.LOCAL
+        this.stateMessage.text = translateText(resultMessage || (this.activeLeaderboard === LeaderboardView.LOCAL
           ? `Local scores unavailable.`
           : this.activeLeaderboard === LeaderboardView.FRIENDS
             ? 'Could not load Steam friends scores.'
-            : `Global board offline. Local scores are safe.`);
+            : this.activeLeaderboard === LeaderboardView.SECTOR
+              ? 'Could not load Steam sector run scores.'
+            : this.activeLeaderboard === LeaderboardView.TACTICAL
+              ? 'Could not load Steam Tactical scores.'
+            : `Global board offline. Local scores are safe.`));
         break;
       default:
         this.stateMessage.text = translateText(this.activeLeaderboard === LeaderboardView.FRIENDS
           ? 'Loading Steam friends scores...'
           : this.activeLeaderboard === LeaderboardView.LOCAL
             ? 'Loading local board...'
+            : this.activeLeaderboard === LeaderboardView.SECTOR
+              ? 'Loading Steam sector run scores...'
+            : this.activeLeaderboard === LeaderboardView.TACTICAL
+              ? 'Loading Steam Tactical scores...'
             : `Loading ${sourceLabel.toLowerCase()}...`);
     }
     this.updateLeaderboardChrome();
@@ -659,7 +755,15 @@ export class HighscoreScene {
   }
 
   normalizeEntry(raw) {
-    const normalized = normalizeLeaderboardEntry(raw, { source: this.activeLeaderboard });
+    const normalized = normalizeLeaderboardEntry(raw, {
+      source: this.activeLeaderboard,
+      view: this.activeLeaderboard,
+      leaderboardKind: this.activeLeaderboard === LeaderboardView.SECTOR
+        ? 'sector_start'
+        : this.activeLeaderboard === LeaderboardView.TACTICAL
+          ? 'mayhem_tactical'
+          : null
+    });
     if (!normalized) return null;
     return {
       ...normalized,
@@ -685,21 +789,34 @@ export class HighscoreScene {
   }
 
   getLastLeaderboardPlayerMatch() {
-    const result = this.game?.lastLeaderboardResult || null;
+    const result = this.activeLeaderboard === LeaderboardView.SECTOR
+      ? (this.game?.lastSectorLeaderboardResult || null)
+      : (this.game?.lastLeaderboardResult || null);
     if (!result) return null;
+    const resultIsTactical = result.leaderboardKind === 'mayhem_tactical'
+      || result.leaderboardName === STEAM_TACTICAL_LEADERBOARD_NAME;
+    if (this.activeLeaderboard === LeaderboardView.TACTICAL && !resultIsTactical) return null;
+    if (this.activeLeaderboard === LeaderboardView.GLOBAL && resultIsTactical) return null;
 
     const localEntry = result.localEntry || null;
     const score = Number(result.score ?? localEntry?.score);
-    const level = Number(result.level ?? localEntry?.level);
+    const level = Number(result.level ?? result.levelReached ?? result.highestSectorReached ?? localEntry?.level);
     return {
       name: this.normalizePlayerNameForMatch(result.name || result.playerName || localEntry?.name || localEntry?.playerName),
       score: Number.isFinite(score) ? score : null,
       level: Number.isFinite(level) ? level : null,
       localPlacement: Number(result.localPlacement ?? localEntry?.placement),
-      steamRank: Number(result.steamRank ?? result.globalRank ?? result.rank),
+      steamRank: Number(result.steamRank ?? result.globalRank ?? result.rank ?? result.sectorSteamRank),
       localStatus: result.localStatus || null,
-      steamStatus: result.steamStatus || result.globalStatus || null
+      steamStatus: result.steamStatus || result.globalStatus || result.sectorSteamStatus || null
     };
+  }
+
+  startRunAgain() {
+    const runMode = this.activeLeaderboard === LeaderboardView.TACTICAL
+      ? RUN_MODES.MAYHEM_TACTICAL
+      : RUN_MODES.RANKED;
+    this.game.startGame(this.game.selectedShipSpriteKey, { runMode });
   }
 
   isFeaturedLeaderboardEntry(entry, index) {
@@ -755,7 +872,7 @@ export class HighscoreScene {
     glow.roundRect(rowX - 8, rowY - 7, rowW + 16, rowHeight + 10, 10);
     glow.fill({ color: 0x37f5ff, alpha: 0.2 });
     glow.stroke({ color: 0xffd15c, width: 4, alpha: 0.5 });
-    glow.filters = [new PIXI.BlurFilter(isMobile ? 8 : 12)];
+    glow.filters = [new PIXI.BlurFilter({ strength: isMobile ? 8 : 12 })];
 
     const pulseFrame = new PIXI.Graphics();
     pulseFrame.roundRect(rowX - 3, rowY - 3, rowW + 6, rowHeight + 2, 8);
@@ -786,7 +903,7 @@ export class HighscoreScene {
     sweep.fill({ color: 0xffffff, alpha: 0.18 });
     sweep.rect(isMobile ? 6 : 10, rowY + 5, isMobile ? 8 : 12, rowHeight - 12);
     sweep.fill({ color: 0xfff15c, alpha: 0.42 });
-    sweep.filters = [new PIXI.BlurFilter(isMobile ? 4 : 6)];
+    sweep.filters = [new PIXI.BlurFilter({ strength: isMobile ? 4 : 6 })];
 
     const leftChevron = new PIXI.Graphics();
     const chevronSize = isMobile ? 8 : 12;
@@ -857,14 +974,21 @@ export class HighscoreScene {
       let entriesToDisplay = [...this.entries];
 
       const desktopTwoColumn = !isMobile && layout.width >= DESKTOP_TWO_COLUMN_MIN_WIDTH && entriesToDisplay.length > MOBILE_LEADERBOARD_VISIBLE_LIMIT;
-      const columnCount = desktopTwoColumn ? 2 : 1;
       const displayLimit = desktopTwoColumn ? LEADERBOARD_DISPLAY_LIMIT : MOBILE_LEADERBOARD_VISIBLE_LIMIT;
+      const visibleEntryCount = Math.min(displayLimit, entriesToDisplay.length || displayLimit);
+      const columnCount = desktopTwoColumn
+        ? Math.min(4, Math.max(2, Math.ceil(visibleEntryCount / 10)))
+        : 1;
+      const compactDesktopGrid = desktopTwoColumn && columnCount >= 3;
       entriesToDisplay = entriesToDisplay.slice(0, displayLimit);
       const rowsPerColumnTarget = desktopTwoColumn
         ? Math.ceil(displayLimit / columnCount)
         : Math.min(displayLimit, entriesToDisplay.length || displayLimit);
-      const columnGap = desktopTwoColumn ? (layout.width < 1500 ? 20 : 28) : 0;
+      const columnGap = desktopTwoColumn
+        ? (compactDesktopGrid ? (layout.width < 1500 ? 10 : 16) : (layout.width < 1500 ? 20 : 28))
+        : 0;
       const columnWidth = (metrics.innerWidth - columnGap * (columnCount - 1)) / columnCount;
+      const showLevelColumn = hasLeaderboardLevelColumn(this.activeLeaderboard);
       const headerHeight = isMobile ? 22 : 24;
       const rowsBaseY = startY + headerHeight + (isMobile ? 4 : 7);
       const rowsBottom = Math.min(metrics.rowsBottom || metrics.bottom - 48, metrics.bottom - (isMobile ? 44 : 54));
@@ -878,7 +1002,7 @@ export class HighscoreScene {
       const maxRows = Math.max(4, Math.min(displayLimit, entriesToDisplay.length, maxRowsPerColumn * columnCount));
       const rowStyle = {
         fontFamily: FONT_ARCADE,
-        fontSize: isMobile ? 13 : (layout.height < 820 ? 12 : 14),
+        fontSize: isMobile ? 13 : (compactDesktopGrid ? (layout.height < 820 ? 9 : 10) : (layout.height < 820 ? 12 : 14)),
         fill: '#e8fcff',
         stroke: '#00131b',
         strokeThickness: 2
@@ -887,23 +1011,31 @@ export class HighscoreScene {
       const headerStyle = {
         ...rowStyle,
         fill: '#ffdf8a',
-        fontSize: isMobile ? 9 : (layout.height < 820 ? 9 : 10),
+        fontSize: isMobile ? 9 : (compactDesktopGrid ? 7 : (layout.height < 820 ? 9 : 10)),
         strokeThickness: 2
       };
 
       const getColumnGeometry = (columnIndex = 0) => {
         const rowX = metrics.innerX + columnIndex * (columnWidth + columnGap);
         const rowW = columnWidth;
-        const rankBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 52);
-        const badgeColumnWidth = isMobile ? 30 : (desktopTwoColumn ? 34 : 42);
-        const badgeGap = isMobile ? 8 : (desktopTwoColumn ? 8 : 12);
-        const scoreBlockWidth = isMobile ? 96 : (desktopTwoColumn ? 110 : 142);
-        const levelBlockWidth = isMobile ? 38 : (desktopTwoColumn ? 42 : 46);
-        const rightPad = isMobile ? 8 : 10;
+        const rankBlockWidth = isMobile ? 38 : (compactDesktopGrid ? 24 : (desktopTwoColumn ? 42 : 52));
+        const badgeColumnWidth = isMobile ? 30 : (compactDesktopGrid ? 24 : (desktopTwoColumn ? 34 : 42));
+        const badgeGap = isMobile ? 8 : (compactDesktopGrid ? 2 : (desktopTwoColumn ? 8 : 12));
+        const scoreBlockWidth = isMobile ? 96 : (compactDesktopGrid ? 58 : (desktopTwoColumn ? 110 : 142));
+        const levelBlockWidth = showLevelColumn ? (isMobile ? 38 : (compactDesktopGrid ? 30 : (desktopTwoColumn ? 42 : 46))) : 0;
+        const levelGap = showLevelColumn ? (isMobile ? 8 : (compactDesktopGrid ? 6 : 10)) : 0;
+        const rightPad = isMobile ? 8 : (compactDesktopGrid ? 5 : 10);
         const contentX = rowX + rankBlockWidth + badgeColumnWidth + badgeGap;
-        const levelCenterX = rowX + rowW - rightPad - levelBlockWidth / 2;
-        const scoreX = levelCenterX - levelBlockWidth / 2 - (isMobile ? 8 : 10);
-        const nameBlockWidth = Math.max(isMobile ? 76 : 92, scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : 12));
+        const levelCenterX = showLevelColumn
+          ? rowX + rowW - rightPad - levelBlockWidth / 2
+          : rowX + rowW - rightPad;
+        const scoreX = showLevelColumn
+          ? levelCenterX - levelBlockWidth / 2 - levelGap
+          : rowX + rowW - rightPad;
+        const nameBlockWidth = Math.max(
+          isMobile ? 76 : (compactDesktopGrid ? 54 : 92),
+          scoreX - scoreBlockWidth - contentX - (isMobile ? 10 : (compactDesktopGrid ? 6 : 12))
+        );
         return {
           rowX,
           rowW,
@@ -933,10 +1065,14 @@ export class HighscoreScene {
         headerBar.fill({ color: 0xffd15c, alpha: 0.38 });
         this.rowsContainer.addChild(headerBar);
 
-        const manifestLabel = desktopTwoColumn && columnIndex === 1 ? 'PILOT MANIFEST 11-20' : 'PILOT MANIFEST';
+        const manifestStart = columnIndex * rowsPerColumnTarget + 1;
+        const manifestEnd = Math.min(displayLimit, manifestStart + rowsPerColumnTarget - 1);
+        const manifestLabel = desktopTwoColumn
+          ? `PILOT MANIFEST ${manifestStart}-${manifestEnd}`
+          : 'PILOT MANIFEST';
         const headers = [
           { text: manifestLabel, x: geometry.rowX, anchorX: 0 },
-          { text: 'SCORE / LEVEL', x: geometry.rowX + geometry.rowW, anchorX: 1 }
+          { text: translateText(getLeaderboardScoreHeader(this.activeLeaderboard)), x: geometry.rowX + geometry.rowW, anchorX: 1 }
         ];
         headers.forEach(entry => {
           const text = createText(entry.text, headerStyle);
@@ -950,11 +1086,11 @@ export class HighscoreScene {
       const computeDisplayRank = (entry) => {
         const fallbackRank = Number(entry?.rank_index ?? entry?.rankIndex ?? entry?.rank);
         if (Number.isFinite(fallbackRank)) {
-          return Math.max(0, Math.min(19, Math.floor(fallbackRank)));
+          return Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(fallbackRank)));
         }
         const levelValue = Number(entry?.level ?? entry?.levelReached);
         if (Number.isFinite(levelValue)) {
-          return Math.max(0, Math.min(19, Math.floor(getRankFromLevel(levelValue))));
+          return Math.max(0, Math.min(MAX_RANK_INDEX, Math.floor(getRankFromLevel(levelValue))));
         }
         return 0;
       };
@@ -1001,7 +1137,7 @@ export class HighscoreScene {
           const rowAura = new PIXI.Graphics();
           rowAura.roundRect(rowX - 2, rowY - 2, rowW + 4, rowHeight - 4, 7);
           rowAura.fill({ color: accent, alpha: index === 0 ? 0.15 : 0.1 });
-          rowAura.filters = [new PIXI.BlurFilter(index === 0 ? 6 : 4)];
+          rowAura.filters = [new PIXI.BlurFilter({ strength: index === 0 ? 6 : 4 })];
           this.rowsContainer.addChild(rowAura);
         }
 
@@ -1040,9 +1176,13 @@ export class HighscoreScene {
         const playerRankIndex = (score.rank_index !== null && score.rank_index !== undefined)
           ? score.rank_index
           : getRankFromLevel(score.level || 1);
-        const clampedRank = Math.max(0, Math.min(19, playerRankIndex));
-        const rankTitle = getRankTitle(clampedRank);
-        const displayName = (score.name || '??').slice(0, isMobile ? 13 : 18).toUpperCase();
+        const clampedRank = Math.max(0, Math.min(MAX_RANK_INDEX, playerRankIndex));
+        const rankTitle = this.activeLeaderboard === LeaderboardView.SECTOR
+          ? translateText('REACHED SECTOR {sector}', {
+            sector: Math.max(1, Math.floor(Number(score.highestSectorReached ?? score.level ?? score.sectorStart) || 1))
+          })
+          : getRankTitle(clampedRank);
+        const displayName = (score.name || '??').slice(0, isMobile ? 13 : (compactDesktopGrid ? 11 : 18)).toUpperCase();
 
         if (isFeaturedPlayer) {
           this.createFeaturedEntryHighlight({
@@ -1069,7 +1209,7 @@ export class HighscoreScene {
         const nameText = createText(displayName, nameStyle);
         const rankNameText = createText(rankTitle, {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(isMobile ? 8 : 8, rowStyle.fontSize - (isMobile ? 4 : 4)),
+          fontSize: Math.max(isMobile ? 8 : (compactDesktopGrid ? 6 : 8), rowStyle.fontSize - (isMobile ? 4 : (compactDesktopGrid ? 3 : 4))),
           fill: isTop3 ? '#ffefaa' : '#9fd7e3',
           stroke: '#00131b',
           strokeThickness: 1
@@ -1081,29 +1221,32 @@ export class HighscoreScene {
         });
         const scoreLabel = createText(index === 0 ? 'LEAD' : 'SCORE', {
           fontFamily: FONT_ARCADE,
-          fontSize: Math.max(8, rowStyle.fontSize - (isMobile ? 5 : 4)),
+          fontSize: Math.max(compactDesktopGrid ? 6 : 8, rowStyle.fontSize - (isMobile ? 5 : (compactDesktopGrid ? 3 : 4))),
           fill: isTop3 ? '#ffe7a8' : '#6fb6c8',
           stroke: '#00131b',
           strokeThickness: 1
         });
-        const levelText = createText(`LV ${score.level || 0}`, {
-          ...rankStyle,
-          fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
-        });
+        const levelDisplay = getLeaderboardLevelDisplay(score, this.activeLeaderboard);
+        const levelText = showLevelColumn
+          ? createText(levelDisplay, {
+              ...rankStyle,
+              fontSize: Math.max(10, rowStyle.fontSize - (isMobile ? 3 : 2))
+            })
+          : null;
 
         rankText.anchor.set(0.5);
         rankText.x = columns.rank;
         rankText.y = rowMidY - 2;
         nameText.x = columns.name;
         nameText.y = primaryY;
-        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : 11);
+        fitTextToWidth(nameText, nameBlockWidth, layout.isMobile ? 9 : (compactDesktopGrid ? 7 : 11));
 
         rankNameText.x = columns.name;
         rankNameText.y = Math.max(
           nameText.y + nameText.height + 1,
           rowY + rowHeight - rankNameText.height - (isMobile ? 8 : 5)
         );
-        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : 9);
+        fitTextToWidth(rankNameText, nameBlockWidth, isMobile ? 7 : (compactDesktopGrid ? 6 : 9));
 
         scoreText.x = columns.score;
         scoreText.y = primaryY - 1;
@@ -1112,20 +1255,23 @@ export class HighscoreScene {
           scoreText.y + scoreText.height + 1,
           rowY + rowHeight - scoreLabel.height - (isMobile ? 8 : 5)
         );
-        levelText.x = columns.level;
-        levelText.y = rowMidY;
         scoreText.anchor.set(1, 0);
         scoreLabel.anchor.set(1, 0);
-        levelText.anchor.set(0.5);
-        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : 12);
+        fitTextToWidth(scoreText, scoreBlockWidth, isMobile ? 10 : (compactDesktopGrid ? 7 : 12));
+        if (levelText) {
+          levelText.x = columns.level;
+          levelText.y = rowMidY;
+          levelText.anchor.set(0.5);
+          fitTextToWidth(levelText, levelBlockWidth, isMobile ? 8 : (compactDesktopGrid ? 7 : 9));
 
-        const levelPill = new PIXI.Graphics();
-        const pillWidth = isMobile ? 38 : 46;
-        const pillHeight = isMobile ? 24 : 28;
-        levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
-        levelPill.fill({ color: 0x031725, alpha: 0.8 });
-        levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
-        this.rowsContainer.addChild(levelPill);
+          const levelPill = new PIXI.Graphics();
+          const pillWidth = isMobile ? 38 : (compactDesktopGrid ? 30 : 46);
+          const pillHeight = isMobile ? 24 : (compactDesktopGrid ? 20 : 28);
+          levelPill.roundRect(columns.level - pillWidth / 2, rowMidY - pillHeight / 2, pillWidth, pillHeight, 5);
+          levelPill.fill({ color: 0x031725, alpha: 0.8 });
+          levelPill.stroke({ color: accent, width: isFeaturedPlayer ? 1.5 : 1, alpha: isFeaturedPlayer ? 0.9 : (isTop3 ? 0.72 : 0.34) });
+          this.rowsContainer.addChild(levelPill);
+        }
 
         const rankTexture = rankTextures[index];
         const displayRank = computeDisplayRank(score);
@@ -1168,7 +1314,8 @@ export class HighscoreScene {
           this.rowsContainer.addChild(placeholder);
         }
 
-        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel, levelText);
+        this.rowsContainer.addChild(rankText, nameText, rankNameText, scoreText, scoreLabel);
+        if (levelText) this.rowsContainer.addChild(levelText);
         this.rowLayoutDebug.push({
           index,
           row: {
@@ -1185,6 +1332,9 @@ export class HighscoreScene {
           score: debugBounds(scoreText),
           scoreLabel: debugBounds(scoreLabel),
           level: debugBounds(levelText),
+          levelText: levelDisplay,
+          levelColumnVisible: showLevelColumn,
+          levelSource: score.levelSource || null,
           featured: isFeaturedPlayer,
           scoreGroup: {
             x: Math.round(columns.score - scoreBlockWidth),
@@ -1446,7 +1596,9 @@ export class HighscoreScene {
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
         ? 0xff55d9
-        : 0x00f6ff;
+        : this.activeLeaderboard === LeaderboardView.SECTOR
+          ? 0xffd15c
+          : 0x00f6ff;
 
     this.titlePlate.roundRect(plateX - 10, plateY - 8, plateW + 20, plateH + 16, 10);
     this.titlePlate.fill({ color: accent, alpha: 0.06 });
@@ -1550,7 +1702,9 @@ export class HighscoreScene {
       ? 0xffd166
       : this.activeLeaderboard === LeaderboardView.FRIENDS
         ? 0xff55d9
-        : 0x00f6ff;
+        : this.activeLeaderboard === LeaderboardView.SECTOR
+          ? 0xffd15c
+          : 0x00f6ff;
 
     this.statsDeck.rect(x, y, deckWidth, 1);
     this.statsDeck.fill({ color: 0x7fffd8, alpha: 0.22 });
@@ -1712,7 +1866,7 @@ export class HighscoreScene {
     container.addChild(label);
 
     const glow = new PIXI.Graphics();
-    glow.filters = [new PIXI.BlurFilter(8)];
+    glow.filters = [new PIXI.BlurFilter({ strength: 8 })];
     const focus = new PIXI.Graphics();
     container.addChildAt(focus, 0);
     container.addChildAt(glow, 0);
@@ -1724,6 +1878,7 @@ export class HighscoreScene {
 
     container.on('pointerover', () => {
       this.setHighscoreFocusByButton(container);
+      playMenuFocusSfx(0.1);
       this.drawButtonChrome(container, {
         active: Boolean(container._active),
         hover: true
@@ -1735,6 +1890,12 @@ export class HighscoreScene {
     });
 
     container.on('pointerdown', () => {
+      playMenuConfirmSfx(0.16);
+      this.menuFx?.burst?.(container.x, container.y, {
+        color: container._active ? 0xffd15c : 0x37f5ff,
+        radius: 86,
+        durationMs: 420
+      });
       container.scale.set(0.95);
     });
 
@@ -1751,6 +1912,7 @@ export class HighscoreScene {
     button._buttonHeight = height;
     if (button._label) {
       button._label.style.fontSize = Math.max(12, Math.min(18, height * 0.42));
+      fitTextToWidth(button._label, width - 32, 11);
     }
     this.setButtonActive(button, Boolean(button._active));
   }
@@ -1817,12 +1979,14 @@ export class HighscoreScene {
     const visible = this.getVisibleControls();
     if (!visible.length) return;
     const next = ((index % visible.length) + visible.length) % visible.length;
+    const changed = next !== this.focusedControlIndex;
     this.focusableControls.forEach((control) => {
       if (!control.button) return;
       control.button._focused = visible[next]?.button === control.button;
       this.drawButtonChrome(control.button, { active: Boolean(control.button._active) });
     });
     this.focusedControlIndex = next;
+    if (changed) playMenuFocusSfx(0.09);
   }
 
   moveHighscoreFocus(delta) {
@@ -1831,7 +1995,21 @@ export class HighscoreScene {
 
   activateHighscoreFocus() {
     const visible = this.getVisibleControls();
+    playMenuConfirmSfx(0.16);
     visible[this.focusedControlIndex]?.activate?.();
+  }
+
+  returnToMenu(source = 'leaderboard') {
+    if (this.leavingScene) return;
+    this.leavingScene = true;
+    this.gamepadNavigator.suppressUntilReleased();
+    this.game?.armMenuExitGuard?.(1000);
+    this.game?.armSceneInputGuard?.(220);
+    this.game.switchScene('menu', {
+      menuExitGuardMs: 1000,
+      inputGuardMs: 220,
+      source
+    });
   }
 
   setupKeyboardNavigation() {
@@ -1839,7 +2017,8 @@ export class HighscoreScene {
     this.keyHandler = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        this.game.switchScene('menu');
+        event.stopImmediatePropagation?.();
+        this.returnToMenu('escape');
         return;
       }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
@@ -1856,13 +2035,14 @@ export class HighscoreScene {
     window.addEventListener('keydown', this.keyHandler, true);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
     if (nav.pressed.left || nav.pressed.up) this.moveHighscoreFocus(-1);
     if (nav.pressed.right || nav.pressed.down) this.moveHighscoreFocus(1);
     if (nav.pressed.confirm) this.activateHighscoreFocus();
-    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.game.switchScene('menu');
+    if (nav.pressed.cancel || nav.pressed.back || nav.pressed.menu) this.returnToMenu('controller');
   }
 
   destroy() {
@@ -1882,6 +2062,7 @@ export class HighscoreScene {
       this.game.app.ticker.remove(this.animationTicker);
       this.animationTicker = null;
     }
+    destroyMenuFx(this);
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
       this.keyHandler = null;

@@ -19,6 +19,16 @@
     "steam_sdk/sdk/redistributable_bin/**/*",
     "steamworks_sdk/redistributable_bin/**/*"
   ],
+  "extraFiles": [
+    {
+      "from": "steam_sdk/sdk/redistributable_bin/win64/steam_api64.dll",
+      "to": "steam_api64.dll"
+    },
+    {
+      "from": "steam_sdk/sdk/redistributable_bin/steam_api.dll",
+      "to": "steam_api.dll"
+    }
+  ],
   "extraMetadata": {
     "main": "electron/main.cjs"
   },

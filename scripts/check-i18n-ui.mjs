@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+﻿import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
@@ -11,14 +11,14 @@ const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
 const languages = [
-  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'LAUNCH RUN', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
-  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'RUN STARTEN', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
-  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '开始游戏', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
-  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'НАЧАТЬ ЗАБЕГ', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
-  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'INICIAR PARTIDA', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
-  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'INICIAR PARTIDA', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
-  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '게임 시작', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
-  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'ゲーム開始', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
+  { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
+  { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
+  { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
+  { code: 'ru', slug: 'russian', settingsLabel: 'Русский', menuSettings: 'НАСТРОЙКИ', launch: 'ЧИСТЫЙ MAYHEM', scorePrefix: 'ОЧКИ', gameOver: 'ИГРА ОКОНЧЕНА', leaderboard: 'ГЛОБАЛЬНАЯ ТАБЛИЦА', glyphProbe: 'Настройки Очки Игра' },
+  { code: 'es', slug: 'spanish-spain', settingsLabel: 'Español', menuSettings: 'AJUSTES', launch: 'MAYHEM PURO', scorePrefix: 'PUNTUACIÓN', gameOver: 'FIN DE LA PARTIDA', leaderboard: 'MARCADOR GLOBAL', glyphProbe: 'Ajustes Puntuación ñáéíóú' },
+  { code: 'pt-BR', slug: 'portuguese-brazil', settingsLabel: 'Português do Brasil', menuSettings: 'CONFIGURAÇÕES', launch: 'MAYHEM PURO', scorePrefix: 'PONTUAÇÃO', gameOver: 'FIM DE JOGO', leaderboard: 'RANKING GLOBAL', glyphProbe: 'Configurações pontuação á à â ã ç é ê í ó ô õ ú' },
+  { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
+  { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
 
 const forbiddenPlaceholderMarkers = [
@@ -244,7 +244,9 @@ async function snapshot(page) {
       scene: state.scene,
       menu: {
         launch: game?.scenes?.menu?.startBtn?._label?.text || null,
-        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null
+        settings: game?.scenes?.menu?.settingsBtn?._label?.text || null,
+        missionBriefing: state.menu?.missionBriefing || null,
+        launchDeck: state.menu?.launchDeck || null
       },
       settings: {
         language: settings?.languageButton?._label?.text || null,
@@ -294,6 +296,14 @@ async function snapshot(page) {
 function boxesOverlap(a, b, gap = 0) {
   if (!a || !b || a.width <= 0 || a.height <= 0 || b.width <= 0 || b.height <= 0) return false;
   return !(a.right + gap <= b.x || b.right + gap <= a.x || a.bottom + gap <= b.y || b.bottom + gap <= a.y);
+}
+
+function boxContains(outer, inner, tolerance = 3) {
+  if (!outer || !inner || outer.width <= 0 || outer.height <= 0 || inner.width <= 0 || inner.height <= 0) return false;
+  return inner.x >= outer.x - tolerance
+    && inner.y >= outer.y - tolerance
+    && inner.right <= outer.right + tolerance
+    && inner.bottom <= outer.bottom + tolerance;
 }
 
 async function screenshot(page, name) {
@@ -396,6 +406,27 @@ async function captureLanguage(page, language, index) {
   shots.menu = await screenshot(page, `${prefix}-main-menu.png`);
   assert(snaps.menu.menu.settings === language.menuSettings, `${language.slug} menu Settings label mismatch`);
   assert(snaps.menu.menu.launch === language.launch, `${language.slug} launch label mismatch`);
+
+  await page.evaluate((showAttempt) => {
+    const menu = window.__game?.scenes?.menu || window.__game?.currentScene;
+    const syntheticRecord = {
+      score: 123456,
+      sectorReached: 9,
+      runElapsedSeconds: 599,
+      runCleared: !showAttempt
+    };
+    menu.dailySignalBestAttempt = showAttempt ? syntheticRecord : null;
+    menu.dailySignalBestClear = showAttempt ? null : syntheticRecord;
+    menu.dailySignalBest = syntheticRecord;
+    menu?.setMenuFocusByButton?.(menu?.dailySignalBtn);
+  }, index % 2 === 1);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 10000 });
+  snaps.dailyMenu = await snapshot(page);
+  assertSnapshotClean(snaps.dailyMenu, language, `${language.slug}.dailyMenu`);
+  shots.dailyMenu = await screenshot(page, `${prefix}-daily-signal-menu.png`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.titleBounds), `${language.slug} Daily title escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(boxContains(snaps.dailyMenu.menu?.missionBriefing?.panelBounds, snaps.dailyMenu.menu?.missionBriefing?.bodyBounds), `${language.slug} Daily body escaped its briefing panel: ${JSON.stringify(snaps.dailyMenu.menu?.missionBriefing)}`);
+  assert(snaps.dailyMenu.menu?.launchDeck?.featuredDailySignal?.flightLog?.symbols?.length > 0, `${language.slug} Daily Flight Log was not exposed`);
 
   await page.evaluate(() => window.__game?.startGame?.());
   await waitForScene(page, 'play');

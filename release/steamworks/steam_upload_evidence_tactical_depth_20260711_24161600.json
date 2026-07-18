@@ -1,0 +1,60 @@
+{
+  "generatedAt": "2026-07-11T14:03:00.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24161600",
+  "sourceCommit": "9bc75eaccafa502e7dd04f9678be74404c8bd32c Record tactical expansion verification",
+  "buildStamp": "v2026-07-11_15-44-24",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24159806",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_tactical_depth_20260711.log",
+  "consoleLogSha256": "a826eb7b1ffc34dd5722b764ee06961c16993479ab32b8a5726f1e7a97f8af92",
+  "payloadManifestSha256": "84019f27c6e0aadeeb05d11626b1766d83abca5b790d904870babc461b1e0bec",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 920416739,
+    "manifestHash": "653831593a4b8c9f132763aa0be55fc96136e11bce2b2313b36f1d7ccd90d743",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "2342cbbb818de38162e8d694ff2b660b957e91f02dafe9ea7444fc3e50af3ad4"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-11 16:01:08]: Successfully finished AppID 4765070 build (BuildID 24161600).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: clean branch codex/current-build-first-session-retention-20260709 at 9bc75ea",
+    "releaseLine": "passed before packaging and VDF generation",
+    "sourceBuild": "passed: v2026-07-11_15-44-24, gitSha 9bc75ea",
+    "localization": "passed: all 86 new strings translated across all seven non-English locales; i18n UI passed eight languages",
+    "tacticalSystems": "passed: 32-augment Draft, two-row HUD, consumed state, loadout details, Run Report, and Codex",
+    "milestoneSystems": "passed: sector 10-60 visual, reward, pause, and input matrix",
+    "humanSimulationStarter": "passed: Sector 3, two keyboard Drafts, 215.9 seconds, three lives, zero errors",
+    "browserSmoke": "passed: test-results/smoke-2026-07-11T13-37-54-470Z/report.json",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-11T13-53-28-032Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-11T13-53-28-034Z/report.json",
+    "packagedPerformance": "passed: 60.0 average FPS, 60.0 minimum FPS, 12 samples, no errors",
+    "desktopSmoke": "passed: build v2026-07-11_15-44-24, gitSha 9bc75ea, zero console events",
+    "desktopPackage": "passed",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-11T13-53-28-039Z/report.json",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24159806.",
+    "Source rollback starts with git revert 9bc75ea and the preceding tactical expansion commits as required."
+  ]
+}

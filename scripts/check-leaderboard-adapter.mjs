@@ -46,8 +46,8 @@ function installCloudFetch() {
       });
     }
     return new Response(JSON.stringify([
-      { id: 1, name: 'ORB', score: 9000, level: 4, rank_index: 7 },
-      { id: 2, name: 'NOVA', score: 7000, level: 3, rank_index: 5 }
+      { id: 1, name: 'ORB', score: 9000, levelReached: 4, rank_index: 7 },
+      { id: 2, name: 'NOVA', score: 7000, metadata: { level: 3 }, rank_index: 5 }
     ]), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
@@ -60,7 +60,45 @@ installWindow();
 installCloudFetch();
 
 const { createLeaderboardAdapter } = await import('../src/leaderboard/LeaderboardAdapter.js');
-const { getPilotNameValidation, toPublicPilotName } = await import('../src/leaderboard/LeaderboardTypes.js');
+const {
+  STEAM_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME,
+  STEAM_SECTOR_LEADERBOARD_NAME,
+  createRunResultFromGame,
+  encodeSteamLeaderboardDetails,
+  encodeSteamSectorLeaderboardDetails,
+  estimateLeaderboardLevelFromScore,
+  getPilotNameValidation,
+  normalizeLeaderboardEntry,
+  readLeaderboardDetails,
+  toPublicPilotName
+} = await import('../src/leaderboard/LeaderboardTypes.js');
+const { LOCAL_LEADERBOARD_KEY, LocalLeaderboard } = await import('../src/api/LocalLeaderboard.js');
+
+assert.equal(normalizeLeaderboardEntry({ name: 'META', score: 100, metadata: { level: 9 } })?.level, 9);
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILS', score: 100, details: [10] })?.level, 10);
+assert.equal(normalizeLeaderboardEntry({ name: 'REACHED', score: 100, levelReached: 11 })?.level, 11);
+assert.equal(estimateLeaderboardLevelFromScore(69212), 14);
+assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.level, 14, 'legacy Steam rows without details must not display as LV1');
+assert.equal(normalizeLeaderboardEntry({ name: 'STEAMOLD', score: 69212 })?.levelSource, 'score_estimate', 'legacy rows without encoded details must be flagged as estimates');
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.level, 6, 'encoded Steam details must beat score fallback');
+assert.equal(normalizeLeaderboardEntry({ name: 'DETAILSWIN', score: 69212, details: [6] })?.levelSource, 'encoded', 'encoded details must be marked as trusted level data');
+assert.deepEqual(readLeaderboardDetails({ details: '0x0a00000018000000f30100003d020000' }).slice(0, 4), [10, 24, 499, 573], 'Steamworks hex details should decode little-endian int32 values');
+assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1, details: '0x0a00000018000000f30100003d020000' })?.level, 10, 'Steam details must beat stale LV1 row metadata');
+assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.level, 9, 'Steam LV1 fallback without details should estimate from score instead of showing LV1');
+assert.equal(normalizeLeaderboardEntry({ source: 'steam', playerName: 'EVILEIRIK', score: 41413, level: 1, levelReached: 1 })?.levelSource, 'score_estimate', 'Steam rows without details must not mark fallback levels as encoded');
+assert.equal(STEAM_LEADERBOARD_NAME, 'nova_swarm_global_score_v2', 'Steam default leaderboard must stay on the metadata-preserving v2 board');
+assert.equal(STEAM_TACTICAL_LEADERBOARD_NAME, 'nova_swarm_tactical_score_v1', 'Tactical Mayhem must use its own Steam board');
+assert.equal(STEAM_SECTOR_LEADERBOARD_NAME, 'nova_swarm_sector_start_score_v1', 'Steam sector challenge leaderboard must use the Steamworks-created board');
+const encodedRun = createRunResultFromGame({ score: 12345, level: 12, rankIndex: 4 }, { levelReached: 9 });
+assert.equal(encodedRun.level, 9, 'run result should prefer explicit levelReached');
+assert.equal(encodedRun.levelReached, 9, 'run result should carry levelReached alias');
+assert.equal(encodeSteamLeaderboardDetails(encodedRun)[0], 9, 'Steam details must encode reached level in slot 0');
+assert.deepEqual(
+  encodeSteamSectorLeaderboardDetails({ startSector: 20, highestSectorReached: 24, finalSector: 23, shipNumericId: 7, runTimeSeconds: 88, bossKills: 2, wavesCleared: 9 }),
+  [20, 24, 23, 7, 88, 2, 9],
+  'Steam sector details must encode start/highest/final sectors without touching global level details'
+);
 
 async function checkWebRuntime() {
   const win = installWindow();
@@ -74,6 +112,15 @@ async function checkWebRuntime() {
   assert.equal(global.source, 'cloud');
   assert.equal(global.entries.length, 2);
   assert.equal(global.entries[0].playerName, 'ORB');
+  assert.equal(global.entries[0].level, 4);
+  assert.equal(global.entries[1].level, 3);
+  const emptyPersonalBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(emptyPersonalBest.score, 0, 'seed leaderboard rows must not become the personal high-score chase target');
+
+  win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
+    { name: 'OLDMETA', score: 3210, metadata: { level: 8 }, timestamp: new Date().toISOString() }
+  ]));
+  assert.equal(LocalLeaderboard.getScores(1)[0]?.level, 8, 'local leaderboard must preserve metadata.level from stored entries');
 
   const localSubmit = await adapter.submitScore({
     score: 4321,
@@ -84,6 +131,20 @@ async function checkWebRuntime() {
   }, { target: 'local', saveLocal: true, name: 'WEB ACE' });
   assert.equal(localSubmit.localStatus, 'saved');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('WEB ACE'), true);
+
+  const reachedRun = {
+    score: 5432,
+    level: 4,
+    levelReached: 5,
+    rankIndex: 4,
+    playerName: 'REACHED ACE',
+    submissionId: 'web-reached-level'
+  };
+  const reachedLocal = await adapter.submitScore(reachedRun, { target: 'local', saveLocal: true, name: 'REACHED ACE' });
+  assert.equal(reachedLocal.localEntry.level, 5, 'local leaderboard should prefer reached level over stale current level');
+  assert.equal(reachedLocal.localEntry.levelReached, 5, 'local leaderboard should carry reached level alias');
+  await adapter.submitScore(reachedRun, { target: 'cloud', saveLocal: false, name: 'REACHED ACE' });
+  assert.equal(cloudState.lastPost.level, 5, 'cloud leaderboard should submit reached level, not stale current level');
 
   assert.equal(getPilotNameValidation('Eirik').valid, true, 'Eirik should be a valid pilot name');
   assert.equal(toPublicPilotName('Eirik', 553006), 'EIRIK', 'Eirik must not fall back to Pilot06');
@@ -99,6 +160,7 @@ async function checkWebRuntime() {
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('PILOT06'), false);
   await adapter.submitScore(eirikRun, { target: 'cloud', saveLocal: false, name: 'Eirik' });
   assert.equal(cloudState.lastPost.name, 'EIRIK');
+  assert.equal(cloudState.lastPost.level, 11);
 }
 
 async function checkMockSteamRuntime() {
@@ -107,11 +169,26 @@ async function checkMockSteamRuntime() {
   const adapter = createLeaderboardAdapter();
   await adapter.refreshAvailability();
   assert.equal(adapter.isSteamAvailable(), true, 'mock Steam runtime should be available');
-  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'friends', 'local']);
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local'], 'Steam tabs should expose Pure, Tactical, Sector, Friends, and Local views');
+
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
+    {
+      playerName: 'ORBIT FRIEND',
+      name: 'ORBIT FRIEND',
+      score: 10000,
+      level: 4,
+      rankIndex: 4,
+      source: 'steam-friends',
+      timestamp: '2026-02-01T00:00:00.000Z'
+    }
+  ]));
+  await adapter.refreshAvailability();
+  assert.deepEqual(adapter.getTabs().map(tab => tab.id), ['global', 'tactical', 'sector', 'friends', 'local']);
 
   const result = await adapter.submitScore({
     score: 12345,
-    level: 5,
+    level: 4,
+    levelReached: 5,
     rankIndex: 8,
     shipId: 'nova_sparrow',
     shipNumericId: 1,
@@ -125,14 +202,114 @@ async function checkMockSteamRuntime() {
   assert.equal(result.steamStatus, 'submitted');
   assert.equal(result.localStatus, 'saved');
   assert.equal(result.name, 'STEAM ACE');
+  assert.equal(result.level, 5, 'Steam submit result should expose reached level');
+  assert.equal(result.steamDetails[0], 5, 'Steam details slot 0 should encode reached level');
 
   const global = await adapter.getScores('global', { useCache: false });
   const friends = await adapter.getScores('friends', { useCache: false });
   assert.equal(global.source, 'steam');
   assert.equal(friends.source, 'steam-friends');
   assert.equal(global.entries[0].score, 12345);
+  assert.equal(global.entries[0].level, 5);
   assert.equal(friends.entries[0].playerName, 'STEAM ACE');
   assert.equal(win.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('STEAM ACE'), true);
+
+  const tacticalRun = createRunResultFromGame({
+    score: 8888,
+    level: 6,
+    rankIndex: 5,
+    runMode: 'ranked_tactical'
+  }, {
+    levelReached: 6,
+    submissionId: 'steam-tactical-run-1'
+  });
+  assert.equal(tacticalRun.leaderboardName, STEAM_TACTICAL_LEADERBOARD_NAME);
+  assert.equal(tacticalRun.leaderboardKind, 'mayhem_tactical');
+  const tacticalSubmit = await adapter.submitScore(tacticalRun, { target: 'steam', saveLocal: false });
+  assert.equal(tacticalSubmit.steamStatus, 'submitted');
+  assert.equal(tacticalSubmit.leaderboardName, STEAM_TACTICAL_LEADERBOARD_NAME);
+  const tactical = await adapter.getScores('tactical', { useCache: false });
+  assert.equal(tactical.sourceLabel, 'Steam Tactical');
+  assert.equal(tactical.entries[0].score, 8888);
+  assert.equal(tactical.entries[0].leaderboardKind, 'mayhem_tactical');
+  const pureAfterTactical = await adapter.getScores('global', { useCache: false });
+  assert.equal(pureAfterTactical.entries[0].score, 12345, 'Tactical submit must not overwrite the Pure board');
+
+  win.localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify([
+    { name: 'LOCAL ACE', score: 54321, level: 10, rankIndex: 8, timestamp: '2026-06-01T00:00:00.000Z' }
+  ]));
+  const knownLocalBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(knownLocalBest.score, 54321, 'known personal best should use the highest local score instead of stale progress');
+
+  const staleLevelScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]')
+    .map((entry) => entry.isCurrentPlayer ? { ...entry, level: 1, levelReached: 1, details: [1, 1, 321, 55, 2, 14] } : entry);
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(staleLevelScores));
+  const repaired = await adapter.submitScore({
+    score: 12345,
+    level: 12,
+    levelReached: 12,
+    rankIndex: 8,
+    shipId: 'nova_sparrow',
+    shipNumericId: 1,
+    shipName: 'Nova Sparrow',
+    runTimeSeconds: 333,
+    kills: 60,
+    bossKills: 3,
+    wavesCleared: 18,
+    submissionId: 'steam-level-repair'
+  }, { target: 'steam', saveLocal: false });
+  assert.equal(repaired.steamStatus, 'submitted');
+  assert.equal(repaired.steamUploadMethod, 'force_update', 'same-score stale Steam level metadata should use a one-row repair update');
+  const repairedGlobal = await adapter.getScores('global', { useCache: false });
+  assert.equal(repairedGlobal.entries.filter((entry) => entry.playerName === 'STEAM ACE').length, 1, 'Steam mock should keep one current-player entry');
+  assert.equal(repairedGlobal.entries[0].score, 12345);
+  assert.equal(repairedGlobal.entries[0].level, 12);
+
+  const steamBestScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]')
+    .map((entry) => entry.isCurrentPlayer ? { ...entry, score: 120140, m_nScore: 120140 } : entry);
+  win.localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify(steamBestScores));
+  const knownSteamBest = await adapter.getKnownPersonalBest({ useCache: false });
+  assert.equal(knownSteamBest.score, 120140, 'known personal best should raise the chase target to the Steam player best');
+
+  const sectorBeforeSubmit = await adapter.getScores('sector', { useCache: false });
+  assert.equal(sectorBeforeSubmit.sourceLabel, 'Steam Sector');
+  assert.equal(sectorBeforeSubmit.entries.length, 0, 'sector board should not show global Steam rows');
+
+  const sectorResult = await adapter.submitSectorStartScore({
+    score: 45678,
+    startSector: 20,
+    sectorStart: 20,
+    highestSectorReached: 24,
+    finalSector: 23,
+    level: 24,
+    levelReached: 24,
+    rankIndex: 8,
+    shipId: 'nova_sparrow',
+    shipNumericId: 1,
+    shipName: 'Nova Sparrow',
+    runTimeSeconds: 222,
+    bossKills: 3,
+    wavesCleared: 12,
+    submissionId: 'steam-sector-run-1',
+    leaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+    leaderboardKind: 'sector_start'
+  }, { name: 'STEAM ACE' });
+  assert.equal(sectorResult.sectorSteamStatus, 'submitted');
+  assert.equal(sectorResult.sectorSteamDetails[0], 20, 'sector details slot 0 should encode start sector');
+  assert.equal(sectorResult.sectorSteamDetails[1], 24, 'sector details slot 1 should encode highest sector reached');
+  assert.equal(sectorResult.leaderboardName, STEAM_SECTOR_LEADERBOARD_NAME);
+
+  const sectorAfterSubmit = await adapter.getScores('sector', { useCache: false });
+  assert.equal(sectorAfterSubmit.sourceLabel, 'Steam Sector');
+  assert.equal(sectorAfterSubmit.entries[0].score, 45678);
+  assert.equal(sectorAfterSubmit.entries[0].leaderboardKind, 'sector_start');
+  assert.equal(sectorAfterSubmit.entries[0].sectorStart, 20);
+  assert.equal(sectorAfterSubmit.entries[0].highestSectorReached, 24);
+  const globalAfterSectorSubmit = await adapter.getScores('global', { useCache: false });
+  assert.equal(globalAfterSectorSubmit.entries[0].score, knownSteamBest.score, 'sector submit must not overwrite the global Steam board');
+  const storedMockScores = JSON.parse(win.localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]');
+  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_SECTOR_LEADERBOARD_NAME && entry.score === 45678), true);
+  assert.equal(storedMockScores.some(entry => entry.leaderboardName === STEAM_LEADERBOARD_NAME && entry.score === knownSteamBest.score), true);
 }
 
 async function checkDesktopLocalPersistenceRuntime() {
@@ -173,13 +350,14 @@ async function checkDesktopLocalPersistenceRuntime() {
   await firstAdapter.refreshAvailability();
   const submitted = await firstAdapter.submitScore({
     score: 56,
-    level: 1,
+    level: 7,
     rankIndex: 0,
     playerName: 'evileirik',
     submissionId: 'evileirik-local-restart'
   }, { target: 'local', saveLocal: true, name: 'evileirik' });
   assert.equal(submitted.localStatus, 'saved');
   assert.equal(desktopScores.some(entry => entry.name === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(desktopScores.some(entry => entry.name === 'EVILEIRIK' && entry.score === 56 && entry.level === 7), true);
   assert.equal(firstWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
 
   const secondWindow = installWindow({ search: '?desktop=1', origin: 'http://127.0.0.1:41099' });
@@ -188,6 +366,7 @@ async function checkDesktopLocalPersistenceRuntime() {
   const local = await secondAdapter.getScores('local', { useCache: false });
   assert.equal(local.source, 'local');
   assert.equal(local.entries.some(entry => entry.playerName === 'EVILEIRIK' && entry.score === 56), true);
+  assert.equal(local.entries.some(entry => entry.playerName === 'EVILEIRIK' && entry.score === 56 && entry.level === 7), true);
   assert.equal(secondWindow.localStorage.getItem('novaSwarm.localLeaderboard.v2')?.includes('EVILEIRIK'), true);
 }
 

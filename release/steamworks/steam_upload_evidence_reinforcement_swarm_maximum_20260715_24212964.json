@@ -1,0 +1,86 @@
+{
+  "generatedAt": "2026-07-15T03:10:00Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24212964",
+  "sourceCommit": "90083d104a51eaa7489f853ce16b4ae7d9c6550c",
+  "sourceBranch": "codex/reinforcement-swarm-wow-20260715",
+  "sourceBaseline": "728118ccb735f3b46150e8a2575091ff500c9fc4",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-15_04-55-27",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24211566",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "813e6a1f38a20d4bd70d36ec036046ea4d4e25037337d11ec0e990c97f66b673",
+  "consoleLogPath": "release/steamworks/steam_upload_console_reinforcement_swarm_maximum_20260715.log",
+  "consoleLogSha256": "868da63ed726c1a93e2a273c65e6eee45b3d6f1105aa2c698c8629693abd361d",
+  "payloadManifestSha256": "7cf4ac178ae092ed35fe7ecb4d73e040b565e51a04c0fe3797e9c4aea8d5720d",
+  "desktopReviewSha256": "9d38d46b8f330dd3aa2f9e17498f630ee3d94b32065ae74262a96f82969dee36",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 955666607,
+    "manifestHash": "bc4e8b8094e8b39df4b682d41536dfec72c5f6098a06291f77413f4b3ebe26e9",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "927de14c22640ef6a0bf1e959ebf9950b1e70a0a5aeb9d555fc7af68c5605c5b"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-15 05:06:29]: Successfully finished AppID 4765070 build (BuildID 24212964).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "3b6f0022cb9dd251e808b5f22f8565bccfb4695a506b41a01f0d0057a4478a3e",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "ab6247ce7b36418799ee7858567e0e13737f5b0c4ce9db19984119acd4e42ea2",
+    "depotManifestId": "5598143424335909009",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: source baseline 728118c and authoritative lock b80059a are ancestors; isolated source commit 90083d1 was tracked-clean before generated release artifacts",
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload; German localization, top-3 polish, Steam Cloud, fullscreen, and temporary marketing hotkey markers present",
+    "sourceBuild": "passed: build v2026-07-15_04-55-27 from gitSha 90083d1; complete content, localization, achievement, audio, roster, powerup, Tactical, Fusion, and reinforcement guards passed",
+    "reinforcementMaximumWow": "passed: test-results/reinforcement-wow/report.json; 46 integrated ships, three real previews, three HUD-safe gates, three separated impact lanes, layered audio, score neutrality, four screenshots, and zero page errors",
+    "reinforcementEntryPerformance": "passed: 44 frames, 17.05 ms average, 16.8 ms p95, 33.3 ms maximum, and zero frames over 50 ms",
+    "localizedUi": "passed before packaging across all eight supported interface languages with zero placeholders, English leaks, console errors, or page errors; this pass adds no player-facing copy",
+    "browserAndController": "passed before packaging: browser smoke, controller-only flow, reinforcement runtime, Mayhem reinforcement waves, boss-support catalog, and reinforcement/Super Storm voice guards",
+    "steamBridge": "passed: native bridge, preload surface, renderer isolation, AppID 4765070, and nova_swarm_global_score_v2 contract",
+    "packagedRuntime": "passed: test-results/steam-package-runtime-2026-07-15T03-05-29-084Z/report.json; native Steam module, overlay addon, AppID, leaderboard identity, and Steam redistributables present",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-15T02-59-45-757Z/report.json; build v2026-07-15_04-55-27; gitSha 90083d1; zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-15T03-00-04-752Z/report.json; build v2026-07-15_04-55-27; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-15T03-00-24-099Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-15T03-01-13-727Z/report.json; 59.52 minimum FPS, 60.11 average FPS, 12 samples, zero warnings, and zero errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-15T03-00-57-202Z/report.json",
+    "desktopPackageReview": "passed: release/steamworks/desktop_package_review_report.json; current, packaged, controls, and performance reports all match v2026-07-15_04-55-27",
+    "vdfSetLiveTestBranch": "passed: exact SetLive value sector-continue-test; public and default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all improvements and content already present in Steam test BuildID 24211566",
+    "one slim HUD-safe reinforcement fleet-signal plate instead of competing duplicate toasts, with permanent score, Mission Status, Lives, and trait HUD areas remaining visible",
+    "three widely separated rift gates with real sector-enemy previews, fleet telemetry, scan wash, lightning, horizon arcs, and atmospheric streaks",
+    "distinct left, center, and right breach impacts with larger multi-ring portals, radial shards, launch trails, layered portal, whoosh, impact, chatter, and voice audio, plus a bounded first-impact hit pause",
+    "extended cyan-gold reinforcement wakes and stronger cyan-magenta Super Storm wakes on every arriving ship, shared by multi-ship boss fuel squads",
+    "responsive 960x540 compact placement and restrained Reduced Motion behavior",
+    "no changes to reinforcement frequency, wave counts, enemy stats, score multipliers, rewards, leaderboards, achievements, progression, saves, Steam Cloud, or Steamworks metadata"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The optional global Sector 20 performance diagnostic still finds two cold transition frames over 50 ms in four variants that never activate reinforcement code; steady combat remains near 60 FPS.",
+    "The generic develop-web-game client remains unavailable because its bundled chromium_headless_shell-1208 is missing; repo-native installed Chrome and Electron suites passed.",
+    "Electron, Node, and npm emitted existing tooling and dependency advisories; the packaged performance report contained zero game warnings and zero game errors."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24211566.",
+    "Source rollback is git revert 90083d104a51eaa7489f853ce16b4ae7d9c6550c."
+  ]
+}

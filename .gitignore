@@ -5,8 +5,11 @@ RESCUE/
 *.diff
 RESCUE_*.txt
 .claude/
+.codex-snapshots/
 .wrangler/
 test-results/
+performance-video/
+tmp/
 tmpclaude-*
 tools/steamcmd/
 tools/dumps/
@@ -32,4 +35,5 @@ steamworks/
 # Protected generated build artifacts - never commit
 public/sw.js
 public/version.json
+public/audio/sfx/nova-swarm-candidates/
 .pw-browsers/

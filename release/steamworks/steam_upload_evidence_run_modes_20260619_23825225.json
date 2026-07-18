@@ -1,0 +1,56 @@
+{
+  "uploadedAtLocal": "2026-06-19 18:49:24 Europe/Oslo",
+  "branch": "codex/mayhem-scout-sector-run-modes-20260619",
+  "sourceCommit": "fbaeff2c5379d01952b11b3d1d3305cb2ec8ea24",
+  "build": {
+    "version": "v2026-06-19_18-32-41",
+    "packagedGitSha": "fbaeff2",
+    "steamBuildId": "23825225",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "depotManifest": "772453607513426612",
+    "baselineDepotManifest": "2093552943102439710"
+  },
+  "steamPipe": {
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "commandShape": "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build <absolute repo path>\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "resultLine": "[2026-06-19 18:49:24]: Successfully finished AppID 4765070 build (BuildID 23825225)."
+  },
+  "verification": {
+    "packageRuntime": "test-results/steam-package-runtime-2026-06-19T16-44-44-080Z/report.json",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-19T16-38-03-212Z/report.json",
+    "currentDesktopSmoke": "test-results/electron-smoke-2026-06-19T16-38-46-422Z",
+    "currentPerfSmoke": "test-results/electron-perf-smoke-2026-06-19T16-41-31-253Z",
+    "runModeReport": "test-results/run-modes-mayhem-scout-sector-2026-06-19T16-27-59-942Z/report.json",
+    "cinematicMenuReport": "test-results/cinematic-hangar-menu-2026-06-19T16-28-00-059Z/report.json",
+    "sectorSelectorReport": "test-results/sector-challenge-selector-2026-06-19T16-27-59-915Z/report.json",
+    "sectorContinueReport": "test-results/sector-continue-mode-2026-06-19T16-28-00-146Z/report.json"
+  },
+  "safety": {
+    "setLiveBlank": true,
+    "steamBranchAssignment": "none",
+    "publicDefaultChanged": false,
+    "sectorContinueTestChanged": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentity": "nova_swarm_global_score_v2",
+    "manualAssignmentRequired": true
+  },
+  "manualSteamworksTestSteps": [
+    "Open Steamworks > App Admin > SteamPipe > Builds for AppID 4765070.",
+    "Find private BuildID 23825225 and leave it unassigned unless manually choosing a branch for testing.",
+    "Install/launch the build from Steam client after manual assignment to a private branch.",
+    "Verify Mayhem Run submits to the existing global leaderboard and can unlock achievements.",
+    "Verify Scout Run is unranked, lower pressure, does not submit to the global leaderboard, and does not unlock achievements or checkpoints.",
+    "Verify Sector Run starts at unlocked checkpoints, explains every-5-sector unlocks, and does not unlock achievements.",
+    "Do not assign this BuildID to public/default until explicitly approved."
+  ],
+  "rollback": {
+    "source": "git checkout codex/build-forward-from-harder-ranked-baseline-accepted-20260619",
+    "steam": "No Steam rollback is required while BuildID 23825225 remains unassigned. If later assigned manually, reassign that branch in Steamworks to the prior desired BuildID."
+  }
+}

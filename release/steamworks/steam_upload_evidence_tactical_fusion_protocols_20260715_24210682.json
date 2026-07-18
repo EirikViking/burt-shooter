@@ -1,0 +1,81 @@
+{
+  "generatedAt": "2026-07-14T23:40:00Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24210682",
+  "sourceCommit": "67f866fe1e7d36aa076281abc58671d4b6d6a208",
+  "sourceBranch": "codex/tactical-fusion-protocols-20260714",
+  "sourceBaseline": "6308492d030a137ef089ad44c54ead4356959c92",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-15_01-22-14",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24208763",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "2dc3a78fc4cebd8e10c3e9691f1cef9fc54866260ad53d96b7bdce0a47dda991",
+  "consoleLogPath": "release/steamworks/steam_upload_console_tactical_fusion_protocols_20260715.log",
+  "consoleLogSha256": "bbbe2a13c692923db75394460b8110a6815b6d1dbd5cb9f73d78666480cbf02e",
+  "payloadManifestSha256": "18f0bbcdc2d51f72cdf02eb19e8565758185aef8cf40b3580ddfb4b8454304a5",
+  "desktopReviewSha256": "4c8cfba8568fa79652f71e1fbe1135127fa143757cd19172726225e03fb6df65",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 955651218,
+    "manifestHash": "6e9f82e5bf73698e283c8725d7c9745d9fd532d8199505ded44000ad3df82e79",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "f81cca5249ae977b08d273f48d2a3558ff034660b115c1000aebb09073140bef"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-15 01:37:34]: Successfully finished AppID 4765070 build (BuildID 24210682).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: source HEAD 67f866f, source baseline 6308492 and authoritative lock b80059a are ancestors, and tracked state was clean before build and upload",
+    "releaseLine": "passed after source commit, during packaging, during VDF generation, and immediately before upload; German localization, top-3 localization polish, Steam Cloud, fullscreen, and temporary marketing hotkey markers present",
+    "sourceBuild": "passed: v2026-07-15_01-22-14, gitSha 67f866f, all content, localization, audio, roster, powerup, Tactical, and Fusion source guards present",
+    "tacticalFusionRuntime": "passed: test-results/tactical-fusions-build-24210682/report.json; four mechanics, four HUD/loadout entries, six screenshots, modal/toast ordering, and zero runtime errors",
+    "howToPlay": "passed: test-results/how-to-play-fusion-readable-final/report.json; six pages across ten layouts/scales with the readable eight-card Tactics layout",
+    "localizedUi": "passed: test-results/i18n-ui-2026-07-14T23-06-08-022Z; eight languages, zero placeholders, English leaks, console errors, or page errors",
+    "browserSmoke": "passed: test-results/smoke-2026-07-14T23-08-38-815Z/report.json; menu, settings, gameplay, gamepad, pause, story, game over, mobile, transitions, and boss victory",
+    "controllerOnly": "passed: test-results/controller-only-flow-2026-07-14T23-11-49-940Z",
+    "packagedRuntime": "passed: test-results/steam-package-runtime-2026-07-14T23-36-07-184Z/report.json; Steam runtime files, AppID 4765070, native module, and nova_swarm_global_score_v2 contract present",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-14T23-34-01-986Z/report.json; build v2026-07-15_01-22-14; gitSha 67f866f; zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-14T23-29-22-903Z/report.json; build v2026-07-15_01-22-14; gitSha 67f866f; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-14T23-30-11-317Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed isolated: test-results/packaged-perf-smoke-2026-07-14T23-31-03-338Z/report.json; 59.88 minimum FPS, 60.28 average FPS, 12 samples, zero warnings and errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-14T23-32-41-794Z/report.json",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports all match v2026-07-15_01-22-14",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all improvements and content from Steam test BuildID 24208763, including the complete localized How to Play manual, 50-elite roster, Extinction Contact, fair Tactical scoring, visual clarity pass, and Reinforcement Swarm WOW presentation",
+    "Rift Reprisal: Phase Reactor plus Phase Wake recasts up to five cleared hostile bullets as fast return-fire shards",
+    "Drone Constellation: Drones plus Drone Link creates converging support-wing crossfire every fourth volley",
+    "Aegis Reactor: Shield plus Point Defense turns shield break into a bounded bullet purge and 2.4-second interception window",
+    "Sky Verdict: Bomb plus Orbital Strike suppresses random orbital targeting and spends exactly one charge at each bomb marker",
+    "localized compact Fusion unlock presentation, HUD-first Fusion status, dedicated Tactical upgrades cards, and fixed modal-over-toast layering",
+    "updated localized Tactics manual with explicit pair ownership, no-score-multiplier fairness, and compact combined Rescan/Hold guidance"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The first pre-package current Electron smoke attempt timed out during cold load; the clean immediate rerun and the stamped post-package rerun both passed with zero app console events."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24208763.",
+    "Source rollback for Tactical Fusion Protocols is git revert 67f866fe1e7d36aa076281abc58671d4b6d6a208."
+  ]
+}

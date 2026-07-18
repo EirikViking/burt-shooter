@@ -1,7 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { requireOptionalPackagedModule } = require('./unpackedModuleResolver.cjs');
 
-const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score';
+const DEFAULT_STEAM_LEADERBOARD_NAME = 'nova_swarm_global_score_v2';
+const DEFAULT_STEAM_APP_ID = 4765070;
 const STEAM_LEADERBOARD_NAME = process.env.NOVA_SWARM_STEAM_LEADERBOARD_NAME || DEFAULT_STEAM_LEADERBOARD_NAME;
 const INT32_MAX = 2147483647;
 const MAX_STEAM_DOWNLOAD_ENTRIES = 100;
@@ -53,9 +55,11 @@ function readSteamAppId(rootDir) {
   if (fromEnv && /^\d+$/.test(String(fromEnv).trim())) return Number(fromEnv);
 
   const candidates = [
+    process.execPath ? path.join(path.dirname(process.execPath), 'steam_appid.txt') : null,
+    process.resourcesPath ? path.join(path.dirname(process.resourcesPath), 'steam_appid.txt') : null,
     path.join(rootDir, 'steam_appid.txt'),
     path.join(process.cwd(), 'steam_appid.txt')
-  ];
+  ].filter(Boolean);
   for (const candidate of candidates) {
     try {
       const raw = fs.readFileSync(candidate, 'utf8').trim();
@@ -64,43 +68,55 @@ function readSteamAppId(rootDir) {
       // Missing local Steam app id files are expected in normal web/dev runs.
     }
   }
-  return null;
+  return DEFAULT_STEAM_APP_ID;
+}
+
+function normalizeSdkPathForSteamworksFfi(candidate) {
+  if (!candidate) return candidate;
+  // steamworks-ffi-node maps every path containing `.asar` to `.asar.unpacked`
+  // before loading the redistributable. Passing an already-unpacked path would
+  // therefore become `app.asar.unpacked.unpacked` and make SteamAPI_Init fail.
+  return String(candidate).replace(/\.asar\.unpacked(?=[\\/])/i, '.asar');
 }
 
 function resolveSdkPath(rootDir) {
   const explicit = process.env.NOVA_SWARM_STEAMWORKS_SDK_PATH || process.env.STEAMWORKS_SDK_PATH;
+  const exeDir = process.execPath ? path.dirname(process.execPath) : null;
   const candidates = [
     explicit,
     path.join(rootDir, 'steam_sdk', 'sdk'),
     path.join(rootDir, 'steam_sdk'),
     path.join(rootDir, 'steamworks_sdk'),
     path.join(rootDir, 'steamworks'),
+    exeDir ? path.join(exeDir, 'steam_sdk', 'sdk') : null,
+    exeDir ? path.join(exeDir, 'steam_sdk') : null,
+    exeDir ? path.join(exeDir, 'steamworks_sdk') : null,
     path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'steamworks_sdk'),
+    path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'app.asar.unpacked', 'steam_sdk', 'sdk'),
+    path.join(rootDir, 'release', 'desktop', 'win-unpacked', 'resources', 'app.asar.unpacked', 'steam_sdk'),
     process.resourcesPath ? path.join(process.resourcesPath, 'steamworks_sdk') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steam_sdk', 'sdk') : null,
+    process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steam_sdk') : null,
     process.resourcesPath ? path.join(process.resourcesPath, 'app.asar.unpacked', 'steamworks_sdk') : null
   ].filter(Boolean);
-  return candidates.find(candidate => {
+  const resolved = candidates.find(candidate => {
     try {
       return fs.existsSync(candidate);
     } catch {
       return false;
     }
   }) || explicit || null;
+  return normalizeSdkPathForSteamworksFfi(resolved);
 }
 
 function requireNativeSteamworks() {
-  try {
-    return require('steamworks-ffi-node');
-  } catch (error) {
-    if (error?.code === 'MODULE_NOT_FOUND') return null;
-    throw error;
-  }
+  return requireOptionalPackagedModule('steamworks-ffi-node');
 }
 
 function requireKoffi() {
   if (koffiModule !== undefined) return koffiModule;
   try {
-    koffiModule = require('koffi');
+    koffiModule = requireOptionalPackagedModule('koffi');
   } catch {
     koffiModule = null;
   }
@@ -190,9 +206,52 @@ function publicFallbackName(steamId, index = 0) {
   return `STEAM ${suffix}`.slice(0, 14);
 }
 
+function toSafePublicSteamName(rawName, fallbackSeed = 0) {
+  const stripped = String(rawName || '')
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u034f\u061c\u115f\u1160\u17b4\u17b5\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u2800\u3000\ufeff\ufff9-\ufffb]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (stripped) return stripped.slice(0, 64);
+  return publicFallbackName(null, fallbackSeed);
+}
+
 function sanitizeDetails(details) {
-  const values = Array.isArray(details) ? details : [];
+  const values = parseDetailsValue(details);
   return values.slice(0, 64).map(clampInt32);
+}
+
+function parseHexDetailsString(value) {
+  const text = String(value || '').trim();
+  if (!text) return [];
+  const compact = text.replace(/^0x/i, '').replace(/[^0-9a-f]/gi, '');
+  if (compact.length < 8 || compact.length % 8 !== 0) return [];
+  const values = [];
+  for (let index = 0; index + 8 <= compact.length && values.length < 64; index += 8) {
+    const chunk = compact.slice(index, index + 8);
+    const b0 = Number.parseInt(chunk.slice(0, 2), 16);
+    const b1 = Number.parseInt(chunk.slice(2, 4), 16);
+    const b2 = Number.parseInt(chunk.slice(4, 6), 16);
+    const b3 = Number.parseInt(chunk.slice(6, 8), 16);
+    if ([b0, b1, b2, b3].some(byte => !Number.isFinite(byte))) continue;
+    values.push(b0 | (b1 << 8) | (b2 << 16) | (b3 << 24));
+  }
+  return values;
+}
+
+function parseDetailsValue(details) {
+  if (details === null || details === undefined || details === '') return [];
+  if (Array.isArray(details)) return details;
+  if (ArrayBuffer.isView(details) && typeof details.length === 'number') return Array.from(details);
+  if (typeof details === 'string') {
+    const hexDetails = parseHexDetailsString(details);
+    if (hexDetails.length) return hexDetails;
+    return (details.match(/-?\d+/g) || []).map(Number);
+  }
+  if (typeof details === 'object' && Number.isFinite(Number(details.length))) {
+    return Array.from({ length: Number(details.length) }, (_, index) => details[index]);
+  }
+  return [];
 }
 
 function detailsMetadata(details) {
@@ -205,6 +264,35 @@ function detailsMetadata(details) {
     bossKills: details[4] ?? null,
     wavesCleared: details[5] ?? null
   };
+}
+
+function readScoreLevel(entry = {}, metadata = {}, details = [], fallback = 1) {
+  for (const value of [
+    metadata.level,
+    metadata.levelReached,
+    entry.metadata?.level,
+    entry.metadata?.levelReached,
+    details[0]
+  ]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return Math.max(1, Math.floor(parsed));
+  }
+  for (const value of [entry.level, entry.levelReached]) {
+    if (value === null || value === undefined || value === '') continue;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) continue;
+    const level = Math.max(1, Math.floor(parsed));
+    if (level === 1 && details.length === 0 && Math.max(1, Math.floor(Number(fallback) || 1)) > 1) continue;
+    return level;
+  }
+  return Math.max(1, Math.floor(Number(fallback) || 1));
+}
+
+function estimateLevelFromScore(score) {
+  const normalizedScore = Math.max(0, integer(score, 0));
+  if (normalizedScore <= 0) return 1;
+  return Math.max(1, Math.min(99, Math.floor(normalizedScore / 5000) + 1));
 }
 
 function jsonSafe(value) {
@@ -252,6 +340,12 @@ class SteamLeaderboardBridge {
     this.callbackTimer = null;
     this.lastUploadDiagnostics = null;
     this.uploadInFlight = false;
+    this.captureSurfaceStatus = {
+      enabled: false,
+      reason: 'not_initialized'
+    };
+    this.screenshotSequence = 0;
+    this.screenshotInputBinding = null;
   }
 
   getStatus() {
@@ -267,6 +361,10 @@ class SteamLeaderboardBridge {
 
   getLastUploadDiagnostics() {
     return this.lastUploadDiagnostics;
+  }
+
+  getCaptureSurfaceStatus() {
+    return { ...this.captureSurfaceStatus };
   }
 
   loadNativeModule() {
@@ -337,6 +435,10 @@ class SteamLeaderboardBridge {
       }
       this.initialized = true;
       this.statusReason = 'ready';
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'not_attached'
+      };
       this.startCallbackPolling();
       return true;
     } catch (error) {
@@ -356,6 +458,137 @@ class SteamLeaderboardBridge {
       }
     }, CALLBACK_POLL_MS);
     this.callbackTimer.unref?.();
+  }
+
+  enableElectronScreenshotCapture(browserWindow, options = {}) {
+    if (!this.initialized || !this.steam) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: this.statusReason || 'steam_not_ready'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+    if (!browserWindow || browserWindow.isDestroyed?.()) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'browser_window_unavailable'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+    const screenshots = this.steam.screenshots;
+    if (
+      typeof screenshots?.hookScreenshots !== 'function'
+      || typeof screenshots?.addScreenshotToLibrary !== 'function'
+    ) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: 'steam_screenshot_api_missing'
+      };
+      return this.getCaptureSurfaceStatus();
+    }
+
+    try {
+      if (this.screenshotInputBinding) {
+        const { webContents, handler } = this.screenshotInputBinding;
+        webContents.removeListener?.('before-input-event', handler);
+      }
+      screenshots.hookScreenshots(true);
+      const handler = (event, input) => {
+        if (input?.type !== 'keyDown' || input?.key !== 'F12' || input?.isAutoRepeat) return;
+        event.preventDefault();
+        this.captureElectronScreenshot(browserWindow, {
+          outputDir: options.outputDir,
+          source: 'f12'
+        }).then((result) => {
+          if (!result.ok) {
+            this.logger.warn?.('[SteamLeaderboardBridge] F12 screenshot failed:', result.reason);
+          }
+        }).catch((error) => {
+          this.logger.warn?.('[SteamLeaderboardBridge] F12 screenshot failed:', error?.message || error);
+        });
+      };
+      browserWindow.webContents.on('before-input-event', handler);
+      this.screenshotInputBinding = {
+        webContents: browserWindow.webContents,
+        handler
+      };
+      this.captureSurfaceStatus = {
+        enabled: true,
+        reason: 'on_demand_ready',
+        mode: 'f12_on_demand',
+        continuousMirror: false
+      };
+    } catch (error) {
+      this.captureSurfaceStatus = {
+        enabled: false,
+        reason: `on_demand_setup_failed: ${error?.message || error}`
+      };
+      this.logger.warn?.('[SteamLeaderboardBridge] Electron screenshot capture setup failed:', error?.message || error);
+    }
+    return this.getCaptureSurfaceStatus();
+  }
+
+  async captureElectronScreenshot(browserWindow, options = {}) {
+    if (!this.initialized || !this.steam) {
+      return {
+        ok: false,
+        reason: this.statusReason || 'steam_not_ready'
+      };
+    }
+    if (
+      typeof this.steam.screenshots?.addScreenshotToLibrary !== 'function'
+      || !browserWindow
+      || browserWindow.isDestroyed?.()
+    ) {
+      return {
+        ok: false,
+        reason: 'steam_screenshot_capture_unavailable'
+      };
+    }
+    try {
+      const image = await browserWindow.webContents.capturePage();
+      const size = image.getSize();
+      if (!size.width || !size.height) {
+        return {
+          ok: false,
+          reason: 'empty_electron_capture'
+        };
+      }
+      const outputDir = path.resolve(
+        options.outputDir
+          || path.join(this.rootDir, 'test-results', 'steam-screenshots-on-demand')
+      );
+      await fs.promises.mkdir(outputDir, { recursive: true });
+      this.screenshotSequence += 1;
+      const filename = `nova-swarm-${Date.now()}-${process.pid}-${this.screenshotSequence}.png`;
+      const screenshotPath = path.join(outputDir, filename);
+      await fs.promises.writeFile(screenshotPath, image.toPNG());
+      const handle = this.steam.screenshots.addScreenshotToLibrary(
+        screenshotPath,
+        null,
+        size.width,
+        size.height
+      );
+      const ok = handle !== 0 && handle !== 0n && handle != null;
+      return {
+        ok,
+        reason: ok ? 'added_to_library' : 'invalid_screenshot_handle',
+        handle: handle == null ? null : String(handle),
+        source: options.source || 'probe',
+        file: screenshotPath,
+        width: size.width,
+        height: size.height
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: `capture_failed: ${error?.message || error}`
+      };
+    }
+  }
+
+  triggerSteamScreenshot(browserWindow, options = {}) {
+    return this.captureElectronScreenshot(browserWindow, options);
   }
 
   async isAvailable() {
@@ -379,7 +612,7 @@ class SteamLeaderboardBridge {
       const name = this.steam.friends?.getPersonaName?.() ||
         this.steam.localplayer?.getName?.() ||
         'STEAM PILOT';
-      return String(name || 'STEAM PILOT').slice(0, 64);
+      return toSafePublicSteamName(name, 0);
     } catch {
       return 'STEAM PILOT';
     }
@@ -435,13 +668,13 @@ class SteamLeaderboardBridge {
 
   async nameForEntry(entry, index) {
     const explicit = entry.playerName || entry.personaName || entry.name || entry.displayName || entry.steamName;
-    if (explicit) return String(explicit).slice(0, 64);
+    if (explicit) return toSafePublicSteamName(explicit, index);
     const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
     const currentId = this.getCurrentSteamId();
     if (steamId && currentId && steamId === currentId) return this.getPersonaName();
     try {
       const friendName = steamId ? this.steam.friends?.getFriendPersonaName?.(steamId) : null;
-      if (friendName) return String(friendName).slice(0, 64);
+      if (friendName) return toSafePublicSteamName(friendName, index);
     } catch {
       // Non-friend global rows may only expose Steam IDs.
     }
@@ -451,9 +684,18 @@ class SteamLeaderboardBridge {
   async normalizeEntries(entries = []) {
     const currentId = this.getCurrentSteamId();
     return Promise.all((Array.isArray(entries) ? entries : []).map(async (entry, index) => {
-      const details = sanitizeDetails(entry.details ?? entry.scoreDetails ?? entry.m_pDetails);
+      const details = sanitizeDetails(
+        entry.details ??
+        entry.scoreDetails ??
+        entry.m_pDetails ??
+        entry.detailsHex ??
+        entry.scoreDetailsHex ??
+        entry.metadata?.details
+      );
       const steamId = stringifySteamId(entry.steamId ?? entry.steamID ?? entry.m_steamIDUser);
       const metadata = detailsMetadata(details);
+      const hasEncodedLevel = details.length > 0 && Number.isFinite(Number(metadata.levelReached)) && Number(metadata.levelReached) > 0;
+      const level = readScoreLevel(entry, metadata, details, estimateLevelFromScore(entry.score ?? entry.m_nScore));
       return {
         rank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
         globalRank: integer(entry.globalRank ?? entry.rank ?? entry.m_nGlobalRank, index + 1),
@@ -461,8 +703,9 @@ class SteamLeaderboardBridge {
         score: clampInt32(entry.score ?? entry.m_nScore),
         details,
         metadata,
-        level: metadata.levelReached || 1,
-        levelReached: metadata.levelReached || 1,
+        level,
+        levelReached: level,
+        levelSource: hasEncodedLevel ? 'encoded' : 'score_estimate',
         shipId: metadata.shipId,
         runTimeSeconds: metadata.runTimeSeconds,
         kills: metadata.kills,
@@ -1050,6 +1293,11 @@ class SteamLeaderboardBridge {
   }
 
   shutdown() {
+    if (this.screenshotInputBinding) {
+      const { webContents, handler } = this.screenshotInputBinding;
+      webContents.removeListener?.('before-input-event', handler);
+      this.screenshotInputBinding = null;
+    }
     if (this.callbackTimer) {
       clearInterval(this.callbackTimer);
       this.callbackTimer = null;
@@ -1061,6 +1309,10 @@ class SteamLeaderboardBridge {
     }
     this.initialized = false;
     this.statusReason = this.statusReason === 'ready' ? 'shutdown' : this.statusReason;
+    this.captureSurfaceStatus = {
+      enabled: false,
+      reason: 'shutdown'
+    };
   }
 }
 
@@ -1069,11 +1321,13 @@ function createSteamLeaderboardBridge(options = {}) {
 }
 
 module.exports = {
+  DEFAULT_STEAM_APP_ID,
   DEFAULT_STEAM_LEADERBOARD_NAME,
   STEAM_LEADERBOARD_NAME,
   STEAM_BACKEND_REJECTED_UNKNOWN_REASON_MESSAGE,
   SteamLeaderboardBridge,
   createSteamLeaderboardBridge,
+  normalizeSdkPathForSteamworksFfi,
   sanitizeDetails,
   stringifySteamId
 };

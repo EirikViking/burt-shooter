@@ -1,0 +1,73 @@
+{
+  "generatedAt": "2026-07-14T19:18:00Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24207299",
+  "sourceCommit": "ce25c2dc2832c16324fd4a27152fa27b97714e78",
+  "sourceBranch": "codex/how-to-play-complete-20260714",
+  "sourceBaseline": "93dcf96ac7da1574bd0a6bce52f7bee85c71a002",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-14_20-49-54",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24206097",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "f8c1c9bf7a4c0837e207c49ddcda4fe23a57c4965edcd5bf2c01b4e5c03bc77b",
+  "consoleLogPath": "release/steamworks/steam_upload_console_how_to_play_complete_20260714.log",
+  "consoleLogSha256": "6860ef9f738c75a1f718a0b02115ffee11ed8d0f0277c69ab24053b8528471fc",
+  "payloadManifestSha256": "d9a4d56488fd07759d30ba80bbc2d2114c59780a4a159febf5b3b23b9ed93f05",
+  "desktopReviewSha256": "b551a2004018f47b169a1d7131a0ab5bc7c976b68fc26e85a38bd96457972cb1",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 955603126,
+    "manifestHash": "c2febfffbb87a2f928f0267d436f229ce285025c5e54920d8334c69fecdc2724",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "fcaffd782ae674416755a162d75f50df1b19c99c4767faf5f0fcd42986d52243"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-14 21:15:43]: Successfully finished AppID 4765070 build (BuildID 24207299).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: source HEAD ce25c2d, source baseline 93dcf96 and authoritative lock b80059a are ancestors, and tracked state was clean before build and upload",
+    "releaseLine": "passed before build and again during VDF generation; German localization, top-3 localization polish, Steam Cloud, fullscreen, and temporary marketing hotkey markers present",
+    "sourceBuild": "passed: v2026-07-14_20-49-54, gitSha ce25c2d, complete six-page How to Play manual, 50 elite profiles, 1222 sprites, 1466 audio assets, and 353 audio keys",
+    "packagedRuntime": "passed: Steam runtime files, AppID 4765070, native module, and nova_swarm_global_score_v2 contract present",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-14T19-10-21-294Z/report.json; build v2026-07-14_20-49-54; gitSha ce25c2d; zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-14T19-03-43-954Z/report.json; build v2026-07-14_20-49-54; gitSha ce25c2d; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-14T19-04-53-654Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-14T19-05-49-307Z/report.json; 60.0 average and minimum FPS, 11 samples, zero errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-14T19-11-20-058Z/report.json",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports all match v2026-07-14_20-49-54",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all improvements and content from Steam test BuildID 24206097, including the visual clarity pass, Extinction Contact, fair Tactical scoring, Tactical leaderboard repair, and the 50-elite roster",
+    "complete six-page How to Play manual covering Flight, Combat, Modes, Tactics, Intel, and Career",
+    "explicit Mayhem Pure, Mayhem Tactical, Scout Run, and Sector Run rules, scoring, progression, leaderboard, and upgrade guidance",
+    "current Tactical Draft, Extinction Contact, Ace, Rival Wing, elite, Cabinet Skill Flight, Pilot Orders, Hangar, and Threat Codex guidance in all eight supported languages"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "One packaged screenshot capture retry recovered after UnknownVizError; packaged controls and performance passed.",
+    "The current Electron smoke logged a Chromium network-service restart outside the app console; the smoke recovered and passed with zero app console events."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24206097.",
+    "Source rollback for the How to Play change is git revert ce25c2dc2832c16324fd4a27152fa27b97714e78."
+  ]
+}

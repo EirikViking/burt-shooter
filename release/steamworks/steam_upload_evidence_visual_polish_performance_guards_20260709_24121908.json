@@ -1,0 +1,96 @@
+{
+  "buildId": "24121908",
+  "uploadedAtLocal": "2026-07-09T07:07:26+02:00",
+  "steamAppId": "4765070",
+  "steamDepotId": "4765071",
+  "steamUser": "gaunziman",
+  "sourceCommit": "a13e5b2",
+  "sourceCommitSubject": "Add visual polish and performance guards",
+  "packagedBuild": "v2026-07-09_06-50-59",
+  "package": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "fileCount": 336,
+    "totalBytes": 916284706,
+    "manifestHash": "f2b695f805d6467ec3951aa44d59717b89058fca5ded5ad51096685410533d96",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "absolutePath": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm visual polish performance guards a13e5b2 v2026-07-09_06-50-59",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "setLive": "",
+    "setLiveEvidence": "\"SetLive\" \"\""
+  },
+  "commands": [
+    {
+      "command": "git fetch --all --prune",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:release-line",
+      "status": "passed",
+      "note": "Verified latest locale files, achievements, Steam Cloud, fullscreen, and marketing hotkey markers."
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "retried-passed",
+      "note": "First packaged smoke launch timed out before report; immediate clean retry passed.",
+      "report": "test-results/packaged-exe-smoke-2026-07-09T05-01-22-210Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-07-09T05-01-31-796Z/report.json",
+      "summary": "minFps=60 avgFps=60 errors=0 consoleEvents=0"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-07-09T05-02-52-918Z/report.json"
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "status": "passed",
+      "report": "test-results/electron-smoke-2026-07-09T05-03-35-959Z/report.json",
+      "summary": "gitSha=a13e5b2 build=v2026-07-09_06-50-59"
+    },
+    {
+      "command": "npm run check:desktop-package",
+      "status": "passed"
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm visual polish performance guards a13e5b2 v2026-07-09_06-50-59\" npm run steamworks:write-vdf",
+      "status": "passed"
+    },
+    {
+      "command": "tools/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:/vibe-coding-e/nova-swarm-sector-continue-prototype/release/steamworks/app_build_LOCAL.vdf +quit",
+      "status": "passed",
+      "buildId": "24121908"
+    }
+  ],
+  "steamCmdResult": {
+    "exitCode": 0,
+    "successLine": "Successfully finished AppID 4765070 build (BuildID 24121908).",
+    "cachedLogin": true
+  },
+  "branchAssignment": {
+    "setLiveBlank": true,
+    "changedSteamBranch": false,
+    "note": "The VDF kept SetLive blank, so this upload did not assign BuildID 24121908 to public/default or any beta branch."
+  },
+  "steamworksSettingsChanged": false,
+  "deployPerformed": true,
+  "deployScope": "Private SteamPipe upload only; no Steam branch assignment."
+}

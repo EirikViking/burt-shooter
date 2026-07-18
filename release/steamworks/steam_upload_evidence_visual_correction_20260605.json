@@ -1,0 +1,66 @@
+{
+  "status": "uploaded",
+  "purpose": "focused visual evidence correction private Steam test build superseding BuildID 23591701",
+  "timestampUtc": "2026-06-05T23:29:30Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineCommit": "148b174796bcbf7d3ed2ad60779636813030afe2",
+  "packageVersion": "v2026-06-06_01-14-32",
+  "supersedesSteamBuildId": "23591701",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23594722",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestFileHash": "c53e2dfbcb6b05e33eb774f675fdd5e25f37cacfeed0995ed4a79598f2f512d6",
+    "manifestContentHash": "aa55e2553b87a4940d6c4efc9f8eb78fef5e38a133a249c8c00993109b8b61aa",
+    "fileCount": 336,
+    "totalBytes": 723519562,
+    "executableSha256": "39aff37924d96ff38bd55924348b5c331afc621b782476e5dc18368cd1b830d8"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-06_01-14-32 BuildID 23591701 visual evidence correction private test",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": ""
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run check:steam-leaderboard-mock",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run check:result-screen-flow",
+    "npm run check:powerup-effects",
+    "npm run check:gameplay-message-overlap",
+    "npm run check:release-line",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-06_01-14-32 BuildID 23591701 visual evidence correction private test\" npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "releaseHardening": "passed 33/33 checks in 475s; summary test-results/release-hardening/latest-summary.md",
+    "deadEnemyCleanup": "passed inside release hardening; inactive enemy visuals are hidden immediately and skipped-frame cleanup is covered",
+    "deadEnemyPlaythrough": "passed inside release hardening; report test-results/dead-enemy-playthrough-2026-06-05T23-06-12-046Z/report.json; audited levels 8, 9, 10, 11, and 12; final staleVisibleCount=0 and orphanedVisibleCount=0; synthetic stale/orphan injection cleaned back to zero",
+    "build": "passed; package version v2026-06-06_01-14-32",
+    "steamLeaderboardMock": "passed; report test-results/steam-leaderboard-mock-2026-06-05T23-15-30-992Z/report.json",
+    "i18n": "passed",
+    "i18nUi": "passed; report test-results/i18n-ui-2026-06-05T23-15-33-006Z/",
+    "resultScreenFlow": "passed after final build; report test-results/result-screen-flow-2026-06-05T23-17-12-231Z/report.json; screenshots regenerated for good-run-status-rank2, good-run-rank2, great-run-status-number1, great-run-number1, and low-score-best-unchanged",
+    "powerupEffects": "passed 22/22 types after final build; report test-results/powerup-effects-2026-06-05T23-17-12-278Z/report.json; Bomb feedback visible in powerup-effects-final.png",
+    "gameplayMessageOverlap": "passed after final build; 48 sampled frames; report test-results/gameplay-message-overlap-2026-06-05T23-17-14-866Z/report.json",
+    "packageSteamWinCurrent": "passed; runtime report test-results/steam-package-runtime-2026-06-05T23-24-25-666Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-05T23-25-01-747Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23594722).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "setLiveKeptEmpty": true,
+    "deployPerformed": false
+  }
+}

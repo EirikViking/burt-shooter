@@ -1,0 +1,78 @@
+{
+  "status": "uploaded_private_unassigned_build",
+  "steamBuildId": "23965036",
+  "supersedesPrivateBuildId": "23964875",
+  "supersedeReason": "The first private upload was rebuilt because packaged smoke showed stale embedded gitSha 5851fb1. The superseding package reports gitSha 60a7a2e.",
+  "sourceCommit": "60a7a2e7358f3cb5f48648ff08f24183a8c8de99",
+  "sourceBranch": "codex/forum-feedback-steam-push-20260629",
+  "build": {
+    "version": "v2026-06-29_13-38-46",
+    "timestamp": "2026-06-29T11:38:46.081Z"
+  },
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2",
+    "changedStoreMetadata": false,
+    "changedLiveBranchAssignment": false,
+    "changedSteamCloudSettings": false,
+    "changedAchievementsMetadata": false
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915855569,
+    "manifestHash": "2aee02f560a3df3aa26807a6e172dbc5ecdf1255ae677fb70c19b8fa210e5f26",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "uploadLogPath": "release/steamworks/steam_upload_console_20260629_focus_drift_superseding.log"
+  },
+  "verification": {
+    "source": [
+      "git diff --check",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:how-to-play",
+      "npm run check:controller-flow",
+      "npm run check:release-line",
+      "npm run build:current"
+    ],
+    "packaged": [
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run steamworks:payload-manifest",
+      "npm run steamworks:write-vdf",
+      "steamcmd +login gaunziman +run_app_build release/steamworks/app_build_LOCAL.vdf +quit"
+    ],
+    "reports": {
+      "howToPlay": "test-results/how-to-play-2026-06-29T11-10-10-277Z/report.json",
+      "i18nUi": "test-results/i18n-ui-2026-06-29T11-19-14-777Z",
+      "controllerFlow": "test-results/controller-only-flow-2026-06-29T11-21-52-198Z",
+      "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-29T11-44-08-342Z/report.json",
+      "packagedPerf": "test-results/packaged-perf-smoke-2026-06-29T11-44-08-337Z/report.json",
+      "packagedControls": "test-results/packaged-control-smoke-2026-06-29T11-44-08-464Z/report.json"
+    },
+    "packagedProof": {
+      "gitSha": "60a7a2e",
+      "minFps": 59.88023952094243,
+      "avgFps": 60.14258449147001,
+      "keyboardMovement": true,
+      "gamepadMovement": true
+    },
+    "knownToolingNote": "The generic develop-web-game Playwright client could not run because that skill resolved a missing chromium_headless_shell-1208 browser. Repo Playwright checks ran successfully using installed Chrome."
+  },
+  "untouched": {
+    "scoreFormula": true,
+    "xpFormula": true,
+    "saveFormat": true,
+    "steamCloudPaths": true,
+    "leaderboardIdentity": true,
+    "achievementIds": true,
+    "appIdAndDepotIds": true,
+    "storeMetadata": true,
+    "liveBranchAssignment": true
+  }
+}

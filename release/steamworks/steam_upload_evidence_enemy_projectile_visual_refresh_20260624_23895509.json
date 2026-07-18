@@ -1,0 +1,79 @@
+{
+  "task": "enemy projectile visual refresh",
+  "uploadedAt": "2026-06-24T16:47:29+02:00",
+  "branch": "codex/enemy-projectile-visual-refresh-20260623",
+  "startingCommit": "f18dbeed7e817ca7f289de2b98a7ad06d84d5b7f",
+  "sourceCommit": "9906b82531955232606cd93bdfcc55dfbb0fda20",
+  "build": {
+    "version": "v2026-06-24_16-38-35",
+    "packagedGitSha": "9906b82",
+    "gitShaProof": [
+      "test-results/packaged-exe-smoke-2026-06-24T14-42-11-679Z/report.json",
+      "test-results/packaged-perf-smoke-2026-06-24T14-43-00-108Z/report.json"
+    ]
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "buildId": "23895509",
+    "branchAssignment": "none",
+    "uploadLog": "test-results/steam-upload-enemy-projectile-visual-refresh-20260624-1646/steamcmd-upload.log",
+    "successLine": "[2026-06-24 16:47:29]: Successfully finished AppID 4765070 build (BuildID 23895509)."
+  },
+  "package": {
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 888574529,
+    "manifestHash": "fdc42c0f7f4345490cb8a2c6a90db65667f3676fe93bc9a9ae04a5a463dbb518",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "visualEvidence": {
+    "artPreview": "test-results/projectile-visuals-art-preview-2026-06-24/enemy-projectile-art-preview.png",
+    "focusedReport": "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/report.json",
+    "screenshots": [
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/basic_wave.png",
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/dense_missile_wave.png",
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/fireball_white_x.png",
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/boss_bullet_pattern.png",
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/boss_beam_tractor.png",
+      "test-results/projectile-visuals-2026-06-24T14-30-26-761Z/pickup_comparison.png"
+    ],
+    "densePerformance": {
+      "frames": 180,
+      "p95Ms": 21.3,
+      "p99Ms": 22.9,
+      "maxMs": 23.4,
+      "longFramesOver50": 0,
+      "generateTextureCalls": 0
+    }
+  },
+  "runtimeEvidence": {
+    "currentDesktopSmoke": "test-results/electron-smoke-2026-06-24T14-32-44-577Z/report.json",
+    "currentDesktopPerf": "test-results/electron-perf-smoke-2026-06-24T14-33-13-104Z/report.json",
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-24T14-42-11-679Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-24T14-43-00-108Z/report.json",
+    "fullSmoke": "test-results/smoke-2026-06-24T14-34-30-587Z/report.json"
+  },
+  "guardrails": {
+    "gameplayBehaviorChanged": false,
+    "projectileSpeedChanged": false,
+    "projectileDamageChanged": false,
+    "projectileHitboxesChanged": false,
+    "firingCadenceChanged": false,
+    "spawnRatesChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudChanged": false,
+    "saveFormatChanged": false,
+    "steamworksMetadataChanged": false,
+    "profileRescueRun": false,
+    "liveLeaderboardScoresSubmitted": false
+  },
+  "rollback": {
+    "source": "git revert 9906b82531955232606cd93bdfcc55dfbb0fda20",
+    "steam": "Do not assign BuildID 23895509, or reassign the private test branch back to the previous desired BuildID."
+  }
+}

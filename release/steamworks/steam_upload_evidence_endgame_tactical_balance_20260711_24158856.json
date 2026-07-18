@@ -1,0 +1,55 @@
+{
+  "generatedAt": "2026-07-11T07:05:32.869Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24158856",
+  "sourceCommit": "c191d3d48f21bd9e2d7e6693b200ec175e8177df Balance endgame hulls and tactical drafts",
+  "buildStamp": "v2026-07-11_08-50-47",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24154705",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_endgame_tactical_balance_20260711.log",
+  "consoleLogSha256": "131bfff83a3c962977ee00ee289804114c7b1bfbc7862a3380c9145f647c68ae",
+  "payloadManifestSha256": "d19a6d0ec3ef50ed4513f597d713d46ed86d2488364486a478da56402195655a",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916393800,
+    "manifestHash": "280bfe8e5a31afcefc830ca2f2f20dd3c70276e3fc17aaad75bd55ea3f66a3df",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "4a8164ce9d4ff1b8079f5b757914aeb9d32b85ebfbff547a55d773e7bcf41714"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-11 09:04:54]: Successfully finished AppID 4765070 build (BuildID 24158856).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: clean branch codex/current-build-first-session-retention-20260709 at c191d3d",
+    "releaseLine": "passed before packaging and VDF generation",
+    "packageSteamWin": "passed",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-11T06-58-26-908Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-11T06-59-09-931Z/report.json",
+    "packagedPerformance": "passed: 60.1122 average FPS, 59.5238 minimum FPS, no warnings or errors",
+    "desktopSmoke": "passed: build v2026-07-11_08-50-47, gitSha c191d3d, zero console events",
+    "desktopPackage": "passed",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-11T07-01-34-592Z/report.json",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24154705.",
+    "Source rollback is git revert c191d3d."
+  ]
+}

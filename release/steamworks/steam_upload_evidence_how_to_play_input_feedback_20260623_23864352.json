@@ -1,0 +1,47 @@
+{
+  "recordedAt": "2026-06-23T00:31:30+02:00",
+  "branch": "codex/how-to-play-input-feedback-polish-20260623",
+  "sourceCommit": "9399c88ceb3d8f23f7cedf8315b184ecb715c861",
+  "packagedVersion": "v2026-06-23_00-22-47",
+  "packagedGitSha": "9399c88",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23864352",
+    "setLive": "",
+    "assignedPublicOrDefault": false
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestFileSha256": "DE224FA3F4B2C23A0ED1027DDA0CA179D522D60DDE378AD64548C34DF3BEFDD2",
+    "contentManifestHash": "d6c33064bd62995f9c3704764a434865092e1c049242fd6333c783d2bb107f83",
+    "fileCount": 336,
+    "totalBytes": 879700259
+  },
+  "proof": {
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-22T22-27-20-564Z/report.json",
+    "packagedPerf": "test-results/packaged-perf-smoke-2026-06-22T22-27-20-564Z/report.json",
+    "packageRuntime": "test-results/steam-package-runtime-2026-06-22T22-29-13-058Z/report.json",
+    "steamCmdLog": "release/steamworks/steam_upload_console_20260623_how_to_play_input_feedback.log",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "vdfVerification": {
+    "appId4765070": true,
+    "depot4765071": true,
+    "setLiveBlank": true,
+    "assignsPublicOrDefault": false
+  },
+  "guardrails": {
+    "steamworksMetadataChanged": false,
+    "appIdChanged": false,
+    "depotChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudSettingsChanged": false,
+    "saveFormatChanged": false,
+    "profileRescueRun": false,
+    "gameplayBalanceChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false
+  }
+}

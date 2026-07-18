@@ -1,0 +1,105 @@
+{
+  "type": "steam_upload_evidence",
+  "createdAt": "2026-07-08T10:14:24Z",
+  "purpose": "Emergency private Steam candidate upload fixing the ultrawide gameplay mask black-playfield regression.",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "61a53b524d62ec0d97e190ffd0fa7165659e7f49",
+    "commitSummary": "Fix ultrawide gameplay mask rendering",
+    "supersedesCandidateBuildId": "24106321",
+    "supersedesReason": "BuildID 24106321 could render a black gameplay field while HUD/UI remained visible."
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24106991",
+    "setLive": "",
+    "branchAssigned": false,
+    "metadataChanged": false,
+    "settingsChanged": false,
+    "publicDefaultChanged": false,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24106991)."
+  },
+  "payload": {
+    "buildVersion": "v2026-07-08_12-02-47",
+    "buildTimestamp": "2026-07-08T10:02:47.071Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "d4eabfbc1fa6ce41e2ea7ba5d35ce95c24903bad2b9a678ca8b71568b01bd65e",
+    "fileCount": 336,
+    "totalBytes": 916231784,
+    "manifestHash": "732036b23c16f9a0b97566ba4ee1913d1a0f124352ddf897d01db7f49b69fd42"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "commandShape": "tools\\steamcmd\\steamcmd.exe +login <cached-steamworks-user> +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "successfulAttemptLog": "release/steamworks/steam_upload_console_black_playfield_fix_20260708.log",
+    "successfulAttemptExitCode": 0
+  },
+  "verification": {
+    "sourceChecks": [
+      "node --check src\\scenes\\PlayScene.js",
+      "node --check scripts\\check-ultrawide-side-ambience.mjs",
+      "node scripts/check-ultrawide-side-ambience.mjs",
+      "node scripts/check-resolution-fairness.mjs",
+      "npm run check:release-line",
+      "npm run check:i18n",
+      "npm run build:current",
+      "npm run check:i18n-ui",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "npm run check:controller-flow",
+      "git diff --check"
+    ],
+    "packagedChecks": [
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run steamworks:write-vdf",
+      "npm run steamworks:payload-manifest"
+    ],
+    "evidenceFiles": [
+      "release/steamworks/steam_payload_manifest.json",
+      "test-results/ultrawide-side-ambience-2026-07-08T09-54-36-787Z/ultrawide-side-ambience.png",
+      "test-results/i18n-ui-2026-07-08T09-57-32-373Z",
+      "test-results/smoke-2026-07-08T09-58-56-093Z/report.json",
+      "test-results/electron-smoke-2026-07-08T10-04-28-582Z",
+      "test-results/steam-sdk-ready-2026-07-08T10-04-57-807Z/report.json",
+      "test-results/steam-package-runtime-2026-07-08T10-07-40-025Z/report.json",
+      "test-results/steam-package-runtime-2026-07-08T10-10-32-492Z/report.json",
+      "test-results/packaged-exe-smoke-2026-07-08T10-07-50-340Z/report.json",
+      "test-results/packaged-control-smoke-2026-07-08T10-08-36-739Z/report.json",
+      "test-results/packaged-perf-smoke-2026-07-08T10-08-46-348Z/report.json"
+    ]
+  },
+  "scopeGuards": {
+    "playerFacingTextChanged": false,
+    "packageDependenciesChanged": false,
+    "steamworksMetadataChanged": false,
+    "scoreXpLeaderboardAchievementChanged": false,
+    "balanceChanged": false,
+    "publicBranchChanged": false,
+    "notes": [
+      "The fix keeps the ultrawide gameplay mask renderable for Pixi's mask pass while excluding it from normal display build.",
+      "The ultrawide proof now fails if the combat zone screenshot is black.",
+      "The upload did not assign a Steam branch because the VDF kept SetLive empty."
+    ]
+  },
+  "knownRisks": [
+    "No Steam branch was assigned by this upload. Manual Steamworks assignment is still required before players receive BuildID 24106991.",
+    "Packaged and Electron smoke logs may include Steam API or Electron deprecation messages from the test harness; the checks exited successfully."
+  ],
+  "rollback": {
+    "source": "git revert 61a53b524d62ec0d97e190ffd0fa7165659e7f49",
+    "steam": "No Steam rollback is needed while BuildID 24106991 remains unassigned. If it is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the previous desired BuildID."
+  }
+}

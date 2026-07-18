@@ -55,6 +55,9 @@ export class Hijacker {
     this.beamPullActive = false;
     this.lastBeamToastAt = 0;
     this.destroyedDuringBeam = false;
+    this.hitFeedbackUntil = 0;
+    this.hitFeedbackDurationMs = 180;
+    this.lastHitFeedback = null;
 
     this.createSprite();
   }
@@ -69,6 +72,12 @@ export class Hijacker {
     this.beamLayer.zIndex = -2;
     this.beamLayer.blendMode = 'add';
     this.sprite.addChild(this.beamLayer);
+
+    this.hitFeedbackLayer = new PIXI.Graphics();
+    this.hitFeedbackLayer.zIndex = 2;
+    this.hitFeedbackLayer.blendMode = 'add';
+    this.hitFeedbackLayer.visible = false;
+    this.sprite.addChild(this.hitFeedbackLayer);
 
     // Use the generated Nova Swarm hijacker craft instead of legacy UFO pack art.
     const loader = PIXI.Assets;
@@ -112,17 +121,33 @@ export class Hijacker {
 
   updateHealthBar() {
     this.healthBar.clear();
-    const barWidth = 60;
-    const barHeight = 4;
-    const healthPct = this.health / this.maxHealth;
+    const barWidth = 72;
+    const barHeight = 7;
+    const barY = Math.max(this.radius + 34, 72);
+    const healthPct = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const fillColor = healthPct > 0.5 ? 0x43ff9a : healthPct > 0.25 ? 0xffef7e : 0xff4b6b;
 
-    // Background
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(-barWidth / 2 - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x020711, alpha: 0.88 });
+    this.healthBar.stroke({ color: 0x7ee9ff, width: 1.25, alpha: 0.92 });
+    this.healthBar.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+    this.healthBar.fill({ color: 0x291228, alpha: 0.96 });
 
-    // Health
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth * healthPct, barHeight);
-    this.healthBar.fill({ color: healthPct > 0.5 ? 0x00ff00 : 0xff0000 });
+    if (healthPct > 0) {
+      this.healthBar.roundRect(-barWidth / 2, barY, Math.max(2, barWidth * healthPct), barHeight, 2);
+      this.healthBar.fill({ color: fillColor, alpha: 0.98 });
+    }
+    this.healthBar.moveTo(0, barY - 2);
+    this.healthBar.lineTo(0, barY + barHeight + 2);
+    this.healthBar.stroke({ color: 0xffffff, width: 1, alpha: 0.36 });
+    this.healthBar._debugLayout = {
+      localY: barY,
+      worldY: this.y + barY,
+      width: barWidth,
+      height: barHeight,
+      healthPct,
+      belowCraft: barY > this.radius
+    };
   }
 
   update(delta, playerX, playerY) {
@@ -145,14 +170,95 @@ export class Hijacker {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
+    this.updateHitFeedback();
     this.updateTractorBeam(delta, playerX, playerY);
   }
 
-  takeDamage(amount) {
+  triggerHitFeedback(sourceId = 'ordinary_fire') {
+    if (!this.hitFeedbackLayer || this.destroyed || !this.active) return null;
+    const normalizedSource = sourceId === 'chain_lightning' ? 'chain_lightning' : 'ordinary_fire';
+    const color = normalizedSource === 'chain_lightning' ? 0x8fffff : 0xfff3ad;
+    const accent = normalizedSource === 'chain_lightning' ? 0xffffff : 0xff55d9;
+    const ringRadius = this.radius + 14;
+    const braceCount = 4;
+    const layer = this.hitFeedbackLayer;
+    layer.clear();
+    layer.circle(0, 0, ringRadius);
+    layer.stroke({ color, width: 4, alpha: 0.92 });
+    layer.circle(0, 0, ringRadius + 8);
+    layer.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    for (let i = 0; i < braceCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / braceCount + Math.PI / 4;
+      const x1 = Math.cos(angle) * (ringRadius + 3);
+      const y1 = Math.sin(angle) * (ringRadius + 3);
+      const x2 = Math.cos(angle) * (ringRadius + 16);
+      const y2 = Math.sin(angle) * (ringRadius + 16);
+      layer.moveTo(x1, y1);
+      layer.lineTo(x2, y2);
+    }
+    layer.stroke({ color: accent, width: 3, alpha: 0.9 });
+    if (normalizedSource === 'chain_lightning') {
+      layer.moveTo(-ringRadius * 0.72, ringRadius * 0.48);
+      layer.lineTo(-4, -ringRadius * 0.18);
+      layer.lineTo(7, ringRadius * 0.08);
+      layer.lineTo(ringRadius * 0.72, -ringRadius * 0.52);
+      layer.stroke({ color: 0xffffff, width: 3.5, alpha: 0.96 });
+    }
+    layer.visible = true;
+    layer.alpha = 1;
+    layer.scale.set(1);
+    this.hitFeedbackUntil = Date.now() + this.hitFeedbackDurationMs;
+    if (this.ufoSprite) this.ufoSprite.tint = color;
+    this.lastHitFeedback = {
+      sourceId: normalizedSource,
+      color,
+      accent,
+      durationMs: this.hitFeedbackDurationMs,
+      ringRadius,
+      braceCount,
+      visible: true
+    };
+    layer._debugHitFeedback = { ...this.lastHitFeedback };
+    return this.lastHitFeedback;
+  }
+
+  updateHitFeedback(now = Date.now()) {
+    if (!this.hitFeedbackLayer?.visible) return false;
+    const remainingMs = Math.max(0, this.hitFeedbackUntil - now);
+    if (remainingMs <= 0) {
+      this.hitFeedbackLayer.visible = false;
+      this.hitFeedbackLayer.clear();
+      this.hitFeedbackLayer.alpha = 0;
+      if (this.ufoSprite) this.ufoSprite.tint = 0xffffff;
+      if (this.lastHitFeedback) this.lastHitFeedback = { ...this.lastHitFeedback, visible: false };
+      if (this.hitFeedbackLayer._debugHitFeedback) {
+        this.hitFeedbackLayer._debugHitFeedback = {
+          ...this.hitFeedbackLayer._debugHitFeedback,
+          visible: false,
+          remainingMs: 0
+        };
+      }
+      return false;
+    }
+    const progress = remainingMs / this.hitFeedbackDurationMs;
+    this.hitFeedbackLayer.alpha = Math.max(0.22, progress);
+    this.hitFeedbackLayer.scale.set(1 + (1 - progress) * 0.12);
+    if (this.hitFeedbackLayer._debugHitFeedback) {
+      this.hitFeedbackLayer._debugHitFeedback = {
+        ...this.hitFeedbackLayer._debugHitFeedback,
+        visible: true,
+        remainingMs: Math.round(remainingMs)
+      };
+    }
+    return true;
+  }
+
+  takeDamage(amount, options = {}) {
     if (this.destroyed || !this.active) return false;
     const brokeBeam = this.isBeamThreatening();
     this.health -= amount;
     this.updateHealthBar();
+    this.triggerHitFeedback(options?.sourceId);
 
     if (this.health <= 0) {
       this.destroy(brokeBeam);
@@ -386,6 +492,176 @@ export class Hijacker {
       layer.circle(0, tipY, 6 + shimmer * 2);
       layer.fill({ color: 0xffffff, alpha: 0.42 });
     }
+
+    this.drawBeamLattice(layer, {
+      active,
+      progress,
+      now,
+      tipY,
+      endX,
+      endY,
+      coneWidth,
+      innerWidth,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+    this.drawBeamLockMandala(layer, {
+      active,
+      progress,
+      now,
+      tipY,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+    this.drawBeamCaptureGlyph(layer, {
+      active,
+      progress,
+      now,
+      endX,
+      endY,
+      coneWidth,
+      coreColor,
+      edgeColor,
+      hotColor,
+      shimmer
+    });
+  }
+
+  drawBeamLattice(layer, {
+    active,
+    progress,
+    now,
+    tipY,
+    endX,
+    endY,
+    coneWidth,
+    innerWidth,
+    coreColor,
+    edgeColor,
+    hotColor,
+    shimmer
+  }) {
+    const beamDx = endX;
+    const beamDy = endY - tipY;
+    const length = Math.max(1, Math.hypot(beamDx, beamDy));
+    const normalX = -beamDy / length;
+    const normalY = beamDx / length;
+    const laneCount = active ? 7 : 5;
+    const segmentCount = active ? 7 : 5;
+
+    for (let i = 0; i < laneCount; i += 1) {
+      const lane = laneCount === 1 ? 0 : (i / (laneCount - 1) - 0.5);
+      const phase = now * (0.008 + i * 0.0007) + i * 1.37;
+      for (let s = 0; s <= segmentCount; s += 1) {
+        const t = s / segmentCount;
+        const widthAtT = innerWidth * (0.12 + t * 0.92);
+        const braid = Math.sin(phase + t * Math.PI * 3.2) * (active ? 8 : 4) * (0.25 + t);
+        const lateral = lane * widthAtT + braid;
+        const x = beamDx * t + normalX * lateral;
+        const y = tipY + beamDy * t + normalY * lateral;
+        if (s === 0) layer.moveTo(x, y);
+        else layer.lineTo(x, y);
+      }
+    }
+    layer.stroke({
+      color: hotColor,
+      width: active ? 2.4 : 1.6,
+      alpha: active ? 0.44 + shimmer * 0.18 : 0.16 + progress * 0.34
+    });
+
+    const rungCount = active ? 8 : 5;
+    for (let i = 1; i <= rungCount; i += 1) {
+      const t = i / (rungCount + 1);
+      const centerX = beamDx * t;
+      const centerY = tipY + beamDy * t;
+      const half = coneWidth * (0.18 + t * 0.62) * (active ? 0.68 : 0.5);
+      const skew = Math.sin(now * 0.011 + i) * (active ? 8 : 4);
+      layer.moveTo(centerX - normalX * half + beamDx / length * skew, centerY - normalY * half + beamDy / length * skew);
+      layer.lineTo(centerX + normalX * half + beamDx / length * skew, centerY + normalY * half + beamDy / length * skew);
+    }
+    layer.stroke({
+      color: active ? 0xffffff : edgeColor,
+      width: active ? 1.8 : 1.2,
+      alpha: active ? 0.26 : 0.12 + progress * 0.24
+    });
+
+    if (!active) return;
+    for (let i = 0; i < 5; i += 1) {
+      const t = ((now * 0.0007 + i * 0.2) % 1);
+      const x = beamDx * t;
+      const y = tipY + beamDy * t;
+      const r = 4 + shimmer * 3 + i * 0.4;
+      layer.circle(x + Math.sin(now * 0.018 + i) * 10, y, r);
+      layer.fill({ color: i % 2 ? coreColor : 0xffffff, alpha: 0.22 });
+    }
+  }
+
+  drawBeamLockMandala(layer, { active, progress, now, tipY, coreColor, edgeColor, hotColor, shimmer }) {
+    const charge = active ? 1 : progress;
+    const spin = now * (active ? 0.006 : 0.003);
+    const outer = this.radius * (0.82 + charge * 0.42) + shimmer * 4;
+    this.drawBeamArc(layer, 0, tipY, outer, outer * 0.58, spin, spin + Math.PI * 0.72, edgeColor, active ? 2.2 : 1.6, active ? 0.52 : 0.18 + progress * 0.34);
+    this.drawBeamArc(layer, 0, tipY, outer * 0.78, outer * 0.44, spin + Math.PI, spin + Math.PI * 1.72, hotColor, active ? 2.4 : 1.5, active ? 0.44 : 0.16 + progress * 0.28);
+    for (let i = 0; i < 10; i += 1) {
+      const a = spin + i * Math.PI * 0.2;
+      const inner = outer * 0.34;
+      const tip = outer * (0.72 + (i % 2) * 0.2);
+      layer.moveTo(Math.cos(a) * inner, tipY + Math.sin(a) * inner * 0.52);
+      layer.lineTo(Math.cos(a) * tip, tipY + Math.sin(a) * tip * 0.52);
+    }
+    layer.stroke({ color: coreColor, width: active ? 1.6 : 1.1, alpha: active ? 0.38 : 0.12 + progress * 0.24 });
+  }
+
+  drawBeamCaptureGlyph(layer, {
+    active,
+    progress,
+    now,
+    endX,
+    endY,
+    coneWidth,
+    coreColor,
+    edgeColor,
+    hotColor,
+    shimmer
+  }) {
+    const lockAlpha = active ? 0.58 : 0.18 + progress * 0.34;
+    const lockR = Math.max(24, coneWidth * (active ? 0.24 : 0.18 + progress * 0.08));
+    const spin = now * (active ? -0.006 : -0.003);
+    for (let i = 0; i < 4; i += 1) {
+      const a = spin + i * Math.PI * 0.5;
+      this.drawBeamArc(layer, endX, endY, lockR, lockR * 0.38, a - 0.22, a + 0.34, i % 2 ? coreColor : edgeColor, active ? 2.4 : 1.6, lockAlpha);
+    }
+    for (let i = 0; i < 6; i += 1) {
+      const a = spin * 1.3 + i * Math.PI / 3;
+      const outerX = endX + Math.cos(a) * lockR * 1.12;
+      const outerY = endY + Math.sin(a) * lockR * 0.42;
+      const innerX = endX + Math.cos(a) * lockR * 0.74;
+      const innerY = endY + Math.sin(a) * lockR * 0.28;
+      layer.moveTo(innerX, innerY);
+      layer.lineTo(outerX, outerY);
+    }
+    layer.stroke({ color: hotColor, width: active ? 1.9 : 1.2, alpha: active ? 0.42 + shimmer * 0.1 : 0.12 + progress * 0.24 });
+    if (active) {
+      layer.circle(endX, endY, 5 + shimmer * 3);
+      layer.fill({ color: 0xffffff, alpha: 0.32 });
+    }
+  }
+
+  drawBeamArc(layer, cx, cy, rx, ry, start, end, color, width, alpha) {
+    const steps = 12;
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const a = start + (end - start) * t;
+      const x = cx + Math.cos(a) * rx;
+      const y = cy + Math.sin(a) * ry;
+      if (i === 0) layer.moveTo(x, y);
+      else layer.lineTo(x, y);
+    }
+    layer.stroke({ color, width, alpha });
   }
 
   clearBeamVisual() {
@@ -406,6 +682,8 @@ export class Hijacker {
       state: this.beamState,
       remainingMs: Math.round(remainingMs),
       pullActive: this.beamPullActive,
+      hitFeedback: this.hitFeedbackLayer?._debugHitFeedback || this.lastHitFeedback,
+      healthBar: this.healthBar?._debugLayout || null,
       target: {
         x: Math.round(this.beamTarget.x),
         y: Math.round(this.beamTarget.y)

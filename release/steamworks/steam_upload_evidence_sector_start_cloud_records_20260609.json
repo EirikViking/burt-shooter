@@ -1,0 +1,54 @@
+{
+  "uploadedAt": "2026-06-09T05:46:01.000Z",
+  "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+  "branch": "feature/sector-continue-prototype-v1",
+  "sourceHead": "e9124d4e3a0bd556168a6e05d783a9b36197d26e",
+  "packageVersion": "v2026-06-09_07-39-24",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23635462",
+    "setLive": "sector-continue-test",
+    "targetBranch": "sector-continue-test",
+    "description": "Sector Start Challenge Steam Cloud records e9124d4 v2026-06-09_07-39-24",
+    "defaultBranchTargeted": false,
+    "testBuildBranchTargeted": false,
+    "mainLeaderboard": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724431592,
+    "manifestHash": "abc2a7b76ae5ac5834f772e09eeb6adcf0b0869e549ee6cfb7559142679d36c0",
+    "executableSha256": "3fd214ab92a94b50d72db270098f39b4dcc53730844c021497fa56c1ed9aaf65"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": "sector-continue-test"
+  },
+  "commands": {
+    "releaseLine": "npm run check:release-line",
+    "package": "npm run package:steam:win",
+    "packagedSmoke": "npm run desktop:smoke:packaged",
+    "payloadManifest": "npm run steamworks:payload-manifest",
+    "writeVdf": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=sector-continue-test STEAM_BUILD_DESC=\"Sector Start Challenge Steam Cloud records e9124d4 v2026-06-09_07-39-24\" npm run steamworks:write-vdf",
+    "uploadRedacted": "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "results": {
+    "releaseLine": "PASS",
+    "steamSdkReady": "PASS",
+    "build": "PASS",
+    "steamPackageRuntime": "PASS",
+    "packagedSmoke": "PASS",
+    "steamcmdUpload": "PASS"
+  },
+  "notes": [
+    "Includes commit e9124d4 Save Sector Start records to Steam Cloud.",
+    "Uploaded only to sector-continue-test via SetLive.",
+    "No default or test-build branch was named in the VDF.",
+    "Steam store metadata, app visibility, AppID, depot ID, and main leaderboard settings were not changed."
+  ]
+}

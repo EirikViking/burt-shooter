@@ -1,11 +1,24 @@
 import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
 import {
   getAccessibilitySettings,
   setColorAssistEnabled,
+  setPlayerHitboxVisible,
   setPlayerFocusScale,
   setScreenShakeScale
 } from '../config/AccessibilitySettings.js';
+import {
+  DEFAULT_WINDOW_SIZE_OPTIONS,
+  DISPLAY_MODES,
+  UI_SCALE_OPTIONS,
+  applyDisplaySettings,
+  getDisplayOptions,
+  getDisplaySettings,
+  getUiScaleLabel,
+  resetDisplaySettings
+} from '../config/DisplaySettings.js';
+import { getMenuSettings, saveMenuSettings } from '../config/MenuSettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -17,7 +30,18 @@ import {
   setLanguagePreference,
   translateText
 } from '../i18n/index.js';
-import { grantSecretShipUnlock } from '../progression/HangarProgressState.js';
+import { ShipData } from '../config/ShipData.js';
+import {
+  CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+  CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+  CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+  grantSecretShipUnlock,
+  readHangarProgressState,
+  rollCreditsAscendantEasterEgg
+} from '../progression/HangarProgressState.js';
+import { getDefaultShowPilotOrders } from '../progression/RunContracts.js';
+import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from './MenuFxLayer.js';
+import { applyResponsiveLayout, getCurrentLayout } from './responsiveLayout.js';
 
 function percent(value) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
@@ -65,6 +89,30 @@ function debugBounds(displayObject) {
   }
 }
 
+function getCreditsAscendantRandom() {
+  const override = typeof window !== 'undefined'
+    ? window.__novaCreditsAscendantEasterEggRandom
+    : globalThis.__novaCreditsAscendantEasterEggRandom;
+  return typeof override === 'function' ? override : Math.random;
+}
+
+function getCreditsRevealShip(shipId = 'nova_ship_07') {
+  const fallback = ShipData[6] || ShipData[0] || {};
+  const ship = ShipData.find(candidate => candidate.id === shipId) || fallback;
+  const textureIndex = Number.isInteger(ship.textureIndex)
+    ? ship.textureIndex
+    : Math.max(0, Number.parseInt(String(ship.spriteKey || '').replace(/\D/g, ''), 10) - 1);
+  return {
+    ship,
+    name: ship.name || 'QUASAR FAN',
+    asset: AssetManifest.generated.playerShips?.[textureIndex]
+  };
+}
+
+function getMusicPackOption(pack) {
+  return MUSIC_PACK_OPTIONS.find((option) => option.id === pack) || MUSIC_PACK_OPTIONS[0];
+}
+
 export class SettingsOverlay {
   constructor(game, {
     title = 'SETTINGS',
@@ -77,10 +125,23 @@ export class SettingsOverlay {
     this.container.zIndex = 2000000;
     this.container.label = 'ui_settingsOverlay';
     this.container.sortableChildren = true;
+    this.menuFx = null;
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.uiScaleButton = null;
+    this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
+    this.displayStatusText = null;
+    this.displayOptions = {
+      modes: DISPLAY_MODES.map((entry) => ({ ...entry, supported: true })),
+      sizes: DEFAULT_WINDOW_SIZE_OPTIONS
+    };
+    this.formCenterX = null;
+    this.formColumnWidth = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -103,6 +164,7 @@ export class SettingsOverlay {
     this.languageUnsubscribe = onLanguageChange(() => this.rebuild());
     this.keyHandler = null;
     this.build();
+    this.refreshDisplayOptions();
     this.setupKeyboardNavigation();
     this.setControlFocus(0);
   }
@@ -111,8 +173,12 @@ export class SettingsOverlay {
     this.controls = [];
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    const requestedUiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
+    const viewportScaleCap = Math.max(1, Math.min(2, width / 1400, height / 980));
+    this.uiScale = Math.min(requestedUiScale, viewportScaleCap);
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
+    const menuSettings = this.getMenuSettingsForOverlay();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -121,22 +187,40 @@ export class SettingsOverlay {
     dim.fill({ color: 0x020713, alpha: 0.82 });
     dim.eventMode = 'static';
     this.container.addChild(dim);
+    installMenuFx(this, {
+      label: 'ui_menuFxSettings',
+      zIndex: 0,
+      accent: 0x7fffd8,
+      secondary: 0xff55d9,
+      gold: 0xffef7e,
+      intensity: 0.6,
+      density: 0.68,
+      alpha: 0.42,
+      openVolume: 0.18
+    });
 
-    const isCompact = width < 620 || height < 820;
-    const panelWidth = Math.min(560, width * 0.82);
-    const panelHeight = Math.min(isCompact ? 790 : 730, height * (isCompact ? 0.98 : 0.97));
+    const isCompact = width < 760 || height < 680;
+    const twoColumn = width >= 980 && height >= 660;
+    const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.92), twoColumn ? 1080 : 700);
+    const panelHeight = Math.min(height * (isCompact ? 0.96 : 0.92), twoColumn ? 760 : 860);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x06111f, alpha: 0.96 });
+    panel.fill({ color: 0x03101f, alpha: 0.975 });
     panel.stroke({ color: 0x00ffff, width: 2, alpha: 0.95 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 7);
+    panel.stroke({ color: 0xff55d9, width: 1.1, alpha: 0.36 });
+    panel.rect(panelX + 26, panelY + 70, panelWidth - 52, 2);
+    panel.fill({ color: 0x37f5ff, alpha: 0.24 });
+    panel.rect(panelX + 26, panelY + panelHeight - 72, panelWidth - 52, 1);
+    panel.fill({ color: 0xffd15c, alpha: 0.22 });
     this.container.addChild(panel);
 
     const titleText = createText(this.title, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 28 : 34,
+      fontSize: Math.round((isCompact ? 26 : 36) * this.uiScale),
       fontWeight: 'bold',
       fill: '#f6fbff',
       stroke: '#003344',
@@ -146,67 +230,200 @@ export class SettingsOverlay {
     titleText.position.set(width / 2, panelY + (isCompact ? 42 : 48));
     this.container.addChild(titleText);
 
-    const toggleGap = isCompact ? 38 : 42;
-    const testGap = isCompact ? 36 : 40;
-    const sliderGap = isCompact ? 38 : 42;
+    const dense = height < 760;
+    const sectionGap = Math.round((twoColumn ? 34 : dense ? 26 : 29) * this.uiScale);
+    const rowGap = Math.round((twoColumn ? 38 : dense ? 29 : 32) * this.uiScale);
+    const tighterGap = Math.round((twoColumn ? 34 : dense ? 27 : 30) * this.uiScale);
+    const sliderGap = Math.round((twoColumn ? 32 : dense ? 28 : 30) * this.uiScale);
     const footerButtonHeight = isCompact ? 32 : 38;
-    const stackedButtonWidth = Math.min(240, panelWidth - 56);
-    let y = panelY + (isCompact ? 84 : 100);
-    this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
-    y += toggleGap;
-    this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
-    y += testGap;
-    this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
-    y += testGap;
-    this.addAudioTestRow('TEST', y);
-    y += testGap;
-    this.addLanguageRow('LANGUAGE', y);
-    y += toggleGap;
-    this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
-    y += sliderGap;
-    this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
-    y += sliderGap;
-    this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
-    y += sliderGap;
-    this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
-      onChange: setScreenShakeScale
-    });
-    y += sliderGap;
-    this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
-      onChange: setPlayerFocusScale
-    });
-    y += toggleGap;
-    this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
-
+    const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
+    const contentTop = panelY + Math.round((isCompact ? 76 : 92) * this.uiScale);
+    const contentBottom = footerY - footerButtonHeight / 2 - Math.round((isCompact ? 20 : 26) * this.uiScale);
+    const columnPad = twoColumn ? 30 : 28;
+    const columnGap = twoColumn ? 26 : 0;
+    const columnWidth = twoColumn
+      ? (panelWidth - columnPad * 2 - columnGap) / 2
+      : panelWidth - columnPad * 2;
+    const leftX = panelX + columnPad;
+    const rightX = twoColumn ? leftX + columnWidth + columnGap : leftX;
+    const setFormColumn = (columnX) => {
+      this.formCenterX = columnX + columnWidth / 2;
+      this.formColumnWidth = columnWidth;
+    };
+
+    if (twoColumn) {
+      const columnHeight = Math.max(120, contentBottom - contentTop);
+      this.drawSettingsSectionFrame(leftX, contentTop, columnWidth, columnHeight, 0x37f5ff);
+      this.drawSettingsSectionFrame(rightX, contentTop, columnWidth, columnHeight, 0xff55d9);
+
+      setFormColumn(leftX);
+      let leftY = contentTop + Math.round(22 * this.uiScale);
+      this.addSectionLabel('DISPLAY', leftY);
+      leftY += sectionGap;
+      this.addDisplayModeRow('Display Mode', leftY);
+      leftY += rowGap;
+      this.addDisplaySizeRow('Window Size', leftY);
+      leftY += rowGap;
+      this.addUiScaleRow('UI Scale', leftY);
+      leftY += rowGap;
+      this.addDisplayResetRow('Safe Reset', leftY);
+      leftY += Math.round(40 * this.uiScale);
+      this.addSectionLabel('GAMEPLAY', leftY);
+      leftY += sectionGap;
+      this.addToggleRow('Confirm Exit', menuSettings.confirmExit, leftY, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+        id: 'confirm_exit',
+        onButton: (button) => {
+          this.confirmExitButton = button;
+        }
+      });
+      leftY += rowGap;
+      this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, leftY, (enabled) => saveMenuSettings({
+        showPilotOrders: enabled
+      }, {
+        defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+      }), {
+        id: 'show_pilot_orders',
+        onButton: (button) => {
+          this.pilotOrdersButton = button;
+        }
+      });
+      leftY += Math.round(40 * this.uiScale);
+      this.addSectionLabel('ACCESSIBILITY', leftY);
+      leftY += sectionGap;
+      this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, leftY, {
+        onChange: setScreenShakeScale
+      });
+      leftY += sliderGap;
+      this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, leftY, {
+        onChange: setPlayerFocusScale
+      });
+      leftY += tighterGap;
+      this.addToggleRow('HITBOX', accessibility.playerHitbox, leftY, setPlayerHitboxVisible, {
+        id: 'player_hitbox'
+      });
+      leftY += tighterGap;
+      this.addToggleRow('COLOR AID', accessibility.colorAssist, leftY, setColorAssistEnabled);
+
+      setFormColumn(rightX);
+      let rightY = contentTop + Math.round(22 * this.uiScale);
+      this.addSectionLabel('AUDIO', rightY);
+      rightY += sectionGap;
+      this.addToggleRow('MUSIC', settings.musicEnabled, rightY, (enabled) => AudioManager.setMusicEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('VOICE', settings.voiceEnabled, rightY, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, rightY, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, rightY, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      rightY += tighterGap;
+      this.addMusicPackRow('MUSIC SET', settings.musicPack, rightY);
+      rightY += tighterGap;
+      this.addAudioTestRow('TEST', rightY);
+      rightY += tighterGap;
+      this.addLanguageRow('LANGUAGE', rightY);
+      rightY += rowGap;
+      this.addSliderRow('MASTER', 'master', settings.masterVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, rightY);
+    } else {
+      this.drawSettingsSectionFrame(leftX, contentTop, columnWidth, Math.max(120, contentBottom - contentTop), 0x37f5ff);
+      setFormColumn(leftX);
+      let y = contentTop + Math.round(18 * this.uiScale);
+      this.addSectionLabel('DISPLAY', y);
+      y += sectionGap;
+      this.addDisplayModeRow('Display Mode', y);
+      y += tighterGap;
+      this.addDisplaySizeRow('Window Size', y);
+      y += tighterGap;
+      this.addUiScaleRow('UI Scale', y);
+      y += tighterGap;
+      this.addDisplayResetRow('Safe Reset', y);
+      y += Math.round(32 * this.uiScale);
+      this.addSectionLabel('GAMEPLAY', y);
+      y += sectionGap;
+      this.addToggleRow('Confirm Exit', menuSettings.confirmExit, y, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
+        id: 'confirm_exit',
+        onButton: (button) => {
+          this.confirmExitButton = button;
+        }
+      });
+      y += tighterGap;
+      this.addToggleRow('Show Pilot Orders', menuSettings.showPilotOrders, y, (enabled) => saveMenuSettings({
+        showPilotOrders: enabled
+      }, {
+        defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+      }), {
+        id: 'show_pilot_orders',
+        onButton: (button) => {
+          this.pilotOrdersButton = button;
+        }
+      });
+      y += Math.round(32 * this.uiScale);
+      this.addSectionLabel('AUDIO', y);
+      y += sectionGap;
+      this.addToggleRow('MUSIC', settings.musicEnabled, y, (enabled) => AudioManager.setMusicEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('VOICE', settings.voiceEnabled, y, (enabled) => AudioManager.setVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
+      y += tighterGap;
+      this.addAudioTestRow('TEST', y);
+      y += tighterGap;
+      this.addLanguageRow('LANGUAGE', y);
+      y += tighterGap;
+      this.addSliderRow('MASTER', 'master', settings.masterVolume, y);
+      y += sliderGap;
+      this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, y);
+      y += sliderGap;
+      this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
+      y += sliderGap;
+      this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
+      y += Math.round(30 * this.uiScale);
+      this.addSectionLabel('ACCESSIBILITY', y);
+      y += sectionGap;
+      this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, y, {
+        onChange: setScreenShakeScale
+      });
+      y += sliderGap;
+      this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
+        onChange: setPlayerFocusScale
+      });
+      y += tighterGap;
+      this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, {
+        id: 'player_hitbox'
+      });
+      y += tighterGap;
+      this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
+    }
+
+    this.formCenterX = null;
+    this.formColumnWidth = null;
+
     if (panelWidth >= 500) {
       const footerButtonGap = isCompact ? 12 : 16;
       const availableFooterWidth = panelWidth - (isCompact ? 44 : 64);
-      const footerButtonWidth = Math.min(isCompact ? 154 : 168, Math.floor((availableFooterWidth - footerButtonGap * 2) / 3));
+      const footerButtonWidth = Math.min(isCompact ? 172 : 190, Math.floor((availableFooterWidth - footerButtonGap) / 2));
       const footerStep = footerButtonWidth + footerButtonGap;
-      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep, footerY, () => this.openCreditsPanel(), {
+      this.addFooterButton('credits', 'CREDITS', width / 2 - footerStep / 2, footerY, () => this.openCreditsPanel(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
-      this.addFooterButton('close', 'CLOSE', width / 2, footerY, () => this.close(), {
-        width: footerButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2 + footerStep, footerY, () => this.toggleFullscreen(), {
+      this.addFooterButton('close', 'CLOSE', width / 2 + footerStep / 2, footerY, () => this.close(), {
         width: footerButtonWidth,
         height: footerButtonHeight
       });
     } else {
       const stackGap = footerButtonHeight + 8;
-      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap * 2, () => this.openCreditsPanel(), {
-        width: stackedButtonWidth,
-        height: footerButtonHeight
-      });
-      this.addFooterButton('fullscreen', 'FULLSCREEN', width / 2, footerY - stackGap, () => this.toggleFullscreen(), {
+      this.addFooterButton('credits', 'CREDITS', width / 2, footerY - stackGap, () => this.openCreditsPanel(), {
         width: stackedButtonWidth,
         height: footerButtonHeight
       });
@@ -217,18 +434,50 @@ export class SettingsOverlay {
     }
   }
 
-  addToggleRow(label, initialValue, y, onChange) {
-    const width = this.game.getWidth();
-    const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+  getDefaultShowPilotOrdersSetting() {
+    return getDefaultShowPilotOrders(readHangarProgressState());
+  }
 
-    const labelText = createText(label, {
+  getMenuSettingsForOverlay() {
+    return getMenuSettings({
+      defaultShowPilotOrders: this.getDefaultShowPilotOrdersSetting()
+    });
+  }
+
+  getFormCenterX() {
+    return Number.isFinite(this.formCenterX) ? this.formCenterX : this.game.getWidth() / 2;
+  }
+
+  getFormColumnWidth() {
+    return Number.isFinite(this.formColumnWidth) ? this.formColumnWidth : Math.min(560, this.game.getWidth() - 72);
+  }
+
+  drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
+    const frame = new PIXI.Graphics();
+    frame.roundRect(x, y, width, height, 8);
+    frame.fill({ color: 0x041323, alpha: 0.76 });
+    frame.roundRect(x, y, width, height, 8);
+    frame.stroke({ color: accent, width: 1.2, alpha: 0.42 });
+    frame.rect(x, y, 6, height);
+    frame.fill({ color: accent, alpha: 0.58 });
+    frame.rect(x + 18, y + 16, width - 36, 1);
+    frame.fill({ color: accent, alpha: 0.18 });
+    this.container.addChild(frame);
+    return frame;
+  }
+
+  addToggleRow(label, initialValue, y, onChange, { id = null, onButton = null } = {}) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+
+    const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 18,
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
     labelText.x = -82;
+    fitTextToWidth(labelText, 126, { minScale: 0.68 });
     row.addChild(labelText);
 
     let enabled = Boolean(initialValue);
@@ -238,12 +487,13 @@ export class SettingsOverlay {
       button._label.text = enabled ? 'ON' : 'OFF';
       button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 132, height: 34 });
+    }, { width: 132, height: 30 });
     button._label.style.fill = enabled ? '#ffffff' : '#9fb5c2';
+    onButton?.(button);
     row.addChild(button);
     this.registerControl({
       type: 'button',
-      id: `toggle_${label.toLowerCase().replace(/\s+/g, '_')}`,
+      id: `toggle_${id || label.toLowerCase().replace(/\s+/g, '_')}`,
       button,
       label
     });
@@ -253,9 +503,8 @@ export class SettingsOverlay {
   }
 
   addAudioTestRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -266,8 +515,8 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 32 });
-    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 32 });
+    const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 30 });
+    const voiceButton = this.createButton('VOICE', 78, 0, () => this.playAudioTest('voice'), { width: 116, height: 30 });
     sfxButton.label = 'ui_settingsTestSfx';
     voiceButton.label = 'ui_settingsTestVoice';
     this.audioTestButtons.sfx = sfxButton;
@@ -289,9 +538,8 @@ export class SettingsOverlay {
   }
 
   addLanguageRow(label, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -315,7 +563,7 @@ export class SettingsOverlay {
 
     const button = this.createButton(selected().label, 18, 0, () => {
       cycle(1).catch((error) => console.warn('[SettingsOverlay] Language change failed:', error));
-    }, { width: 170, height: 32 });
+    }, { width: 170, height: 30 });
     button.label = 'ui_settingsLanguage';
     this.languageButton = button;
     row.addChild(button);
@@ -354,9 +602,8 @@ export class SettingsOverlay {
   }
 
   addMusicPackRow(label, initialPack, y) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -367,22 +614,15 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    let pack = initialPack === 'generated' ? 'generated' : 'classic';
-    const button = this.createButton(pack === 'classic' ? 'CLASSIC' : 'NEW MIX', 18, 0, () => {
-      pack = pack === 'classic' ? 'generated' : 'classic';
-      const settings = AudioManager.setMusicPack(pack);
-      pack = settings.musicPack === 'generated' ? 'generated' : 'classic';
-      button._label.text = pack === 'classic' ? 'CLASSIC' : 'NEW MIX';
-      fitTextToWidth(button._label, 132);
-      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
-    }, { width: 170, height: 32 });
+    let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
+    const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
+    const button = this.createButton(selected().label, 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
     fitTextToWidth(button._label, 132);
     row.addChild(button);
-    this.registerControl({ type: 'button', id: 'music_pack', button, label: 'MUSIC SET' });
 
-    const hint = createText(pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX', {
+    const hint = createText(translateText(selected().hint), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
       fill: '#ffc96e'
@@ -391,8 +631,27 @@ export class SettingsOverlay {
     hint.x = 116;
     row.addChild(hint);
 
-    button.on('pointertap', () => {
-      hint.text = pack === 'classic' ? 'DEFAULT' : 'OPTIONAL MIX';
+    const updateDisplay = (pack) => {
+      const option = getMusicPackOption(pack);
+      selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((entry) => entry.id === option.id));
+      button._label.text = translateText(option.label);
+      fitTextToWidth(button._label, 132);
+      hint.text = translateText(option.hint);
+      fitTextToWidth(hint, 118, { minScale: 0.68 });
+    };
+    function cycleMusicPack(direction = 1) {
+      selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % MUSIC_PACK_OPTIONS.length + MUSIC_PACK_OPTIONS.length) % MUSIC_PACK_OPTIONS.length;
+      const settings = AudioManager.setMusicPack(selected().id);
+      updateDisplay(settings.musicPack);
+      AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    }
+    updateDisplay(initialPack);
+    this.registerControl({
+      type: 'choice',
+      id: 'music_pack',
+      button,
+      label: 'MUSIC SET',
+      cycle: cycleMusicPack
     });
 
     this.container.addChild(row);
@@ -400,9 +659,8 @@ export class SettingsOverlay {
   }
 
   addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
-    const width = this.game.getWidth();
     const row = new PIXI.Container();
-    row.position.set(width / 2, y);
+    row.position.set(this.getFormCenterX(), y);
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -413,7 +671,7 @@ export class SettingsOverlay {
     labelText.x = -154;
     row.addChild(labelText);
 
-    const trackWidth = 250;
+    const trackWidth = Math.min(250, Math.max(178, this.getFormColumnWidth() - 230));
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
     const focus = new PIXI.Graphics();
@@ -423,7 +681,7 @@ export class SettingsOverlay {
       fill: '#ffffff'
     });
     valueText.anchor.set(0, 0.5);
-    valueText.x = 160;
+    valueText.x = trackWidth / 2 + 34;
     row.addChild(focus, track, knob, valueText);
     let sliderEntry = null;
 
@@ -501,6 +759,9 @@ export class SettingsOverlay {
   }
 
   createButton(label, x, y, onPress, { width = 240, height = 38 } = {}) {
+    const controlScale = Math.max(1, Math.min(2, Number(this.uiScale) || 1));
+    width = Math.round(width * controlScale);
+    height = Math.round(height * controlScale);
     const button = new PIXI.Container();
     button.eventMode = 'static';
     button.cursor = 'pointer';
@@ -520,13 +781,14 @@ export class SettingsOverlay {
     });
     text.anchor.set(0.5);
     fitTextToWidth(text, width - 18, { minScale: 0.72 });
+    fitDisplayToBox(text, width - 18, height - 8, { minScale: 0.68 });
     button.addChild(text);
     button._label = text;
 
     const draw = (hovered = false) => {
       focus.clear();
       if (button._focused) {
-        focus.roundRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, 8);
+        focus.roundRect(-width / 2 - 3, -height / 2 - 3, width + 6, height + 6, 7);
         focus.stroke({ color: 0xffef7e, width: 2, alpha: 0.86 });
       }
       bg.clear();
@@ -539,11 +801,215 @@ export class SettingsOverlay {
 
     button.on('pointerover', () => {
       this.setControlFocusByButton(button);
+      playMenuFocusSfx(0.09);
       draw(true);
     });
     button.on('pointerout', () => draw(false));
-    button.on('pointertap', onPress);
+    button.on('pointertap', () => {
+      playMenuConfirmSfx(0.14);
+      this.menuFx?.burst?.(button.parent ? button.parent.x + button.x : button.x, button.parent ? button.parent.y + button.y : button.y, {
+        color: 0x7fffd8,
+        radius: 72,
+        durationMs: 380
+      });
+      onPress?.();
+    });
     return button;
+  }
+
+  addSectionLabel(label, y) {
+    const text = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 14,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      letterSpacing: 0
+    });
+    text.anchor.set(0.5);
+    text.position.set(this.getFormCenterX(), y);
+    fitTextToWidth(text, Math.min(420, this.getFormColumnWidth() - 52), { minScale: 0.74 });
+    this.container.addChild(text);
+  }
+
+  getAvailableDisplayModes() {
+    const current = getDisplaySettings().mode;
+    const options = Array.isArray(this.displayOptions?.modes) ? this.displayOptions.modes : [];
+    const supportedIds = options
+      .filter((entry) => entry?.supported !== false || entry?.id === current)
+      .map((entry) => entry.id);
+    const ids = supportedIds.length ? supportedIds : DISPLAY_MODES.map((entry) => entry.id);
+    return DISPLAY_MODES.filter((entry) => ids.includes(entry.id));
+  }
+
+  getWindowSizeOptions() {
+    const options = Array.isArray(this.displayOptions?.sizes) && this.displayOptions.sizes.length
+      ? this.displayOptions.sizes
+      : DEFAULT_WINDOW_SIZE_OPTIONS;
+    return options;
+  }
+
+  getModeLabel(mode) {
+    return translateText(DISPLAY_MODES.find((entry) => entry.id === mode)?.label || 'Windowed');
+  }
+
+  getSizeLabel(size) {
+    const clean = size || getDisplaySettings().windowSize;
+    const label = String(clean.label || '').trim();
+    const sizeText = `${Math.round(clean.width)} x ${Math.round(clean.height)}`;
+    if (label.startsWith('Native')) return translateText('Native {size}', { size: sizeText });
+    if (label.startsWith('Current')) return translateText('Current {size}', { size: sizeText });
+    return sizeText;
+  }
+
+  setDisplayStatus(message, vars = {}) {
+    if (!this.displayStatusText) return;
+    this.displayStatusText.text = translateText(message, vars);
+    fitTextToWidth(this.displayStatusText, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
+  }
+
+  updateDisplayControls() {
+    const settings = getDisplaySettings();
+    if (this.displayModeButton?._label) {
+      this.displayModeButton._label.text = this.getModeLabel(settings.mode);
+      fitTextToWidth(this.displayModeButton._label, 174);
+    }
+    if (this.displaySizeButton?._label) {
+      this.displaySizeButton._label.text = this.getSizeLabel(settings.windowSize);
+      fitTextToWidth(this.displaySizeButton._label, 174);
+    }
+    if (this.uiScaleButton?._label) {
+      this.uiScaleButton._label.text = getUiScaleLabel(settings.uiScale);
+      fitTextToWidth(this.uiScaleButton._label, 174);
+    }
+  }
+
+  async refreshDisplayOptions() {
+    try {
+      this.displayOptions = await getDisplayOptions();
+      this.updateDisplayControls();
+    } catch (error) {
+      console.warn('[SettingsOverlay] Display options unavailable:', error);
+    }
+  }
+
+  async applyDisplayUpdate(settings, status = 'Display changes applied') {
+    const result = await applyDisplaySettings(settings);
+    applyResponsiveLayout(window.innerWidth, window.innerHeight);
+    this.updateDisplayControls();
+    this.setDisplayStatus(result?.ok ? status : 'Browser display fallback active');
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+    return result;
+  }
+
+  addDisplayModeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getModeLabel(settings.mode), y, async (direction = 1) => {
+      const modes = this.getAvailableDisplayModes();
+      const currentIndex = Math.max(0, modes.findIndex((entry) => entry.id === getDisplaySettings().mode));
+      const next = modes[((currentIndex + Math.sign(direction || 1)) % modes.length + modes.length) % modes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: next.id });
+    }, {
+      id: 'display_mode',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displayModeButton = button;
+      }
+    });
+  }
+
+  addDisplaySizeRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, this.getSizeLabel(settings.windowSize), y, async (direction = 1) => {
+      const sizes = this.getWindowSizeOptions();
+      const current = getDisplaySettings().windowSize;
+      const currentIndex = Math.max(0, sizes.findIndex((entry) => entry.width === current.width && entry.height === current.height));
+      const next = sizes[((currentIndex + Math.sign(direction || 1)) % sizes.length + sizes.length) % sizes.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), mode: 'windowed', windowSize: next }, 'Window size applied');
+    }, {
+      id: 'display_size',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.displaySizeButton = button;
+      }
+    });
+  }
+
+  addUiScaleRow(label, y) {
+    const settings = getDisplaySettings();
+    this.addChoiceRow(label, getUiScaleLabel(settings.uiScale), y, async (direction = 1) => {
+      const current = getDisplaySettings().uiScale;
+      const currentIndex = Math.max(0, UI_SCALE_OPTIONS.findIndex((entry) => entry === current));
+      const next = UI_SCALE_OPTIONS[((currentIndex + Math.sign(direction || 1)) % UI_SCALE_OPTIONS.length + UI_SCALE_OPTIONS.length) % UI_SCALE_OPTIONS.length];
+      await this.applyDisplayUpdate({ ...getDisplaySettings(), uiScale: next }, 'UI scale applied');
+      this.rebuild();
+    }, {
+      id: 'ui_scale',
+      buttonWidth: 222,
+      onButton: (button) => {
+        this.uiScaleButton = button;
+      }
+    });
+  }
+
+  addDisplayResetRow(label, y) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+
+    const buttonX = -Math.round(60 * this.uiScale);
+    const buttonWidth = 168;
+    const button = this.createButton(label, buttonX, 0, async () => {
+      const settings = resetDisplaySettings();
+      await this.applyDisplayUpdate(settings, 'Safe display reset applied');
+    }, { width: buttonWidth, height: 30 });
+    row.addChild(button);
+
+    const status = createText(translateText('Display changes apply immediately'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 12,
+      fill: '#ffc96e'
+    });
+    status.anchor.set(0, 0.5);
+    status.x = buttonX + (buttonWidth * this.uiScale) / 2 + 24;
+    this.displayStatusText = status;
+    fitTextToWidth(status, Math.max(116, this.getFormColumnWidth() * 0.38), { minScale: 0.65 });
+    row.addChild(status);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({ type: 'button', id: 'display_reset', button, label });
+  }
+
+  addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null } = {}) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+
+    const labelText = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = -154;
+    fitTextToWidth(labelText, 132, { minScale: 0.7 });
+    row.addChild(labelText);
+
+    const cycle = (direction = 1) => {
+      Promise.resolve(onCycle?.(direction)).catch((error) => console.warn('[SettingsOverlay] Choice update failed:', error));
+    };
+    const button = this.createButton(valueLabel, 34, 0, () => cycle(1), { width: buttonWidth, height: 30 });
+    button.label = `ui_settings_${id}`;
+    row.addChild(button);
+    onButton?.(button);
+
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({
+      type: 'choice',
+      id,
+      button,
+      label,
+      cycle
+    });
   }
 
   addFooterButton(key, label, x, y, onPress, options) {
@@ -573,6 +1039,7 @@ export class SettingsOverlay {
     if (!this.controls.length) return;
     const count = this.controls.length;
     const next = ((index % count) + count) % count;
+    const changed = next !== this.focusedControlIndex;
     this.controls.forEach((control, controlIndex) => {
       control.focused = controlIndex === next;
       if (control.button) {
@@ -584,6 +1051,7 @@ export class SettingsOverlay {
       }
     });
     this.focusedControlIndex = next;
+    if (changed) playMenuFocusSfx(0.08);
   }
 
   getFocusedControl() {
@@ -653,10 +1121,16 @@ export class SettingsOverlay {
     this.closeCreditsPanel();
     const children = this.container.removeChildren();
     children.forEach((child) => child?.destroy?.({ children: true }));
+    this.menuFx = null;
     this.rows = [];
     this.draggingSlider = null;
     this.audioTestButtons = {};
     this.musicPackButton = null;
+    this.displayModeButton = null;
+    this.displaySizeButton = null;
+    this.uiScaleButton = null;
+    this.confirmExitButton = null;
+    this.pilotOrdersButton = null;
     this.footerButtons = {};
     this.languageButton = null;
     this.languageHint = null;
@@ -676,7 +1150,8 @@ export class SettingsOverlay {
     this.setControlFocus(nextIndex);
   }
 
-  update() {
+  update(delta = 1) {
+    updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
 
@@ -702,31 +1177,19 @@ export class SettingsOverlay {
     if (nav.pressed.confirm) this.activateFocusedControl();
   }
 
-  toggleFullscreen() {
-    try {
-      if (document.fullscreenElement) {
-        document.exitFullscreen?.();
-      } else {
-        document.documentElement.requestFullscreen?.();
-      }
-      AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 120 });
-    } catch (error) {
-      console.warn('[SettingsOverlay] Fullscreen toggle failed:', error);
-    }
-  }
-
   openCreditsPanel() {
     this.closeCreditsPanel();
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const isCompact = width < 820 || height < 760;
+    const isTinyCredits = isCompact && height < 680;
     const panelWidth = Math.min(isCompact ? width * 0.92 : 1120, width * 0.88);
     const panelHeight = Math.min(isCompact ? height * 0.9 : 720, height * 0.88);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const margin = isCompact ? 22 : 42;
-    const headerHeight = isCompact ? 132 : 104;
+    const headerHeight = isCompact ? 132 : 122;
     const footerHeight = isCompact ? 70 : 82;
     const contentTop = panelY + headerHeight;
     const contentBottom = panelY + panelHeight - footerHeight;
@@ -811,17 +1274,22 @@ export class SettingsOverlay {
     overlay.addChild(subtitle);
 
     const artRect = isCompact
-      ? { x: panelX + margin, y: contentTop, width: panelWidth - margin * 2, height: Math.min(150, contentHeight * 0.34) }
+      ? {
+          x: panelX + margin,
+          y: contentTop,
+          width: panelWidth - margin * 2,
+          height: Math.min(isTinyCredits ? 86 : 150, contentHeight * (isTinyCredits ? 0.27 : 0.34))
+        }
       : { x: panelX + margin, y: contentTop, width: Math.min(380, panelWidth * 0.36), height: contentHeight };
     const art = this.createCreditsSpectacle(artRect, isCompact);
     overlay.addChild(art);
 
     const bodyX = isCompact ? panelX + margin : artRect.x + artRect.width + 36;
-    const bodyY = isCompact ? artRect.y + artRect.height + 18 : contentTop + 2;
+    const bodyY = isCompact ? artRect.y + artRect.height + (isTinyCredits ? 14 : 18) : contentTop + 2;
     const bodyWidth = isCompact ? panelWidth - margin * 2 : panelX + panelWidth - margin - bodyX;
     const eggRowY = buttonY - (isCompact ? 92 : 96);
     const footerY = eggRowY - (isCompact ? 42 : 48);
-    const bodyHeight = Math.max(isCompact ? 130 : 178, footerY - bodyY - 18);
+    const bodyHeight = Math.max(isTinyCredits ? 92 : (isCompact ? 130 : 178), footerY - bodyY - (isTinyCredits ? 12 : 18));
     const bodyWash = new PIXI.Graphics();
     bodyWash.roundRect(
       bodyX - 16,
@@ -844,9 +1312,9 @@ export class SettingsOverlay {
     ].join('\n');
     const body = createText(creditsCopy, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: isCompact ? 11 : 16,
+      fontSize: isTinyCredits ? 9 : (isCompact ? 11 : 16),
       fill: '#c9f6ff',
-      lineHeight: isCompact ? 15 : 22,
+      lineHeight: isTinyCredits ? 12 : (isCompact ? 15 : 22),
       fontWeight: '700',
       wordWrap: true,
       wordWrapWidth: bodyWidth,
@@ -854,7 +1322,7 @@ export class SettingsOverlay {
     });
     body.anchor.set(0, 0);
     body.position.set(bodyX, bodyY);
-    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isCompact ? 0.78 : 0.86 });
+    fitDisplayToBox(body, bodyWidth, bodyHeight, { minScale: isTinyCredits ? 0.64 : (isCompact ? 0.78 : 0.86) });
     overlay.addChild(body);
 
     const footer = createText(translateText('No cabinets were harmed. One cabinet was promoted to lore compliance.'), {
@@ -1038,29 +1506,50 @@ export class SettingsOverlay {
     }
 
     const result = grantSecretShipUnlock('nova_ship_07', { source: 'credits_easter_egg' });
+    const ascendantRoll = rollCreditsAscendantEasterEgg({ random: getCreditsAscendantRandom() });
+    const revealResult = ascendantRoll.unlocked
+      ? ascendantRoll
+      : result.unlocked
+        ? result
+        : null;
     if (this.creditsEggStatusText) {
       this.creditsEggStatusText.text = translateText(
-        result.unlocked
+        ascendantRoll.unlocked
+          ? 'Ascendant signal answered: Eirik the Viking is ready in the hangar.'
+          : result.unlocked
           ? 'Cabinet Ghost waiver filed: Quasar Fan is ready in the hangar.'
           : 'Cabinet Ghost already signed this waiver. Quasar Fan remains suspiciously ready.'
       );
       this.creditsEggStatusText.style.fill = '#fff3a2';
     }
     coinButton._drawCoin?.(true);
-    this.showCreditsShipUnlockReveal(result);
+    if (revealResult) this.showCreditsShipUnlockReveal(revealResult);
     this.creditsDebugState = {
       ...(this.creditsDebugState || {}),
       easterEgg: {
         clicks: this.creditsCoinClicks,
         shipId: 'nova_ship_07',
         unlocked: Boolean(result.unlocked),
-        alreadyUnlocked: Boolean(result.alreadyUnlocked)
+        alreadyUnlocked: Boolean(result.alreadyUnlocked),
+        ascendant: {
+          shipId: CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID,
+          chance: CREDITS_ASCENDANT_EASTER_EGG_CHANCE,
+          maxAttempts: CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+          attempted: Boolean(ascendantRoll.attempted),
+          attempts: ascendantRoll.attempts,
+          attemptsRemaining: ascendantRoll.attemptsRemaining,
+          success: Boolean(ascendantRoll.success),
+          unlocked: Boolean(ascendantRoll.unlocked),
+          alreadyUnlocked: Boolean(ascendantRoll.alreadyUnlocked),
+          exhausted: Boolean(ascendantRoll.exhausted)
+        }
       }
     };
   }
 
   showCreditsShipUnlockReveal(result = {}) {
-    if (!this.creditsPanel) return;
+    if (!this.creditsPanel || !result?.unlocked) return false;
+    const revealShip = getCreditsRevealShip(result.shipId);
     if (this.creditsRevealTicker) {
       this.game.app.ticker.remove(this.creditsRevealTicker);
       this.creditsRevealTicker = null;
@@ -1135,7 +1624,7 @@ export class SettingsOverlay {
     fitDisplayToBox(subtitle, maxW - 56, compact ? 34 : 44, { minScale: 0.62 });
     reveal.addChild(subtitle);
 
-    const shipName = createText(translateText('QUASAR FAN'), {
+    const shipName = createText(revealShip.name, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 28 : 44,
       fontWeight: '900',
@@ -1157,7 +1646,7 @@ export class SettingsOverlay {
     reveal.addChild(shipRing);
     this.creditsAnimatedNodes.push({ node: shipRing, kind: 'breathe', baseScale: 1, speed: 3.1 });
 
-    const shipSrc = AssetManifest.generated.playerShips?.[6];
+    const shipSrc = revealShip.asset;
     if (shipSrc) {
       PIXI.Assets.load(shipSrc)
         .then((texture) => {
@@ -1205,6 +1694,18 @@ export class SettingsOverlay {
 
     AudioManager.playSfx('achievement', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.72, minIntervalMs: 0 });
+    if (result.shipId === CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID && result.unlocked) {
+      AudioManager.playVoice('mission_control_viking_legend_unlocked', {
+        force: true,
+        stopOtherVoices: true,
+        exclusiveGroup: 'announcer',
+        cooldownMs: 8000,
+        eventCooldownMs: 0,
+        duckMs: 4300,
+        duckFactor: 0.26,
+        volume: 1.04
+      });
+    }
 
     let elapsed = 0;
     const ticker = (delta) => {
@@ -1230,6 +1731,7 @@ export class SettingsOverlay {
     };
     this.creditsRevealTicker = ticker;
     this.game.app.ticker.add(ticker);
+    return true;
   }
 
   startCreditsAnimation() {
@@ -1451,7 +1953,29 @@ export class SettingsOverlay {
   }
 
   getDebugState() {
+    const displaySettings = getDisplaySettings();
     return {
+      display: {
+        mode: displaySettings.mode,
+        windowSize: displaySettings.windowSize,
+        uiScale: displaySettings.uiScale,
+        uiScaleLabel: this.uiScaleButton?._label?.text || getUiScaleLabel(displaySettings.uiScale),
+        confirmExit: this.getMenuSettingsForOverlay().confirmExit,
+        confirmExitLabel: this.confirmExitButton?._label?.text || (this.getMenuSettingsForOverlay().confirmExit ? 'ON' : 'OFF'),
+        showPilotOrders: this.getMenuSettingsForOverlay().showPilotOrders,
+        showPilotOrdersLabel: this.pilotOrdersButton?._label?.text || (this.getMenuSettingsForOverlay().showPilotOrders ? 'ON' : 'OFF'),
+        modeLabel: this.displayModeButton?._label?.text || null,
+        sizeLabel: this.displaySizeButton?._label?.text || null,
+        status: this.displayStatusText?.text || null,
+        options: {
+          modes: this.getAvailableDisplayModes().map((entry) => entry.id),
+          sizes: this.getWindowSizeOptions().map((entry) => ({
+            width: entry.width,
+            height: entry.height,
+            label: entry.label || null
+          }))
+        }
+      },
       musicPack: {
         value: AudioManager.getSettings().musicPack,
         button: debugBounds(this.musicPackButton),
@@ -1460,12 +1984,14 @@ export class SettingsOverlay {
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,
       creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
-      focus: this.getFocusedControl()?.id || null
+      focus: this.getFocusedControl()?.id || null,
+      menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
   close() {
     this.closeCreditsPanel();
+    destroyMenuFx(this);
     if (this.languageUnsubscribe) {
       this.languageUnsubscribe();
       this.languageUnsubscribe = null;

@@ -3,6 +3,11 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import {
+  STEAM_LEADERBOARD_NAME,
+  STEAM_SECTOR_LEADERBOARD_NAME,
+  STEAM_TACTICAL_LEADERBOARD_NAME
+} from '../src/leaderboard/LeaderboardTypes.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4370));
@@ -105,27 +110,92 @@ try {
   });
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded' });
   await waitForGame(page);
-  await page.evaluate(() => {
+  await page.evaluate(({ sectorLeaderboardName, tacticalLeaderboardName }) => {
     localStorage.setItem('novaSwarm.mockSteamPersona.v1', 'STEAM ACE');
     localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
       { playerName: 'STEAM ACE', score: 22000, level: 7, isCurrentPlayer: true, source: 'steam' },
-      { playerName: 'ORBIT PAL', score: 18000, level: 6, source: 'steam' },
-      { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' }
+      { playerName: 'ORBIT PAL', score: 18000, source: 'steam' },
+      { playerName: 'RIFT PAL', score: 14000, level: 5, source: 'steam' },
+      {
+        playerName: 'TACTICAL ACE',
+        score: 19100,
+        level: 6,
+        leaderboardName: tacticalLeaderboardName,
+        leaderboardKind: 'mayhem_tactical',
+        source: 'steam'
+      },
+      {
+        playerName: 'SECTOR ACE',
+        score: 9100,
+        level: 22,
+        levelReached: 22,
+        startSector: 20,
+        highestSectorReached: 22,
+        finalSector: 22,
+        details: [20, 22, 22, 1, 155, 2, 8],
+        metadata: { leaderboardKind: 'sector_start', startSector: 20, highestSectorReached: 22, finalSector: 22 },
+        leaderboardName: sectorLeaderboardName,
+        leaderboardKind: 'sector_start',
+        source: 'steam'
+      }
     ]));
     window.__game.leaderboardView = 'global';
     window.__game.switchScene('highscore');
+  }, {
+    sectorLeaderboardName: STEAM_SECTOR_LEADERBOARD_NAME,
+    tacticalLeaderboardName: STEAM_TACTICAL_LEADERBOARD_NAME
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
     return state.scene === 'highscore' && state.highscore?.status === 'LOADED';
   }, null, { timeout: 12000 });
   const globalState = await state(page);
-  if (globalState.highscore?.tabs?.join(',') !== 'global,friends,local') {
+  if (globalState.highscore?.tabs?.join(',') !== 'global,tactical,sector,friends,local') {
     throw new Error(`Steam tabs missing: ${globalState.highscore?.tabs}`);
   }
-  if (globalState.highscore?.sourceLabel !== 'Steam Global') {
-    throw new Error(`Expected Steam Global source, got ${globalState.highscore?.sourceLabel}`);
+  if (globalState.highscore?.sourceLabel !== 'Steam Pure') {
+    throw new Error(`Expected Steam Pure source, got ${globalState.highscore?.sourceLabel}`);
   }
+  const globalLevelRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
+  const estimatedLevelRow = globalLevelRows.find((row) => row.levelSource === 'score_estimate');
+  if (!estimatedLevelRow || estimatedLevelRow.levelColumnVisible || estimatedLevelRow.levelText || estimatedLevelRow.level) {
+    throw new Error(`Estimated Steam levels should not render a global LV chip: ${JSON.stringify(globalLevelRows)}`);
+  }
+  if (globalLevelRows.some((row) => /\bLV\b/i.test(String(row.levelText || '')))) {
+    throw new Error(`Global Steam rows should not label score-derived levels as LV: ${JSON.stringify(globalLevelRows)}`);
+  }
+
+  await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('tactical'));
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.highscore?.activeLeaderboard === 'tactical' && state.highscore?.status === 'LOADED';
+  }, null, { timeout: 12000 });
+  const tacticalState = await state(page);
+  if (tacticalState.highscore?.sourceLabel !== 'Steam Tactical') {
+    throw new Error(`Expected Steam Tactical source, got ${tacticalState.highscore?.sourceLabel}`);
+  }
+  if (!tacticalState.highscore?.rows?.some((row) => row.name === 'TACTICAL ACE')) {
+    throw new Error(`Tactical leaderboard did not isolate its Steam rows: ${JSON.stringify(tacticalState.highscore?.rows)}`);
+  }
+  if (tacticalState.highscore?.rows?.some((row) => row.name === 'STEAM ACE')) {
+    throw new Error(`Pure leaderboard entry leaked into Tactical: ${JSON.stringify(tacticalState.highscore?.rows)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-tactical-tab.png'), fullPage: true });
+
+  await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('sector'));
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.highscore?.activeLeaderboard === 'sector' && state.highscore?.status === 'LOADED';
+  }, null, { timeout: 12000 });
+  const sectorState = await state(page);
+  if (sectorState.highscore?.sourceLabel !== 'Steam Sector') {
+    throw new Error(`Expected Steam Sector source, got ${sectorState.highscore?.sourceLabel}`);
+  }
+  const sectorRows = await page.evaluate(() => window.__game?.scenes?.highscore?.rowLayoutDebug || []);
+  if (!sectorRows.some((row) => row.levelText === 'S 20')) {
+    throw new Error(`Sector tab should render start sector as S 20: ${JSON.stringify(sectorRows)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-sector-tab.png'), fullPage: true });
 
   await page.evaluate(() => window.__game.scenes.highscore.setLeaderboardView('friends'));
   await page.waitForFunction(() => {
@@ -146,23 +216,294 @@ try {
   });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text());
-    return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'runback' &&
+      state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
   }, null, { timeout: 12000 });
-  const gameOverState = await state(page);
-  if (!gameOverState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
-  if (gameOverState.gameOver?.canEnterName) throw new Error('Steam submission should not require manual name entry');
-  if (gameOverState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
-    throw new Error(`Steam mock submission failed: ${JSON.stringify(gameOverState.gameOver?.lastLeaderboardResult)}`);
+  const steamSubmittedState = await state(page);
+  if (!steamSubmittedState.gameOver?.steamSubmissionMode) throw new Error('Game over did not enter Steam submission mode');
+  if (steamSubmittedState.gameOver?.canEnterName) throw new Error('Steam submission should not require manual name entry');
+  if (/PILOT NAME|TYPE NAME|ENTER PILOT|SUBMIT SCORE/i.test(`${steamSubmittedState.gameOver?.prompt || ''} ${steamSubmittedState.gameOver?.primaryCta?.label || ''} ${steamSubmittedState.gameOver?.primaryCta?.hint || ''}`)) {
+    throw new Error(`Steam auto-submit flow exposed manual submit copy: ${JSON.stringify(steamSubmittedState.gameOver)}`);
   }
-  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-runback.png'), fullPage: true });
+  if (steamSubmittedState.gameOver?.lastLeaderboardResult?.steamStatus !== 'submitted') {
+    throw new Error(`Steam mock submission failed: ${JSON.stringify(steamSubmittedState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (steamSubmittedState.gameOver?.lastLeaderboardResult?.name !== 'STEAM ACE') {
+    throw new Error(`Steam mock submission did not use Steam persona: ${JSON.stringify(steamSubmittedState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (steamSubmittedState.gameOver?.state === 'input' || steamSubmittedState.gameOver?.canEnterName) {
+    throw new Error(`Steam mock exposed manual name entry: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (steamSubmittedState.gameOver?.primaryCta?.mode !== 'restart' || steamSubmittedState.gameOver?.primaryCta?.disabled) {
+    throw new Error(`Steam result should expose immediate restart without a Continue gate: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  const submittedStatus = steamSubmittedState.gameOver?.leaderboardStatus || '';
+  if (/Steamboard|Steam Board|Steam board|LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD/i.test(submittedStatus)) {
+    throw new Error(`Steam runback reused full or stale leaderboard copy: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  if (!/(Steam|New Steam best): #1/i.test(submittedStatus)) {
+    throw new Error(`Steam mock did not report exact global placement: ${JSON.stringify(steamSubmittedState.gameOver)}`);
+  }
+  const gameOverState = steamSubmittedState;
+  const finalStatus = gameOverState.gameOver?.leaderboardStatus || '';
+  if (!/Local: #\d+/i.test(finalStatus)) {
+    throw new Error(`Final runback did not report exact local placement: ${JSON.stringify(gameOverState.gameOver)}`);
+  }
+  if (!/(Steam|New Steam best): #1/i.test(finalStatus)) {
+    throw new Error(`Final runback did not report exact Steam placement: ${JSON.stringify(gameOverState.gameOver)}`);
+  }
+  if (/Steamboard|Steam Board|Steam board|Rank #1 - Top Three|Top Three/i.test(finalStatus)) {
+    throw new Error(`Final runback reused stale Steam leaderboard copy: ${JSON.stringify(gameOverState.gameOver)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-immediate-runback.png'), fullPage: true });
+  const mockScoresAfterSubmit = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
+  if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.score === 33333 && entry.level === 8)) {
+    throw new Error(`Steam mock submission did not preserve level 8: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
+  if (!mockScoresAfterSubmit.some((entry) => entry.playerName === 'STEAM ACE' && entry.leaderboardName === STEAM_LEADERBOARD_NAME)) {
+    throw new Error(`Steam mock submission did not use ${STEAM_LEADERBOARD_NAME}: ${JSON.stringify(mockScoresAfterSubmit)}`);
+  }
+  await page.evaluate(() => {
+    const localScores = Array.from({ length: 43 }, (_, index) => ({
+      name: `LOCAL${String(index + 1).padStart(2, '0')}`,
+      score: 50000 - index * 100,
+      level: 8,
+      rankIndex: 10,
+      timestamp: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
+      source: 'local_seed'
+    }));
+    localStorage.setItem('novaSwarm.localLeaderboard.v2', JSON.stringify(localScores));
+    localStorage.setItem('novaSwarm.mockSteamLeaderboard.v1', JSON.stringify([
+      { playerName: 'STEAM ACE', name: 'STEAM ACE', score: 87628, level: 12, isCurrentPlayer: true, source: 'steam' },
+      { playerName: 'ORBIT PAL', score: 28000, level: 7, source: 'steam' },
+      { playerName: 'RIFT PAL', score: 24000, level: 6, source: 'steam' }
+    ]));
+    window.__game.lastLeaderboardResult = {
+      score: 33333,
+      globalStatus: 'submitted',
+      steamStatus: 'submitted',
+      steamRank: 1,
+      globalRank: 1,
+      globalPlacement: { placement: 1, qualified: true, numberOne: true, top3: true },
+      globalPlacementTier: 'number1',
+      submissionId: 'stale-top-three'
+    };
+    window.__game.score = 2084;
+    window.__game.level = 2;
+    window.__game.rankIndex = 1;
+    window.__game.switchScene('gameOver');
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'runback' &&
+      state.gameOver?.lastLeaderboardResult?.steamStatus === 'submitted';
+  }, null, { timeout: 12000 });
+  const lowScoreState = await state(page);
+  const lowStatus = lowScoreState.gameOver?.leaderboardStatus || '';
+  if (lowScoreState.gameOver?.globalStatus !== 'steam_best_unchanged') {
+    throw new Error(`Low Steam score should be marked best unchanged: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (!lowScoreState.gameOver?.lastLeaderboardResult?.steamBestUnchanged || lowScoreState.gameOver?.lastLeaderboardResult?.steamPreviousBestScore !== 87628) {
+    throw new Error(`Low Steam score did not preserve previous-best diagnostics: ${JSON.stringify(lowScoreState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (!/Steam: Best unchanged/i.test(lowStatus) || !/Best: 87,628/i.test(lowStatus) || !/This run: 2,084/i.test(lowStatus)) {
+    throw new Error(`Low Steam score did not explain unchanged Steam best: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #/i.test(lowStatus)) {
+    throw new Error(`Low Steam score reused stale or misleading rank copy: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (/LEADERBOARDS|LOCAL BOARD|GLOBAL BOARD|Steamboard|Steam Board|Steam board/i.test(lowStatus)) {
+    throw new Error(`Low Steam runback reused full or stale leaderboard copy: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  if (lowScoreState.gameOver?.primaryCta?.mode !== 'restart' || lowScoreState.gameOver?.primaryCta?.disabled) {
+    throw new Error(`Low Steam result should expose immediate restart without a Continue gate: ${JSON.stringify(lowScoreState.gameOver)}`);
+  }
+  const lowRunbackState = lowScoreState;
+  const lowFinalStatus = lowRunbackState.gameOver?.leaderboardStatus || '';
+  if (!/Steam: Best unchanged/i.test(lowFinalStatus) || !/Best: 87,628/i.test(lowFinalStatus) || !/This run: 2,084/i.test(lowFinalStatus)) {
+    throw new Error(`Final low-score runback did not explain unchanged Steam best: ${JSON.stringify(lowRunbackState.gameOver)}`);
+  }
+  if (!/Local: Not in local top 40/i.test(lowFinalStatus) || /Local #4[1-9]/i.test(lowFinalStatus)) {
+    throw new Error(`Final low-score runback should not show an outside-visible local placement: ${JSON.stringify(lowRunbackState.gameOver)}`);
+  }
+  if (/rank pending|top three|number one|Steam: #|New Steam best|Global: #|Steamboard|Steam Board|Steam board/i.test(lowFinalStatus)) {
+    throw new Error(`Final low-score runback reused stale or misleading rank copy: ${JSON.stringify(lowRunbackState.gameOver)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-best-unchanged-runback.png'), fullPage: true });
+  const mockScoresAfterLowScore = await page.evaluate(() => JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'));
+  if (!mockScoresAfterLowScore.some((entry) => entry.isCurrentPlayer && entry.score === 87628)) {
+    throw new Error(`Steam mock keep-best score was overwritten by low score: ${JSON.stringify(mockScoresAfterLowScore)}`);
+  }
+  const rank3Probe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for rank-3 placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 31000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = false;
+    scene.globalPlacement = null;
+    scene.globalPlacementTier = 'none';
+    scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 3 };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (
+    !rank3Probe.placement?.top3 ||
+    rank3Probe.tier !== 'top3' ||
+    rank3Probe.runbackTitle !== 'Steam Global Leaderboard #3' ||
+    /Top Three/i.test(`${rank3Probe.status} ${rank3Probe.runbackTitle}`)
+  ) {
+    throw new Error(`Steam rank 3 should get rank-specific global leaderboard celebration copy: ${JSON.stringify(rank3Probe)}`);
+  }
+  const rank4Probe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for rank-4 placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 30000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = true;
+    scene.globalPlacement = null;
+    scene.globalPlacementTier = 'none';
+    scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: 4 };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (
+    !rank4Probe.placement?.top10 ||
+    rank4Probe.placement?.top3 ||
+    rank4Probe.placement?.numberOne ||
+    rank4Probe.tier === 'top3' ||
+    rank4Probe.tier !== 'top10' ||
+    !/Steam Global Leaderboard #4/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`) ||
+    /TOP THREE/i.test(`${rank4Probe.status} ${rank4Probe.runbackTitle}`)
+  ) {
+    throw new Error(`Steam rank 4 should be heroic Top 10 without Top Three copy: ${JSON.stringify(rank4Probe)}`);
+  }
+  if (rank4Probe.placement?.placement !== 4 || rank4Probe.tier !== 'top10') {
+    throw new Error(`Steam rank 4 should be a Top 10 placement: ${JSON.stringify(rank4Probe)}`);
+  }
+  const missingRankProbe = await page.evaluate(async () => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) throw new Error('Missing GameOver scene for missing-rank placement probe');
+    scene.isRankedRun = true;
+    if (scene.game) {
+      scene.game.runMode = 'ranked';
+      scene.game.isDebugRun = false;
+    }
+    scene.finalScore = 28000;
+    scene.globalStatus = 'submitted';
+    scene.globalQualified = true;
+    scene.globalPlacement = { score: 28000, placement: 2, qualified: true, top3: true, numberOne: false, source: 'stale_probe' };
+    scene.globalPlacementTier = 'top3';
+    scene.qualificationFanfarePlayed = true;
+    scene.previousSteamBestScore = 0;
+    scene.steamBestUnchanged = false;
+    const result = { globalStatus: 'submitted', globalProvider: 'steam', steamRank: null };
+    const placement = await scene.confirmGlobalLeaderboardAchievements(result);
+    return {
+      placement,
+      result,
+      qualified: scene.globalQualified,
+      tier: scene.globalPlacementTier,
+      status: scene.getLeaderboardStatusMessage?.() || '',
+      runbackTitle: scene.getRunbackTitle?.() || ''
+    };
+  });
+  if (
+    missingRankProbe.placement?.qualified ||
+    missingRankProbe.qualified ||
+    missingRankProbe.tier !== 'none' ||
+    /TOP THREE|NUMBER ONE/i.test(`${missingRankProbe.status} ${missingRankProbe.runbackTitle}`) ||
+    !/Steam: Score submitted/i.test(missingRankProbe.status)
+  ) {
+    throw new Error(`Missing Steam rank should clear stale Top Three placement without final rank pending copy: ${JSON.stringify(missingRankProbe)}`);
+  }
+
+  await page.evaluate(() => {
+    const bridge = window.__novaMockSteamLeaderboardBridge;
+    if (!bridge) throw new Error('Missing mock Steam bridge for timeout probe');
+    bridge.submitScore = () => new Promise(() => {});
+    window.__NOVA_SWARM_STEAM_SUBMIT_TIMEOUT_MS__ = 350;
+    localStorage.removeItem('novaSwarm.pendingSteamLeaderboardSubmits.v1');
+    window.__game.score = 44444;
+    window.__game.level = 4;
+    window.__game.rankIndex = 3;
+    window.__game.switchScene('gameOver');
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text());
+    const scene = window.__game?.scenes?.gameOver;
+    return state.scene === 'gameOver'
+      && state.gameOver?.state === 'runback'
+      && state.gameOver?.lastLeaderboardResult?.steamStatus === 'failed'
+      && scene?.isSubmitting === false;
+  }, null, { timeout: 8000 });
+  const timeoutState = await state(page);
+  if (timeoutState.gameOver?.primaryCta?.disabled || timeoutState.gameOver?.primaryCta?.mode !== 'restart') {
+    throw new Error(`Timed-out Steam submit should re-enable One More Run: ${JSON.stringify(timeoutState.gameOver)}`);
+  }
+  if (timeoutState.gameOver?.lastLeaderboardResult?.steamError !== 'Steam submit timeout') {
+    throw new Error(`Timed-out Steam submit should report the timeout: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (timeoutState.gameOver?.lastLeaderboardResult?.localStatus !== 'saved') {
+    throw new Error(`Timed-out Steam submit should retain a local score backup: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  if (!timeoutState.gameOver?.lastLeaderboardResult?.steamPendingQueued) {
+    throw new Error(`Timed-out Steam submit should queue a retry: ${JSON.stringify(timeoutState.gameOver?.lastLeaderboardResult)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-submit-timeout-runback.png'), fullPage: true });
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).scene === 'play', null, { timeout: 8000 });
+  await page.waitForTimeout(750);
+  const timeoutRestartState = await state(page);
+  if (timeoutRestartState.scene !== 'play' || timeoutRestartState.score !== 0) {
+    throw new Error(`Timed-out Steam submit should restart a clean run: ${JSON.stringify(timeoutRestartState)}`);
+  }
+  await page.screenshot({ path: path.join(outputDir, 'steam-gameover-timeout-restarted.png'), fullPage: true });
 
   const report = {
     status: 'passed',
     baseUrl,
     outputDir,
     tabs: globalState.highscore.tabs,
+    tacticalRows: tacticalState.highscore.rows.length,
+    sectorRows: sectorState.highscore.rows.length,
     friendsRows: friendsState.highscore.rows.length,
+    steamSubmittedHold: steamSubmittedState.gameOver.lastLeaderboardResult,
     steamGameOver: gameOverState.gameOver.lastLeaderboardResult,
+    rank3Probe,
+    rank4Probe,
+    missingRankProbe,
+    timeoutState: timeoutState.gameOver,
+    timeoutRestartState,
+    lowScoreState: lowScoreState.gameOver,
+    lowRunbackState: lowRunbackState.gameOver,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

@@ -1,0 +1,61 @@
+{
+  "uploadedAt": "2026-06-25T00:01:03+02:00",
+  "purpose": "Private unassigned Steam build for hangar profile repair clarity.",
+  "branch": "codex/ascendant-ships-20260624",
+  "sourceCommit": "e7407c3cb2cc7d43fe7e8406bf1424aa02d781d7",
+  "sourceShortSha": "e7407c3",
+  "buildVersion": "v2026-06-24_23-52-02",
+  "steamBuildId": "23901649",
+  "steamcmdExitCode": 0,
+  "steamcmdLog": "test-results/steam-upload-hangar-profile-repair-20260624-20260624-235912/steamcmd-upload.log",
+  "steamcmdProofLine": "[2026-06-25 00:01:03]: Successfully finished AppID 4765070 build (BuildID 23901649).",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": "",
+    "description": "Nova Swarm hangar profile repair clarity e7407c3"
+  },
+  "packagedProof": {
+    "smokeReport": "test-results/packaged-exe-smoke-2026-06-24T21-56-33-649Z/report.json",
+    "perfReport": "test-results/packaged-perf-smoke-2026-06-24T21-57-44-627Z/report.json",
+    "packagedGitSha": "e7407c3",
+    "perfAvgFps": 60.0,
+    "perfMinFps": 60.0,
+    "perfWarnings": [
+      "capturePage retry recovered after: UnknownVizError"
+    ]
+  },
+  "focusedEvidence": {
+    "hangarRepairNoticeReport": "test-results/hangar-profile-repair-notice-2026-06-24T21-49-29-453Z/report.json",
+    "hangarRepairNoticeScreenshot": "test-results/hangar-profile-repair-notice-2026-06-24T21-49-29-453Z/hangar-profile-repair-notice.png",
+    "i18nUiReport": "test-results/i18n-ui-2026-06-24T21-49-29-453Z/report.json",
+    "steamPackageRuntimeReport": "test-results/steam-package-runtime-2026-06-24T21-57-36-638Z/report.json"
+  },
+  "checksRun": [
+    "git fetch --all --prune",
+    "git status --short --branch",
+    "npm run check:i18n",
+    "npm run check:hangar-unlock-integrity",
+    "git diff --check",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:hangar-profile-repair-notice",
+    "npm run check:steam-cloud-save",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:write-vdf",
+    "npm run desktop:perf:packaged",
+    "steamcmd +login gaunziman +run_app_build release/steamworks/app_build_LOCAL.vdf +quit"
+  ],
+  "steamworksUnchanged": {
+    "storeMetadata": true,
+    "liveBranchAssignment": true,
+    "appId": true,
+    "depotId": true,
+    "leaderboards": true,
+    "achievements": true,
+    "steamCloudSettings": true
+  }
+}

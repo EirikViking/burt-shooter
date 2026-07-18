@@ -26,13 +26,13 @@ const steamAchievements = read('electron/steamAchievementsBridge.cjs');
 
 assert(playScene.includes('detonateBombBullet(bullet') && playScene.includes("this.detonateBombBullet(bullet, 'impact')"),
   'bomb shots must detonate on direct enemy impact');
-assert(player.includes('bomb.isBomb = true') && player.includes('bomb.blastRadius = 150') && player.includes('bomb.radius = 11'),
+assert(player.includes('bomb.isBomb = true') && player.includes('bomb.blastRadius = this.bombBlastRadius') && player.includes('bomb.radius = 11'),
   'bomb shot projectile must remain armed and visibly distinct');
 
-assert(boss.includes('minimumFightMs') && boss.includes('finishGateUntilMs') && boss.includes('BossDamageGate'),
-  'boss lethal-damage showcase hold is missing');
+assert(boss.includes('minimumFightMs') && boss.includes('finishGateUntilMs') && boss.includes('BossArmorBleed'),
+  'boss armor-bleed finish pacing is missing');
 assert(boss.includes('if (now < this.finishGateUntilMs) return false;'),
-  'boss must suppress fire during the early-finish hold');
+  'boss should avoid adding extra bullet pressure during armor-bleed pacing');
 
 const tractor = ELITE_MIDDLE_SHIPS.find((profile) => profile.specialAbility === 'tractor_pull');
 assert(tractor && tractor.spawnWeight < 0.5, 'tractor elite should be less common than before');
@@ -45,8 +45,8 @@ assert(player.includes('this.statusVfxPulse = 1.45') && player.includes('duratio
 
 assert(enemyManager.includes('eliteMinY') && enemyManager.includes('minFormationY'),
   'enemy formation/elite vertical clamp is missing');
-assert(powerups.includes("translateText('MAX LIVES REACHED!')"),
-  'extra-life pickup at max lives must show the explicit max-lives message');
+assert(powerups.includes('scene.game.gainLife({') && powerups.includes('count: lifeGrant') && !powerups.includes("translateText('MAX LIVES REACHED!')"),
+  'extra-life pickup must gain another life instead of preserving the old max-lives message path');
 
 assert(gameOver.includes('createUnlockSummary') && gameOver.includes('playShipUnlockVoice') && gameOver.includes('getShipUnlockRevealDebugState'),
   'ship-unlock reveal/announcement path is missing');

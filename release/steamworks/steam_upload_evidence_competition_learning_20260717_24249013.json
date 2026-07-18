@@ -1,0 +1,103 @@
+{
+  "generatedAt": "2026-07-16T23:02:38.9216169Z",
+  "status": "uploaded_private_branch",
+  "purpose": "competition_learning_player_feedback_systems",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24249013",
+  "depotManifestId": "7112821787605154596",
+  "sourceCommit": "5411b76",
+  "sourceBranch": "codex/competition-inspired-three-20260716",
+  "sourceBaseline": "f796248",
+  "buildStamp": "v2026-07-17_00-53-11",
+  "setLive": "sector-continue-test",
+  "publicBuildIdBefore": "24245709",
+  "publicBuildIdAfter": "24245709",
+  "testBranchBuildIdBefore": "24245709",
+  "testBranchBuildIdAfter": "24249013",
+  "publicBranchTouched": false,
+  "testBranchTouched": true,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "storeMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "achievementDefinitionsTouched": false,
+  "steamCloudSettingsTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "ba07620c985855cd023afffd1d8c6f1da5511e4520cca2ccabe3eba2c2e8a94e",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "f20f06f179e5234716e7b7ed1b63e90d9c23a3d958a81024143012da0caf170a",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "8bce7d6244bb5429febea2d08a117046fb013ebce1268ff4fdda994fe08818b3",
+  "payload": {
+    "fileCount": 417,
+    "totalBytes": 957755104,
+    "manifestHash": "f73e0855698a5cc5f582eca9b76998fe5701cce231ed515a36474bb9b919341f",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "b7a2f78d86374c45e4b16e4c853180fb43b81ee6b152b2e94490f28af11cd4eb"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-17 01:01:32]: Successfully finished AppID 4765070 build (BuildID 24249013).",
+    "consoleLogPath": "release/steamworks/steam_upload_console_competition_learning_20260717.log",
+    "consoleLogSha256": "878c977b54cc67e6fc66c270acbac80eea9af1a80456fe40e3654e0a6051c5b6",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "59baddcaffc86b92ea7ba393bcdfe23b6e23a284e710699c1cd55cf474e00db4",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "e296be6593b0e0a59841aa4a550c8beb4a1a8ee0dc1aea3eba294a6a508104a2",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print immediately before and after upload",
+    "publicBuildIdBefore": "24245709",
+    "publicBuildIdAfter": "24245709",
+    "testBranchBuildIdBefore": "24245709",
+    "testBranchBuildIdAfter": "24249013",
+    "publicUnchanged": true,
+    "testBranchAdvanced": true,
+    "beforeLogPath": "test-results/steam-app-info-preupload-competition-learning.log",
+    "beforeLogSha256": "38e2d2b5155a8f3ca99e6eeb7710275c46be9b2f77a2aa3949e95e4d1b8f7c71",
+    "afterLogPath": "test-results/steam-app-info-after-competition-learning.log",
+    "afterLogSha256": "cc5b89781838ceae3a73b90bbbdd2519ef3c4ea1ff1216636d9345f54255e47d"
+  },
+  "verification": {
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload",
+    "competitionLearning": "passed: ship mastery, combat telemetry, Scout anomaly rules, legacy-field preservation, and all unranked guards",
+    "localization": "passed: all eight locales, no placeholders or English leaks",
+    "browserSmoke": "passed with zero warnings, errors, page errors, or failed responses",
+    "controllerFlow": "passed for browser and packaged keyboard/gamepad movement, fire, pause, and menu flows",
+    "packagedRuntimeGate": "passed: Steam native modules, AppID 4765070, and nova_swarm_global_score_v2",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T22-57-00-094Z/report.json",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T22-57-14-846Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T22-57-28-851Z/report.json",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-16T22-57-48-078Z/report.json; 58.48 minimum and 59.62 average FPS, zero warnings or errors",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports match v2026-07-17_00-53-11",
+    "visualQa": "passed at 1280x720, 1920x1080, compact 760x640, and 3840x2160 at 200% UI scale"
+  },
+  "includedState": [
+    "ranked-only Bronze, Silver, and Gold Mayhem mastery medals for every ship",
+    "local effective-damage, average and peak DPS, accuracy, and top-source telemetry",
+    "Calibration, Bullet School, and Boss Lab as configurable unranked Scout anomalies",
+    "all prior tracked Nova Swarm gameplay, capture reliability, localization, leaderboard, save, achievement, controller, and sensory improvements in source ancestry"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "SteamCMD temporarily displaced the desktop Steam session; restarting Steam completed login and the strict packaged Steam smoke then passed."
+  ],
+  "rollback": {
+    "source": "git revert 5411b76",
+    "steam": "Reassign sector-continue-test from BuildID 24249013 to BuildID 24245709. Public/default already remains on 24245709."
+  },
+  "notes": [
+    "SteamCMD assigned BuildID 24249013 only to sector-continue-test through the verified SetLive field.",
+    "The Steamworks website, public/default branch, store metadata, pricing, community posts, leaderboard identities and definitions, achievement definitions, Steam Cloud settings, score and XP formulas, and existing scores were not changed.",
+    "Save identity, key, version, format envelope, and Cloud paths remain unchanged; per-ship mastery uses the existing shipSpecificMilestones field with max-safe Cloud merge semantics."
+  ]
+}

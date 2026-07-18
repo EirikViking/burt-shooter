@@ -12,6 +12,15 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4359));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/normal-enemy-attack-variety-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
+const MAX_ACTION_UNLOCK_LEVEL = Math.max(...ENEMY_THREAT_ACTIONS.map((action) => Math.max(1, Number(action.minLevel) || 1)));
+const ACTION_DEFINITIONS = ENEMY_THREAT_ACTIONS.map((action) => ({ ...action }));
+const MAX_SYNTHETIC_ORBITERS = Math.max(
+  6,
+  ...ENEMY_THREAT_ACTIONS
+    .filter((action) => (action.handlerId || action.id) === 'orbiting_satellites')
+    .map((action) => Number(action.activeBulletCap) || 0)
+) + 3;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -92,7 +101,7 @@ function staticReachability() {
     STAGGERED_WING: { id: 'needle_stagger' }
   };
   const seenByLevel = new Map();
-  for (let level = 1; level <= 16; level += 1) {
+  for (let level = 1; level <= MAX_ACTION_UNLOCK_LEVEL; level += 1) {
     const seen = new Set();
     for (let waveIndex = 0; waveIndex < 6; waveIndex += 1) {
       const formation = formations[(level + waveIndex) % formations.length];
@@ -110,7 +119,9 @@ function staticReachability() {
   return {
     level1: [...seenByLevel.get(1)],
     level4: [...new Set([1, 2, 3, 4].flatMap((level) => [...seenByLevel.get(level)]))],
-    level16: [...new Set([...seenByLevel.values()].flatMap((set) => [...set]))]
+    level16: [...new Set([...Array(16).keys()].flatMap((index) => [...(seenByLevel.get(index + 1) || new Set())]))],
+    maxUnlockLevel: MAX_ACTION_UNLOCK_LEVEL,
+    maxUnlockCoverage: [...new Set([...seenByLevel.values()].flatMap((set) => [...set]))]
   };
 }
 
@@ -134,6 +145,7 @@ try {
   await page.goto(withQuery(baseUrl, {
     autostart: '1',
     debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
     startLevel: '1'
   }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 
@@ -142,7 +154,7 @@ try {
     return state?.scene === 'play' && state?.wave?.state === 'WAVE_ACTIVE';
   }, { timeout: 30000 });
 
-  const runtime = await page.evaluate(async () => {
+  const runtime = await page.evaluate(async ({ maxActionUnlockLevel, actionDefinitions }) => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const enemyManager = play?.enemyManager;
@@ -154,12 +166,14 @@ try {
     const samples = [];
     const bulletIds = new Set();
     const assignedIds = new Set();
+    const targetedActionIds = new Set();
+    const targetedBulletIds = new Set();
     let nanBulletCount = 0;
     let closeSpawnCount = 0;
     let maxMines = 0;
     let maxOrbiters = 0;
 
-    for (let level = 1; level <= 16; level += 1) {
+    for (let level = 1; level <= maxActionUnlockLevel; level += 1) {
       enemyManager.level = level;
       game.level = level;
       const waves = enemyManager.generateWaves(level);
@@ -226,23 +240,70 @@ try {
       }
     }
 
+    const prepareWaveEnemy = (level, waveIndex = 0) => {
+      enemyManager.level = level;
+      game.level = level;
+      const waves = enemyManager.generateWaves(level);
+      const config = waves[waveIndex % waves.length] || waves[0];
+      play.clearEnemyBullets?.('normal_enemy_attack_variety_targeted_check');
+      enemyManager.clearEnemies();
+      enemyManager.currentWaveIndex = waveIndex;
+      enemyManager.normalWavesTotal = waves.length;
+      enemyManager.state = 'WAVE_ACTIVE';
+      enemyManager.phase = 'WAVES';
+      enemyManager.spawnWave(config);
+      const enemies = enemyManager.enemies.filter((enemy) => enemy.kind === 'enemy');
+      for (const enemy of enemies) {
+        enemy.waitingForEntry = false;
+        enemy.active = true;
+        if (enemy.sprite) enemy.sprite.visible = true;
+        enemy.state = 'FORMATION';
+        enemy.x = enemy.formationX;
+        enemy.y = enemy.formationY;
+      }
+      return enemies[0] || null;
+    };
+
+    const missingOrganicActions = actionDefinitions.filter((action) => !assignedIds.has(action.id));
+    for (const action of missingOrganicActions) {
+      const level = Math.max(maxActionUnlockLevel, Number(action.minLevel) || 1);
+      const enemy = prepareWaveEnemy(level, action.id.length);
+      if (!enemy) continue;
+      enemy.level = level;
+      const bullets = enemy.executeThreatAction(action, { x: player.x, y: player.y - 72 }, { fakeout: false });
+      for (let frame = 0; frame < 95; frame += 1) {
+        play.bulletManager.update(1);
+      }
+      const activeBullets = play.bulletManager.enemyBullets.filter((bullet) => bullet?.active !== false);
+      const actionBulletIds = new Set(activeBullets.map((bullet) => bullet.threatActionId).filter(Boolean));
+      for (const id of actionBulletIds) targetedBulletIds.add(id);
+      if (bullets.length || actionBulletIds.has(action.id)) targetedActionIds.add(action.id);
+      for (const bullet of activeBullets) {
+        if (![bullet.x, bullet.y, bullet.vx, bullet.vy].every(Number.isFinite)) nanBulletCount += 1;
+      }
+    }
+
     return {
       assignedIds: [...assignedIds],
       bulletIds: [...bulletIds],
+      targetedActionIds: [...targetedActionIds],
+      targetedBulletIds: [...targetedBulletIds],
       nanBulletCount,
       closeSpawnCount,
       maxMines,
       maxOrbiters,
       samples
     };
-  });
+  }, { maxActionUnlockLevel: MAX_ACTION_UNLOCK_LEVEL, actionDefinitions: ACTION_DEFINITIONS });
 
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'normal-enemy-attack-variety.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
   const expectedIds = new Set(ENEMY_THREAT_ACTIONS.map((action) => action.id));
-  const missingBy16 = [...expectedIds].filter((id) => !runtime.assignedIds.includes(id));
+  const allAssignedIds = [...new Set([...runtime.assignedIds, ...runtime.targetedActionIds])];
+  const allBulletIds = [...new Set([...runtime.bulletIds, ...runtime.targetedBulletIds])];
+  const missingByMaxUnlock = [...expectedIds].filter((id) => !allAssignedIds.includes(id));
   const report = {
     ok:
       ENEMY_THREAT_ACTIONS.length >= 10 &&
@@ -254,8 +315,8 @@ try {
       runtime.nanBulletCount === 0 &&
       runtime.closeSpawnCount === 0 &&
       runtime.maxMines <= 4 &&
-      runtime.maxOrbiters <= 6 &&
-      missingBy16.length === 0 &&
+      runtime.maxOrbiters <= MAX_SYNTHETIC_ORBITERS &&
+      missingByMaxUnlock.length === 0 &&
       pageErrors.length === 0 &&
       consoleWarningsOrErrors.length === 0,
     baseUrl,
@@ -264,11 +325,16 @@ try {
     runtime: {
       assignedIds: runtime.assignedIds,
       bulletIds: runtime.bulletIds,
+      targetedActionIds: runtime.targetedActionIds,
+      targetedBulletIds: runtime.targetedBulletIds,
+      allAssignedIds,
+      allBulletIds,
       nanBulletCount: runtime.nanBulletCount,
       closeSpawnCount: runtime.closeSpawnCount,
       maxMines: runtime.maxMines,
       maxOrbiters: runtime.maxOrbiters,
-      missingBy16
+      maxSyntheticOrbiters: MAX_SYNTHETIC_ORBITERS,
+      missingByMaxUnlock
     },
     sampleCount: runtime.samples.length,
     samples: runtime.samples,
@@ -282,7 +348,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[normal-enemy-attack-variety] PASS actions=${runtime.assignedIds.length} bulletTags=${runtime.bulletIds.length} mines=${runtime.maxMines} orbiters=${runtime.maxOrbiters} screenshot=${screenshot}`);
+    console.log(`[normal-enemy-attack-variety] PASS actions=${allAssignedIds.length} organic=${runtime.assignedIds.length} targeted=${runtime.targetedActionIds.length} bulletTags=${allBulletIds.length} mines=${runtime.maxMines} orbiters=${runtime.maxOrbiters}/${MAX_SYNTHETIC_ORBITERS} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

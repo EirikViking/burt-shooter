@@ -153,10 +153,13 @@ function assert(condition, message) {
 }
 
 async function steerMenuTo(page, optionId) {
-  const order = ['launch', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'exit', 'music'];
-  for (let i = 0; i < 8; i += 1) {
+  const fallbackOrder = ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'music', 'howToPlay', 'exit'];
+  for (let i = 0; i < 12; i += 1) {
     const state = await readState(page);
     if (state.menu?.focusedOption === optionId) return state;
+    const order = Array.isArray(state.menu?.optionOrder) && state.menu.optionOrder.length
+      ? state.menu.optionOrder
+      : fallbackOrder;
     const currentIndex = order.indexOf(state.menu?.focusedOption);
     const targetIndex = order.indexOf(optionId);
     if (currentIndex >= 0 && targetIndex >= 0) {
@@ -168,6 +171,15 @@ async function steerMenuTo(page, optionId) {
     }
   }
   throw new Error(`Menu focus did not reach ${optionId}`);
+}
+
+async function steerSettingsFocusTo(page, focusId, { maxSteps = 28, directionButton = 13 } = {}) {
+  for (let i = 0; i < maxSteps; i += 1) {
+    const state = await readState(page);
+    if (state.settingsOverlay?.focus === focusId) return state;
+    await tapButton(page, directionButton);
+  }
+  return waitForState(page, (state) => state.settingsOverlay?.focus === focusId, `${focusId} settings focus`);
 }
 
 const server = await startPreviewServer();
@@ -229,7 +241,7 @@ try {
   });
 
   await page.goto(withQuery(baseUrl, { skipIntro: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launch', 'menu launch focus', 30000);
+  const menuInitial = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption === 'launchTactical', 'menu Tactical focus', 30000);
   checkpoint('menu-initial', menuInitial, { screenshot: await screenshot(page, '01-menu-initial') });
 
   await steerMenuTo(page, 'settings');
@@ -238,8 +250,7 @@ try {
   checkpoint('menu-settings-open', settingsOpen, { screenshot: await screenshot(page, '02-menu-settings-open') });
 
   const masterBefore = settingsOpen.audio?.masterVolume;
-  for (let i = 0; i < 6; i += 1) await tapButton(page, 13);
-  const languageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'language selector focus');
+  const languageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('menu-settings-language-focus', languageFocused);
   await tapButton(page, 13);
   const masterFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider focus');
@@ -250,12 +261,12 @@ try {
     masterAfter: masterAfter.audio?.masterVolume
   });
   assert(masterAfter.audio?.masterVolume !== masterBefore, 'Controller did not adjust the master volume slider');
-  for (let i = 0; i < 7; i += 1) await tapButton(page, 13);
-  const creditsFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'footer_credits', 'settings credits focus');
+  const creditsFocused = await steerSettingsFocusTo(page, 'footer_credits');
   checkpoint('menu-settings-credits-focused', creditsFocused);
   await tapButton(page, 0);
   const creditsOpen = await waitForState(page, (state) => state.overlays?.credits && state.settingsOverlay?.credits, 'credits opened from settings by controller');
   checkpoint('menu-settings-credits-open', creditsOpen, { screenshot: await screenshot(page, '03-menu-settings-credits-open') });
+  await page.evaluate(() => { window.__novaCreditsAscendantEasterEggRandom = () => 1; });
   await tapButton(page, 12);
   await tapButton(page, 0);
   await tapButton(page, 0);
@@ -299,6 +310,12 @@ try {
   await tapButton(page, 0);
   const hangar = await waitForState(page, (state) => state.scene === 'shipSelect' && state.shipSelect?.spriteKey, 'ship select opened');
   checkpoint('ship-select-open', hangar, { screenshot: await screenshot(page, '06-ship-select-open') });
+  if (hangar.shipSelect?.unlockPresentation?.visible) {
+    await tapButton(page, 9);
+    await waitForState(page, (state) =>
+      state.scene === 'shipSelect' && state.shipSelect?.unlockPresentation?.visible === false,
+    'hangar unlock presentation dismissed by controller Start');
+  }
   await tapButton(page, 9);
   const hangarMenu = await waitForState(page, (state) => state.shipSelect?.hangarMenu?.visible, 'hangar menu opened by controller Start');
   checkpoint('ship-select-hangar-menu-open', hangarMenu, { screenshot: await screenshot(page, '07-ship-select-hangar-menu-open') });
@@ -325,6 +342,7 @@ try {
   await tapButton(page, 0);
   const playStarted = await waitForState(page, (state) => state.scene === 'play' && state.player, 'gameplay launched by controller', 30000);
   checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '09-gameplay-launched') });
+  assert(playStarted.runMode === 'ranked_tactical', `Hangar controller launch entered ${playStarted.runMode || 'unknown'} instead of Mayhem Tactical`);
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -362,10 +380,15 @@ try {
   checkpoint('pause-open', paused, { screenshot: await screenshot(page, '11-pause-open') });
   await tapButton(page, 13);
   await tapButton(page, 0);
+  const tacticalLoadout = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.tacticalLoadout && state.tacticalLoadoutOverlay?.visible, 'pause tactical loadout opened by controller');
+  checkpoint('pause-tactical-loadout-open', tacticalLoadout, { screenshot: await screenshot(page, '11b-pause-tactical-loadout') });
+  await tapButton(page, 1);
+  await waitForState(page, (state) => state.overlays?.pause && !state.overlays?.tacticalLoadout, 'pause tactical loadout closed with controller');
+  await tapButton(page, 13);
+  await tapButton(page, 0);
   const pauseSettings = await waitForState(page, (state) => state.overlays?.pause && state.overlays?.settings && state.settingsOverlay?.focus, 'pause settings opened by controller');
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
-  for (let i = 0; i < 6; i += 1) await tapButton(page, 13);
-  const pauseLanguageFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'language', 'pause language selector focus');
+  const pauseLanguageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('pause-settings-language-focus', pauseLanguageFocused);
   await tapButton(page, 13);
   await tapButton(page, 15);
@@ -390,6 +413,9 @@ try {
   await page.evaluate(() => {
     const game = window.__game;
     if (!game) return;
+    // Keep the manual controller-initials coverage on Mayhem Pure. Tactical
+    // correctly uses Steam persona auto-submission and bypasses name entry.
+    game.runMode = 'ranked';
     game.score = 12000;
     game.level = 4;
     game.rankIndex = Math.max(game.rankIndex || 0, 2);
@@ -427,8 +453,11 @@ try {
     scene.refreshPrimaryCta?.();
   });
   await tapButton(page, 0);
-  const submitted = await waitForState(page, (state) => state.scene === 'gameOver' && state.gameOver?.state === 'runback', 'score submitted from controller initials', 15000);
-  checkpoint('game-over-score-submitted', submitted, {
+  const submitted = await waitForState(page, (state) =>
+    state.scene === 'gameOver' &&
+    state.gameOver?.state === 'runback',
+  'score submitted directly to runback from controller initials', 10000);
+  checkpoint('game-over-score-submitted-runback', submitted, {
     savedName: submitted.gameOver?.lastLeaderboardResult?.name,
     screenshot: await screenshot(page, '15-score-submitted')
   });
@@ -436,10 +465,10 @@ try {
 
   await tapButton(page, 3);
   const highscore = await waitForState(page, (state) => state.scene === 'highscore' && state.highscore?.focusedControl, 'highscores opened by controller Y');
-  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '16-highscores-open') });
+  checkpoint('highscores-open', highscore, { screenshot: await screenshot(page, '17-highscores-open') });
   await tapButton(page, 1);
   const backToMenu = await waitForState(page, (state) => state.scene === 'menu' && state.menu?.focusedOption, 'highscores returned to menu by controller B');
-  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '17-return-menu') });
+  checkpoint('return-menu', backToMenu, { screenshot: await screenshot(page, '18-return-menu') });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,

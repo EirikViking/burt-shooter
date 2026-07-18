@@ -1,0 +1,118 @@
+{
+  "type": "steam_upload_evidence",
+  "feature": "local_run_report",
+  "sourceCommit": "86870adba497f055a61cc61e3ee4d17928114523",
+  "sourceCommitShort": "86870ad",
+  "packageBuild": {
+    "version": "v2026-07-01_16-16-41",
+    "timestamp": "2026-07-01T14:16:41.796Z"
+  },
+  "steamBuild": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "buildId": 24003877,
+    "setLive": "",
+    "noBranchAssignment": true,
+    "resultLine": "[2026-07-01 16:25:46]: Successfully finished AppID 4765070 build (BuildID 24003877).",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf"
+  },
+  "steamcmd": {
+    "path": "C:/steamcmd/steamcmd.exe",
+    "user": "gaunziman",
+    "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit"
+  },
+  "payload": {
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "contentRoot": "release/desktop/win-unpacked",
+    "fileCount": 336,
+    "totalBytes": 915893045,
+    "manifestHash": "a513db088842a93ce9efef5188a19ea64af84962afcf82da198815ffc84815b4",
+    "executable": {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "4982dd2fd10bf33aafc512aa55d26d1379a745037388a85fff682ae9a40fb9c8"
+    }
+  },
+  "verification": [
+    {
+      "command": "git diff --cached --check",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:i18n",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:run-report",
+      "status": "passed",
+      "report": "test-results/run-report-2026-07-01T14-00-50-716Z/report.json"
+    },
+    {
+      "command": "npm run check:result-screen-flow",
+      "status": "passed",
+      "report": "test-results/result-screen-flow-2026-07-01T14-00-26-152Z/report.json"
+    },
+    {
+      "command": "npm run build:current",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:i18n-ui",
+      "status": "passed",
+      "report": "test-results/i18n-ui-2026-07-01T14-01-58-680Z/"
+    },
+    {
+      "command": "npm run check:release-line",
+      "status": "passed"
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed",
+      "reports": [
+        "test-results/steam-sdk-ready-2026-07-01T14-16-41-168Z/report.json",
+        "test-results/steam-package-runtime-2026-07-01T14-20-54-998Z/report.json"
+      ]
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-07-01T14-21-08-780Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-07-01T14-21-44-014Z/report.json"
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' npm run steamworks:write-vdf",
+      "status": "passed"
+    },
+    {
+      "command": "C:/steamcmd/steamcmd.exe +login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+      "status": "passed",
+      "buildId": 24003877
+    }
+  ],
+  "protectedBoundaries": {
+    "steamworksMetadataChanged": false,
+    "steamBranchAssigned": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsChanged": false,
+    "steamCloudPathsChanged": false,
+    "saveFormatChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "balanceChanged": false
+  },
+  "rollback": {
+    "steam": "No Steam rollback is required while BuildID 24003877 remains unassigned. If it is later assigned manually and needs rollback, reassign that branch in Steamworks to the prior desired BuildID.",
+    "source": "git revert 86870adba497f055a61cc61e3ee4d17928114523"
+  }
+}

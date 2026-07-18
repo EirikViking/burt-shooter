@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
 import { chromium } from 'playwright';
+import { HANGAR_UNLOCK_TUNING_VERSION } from '../src/progression/HangarProgressState.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4340));
@@ -11,6 +12,10 @@ const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/gam
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function lineCount(value) {
+  return String(value || '').split(/\n/).filter((line) => line.trim().length > 0).length;
 }
 
 async function isPortAvailable(candidatePort) {
@@ -106,6 +111,9 @@ async function clickLaunchRun(targetPage) {
   });
   if (!bounds) throw new Error('Launch Run button bounds unavailable');
   await targetPage.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await targetPage.waitForTimeout(250);
+  const clicked = await targetPage.evaluate(() => window.__game?.currentSceneName !== 'menu');
+  if (!clicked) await targetPage.keyboard.press('Enter');
 }
 
 async function clickPrimaryCta(targetPage) {
@@ -126,6 +134,51 @@ async function clickPrimaryCta(targetPage) {
   await targetPage.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
 }
 
+async function readGameOverTopLayout(targetPage) {
+  return targetPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    const readNode = (node, id) => {
+      if (!node) return null;
+      const anchorY = Number(node.anchor?.y) || 0;
+      const height = Number(node.height) || 0;
+      return {
+        id,
+        text: String(node.text || ''),
+        visible: node.visible !== false,
+        x: Number(node.x) || 0,
+        y: Number(node.y) || 0,
+        width: Number(node.width) || 0,
+        height,
+        top: (Number(node.y) || 0) - height * anchorY,
+        bottom: (Number(node.y) || 0) + height * (1 - anchorY)
+      };
+    };
+    return [
+      readNode(scene?.title, 'title'),
+      readNode(scene?.scoreText, 'score'),
+      readNode(scene?.levelText, 'level')
+    ].filter((node) => node?.visible);
+  });
+}
+
+function hasReadableTopStack(layout, minGap = 3) {
+  const nodes = Array.isArray(layout) ? layout : [];
+  if (nodes.length < 3) return false;
+  for (let index = 1; index < nodes.length; index += 1) {
+    if (nodes[index - 1].bottom + minGap > nodes[index].top) return false;
+  }
+  return true;
+}
+
+function ctaFitsViewport(cta, viewportHeight = 768) {
+  return Boolean(
+    cta?.visible &&
+    Number(cta.y) >= 0 &&
+    Number(cta.height) > 0 &&
+    Number(cta.y) + Number(cta.height) <= viewportHeight
+  );
+}
+
 function fullLocalLeaderboard() {
   return Array.from({ length: 20 }, (_, index) => ({
     name: `ACE${String(index + 1).padStart(2, '0')}`,
@@ -134,6 +187,10 @@ function fullLocalLeaderboard() {
     rankIndex: 6,
     timestamp: new Date(Date.now() - index * 1000).toISOString()
   }));
+}
+
+function hasLeaderboardAvailabilityLine(value = '') {
+  return /Global:/i.test(value) || /Steam leaderboard unavailable/i.test(value);
 }
 
 observePage(page);
@@ -169,6 +226,7 @@ try {
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'gameover-motivation.png');
   await page.screenshot({ path: screenshot, fullPage: true });
+  const gameOverTopLayout = await readGameOverTopLayout(page);
   const gameOverState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   await clickPrimaryCta(page);
   await page.waitForFunction(() => window.__game?.scenes?.gameOver?.state === 'input', null, { timeout: 5000 });
@@ -178,14 +236,28 @@ try {
     nameInput: window.__game?.scenes?.gameOver?.nameInput || '',
     hiddenMaxLength: window.__game?.scenes?.gameOver?.hiddenInput?.maxLength || null
   }));
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene) return;
+    scene.reportShownAt = Date.now();
+    scene.globalQualified = false;
+    scene.globalStatus = 'offline';
+    scene.leaderboardRuntime.cloud = false;
+    scene.leaderboardAdapter.availability.cloud = false;
+    scene.leaderboardAdapter.refreshed = true;
+    scene.updateCanEnterName?.();
+  });
+  const submittedAt = Date.now();
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.state === 'runback';
-  }, null, { timeout: 15000 });
+  }, null, { timeout: 5000 });
+  const submittedRunbackElapsedMs = Date.now() - submittedAt;
   const submittedRunbackState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const runbackScreenshot = path.join(outputDir, 'gameover-runback.png');
   await page.screenshot({ path: runbackScreenshot, fullPage: true });
+  const runbackTopLayout = await readGameOverTopLayout(page);
 
   await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
@@ -212,12 +284,54 @@ try {
   const alreadyUnlockedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const alreadyUnlockedSummary = alreadyUnlockedState.gameOver?.unlockSummary || '';
 
-  await page.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
-  await page.evaluate(() => {
-    localStorage.removeItem('nova.hangarProgress.v1');
+  const careerPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+  observePage(careerPage);
+  await careerPage.addInitScript((unlockTuningVersion) => {
     localStorage.removeItem('nova.threatDiscovery.v1');
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 8, bestLevel: 21 }));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      unlockTuningVersion,
+      pilotXp: 19000,
+      pilotRank: 8,
+      highestPilotRank: 8,
+      totalRuns: 20,
+      bestScore: 150000,
+      bestSector: 7,
+      bestLevel: 7,
+      bestRank: 8,
+      bestRunTimeSeconds: 420,
+      survivedSeconds: 0,
+      totalBossesDefeated: 6,
+      totalWavesCleared: 30,
+      totalCodexDiscoveries: 40,
+      runClears: 0,
+      noHitWaves: 0,
+      noHitSectors: 0,
+      clearWithLivesRemaining: 0,
+      highestScoreMultiplier: 1,
+      shipSpecificMilestones: {},
+      discoveredThreatIds: [],
+      defeatedBossIds: [],
+      runThemesSurvived: [],
+      secretShipUnlockIds: [],
+      creditsEasterEggFound: false,
+      unlockedShipIds: [
+        'nova_ship_01',
+        'nova_ship_02',
+        'nova_ship_03',
+        'nova_ship_04',
+        'nova_ship_05'
+      ],
+      lastNewlyUnlockedShipIds: [],
+      newRanksThisRun: [],
+      rankAchievementsUnlocked: [],
+      updatedAt: new Date().toISOString()
+    }));
+  }, HANGAR_UNLOCK_TUNING_VERSION);
+  await careerPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await careerPage.waitForFunction(() => window.__game?.currentSceneName === 'play' && window.__game?.scenes?.play?.player, null, { timeout: 30000 });
+  await careerPage.evaluate(() => {
     const game = window.__game;
     if (!game) return;
     game.score = 24668;
@@ -226,7 +340,7 @@ try {
     game.lives = 0;
     game.gameOver();
   });
-  await page.waitForFunction(() => {
+  await careerPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
       return state.scene === 'gameOver' && state.gameOver?.unlockSummary;
@@ -234,7 +348,37 @@ try {
       return false;
     }
   }, null, { timeout: 10000 });
-  const careerGoalState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const careerGoalState = await careerPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const distantBestRecoveryGoal = await careerPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene?.createNextGoal) return null;
+    const previousFinalLevel = scene.finalLevel;
+    scene.finalLevel = 3;
+    const goal = scene.createNextGoal(
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 },
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 }
+    );
+    scene.finalLevel = previousFinalLevel;
+    return goal?.text || null;
+  });
+  await careerPage.setViewportSize({ width: 1920, height: 1080 });
+  await careerPage.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    if (!scene?.createNextGoal) return;
+    scene.finalLevel = 3;
+    scene.nextGoal = scene.createNextGoal(
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 },
+      { bestScore: 261486, bestSector: 60, bestLevel: 60 }
+    );
+    scene.enterRunbackStage?.('distant_best_recovery_test');
+  });
+  await careerPage.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.gameOver?.state === 'runback' && /REACH SECTOR 5/i.test(state.gameOver?.nextGoal || '');
+  }, null, { timeout: 5000 });
+  const distantBestScreenshot = path.join(outputDir, 'gameover-distant-best-recovery.png');
+  await careerPage.screenshot({ path: distantBestScreenshot, fullPage: true });
+  await careerPage.close();
   const careerLevelSummary = careerGoalState.gameOver?.levelSummary || '';
   const careerUnlockSummary = careerGoalState.gameOver?.unlockSummary || '';
   const careerNextGoal = careerGoalState.gameOver?.nextGoal || '';
@@ -266,12 +410,12 @@ try {
   await retryCtaPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.gameOver?.primaryCta?.mode === 'restart';
+      return state.gameOver?.state === 'runback' && state.gameOver?.primaryCta?.mode === 'restart';
     } catch {
       return false;
     }
   }, null, { timeout: 5000 });
-  const noSlotCtaState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+  const noSlotRunbackState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
   await clickPrimaryCta(retryCtaPage);
   await retryCtaPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
   const retryCtaRestartedState = await retryCtaPage.evaluate(() => JSON.parse(window.render_game_to_text()));
@@ -279,9 +423,37 @@ try {
 
   const menuReplayPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   observePage(menuReplayPage);
+  await menuReplayPage.addInitScript(() => {
+    localStorage.removeItem('nova.hangarProgress.v1');
+    localStorage.removeItem('nova.threatDiscovery.v1');
+    localStorage.removeItem('burt.selectedShip.v1');
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 0, bestRank: 0, bestLevel: 1 }));
+  }, HANGAR_UNLOCK_TUNING_VERSION);
   await menuReplayPage.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clickLaunchRun(menuReplayPage);
-  await menuReplayPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
+  try {
+    await menuReplayPage.waitForFunction(() => window.__game?.currentSceneName === 'play', null, { timeout: 10000 });
+  } catch (error) {
+    const launchState = await menuReplayPage.evaluate(() => {
+      let state = {};
+      try {
+        state = JSON.parse(window.render_game_to_text?.() || '{}');
+      } catch {}
+      return {
+        currentSceneName: window.__game?.currentSceneName || null,
+        scene: state.scene || null,
+        menu: state.menu || null,
+        selectedShipSpriteKey: window.__game?.selectedShipSpriteKey || null,
+        storage: {
+          hangar: localStorage.getItem('nova.hangarProgress.v1'),
+          legacyUnlock: localStorage.getItem('burt.shipUnlockProgress.v1'),
+          selectedShip: localStorage.getItem('burt.selectedShip.v1')
+        }
+      };
+    });
+    console.error('[gameover-motivation] menu replay launch timeout', JSON.stringify(launchState, null, 2));
+    throw error;
+  }
   const firstMenuLaunchState = await menuReplayPage.evaluate(() => JSON.parse(window.render_game_to_text()));
   await menuReplayPage.evaluate(() => {
     const game = window.__game;
@@ -310,29 +482,58 @@ try {
   const report = {
     ok: Boolean(
       gameOverState.scene === 'gameOver' &&
-      /NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
-      !/NEXT SHIP:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
+      hasReadableTopStack(gameOverTopLayout) &&
+      hasReadableTopStack(runbackTopLayout) &&
+      /SHIP UNLOCKED|NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
+      !/NEXT SHIP(?: UNLOCK)?:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
-      /CAREER BEST:\s*SECTOR 21/i.test(careerLevelSummary) &&
-      /NEXT SHIP:\s*VIOLET FEINT/i.test(careerUnlockSummary) &&
-      /SURVIVE 15 MINUTES/i.test(careerUnlockSummary) &&
-      /SURVIVEDSECONDS 0\/900/i.test(careerUnlockSummary) &&
-      /NEXT CAREER GOAL:\s*REACH SECTOR 22/i.test(careerNextGoal) &&
+      /BEST SECTOR\s*7/i.test(careerLevelSummary) &&
+      /NEXT SHIP(?: UNLOCK)?:\s*IRON ORBIT/i.test(careerUnlockSummary) &&
+      /DEFEAT 10 BOSSES AND REACH PILOT RANK 4/i.test(careerUnlockSummary) &&
+      /\b6\/10\b/i.test(careerUnlockSummary) &&
+      /\b4\/4\b/i.test(careerUnlockSummary) &&
+      !/SURVIVEDSECONDS/i.test(careerUnlockSummary) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 9/i.test(careerNextGoal) &&
+      /NEXT CAREER GOAL:\s*REACH SECTOR 5/i.test(distantBestRecoveryGoal || '') &&
       !/NEED .*\b1 RANK\b/i.test(alreadyUnlockedSummary) &&
+      /Local: #\d+/i.test(gameOverState.gameOver?.leaderboardStatus || '') &&
+      hasLeaderboardAvailabilityLine(gameOverState.gameOver?.leaderboardStatus || '') &&
+      Boolean(gameOverState.gameOver?.deathCoach?.advice) &&
+      lineCount(gameOverState.gameOver?.levelSummary) <= 4 &&
+      lineCount(gameOverState.gameOver?.unlockSummary) <= 2 &&
+      lineCount(gameOverState.gameOver?.leaderboardStatus) <= 4 &&
+      !/LOCAL LEGEND/i.test(`${gameOverState.gameOver?.ceremonyTitle || ''} ${gameOverState.gameOver?.leaderboardStatus || ''}`) &&
       /LEADERBOARD FIRST|TYPE NAME/i.test(gameOverState.gameOver?.retryPrompt || '') &&
       /SUBMIT SCORE/i.test(gameOverState.gameOver?.primaryCta?.label || '') &&
       /PILOT NAME FIRST|TYPE NAME FIRST|ENTER \/ CLICK/i.test(gameOverState.gameOver?.primaryCta?.hint || '') &&
       ['leaderboard', 'submit'].includes(gameOverState.gameOver?.primaryCta?.mode) &&
       nameInputState.nameInput === 'ABCDEFGHIJKLMN' &&
       nameInputState.hiddenMaxLength === 14 &&
+      submittedRunbackElapsedMs < 3000 &&
       submittedRunbackState.scene === 'gameOver' &&
       submittedRunbackState.gameOver?.state === 'runback' &&
       submittedRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
+      submittedRunbackState.gameOver?.mainMenuCta?.visible === true &&
+      submittedRunbackState.gameOver?.mainMenuCta?.label === 'BACK TO MAIN MENU' &&
+      submittedRunbackState.gameOver?.counterAdviceCard?.visible === true &&
+      /Watch|lane|dodge|safe|clear|ship|hazard|pickup/i.test(submittedRunbackState.gameOver?.counterAdviceCard?.text || '') &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.leaderboardCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.hangarCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.mainMenuCta) &&
+      ctaFitsViewport(submittedRunbackState.gameOver?.runReportCta) &&
       submittedRunbackState.gameOver?.ceremonyTitle === 'ONE MORE RUN?' &&
+      /Local: #\d+/i.test(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
+      hasLeaderboardAvailabilityLine(submittedRunbackState.gameOver?.leaderboardStatus || '') &&
       /^one_more_run_\d\d$/.test(submittedRunbackState.gameOver?.selectedCtaLine?.id || '') &&
-      /ONE MORE RUN/i.test(noSlotCtaState.gameOver?.primaryCta?.label || '') &&
-      noSlotCtaState.gameOver?.primaryCta?.mode === 'restart' &&
-      noSlotCtaState.gameOver?.state === 'runback' &&
+      noSlotRunbackState.gameOver?.primaryCta?.mode === 'restart' &&
+      noSlotRunbackState.gameOver?.state === 'runback' &&
+      noSlotRunbackState.gameOver?.mainMenuCta?.visible === true &&
+      noSlotRunbackState.gameOver?.counterAdviceCard?.visible === true &&
+      /Watch|lane|dodge|safe|clear|ship|hazard|pickup/i.test(noSlotRunbackState.gameOver?.counterAdviceCard?.text || '') &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.leaderboardCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.hangarCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.mainMenuCta) &&
+      ctaFitsViewport(noSlotRunbackState.gameOver?.runReportCta) &&
       retryCtaRestartedState.scene === 'play' &&
       retryCtaRestartedState.score === 0 &&
       firstMenuLaunchState.scene === 'play' &&
@@ -344,9 +545,12 @@ try {
     ),
     baseUrl,
     gameOver: gameOverState.gameOver,
+    gameOverTopLayout,
+    runbackTopLayout,
     leaderboardFirst: {
       submittedScene: submittedRunbackState.scene,
       submittedState: submittedRunbackState.gameOver?.state || null,
+      submittedRunbackElapsedMs,
       selectedCtaLine: submittedRunbackState.gameOver?.selectedCtaLine || null,
       primaryCta: gameOverState.gameOver?.primaryCta || null
     },
@@ -355,7 +559,7 @@ try {
       score: retryCtaRestartedState.score,
       level: retryCtaRestartedState.level,
       lives: retryCtaRestartedState.lives,
-      noSlotCta: noSlotCtaState.gameOver?.primaryCta || null
+      noSlotRunback: noSlotRunbackState.gameOver || null
     },
     returnMenuLaunch: {
       first: {
@@ -374,6 +578,8 @@ try {
     nameInput: nameInputState,
     alreadyUnlocked: alreadyUnlockedState.gameOver,
     careerGoal: careerGoalState.gameOver,
+    distantBestRecoveryGoal,
+    distantBestScreenshot,
     pageErrors,
     consoleErrors,
     screenshot,

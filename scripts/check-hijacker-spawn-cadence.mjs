@@ -8,6 +8,7 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4352));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/hijacker-spawn-cadence-${timestamp()}`);
+const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const levelsToCheck = Array.from({ length: 12 }, (_, index) => index + 1);
 
 function timestamp() {
@@ -101,6 +102,7 @@ try {
     await page.goto(withQuery(baseUrl, {
       autostart: '1',
       debugBossToken: 'NOVA_DEBUG_2026',
+    'nova-devtools-hash': LOCAL_DEVTOOLS_HASH,
       startLevel: String(level)
     }), { waitUntil: 'domcontentloaded', timeout: 30000 });
 

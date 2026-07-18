@@ -4,9 +4,12 @@ import { BonusAsset } from '../utils/BonusAsset.js';
 import {
   getSelectableShips,
   getDefaultShipKey,
+  getShipUnlockHistoryLine,
   getShipUnlockLabel,
   getShipUnlockProgressDetails,
   getShipUnlockProgress,
+  getShipUnlockRequirementLine,
+  getShipUsage,
   isShipUnlocked,
   isValidShipKey,
   resolveShipKey
@@ -14,25 +17,49 @@ import {
 import { setSelectedShipKey } from '../utils/ShipSelectionState.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
+import { getCurrentLayout } from '../ui/responsiveLayout.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
 import { AssetManifest } from '../assets/assetManifest.js';
-import { computeShipStatRanges, createShipStatPanel, getShipCombatRole } from '../ui/ShipStatPanel.js';
+import { computeShipStatRanges, createShipStatPanel, getShipCombatRole, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitHudHint } from '../config/ShipTraitDescriptions.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { translateText } from '../i18n/index.js';
+import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
+import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
+import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, sans-serif';
 const CAREER_INTEL_BODY = 'Your career profile grows between runs. Score, sectors, bosses, Codex discoveries, clean waves, and clears feed Career XP.';
-const CAREER_INTEL_RANK_COPY = 'Pilot Rank is your long-term arcade signal. Rank progress unlocks achievements and helps open the hangar.';
-const CAREER_INTEL_HANGAR_COPY = 'Ship unlocks read milestones from this profile, so even a failed run can move the roster forward.';
-const CAREER_INTEL_CODEX_COPY = 'Codex scans are discoveries from your own profile. New threats are knowledge, score, XP, and future ship progress.';
 const CAREER_INTEL_KICKER = 'PILOT DOSSIER // LIVE ARCADE SIGNAL';
 const CAREER_INTEL_VALUE = 'EVERY RUN LEAVES A RECEIPT';
 const CAREER_INTEL_FLOW = 'CAREER XP FLOW';
+const PILOT_ORDERS_ARCHIVE_EMPTY = 'No Pilot Orders cleared yet.';
+const PILOT_ORDERS_ARCHIVE_HINT = 'Review cleared Pilot Orders here.';
+const PILOT_ORDERS_ARCHIVE_DONE = 'DONE';
+const HANGAR_ACTION_FOCUS_ORDER = ['details', 'start', 'random'];
+const HANGAR_UNLOCK_PRESENTATION_MS = 5400;
+const HANGAR_PROFILE_REPAIR_REASONS = new Set([
+  'legacy_codex_rescue_inflation',
+  'legacy_codex_rescue_preserved'
+]);
+const HANGAR_UNLOCK_STRINGS = {
+  titleSingle: 'NEW HULL ARRIVED',
+  titlePlural: 'NEW HULLS ARRIVED',
+  kicker: 'HANGAR DOORS OPEN',
+  subtitle: 'The paint is still warm. Try not to make it emotional.',
+  rolePrefix: 'COMBAT ROLE',
+  continue: 'ENTER / CLICK / A: KEEP THE KEYS',
+  countPrefix: 'HULLS ADDED'
+};
+
+function getDisplayRankNumber(rankIndex) {
+  return Math.min(MAX_RANK_INDEX + 1, Math.max(1, Math.floor(Number(rankIndex) || 0) + 1));
+}
 
 function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScale = 1 } = {}) {
   if (!display || !maxWidth || !maxHeight) return 1;
@@ -43,14 +70,49 @@ function fitDisplayToBox(display, maxWidth, maxHeight, { minScale = 0.5, maxScal
   return scale;
 }
 
+function bottomOf(display) {
+  if (!display) return 0;
+  return (Number(display.y) || 0) + Math.max(0, Number(display.height) || 0);
+}
+
 function hexColor(color) {
   return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
+function getHangarProfileFooterLines(progress = {}) {
+  if (HANGAR_PROFILE_REPAIR_REASONS.has(progress?.integrityRepairReason)) {
+    return [
+      translateText('PROFILE REPAIRED'),
+      translateText('RUN EVIDENCE VERIFIED')
+    ];
+  }
+  return [translateText('LOCAL PROFILE')];
+}
+
+function shipRecommendationScore(ship) {
+  if (!ship) return -Infinity;
+  const unlockDepth = Number(ship.unlock?.level) || 1;
+  const stats = ship.stats || {};
+  const weapon = ship.weapon || {};
+  const damage = Number(stats.damage) || 1;
+  const speed = Number(stats.speed) || 1;
+  const bulletSpeed = Number(stats.bulletSpeed) || 1;
+  const fireRate = Number(stats.fireRate) || 140;
+  const bullets = Math.max(1, Number(weapon.bullets) || 1);
+  const hitbox = Number(ship.hitbox?.radius) || 12;
+  return unlockDepth * 12 +
+    damage * bullets * 28 +
+    speed * 8 +
+    bulletSpeed * 3 -
+    fireRate * 0.05 -
+    hitbox * 0.6;
+}
+
 export class ShipSelectScene {
-  constructor(game) {
+  constructor(game, options = {}) {
     this.game = game;
     this.container = new PIXI.Container();
+    this.container.sortableChildren = true;
     this.ships = this.orderShips(getSelectableShips());
     this.selectedIndex = 0;
     this.shipCards = [];
@@ -65,21 +127,58 @@ export class ShipSelectScene {
     this.hangarMenuOverlay = null;
     this.careerInfoOverlay = null;
     this.careerInfoDebugState = null;
+    this.careerInfoRefs = null;
     this.careerInfoAnimatedNodes = [];
     this.careerInfoTicker = null;
+    this.careerInfoPilotOrdersPage = 0;
+    this.careerSignalTicker = null;
     this.overlayButtons = [];
     this.overlayFocusedIndex = 0;
     this.mainMenuButtonFocused = false;
+    this.controllerFocus = 'ship';
+    this.actionFocusedIndex = 0;
+    this.actionButtons = [];
     this.gamepadMenuWasPressed = false;
     this.gamepadActionWasPressed = false;
     this.gamepadCancelWasPressed = false;
     this.gamepadVerticalWasPressed = false;
     this.gamepadNavigator = new GamepadNavigator();
+    this.menuFx = null;
     this.exitNoticeTimeout = null;
+    this.recommendedShip = this.getRecommendedShip();
+    this.recommendationBanner = null;
+    this.recommendationText = null;
+    this.recommendationReasonText = null;
+    this.pendingHangarUnlockShips = this.resolvePendingHangarUnlockShips();
+    this.hangarUnlockPresentation = null;
+    this.hangarUnlockPresentationRefs = null;
+    this.hangarUnlockPresentationSprites = [];
+    this.hangarUnlockPresentationParticles = [];
+    this.hangarUnlockPresentationStartedAt = 0;
+    this.hangarUnlockPresentationActive = false;
+    this.hangarUnlockPresentationAcked = false;
+    this.hangarUnlockPresentationTimer = null;
+    this.hangarUnlockPresentationTicker = null;
 
     // Load saved selection
-    const saved = this.loadSelection();
-    if (saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress)) {
+    const preferredSpriteKey = options.preferredSpriteKey;
+    const saved = preferredSpriteKey && isValidShipKey(preferredSpriteKey) ? preferredSpriteKey : this.loadSelection();
+    const newlyUnlockedSpriteKey = this.pendingHangarUnlockShips[0]?.spriteKey || null;
+    const canRestoreSelection = saved && isValidShipKey(saved) && !this.recommendedShip && (
+      saved === preferredSpriteKey ||
+      isShipUnlocked(saved, this.unlockProgress)
+    );
+    if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
+      const resolvedPreferred = resolveShipKey(preferredSpriteKey);
+      const index = this.ships.findIndex(s => s.spriteKey === resolvedPreferred);
+      if (index >= 0) this.selectedIndex = index;
+    } else if (newlyUnlockedSpriteKey) {
+      const index = this.ships.findIndex(s => s.spriteKey === newlyUnlockedSpriteKey);
+      if (index >= 0) this.selectedIndex = index;
+    } else if (!preferredSpriteKey && this.recommendedShip?.spriteKey) {
+      const recommendedIndex = this.ships.findIndex(s => s.spriteKey === this.recommendedShip.spriteKey);
+      if (recommendedIndex >= 0) this.selectedIndex = recommendedIndex;
+    } else if (canRestoreSelection) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
       if (index >= 0) this.selectedIndex = index;
@@ -102,6 +201,17 @@ export class ShipSelectScene {
     this.container.addChild(bg);
 
     await this.createHangarBackdrop(width, height);
+    installMenuFx(this, {
+      label: 'ui_menuFxHangar',
+      zIndex: 0,
+      accent: 0x66ffdd,
+      secondary: 0xff55d9,
+      gold: 0xffd15c,
+      intensity: 0.78,
+      density: 0.82,
+      alpha: 0.46,
+      openVolume: 0.2
+    });
 
     // Animated background layer
     this.bgAnimationContainer = new PIXI.Container();
@@ -114,11 +224,13 @@ export class ShipSelectScene {
       height,
       isMobile: width < 640,
       showSideIntel: width >= 980,
-      showLeftIntel: width >= 1120
+      showLeftIntel: width >= 1120,
+      uiScale: Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1))
     };
 
     this.createHangarFrame(width, height);
     this.createHeader(width, height);
+    this.createRecommendationBanner(width, height);
     this.createBackButton(width, height);
 
     // Carousel container
@@ -162,6 +274,8 @@ export class ShipSelectScene {
 
     // Setup input
     this.setupInput();
+    this.createHangarUnlockPresentation(width, height);
+    this.startHangarUnlockPresentation();
 
     // Continuous animation ticker for glow effects
     this.selectionAnimTicker = () => {
@@ -390,7 +504,7 @@ export class ShipSelectScene {
       e.stopPropagation();
       this.backButton.active = false;
       drawButton();
-      this.returnToMenu('button');
+      this.openHangarMenu('button');
     });
     this.backButton.on('pointerupoutside', () => {
       this.backButton.active = false;
@@ -410,8 +524,64 @@ export class ShipSelectScene {
   }
 
   setMainMenuButtonFocus(focused) {
-    this.mainMenuButtonFocused = Boolean(focused);
+    this.setControllerFocus(focused ? 'back' : 'ship');
+  }
+
+  getControllerFocus() {
+    if (this.controllerFocus === 'back') return 'back';
+    if (HANGAR_ACTION_FOCUS_ORDER.includes(this.controllerFocus)) return this.controllerFocus;
+    return 'ship';
+  }
+
+  getFocusedActionButtonId() {
+    const focus = this.getControllerFocus();
+    return HANGAR_ACTION_FOCUS_ORDER.includes(focus) ? focus : null;
+  }
+
+  setControllerFocus(focus) {
+    const nextFocus = focus === 'back' || HANGAR_ACTION_FOCUS_ORDER.includes(focus) ? focus : 'ship';
+    this.controllerFocus = nextFocus;
+    this.mainMenuButtonFocused = nextFocus === 'back';
+    if (HANGAR_ACTION_FOCUS_ORDER.includes(nextFocus)) {
+      this.actionFocusedIndex = HANGAR_ACTION_FOCUS_ORDER.indexOf(nextFocus);
+    }
     this.backButton?.redraw?.();
+    this.syncActionButtonFocus();
+  }
+
+  setActionFocusByOffset(delta) {
+    const nextIndex = (this.actionFocusedIndex + delta + HANGAR_ACTION_FOCUS_ORDER.length) % HANGAR_ACTION_FOCUS_ORDER.length;
+    this.actionFocusedIndex = nextIndex;
+    this.setControllerFocus(HANGAR_ACTION_FOCUS_ORDER[nextIndex]);
+  }
+
+  focusActionRow() {
+    this.setControllerFocus(HANGAR_ACTION_FOCUS_ORDER[this.actionFocusedIndex] || 'details');
+  }
+
+  syncActionButtonFocus() {
+    const focusedId = this.getFocusedActionButtonId();
+    for (const button of this.actionButtons || []) {
+      button._focused = Boolean(focusedId && button.actionId === focusedId);
+      button.redraw?.();
+    }
+  }
+
+  activateControllerFocus(source = 'controller') {
+    const focus = this.getControllerFocus();
+    if (focus === 'back') {
+      this.returnToMenu(source);
+      return;
+    }
+    if (focus === 'details') {
+      this.openSelectedShipDetails();
+      return;
+    }
+    if (focus === 'random') {
+      this.navigateRandom();
+      return;
+    }
+    this.launchSelectedShip(source);
   }
 
   openHangarMenu(source = 'unknown') {
@@ -431,6 +601,7 @@ export class ShipSelectScene {
   closeHangarMenu(source = 'unknown') {
     if (!this.hangarMenuOverlay?.visible) return;
     this.hangarMenuOverlay.visible = false;
+    if (source === 'controller') this.setControllerFocus('ship');
     this.showHangarMenuNotice('');
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.28 : 0.24 });
   }
@@ -627,7 +798,39 @@ export class ShipSelectScene {
     AudioManager.playSfx('pause_out', { force: true, volume: source === 'keyboard' ? 0.24 : 0.2 });
   }
 
-  createCareerStatTile(label, value, x, y, width, height, accent, compact = false) {
+  rebuildCareerInfoOverlay() {
+    const wasVisible = Boolean(this.careerInfoOverlay?.visible);
+    if (this.careerInfoOverlay?.parent) {
+      this.careerInfoOverlay.parent.removeChild(this.careerInfoOverlay);
+    }
+    this.careerInfoOverlay?.destroy?.({ children: true });
+    this.careerInfoOverlay = null;
+    this.careerInfoRefs = null;
+    this.createCareerInfoOverlay(this.game.getWidth(), this.game.getHeight());
+    if (this.careerInfoOverlay) {
+      this.careerInfoOverlay.visible = wasVisible;
+    }
+  }
+
+  setCareerInfoPilotOrdersPage(page) {
+    const pageCount = Math.max(1, Number(this.careerInfoRefs?.pilotOrdersArchive?._pilotOrdersArchive?.pageCount) || 1);
+    const nextPage = Math.max(0, Math.min(pageCount - 1, Math.floor(Number(page) || 0)));
+    if (nextPage === this.careerInfoPilotOrdersPage) return false;
+    this.careerInfoPilotOrdersPage = nextPage;
+    if (this.careerInfoOverlay?.visible) {
+      this.rebuildCareerInfoOverlay();
+      AudioManager.playSfx('thrusterFire', { volume: 0.11, minIntervalMs: 80 });
+    }
+    return true;
+  }
+
+  flipCareerInfoPilotOrdersPage(delta) {
+    const pageCount = Math.max(1, Number(this.careerInfoRefs?.pilotOrdersArchive?._pilotOrdersArchive?.pageCount) || 1);
+    const nextPage = ((this.careerInfoPilotOrdersPage + Math.sign(delta || 1)) % pageCount + pageCount) % pageCount;
+    return this.setCareerInfoPilotOrdersPage(nextPage);
+  }
+
+  createCareerStatTile(label, value, x, y, width, height, accent, compact = false, subline = '') {
     const tile = new PIXI.Container();
     tile.label = `ui_careerIntelTile_${label}`;
     tile.position.set(x, y);
@@ -650,8 +853,20 @@ export class ShipSelectScene {
       align: 'left',
       letterSpacing: 0
     });
-    valueText.position.set(12, compact ? 12 : 14);
-    fitDisplayToBox(valueText, width - 24, compact ? 22 : 28, { minScale: 0.58 });
+    valueText.position.set(12, compact ? 10 : 12);
+    fitDisplayToBox(valueText, width - 24, subline ? (compact ? 19 : 23) : (compact ? 24 : 30), { minScale: 0.62 });
+
+    const sublineText = createText(String(subline || ''), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 9 : 10,
+      fontWeight: '900',
+      fill: '#d8fbff',
+      align: 'left',
+      letterSpacing: 0
+    });
+    sublineText.visible = Boolean(subline);
+    sublineText.position.set(12, compact ? 30 : 34);
+    fitDisplayToBox(sublineText, width - 24, compact ? 12 : 14, { minScale: 0.72 });
 
     const labelText = createText(translateText(label), {
       fontFamily: FONT_BODY,
@@ -662,8 +877,8 @@ export class ShipSelectScene {
       letterSpacing: 0
     });
     labelText.position.set(12, height - (compact ? 19 : 22));
-    fitDisplayToBox(labelText, width - 24, compact ? 16 : 18, { minScale: 0.54 });
-    tile.addChild(valueText, labelText);
+    fitDisplayToBox(labelText, width - 24, compact ? 16 : 18, { minScale: 0.58 });
+    tile.addChild(valueText, sublineText, labelText);
     return tile;
   }
 
@@ -692,18 +907,308 @@ export class ShipSelectScene {
 
     const p = createText(translateText(copy), {
       fontFamily: FONT_BODY,
-      fontSize: compact ? 9 : 11,
+      fontSize: compact ? 10 : 12,
       fontWeight: '700',
       fill: '#d8fbff',
       wordWrap: true,
       wordWrapWidth: width - 30,
-      lineHeight: compact ? 11 : 14,
+      lineHeight: compact ? 12 : 15,
       letterSpacing: 0
     });
     p.position.set(18, compact ? 30 : 34);
-    fitDisplayToBox(p, width - 30, height - (compact ? 36 : 42), { minScale: 0.7 });
+    fitDisplayToBox(p, width - 30, height - (compact ? 34 : 40), { minScale: 0.78 });
     card.addChild(h, p);
     return card;
+  }
+
+  createPilotOrdersArchivePanel(review, x, y, width, height, compact = false) {
+    const panel = new PIXI.Container();
+    panel.label = 'ui_pilotOrdersArchive';
+    panel.position.set(x, y);
+
+    const completedOrders = Array.isArray(review?.completed) ? review.completed : [];
+    const activeOrders = Array.isArray(review?.active) ? review.active : [];
+    const nextOrders = Array.isArray(review?.next) ? review.next : [];
+    const pendingOrders = Array.isArray(review?.pending) ? review.pending : [];
+    const activeIds = new Set(activeOrders.map((entry) => entry?.id).filter(Boolean));
+    const nextIds = new Set(nextOrders.map((entry) => entry?.id).filter(Boolean));
+    const orderNumberLabel = (entry, fallbackIndex = 0) => {
+      const orderNumber = Number(entry?.orderNumber);
+      const normalized = Number.isFinite(orderNumber) && orderNumber > 0
+        ? Math.floor(orderNumber)
+        : fallbackIndex + 1;
+      return String(normalized).padStart(2, '0');
+    };
+    const allEntries = [...completedOrders, ...pendingOrders]
+      .filter((entry) => entry?.id)
+      .sort((a, b) => {
+        const aIndex = Number.isFinite(Number(a.orderIndex)) ? Number(a.orderIndex) : Number.MAX_SAFE_INTEGER;
+        const bIndex = Number.isFinite(Number(b.orderIndex)) ? Number(b.orderIndex) : Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) return aIndex - bIndex;
+        return String(a.id).localeCompare(String(b.id));
+      });
+    const lineEntries = allEntries.map((entry, index) => {
+      const title = translateText(entry.shortTitle || entry.title || entry.id);
+      const number = orderNumberLabel(entry, index);
+      if (entry.completed) {
+        return {
+          text: `${number} ${translateText(PILOT_ORDERS_ARCHIVE_DONE)} // ${title}`,
+          tone: 'done'
+        };
+      }
+      const progress = translateText('{progress}/{target}', formatRunContractProgressValue(entry.progress || 0, entry.target || 1));
+      if (activeIds.has(entry.id)) {
+        return {
+          text: `${number} ${translateText('ACTIVE')} ${progress} // ${title}`,
+          tone: 'active'
+        };
+      }
+      if (nextIds.has(entry.id)) {
+        return {
+          text: `${number} ${translateText('NEXT')} ${progress} // ${title}`,
+          tone: 'next'
+        };
+      }
+      return {
+        text: `${number} ${progress} // ${title}`,
+        tone: 'pending'
+      };
+    });
+    const fullText = lineEntries.length
+      ? lineEntries.map((entry) => entry.text).join('\n')
+      : translateText(PILOT_ORDERS_ARCHIVE_EMPTY);
+    const accent = completedOrders.length || activeOrders.length ? 0x9cfbff : 0x49677a;
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, width, height, 8);
+    bg.fill({ color: 0x071b2a, alpha: 0.9 });
+    bg.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    bg.rect(0, 0, 7, height);
+    bg.fill({ color: accent, alpha: 0.86 });
+    bg.moveTo(18, height - 10);
+    bg.lineTo(width - 18, height - 10);
+    bg.stroke({ color: accent, width: 1, alpha: 0.3 });
+    panel.addChild(bg);
+
+    const headingLabel = translateText('PILOT ORDERS');
+    const heading = createText(headingLabel, {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 11 : 13,
+      fontWeight: '900',
+      fill: hexColor(accent),
+      letterSpacing: 0
+    });
+    heading.position.set(18, 10);
+    fitDisplayToBox(heading, width - 124, compact ? 18 : 20, { minScale: 0.56 });
+
+    const countLabel = translateText('COMPLETED: {count}', {
+      count: Math.max(0, Math.floor(Number(review?.completedCount) || 0))
+    });
+    const count = createText(countLabel, {
+      fontFamily: FONT_DISPLAY,
+      fontSize: compact ? 12 : 14,
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'right',
+      letterSpacing: 0
+    });
+    count.anchor.set(1, 0);
+    count.position.set(width - 18, 10);
+    fitDisplayToBox(count, 92, compact ? 18 : 20, { minScale: 0.52 });
+
+    const archiveSummaryParts = [
+      activeOrders.length ? `${translateText('ACTIVE')} ${activeOrders.length}` : null,
+      nextOrders.length ? `${translateText('NEXT')} ${nextOrders.length}` : null,
+      completedOrders.length
+        ? translateText('COMPLETED: {count}', {
+            count: Math.max(0, Math.floor(Number(review?.completedCount) || 0))
+          })
+        : null
+    ].filter(Boolean);
+    const archiveSummary = archiveSummaryParts.length
+      ? archiveSummaryParts.join(' // ')
+      : translateText(PILOT_ORDERS_ARCHIVE_HINT);
+    const listTop = compact ? 56 : 62;
+    const listHeight = Math.max(18, height - listTop - 18);
+    const columnCount = width >= 980 && height >= 176
+      ? 3
+      : width >= 640
+        ? 2
+        : 1;
+    const columnGap = columnCount > 1 ? (columnCount >= 3 ? 10 : 14) : 0;
+    const listLineHeight = compact ? 11 : 14;
+    const rowsPerColumn = Math.max(3, Math.floor(listHeight / listLineHeight));
+    const rowsPerPage = Math.max(1, rowsPerColumn * columnCount);
+    const pageCount = Math.max(1, Math.ceil((lineEntries.length || 1) / rowsPerPage));
+    const currentPage = Math.max(0, Math.min(pageCount - 1, Math.floor(Number(this.careerInfoPilotOrdersPage) || 0)));
+    this.careerInfoPilotOrdersPage = currentPage;
+    const pageStart = currentPage * rowsPerPage;
+    const displayLines = lineEntries.length
+      ? lineEntries.slice(pageStart, pageStart + rowsPerPage)
+      : [{ text: fullText, tone: 'empty' }];
+    const visibleText = displayLines.map((entry) => entry.text).join('\n');
+    const hintWidth = pageCount > 1 ? Math.max(120, width - 188) : width - 36;
+    const hint = createText(archiveSummary, {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 9 : 11,
+      fontWeight: '800',
+      fill: '#fff3a2',
+      wordWrap: true,
+      wordWrapWidth: hintWidth,
+      lineHeight: compact ? 10 : 12,
+      letterSpacing: 0
+    });
+    hint.position.set(18, compact ? 28 : 32);
+    fitDisplayToBox(hint, hintWidth, compact ? 14 : 17, { minScale: 0.64 });
+
+    const pageWidgets = [];
+    if (pageCount > 1) {
+      const pageLabel = createText(String(currentPage + 1) + '/' + String(pageCount), {
+        fontFamily: FONT_BODY,
+        fontSize: compact ? 10 : 12,
+        fontWeight: '900',
+        fill: '#ffffff',
+        stroke: '#020711',
+        strokeThickness: 2,
+        align: 'center',
+        letterSpacing: 0
+      });
+      pageLabel.anchor.set(0.5, 0);
+      pageLabel.position.set(width - 72, compact ? 33 : 36);
+      const makePageButton = (label, buttonX, delta) => {
+        const button = new PIXI.Container();
+        button.eventMode = 'static';
+        button.cursor = 'pointer';
+        button.position.set(buttonX, compact ? 40 : 44);
+        button.hitArea = new PIXI.Rectangle(-16, -12, 32, 24);
+        const bg = new PIXI.Graphics();
+        bg.roundRect(-14, -10, 28, 20, 5);
+        bg.fill({ color: 0x071b2a, alpha: 0.96 });
+        bg.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.68 });
+        const copy = createText(label, {
+          fontFamily: FONT_DISPLAY,
+          fontSize: compact ? 12 : 14,
+          fontWeight: '900',
+          fill: '#9cfbff',
+          stroke: '#020711',
+          strokeThickness: 2,
+          letterSpacing: 0
+        });
+        copy.anchor.set(0.5);
+        button.addChild(bg, copy);
+        button.on('pointerdown', (event) => {
+          event.stopPropagation();
+          this.flipCareerInfoPilotOrdersPage(delta);
+        });
+        return button;
+      };
+      pageWidgets.push(
+        makePageButton('<', width - 116, -1),
+        pageLabel,
+        makePageButton('>', width - 28, 1)
+      );
+    }
+
+    const columnWidth = Math.floor((width - 36 - columnGap * (columnCount - 1)) / columnCount);
+    const columnLists = Array.from({ length: columnCount }, () => []);
+    displayLines.forEach((entry, index) => {
+      const column = Math.min(columnCount - 1, Math.floor(index / rowsPerColumn));
+      columnLists[column].push(entry);
+    });
+    const denseArchive = rowsPerPage >= 22;
+    const listFontSize = compact ? (denseArchive ? 9 : 10) : (denseArchive ? 10 : 12);
+    const toneFill = {
+      active: '#fff3a2',
+      next: '#9cfbff',
+      done: '#d8fbff',
+      pending: '#8fb5c2',
+      empty: '#90aeba'
+    };
+    const listTexts = [];
+    columnLists.forEach((lines, column) => {
+      lines.forEach((entry, rowIndex) => {
+        const copy = createText(entry.text, {
+          fontFamily: FONT_BODY,
+          fontSize: listFontSize,
+          fontWeight: entry.tone === 'active' || entry.tone === 'next' ? '900' : '800',
+          fill: toneFill[entry.tone] || '#d8fbff',
+          wordWrap: false,
+          wordWrapWidth: columnWidth,
+          lineHeight: listLineHeight,
+          letterSpacing: 0
+        });
+        copy.position.set(
+          18 + column * (columnWidth + columnGap),
+          listTop + rowIndex * listLineHeight
+        );
+        fitDisplayToBox(copy, columnWidth, listLineHeight + 2, { minScale: denseArchive ? 0.54 : 0.62 });
+        listTexts.push(copy);
+      });
+    });
+    if (!listTexts.length) {
+      const copy = createText(fullText, {
+        fontFamily: FONT_BODY,
+        fontSize: listFontSize,
+        fontWeight: '800',
+        fill: '#90aeba',
+        wordWrap: true,
+        wordWrapWidth: columnWidth,
+        lineHeight: listLineHeight,
+        letterSpacing: 0
+      });
+      copy.position.set(18, listTop);
+      fitDisplayToBox(copy, columnWidth, listHeight, { minScale: denseArchive ? 0.48 : 0.58 });
+      listTexts.push(copy);
+    }
+    panel.addChild(heading, count, hint, ...pageWidgets, ...listTexts);
+
+    panel._pilotOrdersArchive = {
+      heading: headingLabel,
+      countLabel,
+      text: fullText,
+      visibleText,
+      activeCount: activeOrders.length,
+      nextCount: nextOrders.length,
+      completedCount: review?.completedCount || 0,
+      total: review?.total || 0,
+      totalRows: lineEntries.length,
+      page: currentPage,
+      pageCount,
+      rowsPerPage,
+      visibleCount: displayLines.length,
+      summary: archiveSummary
+    };
+    return panel;
+  }
+
+  getNextShipUnlockSummary(progress = this.unlockProgress) {
+    const locked = this.ships
+      .filter(ship => !isShipUnlocked(ship.spriteKey, progress))
+      .sort((a, b) => (Number(a.unlock?.level) || 1) - (Number(b.unlock?.level) || 1));
+    const nextShip = locked[0] || null;
+    if (!nextShip) {
+      return {
+        label: 'ALL SHIPS UNLOCKED',
+        value: `${this.ships.length}/${this.ships.length}`,
+        detail: translateText('HANGAR COMPLETE: ALL SHIPS UNLOCKED')
+      };
+    }
+    const details = getShipUnlockProgressDetails(nextShip.spriteKey, progress);
+    const requirementProgress = details.requirements?.length
+      ? details.requirements.slice(0, 3).map((requirement) => {
+        const current = Math.min(Number(requirement?.current) || 0, Number(requirement?.target) || 0);
+        const target = Number(requirement?.target) || 0;
+        const suffix = requirement?.key === 'survivedSeconds' ? 's' : '';
+        return `${current.toLocaleString('en-US')}${suffix}/${target.toLocaleString('en-US')}${suffix}`;
+      }).join('  ')
+      : String(details.label || '');
+    return {
+      label: 'NEXT SHIP UNLOCK',
+      value: nextShip.name,
+      detail: `${translateText(String(details.label || 'SHIP PROGRESS').toUpperCase())}: ${requirementProgress}`
+    };
   }
 
   startCareerInfoAnimation() {
@@ -741,9 +1246,27 @@ export class ShipSelectScene {
       valueChip: bounds(refs.valueChip),
       body: bounds(refs.body),
       flowBar: bounds(refs.flowBar),
+      nextUnlock: refs.nextUnlock || null,
       stats: (refs.stats || []).map((tile) => bounds(tile)),
       cards: (refs.cards || []).map((card) => bounds(card)),
       snapshot: bounds(refs.snapshot),
+      pilotOrdersArchive: refs.pilotOrdersArchive ? {
+        bounds: bounds(refs.pilotOrdersArchive),
+        heading: refs.pilotOrdersArchive._pilotOrdersArchive?.heading || '',
+        countLabel: refs.pilotOrdersArchive._pilotOrdersArchive?.countLabel || '',
+        text: refs.pilotOrdersArchive._pilotOrdersArchive?.text || '',
+        visibleText: refs.pilotOrdersArchive._pilotOrdersArchive?.visibleText || '',
+        activeCount: refs.pilotOrdersArchive._pilotOrdersArchive?.activeCount || 0,
+        nextCount: refs.pilotOrdersArchive._pilotOrdersArchive?.nextCount || 0,
+        completedCount: refs.pilotOrdersArchive._pilotOrdersArchive?.completedCount || 0,
+        total: refs.pilotOrdersArchive._pilotOrdersArchive?.total || 0,
+        totalRows: refs.pilotOrdersArchive._pilotOrdersArchive?.totalRows || 0,
+        page: refs.pilotOrdersArchive._pilotOrdersArchive?.page || 0,
+        pageCount: refs.pilotOrdersArchive._pilotOrdersArchive?.pageCount || 1,
+        rowsPerPage: refs.pilotOrdersArchive._pilotOrdersArchive?.rowsPerPage || 0,
+        visibleCount: refs.pilotOrdersArchive._pilotOrdersArchive?.visibleCount || 0,
+        summary: refs.pilotOrdersArchive._pilotOrdersArchive?.summary || ''
+      } : null,
       backButton: bounds(refs.close)
     };
   }
@@ -766,15 +1289,18 @@ export class ShipSelectScene {
     const short = height < 620;
     const compact = narrow || short;
     const panelWidth = Math.min(compact ? width - 22 : 900, width - 28);
-    const panelHeight = Math.min(compact ? height - 18 : 560, height - 22);
+    const panelHeight = Math.min(compact ? height - 18 : Math.min(640, height - 44), height - 22);
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const progress = getPilotRankProgress(this.unlockProgress.pilotXp || 0);
     const rankProgress = Math.max(0, Math.min(1, Number(progress.progress) || 0));
+    const displayRank = getDisplayRankNumber(progress.rankIndex);
     const nextRank = progress.rankIndex >= MAX_RANK_INDEX
       ? translateText('MAX')
       : getRankTitle(Math.min(MAX_RANK_INDEX, progress.rankIndex + 1)).toUpperCase();
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
+    const nextUnlock = this.getNextShipUnlockSummary(this.unlockProgress);
+    const pilotOrdersReview = getRunContractCompletionReviewState(this.unlockProgress);
 
     const panel = new PIXI.Graphics();
     panel.roundRect(panelX, panelY, panelWidth, panelHeight, 9);
@@ -870,7 +1396,7 @@ export class ShipSelectScene {
     gauge.addChild(ring);
     this.careerInfoAnimatedNodes.push({ node: ring, kind: 'ring', speed: 0.006 });
 
-    const rankNumber = createText(String(progress.rankIndex), {
+    const rankNumber = createText(String(displayRank), {
       fontFamily: FONT_DISPLAY,
       fontSize: compact ? 42 : 56,
       fontWeight: '900',
@@ -952,46 +1478,45 @@ export class ShipSelectScene {
 
     const statsTop = narrow ? flowY + 48 : contentTop + (short ? 132 : 146);
     const stats = [
+      [nextUnlock.label, nextUnlock.value, 0xffd15c, nextUnlock.detail],
       ['HULLS READY', `${unlockedCount}/${this.ships.length}`, 0x66ffdd],
       ['XP TO NEXT', Number(progress.xpToNextRank || 0).toLocaleString('en-US'), 0xffef7e],
       ['CODEX SCANS', this.unlockProgress.totalCodexDiscoveries || 0, 0xff55d9],
       ['BOSS RECEIPTS', this.unlockProgress.totalBossesDefeated || 0, 0xff8f5c],
-      ['CLEAN WAVES', this.unlockProgress.noHitWaves || 0, 0x9cfbff],
       ['BEST SCORE', Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US'), 0xffffff]
     ].slice(0, short && !narrow ? 3 : 6);
     const statGap = compact ? 7 : 9;
     const statCols = narrow ? 2 : 3;
     const statW = (panelWidth - 80 - statGap * (statCols - 1)) / statCols;
-    const statH = compact ? 48 : 56;
+    const statH = compact ? 56 : 64;
     const statStartX = panelX + 40;
-    const statTiles = stats.map(([label, value, accent], index) => {
+    const statTiles = stats.map(([label, value, accent, subline], index) => {
       const col = index % statCols;
       const row = Math.floor(index / statCols);
-      const tile = this.createCareerStatTile(label, value, statStartX + col * (statW + statGap), statsTop + row * (statH + statGap), statW, statH, accent, compact);
+      const tile = this.createCareerStatTile(label, value, statStartX + col * (statW + statGap), statsTop + row * (statH + statGap), statW, statH, accent, compact, subline);
       overlay.addChild(tile);
       return tile;
     });
 
-    const cardData = [
-      ['EARN XP', CAREER_INTEL_CODEX_COPY, 0xffe76a],
-      ['PILOT RANK', CAREER_INTEL_RANK_COPY, 0x66ffdd],
-      ['HANGAR UNLOCKS', CAREER_INTEL_HANGAR_COPY, 0xff55d9]
-    ];
-    const cardGap = compact ? 7 : 10;
-    const cardCols = narrow ? 1 : 3;
-    const cardW = narrow ? panelWidth - 80 : (panelWidth - 80 - cardGap * 2) / 3;
-    const cardH = narrow ? 44 : short ? 64 : 72;
+    const cardW = panelWidth - 80;
     const cardTop = statsTop + Math.ceil(stats.length / statCols) * (statH + statGap) + (compact ? 8 : 14);
-    const cards = cardData.map(([heading, copy, accent], index) => {
-      const col = narrow ? 0 : index;
-      const row = narrow ? index : 0;
-      const card = this.createCareerCopyCard(heading, copy, panelX + 40 + col * (cardW + cardGap), cardTop + row * (cardH + 7), cardW, cardH, accent, compact);
-      overlay.addChild(card);
-      return card;
-    });
+    const cardH = Math.max(
+      compact ? 70 : 88,
+      Math.min(narrow ? 144 : short ? 108 : 168, panelY + panelHeight - cardTop - (compact ? 68 : 76))
+    );
+    const pilotOrdersArchive = this.createPilotOrdersArchivePanel(
+      pilotOrdersReview,
+      panelX + 40,
+      cardTop,
+      cardW,
+      cardH,
+      compact
+    );
+    overlay.addChild(pilotOrdersArchive);
+    const cards = [pilotOrdersArchive];
 
     const snapshot = createText(
-      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${progress.rankIndex} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
+      `${translateText('PROFILE SNAPSHOT')}: ${translateText('RANK')} ${displayRank} / ${translateText('NEXT RANK')} ${nextRank} / ${translateText('TOTAL RUNS')} ${this.unlockProgress.totalRuns || 0} / ${translateText('BEST SECTOR')} ${this.unlockProgress.bestSector || 1}`,
       {
         fontFamily: FONT_BODY,
         fontSize: compact ? 9 : 12,
@@ -1038,7 +1563,9 @@ export class ShipSelectScene {
       stats: statTiles,
       cards,
       snapshot,
-      close
+      pilotOrdersArchive,
+      close,
+      nextUnlock
     };
     this.careerInfoOverlay = overlay;
     this.container.addChild(overlay);
@@ -1048,7 +1575,7 @@ export class ShipSelectScene {
   async exitGameFromHangar() {
     try {
       const result = await requestExitGame();
-      if (!result.ok) this.showHangarMenuNotice(result.message || EXIT_GAME_WEB_MESSAGE);
+      if (!result.ok && !result.canceled) this.showHangarMenuNotice(result.message || EXIT_GAME_WEB_MESSAGE);
     } catch (e) {
       console.error('[ShipSelect] Exit Game Error:', e);
       this.showHangarMenuNotice(EXIT_GAME_WEB_MESSAGE);
@@ -1092,19 +1619,516 @@ export class ShipSelectScene {
       wordWrap: true,
       wordWrapWidth: 210,
       lineHeight: Math.round(size * 1.24),
-      letterSpacing: 0
+      letterSpacing: 0,
+      uiScaleMode: 'none'
     });
     text.position.set(x, y);
     return text;
   }
 
+  getRecommendedShip() {
+    const unlocked = this.ships.filter(ship => isShipUnlocked(ship.spriteKey, this.unlockProgress));
+    const pool = unlocked.length ? unlocked : this.ships.slice(0, 1);
+    return pool
+      .slice()
+      .sort((a, b) => shipRecommendationScore(b) - shipRecommendationScore(a))[0] || null;
+  }
+
+  createRecommendationBanner(width, height) {
+    const recommended = this.recommendedShip;
+    if (!recommended || width < 760) return;
+    const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
+    const bannerWidth = Math.min(760, width - 360);
+    const bannerHeight = 42;
+    const banner = new PIXI.Container();
+    banner.label = 'ui_shipRecommendationBanner';
+    banner.position.set(width / 2 - bannerWidth / 2, Math.round(100 * Math.min(uiScale, 1.45)));
+    banner.zIndex = 50;
+    banner.bannerWidth = bannerWidth;
+
+    const bg = new PIXI.Graphics();
+    bg.roundRect(0, 0, bannerWidth, bannerHeight, 8);
+    bg.fill({ color: 0x041322, alpha: 0.9 });
+    bg.stroke({ color: 0xffd15c, width: 1.8, alpha: 0.86 });
+    bg.rect(10, 7, 4, bannerHeight - 14);
+    bg.fill({ color: 0x66ffdd, alpha: 0.85 });
+    bg.rect(bannerWidth - 14, 7, 4, bannerHeight - 14);
+    bg.fill({ color: 0xff55d9, alpha: 0.76 });
+
+    const label = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 14,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#000000',
+      strokeThickness: 2,
+      letterSpacing: 0
+    });
+    label.position.set(24, 6);
+
+    const reason = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 12,
+      fontWeight: '800',
+      fill: '#c9fbff',
+      letterSpacing: 0
+    });
+    reason.position.set(24, 24);
+
+    banner.addChild(bg, label, reason);
+    this.recommendationBanner = banner;
+    this.recommendationText = label;
+    this.recommendationReasonText = reason;
+    this.container.addChild(banner);
+    this.updateRecommendationBanner();
+  }
+
+  updateRecommendationBanner() {
+    if (!this.recommendationBanner || !this.recommendedShip) return;
+    const selected = this.ships[this.selectedIndex];
+    const usingRecommended = selected?.spriteKey === this.recommendedShip.spriteKey;
+    const role = getShipCombatRole(this.recommendedShip, this.statRanges);
+    this.recommendationText.text = [translateText('RECOMMENDED HULL'), this.recommendedShip.name].join(': ');
+    this.recommendationReasonText.text = usingRecommended
+      ? translateText('USING RECOMMENDED HULL')
+      : [translateText('BEST UNLOCKED'), role, translateText('HANGAR SAYS THIS ONE HAS THE BEST ODDS')].join(' // ');
+    this.recommendationText.scale.set(1);
+    this.recommendationReasonText.scale.set(1);
+    const textWidth = (Number.isFinite(this.recommendationBanner.bannerWidth)
+      ? this.recommendationBanner.bannerWidth
+      : this.recommendationBanner.width) - 48;
+    fitDisplayToBox(this.recommendationText, textWidth, 18, { minScale: 0.7 });
+    fitDisplayToBox(this.recommendationReasonText, textWidth, 16, { minScale: 0.68 });
+  }
+
+  resolvePendingHangarUnlockShips() {
+    const ids = [...new Set((this.unlockProgress?.lastNewlyUnlockedShipIds || [])
+      .map(id => String(id || '').trim())
+      .filter(Boolean))];
+    if (!ids.length) return [];
+    const idSet = new Set(ids);
+    const seen = new Set();
+    return this.ships.filter((ship) => {
+      const keys = [ship?.baseId, ship?.id, ship?.spriteKey, ship?.baseSpriteKey].filter(Boolean);
+      const matched = keys.some(key => idSet.has(String(key)));
+      const stableKey = String(ship?.baseId || ship?.id || ship?.spriteKey || '');
+      if (!matched || seen.has(stableKey)) return false;
+      seen.add(stableKey);
+      return true;
+    });
+  }
+
+  createHangarUnlockPresentation(width, height) {
+    const ships = this.pendingHangarUnlockShips || [];
+    if (!ships.length) return;
+    const displayedShips = ships.slice(0, 5);
+
+    const overlay = new PIXI.Container();
+    overlay.label = 'ui_hangarUnlockPresentation';
+    overlay.visible = false;
+    overlay.zIndex = 1100000;
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    const frameFx = new PIXI.Graphics();
+    const panel = new PIXI.Graphics();
+    const stageFx = new PIXI.Graphics();
+    const shipStage = new PIXI.Container();
+    const textLayer = new PIXI.Container();
+    overlay.addChild(dim, frameFx, panel, shipStage, textLayer);
+    shipStage.addChild(stageFx);
+
+    const narrow = width < 860;
+    const panelWidth = Math.min(width - 96, narrow ? width - 48 : 940);
+    const panelHeight = Math.min(height - 96, narrow ? height - 72 : 520);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const title = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: narrow ? 34 : 54,
+      fontWeight: '900',
+      fill: '#ffffff',
+      stroke: '#001018',
+      strokeThickness: narrow ? 5 : 7,
+      align: 'center',
+      letterSpacing: 0
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + (narrow ? 82 : 88));
+    title.style.dropShadow = true;
+    title.style.dropShadowColor = '#66ffdd';
+    title.style.dropShadowBlur = 14;
+    title.style.dropShadowDistance = 0;
+
+    const kicker = createText(translateText(HANGAR_UNLOCK_STRINGS.kicker), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      align: 'center',
+      letterSpacing: 0
+    });
+    kicker.anchor.set(0.5);
+    kicker.position.set(width / 2, panelY + 38);
+
+    const subtitle = createText(translateText(HANGAR_UNLOCK_STRINGS.subtitle), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 14 : 18,
+      fontWeight: '800',
+      fill: '#b8fff1',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 96,
+      letterSpacing: 0
+    });
+    subtitle.anchor.set(0.5);
+    subtitle.position.set(width / 2, panelY + (narrow ? 126 : 148));
+
+    const nameText = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: narrow ? 23 : 34,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      stroke: '#1d0c00',
+      strokeThickness: narrow ? 4 : 5,
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 112,
+      letterSpacing: 0
+    });
+    nameText.anchor.set(0.5);
+    nameText.position.set(width / 2, panelY + panelHeight - (narrow ? 118 : 126));
+
+    const roleText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 13 : 16,
+      fontWeight: '900',
+      fill: '#9cfbff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 132,
+      letterSpacing: 0
+    });
+    roleText.anchor.set(0.5);
+    roleText.position.set(width / 2, panelY + panelHeight - (narrow ? 76 : 82));
+
+    const hintText = createText(translateText(HANGAR_UNLOCK_STRINGS.continue), {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center',
+      letterSpacing: 0
+    });
+    hintText.anchor.set(0.5);
+    hintText.position.set(width / 2, panelY + panelHeight - 36);
+
+    const countText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: narrow ? 12 : 15,
+      fontWeight: '900',
+      fill: '#ff55d9',
+      align: 'right',
+      letterSpacing: 0
+    });
+    countText.anchor.set(1, 0);
+    countText.position.set(panelX + panelWidth - 34, panelY + 34);
+
+    textLayer.addChild(kicker, title, subtitle, nameText, roleText, hintText, countText);
+    shipStage.position.set(width / 2, panelY + panelHeight * (narrow ? 0.48 : 0.5));
+
+    this.hangarUnlockPresentationSprites = [];
+    displayedShips.forEach((ship, index) => {
+      const texture = GameAssets.getRankShipTexture(ship.textureIndex) || PIXI.Texture.EMPTY;
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.alpha = 0;
+      sprite.__unlockIndex = index;
+      sprite.__unlockSeed = index * 1.7 + (Number(ship.textureIndex) || 0) * 0.09;
+      const shipPath = GameAssets.getRankShipPath(ship.textureIndex)
+        || AssetManifest.sprites.playerRankShips?.[ship.textureIndex]
+        || null;
+      if ((!texture || texture === PIXI.Texture.EMPTY || texture.width <= 1 || texture.height <= 1) && shipPath) {
+        PIXI.Assets.load(shipPath)
+          .then((loadedTexture) => {
+            if (loadedTexture && loadedTexture.width > 0 && loadedTexture.height > 0) sprite.texture = loadedTexture;
+          })
+          .catch((error) => console.warn('[ShipSelect] Hangar unlock texture failed:', shipPath, error));
+      }
+      this.hangarUnlockPresentationSprites.push(sprite);
+      shipStage.addChild(sprite);
+    });
+
+    const names = displayedShips.map(ship => ship.name).join(' // ');
+    const primaryRole = getShipCombatRole(ships[0], this.statRanges);
+    title.text = translateText(ships.length === 1 ? HANGAR_UNLOCK_STRINGS.titleSingle : HANGAR_UNLOCK_STRINGS.titlePlural);
+    nameText.text = names;
+    roleText.text = [translateText(HANGAR_UNLOCK_STRINGS.rolePrefix), primaryRole].join(': ');
+    countText.text = [translateText(HANGAR_UNLOCK_STRINGS.countPrefix), String(ships.length)].join(' ');
+    const titleBaseScale = fitDisplayToBox(title, panelWidth - 112, narrow ? 54 : 72, { minScale: 0.58 });
+    const nameBaseScale = fitDisplayToBox(nameText, panelWidth - 112, narrow ? 36 : 44, { minScale: 0.5 });
+    const roleBaseScale = fitDisplayToBox(roleText, panelWidth - 132, narrow ? 24 : 28, { minScale: 0.62 });
+    const hintBaseScale = fitDisplayToBox(hintText, panelWidth - 128, 22, { minScale: 0.62 });
+
+    overlay.on('pointerdown', (event) => {
+      event.stopPropagation();
+      this.dismissHangarUnlockPresentation('pointer');
+    });
+
+    this.hangarUnlockPresentationRefs = {
+      width,
+      height,
+      panelX,
+      panelY,
+      panelWidth,
+      panelHeight,
+      narrow,
+      dim,
+      frameFx,
+      panel,
+      stageFx,
+      shipStage,
+      title,
+      kicker,
+      subtitle,
+      nameText,
+      roleText,
+      hintText,
+      countText,
+      displayedShips,
+      baseScales: {
+        title: titleBaseScale,
+        name: nameBaseScale,
+        role: roleBaseScale,
+        hint: hintBaseScale
+      }
+    };
+    this.hangarUnlockPresentation = overlay;
+    this.container.addChild(overlay);
+    this.drawHangarUnlockPresentation();
+  }
+
+  startHangarUnlockPresentation() {
+    if (!this.hangarUnlockPresentation || this.hangarUnlockPresentationActive || !this.pendingHangarUnlockShips?.length) return false;
+    this.hangarUnlockPresentation.visible = true;
+    this.hangarUnlockPresentationActive = true;
+    this.hangarUnlockPresentationStartedAt = Date.now();
+    this.hangarUnlockPresentationAcked = false;
+    this.drawHangarUnlockPresentation();
+
+    AudioManager.playSfx('forceField', { force: true, volume: 0.52 });
+    AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.62 });
+    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.5, {
+      color: this.pendingHangarUnlockShips[0]?.visuals?.variant?.accent || 0xffef7e,
+      radius: 260,
+      durationMs: 980
+    });
+
+    this.hangarUnlockPresentationTicker = () => this.drawHangarUnlockPresentation();
+    this.game.app.ticker.add(this.hangarUnlockPresentationTicker);
+    this.hangarUnlockPresentationTimer = setTimeout(() => {
+      this.dismissHangarUnlockPresentation('auto');
+    }, HANGAR_UNLOCK_PRESENTATION_MS);
+    return true;
+  }
+
+  dismissHangarUnlockPresentation(source = 'unknown') {
+    if (!this.hangarUnlockPresentation || (!this.hangarUnlockPresentationActive && this.hangarUnlockPresentationAcked)) return false;
+    if (this.hangarUnlockPresentationTimer) {
+      clearTimeout(this.hangarUnlockPresentationTimer);
+      this.hangarUnlockPresentationTimer = null;
+    }
+    if (this.hangarUnlockPresentationTicker) {
+      this.game.app.ticker.remove(this.hangarUnlockPresentationTicker);
+      this.hangarUnlockPresentationTicker = null;
+    }
+    this.hangarUnlockPresentationActive = false;
+    this.hangarUnlockPresentation.visible = false;
+    if (!this.hangarUnlockPresentationAcked) {
+      this.hangarUnlockPresentationAcked = true;
+      try {
+        this.unlockProgress = acknowledgeHangarUnlockPresentation();
+      } catch (error) {
+        console.warn('[ShipSelect] Failed to acknowledge hangar unlock presentation:', error);
+      }
+      this.pendingHangarUnlockShips = [];
+      this.updateIntelPanels();
+    }
+    if (source !== 'auto') AudioManager.playSfx('powerup', { force: false, volume: 0.22 });
+    return true;
+  }
+
+  drawHangarUnlockPresentation() {
+    const refs = this.hangarUnlockPresentationRefs;
+    if (!refs) return;
+    const {
+      width,
+      height,
+      panelX,
+      panelY,
+      panelWidth,
+      panelHeight,
+      narrow,
+      dim,
+      frameFx,
+      panel,
+      stageFx,
+      title,
+      kicker,
+      subtitle,
+      nameText,
+      roleText,
+      hintText,
+      countText,
+      baseScales
+    } = refs;
+    const startedAt = this.hangarUnlockPresentationStartedAt || Date.now();
+    const age = Math.max(0, Date.now() - startedAt);
+    const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+    const clamp01 = (value) => Math.max(0, Math.min(1, value));
+    const intro = clamp01(age / 780);
+    const easeOutBack = (value) => {
+      const x = clamp01(value);
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    dim.clear();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x010711, alpha: 0.18 + intro * 0.74 });
+
+    frameFx.clear();
+    const centerX = width / 2;
+    const centerY = panelY + panelHeight * 0.5;
+    for (let i = 0; i < 5; i += 1) {
+      const radius = ((age * 0.12 + i * 86) % Math.max(160, panelWidth * 0.58)) + 42;
+      frameFx.circle(centerX, centerY, radius);
+      frameFx.stroke({ color: i % 2 === 0 ? 0x66ffdd : 0xff55d9, width: 1.4, alpha: (1 - radius / Math.max(180, panelWidth * 0.72)) * 0.18 * intro });
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const x = panelX + 32 + i * ((panelWidth - 64) / 11);
+      frameFx.moveTo(x, panelY + 18);
+      frameFx.lineTo(x + Math.sin(Date.now() * 0.001 + i) * 42, panelY + panelHeight - 18);
+    }
+    frameFx.stroke({ color: 0x37f5ff, width: 1, alpha: 0.06 + pulse * 0.035 });
+
+    panel.clear();
+    panel.roundRect(panelX - 12, panelY - 10, panelWidth + 24, panelHeight + 20, 16);
+    panel.fill({ color: 0x66ffdd, alpha: 0.05 + pulse * 0.04 });
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 12);
+    panel.fill({ color: 0x06101c, alpha: 0.86 + intro * 0.1 });
+    panel.stroke({ color: 0x66ffdd, width: 2.6, alpha: 0.62 + pulse * 0.28 });
+    panel.roundRect(panelX + 14, panelY + 14, panelWidth - 28, panelHeight - 28, 10);
+    panel.stroke({ color: 0xff55d9, width: 1.5, alpha: 0.38 + pulse * 0.18 });
+    panel.rect(panelX + 28, panelY + 28, panelWidth - 56, 3);
+    panel.fill({ color: 0xffef7e, alpha: 0.76 });
+    panel.rect(panelX + 28, panelY + panelHeight - 30, panelWidth - 56, 2);
+    panel.fill({ color: 0x37f5ff, alpha: 0.5 });
+
+    const scanX = panelX + 36 + ((age * 0.34) % Math.max(1, panelWidth - 72));
+    panel.rect(scanX, panelY + 42, 4, panelHeight - 84);
+    panel.fill({ color: 0xffffff, alpha: 0.18 + pulse * 0.12 });
+
+    const titleScale = 0.78 + easeOutBack(age / 620) * 0.22;
+    title.scale.set((baseScales?.title || 1) * titleScale);
+    title.alpha = intro;
+    kicker.alpha = 0.65 + pulse * 0.35;
+    subtitle.alpha = 0.82 + pulse * 0.18;
+    nameText.alpha = intro;
+    nameText.scale.set((baseScales?.name || 1) * (1 + pulse * 0.025));
+    roleText.scale.set(baseScales?.role || 1);
+    hintText.scale.set(baseScales?.hint || 1);
+    roleText.alpha = 0.86 + pulse * 0.14;
+    hintText.alpha = 0.44 + pulse * 0.56;
+    countText.alpha = 0.58 + pulse * 0.42;
+
+    stageFx.clear();
+    const sprites = this.hangarUnlockPresentationSprites || [];
+    const spriteSize = narrow ? 126 : 172;
+    const gap = Math.min(narrow ? 132 : 164, Math.max(narrow ? 92 : 122, panelWidth / Math.max(2.8, sprites.length + 1)));
+    const startX = -((sprites.length - 1) * gap) / 2;
+    sprites.forEach((sprite, index) => {
+      const textureWidth = Math.max(1, sprite.texture.width || sprite.width || spriteSize);
+      const textureHeight = Math.max(1, sprite.texture.height || sprite.height || spriteSize);
+      const baseScale = Math.min(spriteSize / textureWidth, spriteSize / textureHeight);
+      const localAge = age - index * 170;
+      const pop = easeOutBack(localAge / 700);
+      const settle = clamp01(localAge / 820);
+      const x = startX + index * gap;
+      const y = Math.sin(Date.now() * 0.004 + (sprite.__unlockSeed || index)) * (narrow ? 5 : 8) - (1 - settle) * 76;
+      const spritePulse = 1 + Math.sin(Date.now() * 0.006 + index) * 0.035;
+      sprite.x = x;
+      sprite.y = y;
+      sprite.alpha = clamp01(localAge / 340);
+      sprite.rotation = Math.sin(Date.now() * 0.0028 + index) * 0.045 + (1 - settle) * (index % 2 ? 0.18 : -0.18);
+      sprite.scale.set(baseScale * (0.48 + pop * 0.52) * spritePulse);
+
+      const ringPulse = 0.5 + Math.sin(Date.now() * 0.007 + index * 0.9) * 0.5;
+      stageFx.circle(x, y, spriteSize * (0.52 + ringPulse * 0.08));
+      stageFx.stroke({ color: index % 2 ? 0xff55d9 : 0x66ffdd, width: narrow ? 1.6 : 2.2, alpha: 0.24 + ringPulse * 0.24 });
+      stageFx.circle(x, y, spriteSize * (0.68 + pulse * 0.05));
+      stageFx.stroke({ color: 0xffef7e, width: 1, alpha: 0.16 + pulse * 0.12 });
+      const exhaustY = y + spriteSize * 0.34;
+      stageFx.moveTo(x - spriteSize * 0.18, exhaustY);
+      stageFx.lineTo(x - spriteSize * 0.32, exhaustY + spriteSize * (0.16 + ringPulse * 0.08));
+      stageFx.moveTo(x + spriteSize * 0.18, exhaustY);
+      stageFx.lineTo(x + spriteSize * 0.32, exhaustY + spriteSize * (0.16 + ringPulse * 0.08));
+      stageFx.stroke({ color: 0x9cfbff, width: narrow ? 2 : 3, alpha: 0.26 + ringPulse * 0.22 });
+    });
+
+    refs.layout = {
+      panel: {
+        x: Math.round(panelX),
+        y: Math.round(panelY),
+        width: Math.round(panelWidth),
+        height: Math.round(panelHeight)
+      },
+      spriteSize,
+      spriteCount: sprites.length,
+      ageMs: Math.round(age)
+    };
+  }
+
+  getHangarUnlockPresentationDebugState(getBounds) {
+    const bounds = typeof getBounds === 'function' ? getBounds : () => null;
+    const ships = this.pendingHangarUnlockShips || [];
+    return {
+      visible: Boolean(this.hangarUnlockPresentation?.visible),
+      active: Boolean(this.hangarUnlockPresentationActive),
+      acknowledged: Boolean(this.hangarUnlockPresentationAcked),
+      count: ships.length,
+      names: ships.map(ship => ship.name),
+      displayedNames: (this.hangarUnlockPresentationRefs?.displayedShips || []).map(ship => ship.name),
+      hiddenNameCount: Math.max(0, ships.length - (this.hangarUnlockPresentationRefs?.displayedShips?.length || 0)),
+      spriteKeys: ships.map(ship => ship.spriteKey),
+      selectedUnlockFocused: ships.some(ship => ship.spriteKey === this.ships[this.selectedIndex]?.spriteKey),
+      animated: Boolean(this.hangarUnlockPresentationStartedAt && (Date.now() - this.hangarUnlockPresentationStartedAt) > 80),
+      layout: this.hangarUnlockPresentationRefs?.layout || null,
+      bounds: bounds(this.hangarUnlockPresentation),
+      panelBounds: this.hangarUnlockPresentationRefs?.layout?.panel || null,
+      title: this.hangarUnlockPresentationRefs?.title?.text || null,
+      textBounds: {
+        title: bounds(this.hangarUnlockPresentationRefs?.title),
+        names: bounds(this.hangarUnlockPresentationRefs?.nameText),
+        role: bounds(this.hangarUnlockPresentationRefs?.roleText),
+        hint: bounds(this.hangarUnlockPresentationRefs?.hintText)
+      }
+    };
+  }
+
   createIntelPanels(width, height) {
     this.intelPanels = new PIXI.Container();
     this.container.addChild(this.intelPanels);
+    const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
+    const panelMargin = Math.round(22 * Math.min(uiScale, 1.45));
+    const panelTop = Math.round((this.layout.isMobile ? 118 : 128) * Math.min(uiScale, 1.45));
 
     if (this.layout.showLeftIntel) {
       const left = this.createPanel(230, 292, 0x66ffdd);
-      left.position.set(22, 128);
+      left.position.set(panelMargin, panelTop);
+      left.scale.set(uiScale);
       left.eventMode = 'static';
       left.cursor = 'pointer';
       left.hitArea = new PIXI.Rectangle(0, 0, 230, 292);
@@ -1112,33 +2136,41 @@ export class ShipSelectScene {
         e.stopPropagation();
         this.openCareerInfoOverlay('pointer');
       });
-      const title = this.createIntelText('CAREER SIGNAL', 16, 10, 13, '#ffffff', '900');
-      const count = this.createIntelText('', 16, 46, 14, '#ffef7e', '900');
-      const progress = this.createIntelText('', 16, 82, 12, '#b8fff1');
-      const stats = this.createIntelText('', 16, 158, 12, '#d8fbff');
-      const hint = this.createIntelText('CLICK FOR CAREER INTEL', 16, 238, 12, '#ffef7e', '900');
+      const alertGlow = new PIXI.Graphics();
+      const rankRail = new PIXI.Graphics();
+      const title = this.createIntelText('CAREER SIGNAL', 16, 12, 15, '#ffffff', '900');
+      const count = this.createIntelText('', 16, 48, 16, '#ffef7e', '900');
+      const progress = this.createIntelText('', 16, 96, 12, '#b8fff1');
+      const stats = this.createIntelText('', 16, 176, 12, '#d8fbff');
+      const hint = this.createIntelText('CLICK FOR CAREER + PILOT ORDERS', 16, 244, 12, '#ffef7e', '900');
       [progress, stats, hint].forEach(text => {
         text.style.wordWrapWidth = 196;
       });
-      left.addChild(title, count, progress, stats, hint);
-      this.leftIntel = { panel: left, count, progress, stats, hint };
+      left.addChild(alertGlow, title, count, rankRail, progress, stats, hint);
+      this.leftIntel = { panel: left, alertGlow, rankRail, count, progress, stats, hint };
       this.intelPanels.addChild(left);
     }
 
     if (this.layout.showSideIntel) {
       const right = this.createPanel(262, 380, 0xffd166);
-      right.position.set(width - 284, 128);
+      right.position.set(width - panelMargin - 262 * uiScale, panelTop);
+      right.scale.set(uiScale);
       const title = this.createIntelText('COMBAT READOUT', 16, 10, 13, '#ffffff', '900');
       const role = this.createIntelText('', 16, 44, 17, '#ffef7e', '900');
       const weapon = this.createIntelText('', 16, 76, 13, '#d8fbff');
       const trait = this.createIntelText('', 16, 126, 13, '#9ceeff');
       const unlock = this.createIntelText('', 16, 302, 13, '#ffd166', '900');
+      role.style.wordWrapWidth = 226;
+      weapon.style.wordWrapWidth = 226;
+      trait.style.wordWrapWidth = 226;
+      unlock.style.wordWrapWidth = 226;
       const statPanel = createShipStatPanel(this.ships[this.selectedIndex], {
         compact: true,
         width: 228,
         accent: 0xffd166,
         ranges: this.statRanges,
-        title: 'LIVE TUNE'
+        title: 'LIVE TUNE',
+        uiScaleMode: 'none'
       });
       statPanel.position.set(131, 186);
       right.addChild(title, role, weapon, trait, statPanel, unlock);
@@ -1272,9 +2304,12 @@ export class ShipSelectScene {
     container.shipIndex = index;
     const variant = ship.visuals?.variant || null;
     const locked = !isShipUnlocked(ship.spriteKey, this.unlockProgress);
+    const usageCount = getShipUsage(ship.spriteKey);
+    const firstFlight = !locked && usageCount === 0;
     const accent = variant?.accent || 0x00ffff;
     const textAccent = this.getReadableAccent(variant);
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
+    const tierLabel = getShipTierLabel(ship);
 
     const heroY = this.layout.isMobile ? -38 : -58;
     const heroSize = this.layout.isMobile ? 128 : 172;
@@ -1385,6 +2420,60 @@ export class ShipSelectScene {
     container.addChild(glow);
     container.glowEffect = glow;
 
+    if (tierLabel) {
+      const badgeWidth = this.layout.isMobile ? 156 : 190;
+      const badge = new PIXI.Container();
+      badge.position.set(-badgeWidth / 2, this.layout.isMobile ? 50 : 60);
+      const badgeBg = new PIXI.Graphics();
+      badgeBg.roundRect(0, 0, badgeWidth, 24, 6);
+      badgeBg.fill({ color: 0x13061f, alpha: 0.9 });
+      badgeBg.stroke({ color: 0xffef7e, width: 1.4, alpha: 0.88 });
+      const badgeText = createText(tierLabel, {
+        fontFamily: FONT_DISPLAY,
+        fontSize: this.layout.isMobile ? 10 : 11,
+        fill: '#ffef7e',
+        align: 'center',
+        fontWeight: '900',
+        letterSpacing: 0,
+        stroke: '#000000',
+        strokeThickness: 2
+      });
+      badgeText.anchor.set(0.5);
+      badgeText.position.set(badgeWidth / 2, 12);
+      badge.addChild(badgeBg, badgeText);
+      container.addChild(badge);
+      container.tierBadge = badge;
+    }
+
+    if (firstFlight) {
+      const badgeWidth = this.layout.isMobile ? 116 : 138;
+      const badgeHeight = this.layout.isMobile ? 24 : 28;
+      const badge = new PIXI.Container();
+      badge.position.set(-badgeWidth / 2, heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.66));
+      const badgeGlow = new PIXI.Graphics();
+      badgeGlow.roundRect(-4, -4, badgeWidth + 8, badgeHeight + 8, 9);
+      badgeGlow.fill({ color: 0xffef7e, alpha: 0.11 });
+      const badgeBg = new PIXI.Graphics();
+      badgeBg.roundRect(0, 0, badgeWidth, badgeHeight, 7);
+      badgeBg.fill({ color: 0x13061f, alpha: 0.96 });
+      badgeBg.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.96 });
+      const badgeText = createText(translateText('FIRST FLIGHT'), {
+        fontFamily: FONT_DISPLAY,
+        fontSize: this.layout.isMobile ? 10 : 12,
+        fill: '#ffef7e',
+        align: 'center',
+        fontWeight: '900',
+        stroke: '#000000',
+        strokeThickness: 2
+      });
+      badgeText.anchor.set(0.5);
+      badgeText.position.set(badgeWidth / 2, badgeHeight / 2);
+      badge.addChild(badgeGlow, badgeBg, badgeText);
+      container.addChild(badge);
+      container.firstFlightBadge = badge;
+      container.firstFlightBadgeText = badgeText;
+    }
+
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
       fontFamily: FONT_DISPLAY,
@@ -1434,7 +2523,8 @@ export class ShipSelectScene {
       strokeThickness: 2
     });
     trait.anchor.set(0.5, 0);
-    trait.position.set(0, this.layout.isMobile ? 145 : 160);
+    trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : 12));
+    fitDisplayToBox(trait, this.layout.isMobile ? 330 : 560, this.layout.isMobile ? 52 : 58, { minScale: 0.72 });
     container.addChild(trait);
     container.traitText = trait;
 
@@ -1452,6 +2542,8 @@ export class ShipSelectScene {
 
     container.shipData = ship;
     container.locked = locked;
+    container.usageCount = usageCount;
+    container.firstFlightEligible = firstFlight;
     return container;
   }
 
@@ -1508,6 +2600,8 @@ export class ShipSelectScene {
       if (shipContainer.nameText) shipContainer.nameText.visible = isCenter;
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
+      if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
+      if (shipContainer.firstFlightBadge) shipContainer.firstFlightBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
@@ -1618,6 +2712,7 @@ export class ShipSelectScene {
         this.openSelectedShipDetails();
       }
     );
+    this.detailsButton.actionId = 'details';
     this.container.addChild(this.detailsButton);
 
     this.startButton = this.createButton(
@@ -1637,6 +2732,7 @@ export class ShipSelectScene {
         this.launchSelectedShip('button');
       }
     );
+    this.startButton.actionId = 'start';
     this.container.addChild(this.startButton);
 
     this.randomButton = this.createButton(
@@ -1649,7 +2745,10 @@ export class ShipSelectScene {
       0x66ffff,
       () => this.navigateRandom()
     );
+    this.randomButton.actionId = 'random';
     this.container.addChild(this.randomButton);
+    this.actionButtons = [this.detailsButton, this.startButton, this.randomButton];
+    this.syncActionButtonFocus();
     this.updateSelectionInfo();
   }
 
@@ -1704,6 +2803,13 @@ export class ShipSelectScene {
 
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
+    playMenuFocusSfx(0.12);
+    const ship = this.ships[this.selectedIndex];
+    this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.52, {
+      color: ship?.visuals?.variant?.accent || ship?.visuals?.variant?.glow || 0x66ffdd,
+      radius: 160,
+      durationMs: 520
+    });
 
     this.updateCarouselPositions(true);
     this.updateSelectionInfo();
@@ -1742,8 +2848,12 @@ export class ShipSelectScene {
     const ship = this.ships[this.selectedIndex];
     const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
     const modelTotal = Math.max(1, this.baseOrder.length);
-    const status = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress) ? 'READY' : getShipUnlockLabel(ship?.spriteKey);
+    const unlocked = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress);
+    const status = unlocked
+      ? (getShipUsage(ship.spriteKey) === 0 ? translateText('FIRST FLIGHT') : translateText('READY'))
+      : getShipUnlockLabel(ship?.spriteKey);
     this.selectionInfoText.text = `HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}`;
+    this.updateRecommendationBanner();
   }
 
   updateIntelPanels() {
@@ -1751,8 +2861,12 @@ export class ShipSelectScene {
     if (!ship) return;
     const unlocked = isShipUnlocked(ship.spriteKey, this.unlockProgress);
     const role = getShipCombatRole(ship, this.statRanges);
+    const tierLabel = getShipTierLabel(ship);
+    const roleLine = tierLabel ? `${tierLabel} // ${role}` : role;
     const weapon = this.getWeaponSummary(ship);
     const unlockDetails = getShipUnlockProgressDetails(ship.spriteKey, this.unlockProgress);
+    const usageCount = getShipUsage(ship.spriteKey);
+    const firstFlight = unlocked && usageCount === 0;
     const progressLine = !unlocked && Array.isArray(unlockDetails.requirements) && unlockDetails.requirements.length
       ? unlockDetails.requirements
         .slice(0, 2)
@@ -1760,8 +2874,13 @@ export class ShipSelectScene {
         .join('  ')
       : '';
     const unlock = unlocked
-      ? 'STATUS: READY FOR LAUNCH'
-      : `${getShipUnlockLabel(ship.spriteKey)}${progressLine ? `\nPROGRESS: ${progressLine}` : ''}`;
+      ? [
+        firstFlight
+          ? `${translateText('FIRST FLIGHT')} // ${translateText('YOUR LAUNCHES')}: 0`
+          : translateText('STATUS: READY FOR LAUNCH'),
+        getShipUnlockHistoryLine(ship.spriteKey, this.unlockProgress, { translate: translateText })
+      ].join('\n')
+      : `${getShipUnlockRequirementLine(ship.spriteKey, { translate: translateText })}${progressLine ? `\n${translateText('PROGRESS')}: ${progressLine}` : ''}`;
     const unlockedCount = this.ships.filter(candidate => isShipUnlocked(candidate.spriteKey, this.unlockProgress)).length;
 
     if (this.leftIntel) {
@@ -1769,13 +2888,33 @@ export class ShipSelectScene {
       const rankTitle = String(rankProgress.title || getRankTitle(this.unlockProgress.pilotRank || 0)).toUpperCase();
       const isMaxRank = rankProgress.rankIndex >= MAX_RANK_INDEX || rankProgress.progress >= 1;
       const nextTitle = getRankTitle(Math.min(MAX_RANK_INDEX, rankProgress.rankIndex + 1)).toUpperCase();
+      const displayRank = getDisplayRankNumber(rankProgress.rankIndex);
       const rankLine = isMaxRank
         ? [rankTitle, translateText('MAX RANK')].join('  ')
         : `${Math.round((rankProgress.progress || 0) * 100)}% ${translateText('TO')} ${nextTitle}`;
-      this.leftIntel.count.text = `${unlockedCount}/${this.ships.length} HULLS READY`;
-      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${rankProgress.rankIndex}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      this.leftIntel.count.text = translateText(`${unlockedCount}/${this.ships.length} HULLS READY`);
+      this.leftIntel.progress.text = `${translateText('PILOT RANK')} ${displayRank}: ${rankTitle}\n${rankLine}\n${translateText('XP TO NEXT')}: ${Number(rankProgress.xpToNextRank || 0).toLocaleString('en-US')}`;
+      if (this.leftIntel.rankRail) {
+        const fill = Math.max(0, Math.min(1, Number(rankProgress.progress) || 0));
+        this.leftIntel.rankRail.clear();
+        this.leftIntel.rankRail.roundRect(16, 78, 196, 10, 5);
+        this.leftIntel.rankRail.fill({ color: 0x031323, alpha: 0.92 });
+        this.leftIntel.rankRail.stroke({ color: 0x66ffdd, width: 1.2, alpha: 0.52 });
+        this.leftIntel.rankRail.roundRect(18, 80, 192 * fill, 6, 3);
+        this.leftIntel.rankRail.fill({ color: 0xffef7e, alpha: 0.94 });
+      }
+      this.setCareerSignalPulse(Boolean(
+        (Number(this.unlockProgress.pilotXp) || 0) > 0 ||
+        (this.unlockProgress.lastNewlyUnlockedShipIds || []).length > 0 ||
+        (this.unlockProgress.newRanksThisRun || []).length > 0 ||
+        (Number(this.unlockProgress.totalCodexDiscoveries) || 0) > 0
+      ));
       if (this.leftIntel.stats) {
-        this.leftIntel.stats.text = `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}\n${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}\n${translateText('LOCAL PROFILE')}`;
+        this.leftIntel.stats.text = [
+          `${translateText('CODEX SCANS')}: ${this.unlockProgress.totalCodexDiscoveries || 0}`,
+          `${translateText('BEST SCORE')}: ${Number(this.unlockProgress.bestScore || 0).toLocaleString('en-US')}`,
+          ...getHangarProfileFooterLines(this.unlockProgress)
+        ].join('\n');
       }
       if (this.leftIntel.hint) {
         this.leftIntel.hint.text = translateText('CLICK FOR CAREER INTEL');
@@ -1783,10 +2922,20 @@ export class ShipSelectScene {
     }
 
     if (this.rightIntel) {
-      this.rightIntel.role.text = role;
+      this.rightIntel.role.text = roleLine;
       this.rightIntel.weapon.text = weapon;
       this.rightIntel.trait.text = this.getShipTraitText(ship);
       this.rightIntel.unlock.text = unlock;
+      this.rightIntel.role.scale.set(1);
+      this.rightIntel.weapon.scale.set(1);
+      this.rightIntel.trait.scale.set(1);
+      fitDisplayToBox(this.rightIntel.role, 226, 44, { minScale: 0.78 });
+      this.rightIntel.role.y = 44;
+      this.rightIntel.weapon.y = Math.max(76, bottomOf(this.rightIntel.role) + 6);
+      fitDisplayToBox(this.rightIntel.weapon, 226, 38, { minScale: 0.78 });
+      this.rightIntel.trait.y = Math.max(118, bottomOf(this.rightIntel.weapon) + 18);
+      fitDisplayToBox(this.rightIntel.trait, 226, 68, { minScale: 0.64 });
+      this.rightIntel.unlock.scale.set(1);
       if (this.rightIntel.statPanel?.parent) {
         this.rightIntel.statPanel.parent.removeChild(this.rightIntel.statPanel);
       }
@@ -1796,17 +2945,46 @@ export class ShipSelectScene {
         width: 228,
         accent,
         ranges: this.statRanges,
-        title: 'LIVE TUNE'
+        title: 'LIVE TUNE',
+        uiScaleMode: 'none'
       });
-      statPanel.position.set(131, 186);
+      statPanel.position.set(131, Math.max(188, bottomOf(this.rightIntel.trait) + 12));
       this.rightIntel.panel.addChild(statPanel);
       this.rightIntel.statPanel = statPanel;
+      this.rightIntel.unlock.y = Math.min(330, bottomOf(statPanel) + 16);
+      fitDisplayToBox(this.rightIntel.unlock, 226, 42, { minScale: 0.58 });
     }
 
     if (this.compactIntel) {
-      this.compactIntel.role.text = `${role} | ${unlock}`;
+      const compactStatus = unlocked
+        ? (firstFlight ? translateText('FIRST FLIGHT') : translateText('READY'))
+        : getShipUnlockLabel(ship.spriteKey);
+      this.compactIntel.role.text = [roleLine, compactStatus].join(' | ');
       this.compactIntel.weapon.text = weapon;
     }
+  }
+
+  setCareerSignalPulse(active = false) {
+    if (!this.leftIntel?.alertGlow) return;
+    this.leftIntel.careerPulseActive = Boolean(active);
+    if (!active) {
+      this.leftIntel.alertGlow.clear();
+      return;
+    }
+    if (this.careerSignalTicker) return;
+    this.careerSignalTicker = () => {
+      if (!this.leftIntel?.alertGlow || !this.leftIntel.careerPulseActive) return;
+      const pulse = 0.5 + Math.sin(Date.now() * 0.006) * 0.5;
+      const glow = this.leftIntel.alertGlow;
+      glow.clear();
+      glow.roundRect(-5, -5, 240, 302, 10);
+      glow.stroke({ color: 0xffef7e, width: 2 + pulse * 2, alpha: 0.34 + pulse * 0.38 });
+      glow.roundRect(6, 6, 218, 280, 8);
+      glow.stroke({ color: 0x66ffdd, width: 1.5, alpha: 0.24 + pulse * 0.28 });
+      glow.circle(202, 24, 6 + pulse * 5);
+      glow.fill({ color: 0xffef7e, alpha: 0.28 + pulse * 0.34 });
+    };
+    this.game.app.ticker.add(this.careerSignalTicker);
   }
 
   updateRosterStrip() {
@@ -1860,6 +3038,8 @@ export class ShipSelectScene {
     button.eventMode = 'static';
     button.cursor = 'pointer';
     button.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    button.hovered = false;
+    button._focused = false;
 
     // Background with glow
     const bgGlow = new PIXI.Graphics();
@@ -1868,10 +3048,11 @@ export class ShipSelectScene {
     button.addChild(bgGlow);
     button.bgGlow = bgGlow;
 
+    const focusRing = new PIXI.Graphics();
+    button.addChild(focusRing);
+    button.focusRing = focusRing;
+
     const bg = new PIXI.Graphics();
-    bg.rect(0, 0, width, height);
-    bg.fill({ color: bgColor });
-    bg.stroke({ color: 0x00ff00, width: 2 });
     button.addChild(bg);
     button.bg = bg;
 
@@ -1885,6 +3066,29 @@ export class ShipSelectScene {
     text.position.set(width / 2, height / 2);
     button.addChild(text);
     button.text = text;
+    button.activate = () => onClick?.();
+    button.redraw = () => {
+      const hovered = Boolean(button.hovered);
+      const focused = Boolean(button._focused);
+      bg.clear();
+      bg.rect(0, 0, width, height);
+      bg.fill({ color: label === 'START' && (hovered || focused) ? 0x00ffff : bgColor, alpha: hovered || focused ? 0.92 : 1 });
+      bg.stroke({
+        color: hovered ? 0xffffff : focused ? 0xffef7e : 0x00ff00,
+        width: hovered || focused ? 3 : 2,
+        alpha: hovered || focused ? 0.95 : 1
+      });
+
+      focusRing.clear();
+      if (focused) {
+        focusRing.rect(-5, -5, width + 10, height + 10);
+        focusRing.stroke({ color: 0xffef7e, width: 2, alpha: 0.8 });
+      }
+
+      bgGlow.alpha = focused ? 0.24 : 0;
+      if (!hovered) button.scale.set(1);
+    };
+    button.redraw();
 
     button.on('pointerdown', (e) => {
       e.stopPropagation();
@@ -1895,17 +3099,13 @@ export class ShipSelectScene {
         if (button.parent) button.scale.set(1);
       }, 100);
       AudioManager.playSfx('powerup', { force: true, volume: 0.4 });
-      onClick();
+      button.activate();
     });
 
     button.on('pointerover', () => {
-      // Dramatic hover effect
-      bg.clear();
-      bg.rect(0, 0, width, height);
-      bg.fill({ color: label === 'START' ? 0x00ffff : bgColor, alpha: 0.9 });
-      bg.stroke({ color: 0xffffff, width: 3 });
-
-      bgGlow.alpha = 0.3;
+      button.hovered = true;
+      if (button.actionId) this.setControllerFocus(button.actionId);
+      button.redraw();
       button.scale.set(1.05);
 
       // Hover sound
@@ -1913,12 +3113,8 @@ export class ShipSelectScene {
     });
 
     button.on('pointerout', () => {
-      bg.clear();
-      bg.rect(0, 0, width, height);
-      bg.fill({ color: bgColor });
-      bg.stroke({ color: 0x00ff00, width: 2 });
-
-      bgGlow.alpha = 0;
+      button.hovered = false;
+      button.redraw();
       button.scale.set(1);
     });
 
@@ -1929,6 +3125,11 @@ export class ShipSelectScene {
     // Wheel navigation - scroll one ship at a time
     this.wheelHandler = (e) => {
       e.preventDefault();
+      if (this.careerInfoOverlay?.visible) {
+        if (e.deltaY > 0) this.flipCareerInfoPilotOrdersPage(1);
+        else if (e.deltaY < 0) this.flipCareerInfoPilotOrdersPage(-1);
+        return;
+      }
       if (this.animating) return;
 
       if (e.deltaY > 0) {
@@ -2006,7 +3207,10 @@ export class ShipSelectScene {
   getShipTraitText(ship) {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
-    return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}`;
+    const weakness = ship?.tier === 'ascendant' && ship?.weakness
+      ? `\nWEAKNESS: ${this.getShortTeaser(ship.weakness, 74)}`
+      : '';
+    return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}${weakness}`;
   }
 
   getTraitEffectTags(trait) {
@@ -2044,13 +3248,17 @@ export class ShipSelectScene {
       // Log first key press for debug
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
 
-      const handledKey = this.hangarMenuOverlay?.visible ||
+      const presentationVisible = Boolean(this.hangarUnlockPresentation?.visible);
+      const handledKey = presentationVisible ||
+        this.hangarMenuOverlay?.visible ||
         this.careerInfoOverlay?.visible ||
         e.key === 'Tab' ||
         e.key === 'ArrowUp' ||
         e.key === 'ArrowDown' ||
         e.key === 'ArrowLeft' ||
         e.key === 'ArrowRight' ||
+        e.key === 'PageUp' ||
+        e.key === 'PageDown' ||
         e.key === 'Escape' ||
         e.key === 'Enter' ||
         e.code === 'KeyA' ||
@@ -2063,6 +3271,21 @@ export class ShipSelectScene {
         e.code === 'Enter' ||
         e.code === 'NumpadEnter';
       if (handledKey) e.stopImmediatePropagation();
+
+      if (presentationVisible) {
+        e.preventDefault();
+        if (
+          e.key === 'Escape' ||
+          e.code === 'Escape' ||
+          e.key === 'Enter' ||
+          e.code === 'Enter' ||
+          e.code === 'NumpadEnter' ||
+          e.code === 'Space'
+        ) {
+          this.dismissHangarUnlockPresentation('keyboard');
+        }
+        return;
+      }
 
       if (this.hangarMenuOverlay?.visible) {
         this.handleHangarMenuKey(e);
@@ -2108,11 +3331,11 @@ export class ShipSelectScene {
         this.openCareerInfoOverlay('keyboard');
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        this.returnToMenu('keyboard');
+        this.openHangarMenu('keyboard');
       } else if (e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') {
         e.preventDefault();
         if (this.mainMenuButtonFocused) {
-          this.returnToMenu('keyboard');
+          this.openHangarMenu('keyboard');
           return;
         }
         this.launchSelectedShip('keyboard');
@@ -2147,6 +3370,16 @@ export class ShipSelectScene {
   }
 
   handleCareerInfoKey(e) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      this.flipCareerInfoPilotOrdersPage(-1);
+      return true;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+      e.preventDefault();
+      this.flipCareerInfoPilotOrdersPage(1);
+      return true;
+    }
     if (
       e.key === 'Escape' ||
       e.code === 'Escape' ||
@@ -2166,7 +3399,22 @@ export class ShipSelectScene {
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
 
+    if (this.hangarUnlockPresentation?.visible) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.dismissHangarUnlockPresentation('controller');
+      }
+      return;
+    }
+
     if (this.careerInfoOverlay?.visible) {
+      if (nav.pressed.left || nav.pressed.up) {
+        this.flipCareerInfoPilotOrdersPage(-1);
+        return;
+      }
+      if (nav.pressed.right || nav.pressed.down) {
+        this.flipCareerInfoPilotOrdersPage(1);
+        return;
+      }
       if (nav.pressed.cancel || nav.pressed.confirm || nav.pressed.menu || nav.pressed.back) {
         this.closeCareerInfoOverlay('controller');
       }
@@ -2206,38 +3454,55 @@ export class ShipSelectScene {
       this.returnToMenu('controller');
       return;
     }
-    if (nav.pressed.down) this.setMainMenuButtonFocus(true);
-    if (nav.pressed.up) this.setMainMenuButtonFocus(false);
+    const focus = this.getControllerFocus();
+    if (nav.pressed.down) {
+      if (focus === 'ship') this.focusActionRow();
+      else if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) this.setControllerFocus('back');
+      else this.setControllerFocus('ship');
+    }
+    if (nav.pressed.up) {
+      if (focus === 'ship') this.setControllerFocus('back');
+      else if (focus === 'back') this.focusActionRow();
+      else this.setControllerFocus('ship');
+    }
     if (nav.pressed.left) {
-      this.setMainMenuButtonFocus(false);
-      this.navigateLeft();
+      if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) {
+        this.setActionFocusByOffset(-1);
+      } else if (focus === 'back') {
+        this.focusActionRow();
+      } else {
+        this.setControllerFocus('ship');
+        this.navigateLeft();
+      }
     }
     if (nav.pressed.right) {
-      this.setMainMenuButtonFocus(false);
-      this.navigateRight();
+      if (HANGAR_ACTION_FOCUS_ORDER.includes(focus)) {
+        this.setActionFocusByOffset(1);
+      } else if (focus === 'back') {
+        this.focusActionRow();
+      } else {
+        this.setControllerFocus('ship');
+        this.navigateRight();
+      }
     }
     if (nav.pressed.lb) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateModel(-1);
     }
     if (nav.pressed.rb) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateModel(1);
     }
     if (nav.pressed.y) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.navigateRandom();
     }
     if (nav.pressed.x) {
-      this.setMainMenuButtonFocus(false);
+      this.setControllerFocus('ship');
       this.openSelectedShipDetails();
     }
     if (nav.pressed.confirm) {
-      if (this.mainMenuButtonFocused) {
-        this.returnToMenu('controller');
-      } else {
-        this.launchSelectedShip('controller');
-      }
+      this.activateControllerFocus('controller');
     }
   }
 
@@ -2269,7 +3534,7 @@ export class ShipSelectScene {
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
 
     if (DEBUG) console.log(`[ShipSelect] Starting game via ${source}:`, spriteKey);
-    this.game.startGame(spriteKey).catch((error) => {
+    this.game.startGame(spriteKey, { runMode: RUN_MODES.MAYHEM_TACTICAL }).catch((error) => {
       this.launchInProgress = false;
       console.error('[ShipSelect] Failed to start selected ship:', error);
     });
@@ -2331,10 +3596,23 @@ export class ShipSelectScene {
       this.game.app.ticker.remove(this.careerInfoTicker);
       this.careerInfoTicker = null;
     }
+    if (this.careerSignalTicker) {
+      this.game.app.ticker.remove(this.careerSignalTicker);
+      this.careerSignalTicker = null;
+    }
+    if (this.hangarUnlockPresentationTicker) {
+      this.game.app.ticker.remove(this.hangarUnlockPresentationTicker);
+      this.hangarUnlockPresentationTicker = null;
+    }
+    if (this.hangarUnlockPresentationTimer) {
+      clearTimeout(this.hangarUnlockPresentationTimer);
+      this.hangarUnlockPresentationTimer = null;
+    }
     if (this.exitNoticeTimeout) {
       clearTimeout(this.exitNoticeTimeout);
       this.exitNoticeTimeout = null;
     }
+    destroyMenuFx(this);
   }
 
   destroy() {
@@ -2343,6 +3621,10 @@ export class ShipSelectScene {
 
   init() {
     // Called when scene is shown
+  }
+
+  update(delta = 1) {
+    updateMenuFx(this, delta);
   }
 
   getContainer() {

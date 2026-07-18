@@ -1,10 +1,10 @@
 // Shared Rank Policy - Used by both frontend and backend.
 // DO NOT MODIFY WITHOUT UPDATING BOTH DEPLOYMENTS.
 
-export const NUM_RANKS = 20;
-export const MAX_RANK_INDEX = 19;
+export const NUM_RANKS = 40;
+export const MAX_RANK_INDEX = 39;
 export const START_LEVEL = 1;
-export const END_LEVEL = 60;
+export const END_LEVEL = 410;
 
 const LEVEL_THRESHOLDS = [
     1,
@@ -26,7 +26,27 @@ const LEVEL_THRESHOLDS = [
     48,
     52,
     56,
-    60
+    60,
+    68,
+    77,
+    87,
+    98,
+    110,
+    123,
+    137,
+    152,
+    168,
+    185,
+    203,
+    222,
+    242,
+    263,
+    285,
+    308,
+    332,
+    357,
+    383,
+    410
 ];
 
 const PILOT_XP_THRESHOLDS = [
@@ -49,7 +69,27 @@ const PILOT_XP_THRESHOLDS = [
     101800,
     122800,
     147800,
-    177500
+    177500,
+    225000,
+    285000,
+    360000,
+    450000,
+    555000,
+    675000,
+    815000,
+    975000,
+    1155000,
+    1360000,
+    1590000,
+    1850000,
+    2140000,
+    2465000,
+    2830000,
+    3240000,
+    3700000,
+    4215000,
+    4790000,
+    5430000
 ];
 
 const RANK_TITLES = [
@@ -72,7 +112,70 @@ const RANK_TITLES = [
     "High-Score Hero",
     "Swarm Nemesis",
     "Boss Rush Royalty",
-    "Arcade Legend"
+    "Arcade Legend",
+    "Black-Star Bailiff",
+    "Static Undertaker",
+    "Void Receipt",
+    "Meteor Notary",
+    "Hull Sermonizer",
+    "Photon Debt King",
+    "Comet Knife Saint",
+    "Redline Ghost",
+    "Grudge Astronaut",
+    "Zero-G Bastard",
+    "Cabinet War Pope",
+    "Starvektor Baron",
+    "Boss-Mouth Doctor",
+    "Laser Coffin Clerk",
+    "Swarm Tax Marshal",
+    "Nova Ash Colonel",
+    "Dead-Sun Mechanic",
+    "Black Box Prophet",
+    "Final Coin Tyrant",
+    "Heat-Death Champion"
+];
+
+const RANK_LORE = [
+    "New hands. Clean canopy. The swarm has not learned your smell yet.",
+    "The button got hot. You called it strategy and nobody stopped you.",
+    "Small ship, sharp nerves. The stars blinked first.",
+    "You broke the pretty shape. It complained in math.",
+    "The laser behaved. Briefly. You did not.",
+    "You saw the shiny thing and lived. That counts as culture.",
+    "You carried a combo through weather that wanted your bones.",
+    "The swarm dodged left. You were already rude on the right.",
+    "You made the cabinet proud. It charged interest.",
+    "You spent one quarter and bought a tiny war.",
+    "The nebula opened. You answered with receipts and fire.",
+    "The boss wanted bait. You brought teeth.",
+    "Patterns talked. You listened with both guns.",
+    "The cabinet crowned you, then asked for another run.",
+    "You cut waves clean enough to scare the scoreboard.",
+    "Old pilots nod. Young pilots check your replay twice.",
+    "The score climbed high enough to need oxygen.",
+    "The swarm put your name in its emergency book.",
+    "Bosses now arrive with lawyers and bad news.",
+    "Legend is the old ceiling. You used it as a floor.",
+    "You served the swarm notice. It ate the paper. You kept the receipt.",
+    "You buried static in a shallow grave and heard it singing.",
+    "The void handed you a bill. You paid in boss parts.",
+    "Every meteor signed your log. Most used teeth.",
+    "Your hull preached survival. The bullets converted late.",
+    "Light owes you money. You collect at muzzle speed.",
+    "The comet came fast. You made it kneel and sparkle.",
+    "You died in three simulations and won in the one that mattered.",
+    "The grudge wore a helmet. You removed both.",
+    "Gravity called you names. You did not answer downward.",
+    "The cabinet declared war. You became its religion.",
+    "Your name bent starlanes. Insurance stopped returning calls.",
+    "You opened the boss mouth and practiced medicine with rockets.",
+    "The laser coffin was occupied. Then it was fireworks.",
+    "The swarm filed taxes. You audited it with a cannon.",
+    "Nova ash fell like snow. You kept flying because snow is soft.",
+    "The dead sun coughed. You fixed it with bad intentions.",
+    "The black box told the truth. You made it funnier.",
+    "The final coin screamed. You spent it anyway.",
+    "The universe cooled. Your trigger finger did not."
 ];
 
 function sanitizeLevel(level) {
@@ -118,6 +221,21 @@ export function getRankTitle(rankIndex) {
         return RANK_TITLES[0];
     }
     return RANK_TITLES[rankIndex];
+}
+
+export function getRankLore(rankIndex) {
+    if (rankIndex < 0 || rankIndex >= NUM_RANKS) {
+        return RANK_LORE[0];
+    }
+    return RANK_LORE[rankIndex];
+}
+
+export function getAllRankTitles() {
+    return [...RANK_TITLES];
+}
+
+export function getAllRankLore() {
+    return [...RANK_LORE];
 }
 
 export function getThresholds() {

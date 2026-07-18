@@ -10,6 +10,7 @@ import {
   HANGAR_PROGRESS_KEY,
   LEGACY_UNLOCK_PROGRESS_KEY,
   applyRunProgression,
+  previewRunProgression,
   readHangarProgressState
 } from '../src/progression/HangarProgressState.js';
 
@@ -39,6 +40,23 @@ for (let rank = 1; rank < NUM_RANKS; rank += 1) {
 if (ACHIEVEMENTS.length >= 100) fail(`achievement catalog must stay below Steam's 100 achievement limit, got ${ACHIEVEMENTS.length}`);
 
 const before = readHangarProgressState();
+const previewBeforeRaw = fakeStorage.get(HANGAR_PROGRESS_KEY);
+const preview = previewRunProgression({
+  score: 250000,
+  sectorReached: 10,
+  levelReached: 10,
+  runElapsedSeconds: 1500,
+  bossesKilled: 10,
+  wavesCleared: 60,
+  codexDiscoveries: 12,
+  totalCodexDiscoveries: 12,
+  runCleared: true,
+  livesRemaining: 2
+}, before);
+if (fakeStorage.get(HANGAR_PROGRESS_KEY) !== previewBeforeRaw) fail('live rank preview must not write saved pilot progress');
+if (preview.next.pilotRank <= before.pilotRank) fail('live rank preview should expose in-run rank gains');
+if (!Array.isArray(preview.newRanksThisRun) || preview.newRanksThisRun.length === 0) fail('live rank preview should list new ranks');
+
 const result = applyRunProgression({
   score: 250000,
   sectorReached: 10,

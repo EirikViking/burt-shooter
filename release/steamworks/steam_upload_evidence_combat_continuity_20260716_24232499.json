@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-07-16T03:53:52.5916562Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24232499",
+  "depotManifestId": "7125559705317351331",
+  "sourceCommit": "9a3a39c912afc40391f1dc700ea8cc6e86949b37",
+  "sourceBranch": "codex/genre-improvement-20260716",
+  "sourceBaseline": "85f74e21fc8a223b5179e09d20cd14f22939d886",
+  "authoritativeLockTag": "nova-swarm-lock-20260716-leaderboard-runtime-recovery",
+  "authoritativeLockCommit": "85f74e21fc8a223b5179e09d20cd14f22939d886",
+  "buildStamp": "v2026-07-16_05-19-47",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24230448",
+  "rollbackBuildId": "24230448",
+  "publicBuildIdBefore": "24218172",
+  "publicBuildIdAfter": "24218172",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "leaderboardDefinitionsTouched": false,
+  "leaderboardScoresTouched": false,
+  "scoreSubmittedDuringVerification": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "a023201a8030f3c62f3ce9e19f9f60686cbe2d84c93749f148fdb82d68b35f0c",
+  "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+  "payloadManifestSha256": "3ed8939fe5f1a330799667147d5704c8966cf78a042a9f2507752db0c18d5c3b",
+  "desktopReviewPath": "release/steamworks/desktop_package_review_report.json",
+  "desktopReviewSha256": "a169b596658a9908065c52f92ed728c4e168579b914fd184c887de8ad251d66e",
+  "payload": {
+    "fileCount": 417,
+    "totalBytes": 957574405,
+    "manifestHash": "aac0c3a00b46e1ccfb580f3027ea6377c9a31c011dfe53fdda70968868fabf6c",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "1f62578cc29e62cebfa7e78980d69afa53f52aa1b52f3f5f5f2ac813eea20733"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-16 05:51:45]: Successfully finished AppID 4765070 build (BuildID 24232499).",
+    "consoleLogPath": "release/steamworks/steam_upload_console_combat_continuity_20260716.log",
+    "consoleLogSha256": "dde037300c4044495c3f6e12a835c3cf3b607cabe8dbe6728500943c7bc55595",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "c481a9e91d757159e0aec392f8aea4f9eb0f839551a88aded214580c6c4d9683",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "67b09f1b040ca4cbc7a34b84e6ad1a5d3293f9e8da02892d5ed5f6621f7d442f",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "branchVerification": {
+    "method": "independent SteamCMD app_info_update plus app_info_print after upload",
+    "testBranchBuildId": "24232499",
+    "testBranchDepotGid": "7125559705317351331",
+    "testBranchSize": 957574405,
+    "publicBuildId": "24218172",
+    "publicUnchanged": true
+  },
+  "verification": {
+    "sourcePreflight": "passed: isolated worktree, branch, authoritative baseline ancestry, and tracked-clean source state verified before edits",
+    "releaseLine": "passed before packaging, during VDF generation, and immediately before upload",
+    "localization": "passed: check:i18n, build:current, and all-eight-language check:i18n-ui; no new untranslated fallback",
+    "gameplay": "passed: 44 powerup types, exact charge persistence/counts, playable run clock, interruption-safe pickup lifecycle, compact sector signal, and 48-sample message overlap",
+    "sectorPerformance": "passed: full Sector 20 matrix at 16.9 ms p95, 17.4 ms max, and zero frames over 50 ms",
+    "liveLeaderboardRead": "passed: read-only probe opened nova_swarm_global_score_v2 with 80 entries, read Global and Friends, and submitted no score",
+    "packagedRuntimeGate": "passed: test-results/steam-package-runtime-2026-07-16T03-48-12-245Z/report.json",
+    "packagedSteamSmoke": "passed: test-results/packaged-exe-smoke-2026-07-16T03-37-50-761Z/report.json; Steam native bridge and nova_swarm_global_score_v2 ready",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-16T03-40-07-672Z/report.json",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-16T03-40-59-745Z/report.json",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-16T03-41-53-444Z/report.json; 60 FPS minimum and average, zero errors",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-16T03-44-38-959Z/report.json; Steam leaderboard and achievements ready",
+    "desktopPackageReview": "passed: current, packaged, controls, and performance reports match v2026-07-16_05-19-47",
+    "vdfSetLiveTestBranch": "passed: exact SetLive sector-continue-test; public/default targets absent"
+  },
+  "includedImprovementGroups": [
+    "charge-only Bomb, Saw Matrix, and Nova Bloom lifetime and exact refill semantics",
+    "playable-combat-only run clock",
+    "interruption-safe transform-animated pickup confirmation",
+    "compact localized sector pressure signal",
+    "lightweight sector transition hot path without full Threat Codex and procedural-art construction"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The generic develop-web-game client is unavailable because chromium_headless_shell-1208 is missing; the installed-Chrome and Electron suites passed.",
+    "Packaged performance recovered from one screenshot capture UnknownVizError retry and completed at 60 FPS with zero game errors."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, saves, Steam Cloud settings, and existing scores were not changed.",
+    "Test-branch rollback target is BuildID 24230448.",
+    "Source rollback is: git revert 9a3a39c912afc40391f1dc700ea8cc6e86949b37"
+  ]
+}

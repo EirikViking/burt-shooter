@@ -1,0 +1,64 @@
+{
+  "purpose": "Private Steam test build after final QA report loop, packaged perf harness hardening, and PDF review",
+  "gitSha": "8273d8d",
+  "branch": "feature/sector-continue-prototype-v1",
+  "packageVersion": "v2026-06-12_10-54-46",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "leaderboardPreserved": "nova_swarm_global_score_v2",
+  "sectorLeaderboardPreserved": "nova_swarm_sector_start_score_v1",
+  "setLive": "",
+  "steamBuildId": 23699052,
+  "uploadedAtLocal": "2026-06-12 12:04:03 Europe/Oslo",
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724668706,
+    "manifestHash": "bac53d2302ff9825b53aeba3d19d8d76181fbe4ba47801b8a94860ea064b8497"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-12_10-54-46 final QA private test",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "logPath": "test-results/steam-upload-final-qa-20260612/steamcmd-upload.txt",
+    "resultLine": "Successfully finished AppID 4765070 build (BuildID 23699052).",
+    "uploadRedacted": "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "qaReport": {
+    "pdfPath": "output/pdf/nova-swarm-full-qa-2026-06-12.pdf",
+    "renderReviewContactSheet": "output/pdf-review/full-qa-contact-sheet.png",
+    "reviewLoops": [
+      "First PDF review found low-contrast body/caption text; regenerated with light text.",
+      "Second PDF review found unsupported bullet glyphs; regenerated with ASCII hyphen bullets.",
+      "Final rendered PDF contact sheet and spot-check pages passed."
+    ]
+  },
+  "gmail": {
+    "sentTo": "cromkake@gmail.com",
+    "messageId": "19ebb4a9ef91b7b1",
+    "attachment": "output/pdf/nova-swarm-full-qa-2026-06-12.pdf"
+  },
+  "verification": [
+    "npm run check:release-hardening",
+    "npm run check:menu-exit-focus-safety",
+    "npm run check:sector-continue-mode",
+    "npm run check:sector-continue-controller-flow",
+    "npm run check:steamworks-leaderboard-config",
+    "npm run check:ship-unlock-reveal",
+    "npm run capture:boss-vfx-polish",
+    "npm run desktop:smoke:packaged",
+    "npm run desktop:controls:packaged",
+    "npm run desktop:perf:packaged",
+    "npm run check:desktop-package",
+    "npm run capture:visual-polish-report",
+    "npm run package:steam:win:current",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+  ],
+  "steamworksSettingsChanged": false,
+  "liveBranchChanged": false,
+  "dummyLeaderboardScoresSubmitted": false
+}

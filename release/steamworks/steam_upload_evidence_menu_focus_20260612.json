@@ -1,0 +1,50 @@
+{
+  "purpose": "Private Steam test build for menu Back quit guard and gameplay focus-loss auto-pause regression fix",
+  "gitSha": "818cedb",
+  "branch": "feature/sector-continue-prototype-v1",
+  "packageVersion": "v2026-06-12_10-54-46",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "leaderboardPreserved": "nova_swarm_global_score_v2",
+  "sectorLeaderboardPreserved": "nova_swarm_sector_start_score_v1",
+  "setLive": "",
+  "steamBuildId": 23697901,
+  "uploadedAtLocal": "2026-06-12 10:59:05 Europe/Oslo",
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 724666523,
+    "manifestHash": "18a644c63f8b8b0f1289cfa19ffc4b075fc518e469e058407329f117831704bd"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-12_10-54-46 menu focus quit guard private test",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "logPath": "test-results/steam-upload-menu-focus-20260612/steamcmd-upload.txt",
+    "resultLine": "Successfully finished AppID 4765070 build (BuildID 23697901).",
+    "uploadRedacted": "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+  },
+  "verification": [
+    "npm run check:menu-exit-focus-safety",
+    "npm run check:i18n",
+    "npm run check:steam-electron-bridge",
+    "npm run check:controller-flow",
+    "npm run check:leaderboard-adapter",
+    "npm run build:current",
+    "npm run smoke",
+    "npm run desktop:smoke:current",
+    "npm run check:i18n-ui",
+    "npm run check:leaderboard-split",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf"
+  ],
+  "steamworksSettingsChanged": false,
+  "liveBranchChanged": false,
+  "dummyLeaderboardScoresSubmitted": false
+}

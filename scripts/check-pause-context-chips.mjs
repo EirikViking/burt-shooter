@@ -1,0 +1,239 @@
+import { spawn } from 'node:child_process';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:net';
+import path from 'node:path';
+import { chromium } from 'playwright';
+
+const host = process.env.CHECK_HOST || '127.0.0.1';
+const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4474));
+const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/pause-context-chips-${timestamp()}`);
+
+function timestamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-');
+}
+
+function withQuery(url, params) {
+  const next = new URL(url);
+  for (const [key, value] of Object.entries(params)) next.searchParams.set(key, value);
+  return next.toString();
+}
+
+async function isPortAvailable(candidatePort) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => server.close(() => resolve(true)));
+    server.listen(candidatePort, host);
+  });
+}
+
+async function findAvailablePort(startPort) {
+  for (let candidate = startPort; candidate < startPort + 40; candidate += 1) {
+    if (await isPortAvailable(candidate)) return candidate;
+  }
+  throw new Error(`No available pause context chip port found starting at ${startPort}`);
+}
+
+async function canFetch(url) {
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+function viteCommand() {
+  const viteEntry = path.resolve('node_modules/vite/bin/vite.js');
+  if (existsSync(viteEntry)) return { command: process.execPath, args: [viteEntry] };
+  return { command: process.platform === 'win32' ? 'npx.cmd' : 'npx', args: ['vite'] };
+}
+
+async function startDevServer() {
+  if (await canFetch(baseUrl)) return null;
+  const { command, args } = viteCommand();
+  const server = spawn(command, [...args, 'preview', '--host', host, '--port', String(port), '--strictPort'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+    windowsHide: true
+  });
+  server.stdout.on('data', (chunk) => process.stdout.write(`[vite] ${chunk}`));
+  server.stderr.on('data', (chunk) => process.stderr.write(`[vite] ${chunk}`));
+
+  const start = Date.now();
+  while (Date.now() - start < 15000) {
+    if (await canFetch(baseUrl)) return server;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  server.kill();
+  throw new Error(`Dev server did not become ready at ${baseUrl}`);
+}
+
+function findChrome() {
+  return [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+  ].filter(Boolean).find((candidate) => existsSync(candidate));
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+mkdirSync(outputDir, { recursive: true });
+const server = await startDevServer();
+const browser = await chromium.launch({
+  headless: true,
+  executablePath: findChrome(),
+  args: ['--disable-gpu', '--no-sandbox', '--autoplay-policy=no-user-gesture-required']
+});
+
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const pageErrors = [];
+const consoleErrors = [];
+page.on('pageerror', (error) => pageErrors.push(error.message));
+page.on('console', (message) => {
+  if (message.type() === 'error') consoleErrors.push(message.text());
+});
+
+try {
+  await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForFunction(() => window.__game?.scenes?.play?.player && window.__game?.scenes?.play?.setPaused, null, { timeout: 90000 });
+  await page.waitForTimeout(500);
+
+  const state = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const player = play?.player;
+    if (!game || !play || !player) return { ok: false, reason: 'missing play/player' };
+    play.introActive = false;
+    play.introComplete = true;
+    if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
+    game.score = 123456;
+    game.level = 7;
+    game.lives = 1;
+    game.runMode = 'ranked_tactical';
+    player.activePowerup = {
+      type: 'slow_time',
+      expiresAt: Date.now() + 6500,
+      remainingMs: 6500,
+      durationMs: 8000,
+      durationMode: 'wall_clock'
+    };
+    player.powerupEffect = {
+      slowTime: true,
+      enemyTimeScale: 0.33,
+      enemyBulletScale: 0.35,
+      hazardTimeScale: 0.35,
+      durationMs: 8000
+    };
+    ['damage_up', 'rapid_fire', 'drones', 'drones', 'shield', 'magnet'].forEach((id) => player.applyRunAugment?.(id));
+    play.setPaused(true);
+    play.refreshPauseOverlayStats();
+    const toBounds = (display) => {
+      const bounds = display?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
+    return {
+      ok: true,
+      debug: play.getPauseDebugState?.(),
+      chips: {
+        livesColor: play.pauseMenuDecor?.livesValue?.style?.fill || null,
+        powerupColor: play.pauseMenuDecor?.powerupValue?.style?.fill || null
+      },
+      bounds: {
+        pilotOrders: toBounds(play.pauseMenuDecor?.pilotOrdersValue),
+        combatTelemetry: toBounds(play.pauseMenuDecor?.combatTelemetryValue),
+        tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
+        resume: toBounds(play.pauseButtons?.[0])
+      }
+    };
+  });
+
+  await page.waitForTimeout(250);
+  const screenshot = path.join(outputDir, 'pause-context-chips.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+
+  const loadout = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play.openTacticalLoadoutOverlay();
+    return play.getPauseDebugState();
+  });
+  await page.waitForTimeout(180);
+  const loadoutScreenshot = path.join(outputDir, 'pause-tactical-loadout.png');
+  await page.screenshot({ path: loadoutScreenshot, fullPage: true });
+
+  const failures = [];
+  if (!state.ok) failures.push(state.reason || 'state setup failed');
+  if (!state.debug?.visible) failures.push(`pause overlay not visible: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.score !== '123,456') failures.push(`score chip mismatch: ${state.debug?.score}`);
+  if (state.debug?.sector !== '07') failures.push(`sector chip mismatch: ${state.debug?.sector}`);
+  if (state.debug?.lives !== '1') failures.push(`lives chip mismatch: ${state.debug?.lives}`);
+  if (!/SLOW|TIME/i.test(state.debug?.powerup || '')) failures.push(`powerup chip missing slow time: ${state.debug?.powerup}`);
+  if (!state.debug?.pilotOrders) failures.push('pilot orders line missing');
+  if (!/MAGNET/i.test(state.debug?.tacticalDraft || '') || !/\+4/.test(state.debug?.tacticalDraft || '')) failures.push(`tactical draft summary missing latest augment/overflow: ${state.debug?.tacticalDraft}`);
+  if (!loadout.tacticalLoadout?.visible || loadout.tacticalLoadout?.selectedCount !== 6 || loadout.tacticalLoadout?.uniqueCount !== 5) {
+    failures.push(`full tactical loadout did not expose every grouped augment: ${JSON.stringify(loadout.tacticalLoadout)}`);
+  }
+  const overlaps = (a, b, margin = 2) => a && b && a.x < b.x + b.width + margin && a.x + a.width + margin > b.x && a.y < b.y + b.height + margin && a.y + a.height + margin > b.y;
+  if (overlaps(state.bounds?.pilotOrders, state.bounds?.combatTelemetry)) failures.push('pilot orders and combat telemetry lines overlap');
+  if (overlaps(state.bounds?.combatTelemetry, state.bounds?.tacticalDraft)) failures.push('combat telemetry and tactical draft lines overlap');
+  if (overlaps(state.bounds?.tacticalDraft, state.bounds?.resume)) failures.push('tactical draft line overlaps Resume button');
+  if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
+  if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
+
+  const report = {
+    ok: failures.length === 0,
+    baseUrl,
+    screenshot,
+    loadoutScreenshot,
+    state,
+    failures,
+    pageErrors,
+    consoleErrors
+  };
+  await page.setViewportSize({ width: 760, height: 640 });
+  await page.waitForTimeout(220);
+  const compact = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play.closeTacticalLoadoutOverlay();
+    play.setPaused(false);
+    play.destroyPauseOverlay();
+    play.setPaused(true);
+    play.refreshPauseOverlayStats();
+    const toBounds = (display) => {
+      const bounds = display?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
+    return {
+      debug: play.getPauseDebugState(),
+      bounds: {
+        combatTelemetry: toBounds(play.pauseMenuDecor?.combatTelemetryValue),
+        tacticalDraft: toBounds(play.pauseMenuDecor?.tacticalDraftValue),
+        resume: toBounds(play.pauseButtons?.[0]),
+        quit: toBounds(play.pauseButtons?.[4])
+      }
+    };
+  });
+  const compactScreenshot = path.join(outputDir, 'pause-context-chips-compact.png');
+  await page.screenshot({ path: compactScreenshot, fullPage: true });
+  if (!/MAGNET/i.test(compact.debug?.tacticalDraft || '') || !/\+4/.test(compact.debug?.tacticalDraft || '')) failures.push('compact tactical loadout summary missing');
+  if (overlaps(compact.bounds?.combatTelemetry, compact.bounds?.tacticalDraft)) failures.push('compact combat telemetry overlaps tactical loadout');
+  if (overlaps(compact.bounds?.tacticalDraft, compact.bounds?.resume)) failures.push('compact tactical loadout overlaps Resume');
+  for (const [label, bounds] of Object.entries(compact.bounds || {})) {
+    if (!bounds || bounds.x < 0 || bounds.y < 0 || bounds.x + bounds.width > 762 || bounds.y + bounds.height > 642) {
+      failures.push(`compact ${label} outside viewport: ${JSON.stringify(bounds)}`);
+    }
+  }
+  report.compact = { screenshot: compactScreenshot, ...compact };
+  report.ok = failures.length === 0;
+  report.failures = failures;
+  writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
+  assert(report.ok, `[pause-context-chips] ${failures.join('; ')}`);
+  console.log(`[pause-context-chips] PASS screenshot=${screenshot}`);
+} finally {
+  await browser.close();
+  if (server) server.kill();
+}

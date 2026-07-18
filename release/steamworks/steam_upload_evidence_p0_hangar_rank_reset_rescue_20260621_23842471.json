@@ -1,0 +1,131 @@
+{
+  "type": "steam_upload_evidence",
+  "slug": "p0_hangar_rank_reset_rescue",
+  "generatedAt": "2026-06-21T09:32:21.847Z",
+  "branch": "codex/p0-hangar-rank-reset-rescue-20260621",
+  "startingCommit": "3bad76b20d126ead794db8609e6b6c7a13bdee02",
+  "sourceCommit": "90659fe0f2e21730a1293ce026c32170d87e8bfc",
+  "packagedBuild": "v2026-06-21_11-16-53",
+  "packagedGitSha": "90659fe",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23842471",
+    "depotManifest": "6798668438972137678",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssignment": false,
+    "sectorContinueTestAssignment": false,
+    "steamworksMetadataChanged": false
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdConfirmed": true,
+    "depotConfirmed": true,
+    "setLiveBlankConfirmed": true,
+    "containsPublicOrDefaultAssignment": false,
+    "containsSectorContinueTestAssignment": false,
+    "containsSteamBranchAssignment": false
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "sha256": "fa93ef689c228c0353c271087c9a79a50e6889d2772b826db1cff6412d31f920",
+    "manifestHash": "0403af8605b23d428428a63030b92a8b0ac43c5135b97d8f7cd6b231a7d39bb5",
+    "fileCount": 336,
+    "totalBytes": 879615895,
+    "executable": "Nova Swarm.exe"
+  },
+  "uploadEvidence": {
+    "steamcmdLog": "test-results/steam-upload-p0-hangar-rank-reset-rescue-20260621-112808/steamcmd-upload.log",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLogProof": "Successfully finished AppID 4765070 build (BuildID 23842471).",
+    "depotManifestProof": "Success! New manifestID 6798668438972137678 created and 8 new chunks uploaded."
+  },
+  "liveProfileRepair": {
+    "targetProfile": "steam-76561198953993508",
+    "backupPath": "test-results/save-backup-p0-hangar-rank-reset-live-apply-20260621-110201",
+    "step1AuditDir": "test-results/p0-hangar-rank-reset-live-rescue-step1/profile-rescue-import-2026-06-21T09-02-09-848Z",
+    "step2AuditDir": "test-results/p0-hangar-rank-reset-live-rescue-step2/profile-rescue-import-2026-06-21T09-02-17-388Z",
+    "after": {
+      "pilotRank": 19,
+      "pilotXp": 203131,
+      "bestSector": 60,
+      "bestLevel": 60,
+      "bestScore": 168666,
+      "shipsUnlocked": 23,
+      "hangarCodexDiscoveries": 783,
+      "codexFileCount": 937,
+      "checkpointsStored": [
+        5,
+        10,
+        15,
+        20,
+        25,
+        30,
+        45
+      ],
+      "sourceProfilesPreserved": true
+    }
+  },
+  "checks": {
+    "sourceChecks": [
+      "git diff --check",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run check:steam-cloud-save",
+      "npm run check:profile-isolation",
+      "npm run check:profile-rescue-import",
+      "npm run check:scout-codex-persistence",
+      "npm run check:scout-local-best",
+      "npm run check:save-profile-migration",
+      "npm run check:run-modes",
+      "npm run check:sector-start-checkpoint-unlocks",
+      "npm run check:sector-continue-mode",
+      "npm run check:steam-electron-bridge",
+      "npm run check:steam-achievements-mock",
+      "npm run build:current",
+      "npm run check:release-line"
+    ],
+    "releaseChecks": [
+      "npm run package:steam:win",
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:smoke:current",
+      "npm run desktop:perf:current",
+      "npm run smoke",
+      "npm run steamworks:payload-manifest"
+    ],
+    "smoke": {
+      "status": "non_blocking_known_timeout",
+      "reason": "Only failure was known timeout at scripts/smoke-playtest.mjs:764:26 after level 3 debug capture.",
+      "artifact": "test-results/smoke-2026-06-21T09-23-36-192Z"
+    },
+    "packagedSmoke": "test-results/packaged-exe-smoke-2026-06-21T09-21-27-940Z/report.json",
+    "currentSmoke": "test-results/electron-smoke-2026-06-21T09-22-04-310Z/report.json",
+    "currentPerf": "test-results/electron-perf-smoke-2026-06-21T09-22-04-345Z/report.json"
+  },
+  "protectedSystems": {
+    "setLiveChanged": false,
+    "steamBranchAssigned": false,
+    "steamworksMetadataChanged": false,
+    "leaderboardIdentityChanged": false,
+    "liveSavesTouched": true,
+    "liveSaveTouchReason": "Explicit P0 repair of active profile after Nova Swarm was confirmed closed and fresh backup was created.",
+    "sourceProfilesDeletedOrOverwritten": false
+  },
+  "manualSteamworksTestSteps": [
+    "Assign BuildID 23842471 to the intended private test branch in Steamworks.",
+    "Install that private branch through Steam.",
+    "Launch with Steam account 76561198953993508 and confirm Hangar rank 19 / 203,131 XP, 23 hulls ready, best sector 60, and Codex still populated.",
+    "Confirm Sector Run shows checkpoint starts derived from best sector 60.",
+    "Play Scout once and confirm Codex persists but ranked Hangar/career XP/checkpoints do not advance from Scout.",
+    "Play Mayhem once and confirm ranked progress still advances normally."
+  ],
+  "rollback": {
+    "git": "git revert 90659fe0f2e21730a1293ce026c32170d87e8bfc",
+    "steamworks": "Do not assign BuildID 23842471, or reassign the previous private test BuildID.",
+    "liveProfile": "Restore from test-results/save-backup-p0-hangar-rank-reset-live-apply-20260621-110201 if needed."
+  }
+}

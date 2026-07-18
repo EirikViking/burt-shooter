@@ -1,3 +1,5 @@
+const { requireOptionalPackagedModule } = require('./unpackedModuleResolver.cjs');
+
 const XINPUT_DLLS = ['xinput1_4.dll', 'xinput1_3.dll', 'xinput9_1_0.dll'];
 const ERROR_SUCCESS = 0;
 const MAX_GAMEPADS = 4;
@@ -95,7 +97,8 @@ class NativeGamepadBridge {
   load() {
     let koffi = null;
     try {
-      koffi = require('koffi');
+      koffi = requireOptionalPackagedModule('koffi');
+      if (!koffi) throw new Error('koffi module is unavailable');
     } catch (error) {
       this.status = { available: false, dll: null, reason: 'koffi_unavailable', error: error.message };
       return;

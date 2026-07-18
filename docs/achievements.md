@@ -2,11 +2,11 @@
 
 Steam App ID: `4765070`
 
-The canonical achievement list is `src/achievements/AchievementCatalog.js`. The Steam launch set currently contains 30 achievements:
+The canonical achievement list is `src/achievements/AchievementCatalog.js`. The Steam launch set currently contains 81 source/runtime achievements:
 
-- 19 pilot-rank achievements generated from `src/shared/RankPolicy.js`.
+- 39 pilot-rank achievements generated from `src/shared/RankPolicy.js`.
 - 2 leaderboard achievements for global qualification and global #1.
-- 9 medium-to-very-hard milestone achievements for sector progress, run clears, clean play, score mastery, boss wins, Codex discovery, and hangar growth.
+- 40 milestone achievements for sector progress, run clears, clean play, score mastery, boss wins, Codex discovery, hangar growth, First Ranked Run participation, and ultra-hard legendary mastery goals.
 
 Generate the Steamworks setup list from code with:
 
@@ -34,6 +34,10 @@ Create or verify every Steamworks achievement from the generated catalog list:
 - Hidden: `false` unless the catalog says otherwise
 
 Achievement icon assets are staged in `release/steamworks/achievement-icons/`. The manifest maps every API name to achieved and locked 256x256 JPG icons. The current milestone icons were generated with Codex imagegen from the 2026-05-26 3x3 milestone sheet and can be replaced later without changing API names.
+
+The 2026-06-12 pass added hard-rank icons `ACH_RANK_20` through `ACH_RANK_39` and First Ranked Run icons `ACH_EARLY_PILOT-achieved.jpg` / `ACH_EARLY_PILOT-locked.jpg`. The 2026-06-15 pass added ultra-hard legendary achievements and replaced the duplicated milestone badge art with unique achieved/locked icon pairs generated with internal Codex imagegen.
+
+Current Steamworks App Admin evidence showed only 30 configured Steam achievements before the 2026-06-15 source update. On 2026-06-15, the missing achievement rows were added and published in Steamworks; final browser verification showed `Antall prestasjoner: 81` with no missing or extra API names. Achievement icon uploads remain a separate Steamworks visual-polish step because the browser automation surface could not set file inputs.
 
 ## Local Testing
 

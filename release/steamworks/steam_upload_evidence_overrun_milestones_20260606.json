@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-06-06T13:22:31.3929339Z",
+  "purpose": "private Steam test build for recurring Overrun milestone celebration pauses",
+  "steamAppId": 4765070,
+  "depotId": 4765071,
+  "leaderboardName": "nova_swarm_global_score_v2",
+  "sourceCommit": "7e47f9b44d8c94d52f207fbc6016bbc4ce62fb0c",
+  "package": {
+    "version": "v2026-06-06_15-15-43",
+    "timestamp": "2026-06-06T13:15:43.526Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226694144,
+      "sha256": "0aae7eae12b1e2edccef18ea5a24f02b814326c8aca40ea348fe40d12f613f68",
+      "modifiedAt": "2026-06-06T13:18:42.135Z"
+    },
+    "fileCount": 336,
+    "totalBytes": 723704586,
+    "manifestHash": "4f7ae48ca25920995f6cd89032c357f08b303eeeca1d6ba45d0272b78bae4e9f",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-06_15-15-43 recurring Overrun milestones private Steam test",
+    "setLive": "",
+    "setLiveEvidence": "\"SetLive\" \"\"",
+    "appIdEvidence": "\"AppID\" \"4765070\"",
+    "depotEvidence": "\"4765071\""
+  },
+  "steamUpload": {
+    "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+    "steamCmdUser": "gaunziman",
+    "logPath": "test-results/steam-upload-overrun-milestones-20260606/steamcmd-upload-20260606.txt",
+    "exitCode": 0,
+    "buildId": 23600561,
+    "resultLine": "[2026-06-06 15:21:36]: Successfully finished AppID 4765070 build (BuildID 23600561)."
+  },
+  "commands": [
+    "npm run check:release-hardening",
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-06_15-15-43 recurring Overrun milestones private Steam test\" npm run steamworks:write-vdf",
+    "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\burt-shooter-cursor-hide-20260604\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "npm run desktop:smoke:packaged"
+  ],
+  "protectedBoundaries": {
+    "steamStoreMetadataTouched": false,
+    "appVisibilityChanged": false,
+    "appIdChanged": false,
+    "depotIdsChanged": false,
+    "setLiveEmpty": true,
+    "liveBranchChanged": false,
+    "leaderboardRenamed": false,
+    "dummyScoresSubmitted": false,
+    "rc1TagsMoved": false,
+    "restoreBranchMoved": false
+  },
+  "notes": [
+    "Private SteamPipe upload only; no live branch or store metadata changes were made.",
+    "Existing pre-release Vite large chunk warning remains non-blocking.",
+    "Manual Steam-client audio, boss feel/death spectacle, and real ranked leaderboard passes still require human play."
+  ]
+}

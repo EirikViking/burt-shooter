@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { reinforcementVoiceLines } from '../src/config/ReinforcementVoiceLines.js';
+
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID || 'SIbt9DJkaY96v2K2fQyQ';
 const modelId = process.env.ELEVENLABS_MODEL_ID || 'eleven_v3';
@@ -212,9 +214,41 @@ const lines = [
     text: 'Credits protocol open. Tinyfoundry Games denies responsibility for haunted cabinets, boss paperwork, and emotional damage caused by excellent dodging.'
   },
   {
+    file: 'mission_control_viking_legend_unlocked_01.mp3',
+    text: 'Eirik the Viking! Eirik the Viking! Ro, ro, ro for Norge! Level fifty, storm the stars! Hei! Hei! Hei!'
+  },
+  {
     file: 'mission_control_overrun_clear_01.mp3',
     text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
-  }
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_10_01.mp3',
+    text: 'Sector ten cleared. Overrun authorized. The cabinet is applauding and will deny it later.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_20_01.mp3',
+    text: 'Sector twenty cleared. Second signal locked. The swarm is doubling back.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_30_01.mp3',
+    text: 'Sector thirty cleared. Pattern storm confirmed. Read once, move twice.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_40_01.mp3',
+    text: 'Sector forty cleared. Deep circuit holding. Every safe lane is temporary.'
+  },
+  {
+    file: 'mission_control_overrun_clear_sector_50_01.mp3',
+    text: 'Sector fifty cleared. Last cabinet call answered. This is legend territory.'
+  },
+  {
+    file: 'mission_control_overrun_clear_far_signal_01.mp3',
+    text: 'Far overrun sector cleared. The run is off the map. Keep the line.'
+  },
+  ...reinforcementVoiceLines.map((line) => ({
+    file: `${line.id}.mp3`,
+    text: line.text
+  }))
 ];
 
 function requiredEnv() {

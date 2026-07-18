@@ -1,0 +1,187 @@
+{
+    "purpose":  "Scout Codex and Scout local best persistence private Steam test build",
+    "createdAt":  "2026-06-20T15:28:00.000Z",
+    "branch":  "codex/fix-scout-codex-persistence-20260620",
+    "startingCommit":  "f90e04e47fd293b9e36d1876cbefbaf13ff89610",
+    "sourceCommit":  "23d366fe824029146ed195cec4ca7f9aab8efe07",
+    "packagedBuild":  {
+                          "version":  "v2026-06-20_17-12-14",
+                          "gitSha":  "23d366f",
+                          "payloadManifest":  "release/steamworks/steam_payload_manifest.json",
+                          "payloadManifestHash":  "6bf8cb05c1632c79e73ca765b20f15012c80e9f43935a6500b5a1d26ce6f55bd",
+                          "fileCount":  336,
+                          "totalBytes":  879593260,
+                          "executableSha256":  "eddbf764b05dc92095708478ca4686955b3bed2c17db366b9ccbf06f3d8d8c0f",
+                          "packagedSmokeReport":  "test-results/packaged-exe-smoke-2026-06-20T15-17-24-736Z/report.json",
+                          "currentSmokeReport":  "test-results/electron-smoke-2026-06-20T15-18-30-057Z/report.json",
+                          "currentPerfReport":  "test-results/electron-perf-smoke-2026-06-20T15-18-46-266Z/report.json",
+                          "browserSmoke":  {
+                                               "status":  "passed",
+                                               "report":  "test-results/smoke-2026-06-20T15-20-10-205Z/report.json",
+                                               "note":  "Smoke passed fully; only console warning bucket was fullscreen API user gesture warning."
+                                           }
+                      },
+    "steam":  {
+                  "appId":  "4765070",
+                  "depotId":  "4765071",
+                  "buildId":  "23836186",
+                  "depotManifest":  "4764456327079708025",
+                  "baselineDepotManifest":  "2093552943102439710",
+                  "setLive":  "",
+                  "branchAssignment":  null,
+                  "publicDefaultAssigned":  false,
+                  "sectorContinueTestAssigned":  false,
+                  "steamworksMetadataChanged":  false,
+                  "appBuildVdf":  "release/steamworks/app_build_LOCAL.vdf",
+                  "depotBuildVdf":  "release/steam-build-output/depot_build_4765071.vdf",
+                  "appBuildLog":  "release/steam-build-output/app_build_4765070.log",
+                  "depotBuildLog":  "release/steam-build-output/depot_build_4765071.log",
+                  "steamCmd":  "D:/vibe-coding-e/burt-shooter/tools/steamcmd/steamcmd.exe",
+                  "steamCmdUploadLog":  "test-results/steam-upload-scout-codex-persistence-20260620-172311/steamcmd-upload.log",
+                  "resultLine":  "[2026-06-20 17:24:50]: Successfully finished AppID 4765070 build (BuildID 23836186)."
+              },
+    "vdfVerification":  {
+                            "appId":  "4765070",
+                            "depotId":  "4765071",
+                            "setLiveBlank":  true,
+                            "containsPublicDefaultBranch":  false,
+                            "containsSectorContinueTestBranch":  false,
+                            "containsAnyBranchAssignment":  false,
+                            "description":  "Nova Swarm Windows release candidate"
+                        },
+    "checks":  [
+                   {
+                       "command":  "git diff --check",
+                       "status":  "passed",
+                       "note":  "CRLF warnings only"
+                   },
+                   {
+                       "command":  "node --check scripts/check-scout-codex-persistence.mjs; node --check electron/steamCloudSave.cjs; node --check src/game/Game.js; node --check src/steamCloudPersistence.js",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:scout-codex-persistence",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:scout-local-best",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:steam-cloud-save",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:save-profile-migration",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:profile-isolation",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:steam-achievements-mock",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:i18n",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:i18n-ui",
+                       "status":  "passed_after_standalone_rerun",
+                       "artifact":  "test-results/i18n-ui-2026-06-20T15-10-21-210Z"
+                   },
+                   {
+                       "command":  "npm run check:run-modes",
+                       "status":  "passed",
+                       "artifact":  "test-results/run-modes-mayhem-scout-sector-2026-06-20T15-06-27-652Z/report.json"
+                   },
+                   {
+                       "command":  "npm run check:threat-codex",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:steam-electron-bridge",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:codex-layout",
+                       "status":  "passed",
+                       "artifact":  "test-results/codex-revamp-20260606/layout/codex-after-contact-sheet.png"
+                   },
+                   {
+                       "command":  "npm run check:controller-flow",
+                       "status":  "passed",
+                       "artifact":  "test-results/controller-only-flow-2026-06-20T15-07-12-622Z"
+                   },
+                   {
+                       "command":  "npm run build:current",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run check:release-line",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run package:steam:win",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run package:steam:win:current",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:packaged",
+                       "status":  "passed",
+                       "artifact":  "test-results/packaged-exe-smoke-2026-06-20T15-17-24-736Z/report.json"
+                   },
+                   {
+                       "command":  "npm run desktop:smoke:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-smoke-2026-06-20T15-18-30-057Z"
+                   },
+                   {
+                       "command":  "npm run desktop:perf:current",
+                       "status":  "passed",
+                       "artifact":  "test-results/electron-perf-smoke-2026-06-20T15-18-46-266Z"
+                   },
+                   {
+                       "command":  "npm run smoke",
+                       "status":  "passed",
+                       "artifact":  "test-results/smoke-2026-06-20T15-20-10-205Z/report.json"
+                   },
+                   {
+                       "command":  "npm run steamworks:payload-manifest",
+                       "status":  "passed"
+                   },
+                   {
+                       "command":  "SteamCMD run_app_build app_build_LOCAL.vdf",
+                       "status":  "passed"
+                   }
+               ],
+    "notes":  [
+                  "Build uploaded privately with SetLive blank and no branch assignment in the VDF.",
+                  "SteamCMD used cached credentials and did not request Steam Guard/MFA.",
+                  "No Steamworks metadata, AppID, depot ID, leaderboard identity, save/profile rescue, live save files, run mode rules, balance, achievements metadata, powerups, Prism Splitter art, or display settings were changed.",
+                  "Scout Codex discoveries now start a Scout discovery window and persist through the renderer and Electron Steam Cloud merge path.",
+                  "Threat Codex persistence now unions discoveries and maxes counters instead of replacing buckets, with a higher per-category cap for high-progress profiles.",
+                  "Scout local best persistence was verified against stale lower cloud restores and remains profile-local only.",
+                  "Scout still does not submit Steam/global/friends leaderboards, grant achievements, grant career XP, or unlock checkpoints."
+              ],
+    "manualSteamworksTestSteps":  [
+                                      "Open Steamworks \u003e App Admin \u003e SteamPipe \u003e Builds for AppID 4765070.",
+                                      "Find BuildID 23836186 and leave it unassigned unless intentionally selecting it for private testing.",
+                                      "If assigning privately, install that BuildID in the Steam client.",
+                                      "Launch Nova Swarm and confirm build v2026-06-20_17-12-14 and gitSha 23d366f in diagnostics or smoke text.",
+                                      "Start Scout Run, discover new Codex enemies, finish or exit cleanly, restart the game, and confirm those Codex entries remain visible.",
+                                      "Set a Scout score above the current Scout Best, restart the game, and confirm Scout Best remains the higher score.",
+                                      "Confirm Scout still does not submit to Steam/global/friends leaderboards, does not unlock achievements, does not grant career XP, and does not unlock checkpoints.",
+                                      "Confirm Mayhem leaderboard and achievement behavior still work on Mayhem only.",
+                                      "Do not assign this BuildID to public/default until explicitly approved."
+                                  ],
+    "rollback":  {
+                     "source":  "git revert 23d366fe824029146ed195cec4ca7f9aab8efe07",
+                     "steam":  "No Steam rollback is required while BuildID 23836186 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+                 }
+}

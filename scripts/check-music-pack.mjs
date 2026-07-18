@@ -138,6 +138,13 @@ try {
   }, null, { timeout: 10000 });
   const generatedState = await readState(page);
 
+  await page.mouse.click(buttonBounds.x + buttonBounds.width / 2, buttonBounds.y + buttonBounds.height / 2);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.audio?.musicPack === 'overdrive' && /nova_swarm_overdrive_/i.test(state?.audio?.currentMusicTrack || '');
+  }, null, { timeout: 10000 });
+  const overdriveState = await readState(page);
+
   await page.screenshot({ path: path.join(outputDir, 'music-pack-settings.png'), fullPage: true });
 
   const failures = [
@@ -145,6 +152,8 @@ try {
     !/Brave Pilots|SkyFire/i.test(track(classicState)) ? `default pack did not play classic menu track: ${track(classicState) || 'none'}` : null,
     generatedState.audio?.musicPack !== 'generated' ? `settings toggle did not switch to new music pack: ${generatedState.audio?.musicPack || 'missing'}` : null,
     !/nova_swarm_menu_/i.test(track(generatedState)) ? `new music pack did not play new menu track: ${track(generatedState) || 'none'}` : null,
+    overdriveState.audio?.musicPack !== 'overdrive' ? `settings toggle did not switch to overdrive music pack: ${overdriveState.audio?.musicPack || 'missing'}` : null,
+    !/nova_swarm_overdrive_/i.test(track(overdriveState)) ? `overdrive pack did not play overdrive track: ${track(overdriveState) || 'none'}` : null,
     ...pageErrors.map((message) => `page error: ${message}`),
     ...consoleErrors.map((message) => `console error: ${message}`)
   ].filter(Boolean);
@@ -154,6 +163,7 @@ try {
     baseUrl,
     classic: classicState.audio,
     generated: generatedState.audio,
+    overdrive: overdriveState.audio,
     failures,
     pageErrors,
     consoleErrors
@@ -163,7 +173,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[music-pack] PASS classicDefault=${track(classicState)} optionalNew=${track(generatedState)} report=${path.join(outputDir, 'report.json')}`);
+    console.log(`[music-pack] PASS classicDefault=${track(classicState)} optionalNew=${track(generatedState)} overdrive=${track(overdriveState)} report=${path.join(outputDir, 'report.json')}`);
   }
 } finally {
   await browser.close();

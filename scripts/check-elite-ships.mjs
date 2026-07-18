@@ -11,12 +11,18 @@ import {
   getEliteMiddleShipsForLevel,
   planEliteMiddleShipSpawns
 } from '../src/config/EliteMiddleShips.js';
+import {
+  ELITE_MIDDLE_SHIP_EXPANSION,
+  ELITE_MIDDLE_SHIP_EXPANSION_COUNT,
+  ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS
+} from '../src/config/EliteMiddleShipExpansion.js';
 import { ENEMY_ATTACK_STYLE_IDS } from '../src/config/EnemyAttackStyles.js';
 import { ENEMY_MOVEMENT_STYLE_IDS } from '../src/config/EnemyMovementStyles.js';
 
 const root = process.cwd();
 const errors = [];
 const warnings = [];
+const EXPECTED_MIN_WAVES_BEFORE_BOSS = 5;
 
 function fail(message) {
   errors.push(message);
@@ -40,11 +46,11 @@ function deterministicRandom(values) {
 }
 
 const manifestAssets = AssetManifest.generated?.eliteMiddleShips || [];
-if (ELITE_MIDDLE_SHIPS.length !== 20) fail(`expected 20 elite profiles, found ${ELITE_MIDDLE_SHIPS.length}`);
+if (ELITE_MIDDLE_SHIPS.length !== 50) fail(`expected 50 elite profiles, found ${ELITE_MIDDLE_SHIPS.length}`);
 if (ELITE_MIDDLE_SHIPS.length !== ELITE_MIDDLE_SHIP_ASSET_COUNT) {
   fail(`asset count constant should be ${ELITE_MIDDLE_SHIPS.length}, got ${ELITE_MIDDLE_SHIP_ASSET_COUNT}`);
 }
-if (manifestAssets.length !== 20) fail(`AssetManifest.generated.eliteMiddleShips expected 20, found ${manifestAssets.length}`);
+if (manifestAssets.length !== 50) fail(`AssetManifest.generated.eliteMiddleShips expected 50, found ${manifestAssets.length}`);
 
 const ids = new Set();
 const roles = new Set();
@@ -87,28 +93,51 @@ for (const profile of ELITE_MIDDLE_SHIPS) {
   }
 }
 
-if (roles.size !== 20) fail(`expected 20 distinct roles, found ${roles.size}`);
-if (activeSfxKeys.size !== 20) fail(`expected 20 unique elite active SFX keys, found ${activeSfxKeys.size}`);
+if (roles.size < 30) fail(`expected at least 30 distinct role labels across original and expansion elites, found ${roles.size}`);
+if (activeSfxKeys.size !== 50) fail(`expected 50 unique elite active SFX keys, found ${activeSfxKeys.size}`);
+
+if (ELITE_MIDDLE_SHIP_EXPANSION_COUNT !== 30 || ELITE_MIDDLE_SHIP_EXPANSION.length !== 30) {
+  fail(`elite expansion must contain 30 profiles, found constant=${ELITE_MIDDLE_SHIP_EXPANSION_COUNT} profiles=${ELITE_MIDDLE_SHIP_EXPANSION.length}`);
+}
+if (ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.length !== 30) {
+  fail(`elite expansion must expose 30 active SFX keys, found ${ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS.length}`);
+}
+const expansionFamilies = new Map();
+for (const profile of ELITE_MIDDLE_SHIP_EXPANSION) {
+  const family = expansionFamilies.get(profile.specialAbility) || [];
+  family.push(profile);
+  expansionFamilies.set(profile.specialAbility, family);
+  if (profile.spriteIndex < 20 || profile.spriteIndex > 49) fail(`${profile.id} has invalid expansion spriteIndex ${profile.spriteIndex}`);
+  if (!Array.isArray(profile.vfx) || profile.vfx.length < 4) fail(`${profile.id} should expose at least four VFX identity hooks`);
+  const audioPath = `/audio/sfx/nova-swarm/nova_${profile.sfx.active}.mp3`;
+  if (!existsPublic(audioPath)) fail(`${profile.id} missing generated active SFX file ${audioPath}`);
+}
+if (expansionFamilies.size !== 10) fail(`expected 10 expansion ability families, found ${expansionFamilies.size}`);
+for (const [familyName, profiles] of expansionFamilies) {
+  if (profiles.length !== 3) fail(`${familyName} should contain three escalating variants, found ${profiles.length}`);
+  const variants = profiles.map((profile) => profile.abilityVariant).sort((a, b) => a - b);
+  if (variants.join(',') !== '0,1,2') fail(`${familyName} should use variants 0,1,2, found ${variants.join(',')}`);
+}
 const level11 = getEliteMiddleShipsForLevel(11);
 const level40 = getEliteMiddleShipsForLevel(40);
-if (level11.length >= 20) fail('level 11 must not expose all 20 elite middle ships');
-if (level11.length < 3 || level11.length > 5) warn(`level 11 exposes ${level11.length} elites; expected a small early pool`);
-if (level40.length !== 20) fail(`level 40 should expose all 20 elites, found ${level40.length}`);
+if (level11.length >= 50) fail('level 11 must not expose all 50 elite middle ships');
+if (level11.length < 7 || level11.length > 14) warn(`level 11 exposes ${level11.length} elites; expected a controlled early pool`);
+if (level40.length !== 50) fail(`level 40 should expose all 50 elites, found ${level40.length}`);
 if (getEliteMiddleShipMaxActive(10) !== 1) fail('early/mid game should cap active elites at 1');
 if (getEliteMiddleShipMaxActive(40) > 2) fail('late game active elite cap should stay careful, max 2');
 
 for (const level of [1, 2, 3, 5, 11, 20, 30, 40]) {
-  const plan = planEliteMiddleShipSpawns(level, 6, deterministicRandom([0, 0.15, 0.3, 0.55, 0.75]));
+  const plan = planEliteMiddleShipSpawns(level, EXPECTED_MIN_WAVES_BEFORE_BOSS, deterministicRandom([0, 0.15, 0.3, 0.55, 0.75]));
   for (const item of plan) {
-    if (item.waveIndex <= 0 || item.waveIndex >= 5) fail(`level ${level} elite planned too close to boss/first wave: waveIndex ${item.waveIndex}`);
+    if (item.waveIndex <= 0 || item.waveIndex >= EXPECTED_MIN_WAVES_BEFORE_BOSS - 1) fail(`level ${level} elite planned too close to boss/first wave: waveIndex ${item.waveIndex}`);
     const profile = ELITE_MIDDLE_SHIPS.find((entry) => entry.id === item.eliteMiddleShipId);
     if (!profile) fail(`level ${level} plan references unknown elite ${item.eliteMiddleShipId}`);
     if (profile && profile.minLevel > level) fail(`level ${level} plans ${profile.id} before minLevel ${profile.minLevel}`);
   }
 }
 
-if (BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES !== 6) fail('MIN_WAVES_BETWEEN_BOSSES must remain 6');
-if (BalanceConfig.difficulty.wavesPerBossBase !== 6) fail('wavesPerBossBase must remain 6');
+if (BalanceConfig.difficulty.MIN_WAVES_BETWEEN_BOSSES !== EXPECTED_MIN_WAVES_BEFORE_BOSS) fail(`MIN_WAVES_BETWEEN_BOSSES must remain ${EXPECTED_MIN_WAVES_BEFORE_BOSS}`);
+if (BalanceConfig.difficulty.wavesPerBossBase !== EXPECTED_MIN_WAVES_BEFORE_BOSS) fail(`wavesPerBossBase must remain ${EXPECTED_MIN_WAVES_BEFORE_BOSS}`);
 if (!Number.isFinite(BalanceConfig.difficulty.wavesPerBossMax)
   || BalanceConfig.difficulty.wavesPerBossMax < BalanceConfig.difficulty.wavesPerBossBase
   || BalanceConfig.difficulty.wavesPerBossMax > 10) {

@@ -3,6 +3,89 @@ import * as Features from '../config/Features.js';
 import { SFX_CATALOG, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS, getMusicPlaylists, normalizeMusicPack } from './SoundCatalog.js';
 import { BUILD_ID } from '../buildInfo.js';
 
+const SPECTACLE_ACCENT_PROFILES = Object.freeze({
+  kill: Object.freeze({
+    rootHz: 92,
+    sparkleHz: 760,
+    durationSeconds: 0.24,
+    volume: 0.34,
+    noise: 0.16,
+    minIntervalMs: 80
+  }),
+  elite: Object.freeze({
+    rootHz: 64,
+    sparkleHz: 540,
+    durationSeconds: 0.42,
+    volume: 0.48,
+    noise: 0.24,
+    minIntervalMs: 130
+  }),
+  combo: Object.freeze({
+    rootHz: 108,
+    sparkleHz: 930,
+    durationSeconds: 0.5,
+    volume: 0.42,
+    noise: 0.16,
+    minIntervalMs: 160
+  }),
+  pickup: Object.freeze({
+    rootHz: 176,
+    sparkleHz: 1180,
+    durationSeconds: 0.48,
+    volume: 0.38,
+    noise: 0.1,
+    minIntervalMs: 150
+  }),
+  wave: Object.freeze({
+    rootHz: 48,
+    sparkleHz: 680,
+    durationSeconds: 0.74,
+    volume: 0.54,
+    noise: 0.2,
+    minIntervalMs: 520
+  }),
+  wonder: Object.freeze({
+    rootHz: 132,
+    sparkleHz: 1320,
+    durationSeconds: 0.92,
+    volume: 0.32,
+    noise: 0.04,
+    minIntervalMs: 12000
+  }),
+  reinforcement: Object.freeze({
+    rootHz: 42,
+    sparkleHz: 430,
+    durationSeconds: 0.66,
+    volume: 0.5,
+    noise: 0.28,
+    minIntervalMs: 260
+  }),
+  boss_phase: Object.freeze({
+    rootHz: 44,
+    sparkleHz: 510,
+    durationSeconds: 0.82,
+    volume: 0.58,
+    noise: 0.24,
+    minIntervalMs: 520
+  }),
+  boss_death: Object.freeze({
+    rootHz: 32,
+    sparkleHz: 390,
+    durationSeconds: 1.08,
+    volume: 0.66,
+    noise: 0.34,
+    minIntervalMs: 1400
+  }),
+  miracle: Object.freeze({
+    rootHz: 38,
+    sparkleHz: 1320,
+    durationSeconds: 1.12,
+    volume: 0.62,
+    noise: 0.26,
+    minIntervalMs: 5000
+  })
+});
+
 class AudioController {
   constructor() {
     this.context = null;
@@ -10,6 +93,7 @@ class AudioController {
     this.musicEnabled = false;
     this.voiceEnabled = false;
     this.ctaVoiceEnabled = true;
+    this.bossVoiceEnabled = true;
     this.musicPack = 'classic';
 
     // Volume
@@ -60,16 +144,25 @@ class AudioController {
     this.lastVoiceVariantByEvent = {};
     this.activeVoiceGroups = {};
     this.activeVoices = new Map();
+    this.voicePriorityLock = null;
+    this.delayedVoiceTimers = new Set();
     this.lastVoiceSuppression = null;
     this.voiceSuppressionLog = [];
     this.voicePlayId = 0;
     this.lastSfxEvent = null;
     this.lastSfxTrack = null;
+    this.alienBarkCooldownUntil = 0;
+    this.lastAlienBarkVariant = -1;
+    this.spectacleAccentCooldowns = {};
+    this.spectacleNoiseBuffer = null;
+    this.spectacleAccentSequence = 0;
+    this.lastSpectacleAccent = null;
     this.lastVoiceEvent = null;
     this.lastVoiceTrack = null;
     this.sfxAssetHealth = new Map();
     this.pooledSfxKeys = new Set([
       'shoot_small',
+      'shoot_railbreaker',
       'hit',
       'impactMetal',
       'enemy_explode',
@@ -78,6 +171,7 @@ class AudioController {
       'boss_explode',
       'enemy_shoot',
       'powerup',
+      'powerup_pickup',
       'pickup',
       'achievement',
       'forceField'
@@ -139,6 +233,8 @@ class AudioController {
     if (savedVoice !== null) this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
     const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
     if (savedCtaVoice !== null) this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+    const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
+    if (savedBossVoice !== null) this.bossVoiceEnabled = savedBossVoice !== 'false';
 
     this.applyMusicVolume();
   }
@@ -169,6 +265,8 @@ class AudioController {
       this.voiceEnabled = savedVoice !== 'false' && Features.VOICE_ENABLED;
       const savedCtaVoice = localStorage.getItem('burt_cta_voice_enabled');
       this.ctaVoiceEnabled = savedCtaVoice !== 'false';
+      const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
+      this.bossVoiceEnabled = savedBossVoice !== 'false';
 
       // Add debug key listener globally (only once)
       if (!this._debugKeyHandler) {
@@ -275,6 +373,10 @@ class AudioController {
     try {
       audio.currentTime = 0;
     } catch { }
+    try {
+      audio.playbackRate = 1;
+      if ('preservesPitch' in audio) audio.preservesPitch = true;
+    } catch { }
     return audio;
   }
 
@@ -327,10 +429,15 @@ class AudioController {
 
   playSfx(eventName, options = {}) {
     if (!this.enabled) return false;
+    const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
+    if (frameCounters) frameCounters.sfxAttempts = (Number(frameCounters.sfxAttempts) || 0) + 1;
 
     // Filter "blipp blopp" -> 'computerNoise' usage
     // If eventName is specifically one we hate, mapped here
-    if (eventName === 'bad_sound') return;
+    if (eventName === 'bad_sound') {
+      if (frameCounters) frameCounters.sfxSuppressed = (Number(frameCounters.sfxSuppressed) || 0) + 1;
+      return false;
+    }
 
     const originalName = eventName;
     if (this.sfxDenylist && this.sfxDenylist.has(eventName)) {
@@ -360,6 +467,7 @@ class AudioController {
     const now = Date.now();
     const minIntervalMs = this.readMixNumber(options.minIntervalMs, mix.minIntervalMs ?? 50);
     if (!options.force && this.sfxCooldowns[eventName] && now < this.sfxCooldowns[eventName]) {
+      if (frameCounters) frameCounters.sfxSuppressed = (Number(frameCounters.sfxSuppressed) || 0) + 1;
       return false;
     }
     this.sfxCooldowns[eventName] = now + minIntervalMs;
@@ -373,12 +481,293 @@ class AudioController {
     const audio = this.getSfxAudio(eventName, src, options);
     const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
     audio.volume = this.clampUnit(this.masterVolume * this.sfxVolume * volumeMultiplier);
+    const authoredRate = this.readMixNumber(options.playbackRate, mix.playbackRate ?? 1);
+    const rateMin = this.readMixNumber(options.playbackRateMin, mix.playbackRateMin ?? authoredRate);
+    const rateMax = this.readMixNumber(options.playbackRateMax, mix.playbackRateMax ?? authoredRate);
+    const lowRate = Math.max(0.55, Math.min(1.8, Math.min(rateMin, rateMax)));
+    const highRate = Math.max(lowRate, Math.min(1.8, Math.max(rateMin, rateMax)));
+    const playbackRate = lowRate + Math.random() * (highRate - lowRate);
+    try {
+      audio.playbackRate = playbackRate;
+      if ('preservesPitch' in audio) audio.preservesPitch = options.preservePitch === true;
+    } catch { }
     audio.play().catch(e => {
       this.handleSfxPlayFailure(eventName, audio.src, e);
     });
     this.lastSfxPlayedAt[eventName] = now;
     this.lastSfxEvent = eventName;
     this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
+    if (frameCounters) {
+      frameCounters.sfxPlayed = (Number(frameCounters.sfxPlayed) || 0) + 1;
+      frameCounters.lastSfxEvent = eventName;
+    }
+    return true;
+  }
+
+  getSpectacleNoiseBuffer() {
+    const ctx = this.context;
+    if (!ctx) return null;
+    if (this.spectacleNoiseBuffer?.sampleRate === ctx.sampleRate) return this.spectacleNoiseBuffer;
+    const durationSeconds = 1.2;
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * durationSeconds)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let previous = 0;
+    let noiseState = (0x9e3779b9 ^ ctx.sampleRate) >>> 0;
+    for (let index = 0; index < data.length; index += 1) {
+      noiseState = (Math.imul(noiseState, 1664525) + 1013904223) >>> 0;
+      const white = (noiseState / 0x100000000) * 2 - 1;
+      previous = previous * 0.72 + white * 0.28;
+      data[index] = previous;
+    }
+    this.spectacleNoiseBuffer = buffer;
+    return buffer;
+  }
+
+  playSpectacleAccent(kind = 'kill', options = {}) {
+    if (!this.enabled || !this.context) return false;
+    const profile = SPECTACLE_ACCENT_PROFILES[kind] || SPECTACLE_ACCENT_PROFILES.kill;
+    const now = Date.now();
+    const cooldownKey = String(options.cooldownKey || kind);
+    const minIntervalMs = Math.max(0, this.readMixNumber(options.minIntervalMs, profile.minIntervalMs));
+    if (options.force !== true && now < (Number(this.spectacleAccentCooldowns[cooldownKey]) || 0)) {
+      return false;
+    }
+    this.spectacleAccentCooldowns[cooldownKey] = now + minIntervalMs;
+
+    const ctx = this.context;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+    this.spectacleAccentSequence = (Number(this.spectacleAccentSequence) || 0) + 1;
+    const accentJitter = ((Math.imul(this.spectacleAccentSequence, 1103515245) + 12345) >>> 0) / 0x100000000;
+    const intensity = Math.max(0.25, Math.min(1.55, this.readMixNumber(options.intensity, 1)));
+    const durationSeconds = Math.max(
+      0.16,
+      Math.min(1.4, this.readMixNumber(options.durationSeconds, profile.durationSeconds))
+    );
+    const rootScale = Math.max(0.72, Math.min(1.38, Number(options.pitchScale) || 1));
+    const rootHz = profile.rootHz * rootScale;
+    const sparkleHz = profile.sparkleHz * rootScale;
+    const busVolume = this.clampUnit(
+      this.masterVolume *
+      this.sfxVolume *
+      profile.volume *
+      intensity *
+      Math.max(0, this.readMixNumber(options.volume, 1))
+    );
+    if (busVolume <= 0) return false;
+
+    const startAt = Math.max(ctx.currentTime + 0.008, ctx.currentTime);
+    const stopAt = startAt + durationSeconds + 0.12;
+    const output = ctx.createGain();
+    output.gain.setValueAtTime(0.0001, startAt);
+    output.gain.exponentialRampToValueAtTime(Math.max(0.0002, busVolume), startAt + 0.018);
+    output.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds);
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, startAt);
+    compressor.knee.setValueAtTime(16, startAt);
+    compressor.ratio.setValueAtTime(5.5, startAt);
+    compressor.attack.setValueAtTime(0.004, startAt);
+    compressor.release.setValueAtTime(0.16, startAt);
+
+    const panner = typeof ctx.createStereoPanner === 'function' ? ctx.createStereoPanner() : null;
+    const pan = Math.max(-0.78, Math.min(0.78, Number(options.pan) || 0));
+    if (panner) {
+      panner.pan.setValueAtTime(pan, startAt);
+      output.connect(panner);
+      panner.connect(compressor);
+    } else {
+      output.connect(compressor);
+    }
+    compressor.connect(ctx.destination);
+
+    const sub = ctx.createOscillator();
+    const subGain = ctx.createGain();
+    sub.type = kind === 'pickup' || kind === 'combo' ? 'triangle' : 'sine';
+    sub.frequency.setValueAtTime(Math.max(24, rootHz * 1.7), startAt);
+    sub.frequency.exponentialRampToValueAtTime(Math.max(22, rootHz * 0.68), startAt + durationSeconds * 0.84);
+    subGain.gain.setValueAtTime(0.0001, startAt);
+    subGain.gain.exponentialRampToValueAtTime(0.86, startAt + 0.012);
+    subGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.92);
+    sub.connect(subGain);
+    subGain.connect(output);
+
+    const sparkle = ctx.createOscillator();
+    const sparkleFilter = ctx.createBiquadFilter();
+    const sparkleGain = ctx.createGain();
+    sparkle.type = kind === 'boss_death' || kind === 'reinforcement' ? 'sawtooth' : 'triangle';
+    sparkle.frequency.setValueAtTime(sparkleHz * 0.82, startAt);
+    sparkle.frequency.exponentialRampToValueAtTime(
+      sparkleHz * (kind === 'pickup' || kind === 'combo' ? 1.42 : 0.58),
+      startAt + durationSeconds * 0.72
+    );
+    sparkle.detune.setValueAtTime(-12 + accentJitter * 24, startAt);
+    sparkleFilter.type = 'bandpass';
+    sparkleFilter.frequency.setValueAtTime(Math.max(240, sparkleHz), startAt);
+    sparkleFilter.Q.setValueAtTime(4.8, startAt);
+    sparkleGain.gain.setValueAtTime(0.0001, startAt);
+    sparkleGain.gain.exponentialRampToValueAtTime(kind === 'pickup' ? 0.34 : 0.22, startAt + 0.014);
+    sparkleGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.72);
+    sparkle.connect(sparkleFilter);
+    sparkleFilter.connect(sparkleGain);
+    sparkleGain.connect(output);
+
+    const noiseBuffer = this.getSpectacleNoiseBuffer();
+    let noise = null;
+    if (noiseBuffer && profile.noise > 0) {
+      noise = ctx.createBufferSource();
+      const noiseFilter = ctx.createBiquadFilter();
+      const noiseGain = ctx.createGain();
+      noise.buffer = noiseBuffer;
+      noiseFilter.type = kind === 'pickup' || kind === 'combo' ? 'highpass' : 'bandpass';
+      noiseFilter.frequency.setValueAtTime(
+        kind === 'pickup' || kind === 'combo' ? 1450 : Math.max(120, rootHz * 5.4),
+        startAt
+      );
+      noiseFilter.Q.setValueAtTime(kind === 'pickup' || kind === 'combo' ? 0.7 : 2.6, startAt);
+      noiseGain.gain.setValueAtTime(0.0001, startAt);
+      noiseGain.gain.exponentialRampToValueAtTime(profile.noise * intensity, startAt + 0.008);
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.46);
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(output);
+    }
+
+    sub.start(startAt);
+    sparkle.start(startAt);
+    noise?.start?.(startAt);
+    sub.stop(stopAt);
+    sparkle.stop(stopAt);
+    noise?.stop?.(stopAt);
+
+    this.lastSpectacleAccent = {
+      kind,
+      pan: Number(pan.toFixed(2)),
+      intensity: Number(intensity.toFixed(2)),
+      rootHz: Math.round(rootHz),
+      sparkleHz: Math.round(sparkleHz),
+      durationMs: Math.round(durationSeconds * 1000),
+      playedAt: now,
+      compressor: true,
+      synthetic: true
+    };
+    const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
+    if (frameCounters) {
+      frameCounters.spectacleAccentsPlayed = (Number(frameCounters.spectacleAccentsPlayed) || 0) + 1;
+      frameCounters.lastSpectacleAccent = kind;
+    }
+    return true;
+  }
+
+  playAlienAttackBark(options = {}) {
+    if (!this.enabled || !this.context) return false;
+    const now = Date.now();
+    const minIntervalMs = this.readMixNumber(options.minIntervalMs, 7600);
+    if (now < this.alienBarkCooldownUntil && options.force !== true) return false;
+    this.alienBarkCooldownUntil = now + minIntervalMs + Math.random() * 2400;
+
+    const ctx = this.context;
+    const startAt = Math.max(ctx.currentTime + 0.01, ctx.currentTime);
+    const intensity = Math.max(0.35, Math.min(1.4, Number(options.intensity) || 0.75));
+    const variants = 17;
+    let variant = Math.floor(Math.random() * variants);
+    if (variant === this.lastAlienBarkVariant) variant = (variant + 3 + Math.floor(Math.random() * 5)) % variants;
+    this.lastAlienBarkVariant = variant;
+
+    const syllableCount = 2 + (variant % 3);
+    const accent = (variant * 37) % 91;
+    const root = 72 + accent + Math.random() * 44;
+    const busVolume = this.clampUnit(this.masterVolume * this.sfxVolume * 0.34 * intensity);
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, startAt);
+    master.gain.exponentialRampToValueAtTime(Math.max(0.0002, busVolume), startAt + 0.035);
+    master.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.72 + syllableCount * 0.09);
+
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.setValueAtTime(-24, startAt);
+    compressor.knee.setValueAtTime(18, startAt);
+    compressor.ratio.setValueAtTime(5, startAt);
+    compressor.attack.setValueAtTime(0.008, startAt);
+    compressor.release.setValueAtTime(0.16, startAt);
+
+    const panner = typeof ctx.createStereoPanner === 'function' ? ctx.createStereoPanner() : null;
+    if (panner) {
+      panner.pan.setValueAtTime(Math.max(-0.5, Math.min(0.5, Number(options.pan) || 0)), startAt);
+      master.connect(panner);
+      panner.connect(compressor);
+    } else {
+      master.connect(compressor);
+    }
+    compressor.connect(ctx.destination);
+
+    const stopAt = startAt + 1.15;
+    for (let i = 0; i < syllableCount; i += 1) {
+      const t = startAt + i * (0.105 + (variant % 2) * 0.026);
+      const duration = 0.12 + ((variant + i) % 4) * 0.025;
+      const pitch = root * (1 + i * 0.17 + ((variant >> i) % 4) * 0.045);
+      const drop = pitch * (0.42 + ((variant + i) % 5) * 0.045);
+      const osc = ctx.createOscillator();
+      const growl = ctx.createOscillator();
+      const vowel = ctx.createBiquadFilter();
+      const throat = ctx.createBiquadFilter();
+      const syllableGain = ctx.createGain();
+
+      osc.type = (variant + i) % 2 === 0 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(pitch, t);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(24, drop), t + duration);
+      osc.detune.setValueAtTime(-20 + ((variant + i * 11) % 41), t);
+
+      growl.type = 'triangle';
+      growl.frequency.setValueAtTime(Math.max(28, pitch * 0.48), t);
+      growl.frequency.exponentialRampToValueAtTime(Math.max(18, drop * 0.52), t + duration * 0.88);
+
+      vowel.type = 'bandpass';
+      vowel.frequency.setValueAtTime(420 + ((variant * 113 + i * 229) % 900), t);
+      vowel.Q.setValueAtTime(5 + ((variant + i) % 5), t);
+      throat.type = 'lowpass';
+      throat.frequency.setValueAtTime(1500 + ((variant * 73 + i * 140) % 1300), t);
+      throat.Q.setValueAtTime(0.8, t);
+
+      syllableGain.gain.setValueAtTime(0.0001, t);
+      syllableGain.gain.exponentialRampToValueAtTime(0.42 + intensity * 0.2, t + 0.018);
+      syllableGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+      osc.connect(vowel);
+      growl.connect(vowel);
+      vowel.connect(throat);
+      throat.connect(syllableGain);
+      syllableGain.connect(master);
+      osc.start(t);
+      growl.start(t);
+      osc.stop(stopAt);
+      growl.stop(stopAt);
+    }
+
+    const noiseDuration = 0.48 + syllableCount * 0.08;
+    const noiseBuffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * noiseDuration)), ctx.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i += 1) {
+      const decay = 1 - i / noiseData.length;
+      noiseData[i] = (Math.random() * 2 - 1) * decay * 0.42;
+    }
+    const noise = ctx.createBufferSource();
+    const rasp = ctx.createBiquadFilter();
+    const raspGain = ctx.createGain();
+    noise.buffer = noiseBuffer;
+    rasp.type = 'bandpass';
+    rasp.frequency.setValueAtTime(680 + (variant % 7) * 190, startAt);
+    rasp.frequency.exponentialRampToValueAtTime(260 + (variant % 5) * 90, startAt + noiseDuration);
+    rasp.Q.setValueAtTime(6.5, startAt);
+    raspGain.gain.setValueAtTime(0.0001, startAt);
+    raspGain.gain.exponentialRampToValueAtTime(0.22 * intensity, startAt + 0.04);
+    raspGain.gain.exponentialRampToValueAtTime(0.0001, startAt + noiseDuration);
+    noise.connect(rasp);
+    rasp.connect(raspGain);
+    raspGain.connect(master);
+    noise.start(startAt);
+    noise.stop(stopAt);
+
+    this.lastSfxEvent = 'alien_attack_bark';
+    this.lastSfxTrack = `synthetic_variant_${String(variant + 1).padStart(2, '0')}`;
     return true;
   }
 
@@ -700,6 +1089,7 @@ class AudioController {
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
+      bossVoiceEnabled: this.bossVoiceEnabled,
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
@@ -709,8 +1099,15 @@ class AudioController {
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
       lastSfxTrack: this.lastSfxTrack,
+      lastSpectacleAccent: this.lastSpectacleAccent,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
+      voicePriorityLock: this.getActiveVoiceLock() ? {
+        eventName: this.voicePriorityLock.eventName,
+        remainingMs: Math.max(0, Math.round(this.voicePriorityLock.until - Date.now())),
+        priority: this.voicePriorityLock.priority
+      } : null,
+      delayedVoiceCount: this.delayedVoiceTimers?.size || 0,
       lastVoiceSuppression: this.lastVoiceSuppression,
       recentVoiceSuppressions: this.voiceSuppressionLog?.slice(-8) || [],
       activeVoiceCount: this.activeVoices?.size || 0,
@@ -786,8 +1183,20 @@ class AudioController {
     return this.ctaVoiceEnabled;
   }
 
+  setBossVoiceEnabled(enabled) {
+    this.bossVoiceEnabled = Boolean(enabled);
+    try {
+      localStorage.setItem('burt_boss_voice_enabled', this.bossVoiceEnabled);
+    } catch { }
+    return this.bossVoiceEnabled;
+  }
+
   isCtaVoiceEnabled() {
     return this.ctaVoiceEnabled !== false;
+  }
+
+  isBossVoiceEnabled() {
+    return this.bossVoiceEnabled !== false;
   }
 
   toggleMute() {
@@ -795,6 +1204,14 @@ class AudioController {
   }
 
   // --- VOICE ---
+
+  playDiegeticVoice(eventName, options = {}) {
+    return this.playVoice(eventName, {
+      ...options,
+      ignoreVoiceEnabled: true,
+      volumeBus: options.volumeBus || 'sfx'
+    });
+  }
 
   recordVoiceSuppression(eventName, reason, now, detail = {}) {
     const entry = {
@@ -834,10 +1251,81 @@ class AudioController {
     }
   }
 
+  getActiveVoiceLock(now = Date.now()) {
+    const lock = this.voicePriorityLock;
+    if (!lock || now >= lock.until) {
+      this.voicePriorityLock = null;
+      return null;
+    }
+    return lock;
+  }
+
+  reserveVoiceLock(eventName, options = {}) {
+    const now = Date.now();
+    const durationMs = Math.max(0, this.readMixNumber(options.durationMs, options.exclusiveLockMs ?? 0));
+    if (!eventName || durationMs <= 0) return false;
+    const priority = this.readMixNumber(options.voicePriority, options.priority ?? 50);
+    const activeLock = this.getActiveVoiceLock(now);
+    if (activeLock && activeLock.eventName !== eventName && activeLock.priority > priority && options.force !== true) {
+      return false;
+    }
+    if (options.stopOtherVoices === true) {
+      this.stopAllVoices(options.reason || `${eventName}_voice_lock`);
+    }
+    this.voicePriorityLock = {
+      eventName,
+      priority,
+      until: now + durationMs,
+      startedAt: now,
+      reason: options.reason || 'voice_lock'
+    };
+    return true;
+  }
+
+  scheduleVoiceAfterLock(eventName, options, remainingMs, lock) {
+    const delayMs = Math.max(80, Math.min(
+      this.readMixNumber(options.maxVoiceLockDelayMs, 4500),
+      remainingMs + this.readMixNumber(options.voiceLockTailMs, 180)
+    ));
+    const retryOptions = {
+      ...options,
+      delayIfVoiceLocked: false
+    };
+    const timer = setTimeout(() => {
+      this.delayedVoiceTimers.delete(timer);
+      this.playVoice(eventName, retryOptions);
+    }, delayMs);
+    this.delayedVoiceTimers.add(timer);
+    this.recordVoiceSuppression(eventName, 'voice_lock_delayed', Date.now(), {
+      lockEvent: lock?.eventName || null,
+      delayMs: Math.round(delayMs)
+    });
+    return false;
+  }
+
   playVoice(eventName, options = {}) {
-    if (!this.enabled || !this.voiceEnabled) return false;
+    if (!this.enabled) return false;
+    if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
+    const voicePriority = this.readMixNumber(options.voicePriority, mix.priority ?? 0);
+    const activeLock = this.getActiveVoiceLock(now);
+    if (
+      activeLock &&
+      options.bypassVoiceLock !== true &&
+      activeLock.eventName !== eventName &&
+      voicePriority < activeLock.priority
+    ) {
+      const remainingMs = Math.max(0, activeLock.until - now);
+      if (options.delayIfVoiceLocked === true) {
+        return this.scheduleVoiceAfterLock(eventName, options, remainingMs, activeLock);
+      }
+      this.recordVoiceSuppression(eventName, 'voice_lock', now, {
+        lockEvent: activeLock.eventName,
+        remainingMs: Math.round(remainingMs)
+      });
+      return false;
+    }
     const cooldownMs = this.readMixNumber(options.cooldownMs, mix.cooldownMs ?? 1500);
     const eventCooldownMs = Math.max(0, this.readMixNumber(options.eventCooldownMs, mix.eventCooldownMs ?? cooldownMs));
     const force = options.force === true;
@@ -851,6 +1339,14 @@ class AudioController {
     }
     if (options.stopOtherVoices === true) {
       this.stopAllVoices('exclusive_voice_request');
+    }
+    if (this.readMixNumber(options.exclusiveLockMs, 0) > 0) {
+      this.reserveVoiceLock(eventName, {
+        durationMs: options.exclusiveLockMs,
+        voicePriority,
+        force: true,
+        reason: options.exclusiveLockReason || 'exclusive_voice_request'
+      });
     }
 
     // Celebration Rate Limiting
@@ -912,7 +1408,8 @@ class AudioController {
         const audio = new Audio(resolvedSrc);
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
-        audio.volume = this.clampUnit(this.masterVolume * this.voiceVolume * volumeMultiplier);
+        const busVolume = options.volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
+        audio.volume = this.clampUnit(this.masterVolume * busVolume * volumeMultiplier);
         const voiceId = ++this.voicePlayId;
         const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup };
         this.activeVoices.set(voiceId, entry);

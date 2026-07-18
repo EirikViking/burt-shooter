@@ -1,0 +1,19 @@
+Nova Swarm SteamPipe upload evidence
+Generated: 2026-07-15T10:21:45Z
+Source runtime commit: b6aa8a007de0fea713879a70685711709f288ddc
+Build stamp: v2026-07-15_12-01-29
+AppID: 4765070
+DepotID: 4765071
+Verified SetLive target: sector-continue-test
+Verified ContentRoot: ..\desktop\win-unpacked
+
+[2026-07-15 12:15:54]: Starting AppID 4765070 build (flags 0x0).
+[2026-07-15 12:15:54]: Building depot 4765071...
+[2026-07-15 12:16:47]: Uploading new manifest to depot-ingest.discovery.steamserver.net (handle 14600671332154209939, 93831 bytes).
+[2026-07-15 12:16:48]: Uploading 11 out of 11 missing chunks.
+[2026-07-15 12:16:52]: Success! New manifestID 8091511179624093249 created and 11 new chunks uploaded.
+[2026-07-15 12:16:53]: Successfully finished AppID 4765070 build (BuildID 24218172).
+
+SteamCMD exit code: 0
+Public/default target present in VDF: false
+Steamworks website opened: false

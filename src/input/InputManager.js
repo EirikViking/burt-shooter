@@ -50,6 +50,9 @@ export class InputManager {
     this.handleBlur = () => {
       this.resetAllKeys();
     };
+    this.handleNativeBlur = () => {
+      this.resetAllKeys();
+    };
 
     this.handleVisibilityChange = () => {
       if (document.hidden) {
@@ -58,6 +61,7 @@ export class InputManager {
     };
 
     window.addEventListener('blur', this.handleBlur);
+    window.addEventListener('nova-app-window-blur', this.handleNativeBlur);
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
@@ -81,6 +85,7 @@ export class InputManager {
       moveY: 0,
       firing: false,
       dodge: false,
+      focus: false,
       pause: false,
       pauseJustPressed: false,
       buttons: {},
@@ -164,6 +169,7 @@ export class InputManager {
       this.isButtonPressed(buttons, 7);
     const dodge = this.isButtonPressed(buttons, 1) ||
       this.isButtonPressed(buttons, 4);
+    const focus = this.isButtonPressed(buttons, 6);
     const pause = this.isButtonPressed(buttons, 9) ||
       this.isButtonPressed(buttons, 8) ||
       this.isButtonPressed(buttons, 16);
@@ -177,6 +183,7 @@ export class InputManager {
       dpadDown ||
       firing ||
       dodge ||
+      focus ||
       pause;
     if (controllerActive) markControllerInputActive();
 
@@ -188,9 +195,10 @@ export class InputManager {
       moveY: dpadUp ? -1 : dpadDown ? 1 : moveY,
       firing,
       dodge,
+      focus,
       pause,
       pauseJustPressed,
-      buttons: { dpadLeft, dpadRight, dpadUp, dpadDown, firing, dodge, pause },
+      buttons: { dpadLeft, dpadRight, dpadUp, dpadDown, firing, dodge, focus, pause },
       updatedAt: now
     };
     this.previousGamepadButtons = { pause };
@@ -227,13 +235,19 @@ export class InputManager {
 
   isKeyPressed(key) {
     const keyboardOverride = typeof window !== 'undefined' ? window.__burtKeyboardOverride : null;
-    if (keyboardOverride && keyboardOverride[key] === true) return true;
+    const overridePressed = keyboardOverride && (
+      keyboardOverride[key] === true ||
+      (key === 'focus' && (keyboardOverride.ControlLeft === true || keyboardOverride.ControlRight === true))
+    );
+    if (overridePressed) return true;
     const gamepad = this.pollGamepad();
     if (key === 'ArrowLeft' || key === 'KeyA' || key === 'a' || key === 'A') return !!this.keys[key] || gamepad.moveX < -0.35;
     if (key === 'ArrowRight' || key === 'KeyD' || key === 'd' || key === 'D') return !!this.keys[key] || gamepad.moveX > 0.35;
     if (key === 'ArrowUp' || key === 'KeyW' || key === 'w' || key === 'W') return !!this.keys[key] || gamepad.moveY < -0.35;
     if (key === 'ArrowDown' || key === 'KeyS' || key === 's' || key === 'S') return !!this.keys[key] || gamepad.moveY > 0.35;
     if (key === 'ShiftLeft' || key === 'ShiftRight') return !!this.keys[key] || gamepad.dodge;
+    if (key === 'focus') return !!this.keys.focus || !!this.keys.ControlLeft || !!this.keys.ControlRight || gamepad.focus;
+    if (key === 'ControlLeft' || key === 'ControlRight') return !!this.keys[key] || !!this.keys.focus || gamepad.focus;
     if (key === 'Space' || key === 'shoot') return !!this.keys[key] || gamepad.firing;
     return !!this.keys[key];
   }
@@ -263,6 +277,7 @@ export class InputManager {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
     window.removeEventListener('blur', this.handleBlur);
+    window.removeEventListener('nova-app-window-blur', this.handleNativeBlur);
     window.removeEventListener('gamepadconnected', this.handleGamepadConnected);
     window.removeEventListener('gamepaddisconnected', this.handleGamepadDisconnected);
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);

@@ -1,0 +1,66 @@
+{
+  "status": "uploaded",
+  "purpose": "private Steam test build for BuildID 23588518 real-playtest release blockers",
+  "timestampUtc": "2026-06-05T19:15:27Z",
+  "branch": "codex/fix-dead-enemy-pixels-20260604",
+  "baselineCommit": "494a0e9cff1cfcad0c205a2558d6fa92acca8311",
+  "packageVersion": "v2026-06-05_21-08-06",
+  "supersedesSteamBuildId": "23591148",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23591701",
+    "setLive": "",
+    "leaderboardName": "nova_swarm_global_score_v2"
+  },
+  "payload": {
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestFileHash": "002c650e35d9a8c7c44c6f84cffa9f906c8e88268516e7ec5722fb9c216b0d21",
+    "manifestContentHash": "d7ae4a813e54f02c4b5a5d10d36b4489039b6cf7997dd27e49f9c53e59ef0cd6",
+    "fileCount": 336,
+    "totalBytes": 723512401,
+    "executableSha256": "87f41d032278fbcf0f5d80e5e67d44c1017d46965480d3dd8ea6f3aa149e70e4"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "desc": "Nova Swarm v2026-06-05_21-08-06 BuildID 23588518 release blockers Overrun card fix private test",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "buildOutput": "..\\\\steam-build-output",
+    "setLive": ""
+  },
+  "commands": [
+    "npm run check:overrun-confirmation",
+    "npm run check:overrun-clear",
+    "npm run check:dead-enemy-playthrough",
+    "npm run check:i18n",
+    "npm run build:current",
+    "npm run check:i18n-ui",
+    "npm run check:release-hardening",
+    "npm run build",
+    "npm run check:steam-leaderboard-mock",
+    "npm run check:i18n",
+    "npm run check:i18n-ui",
+    "npm run package:steam:win:current",
+    "npm run desktop:smoke:packaged",
+    "npm run steamworks:payload-manifest",
+    "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= STEAM_BUILD_DESC=\"Nova Swarm v2026-06-05_21-08-06 BuildID 23588518 release blockers Overrun card fix private test\" npm run steamworks:write-vdf",
+    "C:\\\\steamcmd\\\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\\\vibe-coding-e\\\\burt-shooter-cursor-hide-20260604\\\\release\\\\steamworks\\\\app_build_LOCAL.vdf +quit"
+  ],
+  "verification": {
+    "overrunConfirmation": "passed with held-card text overlap assertions; report test-results/overrun-confirmation-2026-06-05T18-51-48-618Z/report.json",
+    "overrunClear": "passed",
+    "targetedDeadEnemyPlaythrough": "passed; report test-results/dead-enemy-playthrough-2026-06-05T18-53-00-953Z/report.json",
+    "releaseHardening": "passed 33/33 checks in 487s; summary test-results/release-hardening/latest-summary.md; dead enemy report test-results/dead-enemy-playthrough-2026-06-05T18-59-54-499Z/report.json",
+    "build": "passed; package version v2026-06-05_21-08-06",
+    "steamLeaderboardMock": "passed; report test-results/steam-leaderboard-mock-2026-06-05T19-08-06-932Z/report.json",
+    "i18n": "passed",
+    "i18nUi": "passed; report test-results/i18n-ui-2026-06-05T19-09-05-945Z/",
+    "packageSteamWinCurrent": "passed; runtime report test-results/steam-package-runtime-2026-06-05T19-12-28-580Z/report.json",
+    "packagedSmoke": "passed; report test-results/packaged-exe-smoke-2026-06-05T19-12-42-738Z/report.json",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 23591701).",
+    "dummyScoresSubmitted": false,
+    "steamworksStoreSettingsChanged": false,
+    "setLiveKeptEmpty": true,
+    "deployPerformed": false
+  }
+}

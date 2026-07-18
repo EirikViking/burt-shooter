@@ -1,0 +1,95 @@
+{
+  "generatedAt": "2026-07-08T16:00:14+02:00",
+  "status": "uploaded_private_unassigned",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24110443",
+    "setLive": "",
+    "account": "gaunziman",
+    "branchAssigned": false,
+    "publicDefaultChanged": false
+  },
+  "source": {
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "a0ac94f7e98f50d5109c77e7d800a888547f4864",
+    "summary": "Pilot Orders, Settings, Career Intel, and Run Report UI readability polish"
+  },
+  "package": {
+    "buildVersion": "v2026-07-08_12-02-47",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "5ce04f2fa8beec1fbcd24da95bbb6aa18ee1ff1d0331959c53477e1043ffa85e",
+    "fileCount": 336,
+    "totalBytes": 916240771,
+    "executable": {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "cd1a410ba4de307a05e088536e91c20200d043c11aeb3cca47e7ca641890a9cc"
+    }
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "absolutePath": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": ""
+  },
+  "checks": [
+    {
+      "command": "npm run check:release-line",
+      "status": "passed"
+    },
+    {
+      "command": "npm run build:current",
+      "status": "passed",
+      "notes": "Existing ascendant fallback-art and chunk-size warnings only."
+    },
+    {
+      "command": "npm run package:steam:win:current",
+      "status": "passed",
+      "notes": "A first timed-out wrapper left an incomplete package; rerun completed and check:steam-package-runtime passed."
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-07-08T13-54-21-414Z/report.json",
+      "gitSha": "a0ac94f"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-07-08T13-55-13-677Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-07-08T13-55-37-195Z/report.json",
+      "minFps": 59.99999999999999,
+      "avgFps": 59.99999999999999
+    },
+    {
+      "command": "npm run check:desktop-package",
+      "status": "passed",
+      "report": "release/steamworks/desktop_package_review_report.json"
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed",
+      "report": "release/steamworks/steam_payload_manifest.json"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+      "status": "passed"
+    }
+  ],
+  "upload": {
+    "command": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\tools\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit",
+    "status": "succeeded",
+    "startedAtSteamLog": "2026-07-08 15:58:40",
+    "finishedAtSteamLog": "2026-07-08 16:00:14",
+    "steamcmdSummary": "Successfully finished AppID 4765070 build (BuildID 24110443).",
+    "bytesUploaded": "8.7MB"
+  },
+  "steamworksSettingsTouched": false,
+  "steamBranchAssignmentTouched": false,
+  "steamStoreMetadataTouched": false
+}

@@ -1,0 +1,124 @@
+{
+  "schema": "nova-swarm-steam-upload-evidence.v1",
+  "createdAt": "2026-07-02T21:00:00Z",
+  "branch": "codex/main-menu-run-contracts-20260702",
+  "sourceCommit": "4a03d87f634356441b516d67c6ae0db04c20bf64",
+  "sourceCommitShort": "4a03d87",
+  "sourceCommitMessage": "Add main menu run contracts",
+  "preUploadEvidenceCommit": "8ab081af40ae6216c04e72600c61db55efd6e3cd",
+  "preUploadEvidenceCommitMessage": "Record mission board Steam package evidence",
+  "requestScope": "main-menu Mission Board / Run Contracts, then private Steam upload",
+  "build": {
+    "version": "v2026-07-02_22-47-38",
+    "timestamp": "2026-07-02T20:47:38.429Z",
+    "description": "Nova Swarm Mission Board run contracts 2026-07-02"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24027927",
+    "setLive": "",
+    "branchAssignment": "none",
+    "uploadMode": "private-unassigned",
+    "steamCmd": "C:\\steamcmd\\steamcmd.exe",
+    "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+    "vdfSha256": "17182fab16ffad64811fcf1da7694a50e6dcaf950d92ead5b65e2921f3b8fe30",
+    "uploadLogPath": "release/steamworks/steam_upload_console_mission_board_contracts_20260702.log",
+    "uploadLogSha256": "4299ad693dcc581bce808a0e8c983570be7237d0ee2d53d6ddda1ad186ee43eb",
+    "steamCmdResult": "Successfully finished AppID 4765070 build (BuildID 24027927)."
+  },
+  "vdfInspection": {
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "descLine": "\"Desc\" \"Nova Swarm Mission Board run contracts 2026-07-02\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\"",
+    "depotIdLine": "\"4765071\"",
+    "localPathLine": "\"LocalPath\" \"*\"",
+    "depotPathLine": "\"DepotPath\" \".\""
+  },
+  "payload": {
+    "contentRoot": "release/desktop/win-unpacked",
+    "manifestPath": "release/steamworks/steam_payload_manifest.json",
+    "manifestHash": "fe99c9c4cb0a7a0957646c5b55b2456791eae8745c01de7bdee5f2babe5e4dc5",
+    "manifestFileSha256": "6658c0943f911a5b605f38965cd8ac14f17164638ebc09f8437c91731421d92f",
+    "fileCount": 336,
+    "totalBytes": 915946934,
+    "executableSha256": "12d7acaa34476ae94bec95c1a66368abb65c9e76c26ffcebe0717e7698e9eed9"
+  },
+  "verification": {
+    "sourceChecks": [
+      "node --check src/progression/RunContracts.js",
+      "node --check src/progression/HangarProgressState.js",
+      "node --check src/steamCloudPersistence.js",
+      "node --check src/scenes/PlayScene.js",
+      "node --check src/scenes/MenuScene.js",
+      "node --check src/main.js",
+      "node --check scripts/check-run-contracts.mjs",
+      "npm run check:run-contracts",
+      "npm run check:i18n",
+      "npm run check:i18n-ui",
+      "npm run build:current",
+      "npm run check:release-line",
+      "npm run check:save-profile-migration",
+      "npm run check:profile-rescue-import",
+      "npm run check:steam-electron-bridge",
+      "npm run check:graze-break",
+      "npm run check:boss-support-codex",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "npm run check:controller-flow",
+      "git diff --check"
+    ],
+    "releaseChecks": [
+      "npm run check:release-line",
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run steamworks:payload-manifest",
+      "npm run desktop:smoke:current",
+      "npm run steamworks:write-vdf",
+      "npm run check:desktop-package",
+      "C:\\steamcmd\\steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "reportPaths": {
+      "runContracts": "test-results/run-contracts-2026-07-02T20-34-12-725Z/report.json",
+      "i18nUi": "test-results/i18n-ui-2026-07-02T20-34-43-055Z",
+      "steamSdkReady": "test-results/steam-sdk-ready-2026-07-02T20-47-37-696Z/report.json",
+      "steamPackageRuntime": "test-results/steam-package-runtime-2026-07-02T20-56-41-718Z/report.json",
+      "currentElectronSmoke": "test-results/electron-smoke-2026-07-02T20-55-59-088Z/report.json",
+      "packagedSmoke": "test-results/packaged-exe-smoke-2026-07-02T20-53-06-091Z/report.json",
+      "packagedControls": "test-results/packaged-control-smoke-2026-07-02T20-53-51-769Z/report.json",
+      "packagedPerf": "test-results/packaged-perf-smoke-2026-07-02T20-54-05-973Z/report.json",
+      "desktopPackageReview": "release/steamworks/desktop_package_review_report.json"
+    }
+  },
+  "safety": {
+    "steamworksSettingsChanged": false,
+    "storeMetadataChanged": false,
+    "appIdChanged": false,
+    "depotIdChanged": false,
+    "leaderboardIdentityChanged": false,
+    "achievementsMetadataChanged": false,
+    "steamCloudPathsChanged": false,
+    "scoreFormulaChanged": false,
+    "xpFormulaChanged": false,
+    "balanceChanged": false,
+    "newSteamAchievements": false,
+    "hangarProgressSchemaExtended": true,
+    "newRuntimeNetworkCalls": false,
+    "newSfxAdded": false,
+    "elevenLabsUsed": false,
+    "notes": [
+      "Run Contracts completion state is saved inside existing Hangar Progress / Steam Cloud payloads; no Steam Cloud path changed.",
+      "Rewards remain disabled behind RUN_CONTRACT_REWARDS_ENABLED = false.",
+      "SteamCMD upload succeeded with cached credentials and blank SetLive, so the build is private/unassigned until manually routed in Steamworks.",
+      "No public/default branch assignment was made by this upload."
+    ]
+  },
+  "rollback": {
+    "sourceRollback": "git switch codex/boss-support-slowmo-20260702",
+    "featureRevert": "git revert 4a03d87f634356441b516d67c6ae0db04c20bf64",
+    "steamRollback": "No Steam branch rollback is needed for this upload-only build because SetLive was blank. If BuildID 24027927 is manually assigned later and needs rollback, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the prior desired BuildID."
+  }
+}

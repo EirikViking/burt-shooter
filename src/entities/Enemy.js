@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { GameAssets } from '../utils/GameAssets.js';
 // TASK 3: Import difficulty multiplier
-import { BalanceConfig } from '../config/BalanceConfig.js';
+import { BalanceConfig, getNormalWavePressureTuning } from '../config/BalanceConfig.js';
 import { enhanceEnemyVisuals } from '../utils/EnemyVisualEnhancer.js';
 import { getEnemyVisualVariant } from '../config/VisualVariantCatalog.js';
 import { getGeneratedEnemyProfile } from '../config/GeneratedEnemyProfiles.js';
@@ -13,8 +13,69 @@ import { getEnemyWeaponProfileById, getEnemyWeaponProfileForEnemy, toBulletVisua
 import { getEnemyThreatAction } from '../config/EnemyThreatActions.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { applyThreatResponseToEnemyHealth } from '../config/ShipThreatResponse.js';
+import { applyAceBountyToEnemy } from '../config/AceBounties.js';
+import {
+  applyNemesisProtocolToEnemy,
+  maybeActivateNemesisEnrage,
+  resolveNemesisDamage
+} from '../config/NemesisProtocols.js';
+import { activateRivalWingMorale, applyRivalWingToEnemy, getRivalWingDoctrineById } from '../config/RivalWingDoctrines.js';
+import { createText } from '../utils/pixiText.js';
+import { translateText } from '../i18n/index.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
+
+function drawThreatFrameTick(graphics, angle, innerRadius, outerRadius) {
+  graphics.moveTo(Math.cos(angle) * innerRadius, Math.sin(angle) * innerRadius);
+  graphics.lineTo(Math.cos(angle) * outerRadius, Math.sin(angle) * outerRadius);
+}
+
+function getEnemyThreatFrameProfile(enemy) {
+  if (!enemy || enemy.type === 'bonus_challenge') return null;
+  const accent = enemy.visualVariant?.accent || enemy.color || 0xff5d6c;
+  if (enemy.isRareChaosVisitor && enemy.rareChaosVisitorVariant) {
+    return { tier: 'rare_chaos', color: enemy.rareChaosVisitorVariant.tint, accent: enemy.rareChaosVisitorVariant.accent, markerCount: 11, radiusMult: 2.72 };
+  }
+  if (enemy.isAce && enemy.aceVariant) {
+    const protocol = enemy.nemesisProtocol;
+    return {
+      tier: 'ace',
+      color: protocol?.color || enemy.aceVariant.color || 0xffd15c,
+      accent: enemy.nemesisEnraged ? (protocol?.accent || 0xff6174) : (enemy.aceVariant.accent || 0xffffff),
+      markerCount: protocol ? 8 : 7,
+      radiusMult: protocol ? 2.36 : 2.24
+    };
+  }
+  if (enemy.rivalWingDoctrine) {
+    return { tier: 'rival_wing', color: enemy.rivalWingDoctrine.color || 0xffd15c, accent: enemy.rivalWingMoraleActive ? 0xff6174 : 0x7df9ff, markerCount: 4, radiusMult: 1.88 };
+  }
+  if (enemy.middleShipProfile || enemy.isEliteMiddleShip) {
+    return { tier: 'elite', color: enemy.middleShipProfile?.accent || accent, accent: 0xffffff, markerCount: 6, radiusMult: 2.18 };
+  }
+  if (enemy.kind === 'danger_mid_ship') {
+    return { tier: 'danger_mid', color: enemy.dangerMidShipProfile?.accent || 0xffb84a, accent: 0xfff0a0, markerCount: 5, radiusMult: 2.02 };
+  }
+  if (enemy.generatedProfile?.lateMayhem) {
+    return { tier: 'late_mayhem', color: enemy.generatedProfile.accent || accent, accent: enemy.generatedProfile.tint || 0xffffff, markerCount: 5, radiusMult: 1.9 };
+  }
+  if (enemy.generatedProfile?.role === 'fast_scout' || enemy.generatedProfile?.movementStyle === 'fastNeedle') {
+    return { tier: 'fast', color: 0x66f7ff, accent: enemy.generatedProfile.accent || accent || 0xffef7e, markerCount: 4, radiusMult: 2.6 };
+  }
+  if (enemy.threatActionDefinition) {
+    return { tier: 'threat_action', color: 0xffd36b, accent: accent || 0xff6174, markerCount: 4, radiusMult: 1.82 };
+  }
+  if (enemy.isElite || Number(enemy.maxHealth) >= 8) {
+    return { tier: 'durable', color: 0xffe56d, accent: accent || 0xfff1a8, markerCount: 3, radiusMult: 1.7 };
+  }
+  return null;
+}
+
+function smoothFormationStep(value, sharpness = 2.4) {
+  const normalized = Math.max(-1, Math.min(1, Number(value) || 0));
+  const scale = Math.tanh(sharpness) || 1;
+  return Math.tanh(normalized * sharpness) / scale;
+}
 
 export class Enemy {
   constructor(x, y, type, level, game, waveColor = null) {
@@ -25,6 +86,9 @@ export class Enemy {
     this.game = game;
     this.waveColor = waveColor; // 'Blue', 'Green', 'Red', 'Black'
     this.active = true;
+    this.visualsDeactivated = false;
+    this.destroyed = false;
+    this.ownedVisuals = [];
     this.radius = 15;
 
     this.middleShipProfile = getEliteMiddleShipProfile(type);
@@ -42,6 +106,31 @@ export class Enemy {
     this.moveTimer = 0;
     this.scoreValue = 10;
     this.slow_time = 0;
+    this.hitFeedbackLayer = null;
+    this.hitFeedbackStartedAt = 0;
+    this.hitFeedbackUntil = 0;
+    this.hitFeedbackDamage = 0;
+    this.lastHitSparkAt = 0;
+    this.hitFeedbackSparkCount = 0;
+    this.hitFeedbackImpactAngle = null;
+    this.hitFeedbackImpactDistance = 0;
+    this.hitFeedbackImpactLocalX = 0;
+    this.hitFeedbackImpactLocalY = 0;
+    this.muzzleFlashLayer = null;
+    this.muzzleFlashStartedAt = 0;
+    this.muzzleFlashUntil = 0;
+    this.muzzleFlashAngle = Math.PI / 2;
+    this.muzzleFlashShotCount = 0;
+    this.muzzleFlashColor = 0xff4055;
+    this.hullDetailLayer = null;
+    this.spawnCueLayer = null;
+    this.spawnCueStartedAt = Date.now();
+    this.spawnCueDurationMs = this.isEliteMiddleShip ? 1100 : 860;
+    this.threatFrameLayer = null;
+    this.aceLabelPlate = null;
+    this.aceLabelBack = null;
+    this.aceLabelRails = null;
+    this.aceLabel = null;
 
     // Arcade formation state machine.
     this.state = 'ENTRY';
@@ -59,6 +148,8 @@ export class Enemy {
     this.waveCenterY = y;
     this.waveFormation = null;
     this.tacticalFireScalar = 1;
+    this.tacticalProjectileSpeedScalar = 1;
+    this.tacticalThreatProjectileSpeedScalar = 1;
     this.tacticalShotPattern = 'aimed';
     this.tacticalMoveStyle = 'standard';
     this.tacticalDiveBias = 1;
@@ -67,6 +158,7 @@ export class Enemy {
     this.tacticalPhase = Math.random() * Math.PI * 2;
     this.combatBounds = null;
     this.tacticalSwayScalar = 1;
+    this.formationSwayRampMs = 480;
     this.threatActionDefinition = null;
     this.currentThreatAction = null;
     this.threatTelegraphStartedAt = 0;
@@ -75,11 +167,18 @@ export class Enemy {
     this.threatActionLockedTarget = null;
     this.threatTelegraphLayer = null;
     this.threatActionExecutionCount = 0;
+    this.profileFireScalar = 1;
 
     this.idlePhase = Math.random() * Math.PI * 2;
     this.spriteKey = null;
     this.xtraType = 1; // 1-5
     this.usingXtraAsset = false;
+    this.usingGeneratedEnemyTexture = false;
+    this.usingEliteMiddleShipTexture = false;
+    this.usingPlayerShipTexture = false;
+    this.usingFallbackGraphics = false;
+    this.generatedEnemyTextureFallbackIndex = null;
+    this.eliteMiddleShipTextureFallbackIndex = null;
     this.generatedProfile = this.middleShipProfile ? null : getGeneratedEnemyProfile(type, `${level}|${waveColor || 'none'}|${Math.round(x)}|${Math.round(y)}`);
     this.visualVariant = this.middleShipProfile
       ? {
@@ -107,6 +206,10 @@ export class Enemy {
       activeUntil: 0,
       lastTriggeredAt: 0
     } : null;
+    this.arrivalGuardDamageMultiplier = this.isEliteMiddleShip ? 0.4 : 1;
+    this.arrivalCombatReadyAt = 0;
+    this.entryCompletedAt = 0;
+    this.lastArrivalGuardDamage = null;
     this.eliteStatusUntil = 0;
     this.eliteShieldUntil = 0;
     this.phaseShiftUntil = 0;
@@ -145,6 +248,7 @@ export class Enemy {
       this.spriteKey = profile.type;
       this.generatedEnemyIndex = profile.spriteIndex;
       this.xtraType = (profile.spriteIndex % 5) + 1;
+      this.profileFireScalar = profile.profileFireScalar || 1;
     } else {
     switch (this.type) {
       case 'chaser':
@@ -362,9 +466,18 @@ export class Enemy {
     const globalMult = BalanceConfig.DIFFICULTY_MULTIPLIER;
 
     this.health = Math.ceil(this.health * hpScale);
+    const threatResponse = this.game?.threatResponse || null;
+    const threatHealth = applyThreatResponseToEnemyHealth(
+      this.health,
+      threatResponse,
+      this.game?.threatResponseHealthAccumulator || 0
+    );
+    this.health = threatHealth.health;
+    this.threatResponseHardened = threatHealth.hardened;
+    if (this.game) this.game.threatResponseHealthAccumulator = threatHealth.accumulator;
     this.maxHealth = this.health;
-    this.speed *= speedScale * globalMult;
-    this.shootDelay = this.shootDelay * fireDelayScale;
+    this.speed *= speedScale * globalMult * Math.max(1, Number(threatResponse?.enemySpeedMult) || 1);
+    this.shootDelay = this.shootDelay * fireDelayScale * Math.max(0.72, Number(threatResponse?.enemyFireDelayMult) || 1);
 
     // Sprite Selection
     if (this.middleShipProfile) {
@@ -393,18 +506,97 @@ export class Enemy {
 
   createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.label = `enemy_visual:${this.kind}:${this.type || 'unknown'}`;
+    this.sprite.__enemyOwner = this;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
     this.sprite.sortableChildren = true;
 
+    const tex = this.resolveBodyTexture();
+    if (GameAssets.isValidTexture(tex)) {
+      this.installBodySprite(tex);
+    } else {
+      this.createFallbackGraphics();
+    }
+
+    this.healthBar = new PIXI.Graphics();
+    this.updateHealthBar();
+    this.sprite.addChild(this.healthBar);
+
+    this.hitFeedbackLayer = new PIXI.Graphics();
+    this.hitFeedbackLayer.label = 'enemyHitFeedback';
+    this.hitFeedbackLayer.zIndex = 9;
+    this.hitFeedbackLayer.blendMode = 'add';
+    this.hitFeedbackLayer.visible = false;
+    this.sprite.addChild(this.hitFeedbackLayer);
+
+    this.muzzleFlashLayer = new PIXI.Graphics();
+    this.muzzleFlashLayer.label = 'enemyMuzzleFlash';
+    this.muzzleFlashLayer.zIndex = 8;
+    this.muzzleFlashLayer.blendMode = 'add';
+    this.muzzleFlashLayer.visible = false;
+    this.sprite.addChild(this.muzzleFlashLayer);
+
+    this.spawnCueLayer = new PIXI.Graphics();
+    this.spawnCueLayer.label = 'enemySpawnCue';
+    this.spawnCueLayer.zIndex = -8;
+    this.spawnCueLayer.blendMode = 'add';
+    this.spawnCueLayer.visible = true;
+    this.sprite.addChild(this.spawnCueLayer);
+
+    this.threatFrameLayer = new PIXI.Graphics();
+    this.threatFrameLayer.label = 'enemyThreatFrame';
+    this.threatFrameLayer.zIndex = -7;
+    this.threatFrameLayer.blendMode = 'add';
+    this.threatFrameLayer.visible = false;
+    this.sprite.addChild(this.threatFrameLayer);
+
+    if (this.middleShipProfile) {
+      this.eliteVfxLayer = new PIXI.Graphics();
+      this.eliteVfxLayer.zIndex = -1;
+      this.eliteVfxLayer.blendMode = 'add';
+      this.sprite.addChildAt(this.eliteVfxLayer, 0);
+    } else {
+      this.threatTelegraphLayer = new PIXI.Graphics();
+      this.threatTelegraphLayer.zIndex = -2;
+      this.threatTelegraphLayer.blendMode = 'add';
+      this.sprite.addChildAt(this.threatTelegraphLayer, 0);
+    }
+
+    this.ensureVisualEnhancements();
+  }
+
+  resolveBodyTexture() {
     let tex;
-    // Check for fighter type (player ship variant)
+    this.usingXtraAsset = false;
+    this.usingGeneratedEnemyTexture = false;
+    this.usingEliteMiddleShipTexture = false;
+    this.usingPlayerShipTexture = false;
+    this.generatedEnemyTextureFallbackIndex = null;
+    this.eliteMiddleShipTextureFallbackIndex = null;
+
     if (this.middleShipProfile && Number.isFinite(this.eliteMiddleShipIndex)) {
       tex = GameAssets.getEliteMiddleShipTexture(this.eliteMiddleShipIndex);
-      this.usingEliteMiddleShipTexture = true;
+      this.usingEliteMiddleShipTexture = GameAssets.isValidTexture(tex);
+      if (!this.usingEliteMiddleShipTexture) {
+        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.eliteMiddleShipTextures, this.eliteMiddleShipIndex);
+        if (fallbackIndex !== null) {
+          tex = GameAssets.getEliteMiddleShipTexture(fallbackIndex);
+          this.usingEliteMiddleShipTexture = true;
+          this.eliteMiddleShipTextureFallbackIndex = fallbackIndex;
+        }
+      }
     } else if (this.generatedProfile && Number.isFinite(this.generatedEnemyIndex)) {
       tex = GameAssets.getGeneratedEnemyTexture(this.generatedEnemyIndex);
-      this.usingGeneratedEnemyTexture = true;
+      this.usingGeneratedEnemyTexture = GameAssets.isValidTexture(tex);
+      if (!this.usingGeneratedEnemyTexture) {
+        const fallbackIndex = this.findFallbackTextureIndex(GameAssets.generatedEnemyTextures, this.generatedEnemyIndex);
+        if (fallbackIndex !== null) {
+          tex = GameAssets.getGeneratedEnemyTexture(fallbackIndex);
+          this.usingGeneratedEnemyTexture = true;
+          this.generatedEnemyTextureFallbackIndex = fallbackIndex;
+        }
+      }
     } else if (this.type.startsWith('fighter_') && this.shipTextureIndex !== undefined) {
       tex = GameAssets.getRankShipTexture(this.shipTextureIndex);
       this.usingPlayerShipTexture = true;
@@ -428,6 +620,10 @@ export class Enemy {
       }
     }
 
+    return tex;
+  }
+
+  installBodySprite(tex, insertIndex = null) {
     if (GameAssets.isValidTexture(tex)) {
       const s = new PIXI.Sprite(tex);
       s.anchor.set(0.5);
@@ -449,30 +645,128 @@ export class Enemy {
       }
 
       this.addVariantGlow();
-      this.sprite.addChild(s);
+      if (Number.isFinite(insertIndex)) {
+        this.sprite.addChildAt(s, Math.max(0, Math.min(insertIndex, this.sprite.children.length)));
+      } else {
+        this.sprite.addChild(s);
+      }
       this.body = s;
+      this.usingFallbackGraphics = false;
+      const bodyIndex = this.sprite.getChildIndex?.(s);
+      this.installHullDetailLayer(Number.isFinite(bodyIndex) ? bodyIndex + 1 : null);
+    }
+  }
+
+  installHullDetailLayer(insertIndex = null) {
+    this.removeHullDetailLayer();
+    if (!this.sprite || !this.body?.texture || this.usingFallbackGraphics) return;
+
+    const layer = new PIXI.Graphics();
+    layer.label = 'enemyHullDetail';
+    layer.blendMode = 'add';
+    this.drawHullDetailLayer(layer);
+    if (Number.isFinite(insertIndex)) {
+      this.sprite.addChildAt(layer, Math.max(0, Math.min(insertIndex, this.sprite.children.length)));
     } else {
-      this.createFallbackGraphics();
+      this.sprite.addChild(layer);
+    }
+    this.hullDetailLayer = layer;
+  }
+
+  removeHullDetailLayer() {
+    if (!this.hullDetailLayer) return;
+    if (this.hullDetailLayer.parent) this.hullDetailLayer.parent.removeChild(this.hullDetailLayer);
+    this.hullDetailLayer.destroy?.({ children: true });
+    this.hullDetailLayer = null;
+  }
+
+  drawHullDetailLayer(layer) {
+    if (!layer) return;
+    layer.clear();
+    const profile = this.middleShipProfile || this.generatedProfile || this.visualVariant || {};
+    const accent = profile.accent || this.visualVariant?.accent || this.color || 0x66d9ff;
+    const tint = profile.hullTint || profile.tint || this.visualVariant?.tint || 0xffffff;
+    const radius = Math.max(14, Number(this.radius) || 14);
+    const elite = Boolean(this.middleShipProfile || this.isEliteMiddleShip);
+    const scale = elite ? 1.12 : 1;
+    let pipCount = 0;
+    let railCount = 0;
+    let spineCount = 0;
+    let wingBracketCount = 0;
+
+    for (let i = 0; i < 3; i += 1) {
+      const y = -radius * 0.34 + i * radius * 0.28;
+      const half = radius * (0.16 + i * 0.035) * scale;
+      layer.moveTo(-half, y);
+      layer.lineTo(half, y);
+      railCount += 1;
+    }
+    layer.stroke({ color: tint, width: elite ? 1.1 : 0.85, alpha: elite ? 0.18 : 0.14 });
+
+    [-1, 1].forEach((side) => {
+      const wingX = side * radius * 0.48 * scale;
+      const wingY = radius * 0.08;
+      layer.circle(wingX, wingY, elite ? 2.8 : 2.2);
+      layer.fill({ color: accent, alpha: elite ? 0.26 : 0.2 });
+      layer.moveTo(wingX - side * radius * 0.1, wingY + radius * 0.18);
+      layer.lineTo(wingX + side * radius * 0.16, wingY + radius * 0.28);
+      pipCount += 1;
+      railCount += 1;
+    });
+    layer.stroke({ color: accent, width: elite ? 1.2 : 0.9, alpha: elite ? 0.2 : 0.15 });
+
+    layer.circle(0, radius * 0.48, elite ? 2.5 : 2);
+    layer.fill({ color: 0xffffff, alpha: elite ? 0.22 : 0.16 });
+    pipCount += 1;
+
+    const noseY = radius * 0.62;
+    const midY = radius * 0.02;
+    const tailY = -radius * 0.54;
+    const spineHalf = radius * (elite ? 0.15 : 0.12) * scale;
+    layer.moveTo(0, noseY);
+    layer.lineTo(-spineHalf, midY);
+    layer.lineTo(0, tailY);
+    layer.lineTo(spineHalf, midY);
+    layer.lineTo(0, noseY);
+    spineCount += 4;
+    layer.stroke({ color: 0xffffff, width: elite ? 1.05 : 0.82, alpha: elite ? 0.2 : 0.16 });
+
+    [-1, 1].forEach((side) => {
+      const shoulderX = side * radius * 0.68 * scale;
+      const innerX = side * radius * 0.28 * scale;
+      const upperY = -radius * 0.2;
+      const lowerY = radius * 0.32;
+      layer.moveTo(innerX, upperY);
+      layer.lineTo(shoulderX, upperY + radius * 0.08);
+      layer.lineTo(shoulderX - side * radius * 0.1, lowerY);
+      wingBracketCount += 1;
+    });
+    layer.stroke({ color: accent, width: elite ? 1.15 : 0.9, alpha: elite ? 0.24 : 0.19 });
+
+    if (elite || this.generatedProfile?.lateMayhem) {
+      [-1, 1].forEach((side) => {
+        layer.circle(side * radius * 0.24, -radius * 0.42, 1.9);
+        pipCount += 1;
+      });
+      layer.fill({ color: accent, alpha: elite ? 0.22 : 0.16 });
     }
 
-    this.healthBar = new PIXI.Graphics();
-    this.updateHealthBar();
-    this.sprite.addChild(this.healthBar);
+    layer._debugHullDetail = {
+      visible: true,
+      pipCount,
+      railCount,
+      spineCount,
+      wingBracketCount,
+      usingGeneratedEnemyTexture: Boolean(this.usingGeneratedEnemyTexture),
+      usingEliteMiddleShipTexture: Boolean(this.usingEliteMiddleShipTexture),
+      usingXtraAsset: Boolean(this.usingXtraAsset),
+      usingPlayerShipTexture: Boolean(this.usingPlayerShipTexture)
+    };
+  }
 
-    if (this.middleShipProfile) {
-      this.eliteVfxLayer = new PIXI.Graphics();
-      this.eliteVfxLayer.zIndex = -1;
-      this.eliteVfxLayer.blendMode = 'add';
-      this.sprite.addChildAt(this.eliteVfxLayer, 0);
-    } else {
-      this.threatTelegraphLayer = new PIXI.Graphics();
-      this.threatTelegraphLayer.zIndex = -2;
-      this.threatTelegraphLayer.blendMode = 'add';
-      this.sprite.addChildAt(this.threatTelegraphLayer, 0);
-    }
-
-    // Apply visual enhancements to make enemies look distinct and menacing
-    if (this.usingXtraAsset && this.game?.app) {
+  ensureVisualEnhancements() {
+    // Apply visual enhancements to make enemies look distinct and menacing.
+    if (this.usingXtraAsset && this.game?.app && !this.visualEnhancementCleanup) {
       const color = this.waveColor || 'blue';
       const model = this.xtraType || 1;
       this.visualEnhancementCleanup = enhanceEnemyVisuals(
@@ -484,25 +778,168 @@ export class Enemy {
     }
   }
 
+  tryUpgradeFallbackGraphics() {
+    if (!this.usingFallbackGraphics || !this.sprite || this.visualsDeactivated || this.destroyed) return false;
+    const tex = this.resolveBodyTexture();
+    if (!GameAssets.isValidTexture(tex)) return false;
+
+    let insertIndex = this.sprite.children.length;
+    if (this.body?.parent === this.sprite) {
+      insertIndex = this.sprite.getChildIndex(this.body);
+      this.sprite.removeChild(this.body);
+      this.body.destroy?.({ children: true });
+    } else if (this.variantGlow?.parent === this.sprite) {
+      insertIndex = this.sprite.getChildIndex(this.variantGlow) + 1;
+    }
+
+    this.installBodySprite(tex, insertIndex);
+    this.ensureVisualEnhancements();
+    this.updateHealthBar?.();
+    this.assetUpgradeDebug = {
+      upgraded: true,
+      type: this.type,
+      generatedEnemyIndex: this.generatedEnemyIndex ?? null,
+      generatedEnemyTextureFallbackIndex: this.generatedEnemyTextureFallbackIndex ?? null,
+      eliteMiddleShipIndex: this.eliteMiddleShipIndex ?? null,
+      eliteMiddleShipTextureFallbackIndex: this.eliteMiddleShipTextureFallbackIndex ?? null,
+      usingGeneratedEnemyTexture: Boolean(this.usingGeneratedEnemyTexture),
+      usingEliteMiddleShipTexture: Boolean(this.usingEliteMiddleShipTexture),
+      usingXtraAsset: Boolean(this.usingXtraAsset)
+    };
+    return true;
+  }
+
+  findFallbackTextureIndex(textures, preferredIndex) {
+    if (!Array.isArray(textures) || !textures.length) return null;
+    const start = Math.max(0, Math.floor(Number(preferredIndex) || 0)) % textures.length;
+    for (let offset = 1; offset <= textures.length; offset += 1) {
+      const index = (start + offset) % textures.length;
+      if (index === preferredIndex) continue;
+      if (GameAssets.isValidTexture(textures[index])) return index;
+    }
+    return null;
+  }
+
   createFallbackGraphics() {
+    this.usingFallbackGraphics = true;
+    this.removeHullDetailLayer();
     this.addVariantGlow();
     this.body = new PIXI.Graphics();
-    this.body.circle(0, 0, this.radius);
-    this.body.fill({ color: this.visualVariant?.tint || this.color });
+    this.body.label = 'enemyFallbackHull';
+    this.body.__novaEnemyFallbackShape = 'ship_silhouette';
+    const radius = Math.max(11, Number(this.radius) || 15);
+    const tint = this.visualVariant?.tint || this.color || 0xff66aa;
+    const accent = this.visualVariant?.accent || tint;
+    const wing = radius * 0.92;
+    const noseY = radius * 1.06;
+    const shoulderY = -radius * 0.18;
+    const tailY = -radius * 0.82;
+    const coreY = -radius * 0.5;
+
+    this.body.poly([
+      0, noseY,
+      wing * 0.36, shoulderY + radius * 0.18,
+      wing, shoulderY,
+      wing * 0.34, tailY,
+      wing * 0.13, coreY,
+      0, tailY * 0.64,
+      -wing * 0.13, coreY,
+      -wing * 0.34, tailY,
+      -wing, shoulderY,
+      -wing * 0.36, shoulderY + radius * 0.18
+    ]);
+    this.body.fill({ color: tint, alpha: 0.86 });
+    this.body.stroke({ color: accent, width: 1.7, alpha: 0.78 });
+
+    this.body.poly([
+      0, radius * 0.63,
+      radius * 0.22, -radius * 0.08,
+      0, -radius * 0.38,
+      -radius * 0.22, -radius * 0.08
+    ]);
+    this.body.fill({ color: 0xffffff, alpha: 0.22 });
+
+    this.body.moveTo(-radius * 0.48, -radius * 0.12);
+    this.body.lineTo(radius * 0.48, -radius * 0.12);
+    this.body.moveTo(-radius * 0.3, radius * 0.22);
+    this.body.lineTo(radius * 0.3, radius * 0.22);
+    this.body.moveTo(-radius * 0.18, -radius * 0.58);
+    this.body.lineTo(radius * 0.18, -radius * 0.58);
+    this.body.stroke({ color: 0xffffff, width: 0.95, alpha: 0.26 });
+
+    [-1, 1].forEach((side) => {
+      this.body.circle(side * radius * 0.58, shoulderY + radius * 0.05, 2.2);
+    });
+    this.body.circle(0, noseY - radius * 0.16, 2);
+    this.body.fill({ color: accent, alpha: 0.58 });
+
+    this.body._debugFallbackHull = {
+      shape: 'ship_silhouette',
+      simpleCircle: false,
+      wingSpan: Math.round(wing * 2),
+      railCount: 3,
+      pipCount: 3
+    };
     this.sprite.addChild(this.body);
   }
 
   addVariantGlow() {
     if (!this.visualVariant || this.variantGlow) return;
     const glow = new PIXI.Graphics();
-    const radius = Math.max(20, this.radius * 1.7);
-    glow.circle(0, 0, radius);
-    glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: this.visualVariant.alpha || 0.16 });
-    glow.circle(0, 0, radius * 0.62);
-    glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
+    const earlySurge = Boolean(this.generatedProfile?.earlySurge);
+    const radius = earlySurge ? Math.max(18, this.radius * 1.38) : Math.max(20, this.radius * 1.7);
+    if (earlySurge) {
+      glow.circle(0, 0, radius);
+      glow.stroke({ color: this.visualVariant.accent || this.visualVariant.tint, width: 2, alpha: 0.36 });
+      glow.circle(0, 0, radius * 0.64);
+      glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 1, alpha: 0.24 });
+      glow.circle(0, 0, radius * 0.42);
+      glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: 0.045 });
+    } else {
+      glow.circle(0, 0, radius);
+      glow.fill({ color: this.visualVariant.accent || this.visualVariant.tint, alpha: this.visualVariant.alpha || 0.16 });
+      glow.circle(0, 0, radius * 0.62);
+      glow.stroke({ color: this.visualVariant.tint || 0xffffff, width: 2, alpha: 0.22 });
+    }
     glow.label = `enemyVariantGlow:${this.visualVariant.slug}`;
     this.variantGlow = glow;
     this.sprite.addChild(glow);
+
+    if (this.generatedProfile?.lateMayhem && !this.mayhemVfx) {
+      const profile = this.generatedProfile;
+      const colors = Array.isArray(profile.palette) && profile.palette.length
+        ? profile.palette
+        : [profile.tint, profile.accent, 0xffffff];
+      const mayhem = new PIXI.Graphics();
+      const outer = Math.max(24, this.radius * 2.15);
+      mayhem.circle(0, 0, outer);
+      mayhem.stroke({ color: colors[1] || profile.accent || 0xffffff, width: 1.5, alpha: 0.42 });
+      mayhem.circle(0, 0, outer * 0.72);
+      mayhem.stroke({ color: colors[2] || profile.tint || 0xffffff, width: 1, alpha: 0.3 });
+      const spokeCount = 4 + (profile.spriteIndex % 5);
+      for (let i = 0; i < spokeCount; i += 1) {
+        const angle = (Math.PI * 2 * i) / spokeCount;
+        const inner = outer * 0.34;
+        const tip = outer * (0.72 + (i % 2) * 0.18);
+        mayhem.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        mayhem.lineTo(Math.cos(angle) * tip, Math.sin(angle) * tip);
+      }
+      mayhem.stroke({ color: colors[0] || profile.tint || 0xffffff, width: 1.2, alpha: 0.36 });
+      mayhem.blendMode = 'add';
+      mayhem.alpha = 0.72;
+      mayhem.label = `enemyMayhemVfx:${profile.id}`;
+      this.mayhemVfx = mayhem;
+      this.sprite.addChild(mayhem);
+    }
+  }
+
+  updateMayhemVfx(delta) {
+    if (!this.mayhemVfx || !this.generatedProfile?.lateMayhem) return;
+    const spin = this.generatedProfile.mayhemSpin || 0.5;
+    this.mayhemVfx.rotation += delta * 0.012 * spin;
+    const pulse = Math.sin(Date.now() * 0.006 + this.idlePhase) * 0.5 + 0.5;
+    this.mayhemVfx.alpha = 0.48 + pulse * 0.26;
+    this.mayhemVfx.scale.set(0.94 + pulse * 0.08);
   }
 
   updateHealthBar() {
@@ -522,6 +959,310 @@ export class Enemy {
     this.healthBar.fill({ color: colorAssist ? 0xfff45c : healthPercent > 0.5 ? 0x00ff00 : healthPercent > 0.25 ? 0xffff00 : 0xff0000 });
   }
 
+  triggerHitFeedback(amount = 1, now = Date.now(), options = {}) {
+    if (!this.hitFeedbackLayer || !this.active || this.visualsDeactivated) return;
+    const damage = Math.max(0.1, Number(amount) || 0.1);
+    this.hitFeedbackDamage = Math.max(this.hitFeedbackDamage * 0.6, Math.min(4, damage));
+    this.hitFeedbackStartedAt = now;
+    this.hitFeedbackUntil = Math.max(this.hitFeedbackUntil || 0, now + 210);
+    const impactX = Number(options.impactX);
+    const impactY = Number(options.impactY);
+    const hasImpactPoint = Number.isFinite(impactX) && Number.isFinite(impactY);
+    if (hasImpactPoint) {
+      const localX = impactX - this.x;
+      const localY = impactY - this.y;
+      const distance = Math.hypot(localX, localY);
+      if (distance > 0.25) {
+        const angle = Math.atan2(localY, localX);
+        const impactDistance = Math.max(this.radius * 0.38, Math.min(this.radius * 0.96, distance));
+        this.hitFeedbackImpactAngle = angle;
+        this.hitFeedbackImpactDistance = impactDistance;
+        this.hitFeedbackImpactLocalX = Math.cos(angle) * impactDistance;
+        this.hitFeedbackImpactLocalY = Math.sin(angle) * impactDistance;
+      }
+    } else {
+      this.hitFeedbackImpactAngle = null;
+      this.hitFeedbackImpactDistance = 0;
+      this.hitFeedbackImpactLocalX = 0;
+      this.hitFeedbackImpactLocalY = 0;
+    }
+    const sparkIntervalMs = this.isEliteMiddleShip ? 95 : 70;
+    if (now - (this.lastHitSparkAt || 0) >= sparkIntervalMs) {
+      const color = this.visualVariant?.accent || this.color || 0x66f7ff;
+      const scale = this.isEliteMiddleShip ? 1.05 : 0.72;
+      const sparkX = Number.isFinite(this.hitFeedbackImpactLocalX) ? this.x + this.hitFeedbackImpactLocalX : this.x;
+      const sparkY = Number.isFinite(this.hitFeedbackImpactLocalY) ? this.y + this.hitFeedbackImpactLocalY : this.y;
+      this.game?.scenes?.play?.particleManager?.createHitSpark?.(sparkX, sparkY, color, scale);
+      this.lastHitSparkAt = now;
+      this.hitFeedbackSparkCount += 1;
+    }
+    this.updateHitFeedback(now);
+  }
+
+  updateHitFeedback(now = Date.now()) {
+    const layer = this.hitFeedbackLayer;
+    if (!layer) return;
+    layer.clear();
+    if (!this.active || this.visualsDeactivated || now >= (this.hitFeedbackUntil || 0)) {
+      layer.visible = false;
+      layer._debugHitFeedback = {
+        visible: false,
+        sparkCount: this.hitFeedbackSparkCount || 0,
+        impactSliceCount: 0,
+        ricochetBeadCount: 0,
+        woundedSmokeHashCount: 0,
+        shieldSawToothCount: 0,
+        hitDirectionChevronCount: 0
+      };
+      return;
+    }
+
+    const duration = Math.max(1, (this.hitFeedbackUntil || now) - (this.hitFeedbackStartedAt || now - 1));
+    const elapsed = Math.max(0, now - (this.hitFeedbackStartedAt || now));
+    const progress = Math.max(0, Math.min(1, elapsed / duration));
+    const fade = Math.pow(1 - progress, 0.7);
+    const damageLift = Math.min(1, Math.max(0, Number(this.hitFeedbackDamage) || 0) / Math.max(1, Number(this.maxHealth) || 1));
+    const color = this.visualVariant?.accent || this.color || 0x66f7ff;
+    const radius = Math.max(10, this.radius * (1.08 + progress * 0.48 + damageLift * 0.18));
+    const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth) || 1)));
+    const showArmorCracks = Number(this.maxHealth) >= 3 && healthRatio < 0.999;
+    let armorCrackCount = 0;
+    let impactSliceCount = 0;
+    let ricochetBeadCount = 0;
+    let woundedSmokeHashCount = 0;
+    let shieldSawToothCount = 0;
+    let hitDirectionChevronCount = 0;
+    const tickInner = radius * 0.78;
+    const tickOuter = radius + 5 + damageLift * 4;
+    const width = this.isEliteMiddleShip ? 2.4 : 1.7;
+    layer.circle(0, 0, radius);
+    layer.stroke({ color, width, alpha: 0.34 + fade * 0.5 });
+    layer.circle(0, 0, Math.max(3, radius * 0.28));
+    layer.fill({ color: 0xffffff, alpha: 0.08 + fade * 0.16 });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = this.idlePhase + progress * 0.9 + i * Math.PI * 0.5;
+      layer.moveTo(Math.cos(angle) * tickInner, Math.sin(angle) * tickInner);
+      layer.lineTo(Math.cos(angle) * tickOuter, Math.sin(angle) * tickOuter);
+    }
+    layer.stroke({ color: 0xffffff, width: Math.max(1, width - 0.4), alpha: 0.28 + fade * 0.38 });
+    const hasImpactNotch = Number.isFinite(this.hitFeedbackImpactAngle);
+    if (hasImpactNotch) {
+      const angle = this.hitFeedbackImpactAngle;
+      const impactDistance = Math.max(this.radius * 0.38, Math.min(radius * 0.82, this.hitFeedbackImpactDistance || this.radius * 0.62));
+      const ix = Math.cos(angle) * impactDistance;
+      const iy = Math.sin(angle) * impactDistance;
+      const nx = -Math.sin(angle);
+      const ny = Math.cos(angle);
+      const notchWidth = this.isEliteMiddleShip ? 11 : 8.5;
+      layer.moveTo(ix - nx * notchWidth - Math.cos(angle) * 4, iy - ny * notchWidth - Math.sin(angle) * 4);
+      layer.lineTo(ix - Math.cos(angle) * (14 + damageLift * 4), iy - Math.sin(angle) * (14 + damageLift * 4));
+      layer.lineTo(ix + nx * notchWidth - Math.cos(angle) * 4, iy + ny * notchWidth - Math.sin(angle) * 4);
+      layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 2.8 : 2.2, alpha: 0.58 + fade * 0.38 });
+      layer.circle(ix, iy, this.isEliteMiddleShip ? 4.2 : 3.2);
+      layer.fill({ color, alpha: 0.58 + fade * 0.3 });
+      for (let i = 0; i < 3; i += 1) {
+        const spread = (i - 1) * 0.26;
+        const sliceAngle = angle + spread;
+        const inner = impactDistance * (0.72 + i * 0.04);
+        const outer = Math.min(radius + 12, impactDistance + 18 + i * 5);
+        layer.moveTo(Math.cos(sliceAngle) * inner, Math.sin(sliceAngle) * inner);
+        layer.lineTo(Math.cos(sliceAngle) * outer, Math.sin(sliceAngle) * outer);
+        impactSliceCount += 1;
+      }
+      layer.stroke({ color: this.visualVariant?.glow || 0xffffff, width: this.isEliteMiddleShip ? 1.7 : 1.25, alpha: 0.3 + fade * 0.32 });
+      for (let i = 0; i < 4; i += 1) {
+        const beadAngle = angle + Math.PI + (i - 1.5) * 0.18;
+        const beadDistance = radius * (0.38 + i * 0.11);
+        layer.circle(Math.cos(beadAngle) * beadDistance, Math.sin(beadAngle) * beadDistance, Math.max(1.3, 2.6 - i * 0.22));
+        ricochetBeadCount += 1;
+      }
+      layer.fill({ color: 0xffffff, alpha: 0.18 + fade * 0.18 });
+      for (let i = 0; i < 2; i += 1) {
+        const chevronDistance = impactDistance + 10 + i * 8;
+        const chevronWidth = 5 + i * 1.4;
+        const cx = Math.cos(angle) * chevronDistance;
+        const cy = Math.sin(angle) * chevronDistance;
+        layer.moveTo(cx - nx * chevronWidth - Math.cos(angle) * 4, cy - ny * chevronWidth - Math.sin(angle) * 4);
+        layer.lineTo(cx + Math.cos(angle) * 5, cy + Math.sin(angle) * 5);
+        layer.lineTo(cx + nx * chevronWidth - Math.cos(angle) * 4, cy + ny * chevronWidth - Math.sin(angle) * 4);
+        hitDirectionChevronCount += 1;
+      }
+      layer.stroke({ color, width: 1.3, alpha: 0.28 + fade * 0.26 });
+    }
+    if (showArmorCracks) {
+      const crackCount = healthRatio <= 0.35 ? 5 : healthRatio <= 0.65 ? 4 : 3;
+      const baseAngle = Number.isFinite(this.hitFeedbackImpactAngle) ? this.hitFeedbackImpactAngle : this.idlePhase;
+      for (let i = 0; i < crackCount; i += 1) {
+        const angle = baseAngle + (i - (crackCount - 1) / 2) * 0.42 + Math.sin(this.idlePhase + i) * 0.08;
+        const inner = this.radius * (0.24 + (i % 2) * 0.08);
+        const middle = this.radius * (0.58 + (i % 3) * 0.08);
+        const outer = this.radius * (0.92 + (i % 2) * 0.08);
+        const bend = (i % 2 ? -1 : 1) * (4.6 + damageLift * 2.8);
+        const sx = Math.cos(angle) * inner;
+        const sy = Math.sin(angle) * inner;
+        const mx = Math.cos(angle) * middle - Math.sin(angle) * bend;
+        const my = Math.sin(angle) * middle + Math.cos(angle) * bend;
+        const ex = Math.cos(angle) * outer + Math.sin(angle) * bend * 0.42;
+        const ey = Math.sin(angle) * outer - Math.cos(angle) * bend * 0.42;
+        layer.moveTo(sx, sy);
+        layer.lineTo(mx, my);
+        layer.lineTo(ex, ey);
+        armorCrackCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 2.7 : 2.15, alpha: 0.56 + fade * 0.32 });
+      const tickAngle = baseAngle;
+      const tickSideX = -Math.sin(tickAngle);
+      const tickSideY = Math.cos(tickAngle);
+      for (const side of [-1, 1]) {
+        const center = this.radius * 1.08;
+        const cx = Math.cos(tickAngle) * center + tickSideX * side * this.radius * 0.18;
+        const cy = Math.sin(tickAngle) * center + tickSideY * side * this.radius * 0.18;
+        layer.moveTo(cx - tickSideX * side * 4, cy - tickSideY * side * 4);
+        layer.lineTo(cx + Math.cos(tickAngle) * (6 + damageLift * 4), cy + Math.sin(tickAngle) * (6 + damageLift * 4));
+        armorCrackCount += 1;
+      }
+      layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.9, alpha: 0.42 + fade * 0.28 });
+      layer.circle(0, 0, Math.max(4, this.radius * 0.22));
+      layer.stroke({ color, width: 1.7, alpha: 0.26 + fade * 0.28 });
+      const sawCount = healthRatio <= 0.35 ? 8 : 6;
+      for (let i = 0; i < sawCount; i += 1) {
+        const angle = baseAngle + Math.PI * 0.5 + (i - (sawCount - 1) / 2) * 0.16;
+        const inner = this.radius * (0.72 + (i % 2) * 0.08);
+        const outer = this.radius * (0.98 + (i % 2) * 0.12);
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        shieldSawToothCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + fade * 0.22 });
+      for (let i = 0; i < 3; i += 1) {
+        const hashAngle = baseAngle + Math.PI + (i - 1) * 0.38;
+        const hashRadius = this.radius * (0.58 + i * 0.12);
+        const cx = Math.cos(hashAngle) * hashRadius;
+        const cy = Math.sin(hashAngle) * hashRadius;
+        const tx = -Math.sin(hashAngle) * (4 + i);
+        const ty = Math.cos(hashAngle) * (4 + i);
+        layer.moveTo(cx - tx, cy - ty);
+        layer.lineTo(cx + tx, cy + ty);
+        woundedSmokeHashCount += 1;
+      }
+      layer.stroke({ color, width: 1, alpha: 0.2 + fade * 0.18 });
+    }
+    layer.visible = true;
+    layer._debugHitFeedback = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      fade: Number(fade.toFixed(3)),
+      radius: Number(radius.toFixed(1)),
+      impactNotch: hasImpactNotch,
+      impactAngle: hasImpactNotch ? Number(this.hitFeedbackImpactAngle.toFixed(3)) : null,
+      impactDistance: hasImpactNotch ? Number((this.hitFeedbackImpactDistance || 0).toFixed(1)) : 0,
+      armorCrackCount,
+      impactSliceCount,
+      ricochetBeadCount,
+      woundedSmokeHashCount,
+      shieldSawToothCount,
+      hitDirectionChevronCount,
+      healthRatio: Number(healthRatio.toFixed(3)),
+      sparkCount: this.hitFeedbackSparkCount || 0
+    };
+  }
+
+  triggerMuzzleFlash(angle = Math.PI / 2, shotCount = 1, color = null, now = Date.now()) {
+    if (!this.muzzleFlashLayer || !this.active || this.visualsDeactivated) return;
+    this.muzzleFlashAngle = Number.isFinite(angle) ? angle : Math.PI / 2;
+    this.muzzleFlashShotCount = Math.max(1, Math.min(5, Math.round(Number(shotCount) || 1)));
+    this.muzzleFlashColor = Number.isFinite(color) ? color : (this.visualVariant?.accent || this.color || 0xff4055);
+    this.muzzleFlashStartedAt = now;
+    this.muzzleFlashUntil = now + (this.isEliteMiddleShip ? 300 : 240);
+    this.updateMuzzleFlash(now);
+  }
+
+  updateMuzzleFlash(now = Date.now()) {
+    const layer = this.muzzleFlashLayer;
+    if (!layer) return;
+    layer.clear();
+    if (!this.active || this.visualsDeactivated || now >= (this.muzzleFlashUntil || 0)) {
+      layer.visible = false;
+      layer._debugMuzzleFlash = {
+        visible: false,
+        shotCount: this.muzzleFlashShotCount || 0
+      };
+      return;
+    }
+
+    const duration = Math.max(1, (this.muzzleFlashUntil || now) - (this.muzzleFlashStartedAt || now - 1));
+    const progress = Math.max(0, Math.min(1, (now - (this.muzzleFlashStartedAt || now)) / duration));
+    const fade = Math.pow(1 - progress, 0.68);
+    const angle = this.muzzleFlashAngle;
+    const shotCount = Math.max(1, Math.min(5, this.muzzleFlashShotCount || 1));
+    const color = this.muzzleFlashColor || this.visualVariant?.accent || this.color || 0xff4055;
+    const radius = Math.max(12, this.radius * (1 + shotCount * 0.04));
+    const inner = radius * 0.34;
+    const tip = radius + 11 + shotCount * 2.4 + progress * 7;
+    const spread = 6 + shotCount * 2;
+    const nx = Math.cos(angle);
+    const ny = Math.sin(angle);
+    const px = -ny;
+    const py = nx;
+    const recoilTickCount = Math.min(4, Math.max(2, shotCount + (this.isEliteMiddleShip ? 1 : 0)));
+
+    layer.poly([
+      nx * inner + px * spread, ny * inner + py * spread,
+      nx * tip, ny * tip,
+      nx * inner - px * spread, ny * inner - py * spread
+    ]);
+    layer.fill({ color, alpha: 0.16 + fade * 0.28 });
+    layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.16 + fade * 0.28 });
+    layer.moveTo(nx * inner + px * spread * 1.18, ny * inner + py * spread * 1.18);
+    layer.lineTo(nx * inner - px * spread * 1.18, ny * inner - py * spread * 1.18);
+    layer.stroke({ color: 0xffffff, width: 1.4, alpha: 0.26 + fade * 0.34 });
+    layer.circle(nx * (radius * 0.28), ny * (radius * 0.28), radius * 0.42 + progress * 3);
+    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.12 + fade * 0.24 });
+    layer.circle(nx * (radius * 0.58), ny * (radius * 0.58), 4 + shotCount * 1.1 + progress * 2);
+    layer.stroke({ color, width: 2, alpha: 0.34 + fade * 0.42 });
+    layer.circle(nx * (tip - 2), ny * (tip - 2), 2.6 + shotCount * 0.35 + fade * 1.2);
+    layer.fill({ color: 0xffffff, alpha: 0.34 + fade * 0.34 });
+    layer.circle(nx * (tip - 2), ny * (tip - 2), 4.8 + shotCount * 0.55 + progress * 2);
+    layer.stroke({ color, width: 1.3, alpha: 0.28 + fade * 0.34 });
+    for (let i = 0; i < shotCount; i += 1) {
+      const lane = i - (shotCount - 1) / 2;
+      const start = radius * 0.42;
+      const end = tip + 3;
+      const offset = lane * 4.2;
+      layer.moveTo(nx * start + px * offset, ny * start + py * offset);
+      layer.lineTo(nx * end + px * offset * 0.6, ny * end + py * offset * 0.6);
+    }
+    layer.stroke({ color, width: 0.9, alpha: 0.18 + fade * 0.34 });
+    for (let i = 0; i < shotCount; i += 1) {
+      const lane = i - (shotCount - 1) / 2;
+      const offset = lane * 4.2 * 0.6;
+      layer.circle(nx * (tip + 2) + px * offset, ny * (tip + 2) + py * offset, 1.7 + fade * 0.9);
+      layer.fill({ color: i % 2 ? color : 0xffffff, alpha: 0.34 + fade * 0.34 });
+    }
+    for (let i = 0; i < recoilTickCount; i += 1) {
+      const lane = i - (recoilTickCount - 1) / 2;
+      const recoilStart = radius * (0.18 + i * 0.03);
+      const recoilEnd = radius * (0.48 + progress * 0.16);
+      const offset = lane * 5.5;
+      layer.moveTo(-nx * recoilStart + px * offset, -ny * recoilStart + py * offset);
+      layer.lineTo(-nx * recoilEnd + px * offset * 0.66, -ny * recoilEnd + py * offset * 0.66);
+    }
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.12 + fade * 0.24 });
+    layer.visible = true;
+    layer._debugMuzzleFlash = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      fade: Number(fade.toFixed(3)),
+      shotCount,
+      angle: Number(angle.toFixed(3)),
+      color,
+      mouthBracketVisible: true,
+      hotCoreVisible: true,
+      laneBeadCount: shotCount,
+      recoilTickCount
+    };
+  }
+
   // --- Arcade formation behavior ---
 
   applyWaveTactic(tactic = {}, context = {}) {
@@ -532,7 +1273,9 @@ export class Enemy {
     this.waveCenterY = Number.isFinite(context.centerY) ? context.centerY : this.formationY;
     this.waveFormation = context.formation || null;
     this.waveRole = context.side < 0 ? 'left_flank' : context.side > 0 ? 'right_flank' : 'center';
-    this.tacticalFireScalar = tactic.fireScalar || 1;
+    this.tacticalFireScalar = (tactic.fireScalar || 1) * (this.profileFireScalar || 1);
+    this.tacticalProjectileSpeedScalar = tactic.projectileSpeedScalar || 1;
+    this.tacticalThreatProjectileSpeedScalar = tactic.threatProjectileSpeedScalar || this.tacticalProjectileSpeedScalar || 1;
     this.tacticalShotPattern = tactic.shot || 'aimed';
     this.tacticalMoveStyle = tactic.move || 'standard';
     this.tacticalDiveBias = tactic.diveBias || 1;
@@ -542,9 +1285,178 @@ export class Enemy {
     this.tacticalPhase = (this.waveSlot / this.waveSize) * Math.PI * 2 + Math.random() * 0.25;
   }
 
+  applyAceBounty(variantOrId) {
+    const variant = applyAceBountyToEnemy(this, variantOrId);
+    if (!variant) return null;
+    this.updateHealthBar();
+    if (!this.aceLabel) {
+      this.aceLabelPlate = new PIXI.Container();
+      this.aceLabelPlate.label = 'ace_identity_plate';
+      this.aceLabelPlate.eventMode = 'none';
+      this.aceLabelBack = new PIXI.Graphics();
+      this.aceLabelRails = new PIXI.Graphics();
+      this.aceLabel = createText('', {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 20,
+        fontWeight: '900',
+        fill: '#fff7c4',
+        stroke: '#17000c',
+        strokeThickness: 4,
+        align: 'center',
+        lineHeight: 22,
+        dropShadow: true,
+        dropShadowColor: '#ffb347',
+        dropShadowBlur: 7,
+        dropShadowDistance: 0
+      });
+      this.aceLabel.anchor.set(0.5);
+      this.aceLabelPlate.zIndex = 15;
+      this.aceLabelPlate.addChild(this.aceLabelBack);
+      this.aceLabelPlate.addChild(this.aceLabelRails);
+      this.aceLabelPlate.addChild(this.aceLabel);
+      this.sprite.addChild(this.aceLabelPlate);
+    }
+    this.updateAceBountyLabel();
+    return this.getAceDebugState();
+  }
+
+  applyNemesisProtocol(protocolOrId) {
+    const protocol = applyNemesisProtocolToEnemy(this, protocolOrId);
+    if (!protocol) return null;
+    this.updateHealthBar();
+    this.updateAceBountyLabel();
+    return this.getAceDebugState();
+  }
+
+  attachRivalWingCommand(doctrineOrId) {
+    const doctrine = typeof doctrineOrId === 'string' ? getRivalWingDoctrineById(doctrineOrId) : doctrineOrId;
+    if (!this.isAce || !doctrine) return null;
+    this.rivalWingCommand = doctrine;
+    this.updateAceBountyLabel();
+    return doctrine;
+  }
+
+  applyRivalWingDoctrine(doctrineOrId) {
+    const doctrine = applyRivalWingToEnemy(this, doctrineOrId);
+    if (!doctrine) return null;
+    this.updateHealthBar();
+    return this.getRivalWingDebugState();
+  }
+
+  activateRivalWingMorale() {
+    const morale = activateRivalWingMorale(this);
+    if (!morale) return null;
+    this.updateHealthBar();
+    return morale;
+  }
+
+  getRivalWingDebugState() {
+    const doctrine = this.rivalWingDoctrine;
+    if (!doctrine) return null;
+    return { id: doctrine.id, number: doctrine.number, formationId: doctrine.formationId, disciplineId: doctrine.disciplineId, volleyId: doctrine.volleyId, moraleId: doctrine.moraleId, moraleActive: this.rivalWingMoraleActive === true, scoreValue: this.scoreValue };
+  }
+
+  updateAceBountyLabel() {
+    if (!this.aceLabel || !this.aceVariant) return;
+    const number = String(this.aceVariant.number).padStart(4, '0');
+    const baseReward = translateText(this.aceVariant.rewardLabel);
+    const duplicateReward = Boolean(
+      this.nemesisProtocol
+      && this.nemesisProtocol.bonusKind === this.aceVariant.rewardKind
+      && (
+        (this.aceVariant.rewardKind === 'powerup' && this.nemesisProtocol.bonusPowerupType === this.aceVariant.rewardPowerupType)
+        || (this.aceVariant.rewardKind === 'rescan' && this.nemesisProtocol.bonusId === this.aceVariant.rewardId)
+      )
+    );
+    const reward = duplicateReward ? translateText('2X {reward}', { reward: baseReward }) : baseReward;
+    const label = translateText('DESTROY ACE {number} // {reward}', {
+      number,
+      reward
+    });
+    this.aceLabel.text = label;
+    this.aceLabel.scale.set(1);
+    const maxWidth = 310;
+    if (this.aceLabel.width > maxWidth) {
+      this.aceLabel.scale.set(Math.max(0.82, maxWidth / this.aceLabel.width));
+    }
+    const accent = this.nemesisEnraged
+      ? (this.nemesisProtocol?.accent || 0xff6174)
+      : (this.aceVariant.accent || 0xffd15c);
+    const panelWidth = Math.max(150, Math.ceil(this.aceLabel.width + 30));
+    const panelHeight = Math.max(34, Math.ceil(this.aceLabel.height + 14));
+    this.aceLabelBack?.clear();
+    this.aceLabelBack?.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 7);
+    this.aceLabelBack?.fill({ color: 0x110812, alpha: 0.9 });
+    this.aceLabelBack?.stroke({ color: this.aceVariant.color || 0xffd15c, width: 2.2, alpha: 0.96 });
+    this.aceLabelBack?.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, 4);
+    this.aceLabelBack?.stroke({ color: accent, width: 1, alpha: 0.58 });
+    this.aceLabelRails?.clear();
+    for (const side of [-1, 1]) {
+      const x = side * (panelWidth / 2 + 5);
+      this.aceLabelRails?.moveTo(x, -8);
+      this.aceLabelRails?.lineTo(x + side * 10, 0);
+      this.aceLabelRails?.lineTo(x, 8);
+    }
+    this.aceLabelRails?.stroke({ color: accent, width: 2.4, alpha: 0.9 });
+    this.aceLabelPlate.y = -Math.max(48, this.radius + 38);
+    this.aceLabelPlate.visible = true;
+    this.aceLabel.visible = true;
+  }
+
+  getAceDebugState() {
+    if (!this.isAce || !this.aceVariant) return null;
+    let labelBounds = null;
+    try {
+      const bounds = this.aceLabel?.getBounds?.();
+      if (bounds) {
+        labelBounds = {
+          x: Math.round(bounds.x),
+          y: Math.round(bounds.y),
+          width: Math.round(bounds.width),
+          height: Math.round(bounds.height)
+        };
+      }
+    } catch {
+      labelBounds = null;
+    }
+    return {
+      id: this.aceVariant.id,
+      number: this.aceVariant.number,
+      chassisId: this.aceVariant.chassisId,
+      flightId: this.aceVariant.flightId,
+      weaponId: this.aceVariant.weaponId,
+      rewardId: this.aceVariant.rewardId,
+      rewardLabel: translateText(this.aceVariant.rewardLabel),
+      effects: { ...this.aceVariant.effects },
+      protocol: this.nemesisProtocol ? {
+        id: this.nemesisProtocol.id,
+        number: this.nemesisProtocol.number,
+        openingId: this.nemesisProtocol.openingId,
+        openingLabel: translateText(this.nemesisProtocol.openingLabel),
+        defenseId: this.nemesisProtocol.defenseId,
+        defenseLabel: translateText(this.nemesisProtocol.defenseLabel),
+        enrageId: this.nemesisProtocol.enrageId,
+        enrageLabel: translateText(this.nemesisProtocol.enrageLabel),
+        bonusId: this.nemesisProtocol.bonusId,
+        bonusLabel: translateText(this.nemesisProtocol.bonusLabel),
+        enraged: this.nemesisEnraged === true,
+        damageHits: Math.max(0, Number(this.nemesisDamageHitCount) || 0),
+        lastDamageResolution: this.nemesisLastDamageResolution ? { ...this.nemesisLastDamageResolution } : null
+      } : null,
+      rivalWing: this.rivalWingCommand ? { id: this.rivalWingCommand.id, number: this.rivalWingCommand.number, formationId: this.rivalWingCommand.formationId, formationLabel: translateText(this.rivalWingCommand.formationLabel), moraleId: this.rivalWingCommand.moraleId, moraleLabel: translateText(this.rivalWingCommand.moraleLabel) } : null,
+      label: this.aceLabel?.text || null,
+      labelBounds,
+      labelFontSize: Number(this.aceLabel?.style?.fontSize) || 0,
+      labelScale: Number((this.aceLabel?.scale?.x || 0).toFixed(3)),
+      health: Math.max(0, Number(this.health) || 0),
+      maxHealth: Math.max(0, Number(this.maxHealth) || 0),
+      rewardClaimed: this.aceRewardClaimed === true
+    };
+  }
+
   applyThreatAction(actionOrId = null, context = {}) {
     const action = typeof actionOrId === 'string' ? getEnemyThreatAction(actionOrId) : actionOrId;
-    if (!action || this.kind !== 'enemy' || this.middleShipProfile) {
+    if (!action || (this.kind !== 'enemy' && this.kind !== 'rare_chaos_visitor') || this.middleShipProfile) {
       this.threatActionDefinition = null;
       return;
     }
@@ -552,7 +1464,10 @@ export class Enemy {
     this.threatActionCooldown = action.cooldownMs || 8000;
     const slotDelay = (Number(context.index) || this.waveSlot || 0) * 230;
     const waveDelay = (Number(context.waveIndex) || 0) * 140;
-    this.nextThreatActionAt = Date.now() + 1450 + slotDelay + waveDelay + Math.random() * 550;
+    const baseDelayMs = 1450 + slotDelay + waveDelay + Math.random() * 550;
+    const delayMult = Number.isFinite(Number(context.initialDelayMult)) ? Number(context.initialDelayMult) : 1;
+    const delayTrimMs = Number.isFinite(Number(context.initialDelayMs)) ? Number(context.initialDelayMs) : 0;
+    this.nextThreatActionAt = Date.now() + Math.max(520, baseDelayMs * delayMult - delayTrimMs);
   }
 
   clampCombatX(x, padding = 0) {
@@ -579,6 +1494,12 @@ export class Enemy {
     this.formationX = endX;
     this.formationY = endY;
     this.state = 'ENTRY';
+    this.formationSwayRampMs = 0;
+    if (this.isEliteMiddleShip) {
+      this.arrivalCombatReadyAt = 0;
+      this.entryCompletedAt = 0;
+      this.lastArrivalGuardDamage = null;
+    }
 
     // Randomized Control Point based on side
     const curvePull = Math.max(260, Math.min(460, width * 0.2));
@@ -659,6 +1580,7 @@ export class Enemy {
 
   update(delta, playerX, playerY) {
     if (!this.active && !this.waitingForEntry) return;
+    this.tryUpgradeFallbackGraphics();
 
     if (this.waitingForEntry) {
       if (Date.now() >= this.entryCurve.startTime) {
@@ -666,6 +1588,7 @@ export class Enemy {
         this.active = true;
         this.sprite.visible = true;
         this.entryCurve.startTime = Date.now();
+        this.resetSpawnCue();
       } else {
         return;
       }
@@ -700,7 +1623,7 @@ export class Enemy {
           swayX += offset.x || 0;
           swayY += offset.y || 0;
         }
-    const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
+        const tacticalWave = this.moveTimer * 0.022 + this.tacticalPhase;
         const side = this.waveRole === 'left_flank' ? -1 : this.waveRole === 'right_flank' ? 1 : (this.formationX < screenW / 2 ? -1 : 1);
         if (this.tacticalMoveStyle === 'sweep') {
           swayX += Math.sin(tacticalWave * 0.85) * 34;
@@ -718,24 +1641,29 @@ export class Enemy {
           swayX += Math.cos(tacticalWave + this.waveSlot * 0.5) * 24;
           swayY += Math.sin(tacticalWave + this.waveSlot * 0.5) * 15;
         } else if (this.tacticalMoveStyle === 'needle') {
-          swayX += Math.sign(Math.sin(tacticalWave * 1.4)) * 10;
+          swayX += smoothFormationStep(Math.sin(tacticalWave * 1.4), 2.6) * 10;
           swayY += Math.cos(tacticalWave * 0.6) * 5;
         } else if (this.tacticalMoveStyle === 'weave_wall') {
           swayX += Math.sin(tacticalWave * 1.2 + this.waveSlot) * 22;
           swayY += Math.sin(tacticalWave * 1.7 + this.waveSlot * 0.35) * 12;
         } else if (this.tacticalMoveStyle === 'feint') {
-          const snap = Math.sin(tacticalWave * 1.9);
-          swayX += Math.sign(snap) * 16 + Math.sin(tacticalWave * 0.65) * 10;
+          const snap = smoothFormationStep(Math.sin(tacticalWave * 2.6 + this.waveSlot * 0.35), 2.8);
+          const fakeout = Math.sin(tacticalWave * 1.15 + this.waveSlot * 0.2);
+          swayX += snap * 18 + fakeout * 18;
+          swayY += Math.cos(tacticalWave * 1.25 + this.waveSlot * 0.4) * 9;
         } else if (this.tacticalMoveStyle === 'split_sweep') {
           swayX += side * Math.sin(tacticalWave * 0.8) * 32;
           swayY += Math.cos(tacticalWave * 1.1 + this.waveSlot) * 10;
         } else if (this.tacticalMoveStyle === 'ambush') {
-          swayX += Math.round(Math.sin(tacticalWave * 1.1) * 2) * 9;
+          swayX += smoothFormationStep(Math.sin(tacticalWave * 1.1), 2.2) * 18;
           swayY += Math.max(0, Math.sin(tacticalWave * 1.5)) * 14;
         }
         const swayScalar = this.tacticalSwayScalar || 1;
-        this.x = this.clampCombatX(this.formationX + swayX * swayScalar);
-        this.y = this.formationY + swayY;
+        this.formationSwayRampMs = Math.min(480, (this.formationSwayRampMs || 0) + Math.max(0, delta * 16.67));
+        const rampProgress = Math.min(1, this.formationSwayRampMs / 480);
+        const swayRamp = rampProgress * rampProgress * (3 - 2 * rampProgress);
+        this.x = this.clampCombatX(this.formationX + swayX * swayScalar * swayRamp);
+        this.y = this.formationY + swayY * swayRamp;
 
         // Subtle rotation wobble
         const wobbleAngle = Math.sin(this.moveTimer * 0.03 + this.idlePhase) * 0.1;
@@ -776,12 +1704,382 @@ export class Enemy {
     } else {
       this.updateThreatAction(delta, playerX, playerY);
     }
+    this.updateMayhemVfx(delta);
+    this.updateRareChaosVisitorVisuals(delta);
+    this.updateHitFeedback();
+    this.updateMuzzleFlash();
+    this.updateSpawnCue();
+    this.updateThreatFrame();
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
     // Shooting
     if (this.shootCooldown > 0) this.shootCooldown -= delta;
+  }
+
+  resetSpawnCue(now = Date.now()) {
+    this.spawnCueStartedAt = now;
+    this.spawnCueDurationMs = this.isMayhemSuperStorm
+      ? 1520
+      : this.isReinforcementSwarmEntry || this.isMayhemReinforcement
+        ? 1260
+        : this.isEliteMiddleShip
+          ? 1100
+          : 860;
+    if (this.spawnCueLayer) {
+      this.spawnCueLayer.visible = true;
+      this.spawnCueLayer._debugSpawnCue = {
+        visible: true,
+        progress: 0,
+        resetAt: now
+      };
+    }
+  }
+
+  updateSpawnCue(now = Date.now()) {
+    const layer = this.spawnCueLayer;
+    if (!layer) return;
+    layer.clear();
+    const duration = Math.max(1, Number(this.spawnCueDurationMs) || 860);
+    const elapsed = Math.max(0, now - (this.spawnCueStartedAt || now));
+    const progress = Math.max(0, Math.min(1, elapsed / duration));
+    if (!this.active || this.visualsDeactivated || progress >= 1) {
+      layer.visible = false;
+      layer._debugSpawnCue = {
+        visible: false,
+        progress: Number(progress.toFixed(3))
+      };
+      return;
+    }
+
+    const fade = Math.pow(1 - progress, 0.72);
+    const color = this.visualVariant?.accent || this.visualVariant?.tint || this.color || 0x66f7ff;
+    const reinforcementSwarm = Boolean(this.isReinforcementSwarmEntry || this.isMayhemReinforcement);
+    const superStorm = Boolean(this.isMayhemSuperStorm);
+    const reinforcementAccent = superStorm ? 0xff55f6 : 0xffe56d;
+    const radius = Math.max(14, this.radius * (1.35 + progress * 0.75));
+    const outer = radius + 8 + progress * 12;
+    const sweep = this.idlePhase + progress * Math.PI * 1.4;
+    const gameWidth = this.game?.getWidth?.() || 1280;
+    const gameHeight = this.game?.getHeight?.() || 720;
+    let inboundAngle = Math.PI / 2;
+    if (this.x < gameWidth * 0.18) inboundAngle = 0;
+    else if (this.x > gameWidth * 0.82) inboundAngle = Math.PI;
+    else if (this.y > gameHeight * 0.55) inboundAngle = -Math.PI / 2;
+    let inboundChevronCount = 0;
+    let entryGateTickCount = 0;
+    let entryGhostLaneCount = 0;
+    let braidChevronCount = 0;
+    let formationBracketCount = 0;
+    let entryLockPipCount = 0;
+    let approachSparkCount = 0;
+    let reinforcementWakeCount = 0;
+    layer.circle(0, 0, outer);
+    layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
+    layer.circle(0, 0, radius * 0.66);
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.18 * fade });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = sweep * 0.35 + i * Math.PI * 0.5;
+      layer.circle(Math.cos(angle) * (outer + 5), Math.sin(angle) * (outer + 5), this.isEliteMiddleShip ? 2.4 : 1.8);
+      entryLockPipCount += 1;
+    }
+    layer.fill({ color: 0xffffff, alpha: 0.14 * fade + 0.06 });
+    for (let i = 0; i < 4; i += 1) {
+      const angle = sweep + i * Math.PI * 0.5;
+      const inner = radius * 0.5;
+      const tip = outer + (i % 2) * 4;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * tip, Math.sin(angle) * tip);
+    }
+    layer.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.26 * fade });
+
+    const dirX = Math.cos(inboundAngle);
+    const dirY = Math.sin(inboundAngle);
+    const sideX = Math.cos(inboundAngle + Math.PI * 0.5);
+    const sideY = Math.sin(inboundAngle + Math.PI * 0.5);
+    for (let i = 0; i < 3; i += 1) {
+      const distance = outer + 14 + i * 11;
+      const baseX = -dirX * distance;
+      const baseY = -dirY * distance;
+      const tipX = baseX + dirX * (8 + i * 0.8);
+      const tipY = baseY + dirY * (8 + i * 0.8);
+      const wing = 5 + i * 0.4;
+      layer.moveTo(baseX - sideX * wing, baseY - sideY * wing);
+      layer.lineTo(tipX, tipY);
+      layer.lineTo(baseX + sideX * wing, baseY + sideY * wing);
+      inboundChevronCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: this.isEliteMiddleShip ? 1.6 : 1.25, alpha: 0.24 * fade + 0.1 });
+
+    for (let i = 0; i < 3; i += 1) {
+      const lane = i - 1;
+      const startDistance = outer + 42 + i * 10;
+      const endDistance = outer + 8 + i * 3;
+      const laneOffsetX = sideX * lane * (9 + progress * 3);
+      const laneOffsetY = sideY * lane * (9 + progress * 3);
+      layer.moveTo(-dirX * startDistance + laneOffsetX, -dirY * startDistance + laneOffsetY);
+      layer.lineTo(-dirX * endDistance + laneOffsetX * 0.28, -dirY * endDistance + laneOffsetY * 0.28);
+      entryGhostLaneCount += 1;
+    }
+    layer.stroke({ color, width: 1.05, alpha: 0.12 * fade + 0.08 });
+
+    if (reinforcementSwarm) {
+      const wakeCount = superStorm ? 7 : 5;
+      for (let wake = 0; wake < wakeCount; wake += 1) {
+        const centeredWake = wake - (wakeCount - 1) / 2;
+        const lateral = centeredWake * (superStorm ? 5.2 : 4.4);
+        const startDistance = outer + 58 + (wake % 3) * 15 + progress * 18;
+        const endDistance = outer + 5 + Math.abs(centeredWake) * 2;
+        const wave = Math.sin(progress * Math.PI * 6 + wake * 0.88) * (superStorm ? 4.5 : 3);
+        const startX = -dirX * startDistance + sideX * (lateral + wave);
+        const startY = -dirY * startDistance + sideY * (lateral + wave);
+        const midDistance = (startDistance + endDistance) * 0.52;
+        const midX = -dirX * midDistance + sideX * (lateral * 0.62 - wave * 0.4);
+        const midY = -dirY * midDistance + sideY * (lateral * 0.62 - wave * 0.4);
+        const endX = -dirX * endDistance + sideX * lateral * 0.18;
+        const endY = -dirY * endDistance + sideY * lateral * 0.18;
+        layer.moveTo(startX, startY);
+        layer.lineTo(midX, midY);
+        layer.lineTo(endX, endY);
+        reinforcementWakeCount += 1;
+      }
+      layer.stroke({
+        color: reinforcementAccent,
+        width: superStorm ? 2.2 : 1.7,
+        alpha: (superStorm ? 0.38 : 0.3) * fade + 0.08
+      });
+
+      for (const wakeSide of [-1, 1]) {
+        const distance = outer + 34 + progress * 16;
+        const span = radius * (superStorm ? 0.88 : 0.7);
+        const baseX = -dirX * distance + sideX * wakeSide * span;
+        const baseY = -dirY * distance + sideY * wakeSide * span;
+        layer.moveTo(baseX - dirX * 16, baseY - dirY * 16);
+        layer.lineTo(baseX + sideX * -wakeSide * span * 0.52, baseY + sideY * -wakeSide * span * 0.52);
+        layer.lineTo(baseX + dirX * 8, baseY + dirY * 8);
+        reinforcementWakeCount += 1;
+      }
+      layer.stroke({ color: 0x37f5ff, width: superStorm ? 2 : 1.4, alpha: 0.3 * fade + 0.08 });
+    }
+
+    for (let i = 0; i < 2; i += 1) {
+      const distance = outer + 28 + i * 15;
+      for (const braidSide of [-1, 1]) {
+        const baseX = -dirX * distance + sideX * braidSide * (7 + i * 2);
+        const baseY = -dirY * distance + sideY * braidSide * (7 + i * 2);
+        layer.moveTo(baseX - sideX * braidSide * 3, baseY - sideY * braidSide * 3);
+        layer.lineTo(baseX + dirX * (8 + progress * 4), baseY + dirY * (8 + progress * 4));
+        layer.lineTo(baseX + sideX * braidSide * 3, baseY + sideY * braidSide * 3);
+        braidChevronCount += 1;
+      }
+    }
+    layer.stroke({ color: 0x37f5ff, width: 1, alpha: 0.2 * fade + 0.06 });
+
+    for (let i = 0; i < 3; i += 1) {
+      const distance = outer + 18 + i * 13 - progress * 10;
+      layer.circle(-dirX * distance + sideX * (i - 1) * 3, -dirY * distance + sideY * (i - 1) * 3, Math.max(1.4, 2.6 - i * 0.28));
+      approachSparkCount += 1;
+    }
+    layer.fill({ color: color, alpha: 0.18 * fade + 0.1 });
+
+    for (const offset of [-1, 1]) {
+      const gateDistance = outer + 6;
+      const gateCenterX = -dirX * gateDistance + sideX * offset * Math.max(12, radius * 0.44);
+      const gateCenterY = -dirY * gateDistance + sideY * offset * Math.max(12, radius * 0.44);
+      layer.moveTo(gateCenterX - sideX * 5, gateCenterY - sideY * 5);
+      layer.lineTo(gateCenterX + sideX * 5, gateCenterY + sideY * 5);
+      entryGateTickCount += 1;
+    }
+    layer.stroke({ color, width: 1.6, alpha: 0.34 * fade });
+    for (const offset of [-1, 1]) {
+      const bracketRadius = radius * 0.78;
+      const cx = sideX * offset * bracketRadius - dirX * radius * 0.18;
+      const cy = sideY * offset * bracketRadius - dirY * radius * 0.18;
+      layer.moveTo(cx - dirX * 5, cy - dirY * 5);
+      layer.lineTo(cx + sideX * offset * 8, cy + sideY * offset * 8);
+      layer.lineTo(cx + dirX * 5 + sideX * offset * 8, cy + dirY * 5 + sideY * offset * 8);
+      formationBracketCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 * fade + 0.08 });
+    layer.visible = true;
+    layer._debugSpawnCue = {
+      visible: true,
+      progress: Number(progress.toFixed(3)),
+      radius: Number(outer.toFixed(1)),
+      fade: Number(fade.toFixed(3)),
+      inboundChevronCount,
+      entryGateTickCount,
+      entryGhostLaneCount,
+      braidChevronCount,
+      formationBracketCount,
+      entryLockPipCount,
+      approachSparkCount,
+      reinforcementWakeCount,
+      reinforcementSwarm,
+      superStorm,
+      inboundAngle: Number(inboundAngle.toFixed(3))
+    };
+  }
+
+  updateThreatFrame(now = Date.now()) {
+    const layer = this.threatFrameLayer;
+    if (!layer) return;
+    layer.clear();
+
+    const profile = getEnemyThreatFrameProfile(this);
+    if (!profile || !this.active || this.visualsDeactivated || this.waitingForEntry) {
+      layer.visible = false;
+      layer._debugThreatFrame = {
+        visible: false,
+        tier: profile?.tier || null,
+        orbitalPipCount: 0,
+        warningBracketCount: 0,
+        vectorArrowCount: 0
+      };
+      return;
+    }
+
+    const pulse = Math.sin(now * 0.006 + this.idlePhase) * 0.5 + 0.5;
+    const radius = Math.max(22, this.radius * profile.radiusMult);
+    const outer = radius + (profile.tier === 'elite' || profile.tier === 'ace' ? 8 : 5);
+    const markerCount = Math.max(3, profile.markerCount || 3);
+    let motionTrailCount = 0;
+    let orbitalPipCount = 0;
+    let warningBracketCount = 0;
+    let vectorArrowCount = 0;
+    let arrivalGuardArcCount = 0;
+    let arrivalGuardPipCount = 0;
+    layer.rotation = -(this.sprite?.rotation || 0);
+    if (this.aceLabelPlate) {
+      // The enemy container turns to face its flight vector. Keep the bounty
+      // contract level so its identity and reward stay readable in motion.
+      this.aceLabelPlate.rotation = -(this.sprite?.rotation || 0);
+    }
+
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: profile.color, width: profile.tier === 'elite' || profile.tier === 'ace' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
+    layer.circle(0, 0, outer);
+    layer.stroke({ color: profile.accent, width: 1, alpha: 0.1 + pulse * 0.08 });
+
+    for (let i = 0; i < markerCount; i += 1) {
+      const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+      drawThreatFrameTick(layer, angle, radius - 4, outer + 6);
+    }
+    layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
+
+    const orbitalRadius = outer + 13 + pulse * 2;
+    const orbitalCount = profile.tier === 'elite' || profile.tier === 'ace' ? markerCount + 2 : Math.max(4, markerCount);
+    for (let i = 0; i < orbitalCount; i += 1) {
+      const angle = now * 0.0018 + this.idlePhase * 0.18 + i * (Math.PI * 2 / orbitalCount);
+      layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' || profile.tier === 'ace' ? 2.4 : 1.8);
+      orbitalPipCount += 1;
+    }
+    layer.fill({ color: profile.accent, alpha: 0.12 + pulse * 0.1 });
+
+    for (const angle of [-Math.PI / 4, Math.PI / 4, Math.PI * 0.75, Math.PI * 1.25]) {
+      const r = outer + 2;
+      const tangent = angle + Math.PI * 0.5;
+      const cx = Math.cos(angle) * r;
+      const cy = Math.sin(angle) * r;
+      layer.moveTo(cx - Math.cos(tangent) * 5, cy - Math.sin(tangent) * 5);
+      layer.lineTo(cx + Math.cos(angle) * 5, cy + Math.sin(angle) * 5);
+      layer.lineTo(cx + Math.cos(tangent) * 5, cy + Math.sin(tangent) * 5);
+      warningBracketCount += 1;
+    }
+    layer.stroke({ color: 0xffffff, width: 1, alpha: 0.14 + pulse * 0.12 });
+
+    const arrivalGuardActive = profile.tier === 'elite' && this.state === 'ENTRY';
+    if (arrivalGuardActive) {
+      const guardRadius = outer + 12;
+      const guardSweep = 0.74 + pulse * 0.12;
+      for (let index = 0; index < 4; index += 1) {
+        const center = -Math.PI / 2 + index * Math.PI / 2 + now * 0.0008;
+        layer.arc(0, 0, guardRadius + (index % 2) * 3, center - guardSweep / 2, center + guardSweep / 2);
+        arrivalGuardArcCount += 1;
+      }
+      layer.stroke({ color: profile.color, width: 3.2, alpha: 0.58 + pulse * 0.24 });
+      for (let index = 0; index < 8; index += 1) {
+        const angle = now * -0.0015 + index * Math.PI / 4;
+        const pipRadius = guardRadius + 8 + (index % 2) * 3;
+        layer.circle(Math.cos(angle) * pipRadius, Math.sin(angle) * pipRadius, index % 2 ? 2.2 : 3.1);
+        layer.fill({
+          color: index % 2 ? profile.accent : profile.color,
+          alpha: 0.32 + pulse * 0.18
+        });
+        arrivalGuardPipCount += 1;
+      }
+    }
+
+    if (profile.tier === 'elite' || profile.tier === 'danger_mid' || profile.tier === 'ace') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+        const cx = Math.cos(angle) * (outer + 9);
+        const cy = Math.sin(angle) * (outer + 9);
+        layer.circle(cx, cy, profile.tier === 'elite' || profile.tier === 'ace' ? 2.6 : 2.1);
+      }
+      layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
+    } else if (profile.tier === 'threat_action') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = Math.PI / 4 + i * (Math.PI * 2 / markerCount);
+        drawThreatFrameTick(layer, angle, radius * 0.64, radius * 0.92);
+      }
+      layer.stroke({ color: profile.accent, width: 1.4, alpha: 0.28 + pulse * 0.18 });
+    } else if (profile.tier === 'late_mayhem') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = now * 0.002 + i * (Math.PI * 2 / markerCount);
+        drawThreatFrameTick(layer, angle, radius * 0.78, outer + 4);
+      }
+      layer.stroke({ color: profile.accent, width: 1.3, alpha: 0.26 + pulse * 0.18 });
+    } else if (profile.tier === 'fast') {
+      const trailLean = Math.sin(now * 0.006 + this.idlePhase) * 0.24;
+      for (let i = 0; i < 3; i += 1) {
+        const spread = (i - 1) * radius * 0.34;
+        const y0 = radius * 0.38 + i * 1.5;
+        const y1 = outer + 12 + i * 5;
+        layer.moveTo(spread - 4, y0);
+        layer.lineTo(spread - trailLean * y1, y1);
+        layer.lineTo(spread + 4, y0);
+        layer.closePath();
+        layer.fill({ color: profile.color, alpha: 0.08 + pulse * 0.08 });
+        layer.moveTo(spread, y0);
+        layer.lineTo(spread - trailLean * y1, y1);
+        motionTrailCount += 1;
+      }
+      layer.stroke({ color: profile.color, width: 2.1, alpha: 0.38 + pulse * 0.28 });
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount) + pulse * 0.16;
+        drawThreatFrameTick(layer, angle, radius * 0.82, outer + 5);
+        layer.circle(Math.cos(angle) * (outer + 8), Math.sin(angle) * (outer + 8), 2.4);
+      }
+      layer.fill({ color: profile.accent, alpha: 0.28 + pulse * 0.2 });
+      layer.stroke({ color: profile.accent, width: 1.8, alpha: 0.32 + pulse * 0.24 });
+      for (let i = 0; i < 2; i += 1) {
+        const y = outer + 18 + i * 8;
+        const spread = 5 + i * 2;
+        layer.moveTo(-spread, y);
+        layer.lineTo(0, y + 8 + pulse * 4);
+        layer.lineTo(spread, y);
+        vectorArrowCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + pulse * 0.2 });
+    }
+
+    layer.visible = true;
+    layer._debugThreatFrame = {
+      visible: true,
+      tier: profile.tier,
+      markerCount,
+      radius: Number(outer.toFixed(1)),
+      motionTrailCount,
+      orbitalPipCount,
+      warningBracketCount,
+      vectorArrowCount,
+      arrivalGuardActive,
+      arrivalGuardArcCount,
+      arrivalGuardPipCount,
+      arrivalGuardDamageMultiplier: arrivalGuardActive ? this.arrivalGuardDamageMultiplier : 1
+    };
   }
 
   returnToFormation() {
@@ -806,6 +2104,17 @@ export class Enemy {
   updateBezier(curve, nextState) {
     if (!curve) {
       this.state = nextState;
+      if (nextState === 'FORMATION') {
+        this.formationSwayRampMs = 0;
+        if (this.isEliteMiddleShip) {
+          const now = Date.now();
+          this.entryCompletedAt = now;
+          this.arrivalCombatReadyAt = Math.max(this.arrivalCombatReadyAt || 0, now + 900);
+          if (this.eliteAbility) {
+            this.eliteAbility.nextAt = Math.max(this.eliteAbility.nextAt || 0, this.arrivalCombatReadyAt);
+          }
+        }
+      }
       return;
     }
     const now = Date.now();
@@ -832,6 +2141,16 @@ export class Enemy {
 
     if (t >= 1) {
       this.state = nextState;
+      if (nextState === 'FORMATION') {
+        this.formationSwayRampMs = 0;
+        if (this.isEliteMiddleShip) {
+          this.entryCompletedAt = now;
+          this.arrivalCombatReadyAt = Math.max(this.arrivalCombatReadyAt || 0, now + 900);
+          if (this.eliteAbility) {
+            this.eliteAbility.nextAt = Math.max(this.eliteAbility.nextAt || 0, this.arrivalCombatReadyAt);
+          }
+        }
+      }
     }
   }
 
@@ -848,6 +2167,12 @@ export class Enemy {
       this.eliteAbility.state = 'telegraph';
       this.eliteAbility.startedAt = now;
       this.eliteAbility.triggered = false;
+      this.game?.scenes?.play?.performanceDiagnostics?.mark?.('elite_signal_start', {
+        kind: 'elite_ability',
+        id: profile.id,
+        level: this.level,
+        waveSlot: this.waveSlot
+      });
       AudioManager.playSfx(profile.sfx?.charge || 'elite_special_charge', { volume: 0.42, minIntervalMs: 360 });
     }
 
@@ -936,6 +2261,46 @@ export class Enemy {
       case 'elite_hunter':
         this.fireElitePattern('hunter', playerX, playerY);
         break;
+      case 'prism_barrage':
+        this.fireElitePattern('prism', playerX, playerY);
+        break;
+      case 'meteor_bloom':
+        this.fireElitePattern('meteor', playerX, playerY);
+        break;
+      case 'hunter_dash':
+        this.phaseShiftUntil = now + Math.min(760, this.middleShipProfile.specialActiveMs || 760);
+        this.x = Math.max(this.radius + 18, Math.min(
+          (this.game?.getWidth?.() || 800) - this.radius - 18,
+          this.x + Math.sign(this.x - playerX || 1) * (22 + (this.middleShipProfile.abilityVariant || 0) * 10)
+        ));
+        this.fireElitePattern('dash', playerX, playerY);
+        break;
+      case 'satellite_ring':
+        this.fireElitePattern('satellite', playerX, playerY);
+        break;
+      case 'stasis_lattice':
+        this.applyLocalCooldownPulse(112 + (this.middleShipProfile.abilityVariant || 0) * 28);
+        break;
+      case 'siphon_tether':
+        this.health = Math.min(this.maxHealth, this.health + Math.max(1, this.maxHealth * (0.05 + (this.middleShipProfile.abilityVariant || 0) * 0.02)));
+        this.updateHealthBar?.();
+        this.repairNearbyAllies();
+        break;
+      case 'resonance_command':
+        this.commandNearbyAllies();
+        this.fireElitePattern('resonance', playerX, playerY);
+        break;
+      case 'warp_ambush':
+        this.phaseShiftUntil = now + (this.middleShipProfile.specialActiveMs || 1100);
+        this.spawnMirrorDecoys();
+        this.fireElitePattern('warp', playerX, playerY);
+        break;
+      case 'ion_shear':
+        this.fireElitePattern('shear', playerX, playerY);
+        break;
+      case 'siege_beacon':
+        this.fireElitePattern('siege', playerX, playerY);
+        break;
       default:
         break;
     }
@@ -947,6 +2312,10 @@ export class Enemy {
       this.applyEliteTractorPull(delta, playerX, playerY);
     } else if (ability === 'vortex_gravity') {
       this.applyEliteVortexPull(delta, playerX, playerY);
+    } else if (ability === 'stasis_lattice') {
+      this.applyEliteVortexPull(delta, playerX, playerY, 0.42);
+    } else if (ability === 'siphon_tether') {
+      this.applyEliteTractorPull(delta, playerX, playerY, 0.7);
     }
   }
 
@@ -1006,9 +2375,557 @@ export class Enemy {
       }
       layer.stroke({ color: 0xffffff, width: active ? 2.2 : 1.4, alpha: active ? 0.38 : 0.14 + progress * 0.26 });
     }
+
+    this.drawEliteAttackSignatureVfx(layer, {
+      ability,
+      profile,
+      progress,
+      active,
+      playerX,
+      playerY,
+      color,
+      pulse,
+      radius,
+      now
+    });
   }
 
-  applyEliteTractorPull(delta, playerX, playerY) {
+  drawEliteAttackSignatureVfx(layer, context) {
+    const { ability, profile, progress, active, playerX, playerY, color, pulse, radius, now } = context;
+    const relX = playerX - this.x;
+    const relY = playerY - this.y;
+    const intensity = active ? 1 : Math.max(0.18, progress);
+    const accent = profile?.accent || color || 0x66ffff;
+    const tint = profile?.tint || accent;
+
+    this.drawEliteCoreChargeNodes(layer, {
+      count: ability === 'tractor_pull' || ability === 'vortex_gravity' ? 10 : 7,
+      radius: radius * (active ? 0.92 : 0.76),
+      color: accent,
+      pulse,
+      now,
+      intensity
+    });
+
+    if (ability === 'tractor_pull') {
+      this.drawEliteTractorSignature(layer, { relX, relY, progress, active, color: accent, tint, now, pulse });
+      return;
+    }
+    if (ability === 'vortex_gravity') {
+      this.drawEliteVortexSignature(layer, { progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    if (ability === 'sniper_rail' || ability === 'elite_hunter') {
+      this.drawEliteRailSignature(layer, { relX, relY, progress, active, color: accent, tint, now, pulse, hunter: ability === 'elite_hunter' });
+      return;
+    }
+    if (ability === 'shield_projector' || ability === 'barrier_projector') {
+      this.drawEliteShieldSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, barrier: ability === 'barrier_projector' });
+      return;
+    }
+    if (ability === 'repair_healer' || ability === 'escort_commander') {
+      this.drawEliteSupportSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, command: ability === 'escort_commander' });
+      return;
+    }
+    if (ability === 'jammer_disruptor' || ability === 'pulse_emp') {
+      this.drawElitePulseSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, emp: ability === 'pulse_emp' });
+      return;
+    }
+    if (ability === 'phase_raider' || ability === 'mirror_decoy' || ability === 'splitter_clone') {
+      this.drawElitePhaseMirrorSignature(layer, { progress, active, color: accent, tint, now, pulse, radius, mirror: ability !== 'phase_raider' });
+      return;
+    }
+    if (ability === 'drone_carrier') {
+      this.drawEliteCarrierSignature(layer, { progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    if (['prism_barrage', 'meteor_bloom', 'hunter_dash', 'satellite_ring', 'stasis_lattice', 'siphon_tether', 'resonance_command', 'warp_ambush', 'ion_shear', 'siege_beacon'].includes(ability)) {
+      this.drawEliteExpansionSignature(layer, { ability, profile, relX, relY, progress, active, color: accent, tint, now, pulse, radius });
+      return;
+    }
+    this.drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color: accent, tint, now, pulse, radius });
+  }
+
+  drawEliteCoreChargeNodes(layer, { count, radius, color, pulse, now, intensity }) {
+    for (let i = 0; i < count; i += 1) {
+      const a = now * (0.0035 + (i % 3) * 0.0007) + i * Math.PI * 2 / count;
+      const wobble = 0.88 + Math.sin(now * 0.011 + i) * 0.08;
+      layer.circle(Math.cos(a) * radius * wobble, Math.sin(a) * radius * 0.62 * wobble, 2.6 + pulse * 2);
+      layer.fill({ color: i % 2 ? color : 0xffffff, alpha: 0.12 + intensity * 0.22 });
+    }
+  }
+
+  drawEliteTractorSignature(layer, { relX, relY, progress, active, color, tint, now, pulse }) {
+    const targetY = Math.max(150, relY);
+    const halfWidth = 50 + targetY * 0.18;
+    const alpha = active ? 0.62 : 0.18 + progress * 0.36;
+    const rows = active ? 6 : 4;
+    for (let i = 1; i <= rows; i += 1) {
+      const t = i / (rows + 1);
+      const x = relX * t;
+      const y = this.radius + (targetY - this.radius) * t;
+      const rx = halfWidth * t * (0.46 + pulse * 0.08);
+      const ry = 7 + i * 2.2;
+      this.drawEliteArc(layer, x, y, rx, ry, now * 0.006 + i, now * 0.006 + i + Math.PI * 1.42, i % 2 ? color : 0xffffff, active ? 2.6 : 1.5, alpha);
+      this.drawEliteArc(layer, x, y, rx * 0.72, ry * 0.72, -now * 0.007 + i, -now * 0.007 + i + Math.PI * 1.08, tint, 1.2, alpha * 0.7);
+    }
+    for (let i = 0; i < 5; i += 1) {
+      const lane = i / 4 - 0.5;
+      const phase = now * 0.009 + i * 1.2;
+      layer.moveTo(Math.sin(phase) * 5, this.radius * 0.55);
+      layer.lineTo(relX + lane * halfWidth * 0.82 + Math.sin(phase * 1.4) * 10, targetY);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 2.1 : 1.2, alpha: active ? 0.32 : 0.1 + progress * 0.2 });
+    this.drawEliteCaptureBrackets(layer, relX, targetY, Math.max(20, halfWidth * 0.26), color, active ? 0.58 : 0.18 + progress * 0.28, now);
+  }
+
+  drawEliteVortexSignature(layer, { progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.56 : 0.16 + progress * 0.38;
+    for (let i = 0; i < 5; i += 1) {
+      const r = radius * (0.52 + i * 0.21 + pulse * 0.04);
+      const spin = now * (0.004 + i * 0.0009) + i * Math.PI * 0.55;
+      this.drawEliteArc(layer, 0, 0, r, r * 0.58, spin, spin + Math.PI * (active ? 1.48 : 1.08), i % 2 ? color : tint, active ? 2.5 : 1.5, alpha * (1 - i * 0.09));
+    }
+    for (let i = 0; i < 12; i += 1) {
+      const a = now * 0.006 + i * Math.PI / 6;
+      const inner = radius * 0.28;
+      const outer = radius * (0.82 + (i % 3) * 0.08);
+      layer.moveTo(Math.cos(a) * outer, Math.sin(a) * outer * 0.58);
+      layer.lineTo(Math.cos(a + 0.2) * inner, Math.sin(a + 0.2) * inner * 0.58);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.7 : 1.1, alpha: active ? 0.26 : 0.1 + progress * 0.18 });
+  }
+
+  drawEliteRailSignature(layer, { relX, relY, progress, active, color, tint, now, pulse, hunter }) {
+    const angle = Math.atan2(relY, relX);
+    const length = Math.max(180, Math.hypot(relX, relY));
+    const alpha = active ? 0.72 : 0.22 + progress * 0.42;
+    const normal = angle + Math.PI / 2;
+    const lanes = hunter ? [-10, 10] : [-8, 0, 8];
+    lanes.forEach((offset, index) => {
+      layer.moveTo(Math.cos(normal) * offset, this.radius * 0.25 + Math.sin(normal) * offset);
+      layer.lineTo(Math.cos(angle) * length + Math.cos(normal) * offset, Math.sin(angle) * length + Math.sin(normal) * offset);
+      layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.5 : 1.4, alpha: alpha * (index === 1 ? 1 : 0.7) });
+    });
+    for (let i = 1; i <= 5; i += 1) {
+      const t = i / 6;
+      const x = Math.cos(angle) * length * t;
+      const y = Math.sin(angle) * length * t;
+      const notch = 9 + pulse * 6;
+      layer.moveTo(x + Math.cos(normal) * -notch, y + Math.sin(normal) * -notch);
+      layer.lineTo(x + Math.cos(normal) * notch, y + Math.sin(normal) * notch);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: active ? 0.34 : 0.12 + progress * 0.2 });
+    this.drawEliteCaptureBrackets(layer, relX, relY, hunter ? 19 : 24, hunter ? 0x7cff44 : color, active ? 0.6 : 0.2 + progress * 0.32, now);
+  }
+
+  drawEliteShieldSignature(layer, { progress, active, color, tint, now, pulse, radius, barrier }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.36;
+    const panels = barrier ? 8 : 6;
+    for (let i = 0; i < panels; i += 1) {
+      const a = now * (barrier ? 0.002 : 0.0035) + i * Math.PI * 2 / panels;
+      const next = a + Math.PI * (barrier ? 0.13 : 0.18);
+      const rx = radius * (barrier ? 1.32 : 1.1);
+      const ry = radius * (barrier ? 0.72 : 0.62);
+      this.drawEliteArc(layer, 0, 0, rx, ry, a, next, i % 2 ? color : tint, active ? 3.4 : 2, alpha);
+      layer.circle(Math.cos(a) * rx, Math.sin(a) * ry, 3 + pulse * 2);
+      layer.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.1 + progress * 0.16 });
+    }
+    if (barrier) {
+      [-1, 1].forEach((side) => {
+        const x = side * radius * (1.05 + pulse * 0.08);
+        layer.rect(x - 4, -radius * 0.82, 8, radius * 1.64);
+        layer.fill({ color, alpha: active ? 0.12 : 0.04 + progress * 0.08 });
+        layer.stroke({ color: 0xffffff, width: 1.4, alpha: active ? 0.26 : 0.1 + progress * 0.16 });
+      });
+    }
+  }
+
+  drawEliteSupportSignature(layer, { progress, active, color, tint, now, pulse, radius, command }) {
+    const alpha = active ? 0.5 : 0.16 + progress * 0.3;
+    const allies = this.game?.scenes?.play?.enemyManager?.enemies || [];
+    let tetherCount = 0;
+    for (const ally of allies) {
+      if (!ally?.active || ally === this || ally.kind === 'boss' || tetherCount >= 4) continue;
+      const dx = (ally.x || 0) - this.x;
+      const dy = (ally.y || 0) - this.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > (command ? 190 : 165)) continue;
+      layer.moveTo(0, 0);
+      layer.lineTo(dx, dy);
+      tetherCount += 1;
+    }
+    if (tetherCount > 0) {
+      layer.stroke({ color: command ? 0xffdd66 : color, width: active ? 2.2 : 1.3, alpha });
+    }
+    const pipCount = command ? 7 : 5;
+    for (let i = 0; i < pipCount; i += 1) {
+      const a = now * 0.004 + i * Math.PI * 2 / pipCount;
+      const x = Math.cos(a) * radius * 1.08;
+      const y = Math.sin(a) * radius * 0.64;
+      if (command) {
+        layer.moveTo(x, y - 5 - pulse * 3);
+        layer.lineTo(x + 5, y + 4);
+        layer.lineTo(x - 5, y + 4);
+        layer.closePath();
+        layer.fill({ color: i % 2 ? tint : color, alpha: alpha * 0.7 });
+      } else {
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: i % 2 ? 0xffffff : color, alpha: alpha * 0.7 });
+      }
+    }
+  }
+
+  drawElitePulseSignature(layer, { progress, active, color, tint, now, pulse, radius, emp }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.36;
+    const waves = emp ? 4 : 3;
+    for (let i = 0; i < waves; i += 1) {
+      const r = radius * (0.55 + i * 0.24 + (active ? pulse * 0.1 : progress * 0.08));
+      const segments = emp ? 14 : 11;
+      for (let s = 0; s < segments; s += 1) {
+        const a0 = now * 0.004 + s * Math.PI * 2 / segments;
+        const a1 = a0 + Math.PI * (emp ? 0.055 : 0.075);
+        this.drawEliteArc(layer, 0, 0, r, r * 0.62, a0, a1, (s + i) % 2 ? color : tint, active ? 2.2 : 1.3, alpha * (1 - i * 0.12));
+      }
+    }
+    for (let i = 0; i < (emp ? 8 : 6); i += 1) {
+      const a = now * 0.008 + i * Math.PI * 2 / (emp ? 8 : 6);
+      const r1 = radius * 0.35;
+      const r2 = radius * (0.88 + (i % 2) * 0.16);
+      layer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1 * 0.6);
+      layer.lineTo(Math.cos(a + 0.12) * r2, Math.sin(a + 0.12) * r2 * 0.6);
+    }
+    layer.stroke({ color: 0xffffff, width: active ? 1.7 : 1.1, alpha: active ? 0.24 : 0.08 + progress * 0.18 });
+  }
+
+  drawElitePhaseMirrorSignature(layer, { progress, active, color, tint, now, pulse, radius, mirror }) {
+    const alpha = active ? 0.48 : 0.14 + progress * 0.32;
+    const copies = mirror ? [-1, 1] : [-1.5, -0.75, 0.75, 1.5];
+    copies.forEach((side, index) => {
+      const offsetX = side * radius * (0.52 + pulse * 0.08);
+      const offsetY = Math.sin(now * 0.01 + index) * 8;
+      layer.ellipse(offsetX, offsetY, radius * (mirror ? 0.48 : 0.34), radius * 0.78);
+      layer.stroke({ color: index % 2 ? color : tint, width: active ? 2.2 : 1.3, alpha: alpha * (mirror ? 0.9 : 0.62) });
+      this.drawEliteArc(layer, offsetX, offsetY, radius * 0.62, radius * 0.32, now * 0.004 + index, now * 0.004 + index + Math.PI * 0.78, 0xffffff, 1.2, alpha * 0.55);
+    });
+    if (mirror) {
+      layer.moveTo(-radius * 1.12, 0);
+      layer.lineTo(0, -radius * 0.62);
+      layer.lineTo(radius * 1.12, 0);
+      layer.lineTo(0, radius * 0.62);
+      layer.closePath();
+      layer.stroke({ color: 0xffffff, width: active ? 1.9 : 1.1, alpha: active ? 0.28 : 0.1 + progress * 0.18 });
+    }
+  }
+
+  drawEliteCarrierSignature(layer, { progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.56 : 0.16 + progress * 0.34;
+    [-1, 1].forEach((side) => {
+      const bayX = side * radius * 0.62;
+      layer.rect(bayX - 8, -radius * 0.18, 16, radius * 0.88);
+      layer.fill({ color: side > 0 ? color : tint, alpha: active ? 0.1 : 0.04 + progress * 0.08 });
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1.1, alpha: alpha * 0.72 });
+      for (let i = 0; i < 3; i += 1) {
+        const t = (i + 1) / 4;
+        layer.circle(bayX + side * (14 + pulse * 4), -radius * 0.08 + radius * 0.68 * t, 2.4 + pulse * 1.4);
+        layer.fill({ color, alpha: alpha * 0.8 });
+      }
+    });
+    this.drawEliteArc(layer, 0, radius * 0.34, radius * 1.04, radius * 0.28, now * 0.005, now * 0.005 + Math.PI, color, active ? 2.4 : 1.4, alpha);
+  }
+
+  drawEliteExpansionSignature(layer, { ability, profile, relX, relY, progress, active, color, tint, now, pulse, radius }) {
+    const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+    const alpha = active ? 0.62 : 0.16 + progress * 0.38;
+    const whiteAlpha = active ? 0.34 : 0.08 + progress * 0.22;
+
+    if (ability === 'prism_barrage') {
+      const count = 3 + variant * 2;
+      const targetY = Math.max(160, relY);
+      const spread = 54 + variant * 22;
+      for (let index = 0; index < count; index += 1) {
+        const lane = count === 1 ? 0 : index / (count - 1) - 0.5;
+        const targetX = relX + lane * spread * 2;
+        layer.moveTo(lane * radius * 0.36, radius * 0.3);
+        layer.lineTo(targetX, targetY);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.8 : 1.35, alpha: alpha * (0.72 + (index % 3) * 0.1) });
+        const shardY = radius * (0.72 + (index % 2) * 0.24);
+        const shardX = lane * radius * 1.36;
+        layer.moveTo(shardX, shardY - 8 - pulse * 3);
+        layer.lineTo(shardX + 5, shardY);
+        layer.lineTo(shardX, shardY + 8 + pulse * 3);
+        layer.lineTo(shardX - 5, shardY);
+        layer.closePath();
+        layer.fill({ color: index % 2 ? tint : color, alpha: alpha * 0.5 });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, targetY, 18 + variant * 4, 0xffffff, whiteAlpha, now);
+      return;
+    }
+
+    if (ability === 'meteor_bloom') {
+      const count = 3 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const lane = index - (count - 1) / 2;
+        const x = lane * (24 - variant * 2);
+        const y = radius * 0.86 + 28 + (index % 2) * 18;
+        const forecast = 12 + variant * 2 + pulse * 4;
+        layer.circle(x, y, forecast);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.4, alpha });
+        layer.circle(x, y, 3.5 + pulse * 2);
+        layer.fill({ color: 0xffffff, alpha: whiteAlpha });
+        layer.moveTo(x, radius * 0.22);
+        layer.lineTo(x, y - forecast);
+      }
+      layer.stroke({ color, width: active ? 2.2 : 1.1, alpha: alpha * 0.56 });
+      this.drawEliteArc(layer, 0, 0, radius * (1.02 + pulse * 0.08), radius * 0.6, Math.PI, Math.PI * 2, tint, active ? 3 : 1.6, alpha);
+      return;
+    }
+
+    if (ability === 'hunter_dash') {
+      const angle = Math.atan2(relY, relX);
+      const length = Math.max(190, Math.hypot(relX, relY));
+      const normal = angle + Math.PI / 2;
+      const corridor = 12 + variant * 4;
+      [-1, 1].forEach((side) => {
+        layer.moveTo(Math.cos(normal) * corridor * side, Math.sin(normal) * corridor * side);
+        layer.lineTo(Math.cos(angle) * length + Math.cos(normal) * corridor * side, Math.sin(angle) * length + Math.sin(normal) * corridor * side);
+      });
+      layer.stroke({ color, width: active ? 3 : 1.5, alpha });
+      for (let index = 1; index <= 4 + variant; index += 1) {
+        const t = index / (5 + variant);
+        const x = Math.cos(angle) * length * t;
+        const y = Math.sin(angle) * length * t;
+        layer.moveTo(x - Math.cos(angle) * 10 + Math.cos(normal) * 7, y - Math.sin(angle) * 10 + Math.sin(normal) * 7);
+        layer.lineTo(x, y);
+        layer.lineTo(x - Math.cos(angle) * 10 - Math.cos(normal) * 7, y - Math.sin(angle) * 10 - Math.sin(normal) * 7);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 2 : 1.1, alpha: whiteAlpha });
+      this.drawEliteCaptureBrackets(layer, relX, relY, 17 + variant * 3, tint, alpha, now);
+      return;
+    }
+
+    if (ability === 'satellite_ring') {
+      const count = 6 + variant * 2;
+      const ringR = radius * (1.08 + variant * 0.08);
+      for (let index = 0; index < count; index += 1) {
+        const angle = now * (0.003 + variant * 0.0005) + index * Math.PI * 2 / count;
+        const x = Math.cos(angle) * ringR;
+        const y = Math.sin(angle) * ringR * 0.62;
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: index % 2 ? color : tint, alpha: alpha * 0.72 });
+        layer.moveTo(x, y);
+        layer.lineTo(Math.cos(angle + Math.PI) * radius * 0.22, Math.sin(angle + Math.PI) * radius * 0.14);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: whiteAlpha });
+      this.drawEliteArc(layer, 0, 0, ringR * 1.08, ringR * 0.67, -now * 0.004, -now * 0.004 + Math.PI * 1.7, color, active ? 2.8 : 1.5, alpha);
+      return;
+    }
+
+    if (ability === 'stasis_lattice') {
+      const rings = 2 + variant;
+      for (let ring = 0; ring < rings; ring += 1) {
+        const r = radius * (0.72 + ring * 0.24 + pulse * 0.04);
+        layer.circle(0, 0, r);
+        layer.stroke({ color: ring % 2 ? tint : color, width: active ? 2.4 : 1.3, alpha: alpha * (1 - ring * 0.12) });
+      }
+      const ticks = 8 + variant * 4;
+      for (let index = 0; index < ticks; index += 1) {
+        const angle = index * Math.PI * 2 / ticks - Math.PI / 2;
+        const inner = radius * 0.52;
+        const outer = radius * (0.94 + (index % 3 === 0 ? 0.17 : 0.05));
+        layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+        layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 2 : 1, alpha: whiteAlpha });
+      const hand = now * 0.004 * (variant + 1);
+      layer.moveTo(0, 0);
+      layer.lineTo(Math.cos(hand) * radius * 0.78, Math.sin(hand) * radius * 0.78);
+      layer.stroke({ color: tint, width: 2.4, alpha });
+      return;
+    }
+
+    if (ability === 'siphon_tether') {
+      const targetY = Math.max(150, relY);
+      const strands = 2 + variant;
+      for (let index = 0; index < strands; index += 1) {
+        const offset = (index - (strands - 1) / 2) * 13;
+        const sway = Math.sin(now * 0.008 + index) * (8 + variant * 3);
+        layer.moveTo(offset * 0.35, radius * 0.42);
+        layer.lineTo(relX * 0.5 + sway, targetY * 0.5);
+        layer.lineTo(relX + offset, targetY);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.3, alpha });
+      }
+      for (let index = 0; index < 5 + variant; index += 1) {
+        const angle = -now * 0.005 + index * Math.PI * 2 / (5 + variant);
+        layer.circle(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.62, 3 + pulse * 2);
+        layer.fill({ color: index % 2 ? 0xffffff : tint, alpha: alpha * 0.64 });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, targetY, 20 + variant * 3, color, whiteAlpha, now);
+      return;
+    }
+
+    if (ability === 'resonance_command') {
+      const notes = 6 + variant * 2;
+      for (let index = 0; index < notes; index += 1) {
+        const angle = now * 0.003 + index * Math.PI * 2 / notes;
+        const r = radius * (0.88 + (index % 2) * 0.24 + pulse * 0.05);
+        const x = Math.cos(angle) * r;
+        const y = Math.sin(angle) * r * 0.62;
+        layer.moveTo(x, y + 7);
+        layer.lineTo(x, y - 7);
+        layer.lineTo(x + 7, y - 10);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.4 : 1.3, alpha });
+      }
+      for (let ring = 0; ring < 3; ring += 1) {
+        this.drawEliteArc(layer, 0, 0, radius * (0.68 + ring * 0.26 + pulse * 0.04), radius * (0.34 + ring * 0.13), now * 0.003 + ring, now * 0.003 + ring + Math.PI * 1.45, ring % 2 ? tint : 0xffffff, active ? 2.5 : 1.3, alpha * (1 - ring * 0.15));
+      }
+      return;
+    }
+
+    if (ability === 'warp_ambush') {
+      const echoes = 2 + variant;
+      for (let index = 0; index < echoes; index += 1) {
+        const side = index % 2 ? 1 : -1;
+        const tier = Math.floor(index / 2) + 1;
+        const x = side * radius * (0.62 + tier * 0.28 + pulse * 0.06);
+        const y = Math.sin(now * 0.01 + index) * 10;
+        layer.ellipse(x, y, radius * 0.42, radius * 0.76);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.5 : 1.25, alpha: alpha * (0.78 - tier * 0.1) });
+      }
+      layer.moveTo(0, -radius * 1.25);
+      layer.lineTo(radius * 0.18, -radius * 0.3);
+      layer.lineTo(-radius * 0.14, radius * 0.28);
+      layer.lineTo(0, radius * 1.25);
+      layer.stroke({ color: 0xffffff, width: active ? 3 : 1.5, alpha: whiteAlpha });
+      this.drawEliteCaptureBrackets(layer, relX, relY, 18 + variant * 3, color, alpha, now);
+      return;
+    }
+
+    if (ability === 'ion_shear') {
+      const length = Math.max(190, Math.hypot(relX, relY));
+      const angle = Math.atan2(relY, relX);
+      const shear = 0.48 - variant * 0.05;
+      [-shear, shear].forEach((offset, index) => {
+        const a = angle + offset;
+        layer.moveTo(Math.cos(a + Math.PI) * radius * 0.44, Math.sin(a + Math.PI) * radius * 0.44);
+        layer.lineTo(Math.cos(a) * length, Math.sin(a) * length);
+        layer.stroke({ color: index ? tint : color, width: active ? 3.2 : 1.5, alpha });
+      });
+      if (variant >= 1) {
+        layer.moveTo(0, radius * 0.35);
+        layer.lineTo(relX, relY);
+        layer.stroke({ color: 0xffffff, width: active ? 2.2 : 1.1, alpha: whiteAlpha });
+      }
+      this.drawEliteCaptureBrackets(layer, relX, relY, 22 + variant * 3, tint, alpha, now);
+      return;
+    }
+
+    if (ability === 'siege_beacon') {
+      const grid = 2 + variant;
+      const targetY = Math.max(170, relY);
+      for (let index = 0; index < grid; index += 1) {
+        const lane = index - (grid - 1) / 2;
+        const x = relX + lane * 44;
+        const size = 18 + (index % 2) * 4 + pulse * 2;
+        layer.rect(x - size, targetY - size, size * 2, size * 2);
+        layer.stroke({ color: index % 2 ? tint : color, width: active ? 2.6 : 1.3, alpha });
+        layer.moveTo(lane * radius * 0.4, radius * 0.5);
+        layer.lineTo(x, targetY - size);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.8 : 1, alpha: whiteAlpha });
+      [-1, 1].forEach((side) => {
+        layer.rect(side * radius * 0.68 - 7, -radius * 0.12, 14, radius * 0.92);
+        layer.fill({ color: side > 0 ? color : tint, alpha: active ? 0.14 : 0.04 + progress * 0.08 });
+        layer.stroke({ color: 0xffffff, width: 1.2, alpha: whiteAlpha });
+      });
+    }
+  }
+
+  drawEliteOrdnanceSignature(layer, { ability, relX, relY, progress, active, color, tint, now, pulse, radius }) {
+    const alpha = active ? 0.58 : 0.18 + progress * 0.34;
+    const isLane = ability === 'lane_blocker';
+    const isWeb = ability === 'orb_webber';
+    const isMissile = ability === 'missile_frigate';
+    const isMine = ability === 'mine_layer';
+    const isAnchor = ability === 'anchor_turret';
+    const count = isLane ? 5 : isWeb ? 6 : isMissile ? 2 : isMine ? 3 : isAnchor ? 5 : 7;
+
+    if (isLane) {
+      const baseX = relX * 0.22;
+      for (let i = 0; i < count; i += 1) {
+        const x = baseX + (i - 2) * 24;
+        layer.rect(x - 4, this.radius * 0.35, 8, Math.max(170, relY));
+        layer.fill({ color, alpha: active ? 0.08 : 0.025 + progress * 0.05 });
+        layer.stroke({ color: i % 2 ? 0xffffff : tint, width: active ? 1.8 : 1.1, alpha: alpha * 0.72 });
+      }
+      return;
+    }
+
+    if (isMine || isMissile) {
+      for (let i = 0; i < count; i += 1) {
+        const spread = count === 1 ? 0 : (i - (count - 1) / 2) * (isMissile ? 30 : 34);
+        const y = this.radius * 0.9 + (isMine ? 34 + i * 16 : 22);
+        layer.ellipse(spread, y, isMissile ? 13 + pulse * 4 : 15 + pulse * 5, isMissile ? 24 : 10);
+        layer.stroke({ color: i % 2 ? tint : color, width: active ? 2.4 : 1.4, alpha });
+        layer.circle(spread, y, 3 + pulse * 2);
+        layer.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.08 + progress * 0.18 });
+      }
+      return;
+    }
+
+    if (isWeb) {
+      const webR = radius * 1.06;
+      for (let i = 0; i < count; i += 1) {
+        const a = now * 0.003 + i * Math.PI * 2 / count;
+        const x = Math.cos(a) * webR;
+        const y = Math.sin(a) * webR * 0.62;
+        layer.circle(x, y, 4 + pulse * 2);
+        layer.fill({ color: i % 2 ? color : tint, alpha: alpha * 0.76 });
+        layer.moveTo(x, y);
+        const nextA = now * 0.003 + ((i + 1) % count) * Math.PI * 2 / count;
+        layer.lineTo(Math.cos(nextA) * webR, Math.sin(nextA) * webR * 0.62);
+      }
+      layer.stroke({ color: 0xffffff, width: active ? 1.6 : 1, alpha: active ? 0.22 : 0.08 + progress * 0.16 });
+      return;
+    }
+
+    for (let i = 0; i < count; i += 1) {
+      const a = now * 0.004 + i * Math.PI * 2 / count;
+      const inner = radius * 0.32;
+      const outer = radius * (0.86 + (i % 2) * 0.18 + pulse * 0.04);
+      layer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner * 0.62);
+      layer.lineTo(Math.cos(a) * outer, Math.sin(a) * outer * 0.62);
+    }
+    layer.stroke({ color: isAnchor ? 0xff8844 : color, width: active ? 2.4 : 1.4, alpha });
+    this.drawEliteArc(layer, 0, 0, radius * 1.08, radius * 0.62, -now * 0.004, -now * 0.004 + Math.PI * 1.2, tint, active ? 2.2 : 1.3, alpha * 0.82);
+  }
+
+  drawEliteCaptureBrackets(layer, x, y, size, color, alpha, now) {
+    const spin = now * 0.004;
+    for (let i = 0; i < 4; i += 1) {
+      const a = spin + i * Math.PI * 0.5;
+      const cx = x + Math.cos(a) * size;
+      const cy = y + Math.sin(a) * size * 0.52;
+      layer.moveTo(cx, cy);
+      layer.lineTo(cx - Math.cos(a) * size * 0.32 + Math.cos(a + Math.PI / 2) * size * 0.2, cy - Math.sin(a) * size * 0.18 + Math.sin(a + Math.PI / 2) * size * 0.12);
+    }
+    layer.stroke({ color, width: 2, alpha });
+  }
+
+  drawEliteArc(layer, cx, cy, rx, ry, start, end, color, width, alpha) {
+    const steps = 14;
+    for (let i = 0; i <= steps; i += 1) {
+      const t = i / steps;
+      const a = start + (end - start) * t;
+      const x = cx + Math.cos(a) * rx;
+      const y = cy + Math.sin(a) * ry;
+      if (i === 0) layer.moveTo(x, y);
+      else layer.lineTo(x, y);
+    }
+    layer.stroke({ color, width, alpha });
+  }
+
+  applyEliteTractorPull(delta, playerX, playerY, strengthMult = 1) {
     const player = this.game?.scenes?.play?.player;
     if (!player?.active) return;
     const relX = player.x - this.x;
@@ -1020,12 +2937,13 @@ export class Enemy {
     const frameScale = Math.max(0.5, Math.min(2.2, delta));
     const playerRadius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
-    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale));
-    player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale);
+    const safeStrength = Math.max(0.2, Math.min(1.4, Number(strengthMult) || 1));
+    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale * safeStrength));
+    player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale * safeStrength);
     player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
   }
 
-  applyEliteVortexPull(delta) {
+  applyEliteVortexPull(delta, _playerX, _playerY, strengthMult = 1) {
     const player = this.game?.scenes?.play?.player;
     if (!player?.active) return;
     const dx = this.x - player.x;
@@ -1033,7 +2951,8 @@ export class Enemy {
     const dist = Math.hypot(dx, dy);
     if (dist <= 1 || dist > 260) return;
     const frameScale = Math.max(0.4, Math.min(2.0, delta));
-    const strength = Math.max(0, 1 - dist / 260) * 0.72 * frameScale;
+    const safeStrength = Math.max(0.2, Math.min(1.4, Number(strengthMult) || 1));
+    const strength = Math.max(0, 1 - dist / 260) * 0.72 * frameScale * safeStrength;
     const radius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
     const height = this.game?.getHeight?.() || 600;
@@ -1048,34 +2967,92 @@ export class Enemy {
     const add = (angle, speed = 2.2, damage = 1, extra = {}) => this.addEliteBullet(angle, speed, damage, color, extra);
 
     if (pattern === 'rail') {
-      add(baseAngle, 4.2, 1.2, { radius: 6, trailLength: 44, warningColor: 0xff55ff, haloColor: color });
+      add(baseAngle, 4.2, 1.2, { radius: 6, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.95, animationAmp: 0.09, alphaPulse: 0.12, trailLength: 58, warningColor: 0xff55ff, trailColor: 0xff55ff, haloColor: 0x61f6ff });
     } else if (pattern === 'mine') {
-      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 10, pulseRate: 0.75, haloColor: color }));
+      [-0.22, 0, 0.22].forEach((offset, index) => add(Math.PI / 2 + offset, 1.05 + index * 0.06, 1, { radius: 11 + index, assetIndex: 1, projectileArt: 'heavy_enemy_orb', animationStyle: 'orb', animationRate: 0.85 + index * 0.08, animationAmp: 0.1, alphaPulse: 0.11, pulseRate: 0.52 + index * 0.18, spin: 0.035, warningColor: 0xffd166, trailColor: 0xff7a3d, haloColor: 0xffd166 }));
     } else if (pattern === 'burst') {
-      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 6, trailLength: 30 }));
+      [-0.32, -0.16, 0, 0.16, 0.32].forEach((offset, index) => add(Math.PI / 2 + offset, 2.05, 1, { radius: 5 + (index % 2), assetIndex: 3, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.35 + index * 0.06, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 26 + index * 4, warningColor: index % 2 ? 0x61f6ff : 0xff66cc, trailColor: index % 2 ? 0x61f6ff : 0xff66cc }));
     } else if (pattern === 'lane') {
       [-150, -75, 0, 75, 150].forEach((offset) => {
         const laneAngle = Math.atan2(playerY - this.y, (playerX + offset) - this.x);
-        add(laneAngle, 1.75, 1, { radius: 7, warningColor: 0xffd166, haloColor: color });
+        add(laneAngle, 1.75, 1, { radius: 7, assetIndex: 6, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.55, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 36, warningColor: 0xffd166, trailColor: 0xffd166, haloColor: 0xfff2a6 });
       });
     } else if (pattern === 'web') {
-      [-0.42, -0.2, 0.2, 0.42].forEach((offset) => add(baseAngle + offset, 1.62, 1, { radius: 8, spin: 0.05, wobble: 0.08, haloColor: color }));
+      [-0.42, -0.2, 0.2, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.62, 1, { radius: 8, assetIndex: 9, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.35, animationAmp: 0.08, alphaPulse: 0.11, spin: 0.06 + index * 0.015, wobble: 0.11, warningColor: 0x9f7cff, trailColor: 0x9f7cff, haloColor: 0x9f7cff }));
     } else if (pattern === 'missile') {
-      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, trailLength: 42, accel: 0.002, haloColor: 0xff3355 }));
+      [-0.18, 0.18].forEach((offset) => add(baseAngle + offset, 1.72, 1.15, { radius: 9, assetIndex: 7, projectileArt: 'enemy_fireball', animationStyle: 'fireball', animationRate: 1.25, animationAmp: 0.11, alphaPulse: 0.12, trailLength: 52, accel: 0.0026, warningColor: 0xff3355, trailColor: 0xff3355, haloColor: 0xff6b4a }));
     } else if (pattern === 'anchor') {
-      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset) => add(baseAngle + offset, 1.9, 1, { radius: 7, trailLength: 28, haloColor: color }));
+      [-0.42, -0.21, 0, 0.21, 0.42].forEach((offset, index) => add(baseAngle + offset, 1.9, 1, { radius: 7 + (index === 2 ? 2 : 0), assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 1.05, animationAmp: 0.08, alphaPulse: 0.1, trailLength: 34, pulseRate: 0.9, warningColor: 0xff3355, trailColor: 0xff6a3a, haloColor: 0xff2438 }));
     } else if (pattern === 'hunter') {
-      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, trailLength: 36, warningColor: 0x7cff44, haloColor: color }));
+      [-0.13, 0.13].forEach((offset) => add(baseAngle + offset, 3.15, 1, { radius: 6, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.9, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 46, accel: 0.0012, warningColor: 0x00ff99, trailColor: 0x00ff99, haloColor: 0x00ff99 }));
+    } else if (pattern === 'prism') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 3 + variant * 2;
+      const step = 0.18 - variant * 0.018;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * step;
+        add(baseAngle + offset, 2.55 + variant * 0.18, 0.92 + variant * 0.06, { radius: 5, assetIndex: 3, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.55 + index * 0.04, animationAmp: 0.08, alphaPulse: 0.13, trailLength: 34 + variant * 6, spin: (index % 2 ? -1 : 1) * 0.06, warningColor: index % 2 ? 0xff4fe5 : 0x55eaff, trailColor: index % 2 ? 0xff4fe5 : 0x55eaff, haloColor: 0xffffff });
+      }
+    } else if (pattern === 'meteor') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 3 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * (0.2 - variant * 0.02);
+        add(Math.PI / 2 + offset, 1.08 + (index % 2) * 0.13 + variant * 0.08, 1.05 + variant * 0.08, { radius: 10 + (index % 3), assetIndex: 1, projectileArt: 'heavy_enemy_orb', animationStyle: 'orb', animationRate: 0.8 + index * 0.07, animationAmp: 0.12, alphaPulse: 0.14, pulseRate: 0.62 + index * 0.08, spin: (index % 2 ? -1 : 1) * 0.035, warningColor: 0xffd166, trailColor: 0xff6b4a, haloColor: color });
+      }
+    } else if (pattern === 'dash') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 2 + variant;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * 0.14;
+        add(baseAngle + offset, 3.25 + variant * 0.2, 1, { radius: 5, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 2.05, animationAmp: 0.07, alphaPulse: 0.12, trailLength: 54 + variant * 7, accel: 0.0015, warningColor: 0xff4778, trailColor: color, haloColor: 0x7c8cff });
+      }
+    } else if (pattern === 'satellite') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 6 + variant * 2;
+      const rotation = baseAngle + Math.PI / 2;
+      for (let index = 0; index < count; index += 1) {
+        const angle = rotation + index * Math.PI * 2 / count;
+        add(angle, 1.72 + variant * 0.12, 0.88 + variant * 0.05, { radius: 6, assetIndex: 9, projectileArt: 'boss_shard', animationStyle: 'shard', animationRate: 1.48, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 30, spin: (index % 2 ? -1 : 1) * 0.07, warningColor: index % 2 ? color : 0xffd66b, trailColor: color, haloColor: 0xffffff });
+      }
+    } else if (pattern === 'resonance') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const count = 4 + variant * 2;
+      for (let index = 0; index < count; index += 1) {
+        const offset = (index - (count - 1) / 2) * (0.16 - variant * 0.015);
+        add(baseAngle + offset, 2.05 + variant * 0.12, 0.92, { radius: 7, assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 1.25, animationAmp: 0.09, alphaPulse: 0.14, pulseRate: 0.84, warningColor: 0xffd45c, trailColor: color, haloColor: 0x72e8ff });
+      }
+    } else if (pattern === 'warp') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const offsets = variant === 0 ? [-0.18, 0.18] : variant === 1 ? [-0.28, 0, 0.28] : [-0.36, -0.12, 0.12, 0.36];
+      offsets.forEach((offset, index) => add(baseAngle + offset, 2.95 + variant * 0.16, 1, { radius: 5, assetIndex: 2, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.95, animationAmp: 0.09, alphaPulse: 0.14, trailLength: 48, wobble: index % 2 ? 0.035 : -0.035, warningColor: 0xb06cff, trailColor: color, haloColor: 0x57f4ff }));
+    } else if (pattern === 'shear') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const offsets = variant === 0 ? [-0.46, 0.46] : variant === 1 ? [-0.42, 0, 0.42] : [-0.48, -0.16, 0.16, 0.48];
+      offsets.forEach((offset, index) => add(baseAngle + offset, 2.42 + variant * 0.14, 1, { radius: 6, assetIndex: 6, projectileArt: 'fast_enemy_needle', animationStyle: 'needle', animationRate: 1.78, animationAmp: 0.08, alphaPulse: 0.12, trailLength: 44, warningColor: index % 2 ? 0xff6bd5 : 0x4deaff, trailColor: color, haloColor: 0xffffff }));
+    } else if (pattern === 'siege') {
+      const variant = Math.max(0, Math.min(2, Number(profile?.abilityVariant) || 0));
+      const missileCount = 2 + variant;
+      for (let index = 0; index < missileCount; index += 1) {
+        const offset = (index - (missileCount - 1) / 2) * 0.18;
+        add(baseAngle + offset, 1.58 + variant * 0.09, 1.08 + variant * 0.08, { radius: 9, assetIndex: 7, projectileArt: 'enemy_fireball', animationStyle: 'fireball', animationRate: 1.2, animationAmp: 0.11, alphaPulse: 0.13, trailLength: 52, accel: 0.0024, warningColor: 0xff3d55, trailColor: 0xff6b4a, haloColor: 0xffd05c });
+      }
+      const mineCount = 1 + variant;
+      for (let index = 0; index < mineCount; index += 1) {
+        const offset = (index - (mineCount - 1) / 2) * 0.24;
+        add(Math.PI / 2 + offset, 0.95 + index * 0.08, 1, { radius: 11, assetIndex: 10, projectileArt: 'warning_hazard_marker', animationStyle: 'marker', animationRate: 0.92, animationAmp: 0.1, alphaPulse: 0.13, pulseRate: 0.7, warningColor: 0xffd05c, trailColor: 0xff3d55, haloColor: color });
+      }
     }
   }
 
   addEliteBullet(angle, speed, damage, color, visualConfig = {}) {
+    const specialDamage = Math.max(0.1, (Number(damage) || 1) * 1.25);
     const bullet = new Bullet(
       this.x,
       this.y + this.radius * 0.4,
       Math.cos(angle) * speed,
       Math.sin(angle) * speed,
-      damage,
+      specialDamage,
       color,
       false,
       {
@@ -1143,8 +3120,10 @@ export class Enemy {
       decoy.alpha = 0.34;
       decoy.blendMode = 'add';
       container.addChild(decoy);
+      this.ownedVisuals.push(decoy);
       setTimeout(() => {
         if (decoy.parent) decoy.parent.removeChild(decoy);
+        this.ownedVisuals = this.ownedVisuals.filter(visual => visual !== decoy);
       }, this.middleShipProfile?.specialActiveMs || 1300);
     });
   }
@@ -1168,10 +3147,21 @@ export class Enemy {
       name: this.middleShipProfile.displayName,
       role: this.middleShipProfile.role,
       ability: this.middleShipProfile.specialAbility,
+      abilityVariant: this.middleShipProfile.abilityVariant ?? null,
+      vfx: this.middleShipProfile.vfx || [],
+      activeSfx: this.middleShipProfile.sfx?.active || null,
       abilityState: this.eliteAbility?.state || null,
       abilityRemainingMs: this.eliteAbility?.state === 'cooldown'
         ? Math.max(0, (this.eliteAbility.nextAt || 0) - now)
         : Math.max(0, ((this.eliteAbility.activeUntil || this.eliteAbility.startedAt || now) - now)),
+      arrivalGuardActive: this.state === 'ENTRY' && !this.waitingForEntry,
+      arrivalGuardVisible: Boolean(this.threatFrameLayer?._debugThreatFrame?.arrivalGuardActive),
+      arrivalGuardDamageMultiplier: this.arrivalGuardDamageMultiplier,
+      arrivalGuardArcCount: this.threatFrameLayer?._debugThreatFrame?.arrivalGuardArcCount || 0,
+      arrivalGuardPipCount: this.threatFrameLayer?._debugThreatFrame?.arrivalGuardPipCount || 0,
+      combatReadyRemainingMs: Math.max(0, (this.arrivalCombatReadyAt || 0) - now),
+      entryCompletedAt: this.entryCompletedAt || 0,
+      lastArrivalGuardDamage: this.lastArrivalGuardDamage ? { ...this.lastArrivalGuardDamage } : null,
       shielded: now < (this.eliteShieldUntil || 0),
       phased: now < (this.phaseShiftUntil || 0)
     };
@@ -1202,7 +3192,16 @@ export class Enemy {
       };
       this.threatTelegraphStartedAt = now;
       this.threatActionLockedTarget = locked;
-      AudioManager.playSfx('elite_special_charge', { volume: 0.18, minIntervalMs: 520 });
+      this.game?.scenes?.play?.performanceDiagnostics?.mark?.('boss_event_telegraph_start', {
+        kind: 'enemy_threat',
+        id: action.id,
+        level: this.level,
+        waveSlot: this.waveSlot
+      });
+      AudioManager.playSfx('enemy_threat_soft_warn', { volume: 0.12, minIntervalMs: 1800 });
+      if (this.isRareChaosVisitor) {
+        AudioManager.playSfx('rare_visitor_laser_charge', { volume: 0.64, minIntervalMs: 850 });
+      }
     }
 
     if (!this.currentThreatAction) {
@@ -1217,6 +3216,9 @@ export class Enemy {
 
     this.currentThreatAction.executed = true;
     this.executeThreatAction(action, this.currentThreatAction.lockedTarget, this.currentThreatAction);
+    if (this.isRareChaosVisitor) {
+      AudioManager.playSfx('rare_visitor_laser_fire', { volume: 0.78, minIntervalMs: 380 });
+    }
     this.threatActionExecutionCount += 1;
     this.nextThreatActionAt = now + this.threatActionCooldown + Math.random() * 1200;
     manager?.releaseThreatAction?.(this, action);
@@ -1413,28 +3415,51 @@ export class Enemy {
     return bullets;
   }
 
+  scaleThreatProjectileSpeed(speed) {
+    const safeSpeed = Number(speed);
+    if (!Number.isFinite(safeSpeed) || safeSpeed <= 0) return speed;
+    const tuning = getNormalWavePressureTuning(this.level);
+    const runtimePressure = this.game?.runPressureDirector?.getMultipliers?.()?.projectileSpeedMult || 1;
+    const scale = runtimePressure *
+      (tuning.projectileSpeedMult || 1) *
+      (tuning.threatProjectileSpeedMult || 1) *
+      (this.tacticalThreatProjectileSpeedScalar || 1);
+    const threatResponseMult = Math.max(1, Number(this.game?.threatResponse?.projectileSpeedMult) || 1);
+    return safeSpeed * scale * threatResponseMult * BalanceConfig.difficulty.pressureScalar;
+  }
+
   createThreatBullet(action, angle, speed, options = {}) {
     const weaponProfile = getEnemyWeaponProfileById(action.weaponId || 'crimson_shard');
+    const scaledSpeed = this.scaleThreatProjectileSpeed(speed);
+    const speedScale = speed > 0 ? scaledSpeed / speed : 1;
+    const scaledOptions = { ...options };
+    if (Number.isFinite(scaledOptions.dashSpeed)) {
+      scaledOptions.dashSpeed = this.scaleThreatProjectileSpeed(scaledOptions.dashSpeed);
+    }
+    if (Number.isFinite(scaledOptions.releaseSpeed)) {
+      scaledOptions.releaseSpeed = this.scaleThreatProjectileSpeed(scaledOptions.releaseSpeed);
+    }
     const visualConfig = toBulletVisualConfig(weaponProfile, {
       sourceEnemyType: this.type,
       sourceFireStyle: this.generatedProfile?.fireStyle || null,
       threatActionId: action.id,
       threatActionKind: action.tags?.[0] || 'threat',
-      warningColor: options.warningColor || weaponProfile.warningColor,
-      haloColor: options.haloColor || weaponProfile.haloColor || this.visualVariant?.accent,
-      trailColor: options.trailColor || weaponProfile.trailColor,
-      ...options
+      warningColor: scaledOptions.warningColor || weaponProfile.warningColor,
+      haloColor: scaledOptions.haloColor || weaponProfile.haloColor || this.visualVariant?.accent,
+      trailColor: scaledOptions.trailColor || weaponProfile.trailColor,
+      ...scaledOptions
     });
     const bullet = new Bullet(
       this.x,
       this.y + Math.max(4, this.radius * 0.35),
-      Math.cos(angle) * speed,
-      Math.sin(angle) * speed,
-      options.damage || 1,
+      Math.cos(angle) * scaledSpeed,
+      Math.sin(angle) * scaledSpeed,
+      scaledOptions.damage || 1,
       weaponProfile.color || this.color,
       false,
       visualConfig
     );
+    bullet.runtimeThreatProjectileSpeedScale = speedScale;
     bullet.weaponProfileId = weaponProfile.id;
     bullet.weaponLabel = weaponProfile.label;
     bullet.waveTactic = this.waveTactic?.id || null;
@@ -1499,7 +3524,10 @@ export class Enemy {
   }
 
   canShoot() {
-    return !this.currentThreatAction && this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
+    const arrivalLocked = this.isEliteMiddleShip && (
+      this.state === 'ENTRY' || Date.now() < (this.arrivalCombatReadyAt || 0)
+    );
+    return !arrivalLocked && !this.currentThreatAction && this.shootCooldown <= 0 && this.y > 0 && this.y < 700 && this.sprite.visible;
   }
 
   getTacticalFireScalar() {
@@ -1565,16 +3593,17 @@ export class Enemy {
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
     const diff = BalanceConfig.difficulty;
     const levelScale = Math.max(0, this.level - 1);
-    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(Math.min(
-      diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
-      (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
-    )) ?? Math.min(
+    const baseProjectileSpeed = Math.min(
       diff.enemyProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       (diff.enemyProjectileSpeed ?? 1.55) + levelScale * (diff.enemyProjectileSpeedPerLevel ?? 0)
     );
+    const projectileSpeed = this.game?.runPressureDirector?.scaleProjectileSpeed?.(baseProjectileSpeed, this.level) ??
+      baseProjectileSpeed * getNormalWavePressureTuning(this.level).projectileSpeedMult;
     const speed = projectileSpeed *
       BalanceConfig.difficulty.pressureScalar *
+      Math.max(1, Number(this.game?.threatResponse?.projectileSpeedMult) || 1) *
       openingProjectileScalar *
+      (this.tacticalProjectileSpeedScalar || 1) *
       ((this.middleShipProfile || this.generatedProfile)?.projectileSpeedMult || 1) *
       weaponSpeedMult;
     const vx = (dx / distance) * speed * accuracy;
@@ -1653,6 +3682,7 @@ export class Enemy {
         );
         bullets.push(bullet);
       }
+      this.triggerMuzzleFlash(baseAngle, bullets.length, weaponProfile?.color || profile.accent || this.color);
       return bullets.length === 1 ? bullets[0] : bullets;
     }
 
@@ -1660,6 +3690,7 @@ export class Enemy {
       const bullets = tacticalAngles.map((shot) =>
         makeBullet(shot, weaponProfile?.color || this.color, tacticalAngles.length > 1 ? 0.9 : 1)
       );
+      this.triggerMuzzleFlash(Math.atan2(vy, vx), bullets.length, weaponProfile?.color || this.color);
       return bullets.length === 1 ? bullets[0] : bullets;
     }
 
@@ -1667,7 +3698,127 @@ export class Enemy {
     bullet.weaponProfileId = weaponProfile?.id || bullet.weaponProfileId;
     bullet.weaponLabel = weaponProfile?.label || bullet.weaponLabel;
     bullet.waveTactic = this.waveTactic?.id || null;
+    this.triggerMuzzleFlash(Math.atan2(vy, vx), 1, weaponProfile?.color || this.color);
     return bullet;
+  }
+
+  applyRareChaosVisitor(variant) {
+    if (!variant) return null;
+    this.kind = 'rare_chaos_visitor';
+    this.isRareChaosVisitor = true;
+    this.rareChaosVisitorVariant = variant;
+    this.rareChaosVisitorPhases = new Set();
+    this.scoreValue = 4200 + variant.number * 18;
+    this.health = Math.max(24, Math.ceil((Number(this.maxHealth) || 1) * 7.2 * (variant.healthScalar || 1)));
+    this.maxHealth = this.health;
+    this.radius = Math.max(24, Number(this.radius) * 1.45);
+    this.color = variant.tint;
+    this.visualVariant = {
+      ...(this.visualVariant || {}),
+      tint: variant.tint,
+      accent: variant.accent,
+      scale: Math.max(1.18, Number(this.visualVariant?.scale) || 1),
+      alpha: 0.34
+    };
+    if (this.body) this.body.tint = variant.tint;
+    if (this.sprite) {
+      this.sprite.label = `enemy_visual:rare_chaos_visitor:${variant.id}`;
+      this.sprite.scale.set(this.sprite.scale.x * 1.24, this.sprite.scale.y * 1.24);
+      const aura = new PIXI.Graphics();
+      aura.label = `rareChaosAura:${variant.id}`;
+      aura.zIndex = -10;
+      aura.circle(0, 0, this.radius * 2.2);
+      aura.fill({ color: 0x020006, alpha: 0.72 });
+      aura.circle(0, 0, this.radius * 1.86);
+      aura.fill({ color: variant.tint, alpha: 0.18 });
+      aura.circle(0, 0, this.radius * 1.75);
+      aura.stroke({ color: variant.accent, width: 4, alpha: 0.9 });
+      aura.circle(0, 0, this.radius * 2.25);
+      aura.stroke({ color: 0xff173f, width: 1.8, alpha: 0.78 });
+      aura.circle(0, 0, this.radius * 2.72);
+      aura.stroke({ color: 0x7f0025, width: 1.2, alpha: 0.58 });
+      for (let index = 0; index < 11; index += 1) {
+        const angle = (Math.PI * 2 * index) / 11;
+        drawThreatFrameTick(aura, angle, this.radius * 2.05, this.radius * 2.52);
+      }
+      aura.stroke({ color: variant.accent, width: 2, alpha: 0.64 });
+      for (let index = 0; index < 7; index += 1) {
+        const angle = (Math.PI * 2 * index) / 7;
+        const inner = this.radius * 2.34;
+        const outer = this.radius * (index % 2 ? 2.82 : 3.06);
+        aura.moveTo(Math.cos(angle - 0.035) * inner, Math.sin(angle - 0.035) * inner);
+        aura.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+        aura.lineTo(Math.cos(angle + 0.035) * inner, Math.sin(angle + 0.035) * inner);
+      }
+      aura.stroke({ color: 0xff315f, width: 2.2, alpha: 0.72 });
+      const crown = new PIXI.Graphics();
+      crown.label = `rareChaosCrown:${variant.id}`;
+      crown.zIndex = 12;
+      crown.poly([-20, -this.radius - 18, -10, -this.radius - 32, 0, -this.radius - 19, 10, -this.radius - 34, 20, -this.radius - 18]);
+      crown.stroke({ color: 0xff315f, width: 3.5, alpha: 0.96 });
+      const label = createText(translateText('EXTINCTION CONTACT #{number}', { number: String(variant.number).padStart(2, '0') }), {
+        fontFamily: 'monospace',
+        fontSize: 11,
+        fill: '#ffb0c4',
+        stroke: { color: '#120015', width: 3 },
+        align: 'center'
+      });
+      label.anchor.set(0.5);
+      label.y = -this.radius - 50;
+      label.zIndex = 13;
+      this.sprite.addChildAt(aura, 0);
+      this.sprite.addChild(crown);
+      this.sprite.addChild(label);
+      this.ownedVisuals.push(aura, crown, label);
+      this.rareChaosVisitorVisuals = { aura, crown, label, startedAt: Date.now() };
+    }
+    this.updateHealthBar?.();
+    return this.getRareChaosVisitorDebugState();
+  }
+
+  updateRareChaosVisitorVisuals(delta = 1) {
+    const visuals = this.rareChaosVisitorVisuals;
+    if (!this.isRareChaosVisitor || !visuals || !this.active) return;
+    const time = Date.now() - visuals.startedAt;
+    const healthRatio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth))));
+    const phaseScalar = healthRatio <= 0.25 ? 2.8 : healthRatio <= 0.5 ? 1.8 : 1;
+    visuals.aura.rotation += 0.0045 * Math.max(0.5, Number(delta) || 1) * phaseScalar;
+    visuals.aura.alpha = 0.78 + Math.sin(time * 0.011) * 0.2;
+    visuals.crown.rotation = Math.sin(time * 0.006) * 0.08;
+    visuals.crown.scale.set(1 + Math.sin(time * 0.012) * 0.08);
+    visuals.label.y = -this.radius - 50 + Math.sin(time * 0.005) * 3;
+    if (healthRatio <= 0.25) {
+      visuals.label.style.fill = '#ff7a9a';
+      this.tacticalFireScalar = Math.max(4.2, Number(this.tacticalFireScalar) || 1);
+    }
+  }
+
+  updateRareChaosVisitorDamagePhase() {
+    if (!this.isRareChaosVisitor || !this.rareChaosVisitorVariant || this.health <= 0) return;
+    const ratio = Math.max(0, Math.min(1, Number(this.health) / Math.max(1, Number(this.maxHealth))));
+    for (const threshold of [0.75, 0.5, 0.25]) {
+      if (ratio > threshold || this.rareChaosVisitorPhases.has(threshold)) continue;
+      this.rareChaosVisitorPhases.add(threshold);
+      this.game?.scenes?.play?.onRareChaosVisitorPhase?.(this, threshold);
+    }
+  }
+
+  getRareChaosVisitorDebugState() {
+    if (!this.isRareChaosVisitor || !this.rareChaosVisitorVariant) return null;
+    return {
+      id: this.rareChaosVisitorVariant.id,
+      number: this.rareChaosVisitorVariant.number,
+      name: this.rareChaosVisitorVariant.displayName,
+      loadout: this.rareChaosVisitorVariant.loadoutName,
+      health: this.health,
+      maxHealth: this.maxHealth,
+      healthScalar: this.rareChaosVisitorVariant.healthScalar,
+      fireScalar: this.tacticalFireScalar,
+      projectileSpeedScalar: this.tacticalProjectileSpeedScalar,
+      shot: this.tacticalShotPattern,
+      threatAction: this.threatActionDefinition?.id || null,
+      phases: [...(this.rareChaosVisitorPhases || [])]
+    };
   }
 
   applyElite() {
@@ -1681,13 +3832,29 @@ export class Enemy {
     }
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, options = {}) {
     let resolvedAmount = amount;
     const now = Date.now();
+    if (this.isEliteMiddleShip && this.state === 'ENTRY' && !this.waitingForEntry) {
+      const incoming = Math.max(0, Number(resolvedAmount) || 0);
+      resolvedAmount = incoming * this.arrivalGuardDamageMultiplier;
+      this.lastArrivalGuardDamage = {
+        incoming,
+        applied: resolvedAmount,
+        multiplier: this.arrivalGuardDamageMultiplier,
+        at: now
+      };
+    }
     if (this.middleShipProfile && now < this.phaseShiftUntil) resolvedAmount *= 0.45;
     if (this.middleShipProfile && now < this.eliteShieldUntil) resolvedAmount *= 0.6;
+    resolvedAmount = resolveNemesisDamage(this, resolvedAmount);
     this.health -= resolvedAmount;
     this.updateHealthBar();
+    this.updateRareChaosVisitorDamagePhase();
+    const nemesisEnrage = maybeActivateNemesisEnrage(this);
+    if (nemesisEnrage) {
+      this.game?.scenes?.play?.onNemesisProtocolEnraged?.(this, nemesisEnrage);
+    }
     this.sprite.tint = 0xffffff;
     // Flashing Logic: Restore correct tint
     const profileTint = (this.middleShipProfile || this.generatedProfile)?.hullTint || 0xffffff;
@@ -1703,21 +3870,75 @@ export class Enemy {
         this.splitterReleased = true;
         this.game?.scenes?.play?.enemyManager?.spawnEliteSupportDrone?.(this, { count: 2, split: true });
       }
+      if (this.kind === 'boss_fuel_ship') {
+        AudioManager.playSfx('nova_fuel_ship_pop', { force: true, volume: 0.74, minIntervalMs: 80 });
+        this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.5);
+      } else if (this.kind === 'danger_mid_ship') {
+        AudioManager.playSfx('nova_danger_mid_pop', { volume: 0.55, minIntervalMs: 90 });
+        this.game?.scenes?.play?.particleManager?.createHitSpark?.(this.x, this.y, this.dangerMidShipProfile?.accent || 0xffb84a, 1.25);
+      }
       this.active = false;
+      this.deactivateVisuals('death');
       return true;
     }
+    this.triggerHitFeedback(resolvedAmount, now, options);
     return false;
   }
 
-  destroy() {
-    if (this.middleShipProfile) {
-      AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+  deactivateVisuals(reason = 'inactive') {
+    this.visualsDeactivated = true;
+    this.visualDeactivateReason = reason;
+    if (this.sprite) {
+      this.sprite.visible = false;
+      this.sprite.renderable = false;
+      if (Array.isArray(this.sprite.children)) {
+        this.sprite.children.forEach(child => {
+          if (child) {
+            child.visible = false;
+            child.renderable = false;
+          }
+        });
+      }
     }
-    // Clean up visual enhancements
+    if (this.healthBar) this.healthBar.visible = false;
+    this.hitFeedbackLayer?.clear();
+    if (this.hitFeedbackLayer) this.hitFeedbackLayer.visible = false;
+    this.muzzleFlashLayer?.clear();
+    if (this.muzzleFlashLayer) this.muzzleFlashLayer.visible = false;
+    this.spawnCueLayer?.clear();
+    if (this.spawnCueLayer) this.spawnCueLayer.visible = false;
+    this.threatFrameLayer?.clear();
+    if (this.threatFrameLayer) this.threatFrameLayer.visible = false;
+    this.threatTelegraphLayer?.clear();
+    this.eliteVfxLayer?.clear();
     if (this.visualEnhancementCleanup) {
       this.visualEnhancementCleanup();
       this.visualEnhancementCleanup = null;
     }
+    if (Array.isArray(this.ownedVisuals) && this.ownedVisuals.length > 0) {
+      this.ownedVisuals.forEach(visual => {
+        if (!visual) return;
+        visual.visible = false;
+        visual.renderable = false;
+        if (visual.parent) visual.parent.removeChild(visual);
+        visual.destroy?.({ children: true });
+      });
+      this.ownedVisuals = [];
+    }
+  }
+
+  destroy() {
+    if (this.destroyed) {
+      this.deactivateVisuals('destroy_repeat');
+      return;
+    }
+    this.destroyed = true;
+    this.active = false;
+    this.waitingForEntry = false;
+    if (this.middleShipProfile) {
+      AudioManager.playSfx(this.middleShipProfile.sfx?.death || 'elite_death', { volume: 0.58, minIntervalMs: 120 });
+    }
+    this.deactivateVisuals('destroy');
     this.threatTelegraphLayer?.clear();
     if (this.currentThreatAction && this.threatActionDefinition) {
       this.game?.scenes?.play?.enemyManager?.releaseThreatAction?.(this, this.threatActionDefinition);

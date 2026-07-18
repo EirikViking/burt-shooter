@@ -1,0 +1,97 @@
+{
+  "purpose": "Run mode menu final clarity private Steam test build",
+  "createdAt": "2026-06-20T09:55:00.000Z",
+  "branch": "codex/run-mode-menu-final-clarity-preview-20260620",
+  "startingCommit": "9cceb068f4a4bc52f83ff1fbbe172e97a4a9a082",
+  "sourceCommit": "f311e97b72394dafce38a34d1ee3242145156338",
+  "packagedBuild": {
+    "version": "v2026-06-20_11-37-44",
+    "gitSha": "f311e97",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "9286bd379210f4dc93e9e2f2990f2cd8888bcaf0e2a3c3af84aeb35ed8e99687",
+    "fileCount": 336,
+    "totalBytes": 879571105,
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-20T09-44-05-600Z/report.json"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23834046",
+    "depotManifest": "6701086379849702574",
+    "baselineDepotManifest": "2093552943102439710",
+    "setLive": "",
+    "branchAssignment": null,
+    "publicDefaultAssigned": false,
+    "sectorContinueTestAssigned": false,
+    "steamworksMetadataChanged": false,
+    "appBuildVdf": "release/steamworks/app_build_LOCAL.vdf",
+    "depotBuildVdf": "release/steam-build-output/depot_build_4765071.vdf",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "uploadLog": "test-results/steam-upload-run-mode-menu-clarity-20260620-115101/steamcmd-upload.log",
+    "resultLine": "[2026-06-20 11:52:47]: Successfully finished AppID 4765070 build (BuildID 23834046)."
+  },
+  "vdfVerification": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLiveBlank": true,
+    "containsPublicDefaultBranch": false,
+    "containsSectorContinueTestBranch": false,
+    "containsAnyBranchAssignment": false,
+    "description": "Nova Swarm run mode menu clarity private test f311e97"
+  },
+  "checks": [
+    { "command": "git diff --check", "status": "passed" },
+    { "command": "npm run check:i18n", "status": "passed" },
+    { "command": "npm run check:i18n-ui", "status": "passed", "artifact": "test-results/i18n-ui-2026-06-20T09-30-45-664Z" },
+    { "command": "npm run check:run-modes", "status": "passed", "artifact": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/report.json" },
+    { "command": "npm run check:cinematic-hangar-menu", "status": "passed", "artifact": "test-results/cinematic-hangar-menu-2026-06-20T09-32-50-304Z/report.json" },
+    { "command": "npm run check:sector-challenge-selector", "status": "passed", "artifact": "test-results/sector-challenge-selector-2026-06-20T09-33-16-538Z/report.json" },
+    { "command": "npm run check:sector-start-checkpoint-unlocks", "status": "passed" },
+    { "command": "npm run check:sector-continue-mode", "status": "passed", "artifact": "test-results/sector-continue-mode-2026-06-20T09-34-16-703Z/report.json" },
+    { "command": "npm run check:controller-flow", "status": "passed", "artifact": "test-results/controller-only-flow-2026-06-20T09-34-40-406Z" },
+    { "command": "npm run check:steam-electron-bridge", "status": "passed" },
+    { "command": "npm run check:steam-achievements-mock", "status": "passed" },
+    { "command": "npm run check:save-profile-migration", "status": "passed" },
+    { "command": "npm run check:profile-isolation", "status": "passed" },
+    { "command": "npm run build:current", "status": "passed" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed_on_clean_retry", "artifact": "test-results/packaged-exe-smoke-2026-06-20T09-44-05-600Z/report.json" },
+    { "command": "npm run desktop:smoke:current", "status": "passed", "artifact": "test-results/electron-smoke-2026-06-20T09-44-33-149Z" },
+    { "command": "npm run desktop:perf:current", "status": "passed", "artifact": "test-results/electron-perf-smoke-2026-06-20T09-44-53-488Z" },
+    { "command": "npm run smoke", "status": "non_blocking_known_timeout", "failure": "scripts/smoke-playtest.mjs:764:26 after level 3 debug start captured" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "npm run steamworks:write-vdf", "status": "passed" }
+  ],
+  "screenshots": {
+    "mayhemFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/menu-mayhem-focused.png",
+    "scoutFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/menu-scout-focused.png",
+    "sectorFocused": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/menu-sector-run-focused.png",
+    "selectorUnlocked": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/sector-run-selector-every-5-sectors.png",
+    "selectorLocked": "test-results/sector-challenge-selector-2026-06-20T09-33-16-538Z/selector-locked-checkpoint-35-1920x1080.png",
+    "menu1366": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/menu-run-modes-1366x768.png",
+    "menu1280": "test-results/run-modes-mayhem-scout-sector-2026-06-20T09-32-12-629Z/menu-run-modes-1280x800.png"
+  },
+  "notes": [
+    "The first packaged smoke attempt timed out with no report; no leftover Nova/Electron process remained. A clean retry passed and produced the packaged gitSha proof.",
+    "Current Electron smoke and perf used test-results temp user data. No profile rescue was run and no live save or Steam Cloud save was touched by this pass.",
+    "The browser smoke failure matched the explicitly allowed known flaky timeout after the level 3 debug capture.",
+    "No Steam branch was assigned. The user must manually assign BuildID 23834046 in Steamworks if desired."
+  ],
+  "manualSteamworksTestSteps": [
+    "Open Steamworks > App Admin > SteamPipe > Builds for AppID 4765070.",
+    "Find BuildID 23834046 and leave it unassigned unless intentionally selecting it for a private test branch.",
+    "If assigning privately, install that BuildID in the Steam client.",
+    "Launch Nova Swarm and confirm build v2026-06-20_11-37-44 and gitSha f311e97 in diagnostics or smoke text.",
+    "Verify the Launch Deck shows compact MAYHEM RUN, SCOUT RUN, and SECTOR RUN buttons without covering the center ship.",
+    "Verify Mission Briefing copy for Mayhem, Scout, and Sector Run matches the approved wording.",
+    "Open Sector Run selector and confirm checkpoint/start cards only, every-5-sector Mayhem unlock wording, Checkpoint 10 begins at Sector 11, locked cards cannot launch, and no achievements wording is visible.",
+    "Do not assign this BuildID to public/default until explicitly approved."
+  ],
+  "rollback": {
+    "source": "git revert f311e97b72394dafce38a34d1ee3242145156338",
+    "steam": "No Steam rollback is required while BuildID 23834046 remains unassigned. If it is later assigned manually and needs rollback, reassign that Steam branch back to the previous desired BuildID."
+  }
+}

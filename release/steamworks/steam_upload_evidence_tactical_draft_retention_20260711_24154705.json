@@ -1,0 +1,57 @@
+{
+  "generatedAt": "2026-07-10T22:27:27.094Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24154705",
+  "sourceCommit": "2b59fff2a50d709344e82d48678dfac22d949c9a Add post-boss tactical drafts for run agency",
+  "buildStamp": "v2026-07-11_00-11-10",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24153111",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_tactical_draft_retention_20260711.log",
+  "consoleLogSha256": "6a493b6b660a88c47478403a361ab977eae84a690d7b58e8baa3cc3f7fc577c1",
+  "payloadManifestSha256": "e460fa9fdaf97b3a0ecf6e447a8235e1072d880d605b43e5162a0bd2eaef788e",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916373452,
+    "manifestHash": "66b51cef23eab2383f6c414f9e938dfc5bb008f8da9f6103f853d282e1826c92",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "340c745d5e78895de3666092e651cc893ea33456a7ee7f655113d8f848765898"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-11 00:26:41]: Successfully finished AppID 4765070 build (BuildID 24154705).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: clean branch codex/current-build-first-session-retention-20260709 at 2b59fff before release work",
+    "releaseLine": "passed before packaging and VDF generation",
+    "packageSteamWin": "passed",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-10T22-18-04-763Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-10T22-18-56-963Z/report.json",
+    "packagedPerformance": "passed: 60.1842 average FPS, 59.5238 minimum FPS, no warnings or errors",
+    "desktopPackage": "passed",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-10T22-22-01-253Z/report.json",
+    "humanRetentionRun": "passed: Sector 3, 174500ms, two tactical drafts, zero errors",
+    "localization": "passed all eight supported locales with zero placeholders or English leaks",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "This is the final Steam test-branch candidate for the autonomous 30-plus improvement goal and contains 46 documented improvements.",
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "No score formula, XP formula, leaderboard logic, achievement logic, enemy stat, or boss stat changed in this package.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24153111."
+  ]
+}

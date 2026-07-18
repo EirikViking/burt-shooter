@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { AchievementManager } from '../src/achievements/AchievementManager.js';
 import { getAchievementIds } from '../src/achievements/AchievementCatalog.js';
 import { createSteamAchievementSync } from '../src/achievements/SteamAchievementSync.js';
+import { RUN_MODES } from '../src/game/RunMode.js';
 
 const require = createRequire(import.meta.url);
 const { createSteamAchievementsBridge } = require('../electron/steamAchievementsBridge.cjs');
@@ -85,11 +86,58 @@ function createLocalManager(fake, storage = new MemoryStorage()) {
   return { manager, steamSync, toastEvents };
 }
 
+function createRunModeManager(fake, runMode, storage = new MemoryStorage()) {
+  const toastEvents = [];
+  const steamSync = createSteamAchievementSync({
+    storage,
+    bridge: fake.bridge
+  });
+  const manager = new AchievementManager({
+    storage,
+    steamSync,
+    onUnlock: (unlock) => toastEvents.push(unlock),
+    getRunState: () => ({ runMode, isDebugRun: false })
+  });
+  return { manager, steamSync, toastEvents };
+}
+
 async function waitForAsyncWork() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 const [firstId, secondId, thirdId] = getAchievementIds();
+
+{
+  const fake = createFakeSteamBridge();
+  const { manager } = createRunModeManager(fake, RUN_MODES.RANKED);
+  assert.equal(manager.unlock(firstId, { runMode: RUN_MODES.RANKED, allowAchievements: true })?.id, firstId);
+  await waitForAsyncWork();
+  assert.deepEqual(fake.calls.slice(-3), [
+    ['isAchievementUnlocked', firstId],
+    ['SetAchievement', firstId],
+    ['StoreStats', firstId]
+  ]);
+}
+
+{
+  const fake = createFakeSteamBridge();
+  const { manager, steamSync, toastEvents } = createRunModeManager(fake, RUN_MODES.SCOUT);
+  assert.equal(manager.unlock(firstId, { runMode: RUN_MODES.SCOUT, allowAchievements: false }), null);
+  await waitForAsyncWork();
+  assert.equal(fake.calls.length, 0);
+  assert.deepEqual(steamSync.getDebugState().queued, []);
+  assert.equal(toastEvents.length, 0);
+}
+
+{
+  const fake = createFakeSteamBridge();
+  const { manager, steamSync, toastEvents } = createRunModeManager(fake, RUN_MODES.SECTOR_START);
+  assert.equal(manager.unlock(firstId, { runMode: RUN_MODES.SECTOR_START, allowAchievements: false }), null);
+  await waitForAsyncWork();
+  assert.equal(fake.calls.length, 0);
+  assert.deepEqual(steamSync.getDebugState().queued, []);
+  assert.equal(toastEvents.length, 0);
+}
 
 {
   const fake = createFakeSteamBridge();

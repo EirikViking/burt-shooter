@@ -1,0 +1,82 @@
+{
+  "upload": {
+    "purpose": "Sector Start Challenge arrows and post-clear start private Steam upload",
+    "branch": "feature/sector-continue-prototype-v1",
+    "commit": "135c783773762bc85e1e31e0173ec14597525cbc",
+    "steamAppId": "4765070",
+    "windowsDepotId": "4765071",
+    "buildId": "23630523",
+    "setLive": "",
+    "setLiveStatus": "blank; build was uploaded privately and not set live",
+    "steamworksSettingsChanged": false,
+    "steamcmdUser": "gaunziman",
+    "steamcmdPath": "C:\\steamcmd\\steamcmd.exe",
+    "steamcmdCompletedAtLocal": "2026-06-08 23:56:29 Europe/Oslo"
+  },
+  "package": {
+    "version": "v2026-06-08_23-49-12",
+    "timestamp": "2026-06-08T21:49:12.624Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "payloadManifestPath": "release/steamworks/steam_payload_manifest.json",
+    "payloadFileCount": 336,
+    "payloadTotalBytes": 724426144,
+    "payloadManifestHash": "34f04589dc736719ea73245b1ea7876f6322cc0fbb8e607bc0b8ab9f67d922bb",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "6c2692089ec57e1047ad601fdf453092db5d06168985a5ee07aea01c9fddccda"
+    }
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Sector Start Challenge arrows 135c783 v2026-06-08_23-49-12",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "setLive": ""
+  },
+  "verification": {
+    "preflight": [
+      "git fetch --all --prune",
+      "git status --short --branch",
+      "git branch --show-current",
+      "git log -5 --oneline --decorate",
+      "git worktree list --porcelain"
+    ],
+    "checksRun": [
+      "npm run package:steam:win",
+      "npm run desktop:smoke:packaged",
+      "npm run steamworks:payload-manifest",
+      "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE='' STEAM_BUILD_DESC='Sector Start Challenge arrows 135c783 v2026-06-08_23-49-12' npm run steamworks:write-vdf",
+      "C:\\steamcmd\\steamcmd.exe +login gaunziman +run_app_build D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf +quit"
+    ],
+    "packageRuntime": {
+      "status": "passed",
+      "appId": "4765070",
+      "leaderboard": "nova_swarm_global_score_v2",
+      "report": "test-results/steam-package-runtime-2026-06-08T21-54-31-219Z/report.json"
+    },
+    "packagedSmoke": {
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-08T21-52-05-095Z/report.json",
+      "gitSha": "135c783",
+      "build": "v2026-06-08_23-49-12"
+    },
+    "steamcmdLog": "test-results/steam-upload-20260608-sector-start-arrows-corrected/steamcmd-upload.txt",
+    "steamcmdResult": "Successfully finished AppID 4765070 build (BuildID 23630523).",
+    "supersededUpload": {
+      "buildId": "23630447",
+      "reason": "Superseded because the first upload used package:steam:win:current and its packaged smoke report still exposed stale gitSha 20c5586. The final upload rebuilt with package:steam:win and verified gitSha 135c783."
+    }
+  },
+  "boundaries": {
+    "deployedLive": false,
+    "setLiveBlank": true,
+    "steamworksSettingsChanged": false,
+    "defaultBranchChanged": false,
+    "testBuildBranchChanged": false,
+    "mainLeaderboardChanged": false,
+    "mainLeaderboardName": "nova_swarm_global_score_v2",
+    "releaseReposTouched": false,
+    "steamTagsMoved": false
+  }
+}

@@ -172,6 +172,7 @@ Do not call this Steam-ready until these are true:
 - `npm run desktop:controls:packaged` proves packaged keyboard and gamepad movement/fire/pause paths.
 - `npm run check:desktop-package` validates the packaged executable against the latest Electron smoke, packaged executable smoke, and packaged controls smoke reports, then writes tracked desktop package evidence.
 - `npm run capture:steam-trailer` produces a clean trailer draft report with no browser or network failures.
+- `npm run check:gameplay-cursor` confirms the Windows/system cursor is hidden during active gameplay capture and visible again on menu/pause UI.
 - `npm run render:steam-trailer-audio` produces an audio-mixed MP4 draft report from shipped assets.
 - `npm run render:steam-trailer-candidate` produces a branded H.264/AAC trailer candidate, contact sheet, and clean report from the refreshed draft.
 - `npm run check:steam-assets` validates Steam asset dimensions/transparency and regenerates the review contact sheets.

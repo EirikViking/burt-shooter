@@ -1,0 +1,43 @@
+Hi pilots,
+
+This update is a focused feedback pass based on recent player notes. The goal is simple: make dodging easier to read, make near-miss rewards feel more intentional, keep reward text out of the danger zone, and let the menu keep its personality without the voices stacking on top of each other.
+
+[h2]What Changed[/h2]
+
+[list]
+[*]Added a clearer danger-point / hitbox visibility option in Settings.
+[*]Made the danger point pulse during Focus Drift, phasing, near misses, and Graze Break moments without covering the ship art.
+[*]Changed Graze Break so a newly armed special shot waits for an intentional fire release/re-press if you were already holding shoot.
+[*]Moved lower-priority reward and clear text out of the middle of the playfield during active combat pressure.
+[*]Reduced menu voice spam with a short hover/focus delay and cooldown.
+[*]Fixed the remaining hover-then-click overlap case so click barks cut menu hover barks cleanly instead of layering voices.
+[*]Adjusted a couple of menu voice lines to avoid awkward "live/lives" pronunciation.
+[*]Retuned Blink Drive so it is still fast and useful, but easier to fight with instead of overshooting every problem at maximum drama.
+[*]Added more feedback punch for near-miss streaks, combo milestones, multiplier jumps, and powerup pickups.
+[/list]
+
+[h2]Readability And Control[/h2]
+
+Hitbox readability came up a lot in recent feedback, especially during dense bullet patterns. There is now an extra HITBOX visibility option, and the danger point gets contextual pulses when it matters most: Focus Drift, phasing, near misses, and Graze Break arming/priming.
+
+Graze Break should also feel less wasteful now. If it arms while you are already holding shoot, it waits for you to release and fire intentionally before marking the next shot. The reward is still earned through risky near-miss play; it just should not disappear into a shot you were already holding.
+
+[h2]Cleaner Combat Messages[/h2]
+
+Some clear-bonus and reward text could hang in the middle of the playfield after the fight resumed. Lower-priority reward text now moves up and out of the danger zone while enemies or bullets are active. Important boss and run-clear messages still get their moment.
+
+[h2]Menu Voice Cleanup[/h2]
+
+The boss menu barks are meant to give the cabinet personality, not turn every menu move into an audio traffic jam. Hover/focus barks now wait briefly and cool down, and the hover-then-click overlap bug is fixed so activation lines can take over cleanly.
+
+[h2]Small Feel Wins[/h2]
+
+This patch also adds more arcade feedback to the good moments: near-miss streak surges, combo milestone bursts, multiplier celebration, and stronger pickup feedback. Blink Drive was tuned toward controlled repositioning instead of pure speed, so it should be easier to use in real fights.
+
+[h2]Build Notes[/h2]
+
+Steam AppID, depot, leaderboard identity, score identity, save format, achievements metadata, and Steam Cloud paths are unchanged.
+
+Thanks for the sharp feedback. These small feel/readability details matter a lot in a bullet-heavy arcade game, and the swarm is better when the danger is readable for the right reasons.
+
+Tiny Foundry

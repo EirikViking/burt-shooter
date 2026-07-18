@@ -1,5 +1,12 @@
 # Nova Swarm Gameplay Tuning
 
+## 2026-06-19 Run Mode Profiles
+
+- Mayhem Run is the ranked baseline and keeps the accepted harder profile through `src/game/RunMode.js` with `difficultyProfileId: accepted_harder_ranked`.
+- Scout Run uses `scout_lower_pressure_v1` in `src/game/RunMode.js` for lower-pressure practice. Tune Scout through that profile and `RunPressureDirector`, not one-off checks in scenes or managers.
+- Sector Run keeps checkpoint-start behavior but is unranked for achievements in this first version. Mayhem Run remains the only mode that submits to the existing global leaderboard and unlocks Steam achievements.
+- The main menu Launch Deck uses three compact selectors for Mayhem, Scout, and Sector Run. Keep selector copy and Mission Briefing text aligned with the ranked/unranked rules above.
+
 ## 2026-05-25 Arcade Score-Attack Revamp
 
 - Default run pacing now lives in `src/config/RunPacingConfig.js` and `src/game/RunPressureDirector.js`. The current arcade target is 10 sectors, 150 seconds per sector, and a good-player climax around 24-30 minutes with sharp overrun pressure after the target.
@@ -24,5 +31,6 @@
 
 ## 2026-05-23 Post-First Boss Ease
 
-- Boss 1 remains unchanged. Starting with boss number 2, `bossPostFirstDifficultyScalar=0.8` applies a 20% overall difficulty reduction across boss health, boss projectile pressure, and boss regular/phase shooting cadence.
-- The focused guard is `npm run check:boss-post-first-difficulty`; it verifies level 1 stays unscaled while later bosses receive the 0.8 scalar.
+- Bosses 1-11 also receive `bossEarlyDifficultyScalar=0.9`, a 10% early-boss relief across boss health, boss projectile pressure, and boss regular/phase shooting cadence. Bosses 12+ stay on the previous post-first curve.
+- Starting with boss number 2, `bossPostFirstDifficultyScalar=0.8` still applies a 20% overall difficulty reduction across boss health, boss projectile pressure, and boss regular/phase shooting cadence.
+- The focused guards are `npm run check:early-boss-difficulty-relief` and `npm run check:boss-post-first-difficulty`; they verify levels 1-11 receive the early 0.9 scalar while level 12+ returns to the accepted post-first curve.

@@ -1,0 +1,64 @@
+{
+  "kind": "steam_upload_evidence",
+  "feature": "pilot_orders_50_goal_expansion",
+  "recordedAt": "2026-07-06T11:30:00Z",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "6b2d49864d60d62ef12bf505c039e57308141db4",
+    "commitSummary": "Expand Pilot Orders to 50 goals"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24071811",
+    "buildVersion": "v2026-07-05_09-04-29",
+    "buildDescription": "Nova Swarm Pilot Orders 50-goal private candidate",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignedByUpload": false,
+    "publicDefaultAssignedByUpload": false,
+    "manualPublishRequired": true
+  },
+  "artifacts": {
+    "packageRoot": "release/desktop/win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "a630937909fb25d40c6c8b47b2acf4918e04b0ca90e032f6756e693bdf7777f9",
+    "consoleLog": "release/steamworks/steam_upload_console_pilot_orders_50_20260706_132644.log",
+    "consoleLogSha256": "211694e36880b03a0e3d8a770f428b1a951b480365b700e4f6c27b8e9c0bea0c",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log"
+  },
+  "package": {
+    "fileCount": 336,
+    "totalBytes": 916072163,
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "dcded3423dc37e7ccedb4182b3feb462760f76f9bedca3ab2bca3a33203f40fb"
+    }
+  },
+  "checks": [
+    { "command": "git fetch --all --prune", "status": "passed" },
+    { "command": "git status --short --branch", "status": "passed", "note": "clean before packaging and clean before SteamCMD after restoring tracked manifest" },
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "skipped", "note": "User requested manual verification instead of running all smoke tests this upload lane." },
+    { "command": "npm run desktop:perf:packaged", "status": "skipped", "note": "User requested manual verification instead of running all smoke tests this upload lane." }
+  ],
+  "steamCmd": {
+    "path": "C:\\steamcmd\\steamcmd.exe",
+    "exitCode": 0,
+    "login": "cached gaunziman",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24071811)."
+  },
+  "notes": [
+    "The VDF kept SetLive blank, so this upload did not assign BuildID 24071811 to public/default or any beta branch.",
+    "No Steamworks metadata, branch assignment, public/default release change, AppID, depot, leaderboard identity, score formula, XP formula, or achievement API ID change was made by the upload.",
+    "Manual publication/branch assignment remains required before players receive this build.",
+    "If BuildID 24071811 is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the target branch to the previous desired BuildID."
+  ]
+}

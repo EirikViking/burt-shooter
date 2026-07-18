@@ -1,0 +1,50 @@
+{
+  "generatedAt": "2026-07-10T17:50:00.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24151444",
+  "sourceCommit": "f6a0083a1c309aafa16ba1fb2a15a3b38f331d1b Make gameplay backdrops visibly travel",
+  "buildStamp": "v2026-07-10_19-42-07",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24150401",
+  "publicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "consoleLogPath": "release/steamworks/steam_upload_console_backdrop_travel_20260710.log",
+  "consoleLogSha256": "8d7888b3db1e2464c4b4fe6773be86d5dd90a7ebef6bc08d1ccbbfaeb7ae94fe",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 916335465,
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "d79796f215ad742c1d4cf722293e51290708bb7e7f7cc99df8b51109e8e89bf7",
+      "modifiedAt": "2026-07-10T17:46:48.4737232Z"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-10 19:49:15]: Successfully finished AppID 4765070 build (BuildID 24151444).",
+    "depotManifestLine": "[2026-07-10 19:49:14]: Success! New manifestID 4102908398561769648 created and 8 new chunks uploaded.",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "preflight": "passed: clean worktree before upload, branch codex/current-build-first-session-retention-20260709, HEAD f6a0083, diff-check clean",
+    "releaseLine": "passed before packaging and during VDF generation",
+    "packageSteamWin": "passed",
+    "steamPackageRuntime": "passed during packaging and VDF generation",
+    "vdfSetLiveTestBranch": "passed"
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "No score formula, XP formula, enemy stats, boss balance, leaderboard logic, or achievement logic changed in this upload pass.",
+    "Rollback for test validation is to reassign sector-continue-test to BuildID 24150401."
+  ]
+}

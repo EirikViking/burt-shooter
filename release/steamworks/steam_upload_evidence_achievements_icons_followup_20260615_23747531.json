@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-06-15T17:27:56Z",
+  "steamBuild": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "23747531",
+    "setLive": "",
+    "description": "Nova Swarm private build 2026-06-15 achievements and boss voices",
+    "steamworksUser": "gaunziman"
+  },
+  "source": {
+    "worktree": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/hard-achievements-20260612",
+    "head": "b8cf1cbe739432a7442d0ed5d4db612c8256d87a",
+    "buildVersion": "v2026-06-15_19-20-02"
+  },
+  "package": {
+    "vdf": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+    "contentRoot": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\desktop\\win-unpacked",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "payloadManifestHash": "cdfab3a5a293ab1fc2fb588c03afce139e4f9a31cba41efebd5e2625cceb8348",
+    "payloadFileCount": 336,
+    "payloadBytes": 785864099
+  },
+  "validation": [
+    "npm run check:release-line",
+    "npm run package:steam:win",
+    "npm run steamworks:payload-manifest",
+    "npm run desktop:smoke:packaged"
+  ],
+  "steamcmd": {
+    "path": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+    "commandShape": "+login gaunziman +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "result": "Successfully finished AppID 4765070 build (BuildID 23747531)."
+  },
+  "notes": [
+    "SetLive was intentionally left empty; this upload did not switch a Steam branch live.",
+    "Steamworks achievement metadata/icon publication is separate from this SteamPipe build upload."
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "type": "steam_upload_evidence",
+  "createdAt": "2026-07-08T09:29:18Z",
+  "purpose": "Resolution-invariant gameplay bounds plus decorative-only ultrawide side ambience private Steam candidate upload.",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "9d69c14d6bc942b19ab8b41b37cd2d4625e6771d",
+    "commitSummary": "Add decorative ultrawide side ambience",
+    "baselineBeforeResolutionFix": "b94b689 Record full QA Steam upload evidence",
+    "resolutionFixCommit": "2682ecf Fix resolution-invariant gameplay bounds"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24106321",
+    "setLive": "",
+    "branchAssigned": false,
+    "metadataChanged": false,
+    "settingsChanged": false,
+    "publicDefaultChanged": false,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24106321)."
+  },
+  "payload": {
+    "buildVersion": "v2026-07-08_11-14-58",
+    "buildTimestamp": "2026-07-08T09:14:58.672Z",
+    "contentRoot": "release/desktop/win-unpacked",
+    "executable": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "executableBytes": 226698752,
+    "executableSha256": "fcf4dd3bf43ece50d2475cde28f30f14ae57b0d7538b2152160f1c2d8bc501b7",
+    "fileCount": 336,
+    "totalBytes": 916231518,
+    "manifestHash": "ff56193a5f6574dece01c020748a44ac0101337a1a3a5e0a77ff637d6d8ea0a3"
+  },
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appId": "4765070",
+    "depotId": "4765071",
+    "contentRoot": "..\\desktop\\win-unpacked",
+    "setLive": ""
+  },
+  "steamcmd": {
+    "commandShape": "tools\\steamcmd\\steamcmd.exe +login <cached-steamworks-user> +run_app_build <absolute app_build_LOCAL.vdf> +quit",
+    "successfulAttemptLog": "release/steamworks/steam_upload_console_ultrawide_resolution_20260708.log",
+    "successfulAttemptExitCode": 0
+  },
+  "verification": {
+    "sourceChecks": [
+      "node --check src\\scenes\\PlayScene.js",
+      "node --check scripts\\check-ultrawide-side-ambience.mjs",
+      "node scripts/check-resolution-fairness.mjs",
+      "node scripts/check-ultrawide-side-ambience.mjs",
+      "npm run check:release-line",
+      "npm run check:i18n",
+      "npm run build:current",
+      "npm run check:i18n-ui",
+      "npm run check:controller-flow",
+      "npm run smoke",
+      "npm run desktop:smoke:current",
+      "git diff --check"
+    ],
+    "packagedChecks": [
+      "npm run package:steam:win:current",
+      "npm run desktop:smoke:packaged",
+      "npm run desktop:controls:packaged",
+      "npm run desktop:perf:packaged",
+      "npm run steamworks:write-vdf",
+      "npm run steamworks:payload-manifest"
+    ],
+    "evidenceFiles": [
+      "release/steamworks/steam_payload_manifest.json",
+      "test-results/ultrawide-side-ambience-2026-07-08T09-09-03-466Z/ultrawide-side-ambience.png",
+      "test-results/controller-only-flow-2026-07-08T09-07-31-401Z",
+      "test-results/smoke-2026-07-08T09-11-43-094Z/report.json",
+      "test-results/electron-smoke-2026-07-08T09-16-26-997Z",
+      "test-results/steam-sdk-ready-2026-07-08T09-16-56-071Z/report.json",
+      "test-results/steam-package-runtime-2026-07-08T09-19-41-262Z/report.json",
+      "test-results/steam-package-runtime-2026-07-08T09-25-01-257Z/report.json",
+      "test-results/packaged-exe-smoke-2026-07-08T09-19-55-392Z/report.json",
+      "test-results/packaged-control-smoke-2026-07-08T09-20-59-580Z/report.json",
+      "test-results/packaged-perf-smoke-2026-07-08T09-21-18-794Z/report.json"
+    ]
+  },
+  "scopeGuards": {
+    "playerFacingTextChanged": false,
+    "packageDependenciesChanged": false,
+    "steamworksMetadataChanged": false,
+    "scoreXpLeaderboardAchievementChanged": false,
+    "balanceChanged": false,
+    "ultrawideGuttersInteractive": false,
+    "notes": [
+      "Gameplay remains clipped to the logical 16:9 combat rect.",
+      "Ultrawide gutters contain only decorative ambience: parallax stars, subtle nebula glow, and a faint combat-zone frame.",
+      "The upload did not assign a Steam branch because the VDF kept SetLive empty."
+    ]
+  },
+  "knownRisks": [
+    "No Steam branch was assigned by this upload. Manual Steamworks assignment is still required before players receive BuildID 24106321.",
+    "Packaged smoke logs include Steam API init warnings because the executable was launched outside the live Steam client.",
+    "The generic develop-web-game browser client was attempted but the local Playwright headless-shell cache was missing; the focused Chrome-backed ultrawide ambience check passed."
+  ],
+  "rollback": {
+    "source": "git revert 9d69c14d6bc942b19ab8b41b37cd2d4625e6771d 2682ecf",
+    "steam": "No Steam rollback is needed while BuildID 24106321 remains unassigned. If it is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the affected branch to the previous desired BuildID."
+  }
+}

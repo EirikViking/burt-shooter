@@ -1,0 +1,71 @@
+{
+  "generatedAt": "2026-07-13T08:36:20.000Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24179978",
+  "sourceCommit": "c7e1d0e59faaac6acacd4406700635c11da8b759 Improve first-session combat momentum",
+  "sourceBaseline": "c58a9d0b20d150ddd87c53b50789f3aed791ce4c",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockTagObject": "c788f79cc2f35df2920f8e752e5c968c7ebaab6d",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-13_10-25-45",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24178758",
+  "previousKnownPublicBaselineBuildId": "24132596",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "..\\desktop\\win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "219936fdc9fecaacfc59615229badb58c9d5a18e7a57d4539d1e4b10f21ff874",
+  "consoleLogPath": "release/steamworks/steam_upload_console_first_session_momentum_20260713.log",
+  "consoleLogSha256": "c92ede3005e4b511af1eef2766f04df82341669b92a95fe08c030b7c3dbdec94",
+  "payloadManifestSha256": "56fb2a64d9cd2a2e96a34d83d4045390a1c33d17b019126dba3df655dc2a49d1",
+  "desktopPackageReportSha256": "a1f545ae7728cb221b6871374bc996c3ee8369abac91a40b0e9942f6e9636333",
+  "payload": {
+    "fileCount": 336,
+    "totalBytes": 920564410,
+    "manifestHash": "6c1eb2c0eab4a4b97c423f9bf2106ca16f837fde78cc3632ef4602b02e496b58",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "ff3724e5cb0943150a0546511acf1592ce89ba248f239a131efddc75762a8a7d"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-13 10:36:20]: Successfully finished AppID 4765070 build (BuildID 24179978).",
+    "consoleContainsSuccess": true,
+    "consoleContainsCachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: branch codex/sales-success-22000-20260713, source HEAD c7e1d0e, tracked clean, expected release media and patch-note drafts left untracked",
+    "releaseLine": "passed before packaging and again before VDF generation",
+    "sourceBuild": "passed: v2026-07-13_10-25-45, gitSha c7e1d0e",
+    "openingFunPass": "passed: opening curve, earlier Rapid Fire payoff, HUD-safe pickup lane, boss-gate combo hold, and bounded boss-hit combo sustain",
+    "firstThirtyPolish": "passed: test-results/first-30-polish-2026-07-13T08-16-13-886Z/first-run-pickup.png inspected at 1280x720",
+    "sourceGameplay": "passed: wave pacing, enemy wave patterns, normal enemy attack variety, combo flow, first-boss balance, and 48-sample gameplay message overlap",
+    "localizationAndUi": "passed: check:i18n, build:current, and check:i18n-ui across all eight supported locales",
+    "browserAndControls": "passed: controller flow and browser smoke with no app console or page errors",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-13T08-31-00-376Z/report.json",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-13T08-31-41-077Z/report.json",
+    "freshProfileIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-13T08-31-48-233Z/report.json",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-13T08-31-57-093Z/report.json; gitSha c7e1d0e; zero console events",
+    "desktopPackage": "passed: release/steamworks/desktop_package_review_report.json",
+    "packagedPerformance": "passed: 59.89 average FPS, 58.48 minimum FPS, 12 samples, zero errors",
+    "vdfSetLiveTestBranch": "passed: exactly one sector-continue-test target; blank, public, and default targets absent"
+  },
+  "knownNonGatingCheck": {
+    "command": "npm run check:early-wave-threat",
+    "status": "failed against legacy comparison bands",
+    "details": "Levels 3-5 measured 87.2% versus 68-84%, levels 6-10 measured 200.2% versus 168-190%, and level 16 has two danger moments versus the check's expected three. The check does not include the new openingMomentum fields, its failing pressure inputs were unchanged by this pass, and it is not part of check:release-line."
+  },
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The Steamworks site, public/default branch, store metadata, pricing, score, XP, leaderboard identity, achievement definitions, and Steam Cloud settings were not changed.",
+    "Test-branch rollback target is BuildID 24178758.",
+    "Source rollback is git revert c7e1d0e; the paired powerup deduplication rollback is git revert c58a9d0; deployment-evidence rollback is git revert of the evidence commit that records this file."
+  ]
+}

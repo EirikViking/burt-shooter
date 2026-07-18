@@ -1,4 +1,6 @@
 import { AssetManifest } from '../assets/assetManifest.js';
+import { GENERATED_ENEMY_LEGACY_ASSET_COUNT } from '../config/GeneratedEnemyProfiles.js';
+import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import * as PIXI from 'pixi.js';
 
 class GameAssetsManager {
@@ -12,8 +14,22 @@ class GameAssetsManager {
         this.generatedEnemyTextures = [];
         this.eliteMiddleShipTextures = [];
         this.enemyWeaponTextures = [];
+        this.projectileTextures = {};
         this.rankShipTextures = [];
         this.rankShipList = AssetManifest.sprites.playerRankShips || [];
+        this.xtra = this.createXtraStore();
+    }
+
+    createXtraStore(existing = {}) {
+        return {
+            ships: existing.ships || {},
+            enemies: existing.enemies || {},
+            lasers: existing.lasers || {},
+            damage: existing.damage || {},
+            parts: existing.parts || {},
+            effects: existing.effects || {},
+            powerups: existing.powerups || {}
+        };
     }
 
     async ensureBonusCoreTexture() {
@@ -173,7 +189,10 @@ class GameAssetsManager {
         }));
 
         const generatedEnemies = AssetManifest.generated?.enemies || [];
-        await Promise.all(generatedEnemies.map(async (filepath, index) => {
+        const loadGeneratedEnemies = getNovaPerformanceFlags().disableNewEnemyRoster
+            ? generatedEnemies.slice(0, GENERATED_ENEMY_LEGACY_ASSET_COUNT)
+            : generatedEnemies;
+        await Promise.all(loadGeneratedEnemies.map(async (filepath, index) => {
             try {
                 const texture = await PIXI.Assets.load({
                     alias: `nova_generated_enemy_${index + 1}`,
@@ -198,6 +217,19 @@ class GameAssetsManager {
             }
         }));
 
+        const projectileAssets = AssetManifest.generated?.projectiles || {};
+        await Promise.all(Object.entries(projectileAssets).map(async ([name, filepath]) => {
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_projectile_${name}`,
+                    src: filepath
+                });
+                if (this.isValidTexture(texture)) this.projectileTextures[name] = texture;
+            } catch (e) {
+                console.warn(`[GameAssets] Failed to load projectile asset ${filepath}:`, e);
+            }
+        }));
+
         const eliteMiddleShips = AssetManifest.generated?.eliteMiddleShips || [];
         await Promise.all(eliteMiddleShips.map(async (filepath, index) => {
             try {
@@ -211,7 +243,7 @@ class GameAssetsManager {
             }
         }));
 
-        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length);
+        console.log('[GameAssets] Ships loaded. Player:', Object.keys(this.shipTextures).length, 'Enemy:', Object.keys(this.enemyTextures).length, 'GeneratedEnemy:', this.generatedEnemyTextures.filter(Boolean).length, 'EliteMiddle:', this.eliteMiddleShipTextures.filter(Boolean).length, 'EnemyWeapons:', this.enemyWeaponTextures.filter(Boolean).length, 'Projectiles:', Object.keys(this.projectileTextures).length);
 
         // Load Xtra Assets
         await this.loadXtraAssets();
@@ -268,6 +300,10 @@ class GameAssetsManager {
         return this.enemyWeaponTextures ? this.enemyWeaponTextures[index] : null;
     }
 
+    getProjectileTexture(name) {
+        return this.projectileTextures ? this.projectileTextures[name] : null;
+    }
+
     getRankShipCount() {
         return this.rankShipList.length;
     }
@@ -277,7 +313,7 @@ class GameAssetsManager {
     }
 
     async loadXtraAssets() {
-        this.xtra = { ships: {}, enemies: {}, lasers: {}, damage: {}, parts: {}, effects: {}, powerups: {} };
+        this.xtra = this.createXtraStore(this.xtra);
 
         // Loading Xtra Player Ships (for rank progression)
         const shipPromises = [];
@@ -344,15 +380,7 @@ class GameAssetsManager {
         });
 
         // Loading generated Nova Swarm powerup icons.
-        const powerupPromises = [];
-        const generatedPowerups = AssetManifest.generated?.powerups || {};
-        Object.entries(generatedPowerups).forEach(([name, src]) => {
-            powerupPromises.push(this.loadSingleAsset(
-                `xtra_powerup_${name}`,
-                src,
-                this.xtra.powerups
-            ));
-        });
+        const powerupPromises = [this.loadPowerupAssets()];
 
         await Promise.all([...shipPromises, ...enemyPromises, ...laserPromises, ...dmgPromises, ...fxPromises, ...powerupPromises]);
         console.log('[GameAssets] Xtra Assets Loaded (ships:', Object.keys(this.xtra.ships).length, 'powerups:', Object.keys(this.xtra.powerups).length, ')');
@@ -365,6 +393,18 @@ class GameAssetsManager {
         } catch (e) {
             // calculated risk: ignore missing optional assets
         }
+    }
+
+    async loadPowerupAssets() {
+        this.xtra = this.createXtraStore(this.xtra);
+        const generatedPowerups = AssetManifest.generated?.powerups || {};
+        const powerupPromises = Object.entries(generatedPowerups).map(([name, src]) => {
+            const alias = `xtra_powerup_${name}`;
+            if (this.isValidTexture(this.xtra.powerups[alias])) return Promise.resolve(this.xtra.powerups[alias]);
+            return this.loadSingleAsset(alias, src, this.xtra.powerups);
+        });
+        await Promise.all(powerupPromises);
+        return this.xtra.powerups;
     }
 
     getXtraShip(type, color) {

@@ -9,7 +9,9 @@ import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConf
 import { AudioManager } from '../audio/AudioManager.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
-const HARD_SCALE_FACTOR = 0.3;
+const BOSS_POLISH_VERSION = 'boss-impact-20260612';
+const HARD_SCALE_FACTOR = 0.34;
+const LEGACY_HITBOX_SCALE_FACTOR = 0.3;
 const BOSS_PHASE_PLANS = {
   conductor: { signatures: { 2: 'cone', 3: 'ring' }, anchor: { 2: -0.12, 3: 0.14 }, lane: { 2: -0.01, 3: 0.02 } },
   forge: { signatures: { 2: 'ring', 3: 'cone' }, anchor: { 2: 0.1, 3: -0.12 }, lane: { 2: 0.02, 3: 0.04 } },
@@ -23,12 +25,22 @@ const BOSS_PHASE_PLANS = {
   clock: { signatures: { 2: 'lance', 3: 'ring' }, anchor: { 2: 0.13, 3: -0.13 }, lane: { 2: 0, 3: 0.03 } }
 };
 
-const BOSS_HURT_FLASH_MS = 180;
-const BOSS_FIRE_RECOIL_MS = 260;
-const BOSS_PHASE_PULSE_MS = 860;
+const BOSS_HURT_FLASH_MS = 220;
+const BOSS_FIRE_RECOIL_MS = 300;
+const BOSS_PHASE_PULSE_MS = 1080;
+const BOSS_SPAWN_INVULNERABLE_MS = 800;
+const BOSS_FAST_KILL_GUIDE_MS = 7000;
+const BOSS_ARMOR_BLEED_START_RATIO = 0.22;
+const BOSS_ARMOR_BLEED_MIN_SCALE = 0.06;
+const BOSS_ARMOR_BLEED_MAX_SCALE = 0.68;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function finiteNumber(value, fallback = 1) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function normalizeAngle(angle) {
@@ -66,6 +78,7 @@ export class Boss {
     this.active = true;
     this.game = game;
     this.radius = 50;
+    this.visualRadius = 50;
     // CLEANUP FIX: Add kind tag for cleanup targeting
     this.kind = 'boss';
     this.vx = 2;
@@ -73,16 +86,26 @@ export class Boss {
     const diff = BalanceConfig.difficulty;
     const rawHealth = Math.round(diff.bossBaseHealth + Math.max(0, level - 1) * diff.bossHealthPerLevel);
     const healthBeforePostFirstEase = Math.max(rawHealth, diff.bossMinHealth || 70);
+    this.earlyDifficultyScalar = this.getEarlyBossDifficultyScalar();
     this.difficultyScalar = this.getPostFirstBossDifficultyScalar();
-    this.health = Math.max(1, Math.round(healthBeforePostFirstEase * this.difficultyScalar));
+    const firstBossHealthScalar = level <= 1 ? 0.86 : 1;
+    this.health = Math.max(1, Math.round(
+      healthBeforePostFirstEase *
+      this.earlyDifficultyScalar *
+      this.difficultyScalar *
+      firstBossHealthScalar *
+      this.getRunModeBossDifficultyMultiplier() *
+      Math.max(1, Number(this.game?.threatResponse?.bossHealthMult) || 1)
+    ));
     this.maxHealth = this.health;
     this.shootCooldown = 0;
     this.shootDelay = this.getPhaseShootDelay(1);
     this.moveTimer = 0;
     this.entryStartMs = null;
-    this.entryDurationMs = 1000;
+    this.entryDurationMs = 1280;
     this.entryFromY = 0;
     this.entryToY = 0;
+    this.entryImpactTriggered = false;
     this.bossLaneY = 0;
     this.baseX = x;
     this.phaseAnchorOffset = 0;
@@ -106,22 +129,34 @@ export class Boss {
     this.delayedSignature = null;
     this.phaseNotified = { 2: false, 3: false };
     this.spawnedAtMs = Date.now();
-    this.regularAttackReadyAt = this.spawnedAtMs + (level <= 1 ? 1800 : 1400);
-    this.invulnerableUntilMs = this.spawnedAtMs + 800;
-    this.minimumFightMs = Math.max(7200, Math.min(9800, 7600 + Math.max(0, level - 1) * 140));
+    this.regularAttackReadyAt = this.spawnedAtMs + this.getOpeningAttackDelayMs();
+    this.invulnerableUntilMs = this.spawnedAtMs + BOSS_SPAWN_INVULNERABLE_MS;
+    this.armorBleedGuideMs = Math.max(BOSS_FAST_KILL_GUIDE_MS, Math.min(9000, 7000 + Math.max(0, level - 1) * 55));
+    this.minimumFightMs = this.armorBleedGuideMs;
+    this.firstDamageAtMs = 0;
+    this.fastKillGuideUntilMs = 0;
     this.finishGateUntilMs = 0;
     this.finishGateFxAt = 0;
     this.finishGateLogged = false;
+    this.finishGateDamageScale = 1;
+    this.finishGateLastDamageAt = 0;
     this.visualBaseScale = { x: 1, y: 1 };
     this.animationRig = null;
     this.animationDebug = null;
     this.presentationState = 'idle';
     this.presentationStateUntil = 0;
     this.hurtFlashUntil = 0;
+    this.healPulseUntil = 0;
+    this.healPulseStartedAt = 0;
+    this.lastHealAmount = 0;
+    this.lastHealSource = null;
     this.phasePulseUntil = 0;
     this.fireRecoilUntil = 0;
     this.lastHurtFxAt = 0;
     this.lastFireFxAt = 0;
+    this.lastChargeSparkAt = 0;
+    this.lastPhaseSparkAt = 0;
+    this.lastRegularFireSfxAt = 0;
     this.lastFireAngle = -Math.PI / 2;
     this.defeatPresentationAt = 0;
 
@@ -142,12 +177,14 @@ export class Boss {
 
   async createSprite() {
     this.sprite = new PIXI.Container();
+    this.sprite.label = `enemy_visual:${this.kind}:boss`;
+    this.sprite.__enemyOwner = this;
     this.sprite.sortableChildren = true;
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
     // Load boss visual from factory
-    const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.55 : null;
+    const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.62 : null;
     const bossVisual = await createBossVisual(this.level, maxBossWidth);
     this.profile = bossVisual.profile || this.profile;
     this.color = this.profile?.palette || this.color;
@@ -190,12 +227,14 @@ export class Boss {
     // Compute accurate hitbox from actual boss body size
     if (this.hitboxRef) {
       const bounds = this.hitboxRef.getBounds();
-      // Use the larger dimension for radius (accounting for rotation)
-      this.radius = Math.max(bounds.width, bounds.height) / 2;
-      console.log(`[Boss] ${this.bossType} hitbox radius computed: ${this.radius.toFixed(1)}`);
+      this.visualRadius = Math.max(bounds.width, bounds.height) / 2;
+      const gameplayScale = HARD_SCALE_FACTOR > 0 ? LEGACY_HITBOX_SCALE_FACTOR / HARD_SCALE_FACTOR : 1;
+      this.radius = this.visualRadius * gameplayScale;
+      console.log(`[Boss] ${this.bossType} visual radius ${this.visualRadius.toFixed(1)} gameplay radius preserved ${this.radius.toFixed(1)}`);
     }
 
     this.createBossAnimationRig();
+    this.setPresentationState('arrival', this.entryDurationMs + 420);
 
     // Health bar overlay
     this.healthBar = new PIXI.Graphics();
@@ -220,7 +259,7 @@ export class Boss {
       lineHeight: 22
     });
     this.nameText.anchor.set(0.5);
-    this.nameText.y = -Math.min(this.radius + 30, 72);
+    this.nameText.y = -Math.min(this.getVisualRadius() + 30, 82);
     this.nameText.zIndex = 6;
     this.sprite.addChild(this.nameText);
     this.fitNameText();
@@ -236,19 +275,152 @@ export class Boss {
     fitPixiTextToBox(this.nameText, maxWidth, maxHeight, 0.58);
   }
 
+  getVisualRadius() {
+    return Math.max(this.radius || 50, this.visualRadius || 0);
+  }
+
   updateHealthBar() {
     if (!this.healthBar) return;
 
     this.healthBar.clear();
-    const barWidth = this.radius * 3;
-    const barHeight = 8;
+    const visualRadius = this.getVisualRadius();
+    const barWidth = visualRadius * 3;
+    const barHeight = 9;
     const healthPercent = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const bossPhaseThresholds = [0.75, 0.5, 0.4];
+    const lowHealth = healthPercent <= 0.25;
+    const bossPhaseCount = 3;
+    const currentPhase = Math.max(1, Math.min(bossPhaseCount, Math.round(this.phase || 1)));
+    const phasePipColors = [0x2cff8f, 0xffd166, 0xff4b6b];
+    const barX = -barWidth / 2;
+    const barY = visualRadius + 10;
+    const barColor = healthPercent <= 0.4
+      ? 0xff4b6b
+      : healthPercent <= 0.75 ? 0xff9f3d : 0xff2e58;
+    const frameColor = lowHealth ? 0xffef7e : healthPercent <= 0.4 ? 0xff8fb0 : 0xff6677;
+    let lowHealthBraceCount = 0;
+    let lowHealthSparkCount = 0;
+    let healPulseTickCount = 0;
+    let healPulseSparkCount = 0;
+    const now = Date.now();
+    const healPulseRemaining = Math.max(0, (this.healPulseUntil || 0) - now);
+    const healPulseActive = healPulseRemaining > 0 && (Number(this.lastHealAmount) || 0) > 0;
 
-    this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(barX - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x08070c, alpha: 0.76 });
+    this.healthBar.stroke({ color: frameColor, width: lowHealth ? 1.8 : 1.2, alpha: lowHealth ? 0.86 : 0.64 });
 
-    this.healthBar.rect(-barWidth / 2, this.radius + 10, barWidth * healthPercent, barHeight);
-    this.healthBar.fill({ color: 0xff0000 });
+    this.healthBar.roundRect(barX, barY, barWidth, barHeight, 3);
+    this.healthBar.fill({ color: 0x311018, alpha: 0.92 });
+
+    const fillWidth = Math.max(0, barWidth * healthPercent);
+    if (fillWidth > 0) {
+      this.healthBar.roundRect(barX, barY, fillWidth, barHeight, 3);
+      this.healthBar.fill({ color: barColor, alpha: 0.96 });
+      const leadX = barX + fillWidth;
+      this.healthBar.moveTo(leadX, barY - 3);
+      this.healthBar.lineTo(leadX, barY + barHeight + 3);
+      this.healthBar.stroke({ color: 0xffffff, width: lowHealth ? 2 : 1.3, alpha: lowHealth ? 0.88 : 0.68 });
+    }
+
+    if (healPulseActive && fillWidth > 0) {
+      const healedPercent = Math.max(0, Math.min(1, (Number(this.lastHealAmount) || 0) / Math.max(1, this.maxHealth || 1)));
+      const healWidth = Math.max(9, Math.min(fillWidth, barWidth * healedPercent));
+      const healX = Math.max(barX, barX + fillWidth - healWidth);
+      const pulseProgress = Math.max(0, Math.min(1, healPulseRemaining / 940));
+      const pulse = Math.sin(now * 0.026) * 0.5 + 0.5;
+      this.healthBar.roundRect(healX, barY - 1, healWidth, barHeight + 2, 3);
+      this.healthBar.fill({ color: 0x7dffcc, alpha: 0.22 + pulseProgress * 0.3 });
+      this.healthBar.roundRect(healX - 3, barY - 4, healWidth + 6, barHeight + 8, 5);
+      this.healthBar.stroke({ color: 0x7dffcc, width: 1.25 + pulse * 0.85, alpha: 0.28 + pulseProgress * 0.36 });
+      for (let index = 0; index < 4; index += 1) {
+        const ratio = (index + 0.5) / 4;
+        const tickX = healX + healWidth * ratio;
+        this.healthBar.moveTo(tickX, barY - 5);
+        this.healthBar.lineTo(tickX, barY + barHeight + 5);
+        healPulseTickCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xffffff, width: 0.9, alpha: 0.2 + pulseProgress * 0.26 });
+      const sparkBaseX = Math.min(barX + barWidth - 8, barX + fillWidth + 6);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.max(barX + 8, sparkBaseX - index * 9);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 ? 5 : -5);
+        this.healthBar.circle(sparkX, sparkY, 2.4 + pulse * 1.4);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0x7dffcc, alpha: 0.26 + pulseProgress * 0.28 });
+        healPulseSparkCount += 1;
+      }
+    }
+
+    for (const threshold of bossPhaseThresholds) {
+      const markX = Math.round(barX + barWidth * threshold);
+      const cleared = healthPercent <= threshold;
+      this.healthBar.moveTo(markX, barY - 4);
+      this.healthBar.lineTo(markX, barY + barHeight + 4);
+      this.healthBar.stroke({
+        color: cleared ? 0xffffff : 0xffd166,
+        width: threshold === 0.5 ? 1.4 : 1,
+        alpha: cleared ? 0.78 : 0.58
+      });
+    }
+    const phasePipY = barY + barHeight + 9;
+    const phasePipSpacing = Math.min(18, Math.max(12, barWidth / 8));
+    const phasePipStartX = -((bossPhaseCount - 1) * phasePipSpacing) / 2;
+    for (let index = 0; index < bossPhaseCount; index += 1) {
+      const phaseNumber = index + 1;
+      const pipX = phasePipStartX + index * phasePipSpacing;
+      const active = phaseNumber <= currentPhase;
+      const current = phaseNumber === currentPhase;
+      const pipColor = phasePipColors[index] || 0xffd166;
+      this.healthBar.poly([
+        pipX, phasePipY - 4,
+        pipX + 5, phasePipY,
+        pipX, phasePipY + 4,
+        pipX - 5, phasePipY
+      ]);
+      this.healthBar.fill({ color: active ? pipColor : 0x152838, alpha: active ? (current ? 0.92 : 0.68) : 0.46 });
+      this.healthBar.stroke({ color: current ? 0xffffff : pipColor, width: current ? 1.2 : 0.8, alpha: current ? 0.86 : 0.46 });
+      if (current) {
+        this.healthBar.circle(pipX, phasePipY, 7);
+        this.healthBar.stroke({ color: pipColor, width: 0.9, alpha: 0.46 });
+      }
+    }
+    if (lowHealth) {
+      const hatchCount = 7;
+      for (let index = 0; index < hatchCount; index += 1) {
+        const hatchX = barX + 3 + index * (barWidth / (hatchCount - 0.2));
+        this.healthBar.moveTo(hatchX, barY - 5);
+        this.healthBar.lineTo(hatchX + 10, barY + barHeight + 5);
+        this.healthBar.stroke({ color: 0xffef7e, width: 0.8, alpha: 0.26 });
+      }
+      this.healthBar.roundRect(barX - 6, barY - 6, barWidth + 12, barHeight + 12, 6);
+      this.healthBar.stroke({ color: 0xffef7e, width: 1.1, alpha: 0.34 });
+      const braceY = barY + barHeight * 0.5;
+      for (const sideX of [barX - 9, barX + barWidth + 9]) {
+        const direction = sideX < 0 ? 1 : -1;
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX, braceY + 8);
+        this.healthBar.moveTo(sideX, braceY - 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY - 8);
+        this.healthBar.moveTo(sideX, braceY + 8);
+        this.healthBar.lineTo(sideX + direction * 8, braceY + 8);
+        lowHealthBraceCount += 1;
+      }
+      this.healthBar.stroke({ color: 0xff4b6b, width: 1.35, alpha: 0.54 });
+
+      const sparkStartX = Math.min(barX + barWidth - 30, barX + Math.max(10, fillWidth) + 8);
+      for (let index = 0; index < 3; index += 1) {
+        const sparkX = Math.min(barX + barWidth - 8, sparkStartX + index * 10);
+        const sparkY = barY + barHeight * 0.5 + (index % 2 === 0 ? -3 : 3);
+        this.healthBar.poly([
+          sparkX, sparkY - 3,
+          sparkX + 4, sparkY,
+          sparkX, sparkY + 3,
+          sparkX - 4, sparkY
+        ]);
+        this.healthBar.fill({ color: index === 0 ? 0xffffff : 0xffef7e, alpha: 0.38 });
+        lowHealthSparkCount += 1;
+      }
+    }
 
     // Health text (no decimals)
     const healthText = `${Math.max(0, Math.ceil(this.health))}/${Math.ceil(this.maxHealth)}`;
@@ -258,13 +430,35 @@ export class Boss {
     this.healthText = createText(healthText, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 12,
-      fill: '#ffffff'
+      fontWeight: '900',
+      fill: lowHealth ? '#ffef7e' : '#ffffff',
+      stroke: '#05070c',
+      strokeThickness: 3
     });
     this.healthText.anchor.set(0.5);
-    this.healthText.y = this.radius + 14;
+    this.healthText.y = visualRadius + 14.5;
     if (this.sprite) {
       this.sprite.addChild(this.healthText);
     }
+    this.healthBar.__debugBossHealthBar = {
+      tickCount: bossPhaseThresholds.length,
+      healthPercent: Number(healthPercent.toFixed(3)),
+      lowHealth,
+      fillColor: barColor,
+      hasLeadEdge: fillWidth > 0,
+      currentPhase,
+      phasePipCount: bossPhaseCount,
+      currentPhasePip: currentPhase,
+      dangerHatchCount: lowHealth ? 7 : 0,
+      lowHealthBraceCount,
+      lowHealthSparkCount,
+      healPulseActive,
+      healPulseTickCount,
+      healPulseSparkCount,
+      lastHealAmount: Math.round(Number(this.lastHealAmount) || 0),
+      lastHealSource: this.lastHealSource || null,
+      text: healthText
+    };
   }
 
   update(delta, playerX, playerY) {
@@ -280,6 +474,12 @@ export class Boss {
     }
 
     this.moveTimer += delta;
+    if ((this.healPulseUntil || 0) > Date.now()) {
+      this.updateHealthBar();
+    } else if (this.healPulseUntil) {
+      this.healPulseUntil = 0;
+      this.updateHealthBar();
+    }
 
     // Phase transitions
     if (this.health < this.maxHealth * 0.75 && this.phase === 1) {
@@ -308,10 +508,11 @@ export class Boss {
     const now = Date.now();
     if (this.entryStartMs && now - this.entryStartMs < this.entryDurationMs) {
       const t = (now - this.entryStartMs) / this.entryDurationMs;
-      const ease = 1 - Math.pow(1 - t, 2);
+      const ease = 1 - Math.pow(1 - t, 2.35);
       this.y = this.entryFromY + (this.entryToY - this.entryFromY) * ease;
       this.x = this.baseX;
     } else {
+      this.triggerEntranceImpact();
       this.applyBossMovement(delta, playerX, playerY);
     }
 
@@ -443,17 +644,29 @@ export class Boss {
       this.animationRig.root.parent.removeChild(this.animationRig.root);
     }
 
-    const radius = Math.max(58, Math.min(150, this.radius || 80));
+    const radius = Math.max(58, Math.min(168, this.getVisualRadius() || 80));
     const palette = this.profile?.palette || this.color || 0xff55d9;
     const accent = this.profile?.accent || 0x37f5ff;
     const root = new PIXI.Container();
     root.sortableChildren = true;
     root.zIndex = 2;
 
+    const auraLayer = new PIXI.Graphics();
+    auraLayer.zIndex = -5;
+    auraLayer.blendMode = 'add';
+    const silhouetteLayer = new PIXI.Graphics();
+    silhouetteLayer.zIndex = -4;
+    silhouetteLayer.blendMode = 'add';
     const backLayer = new PIXI.Graphics();
     backLayer.zIndex = -2;
     const engineLayer = new PIXI.Graphics();
     engineLayer.zIndex = -1;
+    const articulationLayer = new PIXI.Container();
+    articulationLayer.sortableChildren = true;
+    articulationLayer.zIndex = 1;
+    const threatLayer = new PIXI.Graphics();
+    threatLayer.zIndex = 2;
+    threatLayer.blendMode = 'add';
     const frontLayer = new PIXI.Graphics();
     frontLayer.zIndex = 3;
     const scanLayer = new PIXI.Graphics();
@@ -461,6 +674,9 @@ export class Boss {
     const impactLayer = new PIXI.Graphics();
     impactLayer.zIndex = 5;
     impactLayer.blendMode = 'add';
+    const chargeLayer = new PIXI.Graphics();
+    chargeLayer.zIndex = 6;
+    chargeLayer.blendMode = 'add';
 
     const leftFin = this.createBossFin(-1, radius, palette, accent);
     const rightFin = this.createBossFin(1, radius, palette, accent);
@@ -472,41 +688,65 @@ export class Boss {
     leftMandible.zIndex = 3;
     rightMandible.zIndex = 3;
 
+    const sidePanels = [];
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 3; i += 1) {
+        const panel = this.createBossSidePanel(side, i, radius, palette, accent);
+        articulationLayer.addChild(panel);
+        sidePanels.push(panel);
+      }
+    }
+
+    const coreShutters = [];
+    for (let i = 0; i < 4; i += 1) {
+      const shutter = this.createBossCoreShutter(i, radius, palette, accent);
+      articulationLayer.addChild(shutter);
+      coreShutters.push(shutter);
+    }
+
     const weaponNodes = [];
     const nodeCount = this.profile?.archetype === 'carrier' ? 4 : this.profile?.archetype === 'needle' ? 3 : 3;
     for (let i = 0; i < nodeCount; i += 1) {
-      const node = new PIXI.Graphics();
-      node.circle(0, 0, Math.max(5, radius * 0.055));
-      node.fill({ color: accent, alpha: 0.52 });
-      node.circle(0, 0, Math.max(8, radius * 0.085));
-      node.stroke({ color: palette, width: 2, alpha: 0.38 });
+      const node = this.createBossWeaponPod(i, nodeCount, radius, palette, accent);
       node.zIndex = 4;
       root.addChild(node);
       weaponNodes.push(node);
     }
 
+    root.addChild(auraLayer);
+    root.addChild(silhouetteLayer);
     root.addChild(backLayer);
     root.addChild(engineLayer);
     root.addChild(leftFin);
     root.addChild(rightFin);
     root.addChild(leftMandible);
     root.addChild(rightMandible);
+    root.addChild(articulationLayer);
+    root.addChild(threatLayer);
     root.addChild(frontLayer);
     root.addChild(scanLayer);
     root.addChild(impactLayer);
+    root.addChild(chargeLayer);
     this.sprite.addChild(root);
 
     this.animationRig = {
       root,
+      auraLayer,
+      silhouetteLayer,
       backLayer,
       engineLayer,
+      articulationLayer,
+      threatLayer,
       frontLayer,
       scanLayer,
       impactLayer,
+      chargeLayer,
       leftFin,
       rightFin,
       leftMandible,
       rightMandible,
+      sidePanels,
+      coreShutters,
       weaponNodes,
       radius,
       palette,
@@ -551,14 +791,125 @@ export class Boss {
     return mandible;
   }
 
+  createBossSidePanel(side, index, radius, palette, accent) {
+    const part = new PIXI.Container();
+    const length = radius * (0.34 + index * 0.07);
+    const width = radius * (0.13 + index * 0.025);
+    const hingeX = side * radius * (0.26 + index * 0.18);
+    const hingeY = radius * (-0.2 + index * 0.22);
+    const plate = new PIXI.Graphics();
+    plate.poly([
+      0, -width * 0.48,
+      side * length, -width * 0.24,
+      side * length * 1.08, width * 0.2,
+      0, width * 0.54
+    ]);
+    plate.fill({ color: palette, alpha: 0.18 + index * 0.025 });
+    plate.poly([
+      0, -width * 0.48,
+      side * length, -width * 0.24,
+      side * length * 1.08, width * 0.2,
+      0, width * 0.54
+    ]);
+    plate.stroke({ color: accent, width: 2, alpha: 0.42 + index * 0.06 });
+    plate.moveTo(side * length * 0.26, -width * 0.2);
+    plate.lineTo(side * length * 0.9, width * 0.16);
+    plate.stroke({ color: 0xffffff, width: 1, alpha: 0.13 });
+    part.addChild(plate);
+    part.x = hingeX;
+    part.y = hingeY;
+    part.baseX = hingeX;
+    part.baseY = hingeY;
+    part.baseRotation = side * (0.1 + index * 0.045);
+    part.side = side;
+    part.index = index;
+    part.phaseOffset = side * 0.9 + index * 1.23;
+    part.rotation = part.baseRotation;
+    part.zIndex = 1 + index;
+    return part;
+  }
+
+  createBossCoreShutter(index, radius, palette, accent) {
+    const part = new PIXI.Container();
+    const angle = index * Math.PI / 2;
+    const length = radius * 0.28;
+    const width = radius * 0.078;
+    const plate = new PIXI.Graphics();
+    plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
+    plate.fill({ color: palette, alpha: 0.2 });
+    plate.roundRect(-width / 2, -length * 0.12, width, length, Math.max(3, width * 0.36));
+    plate.stroke({ color: accent, width: 1.6, alpha: 0.5 });
+    plate.circle(0, length * 0.12, Math.max(2.5, width * 0.22));
+    plate.fill({ color: 0xffffff, alpha: 0.12 });
+    part.addChild(plate);
+    part.rotation = angle;
+    part.baseRotation = angle;
+    part.baseSlide = radius * 0.11;
+    part.index = index;
+    part.x = 0;
+    part.y = 0;
+    plate.y = part.baseSlide;
+    part.plate = plate;
+    part.zIndex = 5 + index;
+    return part;
+  }
+
+  createBossWeaponPod(index, total, radius, palette, accent) {
+    const pod = new PIXI.Container();
+    const shell = new PIXI.Graphics();
+    const barrel = new PIXI.Graphics();
+    const core = new PIXI.Graphics();
+    const size = Math.max(8, radius * 0.08);
+    shell.circle(0, 0, size);
+    shell.fill({ color: accent, alpha: 0.5 });
+    shell.circle(0, 0, size * 1.45);
+    shell.stroke({ color: palette, width: 2, alpha: 0.42 });
+    barrel.roundRect(-size * 0.25, -size * 1.7, size * 0.5, size * 2.2, size * 0.22);
+    barrel.fill({ color: palette, alpha: 0.28 });
+    barrel.roundRect(-size * 0.25, -size * 1.7, size * 0.5, size * 2.2, size * 0.22);
+    barrel.stroke({ color: 0xffffff, width: 1.2, alpha: 0.28 });
+    core.circle(0, 0, size * 0.42);
+    core.fill({ color: 0xffffff, alpha: 0.18 });
+    pod.addChild(barrel);
+    pod.addChild(shell);
+    pod.addChild(core);
+    pod.baseSize = size;
+    pod.index = index;
+    pod.total = total;
+    pod.phaseOffset = index * ((Math.PI * 2) / Math.max(1, total));
+    pod.barrel = barrel;
+    pod.core = core;
+    return pod;
+  }
+
   setPresentationState(state, durationMs = 240) {
     const until = Date.now() + Math.max(0, durationMs);
     this.presentationState = state;
     this.presentationStateUntil = Math.max(this.presentationStateUntil || 0, until);
   }
 
+  getEntryProgress(now = Date.now()) {
+    if (!this.entryStartMs || this.entryDurationMs <= 0) return 1;
+    return clamp((now - this.entryStartMs) / this.entryDurationMs, 0, 1);
+  }
+
+  triggerEntranceImpact() {
+    if (this.entryImpactTriggered) return;
+    this.entryImpactTriggered = true;
+    this.setPresentationState('arrivalImpact', 560);
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.palette || this.color || 0xff55d9;
+    const accent = this.profile?.accent || 0xffffff;
+    playScene?.particleManager?.createBossEntranceBurst?.(this.x, this.y, color, accent);
+    playScene?.triggerShockwave?.(this.x, this.y, accent);
+    playScene?.screenShake?.shake(6, 16);
+    AudioManager.playSfx('boss_spawn', { force: true, volume: 0.36, minIntervalMs: 700 });
+    AudioManager.playSfx('boss_entrance_impact', { force: true, volume: 0.72, minIntervalMs: 900 });
+  }
+
   getPresentationState(now = Date.now()) {
     if (this.health <= 0 || this.defeatPresentationAt > 0) return 'death';
+    if (!this.entryImpactTriggered && this.getEntryProgress(now) < 1) return 'arrival';
     if (now < this.phasePulseUntil) return 'phaseChange';
     if (this.telegraph) return 'charge';
     if (now < this.fireRecoilUntil) return 'firing';
@@ -579,9 +930,15 @@ export class Boss {
       this.lastFireFxAt = now;
       const color = signature ? (this.profile?.accent || 0xffffff) : (this.profile?.palette || this.color || 0xffffff);
       playScene.particleManager.createMuzzleFlash(this.x, this.y + 18, this.lastFireAngle, color);
+      if (signature || this.phase >= 2) {
+        playScene.particleManager.createBossChargeSparks?.(this.x, this.y + 10, color, signature ? 1.25 : 0.7);
+      }
     }
     if (signature && playScene?.screenShake) {
       playScene.screenShake.shake(4, 12);
+    } else if (!signature && now - this.lastRegularFireSfxAt > 260) {
+      this.lastRegularFireSfxAt = now;
+      AudioManager.playSfx('shoot_heavy', { volume: 0.26, minIntervalMs: 220 });
     }
   }
 
@@ -592,12 +949,14 @@ export class Boss {
     const playScene = this.game?.scenes?.play;
     if (playScene?.particleManager && now - this.lastHurtFxAt > 80) {
       this.lastHurtFxAt = now;
-      const radius = Math.max(40, this.radius || 70);
+      const radius = Math.max(40, this.getVisualRadius() || 70);
       const angle = ((now * 0.017) % (Math.PI * 2)) + amount * 0.11;
       const x = this.x + Math.cos(angle) * radius * 0.42;
       const y = this.y + Math.sin(angle) * radius * 0.28;
       playScene.particleManager.createHitSpark(x, y, this.profile?.accent || 0xffff00, 1.15);
+      playScene.particleManager.createBossChargeSparks?.(x, y, this.profile?.palette || this.color || 0xffff00, 0.45);
     }
+    AudioManager.playSfx('boss_damage_armor_crack', { volume: 0.32, minIntervalMs: 115 });
   }
 
   triggerDefeatPresentation() {
@@ -606,9 +965,9 @@ export class Boss {
     this.setPresentationState('death', 640);
     const playScene = this.game?.scenes?.play;
     const color = this.profile?.accent || this.color || 0xffff33;
-    playScene?.particleManager?.createBossExplosion(this.x, this.y, color);
+    playScene?.particleManager?.createLayeredBossExplosion?.(this.x, this.y, color, this.profile?.palette || 0xffffff, 1.05);
     playScene?.triggerShockwave?.(this.x, this.y, color);
-    playScene?.screenShake?.shake(8, 20);
+    playScene?.screenShake?.shake(10, 24);
   }
 
   triggerFinishGatePresentation(untilMs = Date.now() + 1200) {
@@ -620,8 +979,31 @@ export class Boss {
     const color = this.profile?.accent || this.color || 0xffff33;
     playScene?.triggerShockwave?.(this.x, this.y, color);
     playScene?.particleManager?.createHitSpark(this.x, this.y, color, 1.25);
+    playScene?.particleManager?.createBossChargeSparks?.(this.x, this.y, color, 1.05);
     playScene?.screenShake?.shake(3, 10);
     AudioManager.playSfx('boss_phase_surge', { volume: 0.45, minIntervalMs: 900 });
+  }
+
+  heal(amount = 0, { source = 'unknown' } = {}) {
+    if (!this.active || this.health <= 0) return 0;
+    const value = Math.max(0, Number(amount) || 0);
+    if (value <= 0) return 0;
+    const before = this.health;
+    this.health = Math.min(this.maxHealth, this.health + value);
+    const healed = Math.max(0, this.health - before);
+    if (healed <= 0) return 0;
+    const now = Date.now();
+    this.healPulseStartedAt = now;
+    this.healPulseUntil = now + 940;
+    this.lastHealAmount = healed;
+    this.lastHealSource = source;
+    this.updateHealthBar();
+    const playScene = this.game?.scenes?.play;
+    const color = this.profile?.accent || this.color || 0x7dffcc;
+    playScene?.particleManager?.createBossChargeSparks?.(this.x, this.y, color, 1.1);
+    playScene?.particleManager?.createHitSpark?.(this.x, this.y, 0x7dffcc, 1.35);
+    console.log(`[BossHeal] level=${this.level} source=${source} hpBefore=${before} heal=${healed} hpAfter=${this.health}`);
+    return healed;
   }
 
   updateBossAnimation(delta, playerX, playerY) {
@@ -639,8 +1021,16 @@ export class Boss {
     const recoilProgress = clamp((this.fireRecoilUntil - now) / BOSS_FIRE_RECOIL_MS, 0, 1);
     const phaseProgress = clamp((this.phasePulseUntil - now) / BOSS_PHASE_PULSE_MS, 0, 1);
     const presentationState = this.getPresentationState(now);
+    const entryProgress = this.getEntryProgress(now);
+    const entryEnergy = entryProgress < 1 ? Math.sin(entryProgress * Math.PI) : 0;
+    const impactProgress = presentationState === 'arrivalImpact'
+      ? clamp((this.presentationStateUntil - now) / 560, 0, 1)
+      : 0;
+    const deathProgress = this.defeatPresentationAt > 0
+      ? clamp((now - this.defeatPresentationAt) / 840, 0, 1)
+      : 0;
     const rage = 1 - clamp(this.health / Math.max(1, this.maxHealth), 0, 1);
-    const intensity = 1 + telegraphProgress * 0.18 + hurtProgress * 0.22 + recoilProgress * 0.12 + phaseProgress * 0.18 + rage * 0.12 + (this.phase - 1) * 0.04;
+    const intensity = 1 + telegraphProgress * 0.2 + hurtProgress * 0.24 + recoilProgress * 0.13 + phaseProgress * 0.22 + rage * 0.16 + entryEnergy * 0.18 + impactProgress * 0.2 + deathProgress * 0.22 + (this.phase - 1) * 0.05;
     const radius = rig.radius;
     const palette = rig.palette;
     const accent = rig.accent;
@@ -649,7 +1039,9 @@ export class Boss {
     const fireSquash = recoilProgress * 0.045;
     const hurtSnap = hurtProgress * 0.055;
     const phaseSwell = phaseProgress * 0.035;
-    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity + hurtSnap + phaseSwell;
+    const entrySwell = entryProgress < 1 ? (1 - entryProgress) * 0.08 + entryEnergy * 0.045 : 0;
+    const impactSwell = impactProgress * 0.052;
+    const bodyPulse = 1 + Math.sin(t * (archetype === 'clock' ? 1.6 : 0.85)) * 0.01 * intensity + hurtSnap + phaseSwell + entrySwell + impactSwell;
     const bodyStretch = Math.cos(t * 0.7) * 0.006 * intensity + fireSquash;
     this.visualContainer.scale.set(
       this.visualBaseScale.x * (bodyPulse + bodyStretch),
@@ -663,17 +1055,47 @@ export class Boss {
     this.visualContainer.skew.x = Math.sin(t * 0.55 + this.phase) * 0.005 * intensity;
     this.visualContainer.skew.y = Math.cos(t * 0.42) * 0.003 * intensity;
 
+    rig.root.rotation = Math.sin(t * 0.48 + this.phase) * 0.01 * intensity + Math.sin(now * 0.1) * hurtProgress * 0.018;
+    rig.root.scale.set(1 + phaseProgress * 0.035 + impactProgress * 0.045 + deathProgress * 0.06);
+
     const finFlap = Math.sin(t * (archetype === 'jester' ? 1.6 : 0.95) + telegraphProgress * Math.PI * 0.35) * 0.08 * intensity;
-    rig.leftFin.rotation = -0.16 + finFlap;
-    rig.rightFin.rotation = 0.16 - finFlap;
-    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 0.9)) * 0.025 * intensity, 1);
-    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 0.9)) * 0.025 * intensity, 1);
+    const wingOpen = Math.max(telegraphProgress * 0.82, phaseProgress * 0.68, entryEnergy * 0.76, impactProgress * 0.58, deathProgress);
+    rig.leftFin.rotation = -0.16 + finFlap - wingOpen * 0.18;
+    rig.rightFin.rotation = 0.16 - finFlap + wingOpen * 0.18;
+    rig.leftFin.scale.set(1 + Math.max(0, Math.sin(t * 0.9)) * 0.025 * intensity + wingOpen * 0.08, 1 + wingOpen * 0.04);
+    rig.rightFin.scale.set(1 + Math.max(0, Math.cos(t * 0.9)) * 0.025 * intensity + wingOpen * 0.08, 1 + wingOpen * 0.04);
 
     const bite = 0.045 + telegraphProgress * 0.12 + (archetype === 'needle' ? 0.04 : 0);
-    rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite;
-    rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite;
-    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.0)) * 0.025 * intensity);
-    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.0)) * 0.025 * intensity);
+    rig.leftMandible.rotation = -0.16 - Math.sin(t * 1.9) * bite - wingOpen * 0.12;
+    rig.rightMandible.rotation = 0.16 + Math.sin(t * 1.9) * bite + wingOpen * 0.12;
+    rig.leftMandible.y = radius * (0.22 + Math.max(0, Math.sin(t * 1.0)) * 0.025 * intensity + wingOpen * 0.035);
+    rig.rightMandible.y = radius * (0.22 + Math.max(0, Math.cos(t * 1.0)) * 0.025 * intensity + wingOpen * 0.035);
+
+    const panelOpen = clamp(wingOpen + recoilProgress * 0.18 + hurtProgress * 0.08, 0, 1.35);
+    for (const part of rig.sidePanels || []) {
+      const side = part.side || 1;
+      const index = part.index || 0;
+      const flap = Math.sin(t * (0.85 + index * 0.17) + part.phaseOffset) * (0.045 + index * 0.025) * intensity;
+      const scatter = deathProgress * deathProgress * radius * (0.08 + index * 0.035);
+      part.x = part.baseX + side * (panelOpen * radius * (0.028 + index * 0.012) + scatter);
+      part.y = part.baseY + Math.sin(t * 1.08 + part.phaseOffset) * radius * 0.013 + recoilProgress * radius * 0.018 - deathProgress * radius * (0.018 + index * 0.01);
+      part.rotation = part.baseRotation + side * (panelOpen * (0.13 + index * 0.05) + flap + deathProgress * 0.28);
+      part.scale.set(1 + phaseProgress * 0.05 + hurtProgress * 0.04, 1 + telegraphProgress * 0.055 + impactProgress * 0.04);
+      part.alpha = clamp(0.68 + panelOpen * 0.22 - deathProgress * 0.26, 0.38, 0.95);
+    }
+
+    const shutterOpen = clamp(Math.max(telegraphProgress, phaseProgress * 0.78, entryEnergy * 0.65, impactProgress * 0.72) + recoilProgress * 0.2 + deathProgress * 0.8, 0, 1.4);
+    for (const shutter of rig.coreShutters || []) {
+      const index = shutter.index || 0;
+      const plate = shutter.plate;
+      const breathe = Math.sin(t * 1.55 + index) * 0.014 * intensity;
+      shutter.rotation = shutter.baseRotation + breathe + shutterOpen * (index % 2 === 0 ? 0.09 : -0.09);
+      if (plate) {
+        plate.y = shutter.baseSlide + shutterOpen * radius * (0.075 + index * 0.005);
+        plate.scale.set(1 + shutterOpen * 0.08, 1 + recoilProgress * 0.12);
+        plate.alpha = clamp(0.76 + shutterOpen * 0.22 - deathProgress * 0.18, 0.45, 1);
+      }
+    }
 
     rig.engineLayer.clear();
     const exhaust = (0.46 + Math.max(0, Math.sin(t * 1.4)) * 0.12 + telegraphProgress * 0.12) * intensity;
@@ -712,8 +1134,20 @@ export class Boss {
       const orbitRadius = radius * (0.48 + Math.sin(t * 0.45 + index) * 0.015 + telegraphProgress * 0.06);
       node.x = Math.cos(nodePhase) * orbitRadius;
       node.y = Math.sin(nodePhase) * orbitRadius * (archetype === 'carrier' ? 0.36 : 0.46);
-      node.scale.set((0.78 + Math.sin(t * 0.9 + index) * 0.04 + telegraphProgress * 0.08) * phaseBoost);
-      node.alpha = 0.4 + Math.sin(t * 0.75 + index) * 0.06 + telegraphProgress * 0.1;
+      const basePodScale = (0.82 + Math.sin(t * 0.9 + index) * 0.05 + telegraphProgress * 0.14 + recoilProgress * 0.08) * phaseBoost;
+      node.scale.set(basePodScale * (1 + deathProgress * 0.16));
+      node.alpha = clamp(0.44 + Math.sin(t * 0.75 + index) * 0.06 + telegraphProgress * 0.16 - deathProgress * 0.2, 0.28, 0.9);
+      const homeAngle = nodePhase + Math.PI / 2;
+      const aimAngle = Math.atan2(playerY - this.y, playerX - this.x) + Math.PI / 2;
+      node.rotation = lerpAngle(node.rotation || homeAngle, telegraphProgress > 0.05 ? aimAngle : homeAngle, 0.05 + telegraphProgress * 0.22 + recoilProgress * 0.14);
+      if (node.barrel) {
+        node.barrel.scale.y = 1 + telegraphProgress * 0.18 + recoilProgress * 0.3 + phaseProgress * 0.08;
+        node.barrel.y = -recoilProgress * radius * 0.045;
+      }
+      if (node.core) {
+        node.core.alpha = 0.36 + telegraphProgress * 0.34 + recoilProgress * 0.2;
+        node.core.scale.set(1 + telegraphProgress * 0.42 + phaseProgress * 0.18);
+      }
       if (archetype === 'needle' && index === 1) {
         node.y -= radius * (0.08 + telegraphProgress * 0.06);
       }
@@ -723,6 +1157,24 @@ export class Boss {
       recoilProgress,
       phaseProgress,
       telegraphProgress,
+      entryProgress,
+      entryEnergy,
+      impactProgress,
+      deathProgress,
+      rage,
+      presentationState
+    });
+    const auraPrestige = this.drawBossAuraLayers(rig, t, {
+      intensity,
+      telegraphProgress,
+      phaseProgress,
+      hurtProgress,
+      recoilProgress,
+      entryProgress,
+      entryEnergy,
+      impactProgress,
+      deathProgress,
+      rage,
       presentationState
     });
 
@@ -744,6 +1196,20 @@ export class Boss {
       hurt: Number(hurtProgress.toFixed(3)),
       recoil: Number(recoilProgress.toFixed(3)),
       phasePulse: Number(phaseProgress.toFixed(3)),
+      entry: Number(entryProgress.toFixed(3)),
+      death: Number(deathProgress.toFixed(3)),
+      shutterOpen: Number(shutterOpen.toFixed(3)),
+      sidePanelCount: rig.sidePanels?.length || 0,
+      visualRadius: Math.round(this.getVisualRadius()),
+      gameplayRadius: Math.round(this.radius || 0),
+      visualGameplayRadiusRatio: Number((this.getVisualRadius() / Math.max(1, this.radius || 1)).toFixed(3)),
+      aura: Number((Math.min(1, 0.22 + rage * 0.22 + telegraphProgress * 0.26 + phaseProgress * 0.18 + entryEnergy * 0.2 + impactProgress * 0.22)).toFixed(3)),
+      auraWakeRibbonCount: auraPrestige?.auraWakeRibbonCount || 0,
+      weaponChargeRayCount: auraPrestige?.weaponChargeRayCount || 0,
+      panelServoSparkCount: auraPrestige?.panelServoSparkCount || 0,
+      phaseGlyphCount: auraPrestige?.phaseGlyphCount || 0,
+      rageInstabilityCount: auraPrestige?.rageInstabilityCount || 0,
+      polishVersion: BOSS_POLISH_VERSION,
       phase: this.phase
     };
   }
@@ -912,6 +1378,200 @@ export class Boss {
     }
   }
 
+  drawBossAuraLayers(rig, t, state = {}) {
+    const {
+      auraLayer,
+      silhouetteLayer,
+      threatLayer,
+      chargeLayer
+    } = rig || {};
+    if (!auraLayer || !silhouetteLayer || !threatLayer || !chargeLayer) {
+      return {
+        auraWakeRibbonCount: 0,
+        weaponChargeRayCount: 0,
+        panelServoSparkCount: 0,
+        phaseGlyphCount: 0,
+        rageInstabilityCount: 0
+      };
+    }
+
+    auraLayer.clear();
+    silhouetteLayer.clear();
+    threatLayer.clear();
+    chargeLayer.clear();
+
+    const radius = rig.radius;
+    const palette = rig.palette;
+    const accent = rig.accent;
+    const {
+      intensity = 1,
+      telegraphProgress = 0,
+      phaseProgress = 0,
+      hurtProgress = 0,
+      recoilProgress = 0,
+      entryProgress = 1,
+      entryEnergy = 0,
+      impactProgress = 0,
+      deathProgress = 0,
+      rage = 0,
+      presentationState = 'idle'
+    } = state;
+    const charge = Math.max(telegraphProgress, phaseProgress * 0.9, entryEnergy * 0.7, impactProgress, deathProgress * 0.85);
+    const auraAlpha = Math.min(0.72, 0.16 + rage * 0.16 + telegraphProgress * 0.22 + phaseProgress * 0.18 + entryEnergy * 0.16 + impactProgress * 0.2 + deathProgress * 0.24);
+    const pulse = 1 + Math.sin(t * 1.4) * 0.018 * intensity;
+    const slowSpin = t * (this.profile?.archetype === 'clock' ? 0.55 : 0.28);
+    let auraWakeRibbonCount = 0;
+    let weaponChargeRayCount = 0;
+    let panelServoSparkCount = 0;
+    let phaseGlyphCount = 0;
+    let rageInstabilityCount = 0;
+
+    auraLayer.circle(0, 0, radius * (1.1 + rage * 0.12 + charge * 0.22) * pulse);
+    auraLayer.fill({ color: palette, alpha: auraAlpha * 0.16 });
+    auraLayer.circle(0, 0, radius * (1.32 + Math.sin(t * 0.7) * 0.035 + charge * 0.16));
+    auraLayer.stroke({ color: accent, width: 3, alpha: auraAlpha * 0.34 });
+    auraLayer.circle(0, 0, radius * (1.58 + Math.cos(t * 0.52) * 0.045 + phaseProgress * 0.18));
+    auraLayer.stroke({ color: 0xffffff, width: 1.5, alpha: auraAlpha * 0.16 });
+    for (let i = 0; i < 4; i += 1) {
+      const a = -slowSpin * 0.9 + i * Math.PI * 0.5;
+      const inner = radius * (1.04 + charge * 0.08);
+      const mid = radius * (1.28 + charge * 0.16);
+      const outer = radius * (1.5 + charge * 0.22);
+      auraLayer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      auraLayer.lineTo(Math.cos(a + 0.16) * mid, Math.sin(a + 0.16) * mid);
+      auraLayer.lineTo(Math.cos(a + 0.28) * outer, Math.sin(a + 0.28) * outer);
+      auraWakeRibbonCount += 1;
+    }
+    auraLayer.stroke({ color: accent, width: 1.2 + charge * 0.7, alpha: auraAlpha * 0.28 });
+
+    const shadowScale = 1.08 + rage * 0.08 + impactProgress * 0.16 + deathProgress * 0.2;
+    silhouetteLayer.circle(0, radius * 0.06, radius * shadowScale);
+    silhouetteLayer.fill({ color: 0x050712, alpha: 0.18 + rage * 0.06 });
+    silhouetteLayer.circle(0, radius * 0.02, radius * (0.94 + charge * 0.08));
+    silhouetteLayer.stroke({ color: palette, width: 5, alpha: auraAlpha * 0.22 });
+
+    const tickCount = this.profile?.archetype === 'clock' ? 16 : 12;
+    for (let i = 0; i < tickCount; i += 1) {
+      const a = slowSpin + (Math.PI * 2 * i) / tickCount;
+      const inner = radius * (0.92 + charge * 0.06);
+      const outer = radius * (1.1 + charge * 0.18 + ((i + this.phase) % 3 === 0 ? 0.08 : 0));
+      threatLayer.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+      threatLayer.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+    }
+    threatLayer.stroke({ color: accent, width: 1.6 + charge * 1.4, alpha: auraAlpha * (0.3 + charge * 0.24) });
+
+    const glyphCount = this.phase >= 3 ? 6 : 4;
+    for (let i = 0; i < glyphCount; i += 1) {
+      const a = slowSpin * 1.7 + i * (Math.PI * 2 / glyphCount);
+      const r = radius * (1.22 + charge * 0.1 + (i % 2) * 0.06);
+      const tx = -Math.sin(a);
+      const ty = Math.cos(a);
+      const rx = Math.cos(a);
+      const ry = Math.sin(a);
+      const cx = rx * r;
+      const cy = ry * r;
+      const size = 3.5 + charge * 3 + (this.phase - 1);
+      threatLayer.poly([
+        cx + rx * size, cy + ry * size,
+        cx + tx * size * 0.62, cy + ty * size * 0.62,
+        cx - rx * size, cy - ry * size,
+        cx - tx * size * 0.62, cy - ty * size * 0.62
+      ]);
+      phaseGlyphCount += 1;
+    }
+    threatLayer.fill({ color: 0xffffff, alpha: auraAlpha * 0.18 + phaseProgress * 0.1 });
+
+    if (charge > 0.08) {
+      for (const node of rig.weaponNodes || []) {
+        chargeLayer.moveTo(node.x * 0.2, node.y * 0.2);
+        chargeLayer.lineTo(node.x * 0.92, node.y * 0.92);
+        weaponChargeRayCount += 1;
+      }
+      chargeLayer.stroke({ color: 0xffffff, width: 0.9 + charge * 1.1, alpha: 0.12 + charge * 0.2 });
+    }
+
+    const servoAlpha = Math.max(charge * 0.22, hurtProgress * 0.26, rage * 0.08);
+    if (servoAlpha > 0.03) {
+      for (const panel of rig.sidePanels || []) {
+        const x = panel.x + (panel.side || 1) * radius * 0.08;
+        const y = panel.y + Math.sin(t + (panel.index || 0)) * radius * 0.018;
+        chargeLayer.circle(x, y, 1.8 + charge * 2.2 + ((panel.index || 0) % 2) * 0.4);
+        panelServoSparkCount += 1;
+      }
+      chargeLayer.fill({ color: accent, alpha: servoAlpha });
+    }
+
+    if (charge > 0.04 || presentationState === 'death') {
+      const ringCount = presentationState === 'death' ? 4 : 3;
+      for (let i = 0; i < ringCount; i += 1) {
+        const p = (charge + i * 0.22 + t * 0.055) % 1;
+        const r = radius * (0.52 + p * (0.98 + impactProgress * 0.25));
+        chargeLayer.circle(0, 0, r);
+        chargeLayer.stroke({
+          color: i % 2 === 0 ? accent : 0xffffff,
+          width: Math.max(1, 3 - i * 0.45 + telegraphProgress * 1.2),
+          alpha: (0.26 - i * 0.035) * Math.max(charge, 0.25)
+        });
+      }
+
+      const arcCount = this.profile?.archetype === 'carrier' ? 6 : 5;
+      for (let i = 0; i < arcCount; i += 1) {
+        const a = -slowSpin * 1.4 + i * ((Math.PI * 2) / arcCount);
+        const r1 = radius * (0.28 + charge * 0.12);
+        const r2 = radius * (0.82 + charge * 0.34);
+        const bend = 0.24 + Math.sin(t + i) * 0.08;
+        chargeLayer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+        chargeLayer.lineTo(Math.cos(a + bend) * r2, Math.sin(a + bend) * r2);
+      }
+      chargeLayer.stroke({ color: palette, width: 2.2 + telegraphProgress * 1.4, alpha: 0.22 + charge * 0.34 });
+    }
+
+    if (hurtProgress > 0 || recoilProgress > 0) {
+      const flash = Math.max(hurtProgress, recoilProgress * 0.7);
+      for (let i = 0; i < 6; i += 1) {
+        const a = t * 1.3 + i * Math.PI / 3;
+        const r1 = radius * (0.32 + flash * 0.08);
+        const r2 = radius * (0.98 + flash * 0.18);
+        threatLayer.moveTo(Math.cos(a) * r1, Math.sin(a) * r1);
+        threatLayer.lineTo(Math.cos(a + 0.04) * r2, Math.sin(a + 0.04) * r2);
+      }
+      threatLayer.stroke({ color: 0xffffff, width: 2.2, alpha: 0.22 + flash * 0.34 });
+    }
+
+    if (rage > 0.38 || presentationState === 'death') {
+      const staticCount = presentationState === 'death' ? 10 : 6;
+      for (let i = 0; i < staticCount; i += 1) {
+        const a = slowSpin * -1.2 + i * (Math.PI * 2 / staticCount);
+        const r = radius * (0.76 + (i % 3) * 0.16 + rage * 0.18);
+        const tx = -Math.sin(a) * (4 + rage * 6);
+        const ty = Math.cos(a) * (4 + rage * 6);
+        const cx = Math.cos(a) * r;
+        const cy = Math.sin(a) * r;
+        threatLayer.moveTo(cx - tx, cy - ty);
+        threatLayer.lineTo(cx + tx, cy + ty);
+        rageInstabilityCount += 1;
+      }
+      threatLayer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.1 + rage * 0.18 + deathProgress * 0.18 });
+    }
+
+    if (entryProgress < 1 || impactProgress > 0 || deathProgress > 0) {
+      const entryAlpha = Math.max(entryEnergy, impactProgress) * 0.42;
+      const deathAlpha = deathProgress * (1 - deathProgress * 0.45) * 0.48;
+      chargeLayer.circle(0, 0, radius * (1.72 - entryProgress * 0.36 + impactProgress * 0.45 + deathProgress * 0.72));
+      chargeLayer.stroke({ color: accent, width: 5 + deathProgress * 3, alpha: Math.max(entryAlpha, deathAlpha) });
+      chargeLayer.circle(0, 0, radius * (1.1 + entryEnergy * 0.35 + deathProgress * 0.48));
+      chargeLayer.stroke({ color: 0xffffff, width: 2 + deathProgress * 2, alpha: Math.max(entryAlpha * 0.72, deathAlpha * 0.7) });
+    }
+
+    return {
+      auraWakeRibbonCount,
+      weaponChargeRayCount,
+      panelServoSparkCount,
+      phaseGlyphCount,
+      rageInstabilityCount
+    };
+  }
+
   getAnimationDebugState() {
     return this.animationDebug || null;
   }
@@ -1024,14 +1684,62 @@ export class Boss {
     return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
   }
 
+  getEarlyBossDifficultyScalar() {
+    const diff = BalanceConfig.difficulty || {};
+    const maxLevel = Math.max(1, Math.round(Number(diff.bossEarlyDifficultyMaxLevel) || 0));
+    if (this.level > maxLevel) return 1;
+    const scalar = Number(diff.bossEarlyDifficultyScalar);
+    return Number.isFinite(scalar) ? clamp(scalar, 0.2, 1) : 1;
+  }
+
+  getCombinedBossDifficultyScalar() {
+    return this.getEarlyBossDifficultyScalar() * this.getPostFirstBossDifficultyScalar();
+  }
+
+  getRunModeBossDifficultyMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    return clamp(finiteNumber(profile?.bossDifficultyMult, 1), 0.1, 2);
+  }
+
+  getRunModeBossAttackDangerMultiplier() {
+    const profile = this.game?.getRunModeProfile?.() || null;
+    const hpMultiplier = this.getRunModeBossDifficultyMultiplier();
+    const attackMultiplier = clamp(finiteNumber(profile?.bossAttackDangerMult, 1), 0.1, 2);
+    const threatResponseMultiplier = clamp(finiteNumber(this.game?.threatResponse?.bossAttackDangerMult, 1), 1, 1.2);
+    return clamp(hpMultiplier * attackMultiplier * threatResponseMultiplier, 0.1, 2.2);
+  }
+
+  getBossProfileRelief() {
+    const fairness = BalanceConfig.difficulty?.bossFairness || {};
+    const profile = this.profile || getBossProfile(this.level);
+    const relief = fairness.profileRelief?.[profile?.id] || null;
+    if (!relief) return null;
+    const minLevel = Math.max(1, Math.floor(finiteNumber(relief.minLevel, 1)));
+    const maxLevel = Math.max(minLevel, Math.floor(finiteNumber(relief.maxLevel, this.level)));
+    return this.level >= minLevel && this.level <= maxLevel ? relief : null;
+  }
+
+  getBossProfileReliefNumber(key, fallback = 1) {
+    const relief = this.getBossProfileRelief();
+    return relief ? finiteNumber(relief[key], fallback) : fallback;
+  }
+
+  getOpeningAttackDelayMs() {
+    const base = this.level <= 1 ? 1800 : 1400;
+    return Math.max(base, Math.round(this.getBossProfileReliefNumber('openingAttackDelayMs', base)));
+  }
+
   getBossPressureScalar() {
     let scalar = 1;
-    if (this.level <= 1) scalar = 0.78;
+    if (this.level <= 1) scalar = 0.58;
     else if (this.level === 2) scalar = 0.88;
     else if (this.level <= 4) scalar = 0.92;
     else if (this.level <= 6) scalar = 0.96;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 0.72 : 1;
-    return scalar * this.getPostFirstBossDifficultyScalar() * chaosRelief;
+    return scalar *
+      this.getCombinedBossDifficultyScalar() *
+      chaosRelief *
+      clamp(this.getBossProfileReliefNumber('pressureScalarMult', 1), 0.2, 1.2);
   }
 
   getPhaseShootDelay(phase) {
@@ -1042,7 +1750,10 @@ export class Boss {
         ? diff.bossShootDelayPhase2
         : diff.bossShootDelayPhase3;
     const openingDelayScalar = this.level <= 1 ? 1.55 : this.level === 2 ? 1.2 : 1;
-    return (baseDelay * openingDelayScalar) / this.getPostFirstBossDifficultyScalar();
+    return (baseDelay * openingDelayScalar) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossAttackDangerMultiplier()
+    );
   }
 
   getBossProjectileSpeed(phase) {
@@ -1057,7 +1768,7 @@ export class Boss {
     return Math.min(
       diff.bossProjectileSpeedMax ?? Number.POSITIVE_INFINITY,
       baseSpeed + levelScale * (diff.bossProjectileSpeedPerLevel ?? 0)
-    ) * (fairness.globalProjectileMultiplier ?? 1);
+    ) * (fairness.globalProjectileMultiplier ?? 1) * this.getRunModeBossAttackDangerMultiplier();
   }
 
   getBossAttackSpeedMultiplier(attackType = 'normal') {
@@ -1075,17 +1786,47 @@ export class Boss {
   }
 
   getRegularAttackIntervalMs() {
-    const base = this.level <= 1 ? 2200 : this.level === 2 ? 2400 : 2700;
-    const phaseScalar = this.phase === 1 ? 1 : this.phase === 2 ? 0.95 : 0.9;
+    const base = this.level <= 1 ? 3800 : this.level === 2 ? 2580 : 2920;
+    const phaseScalar = this.level <= 1
+      ? (this.phase === 1 ? 1 : 1.28)
+      : this.phase === 2 ? 0.95 : 0.9;
     const chaosRelief = Date.now() < (this.chaosPressureReliefUntilMs || 0) ? 1.45 : 1;
-    return Math.round((base * phaseScalar * chaosRelief) / this.getPostFirstBossDifficultyScalar());
+    const reliefMult = clamp(this.getBossProfileReliefNumber('regularAttackIntervalMult', 1), 0.5, 2);
+    return Math.round(((base * phaseScalar * chaosRelief) / (
+      this.getCombinedBossDifficultyScalar() *
+      this.getRunModeBossAttackDangerMultiplier()
+    )) * reliefMult);
   }
 
   getRegularTelegraphDurationMs() {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    if (this.level <= 2) return fairness.regularTelegraphEarlyMs ?? 960;
-    if (this.level <= 8) return fairness.regularTelegraphMidMs ?? 880;
-    return fairness.regularTelegraphLateMs ?? 780;
+    const base = this.level <= 2
+      ? (fairness.regularTelegraphEarlyMs ?? 960)
+      : this.level <= 8
+        ? (fairness.regularTelegraphMidMs ?? 880)
+        : (fairness.regularTelegraphLateMs ?? 780);
+    return Math.round(base * clamp(this.getBossProfileReliefNumber('regularTelegraphMult', 1), 0.75, 1.6));
+  }
+
+  applyRecoveryPause(durationMs = 0, reason = 'boss_recovery') {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if (duration <= 0) return 0;
+
+    const now = Date.now();
+    const cooldownFrames = Math.ceil(duration / 16.67);
+    this.regularTelegraph = null;
+    this.telegraph = null;
+    this.clearRegularAttackTelegraphVisual();
+    this.clearTelegraphVisual();
+    this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, now + duration);
+    this.shootCooldown = Math.max(this.shootCooldown || 0, cooldownFrames);
+    this.signatureCooldown = Math.max(this.signatureCooldown || 0, cooldownFrames);
+    if (this.delayedSignature) {
+      this.delayedSignature.dueAt = Math.max(this.delayedSignature.dueAt || 0, now + duration);
+    }
+    this.chaosPressureReliefUntilMs = Math.max(this.chaosPressureReliefUntilMs || 0, now + duration);
+    console.log(`[BossRecoveryPause] level=${this.level} reason=${reason} durationMs=${Math.round(duration)}`);
+    return duration;
   }
 
   getPhasePlan() {
@@ -1154,10 +1895,12 @@ export class Boss {
 
   setRingSafeLane(count = 16, wedge = 0.38) {
     const angle = this.getRingSafeAngle(count);
+    const reliefBonus = this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0);
+    const safeWedge = clamp(Number(wedge) + reliefBonus, 0.1, 1.2);
     this.safeLanes = [this.getSafeLaneHint('ring-wedge', {
       signature: 'ring',
       angle: Number(angle.toFixed(3)),
-      width: Number(wedge.toFixed(3)),
+      width: Number(safeWedge.toFixed(3)),
       label: 'BOTTOM WEDGE'
     })];
   }
@@ -1214,6 +1957,10 @@ export class Boss {
 
   playSignatureTelegraphSfx(type) {
     const family = this.getSignatureSfxFamily(type);
+    AudioManager.playSfx('boss_charge_lattice', {
+      volume: 0.42,
+      minIntervalMs: 720
+    });
     AudioManager.playSfx(`boss_${family}_telegraph`, {
       volume: family === 'beam' ? 0.6 : 0.52,
       minIntervalMs: 640
@@ -1221,23 +1968,42 @@ export class Boss {
   }
 
   startSignatureTelegraph(type, playerX, playerY) {
+    const diagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const fairness = BalanceConfig.difficulty.bossFairness || {};
+    const earlyBoss = this.level <= 2;
     if (type === 'ring' || type === 'adds') {
-      this.setRingSafeLane(type === 'adds' ? 14 : 18, type === 'adds' ? 0.48 : (fairness.ringSafeWedge ?? 0.5));
+      const safeWedge = type === 'adds'
+        ? 0.48
+        : earlyBoss
+          ? (fairness.ringSafeWedgeEarly ?? fairness.ringSafeWedge ?? 0.5)
+          : (fairness.ringSafeWedge ?? 0.5);
+      this.setRingSafeLane(type === 'adds' ? 14 : 18, safeWedge);
     } else {
       const spread = type === 'lance' ? 0.16 : type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
+    const ringTelegraphMs = earlyBoss
+      ? (fairness.signatureRingTelegraphEarlyMs ?? fairness.signatureRingTelegraphMs ?? 1220)
+      : (fairness.signatureRingTelegraphMs ?? 1220);
+    const aimedTelegraphMs = earlyBoss
+      ? (fairness.signatureTelegraphEarlyMs ?? fairness.signatureTelegraphMs ?? 1120)
+      : (fairness.signatureTelegraphMs ?? 1120);
+    const telegraphReliefMult = clamp(this.getBossProfileReliefNumber('signatureTelegraphMult', 1), 0.75, 1.7);
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: type === 'ring' || type === 'adds'
-        ? (fairness.signatureRingTelegraphMs ?? 1220)
-        : (fairness.signatureTelegraphMs ?? 1120)
+      duration: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult)
     };
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
+    diagnostics?.mark?.('boss_event_telegraph_start', {
+      kind: 'boss_signature',
+      type,
+      level: this.level,
+      duration: this.telegraph.duration
+    });
     if (playScene?.enqueueToast) {
       playScene.enqueueToast(this.telegraph.label, {
         fontSize: 18,
@@ -1248,20 +2014,201 @@ export class Boss {
       });
     }
     this.playSignatureTelegraphSfx(type);
-    this.updateTelegraphVisual(0, playerX, playerY);
+    measurePerformance('boss_event_telegraph_start.visual_creation', () => this.updateTelegraphVisual(0, playerX, playerY));
+  }
+
+  drawTelegraphMuzzleCharge(layer, originX, originY, radius, color, progress) {
+    if (!layer) return;
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.024) * 0.5;
+    const charge = clamp(progress, 0, 1);
+    for (let i = 0; i < 3; i += 1) {
+      const ring = radius * (0.24 + i * 0.15 + charge * 0.1 + pulse * 0.025);
+      layer.circle(originX, originY, ring);
+      layer.stroke({
+        color: i === 1 ? 0xffffff : color,
+        width: 1.4 + charge * 1.6,
+        alpha: (0.2 + charge * 0.24) / (i + 1)
+      });
+    }
+    const sparks = 8;
+    for (let i = 0; i < sparks; i += 1) {
+      const angle = (Math.PI * 2 * i) / sparks + now * 0.004;
+      const distance = radius * (0.26 + charge * 0.28 + (i % 2) * 0.08);
+      layer.circle(
+        originX + Math.cos(angle) * distance,
+        originY + Math.sin(angle) * distance,
+        1.8 + charge * 2.2
+      );
+    }
+    layer.fill({ color: 0xffffff, alpha: 0.08 + charge * 0.14 });
+  }
+
+  getTelegraphVfxPalette(type, fallbackColor) {
+    if (type === 'lance') return { warning: 0x72fff1, hot: 0xffffff, edge: 0xff4fe4 };
+    if (type === 'mirror') return { warning: 0xff6fff, hot: 0xffffff, edge: 0x74fff0 };
+    if (type === 'cone' || type === 'fan' || type === 'aim') return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0xffa83d };
+    if (type === 'wall') return { warning: 0xff8f3d, hot: 0xffffff, edge: 0x8cffb5 };
+    if (type === 'ring' || type === 'adds' || type === 'radial') return { warning: fallbackColor || 0xff3355, hot: 0xffffff, edge: 0xffe066 };
+    return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0x72fff1 };
+  }
+
+  drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const now = Date.now();
+    const pulse = 0.5 + Math.sin(now * 0.032) * 0.5;
+    const warning = palette?.warning || 0xfff45c;
+    const hot = palette?.hot || 0xffffff;
+    const edge = palette?.edge || warning;
+    const scale = Number.isFinite(options.scale) ? options.scale : 1;
+    const base = Math.max(14, radius * scale);
+    const ringCount = Math.max(2, Math.floor(options.rings || 3));
+
+    for (let i = 0; i < ringCount; i += 1) {
+      const ringProgress = (charge * 0.7 + pulse * 0.18 + i * 0.22) % 1;
+      const r = base * (0.78 + i * 0.23 + ringProgress * 0.2);
+      layer.circle(originX, originY, r);
+      layer.stroke({
+        color: i === ringCount - 1 ? edge : warning,
+        width: 2 + charge * 2.8,
+        alpha: (0.18 + charge * 0.24) / (1 + i * 0.22)
+      });
+    }
+
+    const spokes = Math.max(8, Math.floor(options.spokes || 12));
+    const rotation = now * 0.0035 * (options.reverse ? -1 : 1);
+    for (let i = 0; i < spokes; i += 1) {
+      const angle = (Math.PI * 2 * i) / spokes + rotation;
+      const inner = base * (0.48 + charge * 0.08);
+      const outer = base * (0.92 + charge * 0.48 + (i % 2) * 0.12);
+      layer.moveTo(originX + Math.cos(angle) * inner, originY + Math.sin(angle) * inner);
+      layer.lineTo(originX + Math.cos(angle) * outer, originY + Math.sin(angle) * outer);
+    }
+    layer.stroke({ color: edge, width: 1.6 + charge * 1.8, alpha: 0.16 + charge * 0.22 });
+
+    const nodes = Math.max(6, Math.floor(options.nodes || 10));
+    for (let i = 0; i < nodes; i += 1) {
+      const angle = (Math.PI * 2 * i) / nodes - rotation * 1.4;
+      const distance = base * (0.78 + charge * 0.28 + ((i + 1) % 3) * 0.04);
+      layer.circle(
+        originX + Math.cos(angle) * distance,
+        originY + Math.sin(angle) * distance,
+        2.6 + charge * 3.4 + pulse * 1.4
+      );
+    }
+    layer.fill({ color: hot, alpha: 0.08 + charge * 0.18 });
+  }
+
+  drawTelegraphReleaseGate(layer, originX, originY, angle, length, spread, palette, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const warning = palette?.warning || 0xfff45c;
+    const hot = palette?.hot || 0xffffff;
+    const edge = palette?.edge || warning;
+    const laneSpread = Math.max(0.02, Math.abs(spread || 0.12));
+    const t = Number.isFinite(options.t) ? options.t : (0.26 + charge * 0.58);
+    const centerX = originX + Math.cos(angle) * length * t;
+    const centerY = originY + Math.sin(angle) * length * t;
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
+    const gateWidth = Math.max(18, length * t * Math.sin(laneSpread * 0.5) * (options.widthMult || 0.92));
+
+    layer.moveTo(centerX - px * gateWidth, centerY - py * gateWidth);
+    layer.lineTo(centerX + px * gateWidth, centerY + py * gateWidth);
+    layer.stroke({ color: hot, width: 2.8 + charge * 4, alpha: 0.28 + charge * 0.34 });
+    layer.moveTo(centerX - px * gateWidth * 0.72, centerY - py * gateWidth * 0.72);
+    layer.lineTo(centerX + px * gateWidth * 0.72, centerY + py * gateWidth * 0.72);
+    layer.stroke({ color: edge, width: 1.8 + charge * 2.2, alpha: 0.32 + charge * 0.38 });
+
+    const chevrons = Math.max(2, Math.floor(options.chevrons || 3));
+    for (let i = 0; i < chevrons; i += 1) {
+      const ct = Math.min(0.96, t + i * 0.055);
+      const cx = originX + Math.cos(angle) * length * ct;
+      const cy = originY + Math.sin(angle) * length * ct;
+      const size = 10 + charge * 10 + i * 2;
+      layer.moveTo(cx - Math.cos(angle) * size + px * size * 0.58, cy - Math.sin(angle) * size + py * size * 0.58);
+      layer.lineTo(cx + Math.cos(angle) * size, cy + Math.sin(angle) * size);
+      layer.lineTo(cx - Math.cos(angle) * size - px * size * 0.58, cy - Math.sin(angle) * size - py * size * 0.58);
+    }
+    layer.stroke({ color: warning, width: 1.7 + charge * 1.4, alpha: 0.24 + charge * 0.24 });
+  }
+
+  drawTelegraphLaneCharge(layer, originX, originY, angle, length, lanes, spread, color, progress, options = {}) {
+    if (!layer || !Array.isArray(lanes) || lanes.length === 0) return;
+    const nodeCount = Math.max(2, Math.floor(options.nodeCount || 4));
+    const start = Number.isFinite(options.start) ? options.start : 0.18;
+    const span = Number.isFinite(options.span) ? options.span : 0.74;
+    const size = Number.isFinite(options.size) ? options.size : 3.2;
+    const charge = clamp(progress, 0, 1);
+    for (let laneIndex = 0; laneIndex < lanes.length; laneIndex += 1) {
+      const lane = lanes[laneIndex];
+      const laneAngle = angle + lane * spread;
+      for (let i = 0; i < nodeCount; i += 1) {
+        const travel = (charge * 0.88 + i / nodeCount + laneIndex * 0.09) % 1;
+        const t = start + travel * span;
+        const x = originX + Math.cos(laneAngle) * length * t;
+        const y = originY + Math.sin(laneAngle) * length * t;
+        const glow = clamp(1 - Math.abs(travel - 0.42) * 1.7, 0.18, 1);
+        layer.circle(x, y, size * (0.65 + glow * 0.55 + charge * 0.2));
+      }
+    }
+    layer.fill({ color, alpha: 0.1 + charge * 0.18 });
+    for (const lane of lanes) {
+      const laneAngle = angle + lane * spread;
+      const t = 0.1 + charge * 0.72;
+      const x = originX + Math.cos(laneAngle) * length * t;
+      const y = originY + Math.sin(laneAngle) * length * t;
+      layer.circle(x, y, size * (0.45 + charge * 0.7));
+    }
+    layer.fill({ color: 0xffffff, alpha: 0.08 + charge * 0.16 });
+  }
+
+  drawTelegraphRingCharge(layer, originX, originY, inner, outer, color, progress, options = {}) {
+    if (!layer) return;
+    const charge = clamp(progress, 0, 1);
+    const now = Date.now();
+    const centerY = Number.isFinite(options.centerY) ? options.centerY : 0;
+    const arcCount = Math.max(1, Math.floor(options.arcCount || 3));
+    const nodeCount = Math.max(6, Math.floor(options.nodeCount || 12));
+    for (let i = 0; i < arcCount; i += 1) {
+      const radius = inner + (outer - inner) * (0.28 + i * 0.24 + charge * 0.08);
+      const start = now * (0.0014 + i * 0.00035) + i * 1.7;
+      const sweep = 0.55 + charge * 0.5;
+      layer.arc(originX, originY + centerY, radius, start, start + sweep);
+      layer.arc(originX, originY + centerY, radius, start + Math.PI, start + Math.PI + sweep * 0.72);
+      layer.stroke({
+        color: i % 2 ? 0xffffff : color,
+        width: 2 + charge * 2,
+        alpha: 0.12 + charge * 0.2
+      });
+    }
+    for (let i = 0; i < nodeCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / nodeCount - now * 0.002 + charge * 1.2;
+      const radius = inner + (outer - inner) * (0.46 + ((i % 3) - 1) * 0.08);
+      layer.circle(
+        originX + Math.cos(angle) * radius,
+        originY + centerY + Math.sin(angle) * radius,
+        2.2 + charge * 2.8
+      );
+    }
+    layer.fill({ color: 0xffffff, alpha: 0.08 + charge * 0.14 });
   }
 
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
 
-    const warningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
+    const baseWarningColor = this.telegraph.type === 'ring' || this.telegraph.type === 'adds'
       ? (this.profile?.accent || 0xff3355)
       : (this.profile?.palette || 0xfff45c);
+    const palette = this.getTelegraphVfxPalette(this.telegraph.type, baseWarningColor);
+    const warningColor = palette.warning;
     const fillAlpha = 0.28 + progress * 0.16;
     const laneAlpha = 0.54 + progress * 0.24;
     const pulse = 1 + Math.sin(Date.now() * 0.024) * 0.08;
     const originX = 0;
     const originY = 0;
+    const visualRadius = this.getVisualRadius();
     this.updateHealthBar();
     const warningLayer = this.healthBar;
     if (!warningLayer) return;
@@ -1269,7 +2216,7 @@ export class Boss {
     if (this.telegraph.type === 'cone' || this.telegraph.type === 'mirror' || this.telegraph.type === 'lance') {
       const angle = Math.atan2(playerY - this.y, playerX - this.x);
       const spread = this.telegraph.type === 'lance' ? 0.16 : this.telegraph.type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
-      const length = Math.max(this.radius * 2.8, 230);
+      const length = Math.max(visualRadius * 2.8, 230);
       const steps = 8;
       const points = [originX, originY];
       for (let i = 0; i <= steps; i++) {
@@ -1286,7 +2233,7 @@ export class Boss {
       const lanes = this.telegraph.type === 'lance' ? [-0.08, 0, 0.08] : [-0.5, -0.22, 0.22, 0.5];
       for (const lane of lanes) {
         const a = angle + lane * spread;
-        warningLayer.moveTo(originX + Math.cos(a) * this.radius * 0.7, originY + Math.sin(a) * this.radius * 0.7);
+        warningLayer.moveTo(originX + Math.cos(a) * visualRadius * 0.7, originY + Math.sin(a) * visualRadius * 0.7);
         warningLayer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
       }
       warningLayer.stroke({ color: warningColor, width: 2 + progress * 2, alpha: laneAlpha });
@@ -1303,12 +2250,26 @@ export class Boss {
         warningLayer.lineTo(cx + px * band, cy + py * band);
       }
       warningLayer.stroke({ color: 0xffffff, width: 1.4 + progress, alpha: 0.2 + progress * 0.18 });
-      warningLayer.circle(originX, originY, this.radius * (0.32 + progress * 0.16));
+      warningLayer.circle(originX, originY, visualRadius * (0.32 + progress * 0.16));
       warningLayer.fill({ color: warningColor, alpha: 0.18 + progress * 0.1 });
-      warningLayer.circle(originX, originY, this.radius * (0.18 + progress * 0.08));
+      warningLayer.circle(originX, originY, visualRadius * (0.18 + progress * 0.08));
       warningLayer.fill({ color: 0xffffff, alpha: 0.18 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY, visualRadius, palette, progress, {
+        scale: this.telegraph.type === 'lance' ? 1.24 : 1.08,
+        spokes: this.telegraph.type === 'lance' ? 14 : 12,
+        nodes: this.telegraph.type === 'lance' ? 12 : 10
+      });
+      this.drawTelegraphReleaseGate(warningLayer, originX, originY, angle, length * pulse, spread, palette, progress, {
+        widthMult: this.telegraph.type === 'lance' ? 0.36 : 0.9,
+        chevrons: this.telegraph.type === 'lance' ? 4 : 3
+      });
+      this.drawTelegraphLaneCharge(warningLayer, originX, originY, angle, length * pulse, lanes, spread, warningColor, progress, {
+        nodeCount: this.telegraph.type === 'lance' ? 5 : 4,
+        size: this.telegraph.type === 'lance' ? 3.6 : 3
+      });
+      this.drawTelegraphMuzzleCharge(warningLayer, originX, originY, visualRadius, warningColor, progress);
     } else {
-      const maxRadius = Math.max(this.radius * 2.15, 170);
+      const maxRadius = Math.max(visualRadius * 2.15, 170);
       const innerRadius = maxRadius * 0.46;
       const outer = maxRadius * (0.72 + progress * 0.34) * pulse;
       const inner = innerRadius * (0.8 + progress * 0.16);
@@ -1334,6 +2295,18 @@ export class Boss {
         warningLayer.circle(originX + Math.cos(a) * nodeR, originY + 18 + Math.sin(a) * nodeR, 4 + progress * 3);
       }
       warningLayer.fill({ color: 0xffffff, alpha: 0.16 + progress * 0.16 });
+      this.drawTelegraphChargeHalo(warningLayer, originX, originY + 18, visualRadius * 1.2, palette, progress, {
+        scale: 1.26,
+        rings: 4,
+        spokes: 16,
+        nodes: 14,
+        reverse: true
+      });
+      this.drawTelegraphRingCharge(warningLayer, originX, originY, inner, outer, warningColor, progress, {
+        centerY: 18,
+        arcCount: 3,
+        nodeCount: 14
+      });
     }
 
     if (this.nameText) {
@@ -1392,43 +2365,75 @@ export class Boss {
     layer.clear();
 
     const warningColor = this.profile?.accent || this.profile?.palette || 0xfff45c;
+    const palette = this.getTelegraphVfxPalette(this.regularTelegraph.type, warningColor);
+    const familyColor = palette.warning;
     const pulse = 1 + Math.sin(Date.now() * 0.03) * 0.06;
     const alpha = 0.18 + progress * 0.34;
     const width = 2 + progress * 2;
     const originX = 0;
     const originY = 18;
+    const visualRadius = this.getVisualRadius();
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
     const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
     const length = Math.max(gameHeight * 0.7, 440);
     const angle = Math.atan2(playerY - this.y, playerX - this.x);
 
     if (this.regularTelegraph.type === 'radial') {
-      const outer = Math.max(this.radius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
+      const outer = Math.max(visualRadius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
       const inner = outer * 0.55;
       layer.circle(originX, originY, outer);
       layer.stroke({ color: warningColor, width: 4, alpha: 0.38 + progress * 0.26 });
       layer.circle(originX, originY, inner);
       layer.stroke({ color: 0xffffff, width: 2, alpha: 0.28 + progress * 0.24 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 1.02, palette, progress, {
+        scale: 1.16,
+        rings: 3,
+        spokes: 14,
+        nodes: 12,
+        reverse: true
+      });
       for (let i = 0; i < 10; i++) {
         const a = (Math.PI * 2 * i) / 10 + progress * 0.45;
         layer.moveTo(originX + Math.cos(a) * (inner + 10), originY + Math.sin(a) * (inner + 10));
         layer.lineTo(originX + Math.cos(a) * (outer - 10), originY + Math.sin(a) * (outer - 10));
       }
       layer.stroke({ color: warningColor, width: 2, alpha: 0.34 + progress * 0.18 });
+      this.drawTelegraphRingCharge(layer, originX, originY, inner, outer, warningColor, progress, {
+        arcCount: 2,
+        nodeCount: 10
+      });
       return;
     }
 
     if (this.regularTelegraph.type === 'wall') {
       const offsets = this.getWallColumnOffsets();
+      const sweepY = originY + visualRadius * 0.42 + length * (0.12 + progress * 0.78);
       for (const x of offsets) {
-        layer.roundRect(x - 7, originY + this.radius * 0.35, 14, length * pulse, 8);
-        layer.fill({ color: warningColor, alpha });
-        layer.moveTo(x, originY + this.radius * 0.2);
+        layer.roundRect(x - 7, originY + visualRadius * 0.35, 14, length * pulse, 8);
+        layer.fill({ color: familyColor, alpha });
+        layer.moveTo(x, originY + visualRadius * 0.2);
         layer.lineTo(x, originY + length * pulse);
       }
       layer.stroke({ color: 0xffffff, width, alpha: 0.34 + progress * 0.26 });
+      for (const x of offsets) {
+        layer.roundRect(x - 20, sweepY - 10, 40, 18, 9);
+        layer.fill({ color: palette.edge, alpha: 0.18 + progress * 0.22 });
+        layer.roundRect(x - 12, sweepY - 5, 24, 10, 5);
+        layer.fill({ color: palette.hot, alpha: 0.16 + progress * 0.3 });
+        layer.moveTo(x - 22, sweepY);
+        layer.lineTo(x + 22, sweepY + 10);
+        layer.moveTo(x - 16, sweepY - 24);
+        layer.lineTo(x + 16, sweepY - 12);
+      }
+      layer.stroke({ color: 0xffffff, width: 2.4 + progress * 1.6, alpha: 0.18 + progress * 0.24 });
+      this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+        scale: 1.06,
+        rings: 2,
+        spokes: 10,
+        nodes: 8
+      });
       const safeColumn = this.getWallSafeColumn() * Math.min(30, gameWidth * 0.035);
-      layer.roundRect(safeColumn - 14, originY + this.radius * 0.4, 28, length * 0.92, 12);
+      layer.roundRect(safeColumn - 14, originY + visualRadius * 0.4, 28, length * 0.92, 12);
       layer.stroke({ color: 0x8cffb5, width: 2, alpha: 0.32 + progress * 0.28 });
       return;
     }
@@ -1439,7 +2444,7 @@ export class Boss {
     const lanes = this.regularTelegraph.type === 'fan' ? [-0.5, -0.25, 0, 0.25, 0.5] : [0];
     for (const lane of lanes) {
       const a = angle + lane * spread;
-      const start = this.radius * 0.55;
+      const start = visualRadius * 0.55;
       layer.moveTo(originX + Math.cos(a) * start, originY + Math.sin(a) * start);
       layer.lineTo(originX + Math.cos(a) * length * pulse, originY + Math.sin(a) * length * pulse);
     }
@@ -1455,6 +2460,21 @@ export class Boss {
       layer.poly(points);
       layer.fill({ color: warningColor, alpha: 0.08 + progress * 0.1 });
     }
+    this.drawTelegraphChargeHalo(layer, originX, originY, visualRadius * 0.92, palette, progress, {
+      scale: this.regularTelegraph.attack === 'sniper' ? 1.18 : 1,
+      rings: 3,
+      spokes: this.regularTelegraph.attack === 'sniper' ? 14 : 10,
+      nodes: this.regularTelegraph.attack === 'sniper' ? 12 : 8
+    });
+    this.drawTelegraphReleaseGate(layer, originX, originY, angle, length * pulse, spread, palette, progress, {
+      widthMult: this.regularTelegraph.attack === 'sniper' ? 0.24 : 0.78,
+      chevrons: this.regularTelegraph.attack === 'sniper' ? 4 : 2
+    });
+    this.drawTelegraphLaneCharge(layer, originX, originY, angle, length * pulse, lanes, spread, warningColor, progress, {
+      nodeCount: this.regularTelegraph.type === 'fan' ? 3 : 4,
+      size: this.regularTelegraph.attack === 'sniper' ? 3.4 : 2.8
+    });
+    this.drawTelegraphMuzzleCharge(layer, originX, originY, visualRadius * 0.72, warningColor, progress);
   }
 
   clearRegularAttackTelegraphVisual() {
@@ -1513,7 +2533,12 @@ export class Boss {
     });
     const safeAngle = this.getRingSafeAngle(count);
     const fairness = BalanceConfig.difficulty.bossFairness || {};
-    const safeWedge = this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5);
+    const safeWedge = clamp(
+      (this.level <= 2 ? (fairness.ringSafeWedgeEarly ?? 0.58) : (fairness.ringSafeWedge ?? 0.5)) +
+        this.getBossProfileReliefNumber('ringSafeWedgeBonus', 0),
+      0.1,
+      1.2
+    );
     this.setRingSafeLane(count, safeWedge);
     for (let i = 0; i < count; i++) {
       if (i % gapSize === 0) continue;
@@ -1593,9 +2618,17 @@ export class Boss {
     };
 
     if (attack === 'fan' || attack === 'burst' || attack === 'fakeout') {
-      const count = this.phase === 1 ? 1 : attack === 'burst' ? 5 : 3;
-      const spread = this.phase === 1 ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
-      const speed = this.getBossProjectileSpeed(this.phase === 1 ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
+      const firstBoss = this.level <= 1;
+      const configuredBurstCount = this.phase >= 3
+        ? this.getBossProfileReliefNumber('burstShotsPhase3', 5)
+        : this.getBossProfileReliefNumber('burstShotsPhase2', 5);
+      const count = this.phase === 1 || firstBoss
+        ? 1
+        : attack === 'burst'
+          ? clamp(Math.round(configuredBurstCount), 1, 5)
+          : 3;
+      const spread = this.phase === 1 || firstBoss ? 0 : attack === 'fakeout' ? 0.46 : 0.34;
+      const speed = this.getBossProjectileSpeed(this.phase === 1 || firstBoss ? 1 : 2) * pressure * this.getBossAttackSpeedMultiplier(attack);
       for (let i = 0; i < count; i++) {
         const t = count === 1 ? 0 : (i / (count - 1)) - 0.5;
         addBullet(this.x, this.y, aimAngle + t * spread, speed);
@@ -1711,46 +2744,78 @@ export class Boss {
     return bullets;
   }
 
+  getArmorBleedThreshold() {
+    const maxHealth = Math.max(1, Number(this.maxHealth) || 1);
+    return Math.max(1, maxHealth * BOSS_ARMOR_BLEED_START_RATIO);
+  }
+
+  getArmorBleedDamageScale(elapsedMs = 0, guideMs = this.armorBleedGuideMs || this.minimumFightMs) {
+    const guide = Math.max(1, Number(guideMs) || this.armorBleedGuideMs || this.minimumFightMs || 1);
+    const progress = clamp((Number(elapsedMs) || 0) / guide, 0, 1);
+    const easedProgress = progress ** 2.35;
+    return clamp(
+      BOSS_ARMOR_BLEED_MIN_SCALE + easedProgress * (BOSS_ARMOR_BLEED_MAX_SCALE - BOSS_ARMOR_BLEED_MIN_SCALE),
+      BOSS_ARMOR_BLEED_MIN_SCALE,
+      BOSS_ARMOR_BLEED_MAX_SCALE
+    );
+  }
+
+  isFinishPacingActive(now = Date.now()) {
+    return Number(now) < (this.finishGateUntilMs || 0);
+  }
+
   takeDamage(amount) {
     const now = Date.now();
     const invuln = now < this.invulnerableUntilMs;
     if (invuln) return false;
+    const rawDamage = Math.max(0, Number(amount) || 0);
+    if (rawDamage <= 0) return false;
+    if (!this.firstDamageAtMs) {
+      this.firstDamageAtMs = now;
+      this.fastKillGuideUntilMs = this.firstDamageAtMs + BOSS_FAST_KILL_GUIDE_MS;
+    }
     const hpBefore = this.health;
-    const elapsed = now - (this.spawnedAtMs || now);
+    const pacingAnchorAt = this.firstDamageAtMs || now;
+    const elapsed = now - pacingAnchorAt;
     const gateActive = now < this.finishGateUntilMs;
-    const minFightMs = Math.max(0, Number(this.minimumFightMs) || 0);
-    const incomingHealth = this.health - amount;
-    if (incomingHealth <= 0 && elapsed < minFightMs) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.min(Math.max(floor, this.health), Math.max(floor, this.maxHealth));
-      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, (this.spawnedAtMs || now) + minFightMs);
+    const guideMs = Math.max(0, Number(this.armorBleedGuideMs || this.minimumFightMs) || 0);
+    const pacingActive = elapsed < guideMs;
+    const healthRatio = this.health / Math.max(1, this.maxHealth || 1);
+    const armorBleedThreshold = this.getArmorBleedThreshold();
+    const projectedFullDamageHealth = this.health - rawDamage;
+    const shouldArmorBleed = pacingActive && (
+      gateActive ||
+      healthRatio <= BOSS_ARMOR_BLEED_START_RATIO ||
+      projectedFullDamageHealth <= armorBleedThreshold
+    );
+    const damageScale = shouldArmorBleed ? this.getArmorBleedDamageScale(elapsed, guideMs) : 1;
+    const fullDamageBeforeBleed = shouldArmorBleed
+      ? Math.max(0, this.health - armorBleedThreshold)
+      : rawDamage;
+    const bleedDamage = shouldArmorBleed
+      ? Math.max(0, rawDamage - fullDamageBeforeBleed)
+      : 0;
+    const effectiveDamage = shouldArmorBleed
+      ? Math.min(rawDamage, fullDamageBeforeBleed + bleedDamage * damageScale)
+      : rawDamage;
+    const incomingHealth = this.health - effectiveDamage;
+    if (shouldArmorBleed) {
+      this.finishGateUntilMs = Math.max(this.finishGateUntilMs || 0, pacingAnchorAt + guideMs);
+      this.finishGateDamageScale = damageScale;
+      this.finishGateLastDamageAt = now;
       this.shootCooldown = Math.max(this.shootCooldown || 0, 80);
       this.signatureCooldown = Math.max(this.signatureCooldown || 0, 180);
       this.regularAttackReadyAt = Math.max(this.regularAttackReadyAt || 0, this.finishGateUntilMs + 500);
-      this.telegraph = null;
-      this.regularTelegraph = null;
-      this.clearTelegraphVisual();
-      this.clearRegularAttackTelegraphVisual();
-      this.updateHealthBar();
-      this.triggerHurtPresentation(amount);
-      this.triggerFinishGatePresentation(this.finishGateUntilMs);
       if (!this.finishGateLogged) {
         this.finishGateLogged = true;
-        console.log(`[BossDamageGate] level=${this.level} elapsedMs=${Math.round(elapsed)} minFightMs=${Math.round(minFightMs)} floor=${floor}`);
+        console.log(`[BossArmorBleed] level=${this.level} elapsedMs=${Math.round(elapsed)} guideMs=${Math.round(guideMs)} threshold=${Math.round(armorBleedThreshold)} scale=${damageScale.toFixed(2)}`);
       }
-      return false;
-    }
-    if (gateActive) {
-      const floor = Math.max(1, Math.ceil(this.maxHealth * 0.055));
-      this.health = Math.max(floor, incomingHealth);
-      this.updateHealthBar();
       this.triggerFinishGatePresentation(this.finishGateUntilMs);
-      return false;
     }
     this.health = incomingHealth;
     this.updateHealthBar();
-    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${amount} hpAfter=${this.health} invuln=${invuln}`);
-    this.triggerHurtPresentation(amount);
+    console.log(`[BossDamage] level=${this.level} hpBefore=${hpBefore} dmg=${rawDamage} effective=${Number(effectiveDamage.toFixed(2))} hpAfter=${this.health} invuln=${invuln} armorBleed=${shouldArmorBleed}`);
+    this.triggerHurtPresentation(effectiveDamage);
 
     if (this.health <= 0) {
       this.triggerDefeatPresentation();

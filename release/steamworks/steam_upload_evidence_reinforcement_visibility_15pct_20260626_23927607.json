@@ -1,0 +1,104 @@
+{
+  "uploadedAtUtc": "2026-06-26T08:27:06Z",
+  "steamBuildId": "23927607",
+  "steamDepotManifestId": "2777092256038632047",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "setLive": "",
+  "branchAssignment": "none",
+  "steamCmdUser": "gaunziman",
+  "steamCmdPath": "D:\\vibe-coding-e\\burt-shooter\\tools\\steamcmd\\steamcmd.exe",
+  "appBuildVdf": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steamworks\\app_build_LOCAL.vdf",
+  "buildOutputDir": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype\\release\\steam-build-output",
+  "sourceCommitForPackage": "33ee2a82616f5c923925b8e8081f8d13262d82ca",
+  "payloadManifestCommitBeforeUpload": "b2fb48268bf438c49663538444626216d5cb4e82",
+  "branch": "codex/reinforcements-15pct-double-boss-20260626",
+  "contentRoot": "release/desktop/win-unpacked",
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 907189013,
+    "generatedAtUtc": "2026-06-26T08:24:39.424Z"
+  },
+  "packageArtifacts": {
+    "exePath": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "exeBytes": 226698752,
+    "exeSha256": "11e904fe26c5da0bf6fdf8d25e5f6968aa6dc97cb78905ff735938c73aee68b7"
+  },
+  "reinforcementTuning": {
+    "mayhemReinforcementChance": 0.15,
+    "bossFightReinforcementChance": 0.15,
+    "doubleWaveChance": 0.08,
+    "doubleWaveDelayMs": 900,
+    "bossWarningLeadMs": 2000,
+    "bossFirstCheckDelayMs": 3500,
+    "bossCheckIntervalMs": 2600,
+    "bossCooldownMs": 9000,
+    "bossMaxEvents": 2,
+    "doubleWaveMinLevel": 8
+  },
+  "checks": [
+    {
+      "command": "npm run check:release-line",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build:current",
+      "result": "passed",
+      "notes": "Existing ascendant fallback-art warnings and Vite large-chunk warning only."
+    },
+    {
+      "command": "npm run package:steam:win:current",
+      "result": "passed",
+      "reports": [
+        "test-results/steam-sdk-ready-2026-06-26T08-20-20-490Z/report.json",
+        "test-results/steam-package-runtime-2026-06-26T08-22-09-342Z/report.json"
+      ]
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "result": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-26T08-22-17-141Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "result": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-06-26T08-23-05-314Z/report.json",
+      "notes": "One earlier perf run failed when the packaged perf harness sampled an accidentally paused window; source commit 33ee2a8 keeps the perf-smoke path unpaused before sampling."
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "result": "passed"
+    },
+    {
+      "command": "$env:STEAM_APP_ID='4765070'; $env:STEAM_DEPOT_ID='4765071'; $env:STEAM_SET_LIVE=''; npm run steamworks:write-vdf",
+      "result": "passed"
+    },
+    {
+      "command": "steamcmd +login gaunziman +run_app_build app_build_LOCAL.vdf +quit",
+      "result": "passed",
+      "buildId": "23927607"
+    }
+  ],
+  "steamCmdLogSummary": {
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "summary": "Successfully finished AppID 4765070 build (BuildID 23927607). Depot 4765071 uploaded manifest 2777092256038632047 with 2 changed files and no added or removed files."
+  },
+  "protectedAreas": {
+    "steamAppIdChanged": false,
+    "steamDepotIdsChanged": false,
+    "leaderboardsChanged": false,
+    "achievementIdsChanged": false,
+    "steamCloudPathsChanged": false,
+    "saveFormatChanged": false,
+    "scoringChanged": false,
+    "xpChanged": false,
+    "storeMetadataChanged": false,
+    "visibilityChanged": false,
+    "releaseBranchesChanged": false,
+    "liveBranchAssignmentChanged": false,
+    "setLiveUsed": false,
+    "dummyScoresSubmitted": false
+  }
+}

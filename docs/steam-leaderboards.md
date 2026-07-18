@@ -7,17 +7,17 @@ The leaderboard screen keeps the same visual deck. Data now flows through `src/l
 ## Runtime Behavior
 
 - Web: `GLOBAL` uses the existing Cloudflare/D1 `/api/highscores`; `LOCAL` uses browser local storage.
-- Steam-capable Electron runtime: `GLOBAL` uses Steam global scores, `FRIENDS` uses Steam friends scores, and `LOCAL` remains available as a backup/history board.
+- Steam-capable Electron runtime: `GLOBAL` uses Steam global scores, `FRIENDS` appears only when Steam returns at least one non-current-player friend score, and `LOCAL` remains available as a backup/history board.
 - Offline/fallback: if no cloud or Steam provider is available, local scores still load and score submission failure never blocks `ONE MORE RUN`.
 - Pre-release score normalization: gameplay score awards are stored, displayed, and submitted at `0.1x` the previous scale using `Math.round`. Local browser and Electron boards moved to v2 storage with low fictional seed scores (`500` through `7900`) so old inflated local rows are not mixed with new runs.
 - App-owned global reset: run `NOVA_SWARM_RESET_LEADERBOARD=I_UNDERSTAND_PRE_RELEASE_RESET npm run leaderboard:reset-pre-release` to delete D1 pre-release rows and seed the same low fictional board. Do this only for pre-release cleanup.
-- Steam migration: no Steam leaderboard migration is required until Steam writes are accepted. Future Steam submissions receive the already-normalized run score from `Game.score`.
+- Steam migration: the runtime default is the metadata-preserving `nova_swarm_global_score_v2` board. Do not point the game back to the legacy `nova_swarm_global_score` board.
 
 ## Steamworks Setup
 
 Create this leaderboard in Steamworks App Admin:
 
-- Internal name: `nova_swarm_global_score`
+- Internal name: `nova_swarm_global_score_v2`
 - Community name: `Global High Score` if the App Admin UI exposes it. The current UI may show this blank while the internal leaderboard exists.
 - Sort method: Descending / Synkende
 - Display type: Numeric / Numerisk
@@ -92,7 +92,7 @@ Checks:
 - `npm run check:steam-sdk-ready` verifies the SDK redistributables and optional native package.
 - `npm run check:steam-electron-bridge` verifies the native adapter contract with a mocked Steamworks SDK, the preload surface, and renderer isolation.
 - `npm run desktop:smoke:current` verifies the Electron app still runs when Steam is unavailable.
-- `npm run probe:steam-leaderboard-live` is a manual live probe for the real `nova_swarm_global_score` leaderboard. It uses the same native adapter as Electron and writes a JSON report under `test-results/`.
+- `npm run probe:steam-leaderboard-live` is a manual live probe for the real `nova_swarm_global_score_v2` leaderboard. It uses the same native adapter as Electron and writes a JSON report under `test-results/`.
 - `npm run probe:steam-leaderboard-electron` is a manual Electron/preload/IPC probe for the same leaderboard. It can run against local Electron or the packaged executable with `-- --packaged`.
 - `npm run steamworks:leaderboard-write-diagnose` is a read-only checklist/report command. It reads local build files, Steam install manifests, and recent probe reports, then prints the exact Steamworks values to verify.
 
@@ -103,7 +103,7 @@ Live probe prerequisites:
 - Steamworks SDK redistributables exist at `steam_sdk/sdk/redistributable_bin/`.
 - `steamworks-ffi-node` is installed through `npm install`.
 
-Current live result from local Node with `steam_appid.txt`: bridge ready, `nova_swarm_global_score` opens, global download succeeds with `0` entries, friends download succeeds with `0` entries, and keep-best upload of score `1` returned `Score upload was not successful`. The no-details variant failed the same way, so metadata formatting is not the likely first blocker. Steam leaderboard read path is verified locally; write path is pending.
+Legacy v1 result from local Node with `steam_appid.txt`: bridge ready, `nova_swarm_global_score` opened, global download succeeded with `0` entries, friends download succeeded with `0` entries, and keep-best upload of score `1` returned `Score upload was not successful`. The live game default is now `nova_swarm_global_score_v2`.
 
 Current Steam-installed result for build `23351534`: the game launches from Steam, shows `GLOBAL / FRIENDS / LOCAL`, friends read works but is empty, local backup saves, and Steam global submission still fails. Steam leaderboard read path is verified in Steam runtime; write path is pending. Upload diagnostics added after this build need a new SteamPipe build before they can prove the raw Steam callback result in the Steam-installed runtime.
 
@@ -123,7 +123,7 @@ The default live probe submits one deliberately low keep-best score of `1` with 
 - `npm run probe:steam-leaderboard-live -- --details=none --score=1` submits without metadata to isolate details formatting.
 - `npm run probe:steam-leaderboard-live -- --details=empty --score=1` submits an empty details array.
 - `npm run probe:steam-leaderboard-live -- --score=1001` submits a custom keep-best score.
-- `npm run probe:steam-leaderboard-live -- --details=none --score=1 --leaderboard=nova_swarm_global_score_v2_test` targets a fresh test leaderboard with the same settings.
+- `npm run probe:steam-leaderboard-live -- --details=none --score=1 --leaderboard=nova_swarm_global_score_v3_test` targets a fresh test leaderboard with the same settings.
 - `npm run probe:steam-leaderboard-live -- --force-update --score=1` is available only for intentional manual diagnosis. Do not use it casually because it can overwrite an existing better score.
 
 Electron runtime probe examples:
@@ -139,7 +139,7 @@ The Electron probe intentionally does not support force update. It records wheth
 Do not spam submissions. Prefer one read-only run, one default keep-best run, then one no-details run if default still fails. Interpret results as:
 
 - Bridge unavailable: check Steam client/login, app access, App ID config, SDK redistributables, and native package install.
-- Leaderboard open failed: confirm `nova_swarm_global_score` exists for App ID `4765070`.
+- Leaderboard open failed: confirm `nova_swarm_global_score_v2` exists for App ID `4765070`.
 - Friends download works but global download fails: the current Steamworks Reader/Leser setting may be limiting global reads; investigate that before deleting or recreating the leaderboard.
 - Local Node reads work but writes fail: test from a Steam-client-installed launch before overfitting code, then verify Steamworks write settings and wrapper upload mapping.
 - Submit succeeds and entries can be downloaded: Steam leaderboard read/write path is verified locally, but the Steam-installed build still needs the manual runtime checklist below.
@@ -148,22 +148,22 @@ SteamPipe status on 2026-05-21: App ID `4765070` and Windows depot ID `4765071` 
 
 Current diagnosis as of build `23352036`: installed Steam manifest matches build `23352036`, local and packaged probes can open/read the leaderboard, and the raw upload callback returns `m_bSuccess: 0` with `details=none`. Details overflow and visible Trusted config are ruled out; the remaining fastest checks are stats readiness, Steam client launch context, package/pre-release entitlement, a fresh v2 leaderboard, or Steam backend rejection. Check only:
 
-- Leaderboard config: `nova_swarm_global_score`, Writer/Skriver `-`, Reader/Leser `-`, Lobby `-`, Sort `Descending`, Display `Numeric`; do not delete/reset/recreate.
+- Leaderboard config: `nova_swarm_global_score_v2`, Writer/Skriver `-`, Reader/Leser `-`, Lobby `-`, Sort `Descending`, Display `Numeric`; do not delete/reset/recreate.
 - RequestCurrentStats/UserStatsReceived_t readiness: the latest probe report must show `requestCurrentStats.ok = true`.
 - Launch context: verify the probe was launched from the Steam client, not only npm/direct Node.
 - Builds: default branch points to `23352036` or newer diagnostics build; do not release/publish or alter pricing/date.
 - Packages: the Dev Comp or Beta Testing package used by `gaunziman` / `EvilEirik` includes app `4765070` and depot `4765071`.
 - Steam client console: `licenses_for_app 4765070` should show the package and depot used by this account.
-- Fresh leaderboard isolation: if `nova_swarm_global_score_v2_test` with the same settings also returns `m_bSuccess: 0`, prepare a Steamworks support ticket with raw callback JSON.
+- Fresh leaderboard isolation: if `nova_swarm_global_score_v3_test` with the same settings also returns `m_bSuccess: 0`, prepare a Steamworks support ticket with raw callback JSON.
 
-For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider and shows `GLOBAL / FRIENDS / LOCAL` tabs.
+For local validation without Steam, open with `?mockSteamLeaderboard=1`. This enables the mock provider. `FRIENDS` appears only after mock friend rows are seeded.
 
 ## Manual Steam Runtime Checklist
 
 1. Install/launch Nova Swarm from Steam client or a Steam runtime test environment.
 2. Confirm Steam overlay works, if overlay support is expected.
 3. Open leaderboard screen.
-4. Confirm tabs show `GLOBAL / FRIENDS / LOCAL`.
+4. Confirm tabs show `GLOBAL / LOCAL`; `FRIENDS` should appear only if the account has friend leaderboard rows for this game.
 5. Confirm `GLOBAL` source label says `Steam Global`.
 6. Confirm `FRIENDS` source label says `Steam Friends`.
 7. Play a short run and die.

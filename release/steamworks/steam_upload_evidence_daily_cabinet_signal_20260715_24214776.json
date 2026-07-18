@@ -1,0 +1,90 @@
+{
+  "generatedAt": "2026-07-15T06:11:54Z",
+  "status": "uploaded_and_set_live_test_branch",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "buildId": "24214776",
+  "sourceCommit": "655e48c915cf5cdfd7faea72981d61ac9d21b81b",
+  "sourceBranch": "codex/daily-cabinet-signal-20260715",
+  "sourceBaseline": "2147e21d2c354c8288e914ae460765cbe55a3ca3",
+  "authoritativeLockTag": "nova-swarm-lock-20260712-tactical-store-refresh",
+  "authoritativeLockCommit": "b80059ae255499e379283bef4e762c5b5901f944",
+  "buildStamp": "v2026-07-15_07-51-09",
+  "testBranch": "sector-continue-test",
+  "setLive": "sector-continue-test",
+  "previousTestBranchBuildId": "24212964",
+  "publicBranchTouched": false,
+  "steamworksSiteOpened": false,
+  "steamworksMetadataTouched": false,
+  "contentRoot": "../desktop/win-unpacked",
+  "vdfPath": "release/steamworks/app_build_LOCAL.vdf",
+  "vdfSha256": "96ee26dc5285430dc29f82496660b11bd2e59b7215384b6d9929da57bab19751",
+  "consoleLogPath": "release/steamworks/steam_upload_console_daily_cabinet_20260715.log",
+  "consoleLogSha256": "f067d268f2f38037e7303f87bf53416134890477cdaee3bb7b7ae364ddf15d9b",
+  "payloadManifestSha256": "884439e0710f99bb0e68651734b3fc743bbaae8676e2e90f1acc81bbdac76003",
+  "desktopReviewSha256": "8d63115a17e6a6b52876abef5ca2c19cbf0385037bed440fd7d635ddf8e3a17d",
+  "payload": {
+    "fileCount": 329,
+    "totalBytes": 952915140,
+    "manifestHash": "c99c0524724fb69bc07462ab3d8f58c3e59c75d8f7dc6b1fd863ae5eabb571aa",
+    "executable": {
+      "path": "Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "6e85f1562efc2881cf8d207e43bec55c34685672cab39812499e289581afe878"
+    }
+  },
+  "uploadProof": {
+    "successLine": "[2026-07-15 08:09:42]: Successfully finished AppID 4765070 build (BuildID 24214776).",
+    "appBuildLogPath": "release/steam-build-output/app_build_4765070.log",
+    "appBuildLogSha256": "e9795589f7a4e7e709ccb3a11aa049111f36ce8ef7656673ac3c696c1b964dcb",
+    "depotBuildLogPath": "release/steam-build-output/depot_build_4765071.log",
+    "depotBuildLogSha256": "a76d858766cd080ca0fc8ca22cfdddbc9d9247a36cc3200a58338400a2b23f7e",
+    "depotManifestId": "2450258030557688080",
+    "cachedLogin": true,
+    "exitCode": 0
+  },
+  "verification": {
+    "sourcePreflight": "passed: isolated source branch was tracked-clean at commit 655e48c before generated release evidence; authoritative lock b80059a remains an ancestor",
+    "releaseLine": "passed before packaging, during packaging, and during VDF generation; all eight locale files, German/top-language polish, Steam Cloud, fullscreen, and temporary marketing hotkey markers present",
+    "sourceBuild": "passed: build v2026-07-15_07-51-09 from gitSha 655e48c; full content, localization, achievement, audio, roster, powerup, Tactical, Fusion, and reinforcement guards passed",
+    "dailyContract": "passed: deterministic UTC rotation, explicit loaner roster, contract hashing, tamper rejection, validity window, expiry, reinforcement sectors, and Super Storm sectors",
+    "dailyRecords": "passed: clear-first ordering, score/sector/time tie breaks, invalid/debug rejection, exact-tie rejection, storage absence, and quota-failure fail-closed behavior",
+    "dailyRuntime": "passed: test-results/run-modes-mayhem-scout-sector-2026-07-15T05-13-16-044Z/report.json; start, locked loaner, failure sector, exact-contract retry, fresh attempt ID, Sector 10 clear, no Sector 11, local record, and unchanged Pure/Tactical/Scout/Sector flows",
+    "tacticalDraft": "passed: test-results/tactical-draft-2026-07-15T05-39-42-264Z/report.json; responsive layout, hold/rescan/ban, animated lock-in, keyboard, pointer, and controller",
+    "runContracts": "passed: test-results/run-contracts-2026-07-15T05-34-24-218Z; Pilot Orders rail and completion presentation",
+    "howToPlay": "passed: test-results/how-to-play-2026-07-15T05-32-00-057Z/report.json; ten PC layouts and corrected run-mode/record truth",
+    "localizedUi": "passed: test-results/i18n-ui-2026-07-15T05-21-29-827Z; all eight supported interface languages with zero placeholders, English leaks, console errors, or page errors",
+    "browserAndController": "passed: test-results/smoke-2026-07-15T05-44-04-668Z/report.json and test-results/controller-only-flow-2026-07-15T05-34-24-040Z",
+    "steamBridge": "passed: native bridge contract, preload surface, renderer isolation, AppID 4765070, and nova_swarm_global_score_v2 contract",
+    "packagedRuntime": "passed: test-results/steam-package-runtime-2026-07-15T06-08-11-121Z/report.json; native Steam module, AppID, leaderboard identity, and Steam redistributables present",
+    "currentElectronSmoke": "passed: test-results/electron-smoke-2026-07-15T06-06-27-189Z/report.json; build v2026-07-15_07-51-09; gitSha 655e48c; Steam identity ready; zero app console events",
+    "packagedSmoke": "passed: test-results/packaged-exe-smoke-2026-07-15T06-02-39-581Z/report.json; build v2026-07-15_07-51-09; zero console events",
+    "packagedControls": "passed: test-results/packaged-control-smoke-2026-07-15T06-02-59-812Z/report.json; keyboard and gamepad movement, fire, and pause",
+    "packagedPerformance": "passed: test-results/packaged-perf-smoke-2026-07-15T06-04-39-613Z/report.json; 58.82 minimum FPS, 59.88 average FPS, 12 samples, zero warnings, and zero errors",
+    "freshProfileSteamIsolation": "passed: test-results/fresh-profile-steam-isolation-2026-07-15T06-03-55-277Z/report.json",
+    "desktopPackageReview": "passed: release/steamworks/desktop_package_review_report.json; current, packaged, controls, and performance reports all match v2026-07-15_07-51-09",
+    "vdfSetLiveTestBranch": "passed: exact SetLive value sector-continue-test; public and default targets absent"
+  },
+  "includedImprovementGroups": [
+    "all improvements and content already present in Steam test BuildID 24212964, including the maximum-WOW reinforcement breach presentation",
+    "a prominent Daily Cabinet Signal with one shared UTC contract, dated loaner ship, route theme, Tactical Drafts, and a clear Sector 10 finish",
+    "three authored daily challenge families: Reinforcement Siege, Crossfire Blackout, and Minefield Audit",
+    "exact-contract retry with a fresh attempt ID, visible expired-contract rejection, and a separate local daily best keyed by date and rules hash",
+    "honest competitive boundaries: no public daily leaderboard before full gameplay determinism, and no Career, checkpoint, Pilot Order, achievement, general leaderboard, or persistent Codex progress",
+    "dedicated Daily clear/failure result identity, correct reached-sector reporting, compact menu briefing, Pilot Orders rail fit, and corrected How to Play run-mode truth",
+    "complete English, German, Spanish, Brazilian Portuguese, Russian, Simplified Chinese, Korean, and Japanese interface copy"
+  ],
+  "knownNonGatingWarnings": [
+    "Five Ascendant ships still use their documented temporary fallback art.",
+    "The main JavaScript chunk remains above the 700 kB advisory threshold.",
+    "The first package attempt stopped before building because this isolated worktree lacked ignored Steam SDK redistributables; verified copies with matching hashes were installed locally and the SDK gate passed.",
+    "The first desktop-package review stopped on a stale pre-stamp Electron smoke; a fresh v2026-07-15_07-51-09 smoke passed and the review then passed.",
+    "Electron and Node emitted existing tooling deprecation advisories; the packaged performance report contained zero game warnings and zero game errors."
+  ],
+  "notes": [
+    "SteamCMD targeted only sector-continue-test through SetLive in the verified VDF.",
+    "The public/default branch, Steamworks site, store metadata, pricing, leaderboard definitions, achievement definitions, and Steam Cloud settings were not changed by this deployment.",
+    "Test-branch rollback target is BuildID 24212964.",
+    "Source rollback is git revert 655e48c915cf5cdfd7faea72981d61ac9d21b81b, followed by reverting the two Daily localization commits if the complete feature must be removed."
+  ]
+}

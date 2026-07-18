@@ -1,0 +1,46 @@
+{
+  "task": "mechanics-fairness-readability-pass",
+  "uploadedAt": "2026-06-24T09:38:16Z",
+  "sourceCommit": "f522114610b1ef5fed44f3f82b2509f653ab320c",
+  "sourceCommitShort": "f522114",
+  "branch": "codex/mechanics-fairness-readability-pass-20260624",
+  "buildVersion": "v2026-06-24_11-29-01",
+  "steamBuildId": "23890725",
+  "appId": "4765070",
+  "depotId": "4765071",
+  "leaderboardIdentity": "nova_swarm_global_score_v2",
+  "vdf": {
+    "path": "release/steamworks/app_build_LOCAL.vdf",
+    "appIdLine": "\"AppID\" \"4765070\"",
+    "depotLine": "\"4765071\"",
+    "contentRootLine": "\"ContentRoot\" \"..\\\\desktop\\\\win-unpacked\"",
+    "setLiveLine": "\"SetLive\" \"\""
+  },
+  "packageProof": {
+    "packageRuntimeReport": "test-results/steam-package-runtime-2026-06-24T09-35-04-087Z/report.json",
+    "packagedSmokeReport": "test-results/packaged-exe-smoke-2026-06-24T09-32-53-884Z/report.json",
+    "packagedPerfReport": "test-results/packaged-perf-smoke-2026-06-24T09-32-53-992Z/report.json",
+    "packagedGitSha": "f522114"
+  },
+  "focusedEvidence": {
+    "fastTargetReadability": "test-results/fast-target-readability-2026-06-24T09-22-06-859Z/report.json",
+    "bossInvulnerabilityAudit": "test-results/boss-invulnerability-audit-2026-06-24T09-22-06-808Z/report.json",
+    "comboFlowMechanics": "test-results/combo-flow-mechanics-2026-06-24T09-22-06-817Z/report.json"
+  },
+  "steamcmd": {
+    "path": "tools/steamcmd/steamcmd.exe",
+    "uploadLog": "test-results/steam-upload-mechanics-fairness-20260624-113550/steamcmd-upload.log",
+    "resultLine": "[2026-06-24 11:38:16]: Successfully finished AppID 4765070 build (BuildID 23890725).",
+    "depotManifest": "2345320528093323637"
+  },
+  "scopeGuard": [
+    "No Steam branch was assigned because SetLive was blank.",
+    "No Steamworks metadata, AppID, depot ID, store visibility, leaderboard identity, achievements metadata, Steam Cloud settings, save format, profile rescue, live saves, or live leaderboard submissions were changed.",
+    "No boss behavior, Scout boss tuning, Sector Run rules, Mayhem recalibration values, score formula, or XP formula were changed.",
+    "The only gameplay-side source change was a bounded generated fast-target hitbox readability floor capped at +3 px; speed, HP, score values, spawns, weapons, and Codex IDs were unchanged."
+  ],
+  "rollback": {
+    "source": "git revert f522114610b1ef5fed44f3f82b2509f653ab320c",
+    "steam": "Do not assign BuildID 23890725, or reassign the private test branch back to the previous desired BuildID."
+  }
+}

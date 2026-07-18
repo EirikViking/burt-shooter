@@ -1,0 +1,51 @@
+{
+  "kind": "steam_upload_evidence",
+  "feature": "spent_powerup_clarity",
+  "recordedAt": "2026-07-05T09:04:15Z",
+  "source": {
+    "repo": "D:\\vibe-coding-e\\nova-swarm-sector-continue-prototype",
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "d9e23106a2fb9a6fd05eb24558f4c9585f177afa",
+    "commitSummary": "Polish spent powerup feedback"
+  },
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24059373",
+    "buildVersion": "v2026-07-05_09-04-29",
+    "buildDescription": "Nova Swarm v2026-07-05_09-04-29 spent powerup clarity d9e2310",
+    "setLive": "",
+    "setLiveBlank": true,
+    "branchAssignedByUpload": false,
+    "publicDefaultAssignedByUpload": false,
+    "manualPublishRequired": true
+  },
+  "artifacts": {
+    "packageRoot": "release/desktop/win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "payloadManifest": "release/steamworks/steam_payload_manifest.json",
+    "appBuildLog": "release/steam-build-output/app_build_4765070.log",
+    "depotBuildLog": "release/steam-build-output/depot_build_4765071.log",
+    "steamCmdLog": "test-results/steam-upload-spent-powerup-clarity-20260705_110230/steamcmd-upload.log"
+  },
+  "checks": [
+    { "command": "npm run check:release-line", "status": "passed" },
+    { "command": "npm run package:steam:win:current", "status": "passed" },
+    { "command": "npm run desktop:smoke:packaged", "status": "passed", "report": "test-results/packaged-exe-smoke-2026-07-05T08-59-57-513Z/report.json" },
+    { "command": "npm run desktop:perf:packaged", "status": "passed", "report": "test-results/packaged-perf-smoke-2026-07-05T09-00-26-242Z/report.json" },
+    { "command": "npm run desktop:controls:packaged", "status": "passed", "report": "test-results/packaged-control-smoke-2026-07-05T09-01-44-926Z/report.json" },
+    { "command": "npm run steamworks:payload-manifest", "status": "passed" },
+    { "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE=\"\" npm run steamworks:write-vdf", "status": "passed" }
+  ],
+  "steamCmd": {
+    "path": "tools\\steamcmd\\steamcmd.exe",
+    "exitCode": 0,
+    "login": "cached gaunziman",
+    "result": "Successfully finished AppID 4765070 build (BuildID 24059373)."
+  },
+  "notes": [
+    "The VDF kept SetLive blank, so this upload did not assign BuildID 24059373 to public/default or any beta branch.",
+    "User requested manual publication after upload.",
+    "If BuildID 24059373 is later assigned manually and must be rolled back, use Steamworks App Admin > SteamPipe > Builds to reassign the target branch to the previous desired BuildID."
+  ]
+}

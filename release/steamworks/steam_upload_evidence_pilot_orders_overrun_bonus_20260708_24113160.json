@@ -1,0 +1,53 @@
+{
+  "status": "uploaded_private_unassigned",
+  "uploadedAt": "2026-07-08T16:44:28Z",
+  "steam": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "buildId": "24113160",
+    "setLive": "",
+    "branchAssignment": "none",
+    "steamworksSettingsChanged": false,
+    "steamCmdUser": "gaunziman",
+    "resultLine": "[2026-07-08 18:44:28]: Successfully finished AppID 4765070 build (BuildID 24113160)."
+  },
+  "source": {
+    "branch": "codex/main-menu-run-contracts-20260702",
+    "commit": "bb6318e12587bbcbfd48eea02b2ee2a8c7bf385e",
+    "summary": "Fix Pilot Orders pills and overrun bonuses"
+  },
+  "build": {
+    "version": "v2026-07-08_18-25-05",
+    "timestamp": "2026-07-08T16:25:05.280Z",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "description": "Nova Swarm Pilot Orders and overrun bonus fix v2026-07-08_18-25-05",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked"
+  },
+  "payload": {
+    "manifest": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 916242442,
+    "manifestHash": "3e73f0fb7caa1921cce2fbc31c4d37b3766df041858599f999e7b88a025f8d4d",
+    "executable": {
+      "path": "release/desktop/win-unpacked/Nova Swarm.exe",
+      "bytes": 226698752,
+      "sha256": "13548f9030917c89e5a2a36b882db91f77721d762cea0d9687f017b6b33fc007"
+    }
+  },
+  "verification": {
+    "releaseLine": "npm run check:release-line",
+    "package": "npm run package:steam:win",
+    "packageRuntimeReport": "test-results/steam-package-runtime-2026-07-08T16-31-33-560Z/report.json",
+    "desktopPackageReview": "release/steamworks/desktop_package_review_report.json",
+    "packagedExeSmoke": "test-results/packaged-exe-smoke-2026-07-08T16-32-01-210Z/report.json",
+    "packagedControlsSmoke": "test-results/packaged-control-smoke-2026-07-08T16-32-01-175Z/report.json",
+    "packagedPerfSmoke": "test-results/packaged-perf-smoke-2026-07-08T16-33-21-099Z/report.json",
+    "currentElectronSmoke": "test-results/electron-smoke-2026-07-08T16-37-03-971Z/report.json",
+    "desktopPackageCheck": "npm run check:desktop-package"
+  },
+  "notes": [
+    "SteamCMD upload used cached credentials and completed successfully.",
+    "The VDF kept SetLive blank, so this upload did not assign the build to a public/default Steam branch.",
+    "No Steamworks store metadata, leaderboard identity, achievement metadata, package dependencies, score identity, or XP identity changes were made as part of the upload evidence."
+  ]
+}

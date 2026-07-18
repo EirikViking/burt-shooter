@@ -1,0 +1,137 @@
+{
+  "kind": "steam_private_upload_evidence",
+  "task": "menu voice hover click overlap fix",
+  "recordedAt": "2026-06-30T13:32:32Z",
+  "repo": "D:/vibe-coding-e/nova-swarm-sector-continue-prototype",
+  "branch": "codex/menu-voice-overlap-fix-20260630",
+  "sourceCommit": "af6b8760ffc341abdb6903cd02ba94dc06e3af3f",
+  "packageManifestCommit": "2ac188564fcab8b4db442e1e929a0e60d0fd3c7f",
+  "build": {
+    "version": "v2026-06-30_15-24-41",
+    "timestamp": "2026-06-30T13:24:41.045Z",
+    "packagedExe": "release/desktop/win-unpacked/Nova Swarm.exe",
+    "packagedExeBytes": 226698752,
+    "packagedExeSha256": "a7fb33d0f17544c8a1562b527f701e40e1404c4a2d39afa5ba0c9e84740c5ebf"
+  },
+  "steamworks": {
+    "appId": "4765070",
+    "depotId": "4765071",
+    "leaderboardName": "nova_swarm_global_score_v2",
+    "setLive": "",
+    "contentRoot": "..\\\\desktop\\\\win-unpacked",
+    "vdf": "release/steamworks/app_build_LOCAL.vdf",
+    "branchAssignedByVdf": false
+  },
+  "payloadManifest": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 336,
+    "totalBytes": 915871406,
+    "manifestHash": "263c6eca7bc576022f27cec6c425016f877e51acfb5d9607cb6e05fe93b532e7",
+    "fileSha256": "ab9ac2fca84d327f2eb45c7ac2bfacf88b03a85687a32728e09d0ad82a0dfb1c"
+  },
+  "verification": [
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:menu-boss-barks",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:menu-voice-overlap",
+      "status": "passed",
+      "report": "test-results/menu-voice-overlap-2026-06-30T13-17-30-894Z/report.json",
+      "screenshot": "test-results/menu-voice-overlap-2026-06-30T13-17-30-894Z/menu-voice-overlap.png"
+    },
+    {
+      "command": "npm run check:i18n",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:i18n-ui",
+      "status": "passed",
+      "report": "test-results/i18n-ui-2026-06-30T13-18-37-732Z"
+    },
+    {
+      "command": "npm run check:controller-flow",
+      "status": "passed",
+      "report": "test-results/controller-only-flow-2026-06-30T13-18-37-758Z"
+    },
+    {
+      "command": "npm run check:steam-electron-bridge",
+      "status": "passed"
+    },
+    {
+      "command": "npm run smoke",
+      "status": "passed",
+      "report": "test-results/smoke-2026-06-30T13-20-14-909Z/report.json"
+    },
+    {
+      "command": "npm run desktop:smoke:current",
+      "status": "passed",
+      "report": "test-results/electron-smoke-2026-06-30T13-20-28-103Z/report.json"
+    },
+    {
+      "command": "npm run build:current",
+      "status": "passed"
+    },
+    {
+      "command": "npm run check:release-line",
+      "status": "passed"
+    },
+    {
+      "command": "npm run package:steam:win",
+      "status": "passed"
+    },
+    {
+      "command": "npm run desktop:smoke:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-exe-smoke-2026-06-30T13-28-03-867Z/report.json"
+    },
+    {
+      "command": "npm run desktop:controls:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-control-smoke-2026-06-30T13-28-03-900Z/report.json"
+    },
+    {
+      "command": "npm run desktop:perf:packaged",
+      "status": "passed",
+      "report": "test-results/packaged-perf-smoke-2026-06-30T13-28-03-900Z/report.json",
+      "minFps": 60.60606060606061,
+      "avgFps": 60.606060606060616,
+      "warnings": []
+    },
+    {
+      "command": "npm run steamworks:payload-manifest",
+      "status": "passed"
+    },
+    {
+      "command": "STEAM_APP_ID=4765070 STEAM_DEPOT_ID=4765071 STEAM_SET_LIVE= npm run steamworks:write-vdf",
+      "status": "passed",
+      "report": "test-results/steam-package-runtime-2026-06-30T13-29-57-093Z/report.json"
+    }
+  ],
+  "steamcmd": {
+    "commandShape": "C:/steamcmd/steamcmd.exe +@ShutdownOnFailedCommand 1 +login <cached-steamworks-user> +run_app_build <repo>/release/steamworks/app_build_LOCAL.vdf +quit",
+    "status": "passed",
+    "privateBuildId": "23984664",
+    "log": "test-results/steam-upload-menu-voice-overlap-20260630-153057/steamcmd.log"
+  },
+  "unchanged": [
+    "No Steam branch assignment",
+    "No public/default SetLive assignment",
+    "No store metadata change",
+    "No AppID or depot ID change",
+    "No leaderboard identity change",
+    "No achievements metadata change",
+    "No Steam Cloud settings change",
+    "No save format change",
+    "No score identity change",
+    "No deploy"
+  ],
+  "rollback": {
+    "source": "git revert af6b8760ffc341abdb6903cd02ba94dc06e3af3f",
+    "steam": "SetLive was blank, so no Steam branch was changed by this upload. If BuildID 23984664 is manually assigned later, reassign the target branch to the previous intended BuildID in Steamworks."
+  }
+}
