@@ -342,6 +342,7 @@ try {
   await tapButton(page, 0);
   const playStarted = await waitForState(page, (state) => state.scene === 'play' && state.player, 'gameplay launched by controller', 30000);
   checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '09-gameplay-launched') });
+  assert(playStarted.runMode === 'ranked_tactical', `Hangar controller launch entered ${playStarted.runMode || 'unknown'} instead of Mayhem Tactical`);
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -412,6 +413,9 @@ try {
   await page.evaluate(() => {
     const game = window.__game;
     if (!game) return;
+    // Keep the manual controller-initials coverage on Mayhem Pure. Tactical
+    // correctly uses Steam persona auto-submission and bypasses name entry.
+    game.runMode = 'ranked';
     game.score = 12000;
     game.level = 4;
     game.rankIndex = Math.max(game.rankIndex || 0, 2);

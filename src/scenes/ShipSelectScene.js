@@ -28,6 +28,7 @@ import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
 import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -3533,7 +3534,7 @@ export class ShipSelectScene {
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
 
     if (DEBUG) console.log(`[ShipSelect] Starting game via ${source}:`, spriteKey);
-    this.game.startGame(spriteKey).catch((error) => {
+    this.game.startGame(spriteKey, { runMode: RUN_MODES.MAYHEM_TACTICAL }).catch((error) => {
       this.launchInProgress = false;
       console.error('[ShipSelect] Failed to start selected ship:', error);
     });

@@ -153,6 +153,16 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterKeyboard = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
+  const detailsShipKey = beforeKeyboard.shipSelect.spriteKey;
+  await page.evaluate(async (spriteKey) => {
+    await window.__game?.showShipDetails?.(spriteKey);
+  }, detailsShipKey);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'shipDetails', { timeout: 10000 });
+  const beforeDetailsStart = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  await page.evaluate(() => window.__game?.currentScene?.startGame?.());
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
+  const afterDetailsStart = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+
   mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'ship-selector-start.png');
   await page.screenshot({ path: screenshot, fullPage: true });
@@ -178,11 +188,18 @@ try {
       beforeClick.shipSelect?.spriteKey &&
       afterClick.scene === 'play' &&
       afterClick.selectedShipSpriteKey === beforeClick.shipSelect.spriteKey &&
+      afterClick.runMode === 'ranked_tactical' &&
       beforeKeyboard.shipSelect?.spriteKey &&
       afterKeyboard.scene === 'play' &&
       afterKeyboard.selectedShipSpriteKey === beforeKeyboard.shipSelect.spriteKey &&
+      afterKeyboard.runMode === 'ranked_tactical' &&
       afterKeyboard.score === 0 &&
       afterKeyboard.lives === 3 &&
+      beforeDetailsStart.scene === 'shipDetails' &&
+      beforeDetailsStart.shipDetails?.spriteKey === detailsShipKey &&
+      afterDetailsStart.scene === 'play' &&
+      afterDetailsStart.selectedShipSpriteKey === detailsShipKey &&
+      afterDetailsStart.runMode === 'ranked_tactical' &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -204,6 +221,7 @@ try {
     afterClick: {
       scene: afterClick.scene,
       selectedShipSpriteKey: afterClick.selectedShipSpriteKey,
+      runMode: afterClick.runMode,
       score: afterClick.score,
       lives: afterClick.lives
     },
@@ -211,8 +229,17 @@ try {
     afterKeyboard: {
       scene: afterKeyboard.scene,
       selectedShipSpriteKey: afterKeyboard.selectedShipSpriteKey,
+      runMode: afterKeyboard.runMode,
       score: afterKeyboard.score,
       lives: afterKeyboard.lives
+    },
+    beforeDetailsStart: beforeDetailsStart.shipDetails,
+    afterDetailsStart: {
+      scene: afterDetailsStart.scene,
+      selectedShipSpriteKey: afterDetailsStart.selectedShipSpriteKey,
+      runMode: afterDetailsStart.runMode,
+      score: afterDetailsStart.score,
+      lives: afterDetailsStart.lives
     },
     pageErrors,
     consoleErrors,
@@ -224,7 +251,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[ship-selector-start] PASS menuOverlay=${afterMenuButton.shipSelect.hangarMenu.visible} escape=${afterEscapeMenu.shipSelect.hangarMenu.visible}->${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey} keyboard=${afterKeyboard.selectedShipSpriteKey} screenshot=${screenshot}`);
+    console.log(`[ship-selector-start] PASS menuOverlay=${afterMenuButton.shipSelect.hangarMenu.visible} escape=${afterEscapeMenu.shipSelect.hangarMenu.visible}->${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey}:${afterClick.runMode} keyboard=${afterKeyboard.selectedShipSpriteKey}:${afterKeyboard.runMode} details=${afterDetailsStart.selectedShipSpriteKey}:${afterDetailsStart.runMode} screenshot=${screenshot}`);
   }
 } finally {
   await browser.close();

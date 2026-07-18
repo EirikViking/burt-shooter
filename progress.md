@@ -1,5 +1,18 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-18 Hangar Tactical launch follow up
+
+- Original follow up prompt: When launching a game from the Hangar, start Mayhem Tactical directly or provide a mode choice, then deploy to Steam and publish the prepared Steam messages.
+- Isolated work started from committed Tyrian communication HEAD `61000872df5c7dcdfcee292350b58ddc54cc54bb` on branch `codex/hangar-tactical-launch-20260718`.
+- Root cause confirmed before the product fix: both `ShipSelectScene.launchSelectedShip()` and `ShipDetailsScene.startGame()` call `Game.startGame()` without `runMode`, so `normalizeRunMode(undefined)` falls back to Mayhem Pure.
+- Extended the existing real browser Hangar launch check to require Mayhem Tactical for mouse, keyboard, and Ship Details launch paths. Product code has not yet been changed at this checkpoint.
+- Baseline browser reproduction failed the new assertions exactly as expected: mouse, keyboard, and Ship Details all entered `runMode: ranked`, confirming Mayhem Pure on every Hangar start path.
+- Applied the narrow product fix: both Hangar start calls now pass the existing `RUN_MODES.MAYHEM_TACTICAL` constant. No mode definitions, score rules, leaderboard routing, save data, achievements, or player facing strings changed.
+- The focused real Chrome check now passes for mouse, keyboard, and Ship Details launch paths with `runMode: ranked_tactical`. Its full game screenshot visibly shows the Tactical directive HUD.
+- The generic web game harness also reached gameplay in `ranked_tactical` with movement and firing active and no page or console errors. Its WebGL canvas screenshot was black, so the repo native full page Chrome capture remains the authoritative visual evidence.
+- Updated the broader controller flow check to assert the Hangar launch is Tactical, then use Mayhem Pure only for its separate manual controller initials subtest. This preserves both launch mode and initials entry coverage because Tactical correctly uses Steam persona auto submission.
+- Focused and adjacent checks passed: release line, current build, ship selector start, run mode identity, run modes, Hangar controller details, controller flow, keyboard launches, browser smoke, current desktop smoke, and Steam Electron bridge.
+
 ## 2026-07-17 Player comprehension and Cabinet Wonders pass (complete, not deployed)
 
 - Continued from the verified clean private test-build lock `fd5d9f79042d78d842a760e6908784bd10375fae` on isolated branch `codex/comprehension-surprises-patchnotes-20260717`; the original dirty repository was not edited.

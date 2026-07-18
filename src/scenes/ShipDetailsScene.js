@@ -18,6 +18,7 @@ import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
+import { RUN_MODES } from '../game/RunMode.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -534,7 +535,7 @@ export class ShipDetailsScene {
         }
         console.log('[ShipDetails] Starting game with ship:', this.spriteKey);
         // Read from state to ensure we have the latest selection
-        this.game.startGame(this.spriteKey);
+        this.game.startGame(this.spriteKey, { runMode: RUN_MODES.MAYHEM_TACTICAL });
     }
 
     cleanup() {
