@@ -118,6 +118,86 @@ try {
   await page.mouse.click(24, 24);
   await page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'BOSS_ACTIVE', null, { timeout: 30000 });
   await page.waitForTimeout(1800);
+  const decisionMatrix = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play) throw new Error('Missing PlayScene for level-clear suppression matrix');
+    const cases = {};
+    const cancelScheduled = () => {
+      play.levelClearVoiceToken = (play.levelClearVoiceToken || 0) + 1;
+    };
+
+    play.lifeLostThisWave = true;
+    play.lastLifeLossAtMs = Date.now() - 10000;
+    cases.diedThisWave = {
+      scheduled: play.playLevelClearVoice({ bossCompletion: false }),
+      decision: structuredClone(play.lastLevelClearVoiceDecision)
+    };
+
+    play.lifeLostThisWave = false;
+    play.lastLifeLossAtMs = Date.now();
+    cases.lifeLossGrace = {
+      scheduled: play.playLevelClearVoice({ bossCompletion: false }),
+      decision: structuredClone(play.lastLevelClearVoiceDecision)
+    };
+
+    play.lifeLostThisWave = false;
+    play.lastLifeLossAtMs = 0;
+    cases.survivedThisWave = {
+      scheduled: play.playLevelClearVoice({ bossCompletion: false }),
+      decision: structuredClone(play.lastLevelClearVoiceDecision)
+    };
+    cancelScheduled();
+
+    play.lifeLostThisWave = false;
+    play.lastLifeLossAtMs = 0;
+    cases.survivedBossClear = {
+      scheduled: play.playLevelClearVoice({ bossCompletion: true }),
+      decision: structuredClone(play.lastLevelClearVoiceDecision)
+    };
+    cancelScheduled();
+
+    play.lifeLostThisWave = true;
+    play.lastLifeLossAtMs = Date.now();
+    play.lastLevelClearVoiceDecision = { status: 'suppressed', reason: 'life_lost_this_wave' };
+    play.lifeLostThisWave = false;
+    play.lastLifeLossAtMs = 0;
+    play.lastLevelClearVoiceDecision = null;
+    cases.retryReset = {
+      scheduled: play.playLevelClearVoice({ bossCompletion: false }),
+      decision: structuredClone(play.lastLevelClearVoiceDecision),
+      lifeLostThisWave: play.lifeLostThisWave,
+      lastLifeLossAtMs: play.lastLifeLossAtMs
+    };
+    cancelScheduled();
+
+    play.lifeLostThisWave = false;
+    play.lastLifeLossAtMs = 0;
+    play.lastLevelClearVoiceDecision = null;
+    return cases;
+  });
+  if (decisionMatrix.diedThisWave.scheduled !== false || decisionMatrix.diedThisWave.decision?.reason !== 'life_lost_this_wave') {
+    throw new Error(`died-this-wave compliment was not suppressed: ${JSON.stringify(decisionMatrix.diedThisWave)}`);
+  }
+  if (decisionMatrix.lifeLossGrace.scheduled !== false || decisionMatrix.lifeLossGrace.decision?.reason !== 'life_loss_grace') {
+    throw new Error(`post-life-loss grace did not suppress compliment: ${JSON.stringify(decisionMatrix.lifeLossGrace)}`);
+  }
+  if (decisionMatrix.survivedThisWave.scheduled !== true || decisionMatrix.survivedThisWave.decision?.status !== 'scheduled') {
+    throw new Error(`survived wave did not schedule compliment: ${JSON.stringify(decisionMatrix.survivedThisWave)}`);
+  }
+  if (
+    decisionMatrix.survivedBossClear.scheduled !== true
+    || decisionMatrix.survivedBossClear.decision?.bossCompletion !== true
+    || decisionMatrix.survivedBossClear.decision?.delayMs < 9000
+  ) {
+    throw new Error(`survived boss clear did not preserve delayed compliment: ${JSON.stringify(decisionMatrix.survivedBossClear)}`);
+  }
+  if (
+    decisionMatrix.retryReset.scheduled !== true
+    || decisionMatrix.retryReset.lifeLostThisWave !== false
+    || decisionMatrix.retryReset.lastLifeLossAtMs !== 0
+  ) {
+    throw new Error(`retry reset left compliment suppression state behind: ${JSON.stringify(decisionMatrix.retryReset)}`);
+  }
   const before = await stateFromPage(page);
 
   await page.evaluate(() => {
@@ -147,6 +227,7 @@ try {
     outputDir,
     beforeAudio: before.audio || null,
     afterAudio: after.audio || null,
+    decisionMatrix,
     lastVoiceEvent: after.audio?.lastVoiceEvent || null,
     lastVoiceTrack: after.audio?.lastVoiceTrack || null,
     consoleEvents,

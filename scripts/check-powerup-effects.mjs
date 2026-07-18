@@ -824,10 +824,185 @@ try {
     });
     const pickupCleanupProbe = { pickupEffectsBeforeCleanup, pickupEffectsAfterCleanup, persistentPickupRings };
 
+    const savedDoubleShotState = {
+      weaponProfile: player.weaponProfile,
+      runAugmentIds: [...(player.runAugmentIds || [])],
+      consumedRunAugmentIds: [...(player.consumedRunAugmentIds || [])],
+      rankBoost: { ...(player.rankBoost || {}) },
+      statusEffects: new Map(player.statusEffects || [])
+    };
+    const configureDoubleShotBuild = ({ baseShots, stacks, rankBoostType = null, activeType = null }) => {
+      resetScene();
+      player.weaponProfile = { ...(savedDoubleShotState.weaponProfile || {}), bullets: baseShots };
+      player.runAugmentIds = Array.from({ length: stacks }, () => 'double_shot');
+      player.consumedRunAugmentIds = [];
+      player.rankBoost = { type: rankBoostType, expiresAt: rankBoostType ? Number.MAX_SAFE_INTEGER : 0 };
+      player.statusEffects = new Map();
+      player.recalculateStats();
+      if (activeType) player.applyPowerup(activeType);
+      return {
+        baseShots,
+        stacks,
+        activeType,
+        multiShot: player.multiShot,
+        rankBoostExtraShots: player.rankBoostExtraShots,
+        emittedShots: player.multiShot + player.rankBoostExtraShots,
+        bulletDamage: player.bulletDamage,
+        shootDelay: player.shootDelay
+      };
+    };
+    const doubleShotMatrix = [];
+    for (const baseShots of [1, 2, 3]) {
+      for (const stacks of [1, 2, 3]) {
+        const permanent = configureDoubleShotBuild({ baseShots, stacks });
+        player.traitShotCounter = 0;
+        player.traitVolleyCounter = 0;
+        const permanentVolley = shootNow().length;
+        player.applyPowerup('double_shot');
+        player.traitShotCounter = 0;
+        player.traitVolleyCounter = 0;
+        const activeVolley = shootNow().length;
+        const active = {
+          multiShot: player.multiShot,
+          rankBoostExtraShots: player.rankBoostExtraShots,
+          emittedShots: player.multiShot + player.rankBoostExtraShots,
+          volleyCount: activeVolley
+        };
+        assert(active.multiShot === Math.min(8, permanent.multiShot + 1), 'double_shot: timed pickup did not add exactly one bounded permanent shot', {
+          baseShots,
+          stacks,
+          permanent,
+          active
+        });
+        assert(activeVolley >= permanentVolley && activeVolley === active.emittedShots, 'double_shot: actual volley count was reduced or diverged from active shot state', {
+          baseShots,
+          stacks,
+          permanentVolley,
+          activeVolley,
+          active
+        });
+        const firstExpiry = player.activePowerup.expiresAt;
+        player.applyPowerup('double_shot');
+        assert(player.multiShot === active.multiShot && player.activePowerup.expiresAt >= firstExpiry, 'double_shot: refresh changed shot configuration or shortened duration', {
+          firstExpiry,
+          refreshedExpiry: player.activePowerup.expiresAt,
+          active,
+          refreshedMultiShot: player.multiShot
+        });
+        player.resetPowerups();
+        const expired = {
+          multiShot: player.multiShot,
+          rankBoostExtraShots: player.rankBoostExtraShots,
+          emittedShots: player.multiShot + player.rankBoostExtraShots,
+          bulletDamage: player.bulletDamage,
+          shootDelay: player.shootDelay
+        };
+        assert(
+          expired.multiShot === permanent.multiShot
+          && expired.rankBoostExtraShots === permanent.rankBoostExtraShots
+          && expired.bulletDamage === permanent.bulletDamage
+          && expired.shootDelay === permanent.shootDelay,
+          'double_shot: expiry did not restore the exact permanent configuration',
+          { baseShots, stacks, permanent, expired }
+        );
+        doubleShotMatrix.push({ permanent: { ...permanent, volleyCount: permanentVolley }, active, expired });
+      }
+    }
+
+    const reportedFourShotBuild = configureDoubleShotBuild({ baseShots: 2, stacks: 3 });
+    assert(reportedFourShotBuild.multiShot === 4, 'double_shot: could not reproduce the reported four-shot permanent Tactical build', reportedFourShotBuild);
+    player.applyPowerup('double_shot');
+    const reportedFiveShotActive = {
+      multiShot: player.multiShot,
+      emittedShots: player.multiShot + player.rankBoostExtraShots,
+      volleyCount: shootNow().length
+    };
+    assert(
+      reportedFiveShotActive.multiShot === 5
+      && reportedFiveShotActive.emittedShots === 5
+      && reportedFiveShotActive.volleyCount === 5,
+      'double_shot: reported four-shot build did not become five shots',
+      { reportedFourShotBuild, reportedFiveShotActive }
+    );
+    player.resetPowerups();
+    assert(player.multiShot === 4, 'double_shot: reported build did not restore to four shots on expiry');
+
+    const rankedPermanent = configureDoubleShotBuild({ baseShots: 2, stacks: 3, rankBoostType: 'fire_rate' });
+    player.applyPowerup('double_shot');
+    const rankedActive = {
+      multiShot: player.multiShot,
+      rankBoostExtraShots: player.rankBoostExtraShots,
+      emittedShots: player.multiShot + player.rankBoostExtraShots
+    };
+    assert(
+      rankedActive.multiShot === rankedPermanent.multiShot + 1
+      && rankedActive.rankBoostExtraShots === rankedPermanent.rankBoostExtraShots
+      && rankedActive.emittedShots === rankedPermanent.emittedShots + 1,
+      'double_shot: Rank Boost was reduced or omitted',
+      { rankedPermanent, rankedActive }
+    );
+    player.statusEffects.set('powerup_nullification', {
+      id: 'powerup_nullification',
+      expiresAt: player.getGameplayClockMs() + 1000
+    });
+    player.recalculateStats();
+    const suppressed = {
+      multiShot: player.multiShot,
+      rankBoostExtraShots: player.rankBoostExtraShots,
+      emittedShots: player.multiShot + player.rankBoostExtraShots
+    };
+    assert(
+      suppressed.multiShot === rankedPermanent.multiShot
+      && suppressed.rankBoostExtraShots === rankedPermanent.rankBoostExtraShots,
+      'double_shot: Tractor suppression removed permanent Tactical shots or Rank Boost',
+      { rankedPermanent, suppressed }
+    );
+    player.statusEffects.delete('powerup_nullification');
+    player.recalculateStats();
+    assert(player.multiShot === rankedActive.multiShot, 'double_shot: timed shot did not return after suppression ended');
+
+    const timedShotFloors = [];
+    for (const activeType of ['triple_beam', 'overdrive_core']) {
+      const beforeReplacement = configureDoubleShotBuild({ baseShots: 1, stacks: 0, activeType });
+      player.applyPowerup('double_shot');
+      const afterReplacement = {
+        multiShot: player.multiShot,
+        rankBoostExtraShots: player.rankBoostExtraShots,
+        emittedShots: player.multiShot + player.rankBoostExtraShots
+      };
+      assert(afterReplacement.emittedShots >= beforeReplacement.emittedShots, `double_shot: replacing ${activeType} lowered the live volley`, {
+        beforeReplacement,
+        afterReplacement
+      });
+      assert(afterReplacement.multiShot <= 8, `double_shot: ${activeType} interaction exceeded the direct projectile safety cap`, afterReplacement);
+      player.resetPowerups();
+      assert(player.multiShot === 1, `double_shot: ${activeType} interaction did not restore the permanent one-lane build`);
+      timedShotFloors.push({ activeType, beforeReplacement, afterReplacement });
+    }
+
+    player.weaponProfile = savedDoubleShotState.weaponProfile;
+    player.runAugmentIds = savedDoubleShotState.runAugmentIds;
+    player.consumedRunAugmentIds = savedDoubleShotState.consumedRunAugmentIds;
+    player.rankBoost = savedDoubleShotState.rankBoost;
+    player.statusEffects = savedDoubleShotState.statusEffects;
+    player.resetPowerups();
+    player.recalculateStats();
+    const doubleShotRegression = {
+      reportedFourShotBuild,
+      reportedFiveShotActive,
+      matrix: doubleShotMatrix,
+      rankedPermanent,
+      rankedActive,
+      suppressed,
+      timedShotFloors,
+      safeMultiShotCap: 8
+    };
+
     return {
       status: 'passed',
       testedTypes: types,
       results,
+      doubleShotRegression,
       runClockProbe,
       gameplayTimerProbe,
       pickupCleanupProbe,

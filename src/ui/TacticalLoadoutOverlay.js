@@ -278,7 +278,10 @@ export class TacticalLoadoutOverlay {
     this.container.addChild(title);
 
     const subtitleSource = this.doctrine
-      ? translateText('{name} // {stage}', { name: translateText(this.doctrine.name), stage: translateText(this.doctrine.stage) })
+      ? translateText('{name} // {stage} — descriptive only; future offers stay unrestricted.', {
+        name: translateText(this.doctrine.name),
+        stage: translateText(this.doctrine.stage)
+      })
       : translateText('PERMANENT THIS RUN');
     const subtitle = createText(subtitleSource, {
       fontFamily: FONT_BODY,

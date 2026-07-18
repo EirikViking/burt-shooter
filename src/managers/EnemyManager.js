@@ -4757,8 +4757,10 @@ export class EnemyManager {
     const superStormGroupCount = this.mayhemSuperStormSurvivalWaveCounts?.get(clearedWaveIndex) || 0;
     const survivedMayhemSuperStorm = superStormGroupCount > 0;
     if (survivedMayhemSuperStorm) this.mayhemSuperStormSurvivalWaveCounts.delete(clearedWaveIndex);
+    let suppressPositiveAfterWaveCompliment = false;
     if (this.game?.scenes?.play) {
       const playScene = this.game.scenes.play;
+      suppressPositiveAfterWaveCompliment = playScene.shouldSuppressPositiveAfterWaveCompliment?.() === true;
       playScene.wavesCleared = (Number(playScene.wavesCleared) || 0) + clearedWaveCount;
       if (!clearedWave?.isChallenge) {
         if ((Number(playScene.damageTakenThisWave) || 0) === 0) {
@@ -4796,7 +4798,7 @@ export class EnemyManager {
           AudioManager.playSfx('combo_breakout', { volume: 0.5, minIntervalMs: 0 });
         }
       }
-      if (survivedMayhemSuperStorm) {
+      if (survivedMayhemSuperStorm && !suppressPositiveAfterWaveCompliment) {
         AudioManager.playVoice(MAYHEM_SUPER_STORM_SURVIVED_SOUND_ID, {
           force: true,
           bypassGlobalCooldown: true,
@@ -4872,6 +4874,9 @@ export class EnemyManager {
       clearedWaveNumber: transitionWaveIndex + 1,
       hasUpcomingWave
     });
+    if (this.game?.scenes?.play) {
+      this.game.scenes.play.lifeLostThisWave = false;
+    }
 
     // Logic to potentially inject a short score-risk challenge wave.
     const normalWaveLevel = this.getNormalWaveDifficultyLevel(this.level);

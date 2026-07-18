@@ -83,8 +83,8 @@ export function getTraitDetailLines(trait, ship = {}) {
   }
 
   if (Number(combat.dodgePulseRadius || 0) > 0) {
-    lines.push(`Dodging releases a small pulse that clears nearby enemy bullets within ${Math.round(combat.dodgePulseRadius)} px.`);
-    lines.push('Use dodge pulse when threading dense bullet patterns.');
+    lines.push(`Finishing a phase dodge releases one pulse that clears nearby enemy bullets within ${Math.round(combat.dodgePulseRadius)} px.`);
+    lines.push('Graze safely during the phase window, then use the exit pulse to open your next lane.');
   }
 
   if (Number(combat.nearMissScoreMult || 1) > 1.02) {
@@ -112,7 +112,7 @@ export function getTraitHudHint(trait, ship = {}) {
   if (combat.bonusShotEvery) return `Bonus shot every ${combat.bonusShotEvery} shots.`;
   if (combat.pierceEvery) return `Piercing shot every ${combat.pierceEvery} shots.`;
   if (combat.critEvery) return `Critical shot every ${combat.critEvery} shots.`;
-  if (combat.dodgePulseRadius) return 'Dodge pulse clears nearby bullets.';
+  if (combat.dodgePulseRadius) return 'Phase exit pulse clears nearby bullets.';
   if (combat.nearMissScoreMult && combat.nearMissScoreMult !== 1) return 'Near misses boost score.';
   return trait?.description || 'Passive trait active.';
 }

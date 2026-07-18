@@ -55,6 +55,9 @@ export class Hijacker {
     this.beamPullActive = false;
     this.lastBeamToastAt = 0;
     this.destroyedDuringBeam = false;
+    this.hitFeedbackUntil = 0;
+    this.hitFeedbackDurationMs = 180;
+    this.lastHitFeedback = null;
 
     this.createSprite();
   }
@@ -69,6 +72,12 @@ export class Hijacker {
     this.beamLayer.zIndex = -2;
     this.beamLayer.blendMode = 'add';
     this.sprite.addChild(this.beamLayer);
+
+    this.hitFeedbackLayer = new PIXI.Graphics();
+    this.hitFeedbackLayer.zIndex = 2;
+    this.hitFeedbackLayer.blendMode = 'add';
+    this.hitFeedbackLayer.visible = false;
+    this.sprite.addChild(this.hitFeedbackLayer);
 
     // Use the generated Nova Swarm hijacker craft instead of legacy UFO pack art.
     const loader = PIXI.Assets;
@@ -112,17 +121,33 @@ export class Hijacker {
 
   updateHealthBar() {
     this.healthBar.clear();
-    const barWidth = 60;
-    const barHeight = 4;
-    const healthPct = this.health / this.maxHealth;
+    const barWidth = 72;
+    const barHeight = 7;
+    const barY = Math.max(this.radius + 34, 72);
+    const healthPct = Math.max(0, Math.min(1, this.health / this.maxHealth));
+    const fillColor = healthPct > 0.5 ? 0x43ff9a : healthPct > 0.25 ? 0xffef7e : 0xff4b6b;
 
-    // Background
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth, barHeight);
-    this.healthBar.fill({ color: 0x333333 });
+    this.healthBar.roundRect(-barWidth / 2 - 3, barY - 3, barWidth + 6, barHeight + 6, 4);
+    this.healthBar.fill({ color: 0x020711, alpha: 0.88 });
+    this.healthBar.stroke({ color: 0x7ee9ff, width: 1.25, alpha: 0.92 });
+    this.healthBar.roundRect(-barWidth / 2, barY, barWidth, barHeight, 2);
+    this.healthBar.fill({ color: 0x291228, alpha: 0.96 });
 
-    // Health
-    this.healthBar.rect(-barWidth / 2, -this.radius - 15, barWidth * healthPct, barHeight);
-    this.healthBar.fill({ color: healthPct > 0.5 ? 0x00ff00 : 0xff0000 });
+    if (healthPct > 0) {
+      this.healthBar.roundRect(-barWidth / 2, barY, Math.max(2, barWidth * healthPct), barHeight, 2);
+      this.healthBar.fill({ color: fillColor, alpha: 0.98 });
+    }
+    this.healthBar.moveTo(0, barY - 2);
+    this.healthBar.lineTo(0, barY + barHeight + 2);
+    this.healthBar.stroke({ color: 0xffffff, width: 1, alpha: 0.36 });
+    this.healthBar._debugLayout = {
+      localY: barY,
+      worldY: this.y + barY,
+      width: barWidth,
+      height: barHeight,
+      healthPct,
+      belowCraft: barY > this.radius
+    };
   }
 
   update(delta, playerX, playerY) {
@@ -145,14 +170,95 @@ export class Hijacker {
     this.sprite.x = this.x;
     this.sprite.y = this.y;
 
+    this.updateHitFeedback();
     this.updateTractorBeam(delta, playerX, playerY);
   }
 
-  takeDamage(amount) {
+  triggerHitFeedback(sourceId = 'ordinary_fire') {
+    if (!this.hitFeedbackLayer || this.destroyed || !this.active) return null;
+    const normalizedSource = sourceId === 'chain_lightning' ? 'chain_lightning' : 'ordinary_fire';
+    const color = normalizedSource === 'chain_lightning' ? 0x8fffff : 0xfff3ad;
+    const accent = normalizedSource === 'chain_lightning' ? 0xffffff : 0xff55d9;
+    const ringRadius = this.radius + 14;
+    const braceCount = 4;
+    const layer = this.hitFeedbackLayer;
+    layer.clear();
+    layer.circle(0, 0, ringRadius);
+    layer.stroke({ color, width: 4, alpha: 0.92 });
+    layer.circle(0, 0, ringRadius + 8);
+    layer.stroke({ color: accent, width: 1.5, alpha: 0.72 });
+    for (let i = 0; i < braceCount; i += 1) {
+      const angle = (Math.PI * 2 * i) / braceCount + Math.PI / 4;
+      const x1 = Math.cos(angle) * (ringRadius + 3);
+      const y1 = Math.sin(angle) * (ringRadius + 3);
+      const x2 = Math.cos(angle) * (ringRadius + 16);
+      const y2 = Math.sin(angle) * (ringRadius + 16);
+      layer.moveTo(x1, y1);
+      layer.lineTo(x2, y2);
+    }
+    layer.stroke({ color: accent, width: 3, alpha: 0.9 });
+    if (normalizedSource === 'chain_lightning') {
+      layer.moveTo(-ringRadius * 0.72, ringRadius * 0.48);
+      layer.lineTo(-4, -ringRadius * 0.18);
+      layer.lineTo(7, ringRadius * 0.08);
+      layer.lineTo(ringRadius * 0.72, -ringRadius * 0.52);
+      layer.stroke({ color: 0xffffff, width: 3.5, alpha: 0.96 });
+    }
+    layer.visible = true;
+    layer.alpha = 1;
+    layer.scale.set(1);
+    this.hitFeedbackUntil = Date.now() + this.hitFeedbackDurationMs;
+    if (this.ufoSprite) this.ufoSprite.tint = color;
+    this.lastHitFeedback = {
+      sourceId: normalizedSource,
+      color,
+      accent,
+      durationMs: this.hitFeedbackDurationMs,
+      ringRadius,
+      braceCount,
+      visible: true
+    };
+    layer._debugHitFeedback = { ...this.lastHitFeedback };
+    return this.lastHitFeedback;
+  }
+
+  updateHitFeedback(now = Date.now()) {
+    if (!this.hitFeedbackLayer?.visible) return false;
+    const remainingMs = Math.max(0, this.hitFeedbackUntil - now);
+    if (remainingMs <= 0) {
+      this.hitFeedbackLayer.visible = false;
+      this.hitFeedbackLayer.clear();
+      this.hitFeedbackLayer.alpha = 0;
+      if (this.ufoSprite) this.ufoSprite.tint = 0xffffff;
+      if (this.lastHitFeedback) this.lastHitFeedback = { ...this.lastHitFeedback, visible: false };
+      if (this.hitFeedbackLayer._debugHitFeedback) {
+        this.hitFeedbackLayer._debugHitFeedback = {
+          ...this.hitFeedbackLayer._debugHitFeedback,
+          visible: false,
+          remainingMs: 0
+        };
+      }
+      return false;
+    }
+    const progress = remainingMs / this.hitFeedbackDurationMs;
+    this.hitFeedbackLayer.alpha = Math.max(0.22, progress);
+    this.hitFeedbackLayer.scale.set(1 + (1 - progress) * 0.12);
+    if (this.hitFeedbackLayer._debugHitFeedback) {
+      this.hitFeedbackLayer._debugHitFeedback = {
+        ...this.hitFeedbackLayer._debugHitFeedback,
+        visible: true,
+        remainingMs: Math.round(remainingMs)
+      };
+    }
+    return true;
+  }
+
+  takeDamage(amount, options = {}) {
     if (this.destroyed || !this.active) return false;
     const brokeBeam = this.isBeamThreatening();
     this.health -= amount;
     this.updateHealthBar();
+    this.triggerHitFeedback(options?.sourceId);
 
     if (this.health <= 0) {
       this.destroy(brokeBeam);
@@ -576,6 +682,8 @@ export class Hijacker {
       state: this.beamState,
       remainingMs: Math.round(remainingMs),
       pullActive: this.beamPullActive,
+      hitFeedback: this.hitFeedbackLayer?._debugHitFeedback || this.lastHitFeedback,
+      healthBar: this.healthBar?._debugLayout || null,
       target: {
         x: Math.round(this.beamTarget.x),
         y: Math.round(this.beamTarget.y)

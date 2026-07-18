@@ -67,10 +67,28 @@ if (!playSceneSource.includes("AudioManager.playDiegeticVoice('level_clear_flirt
 if (!playSceneSource.includes("exclusiveGroup: 'level_clear_flirt'")) {
   fail('level-clear voice should have an exclusive group to avoid stacked compliments');
 }
+if (!playSceneSource.includes('LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000')) {
+  fail('level-clear compliments should keep a short bounded post-life-loss grace period');
+}
+if (!playSceneSource.includes('shouldSuppressPositiveAfterWaveCompliment')) {
+  fail('level-clear voice should consult the died-this-wave/grace suppression guard');
+}
+if (!playSceneSource.includes("reason: 'life_lost_after_schedule'")) {
+  fail('life loss should invalidate an already scheduled positive compliment');
+}
+if (!playSceneSource.includes('this.lifeLostThisWave = false;')) {
+  fail('life-loss compliment tracking should reset for new runs/scenes and completed waves');
+}
 
 const enemyManagerSource = fs.readFileSync(path.join(rootDir, 'src/managers/EnemyManager.js'), 'utf8');
 if (!/if\s*\(\s*hasUpcomingWave\s*\)\s*{\s*AudioManager\.playVoice\('mission_control_wave_clear'/.test(enemyManagerSource)) {
   fail('mission_control_wave_clear should only play when another wave is upcoming; final-wave sector clear uses level_clear_flirt');
+}
+if (!enemyManagerSource.includes('survivedMayhemSuperStorm && !suppressPositiveAfterWaveCompliment')) {
+  fail('positive super-storm survival voice should be suppressed after a life loss');
+}
+if (!enemyManagerSource.includes('this.game.scenes.play.lifeLostThisWave = false;')) {
+  fail('died-this-wave tracking should reset after each completed wave');
 }
 
 const generatorSource = fs.readFileSync(path.join(rootDir, 'scripts/generate-level-clear-voices.mjs'), 'utf8');

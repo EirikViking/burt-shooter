@@ -62,9 +62,9 @@ export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
   defineAugment({ id: 'bomb', evolutionName: 'SIEGE RACK', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
   defineAugment({ id: 'orbital_strike', evolutionName: 'SKY TRIBUNAL', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
   defineAugment({ id: 'phase_reactor', name: 'PHASE REACTOR', category: 'mobility', color: 0xff5bd6, sfx: 'tactical_phase_reactor', draftDescription: 'Phase instantly primes your next volley', detail: 'The reactor converts one tasteful violation of spacetime into a fully stamped firing permit. Phase, then shoot. Physics has filed a complaint and is waiting in the wrong queue.', modifiers: { phaseReload: true }, maxStacks: 1 }),
-  defineAugment({ id: 'focus_lens', name: 'FOCUS LENS', category: 'mobility', color: 0xffef7e, sfx: 'tactical_focus_lens', draftDescription: 'Focused shots deal +18% damage', detail: 'Holding Focus routes every loose photon through the expensive glass. The beam gets meaner, the ship gets deliberate, and nearby insurance forms begin filling themselves out.', modifiers: { focusDamageMult: 1.18 }, maxStacks: 1 }),
+  defineAugment({ id: 'focus_lens', name: 'FOCUS LENS', category: 'mobility', color: 0xffef7e, sfx: 'tactical_focus_lens', draftDescription: 'Focused shots deal +18% damage and tighten spread 25%', detail: 'Holding Focus routes every loose photon through the expensive glass. Shots tighten to 75% of their normal spread while focused, without changing projectile count or fire rate. The beam gets meaner, the ship gets deliberate, and nearby insurance forms begin filling themselves out.', modifiers: { focusDamageMult: 1.18, focusSpreadMult: 0.75 }, maxStacks: 1 }),
   defineAugment({ id: 'inertial_dampers', name: 'INERTIAL DAMPERS', category: 'mobility', color: 0x63f4ff, sfx: 'tactical_inertial_dampers', draftDescription: 'Focus movement keeps 22% more speed', detail: 'A padded cup holder for momentum. Tight weaving stays precise without making the ship feel like it is towing a municipal moon. The manual insists this was always intentional.', modifiers: { focusSpeedMult: 1.22 }, maxStacks: 1 }),
-  defineAugment({ id: 'phase_wake', name: 'PHASE WAKE', category: 'mobility', color: 0x8d7dff, sfx: 'tactical_phase_wake', draftDescription: 'Phase clears hostile bullets within 58px', detail: 'Your phase exit leaves a tiny hole in causality and a much larger hole in nearby enemy paperwork. It clears danger, not score. Heroism still needs witnesses.', modifiers: { phaseClearRadius: 58 }, maxStacks: 1 }),
+  defineAugment({ id: 'phase_wake', name: 'PHASE WAKE', category: 'mobility', color: 0x8d7dff, sfx: 'tactical_phase_wake', draftDescription: 'Phase exit clears hostile bullets within 58px', detail: 'Your phase exit leaves a tiny hole in causality and a much larger hole in nearby enemy paperwork. It clears danger, not score. Heroism still needs witnesses.', modifiers: { phaseClearRadius: 58 }, maxStacks: 1 }),
   defineAugment({ id: 'slipstream_coils', name: 'SLIPSTREAM COILS', category: 'mobility', color: 0x4dffbf, sfx: 'tactical_slipstream_coils', draftDescription: 'Moving recharges Phase 18% faster', detail: 'The coils steal charge from the trail you were going to leave behind anyway. Standing still remains technically legal and spiritually suspicious.', modifiers: { movingDodgeRecoveryMult: 1.18 }, maxStacks: 1 }),
   defineAugment({ id: 'emergency_bulkhead', name: 'EMERGENCY BULKHEAD', category: 'defense', color: 0x62ffae, sfx: 'tactical_emergency_bulkhead', draftDescription: 'At 1 life, each sector starts with a 6s shield', detail: 'When the life counter reaches one, a bulkhead slams shut around the important bits. Nobody agrees which bits are important, so the shield covers the whole ship for six seconds.', modifiers: { lowLifeSectorShieldMs: 6000 }, maxStacks: 1 }),
   defineAugment({ id: 'impact_foam', name: 'IMPACT FOAM', category: 'defense', color: 0x9effe5, sfx: 'tactical_impact_foam', draftDescription: 'Post-hit safety lasts 0.3s longer', detail: 'The hull fills every fresh crater with fluorescent safety foam and one strongly worded memo. You get three extra tenths to leave before the memo catches fire.', modifiers: { hitInvulnerabilityBonusMs: 300 }, maxStacks: 1 }),
@@ -241,8 +241,10 @@ export function buildTacticalDraftOffers({
   seed = 'nova-swarm-draft',
   sectorCleared = 1,
   selectedIds = [],
+  consumedIds = [],
   lives = 3,
   maxLives = 3,
+  baseShotCount = 1,
   activePowerupType = null,
   runTheme = null,
   excludedIds = [],
@@ -250,7 +252,9 @@ export function buildTacticalDraftOffers({
   heldId = null
 } = {}) {
   const counts = getStackCounts(selectedIds);
-  const context = { lives, maxLives, activePowerupType, runTheme };
+  const consumed = new Set(Array.isArray(consumedIds) ? consumedIds : []);
+  const activeSelected = new Set((Array.isArray(selectedIds) ? selectedIds : []).filter((id) => !consumed.has(id)));
+  const context = { lives, maxLives, baseShotCount, activePowerupType, runTheme };
   const banned = new Set(Array.isArray(bannedIds) ? bannedIds : []);
   const fixedScoreRoute = Math.max(1, Math.floor(Number(sectorCleared) || 1)) === TACTICAL_SCORE_ROUTE_SECTOR;
   const eligibleCandidates = TACTICAL_DRAFT_AUGMENTS.filter((augment) => {
@@ -263,12 +267,38 @@ export function buildTacticalDraftOffers({
   let candidates = eligibleCandidates;
   const unseenCandidates = candidates.filter((augment) => (counts.get(augment.id) || 0) === 0);
   const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
+  const eligibleById = new Map(eligibleCandidates.map((augment) => [augment.id, augment]));
+  const fusionCompletionCandidate = TACTICAL_FUSION_PROTOCOLS
+    .flatMap((fusion) => {
+      const missingIds = fusion.requiredIds.filter((id) => !activeSelected.has(id));
+      const ownedCount = fusion.requiredIds.length - missingIds.length;
+      if (ownedCount !== fusion.requiredIds.length - 1 || missingIds.length !== 1) return [];
+      const candidate = eligibleById.get(missingIds[0]);
+      if (!candidate || excluded.has(candidate.id)) return [];
+      return [candidate];
+    })
+    .filter((augment, index, all) => all.findIndex((candidate) => candidate.id === augment.id) === index)
+    .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))[0] || null;
+  const singleLaneCatchupCandidate = Number(baseShotCount) <= 1
+    && Math.max(1, Math.floor(Number(sectorCleared) || 1)) >= 3
+    && Math.max(1, Math.floor(Number(sectorCleared) || 1)) % 3 === 0
+    && (counts.get('double_shot') || 0) === 0
+    && !excluded.has('double_shot')
+    ? eligibleById.get('double_shot') || null
+    : null;
   const allowEvolution = sectorCleared >= 3 && counts.size > 0;
-  const evolutionCandidate = allowEvolution
+  let evolutionCandidate = allowEvolution
     ? candidates
       .filter((augment) => (counts.get(augment.id) || 0) > 0 && !excluded.has(augment.id))
       .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))[0] || null
     : null;
+  if (
+    evolutionCandidate
+    && (counts.get(evolutionCandidate.id) || 0) >= 2
+    && unseenCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT
+  ) {
+    evolutionCandidate = null;
+  }
   if (unseenCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = unseenCandidates;
   const freshCandidates = candidates.filter((augment) => !excluded.has(augment.id));
   if (freshCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = freshCandidates;
@@ -298,9 +328,41 @@ export function buildTacticalDraftOffers({
     ));
     if (alternatives.length >= 2) offers.splice(0, offers.length, alternatives[0], evolutionCandidate, alternatives[1]);
   }
+  const ensurePriorityOffer = (candidate, protectedIds = new Set()) => {
+    if (!candidate || offers.some((augment) => augment.id === candidate.id)) return;
+    const thirdStackIndex = offers.findIndex((augment) => (
+      !protectedIds.has(augment.id)
+      && (counts.get(augment.id) || 0) >= 2
+    ));
+    const fallbackIndex = offers
+      .map((augment, index) => ({ augment, index }))
+      .reverse()
+      .find(({ augment }) => !protectedIds.has(augment.id))?.index;
+    const replacementIndex = thirdStackIndex >= 0
+      ? thirdStackIndex
+      : Number.isInteger(fallbackIndex)
+        ? fallbackIndex
+        : offers.length;
+    if (replacementIndex < offers.length) offers.splice(replacementIndex, 1, candidate);
+    else if (offers.length < TACTICAL_DRAFT_OFFER_COUNT) offers.push(candidate);
+  };
+  unseenCandidates
+    .filter((candidate) => !excluded.has(candidate.id))
+    .sort((a, b) => stableScore(seed, b, sectorCleared, context) - stableScore(seed, a, sectorCleared, context))
+    .forEach((candidate) => {
+      const protectedIds = new Set(
+        offers
+          .filter((augment) => (counts.get(augment.id) || 0) < 2)
+          .map((augment) => augment.id)
+      );
+      ensurePriorityOffer(candidate, protectedIds);
+    });
+  ensurePriorityOffer(fusionCompletionCandidate);
+  ensurePriorityOffer(singleLaneCatchupCandidate, new Set([fusionCompletionCandidate?.id].filter(Boolean)));
   const heldCandidate = eligibleCandidates.find((augment) => augment.id === heldId) || null;
   if (heldCandidate && !offers.some((augment) => augment.id === heldCandidate.id)) {
-    const replacementIndex = offers.findIndex((augment) => augment.id !== evolutionCandidate?.id);
+    const protectedIds = new Set([fusionCompletionCandidate?.id, singleLaneCatchupCandidate?.id].filter(Boolean));
+    const replacementIndex = offers.findIndex((augment) => !protectedIds.has(augment.id));
     offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1, heldCandidate);
   }
   const scoreRouteCandidate = fixedScoreRoute
@@ -309,7 +371,12 @@ export function buildTacticalDraftOffers({
   if (scoreRouteCandidate) {
     const scoreRouteIndex = offers.findIndex((augment) => augment.id === scoreRouteCandidate.id);
     if (scoreRouteIndex >= 0) offers.splice(scoreRouteIndex, 1);
-    const replacementIndex = offers.findIndex((augment) => augment.id !== heldCandidate?.id && augment.id !== evolutionCandidate?.id);
+    const protectedIds = new Set([
+      heldCandidate?.id,
+      fusionCompletionCandidate?.id,
+      singleLaneCatchupCandidate?.id
+    ].filter(Boolean));
+    const replacementIndex = offers.findIndex((augment) => !protectedIds.has(augment.id));
     if (offers.length >= TACTICAL_DRAFT_OFFER_COUNT) offers.splice(replacementIndex >= 0 ? replacementIndex : offers.length - 1, 1);
     offers.splice(Math.min(1, offers.length), 0, scoreRouteCandidate);
   }
@@ -321,7 +388,9 @@ export function buildTacticalDraftOffers({
       currentStacks,
       nextStack,
       held: augment.id === heldId,
-      fixedScoreRoute: fixedScoreRoute && augment.id === 'combo_anchor'
+      fixedScoreRoute: fixedScoreRoute && augment.id === 'combo_anchor',
+      fusionCompletionPriority: augment.id === fusionCompletionCandidate?.id,
+      singleLaneCatchup: augment.id === singleLaneCatchupCandidate?.id
     };
   });
 }
@@ -341,6 +410,7 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     droneCount: 0,
     chainMax: 0,
     focusDamageMult: 1,
+    focusSpreadMult: 1,
     focusSpeedMult: 1,
     phaseReload: false,
     phaseClearRadius: 0,
@@ -378,7 +448,7 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
         ? SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness
         : SHIP_THREAT_RESPONSE_TARGETS.thirdStackEffectiveness;
     const modifiers = augment.modifiers || {};
-    const suppressMatchingTimedEffect = activePowerupType === id;
+    const suppressMatchingTimedEffect = activePowerupType === id && id !== 'double_shot';
     if (!suppressMatchingTimedEffect) {
       result.damageMult *= Math.pow(Number(modifiers.damageMult) || 1, effectiveness);
       result.fireDelayMult *= Math.pow(Number(modifiers.fireDelayMult) || 1, effectiveness);
@@ -393,6 +463,7 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
       result.droneCount += (Number(modifiers.droneCount) || 0) * effectiveness;
       result.chainMax += (Number(modifiers.chainMax) || 0) * effectiveness;
       result.focusDamageMult *= Math.pow(Number(modifiers.focusDamageMult) || 1, effectiveness);
+      result.focusSpreadMult *= Math.pow(Number(modifiers.focusSpreadMult) || 1, effectiveness);
       result.focusSpeedMult *= Math.pow(Number(modifiers.focusSpeedMult) || 1, effectiveness);
       result.phaseReload = result.phaseReload || modifiers.phaseReload === true;
       result.phaseClearRadius = Math.max(result.phaseClearRadius, (Number(modifiers.phaseClearRadius) || 0) * effectiveness);
@@ -413,7 +484,9 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     result.sectorStart.bombShots += Number(sectorStart.bombShots) || 0;
     result.sectorStart.orbitalCharges += Number(sectorStart.orbitalCharges) || 0;
   }
-  result.overlapSuppressedId = activePowerupType && selectedIds.includes(activePowerupType)
+  result.overlapSuppressedId = activePowerupType
+    && activePowerupType !== 'double_shot'
+    && selectedIds.includes(activePowerupType)
     ? activePowerupType
     : null;
   result.fusionIds = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => fusion.id);

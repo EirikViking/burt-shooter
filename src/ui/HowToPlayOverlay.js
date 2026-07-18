@@ -23,7 +23,7 @@ const CORE_HELP_ROWS = Object.freeze([
     icon: 'FOCUS',
     label: 'FOCUS DRIFT',
     control: 'HOLD CTRL / LT',
-    tip: 'Hold Focus to slow your ship for tight weaving without changing your weapon.',
+    tip: 'Hold Focus to slow your ship for tight weaving. FOCUS LENS also tightens shot spread while held.',
     accent: 0xffef7e
   },
   {
@@ -149,7 +149,7 @@ const TACTICS_HELP_ROWS = Object.freeze([
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
     control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
-    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack. Your mix becomes a named Run Doctrine.',
+    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack. A Run Doctrine reflects your current build and never restricts or weights future offers.',
     accent: 0xffef7e
   },
   {
@@ -291,7 +291,7 @@ const HELP_PAGES = Object.freeze([
 
 const HELP_DETAIL_COPY = Object.freeze({
   MOVE: 'Small corrections beat heroic sightseeing. Enter a lane, solve one threat, then leave before the lane develops opinions. Wide circles look elegant right up until every bullet agrees on your address.',
-  'FOCUS DRIFT': 'Focus does not slow time and it does not improve your tax status. It reduces ship movement so tiny gaps become flyable. Hold it for the difficult weave, release it before your escape route becomes a historical document.',
+  'FOCUS DRIFT': 'Focus does not slow time and it does not improve your tax status. It reduces ship movement so tiny gaps become flyable. Hold it for the difficult weave, release it before your escape route becomes a historical document. With FOCUS LENS, held Focus also tightens shot spread to 75% without changing projectile count or fire rate.',
   SHOOT: 'The trigger is unlimited; safe attention is not. Sweep fragile lane-blockers first, then burn the expensive target. Firing at everything equally is democracy, not tactics, and the swarm has already counted the votes.',
   'DODGE / PHASE': 'Phase Burst is a brief permission slip to occupy the same space as danger. It does not move the ship for you. Tap it late, cross the threat, and be somewhere useful when reality notices the paperwork.',
   'CHAINED DODGE': 'A chain is several near misses before the graze timer expires. The cabinet is impressed by controlled nerve, not random panic. Stay close enough to be brave and far enough to remain employed.',

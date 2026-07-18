@@ -168,6 +168,7 @@ const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
+const LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
 const SECTOR_ARRIVAL_STINGER_MS = 1100 + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
 const FIRST_RUN_CONTROLS_DELAY_MS = 240;
@@ -472,6 +473,9 @@ export class PlayScene {
     this.extraLivesEarnedThisRun = 0;
     this.lastLifeLossSource = null;
     this.finalLifeLossSource = null;
+    this.lifeLostThisWave = false;
+    this.lastLifeLossAtMs = 0;
+    this.lastLevelClearVoiceDecision = null;
     this.powerupsCollectedThisRun = 0;
     this.repairsGrantedThisRun = 0;
     this.lastKillAt = 0;
@@ -695,6 +699,9 @@ export class PlayScene {
     this.extraLivesEarnedThisRun = 0;
     this.lastLifeLossSource = null;
     this.finalLifeLossSource = null;
+    this.lifeLostThisWave = false;
+    this.lastLifeLossAtMs = 0;
+    this.lastLevelClearVoiceDecision = null;
     this.powerupsCollectedThisRun = 0;
     this.grazeBreaksThisRun = 0;
     this.repairsGrantedThisRun = 0;
@@ -4206,6 +4213,7 @@ export class PlayScene {
               this.postBossLevelIntroPending = bossCompletion;
               this.maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud });
               if (bossCompletion) this.damageTakenThisSector = 0;
+              this.lifeLostThisWave = false;
               this.game.nextLevel();
               if (!this.player) return;
               const sprite = this.player.sprite;
@@ -4288,12 +4296,47 @@ export class PlayScene {
     }
   }
 
+  shouldSuppressPositiveAfterWaveCompliment(now = Date.now()) {
+    const recentLifeLoss = this.lastLifeLossAtMs > 0
+      && Math.max(0, Number(now) || 0) - this.lastLifeLossAtMs < LIFE_LOSS_COMPLIMENT_GRACE_MS;
+    return this.lifeLostThisWave === true || recentLifeLoss;
+  }
+
   playLevelClearVoice({ bossCompletion = false } = {}) {
+    const scheduledAt = Date.now();
+    if (this.shouldSuppressPositiveAfterWaveCompliment(scheduledAt)) {
+      this.levelClearVoiceToken = (this.levelClearVoiceToken || 0) + 1;
+      this.lastLevelClearVoiceDecision = {
+        status: 'suppressed',
+        reason: this.lifeLostThisWave ? 'life_lost_this_wave' : 'life_loss_grace',
+        bossCompletion,
+        scheduledAt,
+        graceMs: LIFE_LOSS_COMPLIMENT_GRACE_MS
+      };
+      return false;
+    }
     const delayMs = bossCompletion ? BOSS_DEATH_VOICE_LOCK_MS + 450 : 260;
     const token = (this.levelClearVoiceToken || 0) + 1;
     this.levelClearVoiceToken = token;
+    this.lastLevelClearVoiceDecision = {
+      status: 'scheduled',
+      reason: 'survived_wave',
+      bossCompletion,
+      scheduledAt,
+      delayMs,
+      graceMs: LIFE_LOSS_COMPLIMENT_GRACE_MS
+    };
     setTimeout(() => {
       if (this.game?.currentScene !== this || this.levelClearVoiceToken !== token) return;
+      if (this.shouldSuppressPositiveAfterWaveCompliment()) {
+        this.lastLevelClearVoiceDecision = {
+          ...this.lastLevelClearVoiceDecision,
+          status: 'suppressed',
+          reason: this.lifeLostThisWave ? 'life_lost_this_wave' : 'life_loss_grace',
+          suppressedAt: Date.now()
+        };
+        return;
+      }
       AudioManager.playDiegeticVoice('level_clear_flirt', {
         force: true,
         bypassGlobalCooldown: true,
@@ -4308,7 +4351,13 @@ export class PlayScene {
         duckFactor: bossCompletion ? 0.28 : 0.36,
         duckMs: bossCompletion ? 2100 : 1600
       });
+      this.lastLevelClearVoiceDecision = {
+        ...this.lastLevelClearVoiceDecision,
+        status: 'played',
+        playedAt: Date.now()
+      };
     }, delayMs);
+    return true;
   }
 
   onRankUp(newRank) {
@@ -4620,12 +4669,17 @@ export class PlayScene {
   showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!', options = {}) {
     const { width, height } = this.game.app.screen;
     const compact = Boolean(options.compact);
+    const defaultQuipAllowed = !this.shouldSuppressPositiveAfterWaveCompliment();
     const subtitle = Object.prototype.hasOwnProperty.call(options, 'subtitle')
       ? options.subtitle
-      : tauntDirector.getRotatingText('wave_clear_quip');
+      : defaultQuipAllowed
+        ? tauntDirector.getRotatingText('wave_clear_quip')
+        : '';
     const humorState = Object.prototype.hasOwnProperty.call(options, 'subtitle')
       ? null
-      : tauntDirector.getRotationDebugState();
+      : defaultQuipAllowed
+        ? tauntDirector.getRotationDebugState()
+        : null;
     const panelWidth = compact ? 340 : 400;
     const panelHeight = compact ? 108 : 130;
     const panelRadius = compact ? 8 : 10;
@@ -5689,6 +5743,7 @@ export class PlayScene {
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_hijacker_hit');
             this.recordCombatProjectileHit(bullet);
             const destroyed = this.applyCombatDamage(hijacker, bullet.damage, getCombatDamageSourceForBullet(bullet));
+            this.triggerChainLightning(hijacker, bullet.damage);
 
             if (destroyed) {
               // Hijacker explosion
@@ -6065,7 +6120,10 @@ export class PlayScene {
     if (!target || typeof target.takeDamage !== 'function') return false;
     const requestedDamage = Math.max(0, Number(amount) || 0);
     const healthBefore = Number(target.health ?? target.hp);
-    const destroyed = target.takeDamage(requestedDamage, options);
+    const damageOptions = target.kind === 'hijacker'
+      ? { ...(options && typeof options === 'object' ? options : {}), sourceId }
+      : options;
+    const destroyed = target.takeDamage(requestedDamage, damageOptions);
     const healthAfter = Number(target.health ?? target.hp);
     let effectiveDamage = 0;
     if (Number.isFinite(healthBefore) && Number.isFinite(healthAfter)) {
@@ -7422,8 +7480,10 @@ export class PlayScene {
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
       selectedIds: this.player.runAugmentIds || [],
+      consumedIds: this.player.consumedRunAugmentIds || [],
       lives: Number(this.game?.lives) || 0,
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       bannedIds: this.tacticalDraftBannedIds,
@@ -8260,8 +8320,10 @@ export class PlayScene {
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:ban:${this.tacticalDraftBannedIds.length}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
+      consumedIds: this.player?.consumedRunAugmentIds || [],
       lives: Number(this.game?.lives) || 0,
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
@@ -8316,8 +8378,10 @@ export class PlayScene {
       seed: `${this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`}:rescan:${nextRescanCount}`,
       sectorCleared: state.sectorCleared,
       selectedIds: this.player?.runAugmentIds || [],
+      consumedIds: this.player?.consumedRunAugmentIds || [],
       lives: Number(this.game?.lives) || 0,
       maxLives: Number(this.game?.maxLives) || MAX_PLAYER_LIVES,
+      baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
@@ -10475,6 +10539,17 @@ export class PlayScene {
 
   onLifeLost(lives, context = {}) {
     const source = String(context?.source || 'unknown');
+    this.lifeLostThisWave = true;
+    this.lastLifeLossAtMs = Date.now();
+    this.levelClearVoiceToken = (this.levelClearVoiceToken || 0) + 1;
+    if (this.lastLevelClearVoiceDecision?.status === 'scheduled') {
+      this.lastLevelClearVoiceDecision = {
+        ...this.lastLevelClearVoiceDecision,
+        status: 'suppressed',
+        reason: 'life_lost_after_schedule',
+        suppressedAt: this.lastLifeLossAtMs
+      };
+    }
     this.lastLifeLossSource = source;
     if (context?.final || (Number(lives) || 0) <= 0) {
       this.finalLifeLossSource = source;
@@ -10484,6 +10559,7 @@ export class PlayScene {
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
     this.emitRunContractEvent('life_lost', { sector: this.game?.level || 1, source });
     this.recordBalanceLifeLost();
+    this.player?.cancelDodgeExitPulse?.('life_lost', { endDodge: true });
     this.player?.clearStatusEffects?.('life_lost');
     if (this.tryLastStandRepair()) {
       if ((Number(this.game?.lives) || 0) > 0) {
@@ -16530,13 +16606,24 @@ export class PlayScene {
   }
 
   triggerChainLightning(sourceEnemy, baseDamage) {
-    if (!this.player?.chainLightningActive) return;
+    if (!this.player?.chainLightningActive || !sourceEnemy) {
+      this.lastChainLightning = {
+        triggered: false,
+        reason: !sourceEnemy ? 'missing_source' : 'inactive'
+      };
+      return this.lastChainLightning;
+    }
 
     const maxChains = this.player.chainLightningMaxChains || 3;
     const chainRange = 150; // pixels
     const damageMultiplier = 0.5; // 50% of original damage per chain
 
     const chainedEnemies = [sourceEnemy];
+    const chainedEnemySet = new Set(chainedEnemies);
+    const targetPool = (this.enemyManager?.enemies || []).filter(Boolean);
+    const hijacker = this.enemyManager?.hijacker;
+    if (hijacker?.active && !targetPool.includes(hijacker)) targetPool.push(hijacker);
+    const hitTargets = [];
     let currentEnemy = sourceEnemy;
 
     for (let i = 0; i < maxChains; i++) {
@@ -16544,8 +16631,8 @@ export class PlayScene {
       let nearest = null;
       let nearestDist = chainRange;
 
-      this.enemyManager.enemies.forEach(enemy => {
-        if (enemy.active && !chainedEnemies.includes(enemy)) {
+      targetPool.forEach(enemy => {
+        if (enemy.active && !chainedEnemySet.has(enemy)) {
           const dist = Math.hypot(enemy.x - currentEnemy.x, enemy.y - currentEnemy.y);
           if (dist < nearestDist) {
             nearest = enemy;
@@ -16562,10 +16649,19 @@ export class PlayScene {
       // Deal damage
       const chainDamage = baseDamage * damageMultiplier;
       const destroyed = this.applyCombatDamage(nearest, chainDamage, 'chain_lightning');
+      const targetIsHijacker = nearest.kind === 'hijacker' || nearest === hijacker;
+      hitTargets.push({
+        target: nearest,
+        kind: nearest.kind || nearest.type || 'enemy',
+        distance: nearestDist,
+        damage: chainDamage,
+        destroyed,
+        scoreHandledByTarget: targetIsHijacker && destroyed
+      });
 
       if (destroyed) {
         // Award score
-        if (!this.player.isSlowTimeActive?.()) {
+        if (!targetIsHijacker && !this.player.isSlowTimeActive?.()) {
           const scoreAwarded = this.getComboScore(nearest.scoreValue);
           const appliedScore = this.game.addScore(this.getNormalWaveScoreAward(scoreAwarded, nearest));
           if (this.scorePopupManager) {
@@ -16575,10 +16671,15 @@ export class PlayScene {
         this.onEnemyKilled(nearest);
         this.playEnemyDeathFeedback(nearest, { volume: 0.4 });
       } else {
-        this.particleManager.createHitSpark(nearest.x, nearest.y);
+        this.particleManager?.createHitSpark?.(
+          nearest.x,
+          nearest.y,
+          targetIsHijacker ? 0x8fffff : undefined
+        );
       }
 
       chainedEnemies.push(nearest);
+      chainedEnemySet.add(nearest);
       currentEnemy = nearest;
     }
 
@@ -16586,6 +16687,19 @@ export class PlayScene {
     if (chainedEnemies.length > 1) {
       AudioManager.playSfx('chain_lightning_arc', { volume: 0.62 });
     }
+    this.lastChainLightning = {
+      triggered: hitTargets.length > 0,
+      reason: hitTargets.length > 0 ? 'chained' : 'no_target',
+      source: sourceEnemy,
+      sourceKind: sourceEnemy.kind || sourceEnemy.type || 'enemy',
+      maxChains,
+      chainRange,
+      damageMultiplier,
+      hitCount: hitTargets.length,
+      hitTargets,
+      audioEvents: hitTargets.length > 0 ? 1 : 0
+    };
+    return this.lastChainLightning;
   }
 
   drawLightningArc(x1, y1, x2, y2) {

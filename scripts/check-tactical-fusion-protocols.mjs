@@ -180,13 +180,17 @@ try {
       ));
     }
     player.startDodge();
+    const duringDodgeBullets = manager.enemyBullets.filter((bullet) => bullet.active !== false).length;
+    player.finishDodge('duration');
     return {
+      duringDodgeBullets,
       enemyBullets: manager.enemyBullets.filter((bullet) => bullet.active !== false).length,
       riftShards: manager.playerBullets.filter((bullet) => bullet.isTacticalRiftShard).length,
       event: structuredClone(player.lastTacticalFusionEvent),
       stats: structuredClone(player.tacticalFusionStats)
     };
   });
+  assert(riftRuntime.duringDodgeBullets === 7, `Rift Reprisal cleared bullets before Phase exit: ${JSON.stringify(riftRuntime)}`);
   assert(riftRuntime.enemyBullets === 0, `Rift Reprisal failed to clear Phase bullets: ${JSON.stringify(riftRuntime)}`);
   assert(riftRuntime.riftShards === 5 && riftRuntime.event?.projectileCount === 5, `Rift Reprisal return-fire cap failed: ${JSON.stringify(riftRuntime)}`);
   report.states.riftRuntime = riftRuntime;
@@ -254,24 +258,28 @@ try {
   const skyRuntime = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     const player = play.player;
-    if (!play.enemyManager.enemies.some((enemy) => enemy?.active)) {
-      play.enemyManager.enemies.push({
-        active: true,
-        waitingForEntry: true,
-        kind: 'fusion_check_target',
-        type: 'fusion_check_target',
-        x: Math.max(90, player.x - 240),
-        y: Math.max(180, player.y - 260),
-        radius: 16,
-        health: 9999,
-        scoreValue: 0,
-        update() {},
-        takeDamage(damage) {
-          this.health -= Math.max(0, Number(damage) || 0);
-          return false;
-        }
-      });
-    }
+    const fusionTarget = {
+      active: true,
+      waitingForEntry: false,
+      kind: 'fusion_check_target',
+      type: 'fusion_check_target',
+      x: Math.max(90, player.x - 80),
+      y: Math.max(180, player.y - 260),
+      radius: 16,
+      health: 9999,
+      maxHealth: 9999,
+      scoreValue: 0,
+      update() {},
+      takeDamage(damage) {
+        this.health -= Math.max(0, Number(damage) || 0);
+        return false;
+      }
+    };
+    play.enemyManager.enemies.push(fusionTarget);
+    play.enemyManager.state = 'WAVE_ACTIVE';
+    play.enemyManager.phase = 'WAVES';
+    play.pendingEnemyStartTimeout = null;
+    play.introActive = false;
     player.applyRunAugment('bomb');
     const result = player.applyRunAugment('orbital_strike');
     player.orbitalStrikeActive = true;
@@ -282,18 +290,23 @@ try {
     const chargesAfterSuppressedTimer = player.orbitalStrikeCharges;
     player.bombShotsLeft = 1;
     player.bombMaxShots = 1;
+    player.bombArmedAt = player.getGameplayClockMs() - 1;
+    const bombQueued = player.queueBombTriggerIntent();
     player.shootCooldown = 0;
     const bomb = player.shoot()[0];
-    bomb.x = Math.max(90, player.x - 240);
+    bomb.x = fusionTarget.x;
     bomb.y = Math.max(180, player.y - 260);
     const target = { x: bomb.x, y: bomb.y };
     const detonated = play.detonateBombBullet(bomb, 'fusion_check');
+    fusionTarget.active = false;
+    play.enemyManager.enemies = play.enemyManager.enemies.filter((enemy) => enemy !== fusionTarget);
     play.showTacticalFusionUnlock(result.newFusions[0]);
     play.hud?.update?.();
     return {
       newFusionIds: result.newFusionIds,
       chargesAfterSuppressedTimer,
       chargesAfterBomb: player.orbitalStrikeCharges,
+      bombQueued,
       detonated,
       target,
       orbitalDebug: structuredClone(play.lastOrbitalStrikeDebug),
@@ -302,6 +315,7 @@ try {
   });
   assert(skyRuntime.newFusionIds.join(',') === 'sky_verdict', `Sky Fusion unlock mismatch: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.chargesAfterSuppressedTimer === 2, 'Sky Verdict did not suppress random automatic targeting');
+  assert(skyRuntime.bombQueued, `Sky Verdict test bomb did not pass the current guarded Bomb commit path: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.detonated && skyRuntime.chargesAfterBomb === 1, `Sky Verdict did not spend exactly one charge: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.orbitalDebug?.fusionId === 'sky_verdict', `Sky Verdict did not mark the forced orbital strike: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.orbitalDebug?.targetX === Math.round(skyRuntime.target.x) && skyRuntime.orbitalDebug?.targetY === Math.round(skyRuntime.target.y), 'Sky Verdict beam did not use the bomb marker');

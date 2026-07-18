@@ -15,6 +15,7 @@ import {
   getTacticalFusionBlueprints
 } from '../src/config/TacticalDraft.js';
 import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
+import { analyzeTacticalDoctrine } from '../src/config/TacticalDoctrine.js';
 import { RUN_MODES } from '../src/game/RunMode.js';
 
 const host = '127.0.0.1';
@@ -191,7 +192,7 @@ for (const id of newAugmentIds) {
 }
 const expanded = buildTacticalDraftModifiers(newAugmentIds);
 for (const modifier of [
-  'phaseReload', 'focusDamageMult', 'focusSpeedMult', 'phaseClearRadius', 'movingDodgeRecoveryMult',
+  'phaseReload', 'focusDamageMult', 'focusSpreadMult', 'focusSpeedMult', 'phaseClearRadius', 'movingDodgeRecoveryMult',
   'lowLifeSectorShieldMs', 'hitInvulnerabilityBonusMs', 'grazeShieldThreshold', 'lowLifeDodgeRecoveryMult',
   'comboWindowBonusMs', 'pickupLifetimeMult', 'powerupDurationMult', 'droneDamageMult'
 ]) {
@@ -223,6 +224,9 @@ assert(latePoolOffers.length === 3 && latePoolOffers.every((offer) => offer.next
 const matchingTimedPickup = buildTacticalDraftModifiers(['damage_up', 'rapid_fire'], { activePowerupType: 'damage_up' });
 assert(matchingTimedPickup.overlapSuppressedId === 'damage_up', 'matching timed pickup should suppress only its duplicate Draft effect');
 assert(Math.abs(matchingTimedPickup.damageMult - 1) < 0.0001 && matchingTimedPickup.fireDelayMult < 1, 'matching timed pickup suppression affected unrelated Draft effects');
+const matchingDoubleShot = buildTacticalDraftModifiers(['double_shot'], { activePowerupType: 'double_shot' });
+assert(!matchingDoubleShot.overlapSuppressedId && matchingDoubleShot.shotBonus === 1,
+  'timed Double Shot should stack on, not suppress, the permanent Tactical shot bonus');
 const evolutionOffers = buildTacticalDraftOffers({
   seed: 'evolution-proof',
   sectorCleared: 3,
@@ -259,6 +263,128 @@ assert(phaseCompletion.length === 1 && phaseCompletion[0].status === 'completes'
   `Phase Reactor should forecast a completed Fusion when Phase Wake is owned: ${JSON.stringify(phaseCompletion)}`);
 assert(getTacticalFusionBlueprints('phase_reactor', ['phase_reactor', 'phase_wake']).length === 0,
   'already-active Fusions should not keep advertising a Draft blueprint');
+
+const doctrineArgs = {
+  seed: 'doctrine-descriptive-only',
+  sectorCleared: 4,
+  selectedIds: ['damage_up', 'damage_up', 'rapid_fire'],
+  lives: 3,
+  maxLives: 4,
+  baseShotCount: 1
+};
+const gunshipDoctrine = analyzeTacticalDoctrine(doctrineArgs.selectedIds);
+assert(gunshipDoctrine?.id === 'gunship', `expected Gunship doctrine for eligibility proof: ${JSON.stringify(gunshipDoctrine)}`);
+const doctrineOffersA = buildTacticalDraftOffers({ ...doctrineArgs, doctrine: gunshipDoctrine });
+const doctrineOffersB = buildTacticalDraftOffers({
+  ...doctrineArgs,
+  doctrine: { id: 'bastion', weights: { defense: 999 }, eligibleIds: ['shield'] }
+});
+assert(
+  JSON.stringify(doctrineOffersA) === JSON.stringify(doctrineOffersB),
+  'Run Doctrine metadata affected candidate eligibility, ordering, or weights'
+);
+
+const allExceptPhaseWake = TACTICAL_DRAFT_AUGMENTS
+  .filter((augment) => augment.id !== 'phase_wake')
+  .flatMap((augment) => Array(Math.min(augment.maxStacks, augment.maxStacks === 3 ? 2 : 1)).fill(augment.id));
+const fusionBeforeThirdStack = buildTacticalDraftOffers({
+  seed: 'fusion-before-third-stack',
+  sectorCleared: 14,
+  selectedIds: allExceptPhaseWake,
+  lives: 3,
+  maxLives: 4
+});
+assert(
+  fusionBeforeThirdStack.some((offer) => offer.id === 'phase_wake' && offer.fusionCompletionPriority),
+  `eligible Fusion partner was not reserved ahead of Stack III: ${JSON.stringify(fusionBeforeThirdStack)}`
+);
+
+const heldAndFixed = buildTacticalDraftOffers({
+  seed: 'held-fixed-fusion-priority',
+  sectorCleared: TACTICAL_SCORE_ROUTE_SECTOR,
+  selectedIds: ['phase_reactor'],
+  heldId: 'damage_up',
+  lives: 3,
+  maxLives: 4
+});
+assert(heldAndFixed.some((offer) => offer.id === 'phase_wake' && offer.fusionCompletionPriority),
+  `Fusion priority disappeared beside held/fixed choices: ${JSON.stringify(heldAndFixed)}`);
+assert(heldAndFixed.some((offer) => offer.id === 'damage_up' && offer.held),
+  `held choice did not survive Fusion priority: ${JSON.stringify(heldAndFixed)}`);
+assert(heldAndFixed.some((offer) => offer.id === 'combo_anchor' && offer.fixedScoreRoute),
+  `fixed Sector 5 score route did not survive Fusion priority: ${JSON.stringify(heldAndFixed)}`);
+
+for (let index = 0; index < 40; index += 1) {
+  const bannedPartner = buildTacticalDraftOffers({
+    seed: `banned-fusion-partner-${index}`,
+    sectorCleared: 9,
+    selectedIds: ['phase_reactor'],
+    bannedIds: ['phase_wake']
+  });
+  assert(!bannedPartner.some((offer) => offer.id === 'phase_wake'),
+    `banned Fusion partner was forced for seed ${index}: ${JSON.stringify(bannedPartner)}`);
+  const cappedConsumedPartner = buildTacticalDraftOffers({
+    seed: `capped-fusion-partner-${index}`,
+    sectorCleared: 9,
+    selectedIds: ['phase_reactor', 'phase_wake'],
+    consumedIds: ['phase_wake']
+  });
+  assert(!cappedConsumedPartner.some((offer) => offer.id === 'phase_wake'),
+    `capped/consumed Fusion partner was forced for seed ${index}: ${JSON.stringify(cappedConsumedPartner)}`);
+}
+
+const prioritySelected = TACTICAL_DRAFT_AUGMENTS
+  .filter((augment) => augment.id !== 'focus_lens')
+  .flatMap((augment) => Array(Math.min(augment.maxStacks, augment.id === 'damage_up' || augment.id === 'rapid_fire' ? 2 : 1)).fill(augment.id));
+for (let index = 0; index < 80; index += 1) {
+  const offers = buildTacticalDraftOffers({
+    seed: `unseen-before-stack-three-${index}`,
+    sectorCleared: 12,
+    selectedIds: prioritySelected,
+    lives: 3,
+    maxLives: 4
+  });
+  const hasThirdStack = offers.some((offer) => offer.nextStack === 3);
+  if (hasThirdStack) {
+    assert(offers.some((offer) => offer.id === 'focus_lens'),
+      `Stack III crowded out an unseen valid choice for seed ${index}: ${JSON.stringify(offers)}`);
+  }
+}
+
+const singleLaneOfferSectors = [];
+for (let sectorCleared = 1; sectorCleared <= 12; sectorCleared += 1) {
+  const offers = buildTacticalDraftOffers({
+    seed: 'gunship-single-lane-catchup',
+    sectorCleared,
+    selectedIds: ['damage_up', 'rapid_fire'],
+    baseShotCount: 1,
+    lives: 3,
+    maxLives: 4,
+    doctrine: gunshipDoctrine
+  });
+  if (offers.some((offer) => offer.id === 'double_shot')) singleLaneOfferSectors.push(sectorCleared);
+}
+assert(singleLaneOfferSectors.some((sector) => sector <= 3),
+  `single-lane Gunship build was starved of Double Shot: ${singleLaneOfferSectors.join(',')}`);
+assert([3, 6, 9, 12].every((sector) => singleLaneOfferSectors.includes(sector)),
+  `single-lane catch-up cadence was not bounded: ${singleLaneOfferSectors.join(',')}`);
+
+for (let index = 0; index < 80; index += 1) {
+  const args = {
+    seed: `determinism-${index}`,
+    sectorCleared: 1 + (index % 18),
+    selectedIds: index % 2 ? ['phase_reactor', 'damage_up', 'damage_up'] : ['shield', 'speed_up'],
+    baseShotCount: index % 3 === 0 ? 1 : 2,
+    lives: 1 + (index % 3),
+    maxLives: 4,
+    heldId: index % 5 === 0 ? 'magnet' : null,
+    bannedIds: index % 7 === 0 ? ['rapid_fire'] : []
+  };
+  assert(
+    JSON.stringify(buildTacticalDraftOffers(args)) === JSON.stringify(buildTacticalDraftOffers(args)),
+    `seeded offers changed between identical calls for seed ${args.seed}`
+  );
+}
 for (const [offerId, partnerId, fusionId] of [
   ['drones', 'drone_link', 'drone_constellation'],
   ['shield', 'point_defense', 'aegis_reactor'],

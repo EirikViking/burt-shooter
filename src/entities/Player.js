@@ -103,6 +103,10 @@ export class Player {
     this.isDodging = false;
     this.dodgeDuration = 0;
     this.dodgeDurationMax = Math.round(333 * (this.traitCombat.dodgeDurationMult || 1));
+    this.dodgeSequence = 0;
+    this.pendingDodgeExitPulseToken = 0;
+    this.resolvedDodgeExitPulseToken = 0;
+    this.lastDodgeExitPulse = null;
 
     // Tractor Beam Removed
 
@@ -118,6 +122,7 @@ export class Player {
 
     // Powerups
     this.activePowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock' };
+    this.doubleShotShotFloor = 0;
     this.powerupEffect = null;
     this.powerupMovementBoostMult = 1;
     this.powerupDodgeDelayMult = 1;
@@ -1828,10 +1833,7 @@ export class Player {
       this.sprite.alpha = 0.42; // Visually indicate dodge without making the ship vanish.
       this.updateDodgeVisual(dt);
       if (this.dodgeDuration <= 0) {
-        this.isDodging = false;
-        this.invulnerable = this.invulnerableTime > 0;
-        this.clearDodgeVisual();
-        if (!this.isGhostActive()) this.sprite.alpha = 1;
+        this.finishDodge('duration');
       }
     } else {
       // Invulnerable blinking
@@ -2080,7 +2082,10 @@ export class Player {
     }
 
     const scramble = this.getStatusEffect('target_scramble');
-    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1);
+    const focusSpreadMult = this.focusDriftActive
+      ? Math.max(0.6, Math.min(1, Number(this.runAugmentModifiers?.focusSpreadMult) || 1))
+      : 1;
+    const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1) * focusSpreadMult;
     const jitterRange = scramble?.shotJitter || 0;
     const totalShots = Math.max(1, this.multiShot + this.rankBoostExtraShots);
     const spreadAngles = totalShots > 1 ?
@@ -3273,6 +3278,10 @@ export class Player {
   }
 
   startDodge() {
+    if (this.isDodging) return false;
+    const token = (Number(this.dodgeSequence) || 0) + 1;
+    this.dodgeSequence = token;
+    this.pendingDodgeExitPulseToken = token;
     this.isDodging = true;
     this.invulnerable = true;
     this.dodgeDuration = this.dodgeDurationMax;
@@ -3282,7 +3291,55 @@ export class Player {
     if (this.runAugmentModifiers?.phaseReload) this.shootCooldown = 0;
     AudioManager.playSfx('ghost_phase_shift', { volume: 0.46, minIntervalMs: 160 });
     this.updateDodgeVisual(0);
-    this.triggerTraitDodgePulse();
+    return true;
+  }
+
+  finishDodge(reason = 'duration') {
+    if (!this.isDodging) return false;
+    const token = this.pendingDodgeExitPulseToken;
+    this.isDodging = false;
+    this.dodgeDuration = 0;
+    this.invulnerable = this.invulnerableTime > 0;
+    this.clearDodgeVisual();
+    if (!this.isGhostActive() && this.sprite) this.sprite.alpha = 1;
+    if (reason === 'duration') this.resolveDodgeExitPulse(token);
+    else this.cancelDodgeExitPulse(reason);
+    return true;
+  }
+
+  cancelDodgeExitPulse(reason = 'cancelled', { endDodge = false } = {}) {
+    const token = this.pendingDodgeExitPulseToken;
+    this.pendingDodgeExitPulseToken = 0;
+    if (endDodge) {
+      this.isDodging = false;
+      this.dodgeDuration = 0;
+      this.clearDodgeVisual();
+      if (!this.isGhostActive() && this.sprite) this.sprite.alpha = 1;
+    }
+    if (token > 0) {
+      this.lastDodgeExitPulse = {
+        token,
+        reason,
+        cancelled: true,
+        cleared: 0,
+        phaseCleared: 0,
+        shards: 0
+      };
+    }
+    return token > 0;
+  }
+
+  resolveDodgeExitPulse(token = this.pendingDodgeExitPulseToken) {
+    const normalizedToken = Math.max(0, Math.floor(Number(token) || 0));
+    if (
+      normalizedToken <= 0
+      || normalizedToken !== this.pendingDodgeExitPulseToken
+      || normalizedToken === this.resolvedDodgeExitPulseToken
+    ) return false;
+    this.pendingDodgeExitPulseToken = 0;
+    this.resolvedDodgeExitPulseToken = normalizedToken;
+    this.triggerTraitDodgePulse({ token: normalizedToken });
+    return true;
   }
 
   updateDodgeVisual(dt = 0) {
@@ -3476,37 +3533,70 @@ export class Player {
     return this.invulnerableTime;
   }
 
-  triggerTraitDodgePulse() {
-    const radius = Math.max(
-      Number(this.traitCombat?.dodgePulseRadius || 0),
-      Number(this.runAugmentModifiers?.phaseClearRadius || 0)
-    );
+  triggerTraitDodgePulse({ token = this.resolvedDodgeExitPulseToken } = {}) {
+    const traitRadius = Math.max(0, Number(this.traitCombat?.dodgePulseRadius) || 0);
+    const phaseRadius = Math.max(0, Number(this.runAugmentModifiers?.phaseClearRadius) || 0);
+    const combinesTraitAndPhase = traitRadius > 0 && phaseRadius > 0;
+    const combinedRadiusBonus = combinesTraitAndPhase
+      ? Math.max(8, Math.min(14, Math.round(Math.min(traitRadius, phaseRadius) * 0.2)))
+      : 0;
+    const radius = Math.min(112, Math.max(traitRadius, phaseRadius) + combinedRadiusBonus);
+    const phaseContributionRadius = phaseRadius > 0
+      ? Math.min(radius, phaseRadius + combinedRadiusBonus)
+      : 0;
     const playScene = this.game?.scenes?.play;
-    if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) return;
+    if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) {
+      this.lastDodgeExitPulse = {
+        token,
+        reason: 'no_pulse_source',
+        cancelled: false,
+        traitRadius,
+        phaseRadius,
+        combinedRadiusBonus,
+        radius: 0,
+        cleared: 0,
+        phaseCleared: 0,
+        shards: 0,
+        clearAudioEvents: 0,
+        fusionAudioEvents: 0
+      };
+      return this.lastDodgeExitPulse;
+    }
 
     let cleared = 0;
-    const clearedPositions = [];
+    let phaseCleared = 0;
+    const phaseClearedPositions = [];
+    const clearReason = combinesTraitAndPhase
+      ? 'combined_dodge_exit_pulse'
+      : phaseRadius > 0
+        ? 'phase_wake_exit'
+        : 'trait_dodge_exit_pulse';
     playScene.bulletManager.enemyBullets.forEach((bullet) => {
       if (!bullet?.active) return;
       const dist = Math.hypot((bullet.x || 0) - this.x, (bullet.y || 0) - this.y);
       if (dist > radius) return;
-      playScene.bulletManager.deactivateBullet?.(bullet, 'trait_dodge_pulse');
+      playScene.bulletManager.deactivateBullet?.(bullet, clearReason);
       cleared += 1;
-      if (clearedPositions.length < 5) clearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
+      if (phaseContributionRadius > 0 && dist <= phaseContributionRadius) {
+        phaseCleared += 1;
+        if (phaseClearedPositions.length < 5) {
+          phaseClearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
+        }
+      }
       if (playScene.particleManager) {
         playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
       }
     });
 
     if (cleared > 0) {
-      playScene.bulletManager.pruneInactiveBullets?.('enemy', 'trait_dodge_pulse');
+      playScene.bulletManager.pruneInactiveBullets?.('enemy', clearReason);
       AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
       if (playScene.enqueueToast) {
         playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
       }
-      if (this.runAugmentModifiers?.riftReprisal) {
-        const shardCount = clearedPositions.length;
-        clearedPositions.forEach((position, index) => {
+      if (this.runAugmentModifiers?.riftReprisal && phaseClearedPositions.length > 0) {
+        const shardCount = phaseClearedPositions.length;
+        phaseClearedPositions.forEach((position, index) => {
           const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.09;
           const shard = new Bullet(
             position.x,
@@ -3550,6 +3640,23 @@ export class Player {
         if (ring.parent) ring.parent.removeChild(ring);
       }, 130);
     }
+    const shards = this.runAugmentModifiers?.riftReprisal ? phaseClearedPositions.length : 0;
+    this.lastDodgeExitPulse = {
+      token,
+      reason: clearReason,
+      cancelled: false,
+      traitRadius,
+      phaseRadius,
+      phaseContributionRadius,
+      combinedRadiusBonus,
+      radius,
+      cleared,
+      phaseCleared,
+      shards,
+      clearAudioEvents: cleared > 0 ? 1 : 0,
+      fusionAudioEvents: shards > 0 ? 1 : 0
+    };
+    return this.lastDodgeExitPulse;
   }
 
   takeDamage() {
@@ -3891,6 +3998,12 @@ export class Player {
     this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
     this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
     this.multiShot = Math.max(1, Math.min(8, this.multiShot + Math.round(modifiers.shotBonus || 0)));
+    if (this.activePowerup?.type === 'double_shot' && !this.isPowerupSuppressed()) {
+      this.multiShot = Math.min(8, Math.max(
+        this.multiShot,
+        Math.max(1, Number(this.doubleShotShotFloor) || 1)
+      ));
+    }
     const directOutputAfter = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
     const directOutputCap = directOutputBefore * SHIP_THREAT_RESPONSE_TARGETS.maxDirectDraftOutputMult;
     if (directOutputAfter > directOutputCap && directOutputAfter > 0) {
@@ -4141,7 +4254,11 @@ export class Player {
       return;
     }
 
+    const doubleShotShotFloor = type === 'double_shot'
+      ? Math.max(1, Math.min(8, Math.round(Number(this.multiShot) || 1)))
+      : 0;
     this.resetPowerups(); // Clear existing to prevent stacking weirdness
+    this.doubleShotShotFloor = doubleShotShotFloor;
     this.activePowerup.type = type;
     this.setActivePowerupDuration(type, durationMs, now);
     this.powerupEffect = effect;
@@ -4293,6 +4410,7 @@ export class Player {
     this.bombColor = 0xffaa00;
     this.droneCount = 2;
     this.droneColor = 0x66ccff;
+    this.doubleShotShotFloor = 0;
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
     this.activePowerup.remainingMs = 0;
@@ -4462,7 +4580,7 @@ export class Player {
           this.shootDelay = this.stats.fireRate * 0.5;
           break;
         case 'double_shot':
-          this.multiShot = Math.max(this.multiShot, 2);
+          this.multiShot = Math.min(8, this.multiShot + 1);
           break;
         case 'damage_up':
           this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
@@ -4705,6 +4823,7 @@ export class Player {
   }
 
   forceRespawn(screenWidth, screenHeight) {
+    this.cancelDodgeExitPulse('life_lost', { endDodge: true });
     this.x = screenWidth / 2;
     this.y = screenHeight - 100;
     this.sprite.x = this.x;
@@ -4741,6 +4860,7 @@ export class Player {
   }
 
   destroy() {
+    this.cancelDodgeExitPulse('destroy', { endDodge: true });
     this.clearStatusEffects('destroy');
     // Clean up visual enhancements
     if (this.visualEnhancementCleanup) {
