@@ -30,10 +30,12 @@ The upload did not change Steamworks settings or assign the build to a player fa
 
 ## Public communication status
 
-The Steam announcement and direct Tyrian reply are prepared with no hyphen or dash characters.
+The Steam announcement is live:
 
-The Computer Use control kernel failed twice before any browser action with:
+`https://store.steampowered.com/news/app/4765070/view/711155348639057266`
 
-`failed to write kernel assets: Systemet finner ikke angitt bane. (os error 3)`
+The direct Tyrian forum reply is live as comment 68:
 
-Chrome uses the same unavailable control kernel in this Codex task. Neither public message was posted or verified.
+`https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=5#c577173563817100712`
+
+The live forum reply is the verified unquoted version. A quote formatted replacement was supplied to the user for manual posting, but no replacement is claimed or verified here.

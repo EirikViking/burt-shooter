@@ -2048,3 +2048,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - The steady 1920x1080 Electron diagnostic scene passes at 59.81 rAF Hz, 59.91 render/canvas submissions Hz, and 59.71 fixed-step Hz; p50/p95/p99/max are 16.7/16.9/17.2/17.4 ms with no intervals above 25 ms. Representative Mayhem and Sector gameplay both hold 60.0 average FPS with 16.9 ms p95, 17.2 ms p99, no active-wave interval above 20 ms, and no interval above 50 ms.
 - Source-Electron live Steam screenshot integration passes with a valid 1920x1080 image at entropy 6.57 while `continuousMirror` is false. Browser cadence, i18n for all eight locales, UI localization, browser smoke, Electron smoke, controller-only flow, Steam bridge contract, release-line guard, and targeted gameplay pacing checks pass.
 - Steamworks settings, public/default, and deploy remain untouched. Private packaging/upload and final Steam Game Recording fresh-frame verification are still pending.
+
+## 2026-07-18 - Stable lock for Steam BuildID 24274850
+
+- Locked the exact uploaded source `4c27594136aa0b74f1c55ca98a20a1a6fe25af44` and upload evidence commit `a7adf0fa93b68d3a2587acbec0cd033eae02a005` on dedicated branch `codex/stable-build24274850-20260718`.
+- The locked source contains the approved checkpoint, frame pacing and Steam capture rescue, all confirmed Tyrian gameplay feedback fixes, and the Hangar correction that launches Mayhem Tactical through click, keyboard, controller, and ship details routes.
+- Steam BuildID `24274850`, package `v2026-07-18_17-04-21`, AppID `4765070`, and depot `4765071` remain private and unassigned with VDF `SetLive` empty. This lock performed no Steam upload, branch assignment, Steamworks mutation, or production data change.
+- Final focused checks, release line, all eight localization catalogs and UI surfaces, controller flow, production build, browser smoke, Electron smoke, exact Steam package runtime, and `git diff --check` pass. Focus Lens, Tractor feedback, ordinary hit feedback, Hangar Tactical launch, German Settings, and Japanese HUD captures were manually inspected.
+- The first localization UI and controller attempts recorded transient nonreproducible browser failures. Immediate clean reruns passed completely; both failed and passing artifacts are retained.
+- The stable source and evidence will be published as immutable GitHub tags `nova-swarm-release-20260718-build24274850` and `nova-swarm-stable-20260718-build24274850`. Future improvements must start in a new branch and worktree from the stable evidence tag.
