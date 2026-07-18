@@ -1,0 +1,22 @@
+Hi pilots,
+
+This is a focused feedback patch built directly from recent player testing. It makes dodge builds less self-defeating, prevents Double Shot from becoming a downgrade, adds a tighter firing option, and improves several moments where the game was technically working but communicating the wrong thing.
+
+[h2]What changed[/h2]
+
+[list]
+[*][b]Dodge Pulse now fires at phase exit.[/b] The invulnerable dodge and graze window stays intact, while Dodge Pulse and Phase Wake now combine into one bounded clear instead of competing with each other. Rift Reprisal still creates shards from eligible Phase Wake clears.
+[*][b]Double Shot always adds firepower.[/b] The timed pickup now adds one shot to the current permanent build instead of replacing it. A four-shot build becomes five shots while active, then returns exactly to four when it expires.
+[*][b]Focus Lens now tightens spread.[/b] Holding Focus keeps the existing focused-damage bonus and also narrows the current ship's firing spread by 25%, without changing projectile count or unfocused firing.
+[*][b]No celebratory sarcasm after losing a life.[/b] Positive wave-clear compliments and celebratory quips are suppressed when a life was lost during that wave or immediately beforehand. Score, progression, and clear-state information are unchanged.
+[*][b]The Tractor joins Chain Lightning.[/b] An active Tractor/Hijacker can now be a Chain Lightning source or target, with clearer ordinary-hit and lightning-hit feedback and a more readable health bar.
+[*][b]Tactical offers respect build direction.[/b] Eligible Fusion-completing choices and unseen valid augments are prioritized ahead of third stacks. Run Doctrines remain descriptive only and never restrict future offers.
+[/list]
+
+The Steam screenshot and Game Recording capture fix from the current build line is included unchanged.
+
+Score formulas, leaderboard identities and stored scores, achievement IDs and requirements, save data, Steam Cloud paths, and Steamworks settings were not changed.
+
+Special thanks to Tyrian for the detailed testing and concrete examples. The swarm gets better when feedback gives us something precise to reproduce.
+
+Tiny Foundry
