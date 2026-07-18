@@ -22,6 +22,11 @@
 - `npm run check:desktop-package` passed in explicit local mode.
 - Live Steam initialization was not claimed because the Steam client was not running.
 
-## Upload state
+## Upload receipt
 
-The external execution approval gate rejected the SteamCMD transfer before it started. No package data was uploaded, no Steam BuildID was created, and no Steam branch was assigned or changed. Resume only after explicit upload re-authorization following that risk notice, using the existing generated VDF and verifying again that `SetLive` is blank.
+- SteamPipe upload completed successfully at `2026-07-18 15:38:33` Europe/Oslo.
+- Steam BuildID: `24274142`.
+- Depot manifest: `945000638569068439`.
+- SteamCMD confirmed AppID `4765070` and depot `4765071`.
+- The verified VDF retained `"SetLive" ""`, so the build is private and unassigned.
+- No Steam branch was promoted, no Steamworks setting was changed, and no public deployment was performed.
