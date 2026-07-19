@@ -44,6 +44,8 @@ Upload log: `test-results/steam-upload-achievement-integrity-20260719/steamcmd.s
 - Full Hangar Omega now requires and describes all 30 currently playable ships instead of the stale 25-ship requirement.
 - After explicit approval, only `ACH_NO_REPAIR_RECEIPTS` was cleared from the logged-in Steam user and matching local/Cloud mirrors. Steam and local counts changed from 60 to 59, with every other achievement unchanged.
 
+The package includes the Full Hangar Omega runtime and localized in-game description correction. The matching live Steamworks player-facing description still requires an authenticated Steam Partner browser session and was not changed during this upload.
+
 ## Exact-package verification
 
 - All 81 achievement catalog entries passed: 39 rank, 40 milestone, and 2 leaderboard achievements.

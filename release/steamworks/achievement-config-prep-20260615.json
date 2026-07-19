@@ -1069,8 +1069,8 @@
       "hidden": false,
       "type": "milestone",
       "metric": "unlockedShipCount",
-      "target": 25,
-      "minimumScore": 100000,
+      "target": 30,
+      "minimumScore": 250000,
       "difficulty": "legendary",
       "achievedIcon": "ACH_FULL_HANGAR_OMEGA-achieved.jpg",
       "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"
