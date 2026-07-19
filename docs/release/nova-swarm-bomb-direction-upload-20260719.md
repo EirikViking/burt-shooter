@@ -67,3 +67,11 @@ Bomb charge count, fresh-press firing rule, target eligibility, projectile speed
 - `npm run check:fresh-profile-steam-isolation` passed.
 - `npm run check:desktop-package` passed.
 - The payload manifest contains 417 files and 958,420,502 bytes.
+
+## Forum reply
+
+The verified Tiny Foundry reply was posted as comment `#72`:
+
+`https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=5#c577173563817164433`
+
+The live thread showed the complete reply, the Tiny Foundry developer identity, timestamp `19 July, 2026 @ 11:22:22 am CEST`, comment link `#72`, and `Showing 61-72 of 72 comments`. The reply accurately states that BuildID `24281734` is private and unassigned and does not claim that the public branch moved.
