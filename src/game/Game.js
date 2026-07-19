@@ -27,7 +27,10 @@ import {
   getRankAchievementId
 } from '../achievements/AchievementCatalog.js';
 import { evaluateSwarmEliteEligibility } from '../achievements/SwarmEliteAchievement.js';
-import { getMilestoneAchievementUnlocks } from '../achievements/MilestoneAchievements.js';
+import {
+  captureNoRepairReceiptsLifeLosses,
+  getMilestoneAchievementUnlocks
+} from '../achievements/MilestoneAchievements.js';
 import { onLanguageChange, translateText } from '../i18n/index.js';
 import { MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { RunPacingConfig, getRunPacingDebugState } from '../config/RunPacingConfig.js';
@@ -111,6 +114,7 @@ export class Game {
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
     this.runClearLifeLosses = 0;
+    this.noRepairReceiptsLifeLosses = null;
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
@@ -407,6 +411,7 @@ export class Game {
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
     this.runClearLifeLosses = 0;
+    this.noRepairReceiptsLifeLosses = null;
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
@@ -591,7 +596,18 @@ export class Game {
     this.runClearReason = reason;
     this.runClearLivesRemaining = Math.max(0, Number(this.lives) || 0);
     this.runClearLifeLosses = Math.max(0, Number(this.scenes?.play?.lifeLossesThisRun) || 0);
+    this.updateNoRepairReceiptsQualification();
     return true;
+  }
+
+  updateNoRepairReceiptsQualification() {
+    this.noRepairReceiptsLifeLosses = captureNoRepairReceiptsLifeLosses({
+      capturedLifeLosses: this.noRepairReceiptsLifeLosses,
+      runCleared: this.runCleared,
+      score: this.score,
+      lifeLosses: this.scenes?.play?.lifeLossesThisRun
+    });
+    return this.noRepairReceiptsLifeLosses;
   }
 
   awardRunClearScoreBonuses({ clearBonus = 0, livesBonus = 0, awardKey = 'run_clear' } = {}) {
@@ -842,6 +858,7 @@ export class Game {
     const preDangerAward = normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
     const applied = this.getScoreAward(points);
     this.score += applied;
+    this.updateNoRepairReceiptsQualification();
     const breakdownKey = this.scoreBreakdown[source] !== undefined ? source : 'baseScore';
     this.scoreBreakdown[breakdownKey] += applied;
     this.scoreBreakdown.dangerMultiplierBonus += Math.max(0, applied - preDangerAward);
@@ -1332,6 +1349,14 @@ export class Game {
       clearReason: overrides.clearReason || this.runClearReason || null,
       clearLivesRemaining: Math.max(0, Number(overrides.clearLivesRemaining ?? this.runClearLivesRemaining) || 0),
       clearLifeLosses: Math.max(0, Number(overrides.clearLifeLosses ?? this.runClearLifeLosses) || 0),
+      noRepairReceiptsLifeLosses: Math.max(
+        0,
+        Number(
+          overrides.noRepairReceiptsLifeLosses
+          ?? this.noRepairReceiptsLifeLosses
+          ?? play?.lifeLossesThisRun
+        ) || 0
+      ),
       codexDiscoveries: discoveries.length,
       totalCodexDiscoveries: discoveryStats.totalDiscovered,
       runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
@@ -1400,6 +1425,7 @@ export class Game {
       clearReason: this.runClearReason || null,
       clearLivesRemaining: Math.max(0, Number(this.runClearLivesRemaining) || 0),
       clearLifeLosses: Math.max(0, Number(this.runClearLifeLosses) || 0),
+      noRepairReceiptsLifeLosses: this.noRepairReceiptsLifeLosses,
       runMode: this.runMode,
       runModeReason: this.runModeReason
     };
@@ -1591,6 +1617,7 @@ export class Game {
           livesRemaining: this.runSummary.livesRemaining,
           clearLivesRemaining: this.runSummary.clearLivesRemaining,
           clearLifeLosses: this.runSummary.clearLifeLosses,
+          noRepairReceiptsLifeLosses: this.runSummary.noRepairReceiptsLifeLosses,
           minimumScore: achievement.minimumScore
         });
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);

@@ -929,7 +929,7 @@ const sourceText = Object.freeze({
   'Graze Storm Crown': 'Graze storm crown',
   'Trigger 12 Graze Breaks in a 250,000-point ranked run.': '250,000 jeom rank run-eseo Graze Break-reul 12-hoe baldong haseyo.',
   'Full Hangar Omega': 'Full hangar Omega',
-  'Unlock all 25 playable ships, then finish a 250,000-point ranked run.': 'Hamseon 25cheok-eul modu haegeumhan dwi 250,000 jeom raengkeu reon-eul machiseyo.',
+  'Unlock all 30 playable ships, then finish a 250,000-point ranked run.': 'Hamseon 30cheok-eul modu haegeumhan dwi 250,000 jeom raengkeu reon-eul machiseyo.',
   'CREDITS: THE CABINET DENIES EVERYTHING': '크레딧: Cabinet은 전부 부인합니다',
   'A Tinyfoundry Games incident report, heavily denied by Mission Control.': 'Tinyfoundry Games 사고 보고서. 임무 관제부는 강하게 부인했습니다.',
   'Tinyfoundry Games: legally responsible for the explosions, emotionally responsible for the coins.': 'Tinyfoundry Games: 폭발은 법적으로, 동전은 감정적으로 책임집니다.',

@@ -990,7 +990,7 @@ const sourceText = Object.freeze({
   'Graze Storm Crown': 'Graze-Sturmkrone',
   'Trigger 12 Graze Breaks in a 250,000-point ranked run.': 'Loese 12 Graze Breaks in einem 250.000-Punkte-Run aus.',
   'Full Hangar Omega': 'Voller Hangar Omega',
-  'Unlock all 25 playable ships, then finish a 250,000-point ranked run.': 'Schalte alle 25 spielbaren Schiffe frei und beende dann einen gewerteten 250.000-Punkte-Run.',
+  'Unlock all 30 playable ships, then finish a 250,000-point ranked run.': 'Schalte alle 30 spielbaren Schiffe frei und beende dann einen gewerteten 250.000-Punkte-Run.',
   'CREDITS: THE CABINET DENIES EVERYTHING': 'CREDITS: DAS CABINET STREITET ALLES AB',
   'A Tinyfoundry Games incident report, heavily denied by Mission Control.': 'Ein Tinyfoundry-Games-Vorfallsbericht, von der Missionskontrolle energisch abgestritten.',
   'Tinyfoundry Games: legally responsible for the explosions, emotionally responsible for the coins.': 'Tinyfoundry Games: rechtlich für die Explosionen verantwortlich, emotional für die Münzen.',

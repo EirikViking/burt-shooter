@@ -1,4 +1,8 @@
-import { MILESTONE_ACHIEVEMENT_IDS, getMilestoneAchievements } from './AchievementCatalog.js';
+import {
+  LEGEND_COMPOUND_SCORE_GATE,
+  MILESTONE_ACHIEVEMENT_IDS,
+  getMilestoneAchievements
+} from './AchievementCatalog.js';
 
 function finiteNumber(value, fallback = 0) {
   const number = Number(value);
@@ -45,6 +49,8 @@ function getMetricValueByName(metric, summary = {}, progress = {}) {
       return summary.runCleared
         ? finiteNumber(summary.clearLifeLosses ?? summary.lifeLosses)
         : finiteNumber(summary.lifeLosses);
+    case 'noRepairReceiptsLifeLosses':
+      return finiteNumber(summary.noRepairReceiptsLifeLosses ?? summary.lifeLosses);
     case 'bossesKilled':
       return finiteNumber(summary.bossesKilled);
     case 'totalBossesDefeated':
@@ -129,6 +135,17 @@ function getRequirementEntries(achievement, summary = {}, progress = {}) {
 function requirementMet(requirement) {
   if (requirement.comparator === '<=') return requirement.value <= requirement.target;
   return requirement.value >= requirement.target;
+}
+
+export function captureNoRepairReceiptsLifeLosses({
+  capturedLifeLosses = null,
+  runCleared = false,
+  score = 0,
+  lifeLosses = 0
+} = {}) {
+  if (capturedLifeLosses != null) return Math.max(0, finiteNumber(capturedLifeLosses));
+  if (!runCleared || finiteNumber(score) < LEGEND_COMPOUND_SCORE_GATE) return null;
+  return Math.max(0, finiteNumber(lifeLosses));
 }
 
 export function getMilestoneAchievementUnlocks({ summary = {}, progress = {} } = {}) {

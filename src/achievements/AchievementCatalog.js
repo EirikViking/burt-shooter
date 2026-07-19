@@ -345,12 +345,12 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
     name: 'No Repair Receipts',
     description: 'Clear a 250,000-point ranked run without losing a life.',
     type: 'milestone',
-    metric: 'clearLifeLosses',
+    metric: 'noRepairReceiptsLifeLosses',
     target: 0,
     minimumScore: LEGEND_COMPOUND_SCORE_GATE,
     requirements: scoreGated([
       { metric: 'runCleared', target: 1 },
-      { metric: 'clearLifeLosses', target: 0, comparator: '<=' }
+      { metric: 'noRepairReceiptsLifeLosses', target: 0, comparator: '<=' }
     ], LEGEND_COMPOUND_SCORE_GATE),
     difficulty: 'legendary',
     hidden: false
@@ -541,12 +541,12 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.FULL_HANGAR_OMEGA,
     name: 'Full Hangar Omega',
-    description: 'Unlock all 25 playable ships, then finish a 250,000-point ranked run.',
+    description: 'Unlock all 30 playable ships, then finish a 250,000-point ranked run.',
     type: 'milestone',
     metric: 'unlockedShipCount',
-    target: 25,
+    target: 30,
     minimumScore: LEGEND_COMPOUND_SCORE_GATE,
-    requirements: scoreGated([{ metric: 'unlockedShipCount', target: 25 }], LEGEND_COMPOUND_SCORE_GATE),
+    requirements: scoreGated([{ metric: 'unlockedShipCount', target: 30 }], LEGEND_COMPOUND_SCORE_GATE),
     difficulty: 'legendary',
     hidden: false
   }

@@ -7,6 +7,7 @@ import {
   LEGEND_SCORE_GATE,
   SWARM_ELITE_SCORE_GATE
 } from '../src/achievements/AchievementCatalog.js';
+import { ShipUnlockConfig } from '../src/config/ShipUnlockConfig.js';
 
 const errors = [];
 
@@ -107,6 +108,18 @@ if (!earlyPilot) {
   }
   if (earlyPilot.description !== 'Finish any ranked run. Practice and Sector Start runs do not count.') {
     fail(`ACH_EARLY_PILOT description drifted: "${earlyPilot.description}".`);
+  }
+}
+
+const fullHangarOmega = ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_FULL_HANGAR_OMEGA');
+if (!fullHangarOmega) {
+  fail('Missing ACH_FULL_HANGAR_OMEGA.');
+} else {
+  if (Number(fullHangarOmega.target) !== ShipUnlockConfig.length) {
+    fail(`Full Hangar Omega must require all ${ShipUnlockConfig.length} playable ships; saw ${fullHangarOmega.target}.`);
+  }
+  if (!fullHangarOmega.description.includes(`all ${ShipUnlockConfig.length} playable ships`)) {
+    fail(`Full Hangar Omega description must name the current ${ShipUnlockConfig.length}-ship catalog.`);
   }
 }
 

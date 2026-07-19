@@ -649,7 +649,7 @@
     {
       "apiName": "ACH_FULL_HANGAR_OMEGA",
       "displayName": "Full Hangar Omega",
-      "description": "Unlock all 25 playable ships, then finish a 250,000-point ranked run.",
+      "description": "Unlock all 30 playable ships, then finish a 250,000-point ranked run.",
       "hidden": false,
       "achievedIcon": "ACH_FULL_HANGAR_OMEGA-achieved.jpg",
       "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"

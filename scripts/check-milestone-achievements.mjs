@@ -5,7 +5,11 @@ import {
   LEGEND_SCORE_GATE,
   MILESTONE_ACHIEVEMENTS
 } from '../src/achievements/AchievementCatalog.js';
-import { getMilestoneAchievementUnlocks } from '../src/achievements/MilestoneAchievements.js';
+import {
+  captureNoRepairReceiptsLifeLosses,
+  getMilestoneAchievementUnlocks
+} from '../src/achievements/MilestoneAchievements.js';
+import { ShipUnlockConfig } from '../src/config/ShipUnlockConfig.js';
 
 function idsFor(summary = {}, progress = {}) {
   return getMilestoneAchievementUnlocks({ summary, progress }).map((entry) => entry.achievement.id);
@@ -117,22 +121,95 @@ const noRepairCleanClearWithOverrunLoss = idsFor({
   finalScore: LEGEND_COMPOUND_SCORE_GATE,
   runCleared: true,
   clearLifeLosses: 0,
+  noRepairReceiptsLifeLosses: 0,
   lifeLosses: 1
 }, {});
 assert.ok(
   noRepairCleanClearWithOverrunLoss.includes('ACH_NO_REPAIR_RECEIPTS'),
-  'No Repair Receipts should preserve a clean Sector 10 clear after a later Overrun life loss.'
+  'No Repair Receipts should preserve qualification after the run was both clear and worth 250k.'
+);
+const noRepairLossAfterClearBefore250k = idsFor({
+  score: LEGEND_COMPOUND_SCORE_GATE,
+  finalScore: LEGEND_COMPOUND_SCORE_GATE,
+  runCleared: true,
+  clearLifeLosses: 0,
+  noRepairReceiptsLifeLosses: 2,
+  lifeLosses: 2
+}, {});
+assert.ok(
+  !noRepairLossAfterClearBefore250k.includes('ACH_NO_REPAIR_RECEIPTS'),
+  'No Repair Receipts must reject lives lost after Sector 10 but before the run reaches 250k.'
 );
 const noRepairDirtyClear = idsFor({
   score: LEGEND_COMPOUND_SCORE_GATE,
   finalScore: LEGEND_COMPOUND_SCORE_GATE,
   runCleared: true,
   clearLifeLosses: 1,
+  noRepairReceiptsLifeLosses: 1,
   lifeLosses: 1
 }, {});
 assert.ok(
   !noRepairDirtyClear.includes('ACH_NO_REPAIR_RECEIPTS'),
   'No Repair Receipts should reject a life lost before the Sector 10 clear.'
+);
+
+assert.equal(
+  captureNoRepairReceiptsLifeLosses({
+    runCleared: true,
+    score: LEGEND_COMPOUND_SCORE_GATE - 1,
+    lifeLosses: 0
+  }),
+  null,
+  'A clean clear below 250k must not freeze qualification early.'
+);
+assert.equal(
+  captureNoRepairReceiptsLifeLosses({
+    runCleared: true,
+    score: LEGEND_COMPOUND_SCORE_GATE,
+    lifeLosses: 2
+  }),
+  2,
+  'Reaching 250k after the clear must capture intervening life losses.'
+);
+assert.equal(
+  captureNoRepairReceiptsLifeLosses({
+    runCleared: false,
+    score: LEGEND_COMPOUND_SCORE_GATE,
+    lifeLosses: 0
+  }),
+  null,
+  'Reaching 250k before the clear must wait for the clear.'
+);
+assert.equal(
+  captureNoRepairReceiptsLifeLosses({
+    runCleared: true,
+    score: LEGEND_COMPOUND_SCORE_GATE,
+    lifeLosses: 1
+  }),
+  1,
+  'Clearing after 250k must capture life losses at the clear.'
+);
+assert.equal(
+  captureNoRepairReceiptsLifeLosses({
+    capturedLifeLosses: 0,
+    runCleared: true,
+    score: LEGEND_COMPOUND_SCORE_GATE + 50000,
+    lifeLosses: 1
+  }),
+  0,
+  'Later Overrun losses must not revoke an already qualified clean 250k clear.'
+);
+
+const fullHangarOmega = LEGEND_ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_FULL_HANGAR_OMEGA');
+assert.equal(
+  fullHangarOmega?.target,
+  ShipUnlockConfig.length,
+  'Full Hangar Omega must require every currently playable ship.'
+);
+assert.equal(
+  fullHangarOmega?.requirements?.find((requirement) => requirement.metric === 'unlockedShipCount')?.target,
+  ShipUnlockConfig.length,
+  'Full Hangar Omega authored requirement must match the playable ship catalog.'
 );
 
 const fullLegendUnlockIds = idsFor({
@@ -141,7 +218,7 @@ const fullLegendUnlockIds = idsFor({
   finalScore: 2000000
 }, {
   ...overqualifiedProgress,
-  unlockedShipIds: Array.from({ length: 25 }, (_, index) => `ship_${index}`)
+  unlockedShipIds: Array.from({ length: ShipUnlockConfig.length }, (_, index) => `ship_${index}`)
 });
 assert.deepEqual(
   [...legendIds].filter((id) => !fullLegendUnlockIds.includes(id)),

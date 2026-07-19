@@ -55,6 +55,7 @@ function compactPayload(payload = {}) {
     'livesRemaining',
     'clearLivesRemaining',
     'clearLifeLosses',
+    'noRepairReceiptsLifeLosses',
     'minimumScore'
   ];
   return Object.fromEntries(

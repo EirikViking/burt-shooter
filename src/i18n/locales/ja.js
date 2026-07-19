@@ -929,7 +929,7 @@ const sourceText = Object.freeze({
   'Graze Storm Crown': 'Graze arashi no oukan',
   'Trigger 12 Graze Breaks in a 250,000-point ranked run.': '250,000 ten no rank run de Graze Break o 12 kai hatsudou suru.',
   'Full Hangar Omega': 'Full hangar Omega',
-  'Unlock all 25 playable ships, then finish a 250,000-point ranked run.': 'Playable kitai 25 ki subete o kaijo shi, sono ato 250,000 ten no ranku ran o oeru.',
+  'Unlock all 30 playable ships, then finish a 250,000-point ranked run.': 'Playable kitai 30 ki subete o kaijo shi, sono ato 250,000 ten no ranku ran o oeru.',
   'CREDITS: THE CABINET DENIES EVERYTHING': 'クレジット: Cabinet は全面否認',
   'A Tinyfoundry Games incident report, heavily denied by Mission Control.': 'Tinyfoundry Games の事故報告書。司令部は強く否認しています。',
   'Tinyfoundry Games: legally responsible for the explosions, emotionally responsible for the coins.': 'Tinyfoundry Games: 爆発には法的責任、コインには感情的責任があります。',

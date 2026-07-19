@@ -2092,3 +2092,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - The 417-file, 958,420,502-byte payload has manifest hash `3b0e551bf00844dadde40c02adff6601fd841a8d3d81d299389d0109428e372f`; the packaged executable SHA-256 is `B57CAFDC9E0AE75A9DB03B5C53810DE8DED0CC92B0DC8B669CAF5D691FEACE33`.
 - SteamCMD uploaded BuildID `24281734` for AppID `4765070` and depot `4765071`. The VDF retained `SetLive ""`, so the build is private and unassigned. No Steam branch, Steamworks setting, leaderboard or achievement data, Cloud path, or production data was changed.
 - Posted and independently verified the Tiny Foundry forum reply as comment `#72` at `https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=5#c577173563817164433`. The reply explains the intended Bomb behavior, identifies the reversed velocity sign, names BuildID `24281734`, and explicitly says the build is private and unassigned rather than publicly live.
+
+## 2026-07-19 - Achievement integrity audit
+
+- Follow-up prompt: the Steam screenshot showed No Repair Receipts unlocked even though lives were lost before the run reached 250,000; review and fix that condition and audit all achievements.
+- Started clean from post-Bomb evidence baseline `ff0a4d3c330d54c0a1e1c6aadac9b394d407d7de` on `codex/achievement-integrity-audit-20260719`. The locked stable worktree and immutable tags remain untouched.
+- Confirmed the screenshot unlock came from the earlier manual support backfill. The previous runtime fix also had a real ordering flaw: it combined a Sector 10 life-loss snapshot with the final score, allowing losses between the clear and 250,000 points.
+- No Repair Receipts now freezes life losses only when the run has both cleared Sector 10 and reached 250,000 points. Boundary tests cover either ordering, losses between the conditions, and later Overrun losses after valid qualification.
+- Audited all 81 achievements: 39 sequential rank achievements, 40 milestone evaluators, and 2 accepted-leaderboard achievements. The second confirmed defect was Full Hangar Omega still saying and requiring 25 ships while the playable catalog contains 30; its requirement and all seven translations now use 30.
+- Preserved every achievement ID, score/rank formula, leaderboard identity, stored score, save key/schema, and Steam Cloud path. The incorrect existing Steam unlock was not silently cleared. Steamworks, packaging, upload, branch assignment, and production data remain untouched.

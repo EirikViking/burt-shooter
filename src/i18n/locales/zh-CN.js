@@ -925,7 +925,7 @@ const sourceText = Object.freeze({
   'Graze Storm Crown': 'Cadan fengbao wangguan',
   'Trigger 12 Graze Breaks in a 250,000-point ranked run.': 'Zai yici 250,000 fen paiming moshi zhong chufa 12 ci Graze Break.',
   'Full Hangar Omega': 'Manbian jiku Omega',
-  'Unlock all 25 playable ships, then finish a 250,000-point ranked run.': 'Jiesuo quanbu 25 sou kewan feichuan, ranhou wancheng yici 250,000 fen paiming chuji.',
+  'Unlock all 30 playable ships, then finish a 250,000-point ranked run.': 'Jiesuo quanbu 30 sou kewan feichuan, ranhou wancheng yici 250,000 fen paiming chuji.',
   'CREDITS: THE CABINET DENIES EVERYTHING': '制作名单：Cabinet 否认一切',
   'A Tinyfoundry Games incident report, heavily denied by Mission Control.': 'Tinyfoundry Games 事故报告，任务控制部强烈否认。',
   'Tinyfoundry Games: legally responsible for the explosions, emotionally responsible for the coins.': 'Tinyfoundry Games：依法负责爆炸，情感上负责硬币。',
