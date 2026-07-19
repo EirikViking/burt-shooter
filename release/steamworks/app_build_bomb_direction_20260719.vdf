@@ -1,0 +1,21 @@
+"AppBuild"
+{
+  "AppID" "4765070"
+  "Desc" "Nova Swarm Bomb direction fix v2026-07-19_11-12-29"
+  "BuildOutput" "..\\steam-build-output"
+  "ContentRoot" "..\\desktop\\win-unpacked"
+  "SetLive" ""
+
+  "Depots"
+  {
+    "4765071"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}
