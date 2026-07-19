@@ -2102,3 +2102,10 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Audited all 81 achievements: 39 sequential rank achievements, 40 milestone evaluators, and 2 accepted-leaderboard achievements. The second confirmed defect was Full Hangar Omega still saying and requiring 25 ships while the playable catalog contains 30; its requirement and all seven translations now use 30.
 - Preserved every achievement ID, score/rank formula, leaderboard identity, stored score, save key/schema, and Steam Cloud path. Steamworks settings, packaging, upload, and branch assignment remained untouched during the audit itself.
 - After explicit user approval, cleared only `ACH_NO_REPAIR_RECEIPTS` through the logged-in Steam bridge and removed only that ID from the local, retry-queue, and Steam Cloud mirrors. Steam and local unlock counts both changed from 60 to 59; exact set comparison proved all other achievement IDs unchanged. Evidence: `test-results/clear-no-repair-receipts-2026-07-19T10-06-23-569Z/report.json`.
+
+## 2026-07-19 - Achievement integrity build uploaded privately
+
+- Packaged source `e16cd634c9d05b3246ef90214317a5cdae0b293d` as `v2026-07-19_12-07-13` under `E:\Codex\nova-swarm-steam-package-achievement-integrity-20260719\desktop\win-unpacked`.
+- Exact-package Steam runtime, current and packaged Steam-backed smoke, keyboard/gamepad controls, fresh-profile isolation, desktop integrity, and performance passed. Performance held 60.0 minimum and average FPS across 11 samples.
+- The 417-file, 958,421,535-byte payload has manifest hash `8a9652a9dcc45849653388de9750454fd1c207d3a7a15ddef66dc0276dbe813e`; the packaged executable SHA-256 is `D0963ACEADD470D8229C439337E576C416C99631044C46DD7F4DD212CC948721`.
+- SteamCMD uploaded BuildID `24282095` for AppID `4765070` and depot `4765071`. The VDF retained `SetLive ""`, so the build is private and unassigned. No Steam branch or Steamworks setting changed.

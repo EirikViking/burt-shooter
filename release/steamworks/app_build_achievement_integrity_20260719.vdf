@@ -1,0 +1,21 @@
+"AppBuild"
+{
+  "AppID" "4765070"
+  "Desc" "Nova Swarm achievement integrity fix v2026-07-19_12-07-13"
+  "BuildOutput" "..\\steam-build-output"
+  "ContentRoot" "..\\desktop\\win-unpacked"
+  "SetLive" ""
+
+  "Depots"
+  {
+    "4765071"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}

@@ -48,3 +48,7 @@ The catalog now has 30 playable ships, but Full Hangar Omega still said and requ
 ## Scope preserved
 
 No achievement ID, leaderboard identity, stored score, save key, save schema, Steam Cloud path, AppID, depot ID, score formula, or rank formula changed. The explicitly approved single-account achievement clear is the only production-data correction in this pass.
+
+## Private Steam deployment
+
+The verified package `v2026-07-19_12-07-13` was uploaded as Steam BuildID `24282095` for AppID `4765070` and depot `4765071`. The VDF retained `SetLive ""`; no Steam branch was assigned or moved.
