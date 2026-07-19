@@ -31,7 +31,7 @@ After explicit approval, the single `ACH_NO_REPAIR_RECEIPTS` unlock was cleared 
 
 ### Full Hangar Omega was stale
 
-The catalog now has 30 playable ships, but Full Hangar Omega still said and required 25. Its requirement, 250,000-point score gate, all supported-language descriptions, and release-preparation metadata now match the intended 30-ship condition. The uploaded package contains the corrected runtime and in-game text. Synchronizing the player-facing Steamworks description is still pending authenticated Steam Partner access.
+The catalog now has 30 playable ships, but Full Hangar Omega still said and required 25. Its requirement, 250,000-point score gate, all supported-language descriptions, and release-preparation metadata now match the intended 30-ship condition. The uploaded package contains the corrected runtime and in-game text. Steamworks stats revision 10 published the matching English description, changing only `25` to `30`.
 
 ## Full-catalog review
 
@@ -47,10 +47,10 @@ The catalog now has 30 playable ships, but Full Hangar Omega still said and requ
 
 ## Scope preserved
 
-No achievement ID, leaderboard identity, stored score, save key, save schema, Steam Cloud path, AppID, depot ID, score formula, or rank formula changed. The explicitly approved single-account achievement clear is the only production-data correction in this pass.
+No achievement ID, leaderboard identity, stored score, save key, save schema, Steam Cloud path, AppID, depot ID, score formula, or rank formula changed. The explicitly approved single-account achievement clear and the approved Full Hangar Omega description correction are the only production changes in this pass.
 
 ## Private Steam deployment
 
 The verified package `v2026-07-19_12-07-13` was uploaded as Steam BuildID `24282095` for AppID `4765070` and depot `4765071`. The VDF retained `SetLive ""`; no Steam branch was assigned or moved.
 
-The uploaded build contains the corrected Full Hangar Omega runtime and localized in-game descriptions. The live Steamworks achievement-description row was not changed because the Steam Partner site requires an authenticated browser session.
+The uploaded build contains the corrected Full Hangar Omega runtime and localized in-game descriptions. Steamworks stats revision 10 was then published with exactly one pending diff: the `ACH_FULL_HANGAR_OMEGA` English description changed from 25 to 30 playable ships. The history page showed no remaining unpublished changes, and the achievement table was reopened to verify the 30-ship text.
