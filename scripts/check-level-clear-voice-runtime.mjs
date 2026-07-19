@@ -101,7 +101,7 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 try {
   await page.addInitScript(() => {
     localStorage.setItem('burt_music_enabled', 'true');
-    localStorage.setItem('burt_voice_enabled', 'true');
+    localStorage.setItem('burt_voice_enabled', 'false');
     localStorage.setItem('burt_volume_sfx', '1');
     localStorage.setItem('burt_volume_voice', '1');
     localStorage.setItem('burt_volume_master', '1');
@@ -212,13 +212,17 @@ try {
     boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
   });
 
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.audio?.lastVoiceEvent === 'level_clear_flirt' &&
-      /^level_clear_flirt_\d{3}\.mp3$/.test(state?.audio?.lastVoiceTrack || '');
-  }, null, { timeout: 20000 });
+  await page.waitForFunction(() => (
+    window.__game?.scenes?.play?.lastLevelClearVoiceDecision?.status === 'played'
+  ), null, { timeout: 20000 });
 
   const after = await stateFromPage(page);
+  if (after.audio?.voiceEnabled !== false) {
+    throw new Error(`Voice should remain disabled, got ${after.audio?.voiceEnabled}`);
+  }
+  if (after.audio?.lastVoiceEvent === 'level_clear_flirt' || after.audio?.activeVoiceCount > 0) {
+    throw new Error(`Muted level-clear voice leaked into playback: ${JSON.stringify(after.audio)}`);
+  }
   await page.screenshot({ path: path.join(outputDir, 'level-clear-voice-runtime.png'), fullPage: true });
 
   const report = {
@@ -234,7 +238,7 @@ try {
     pageErrors
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[level-clear-voice-runtime] PASS voice=${report.lastVoiceTrack} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[level-clear-voice-runtime] PASS mutedVoice=${report.lastVoiceTrack || 'none'} report=${path.join(outputDir, 'report.json')}`);
 } catch (error) {
   const finalState = await stateFromPage(page).catch(() => null);
   const failure = {
