@@ -5481,12 +5481,29 @@ export class PlayScene {
     // Bomb detonation check
     measure('collision.bomb_apex', () => {
     const screenHeight = this.gameplayGame.getHeight();
-    const detonationY = screenHeight * 0.45; // Detonate at 45% of the logical playfield height
+    const fallbackDetonationY = screenHeight * 0.12;
     this.bulletManager.playerBullets.forEach(bullet => {
       collisionStats.bombApexChecks += 1;
-      if (bullet.active && bullet.isBomb && bullet.y <= detonationY) {
+      if (!bullet.active || !bullet.isBomb) return;
+      const target = bullet.bombTarget;
+      const targetActive = Boolean(target && target.active !== false && target.destroyed !== true);
+      const targetX = targetActive && Number.isFinite(Number(target.x))
+        ? Number(target.x)
+        : Number(bullet.bombTargetX);
+      const targetY = targetActive && Number.isFinite(Number(target.y))
+        ? Number(target.y)
+        : Number(bullet.bombTargetY);
+      const targetRadius = targetActive
+        ? Math.max(0, Number(target.radius) || Number(bullet.bombTargetRadius) || 0)
+        : Math.max(0, Number(bullet.bombTargetRadius) || 0);
+      const hasCommitPoint = Number.isFinite(targetX) && Number.isFinite(targetY);
+      const fuseRadius = Math.max(18, (Number(bullet.radius) || 0) + targetRadius + 3);
+      const reachedCommitPoint = hasCommitPoint
+        && Math.hypot((Number(bullet.x) || 0) - targetX, (Number(bullet.y) || 0) - targetY) <= fuseRadius;
+      const reachedFallbackApex = !hasCommitPoint && bullet.y <= fallbackDetonationY;
+      if (reachedCommitPoint || reachedFallbackApex) {
         collisionStats.bombApexDetonations += 1;
-        this.detonateBombBullet(bullet, 'apex');
+        this.detonateBombBullet(bullet, reachedCommitPoint ? 'target_lock' : 'apex');
       }
     });
     });

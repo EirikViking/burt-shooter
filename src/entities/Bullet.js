@@ -770,12 +770,33 @@ export class Bullet {
     this.screenHeight = height;
   }
 
+  updateBombGuidance() {
+    if (!this.isBomb || !this.bombTarget) return false;
+    const target = this.bombTarget;
+    if (target.active === false || target.destroyed === true) return false;
+    const targetX = Number(target.x);
+    const targetY = Number(target.y);
+    if (!Number.isFinite(targetX) || !Number.isFinite(targetY)) return false;
+    const dx = targetX - this.x;
+    const dy = targetY - this.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance < 0.001) return false;
+    const speed = Math.max(0.1, Number(this.bombGuidanceSpeed) || Math.hypot(this.vx, this.vy) || this.speed || 0.1);
+    this.vx = dx / distance * speed;
+    this.vy = dy / distance * speed;
+    this.bombTargetX = targetX;
+    this.bombTargetY = targetY;
+    this.bombTargetRadius = Math.max(0, Number(target.radius) || this.bombTargetRadius || 0);
+    return true;
+  }
+
   update(delta) {
     if (!this.active) return;
 
     this.age += delta;
     this.ageMs += delta * 16.67;
     if (!this.isPlayer) this.applyEnemyWeaponBehavior(delta);
+    if (this.isBomb) this.updateBombGuidance();
 
     this.x += this.vx * delta;
     this.y += this.vy * delta;
@@ -786,6 +807,9 @@ export class Bullet {
     }
     this.speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
     this.angle = Math.atan2(this.vy, this.vx);
+    if (this.isBomb && this.isPlayer) {
+      this.sprite.rotation = this.angle - this.baseAngle;
+    }
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;

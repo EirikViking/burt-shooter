@@ -51,6 +51,7 @@ export function findBombCommitTarget({
   player,
   enemies = [],
   boss = null,
+  hijacker = null,
   blastRadius = 150,
   shotDamage = 5,
   viewportWidth = Number.POSITIVE_INFINITY,
@@ -74,6 +75,19 @@ export function findBombCommitTarget({
       reason: 'boss',
       clusterCount: 1,
       horizontalGap: Math.abs((Number(boss.x) || 0) - (Number(player.x) || 0))
+    };
+  }
+
+  if (
+    isActiveTarget(hijacker, targetOptions)
+    && isAheadOfPlayer(player, hijacker)
+    && isInsideBombLane(player, hijacker, safeBlastRadius)
+  ) {
+    return {
+      target: hijacker,
+      reason: 'tractor',
+      clusterCount: 1,
+      horizontalGap: Math.abs((Number(hijacker.x) || 0) - (Number(player.x) || 0))
     };
   }
 

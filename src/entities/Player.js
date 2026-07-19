@@ -318,6 +318,7 @@ export class Player {
       player: this,
       enemies: playScene?.enemyManager?.enemies || [],
       boss: playScene?.enemyManager?.boss || null,
+      hijacker: playScene?.enemyManager?.hijacker || null,
       blastRadius: this.bombBlastRadius,
       shotDamage: this.bulletDamage * this.bombDamageMult,
       viewportWidth: this.game?.getWidth?.(),
@@ -2047,11 +2048,19 @@ export class Player {
     const shouldFireBomb = this.bombShotsLeft > 0 && this.bombTriggerQueued && bombCommitState.ready;
     this.bombTriggerQueued = false;
     if (shouldFireBomb) {
+      const launchX = this.x;
+      const launchY = this.y - 20;
+      const targetX = Number(bombCommitState.target?.x);
+      const targetY = Number(bombCommitState.target?.y);
+      const bombSpeed = Math.max(0.1, this.bulletSpeed * 0.4);
+      const targetDx = Number.isFinite(targetX) ? targetX - launchX : 0;
+      const targetDy = Number.isFinite(targetY) ? targetY - launchY : -1;
+      const targetDistance = Math.max(0.001, Math.hypot(targetDx, targetDy));
       const bomb = new Bullet(
-        this.x,
-        this.y - 20,
-        0, // Straight up
-        -this.bulletSpeed * 0.4, // 40% slower, toward the upper playfield
+        launchX,
+        launchY,
+        targetDx / targetDistance * bombSpeed,
+        targetDy / targetDistance * bombSpeed,
         this.bulletDamage * this.bombDamageMult,
         this.bombColor,
         true,
@@ -2065,6 +2074,11 @@ export class Player {
       bomb.haloColor = this.bombColor;
       bomb.commitReason = bombCommitState.reason;
       bomb.commitClusterCount = bombCommitState.clusterCount || 0;
+      bomb.bombTarget = bombCommitState.target;
+      bomb.bombTargetX = Number.isFinite(targetX) ? targetX : launchX;
+      bomb.bombTargetY = Number.isFinite(targetY) ? targetY : 0;
+      bomb.bombTargetRadius = Math.max(0, Number(bombCommitState.target?.radius) || 0);
+      bomb.bombGuidanceSpeed = bombSpeed;
       annotatePowerupBullet(bomb);
       this.applyTraitProjectileEffects(bomb, shotCounter);
       bullets.push(bomb);

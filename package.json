@@ -276,6 +276,7 @@
     "check:life-cap": "node scripts/check-life-cap-removed.mjs",
     "check:weapon-powerup-firing-duration": "node scripts/check-weapon-powerup-firing-duration.mjs",
     "check:powerup-effects": "node scripts/check-powerup-effects.mjs",
+    "check:bomb-usability": "node scripts/check-bomb-usability.mjs",
     "check:powerup-visuals": "node scripts/check-powerup-visuals.mjs",
     "check:slow-time-visual-field": "node scripts/check-slow-time-visual-field.mjs",
     "check:bomb-charge-indicator-readability": "node scripts/check-bomb-charge-indicator-readability.mjs",

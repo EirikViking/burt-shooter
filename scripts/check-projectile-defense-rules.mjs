@@ -70,6 +70,17 @@ const bossTarget = findBombCommitTarget({
 });
 assert(bossTarget.target && bossTarget.reason === 'boss', 'bomb should commit to an aligned boss');
 
+const tractor = { active: true, kind: 'hijacker', x: 580, y: 140, health: 80, radius: 35 };
+const tractorTarget = findBombCommitTarget({
+  player: bombPlayer,
+  hijacker: tractor,
+  blastRadius: 150,
+  shotDamage: 10,
+  ...targetSurface
+});
+assert(tractorTarget.target === tractor && tractorTarget.reason === 'tractor',
+  'bomb should commit to an aligned Tractor/Hijacker');
+
 for (const [label, target] of [
   ['waiting entry', { active: true, waitingForEntry: true, x: 500, y: 240, health: 60, radius: 18 }],
   ['hidden sprite', { active: true, x: 500, y: 240, health: 60, radius: 18, sprite: { visible: false, renderable: true, alpha: 1 } }],
