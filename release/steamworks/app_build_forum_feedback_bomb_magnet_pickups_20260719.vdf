@@ -1,0 +1,21 @@
+"AppBuild"
+{
+  "AppID" "4765070"
+  "Desc" "Nova Swarm Bomb Magnet pickup fixes v2026-07-19_21-10-19"
+  "BuildOutput" "E:\Codex\nova-swarm-steam-package-forum-feedback-20260719-v2\steam-build-output"
+  "ContentRoot" "E:\Codex\nova-swarm-steam-package-forum-feedback-20260719-v2\desktop\win-unpacked"
+  "SetLive" ""
+
+  "Depots"
+  {
+    "4765071"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}
