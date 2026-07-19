@@ -1,0 +1,21 @@
+"AppBuild"
+{
+  "AppID" "4765070"
+  "Desc" "Nova Swarm voice mute routing fix v2026-07-19_18-13-25"
+  "BuildOutput" "E:\Codex\nova-swarm-steam-package-voice-mute-20260719\steam-build-output"
+  "ContentRoot" "E:\Codex\nova-swarm-steam-package-voice-mute-20260719\desktop\win-unpacked"
+  "SetLive" ""
+
+  "Depots"
+  {
+    "4765071"
+    {
+      "FileMapping"
+      {
+        "LocalPath" "*"
+        "DepotPath" "."
+        "recursive" "1"
+      }
+    }
+  }
+}
