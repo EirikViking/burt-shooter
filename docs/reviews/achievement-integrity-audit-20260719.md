@@ -25,7 +25,9 @@ The corrected runtime freezes life losses only at the first moment when both con
 
 The order is covered both ways. Reaching 250,000 first waits for the clear; clearing first below 250,000 waits for the score. Life losses between those two moments invalidate the achievement. Once both conditions were met cleanly, later Overrun losses do not revoke it.
 
-The Steam unlock shown in the supplied screenshot was created by the earlier support backfill, not by a naturally evaluated corrected run. This pass does not silently clear that external Steam achievement.
+The Steam unlock shown in the supplied screenshot was created by the earlier support backfill, not by a naturally evaluated corrected run.
+
+After explicit approval, the single `ACH_NO_REPAIR_RECEIPTS` unlock was cleared through the normal Steam achievement bridge and removed from the matching local, retry-queue, and Steam Cloud mirrors. Steam and local counts each changed from 60 to 59, and set comparison proved every other achievement unchanged.
 
 ### Full Hangar Omega was stale
 
@@ -45,4 +47,4 @@ The catalog now has 30 playable ships, but Full Hangar Omega still said and requ
 
 ## Scope preserved
 
-No achievement ID, leaderboard identity, stored score, save key, save schema, Steam Cloud path, AppID, depot ID, score formula, or rank formula changed. No Steam package was built or uploaded, no Steam branch moved, and no Steamworks setting or live achievement row was modified.
+No achievement ID, leaderboard identity, stored score, save key, save schema, Steam Cloud path, AppID, depot ID, score formula, or rank formula changed. The explicitly approved single-account achievement clear is the only production-data correction in this pass.
