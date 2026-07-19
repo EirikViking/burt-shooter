@@ -41,6 +41,10 @@ function getMetricValueByName(metric, summary = {}, progress = {}) {
         finiteNumber(progress.clearWithLivesRemaining),
         summary.runCleared ? finiteNumber(summary.clearLivesRemaining ?? summary.livesRemaining) : 0
       );
+    case 'clearLifeLosses':
+      return summary.runCleared
+        ? finiteNumber(summary.clearLifeLosses ?? summary.lifeLosses)
+        : finiteNumber(summary.lifeLosses);
     case 'bossesKilled':
       return finiteNumber(summary.bossesKilled);
     case 'totalBossesDefeated':

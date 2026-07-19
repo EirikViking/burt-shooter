@@ -339,6 +339,7 @@ export function createRunReport(summary = {}) {
       shipMastery,
       scoutAnomaly,
       runCleared: Boolean(summary.runCleared),
+      clearLifeLosses: toWholeNumber(summary.clearLifeLosses ?? summary.lifeLosses),
       deathCoach,
       pilotOrdersCompleted,
       tacticalDraftPicks,

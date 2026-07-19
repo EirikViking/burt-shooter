@@ -42,6 +42,8 @@ assert.match(bonusSource, /awardKey = 'run_clear'/);
 assert.match(bonusSource, /applyExactScoreBonus\(game, baseClearBonus, 'runClearBonus'\)/);
 assert.match(bonusSource, /applyExactScoreBonus\(game, baseLivesBonus, 'remainingLivesBonus'\)/);
 assert.match(gameSource, /clearLivesRemaining: this\.runClearLivesRemaining \|\| 0/);
+assert.match(gameSource, /this\.runClearLifeLosses = Math\.max\(0, Number\(this\.scenes\?\.play\?\.lifeLossesThisRun\) \|\| 0\)/);
+assert.match(gameSource, /clearLifeLosses: Math\.max\(0, Number\(overrides\.clearLifeLosses \?\? this\.runClearLifeLosses\) \|\| 0\)/);
 assert.match(gameSource, /runCleared: Boolean\(this\.runCleared\)/);
 assert.match(progressionSource, /summary\.clearLivesRemaining \?\? summary\.livesRemaining/);
 assert.match(manifestSource, /overrunVictorySeal/);

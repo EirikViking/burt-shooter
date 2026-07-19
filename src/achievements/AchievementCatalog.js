@@ -345,12 +345,12 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
     name: 'No Repair Receipts',
     description: 'Clear a 250,000-point ranked run without losing a life.',
     type: 'milestone',
-    metric: 'lifeLosses',
+    metric: 'clearLifeLosses',
     target: 0,
     minimumScore: LEGEND_COMPOUND_SCORE_GATE,
     requirements: scoreGated([
       { metric: 'runCleared', target: 1 },
-      { metric: 'lifeLosses', target: 0, comparator: '<=' }
+      { metric: 'clearLifeLosses', target: 0, comparator: '<=' }
     ], LEGEND_COMPOUND_SCORE_GATE),
     difficulty: 'legendary',
     hidden: false

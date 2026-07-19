@@ -112,6 +112,28 @@ assert.ok(
   noRepairClear.includes('ACH_NO_REPAIR_RECEIPTS'),
   'No Repair Receipts should unlock on a cleared 250k no-life-loss ranked run.'
 );
+const noRepairCleanClearWithOverrunLoss = idsFor({
+  score: LEGEND_COMPOUND_SCORE_GATE,
+  finalScore: LEGEND_COMPOUND_SCORE_GATE,
+  runCleared: true,
+  clearLifeLosses: 0,
+  lifeLosses: 1
+}, {});
+assert.ok(
+  noRepairCleanClearWithOverrunLoss.includes('ACH_NO_REPAIR_RECEIPTS'),
+  'No Repair Receipts should preserve a clean Sector 10 clear after a later Overrun life loss.'
+);
+const noRepairDirtyClear = idsFor({
+  score: LEGEND_COMPOUND_SCORE_GATE,
+  finalScore: LEGEND_COMPOUND_SCORE_GATE,
+  runCleared: true,
+  clearLifeLosses: 1,
+  lifeLosses: 1
+}, {});
+assert.ok(
+  !noRepairDirtyClear.includes('ACH_NO_REPAIR_RECEIPTS'),
+  'No Repair Receipts should reject a life lost before the Sector 10 clear.'
+);
 
 const fullLegendUnlockIds = idsFor({
   ...overqualifiedLowScoreSummary,

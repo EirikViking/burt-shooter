@@ -110,6 +110,7 @@ export class Game {
     this.runCleared = false;
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
+    this.runClearLifeLosses = 0;
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
@@ -405,6 +406,7 @@ export class Game {
     this.runCleared = false;
     this.runClearReason = null;
     this.runClearLivesRemaining = 0;
+    this.runClearLifeLosses = 0;
     this.runClearScoreBonusAward = null;
     this.runClearScoreBonusAwards = {};
     this.runFinalized = false;
@@ -588,6 +590,7 @@ export class Game {
     this.runCleared = true;
     this.runClearReason = reason;
     this.runClearLivesRemaining = Math.max(0, Number(this.lives) || 0);
+    this.runClearLifeLosses = Math.max(0, Number(this.scenes?.play?.lifeLossesThisRun) || 0);
     return true;
   }
 
@@ -1328,6 +1331,7 @@ export class Game {
       runCleared: Boolean(overrides.runCleared ?? this.runCleared),
       clearReason: overrides.clearReason || this.runClearReason || null,
       clearLivesRemaining: Math.max(0, Number(overrides.clearLivesRemaining ?? this.runClearLivesRemaining) || 0),
+      clearLifeLosses: Math.max(0, Number(overrides.clearLifeLosses ?? this.runClearLifeLosses) || 0),
       codexDiscoveries: discoveries.length,
       totalCodexDiscoveries: discoveryStats.totalDiscovered,
       runThemeDiscoveries: discoveries.filter((entry) => entry.category === 'runThemes').length,
@@ -1395,6 +1399,7 @@ export class Game {
       runCleared: Boolean(this.runCleared),
       clearReason: this.runClearReason || null,
       clearLivesRemaining: Math.max(0, Number(this.runClearLivesRemaining) || 0),
+      clearLifeLosses: Math.max(0, Number(this.runClearLifeLosses) || 0),
       runMode: this.runMode,
       runModeReason: this.runModeReason
     };
@@ -1585,6 +1590,7 @@ export class Game {
           runCleared: this.runSummary.runCleared,
           livesRemaining: this.runSummary.livesRemaining,
           clearLivesRemaining: this.runSummary.clearLivesRemaining,
+          clearLifeLosses: this.runSummary.clearLifeLosses,
           minimumScore: achievement.minimumScore
         });
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);

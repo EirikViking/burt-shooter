@@ -147,6 +147,7 @@ try {
     game.runCleared = false;
     game.runClearReason = null;
     game.runClearLivesRemaining = 0;
+    game.runClearLifeLosses = 0;
     game.runClearScoreBonusAward = null;
     game.runClearScoreBonusAwards = {};
     game.runFinalized = false;
@@ -156,6 +157,7 @@ try {
     game.scoreBreakdown = game.createEmptyScoreBreakdown();
     game.scoreBreakdown.baseScore = baseScore;
     game.scoreBreakdown.finalScore = baseScore;
+    play.lifeLossesThisRun = 0;
     game.globalLeaderboardTargets = [];
     game.runPressureDirector = { getScoreMultiplier: () => 2 };
     if (play.player) play.player.scoreMultiplier = 2;
@@ -237,6 +239,7 @@ try {
       gameScore: game.score,
       runCleared: game.runCleared,
       clearLivesRemaining: game.runClearLivesRemaining,
+      clearLifeLosses: game.runClearLifeLosses,
       award: game.runClearScoreBonusAward,
       breakdown: { ...game.scoreBreakdown }
     };
@@ -245,6 +248,7 @@ try {
   assert.equal(immediate.triggered, true, 'runtime clear celebration did not trigger');
   assert.equal(immediate.runCleared, true, 'runtime clear did not mark the run cleared');
   assert.equal(immediate.clearLivesRemaining, 3, 'runtime clear did not snapshot spare hulls');
+  assert.equal(immediate.clearLifeLosses, 0, 'runtime clear did not snapshot clean-clear life losses');
   assertScoreInvariant(immediate, 'immediate clear');
 
   const duplicate = await page.evaluate(() => {
@@ -284,6 +288,7 @@ try {
     game.runCleared = true;
     game.currentScene = play;
     game.currentSceneName = 'play';
+    play.lifeLossesThisRun = 1;
     play.gameOverInterlude = null;
     game.gameOverTransitionPending = false;
     const triggered = play.maybeTriggerOverrunCelebration({
@@ -342,6 +347,8 @@ try {
       finalScore: scene?.finalScore || 0,
       runSummaryScore: game.runSummary?.score || 0,
       runSummaryFinalScore: game.runSummary?.finalScore || 0,
+      runSummaryLifeLosses: game.runSummary?.lifeLosses,
+      runSummaryClearLifeLosses: game.runSummary?.clearLifeLosses,
       progressionBestScore: game.runProgressionResult?.next?.bestScore || 0,
       lastLeaderboardResult: game.lastLeaderboardResult || null,
       submissions: [...(window.__overrunScoreSubmissions || [])],
@@ -352,6 +359,8 @@ try {
   assert.equal(gameOver.finalScore, expectedFinalScore, 'GameOver finalScore did not include overrun milestone bonuses');
   assert.equal(gameOver.runSummaryScore, expectedFinalScore, 'run summary score did not include overrun milestone bonuses');
   assert.equal(gameOver.runSummaryFinalScore, expectedFinalScore, 'run summary finalScore did not include overrun milestone bonuses');
+  assert.equal(gameOver.runSummaryLifeLosses, 1, 'run summary should retain the later Overrun life loss');
+  assert.equal(gameOver.runSummaryClearLifeLosses, 0, 'run summary should preserve the clean Sector 10 snapshot');
   assert.equal(gameOver.progressionBestScore, expectedFinalScore, 'career/profile best score did not include overrun milestone bonuses');
   assert.equal(gameOver.lastLeaderboardResult?.score, expectedFinalScore, 'last leaderboard result did not include overrun milestone bonuses');
   assert.ok(gameOver.submissions.length >= 1, 'Steam leaderboard submit path was not exercised');
