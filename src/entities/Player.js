@@ -2051,7 +2051,7 @@ export class Player {
         this.x,
         this.y - 20,
         0, // Straight up
-        this.bulletSpeed * 0.4, // 40% slower
+        -this.bulletSpeed * 0.4, // 40% slower, toward the upper playfield
         this.bulletDamage * this.bombDamageMult,
         this.bombColor,
         true,

@@ -642,17 +642,25 @@ try {
           player.shootCooldown = 0;
           const bomb = tapFire().find(bullet => bullet.isBomb);
           assert(bomb, `${type}: fresh fire press on a valid target did not create a bomb bullet`);
-          enemy.x = bomb.x;
-          enemy.y = bomb.y;
+          const bombLaunchY = bomb.y;
+          assert(bomb.vy < 0, `${type}: bomb should travel upward toward the locked target`, {
+            launchY: bombLaunchY,
+            targetY: enemy.y,
+            vy: bomb.vy
+          });
           enemy.health = 2;
-          if (enemy.sprite) {
-            enemy.sprite.x = bomb.x;
-            enemy.sprite.y = bomb.y;
-          }
           const beforeScore = game.score;
-          play.checkCollisions();
+          for (let frame = 0; frame < 90 && bomb.active; frame += 1) {
+            bomb.update(1);
+            play.checkCollisions();
+          }
           play.cleanupSkippedFrameVisuals?.('bomb_effect_check');
           const audit = renderState().enemyVisualAudit;
+          assert(bomb.y < bombLaunchY, `${type}: bomb did not move upward after launch`, {
+            launchY: bombLaunchY,
+            finalY: bomb.y,
+            vy: bomb.vy
+          });
           assert(bomb.bombDetonated === true && bomb.active === false, `${type}: bomb did not detonate`, { bombDetonated: bomb.bombDetonated, active: bomb.active });
           assert(enemy.active === false || enemy.destroyed === true || enemy.health <= 0, `${type}: enemy survived bomb`, {
             active: enemy.active,

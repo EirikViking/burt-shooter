@@ -269,6 +269,7 @@ try {
         volleyBullets: volleyBullets.length,
         volley: volleyFlash,
         bombBullets: bombBullets.length,
+        bombVy: bombBullets[0]?.vy ?? null,
         bomb: bombFlash,
         screenshot: screenshotFlash
       }
@@ -281,6 +282,8 @@ try {
 
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
+  if (state.muzzleFlash?.bombBullets !== 1) failures.push(`valid bomb target should create exactly one bomb projectile: ${JSON.stringify(state.muzzleFlash)}`);
+  if (!(state.muzzleFlash?.bombVy < 0)) failures.push(`bomb projectile should travel upward toward its locked target: ${JSON.stringify(state.muzzleFlash)}`);
   if (state.counts?.playerBullets !== 6) failures.push(`player bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (state.counts?.enemyBullets !== 2) failures.push(`enemy bullet count mismatch: ${JSON.stringify(state.counts)}`);
   if (!state.player?.isPlayer) failures.push(`player debug missing isPlayer: ${JSON.stringify(state.player)}`);
