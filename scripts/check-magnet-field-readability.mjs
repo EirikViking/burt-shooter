@@ -130,6 +130,11 @@ try {
       if (powerup.sprite?.parent) powerup.sprite.parent.removeChild(powerup.sprite);
     });
     manager.powerups = [];
+    (play.ambientBonusDrones || []).forEach((drone) => {
+      if (drone.sprite?.parent) drone.sprite.parent.removeChild(drone.sprite);
+      drone.destroy?.();
+    });
+    play.ambientBonusDrones = [];
 
     const width = game.getWidth();
     const height = game.getHeight();
@@ -164,11 +169,26 @@ try {
     const pulledB = makePowerup('score_fever', player.x + 150, player.y - 72);
     const outside = makePowerup('rapid_fire', player.x - 330, player.y - 156);
     const immune = makePowerup('super_extra_life', player.x + 90, player.y - 160);
+    const makeBonusDrone = (type, x, y) => {
+      play.spawnAmbientBonusDrone(type);
+      const drone = play.ambientBonusDrones[play.ambientBonusDrones.length - 1];
+      drone.x = x;
+      drone.y = y;
+      drone.vx = 0;
+      drone.vy = 0;
+      drone.sprite.x = x;
+      drone.sprite.y = y;
+      return drone;
+    };
+    const hazardDrone = makeBonusDrone('HAZARD', player.x - 120, player.y - 28);
+    const collectibleCore = makeBonusDrone('POWERUP', player.x + 120, player.y - 28);
     const starts = new Map([
       ['shield', { x: pulledA.x, y: pulledA.y }],
       ['scoreFever', { x: pulledB.x, y: pulledB.y }],
       ['outside', { x: outside.x, y: outside.y }],
-      ['immune', { x: immune.x, y: immune.y }]
+      ['immune', { x: immune.x, y: immune.y }],
+      ['hazardDrone', { x: hazardDrone.x, y: hazardDrone.y }],
+      ['collectibleCore', { x: collectibleCore.x, y: collectibleCore.y }]
     ]);
 
     play.applyMagnetPull(1);
@@ -187,7 +207,12 @@ try {
         shield: Math.hypot(pulledA.x - starts.get('shield').x, pulledA.y - starts.get('shield').y),
         scoreFever: Math.hypot(pulledB.x - starts.get('scoreFever').x, pulledB.y - starts.get('scoreFever').y),
         outside: Math.hypot(outside.x - starts.get('outside').x, outside.y - starts.get('outside').y),
-        immune: Math.hypot(immune.x - starts.get('immune').x, immune.y - starts.get('immune').y)
+        immune: Math.hypot(immune.x - starts.get('immune').x, immune.y - starts.get('immune').y),
+        hazardDrone: Math.hypot(hazardDrone.x - starts.get('hazardDrone').x, hazardDrone.y - starts.get('hazardDrone').y),
+        collectibleCore: Math.hypot(
+          collectibleCore.x - starts.get('collectibleCore').x,
+          collectibleCore.y - starts.get('collectibleCore').y
+        )
       }
     };
   });
@@ -221,6 +246,9 @@ try {
   if ((state.moved?.shield || 0) <= 0.5 || (state.moved?.scoreFever || 0) <= 0.5) failures.push(`inside powerups did not move enough: ${JSON.stringify(state.moved)}`);
   if ((state.moved?.outside || 0) > 0.1) failures.push(`outside powerup should not move: ${state.moved?.outside}`);
   if ((state.moved?.immune || 0) > 0.1) failures.push(`magnet-immune powerup should not move: ${state.moved?.immune}`);
+  if ((state.moved?.collectibleCore || 0) <= 0.5) failures.push(`collectible bonus core was not pulled: ${state.moved?.collectibleCore}`);
+  if ((state.moved?.hazardDrone || 0) > 0.1) failures.push(`hazard bonus drone must not be pulled toward the player: ${state.moved?.hazardDrone}`);
+  if ((state.debug?.bonusTargetCount || 0) !== 1) failures.push(`only the collectible bonus core should be a bonus pull target: ${state.debug?.bonusTargetCount}`);
   if (!hidden.ok) failures.push(hidden.reason || 'hidden state failed');
   if (hidden.visible || hidden.debug?.visible) failures.push(`magnet field did not hide after deactivation: ${JSON.stringify(hidden)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

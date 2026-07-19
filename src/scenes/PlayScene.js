@@ -17004,7 +17004,9 @@ export class PlayScene {
     });
 
     this.ambientBonusDrones.forEach(b => {
-      if (!b.active) return;
+      // Only the POWERUP variant is collectible. Pulling HAZARD drones turns
+      // the pickup helper into an unavoidable contact-damage source.
+      if (!b.active || b.type !== 'POWERUP') return;
       const dx = px - b.x;
       const dy = py - b.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
