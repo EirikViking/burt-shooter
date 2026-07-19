@@ -1135,6 +1135,11 @@ class AudioController {
       localStorage.setItem(`burt_volume_${kind}`, String(clamped));
     } catch { }
     this.applyMusicVolume();
+    if (kind === 'voice' && clamped <= 0) {
+      this.silenceVoicePlayback('voice_volume_zero');
+    } else {
+      this.applyActiveVoiceVolumes();
+    }
     return this.getSettings();
   }
 
@@ -1172,6 +1177,9 @@ class AudioController {
     try {
       localStorage.setItem('burt_voice_enabled', this.voiceEnabled);
     } catch { }
+    if (!this.voiceEnabled) {
+      this.silenceVoicePlayback('voice_disabled');
+    }
     return this.voiceEnabled;
   }
 
@@ -1208,8 +1216,8 @@ class AudioController {
   playDiegeticVoice(eventName, options = {}) {
     return this.playVoice(eventName, {
       ...options,
-      ignoreVoiceEnabled: true,
-      volumeBus: options.volumeBus || 'sfx'
+      ignoreVoiceEnabled: false,
+      volumeBus: 'voice'
     });
   }
 
@@ -1306,6 +1314,13 @@ class AudioController {
   playVoice(eventName, options = {}) {
     if (!this.enabled) return false;
     if (!this.voiceEnabled && options.ignoreVoiceEnabled !== true) return false;
+    if (this.masterVolume <= 0 || this.voiceVolume <= 0) {
+      this.recordVoiceSuppression(eventName, 'voice_muted', Date.now(), {
+        masterVolume: this.masterVolume,
+        voiceVolume: this.voiceVolume
+      });
+      return false;
+    }
     const now = Date.now();
     const mix = VOICE_MIX[eventName] || {};
     const voicePriority = this.readMixNumber(options.voicePriority, mix.priority ?? 0);
@@ -1408,10 +1423,11 @@ class AudioController {
         const audio = new Audio(resolvedSrc);
         audio.preload = 'auto';
         const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
-        const busVolume = options.volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
+        const volumeBus = options.volumeBus === 'sfx' ? 'sfx' : 'voice';
+        const busVolume = volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
         audio.volume = this.clampUnit(this.masterVolume * busVolume * volumeMultiplier);
         const voiceId = ++this.voicePlayId;
-        const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup };
+        const entry = { audio, eventName, src: resolvedSrc, exclusiveGroup, volumeBus, volumeMultiplier };
         this.activeVoices.set(voiceId, entry);
         const cleanupVoice = () => {
           if (this.activeVoices.get(voiceId)?.audio === audio) {
@@ -1493,6 +1509,26 @@ class AudioController {
     if (stopped && this.isVerboseDiagnostics()) {
       console.log(`[Audio] stopped ${stopped} active voice(s): ${reason}`);
     }
+    return stopped;
+  }
+
+  applyActiveVoiceVolumes() {
+    for (const entry of this.activeVoices?.values?.() || []) {
+      if (!entry?.audio) continue;
+      const busVolume = entry.volumeBus === 'sfx' ? this.sfxVolume : this.voiceVolume;
+      entry.audio.volume = this.clampUnit(
+        this.masterVolume * busVolume * this.readMixNumber(entry.volumeMultiplier, 1)
+      );
+    }
+  }
+
+  silenceVoicePlayback(reason = 'muted') {
+    const stopped = this.stopAllVoices(reason);
+    for (const timer of this.delayedVoiceTimers || []) {
+      clearTimeout(timer);
+    }
+    this.delayedVoiceTimers?.clear?.();
+    this.voicePriorityLock = null;
     return stopped;
   }
 

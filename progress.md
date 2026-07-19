@@ -2111,3 +2111,9 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - SteamCMD uploaded BuildID `24282095` for AppID `4765070` and depot `4765071`. The VDF retained `SetLive ""`, so the build is private and unassigned. No Steam branch or Steamworks setting changed.
 - Corrected the Full Hangar Omega release-preparation record to match the shipped 30-ship and 250,000-point requirement. The uploaded package already contains the corrected runtime and localized in-game text.
 - Published Steamworks stats revision 10 after reviewing its exact single diff: the `ACH_FULL_HANGAR_OMEGA` English description changed from 25 to 30 playable ships. Reopened the achievement table to verify the live 30-ship text and the history page to verify no unpublished changes remained. No other Steamworks setting or row changed.
+
+## 2026-07-19 - Voice mute routing follow-up
+
+- Follow-up prompt: all voice categories were disabled and Voice volume was zero, but female voices still played during gameplay; fix surgically and deploy to Steam.
+- Root cause: `playDiegeticVoice()` explicitly bypassed the global Voice switch and routed level-clear compliments, tactical boss banter, and boss-death vocals through the SFX volume. Active voice elements also kept their old volume after the Voice slider moved to zero.
+- Central fix: diegetic voices now obey the global Voice switch and Voice volume, zero Voice volume or disabling Voice immediately stops active and delayed speech, and active speech follows subsequent Voice-volume changes. Added a focused mute-contract regression check; no player-facing text, gameplay balance, scoring, achievements, leaderboards, saves, or Steam Cloud paths changed.
