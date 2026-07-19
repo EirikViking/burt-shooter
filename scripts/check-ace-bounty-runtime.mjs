@@ -264,7 +264,7 @@ try {
   completion.screenshot = path.join(outputDir, 'ace-reward-double-pickup-1920x1080.png');
   await page.screenshot({ path: completion.screenshot, fullPage: true });
 
-  const bundledRewards = await page.evaluate(() => {
+  const distinctRewardIdentity = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     const before = play.powerupManager.powerups.length;
     const enemy = { x: 640, y: 320, nemesisBonusRewardClaimed: false };
@@ -276,29 +276,83 @@ try {
       bonusPowerupType: 'bomb'
     }, enemy);
     const created = play.powerupManager.powerups.slice(before);
-    const appliedTypes = [];
-    const originalApplyPowerup = play.player.applyPowerup;
-    play.player.applyPowerup = (type) => appliedTypes.push(type);
-    try {
-      created[0]?.collect(play.player, play);
-    } finally {
-      play.player.applyPowerup = originalApplyPowerup;
-    }
+    window.__aceDistinctRewardPickups = created;
     return {
       physicalPickupCount: created.length,
-      pickupType: created[0]?.type || null,
-      bundledPowerupTypes: [...(created[0]?.bundledPowerupTypes || [])],
-      appliedTypes,
+      pickups: created.map((pickup) => ({
+        type: pickup?.type || null,
+        bundledPowerupTypes: [...(pickup?.bundledPowerupTypes || [])],
+        textureLabel: pickup?.mainSprite?.texture?.label
+          || pickup?.mainSprite?.texture?.source?.label
+          || null,
+        rewardClaim: pickup?.rewardClaim === true,
+        rngIsolated: pickup?.rngIsolated === true,
+        x: Number(pickup?.x) || 0,
+        y: Number(pickup?.y) || 0
+      })),
       reward: pair.reward,
       protocolReward: pair.protocolReward
     };
   });
-  report.scenarios.bundledRewards = bundledRewards;
-  if (bundledRewards.physicalPickupCount !== 1 || bundledRewards.pickupType !== 'shield' || bundledRewards.bundledPowerupTypes?.join(',') !== 'bomb') {
-    failures.push(`Different Ace/Nemesis rewards did not share one pickup: ${JSON.stringify(bundledRewards)}`);
+  distinctRewardIdentity.screenshot = path.join(outputDir, 'ace-reward-distinct-pickups-1920x1080.png');
+  await page.screenshot({ path: distinctRewardIdentity.screenshot, fullPage: true });
+  report.scenarios.distinctRewardIdentity = distinctRewardIdentity;
+  if (
+    distinctRewardIdentity.physicalPickupCount !== 2
+    || distinctRewardIdentity.pickups?.map((pickup) => pickup.type).join(',') !== 'shield,bomb'
+    || distinctRewardIdentity.pickups?.some((pickup) => (
+      pickup.bundledPowerupTypes?.length !== 0
+      || !pickup.rewardClaim
+      || !String(pickup.textureLabel || '').includes(`nova-powerup-${pickup.type}-`)
+    ))
+    || distinctRewardIdentity.pickups?.filter((pickup) => pickup.rngIsolated).length !== 1
+    || Math.abs(
+      (distinctRewardIdentity.pickups?.[0]?.x || 0)
+      - (distinctRewardIdentity.pickups?.[1]?.x || 0)
+    ) < 110
+  ) {
+    failures.push(`Different Ace/Nemesis rewards were not two readable one-icon/one-effect pickups: ${JSON.stringify(distinctRewardIdentity)}`);
   }
-  if (bundledRewards.appliedTypes?.join(',') !== 'shield,bomb' || !bundledRewards.reward?.bundled || !bundledRewards.protocolReward?.bundled || bundledRewards.protocolReward?.coalesced) {
-    failures.push(`Bundled pickup did not apply both rewards: ${JSON.stringify(bundledRewards)}`);
+
+  const distinctRewardCollection = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const created = window.__aceDistinctRewardPickups || [];
+    const originalApplyPowerup = play.player.applyPowerup;
+    const originalEnqueueToast = play.enqueueToast;
+    const collections = [];
+    try {
+      for (const pickup of created) {
+        const appliedTypes = [];
+        const messages = [];
+        play.player.applyPowerup = (type) => appliedTypes.push(type);
+        play.enqueueToast = (message) => messages.push(String(message || ''));
+        pickup?.collect(play.player, play);
+        collections.push({
+          displayedType: pickup?.type || null,
+          appliedTypes,
+          messages
+        });
+      }
+    } finally {
+      play.player.applyPowerup = originalApplyPowerup;
+      play.enqueueToast = originalEnqueueToast;
+      delete window.__aceDistinctRewardPickups;
+    }
+    return collections;
+  });
+  report.scenarios.distinctRewardCollection = distinctRewardCollection;
+  if (
+    distinctRewardCollection.length !== 2
+    || distinctRewardCollection.some((entry) => (
+      entry.appliedTypes?.length !== 1
+      || entry.appliedTypes[0] !== entry.displayedType
+      || entry.messages?.length !== 1
+    ))
+    || !distinctRewardIdentity.reward?.physicalPair
+    || !distinctRewardIdentity.protocolReward?.physicalPair
+    || distinctRewardIdentity.protocolReward?.coalesced
+  ) {
+    failures.push(`Distinct pickup icon/effect/message identity mismatch: ${JSON.stringify({ distinctRewardIdentity, distinctRewardCollection })}`);
   }
 
   const duplicateRewardRng = await page.evaluate(() => {

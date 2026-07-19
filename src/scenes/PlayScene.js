@@ -190,6 +190,7 @@ const ACE_REWARD_PICKUP_OPTIONS = Object.freeze({
   verticalSpeed: 0.42,
   pickupAssistRadius: 40
 });
+const ACE_REWARD_PICKUP_PAIR_OFFSET = 60;
 
 export class PlayScene {
   constructor(game) {
@@ -2451,58 +2452,36 @@ export class PlayScene {
       ? enemy.y
       : Math.max(96, (this.player?.y || this.game.getHeight() * 0.72) - 42);
     const duplicateType = completion.rewardPowerupType === completion.bonusPowerupType;
-    if (duplicateType) {
-      const screenWidth = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
-      const offset = 48;
-      const pairCenterX = Math.max(52 + offset, Math.min(screenWidth - 52 - offset, x));
-      const first = this.powerupManager.spawnSpecific(pairCenterX - offset, y, completion.rewardPowerupType, {
-        ...ACE_REWARD_PICKUP_OPTIONS,
-        source: 'ace_nemesis_pair',
-        spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:ace` : null
-      });
-      const second = this.powerupManager.spawnSpecific(pairCenterX + offset, y, completion.bonusPowerupType, {
-        ...ACE_REWARD_PICKUP_OPTIONS,
-        source: 'ace_nemesis_pair',
-        spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:nemesis` : null,
-        // The second physical reward is new. Give its cosmetic motion a local RNG
-        // so paying the promised duplicate does not perturb later gameplay rolls.
-        visualSeed: `${completion.rewardSpawnKey || 'ace-nemesis-pair'}:${completion.bonusPowerupType}:${pairCenterX}:${y}`
-      });
-      return {
-        reward: {
-          granted: Boolean(first),
-          kind: 'powerup',
-          type: completion.rewardPowerupType,
-          duplicatePair: true
-        },
-        protocolReward: {
-          granted: Boolean(second),
-          kind: 'powerup',
-          type: completion.bonusPowerupType,
-          duplicatePair: true,
-          coalesced: false
-        }
-      };
-    }
-    const powerup = this.powerupManager.spawnSpecific(x, y, completion.rewardPowerupType, {
+    const screenWidth = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
+    const offset = ACE_REWARD_PICKUP_PAIR_OFFSET;
+    const pairCenterX = Math.max(52 + offset, Math.min(screenWidth - 52 - offset, x));
+    const first = this.powerupManager.spawnSpecific(pairCenterX - offset, y, completion.rewardPowerupType, {
       ...ACE_REWARD_PICKUP_OPTIONS,
-      source: 'ace_nemesis_bundle',
-      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:bundle` : null,
-      bundledPowerupTypes: [completion.bonusPowerupType]
+      source: 'ace_nemesis_pair',
+      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:ace` : null
     });
-    const granted = Boolean(powerup);
+    const second = this.powerupManager.spawnSpecific(pairCenterX + offset, y, completion.bonusPowerupType, {
+      ...ACE_REWARD_PICKUP_OPTIONS,
+      source: 'ace_nemesis_pair',
+      spawnKey: completion.rewardSpawnKey ? `${completion.rewardSpawnKey}:nemesis` : null,
+      // Keep the second reward's cosmetic motion off the gameplay RNG stream.
+      // This preserves the random-call footprint of the former bundled pickup.
+      visualSeed: `${completion.rewardSpawnKey || 'ace-nemesis-pair'}:${completion.bonusPowerupType}:${pairCenterX}:${y}`
+    });
     return {
       reward: {
-        granted,
+        granted: Boolean(first),
         kind: 'powerup',
         type: completion.rewardPowerupType,
-        bundled: true
+        physicalPair: true,
+        duplicatePair: duplicateType
       },
       protocolReward: {
-        granted,
+        granted: Boolean(second),
         kind: 'powerup',
         type: completion.bonusPowerupType,
-        bundled: true,
+        physicalPair: true,
+        duplicatePair: duplicateType,
         coalesced: false
       }
     };
