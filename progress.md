@@ -1,6 +1,6 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
-## 2026-07-20 Cabinet Wonders spectacle expansion (in progress)
+## 2026-07-20 Cabinet Wonders spectacle expansion (stable release lock)
 
 - Current prompt: add seven more Cabinet Wonders, make them much more visually stunning, verify surgically, and deploy the completed build to Steam.
 - Isolated worktree: `C:\tmp\nova-swarm-cabinet-wonders-20260720`; branch: `codex/cabinet-wonders-spectacle-20260720`; verified baseline: `44c43af566ebeb75c0c64720f15713bc362cb4d9`; latest packaged source ancestor: `dc2b4e7ab6d9c8ffeb012bf58c6c4504212624e9`.
