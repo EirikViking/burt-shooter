@@ -19157,8 +19157,11 @@ export class PlayScene {
   showBossIntro(name, taunt) {
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
-    const panelWidth = Math.max(300, Math.min(compact ? width - 34 : 640, width * 0.72));
-    const panelHeight = compact ? 164 : 132;
+    const edgeAligned = !compact && width >= 1100;
+    const panelWidth = edgeAligned
+      ? Math.max(330, Math.min(460, width * 0.3))
+      : Math.max(300, Math.min(compact ? width - 34 : 560, width * 0.66));
+    const panelHeight = compact ? 148 : (edgeAligned ? 100 : 116);
     const duration = (compact ? 1680 : 1780) + GAMEPLAY_MESSAGE_EXTRA_READ_MS;
     const fitText = (text, maxWidth, maxHeight, minScale = 0.68) => {
       if (!text) return;
@@ -19179,10 +19182,10 @@ export class PlayScene {
     card.label = 'ui_boss_intro_signal';
     card.eventMode = 'none';
     card.interactive = false;
-    card.x = width / 2;
-    const preferredY = compact ? height * 0.43 : height * 0.345;
-    const minimumY = compact ? 190 : 238;
-    const bottomSafeY = height - panelHeight / 2 - (compact ? 82 : 112);
+    card.x = edgeAligned ? panelWidth / 2 + 18 : width / 2;
+    const preferredY = compact ? height * 0.43 : (edgeAligned ? height * 0.4 : height * 0.35);
+    const minimumY = compact ? 190 : (edgeAligned ? 262 : 220);
+    const bottomSafeY = height - panelHeight / 2 - (compact ? 82 : 92);
     card.y = Math.min(bottomSafeY, Math.max(minimumY, preferredY));
     card.alpha = 0;
 
@@ -19190,16 +19193,16 @@ export class PlayScene {
     const gold = 0xffe66d;
     const cyan = 0x57f3ff;
     const glow = new PIXI.Graphics();
-    glow.roundRect(-panelWidth / 2 - 14, -panelHeight / 2 - 10, panelWidth + 28, panelHeight + 20, 14);
-    glow.fill({ color: accent, alpha: 0.12 });
+    glow.roundRect(-panelWidth / 2 - 10, -panelHeight / 2 - 7, panelWidth + 20, panelHeight + 14, 12);
+    glow.fill({ color: accent, alpha: 0.075 });
     glow.roundRect(-panelWidth / 2 - 6, -panelHeight / 2 - 5, panelWidth + 12, panelHeight + 10, 10);
-    glow.stroke({ color: cyan, width: 2, alpha: 0.16 });
+    glow.stroke({ color: cyan, width: 1.4, alpha: 0.12 });
     card.addChild(glow);
 
     const panel = new PIXI.Graphics();
     panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
-    panel.fill({ color: 0x05090f, alpha: 0.94 });
-    panel.stroke({ color: accent, width: 3, alpha: 0.94 });
+    panel.fill({ color: 0x05090f, alpha: 0.9 });
+    panel.stroke({ color: accent, width: 2.2, alpha: 0.88 });
     panel.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 5);
     panel.stroke({ color: cyan, width: 1.2, alpha: 0.42 });
     panel.rect(-panelWidth / 2 + 10, -panelHeight / 2 + 10, panelWidth - 20, 5);
@@ -19249,8 +19252,8 @@ export class PlayScene {
       dropShadowDistance: 0
     });
     title.anchor.set(0.5);
-    title.y = compact ? -47 : -35;
-    fitText(title, panelWidth - 54, compact ? 38 : 34, 0.38);
+    title.y = compact ? -42 : (edgeAligned ? -21 : -31);
+    fitText(title, panelWidth - 54, compact ? 38 : (edgeAligned ? 27 : 32), 0.38);
     card.addChild(title);
 
     const line = createText(taunt || 'LET\'S GO!', {
@@ -19270,14 +19273,23 @@ export class PlayScene {
       dropShadowDistance: 0
     });
     line.anchor.set(0.5);
-    fitText(line, panelWidth - 58, compact ? 62 : 48, 0.5);
+    fitText(line, panelWidth - 58, compact ? 56 : (edgeAligned ? 32 : 42), 0.5);
     const titleBottom = title.y + Math.max(0, title.height || 0) / 2;
     const lineHalfHeight = Math.max(0, line.height || 0) / 2;
     line.y = Math.min(
-      panelHeight / 2 - 26 - lineHalfHeight,
-      Math.max(compact ? 33 : 28, titleBottom + 12 + lineHalfHeight)
+      panelHeight / 2 - (edgeAligned ? 14 : 24) - lineHalfHeight,
+      Math.max(compact ? 30 : (edgeAligned ? 17 : 25), titleBottom + (edgeAligned ? 7 : 11) + lineHalfHeight)
     );
     card.addChild(line);
+
+    card.__bossIntroDebug = {
+      edgeAligned,
+      placement: edgeAligned ? 'left-edge' : 'center-compact',
+      panelWidth: Math.round(panelWidth),
+      panelHeight: Math.round(panelHeight),
+      x: Math.round(card.x),
+      y: Math.round(card.y)
+    };
 
     this.uiOverlay.addChild(card);
     this.activeBossIntroCard = card;
@@ -19288,8 +19300,16 @@ export class PlayScene {
       slot: 'center',
       priority: 4,
       duration,
+      edgeAligned,
+      placement: edgeAligned ? 'left-edge' : 'center-compact',
       duplicateKey: this.getToastDuplicateKey(`${name || 'BOSS'}\n${taunt || 'LET\'S GO!'}`, 'boss_intro'),
-      originalOptions: { type: 'boss_intro', slot: 'center', priority: 4 },
+      originalOptions: {
+        type: 'boss_intro',
+        slot: 'center',
+        priority: 4,
+        edgeAligned,
+        placement: edgeAligned ? 'left-edge' : 'center-compact'
+      },
       createdAt: Date.now()
     };
     this.lastHitStopRequestMs = 250;

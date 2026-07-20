@@ -355,6 +355,13 @@ try {
   if (!bossIntroActive) {
     throw new Error(`boss intro did not expose a tracked center message: ${JSON.stringify(bossIntroState.toast?.active || [], null, 2)}`);
   }
+  if (bossIntroActive.edgeAligned !== true || bossIntroActive.placement !== 'left-edge') {
+    throw new Error(`desktop boss intro did not leave the central combat lane: ${JSON.stringify(bossIntroActive, null, 2)}`);
+  }
+  const bossIntroRight = Number(bossIntroActive.bounds?.x || 0) + Number(bossIntroActive.bounds?.width || 0);
+  if (bossIntroRight > 1280 * 0.44) {
+    throw new Error(`boss intro intruded into the protected center lane: ${JSON.stringify(bossIntroActive.bounds, null, 2)}`);
+  }
   if (/boss entrance|pew-pew|coin slot|swarm choreography|panic button/i.test(bossIntroActive.message || '')) {
     throw new Error(`boss intro leaked generated arcade filler: ${JSON.stringify(bossIntroActive, null, 2)}`);
   }

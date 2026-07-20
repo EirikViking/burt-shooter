@@ -169,6 +169,23 @@ try {
         y: Math.round(hud.activePowerupGroup?.y || 0),
         width: Math.round(hud.activePowerupGroup?.width || 0),
         height: Math.round(hud.activePowerupGroup?.height || 0)
+      },
+      hierarchy: {
+        livesPriority: hud.livesGroup?._debugPriority || null,
+        missionPriority: hud.missionPanel?._debugPriority || null,
+        scorePriority: hud.scoreText?._debugPriority || null,
+        rankPriority: hud.rankGroup?._debugPriority || null,
+        recordPriority: hud.highscoreChaseGroup?._debugPriority || null,
+        powerupPriority: hud.activePowerupGroup?._debugPriority || null,
+        traitPriority: hud.traitGroup?._debugPriority || null,
+        livesAlpha: Number(hud.livesGroup?.alpha ?? 0),
+        missionTextAlpha: Number(hud.missionText?.alpha ?? 0),
+        directiveAlpha: Number(hud.directiveText?.alpha ?? 0),
+        scoreAlpha: Number(hud.scoreText?.alpha ?? 0),
+        rankAlpha: Number(hud.rankGroup?.alpha ?? 0),
+        recordAlpha: Number(hud.highscoreChaseGroup?.alpha ?? 0),
+        powerupAlpha: Number(hud.activePowerupGroup?.alpha ?? 0),
+        traitAlpha: Number(hud.traitGroup?.alpha ?? 0)
       }
     };
   });
@@ -176,6 +193,24 @@ try {
   await page.waitForTimeout(250);
   const screenshot = path.join(outputDir, 'hud-readability.png');
   await page.screenshot({ path: screenshot, fullPage: true });
+
+  const bossHierarchy = await page.evaluate(() => {
+    const hud = window.__game?.scenes?.play?.hud;
+    if (!hud) return null;
+    hud.missionText.text = 'BOSS HP 420';
+    hud.updateMissionProgress({
+      state: 'BOSS_ACTIVE',
+      phase: 'BOSS',
+      waveTotal: 5,
+      waveIndex: 5,
+      activeEnemies: 1,
+      activeBullets: 32
+    });
+    return { ...(hud.missionPanel?._debugPriority || {}) };
+  });
+  await page.waitForTimeout(120);
+  const bossScreenshot = path.join(outputDir, 'hud-boss-priority.png');
+  await page.screenshot({ path: bossScreenshot, fullPage: true });
 
   const spentRow = state.rows?.find((row) => row.spent);
   const expiringRow = state.rows?.find((row) => row.expiring);
@@ -203,11 +238,26 @@ try {
       expiringRow?.progress > 0 &&
       expiringRow?.progress <= 0.25 &&
       expiringRow?.expiryOverlayVisible &&
+      state.hierarchy?.livesPriority === 'critical' &&
+      state.hierarchy?.missionPriority?.tier === 'objective' &&
+      state.hierarchy?.scorePriority === 'secondary' &&
+      state.hierarchy?.rankPriority === 'secondary' &&
+      state.hierarchy?.recordPriority === 'secondary' &&
+      state.hierarchy?.powerupPriority === 'support' &&
+      state.hierarchy?.traitPriority === 'support' &&
+      state.hierarchy?.livesAlpha > state.hierarchy?.scoreAlpha &&
+      state.hierarchy?.powerupAlpha > state.hierarchy?.scoreAlpha &&
+      state.hierarchy?.traitAlpha > state.hierarchy?.rankAlpha &&
+      state.hierarchy?.missionTextAlpha > state.hierarchy?.directiveAlpha &&
+      bossHierarchy?.tier === 'critical' &&
+      bossHierarchy?.boss === true &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
     baseUrl,
     screenshot,
+    bossScreenshot,
+    bossHierarchy,
     state,
     pageErrors,
     consoleErrors
@@ -218,7 +268,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[hud-readability] PASS screenshot=${screenshot}`);
+    console.log(`[hud-readability] PASS screenshot=${screenshot} boss=${bossScreenshot}`);
   }
 } finally {
   await browser.close();

@@ -654,8 +654,11 @@ export class HUD {
 
     this.highscoreChaseTitle.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (isRivalMode ? '#87f8ff' : '#ffef7e');
     this.highscoreChaseGap.style.fill = rivalFlashActive || surpassed ? '#fff05c' : (ratio >= 0.9 ? '#ff55d9' : '#7fffd8');
-    this.highscoreChaseGroup.alpha = hasTarget ? 0.86 + pulse * 0.14 : 0.78;
+    this.highscoreChaseGroup.alpha = hasTarget
+      ? (chaseIsHot ? 0.82 + pulse * 0.16 : 0.62)
+      : 0.5;
     this.highscoreChaseGroup.scale.set(1);
+    this.highscoreChaseGroup._debugPriority = chaseIsHot ? 'support-hot' : 'secondary';
 
     const barW = Math.max(48, w - 22);
     const progress = isRivalNumberOne ? 1 : (hasTarget ? Math.min(1, ratio) : 0.08 + pulse * 0.08);
@@ -1007,6 +1010,8 @@ export class HUD {
             ? 0xff7a55
             : 0x66f7ff;
 
+    this.updateMissionPriorityVisual({ isBoss, isClear, isBriefing, pressure });
+
     rail.clear();
     fill.clear();
     active.clear();
@@ -1106,6 +1111,52 @@ export class HUD {
       heatPipCount,
       threatChevronCount,
       color: activeColor
+    };
+  }
+
+  updateMissionPriorityVisual({ isBoss = false, isClear = false, isBriefing = false, pressure = 0 } = {}) {
+    const layout = this.missionPanel?.__layout;
+    if (!layout) return;
+
+    const immediateDanger = !isClear && pressure >= 0.7;
+    const critical = isBoss || immediateDanger;
+    const accent = isBoss
+      ? 0xff55d9
+      : immediateDanger
+        ? 0xff765c
+        : isClear
+          ? 0x75ff8d
+          : isBriefing
+            ? 0xffef7e
+            : 0x66dff7;
+
+    this.drawGlassPanel(
+      this.missionPanel,
+      layout.x,
+      layout.y,
+      layout.width,
+      layout.height,
+      accent,
+      critical ? 0.1 : 0.035,
+      {
+        fillAlpha: critical ? 0.7 : 0.54,
+        strokeAlpha: critical ? 0.9 : 0.58,
+        strokeWidth: critical ? 1.8 : 1.15
+      }
+    );
+
+    this.missionLabel.alpha = critical ? 0.9 : 0.68;
+    this.missionText.alpha = 1;
+    this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
+    this.directiveText.alpha = 0.62;
+    this.directiveProgressBg.alpha = 0.56;
+    this.directiveProgressFill.alpha = 0.72;
+    this.missionPanel._debugPriority = {
+      tier: critical ? 'critical' : 'objective',
+      boss: isBoss,
+      immediateDanger,
+      pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
+      accent
     };
   }
 
@@ -2230,9 +2281,37 @@ export class HUD {
     this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
     this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
 
-    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x00d9ff, 0.16);
-    this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.14);
-    this.drawGlassPanel(this.missionPanel, missionPanelX, missionPanelY, missionPanelWidth, missionPanelHeight, 0xff55d9, 0.1);
+    this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x5fa8bd, 0.035, {
+      fillAlpha: 0.44,
+      strokeAlpha: 0.36,
+      strokeWidth: 1
+    });
+    this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.055, {
+      fillAlpha: 0.62,
+      strokeAlpha: 0.72,
+      strokeWidth: 1.55
+    });
+    this.missionPanel.__layout = {
+      x: missionPanelX,
+      y: missionPanelY,
+      width: missionPanelWidth,
+      height: missionPanelHeight
+    };
+    this.updateMissionPriorityVisual();
+
+    this.rankGroup.alpha = 0.72;
+    this.rankGroup._debugPriority = 'secondary';
+    this.scoreText.alpha = 0.74;
+    this.scoreText._debugPriority = 'secondary';
+    this.scoreMultiplierText.alpha = 0.78;
+    this.levelText.alpha = 0.68;
+    this.levelText._debugPriority = 'secondary';
+    this.activePowerupGroup.alpha = 0.86;
+    this.activePowerupGroup._debugPriority = 'support';
+    this.tacticalAugmentGroup.alpha = 0.66;
+    this.tacticalAugmentGroup._debugPriority = 'secondary';
+    this.traitGroup.alpha = 0.84;
+    this.traitGroup._debugPriority = 'support';
 
     // Rank Position (Top Left)
     this.rankGroup.x = margin + 10;
@@ -2331,12 +2410,16 @@ export class HUD {
     }
   }
 
-  drawGlassPanel(graphics, x, y, width, height, accent, alpha = 0.14) {
+  drawGlassPanel(graphics, x, y, width, height, accent, alpha = 0.14, {
+    fillAlpha = 0.58,
+    strokeAlpha = 0.85,
+    strokeWidth = 1.5
+  } = {}) {
     if (!graphics) return;
     graphics.clear();
     graphics.roundRect(x, y, width, height, 8);
-    graphics.fill({ color: 0x03101d, alpha: 0.58 });
-    graphics.stroke({ color: accent, width: 1.5, alpha: 0.85 });
+    graphics.fill({ color: 0x03101d, alpha: fillAlpha });
+    graphics.stroke({ color: accent, width: strokeWidth, alpha: strokeAlpha });
     graphics.rect(x + 1, y + 1, Math.max(0, width - 2), Math.max(0, height * 0.38));
     graphics.fill({ color: accent, alpha });
   }
@@ -2358,12 +2441,15 @@ export class HUD {
     const width = this.livesText.x + this.livesText.width + padding / 2;
     this.livesBg.clear();
     this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
-    this.livesBg.fill({ color: critical ? 0x2a050a : 0x000000, alpha: critical ? 0.16 + pulse * 0.1 : 0.02 });
+    this.livesBg.fill({ color: critical ? 0x2a050a : 0x03120a, alpha: critical ? 0.72 + pulse * 0.08 : 0.58 });
     if (critical) {
-      this.livesBg.stroke({ color: pulse > 0.52 ? 0xff4040 : 0xffd166, width: 1.4, alpha: 0.52 + pulse * 0.34 });
+      this.livesBg.stroke({ color: pulse > 0.52 ? 0xff4040 : 0xffd166, width: 2.2, alpha: 0.76 + pulse * 0.22 });
+    } else {
+      this.livesBg.stroke({ color: 0x75ff8d, width: 1.45, alpha: 0.78 });
     }
     this.livesGroup._debugCritical = critical;
     this.livesGroup._debugPulse = Number(pulse.toFixed(3));
+    this.livesGroup._debugPriority = 'critical';
   }
 
   destroy() {
