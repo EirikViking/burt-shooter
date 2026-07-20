@@ -11,6 +11,7 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - Adjacent verification passed `check:sensory-overhaul` at 21.1 ms p95, player-projectile readability, boss-hazard arming readability, all-eight-language i18n UI, full browser smoke, controller-only flow, current Electron smoke, Steam SDK readiness, and `check:release-line`. Browser smoke contained only the accepted preview service-worker warning and no page errors or failed responses.
 - Source commit `3686bf634813bcbfcf29634c094bc81eaaed8191` was built as `v2026-07-20_14-43-17` and packaged to `E:\Codex\nova-swarm-steam-package-cabinet-wonders-20260720\desktop\win-unpacked`. The exact payload contains 417 files / 958,436,871 bytes, manifest hash `2c392c22dff9a43ce6a18d6344b4051945384c405c798da58cc27f49f843ccd5`, and executable SHA-256 `9b23b32d8657acd2dbab88ca4eb11af966040d32aba94f74614b6ef771cac2be`.
 - Exact-package Steam runtime, launch smoke, keyboard/gamepad controls, fresh-profile Steam isolation, and desktop package review pass. Packaged performance held 58.82 minimum / 59.81 average FPS across 11 samples with zero warnings and zero errors. The exact packaged menu screenshot was inspected and shows build `v2026-07-20_14-43-17`.
+- SteamCMD uploaded the exact payload successfully as private, unassigned BuildID `24295917`, depot manifest `932713604018215419`, AppID `4765070`, depot `4765071`. The inspected VDF kept `SetLive ""`; no Steam branch moved and no Steamworks setting or production data changed.
 
 ## 2026-07-18 Hangar Tactical launch follow up
 
