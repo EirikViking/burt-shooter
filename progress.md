@@ -2143,3 +2143,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Declined the proposal to grant Tactical augments automatically in Pure. That would blur the no-draft mode contract, alter historical score comparability, and weaken hull identity; Tactical already provides the progression-rich route.
 - Verified the surrounding Steam thread explains Tyrian's 700k Pure removal request: the run used upgrade/Tactical conditions but was recorded under Pure during the leaderboard split. He prefers moving it to Tactical, or deletion if moving is impractical, so Pure players are not chasing a score earned under different rules. No live leaderboard data was changed without explicit authorization.
 - Focus Lens runtime evidence, projectile readability, boss-hazard arming readability, i18n, all-language UI QA, and `build:current` pass. The Focus spread composite and both gameplay readability screenshots were manually inspected. The generic web-game client also completed a live movement/fire pass with text state showing 10 fired shots, active hostile bullets, and zero orphaned visuals; its direct WebGL screenshots reproduced the known black-canvas capture limitation.
+
+## 2026-07-20 - Focus and combat clarity uploaded privately
+
+- Packaged source `dc2b4e7ab6d9c8ffeb012bf58c6c4504212624e9` as `v2026-07-20_13-31-07` under `E:\Codex\nova-swarm-steam-package-focus-clarity-20260720\desktop\win-unpacked`.
+- The exact 417-file, 958,426,778-byte payload has manifest hash `5b0d574d3f415f74521e6306ffedffa262e292677339042f5389324436f16d7f`; executable SHA-256 is `2B29F7CDF036E510F68D00508BDE72309511F36CD60269D3DBCCBA4A1171F49C`.
+- Steam-backed packaged launch smoke passed with AppID `4765070`, leaderboard `nova_swarm_global_score_v2`, build `v2026-07-20_13-31-07`, and source `dc2b4e7`. Packaged performance passed at 58.14 minimum and 59.92 average FPS with no warnings or errors.
+- SteamCMD uploaded BuildID `24294849` and depot manifest `2637014136763097821` for depot `4765071`. The VDF retained `SetLive ""`, so the build is private and unassigned. No Steam branch or Steamworks setting changed.
+- The user confirmed that Tyrian's 700k Mayhem Pure score was manually deleted. This build and upload did not modify leaderboard data.
+- Confirmed that the combined reply should answer Tyrian comments #73, #74, and #75. A humble paste-ready draft is preserved in `docs/release/nova-swarm-tyrian-focus-clarity-upload-20260720.md`; it was not posted.
