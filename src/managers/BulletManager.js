@@ -261,6 +261,12 @@ export class BulletManager {
     }
   }
 
+  setFocusCombatClarity(active) {
+    for (const bullet of this.playerBullets) {
+      if (bullet?.active !== false) bullet.setFocusCombatClarity?.(active);
+    }
+  }
+
   getTotalCount() {
     return this.playerBullets.length + this.enemyBullets.length;
   }

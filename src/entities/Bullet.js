@@ -3,6 +3,9 @@ import { GameAssets } from '../utils/GameAssets.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
 
 const GENERATED_PROJECTILE_UNFRAMED_SCALE_MULT = 1.32;
+const PLAYER_PROJECTILE_Z_INDEX = 80;
+const ENEMY_PROJECTILE_Z_INDEX = 120;
+const FOCUS_FRIENDLY_PROJECTILE_ALPHA = 0.42;
 
 export class Bullet {
   constructor(x, y, vx, vy, damage, color, isPlayer, visualConfig = null) {
@@ -32,7 +35,8 @@ export class Bullet {
     this.sprite.__novaProjectileOwner = this;
     this.sprite.x = x;
     this.sprite.y = y;
-    this.sprite.zIndex = isPlayer ? 100 : 90;
+    // Hostile fire must stay above the player's bright projectile stream.
+    this.sprite.zIndex = isPlayer ? PLAYER_PROJECTILE_Z_INDEX : ENEMY_PROJECTILE_Z_INDEX;
     this.angle = Math.atan2(vy, vx);
     this.speed = Math.sqrt(vx * vx + vy * vy);
     this.trail = null;
@@ -875,6 +879,11 @@ export class Bullet {
     ) {
       this.active = false;
     }
+  }
+
+  setFocusCombatClarity(active) {
+    if (!this.isPlayer || this.isBomb || !this.sprite) return;
+    this.sprite.alpha = active ? FOCUS_FRIENDLY_PROJECTILE_ALPHA : 1;
   }
 
   updateEnemyProjectileAnimation(delta) {

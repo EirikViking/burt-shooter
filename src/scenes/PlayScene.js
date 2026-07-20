@@ -4029,7 +4029,10 @@ export class PlayScene {
       const enemyBulletScale = slowTimeActive ? (this.player?.getSlowTimeEnemyBulletScale?.() ?? 0.35) : 1;
       const hazardTimeScale = slowTimeActive ? (this.player?.getSlowTimeHazardScale?.() ?? 0.35) : 1;
       measure('bullets', () => {
-        if (this.bulletManager) this.bulletManager.update(delta, enemyBulletScale);
+        if (this.bulletManager) {
+          this.bulletManager.update(delta, enemyBulletScale);
+          this.bulletManager.setFocusCombatClarity(Boolean(this.player?.focusDriftActive));
+        }
       });
       measure('enemies', () => {
         if (this.enemyManager) this.enemyManager.update(delta);

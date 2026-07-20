@@ -187,8 +187,48 @@ try {
     return result;
   });
 
+  const clarity = await page.evaluate(async () => {
+    const { Bullet } = await import('/src/entities/Bullet.js');
+    const manager = window.__game?.scenes?.play?.bulletManager;
+    if (!manager) throw new Error('Missing BulletManager for Focus clarity check');
+
+    const friendly = new Bullet(320, 700, 0, -12, 1, 0x66f7ff, true);
+    const bomb = new Bullet(360, 700, 0, -8, 5, 0xffa84d, true);
+    const hostile = new Bullet(340, 220, 0, 6, 1, 0xff6174, false);
+    bomb.isBomb = true;
+
+    const savedPlayerBullets = manager.playerBullets;
+    manager.playerBullets = [friendly, bomb];
+    manager.setFocusCombatClarity(true);
+    const focused = {
+      friendlyAlpha: friendly.sprite.alpha,
+      bombAlpha: bomb.sprite.alpha,
+      hostileAlpha: hostile.sprite.alpha,
+      friendlyZ: friendly.sprite.zIndex,
+      hostileZ: hostile.sprite.zIndex
+    };
+    manager.setFocusCombatClarity(false);
+    const restoredFriendlyAlpha = friendly.sprite.alpha;
+    manager.playerBullets = savedPlayerBullets;
+    friendly.destroy?.();
+    bomb.destroy?.();
+    hostile.destroy?.();
+    return { focused, restoredFriendlyAlpha };
+  });
+
+  assert(clarity.focused.friendlyAlpha <= 0.45,
+    `Focus left friendly projectile alpha at ${clarity.focused.friendlyAlpha}`);
+  assert(clarity.focused.bombAlpha === 1,
+    `Focus dimmed the tactical bomb to ${clarity.focused.bombAlpha}`);
+  assert(clarity.focused.hostileAlpha === 1,
+    `Focus dimmed hostile fire to ${clarity.focused.hostileAlpha}`);
+  assert(clarity.focused.hostileZ > clarity.focused.friendlyZ,
+    `Hostile projectile zIndex ${clarity.focused.hostileZ} was not above friendly ${clarity.focused.friendlyZ}`);
+  assert(clarity.restoredFriendlyAlpha === 1,
+    `Friendly projectile alpha restored to ${clarity.restoredFriendlyAlpha}`);
+
   for (const sample of samples) {
-    assert(sample.focusSpreadMult === 0.75, `${sample.shipName}: Focus Lens multiplier was ${sample.focusSpreadMult}`);
+    assert(sample.focusSpreadMult === 0.6, `${sample.shipName}: Focus Lens multiplier was ${sample.focusSpreadMult}`);
     assert(sample.focused.projectileCount === sample.unfocused.projectileCount,
       `${sample.shipName}: Focus changed projectile count`);
     assert(sample.focused.multiShot === sample.unfocused.multiShot,
@@ -197,8 +237,8 @@ try {
       `${sample.shipName}: Focus changed firing cadence`);
     assert(sample.focused.damage > sample.unfocused.damage * 1.17,
       `${sample.shipName}: existing Focus Lens damage identity was lost`);
-    assert(Math.abs(sample.outerAngleRatio - 0.75) < 0.015,
-      `${sample.shipName}: focused spread ratio ${sample.outerAngleRatio} was not 0.75`);
+    assert(Math.abs(sample.outerAngleRatio - 0.6) < 0.015,
+      `${sample.shipName}: focused spread ratio ${sample.outerAngleRatio} was not 0.6`);
     assert(sample.envelopeAt600.focused < sample.envelopeAt600.unfocused,
       `${sample.shipName}: focused envelope did not tighten`);
   }
@@ -229,7 +269,7 @@ try {
     ctx.fillText('FOCUS LENS // LIVE VOLLEY SPREAD EVIDENCE', 960, 58);
     ctx.fillStyle = '#9cfbff';
     ctx.font = '700 22px Rajdhani, Arial';
-    ctx.fillText('Actual Player.shoot() angles • Focus = 75% spread • projectile count and cadence unchanged', 960, 94);
+    ctx.fillText('Focus = 60% spread • friendly fire dims • bombs and hostile fire stay fully visible', 960, 94);
 
     const colors = { unfocused: '#ff55d9', focused: '#66f7ff' };
     const panelWidth = 590;
