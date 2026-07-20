@@ -1,5 +1,15 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-20 Cabinet Wonders spectacle expansion (in progress)
+
+- Current prompt: add seven more Cabinet Wonders, make them much more visually stunning, verify surgically, and deploy the completed build to Steam.
+- Isolated worktree: `C:\tmp\nova-swarm-cabinet-wonders-20260720`; branch: `codex/cabinet-wonders-spectacle-20260720`; verified baseline: `44c43af566ebeb75c0c64720f15713bc362cb4d9`; latest packaged source ancestor: `dc2b4e7ab6d9c8ffeb012bf58c6c4504212624e9`.
+- Preserve the existing deterministic planner, safe-transition eligibility, one-Wonder-per-run limit, score/gameplay neutrality, Reduced Motion path, and background/HUD layering. Expand the catalog from three to ten and upgrade the procedural presentation without adding player-facing text or external art dependencies.
+- Added Singularity Bloom, Celestial Koi Procession, Prismatic Supernova, Warp Cathedral, Quantum Eclipse, Nebula Jellyfish, and Phoenix Comet. All ten Wonders now share a restrained drifting star field; the original Fleet and Starwhale gained additional halo/breath detail.
+- The first all-variant screenshot pass exposed an inherited coordinate-space defect: Wonders used outer-window dimensions while drawing inside the scaled gameplay container, compressing them toward the upper-left. The presentation now uses gameplay-space dimensions, centering and scaling every Wonder correctly while keeping it behind combat and HUD.
+- `npm run check:cabinet-wonders`, `npm run build:current`, and the ten-variant `npm run check:cabinet-wonders-runtime` pass. The latest contact sheet at `test-results/cabinet-wonders-2026-07-20T12-25-06-872Z/cabinet-wonders-contact-sheet.png` was inspected and shows all ten distinct, centered spectacles with hostile fire and HUD remaining legible. The required generic web-game client was attempted but its bundled Playwright browser is absent; the repo-native installed-Chrome runtime check provides the successful live gameplay and screenshot coverage.
+- Adjacent verification passed `check:sensory-overhaul` at 21.1 ms p95, player-projectile readability, boss-hazard arming readability, all-eight-language i18n UI, full browser smoke, controller-only flow, current Electron smoke, Steam SDK readiness, and `check:release-line`. Browser smoke contained only the accepted preview service-worker warning and no page errors or failed responses.
+
 ## 2026-07-18 Hangar Tactical launch follow up
 
 - Original follow up prompt: When launching a game from the Hangar, start Mayhem Tactical directly or provide a mode choice, then deploy to Steam and publish the prepared Steam messages.

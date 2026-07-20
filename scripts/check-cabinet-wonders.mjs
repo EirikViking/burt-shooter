@@ -9,8 +9,8 @@ import {
   getCabinetWonderChance
 } from '../src/game/CabinetWonders.js';
 
-assert.equal(CABINET_WONDER_VARIANT_COUNT, 3, 'Cabinet Wonders must ship three distinct rare moments');
-assert.equal(new Set(CABINET_WONDER_CATALOG.map((entry) => entry.id)).size, 3, 'Cabinet Wonder IDs must be unique');
+assert.equal(CABINET_WONDER_VARIANT_COUNT, 10, 'Cabinet Wonders must ship ten distinct rare moments');
+assert.equal(new Set(CABINET_WONDER_CATALOG.map((entry) => entry.id)).size, 10, 'Cabinet Wonder IDs must be unique');
 assert.ok(CABINET_WONDER_CATALOG.every((entry) => entry.palette.length === 3 && entry.pitchScale > 0), 'each wonder needs a visual palette and audio identity');
 
 assert.equal(evaluateCabinetWonder('test', { sector: 4, waveNumber: 3, hasUpcomingWave: false }).reason, 'no_safe_transition');
@@ -75,6 +75,18 @@ assert.match(
   enemyManagerSource,
   /isChallenge:\s*Boolean\(clearedWave\?\.isChallenge \|\| this\.waves\[transitionWaveIndex \+ 1\]\?\.isChallenge\)/,
   'Cabinet Wonders must stay out of both completed and upcoming challenge-flight transitions'
+);
+
+const playSceneSource = readFileSync(new URL('../src/scenes/PlayScene.js', import.meta.url), 'utf8');
+assert.match(
+  playSceneSource,
+  /const width = Math\.max\(320, Number\(this\.gameplayGame\?\.getWidth\?\.\(\)\)/,
+  'Cabinet Wonders must use the scaled gameplay coordinate space instead of outer-window dimensions'
+);
+assert.match(
+  playSceneSource,
+  /const durationMs = reducedMotion \? 1400 : 2300;/,
+  'Cabinet Wonders need a readable full-motion hold with a shorter Reduced Motion path'
 );
 
 console.log(`[cabinet-wonders] PASS variants=${CABINET_WONDER_VARIANT_COUNT} maxChance=${CABINET_WONDER_MAX_CHANCE}`);

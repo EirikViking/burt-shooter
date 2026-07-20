@@ -15,6 +15,41 @@ export const CABINET_WONDER_CATALOG = freezeEntries([
     id: 'aurora_crown',
     palette: Object.freeze([0x66ffd1, 0x7a8cff, 0xff62d8]),
     pitchScale: 1.2
+  },
+  {
+    id: 'singularity_bloom',
+    palette: Object.freeze([0x9a7dff, 0xff65d8, 0x63f4ff]),
+    pitchScale: 0.74
+  },
+  {
+    id: 'celestial_koi_procession',
+    palette: Object.freeze([0xffd36a, 0xff6fcf, 0x75f7ff]),
+    pitchScale: 1.14
+  },
+  {
+    id: 'prismatic_supernova',
+    palette: Object.freeze([0xffffff, 0x73efff, 0xff78d7]),
+    pitchScale: 1.32
+  },
+  {
+    id: 'warp_cathedral',
+    palette: Object.freeze([0x61f7ff, 0x8d7cff, 0xffd86b]),
+    pitchScale: 0.84
+  },
+  {
+    id: 'quantum_eclipse',
+    palette: Object.freeze([0xffc86b, 0xff5ec9, 0x79eaff]),
+    pitchScale: 0.68
+  },
+  {
+    id: 'nebula_jellyfish',
+    palette: Object.freeze([0x8c7dff, 0x67ffe0, 0xff78dc]),
+    pitchScale: 0.98
+  },
+  {
+    id: 'phoenix_comet',
+    palette: Object.freeze([0xffee8a, 0xff7a57, 0xff59cb]),
+    pitchScale: 1.26
   }
 ]);
 

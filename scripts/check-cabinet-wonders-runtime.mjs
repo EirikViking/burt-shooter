@@ -136,9 +136,26 @@ const browser = await chromium.launch({
 });
 const report = { ok: false, baseUrl, outputDir, scenarios: [], failures: [] };
 try {
-  report.scenarios.push(await runVariant(browser, 'ghost_fleet_salute', { width: 1280, height: 720 }));
-  report.scenarios.push(await runVariant(browser, 'starwhale_constellation', { width: 1920, height: 1080 }));
-  report.scenarios.push(await runVariant(browser, 'aurora_crown', { width: 1280, height: 720 }, true));
+  const variantIds = [
+    'ghost_fleet_salute',
+    'starwhale_constellation',
+    'aurora_crown',
+    'singularity_bloom',
+    'celestial_koi_procession',
+    'prismatic_supernova',
+    'warp_cathedral',
+    'quantum_eclipse',
+    'nebula_jellyfish',
+    'phoenix_comet'
+  ];
+  for (const [index, variantId] of variantIds.entries()) {
+    report.scenarios.push(await runVariant(
+      browser,
+      variantId,
+      index % 3 === 1 ? { width: 1920, height: 1080 } : { width: 1280, height: 720 },
+      variantId === 'aurora_crown'
+    ));
+  }
 
   for (const scenario of report.scenarios) {
     const active = scenario.active;
@@ -154,7 +171,7 @@ try {
       report.failures.push(`${scenario.variantId} force/one-per-run/score-neutral mismatch: ${JSON.stringify(scenario.synchronous)}`);
     }
     if (
-      active?.availableVariants !== 3
+      active?.availableVariants !== 10
       || active?.shownCount !== 1
       || active?.onePerRun !== true
       || active?.scoreNeutral !== true

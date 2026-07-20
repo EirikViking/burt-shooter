@@ -2584,10 +2584,36 @@ export class PlayScene {
     let elementCount = 0;
     let authoredBounds = { x: width * 0.12, y: height * 0.15, width: width * 0.76, height: height * 0.3 };
     let animate = () => {};
+    const sparkField = new PIXI.Container();
+    sparkField.label = 'cabinet_wonder_spark_field';
+    const sparkCount = reducedMotion ? 12 : 26;
+    for (let index = 0; index < sparkCount; index += 1) {
+      const spark = new PIXI.Graphics();
+      const radius = 0.8 + (index % 5) * 0.34;
+      const color = palette[index % palette.length];
+      spark.circle(0, 0, radius * 3.6);
+      spark.fill({ color, alpha: 0.045 + (index % 4) * 0.012 });
+      spark.circle(0, 0, radius);
+      spark.fill({ color: index % 7 === 0 ? 0xffffff : color, alpha: 0.42 + (index % 3) * 0.12 });
+      spark.x = width * (0.08 + (((index * 79) % 839) / 839) * 0.84);
+      spark.y = height * (0.09 + (((index * 47 + 13) % 293) / 293) * 0.35);
+      spark.blendMode = 'add';
+      sparkField.addChild(spark);
+      elementCount += 1;
+    }
+    root.addChild(sparkField);
 
     if (variant.id === 'ghost_fleet_salute') {
       const fleet = new PIXI.Container();
       fleet.label = 'cabinet_wonder_ghost_fleet';
+      const fleetHalo = new PIXI.Graphics();
+      fleetHalo.circle(width * 0.5, height * 0.34, Math.min(width * 0.29, height * 0.36));
+      fleetHalo.stroke({ color: palette[1], width: Math.max(8, width * 0.012), alpha: 0.035 });
+      fleetHalo.circle(width * 0.5, height * 0.34, Math.min(width * 0.23, height * 0.29));
+      fleetHalo.stroke({ color: palette[0], width: Math.max(1.4, width * 0.0015), alpha: 0.2 });
+      fleetHalo.blendMode = 'add';
+      root.addChild(fleetHalo);
+      elementCount += 1;
       for (let index = 0; index < 6; index += 1) {
         const ship = new PIXI.Graphics();
         const size = Math.max(20, Math.min(32, width * (0.018 + index * 0.001)));
@@ -2619,6 +2645,7 @@ export class PlayScene {
       animate = (progress, elapsedMs) => {
         root.x = reducedMotion ? 0 : width * (-0.07 + progress * 0.14);
         root.y = reducedMotion ? 0 : Math.sin(elapsedMs * 0.003) * 3;
+        fleetHalo.rotation = reducedMotion ? 0 : elapsedMs * 0.00012;
       };
     } else if (variant.id === 'starwhale_constellation') {
       const scale = Math.max(0.62, Math.min(1.15, Math.min(width / 1280, height / 720)));
@@ -2658,6 +2685,23 @@ export class PlayScene {
       eye.blendMode = 'add';
       root.addChild(eye);
       elementCount += 1;
+      for (let index = 0; index < 4; index += 1) {
+        const breath = new PIXI.Graphics();
+        const length = (46 + index * 24) * scale;
+        breath.moveTo(centerX + 205 * scale, centerY - 9 * scale);
+        breath.bezierCurveTo(
+          centerX + (220 + index * 8) * scale,
+          centerY - (22 + index * 4) * scale,
+          centerX + (240 + index * 12) * scale,
+          centerY + (12 + index * 7) * scale,
+          centerX + (205 * scale) + length,
+          centerY - (5 + index * 3) * scale
+        );
+        breath.stroke({ color: palette[(index + 1) % palette.length], width: Math.max(1, 2.6 * scale), alpha: 0.12 + index * 0.035 });
+        breath.blendMode = 'add';
+        root.addChild(breath);
+        elementCount += 1;
+      }
       authoredBounds = { x: width * 0.2, y: height * 0.15, width: width * 0.68, height: height * 0.3 };
       animate = (_progress, elapsedMs) => {
         root.x = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0018) * 10;
@@ -2665,7 +2709,7 @@ export class PlayScene {
         const pulse = reducedMotion ? 0 : Math.sin(elapsedMs * 0.004) * 0.006;
         root.scale.set(1 + pulse);
       };
-    } else {
+    } else if (variant.id === 'aurora_crown') {
       for (let index = 0; index < 5; index += 1) {
         const glow = new PIXI.Graphics();
         const y = height * (0.24 + index * 0.032);
@@ -2717,17 +2761,453 @@ export class PlayScene {
         const pulse = reducedMotion ? 0 : Math.sin(elapsedMs * 0.006) * 0.008;
         root.scale.set(1 + pulse);
       };
+    } else if (variant.id === 'singularity_bloom') {
+      const centerX = width * 0.52;
+      const centerY = height * 0.285;
+      const baseRadius = Math.min(width * 0.11, height * 0.16);
+      const rings = [];
+      for (let index = 0; index < 9; index += 1) {
+        const ring = new PIXI.Graphics();
+        const radius = baseRadius * (0.62 + index * 0.13);
+        ring.circle(0, 0, radius);
+        ring.stroke({
+          color: palette[index % palette.length],
+          width: Math.max(1.2, 5.2 - index * 0.38),
+          alpha: 0.13 + (index % 3) * 0.055
+        });
+        ring.x = centerX;
+        ring.y = centerY;
+        ring.scale.set(1, 0.27 + (index % 3) * 0.055);
+        ring.rotation = -0.28 + index * 0.071;
+        ring.blendMode = 'add';
+        root.addChild(ring);
+        rings.push(ring);
+        elementCount += 1;
+      }
+      const lens = new PIXI.Graphics();
+      lens.circle(centerX, centerY, baseRadius * 1.36);
+      lens.fill({ color: palette[0], alpha: 0.035 });
+      lens.circle(centerX, centerY, baseRadius * 0.72);
+      lens.fill({ color: 0x02020c, alpha: 0.96 });
+      lens.circle(centerX - baseRadius * 0.12, centerY - baseRadius * 0.11, baseRadius * 0.18);
+      lens.fill({ color: 0xffffff, alpha: 0.08 });
+      root.addChild(lens);
+      elementCount += 1;
+      const jets = [];
+      for (let index = 0; index < 12; index += 1) {
+        const jet = new PIXI.Graphics();
+        const angle = (Math.PI * 2 * index) / 12;
+        const inner = baseRadius * 0.78;
+        const outer = baseRadius * (1.4 + (index % 4) * 0.18);
+        jet.moveTo(centerX + Math.cos(angle) * inner, centerY + Math.sin(angle) * inner * 0.46);
+        jet.lineTo(centerX + Math.cos(angle) * outer, centerY + Math.sin(angle) * outer * 0.46);
+        jet.stroke({ color: palette[(index + 1) % palette.length], width: index % 3 === 0 ? 2.8 : 1.2, alpha: 0.17 + (index % 3) * 0.06 });
+        jet.blendMode = 'add';
+        root.addChild(jet);
+        jets.push(jet);
+        elementCount += 1;
+      }
+      authoredBounds = { x: width * 0.31, y: height * 0.08, width: width * 0.42, height: height * 0.4 };
+      animate = (_progress, elapsedMs) => {
+        rings.forEach((ring, index) => {
+          ring.rotation += (index % 2 === 0 ? 1 : -1) * (reducedMotion ? 0.0002 : 0.0012);
+        });
+        const pulse = reducedMotion ? 1 : 1 + Math.sin(elapsedMs * 0.005) * 0.025;
+        lens.scale.set(pulse);
+        jets.forEach((jet, index) => {
+          jet.alpha = 0.58 + Math.sin(elapsedMs * 0.006 + index) * 0.28;
+        });
+      };
+    } else if (variant.id === 'celestial_koi_procession') {
+      const school = new PIXI.Container();
+      const fish = [];
+      for (let index = 0; index < 5; index += 1) {
+        const koi = new PIXI.Container();
+        const size = Math.max(17, Math.min(31, width * (0.018 + index * 0.0014)));
+        const color = palette[index % palette.length];
+        const aura = new PIXI.Graphics();
+        aura.circle(0, 0, size * 1.45);
+        aura.fill({ color, alpha: 0.07 });
+        aura.blendMode = 'add';
+        const body = new PIXI.Graphics();
+        body.poly([
+          size * 1.12, 0,
+          size * 0.28, -size * 0.48,
+          -size * 0.72, -size * 0.32,
+          -size * 0.94, 0,
+          -size * 0.72, size * 0.32,
+          size * 0.28, size * 0.48
+        ]);
+        body.fill({ color, alpha: 0.52 });
+        body.stroke({ color: 0xffffff, width: Math.max(1, size * 0.055), alpha: 0.72 });
+        body.poly([-size * 0.78, 0, -size * 1.52, -size * 0.58, -size * 1.28, 0, -size * 1.52, size * 0.58]);
+        body.fill({ color: palette[(index + 1) % palette.length], alpha: 0.38 });
+        body.circle(size * 0.55, -size * 0.1, Math.max(1.2, size * 0.075));
+        body.fill({ color: 0xffffff, alpha: 0.95 });
+        const trail = new PIXI.Graphics();
+        for (let strand = 0; strand < 3; strand += 1) {
+          trail.moveTo(-size * 1.3, (strand - 1) * size * 0.16);
+          trail.bezierCurveTo(
+            -size * 2.2,
+            (strand - 1) * size * 0.42,
+            -size * 3,
+            (1 - strand) * size * 0.38,
+            -size * (3.6 + strand * 0.28),
+            (strand - 1) * size * 0.12
+          );
+        }
+        trail.stroke({ color: palette[(index + 2) % palette.length], width: Math.max(1.2, size * 0.085), alpha: 0.22 });
+        trail.blendMode = 'add';
+        koi.addChild(aura, trail, body);
+        koi.x = width * (0.14 + index * 0.17);
+        koi.y = height * (0.19 + (index % 3) * 0.085);
+        koi.rotation = -0.08 + index * 0.035;
+        school.addChild(koi);
+        fish.push(koi);
+        elementCount += 3;
+      }
+      root.addChild(school);
+      authoredBounds = { x: width * 0.08, y: height * 0.11, width: width * 0.84, height: height * 0.34 };
+      animate = (progress, elapsedMs) => {
+        school.x = reducedMotion ? 0 : width * (-0.035 + progress * 0.07);
+        fish.forEach((koi, index) => {
+          koi.y += reducedMotion ? 0 : Math.sin(elapsedMs * 0.0032 + index * 1.4) * 0.32;
+          koi.rotation = -0.05 + Math.sin(elapsedMs * 0.0025 + index) * 0.08;
+          koi.scale.y = 0.96 + Math.sin(elapsedMs * 0.004 + index * 0.8) * 0.04;
+        });
+      };
+    } else if (variant.id === 'prismatic_supernova') {
+      const centerX = width * 0.52;
+      const centerY = height * 0.285;
+      const radius = Math.min(width * 0.09, height * 0.135);
+      const rayField = new PIXI.Container();
+      const rays = [];
+      for (let index = 0; index < 28; index += 1) {
+        const ray = new PIXI.Graphics();
+        const angle = (Math.PI * 2 * index) / 28;
+        const inner = radius * (0.58 + (index % 4) * 0.08);
+        const outer = radius * (1.5 + (index % 7) * 0.18);
+        ray.moveTo(centerX + Math.cos(angle) * inner, centerY + Math.sin(angle) * inner);
+        ray.lineTo(centerX + Math.cos(angle) * outer, centerY + Math.sin(angle) * outer);
+        ray.stroke({
+          color: palette[index % palette.length],
+          width: index % 4 === 0 ? 3.4 : 1.2,
+          alpha: 0.16 + (index % 5) * 0.035
+        });
+        ray.blendMode = 'add';
+        rayField.addChild(ray);
+        rays.push(ray);
+        elementCount += 1;
+      }
+      root.addChild(rayField);
+      const crystal = new PIXI.Graphics();
+      const facets = 12;
+      const points = [];
+      for (let index = 0; index < facets; index += 1) {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * index) / facets;
+        const facetRadius = radius * (index % 2 === 0 ? 1 : 0.58);
+        points.push(centerX + Math.cos(angle) * facetRadius, centerY + Math.sin(angle) * facetRadius);
+      }
+      crystal.poly(points);
+      crystal.fill({ color: palette[1], alpha: 0.18 });
+      crystal.stroke({ color: 0xffffff, width: 2.2, alpha: 0.82 });
+      for (let index = 0; index < facets; index += 2) {
+        const angle = -Math.PI / 2 + (Math.PI * 2 * index) / facets;
+        crystal.moveTo(centerX, centerY);
+        crystal.lineTo(centerX + Math.cos(angle) * radius, centerY + Math.sin(angle) * radius);
+      }
+      crystal.stroke({ color: palette[2], width: 1.2, alpha: 0.55 });
+      crystal.circle(centerX, centerY, radius * 0.32);
+      crystal.fill({ color: 0xffffff, alpha: 0.9 });
+      crystal.blendMode = 'add';
+      root.addChild(crystal);
+      elementCount += 1;
+      authoredBounds = { x: width * 0.3, y: height * 0.06, width: width * 0.44, height: height * 0.44 };
+      animate = (progress, elapsedMs) => {
+        rayField.rotation = reducedMotion ? 0 : elapsedMs * 0.00012;
+        rays.forEach((ray, index) => {
+          ray.alpha = 0.55 + Math.sin(elapsedMs * 0.006 + index * 0.7) * 0.3;
+        });
+        const bloom = reducedMotion ? 1 : 0.92 + Math.sin(elapsedMs * 0.005) * 0.08 + progress * 0.04;
+        crystal.scale.set(bloom);
+      };
+    } else if (variant.id === 'warp_cathedral') {
+      const centerX = width * 0.5;
+      const horizonY = height * 0.29;
+      const arches = [];
+      for (let index = 0; index < 9; index += 1) {
+        const depth = (index + 1) / 9;
+        const arch = new PIXI.Graphics();
+        const archW = width * (0.08 + depth * 0.54);
+        const archH = height * (0.05 + depth * 0.26);
+        arch.moveTo(centerX - archW * 0.5, horizonY + archH * 0.48);
+        arch.lineTo(centerX - archW * 0.5, horizonY);
+        arch.bezierCurveTo(
+          centerX - archW * 0.46,
+          horizonY - archH,
+          centerX + archW * 0.46,
+          horizonY - archH,
+          centerX + archW * 0.5,
+          horizonY
+        );
+        arch.lineTo(centerX + archW * 0.5, horizonY + archH * 0.48);
+        arch.stroke({
+          color: palette[index % palette.length],
+          width: Math.max(1.1, 4.8 - index * 0.32),
+          alpha: 0.11 + depth * 0.22
+        });
+        arch.blendMode = 'add';
+        root.addChild(arch);
+        arches.push(arch);
+        elementCount += 1;
+      }
+      const aisle = new PIXI.Graphics();
+      for (let index = 0; index < 7; index += 1) {
+        const spread = width * (0.08 + index * 0.052);
+        aisle.moveTo(centerX - width * 0.012, horizonY);
+        aisle.lineTo(centerX - spread, height * 0.48);
+        aisle.moveTo(centerX + width * 0.012, horizonY);
+        aisle.lineTo(centerX + spread, height * 0.48);
+      }
+      aisle.stroke({ color: palette[0], width: 1.2, alpha: 0.12 });
+      aisle.blendMode = 'add';
+      root.addChild(aisle);
+      elementCount += 1;
+      const gate = new PIXI.Graphics();
+      gate.circle(centerX, horizonY - height * 0.015, Math.min(width, height) * 0.038);
+      gate.fill({ color: 0xffffff, alpha: 0.18 });
+      gate.circle(centerX, horizonY - height * 0.015, Math.min(width, height) * 0.021);
+      gate.fill({ color: palette[2], alpha: 0.84 });
+      gate.blendMode = 'add';
+      root.addChild(gate);
+      elementCount += 1;
+      authoredBounds = { x: width * 0.18, y: height * 0.06, width: width * 0.64, height: height * 0.43 };
+      animate = (_progress, elapsedMs) => {
+        arches.forEach((arch, index) => {
+          const wave = reducedMotion ? 0 : Math.sin(elapsedMs * 0.003 + index * 0.8) * 0.035;
+          arch.scale.set(1 + wave);
+          arch.alpha = 0.68 + Math.sin(elapsedMs * 0.004 + index) * 0.22;
+        });
+        gate.scale.set(reducedMotion ? 1 : 0.92 + Math.sin(elapsedMs * 0.007) * 0.12);
+      };
+    } else if (variant.id === 'quantum_eclipse') {
+      const centerX = width * 0.53;
+      const centerY = height * 0.28;
+      const radius = Math.min(width * 0.075, height * 0.115);
+      const corona = new PIXI.Container();
+      const coronaRays = [];
+      for (let index = 0; index < 24; index += 1) {
+        const ray = new PIXI.Graphics();
+        const angle = (Math.PI * 2 * index) / 24;
+        const inner = radius * 0.96;
+        const outer = radius * (1.28 + (index % 6) * 0.11);
+        ray.moveTo(centerX + Math.cos(angle) * inner, centerY + Math.sin(angle) * inner);
+        ray.lineTo(centerX + Math.cos(angle) * outer, centerY + Math.sin(angle) * outer);
+        ray.stroke({ color: palette[index % palette.length], width: index % 3 === 0 ? 3 : 1.25, alpha: 0.18 + (index % 4) * 0.045 });
+        ray.blendMode = 'add';
+        corona.addChild(ray);
+        coronaRays.push(ray);
+        elementCount += 1;
+      }
+      root.addChild(corona);
+      for (let index = 0; index < 4; index += 1) {
+        const halo = new PIXI.Graphics();
+        halo.circle(centerX, centerY, radius * (1.05 + index * 0.16));
+        halo.stroke({ color: palette[(index + 1) % palette.length], width: 2.6 + index, alpha: 0.08 });
+        halo.blendMode = 'add';
+        root.addChild(halo);
+        elementCount += 1;
+      }
+      const moon = new PIXI.Graphics();
+      moon.circle(centerX, centerY, radius);
+      moon.fill({ color: 0x030411, alpha: 0.97 });
+      moon.circle(centerX - radius * 0.23, centerY - radius * 0.19, radius * 0.18);
+      moon.fill({ color: 0x182142, alpha: 0.34 });
+      moon.circle(centerX + radius * 0.31, centerY + radius * 0.24, radius * 0.12);
+      moon.fill({ color: 0x2f1747, alpha: 0.28 });
+      root.addChild(moon);
+      elementCount += 1;
+      const satellite = new PIXI.Graphics();
+      satellite.circle(0, 0, Math.max(4, radius * 0.1));
+      satellite.fill({ color: palette[2], alpha: 0.82 });
+      satellite.circle(0, 0, Math.max(8, radius * 0.2));
+      satellite.stroke({ color: 0xffffff, width: 1, alpha: 0.28 });
+      satellite.blendMode = 'add';
+      root.addChild(satellite);
+      elementCount += 1;
+      authoredBounds = { x: width * 0.35, y: height * 0.07, width: width * 0.36, height: height * 0.4 };
+      animate = (_progress, elapsedMs) => {
+        corona.rotation = reducedMotion ? 0 : elapsedMs * 0.00018;
+        coronaRays.forEach((ray, index) => {
+          ray.alpha = 0.58 + Math.sin(elapsedMs * 0.006 + index * 0.9) * 0.32;
+        });
+        const orbit = reducedMotion ? 0.55 : elapsedMs * 0.00125;
+        satellite.x = centerX + Math.cos(orbit) * radius * 1.72;
+        satellite.y = centerY + Math.sin(orbit) * radius * 0.62;
+      };
+    } else if (variant.id === 'nebula_jellyfish') {
+      const swarm = new PIXI.Container();
+      const creatures = [];
+      for (let index = 0; index < 3; index += 1) {
+        const jelly = new PIXI.Container();
+        const radius = Math.max(28, Math.min(52, width * (0.031 + index * 0.004)));
+        const color = palette[index % palette.length];
+        const halo = new PIXI.Graphics();
+        halo.circle(0, 0, radius * 1.35);
+        halo.fill({ color, alpha: 0.055 });
+        halo.scale.y = 0.68;
+        halo.blendMode = 'add';
+        const bell = new PIXI.Graphics();
+        bell.circle(0, 0, radius);
+        bell.fill({ color, alpha: 0.2 });
+        bell.stroke({ color: 0xffffff, width: Math.max(1.4, radius * 0.055), alpha: 0.5 });
+        bell.scale.y = 0.58;
+        bell.blendMode = 'add';
+        const core = new PIXI.Graphics();
+        core.circle(0, -radius * 0.08, radius * 0.28);
+        core.fill({ color: palette[(index + 1) % palette.length], alpha: 0.72 });
+        core.blendMode = 'add';
+        jelly.addChild(halo, bell, core);
+        for (let strand = 0; strand < 7; strand += 1) {
+          const tentacle = new PIXI.Graphics();
+          const startX = (strand - 3) * radius * 0.18;
+          tentacle.moveTo(startX, radius * 0.34);
+          tentacle.bezierCurveTo(
+            startX - radius * 0.18,
+            radius * 0.78,
+            startX + radius * 0.28,
+            radius * 1.12,
+            startX + (strand % 2 === 0 ? 1 : -1) * radius * 0.12,
+            radius * (1.38 + (strand % 3) * 0.16)
+          );
+          tentacle.stroke({ color: palette[(index + strand) % palette.length], width: strand % 2 === 0 ? 2.2 : 1.2, alpha: 0.22 + (strand % 3) * 0.05 });
+          tentacle.blendMode = 'add';
+          jelly.addChild(tentacle);
+          elementCount += 1;
+        }
+        jelly.x = width * (0.24 + index * 0.27);
+        jelly.y = height * (0.2 + (index % 2) * 0.07);
+        jelly.scale.set(0.82 + index * 0.12);
+        swarm.addChild(jelly);
+        creatures.push(jelly);
+        elementCount += 3;
+      }
+      root.addChild(swarm);
+      authoredBounds = { x: width * 0.14, y: height * 0.08, width: width * 0.72, height: height * 0.42 };
+      animate = (_progress, elapsedMs) => {
+        creatures.forEach((jelly, index) => {
+          const drift = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0023 + index * 2.1);
+          jelly.y += drift * 0.42;
+          jelly.x += reducedMotion ? 0 : Math.cos(elapsedMs * 0.0018 + index) * 0.18;
+          jelly.rotation = drift * 0.045;
+          const pulse = 0.82 + index * 0.12 + (reducedMotion ? 0 : Math.sin(elapsedMs * 0.005 + index) * 0.025);
+          jelly.scale.set(pulse, pulse * (0.96 + Math.sin(elapsedMs * 0.005 + index) * 0.035));
+        });
+      };
+    } else if (variant.id === 'phoenix_comet') {
+      const centerX = width * 0.52;
+      const centerY = height * 0.31;
+      const scale = Math.max(0.72, Math.min(1.35, Math.min(width / 1280, height / 720)));
+      const phoenix = new PIXI.Container();
+      phoenix.x = centerX;
+      phoenix.y = centerY;
+      const tail = new PIXI.Graphics();
+      for (let strand = 0; strand < 7; strand += 1) {
+        tail.moveTo(0, 12 * scale);
+        tail.bezierCurveTo(
+          (-44 + strand * 14) * scale,
+          42 * scale,
+          (-72 + strand * 24) * scale,
+          88 * scale,
+          (-94 + strand * 31) * scale,
+          132 * scale
+        );
+      }
+      tail.stroke({ color: palette[1], width: Math.max(1.4, 3.8 * scale), alpha: 0.18 });
+      tail.blendMode = 'add';
+      phoenix.addChild(tail);
+      const wings = [];
+      for (const side of [-1, 1]) {
+        const wing = new PIXI.Container();
+        for (let feather = 0; feather < 9; feather += 1) {
+          const plume = new PIXI.Graphics();
+          const angle = (-0.18 - feather * 0.085) * side;
+          const length = (62 + feather * 12) * scale;
+          plume.moveTo(0, 0);
+          plume.bezierCurveTo(
+            side * length * 0.35,
+            -length * 0.18,
+            side * length * 0.72,
+            -length * 0.5,
+            side * length,
+            -length * (0.36 + feather * 0.018)
+          );
+          plume.stroke({
+            color: palette[(feather + (side > 0 ? 1 : 0)) % palette.length],
+            width: Math.max(1.2, (5.2 - feather * 0.34) * scale),
+            alpha: 0.18 + feather * 0.025
+          });
+          plume.rotation = angle * 0.12;
+          plume.blendMode = 'add';
+          wing.addChild(plume);
+          elementCount += 1;
+        }
+        phoenix.addChild(wing);
+        wings.push({ wing, side });
+      }
+      const body = new PIXI.Graphics();
+      body.poly([
+        0, -44 * scale,
+        18 * scale, -8 * scale,
+        10 * scale, 26 * scale,
+        0, 46 * scale,
+        -10 * scale, 26 * scale,
+        -18 * scale, -8 * scale
+      ]);
+      body.fill({ color: palette[1], alpha: 0.48 });
+      body.stroke({ color: 0xffffff, width: Math.max(1.3, 2.2 * scale), alpha: 0.78 });
+      body.circle(0, -50 * scale, 8 * scale);
+      body.fill({ color: palette[0], alpha: 0.82 });
+      body.poly([6 * scale, -53 * scale, 20 * scale, -49 * scale, 7 * scale, -45 * scale]);
+      body.fill({ color: palette[2], alpha: 0.8 });
+      body.blendMode = 'add';
+      phoenix.addChild(body);
+      elementCount += 1;
+      const cometHalo = new PIXI.Graphics();
+      cometHalo.circle(0, -8 * scale, 56 * scale);
+      cometHalo.fill({ color: palette[0], alpha: 0.045 });
+      cometHalo.blendMode = 'add';
+      phoenix.addChildAt(cometHalo, 0);
+      elementCount += 1;
+      root.addChild(phoenix);
+      authoredBounds = { x: width * 0.26, y: height * 0.05, width: width * 0.52, height: height * 0.44 };
+      animate = (progress, elapsedMs) => {
+        phoenix.y = centerY + (reducedMotion ? 0 : Math.sin(elapsedMs * 0.003) * 6 - progress * height * 0.035);
+        phoenix.rotation = reducedMotion ? 0 : Math.sin(elapsedMs * 0.002) * 0.035;
+        wings.forEach(({ wing, side }) => {
+          wing.rotation = side * (reducedMotion ? 0 : Math.sin(elapsedMs * 0.005) * 0.045);
+        });
+        const pulse = reducedMotion ? 1 : 0.96 + Math.sin(elapsedMs * 0.006) * 0.045;
+        phoenix.scale.set(pulse);
+      };
     }
 
+    const variantAnimate = animate;
+    animate = (progress, elapsedMs) => {
+      sparkField.x = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0008) * width * 0.008;
+      sparkField.y = reducedMotion ? 0 : Math.cos(elapsedMs * 0.0011) * height * 0.004;
+      sparkField.alpha = reducedMotion ? 0.72 : 0.64 + Math.sin(elapsedMs * 0.0035) * 0.18;
+      variantAnimate(progress, elapsedMs);
+    };
     return { root, elementCount, authoredBounds, animate };
   }
 
   showCabinetWonder(decision = {}) {
     if (!decision.variant || this.activeCabinetWonder || this.cabinetWonderHistory.length > 0 || !this.gameContainer) return false;
-    const width = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
-    const height = Math.max(240, Number(this.game?.getHeight?.()) || 720);
+    const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
+    const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const durationMs = reducedMotion ? 1200 : 1700;
+    const durationMs = reducedMotion ? 1400 : 2300;
     const visual = this.createCabinetWonderVisual(decision.variant, width, height, reducedMotion);
     visual.root.alpha = 0;
     this.gameContainer.addChild(visual.root);
@@ -2737,10 +3217,10 @@ export class PlayScene {
       force: true,
       cooldownKey: 'cabinet_wonder',
       minIntervalMs: 0,
-      intensity: reducedMotion ? 0.5 : 0.64,
-      volume: 0.72,
+      intensity: reducedMotion ? 0.5 : 0.72,
+      volume: 0.76,
       pitchScale: decision.variant.pitchScale || 1,
-      durationSeconds: reducedMotion ? 0.62 : 0.92
+      durationSeconds: reducedMotion ? 0.7 : 1.18
     });
     const historyEntry = {
       id: decision.variant.id,
@@ -2811,7 +3291,7 @@ export class PlayScene {
   getCabinetWonderDebugState() {
     const active = this.activeCabinetWonder;
     const last = this.cabinetWonderHistory.at(-1) || null;
-    const screenHeight = Math.max(240, Number(this.game?.getHeight?.()) || 720);
+    const screenHeight = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     return {
       availableVariants: CABINET_WONDER_VARIANT_COUNT,
       shownCount: this.cabinetWonderHistory.length,
