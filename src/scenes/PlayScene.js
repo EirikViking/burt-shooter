@@ -66,6 +66,9 @@ import {
 import {
   TACTICAL_DRAFT_BAN_COUNT,
   buildTacticalDraftOffers,
+  getActiveTacticalAugmentIds,
+  getActiveTacticalFusionProtocols,
+  getTacticalDraftMeta,
   getTacticalFusionBlueprints,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
@@ -182,6 +185,12 @@ const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
+const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
+  offense: 0xff647f,
+  mobility: 0x58d8ff,
+  defense: 0x64ffb0,
+  utility: 0xffd15c
+});
 const DEFERRED_GAMEPLAY_PERSISTENCE_IDLE_MS = 1200;
 const STRAGGLER_BEACON_MAX_TARGETS = 3;
 const ACE_REWARD_PICKUP_OPTIONS = Object.freeze({
@@ -7971,8 +7980,103 @@ export class PlayScene {
     return offers.map((offer) => ({
       ...offer,
       doctrineProjection: projectTacticalDoctrine(selectedIds, consumedIds, offer.id),
-      fusionBlueprints: getTacticalFusionBlueprints(offer.id, selectedIds)
+      fusionBlueprints: getTacticalFusionBlueprints(offer.id, selectedIds),
+      statPreview: this.player?.getRunAugmentStatPreview?.(offer.id) || {
+        kind: 'contextual',
+        metric: null,
+        before: null,
+        after: null,
+        overlapSuppressed: false
+      }
     }));
+  }
+
+  formatTacticalDraftStatPreview(preview = null) {
+    if (preview?.kind !== 'stat' || !preview.metric) {
+      return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
+    }
+    const definitions = {
+      damage: { label: 'DAMAGE', format: (value) => Number(value).toFixed(2) },
+      fireDelay: { label: 'FIRE DELAY', format: (value) => `${Math.round(Number(value) || 0)} ms` },
+      shots: { label: 'SHOTS', format: (value) => String(Math.round(Number(value) || 0)) },
+      piercing: { label: 'PIERCING', format: (value) => translateText(value ? 'ON' : 'OFF') },
+      chainReach: { label: 'CHAIN REACH', format: (value) => String(Math.round(Number(value) || 0)) },
+      movement: { label: 'MOVEMENT', format: (value) => Number(value).toFixed(2) },
+      dodgeCooldown: { label: 'DODGE COOLDOWN', format: (value) => `${Math.round(Number(value) || 0)} ms` },
+      pickupRange: { label: 'PICKUP RANGE', format: (value) => String(Math.round(Number(value) || 0)) },
+      supportDrones: { label: 'SUPPORT DRONES', format: (value) => String(Math.round(Number(value) || 0)) }
+    };
+    const definition = definitions[preview.metric];
+    if (!definition) return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
+    return {
+      kind: 'stat',
+      label: translateText(definition.label),
+      value: `${definition.format(preview.before)} → ${definition.format(preview.after)}`
+    };
+  }
+
+  getTacticalDraftBuildSummaryData() {
+    const selectedIds = this.player?.runAugmentIds || [];
+    const consumedIds = this.player?.consumedRunAugmentIds || [];
+    const activeIds = getActiveTacticalAugmentIds(selectedIds, consumedIds);
+    const counts = { offense: 0, mobility: 0, defense: 0, utility: 0 };
+    activeIds.forEach((id) => {
+      const category = getTacticalDraftMeta(id)?.category;
+      if (category in counts) counts[category] += 1;
+    });
+    const doctrine = analyzeTacticalDoctrine(selectedIds, consumedIds);
+    const fusions = getActiveTacticalFusionProtocols(activeIds);
+    return { activeIds, counts, doctrine, fusions };
+  }
+
+  createTacticalDraftBuildSummary() {
+    const summary = new PIXI.Container();
+    summary.label = 'tactical_draft_active_build';
+    summary.eventMode = 'none';
+    const bg = new PIXI.Graphics();
+    const title = createText(translateText('ACTIVE BUILD'), {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      letterSpacing: 1
+    });
+    title.anchor.set(0, 0.5);
+    const empty = createText(translateText('NO AUGMENTS YET'), {
+      fontFamily: FONT_BODY,
+      fontSize: 11,
+      fontWeight: '800',
+      fill: '#8ba8b6'
+    });
+    empty.anchor.set(0, 0.5);
+    const categoryNodes = Object.keys(TACTICAL_DRAFT_CATEGORY_COLORS).map((category) => {
+      const node = createText('', {
+        fontFamily: FONT_BODY,
+        fontSize: 10,
+        fontWeight: '900',
+        fill: TACTICAL_DRAFT_CATEGORY_COLORS[category]
+      });
+      node.anchor.set(0, 0.5);
+      node._category = category;
+      return node;
+    });
+    const doctrine = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#d8f7ff'
+    });
+    doctrine.anchor.set(1, 0.5);
+    const fusion = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 10,
+      fontWeight: '900',
+      fill: '#e0a3ff'
+    });
+    fusion.anchor.set(1, 0.5);
+    summary.addChild(bg, title, empty, ...categoryNodes, doctrine, fusion);
+    summary._nodes = { bg, title, empty, categoryNodes, doctrine, fusion };
+    return summary;
   }
 
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
@@ -8043,19 +8147,21 @@ export class PlayScene {
     subtitle.anchor.set(0.5);
     overlay.addChild(dim, frame, lockInBurst, eyebrow, title, subtitle);
 
+    const buildSummary = this.createTacticalDraftBuildSummary();
+    overlay.addChild(buildSummary);
     const cards = offers.map((offer, index) => this.createTacticalDraftCard(offer, index));
     cards.forEach((card) => overlay.addChild(card));
     const rescan = this.createTacticalDraftRescanControl();
     const hold = this.createTacticalDraftHoldControl();
     const ban = this.createTacticalDraftBanControl();
     overlay.addChild(rescan, hold, ban);
-    const recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
+    const initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
       offers,
-      focusIndex: recommendedIndex,
-      recommendedIndex,
+      focusIndex: initialFocusIndex,
+      initialFocusIndex,
       confirmedId: null,
       result: null,
       overlay,
@@ -8065,6 +8171,7 @@ export class PlayScene {
       eyebrow,
       title,
       subtitle,
+      buildSummary,
       cards,
       rescan,
       hold,
@@ -8087,7 +8194,7 @@ export class PlayScene {
     this.uiOverlay.addChild(overlay);
     this.layoutTacticalDraft();
     this.tacticalDraftNavigator.suppressUntilReleased();
-    this.setTacticalDraftFocus(recommendedIndex, { silent: true });
+    this.setTacticalDraftFocus(initialFocusIndex, { silent: true });
     if (scoreRouteOffer) {
       this.tacticalScoreRouteDecision = {
         sector: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
@@ -8103,7 +8210,7 @@ export class PlayScene {
     } else {
       AudioManager.playSfx('nova_rank_fanfare', { force: true, volume: 0.42, minIntervalMs: 120 });
     }
-    this.scheduleTacticalBossBanter(offers[recommendedIndex]?.id, { delayMs: 760, context: 'draft' });
+    this.scheduleTacticalBossBanter(offers[initialFocusIndex]?.id, { delayMs: 760, context: 'draft' });
     return true;
   }
 
@@ -8116,20 +8223,28 @@ export class PlayScene {
     card._offer = offer;
     const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
+    const categoryBadge = new PIXI.Graphics();
     const categoryLabel = offer.fixedScoreRoute
       ? translateText('ONE-TIME SCORE ROUTE')
       : translateText(String(offer.category || 'utility').toUpperCase());
-    const category = createText(translateText('{category} // {stack}/{max}', {
-      category: categoryLabel,
-      stack: offer.nextStack,
-      max: offer.maxStacks
-    }), {
+    const category = createText(categoryLabel, {
       fontFamily: FONT_BODY,
-      fontSize: 12,
+      fontSize: 10,
       fontWeight: '900',
-      fill: '#7ee9ff'
+      fill: '#d8f7ff',
+      letterSpacing: 0.8
     });
     category.anchor.set(0.5);
+    const stackBadge = new PIXI.Graphics();
+    const stackLabel = createText(offer.currentStacks > 0
+      ? translateText('STACK {current}/{max}', { current: offer.currentStacks, max: offer.maxStacks })
+      : translateText('NEW'), {
+      fontFamily: FONT_BODY,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#d8f7ff'
+    });
+    stackLabel.anchor.set(0.5);
     const scoreRouteBadge = new PIXI.Container();
     scoreRouteBadge.label = `tactical_score_route_badge_${offer.id}`;
     scoreRouteBadge.eventMode = 'none';
@@ -8172,6 +8287,24 @@ export class PlayScene {
       wordWrapWidth: 250
     });
     description.anchor.set(0.5);
+    const impact = this.formatTacticalDraftStatPreview(offer.statPreview);
+    const impactBadge = new PIXI.Graphics();
+    const impactLabel = createText(impact.kind === 'stat' ? impact.label : translateText('CONTEXTUAL EFFECT'), {
+      fontFamily: FONT_BODY,
+      fontSize: 8,
+      fontWeight: '900',
+      fill: impact.kind === 'stat' ? '#8df7ff' : '#9fb6c0',
+      letterSpacing: 0.7
+    });
+    impactLabel.anchor.set(0.5);
+    const impactValue = createText(impact.value, {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 14,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center'
+    });
+    impactValue.anchor.set(0.5);
     const fusionBlueprint = offer.fusionBlueprints?.[0] || null;
     const fusionBadge = new PIXI.Graphics();
     fusionBadge.label = `tactical_fusion_blueprint_${offer.id}`;
@@ -8213,6 +8346,7 @@ export class PlayScene {
     fusionLabel.visible = Boolean(fusionBlueprint);
     fusionName.visible = Boolean(fusionBlueprint);
     fusionHint.visible = Boolean(fusionBlueprint);
+    const permanenceBadge = new PIXI.Graphics();
     const permanence = createText(offer.fixedScoreRoute
       ? translateText('ONE CHANCE // WILL NOT RETURN')
       : offer.currentStacks >= 2
@@ -8227,6 +8361,15 @@ export class PlayScene {
       align: 'center'
     });
     permanence.anchor.set(0.5);
+    const doctrineBadge = new PIXI.Graphics();
+    const doctrineTitle = createText(translateText('BUILD SYNERGY'), {
+      fontFamily: FONT_BODY,
+      fontSize: 8,
+      fontWeight: '900',
+      fill: '#9fb6c0',
+      letterSpacing: 0.7
+    });
+    doctrineTitle.anchor.set(0.5);
     const doctrine = createText(this.getTacticalDoctrinePreviewText(offer), {
       fontFamily: FONT_BODY,
       fontSize: 10,
@@ -8251,24 +8394,50 @@ export class PlayScene {
       align: 'center'
     });
     choose.anchor.set(0.5);
-    card.addChild(glow, bg, category, scoreRouteBadge);
+    card.addChild(glow, bg, categoryBadge, category, stackBadge, stackLabel, scoreRouteBadge);
     if (icon) card.addChild(icon);
-    card.addChild(name, description, fusionBadge, fusionLabel, fusionName, fusionHint, doctrine, permanence, holdBadge, choose);
+    card.addChild(
+      name,
+      description,
+      impactBadge,
+      impactLabel,
+      impactValue,
+      fusionBadge,
+      fusionLabel,
+      fusionName,
+      fusionHint,
+      doctrineBadge,
+      doctrineTitle,
+      doctrine,
+      permanenceBadge,
+      permanence,
+      holdBadge,
+      choose
+    );
     card._nodes = {
       glow,
       bg,
+      categoryBadge,
       category,
+      stackBadge,
+      stackLabel,
       scoreRouteBadge,
       scoreRouteBadgeBg,
       scoreRouteBadgeText,
       icon,
       name,
       description,
+      impactBadge,
+      impactLabel,
+      impactValue,
       fusionBadge,
       fusionLabel,
       fusionName,
       fusionHint,
+      doctrineBadge,
+      doctrineTitle,
       doctrine,
+      permanenceBadge,
       permanence,
       holdBadge,
       choose
@@ -8358,21 +8527,13 @@ export class PlayScene {
     return translateText('REINFORCES: {doctrine}', { doctrine });
   }
 
-  getRecommendedTacticalDraftIndex(offers = []) {
+  getInitialTacticalDraftFocusIndex(offers = []) {
     if (!Array.isArray(offers) || !offers.length) return 0;
     const scoreRouteIndex = offers.findIndex((offer) => offer.fixedScoreRoute);
     if (scoreRouteIndex >= 0) return scoreRouteIndex;
     const heldIndex = offers.findIndex((offer) => offer.held);
     if (heldIndex >= 0) return heldIndex;
-    const evolutionIndex = offers.findIndex((offer) => offer.currentStacks > 0);
-    if (evolutionIndex >= 0) return evolutionIndex;
-    const synthesisIndex = offers.findIndex((offer) => offer.doctrineProjection?.after?.synthesis);
-    if (synthesisIndex >= 0) return synthesisIndex;
-    const reinforceIndex = offers.findIndex((offer) => {
-      const projection = offer.doctrineProjection;
-      return projection?.before?.id && projection.before.id === projection.after?.id;
-    });
-    return reinforceIndex >= 0 ? reinforceIndex : Math.min(1, offers.length - 1);
+    return Math.min(1, offers.length - 1);
   }
 
   createTacticalDraftFallbackIcon(offer) {
@@ -8429,15 +8590,84 @@ export class PlayScene {
     state.frame.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.36 });
     state.frame.rect(27, 27, width - 54, height - 54);
     state.frame.stroke({ color: 0xffd15c, width: 1, alpha: 0.2 });
-    state.eyebrow.style.fontSize = compact ? 12 : 15;
-    state.eyebrow.position.set(width / 2, compact ? 38 : 54);
-    state.title.style.fontSize = compact ? 27 : 38;
-    state.title.position.set(width / 2, compact ? 70 : 92);
-    state.subtitle.style.fontSize = compact ? 13 : 17;
+    state.eyebrow.style.fontSize = compact ? 11 : 13;
+    state.eyebrow.position.set(width / 2, compact ? 30 : 42);
+    state.title.style.fontSize = compact ? 26 : 36;
+    state.title.position.set(width / 2, compact ? 57 : 74);
+    state.subtitle.style.fontSize = compact ? 12 : 15;
     state.subtitle.style.wordWrapWidth = Math.max(260, width - (compact ? 48 : 120));
-    state.subtitle.style.lineHeight = compact ? 16 : 21;
+    state.subtitle.style.lineHeight = compact ? 14 : 18;
     state.subtitle.updateText?.(false);
-    state.subtitle.position.set(width / 2, compact ? 98 : 128);
+    state.subtitle.position.set(width / 2, compact ? 82 : 105);
+
+    if (state.buildSummary?._nodes) {
+      const summary = state.buildSummary;
+      const nodes = summary._nodes;
+      const data = this.getTacticalDraftBuildSummaryData();
+      summary._data = data;
+      const summaryWidth = compact ? Math.max(300, width - 52) : Math.min(1120, width - 120);
+      const summaryHeight = compact ? 30 : 40;
+      summary._draftLayout = { width: summaryWidth, height: summaryHeight, compact };
+      summary.position.set(width / 2, compact ? 146 : 148);
+      nodes.bg.clear();
+      nodes.bg.roundRect(-summaryWidth / 2, -summaryHeight / 2, summaryWidth, summaryHeight, 6);
+      nodes.bg.fill({ color: 0x06131f, alpha: 0.94 });
+      nodes.bg.roundRect(-summaryWidth / 2, -summaryHeight / 2, summaryWidth, summaryHeight, 6);
+      nodes.bg.stroke({ color: 0x37f5ff, width: 1, alpha: 0.32 });
+      nodes.title.style.fontSize = compact ? 8 : 10;
+      nodes.title.position.set(-summaryWidth / 2 + 12, 0);
+      nodes.title.scale.set(1);
+      nodes.title.updateText?.(false);
+      nodes.title.scale.set(Math.min(1, 92 / Math.max(1, nodes.title.width)));
+      const activeCategories = nodes.categoryNodes.filter((node) => data.counts[node._category] > 0);
+      nodes.categoryNodes.forEach((node) => {
+        const count = data.counts[node._category];
+        node.visible = count > 0;
+        node.text = translateText('{category} {count}', {
+          category: translateText(node._category.toUpperCase()),
+          count
+        });
+        node.style.fontSize = compact ? 8 : 10;
+        node.scale.set(1);
+        node.updateText?.(false);
+      });
+      nodes.empty.visible = data.activeIds.length === 0;
+      nodes.empty.style.fontSize = compact ? 8 : 11;
+      nodes.empty.position.set(-summaryWidth / 2 + (compact ? 92 : 118), 0);
+      nodes.doctrine.text = data.doctrine
+        ? translateText('{name} // {stage}', {
+          name: translateText(data.doctrine.name),
+          stage: translateText(data.doctrine.stage)
+        })
+        : '';
+      nodes.doctrine.visible = Boolean(data.doctrine) && (!compact || activeCategories.length <= 2);
+      nodes.doctrine.style.fill = data.doctrine?.color || '#d8f7ff';
+      nodes.doctrine.style.fontSize = compact ? 8 : 10;
+      nodes.doctrine.scale.set(1);
+      nodes.doctrine.updateText?.(false);
+      nodes.doctrine.position.set(summaryWidth / 2 - 12, 0);
+      nodes.doctrine.scale.set(Math.min(1, (compact ? 190 : 250) / Math.max(1, nodes.doctrine.width)));
+      nodes.fusion.text = data.fusions.length
+        ? translateText('FUSIONS {count}', { count: data.fusions.length })
+        : '';
+      nodes.fusion.visible = data.fusions.length > 0 && (!compact || !nodes.doctrine.visible);
+      nodes.fusion.style.fontSize = compact ? 8 : 10;
+      nodes.fusion.scale.set(1);
+      nodes.fusion.updateText?.(false);
+      nodes.fusion.position.set(
+        nodes.doctrine.visible ? nodes.doctrine.x - nodes.doctrine.width - 18 : summaryWidth / 2 - 12,
+        0
+      );
+      let categoryX = -summaryWidth / 2 + (compact ? 92 : 118);
+      const categoryLimit = (nodes.fusion.visible ? nodes.fusion.x - nodes.fusion.width : nodes.doctrine.visible ? nodes.doctrine.x - nodes.doctrine.width : summaryWidth / 2) - 14;
+      const categoryWidth = activeCategories.reduce((sum, node) => sum + node.width, 0) + Math.max(0, activeCategories.length - 1) * 14;
+      const categoryScale = Math.min(1, Math.max(0.58, (categoryLimit - categoryX) / Math.max(1, categoryWidth)));
+      activeCategories.forEach((node) => {
+        node.scale.set(categoryScale);
+        node.position.set(categoryX, 0);
+        categoryX += node.width + (compact ? 9 : 14);
+      });
+    }
 
     if (state.rescan && state.hold && state.ban) {
       const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
@@ -8447,7 +8677,7 @@ export class PlayScene {
       state.ban._draftLayout = { width: controlWidth, height: controlHeight };
       const controlGap = compact ? 8 : 12;
       const controlsWidth = controlWidth * 3 + controlGap * 2;
-      const controlY = compact ? (state.scoreRouteOfferId ? 132 : 124) : height - 42;
+      const controlY = compact ? (state.scoreRouteOfferId ? 118 : 112) : height - 38;
       state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
       state.hold.position.set(width / 2, controlY);
       state.ban.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
@@ -8459,12 +8689,13 @@ export class PlayScene {
       this.redrawTacticalDraftBan();
     }
 
-    const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(340, (width - 120) / 3);
-    const cardHeight = compact ? Math.max(106, Math.min(134, (height - 170) / 3 - 10)) : Math.min(365, height - 230);
+    const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(380, (width - 140) / 3);
+    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(410, height - 300);
+    const cardTop = compact ? 174 : 184;
     state.cards.forEach((card, index) => {
       card.position.set(
         compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
-        compact ? (state.scoreRouteOfferId ? 168 : 158) + cardHeight / 2 + index * (cardHeight + 16) : 145 + cardHeight / 2
+        cardTop + cardHeight / 2 + (compact ? index * (cardHeight + 24) : 0)
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
@@ -8478,10 +8709,17 @@ export class PlayScene {
       };
       if (compact) {
         nodes.category.anchor.set(0, 0.5);
-        nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 23);
-        nodes.scoreRouteBadge.position.set(cardWidth / 2 - 58, -cardHeight / 2 + 21);
+        nodes.category.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 17);
+        fitTextWidth(nodes.category, Math.min(150, cardWidth * 0.28), 0.58);
+        nodes.categoryBadge.position.set(nodes.category.x + nodes.category.width / 2, nodes.category.y);
+        nodes.categoryBadge._pillLayout = { width: nodes.category.width + 18, height: 19 };
+        nodes.stackLabel.style.fontSize = 8;
+        nodes.stackLabel.position.set(cardWidth / 2 - 42, -cardHeight / 2 + 17);
+        fitTextWidth(nodes.stackLabel, 76, 0.6);
+        nodes.stackBadge.position.copyFrom(nodes.stackLabel.position);
+        nodes.stackBadge._pillLayout = { width: nodes.stackLabel.width + 14, height: 19 };
+        nodes.scoreRouteBadge.position.set(cardWidth / 2 - 58, -cardHeight / 2 + 17);
         nodes.scoreRouteBadgeText.style.fontSize = 8;
-        fitTextWidth(nodes.category, cardWidth - 226, 0.58);
         if (nodes.icon) {
           nodes.icon.position.set(-cardWidth / 2 + 46, 0);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
@@ -8489,36 +8727,54 @@ export class PlayScene {
           nodes.icon.scale.set(Math.min(1, 52 / Math.max(1, iconWidth, iconHeight)));
         }
         nodes.name.anchor.set(0, 0.5);
-        nodes.name.style.fontSize = 18;
-        nodes.name.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 48);
+        nodes.name.style.fontSize = 17;
+        nodes.name.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 39);
         nodes.description.anchor.set(0, 0.5);
-        nodes.description.style.fontSize = 12;
+        nodes.description.style.fontSize = 11;
         nodes.description.style.align = 'left';
-        nodes.description.style.wordWrapWidth = cardWidth - 190;
-        nodes.description.position.set(-cardWidth / 2 + 86, 16);
+        nodes.description.style.wordWrapWidth = hasFusionBlueprint ? Math.max(175, cardWidth * 0.46) : cardWidth - 190;
+        nodes.description.position.set(-cardWidth / 2 + 86, -2);
+        const compactImpactWidth = hasFusionBlueprint ? Math.max(170, cardWidth * 0.34) : Math.min(270, cardWidth - 210);
+        const compactImpactX = -cardWidth / 2 + 86 + compactImpactWidth / 2;
+        nodes.impactBadge.position.set(compactImpactX, cardHeight / 2 - 39);
+        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: 22 };
+        nodes.impactLabel.anchor.set(0, 0.5);
+        nodes.impactLabel.style.fontSize = 7;
+        nodes.impactLabel.position.set(compactImpactX - compactImpactWidth / 2 + 8, cardHeight / 2 - 39);
+        nodes.impactValue.anchor.set(1, 0.5);
+        nodes.impactValue.style.fontSize = 11;
+        nodes.impactValue.position.set(compactImpactX + compactImpactWidth / 2 - 8, cardHeight / 2 - 39);
+        fitTextWidth(nodes.impactValue, compactImpactWidth * 0.58, 0.58);
+        nodes.doctrineTitle.visible = false;
+        nodes.doctrineBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 18);
+        nodes.doctrineBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 18 };
         nodes.doctrine.anchor.set(0, 0.5);
-        nodes.doctrine.style.fontSize = 8;
-        nodes.doctrine.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 34);
+        nodes.doctrine.style.fontSize = 7;
+        nodes.doctrine.position.set(-cardWidth / 2 + 94, cardHeight / 2 - 18);
+        fitTextWidth(nodes.doctrine, Math.min(214, cardWidth * 0.4), 0.54);
+        nodes.permanenceBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 5);
+        nodes.permanenceBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 15 };
         nodes.permanence.anchor.set(0, 0.5);
-        nodes.permanence.style.fontSize = 9;
-        nodes.permanence.position.set(-cardWidth / 2 + 86, cardHeight / 2 - 18);
-        nodes.holdBadge.position.set(cardWidth / 2 - 35, -cardHeight / 2 + 20);
+        nodes.permanence.style.fontSize = 7;
+        nodes.permanence.position.set(-cardWidth / 2 + 94, cardHeight / 2 - 5);
+        fitTextWidth(nodes.permanence, Math.min(214, cardWidth * 0.4), 0.54);
+        nodes.holdBadge.position.set(cardWidth / 2 - 98, -cardHeight / 2 + 17);
         nodes.choose.anchor.set(1, 0.5);
-        nodes.choose.position.set(cardWidth / 2 - 16, cardHeight / 2 - 20);
-        nodes.choose.style.fontSize = 12;
+        nodes.choose.position.set(cardWidth / 2 - 16, cardHeight / 2 - 13);
+        nodes.choose.style.fontSize = 11;
         if (hasFusionBlueprint) {
           const badgeWidth = Math.min(208, Math.max(156, cardWidth * 0.34));
-          const badgeHeight = 50;
+          const badgeHeight = 46;
           const badgeX = cardWidth / 2 - badgeWidth / 2 - 12;
-          const badgeY = -cardHeight / 2 + badgeHeight / 2 + 10;
+          const badgeY = -cardHeight / 2 + badgeHeight / 2 + 27;
           nodes.fusionBadge.position.set(badgeX, badgeY);
           nodes.fusionBadge._fusionLayout = { width: badgeWidth, height: badgeHeight, compact: true };
           nodes.fusionLabel.style.fontSize = 8;
-          nodes.fusionLabel.position.set(badgeX, badgeY - 15);
+          nodes.fusionLabel.position.set(badgeX, badgeY - 13);
           nodes.fusionName.style.fontSize = 11;
           nodes.fusionName.position.set(badgeX, badgeY);
           nodes.fusionHint.style.fontSize = 8;
-          nodes.fusionHint.position.set(badgeX, badgeY + 15);
+          nodes.fusionHint.position.set(badgeX, badgeY + 13);
           fitTextWidth(nodes.name, badgeX - badgeWidth / 2 - nodes.name.x - 12, 0.62);
           fitTextWidth(nodes.fusionLabel, badgeWidth - 16, 0.62);
           fitTextWidth(nodes.fusionName, badgeWidth - 16, 0.58);
@@ -8528,53 +8784,78 @@ export class PlayScene {
         }
       } else {
         nodes.choose.anchor.set(0.5);
-        if (card._offer?.fixedScoreRoute) {
-          nodes.category.anchor.set(0, 0.5);
-          nodes.category.position.set(-cardWidth / 2 + 18, -cardHeight / 2 + 25);
-          fitTextWidth(nodes.category, cardWidth - 158, 0.58);
-        } else {
-          nodes.category.anchor.set(0.5);
-          nodes.category.position.set(0, -cardHeight / 2 + 25);
-        }
+        nodes.category.anchor.set(0.5);
+        nodes.category.position.set(0, -cardHeight / 2 + 24);
+        fitTextWidth(nodes.category, cardWidth - 170, 0.58);
+        nodes.categoryBadge.position.copyFrom(nodes.category.position);
+        nodes.categoryBadge._pillLayout = { width: nodes.category.width + 24, height: 22 };
+        nodes.stackLabel.style.fontSize = 9;
+        nodes.stackLabel.position.set(cardWidth / 2 - 48, -cardHeight / 2 + 24);
+        fitTextWidth(nodes.stackLabel, 82, 0.6);
+        nodes.stackBadge.position.copyFrom(nodes.stackLabel.position);
+        nodes.stackBadge._pillLayout = { width: nodes.stackLabel.width + 16, height: 22 };
         nodes.scoreRouteBadge.position.set(cardWidth / 2 - 64, -cardHeight / 2 + 26);
         nodes.scoreRouteBadgeText.style.fontSize = 10;
         if (nodes.icon) {
-          nodes.icon.position.set(0, -cardHeight / 2 + 90);
+          nodes.icon.position.set(0, -cardHeight / 2 + 78);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
           const iconHeight = nodes.icon.texture?.height || nodes.icon.height || 60;
           nodes.icon.scale.set(Math.min(1.15, 78 / Math.max(1, iconWidth, iconHeight)));
         }
         nodes.name.anchor.set(0.5);
-        nodes.name.style.fontSize = 23;
-        nodes.name.position.set(0, -cardHeight / 2 + 154);
+        nodes.name.style.fontSize = 22;
+        nodes.name.position.set(0, -cardHeight / 2 + 136);
         fitTextWidth(nodes.name, cardWidth - 36, 0.62);
         nodes.description.anchor.set(0.5);
         nodes.description.style.fontSize = 15;
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrapWidth = cardWidth - 48;
-        nodes.description.position.set(0, hasFusionBlueprint ? 16 : 24);
+        nodes.description.position.set(0, -28);
+        nodes.impactBadge.position.set(0, 24);
+        nodes.impactBadge._pillLayout = {
+          width: cardWidth - 52,
+          height: card._offer?.statPreview?.kind === 'stat' ? 43 : 24
+        };
+        nodes.impactLabel.anchor.set(0.5);
+        nodes.impactLabel.style.fontSize = 8;
+        nodes.impactLabel.position.set(0, card._offer?.statPreview?.kind === 'stat' ? 14 : 24);
+        nodes.impactValue.anchor.set(0.5);
+        nodes.impactValue.style.fontSize = 14;
+        nodes.impactValue.position.set(0, 33);
+        fitTextWidth(nodes.impactValue, cardWidth - 76, 0.62);
+        const doctrineY = cardHeight / 2 - (hasFusionBlueprint ? 78 : 98);
+        nodes.doctrineBadge.position.set(0, doctrineY);
+        nodes.doctrineBadge._pillLayout = { width: cardWidth - 58, height: 34 };
+        nodes.doctrineTitle.visible = true;
+        nodes.doctrineTitle.style.fontSize = 7;
+        nodes.doctrineTitle.position.set(0, doctrineY - 8);
         nodes.doctrine.anchor.set(0.5);
-        nodes.doctrine.style.fontSize = 10;
-        nodes.doctrine.position.set(0, cardHeight / 2 - (hasFusionBlueprint ? 76 : 86));
+        nodes.doctrine.style.fontSize = 9;
+        nodes.doctrine.position.set(0, doctrineY + 7);
+        fitTextWidth(nodes.doctrine, cardWidth - 78, 0.58);
+        const permanenceY = cardHeight / 2 - 48;
+        nodes.permanenceBadge.position.set(0, permanenceY);
+        nodes.permanenceBadge._pillLayout = { width: Math.min(cardWidth - 90, nodes.permanence.width + 24), height: 22 };
         nodes.permanence.anchor.set(0.5);
-        nodes.permanence.style.fontSize = 11;
-        nodes.permanence.position.set(0, cardHeight / 2 - (hasFusionBlueprint ? 54 : 62));
+        nodes.permanence.style.fontSize = 9;
+        nodes.permanence.position.set(0, permanenceY);
+        fitTextWidth(nodes.permanence, cardWidth - 112, 0.58);
         nodes.holdBadge.position.set(cardWidth / 2 - 38, -cardHeight / 2 + 25);
-        nodes.choose.position.set(0, cardHeight / 2 - 27);
+        nodes.choose.position.set(0, cardHeight / 2 - 20);
         nodes.choose.style.fontSize = 15;
         if (hasFusionBlueprint) {
           const badgeWidth = cardWidth - 40;
-          const badgeHeight = 50;
+          const badgeHeight = 46;
           const badgeX = 0;
-          const badgeY = cardHeight / 2 - 114;
+          const badgeY = cardHeight / 2 - 128;
           nodes.fusionBadge.position.set(badgeX, badgeY);
           nodes.fusionBadge._fusionLayout = { width: badgeWidth, height: badgeHeight, compact: false };
           nodes.fusionLabel.style.fontSize = 9;
-          nodes.fusionLabel.position.set(badgeX, badgeY - 15);
+          nodes.fusionLabel.position.set(badgeX, badgeY - 13);
           nodes.fusionName.style.fontSize = 12;
           nodes.fusionName.position.set(badgeX, badgeY);
           nodes.fusionHint.style.fontSize = 8;
-          nodes.fusionHint.position.set(badgeX, badgeY + 15);
+          nodes.fusionHint.position.set(badgeX, badgeY + 13);
           fitTextWidth(nodes.fusionLabel, badgeWidth - 24, 0.62);
           fitTextWidth(nodes.fusionName, badgeWidth - 24, 0.58);
           fitTextWidth(nodes.fusionHint, badgeWidth - 24, 0.5);
@@ -8596,7 +8877,8 @@ export class PlayScene {
     const fusionBlueprint = card._offer?.fusionBlueprints?.[0] || null;
     const completesFusion = Boolean(fusionBlueprint?.completesOnPick);
     const fusionAccent = Number(fusionBlueprint?.color) || 0xff5bd6;
-    const accent = scoreRoute ? 0xffa84d : completesFusion ? fusionAccent : Number(card._offer?.color) || 0x37f5ff;
+    const categoryAccent = TACTICAL_DRAFT_CATEGORY_COLORS[card._offer?.category] || 0x37f5ff;
+    const accent = scoreRoute ? 0xffa84d : categoryAccent;
     const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
     nodes.glow.clear();
     nodes.bg.clear();
@@ -8618,6 +8900,43 @@ export class PlayScene {
     });
     nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
     nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
+    const drawPill = (graphic, pillLayout, { color = accent, fill = 0x071724, alpha = 0.82, width = 1 } = {}) => {
+      if (!graphic || !pillLayout) return;
+      graphic.clear();
+      graphic.roundRect(-pillLayout.width / 2, -pillLayout.height / 2, pillLayout.width, pillLayout.height, pillLayout.height / 2);
+      graphic.fill({ color: fill, alpha });
+      graphic.roundRect(-pillLayout.width / 2, -pillLayout.height / 2, pillLayout.width, pillLayout.height, pillLayout.height / 2);
+      graphic.stroke({ color, width, alpha: focused ? 0.86 : 0.48 });
+    };
+    drawPill(nodes.categoryBadge, nodes.categoryBadge._pillLayout, { color: accent, fill: 0x071724, alpha: 0.92 });
+    nodes.category.style.fill = scoreRoute ? '#ffcf86' : accent;
+    nodes.stackBadge.visible = !scoreRoute;
+    nodes.stackLabel.visible = !scoreRoute;
+    if (!scoreRoute) {
+      drawPill(nodes.stackBadge, nodes.stackBadge._pillLayout, {
+        color: card._offer?.currentStacks > 0 ? 0xffd15c : 0x6d8794,
+        fill: card._offer?.currentStacks > 0 ? 0x241b08 : 0x09131c,
+        alpha: 0.9
+      });
+      nodes.stackLabel.style.fill = card._offer?.currentStacks > 0 ? '#fff3a0' : '#b7d4df';
+    }
+    drawPill(nodes.impactBadge, nodes.impactBadge._pillLayout, {
+      color: card._offer?.statPreview?.kind === 'stat' ? 0x37f5ff : 0x536572,
+      fill: 0x06131f,
+      alpha: 0.9
+    });
+    nodes.impactValue.visible = card._offer?.statPreview?.kind === 'stat';
+    nodes.impactLabel.style.fill = card._offer?.statPreview?.kind === 'stat' ? '#8df7ff' : '#9fb6c0';
+    drawPill(nodes.doctrineBadge, nodes.doctrineBadge._pillLayout, {
+      color: Number(card._offer?.doctrineProjection?.after?.color) || accent,
+      fill: 0x081421,
+      alpha: 0.84
+    });
+    drawPill(nodes.permanenceBadge, nodes.permanenceBadge._pillLayout, {
+      color: scoreRoute ? 0xffa84d : 0x8d7d55,
+      fill: scoreRoute ? 0x241609 : 0x17170d,
+      alpha: 0.82
+    });
     nodes.fusionBadge.visible = Boolean(fusionBlueprint);
     nodes.fusionLabel.visible = Boolean(fusionBlueprint);
     nodes.fusionName.visible = Boolean(fusionBlueprint);
@@ -8673,7 +8992,6 @@ export class PlayScene {
       nodes.scoreRouteBadgeText.updateText?.(false);
       nodes.scoreRouteBadgeText.scale.set(Math.min(1, (badgeWidth - 38) / Math.max(1, nodes.scoreRouteBadgeText.width)));
     }
-    nodes.category.style.fill = scoreRoute ? '#ffcf86' : '#7ee9ff';
     nodes.permanence.style.fill = scoreRoute ? '#ffd15c' : '#fff3a0';
     nodes.choose.text = confirmed
       ? translateText('LOCKED IN')
@@ -8845,13 +9163,13 @@ export class PlayScene {
     state.cards.forEach((card) => state.overlay.addChild(card));
     state.bansRemaining -= 1;
     this.tacticalDraftBansRemaining = state.bansRemaining;
-    state.recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
-    state.focusIndex = state.recommendedIndex;
+    state.initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
+    state.focusIndex = state.initialFocusIndex;
     state.lastBannedId = offer.id;
     state.lastBanSource = source;
     this.layoutTacticalDraft();
-    this.setTacticalDraftFocus(state.recommendedIndex, { silent: true });
-    this.scheduleTacticalBossBanter(offers[state.recommendedIndex]?.id, { delayMs: 680, context: 'draft' });
+    this.setTacticalDraftFocus(state.initialFocusIndex, { silent: true });
+    this.scheduleTacticalBossBanter(offers[state.initialFocusIndex]?.id, { delayMs: 680, context: 'draft' });
     AudioManager.playSfx('ui_error', { volume: 0.34, minIntervalMs: 80 });
     return true;
   }
@@ -8902,12 +9220,12 @@ export class PlayScene {
     state.rescansRemaining -= 1;
     this.tacticalDraftRescansRemaining = state.rescansRemaining;
     this.tacticalDraftRescansUsed += 1;
-    state.recommendedIndex = this.getRecommendedTacticalDraftIndex(offers);
-    state.focusIndex = state.recommendedIndex;
+    state.initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
+    state.focusIndex = state.initialFocusIndex;
     state.openedAt = Date.now();
     this.layoutTacticalDraft();
-    this.setTacticalDraftFocus(state.recommendedIndex, { silent: true });
-    this.scheduleTacticalBossBanter(offers[state.recommendedIndex]?.id, { delayMs: 680, context: 'draft' });
+    this.setTacticalDraftFocus(state.initialFocusIndex, { silent: true });
+    this.scheduleTacticalBossBanter(offers[state.initialFocusIndex]?.id, { delayMs: 680, context: 'draft' });
     playMenuConfirmSfx(0.3);
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
@@ -9461,7 +9779,7 @@ export class PlayScene {
       fusionUnlock: this.lastTacticalFusionUnlock ? { ...this.lastTacticalFusionUnlock } : null,
       sectorCleared: state?.sectorCleared || null,
       focusIndex: state?.focusIndex ?? null,
-      recommendedIndex: state?.recommendedIndex ?? null,
+      initialFocusIndex: state?.initialFocusIndex ?? null,
       confirmedId: state?.confirmedId || null,
       lockInActive: Boolean(state?.confirmedId && state?.lockInBurst?.visible),
       lockInProgress: Number(state?.lockInProgress) || 0,
@@ -9470,6 +9788,23 @@ export class PlayScene {
       title: state?.title?.text || null,
       eyebrow: state?.eyebrow?.text || null,
       subtitle: state?.subtitle?.text || null,
+      buildSummary: state?.buildSummary ? {
+        bounds: boundsOf(state.buildSummary),
+        title: state.buildSummary._nodes?.title?.text || null,
+        empty: state.buildSummary._nodes?.empty?.visible
+          ? state.buildSummary._nodes?.empty?.text || null
+          : null,
+        categories: state.buildSummary._nodes?.categoryNodes
+          ?.filter((node) => node.visible)
+          .map((node) => ({ category: node._category, text: node.text, bounds: boundsOf(node) })) || [],
+        doctrine: state.buildSummary._nodes?.doctrine?.visible
+          ? state.buildSummary._nodes?.doctrine?.text || null
+          : null,
+        fusion: state.buildSummary._nodes?.fusion?.visible
+          ? state.buildSummary._nodes?.fusion?.text || null
+          : null,
+        activeIds: state.buildSummary._data?.activeIds?.slice?.() || []
+      } : null,
       scoreRouteOfferId: state?.scoreRouteOfferId || null,
       scoreRouteDecision: state?.scoreRouteDecision || this.tacticalScoreRouteDecision?.status || null,
       scoreRouteState: this.tacticalScoreRouteDecision ? { ...this.tacticalScoreRouteDecision } : null,
@@ -9515,6 +9850,7 @@ export class PlayScene {
           ? boundsOf(state.cards?.[index]?._nodes?.scoreRouteBadge)
           : null,
         descriptionSource: offer.description,
+        statPreview: offer.statPreview ? { ...offer.statPreview } : null,
         fusionBlueprint: offer.fusionBlueprints?.[0] ? {
           id: offer.fusionBlueprints[0].id,
           nameSource: offer.fusionBlueprints[0].name,
@@ -9533,6 +9869,7 @@ export class PlayScene {
         fusionNameBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionName) : null,
         fusionHintBounds: offer.fusionBlueprints?.length ? boundsOf(state.cards?.[index]?._nodes?.fusionHint) : null,
         doctrinePreviewText: state.cards?.[index]?._nodes?.doctrine?.text || null,
+        doctrineBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.doctrineBadge),
         doctrinePreviewBounds: boundsOf(state.cards?.[index]?._nodes?.doctrine),
         doctrineProjection: offer.doctrineProjection ? {
           beforeId: offer.doctrineProjection.before?.id || null,
@@ -9547,6 +9884,17 @@ export class PlayScene {
         bounds: boundsOf(state.cards?.[index]),
         nameText: state.cards?.[index]?._nodes?.name?.text || null,
         descriptionText: state.cards?.[index]?._nodes?.description?.text || null,
+        categoryText: state.cards?.[index]?._nodes?.category?.text || null,
+        categoryBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.categoryBadge),
+        stackText: state.cards?.[index]?._nodes?.stackLabel?.text || null,
+        stackBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.stackBadge),
+        impactLabelText: state.cards?.[index]?._nodes?.impactLabel?.text || null,
+        impactValueText: state.cards?.[index]?._nodes?.impactValue?.visible
+          ? state.cards?.[index]?._nodes?.impactValue?.text || null
+          : null,
+        impactBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.impactBadge),
+        permanenceText: state.cards?.[index]?._nodes?.permanence?.text || null,
+        permanenceBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.permanenceBadge),
         nameBounds: boundsOf(state.cards?.[index]?._nodes?.name),
         descriptionBounds: boundsOf(state.cards?.[index]?._nodes?.description),
         chooseBounds: boundsOf(state.cards?.[index]?._nodes?.choose),

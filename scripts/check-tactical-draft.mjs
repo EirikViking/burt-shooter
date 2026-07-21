@@ -113,7 +113,7 @@ function assertDraftLayout(state, width, height, label) {
   });
   for (let a = 0; a < bounds.length; a += 1) {
     for (let b = a + 1; b < bounds.length; b += 1) {
-      assert(!overlap(bounds[a], bounds[b]), `${label}: cards ${a} and ${b} overlap`);
+      assert(!overlap(bounds[a], bounds[b]), `${label}: cards ${a} and ${b} overlap: ${JSON.stringify([bounds[a], bounds[b]])}`);
     }
   }
   const holdBounds = state.tacticalDraft.holdBounds;
@@ -128,12 +128,38 @@ function assertDraftLayout(state, width, height, label) {
     assert(!overlap(rescanBounds, box, 0), `${label}: rescan control overlaps a card`);
     assert(!overlap(banBounds, box, 0), `${label}: ban control overlaps a card`);
   }
+  const buildSummary = state.tacticalDraft.buildSummary;
+  assert(buildSummary?.bounds && buildSummary.bounds.width > 120 && buildSummary.bounds.height > 20,
+    `${label}: active-build summary is missing`);
+  assert(String(buildSummary.title || '').trim(), `${label}: active-build summary title is missing`);
+  for (const box of bounds) {
+    assert(!overlap(buildSummary.bounds, box, 0), `${label}: active-build summary overlaps a card`);
+  }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
-    for (const [name, textBounds] of [['name', offer.nameBounds], ['description', offer.descriptionBounds], ['doctrine', offer.doctrinePreviewBounds]]) {
+    for (const [name, textBounds] of [
+      ['name', offer.nameBounds],
+      ['description', offer.descriptionBounds],
+      ['category badge', offer.categoryBadgeBounds],
+      ['impact badge', offer.impactBadgeBounds],
+      ['doctrine badge', offer.doctrineBadgeBounds],
+      ['permanence badge', offer.permanenceBadgeBounds]
+    ]) {
       assert(textBounds && textBounds.width > 0 && textBounds.height > 0, `${label}: ${name} ${index} has invalid bounds`);
       assert(textBounds.x >= card.x - 2 && textBounds.y >= card.y - 2 && textBounds.x + textBounds.width <= card.x + card.width + 2 && textBounds.y + textBounds.height <= card.y + card.height + 2, `${label}: ${name} ${index} escapes card`);
     }
+    if (!offer.fixedScoreRoute) {
+      assert(offer.stackBadgeBounds?.width > 0 && String(offer.stackText || '').trim(), `${label}: offer ${offer.id} is missing stack state`);
+    }
+    assert(['stat', 'contextual'].includes(offer.statPreview?.kind), `${label}: offer ${offer.id} has no trustworthy impact mode`);
+    assert(String(offer.impactLabelText || '').trim(), `${label}: offer ${offer.id} is missing impact context`);
+    if (offer.statPreview.kind === 'stat') {
+      assert(String(offer.impactValueText || '').includes('→'), `${label}: offer ${offer.id} is missing before/after impact`);
+    } else {
+      assert(!offer.impactValueText, `${label}: contextual offer ${offer.id} exposed a misleading number`);
+    }
+    assert(String(offer.categoryText || '').trim() && String(offer.permanenceText || '').trim(),
+      `${label}: offer ${offer.id} is missing category or permanence`);
     assert(offer.doctrineProjection?.afterId || offer.doctrineProjection?.consumed, `${label}: offer ${offer.id} missing doctrine forecast`);
     assert(String(offer.doctrinePreviewText || '').trim(), `${label}: offer ${offer.id} missing doctrine forecast text`);
     if (offer.fusionBlueprint) {
@@ -152,7 +178,7 @@ function assertDraftLayout(state, width, height, label) {
         `${label}: Fusion forecast for ${offer.id} is missing player-facing copy`);
     }
   });
-  assert(state.tacticalDraft.recommendedIndex === state.tacticalDraft.focusIndex, `${label}: recommended card should receive initial focus`);
+  assert(state.tacticalDraft.initialFocusIndex === state.tacticalDraft.focusIndex, `${label}: neutral initial focus was not applied`);
 }
 
 const lowLifeOffers = buildTacticalDraftOffers({ seed: 'check', sectorCleared: 2, lives: 1, maxLives: 3 });
@@ -438,6 +464,17 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
   let state = await readState(page);
   assertDraftLayout(state, 1280, 720, 'desktop');
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.waitForTimeout(180);
+  state = await readState(page);
+  assertDraftLayout(state, 1920, 1080, 'first-draft-1920x1080');
+  assert(state.tacticalDraft.initialFocusIndex === 1, 'ordinary first Draft should use neutral middle focus');
+  const firstDraftScreenshot = path.join(outputDir, 'tactical-draft-first-1920x1080.png');
+  await page.screenshot({ path: firstDraftScreenshot });
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.waitForTimeout(180);
+  state = await readState(page);
+  assertDraftLayout(state, 1280, 720, 'desktop-restored');
   const firstOfferIds = state.tacticalDraft.offers.map((offer) => offer.id);
   assert(state.tacticalDraft.rescansRemaining === 1, 'fresh run should expose one Draft rescan');
   assert(state.tacticalDraft.bansRemaining === 2, 'fresh run should expose two Draft bans');
@@ -454,7 +491,7 @@ try {
   assert(rescannedOfferIds.filter((id) => id !== keyboardHeldId).every((id) => !firstOfferIds.includes(id)),
     `rescan repeated an unheld prior offer: ${rescannedOfferIds.join(', ')}`);
   assert(state.tacticalDraft.offers.filter((offer) => offer.held).length === 1, 'rescan did not retain exactly one held card');
-  assert(state.tacticalDraft.offers[state.tacticalDraft.recommendedIndex]?.id === keyboardHeldId, 'held offer should receive recommended focus after rescan');
+  assert(state.tacticalDraft.offers[state.tacticalDraft.initialFocusIndex]?.id === keyboardHeldId, 'held offer should receive initial focus after rescan');
   assert(/USED/i.test(state.tacticalDraft.rescanLabel || ''), 'rescan control did not show its spent state');
   const banTargetIndex = state.tacticalDraft.offers.findIndex((offer) => offer.id !== keyboardHeldId);
   const banNavigationSteps = (banTargetIndex - state.tacticalDraft.focusIndex + state.tacticalDraft.offers.length) % state.tacticalDraft.offers.length;
@@ -546,6 +583,17 @@ try {
   assertDraftLayout(state, 760, 640, 'compact');
   const compactScreenshot = path.join(outputDir, 'tactical-draft-compact.png');
   await page.screenshot({ path: compactScreenshot });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.waitForTimeout(180);
+  state = await readState(page);
+  assertDraftLayout(state, 1920, 1080, 'late-draft-1920x1080');
+  assert(state.tacticalDraft.buildSummary.activeIds.length >= 2, 'late Draft did not expose the active build');
+  const lateDraftScreenshot = path.join(outputDir, 'tactical-draft-late-1920x1080.png');
+  await page.screenshot({ path: lateDraftScreenshot });
+  await page.setViewportSize({ width: 760, height: 640 });
+  await page.waitForTimeout(180);
+  state = await readState(page);
+  assertDraftLayout(state, 760, 640, 'compact-restored');
   const holdTarget = state.tacticalDraft.holdBounds;
   await page.mouse.click(holdTarget.x + holdTarget.width / 2, holdTarget.y + holdTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId);
@@ -665,6 +713,20 @@ try {
   const fusionActivatedState = await readState(fusionPage);
   assert(fusionActivatedState.tacticalDraft.player?.fusionIds?.includes('rift_reprisal'),
     `choosing the completion card did not activate Rift Reprisal: ${JSON.stringify(fusionActivatedState.tacticalDraft.player)}`);
+  await fusionPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 5000 });
+  await fusionPage.setViewportSize({ width: 1920, height: 1080 });
+  await fusionPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearTacticalFusionUnlock?.('active_build_fixture');
+    play.openTacticalDraft({ sectorCleared: 3 });
+  });
+  await fusionPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  const activeFusionDraftState = await readState(fusionPage);
+  assertDraftLayout(activeFusionDraftState, 1920, 1080, 'active-fusion-1920x1080');
+  assert(/1/.test(activeFusionDraftState.tacticalDraft.buildSummary.fusion || ''),
+    `active Fusion was missing from the build summary: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
+  const activeFusionScreenshot = path.join(outputDir, 'tactical-draft-active-fusion-1920x1080.png');
+  await fusionPage.screenshot({ path: activeFusionScreenshot });
   await fusionPage.close();
 
   const runtimePage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -681,6 +743,15 @@ try {
       shots: player.multiShot,
       lives: game.lives
     };
+    const previewIdsBefore = player.runAugmentIds.slice();
+    const dronesBeforePreview = player.drones.length;
+    const damagePreview = player.getRunAugmentStatPreview('damage_up');
+    const dynamicPreview = player.getRunAugmentStatPreview('phase_reactor');
+    const dronePreview = player.getRunAugmentStatPreview('drones');
+    const previewStateUnchanged = player.runAugmentIds.join(',') === previewIdsBefore.join(',')
+      && player.drones.length === dronesBeforePreview
+      && Math.abs(player.bulletDamage - baseline.damage) < 0.0001
+      && Math.abs(player.shootDelay - baseline.fireDelay) < 0.0001;
     player.grantInvulnerability(5000, 'dodge_overlap_check');
     player.startDodge();
     player.dodgeDuration = 0;
@@ -689,7 +760,9 @@ try {
       invulnerable: player.invulnerable,
       remainingMs: player.invulnerableTime
     };
-    ['damage_up', 'rapid_fire', 'speed_up', 'rail_surge', 'double_shot', 'pierce', 'blink_drive', 'magnet', 'drones', 'chain_lightning']
+    player.applyRunAugment('damage_up');
+    const damageAfterApply = player.bulletDamage;
+    ['rapid_fire', 'speed_up', 'rail_surge', 'double_shot', 'pierce', 'blink_drive', 'magnet', 'drones', 'chain_lightning']
       .forEach((id) => player.applyRunAugment(id));
     const boosted = {
       damage: player.bulletDamage,
@@ -737,6 +810,7 @@ try {
     }));
     return {
       baseline,
+      preview: { damagePreview, dynamicPreview, dronePreview, previewStateUnchanged, damageAfterApply },
       boosted,
       sectorStart,
       sectorEffects: {
@@ -769,6 +843,11 @@ try {
   assert(runtime.sectorEffects.bombShots >= 2 && runtime.sectorEffects.orbitalCharges >= 2, 'offensive sector-start payload missing');
   assert(runtime.repair.after === runtime.repair.before + 1, 'nano patch did not repair one life');
   assert(runtime.repair.nanoPatch.consumed === true, 'nano patch was not flagged consumed');
+  assert(runtime.preview.previewStateUnchanged, `stat preview mutated live player state: ${JSON.stringify(runtime.preview)}`);
+  assert(runtime.preview.damagePreview.kind === 'stat' && Math.abs(runtime.preview.damagePreview.after - runtime.preview.damageAfterApply) < 0.0001,
+    `damage preview did not match authoritative apply: ${JSON.stringify(runtime.preview)}`);
+  assert(runtime.preview.dynamicPreview.kind === 'contextual' && runtime.preview.dronePreview.kind === 'stat',
+    `dynamic/direct preview classification drifted: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.repair.nanoPatchAgain.applied === false && runtime.repair.nanoPatchAgain.reason === 'stack_cap', 'consumed nano patch could be applied twice');
   assert(runtime.debug.consumedIds.includes('nano_patch') && !runtime.debug.activeIds.includes('nano_patch'), 'consumed nano patch remained active');
   assert(runtime.overlap.activeType === 'damage_up' && runtime.overlap.suppressedId === 'damage_up', 'matching ordinary pickup did not take temporary priority');
@@ -800,7 +879,7 @@ try {
 
   assert(consoleErrors.length === 0, `browser errors: ${consoleErrors.join(' | ')}`);
   report.ok = true;
-  report.desktop = { screenshot: desktopScreenshot };
+  report.desktop = { screenshot: desktopScreenshot, firstDraftScreenshot, lateDraftScreenshot };
   report.compact = { screenshot: compactScreenshot };
   report.interactionHistory = state.tacticalDraft.history;
   report.lockInScreenshot = lockInScreenshot;
@@ -811,6 +890,7 @@ try {
     compactScreenshot: fusionBlueprintScreenshot,
     completionScreenshot: fusionCompletionScreenshot,
     germanCompletionScreenshot: fusionGermanScreenshot,
+    activeFusionScreenshot,
     activatedFusionIds: fusionActivatedState.tacticalDraft.player?.fusionIds || []
   };
   report.automaticBossClearGate = { gatedLevel, advancedLevel: flowState.arcadeRun.currentSector };

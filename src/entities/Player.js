@@ -3996,7 +3996,60 @@ export class Player {
     };
   }
 
-  applyRunAugmentModifiers() {
+  getRunAugmentStatPreview(id) {
+    const augment = getTacticalDraftAugment(id);
+    const metric = String(augment?.previewMetric || '');
+    if (!augment || !metric || augment.consumedOnApply) {
+      return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed: false };
+    }
+
+    const snapshotKeys = [
+      'speed', 'bulletDamage', 'shootDelay', 'bulletSpeed', 'dodgeDelay', 'dodgeDurationMax',
+      'multiShot', 'bulletPierce', 'rankBoostExtraShots', 'rankBoostBulletFx', 'magnetActive',
+      'magnetExpiresAt', 'magnetRadius', 'magnetStrength', 'dronesActive', 'dronesExpiresAt',
+      'droneCount', 'droneColor', 'chainLightningActive', 'chainLightningMaxChains', 'muzzleFlashColor'
+    ];
+    const snapshot = Object.fromEntries(snapshotKeys.map((key) => [key, this[key]]));
+    const selectedIds = this.runAugmentIds.slice();
+    const consumedIds = this.consumedRunAugmentIds.slice();
+    const modifiers = this.runAugmentModifiers;
+    const readMetric = () => {
+      switch (metric) {
+        case 'damage': return Number(this.bulletDamage) || 0;
+        case 'fireDelay': return Number(this.shootDelay) || 0;
+        case 'shots': return Math.max(1, Math.round(Number(this.multiShot) || 1));
+        case 'piercing': return Boolean(this.bulletPierce);
+        case 'chainReach': return Math.max(0, Math.round(Number(this.chainLightningMaxChains) || 0));
+        case 'movement': return Number(this.speed) || 0;
+        case 'dodgeCooldown': return Math.max(0, Math.round(Number(this.dodgeDelay) || 0));
+        case 'pickupRange': return this.magnetActive ? Math.max(0, Math.round(Number(this.magnetRadius) || 0)) : 0;
+        case 'supportDrones': return this.dronesActive ? Math.max(0, Math.round(Number(this.droneCount) || 0)) : 0;
+        default: return null;
+      }
+    };
+
+    const before = readMetric();
+    let after = before;
+    let overlapSuppressed = false;
+    try {
+      this.runAugmentIds.push(id);
+      this.recalculateStats({ preview: true });
+      after = readMetric();
+      overlapSuppressed = this.runAugmentModifiers?.overlapSuppressedId === id;
+    } finally {
+      this.runAugmentIds = selectedIds;
+      this.consumedRunAugmentIds = consumedIds;
+      for (const [key, value] of Object.entries(snapshot)) this[key] = value;
+      this.runAugmentModifiers = modifiers;
+    }
+
+    if (overlapSuppressed || before === after) {
+      return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed };
+    }
+    return { kind: 'stat', metric, before, after, overlapSuppressed: false };
+  }
+
+  applyRunAugmentModifiers({ preview = false } = {}) {
     const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
     const modifiers = buildTacticalDraftModifiers(activeIds, {
       activePowerupType: this.activePowerup?.type || null
@@ -4034,7 +4087,7 @@ export class Player {
       this.dronesActive = true;
       this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
       this.droneCount = Math.max(1, Math.min(2, Math.round(modifiers.droneCount)));
-      if (!this.drones.length && this.sprite) this.createDrones(this.droneCount, 0x66ccff);
+      if (!preview && !this.drones.length && this.sprite) this.createDrones(this.droneCount, 0x66ccff);
     }
     if (modifiers.chainMax > 0) {
       this.chainLightningActive = true;
@@ -4509,7 +4562,7 @@ export class Player {
     this.recalculateStats();
   }
 
-  applyCatalogStatModifiers(effect = {}) {
+  applyCatalogStatModifiers(effect = {}, { preview = false } = {}) {
     if (!effect || typeof effect !== 'object') return;
 
     if (Number.isFinite(effect.shotsMin)) {
@@ -4548,11 +4601,11 @@ export class Player {
       this.dronesActive = true;
       this.droneCount = Math.max(1, Math.min(4, Math.round(effect.droneCount)));
       this.droneColor = Number.isFinite(effect.droneColor) ? effect.droneColor : this.droneColor;
-      if (!this.drones.length && this.sprite) this.createDrones(this.droneCount, this.droneColor);
+      if (!preview && !this.drones.length && this.sprite) this.createDrones(this.droneCount, this.droneColor);
     }
   }
 
-  recalculateStats() {
+  recalculateStats({ preview = false } = {}) {
     // 1. Reset to BASE STATS from Single Source of Truth
     this.speed = this.stats.speed;
     this.bulletDamage = this.stats.damage;
@@ -4610,19 +4663,19 @@ export class Player {
           break;
         case 'drones':
           this.dronesActive = true;
-          if (!this.drones.length && this.sprite) this.createDrones();
+          if (!preview && !this.drones.length && this.sprite) this.createDrones();
           break;
       }
 
       if (!BASE_POWERUP_TYPE_SET.has(this.activePowerup.type)) {
-        this.applyCatalogStatModifiers(this.powerupEffect || {});
+        this.applyCatalogStatModifiers(this.powerupEffect || {}, { preview });
       }
     }
 
     this.applyRankBoostModifiers();
     this.applySynergyModifiers();
     this.applyStatusEffectModifiers();
-    this.applyRunAugmentModifiers();
+    this.applyRunAugmentModifiers({ preview });
   }
 
   applyStatusEffectModifiers() {

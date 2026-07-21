@@ -136,7 +136,7 @@ try {
   const routeIndex = state.tacticalDraft.offers.findIndex((offer) => offer.fixedScoreRoute);
   const failures = [];
   if (!routeOffer || routeOffer.id !== 'combo_anchor' || routeIndex !== state.tacticalDraft.focusIndex ||
-      routeIndex !== state.tacticalDraft.recommendedIndex) {
+      routeIndex !== state.tacticalDraft.initialFocusIndex) {
     failures.push(`score route did not receive forced focus: ${JSON.stringify(state.tacticalDraft)}`);
   }
   if (!/NOW OR NEVER/i.test(state.tacticalDraft.title || '') ||
