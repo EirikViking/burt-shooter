@@ -175,7 +175,7 @@ try {
         enemy.speed = 0;
         enemy.vx = 0;
         enemy.vy = 0;
-        enemy.x = sourceX + (index - 1.5) * 22;
+        enemy.x = sourceX + 58 + index * 8;
         enemy.y = sourceY + (playerY - sourceY) * t;
         enemy.update = () => {};
         if (enemy.sprite) {
@@ -195,7 +195,7 @@ try {
     hijacker.baseY = sourceY;
     hijacker.health = 30;
     hijacker.maxHealth = 30;
-    hijacker.beamActiveMs = 2200;
+    hijacker.beamActiveMs = 4000;
     hijacker.beamWarningMs = 120;
     hijacker.sprite.x = hijacker.x;
     hijacker.sprite.y = hijacker.y;
@@ -208,8 +208,10 @@ try {
 
     for (let i = 0; i < 3; i++) {
       const bullet = hijacker.shoot(player.x, player.y);
-      bullet.x = sourceX + (i - 1) * 28;
-      bullet.y = sourceY + 210 + i * 74;
+      bullet.x = sourceX + 50 + i * 8;
+      bullet.y = sourceY + 100 + i * 60;
+      bullet.vx = 0;
+      bullet.vy = 0;
       if (bullet.sprite) {
         bullet.sprite.x = bullet.x;
         bullet.sprite.y = bullet.y;

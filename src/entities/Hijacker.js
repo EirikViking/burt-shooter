@@ -2,6 +2,16 @@ import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { isHijackerEnabled } from '../config/isExtrasEnabled.js';
+import { getHijackerMaxHealth } from '../config/HijackerBalance.js';
+
+const TRACTOR_BEAM_VISUAL_PROFILE = Object.freeze({
+  blendMode: 'normal',
+  activeOuterAlpha: 0.045,
+  activeCoreAlpha: 0.085,
+  activeInnerAlpha: 0.035,
+  activeLaneCount: 5,
+  activeRingCount: 4
+});
 
 /**
  * Hijacker - special interceptor enemy with a readable tractor-beam attack.
@@ -40,7 +50,7 @@ export class Hijacker {
     this.hoverFreq = 0.02; // Hover frequency
 
     // Health (tougher than regular enemies)
-    this.health = 30 + this.level * 5;
+    this.health = getHijackerMaxHealth(this.level);
     this.maxHealth = this.health;
     this.scoreValue = 500;
 
@@ -70,7 +80,7 @@ export class Hijacker {
 
     this.beamLayer = new PIXI.Graphics();
     this.beamLayer.zIndex = -2;
-    this.beamLayer.blendMode = 'add';
+    this.beamLayer.blendMode = TRACTOR_BEAM_VISUAL_PROFILE.blendMode;
     this.sprite.addChild(this.beamLayer);
 
     this.hitFeedbackLayer = new PIXI.Graphics();
@@ -435,9 +445,12 @@ export class Hijacker {
       layer.fill({ color, alpha });
     };
 
-    drawCone(coneWidth * 1.18, warningColor, active ? 0.1 : 0.06 + progress * 0.08);
-    drawCone(coneWidth, coreColor, active ? 0.19 : 0.09 + progress * 0.13);
-    drawCone(innerWidth, 0xffffff, active ? 0.06 + shimmer * 0.04 : 0.04 + progress * 0.05);
+    const outerFillAlpha = active ? TRACTOR_BEAM_VISUAL_PROFILE.activeOuterAlpha : 0.05 + progress * 0.06;
+    const coreFillAlpha = active ? TRACTOR_BEAM_VISUAL_PROFILE.activeCoreAlpha : 0.07 + progress * 0.09;
+    const innerFillAlpha = active ? TRACTOR_BEAM_VISUAL_PROFILE.activeInnerAlpha : 0.025 + progress * 0.035;
+    drawCone(coneWidth * 1.18, warningColor, outerFillAlpha);
+    drawCone(coneWidth, coreColor, coreFillAlpha);
+    drawCone(innerWidth, 0xffffff, innerFillAlpha);
 
     const edgePoints = [
       [endX - coneWidth, endY],
@@ -447,14 +460,14 @@ export class Hijacker {
       layer.moveTo(0, tipY);
       layer.lineTo(x, y);
     }
-    layer.stroke({ color: 0xffffff, width: active ? 8 : 4 + progress * 3, alpha: active ? 0.2 : 0.12 + progress * 0.26 });
+    layer.stroke({ color: 0xffffff, width: active ? 5 : 3 + progress * 2, alpha: active ? 0.08 : 0.1 + progress * 0.2 });
     for (const [x, y] of edgePoints) {
       layer.moveTo(0, tipY);
       layer.lineTo(x, y);
     }
-    layer.stroke({ color: edgeColor, width: active ? 3.5 : 2 + progress * 1.8, alpha: active ? 0.68 : 0.28 + progress * 0.42 });
+    layer.stroke({ color: edgeColor, width: active ? 2.5 : 1.8 + progress * 1.4, alpha: active ? 0.42 : 0.22 + progress * 0.34 });
 
-    const strandCount = active ? 7 : 5;
+    const strandCount = active ? TRACTOR_BEAM_VISUAL_PROFILE.activeLaneCount : 5;
     for (let i = 0; i < strandCount; i++) {
       const lane = strandCount === 1 ? 0 : (i / (strandCount - 1) - 0.5);
       const phase = now * (0.006 + i * 0.0006) + i * 1.7;
@@ -464,9 +477,9 @@ export class Hijacker {
       layer.moveTo(Math.sin(phase) * 4, tipY + 3);
       layer.lineTo(targetX, targetY);
     }
-    layer.stroke({ color: hotColor, width: active ? 2.2 : 1.6, alpha: active ? 0.42 + shimmer * 0.18 : 0.18 + progress * 0.28 });
+    layer.stroke({ color: hotColor, width: active ? 1.8 : 1.4, alpha: active ? 0.28 + shimmer * 0.1 : 0.14 + progress * 0.22 });
 
-    const rings = active ? 6 : 4;
+    const rings = active ? TRACTOR_BEAM_VISUAL_PROFILE.activeRingCount : 4;
     for (let i = 1; i <= rings; i++) {
       const t = i / (rings + 1);
       const x = endX * t;
@@ -474,23 +487,23 @@ export class Hijacker {
       const ringPulse = 0.88 + progress * 0.2 + Math.sin(now * 0.012 + i) * 0.08;
       const r = (halfWidth * t * 0.58 + 10) * ringPulse * pulse;
       layer.ellipse(x, y, r, Math.max(8, r * 0.22));
-      layer.stroke({ color: i % 2 ? coreColor : edgeColor, width: active ? 2.5 : 1.5, alpha: active ? 0.5 : 0.22 + progress * 0.26 });
+      layer.stroke({ color: i % 2 ? coreColor : edgeColor, width: active ? 1.8 : 1.4, alpha: active ? 0.32 : 0.18 + progress * 0.22 });
       if (active) {
         const nodeA = now * 0.006 + i;
         layer.circle(x + Math.cos(nodeA) * r, y + Math.sin(nodeA) * r * 0.22, 3.5 + shimmer * 2);
-        layer.fill({ color: 0xffffff, alpha: 0.34 });
+        layer.fill({ color: 0xffffff, alpha: 0.22 });
       }
     }
 
     if (active) {
       layer.ellipse(endX, endY, coneWidth * 0.64, Math.max(14, coneWidth * 0.14));
-      layer.stroke({ color: 0xffffff, width: 3, alpha: 0.46 });
+      layer.stroke({ color: 0xffffff, width: 2, alpha: 0.26 });
       layer.ellipse(endX, endY, coneWidth * 0.46, Math.max(10, coneWidth * 0.1));
-      layer.stroke({ color: coreColor, width: 3, alpha: 0.62 });
+      layer.stroke({ color: coreColor, width: 2, alpha: 0.38 });
       layer.circle(0, tipY, 13 + shimmer * 5);
-      layer.fill({ color: coreColor, alpha: 0.2 });
+      layer.fill({ color: coreColor, alpha: 0.12 });
       layer.circle(0, tipY, 6 + shimmer * 2);
-      layer.fill({ color: 0xffffff, alpha: 0.42 });
+      layer.fill({ color: 0xffffff, alpha: 0.26 });
     }
 
     this.drawBeamLattice(layer, {
@@ -529,6 +542,16 @@ export class Hijacker {
       hotColor,
       shimmer
     });
+    this.lastBeamVisual = {
+      active,
+      blendMode: TRACTOR_BEAM_VISUAL_PROFILE.blendMode,
+      outerFillAlpha,
+      coreFillAlpha,
+      innerFillAlpha,
+      strandCount,
+      ringCount: rings,
+      hostileProjectilesAboveBeam: true
+    };
   }
 
   drawBeamLattice(layer, {
@@ -550,8 +573,8 @@ export class Hijacker {
     const length = Math.max(1, Math.hypot(beamDx, beamDy));
     const normalX = -beamDy / length;
     const normalY = beamDx / length;
-    const laneCount = active ? 7 : 5;
-    const segmentCount = active ? 7 : 5;
+    const laneCount = active ? 4 : 5;
+    const segmentCount = 5;
 
     for (let i = 0; i < laneCount; i += 1) {
       const lane = laneCount === 1 ? 0 : (i / (laneCount - 1) - 0.5);
@@ -570,10 +593,10 @@ export class Hijacker {
     layer.stroke({
       color: hotColor,
       width: active ? 2.4 : 1.6,
-      alpha: active ? 0.44 + shimmer * 0.18 : 0.16 + progress * 0.34
+      alpha: active ? 0.25 + shimmer * 0.08 : 0.14 + progress * 0.28
     });
 
-    const rungCount = active ? 8 : 5;
+    const rungCount = 5;
     for (let i = 1; i <= rungCount; i += 1) {
       const t = i / (rungCount + 1);
       const centerX = beamDx * t;
@@ -586,17 +609,17 @@ export class Hijacker {
     layer.stroke({
       color: active ? 0xffffff : edgeColor,
       width: active ? 1.8 : 1.2,
-      alpha: active ? 0.26 : 0.12 + progress * 0.24
+      alpha: active ? 0.16 : 0.1 + progress * 0.2
     });
 
     if (!active) return;
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       const t = ((now * 0.0007 + i * 0.2) % 1);
       const x = beamDx * t;
       const y = tipY + beamDy * t;
       const r = 4 + shimmer * 3 + i * 0.4;
       layer.circle(x + Math.sin(now * 0.018 + i) * 10, y, r);
-      layer.fill({ color: i % 2 ? coreColor : 0xffffff, alpha: 0.22 });
+      layer.fill({ color: i % 2 ? coreColor : 0xffffff, alpha: 0.16 });
     }
   }
 
@@ -628,7 +651,7 @@ export class Hijacker {
     hotColor,
     shimmer
   }) {
-    const lockAlpha = active ? 0.58 : 0.18 + progress * 0.34;
+    const lockAlpha = active ? 0.4 : 0.16 + progress * 0.28;
     const lockR = Math.max(24, coneWidth * (active ? 0.24 : 0.18 + progress * 0.08));
     const spin = now * (active ? -0.006 : -0.003);
     for (let i = 0; i < 4; i += 1) {
@@ -644,10 +667,10 @@ export class Hijacker {
       layer.moveTo(innerX, innerY);
       layer.lineTo(outerX, outerY);
     }
-    layer.stroke({ color: hotColor, width: active ? 1.9 : 1.2, alpha: active ? 0.42 + shimmer * 0.1 : 0.12 + progress * 0.24 });
+    layer.stroke({ color: hotColor, width: active ? 1.6 : 1.2, alpha: active ? 0.3 + shimmer * 0.08 : 0.1 + progress * 0.2 });
     if (active) {
       layer.circle(endX, endY, 5 + shimmer * 3);
-      layer.fill({ color: 0xffffff, alpha: 0.32 });
+      layer.fill({ color: 0xffffff, alpha: 0.22 });
     }
   }
 
@@ -666,6 +689,7 @@ export class Hijacker {
 
   clearBeamVisual() {
     if (this.beamLayer) this.beamLayer.clear();
+    if (this.lastBeamVisual) this.lastBeamVisual = { ...this.lastBeamVisual, active: false };
   }
 
   getTractorState() {
@@ -682,6 +706,9 @@ export class Hijacker {
       state: this.beamState,
       remainingMs: Math.round(remainingMs),
       pullActive: this.beamPullActive,
+      health: Math.max(0, Math.round(this.health)),
+      maxHealth: Math.max(0, Math.round(this.maxHealth)),
+      visual: this.lastBeamVisual ? { ...this.lastBeamVisual } : null,
       hitFeedback: this.hitFeedbackLayer?._debugHitFeedback || this.lastHitFeedback,
       healthBar: this.healthBar?._debugLayout || null,
       target: {

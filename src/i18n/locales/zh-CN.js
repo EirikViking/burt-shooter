@@ -893,7 +893,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': '豪华擦弹破击者',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': '在一次 250,000 分排名模式中触发 3 次 Graze Break。',
   'No Repair Receipts': '无维修账单',
-  'Clear a 250,000-point ranked run without losing a life.': 'Bu shiqu shengming bing wancheng yici 250,000 fen paiming chuji.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': '在同一局排名模式中，保住所有生命，直到通过第 10 区并达到 250,000 分。',
   'Full-Hull Fireworks': '满甲烟火',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Yi shengyu 3 tiao ming bing zhishao 250,000 fen wancheng paiming chuji.',
   'Swarm Taxonomist': '虫群分类学家',

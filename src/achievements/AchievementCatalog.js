@@ -343,7 +343,7 @@ export const LEGEND_ACHIEVEMENTS = Object.freeze([
   {
     id: LEGEND_ACHIEVEMENT_IDS.NO_REPAIR_RECEIPTS,
     name: 'No Repair Receipts',
-    description: 'Clear a 250,000-point ranked run without losing a life.',
+    description: 'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.',
     type: 'milestone',
     metric: 'noRepairReceiptsLifeLosses',
     target: 0,

@@ -897,7 +897,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': 'Graze Breaker Deluxe',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': '250,000점 랭크 런에서 Graze Break를 3회 발동하세요.',
   'No Repair Receipts': '수리 영수증 없음',
-  'Clear a 250,000-point ranked run without losing a life.': 'Moksum-eul ilhji ango 250,000 jeom raengkeu reon-eul keulliohaseyo.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': '한 번의 랭크 게임에서 모든 목숨을 유지한 채 섹터 10을 클리어하고 250,000점을 달성하세요.',
   'Full-Hull Fireworks': '풀 헐 불꽃놀이',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Moksum 3gae-reul namgigo 250,000 jeom isang-euro raengkeu reon-eul keulliohaseyo.',
   'Swarm Taxonomist': '스웜 분류학자',

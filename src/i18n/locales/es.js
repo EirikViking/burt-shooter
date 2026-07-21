@@ -963,7 +963,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': 'Graze Breaker Deluxe',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': 'Activa 3 Graze Breaks en una partida de 250.000 puntos.',
   'No Repair Receipts': 'Sin recibos de reparación',
-  'Clear a 250,000-point ranked run without losing a life.': 'Completa una partida clasificada de 250.000 puntos sin perder una vida.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': 'Conserva todas las vidas hasta completar el Sector 10 y alcanzar 250.000 puntos en una misma partida clasificatoria.',
   'Full-Hull Fireworks': 'Fuegos de casco completo',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Completa una partida clasificada con 3 vidas restantes y al menos 250.000 puntos.',
   'Swarm Taxonomist': 'Taxonomista del enjambre',

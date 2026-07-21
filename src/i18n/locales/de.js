@@ -958,7 +958,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': 'Graze-Breaker Deluxe',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': 'Loese 3 Graze Breaks in einem 250.000-Punkte-Run aus.',
   'No Repair Receipts': 'Keine Reparaturbelege',
-  'Clear a 250,000-point ranked run without losing a life.': 'Schliesse einen 250.000-Punkte-Run ab, ohne ein Leben zu verlieren.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': 'Behalte alle Leben, bis du in einem gewerteten Run Sektor 10 abgeschlossen und 250.000 Punkte erreicht hast.',
   'Full-Hull Fireworks': 'Vollhuellen-Feuerwerk',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Schliesse einen gewerteten Run mit 3 Leben uebrig und mindestens 250.000 Punkten ab.',
   'Swarm Taxonomist': 'Schwarm-Taxonom',

@@ -112,6 +112,12 @@ const noRepairClear = idsFor({
   runCleared: true,
   lifeLosses: 0
 }, {});
+const noRepairAchievement = LEGEND_ACHIEVEMENTS.find((achievement) => achievement.id === 'ACH_NO_REPAIR_RECEIPTS');
+assert.equal(
+  noRepairAchievement?.description,
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.',
+  'No Repair Receipts should state the complete qualification window explicitly.'
+);
 assert.ok(
   noRepairClear.includes('ACH_NO_REPAIR_RECEIPTS'),
   'No Repair Receipts should unlock on a cleared 250k no-life-loss ranked run.'

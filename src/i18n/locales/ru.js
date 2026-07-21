@@ -979,7 +979,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': 'Graze Breaker Deluxe',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': 'Активируй 3 Graze Break в забеге на 250 000 очков.',
   'No Repair Receipts': 'Без ремонтных чеков',
-  'Clear a 250,000-point ranked run without losing a life.': 'Zavershi reytingovyy zabeg na 250 000 ochkov, ne poteryav zhizn.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': 'Сохрани все жизни, пока не пройдёшь сектор 10 и не наберёшь 250 000 очков в одном рейтинговом забеге.',
   'Full-Hull Fireworks': 'Фейерверк полного корпуса',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Zavershi reytingovyy zabeg s 3 zhiznyami v zapase i minimum 250 000 ochkov.',
   'Swarm Taxonomist': 'Таксономист роя',

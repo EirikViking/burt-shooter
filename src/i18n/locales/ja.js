@@ -897,7 +897,7 @@ const sourceText = Object.freeze({
   'Graze Breaker Deluxe': 'Graze Breaker Deluxe',
   'Trigger 3 Graze Breaks in a 250,000-point ranked run.': '250,000点のランク run で Graze Break を3回発動する。',
   'No Repair Receipts': '修理レシートなし',
-  'Clear a 250,000-point ranked run without losing a life.': 'Raifu o ushinawazu 250,000 ten no ranku ran o kuria.',
+  'Keep every life until you clear Sector 10 and reach 250,000 points in one ranked run.': '1回のランクランで、ライフを失わずにセクター10をクリアし、250,000点に到達する。',
   'Full-Hull Fireworks': '満タン船体花火',
   'Clear a ranked run with 3 lives remaining and at least 250,000 points.': 'Raifu 3 tsu o nokoshi 250,000 ten ijou de ranku ran o kuria.',
   'Swarm Taxonomist': 'スワーム分類学者',
