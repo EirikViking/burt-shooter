@@ -50,12 +50,29 @@ class Particle {
     } else {
       this.isDebris = false;
       this.sprite.clear();
-      this.sprite.circle(0, 0, size);
-      this.sprite.fill({ color: color });
+      const speed = Math.max(0.1, Math.hypot(vx, vy));
+      const shardLength = Math.max(2.4, Math.min(15, size * (1.35 + Math.min(1.45, speed * 0.16))));
+      const shardWidth = Math.max(0.8, Math.min(6, size * 0.72));
+      this.sprite.poly([
+        -shardLength * 0.34, 0,
+        -shardLength * 0.04, -shardWidth,
+        shardLength, 0,
+        -shardLength * 0.04, shardWidth
+      ]);
+      this.sprite.fill({ color, alpha: 0.92 });
+      this.sprite.poly([
+        -shardLength * 0.12, 0,
+        shardLength * 0.48, -Math.max(0.35, shardWidth * 0.24),
+        shardLength * 0.82, 0,
+        shardLength * 0.48, Math.max(0.35, shardWidth * 0.24)
+      ]);
+      this.sprite.fill({ color: 0xffffff, alpha: 0.78 });
       this.sprite.x = x;
       this.sprite.y = y;
+      this.sprite.rotation = Math.atan2(vy, vx);
       this.sprite.alpha = 1;
       this.sprite.scale.set(1);
+      this.sprite.blendMode = 'add';
       this.sprite.visible = true;
       this.bitmap.visible = false;
     }
@@ -84,8 +101,9 @@ class Particle {
       this.sprite.x = this.x;
       this.sprite.y = this.y;
       const lifePercent = this.age / this.lifetime;
-      this.sprite.alpha = 1 - lifePercent;
-      this.sprite.scale.set(1 - lifePercent * 0.5);
+      this.sprite.rotation = Math.atan2(this.vy, this.vx) + this.rotationSpeed * this.age * 0.08;
+      this.sprite.alpha = Math.pow(1 - lifePercent, 1.35);
+      this.sprite.scale.set(1 - lifePercent * 0.42, 1 - lifePercent * 0.68);
     }
   }
 }
@@ -162,17 +180,18 @@ export class ParticleManager {
   }
 
   createExplosion(x, y, color, intensity = 1) {
-    const particleCount = Math.floor(20 * intensity);
-    const speedMult = intensity;
-    const sizeMult = intensity;
+    const visualIntensity = Math.max(0.2, Number(intensity) || 1);
+    const particleCount = Math.min(64, Math.max(5, Math.floor(18 * visualIntensity)));
+    const speedMult = Math.min(2.35, 0.72 + Math.sqrt(visualIntensity) * 0.52);
+    const sizeMult = Math.min(1.7, 0.72 + Math.sqrt(visualIntensity) * 0.38);
 
     for (let i = 0; i < particleCount; i++) {
-      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.3 - 0.15);
-      const speed = (2 + Math.random() * 3) * speedMult;
+      const angle = (Math.PI * 2 * i) / particleCount + (Math.random() * 0.62 - 0.31);
+      const speed = (1.6 + Math.random() * 4.2) * speedMult;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
       const size = (2 + Math.random() * 3) * sizeMult;
-      const lifetime = 30 + Math.random() * 30;
+      const lifetime = 22 + Math.random() * 34;
 
       if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
         break;
@@ -180,7 +199,7 @@ export class ParticleManager {
     }
 
     // Debris
-    const debrisCount = Math.floor((2 + Math.floor(Math.random() * 3)) * intensity);
+    const debrisCount = Math.min(9, Math.floor((2 + Math.floor(Math.random() * 3)) * Math.sqrt(visualIntensity)));
     for (let i = 0; i < debrisCount; i++) {
       const tex = GameAssets.getRandomPart();
       if (tex) {
@@ -191,6 +210,30 @@ export class ParticleManager {
         this.spawnParticle(x, y, vx, vy, 0xffffff, 5 * sizeMult, 60, tex);
       }
     }
+  }
+
+  createCelebrationStarburst(x, y, color = 0xffef7e, accent = 0x7ee9ff) {
+    this.createRadialBurst(x, y, color, {
+      count: 18,
+      intensity: 1.05,
+      minSpeed: 2.8,
+      maxSpeed: 7.4,
+      size: 2.25,
+      lifetime: 34,
+      jitter: 0.12,
+      alternateColor: 0xffffff
+    });
+    this.createRadialBurst(x, y, accent, {
+      count: 12,
+      intensity: 0.72,
+      minSpeed: 1.2,
+      maxSpeed: 3.6,
+      size: 1.55,
+      lifetime: 46,
+      angleOffset: Math.PI / 12,
+      jitter: 0.18,
+      alternateColor: color
+    });
   }
 
   createRadialBurst(x, y, color, options = {}) {
@@ -273,17 +316,27 @@ export class ParticleManager {
 
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
-    this.createExplosion(x, y, color, 3.0);
-    // Add extra ring of slower particles
-    for (let i = 0; i < 30; i++) {
-      const angle = (Math.PI * 2 * i) / 30;
-      const speed = 1 + Math.random();
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed;
-      const size = 4 + Math.random() * 4;
-      const lifetime = 60 + Math.random() * 40;
-      this.spawnParticle(x, y, vx, vy, color, size, lifetime);
-    }
+    this.createRadialBurst(x, y, color, {
+      count: 52,
+      intensity: 1.45,
+      minSpeed: 2.2,
+      maxSpeed: 7.8,
+      size: 2.8,
+      lifetime: 54,
+      jitter: 0.34,
+      alternateColor: 0xffffff
+    });
+    this.createRadialBurst(x, y, color, {
+      count: 28,
+      intensity: 0.88,
+      minSpeed: 0.65,
+      maxSpeed: 2.6,
+      size: 3.7,
+      lifetime: 82,
+      angleOffset: Math.PI / 28,
+      jitter: 0.42,
+      alternateColor: 0xfff4b0
+    });
   }
 
   createLayeredBossExplosion(x, y, color, accent = 0xffffff, intensity = 1) {

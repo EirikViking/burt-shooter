@@ -314,7 +314,17 @@ export class SpectacleDirector {
     for (let ring = 0; ring < ringCount; ring += 1) {
       const phase = Math.max(0, Math.min(1, t * 1.36 - ring * 0.09));
       const radius = baseRadius * (0.56 + ring * 0.23 + phase * 0.72);
-      this.layer.circle(pulse.x, pulse.y, radius);
+      const segmentCount = pulse.performanceLite || pulse.reducedMotion
+        ? 4
+        : (pulse.kind === 'boss_death' || pulse.kind === 'miracle' ? 8 : 6);
+      const segmentSpan = Math.PI * 2 / segmentCount;
+      for (let segment = 0; segment < segmentCount; segment += 1) {
+        const start = rotation * (ring % 2 ? -0.18 : 0.14)
+          + ring * 0.13
+          + segment * segmentSpan;
+        const fillRatio = 0.42 + ((ring + segment) % 3) * 0.1;
+        this.layer.arc(pulse.x, pulse.y, radius, start, start + segmentSpan * fillRatio);
+      }
       this.layer.stroke({
         color: ring % 2 ? pulse.accent : pulse.color,
         width: Math.max(0.8, (4.4 - ring * 0.48) * (1 - phase * 0.56)),
@@ -463,9 +473,20 @@ export class SpectacleDirector {
     }
 
     const coreRadius = Math.max(3, baseRadius * (0.095 + (1 - t) * 0.06));
-    this.layer.circle(pulse.x, pulse.y, coreRadius);
+    const corePoints = [];
+    for (let point = 0; point < 12; point += 1) {
+      const angle = rotation * 0.34 + point * Math.PI / 6;
+      const radius = coreRadius * (point % 2 ? 0.52 : 1);
+      corePoints.push(pulse.x + Math.cos(angle) * radius, pulse.y + Math.sin(angle) * radius);
+    }
+    this.layer.poly(corePoints);
     this.layer.fill({ color: 0xffffff, alpha: 0.28 * alpha });
-    this.layer.circle(pulse.x, pulse.y, coreRadius * 0.56);
+    this.layer.poly([
+      pulse.x, pulse.y - coreRadius * 0.58,
+      pulse.x + coreRadius * 0.58, pulse.y,
+      pulse.x, pulse.y + coreRadius * 0.58,
+      pulse.x - coreRadius * 0.58, pulse.y
+    ]);
     this.layer.fill({ color: pulse.color, alpha: 0.55 * alpha });
   }
 

@@ -1742,6 +1742,16 @@ export class PlayScene {
     return true;
   }
 
+  deferCenterToastForWaveBonus(durationMs = 0) {
+    const display = this.activeCenterToast;
+    if (!display?.__toastMeta) return false;
+    const type = display.__toastMeta.type || 'generic';
+    if (type === 'boss' || type === 'boss_intro' || type === 'run_clear') return false;
+    return this.deferActiveToastDisplay(display, 'center', Math.max(0, Number(durationMs) || 0) + 180, {
+      minRemainingMs: 1100
+    });
+  }
+
   finishPersonalBestCelebration(reason = 'complete', { preserveCarry = false } = {}) {
     const active = this.activePersonalBestCelebration;
     if (!active) return false;
@@ -5148,6 +5158,15 @@ export class PlayScene {
     const ringCount = compact ? 1 : 3;
     const ringRadius = compact ? 155 : 220;
     const effectY = compact ? height * 0.38 : height * 0.35;
+    const phases = {
+      entry: compact ? 220 : 400,
+      hold: compact ? 650 : 1800,
+      exit: compact ? 350 : 600,
+      flashPeak: compact ? 90 : 150
+    };
+    const totalDuration = phases.entry + phases.hold + phases.exit;
+    this.deferCenterToastForWaveBonus(totalDuration);
+    this.reserveMessageFocus(totalDuration + 300, { priority: 8, slots: ['center'] });
 
     // Create dedicated isolated effect container
     const effectContainer = new PIXI.Container();
@@ -5186,11 +5205,17 @@ export class PlayScene {
     }
     effectContainer.addChild(sweepLayer);
 
-    // Outer glow rings for extra wow
+    // Segmented scan arcs keep the celebration luminous without a giant target-ring silhouette.
     for (let i = 0; i < ringCount; i++) {
       const outerRing = new PIXI.Graphics();
-      outerRing.circle(0, 0, ringRadius + i * 30);
-      outerRing.stroke({ color: 0x00ff00, width: 2, alpha: compact ? 0.22 : 0.3 - i * 0.1 });
+      const radius = ringRadius + i * 30;
+      const segments = compact ? 8 : 12;
+      for (let segment = 0; segment < segments; segment += 1) {
+        const start = (Math.PI * 2 * segment) / segments + i * 0.08;
+        const end = start + (Math.PI * 2 / segments) * 0.56;
+        outerRing.arc(0, 0, radius, start, end);
+      }
+      outerRing.stroke({ color: i % 2 ? 0x7ee9ff : 0x00ff66, width: compact ? 1.4 : 2, alpha: compact ? 0.2 : 0.28 - i * 0.065 });
       effectContainer.addChild(outerRing);
     }
 
@@ -5212,17 +5237,22 @@ export class PlayScene {
     innerGlow.stroke({ color: 0xffff00, width: 2, alpha: 0.3 });
     effectContainer.addChild(innerGlow);
 
-    // Star burst decoration
-    const starCount = compact ? 4 : 8;
-    for (let i = 0; i < starCount; i++) {
-      const angle = (Math.PI * 2 * i) / starCount;
-      const star = new PIXI.Graphics();
-      star.moveTo(0, 0);
-      star.lineTo(Math.cos(angle) * (compact ? 18 : 25), Math.sin(angle) * (compact ? 18 : 25));
-      star.stroke({ color: 0xffff00, width: 2, alpha: compact ? 0.45 : 0.7 });
-      star.x = Math.cos(angle) * (compact ? 150 : 180);
-      star.y = Math.sin(angle) * (compact ? 38 : 50);
-      effectContainer.addChild(star);
+    // Prismatic glints replace the old single-line star spokes.
+    const glintCount = compact ? 4 : 8;
+    for (let i = 0; i < glintCount; i++) {
+      const angle = (Math.PI * 2 * i) / glintCount;
+      const glint = new PIXI.Graphics();
+      const glintLength = compact ? 13 : 18;
+      const glintWidth = compact ? 2.5 : 3.5;
+      glint.poly([0, -glintLength, glintWidth, -glintWidth, glintLength, 0, glintWidth, glintWidth, 0, glintLength, -glintWidth, glintWidth, -glintLength, 0, -glintWidth, -glintWidth]);
+      glint.fill({ color: i % 2 ? 0x7ee9ff : 0xffef7e, alpha: compact ? 0.5 : 0.7 });
+      glint.poly([0, -glintLength * 0.5, 1.2, 0, 0, glintLength * 0.5, -1.2, 0]);
+      glint.fill({ color: 0xffffff, alpha: 0.74 });
+      glint.x = Math.cos(angle) * (compact ? 150 : 180);
+      glint.y = Math.sin(angle) * (compact ? 38 : 50);
+      glint.rotation = angle * 0.5;
+      glint.blendMode = 'add';
+      effectContainer.addChild(glint);
     }
 
     // Main label (WAVE CLEARED!) - Big and bold
@@ -5313,20 +5343,12 @@ export class PlayScene {
 
     // Animation sequence: explosive entry, hold, smooth exit
     let elapsed = 0;
-    const phases = {
-      entry: compact ? 220 : 400,    // Fast explosive entry
-      hold: compact ? 650 : 1800,    // Hold for readability
-      exit: compact ? 350 : 600,     // Smooth fade out
-      flashPeak: compact ? 90 : 150  // Flash duration
-    };
-    const totalDuration = phases.entry + phases.hold + phases.exit;
-    this.reserveMessageFocus(totalDuration + 300, { priority: 3 });
     effectContainer._debugWaveClearEffect = {
       compact,
       panelWidth,
       panelHeight,
       ringCount,
-      starCount,
+      glintCount,
       sweepBandCount,
       sweepChevronCount,
       subtitle: Boolean(subtitle),
@@ -5380,6 +5402,7 @@ export class PlayScene {
         effectContainer.destroy({ children: true });
         if (this.activeWaveBonusEffect === effectContainer) this.activeWaveBonusEffect = null;
         this.flushPendingRankUpPresentation('wave_bonus_complete');
+        this.processToastQueue();
       }
     };
 
@@ -14040,7 +14063,8 @@ export class PlayScene {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
     this.maybeRelocateActiveCenterToastForCombat(now);
-    let centerReady = !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+    const centerPresentationActive = Boolean(this.activeWaveBonusEffect?.parent || this.activeRankUpPresentation?.parent);
+    let centerReady = !centerPresentationActive && !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
       ? this.peekReadyToast(this.toastQueue, now)
       : null;
     let topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
@@ -14049,7 +14073,7 @@ export class PlayScene {
     if (centerReady && this.shouldRelocateCenterToastForCombat(centerReady)) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.queueCombatRelocatedToast(entry, now);
-      centerReady = !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
+      centerReady = !centerPresentationActive && !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
         ? this.peekReadyToast(this.toastQueue, now)
         : null;
       topReady = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
@@ -14076,7 +14100,7 @@ export class PlayScene {
         this.delayReadyToast(this.toastCornerQueue, cornerReady, 500, now);
       }
     }
-    if (!this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
+    if (!centerPresentationActive && !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center') && this.toastQueue.length > 0) {
       const entry = this.dequeueReadyToast(this.toastQueue, now);
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
     }
@@ -14468,10 +14492,21 @@ export class PlayScene {
     const rewardPill = addPill(data.reward, textLeft, pillsY, pillMaxWidth, accentColor);
     const dangerPill = addPill(data.danger, textLeft + pillMaxWidth + 8, pillsY, pillMaxWidth, secondaryAccent);
     const requestedY = Number(layout.y) || height * 0.28;
+    const augmentBounds = this.getVisibleHudBounds(this.hud?.tacticalAugmentGroup);
+    const dossierX = edgeAligned ? panelWidth / 2 + 18 : width / 2;
+    const overlapsAugmentColumns = augmentBounds
+      && dossierX + panelWidth / 2 >= augmentBounds.x
+      && dossierX - panelWidth / 2 <= augmentBounds.x + augmentBounds.width;
+    const augmentSafeY = overlapsAugmentColumns
+      ? augmentBounds.y + augmentBounds.height + panelHeight / 2 + 14
+      : 0;
     const bottomSafeMargin = compact ? 10 : 28;
     const topSafeY = panelHeight / 2 + (compact ? 160 : 108);
-    dossier.x = edgeAligned ? panelWidth / 2 + 18 : width / 2;
-    dossier.y = Math.min(height - panelHeight / 2 - bottomSafeMargin, Math.max(topSafeY, requestedY));
+    dossier.x = dossierX;
+    dossier.y = Math.min(
+      height - panelHeight / 2 - bottomSafeMargin,
+      Math.max(topSafeY, requestedY, augmentSafeY)
+    );
     dossier.alpha = 0;
     dossier.scale.set(0.94);
     dossier.__aceDossierFx = { burst, outerGlow };
@@ -14484,6 +14519,8 @@ export class PlayScene {
       placement: edgeAligned ? 'left-edge' : 'upper-center-edge-safe',
       x: Math.round(dossier.x),
       y: Math.round(dossier.y),
+      augmentSafeY: Math.round(augmentSafeY),
+      avoidsAugmentTray: !overlapsAugmentColumns || dossier.y - panelHeight / 2 >= augmentBounds.y + augmentBounds.height + 10,
       title: String(data.title || ''),
       primary: String(data.primary || ''),
       action: String(data.action || ''),
@@ -14503,6 +14540,17 @@ export class PlayScene {
     };
     this.uiOverlay.addChild(dossier);
     return dossier;
+  }
+
+  getVisibleHudBounds(node) {
+    if (!node || node.visible === false || node.alpha <= 0.05 || !node.getBounds) return null;
+    try {
+      const bounds = node.getBounds();
+      if (!Number.isFinite(bounds?.x) || !Number.isFinite(bounds?.y) || bounds.width <= 0 || bounds.height <= 0) return null;
+      return { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height };
+    } catch {
+      return null;
+    }
   }
 
   showToastNow(message, options, slot) {
@@ -19382,8 +19430,22 @@ export class PlayScene {
 
   triggerShockwave(x, y, color = 0xffff00) {
     const ring = new PIXI.Graphics();
-    ring.circle(0, 0, 10);
-    ring.stroke({ color, width: 3, alpha: 0.9 });
+    const segmentCount = 12;
+    for (let index = 0; index < segmentCount; index += 1) {
+      const start = (Math.PI * 2 * index) / segmentCount + (index % 2) * 0.025;
+      const end = start + (Math.PI * 2 / segmentCount) * (index % 3 === 0 ? 0.46 : 0.68);
+      ring.arc(0, 0, 10, start, end);
+    }
+    ring.stroke({ color, width: 2.4, alpha: 0.86 });
+    ring.poly([0, -7, 7, 0, 0, 7, -7, 0]);
+    ring.stroke({ color: 0xffffff, width: 0.8, alpha: 0.38 });
+    for (let index = 0; index < 4; index += 1) {
+      const angle = index * Math.PI / 2 + Math.PI / 4;
+      ring.moveTo(Math.cos(angle) * 8.5, Math.sin(angle) * 8.5);
+      ring.lineTo(Math.cos(angle) * 13, Math.sin(angle) * 13);
+    }
+    ring.stroke({ color, width: 1.2, alpha: 0.62 });
+    ring.blendMode = 'add';
     ring.x = x;
     ring.y = y;
     this.uiOverlay.addChild(ring);
@@ -19391,7 +19453,8 @@ export class PlayScene {
     const ticker = (delta) => {
       radius += delta.deltaTime * 2.4;
       ring.scale.set(radius / 10);
-      ring.alpha -= 0.02 * delta.deltaTime;
+      ring.rotation += 0.006 * delta.deltaTime;
+      ring.alpha -= 0.022 * delta.deltaTime;
       if (ring.alpha <= 0) {
         this.game.app.ticker.remove(ticker);
         if (ring.parent) ring.parent.removeChild(ring);
@@ -19453,10 +19516,18 @@ export class PlayScene {
     const draw = (t = 0) => {
       sigil.clear();
       const spin = t * (style.spin || 0.8);
-      sigil.circle(bossX, bossY, radius * (0.42 + t * 0.42));
-      sigil.stroke({ color: baseColor, width: 5, alpha: 0.34 * (1 - t) });
-      sigil.circle(bossX, bossY, radius * (0.72 + t * 0.32));
-      sigil.stroke({ color: accent, width: 2.5, alpha: 0.24 * (1 - t) });
+      const innerRadius = radius * (0.42 + t * 0.42);
+      const outerRadius = radius * (0.72 + t * 0.32);
+      for (let segment = 0; segment < 12; segment += 1) {
+        const start = (Math.PI * 2 * segment) / 12 + spin * 0.35;
+        sigil.arc(bossX, bossY, innerRadius, start, start + Math.PI * 0.105);
+      }
+      sigil.stroke({ color: baseColor, width: 4.2, alpha: 0.34 * (1 - t) });
+      for (let segment = 0; segment < 16; segment += 1) {
+        const start = (Math.PI * 2 * segment) / 16 - spin * 0.2;
+        sigil.arc(bossX, bossY, outerRadius, start, start + Math.PI * 0.072);
+      }
+      sigil.stroke({ color: accent, width: 2.2, alpha: 0.25 * (1 - t) });
       for (let i = 0; i < spokes; i += 1) {
         const angle = (Math.PI * 2 * i) / spokes + spin;
         const inner = radius * (0.28 + (i % 2) * 0.08);

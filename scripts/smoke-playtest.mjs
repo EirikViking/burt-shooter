@@ -301,6 +301,7 @@ function summarizeSmokeReport(report, blockingIssues) {
       '06-game-over.png',
       '08-mobile-intro.png',
       '10-level3-gameplay.png',
+      '14a-boss-impact.png',
       '14-boss-defeated.png',
       '15-level-2-start.png'
     ],
@@ -810,6 +811,8 @@ async function runSmoke() {
       boss.finishGateUntilMs = 0;
       boss.takeDamage((boss.health || boss.maxHealth || 1) + 9999);
     });
+    await bossPage.waitForTimeout(180);
+    await bossPage.screenshot({ path: path.join(outputDir, '14a-boss-impact.png'), fullPage: true });
     await bossPage.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.state === 'LEVEL_COMPLETE', null, { timeout: 10000 });
     await bossPage.waitForFunction(() => {
       try {

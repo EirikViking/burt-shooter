@@ -1263,7 +1263,9 @@ export class HUD {
     if (this.tacticalAugmentItems[index]) return this.tacticalAugmentItems[index];
 
     const container = new PIXI.Container();
+    const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
+    const accentRail = new PIXI.Graphics();
     const emblem = new PIXI.Graphics();
     const icon = new PIXI.Sprite();
     icon.anchor.set(0.5);
@@ -1284,10 +1286,10 @@ export class HUD {
       align: 'center'
     });
     stack.anchor.set(0.5);
-    container.addChild(bg, emblem, icon, label, stackBg, stack);
+    container.addChild(glow, bg, accentRail, emblem, icon, label, stackBg, stack);
     this.tacticalAugmentList.addChild(container);
 
-    const item = { container, bg, emblem, icon, label, stackBg, stack };
+    const item = { container, glow, bg, accentRail, emblem, icon, label, stackBg, stack };
     this.tacticalAugmentItems[index] = item;
     return item;
   }
@@ -1333,13 +1335,34 @@ export class HUD {
 
   updateTacticalAugmentItem(item, entry, width, height, compact, overflow = false) {
     const color = Number(entry?.color) || 0x37f5ff;
+    const isFusion = entry?.category === 'fusion';
     const iconX = compact ? 13 : 15;
     const iconY = height / 2;
     const iconSize = compact ? 17 : 20;
+    item.glow.clear();
+    item.glow.roundRect(-2, -2, width + 4, height + 4, 7);
+    item.glow.fill({ color, alpha: overflow ? 0.035 : isFusion ? 0.1 : 0.055 });
+    item.glow.stroke({ color, width: isFusion ? 2 : 1.2, alpha: overflow ? 0.12 : isFusion ? 0.26 : 0.16 });
+    item.glow.blendMode = 'add';
     item.bg.clear();
-    item.bg.roundRect(0, 0, width, height, 5);
-    item.bg.fill({ color: 0x03101d, alpha: overflow ? 0.72 : 0.64 });
-    item.bg.stroke({ color, width: overflow ? 1.2 : 1, alpha: overflow ? 0.78 : 0.54 });
+    item.bg.roundRect(0, 0, width, height, 6);
+    item.bg.fill({ color: isFusion ? 0x090b1d : 0x03101d, alpha: overflow ? 0.78 : 0.84 });
+    item.bg.stroke({ color, width: overflow ? 1.2 : isFusion ? 1.35 : 1, alpha: overflow ? 0.72 : isFusion ? 0.72 : 0.46 });
+    item.bg.roundRect(3, 3, width - 6, height - 6, 4);
+    item.bg.fill({ color, alpha: overflow ? 0.025 : isFusion ? 0.075 : 0.035 });
+    item.bg.stroke({ color: 0xffffff, width: 0.6, alpha: overflow ? 0.08 : 0.13 });
+
+    item.accentRail.clear();
+    item.accentRail.roundRect(1, 5, isFusion ? 3 : 2, height - 10, 1.5);
+    item.accentRail.fill({ color, alpha: overflow ? 0.46 : 0.9 });
+    item.accentRail.moveTo(width - 12, 3);
+    item.accentRail.lineTo(width - 4, 3);
+    item.accentRail.lineTo(width - 4, 9);
+    item.accentRail.stroke({ color: isFusion ? 0xffffff : color, width: 1, alpha: isFusion ? 0.48 : 0.28 });
+    if (isFusion && !overflow) {
+      item.accentRail.poly([width - 15, height - 4, width - 10, height - 9, width - 5, height - 4, width - 10, height - 1]);
+      item.accentRail.fill({ color: 0x7ee9ff, alpha: 0.62 });
+    }
 
     item.icon.visible = false;
     item.emblem.visible = !overflow;
@@ -1354,9 +1377,11 @@ export class HUD {
         item.icon.y = iconY;
         item.emblem.clear();
         item.emblem.circle(iconX, iconY, iconSize * 0.62);
-        item.emblem.fill({ color: 0x03101d, alpha: 0.82 });
+        item.emblem.fill({ color: 0x03101d, alpha: 0.94 });
+        item.emblem.circle(iconX, iconY, iconSize * 0.78);
+        item.emblem.stroke({ color, width: isFusion ? 1.6 : 1, alpha: isFusion ? 0.34 : 0.18 });
         item.emblem.circle(iconX, iconY, iconSize * 0.61);
-        item.emblem.stroke({ color, width: 1, alpha: 0.72 });
+        item.emblem.stroke({ color, width: isFusion ? 1.45 : 1, alpha: isFusion ? 0.92 : 0.72 });
       } else {
         this.drawTacticalAugmentEmblem(item.emblem, entry.category, color, iconX, iconY, iconSize * 0.62);
       }
@@ -1488,9 +1513,11 @@ export class HUD {
     const trayRows = Math.max(1, Math.ceil(visibleEntries.length / columns));
     const trayHeight = doctrineHeight + 8 + trayRows * itemHeight + Math.max(0, trayRows - 1) * gap;
     this.tacticalAugmentBackdrop.clear();
-    this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 6);
-    this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.34 });
-    this.tacticalAugmentBackdrop.stroke({ color: 0x37f5ff, width: 0.8, alpha: 0.2 });
+    this.tacticalAugmentBackdrop.roundRect(0, 0, trayWidth, trayHeight, 8);
+    this.tacticalAugmentBackdrop.fill({ color: 0x010711, alpha: 0.54 });
+    this.tacticalAugmentBackdrop.stroke({ color: 0x37f5ff, width: 0.8, alpha: 0.22 });
+    this.tacticalAugmentBackdrop.roundRect(4, 4, trayWidth - 8, trayHeight - 8, 5);
+    this.tacticalAugmentBackdrop.stroke({ color: 0xffffff, width: 0.5, alpha: 0.08 });
     this.tacticalDoctrineTitle.visible = Boolean(doctrine);
     if (doctrine) {
       this.tacticalDoctrineTitle.text = translateText('{name} // {stage}', {

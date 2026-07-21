@@ -3,8 +3,6 @@
  * Keeps public-facing humor focused on arcade shooter tropes.
  */
 
-import * as PIXI from 'pixi.js';
-import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 import { NOVA_HUMOR_POOLS } from '../i18n/novaHumorSourceText.js';
 
@@ -172,101 +170,27 @@ class TauntDirector {
     }
 
     showTaunt(text) {
-        if (!this.scene || !this.scene.container) return;
-
-        const container = new PIXI.Container();
-        container.zIndex = 900;
-        container.x = this.scene.game.getWidth() / 2;
-        container.y = this.scene.game.getHeight() / 2 - 50;
-
-        const glitchLayers = [];
-        const colors = [0xff00ff, 0x00ffff, 0xffff00];
-
-        for (let i = 0; i < 3; i++) {
-            const glitchText = createText(text, {
-                fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-                fontSize: 32,
-                fill: colors[i],
-                fontWeight: 'bold',
-                stroke: '#000000',
-                strokeThickness: 4
-            });
-            glitchText.anchor.set(0.5);
-            glitchText.alpha = 0.3 + i * 0.2;
-            glitchText.x = (i - 1) * 2;
-            glitchText.y = (i - 1) * 2;
-            container.addChild(glitchText);
-            glitchLayers.push(glitchText);
-        }
-
-        const mainText = createText(text, {
-            fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-            fontSize: 36,
-            fill: '#ffffff',
-            fontWeight: 'bold',
-            stroke: '#000000',
-            strokeThickness: 5
+        if (!this.scene?.enqueueToast) return;
+        const width = this.scene.game.getWidth();
+        const y = Math.max(154, this.scene.game.getHeight() * 0.17);
+        this.scene.enqueueToast(text, {
+            slot: 'top',
+            type: 'cabinetTaunt',
+            priority: 1,
+            duration: 1500,
+            fontSize: width < 720 ? 17 : 22,
+            fill: '#f8fbff',
+            accent: 0xffef7e,
+            signalPlate: true,
+            y,
+            maxWidth: Math.min(520, width * 0.62),
+            onShown: () => this.scene?.particleManager?.createCelebrationStarburst?.(
+                width / 2,
+                y,
+                0xffef7e,
+                0x7ee9ff
+            )
         });
-        mainText.anchor.set(0.5);
-        container.addChild(mainText);
-
-        if (this.scene.particleManager) {
-            this.scene.particleManager.createExplosion(container.x, container.y, 0xffff00, 12);
-        }
-
-        this.scene.container.addChild(container);
-
-        let time = 0;
-        const duration = 1500;
-        const fadeIn = 250;
-        const hold = 1000;
-        const fadeOut = 250;
-
-        container.alpha = 0;
-        container.scale.set(0.8);
-
-        const ticker = (delta) => {
-            time += delta.deltaTime * 16.67;
-
-            if (time < fadeIn + hold) {
-                glitchLayers.forEach((layer, i) => {
-                    if (layer && !layer.destroyed) {
-                        layer.x = (i - 1) * 2 + (Math.random() - 0.5) * 4;
-                        layer.y = (i - 1) * 2 + (Math.random() - 0.5) * 4;
-                    }
-                });
-            }
-
-            if (!container || container.destroyed) {
-                this.scene.game.app.ticker.remove(ticker);
-                const idx = this.activeTickers.indexOf(ticker);
-                if (idx >= 0) this.activeTickers.splice(idx, 1);
-                return;
-            }
-
-            if (time < fadeIn) {
-                const progress = time / fadeIn;
-                container.alpha = progress;
-                container.scale.set(0.8 + progress * 0.2);
-            } else if (time < fadeIn + hold) {
-                container.alpha = 1;
-                container.scale.set(1 + Math.sin(time * 0.01) * 0.05);
-            } else if (time < duration) {
-                const progress = (time - fadeIn - hold) / fadeOut;
-                container.alpha = 1 - progress;
-                container.scale.set(1 + progress * 0.2);
-            } else {
-                this.scene.game.app.ticker.remove(ticker);
-                const idx = this.activeTickers.indexOf(ticker);
-                if (idx >= 0) this.activeTickers.splice(idx, 1);
-                if (this.scene && this.scene.container) {
-                    this.scene.container.removeChild(container);
-                }
-            }
-        };
-
-        this.scene.game.app.ticker.add(ticker);
-        this.activeTickers.push(ticker);
     }
 
     cleanup() {

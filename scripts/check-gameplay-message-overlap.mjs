@@ -249,14 +249,33 @@ try {
     play.enemyManager.state = 'WAVE_BRIEFING';
     play.enemyManager.pendingWaveConfig = null;
     play.enemyManager.waveBriefingTimer = 0;
+    play.showFlawlessWaveCelebration(15, 71);
     play.showWaveBonusEffect(500, 'WAVE CLEARED!', { compact: true, subtitle: 'NEXT WAVE' });
     play.onRankUp((Number(game.rankIndex) || 0) + 1);
   });
+  await page.waitForTimeout(120);
+  const waveClearArbitrationState = await readState(page);
+  const waveClearCenterToast = (waveClearArbitrationState.toast?.active || []).find((toast) => toast.slot === 'center');
+  if (waveClearCenterToast) {
+    throw new Error(`center toast overlapped wave-clear presentation: ${JSON.stringify(waveClearCenterToast, null, 2)}`);
+  }
+  if ((waveClearArbitrationState.toast?.queued?.center || 0) < 1) {
+    throw new Error(`flawless streak was not preserved in the center queue: ${JSON.stringify(waveClearArbitrationState.toast, null, 2)}`);
+  }
   const progressionSamples = [];
+  let flawlessReleasedAfterPresentations = false;
   for (let index = 0; index < 52; index += 1) {
     await page.waitForTimeout(100);
     const state = await readState(page);
-    progressionSamples.push(state.toast?.progressionPresentation || {});
+    const presentation = state.toast?.progressionPresentation || {};
+    const activeFlawless = (state.toast?.active || []).find((toast) => toast.type === 'flawlessWave');
+    if (activeFlawless && !presentation.waveBonusActive && !presentation.rankUpActive) {
+      flawlessReleasedAfterPresentations = true;
+    }
+    if (activeFlawless && (presentation.waveBonusActive || presentation.rankUpActive)) {
+      throw new Error(`flawless streak overlapped a center progression presentation: ${JSON.stringify({ activeFlawless, presentation }, null, 2)}`);
+    }
+    progressionSamples.push(presentation);
   }
   if (progressionSamples.some((sample) => sample.waveBonusActive && sample.rankUpActive)) {
     throw new Error(`rank-up presentation overlapped wave-clear presentation: ${JSON.stringify(progressionSamples, null, 2)}`);
@@ -266,6 +285,9 @@ try {
   }
   if (!progressionSamples.some((sample) => sample.rankUpActive && !sample.waveBonusActive)) {
     throw new Error('queued rank-up presentation was not released after wave clear');
+  }
+  if (!flawlessReleasedAfterPresentations) {
+    throw new Error('queued flawless streak was not released after wave-clear and rank-up presentations');
   }
   const transitionDelayMs = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;

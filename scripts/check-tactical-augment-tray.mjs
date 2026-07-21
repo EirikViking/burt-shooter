@@ -174,6 +174,50 @@ try {
     failures.push(`desktop tray outside viewport: ${JSON.stringify(desktop.bounds?.tray)}`);
   }
 
+  const aceClearance = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const toBounds = (node) => {
+      const bounds = node?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
+    const display = play?.createAceContactDossier?.({
+      edgeAligned: true,
+      accent: 0xffd15c,
+      secondaryAccent: 0x7df9ff,
+      aceDossier: {
+        title: 'ACE CONTRACT',
+        primary: '#0026',
+        action: 'DESTROY THE GOLD-MARKED ACE',
+        reward: 'REWARD: SCORE CACHE',
+        danger: 'ATTACK: VOLLEY',
+        protocol: 'NEMESIS',
+        wing: 'RIVAL WING'
+      }
+    }, { width: 1920, height: 1080, maxWidth: 500, y: 270 });
+    if (display) display.alpha = 1;
+    const result = {
+      dossier: toBounds(display),
+      augments: toBounds(play?.hud?.tacticalAugmentGroup),
+      debug: structuredClone(display?.__aceDossierDebug || null)
+    };
+    return result;
+  });
+  aceClearance.screenshot = path.join(outputDir, 'ace-contract-augment-clearance-1920x1080.png');
+  await page.screenshot({ path: aceClearance.screenshot, fullPage: true });
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const display = play?.uiOverlay?.children?.find?.((child) => child?.label === 'ace_contact_dossier');
+    if (display?.parent) display.parent.removeChild(display);
+    display?.destroy?.({ children: true });
+  });
+  report.scenarios.aceClearance = aceClearance;
+  if (!aceClearance.dossier || !aceClearance.augments || overlaps(aceClearance.dossier, aceClearance.augments, 10)) {
+    failures.push(`Ace Contract overlaps active augments: ${JSON.stringify(aceClearance)}`);
+  }
+  if (aceClearance.debug?.avoidsAugmentTray !== true) {
+    failures.push(`Ace Contract did not report augment clearance: ${JSON.stringify(aceClearance.debug)}`);
+  }
+
   await page.setViewportSize({ width: 840, height: 640 });
   await page.waitForTimeout(320);
   const compact = await setAugments(page, desktopIds);
@@ -191,6 +235,41 @@ try {
   if (compact.bounds?.tray?.x < 0 || compact.bounds?.tray?.y < 0 || compact.bounds?.tray?.x + compact.bounds?.tray?.width > 840 || compact.bounds?.tray?.y + compact.bounds?.tray?.height > 640) {
     failures.push(`compact tray outside viewport: ${JSON.stringify(compact.bounds?.tray)}`);
   }
+  const compactAceClearance = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const toBounds = (node) => {
+      const bounds = node?.getBounds?.();
+      return bounds ? { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height } : null;
+    };
+    const display = play?.createAceContactDossier?.({
+      edgeAligned: true,
+      accent: 0xffd15c,
+      secondaryAccent: 0x7df9ff,
+      aceDossier: {
+        title: 'ACE CONTRACT', primary: '#0026', action: 'DESTROY THE GOLD-MARKED ACE',
+        reward: 'REWARD: SCORE CACHE', danger: 'ATTACK: VOLLEY'
+      }
+    }, { width: 840, height: 640, maxWidth: 460, y: 176 });
+    if (display) display.alpha = 1;
+    return {
+      dossier: toBounds(display),
+      augments: toBounds(play?.hud?.tacticalAugmentGroup),
+      debug: structuredClone(display?.__aceDossierDebug || null)
+    };
+  });
+  report.scenarios.compactAceClearance = compactAceClearance;
+  if (!compactAceClearance.dossier || !compactAceClearance.augments || overlaps(compactAceClearance.dossier, compactAceClearance.augments, 10)) {
+    failures.push(`compact Ace Contract overlaps active augments: ${JSON.stringify(compactAceClearance)}`);
+  }
+  if (compactAceClearance.debug?.avoidsAugmentTray !== true) {
+    failures.push(`compact Ace Contract did not report augment clearance: ${JSON.stringify(compactAceClearance.debug)}`);
+  }
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const display = play?.uiOverlay?.children?.find?.((child) => child?.label === 'ace_contact_dossier');
+    if (display?.parent) display.parent.removeChild(display);
+    display?.destroy?.({ children: true });
+  });
 
   await page.evaluate(() => window.__novaI18n?.setLanguagePreference?.('de'));
   await page.waitForTimeout(100);
