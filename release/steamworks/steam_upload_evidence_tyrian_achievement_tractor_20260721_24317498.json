@@ -1,0 +1,37 @@
+{
+  "recordedAt": "2026-07-21T15:41:19Z",
+  "sourceCommit": "655a4899659163d5cd43a42c9c83f1f6effe4fd2",
+  "packageReadinessCommit": "41944c8",
+  "buildVersion": "v2026-07-21_17-28-45",
+  "embeddedGitSha": "655a489",
+  "payload": {
+    "path": "release/desktop/win-unpacked",
+    "fileCount": 410,
+    "totalBytes": 955615992,
+    "manifestSha256": "732ab4c0e8c9b41535051d0dd772048d467027a81d1b1ff8cac9be72ef1ae198",
+    "executableSha256": "3bfe20bb799425a98c10fe1336b95de0619ed69c9e918ae042263c211f6328ba"
+  },
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "setLive": "sector-continue-test",
+    "previousTestBuildId": 24311168,
+    "buildId": 24317498,
+    "depotManifestId": "410195413635755475",
+    "publicBefore": 24311168,
+    "publicAfter": 24311168,
+    "testBuildBefore": 23782673,
+    "testBuildAfter": 23782673,
+    "exactlyOneUpload": true,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24317498)."
+  },
+  "scope": {
+    "publicOrDefaultDeploy": false,
+    "newBranchCreated": false,
+    "patchNotesPublished": false,
+    "forumReplyPosted": false,
+    "gitPush": false,
+    "otherSteamworksSettingsChanged": false
+  },
+  "rollbackTestBuildId": 24311168
+}
