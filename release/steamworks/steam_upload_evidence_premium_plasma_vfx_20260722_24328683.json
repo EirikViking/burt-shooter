@@ -1,0 +1,50 @@
+{
+  "recordedAt": "2026-07-22T06:19:12Z",
+  "taskBaseline": "6b4126be88eaabe4a50d1dfcdfd8231bb27d72e6",
+  "sourceCommit": "764a5ec",
+  "packageReadinessCommit": "859265416b9c993f791228815d90a16545f99a6a",
+  "buildVersion": "v2026-07-22_08-08-50",
+  "embeddedGitSha": "764a5ec",
+  "payload": {
+    "path": "release/desktop/win-unpacked",
+    "fileCount": 410,
+    "totalBytes": 957203427,
+    "manifestSha256": "ca6830c4174597096ceef3141b64ed5fdc9f240bda1ef7c8d365b1bd7c99e58b",
+    "executableSha256": "ad9cd4c41ab09ac6f6b41c952a94379e101dbe747a6f71a4e9c67e34dcd2cf92"
+  },
+  "steam": {
+    "appId": 4765070,
+    "depotId": 4765071,
+    "setLive": "sector-continue-test",
+    "previousTestBuildId": 24327765,
+    "buildId": 24328683,
+    "depotManifestId": "8963460960521347700",
+    "publicBefore": 24311168,
+    "publicAfter": 24311168,
+    "testBuildBefore": 23782673,
+    "testBuildAfter": 23782673,
+    "exactlyOneUpload": true,
+    "result": "Successfully finished AppID 4765070 build (BuildID 24328683)."
+  },
+  "validation": {
+    "allEightLanguageUi": "passed",
+    "messageOverlapSamples": 48,
+    "packagedRuntimeLocal": "passed",
+    "packagedSteamClientRuntime": "blocked_steam_init_returned_false",
+    "nativeSteamPackageRuntime": "passed",
+    "steamCmdCachedAuthentication": "passed_without_human_action",
+    "packagedKeyboardGamepad": "passed",
+    "packagedMinimumFps": 59.88023952094243,
+    "packagedAverageFps": 60.11383990364955,
+    "packagedPerformanceSamples": 12
+  },
+  "scope": {
+    "publicOrDefaultDeploy": false,
+    "newBranchCreated": false,
+    "patchNotesPublished": false,
+    "forumReplyPosted": false,
+    "gitPush": false,
+    "otherSteamworksSettingsChanged": false
+  },
+  "rollbackTestBuildId": 24327765
+}
