@@ -7,6 +7,8 @@ class GameAssetsManager {
     constructor() {
         this.bonusCoreTexture = null;
         this.plasmaBloomTexture = null;
+        this.plasmaBloomTextures = [];
+        this.tacticalDraftFieldTexture = null;
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
@@ -63,17 +65,41 @@ class GameAssetsManager {
     }
 
     async ensurePlasmaBloomTexture() {
-        if (this.isValidTexture(this.plasmaBloomTexture)) return this.plasmaBloomTexture;
-        try {
-            const tex = await PIXI.Assets.load({
-                alias: 'nova_plasma_bloom',
-                src: AssetManifest.generated.vfx.plasmaBloom
-            });
-            if (this.isValidTexture(tex)) this.plasmaBloomTexture = tex;
-        } catch (error) {
-            console.warn('[GameAssets] Plasma bloom texture unavailable:', error?.message || error);
-        }
+        await this.ensurePlasmaBloomTextures();
         return this.plasmaBloomTexture;
+    }
+
+    async ensurePlasmaBloomTextures() {
+        const sources = AssetManifest.generated?.vfx?.plasmaBlooms || [AssetManifest.generated?.vfx?.plasmaBloom];
+        const loaded = await Promise.all(sources.filter(Boolean).map(async (src, index) => {
+            if (this.isValidTexture(this.plasmaBloomTextures[index])) return this.plasmaBloomTextures[index];
+            try {
+                return await PIXI.Assets.load({
+                    alias: index === 0 ? 'nova_plasma_bloom' : `nova_plasma_bloom_${index + 1}`,
+                    src
+                });
+            } catch (error) {
+                console.warn(`[GameAssets] Plasma bloom texture ${index + 1} unavailable:`, error?.message || error);
+                return null;
+            }
+        }));
+        this.plasmaBloomTextures = loaded.filter((texture) => this.isValidTexture(texture));
+        this.plasmaBloomTexture = this.plasmaBloomTextures[0] || null;
+        return this.plasmaBloomTextures;
+    }
+
+    async ensureTacticalDraftFieldTexture() {
+        if (this.isValidTexture(this.tacticalDraftFieldTexture)) return this.tacticalDraftFieldTexture;
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: 'nova_tactical_draft_command_field',
+                src: AssetManifest.generated?.tacticalDraftField
+            });
+            if (this.isValidTexture(texture)) this.tacticalDraftFieldTexture = texture;
+        } catch (error) {
+            console.warn('[GameAssets] Tactical Draft command field unavailable:', error?.message || error);
+        }
+        return this.tacticalDraftFieldTexture;
     }
 
     async loadBonusCore() {
@@ -123,8 +149,19 @@ class GameAssetsManager {
         return this.bonusCoreTexture;
     }
 
-    getPlasmaBloomTexture() {
-        return this.plasmaBloomTexture;
+    getPlasmaBloomTexture(variant = 0) {
+        const textures = this.getPlasmaBloomTextures();
+        if (!textures.length) return this.plasmaBloomTexture;
+        const index = Math.abs(Math.floor(Number(variant) || 0)) % textures.length;
+        return textures[index];
+    }
+
+    getPlasmaBloomTextures() {
+        return this.plasmaBloomTextures.filter((texture) => this.isValidTexture(texture));
+    }
+
+    getTacticalDraftFieldTexture() {
+        return this.tacticalDraftFieldTexture;
     }
 
     getBonusCoreSpriteTexture() {

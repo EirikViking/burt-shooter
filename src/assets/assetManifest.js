@@ -29,9 +29,16 @@ export const AssetManifest = {
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
+        tacticalDraftField: '/art/generated/nova-swarm/ui/tactical-draft/nova-tactical-draft-command-field-20260722.png',
         vfx: {
             overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
+            plasmaBlooms: [
+                '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
+                '/art/generated/nova-swarm/vfx/plasma/nova-plasma-ion-shear-20260722.png',
+                '/art/generated/nova-swarm/vfx/plasma/nova-plasma-solar-corona-20260722.png',
+                '/art/generated/nova-swarm/vfx/plasma/nova-plasma-void-collapse-20260722.png'
+            ],
             bossWarningAtlas: '/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-atlas-20260603-clean.png',
             bossWarningEmblems: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-${String(i + 1).padStart(2, '0')}-20260603-clean.png`)
         },

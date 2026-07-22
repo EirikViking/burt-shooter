@@ -126,8 +126,10 @@ export class ParticleManager {
     this.energyBlooms = [];
     this.energyBloomPool = [];
     this.maxEnergyBlooms = 18;
+    this.lastEnergyBloomVariant = -1;
+    this.energyBloomVariantCounts = [0, 0, 0, 0];
     this.onCap = onCap;
-    GameAssets.ensurePlasmaBloomTexture?.().catch(() => {});
+    GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
   }
 
   attachParticleDisplay(particle) {
@@ -190,9 +192,11 @@ export class ParticleManager {
   }
 
   createEnergyBloom(x, y, intensity = 1, options = {}) {
-    const texture = GameAssets.getPlasmaBloomTexture?.();
+    const textures = GameAssets.getPlasmaBloomTextures?.() || [];
+    const variant = this.resolveEnergyBloomVariant(options.color, options.variant, textures.length);
+    const texture = GameAssets.getPlasmaBloomTexture?.(variant);
     if (!GameAssets.isValidTexture(texture)) {
-      GameAssets.ensurePlasmaBloomTexture?.().catch(() => {});
+      GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
       return false;
     }
     if (this.energyBlooms.length >= this.maxEnergyBlooms) {
@@ -221,6 +225,7 @@ export class ParticleManager {
     sprite.scale.set(baseScale * 0.22 * aspect, baseScale * 0.22 / aspect);
     this.energyBlooms.push({
       sprite,
+      variant,
       age: 0,
       lifetime: Math.max(22, Number(options.lifetime) || (34 + Math.sqrt(safeIntensity) * 18)),
       baseScale,
@@ -228,7 +233,37 @@ export class ParticleManager {
       alpha: Math.max(0.18, Math.min(0.9, Number(options.alpha) || (0.38 + safeIntensity * 0.12))),
       rotationSpeed: Number(options.rotationSpeed) || (Math.random() - 0.5) * 0.018
     });
+    this.lastEnergyBloomVariant = variant;
+    this.energyBloomVariantCounts[variant] = (this.energyBloomVariantCounts[variant] || 0) + 1;
     return true;
+  }
+
+  resolveEnergyBloomVariant(color = null, requestedVariant = null, textureCount = 0) {
+    const count = Math.max(1, Number(textureCount) || GameAssets.getPlasmaBloomTextures?.().length || 1);
+    const namedVariants = { nova: 0, ion: 1, solar: 2, void: 3 };
+    if (typeof requestedVariant === 'string' && requestedVariant in namedVariants) {
+      return namedVariants[requestedVariant] % count;
+    }
+    if (Number.isFinite(requestedVariant)) return Math.abs(Math.floor(requestedVariant)) % count;
+
+    const numericColor = Number(color);
+    let candidates = Array.from({ length: count }, (_, index) => index);
+    if (Number.isFinite(numericColor) && count > 1) {
+      const red = (numericColor >> 16) & 0xff;
+      const green = (numericColor >> 8) & 0xff;
+      const blue = numericColor & 0xff;
+      if (red > blue * 1.12 && red > green * 1.05) candidates = [2, 0].filter((index) => index < count);
+      else if (blue > red * 1.18 && red > green * 0.8) candidates = [3, 1, 0].filter((index) => index < count);
+      else if (blue + green > red * 1.7) candidates = [1, 0, 3].filter((index) => index < count);
+    }
+    let choice = candidates[Math.floor(Math.random() * candidates.length)] ?? 0;
+    if (count > 1 && choice === this.lastEnergyBloomVariant) {
+      const alternatives = candidates.filter((index) => index !== choice);
+      choice = alternatives.length
+        ? alternatives[Math.floor(Math.random() * alternatives.length)]
+        : (choice + 1) % count;
+    }
+    return choice;
   }
 
   createExplosion(x, y, color, intensity = 1) {
@@ -236,7 +271,8 @@ export class ParticleManager {
     const bloomIntensity = Math.min(2.2, visualIntensity);
     this.createEnergyBloom(x, y, bloomIntensity, {
       size: 78 + Math.sqrt(bloomIntensity) * 58,
-      alpha: Math.min(0.62, 0.34 + Math.sqrt(bloomIntensity) * 0.16)
+      alpha: Math.min(0.62, 0.34 + Math.sqrt(bloomIntensity) * 0.16),
+      color
     });
     const particleCount = Math.min(64, Math.max(5, Math.floor(18 * visualIntensity)));
     const speedMult = Math.min(2.35, 0.72 + Math.sqrt(visualIntensity) * 0.52);
@@ -336,8 +372,25 @@ export class ParticleManager {
 
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
-    this.createEnergyBloom(x, y, 2.8, { size: 310, lifetime: 76, alpha: 0.86, aspect: 1.12 });
-    this.createEnergyBloom(x - 16, y + 8, 1.9, { size: 220, lifetime: 64, alpha: 0.56, aspect: 0.78 });
+    const primaryVariant = this.resolveEnergyBloomVariant(color, null, GameAssets.getPlasmaBloomTextures?.().length);
+    const secondaryVariant = (primaryVariant + 1 + Math.floor(Math.random() * 2)) % Math.max(1, GameAssets.getPlasmaBloomTextures?.().length || 1);
+    this.createEnergyBloom(x, y, 2.8, {
+      size: 310,
+      lifetime: 76,
+      alpha: 0.82,
+      aspect: 1.12,
+      color,
+      variant: primaryVariant
+    });
+    this.createEnergyBloom(x - 16, y + 8, 1.9, {
+      size: 220,
+      lifetime: 64,
+      alpha: 0.52,
+      aspect: 0.78,
+      color,
+      variant: secondaryVariant,
+      rotation: Math.random() * Math.PI * 2
+    });
     this.createRadialBurst(x, y, color, {
       count: 52,
       intensity: 1.45,

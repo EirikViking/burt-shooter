@@ -133,7 +133,8 @@ function assertDraftLayout(state, width, height, label) {
     `${label}: active-build summary is missing`);
   assert(String(buildSummary.title || '').trim(), `${label}: active-build summary title is missing`);
   for (const box of bounds) {
-    assert(!overlap(buildSummary.bounds, box, 0), `${label}: active-build summary overlaps a card`);
+    assert(!overlap(buildSummary.bounds, box, 0),
+      `${label}: active-build summary overlaps a card: ${JSON.stringify({ summary: buildSummary.bounds, card: box })}`);
   }
   state.tacticalDraft.offers.forEach((offer, index) => {
     const card = bounds[index];
@@ -587,7 +588,11 @@ try {
   await page.waitForTimeout(180);
   state = await readState(page);
   assertDraftLayout(state, 1920, 1080, 'late-draft-1920x1080');
-  assert(state.tacticalDraft.buildSummary.activeIds.length >= 2, 'late Draft did not expose the active build');
+  assert(state.tacticalDraft.history.length === 2 && state.tacticalDraft.buildSummary.activeIds.length >= 1,
+    'late Draft did not expose the selected active build');
+  assert(state.tacticalDraft.materialReady === true, 'late Draft did not load its command-field material');
+  assert(state.tacticalDraft.offers.every((offer) => offer.visualLanguage === 'tactical_command_module_v3' && offer.materialReady),
+    'late Draft cards did not use the premium command-module material');
   const lateDraftScreenshot = path.join(outputDir, 'tactical-draft-late-1920x1080.png');
   await page.screenshot({ path: lateDraftScreenshot });
   await page.setViewportSize({ width: 760, height: 640 });
@@ -725,8 +730,10 @@ try {
   assertDraftLayout(activeFusionDraftState, 1920, 1080, 'active-fusion-1920x1080');
   assert(/1/.test(activeFusionDraftState.tacticalDraft.buildSummary.fusion || ''),
     `active Fusion was missing from the build summary: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
-  assert(activeFusionDraftState.tacticalDraft.buildSummary.visualLanguage === 'active_build_command_strip_v2',
+  assert(activeFusionDraftState.tacticalDraft.buildSummary.visualLanguage === 'active_build_command_deck_v3',
     `active build retained its legacy flat bar: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
+  assert(activeFusionDraftState.tacticalDraft.buildSummary.categories.length === 4,
+    `desktop Active Build did not expose all category modules: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
   const activeFusionScreenshot = path.join(outputDir, 'tactical-draft-active-fusion-1920x1080.png');
   await fusionPage.screenshot({ path: activeFusionScreenshot });
   await fusionPage.close();

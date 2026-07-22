@@ -181,6 +181,14 @@ async function stageHeroMoments(page) {
     play.particleManager?.createExplosion?.(width * 0.28, height * 0.34, 0xff4bd8, 1.1);
     play.particleManager?.createExplosion?.(width * 0.72, height * 0.43, 0xffdf63, 0.9);
     play.particleManager?.createExplosion?.(width * 0.5, height * 0.62, 0x43efff, 1.25);
+    ['nova', 'ion', 'solar', 'void'].forEach((variant, index) => {
+      play.particleManager?.createEnergyBloom?.(
+        width * (0.22 + index * 0.19),
+        height * (0.74 + (index % 2) * 0.06),
+        0.82,
+        { variant, size: 118, alpha: 0.46, lifetime: 74 }
+      );
+    });
     AudioManager.playSfx('enemy_explode', { force: true, pool: true });
     const explosionRates = Object.entries(AudioManager.sfxPools || {})
       .filter(([key]) => key.startsWith('enemy_explode:'))
@@ -188,6 +196,7 @@ async function stageHeroMoments(page) {
     return {
       spectacle: play.spectacleDirector.getDebugState(),
       plasmaBlooms: play.particleManager?.energyBlooms?.length || 0,
+      plasmaBloomVariants: Array.from(new Set(play.particleManager?.energyBlooms?.map((bloom) => bloom.variant) || [])),
       audio: AudioManager.getSettings(),
       explosionRates
     };
@@ -338,6 +347,9 @@ try {
   }
   if (report.hero.plasmaBlooms < 3) {
     report.errors.push(`organic plasma bloom texture did not stage: ${report.hero.plasmaBlooms}`);
+  }
+  if (report.hero.plasmaBloomVariants.length < 4) {
+    report.errors.push(`plasma bloom variation set did not stage: ${JSON.stringify(report.hero.plasmaBloomVariants)}`);
   }
   const accent = report.hero.audio?.lastSpectacleAccent;
   if (!accent?.synthetic || !accent?.compressor || accent.kind !== 'combo') {

@@ -216,6 +216,8 @@ export class PlayScene {
     this.container.addChild(this.decorativeOverlay);
     this.container.addChild(this.uiContainer);
     this.container.addChild(this.uiOverlay);
+    GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
+    GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
     this.gameplayViewportMask.eventMode = 'none';
     this.applyGameplayViewportMask();
 
@@ -8013,6 +8015,13 @@ export class PlayScene {
     summary.label = 'tactical_draft_active_build';
     summary.eventMode = 'none';
     const bg = new PIXI.Graphics();
+    const fieldTexture = GameAssets.getTacticalDraftFieldTexture?.();
+    const material = new PIXI.Sprite(GameAssets.isValidTexture(fieldTexture) ? fieldTexture : PIXI.Texture.EMPTY);
+    material.anchor.set(0.5);
+    material.blendMode = 'add';
+    material.eventMode = 'none';
+    const materialMask = new PIXI.Graphics();
+    material.mask = materialMask;
     const titleRail = new PIXI.Graphics();
     const title = createText(translateText('ACTIVE BUILD'), {
       fontFamily: FONT_BODY,
@@ -8045,6 +8054,22 @@ export class PlayScene {
       node._category = category;
       return node;
     });
+    const categoryCountNodes = Object.keys(TACTICAL_DRAFT_CATEGORY_COLORS).map((category) => {
+      const node = createText('', {
+        fontFamily: FONT_DISPLAY,
+        fontSize: 18,
+        fontWeight: '900',
+        fill: '#ffffff'
+      });
+      node.anchor.set(1, 0.5);
+      node._category = category;
+      return node;
+    });
+    const categoryMeterNodes = Object.keys(TACTICAL_DRAFT_CATEGORY_COLORS).map((category) => {
+      const node = new PIXI.Graphics();
+      node._category = category;
+      return node;
+    });
     const signatureBg = new PIXI.Graphics();
     const doctrine = createText('', {
       fontFamily: FONT_BODY,
@@ -8060,8 +8085,36 @@ export class PlayScene {
       fill: '#e0a3ff'
     });
     fusion.anchor.set(1, 0.5);
-    summary.addChild(bg, titleRail, title, empty, ...categoryBgNodes, ...categoryNodes, signatureBg, doctrine, fusion);
-    summary._nodes = { bg, titleRail, title, empty, categoryNodes, categoryBgNodes, signatureBg, doctrine, fusion };
+    summary.addChild(
+      bg,
+      material,
+      materialMask,
+      titleRail,
+      title,
+      empty,
+      ...categoryBgNodes,
+      ...categoryMeterNodes,
+      ...categoryNodes,
+      ...categoryCountNodes,
+      signatureBg,
+      doctrine,
+      fusion
+    );
+    summary._nodes = {
+      bg,
+      material,
+      materialMask,
+      titleRail,
+      title,
+      empty,
+      categoryNodes,
+      categoryBgNodes,
+      categoryCountNodes,
+      categoryMeterNodes,
+      signatureBg,
+      doctrine,
+      fusion
+    };
     return summary;
   }
 
@@ -8092,6 +8145,12 @@ export class PlayScene {
     const dim = new PIXI.Graphics();
     dim.label = 'tactical_draft_dim';
     dim.eventMode = 'static';
+    const fieldTexture = GameAssets.getTacticalDraftFieldTexture?.();
+    const material = new PIXI.Sprite(GameAssets.isValidTexture(fieldTexture) ? fieldTexture : PIXI.Texture.EMPTY);
+    material.label = 'tactical_draft_command_field';
+    material.anchor.set(0.5);
+    material.blendMode = 'add';
+    material.eventMode = 'none';
     const frame = new PIXI.Graphics();
     frame.label = 'tactical_draft_frame';
     const lockInBurst = new PIXI.Graphics();
@@ -8131,7 +8190,7 @@ export class PlayScene {
       lineHeight: 20
     });
     subtitle.anchor.set(0.5);
-    overlay.addChild(dim, frame, lockInBurst, eyebrow, title, subtitle);
+    overlay.addChild(dim, material, frame, lockInBurst, eyebrow, title, subtitle);
 
     const buildSummary = this.createTacticalDraftBuildSummary();
     overlay.addChild(buildSummary);
@@ -8152,6 +8211,7 @@ export class PlayScene {
       result: null,
       overlay,
       dim,
+      material,
       frame,
       lockInBurst,
       eyebrow,
@@ -8209,6 +8269,22 @@ export class PlayScene {
     card._offer = offer;
     const glow = new PIXI.Graphics();
     const bg = new PIXI.Graphics();
+    const fieldTexture = GameAssets.getTacticalDraftFieldTexture?.();
+    const material = new PIXI.Sprite(GameAssets.isValidTexture(fieldTexture) ? fieldTexture : PIXI.Texture.EMPTY);
+    material.anchor.set(0.5);
+    material.blendMode = 'add';
+    material.eventMode = 'none';
+    const materialMask = new PIXI.Graphics();
+    material.mask = materialMask;
+    const heroPlate = new PIXI.Graphics();
+    const bloomVariant = { offense: 2, mobility: 1, defense: 0, utility: 3 }[offer.category] ?? 0;
+    const bloomTexture = GameAssets.getPlasmaBloomTexture?.(bloomVariant);
+    const artBloom = new PIXI.Sprite(GameAssets.isValidTexture(bloomTexture) ? bloomTexture : PIXI.Texture.EMPTY);
+    artBloom.anchor.set(0.5);
+    artBloom.blendMode = 'add';
+    artBloom.eventMode = 'none';
+    artBloom._variant = bloomVariant;
+    const dataRail = new PIXI.Graphics();
     const categoryBadge = new PIXI.Graphics();
     const categoryLabel = offer.fixedScoreRoute
       ? translateText('ONE-TIME SCORE ROUTE')
@@ -8380,7 +8456,21 @@ export class PlayScene {
       align: 'center'
     });
     choose.anchor.set(0.5);
-    card.addChild(glow, bg, categoryBadge, category, stackBadge, stackLabel, scoreRouteBadge);
+    const chooseBg = new PIXI.Graphics();
+    card.addChild(
+      glow,
+      bg,
+      material,
+      materialMask,
+      heroPlate,
+      artBloom,
+      dataRail,
+      categoryBadge,
+      category,
+      stackBadge,
+      stackLabel,
+      scoreRouteBadge
+    );
     if (icon) card.addChild(icon);
     card.addChild(
       name,
@@ -8398,11 +8488,17 @@ export class PlayScene {
       permanenceBadge,
       permanence,
       holdBadge,
+      chooseBg,
       choose
     );
     card._nodes = {
       glow,
       bg,
+      material,
+      materialMask,
+      heroPlate,
+      artBloom,
+      dataRail,
       categoryBadge,
       category,
       stackBadge,
@@ -8426,6 +8522,7 @@ export class PlayScene {
       permanenceBadge,
       permanence,
       holdBadge,
+      chooseBg,
       choose
     };
     card.on('pointerover', () => this.setTacticalDraftFocus(index));
@@ -8526,11 +8623,13 @@ export class PlayScene {
     const icon = new PIXI.Graphics();
     const color = Number(offer?.color) || 0x37f5ff;
     const category = String(offer?.category || 'utility');
-    icon.circle(0, 0, 30);
+    const outer = [0, -30, 21, -21, 30, 0, 21, 21, 0, 30, -21, 21, -30, 0, -21, -21];
+    const inner = [0, -25, 18, -18, 25, 0, 18, 18, 0, 25, -18, 18, -25, 0, -18, -18];
+    icon.poly(outer);
     icon.fill({ color: 0x04111f, alpha: 0.96 });
-    icon.circle(0, 0, 27);
+    icon.poly(outer);
     icon.stroke({ color, width: 2.2, alpha: 0.92 });
-    icon.circle(0, 0, 20);
+    icon.poly(inner);
     icon.stroke({ color: 0xffffff, width: 1, alpha: 0.28 });
     if (category === 'offense') {
       icon.poly([-6, -19, 8, -4, 1, -4, 8, 19, -10, 2, -2, 2]);
@@ -8550,10 +8649,10 @@ export class PlayScene {
       icon.stroke({ color, width: 2.4, alpha: 0.96 });
     } else {
       [[-10, -10], [10, -10], [-10, 10], [10, 10]].forEach(([x, y]) => {
-        icon.circle(x, y, 5);
+        icon.poly([x, y - 5, x + 5, y, x, y + 5, x - 5, y]);
         icon.fill({ color, alpha: 0.9 });
       });
-      icon.circle(0, 0, 6);
+      icon.poly([0, -7, 7, 0, 0, 7, -7, 0]);
       icon.stroke({ color: 0xffffff, width: 2, alpha: 0.7 });
     }
     icon._tacticalDraftFallback = true;
@@ -8569,13 +8668,38 @@ export class PlayScene {
     state.compact = compact;
     state.dim.clear();
     state.dim.rect(0, 0, width, height);
-    state.dim.fill({ color: 0x010711, alpha: 0.82 });
+    state.dim.fill({ color: 0x010711, alpha: 0.78 });
     state.dim.hitArea = new PIXI.Rectangle(0, 0, width, height);
+    if (state.material) {
+      const fieldTexture = GameAssets.getTacticalDraftFieldTexture?.();
+      if (GameAssets.isValidTexture(fieldTexture) && state.material.texture !== fieldTexture) {
+        state.material.texture = fieldTexture;
+      }
+      const textureWidth = Math.max(1, state.material.texture?.width || 1);
+      const textureHeight = Math.max(1, state.material.texture?.height || 1);
+      const coverScale = Math.max(width / textureWidth, height / textureHeight);
+      state.material.position.set(width / 2, height / 2);
+      state.material.scale.set(coverScale * 1.025);
+      state.material._baseScale = coverScale * 1.025;
+      state.material.alpha = compact ? 0.42 : 0.56;
+      state.material.visible = GameAssets.isValidTexture(state.material.texture);
+    }
     state.frame.clear();
-    state.frame.rect(18, 18, width - 36, height - 36);
-    state.frame.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.36 });
-    state.frame.rect(27, 27, width - 54, height - 54);
-    state.frame.stroke({ color: 0xffd15c, width: 1, alpha: 0.2 });
+    const edge = compact ? 18 : 32;
+    const corner = compact ? 24 : 46;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+      const x = sx < 0 ? edge : width - edge;
+      const y = sy < 0 ? edge : height - edge;
+      state.frame.moveTo(x, y + sy * corner);
+      state.frame.lineTo(x, y);
+      state.frame.lineTo(x + sx * corner, y);
+    }
+    state.frame.stroke({ color: 0x37f5ff, width: 2, alpha: 0.62 });
+    state.frame.moveTo(edge + corner + 16, edge);
+    state.frame.lineTo(width * 0.31, edge);
+    state.frame.moveTo(width * 0.69, edge);
+    state.frame.lineTo(width - edge - corner - 16, edge);
+    state.frame.stroke({ color: 0xffd15c, width: 1.4, alpha: 0.38 });
     state.eyebrow.style.fontSize = compact ? 11 : 13;
     state.eyebrow.position.set(width / 2, compact ? 30 : 42);
     state.title.style.fontSize = compact ? 26 : 36;
@@ -8592,9 +8716,9 @@ export class PlayScene {
       const data = this.getTacticalDraftBuildSummaryData();
       summary._data = data;
       const summaryWidth = compact ? Math.max(300, width - 52) : Math.min(1120, width - 120);
-      const summaryHeight = compact ? 32 : 54;
+      const summaryHeight = compact ? 40 : 72;
       summary._draftLayout = { width: summaryWidth, height: summaryHeight, compact };
-      summary.position.set(width / 2, compact ? 146 : 148);
+      summary.position.set(width / 2, compact ? 150 : 158);
       nodes.bg.clear();
       const chamfer = compact ? 8 : 12;
       const summaryPoints = [
@@ -8615,6 +8739,21 @@ export class PlayScene {
       nodes.bg.moveTo(summaryWidth / 2 - summaryWidth * 0.22, summaryHeight / 2 - 5);
       nodes.bg.lineTo(summaryWidth / 2 - 18, summaryHeight / 2 - 5);
       nodes.bg.stroke({ color: 0xffd15c, width: 1.4, alpha: 0.5 });
+      nodes.materialMask.clear();
+      nodes.materialMask.poly(summaryPoints);
+      nodes.materialMask.fill({ color: 0xffffff, alpha: 1 });
+      const summaryTexture = GameAssets.getTacticalDraftFieldTexture?.();
+      if (GameAssets.isValidTexture(summaryTexture) && nodes.material.texture !== summaryTexture) {
+        nodes.material.texture = summaryTexture;
+      }
+      if (GameAssets.isValidTexture(nodes.material.texture)) {
+        nodes.material.width = summaryWidth;
+        nodes.material.height = summaryHeight;
+        nodes.material.alpha = compact ? 0.3 : 0.4;
+        nodes.material.visible = true;
+      } else {
+        nodes.material.visible = false;
+      }
       nodes.titleRail.clear();
       const railX = -summaryWidth / 2 + (compact ? 78 : 104);
       nodes.titleRail.moveTo(railX, -summaryHeight / 2 + 8);
@@ -8625,24 +8764,28 @@ export class PlayScene {
         nodes.titleRail.fill({ color: bar === 0 ? 0xffd15c : 0x37f5ff, alpha: 0.42 - bar * 0.08 });
       }
       nodes.title.style.fontSize = compact ? 8 : 10;
-      nodes.title.position.set(-summaryWidth / 2 + 13, compact ? -1 : -8);
+      nodes.title.position.set(-summaryWidth / 2 + 13, compact ? -1 : -12);
       nodes.title.scale.set(1);
       nodes.title.updateText?.(false);
       nodes.title.scale.set(Math.min(1, (compact ? 58 : 80) / Math.max(1, nodes.title.width)));
-      const activeCategories = nodes.categoryNodes.filter((node) => data.counts[node._category] > 0);
+      const activeCategories = nodes.categoryNodes.filter((node) => !compact || data.counts[node._category] > 0);
       nodes.categoryNodes.forEach((node, index) => {
         const count = data.counts[node._category];
-        node.visible = count > 0;
-        nodes.categoryBgNodes[index].visible = count > 0;
-        node.text = translateText('{category} {count}', {
-          category: translateText(node._category.toUpperCase()),
-          count
-        });
-        node.style.fontSize = compact ? 8 : 10;
+        const visible = !compact || count > 0;
+        node.visible = visible;
+        nodes.categoryBgNodes[index].visible = visible;
+        nodes.categoryCountNodes[index].visible = visible;
+        nodes.categoryMeterNodes[index].visible = visible;
+        node.text = translateText(node._category.toUpperCase());
+        nodes.categoryCountNodes[index].text = String(count);
+        node.style.fontSize = compact ? 8 : 9;
+        nodes.categoryCountNodes[index].style.fontSize = compact ? 13 : 18;
         node.scale.set(1);
         node.updateText?.(false);
+        nodes.categoryCountNodes[index].scale.set(1);
+        nodes.categoryCountNodes[index].updateText?.(false);
       });
-      nodes.empty.visible = data.activeIds.length === 0;
+      nodes.empty.visible = compact && data.activeIds.length === 0;
       nodes.empty.style.fontSize = compact ? 8 : 11;
       nodes.empty.position.set(-summaryWidth / 2 + (compact ? 92 : 128), 0);
       nodes.doctrine.text = data.doctrine
@@ -8686,25 +8829,55 @@ export class PlayScene {
       let categoryX = -summaryWidth / 2 + (compact ? 92 : 126);
       const categoryLimit = signatureVisible ? summaryWidth / 2 - signatureWidth - 24 : summaryWidth / 2 - 18;
       const gap = compact ? 6 : 9;
+      const moduleWidth = Math.max(compact ? 58 : 106, (categoryLimit - categoryX - gap * Math.max(0, activeCategories.length - 1)) / Math.max(1, activeCategories.length));
       activeCategories.forEach((node) => {
-        const bgNode = nodes.categoryBgNodes.find((entry) => entry._category === node._category);
-        const available = Math.max(46, categoryLimit - categoryX);
-        const chipWidth = Math.min(available, Math.max(compact ? 58 : 78, node.width + (compact ? 18 : 30)));
-        const chipHeight = compact ? 20 : 28;
+        const nodeIndex = nodes.categoryNodes.indexOf(node);
+        const bgNode = nodes.categoryBgNodes[nodeIndex];
+        const countNode = nodes.categoryCountNodes[nodeIndex];
+        const meterNode = nodes.categoryMeterNodes[nodeIndex];
+        const count = data.counts[node._category] || 0;
+        const chipWidth = Math.max(48, moduleWidth);
+        const chipHeight = compact ? 27 : 48;
+        const chamferSize = compact ? 5 : 8;
         bgNode.clear();
-        bgNode.roundRect(-chipWidth / 2, -chipHeight / 2, chipWidth, chipHeight, compact ? 4 : 6);
-        bgNode.fill({ color: 0x071b2a, alpha: 0.96 });
-        bgNode.stroke({ color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category], width: 1.25, alpha: 0.62 });
-        bgNode.moveTo(-chipWidth / 2 + 7, -4);
-        bgNode.lineTo(-chipWidth / 2 + 13, 0);
-        bgNode.lineTo(-chipWidth / 2 + 7, 4);
-        bgNode.stroke({ color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category], width: 1.4, alpha: 0.82 });
+        bgNode.poly([
+          -chipWidth / 2 + chamferSize, -chipHeight / 2,
+          chipWidth / 2, -chipHeight / 2,
+          chipWidth / 2, chipHeight / 2 - chamferSize,
+          chipWidth / 2 - chamferSize, chipHeight / 2,
+          -chipWidth / 2, chipHeight / 2,
+          -chipWidth / 2, -chipHeight / 2 + chamferSize
+        ]);
+        bgNode.fill({ color: count > 0 ? 0x071b2a : 0x050d16, alpha: count > 0 ? 0.96 : 0.78 });
+        bgNode.stroke({
+          color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category],
+          width: count > 0 ? 1.5 : 1,
+          alpha: count > 0 ? 0.72 : 0.22
+        });
         bgNode.position.set(categoryX + chipWidth / 2, 0);
-        node.position.set(categoryX + (compact ? 13 : 20), 0);
-        node.scale.set(Math.min(1, (chipWidth - (compact ? 17 : 26)) / Math.max(1, node.width)));
+        node.anchor.set(0, 0.5);
+        node.position.set(categoryX + (compact ? 8 : 12), compact ? -4 : -8);
+        node.alpha = count > 0 ? 1 : 0.44;
+        node.scale.set(Math.min(1, (chipWidth - (compact ? 34 : 54)) / Math.max(1, node.width)));
+        countNode.position.set(categoryX + chipWidth - (compact ? 7 : 12), compact ? -4 : -6);
+        countNode.alpha = count > 0 ? 1 : 0.28;
+        meterNode.clear();
+        const segmentCount = compact ? 3 : 5;
+        const meterGap = 3;
+        const meterWidth = chipWidth - (compact ? 16 : 24);
+        const segmentWidth = (meterWidth - meterGap * (segmentCount - 1)) / segmentCount;
+        for (let segment = 0; segment < segmentCount; segment += 1) {
+          const segmentX = -meterWidth / 2 + segment * (segmentWidth + meterGap);
+          meterNode.roundRect(segmentX, 0, segmentWidth, compact ? 2 : 3, 1);
+          meterNode.fill({
+            color: segment < count ? TACTICAL_DRAFT_CATEGORY_COLORS[node._category] : 0x27404d,
+            alpha: segment < count ? 0.88 : 0.3
+          });
+        }
+        meterNode.position.set(categoryX + chipWidth / 2, compact ? 7 : 13);
         categoryX += chipWidth + gap;
       });
-      summary._visualLanguage = 'active_build_command_strip_v2';
+      summary._visualLanguage = 'active_build_command_deck_v3';
     }
 
     if (state.rescan && state.hold && state.ban) {
@@ -8728,8 +8901,8 @@ export class PlayScene {
     }
 
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(380, (width - 140) / 3);
-    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(410, height - 300);
-    const cardTop = compact ? 174 : 184;
+    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(420, height - 320);
+    const cardTop = compact ? 178 : 220;
     state.cards.forEach((card, index) => {
       card.position.set(
         compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
@@ -8899,6 +9072,39 @@ export class PlayScene {
           fitTextWidth(nodes.fusionHint, badgeWidth - 24, 0.5);
         }
       }
+      const fieldTexture = GameAssets.getTacticalDraftFieldTexture?.();
+      if (GameAssets.isValidTexture(fieldTexture) && nodes.material.texture !== fieldTexture) {
+        nodes.material.texture = fieldTexture;
+      }
+      if (GameAssets.isValidTexture(nodes.material.texture)) {
+        nodes.material.width = cardWidth;
+        nodes.material.height = cardHeight;
+        nodes.material.rotation = 0;
+        nodes.material.visible = true;
+      } else {
+        nodes.material.visible = false;
+      }
+      const bloomTexture = GameAssets.getPlasmaBloomTexture?.(nodes.artBloom._variant);
+      if (GameAssets.isValidTexture(bloomTexture) && nodes.artBloom.texture !== bloomTexture) {
+        nodes.artBloom.texture = bloomTexture;
+      }
+      if (GameAssets.isValidTexture(nodes.artBloom.texture)) {
+        const bloomPixels = compact ? 78 : 128;
+        const bloomScale = bloomPixels / Math.max(1, nodes.artBloom.texture.width, nodes.artBloom.texture.height);
+        nodes.artBloom.position.set(nodes.icon?.x || 0, nodes.icon?.y || (compact ? 0 : -cardHeight / 2 + 78));
+        nodes.artBloom.scale.set(bloomScale * (index === 1 ? 1.08 : 1), bloomScale * (index === 2 ? 0.86 : 1));
+        nodes.artBloom._baseScaleX = nodes.artBloom.scale.x;
+        nodes.artBloom._baseScaleY = nodes.artBloom.scale.y;
+        nodes.artBloom.visible = true;
+      } else {
+        nodes.artBloom.visible = false;
+      }
+      nodes.chooseBg.position.copyFrom(nodes.choose.position);
+      nodes.chooseBg._buttonLayout = {
+        width: compact ? Math.min(158, Math.max(112, cardWidth * 0.27)) : Math.min(230, cardWidth - 74),
+        height: compact ? 27 : 34,
+        align: compact ? 'right' : 'center'
+      };
       this.redrawTacticalDraftCard(card);
     });
   }
@@ -8920,24 +9126,93 @@ export class PlayScene {
     const pulse = focused ? 0.5 + Math.sin(state.pulse) * 0.5 : 0;
     nodes.glow.clear();
     nodes.bg.clear();
-    nodes.glow.roundRect(-layout.width / 2 - 5, -layout.height / 2 - 5, layout.width + 10, layout.height + 10, 8);
+    const chamfer = layout.compact ? 7 : 12;
+    const cardPoints = [
+      -layout.width / 2 + chamfer, -layout.height / 2,
+      layout.width / 2 - chamfer, -layout.height / 2,
+      layout.width / 2, -layout.height / 2 + chamfer,
+      layout.width / 2, layout.height / 2 - chamfer,
+      layout.width / 2 - chamfer, layout.height / 2,
+      -layout.width / 2 + chamfer, layout.height / 2,
+      -layout.width / 2, layout.height / 2 - chamfer,
+      -layout.width / 2, -layout.height / 2 + chamfer
+    ];
+    const glowInset = focused || confirmed ? 7 : 4;
+    nodes.glow.poly([
+      -layout.width / 2 + chamfer - glowInset, -layout.height / 2 - glowInset,
+      layout.width / 2 - chamfer + glowInset, -layout.height / 2 - glowInset,
+      layout.width / 2 + glowInset, -layout.height / 2 + chamfer - glowInset,
+      layout.width / 2 + glowInset, layout.height / 2 - chamfer + glowInset,
+      layout.width / 2 - chamfer + glowInset, layout.height / 2 + glowInset,
+      -layout.width / 2 + chamfer - glowInset, layout.height / 2 + glowInset,
+      -layout.width / 2 - glowInset, layout.height / 2 - chamfer + glowInset,
+      -layout.width / 2 - glowInset, -layout.height / 2 + chamfer - glowInset
+    ]);
     nodes.glow.fill({
       color: confirmed ? 0xffd15c : accent,
       alpha: confirmed ? 0.28 : focused ? (scoreRoute ? 0.14 + pulse * 0.12 : 0.08 + pulse * 0.08) : scoreRoute ? 0.045 : 0
     });
-    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
+    nodes.bg.poly(cardPoints);
     nodes.bg.fill({
       color: confirmed ? 0x102616 : scoreRoute ? (focused ? 0x241609 : 0x160f08) : focused ? 0x071d2f : 0x04111f,
       alpha: 0.96
     });
-    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 6);
+    nodes.bg.poly(cardPoints);
     nodes.bg.stroke({
       color: confirmed ? 0xffef7e : held ? 0xffd15c : scoreRoute ? 0xffa84d : focused ? 0xffffff : accent,
       width: confirmed ? 3 : held ? 2.2 : scoreRoute ? (focused ? 3.2 : 2.2) : focused ? 2.4 : 1.2,
       alpha: focused || confirmed || held || scoreRoute ? 0.96 : 0.55
     });
-    nodes.bg.rect(-layout.width / 2 + 12, -layout.height / 2 + 10, focused || confirmed ? 5 : 2, layout.height - 20);
+    nodes.materialMask.clear();
+    nodes.materialMask.poly(cardPoints);
+    nodes.materialMask.fill({ color: 0xffffff, alpha: 1 });
+    nodes.material.alpha = focused ? 0.28 : 0.14;
+    nodes.artBloom.alpha = focused ? 0.28 + pulse * 0.12 : 0.13;
+    nodes.artBloom.rotation += (focused ? 0.0018 : 0.0005) * (card._draftIndex % 2 ? 1 : -1);
+    if (nodes.artBloom._baseScaleX) {
+      const bloomPulse = focused ? 1 + pulse * 0.045 : 1;
+      nodes.artBloom.scale.set(nodes.artBloom._baseScaleX * bloomPulse, nodes.artBloom._baseScaleY * bloomPulse);
+    }
+    nodes.bg.rect(-layout.width / 2 + 10, -layout.height / 2 + chamfer + 6, focused || confirmed ? 5 : 2, layout.height - chamfer * 2 - 12);
     nodes.bg.fill({ color: confirmed ? 0xffd15c : accent, alpha: focused || confirmed ? 0.92 : 0.46 });
+    nodes.heroPlate.clear();
+    if (layout.compact) {
+      const plateWidth = 72;
+      const plateHeight = layout.height - 28;
+      const plateX = -layout.width / 2 + 48;
+      nodes.heroPlate.poly([
+        plateX - plateWidth / 2 + 7, -plateHeight / 2,
+        plateX + plateWidth / 2, -plateHeight / 2,
+        plateX + plateWidth / 2, plateHeight / 2 - 7,
+        plateX + plateWidth / 2 - 7, plateHeight / 2,
+        plateX - plateWidth / 2, plateHeight / 2,
+        plateX - plateWidth / 2, -plateHeight / 2 + 7
+      ]);
+      nodes.heroPlate.fill({ color: 0x020912, alpha: 0.72 });
+      nodes.heroPlate.stroke({ color: accent, width: 1.2, alpha: focused ? 0.48 : 0.25 });
+    } else {
+      const plateWidth = Math.min(176, layout.width - 80);
+      const plateHeight = 104;
+      const plateY = -layout.height / 2 + 83;
+      nodes.heroPlate.poly([
+        -plateWidth / 2 + 12, plateY - plateHeight / 2,
+        plateWidth / 2, plateY - plateHeight / 2,
+        plateWidth / 2, plateY + plateHeight / 2 - 12,
+        plateWidth / 2 - 12, plateY + plateHeight / 2,
+        -plateWidth / 2, plateY + plateHeight / 2,
+        -plateWidth / 2, plateY - plateHeight / 2 + 12
+      ]);
+      nodes.heroPlate.fill({ color: 0x020912, alpha: 0.62 });
+      nodes.heroPlate.stroke({ color: accent, width: 1.2, alpha: focused ? 0.46 : 0.22 });
+    }
+    nodes.dataRail.clear();
+    const railSegments = 7;
+    const activeSegments = Math.min(railSegments, 2 + (Number(card._offer?.currentStacks) || 0) * 2);
+    for (let index = 0; index < railSegments; index += 1) {
+      const railY = -layout.height / 2 + 18 + index * Math.max(8, (layout.height - 36) / railSegments);
+      nodes.dataRail.roundRect(-layout.width / 2 + (focused ? 18 : 16), railY, index < activeSegments ? (focused ? 20 : 14) : 7, 2, 1);
+      nodes.dataRail.fill({ color: index < activeSegments ? accent : 0x536572, alpha: index < activeSegments ? 0.66 : 0.22 });
+    }
     const drawPill = (graphic, pillLayout, { color = accent, fill = 0x071724, alpha = 0.82, width = 1 } = {}) => {
       if (!graphic || !pillLayout) return;
       graphic.clear();
@@ -9000,9 +9275,11 @@ export class PlayScene {
       nodes.fusionBadge.lineTo(badgeWidth / 2 - 3, 0);
       nodes.fusionBadge.stroke({ color: fusionAccent, width: 1.2, alpha: 0.72 });
       for (const x of [-nodeX, nodeX]) {
-        nodes.fusionBadge.circle(x, 0, completesFusion ? 4.2 : 3.2);
+        const core = completesFusion ? 4.2 : 3.2;
+        nodes.fusionBadge.poly([x, -core, x + core, 0, x, core, x - core, 0]);
         nodes.fusionBadge.fill({ color: completesFusion ? 0xffef7e : fusionAccent, alpha: 0.96 });
-        nodes.fusionBadge.circle(x, 0, completesFusion ? 7.4 : 6.2);
+        const halo = completesFusion ? 7.4 : 6.2;
+        nodes.fusionBadge.poly([x, -halo, x + halo, 0, x, halo, x - halo, 0]);
         nodes.fusionBadge.stroke({ color: fusionAccent, width: 1, alpha: 0.52 + pulse * 0.22 });
       }
       nodes.fusionLabel.style.fill = completesFusion ? '#fff3a0' : '#8df7ff';
@@ -9022,7 +9299,8 @@ export class PlayScene {
       });
       for (let index = 0; index < 4; index += 1) {
         const x = -badgeWidth / 2 + 9 + index * 5;
-        nodes.scoreRouteBadgeBg.circle(x, 0, index === 0 ? 2.2 : 1.4);
+        const size = index === 0 ? 3.4 : 2.4;
+        nodes.scoreRouteBadgeBg.rect(x - size / 2, -size / 2, size, size);
         nodes.scoreRouteBadgeBg.fill({ color: index % 2 ? 0xffd15c : 0xffffff, alpha: 0.72 + pulse * 0.22 });
       }
       nodes.scoreRouteBadgeText.style.fill = focused ? '#ffffff' : '#fff3a0';
@@ -9041,12 +9319,50 @@ export class PlayScene {
       ? Math.min(190, layout.width * 0.36)
       : layout.width - 36;
     nodes.choose.scale.set(Math.min(1, Math.max(0.52, chooseMaxWidth / Math.max(1, nodes.choose.width))));
+    nodes.chooseBg.clear();
+    const chooseLayout = nodes.chooseBg._buttonLayout;
+    if (chooseLayout) {
+      const buttonWidth = chooseLayout.width;
+      const buttonHeight = chooseLayout.height;
+      const buttonChamfer = layout.compact ? 6 : 8;
+      const buttonCenterX = chooseLayout.align === 'right'
+        ? nodes.choose.x - buttonWidth / 2 + 7
+        : nodes.choose.x;
+      nodes.chooseBg.position.set(buttonCenterX, nodes.choose.y);
+      nodes.chooseBg.poly([
+        -buttonWidth / 2 + buttonChamfer, -buttonHeight / 2,
+        buttonWidth / 2, -buttonHeight / 2,
+        buttonWidth / 2, buttonHeight / 2 - buttonChamfer,
+        buttonWidth / 2 - buttonChamfer, buttonHeight / 2,
+        -buttonWidth / 2, buttonHeight / 2,
+        -buttonWidth / 2, -buttonHeight / 2 + buttonChamfer
+      ]);
+      nodes.chooseBg.fill({
+        color: confirmed ? 0x39401a : focused ? accent : 0x071724,
+        alpha: confirmed ? 0.92 : focused ? 0.78 + pulse * 0.12 : 0.86
+      });
+      nodes.chooseBg.stroke({
+        color: confirmed ? 0xffef7e : focused ? 0xffffff : accent,
+        width: focused || confirmed ? 1.8 : 1,
+        alpha: focused || confirmed ? 0.94 : 0.42
+      });
+      if (!layout.compact) {
+        for (const side of [-1, 1]) {
+          const x = side * (buttonWidth / 2 - 15);
+          nodes.chooseBg.moveTo(x - side * 5, -4);
+          nodes.chooseBg.lineTo(x, 0);
+          nodes.chooseBg.lineTo(x - side * 5, 4);
+        }
+        nodes.chooseBg.stroke({ color: focused ? 0xffffff : accent, width: 1.4, alpha: focused ? 0.82 : 0.36 });
+      }
+    }
     nodes.holdBadge.visible = held && !scoreRoute;
     nodes.holdBadge.style.fill = '#fff3a0';
     if (held) {
       nodes.holdBadge.text = translateText('HELD');
       nodes.holdBadge.style.fill = '#fff3a0';
     }
+    card._visualLanguage = 'tactical_command_module_v3';
     card.scale.set(focused && !layout.compact ? 1.015 : 1);
   }
 
@@ -9383,6 +9699,16 @@ export class PlayScene {
     const state = this.tacticalDraft;
     if (!state?.active) return;
     state.pulse += Math.max(0, Number(delta) || 0) * 0.075;
+    if (state.material?._baseScale) {
+      const materialDrift = Math.sin(state.pulse * 0.22);
+      state.material.rotation = materialDrift * 0.0018;
+      state.material.scale.set(state.material._baseScale * (1 + materialDrift * 0.004));
+      state.material.alpha = (state.compact ? 0.42 : 0.56) + Math.sin(state.pulse * 0.31) * 0.025;
+    }
+    if (state.buildSummary?._nodes?.material) {
+      state.buildSummary._nodes.material.x = Math.sin(state.pulse * 0.27) * 4;
+      state.buildSummary._nodes.material.alpha = (state.compact ? 0.3 : 0.4) + Math.sin(state.pulse * 0.42) * 0.035;
+    }
     const nav = this.tacticalDraftNavigator.update();
     if (!state.inputArmed) {
       const keyboardHeld = [
@@ -9473,6 +9799,7 @@ export class PlayScene {
     let traceDistance = (progress * 2.6 * perimeter) % perimeter;
     let traceX = centerX - halfWidth;
     let traceY = centerY - halfHeight;
+    let traceAngle = 0;
     const topLength = halfWidth * 2;
     const sideLength = halfHeight * 2;
     if (traceDistance <= topLength) {
@@ -9480,24 +9807,56 @@ export class PlayScene {
     } else if ((traceDistance -= topLength) <= sideLength) {
       traceX = centerX + halfWidth;
       traceY += traceDistance;
+      traceAngle = Math.PI / 2;
     } else if ((traceDistance -= sideLength) <= topLength) {
       traceX = centerX + halfWidth - traceDistance;
       traceY = centerY + halfHeight;
+      traceAngle = Math.PI;
     } else {
       traceDistance -= topLength;
       traceY = centerY + halfHeight - traceDistance;
+      traceAngle = -Math.PI / 2;
     }
-    burst.circle(traceX, traceY, 10 + Math.sin(progress * Math.PI * 7) * 2);
-    burst.fill({ color: accent, alpha: reveal * fade * 0.28 });
-    burst.circle(traceX, traceY, 4.2);
-    burst.fill({ color: 0xffffff, alpha: reveal * fade * 0.96 });
+    const traceLength = 18 + Math.sin(progress * Math.PI * 7) * 2;
+    const traceWidth = 5.5;
+    const traceCos = Math.cos(traceAngle);
+    const traceSin = Math.sin(traceAngle);
+    const traceNormalX = -traceSin;
+    const traceNormalY = traceCos;
+    burst.poly([
+      traceX + traceCos * traceLength * 0.62,
+      traceY + traceSin * traceLength * 0.62,
+      traceX - traceCos * traceLength * 0.46 + traceNormalX * traceWidth,
+      traceY - traceSin * traceLength * 0.46 + traceNormalY * traceWidth,
+      traceX - traceCos * traceLength * 0.18,
+      traceY - traceSin * traceLength * 0.18,
+      traceX - traceCos * traceLength * 0.46 - traceNormalX * traceWidth,
+      traceY - traceSin * traceLength * 0.46 - traceNormalY * traceWidth
+    ]);
+    burst.fill({ color: accent, alpha: reveal * fade * 0.82 });
+    burst.moveTo(traceX - traceCos * traceLength * 0.26, traceY - traceSin * traceLength * 0.26);
+    burst.lineTo(traceX + traceCos * traceLength * 0.54, traceY + traceSin * traceLength * 0.54);
+    burst.stroke({ color: 0xffffff, width: 1.4, alpha: reveal * fade * 0.88 });
 
     const sparkRadius = Math.max(halfWidth, halfHeight) + 18 + reveal * 18;
-    for (let index = 0; index < 12; index += 1) {
-      const angle = index * (Math.PI * 2 / 12) + progress * 0.7;
-      const sparkLength = 7 + (index % 3) * 4;
-      burst.moveTo(centerX + Math.cos(angle) * sparkRadius, centerY + Math.sin(angle) * sparkRadius);
-      burst.lineTo(centerX + Math.cos(angle) * (sparkRadius + sparkLength), centerY + Math.sin(angle) * (sparkRadius + sparkLength));
+    const sparkPattern = [-2.82, -2.05, -0.86, -0.18, 0.61, 1.76, 2.47];
+    for (let index = 0; index < sparkPattern.length; index += 1) {
+      const angle = sparkPattern[index] + progress * (index % 2 ? -0.22 : 0.32);
+      const sparkLength = 8 + (index % 3) * 5;
+      const radius = sparkRadius + (index % 2) * 7;
+      const startX = centerX + Math.cos(angle) * radius;
+      const startY = centerY + Math.sin(angle) * radius;
+      const endX = centerX + Math.cos(angle + 0.08) * (radius + sparkLength);
+      const endY = centerY + Math.sin(angle + 0.08) * (radius + sparkLength);
+      burst.moveTo(startX, startY);
+      burst.bezierCurveTo(
+        startX + Math.cos(angle + 0.5) * sparkLength * 0.35,
+        startY + Math.sin(angle + 0.5) * sparkLength * 0.35,
+        endX - Math.cos(angle) * sparkLength * 0.28,
+        endY - Math.sin(angle) * sparkLength * 0.28,
+        endX,
+        endY
+      );
     }
     burst.stroke({ color: selectedIndex % 2 === 0 ? accent : 0xffffff, width: 1.6, alpha: reveal * fade * 0.46 });
 
@@ -9926,6 +10285,7 @@ export class PlayScene {
       lockInProgress: Number(state?.lockInProgress) || 0,
       inputArmed: Boolean(state?.inputArmed),
       compact: Boolean(state?.compact),
+      materialReady: Boolean(state?.material?.visible && GameAssets.isValidTexture(state.material.texture)),
       title: state?.title?.text || null,
       eyebrow: state?.eyebrow?.text || null,
       subtitle: state?.subtitle?.text || null,
@@ -10023,6 +10383,9 @@ export class PlayScene {
         } : null,
         held: offer.id === this.tacticalDraftHeldId,
         focused: index === state.focusIndex,
+        visualLanguage: state.cards?.[index]?._visualLanguage || null,
+        materialReady: Boolean(state.cards?.[index]?._nodes?.material?.visible),
+        bloomVariant: state.cards?.[index]?._nodes?.artBloom?._variant ?? null,
         bounds: boundsOf(state.cards?.[index]),
         nameText: state.cards?.[index]?._nodes?.name?.text || null,
         descriptionText: state.cards?.[index]?._nodes?.description?.text || null,
