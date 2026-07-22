@@ -720,6 +720,9 @@ function buildGameTextState(game) {
     gameOverInterlude: playScene?.getGameOverInterludeDebugState
       ? playScene.getGameOverInterludeDebugState(getBoundsDebug)
       : { active: false, visible: false },
+    gameOverAnimation: playScene?.getGameOverAnimationDebugState
+      ? playScene.getGameOverAnimationDebugState(getBoundsDebug)
+      : { active: false, visible: false },
     overrunInterlude: playScene?.getOverrunInterludeDebugState
       ? playScene.getOverrunInterludeDebugState(getBoundsDebug)
       : { active: false, requiresConfirm: false },

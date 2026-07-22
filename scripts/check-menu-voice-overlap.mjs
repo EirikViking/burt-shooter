@@ -397,6 +397,44 @@ try {
   const screenshot = path.join(outputDir, 'menu-voice-overlap.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
+  const launchHandoffBefore = await page.evaluate(() => {
+    const scene = window.__game?.currentScene;
+    scene.playBossMenuBark('launchTactical', {
+      target: scene.tacticalStartBtn,
+      intent: 'activate',
+      immediate: true,
+      force: true
+    });
+    const instances = window.__fakeAudioInstances || [];
+    const activeMenuVoiceIndex = instances.findIndex((audio) => (
+      !audio.paused && String(audio.src || '').includes('/audio/voice/menu-boss-barks/')
+    ));
+    return {
+      state: JSON.parse(window.render_game_to_text?.() || '{}'),
+      activeMenuVoiceIndex
+    };
+  });
+  const started = await page.evaluate(() => window.__game?.startGame?.(undefined, {
+    runMode: 'ranked_tactical',
+    inputDevice: 'keyboard',
+    countShipUsage: false
+  }));
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 30000 });
+  await page.waitForTimeout(650);
+  const launchHandoffAfter = await page.evaluate((activeMenuVoiceIndex) => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    const instances = window.__fakeAudioInstances || [];
+    return {
+      state,
+      menuVoicePaused: activeMenuVoiceIndex >= 0 ? instances[activeMenuVoiceIndex]?.paused === true : false,
+      activeMenuAudioCount: instances.filter((audio) => (
+        !audio.paused && String(audio.src || '').includes('/audio/voice/menu-boss-barks/')
+      )).length
+    };
+  }, launchHandoffBefore.activeMenuVoiceIndex);
+  const launchHandoffScreenshot = path.join(outputDir, 'menu-to-gameplay-voice-handoff.png');
+  await page.screenshot({ path: launchHandoffScreenshot, fullPage: true });
+
   const beforeAudio = before.audio || {};
   const afterClickAudio = afterClick.audio || {};
   const pendingAudio = afterPendingClick.state?.audio || {};
@@ -434,6 +472,14 @@ try {
       afterPendingClick.pendingAfterDelay === false &&
       pendingAudio.activeVoiceCount === 1 &&
       pendingAudio.activeVoiceGroups?.boss_menu_bark?.eventName === 'boss_menu_bark_settings' &&
+      started === true &&
+      launchHandoffBefore.activeMenuVoiceIndex >= 0 &&
+      launchHandoffBefore.state?.audio?.activeVoiceGroups?.boss_menu_bark?.eventName === getRunModeNarrationSpec('launchTactical')?.event &&
+      launchHandoffAfter.state?.scene === 'play' &&
+      launchHandoffAfter.menuVoicePaused === true &&
+      launchHandoffAfter.activeMenuAudioCount === 0 &&
+      !launchHandoffAfter.state?.audio?.activeVoiceGroups?.boss_menu_bark &&
+      (launchHandoffAfter.state?.audio?.activeVoiceCount || 0) <= 1 &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -451,6 +497,11 @@ try {
     beforeAudio,
     afterClickAudio,
     afterPendingClick,
+    launchHandoff: {
+      before: launchHandoffBefore,
+      after: launchHandoffAfter,
+      screenshot: launchHandoffScreenshot
+    },
     pageErrors,
     consoleErrors,
     fakeAudioPlayCount: await page.evaluate(() => window.__fakeAudioPlayLog?.length || 0),

@@ -462,6 +462,10 @@ export class Game {
       rkFromAdd: 0
     };
 
+    // A menu bark may still be playing when a successful launch hands audio
+    // ownership to gameplay. Clear active and delayed menu voices at the last
+    // safe point before PlayScene can start its own pilot/combat callouts.
+    AudioManager.silenceVoicePlayback?.('gameplay_start_handoff');
     this.switchScene('play');
     this.prepareGameplayInputFocus();
     if (!isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {

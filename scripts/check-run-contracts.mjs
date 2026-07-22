@@ -432,6 +432,30 @@ function runCatalogAndSaveTests() {
     progress: { runContracts: savedPartialOrders }
   });
   assert.equal(findSessionItem(seededPartialSession, 'near_miss_streak').progress, 3, 'near-miss session progress should seed from the menu value');
+  const tacticalNearMissSession = startRunContractSession({
+    runMode: RUN_MODES.MAYHEM_TACTICAL,
+    progress: { runContracts: savedPartialOrders }
+  });
+  const tacticalNearMissFour = applyRunContractEvent(tacticalNearMissSession, {
+    type: 'near_miss',
+    streak: 4,
+    sector: 1
+  });
+  assert.equal(
+    findSessionItem(tacticalNearMissFour.session, 'near_miss_streak').progress,
+    4,
+    'Mayhem Tactical near-miss streak should advance saved 3/5 progress to 4/5'
+  );
+  const tacticalNearMissSeven = applyRunContractEvent(tacticalNearMissFour.session, {
+    type: 'near_miss',
+    streak: 7,
+    sector: 1
+  });
+  assert.deepEqual(
+    tacticalNearMissSeven.completed.map((entry) => entry.id),
+    ['near_miss_streak'],
+    'Mayhem Tactical 7x near-miss streak should complete the saved 3/5 order'
+  );
   assert.equal(findSessionItem(seededPartialSession, 'support_hunter').progress, 1, 'saved multi-count orders should seed from the menu value');
   const lowerNearMissSession = {
     ...seededPartialSession,

@@ -218,6 +218,7 @@ export class PlayScene {
     this.container.addChild(this.uiOverlay);
     GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
     GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
+    this.gameOverFinalTransmissionReady = GameAssets.ensureGameOverFinalTransmissionTexture?.().catch(() => null);
     GameAssets.ensureCabinetWonderTextures?.().catch(() => {});
     this.gameplayViewportMask.eventMode = 'none';
     this.applyGameplayViewportMask();
@@ -551,6 +552,7 @@ export class PlayScene {
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
+    this.gameOverAnimationDebug = null;
     this.stragglerBeaconLayer = null;
     this.lastStragglerBeaconDebug = null;
 
@@ -638,6 +640,7 @@ export class PlayScene {
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
+    this.gameOverAnimationDebug = null;
     this.overrunClearLayer = new PIXI.Container();
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
@@ -8925,8 +8928,8 @@ export class PlayScene {
     }
 
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(420, (width - 140) / 3);
-    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(590, Math.max(420, height - 320));
-    const cardTop = compact ? 178 : 214;
+    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(460, Math.max(410, height - 420));
+    const cardTop = compact ? 178 : 246;
 
     if (state.rescan && state.hold && state.ban) {
       const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
@@ -9055,21 +9058,21 @@ export class PlayScene {
         nodes.scoreRouteBadge.position.set(cardWidth / 2 - 64, -cardHeight / 2 + 26);
         nodes.scoreRouteBadgeText.style.fontSize = 10;
         if (nodes.icon) {
-          nodes.icon.position.set(0, -cardHeight / 2 + 86);
+          nodes.icon.position.set(0, -cardHeight / 2 + 72);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
           const iconHeight = nodes.icon.texture?.height || nodes.icon.height || 60;
-          nodes.icon.scale.set(Math.min(1.24, 88 / Math.max(1, iconWidth, iconHeight)));
+          nodes.icon.scale.set(Math.min(1.2, 80 / Math.max(1, iconWidth, iconHeight)));
         }
         nodes.name.anchor.set(0.5);
         nodes.name.style.fontSize = 24;
-        nodes.name.position.set(0, -cardHeight / 2 + 154);
+        nodes.name.position.set(0, -cardHeight / 2 + 132);
         fitTextWidth(nodes.name, cardWidth - 36, 0.62);
         nodes.description.anchor.set(0.5);
         nodes.description.style.fontSize = 16;
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrapWidth = cardWidth - 48;
-        nodes.description.position.set(0, -cardHeight / 2 + 214);
-        const impactY = -cardHeight / 2 + 296;
+        nodes.description.position.set(0, -cardHeight / 2 + 184);
+        const impactY = -cardHeight / 2 + 252;
         nodes.impactBadge.position.set(0, impactY);
         nodes.impactBadge._pillLayout = {
           width: cardWidth - 52,
@@ -9082,7 +9085,15 @@ export class PlayScene {
         nodes.impactValue.style.fontSize = 16;
         nodes.impactValue.position.set(0, impactY + 11);
         fitTextWidth(nodes.impactValue, cardWidth - 76, 0.62);
-        const doctrineY = cardHeight / 2 - (hasFusionBlueprint ? 78 : 98);
+        const chooseY = cardHeight / 2 - 20;
+        const denseDesktop = cardHeight < 440;
+        const doctrineY = impactY + (hasFusionBlueprint
+          ? (denseDesktop ? 34 : 46)
+          : (denseDesktop ? 52 : 62));
+        const fusionY = doctrineY + (denseDesktop ? 42 : 54);
+        const permanenceY = hasFusionBlueprint
+          ? fusionY + (denseDesktop ? 34 : 48)
+          : doctrineY + (denseDesktop ? 42 : 64);
         nodes.doctrineBadge.position.set(0, doctrineY);
         nodes.doctrineBadge._pillLayout = { width: cardWidth - 58, height: 34 };
         nodes.doctrineTitle.visible = true;
@@ -9092,7 +9103,6 @@ export class PlayScene {
         nodes.doctrine.style.fontSize = 10;
         nodes.doctrine.position.set(0, doctrineY + 7);
         fitTextWidth(nodes.doctrine, cardWidth - 78, 0.58);
-        const permanenceY = cardHeight / 2 - 48;
         nodes.permanenceBadge.position.set(0, permanenceY);
         nodes.permanenceBadge._pillLayout = { width: Math.min(cardWidth - 90, nodes.permanence.width + 24), height: 22 };
         nodes.permanence.anchor.set(0.5);
@@ -9100,13 +9110,13 @@ export class PlayScene {
         nodes.permanence.position.set(0, permanenceY);
         fitTextWidth(nodes.permanence, cardWidth - 112, 0.58);
         nodes.holdBadge.position.set(cardWidth / 2 - 38, -cardHeight / 2 + 25);
-        nodes.choose.position.set(0, cardHeight / 2 - 20);
+        nodes.choose.position.set(0, chooseY);
         nodes.choose.style.fontSize = 17;
         if (hasFusionBlueprint) {
           const badgeWidth = cardWidth - 40;
           const badgeHeight = 46;
           const badgeX = 0;
-          const badgeY = cardHeight / 2 - 128;
+          const badgeY = fusionY;
           nodes.fusionBadge.position.set(badgeX, badgeY);
           nodes.fusionBadge._fusionLayout = { width: badgeWidth, height: badgeHeight, compact: false };
           nodes.fusionLabel.style.fontSize = 9;
@@ -9139,7 +9149,7 @@ export class PlayScene {
       if (GameAssets.isValidTexture(nodes.artBloom.texture)) {
         const bloomPixels = compact ? 78 : 148;
         const bloomScale = bloomPixels / Math.max(1, nodes.artBloom.texture.width, nodes.artBloom.texture.height);
-        nodes.artBloom.position.set(nodes.icon?.x || 0, nodes.icon?.y || (compact ? 0 : -cardHeight / 2 + 86));
+        nodes.artBloom.position.set(nodes.icon?.x || 0, nodes.icon?.y || (compact ? 0 : -cardHeight / 2 + 72));
         nodes.artBloom.scale.set(bloomScale * (index === 1 ? 1.08 : 1), bloomScale * (index === 2 ? 0.86 : 1));
         nodes.artBloom._baseScaleX = nodes.artBloom.scale.x;
         nodes.artBloom._baseScaleY = nodes.artBloom.scale.y;
@@ -11906,15 +11916,92 @@ export class PlayScene {
 
     const shade = new PIXI.Graphics();
     shade.rect(0, 0, width, height);
-    shade.fill({ color: 0x020711, alpha: 0.58 });
+    shade.fill({ color: 0x01040b, alpha: 0.46 });
     layer.addChild(shade);
 
-    const ring = new PIXI.Graphics();
-    ring.x = width / 2;
-    ring.y = height * 0.46;
-    layer.addChild(ring);
+    const heroTexture = GameAssets.getGameOverFinalTransmissionTexture?.();
+    const hero = new PIXI.Sprite(GameAssets.isValidTexture(heroTexture) ? heroTexture : PIXI.Texture.EMPTY);
+    hero.label = 'game_over_final_transmission_art';
+    hero.anchor.set(0.5);
+    hero.position.set(width / 2, height / 2);
+    hero.eventMode = 'none';
+    hero.visible = false;
+    const fitHero = (texture) => {
+      if (!GameAssets.isValidTexture(texture) || hero.destroyed) return false;
+      hero.texture = texture;
+      const coverScale = Math.max(width / Math.max(1, texture.width), height / Math.max(1, texture.height));
+      hero._baseScale = coverScale * 1.035;
+      hero.scale.set(hero._baseScale);
+      hero.visible = true;
+      if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.generatedArtReady = true;
+      return true;
+    };
+    fitHero(heroTexture);
+    layer.addChild(hero);
+    if (!hero.visible) {
+      GameAssets.ensureGameOverFinalTransmissionTexture?.().then((texture) => {
+        if (this.gameOverAnimationLayer === layer) fitHero(texture);
+      }).catch(() => {});
+    }
 
-    const titleSize = width < 720 ? 48 : 86;
+    const fractureVeil = new PIXI.Graphics();
+    fractureVeil.label = 'game_over_angular_fracture_veil';
+    const coreX = width / 2;
+    const coreY = height * 0.315;
+    const fractureSegments = [
+      [-0.34, -0.03, -0.19, 0.02], [-0.27, 0.08, -0.12, 0.04],
+      [-0.18, -0.12, -0.07, -0.02], [0.34, -0.04, 0.19, 0.02],
+      [0.27, 0.09, 0.12, 0.04], [0.18, -0.13, 0.07, -0.02]
+    ];
+    fractureSegments.forEach(([x1, y1, x2, y2], index) => {
+      fractureVeil.moveTo(coreX + width * x1, coreY + height * y1);
+      fractureVeil.lineTo(coreX + width * x2, coreY + height * y2);
+      fractureVeil.stroke({ color: index % 2 ? 0x37f5ff : 0xff55d9, width: index % 3 === 0 ? 2 : 1, alpha: 0.42 });
+    });
+    layer.addChild(fractureVeil);
+
+    const shards = Array.from({ length: width < 720 ? 8 : 14 }, (_, index) => {
+      const shard = new PIXI.Graphics();
+      const side = index % 2 === 0 ? -1 : 1;
+      const spread = 0.08 + (index % 7) * 0.047;
+      const size = 3 + (index % 4) * 1.5;
+      shard.poly([0, -size * 1.8, size, 0, 0, size * 1.8, -size * 0.65, 0]);
+      shard.fill({ color: index % 3 === 0 ? 0x37f5ff : 0xff55d9, alpha: 0.82 });
+      shard.position.set(coreX + side * width * spread, coreY + ((index % 5) - 2) * height * 0.025);
+      shard.rotation = side * (0.18 + index * 0.11);
+      shard._originX = shard.x;
+      shard._originY = shard.y;
+      shard._driftX = side * (18 + (index % 5) * 7);
+      shard._driftY = ((index % 5) - 2) * 9 - 8;
+      layer.addChild(shard);
+      return shard;
+    });
+
+    const titlePlate = new PIXI.Graphics();
+    titlePlate.label = 'game_over_final_transmission_title_plate';
+    const plateWidth = Math.min(width * 0.78, 820);
+    const plateHeight = width < 720 ? 118 : 158;
+    const plateY = height * 0.62;
+    const cut = width < 720 ? 14 : 22;
+    titlePlate.poly([
+      coreX - plateWidth / 2 + cut, plateY - plateHeight / 2,
+      coreX + plateWidth / 2 - cut, plateY - plateHeight / 2,
+      coreX + plateWidth / 2, plateY - plateHeight / 2 + cut,
+      coreX + plateWidth / 2 - cut, plateY + plateHeight / 2,
+      coreX - plateWidth / 2 + cut, plateY + plateHeight / 2,
+      coreX - plateWidth / 2, plateY + plateHeight / 2 - cut,
+      coreX - plateWidth / 2, plateY - plateHeight / 2 + cut
+    ]);
+    titlePlate.fill({ color: 0x010711, alpha: 0.78 });
+    titlePlate.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.68 });
+    titlePlate.moveTo(coreX - plateWidth / 2 + cut + 18, plateY - plateHeight / 2 + 7);
+    titlePlate.lineTo(coreX - 42, plateY - plateHeight / 2 + 7);
+    titlePlate.moveTo(coreX + 42, plateY + plateHeight / 2 - 7);
+    titlePlate.lineTo(coreX + plateWidth / 2 - cut - 18, plateY + plateHeight / 2 - 7);
+    titlePlate.stroke({ color: 0xff55d9, width: 2, alpha: 0.68 });
+    layer.addChild(titlePlate);
+
+    const titleSize = width < 720 ? 46 : 78;
     const title = createText(translateText('GAME OVER'), {
       fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
       fontSize: titleSize,
@@ -11931,7 +12018,7 @@ export class PlayScene {
     });
     title.anchor.set(0.5);
     title.x = width / 2;
-    title.y = height * 0.43;
+    title.y = plateY - (width < 720 ? 12 : 18);
     layer.addChild(title);
 
     const finalScore = typeof this.game.getFinalScore === 'function' ? this.game.getFinalScore() : this.game.score;
@@ -11946,12 +12033,22 @@ export class PlayScene {
     });
     subtitle.anchor.set(0.5);
     subtitle.x = width / 2;
-    subtitle.y = title.y + (width < 720 ? 52 : 82);
+    subtitle.y = plateY + (width < 720 ? 37 : 48);
     layer.addChild(subtitle);
 
     this.uiOverlay.addChild(layer);
     this.uiOverlay.sortChildren?.();
     AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
+    this.gameOverAnimationDebug = {
+      active: true,
+      visualLanguage: 'final_transmission_imagegen_v1',
+      generatedArtReady: hero.visible,
+      primitiveRingCount: 0,
+      shardCount: shards.length,
+      titlePlate: true,
+      startedAt: Date.now(),
+      durationMs: 1480
+    };
 
     let elapsed = 0;
     const duration = 1480;
@@ -11960,14 +12057,24 @@ export class PlayScene {
       const t = Math.min(1, elapsed / duration);
       const intro = Math.min(1, elapsed / 260);
       layer.alpha = intro < 1 ? intro : Math.max(0, 1 - Math.max(0, t - 0.82) / 0.18);
-      layer.scale.set(0.92 + Math.sin(Math.min(1, intro) * Math.PI * 0.5) * 0.08);
-      const pulse = 0.5 + Math.sin(elapsed * 0.014) * 0.5;
-      ring.clear();
-      ring.circle(0, 0, Math.min(width, height) * (0.22 + pulse * 0.03));
-      ring.stroke({ color: 0xff55d9, width: 4, alpha: 0.52 + pulse * 0.28 });
-      ring.circle(0, 0, Math.min(width, height) * (0.34 + pulse * 0.04));
-      ring.stroke({ color: 0x37f5ff, width: 2, alpha: 0.36 + pulse * 0.18 });
+      layer.scale.set(0.97 + Math.sin(Math.min(1, intro) * Math.PI * 0.5) * 0.03);
+      const pulse = 0.5 + Math.sin(elapsed * 0.012) * 0.5;
+      if (hero.visible && hero._baseScale) {
+        hero.scale.set(hero._baseScale * (0.985 + intro * 0.025 + pulse * 0.004));
+        hero.position.set(width / 2 + Math.sin(elapsed * 0.0024) * 2.5, height / 2 - (1 - intro) * 18);
+        hero.alpha = 0.82 + pulse * 0.12;
+      }
+      fractureVeil.alpha = 0.38 + pulse * 0.38;
+      shards.forEach((shard, index) => {
+        const travel = Math.min(1, t * (1.08 + (index % 3) * 0.08));
+        shard.x = shard._originX + shard._driftX * travel;
+        shard.y = shard._originY + shard._driftY * travel;
+        shard.rotation += (index % 2 ? 1 : -1) * 0.009 * tick.deltaTime;
+        shard.alpha = Math.max(0, 0.9 - Math.max(0, travel - 0.58) * 1.6);
+      });
+      titlePlate.alpha = 0.72 + pulse * 0.18;
       if (elapsed >= duration) {
+        if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.active = false;
         this.game.app.ticker.remove(ticker);
         this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
       }
@@ -11975,6 +12082,17 @@ export class PlayScene {
     this.game.app.ticker.add(ticker);
     if (!this._activeTickers) this._activeTickers = [];
     this._activeTickers.push(ticker);
+  }
+
+  getGameOverAnimationDebugState(getBounds) {
+    const layer = this.gameOverAnimationLayer;
+    const debug = this.gameOverAnimationDebug;
+    if (!debug) return { active: false, visible: false };
+    return {
+      ...debug,
+      visible: Boolean(layer?.parent),
+      bounds: typeof getBounds === 'function' ? getBounds(layer) : null
+    };
   }
 
   onLifeLost(lives, context = {}) {

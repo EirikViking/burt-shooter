@@ -103,10 +103,11 @@ try {
     return state.scene === 'play' && Boolean(window.__game?.scenes?.play?.player);
   }, null, { timeout: 30000 });
 
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const game = window.__game;
     const play = game?.scenes?.play;
     const player = play?.player;
+    await play?.gameOverFinalTransmissionReady;
     game.lives = 1;
     play.debugInvincible = false;
     if (player) {
@@ -130,6 +131,11 @@ try {
   const ceremonyLayers = await page.evaluate(() => window.__game?.scenes?.play?.gameOverAnimationLayer?.children?.length || 0);
   assert(ceremonyLayers >= 4, 'single game-over ceremony is missing its title/score visual stack', { ceremonyLayers });
   assert(interludeState.gameOverInterlude?.active !== true, 'normal final death started the duplicate legacy interlude', interludeState.gameOverInterlude);
+  assert(interludeState.gameOverAnimation?.active === true, 'final-death celebration did not expose its active debug state', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.visualLanguage === 'final_transmission_imagegen_v1', 'final-death celebration is not using the approved final-transmission visual language', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.generatedArtReady === true, 'generated final-transmission art was not ready for the celebration', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.primitiveRingCount === 0, 'primitive circle rings returned to the final-death celebration', interludeState.gameOverAnimation);
+  assert((interludeState.gameOverAnimation?.shardCount || 0) >= 8, 'angular breakup fragments are missing from the final-death celebration', interludeState.gameOverAnimation);
 
   await page.evaluate(() => window.advanceTime?.(700));
   const heldState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));

@@ -97,12 +97,46 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
   if (message.type() === 'error') consoleErrors.push(message.text());
 });
+await page.addInitScript(() => {
+  localStorage.clear();
+  localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+  localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+    version: 1,
+    runContracts: {
+      version: 8,
+      activeIds: ['near_miss_streak', 'slow_mo_finisher', 'blink_control'],
+      completedIds: [],
+      completed: {},
+      progress: {
+        near_miss_streak: {
+          id: 'near_miss_streak',
+          progress: 3,
+          target: 5,
+          lastRunMode: 'ranked',
+          lastSector: 1,
+          updatedAt: '2026-07-22T00:00:00.000Z'
+        }
+      }
+    }
+  }));
+});
 
 try {
-  await page.goto(withQuery(baseUrl, { autostart: '1', offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(withQuery(baseUrl, { offlineLeaderboard: '1' }), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.player?.active;
+    return state?.scene === 'menu';
+  }, null, { timeout: 30000 });
+  await page.evaluate(async () => {
+    await window.__game?.startGame?.(undefined, {
+      runMode: 'ranked_tactical',
+      inputDevice: 'keyboard',
+      countShipUsage: false
+    });
+  });
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.scene === 'play' && state?.runMode === 'ranked_tactical' && state?.player?.active;
   }, null, { timeout: 30000 });
 
   const state = await page.evaluate(async () => {
@@ -135,10 +169,15 @@ try {
       await new Promise((resolve) => setTimeout(resolve, 60));
     }
     await new Promise((resolve) => setTimeout(resolve, 120));
+    play.flushDeferredRunContractProgress?.(true);
+    const textState = readState();
+    const savedProfile = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
     return {
       ok: true,
-      scoring: readState().scoring,
-      hitbox: readState().player?.hitboxReticle || null,
+      scoring: textState.scoring,
+      hitbox: textState.player?.hitboxReticle || null,
+      runContracts: textState.runContracts || null,
+      savedRunContracts: savedProfile.runContracts || null,
       visible: Boolean(player.hitboxReticle?.visible)
     };
   });
@@ -158,6 +197,13 @@ try {
   if ((nearMiss.surgeSpikeCount || 0) < 5) failures.push(`surge-ready burst spikes missing: ${JSON.stringify(nearMiss)}`);
   if (!(nearMiss.windowProgress > 0.6 && nearMiss.windowProgress <= 1)) failures.push(`window progress should still be readable: ${JSON.stringify(nearMiss)}`);
   if ((state.scoring?.bestDangerDodgeStreak || 0) < 5) failures.push(`scoring streak did not register: ${JSON.stringify(state.scoring)}`);
+  const nearMissOrder = state.runContracts?.active?.find((entry) => entry.id === 'near_miss_streak');
+  if (nearMissOrder?.progress !== 5 || nearMissOrder?.completed !== true) {
+    failures.push(`seeded 3/5 Pilot Order did not complete through real applyNearMiss calls: ${JSON.stringify(state.runContracts)}`);
+  }
+  if (state.savedRunContracts?.completed?.near_miss_streak?.count !== 1) {
+    failures.push(`5x near-miss completion did not persist to the hangar profile: ${JSON.stringify(state.savedRunContracts)}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

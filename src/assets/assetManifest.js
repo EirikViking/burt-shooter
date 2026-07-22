@@ -25,6 +25,7 @@ export const AssetManifest = {
         },
         leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
         gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
+        gameOverFinalTransmission: '/art/generated/nova-swarm/gameover/nova-swarm-final-transmission-interlude-20260722.png',
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
