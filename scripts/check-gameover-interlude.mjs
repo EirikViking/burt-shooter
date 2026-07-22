@@ -135,9 +135,11 @@ try {
   assert(interludeState.gameOverAnimation?.visualLanguage === 'final_transmission_imagegen_v1', 'final-death celebration is not using the approved final-transmission visual language', interludeState.gameOverAnimation);
   assert(interludeState.gameOverAnimation?.generatedArtReady === true, 'generated final-transmission art was not ready for the celebration', interludeState.gameOverAnimation);
   assert(interludeState.gameOverAnimation?.primitiveRingCount === 0, 'primitive circle rings returned to the final-death celebration', interludeState.gameOverAnimation);
-  assert((interludeState.gameOverAnimation?.shardCount || 0) >= 8, 'angular breakup fragments are missing from the final-death celebration', interludeState.gameOverAnimation);
+  assert((interludeState.gameOverAnimation?.shardCount || 0) >= 12, 'angular breakup fragments are missing from the final-death celebration', interludeState.gameOverAnimation);
+  assert((interludeState.gameOverAnimation?.durationMs || 0) >= 3600, 'final-death celebration is still too brief to read', interludeState.gameOverAnimation);
+  assert((interludeState.gameOverAnimation?.animationPhases || []).length >= 5, 'final-death celebration is missing staged animation phases', interludeState.gameOverAnimation);
 
-  await page.evaluate(() => window.advanceTime?.(700));
+  await page.evaluate(() => window.advanceTime?.(1400));
   const heldState = JSON.parse(await page.evaluate(() => window.render_game_to_text()));
   assert(heldState.scene === 'play', 'single game-over ceremony did not hold briefly inside gameplay', heldState);
   assert(heldState.gameOverInterlude?.active !== true, 'duplicate game-over interlude appeared during the hold', heldState);
@@ -146,7 +148,7 @@ try {
   const screenshot = path.join(outputDir, 'gameover-interlude.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
-  await page.evaluate(() => window.advanceTime?.(1100));
+  await page.evaluate(() => window.advanceTime?.(2600));
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.scene === 'gameOver' && state.gameOver?.backdropLoaded === true;

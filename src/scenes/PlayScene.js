@@ -185,6 +185,7 @@ const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
+const GAME_OVER_CELEBRATION_DURATION_MS = 3800;
 const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
   offense: 0xff647f,
   mobility: 0x58d8ff,
@@ -11897,7 +11898,7 @@ export class PlayScene {
       if (this.game?.currentScene === this) {
         this.game.gameOver({ fromInterlude: true });
       }
-    }, 1500);
+    }, GAME_OVER_CELEBRATION_DURATION_MS + 60);
     if (!this._deathTimeouts) this._deathTimeouts = [];
     this._deathTimeouts.push(id);
     return true;
@@ -11911,7 +11912,7 @@ export class PlayScene {
     layer.label = 'ui_in_game_game_over_animation';
     layer.zIndex = 1000000;
     layer.alpha = 0;
-    layer.scale.set(0.92);
+    layer.scale.set(0.965);
     this.gameOverAnimationLayer = layer;
 
     const shade = new PIXI.Graphics();
@@ -11960,10 +11961,38 @@ export class PlayScene {
     });
     layer.addChild(fractureVeil);
 
-    const shards = Array.from({ length: width < 720 ? 8 : 14 }, (_, index) => {
+    const coreSignal = new PIXI.Graphics();
+    coreSignal.label = 'game_over_angular_core_signal';
+    coreSignal.poly([0, -34, 34, 0, 0, 34, -34, 0]);
+    coreSignal.fill({ color: 0xff55d9, alpha: 0.16 });
+    coreSignal.stroke({ color: 0xffb4f1, width: 2, alpha: 0.88 });
+    coreSignal.poly([0, -21, 21, 0, 0, 21, -21, 0]);
+    coreSignal.stroke({ color: 0x7ef9ff, width: 2, alpha: 0.92 });
+    coreSignal.position.set(coreX, coreY);
+    coreSignal.alpha = 0;
+    coreSignal.scale.set(0.35);
+    layer.addChild(coreSignal);
+
+    const scanBlade = new PIXI.Graphics();
+    scanBlade.label = 'game_over_signal_scan_blade';
+    const scanWidth = Math.min(width * 0.72, 900);
+    scanBlade.poly([
+      -scanWidth / 2, -4,
+      scanWidth / 2 - 24, -4,
+      scanWidth / 2, 0,
+      scanWidth / 2 - 24, 4,
+      -scanWidth / 2, 4
+    ]);
+    scanBlade.fill({ color: 0x73f7ff, alpha: 0.42 });
+    scanBlade.position.set(coreX, coreY - height * 0.1);
+    scanBlade.rotation = -0.045;
+    scanBlade.alpha = 0;
+    layer.addChild(scanBlade);
+
+    const shards = Array.from({ length: width < 720 ? 12 : 20 }, (_, index) => {
       const shard = new PIXI.Graphics();
       const side = index % 2 === 0 ? -1 : 1;
-      const spread = 0.08 + (index % 7) * 0.047;
+      const spread = 0.055 + (index % 10) * 0.034;
       const size = 3 + (index % 4) * 1.5;
       shard.poly([0, -size * 1.8, size, 0, 0, size * 1.8, -size * 0.65, 0]);
       shard.fill({ color: index % 3 === 0 ? 0x37f5ff : 0xff55d9, alpha: 0.82 });
@@ -11971,8 +12000,9 @@ export class PlayScene {
       shard.rotation = side * (0.18 + index * 0.11);
       shard._originX = shard.x;
       shard._originY = shard.y;
-      shard._driftX = side * (18 + (index % 5) * 7);
-      shard._driftY = ((index % 5) - 2) * 9 - 8;
+      shard._driftX = side * (54 + (index % 6) * 18);
+      shard._driftY = ((index % 7) - 3) * 18 - 18;
+      shard._delayMs = 140 + (index % 5) * 55;
       layer.addChild(shard);
       return shard;
     });
@@ -11999,6 +12029,8 @@ export class PlayScene {
     titlePlate.moveTo(coreX + 42, plateY + plateHeight / 2 - 7);
     titlePlate.lineTo(coreX + plateWidth / 2 - cut - 18, plateY + plateHeight / 2 - 7);
     titlePlate.stroke({ color: 0xff55d9, width: 2, alpha: 0.68 });
+    titlePlate.alpha = 0;
+    titlePlate.x = -32;
     layer.addChild(titlePlate);
 
     const titleSize = width < 720 ? 46 : 78;
@@ -12019,6 +12051,8 @@ export class PlayScene {
     title.anchor.set(0.5);
     title.x = width / 2;
     title.y = plateY - (width < 720 ? 12 : 18);
+    title.alpha = 0;
+    title.scale.set(0.88);
     layer.addChild(title);
 
     const finalScore = typeof this.game.getFinalScore === 'function' ? this.game.getFinalScore() : this.game.score;
@@ -12034,6 +12068,7 @@ export class PlayScene {
     subtitle.anchor.set(0.5);
     subtitle.x = width / 2;
     subtitle.y = plateY + (width < 720 ? 37 : 48);
+    subtitle.alpha = 0;
     layer.addChild(subtitle);
 
     this.uiOverlay.addChild(layer);
@@ -12046,33 +12081,58 @@ export class PlayScene {
       primitiveRingCount: 0,
       shardCount: shards.length,
       titlePlate: true,
+      animationPhases: ['impact', 'fracture', 'title_reveal', 'final_hold', 'fade'],
       startedAt: Date.now(),
-      durationMs: 1480
+      durationMs: GAME_OVER_CELEBRATION_DURATION_MS
     };
 
     let elapsed = 0;
-    const duration = 1480;
+    const duration = GAME_OVER_CELEBRATION_DURATION_MS;
+    const clamp01 = (value) => Math.max(0, Math.min(1, value));
+    const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3);
+    const easeInOut = (value) => {
+      const t = clamp01(value);
+      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    };
     const ticker = (tick) => {
       elapsed += tick.deltaTime * 16.67;
       const t = Math.min(1, elapsed / duration);
-      const intro = Math.min(1, elapsed / 260);
-      layer.alpha = intro < 1 ? intro : Math.max(0, 1 - Math.max(0, t - 0.82) / 0.18);
-      layer.scale.set(0.97 + Math.sin(Math.min(1, intro) * Math.PI * 0.5) * 0.03);
-      const pulse = 0.5 + Math.sin(elapsed * 0.012) * 0.5;
+      const intro = easeOutCubic(elapsed / 560);
+      const titleIn = easeOutCubic((elapsed - 420) / 520);
+      const scoreIn = easeOutCubic((elapsed - 820) / 420);
+      const exit = easeInOut((elapsed - (duration - 540)) / 540);
+      const holdPulse = 0.5 + Math.sin(elapsed * 0.0065) * 0.5;
+      layer.alpha = intro * (1 - exit);
+      layer.scale.set(0.965 + intro * 0.035 - exit * 0.008);
       if (hero.visible && hero._baseScale) {
-        hero.scale.set(hero._baseScale * (0.985 + intro * 0.025 + pulse * 0.004));
-        hero.position.set(width / 2 + Math.sin(elapsed * 0.0024) * 2.5, height / 2 - (1 - intro) * 18);
-        hero.alpha = 0.82 + pulse * 0.12;
+        const cinematicDrift = easeInOut(t);
+        hero.scale.set(hero._baseScale * (0.98 + intro * 0.028 + cinematicDrift * 0.035 + holdPulse * 0.004));
+        hero.position.set(
+          width / 2 + Math.sin(elapsed * 0.0018) * 6,
+          height / 2 - (1 - intro) * 28 - cinematicDrift * 8
+        );
+        hero.alpha = 0.72 + intro * 0.2 + holdPulse * 0.06;
       }
-      fractureVeil.alpha = 0.38 + pulse * 0.38;
+      fractureVeil.alpha = (0.18 + intro * 0.34 + holdPulse * 0.28) * (1 - exit);
+      const coreBurst = easeOutCubic((elapsed - 100) / 720);
+      coreSignal.alpha = Math.max(0, (0.92 - coreBurst * 0.42 + holdPulse * 0.14) * (1 - exit));
+      coreSignal.scale.set(0.35 + coreBurst * 1.18 + holdPulse * 0.045);
+      coreSignal.rotation = elapsed * 0.00035;
+      const scanProgress = clamp01((elapsed - 260) / 1500);
+      scanBlade.y = coreY - height * 0.11 + scanProgress * height * 0.25;
+      scanBlade.alpha = Math.sin(scanProgress * Math.PI) * 0.54 * (1 - exit);
       shards.forEach((shard, index) => {
-        const travel = Math.min(1, t * (1.08 + (index % 3) * 0.08));
+        const travel = easeOutCubic((elapsed - shard._delayMs) / (1380 + (index % 4) * 130));
         shard.x = shard._originX + shard._driftX * travel;
         shard.y = shard._originY + shard._driftY * travel;
-        shard.rotation += (index % 2 ? 1 : -1) * 0.009 * tick.deltaTime;
-        shard.alpha = Math.max(0, 0.9 - Math.max(0, travel - 0.58) * 1.6);
+        shard.rotation += (index % 2 ? 1 : -1) * 0.012 * tick.deltaTime;
+        shard.alpha = Math.max(0, (0.22 + travel * 0.72 + holdPulse * 0.08) * (1 - exit));
       });
-      titlePlate.alpha = 0.72 + pulse * 0.18;
+      titlePlate.x = -32 * (1 - titleIn);
+      titlePlate.alpha = titleIn * (0.78 + holdPulse * 0.12) * (1 - exit);
+      title.alpha = titleIn * (1 - exit);
+      title.scale.set(0.88 + titleIn * 0.12 + holdPulse * 0.008);
+      subtitle.alpha = scoreIn * (0.84 + holdPulse * 0.16) * (1 - exit);
       if (elapsed >= duration) {
         if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.active = false;
         this.game.app.ticker.remove(ticker);
