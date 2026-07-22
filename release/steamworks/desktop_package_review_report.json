@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-22T04:38:12.954Z",
+  "generatedAt": "2026-07-22T06:15:53.587Z",
   "status": "passed",
   "currentBuild": {
-    "version": "v2026-07-22_01-29-17",
-    "timestamp": "2026-07-21T23:29:17.593Z"
+    "version": "v2026-07-22_08-08-50",
+    "timestamp": "2026-07-22T06:08:50.729Z"
   },
   "packagedSmokeMode": "local",
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226698752,
-    "modifiedAt": "2026-07-21T23:32:27.408Z"
+    "modifiedAt": "2026-07-22T06:12:41.489Z"
   },
   "steamApiPayload": {
     "path": "release/desktop/win-unpacked/steam_api64.dll",
@@ -17,10 +17,10 @@
     "modifiedAt": "2026-06-04T17:20:54.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-07-22T04-37-45-787Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-07-22T04-37-45-787Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-07-22T06-15-33-604Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-07-22T06-15-33-604Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-22_01-29-17",
+    "build": "v2026-07-22_08-08-50",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -39,10 +39,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-07-22T04-37-07-443Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-07-22T04-37-07-443Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-07-22T06-13-39-751Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-07-22T06-13-39-751Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-22_01-29-17",
+    "build": "v2026-07-22_08-08-50",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -66,15 +66,15 @@
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-07-22T04-35-12-715Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-07-22T06-13-46-500Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-07-22T04-35-12-715Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-07-22T04-35-12-715Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-07-22T04-35-12-715Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-07-22T04-35-12-715Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-07-22T06-13-46-500Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-07-22T06-13-46-500Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-07-22T06-13-46-500Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-07-22T06-13-46-500Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-07-22_01-29-17",
+    "build": "v2026-07-22_08-08-50",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,
@@ -87,12 +87,12 @@
     "errors": []
   },
   "latestPackagedPerfSmoke": {
-    "reportPath": "test-results/packaged-perf-smoke-2026-07-22T04-35-41-199Z/report.json",
-    "screenshotPath": "test-results/packaged-perf-smoke-2026-07-22T04-35-41-199Z/01-electron-perf-final.png",
+    "reportPath": "test-results/packaged-perf-smoke-2026-07-22T06-14-00-875Z/report.json",
+    "screenshotPath": "test-results/packaged-perf-smoke-2026-07-22T06-14-00-875Z/01-electron-perf-final.png",
     "status": "passed",
-    "build": "v2026-07-22_01-29-17",
-    "minFps": 59.99999999999999,
-    "avgFps": 59.999999999999986,
+    "build": "v2026-07-22_08-08-50",
+    "minFps": 59.88023952094243,
+    "avgFps": 60.11383990364955,
     "minRequiredFps": 50,
     "consoleEvents": [],
     "errors": []
