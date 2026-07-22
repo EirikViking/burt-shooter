@@ -146,8 +146,9 @@ try {
   if (!state.labels?.includes?.('waveClearSweepLayer')) failures.push(`wave clear sweep layer missing: ${JSON.stringify(state.labels)}`);
   if ((state.debug?.sweepBandCount || 0) < 3) failures.push(`wave clear sweep bands missing: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.sweepChevronCount || 0) < 6) failures.push(`wave clear sweep chevrons missing: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.ringCount || 0) < 1) failures.push(`wave clear ring debug missing: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.glintCount || 0) < 4) failures.push(`wave clear prismatic glints missing: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.ringCount || 0) !== 0) failures.push(`wave clear retained target rings: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.glintCount || 0) !== 0) failures.push(`wave clear retained star glints: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.accentRailCount || 0) < 2) failures.push(`wave clear accent rails missing: ${JSON.stringify(state.debug)}`);
   if (!state.debug?.subtitle) failures.push(`wave clear subtitle flag missing: ${JSON.stringify(state.debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

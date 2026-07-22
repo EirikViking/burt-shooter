@@ -31,6 +31,7 @@ export const AssetManifest = {
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
         vfx: {
             overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png',
+            plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
             bossWarningAtlas: '/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-atlas-20260603-clean.png',
             bossWarningEmblems: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/vfx/boss-warning-emblems/nova-boss-warning-emblem-${String(i + 1).padStart(2, '0')}-20260603-clean.png`)
         },

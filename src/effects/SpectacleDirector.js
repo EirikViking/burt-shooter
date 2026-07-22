@@ -283,6 +283,174 @@ export class SpectacleDirector {
   drawPulse(pulse, width, height) {
     const profile = pulse.profile;
     const t = clamp(pulse.elapsedMs / pulse.durationMs, 0, 1);
+    const intro = Math.min(1, t / 0.1);
+    const fade = Math.pow(Math.max(0, 1 - t), 0.92);
+    const intensity = pulse.intensity;
+    const motion = pulse.reducedMotion ? 0.2 : profile.motion;
+    const alpha = intro * fade * intensity;
+    const growth = 0.28 + intro * 0.38 + Math.pow(t, 0.7) * 0.82;
+    const baseRadius = profile.radius * growth * (0.78 + intensity * 0.22);
+    const rotation = pulse.seed + t * 0.46 * motion;
+    const lite = pulse.performanceLite || pulse.reducedMotion;
+    const tendrilCount = lite
+      ? Math.max(4, Math.ceil(profile.rays * 0.25))
+      : Math.max(6, Math.ceil(profile.rays * 0.45));
+    const fragmentCount = lite
+      ? Math.max(3, Math.ceil(profile.shards * 0.28))
+      : Math.max(5, Math.ceil(profile.shards * 0.5));
+
+    if (profile.screenWash > 0) {
+      this.layer.rect(0, 0, width, height);
+      this.layer.fill({
+        color: pulse.color,
+        alpha: profile.screenWash * Math.min(1, alpha) * Math.max(0, 1 - t * 2.2)
+      });
+    }
+
+    // Irregular plasma tendrils replace the old radar rings and radial spokes.
+    // Every path bends on a different axis so the burst reads as turbulent energy,
+    // not a geometric emblem.
+    for (let index = 0; index < tendrilCount; index += 1) {
+      const variation = Math.sin((index + 1) * 17.31 + pulse.seed * 5.17);
+      const angle = rotation + (Math.PI * 2 * index) / tendrilCount + variation * 0.34;
+      const reach = baseRadius * (0.62 + ((index * 7) % 9) * 0.065);
+      const inner = baseRadius * (0.08 + (index % 3) * 0.035);
+      const bend = reach * (0.12 + Math.abs(variation) * 0.14) * (index % 2 ? 1 : -1);
+      const nx = Math.cos(angle);
+      const ny = Math.sin(angle);
+      const tx = -ny;
+      const ty = nx;
+      const sx = pulse.x + nx * inner;
+      const sy = pulse.y + ny * inner;
+      const ex = pulse.x + nx * reach + tx * bend * 0.42;
+      const ey = pulse.y + ny * reach + ty * bend * 0.42;
+      this.layer.moveTo(sx, sy);
+      this.layer.bezierCurveTo(
+        pulse.x + nx * reach * 0.3 + tx * bend,
+        pulse.y + ny * reach * 0.3 + ty * bend,
+        pulse.x + nx * reach * 0.68 - tx * bend * 0.46,
+        pulse.y + ny * reach * 0.68 - ty * bend * 0.46,
+        ex,
+        ey
+      );
+      this.layer.stroke({
+        color: index % 3 === 0 ? pulse.accent : pulse.color,
+        width: Math.max(2.2, (9 - index * 0.18) * (1 - t * 0.42)),
+        alpha: 0.075 * alpha
+      });
+      this.layer.moveTo(sx, sy);
+      this.layer.bezierCurveTo(
+        pulse.x + nx * reach * 0.3 + tx * bend,
+        pulse.y + ny * reach * 0.3 + ty * bend,
+        pulse.x + nx * reach * 0.68 - tx * bend * 0.46,
+        pulse.y + ny * reach * 0.68 - ty * bend * 0.46,
+        ex,
+        ey
+      );
+      this.layer.stroke({
+        color: index % 4 === 0 ? 0xffffff : (index % 2 ? pulse.color : pulse.accent),
+        width: Math.max(0.8, 2.4 - t * 1.2),
+        alpha: 0.3 * alpha
+      });
+    }
+
+    // Broken, off-axis wavefronts preserve impact scale without concentric circles.
+    const wavefrontCount = lite ? 1 : (pulse.kind === 'boss_death' || pulse.kind === 'miracle' ? 3 : 2);
+    for (let wave = 0; wave < wavefrontCount; wave += 1) {
+      const axis = rotation * (wave % 2 ? -0.36 : 0.22) + wave * 2.08;
+      const span = baseRadius * (0.74 + wave * 0.22);
+      const nx = Math.cos(axis);
+      const ny = Math.sin(axis);
+      const tx = -ny;
+      const ty = nx;
+      const offset = baseRadius * (wave - (wavefrontCount - 1) * 0.5) * 0.13;
+      this.layer.moveTo(
+        pulse.x - tx * span + nx * offset,
+        pulse.y - ty * span + ny * offset
+      );
+      this.layer.bezierCurveTo(
+        pulse.x - tx * span * 0.32 + nx * span * 0.22,
+        pulse.y - ty * span * 0.32 + ny * span * 0.22,
+        pulse.x + tx * span * 0.36 + nx * span * 0.12,
+        pulse.y + ty * span * 0.36 + ny * span * 0.12,
+        pulse.x + tx * span + nx * offset * 0.35,
+        pulse.y + ty * span + ny * offset * 0.35
+      );
+      this.layer.stroke({
+        color: wave % 2 ? pulse.accent : pulse.color,
+        width: Math.max(1, 3.4 - wave * 0.7),
+        alpha: (0.22 - wave * 0.035) * alpha
+      });
+    }
+
+    // Thin, tapered fragments are deliberately uneven and never form diamonds.
+    for (let index = 0; index < fragmentCount; index += 1) {
+      const angle = -rotation * 0.7 + index * 2.399 + Math.sin(index * 9.7 + pulse.seed) * 0.28;
+      const distance = baseRadius * (0.4 + ((index * 5) % 8) * 0.07);
+      const length = baseRadius * (0.055 + (index % 4) * 0.012);
+      const widthScale = Math.max(0.8, length * 0.13);
+      const nx = Math.cos(angle);
+      const ny = Math.sin(angle);
+      const tx = -ny;
+      const ty = nx;
+      const cx = pulse.x + nx * distance;
+      const cy = pulse.y + ny * distance;
+      this.layer.poly([
+        cx + nx * length, cy + ny * length,
+        cx - nx * length * 0.62 + tx * widthScale, cy - ny * length * 0.62 + ty * widthScale,
+        cx - nx * length * 0.3 - tx * widthScale * 0.34, cy - ny * length * 0.3 - ty * widthScale * 0.34
+      ]);
+      this.layer.fill({
+        color: index % 4 === 0 ? 0xffffff : (index % 2 ? pulse.color : pulse.accent),
+        alpha: 0.2 * alpha
+      });
+    }
+
+    if (profile.horizontalSweep) {
+      const sweep = width * (0.1 + Math.min(1, t * 1.7) * 0.42);
+      const y = clamp(pulse.y, height * 0.12, height * 0.88);
+      this.layer.moveTo(Math.max(0, pulse.x - sweep), y - 5);
+      this.layer.bezierCurveTo(pulse.x - sweep * 0.3, y + 4, pulse.x + sweep * 0.25, y - 4, Math.min(width, pulse.x + sweep), y + 3);
+      this.layer.stroke({ color: pulse.accent, width: 1.5, alpha: 0.12 * alpha });
+    }
+
+    if (profile.edgeBloom) {
+      const edgeAlpha = 0.1 * alpha * Math.max(0, 1 - t * 0.76);
+      const inset = 8 + t * 24;
+      const corner = Math.min(width, height) * (0.08 + intensity * 0.018);
+      this.layer.moveTo(inset, corner);
+      this.layer.lineTo(inset, inset);
+      this.layer.lineTo(corner, inset);
+      this.layer.moveTo(width - corner, inset);
+      this.layer.lineTo(width - inset, inset);
+      this.layer.lineTo(width - inset, corner);
+      this.layer.moveTo(inset, height - corner);
+      this.layer.lineTo(inset, height - inset);
+      this.layer.lineTo(corner, height - inset);
+      this.layer.moveTo(width - corner, height - inset);
+      this.layer.lineTo(width - inset, height - inset);
+      this.layer.lineTo(width - inset, height - corner);
+      this.layer.stroke({ color: pulse.accent, width: 2.6, alpha: edgeAlpha });
+    }
+
+    const core = Math.max(4, baseRadius * (0.08 + (1 - t) * 0.055));
+    this.layer.moveTo(pulse.x - core * 1.15, pulse.y + core * 0.08);
+    this.layer.bezierCurveTo(
+      pulse.x - core * 0.48, pulse.y - core * 0.92,
+      pulse.x + core * 0.52, pulse.y - core * 0.66,
+      pulse.x + core * 1.08, pulse.y - core * 0.12
+    );
+    this.layer.bezierCurveTo(
+      pulse.x + core * 0.42, pulse.y + core * 0.88,
+      pulse.x - core * 0.54, pulse.y + core * 0.7,
+      pulse.x - core * 1.15, pulse.y + core * 0.08
+    );
+    this.layer.fill({ color: 0xffffff, alpha: 0.34 * alpha });
+  }
+
+  drawLegacyPulse(pulse, width, height) {
+    const profile = pulse.profile;
+    const t = clamp(pulse.elapsedMs / pulse.durationMs, 0, 1);
     const intro = Math.min(1, t / 0.13);
     const fade = Math.pow(Math.max(0, 1 - t), 0.82);
     const motionScale = pulse.reducedMotion ? 0.24 : profile.motion;
@@ -510,6 +678,9 @@ export class SpectacleDirector {
       layerAttached: Boolean(this.layer?.parent),
       layerVisible: Boolean(this.layer?.visible),
       oneTicker: Boolean(this.boundUpdate),
+      visualLanguage: 'plasma_fracture_v2',
+      primitiveCircleCount: 0,
+      primitiveDiamondCount: 0,
       lastEvent: this.lastEvent ? { ...this.lastEvent } : null
     };
   }

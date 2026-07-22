@@ -2381,35 +2381,12 @@ export class Player {
       console.log(`[Shockwave] Hit ${hitCount} enemies`);
     }
 
-    // Visual effect - expanding ring
-    if (playScene.gameContainer) {
-      const ring = new PIXI.Graphics();
-      let radius = 0;
-      const maxRadius = 250;
-      const duration = 500;
-      const startTime = Date.now();
-
-      const animateRing = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(1, elapsed / duration);
-        radius = maxRadius * progress;
-        const alpha = 1 - progress;
-
-        ring.clear();
-        ring.circle(this.x, this.y, radius);
-        ring.stroke({ color: shockwaveColor, width: 4, alpha: alpha * 0.8 });
-        ring.fill({ color: shockwaveColor, alpha: alpha * 0.2 });
-
-        if (progress < 1) {
-          requestAnimationFrame(animateRing);
-        } else {
-          if (ring.parent) ring.parent.removeChild(ring);
-        }
-      };
-
-      playScene.gameContainer.addChild(ring);
-      animateRing();
-    }
+    playScene.triggerShockwave?.(this.x, this.y, shockwaveColor);
+    playScene.particleManager?.createEnergyBloom?.(this.x, this.y, 1.45, {
+      size: Math.min(280, shockwaveRadius * 0.9),
+      alpha: 0.52,
+      aspect: 1.2
+    });
 
     // Sound effect
     AudioManager.playSfx('explosionCrunch', { force: true, volume: 1.0 });
@@ -3644,16 +3621,14 @@ export class Player {
       }
     }
 
-    if (playScene.gameContainer) {
-      const ring = new PIXI.Graphics();
-      const color = this.visualVariant?.accent || 0x66ffff;
-      ring.circle(this.x, this.y, radius);
-      ring.stroke({ color, width: 3, alpha: 0.74 });
-      playScene.gameContainer.addChild(ring);
-      setTimeout(() => {
-        if (ring.parent) ring.parent.removeChild(ring);
-      }, 130);
-    }
+    const pulseColor = this.visualVariant?.accent || 0x66ffff;
+    playScene.triggerShockwave?.(this.x, this.y, pulseColor);
+    playScene.particleManager?.createEnergyBloom?.(this.x, this.y, 0.72, {
+      size: Math.max(92, radius * 1.45),
+      lifetime: 28,
+      alpha: 0.38,
+      aspect: 1.28
+    });
     const shards = this.runAugmentModifiers?.riftReprisal ? phaseClearedPositions.length : 0;
     this.lastDodgeExitPulse = {
       token,

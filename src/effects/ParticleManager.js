@@ -51,22 +51,28 @@ class Particle {
       this.isDebris = false;
       this.sprite.clear();
       const speed = Math.max(0.1, Math.hypot(vx, vy));
-      const shardLength = Math.max(2.4, Math.min(15, size * (1.35 + Math.min(1.45, speed * 0.16))));
-      const shardWidth = Math.max(0.8, Math.min(6, size * 0.72));
-      this.sprite.poly([
-        -shardLength * 0.34, 0,
-        -shardLength * 0.04, -shardWidth,
-        shardLength, 0,
-        -shardLength * 0.04, shardWidth
-      ]);
+      const shardLength = Math.max(3.2, Math.min(18, size * (1.5 + Math.min(1.65, speed * 0.17))));
+      const shardWidth = Math.max(0.9, Math.min(6.5, size * 0.7));
+      const curl = (Math.random() - 0.5) * shardWidth * 1.2;
+      this.sprite.moveTo(-shardLength * 0.5, curl * 0.18);
+      this.sprite.bezierCurveTo(
+        -shardLength * 0.1, -shardWidth * 0.72,
+        shardLength * 0.46, -shardWidth * 1.04 + curl,
+        shardLength, -shardWidth * 0.08
+      );
+      this.sprite.bezierCurveTo(
+        shardLength * 0.42, shardWidth * 0.38 + curl * 0.35,
+        -shardLength * 0.06, shardWidth * 0.78,
+        -shardLength * 0.5, curl * 0.18
+      );
       this.sprite.fill({ color, alpha: 0.92 });
-      this.sprite.poly([
-        -shardLength * 0.12, 0,
-        shardLength * 0.48, -Math.max(0.35, shardWidth * 0.24),
-        shardLength * 0.82, 0,
-        shardLength * 0.48, Math.max(0.35, shardWidth * 0.24)
-      ]);
-      this.sprite.fill({ color: 0xffffff, alpha: 0.78 });
+      this.sprite.moveTo(-shardLength * 0.08, curl * 0.1);
+      this.sprite.bezierCurveTo(
+        shardLength * 0.25, -shardWidth * 0.2,
+        shardLength * 0.56, curl * 0.18,
+        shardLength * 0.82, -shardWidth * 0.06
+      );
+      this.sprite.stroke({ color: 0xffffff, width: Math.max(0.55, shardWidth * 0.22), alpha: 0.72 });
       this.sprite.x = x;
       this.sprite.y = y;
       this.sprite.rotation = Math.atan2(vy, vx);
@@ -117,7 +123,11 @@ export class ParticleManager {
     this.softParticleBudget = 520;
     this.pressureSpawnCounter = 0;
     this.lastPressureTrimCount = 0;
+    this.energyBlooms = [];
+    this.energyBloomPool = [];
+    this.maxEnergyBlooms = 18;
     this.onCap = onCap;
+    GameAssets.ensurePlasmaBloomTexture?.().catch(() => {});
   }
 
   attachParticleDisplay(particle) {
@@ -179,8 +189,55 @@ export class ParticleManager {
     if (particle.bitmap) particle.bitmap.visible = false;
   }
 
+  createEnergyBloom(x, y, intensity = 1, options = {}) {
+    const texture = GameAssets.getPlasmaBloomTexture?.();
+    if (!GameAssets.isValidTexture(texture)) {
+      GameAssets.ensurePlasmaBloomTexture?.().catch(() => {});
+      return false;
+    }
+    if (this.energyBlooms.length >= this.maxEnergyBlooms) {
+      const oldest = this.energyBlooms.shift();
+      if (oldest?.sprite) {
+        oldest.sprite.visible = false;
+        this.energyBloomPool.push(oldest.sprite);
+      }
+    }
+    const sprite = this.energyBloomPool.pop() || new PIXI.Sprite(texture);
+    sprite.texture = texture;
+    sprite.anchor.set(0.5);
+    sprite.x = x;
+    sprite.y = y;
+    sprite.rotation = Number(options.rotation) || Math.random() * Math.PI * 2;
+    sprite.alpha = 0;
+    sprite.tint = 0xffffff;
+    sprite.blendMode = 'add';
+    sprite.visible = true;
+    if (sprite.parent !== this.container) this.container.addChild(sprite);
+
+    const safeIntensity = Math.max(0.2, Math.min(3.2, Number(intensity) || 1));
+    const targetPixels = Math.max(68, Number(options.size) || (92 + Math.sqrt(safeIntensity) * 68));
+    const baseScale = targetPixels / Math.max(1, texture.width, texture.height);
+    const aspect = Math.max(0.72, Math.min(1.34, Number(options.aspect) || (0.86 + Math.random() * 0.28)));
+    sprite.scale.set(baseScale * 0.22 * aspect, baseScale * 0.22 / aspect);
+    this.energyBlooms.push({
+      sprite,
+      age: 0,
+      lifetime: Math.max(22, Number(options.lifetime) || (34 + Math.sqrt(safeIntensity) * 18)),
+      baseScale,
+      aspect,
+      alpha: Math.max(0.18, Math.min(0.9, Number(options.alpha) || (0.38 + safeIntensity * 0.12))),
+      rotationSpeed: Number(options.rotationSpeed) || (Math.random() - 0.5) * 0.018
+    });
+    return true;
+  }
+
   createExplosion(x, y, color, intensity = 1) {
     const visualIntensity = Math.max(0.2, Number(intensity) || 1);
+    const bloomIntensity = Math.min(2.2, visualIntensity);
+    this.createEnergyBloom(x, y, bloomIntensity, {
+      size: 78 + Math.sqrt(bloomIntensity) * 58,
+      alpha: Math.min(0.62, 0.34 + Math.sqrt(bloomIntensity) * 0.16)
+    });
     const particleCount = Math.min(64, Math.max(5, Math.floor(18 * visualIntensity)));
     const speedMult = Math.min(2.35, 0.72 + Math.sqrt(visualIntensity) * 0.52);
     const sizeMult = Math.min(1.7, 0.72 + Math.sqrt(visualIntensity) * 0.38);
@@ -197,43 +254,6 @@ export class ParticleManager {
         break;
       }
     }
-
-    // Debris
-    const debrisCount = Math.min(9, Math.floor((2 + Math.floor(Math.random() * 3)) * Math.sqrt(visualIntensity)));
-    for (let i = 0; i < debrisCount; i++) {
-      const tex = GameAssets.getRandomPart();
-      if (tex) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = (1 + Math.random() * 2) * speedMult;
-        const vx = Math.cos(angle) * speed;
-        const vy = Math.sin(angle) * speed;
-        this.spawnParticle(x, y, vx, vy, 0xffffff, 5 * sizeMult, 60, tex);
-      }
-    }
-  }
-
-  createCelebrationStarburst(x, y, color = 0xffef7e, accent = 0x7ee9ff) {
-    this.createRadialBurst(x, y, color, {
-      count: 18,
-      intensity: 1.05,
-      minSpeed: 2.8,
-      maxSpeed: 7.4,
-      size: 2.25,
-      lifetime: 34,
-      jitter: 0.12,
-      alternateColor: 0xffffff
-    });
-    this.createRadialBurst(x, y, accent, {
-      count: 12,
-      intensity: 0.72,
-      minSpeed: 1.2,
-      maxSpeed: 3.6,
-      size: 1.55,
-      lifetime: 46,
-      angleOffset: Math.PI / 12,
-      jitter: 0.18,
-      alternateColor: color
-    });
   }
 
   createRadialBurst(x, y, color, options = {}) {
@@ -316,6 +336,8 @@ export class ParticleManager {
 
   // Massive explosion for boss deaths
   createBossExplosion(x, y, color) {
+    this.createEnergyBloom(x, y, 2.8, { size: 310, lifetime: 76, alpha: 0.86, aspect: 1.12 });
+    this.createEnergyBloom(x - 16, y + 8, 1.9, { size: 220, lifetime: 64, alpha: 0.56, aspect: 0.78 });
     this.createRadialBurst(x, y, color, {
       count: 52,
       intensity: 1.45,
@@ -459,6 +481,25 @@ export class ParticleManager {
   }
 
   update(delta) {
+    for (let index = this.energyBlooms.length - 1; index >= 0; index -= 1) {
+      const bloom = this.energyBlooms[index];
+      bloom.age += delta;
+      const t = Math.min(1, bloom.age / bloom.lifetime);
+      const intro = Math.min(1, t / 0.11);
+      const expansion = 0.24 + intro * 0.74 + Math.pow(t, 0.72) * 0.9;
+      bloom.sprite.scale.set(
+        bloom.baseScale * expansion * bloom.aspect,
+        bloom.baseScale * expansion / bloom.aspect
+      );
+      bloom.sprite.alpha = bloom.alpha * intro * Math.pow(1 - t, 1.08);
+      bloom.sprite.rotation += bloom.rotationSpeed * delta;
+      if (t >= 1) {
+        bloom.sprite.visible = false;
+        this.energyBloomPool.push(bloom.sprite);
+        this.energyBlooms.splice(index, 1);
+      }
+    }
+
     const softBudget = Math.max(0, Math.floor(Number(this.softParticleBudget) || 0));
     const overflow = softBudget > 0 ? Math.max(0, this.particles.length - softBudget) : 0;
     const trimTarget = overflow > 0 ? Math.min(overflow, Math.ceil(this.particles.length * 0.18)) : 0;

@@ -178,14 +178,42 @@ async function stageHeroMoments(page) {
       audioVolume: 0.82,
       force: true
     });
+    play.particleManager?.createExplosion?.(width * 0.28, height * 0.34, 0xff4bd8, 1.1);
+    play.particleManager?.createExplosion?.(width * 0.72, height * 0.43, 0xffdf63, 0.9);
+    play.particleManager?.createExplosion?.(width * 0.5, height * 0.62, 0x43efff, 1.25);
     AudioManager.playSfx('enemy_explode', { force: true, pool: true });
     const explosionRates = Object.entries(AudioManager.sfxPools || {})
       .filter(([key]) => key.startsWith('enemy_explode:'))
       .flatMap(([, pool]) => pool.map((audio) => Number(audio.playbackRate) || 0));
     return {
       spectacle: play.spectacleDirector.getDebugState(),
+      plasmaBlooms: play.particleManager?.energyBlooms?.length || 0,
       audio: AudioManager.getSettings(),
       explosionRates
+    };
+  });
+}
+
+async function stageBossDeathMoment(page) {
+  return page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const width = game.getWidth();
+    const height = game.getHeight();
+    play.spectacleDirector.clear();
+    play.triggerBossDeathImpact({
+      boss: {
+        x: width * 0.5,
+        y: height * 0.38,
+        profile: { id: 'visual_qa_boss', index: 4 }
+      },
+      color: 0xff5b85,
+      type: 'VISUAL_QA_BOSS'
+    });
+    return {
+      spectacle: play.spectacleDirector.getDebugState(),
+      plasmaBlooms: play.particleManager?.energyBlooms?.length || 0,
+      scheduledBursts: play._deathTimeouts?.length || 0
     };
   });
 }
@@ -242,6 +270,9 @@ const catalogSource = readFileSync('src/audio/SoundCatalog.js', 'utf8');
 const staticErrors = [];
 if (!spectacleSource.includes('MAX_ACTIVE_PULSES = 10')) staticErrors.push('bounded pulse cap is missing');
 if (!spectacleSource.includes("label = 'spectacleDirectorLayer'")) staticErrors.push('shared spectacle layer is missing');
+if (!spectacleSource.includes("visualLanguage: 'plasma_fracture_v2'")) staticErrors.push('premium plasma-fracture visual language is missing');
+if (!spectacleSource.includes('primitiveCircleCount: 0')) staticErrors.push('primitive circle regression guard is missing');
+if (!spectacleSource.includes('primitiveDiamondCount: 0')) staticErrors.push('primitive diamond regression guard is missing');
 if (spectacleSource.includes('setInterval(')) staticErrors.push('spectacle layer must not create interval timers');
 if (!audioSource.includes('playSpectacleAccent')) staticErrors.push('procedural spectacle accent is missing');
 if (!audioSource.includes('createDynamicsCompressor')) staticErrors.push('spectacle accent compressor is missing');
@@ -280,6 +311,7 @@ const report = {
   hero: null,
   stress: null,
   reducedMotion: null,
+  bossDeath: null,
   consoleEvents,
   errors: []
 };
@@ -299,6 +331,14 @@ try {
   for (const kind of ['elite', 'pickup', 'combo']) {
     if (!report.hero.spectacle.activeKinds.includes(kind)) report.errors.push(`hero moment is missing ${kind}`);
   }
+  if (report.hero.spectacle.visualLanguage !== 'plasma_fracture_v2' ||
+    report.hero.spectacle.primitiveCircleCount !== 0 ||
+    report.hero.spectacle.primitiveDiamondCount !== 0) {
+    report.errors.push(`legacy explosion geometry remained active: ${JSON.stringify(report.hero.spectacle)}`);
+  }
+  if (report.hero.plasmaBlooms < 3) {
+    report.errors.push(`organic plasma bloom texture did not stage: ${report.hero.plasmaBlooms}`);
+  }
   const accent = report.hero.audio?.lastSpectacleAccent;
   if (!accent?.synthetic || !accent?.compressor || accent.kind !== 'combo') {
     report.errors.push(`procedural accent debug state is incomplete: ${JSON.stringify(accent)}`);
@@ -308,6 +348,20 @@ try {
     report.hero.explosionRates.every((rate) => Math.abs(rate - 1) < 0.0001)) {
     report.errors.push(`enemy explosion pitch variation is out of range: ${JSON.stringify(report.hero.explosionRates)}`);
   }
+
+  report.bossDeath = await stageBossDeathMoment(page);
+  await page.waitForTimeout(280);
+  report.screenshots.bossDeath = path.join(outputDir, '02-boss-death-plasma-cascade-desktop.png');
+  await page.screenshot({ path: report.screenshots.bossDeath, fullPage: false });
+  if (report.bossDeath.spectacle?.lastEvent?.kind !== 'boss_death' || report.bossDeath.plasmaBlooms < 2) {
+    report.errors.push(`boss death plasma cascade did not stage: ${JSON.stringify(report.bossDeath)}`);
+  }
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    (play?._deathTimeouts || []).forEach((id) => clearTimeout(id));
+    if (play) play._deathTimeouts = [];
+    play?.spectacleDirector?.clear?.();
+  });
 
   report.stress = await stressBoundedLayer(page);
   if (report.stress.state.activePulses > report.stress.state.activeLimit ||
@@ -359,7 +413,7 @@ try {
     };
   });
   await reducedPage.waitForTimeout(120);
-  report.screenshots.reducedMotion = path.join(outputDir, '02-reduced-motion-compact.png');
+  report.screenshots.reducedMotion = path.join(outputDir, '03-reduced-motion-compact.png');
   await reducedPage.screenshot({ path: report.screenshots.reducedMotion, fullPage: false });
   if (!report.reducedMotion.cap?.reducedMotion ||
     report.reducedMotion.cap?.activeLimit !== 5 ||

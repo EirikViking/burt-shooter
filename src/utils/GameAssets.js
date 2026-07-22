@@ -6,6 +6,7 @@ import * as PIXI from 'pixi.js';
 class GameAssetsManager {
     constructor() {
         this.bonusCoreTexture = null;
+        this.plasmaBloomTexture = null;
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
@@ -61,6 +62,20 @@ class GameAssetsManager {
         return this.ensureBonusCoreTexture();
     }
 
+    async ensurePlasmaBloomTexture() {
+        if (this.isValidTexture(this.plasmaBloomTexture)) return this.plasmaBloomTexture;
+        try {
+            const tex = await PIXI.Assets.load({
+                alias: 'nova_plasma_bloom',
+                src: AssetManifest.generated.vfx.plasmaBloom
+            });
+            if (this.isValidTexture(tex)) this.plasmaBloomTexture = tex;
+        } catch (error) {
+            console.warn('[GameAssets] Plasma bloom texture unavailable:', error?.message || error);
+        }
+        return this.plasmaBloomTexture;
+    }
+
     async loadBonusCore() {
         return this.ensureBonusCoreTexture();
     }
@@ -106,6 +121,10 @@ class GameAssetsManager {
 
     getBonusCoreTexture() {
         return this.bonusCoreTexture;
+    }
+
+    getPlasmaBloomTexture() {
+        return this.plasmaBloomTexture;
     }
 
     getBonusCoreSpriteTexture() {

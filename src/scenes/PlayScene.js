@@ -1867,7 +1867,7 @@ export class PlayScene {
     const centerY = height * (compact ? 0.46 : 0.44);
     const panelWidth = Math.min(width - (compact ? 28 : 80), compact ? 520 : 760);
     const panelHeight = compact ? 184 : 224;
-    const rayCount = reducedMotion ? 10 : 18;
+    const ribbonCount = reducedMotion ? 3 : 6;
     const sparkCount = reducedMotion ? 14 : 38;
     const durationMs = reducedMotion ? 6200 : 7600;
     const impactMs = reducedMotion ? 720 : 920;
@@ -1902,36 +1902,37 @@ export class PlayScene {
     frame.blendMode = 'add';
     container.addChild(frame);
 
-    const burstLayer = new PIXI.Container();
+    const burstLayer = new PIXI.Graphics();
     burstLayer.position.set(centerX, centerY);
-    for (let index = 0; index < rayCount; index += 1) {
-      const ray = new PIXI.Graphics();
-      const rayLength = Math.max(width, height) * (0.48 + (index % 3) * 0.08);
-      const halfWidth = compact ? 8 : 13;
-      ray.poly([0, -36, -halfWidth, -rayLength, halfWidth, -rayLength]);
-      ray.fill({ color: index % 2 ? 0x4ef8ff : 0xffe66d, alpha: index % 3 === 0 ? 0.18 : 0.1 });
-      ray.rotation = (Math.PI * 2 * index) / rayCount;
-      burstLayer.addChild(ray);
+    for (let index = 0; index < ribbonCount; index += 1) {
+      const side = index % 2 ? 1 : -1;
+      const lane = Math.floor(index / 2) - 1;
+      const reach = Math.max(width, height) * (0.38 + (index % 3) * 0.07);
+      burstLayer.moveTo(side * 38, lane * 28);
+      burstLayer.bezierCurveTo(
+        side * reach * 0.28, lane * 62 - side * 38,
+        side * reach * 0.7, lane * 78 + side * 52,
+        side * reach, lane * 44 + side * 12
+      );
+      burstLayer.stroke({
+        color: index % 2 ? 0x4ef8ff : 0xffe66d,
+        width: index % 3 === 0 ? 4.2 : 2.2,
+        alpha: index % 3 === 0 ? 0.16 : 0.1
+      });
     }
     burstLayer.blendMode = 'add';
     container.addChild(burstLayer);
 
-    const ringLayer = new PIXI.Container();
-    ringLayer.position.set(centerX, centerY);
-    const rings = [];
-    [104, 132, 164].forEach((radius, index) => {
-      const ring = new PIXI.Graphics();
-      ring.circle(0, 0, compact ? radius * 0.8 : radius);
-      ring.stroke({
-        color: index === 1 ? 0xffe66d : 0x4ef8ff,
-        width: index === 1 ? 3 : 2,
-        alpha: index === 1 ? 0.74 : 0.5
-      });
-      ringLayer.addChild(ring);
-      rings.push(ring);
-    });
-    ringLayer.blendMode = 'add';
-    container.addChild(ringLayer);
+    const waveLayer = new PIXI.Graphics();
+    waveLayer.position.set(centerX, centerY);
+    for (let lane = -1; lane <= 1; lane += 1) {
+      const span = (compact ? 118 : 168) + lane * 12;
+      waveLayer.moveTo(-span, lane * 24);
+      waveLayer.bezierCurveTo(-span * 0.28, lane * 38 - 24, span * 0.34, lane * 38 + 18, span, lane * 20);
+      waveLayer.stroke({ color: lane === 0 ? 0xffe66d : 0x4ef8ff, width: lane === 0 ? 2.4 : 1.5, alpha: lane === 0 ? 0.5 : 0.34 });
+    }
+    waveLayer.blendMode = 'add';
+    container.addChild(waveLayer);
 
     const sparkLayer = new PIXI.Container();
     sparkLayer.position.set(centerX, centerY);
@@ -1941,7 +1942,7 @@ export class PlayScene {
       const angle = (Math.PI * 2 * index) / sparkCount + (index % 5) * 0.08;
       const size = 2 + (index % 4);
       const spark = new PIXI.Graphics();
-      spark.poly([0, -size, size, 0, 0, size, -size, 0]);
+      spark.poly([0, -size * 1.45, size * 0.52, size * 0.32, -size * 0.24, size, -size * 0.4, -size * 0.08]);
       spark.fill({ color: sparkPalette[index % sparkPalette.length], alpha: 0.96 });
       spark.blendMode = 'add';
       sparkLayer.addChild(spark);
@@ -2063,7 +2064,8 @@ export class PlayScene {
       source,
       reducedMotion,
       scoreNeutral: true,
-      rayCount,
+      rayCount: 0,
+      ribbonCount,
       sparkCount,
       hasCrown: true,
       hasLiveCounter: true,
@@ -2136,14 +2138,9 @@ export class PlayScene {
       flash.alpha = Math.max(0, (1 - elapsed / 520) * (reducedMotion ? 0.22 : 0.7));
       wash.alpha = Math.max(0.14, 1 - settleEase * 0.86);
       frame.alpha = (0.58 + Math.sin(elapsed * 0.01) * 0.18) * (1 - settleEase * 0.58);
-      burstLayer.rotation += reducedMotion ? 0 : animationDeltaFrames * 0.0018;
       burstLayer.alpha = (0.48 + Math.max(0, Math.sin(elapsed * 0.006)) * 0.36) * (1 - settleEase * 0.72);
-      ringLayer.rotation -= reducedMotion ? 0 : animationDeltaFrames * 0.003;
-      ringLayer.alpha = 1 - settleEase * 0.58;
-      rings.forEach((ring, index) => {
-        const pulse = 1 + Math.sin(elapsed * 0.006 + index * 1.4) * (reducedMotion ? 0.012 : 0.055);
-        ring.scale.set(pulse);
-      });
+      waveLayer.alpha = 1 - settleEase * 0.58;
+      waveLayer.scale.set(1 + Math.sin(elapsed * 0.006) * (reducedMotion ? 0.01 : 0.045), 1);
       const travel = Math.min(1, elapsed / (reducedMotion ? 900 : 1500));
       const travelEase = 1 - Math.pow(1 - travel, 3);
       sparks.forEach((spark, index) => {
@@ -5164,8 +5161,7 @@ export class PlayScene {
     const panelWidth = compact ? 340 : 400;
     const panelHeight = compact ? 108 : 130;
     const panelRadius = compact ? 8 : 10;
-    const ringCount = compact ? 1 : 3;
-    const ringRadius = compact ? 155 : 220;
+    const ringCount = 0;
     const effectY = compact ? height * 0.38 : height * 0.35;
     const phases = {
       entry: compact ? 220 : 400,
@@ -5214,20 +5210,6 @@ export class PlayScene {
     }
     effectContainer.addChild(sweepLayer);
 
-    // Segmented scan arcs keep the celebration luminous without a giant target-ring silhouette.
-    for (let i = 0; i < ringCount; i++) {
-      const outerRing = new PIXI.Graphics();
-      const radius = ringRadius + i * 30;
-      const segments = compact ? 8 : 12;
-      for (let segment = 0; segment < segments; segment += 1) {
-        const start = (Math.PI * 2 * segment) / segments + i * 0.08;
-        const end = start + (Math.PI * 2 / segments) * 0.56;
-        outerRing.arc(0, 0, radius, start, end);
-      }
-      outerRing.stroke({ color: i % 2 ? 0x7ee9ff : 0x00ff66, width: compact ? 1.4 : 2, alpha: compact ? 0.2 : 0.28 - i * 0.065 });
-      effectContainer.addChild(outerRing);
-    }
-
     // Background panel with glow
     const panel = new PIXI.Graphics();
     panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, panelRadius);
@@ -5246,23 +5228,19 @@ export class PlayScene {
     innerGlow.stroke({ color: 0xffff00, width: 2, alpha: 0.3 });
     effectContainer.addChild(innerGlow);
 
-    // Prismatic glints replace the old single-line star spokes.
-    const glintCount = compact ? 4 : 8;
-    for (let i = 0; i < glintCount; i++) {
-      const angle = (Math.PI * 2 * i) / glintCount;
-      const glint = new PIXI.Graphics();
-      const glintLength = compact ? 13 : 18;
-      const glintWidth = compact ? 2.5 : 3.5;
-      glint.poly([0, -glintLength, glintWidth, -glintWidth, glintLength, 0, glintWidth, glintWidth, 0, glintLength, -glintWidth, glintWidth, -glintLength, 0, -glintWidth, -glintWidth]);
-      glint.fill({ color: i % 2 ? 0x7ee9ff : 0xffef7e, alpha: compact ? 0.5 : 0.7 });
-      glint.poly([0, -glintLength * 0.5, 1.2, 0, 0, glintLength * 0.5, -1.2, 0]);
-      glint.fill({ color: 0xffffff, alpha: 0.74 });
-      glint.x = Math.cos(angle) * (compact ? 150 : 180);
-      glint.y = Math.sin(angle) * (compact ? 38 : 50);
-      glint.rotation = angle * 0.5;
-      glint.blendMode = 'add';
-      effectContainer.addChild(glint);
+    const accentRails = new PIXI.Graphics();
+    const accentRailCount = compact ? 2 : 4;
+    for (let i = 0; i < accentRailCount; i += 1) {
+      const side = i % 2 ? 1 : -1;
+      const lane = Math.floor(i / 2);
+      const x = side * (panelWidth / 2 + 18 + lane * 14);
+      const y = (lane - 0.5) * (compact ? 34 : 46);
+      accentRails.moveTo(x - side * 18, y - 7);
+      accentRails.lineTo(x, y);
+      accentRails.lineTo(x - side * 18, y + 7);
     }
+    accentRails.stroke({ color: 0x7ee9ff, width: compact ? 1.4 : 1.8, alpha: 0.46 });
+    effectContainer.addChild(accentRails);
 
     // Main label (WAVE CLEARED!) - Big and bold
     const labelText = createText(label, {
@@ -5357,7 +5335,8 @@ export class PlayScene {
       panelWidth,
       panelHeight,
       ringCount,
-      glintCount,
+      glintCount: 0,
+      accentRailCount,
       sweepBandCount,
       sweepChevronCount,
       subtitle: Boolean(subtitle),
@@ -8034,6 +8013,7 @@ export class PlayScene {
     summary.label = 'tactical_draft_active_build';
     summary.eventMode = 'none';
     const bg = new PIXI.Graphics();
+    const titleRail = new PIXI.Graphics();
     const title = createText(translateText('ACTIVE BUILD'), {
       fontFamily: FONT_BODY,
       fontSize: 10,
@@ -8060,6 +8040,12 @@ export class PlayScene {
       node._category = category;
       return node;
     });
+    const categoryBgNodes = Object.keys(TACTICAL_DRAFT_CATEGORY_COLORS).map((category) => {
+      const node = new PIXI.Graphics();
+      node._category = category;
+      return node;
+    });
+    const signatureBg = new PIXI.Graphics();
     const doctrine = createText('', {
       fontFamily: FONT_BODY,
       fontSize: 10,
@@ -8074,8 +8060,8 @@ export class PlayScene {
       fill: '#e0a3ff'
     });
     fusion.anchor.set(1, 0.5);
-    summary.addChild(bg, title, empty, ...categoryNodes, doctrine, fusion);
-    summary._nodes = { bg, title, empty, categoryNodes, doctrine, fusion };
+    summary.addChild(bg, titleRail, title, empty, ...categoryBgNodes, ...categoryNodes, signatureBg, doctrine, fusion);
+    summary._nodes = { bg, titleRail, title, empty, categoryNodes, categoryBgNodes, signatureBg, doctrine, fusion };
     return summary;
   }
 
@@ -8606,23 +8592,48 @@ export class PlayScene {
       const data = this.getTacticalDraftBuildSummaryData();
       summary._data = data;
       const summaryWidth = compact ? Math.max(300, width - 52) : Math.min(1120, width - 120);
-      const summaryHeight = compact ? 30 : 40;
+      const summaryHeight = compact ? 32 : 54;
       summary._draftLayout = { width: summaryWidth, height: summaryHeight, compact };
       summary.position.set(width / 2, compact ? 146 : 148);
       nodes.bg.clear();
-      nodes.bg.roundRect(-summaryWidth / 2, -summaryHeight / 2, summaryWidth, summaryHeight, 6);
-      nodes.bg.fill({ color: 0x06131f, alpha: 0.94 });
-      nodes.bg.roundRect(-summaryWidth / 2, -summaryHeight / 2, summaryWidth, summaryHeight, 6);
-      nodes.bg.stroke({ color: 0x37f5ff, width: 1, alpha: 0.32 });
+      const chamfer = compact ? 8 : 12;
+      const summaryPoints = [
+        -summaryWidth / 2 + chamfer, -summaryHeight / 2,
+        summaryWidth / 2 - chamfer, -summaryHeight / 2,
+        summaryWidth / 2, -summaryHeight / 2 + chamfer,
+        summaryWidth / 2, summaryHeight / 2 - chamfer,
+        summaryWidth / 2 - chamfer, summaryHeight / 2,
+        -summaryWidth / 2 + chamfer, summaryHeight / 2,
+        -summaryWidth / 2, summaryHeight / 2 - chamfer,
+        -summaryWidth / 2, -summaryHeight / 2 + chamfer
+      ];
+      nodes.bg.poly(summaryPoints);
+      nodes.bg.fill({ color: 0x041321, alpha: 0.96 });
+      nodes.bg.stroke({ color: 0x37f5ff, width: 1.25, alpha: 0.48 });
+      nodes.bg.moveTo(-summaryWidth / 2 + 18, -summaryHeight / 2 + 5);
+      nodes.bg.lineTo(-summaryWidth / 2 + summaryWidth * 0.37, -summaryHeight / 2 + 5);
+      nodes.bg.moveTo(summaryWidth / 2 - summaryWidth * 0.22, summaryHeight / 2 - 5);
+      nodes.bg.lineTo(summaryWidth / 2 - 18, summaryHeight / 2 - 5);
+      nodes.bg.stroke({ color: 0xffd15c, width: 1.4, alpha: 0.5 });
+      nodes.titleRail.clear();
+      const railX = -summaryWidth / 2 + (compact ? 78 : 104);
+      nodes.titleRail.moveTo(railX, -summaryHeight / 2 + 8);
+      nodes.titleRail.lineTo(railX, summaryHeight / 2 - 8);
+      nodes.titleRail.stroke({ color: 0x37f5ff, width: 2, alpha: 0.62 });
+      for (let bar = 0; bar < 3; bar += 1) {
+        nodes.titleRail.roundRect(railX - (compact ? 20 : 27), 7 + bar * 4, (compact ? 16 : 22) - bar * 3, 2, 1);
+        nodes.titleRail.fill({ color: bar === 0 ? 0xffd15c : 0x37f5ff, alpha: 0.42 - bar * 0.08 });
+      }
       nodes.title.style.fontSize = compact ? 8 : 10;
-      nodes.title.position.set(-summaryWidth / 2 + 12, 0);
+      nodes.title.position.set(-summaryWidth / 2 + 13, compact ? -1 : -8);
       nodes.title.scale.set(1);
       nodes.title.updateText?.(false);
-      nodes.title.scale.set(Math.min(1, 92 / Math.max(1, nodes.title.width)));
+      nodes.title.scale.set(Math.min(1, (compact ? 58 : 80) / Math.max(1, nodes.title.width)));
       const activeCategories = nodes.categoryNodes.filter((node) => data.counts[node._category] > 0);
-      nodes.categoryNodes.forEach((node) => {
+      nodes.categoryNodes.forEach((node, index) => {
         const count = data.counts[node._category];
         node.visible = count > 0;
+        nodes.categoryBgNodes[index].visible = count > 0;
         node.text = translateText('{category} {count}', {
           category: translateText(node._category.toUpperCase()),
           count
@@ -8633,7 +8644,7 @@ export class PlayScene {
       });
       nodes.empty.visible = data.activeIds.length === 0;
       nodes.empty.style.fontSize = compact ? 8 : 11;
-      nodes.empty.position.set(-summaryWidth / 2 + (compact ? 92 : 118), 0);
+      nodes.empty.position.set(-summaryWidth / 2 + (compact ? 92 : 128), 0);
       nodes.doctrine.text = data.doctrine
         ? translateText('{name} // {stage}', {
           name: translateText(data.doctrine.name),
@@ -8645,8 +8656,8 @@ export class PlayScene {
       nodes.doctrine.style.fontSize = compact ? 8 : 10;
       nodes.doctrine.scale.set(1);
       nodes.doctrine.updateText?.(false);
-      nodes.doctrine.position.set(summaryWidth / 2 - 12, 0);
-      nodes.doctrine.scale.set(Math.min(1, (compact ? 190 : 250) / Math.max(1, nodes.doctrine.width)));
+      nodes.doctrine.position.set(summaryWidth / 2 - 18, 0);
+      nodes.doctrine.scale.set(Math.min(1, (compact ? 172 : 270) / Math.max(1, nodes.doctrine.width)));
       nodes.fusion.text = data.fusions.length
         ? translateText('FUSIONS {count}', { count: data.fusions.length })
         : '';
@@ -8654,19 +8665,46 @@ export class PlayScene {
       nodes.fusion.style.fontSize = compact ? 8 : 10;
       nodes.fusion.scale.set(1);
       nodes.fusion.updateText?.(false);
-      nodes.fusion.position.set(
-        nodes.doctrine.visible ? nodes.doctrine.x - nodes.doctrine.width - 18 : summaryWidth / 2 - 12,
-        0
-      );
-      let categoryX = -summaryWidth / 2 + (compact ? 92 : 118);
-      const categoryLimit = (nodes.fusion.visible ? nodes.fusion.x - nodes.fusion.width : nodes.doctrine.visible ? nodes.doctrine.x - nodes.doctrine.width : summaryWidth / 2) - 14;
-      const categoryWidth = activeCategories.reduce((sum, node) => sum + node.width, 0) + Math.max(0, activeCategories.length - 1) * 14;
-      const categoryScale = Math.min(1, Math.max(0.58, (categoryLimit - categoryX) / Math.max(1, categoryWidth)));
+      nodes.fusion.position.set(summaryWidth / 2 - 18, nodes.doctrine.visible ? 9 : 0);
+      nodes.doctrine.y = nodes.fusion.visible ? -8 : 0;
+      nodes.signatureBg.clear();
+      const signatureVisible = nodes.doctrine.visible || nodes.fusion.visible;
+      nodes.signatureBg.visible = signatureVisible;
+      const signatureWidth = compact ? 190 : 306;
+      if (signatureVisible) {
+        nodes.signatureBg.position.set(summaryWidth / 2 - signatureWidth / 2 - 10, 0);
+        nodes.signatureBg.poly([
+          -signatureWidth / 2 + 9, -summaryHeight / 2 + 7,
+          signatureWidth / 2, -summaryHeight / 2 + 7,
+          signatureWidth / 2, summaryHeight / 2 - 7,
+          -signatureWidth / 2, summaryHeight / 2 - 7,
+          -signatureWidth / 2, -summaryHeight / 2 + 16
+        ]);
+        nodes.signatureBg.fill({ color: 0x0b1026, alpha: 0.88 });
+        nodes.signatureBg.stroke({ color: data.fusions.length ? 0xd86bff : 0x37f5ff, width: 1, alpha: 0.42 });
+      }
+      let categoryX = -summaryWidth / 2 + (compact ? 92 : 126);
+      const categoryLimit = signatureVisible ? summaryWidth / 2 - signatureWidth - 24 : summaryWidth / 2 - 18;
+      const gap = compact ? 6 : 9;
       activeCategories.forEach((node) => {
-        node.scale.set(categoryScale);
-        node.position.set(categoryX, 0);
-        categoryX += node.width + (compact ? 9 : 14);
+        const bgNode = nodes.categoryBgNodes.find((entry) => entry._category === node._category);
+        const available = Math.max(46, categoryLimit - categoryX);
+        const chipWidth = Math.min(available, Math.max(compact ? 58 : 78, node.width + (compact ? 18 : 30)));
+        const chipHeight = compact ? 20 : 28;
+        bgNode.clear();
+        bgNode.roundRect(-chipWidth / 2, -chipHeight / 2, chipWidth, chipHeight, compact ? 4 : 6);
+        bgNode.fill({ color: 0x071b2a, alpha: 0.96 });
+        bgNode.stroke({ color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category], width: 1.25, alpha: 0.62 });
+        bgNode.moveTo(-chipWidth / 2 + 7, -4);
+        bgNode.lineTo(-chipWidth / 2 + 13, 0);
+        bgNode.lineTo(-chipWidth / 2 + 7, 4);
+        bgNode.stroke({ color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category], width: 1.4, alpha: 0.82 });
+        bgNode.position.set(categoryX + chipWidth / 2, 0);
+        node.position.set(categoryX + (compact ? 13 : 20), 0);
+        node.scale.set(Math.min(1, (chipWidth - (compact ? 17 : 26)) / Math.max(1, node.width)));
+        categoryX += chipWidth + gap;
       });
+      summary._visualLanguage = 'active_build_command_strip_v2';
     }
 
     if (state.rescan && state.hold && state.ban) {
@@ -9607,6 +9645,87 @@ export class PlayScene {
     return true;
   }
 
+  drawTacticalFusionEmblem(graphics, fusion, accent, compact = false) {
+    const id = String(fusion?.id || 'fusion');
+    const scale = compact ? 0.84 : 1;
+    graphics.clear();
+    graphics.blendMode = 'add';
+
+    if (id === 'rift_reprisal') {
+      for (const side of [-1, 1]) {
+        graphics.moveTo(side * 23 * scale, -31 * scale);
+        graphics.bezierCurveTo(
+          side * 5 * scale, -17 * scale,
+          side * 18 * scale, 12 * scale,
+          side * 2 * scale, 32 * scale
+        );
+        graphics.stroke({ color: side < 0 ? accent : 0x66efff, width: 7 * scale, alpha: 0.22 });
+        graphics.moveTo(side * 23 * scale, -31 * scale);
+        graphics.bezierCurveTo(
+          side * 5 * scale, -17 * scale,
+          side * 18 * scale, 12 * scale,
+          side * 2 * scale, 32 * scale
+        );
+        graphics.stroke({ color: side < 0 ? 0xffffff : accent, width: 2.2 * scale, alpha: 0.92 });
+      }
+      graphics.moveTo(-5 * scale, -22 * scale);
+      graphics.lineTo(5 * scale, -8 * scale);
+      graphics.lineTo(-4 * scale, 7 * scale);
+      graphics.lineTo(4 * scale, 22 * scale);
+      graphics.stroke({ color: 0xffffff, width: 1.4 * scale, alpha: 0.72 });
+    } else if (id === 'drone_constellation') {
+      const points = [[0, -30], [-27, 18], [27, 18]];
+      graphics.moveTo(points[0][0] * scale, points[0][1] * scale);
+      graphics.lineTo(points[1][0] * scale, points[1][1] * scale);
+      graphics.lineTo(points[2][0] * scale, points[2][1] * scale);
+      graphics.lineTo(points[0][0] * scale, points[0][1] * scale);
+      graphics.stroke({ color: 0x66efff, width: 1.4 * scale, alpha: 0.46 });
+      points.forEach(([x, y], index) => {
+        graphics.poly([
+          x * scale, (y - 10) * scale,
+          (x + 8) * scale, (y + 7) * scale,
+          x * scale, (y + 3) * scale,
+          (x - 8) * scale, (y + 7) * scale
+        ]);
+        graphics.fill({ color: index === 0 ? 0xffffff : accent, alpha: 0.88 });
+      });
+    } else if (id === 'aegis_reactor') {
+      graphics.poly([0, -34, 29, -19, 24, 17, 0, 35, -24, 17, -29, -19].map((value) => value * scale));
+      graphics.fill({ color: accent, alpha: 0.12 });
+      graphics.stroke({ color: accent, width: 3 * scale, alpha: 0.9 });
+      graphics.moveTo(-17 * scale, -12 * scale);
+      graphics.bezierCurveTo(-4 * scale, -24 * scale, 16 * scale, -13 * scale, 18 * scale, 2 * scale);
+      graphics.bezierCurveTo(17 * scale, 17 * scale, 4 * scale, 25 * scale, -11 * scale, 18 * scale);
+      graphics.stroke({ color: 0xffffff, width: 2.2 * scale, alpha: 0.76 });
+      graphics.moveTo(-19 * scale, 6 * scale);
+      graphics.lineTo(-5 * scale, 6 * scale);
+      graphics.lineTo(1 * scale, -5 * scale);
+      graphics.lineTo(8 * scale, 11 * scale);
+      graphics.lineTo(20 * scale, 11 * scale);
+      graphics.stroke({ color: 0x66efff, width: 2.4 * scale, alpha: 0.82 });
+    } else {
+      graphics.moveTo(0, -35 * scale);
+      graphics.lineTo(8 * scale, -9 * scale);
+      graphics.lineTo(2 * scale, -13 * scale);
+      graphics.lineTo(-7 * scale, 31 * scale);
+      graphics.lineTo(-2 * scale, 6 * scale);
+      graphics.lineTo(-9 * scale, 10 * scale);
+      graphics.closePath();
+      graphics.fill({ color: 0xffffff, alpha: 0.88 });
+      for (const side of [-1, 1]) {
+        graphics.moveTo(side * 31 * scale, -24 * scale);
+        graphics.lineTo(side * 18 * scale, -24 * scale);
+        graphics.lineTo(side * 18 * scale, -10 * scale);
+        graphics.moveTo(side * 31 * scale, 24 * scale);
+        graphics.lineTo(side * 18 * scale, 24 * scale);
+        graphics.lineTo(side * 18 * scale, 10 * scale);
+      }
+      graphics.stroke({ color: accent, width: 2.4 * scale, alpha: 0.86 });
+    }
+    graphics._fusionEmblemId = id;
+    return id;
+  }
+
   showTacticalFusionUnlock(fusion) {
     if (!fusion || !this.uiOverlay || !this.game?.app?.ticker) return false;
     this.clearTacticalFusionUnlock('replaced');
@@ -9627,16 +9746,25 @@ export class PlayScene {
     container.eventMode = 'none';
     container.alpha = 0;
 
-    const burst = new PIXI.Container();
+    const burst = new PIXI.Graphics();
     burst.position.set(centerX, centerY);
-    const rayCount = reducedMotion ? 8 : 16;
-    for (let index = 0; index < rayCount; index += 1) {
-      const ray = new PIXI.Graphics();
-      const rayLength = panelWidth * (0.48 + (index % 3) * 0.07);
-      ray.poly([0, -26, -5, -rayLength, 5, -rayLength]);
-      ray.fill({ color: index % 2 ? accent : 0x66efff, alpha: index % 3 === 0 ? 0.16 : 0.08 });
-      ray.rotation = (Math.PI * 2 * index) / rayCount;
-      burst.addChild(ray);
+    const plasmaRibbonCount = reducedMotion ? 3 : 6;
+    for (let index = 0; index < plasmaRibbonCount; index += 1) {
+      const side = index % 2 ? 1 : -1;
+      const lane = Math.floor(index / 2) - 1;
+      const y = lane * (compact ? 44 : 58);
+      const reach = panelWidth * (0.52 + (index % 3) * 0.08);
+      burst.moveTo(side * 38, y * 0.18);
+      burst.bezierCurveTo(
+        side * reach * 0.28, y - side * 32,
+        side * reach * 0.66, y + side * 46,
+        side * reach, y + side * 12
+      );
+      burst.stroke({
+        color: index % 3 === 0 ? 0xffffff : (index % 2 ? accent : 0x66efff),
+        width: index % 3 === 0 ? 2.4 : 5.2,
+        alpha: index % 3 === 0 ? 0.18 : 0.1
+      });
     }
     burst.blendMode = 'add';
     container.addChild(burst);
@@ -9644,25 +9772,34 @@ export class PlayScene {
     const panel = new PIXI.Container();
     panel.position.set(centerX, centerY);
     const glow = new PIXI.Graphics();
-    glow.roundRect(-panelWidth / 2 - 5, -panelHeight / 2 - 5, panelWidth + 10, panelHeight + 10, 14);
-    glow.stroke({ color: accent, width: 7, alpha: 0.22 });
+    const chamfer = compact ? 15 : 20;
+    const panelPoints = [
+      -panelWidth / 2 + chamfer, -panelHeight / 2,
+      panelWidth / 2 - chamfer, -panelHeight / 2,
+      panelWidth / 2, -panelHeight / 2 + chamfer,
+      panelWidth / 2, panelHeight / 2 - chamfer,
+      panelWidth / 2 - chamfer, panelHeight / 2,
+      -panelWidth / 2 + chamfer, panelHeight / 2,
+      -panelWidth / 2, panelHeight / 2 - chamfer,
+      -panelWidth / 2, -panelHeight / 2 + chamfer
+    ];
+    glow.poly(panelPoints);
+    glow.stroke({ color: accent, width: 9, alpha: 0.18 });
     glow.blendMode = 'add';
     panel.addChild(glow);
     const bg = new PIXI.Graphics();
-    bg.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 12);
+    bg.poly(panelPoints);
     bg.fill({ color: 0x030812, alpha: 0.94 });
     bg.stroke({ color: accent, width: compact ? 2.5 : 3.5, alpha: 0.96 });
-    bg.roundRect(-panelWidth / 2 + 8, -panelHeight / 2 + 8, panelWidth - 16, panelHeight - 16, 8);
-    bg.stroke({ color: 0x66efff, width: 1.3, alpha: 0.62 });
+    bg.moveTo(-panelWidth / 2 + 18, -panelHeight / 2 + 10);
+    bg.lineTo(panelWidth / 2 - 34, -panelHeight / 2 + 10);
+    bg.moveTo(-panelWidth / 2 + 34, panelHeight / 2 - 10);
+    bg.lineTo(panelWidth / 2 - 18, panelHeight / 2 - 10);
+    bg.stroke({ color: 0x66efff, width: 1.3, alpha: 0.52 });
     panel.addChild(bg);
 
     const core = new PIXI.Graphics();
-    for (const radius of compact ? [25, 34] : [30, 42]) {
-      core.circle(0, 0, radius);
-      core.stroke({ color: radius % 2 ? accent : 0x66efff, width: 2, alpha: 0.66 });
-    }
-    core.poly([0, -18, 16, 0, 0, 18, -16, 0]);
-    core.stroke({ color: 0xffffff, width: 2, alpha: 0.86 });
+    this.drawTacticalFusionEmblem(core, fusion, accent, compact);
     core.position.set(-panelWidth / 2 + (compact ? 54 : 66), 0);
     core.blendMode = 'add';
     panel.addChild(core);
@@ -9709,7 +9846,10 @@ export class PlayScene {
       name: fusion.name,
       description: fusion.description,
       reducedMotion,
-      rayCount,
+      rayCount: 0,
+      plasmaRibbonCount,
+      emblemId: core._fusionEmblemId,
+      visualLanguage: 'fusion_signature_v2',
       scoreNeutral: true,
       bounds: {
         x: Math.round(centerX - panelWidth / 2),
@@ -9739,8 +9879,9 @@ export class PlayScene {
       const eased = 1 - Math.pow(1 - intro, 3);
       container.alpha = eased * (1 - outro);
       panel.scale.set(0.78 + eased * 0.22 + Math.sin(elapsed * 0.012) * (reducedMotion ? 0.004 : 0.014));
-      burst.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.004;
-      core.rotation -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.018;
+      burst.scale.set(0.78 + eased * 0.22, 0.72 + eased * 0.28);
+      burst.alpha = 0.62 + Math.sin(elapsed * 0.009) * (reducedMotion ? 0.02 : 0.12);
+      core.scale.set(0.94 + Math.sin(elapsed * 0.014) * (reducedMotion ? 0.01 : 0.045));
       if (elapsed >= durationMs) this.clearTacticalFusionUnlock('complete');
     };
     this.activeTacticalFusionUnlock = { container, ticker };
@@ -9790,6 +9931,7 @@ export class PlayScene {
       subtitle: state?.subtitle?.text || null,
       buildSummary: state?.buildSummary ? {
         bounds: boundsOf(state.buildSummary),
+        visualLanguage: state.buildSummary._visualLanguage || null,
         title: state.buildSummary._nodes?.title?.text || null,
         empty: state.buildSummary._nodes?.empty?.visible
           ? state.buildSummary._nodes?.empty?.text || null
@@ -19777,35 +19919,36 @@ export class PlayScene {
   }
 
   triggerShockwave(x, y, color = 0xffff00) {
-    const ring = new PIXI.Graphics();
-    const segmentCount = 12;
-    for (let index = 0; index < segmentCount; index += 1) {
-      const start = (Math.PI * 2 * index) / segmentCount + (index % 2) * 0.025;
-      const end = start + (Math.PI * 2 / segmentCount) * (index % 3 === 0 ? 0.46 : 0.68);
-      ring.arc(0, 0, 10, start, end);
-    }
-    ring.stroke({ color, width: 2.4, alpha: 0.86 });
-    ring.poly([0, -7, 7, 0, 0, 7, -7, 0]);
-    ring.stroke({ color: 0xffffff, width: 0.8, alpha: 0.38 });
-    for (let index = 0; index < 4; index += 1) {
-      const angle = index * Math.PI / 2 + Math.PI / 4;
-      ring.moveTo(Math.cos(angle) * 8.5, Math.sin(angle) * 8.5);
-      ring.lineTo(Math.cos(angle) * 13, Math.sin(angle) * 13);
-    }
-    ring.stroke({ color, width: 1.2, alpha: 0.62 });
-    ring.blendMode = 'add';
-    ring.x = x;
-    ring.y = y;
-    this.uiOverlay.addChild(ring);
+    const wave = new PIXI.Graphics();
+    const paths = [
+      [-12, 2, -5, -12, 7, -10, 14, -2],
+      [-10, 7, -2, 14, 8, 10, 12, 4],
+      [-4, -11, 3, -15, 11, -7, 13, 1]
+    ];
+    paths.forEach((path, index) => {
+      wave.moveTo(path[0], path[1]);
+      wave.bezierCurveTo(path[2], path[3], path[4], path[5], path[6], path[7]);
+      wave.stroke({
+        color: index === 1 ? 0xffffff : color,
+        width: index === 1 ? 1.1 : 2.2,
+        alpha: index === 1 ? 0.42 : 0.74
+      });
+    });
+    wave.blendMode = 'add';
+    wave.x = x;
+    wave.y = y;
+    wave.rotation = -0.22;
+    this.uiOverlay.addChild(wave);
     let radius = 10;
     const ticker = (delta) => {
       radius += delta.deltaTime * 2.4;
-      ring.scale.set(radius / 10);
-      ring.rotation += 0.006 * delta.deltaTime;
-      ring.alpha -= 0.022 * delta.deltaTime;
-      if (ring.alpha <= 0) {
+      wave.scale.set(radius / 10, radius / 11.8);
+      wave.rotation += 0.003 * delta.deltaTime;
+      wave.alpha -= 0.022 * delta.deltaTime;
+      if (wave.alpha <= 0) {
         this.game.app.ticker.remove(ticker);
-        if (ring.parent) ring.parent.removeChild(ring);
+        if (wave.parent) wave.parent.removeChild(wave);
+        wave.destroy?.();
       }
     };
     this.game.app.ticker.add(ticker);
@@ -19859,30 +20002,52 @@ export class PlayScene {
 
     const baseColor = style.baseColor || palette[0] || 0xffff33;
     const accent = style.accent || palette[1] || 0xffffff;
-    const spokes = style.spokes || 10;
     const radius = style.radius || Math.min(this.game.getWidth(), this.game.getHeight()) * 0.16;
+    const tendrilCount = Math.max(7, Math.min(15, style.spokes || 10));
+    const patternSeed = [...String(style.pattern || style.id || 'boss')]
+      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const draw = (t = 0) => {
       sigil.clear();
-      const spin = t * (style.spin || 0.8);
-      const innerRadius = radius * (0.42 + t * 0.42);
-      const outerRadius = radius * (0.72 + t * 0.32);
-      for (let segment = 0; segment < 12; segment += 1) {
-        const start = (Math.PI * 2 * segment) / 12 + spin * 0.35;
-        sigil.arc(bossX, bossY, innerRadius, start, start + Math.PI * 0.105);
-      }
-      sigil.stroke({ color: baseColor, width: 4.2, alpha: 0.34 * (1 - t) });
-      for (let segment = 0; segment < 16; segment += 1) {
-        const start = (Math.PI * 2 * segment) / 16 - spin * 0.2;
-        sigil.arc(bossX, bossY, outerRadius, start, start + Math.PI * 0.072);
-      }
-      sigil.stroke({ color: accent, width: 2.2, alpha: 0.25 * (1 - t) });
-      for (let i = 0; i < spokes; i += 1) {
-        const angle = (Math.PI * 2 * i) / spokes + spin;
-        const inner = radius * (0.28 + (i % 2) * 0.08);
-        const outer = radius * (style.longSpokes ? 1.42 : 1.05) * (0.9 + t * 0.55);
-        sigil.moveTo(bossX + Math.cos(angle) * inner, bossY + Math.sin(angle) * inner);
-        sigil.lineTo(bossX + Math.cos(angle) * outer, bossY + Math.sin(angle) * outer);
-        sigil.stroke({ color: i % 2 ? accent : baseColor, width: i % 2 ? 2 : 3.5, alpha: 0.42 * (1 - t) });
+      const drift = t * (style.spin || 0.8) * 0.22;
+      const reachScale = 0.5 + t * 0.86;
+      for (let i = 0; i < tendrilCount; i += 1) {
+        const variation = Math.sin(patternSeed * 0.17 + i * 13.71);
+        const angle = i * 2.399963 + patternSeed * 0.013 + drift + variation * 0.28;
+        const reach = radius * reachScale * (0.62 + ((i * 7 + patternSeed) % 11) * 0.055)
+          * (style.longSpokes ? 1.16 : 1);
+        const nx = Math.cos(angle);
+        const ny = Math.sin(angle);
+        const tx = -ny;
+        const ty = nx;
+        const bend = reach * (0.1 + Math.abs(variation) * 0.19) * (i % 2 ? 1 : -1);
+        const sx = bossX + nx * radius * 0.08;
+        const sy = bossY + ny * radius * 0.08;
+        const ex = bossX + nx * reach + tx * bend * 0.24;
+        const ey = bossY + ny * reach + ty * bend * 0.24;
+        sigil.moveTo(sx, sy);
+        sigil.bezierCurveTo(
+          bossX + nx * reach * 0.34 + tx * bend,
+          bossY + ny * reach * 0.34 + ty * bend,
+          bossX + nx * reach * 0.72 - tx * bend * 0.48,
+          bossY + ny * reach * 0.72 - ty * bend * 0.48,
+          ex,
+          ey
+        );
+        sigil.stroke({
+          color: i % 3 ? baseColor : accent,
+          width: i % 3 ? 2.8 : 5.2,
+          alpha: (i % 3 ? 0.38 : 0.15) * (1 - t)
+        });
+        if (i % 2 === 0) {
+          const fragmentLength = radius * (0.06 + (i % 4) * 0.012);
+          const fragmentWidth = Math.max(1.2, fragmentLength * 0.14);
+          sigil.poly([
+            ex + nx * fragmentLength, ey + ny * fragmentLength,
+            ex - nx * fragmentLength * 0.5 + tx * fragmentWidth, ey - ny * fragmentLength * 0.5 + ty * fragmentWidth,
+            ex - nx * fragmentLength * 0.24 - tx * fragmentWidth * 0.3, ey - ny * fragmentLength * 0.24 - ty * fragmentWidth * 0.3
+          ]);
+          sigil.fill({ color: i % 4 ? accent : 0xffffff, alpha: 0.3 * (1 - t) });
+        }
       }
     };
     draw(0);
@@ -19929,8 +20094,8 @@ export class PlayScene {
       baseColor
     };
     const palette = [baseColor, style.accent, 0xfff066, 0xff6633, 0xff3d7f, 0x61f6ff, 0x8cfffb, 0xffffff];
-    const burstCount = 12 + (seed % 5) + (style.pattern === 'confetti' ? 5 : 0);
-    const ringCount = 3 + (seed % 3) + (style.pattern === 'vortex' || style.pattern === 'spiral' ? 2 : 0);
+    const burstCount = 8 + (seed % 4) + (style.pattern === 'confetti' ? 2 : 0);
+    const ringCount = 1;
 
     this.emitSpectacle('boss_death', {
       x: bossX,
@@ -20007,7 +20172,7 @@ export class PlayScene {
 
       this.scheduleBossDeathFx(() => {
         this.particleManager?.createExplosion(x, y, burstColor, intensity);
-        if (i === 1 || i === Math.floor(burstCount / 2)) {
+        if (i === Math.floor(burstCount / 2)) {
           this.triggerShockwave(x, y, burstColor);
         }
         if (i % 3 === 0) {

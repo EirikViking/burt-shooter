@@ -183,13 +183,7 @@ class TauntDirector {
             accent: 0xffef7e,
             signalPlate: true,
             y,
-            maxWidth: Math.min(520, width * 0.62),
-            onShown: () => this.scene?.particleManager?.createCelebrationStarburst?.(
-                width / 2,
-                y,
-                0xffef7e,
-                0x7ee9ff
-            )
+            maxWidth: Math.min(520, width * 0.62)
         });
     }
 

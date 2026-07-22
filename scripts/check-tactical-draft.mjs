@@ -725,6 +725,8 @@ try {
   assertDraftLayout(activeFusionDraftState, 1920, 1080, 'active-fusion-1920x1080');
   assert(/1/.test(activeFusionDraftState.tacticalDraft.buildSummary.fusion || ''),
     `active Fusion was missing from the build summary: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
+  assert(activeFusionDraftState.tacticalDraft.buildSummary.visualLanguage === 'active_build_command_strip_v2',
+    `active build retained its legacy flat bar: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
   const activeFusionScreenshot = path.join(outputDir, 'tactical-draft-active-fusion-1920x1080.png');
   await fusionPage.screenshot({ path: activeFusionScreenshot });
   await fusionPage.close();
