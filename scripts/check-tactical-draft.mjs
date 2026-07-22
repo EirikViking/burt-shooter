@@ -591,7 +591,7 @@ try {
   assert(state.tacticalDraft.history.length === 2 && state.tacticalDraft.buildSummary.activeIds.length >= 1,
     'late Draft did not expose the selected active build');
   assert(state.tacticalDraft.materialReady === true, 'late Draft did not load its command-field material');
-  assert(state.tacticalDraft.offers.every((offer) => offer.visualLanguage === 'tactical_command_module_v3' && offer.materialReady),
+  assert(state.tacticalDraft.offers.every((offer) => offer.visualLanguage === 'tactical_command_module_v4' && offer.materialReady),
     'late Draft cards did not use the premium command-module material');
   const lateDraftScreenshot = path.join(outputDir, 'tactical-draft-late-1920x1080.png');
   await page.screenshot({ path: lateDraftScreenshot });
@@ -730,7 +730,7 @@ try {
   assertDraftLayout(activeFusionDraftState, 1920, 1080, 'active-fusion-1920x1080');
   assert(/1/.test(activeFusionDraftState.tacticalDraft.buildSummary.fusion || ''),
     `active Fusion was missing from the build summary: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
-  assert(activeFusionDraftState.tacticalDraft.buildSummary.visualLanguage === 'active_build_command_deck_v3',
+  assert(activeFusionDraftState.tacticalDraft.buildSummary.visualLanguage === 'active_build_command_deck_v4',
     `active build retained its legacy flat bar: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
   assert(activeFusionDraftState.tacticalDraft.buildSummary.categories.length === 4,
     `desktop Active Build did not expose all category modules: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
@@ -879,11 +879,20 @@ try {
   });
   await flowPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === true, null, { timeout: 10000 });
   const gatedLevel = await flowPage.evaluate(() => window.__game.level);
+  const interruptionGuard = await flowPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.pauseForExternalInterruption('focus_out');
+    return { isPaused: play.isPaused, pauseVisible: Boolean(play.pauseOverlay?.visible) };
+  });
+  assert(interruptionGuard.isPaused === false && interruptionGuard.pauseVisible === false,
+    `external focus event paused behind Tactical Draft: ${JSON.stringify(interruptionGuard)}`);
   assert(gatedLevel === 1, `sector advanced before tactical choice: ${gatedLevel}`);
   await flowPage.evaluate(() => window.__game.scenes.play.confirmTacticalDraft(1, 'pointer'));
   await flowPage.waitForFunction(() => window.__game.level === 2, null, { timeout: 5000 });
   const flowState = await readState(flowPage);
   assert(flowState.tacticalDraft.history.length === 1, 'automatic boss-clear draft did not retain its pick');
+  assert(flowState.isPaused === false && flowState.pauseOverlay?.visible !== true,
+    `Tactical Draft returned to Pause instead of combat: ${JSON.stringify(flowState.pauseOverlay)}`);
   await flowPage.close();
 
   assert(consoleErrors.length === 0, `browser errors: ${consoleErrors.join(' | ')}`);
@@ -902,7 +911,7 @@ try {
     activeFusionScreenshot,
     activatedFusionIds: fusionActivatedState.tacticalDraft.player?.fusionIds || []
   };
-  report.automaticBossClearGate = { gatedLevel, advancedLevel: flowState.arcadeRun.currentSector };
+  report.automaticBossClearGate = { gatedLevel, advancedLevel: flowState.arcadeRun.currentSector, interruptionGuard };
   report.consoleErrors = consoleErrors;
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
   console.log(`[tactical-draft] PASS report=${path.join(outputDir, 'report.json')}`);

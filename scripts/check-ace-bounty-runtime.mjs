@@ -167,9 +167,19 @@ try {
   if (desktop.ace?.rivalWing?.id !== 'spearhead_standard_aimed_hold' || desktop.ace?.rivalWing?.number !== 1) failures.push(`desktop Rival Wing identity mismatch: ${JSON.stringify(desktop.ace?.rivalWing)}`);
   if (desktop.ace?.maxHealth <= desktop.base?.maxHealth) failures.push(`Ace health did not increase: ${JSON.stringify(desktop)}`);
   if (desktop.base?.scoreValue !== (await page.evaluate(() => window.__game?.scenes?.play?.enemyManager?.enemies?.find((enemy) => enemy?.isAce)?.scoreValue))) failures.push('Ace promotion changed score value');
-  if (desktop.threatFrame?.tier !== 'ace' || desktop.threatFrame?.markerCount !== 8) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
-  if (!/DESTROY ACE 0001.*2X SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
-  if ((desktop.ace?.label || '').includes('\n') || desktop.ace?.labelFontSize < 20 || desktop.ace?.labelScale < 0.82) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
+  if (
+    desktop.threatFrame?.tier !== 'ace'
+    || desktop.threatFrame?.markerCount !== 8
+    || desktop.threatFrame?.commandChevronCount !== 6
+    || desktop.threatFrame?.visualLanguage !== 'ace_command_signature_v2'
+  ) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
+  if (!/^ACE 0001.*2X SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
+  if (
+    (desktop.ace?.label || '').includes('\n')
+    || desktop.ace?.labelFontSize < 18
+    || desktop.ace?.labelScale < 0.7
+    || desktop.ace?.visualLanguage !== 'ace_command_signature_v2'
+  ) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
   if (
     desktop.toast?.type !== 'aceContact'
@@ -477,7 +487,7 @@ try {
   localized.screenshot = path.join(outputDir, 'ace-bounty-840x640-de.png');
   await page.screenshot({ path: localized.screenshot, fullPage: true });
   report.scenarios.localized = localized;
-  if (!localized.ok || !/ZERSTOERE ASS 1000.*2-FACH EXTRA-NEUSCAN/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
+  if (!localized.ok || !/^ASS 1000.*2-FACH EXTRA-NEUSCAN/.test(localized.ace?.label || '')) failures.push(`German Ace label mismatch: ${localized.ace?.label}`);
   if (!/NEMESIS 10000/.test(localized.toast?.dossier?.protocol || '') || localized.ace?.protocol?.number !== 10000) failures.push(`German Nemesis dossier mismatch: ${localized.toast?.dossier?.protocol}`);
   if (!/RIVALEN-STAFFEL 10000/.test(localized.toast?.dossier?.wing || '') || localized.ace?.rivalWing?.number !== 10000) failures.push(`German Rival Wing dossier mismatch: ${localized.toast?.dossier?.wing}`);
   if (/ACE|BOUNTY|REWARD/.test(localized.ace?.label || '')) failures.push(`German Ace label retained English copy: ${localized.ace?.label}`);

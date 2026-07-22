@@ -9,6 +9,7 @@ class GameAssetsManager {
         this.plasmaBloomTexture = null;
         this.plasmaBloomTextures = [];
         this.tacticalDraftFieldTexture = null;
+        this.cabinetWonderTextures = {};
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
         this.crewPortraitList = AssetManifest.generated?.crewPortraits || [];
@@ -102,6 +103,24 @@ class GameAssetsManager {
         return this.tacticalDraftFieldTexture;
     }
 
+    async ensureCabinetWonderTextures() {
+        const sources = AssetManifest.generated?.cabinetWonders || {};
+        const entries = await Promise.all(Object.entries(sources).map(async ([id, src]) => {
+            if (this.isValidTexture(this.cabinetWonderTextures[id])) return [id, this.cabinetWonderTextures[id]];
+            try {
+                const texture = await PIXI.Assets.load({ alias: `nova_cabinet_wonder_${id}`, src });
+                return [id, this.isValidTexture(texture) ? texture : null];
+            } catch (error) {
+                console.warn(`[GameAssets] Cabinet Wonder texture ${id} unavailable:`, error?.message || error);
+                return [id, null];
+            }
+        }));
+        entries.forEach(([id, texture]) => {
+            if (texture) this.cabinetWonderTextures[id] = texture;
+        });
+        return this.cabinetWonderTextures;
+    }
+
     async loadBonusCore() {
         return this.ensureBonusCoreTexture();
     }
@@ -162,6 +181,11 @@ class GameAssetsManager {
 
     getTacticalDraftFieldTexture() {
         return this.tacticalDraftFieldTexture;
+    }
+
+    getCabinetWonderTexture(id) {
+        const texture = this.cabinetWonderTextures[String(id || '')];
+        return this.isValidTexture(texture) ? texture : null;
     }
 
     getBonusCoreSpriteTexture() {

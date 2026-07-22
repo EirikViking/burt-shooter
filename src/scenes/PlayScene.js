@@ -218,6 +218,7 @@ export class PlayScene {
     this.container.addChild(this.uiOverlay);
     GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
     GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
+    GameAssets.ensureCabinetWonderTextures?.().catch(() => {});
     this.gameplayViewportMask.eventMode = 'none';
     this.applyGameplayViewportMask();
 
@@ -2602,6 +2603,24 @@ export class PlayScene {
     let elementCount = 0;
     let authoredBounds = { x: width * 0.12, y: height * 0.15, width: width * 0.76, height: height * 0.3 };
     let animate = () => {};
+    const generatedTexture = GameAssets.getCabinetWonderTexture?.(variant.id);
+    let generatedArt = null;
+    if (generatedTexture) {
+      generatedArt = new PIXI.Sprite(generatedTexture);
+      generatedArt.label = `cabinet_wonder_imagegen_${variant.id}`;
+      generatedArt.anchor.set(0.5);
+      generatedArt.x = width * 0.5;
+      generatedArt.y = height * 0.29;
+      const sourceWidth = Math.max(1, generatedTexture.width || 1);
+      const sourceHeight = Math.max(1, generatedTexture.height || 1);
+      const scale = Math.min((width * 0.72) / sourceWidth, (height * 0.54) / sourceHeight);
+      generatedArt.scale.set(scale);
+      generatedArt.alpha = reducedMotion ? 0.7 : 0.82;
+      generatedArt.blendMode = 'add';
+      generatedArt.eventMode = 'none';
+      root.addChild(generatedArt);
+      elementCount += 1;
+    }
     const sparkField = new PIXI.Container();
     sparkField.label = 'cabinet_wonder_spark_field';
     const sparkCount = reducedMotion ? 12 : 26;
@@ -3214,10 +3233,29 @@ export class PlayScene {
     animate = (progress, elapsedMs) => {
       sparkField.x = reducedMotion ? 0 : Math.sin(elapsedMs * 0.0008) * width * 0.008;
       sparkField.y = reducedMotion ? 0 : Math.cos(elapsedMs * 0.0011) * height * 0.004;
-      sparkField.alpha = reducedMotion ? 0.72 : 0.64 + Math.sin(elapsedMs * 0.0035) * 0.18;
+      sparkField.alpha = reducedMotion ? 0.48 : 0.4 + Math.sin(elapsedMs * 0.0035) * 0.12;
+      if (generatedArt) {
+        const pulse = reducedMotion ? 1 : 0.985 + Math.sin(elapsedMs * 0.0019) * 0.025;
+        generatedArt.scale.set(generatedArt._baseScale * pulse);
+        generatedArt.y = height * 0.29 + (reducedMotion ? 0 : Math.sin(elapsedMs * 0.00135) * height * 0.008);
+        generatedArt.rotation = reducedMotion ? 0 : Math.sin(elapsedMs * 0.00085) * 0.008;
+        generatedArt.alpha = (reducedMotion ? 0.7 : 0.78 + Math.sin(elapsedMs * 0.0024) * 0.08) * (0.92 + Math.min(1, progress / 0.2) * 0.08);
+      }
       variantAnimate(progress, elapsedMs);
     };
-    return { root, elementCount, authoredBounds, animate };
+    let proceduralAccentAlpha = 1;
+    if (generatedArt) {
+      generatedArt._baseScale = generatedArt.scale.x;
+      const proceduralAccentLayer = new PIXI.Container();
+      proceduralAccentLayer.label = `cabinet_wonder_procedural_accents_${variant.id}`;
+      proceduralAccentAlpha = 0.16;
+      proceduralAccentLayer.alpha = proceduralAccentAlpha;
+      root.children
+        .filter((child) => child !== generatedArt)
+        .forEach((child) => proceduralAccentLayer.addChild(child));
+      root.addChild(proceduralAccentLayer);
+    }
+    return { root, elementCount, authoredBounds, animate, generatedArtReady: Boolean(generatedArt), proceduralAccentAlpha };
   }
 
   showCabinetWonder(decision = {}) {
@@ -3256,6 +3294,9 @@ export class PlayScene {
       audioProfile: 'wonder',
       audioPlayed,
       layer: 'gameplay_background',
+      visualLanguage: visual.generatedArtReady ? 'cabinet_wonder_imagegen_v2' : 'cabinet_wonder_procedural_fallback',
+      generatedArtReady: visual.generatedArtReady,
+      proceduralAccentAlpha: visual.proceduralAccentAlpha,
       active: true,
       completed: false,
       startedAt: Date.now()
@@ -3325,6 +3366,9 @@ export class PlayScene {
         elementCount: active.historyEntry.elementCount,
         audioProfile: active.historyEntry.audioProfile,
         layer: active.historyEntry.layer,
+        visualLanguage: active.historyEntry.visualLanguage,
+        generatedArtReady: active.historyEntry.generatedArtReady,
+        proceduralAccentAlpha: active.historyEntry.proceduralAccentAlpha,
         authoredBounds: { ...active.historyEntry.authoredBounds },
         upperFieldSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * 0.5
       } : null,
@@ -8716,7 +8760,7 @@ export class PlayScene {
       const data = this.getTacticalDraftBuildSummaryData();
       summary._data = data;
       const summaryWidth = compact ? Math.max(300, width - 52) : Math.min(1120, width - 120);
-      const summaryHeight = compact ? 40 : 72;
+      const summaryHeight = compact ? 40 : 80;
       summary._draftLayout = { width: summaryWidth, height: summaryHeight, compact };
       summary.position.set(width / 2, compact ? 150 : 158);
       nodes.bg.clear();
@@ -8763,7 +8807,7 @@ export class PlayScene {
         nodes.titleRail.roundRect(railX - (compact ? 20 : 27), 7 + bar * 4, (compact ? 16 : 22) - bar * 3, 2, 1);
         nodes.titleRail.fill({ color: bar === 0 ? 0xffd15c : 0x37f5ff, alpha: 0.42 - bar * 0.08 });
       }
-      nodes.title.style.fontSize = compact ? 8 : 10;
+      nodes.title.style.fontSize = compact ? 8 : 11;
       nodes.title.position.set(-summaryWidth / 2 + 13, compact ? -1 : -12);
       nodes.title.scale.set(1);
       nodes.title.updateText?.(false);
@@ -8778,8 +8822,8 @@ export class PlayScene {
         nodes.categoryMeterNodes[index].visible = visible;
         node.text = translateText(node._category.toUpperCase());
         nodes.categoryCountNodes[index].text = String(count);
-        node.style.fontSize = compact ? 8 : 9;
-        nodes.categoryCountNodes[index].style.fontSize = compact ? 13 : 18;
+        node.style.fontSize = compact ? 8 : 10;
+        nodes.categoryCountNodes[index].style.fontSize = compact ? 13 : 21;
         node.scale.set(1);
         node.updateText?.(false);
         nodes.categoryCountNodes[index].scale.set(1);
@@ -8837,7 +8881,7 @@ export class PlayScene {
         const meterNode = nodes.categoryMeterNodes[nodeIndex];
         const count = data.counts[node._category] || 0;
         const chipWidth = Math.max(48, moduleWidth);
-        const chipHeight = compact ? 27 : 48;
+        const chipHeight = compact ? 27 : 56;
         const chamferSize = compact ? 5 : 8;
         bgNode.clear();
         bgNode.poly([
@@ -8877,18 +8921,24 @@ export class PlayScene {
         meterNode.position.set(categoryX + chipWidth / 2, compact ? 7 : 13);
         categoryX += chipWidth + gap;
       });
-      summary._visualLanguage = 'active_build_command_deck_v3';
+      summary._visualLanguage = 'active_build_command_deck_v4';
     }
+
+    const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(420, (width - 140) / 3);
+    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(590, Math.max(420, height - 320));
+    const cardTop = compact ? 178 : 214;
 
     if (state.rescan && state.hold && state.ban) {
       const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
-      const controlHeight = compact ? 28 : 34;
+      const controlHeight = compact ? 28 : 38;
       state.rescan._draftLayout = { width: controlWidth, height: controlHeight };
       state.hold._draftLayout = { width: controlWidth, height: controlHeight };
       state.ban._draftLayout = { width: controlWidth, height: controlHeight };
       const controlGap = compact ? 8 : 12;
       const controlsWidth = controlWidth * 3 + controlGap * 2;
-      const controlY = compact ? (state.scoreRouteOfferId ? 118 : 112) : height - 38;
+      const controlY = compact
+        ? (state.scoreRouteOfferId ? 118 : 112)
+        : Math.min(height - 30, cardTop + cardHeight + 42);
       state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
       state.hold.position.set(width / 2, controlY);
       state.ban.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
@@ -8900,12 +8950,9 @@ export class PlayScene {
       this.redrawTacticalDraftBan();
     }
 
-    const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(380, (width - 140) / 3);
-    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(420, height - 320);
-    const cardTop = compact ? 178 : 220;
     state.cards.forEach((card, index) => {
       card.position.set(
-        compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 18),
+        compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 28),
         cardTop + cardHeight / 2 + (compact ? index * (cardHeight + 24) : 0)
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
@@ -9008,31 +9055,32 @@ export class PlayScene {
         nodes.scoreRouteBadge.position.set(cardWidth / 2 - 64, -cardHeight / 2 + 26);
         nodes.scoreRouteBadgeText.style.fontSize = 10;
         if (nodes.icon) {
-          nodes.icon.position.set(0, -cardHeight / 2 + 78);
+          nodes.icon.position.set(0, -cardHeight / 2 + 86);
           const iconWidth = nodes.icon.texture?.width || nodes.icon.width || 60;
           const iconHeight = nodes.icon.texture?.height || nodes.icon.height || 60;
-          nodes.icon.scale.set(Math.min(1.15, 78 / Math.max(1, iconWidth, iconHeight)));
+          nodes.icon.scale.set(Math.min(1.24, 88 / Math.max(1, iconWidth, iconHeight)));
         }
         nodes.name.anchor.set(0.5);
-        nodes.name.style.fontSize = 22;
-        nodes.name.position.set(0, -cardHeight / 2 + 136);
+        nodes.name.style.fontSize = 24;
+        nodes.name.position.set(0, -cardHeight / 2 + 154);
         fitTextWidth(nodes.name, cardWidth - 36, 0.62);
         nodes.description.anchor.set(0.5);
-        nodes.description.style.fontSize = 15;
+        nodes.description.style.fontSize = 16;
         nodes.description.style.align = 'center';
         nodes.description.style.wordWrapWidth = cardWidth - 48;
-        nodes.description.position.set(0, -28);
-        nodes.impactBadge.position.set(0, 24);
+        nodes.description.position.set(0, -cardHeight / 2 + 214);
+        const impactY = -cardHeight / 2 + 296;
+        nodes.impactBadge.position.set(0, impactY);
         nodes.impactBadge._pillLayout = {
           width: cardWidth - 52,
-          height: card._offer?.statPreview?.kind === 'stat' ? 43 : 24
+          height: card._offer?.statPreview?.kind === 'stat' ? 50 : 30
         };
         nodes.impactLabel.anchor.set(0.5);
-        nodes.impactLabel.style.fontSize = 8;
-        nodes.impactLabel.position.set(0, card._offer?.statPreview?.kind === 'stat' ? 14 : 24);
+        nodes.impactLabel.style.fontSize = 9;
+        nodes.impactLabel.position.set(0, impactY + (card._offer?.statPreview?.kind === 'stat' ? -10 : 0));
         nodes.impactValue.anchor.set(0.5);
-        nodes.impactValue.style.fontSize = 14;
-        nodes.impactValue.position.set(0, 33);
+        nodes.impactValue.style.fontSize = 16;
+        nodes.impactValue.position.set(0, impactY + 11);
         fitTextWidth(nodes.impactValue, cardWidth - 76, 0.62);
         const doctrineY = cardHeight / 2 - (hasFusionBlueprint ? 78 : 98);
         nodes.doctrineBadge.position.set(0, doctrineY);
@@ -9041,19 +9089,19 @@ export class PlayScene {
         nodes.doctrineTitle.style.fontSize = 7;
         nodes.doctrineTitle.position.set(0, doctrineY - 8);
         nodes.doctrine.anchor.set(0.5);
-        nodes.doctrine.style.fontSize = 9;
+        nodes.doctrine.style.fontSize = 10;
         nodes.doctrine.position.set(0, doctrineY + 7);
         fitTextWidth(nodes.doctrine, cardWidth - 78, 0.58);
         const permanenceY = cardHeight / 2 - 48;
         nodes.permanenceBadge.position.set(0, permanenceY);
         nodes.permanenceBadge._pillLayout = { width: Math.min(cardWidth - 90, nodes.permanence.width + 24), height: 22 };
         nodes.permanence.anchor.set(0.5);
-        nodes.permanence.style.fontSize = 9;
+        nodes.permanence.style.fontSize = 10;
         nodes.permanence.position.set(0, permanenceY);
         fitTextWidth(nodes.permanence, cardWidth - 112, 0.58);
         nodes.holdBadge.position.set(cardWidth / 2 - 38, -cardHeight / 2 + 25);
         nodes.choose.position.set(0, cardHeight / 2 - 20);
-        nodes.choose.style.fontSize = 15;
+        nodes.choose.style.fontSize = 17;
         if (hasFusionBlueprint) {
           const badgeWidth = cardWidth - 40;
           const badgeHeight = 46;
@@ -9089,9 +9137,9 @@ export class PlayScene {
         nodes.artBloom.texture = bloomTexture;
       }
       if (GameAssets.isValidTexture(nodes.artBloom.texture)) {
-        const bloomPixels = compact ? 78 : 128;
+        const bloomPixels = compact ? 78 : 148;
         const bloomScale = bloomPixels / Math.max(1, nodes.artBloom.texture.width, nodes.artBloom.texture.height);
-        nodes.artBloom.position.set(nodes.icon?.x || 0, nodes.icon?.y || (compact ? 0 : -cardHeight / 2 + 78));
+        nodes.artBloom.position.set(nodes.icon?.x || 0, nodes.icon?.y || (compact ? 0 : -cardHeight / 2 + 86));
         nodes.artBloom.scale.set(bloomScale * (index === 1 ? 1.08 : 1), bloomScale * (index === 2 ? 0.86 : 1));
         nodes.artBloom._baseScaleX = nodes.artBloom.scale.x;
         nodes.artBloom._baseScaleY = nodes.artBloom.scale.y;
@@ -9102,7 +9150,7 @@ export class PlayScene {
       nodes.chooseBg.position.copyFrom(nodes.choose.position);
       nodes.chooseBg._buttonLayout = {
         width: compact ? Math.min(158, Math.max(112, cardWidth * 0.27)) : Math.min(230, cardWidth - 74),
-        height: compact ? 27 : 34,
+        height: compact ? 27 : 42,
         align: compact ? 'right' : 'center'
       };
       this.redrawTacticalDraftCard(card);
@@ -9362,7 +9410,7 @@ export class PlayScene {
       nodes.holdBadge.text = translateText('HELD');
       nodes.holdBadge.style.fill = '#fff3a0';
     }
-    card._visualLanguage = 'tactical_command_module_v3';
+    card._visualLanguage = 'tactical_command_module_v4';
     card.scale.set(focused && !layout.compact ? 1.015 : 1);
   }
 
@@ -9948,6 +9996,8 @@ export class PlayScene {
     this.tacticalDraftConfirmTimeout = setTimeout(() => {
       this.tacticalDraftConfirmTimeout = null;
       this.clearTacticalDraft('confirmed');
+      this.externalPauseSuppressedUntil = Date.now() + 600;
+      if (this.isPaused) this.setPaused(false);
       const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
       this.enqueueToast(`${translateText(offer.displayName || offer.name)}  ${status}`, {
         fontSize: 18,
@@ -10265,6 +10315,11 @@ export class PlayScene {
     state?.overlay?.destroy?.({ children: true });
     this.lastTacticalDraftCloseReason = reason;
     this.tacticalDraft = null;
+    if (reason === 'confirmed') {
+      this.externalPauseSuppressedUntil = Date.now() + 600;
+      this.tacticalDraftNavigator.suppressUntilReleased();
+      this.pauseGamepadNavigator.suppressUntilReleased();
+    }
   }
 
   getTacticalDraftDebugState() {
@@ -10480,7 +10535,14 @@ export class PlayScene {
 
   pauseForExternalInterruption(reason = 'external_interruption') {
     if (this.controlSmokeMode) return;
-    if (this.game?.currentScene !== this || !this.isReady || this.isPaused || (this.game?.lives || 0) <= 0) return;
+    if (
+      this.game?.currentScene !== this
+      || !this.isReady
+      || this.isPaused
+      || this.tacticalDraft?.active
+      || Date.now() < (Number(this.externalPauseSuppressedUntil) || 0)
+      || (this.game?.lives || 0) <= 0
+    ) return;
     this.pauseReason = reason;
     this.setPaused(true);
   }
@@ -10545,8 +10607,8 @@ export class PlayScene {
     overlay.addChild(decorLayer);
 
     const uiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
-    const panelWidth = Math.min(620 * uiScale, Math.max(500 * uiScale, width * 0.34 * uiScale));
-    const panelHeight = Math.min(height * 0.9, 490 * uiScale);
+    const panelWidth = Math.min(width - 36, 700 * Math.min(uiScale, 1.15));
+    const panelHeight = Math.min(height - 28, 650 * Math.min(uiScale, 1.05));
     const panelX = width / 2 - panelWidth / 2;
     const panelY = height / 2 - panelHeight / 2;
     const centerX = width / 2;
@@ -10731,7 +10793,7 @@ export class PlayScene {
       return chip;
     };
 
-    const chipY = panelY + 150;
+    const chipY = panelY + 158;
     const chipWidth = Math.min(138 * uiScale, Math.max(118, (panelWidth - 92) / 4));
     const chipGap = Math.min(14 * uiScale, 16);
     const chipStep = chipWidth + chipGap;
@@ -10740,6 +10802,22 @@ export class PlayScene {
     const livesChip = makeChip(translateText('LIVES'), String(this.game.lives || 0), centerX + chipStep * 0.5, chipY, this.game.lives <= 1 ? 0xff4f6d : 0x7fffd8, { width: chipWidth, valueSize: 15 });
     const powerupChip = makeChip(translateText('POWERUPS'), this.getPausePowerupSummary(), centerX + chipStep * 1.5, chipY, 0xb39cff, { width: chipWidth, valueSize: 14 });
     decorLayer.addChild(scoreChip, sectorChip, livesChip, powerupChip);
+
+    const intelPlate = new PIXI.Graphics();
+    intelPlate.label = 'ui_pauseIntelPlate';
+    intelPlate.zIndex = 5;
+    intelPlate.roundRect(panelX + 34, panelY + 184, panelWidth - 68, 134, 8);
+    intelPlate.fill({ color: 0x020c18, alpha: 0.78 });
+    intelPlate.roundRect(panelX + 34, panelY + 184, panelWidth - 68, 134, 8);
+    intelPlate.stroke({ color: 0x0b5a72, width: 1, alpha: 0.62 });
+    intelPlate.moveTo(panelX + 52, panelY + 223);
+    intelPlate.lineTo(panelX + panelWidth - 52, panelY + 223);
+    intelPlate.moveTo(panelX + 52, panelY + 257);
+    intelPlate.lineTo(panelX + panelWidth - 52, panelY + 257);
+    intelPlate.stroke({ color: 0x37f5ff, width: 1, alpha: 0.2 });
+    intelPlate.rect(panelX + 40, panelY + 194, 3, 114);
+    intelPlate.fill({ color: 0xffd15c, alpha: 0.58 });
+    decorLayer.addChild(intelPlate);
 
     const pilotOrdersLine = createText(this.getPausePilotOrdersSummary(), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -10753,7 +10831,7 @@ export class PlayScene {
       wordWrapWidth: panelWidth - 76
     });
     pilotOrdersLine.anchor.set(0.5);
-    pilotOrdersLine.position.set(centerX, panelY + 172 * uiScale);
+    pilotOrdersLine.position.set(centerX, panelY + 205);
     pilotOrdersLine.zIndex = 7;
     overlay.addChild(pilotOrdersLine);
 
@@ -10764,10 +10842,12 @@ export class PlayScene {
       fill: '#8df6ff',
       stroke: '#031323',
       strokeThickness: 2,
-      align: 'center'
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 100
     });
     combatTelemetryLine.anchor.set(0.5);
-    combatTelemetryLine.position.set(centerX, panelY + 192 * uiScale);
+    combatTelemetryLine.position.set(centerX, panelY + 240);
     combatTelemetryLine.zIndex = 7;
     overlay.addChild(combatTelemetryLine);
 
@@ -10781,19 +10861,22 @@ export class PlayScene {
       fill: '#fff3a0',
       stroke: '#031323',
       strokeThickness: 2,
-      align: 'center'
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 100,
+      lineHeight: Math.round(11 * Math.min(uiScale, 1.2))
     });
     tacticalDraftLine.anchor.set(0.5);
-    tacticalDraftLine.position.set(centerX, panelY + 216 * uiScale);
+    tacticalDraftLine.position.set(centerX, panelY + 282);
     tacticalDraftLine.zIndex = 7;
     overlay.addChild(tacticalDraftLine);
 
     this.pauseButtons = [
-      this.createPauseButton(translateText('RESUME'), centerX, panelY + 268 * uiScale, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
-      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 316 * uiScale, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
-      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 364 * uiScale, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
-      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 412 * uiScale, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 460 * uiScale, () => {
+      this.createPauseButton(translateText('RESUME'), centerX, panelY + 358, () => this.setPaused(false), { accent: 0xffd15c, hot: true }),
+      this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 410, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
+      this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 462, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
+      this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 514, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
+      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 566, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.closeTacticalLoadoutOverlay();
@@ -10826,6 +10909,7 @@ export class PlayScene {
       pilotOrdersValue: pilotOrdersLine,
       combatTelemetryValue: combatTelemetryLine,
       tacticalDraftValue: tacticalDraftLine,
+      visualLanguage: 'pause_command_deck_v2',
       leftRadar,
       rightRadar,
       resize: () => {}
@@ -10896,6 +10980,7 @@ export class PlayScene {
     const decor = this.pauseMenuDecor;
     return {
       visible: Boolean(this.pauseOverlay?.visible && this.pauseOverlay?.parent),
+      visualLanguage: decor?.visualLanguage || null,
       score: decor?.scoreValue?.text ?? null,
       sector: decor?.sectorValue?.text ?? null,
       lives: decor?.livesValue?.text ?? null,

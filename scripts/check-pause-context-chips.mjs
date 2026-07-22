@@ -156,6 +156,19 @@ try {
   const screenshot = path.join(outputDir, 'pause-context-chips.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    play.setPaused(false);
+    play.destroyPauseOverlay();
+    play.setPaused(true);
+    play.refreshPauseOverlayStats();
+  });
+  await page.waitForTimeout(180);
+  const desktopScreenshot = path.join(outputDir, 'pause-context-chips-1920x1080.png');
+  await page.screenshot({ path: desktopScreenshot, fullPage: true });
+  const desktopDebug = await page.evaluate(() => window.__game?.scenes?.play?.getPauseDebugState?.());
+
   const loadout = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     play.openTacticalLoadoutOverlay();
@@ -168,6 +181,7 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if (!state.debug?.visible) failures.push(`pause overlay not visible: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.visualLanguage !== 'pause_command_deck_v2' || desktopDebug?.visualLanguage !== 'pause_command_deck_v2') failures.push('premium pause command-deck language missing');
   if (state.debug?.score !== '123,456') failures.push(`score chip mismatch: ${state.debug?.score}`);
   if (state.debug?.sector !== '07') failures.push(`sector chip mismatch: ${state.debug?.sector}`);
   if (state.debug?.lives !== '1') failures.push(`lives chip mismatch: ${state.debug?.lives}`);
@@ -188,6 +202,8 @@ try {
     ok: failures.length === 0,
     baseUrl,
     screenshot,
+    desktopScreenshot,
+    desktopDebug,
     loadoutScreenshot,
     state,
     failures,

@@ -181,6 +181,9 @@ try {
       || active?.active?.elementCount < 5
       || active?.active?.audioProfile !== 'wonder'
       || active?.active?.layer !== 'gameplay_background'
+      || active?.active?.generatedArtReady !== true
+      || active?.active?.visualLanguage !== 'cabinet_wonder_imagegen_v2'
+      || active?.active?.proceduralAccentAlpha > 0.2
       || active?.overlayCount !== 1
       || active?.active?.reducedMotion !== scenario.reducedMotion
     ) {

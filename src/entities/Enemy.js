@@ -1297,7 +1297,7 @@ export class Enemy {
       this.aceLabelRails = new PIXI.Graphics();
       this.aceLabel = createText('', {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '900',
         fill: '#fff7c4',
         stroke: '#17000c',
@@ -1369,35 +1369,50 @@ export class Enemy {
       )
     );
     const reward = duplicateReward ? translateText('2X {reward}', { reward: baseReward }) : baseReward;
-    const label = translateText('DESTROY ACE {number} // {reward}', {
+    const label = translateText('ACE {number} // {reward}', {
       number,
       reward
     });
     this.aceLabel.text = label;
     this.aceLabel.scale.set(1);
-    const maxWidth = 310;
+    const maxWidth = 232;
     if (this.aceLabel.width > maxWidth) {
-      this.aceLabel.scale.set(Math.max(0.82, maxWidth / this.aceLabel.width));
+      this.aceLabel.scale.set(Math.max(0.7, maxWidth / this.aceLabel.width));
     }
     const accent = this.nemesisEnraged
       ? (this.nemesisProtocol?.accent || 0xff6174)
       : (this.aceVariant.accent || 0xffd15c);
-    const panelWidth = Math.max(150, Math.ceil(this.aceLabel.width + 30));
-    const panelHeight = Math.max(34, Math.ceil(this.aceLabel.height + 14));
+    const panelWidth = Math.max(138, Math.ceil(this.aceLabel.width + 30));
+    const panelHeight = Math.max(38, Math.ceil(this.aceLabel.height + 16));
+    const chamfer = 9;
+    const platePoints = [
+      -panelWidth / 2 + chamfer, -panelHeight / 2,
+      panelWidth / 2 - chamfer, -panelHeight / 2,
+      panelWidth / 2, -panelHeight / 2 + chamfer,
+      panelWidth / 2 - 7, panelHeight / 2,
+      -panelWidth / 2 + 7, panelHeight / 2,
+      -panelWidth / 2, -panelHeight / 2 + chamfer
+    ];
     this.aceLabelBack?.clear();
-    this.aceLabelBack?.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 7);
+    this.aceLabelBack?.poly(platePoints);
     this.aceLabelBack?.fill({ color: 0x110812, alpha: 0.9 });
-    this.aceLabelBack?.stroke({ color: this.aceVariant.color || 0xffd15c, width: 2.2, alpha: 0.96 });
-    this.aceLabelBack?.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, 4);
-    this.aceLabelBack?.stroke({ color: accent, width: 1, alpha: 0.58 });
+    this.aceLabelBack?.poly(platePoints);
+    this.aceLabelBack?.stroke({ color: this.aceVariant.color || 0xffd15c, width: 2, alpha: 0.9 });
+    this.aceLabelBack?.moveTo(-panelWidth / 2 + 18, panelHeight / 2 - 5);
+    this.aceLabelBack?.lineTo(panelWidth / 2 - 18, panelHeight / 2 - 5);
+    this.aceLabelBack?.stroke({ color: accent, width: 2, alpha: 0.58 });
     this.aceLabelRails?.clear();
     for (const side of [-1, 1]) {
-      const x = side * (panelWidth / 2 + 5);
-      this.aceLabelRails?.moveTo(x, -8);
-      this.aceLabelRails?.lineTo(x + side * 10, 0);
-      this.aceLabelRails?.lineTo(x, 8);
+      const x = side * (panelWidth / 2 + 4);
+      this.aceLabelRails?.moveTo(x, -11);
+      this.aceLabelRails?.lineTo(x + side * 13, -3);
+      this.aceLabelRails?.lineTo(x + side * 7, 0);
+      this.aceLabelRails?.lineTo(x + side * 13, 7);
+      this.aceLabelRails?.lineTo(x, 12);
     }
-    this.aceLabelRails?.stroke({ color: accent, width: 2.4, alpha: 0.9 });
+    this.aceLabelRails?.stroke({ color: accent, width: 2.2, alpha: 0.9 });
+    this.aceLabelRails?.poly([0, -panelHeight / 2 - 7, 5, -panelHeight / 2 - 2, 0, -panelHeight / 2 + 3, -5, -panelHeight / 2 - 2]);
+    this.aceLabelRails?.fill({ color: 0xfff3a0, alpha: 0.84 });
     this.aceLabelPlate.y = -Math.max(48, this.radius + 38);
     this.aceLabelPlate.visible = true;
     this.aceLabel.visible = true;
@@ -1448,6 +1463,7 @@ export class Enemy {
       labelBounds,
       labelFontSize: Number(this.aceLabel?.style?.fontSize) || 0,
       labelScale: Number((this.aceLabel?.scale?.x || 0).toFixed(3)),
+      visualLanguage: 'ace_command_signature_v2',
       health: Math.max(0, Number(this.health) || 0),
       maxHealth: Math.max(0, Number(this.maxHealth) || 0),
       rewardClaimed: this.aceRewardClaimed === true
@@ -1948,6 +1964,7 @@ export class Enemy {
     let orbitalPipCount = 0;
     let warningBracketCount = 0;
     let vectorArrowCount = 0;
+    let commandChevronCount = 0;
     let arrivalGuardArcCount = 0;
     let arrivalGuardPipCount = 0;
     layer.rotation = -(this.sprite?.rotation || 0);
@@ -1957,25 +1974,57 @@ export class Enemy {
       this.aceLabelPlate.rotation = -(this.sprite?.rotation || 0);
     }
 
-    layer.circle(0, 0, radius);
-    layer.stroke({ color: profile.color, width: profile.tier === 'elite' || profile.tier === 'ace' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
-    layer.circle(0, 0, outer);
-    layer.stroke({ color: profile.accent, width: 1, alpha: 0.1 + pulse * 0.08 });
+    if (profile.tier === 'ace') {
+      const diamondRadius = outer + 4;
+      layer.poly([0, -diamondRadius, diamondRadius, 0, 0, diamondRadius, -diamondRadius, 0]);
+      layer.stroke({ color: profile.color, width: 1.7, alpha: 0.28 + pulse * 0.2 });
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / 6);
+        const radial = outer + 13 + (i % 2) * 6;
+        const cx = Math.cos(angle) * radial;
+        const cy = Math.sin(angle) * radial;
+        const tangent = angle + Math.PI / 2;
+        const wing = 9 + pulse * 3;
+        layer.moveTo(cx - Math.cos(tangent) * wing, cy - Math.sin(tangent) * wing);
+        layer.lineTo(cx + Math.cos(angle) * 8, cy + Math.sin(angle) * 8);
+        layer.lineTo(cx + Math.cos(tangent) * wing, cy + Math.sin(tangent) * wing);
+        commandChevronCount += 1;
+      }
+      layer.stroke({ color: profile.accent, width: 2.6, alpha: 0.48 + pulse * 0.3 });
+      const crownY = -outer - 20;
+      layer.poly([-16, crownY + 7, -9, crownY - 3, 0, crownY + 3, 9, crownY - 3, 16, crownY + 7]);
+      layer.stroke({ color: 0xfff3a0, width: 2, alpha: 0.56 + pulse * 0.3 });
+      const orbitalRadius = outer + 23 + pulse * 2;
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = now * 0.0011 + this.idlePhase * 0.18 + i * (Math.PI * 2 / markerCount);
+        const x = Math.cos(angle) * orbitalRadius;
+        const y = Math.sin(angle) * orbitalRadius;
+        const pip = i % 2 ? 2.8 : 3.8;
+        layer.poly([x, y - pip, x + pip, y, x, y + pip, x - pip, y]);
+        orbitalPipCount += 1;
+      }
+      layer.fill({ color: profile.accent, alpha: 0.18 + pulse * 0.14 });
+    } else {
+      layer.circle(0, 0, radius);
+      layer.stroke({ color: profile.color, width: profile.tier === 'elite' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
+      layer.circle(0, 0, outer);
+      layer.stroke({ color: profile.accent, width: 1, alpha: 0.1 + pulse * 0.08 });
 
-    for (let i = 0; i < markerCount; i += 1) {
-      const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
-      drawThreatFrameTick(layer, angle, radius - 4, outer + 6);
-    }
-    layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+        drawThreatFrameTick(layer, angle, radius - 4, outer + 6);
+      }
+      layer.stroke({ color: profile.color, width: profile.tier === 'durable' ? 1.6 : 2.2, alpha: 0.36 + pulse * 0.2 });
 
-    const orbitalRadius = outer + 13 + pulse * 2;
-    const orbitalCount = profile.tier === 'elite' || profile.tier === 'ace' ? markerCount + 2 : Math.max(4, markerCount);
-    for (let i = 0; i < orbitalCount; i += 1) {
-      const angle = now * 0.0018 + this.idlePhase * 0.18 + i * (Math.PI * 2 / orbitalCount);
-      layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' || profile.tier === 'ace' ? 2.4 : 1.8);
-      orbitalPipCount += 1;
+      const orbitalRadius = outer + 13 + pulse * 2;
+      const orbitalCount = profile.tier === 'elite' ? markerCount + 2 : Math.max(4, markerCount);
+      for (let i = 0; i < orbitalCount; i += 1) {
+        const angle = now * 0.0018 + this.idlePhase * 0.18 + i * (Math.PI * 2 / orbitalCount);
+        layer.circle(Math.cos(angle) * orbitalRadius, Math.sin(angle) * orbitalRadius, profile.tier === 'elite' ? 2.4 : 1.8);
+        orbitalPipCount += 1;
+      }
+      layer.fill({ color: profile.accent, alpha: 0.12 + pulse * 0.1 });
     }
-    layer.fill({ color: profile.accent, alpha: 0.12 + pulse * 0.1 });
 
     for (const angle of [-Math.PI / 4, Math.PI / 4, Math.PI * 0.75, Math.PI * 1.25]) {
       const r = outer + 2;
@@ -2011,7 +2060,16 @@ export class Enemy {
       }
     }
 
-    if (profile.tier === 'elite' || profile.tier === 'danger_mid' || profile.tier === 'ace') {
+    if (profile.tier === 'ace') {
+      for (let i = 0; i < markerCount; i += 1) {
+        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
+        const cx = Math.cos(angle) * (outer + 9);
+        const cy = Math.sin(angle) * (outer + 9);
+        const pip = 2.6;
+        layer.poly([cx, cy - pip, cx + pip, cy, cx, cy + pip, cx - pip, cy]);
+      }
+      layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
+    } else if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
       for (let i = 0; i < markerCount; i += 1) {
         const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
         const cx = Math.cos(angle) * (outer + 9);
@@ -2078,6 +2136,8 @@ export class Enemy {
       arrivalGuardActive,
       arrivalGuardArcCount,
       arrivalGuardPipCount,
+      commandChevronCount,
+      visualLanguage: profile.tier === 'ace' ? 'ace_command_signature_v2' : 'threat_frame_v1',
       arrivalGuardDamageMultiplier: arrivalGuardActive ? this.arrivalGuardDamageMultiplier : 1
     };
   }
