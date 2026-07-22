@@ -4,6 +4,10 @@ import { RankAssets } from '../utils/RankAssets.js';
 import { Player, RESPAWN_INVULNERABILITY_MS } from '../entities/Player.js';
 import { BonusDrone } from '../entities/BonusDrone.js';
 import { AssetManifest } from '../assets/assetManifest.js';
+import {
+  commitGameOverFinalTransmissionVariant,
+  reserveNextGameOverFinalTransmissionVariant
+} from '../config/GameOverFinalTransmissionVariants.js';
 import { getEliteMiddleShipsForLevel } from '../config/EliteMiddleShips.js';
 import { BalanceConfig, MAX_PLAYER_LIVES } from '../config/BalanceConfig.js';
 import { COMBO_MILESTONES, COMBO_WINDOW_MS } from '../config/ComboConfig.js';
@@ -219,7 +223,8 @@ export class PlayScene {
     this.container.addChild(this.uiOverlay);
     GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
     GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
-    this.gameOverFinalTransmissionReady = GameAssets.ensureGameOverFinalTransmissionTexture?.().catch(() => null);
+    this.gameOverFinalTransmissionVariant = null;
+    this.gameOverFinalTransmissionReady = null;
     GameAssets.ensureCabinetWonderTextures?.().catch(() => {});
     this.gameplayViewportMask.eventMode = 'none';
     this.applyGameplayViewportMask();
@@ -642,6 +647,10 @@ export class PlayScene {
     this.finalDeathFeedbackShown = false;
     this.gameOverAnimationLayer = null;
     this.gameOverAnimationDebug = null;
+    this.gameOverFinalTransmissionVariant = reserveNextGameOverFinalTransmissionVariant();
+    this.gameOverFinalTransmissionReady = GameAssets.ensureGameOverFinalTransmissionTexture?.(
+      this.gameOverFinalTransmissionVariant
+    ).catch(() => null);
     this.overrunClearLayer = new PIXI.Container();
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
@@ -11893,21 +11902,33 @@ export class PlayScene {
     this.game.lockFinalScore?.('final_life_lost');
     this.clearToastState();
     this.triggerPlayerDeathFeedback({ final: true });
-    this.showInGameGameOverAnimation();
-    const id = setTimeout(() => {
+    commitGameOverFinalTransmissionVariant(this.gameOverFinalTransmissionVariant);
+    let transitioned = false;
+    let safetyId = null;
+    const complete = () => {
+      if (transitioned) return;
+      transitioned = true;
+      if (safetyId) clearTimeout(safetyId);
       if (this.game?.currentScene === this) {
         this.game.gameOver({ fromInterlude: true });
       }
-    }, GAME_OVER_CELEBRATION_DURATION_MS + 60);
+    };
+    this.showInGameGameOverAnimation({ onComplete: complete });
+    safetyId = setTimeout(complete, GAME_OVER_CELEBRATION_DURATION_MS + 1200);
     if (!this._deathTimeouts) this._deathTimeouts = [];
-    this._deathTimeouts.push(id);
+    this._deathTimeouts.push(safetyId);
     return true;
   }
 
-  showInGameGameOverAnimation() {
-    if (!this.uiOverlay || this.gameOverAnimationLayer?.parent) return;
+  showInGameGameOverAnimation({ onComplete } = {}) {
+    if (!this.uiOverlay || this.gameOverAnimationLayer?.parent) return false;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    const variant = this.gameOverFinalTransmissionVariant
+      || reserveNextGameOverFinalTransmissionVariant();
+    this.gameOverFinalTransmissionVariant = variant;
+    const animation = variant.animation || {};
+    const colors = variant.colors || { primary: 0x37f5ff, secondary: 0xff55d9, accent: 0xfff3a2 };
     const layer = new PIXI.Container();
     layer.label = 'ui_in_game_game_over_animation';
     layer.zIndex = 1000000;
@@ -11920,7 +11941,7 @@ export class PlayScene {
     shade.fill({ color: 0x01040b, alpha: 0.46 });
     layer.addChild(shade);
 
-    const heroTexture = GameAssets.getGameOverFinalTransmissionTexture?.();
+    const heroTexture = GameAssets.getGameOverFinalTransmissionTexture?.(variant);
     const hero = new PIXI.Sprite(GameAssets.isValidTexture(heroTexture) ? heroTexture : PIXI.Texture.EMPTY);
     hero.label = 'game_over_final_transmission_art';
     hero.anchor.set(0.5);
@@ -11940,7 +11961,7 @@ export class PlayScene {
     fitHero(heroTexture);
     layer.addChild(hero);
     if (!hero.visible) {
-      GameAssets.ensureGameOverFinalTransmissionTexture?.().then((texture) => {
+      GameAssets.ensureGameOverFinalTransmissionTexture?.(variant).then((texture) => {
         if (this.gameOverAnimationLayer === layer) fitHero(texture);
       }).catch(() => {});
     }
@@ -11957,17 +11978,17 @@ export class PlayScene {
     fractureSegments.forEach(([x1, y1, x2, y2], index) => {
       fractureVeil.moveTo(coreX + width * x1, coreY + height * y1);
       fractureVeil.lineTo(coreX + width * x2, coreY + height * y2);
-      fractureVeil.stroke({ color: index % 2 ? 0x37f5ff : 0xff55d9, width: index % 3 === 0 ? 2 : 1, alpha: 0.42 });
+      fractureVeil.stroke({ color: index % 2 ? colors.primary : colors.secondary, width: index % 3 === 0 ? 2 : 1, alpha: 0.42 });
     });
     layer.addChild(fractureVeil);
 
     const coreSignal = new PIXI.Graphics();
     coreSignal.label = 'game_over_angular_core_signal';
     coreSignal.poly([0, -34, 34, 0, 0, 34, -34, 0]);
-    coreSignal.fill({ color: 0xff55d9, alpha: 0.16 });
-    coreSignal.stroke({ color: 0xffb4f1, width: 2, alpha: 0.88 });
+    coreSignal.fill({ color: colors.secondary, alpha: 0.16 });
+    coreSignal.stroke({ color: colors.accent, width: 2, alpha: 0.88 });
     coreSignal.poly([0, -21, 21, 0, 0, 21, -21, 0]);
-    coreSignal.stroke({ color: 0x7ef9ff, width: 2, alpha: 0.92 });
+    coreSignal.stroke({ color: colors.primary, width: 2, alpha: 0.92 });
     coreSignal.position.set(coreX, coreY);
     coreSignal.alpha = 0;
     coreSignal.scale.set(0.35);
@@ -11983,7 +12004,7 @@ export class PlayScene {
       scanWidth / 2 - 24, 4,
       -scanWidth / 2, 4
     ]);
-    scanBlade.fill({ color: 0x73f7ff, alpha: 0.42 });
+    scanBlade.fill({ color: colors.primary, alpha: 0.42 });
     scanBlade.position.set(coreX, coreY - height * 0.1);
     scanBlade.rotation = -0.045;
     scanBlade.alpha = 0;
@@ -11995,13 +12016,26 @@ export class PlayScene {
       const spread = 0.055 + (index % 10) * 0.034;
       const size = 3 + (index % 4) * 1.5;
       shard.poly([0, -size * 1.8, size, 0, 0, size * 1.8, -size * 0.65, 0]);
-      shard.fill({ color: index % 3 === 0 ? 0x37f5ff : 0xff55d9, alpha: 0.82 });
+      shard.fill({ color: index % 3 === 0 ? colors.primary : colors.secondary, alpha: 0.82 });
       shard.position.set(coreX + side * width * spread, coreY + ((index % 5) - 2) * height * 0.025);
       shard.rotation = side * (0.18 + index * 0.11);
       shard._originX = shard.x;
       shard._originY = shard.y;
-      shard._driftX = side * (54 + (index % 6) * 18);
-      shard._driftY = ((index % 7) - 3) * 18 - 18;
+      const radialX = side * (54 + (index % 6) * 18);
+      const radialY = ((index % 7) - 3) * 18 - 18;
+      if (animation.shardMode === 'spiral') {
+        shard._driftX = radialY * 0.8;
+        shard._driftY = -radialX * 0.45;
+      } else if (animation.shardMode === 'shear') {
+        shard._driftX = side * (110 + (index % 4) * 24);
+        shard._driftY = side * ((index % 5) - 2) * 12;
+      } else if (animation.shardMode === 'cascade') {
+        shard._driftX = side * (24 + (index % 5) * 12);
+        shard._driftY = 82 + (index % 7) * 18;
+      } else {
+        shard._driftX = radialX;
+        shard._driftY = radialY;
+      }
       shard._delayMs = 140 + (index % 5) * 55;
       layer.addChild(shard);
       return shard;
@@ -12023,14 +12057,17 @@ export class PlayScene {
       coreX - plateWidth / 2, plateY - plateHeight / 2 + cut
     ]);
     titlePlate.fill({ color: 0x010711, alpha: 0.78 });
-    titlePlate.stroke({ color: 0x37f5ff, width: 1.5, alpha: 0.68 });
+    titlePlate.stroke({ color: colors.primary, width: 1.5, alpha: 0.68 });
     titlePlate.moveTo(coreX - plateWidth / 2 + cut + 18, plateY - plateHeight / 2 + 7);
     titlePlate.lineTo(coreX - 42, plateY - plateHeight / 2 + 7);
     titlePlate.moveTo(coreX + 42, plateY + plateHeight / 2 - 7);
     titlePlate.lineTo(coreX + plateWidth / 2 - cut - 18, plateY + plateHeight / 2 - 7);
-    titlePlate.stroke({ color: 0xff55d9, width: 2, alpha: 0.68 });
+    titlePlate.stroke({ color: colors.secondary, width: 2, alpha: 0.68 });
     titlePlate.alpha = 0;
-    titlePlate.x = -32;
+    const titleEntryX = animation.titleEntry === 'left' ? -56 : animation.titleEntry === 'right' ? 56 : 0;
+    const titleEntryY = animation.titleEntry === 'rise' ? 42 : animation.titleEntry === 'drop' ? -42 : 0;
+    titlePlate.x = titleEntryX;
+    titlePlate.y = titleEntryY;
     layer.addChild(titlePlate);
 
     const titleSize = width < 720 ? 46 : 78;
@@ -12038,13 +12075,13 @@ export class PlayScene {
       fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
       fontSize: titleSize,
       fontWeight: '900',
-      fill: '#fff3a2',
+      fill: `#${colors.accent.toString(16).padStart(6, '0')}`,
       stroke: '#2a0013',
       strokeThickness: width < 720 ? 5 : 8,
       align: 'center',
       letterSpacing: 0,
       dropShadow: true,
-      dropShadowColor: '#ff55d9',
+      dropShadowColor: `#${colors.secondary.toString(16).padStart(6, '0')}`,
       dropShadowBlur: 12,
       dropShadowDistance: 0
     });
@@ -12060,7 +12097,7 @@ export class PlayScene {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: width < 720 ? 17 : 24,
       fontWeight: '900',
-      fill: '#9cfbff',
+      fill: `#${colors.primary.toString(16).padStart(6, '0')}`,
       stroke: '#020711',
       strokeThickness: 4,
       align: 'center'
@@ -12071,17 +12108,28 @@ export class PlayScene {
     subtitle.alpha = 0;
     layer.addChild(subtitle);
 
+    const handoffShade = new PIXI.Graphics();
+    handoffShade.label = 'game_over_direct_handoff_shade';
+    handoffShade.rect(0, 0, width, height);
+    handoffShade.fill({ color: 0x01030a, alpha: 1 });
+    handoffShade.alpha = 0;
+    layer.addChild(handoffShade);
+
     this.uiOverlay.addChild(layer);
     this.uiOverlay.sortChildren?.();
     AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
     this.gameOverAnimationDebug = {
       active: true,
-      visualLanguage: 'final_transmission_imagegen_v1',
+      visualLanguage: 'final_transmission_imagegen_v2',
+      variantId: variant.id,
+      variantCount: 30,
+      animationSignature: { ...animation },
       generatedArtReady: hero.visible,
       primitiveRingCount: 0,
       shardCount: shards.length,
       titlePlate: true,
-      animationPhases: ['impact', 'fracture', 'title_reveal', 'final_hold', 'fade'],
+      animationPhases: ['impact', 'fracture', 'title_reveal', 'final_hold', 'direct_handoff'],
+      directHandoff: true,
       startedAt: Date.now(),
       durationMs: GAME_OVER_CELEBRATION_DURATION_MS
     };
@@ -12100,48 +12148,99 @@ export class PlayScene {
       const intro = easeOutCubic(elapsed / 560);
       const titleIn = easeOutCubic((elapsed - 420) / 520);
       const scoreIn = easeOutCubic((elapsed - 820) / 420);
-      const exit = easeInOut((elapsed - (duration - 540)) / 540);
+      const handoff = easeInOut((elapsed - (duration - 420)) / 420);
       const holdPulse = 0.5 + Math.sin(elapsed * 0.0065) * 0.5;
-      layer.alpha = intro * (1 - exit);
-      layer.scale.set(0.965 + intro * 0.035 - exit * 0.008);
+      layer.alpha = intro;
+      layer.scale.set(0.965 + intro * 0.035);
       if (hero.visible && hero._baseScale) {
         const cinematicDrift = easeInOut(t);
-        hero.scale.set(hero._baseScale * (0.98 + intro * 0.028 + cinematicDrift * 0.035 + holdPulse * 0.004));
+        const phase = elapsed * 0.001 * (animation.speed || 1) + (animation.phase || 0);
+        const ampX = animation.amplitudeX || 6;
+        const ampY = animation.amplitudeY || 5;
+        let motionX = Math.sin(phase) * ampX;
+        let motionY = Math.cos(phase * 0.83) * ampY;
+        if (animation.path === 'parallax') {
+          motionX = Math.sin(phase * 0.72) * ampX + Math.cos(phase * 1.9) * ampX * 0.45;
+          motionY = Math.cos(phase * 0.54) * ampY;
+        } else if (animation.path === 'ascend') {
+          motionX = Math.sin(phase * 1.4) * ampX;
+          motionY = (1 - cinematicDrift) * 30 - cinematicDrift * ampY;
+        } else if (animation.path === 'descend') {
+          motionX = Math.cos(phase * 1.15) * ampX;
+          motionY = -(1 - cinematicDrift) * 30 + cinematicDrift * ampY;
+        } else if (animation.path === 'figure_eight') {
+          motionX = Math.sin(phase) * ampX;
+          motionY = Math.sin(phase * 2) * ampY;
+        } else if (animation.path === 'recoil') {
+          const recoil = Math.sin(Math.min(1, elapsed / 780) * Math.PI) * (1 - cinematicDrift * 0.35);
+          motionX = Math.sin(phase * 2.2) * ampX * 0.55;
+          motionY = -recoil * ampY * 2.4 + Math.cos(phase) * ampY * 0.35;
+        }
+        hero.scale.set(hero._baseScale * (0.98 + intro * 0.028 + cinematicDrift * (animation.zoom || 0.035) + holdPulse * 0.004));
         hero.position.set(
-          width / 2 + Math.sin(elapsed * 0.0018) * 6,
-          height / 2 - (1 - intro) * 28 - cinematicDrift * 8
+          width / 2 + motionX + (animation.driftX || 0) * cinematicDrift,
+          height / 2 - (1 - intro) * 28 + motionY + (animation.driftY || 0) * cinematicDrift
         );
+        hero.rotation = Math.sin(phase * 0.64) * (animation.rotation || 0);
         hero.alpha = 0.72 + intro * 0.2 + holdPulse * 0.06;
       }
-      fractureVeil.alpha = (0.18 + intro * 0.34 + holdPulse * 0.28) * (1 - exit);
+      fractureVeil.alpha = 0.18 + intro * 0.34 + holdPulse * 0.28;
       const coreBurst = easeOutCubic((elapsed - 100) / 720);
-      coreSignal.alpha = Math.max(0, (0.92 - coreBurst * 0.42 + holdPulse * 0.14) * (1 - exit));
-      coreSignal.scale.set(0.35 + coreBurst * 1.18 + holdPulse * 0.045);
-      coreSignal.rotation = elapsed * 0.00035;
+      let corePulse = holdPulse;
+      if (animation.coreMode === 'flare') corePulse = Math.max(holdPulse * 0.55, 1 - clamp01((elapsed - 120) / 980));
+      if (animation.coreMode === 'breathe') corePulse = 0.5 + Math.sin(elapsed * 0.0035) * 0.5;
+      if (animation.coreMode === 'tremor') corePulse = 0.5 + Math.sin(elapsed * 0.014) * 0.5;
+      if (animation.coreMode === 'doublebeat') corePulse = Math.pow(Math.max(0, Math.sin(elapsed * 0.009)), 5);
+      coreSignal.alpha = Math.max(0, 0.78 - coreBurst * 0.34 + corePulse * 0.24);
+      coreSignal.scale.set(0.35 + coreBurst * 1.18 + corePulse * 0.075);
+      coreSignal.rotation = elapsed * 0.00035 * (animation.direction || 1);
+      coreSignal.x = coreX + (animation.coreMode === 'tremor' ? Math.sin(elapsed * 0.025) * 3 : 0);
       const scanProgress = clamp01((elapsed - 260) / 1500);
-      scanBlade.y = coreY - height * 0.11 + scanProgress * height * 0.25;
-      scanBlade.alpha = Math.sin(scanProgress * Math.PI) * 0.54 * (1 - exit);
+      if (animation.scanMode === 'up') {
+        scanBlade.position.set(coreX, coreY + height * 0.14 - scanProgress * height * 0.25);
+      } else if (animation.scanMode === 'left' || animation.scanMode === 'right') {
+        const direction = animation.scanMode === 'left' ? -1 : 1;
+        scanBlade.rotation = Math.PI / 2;
+        scanBlade.position.set(coreX - direction * width * 0.24 + direction * scanProgress * width * 0.48, coreY);
+      } else if (animation.scanMode === 'diagonal_down' || animation.scanMode === 'diagonal_up') {
+        const direction = animation.scanMode === 'diagonal_down' ? 1 : -1;
+        scanBlade.rotation = direction * 0.34;
+        scanBlade.position.set(coreX - width * 0.16 + scanProgress * width * 0.32, coreY - direction * height * 0.13 + direction * scanProgress * height * 0.26);
+      } else {
+        scanBlade.position.set(coreX, coreY - height * 0.11 + scanProgress * height * 0.25);
+      }
+      scanBlade.alpha = Math.sin(scanProgress * Math.PI) * 0.54;
       shards.forEach((shard, index) => {
         const travel = easeOutCubic((elapsed - shard._delayMs) / (1380 + (index % 4) * 130));
-        shard.x = shard._originX + shard._driftX * travel;
-        shard.y = shard._originY + shard._driftY * travel;
-        shard.rotation += (index % 2 ? 1 : -1) * 0.012 * tick.deltaTime;
-        shard.alpha = Math.max(0, (0.22 + travel * 0.72 + holdPulse * 0.08) * (1 - exit));
+        const returnTravel = animation.shardMode === 'return' ? Math.sin(travel * Math.PI) : travel;
+        const spiralX = animation.shardMode === 'spiral' ? Math.sin(travel * Math.PI * 2 + index) * 26 * travel : 0;
+        const spiralY = animation.shardMode === 'spiral' ? Math.cos(travel * Math.PI * 2 + index) * 18 * travel : 0;
+        shard.x = shard._originX + shard._driftX * returnTravel + spiralX;
+        shard.y = shard._originY + shard._driftY * returnTravel + spiralY;
+        shard.rotation += (index % 2 ? 1 : -1) * 0.012 * (animation.fragmentSpin || 1) * tick.deltaTime;
+        shard.alpha = Math.max(0, 0.22 + travel * 0.72 + holdPulse * 0.08);
       });
-      titlePlate.x = -32 * (1 - titleIn);
-      titlePlate.alpha = titleIn * (0.78 + holdPulse * 0.12) * (1 - exit);
-      title.alpha = titleIn * (1 - exit);
-      title.scale.set(0.88 + titleIn * 0.12 + holdPulse * 0.008);
-      subtitle.alpha = scoreIn * (0.84 + holdPulse * 0.16) * (1 - exit);
+      titlePlate.x = titleEntryX * (1 - titleIn);
+      titlePlate.y = titleEntryY * (1 - titleIn);
+      titlePlate.alpha = titleIn * (0.78 + holdPulse * 0.12);
+      title.x = width / 2 + titleEntryX * (1 - titleIn);
+      title.y = plateY - (width < 720 ? 12 : 18) + titleEntryY * (1 - titleIn);
+      title.alpha = titleIn;
+      const titleZoom = animation.titleEntry === 'zoom' ? 0.18 : 0;
+      title.scale.set(0.88 - titleZoom * (1 - titleIn) + titleIn * 0.12 + holdPulse * 0.008);
+      subtitle.alpha = scoreIn * (0.84 + holdPulse * 0.16);
+      handoffShade.alpha = handoff;
       if (elapsed >= duration) {
         if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.active = false;
         this.game.app.ticker.remove(ticker);
         this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
+        onComplete?.();
       }
     };
     this.game.app.ticker.add(ticker);
     if (!this._activeTickers) this._activeTickers = [];
     this._activeTickers.push(ticker);
+    return true;
   }
 
   getGameOverAnimationDebugState(getBounds) {

@@ -10,6 +10,7 @@ class GameAssetsManager {
         this.plasmaBloomTextures = [];
         this.tacticalDraftFieldTexture = null;
         this.gameOverFinalTransmissionTexture = null;
+        this.gameOverFinalTransmissionTextures = {};
         this.cabinetWonderTextures = {};
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
@@ -104,18 +105,43 @@ class GameAssetsManager {
         return this.tacticalDraftFieldTexture;
     }
 
-    async ensureGameOverFinalTransmissionTexture() {
-        if (this.isValidTexture(this.gameOverFinalTransmissionTexture)) return this.gameOverFinalTransmissionTexture;
+    resolveGameOverFinalTransmissionVariant(variantOrId) {
+        const variants = AssetManifest.generated?.gameOverFinalTransmissions || [];
+        if (variantOrId?.id && variantOrId?.src) return variantOrId;
+        const id = String(variantOrId || '');
+        return variants.find((variant) => variant.id === id) || variants[0] || {
+            id: 'final_transmission_01',
+            src: AssetManifest.generated?.gameOverFinalTransmission
+        };
+    }
+
+    async ensureGameOverFinalTransmissionTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        if (this.isValidTexture(this.gameOverFinalTransmissionTextures[variant.id])) {
+            return this.gameOverFinalTransmissionTextures[variant.id];
+        }
         try {
             const texture = await PIXI.Assets.load({
-                alias: 'nova_game_over_final_transmission',
-                src: AssetManifest.generated?.gameOverFinalTransmission
+                alias: `nova_game_over_${variant.id}`,
+                src: variant.src
             });
-            if (this.isValidTexture(texture)) this.gameOverFinalTransmissionTexture = texture;
+            if (this.isValidTexture(texture)) {
+                Object.keys(this.gameOverFinalTransmissionTextures).forEach((cachedId) => {
+                    if (cachedId === variant.id) return;
+                    delete this.gameOverFinalTransmissionTextures[cachedId];
+                    try {
+                        Promise.resolve(PIXI.Assets.unload(`nova_game_over_${cachedId}`)).catch(() => {});
+                    } catch {
+                        // The new current texture remains usable if an old cache entry cannot unload.
+                    }
+                });
+                this.gameOverFinalTransmissionTextures[variant.id] = texture;
+                this.gameOverFinalTransmissionTexture = texture;
+            }
         } catch (error) {
-            console.warn('[GameAssets] Game Over final-transmission plate unavailable:', error?.message || error);
+            console.warn(`[GameAssets] Game Over final-transmission plate ${variant.id} unavailable:`, error?.message || error);
         }
-        return this.gameOverFinalTransmissionTexture;
+        return this.gameOverFinalTransmissionTextures[variant.id] || null;
     }
 
     async ensureCabinetWonderTextures() {
@@ -198,8 +224,9 @@ class GameAssetsManager {
         return this.tacticalDraftFieldTexture;
     }
 
-    getGameOverFinalTransmissionTexture() {
-        return this.gameOverFinalTransmissionTexture;
+    getGameOverFinalTransmissionTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        return this.gameOverFinalTransmissionTextures[variant.id] || null;
     }
 
     getCabinetWonderTexture(id) {

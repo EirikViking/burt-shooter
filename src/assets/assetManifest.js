@@ -6,6 +6,7 @@ import {
     ELITE_MIDDLE_SHIP_EXPANSION_ASSETS,
     ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS
 } from '../config/EliteMiddleShipExpansion.js';
+import { GAME_OVER_FINAL_TRANSMISSION_VARIANTS } from '../config/GameOverFinalTransmissionVariants.js';
 
 export const AssetManifest = {
     generated: {
@@ -26,6 +27,7 @@ export const AssetManifest = {
         leaderboardHall: '/art/generated/nova-swarm/leaderboard/nova-swarm-leaderboard-hall-20260519.png',
         gameOverCeremony: '/art/generated/nova-swarm/gameover/nova-swarm-gameover-ceremony-20260519.png',
         gameOverFinalTransmission: '/art/generated/nova-swarm/gameover/nova-swarm-final-transmission-interlude-20260722.png',
+        gameOverFinalTransmissions: GAME_OVER_FINAL_TRANSMISSION_VARIANTS,
         gameplayArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-gameplay-arena.webp',
         stormGameplayBackdrop: '/art/generated/nova-swarm/nova-swarm-storm-gameplay-backdrop.webp',
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',

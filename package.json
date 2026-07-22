@@ -144,6 +144,7 @@
     "check:player-engine-thruster-readability": "node scripts/check-player-engine-thruster-readability.mjs",
     "check:player-damage-direction-cue": "node scripts/check-player-damage-direction-cue.mjs",
     "check:career-intel-layout": "node scripts/check-career-intel-layout.mjs",
+    "check:gameover-final-transmissions": "node scripts/check-gameover-final-transmissions.mjs",
     "check:gameover-interlude": "node scripts/check-gameover-interlude.mjs",
     "check:gameover-ceremony": "node scripts/check-gameover-ceremony.mjs",
     "check:leaderboard-split": "node scripts/check-leaderboard-split.mjs",

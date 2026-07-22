@@ -132,7 +132,10 @@ try {
   assert(ceremonyLayers >= 4, 'single game-over ceremony is missing its title/score visual stack', { ceremonyLayers });
   assert(interludeState.gameOverInterlude?.active !== true, 'normal final death started the duplicate legacy interlude', interludeState.gameOverInterlude);
   assert(interludeState.gameOverAnimation?.active === true, 'final-death celebration did not expose its active debug state', interludeState.gameOverAnimation);
-  assert(interludeState.gameOverAnimation?.visualLanguage === 'final_transmission_imagegen_v1', 'final-death celebration is not using the approved final-transmission visual language', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.visualLanguage === 'final_transmission_imagegen_v2', 'final-death celebration is not using the rotating final-transmission visual language', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.variantCount === 30, 'final-death celebration does not expose all 30 variants', interludeState.gameOverAnimation);
+  assert(Boolean(interludeState.gameOverAnimation?.variantId), 'final-death celebration did not select a variant', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.directHandoff === true, 'final-death celebration is not configured for direct result-screen handoff', interludeState.gameOverAnimation);
   assert(interludeState.gameOverAnimation?.generatedArtReady === true, 'generated final-transmission art was not ready for the celebration', interludeState.gameOverAnimation);
   assert(interludeState.gameOverAnimation?.primitiveRingCount === 0, 'primitive circle rings returned to the final-death celebration', interludeState.gameOverAnimation);
   assert((interludeState.gameOverAnimation?.shardCount || 0) >= 12, 'angular breakup fragments are missing from the final-death celebration', interludeState.gameOverAnimation);
