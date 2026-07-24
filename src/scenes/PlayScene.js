@@ -971,6 +971,9 @@ export class PlayScene {
     if (this.player.setRank) {
       this.player.setRank(initialRank, 'init_placeholder');
     }
+    const tacticalBaselineAugmentIds = this.game?.getRunModeProfile?.()?.tacticalBaselineAugmentIds || [];
+    this.overrunBaselineAugmentIds = tacticalBaselineAugmentIds
+      .filter((id) => this.player.applyRunAugment?.(id)?.applied);
     this.applySeasonCosmetics();
     this.startNextTacticalDirective('run_start');
 

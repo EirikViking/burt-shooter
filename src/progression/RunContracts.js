@@ -12,11 +12,17 @@ const MAYHEM_MODES = Object.freeze([
   RUN_MODES.RANKED,
   RUN_MODES.MAYHEM_TACTICAL
 ]);
+const CUMULATIVE_CAREER_MODES = Object.freeze([
+  ...MAYHEM_MODES,
+  RUN_MODES.OVERRUN_PURE,
+  RUN_MODES.OVERRUN_TACTICAL
+]);
+const PILOT_ORDER_SESSION_MODES = CUMULATIVE_CAREER_MODES;
 
 function defineContract(config = {}) {
   return Object.freeze({
     modeLabel: 'Mayhem',
-    modes: MAYHEM_MODES,
+    modes: config.persistAcrossRuns ? CUMULATIVE_CAREER_MODES : MAYHEM_MODES,
     accent: 0x37f5ff,
     ...config,
     ...(Array.isArray(config.powerupTypes) ? { powerupTypes: Object.freeze([...config.powerupTypes]) } : {})
@@ -1296,7 +1302,7 @@ export function mergeRunContractsState(localState = {}, cloudState = {}) {
 export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress = {} } = {}) {
   const mode = normalizeRunMode(runMode);
   const baseState = normalizeRunContractsState(progress?.runContracts || progress || {});
-  const state = MAYHEM_MODES.includes(mode) ? prepareRunContractsForEligibleRun(baseState) : baseState;
+  const state = PILOT_ORDER_SESSION_MODES.includes(mode) ? prepareRunContractsForEligibleRun(baseState) : baseState;
   const careerProgress = seedCareerProgressFromHangar(state.careerProgress, progress);
   const activeIds = areAllRunContractsComplete(state) ? [] : state.activeIds;
   return {
@@ -1406,7 +1412,7 @@ function progressForEvent(contract, item, event, session) {
 
 function applyCareerProgressEvent(careerProgress = {}, event = {}, runMode = RUN_MODES.RANKED) {
   const mode = normalizeRunMode(runMode);
-  if (!MAYHEM_MODES.includes(mode)) return careerProgress;
+  if (!PILOT_ORDER_SESSION_MODES.includes(mode)) return careerProgress;
   const eventType = String(event?.type || '');
   const relevantGroups = PERSISTENT_GROUPS_BY_EVENT.get(eventType) || [];
   if (!relevantGroups.length) return careerProgress;

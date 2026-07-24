@@ -1,0 +1,136 @@
+import assert from 'node:assert/strict';
+
+import {
+  OVERRUN_START_SECTOR,
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
+  OVERRUN_UNLOCK_SECTOR,
+  RUN_MODES,
+  canRunModeSubmitGlobalLeaderboard,
+  canRunModeUnlockAchievements,
+  canRunModeUpdateCareerProgress,
+  canRunModeUpdateCompetitiveCareerBests,
+  getOverrunStartState,
+  getRunModeProfile,
+  isOverrunRunMode
+} from '../src/game/RunMode.js';
+import {
+  HANGAR_PROGRESS_KEY,
+  applyRunProgression,
+  calculatePilotXpForRun,
+  createDefaultHangarProgress,
+  writeHangarProgressState
+} from '../src/progression/HangarProgressState.js';
+
+class MemoryStorage {
+  constructor() {
+    this.map = new Map();
+  }
+
+  getItem(key) {
+    return this.map.has(key) ? this.map.get(key) : null;
+  }
+
+  setItem(key, value) {
+    this.map.set(key, String(value));
+  }
+
+  removeItem(key) {
+    this.map.delete(key);
+  }
+}
+
+globalThis.localStorage = new MemoryStorage();
+
+assert.deepEqual(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR - 1 }), {
+  available: false,
+  highestReachedSector: OVERRUN_UNLOCK_SECTOR - 1,
+  requiredSector: OVERRUN_UNLOCK_SECTOR,
+  startSector: OVERRUN_START_SECTOR
+});
+assert.equal(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR }).available, true);
+
+for (const mode of [RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]) {
+  assert.equal(isOverrunRunMode(mode), true);
+  assert.equal(canRunModeSubmitGlobalLeaderboard(mode), false);
+  assert.equal(canRunModeUnlockAchievements(mode), false);
+  assert.equal(canRunModeUpdateCareerProgress(mode), true);
+  assert.equal(canRunModeUpdateCompetitiveCareerBests(mode), false);
+  assert.equal(getRunModeProfile(mode).unlocksRankedCheckpoints, false);
+  assert.equal(getRunModeProfile(mode).careerXpMultiplier, 0.65);
+}
+
+assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_PURE).tacticalDraftEnabled, false);
+assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_TACTICAL).tacticalDraftEnabled, true);
+assert.deepEqual(
+  getRunModeProfile(RUN_MODES.OVERRUN_TACTICAL).tacticalBaselineAugmentIds,
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS
+);
+
+assert.equal(
+  calculatePilotXpForRun({
+    runMode: RUN_MODES.OVERRUN_PURE,
+    startSector: OVERRUN_START_SECTOR,
+    sectorReached: OVERRUN_START_SECTOR
+  }),
+  0,
+  'starting at sector 51 must not grant 50 sectors of career XP'
+);
+
+const base = writeHangarProgressState({
+  ...createDefaultHangarProgress(),
+  pilotXp: 1200,
+  pilotRank: 2,
+  highestPilotRank: 2,
+  totalRuns: 8,
+  bestScore: 123456,
+  bestSector: 35,
+  bestLevel: 35,
+  bestRunTimeSeconds: 420,
+  runClears: 2,
+  clearWithLivesRemaining: 2,
+  highestScoreMultiplier: 7,
+  totalBossesDefeated: 12,
+  totalWavesCleared: 100,
+  shipSpecificMilestones: {
+    nova_ship_01: {
+      runs: 4,
+      bestScore: 123456,
+      bestSector: 35,
+      bossesKilled: 12,
+      runClears: 2
+    }
+  }
+});
+
+const result = applyRunProgression({
+  runMode: RUN_MODES.OVERRUN_TACTICAL,
+  shipId: 'nova_ship_01',
+  startSector: OVERRUN_START_SECTOR,
+  sectorReached: 53,
+  levelReached: 53,
+  score: 999999,
+  runElapsedSeconds: 90,
+  bossesKilled: 2,
+  wavesCleared: 3,
+  noHitWaves: 1,
+  noHitSectors: 1,
+  runCleared: true,
+  clearLivesRemaining: 3,
+  highestScoreMultiplier: 50
+}, { updateCompetitiveBests: false });
+
+assert.ok(result.xpGained > 0, 'Overrun should grant reduced career XP');
+assert.equal(result.next.totalRuns, base.totalRuns + 1);
+assert.equal(result.next.totalBossesDefeated, base.totalBossesDefeated + 2);
+assert.equal(result.next.totalWavesCleared, base.totalWavesCleared + 3);
+assert.equal(result.next.bestScore, base.bestScore, 'Overrun must not overwrite competitive best score');
+assert.equal(result.next.bestSector, base.bestSector, 'Overrun must not overwrite competitive best sector');
+assert.equal(result.next.bestLevel, base.bestLevel, 'Overrun must not overwrite competitive best level');
+assert.equal(result.next.bestRunTimeSeconds, base.bestRunTimeSeconds, 'Overrun must not overwrite competitive best time');
+assert.equal(result.next.runClears, base.runClears, 'Overrun must not create a competitive clear');
+assert.equal(result.next.clearWithLivesRemaining, base.clearWithLivesRemaining);
+assert.equal(result.next.highestScoreMultiplier, base.highestScoreMultiplier);
+assert.deepEqual(result.next.shipSpecificMilestones, base.shipSpecificMilestones, 'Overrun must not alter competitive ship mastery');
+assert.ok(localStorage.getItem(HANGAR_PROGRESS_KEY), 'Overrun career result should persist');
+
+console.log('[overrun-mode] PASS unlock, fixed start, Pure/Tactical identity, reward isolation, competitive-state protection');

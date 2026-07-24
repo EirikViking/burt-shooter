@@ -6,10 +6,21 @@ export const RUN_MODES = Object.freeze({
   DAILY_SIGNAL: 'daily_signal',
   SCOUT: 'scout',
   UNRANKED: 'unranked',
-  SECTOR_START: 'sector_start'
+  SECTOR_START: 'sector_start',
+  OVERRUN_PURE: 'overrun_pure',
+  OVERRUN_TACTICAL: 'overrun_tactical'
 });
 
 export const SECTOR_START_CHECKPOINT_INTERVAL = 5;
+export const OVERRUN_START_SECTOR = 51;
+export const OVERRUN_UNLOCK_SECTOR = 30;
+export const OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS = Object.freeze([
+  'damage_up',
+  'rapid_fire',
+  'blink_drive',
+  'focus_lens',
+  'double_shot'
+]);
 
 const DEFAULT_MULTIPLIERS = Object.freeze({
   fireChanceMult: 1,
@@ -151,6 +162,61 @@ export const RUN_MODE_PROFILES = Object.freeze({
     normalWaveScoreXpMult: 1,
     pressureMultipliers: DEFAULT_MULTIPLIERS
   }),
+  [RUN_MODES.OVERRUN_PURE]: Object.freeze({
+    id: RUN_MODES.OVERRUN_PURE,
+    menuId: 'overrun',
+    label: 'OVERRUN PURE',
+    shortLabel: 'Overrun Pure',
+    subLabel: 'Sector 51 · Career active · No leaderboard',
+    resultLabel: 'OVERRUN PURE',
+    oneMoreLabel: 'ONE MORE OVERRUN',
+    ranked: false,
+    tacticalDraftEnabled: false,
+    mayhemReinforcementsEnabled: true,
+    routineReinforcementsEnabled: true,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: true,
+    updatesCompetitiveCareerBests: false,
+    careerXpMultiplier: 0.65,
+    difficultyProfileId: 'overrun_sector_51_v1',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1.12,
+    normalWaveScoreXpMult: 1,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
+  [RUN_MODES.OVERRUN_TACTICAL]: Object.freeze({
+    id: RUN_MODES.OVERRUN_TACTICAL,
+    menuId: 'overrun',
+    label: 'OVERRUN TACTICAL',
+    shortLabel: 'Overrun Tactical',
+    subLabel: 'Sector 51 · Fixed baseline · Career active',
+    resultLabel: 'OVERRUN TACTICAL',
+    oneMoreLabel: 'ONE MORE OVERRUN',
+    ranked: false,
+    tacticalDraftEnabled: true,
+    mayhemReinforcementsEnabled: true,
+    routineReinforcementsEnabled: true,
+    submitsGlobalLeaderboard: false,
+    submitsLocalLeaderboard: false,
+    unlocksAchievements: false,
+    unlocksRankedCheckpoints: false,
+    updatesCareerProgress: true,
+    updatesCompetitiveCareerBests: false,
+    careerXpMultiplier: 0.65,
+    tacticalBaselineAugmentIds: OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
+    difficultyProfileId: 'overrun_sector_51_v1',
+    normalWaveDifficultyLevelOffsetDelta: 0,
+    bossDifficultyMult: 1,
+    bossAttackDangerMult: 1,
+    normalWaveAggressionMult: 1.12,
+    normalWaveScoreXpMult: 1,
+    pressureMultipliers: DEFAULT_MULTIPLIERS
+  }),
   [RUN_MODES.UNRANKED]: Object.freeze({
     id: RUN_MODES.UNRANKED,
     menuId: 'debugPractice',
@@ -199,7 +265,11 @@ const RUN_MODE_ALIASES = Object.freeze({
   debug_practice: RUN_MODES.UNRANKED,
   sector_start: RUN_MODES.SECTOR_START,
   sector_run: RUN_MODES.SECTOR_START,
-  sector_continue: RUN_MODES.SECTOR_START
+  sector_continue: RUN_MODES.SECTOR_START,
+  overrun: RUN_MODES.OVERRUN_TACTICAL,
+  overrun_start: RUN_MODES.OVERRUN_TACTICAL,
+  overrun_tactical: RUN_MODES.OVERRUN_TACTICAL,
+  overrun_pure: RUN_MODES.OVERRUN_PURE
 });
 
 function normalizeRunModeToken(value) {
@@ -286,6 +356,25 @@ export function canRunModeUseMayhemReinforcements(mode) {
   return profile.ranked === true || profile.mayhemReinforcementsEnabled === true;
 }
 
+export function canRunModeUpdateCareerProgress(mode, { isDebugRun = false } = {}) {
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode !== null
+    && isDebugRun !== true
+    && RUN_MODE_PROFILES[canonicalMode]?.updatesCareerProgress === true;
+}
+
+export function canRunModeUpdateCompetitiveCareerBests(mode, options = {}) {
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode !== null
+    && canRunModeUpdateCareerProgress(canonicalMode, options)
+    && RUN_MODE_PROFILES[canonicalMode]?.updatesCompetitiveCareerBests !== false;
+}
+
+export function isOverrunRunMode(mode) {
+  const canonicalMode = parseRunMode(mode);
+  return canonicalMode === RUN_MODES.OVERRUN_PURE || canonicalMode === RUN_MODES.OVERRUN_TACTICAL;
+}
+
 function floorSector(value, fallback = 1) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.max(1, Math.floor(number)) : fallback;
@@ -346,5 +435,15 @@ export function getSectorStartState(progress = {}, requestedSector = null) {
     highestReachedSector,
     checkpoints,
     selectedCheckpoint
+  };
+}
+
+export function getOverrunStartState(progress = {}) {
+  const highestReachedSector = getHighestReachedSector(progress);
+  return {
+    available: highestReachedSector >= OVERRUN_UNLOCK_SECTOR,
+    highestReachedSector,
+    requiredSector: OVERRUN_UNLOCK_SECTOR,
+    startSector: OVERRUN_START_SECTOR
   };
 }

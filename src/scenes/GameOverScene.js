@@ -38,7 +38,7 @@ import { CREDITS_ASCENDANT_EASTER_EGG_SHIP_ID } from '../progression/HangarProgr
 import { formatRunContractProgressValue } from '../progression/RunContracts.js';
 import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/RankPolicy.js';
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
-import { RUN_MODES, getRunModeProfile } from '../game/RunMode.js';
+import { RUN_MODES, getRunModeProfile, isOverrunRunMode } from '../game/RunMode.js';
 import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getRecoverySectorGoal } from '../config/RetentionPresentation.js';
@@ -1007,6 +1007,10 @@ export class GameOverScene {
     return this.game?.runSummary?.runMode === RUN_MODES.DAILY_SIGNAL || this.game?.runMode === RUN_MODES.DAILY_SIGNAL;
   }
 
+  isOverrunResult() {
+    return isOverrunRunMode(this.game?.runSummary?.runMode || this.game?.runMode);
+  }
+
   isResultActionStage() {
     return this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked';
   }
@@ -1017,6 +1021,9 @@ export class GameOverScene {
     }
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeRecordLine() || translateText('SECTOR RUN');
+    }
+    if (this.isOverrunResult()) {
+      return translateText('OVERRUN // CAREER PROGRESS ACTIVE');
     }
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
       return this.getScoutRunBestLine() || translateText('Local: Scout practice score only');
@@ -1040,6 +1047,7 @@ export class GameOverScene {
   getGlobalPlacementLine() {
     if (this.isDailySignalResult()) return translateText('PUBLIC DAILY BOARD: NOT ENABLED');
     if (this.isSectorStartChallengeResult()) return this.getSectorStartChallengeReachedLine();
+    if (this.isOverrunResult()) return translateText('LEADERBOARD: DISABLED FOR OVERRUN');
     if (!this.isRankedRun) return translateText('Global: Scout unranked - no submission');
     if (this.steamSubmissionMode) return this.getSteamPlacementLine();
     const rank = this.getGlobalPlacementRank();
@@ -1091,6 +1099,17 @@ export class GameOverScene {
     if (this.isSectorStartChallengeResult()) {
       return this.getSectorStartChallengeResultLines();
     }
+    if (this.isOverrunResult()) {
+      const summary = this.game?.runSummary || {};
+      const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
+      return [
+        translateText('OVERRUN // SECTOR {sector}', {
+          sector: Math.max(51, Math.floor(Number(summary.sectorReached || summary.levelReached || this.finalLevel || 51) || 51))
+        }),
+        translateText('CAREER XP +{xp}', { xp: gained.toLocaleString('en-US') }),
+        translateText('LEADERBOARDS / ACHIEVEMENTS / CHECKPOINTS OFF')
+      ];
+    }
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
       return this.getScoutRunResultLines();
     }
@@ -1105,6 +1124,8 @@ export class GameOverScene {
       ? translateText('DAILY SIGNAL - LOCAL UTC CHALLENGE - NO PUBLIC SUBMISSION')
       : this.game?.runMode === RUN_MODES.SECTOR_START
       ? translateText('SECTOR RUN - MAIN SCORE NOT LOGGED - NO ACHIEVEMENTS')
+      : this.isOverrunResult()
+      ? translateText('OVERRUN - CAREER ACTIVE - NO LEADERBOARD')
       : translateText('SCOUT RUN - UNRANKED LOCAL SCORE ONLY');
   }
 
@@ -1462,6 +1483,12 @@ export class GameOverScene {
       ].join('\n');
     }
     const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
+    if (this.isOverrunResult()) {
+      return [
+        translateText('OVERRUN // SECTOR {sector}', { sector: this.finalLevel || 51 }),
+        `${this.formatElapsedTime(elapsedSeconds)} | ${translateText('CAREER XP +{xp}', { xp: gained.toLocaleString('en-US') })}`
+      ].join('\n');
+    }
     return [
       `Sector ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
       `XP +${gained.toLocaleString('en-US')}`
@@ -1514,6 +1541,7 @@ export class GameOverScene {
         : translateText('NEXT GOAL: CLEAR SECTOR {sector}', { sector: summary.dailySignalContract?.finishSector || 10 });
     }
     if (this.isSectorStartChallengeResult()) return '';
+    if (this.isOverrunResult()) return translateText('NEXT GOAL: PUSH ONE SECTOR DEEPER');
     const rivalGoal = this.getGlobalRivalNextGoalText();
     if (rivalGoal) return rivalGoal;
     const rank = this.getGlobalPlacementRank();
@@ -1640,6 +1668,7 @@ export class GameOverScene {
     if (this.isDailySignalResult()) {
       return translateText(this.game?.runSummary?.runCleared ? 'DAILY SIGNAL CLEARED' : 'DAILY SIGNAL ENDED');
     }
+    if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN COMPLETE');
     if (!this.isRankedRun) return translateText('PRACTICE COMPLETE');
@@ -1668,6 +1697,11 @@ export class GameOverScene {
       if (this.game?.runMode === RUN_MODES.SECTOR_START) {
         const resultText = this.getSectorStartChallengeResultLines().join('\n');
         const base = translateText('Sector Run complete. Checkpoint context saved separately; achievements, Mayhem leaderboard, and career progress stayed untouched. Sector board records are separate.');
+        return resultText ? `${base}\n${resultText}` : base;
+      }
+      if (this.isOverrunResult()) {
+        const resultText = this.getLeaderboardPlacementLines().join('\n');
+        const base = translateText('Overrun complete. Career XP and cumulative Pilot Orders advanced; leaderboards, achievements, and checkpoint unlocks stayed off.');
         return resultText ? `${base}\n${resultText}` : base;
       }
       const resultText = this.getScoutRunResultLines().join('\n');
@@ -2693,7 +2727,7 @@ export class GameOverScene {
 
   shouldShowLeaderboardButton() {
     if (this.isSubmitting) return false;
-    if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult()) return false;
+    if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult() || this.isOverrunResult()) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
       Boolean(this.leaderboardAdapter?.isSteamAvailable?.())
@@ -4183,6 +4217,11 @@ export class GameOverScene {
             scoutAnomalyId: summary.scoutAnomalyId || this.game?.scoutAnomalyId,
             inputDevice: this.lastInputDevice
           }
+        : this.isOverrunResult()
+          ? {
+              runMode: this.game?.runMode,
+              inputDevice: this.lastInputDevice
+            }
         : {
             runMode: this.game?.runMode === RUN_MODES.MAYHEM_TACTICAL
               ? RUN_MODES.MAYHEM_TACTICAL
@@ -5819,6 +5858,7 @@ export class GameOverScene {
 
   getRunbackTitle() {
     if (this.isDailySignalResult()) return this.getCeremonyTitle();
+    if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return translateText('SCOUT RUN');
     if (this.globalPlacement?.qualified && this.globalPlacement?.numberOne) return 'NUMBER ONE';

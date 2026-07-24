@@ -19,6 +19,7 @@ import {
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
   getRunModeProfile,
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   getSectorStartCheckpoints,
   getSectorStartPlaySector,
   isRankedRunMode
@@ -289,14 +290,15 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(daily?.label, 'DAILY CHALLENGE', `${label}: Daily Challenge label`);
   assert.match(daily?.sublabel || '', /(?:CLEAR S10|CLEARED)/i, `${label}: Daily Challenge should explain today's activity`);
   assert.equal(daily?.role, 'activity', `${label}: Daily Challenge should be identified as a side activity`);
-  assert.deepEqual(deck.hierarchy, ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart'], `${label}: mode hierarchy`);
-  assert.equal(Object.keys(deck.cards || {}).length, 5, `${label}: Launch Deck must contain all five run cards`);
+  assert.deepEqual(deck.hierarchy, ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'overrun'], `${label}: mode hierarchy`);
+  assert.equal(Object.keys(deck.cards || {}).length, 6, `${label}: Launch Deck must contain all six run cards`);
   const cards = [
     ['mayhemTactical', deck.cards?.mayhemTactical],
     ['mayhem', deck.cards?.mayhem],
     ['daily', deck.cards?.daily],
     ['scout', deck.cards?.scout],
-    ['sector', deck.cards?.sector]
+    ['sector', deck.cards?.sector],
+    ['overrun', deck.cards?.overrun]
   ];
   for (const [name, card] of cards) {
     assertInside(card?.bounds, screen, `${label}: ${name} card`);
@@ -329,16 +331,23 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector sublabel`);
   assert.equal(deck.cards?.sector?.role, 'checkpoint', `${label}: Sector role`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should not carry paragraph body text`);
+  assert.equal(deck.cards?.overrun?.label, 'OVERRUN TACTICAL', `${label}: Overrun label`);
+  assert.equal(deck.cards?.overrun?.sublabel, 'TACTICAL · S51 · CAREER', `${label}: Overrun sublabel`);
+  assert.equal(deck.cards?.overrun?.role, 'advanced', `${label}: Overrun role`);
+  assert.equal(deck.cards?.overrun?.available, true, `${label}: Overrun should be unlocked by the mature fixture`);
+  assert.equal(deck.cards?.overrun?.startSector, 51, `${label}: Overrun fixed start`);
   assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.mayhem.bounds.height * 1.25, `${label}: Tactical card should be materially taller than Pure`);
   assert.ok(deck.cards.mayhemTactical.bounds.width > deck.cards.mayhem.bounds.width, `${label}: Tactical card should be wider than secondary modes`);
   assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.mayhemTactical.bounds.x) < 36, `${label}: Pure/Tactical cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.daily.bounds.x) < 36, `${label}: Pure/Daily cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.daily.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Daily/Scout cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
+  assert.ok(Math.abs(deck.cards.sector.bounds.x - deck.cards.overrun.bounds.x) < 36, `${label}: Sector/Overrun cards should share the left command stack`);
   assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.mayhem.bounds.y + 36, `${label}: Tactical/Pure cards overlap vertically`);
   assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.daily.bounds.y + 36, `${label}: Pure/Daily cards overlap vertically`);
   assert.ok(deck.cards.daily.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Daily/Scout cards overlap vertically`);
   assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector cards overlap vertically`);
+  assert.ok(deck.cards.sector.bounds.bottom < deck.cards.overrun.bounds.y + 36, `${label}: Sector/Overrun cards overlap vertically`);
   assert.ok(deck.bounds.right < screen.width * 0.5, `${label}: Launch Deck should avoid the center ship showcase lane`);
   assert.ok((state.menu?.panel?.y || 0) > deck.bounds.bottom, `${label}: utility dock should sit below Launch Deck`);
   assert.doesNotMatch(JSON.stringify(state.menu || {}), /Sector 1 climb/i, `${label}: old Sector 1 climb wording should not be player-facing`);
@@ -376,6 +385,8 @@ function assertStaticRules() {
   assert.equal(isRankedRunMode(RUN_MODES.DAILY_SIGNAL), false);
   assert.equal(isRankedRunMode(RUN_MODES.SCOUT), false);
   assert.equal(isRankedRunMode(RUN_MODES.SECTOR_START), false);
+  assert.equal(isRankedRunMode(RUN_MODES.OVERRUN_PURE), false);
+  assert.equal(isRankedRunMode(RUN_MODES.OVERRUN_TACTICAL), false);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.RANKED), true);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.MAYHEM_TACTICAL), true);
   assert.equal(canRunModeSubmitGlobalLeaderboard(RUN_MODES.DAILY_SIGNAL), false);
@@ -486,6 +497,7 @@ try {
   assert.equal(menu.menu?.items?.tacticalLaunchButton?.width > 0, true, 'Mayhem Tactical should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
+  assert.equal(menu.menu?.items?.overrunStartButton?.width > 0, true, 'Overrun should be visible');
   assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
   assert.equal(settledMenu.menu?.focusedOption, 'launchTactical', 'Mayhem Tactical should receive default focus');
   assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launchTactical', 'Mission briefing should default to Mayhem Tactical');
@@ -532,7 +544,7 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await waitForScene(page, 'menu');
     await page.waitForTimeout(250);
-    for (const mode of ['dailySignal', 'launch', 'launchTactical', 'scout', 'sectorStart']) {
+    for (const mode of ['dailySignal', 'launch', 'launchTactical', 'scout', 'sectorStart', 'overrun']) {
       assertLaunchDeckVisible(await focusMenuOption(page, mode), `${viewport.name} ${mode} briefing`);
     }
   }
@@ -610,6 +622,96 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'sector-run-selector-every-5-sectors.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.closeSectorSelector?.());
   await waitForScene(page, 'menu');
+
+  const overrunFocus = await focusMenuOption(page, 'overrun');
+  assert.equal(overrunFocus.menu?.missionBriefing?.mode, 'overrun');
+  assert.match(
+    overrunFocus.menu?.missionBriefing?.body || '',
+    /SECTOR 51.*UNRANKED[\s\S]*Fixed Tactical baseline[\s\S]*Career XP and cumulative Pilot Orders stay active[\s\S]*No leaderboard submission, achievements, or checkpoint unlocks/i
+  );
+  await page.screenshot({ path: path.join(outputDir, 'menu-overrun-tactical-focused.png'), fullPage: false });
+  await page.evaluate(() => window.__game?.scenes?.menu?.cycleOverrunRunMode?.(-1, { force: true }));
+  await page.waitForTimeout(180);
+  const overrunPureFocus = await readState(page);
+  assert.equal(overrunPureFocus.menu?.launchDeck?.cards?.overrun?.runMode, RUN_MODES.OVERRUN_PURE);
+  assert.equal(overrunPureFocus.menu?.launchDeck?.cards?.overrun?.label, 'OVERRUN PURE');
+  assert.match(overrunPureFocus.menu?.missionBriefing?.body || '', /Pure ship baseline with no Tactical Drafts/i);
+  await page.screenshot({ path: path.join(outputDir, 'menu-overrun-pure-focused.png'), fullPage: false });
+
+  await page.evaluate(() => window.__game?.scenes?.menu?.startOverrunRun?.());
+  const overrunPurePlay = await waitForScene(page, 'play');
+  const overrunPureRuntime = await page.evaluate(() => ({
+    level: window.__game?.level,
+    startSector: window.__game?.runStartSector,
+    runMode: window.__game?.runMode,
+    baselineIds: window.__game?.scenes?.play?.overrunBaselineAugmentIds || [],
+    playerAugmentIds: window.__game?.scenes?.play?.player?.runAugmentIds || [],
+    leaderboardAllowed: window.__game?.getRunModeProfile?.()?.submitsGlobalLeaderboard === true,
+    achievementAllowed: window.__game?.canUnlockAchievementsForCurrentRun?.()
+  }));
+  assert.equal(overrunPurePlay.runMode, RUN_MODES.OVERRUN_PURE);
+  assert.equal(overrunPureRuntime.level, 51);
+  assert.equal(overrunPureRuntime.startSector, 51);
+  assert.deepEqual(overrunPureRuntime.baselineIds, []);
+  assert.deepEqual(overrunPureRuntime.playerAugmentIds, []);
+  assert.equal(overrunPureRuntime.leaderboardAllowed, false);
+  assert.equal(overrunPureRuntime.achievementAllowed, false);
+  await page.screenshot({ path: path.join(outputDir, 'overrun-pure-sector-51.png'), fullPage: false });
+
+  await page.evaluate(() => window.__game?.showMenu?.());
+  await waitForScene(page, 'menu');
+  const beforeOverrunResult = await storageSnapshot(page);
+  await page.evaluate((mode) => {
+    const menuScene = window.__game?.scenes?.menu;
+    menuScene.overrunRunMode = mode;
+    menuScene.startOverrunRun?.();
+  }, RUN_MODES.OVERRUN_TACTICAL);
+  const overrunTacticalPlay = await waitForScene(page, 'play');
+  const overrunTacticalRuntime = await page.evaluate(() => ({
+    level: window.__game?.level,
+    startSector: window.__game?.runStartSector,
+    runMode: window.__game?.runMode,
+    baselineIds: window.__game?.scenes?.play?.overrunBaselineAugmentIds || [],
+    playerAugmentIds: window.__game?.scenes?.play?.player?.runAugmentIds || []
+  }));
+  assert.equal(overrunTacticalPlay.runMode, RUN_MODES.OVERRUN_TACTICAL);
+  assert.equal(overrunTacticalRuntime.level, 51);
+  assert.equal(overrunTacticalRuntime.startSector, 51);
+  assert.deepEqual(overrunTacticalRuntime.baselineIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
+  assert.deepEqual(overrunTacticalRuntime.playerAugmentIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
+  await page.screenshot({ path: path.join(outputDir, 'overrun-tactical-sector-51.png'), fullPage: false });
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(250000, 'baseScore');
+    game.level = 52;
+    const playScene = game.scenes?.play;
+    playScene.bossKills = 1;
+    playScene.wavesCleared = 2;
+    game.finalizeRunProgression?.();
+    game.gameOver({ fromInterlude: true });
+  });
+  const overrunResult = await waitForGameOverActionStage(page);
+  const overrunResultText = [
+    overrunResult.gameOver?.ceremonyTitle,
+    overrunResult.gameOver?.ceremonyComment,
+    overrunResult.gameOver?.prompt,
+    overrunResult.gameOver?.leaderboardStatus,
+    overrunResult.gameOver?.runback?.runSummary
+  ].filter(Boolean).join('\n');
+  assert.match(overrunResultText, /OVERRUN/i);
+  assert.match(overrunResultText, /CAREER XP/i);
+  assert.match(overrunResultText, /LEADERBOARD/i);
+  assert.equal(overrunResult.gameOver?.leaderboardCta?.visible, false, 'Overrun result must not expose a leaderboard CTA');
+  assert.equal(overrunResult.gameOver?.primaryCta?.label, 'ONE MORE OVERRUN');
+  const afterOverrunResult = await storageSnapshot(page);
+  assert.ok(afterOverrunResult.hangar.pilotXp > beforeOverrunResult.hangar.pilotXp, 'Overrun result should persist career XP');
+  assert.equal(afterOverrunResult.hangar.totalRuns, beforeOverrunResult.hangar.totalRuns + 1);
+  assert.equal(afterOverrunResult.hangar.bestScore, beforeOverrunResult.hangar.bestScore);
+  assert.equal(afterOverrunResult.hangar.bestSector, beforeOverrunResult.hangar.bestSector);
+  assert.equal(afterOverrunResult.hangar.bestLevel, beforeOverrunResult.hangar.bestLevel);
+  await page.screenshot({ path: path.join(outputDir, 'overrun-tactical-result.png'), fullPage: false });
+
+  await seedProfile(page);
 
   const expiredDailyRejected = await page.evaluate(async () => {
     const game = window.__game;

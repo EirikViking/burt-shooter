@@ -28,8 +28,10 @@ const progress = {
 for (const contract of getRunContractCatalog()) {
   assert.deepEqual(
     contract.modes,
-    [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL],
-    `${contract.id} should be available in both ranked Mayhem modes only`
+    contract.persistAcrossRuns
+      ? [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL, RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]
+      : [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL],
+    `${contract.id} should expose only its intended eligible modes`
   );
 }
 
@@ -50,6 +52,19 @@ for (const runMode of [RUN_MODES.RANKED, RUN_MODES.MAYHEM_TACTICAL]) {
   );
 }
 
+for (const runMode of [RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]) {
+  const session = startRunContractSession({ runMode, progress });
+  assert.equal(
+    session.active.some((item) => item.id === 'graze_10'),
+    false,
+    `${runMode} should rotate cleared cumulative Pilot Orders before the run starts`
+  );
+  const bossOrder = session.active.find((item) => item.id === 'boss_breaker');
+  assert.equal(bossOrder?.eligible, false, `${runMode} should keep one-run skill orders Mayhem-only`);
+  const result = applyRunContractEvent(session, { type: 'boss_defeated', sector: 52 });
+  assert.equal(result.completed.length, 0, `${runMode} should not complete a Mayhem-only skill order`);
+}
+
 for (const runMode of [RUN_MODES.SCOUT, RUN_MODES.SECTOR_START]) {
   const session = startRunContractSession({ runMode, progress });
   assert.equal(
@@ -68,4 +83,4 @@ for (const runMode of [RUN_MODES.SCOUT, RUN_MODES.SECTOR_START]) {
   );
 }
 
-console.log('[run-contract-mode-eligibility] PASS pure+tactical eligible; scout+sector excluded');
+console.log('[run-contract-mode-eligibility] PASS Mayhem skill orders, Overrun cumulative orders, scout+sector exclusion');

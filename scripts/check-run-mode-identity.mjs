@@ -19,6 +19,8 @@ const supportedModes = [
   [RUN_MODES.DAILY_SIGNAL, 'Daily Signal'],
   [RUN_MODES.SCOUT, 'Scout Run'],
   [RUN_MODES.SECTOR_START, 'Sector Run'],
+  [RUN_MODES.OVERRUN_PURE, 'Overrun Pure'],
+  [RUN_MODES.OVERRUN_TACTICAL, 'Overrun Tactical'],
   [RUN_MODES.UNRANKED, 'Practice Run']
 ];
 
@@ -42,6 +44,8 @@ assert.equal(parseRunMode('mayhem-pure'), RUN_MODES.RANKED);
 assert.equal(parseRunMode('TACTICAL'), RUN_MODES.MAYHEM_TACTICAL);
 assert.equal(parseRunMode('daily challenge'), RUN_MODES.DAILY_SIGNAL);
 assert.equal(parseRunMode('sector continue'), RUN_MODES.SECTOR_START);
+assert.equal(parseRunMode('overrun'), RUN_MODES.OVERRUN_TACTICAL);
+assert.equal(parseRunMode('overrun-pure'), RUN_MODES.OVERRUN_PURE);
 assert.equal(parseRunMode('mystery_mode'), null);
 assert.equal(parseRunMode(null), null);
 

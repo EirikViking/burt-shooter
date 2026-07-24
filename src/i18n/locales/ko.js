@@ -3,6 +3,7 @@ import { buildArcadePatterns } from './patterns.js';
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
+import { getOverrunModeSourceText } from '../overrunModeSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
@@ -1815,6 +1816,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko') }),
   patterns
 };

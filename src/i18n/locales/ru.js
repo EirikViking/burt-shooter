@@ -3,6 +3,7 @@ import { buildArcadePatterns } from './patterns.js';
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
+import { getOverrunModeSourceText } from '../overrunModeSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
@@ -1816,6 +1817,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru') }),
   patterns
 };

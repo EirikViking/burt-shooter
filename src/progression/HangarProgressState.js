@@ -9,7 +9,7 @@ import {
   getPilotRankProgress,
   getRankFromPilotXp
 } from '../shared/RankPolicy.js';
-import { getRunModeNormalWaveScoreXpMultiplier } from '../game/RunMode.js';
+import { getRunModeNormalWaveScoreXpMultiplier, getRunModeProfile } from '../game/RunMode.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { getRunContractRewardXpForRun, normalizeRunContractsState } from './RunContracts.js';
 import {
@@ -630,9 +630,12 @@ export function rollCreditsAscendantEasterEgg({ random = Math.random } = {}) {
 
 export function calculatePilotXpForRun(summary = {}) {
   const xp = RunPacingConfig.pilotXp;
+  const runModeProfile = getRunModeProfile(summary.runMode);
+  const careerXpMultiplier = Math.max(0, Number(runModeProfile.careerXpMultiplier) || 1);
   const normalWaveXpMult = getRunModeNormalWaveScoreXpMultiplier(summary.runMode);
   const scoreXp = Math.floor((Number(summary.score) || 0) / Math.max(1, xp.scoreDivisor));
-  const sectorXp = Math.max(0, floor(summary.sectorReached, 1) - 1) * xp.sectorReachedBase;
+  const startSector = Math.max(1, floor(summary.startSector ?? summary.sectorStartPlaySector, 1));
+  const sectorXp = Math.max(0, floor(summary.sectorReached, startSector) - startSector) * xp.sectorReachedBase;
   const waveXp = floor(summary.wavesCleared) * xp.waveClear * normalWaveXpMult;
   const bossXp = floor(summary.bossesKilled) * xp.bossDefeat;
   const discoveryXp = floor(summary.codexDiscoveries) * xp.codexDiscovery;
@@ -643,7 +646,10 @@ export function calculatePilotXpForRun(summary = {}) {
   const clearLivesRemaining = floor(summary.clearLivesRemaining ?? summary.livesRemaining);
   const livesXp = summary.runCleared ? clearLivesRemaining * xp.clearWithLivesRemaining : 0;
   const pilotOrderXp = getRunContractRewardXpForRun(summary.runContracts);
-  return Math.max(0, Math.floor(scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp + pilotOrderXp));
+  return Math.max(0, Math.floor(
+    (scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp + pilotOrderXp)
+    * careerXpMultiplier
+  ));
 }
 
 export function previewRunProgression(summary = {}, baseProgress = readHangarProgressState()) {
@@ -675,12 +681,14 @@ export function previewRunProgression(summary = {}, baseProgress = readHangarPro
   };
 }
 
-export function applyRunProgression(summary = {}) {
+export function applyRunProgression(summary = {}, { updateCompetitiveBests = true } = {}) {
   const previous = readHangarProgressState();
   const xpGained = calculatePilotXpForRun(summary);
   const nextXp = previous.pilotXp + xpGained;
   const nextRank = getRankFromPilotXp(nextXp);
-  const shipMastery = recordShipMasteryRun(previous.shipSpecificMilestones, summary);
+  const shipMastery = updateCompetitiveBests
+    ? recordShipMasteryRun(previous.shipSpecificMilestones, summary)
+    : { milestones: previous.shipSpecificMilestones };
   const newRanksThisRun = [];
   for (let rank = previous.pilotRank + 1; rank <= nextRank; rank += 1) {
     newRanksThisRun.push(rank);
@@ -690,19 +698,27 @@ export function applyRunProgression(summary = {}) {
     pilotRank: nextRank,
     highestPilotRank: Math.max(previous.highestPilotRank, nextRank),
     totalRuns: previous.totalRuns + 1,
-    bestScore: floor(summary.score),
-    bestSector: Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1)),
-    bestLevel: Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1)),
-    bestRunTimeSeconds: floor(summary.runElapsedSeconds),
+    bestScore: updateCompetitiveBests ? floor(summary.score) : previous.bestScore,
+    bestSector: updateCompetitiveBests
+      ? Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1))
+      : previous.bestSector,
+    bestLevel: updateCompetitiveBests
+      ? Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1))
+      : previous.bestLevel,
+    bestRunTimeSeconds: updateCompetitiveBests ? floor(summary.runElapsedSeconds) : previous.bestRunTimeSeconds,
     survivedSeconds: floor(summary.runElapsedSeconds),
     totalBossesDefeated: previous.totalBossesDefeated + floor(summary.bossesKilled),
     totalWavesCleared: previous.totalWavesCleared + floor(summary.wavesCleared),
     totalCodexDiscoveries: floor(summary.totalCodexDiscoveries, previous.totalCodexDiscoveries),
-    runClears: previous.runClears + (summary.runCleared ? 1 : 0),
+    runClears: previous.runClears + (updateCompetitiveBests && summary.runCleared ? 1 : 0),
     noHitWaves: previous.noHitWaves + floor(summary.noHitWaves),
     noHitSectors: previous.noHitSectors + floor(summary.noHitSectors),
-    clearWithLivesRemaining: summary.runCleared ? Math.max(previous.clearWithLivesRemaining, floor(summary.clearLivesRemaining ?? summary.livesRemaining)) : previous.clearWithLivesRemaining,
-    highestScoreMultiplier: Math.max(previous.highestScoreMultiplier, Number(summary.highestScoreMultiplier) || 1),
+    clearWithLivesRemaining: updateCompetitiveBests && summary.runCleared
+      ? Math.max(previous.clearWithLivesRemaining, floor(summary.clearLivesRemaining ?? summary.livesRemaining))
+      : previous.clearWithLivesRemaining,
+    highestScoreMultiplier: updateCompetitiveBests
+      ? Math.max(previous.highestScoreMultiplier, Number(summary.highestScoreMultiplier) || 1)
+      : previous.highestScoreMultiplier,
     discoveredThreatIds: Array.isArray(summary.discoveredThreatIds) ? summary.discoveredThreatIds : [],
     defeatedBossIds: Array.isArray(summary.defeatedBossIds) ? summary.defeatedBossIds : [],
     runThemesSurvived: summary.runTheme ? [summary.runTheme] : [],
@@ -713,8 +729,10 @@ export function applyRunProgression(summary = {}) {
     unlockContext: {
       source: summary.runMode || 'mayhem',
       runMode: summary.runMode || null,
-      sector: Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1)),
-      score: floor(summary.score),
+      sector: updateCompetitiveBests
+        ? Math.max(floor(summary.sectorReached, 1), floor(summary.levelReached, 1))
+        : previous.bestSector,
+      score: updateCompetitiveBests ? floor(summary.score) : previous.bestScore,
       bossCount: previous.totalBossesDefeated + floor(summary.bossesKilled),
       bossesKilled: floor(summary.bossesKilled),
       buildVersion: BUILD_ID

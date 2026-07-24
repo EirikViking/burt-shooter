@@ -3,6 +3,7 @@ import { buildArcadePatterns } from './patterns.js';
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
+import { getOverrunModeSourceText } from '../overrunModeSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
@@ -1840,6 +1841,6 @@ export const es = {
   diagnostics: {
     interfaceLanguage: 'Idioma de interfaz'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getOverrunModeSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es') }),
   patterns
 };

@@ -35,7 +35,14 @@ import {
   RUN_MODE_NARRATION_SPECS,
   getRunModeNarrationSpec
 } from '../config/RunModeNarration.js';
-import { RUN_MODES, SECTOR_START_CHECKPOINT_INTERVAL, getRunModeProfile, getSectorStartPlaySector, getSectorStartState } from '../game/RunMode.js';
+import {
+  RUN_MODES,
+  SECTOR_START_CHECKPOINT_INTERVAL,
+  getOverrunStartState,
+  getRunModeProfile,
+  getSectorStartPlaySector,
+  getSectorStartState
+} from '../game/RunMode.js';
 import {
   applyScoutAnomalyToProfile,
   cycleScoutAnomaly,
@@ -285,6 +292,9 @@ export class MenuScene {
     this.sectorStartBtn = null;
     this.sectorStartState = { available: false, checkpoints: [], selectedCheckpoint: null, highestReachedSector: 1 };
     this.selectedSectorStartIndex = 0;
+    this.overrunStartBtn = null;
+    this.overrunStartState = getOverrunStartState();
+    this.overrunRunMode = RUN_MODES.OVERRUN_TACTICAL;
     this.sectorSelectorOpen = false;
     this.sectorSelectorOverlay = null;
     this.sectorSelectorPanel = null;
@@ -1070,6 +1080,7 @@ export class MenuScene {
       this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
+      this.overrunStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -1379,6 +1390,30 @@ export class MenuScene {
     this.sectorStartBtn.on('pointerdown', (event) => this.handleSectorStartPointerDown(event));
     this.container.addChild(this.sectorStartBtn);
 
+    this.overrunStartBtn = this.createButton('OVERRUN TACTICAL', layout, {
+      accent: 0xff6b45,
+      icon: 'launch',
+      dynamicLabel: () => translateText(
+        this.overrunRunMode === RUN_MODES.OVERRUN_PURE ? 'OVERRUN PURE' : 'OVERRUN TACTICAL'
+      ),
+      dynamicSubLabel: () => this.getOverrunMenuSubLabel(),
+      labelMinScale: 0.66
+    });
+    this.configureRunModeCard(this.overrunStartBtn, { id: 'overrun', secondary: 0xffd15c, role: 'advanced' });
+    this.overrunStartBtn.alpha = 0;
+    this.overrunStartBtn.on('pointerdown', (event) => {
+      this.setInputDevice('keyboard');
+      this.setMenuFocusByButton(this.overrunStartBtn);
+      const local = event?.getLocalPosition?.(this.overrunStartBtn);
+      const width = Number(this.overrunStartBtn?._btnWidth) || 0;
+      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
+        this.cycleOverrunRunMode(local.x < 0 ? -1 : 1, { force: true });
+        return;
+      }
+      this.startOverrunRun();
+    });
+    this.container.addChild(this.overrunStartBtn);
+
     this.highscoreBtn = this.createButton('SHIP HANGAR', layout, {
       accent: 0x37f5ff,
       icon: 'hangar',
@@ -1602,6 +1637,7 @@ export class MenuScene {
       this.tacticalStartBtn?._label,
       this.scoutRunBtn?._label,
       this.sectorStartBtn?._label,
+      this.overrunStartBtn?._label,
       this.highscoreBtn?._label,
       this.storyBtn?._label,
       this.threatCodexBtn?._label,
@@ -1783,13 +1819,15 @@ export class MenuScene {
     fitTextToWidth(this.subtitle, titleWidth, { minScale: 0.72 });
 
     this.refreshSectorStartState();
+    this.overrunStartState = getOverrunStartState(readHangarProgressState());
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
       this.tacticalStartBtn,
       this.startBtn,
       this.dailySignalBtn,
       this.scoutRunBtn,
-      this.sectorStartBtn
+      this.sectorStartBtn,
+      this.overrunStartBtn
     ].filter(Boolean);
     const dockButtons = [
       this.highscoreBtn,
@@ -2067,6 +2105,7 @@ export class MenuScene {
       this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
+      this.overrunStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -2134,6 +2173,11 @@ export class MenuScene {
         ? translateText('LEFT/RIGHT: ANOMALY // A: START // B: BACK')
         : translateText('LEFT/RIGHT: ANOMALY // ENTER/SPACE: START // ESC: BACK');
     }
+    if (this.getSelectedMenuOptionId() === 'overrun') {
+      return this.lastInputDevice === 'controller'
+        ? translateText('LEFT/RIGHT: LOADOUT // A: START // B: BACK')
+        : translateText('LEFT/RIGHT: LOADOUT // ENTER/SPACE: START // ESC: BACK');
+    }
     return this.lastInputDevice === 'controller'
       ? translateText('D-PAD/STICK: NAVIGATE // A: CONFIRM // B: BACK')
       : translateText('ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK');
@@ -2143,6 +2187,14 @@ export class MenuScene {
     const body = briefing.menuBody || briefing.body;
     const humorLine = briefing.id === 'dailySignal' ? '' : this.menuHumorLine;
     return humorLine ? `${body}\n// ${humorLine}` : body;
+  }
+
+  updateRunModeBriefing() {
+    const briefing = this.getRunModeBriefing();
+    if (this.runModeBriefingTitle) {
+      this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
+    }
+    if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
   }
 
   getRunModeBriefing() {
@@ -2221,6 +2273,34 @@ export class MenuScene {
           translateText('No leaderboard submission or achievements. Sector records stay local.')
         ].join('\n'),
         body: translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.')
+      };
+    }
+    if (focused === 'overrun') {
+      const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
+      const tactical = this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL;
+      return {
+        id: 'overrun',
+        title: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
+        accent: 0xff6b45,
+        secondary: 0xffd15c,
+        menuBody: state.available
+          ? [
+              translateText('SECTOR 51 · UNRANKED'),
+              translateText(tactical
+                ? 'Fixed Tactical baseline, then boss Drafts continue.'
+                : 'Pure ship baseline with no Tactical Drafts.'),
+              translateText('Career XP and cumulative Pilot Orders stay active.'),
+              translateText('No leaderboard submission, achievements, or checkpoint unlocks.'),
+              translateText('LEFT/RIGHT: CHANGE LOADOUT')
+            ].join('\n')
+          : [
+              translateText('LOCKED · REACH SECTOR 30'),
+              translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
+              translateText('No leaderboard shortcut. Career rewards begin only after unlock.')
+            ].join('\n'),
+        body: state.available
+          ? translateText('Start at Sector 51 for aggressive late-game runs. Career XP and cumulative Pilot Orders count, while leaderboards, achievements, and checkpoint unlocks stay off.')
+          : translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.')
       };
     }
     if (focused === 'launchTactical') {
@@ -3209,6 +3289,7 @@ export class MenuScene {
       tacticalLaunchButton: this.tacticalStartBtn,
       scoutRunButton: this.scoutRunBtn,
       sectorStartButton: this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
+      overrunStartButton: this.overrunStartBtn,
       hangarButton: this.highscoreBtn,
       highscoresButton: this.storyBtn,
       threatCodexButton: this.threatCodexBtn,
@@ -3298,7 +3379,7 @@ export class MenuScene {
       },
       launchDeck: {
         bounds: this.launchDeckBounds,
-        hierarchy: ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart'],
+        hierarchy: ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'overrun'],
         featuredDailySignal: {
           label: this.dailySignalBtn?._label?.text || null,
           sublabel: this.dailySignalBtn?._sublabel?.text || null,
@@ -3374,6 +3455,18 @@ export class MenuScene {
             role: this.sectorStartBtn?._runModeRole || null,
             focused: Boolean(this.sectorStartBtn?._focused),
             bounds: boundsForMenuButtonLayout(this.sectorStartBtn?.visible ? this.sectorStartBtn : null)
+          },
+          overrun: {
+            label: this.overrunStartBtn?._label?.text || null,
+            sublabel: this.overrunStartBtn?._sublabel?.text || null,
+            body: this.overrunStartBtn?._bodyLabel?.text || null,
+            role: this.overrunStartBtn?._runModeRole || null,
+            focused: Boolean(this.overrunStartBtn?._focused),
+            available: Boolean(this.overrunStartState?.available),
+            requiredSector: this.overrunStartState?.requiredSector || 30,
+            startSector: this.overrunStartState?.startSector || 51,
+            runMode: this.overrunRunMode,
+            bounds: boundsForMenuButtonLayout(this.overrunStartBtn)
           }
         }
       },
@@ -4369,6 +4462,7 @@ export class MenuScene {
       this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
+      this.overrunStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -4886,6 +4980,7 @@ export class MenuScene {
     this.animateElement(this.dailySignalBtn, 1.08, 0.38);
     this.animateElement(this.scoutRunBtn, 1.18, 0.38);
     this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.28, 0.38);
+    this.animateElement(this.overrunStartBtn, 1.34, 0.38);
     this.animateElement(this.highscoreBtn, 1.32, 0.4);
     this.animateElement(this.storyBtn, 1.42, 0.4);
     this.animateElement(this.threatCodexBtn, 1.52, 0.4);
@@ -4906,6 +5001,7 @@ export class MenuScene {
       ...(this.sectorStartBtn?.visible
         ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
         : []),
+      { id: 'overrun', button: this.overrunStartBtn, activate: () => this.startOverrunRun() },
       { id: 'hangar', button: this.highscoreBtn, activate: () => this.openShipSelect() },
       {
         id: 'highscores',
@@ -5076,8 +5172,8 @@ export class MenuScene {
       }
       return;
     }
-    if (nav.pressed.left && !this.cycleScoutAnomalySelection(-1)) this.moveMenuFocus(-1);
-    if (nav.pressed.right && !this.cycleScoutAnomalySelection(1)) this.moveMenuFocus(1);
+    if (nav.pressed.left && !this.cycleScoutAnomalySelection(-1) && !this.cycleOverrunRunMode(-1)) this.moveMenuFocus(-1);
+    if (nav.pressed.right && !this.cycleScoutAnomalySelection(1) && !this.cycleOverrunRunMode(1)) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -5109,6 +5205,39 @@ export class MenuScene {
       console.warn('[MenuScene] Could not read saved ship for quick start:', e);
     }
     return getDefaultShipKey();
+  }
+
+  getOverrunMenuSubLabel() {
+    const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
+    if (!state.available) return translateText('LOCKED · REACH SECTOR 30');
+    return translateText(
+      this.overrunRunMode === RUN_MODES.OVERRUN_PURE
+        ? 'PURE · S51 · CAREER'
+        : 'TACTICAL · S51 · CAREER'
+    );
+  }
+
+  cycleOverrunRunMode(delta, { force = false } = {}) {
+    if (!force && this.getSelectedMenuOptionId() !== 'overrun') return false;
+    this.overrunRunMode = this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL
+      ? RUN_MODES.OVERRUN_PURE
+      : RUN_MODES.OVERRUN_TACTICAL;
+    this.refreshButtonCopy(this.overrunStartBtn, { forceGpuRefresh: true });
+    this.drawMenuButton(this.overrunStartBtn, false);
+    this.updateRunModeBriefing();
+    playMenuFocusSfx(0.09);
+    return true;
+  }
+
+  startOverrunRun() {
+    this.overrunStartState = getOverrunStartState(readHangarProgressState());
+    this.refreshButtonCopy(this.overrunStartBtn, { forceGpuRefresh: true });
+    if (!this.overrunStartState.available) {
+      this.updateRunModeBriefing();
+      return false;
+    }
+    this.quickStartRun(this.overrunRunMode);
+    return true;
   }
 
   quickStartRun(runMode = RUN_MODES.RANKED) {
@@ -5631,6 +5760,7 @@ export class MenuScene {
       this.tacticalStartBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
+      this.overrunStartBtn,
       this.highscoreBtn,
       this.storyBtn,
       this.threatCodexBtn,
@@ -5641,6 +5771,7 @@ export class MenuScene {
       this.musicBtn
     ].filter(Boolean).forEach((button) => this.refreshButtonCopy(button, { forceGpuRefresh: true }));
     this.refreshSectorStartState();
+    this.overrunStartState = getOverrunStartState(readHangarProgressState());
     this.updateSectorStartButton({ forceGpuRefresh: true });
     this.settingsOverlay?.rebuild?.();
     this.layoutMenu();

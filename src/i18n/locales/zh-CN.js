@@ -3,6 +3,7 @@ import { buildArcadePatterns } from './patterns.js';
 import { getPowerupExpansionSourceText } from '../powerupExpansionSourceText.js';
 import { getNovaHumorSourceText } from '../novaHumorSourceText.js';
 import { getMayhemModesSourceText } from '../mayhemModesSourceText.js';
+import { getOverrunModeSourceText } from '../overrunModeSourceText.js';
 import { getEliteExpansionSourceText } from '../eliteExpansionSourceText.js';
 import { getHowToPlayCompleteSourceText } from '../howToPlayCompleteSourceText.js';
 import { getTacticalFusionSourceText } from '../tacticalFusionSourceText.js';
@@ -1816,6 +1817,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN') }),
   patterns
 };

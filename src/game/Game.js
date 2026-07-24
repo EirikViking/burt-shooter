@@ -51,10 +51,15 @@ import {
 } from './Playfield.js';
 import {
   RUN_MODES,
+  OVERRUN_START_SECTOR,
+  canRunModeUpdateCareerProgress,
+  canRunModeUpdateCompetitiveCareerBests,
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
+  getOverrunStartState,
   getSectorStartPlaySector,
   getSectorStartState,
+  isOverrunRunMode,
   isRankedRunMode,
   getRunModeProfile,
   normalizeRunMode,
@@ -358,6 +363,9 @@ export class Game {
       ? 'controller'
       : 'keyboard';
     const startingProgress = readHangarProgressState();
+    const overrunStartState = isOverrunRunMode(requestedRunMode)
+      ? getOverrunStartState(startingProgress)
+      : null;
     const sectorStartCheckpoint = requestedRunMode === RUN_MODES.SECTOR_START
       ? resolveSectorStartCheckpoint(options.startSector, startingProgress)
       : null;
@@ -371,16 +379,25 @@ export class Game {
       });
       return false;
     }
-    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${sectorStartPlaySector || 1}`);
+    if (overrunStartState && !overrunStartState.available) {
+      console.warn('[Game] overrun_start blocked', overrunStartState);
+      return false;
+    }
+    const runStartSector = overrunStartState?.available
+      ? OVERRUN_START_SECTOR
+      : (sectorStartPlaySector || 1);
+    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
     this.refreshThreatResponse(0);
 
     this.score = 0;
-    this.level = sectorStartPlaySector || 1;
+    this.level = runStartSector;
     this.lives = 3;
     this.isDebugRun = false;
     this.runMode = requestedRunMode;
-    this.runModeReason = requestedRunMode === RUN_MODES.SECTOR_START
+    this.runModeReason = isOverrunRunMode(requestedRunMode)
+      ? 'overrun_sector_51_career'
+      : requestedRunMode === RUN_MODES.SECTOR_START
       ? 'sector_start_checkpoint'
       : requestedRunMode === RUN_MODES.DAILY_SIGNAL
         ? 'daily_signal_local_challenge'
@@ -393,6 +410,10 @@ export class Game {
     this.sectorStartCheckpoint = sectorStartCheckpoint;
     this.sectorStartPlaySector = sectorStartPlaySector;
     this.sectorStartHighestReached = sectorStartCheckpoint ? getSectorStartState(startingProgress).highestReachedSector : null;
+    this.runStartSector = runStartSector;
+    this.overrunSeenBossMaxSector = overrunStartState?.available
+      ? Math.min(50, overrunStartState.highestReachedSector)
+      : null;
     this.lastSectorStartChallengeRecord = null;
     this.dailySignalContract = dailySignalContract;
     this.dailySignalContractValidation = dailySignalContractValidation;
@@ -437,7 +458,10 @@ export class Game {
       seed: dailySignalContract?.seed || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
     if (
-      (this.isRankedRun() || requestedRunMode === RUN_MODES.SCOUT || requestedRunMode === RUN_MODES.DAILY_SIGNAL)
+      (this.isRankedRun()
+        || this.canUpdateCareerProgressForCurrentRun()
+        || requestedRunMode === RUN_MODES.SCOUT
+        || requestedRunMode === RUN_MODES.DAILY_SIGNAL)
       && RunPacingConfig.threatCodexEnabled
     ) {
       startThreatDiscoveryRun();
@@ -517,6 +541,14 @@ export class Game {
 
   isRankedRun() {
     return isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+  }
+
+  canUpdateCareerProgressForCurrentRun() {
+    return canRunModeUpdateCareerProgress(this.runMode, { isDebugRun: this.isDebugRun });
+  }
+
+  canUpdateCompetitiveCareerBestsForCurrentRun() {
+    return canRunModeUpdateCompetitiveCareerBests(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isDailySignalRun() {
@@ -1332,6 +1364,7 @@ export class Game {
       finalScore,
       levelReached,
       sectorReached: levelReached,
+      startSector: Math.max(1, Number(this.runStartSector) || 1),
       runElapsedSeconds: Math.max(0, elapsed),
       bossesKilled: Number(play?.bossKills) || 0,
       wavesCleared: Number(play?.wavesCleared) || 0,
@@ -1421,6 +1454,7 @@ export class Game {
       finalScore: this.score,
       levelReached,
       sectorReached: levelReached,
+      startSector: Math.max(1, Number(this.runStartSector) || 1),
       runElapsedSeconds: Math.max(0, elapsed),
       bossesKilled: Number(play?.bossKills) || 0,
       wavesCleared: Number(play?.wavesCleared) || 0,
@@ -1441,7 +1475,7 @@ export class Game {
 
   updateLiveRunRank({ force = false } = {}) {
     if (!RunPacingConfig.pilotRankProgressionEnabled) return this.liveRankProgression;
-    if (this.runFinalized || !this.isRankedRun() || this.currentSceneName !== 'play') return this.liveRankProgression;
+    if (this.runFinalized || !this.canUpdateCareerProgressForCurrentRun() || this.currentSceneName !== 'play') return this.liveRankProgression;
     const now = Date.now();
     if (!force && now < (this.nextLiveRankCheckAtMs || 0)) return this.liveRankProgression;
     this.nextLiveRankCheckAtMs = now + 300;
@@ -1494,10 +1528,14 @@ export class Game {
     }
     flushThreatDiscoveryState();
     const previousProgress = readHangarProgressState();
-    let result = this.isRankedRun() && RunPacingConfig.pilotRankProgressionEnabled
-      ? applyRunProgression(this.runSummary)
+    const updatesCareerProgress = this.canUpdateCareerProgressForCurrentRun()
+      && RunPacingConfig.pilotRankProgressionEnabled;
+    let result = updatesCareerProgress
+      ? applyRunProgression(this.runSummary, {
+          updateCompetitiveBests: this.canUpdateCompetitiveCareerBestsForCurrentRun()
+        })
       : { previous: previousProgress, next: previousProgress, xpGained: 0, newRanksThisRun: [], newlyUnlockedShipIds: [], rankProgress: null };
-    if (this.isRankedRun() && result?.next) {
+    if (updatesCareerProgress && result?.next) {
       const runStartProgress = this.hangarProgressAtRunStart || result.previous || previousProgress;
       const runStartUnlocked = new Set((runStartProgress.unlockedShipIds || []).map(String));
       const newlyUnlockedShipIds = (result.next.unlockedShipIds || [])
