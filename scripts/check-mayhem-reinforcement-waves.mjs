@@ -174,7 +174,7 @@ const requiredSourceSnippets = [
   'const useSuperStormVoice = state.isSuperStorm === true',
   'groupIndex * 1200',
   'index * 1200',
-  'allowConcurrentSpawn: isSuperStorm || index > 0',
+  'allowConcurrentSpawn: state.isRoutineReinforcement || isSuperStorm || index > 0',
   'this.bossReinforcementNextCheckAtMs = Date.now() + 1200',
   'doubleWaveMinLevel',
   'doubleWaveRequiresPriorReinforcement',

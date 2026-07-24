@@ -680,6 +680,32 @@ try {
   assert.deepEqual(overrunTacticalRuntime.baselineIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
   assert.deepEqual(overrunTacticalRuntime.playerAugmentIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
   await page.screenshot({ path: path.join(outputDir, 'overrun-tactical-sector-51.png'), fullPage: false });
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => {
+    const manager = window.__game?.scenes?.play?.enemyManager;
+    const config = manager?.createOverrunRoutineReinforcementConfig?.(1);
+    if (!manager || !config) throw new Error('Overrun routine reinforcement config unavailable');
+    manager.clearPendingWaveSpawns?.();
+    manager.clearEnemies?.();
+    manager.state = 'WAVE_ACTIVE';
+    manager.phase = 'WAVES';
+    manager.waveEnding = false;
+    manager.spawning = false;
+    manager.pendingWaveConfig = null;
+    manager.spawnWave({
+      ...config,
+      reinforcementEntryRoute: 'bottom',
+      reinforcementEntryDelayMs: 0
+    });
+  });
+  await page.waitForTimeout(650);
+  const overrunReinforcementState = await readState(page);
+  const routineReinforcements = (overrunReinforcementState.visibleEnemies || [])
+    .filter((enemy) => enemy.reinforcement?.routine);
+  assert.ok(routineReinforcements.length >= 2 && routineReinforcements.length <= 4);
+  assert.ok(routineReinforcements.every((enemy) => enemy.reinforcement?.entryRoute === 'bottom'));
+  assert.ok(routineReinforcements.every((enemy) => enemy.reinforcement?.swarmEntry === true));
+  await page.screenshot({ path: path.join(outputDir, 'overrun-bottom-reinforcements.png'), fullPage: false });
   await page.evaluate(() => {
     const game = window.__game;
     game.addScore(250000, 'baseScore');

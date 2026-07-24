@@ -93,6 +93,7 @@
     "check:run-report": "node scripts/check-run-report.mjs",
     "check:run-mode-identity": "node scripts/check-run-mode-identity.mjs",
     "check:overrun-mode": "node scripts/check-overrun-mode.mjs",
+    "check:overrun-reinforcements": "node scripts/check-overrun-reinforcements.mjs",
     "check:pause-context-chips": "node scripts/check-pause-context-chips.mjs",
     "check:nova-humor": "node scripts/check-nova-humor-everywhere.mjs",
     "check:nova-humor-runtime": "node scripts/check-nova-humor-runtime.mjs",

@@ -397,8 +397,8 @@ async function createBigPlayerShipBoss(shipNum, shipColor) {
  * Main factory function - creates boss visual for a given level
  * @returns {Promise<{container: PIXI.Container, hitboxRef: PIXI.DisplayObject, textureOk: boolean, kind: string, cleanup: Function}>}
  */
-export async function createBossVisual(level, maxWidth) {
-  const profile = getBossProfile(level);
+export async function createBossVisual(level, maxWidth, profileOverride = null) {
+  const profile = profileOverride || getBossProfile(level);
   const generatedResult = await createGeneratedBossVisual(profile, maxWidth);
   if (generatedResult) {
     const bounds = generatedResult.hitboxRef ? generatedResult.hitboxRef.getBounds() : { width: 0, height: 0 };

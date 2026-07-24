@@ -33,6 +33,7 @@ import {
 import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../config/BossSupportShips.js';
+import { getBossProfileForRun } from '../config/BossRoster.js';
 import {
   getRareChaosVisitorVariant,
   planRareChaosVisitorSpawn
@@ -1220,6 +1221,136 @@ export class EnemyManager {
     return `${Math.max(1, Math.floor(Number(level) || 1))}:${Math.max(0, Math.floor(Number(waveIndex) || 0))}`;
   }
 
+  isOverrunRoutineReinforcementMode() {
+    return this.game?.getRunModeProfile?.()?.routineReinforcementsEnabled === true;
+  }
+
+  getOverrunRoutineReinforcementRoute(sequence = this.currentWaveIndex) {
+    const routes = ['side_left', 'bottom', 'side_right', 'opposite_player'];
+    const level = Math.max(1, Math.floor(Number(this.level) || 1));
+    const index = Math.max(0, Math.floor(Number(sequence) || 0));
+    return routes[(level + index) % routes.length];
+  }
+
+  createOverrunRoutineReinforcementConfig(sequence = this.currentWaveIndex, { boss = false } = {}) {
+    const level = Math.max(1, Math.floor(Number(this.level) || 1));
+    const waveIndex = Math.max(0, Math.floor(Number(sequence) || 0));
+    const normalWaveLevel = Math.max(1, Number(this.getNormalWaveDifficultyLevel(level)) || level);
+    const formation = ['STAGGERED_WING', 'PINCER', 'CROSS_STREAM', 'SIDEWINDER'][(level + waveIndex) % 4];
+    const tacticId = this.pickWaveTactic(normalWaveLevel, waveIndex, formation);
+    const countRoll = this.getStableReinforcementRoll(level, waveIndex, boss ? 'overrun-boss-routine-count' : 'overrun-routine-count');
+    const baseWave = {
+      type: pickGeneratedEnemyTypeForLevel(normalWaveLevel),
+      count: 2 + Math.min(2, Math.floor(countRoll * 3)),
+      formation,
+      tactic: {
+        id: tacticId,
+        fireScalar: 1.28,
+        fireDelayMult: 0.76,
+        diveBias: 1.42,
+        entrySpeed: 0.72,
+        forcedDive: true
+      },
+      entry: 'single',
+      reinforcementEntryRoute: this.getOverrunRoutineReinforcementRoute(waveIndex + (boss ? 2 : 0)),
+      cadence: 1.18,
+      sourceLevel: level,
+      normalWaveDifficultyLevel: normalWaveLevel,
+      isMayhemReinforcement: true,
+      isOverrunRoutineReinforcement: true,
+      isBossMayhemReinforcement: boss,
+      reinforcedFromWaveIndex: this.currentWaveIndex,
+      reinforcementGroupIndex: 0,
+      reinforcementGroupCount: 1,
+      reinforcementEntryDelayMs: 0,
+      reinforcementLaneOffsetPx: 0,
+      reinforcementScoreMultiplier: 1,
+      allowConcurrentSpawn: true
+    };
+    const shaped = this.game?.contentDirector?.shapeWaveConfig?.(baseWave, {
+      level: normalWaveLevel,
+      sourceLevel: level,
+      waveIndex
+    }) || baseWave;
+    return {
+      ...shaped,
+      count: baseWave.count,
+      tactic: baseWave.tactic,
+      reinforcementEntryRoute: baseWave.reinforcementEntryRoute,
+      isOverrunRoutineReinforcement: true
+    };
+  }
+
+  getOverrunRoutineReinforcementEligibility(objectiveCount = this.getObjectiveEnemyCount()) {
+    const config = this.getMayhemReinforcementConfig();
+    const currentWaveIndex = Math.max(0, Math.floor(Number(this.currentWaveIndex) || 0));
+    const currentWave = this.waves?.[currentWaveIndex] || null;
+    const expected = this.getMayhemReinforcementWaveExpectedCount(currentWave);
+    const clearRatio = expected > 0 ? Math.max(0, Math.min(1, (expected - objectiveCount) / expected)) : 0;
+    const playScene = this.game?.scenes?.play || null;
+    const activeEnemyBullets = playScene?.bulletManager?.enemyBullets
+      ?.filter((bullet) => bullet?.active !== false).length || 0;
+    const waveAgeMs = Number(this.waveActiveTimer) || 0;
+    const reasons = [];
+    if (!config) reasons.push('disabled');
+    if (!this.isOverrunRoutineReinforcementMode()) reasons.push('not_overrun_routine');
+    if (this.phase !== 'WAVES' || this.state !== 'WAVE_ACTIVE') reasons.push('not_normal_wave_phase');
+    if (this.boss?.active || this.bossSpawnedThisLevel || this.state === 'BOSS_GATE') reasons.push('boss_active_or_pending');
+    if (this.waveEnding || this.spawning || this.pendingWaveConfig) reasons.push('wave_not_stable');
+    if (playScene?.sectorArrivalStinger?.active) reasons.push('sector_stinger_active');
+    if (playScene?.player?.invulnerable) reasons.push('player_respawn_or_invulnerable');
+    if (this.mayhemReinforcementState) reasons.push('already_scheduled');
+    if (this.mayhemReinforcementTriggeredWaves?.has(currentWaveIndex)) reasons.push('already_triggered_for_wave');
+    if (waveAgeMs < 1800) reasons.push('wave_too_young');
+    if (clearRatio < 0.2) reasons.push('not_enough_wave_progress');
+    if (objectiveCount > Math.max(10, Math.ceil(expected * 0.8))) reasons.push('too_many_enemies');
+    if (activeEnemyBullets > 32) reasons.push('too_many_bullets');
+    const routineConfig = this.createOverrunRoutineReinforcementConfig(currentWaveIndex);
+    const stableRoll = this.getStableReinforcementRoll(this.level, currentWaveIndex, 'overrun-routine');
+    return {
+      eligible: reasons.length === 0,
+      reasons,
+      hardReasons: reasons,
+      softReasons: [],
+      config,
+      currentWaveIndex,
+      nextWaveIndex: currentWaveIndex,
+      objectiveCount,
+      expected,
+      clearRatio,
+      activeEnemyBullets,
+      waveAgeMs,
+      roll: stableRoll,
+      extraWaveRoll: stableRoll,
+      superStormRoll: 1,
+      chance: 1,
+      doubleWaveChance: 0,
+      normalMinWaveCount: 0,
+      normalMaxWaveCount: 0,
+      normalMaxWaveChance: 0,
+      superStormChance: 0,
+      superStormWaveCount: 0,
+      superStormNaturalHit: false,
+      superStormPityForced: false,
+      dailySignalReinforcementForced: false,
+      dailySignalSuperStormForced: false,
+      dailySignalForced: false,
+      canRecordSuperStormMiss: false,
+      isSuperStorm: false,
+      isRoutineReinforcement: true,
+      reinforcementWaveIndices: [],
+      reinforcementWaveConfigs: [routineConfig],
+      syntheticWaveCount: 1,
+      warningMs: 1200,
+      pityForced: false,
+      pityRelaxed: false,
+      eligibleMisses: this.mayhemReinforcementEligibleMisses || 0,
+      runSpawned: this.mayhemReinforcementRunSpawned || 0,
+      superStormEligibleMisses: 0,
+      superStormRunSpawned: 0
+    };
+  }
+
   shouldForceMayhemReinforcementByPity(config = this.getMayhemReinforcementConfig()) {
     if (!config) return false;
     const misses = Math.max(0, Math.floor(Number(this.mayhemReinforcementEligibleMisses) || 0));
@@ -1367,6 +1498,11 @@ export class EnemyManager {
   }
 
   getMayhemReinforcementEligibility(objectiveCount = this.getObjectiveEnemyCount()) {
+    if (this.isOverrunRoutineReinforcementMode()) {
+      const result = this.getOverrunRoutineReinforcementEligibility(objectiveCount);
+      if (this.mayhemReinforcementStats) this.mayhemReinforcementStats.lastEligibility = result;
+      return result;
+    }
     const config = this.getMayhemReinforcementConfig();
     const currentWaveIndex = Math.max(0, Math.floor(Number(this.currentWaveIndex) || 0));
     const nextWaveIndex = currentWaveIndex + 1;
@@ -1533,6 +1669,7 @@ export class EnemyManager {
       reinforcementWaveConfigs: eligibility.reinforcementWaveConfigs,
       syntheticWaveCount: eligibility.syntheticWaveCount,
       isSuperStorm: eligibility.isSuperStorm,
+      isRoutineReinforcement: eligibility.isRoutineReinforcement === true,
       scheduledAt: now,
       spawnAt: now + warningMs,
       warningMs,
@@ -1549,10 +1686,12 @@ export class EnemyManager {
     if (eligibility.isSuperStorm) this.mayhemReinforcementStats.superStorms += 1;
     this.mayhemReinforcementStats.lastPityForced = eligibility.pityForced;
     this.fireMayhemReinforcementWarning(this.mayhemReinforcementState);
-    const targetLabel = eligibility.isSuperStorm
-      ? `${eligibility.reinforcementWaveConfigs?.length || eligibility.superStormWaveCount || 3}groups` +
-        (eligibility.syntheticWaveCount ? `+${eligibility.syntheticWaveCount}synthetic` : '')
-      : eligibility.reinforcementWaveIndices.map((index) => index + 1).join('+');
+    const targetLabel = eligibility.isRoutineReinforcement
+      ? `routine-${eligibility.reinforcementWaveConfigs?.[0]?.reinforcementEntryRoute || 'side'}`
+      : eligibility.isSuperStorm
+        ? `${eligibility.reinforcementWaveConfigs?.length || eligibility.superStormWaveCount || 3}groups` +
+          (eligibility.syntheticWaveCount ? `+${eligibility.syntheticWaveCount}synthetic` : '')
+        : eligibility.reinforcementWaveIndices.map((index) => index + 1).join('+');
     console.log(
       `[MayhemReinforcement] scheduled${eligibility.isSuperStorm ? '_super_storm' : ''} level=${this.level}` +
       ` wave=${eligibility.currentWaveIndex + 1}->${targetLabel}` +
@@ -1674,7 +1813,7 @@ export class EnemyManager {
 
     const reinforcementWaveIndices = Array.isArray(state.reinforcementWaveIndices) && state.reinforcementWaveIndices.length
       ? state.reinforcementWaveIndices
-      : (state.isSuperStorm ? [] : [state.reinforcementWaveIndex]);
+      : (state.isSuperStorm || state.isRoutineReinforcement ? [] : [state.reinforcementWaveIndex]);
     const configs = Array.isArray(state.reinforcementWaveConfigs) && state.reinforcementWaveConfigs.length
       ? state.reinforcementWaveConfigs
       : reinforcementWaveIndices.map((waveIndex) => this.waves?.[waveIndex] || null);
@@ -1697,7 +1836,7 @@ export class EnemyManager {
       this.mayhemSuperStormEligibleMisses = 0;
       this.mayhemSuperStormRunMissedWaveKeys?.clear();
     }
-    this.mayhemReinforcementStats.spawned += state.isSuperStorm
+    this.mayhemReinforcementStats.spawned += state.isSuperStorm || state.isRoutineReinforcement
       ? Math.max(0, configs.length - reinforcementWaveIndices.length)
       : 0;
     this.mayhemReinforcementRunSpawned = Math.max(0, Math.floor(Number(this.mayhemReinforcementRunSpawned) || 0)) + 1;
@@ -1709,7 +1848,9 @@ export class EnemyManager {
       const isSuperStorm = state.isSuperStorm === true;
       this.measurePerformance('mayhem_reinforcement.spawn_wave', () => this.spawnWave({
         ...config,
-        entry: index % 3 === 0 ? 'split' : index % 3 === 1 ? 'alternating' : 'single',
+        entry: state.isRoutineReinforcement
+          ? (config.entry || 'single')
+          : index % 3 === 0 ? 'split' : index % 3 === 1 ? 'alternating' : 'single',
         isMayhemReinforcement: true,
         reinforcedFromWaveIndex: state.currentWaveIndex,
         reinforcementGroupIndex: index,
@@ -1721,8 +1862,10 @@ export class EnemyManager {
         reinforcementLaneOffsetPx: configs.length > 1
           ? centeredIndex * (isSuperStorm ? (reinforcementConfig?.superStormLaneOffsetPx || 58) : 72)
           : 0,
-        reinforcementScoreMultiplier: reinforcementConfig?.reinforcementScoreMultiplier || 1,
-        allowConcurrentSpawn: isSuperStorm || index > 0
+        reinforcementScoreMultiplier: state.isRoutineReinforcement
+          ? 1
+          : (reinforcementConfig?.reinforcementScoreMultiplier || 1),
+        allowConcurrentSpawn: state.isRoutineReinforcement || isSuperStorm || index > 0
       }));
     });
     console.log(
@@ -1737,6 +1880,9 @@ export class EnemyManager {
   maybeScheduleBossMayhemReinforcement() {
     const config = this.getMayhemReinforcementConfig();
     if (!config || config.bossFightChance <= 0 || config.bossFightMaxEvents <= 0) return false;
+    if (this.isOverrunRoutineReinforcementMode()) {
+      return this.maybeScheduleOverrunBossRoutineReinforcement(config);
+    }
     if (!canRunModeUseMayhemReinforcements(this.game?.runMode)) return false;
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return false;
     if (this.bossReinforcementState && !this.bossReinforcementState.spawned) return false;
@@ -1803,6 +1949,45 @@ export class EnemyManager {
       ` tripleRoll=${tripleWaveRoll.toFixed(4)} tripleChance=${config.tripleWaveChance}` +
       ` fullWaves=${reinforcementWaveConfigs.length}`
     );
+    return true;
+  }
+
+  maybeScheduleOverrunBossRoutineReinforcement(config = this.getMayhemReinforcementConfig()) {
+    if (!config || this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) return false;
+    if (this.bossReinforcementState && !this.bossReinforcementState.spawned) return false;
+    if (this.bossReinforcementEventsThisBoss >= 2) return false;
+    const now = Date.now();
+    const bossAgeMs = now - (this.bossSpawnedAtMs || this.boss.spawnedAtMs || now);
+    if (bossAgeMs < 4200 || now < this.bossReinforcementCooldownUntilMs || now < this.bossReinforcementNextCheckAtMs) return false;
+    const playScene = this.game?.scenes?.play;
+    const activeBossAdds = this.enemies.filter((enemy) =>
+      enemy?.kind !== 'boss' && (enemy.active || enemy.waitingForEntry)
+    ).length;
+    const activeBullets = playScene?.bulletManager?.enemyBullets?.filter((bullet) => bullet?.active !== false).length || 0;
+    if (activeBossAdds > 6 || activeBullets > 30 || (playScene?.lastHitAt && now - playScene.lastHitAt < 4200)) {
+      this.bossReinforcementNextCheckAtMs = now + 1200;
+      return false;
+    }
+    const attemptIndex = Math.max(0, Math.floor(Number(this.bossReinforcementAttemptIndex) || 0));
+    const routineConfig = this.createOverrunRoutineReinforcementConfig(attemptIndex, { boss: true });
+    this.bossReinforcementAttemptIndex = attemptIndex + 1;
+    this.bossReinforcementState = {
+      bossLevel: Math.max(1, Math.floor(Number(this.level) || 1)),
+      attemptIndex,
+      reinforcementGroupCount: 1,
+      reinforcementWaveConfigs: [routineConfig],
+      isRoutineReinforcement: true,
+      scheduledAt: now,
+      spawnAt: now + 1200,
+      warningMs: 1200,
+      warningFired: false,
+      spawned: false,
+      roll: 0
+    };
+    this.fireMayhemReinforcementWarning(this.bossReinforcementState);
+    this.bossReinforcementCooldownUntilMs = now + 8200;
+    this.bossReinforcementNextCheckAtMs = now + 8200;
+    this.mayhemReinforcementStats.scheduled += 1;
     return true;
   }
 
@@ -2734,13 +2919,23 @@ export class EnemyManager {
         return;
       }
       this.measurePerformance('enemy_batch_creation', () => {
-        const startX = this.getWaveEntryX(config.entry || 'single', i, startLeft, screenW);
+        const reinforcementEntryRoute = String(config.reinforcementEntryRoute || '');
+        const entryStart = this.getWaveEntryStart({
+          route: reinforcementEntryRoute,
+          entry: config.entry || 'single',
+          index: i,
+          startLeft,
+          screenW,
+          pos
+        });
+        const startX = entryStart.x;
+        const startY = entryStart.y;
         const dangerProfile = dangerAssignments.get(i);
         const dangerMidType = dangerProfile && Number.isFinite(dangerProfile.spriteIndex)
           ? getGeneratedEnemyTypeForSpriteIndex(dangerProfile.spriteIndex)
           : null;
         const enemyType = dangerMidType || type;
-        const enemy = this.measurePerformance('enemy_generation.create_enemy', () => new Enemy(startX, -100, enemyType, normalWaveLevel, this.game, waveColor));
+        const enemy = this.measurePerformance('enemy_generation.create_enemy', () => new Enemy(startX, startY, enemyType, normalWaveLevel, this.game, waveColor));
         if (config.isChallenge && enemy.kind === 'bonus_drone') {
           enemy.kind = 'enemy';
         }
@@ -2750,6 +2945,9 @@ export class EnemyManager {
           enemy.reinforcementGroupCount = Math.max(1, Math.floor(Number(config.reinforcementGroupCount) || 1));
           enemy.isMayhemSuperStorm = config.isMayhemSuperStorm === true;
           enemy.isReinforcementSwarmEntry = enemy.reinforcementGroupCount > 1;
+          enemy.isOverrunRoutineReinforcement = config.isOverrunRoutineReinforcement === true;
+          enemy.reinforcementEntryRoute = reinforcementEntryRoute || null;
+          if (enemy.isOverrunRoutineReinforcement) enemy.isReinforcementSwarmEntry = true;
           const scoreMultiplier = Math.max(1, Number(config.reinforcementScoreMultiplier) || 1);
           if (scoreMultiplier > 1) {
             enemy.scoreValue = Math.max(1, Math.round((enemy.scoreValue || 0) * scoreMultiplier));
@@ -2821,7 +3019,7 @@ export class EnemyManager {
         }
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
-        enemy.startEntry(startX, -50, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
+        enemy.startEntry(startX, startY, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
         if (config.isChallenge) {
           this.registerChallengeFlightTarget(enemy, {
             index: i,
@@ -3163,12 +3361,13 @@ export class EnemyManager {
   applyNormalWavePressureToTactic(tactic = {}) {
     const pressureTuning = getNormalWavePressureTuning(this.currentNormalWaveDifficultyLevel || this.getNormalWaveDifficultyLevel(this.level));
     const openingMomentum = this.getOpeningMomentumTuning();
+    const runModeAggression = Math.max(0.5, Number(this.game?.getRunModeProfile?.()?.normalWaveAggressionMult) || 1);
     return {
       ...tactic,
-      fireScalar: (tactic.fireScalar || 1) * (pressureTuning.tacticFireMult || 1),
-      fireDelayMult: (tactic.fireDelayMult || 1) * (pressureTuning.tacticFireDelayMult || 1),
-      diveBias: (tactic.diveBias || 1) * (pressureTuning.diveBiasMult || 1) * openingMomentum.diveBiasMult,
-      entrySpeed: (tactic.entrySpeed || 1) * (pressureTuning.entrySpeedMult || 1),
+      fireScalar: (tactic.fireScalar || 1) * (pressureTuning.tacticFireMult || 1) * runModeAggression,
+      fireDelayMult: (tactic.fireDelayMult || 1) * (pressureTuning.tacticFireDelayMult || 1) / runModeAggression,
+      diveBias: (tactic.diveBias || 1) * (pressureTuning.diveBiasMult || 1) * openingMomentum.diveBiasMult * runModeAggression,
+      entrySpeed: (tactic.entrySpeed || 1) * (pressureTuning.entrySpeedMult || 1) / Math.sqrt(runModeAggression),
       normalWavePressureBand: pressureTuning.id
     };
   }
@@ -3211,6 +3410,27 @@ export class EnemyManager {
       return (startLeft ? index % 2 === 0 : index % 2 !== 0) ? -100 : screenW + 100;
     }
     return startLeft ? -100 : screenW + 100;
+  }
+
+  getWaveEntryStart({ route = '', entry = 'single', index = 0, startLeft = true, screenW, pos }) {
+    let x = this.getWaveEntryX(entry, index, startLeft, screenW);
+    let y = -50;
+    const screenH = this.game.getHeight();
+    if (route === 'side_left') {
+      x = -100;
+      y = Math.max(70, Math.min(screenH - 70, pos.y));
+    } else if (route === 'side_right') {
+      x = screenW + 100;
+      y = Math.max(70, Math.min(screenH - 70, pos.y));
+    } else if (route === 'bottom') {
+      x = Math.max(40, Math.min(screenW - 40, pos.x));
+      y = screenH + 100;
+    } else if (route === 'opposite_player') {
+      const playerX = Number(this.game?.scenes?.play?.player?.x);
+      x = Number.isFinite(playerX) && playerX < screenW / 2 ? screenW + 100 : -100;
+      y = Math.max(70, Math.min(screenH - 70, pos.y));
+    }
+    return { x, y };
   }
 
   spawnEliteMiddleShip(profileId, context = {}) {
@@ -3691,7 +3911,11 @@ export class EnemyManager {
       : marketingDebug
         ? Math.max(82, Math.min(this.game.getHeight() * 0.32, 82 + Math.random() * 110))
         : 100;
-    const boss = new Boss(centerX, spawnY, level, this.game); // VISIBILITY FIX: Spawn at visible position
+    const bossProfile = getBossProfileForRun(level, {
+      seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
+      seenThroughSector: this.game?.overrunSeenBossMaxSector || 50
+    });
+    const boss = new Boss(centerX, spawnY, level, this.game, bossProfile); // VISIBILITY FIX: Spawn at visible position
 
     // Wait for boss visual to load
     await boss.createSprite();

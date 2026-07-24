@@ -1176,6 +1176,8 @@ function buildGameTextState(game) {
           groupCount: Math.max(1, Math.floor(Number(enemy.reinforcementGroupCount) || 1)),
           superStorm: Boolean(enemy.isMayhemSuperStorm),
           swarmEntry: Boolean(enemy.isReinforcementSwarmEntry),
+          routine: Boolean(enemy.isOverrunRoutineReinforcement),
+          entryRoute: enemy.reinforcementEntryRoute || null,
           spawnCueDurationMs: Math.max(0, Math.round(Number(enemy.spawnCueDurationMs) || 0)),
           spawnCue: enemy.spawnCueLayer?._debugSpawnCue ? { ...enemy.spawnCueLayer._debugSpawnCue } : null
         } : null,

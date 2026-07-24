@@ -71,7 +71,7 @@ function fitPixiTextToBox(text, maxWidth, maxHeight, minScale = 0.62) {
 }
 
 export class Boss {
-  constructor(x, y, level, game) {
+  constructor(x, y, level, game, profile = null) {
     this.x = x;
     this.y = y;
     this.level = level;
@@ -119,7 +119,7 @@ export class Boss {
     this.tauntHalfShown = false;
     this.scoreValue = 1000;
     this.phase = 1;
-    this.profile = getBossProfile(level);
+    this.profile = profile || getBossProfile(level);
     this.color = this.profile?.palette || 0xff00ff;
     this.signatureCooldown = 0;
     this.telegraph = null;
@@ -185,7 +185,7 @@ export class Boss {
 
     // Load boss visual from factory
     const maxBossWidth = this.game?.getWidth ? this.game.getWidth() * 0.62 : null;
-    const bossVisual = await createBossVisual(this.level, maxBossWidth);
+    const bossVisual = await createBossVisual(this.level, maxBossWidth, this.profile);
     this.profile = bossVisual.profile || this.profile;
     this.color = this.profile?.palette || this.color;
     this.name = this.profile?.name || this.name;
