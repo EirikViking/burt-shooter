@@ -3507,6 +3507,8 @@ export class MenuScene {
             role: this.overrunStartBtn?._runModeRole || null,
             focused: Boolean(this.overrunStartBtn?._focused),
             available: Boolean(this.overrunStartState?.available),
+            progressionUnlocked: Boolean(this.overrunStartState?.progressionUnlocked),
+            previewAccess: Boolean(this.overrunStartState?.previewAccess),
             requiredSector: this.overrunStartState?.requiredSector || 30,
             startSector: this.overrunStartState?.startSector || 51,
             runMode: this.overrunRunMode,

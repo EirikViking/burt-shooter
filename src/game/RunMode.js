@@ -14,6 +14,7 @@ export const RUN_MODES = Object.freeze({
 export const SECTOR_START_CHECKPOINT_INTERVAL = 5;
 export const OVERRUN_START_SECTOR = 51;
 export const OVERRUN_UNLOCK_SECTOR = 30;
+export const OVERRUN_WEB_PREVIEW_PARAM = 'overrunPreview';
 export const OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS = Object.freeze([
   'damage_up',
   'rapid_fire',
@@ -438,10 +439,31 @@ export function getSectorStartState(progress = {}, requestedSector = null) {
   };
 }
 
-export function getOverrunStartState(progress = {}) {
+export function isOverrunWebPreviewAccessEnabled({
+  location = globalThis.location,
+  desktop = globalThis.window?.__NOVA_SWARM_DESKTOP__ === true
+} = {}) {
+  let params;
+  try {
+    params = new URLSearchParams(location?.search || '');
+  } catch {
+    return false;
+  }
+  const desktopRuntime = desktop === true || params.get('desktop') === '1';
+  return !desktopRuntime && params.get(OVERRUN_WEB_PREVIEW_PARAM) === '1';
+}
+
+export function getOverrunStartState(progress = {}, options = {}) {
   const highestReachedSector = getHighestReachedSector(progress);
+  const progressionUnlocked = highestReachedSector >= OVERRUN_UNLOCK_SECTOR;
+  const previewAccess = !progressionUnlocked && (
+    options.previewAccess === true
+    || (options.previewAccess == null && isOverrunWebPreviewAccessEnabled(options))
+  );
   return {
-    available: highestReachedSector >= OVERRUN_UNLOCK_SECTOR,
+    available: progressionUnlocked || previewAccess,
+    progressionUnlocked,
+    previewAccess,
     highestReachedSector,
     requiredSector: OVERRUN_UNLOCK_SECTOR,
     startSector: OVERRUN_START_SECTOR

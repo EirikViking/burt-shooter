@@ -489,6 +489,43 @@ const report = {
 };
 
 try {
+  await page.goto(`${baseUrl}/?mockSteamLeaderboard=1&skipIntro=1&overrunPreview=1`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000
+  });
+  await waitForGame(page);
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForGame(page);
+  await waitForScene(page, 'menu');
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await page.waitForTimeout(1600);
+  const webPreviewMenu = await readState(page);
+  assertLaunchDeckVisible(webPreviewMenu, '1920x900 fresh web-preview menu');
+  assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.available, true);
+  assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.progressionUnlocked, false);
+  assert.equal(webPreviewMenu.menu?.launchDeck?.cards?.overrun?.previewAccess, true);
+  assert.equal(webPreviewMenu.menu?.missionBoard?.hidden, false, 'fresh web-preview profiles should show Pilot Orders');
+  assert.equal(webPreviewMenu.menu?.missionBoard?.rows?.length, 3, 'fresh web-preview profiles should show three Pilot Orders');
+  assert.equal(webPreviewMenu.menu?.missionBoard?.bounds?.placement, 'rightRail');
+  assertInside(webPreviewMenu.menu?.missionBoard?.bounds, webPreviewMenu.menu?.screen, 'web-preview Pilot Orders');
+  await focusMenuOption(page, 'overrun');
+  await page.screenshot({ path: path.join(outputDir, 'menu-overrun-web-preview.png'), fullPage: false });
+  const webPreviewStarted = await page.evaluate(() => window.__game?.currentScene?.startOverrunRun?.());
+  assert.equal(webPreviewStarted, true, 'web-preview access should launch Overrun from a fresh local profile');
+  const webPreviewPlay = await waitForScene(page, 'play');
+  assert.equal(webPreviewPlay.runMode, RUN_MODES.OVERRUN_TACTICAL);
+  assert.equal(webPreviewPlay.level, 51);
+  report.webPreview = {
+    overrun: webPreviewMenu.menu?.launchDeck?.cards?.overrun,
+    missionBoard: webPreviewMenu.menu?.missionBoard,
+    launchedRunMode: webPreviewPlay.runMode,
+    launchedSector: webPreviewPlay.level
+  };
+
   const menu = await seedProfile(page);
   await page.waitForTimeout(1500);
   const settledMenu = await readState(page);

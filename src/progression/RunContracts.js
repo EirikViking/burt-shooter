@@ -1102,20 +1102,8 @@ export function getRunContractById(id) {
   return CONTRACT_BY_ID.get(String(id || '')) || null;
 }
 
-export function isMaturePilotOrdersProfile(progress = {}) {
-  const source = progress && typeof progress === 'object' ? progress : {};
-  const bestSector = Math.max(
-    floor(source.bestSector, 1),
-    floor(source.bestLevel, 1)
-  );
-  return bestSector >= 10
-    || floor(source.totalRuns) >= 8
-    || floor(source.totalBossesDefeated) >= 3
-    || floor(source.runClears) >= 1;
-}
-
-export function getDefaultShowPilotOrders(progress = {}) {
-  return !isMaturePilotOrdersProfile(progress);
+export function getDefaultShowPilotOrders() {
+  return true;
 }
 
 function shouldSeedRunProgress(id) {

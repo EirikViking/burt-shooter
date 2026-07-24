@@ -4,6 +4,7 @@ import {
   OVERRUN_START_SECTOR,
   OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   OVERRUN_UNLOCK_SECTOR,
+  OVERRUN_WEB_PREVIEW_PARAM,
   RUN_MODES,
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
@@ -11,6 +12,7 @@ import {
   canRunModeUpdateCompetitiveCareerBests,
   getOverrunStartState,
   getRunModeProfile,
+  isOverrunWebPreviewAccessEnabled,
   isOverrunRunMode
 } from '../src/game/RunMode.js';
 import {
@@ -43,11 +45,29 @@ globalThis.localStorage = new MemoryStorage();
 
 assert.deepEqual(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR - 1 }), {
   available: false,
+  progressionUnlocked: false,
+  previewAccess: false,
   highestReachedSector: OVERRUN_UNLOCK_SECTOR - 1,
   requiredSector: OVERRUN_UNLOCK_SECTOR,
   startSector: OVERRUN_START_SECTOR
 });
 assert.equal(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR }).available, true);
+assert.deepEqual(getOverrunStartState({ bestSector: 1 }, { previewAccess: true }), {
+  available: true,
+  progressionUnlocked: false,
+  previewAccess: true,
+  highestReachedSector: 1,
+  requiredSector: OVERRUN_UNLOCK_SECTOR,
+  startSector: OVERRUN_START_SECTOR
+});
+assert.equal(isOverrunWebPreviewAccessEnabled({
+  location: { search: `?${OVERRUN_WEB_PREVIEW_PARAM}=1` },
+  desktop: false
+}), true);
+assert.equal(isOverrunWebPreviewAccessEnabled({
+  location: { search: `?${OVERRUN_WEB_PREVIEW_PARAM}=1&desktop=1` },
+  desktop: false
+}), false, 'desktop builds must retain the normal progression unlock');
 
 for (const mode of [RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]) {
   assert.equal(isOverrunRunMode(mode), true);

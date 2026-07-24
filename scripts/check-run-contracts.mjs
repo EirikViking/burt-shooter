@@ -229,7 +229,7 @@ function runCatalogAndSaveTests() {
   assert.equal(disabledMenuState.status, 'hidden', 'settings toggle should hide unfinished Pilot Orders');
   assert.equal(disabledMenuState.disabledBySetting, true, 'hidden unfinished board should identify the toggle as the reason');
   assert.equal(getDefaultShowPilotOrders({ bestSector: 1, totalRuns: 0 }), true, 'fresh profiles should show Pilot Orders by default');
-  assert.equal(getDefaultShowPilotOrders({ bestSector: 10 }), false, 'mature profiles should hide Pilot Orders by default');
+  assert.equal(getDefaultShowPilotOrders({ bestSector: 10 }), true, 'unfinished Pilot Orders should remain visible for mature profiles by default');
 
   const modeEligibilityState = runContractState({
     activeIds: FIRST_THREE,
@@ -1392,15 +1392,15 @@ async function runBrowserSmoke() {
       expectedDisabledBySetting: true
     });
 
-    const veteranHiddenProof = await captureMenuProof(page, {
-      label: 'pilot-orders-veteran-default-hidden-menu',
+    const veteranVisibleProof = await captureMenuProof(page, {
+      label: 'pilot-orders-veteran-default-visible-menu',
       width: 1280,
       height: 720,
       uiScale: 1,
       runContracts: activeState,
       hangarPatch: { bestSector: 10, bestLevel: 10, totalRuns: 8 },
-      expectedStatus: 'hidden',
-      expectedDisabledBySetting: true
+      expectedStatus: 'active',
+      expectedDisabledBySetting: false
     });
 
     const completedProof = await captureMenuProof(page, {
@@ -1765,7 +1765,7 @@ async function runBrowserSmoke() {
         steamDeckMenu: steamDeckProof.screenshot,
         largeUiMenu: largeUiProof.screenshot,
         hiddenBySettingMenu: settingHiddenProof.screenshot,
-        veteranDefaultHiddenMenu: veteranHiddenProof.screenshot,
+        veteranDefaultVisibleMenu: veteranVisibleProof.screenshot,
         nextCompletionToast: nonFinalToastScreenshot,
         nextRunReport: nonFinalReportScreenshot,
         nextPauseLine: singleSlotPauseScreenshot,
