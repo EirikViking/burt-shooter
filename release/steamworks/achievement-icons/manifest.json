@@ -1,9 +1,9 @@
 {
   "appId": 4765070,
-  "generatedAt": "2026-06-15T12:45:28.054Z",
+  "generatedAt": "2026-07-24T15:18:35.842Z",
   "canonicalSource": "src/achievements/AchievementCatalog.js",
   "sourceSheet": "nova-swarm-achievement-icons-sheet-20260615-legendary-unique.png",
-  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and First Ranked Run icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs.",
+  "sourceGenerator": "Codex generated/curated achievement icon set; 2026-06-12 hard-rank and First Ranked Run icons generated from local badge/SVG assets; 2026-06-15 ultra-hard achievement icons generated with internal Codex imagegen and processed to 256x256 JPG pairs. 2026-07-24 rank-number correction remaps stable zero-based API ids to player-facing badge index + 1.",
   "iconSize": "256x256 jpg",
   "icons": [
     {
@@ -12,7 +12,9 @@
       "description": "Reach the Button Warmer rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_01-achieved.jpg",
-      "lockedIcon": "ACH_RANK_01-locked.jpg"
+      "lockedIcon": "ACH_RANK_01-locked.jpg",
+      "displayRankNumber": 2,
+      "sourceRankBadge": "nova-rank-badge-02-20260612.png"
     },
     {
       "apiName": "ACH_RANK_02",
@@ -20,7 +22,9 @@
       "description": "Reach the Pixel Pilot rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_02-achieved.jpg",
-      "lockedIcon": "ACH_RANK_02-locked.jpg"
+      "lockedIcon": "ACH_RANK_02-locked.jpg",
+      "displayRankNumber": 3,
+      "sourceRankBadge": "nova-rank-badge-03-20260612.png"
     },
     {
       "apiName": "ACH_RANK_03",
@@ -28,7 +32,9 @@
       "description": "Reach the Formation Breaker rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_03-achieved.jpg",
-      "lockedIcon": "ACH_RANK_03-locked.jpg"
+      "lockedIcon": "ACH_RANK_03-locked.jpg",
+      "displayRankNumber": 4,
+      "sourceRankBadge": "nova-rank-badge-04-20260612.png"
     },
     {
       "apiName": "ACH_RANK_04",
@@ -36,7 +42,9 @@
       "description": "Reach the Laser Wrangler rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_04-achieved.jpg",
-      "lockedIcon": "ACH_RANK_04-locked.jpg"
+      "lockedIcon": "ACH_RANK_04-locked.jpg",
+      "displayRankNumber": 5,
+      "sourceRankBadge": "nova-rank-badge-05-20260612.png"
     },
     {
       "apiName": "ACH_RANK_05",
@@ -44,7 +52,9 @@
       "description": "Reach the Bonus Hunter rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_05-achieved.jpg",
-      "lockedIcon": "ACH_RANK_05-locked.jpg"
+      "lockedIcon": "ACH_RANK_05-locked.jpg",
+      "displayRankNumber": 6,
+      "sourceRankBadge": "nova-rank-badge-06-20260612.png"
     },
     {
       "apiName": "ACH_RANK_06",
@@ -52,7 +62,9 @@
       "description": "Reach the Combo Courier rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_06-achieved.jpg",
-      "lockedIcon": "ACH_RANK_06-locked.jpg"
+      "lockedIcon": "ACH_RANK_06-locked.jpg",
+      "displayRankNumber": 7,
+      "sourceRankBadge": "nova-rank-badge-07-20260612.png"
     },
     {
       "apiName": "ACH_RANK_07",
@@ -60,7 +72,9 @@
       "description": "Reach the Swarm Dodger rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_07-achieved.jpg",
-      "lockedIcon": "ACH_RANK_07-locked.jpg"
+      "lockedIcon": "ACH_RANK_07-locked.jpg",
+      "displayRankNumber": 8,
+      "sourceRankBadge": "nova-rank-badge-08-20260612.png"
     },
     {
       "apiName": "ACH_RANK_08",
@@ -68,7 +82,9 @@
       "description": "Reach the Arcade Ace rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_08-achieved.jpg",
-      "lockedIcon": "ACH_RANK_08-locked.jpg"
+      "lockedIcon": "ACH_RANK_08-locked.jpg",
+      "displayRankNumber": 9,
+      "sourceRankBadge": "nova-rank-badge-09-20260612.png"
     },
     {
       "apiName": "ACH_RANK_09",
@@ -76,7 +92,9 @@
       "description": "Reach the Quarter Captain rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_09-achieved.jpg",
-      "lockedIcon": "ACH_RANK_09-locked.jpg"
+      "lockedIcon": "ACH_RANK_09-locked.jpg",
+      "displayRankNumber": 10,
+      "sourceRankBadge": "nova-rank-badge-10-20260612.png"
     },
     {
       "apiName": "ACH_RANK_10",
@@ -84,7 +102,9 @@
       "description": "Reach the Nebula Striker rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_10-achieved.jpg",
-      "lockedIcon": "ACH_RANK_10-locked.jpg"
+      "lockedIcon": "ACH_RANK_10-locked.jpg",
+      "displayRankNumber": 11,
+      "sourceRankBadge": "nova-rank-badge-11-20260612.png"
     },
     {
       "apiName": "ACH_RANK_11",
@@ -92,7 +112,9 @@
       "description": "Reach the Boss Baiter rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_11-achieved.jpg",
-      "lockedIcon": "ACH_RANK_11-locked.jpg"
+      "lockedIcon": "ACH_RANK_11-locked.jpg",
+      "displayRankNumber": 12,
+      "sourceRankBadge": "nova-rank-badge-12-20260612.png"
     },
     {
       "apiName": "ACH_RANK_12",
@@ -100,7 +122,9 @@
       "description": "Reach the Pattern Reader rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_12-achieved.jpg",
-      "lockedIcon": "ACH_RANK_12-locked.jpg"
+      "lockedIcon": "ACH_RANK_12-locked.jpg",
+      "displayRankNumber": 13,
+      "sourceRankBadge": "nova-rank-badge-13-20260612.png"
     },
     {
       "apiName": "ACH_RANK_13",
@@ -108,7 +132,9 @@
       "description": "Reach the Cabinet Champion rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_13-achieved.jpg",
-      "lockedIcon": "ACH_RANK_13-locked.jpg"
+      "lockedIcon": "ACH_RANK_13-locked.jpg",
+      "displayRankNumber": 14,
+      "sourceRankBadge": "nova-rank-badge-14-20260612.png"
     },
     {
       "apiName": "ACH_RANK_14",
@@ -116,7 +142,9 @@
       "description": "Reach the Wave Surgeon rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_14-achieved.jpg",
-      "lockedIcon": "ACH_RANK_14-locked.jpg"
+      "lockedIcon": "ACH_RANK_14-locked.jpg",
+      "displayRankNumber": 15,
+      "sourceRankBadge": "nova-rank-badge-15-20260612.png"
     },
     {
       "apiName": "ACH_RANK_15",
@@ -124,7 +152,9 @@
       "description": "Reach the Starline Veteran rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_15-achieved.jpg",
-      "lockedIcon": "ACH_RANK_15-locked.jpg"
+      "lockedIcon": "ACH_RANK_15-locked.jpg",
+      "displayRankNumber": 16,
+      "sourceRankBadge": "nova-rank-badge-16-20260612.png"
     },
     {
       "apiName": "ACH_RANK_16",
@@ -132,7 +162,9 @@
       "description": "Reach the High-Score Hero rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_16-achieved.jpg",
-      "lockedIcon": "ACH_RANK_16-locked.jpg"
+      "lockedIcon": "ACH_RANK_16-locked.jpg",
+      "displayRankNumber": 17,
+      "sourceRankBadge": "nova-rank-badge-17-20260612.png"
     },
     {
       "apiName": "ACH_RANK_17",
@@ -140,7 +172,9 @@
       "description": "Reach the Swarm Nemesis rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_17-achieved.jpg",
-      "lockedIcon": "ACH_RANK_17-locked.jpg"
+      "lockedIcon": "ACH_RANK_17-locked.jpg",
+      "displayRankNumber": 18,
+      "sourceRankBadge": "nova-rank-badge-18-20260612.png"
     },
     {
       "apiName": "ACH_RANK_18",
@@ -148,7 +182,9 @@
       "description": "Reach the Boss Rush Royalty rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_18-achieved.jpg",
-      "lockedIcon": "ACH_RANK_18-locked.jpg"
+      "lockedIcon": "ACH_RANK_18-locked.jpg",
+      "displayRankNumber": 19,
+      "sourceRankBadge": "nova-rank-badge-19-20260612.png"
     },
     {
       "apiName": "ACH_RANK_19",
@@ -156,7 +192,9 @@
       "description": "Reach the Arcade Legend rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_19-achieved.jpg",
-      "lockedIcon": "ACH_RANK_19-locked.jpg"
+      "lockedIcon": "ACH_RANK_19-locked.jpg",
+      "displayRankNumber": 20,
+      "sourceRankBadge": "nova-rank-badge-20-20260612.png"
     },
     {
       "apiName": "ACH_RANK_20",
@@ -164,7 +202,9 @@
       "description": "Reach the Black-Star Bailiff rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_20-achieved.jpg",
-      "lockedIcon": "ACH_RANK_20-locked.jpg"
+      "lockedIcon": "ACH_RANK_20-locked.jpg",
+      "displayRankNumber": 21,
+      "sourceRankBadge": "nova-rank-badge-21-20260612.png"
     },
     {
       "apiName": "ACH_RANK_21",
@@ -172,7 +212,9 @@
       "description": "Reach the Static Undertaker rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_21-achieved.jpg",
-      "lockedIcon": "ACH_RANK_21-locked.jpg"
+      "lockedIcon": "ACH_RANK_21-locked.jpg",
+      "displayRankNumber": 22,
+      "sourceRankBadge": "nova-rank-badge-22-20260612.png"
     },
     {
       "apiName": "ACH_RANK_22",
@@ -180,7 +222,9 @@
       "description": "Reach the Void Receipt rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_22-achieved.jpg",
-      "lockedIcon": "ACH_RANK_22-locked.jpg"
+      "lockedIcon": "ACH_RANK_22-locked.jpg",
+      "displayRankNumber": 23,
+      "sourceRankBadge": "nova-rank-badge-23-20260612.png"
     },
     {
       "apiName": "ACH_RANK_23",
@@ -188,7 +232,9 @@
       "description": "Reach the Meteor Notary rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_23-achieved.jpg",
-      "lockedIcon": "ACH_RANK_23-locked.jpg"
+      "lockedIcon": "ACH_RANK_23-locked.jpg",
+      "displayRankNumber": 24,
+      "sourceRankBadge": "nova-rank-badge-24-20260612.png"
     },
     {
       "apiName": "ACH_RANK_24",
@@ -196,7 +242,9 @@
       "description": "Reach the Hull Sermonizer rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_24-achieved.jpg",
-      "lockedIcon": "ACH_RANK_24-locked.jpg"
+      "lockedIcon": "ACH_RANK_24-locked.jpg",
+      "displayRankNumber": 25,
+      "sourceRankBadge": "nova-rank-badge-25-20260612.png"
     },
     {
       "apiName": "ACH_RANK_25",
@@ -204,7 +252,9 @@
       "description": "Reach the Photon Debt King rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_25-achieved.jpg",
-      "lockedIcon": "ACH_RANK_25-locked.jpg"
+      "lockedIcon": "ACH_RANK_25-locked.jpg",
+      "displayRankNumber": 26,
+      "sourceRankBadge": "nova-rank-badge-26-20260612.png"
     },
     {
       "apiName": "ACH_RANK_26",
@@ -212,7 +262,9 @@
       "description": "Reach the Comet Knife Saint rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_26-achieved.jpg",
-      "lockedIcon": "ACH_RANK_26-locked.jpg"
+      "lockedIcon": "ACH_RANK_26-locked.jpg",
+      "displayRankNumber": 27,
+      "sourceRankBadge": "nova-rank-badge-27-20260612.png"
     },
     {
       "apiName": "ACH_RANK_27",
@@ -220,7 +272,9 @@
       "description": "Reach the Redline Ghost rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_27-achieved.jpg",
-      "lockedIcon": "ACH_RANK_27-locked.jpg"
+      "lockedIcon": "ACH_RANK_27-locked.jpg",
+      "displayRankNumber": 28,
+      "sourceRankBadge": "nova-rank-badge-28-20260612.png"
     },
     {
       "apiName": "ACH_RANK_28",
@@ -228,7 +282,9 @@
       "description": "Reach the Grudge Astronaut rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_28-achieved.jpg",
-      "lockedIcon": "ACH_RANK_28-locked.jpg"
+      "lockedIcon": "ACH_RANK_28-locked.jpg",
+      "displayRankNumber": 29,
+      "sourceRankBadge": "nova-rank-badge-29-20260612.png"
     },
     {
       "apiName": "ACH_RANK_29",
@@ -236,7 +292,9 @@
       "description": "Reach the Zero-G Bastard rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_29-achieved.jpg",
-      "lockedIcon": "ACH_RANK_29-locked.jpg"
+      "lockedIcon": "ACH_RANK_29-locked.jpg",
+      "displayRankNumber": 30,
+      "sourceRankBadge": "nova-rank-badge-30-20260612.png"
     },
     {
       "apiName": "ACH_RANK_30",
@@ -244,7 +302,9 @@
       "description": "Reach the Cabinet War Pope rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_30-achieved.jpg",
-      "lockedIcon": "ACH_RANK_30-locked.jpg"
+      "lockedIcon": "ACH_RANK_30-locked.jpg",
+      "displayRankNumber": 31,
+      "sourceRankBadge": "nova-rank-badge-31-20260612.png"
     },
     {
       "apiName": "ACH_RANK_31",
@@ -252,7 +312,9 @@
       "description": "Reach the Starvektor Baron rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_31-achieved.jpg",
-      "lockedIcon": "ACH_RANK_31-locked.jpg"
+      "lockedIcon": "ACH_RANK_31-locked.jpg",
+      "displayRankNumber": 32,
+      "sourceRankBadge": "nova-rank-badge-32-20260612.png"
     },
     {
       "apiName": "ACH_RANK_32",
@@ -260,7 +322,9 @@
       "description": "Reach the Boss-Mouth Doctor rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_32-achieved.jpg",
-      "lockedIcon": "ACH_RANK_32-locked.jpg"
+      "lockedIcon": "ACH_RANK_32-locked.jpg",
+      "displayRankNumber": 33,
+      "sourceRankBadge": "nova-rank-badge-33-20260612.png"
     },
     {
       "apiName": "ACH_RANK_33",
@@ -268,7 +332,9 @@
       "description": "Reach the Laser Coffin Clerk rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_33-achieved.jpg",
-      "lockedIcon": "ACH_RANK_33-locked.jpg"
+      "lockedIcon": "ACH_RANK_33-locked.jpg",
+      "displayRankNumber": 34,
+      "sourceRankBadge": "nova-rank-badge-34-20260612.png"
     },
     {
       "apiName": "ACH_RANK_34",
@@ -276,7 +342,9 @@
       "description": "Reach the Swarm Tax Marshal rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_34-achieved.jpg",
-      "lockedIcon": "ACH_RANK_34-locked.jpg"
+      "lockedIcon": "ACH_RANK_34-locked.jpg",
+      "displayRankNumber": 35,
+      "sourceRankBadge": "nova-rank-badge-35-20260612.png"
     },
     {
       "apiName": "ACH_RANK_35",
@@ -284,7 +352,9 @@
       "description": "Reach the Nova Ash Colonel rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_35-achieved.jpg",
-      "lockedIcon": "ACH_RANK_35-locked.jpg"
+      "lockedIcon": "ACH_RANK_35-locked.jpg",
+      "displayRankNumber": 36,
+      "sourceRankBadge": "nova-rank-badge-36-20260612.png"
     },
     {
       "apiName": "ACH_RANK_36",
@@ -292,7 +362,9 @@
       "description": "Reach the Dead-Sun Mechanic rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_36-achieved.jpg",
-      "lockedIcon": "ACH_RANK_36-locked.jpg"
+      "lockedIcon": "ACH_RANK_36-locked.jpg",
+      "displayRankNumber": 37,
+      "sourceRankBadge": "nova-rank-badge-37-20260612.png"
     },
     {
       "apiName": "ACH_RANK_37",
@@ -300,7 +372,9 @@
       "description": "Reach the Black Box Prophet rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_37-achieved.jpg",
-      "lockedIcon": "ACH_RANK_37-locked.jpg"
+      "lockedIcon": "ACH_RANK_37-locked.jpg",
+      "displayRankNumber": 38,
+      "sourceRankBadge": "nova-rank-badge-38-20260612.png"
     },
     {
       "apiName": "ACH_RANK_38",
@@ -308,7 +382,9 @@
       "description": "Reach the Final Coin Tyrant rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_38-achieved.jpg",
-      "lockedIcon": "ACH_RANK_38-locked.jpg"
+      "lockedIcon": "ACH_RANK_38-locked.jpg",
+      "displayRankNumber": 39,
+      "sourceRankBadge": "nova-rank-badge-39-20260612.png"
     },
     {
       "apiName": "ACH_RANK_39",
@@ -316,7 +392,9 @@
       "description": "Reach the Heat-Death Champion rank.",
       "hidden": false,
       "achievedIcon": "ACH_RANK_39-achieved.jpg",
-      "lockedIcon": "ACH_RANK_39-locked.jpg"
+      "lockedIcon": "ACH_RANK_39-locked.jpg",
+      "displayRankNumber": 40,
+      "sourceRankBadge": "nova-rank-badge-40-20260724.png"
     },
     {
       "apiName": "ACH_GLOBAL_LEADERBOARD",
@@ -655,5 +733,6 @@
       "lockedIcon": "ACH_FULL_HANGAR_OMEGA-locked.jpg"
     }
   ],
-  "sourceFiles": []
+  "sourceFiles": [],
+  "rankNumbering": "Steam API rank index is stable and zero-based; icon numerals are player-facing index + 1."
 }

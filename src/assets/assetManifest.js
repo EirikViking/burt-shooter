@@ -285,8 +285,14 @@ export const AssetManifest = {
             '/sprites/boss/boss_turret_no_bg2.png'
         ],
 
-        // Nova Swarm rank badges - 40 ranks total (0-39)
-        ranks: Array.from({ length: 40 }, (_, i) => `/art/generated/nova-swarm/ranks/nova-rank-badge-${i.toString().padStart(2, '0')}-20260612.png`),
+        // Nova Swarm player-facing rank badges - internal indices 0-39 display Ranks 1-40.
+        ranks: [
+            ...Array.from(
+                { length: 39 },
+                (_, rankIndex) => `/art/generated/nova-swarm/ranks/nova-rank-badge-${String(rankIndex + 1).padStart(2, '0')}-20260612.png`
+            ),
+            '/art/generated/nova-swarm/ranks/nova-rank-badge-40-20260724.png'
+        ],
 
         // Damage Overlays
         damage: {

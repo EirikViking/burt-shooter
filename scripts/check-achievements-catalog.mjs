@@ -163,6 +163,18 @@ if (!fs.existsSync(manifestPath)) {
       continue;
     }
     const entry = (manifest.icons || []).find((item) => item.apiName === id);
+    const rankMatch = /^ACH_RANK_(\d{2})$/.exec(id);
+    if (rankMatch) {
+      const expectedDisplayRank = Number(rankMatch[1]) + 1;
+      const expectedBadgeDate = expectedDisplayRank === 40 ? '20260724' : '20260612';
+      const expectedSourceBadge = `nova-rank-badge-${String(expectedDisplayRank).padStart(2, '0')}-${expectedBadgeDate}.png`;
+      if (Number(entry?.displayRankNumber) !== expectedDisplayRank) {
+        fail(`Icon manifest ${id} must display player-facing Rank ${expectedDisplayRank}; saw ${entry?.displayRankNumber ?? '<missing>'}.`);
+      }
+      if (entry?.sourceRankBadge !== expectedSourceBadge) {
+        fail(`Icon manifest ${id} must use ${expectedSourceBadge}; saw ${entry?.sourceRankBadge || '<missing>'}.`);
+      }
+    }
     for (const key of ['achievedIcon', 'lockedIcon']) {
       const file = entry?.[key];
       const iconPath = file ? path.resolve(releaseIconDir, file) : null;
@@ -172,6 +184,12 @@ if (!fs.existsSync(manifestPath)) {
       }
       if (!fs.existsSync(path.resolve(publicIconDir, file))) {
         fail(`Runtime achievement icon missing public file ${file}.`);
+      } else {
+        const publicHash = crypto.createHash('sha256').update(fs.readFileSync(path.resolve(publicIconDir, file))).digest('hex');
+        const releaseHash = crypto.createHash('sha256').update(fs.readFileSync(iconPath)).digest('hex');
+        if (publicHash !== releaseHash) {
+          fail(`Runtime and Steam achievement icons differ for ${file}.`);
+        }
       }
       const hash = crypto.createHash('sha256').update(fs.readFileSync(iconPath)).digest('hex');
       const matches = iconHashes[key].get(hash) || [];

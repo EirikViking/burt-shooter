@@ -37,6 +37,9 @@ for (let rank = 1; rank < NUM_RANKS; rank += 1) {
   if (!ACHIEVEMENTS.some((entry) => entry.id === id)) fail(`achievement catalog missing ${id}`);
   if (!getRankTitle(rank)) fail(`rank ${rank} missing readable title`);
 }
+const meteorNotaryRankIndex = 23;
+if (getRankTitle(meteorNotaryRankIndex) !== 'Meteor Notary') fail('Meteor Notary must remain internal rank index 23');
+if (getRankAchievementId(meteorNotaryRankIndex) !== 'ACH_RANK_23') fail('Meteor Notary Steam API id must remain ACH_RANK_23');
 if (ACHIEVEMENTS.length >= 100) fail(`achievement catalog must stay below Steam's 100 achievement limit, got ${ACHIEVEMENTS.length}`);
 
 const before = readHangarProgressState();
