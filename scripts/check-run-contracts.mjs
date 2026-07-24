@@ -1217,6 +1217,35 @@ async function runBrowserSmoke() {
     assert.equal(hoverState.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'hover detail should explain the hovered order');
     await page.screenshot({ path: path.join(outputDir, 'pilot-orders-hover-detail-menu.png'), fullPage: true });
 
+    const wideOverrunProof = await captureMenuProof(page, {
+      label: 'pilot-orders-wide-overrun-menu',
+      width: 1920,
+      height: 1080,
+      uiScale: 1,
+      runContracts: activeState,
+      showPilotOrders: true,
+      hangarPatch: { bestSector: 60, bestLevel: 60, totalRuns: 12 },
+      expectedStatus: 'active'
+    });
+    assert.equal(
+      wideOverrunProof.state.menu.launchDeck.cards.overrun.available,
+      true,
+      'wide mature-profile proof should include the unlocked Overrun card'
+    );
+    assert.equal(
+      wideOverrunProof.state.menu.missionBoard.bounds.placement,
+      'rightRail',
+      'Pilot Orders should move beside the six-card deck when it cannot fit below'
+    );
+    assert.equal(
+      boundsOverlap(
+        wideOverrunProof.state.menu.launchDeck.bounds,
+        wideOverrunProof.state.menu.missionBoard.bounds
+      ),
+      false,
+      'wide six-card launch deck and Pilot Orders must not overlap'
+    );
+
     await seedMenuProfile(page, activeState, 1);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
     await waitForMenu(page);
@@ -1731,6 +1760,7 @@ async function runBrowserSmoke() {
       consoleErrors,
       screenshots: {
         activeMenu: activeProof.screenshot,
+        wideOverrunMenu: wideOverrunProof.screenshot,
         settingsToggle: settingsScreenshot,
         steamDeckMenu: steamDeckProof.screenshot,
         largeUiMenu: largeUiProof.screenshot,

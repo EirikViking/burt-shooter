@@ -2393,8 +2393,38 @@ export class MenuScene {
     const isMobileLayout = Boolean(metrics.isMobileLayout);
     const dockTop = Number(metrics.dockTop) || height;
     const briefingBounds = this.runModePanel?._briefingBounds || null;
+    const belowDeckScale = Math.min(uiScale, isMobileLayout ? 1.18 : 1.15);
+    const belowDeckGap = Math.round(clampNumber(height * 0.006, 5, 8) * belowDeckScale);
+    const belowDeckPadY = Math.round((isShortLayout ? 8 : 10) * belowDeckScale);
+    const belowDeckRowHeight = Math.round(clampNumber(
+      height * 0.052 * belowDeckScale,
+      (isShortLayout ? 38 : 42) * belowDeckScale,
+      (isMobileLayout ? 42 : 46) * belowDeckScale
+    ));
+    const belowDeckHeaderHeight = Math.round((isShortLayout ? 56 : 60) * belowDeckScale);
+    const estimatedBelowDeckBoardHeight = (
+      belowDeckPadY * 2 +
+      belowDeckHeaderHeight +
+      belowDeckRowHeight * 3 +
+      belowDeckGap * 2
+    );
+    const estimatedBelowDeckStackGap = Math.round(
+      clampNumber(height * 0.022, isMobileLayout ? 12 : 16, isMobileLayout ? 22 : 30) *
+      Math.min(uiScale, 1.2)
+    );
+    const belowDeckBottomLimit = dockTop - clampNumber(height * 0.014, 8, 16);
+    const requiresRightRailForVerticalFit = Boolean(
+      !isMobileLayout &&
+      briefingBounds &&
+      this.launchDeckBounds.bottom +
+        estimatedBelowDeckStackGap +
+        estimatedBelowDeckBoardHeight >
+        belowDeckBottomLimit
+    );
     const useRightRail = Boolean(
-      !isMobileLayout && briefingBounds && (width < 1450 || height < 820 || uiScale > 1.2)
+      !isMobileLayout &&
+      briefingBounds &&
+      (width < 1450 || height < 820 || uiScale > 1.2 || requiresRightRailForVerticalFit)
     );
     const compactBoard = useRightRail || height < 650;
     const boardScale = Math.min(uiScale, isMobileLayout ? 1.18 : 1.15);
