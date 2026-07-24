@@ -290,11 +290,10 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(daily?.label, 'DAILY CHALLENGE', `${label}: Daily Challenge label`);
   assert.match(daily?.sublabel || '', /(?:CLEAR S10|CLEARED)/i, `${label}: Daily Challenge should explain today's activity`);
   assert.equal(daily?.role, 'activity', `${label}: Daily Challenge should be identified as a side activity`);
-  assert.deepEqual(deck.hierarchy, ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'overrun'], `${label}: mode hierarchy`);
-  assert.equal(Object.keys(deck.cards || {}).length, 6, `${label}: Launch Deck must contain all six run cards`);
+  assert.deepEqual(deck.hierarchy, ['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun'], `${label}: mode hierarchy`);
+  assert.equal(Object.keys(deck.cards || {}).length, 5, `${label}: Launch Deck must contain five clear mode families`);
   const cards = [
     ['mayhemTactical', deck.cards?.mayhemTactical],
-    ['mayhem', deck.cards?.mayhem],
     ['daily', deck.cards?.daily],
     ['scout', deck.cards?.scout],
     ['sector', deck.cards?.sector],
@@ -313,13 +312,10 @@ function assertLaunchDeckVisible(state, label) {
       `${label}: ${name} selector should not become oversized; bounds=${JSON.stringify(card.bounds)}`
     );
   }
-  assert.equal(deck.cards?.mayhem?.label, 'MAYHEM PURE', `${label}: Pure Mayhem label`);
-  assert.equal(deck.cards?.mayhem?.sublabel, 'ALTERNATIVE RANKED MODE', `${label}: Pure Mayhem sublabel`);
-  assert.equal(deck.cards?.mayhem?.role, 'alternative', `${label}: Pure Mayhem role`);
-  assert.equal(deck.cards?.mayhem?.body || '', '', `${label}: Mayhem card should not carry paragraph body text`);
   assert.equal(deck.cards?.mayhemTactical?.label, 'MAYHEM TACTICAL', `${label}: Tactical Mayhem label`);
   assert.equal(deck.cards?.mayhemTactical?.sublabel, 'MAIN MODE · RECOMMENDED · RANKED', `${label}: Tactical Mayhem sublabel`);
   assert.equal(deck.cards?.mayhemTactical?.role, 'main', `${label}: Tactical Mayhem role`);
+  assert.equal(deck.cards?.mayhemTactical?.runMode, RUN_MODES.MAYHEM_TACTICAL, `${label}: Mayhem family should default to Tactical`);
   assert.equal(deck.cards?.mayhemTactical?.body || '', '', `${label}: Tactical card should not carry paragraph body text`);
   assert.equal(deck.cards?.daily?.label, 'DAILY CHALLENGE', `${label}: Daily label`);
   assert.equal(deck.cards?.daily?.role, 'activity', `${label}: Daily role`);
@@ -336,15 +332,13 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(deck.cards?.overrun?.role, 'advanced', `${label}: Overrun role`);
   assert.equal(deck.cards?.overrun?.available, true, `${label}: Overrun should be unlocked by the mature fixture`);
   assert.equal(deck.cards?.overrun?.startSector, 51, `${label}: Overrun fixed start`);
-  assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.mayhem.bounds.height * 1.25, `${label}: Tactical card should be materially taller than Pure`);
-  assert.ok(deck.cards.mayhemTactical.bounds.width > deck.cards.mayhem.bounds.width, `${label}: Tactical card should be wider than secondary modes`);
-  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.mayhemTactical.bounds.x) < 36, `${label}: Pure/Tactical cards should share the left command stack`);
-  assert.ok(Math.abs(deck.cards.mayhem.bounds.x - deck.cards.daily.bounds.x) < 36, `${label}: Pure/Daily cards should share the left command stack`);
+  assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.daily.bounds.height * 1.25, `${label}: Mayhem family should remain materially taller than side modes`);
+  assert.ok(deck.cards.mayhemTactical.bounds.width > deck.cards.daily.bounds.width, `${label}: Mayhem family should remain wider than side modes`);
+  assert.ok(Math.abs(deck.cards.mayhemTactical.bounds.x - deck.cards.daily.bounds.x) < 36, `${label}: Mayhem/Daily cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.daily.bounds.x - deck.cards.scout.bounds.x) < 36, `${label}: Daily/Scout cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.scout.bounds.x - deck.cards.sector.bounds.x) < 36, `${label}: Scout/Sector cards should share the left command stack`);
   assert.ok(Math.abs(deck.cards.sector.bounds.x - deck.cards.overrun.bounds.x) < 36, `${label}: Sector/Overrun cards should share the left command stack`);
-  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.mayhem.bounds.y + 36, `${label}: Tactical/Pure cards overlap vertically`);
-  assert.ok(deck.cards.mayhem.bounds.bottom < deck.cards.daily.bounds.y + 36, `${label}: Pure/Daily cards overlap vertically`);
+  assert.ok(deck.cards.mayhemTactical.bounds.bottom < deck.cards.daily.bounds.y + 36, `${label}: Mayhem/Daily cards overlap vertically`);
   assert.ok(deck.cards.daily.bounds.bottom < deck.cards.scout.bounds.y + 36, `${label}: Daily/Scout cards overlap vertically`);
   assert.ok(deck.cards.scout.bounds.bottom < deck.cards.sector.bounds.y + 36, `${label}: Scout/Sector cards overlap vertically`);
   assert.ok(deck.cards.sector.bounds.bottom < deck.cards.overrun.bounds.y + 36, `${label}: Sector/Overrun cards overlap vertically`);
@@ -530,7 +524,7 @@ try {
   await page.waitForTimeout(1500);
   const settledMenu = await readState(page);
   assert.equal(menu.menu?.items?.dailySignalButton?.width > 0, true, 'Daily Signal should be visible');
-  assert.equal(menu.menu?.items?.launchButton?.width > 0, true, 'Mayhem Pure should be visible');
+  assert.equal(menu.menu?.items?.launchButton, null, 'Mayhem Pure should not consume a separate top-level card');
   assert.equal(menu.menu?.items?.tacticalLaunchButton?.width > 0, true, 'Mayhem Tactical should be visible');
   assert.equal(menu.menu?.items?.scoutRunButton?.width > 0, true, 'Scout Run should be visible');
   assert.equal(menu.menu?.items?.sectorStartButton?.width > 0, true, 'Sector Run should be visible');
@@ -539,8 +533,53 @@ try {
   assert.equal(settledMenu.menu?.focusedOption, 'launchTactical', 'Mayhem Tactical should receive default focus');
   assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launchTactical', 'Mission briefing should default to Mayhem Tactical');
   assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM TACTICAL/i);
-  assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*spectacular build/i);
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*CHANGE RULESET/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(180);
+  const pureMayhemMenu = await readState(page);
+  assert.equal(pureMayhemMenu.menu?.focusedOption, 'launchTactical', 'changing Mayhem ruleset should keep focus on the Mayhem family');
+  assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM PURE', 'Mayhem family should expose Pure');
+  assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.sublabel, 'ALTERNATIVE RANKED MODE', 'Pure ruleset should explain its role');
+  assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.runMode, RUN_MODES.RANKED, 'Pure ruleset should retain ranked identity');
+  assert.match(pureMayhemMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM PURE/i);
+  assert.match(pureMayhemMenu.menu?.missionBriefing?.body || '', /No tactical drafts[\s\S]*PURE LEADERBOARD[\s\S]*CHANGE RULESET/i);
+  const pureLaunch = await page.evaluate(() => {
+    const scene = window.__game?.currentScene;
+    const game = window.__game;
+    const originalStartGame = game.startGame;
+    let captured = null;
+    game.startGame = (ship, options) => {
+      captured = { ship, options };
+    };
+    scene.launchingRun = false;
+    scene.activateFocusedMenuOption();
+    scene.launchingRun = false;
+    game.startGame = originalStartGame;
+    return captured;
+  });
+  assert.equal(pureLaunch?.options?.runMode, RUN_MODES.RANKED, 'Mayhem family should launch the selected Pure ruleset');
+  await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-pure-ruleset.png'), fullPage: false });
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(180);
+  const restoredTacticalMenu = await readState(page);
+  assert.equal(restoredTacticalMenu.menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM TACTICAL', 'Mayhem family should return to Tactical');
+  assert.equal(restoredTacticalMenu.menu?.launchDeck?.cards?.mayhemTactical?.runMode, RUN_MODES.MAYHEM_TACTICAL, 'Tactical ruleset should retain ranked Tactical identity');
+  const tacticalLaunch = await page.evaluate(() => {
+    const scene = window.__game?.currentScene;
+    const game = window.__game;
+    const originalStartGame = game.startGame;
+    let captured = null;
+    game.startGame = (ship, options) => {
+      captured = { ship, options };
+    };
+    scene.launchingRun = false;
+    scene.activateFocusedMenuOption();
+    scene.launchingRun = false;
+    game.startGame = originalStartGame;
+    return captured;
+  });
+  assert.equal(tacticalLaunch?.options?.runMode, RUN_MODES.MAYHEM_TACTICAL, 'Mayhem family should launch the selected Tactical ruleset');
   assert.equal(settledMenu.menu?.scoutRun?.buttonText, 'SCOUT RUN');
   assert.match(
     settledMenu.menu?.scoutRun?.buttonSubtext || '',
@@ -581,7 +620,7 @@ try {
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await waitForScene(page, 'menu');
     await page.waitForTimeout(250);
-    for (const mode of ['dailySignal', 'launch', 'launchTactical', 'scout', 'sectorStart', 'overrun']) {
+    for (const mode of ['dailySignal', 'launchTactical', 'scout', 'sectorStart', 'overrun']) {
       assertLaunchDeckVisible(await focusMenuOption(page, mode), `${viewport.name} ${mode} briefing`);
     }
   }
@@ -598,18 +637,22 @@ try {
   await focusMenuOption(page, 'launchTactical');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'launch', 'ArrowRight should move Tactical focus to Pure');
-  await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(150);
-  assert.equal((await readState(page)).menu?.focusedOption, 'dailySignal', 'ArrowRight should move Pure focus to Daily Challenge');
-  const mayhemFocus = await focusMenuOption(page, 'launch');
-  assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launch');
-  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /ALTERNATIVE RANKED MODE[\s\S]*No tactical drafts[\s\S]*original Mayhem ruleset[\s\S]*PURE LEADERBOARD[\s\S]*Achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i);
+  const mayhemFocus = await readState(page);
+  assert.equal(mayhemFocus.menu?.focusedOption, 'launchTactical', 'ArrowRight should keep focus on the Mayhem family');
+  assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launchTactical');
+  assert.equal(mayhemFocus.menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM PURE');
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /ALTERNATIVE RANKED MODE[\s\S]*No tactical drafts[\s\S]*original Mayhem ruleset[\s\S]*PURE LEADERBOARD[\s\S]*CHANGE RULESET/i);
   assert.doesNotMatch(mayhemFocus.menu?.missionBriefing?.body || '', /Sector 1 climb/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
+  await page.keyboard.press('ArrowRight');
+  await page.waitForTimeout(150);
+  assert.equal((await readState(page)).menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM TACTICAL', 'ArrowRight should toggle the Mayhem family back to Tactical');
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(150);
+  assert.equal((await readState(page)).menu?.focusedOption, 'dailySignal', 'ArrowDown should move from Mayhem to Daily Challenge');
   const tacticalFocus = await focusMenuOption(page, 'launchTactical');
   assert.equal(tacticalFocus.menu?.missionBriefing?.mode, 'launchTactical');
-  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*spectacular build/i);
+  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*CHANGE RULESET/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-tactical-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');

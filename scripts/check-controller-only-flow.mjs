@@ -153,7 +153,7 @@ function assert(condition, message) {
 }
 
 async function steerMenuTo(page, optionId) {
-  const fallbackOrder = ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'music', 'howToPlay', 'exit'];
+  const fallbackOrder = ['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun', 'hangar', 'highscores', 'threatCodex', 'achievements', 'settings', 'music', 'howToPlay', 'exit'];
   for (let i = 0; i < 12; i += 1) {
     const state = await readState(page);
     if (state.menu?.focusedOption === optionId) return state;

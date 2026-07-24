@@ -99,7 +99,12 @@ const matrix = expectedCards.map((expected) => {
   assert.ok(VOICE_MIX[spec.event], `${expected.menuId} voice mix`);
 
   assert.match(menuSource, new RegExp(`\\b${expected.button}\\b`), `${expected.menuId} selectable button`);
-  assert.match(menuSource, new RegExp(`id:\\s*'${expected.menuId}'`), `${expected.menuId} navigation entry`);
+  if (expected.menuId === 'launch') {
+    assert.match(menuSource, /cycleMayhemRunMode/, 'Mayhem Pure ruleset selector');
+    assert.match(menuSource, /mayhemRunMode\s*===\s*RUN_MODES\.RANKED/, 'Mayhem Pure ruleset identity');
+  } else {
+    assert.match(menuSource, new RegExp(`id:\\s*'${expected.menuId}'`), `${expected.menuId} navigation entry`);
+  }
 
   return {
     modeId: spec.modeId,

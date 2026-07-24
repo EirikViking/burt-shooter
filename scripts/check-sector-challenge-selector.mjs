@@ -521,7 +521,7 @@ try {
     };
   });
   state = await readState(page);
-  await clickBounds(page, state.menu.items.launchButton);
+  await clickBounds(page, state.menu.items.tacticalLaunchButton);
   await page.waitForTimeout(150);
   state = await readState(page);
   assert.equal(state.menu.sectorStart.selector.open, true, 'underlying launch button should be inert while selector is open');

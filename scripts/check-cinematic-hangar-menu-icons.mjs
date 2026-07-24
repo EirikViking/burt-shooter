@@ -240,7 +240,7 @@ async function waitForMenu(page) {
   }, null, { timeout: 12000 });
   await page.waitForFunction(() => {
     const menu = window.__game?.scenes?.menu;
-    return (menu?.startBtn?.alpha || 0) > 0.95 &&
+    return (menu?.tacticalStartBtn?.alpha || 0) > 0.95 &&
       (menu?.sectorStartBtn?.alpha || 0) > 0.95 &&
       (menu?.threatCodexBtn?.alpha || 0) > 0.95 &&
       (menu?.exitBtn?.alpha || 0) > 0.95;

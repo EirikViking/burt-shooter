@@ -288,6 +288,7 @@ export class MenuScene {
     this.disclaimer = null;
     this.startBtn = null;
     this.tacticalStartBtn = null;
+    this.mayhemRunMode = RUN_MODES.MAYHEM_TACTICAL;
     this.scoutRunBtn = null;
     this.scoutAnomaly = readScoutAnomalySelection();
     this.sectorStartBtn = null;
@@ -549,9 +550,17 @@ export class MenuScene {
       } else if (isMoveDown) {
         this.moveMenuFocus(event.shiftKey ? -1 : 1);
       } else if (isMoveLeft) {
-        if (!this.cycleScoutAnomalySelection(-1)) this.moveMenuFocus(-1);
+        if (
+          !this.cycleScoutAnomalySelection(-1)
+          && !this.cycleMayhemRunMode(-1)
+          && !this.cycleOverrunRunMode(-1)
+        ) this.moveMenuFocus(-1);
       } else if (isMoveRight) {
-        if (!this.cycleScoutAnomalySelection(1)) this.moveMenuFocus(1);
+        if (
+          !this.cycleScoutAnomalySelection(1)
+          && !this.cycleMayhemRunMode(1)
+          && !this.cycleOverrunRunMode(1)
+        ) this.moveMenuFocus(1);
       } else if (isCancel) {
         this.playBossMenuBark('exit', { target: this.exitBtn, intent: 'activate', force: true });
         this.openQuitConfirmation({ source: 'keyboard' });
@@ -1341,19 +1350,37 @@ export class MenuScene {
       this.setInputDevice('keyboard');
       this.quickStartRun(RUN_MODES.RANKED);
     });
+    this.startBtn.visible = false;
+    this.startBtn.eventMode = 'none';
     this.container.addChild(this.startBtn);
 
     this.tacticalStartBtn = this.createButton('MAYHEM TACTICAL', layout, {
       variant: 'primary',
       accent: 0xff55d9,
       icon: 'launch',
-      subLabel: 'MAIN MODE · RECOMMENDED · RANKED'
+      subLabel: 'MAIN MODE · RECOMMENDED · RANKED',
+      dynamicLabel: () => translateText(
+        this.mayhemRunMode === RUN_MODES.RANKED ? 'MAYHEM PURE' : 'MAYHEM TACTICAL'
+      ),
+      dynamicSubLabel: () => translateText(
+        this.mayhemRunMode === RUN_MODES.RANKED
+          ? 'ALTERNATIVE RANKED MODE'
+          : 'MAIN MODE · RECOMMENDED · RANKED'
+      )
     });
     this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8, role: 'main' });
+    this.attachScoutAnomalyCue(this.tacticalStartBtn);
     this.tacticalStartBtn.alpha = 0;
-    this.tacticalStartBtn.on('pointerdown', () => {
+    this.tacticalStartBtn.on('pointerdown', (event) => {
       this.setInputDevice('keyboard');
-      this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL);
+      this.setMenuFocusByButton(this.tacticalStartBtn);
+      const local = event?.getLocalPosition?.(this.tacticalStartBtn);
+      const width = Number(this.tacticalStartBtn?._btnWidth) || 0;
+      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
+        this.cycleMayhemRunMode(local.x < 0 ? -1 : 1, { force: true });
+        return;
+      }
+      this.quickStartRun(this.mayhemRunMode);
     });
     this.container.addChild(this.tacticalStartBtn);
 
@@ -1401,6 +1428,7 @@ export class MenuScene {
       labelMinScale: 0.66
     });
     this.configureRunModeCard(this.overrunStartBtn, { id: 'overrun', secondary: 0xffd15c, role: 'advanced' });
+    this.attachScoutAnomalyCue(this.overrunStartBtn);
     this.overrunStartBtn.alpha = 0;
     this.overrunStartBtn.on('pointerdown', (event) => {
       this.setInputDevice('keyboard');
@@ -1824,7 +1852,6 @@ export class MenuScene {
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
       this.tacticalStartBtn,
-      this.startBtn,
       this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
@@ -1864,6 +1891,9 @@ export class MenuScene {
       (isShortLayout ? 142 : 164) * briefingScale
     ) + (this.menuHumorLine ? 28 * Math.min(briefingScale, 1.35) : 0));
     if (runModeBriefing.id === 'dailySignal') {
+      briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
+    }
+    if (runModeBriefing.id === 'scout') {
       briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
     }
     if (runModeBriefing.id === 'overrun') {
@@ -2177,6 +2207,11 @@ export class MenuScene {
         ? translateText('LEFT/RIGHT: ANOMALY // A: START // B: BACK')
         : translateText('LEFT/RIGHT: ANOMALY // ENTER/SPACE: START // ESC: BACK');
     }
+    if (this.getSelectedMenuOptionId() === 'launchTactical') {
+      return this.lastInputDevice === 'controller'
+        ? translateText('LEFT/RIGHT: RULESET // A: START // B: BACK')
+        : translateText('LEFT/RIGHT: RULESET // ENTER/SPACE: START // ESC: BACK');
+    }
     if (this.getSelectedMenuOptionId() === 'overrun') {
       return this.lastInputDevice === 'controller'
         ? translateText('LEFT/RIGHT: LOADOUT // A: START // B: BACK')
@@ -2318,33 +2353,28 @@ export class MenuScene {
       };
     }
     if (focused === 'launchTactical') {
+      const tactical = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL;
       return {
         id: 'launchTactical',
-        title: translateText('MAYHEM TACTICAL'),
-        accent: 0xff55d9,
+        title: translateText(tactical ? 'MAYHEM TACTICAL' : 'MAYHEM PURE'),
+        accent: tactical ? 0xff55d9 : 0xffd15c,
         secondary: 0x7fffd8,
-        menuBody: [
-          translateText('MAIN MODE · RECOMMENDED'),
-          translateText('Draft one permanent tactical upgrade after each boss.'),
-          translateText('RANKED · TACTICAL LEADERBOARD'),
-          translateText('Push deeper, score higher, and shape a spectacular build.')
-        ].join('\n'),
-        body: translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
-      };
-    }
-    if (focused === 'launch') {
-      return {
-        id: 'launch',
-        title: translateText('MAYHEM PURE'),
-        accent: 0xffd15c,
-        secondary: 0x7fffd8,
-        menuBody: [
-          translateText('ALTERNATIVE RANKED MODE'),
-          translateText('No tactical drafts. Pure ship mastery on the original Mayhem ruleset.'),
-          translateText('RANKED · PURE LEADERBOARD'),
-          translateText('Achievements, career XP, and checkpoint unlocks stay active.')
-        ].join('\n'),
-        body: translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
+        menuBody: tactical
+          ? [
+              translateText('MAIN MODE · RECOMMENDED'),
+              translateText('Draft one permanent tactical upgrade after each boss.'),
+              translateText('RANKED · TACTICAL LEADERBOARD'),
+              translateText('LEFT/RIGHT: CHANGE RULESET')
+            ].join('\n')
+          : [
+              translateText('ALTERNATIVE RANKED MODE'),
+              translateText('No tactical drafts. Pure ship mastery on the original Mayhem ruleset.'),
+              translateText('RANKED · PURE LEADERBOARD'),
+              translateText('LEFT/RIGHT: CHANGE RULESET')
+            ].join('\n'),
+        body: tactical
+          ? translateText('Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.')
+          : translateText('No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.')
       };
     }
     return {
@@ -3329,7 +3359,7 @@ export class MenuScene {
       disclaimer: this.disclaimer,
       controls: this.controls,
       dailySignalButton: this.dailySignalBtn,
-      launchButton: this.startBtn,
+      launchButton: this.startBtn?.visible ? this.startBtn : null,
       tacticalLaunchButton: this.tacticalStartBtn,
       scoutRunButton: this.scoutRunBtn,
       sectorStartButton: this.sectorStartBtn?.visible ? this.sectorStartBtn : null,
@@ -3423,7 +3453,7 @@ export class MenuScene {
       },
       launchDeck: {
         bounds: this.launchDeckBounds,
-        hierarchy: ['launchTactical', 'launch', 'dailySignal', 'scout', 'sectorStart', 'overrun'],
+        hierarchy: ['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun'],
         featuredDailySignal: {
           label: this.dailySignalBtn?._label?.text || null,
           sublabel: this.dailySignalBtn?._sublabel?.text || null,
@@ -3460,20 +3490,13 @@ export class MenuScene {
           resetTime: this.formatDailySignalResetTime()
         },
         cards: {
-          mayhem: {
-            label: this.startBtn?._label?.text || null,
-            sublabel: this.startBtn?._sublabel?.text || null,
-            body: this.startBtn?._bodyLabel?.text || null,
-            role: this.startBtn?._runModeRole || null,
-            focused: Boolean(this.startBtn?._focused),
-            bounds: boundsForMenuButtonLayout(this.startBtn)
-          },
           mayhemTactical: {
             label: this.tacticalStartBtn?._label?.text || null,
             sublabel: this.tacticalStartBtn?._sublabel?.text || null,
             body: this.tacticalStartBtn?._bodyLabel?.text || null,
             role: this.tacticalStartBtn?._runModeRole || null,
             focused: Boolean(this.tacticalStartBtn?._focused),
+            runMode: this.mayhemRunMode,
             bounds: boundsForMenuButtonLayout(this.tacticalStartBtn)
           },
           daily: {
@@ -3682,6 +3705,9 @@ export class MenuScene {
   }
 
   getBossMenuBarkEvent(menuId) {
+    if (menuId === 'launchTactical' && this.mayhemRunMode === RUN_MODES.RANKED) {
+      return getRunModeNarrationSpec('launch')?.event || null;
+    }
     if (menuId === 'overrun') {
       const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
       const variantId = !state.available
@@ -4695,6 +4721,7 @@ export class MenuScene {
     const isPureMayhem = container === this.startBtn;
     const isTacticalMayhem = container === this.tacticalStartBtn;
     const isPrimaryMode = isTacticalMayhem;
+    const isSelectedPureMayhem = isTacticalMayhem && this.mayhemRunMode === RUN_MODES.RANKED;
     const isMayhem = isPureMayhem || isTacticalMayhem;
     const accent = container._accent || 0x37f5ff;
     const secondary = container._secondaryAccent || 0x7fffd8;
@@ -4702,7 +4729,7 @@ export class MenuScene {
     const active = isHover || isFocused;
     const pulse = 0.5 + Math.sin(this.animationTime * (isPrimaryMode ? 2.35 : (isMayhem ? 2.6 : 3.3))) * 0.5;
     const sweep = active ? (0.5 + Math.sin(this.animationTime * 4.9) * 0.5) : pulse;
-    const hotAccent = isPureMayhem ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary));
+    const hotAccent = (isPureMayhem || isSelectedPureMayhem) ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary));
 
     focus.clear();
     if (isFocused) {
@@ -4716,14 +4743,14 @@ export class MenuScene {
     bg.clear();
     drawCutPanel(bg, x + 10, y + 12, w, h, 14, { color: 0x000000, alpha: isPrimaryMode ? 0.62 : 0.52 });
     drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, 14, { color: accent, alpha: active ? 0.2 : (isPrimaryMode ? 0.18 + pulse * 0.08 : (isMayhem ? 0.13 + pulse * 0.06 : 0.09)) }, { color: accent, width: active ? 2.2 : (isPrimaryMode ? 1.8 : 1.35), alpha: active ? 0.86 : (isPrimaryMode ? 0.62 + pulse * 0.16 : (isMayhem ? 0.5 + pulse * 0.12 : 0.38)) });
-    const mayhemBase = isPureMayhem ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
-    const mayhemInner = isPureMayhem ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
+    const mayhemBase = (isPureMayhem || isSelectedPureMayhem) ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
+    const mayhemInner = (isPureMayhem || isSelectedPureMayhem) ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
     drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: isPrimaryMode ? 0.94 : 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.35 : (isPrimaryMode ? 1.85 : 1.4), alpha: active ? 0.94 : (isPrimaryMode ? 0.7 : 0.52) });
     drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.46 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.08 });
     bg.rect(x + 8, y + 8, w - 16, Math.max(34, h * 0.34));
-    bg.fill({ color: isPureMayhem ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
+    bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
     bg.rect(x + 12, y + h - 13, w - 24, 4);
-    bg.fill({ color: isPureMayhem ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
+    bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
     bg.rect(x + 12, y + 12, 4, h - 24);
     bg.fill({ color: hotAccent, alpha: active ? 0.82 : 0.48 });
     bg.rect(x + w - 16, y + 12, 4, h - 24);
@@ -4758,7 +4785,7 @@ export class MenuScene {
       label.visible = true;
       label.anchor.set(0, 0.5);
       label.style.align = 'left';
-      label.style.fill = isPrimaryMode ? '#ffffff' : (isPureMayhem ? '#ffe584' : '#dffcff');
+      label.style.fill = isSelectedPureMayhem ? '#ffe584' : (isPrimaryMode ? '#ffffff' : (isPureMayhem ? '#ffe584' : '#dffcff'));
       label.style.strokeThickness = 4;
       label.x = x + (compactCard ? 66 : 82);
       label.y = compactCard ? (y + h * 0.38) : (y + 32);
@@ -4767,7 +4794,7 @@ export class MenuScene {
       sublabel.visible = true;
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
-      sublabel.style.fill = isPrimaryMode ? '#7fffd8' : (isPureMayhem ? '#fff3b6' : '#9feeff');
+      sublabel.style.fill = isSelectedPureMayhem ? '#fff3b6' : (isPrimaryMode ? '#7fffd8' : (isPureMayhem ? '#fff3b6' : '#9feeff'));
       sublabel.alpha = sublabel.text ? (active ? 1 : 0.84) : 0;
       sublabel.x = x + (compactCard ? 66 : 82);
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
@@ -5032,11 +5059,10 @@ export class MenuScene {
     this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.tacticalStartBtn, 0.86, 0.42);
-    this.animateElement(this.startBtn, 0.98, 0.38);
-    this.animateElement(this.dailySignalBtn, 1.08, 0.38);
-    this.animateElement(this.scoutRunBtn, 1.18, 0.38);
-    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.28, 0.38);
-    this.animateElement(this.overrunStartBtn, 1.34, 0.38);
+    this.animateElement(this.dailySignalBtn, 0.98, 0.38);
+    this.animateElement(this.scoutRunBtn, 1.08, 0.38);
+    this.animateElement(this.sectorStartBtn?.visible ? this.sectorStartBtn : null, 1.18, 0.38);
+    this.animateElement(this.overrunStartBtn, 1.28, 0.38);
     this.animateElement(this.highscoreBtn, 1.32, 0.4);
     this.animateElement(this.storyBtn, 1.42, 0.4);
     this.animateElement(this.threatCodexBtn, 1.52, 0.4);
@@ -5050,8 +5076,7 @@ export class MenuScene {
   buildMenuNavigation() {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
-      { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(RUN_MODES.MAYHEM_TACTICAL) },
-      { id: 'launch', button: this.startBtn, activate: () => this.quickStartRun(RUN_MODES.RANKED) },
+      { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(this.mayhemRunMode) },
       { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
@@ -5228,8 +5253,18 @@ export class MenuScene {
       }
       return;
     }
-    if (nav.pressed.left && !this.cycleScoutAnomalySelection(-1) && !this.cycleOverrunRunMode(-1)) this.moveMenuFocus(-1);
-    if (nav.pressed.right && !this.cycleScoutAnomalySelection(1) && !this.cycleOverrunRunMode(1)) this.moveMenuFocus(1);
+    if (
+      nav.pressed.left
+      && !this.cycleScoutAnomalySelection(-1)
+      && !this.cycleMayhemRunMode(-1)
+      && !this.cycleOverrunRunMode(-1)
+    ) this.moveMenuFocus(-1);
+    if (
+      nav.pressed.right
+      && !this.cycleScoutAnomalySelection(1)
+      && !this.cycleMayhemRunMode(1)
+      && !this.cycleOverrunRunMode(1)
+    ) this.moveMenuFocus(1);
     if (nav.pressed.up) this.moveMenuFocus(-1);
     if (nav.pressed.down) this.moveMenuFocus(1);
     if (nav.pressed.confirm) this.activateFocusedMenuOption();
@@ -5261,6 +5296,25 @@ export class MenuScene {
       console.warn('[MenuScene] Could not read saved ship for quick start:', e);
     }
     return getDefaultShipKey();
+  }
+
+  cycleMayhemRunMode(delta, { force = false } = {}) {
+    if (!force && this.getSelectedMenuOptionId() !== 'launchTactical') return false;
+    this.mayhemRunMode = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
+      ? RUN_MODES.RANKED
+      : RUN_MODES.MAYHEM_TACTICAL;
+    this.tacticalStartBtn._accent = this.mayhemRunMode === RUN_MODES.RANKED ? 0xffd15c : 0xff55d9;
+    this.refreshButtonCopy(this.tacticalStartBtn, { forceGpuRefresh: true });
+    this.drawMenuButton(this.tacticalStartBtn, false);
+    this.updateRunModeBriefing();
+    if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
+    playMenuFocusSfx(0.09);
+    this.playBossMenuBark('launchTactical', {
+      target: this.tacticalStartBtn,
+      intent: 'focus',
+      force: true
+    });
+    return true;
   }
 
   getOverrunMenuSubLabel() {
