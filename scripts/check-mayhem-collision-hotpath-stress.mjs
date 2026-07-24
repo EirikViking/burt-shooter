@@ -133,7 +133,6 @@ try {
     try {
       play.game?.app?.ticker?.stop?.();
       play.performanceDiagnostics?.setOptions?.({ enabled: true });
-      play.performanceDiagnostics?.reset?.();
       play.game.level = 3;
       play.game.runMode = 'ranked';
       play.game.score = 0;
@@ -148,12 +147,12 @@ try {
         isPowerupSuppressed: () => false
       };
 
-      const enemies = Array.from({ length: 50 }, (_, index) => {
+      const createStressEnemy = (index, prefix = 'stress_enemy') => {
         const x = 160 + (index % 10) * 112;
         const y = 130 + Math.floor(index / 10) * 74;
         return {
-          id: `stress_enemy_${index}`,
-          type: `stress_enemy_${index}`,
+          id: `${prefix}_${index}`,
+          type: `${prefix}_${index}`,
           kind: 'enemy',
           active: true,
           x,
@@ -172,24 +171,18 @@ try {
             return false;
           }
         };
+      };
+      const createStressBullet = (enemy) => ({
+        active: true,
+        x: enemy.x,
+        y: enemy.y,
+        radius: 5,
+        damage: 2,
+        piercing: false,
+        isBomb: false
       });
 
-      const bullets = Array.from({ length: 100 }, (_, index) => {
-        const enemy = enemies[index % enemies.length];
-        return {
-          active: true,
-          x: enemy.x,
-          y: enemy.y,
-          radius: 5,
-          damage: 2,
-          piercing: false,
-          isBomb: false
-        };
-      });
-
-      play.enemyManager.enemies = enemies;
       play.enemyManager.hijacker = null;
-      play.bulletManager.playerBullets = bullets;
       play.bulletManager.enemyBullets = [];
       play.powerupManager.powerups = [];
       play.ambientBonusDrones = [];
@@ -197,6 +190,36 @@ try {
       play.triggerChainLightning = () => {};
       play.applyShipTraitBulletImpact = () => {};
       play.powerupManager.spawn = () => {};
+
+      // The dev-server bundle compiles this dense branch lazily. Warm it once
+      // before measuring so the probe reports gameplay hot-path cost, not V8
+      // compilation time from the first synthetic 50-kill burst.
+      const warmEnemies = Array.from({ length: 8 }, (_, index) => createStressEnemy(index, 'warm_enemy'));
+      play.enemyManager.enemies = warmEnemies;
+      play.bulletManager.playerBullets = warmEnemies.map(createStressBullet);
+      play.checkCollisions();
+      play.scorePopupManager?.cleanup?.();
+      play.enemyManager.enemies = [];
+      play.bulletManager.playerBullets = [];
+      play.deferredThreatDefeats = [];
+      play.deferredThreatDefeatStats = { queued: 0, flushed: 0, firstDefeats: 0 };
+      play.deferredHotPathScoreProgress = null;
+      play.deferredHotPathScoreAwards = {};
+      play.deferredRunContractEnemyDefeats = [];
+      play.comboCount = 0;
+      play.comboMultiplier = 1;
+      play.killStreak = 0;
+      play.totalKills = 0;
+      play.bestComboCount = 0;
+      play.lastKillAt = 0;
+      play.comboMilestonesReached?.clear?.();
+      play.game.score = 0;
+      play.performanceDiagnostics?.resetSamples?.();
+
+      const enemies = Array.from({ length: 50 }, (_, index) => createStressEnemy(index));
+      const bullets = Array.from({ length: 100 }, (_, index) => createStressBullet(enemies[index % enemies.length]));
+      play.enemyManager.enemies = enemies;
+      play.bulletManager.playerBullets = bullets;
 
       const beforeScore = play.game.score;
       window.__novaCollisionHotpathStressActive = true;
@@ -295,8 +318,12 @@ try {
   assert.ok(stress.collisionStats.playerBulletEnemyKills >= 20, 'stress should create many simultaneous kills');
   assert.ok(stress.afterScore > stress.beforeScore, 'stress kills should still award score');
   assert.ok(stress.deferredThreatDefeats >= 20, 'enemy defeat progression should be deferred');
-  assert.ok((stress.sections['collision.progression_hooks.enemy_killed']?.avgMs || 0) < 0.5, 'enemy_killed hook average should be below 0.5ms');
-  assert.ok((stress.sections['collision.progression_hooks.enemy_killed']?.maxMs || 0) < 1.5, 'enemy_killed hook max should stay within browser-timer margin');
+  const enemyKilledHooks = stress.sections['collision.progression_hooks.enemy_killed'] || {};
+  const enemyKilledHookTotalMs = (enemyKilledHooks.avgMs || 0) * (enemyKilledHooks.count || 0);
+  assert.equal(enemyKilledHooks.count, 50, 'stress should measure every enemy_killed progression hook');
+  assert.ok((enemyKilledHooks.avgMs || 0) < 0.12, 'enemy_killed hook average should stay below 0.12ms');
+  assert.ok(enemyKilledHookTotalMs < 5, 'all 50 enemy_killed hooks should stay below 5ms total');
+  assert.ok((enemyKilledHooks.maxMs || 0) < 3, 'no enemy_killed hook should create a multi-millisecond stall');
   assert.ok((stress.sections['collision.player_bullets_enemies']?.maxMs || 0) < 10, 'player_bullets_enemies should stay below 10ms');
   assert.ok((stress.sections['collision.player_bullets_enemies.hit_test']?.maxMs || 0) < 4, 'hit_test should stay below 4ms');
   assert.ok((stress.sections['collision.side_effects.total']?.maxMs || 0) < 8, 'side effects should remain low under massive kill bursts');

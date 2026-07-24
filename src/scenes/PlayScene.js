@@ -17539,30 +17539,34 @@ export class PlayScene {
     return true;
   }
 
+  queueEnemyKillToast(sideEffects, message, options) {
+    if (!this.queueCollisionSideEffect(sideEffects, 'toasts', { message, options })) {
+      this.enqueueToast(message, options);
+    }
+  }
+
+  queueEnemyKillExplosion(sideEffects, x, y, color, intensity) {
+    if (!this.queueCollisionSideEffect(sideEffects, 'playerExplosions', { x, y, color, intensity })) {
+      this.particleManager?.createExplosion?.(x, y, color, intensity);
+    }
+  }
+
+  queueEnemyKillShake(sideEffects, intensity, duration) {
+    if (!this.queueCollisionSideEffect(sideEffects, 'screenShakes', { intensity, duration })) {
+      this.screenShake?.shake?.(intensity, duration);
+    }
+  }
+
+  queueEnemyKillComboFlare(sideEffects, options) {
+    if (!this.queueCollisionSideEffect(sideEffects, 'comboFlares', options)) {
+      this.triggerComboMilestoneFlare(options);
+    }
+  }
+
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
     this.enemyManager?.recordChallengeFlightKill?.(enemy);
     const sideEffects = options.sideEffects || null;
-    const queueToast = (message, toastOptions) => {
-      if (!this.queueCollisionSideEffect(sideEffects, 'toasts', { message, options: toastOptions })) {
-        this.enqueueToast(message, toastOptions);
-      }
-    };
-    const queuePlayerExplosion = (x, y, color, intensity) => {
-      if (!this.queueCollisionSideEffect(sideEffects, 'playerExplosions', { x, y, color, intensity })) {
-        this.particleManager?.createExplosion?.(x, y, color, intensity);
-      }
-    };
-    const queueScreenShake = (intensity, duration) => {
-      if (!this.queueCollisionSideEffect(sideEffects, 'screenShakes', { intensity, duration })) {
-        this.screenShake?.shake?.(intensity, duration);
-      }
-    };
-    const queueComboFlare = (flareOptions) => {
-      if (!this.queueCollisionSideEffect(sideEffects, 'comboFlares', flareOptions)) {
-        this.triggerComboMilestoneFlare(flareOptions);
-      }
-    };
     if (enemy?.isRareChaosVisitor) this.completeRareChaosVisitor(enemy);
     if (enemy?.isAce) this.completeAceBounty(enemy);
     if (enemy?.kind === 'boss') {
@@ -17654,16 +17658,16 @@ export class PlayScene {
       if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
         this.comboMilestonesReached.add(milestone.threshold);
         const appliedBonus = this.addNormalWaveScore(milestone.bonus, 'baseScore', enemy);
-        queueToast(`${milestone.label} +${appliedBonus}`, {
+        this.queueEnemyKillToast(sideEffects, `${milestone.label} +${appliedBonus}`, {
           fontSize: 26,
           fill: '#ffaa00',
           slot: 'center',
           type: 'milestone',
           duration: 1800
         });
-        queuePlayerExplosion(this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
-        queueScreenShake(6, 15);
-        queueComboFlare({
+        this.queueEnemyKillExplosion(sideEffects, this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
+        this.queueEnemyKillShake(sideEffects, 6, 15);
+        this.queueEnemyKillComboFlare(sideEffects, {
           threshold: milestone.threshold,
           multiplier: this.comboMultiplier,
           reason: 'combo_milestone',
@@ -17681,10 +17685,10 @@ export class PlayScene {
 
     if (this.comboMultiplier !== prevMultiplier) {
       const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
-      queueToast(label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
-      queuePlayerExplosion(this.player?.x, this.player?.y, 0x00ffff);
+      this.queueEnemyKillToast(sideEffects, label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
+      this.queueEnemyKillExplosion(sideEffects, this.player?.x, this.player?.y, 0x00ffff);
       if (!COMBO_MILESTONES.some((milestone) => milestone.threshold === this.comboCount)) {
-        queueComboFlare({
+        this.queueEnemyKillComboFlare(sideEffects, {
           threshold: this.comboCount,
           multiplier: this.comboMultiplier,
           reason: 'combo_multiplier',
@@ -17698,7 +17702,7 @@ export class PlayScene {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
       const appliedBonus = this.addNormalWaveScore(bonus, 'baseScore', enemy);
       if (this.comboCount % 20 === 0) {
-        queueToast(`COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
+        this.queueEnemyKillToast(sideEffects, `COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
       }
     }
 
