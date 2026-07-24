@@ -212,21 +212,14 @@ try {
   assert.equal(menu.menu?.sectorStart?.available, true);
   assert.deepEqual(menu.menu?.sectorStart?.checkpoints, [5, 10, 15]);
   assert.equal(menu.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.match(menu.menu?.sectorStart?.buttonText || '', /SECTOR 15 CHALLENGE/);
+  assert.equal(menu.menu?.sectorStart?.buttonText, 'SECTOR RUN', 'menu card should keep its stable run-mode label');
+  assert.equal(menu.menu?.sectorStart?.buttonVisualText, 'SECTOR RUN', 'rendered menu card should match the run-mode label');
 
   for (let index = 0; index < 4; index += 1) await tapButton(page, 13);
   const focused = await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused by D-pad down');
   assert.equal(focused.menu?.sectorStart?.selectedCheckpoint, 15);
-  assert.equal(focused.menu?.sectorStart?.arrowCueVisible, true, 'controller focus should show checkpoint switch arrows');
-  assert.ok((focused.menu?.sectorStart?.arrowCueBounds?.width || 0) > 0, 'checkpoint switch arrows should have visible bounds');
-  assert.match(focused.menu?.sectorStart?.primaryHintText || '', /LEFT\/RIGHT: SECTOR/, 'controller hint should explain sector switching');
-
-  await tapButton(page, 14);
-  const cycledLeft = await waitForState(page, (state) => state.menu?.sectorStart?.selectedCheckpoint === 10, 'sector start checkpoint cycled left');
-
-  await tapButton(page, 15);
-  const cycledRight = await waitForState(page, (state) => state.menu?.sectorStart?.selectedCheckpoint === 15, 'sector start checkpoint cycled right');
-  assert.equal(cycledRight.menu?.focusedOption, 'sectorStart');
+  assert.equal(focused.menu?.sectorStart?.arrowCueVisible, false, 'run-mode card should defer checkpoint switching to the selector');
+  assert.match(focused.menu?.sectorStart?.primaryHintText || '', /A: CONFIRM/, 'controller hint should explain how to open the selector');
 
   await tapButton(page, 12);
   const returnedToScout = await waitForState(page, (state) => state.menu?.focusedOption === 'scout', 'controller can move back out of sector start focus');
@@ -234,6 +227,31 @@ try {
 
   await tapButton(page, 13);
   await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start refocused before launch');
+
+  await tapButton(page, 0);
+  const selector = await waitForState(
+    page,
+    (state) => state.menu?.sectorStart?.selector?.open === true,
+    'sector selector opened by controller'
+  );
+  assert.equal(selector.menu?.sectorStart?.selector?.selectedSector, 15);
+  assert.equal(selector.menu?.sectorStart?.selector?.selectedUnlocked, true);
+  assert.equal(selector.menu?.sectorStart?.selector?.launchLabel, 'LAUNCH SECTOR 15');
+
+  await tapButton(page, 14);
+  const cycledLeft = await waitForState(
+    page,
+    (state) => state.menu?.sectorStart?.selector?.selectedSector === 10,
+    'sector selector checkpoint cycled left'
+  );
+
+  await tapButton(page, 15);
+  const cycledRight = await waitForState(
+    page,
+    (state) => state.menu?.sectorStart?.selector?.selectedSector === 15,
+    'sector selector checkpoint cycled right'
+  );
+  assert.equal(cycledRight.menu?.sectorStart?.selector?.selectedUnlocked, true);
 
   await tapButton(page, 0);
   const play = await waitForState(page, (state) => state.scene === 'play' && state.runMode === 'sector_start', 'sector start launched by controller', 30000);
@@ -251,9 +269,13 @@ try {
     focus: focused.menu?.focusedOption,
     checkpoints: focused.menu?.sectorStart?.checkpoints,
     arrowCueVisible: focused.menu?.sectorStart?.arrowCueVisible,
-    cycledLeft: cycledLeft.menu?.sectorStart?.selectedCheckpoint,
-    cycledRight: cycledRight.menu?.sectorStart?.selectedCheckpoint,
-    returnedFocus: returnedToLaunch.menu?.focusedOption,
+    cycledLeft: cycledLeft.menu?.sectorStart?.selector?.selectedSector,
+    cycledRight: cycledRight.menu?.sectorStart?.selector?.selectedSector,
+    returnedFocus: returnedToScout.menu?.focusedOption,
+    selector: {
+      selectedSector: selector.menu?.sectorStart?.selector?.selectedSector,
+      launchLabel: selector.menu?.sectorStart?.selector?.launchLabel
+    },
     launched: {
       runMode: play.runMode,
       level: play.level,
