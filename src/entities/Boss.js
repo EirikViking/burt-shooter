@@ -242,8 +242,12 @@ export class Boss {
     this.sprite.addChild(this.healthBar);
     this.updateHealthBar();
 
+    this.signatureWarningLayer = new PIXI.Graphics();
+    this.signatureWarningLayer.zIndex = 4;
+    this.sprite.addChild(this.signatureWarningLayer);
+
     this.attackWarningLayer = new PIXI.Graphics();
-    this.attackWarningLayer.zIndex = 4;
+    this.attackWarningLayer.zIndex = 3;
     this.sprite.addChild(this.attackWarningLayer);
 
     // Name display overlay
@@ -473,7 +477,9 @@ export class Boss {
       return;
     }
 
-    this.moveTimer += delta;
+    if (!this.telegraph?.movementLocked) {
+      this.moveTimer += delta;
+    }
     if ((this.healPulseUntil || 0) > Date.now()) {
       this.updateHealthBar();
     } else if (this.healPulseUntil) {
@@ -518,7 +524,8 @@ export class Boss {
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
-    this.updateBossAnimation(delta, playerX, playerY);
+    const animationAim = this.getSignatureAimPoint(playerX, playerY);
+    this.updateBossAnimation(delta, animationAim.x, animationAim.y);
 
     if (this.signatureCooldown > 0) {
       this.signatureCooldown -= delta;
@@ -1577,6 +1584,8 @@ export class Boss {
   }
 
   applyBossMovement(delta, playerX, playerY) {
+    if (this.telegraph?.movementLocked) return;
+
     const profile = this.moveProfile || this.getMoveProfile(this.bossType);
     const t = this.moveTimer * 0.02;
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
@@ -1955,6 +1964,23 @@ export class Boss {
     return 'web';
   }
 
+  isAimedSignature(type) {
+    return type === 'cone' || type === 'mirror' || type === 'lance';
+  }
+
+  getSignatureAimPoint(playerX, playerY) {
+    const lockedAngle = this.telegraph?.lockedAngle;
+    if (!Number.isFinite(lockedAngle)) {
+      return { x: playerX, y: playerY, locked: false };
+    }
+    const distance = Math.max(240, Number(this.telegraph?.aimDistance) || 0);
+    return {
+      x: this.x + Math.cos(lockedAngle) * distance,
+      y: this.y + Math.sin(lockedAngle) * distance,
+      locked: true
+    };
+  }
+
   playSignatureTelegraphSfx(type) {
     const family = this.getSignatureSfxFamily(type);
     AudioManager.playSfx('boss_charge_lattice', {
@@ -1990,11 +2016,20 @@ export class Boss {
       ? (fairness.signatureTelegraphEarlyMs ?? fairness.signatureTelegraphMs ?? 1120)
       : (fairness.signatureTelegraphMs ?? 1120);
     const telegraphReliefMult = clamp(this.getBossProfileReliefNumber('signatureTelegraphMult', 1), 0.75, 1.7);
+    const aimed = this.isAimedSignature(type);
+    const lockedAngle = aimed
+      ? Math.atan2(playerY - this.y, playerX - this.x)
+      : null;
     this.telegraph = {
       type,
       label: this.getSignatureLabel(type),
       start: Date.now(),
-      duration: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult)
+      duration: Math.round((type === 'ring' || type === 'adds' ? ringTelegraphMs : aimedTelegraphMs) * telegraphReliefMult),
+      lockedAngle,
+      aimDistance: aimed ? Math.max(240, Math.hypot(playerX - this.x, playerY - this.y)) : null,
+      movementLocked: aimed,
+      originX: this.x,
+      originY: this.y
     };
     this.setPresentationState('charge', this.telegraph.duration);
     const playScene = this.game?.scenes?.play;
@@ -2195,6 +2230,83 @@ export class Boss {
     layer.fill({ color: 0xffffff, alpha: 0.08 + charge * 0.14 });
   }
 
+  drawSignatureCountdownRing(layer, progress, visualRadius) {
+    if (!layer || !this.telegraph) return;
+    const charge = clamp(progress, 0, 1);
+    const radius = Math.max(82, visualRadius * 1.34);
+    const start = -Math.PI / 2;
+    const sweep = Math.PI * charge;
+    const timerColor = charge >= 0.86 ? 0xffffff : 0xfff45c;
+
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: 0x05070c, width: 13, alpha: 0.84 });
+    layer.circle(0, 0, radius);
+    layer.stroke({ color: 0xffffff, width: 2, alpha: 0.42 });
+
+    if (sweep > 0.001) {
+      layer.arc(0, 0, radius, start, start + sweep);
+      layer.arc(0, 0, radius, start, start - sweep, true);
+      layer.stroke({ color: timerColor, width: 8, alpha: 0.96 });
+    }
+
+    for (const angle of [start, Math.PI / 2]) {
+      const inner = radius - 10;
+      const outer = radius + 10;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    layer.stroke({
+      color: charge >= 0.86 ? 0xffa83d : 0xffffff,
+      width: charge >= 0.86 ? 5 : 3,
+      alpha: 0.9
+    });
+
+    layer.__debugBossSignatureWarning = {
+      phase: 'warning',
+      type: this.telegraph.type,
+      progress: Number(charge.toFixed(3)),
+      radius: Math.round(radius),
+      leftArcSweep: Number(sweep.toFixed(3)),
+      rightArcSweep: Number(sweep.toFixed(3)),
+      startsAtTop: true,
+      endsAtBottom: charge >= 0.999,
+      aimLocked: Number.isFinite(this.telegraph.lockedAngle),
+      movementLocked: Boolean(this.telegraph.movementLocked),
+      nameCountdownRemoved: true
+    };
+  }
+
+  getSignatureWarningDebugState() {
+    if (this.telegraph) {
+      const elapsed = Date.now() - this.telegraph.start;
+      const progress = clamp(elapsed / Math.max(1, this.telegraph.duration), 0, 1);
+      return {
+        phase: 'warning',
+        type: this.telegraph.type,
+        progress: Number(progress.toFixed(3)),
+        lockedAngle: Number.isFinite(this.telegraph.lockedAngle)
+          ? Number(this.telegraph.lockedAngle.toFixed(4))
+          : null,
+        movementLocked: Boolean(this.telegraph.movementLocked),
+        originX: Math.round(Number(this.telegraph.originX) || 0),
+        originY: Math.round(Number(this.telegraph.originY) || 0),
+        timer: this.signatureWarningLayer?.__debugBossSignatureWarning || null
+      };
+    }
+    if (this.lastSignatureRelease && Date.now() - this.lastSignatureRelease.releasedAt < 500) {
+      return {
+        phase: 'release',
+        type: this.lastSignatureRelease.type,
+        lockedAngle: Number.isFinite(this.lastSignatureRelease.lockedAngle)
+          ? Number(this.lastSignatureRelease.lockedAngle.toFixed(4))
+          : null,
+        originX: Math.round(Number(this.lastSignatureRelease.originX) || 0),
+        originY: Math.round(Number(this.lastSignatureRelease.originY) || 0)
+      };
+    }
+    return null;
+  }
+
   updateTelegraphVisual(progress, playerX, playerY) {
     if (!this.telegraph) return;
 
@@ -2210,11 +2322,14 @@ export class Boss {
     const originY = 0;
     const visualRadius = this.getVisualRadius();
     this.updateHealthBar();
-    const warningLayer = this.healthBar;
+    const warningLayer = this.signatureWarningLayer || this.healthBar;
     if (!warningLayer) return;
+    warningLayer.clear();
 
     if (this.telegraph.type === 'cone' || this.telegraph.type === 'mirror' || this.telegraph.type === 'lance') {
-      const angle = Math.atan2(playerY - this.y, playerX - this.x);
+      const angle = Number.isFinite(this.telegraph.lockedAngle)
+        ? this.telegraph.lockedAngle
+        : Math.atan2(playerY - this.y, playerX - this.x);
       const spread = this.telegraph.type === 'lance' ? 0.16 : this.telegraph.type === 'mirror' ? 0.38 : this.level <= 2 ? 0.5 : 0.64;
       const length = Math.max(visualRadius * 2.8, 230);
       const steps = 8;
@@ -2309,11 +2424,12 @@ export class Boss {
       });
     }
 
+    this.drawSignatureCountdownRing(warningLayer, progress, visualRadius);
+
     if (this.nameText) {
-      const remaining = Math.max(0, Math.ceil((1 - progress) * 3));
-      this.nameText.text = `${this.telegraph.label}\n${remaining}`;
-      this.nameText.alpha = 0.88 + progress * 0.12;
-      this.fitNameText(58);
+      this.nameText.text = this.name;
+      this.nameText.alpha = 1;
+      this.fitNameText();
     }
 
   }
@@ -2324,6 +2440,10 @@ export class Boss {
       this.nameText.text = this.name;
       this.nameText.alpha = 1;
       this.fitNameText();
+    }
+    if (this.signatureWarningLayer) {
+      this.signatureWarningLayer.clear();
+      this.signatureWarningLayer.__debugBossSignatureWarning = null;
     }
     if (hadTelegraphOverlay) {
       this.updateHealthBar();
@@ -2482,14 +2602,25 @@ export class Boss {
   }
 
   executeSignatureMove(type, playerX, playerY) {
-    this.triggerFirePresentation(type, true, playerX, playerY);
+    const lockedAngle = Number.isFinite(this.telegraph?.lockedAngle)
+      ? this.telegraph.lockedAngle
+      : null;
+    const aimPoint = this.getSignatureAimPoint(playerX, playerY);
+    this.lastSignatureRelease = {
+      type,
+      lockedAngle,
+      originX: this.x,
+      originY: this.y,
+      releasedAt: Date.now()
+    };
+    this.triggerFirePresentation(type, true, aimPoint.x, aimPoint.y);
     if (type === 'cone') {
-      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64);
+      this.fireCone(aimPoint.x, aimPoint.y, this.level <= 2 ? 5 : 8, this.level <= 2 ? 0.5 : 0.64, lockedAngle);
     } else if (type === 'mirror') {
-      this.fireCone(playerX, playerY, this.level <= 2 ? 5 : 7, 0.38);
+      this.fireCone(aimPoint.x, aimPoint.y, this.level <= 2 ? 5 : 7, 0.38, lockedAngle);
       this.fireRingBurst(this.level <= 2 ? 8 : 12, 3);
     } else if (type === 'lance') {
-      this.fireCone(playerX, playerY, 3, 0.14);
+      this.fireCone(aimPoint.x, aimPoint.y, 3, 0.14, lockedAngle);
     } else if (type === 'adds') {
       const playScene = this.game?.scenes?.play;
       playScene?.enemyManager?.spawnBossAdds(this.level <= 2 ? 2 : 4);
@@ -2501,10 +2632,15 @@ export class Boss {
         playScene?.enemyManager?.spawnBossAdds(3);
       }
     }
-    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', { type, playerX, playerY });
+    this.game?.scenes?.play?.registerBossHazardFromBoss?.(this, 'signature', {
+      type,
+      playerX: aimPoint.x,
+      playerY: aimPoint.y,
+      lockedAngle
+    });
   }
 
-  fireCone(playerX, playerY, shots = 7, spread = 0.6) {
+  fireCone(playerX, playerY, shots = 7, spread = 0.6, lockedAngle = null) {
     const bullets = [];
     const visualConfig = toBulletVisualConfig(getBossSignatureWeaponProfile(this.telegraph?.type || 'cone'), {
       sourceEnemyType: 'boss',
@@ -2512,7 +2648,10 @@ export class Boss {
     });
     for (let i = 0; i < shots; i++) {
       const t = (i / (shots - 1)) - 0.5;
-      const angle = Math.atan2(playerY - this.y, playerX - this.x) + t * spread;
+      const baseAngle = Number.isFinite(lockedAngle)
+        ? lockedAngle
+        : Math.atan2(playerY - this.y, playerX - this.x);
+      const angle = baseAngle + t * spread;
       const attackType = this.telegraph?.type || 'cone';
       const speed = this.getBossProjectileSpeed(2) *
         this.getBossAttackSpeedMultiplier(attackType) *

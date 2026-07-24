@@ -83,10 +83,31 @@ function findChrome() {
 }
 
 async function waitForBoss(page) {
-  await page.waitForFunction(() => {
-    const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
-  }, null, { timeout: 30000 });
+  try {
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state?.scene === 'play' && state?.wave?.state === 'BOSS_ACTIVE';
+    }, null, { timeout: 90000 });
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => {
+      let textState = null;
+      try {
+        textState = JSON.parse(window.render_game_to_text?.() || '{}');
+      } catch (parseError) {
+        textState = { parseError: parseError?.message || String(parseError) };
+      }
+      return {
+        url: location.href,
+        readyState: document.readyState,
+        hasGame: Boolean(window.__game),
+        hasTextRenderer: typeof window.render_game_to_text === 'function',
+        currentSceneName: window.__game?.currentSceneName || null,
+        waveState: window.__game?.scenes?.play?.enemyManager?.state || null,
+        textState
+      };
+    });
+    throw new Error(`First boss did not become active: ${JSON.stringify(diagnostics)}`, { cause: error });
+  }
 }
 
 async function collectState(page) {

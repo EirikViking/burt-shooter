@@ -152,19 +152,137 @@ try {
   const firedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
 
   const bossTelegraph = telegraphState.visibleEnemies?.find(enemy => enemy.kind === 'boss')?.telegraph || null;
+  const signatureWarning = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const boss = play?.enemyManager?.boss;
+    const player = play?.player;
+    if (!boss || !player) return { ok: false, reason: 'missing_boss_or_player' };
+
+    boss.shootCooldown = 999999;
+    boss.regularAttackReadyAt = Date.now() + 60000;
+    boss.regularTelegraph = null;
+    boss.clearRegularAttackTelegraphVisual?.();
+
+    player.x = game.getWidth() * 0.82;
+    player.y = game.getHeight() * 0.78;
+    boss.startSignatureTelegraph('cone', player.x, player.y);
+    boss.telegraph.start = Date.now() - boss.telegraph.duration * 0.24;
+    const startPosition = { x: boss.x, y: boss.y };
+    const lockedAngle = boss.telegraph.lockedAngle;
+    boss.update(16, player.x, player.y);
+    const earlyState = JSON.parse(window.render_game_to_text());
+
+    player.x = game.getWidth() * 0.12;
+    player.y = game.getHeight() * 0.86;
+    boss.telegraph.start = Date.now() - boss.telegraph.duration * 0.68;
+    boss.update(16, player.x, player.y);
+    const shiftedState = JSON.parse(window.render_game_to_text());
+    const livePlayerAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+    const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
+
+    return {
+      ok: true,
+      startPosition,
+      warningPosition: { x: boss.x, y: boss.y },
+      lockedAngle,
+      livePlayerAngle,
+      lockedVsLiveDelta: Math.abs(normalize(livePlayerAngle - lockedAngle)),
+      bossName: boss.name,
+      nameText: boss.nameText?.text || null,
+      earlyState,
+      shiftedState,
+      layerDebug: boss.signatureWarningLayer?.__debugBossSignatureWarning || null
+    };
+  });
+
+  const signatureScreenshot = path.join(outputDir, 'boss-signature-locked-warning.png');
+  await page.screenshot({ path: signatureScreenshot, fullPage: true });
+
+  const signatureRelease = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const boss = play?.enemyManager?.boss;
+    const player = play?.player;
+    if (!boss || !player || !boss.telegraph) return { ok: false, reason: 'missing_signature_warning' };
+
+    const lockedAngle = boss.telegraph.lockedAngle;
+    const startIndex = play.bulletManager.enemyBullets.length;
+    boss.telegraph.start = Date.now() - boss.telegraph.duration - 1;
+    boss.update(16, player.x, player.y);
+    const created = play.bulletManager.enemyBullets
+      .slice(startIndex)
+      .filter((bullet) => bullet?.sourceFireStyle === 'cone')
+      .map((bullet) => ({
+        angle: Math.atan2(bullet.vy, bullet.vx),
+        vx: bullet.vx,
+        vy: bullet.vy
+      }));
+    const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
+    const center = created
+      .map((bullet) => ({
+        ...bullet,
+        delta: Math.abs(normalize(bullet.angle - lockedAngle))
+      }))
+      .sort((a, b) => a.delta - b.delta)[0] || null;
+    const state = JSON.parse(window.render_game_to_text());
+    const stateBoss = state.visibleEnemies?.find((enemy) => enemy.kind === 'boss') || null;
+    return {
+      ok: true,
+      lockedAngle,
+      created,
+      center,
+      releaseDebug: boss.lastSignatureRelease || null,
+      stateWarning: stateBoss?.bossSignatureWarning || null
+    };
+  });
+
+  const warningBoss = signatureWarning.shiftedState?.visibleEnemies?.find((enemy) => enemy.kind === 'boss') || null;
+  const warningDebug = warningBoss?.bossSignatureWarning || null;
+  const movementDelta = Math.hypot(
+    (signatureWarning.warningPosition?.x || 0) - (signatureWarning.startPosition?.x || 0),
+    (signatureWarning.warningPosition?.y || 0) - (signatureWarning.startPosition?.y || 0)
+  );
   const report = {
     ok: Boolean(bossTelegraph) &&
       bossTelegraph.label === 'REGULAR ATTACK TELL' &&
       (firedState.counts?.enemyBullets || 0) > (telegraphState.counts?.enemyBullets || 0) &&
+      signatureWarning.ok === true &&
+      movementDelta < 0.01 &&
+      signatureWarning.lockedVsLiveDelta > 0.35 &&
+      warningBoss?.telegraph?.movementLocked === true &&
+      warningBoss?.telegraph?.lockedAngle === Number(signatureWarning.lockedAngle.toFixed(4)) &&
+      warningDebug?.phase === 'warning' &&
+      warningDebug?.timer?.startsAtTop === true &&
+      warningDebug?.timer?.leftArcSweep > 1 &&
+      warningDebug?.timer?.rightArcSweep > 1 &&
+      warningDebug?.timer?.nameCountdownRemoved === true &&
+      signatureWarning.nameText === signatureWarning.bossName &&
+      signatureRelease.ok === true &&
+      signatureRelease.created?.length === 5 &&
+      signatureRelease.center?.delta < 0.001 &&
+      signatureRelease.stateWarning?.phase === 'release' &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0,
     baseUrl,
     bossTelegraph,
     enemyBulletsBefore: telegraphState.counts?.enemyBullets || 0,
     enemyBulletsAfter: firedState.counts?.enemyBullets || 0,
+    signatureWarning: {
+      movementDelta,
+      lockedAngle: signatureWarning.lockedAngle,
+      livePlayerAngle: signatureWarning.livePlayerAngle,
+      lockedVsLiveDelta: signatureWarning.lockedVsLiveDelta,
+      nameText: signatureWarning.nameText,
+      state: warningDebug,
+      layer: signatureWarning.layerDebug
+    },
+    signatureRelease,
     pageErrors,
     consoleErrors,
-    screenshot: telegraphScreenshot
+    screenshots: {
+      regular: telegraphScreenshot,
+      signature: signatureScreenshot
+    }
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 
@@ -172,7 +290,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[boss-telegraph] PASS attack=${bossTelegraph.attack} type=${bossTelegraph.type} screenshot=${telegraphScreenshot}`);
+    console.log(`[boss-telegraph] PASS regular=${bossTelegraph.attack}/${bossTelegraph.type} signature=cone lockedAngle=${signatureWarning.lockedAngle.toFixed(3)} screenshots=${telegraphScreenshot},${signatureScreenshot}`);
   }
 } finally {
   await browser.close();

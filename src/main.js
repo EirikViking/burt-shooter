@@ -1189,6 +1189,7 @@ function buildGameTextState(game) {
         bossAttack: enemy.profile?.attack || null,
         bossSignature: enemy.getSignatureForPhase ? enemy.getSignatureForPhase(enemy.phase || 1) : (enemy.profile?.signature || null),
         bossAnimation: enemy.getAnimationDebugState ? enemy.getAnimationDebugState() : null,
+        bossSignatureWarning: enemy.getSignatureWarningDebugState ? enemy.getSignatureWarningDebugState() : null,
         safeLanes: Array.isArray(enemy.safeLanes) ? enemy.safeLanes : [],
         phaseShift: enemy.kind === 'boss' ? {
           anchorOffset: Math.round(enemy.phaseAnchorOffset || 0),
@@ -1199,6 +1200,10 @@ function buildGameTextState(game) {
         telegraph: enemy.telegraph ? {
           type: enemy.telegraph.type || null,
           label: enemy.telegraph.label || null,
+          lockedAngle: Number.isFinite(enemy.telegraph.lockedAngle)
+            ? Number(enemy.telegraph.lockedAngle.toFixed(4))
+            : null,
+          movementLocked: Boolean(enemy.telegraph.movementLocked),
           remainingMs: Math.max(0, Math.round((enemy.telegraph.start + enemy.telegraph.duration) - Date.now()))
         } : enemy.regularTelegraph ? {
           type: enemy.regularTelegraph.type || null,
