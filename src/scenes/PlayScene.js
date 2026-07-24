@@ -601,7 +601,7 @@ export class PlayScene {
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
-    this.inputManager.resetAllKeys();
+    this.inputManager.resetTransientState({ preserveFire: true, suppressUntilReleased: true });
     this.gameplayGame = this.game.createGameplayFacade?.() || this.game;
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
@@ -8267,6 +8267,7 @@ export class PlayScene {
     const ban = this.createTacticalDraftBanControl();
     overlay.addChild(rescan, hold, ban);
     const initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
+    this.resetTransientGameplayInput('tactical_draft_enter', { preserveFire: true });
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
@@ -9802,7 +9803,7 @@ export class PlayScene {
         return;
       }
       state.inputArmed = true;
-      this.inputManager?.resetAllKeys?.();
+      this.resetTransientGameplayInput('tactical_draft_armed', { preserveFire: true });
       state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
       return;
     }
@@ -10343,6 +10344,9 @@ export class PlayScene {
       this.tacticalScoreRouteRestrictionTimeout = null;
     }
     const state = this.tacticalDraft;
+    if (state?.active) {
+      this.resetTransientGameplayInput(`tactical_draft_exit:${reason}`, { preserveFire: true });
+    }
     if (state?.overlay?.parent) state.overlay.parent.removeChild(state.overlay);
     state?.overlay?.destroy?.({ children: true });
     this.lastTacticalDraftCloseReason = reason;
@@ -10504,6 +10508,22 @@ export class PlayScene {
     };
   }
 
+  resetTransientGameplayInput(reason = 'gameplay_transition', { preserveFire = true } = {}) {
+    const input = this.inputManager?.resetTransientState?.({
+      preserveFire,
+      suppressUntilReleased: true
+    }) || null;
+    this.touchControls?.resetTransientState?.();
+    this.player?.resetTransientInputState?.();
+    this.lastTransientInputReset = {
+      reason,
+      preserveFire: Boolean(preserveFire),
+      at: Date.now(),
+      input
+    };
+    return this.lastTransientInputReset;
+  }
+
   handlePauseToggle() {
     const pressed = this.inputManager.consumeKeyPress
       ? this.inputManager.consumeKeyPress('KeyP', 'p', 'P', 'Escape')
@@ -10518,6 +10538,7 @@ export class PlayScene {
 
   setPaused(paused) {
     if (this.isPaused === paused) return;
+    this.resetTransientGameplayInput(paused ? 'pause_enter' : 'pause_exit', { preserveFire: true });
     this.isPaused = paused;
     if (paused) {
       this.showPauseOverlay();
@@ -10570,6 +10591,7 @@ export class PlayScene {
   }
 
   pauseForExternalInterruption(reason = 'external_interruption') {
+    this.resetTransientGameplayInput(`focus_loss:${reason}`, { preserveFire: false });
     if (this.controlSmokeMode) return;
     if (
       this.game?.currentScene !== this
@@ -20434,6 +20456,7 @@ export class PlayScene {
   }
 
   showBossIntro(name, taunt) {
+    this.resetTransientGameplayInput('boss_intro_enter', { preserveFire: true });
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
     const edgeAligned = !compact && width >= 1100;
@@ -20614,7 +20637,10 @@ export class PlayScene {
       if (elapsed >= duration) {
         this.game.app.ticker.remove(ticker);
         if (card.parent) card.parent.removeChild(card);
-        if (this.activeBossIntroCard === card) this.activeBossIntroCard = null;
+        if (this.activeBossIntroCard === card) {
+          this.resetTransientGameplayInput('boss_intro_exit', { preserveFire: true });
+          this.activeBossIntroCard = null;
+        }
       }
     };
     card.__toastTicker = ticker;

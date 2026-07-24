@@ -10,6 +10,8 @@ export class InputManager {
     this.gamepadDeadzone = 0.24;
     this.gamepadState = this.createEmptyGamepadState();
     this.previousGamepadButtons = {};
+    this.suppressedKeys = new Set();
+    this.suppressedGamepadActions = new Map();
     this.setupKeyboard();
     this.setupMouse();
     this.setupFocusHandlers();
@@ -23,13 +25,19 @@ export class InputManager {
     this.handleMouseUp = (e) => {
       if (e.button === 0) this.touchFireActive = false;
     };
+    this.handlePointerCancel = () => {
+      this.touchFireActive = false;
+      this.touches = [];
+    };
     // Bind to window to catch clicks outside canvas if needed, or document
     document.addEventListener('pointerdown', this.handleMouseDown);
     document.addEventListener('pointerup', this.handleMouseUp);
+    document.addEventListener('pointercancel', this.handlePointerCancel);
   }
 
   setupKeyboard() {
     this.handleKeyDown = (e) => {
+      if (this.suppressedKeys.has(e.code) || this.suppressedKeys.has(e.key)) return;
       if (!this.keys[e.code]) this.justPressed[e.code] = true;
       if (!this.keys[e.key]) this.justPressed[e.key] = true;
       this.keys[e.code] = true;
@@ -39,6 +47,8 @@ export class InputManager {
     this.handleKeyUp = (e) => {
       this.keys[e.code] = false;
       this.keys[e.key] = false;
+      this.suppressedKeys.delete(e.code);
+      this.suppressedKeys.delete(e.key);
     };
 
     window.addEventListener('keydown', this.handleKeyDown);
@@ -70,6 +80,7 @@ export class InputManager {
     this.handleGamepadDisconnected = () => {
       this.gamepadState = this.createEmptyGamepadState();
       this.previousGamepadButtons = {};
+      this.suppressedGamepadActions.clear();
     };
 
     window.addEventListener('gamepadconnected', this.handleGamepadConnected);
@@ -146,59 +157,125 @@ export class InputManager {
     return Boolean(button.pressed || button.value > 0.5);
   }
 
+  readGamepadControls(pad) {
+    if (!pad || pad.connected === false) {
+      return {
+        connected: false,
+        id: null,
+        index: null,
+        moveX: 0,
+        moveY: 0,
+        firing: false,
+        dodge: false,
+        focus: false,
+        pause: false,
+        dpadLeft: false,
+        dpadRight: false,
+        dpadUp: false,
+        dpadDown: false
+      };
+    }
+
+    const buttons = pad.buttons || [];
+    const axes = pad.axes || [];
+    const axisX = this.readDirectionalAxis(axes, 0, 2);
+    const axisY = this.readDirectionalAxis(axes, 1, 3);
+    const dpadLeft = this.isButtonPressed(buttons, 14);
+    const dpadRight = this.isButtonPressed(buttons, 15);
+    const dpadUp = this.isButtonPressed(buttons, 12);
+    const dpadDown = this.isButtonPressed(buttons, 13);
+    return {
+      connected: true,
+      id: pad.id || 'gamepad',
+      index: Number.isFinite(pad.index) ? pad.index : 0,
+      moveX: dpadLeft ? -1 : dpadRight ? 1 : axisX,
+      moveY: dpadUp ? -1 : dpadDown ? 1 : axisY,
+      firing: this.isButtonPressed(buttons, 0) ||
+        this.isButtonPressed(buttons, 5) ||
+        this.isButtonPressed(buttons, 7),
+      dodge: this.isButtonPressed(buttons, 1) ||
+        this.isButtonPressed(buttons, 4),
+      focus: this.isButtonPressed(buttons, 6),
+      pause: this.isButtonPressed(buttons, 9) ||
+        this.isButtonPressed(buttons, 8) ||
+        this.isButtonPressed(buttons, 16),
+      dpadLeft,
+      dpadRight,
+      dpadUp,
+      dpadDown
+    };
+  }
+
+  applySuppressedAxis(action, value) {
+    if (!this.suppressedGamepadActions.has(action)) return value;
+    const heldDirection = Number(this.suppressedGamepadActions.get(action)) || 0;
+    const nextDirection = Math.sign(Number(value) || 0);
+    if (nextDirection === 0) {
+      this.suppressedGamepadActions.delete(action);
+      return 0;
+    }
+    if (nextDirection !== heldDirection) {
+      this.suppressedGamepadActions.delete(action);
+      return value;
+    }
+    return 0;
+  }
+
+  applySuppressedButton(action, pressed) {
+    if (!this.suppressedGamepadActions.has(action)) return Boolean(pressed);
+    if (!pressed) this.suppressedGamepadActions.delete(action);
+    return false;
+  }
+
   pollGamepad(force = false) {
     const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     if (!force && now - (this.gamepadState.updatedAt || 0) < 8) return this.gamepadState;
 
     const pad = this.getGamepadSnapshot();
-    if (!pad || pad.connected === false) {
+    const raw = this.readGamepadControls(pad);
+    if (!raw.connected) {
       this.gamepadState = this.createEmptyGamepadState();
+      this.suppressedGamepadActions.clear();
       return this.gamepadState;
     }
 
-    const buttons = pad.buttons || [];
-    const axes = pad.axes || [];
-    const moveX = this.readDirectionalAxis(axes, 0, 2);
-    const moveY = this.readDirectionalAxis(axes, 1, 3);
-    const dpadLeft = this.isButtonPressed(buttons, 14);
-    const dpadRight = this.isButtonPressed(buttons, 15);
-    const dpadUp = this.isButtonPressed(buttons, 12);
-    const dpadDown = this.isButtonPressed(buttons, 13);
-    const firing = this.isButtonPressed(buttons, 0) ||
-      this.isButtonPressed(buttons, 5) ||
-      this.isButtonPressed(buttons, 7);
-    const dodge = this.isButtonPressed(buttons, 1) ||
-      this.isButtonPressed(buttons, 4);
-    const focus = this.isButtonPressed(buttons, 6);
-    const pause = this.isButtonPressed(buttons, 9) ||
-      this.isButtonPressed(buttons, 8) ||
-      this.isButtonPressed(buttons, 16);
+    const moveX = this.applySuppressedAxis('moveX', raw.moveX);
+    const moveY = this.applySuppressedAxis('moveY', raw.moveY);
+    const firing = this.applySuppressedButton('firing', raw.firing);
+    const dodge = this.applySuppressedButton('dodge', raw.dodge);
+    const focus = this.applySuppressedButton('focus', raw.focus);
+    const pause = this.applySuppressedButton('pause', raw.pause);
     const pauseWasPressed = Boolean(this.previousGamepadButtons.pause);
     const pauseJustPressed = Boolean(pause && (this.gamepadState.pauseJustPressed || !pauseWasPressed));
-    const controllerActive = Math.abs(moveX) > 0 ||
-      Math.abs(moveY) > 0 ||
-      dpadLeft ||
-      dpadRight ||
-      dpadUp ||
-      dpadDown ||
-      firing ||
-      dodge ||
-      focus ||
-      pause;
+    const controllerActive = Math.abs(raw.moveX) > 0 ||
+      Math.abs(raw.moveY) > 0 ||
+      raw.firing ||
+      raw.dodge ||
+      raw.focus ||
+      raw.pause;
     if (controllerActive) markControllerInputActive();
 
     this.gamepadState = {
       connected: true,
-      id: pad.id || 'gamepad',
-      index: Number.isFinite(pad.index) ? pad.index : 0,
-      moveX: dpadLeft ? -1 : dpadRight ? 1 : moveX,
-      moveY: dpadUp ? -1 : dpadDown ? 1 : moveY,
+      id: raw.id,
+      index: raw.index,
+      moveX,
+      moveY,
       firing,
       dodge,
       focus,
       pause,
       pauseJustPressed,
-      buttons: { dpadLeft, dpadRight, dpadUp, dpadDown, firing, dodge, focus, pause },
+      buttons: {
+        dpadLeft: moveX < -0.35 && raw.dpadLeft,
+        dpadRight: moveX > 0.35 && raw.dpadRight,
+        dpadUp: moveY < -0.35 && raw.dpadUp,
+        dpadDown: moveY > 0.35 && raw.dpadDown,
+        firing,
+        dodge,
+        focus,
+        pause
+      },
       updatedAt: now
     };
     this.previousGamepadButtons = { pause };
@@ -218,11 +295,73 @@ export class InputManager {
     };
   }
 
-  resetAllKeys() {
-    this.keys = {};
+  resetTransientState({ preserveFire = false, suppressUntilReleased = true } = {}) {
+    const fireKeys = new Set(['Space', ' ', 'shoot']);
+    const nextKeys = {};
+    for (const [key, pressed] of Object.entries(this.keys)) {
+      if (!pressed) continue;
+      if (preserveFire && fireKeys.has(key)) {
+        nextKeys[key] = true;
+      } else if (suppressUntilReleased) {
+        this.suppressedKeys.add(key);
+      }
+    }
+    this.keys = nextKeys;
     this.justPressed = {};
-    this.touchFireActive = false;
+    this.touches = [];
+    if (!preserveFire) this.touchFireActive = false;
+
+    const raw = this.readGamepadControls(this.getGamepadSnapshot());
+    if (!suppressUntilReleased) {
+      this.suppressedKeys.clear();
+      this.suppressedGamepadActions.clear();
+    } else {
+      if (raw.moveX) this.suppressedGamepadActions.set('moveX', Math.sign(raw.moveX));
+      if (raw.moveY) this.suppressedGamepadActions.set('moveY', Math.sign(raw.moveY));
+      if (raw.dodge) this.suppressedGamepadActions.set('dodge', true);
+      if (raw.focus) this.suppressedGamepadActions.set('focus', true);
+      if (raw.pause) this.suppressedGamepadActions.set('pause', true);
+      if (raw.firing && !preserveFire) this.suppressedGamepadActions.set('firing', true);
+    }
+
+    const preservedGamepadFire = Boolean(preserveFire && raw.firing);
+    this.gamepadState = {
+      ...this.createEmptyGamepadState(),
+      connected: raw.connected,
+      id: raw.id,
+      index: raw.index,
+      firing: preservedGamepadFire,
+      buttons: {
+        dpadLeft: false,
+        dpadRight: false,
+        dpadUp: false,
+        dpadDown: false,
+        firing: preservedGamepadFire,
+        dodge: false,
+        focus: false,
+        pause: false
+      },
+      updatedAt: 0
+    };
     this.previousGamepadButtons = {};
+    return this.getTransientDebugState();
+  }
+
+  resetAllKeys() {
+    return this.resetTransientState({ preserveFire: false, suppressUntilReleased: true });
+  }
+
+  getTransientDebugState() {
+    return {
+      pressedKeys: Object.entries(this.keys)
+        .filter(([, pressed]) => Boolean(pressed))
+        .map(([key]) => key)
+        .sort(),
+      suppressedKeys: Array.from(this.suppressedKeys).sort(),
+      suppressedGamepadActions: Object.fromEntries(this.suppressedGamepadActions),
+      touchFireActive: Boolean(this.touchFireActive),
+      touches: this.touches.length
+    };
   }
 
   isFiring() {
@@ -283,8 +422,11 @@ export class InputManager {
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     document.removeEventListener('pointerdown', this.handleMouseDown);
     document.removeEventListener('pointerup', this.handleMouseUp);
+    document.removeEventListener('pointercancel', this.handlePointerCancel);
     this.keys = {};
     this.justPressed = {};
+    this.suppressedKeys.clear();
+    this.suppressedGamepadActions.clear();
     this.gamepadState = this.createEmptyGamepadState();
     this.destroyed = true;
   }

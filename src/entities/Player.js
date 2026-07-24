@@ -104,6 +104,7 @@ export class Player {
     this.dodgeDuration = 0;
     this.dodgeDurationMax = Math.round(333 * (this.traitCombat.dodgeDurationMult || 1));
     this.dodgeSequence = 0;
+    this.dodgeInputWasPressed = false;
     this.pendingDodgeExitPulseToken = 0;
     this.resolvedDodgeExitPulseToken = 0;
     this.lastDodgeExitPulse = null;
@@ -1824,7 +1825,8 @@ export class Player {
     this.updateStatusEffectVisuals(deltaSeconds);
 
     // Dodge Logic
-    if ((this.inputManager.isKeyPressed('ShiftLeft') || this.inputManager.isKeyPressed('ShiftRight')) && this.dodgeCooldown <= 0 && !this.isDodging) {
+    const dodgeInputPressed = this.inputManager.isKeyPressed('ShiftLeft') || this.inputManager.isKeyPressed('ShiftRight');
+    if (this.consumeDodgeInputEdge(dodgeInputPressed) && this.dodgeCooldown <= 0 && !this.isDodging) {
       this.startDodge();
     }
 
@@ -1888,6 +1890,18 @@ export class Player {
   }
 
   // --- Actions ---
+
+  consumeDodgeInputEdge(pressed) {
+    const down = Boolean(pressed);
+    const justPressed = down && !this.dodgeInputWasPressed;
+    this.dodgeInputWasPressed = down;
+    return justPressed;
+  }
+
+  resetTransientInputState() {
+    this.touchInput = { moveX: 0, moveY: 0 };
+    this.dodgeInputWasPressed = false;
+  }
 
   createMuzzleFlash(options = {}) {
     if (!this.sprite) return;

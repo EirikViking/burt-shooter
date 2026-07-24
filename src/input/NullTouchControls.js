@@ -27,6 +27,10 @@ export class NullTouchControls {
     };
   }
 
+  resetTransientState() {
+    // No-op
+  }
+
   destroy() {
     // No-op
   }

@@ -234,6 +234,15 @@ export class TouchControls {
     };
   }
 
+  resetTransientState() {
+    this.moveTouch = null;
+    this.moveX = 0;
+    this.moveY = 0;
+    if (this.joystickBase) this.joystickBase.style.display = 'none';
+    if (this.joystickStick) this.joystickStick.style.display = 'none';
+    if (this.joystickHint) this.joystickHint.style.opacity = '0.7';
+  }
+
   destroy() {
     if (this.leftZone) {
       document.body.removeChild(this.leftZone);
