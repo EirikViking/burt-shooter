@@ -154,7 +154,8 @@ try {
     ['startBtn', 'launch'],
     ['dailySignalBtn', 'dailySignal'],
     ['scoutRunBtn', 'scout'],
-    ['sectorStartBtn', 'sectorStart']
+    ['sectorStartBtn', 'sectorStart'],
+    ['overrunStartBtn', 'overrun']
   ];
   const finishVoices = async () => page.evaluate(() => {
     for (const audio of window.__fakeAudioInstances || []) {
@@ -169,8 +170,12 @@ try {
       String(src).includes('/audio/voice/menu-boss-barks/boss_menu_bark_mode_')
     )).length || 0
   ));
-  const captureNarration = async (buttonKey, expectedMenuId, label) => {
-    const narration = getRunModeNarrationSpec(expectedMenuId);
+  const captureNarration = async (buttonKey, expectedMenuId, label, variantId = null) => {
+    const resolvedVariantId = expectedMenuId === 'overrun' ? (variantId || 'locked') : null;
+    const narration = getRunModeNarrationSpec(
+      expectedMenuId,
+      resolvedVariantId === 'tactical' ? null : resolvedVariantId
+    );
     const state = await readState(page);
     return {
       label,
@@ -186,12 +191,12 @@ try {
       playCount: await readPlayCount()
     };
   };
-  const hoverCard = async (buttonKey, expectedMenuId, label, { finish = true } = {}) => {
+  const hoverCard = async (buttonKey, expectedMenuId, label, { finish = true, variantId = null } = {}) => {
     await page.evaluate((key) => {
       window.__game?.currentScene?.[key]?.emit?.('pointerover');
     }, buttonKey);
     await page.waitForTimeout(460);
-    const result = await captureNarration(buttonKey, expectedMenuId, label);
+    const result = await captureNarration(buttonKey, expectedMenuId, label, variantId);
     await pointOut(buttonKey);
     if (finish) await finishVoices();
     await page.waitForTimeout(60);
@@ -230,7 +235,8 @@ try {
     runModeCards[0],
     runModeCards[4],
     runModeCards[1],
-    runModeCards[3]
+    runModeCards[3],
+    runModeCards[5]
   ];
   const randomSequence = await runHoverSequence(randomCards, 'random');
 
@@ -258,10 +264,36 @@ try {
   const quickScrub = {
     startPlayCount: scrubStartPlayCount,
     endPlayCount: await readPlayCount(),
-    final: await captureNarration(...runModeCards[4], 'quick-scrub-final')
+    final: await captureNarration(...runModeCards[5], 'quick-scrub-final')
   };
-  await pointOut(runModeCards[4][0]);
+  await pointOut(runModeCards[5][0]);
   await finishVoices();
+
+  await page.evaluate(() => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      version: 1,
+      bestSector: 30,
+      bestLevel: 30,
+      totalRuns: 8
+    }));
+  });
+  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'menu', { timeout: 30000 });
+  const unlockedTacticalNarration = await hoverCard(
+    'overrunStartBtn',
+    'overrun',
+    'overrun-unlocked-tactical',
+    { variantId: 'tactical' }
+  );
+  await page.evaluate(() => {
+    window.__game.currentScene.overrunRunMode = 'overrun_pure';
+  });
+  const unlockedPureNarration = await hoverCard(
+    'overrunStartBtn',
+    'overrun',
+    'overrun-unlocked-pure',
+    { variantId: 'pure' }
+  );
 
   const reentryStartPlayCount = await readPlayCount();
   const reentryFirst = await hoverCard(...runModeCards[1], 'same-card-first');
@@ -451,6 +483,10 @@ try {
       activeReplacement.second.activeEvent === getRunModeNarrationSpec('dailySignal')?.event &&
       quickScrub.endPlayCount - quickScrub.startPlayCount === 1 &&
       isCorrectNarration(quickScrub.final) &&
+      isCorrectNarration(unlockedTacticalNarration) &&
+      unlockedTacticalNarration.expectedEvent === getRunModeNarrationSpec('overrun')?.event &&
+      isCorrectNarration(unlockedPureNarration) &&
+      unlockedPureNarration.expectedEvent === getRunModeNarrationSpec('overrun', 'pure')?.event &&
       sameCardReentry.endPlayCount - sameCardReentry.startPlayCount === 2 &&
       isCorrectNarration(sameCardReentry.first) &&
       isCorrectNarration(sameCardReentry.second) &&
@@ -489,6 +525,8 @@ try {
     randomSequence,
     activeReplacement,
     quickScrub,
+    unlockedTacticalNarration,
+    unlockedPureNarration,
     sameCardReentry,
     withinCardMovement,
     keyboardNavigation,

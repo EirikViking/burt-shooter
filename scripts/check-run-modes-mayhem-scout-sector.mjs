@@ -623,11 +623,44 @@ try {
   await page.evaluate(() => window.__game?.scenes?.menu?.closeSectorSelector?.());
   await waitForScene(page, 'menu');
 
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.menu;
+    const progress = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      ...progress,
+      bestSector: 29,
+      bestLevel: 29
+    }));
+    scene.overrunStartState = null;
+    scene.refreshButtonCopy?.(scene.overrunStartBtn, { forceGpuRefresh: true });
+    scene.setMenuFocusByButton?.(scene.overrunStartBtn);
+  });
+  await page.waitForTimeout(180);
+  const lockedOverrunFocus = await readState(page);
+  assert.equal(lockedOverrunFocus.menu?.launchDeck?.cards?.overrun?.available, false);
+  assert.equal(lockedOverrunFocus.menu?.launchDeck?.cards?.overrun?.sublabel, 'LOCKED · REACH SECTOR 30');
+  assert.match(
+    lockedOverrunFocus.menu?.missionBriefing?.body || '',
+    /Reach Sector 30 in Mayhem[\s\S]*Sector milestone, not Pilot Rank 30[\s\S]*zero starting score and 65% of normal Career XP/i
+  );
+  await page.screenshot({ path: path.join(outputDir, 'menu-overrun-locked-focused.png'), fullPage: false });
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.menu;
+    const progress = JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}');
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
+      ...progress,
+      bestSector: 31,
+      bestLevel: 31
+    }));
+    scene.overrunStartState = null;
+    scene.refreshButtonCopy?.(scene.overrunStartBtn, { forceGpuRefresh: true });
+  });
+
   const overrunFocus = await focusMenuOption(page, 'overrun');
   assert.equal(overrunFocus.menu?.missionBriefing?.mode, 'overrun');
   assert.match(
     overrunFocus.menu?.missionBriefing?.body || '',
-    /SECTOR 51.*UNRANKED[\s\S]*Fixed Tactical baseline[\s\S]*Career XP and cumulative Pilot Orders stay active[\s\S]*No leaderboard submission, achievements, or checkpoint unlocks/i
+    /SECTOR 51.*UNRANKED[\s\S]*Damage Up.*Rapid Fire.*Blink Drive.*Focus Lens.*Double Shot[\s\S]*Boss Drafts continue[\s\S]*zero score[\s\S]*65% NORMAL CAREER XP[\s\S]*Career XP and cumulative Pilot Orders stay active[\s\S]*No leaderboard submission, achievements, or checkpoint unlocks/i
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-tactical-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.cycleOverrunRunMode?.(-1, { force: true }));
@@ -635,7 +668,10 @@ try {
   const overrunPureFocus = await readState(page);
   assert.equal(overrunPureFocus.menu?.launchDeck?.cards?.overrun?.runMode, RUN_MODES.OVERRUN_PURE);
   assert.equal(overrunPureFocus.menu?.launchDeck?.cards?.overrun?.label, 'OVERRUN PURE');
-  assert.match(overrunPureFocus.menu?.missionBriefing?.body || '', /Pure ship baseline with no Tactical Drafts/i);
+  assert.match(
+    overrunPureFocus.menu?.missionBriefing?.body || '',
+    /Pure ship baseline with no Tactical Drafts[\s\S]*zero score[\s\S]*65% NORMAL CAREER XP/i
+  );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-pure-focused.png'), fullPage: false });
 
   await page.evaluate(() => window.__game?.scenes?.menu?.startOverrunRun?.());

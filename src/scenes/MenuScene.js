@@ -33,7 +33,8 @@ import { deriveDailySignalContract, getDailySignalResetSeconds } from '../config
 import { getSectorInfo } from '../config/SectorCatalog.js';
 import {
   RUN_MODE_NARRATION_SPECS,
-  getRunModeNarrationSpec
+  getRunModeNarrationSpec,
+  getRunModeNarrationSpecByEvent
 } from '../config/RunModeNarration.js';
 import {
   RUN_MODES,
@@ -1865,6 +1866,9 @@ export class MenuScene {
     if (runModeBriefing.id === 'dailySignal') {
       briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
     }
+    if (runModeBriefing.id === 'overrun') {
+      briefingHeight += Math.round((isShortLayout ? 42 : 48) * Math.min(briefingScale, 1.25));
+    }
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.176 * uiScale, (isMobileLayout ? 238 : 252) * uiScale, (isMobileLayout ? 310 : 350) * uiScale));
@@ -2278,6 +2282,14 @@ export class MenuScene {
     if (focused === 'overrun') {
       const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
       const tactical = this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL;
+      const availableModeLines = tactical
+        ? [
+            translateText('TACTICAL START: Damage Up · Rapid Fire · Blink Drive · Focus Lens · Double Shot.'),
+            translateText('Boss Drafts continue after the fixed starting loadout.')
+          ]
+        : [
+            translateText('Pure ship baseline with no Tactical Drafts.')
+          ];
       return {
         id: 'overrun',
         title: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
@@ -2286,9 +2298,9 @@ export class MenuScene {
         menuBody: state.available
           ? [
               translateText('SECTOR 51 · UNRANKED'),
-              translateText(tactical
-                ? 'Fixed Tactical baseline, then boss Drafts continue.'
-                : 'Pure ship baseline with no Tactical Drafts.'),
+              ...availableModeLines,
+              translateText('Starts at zero score. No skipped-sector rewards.'),
+              translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
               translateText('Career XP and cumulative Pilot Orders stay active.'),
               translateText('No leaderboard submission, achievements, or checkpoint unlocks.'),
               translateText('LEFT/RIGHT: CHANGE LOADOUT')
@@ -2296,11 +2308,13 @@ export class MenuScene {
           : [
               translateText('LOCKED · REACH SECTOR 30'),
               translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
+              translateText('This is a Sector milestone, not Pilot Rank 30.'),
+              translateText('After unlock: zero starting score and 65% of normal Career XP.'),
               translateText('No leaderboard shortcut. Career rewards begin only after unlock.')
             ].join('\n'),
         body: state.available
-          ? translateText('Start at Sector 51 for aggressive late-game runs. Career XP and cumulative Pilot Orders count, while leaderboards, achievements, and checkpoint unlocks stay off.')
-          : translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.')
+          ? translateText('Starts at zero score with no skipped-sector rewards. Earns 65% of normal Career XP (35% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.')
+          : translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start. This is based on the highest Sector reached, not Pilot Rank.')
       };
     }
     if (focused === 'launchTactical') {
@@ -3666,6 +3680,15 @@ export class MenuScene {
   }
 
   getBossMenuBarkEvent(menuId) {
+    if (menuId === 'overrun') {
+      const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
+      const variantId = !state.available
+        ? 'locked'
+        : this.overrunRunMode === RUN_MODES.OVERRUN_PURE
+          ? 'pure'
+          : null;
+      return getRunModeNarrationSpec(menuId, variantId)?.event || null;
+    }
     return MENU_BOSS_BARK_EVENTS[menuId] || null;
   }
 
@@ -3676,7 +3699,7 @@ export class MenuScene {
     reason = null,
     timestamp = Date.now()
   } = {}) {
-    const spec = getRunModeNarrationSpec(menuId);
+    const spec = getRunModeNarrationSpecByEvent(eventName) || getRunModeNarrationSpec(menuId);
     if (!spec) return null;
     const entry = Object.freeze({
       modeId: spec.modeId,
@@ -3809,7 +3832,8 @@ export class MenuScene {
     if (isActivate) this.clearPendingBossMenuBark();
     const now = Date.now();
     const isRunModeFocus = !isActivate && target?._isRunModeCard === true;
-    const isDistinctRunModeFocus = isRunModeFocus && this.lastBossMenuBarkId !== menuId;
+    const barkIdentity = isRunModeFocus ? eventName : menuId;
+    const isDistinctRunModeFocus = isRunModeFocus && this.lastBossMenuBarkId !== barkIdentity;
     const minCooldown = isActivate ? 420 : MENU_BOSS_BARK_FOCUS_COOLDOWN_MS;
     const sameCooldown = isActivate ? 420 : MENU_BOSS_BARK_SAME_FOCUS_COOLDOWN_MS;
     if (!force && !isDistinctRunModeFocus && now - this.lastBossMenuBarkAt < minCooldown) {
@@ -3823,7 +3847,7 @@ export class MenuScene {
       if (isActivate) this.showBossMenuBarkVfx(target, { intent });
       return false;
     }
-    if (!force && this.lastBossMenuBarkId === menuId && now - this.lastBossMenuBarkAt < sameCooldown) {
+    if (!force && this.lastBossMenuBarkId === barkIdentity && now - this.lastBossMenuBarkAt < sameCooldown) {
       this.recordModeNarrationDispatch(menuId, eventName, {
         decision: 'suppressed_same_mode_cooldown',
         intent,
@@ -3844,7 +3868,7 @@ export class MenuScene {
       });
       return false;
     }
-    this.lastBossMenuBarkId = menuId;
+    this.lastBossMenuBarkId = barkIdentity;
     this.lastBossMenuBarkAt = now;
     try {
       AudioManager.init();

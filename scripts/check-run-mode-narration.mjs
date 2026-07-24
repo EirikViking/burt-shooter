@@ -50,6 +50,13 @@ const expectedCards = Object.freeze([
     displayTitle: 'SECTOR RUN',
     event: 'boss_menu_bark_mode_sector',
     required: [/\bUnranked checkpoint practice\b/i, /unlocked in Mayhem/i, /records stay local/i]
+  }),
+  Object.freeze({
+    button: 'overrunStartBtn',
+    menuId: 'overrun',
+    displayTitle: 'OVERRUN TACTICAL',
+    event: 'boss_menu_bark_mode_overrun_tactical',
+    required: [/Sector Fifty-One/i, /zero score/i, /Damage Up/i, /Rapid Fire/i, /Blink Drive/i, /Focus Lens/i, /Double Shot/i, /sixty-five percent/i]
   })
 ]);
 
@@ -106,6 +113,30 @@ const matrix = expectedCards.map((expected) => {
     audioUrl: expectedUrl
   };
 });
+
+for (const [variantId, expected] of Object.entries({
+  pure: {
+    event: 'boss_menu_bark_mode_overrun_pure',
+    required: [/Sector Fifty-One/i, /zero score/i, /no Tactical augments/i, /no .*boss Drafts/i, /sixty-five percent/i]
+  },
+  locked: {
+    event: 'boss_menu_bark_mode_overrun_locked',
+    required: [/Overrun locked/i, /Sector Thirty in Mayhem/i, /Sector Fifty-One/i, /sixty-five percent/i]
+  }
+})) {
+  const spec = getRunModeNarrationSpec('overrun', variantId);
+  assert.equal(spec.event, expected.event, `overrun ${variantId} narration event`);
+  for (const pattern of expected.required) {
+    assert.match(spec.transcriptSource, pattern, `overrun ${variantId} transcript misses ${pattern}`);
+  }
+  for (const locale of getSupportedLanguages()) {
+    const resolvedText = translateTextForLocale(locale, spec.transcriptSource);
+    assert.ok(resolvedText && !resolvedText.includes('undefined'), `overrun ${variantId} ${locale} resolved narration text`);
+    if (locale !== 'en') {
+      assert.notEqual(resolvedText, spec.transcriptSource, `overrun ${variantId} ${locale} must not fall back to English narration text`);
+    }
+  }
+}
 
 assert.match(menuSource, /RUN_MODE_NARRATION_SPECS/, 'MenuScene must derive the mode narration mapping from the audited specs');
 assert.doesNotMatch(

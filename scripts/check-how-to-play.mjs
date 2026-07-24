@@ -23,7 +23,7 @@ const scenarios = [
 const expectedRows = {
   flight: ['MOVE', 'FOCUS DRIFT', 'SHOOT', 'DODGE / PHASE'],
   combat: ['CHAINED DODGE', 'GRAZE', 'GRAZE BREAK', 'COMBOS', 'TRACTOR SHIPS', 'PICKUP INTENT'],
-  modes: ['DAILY CHALLENGE', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN'],
+  modes: ['DAILY CHALLENGE', 'MAYHEM PURE', 'MAYHEM TACTICAL', 'SCOUT RUN', 'SECTOR RUN', 'OVERRUN'],
   tactics: ['SIDE DIRECTIVES', 'TACTICAL DRAFT', 'FUSION PROTOCOLS', 'SCORE ROUTE & BANS', 'DRAFT TOOLS', 'POWERUP OVERLAP', 'STACK LIMITS', 'THREAT RESPONSE'],
   intel: ['ACE BOUNTIES', 'EXTINCTION-CLASS CONTACT', 'ELITE SIGNALS', 'CABINET SKILL FLIGHT', 'BOSS WAVES'],
   career: ['PILOT ORDERS', 'SHIP HANGAR', 'THREAT CODEX', 'RECORDS & LEADERBOARDS']
@@ -154,6 +154,9 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('leaves boards, achievements, career XP, Pilot Orders, and checkpoints untouched'), `${label} should explain Scout progression limits`);
     assert(joined.includes('separate Steam Sector leaderboard'), `${label} should explain the Sector Run leaderboard lane`);
     assert(joined.includes('career and achievements stay untouched'), `${label} should explain Sector Run progression limits`);
+    assert(joined.includes('SECTOR 51 // 65% NORMAL CAREER XP'), `${label} should disclose the reduced Overrun Career XP rate`);
+    assert(joined.includes('65% of normal Career XP (35% less)'), `${label} should make clear that Overrun XP is reduced, not a bonus`);
+    assert(joined.includes('competitive bests untouched'), `${label} should explain Overrun progression isolation`);
   }
   if (expectedPage === 'tactics') {
     assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
@@ -333,6 +336,27 @@ try {
       const menuModes = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'modes', `${scenario.name} menu modes page`);
       assertOverlayLayout(menuModes, `${scenario.name} menu modes page`);
       assertCleanHelpCopy(menuModes, `${scenario.name} menu modes page`, 'modes');
+      await page.evaluate(() => {
+        const overlay = window.__game?.currentScene?.howToPlayOverlay;
+        const overrunCard = overlay?.cards?.find((card) => card?._helpRow?.label === 'OVERRUN');
+        overlay?.openDetail?.(overrunCard?._helpRow);
+      });
+      const overrunDetail = await waitForState(
+        page,
+        (state) => state.howToPlayOverlay?.detail?.label === 'OVERRUN',
+        `${scenario.name} Overrun help detail`
+      );
+      assert(
+        overrunDetail.howToPlayOverlay.detail.detail.includes('reduced Career XP—not a +65% bonus'),
+        `${scenario.name} Overrun detail should distinguish reduced XP from bonus XP`
+      );
+      const overrunDetailShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-overrun-detail');
+      await page.keyboard.press('Escape');
+      await waitForState(
+        page,
+        (state) => state.overlays?.howToPlay && !state.howToPlayOverlay?.detail,
+        `${scenario.name} Overrun help detail closed`
+      );
       await page.keyboard.press('ArrowRight');
       const menuTactics = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'tactics', `${scenario.name} menu tactics page`);
       assertOverlayLayout(menuTactics, `${scenario.name} menu tactics page`);
@@ -503,6 +527,7 @@ try {
         menuRows: menuCareer.howToPlayOverlay?.rows,
         menuDetail: menuDetail.howToPlayOverlay?.detail,
         menuDetailShot,
+        overrunDetailShot,
         pauseRows: pauseCareer.howToPlayOverlay?.rows,
         menuLayout: menuCareer.howToPlayOverlay?.layout,
         pauseLayout: pauseCareer.howToPlayOverlay?.layout,

@@ -56,17 +56,19 @@ for (const group of menuBossBarkGroups) {
 }
 
 const modeNarrationGroups = menuBossBarkGroups.filter((group) => group.isRunModeNarration);
-if (modeNarrationGroups.length !== RUN_MODE_NARRATION_SPECS.length) {
-  fail(`expected ${RUN_MODE_NARRATION_SPECS.length} dedicated mode narration groups, got ${modeNarrationGroups.length}`);
+if (modeNarrationGroups.length !== RUN_MODE_NARRATION_EVENT_IDS.length) {
+  fail(`expected ${RUN_MODE_NARRATION_EVENT_IDS.length} dedicated mode narration groups, got ${modeNarrationGroups.length}`);
 }
-if (new Set(RUN_MODE_NARRATION_EVENT_IDS).size !== RUN_MODE_NARRATION_SPECS.length) {
-  fail('every selectable run mode must use a unique narration event');
+if (new Set(RUN_MODE_NARRATION_EVENT_IDS).size !== RUN_MODE_NARRATION_EVENT_IDS.length) {
+  fail('every selectable run-mode narration state must use a unique event');
 }
 for (const spec of RUN_MODE_NARRATION_SPECS) {
-  const group = modeNarrationGroups.find((entry) => entry.event === spec.event);
-  if (!group) fail(`missing dedicated mode narration group for ${spec.modeId}: ${spec.event}`);
-  if (group?.lines?.[0] !== spec.transcriptSource) {
-    fail(`mode narration transcript mismatch for ${spec.modeId}`);
+  for (const narration of [spec, ...spec.variants.map((variant) => ({ ...spec, ...variant }))]) {
+    const group = modeNarrationGroups.find((entry) => entry.event === narration.event);
+    if (!group) fail(`missing dedicated mode narration group for ${narration.modeId}: ${narration.event}`);
+    if (group?.lines?.[0] !== narration.transcriptSource) {
+      fail(`mode narration transcript mismatch for ${narration.modeId}`);
+    }
   }
 }
 

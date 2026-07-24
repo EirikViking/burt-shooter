@@ -6,7 +6,10 @@ export const MENU_BOSS_BARK_DEFAULT_VOICE_ID = BOSS_DEATH_DEFAULT_VOICE_ID;
 export const MENU_BOSS_BARK_DEFAULT_VOICE_NAME = `${BOSS_DEATH_DEFAULT_VOICE_NAME} - Menu Bark`;
 export const MENU_BOSS_BARK_MODEL_ID = BOSS_DEATH_MODEL_ID;
 
-const runModeNarrationGroups = RUN_MODE_NARRATION_SPECS.map((spec) => ({
+const runModeNarrationGroups = RUN_MODE_NARRATION_SPECS.flatMap((spec) => [
+  spec,
+  ...spec.variants.map((variant) => ({ ...spec, ...variant }))
+]).map((spec) => ({
   id: `mode_${spec.modeId}`,
   event: spec.event,
   isRunModeNarration: true,
