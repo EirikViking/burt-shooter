@@ -4120,7 +4120,8 @@ export class MenuScene {
     const maxCheckpoint = checkpoints.length ? Math.max(...checkpoints) : 0;
     const displayMax = Math.max(
       SECTOR_START_CHECKPOINT_INTERVAL,
-      Math.min(65, Math.ceil(Math.max(highest, maxCheckpoint, 5) / SECTOR_START_CHECKPOINT_INTERVAL) * SECTOR_START_CHECKPOINT_INTERVAL)
+      Math.ceil(Math.max(highest, maxCheckpoint, SECTOR_START_CHECKPOINT_INTERVAL) / SECTOR_START_CHECKPOINT_INTERVAL)
+        * SECTOR_START_CHECKPOINT_INTERVAL
     );
     const sectors = [];
     for (let sector = SECTOR_START_CHECKPOINT_INTERVAL; sector <= displayMax; sector += SECTOR_START_CHECKPOINT_INTERVAL) {

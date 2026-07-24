@@ -179,6 +179,16 @@ async function readState(page) {
 async function seedProfile(page, progress = makeProgress(), records = challengeRecords()) {
   await page.addInitScript(({ progress, records }) => {
     localStorage.clear();
+    window.__novaExitRequests = [];
+    Object.defineProperty(window, '__novaApp', {
+      configurable: true,
+      value: {
+        exitGame: async (payload) => {
+          window.__novaExitRequests.push(payload || {});
+          return { ok: false, canceled: true };
+        }
+      }
+    });
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(progress));
     localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({
@@ -355,7 +365,10 @@ try {
   assert.equal(state.scene, 'menu', 'expected menu scene');
   assert.equal(state.menu?.sectorStart?.selector?.open, false, 'selector should start closed');
   assert.ok(state.menu.items.exitButton?.width > 0, 'exit button should be visible from the main menu');
-  await page.waitForTimeout(1800);
+  await page.waitForFunction(() => {
+    const exitButton = window.__game?.scenes?.menu?.exitBtn;
+    return exitButton?.visible === true && Number(exitButton.alpha) >= 0.99;
+  }, null, { timeout: 15000 });
   state = await readState(page);
   assert.equal(state.menu.sectorStart.arrowCueVisible, false, 'sector run dock tile should not show stepper arrows');
   await page.screenshot({ path: path.join(outputDir, 'main-menu-1920x1080.png'), fullPage: false });
@@ -374,26 +387,26 @@ try {
   state = await readState(page);
   assert.equal(state.menu.focusedOption, 'scout', 'left from Sector Run should move dock focus to Scout Run');
   assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'left/right dock navigation must not cycle selected checkpoint');
+  const scoutAnomalyBeforeArrow = state.menu.scoutRun.anomaly?.id;
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(120);
   state = await readState(page);
-  assert.equal(state.menu.focusedOption, 'sectorStart', 'right from Scout Run should return focus to Sector Run');
+  assert.equal(state.menu.focusedOption, 'scout', 'right on Scout Run should retain focus while cycling its anomaly');
+  assert.notEqual(state.menu.scoutRun.anomaly?.id, scoutAnomalyBeforeArrow, 'right on Scout Run should cycle its anomaly');
+  assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'cycling Scout anomaly must not change the selected sector checkpoint');
+  await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(120);
+  state = await readState(page);
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'down from Scout Run should move focus to Sector Run');
   assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'returning focus should not cycle selected checkpoint');
 
-  await page.evaluate(() => {
-    const menu = window.__game?.scenes?.menu;
-    window.__exitButtonCalled = false;
-    menu.exitGame = () => {
-      window.__exitButtonCalled = true;
-    };
-  });
   await clickBounds(page, state.menu.items.exitButton);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.menu?.quitConfirmation?.open === true &&
       state.menu?.quitConfirmation?.defaultFocusIsCancel === true;
   }, null, { timeout: 5000 });
-  assert.equal(await page.evaluate(() => window.__exitButtonCalled), false, 'top-right Exit should not quit before confirmation');
+  assert.equal(await page.evaluate(() => window.__novaExitRequests?.length || 0), 0, 'top-right Exit should not request desktop exit before confirmation');
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -459,6 +472,33 @@ try {
   assert.match(lockedCheckpointState.menu.sectorStart.selector.detailText || '', /Use Sector Run later to jump deeper without replaying early sectors/i);
   await lockedCheckpointPage.screenshot({ path: path.join(outputDir, 'selector-locked-checkpoint-10-1366x768.png'), fullPage: false });
   await lockedCheckpointPage.close();
+
+  const matureProfilePage = await newSeededPage(
+    browser,
+    { width: 1920, height: 1080 },
+    makeProgress({ bestSector: 88, bestLevel: 88, pilotXp: 48000, pilotRank: 24, highestPilotRank: 24, bestScore: 280000, totalRuns: 86 }),
+    { version: 1, updatedAt: '2026-07-24T00:00:00.000Z', byCheckpoint: {} }
+  );
+  let matureProfileState = await openSelector(matureProfilePage);
+  assertNoNonCheckpointTiles(matureProfileState, 'Sector 88 mature profile selector');
+  assert.equal(sectorEntry(matureProfileState, 65)?.unlocked, true, 'legacy Sector 65 checkpoint should remain available');
+  assert.equal(sectorEntry(matureProfileState, 70)?.unlocked, true, 'selector must continue beyond the old Sector 65 display ceiling');
+  assert.equal(sectorEntry(matureProfileState, 85)?.unlocked, true, 'Sector 88 profile should expose its earned Sector 85 checkpoint');
+  assert.equal(sectorEntry(matureProfileState, 85)?.playSector, 85, 'Sector 85 checkpoint should begin at Sector 85');
+  assert.equal(sectorEntry(matureProfileState, 90)?.unlocked, false, 'Sector 90 must stay locked until its existing gate is earned');
+  matureProfileState = await selectSectorForScreenshot(matureProfilePage, 85);
+  assert.match(matureProfileState.menu.sectorStart.selector.launchLabel || '', /85/, 'mature profile launch action should target Sector 85');
+  await matureProfilePage.screenshot({ path: path.join(outputDir, 'selector-sector-88-profile-1920x1080.png'), fullPage: false });
+  report.cases.push({
+    matureProfile: {
+      highestSector: 88,
+      checkpoint65: sectorEntry(matureProfileState, 65),
+      checkpoint70: sectorEntry(matureProfileState, 70),
+      checkpoint85: sectorEntry(matureProfileState, 85),
+      checkpoint90: sectorEntry(matureProfileState, 90)
+    }
+  });
+  await matureProfilePage.close();
 
   for (const sector of [5, 10, 20, 30]) {
     state = await selectSectorForScreenshot(page, sector);

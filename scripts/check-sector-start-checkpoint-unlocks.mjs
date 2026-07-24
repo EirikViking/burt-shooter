@@ -157,6 +157,13 @@ assert.deepEqual(
   [5, 10, 15, 20, 25, 30],
   'every-five checkpoint rule should be enforced through supported range'
 );
+assert.deepEqual(
+  getSectorStartCheckpoints(progress(88)),
+  [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85],
+  'mature profiles must retain every earned checkpoint beyond the old Sector 65 display ceiling'
+);
+assert.equal(isSectorStartCheckpointUnlocked(85, progress(88)), true, 'Sector 88 progress should expose the earned Sector 85 checkpoint');
+assert.equal(isSectorStartCheckpointUnlocked(90, progress(88)), false, 'Sector 88 progress must not pre-unlock the Sector 90 gate');
 for (const nonCheckpoint of [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 14, 16, 17, 19, 31, 32]) {
   assert.equal(resolveSectorStartCheckpoint(nonCheckpoint, progress(32)), null, `non-checkpoint sector ${nonCheckpoint} must not resolve as a start point`);
   assert.equal(isSectorStartCheckpointUnlocked(nonCheckpoint, progress(32)), false, `non-checkpoint sector ${nonCheckpoint} must not be independently unlocked`);
