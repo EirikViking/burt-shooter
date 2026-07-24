@@ -3973,8 +3973,10 @@ export class Player {
 
   getRunAugmentStatPreview(id) {
     const augment = getTacticalDraftAugment(id);
-    const metric = String(augment?.previewMetric || '');
-    if (!augment || !metric || augment.consumedOnApply) {
+    const metricIds = Array.isArray(augment?.previewMetrics) && augment.previewMetrics.length
+      ? augment.previewMetrics.map((metric) => String(metric || '')).filter(Boolean)
+      : [String(augment?.previewMetric || '')].filter(Boolean);
+    if (!augment || !metricIds.length || augment.consumedOnApply) {
       return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed: false };
     }
 
@@ -3988,28 +3990,41 @@ export class Player {
     const selectedIds = this.runAugmentIds.slice();
     const consumedIds = this.consumedRunAugmentIds.slice();
     const modifiers = this.runAugmentModifiers;
-    const readMetric = () => {
+    const readMetric = (metric) => {
       switch (metric) {
         case 'damage': return Number(this.bulletDamage) || 0;
+        case 'directDps': return (
+          (Number(this.bulletDamage) || 0)
+          * Math.max(1, Math.round(Number(this.multiShot) || 1))
+          * 1000
+        ) / Math.max(1, Number(this.shootDelay) || 1);
         case 'fireDelay': return Number(this.shootDelay) || 0;
+        case 'bulletSpeed': return Number(this.bulletSpeed) || 0;
         case 'shots': return Math.max(1, Math.round(Number(this.multiShot) || 1));
         case 'piercing': return Boolean(this.bulletPierce);
         case 'chainReach': return Math.max(0, Math.round(Number(this.chainLightningMaxChains) || 0));
         case 'movement': return Number(this.speed) || 0;
         case 'dodgeCooldown': return Math.max(0, Math.round(Number(this.dodgeDelay) || 0));
+        case 'dodgeDuration': return Math.max(0, Math.round(Number(this.dodgeDurationMax) || 0));
         case 'pickupRange': return this.magnetActive ? Math.max(0, Math.round(Number(this.magnetRadius) || 0)) : 0;
         case 'supportDrones': return this.dronesActive ? Math.max(0, Math.round(Number(this.droneCount) || 0)) : 0;
         default: return null;
       }
     };
 
-    const before = readMetric();
-    let after = before;
+    let beforeMetrics = [];
+    let afterMetrics = [];
+    let projectedFusionIds = [];
     let overlapSuppressed = false;
     try {
+      this.runAugmentIds = selectedIds.slice();
+      this.consumedRunAugmentIds = consumedIds.slice();
+      this.recalculateStats({ preview: true });
+      beforeMetrics = metricIds.map((metric) => ({ metric, value: readMetric(metric) }));
       this.runAugmentIds.push(id);
       this.recalculateStats({ preview: true });
-      after = readMetric();
+      afterMetrics = metricIds.map((metric) => ({ metric, value: readMetric(metric) }));
+      projectedFusionIds = this.runAugmentModifiers?.fusionIds?.slice?.() || [];
       overlapSuppressed = this.runAugmentModifiers?.overlapSuppressedId === id;
     } finally {
       this.runAugmentIds = selectedIds;
@@ -4018,10 +4033,30 @@ export class Player {
       this.runAugmentModifiers = modifiers;
     }
 
-    if (overlapSuppressed || before === after) {
+    if (overlapSuppressed) {
       return { kind: 'contextual', metric: null, before: null, after: null, overlapSuppressed };
     }
-    return { kind: 'stat', metric, before, after, overlapSuppressed: false };
+    const metrics = metricIds.map((metric, index) => ({
+      metric,
+      before: beforeMetrics[index]?.value ?? null,
+      after: afterMetrics[index]?.value ?? null
+    }));
+    const primary = metrics[0];
+    const capped = metrics.every(({ before, after }) => (
+      typeof before === 'number' && typeof after === 'number'
+        ? Math.abs(before - after) < 0.000001
+        : before === after
+    ));
+    return {
+      kind: 'stat',
+      metric: primary.metric,
+      before: primary.before,
+      after: primary.after,
+      metrics,
+      capped,
+      projectedFusionIds,
+      overlapSuppressed: false
+    };
   }
 
   applyRunAugmentModifiers({ preview = false } = {}) {
@@ -4033,7 +4068,10 @@ export class Player {
     const directOutputBefore = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
     this.bulletDamage = Math.max(0.65, this.bulletDamage * modifiers.damageMult);
     if (modifiers.fireDelayMult !== 1) {
-      this.shootDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+      const projectedDelay = Math.max(55, this.shootDelay * modifiers.fireDelayMult);
+      this.shootDelay = modifiers.fireDelayMult < 1
+        ? Math.min(this.shootDelay, projectedDelay)
+        : projectedDelay;
     }
     this.speed = Math.max(1.5, this.speed * modifiers.speedMult);
     this.bulletSpeed = Math.max(2.5, this.bulletSpeed * modifiers.bulletSpeedMult);

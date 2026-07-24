@@ -156,6 +156,10 @@ function assertDraftLayout(state, width, height, label) {
     assert(String(offer.impactLabelText || '').trim(), `${label}: offer ${offer.id} is missing impact context`);
     if (offer.statPreview.kind === 'stat') {
       assert(String(offer.impactValueText || '').includes('→'), `${label}: offer ${offer.id} is missing before/after impact`);
+      assert(offer.impactLabelBounds?.width > 0 && offer.impactValueBounds?.width > 0,
+        `${label}: offer ${offer.id} is missing impact text bounds`);
+      assert(!overlap(offer.impactLabelBounds, offer.impactValueBounds, 0),
+        `${label}: offer ${offer.id} impact label overlaps its values`);
     } else {
       assert(!offer.impactValueText, `${label}: contextual offer ${offer.id} exposed a misleading number`);
     }
@@ -755,8 +759,29 @@ try {
     const previewIdsBefore = player.runAugmentIds.slice();
     const dronesBeforePreview = player.drones.length;
     const damagePreview = player.getRunAugmentStatPreview('damage_up');
+    const damagePreviewRepeated = player.getRunAugmentStatPreview('damage_up');
+    const killWarrantPreview = player.getRunAugmentStatPreview('target_paint');
+    const killWarrantPreviewRepeated = player.getRunAugmentStatPreview('target_paint');
+    const mobilityPreview = player.getRunAugmentStatPreview('blink_drive');
     const dynamicPreview = player.getRunAugmentStatPreview('phase_reactor');
     const dronePreview = player.getRunAugmentStatPreview('drones');
+    const rankBoostTypeBeforeCapPreview = player.rankBoost?.type || null;
+    if (player.rankBoost) player.rankBoost.type = 'fire_rate';
+    player.recalculateStats({ preview: true });
+    const cappedFireRatePreview = player.getRunAugmentStatPreview('rapid_fire');
+    if (player.rankBoost) player.rankBoost.type = rankBoostTypeBeforeCapPreview;
+    player.recalculateStats({ preview: true });
+    const selectedBeforeFusionPreview = player.runAugmentIds.slice();
+    const consumedBeforeFusionPreview = player.consumedRunAugmentIds.slice();
+    player.runAugmentIds = ['drone_link'];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats({ preview: true });
+    const fusionIdsBeforePreview = player.getRunAugmentDebugState().fusionIds.slice();
+    const fusionPreview = player.getRunAugmentStatPreview('drones');
+    const fusionIdsAfterPreview = player.getRunAugmentDebugState().fusionIds.slice();
+    player.runAugmentIds = selectedBeforeFusionPreview;
+    player.consumedRunAugmentIds = consumedBeforeFusionPreview;
+    player.recalculateStats({ preview: true });
     const previewStateUnchanged = player.runAugmentIds.join(',') === previewIdsBefore.join(',')
       && player.drones.length === dronesBeforePreview
       && Math.abs(player.bulletDamage - baseline.damage) < 0.0001
@@ -819,7 +844,21 @@ try {
     }));
     return {
       baseline,
-      preview: { damagePreview, dynamicPreview, dronePreview, previewStateUnchanged, damageAfterApply },
+      preview: {
+        damagePreview,
+        damagePreviewRepeated,
+        killWarrantPreview,
+        killWarrantPreviewRepeated,
+        mobilityPreview,
+        cappedFireRatePreview,
+        fusionPreview,
+        fusionIdsBeforePreview,
+        fusionIdsAfterPreview,
+        dynamicPreview,
+        dronePreview,
+        previewStateUnchanged,
+        damageAfterApply
+      },
       boosted,
       sectorStart,
       sectorEffects: {
@@ -855,6 +894,26 @@ try {
   assert(runtime.preview.previewStateUnchanged, `stat preview mutated live player state: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.preview.damagePreview.kind === 'stat' && Math.abs(runtime.preview.damagePreview.after - runtime.preview.damageAfterApply) < 0.0001,
     `damage preview did not match authoritative apply: ${JSON.stringify(runtime.preview)}`);
+  assert(JSON.stringify(runtime.preview.damagePreview) === JSON.stringify(runtime.preview.damagePreviewRepeated),
+    `repeated Warhead Authority preview drifted: ${JSON.stringify(runtime.preview)}`);
+  assert(runtime.preview.damagePreview.after > runtime.preview.damagePreview.before,
+    `Warhead Authority projected reduced or unchanged damage: ${JSON.stringify(runtime.preview.damagePreview)}`);
+  assert(runtime.preview.killWarrantPreview.kind === 'stat' && runtime.preview.killWarrantPreview.metric === 'directDps'
+    && runtime.preview.killWarrantPreview.after > runtime.preview.killWarrantPreview.before,
+  `Kill Warrant did not project a positive combined DPS change: ${JSON.stringify(runtime.preview.killWarrantPreview)}`);
+  assert(JSON.stringify(runtime.preview.killWarrantPreview) === JSON.stringify(runtime.preview.killWarrantPreviewRepeated),
+    `repeated Kill Warrant preview drifted: ${JSON.stringify(runtime.preview.killWarrantPreviewRepeated)}`);
+  assert(runtime.preview.mobilityPreview.metrics?.map((entry) => entry.metric).join(',') === 'movement,dodgeCooldown'
+    && runtime.preview.mobilityPreview.metrics[0].after > runtime.preview.mobilityPreview.metrics[0].before
+    && runtime.preview.mobilityPreview.metrics[1].after < runtime.preview.mobilityPreview.metrics[1].before,
+  `multi-stat mobility preview was incomplete or misleading: ${JSON.stringify(runtime.preview.mobilityPreview)}`);
+  assert(runtime.preview.cappedFireRatePreview.kind === 'stat' && runtime.preview.cappedFireRatePreview.capped === true
+    && runtime.preview.cappedFireRatePreview.after <= runtime.preview.cappedFireRatePreview.before,
+  `capped positive fire-rate preview made the weapon slower: ${JSON.stringify(runtime.preview.cappedFireRatePreview)}`);
+  assert(JSON.stringify(runtime.preview.fusionIdsBeforePreview) === JSON.stringify(runtime.preview.fusionIdsAfterPreview)
+    && runtime.preview.fusionPreview.kind === 'stat'
+    && runtime.preview.fusionPreview.projectedFusionIds?.includes('drone_constellation'),
+  `Fusion preview mutated active Fusion state: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.preview.dynamicPreview.kind === 'contextual' && runtime.preview.dronePreview.kind === 'stat',
     `dynamic/direct preview classification drifted: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.repair.nanoPatchAgain.applied === false && runtime.repair.nanoPatchAgain.reason === 'stack_cap', 'consumed nano patch could be applied twice');

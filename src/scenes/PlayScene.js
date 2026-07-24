@@ -8035,21 +8035,30 @@ export class PlayScene {
     }
     const definitions = {
       damage: { label: 'DAMAGE', format: (value) => Number(value).toFixed(2) },
+      directDps: { label: 'DIRECT DPS', format: (value) => Number(value).toFixed(2) },
       fireDelay: { label: 'FIRE DELAY', format: (value) => `${Math.round(Number(value) || 0)} ms` },
+      bulletSpeed: { label: 'BULLET SPEED', format: (value) => Number(value).toFixed(2) },
       shots: { label: 'SHOTS', format: (value) => String(Math.round(Number(value) || 0)) },
       piercing: { label: 'PIERCING', format: (value) => translateText(value ? 'ON' : 'OFF') },
       chainReach: { label: 'CHAIN REACH', format: (value) => String(Math.round(Number(value) || 0)) },
       movement: { label: 'MOVEMENT', format: (value) => Number(value).toFixed(2) },
       dodgeCooldown: { label: 'DODGE COOLDOWN', format: (value) => `${Math.round(Number(value) || 0)} ms` },
+      dodgeDuration: { label: 'DODGE DURATION', format: (value) => `${Math.round(Number(value) || 0)} ms` },
       pickupRange: { label: 'PICKUP RANGE', format: (value) => String(Math.round(Number(value) || 0)) },
       supportDrones: { label: 'SUPPORT DRONES', format: (value) => String(Math.round(Number(value) || 0)) }
     };
-    const definition = definitions[preview.metric];
-    if (!definition) return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
+    const metrics = (Array.isArray(preview.metrics) && preview.metrics.length
+      ? preview.metrics
+      : [{ metric: preview.metric, before: preview.before, after: preview.after }])
+      .map((entry) => ({ ...entry, definition: definitions[entry.metric] }))
+      .filter((entry) => entry.definition);
+    if (!metrics.length) return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
     return {
       kind: 'stat',
-      label: translateText(definition.label),
-      value: `${definition.format(preview.before)} → ${definition.format(preview.after)}`
+      label: metrics.map(({ definition }) => translateText(definition.label)).join(' / '),
+      value: metrics.map(({ before, after, definition }) => (
+        `${definition.format(before)} → ${definition.format(after)}`
+      )).join(' / ')
     };
   }
 
@@ -9007,15 +9016,17 @@ export class PlayScene {
         nodes.description.position.set(-cardWidth / 2 + 86, -2);
         const compactImpactWidth = hasFusionBlueprint ? Math.max(170, cardWidth * 0.34) : Math.min(270, cardWidth - 210);
         const compactImpactX = -cardWidth / 2 + 86 + compactImpactWidth / 2;
-        nodes.impactBadge.position.set(compactImpactX, cardHeight / 2 - 39);
-        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: 22 };
-        nodes.impactLabel.anchor.set(0, 0.5);
+        const compactImpactY = cardHeight / 2 - 44;
+        nodes.impactBadge.position.set(compactImpactX, compactImpactY);
+        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: 30 };
+        nodes.impactLabel.anchor.set(0.5);
         nodes.impactLabel.style.fontSize = 7;
-        nodes.impactLabel.position.set(compactImpactX - compactImpactWidth / 2 + 8, cardHeight / 2 - 39);
-        nodes.impactValue.anchor.set(1, 0.5);
-        nodes.impactValue.style.fontSize = 11;
-        nodes.impactValue.position.set(compactImpactX + compactImpactWidth / 2 - 8, cardHeight / 2 - 39);
-        fitTextWidth(nodes.impactValue, compactImpactWidth * 0.58, 0.58);
+        nodes.impactLabel.position.set(compactImpactX, compactImpactY - 6);
+        fitTextWidth(nodes.impactLabel, compactImpactWidth - 16, 0.56);
+        nodes.impactValue.anchor.set(0.5);
+        nodes.impactValue.style.fontSize = 10;
+        nodes.impactValue.position.set(compactImpactX, compactImpactY + 7);
+        fitTextWidth(nodes.impactValue, compactImpactWidth - 16, 0.58);
         nodes.doctrineTitle.visible = false;
         nodes.doctrineBadge.position.set(-cardWidth / 2 + 86 + Math.min(230, cardWidth * 0.43) / 2, cardHeight / 2 - 18);
         nodes.doctrineBadge._pillLayout = { width: Math.min(230, cardWidth * 0.43), height: 18 };
@@ -9091,6 +9102,7 @@ export class PlayScene {
         nodes.impactLabel.anchor.set(0.5);
         nodes.impactLabel.style.fontSize = 9;
         nodes.impactLabel.position.set(0, impactY + (card._offer?.statPreview?.kind === 'stat' ? -10 : 0));
+        fitTextWidth(nodes.impactLabel, cardWidth - 76, 0.58);
         nodes.impactValue.anchor.set(0.5);
         nodes.impactValue.style.fontSize = 16;
         nodes.impactValue.position.set(0, impactY + 11);
@@ -10469,8 +10481,12 @@ export class PlayScene {
         stackText: state.cards?.[index]?._nodes?.stackLabel?.text || null,
         stackBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.stackBadge),
         impactLabelText: state.cards?.[index]?._nodes?.impactLabel?.text || null,
+        impactLabelBounds: boundsOf(state.cards?.[index]?._nodes?.impactLabel),
         impactValueText: state.cards?.[index]?._nodes?.impactValue?.visible
           ? state.cards?.[index]?._nodes?.impactValue?.text || null
+          : null,
+        impactValueBounds: state.cards?.[index]?._nodes?.impactValue?.visible
+          ? boundsOf(state.cards?.[index]?._nodes?.impactValue)
           : null,
         impactBadgeBounds: boundsOf(state.cards?.[index]?._nodes?.impactBadge),
         permanenceText: state.cards?.[index]?._nodes?.permanence?.text || null,
