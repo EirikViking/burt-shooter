@@ -635,6 +635,107 @@ function runCatalogAndSaveTests() {
   });
   assert.equal(findSessionItem(resumedVariety, 'enemy_variety_50').progress, 2, 'enemy variety should resume unique progress');
 
+  const inactiveCareerSession = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      runContracts: normalizeRunContractsState({
+        activeIds: ['graze_10', 'boss_breaker', 'phase_runner']
+      })
+    }
+  });
+  const inactiveCareerEvents = applyEvents(inactiveCareerSession, [
+    { type: 'enemy_defeated', sector: 2, count: 400, enemyType: 'career_scout' },
+    { type: 'enemy_defeated', sector: 2, count: 600, enemyType: 'career_diver' },
+    { type: 'boss_defeated', sector: 2 },
+    { type: 'run_started', sector: 2 }
+  ]);
+  const inactiveCareerSaved = recordRunContractSessionProgress(
+    normalizeRunContractsState({ activeIds: ['graze_10', 'boss_breaker', 'phase_runner'] }),
+    inactiveCareerEvents.session
+  );
+  const inheritedCareerSession = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      runContracts: normalizeRunContractsState({
+        ...inactiveCareerSaved,
+        activeIds: ['enemy_sweep_2500', 'enemy_variety_50', 'boss_hunter_10']
+      })
+    }
+  });
+  assert.equal(
+    findSessionItem(inheritedCareerSession, 'enemy_sweep_2500').progress,
+    1000,
+    'inactive cumulative enemy defeats should seed a later enemy-sweep order'
+  );
+  assert.equal(
+    findSessionItem(inheritedCareerSession, 'enemy_variety_50').progress,
+    2,
+    'inactive unique enemy defeats should seed a later variety order'
+  );
+  assert.equal(
+    findSessionItem(inheritedCareerSession, 'boss_hunter_10').progress,
+    1,
+    'inactive boss defeats should seed a later boss-hunter order'
+  );
+
+  const migratedCareerSession = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      totalRuns: 46,
+      totalBossesDefeated: 88,
+      runContracts: normalizeRunContractsState({
+        activeIds: ['ranked_regular_10', 'enemy_sweep_25000', 'boss_hunter_100'],
+        completed: {
+          enemy_sweep_1000: completion('enemy_sweep_1000'),
+          enemy_sweep_2500: completion('enemy_sweep_2500'),
+          enemy_sweep_10000: completion('enemy_sweep_10000'),
+          enemy_variety_50: completion('enemy_variety_50')
+        }
+      })
+    }
+  });
+  assert.equal(
+    findSessionItem(migratedCareerSession, 'ranked_regular_10').progress,
+    10,
+    'saved career run totals should backfill the late Mayhem-start order'
+  );
+  assert.equal(
+    findSessionItem(migratedCareerSession, 'enemy_sweep_25000').progress,
+    10000,
+    'completed enemy-sweep tiers should backfill the late 25000-enemy order'
+  );
+  assert.equal(
+    findSessionItem(migratedCareerSession, 'boss_hunter_100').progress,
+    88,
+    'saved career boss totals should backfill the late 100-boss order'
+  );
+  const migratedVarietySession = startRunContractSession({
+    runMode: RUN_MODES.RANKED,
+    progress: {
+      runContracts: normalizeRunContractsState({
+        activeIds: ['enemy_variety_100'],
+        completed: {
+          enemy_variety_50: completion('enemy_variety_50')
+        }
+      })
+    }
+  });
+  assert.equal(
+    findSessionItem(migratedVarietySession, 'enemy_variety_100').progress,
+    50,
+    'completed variety tiers should backfill the late 100-type order'
+  );
+  const migratedVarietyAdvanced = applyRunContractEvent(migratedVarietySession, {
+    type: 'enemy_defeated',
+    sector: 12,
+    enemyType: 'new_after_migration'
+  });
+  assert.equal(
+    findSessionItem(migratedVarietyAdvanced.session, 'enemy_variety_100').progress,
+    51,
+    'new unique types should advance a migrated variety total even when legacy IDs were unavailable'
+  );
+
   const scoutSession = startRunContractSession({ runMode: RUN_MODES.SCOUT, progress: migrated });
   const scoutResult = applyRunContractEvent(scoutSession, { type: 'near_miss', streak: 1, sector: 1 });
   assert.equal(scoutResult.completed.length, 0, 'Scout runs should not complete Mayhem-only orders');
@@ -721,6 +822,10 @@ function runCatalogAndSaveTests() {
       progress: {
         enemy_sweep_1000: { id: 'enemy_sweep_1000', progress: 500, target: 1000 },
         enemy_variety_50: { id: 'enemy_variety_50', progress: 1, target: 50, uniqueIds: ['scout'] }
+      },
+      careerProgress: {
+        enemy_kills: { progress: 500 },
+        enemy_variety: { progress: 1, uniqueIds: ['scout'] }
       }
     },
     {
@@ -728,11 +833,21 @@ function runCatalogAndSaveTests() {
       progress: {
         enemy_sweep_1000: { id: 'enemy_sweep_1000', progress: 750, target: 1000 },
         enemy_variety_50: { id: 'enemy_variety_50', progress: 1, target: 50, uniqueIds: ['diver'] }
+      },
+      careerProgress: {
+        enemy_kills: { progress: 750 },
+        enemy_variety: { progress: 1, uniqueIds: ['diver'] }
       }
     }
   );
   assert.equal(mergedProgress.progress.enemy_sweep_1000.progress, 750, 'merge should keep higher enemy-kill progress');
   assert.deepEqual(mergedProgress.progress.enemy_variety_50.uniqueIds.sort(), ['diver', 'scout'], 'merge should union unique enemy type progress');
+  assert.equal(mergedProgress.careerProgress.enemy_kills.progress, 750, 'merge should keep the higher career enemy total');
+  assert.deepEqual(
+    mergedProgress.careerProgress.enemy_variety.uniqueIds.sort(),
+    ['diver', 'scout'],
+    'merge should union career enemy type history'
+  );
 
   writeHangarProgressState({
     ...migrated,
@@ -1066,8 +1181,8 @@ async function runBrowserSmoke() {
     const completeNoticeState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: false });
     const hiddenState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: true });
     const finalRunState = runContractState({
-      activeIds: ['enemy_sweep_2500'],
-      completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'enemy_sweep_2500'),
+      activeIds: ['support_hunter_100'],
+      completedIds: RUN_CONTRACT_ORDER_IDS.filter((id) => id !== 'support_hunter_100'),
       completionNoticeSeen: false
     });
 
@@ -1491,7 +1606,7 @@ async function runBrowserSmoke() {
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
-      play.emitRunContractEvent('enemy_defeated', { sector: window.__game?.level || 1, count: 625 });
+      play.emitRunContractEvent('boss_support_defeated', { sector: window.__game?.level || 1, count: 25 });
     });
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -1505,15 +1620,15 @@ async function runBrowserSmoke() {
         pauseOverlay: textState.pauseOverlay || null
       };
     });
-    const progressSweep = progressResult.runContracts?.active?.find((item) => item.id === 'enemy_sweep_2500');
-    assert.equal(progressSweep?.progress, 625, 'in-run 2500 Enemies order should show partial progress');
-    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 625, 'partial Pilot Orders progress should be exposed for run report state');
-    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '14', 'partial Pilot Orders progress should expose the order number without the catalog total');
+    const progressSupport = progressResult.runContracts?.active?.find((item) => item.id === 'support_hunter_100');
+    assert.equal(progressSupport?.progress, 75, 'late support-hunter order should inherit 50 career defeats and show new progress');
+    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.progress, 75, 'partial Pilot Orders progress should be exposed for run report state');
+    assert.equal(progressResult.runContracts?.progressThisRun?.[0]?.orderSlot, '50', 'partial Pilot Orders progress should expose the order number without the catalog total');
     const progressToast = progressResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER PROGRESS'));
     assert.equal(progressToast?.slot, 'top', 'progress toast should use the top queue');
     assert.equal(progressToast?.type, 'runContractProgress', 'progress toast should expose the runContractProgress type');
     assert.match(progressToast?.message || '', /PILOT ORDERS COMPLETED: 49/, 'progress toast should include the completed count without revealing the endpoint');
-    assert.match(progressToast?.message || '', /ORDER PROGRESS: 2500 Enemies 625\/2,500/, 'progress toast should include the active order');
+    assert.match(progressToast?.message || '', /ORDER PROGRESS: 100 Supports 75\/100/, 'progress toast should include inherited career progress for the active order');
     assert.ok(progressToast?.duration >= 4000, 'progress toast should stay visible long enough to notice');
     const progressToastScreenshot = path.join(outputDir, 'pilot-order-progress-toast.png');
     await page.waitForTimeout(300);
@@ -1527,9 +1642,9 @@ async function runBrowserSmoke() {
       return state.isPaused && state.pauseOverlay?.visible === true;
     }, null, { timeout: 5000 });
     const pauseState = await readState(page);
-    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /2500 Enemies/, 'pause overlay should show the active Pilot Order');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /100 Supports/, 'pause overlay should show the active Pilot Order');
     assert.match(pauseState.pauseOverlay?.pilotOrders || '', /PILOT ORDERS COMPLETED: 49/, 'pause overlay should show completed Pilot Orders without revealing the endpoint');
-    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /625\/2,500/, 'pause overlay should show active Pilot Order progress');
+    assert.match(pauseState.pauseOverlay?.pilotOrders || '', /75\/100/, 'pause overlay should show active Pilot Order progress');
     const pauseScreenshot = path.join(outputDir, 'pilot-orders-pause-line.png');
     await page.screenshot({ path: pauseScreenshot, fullPage: true });
     await page.evaluate(() => {
@@ -1539,7 +1654,7 @@ async function runBrowserSmoke() {
 
     await page.evaluate(() => {
       const play = window.__game?.scenes?.play;
-      play.emitRunContractEvent('enemy_defeated', { sector: window.__game?.level || 1, count: 2500 });
+      play.emitRunContractEvent('boss_support_defeated', { sector: window.__game?.level || 1, count: 25 });
     });
     await page.waitForFunction(() => {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -1555,21 +1670,21 @@ async function runBrowserSmoke() {
         savedRunContracts: profile.runContracts || null
       };
     });
-    const sweep = completionResult.runContracts?.active?.find((item) => item.id === 'enemy_sweep_2500');
-    assert.equal(sweep?.progress, 2500, 'in-run 2500 Enemies order should reach target');
-    assert.equal(sweep?.completed, true, 'in-run 2500 Enemies order should mark complete');
+    const supportOrder = completionResult.runContracts?.active?.find((item) => item.id === 'support_hunter_100');
+    assert.equal(supportOrder?.progress, 100, 'in-run 100 Supports order should reach target');
+    assert.equal(supportOrder?.completed, true, 'in-run 100 Supports order should mark complete');
     assert.equal(completionResult.runContracts?.allCompleteThisRun, true, 'final order completion should be exposed to run report state');
     assert.equal(
-      completionResult.savedRunContracts?.completed?.enemy_sweep_2500?.count,
+      completionResult.savedRunContracts?.completed?.support_hunter_100?.count,
       1,
       'completion should persist to hangar profile'
     );
     assert.ok(
-      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 2500 Enemies')),
+      completionResult.toastMessages.some((message) => message.includes('ORDER COMPLETE: 100 Supports')),
       'completion toast should be visible through text state'
     );
     assert.ok(
-      completionResult.toastMessages.some((message) => message.includes('REWARD: +240 Career XP')),
+      completionResult.toastMessages.some((message) => message.includes('REWARD: +420 Career XP')),
       'completion toast should expose the final order Career XP reward'
     );
     const orderToast = completionResult.toastActive.find((toast) => String(toast.message || '').includes('ORDER COMPLETE'));
@@ -1595,7 +1710,7 @@ async function runBrowserSmoke() {
       return state.scene === 'gameOver' && state.gameOver?.runReportOverlay?.visible === true;
     }, null, { timeout: 10000 });
     const reportState = await readState(page);
-    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+COMPLETED: 50\s+2500 Enemies \+240 XP/);
+    assert.match(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS: COMPLETE\s+COMPLETED: 50\s+100 Supports \+420 XP/);
     assert.doesNotMatch(reportState.gameOver?.runReportOverlay?.text || '', /PILOT ORDERS:[^\n]*\/50/, 'final run report must keep the Pilot Orders endpoint hidden');
     const reportScreenshot = path.join(outputDir, 'pilot-orders-run-report.png');
     await page.screenshot({ path: reportScreenshot, fullPage: true });

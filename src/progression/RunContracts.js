@@ -701,6 +701,136 @@ function getContractGroup(contractOrId) {
   return clampText(contract?.group || contract?.id || contractOrId, 80);
 }
 
+const PERSISTENT_EVENT_BY_OBJECTIVE = Object.freeze({
+  grazes: 'near_miss',
+  boss_support_defeats: 'boss_support_defeated',
+  phase_uses: 'phase_used',
+  blink_drive_survive: 'blink_drive_survived',
+  run_starts: 'run_started',
+  powerup_collected: 'powerup_collected',
+  boss_defeats: 'boss_defeated',
+  enemy_defeats: 'enemy_defeated',
+  unique_enemy_defeats: 'enemy_defeated',
+  pilot_rank_reached: 'pilot_rank_reached'
+});
+
+const PERSISTENT_CONTRACTS_BY_GROUP = new Map();
+const PERSISTENT_GROUP_TARGETS = new Map();
+const PERSISTENT_GROUPS_BY_EVENT = new Map();
+for (const contract of RUN_CONTRACT_CATALOG) {
+  if (!contract.persistAcrossRuns) continue;
+  const group = getContractGroup(contract);
+  const contracts = PERSISTENT_CONTRACTS_BY_GROUP.get(group) || [];
+  contracts.push(contract);
+  PERSISTENT_CONTRACTS_BY_GROUP.set(group, contracts);
+  PERSISTENT_GROUP_TARGETS.set(group, Math.max(
+    PERSISTENT_GROUP_TARGETS.get(group) || 1,
+    floor(contract.target, 1)
+  ));
+  const eventType = PERSISTENT_EVENT_BY_OBJECTIVE[contract.objective];
+  if (!eventType) continue;
+  const groups = PERSISTENT_GROUPS_BY_EVENT.get(eventType) || [];
+  if (!groups.includes(group)) groups.push(group);
+  PERSISTENT_GROUPS_BY_EVENT.set(eventType, groups);
+}
+
+function getPersistentGroupTarget(group = '') {
+  return PERSISTENT_GROUP_TARGETS.get(group) || 1;
+}
+
+function normalizeCareerProgress(raw = {}, completed = {}, progress = {}) {
+  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  const normalized = {};
+  const ensureGroup = (group) => {
+    if (!PERSISTENT_CONTRACTS_BY_GROUP.has(group)) return null;
+    if (!normalized[group]) {
+      normalized[group] = {
+        progress: 0,
+        updatedAt: nowIso()
+      };
+    }
+    return normalized[group];
+  };
+  for (const [rawGroup, rawEntry] of Object.entries(source)) {
+    const group = clampText(rawGroup, 80);
+    const entry = ensureGroup(group);
+    if (!entry) continue;
+    entry.progress = Math.min(getPersistentGroupTarget(group), floor(rawEntry?.progress));
+    entry.updatedAt = clampText(rawEntry?.updatedAt, 80) || entry.updatedAt;
+    const uniqueIds = uniqueTextIds(rawEntry?.uniqueIds, {
+      maxItems: getPersistentGroupTarget(group),
+      maxLength: 120
+    });
+    if (uniqueIds.length) {
+      entry.uniqueIds = uniqueIds;
+      entry.progress = Math.max(entry.progress, uniqueIds.length);
+    }
+  }
+  for (const contract of RUN_CONTRACT_CATALOG) {
+    if (!contract.persistAcrossRuns) continue;
+    const savedProgress = progress?.[contract.id];
+    if (!completed?.[contract.id] && !savedProgress) continue;
+    const group = getContractGroup(contract);
+    const entry = ensureGroup(group);
+    if (!entry) continue;
+    if (completed?.[contract.id]) entry.progress = Math.max(entry.progress, floor(contract.target, 1));
+    if (!savedProgress) continue;
+    entry.progress = Math.max(entry.progress, floor(savedProgress.progress));
+    if (contract.objective === 'unique_enemy_defeats') {
+      entry.uniqueIds = uniqueTextIds([...(entry.uniqueIds || []), ...(savedProgress.uniqueIds || [])], {
+        maxItems: getPersistentGroupTarget(group),
+        maxLength: 120
+      });
+      entry.progress = Math.max(entry.progress, entry.uniqueIds.length);
+    }
+  }
+  for (const [group, entry] of Object.entries(normalized)) {
+    entry.progress = Math.min(getPersistentGroupTarget(group), floor(entry.progress));
+  }
+  return normalized;
+}
+
+function seedCareerProgressFromHangar(careerProgress = {}, progress = {}) {
+  const seeded = normalizeCareerProgress(careerProgress);
+  const seedCount = (group, value) => {
+    const target = getPersistentGroupTarget(group);
+    const count = Math.min(target, floor(value));
+    if (count <= 0) return;
+    const previous = seeded[group] || { progress: 0, updatedAt: nowIso() };
+    seeded[group] = {
+      ...previous,
+      progress: Math.max(floor(previous.progress), count)
+    };
+  };
+  seedCount('boss_kills', progress.totalBossesDefeated);
+  seedCount('run_starts', progress.totalRuns);
+  seedCount('pilot_rank', getPilotRankDisplay(progress));
+  return seeded;
+}
+
+function mergeCareerProgress(localProgress = {}, cloudProgress = {}) {
+  const local = normalizeCareerProgress(localProgress);
+  const cloud = normalizeCareerProgress(cloudProgress);
+  const merged = {};
+  for (const group of new Set([...Object.keys(local), ...Object.keys(cloud)])) {
+    const localEntry = local[group] || {};
+    const cloudEntry = cloud[group] || {};
+    const uniqueIds = uniqueTextIds([...(localEntry.uniqueIds || []), ...(cloudEntry.uniqueIds || [])], {
+      maxItems: getPersistentGroupTarget(group),
+      maxLength: 120
+    });
+    merged[group] = {
+      progress: Math.min(
+        getPersistentGroupTarget(group),
+        Math.max(floor(localEntry.progress), floor(cloudEntry.progress), uniqueIds.length)
+      ),
+      updatedAt: latestIso(localEntry.updatedAt, cloudEntry.updatedAt) || nowIso(),
+      ...(uniqueIds.length ? { uniqueIds } : {})
+    };
+  }
+  return merged;
+}
+
 export function getRunContractReward(contractOrId = '') {
   if (!RUN_CONTRACT_REWARDS_ENABLED) return null;
   const contract = typeof contractOrId === 'object' && contractOrId
@@ -827,6 +957,9 @@ function buildRunContractDisplayEntry(id, state = {}) {
   if (!contract) return null;
   const completion = state.completed?.[id] || null;
   const savedProgress = state.progress?.[id] || null;
+  const careerProgress = contract.persistAcrossRuns
+    ? state.careerProgress?.[getContractGroup(contract)] || null
+    : null;
   const orderNumber = getRunContractOrderNumber(id);
   const target = contract.target || 1;
   const completed = Boolean(completion);
@@ -843,7 +976,9 @@ function buildRunContractDisplayEntry(id, state = {}) {
     modeLabel: contract.modeLabel || 'Mayhem',
     target,
     reward: getRunContractReward(contract),
-    progress: completed ? target : Math.min(target, floor(savedProgress?.progress)),
+    progress: completed
+      ? target
+      : Math.min(target, Math.max(floor(savedProgress?.progress), floor(careerProgress?.progress))),
     objective: contract.objective || 'unknown',
     group: getContractGroup(contract),
     accent: contract.accent || 0x37f5ff,
@@ -1027,12 +1162,14 @@ export function normalizeRunContractsState(raw = {}) {
   const completionNoticeSeenAt = completionNoticeSeen
     ? (latestIso(source.completionNoticeSeenAt, source.completedNoticeSeenAt, source.allCompleteSeenAt) || clampText(source.updatedAt, 80) || allCompletedAt || nowIso())
     : null;
+  const careerProgress = normalizeCareerProgress(source.careerProgress, completed, progress);
   return {
     version: RUN_CONTRACTS_VERSION,
     activeIds,
     completedIds,
     completed,
     progress,
+    careerProgress,
     allCompletedAt,
     completionNoticeSeen,
     completionNoticeSeenAt,
@@ -1148,6 +1285,7 @@ export function mergeRunContractsState(localState = {}, cloudState = {}) {
     completed,
     completedIds: orderedCompletedIds(completed),
     progress: mergeProgressState(local.progress, cloud.progress),
+    careerProgress: mergeCareerProgress(local.careerProgress, cloud.careerProgress),
     completionNoticeSeen,
     allCompletedAt: latestIso(local.allCompletedAt, cloud.allCompletedAt),
     completionNoticeSeenAt: latestIso(local.completionNoticeSeenAt, cloud.completionNoticeSeenAt),
@@ -1159,6 +1297,7 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
   const mode = normalizeRunMode(runMode);
   const baseState = normalizeRunContractsState(progress?.runContracts || progress || {});
   const state = MAYHEM_MODES.includes(mode) ? prepareRunContractsForEligibleRun(baseState) : baseState;
+  const careerProgress = seedCareerProgressFromHangar(state.careerProgress, progress);
   const activeIds = areAllRunContractsComplete(state) ? [] : state.activeIds;
   return {
     version: RUN_CONTRACTS_VERSION,
@@ -1166,16 +1305,26 @@ export function startRunContractSession({ runMode = RUN_MODES.RANKED, progress =
     noLifeLost: true,
     allCompleteThisRun: false,
     allCompletedAt: state.allCompletedAt || null,
+    careerProgress,
     active: activeIds.map((id) => {
       const contract = getRunContractById(id);
       const savedProgress = state.progress?.[id] || null;
+      const savedCareerProgress = contract?.persistAcrossRuns
+        ? careerProgress[getContractGroup(contract)] || null
+        : null;
       const progressValue = contract?.objective === 'pilot_rank_reached'
-        ? Math.min(contract.target || 1, Math.max(floor(savedProgress?.progress), getPilotRankDisplay(progress)))
+        ? Math.min(
+            contract.target || 1,
+            Math.max(floor(savedProgress?.progress), floor(savedCareerProgress?.progress), getPilotRankDisplay(progress))
+          )
         : shouldSeedRunProgress(id)
-          ? Math.min(contract.target || 1, floor(savedProgress?.progress))
+          ? Math.min(contract.target || 1, Math.max(floor(savedProgress?.progress), floor(savedCareerProgress?.progress)))
           : 0;
       const uniqueIds = contract?.objective === 'unique_enemy_defeats'
-        ? uniqueTextIds(savedProgress?.uniqueIds, { maxItems: contract.target || 100, maxLength: 120 })
+        ? uniqueTextIds([...(savedCareerProgress?.uniqueIds || []), ...(savedProgress?.uniqueIds || [])], {
+            maxItems: contract.target || 100,
+            maxLength: 120
+          })
         : undefined;
         return {
           id,
@@ -1206,7 +1355,7 @@ function progressForEvent(contract, item, event, session) {
     case 'graze_breaks':
       return type === 'graze_break' ? current + 1 : current;
     case 'boss_support_defeats':
-      return type === 'boss_support_defeated' ? current + 1 : current;
+      return type === 'boss_support_defeated' ? current + Math.max(1, floor(event.count, 1)) : current;
     case 'boss_slow_time_defeat':
       return type === 'boss_defeated' && event.slowTimeActive === true ? contract.target : current;
     case 'phase_through_danger':
@@ -1234,7 +1383,7 @@ function progressForEvent(contract, item, event, session) {
     case 'boss_defeated':
       return type === 'boss_defeated' ? contract.target : current;
     case 'boss_defeats':
-      return type === 'boss_defeated' ? current + 1 : current;
+      return type === 'boss_defeated' ? current + Math.max(1, floor(event.count, 1)) : current;
     case 'enemy_defeats':
       return type === 'enemy_defeated' ? current + Math.max(1, floor(event.count, 1)) : current;
     case 'pilot_rank_reached': {
@@ -1255,13 +1404,59 @@ function progressForEvent(contract, item, event, session) {
   }
 }
 
+function applyCareerProgressEvent(careerProgress = {}, event = {}, runMode = RUN_MODES.RANKED) {
+  const mode = normalizeRunMode(runMode);
+  if (!MAYHEM_MODES.includes(mode)) return careerProgress;
+  const eventType = String(event?.type || '');
+  const relevantGroups = PERSISTENT_GROUPS_BY_EVENT.get(eventType) || [];
+  if (!relevantGroups.length) return careerProgress;
+  const next = { ...(careerProgress || {}) };
+  for (const group of relevantGroups) {
+    const groupContracts = (PERSISTENT_CONTRACTS_BY_GROUP.get(group) || [])
+      .filter((candidate) => isRunContractEligible(candidate, mode));
+    if (!groupContracts.length) continue;
+    const previous = next[group] || { progress: 0, updatedAt: nowIso() };
+    let progress = floor(previous.progress);
+    let uniqueIds = uniqueTextIds(previous.uniqueIds, {
+      maxItems: getPersistentGroupTarget(group),
+      maxLength: 120
+    });
+    if (groupContracts.some((candidate) => candidate.objective === 'unique_enemy_defeats')
+      && eventType === 'enemy_defeated') {
+      const enemyType = clampText(event.enemyType || event.threatId || event.enemyId || event.kind, 120);
+      if (enemyType && !uniqueIds.includes(enemyType)) {
+        uniqueIds.push(enemyType);
+        progress += 1;
+      }
+    } else {
+      let nextProgress = progress;
+      for (const candidate of groupContracts) {
+        nextProgress = Math.max(
+          nextProgress,
+          progressForEvent(candidate, { progress }, event, { noLifeLost: true, runMode: mode })
+        );
+      }
+      progress = nextProgress;
+    }
+    if (progress > floor(previous.progress) || uniqueIds.length > (previous.uniqueIds || []).length) {
+      next[group] = {
+        progress: Math.min(getPersistentGroupTarget(group), progress),
+        updatedAt: nowIso(),
+        ...(uniqueIds.length ? { uniqueIds: uniqueIds.slice(0, getPersistentGroupTarget(group)) } : {})
+      };
+    }
+  }
+  return next;
+}
+
 export function applyRunContractEvent(session, event = {}) {
   if (!session || typeof session !== 'object') return { session, completed: [] };
   const nextSession = {
     ...session,
     noLifeLost: event.type === 'life_lost' ? false : session.noLifeLost !== false,
     active: [],
-    completedThisRun: Array.isArray(session.completedThisRun) ? [...session.completedThisRun] : []
+    completedThisRun: Array.isArray(session.completedThisRun) ? [...session.completedThisRun] : [],
+    careerProgress: applyCareerProgressEvent(session.careerProgress, event, session.runMode)
   };
   const completed = [];
   for (const item of Array.isArray(session.active) ? session.active : []) {
@@ -1276,9 +1471,13 @@ export function applyRunContractEvent(session, event = {}) {
           maxItems: contract.target || 100,
           maxLength: 120
         });
-        if (enemyType && !uniqueIds.includes(enemyType)) uniqueIds.push(enemyType);
+        const isNewEnemyType = Boolean(enemyType && !uniqueIds.includes(enemyType));
+        if (isNewEnemyType) uniqueIds.push(enemyType);
         nextItem.uniqueIds = uniqueIds.slice(0, contract.target || 100);
-        nextItem.progress = Math.min(contract.target, Math.max(floor(nextItem.progress), nextItem.uniqueIds.length));
+        nextItem.progress = Math.min(
+          contract.target,
+          Math.max(floor(nextItem.progress) + (isNewEnemyType ? 1 : 0), nextItem.uniqueIds.length)
+        );
       } else {
         nextItem.progress = Math.min(contract.target, progressForEvent(contract, nextItem, event, nextSession));
       }
@@ -1335,6 +1534,7 @@ export function recordRunContractSessionProgress(state = {}, session = {}) {
   return normalizeRunContractsState({
     ...normalized,
     progress,
+    careerProgress: mergeCareerProgress(normalized.careerProgress, session.careerProgress),
     updatedAt: nowIso()
   });
 }
@@ -1464,6 +1664,7 @@ export function getRunContractSessionState(session = null) {
     noLifeLost: session.noLifeLost !== false,
     allCompleteThisRun: Boolean(session.allCompleteThisRun),
     allCompletedAt: session.allCompletedAt || null,
+    careerProgress: normalizeCareerProgress(session.careerProgress),
     active: (session.active || []).map((item) => {
       const contract = getRunContractById(item.id);
       const orderNumber = getRunContractOrderNumber(item.id);
