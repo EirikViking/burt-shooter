@@ -10579,9 +10579,13 @@ export class PlayScene {
     };
   }
 
-  resetTransientGameplayInput(reason = 'gameplay_transition', { preserveFire = true } = {}) {
+  resetTransientGameplayInput(
+    reason = 'gameplay_transition',
+    { preserveFire = true, preserveMovement = false } = {}
+  ) {
     const input = this.inputManager?.resetTransientState?.({
       preserveFire,
+      preserveMovement,
       suppressUntilReleased: true
     }) || null;
     this.touchControls?.resetTransientState?.();
@@ -10589,6 +10593,7 @@ export class PlayScene {
     this.lastTransientInputReset = {
       reason,
       preserveFire: Boolean(preserveFire),
+      preserveMovement: Boolean(preserveMovement),
       at: Date.now(),
       input
     };
@@ -20536,7 +20541,10 @@ export class PlayScene {
   }
 
   showBossIntro(name, taunt) {
-    this.resetTransientGameplayInput('boss_intro_enter', { preserveFire: true });
+    this.resetTransientGameplayInput('boss_intro_enter', {
+      preserveFire: true,
+      preserveMovement: true
+    });
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
     const edgeAligned = !compact && width >= 1100;
@@ -20718,7 +20726,10 @@ export class PlayScene {
         this.game.app.ticker.remove(ticker);
         if (card.parent) card.parent.removeChild(card);
         if (this.activeBossIntroCard === card) {
-          this.resetTransientGameplayInput('boss_intro_exit', { preserveFire: true });
+          this.resetTransientGameplayInput('boss_intro_exit', {
+            preserveFire: true,
+            preserveMovement: true
+          });
           this.activeBossIntroCard = null;
         }
       }

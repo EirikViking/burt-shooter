@@ -205,6 +205,49 @@ try {
   assert(report.poster.y > 330, `boss warning is too high and can block boss arrival at y=${report.poster.y}`);
   assert(forbiddenIntroTexts.length === 0, `ship intro text overlaps boss warning: ${forbiddenIntroTexts.join(' | ')}`);
 
+  await page.keyboard.down('w');
+  await page.keyboard.down('ArrowRight');
+  const bossIntroEnterInput = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    if (!play?.inputManager) throw new Error('Missing input manager for boss-intro continuity check');
+    play.showBossIntro('INPUT CONTINUITY', 'HOLD COURSE');
+    return {
+      reset: play.lastTransientInputReset,
+      input: play.inputManager.getTransientDebugState()
+    };
+  });
+  assert(bossIntroEnterInput.reset?.reason === 'boss_intro_enter',
+    `boss intro enter did not reset through the expected path: ${JSON.stringify(bossIntroEnterInput)}`);
+  assert(bossIntroEnterInput.reset?.preserveMovement === true,
+    `boss intro enter did not preserve movement: ${JSON.stringify(bossIntroEnterInput)}`);
+  assert(bossIntroEnterInput.input?.pressedKeys?.includes('KeyW'),
+    `held vertical steering was lost when boss intro opened: ${JSON.stringify(bossIntroEnterInput)}`);
+  assert(bossIntroEnterInput.input?.pressedKeys?.includes('ArrowRight'),
+    `held horizontal steering was lost when boss intro opened: ${JSON.stringify(bossIntroEnterInput)}`);
+
+  await page.waitForFunction(() => {
+    const play = window.__game?.scenes?.play;
+    return play?.lastTransientInputReset?.reason === 'boss_intro_exit';
+  }, null, { timeout: 10000 });
+  const bossIntroExitInput = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return {
+      reset: play?.lastTransientInputReset,
+      input: play?.inputManager?.getTransientDebugState?.()
+    };
+  });
+  assert(bossIntroExitInput.reset?.preserveMovement === true,
+    `boss intro exit did not preserve movement: ${JSON.stringify(bossIntroExitInput)}`);
+  assert(bossIntroExitInput.input?.pressedKeys?.includes('KeyW'),
+    `held vertical steering was lost when boss intro closed: ${JSON.stringify(bossIntroExitInput)}`);
+  assert(bossIntroExitInput.input?.pressedKeys?.includes('ArrowRight'),
+    `held horizontal steering was lost when boss intro closed: ${JSON.stringify(bossIntroExitInput)}`);
+  assert(!bossIntroExitInput.input?.suppressedKeys?.includes('KeyW')
+    && !bossIntroExitInput.input?.suppressedKeys?.includes('ArrowRight'),
+  `boss intro exit suppressed held steering until release: ${JSON.stringify(bossIntroExitInput)}`);
+  await page.keyboard.up('w');
+  await page.keyboard.up('ArrowRight');
+
   await page.evaluate(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
@@ -256,6 +299,10 @@ try {
     overrunBossIdentity: {
       announcedName: overrunBossIdentity.expectedName,
       spawnedName: overrunSpawnedName.name
+    },
+    bossIntroInputContinuity: {
+      enter: bossIntroEnterInput,
+      exit: bossIntroExitInput
     },
     pageErrors,
     consoleWarningsOrErrors

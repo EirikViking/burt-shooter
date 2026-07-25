@@ -295,12 +295,23 @@ export class InputManager {
     };
   }
 
-  resetTransientState({ preserveFire = false, suppressUntilReleased = true } = {}) {
+  resetTransientState({
+    preserveFire = false,
+    preserveMovement = false,
+    suppressUntilReleased = true
+  } = {}) {
     const fireKeys = new Set(['Space', ' ', 'shoot']);
+    const movementKeys = new Set([
+      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+      'KeyA', 'KeyD', 'KeyW', 'KeyS',
+      'a', 'A', 'd', 'D', 'w', 'W', 's', 'S'
+    ]);
     const nextKeys = {};
     for (const [key, pressed] of Object.entries(this.keys)) {
       if (!pressed) continue;
       if (preserveFire && fireKeys.has(key)) {
+        nextKeys[key] = true;
+      } else if (preserveMovement && movementKeys.has(key)) {
         nextKeys[key] = true;
       } else if (suppressUntilReleased) {
         this.suppressedKeys.add(key);
@@ -316,8 +327,8 @@ export class InputManager {
       this.suppressedKeys.clear();
       this.suppressedGamepadActions.clear();
     } else {
-      if (raw.moveX) this.suppressedGamepadActions.set('moveX', Math.sign(raw.moveX));
-      if (raw.moveY) this.suppressedGamepadActions.set('moveY', Math.sign(raw.moveY));
+      if (raw.moveX && !preserveMovement) this.suppressedGamepadActions.set('moveX', Math.sign(raw.moveX));
+      if (raw.moveY && !preserveMovement) this.suppressedGamepadActions.set('moveY', Math.sign(raw.moveY));
       if (raw.dodge) this.suppressedGamepadActions.set('dodge', true);
       if (raw.focus) this.suppressedGamepadActions.set('focus', true);
       if (raw.pause) this.suppressedGamepadActions.set('pause', true);
@@ -325,17 +336,21 @@ export class InputManager {
     }
 
     const preservedGamepadFire = Boolean(preserveFire && raw.firing);
+    const preservedGamepadMoveX = preserveMovement ? raw.moveX : 0;
+    const preservedGamepadMoveY = preserveMovement ? raw.moveY : 0;
     this.gamepadState = {
       ...this.createEmptyGamepadState(),
       connected: raw.connected,
       id: raw.id,
       index: raw.index,
+      moveX: preservedGamepadMoveX,
+      moveY: preservedGamepadMoveY,
       firing: preservedGamepadFire,
       buttons: {
-        dpadLeft: false,
-        dpadRight: false,
-        dpadUp: false,
-        dpadDown: false,
+        dpadLeft: preserveMovement && preservedGamepadMoveX < -0.35 && raw.dpadLeft,
+        dpadRight: preserveMovement && preservedGamepadMoveX > 0.35 && raw.dpadRight,
+        dpadUp: preserveMovement && preservedGamepadMoveY < -0.35 && raw.dpadUp,
+        dpadDown: preserveMovement && preservedGamepadMoveY > 0.35 && raw.dpadDown,
         firing: preservedGamepadFire,
         dodge: false,
         focus: false,

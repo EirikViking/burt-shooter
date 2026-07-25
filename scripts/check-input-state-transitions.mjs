@@ -88,6 +88,21 @@ key('keyup', 'ShiftLeft', 'Shift');
 key('keyup', 'ArrowRight', 'ArrowRight');
 key('keyup', 'Space', ' ');
 
+key('keydown', 'KeyW', 'w');
+key('keydown', 'ArrowRight', 'ArrowRight');
+key('keydown', 'Space', ' ');
+input.resetTransientState({
+  preserveFire: true,
+  preserveMovement: true,
+  suppressUntilReleased: true
+});
+assert.equal(input.isKeyPressed('KeyW'), true, 'live boss-warning vertical steering must survive a presentation transition');
+assert.equal(input.isKeyPressed('ArrowRight'), true, 'live boss-warning horizontal steering must survive a presentation transition');
+assert.equal(input.isFiring(), true, 'held fire must survive a presentation transition');
+key('keyup', 'KeyW', 'w');
+key('keyup', 'ArrowRight', 'ArrowRight');
+key('keyup', 'Space', ' ');
+
 document.emit('pointerdown', { button: 0 });
 input.resetTransientState({ preserveFire: true, suppressUntilReleased: true });
 assert.equal(input.isFiring(), true, 'held pointer fire must survive a gameplay transition');
@@ -124,6 +139,17 @@ gamepad = input.pollGamepad(true);
 assert.equal(gamepad.moveX < 0, true, 'gamepad movement must resume after release');
 assert.equal(gamepad.dodge, true, 'gamepad phase must re-arm after release');
 assert.equal(gamepad.focus, true, 'gamepad focus must resume after release');
+
+input.resetTransientState({
+  preserveFire: true,
+  preserveMovement: true,
+  suppressUntilReleased: true
+});
+gamepad = input.pollGamepad(true);
+assert.equal(gamepad.moveX < 0, true, 'live boss-warning gamepad steering must survive a presentation transition');
+assert.equal(gamepad.dodge, false, 'held gamepad phase must still be edge-suppressed');
+assert.equal(gamepad.focus, false, 'held gamepad focus must still be edge-suppressed');
+assert.equal(gamepad.firing, true, 'held gamepad fire must survive a presentation transition');
 
 input.resetTransientState({ preserveFire: false, suppressUntilReleased: true });
 gamepad = input.pollGamepad(true);
@@ -166,8 +192,8 @@ assert.match(
 assert.match(playSource, /tactical_draft_enter[\s\S]*preserveFire: true/);
 assert.match(playSource, /tactical_draft_exit:\$\{reason\}[\s\S]*preserveFire: true/);
 assert.match(playSource, /pause_enter' : 'pause_exit'[\s\S]*preserveFire: true/);
-assert.match(playSource, /boss_intro_enter[\s\S]*preserveFire: true/);
-assert.match(playSource, /boss_intro_exit[\s\S]*preserveFire: true/);
+assert.match(playSource, /boss_intro_enter[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
+assert.match(playSource, /boss_intro_exit[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
 assert.match(playSource, /focus_loss:\$\{reason\}[\s\S]*preserveFire: false/);
 assert.match(gameSource, /scene_teardown[\s\S]*preserveFire: true/);
 assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*resetTransientState/);
