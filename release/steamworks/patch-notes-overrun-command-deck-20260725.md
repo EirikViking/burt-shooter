@@ -33,6 +33,15 @@ The mode now has a proper unlock celebration, clearer locked-state guidance, loa
 - Cumulative orders now keep their progress between eligible runs instead of quietly forgetting the work.
 - Order progress remains visible without fighting the selected-mode briefing for space.
 
+## Cabinet Wonders
+
+The strange signals glimpsed between battles have become a much larger part of the journey.
+
+- Added 50 new Cabinet Wonders, bringing the total collection to 60.
+- Wonders can now break through at safe transitions every third sector, with recent sightings kept out of rotation so the journey stays surprising.
+- Every Wonder you encounter is permanently archived in a new Threat Codex category and carried through Steam Cloud.
+- Each discovery has its own illustration, signal classification, field note, and original history—fragments of vanished expeditions, impossible machines, lost civilizations, and things the Cabinet may have been trying to forget.
+
 ## Sector Run and launch fixes
 
 - Sector Run now exposes every unlocked five-sector start point through the full current sector roadmap, rather than stopping at Sector 60.
