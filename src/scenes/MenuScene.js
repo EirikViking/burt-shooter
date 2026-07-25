@@ -3022,6 +3022,7 @@ export class MenuScene {
           fill: option.selected ? '#ffffff' : '#9feeff',
           stroke: '#020711',
           strokeThickness: 2,
+          padding: 12,
           align: 'center'
         });
         label.anchor.set(0.5);

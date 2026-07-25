@@ -320,6 +320,12 @@ function assertOpenReport(state, viewport) {
     assertContains(panel, section, `Report section ${section.id}`);
     assert(!rectanglesOverlap(section, tactical.bounds), `Report section ${section.id} overlaps Tactical Loadout.`);
   }
+  for (let index = 0; index < (overlay.sections || []).length; index += 1) {
+    for (let otherIndex = index + 1; otherIndex < overlay.sections.length; otherIndex += 1) {
+      assert(!rectanglesOverlap(overlay.sections[index], overlay.sections[otherIndex]),
+        `Report sections overlap: ${overlay.sections[index].id} / ${overlay.sections[otherIndex].id}.`);
+    }
+  }
   assert(!rectanglesOverlap(tactical.bounds, overlay.deathCoachBounds), 'Tactical Loadout overlaps counter advice.');
   assert(!rectanglesOverlap(overlay.deathCoachBounds, overlay.pilotOrdersBounds), 'Counter advice overlaps Pilot Orders.');
   assert(!rectanglesOverlap(overlay.pilotOrdersBounds, overlay.closeButtonBounds), 'Pilot Orders overlaps Close button.');

@@ -135,7 +135,7 @@ import {
   recordRunContractSessionProgress,
   startRunContractSession
 } from '../progression/RunContracts.js';
-import { getBossProfile } from '../config/BossRoster.js';
+import { getBossProfile, getBossProfileForRun } from '../config/BossRoster.js';
 import {
   RUN_MODES,
   canRunModeUseTacticalDraft,
@@ -8154,6 +8154,18 @@ export class PlayScene {
       fill: '#e0a3ff'
     });
     fusion.anchor.set(1, 0.5);
+    const installLabel = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#fff3a0',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'center',
+      padding: 6
+    });
+    installLabel.anchor.set(0.5);
+    installLabel.visible = false;
     summary.addChild(
       bg,
       material,
@@ -8167,7 +8179,8 @@ export class PlayScene {
       ...categoryCountNodes,
       signatureBg,
       doctrine,
-      fusion
+      fusion,
+      installLabel
     );
     summary._nodes = {
       bg,
@@ -8182,7 +8195,8 @@ export class PlayScene {
       categoryMeterNodes,
       signatureBg,
       doctrine,
-      fusion
+      fusion,
+      installLabel
     };
     return summary;
   }
@@ -8785,6 +8799,7 @@ export class PlayScene {
       const nodes = summary._nodes;
       const data = this.getTacticalDraftBuildSummaryData();
       summary._data = data;
+      const installingCategory = state.installingCategory || null;
       const summaryWidth = compact ? Math.max(300, width - 52) : Math.min(1120, width - 120);
       const summaryHeight = compact ? 40 : 80;
       summary._draftLayout = { width: summaryWidth, height: summaryHeight, compact };
@@ -8906,6 +8921,7 @@ export class PlayScene {
         const countNode = nodes.categoryCountNodes[nodeIndex];
         const meterNode = nodes.categoryMeterNodes[nodeIndex];
         const count = data.counts[node._category] || 0;
+        const installing = installingCategory === node._category;
         const chipWidth = Math.max(48, moduleWidth);
         const chipHeight = compact ? 27 : 56;
         const chamferSize = compact ? 5 : 8;
@@ -8920,9 +8936,9 @@ export class PlayScene {
         ]);
         bgNode.fill({ color: count > 0 ? 0x071b2a : 0x050d16, alpha: count > 0 ? 0.96 : 0.78 });
         bgNode.stroke({
-          color: TACTICAL_DRAFT_CATEGORY_COLORS[node._category],
-          width: count > 0 ? 1.5 : 1,
-          alpha: count > 0 ? 0.72 : 0.22
+          color: installing ? 0xffffff : TACTICAL_DRAFT_CATEGORY_COLORS[node._category],
+          width: installing ? 3 : count > 0 ? 1.5 : 1,
+          alpha: installing ? 0.96 : count > 0 ? 0.72 : 0.22
         });
         bgNode.position.set(categoryX + chipWidth / 2, 0);
         node.anchor.set(0, 0.5);
@@ -8945,8 +8961,20 @@ export class PlayScene {
           });
         }
         meterNode.position.set(categoryX + chipWidth / 2, compact ? 7 : 13);
+        meterNode.visible = !installing;
+        if (installing) {
+          nodes.installLabel.text = translateText(state.installingName || '');
+          nodes.installLabel.style.fontSize = compact ? 7 : 9;
+          nodes.installLabel.style.fill = TACTICAL_DRAFT_CATEGORY_COLORS[node._category];
+          nodes.installLabel.position.set(categoryX + chipWidth / 2, compact ? 7 : 14);
+          nodes.installLabel.scale.set(1);
+          nodes.installLabel.updateText?.(false);
+          nodes.installLabel.scale.set(Math.min(1, (chipWidth - 12) / Math.max(1, nodes.installLabel.width)));
+          nodes.installLabel.visible = true;
+        }
         categoryX += chipWidth + gap;
       });
+      if (!installingCategory) nodes.installLabel.visible = false;
       summary._visualLanguage = 'active_build_command_deck_v4';
     }
 
@@ -9992,6 +10020,9 @@ export class PlayScene {
       this.tacticalDraftHeldId = null;
     }
     state.confirmedId = offer.id;
+    state.installingCategory = offer.category;
+    state.installingName = offer.displayName || offer.name;
+    state.confirmHoldMs = 1000;
     state.result = result;
     state.confirmedAt = Date.now();
     state.lockInCardOrigins = state.cards.map((card) => ({
@@ -10026,6 +10057,7 @@ export class PlayScene {
       description: offer.detail || offer.description
     }, { silent: true, scoreBonus: false });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
+    this.layoutTacticalDraft();
     this.screenShake?.shake?.(this.game.getWidth() < 620 ? 1.5 : 2.5, 7);
     AudioManager.playSfx(offer.sfx || getPowerupMeta(offer.id)?.sfx || 'powerup', { force: true, volume: 0.88, minIntervalMs: 80 });
     const complete = state.onComplete;
@@ -10069,7 +10101,7 @@ export class PlayScene {
       }
       if (result.newFusions?.length) this.showTacticalFusionUnlock(result.newFusions[0]);
       complete?.();
-    }, 610);
+    }, state.confirmHoldMs);
     return true;
   }
 
@@ -10375,6 +10407,9 @@ export class PlayScene {
       focusIndex: state?.focusIndex ?? null,
       initialFocusIndex: state?.initialFocusIndex ?? null,
       confirmedId: state?.confirmedId || null,
+      installingCategory: state?.installingCategory || null,
+      installingName: state?.installingName || null,
+      confirmHoldMs: Number(state?.confirmHoldMs) || 0,
       lockInActive: Boolean(state?.confirmedId && state?.lockInBurst?.visible),
       lockInProgress: Number(state?.lockInProgress) || 0,
       inputArmed: Boolean(state?.inputArmed),
@@ -19088,7 +19123,10 @@ export class PlayScene {
       return;
     }
 
-    const bossProfile = this.enemyManager?.boss?.profile || getBossProfile(this.game?.level || 1);
+    const bossProfile = this.enemyManager?.boss?.profile || getBossProfileForRun(this.game?.level || 1, {
+      seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
+      seenThroughSector: this.game?.overrunSeenBossMaxSector || 50
+    });
     const primaryColor = bossProfile?.palette || 0xff3030;
     const accentColor = bossProfile?.accent || 0x2ff6ff;
     const spectacular = reason === 'boss_spawn';
@@ -19321,7 +19359,9 @@ export class PlayScene {
       threatLevel,
       approachChevronCount,
       spectacular,
-      reason
+      reason,
+      bossProfileId: bossProfile?.id || null,
+      bossProfileName: bossProfile?.name || null
     };
 
     this.uiOverlay.addChild(poster);

@@ -5225,7 +5225,7 @@ export class GameOverScene {
     const tacticalBandWidth = panelWidth - innerPad * 2;
     const chipGap = compact ? 6 : 8;
     const chipHeight = compact ? 22 : 26;
-    const chipMinWidth = compact ? 142 : 160;
+    const chipMinWidth = compact ? 110 : 160;
     const chipColumns = tacticalLoadout.length > 0
       ? Math.max(1, Math.floor((tacticalBandWidth - 24 + chipGap) / (chipMinWidth + chipGap)))
       : 0;
@@ -5297,18 +5297,27 @@ export class GameOverScene {
 
     const textLines = [];
     const sectionBounds = [];
+    const sectionAccents = {
+      run: 0xffd15c,
+      combat: 0xff6b8a,
+      survival: 0x7dffcc,
+      rewards: 0x37f5ff
+    };
     (report.sections || []).forEach((section, index) => {
       const column = columns === 1 ? 0 : index % columns;
       const row = columns === 1 ? index : Math.floor(index / columns);
       const x = -panelWidth / 2 + innerPad + column * (sectionWidth + gap);
       const y = contentTop + row * (sectionHeight + gap);
+      const sectionAccent = sectionAccents[section.id] || 0x37f5ff;
       const sectionBox = new PIXI.Graphics();
       sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
-      sectionBox.fill({ color: 0x06182a, alpha: 0.84 });
+      sectionBox.fill({ color: 0x06182a, alpha: 0.92 });
       sectionBox.roundRect(x, y, sectionWidth, sectionHeight, 8);
-      sectionBox.stroke({ color: 0x37f5ff, width: 1.1, alpha: 0.38 });
-      sectionBox.rect(x + 10, y + 26, sectionWidth - 20, 1);
-      sectionBox.fill({ color: 0x37f5ff, alpha: 0.18 });
+      sectionBox.stroke({ color: sectionAccent, width: 1.2, alpha: 0.52 });
+      sectionBox.rect(x, y, 6, sectionHeight);
+      sectionBox.fill({ color: sectionAccent, alpha: 0.82 });
+      sectionBox.rect(x + 18, y + 29, sectionWidth - 32, 1);
+      sectionBox.fill({ color: sectionAccent, alpha: 0.24 });
       this.runReportPanel.addChild(sectionBox);
       sectionBounds.push({
         id: section.id,
@@ -5321,51 +5330,93 @@ export class GameOverScene {
       const header = createText(this.getRunReportSectionLabel(section.id), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: sectionTitleSize,
-        fontWeight: 'bold',
-        fill: '#7dffcc',
+        fontWeight: '900',
+        fill: sectionAccent,
         stroke: '#031323',
         strokeThickness: 2,
         align: 'left'
       });
-      header.x = x + 12;
-      header.y = y + 9;
-      fitDisplayToBox(header, sectionWidth - 24, sectionTitleSize + 8, { minScale: 0.62 });
+      header.x = x + 18;
+      header.y = y + 8;
+      fitDisplayToBox(header, sectionWidth - 36, sectionTitleSize + 10, { minScale: 0.62 });
       this.runReportPanel.addChild(header);
       textLines.push(header.text);
 
       const rows = (section.rows || [])
         .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
-      const sectionRowSize = compact && rows.length > 6
-        ? Math.max(9, rowSize - 2)
-        : compact && rows.length > 5
-          ? Math.max(9, rowSize - 1)
-          : rowSize;
-      const rowStep = rows.length
-        ? rows.length === 1
-          ? sectionRowSize + 2
-          : Math.max(sectionRowSize + 1, (sectionHeight - 38 - sectionRowSize) / (rows.length - 1))
-        : sectionRowSize + 7;
+      const metricColumns = narrow || sectionWidth < 390 ? 1 : compact ? 3 : 2;
+      const metricGap = compact ? 3 : 7;
+      const metricAreaX = x + 14;
+      const metricAreaY = y + 37;
+      const metricAreaWidth = sectionWidth - 26;
+      const metricAreaHeight = Math.max(1, sectionHeight - 47);
+      const metricRows = Math.max(1, Math.ceil(rows.length / metricColumns));
+      const metricWidth = (metricAreaWidth - metricGap * (metricColumns - 1)) / metricColumns;
+      const metricHeight = Math.max(11, (metricAreaHeight - metricGap * (metricRows - 1)) / metricRows);
+      const denseMetrics = metricHeight < 38;
       rows.forEach((entry, rowIndex) => {
+        const metricColumn = rowIndex % metricColumns;
+        const metricRow = Math.floor(rowIndex / metricColumns);
+        const metricX = metricAreaX + metricColumn * (metricWidth + metricGap);
+        const metricY = metricAreaY + metricRow * (metricHeight + metricGap);
         const label = this.getRunReportFieldLabel(entry.id);
         const value = this.formatRunReportValue(entry);
         const rowText = [label, value].join(': ');
-        const line = createText(rowText, {
+
+        const metricBg = new PIXI.Graphics();
+        metricBg.roundRect(metricX, metricY, metricWidth, metricHeight, 5);
+        metricBg.fill({ color: 0x03111f, alpha: 0.9 });
+        metricBg.roundRect(metricX, metricY, metricWidth, metricHeight, 5);
+        metricBg.stroke({ color: sectionAccent, width: 0.8, alpha: 0.24 });
+        metricBg.rect(metricX + 8, metricY + metricHeight - 3, Math.max(12, metricWidth * 0.28), 1);
+        metricBg.fill({ color: sectionAccent, alpha: 0.5 });
+        this.runReportPanel.addChild(metricBg);
+
+        const metricLabel = createText(label.toUpperCase(), {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: sectionRowSize,
-          fontWeight: rowIndex === 0 ? 'bold' : 'normal',
-          fill: rowIndex === 0 ? '#ffffff' : '#cbeff4',
+          fontSize: denseMetrics ? 7 : compact ? 9 : 11,
+          fontWeight: '900',
+          fill: sectionAccent,
+          stroke: '#031323',
+          strokeThickness: 2,
+          align: 'left',
+          letterSpacing: 0.5
+        });
+        metricLabel.anchor.set(0, denseMetrics ? 0.5 : 0);
+        metricLabel.x = metricX + 9;
+        metricLabel.y = denseMetrics ? metricY + metricHeight / 2 : metricY + 5;
+        fitDisplayToBox(
+          metricLabel,
+          denseMetrics ? metricWidth * 0.58 : metricWidth - 18,
+          denseMetrics ? metricHeight - 5 : Math.max(7, metricHeight * 0.32),
+          { minScale: 0.52 }
+        );
+
+        const metricValue = createText(value, {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: denseMetrics ? 10 : compact ? 13 : 17,
+          fontWeight: '900',
+          fill: '#eefcff',
           stroke: '#031323',
           strokeThickness: 2,
           align: 'left',
           wordWrap: true,
-          wordWrapWidth: sectionWidth - 24,
-          lineHeight: sectionRowSize + 3
+          wordWrapWidth: metricWidth - 18,
+          lineHeight: denseMetrics ? 10 : compact ? 14 : 18
         });
-        line.x = x + 12;
-        line.y = y + 34 + rowIndex * rowStep;
-        fitDisplayToBox(line, sectionWidth - 24, Math.max(sectionRowSize + 2, rowStep - 1), { minScale: 0.64 });
-        this.runReportPanel.addChild(line);
-        textLines.push(line.text);
+        metricValue.anchor.set(denseMetrics ? 1 : 0, denseMetrics ? 0.5 : 0);
+        metricValue.x = denseMetrics ? metricX + metricWidth - 9 : metricX + 9;
+        metricValue.y = denseMetrics
+          ? metricY + metricHeight / 2
+          : metricY + Math.max(16, metricHeight * 0.38);
+        fitDisplayToBox(
+          metricValue,
+          denseMetrics ? metricWidth * 0.37 : metricWidth - 18,
+          denseMetrics ? metricHeight - 5 : Math.max(8, metricHeight * 0.5),
+          { minScale: 0.52 }
+        );
+        this.runReportPanel.addChild(metricLabel, metricValue);
+        textLines.push(rowText);
       });
     });
 

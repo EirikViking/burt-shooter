@@ -204,6 +204,47 @@ try {
   assert(Math.abs(report.poster.x - 640) > 130, `boss warning blocks the boss lane at x=${report.poster.x}`);
   assert(report.poster.y > 330, `boss warning is too high and can block boss arrival at y=${report.poster.y}`);
   assert(forbiddenIntroTexts.length === 0, `ship intro text overlaps boss warning: ${forbiddenIntroTexts.join(' | ')}`);
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const manager = play?.enemyManager;
+    if (!game || !play || !manager) throw new Error('Missing Overrun boss-flow fixtures');
+    for (const child of [...play.uiOverlay.children]) {
+      if (child.label === 'ui_boss_dossier') {
+        play.uiOverlay.removeChild(child);
+        child.destroy?.({ children: true });
+      }
+    }
+    game.level = 51;
+    game.runMode = 'overrun_tactical';
+    manager.boss = null;
+    play.showBossTaunt('boss_spawn');
+  });
+  await page.waitForFunction(() => {
+    const play = window.__game?.scenes?.play;
+    const poster = play?.uiOverlay?.children?.find((child) => child.label === 'ui_boss_dossier');
+    return Boolean(poster?._debugBossWarningDossier?.bossProfileName);
+  }, null, { timeout: 10000 });
+  const overrunBossIdentity = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const poster = play?.uiOverlay?.children?.find((child) => child.label === 'ui_boss_dossier');
+    return {
+      expectedName: poster?._debugBossWarningDossier?.bossProfileName || null,
+      expectedId: poster?._debugBossWarningDossier?.bossProfileId || null
+    };
+  });
+  const overrunSpawnedName = await page.evaluate(async () => {
+    const manager = window.__game?.scenes?.play?.enemyManager;
+    await manager.spawnBoss(51);
+    return {
+      name: manager.boss?.profile?.name || null,
+      id: manager.boss?.profile?.id || null
+    };
+  });
+  assert(overrunBossIdentity.expectedName === overrunSpawnedName.name
+    && overrunBossIdentity.expectedId === overrunSpawnedName.id,
+  `Overrun warning announced ${overrunBossIdentity.expectedName}, but spawned ${overrunSpawnedName.name}`);
   assert(pageErrors.length === 0, `page errors: ${pageErrors.join('; ')}`);
   assert(consoleWarningsOrErrors.length === 0, `console warnings/errors: ${consoleWarningsOrErrors.join('; ')}`);
 
@@ -212,6 +253,10 @@ try {
     baseUrl,
     screenshot,
     report,
+    overrunBossIdentity: {
+      announcedName: overrunBossIdentity.expectedName,
+      spawnedName: overrunSpawnedName.name
+    },
     pageErrors,
     consoleWarningsOrErrors
   };

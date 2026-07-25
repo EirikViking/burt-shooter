@@ -525,18 +525,29 @@ try {
   await page.screenshot({ path: desktopScreenshot });
 
   const keyboardTargetIndex = (state.tacticalDraft.focusIndex + 1) % state.tacticalDraft.offers.length;
+  const keyboardTarget = state.tacticalDraft.offers[keyboardTargetIndex];
   await page.keyboard.press('ArrowRight');
   await page.waitForFunction((target) => JSON.parse(window.render_game_to_text()).tacticalDraft?.focusIndex === target, keyboardTargetIndex);
+  const lockInStartedAt = Date.now();
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.lockInActive === true, null, { timeout: 3000 });
   await page.waitForTimeout(180);
   const lockInState = await readState(page);
   assert(lockInState.tacticalDraft.confirmedId, 'lock-in celebration lost the confirmed choice');
+  assert(lockInState.tacticalDraft.installingCategory === keyboardTarget.category,
+    `selected augment was not shown in its ${keyboardTarget.category} Active Build slot`);
+  assert(lockInState.tacticalDraft.installingName === keyboardTarget.name,
+    'Active Build slot did not identify the augment being installed');
+  assert(lockInState.tacticalDraft.buildSummary.activeIds.includes(lockInState.tacticalDraft.confirmedId),
+    'confirmed augment was not present in Active Build before combat resumed');
+  assert(lockInState.tacticalDraft.confirmHoldMs === 1000,
+    `Active Build confirmation should hold for one second, got ${lockInState.tacticalDraft.confirmHoldMs}ms`);
   assert(lockInState.tacticalDraft.lockInProgress > 0 && lockInState.tacticalDraft.lockInProgress < 1,
     `lock-in celebration did not animate: ${lockInState.tacticalDraft.lockInProgress}`);
   const lockInScreenshot = path.join(outputDir, 'tactical-draft-lock-in.png');
   await page.screenshot({ path: lockInScreenshot });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+  assert(Date.now() - lockInStartedAt >= 950, 'Tactical Draft did not hold the installed augment for one second');
   state = await readState(page);
   assert(state.tacticalDraft.history.length === 1, 'keyboard selection was not recorded');
 
