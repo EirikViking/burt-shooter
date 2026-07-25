@@ -767,6 +767,9 @@ function sanitizeHangarProgress(progress = {}) {
     newRanksThisRun: sanitizeStringArray(raw.newRanksThisRun, { maxItems: 32, maxLength: 12 })
       .map((value) => sanitizeNumber(value, 0, { min: 0, max: 20 })),
     rankAchievementsUnlocked: sanitizeStringArray(raw.rankAchievementsUnlocked),
+    overrunUnlockCelebrationPending: Boolean(raw.overrunUnlockCelebrationPending)
+      && !Boolean(raw.overrunUnlockCelebrationSeen),
+    overrunUnlockCelebrationSeen: Boolean(raw.overrunUnlockCelebrationSeen),
     rankProgress: raw.rankProgress && typeof raw.rankProgress === 'object'
       ? sanitizeJsonValue(raw.rankProgress, 1)
       : null,
@@ -982,6 +985,13 @@ function mergeHangarProgress(localProgress = {}, rendererProgress = {}) {
     rankAchievementsUnlocked: mergeStringArray(local.rankAchievementsUnlocked, renderer.rankAchievementsUnlocked),
     rankProgress: renderer.rankProgress || local.rankProgress || null,
     runContracts: mergeRunContractsState(local.runContracts, renderer.runContracts),
+    overrunUnlockCelebrationSeen: Boolean(
+      local.overrunUnlockCelebrationSeen || renderer.overrunUnlockCelebrationSeen
+    ),
+    overrunUnlockCelebrationPending: Boolean(
+      (local.overrunUnlockCelebrationPending || renderer.overrunUnlockCelebrationPending)
+      && !(local.overrunUnlockCelebrationSeen || renderer.overrunUnlockCelebrationSeen)
+    ),
     updatedAt: renderer.updatedAt || local.updatedAt || nowIso()
   });
 }
@@ -1150,6 +1160,74 @@ function mergeScoutRunRecords(localRecords = {}, rendererRecords = {}) {
     version: Math.max(local.version, renderer.version, 1),
     updatedAt: renderer.updatedAt || local.updatedAt || nowIso(),
     best: best || null
+  };
+}
+
+const OVERRUN_RUN_MODES = Object.freeze(['overrun_pure', 'overrun_tactical']);
+
+function sanitizeOverrunRunRecord(raw = {}, fallbackMode = null) {
+  if (!raw || typeof raw !== 'object') return null;
+  const runMode = OVERRUN_RUN_MODES.includes(raw.runMode) ? raw.runMode : fallbackMode;
+  if (!OVERRUN_RUN_MODES.includes(runMode)) return null;
+  const score = sanitizeNumber(raw.score ?? raw.finalScore, 0);
+  if (score <= 0) return null;
+  const sectorReached = Math.max(1, sanitizeNumber(raw.sectorReached ?? raw.levelReached, 1));
+  return {
+    score,
+    sectorReached,
+    levelReached: Math.max(1, sanitizeNumber(raw.levelReached ?? raw.sectorReached, sectorReached)),
+    runMode,
+    shipId: sanitizeOptionalString(raw.shipId, 120),
+    shipName: sanitizeOptionalString(raw.shipName, 120),
+    selectedShipSpriteKey: sanitizeOptionalString(raw.selectedShipSpriteKey ?? raw.shipKey, 120),
+    completedAt: String(raw.completedAt || raw.timestamp || nowIso()),
+    runElapsedSeconds: sanitizeNumber(raw.runElapsedSeconds, 0),
+    bossesKilled: sanitizeNumber(raw.bossesKilled, 0),
+    wavesCleared: sanitizeNumber(raw.wavesCleared, 0),
+    source: 'overrun_personal_best'
+  };
+}
+
+function sanitizeOverrunRunRecords(rawRecords = {}) {
+  const raw = rawRecords && typeof rawRecords === 'object' ? rawRecords : {};
+  const source = raw.byMode && typeof raw.byMode === 'object' ? raw.byMode : raw;
+  const byMode = {};
+  for (const mode of OVERRUN_RUN_MODES) {
+    const record = sanitizeOverrunRunRecord(source[mode], mode);
+    if (record) byMode[mode] = record;
+  }
+  return {
+    version: Math.max(1, sanitizeNumber(raw.version, 1)),
+    updatedAt: String(raw.updatedAt || nowIso()),
+    byMode
+  };
+}
+
+function isBetterOverrunRunRecord(candidate, previous) {
+  const next = sanitizeOverrunRunRecord(candidate, candidate?.runMode);
+  const current = sanitizeOverrunRunRecord(previous, previous?.runMode);
+  if (!next) return false;
+  if (!current) return true;
+  if (next.score !== current.score) return next.score > current.score;
+  if (next.sectorReached !== current.sectorReached) return next.sectorReached > current.sectorReached;
+  if (next.levelReached !== current.levelReached) return next.levelReached > current.levelReached;
+  return Date.parse(next.completedAt) > Date.parse(current.completedAt);
+}
+
+function mergeOverrunRunRecords(localRecords = {}, rendererRecords = {}) {
+  const local = sanitizeOverrunRunRecords(localRecords);
+  const renderer = sanitizeOverrunRunRecords(rendererRecords);
+  const byMode = {};
+  for (const mode of OVERRUN_RUN_MODES) {
+    const best = isBetterOverrunRunRecord(renderer.byMode[mode], local.byMode[mode])
+      ? renderer.byMode[mode]
+      : local.byMode[mode];
+    if (best) byMode[mode] = best;
+  }
+  return {
+    version: Math.max(local.version, renderer.version, 1),
+    updatedAt: renderer.updatedAt || local.updatedAt || nowIso(),
+    byMode
   };
 }
 
@@ -1411,6 +1489,7 @@ function sanitizeRendererState(state = {}) {
     state.sectorStartChallengeRecords || state.sectorStartRecords || {}
   );
   const scoutRunRecords = sanitizeScoutRunRecords(state.scoutRunRecords || state.scoutBest || state.scoutRunBest || {});
+  const overrunRunRecords = sanitizeOverrunRunRecords(state.overrunRunRecords || {});
   const hangarProgress = repairHangarProgressFromPersistence(
     sanitizeHangarProgress(state.hangarProgress || {}),
     {
@@ -1440,6 +1519,7 @@ function sanitizeRendererState(state = {}) {
     threatDiscovery,
     sectorStartChallengeRecords,
     scoutRunRecords,
+    overrunRunRecords,
     shipUsage,
     shipUsageTotal: Math.max(sanitizeNumber(state.shipUsageTotal, 0), sumShipUsage(shipUsage)),
     settings: sanitizeSettings(state.settings || {})
@@ -1460,6 +1540,7 @@ function createEmptySave(profileContext = {}) {
     threatDiscovery: sanitizeThreatDiscovery(),
     sectorStartChallengeRecords: sanitizeSectorStartChallengeRecords(),
     scoutRunRecords: sanitizeScoutRunRecords(),
+    overrunRunRecords: sanitizeOverrunRunRecords(),
     shipUsage: sanitizeShipUsage(),
     shipUsageTotal: 0,
     settings: sanitizeSettings()
@@ -1481,6 +1562,7 @@ function normalizeSave(rawSave = {}, localHighscores = null, profileContext = {}
     threatDiscovery: rendererState.threatDiscovery,
     sectorStartChallengeRecords: rendererState.sectorStartChallengeRecords,
     scoutRunRecords: rendererState.scoutRunRecords,
+    overrunRunRecords: rendererState.overrunRunRecords,
     shipUsage: rendererState.shipUsage,
     shipUsageTotal: rendererState.shipUsageTotal,
     settings: rendererState.settings
@@ -1629,6 +1711,9 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       scoutRunRecords: Object.hasOwn(state, 'scoutRunRecords') || Object.hasOwn(state, 'scoutBest') || Object.hasOwn(state, 'scoutRunBest')
         ? mergeScoutRunRecords(current.scoutRunRecords, rendererState.scoutRunRecords)
         : current.scoutRunRecords,
+      overrunRunRecords: Object.hasOwn(state, 'overrunRunRecords')
+        ? mergeOverrunRunRecords(current.overrunRunRecords, rendererState.overrunRunRecords)
+        : current.overrunRunRecords,
       shipUsage,
       shipUsageTotal: Math.max(
         current.shipUsageTotal || 0,
@@ -1661,6 +1746,10 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
         sanitizeSectorStartChallengeRecords(save.sectorStartChallengeRecords || save.sectorStartRecords || {}).byCheckpoint
       ).length,
       scoutRunBestScore: sanitizeScoutRunRecords(save.scoutRunRecords || save.scoutBest || save.scoutRunBest).best?.score || 0,
+      overrunRunBestScores: Object.fromEntries(
+        Object.entries(sanitizeOverrunRunRecords(save.overrunRunRecords).byMode)
+          .map(([mode, record]) => [mode, record.score])
+      ),
       threatDiscoveryCategories: Object.keys(save.threatDiscovery?.items || {}).length,
       threatDiscoveryUnread: Array.isArray(save.threatDiscovery?.unreadIds) ? save.threatDiscovery.unreadIds.length : 0,
       updatedAt: save.updatedAt

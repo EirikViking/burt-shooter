@@ -22,6 +22,12 @@ import {
   createDefaultHangarProgress,
   writeHangarProgressState
 } from '../src/progression/HangarProgressState.js';
+import {
+  OVERRUN_RUN_RECORDS_KEY,
+  getOverrunRunBest,
+  mergeOverrunRunRecords,
+  recordOverrunRun
+} from '../src/progression/OverrunRunRecords.js';
 
 class MemoryStorage {
   constructor() {
@@ -42,6 +48,14 @@ class MemoryStorage {
 }
 
 globalThis.localStorage = new MemoryStorage();
+globalThis.Audio = class {
+  addEventListener() {}
+  removeEventListener() {}
+  pause() {}
+  play() { return Promise.resolve(); }
+  load() {}
+};
+const { PowerupManager } = await import('../src/managers/PowerupManager.js');
 
 assert.deepEqual(getOverrunStartState({ bestSector: OVERRUN_UNLOCK_SECTOR - 1 }), {
   available: false,
@@ -85,6 +99,22 @@ assert.deepEqual(
   getRunModeProfile(RUN_MODES.OVERRUN_TACTICAL).tacticalBaselineAugmentIds,
   OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS
 );
+
+writeHangarProgressState({
+  ...createDefaultHangarProgress(),
+  bestSector: OVERRUN_UNLOCK_SECTOR - 1,
+  bestLevel: OVERRUN_UNLOCK_SECTOR - 1
+});
+const unlockTransition = applyRunProgression({
+  runMode: RUN_MODES.RANKED,
+  score: 30000,
+  sectorReached: OVERRUN_UNLOCK_SECTOR,
+  levelReached: OVERRUN_UNLOCK_SECTOR,
+  runElapsedSeconds: 300
+});
+assert.equal(unlockTransition.previous.overrunUnlockCelebrationPending, false);
+assert.equal(unlockTransition.next.overrunUnlockCelebrationPending, true, 'crossing Sector 30 should queue the one-time celebration');
+assert.equal(unlockTransition.next.overrunUnlockCelebrationSeen, false);
 
 assert.equal(
   calculatePilotXpForRun({
@@ -153,4 +183,68 @@ assert.equal(result.next.highestScoreMultiplier, base.highestScoreMultiplier);
 assert.deepEqual(result.next.shipSpecificMilestones, base.shipSpecificMilestones, 'Overrun must not alter competitive ship mastery');
 assert.ok(localStorage.getItem(HANGAR_PROGRESS_KEY), 'Overrun career result should persist');
 
-console.log('[overrun-mode] PASS unlock, fixed start, Pure/Tactical identity, reward isolation, competitive-state protection');
+const firstPure = recordOverrunRun({
+  runMode: RUN_MODES.OVERRUN_PURE,
+  score: 12000,
+  sectorReached: 56,
+  levelReached: 56,
+  runElapsedSeconds: 180
+});
+assert.equal(firstPure.isNewBest, true);
+assert.equal(firstPure.stored, true);
+assert.equal(getOverrunRunBest(RUN_MODES.OVERRUN_PURE).score, 12000);
+
+const lowerPure = recordOverrunRun({
+  runMode: RUN_MODES.OVERRUN_PURE,
+  score: 11000,
+  sectorReached: 60,
+  levelReached: 60
+});
+assert.equal(lowerPure.isNewBest, false, 'score remains the primary personal-best metric');
+assert.equal(getOverrunRunBest(RUN_MODES.OVERRUN_PURE).score, 12000);
+
+const tactical = recordOverrunRun({
+  runMode: RUN_MODES.OVERRUN_TACTICAL,
+  score: 9000,
+  sectorReached: 54,
+  levelReached: 54
+});
+assert.equal(tactical.isNewBest, true);
+assert.equal(getOverrunRunBest(RUN_MODES.OVERRUN_TACTICAL).score, 9000);
+assert.ok(localStorage.getItem(OVERRUN_RUN_RECORDS_KEY));
+
+const merged = mergeOverrunRunRecords(
+  JSON.parse(localStorage.getItem(OVERRUN_RUN_RECORDS_KEY)),
+  {
+    byMode: {
+      [RUN_MODES.OVERRUN_PURE]: {
+        runMode: RUN_MODES.OVERRUN_PURE,
+        score: 15000,
+        sectorReached: 57
+      },
+      [RUN_MODES.OVERRUN_TACTICAL]: {
+        runMode: RUN_MODES.OVERRUN_TACTICAL,
+        score: 8000,
+        sectorReached: 70
+      }
+    }
+  }
+);
+assert.equal(merged.byMode[RUN_MODES.OVERRUN_PURE].score, 15000, 'Steam Cloud merge keeps the stronger Pure record');
+assert.equal(merged.byMode[RUN_MODES.OVERRUN_TACTICAL].score, 9000, 'Steam Cloud merge cannot downgrade Tactical');
+
+const overrunPowerups = new PowerupManager({ addChild() {}, removeChild() {} }, {
+  level: OVERRUN_START_SECTOR,
+  scenes: {},
+  getWidth: () => 1280
+});
+let forcedExtraLives = 0;
+overrunPowerups.forceExtraLifeSpawn = () => {
+  forcedExtraLives += 1;
+};
+overrunPowerups.checkLevelReset(OVERRUN_START_SECTOR);
+overrunPowerups.checkLevelReset(OVERRUN_START_SECTOR + 1);
+assert.equal(forcedExtraLives, 0, 'Overrun must not inherit a 50-sector extra-life gap at launch');
+assert.equal(overrunPowerups.lastExtraLifeLevel, OVERRUN_START_SECTOR - 1);
+
+console.log('[overrun-mode] PASS unlock, fixed start, Pure/Tactical records, reward isolation, competitive-state protection');

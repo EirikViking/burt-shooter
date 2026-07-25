@@ -81,6 +81,7 @@ import {
   writeHangarProgressState
 } from '../progression/HangarProgressState.js';
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
+import { getOverrunRunBest, recordOverrunRun } from '../progression/OverrunRunRecords.js';
 import { getMayhemModeBestScore, recordMayhemModeScore } from '../progression/MayhemModeRecords.js';
 import { getSectorStartChallengeRecord, recordSectorStartChallengeRun } from '../progression/SectorStartChallengeRecords.js';
 import {
@@ -948,14 +949,22 @@ export class Game {
   } = {}) {
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
     const isDailySignal = runMode === RUN_MODES.DAILY_SIGNAL;
+    const isOverrun = isOverrunRunMode(runMode);
     const sectorRecord = isSectorStart ? getSectorStartChallengeRecord(sectorStartCheckpoint) : null;
     const dailyBestAttempt = isDailySignal ? getDailySignalBestAttempt(dailySignalContract) : null;
     const dailyBestClear = isDailySignal ? getDailySignalBestClear(dailySignalContract) : null;
     const rankedModeBest = isRankedRunMode(runMode)
       ? getMayhemModeBestScore(runMode, { legacyPureBest: progress?.bestScore })
       : 0;
+    const overrunBest = isOverrun ? getOverrunRunBest(runMode) : null;
     const targetScore = Math.max(0, Math.floor(Number(
-      isSectorStart ? sectorRecord?.scoreEarned : isDailySignal ? dailyBestClear?.score : rankedModeBest
+      isSectorStart
+        ? sectorRecord?.scoreEarned
+        : isDailySignal
+          ? dailyBestClear?.score
+          : isOverrun
+            ? overrunBest?.score
+            : rankedModeBest
     ) || 0));
     const targetSector = isDailySignal
       ? Math.max(1, Math.floor(Number(dailySignalContract?.finishSector) || 10))
@@ -976,7 +985,9 @@ export class Game {
         ? 'sector_start_record'
         : isDailySignal
           ? 'daily_signal_local_best'
-          : 'mayhem_mode_best_score',
+          : isOverrun
+            ? 'overrun_personal_best'
+            : 'mayhem_mode_best_score',
       syncingTarget: isRankedRunMode(runMode),
       checkpoint: sectorStartCheckpoint || null,
       surpassed: goalMode === 'daily_clear' ? false : targetScore <= 0,
@@ -1054,7 +1065,7 @@ export class Game {
     const score = Math.max(0, Number(this.score) || 0);
     const ratio = score / chase.targetScore;
     const beatPersonalBest = (
-      isRankedRunMode(chase.runMode)
+      (isRankedRunMode(chase.runMode) || isOverrunRunMode(chase.runMode))
       && !chase.syncingTarget
       && score > chase.targetScore
     );
@@ -1610,6 +1621,23 @@ export class Game {
         scoutRunPreviousBest: scoutRecord.previousRecord,
         scoutRunBest: scoutRecord.bestRecord,
         scoutRunNewBest: scoutRecord.isNewBest
+      };
+    }
+    if (isOverrunRunMode(this.runMode)) {
+      const ship = getShipMetadata(this.selectedShipSpriteKey);
+      const overrunRecord = recordOverrunRun(this.runSummary, {
+        selectedShipSpriteKey: this.selectedShipSpriteKey,
+        shipId: ship?.id || this.selectedShipSpriteKey || null,
+        shipName: ship?.name || null
+      });
+      this.lastOverrunRunRecord = overrunRecord;
+      this.runSummary = {
+        ...this.runSummary,
+        overrunRunAttempt: overrunRecord.attemptRecord,
+        overrunRunPreviousBest: overrunRecord.previousRecord,
+        overrunRunBest: overrunRecord.bestRecord,
+        overrunRunNewBest: overrunRecord.isNewBest,
+        overrunRunStored: overrunRecord.stored
       };
     }
     if (this.runMode === RUN_MODES.DAILY_SIGNAL && this.dailySignalContract) {

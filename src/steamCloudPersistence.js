@@ -10,6 +10,11 @@ import {
   normalizeScoutRunRecord
 } from './progression/ScoutRunRecords.js';
 import {
+  OVERRUN_RUN_RECORDS_KEY,
+  mergeOverrunRunRecords,
+  normalizeOverrunRunRecords
+} from './progression/OverrunRunRecords.js';
+import {
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
   UI_SCALE_KEY,
@@ -50,6 +55,7 @@ export const CLOUD_SHIP_USAGE_KEY = 'burt.shipUsage.v1';
 export const CLOUD_SHIP_USAGE_TOTAL_KEY = 'burt.shipUsageTotal.v1';
 export const CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY = SECTOR_START_CHALLENGE_RECORDS_KEY;
 export const CLOUD_SCOUT_RUN_RECORDS_KEY = SCOUT_RUN_RECORDS_KEY;
+export const CLOUD_OVERRUN_RUN_RECORDS_KEY = OVERRUN_RUN_RECORDS_KEY;
 
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
@@ -309,6 +315,13 @@ function mergeHangarProgress(localProgress = {}, cloudProgress = {}) {
     unlockedShipIds: mergeArrayUnique(local, cloud, 'unlockedShipIds'),
     shipUnlockHistory: mergeShipUnlockHistory(local.shipUnlockHistory, cloud.shipUnlockHistory),
     runContracts: mergeRunContractsState(local.runContracts, cloud.runContracts),
+    overrunUnlockCelebrationSeen: Boolean(
+      local.overrunUnlockCelebrationSeen || cloud.overrunUnlockCelebrationSeen
+    ),
+    overrunUnlockCelebrationPending: Boolean(
+      (local.overrunUnlockCelebrationPending || cloud.overrunUnlockCelebrationPending)
+      && !(local.overrunUnlockCelebrationSeen || cloud.overrunUnlockCelebrationSeen)
+    ),
     lastNewlyUnlockedShipIds: Array.isArray(local.lastNewlyUnlockedShipIds) ? local.lastNewlyUnlockedShipIds : []
   };
 }
@@ -845,6 +858,9 @@ export function collectSteamCloudPersistenceState({
   const scoutRunRecords = normalizeScoutRunRecordsPayload(
     readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {})
   );
+  const overrunRunRecords = normalizeOverrunRunRecords(
+    readJsonStorage(storage, CLOUD_OVERRUN_RUN_RECORDS_KEY, {})
+  );
   const shipUsage = normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}));
   const rawHangarProgress = typeof getShipUnlockProgress === 'function'
     ? getShipUnlockProgress()
@@ -856,6 +872,7 @@ export function collectSteamCloudPersistenceState({
     selectedShipKey,
     sectorStartChallengeRecords,
     scoutRunRecords,
+    overrunRunRecords,
     shipUsage
   });
   const settings = typeof getAccessibilitySettings === 'function'
@@ -888,6 +905,7 @@ export function collectSteamCloudPersistenceState({
     threatDiscovery,
     sectorStartChallengeRecords,
     scoutRunRecords,
+    overrunRunRecords,
     shipUsage,
     shipUsageTotal: Math.max(
       Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
@@ -918,6 +936,7 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     shipUsageTotal: 0,
     sectorStartChallengeRecords: 0,
     scoutRunBest: 0,
+    overrunRunBestScores: {},
     settings: 0
   };
   if (!storage || !save || typeof save !== 'object') return summary;
@@ -1042,6 +1061,21 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     ) || summary.restored;
   }
 
+  if (save.overrunRunRecords) {
+    const mergedOverrun = mergeOverrunRunRecords(
+      readJsonStorage(storage, CLOUD_OVERRUN_RUN_RECORDS_KEY, {}),
+      save.overrunRunRecords
+    );
+    summary.overrunRunBestScores = Object.fromEntries(
+      Object.entries(mergedOverrun.byMode).map(([mode, record]) => [mode, record.score])
+    );
+    summary.restored = writeStorage(
+      storage,
+      CLOUD_OVERRUN_RUN_RECORDS_KEY,
+      JSON.stringify(mergedOverrun)
+    ) || summary.restored;
+  }
+
   const settings = save.settings || {};
   if (settings.screenShake !== undefined && writeStorage(storage, SCREEN_SHAKE_KEY, clampUnit(settings.screenShake, 1))) {
     summary.settings += 1;
@@ -1093,6 +1127,10 @@ export function summarizeSteamCloudPersistence(save = {}) {
     shipUsageShips: Object.keys(normalizeUsageMap(save?.shipUsage || save?.shipUsageByShip || {})).length,
     shipUsageTotal: Math.max(Math.floor(Number(save?.shipUsageTotal) || 0), sumUsageMap(save?.shipUsage || save?.shipUsageByShip || {})),
     scoutRunBestScore: normalizeScoutRunRecordsPayload(save?.scoutRunRecords || { best: save?.scoutBest || save?.scoutRunBest }).best?.score || 0,
+    overrunRunBestScores: Object.fromEntries(
+      Object.entries(normalizeOverrunRunRecords(save?.overrunRunRecords || {}).byMode)
+        .map(([mode, record]) => [mode, record.score])
+    ),
     threatDiscoveryCategories: Object.keys(save?.threatDiscovery?.items || {}).length,
     sectorStartChallengeCheckpoints: Object.keys(
       normalizeSectorStartChallengeRecordsPayload(save?.sectorStartChallengeRecords || save?.sectorStartRecords || {}).byCheckpoint

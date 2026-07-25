@@ -1136,11 +1136,12 @@ export class PowerupManager {
     this.duplicateSpawnAttempts = [];
     this.dropsThisLevel = 0;
     this.dropsThisRun = 0; // Track total drops this run
-    this.currentLevel = 1;
+    const runStartLevel = Math.max(1, Math.floor(Number(game?.level) || 1));
+    this.currentLevel = runStartLevel;
     this.lastSpawnTime = Date.now();
 
     // Track extra life spawns for the rare long-gap guarantee.
-    this.lastExtraLifeLevel = 0;
+    this.lastExtraLifeLevel = runStartLevel - 1;
     this.extraLifeSpawnedThisLevel = false;
     this.pendingGuaranteedExtraLifeLevel = null;
     this.novaMiracleSpawnedThisRun = false;

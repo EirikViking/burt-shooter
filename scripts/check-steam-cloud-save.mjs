@@ -8,6 +8,7 @@ import {
   CLOUD_HANGAR_PROGRESS_KEY,
   CLOUD_LANGUAGE_KEY,
   CLOUD_LOCAL_LEADERBOARD_KEY,
+  CLOUD_OVERRUN_RUN_RECORDS_KEY,
   CLOUD_SCOUT_RUN_RECORDS_KEY,
   CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY,
   CLOUD_SHIP_USAGE_KEY,
@@ -224,6 +225,24 @@ try {
         completedAt: '2026-01-06T00:00:00.000Z'
       }
     },
+    overrunRunRecords: {
+      version: 1,
+      updatedAt: '2026-01-06T00:00:00.000Z',
+      byMode: {
+        overrun_pure: {
+          runMode: 'overrun_pure',
+          score: 150000,
+          sectorReached: 58,
+          completedAt: '2026-01-06T00:00:00.000Z'
+        },
+        overrun_tactical: {
+          runMode: 'overrun_tactical',
+          score: 180000,
+          sectorReached: 60,
+          completedAt: '2026-01-06T00:00:00.000Z'
+        }
+      }
+    },
     debugFlags: { shouldNotPersist: true },
     absolutePath: 'C:/Users/example/AppData/Roaming/Nova Swarm'
   });
@@ -244,6 +263,8 @@ try {
   assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].scoreEarned, 1200);
   assert.equal(merged.sectorStartChallengeRecords.byCheckpoint['5'].highestSectorReached, 7);
   assert.equal(merged.scoutRunRecords.best.score, 120000);
+  assert.equal(merged.overrunRunRecords.byMode.overrun_pure.score, 150000);
+  assert.equal(merged.overrunRunRecords.byMode.overrun_tactical.score, 180000);
   assert.equal(merged.settings.screenShake, 0.35);
   assert.equal(merged.settings.playerFocus, 0.8);
   assert.equal(merged.settings.colorAssist, true);
@@ -314,6 +335,18 @@ try {
         completedAt: '2026-01-07T00:00:00.000Z'
       }
     })],
+    [CLOUD_OVERRUN_RUN_RECORDS_KEY, JSON.stringify({
+      version: 1,
+      updatedAt: '2026-01-07T00:00:00.000Z',
+      byMode: {
+        overrun_pure: {
+          runMode: 'overrun_pure',
+          score: 160000,
+          sectorReached: 59,
+          completedAt: '2026-01-07T00:00:00.000Z'
+        }
+      }
+    })],
     [CONFIRM_EXIT_KEY, '0'],
     [SHOW_PILOT_ORDERS_KEY, '0']
   ]);
@@ -353,6 +386,7 @@ try {
   assert.equal(collectedSave.shipUsage.nova_ship_04, 3);
   assert.equal(collectedSave.shipUsage['nova-player-ship-04.png'], 2);
   assert.equal(collectedSave.shipUsageTotal, 9);
+  assert.equal(collectedSave.overrunRunRecords.byMode.overrun_pure.score, 160000);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].scoreEarned, 4444);
   assert.equal(collectedSave.sectorStartChallengeRecords.byCheckpoint['10'].highestSectorReached, 12);
   assert.equal(collectedSave.scoutRunRecords.best.score, 130000);

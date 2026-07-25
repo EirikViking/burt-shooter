@@ -529,7 +529,8 @@ export class GameOverScene {
     }
     const previousProgress = this.game.runProgressionResult?.previous || getShipUnlockProgress();
     const previousModeBest = Math.max(0, Number(this.game?.previousMayhemModeBestScore) || 0);
-    this.isPersonalBest = this.isRankedRun && this.finalScore > previousModeBest;
+    this.isPersonalBest = (this.isRankedRun && this.finalScore > previousModeBest)
+      || (this.isOverrunResult() && this.game?.runSummary?.overrunRunNewBest === true);
     this.qualificationFanfarePlayed = false;
     this.personalBestVoicePlayed = Boolean(this.game?.personalBestLiveCelebrated);
     this.nearMissVoicePlayed = false;
@@ -1102,10 +1103,15 @@ export class GameOverScene {
     if (this.isOverrunResult()) {
       const summary = this.game?.runSummary || {};
       const gained = Math.max(0, Math.floor(Number(summary.pilotXpGained) || 0));
+      const best = summary.overrunRunBest || summary.overrunRunAttempt || null;
       return [
         translateText('OVERRUN // SECTOR {sector}', {
           sector: Math.max(51, Math.floor(Number(summary.sectorReached || summary.levelReached || this.finalLevel || 51) || 51))
         }),
+        [
+          summary.overrunRunNewBest ? translateText('NEW PERSONAL BEST') : translateText('PERSONAL BEST'),
+          this.formatScoreNumber(best?.score || this.finalScore)
+        ].join(' · '),
         translateText('CAREER XP +{xp}', { xp: gained.toLocaleString('en-US') }),
         translateText('LEADERBOARDS / ACHIEVEMENTS / CHECKPOINTS OFF')
       ];
