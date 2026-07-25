@@ -39,6 +39,10 @@ The mode now has a proper unlock celebration, clearer locked-state guidance, loa
 - Fixed Overrun incorrectly starting with an extra-life powerup.
 - Fixed transient input state carrying into a new run and interfering with launch or selection.
 - Fixed Tactical Draft stat previews, boss signature warning stability, and several menu text clipping and overlap cases.
+- Fixed the Tactical/Pure selector trimming the final letters on a fresh launch.
+- Overrun boss announcements now identify the boss that actually enters the arena.
+- Tactical Draft choices now settle into the correct Active Build slot and remain visible for a beat before combat resumes.
+- Rebuilt the Run Report into a clearer combat dashboard with stronger stat hierarchy, grouped tactical upgrades, survival advice, and Pilot Order progress.
 - Added broader resolution, keyboard, controller, and localization checks around the new command deck.
 
 This pass is about making the cabinet easier to read without making it quieter. Pick the run you actually want, know what it changes, and then make the usual terrible decisions at speed.
