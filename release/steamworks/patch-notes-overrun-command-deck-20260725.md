@@ -47,6 +47,7 @@ The strange signals glimpsed between battles have become a much larger part of t
 - Sector Run now exposes every unlocked five-sector start point through the full current sector roadmap, rather than stopping at Sector 60.
 - Fixed Overrun incorrectly starting with an extra-life powerup.
 - Fixed transient input state carrying into a new run and interfering with launch or selection.
+- Fixed held movement directions briefly becoming unresponsive when boss warnings opened or closed.
 - Fixed Tactical Draft stat previews, boss signature warning stability, and several menu text clipping and overlap cases.
 - Fixed the Tactical/Pure selector trimming the final letters on a fresh launch.
 - Overrun boss announcements now identify the boss that actually enters the arena.
