@@ -172,6 +172,10 @@ const ENGLISH_FACTS = Object.freeze({
     'The Swarm Director, a hidden command intelligence with theater-kid energy, loads {threats} into shapes such as {formations}. Watch sector one, name the pressure, then {adapt}.',
     'This is one of the Swarm Director\'s favorite lies: a hidden command intelligence arranges {threats} inside {formations} and calls it variety. Watch sector one; after that, {adapt}.'
   ]),
+  wonders: Object.freeze([
+    '{name} is a Cabinet Wonder: a harmless, impossible phenomenon archived from a live flight. It changes no score or combat rule; the sighting itself unlocks its recovered history.',
+    'The Cabinet classifies {name} as an observed Wonder. It carries no weapon, offers no reward, and leaves behind only a story that should not have survived.'
+  ]),
   cabinetLogs: Object.freeze([
     'The surviving line reads: “{line}” Context: {context} The advice underneath is practical, which is how we know the joke was written under duress.',
     'Black-box audio preserved one useful sentence: “{line}” The flight note adds: {context} Somebody laughed, somebody learned, and the repair bill declined to comment.'
@@ -240,6 +244,10 @@ const ENGLISH_TIPS = Object.freeze({
   runThemes: [
     'Use sector one to catch {name} lying. Name the repeated pressure, route around it, and {maneuver}.',
     '{name} changes the run\'s habits, not the laws of survival. Keep an exit, test the rhythm, and {maneuver}.'
+  ],
+  wonders: [
+    '{name} is safe to witness. Keep the combat lane clear, let the phenomenon pass, and read its recovered history in the Codex.',
+    'Do not chase {name} through active fire. The Cabinet saves the sighting automatically; survive first, read later.'
   ],
   cabinetLogs: [
     '{name} is a receipt, not scripture. Take the useful read into the next live pattern and {maneuver}.',
@@ -605,6 +613,26 @@ const FRESH_SIGNAL_LABELS = Object.freeze({
   ja: '新しい信号'
 });
 
+const TRANSLATED_WONDER_FACTS = Object.freeze({
+  de: '{name} ist ein Cabinet-Wunder: ein harmloses, unmögliches Phänomen aus einem echten Flug. Die Sichtung verändert weder Punkte noch Kampfregeln und schaltet ihre überlieferte Geschichte frei.',
+  es: '{name} es una Maravilla del Cabinet: un fenómeno imposible e inofensivo registrado durante un vuelo real. El avistamiento no cambia la puntuación ni el combate y desbloquea su historia recuperada.',
+  ru: '{name} — Чудо Cabinet: безвредное невозможное явление, записанное во время настоящего полёта. Наблюдение не меняет счёт или правила боя и открывает восстановленную историю.',
+  'pt-BR': '{name} é uma Maravilha do Cabinet: um fenômeno impossível e inofensivo registrado em um voo real. O avistamento não muda a pontuação nem o combate e libera sua história recuperada.',
+  'zh-CN': '{name}是一项Cabinet奇观：在真实飞行中记录到的无害而不可能的现象。目击不会改变分数或战斗规则，并会解锁其复原历史。',
+  ko: '{name}은 Cabinet 경이 현상이다. 실제 비행에서 기록된 무해하고 불가능한 현상으로, 점수나 전투 규칙은 바꾸지 않으며 복원된 이야기를 해금한다.',
+  ja: '{name}はCabinetワンダー。実際の飛行で記録された、無害でありえない現象だ。スコアや戦闘ルールは変えず、観測すると復元された物語が解放される。'
+});
+
+const TRANSLATED_WONDER_TIPS = Object.freeze({
+  de: '{name} kann sicher beobachtet werden. Halte die Kampfbahn frei; das Cabinet speichert die Sichtung automatisch.',
+  es: '{name} puede observarse sin peligro. Mantén libre el carril de combate; el Cabinet guarda el avistamiento automáticamente.',
+  ru: '{name} безопасно для наблюдения. Держи боевую линию свободной; Cabinet сохранит встречу автоматически.',
+  'pt-BR': '{name} pode ser observado com segurança. Mantenha a pista de combate livre; o Cabinet salva o avistamento automaticamente.',
+  'zh-CN': '可以安全观察{name}。保持战斗航道畅通；Cabinet会自动保存这次目击。',
+  ko: '{name}은 안전하게 관찰할 수 있다. 전투 레인을 비워 두면 Cabinet이 목격 기록을 자동 저장한다.',
+  ja: '{name}は安全に観測できる。戦闘レーンを空けておけば、Cabinetが目撃記録を自動保存する。'
+});
+
 function hashText(value = '') {
   let hash = 2166136261;
   for (const char of String(value)) {
@@ -725,6 +753,9 @@ function englishFact(entry, vars, seed) {
 }
 
 function translatedFact(entry, vars, locale) {
+  if (entry.category === 'wonders') {
+    return fill(TRANSLATED_WONDER_FACTS[locale] || TRANSLATED_WONDER_FACTS.de, vars);
+  }
   const template = TRANSLATED_CATEGORY_COPY[locale]?.facts?.[entry.category]
     || TRANSLATED_CATEGORY_COPY.de.facts[entry.category]
     || '{name}: {context}';
@@ -780,6 +811,9 @@ function tipFor(entry, displayName, locale, translate) {
   if (locale === 'en') {
     const pool = ENGLISH_TIPS[entry.category] || ENGLISH_TIPS.cabinetLogs;
     return fill(pick(pool, seed, 19), vars);
+  }
+  if (entry.category === 'wonders') {
+    return fill(TRANSLATED_WONDER_TIPS[locale] || TRANSLATED_WONDER_TIPS.de, vars);
   }
   const template = TRANSLATED_CATEGORY_COPY[locale]?.tips?.[entry.category]
     || TRANSLATED_CATEGORY_COPY.de.tips[entry.category]

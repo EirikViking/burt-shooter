@@ -30,6 +30,7 @@ const CATEGORY_ACCENTS = Object.freeze({
   elites: 0xff55d9,
   bosses: 0xff6a2a,
   runThemes: 0xa77dff,
+  wonders: 0x7df9ff,
   cabinetLogs: 0xffd15c,
   pilotRanks: 0xffe76a
 });
@@ -794,7 +795,7 @@ export class ThreatCodexScene {
         align: 'center',
         wordWrap: true,
         wordWrapWidth: buttonWidth - 20
-      }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 6 : compact ? 9 : 10, { x: 0.5, y: 0 });
+      }, (buttonWidth - 7) / 2, categoryLayout.twoRows ? 6 : compact ? 8 : 8, { x: 0.5, y: 0 });
 
       const countText = addText(button, `${counts.discovered}/${counts.total}`, {
         fontSize: categoryLayout.twoRows ? 9 : compact ? 10 : 12,

@@ -10,7 +10,7 @@ const port = process.env.I18N_UI_URL ? null : (explicitPort || await findAvailab
 const baseUrl = process.env.I18N_UI_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.I18N_UI_OUTPUT_DIR || `test-results/i18n-ui-${timestamp()}`);
 
-const languages = [
+const allLanguages = [
   { code: 'en', slug: 'english', settingsLabel: 'English', menuSettings: 'SETTINGS', launch: 'MAYHEM PURE', scorePrefix: 'SCORE', gameOver: 'GAME OVER', leaderboard: 'GLOBAL SCORE DECK', glyphProbe: 'Nova Swarm' },
   { code: 'de', slug: 'german', settingsLabel: 'Deutsch', menuSettings: 'EINSTELLUNGEN', launch: 'MAYHEM PUR', scorePrefix: 'PUNKTZAHL', gameOver: 'SPIEL VORBEI', leaderboard: 'GLOBALES SCORE-DECK', glyphProbe: 'äöüÄÖÜß' },
   { code: 'zh-CN', slug: 'chinese-simplified', settingsLabel: '简体中文', menuSettings: '设置', launch: '纯粹狂潮', scorePrefix: '分数', gameOver: '游戏结束', leaderboard: '全球计分榜', glyphProbe: '设置排行榜游戏结束' },
@@ -20,6 +20,18 @@ const languages = [
   { code: 'ko', slug: 'korean', settingsLabel: '한국어', menuSettings: '설정', launch: '메이헴 퓨어', scorePrefix: '점수', gameOver: '게임 오버', leaderboard: '글로벌 순위표', glyphProbe: '한국어 설정 점수 순위표' },
   { code: 'ja', slug: 'japanese', settingsLabel: '日本語', menuSettings: '設定', launch: 'メイヘム・ピュア', scorePrefix: 'スコア', gameOver: 'ゲームオーバー', leaderboard: 'グローバルランキング', glyphProbe: '日本語 設定 スコア ランキング' }
 ];
+const requestedLanguages = new Set(
+  String(process.env.I18N_UI_LANGUAGES || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+const languages = requestedLanguages.size
+  ? allLanguages.filter((language) => requestedLanguages.has(language.code))
+  : allLanguages;
+if (languages.length === 0) {
+  throw new Error(`No i18n UI languages matched I18N_UI_LANGUAGES=${[...requestedLanguages].join(',')}`);
+}
 
 const forbiddenPlaceholderMarkers = [
   'Texto:',

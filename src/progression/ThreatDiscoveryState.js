@@ -15,6 +15,7 @@ export const DISCOVERY_CATEGORIES = Object.freeze([
   'elites',
   'bosses',
   'runThemes',
+  'wonders',
   'cabinetLogs',
   'pilotRanks',
   'rareModifiers'

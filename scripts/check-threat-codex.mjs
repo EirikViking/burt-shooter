@@ -52,6 +52,13 @@ for (const augment of TACTICAL_DRAFT_AUGMENTS) {
 }
 if ((catalog.sectors?.length || 0) <= 12) fail(`sector Codex must not be capped at 12 entries, found ${catalog.sectors?.length || 0}`);
 if ((catalog.runThemes?.length || 0) < 18) fail(`expected at least 18 run theme codex entries, found ${catalog.runThemes?.length || 0}`);
+if ((catalog.wonders?.length || 0) !== 60) fail(`expected all 60 Cabinet Wonders in Codex, found ${catalog.wonders?.length || 0}`);
+if (new Set((catalog.wonders || []).map((entry) => entry.name)).size !== 60) fail('every Cabinet Wonder needs a unique Codex title');
+if (new Set((catalog.wonders || []).map((entry) => entry.description)).size !== 60) fail('every Cabinet Wonder needs a unique Codex history');
+if (new Set((catalog.wonders || []).map((entry) => entry.art)).size !== 60) fail('every Cabinet Wonder needs unique Codex art');
+if (!catalog.wonders?.every((entry) => entry.codexBodyMode === 'epic' && entry.description.length >= 500 && entry.tip.length >= 40)) {
+  fail('every Cabinet Wonder needs the epic Codex layout, a substantial history, and a field note');
+}
 if ((catalog.pilotRanks?.length || 0) < 40) fail(`expected at least 40 pilot rank codex entries, found ${catalog.pilotRanks?.length || 0}`);
 const waveArt = catalog.waveTactics?.map(entry => entry.art).filter(Boolean) || [];
 if (waveArt.length !== catalog.waveTactics.length) fail('every wave tactic should have unique Codex art');
@@ -240,6 +247,16 @@ if (eliteProbe?.id) {
 const augmentSeen = recordThreatSeen('phase_reactor', 'augments', { name: 'PHASE REACTOR' });
 if (!augmentSeen.isNew || !getThreatCodexState().items?.augments?.phase_reactor) {
   fail('using a tactical augment should persist it in the Augments Codex category');
+}
+resetDiscoveryStateForTests();
+
+const wonderProbe = catalog.wonders?.find((entry) => entry.id === 'celestial_crane_migration');
+const wonderSeen = recordThreatSeen(wonderProbe?.id, 'wonders', { name: wonderProbe?.name });
+if (!wonderProbe || !wonderSeen.isNew || !getThreatCodexState().items?.wonders?.celestial_crane_migration) {
+  fail('observing a Cabinet Wonder should persist it in the Wonders Codex category');
+}
+if (getCodexCompletionCounts(catalog).wonders?.discovered !== 1) {
+  fail('Wonders Codex completion should count the observed Wonder');
 }
 resetDiscoveryStateForTests();
 

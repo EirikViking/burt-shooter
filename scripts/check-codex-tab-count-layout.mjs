@@ -24,6 +24,7 @@ const seededDiscoveryTargets = {
   elites: 8,
   bosses: 8,
   runThemes: 5,
+  wonders: 6,
   cabinetLogs: 5
 };
 const catalogForExpectations = getThreatCodexCatalog();

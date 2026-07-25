@@ -15,6 +15,7 @@ import { AssetManifest } from '../assets/assetManifest.js';
 import { getCurrentLanguage, translateTextForLocale } from '../i18n/index.js';
 import { applyCodexLore, getCodexRuntimeDescription, getCodexRuntimeTip } from '../i18n/codexLore.js';
 import { getCabinetLogEntries } from '../text/phrasePool.js';
+import { CABINET_WONDER_DEFINITIONS } from './CabinetWonderLore.js';
 import {
   getAllRankTitles,
   getPilotXpThreshold,
@@ -55,6 +56,7 @@ export const THREAT_CODEX_CATEGORIES = Object.freeze([
   { id: 'elites', label: 'Elites' },
   { id: 'bosses', label: 'Bosses' },
   { id: 'runThemes', label: 'Run Themes' },
+  { id: 'wonders', label: 'Wonders' },
   { id: 'cabinetLogs', label: 'Cabinet Logs' },
   { id: 'pilotRanks', label: 'Pilot Ranks' }
 ]);
@@ -1521,6 +1523,28 @@ function tacticalAugmentEntry(augment) {
   };
 }
 
+function cabinetWonderEntry(wonder) {
+  return {
+    id: wonder.id,
+    category: 'wonders',
+    name: wonder.title,
+    rarity: 'Cabinet Wonder',
+    role: 'Observed Phenomenon',
+    description: '',
+    tip: wonder.fieldNote,
+    art: wonder.art,
+    accent: wonder.palette?.[0] || 0x7df9ff,
+    signalClass: 'Cabinet Wonder',
+    codexBodyMode: 'epic',
+    loreFacts: {
+      epicDescription: wonder.history,
+      epicTip: wonder.fieldNote,
+      originalDescription: wonder.history,
+      originalTip: wonder.fieldNote
+    }
+  };
+}
+
 export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
   const rawCatalog = {
     enemies: [
@@ -1538,6 +1562,7 @@ export function getThreatCodexCatalog({ locale = getCurrentLanguage() } = {}) {
     elites: ELITE_MIDDLE_SHIPS.map(eliteEntry),
     bosses: BOSS_ROSTER.map(bossEntry),
     runThemes: RunContentDirectorConfig.runThemes.map(runThemeEntry),
+    wonders: CABINET_WONDER_DEFINITIONS.map(cabinetWonderEntry),
     cabinetLogs: getCabinetLogEntries({}, locale).map(cabinetLogEntry),
     pilotRanks: getAllRankTitles().map(pilotRankEntry)
   };

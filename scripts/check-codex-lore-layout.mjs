@@ -10,7 +10,8 @@ const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(5220));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/codex-lore-layout');
-const scenarios = [
+const allScenarios = [
+  { locale: 'en', width: 1920, height: 1080, category: 'wonders', entryId: 'celestial_crane_migration', label: 'en-wonder-epic-history' },
   { locale: 'en', width: 1920, height: 1080, category: 'enemies', entryId: 'rare_chaos_visitor_11', label: 'en-long-chaos-name' },
   { locale: 'de', width: 1600, height: 900, category: 'augments', entryId: 'combo_anchor', label: 'de-augment' },
   { locale: 'es', width: 1600, height: 900, category: 'cabinetLogs', entryId: 'codex-discovery', label: 'es-cabinet-log' },
@@ -20,6 +21,11 @@ const scenarios = [
   { locale: 'ko', width: 1366, height: 768, category: 'pilotRanks', entryId: 'pilot_rank_39', label: 'ko-rank' },
   { locale: 'ja', width: 1366, height: 768, category: 'attackPatterns', entryId: 'telegraph_rail_lance', label: 'ja-pattern' }
 ];
+const scenarioFilter = String(process.env.CHECK_SCENARIO_FILTER || '').trim();
+const scenarios = scenarioFilter
+  ? allScenarios.filter((scenario) => scenario.label.includes(scenarioFilter))
+  : allScenarios;
+if (scenarios.length === 0) throw new Error(`No Codex lore scenarios matched CHECK_SCENARIO_FILTER=${scenarioFilter}`);
 
 async function isPortAvailable(candidatePort) {
   return new Promise((resolve) => {
