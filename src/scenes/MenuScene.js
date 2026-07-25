@@ -65,6 +65,7 @@ const FONT_DISPLAY = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, s
 const FONT_ARCADE = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
 const FONT_BUTTON = 'Orbitron, Rajdhani, Bahnschrift, Eurostile, Bank Gothic, sans-serif';
+const SECTOR_START_SELECTION_STORAGE_KEY = 'nova_swarm_sector_start_selection_v1';
 
 const MENU_ICON_ASSET_KEYS = {
   launch: 'launch',
@@ -581,7 +582,7 @@ export class MenuScene {
         this.runModeDetailsFocused = true;
         this.missionBoardFocusActive = false;
         this.drawRunModeDetailsButton();
-        this.openModeBriefing();
+        this.activateRunModeDetailsAction();
         return;
       }
       if (isDetailsFocus) {
@@ -623,7 +624,7 @@ export class MenuScene {
       }
       if (this.runModeDetailsFocused) {
         if (isPrimaryStart) {
-          this.openModeBriefing();
+          this.activateRunModeDetailsAction();
         } else if (isCancel) {
           this.runModeDetailsFocused = false;
           this.drawRunModeDetailsButton();
@@ -1463,7 +1464,7 @@ export class MenuScene {
       event.stopPropagation?.();
       this.setInputDevice('keyboard');
       this.runModeDetailsFocused = true;
-      this.openModeBriefing();
+      this.activateRunModeDetailsAction();
     });
     this.container.addChild(this.runModeDetailsButton);
 
@@ -1628,7 +1629,8 @@ export class MenuScene {
     this.sectorStartBtn = this.createButton('SECTOR RUN', layout, {
       accent: 0x37f5ff,
       icon: 'target',
-      subLabel: 'CHECKPOINT PUSH'
+      subLabel: 'CHECKPOINT PUSH',
+      dynamicSubLabel: () => this.getSectorStartButtonSubLabel()
     });
     this.configureRunModeCard(this.sectorStartBtn, { id: 'sector', secondary: 0xffd15c, role: 'checkpoint' });
     this.sectorStartBtn.alpha = 0;
@@ -2567,7 +2569,10 @@ export class MenuScene {
       footerHeight
     );
     const inputGlyph = this.lastInputDevice === 'controller' ? '  [Y]' : '';
-    this.runModeDetailsButtonText.text = translateText('VIEW MODE DETAILS') + inputGlyph;
+    const detailsLabel = this.getSelectedMenuOptionId() === 'sectorStart'
+      ? 'SELECT START POINT'
+      : 'VIEW MODE DETAILS';
+    this.runModeDetailsButtonText.text = translateText(detailsLabel) + inputGlyph;
     this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
     const helpTexture = this.menuIconTextures?.help;
     const hasIcon = Boolean(helpTexture && GameAssets.isValidTexture(helpTexture));
@@ -2821,7 +2826,7 @@ export class MenuScene {
     overlay._modes.x = width / 2;
     overlay._modes.y = panelY + 202;
     overlay._rewards.text = [
-      translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
+      translateText('SECTOR 51 // 85% NORMAL CAREER XP'),
       translateText('Career XP and cumulative Pilot Orders stay active.')
     ].join('\n');
     overlay._rewards.x = width / 2;
@@ -2882,6 +2887,14 @@ export class MenuScene {
         selected: option.selected
       }))
     };
+  }
+
+  activateRunModeDetailsAction() {
+    if (this.getSelectedMenuOptionId() === 'sectorStart') {
+      this.openSectorSelector();
+      return true;
+    }
+    return this.openModeBriefing();
   }
 
   openModeBriefing() {
@@ -3227,6 +3240,9 @@ export class MenuScene {
       };
     }
     if (focused === 'sectorStart') {
+      const selectedCheckpoint = this.getSelectedSectorStartCheckpoint();
+      const selectedPlaySector = getSectorStartPlaySector(selectedCheckpoint) || selectedCheckpoint || 1;
+      const highestReachedSector = Math.max(1, Number(this.sectorStartState?.highestReachedSector) || 1);
       return {
         id: 'sectorStart',
         title: translateText('SECTOR RUN'),
@@ -3235,14 +3251,14 @@ export class MenuScene {
         accent: 0x37f5ff,
         secondary: 0xffd15c,
         summary: [
-          'Start from a checkpoint unlocked in Mayhem.',
-          'Practice later sectors without replaying the opening.'
+          translateText('STARTS AT SECTOR {sector}', { sector: selectedPlaySector }),
+          `${translateText('MAYHEM BEST')}: ${translateText('SECTOR {sector}', { sector: highestReachedSector })}`
         ],
         tiles: [
-          { label: 'START', value: 'CHECKPOINT' },
+          { label: 'START', value: translateText('SECTOR {sector}', { sector: selectedPlaySector }) },
+          { label: 'MAYHEM BEST', value: translateText('SECTOR {sector}', { sector: highestReachedSector }) },
           { label: 'RANKING', value: 'UNRANKED' },
-          { label: 'RECORD', value: 'LOCAL' },
-          { label: 'DRAFTS', value: 'TACTICAL' }
+          { label: 'RECORD', value: 'LOCAL' }
         ],
         restriction: 'No leaderboard submission or achievements. Sector records stay local.',
         personalBest: '',
@@ -3324,7 +3340,7 @@ export class MenuScene {
           ? [
               { label: 'START', value: 'SECTOR 51' },
               { label: 'SCORE', value: 'STARTS AT 0' },
-              { label: 'CAREER XP', value: '65% OF NORMAL' },
+              { label: 'CAREER XP', value: '85% OF NORMAL' },
               { label: 'BOSS DRAFTS', value: tactical ? 'CONTINUE' : 'OFF' }
             ]
           : [
@@ -3373,7 +3389,7 @@ export class MenuScene {
               id: 'active',
               title: 'PROGRESSION ACTIVE',
               items: [
-                '65% of normal Career XP',
+                '85% of normal Career XP',
                 'Cumulative Pilot Orders remain active'
               ]
             },
@@ -3405,7 +3421,7 @@ export class MenuScene {
               ...availableModeLines,
               translateText('Starts at zero score. No skipped-sector rewards.'),
               [
-                translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
+                translateText('SECTOR 51 // 85% NORMAL CAREER XP'),
                 translateText('Career XP and cumulative Pilot Orders stay active.')
               ].join(' // '),
               personalBestLine,
@@ -3415,11 +3431,11 @@ export class MenuScene {
               translateText('LOCKED · REACH SECTOR 30'),
               translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
               translateText('This is a Sector milestone, not Pilot Rank 30.'),
-              translateText('After unlock: zero starting score and 65% of normal Career XP.'),
+              translateText('After unlock: zero starting score and 85% of normal Career XP.'),
               translateText('No leaderboard shortcut. Career rewards begin only after unlock.')
             ].join('\n'),
         body: state.available
-          ? translateText('Starts at zero score with no skipped-sector rewards. Earns 65% of normal Career XP (35% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.')
+          ? translateText('Starts at zero score with no skipped-sector rewards. Earns 85% of normal Career XP (15% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.')
           : translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start. This is based on the highest Sector reached, not Pilot Rank.')
       };
     }
@@ -6342,7 +6358,7 @@ export class MenuScene {
       { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
-        ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.openSectorSelector() }]
+        ? [{ id: 'sectorStart', button: this.sectorStartBtn, activate: () => this.launchSectorStartRun() }]
         : []),
       { id: 'overrun', button: this.overrunStartBtn, activate: () => this.startOverrunRun() },
       { id: 'hangar', button: this.highscoreBtn, activate: () => this.openShipSelect() },
@@ -6519,7 +6535,7 @@ export class MenuScene {
       this.runModeDetailsFocused = true;
       this.missionBoardFocusActive = false;
       this.drawRunModeDetailsButton();
-      this.openModeBriefing();
+      this.activateRunModeDetailsAction();
       return;
     }
     if (nav.pressed.x && (this.missionBoardState?.active || []).length) {
@@ -6765,7 +6781,7 @@ export class MenuScene {
 
   refreshSectorStartState() {
     const progress = readHangarProgressState();
-    const previousSelection = this.getSelectedSectorStartCheckpoint();
+    const previousSelection = this.getSelectedSectorStartCheckpoint() || this.readPersistedSectorStartCheckpoint();
     const state = getSectorStartState(progress, previousSelection);
     const checkpoints = state.checkpoints || [];
     if (checkpoints.length) {
@@ -6784,6 +6800,26 @@ export class MenuScene {
   getSelectedSectorStartCheckpoint() {
     const checkpoints = this.sectorStartState?.checkpoints || [];
     return checkpoints[this.selectedSectorStartIndex] || this.sectorStartState?.selectedCheckpoint || null;
+  }
+
+  readPersistedSectorStartCheckpoint() {
+    try {
+      const value = Number(localStorage.getItem(SECTOR_START_SELECTION_STORAGE_KEY));
+      return Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  persistSectorStartCheckpoint(checkpoint) {
+    const value = Math.max(1, Math.floor(Number(checkpoint) || 0));
+    if (!value) return false;
+    try {
+      localStorage.setItem(SECTOR_START_SELECTION_STORAGE_KEY, String(value));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   formatSectorStartMenuBestScore(value) {
@@ -6805,7 +6841,9 @@ export class MenuScene {
 
   getSectorStartButtonSubLabel() {
     if (!this.sectorStartState?.available) return translateText('LOCKED');
-    return translateText('CHECKPOINT PUSH');
+    return translateText('CHECKPOINT {sector}', {
+      sector: this.getSelectedSectorStartCheckpoint()
+    });
   }
 
   updateSectorStartButton({ forceGpuRefresh = false } = {}) {
@@ -6838,7 +6876,7 @@ export class MenuScene {
     this.setInputDevice('keyboard');
     this.setMenuFocusByButton(this.sectorStartBtn);
     event?.stopPropagation?.();
-    this.openSectorSelector();
+    this.launchSectorStartRun();
   }
 
   launchSectorStartRun(requestedCheckpoint = null) {
@@ -6849,6 +6887,7 @@ export class MenuScene {
       return;
     }
     this.launchingRun = true;
+    this.persistSectorStartCheckpoint(checkpoint);
     try {
       AudioManager.init();
       AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.7 });

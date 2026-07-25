@@ -354,7 +354,11 @@ function assertLaunchDeckVisible(state, label) {
   assert.equal(deck.cards?.scout?.role, 'practice', `${label}: Scout role`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should not carry paragraph body text`);
   assert.equal(deck.cards?.sector?.label, 'SECTOR RUN', `${label}: Sector label`);
-  assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector sublabel`);
+  if (state.menu?.sectorStart?.available) {
+    assert.match(deck.cards?.sector?.sublabel || '', /^CHECKPOINT \d+$/, `${label}: unlocked Sector sublabel should expose the selected checkpoint`);
+  } else {
+    assert.equal(deck.cards?.sector?.sublabel, 'LOCKED', `${label}: locked Sector sublabel`);
+  }
   assert.equal(deck.cards?.sector?.role, 'checkpoint', `${label}: Sector role`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should not carry paragraph body text`);
   assert.equal(deck.cards?.overrun?.label, 'OVERRUN TACTICAL', `${label}: Overrun label`);
@@ -641,7 +645,7 @@ try {
     'Scout launch card should expose the selected anomaly'
   );
   assert.equal(settledMenu.menu?.sectorStart?.buttonText, 'SECTOR RUN');
-  assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'CHECKPOINT PUSH');
+  assert.equal(settledMenu.menu?.sectorStart?.buttonSubtext, 'CHECKPOINT 30');
   await page.setViewportSize({ width: 1920, height: 1080 });
   await waitForScene(page, 'menu');
   await page.waitForTimeout(500);
@@ -759,7 +763,11 @@ try {
   assert.equal((await readState(page)).menu?.scoutRun?.anomaly?.id, 'calibration', 'Scout anomaly should cycle back deterministically');
   const sectorFocus = await focusMenuOption(page, 'sectorStart');
   assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
-  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /checkpoint unlocked in Mayhem[\s\S]*Practice later sectors/i);
+  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /STARTS AT SECTOR 31[\s\S]*MAYHEM BEST: SECTOR 31/i);
+  assert.deepEqual(
+    Object.fromEntries(sectorFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]) || []),
+    { START: 'SECTOR 31', 'MAYHEM BEST': 'SECTOR 31', RECORD: 'LOCAL' }
+  );
   assert.match(sectorFocus.menu?.missionBriefing?.restriction || '', /No leaderboard submission or achievements.*Sector records stay local/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
@@ -819,7 +827,7 @@ try {
   );
   assert.deepEqual(
     overrunFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]),
-    [['START', 'SECTOR 51'], ['SCORE', 'STARTS AT 0'], ['CAREER XP', '65% OF NORMAL'], ['BOSS DRAFTS', 'CONTINUE']]
+    [['START', 'SECTOR 51'], ['SCORE', 'STARTS AT 0'], ['CAREER XP', '85% OF NORMAL'], ['BOSS DRAFTS', 'CONTINUE']]
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-tactical-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.cycleOverrunRunMode?.(-1, { force: true }));

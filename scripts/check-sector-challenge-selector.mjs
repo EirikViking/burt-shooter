@@ -279,9 +279,16 @@ async function newSeededPage(
 }
 
 async function openSelector(page) {
+  await page.evaluate(() => {
+    const menu = window.__game?.scenes?.menu;
+    menu?.setMenuFocusByButton?.(menu.sectorStartBtn);
+  });
+  await page.waitForTimeout(100);
   let state = await readState(page);
   assert.equal(state.scene, 'menu', 'expected menu before opening selector');
-  await clickBounds(page, state.menu.items.sectorStartButton);
+  assert.equal(state.menu.focusedOption, 'sectorStart', 'Sector Run must be focused before using its secondary start-point action');
+  assert.match(state.menu.missionBriefing?.detailsButtonLabel || '', /SELECT START POINT/, 'Sector Run secondary action should be explicit');
+  await clickBounds(page, state.menu.missionBriefing.detailsButtonBounds);
   await page.waitForFunction(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.menu?.sectorStart?.selector?.open === true;
@@ -403,6 +410,21 @@ try {
   state = await readState(page);
   assert.equal(state.menu.focusedOption, 'sectorStart', 'down from Scout Run should move focus to Sector Run');
   assert.equal(state.menu.sectorStart.selectedCheckpoint, selectedCheckpointBeforeArrow, 'returning focus should not cycle selected checkpoint');
+  assert.match(state.menu.sectorStart.buttonSubtext || '', /CHECKPOINT\s+\d+/i, 'Sector Run card should expose its selected checkpoint');
+  assert.match(state.menu.missionBriefing?.detailsButtonLabel || '', /SELECT START POINT/, 'Sector Run details action should open the selector');
+
+  await stubStartGame(page);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => Boolean(window.__sectorSelectorStartArgs), null, { timeout: 8000 });
+  const quickStartArgs = await page.evaluate(() => window.__sectorSelectorStartArgs);
+  assert.equal(quickStartArgs[1]?.runMode, 'sector_start', 'Sector Run primary action should launch immediately');
+  assert.equal(quickStartArgs[1]?.startSector, selectedCheckpointBeforeArrow, 'Sector Run primary action should use the selected checkpoint');
+  await page.waitForTimeout(120);
+  report.cases.push({
+    quickStart: true,
+    checkpoint: selectedCheckpointBeforeArrow,
+    secondaryAction: state.menu.missionBriefing?.detailsButtonLabel
+  });
 
   await clickBounds(page, state.menu.items.exitButton);
   await page.waitForFunction(() => {

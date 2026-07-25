@@ -215,11 +215,12 @@ try {
   assert.equal(menu.menu?.sectorStart?.buttonText, 'SECTOR RUN', 'menu card should keep its stable run-mode label');
   assert.equal(menu.menu?.sectorStart?.buttonVisualText, 'SECTOR RUN', 'rendered menu card should match the run-mode label');
 
-  for (let index = 0; index < 4; index += 1) await tapButton(page, 13);
+  for (let index = 0; index < 3; index += 1) await tapButton(page, 13);
   const focused = await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused by D-pad down');
   assert.equal(focused.menu?.sectorStart?.selectedCheckpoint, 15);
   assert.equal(focused.menu?.sectorStart?.arrowCueVisible, false, 'run-mode card should defer checkpoint switching to the selector');
-  assert.match(focused.menu?.sectorStart?.primaryHintText || '', /A: CONFIRM/, 'controller hint should explain how to open the selector');
+  assert.match(focused.menu?.sectorStart?.primaryHintText || '', /A: CONFIRM/, 'controller hint should explain the primary launch action');
+  assert.match(focused.menu?.missionBriefing?.detailsButtonLabel || '', /SELECT START POINT/, 'secondary Sector action should explicitly select a start point');
 
   await tapButton(page, 12);
   const returnedToScout = await waitForState(page, (state) => state.menu?.focusedOption === 'scout', 'controller can move back out of sector start focus');
@@ -228,11 +229,29 @@ try {
   await tapButton(page, 13);
   await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start refocused before launch');
 
+  await page.evaluate(() => {
+    window.__sectorQuickStartArgs = null;
+    window.__game.startGame = (...args) => {
+      window.__sectorQuickStartArgs = args;
+      return false;
+    };
+  });
   await tapButton(page, 0);
+  await page.waitForFunction(() => Boolean(window.__sectorQuickStartArgs), null, { timeout: 8000 });
+  const quickStartArgs = await page.evaluate(() => window.__sectorQuickStartArgs);
+  assert.equal(quickStartArgs[1]?.runMode, 'sector_start', 'A should quick-launch Sector Run');
+  assert.equal(quickStartArgs[1]?.startSector, 15, 'A should quick-launch the persisted selected checkpoint');
+  const afterQuickStart = await readState(page);
+  assert.notEqual(afterQuickStart.menu?.sectorStart?.selector?.open, true, 'primary launch must not open the selector');
+
+  await loadProfile(page, makeProgress());
+  for (let index = 0; index < 3; index += 1) await tapButton(page, 13);
+  await waitForState(page, (state) => state.menu?.focusedOption === 'sectorStart', 'sector start focused before secondary action');
+  await tapButton(page, 3);
   const selector = await waitForState(
     page,
     (state) => state.menu?.sectorStart?.selector?.open === true,
-    'sector selector opened by controller'
+    'sector selector opened by controller Y'
   );
   assert.equal(selector.menu?.sectorStart?.selector?.selectedSector, 15);
   assert.equal(selector.menu?.sectorStart?.selector?.selectedUnlocked, true);
@@ -280,6 +299,10 @@ try {
       runMode: play.runMode,
       level: play.level,
       scoreSubmissionAllowed: play.scoreSubmissionAllowed
+    },
+    quickLaunch: {
+      runMode: quickStartArgs[1]?.runMode,
+      checkpoint: quickStartArgs[1]?.startSector
     },
     pageErrors,
     consoleErrors,

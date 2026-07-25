@@ -137,8 +137,8 @@ const MODE_HELP_ROWS = Object.freeze([
     code: 'O1',
     icon: 'OVERRUN',
     label: 'OVERRUN',
-    control: 'SECTOR 51 // 65% NORMAL CAREER XP',
-    tip: 'Starts at zero score with no skipped-sector rewards. Earns 65% of normal Career XP (35% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.',
+    control: 'SECTOR 51 // 85% NORMAL CAREER XP',
+    tip: 'Starts at zero score with no skipped-sector rewards. Earns 85% of normal Career XP (15% less), advances cumulative Pilot Orders, and leaves leaderboards, achievements, checkpoints, and competitive bests untouched.',
     accent: 0xff8f5a
   }
 ]);
@@ -313,7 +313,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
   'SCOUT RUN': 'Choose Calibration for the original Scout rules, Bullet School for ranked-speed projectile pressure with Scout sustain, or Boss Lab for full-strength bosses after Scout waves. Change anomaly with Left/Right before launch. Every preset remains unranked.',
   'SECTOR RUN': 'Unlock checkpoints through Mayhem, then practice deeper routes with boss Drafts. Each checkpoint keeps its own record and submits to the separate Steam Sector leaderboard; career and achievements stay untouched.',
-  OVERRUN: 'Unlock by reaching Sector 30 in Mayhem. Pure starts without Tactical augments or boss Drafts. Tactical starts with Damage Up, Rapid Fire, Blink Drive, Focus Lens, and Double Shot, then continues boss Drafts. Both begin at zero score and award no credit for skipped sectors. The 65% rate is reduced Career XP—not a +65% bonus.',
+  OVERRUN: 'Unlock by reaching Sector 30 in Mayhem. Pure starts without Tactical augments or boss Drafts. Tactical starts with Damage Up, Rapid Fire, Blink Drive, Focus Lens, and Double Shot, then continues boss Drafts. Both begin at zero score and award no credit for skipped sectors. The 85% rate is reduced Career XP—not a +85% bonus.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
   'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',

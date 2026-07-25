@@ -90,7 +90,7 @@ for (const mode of [RUN_MODES.OVERRUN_PURE, RUN_MODES.OVERRUN_TACTICAL]) {
   assert.equal(canRunModeUpdateCareerProgress(mode), true);
   assert.equal(canRunModeUpdateCompetitiveCareerBests(mode), false);
   assert.equal(getRunModeProfile(mode).unlocksRankedCheckpoints, false);
-  assert.equal(getRunModeProfile(mode).careerXpMultiplier, 0.65);
+  assert.equal(getRunModeProfile(mode).careerXpMultiplier, 0.85);
 }
 
 assert.equal(getRunModeProfile(RUN_MODES.OVERRUN_PURE).tacticalDraftEnabled, false);
@@ -124,6 +124,30 @@ assert.equal(
   }),
   0,
   'starting at sector 51 must not grant 50 sectors of career XP'
+);
+
+const representativeActivity = {
+  startSector: OVERRUN_START_SECTOR,
+  sectorReached: 55,
+  score: 180000,
+  wavesCleared: 18,
+  bossesKilled: 1,
+  codexDiscoveries: 2,
+  noHitWaves: 3,
+  noHitSectors: 1
+};
+const normalCareerXp = calculatePilotXpForRun({
+  ...representativeActivity,
+  runMode: RUN_MODES.SECTOR_START
+});
+const overrunCareerXp = calculatePilotXpForRun({
+  ...representativeActivity,
+  runMode: RUN_MODES.OVERRUN_TACTICAL
+});
+const overrunCareerRatio = overrunCareerXp / normalCareerXp;
+assert(
+  overrunCareerRatio >= 0.84 && overrunCareerRatio <= 0.85,
+  `representative Overrun activity should pay approximately 85% of normal Career XP, got ${overrunCareerRatio}`
 );
 
 const base = writeHangarProgressState({
@@ -247,4 +271,4 @@ overrunPowerups.checkLevelReset(OVERRUN_START_SECTOR + 1);
 assert.equal(forcedExtraLives, 0, 'Overrun must not inherit a 50-sector extra-life gap at launch');
 assert.equal(overrunPowerups.lastExtraLifeLevel, OVERRUN_START_SECTOR - 1);
 
-console.log('[overrun-mode] PASS unlock, fixed start, Pure/Tactical records, reward isolation, competitive-state protection');
+console.log(`[overrun-mode] PASS unlock, fixed start, Pure/Tactical records, ${(overrunCareerRatio * 100).toFixed(1)}% representative Career XP, reward isolation, competitive-state protection`);

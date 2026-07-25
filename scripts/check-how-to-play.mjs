@@ -154,8 +154,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('leaves boards, achievements, career XP, Pilot Orders, and checkpoints untouched'), `${label} should explain Scout progression limits`);
     assert(joined.includes('separate Steam Sector leaderboard'), `${label} should explain the Sector Run leaderboard lane`);
     assert(joined.includes('career and achievements stay untouched'), `${label} should explain Sector Run progression limits`);
-    assert(joined.includes('SECTOR 51 // 65% NORMAL CAREER XP'), `${label} should disclose the reduced Overrun Career XP rate`);
-    assert(joined.includes('65% of normal Career XP (35% less)'), `${label} should make clear that Overrun XP is reduced, not a bonus`);
+    assert(joined.includes('SECTOR 51 // 85% NORMAL CAREER XP'), `${label} should disclose the reduced Overrun Career XP rate`);
+    assert(joined.includes('85% of normal Career XP (15% less)'), `${label} should make clear that Overrun XP is reduced, not a bonus`);
     assert(joined.includes('competitive bests untouched'), `${label} should explain Overrun progression isolation`);
   }
   if (expectedPage === 'tactics') {
@@ -347,7 +347,7 @@ try {
         `${scenario.name} Overrun help detail`
       );
       assert(
-        overrunDetail.howToPlayOverlay.detail.detail.includes('reduced Career XP—not a +65% bonus'),
+        overrunDetail.howToPlayOverlay.detail.detail.includes('reduced Career XP—not a +85% bonus'),
         `${scenario.name} Overrun detail should distinguish reduced XP from bonus XP`
       );
       const overrunDetailShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-overrun-detail');
@@ -546,7 +546,10 @@ try {
         pageErrors,
         consoleErrors
       });
-      assert(pageErrors.length === 0 && consoleErrors.length === 0, `${scenario.name} browser diagnostics failed`);
+      assert(
+        pageErrors.length === 0 && consoleErrors.length === 0,
+        `${scenario.name} browser diagnostics failed: ${JSON.stringify({ pageErrors, consoleErrors })}`
+      );
     } finally {
       await page.close();
     }
