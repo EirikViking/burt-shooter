@@ -2519,7 +2519,21 @@ export class MenuScene {
     const tilesY = Math.round(summaryY + summaryHeight + 7 * compactScale);
     const footerHeight = Math.round((isShortLayout ? 30 : 33) * compactScale);
     const footerY = y + height - padY - footerHeight;
-    const restrictionY = footerY - Math.round((isShortLayout ? 20 : 24) * compactScale);
+    const restrictionGap = Math.round(10 * compactScale);
+    this.runModeRestriction.style.fontSize = Math.round((isShortLayout ? 10 : 13) * compactScale);
+    this.runModeRestriction.style.wordWrapWidth = innerWidth;
+    this.runModeRestriction.style.lineHeight = Math.round(this.runModeRestriction.style.fontSize * 1.25);
+    this.runModeRestriction.scale.set(1);
+    refreshTextTexture(this.runModeRestriction);
+    fitTextToWidth(this.runModeRestriction, innerWidth, { minScale: 0.82 });
+    const restrictionVisible = Boolean(briefing.restriction);
+    const restrictionHeight = restrictionVisible
+      ? Math.max(
+        Math.round(this.runModeRestriction.style.lineHeight * 0.9),
+        Math.ceil(this.runModeRestriction.height || 0)
+      )
+      : 0;
+    const restrictionY = footerY - restrictionGap - restrictionHeight;
     const tileAreaHeight = Math.max(54, restrictionY - tilesY - Math.round(5 * compactScale));
     this.layoutRunModeInfoTiles(briefing.tiles || [], {
       x: innerX,
@@ -2531,12 +2545,8 @@ export class MenuScene {
       compactScale
     });
 
-    this.runModeRestriction.style.fontSize = Math.round((isShortLayout ? 10 : 13) * compactScale);
-    this.runModeRestriction.style.wordWrapWidth = innerWidth;
-    this.runModeRestriction.style.lineHeight = Math.round(this.runModeRestriction.style.fontSize * 1.25);
     this.runModeRestriction.position.set(innerX, restrictionY);
-    fitTextToWidth(this.runModeRestriction, innerWidth, { minScale: 0.82 });
-    this.runModeRestriction.visible = Boolean(briefing.restriction);
+    this.runModeRestriction.visible = restrictionVisible;
 
     const detailsWidth = briefing.personalBest
       ? Math.min(innerWidth * 0.58, Math.round(236 * compactScale))
@@ -4570,11 +4580,20 @@ export class MenuScene {
           restriction: Number(this.runModeRestriction?.style?.padding) || 0,
           details: Number(this.runModeDetailsButtonText?.style?.padding) || 0
         },
+        statusBounds: boundsForDisplayObject(this.runModeStatusBadgeBg),
+        variantSelectorBounds: boundsForDisplayObject(this.runModeVariantSelector),
+        restrictionBounds: this.runModeRestriction?.visible
+          ? boundsForDisplayObject(this.runModeRestriction)
+          : null,
+        personalBestBounds: this.runModePersonalBest?.visible
+          ? boundsForDisplayObject(this.runModePersonalBest)
+          : null,
         detailsButtonBounds: boundsForDisplayObject(this.runModeDetailsButton),
         tiles: this.runModeInfoTileItems.map((item) => ({
           label: item?._nodes?.label?.text || null,
           value: item?._nodes?.value?.text || null,
-          bounds: boundsForDisplayObject(item)
+          bounds: boundsForDisplayObject(item),
+          visualBounds: boundsForDisplayObject(item?._nodes?.bg)
         })),
         mode: this.getRunModeBriefing().id,
         panelBounds: this.runModePanel?._briefingBounds || boundsForDisplayObject(this.runModePanel),

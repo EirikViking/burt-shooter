@@ -280,6 +280,36 @@ function assertInside(bounds, screen, label) {
   assert.ok(bounds.bottom <= screen.height + 2, `${label}: bottom edge offscreen`);
 }
 
+function assertSeparated(upperBounds, lowerBounds, label, gap = 0) {
+  if (
+    !upperBounds || !lowerBounds
+    || upperBounds.width <= 0 || upperBounds.height <= 0
+    || lowerBounds.width <= 0 || lowerBounds.height <= 0
+  ) return;
+  assert.ok(
+    upperBounds.bottom + gap <= lowerBounds.y,
+    `${label}: overlap upper=${JSON.stringify(upperBounds)} lower=${JSON.stringify(lowerBounds)}`
+  );
+}
+
+function assertNoOverlap(firstBounds, secondBounds, label, gap = 0) {
+  if (
+    !firstBounds || !secondBounds
+    || firstBounds.width <= 0 || firstBounds.height <= 0
+    || secondBounds.width <= 0 || secondBounds.height <= 0
+  ) return;
+  const separated = (
+    firstBounds.right + gap <= secondBounds.x
+    || secondBounds.right + gap <= firstBounds.x
+    || firstBounds.bottom + gap <= secondBounds.y
+    || secondBounds.bottom + gap <= firstBounds.y
+  );
+  assert.ok(
+    separated,
+    `${label}: overlap first=${JSON.stringify(firstBounds)} second=${JSON.stringify(secondBounds)}`
+  );
+}
+
 function assertLaunchDeckVisible(state, label) {
   const screen = state.menu?.screen;
   const deck = state.menu?.launchDeck;
@@ -353,6 +383,24 @@ function assertLaunchDeckVisible(state, label) {
   assert.ok(
     (briefing.bodyBounds?.bottom || 0) <= briefing.panelBounds.bottom + 4,
     `${label}: Mission Briefing body should stay inside frame body=${JSON.stringify(briefing.bodyBounds)} panel=${JSON.stringify(briefing.panelBounds)}`
+  );
+  assertSeparated(
+    briefing.statusBounds,
+    briefing.variantSelectorBounds,
+    `${label}: status badge and ruleset selector`,
+    2
+  );
+  assertSeparated(
+    briefing.restrictionBounds,
+    briefing.detailsButtonBounds,
+    `${label}: restriction and details button`,
+    2
+  );
+  assertNoOverlap(
+    briefing.personalBestBounds,
+    briefing.detailsButtonBounds,
+    `${label}: personal best and details button`,
+    2
   );
 }
 
