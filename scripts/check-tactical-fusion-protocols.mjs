@@ -209,15 +209,24 @@ try {
     player.traitShotCounter = 3;
     const bullets = player.shoot();
     bullets.forEach((bullet) => play.bulletManager.addPlayerBullet(bullet));
+    const constellation = bullets.filter((bullet) => bullet.tacticalFusionId === 'drone_constellation');
     return {
       newFusionIds: result.newFusionIds,
       activeDrones: player.drones.length,
-      constellationShots: bullets.filter((bullet) => bullet.tacticalFusionId === 'drone_constellation').length,
+      constellationShots: constellation.length,
+      originKinds: constellation.map((bullet) => bullet.tacticalFusionOriginKind),
+      originXs: constellation.map((bullet) => Math.round(bullet.x)),
+      dronesBelowHull: player.drones.every((drone) =>
+        player.sprite.getChildIndex(drone) < player.sprite.getChildIndex(player.shipSprite)
+      ),
       event: structuredClone(player.lastTacticalFusionEvent)
     };
   });
   assert(droneRuntime.newFusionIds.join(',') === 'drone_constellation', `Drone Fusion unlock mismatch: ${JSON.stringify(droneRuntime)}`);
   assert(droneRuntime.activeDrones >= 1 && droneRuntime.constellationShots >= 2, `Drone Constellation did not create crossfire: ${JSON.stringify(droneRuntime)}`);
+  assert(droneRuntime.originKinds.filter((kind) => kind === 'mirrored_echo').length === 2, `one-drone Constellation did not create mirrored origins: ${JSON.stringify(droneRuntime)}`);
+  assert(new Set(droneRuntime.originXs).size >= 2, `one-drone Constellation origins did not separate: ${JSON.stringify(droneRuntime)}`);
+  assert(droneRuntime.dronesBelowHull === true, `permanent drones should render below the player hull: ${JSON.stringify(droneRuntime)}`);
   report.states.droneRuntime = droneRuntime;
   report.screenshots.drone = path.join(outputDir, '03-drone-constellation.png');
   await page.screenshot({ path: report.screenshots.drone });

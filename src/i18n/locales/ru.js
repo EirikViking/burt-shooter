@@ -1164,6 +1164,7 @@ const sourceText = Object.freeze({
   'COMBOS': 'КОМБО',
   'FAST KILLS KEEP THE CHAIN': 'БЫСТРЫЕ УБИЙСТВА ДЕРЖАТ ЦЕПЬ',
   'NEAR MISS': 'БЛИЗКИЙ ПРОЛЕТ',
+  'SHIP GRAZE': 'КАСАНИЕ КОРАБЛЯ',
   'SKIM DANGER, THEN ESCAPE': 'СКОЛЬЗНИ У ОПАСНОСТИ И УХОДИ',
   'TRACTOR SHIPS': 'ТРАКТОРНЫЕ КОРАБЛИ',
   'BREAK ACTIVE BEAMS': 'ЛОМАЙ АКТИВНЫЕ ЛУЧИ',

@@ -174,6 +174,7 @@ function pickBossWarningJoke(profile, level = 1) {
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
+const GAME_OVER_DEATH_HOLD_MS = 550;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
@@ -4435,6 +4436,13 @@ export class PlayScene {
   update(delta) {
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
+    this.inputManager?.recordFrameContinuity?.(delta * (1000 / 60), {
+      level: this.game?.level || null,
+      bossWarning: Boolean(this.bossWarningActive || this.bossIntroActive),
+      reinforcementWarning: Boolean(this.mayhemReinforcementWarning?.active),
+      tacticalDraft: Boolean(this.tacticalDraft?.active),
+      gameOver: Boolean(this.gameOverSequenceStarted)
+    });
     const perfDiag = this.performanceDiagnostics;
     const perfOptions = perfDiag?.enabled ? perfDiag.options : null;
     const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
@@ -6539,6 +6547,9 @@ export class PlayScene {
       if (enemy.active && this.player.active) {
         if (enemy.challengeFlightTarget) return;
         collisionStats.enemyPlayerChecks += 1;
+        if (this.tryApplyEnemyShipGraze(enemy)) {
+          collisionStats.enemyPlayerShipGrazes = (collisionStats.enemyPlayerShipGrazes || 0) + 1;
+        }
         if (this.checkCollision(enemy, this.player)) {
           collisionStats.enemyPlayerHits += 1;
           // Feature: Ghost Ship prevents hit
@@ -12028,7 +12039,7 @@ export class PlayScene {
       }
     };
     this.showInGameGameOverAnimation({ onComplete: complete });
-    safetyId = setTimeout(complete, GAME_OVER_CELEBRATION_DURATION_MS + 1200);
+    safetyId = setTimeout(complete, GAME_OVER_DEATH_HOLD_MS + GAME_OVER_CELEBRATION_DURATION_MS + 1200);
     if (!this._deathTimeouts) this._deathTimeouts = [];
     this._deathTimeouts.push(safetyId);
     return true;
@@ -12048,6 +12059,9 @@ export class PlayScene {
     layer.zIndex = 1000000;
     layer.alpha = 0;
     layer.scale.set(0.965);
+    layer.eventMode = 'static';
+    layer.cursor = 'pointer';
+    layer.hitArea = new PIXI.Rectangle(0, 0, width, height);
     this.gameOverAnimationLayer = layer;
 
     const shade = new PIXI.Graphics();
@@ -12231,7 +12245,6 @@ export class PlayScene {
 
     this.uiOverlay.addChild(layer);
     this.uiOverlay.sortChildren?.();
-    AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
     this.gameOverAnimationDebug = {
       active: true,
       visualLanguage: 'final_transmission_imagegen_v2',
@@ -12242,13 +12255,50 @@ export class PlayScene {
       primitiveRingCount: 0,
       shardCount: shards.length,
       titlePlate: true,
-      animationPhases: ['impact', 'fracture', 'title_reveal', 'final_hold', 'direct_handoff'],
+      animationPhases: ['death_hold', 'impact', 'fracture', 'title_reveal', 'final_hold', 'direct_handoff'],
       directHandoff: true,
+      deathHoldMs: GAME_OVER_DEATH_HOLD_MS,
+      skippable: true,
+      skipped: false,
+      skipReason: null,
       startedAt: Date.now(),
-      durationMs: GAME_OVER_CELEBRATION_DURATION_MS
+      durationMs: GAME_OVER_DEATH_HOLD_MS + GAME_OVER_CELEBRATION_DURATION_MS
     };
 
-    let elapsed = 0;
+    let elapsed = -GAME_OVER_DEATH_HOLD_MS;
+    let presentationStarted = false;
+    let completed = false;
+    let ticker = null;
+    const skipDebounceUntil = Date.now() + 180;
+    const initialControllerState = this.inputManager?.getGamepadState?.() || {};
+    let controllerReleasedSinceStart = !Object.values(initialControllerState.buttons || {}).some(Boolean);
+    const completeAnimation = (reason = 'natural') => {
+      if (completed) return;
+      completed = true;
+      if (this.gameOverAnimationDebug) {
+        this.gameOverAnimationDebug.active = false;
+        this.gameOverAnimationDebug.skipped = reason !== 'natural';
+        this.gameOverAnimationDebug.skipReason = reason === 'natural' ? null : reason;
+      }
+      if (ticker) this.game.app.ticker.remove(ticker);
+      this._activeTickers = (this._activeTickers || []).filter((fn) => fn !== ticker);
+      window.removeEventListener('keydown', handleGameOverSkipKey);
+      layer.removeAllListeners?.('pointerdown');
+      onComplete?.();
+    };
+    const requestSkip = (reason) => {
+      if (Date.now() < skipDebounceUntil) return false;
+      completeAnimation(reason);
+      return true;
+    };
+    const handleGameOverSkipKey = (event) => {
+      if (event.repeat) return;
+      if (!['Enter', 'NumpadEnter', 'Space', 'Escape'].includes(event.code)) return;
+      event.preventDefault?.();
+      requestSkip('keyboard');
+    };
+    window.addEventListener('keydown', handleGameOverSkipKey);
+    layer.on('pointerdown', () => requestSkip('pointer'));
     const duration = GAME_OVER_CELEBRATION_DURATION_MS;
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
     const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3);
@@ -12256,8 +12306,23 @@ export class PlayScene {
       const t = clamp01(value);
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     };
-    const ticker = (tick) => {
+    ticker = (tick) => {
       elapsed += tick.deltaTime * 16.67;
+      const gamepad = this.inputManager?.getGamepadState?.() || {};
+      const controllerPressed = Object.values(gamepad.buttons || {}).some(Boolean);
+      if (!controllerReleasedSinceStart && !controllerPressed) controllerReleasedSinceStart = true;
+      if (controllerReleasedSinceStart && controllerPressed && Date.now() >= skipDebounceUntil) {
+        completeAnimation('controller');
+        return;
+      }
+      if (elapsed < 0) {
+        layer.alpha = 0;
+        return;
+      }
+      if (!presentationStarted) {
+        presentationStarted = true;
+        AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
+      }
       const t = Math.min(1, elapsed / duration);
       const intro = easeOutCubic(elapsed / 560);
       const titleIn = easeOutCubic((elapsed - 420) / 520);
@@ -12345,10 +12410,7 @@ export class PlayScene {
       subtitle.alpha = scoreIn * (0.84 + holdPulse * 0.16);
       handoffShade.alpha = handoff;
       if (elapsed >= duration) {
-        if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.active = false;
-        this.game.app.ticker.remove(ticker);
-        this._activeTickers = (this._activeTickers || []).filter(fn => fn !== ticker);
-        onComplete?.();
+        completeAnimation('natural');
       }
     };
     this.game.app.ticker.add(ticker);
@@ -18288,9 +18350,39 @@ export class PlayScene {
     return this.lastGrazeBreak;
   }
 
-  applyNearMiss(bullet) {
+  tryApplyEnemyShipGraze(enemy) {
+    if (!enemy || !this.player?.active || enemy.active === false) return false;
+    const routeGrazeEligible = enemy.state === 'DIVE'
+      || enemy.state === 'RETURN'
+      || Boolean(
+        (enemy.isMayhemReinforcement || enemy.isReinforcementSwarmEntry)
+        && enemy.state === 'ENTRY'
+      );
+    if (
+      !routeGrazeEligible
+      || enemy.shipGrazeTriggered
+      || this.player.invulnerable
+      || this.player.isGhostActive?.()
+    ) return false;
+    const enemyDistance = Math.hypot(enemy.x - this.player.x, enemy.y - this.player.y);
+    const contactRadius = (enemy.radius || 15) + (this.player.radius || 12);
+    if (enemyDistance <= contactRadius || enemyDistance >= contactRadius + 20) return false;
+    const applied = this.applyNearMiss(enemy, {
+      source: 'ship',
+      scoreMultiplier: 0.35,
+      labelKey: 'SHIP GRAZE'
+    });
+    if (applied) enemy.shipGrazeTriggered = true;
+    return applied;
+  }
+
+  applyNearMiss(bullet, {
+    source = 'bullet',
+    scoreMultiplier = 1,
+    labelKey = 'NEAR MISS'
+  } = {}) {
     const now = Date.now();
-    if (now < this.nearMissCooldownAt) return;
+    if (now < this.nearMissCooldownAt) return false;
     this.nearMissCooldownAt = now + 450;
     if (now - this.lastNearMissAt > 2200) {
       this.dangerDodgeCount = 0;
@@ -18301,16 +18393,23 @@ export class PlayScene {
     this.bestDangerDodgeStreak = Math.max(this.bestDangerDodgeStreak, this.dangerDodgeCount);
     this.emitRunContractEvent('near_miss', {
       sector: this.game?.level || 1,
-      streak: this.dangerDodgeCount
+      streak: this.dangerDodgeCount,
+      source
     });
     this.emitTacticalDirectiveEvent('near_miss', {
       sector: this.game?.level || 1,
-      streak: this.dangerDodgeCount
+      streak: this.dangerDodgeCount,
+      source
     });
     const comboMult = Math.max(1, this.comboMultiplier);
     const traitMult = Number(this.player?.traitCombat?.nearMissScoreMult || 1);
     const streakBonus = Math.min(100, 25 + this.dangerDodgeCount * 15);
-    const score = Math.round(streakBonus * comboMult * (Number.isFinite(traitMult) ? traitMult : 1));
+    const score = Math.max(1, Math.round(
+      streakBonus
+      * comboMult
+      * (Number.isFinite(traitMult) ? traitMult : 1)
+      * Math.max(0, Number(scoreMultiplier) || 0)
+    ));
     const appliedScore = this.game.addScore(score);
     this.lastDangerDodgeScore = appliedScore;
     this.player?.markNearMissStreakVisual?.(this.dangerDodgeCount, this.dangerDodgeTimerMs || 2200, {
@@ -18329,7 +18428,7 @@ export class PlayScene {
       });
       AudioManager.playSfx('tactical_graze_plating', { force: true, volume: 0.76, minIntervalMs: 500 });
     }
-    const nearMissLabel = translateText('NEAR MISS');
+    const nearMissLabel = translateText(labelKey);
     const label = this.dangerDodgeCount >= 2
       ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`
       : `${nearMissLabel} +${appliedScore}`;
@@ -18368,6 +18467,7 @@ export class PlayScene {
       });
     }
     this.triggerNearMissSurge();
+    return true;
   }
 
   applyShipTraitBulletImpact(bullet, sourceEnemy) {
@@ -19274,11 +19374,18 @@ export class PlayScene {
     const scanOverlay = new PIXI.Graphics();
     scanOverlay.roundRect(-136, -148, 272, 268, 7);
     scanOverlay.stroke({ color: primaryColor, width: 2, alpha: 0.72 });
-    scanOverlay.moveTo(-122, -18);
-    scanOverlay.lineTo(122, -18);
-    scanOverlay.moveTo(0, -138);
-    scanOverlay.lineTo(0, 88);
-    scanOverlay.stroke({ color: accentColor, width: 1, alpha: 0.55 });
+    const bracketLength = 28;
+    for (const [x, y, sx, sy] of [
+      [-122, -134, 1, 1],
+      [122, -134, -1, 1],
+      [-122, 106, 1, -1],
+      [122, 106, -1, -1]
+    ]) {
+      scanOverlay.moveTo(x, y + sy * bracketLength);
+      scanOverlay.lineTo(x, y);
+      scanOverlay.lineTo(x + sx * bracketLength, y);
+    }
+    scanOverlay.stroke({ color: accentColor, width: 1.4, alpha: 0.58 });
     poster.addChild(scanOverlay);
 
     const threatMeter = new PIXI.Graphics();
@@ -19546,15 +19653,24 @@ export class PlayScene {
     }
     emblem.addChild(glyph);
 
-    const sweep = new PIXI.Graphics();
-    sweep.blendMode = 'add';
-    sweep.moveTo(0, 0);
-    sweep.lineTo(108, -26);
-    sweep.stroke({ color: 0xffffff, width: 2, alpha: 0.28 });
-    sweep.moveTo(0, 0);
-    sweep.lineTo(94, 44);
-    sweep.stroke({ color: accentColor, width: 1.4, alpha: 0.24 });
-    emblem.addChild(sweep);
+    const perimeterLock = new PIXI.Graphics();
+    perimeterLock.blendMode = 'add';
+    for (let index = 0; index < 8; index += 1) {
+      const angle = -Math.PI * 0.5 + index * (Math.PI / 4);
+      const inner = 104;
+      const outer = index % 2 === 0 ? 120 : 114;
+      perimeterLock.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      perimeterLock.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      perimeterLock.stroke({
+        color: index % 2 === 0 ? primaryColor : accentColor,
+        width: index % 2 === 0 ? 2.2 : 1.4,
+        alpha: index % 2 === 0 ? 0.46 : 0.3
+      });
+    }
+    perimeterLock.arc(0, 0, 110, -Math.PI * 0.88, -Math.PI * 0.58);
+    perimeterLock.arc(0, 0, 110, Math.PI * 0.12, Math.PI * 0.42);
+    perimeterLock.stroke({ color: accentColor, width: 2, alpha: 0.34 });
+    emblem.addChild(perimeterLock);
 
     return emblem;
   }
@@ -19671,15 +19787,25 @@ export class PlayScene {
       }
     }
 
-    const sweep = new PIXI.Graphics();
-    sweep.blendMode = 'add';
-    sweep.moveTo(0, 0);
-    sweep.lineTo(108, -26);
-    sweep.stroke({ color: 0xffffff, width: 2, alpha: 0.28 });
-    sweep.moveTo(0, 0);
-    sweep.lineTo(94, 44);
-    sweep.stroke({ color: accentColor, width: 1.4, alpha: 0.24 });
-    emblem.addChild(sweep);
+    const perimeterLock = new PIXI.Graphics();
+    perimeterLock.label = 'boss_warning_perimeter_lock';
+    perimeterLock.blendMode = 'add';
+    for (let index = 0; index < 8; index += 1) {
+      const angle = -Math.PI * 0.5 + index * (Math.PI / 4);
+      const inner = 104;
+      const outer = index % 2 === 0 ? 120 : 114;
+      perimeterLock.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      perimeterLock.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      perimeterLock.stroke({
+        color: index % 2 === 0 ? primaryColor : accentColor,
+        width: index % 2 === 0 ? 2.2 : 1.4,
+        alpha: index % 2 === 0 ? 0.46 : 0.3
+      });
+    }
+    perimeterLock.arc(0, 0, 110, -Math.PI * 0.88, -Math.PI * 0.58);
+    perimeterLock.arc(0, 0, 110, Math.PI * 0.12, Math.PI * 0.42);
+    perimeterLock.stroke({ color: accentColor, width: 2, alpha: 0.34 });
+    emblem.addChild(perimeterLock);
 
     return emblem;
   }
@@ -19757,6 +19883,65 @@ export class PlayScene {
     };
   }
 
+  showMayhemRoutineReinforcementWarning({ groupCount = 1, route = 'side', warningMs = 1200 } = {}) {
+    const host = this.uiOverlay || this.decorativeOverlay || this.gameContainer || this.container;
+    if (!host || !this.game?.app?.ticker) return false;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const normalizedRoute = String(route || 'side').toLowerCase();
+    const duration = Math.max(700, Math.min(1500, Math.floor(Number(warningMs) || 1200)));
+    const root = new PIXI.Container();
+    root.label = 'mayhem_routine_reinforcement_warning';
+    root.eventMode = 'none';
+    root.zIndex = 9800;
+    const fromLeft = normalizedRoute.includes('left');
+    const fromRight = normalizedRoute.includes('right');
+    const fromBottom = normalizedRoute.includes('bottom') || normalizedRoute.includes('opposite');
+    root.position.set(
+      fromLeft ? 34 : fromRight ? width - 34 : width / 2,
+      fromBottom ? height - 86 : Math.max(150, height * 0.36)
+    );
+    root.rotation = fromLeft ? -Math.PI / 2 : fromRight ? Math.PI / 2 : Math.PI;
+    const cue = new PIXI.Graphics();
+    for (let index = 0; index < 3; index += 1) {
+      const y = index * 14;
+      cue.moveTo(-14, y - 8);
+      cue.lineTo(0, y);
+      cue.lineTo(14, y - 8);
+      cue.stroke({ color: index % 2 ? 0xffdf63 : 0x43efff, width: 2.4, alpha: 0.82 - index * 0.14 });
+    }
+    root.addChild(cue);
+    host.addChild(root);
+    host.sortChildren?.();
+
+    const startedAt = Date.now();
+    this.lastMayhemReinforcementPresentation = {
+      phase: 'warning',
+      tier: 'routine',
+      route: normalizedRoute,
+      groupCount: Math.max(1, Math.floor(Number(groupCount) || 1)),
+      signalPlateVisible: false,
+      scoreNeutral: true,
+      startedAt,
+      activeUntil: startedAt + duration
+    };
+    let elapsed = 0;
+    const ticker = (delta) => {
+      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      const t = Math.min(1, elapsed / duration);
+      const pulse = (Math.sin(elapsed * 0.02) + 1) * 0.5;
+      root.alpha = Math.pow(Math.max(0, 1 - t), 0.62) * (0.62 + pulse * 0.38);
+      root.scale.set(0.9 + pulse * 0.12);
+      if (t >= 1 || this.game?.currentScene !== this) {
+        this.game.app.ticker.remove(ticker);
+        if (root.parent) root.parent.removeChild(root);
+        root.destroy?.({ children: true });
+      }
+    };
+    this.game.app.ticker.add(ticker);
+    return true;
+  }
+
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false, warningMs = 2000 } = {}) {
     const count = Math.max(1, Math.min(8, Math.floor(Number(groupCount) || 1)));
     const width = this.game.getWidth();
@@ -19789,6 +19974,7 @@ export class PlayScene {
 
     this.lastMayhemReinforcementPresentation = {
       phase: 'warning',
+      tier: superStorm || boss ? 'headline' : 'major',
       groupCount: count,
       entryBursts: 0,
       lastEntryGroup: null,

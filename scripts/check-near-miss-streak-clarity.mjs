@@ -153,6 +153,29 @@ try {
     player.y = game.getHeight() * 0.68;
     player.sprite.x = player.x;
     player.sprite.y = player.y;
+    player.invulnerable = false;
+    player.invulnerableTime = 0;
+    const contactRadius = (player.radius || 12) + 15;
+    const routeEnemy = {
+      active: true,
+      state: 'DIVE',
+      radius: 15,
+      x: player.x + contactRadius + 8,
+      y: player.y
+    };
+    play.nearMissCooldownAt = 0;
+    const shipGrazeApplied = play.tryApplyEnemyShipGraze(routeEnemy);
+    play.nearMissCooldownAt = 0;
+    const shipGrazeRepeated = play.tryApplyEnemyShipGraze(routeEnemy);
+    const formationGrazeApplied = play.tryApplyEnemyShipGraze({
+      active: true,
+      state: 'FORMATION',
+      radius: 15,
+      x: player.x + contactRadius + 8,
+      y: player.y
+    });
+    play.dangerDodgeCount = 0;
+    play.dangerDodgeTimerMs = 0;
     player.invulnerable = true;
     player.invulnerableTime = 10000;
     play.nearMissCooldownAt = 0;
@@ -178,7 +201,13 @@ try {
       hitbox: textState.player?.hitboxReticle || null,
       runContracts: textState.runContracts || null,
       savedRunContracts: savedProfile.runContracts || null,
-      visible: Boolean(player.hitboxReticle?.visible)
+      visible: Boolean(player.hitboxReticle?.visible),
+      shipGraze: {
+        applied: shipGrazeApplied,
+        repeated: shipGrazeRepeated,
+        marked: Boolean(routeEnemy.shipGrazeTriggered),
+        formationApplied: formationGrazeApplied
+      }
     };
   });
 
@@ -197,6 +226,9 @@ try {
   if ((nearMiss.surgeSpikeCount || 0) < 5) failures.push(`surge-ready burst spikes missing: ${JSON.stringify(nearMiss)}`);
   if (!(nearMiss.windowProgress > 0.6 && nearMiss.windowProgress <= 1)) failures.push(`window progress should still be readable: ${JSON.stringify(nearMiss)}`);
   if ((state.scoring?.bestDangerDodgeStreak || 0) < 5) failures.push(`scoring streak did not register: ${JSON.stringify(state.scoring)}`);
+  if (!state.shipGraze?.applied || !state.shipGraze?.marked) failures.push(`route-ship graze did not register: ${JSON.stringify(state.shipGraze)}`);
+  if (state.shipGraze?.repeated) failures.push(`one route ship produced repeat graze credit: ${JSON.stringify(state.shipGraze)}`);
+  if (state.shipGraze?.formationApplied) failures.push(`formation ship incorrectly produced graze credit: ${JSON.stringify(state.shipGraze)}`);
   const nearMissOrder = state.runContracts?.active?.find((entry) => entry.id === 'near_miss_streak');
   if (nearMissOrder?.progress !== 5 || nearMissOrder?.completed !== true) {
     failures.push(`seeded 3/5 Pilot Order did not complete through real applyNearMiss calls: ${JSON.stringify(state.runContracts)}`);

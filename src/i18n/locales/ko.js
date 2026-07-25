@@ -1083,6 +1083,7 @@ const sourceText = Object.freeze({
   'COMBOS': '콤보',
   'FAST KILLS KEEP THE CHAIN': '빠른 처치가 체인을 유지',
   'NEAR MISS': '근접 회피',
+  'SHIP GRAZE': '함선 스침',
   'SKIM DANGER, THEN ESCAPE': '위험을 스치고 탈출',
   'TRACTOR SHIPS': '견인 함선',
   'BREAK ACTIVE BEAMS': '활성 빔 끊기',

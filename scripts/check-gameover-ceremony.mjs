@@ -160,19 +160,25 @@ async function checkInGameFinalDeathAnimation(browser) {
   }, null, { timeout: 5000 });
   const lockedState = await page.evaluate(() => {
     const game = window.__game;
+    const play = game.scenes?.play;
     return {
       blockedAward: game.addScore(999, 'baseScore'),
       score: game.score,
       finalScoreSnapshot: game.finalScoreSnapshot,
-      finalScoreLocked: game.finalScoreLocked
+      finalScoreLocked: game.finalScoreLocked,
+      animation: structuredClone(play?.gameOverAnimationDebug || null),
+      layerAlpha: play?.gameOverAnimationLayer?.alpha
     };
   });
   assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
   assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
   assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
   assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
+  assert(lockedState.animation?.deathHoldMs === 550 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.layerAlpha === 0, `frozen battle should remain visible during the death hold: ${lockedState.layerAlpha}`);
   await page.waitForTimeout(450);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
+  await page.keyboard.press('Enter');
   await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
   const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const invariant = await page.evaluate(() => {
@@ -187,6 +193,7 @@ async function checkInGameFinalDeathAnimation(browser) {
     };
   });
   assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
+  assert(state.gameOverAnimation?.skipped === true && state.gameOverAnimation?.skipReason === 'keyboard', `game-over ceremony did not record the intentional skip: ${JSON.stringify(state.gameOverAnimation)}`);
   assert(Object.values(invariant).every((value) => value === 12345), `final score invariant failed: ${JSON.stringify(invariant)}`);
   assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
   await page.close();

@@ -2210,13 +2210,36 @@ export class Player {
           const droneCount = Math.max(1, this.drones.length);
           const slot = droneIndex - (droneCount - 1) / 2;
           const inward = slot === 0 ? 1 : -Math.sign(slot);
-          const angles = droneCount === 1 ? [-0.24, 0.24] : [inward * (0.2 + Math.abs(slot) * 0.035)];
-          angles.forEach((angle, angleIndex) => {
+          const launchProfiles = droneCount === 1
+            ? [-1, 1].map((side) => {
+                const originX = worldX + side * 20;
+                const originY = worldY + 2;
+                const targetX = this.x;
+                const targetY = worldY - 190;
+                const aimX = targetX - originX;
+                const aimY = targetY - originY;
+                const aimLength = Math.max(1, Math.hypot(aimX, aimY));
+                return {
+                  originX,
+                  originY,
+                  velocityX: (aimX / aimLength) * this.bulletSpeed * 1.05,
+                  velocityY: (aimY / aimLength) * this.bulletSpeed * 1.05,
+                  originKind: 'mirrored_echo'
+                };
+              })
+            : [{
+                originX: worldX,
+                originY: worldY,
+                velocityX: Math.sin(inward * (0.2 + Math.abs(slot) * 0.035)) * this.bulletSpeed * 1.05,
+                velocityY: -Math.cos(inward * (0.2 + Math.abs(slot) * 0.035)) * this.bulletSpeed * 1.05,
+                originKind: 'drone'
+              }];
+          launchProfiles.forEach((launch, angleIndex) => {
             const fusionShot = new Bullet(
-              worldX,
-              worldY,
-              Math.sin(angle) * this.bulletSpeed * 1.05,
-              -Math.cos(angle) * this.bulletSpeed * 1.05,
+              launch.originX,
+              launch.originY,
+              launch.velocityX,
+              launch.velocityY,
               Math.max(0.7, this.bulletDamage * 0.56),
               angleIndex % 2 === 0 ? 0xff62dc : 0x62efff,
               true,
@@ -2224,6 +2247,7 @@ export class Player {
             );
             fusionShot.isTacticalFusionShot = true;
             fusionShot.tacticalFusionId = 'drone_constellation';
+            fusionShot.tacticalFusionOriginKind = launch.originKind;
             fusionShot.trailLength = 42;
             fusionShot.pulseRate = 0.9;
             this.applyTraitProjectileEffects(fusionShot, shotCounter, { bonus: true, drone: true });
@@ -2277,9 +2301,9 @@ export class Player {
       // Add glow ring for visibility
       const glow = new PIXI.Graphics();
       glow.circle(0, 0, 16);
-      glow.fill({ color: safeColor, alpha: 0.3 });
+      glow.fill({ color: safeColor, alpha: 0.2 });
       glow.circle(0, 0, 12);
-      glow.stroke({ color: safeColor, width: 2, alpha: 0.8 });
+      glow.stroke({ color: safeColor, width: 2, alpha: 0.68 });
       droneContainer.addChild(glow);
 
       // Add the ship sprite
@@ -2299,10 +2323,14 @@ export class Player {
 
       // Ensure visibility
       droneContainer.visible = true;
-      droneContainer.alpha = 1;
+      droneContainer.alpha = 0.9;
 
-      // Add to player sprite container
-      this.sprite.addChild(droneContainer);
+      // Drones are support silhouettes. Keep them below the player's hull so
+      // the pilot and practical hitbox remain readable during dense combat.
+      const shipIndex = this.shipSprite?.parent === this.sprite
+        ? this.sprite.getChildIndex(this.shipSprite)
+        : 0;
+      this.sprite.addChildAt(droneContainer, Math.max(0, shipIndex));
       this.drones.push(droneContainer);
     }
 

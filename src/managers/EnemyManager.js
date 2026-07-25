@@ -1762,6 +1762,13 @@ export class EnemyManager {
     this.mayhemReinforcementStats.lastWarningLeadMs = Math.max(0, state.spawnAt - Date.now());
 
     const playScene = this.game?.scenes?.play;
+    const boss = this.state === 'BOSS_ACTIVE';
+    const warningTier = state.isSuperStorm === true || boss
+      ? 'headline'
+      : state.isRoutineReinforcement === true
+        ? 'routine'
+        : 'major';
+    state.warningTier = warningTier;
     const groupCount = Math.max(
       1,
       Math.floor(Number(state.reinforcementGroupCount) ||
@@ -1770,13 +1777,19 @@ export class EnemyManager {
         1)
     );
     const useSuperStormVoice = state.isSuperStorm === true;
-    const specializedPresentationShown = playScene?.showMayhemReinforcementStormWarning?.({
-      groupCount,
-      boss: this.state === 'BOSS_ACTIVE',
-      superStorm: state.isSuperStorm === true,
-      warningMs: state.warningMs
-    });
-    if (!specializedPresentationShown && playScene?.showToast) {
+    const specializedPresentationShown = warningTier === 'routine'
+      ? playScene?.showMayhemRoutineReinforcementWarning?.({
+          groupCount,
+          route: state.reinforcementWaveConfigs?.[0]?.reinforcementEntryRoute || 'side',
+          warningMs: state.warningMs
+        })
+      : playScene?.showMayhemReinforcementStormWarning?.({
+          groupCount,
+          boss,
+          superStorm: state.isSuperStorm === true,
+          warningMs: state.warningMs
+        });
+    if (warningTier !== 'routine' && !specializedPresentationShown && playScene?.showToast) {
       const compactHud = this.game.getWidth() < 1100 || this.game.getHeight() < 700;
       playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
         fontSize: compactHud ? 17 : 22,
@@ -1791,14 +1804,22 @@ export class EnemyManager {
         maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.64)
       });
     }
-    AudioManager.playVoice(useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
-      force: true,
-      bypassGlobalCooldown: true,
-      cooldownMs: useSuperStormVoice ? 0 : 2200,
-      eventCooldownMs: useSuperStormVoice ? 0 : 2200,
-      duckMs: useSuperStormVoice ? 2400 : 1150,
-      voicePriority: useSuperStormVoice ? 8 : 7
-    });
+    if (warningTier === 'routine') {
+      AudioManager.playSfx('enemy_threat_soft_warn', {
+        force: false,
+        volume: 0.28,
+        minIntervalMs: 900
+      });
+    } else {
+      AudioManager.playVoice(useSuperStormVoice ? MAYHEM_SUPER_STORM_WARNING_SOUND_ID : MAYHEM_REINFORCEMENT_WAVE_SOUND_ID, {
+        force: warningTier === 'headline',
+        bypassGlobalCooldown: warningTier === 'headline',
+        cooldownMs: useSuperStormVoice ? 0 : 6000,
+        eventCooldownMs: useSuperStormVoice ? 0 : 6000,
+        duckMs: useSuperStormVoice ? 2400 : 1050,
+        voicePriority: useSuperStormVoice ? 8 : warningTier === 'headline' ? 7 : 5
+      });
+    }
     return true;
   }
 

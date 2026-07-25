@@ -1078,6 +1078,7 @@ const sourceText = Object.freeze({
   'COMBOS': '连击',
   'FAST KILLS KEEP THE CHAIN': '快速击杀维持连击',
   'NEAR MISS': '近身擦弹',
+  'SHIP GRAZE': '擦身掠过',
   'SKIM DANGER, THEN ESCAPE': '擦过危险，然后脱离',
   'TRACTOR SHIPS': '牵引舰',
   'BREAK ACTIVE BEAMS': '打断活动光束',
