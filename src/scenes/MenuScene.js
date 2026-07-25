@@ -7,6 +7,7 @@ import { addResponsiveListener, getCurrentLayout } from '../ui/responsiveLayout.
 import { createTextLayout, clampTextWidth, getResponsiveFontSize } from '../ui/textLayout.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
+import { ModeBriefingOverlay } from '../ui/ModeBriefingOverlay.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { isMobile, isIOS, isStandalone } from '../utils/Mobile.js';
 import { EXIT_GAME_WEB_MESSAGE, requestExitGame } from '../utils/ExitGame.js';
@@ -39,12 +40,14 @@ import {
 } from '../config/RunModeNarration.js';
 import {
   RUN_MODES,
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   SECTOR_START_CHECKPOINT_INTERVAL,
   getOverrunStartState,
   getRunModeProfile,
   getSectorStartPlaySector,
   getSectorStartState
 } from '../game/RunMode.js';
+import { getTacticalDraftMeta } from '../config/TacticalDraft.js';
 import {
   applyScoutAnomalyToProfile,
   SCOUT_ANOMALIES,
@@ -264,7 +267,21 @@ export class MenuScene {
     this.primaryHint = null;
     this.runModePanel = null;
     this.runModeBriefingTitle = null;
+    this.runModeTitle = null;
     this.runModeExplainer = null;
+    this.runModeStatusBadge = null;
+    this.runModeStatusBadgeBg = null;
+    this.runModeInfoTiles = null;
+    this.runModeInfoTileItems = [];
+    this.runModeInfoTileSignature = '';
+    this.runModeRestriction = null;
+    this.runModePersonalBest = null;
+    this.runModeDetailsButton = null;
+    this.runModeDetailsButtonBg = null;
+    this.runModeDetailsButtonIcon = null;
+    this.runModeDetailsButtonText = null;
+    this.runModeDetailsFocused = false;
+    this.modeBriefingOverlay = null;
     this.runModeVariantSelector = null;
     this.runModeVariantTabs = [];
     this.runModeVariantSignature = '';
@@ -273,6 +290,7 @@ export class MenuScene {
     this.missionBoardPanel = null;
     this.missionBoardTitle = null;
     this.missionBoardSubtitle = null;
+    this.missionBoardStatus = null;
     this.missionBoardRows = [];
     this.missionBoardBounds = null;
     this.missionBoardState = null;
@@ -283,6 +301,7 @@ export class MenuScene {
     this.missionBoardSelectedOrderId = null;
     this.missionBoardSelectionManual = false;
     this.missionBoardSelectedDetail = null;
+    this.missionBoardFocusActive = false;
     this.launchDeckBounds = null;
     this.dailySignalBtn = null;
     this.dailySignalBounds = null;
@@ -510,15 +529,17 @@ export class MenuScene {
       const tagName = String(target?.tagName || '').toLowerCase();
       if (tagName === 'input' || tagName === 'textarea' || target?.isContentEditable) return;
       this.markMenuActivity();
-      if (this.settingsOverlay || this.howToPlayOverlay) return;
+      if (this.settingsOverlay || this.howToPlayOverlay || this.modeBriefingOverlay) return;
 
       const isPrimaryStart = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space';
       const isMoveUp = event.key === 'ArrowUp' || event.code === 'ArrowUp';
-      const isMoveDown = event.key === 'ArrowDown' || event.code === 'ArrowDown' || event.key === 'Tab';
+      const isMoveDown = event.key === 'ArrowDown' || event.code === 'ArrowDown';
       const isMoveLeft = event.key === 'ArrowLeft' || event.code === 'ArrowLeft';
       const isMoveRight = event.key === 'ArrowRight' || event.code === 'ArrowRight';
       const isCancel = event.key === 'Escape';
-      if (!isPrimaryStart && !isMoveUp && !isMoveDown && !isMoveLeft && !isMoveRight && !isCancel) return;
+      const isDetailsFocus = event.key === 'Tab';
+      const isDetailsShortcut = event.code === 'KeyI';
+      if (!isPrimaryStart && !isMoveUp && !isMoveDown && !isMoveLeft && !isMoveRight && !isCancel && !isDetailsFocus && !isDetailsShortcut) return;
 
       event.preventDefault();
       this.setInputDevice('keyboard');
@@ -553,6 +574,81 @@ export class MenuScene {
             force: true
           });
           this.activateSectorSelectorSelection();
+        }
+        return;
+      }
+      if (isDetailsShortcut && this.getRunModeBriefing()?.details) {
+        this.runModeDetailsFocused = true;
+        this.missionBoardFocusActive = false;
+        this.drawRunModeDetailsButton();
+        this.openModeBriefing();
+        return;
+      }
+      if (isDetailsFocus) {
+        const pilotRows = this.missionBoardState?.active || [];
+        if (this.missionBoardFocusActive && pilotRows.length) {
+          const nextIndex = this.missionBoardSelectedIndex + (event.shiftKey ? -1 : 1);
+          if (nextIndex >= 0 && nextIndex < pilotRows.length) {
+            this.selectMissionBoardOrder(nextIndex, { manual: true });
+          } else {
+            this.missionBoardFocusActive = false;
+            this.runModeDetailsFocused = Boolean(event.shiftKey && this.getRunModeBriefing()?.details);
+          }
+        } else if (this.runModeDetailsFocused && pilotRows.length && !event.shiftKey) {
+          this.runModeDetailsFocused = false;
+          this.missionBoardFocusActive = true;
+          this.selectMissionBoardOrder(0, { manual: true });
+        } else {
+          this.runModeDetailsFocused = Boolean(this.getRunModeBriefing()?.details);
+          this.missionBoardFocusActive = false;
+        }
+        this.drawRunModeDetailsButton();
+        this.drawMissionBoardPanel();
+        return;
+      }
+      if (this.missionBoardFocusActive) {
+        const pilotRows = this.missionBoardState?.active || [];
+        if (!pilotRows.length) {
+          this.missionBoardFocusActive = false;
+        } else if (isMoveUp || isMoveLeft) {
+          this.selectMissionBoardOrder(Math.max(0, this.missionBoardSelectedIndex - 1), { manual: true });
+        } else if (isMoveDown || isMoveRight) {
+          this.selectMissionBoardOrder(Math.min(pilotRows.length - 1, this.missionBoardSelectedIndex + 1), { manual: true });
+        } else if (isCancel || isPrimaryStart) {
+          this.missionBoardFocusActive = false;
+          this.missionBoardSelectionManual = false;
+          this.drawMissionBoardPanel();
+        }
+        return;
+      }
+      if (this.runModeDetailsFocused) {
+        if (isPrimaryStart) {
+          this.openModeBriefing();
+        } else if (isCancel) {
+          this.runModeDetailsFocused = false;
+          this.drawRunModeDetailsButton();
+        } else if (isMoveLeft) {
+          if (
+            !this.cycleScoutAnomalySelection(-1)
+            && !this.cycleMayhemRunMode(-1)
+            && !this.cycleOverrunRunMode(-1)
+          ) {
+            this.runModeDetailsFocused = false;
+            this.moveMenuFocus(-1);
+          }
+        } else if (isMoveRight) {
+          if (
+            !this.cycleScoutAnomalySelection(1)
+            && !this.cycleMayhemRunMode(1)
+            && !this.cycleOverrunRunMode(1)
+          ) {
+            this.runModeDetailsFocused = false;
+            this.moveMenuFocus(1);
+          }
+        } else if (isMoveUp || isMoveDown) {
+          this.runModeDetailsFocused = false;
+          this.drawRunModeDetailsButton();
+          this.moveMenuFocus(isMoveUp ? -1 : 1);
         }
         return;
       }
@@ -1126,6 +1222,7 @@ export class MenuScene {
       }
     })).then(() => {
       this.getMenuButtonList().forEach((button) => this.drawMenuButton(button, false));
+      if (this.game?.currentScene === this) this.layoutMenu();
       return this.menuIconTextures;
     });
     return this.menuIconLoadPromise;
@@ -1244,30 +1341,131 @@ export class MenuScene {
       wordWrap: true,
       breakWords: true,
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
-      lineHeight: Math.round(runModeSize * 1.18)
+      lineHeight: Math.round(runModeSize * 1.18),
+      padding: 12
     });
     this.runModeBriefingTitle.anchor.set(0, 0);
     this.runModeBriefingTitle.alpha = 0;
     this.runModeBriefingTitle.zIndex = 10;
     this.container.addChild(this.runModeBriefingTitle);
 
-    this.runModeExplainer = createText(this.getRunModeExplainerText(), {
-      fontFamily: FONT_MONO,
-      fontSize: runModeSize,
-      fontWeight: '800',
-      fill: '#dffcff',
+    this.runModeTitle = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(18, Math.round(runModeSize * 1.45)),
+      fontWeight: '900',
+      fill: '#f6fbff',
       stroke: '#020711',
       strokeThickness: 3,
+      align: 'left',
+      padding: 36
+    });
+    this.runModeTitle.anchor.set(0, 0);
+    this.runModeTitle.alpha = 0;
+    this.runModeTitle.zIndex = 10;
+    this.container.addChild(this.runModeTitle);
+
+    this.runModeExplainer = createText(this.getRunModeExplainerText(), {
+      fontFamily: FONT_ARCADE,
+      fontSize: runModeSize,
+      fontWeight: '600',
+      fill: '#dffcff',
       align: 'left',
       wordWrap: true,
       breakWords: true,
       wordWrapWidth: clampTextWidth(width * 0.7, layout),
-      lineHeight: Math.round(runModeSize * 1.32)
+      lineHeight: Math.round(runModeSize * 1.42),
+      padding: 12
     });
     this.runModeExplainer.anchor.set(0, 0);
     this.runModeExplainer.alpha = 0;
     this.runModeExplainer.zIndex = 10;
     this.container.addChild(this.runModeExplainer);
+
+    this.runModeStatusBadge = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(10, Math.round(runModeSize * 0.82)),
+      fontWeight: '900',
+      fill: '#ffe6ad',
+      align: 'center',
+      padding: 18
+    });
+    this.runModeStatusBadge.anchor.set(0.5);
+    this.runModeStatusBadge.zIndex = 12;
+    this.runModeStatusBadgeBg = new PIXI.Graphics();
+    this.runModeStatusBadgeBg.zIndex = 11;
+    this.container.addChild(this.runModeStatusBadgeBg, this.runModeStatusBadge);
+
+    this.runModeInfoTiles = new PIXI.Container();
+    this.runModeInfoTiles.zIndex = 10;
+    this.container.addChild(this.runModeInfoTiles);
+
+    this.runModeRestriction = createText('', {
+      fontFamily: FONT_ARCADE,
+      fontSize: Math.max(11, runModeSize),
+      fontWeight: '600',
+      fill: '#ffd7c7',
+      align: 'left',
+      wordWrap: true,
+      breakWords: true,
+      wordWrapWidth: clampTextWidth(width * 0.7, layout),
+      lineHeight: Math.round(runModeSize * 1.35),
+      padding: 12
+    });
+    this.runModeRestriction.anchor.set(0, 0);
+    this.runModeRestriction.zIndex = 10;
+    this.container.addChild(this.runModeRestriction);
+
+    this.runModePersonalBest = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(10, Math.round(runModeSize * 0.82)),
+      fontWeight: '900',
+      fill: '#8fa9b8',
+      align: 'left',
+      padding: 18
+    });
+    this.runModePersonalBest.anchor.set(0, 0.5);
+    this.runModePersonalBest.zIndex = 10;
+    this.container.addChild(this.runModePersonalBest);
+
+    this.runModeDetailsButton = new PIXI.Container();
+    this.runModeDetailsButton.zIndex = 12;
+    this.runModeDetailsButton.eventMode = 'static';
+    this.runModeDetailsButton.cursor = 'pointer';
+    this.runModeDetailsButtonBg = new PIXI.Graphics();
+    this.runModeDetailsButtonIcon = new PIXI.Sprite();
+    this.runModeDetailsButtonIcon.anchor.set(0.5);
+    this.runModeDetailsButtonIcon.visible = false;
+    this.runModeDetailsButtonText = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(10, Math.round(runModeSize * 0.9)),
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center',
+      padding: 48
+    });
+    this.runModeDetailsButtonText.anchor.set(0.5);
+    this.runModeDetailsButton.addChild(
+      this.runModeDetailsButtonBg,
+      this.runModeDetailsButtonIcon,
+      this.runModeDetailsButtonText
+    );
+    this.runModeDetailsButton.on('pointerover', () => {
+      this.runModeDetailsFocused = true;
+      this.drawRunModeDetailsButton();
+      playMenuFocusSfx(0.07);
+    });
+    this.runModeDetailsButton.on('pointerout', () => {
+      if (this.lastInputDevice !== 'keyboard') return;
+      this.runModeDetailsFocused = false;
+      this.drawRunModeDetailsButton();
+    });
+    this.runModeDetailsButton.on('pointertap', (event) => {
+      event.stopPropagation?.();
+      this.setInputDevice('keyboard');
+      this.runModeDetailsFocused = true;
+      this.openModeBriefing();
+    });
+    this.container.addChild(this.runModeDetailsButton);
 
     this.runModeVariantSelector = new PIXI.Container();
     this.runModeVariantSelector.zIndex = 11;
@@ -1286,7 +1484,8 @@ export class MenuScene {
       fill: '#ffd15c',
       stroke: '#020711',
       strokeThickness: 3,
-      align: 'left'
+      align: 'left',
+      padding: 12
     });
     this.missionBoardTitle.anchor.set(0, 0);
     this.missionBoardTitle.alpha = 0;
@@ -1302,12 +1501,28 @@ export class MenuScene {
       strokeThickness: 3,
       align: 'left',
       wordWrap: false,
-      wordWrapWidth: clampTextWidth(width * 0.34, layout)
+      wordWrapWidth: clampTextWidth(width * 0.34, layout),
+      padding: 12
     });
     this.missionBoardSubtitle.anchor.set(0, 0);
     this.missionBoardSubtitle.alpha = 0;
     this.missionBoardSubtitle.zIndex = 10;
     this.container.addChild(this.missionBoardSubtitle);
+
+    this.missionBoardStatus = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: Math.max(8, Math.round(runModeSize * 0.58)),
+      fontWeight: '800',
+      fill: '#79aeb7',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'left',
+      padding: 12
+    });
+    this.missionBoardStatus.anchor.set(0, 0);
+    this.missionBoardStatus.alpha = 0;
+    this.missionBoardStatus.zIndex = 10;
+    this.container.addChild(this.missionBoardStatus);
 
     this.missionBoardRows = [0, 1, 2].map((index) => this.createMissionBoardRow(index));
     for (const row of this.missionBoardRows) this.container.addChild(row);
@@ -1650,7 +1865,8 @@ export class MenuScene {
       this.runModeExplainer,
       this.missionBoardTitle,
       this.missionBoardSubtitle,
-      ...(this.missionBoardRows || []).flatMap((row) => [row?._title, row?._detail, row?._progress]),
+      this.missionBoardStatus,
+      ...(this.missionBoardRows || []).flatMap((row) => [row?._title, row?._detail, row?._progress, row?._reward]),
       this.disclaimer,
       this.controls,
       this.easter,
@@ -1724,8 +1940,12 @@ export class MenuScene {
     if (button._isRunModeCard) {
       const w = button._btnWidth || 320;
       const compactCard = button !== this.tacticalStartBtn;
-      const labelMaxWidth = Math.max(compactCard ? 148 : 160, w - (compactCard ? 78 : 128));
-      this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: compactCard ? 0.58 : 0.7, forceGpuRefresh });
+      const labelMaxWidth = Math.max(compactCard ? 96 : 108, w - (compactCard ? 84 : 100));
+      this.refreshMenuButtonLabel(button, labelMaxWidth, {
+        minScale: compactCard ? 0.54 : 0.64,
+        forceGpuRefresh,
+        texturePadding: compactCard ? 42 : 52
+      });
       this.refreshMenuButtonSubLabel(button, labelMaxWidth, { minScale: compactCard ? 0.5 : 0.62, forceGpuRefresh });
       if (button._bodyLabel) {
         button._bodyLabel.style.wordWrapWidth = Math.max(180, w - 42);
@@ -1742,13 +1962,13 @@ export class MenuScene {
     const labelInset = button._iconType
       ? (isPrimaryButton ? 138 : (isCompactButton ? 40 : (isNarrowDockButton ? 58 : 92)))
       : (isCompactButton ? 36 : 48);
-    const labelRightPad = isPrimaryButton ? 16 : (isCompactButton ? 12 : 10);
+    const labelRightPad = isPrimaryButton ? 20 : (isCompactButton ? 18 : (isDockButton ? 22 : 16));
     const labelMaxWidth = Math.max(36, (button._btnWidth || 180) - labelInset - labelRightPad);
     const fitMinScale = Number.isFinite(button._labelMinScale)
       ? button._labelMinScale
       : (isDockButton ? (isPrimaryButton ? 0.42 : (isNarrowDockButton ? 0.38 : 0.46)) : 0.62);
     const labelTexturePadding = isDockButton
-      ? (isCompactButton ? 12 : (isPrimaryButton ? 24 : 18))
+      ? (isCompactButton ? 18 : (isPrimaryButton ? 28 : 30))
       : null;
     const sublabelFitMinScale = isDockButton ? (isNarrowDockButton ? 0.38 : 0.5) : 0.62;
     this.refreshMenuButtonLabel(button, labelMaxWidth, { minScale: fitMinScale, forceGpuRefresh, texturePadding: labelTexturePadding });
@@ -1824,20 +2044,26 @@ export class MenuScene {
     this.primaryHint.visible = false;
     this.runModePanel.visible = true;
     this.runModeBriefingTitle.visible = true;
+    this.runModeTitle.visible = true;
     this.runModeExplainer.visible = true;
     this.disclaimer.visible = false;
     this.controls.visible = false;
     this.primaryHint.text = this.getPrimaryHintText();
     this.primaryHint.style.fontSize = Math.max(10, controlsSize);
     const runModeBriefing = this.getRunModeBriefing();
-    this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + runModeBriefing.title;
+    this.runModeBriefingTitle.text = translateText('RUN MODE');
+    this.runModeTitle.text = runModeBriefing.title;
     this.runModeExplainer.text = this.getRunModeExplainerText(runModeBriefing);
+    this.runModeStatusBadge.text = translateText(runModeBriefing.status || '');
+    this.runModeRestriction.text = translateText(runModeBriefing.restriction || '');
+    this.runModePersonalBest.text = runModeBriefing.personalBest || '';
     this.disclaimer.text = this.getDisclaimerText(layout);
 
     this.title.updateText?.(false);
     this.subtitle.updateText?.(false);
     this.primaryHint.updateText?.(false);
     this.runModeBriefingTitle.updateText?.(false);
+    this.runModeTitle.updateText?.(false);
     this.runModeExplainer.updateText?.(false);
     fitTextToWidth(this.title, titleWidth, { minScale: 0.54 });
     fitTextToWidth(this.subtitle, titleWidth, { minScale: 0.72 });
@@ -1864,7 +2090,7 @@ export class MenuScene {
     const marginX = clampNumber(width * 0.018, 16, 34);
     const gap = clampNumber(width * 0.007, 8, 16);
     const dockWidth = Math.max(0, width - marginX * 2);
-    const dockHeight = clampNumber(height * 0.118 * uiScale, (isShortLayout ? 82 : 96) * uiScale, (isMobileLayout ? 112 : 128) * uiScale);
+    const dockHeight = clampNumber(height * 0.106 * uiScale, (isShortLayout ? 74 : 86) * uiScale, (isMobileLayout ? 102 : 114) * uiScale);
     const safeBottomEdge = Number.isFinite(safeMargin.bottom)
       ? (safeMargin.bottom > height * 0.5 ? safeMargin.bottom : height - safeMargin.bottom)
       : height;
@@ -1881,20 +2107,16 @@ export class MenuScene {
     };
     const briefingScale = Math.max(1, Math.min(2, uiScale));
     const briefingResponsiveScale = Math.min(briefingScale, isMobileLayout ? 1.25 : 1.6);
-    let briefingHeight = Math.round(clampNumber(
-      height * 0.15 * briefingResponsiveScale,
-      (isShortLayout ? 118 : 132) * briefingScale,
-      (isShortLayout ? 142 : 164) * briefingScale
-    ) + (this.menuHumorLine ? 28 * Math.min(briefingScale, 1.35) : 0));
-    if (runModeBriefing.id === 'dailySignal') {
-      briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
-    }
-    if (runModeBriefing.id === 'scout') {
-      briefingHeight += Math.round((isShortLayout ? 24 : 28) * Math.min(briefingScale, 1.25));
-    }
-    if (runModeBriefing.id === 'overrun') {
-      briefingHeight += Math.round((isShortLayout ? 42 : 48) * Math.min(briefingScale, 1.25));
-    }
+    const responsiveBriefingHeight = Math.round(clampNumber(
+      height * 0.365 * briefingResponsiveScale,
+      (isShortLayout ? 240 : 276) * briefingScale,
+      (isShortLayout ? 250 : 342) * briefingScale
+    ));
+    const briefingHeight = Math.round(
+      !isMobileLayout && uiScale > 1.2
+        ? Math.min(responsiveBriefingHeight, height * 0.37)
+        : responsiveBriefingHeight
+    );
     const titleClearForDeck = (this.subtitle?.y || safeMargin.top) + ((this.subtitle?.height || 0) / 2) + 12;
     const cardGap = clampNumber(height * 0.008, 6, 9);
     const cardWidth = Math.round(clampNumber(width * 0.176 * uiScale, (isMobileLayout ? 238 : 252) * uiScale, (isMobileLayout ? 310 : 350) * uiScale));
@@ -2005,9 +2227,9 @@ export class MenuScene {
     const briefingWidth = Math.min(
       width - marginX * 2,
       Math.round(clampNumber(
-        width * (isMobileLayout ? 0.36 : 0.29) * Math.min(briefingScale, 1.35),
-        (isMobileLayout ? 360 : 420) * briefingScale,
-        (isMobileLayout ? 470 : 560) * briefingScale
+        width * (isMobileLayout ? 0.36 : 0.275) * Math.min(briefingScale, 1.35),
+        (isMobileLayout ? 360 : 380) * briefingScale,
+        (isMobileLayout ? 470 : 520) * briefingScale
       ))
     );
     const briefingX = Math.round(clampNumber(
@@ -2015,9 +2237,9 @@ export class MenuScene {
       Math.max((this.launchDeckBounds?.right || 0) + 42, width * 0.61),
       width - marginX - briefingWidth
     ));
-    const plannedUtilityHeight = isMobileLayout ? 28 : 32;
+    const plannedUtilityHeight = isMobileLayout ? 28 : 30;
     const plannedUtilityGap = isMobileLayout ? 6 : 7;
-    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 22 : 28) + (plannedUtilityHeight + plannedUtilityGap) * 2 + plannedUtilityHeight / 2;
+    const plannedUtilityBottom = safeMargin.top + (isMobileLayout ? 22 : 28) + plannedUtilityHeight / 2;
     const utilityBottom = Math.max(
       plannedUtilityBottom,
       boundsForDisplayObject(this.musicBtn)?.bottom || 0,
@@ -2032,37 +2254,6 @@ export class MenuScene {
     ));
     const briefingPadX = Math.round((isMobileLayout ? 18 : 22) * briefingScale);
     const briefingPadY = Math.round((isShortLayout ? 12 : 14) * briefingScale);
-    this.runModeBriefingTitle.style.fontSize = Math.round((isMobileLayout ? 12 : 14) * uiScale);
-    this.runModeBriefingTitle.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
-    this.runModeBriefingTitle.x = briefingX + briefingPadX;
-    this.runModeBriefingTitle.y = briefingY + briefingPadY;
-    this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
-    const selectorOffset = this.layoutRunModeVariantSelector({
-      x: briefingX + briefingPadX,
-      y: briefingY + briefingPadY + Math.round((isShortLayout ? 25 : 29) * briefingScale),
-      width: briefingWidth - briefingPadX * 2,
-      height: Math.round((isShortLayout ? 30 : 34) * briefingScale),
-      accent: runModeBriefing.accent
-    });
-    this.runModeExplainer.style.fontSize = Math.round((isMobileLayout ? 12 : 13) * uiScale);
-    this.runModeExplainer.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
-    this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.24);
-    this.runModeExplainer.x = briefingX + briefingPadX;
-    this.runModeExplainer.y = briefingY + briefingPadY
-      + Math.round((isShortLayout ? 26 : 31) * briefingScale)
-      + selectorOffset;
-    this.runModeExplainer.scale.set(1);
-    refreshTextTexture(this.runModeExplainer);
-    const briefingBodyMaxHeight = Math.max(48, briefingHeight - (this.runModeExplainer.y - briefingY) - 6);
-    if ((this.runModeExplainer.height || 0) > briefingBodyMaxHeight) {
-      const minimumBodyScale = selectorOffset > 0
-        ? (runModeBriefing.id === 'scout' ? 0.62 : 0.66)
-        : (runModeBriefing.id === 'dailySignal' ? 0.68 : 0.82);
-      const bodyScale = Math.max(minimumBodyScale, briefingBodyMaxHeight / this.runModeExplainer.height);
-      this.runModeExplainer.scale.set(bodyScale);
-      refreshTextTexture(this.runModeExplainer);
-    }
-    this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
     this.runModePanel.alpha = this.runModePanel.alpha || 1;
     this.runModePanel._briefingBounds = {
       x: Math.round(briefingX),
@@ -2074,6 +2265,18 @@ export class MenuScene {
     };
     this.runModePanel._briefingAccent = runModeBriefing.accent;
     this.runModePanel._briefingSecondary = runModeBriefing.secondary;
+    this.layoutRunModeOverview({
+      briefing: runModeBriefing,
+      x: briefingX,
+      y: briefingY,
+      width: briefingWidth,
+      height: briefingHeight,
+      padX: briefingPadX,
+      padY: briefingPadY,
+      uiScale,
+      isShortLayout,
+      isMobileLayout
+    });
     this.drawRunModeExplainerPanel(layout, width, height);
     this.layoutMissionBoard(layout, {
       width,
@@ -2102,8 +2305,8 @@ export class MenuScene {
     this.easter.y = dockBottom + 4;
     this.easter.anchor.set(0, 0.5);
 
-    const utilityWidth = (isMobileLayout ? 132 : 158) * uiScale;
-    const utilityHeight = (isMobileLayout ? 28 : 32) * uiScale;
+    const utilityWidth = (isMobileLayout ? 112 : 124) * uiScale;
+    const utilityHeight = (isMobileLayout ? 28 : 30) * uiScale;
     const utilityGap = (isMobileLayout ? 6 : 7) * uiScale;
     const utilityButtons = [this.musicBtn, this.helpBtn, this.exitBtn].filter(Boolean);
     utilityButtons.forEach((button, index) => {
@@ -2114,8 +2317,8 @@ export class MenuScene {
       button._label.style.fontSize = Math.max(9, controlsSize - 1);
       this.refreshButtonCopy(button, { forceGpuRefresh: forceLabelGpuRefresh });
       button.scale.set(1);
-      button.x = width - marginX - utilityWidth / 2;
-      button.y = safeMargin.top + (isMobileLayout ? 22 : 28) + index * (utilityHeight + utilityGap);
+      button.x = width - marginX - utilityWidth / 2 - (utilityButtons.length - 1 - index) * (utilityWidth + utilityGap);
+      button.y = safeMargin.top + (isMobileLayout ? 22 : 28);
       button._layoutY = button.y;
       button._motionY = button.y;
       if (!Number.isFinite(button._motionScale)) button._motionScale = 1;
@@ -2179,6 +2382,7 @@ export class MenuScene {
       [this.missionBoardPanel, 0.12],
       [this.missionBoardTitle, 0.08],
       [this.missionBoardSubtitle, 0.08],
+      [this.missionBoardStatus, 0.08],
       ...(this.missionBoardRows || []).map((row) => [row, 0.1])
     ].forEach(([item, alpha]) => {
       if (!item) return;
@@ -2230,10 +2434,258 @@ export class MenuScene {
       : translateText('ARROWS: NAVIGATE // ENTER/SPACE: CONFIRM // ESC: BACK');
   }
 
+  layoutRunModeOverview({
+    briefing,
+    x,
+    y,
+    width,
+    height,
+    padX,
+    padY,
+    uiScale,
+    isShortLayout
+  }) {
+    const innerX = x + padX;
+    const innerWidth = width - padX * 2;
+    const compactScale = Math.min(1.2, Math.max(1, Number(uiScale) || 1));
+    const eyebrowSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    const titleSize = Math.round((isShortLayout ? 18 : 21) * compactScale);
+    const bodySize = Math.round((isShortLayout ? 12 : 15) * compactScale);
+    const selectorY = y + padY + Math.round(44 * compactScale);
+    const selectorHeight = Math.round((isShortLayout ? 29 : 32) * compactScale);
+
+    this.runModeBriefingTitle.style.fontSize = eyebrowSize;
+    this.runModeBriefingTitle.style.fill = '#7fffd8';
+    this.runModeBriefingTitle.style.stroke = null;
+    this.runModeBriefingTitle.style.letterSpacing = 1.2;
+    this.runModeBriefingTitle.x = innerX;
+    this.runModeBriefingTitle.y = y + padY;
+    this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
+
+    this.runModeTitle.style.fontSize = titleSize;
+    this.runModeTitle.x = innerX;
+    this.runModeTitle.y = y + padY + Math.round(14 * compactScale);
+    this.runModeTitle.alpha = this.runModeTitle.alpha || 1;
+    fitTextToWidth(this.runModeTitle, innerWidth * 0.7, { minScale: 0.72 });
+
+    const badgeHeight = Math.round((isShortLayout ? 22 : 25) * compactScale);
+    this.runModeStatusBadge.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    this.runModeStatusBadge.updateText?.(false);
+    const badgeWidth = Math.min(
+      innerWidth * 0.34,
+      Math.max(Math.round(82 * compactScale), (this.runModeStatusBadge.width || 0) + Math.round(22 * compactScale))
+    );
+    const badgeX = innerX + innerWidth - badgeWidth;
+    const badgeY = y + padY + Math.round(10 * compactScale);
+    this.runModeStatusBadgeBg.clear();
+    drawCutPanel(
+      this.runModeStatusBadgeBg,
+      badgeX,
+      badgeY,
+      badgeWidth,
+      badgeHeight,
+      5,
+      { color: briefing.locked ? 0x17191d : 0x26130c, alpha: 0.96 },
+      { color: briefing.locked ? 0x68727c : 0xff8a58, width: 1, alpha: 0.76 }
+    );
+    this.runModeStatusBadge.position.set(badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
+    this.runModeStatusBadge.visible = Boolean(briefing.status);
+    this.runModeStatusBadgeBg.visible = Boolean(briefing.status);
+
+    const selectorOffset = this.layoutRunModeVariantSelector({
+      x: innerX,
+      y: selectorY,
+      width: innerWidth,
+      height: selectorHeight,
+      accent: briefing.accent
+    });
+    const summaryY = selectorOffset > 0
+      ? selectorY + selectorOffset
+      : y + padY + Math.round(48 * compactScale);
+    this.runModeExplainer.style.fontSize = bodySize;
+    this.runModeExplainer.style.wordWrapWidth = innerWidth;
+    this.runModeExplainer.style.lineHeight = Math.round(bodySize * (isShortLayout ? 1.25 : 1.34));
+    this.runModeExplainer.x = innerX;
+    this.runModeExplainer.y = summaryY;
+    this.runModeExplainer.scale.set(1);
+    refreshTextTexture(this.runModeExplainer);
+    const summaryMaxHeight = Math.round(bodySize * 2.8);
+    if ((this.runModeExplainer.height || 0) > summaryMaxHeight) {
+      this.runModeExplainer.scale.set(Math.max(0.86, summaryMaxHeight / this.runModeExplainer.height));
+    }
+    this.runModeExplainer.alpha = this.runModeExplainer.alpha || 1;
+
+    const summaryHeight = Math.min(summaryMaxHeight, this.runModeExplainer.height || summaryMaxHeight);
+    const tilesY = Math.round(summaryY + summaryHeight + 7 * compactScale);
+    const footerHeight = Math.round((isShortLayout ? 30 : 33) * compactScale);
+    const footerY = y + height - padY - footerHeight;
+    const restrictionY = footerY - Math.round((isShortLayout ? 20 : 24) * compactScale);
+    const tileAreaHeight = Math.max(54, restrictionY - tilesY - Math.round(5 * compactScale));
+    this.layoutRunModeInfoTiles(briefing.tiles || [], {
+      x: innerX,
+      y: tilesY,
+      width: innerWidth,
+      height: tileAreaHeight,
+      accent: briefing.accent,
+      secondary: briefing.secondary,
+      compactScale
+    });
+
+    this.runModeRestriction.style.fontSize = Math.round((isShortLayout ? 10 : 13) * compactScale);
+    this.runModeRestriction.style.wordWrapWidth = innerWidth;
+    this.runModeRestriction.style.lineHeight = Math.round(this.runModeRestriction.style.fontSize * 1.25);
+    this.runModeRestriction.position.set(innerX, restrictionY);
+    fitTextToWidth(this.runModeRestriction, innerWidth, { minScale: 0.82 });
+    this.runModeRestriction.visible = Boolean(briefing.restriction);
+
+    const detailsWidth = briefing.personalBest
+      ? Math.min(innerWidth * 0.58, Math.round(236 * compactScale))
+      : innerWidth;
+    const bestWidth = Math.max(0, innerWidth - detailsWidth - Math.round(10 * compactScale));
+    this.runModePersonalBest.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    this.runModePersonalBest.position.set(innerX, footerY + footerHeight / 2);
+    fitTextToWidth(this.runModePersonalBest, bestWidth, { minScale: 0.68 });
+    this.runModePersonalBest.visible = Boolean(briefing.personalBest);
+
+    this.runModeDetailsButton.position.set(innerX + innerWidth - detailsWidth / 2, footerY + footerHeight / 2);
+    this.runModeDetailsButton._btnWidth = detailsWidth;
+    this.runModeDetailsButton._btnHeight = footerHeight;
+    this.runModeDetailsButton.hitArea = new PIXI.Rectangle(
+      -detailsWidth / 2,
+      -footerHeight / 2,
+      detailsWidth,
+      footerHeight
+    );
+    const inputGlyph = this.lastInputDevice === 'controller' ? '  [Y]' : '';
+    this.runModeDetailsButtonText.text = translateText('VIEW MODE DETAILS') + inputGlyph;
+    this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
+    const helpTexture = this.menuIconTextures?.help;
+    const hasIcon = Boolean(helpTexture && GameAssets.isValidTexture(helpTexture));
+    this.runModeDetailsButtonIcon.visible = hasIcon;
+    if (hasIcon) {
+      this.runModeDetailsButtonIcon.texture = helpTexture;
+      const iconSize = Math.round(18 * compactScale);
+      this.runModeDetailsButtonIcon.scale.set(iconSize / Math.max(1, helpTexture.width || 1, helpTexture.height || 1));
+      this.runModeDetailsButtonIcon.position.set(-detailsWidth / 2 + Math.round(18 * compactScale), 0);
+      this.runModeDetailsButtonText.position.set(Math.round(9 * compactScale), 0);
+      fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(50 * compactScale), { minScale: 0.68 });
+    } else {
+      this.runModeDetailsButtonText.position.set(0, 0);
+      fitTextToWidth(this.runModeDetailsButtonText, detailsWidth - Math.round(20 * compactScale), { minScale: 0.68 });
+    }
+    this.runModeDetailsButton.visible = Boolean(briefing.details);
+    this.drawRunModeDetailsButton();
+  }
+
+  layoutRunModeInfoTiles(tiles, {
+    x,
+    y,
+    width,
+    height,
+    accent,
+    secondary,
+    compactScale
+  }) {
+    const visibleStatus = String(this.runModeStatusBadge?.text || '').trim().toUpperCase();
+    const safeTiles = (Array.isArray(tiles) ? tiles : [])
+      .filter((tile) => {
+        const label = String(tile?.label || '').trim().toUpperCase();
+        const value = String(tile?.value || '').trim().toUpperCase();
+        return !(visibleStatus && label === 'RANKING' && value === visibleStatus);
+      })
+      .slice(0, 4);
+    const signature = safeTiles.map((tile) => `${tile.label}:${tile.value}:${tile.tone || ''}`).join('|');
+    if (signature !== this.runModeInfoTileSignature) {
+      this.runModeInfoTiles.removeChildren().forEach((child) => child.destroy?.({ children: true }));
+      this.runModeInfoTileItems = [];
+      safeTiles.forEach((tile) => {
+        const item = new PIXI.Container();
+        const bg = new PIXI.Graphics();
+        const label = createText(translateText(tile.label), {
+          fontFamily: FONT_DISPLAY,
+          fontSize: Math.round(9 * compactScale),
+          fontWeight: '900',
+          fill: '#8fa9b8',
+          padding: 24
+        });
+        const value = createText(translateText(tile.value), {
+          fontFamily: FONT_DISPLAY,
+          fontSize: Math.round(12 * compactScale),
+          fontWeight: '900',
+          fill: tile.tone === 'warning' ? '#ffbd91' : '#f4fbff',
+          padding: 24
+        });
+        item.addChild(bg, label, value);
+        item._nodes = { bg, label, value };
+        item._tile = tile;
+        this.runModeInfoTiles.addChild(item);
+        this.runModeInfoTileItems.push(item);
+      });
+      this.runModeInfoTileSignature = signature;
+    }
+    this.runModeInfoTiles.position.set(x, y);
+    this.runModeInfoTiles.visible = safeTiles.length > 0;
+    const gap = Math.round(6 * compactScale);
+    const columns = 2;
+    const rows = Math.max(1, Math.ceil(safeTiles.length / columns));
+    const tileWidth = (width - gap) / columns;
+    const tileHeight = clampNumber(
+      (height - gap * (rows - 1)) / rows,
+      28,
+      Math.round(46 * compactScale)
+    );
+    this.runModeInfoTileItems.forEach((item, index) => {
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      item.position.set(column * (tileWidth + gap), row * (tileHeight + gap));
+      const { bg, label, value } = item._nodes;
+      const warning = item._tile?.tone === 'warning';
+      bg.clear();
+      bg.rect(0, 0, tileWidth, tileHeight);
+      bg.fill({ color: warning ? 0x160e0b : 0x03101b, alpha: warning ? 0.72 : 0.54 });
+      bg.rect(0, tileHeight - 1, tileWidth, 1);
+      bg.fill({ color: warning ? 0xff8a58 : secondary || accent, alpha: warning ? 0.34 : 0.17 });
+      if (column > 0) {
+        bg.rect(0, 4, 1, Math.max(1, tileHeight - 8));
+        bg.fill({ color: secondary || accent, alpha: 0.14 });
+      }
+      label.style.fontSize = Math.max(7, Math.min(Math.round(9 * compactScale), Math.floor(tileHeight * 0.26)));
+      value.style.fontSize = Math.max(9, Math.min(Math.round(12 * compactScale), Math.floor(tileHeight * 0.36)));
+      refreshTextTexture(label);
+      refreshTextTexture(value);
+      label.position.set(Math.round(9 * compactScale), Math.max(2, Math.round(tileHeight * 0.1)));
+      value.position.set(Math.round(9 * compactScale), Math.max(label.y + label.height, tileHeight - value.height - Math.max(2, Math.round(tileHeight * 0.08))));
+      fitTextToWidth(label, tileWidth - Math.round(18 * compactScale), { minScale: 0.62 });
+      fitTextToWidth(value, tileWidth - Math.round(18 * compactScale), { minScale: 0.58 });
+    });
+  }
+
+  drawRunModeDetailsButton() {
+    const button = this.runModeDetailsButton;
+    if (!button || !button.visible) return;
+    const width = Number(button._btnWidth) || 220;
+    const height = Number(button._btnHeight) || 34;
+    const focused = Boolean(this.runModeDetailsFocused);
+    const accent = this.runModePanel?._briefingAccent || 0x37f5ff;
+    this.runModeDetailsButtonBg.clear();
+    drawCutPanel(
+      this.runModeDetailsButtonBg,
+      -width / 2,
+      -height / 2,
+      width,
+      height,
+      6,
+      { color: focused ? 0x0c3850 : 0x061827, alpha: focused ? 0.98 : 0.78 },
+      { color: focused ? 0xffffff : accent, width: focused ? 2 : 1, alpha: focused ? 0.96 : 0.34 }
+    );
+  }
+
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
-    const body = briefing.menuBody || briefing.body;
-    const humorLine = briefing.id === 'overview' ? this.menuHumorLine : '';
-    return humorLine ? `${body}\n// ${humorLine}` : body;
+    const summary = Array.isArray(briefing.summary)
+      ? briefing.summary.slice(0, 2).map((line) => translateText(line)).filter(Boolean)
+      : [];
+    if (summary.length) return summary.join('\n');
+    return briefing.body || briefing.menuBody || '';
   }
 
   layoutOverrunUnlockCelebration(width, height) {
@@ -2398,11 +2850,66 @@ export class MenuScene {
 
   updateRunModeBriefing() {
     const briefing = this.getRunModeBriefing();
-    if (this.runModeBriefingTitle) {
-      this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
-    }
+    if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODE');
+    if (this.runModeTitle) this.runModeTitle.text = briefing.title;
     if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+    if (this.runModeStatusBadge) this.runModeStatusBadge.text = translateText(briefing.status || '');
+    if (this.runModeRestriction) this.runModeRestriction.text = translateText(briefing.restriction || '');
+    if (this.runModePersonalBest) this.runModePersonalBest.text = briefing.personalBest || '';
     this.runModeVariantSignature = '';
+    this.runModeInfoTileSignature = '';
+    if (this.modeBriefingOverlay) {
+      this.modeBriefingOverlay.rebuild(this.getModeBriefingOverlayData(briefing));
+    }
+  }
+
+  getModeBriefingOverlayData(briefing = this.getRunModeBriefing()) {
+    return {
+      ...briefing,
+      variants: this.getRunModeVariantOptions().map((option) => ({
+        id: option.id,
+        label: option.label,
+        selected: option.selected
+      }))
+    };
+  }
+
+  openModeBriefing() {
+    const briefing = this.getRunModeBriefing();
+    if (!briefing?.details || this.modeBriefingOverlay) return false;
+    this.clearPendingBossMenuBark();
+    AudioManager.playSfx('ui_open', { volume: 0.26, force: true });
+    this.modeBriefingOverlay = new ModeBriefingOverlay(this.game, {
+      data: this.getModeBriefingOverlayData(briefing),
+      onVariantChange: (variantId) => {
+        if (variantId === RUN_MODES.MAYHEM_TACTICAL || variantId === RUN_MODES.RANKED) {
+          if (this.mayhemRunMode !== variantId) this.cycleMayhemRunMode(1, { force: true });
+        } else if (variantId === RUN_MODES.OVERRUN_TACTICAL || variantId === RUN_MODES.OVERRUN_PURE) {
+          if (this.overrunRunMode !== variantId) this.cycleOverrunRunMode(1, { force: true });
+        } else if (SCOUT_ANOMALIES.some((anomaly) => anomaly.id === variantId)) {
+          if (this.scoutAnomaly?.id !== variantId) {
+            this.scoutAnomaly = writeScoutAnomalySelection(variantId);
+            this.refreshButtonCopy(this.scoutRunBtn, { forceGpuRefresh: true });
+            this.drawMenuButton(this.scoutRunBtn, false);
+            this.updateRunModeBriefing();
+            this.layoutMenu({ forceLabelGpuRefresh: true });
+          }
+        }
+      },
+      onClose: () => {
+        this.modeBriefingOverlay = null;
+        this.runModeDetailsFocused = true;
+        this.drawRunModeDetailsButton();
+        this.menuGamepadNavigator.suppressUntilReleased();
+      }
+    });
+    this.container.addChild(this.modeBriefingOverlay.container);
+    return true;
+  }
+
+  closeModeBriefing() {
+    this.modeBriefingOverlay?.close?.();
+    this.modeBriefingOverlay = null;
   }
 
   getRunModeVariantOptions() {
@@ -2530,6 +3037,23 @@ export class MenuScene {
     return height + 9;
   }
 
+  getOverrunStartingUpgradeBriefingItems() {
+    return OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS
+      .map((id) => {
+        const meta = getTacticalDraftMeta(id);
+        if (!meta) return null;
+        return {
+          id,
+          iconId: id,
+          name: meta.name,
+          description: meta.description,
+          tooltip: meta.detail || meta.description,
+          color: meta.color
+        };
+      })
+      .filter(Boolean);
+  }
+
   getRunModeBriefing() {
     const focused = this.getSelectedMenuOptionId();
     if (focused === 'dailySignal') {
@@ -2552,8 +3076,53 @@ export class MenuScene {
       return {
         id: 'dailySignal',
         title: translateText('DAILY CHALLENGE'),
+        variantTitle: translateText('DAILY CHALLENGE'),
+        status: 'UNRANKED',
         accent: 0x7dffcc,
         secondary: 0xff55d9,
+        summary: [
+          'Clear today’s challenge with a loaner ship.',
+          'Replay it to improve your local daily record.'
+        ],
+        tiles: [
+          { label: 'TARGET', value: translateText('SECTOR {sector}', { sector: contract.finishSector }) },
+          { label: 'SHIP', value: contract.loanerShipName },
+          { label: 'DRAFTS', value: 'TACTICAL' },
+          { label: 'RECORD', value: bestClear ? 'CLEARED' : bestAttempt ? 'ATTEMPTED' : 'NOT ATTEMPTED' }
+        ],
+        restriction: 'Local record only. No public daily leaderboard.',
+        personalBest: `${translateText('BEST')} — ${recordLine}`,
+        details: {
+          title: translateText('DAILY CHALLENGE'),
+          intro: translateText('Clear Sector {sector}, then replay to improve your local best.', { sector: contract.finishSector }),
+          sections: [
+            {
+              id: 'conditions',
+              title: 'STARTING CONDITIONS',
+              span: 2,
+              tiles: [
+                { label: 'TARGET', value: translateText('SECTOR {sector}', { sector: contract.finishSector }) },
+                { label: 'SHIP', value: contract.loanerShipName },
+                { label: 'ROUTE', value: translateText(contract.templateLabel) }
+              ]
+            },
+            {
+              id: 'active',
+              title: 'ACTIVE',
+              items: [
+                'Tactical Boss Drafts',
+                translateText('WEEKLY CLEARS: {clears} / 7', { clears: flightLog.clears }),
+                translateText('RESETS IN {time}', { time: this.formatDailySignalResetTime(contract) })
+              ]
+            },
+            {
+              id: 'unavailable',
+              title: 'NOT AVAILABLE',
+              tone: 'warning',
+              items: ['Public daily leaderboard submission']
+            }
+          ]
+        },
         menuBody: [
           translateText('TODAY: CLEAR SECTOR {sector}', { sector: contract.finishSector }),
           translateText('{ship} · {route} · TACTICAL DRAFTS', {
@@ -2575,8 +3144,60 @@ export class MenuScene {
       return {
         id: 'scout',
         title: translateText('SCOUT RUN'),
+        variantTitle: translateText('SCOUT RUN'),
+        status: 'UNRANKED',
         accent: 0x7fffd8,
         secondary: 0x37f5ff,
+        summary: [
+          anomaly.description,
+          anomaly.ruleSummary
+        ],
+        tiles: [
+          { label: 'ANOMALY', value: anomaly.name },
+          { label: 'RANKING', value: 'UNRANKED' },
+          { label: 'CAREER XP', value: 'OFF' },
+          { label: 'CHECKPOINTS', value: 'OFF' }
+        ],
+        restriction: 'No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+        personalBest: '',
+        details: {
+          title: translateText('SCOUT RUN'),
+          intro: translateText(
+            '{name}: {description} No leaderboard submission, achievements, career XP, or checkpoint unlocks.',
+            {
+              name: translateText(anomaly.name),
+              description: translateText(anomaly.description)
+            }
+          ),
+          sections: [
+            {
+              id: 'conditions',
+              title: 'STARTING CONDITIONS',
+              span: 2,
+              tiles: [
+                { label: 'ANOMALY', value: anomaly.name },
+                { label: 'RANKING', value: 'UNRANKED' },
+                { label: 'PRESSURE', value: 'PRACTICE' }
+              ]
+            },
+            {
+              id: 'active',
+              title: 'ACTIVE',
+              items: [anomaly.ruleSummary]
+            },
+            {
+              id: 'unavailable',
+              title: 'NOT AVAILABLE',
+              tone: 'warning',
+              items: [
+                'Leaderboard submission',
+                'Achievements',
+                'Career XP',
+                'Checkpoint unlocks'
+              ]
+            }
+          ]
+        },
         menuBody: [
           translateText('PRACTICE · UNRANKED'),
           translateText('ANOMALY: {name}', { name: translateText(anomaly.name) }),
@@ -2598,8 +3219,49 @@ export class MenuScene {
       return {
         id: 'sectorStart',
         title: translateText('SECTOR RUN'),
+        variantTitle: translateText('SECTOR RUN'),
+        status: 'UNRANKED',
         accent: 0x37f5ff,
         secondary: 0xffd15c,
+        summary: [
+          'Start from a checkpoint unlocked in Mayhem.',
+          'Practice later sectors without replaying the opening.'
+        ],
+        tiles: [
+          { label: 'START', value: 'CHECKPOINT' },
+          { label: 'RANKING', value: 'UNRANKED' },
+          { label: 'RECORD', value: 'LOCAL' },
+          { label: 'DRAFTS', value: 'TACTICAL' }
+        ],
+        restriction: 'No leaderboard submission or achievements. Sector records stay local.',
+        personalBest: '',
+        details: {
+          title: translateText('SECTOR RUN'),
+          intro: translateText('Jump to checkpoints unlocked in Mayhem. Push deeper for fun, routing, and practice without replaying the early sectors. No achievements. Sector records are separate.'),
+          sections: [
+            {
+              id: 'conditions',
+              title: 'STARTING CONDITIONS',
+              span: 2,
+              tiles: [
+                { label: 'START', value: 'MAYHEM CHECKPOINT' },
+                { label: 'RANKING', value: 'UNRANKED' },
+                { label: 'RECORD', value: 'LOCAL' }
+              ]
+            },
+            {
+              id: 'active',
+              title: 'ACTIVE',
+              items: ['Tactical Boss Drafts', 'Local Sector records']
+            },
+            {
+              id: 'unavailable',
+              title: 'NOT AVAILABLE',
+              tone: 'warning',
+              items: ['Leaderboard submission', 'Achievements']
+            }
+          ]
+        },
         menuBody: [
           translateText('CHECKPOINT PRACTICE · UNRANKED'),
           translateText('Start from checkpoints unlocked in Mayhem and practice later sectors.'),
@@ -2628,9 +3290,103 @@ export class MenuScene {
           ];
       return {
         id: 'overrun',
-        title: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
+        title: translateText('OVERRUN'),
+        variantTitle: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
+        status: state.available ? 'UNRANKED' : 'LOCKED',
+        locked: !state.available,
         accent: 0xff6b45,
         secondary: 0xffd15c,
+        summary: state.available
+          ? tactical
+            ? [
+                'Start at Sector 51 with five fixed upgrades.',
+                'Boss victories still offer new upgrade choices.'
+              ]
+            : [
+                'Start at Sector 51 on the Pure ship baseline.',
+                'No Tactical upgrades or Boss Drafts are offered.'
+              ]
+          : [
+              'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.'
+            ],
+        tiles: state.available
+          ? [
+              { label: 'START', value: 'SECTOR 51' },
+              { label: 'SCORE', value: 'STARTS AT 0' },
+              { label: 'CAREER XP', value: '65% OF NORMAL' },
+              { label: 'BOSS DRAFTS', value: tactical ? 'CONTINUE' : 'OFF' }
+            ]
+          : [
+              { label: 'MAYHEM BEST', value: translateText('SECTOR {sector}', { sector: state.highestReachedSector }) },
+              { label: 'REQUIRED', value: 'SECTOR 30', tone: 'warning' }
+            ],
+        restriction: state.available
+          ? 'No skipped-sector rewards, achievements, or checkpoint unlocks.'
+          : 'Progress is based on the highest Sector reached, not Pilot Rank.',
+        personalBest: state.available
+          ? `${translateText('BEST')} — ${personalBest ? formatNumber(personalBest.score) : translateText('NOT ATTEMPTED')}`
+          : '',
+        details: {
+          title: translateText(tactical ? 'OVERRUN TACTICAL' : 'OVERRUN PURE'),
+          intro: state.available
+            ? tactical
+              ? 'Skip the opening sectors and enter the fight at Sector 51 with a prepared tactical build.'
+              : 'Skip the opening sectors and enter the fight at Sector 51 on the Pure ship baseline.'
+            : 'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.',
+          sections: [
+            {
+              id: 'conditions',
+              title: 'STARTING CONDITIONS',
+              span: 2,
+              tiles: [
+                { label: 'START', value: 'SECTOR 51' },
+                { label: 'SCORE', value: 'STARTS AT 0' },
+                { label: 'RANKING', value: 'UNRANKED', tone: 'warning' }
+              ]
+            },
+            ...(tactical
+              ? [{
+                  id: 'loadout',
+                  title: 'STARTING LOADOUT',
+                  span: 2,
+                  upgrades: this.getOverrunStartingUpgradeBriefingItems(),
+                  body: 'You begin with these five upgrades. After that, Boss Drafts continue normally: boss victories still let you choose additional upgrades.'
+                }]
+              : [{
+                  id: 'loadout',
+                  title: 'STARTING LOADOUT',
+                  span: 2,
+                  body: 'Pure starts without Tactical upgrades or Boss Drafts.'
+                }]),
+            {
+              id: 'active',
+              title: 'PROGRESSION ACTIVE',
+              items: [
+                '65% of normal Career XP',
+                'Cumulative Pilot Orders remain active'
+              ]
+            },
+            {
+              id: 'unavailable',
+              title: 'NOT AVAILABLE',
+              tone: 'warning',
+              items: [
+                'Rewards from skipped sectors',
+                'Leaderboard submission',
+                'Achievements',
+                'Checkpoint unlocks'
+              ]
+            },
+            {
+              id: 'unlock',
+              title: 'UNLOCK REQUIREMENT',
+              span: 2,
+              body: state.available
+                ? 'Unlocked by reaching Sector 30 in Mayhem Tactical.'
+                : 'Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start.'
+            }
+          ]
+        },
         menuBody: state.available
           ? [
               translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
@@ -2660,9 +3416,63 @@ export class MenuScene {
       const tactical = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL;
       return {
         id: 'launchTactical',
-        title: translateText(tactical ? 'MAYHEM TACTICAL' : 'MAYHEM PURE'),
+        title: translateText('MAYHEM'),
+        variantTitle: translateText(tactical ? 'MAYHEM TACTICAL' : 'MAYHEM PURE'),
+        status: 'RANKED',
         accent: tactical ? 0xff55d9 : 0xffd15c,
         secondary: 0x7fffd8,
+        summary: tactical
+          ? [
+              'Draft one permanent tactical upgrade after each boss.',
+              'Compete on the separate Tactical leaderboard.'
+            ]
+          : [
+              'Play the original Mayhem rules with no Tactical Drafts.',
+              'Compete on the Pure leaderboard.'
+            ],
+        tiles: [
+          { label: 'START', value: 'SECTOR 1' },
+          { label: 'SCORE', value: 'STARTS AT 0' },
+          { label: 'CAREER XP', value: '100%' },
+          { label: 'CHECKPOINTS', value: 'ACTIVE' }
+        ],
+        restriction: tactical ? 'Tactical and Pure use separate leaderboards.' : 'No Tactical upgrades or Boss Drafts.',
+        personalBest: '',
+        details: {
+          title: translateText(tactical ? 'MAYHEM TACTICAL' : 'MAYHEM PURE'),
+          intro: tactical
+            ? 'Bosses offer permanent tactical upgrades for the current run.'
+            : 'Original Mayhem rules with no Tactical Drafts.',
+          sections: [
+            {
+              id: 'conditions',
+              title: 'STARTING CONDITIONS',
+              span: 2,
+              tiles: [
+                { label: 'START', value: 'SECTOR 1' },
+                { label: 'SCORE', value: 'STARTS AT 0' },
+                { label: 'RANKING', value: 'RANKED' }
+              ]
+            },
+            {
+              id: 'active',
+              title: 'PROGRESSION ACTIVE',
+              items: [
+                '100% Career XP',
+                'Pilot Orders',
+                'Achievements',
+                'Checkpoint unlocks'
+              ]
+            },
+            {
+              id: 'rules',
+              title: tactical ? 'TACTICAL RULES' : 'PURE RULES',
+              items: tactical
+                ? ['Boss victories offer permanent Tactical upgrades', 'Separate Tactical leaderboard']
+                : ['No Tactical upgrades or Boss Drafts', 'Pure leaderboard']
+            }
+          ]
+        },
         menuBody: tactical
           ? [
               translateText('MAIN MODE · RECOMMENDED'),
@@ -2684,8 +3494,33 @@ export class MenuScene {
     return {
       id: 'overview',
       title: translateText('RUN MODES'),
+      variantTitle: translateText('RUN MODES'),
+      status: '',
       accent: 0x37f5ff,
       secondary: 0xffd15c,
+      summary: [
+        'Choose a ranked Mayhem run or a focused side activity.',
+        'Each mode keeps its own rules, records, and progression contract.'
+      ],
+      tiles: [],
+      restriction: '',
+      personalBest: '',
+      details: {
+        title: translateText('RUN MODES'),
+        intro: 'Choose the run contract that matches what you want to practice or chase.',
+        sections: [
+          {
+            id: 'modes',
+            title: 'RUN MODES',
+            span: 2,
+            items: [
+              'Mayhem Tactical is the recommended ranked mode.',
+              'Mayhem Pure keeps the original ranked rules.',
+              'Daily, Scout, Sector, and Overrun have separate progression contracts.'
+            ]
+          }
+        ]
+      },
       menuBody: [
         translateText('MAYHEM TACTICAL is the recommended main mode.'),
         translateText('Mayhem Pure is the alternative ranked ruleset. Daily, Scout, and Sector are side activities and practice routes.')
@@ -2721,13 +3556,11 @@ export class MenuScene {
     const secondary = this.runModePanel._briefingSecondary || 0x7fffd8;
 
     this.runModePanel.clear();
-    drawCutPanel(this.runModePanel, x, y, panelWidth, panelHeight, 10, { color: 0x031323, alpha: 0.78 }, { color: accent, width: 1.5, alpha: 0.82 });
+    drawCutPanel(this.runModePanel, x, y, panelWidth, panelHeight, 10, { color: 0x031323, alpha: 0.84 }, { color: accent, width: 1.25, alpha: 0.58 });
     this.runModePanel.rect(x + 10, y + 9, 3, Math.max(6, panelHeight - 18));
-    this.runModePanel.fill({ color: secondary, alpha: 0.9 });
+    this.runModePanel.fill({ color: secondary, alpha: 0.58 });
     this.runModePanel.rect(x + panelWidth - 13, y + 9, 3, Math.max(6, panelHeight - 18));
-    this.runModePanel.fill({ color: accent, alpha: 0.64 });
-    this.runModePanel.rect(x + 22, y + 38, panelWidth - 44, 1);
-    this.runModePanel.fill({ color: 0xffffff, alpha: 0.16 });
+    this.runModePanel.fill({ color: accent, alpha: 0.34 });
     this.runModePanel.rect(x + 22, y + panelHeight - 10, panelWidth - 44, 1);
     this.runModePanel.fill({ color: secondary, alpha: 0.2 });
   }
@@ -2745,11 +3578,11 @@ export class MenuScene {
     const belowDeckGap = Math.round(clampNumber(height * 0.006, 5, 8) * belowDeckScale);
     const belowDeckPadY = Math.round((isShortLayout ? 8 : 10) * belowDeckScale);
     const belowDeckRowHeight = Math.round(clampNumber(
-      height * 0.052 * belowDeckScale,
-      (isShortLayout ? 38 : 42) * belowDeckScale,
-      (isMobileLayout ? 42 : 46) * belowDeckScale
+      height * 0.058 * belowDeckScale,
+      (isShortLayout ? 46 : 52) * belowDeckScale,
+      (isMobileLayout ? 50 : 58) * belowDeckScale
     ));
-    const belowDeckHeaderHeight = Math.round((isShortLayout ? 56 : 60) * belowDeckScale);
+    const belowDeckHeaderHeight = Math.round((isShortLayout ? 50 : 58) * belowDeckScale);
     const estimatedBelowDeckBoardHeight = (
       belowDeckPadY * 2 +
       belowDeckHeaderHeight +
@@ -2776,15 +3609,15 @@ export class MenuScene {
     );
     const compactBoard = useRightRail || height < 650;
     const boardScale = Math.min(uiScale, isMobileLayout ? 1.18 : 1.15);
-    const gap = Math.round((compactBoard ? 4 : clampNumber(height * 0.006, 5, 8)) * boardScale);
+    const gap = Math.round((compactBoard ? 3 : clampNumber(height * 0.006, 5, 8)) * boardScale);
     const padX = Math.round((compactBoard ? 9 : (isMobileLayout ? 10 : 16)) * Math.min(uiScale, 1.2));
-    const padY = Math.round((compactBoard ? 6 : (isShortLayout ? 8 : 10)) * boardScale);
+    const padY = Math.round((compactBoard ? 4 : (isShortLayout ? 8 : 10)) * boardScale);
     const rowHeight = Math.round(clampNumber(
-      height * (compactBoard ? 0.044 : 0.052) * boardScale,
-      (compactBoard ? 30 : (isShortLayout ? 38 : 42)) * boardScale,
-      (compactBoard ? 34 : (isMobileLayout ? 42 : 46)) * boardScale
+      height * (compactBoard ? 0.058 : 0.058) * boardScale,
+      (compactBoard ? 42 : (isShortLayout ? 48 : 52)) * boardScale,
+      (compactBoard ? 48 : (isMobileLayout ? 54 : 60)) * boardScale
     ));
-    const headerHeight = Math.round((compactBoard ? 44 : (isShortLayout ? 56 : 60)) * boardScale);
+    const headerHeight = Math.round((compactBoard ? 42 : (isShortLayout ? 52 : 58)) * boardScale);
     let hangarProgress = readHangarProgressState();
     const menuSettings = getMenuSettings({
       defaultShowPilotOrders: getDefaultShowPilotOrders(hangarProgress)
@@ -2834,7 +3667,7 @@ export class MenuScene {
       ? 0
       : Math.round(completeState
         ? padY * 2 + Math.round((isMobileLayout ? 54 : 62) * boardScale)
-        : padY * 2 + headerHeight + rowHeight * 3 + gap * 2);
+        : padY * 2 + headerHeight + rowHeight * rows.length + gap * Math.max(0, rows.length - 1));
     const boardX = Math.round(useRightRail ? briefingBounds.x : this.launchDeckBounds.x);
     const stackToBoardGap = Math.round(
       clampNumber(height * 0.022, isMobileLayout ? 12 : 16, isMobileLayout ? 22 : 30) *
@@ -2870,6 +3703,7 @@ export class MenuScene {
       this.missionBoardPanel.visible = false;
       this.missionBoardTitle.visible = false;
       this.missionBoardSubtitle.visible = false;
+      this.missionBoardStatus.visible = false;
       this.missionBoardRows.forEach((row) => {
         row.visible = false;
       });
@@ -2879,13 +3713,10 @@ export class MenuScene {
 
     this.missionBoardPanel.visible = true;
     const missionTitle = translateText(completeState ? missionState.completionTitle : missionState.title);
-    const completionLabel = translateText('COMPLETED: {count}', {
-      count: missionState.progressLabel || '0'
-    });
-    this.missionBoardTitle.text = completeState
-      ? missionTitle
-      : `${missionTitle} // ${completionLabel}`;
-    this.missionBoardTitle.style.fontSize = Math.round((compactBoard ? 11 : (isMobileLayout ? 11 : 14)) * Math.min(uiScale, 1.25));
+    const activeCompletedCount = rows.filter((entry) => entry?.completed).length;
+    const activeTotal = rows.length;
+    this.missionBoardTitle.text = missionTitle;
+    this.missionBoardTitle.style.fontSize = Math.round((compactBoard ? 12 : (isMobileLayout ? 12 : 15)) * Math.min(uiScale, 1.25));
     this.missionBoardTitle.x = boardX + padX;
     this.missionBoardTitle.y = boardY + padY;
     this.missionBoardTitle.alpha = this.missionBoardTitle.alpha || 1;
@@ -2895,23 +3726,41 @@ export class MenuScene {
 
     this.missionBoardSubtitle.text = completeState
       ? translateText(missionState.completionBody)
-      : this.getMissionBoardDetailText(rows[selectedIndex]) || translateText(missionState.subtitle);
-    this.missionBoardSubtitle.style.fontFamily = completeState ? FONT_MONO : FONT_ARCADE;
-    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 10 : (compactBoard ? 10 : (isMobileLayout ? 12 : 15))) * Math.min(uiScale, 1.25));
-    this.missionBoardSubtitle.style.fontWeight = completeState ? '800' : '900';
-    this.missionBoardSubtitle.style.fill = completeState ? '#9feeff' : '#f6fbff';
-    this.missionBoardSubtitle.style.strokeThickness = completeState ? 2 : 3;
-    this.missionBoardSubtitle.style.wordWrap = !completeState;
+      : translateText('{completed} / {total} COMPLETE', {
+        completed: formatNumber(activeCompletedCount),
+        total: formatNumber(activeTotal)
+      });
+    this.missionBoardSubtitle.style.fontFamily = FONT_MONO;
+    this.missionBoardSubtitle.style.fontSize = Math.round((completeState ? 10 : (compactBoard ? 10 : 12)) * Math.min(uiScale, 1.25));
+    this.missionBoardSubtitle.style.fontWeight = '900';
+    this.missionBoardSubtitle.style.fill = completeState ? '#9feeff' : '#dffcff';
+    this.missionBoardSubtitle.style.strokeThickness = 2;
+    this.missionBoardSubtitle.style.wordWrap = false;
     this.missionBoardSubtitle.style.wordWrapWidth = boardWidth - padX * 2 - Math.round(22 * uiScale);
     this.missionBoardSubtitle.style.lineHeight = Math.round(this.missionBoardSubtitle.style.fontSize * 1.08);
-    this.missionBoardSubtitle.x = boardX + padX + (completeState ? 0 : Math.round(8 * uiScale));
+    this.missionBoardSubtitle.x = boardX + padX;
     this.missionBoardSubtitle.y = completeState
       ? boardY + padY + Math.round(22 * uiScale)
-      : boardY + padY + Math.round(22 * boardScale);
+      : boardY + padY + Math.round(21 * boardScale);
     this.missionBoardSubtitle.alpha = this.missionBoardSubtitle.alpha || 1;
     this.missionBoardSubtitle.visible = true;
     refreshTextTexture(this.missionBoardSubtitle);
-    fitTextToWidth(this.missionBoardSubtitle, boardWidth - padX * 2 - Math.round(18 * uiScale), { minScale: 0.82 });
+    fitTextToWidth(this.missionBoardSubtitle, boardWidth - padX * 2, { minScale: 0.82 });
+
+    const selectedMode = this.getRunModeBriefing()?.runMode || RUN_MODES.RANKED;
+    const activeInMode = rows.length > 0 && rows.every((entry) => (
+      Array.isArray(entry?.modes) && entry.modes.includes(selectedMode)
+    ));
+    this.missionBoardStatus.text = completeState
+      ? ''
+      : translateText(activeInMode ? 'ACTIVE IN THIS MODE' : 'NOT ACTIVE IN THIS MODE');
+    this.missionBoardStatus.style.fontSize = Math.round((compactBoard ? 8 : 9) * Math.min(uiScale, 1.25));
+    this.missionBoardStatus.x = boardX + padX;
+    this.missionBoardStatus.y = boardY + padY + Math.round(35 * boardScale);
+    this.missionBoardStatus.alpha = this.missionBoardStatus.alpha || 1;
+    this.missionBoardStatus.visible = !completeState;
+    refreshTextTexture(this.missionBoardStatus);
+    fitTextToWidth(this.missionBoardStatus, boardWidth - padX * 2, { minScale: 0.82 });
 
     this.missionBoardRows.forEach((row, index) => {
       const contract = rows[index];
@@ -2928,54 +3777,79 @@ export class MenuScene {
       row._selected = index === selectedIndex;
       const titleText = translateText(contract.shortTitle || contract.title);
       row._title.text = titleText;
-      row._detail.text = '';
-      row._detail.visible = false;
+      row._detail.text = translateText(contract.howTo || contract.shortDescription || contract.description || '');
+      row._detail.visible = true;
       row._progress.text = contract.completed
         ? translateText('COMPLETE')
-        : translateText('{progress}/{target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
+        : translateText('{progress} / {target}', formatRunContractProgressValue(contract.progress || 0, contract.target || 1));
+      row._reward.text = contract.reward?.pilotXp
+        ? translateText('+{xp} XP', { xp: formatNumber(contract.reward.pilotXp) })
+        : '';
+      row._reward.visible = Boolean(row._reward.text);
       row._progressRatio = contract.completed
         ? 1
         : clampNumber((Number(contract.progress) || 0) / Math.max(1, Number(contract.target) || 1), 0, 1);
       row._title.style.fill = contract.completed ? '#fff3a2' : '#dffcff';
       row._detail.style.fill = contract.completed ? '#d7ffec' : '#9feeff';
       row._progress.style.fill = contract.completed ? '#7dffcc' : '#ffef7e';
-      row._title.style.fontSize = Math.round((compactBoard ? 12 : (isMobileLayout ? 12 : 16)) * Math.min(uiScale, 1.25));
-      row._detail.style.fontSize = Math.round((isMobileLayout ? 9 : 10) * uiScale);
-      row._detail.style.wordWrap = false;
+      row._title.style.fontSize = Math.round((compactBoard ? 11 : (isMobileLayout ? 12 : 14)) * Math.min(uiScale, 1.25));
+      row._detail.style.fontSize = Math.round((compactBoard ? 8.5 : (isMobileLayout ? 9 : 10)) * Math.min(uiScale, 1.18));
+      row._detail.style.wordWrap = true;
       row._detail.style.lineHeight = Math.round(row._detail.style.fontSize * 1.05);
-      row._progress.style.fontSize = Math.round((compactBoard ? 10 : (isMobileLayout ? 10 : 11)) * Math.min(uiScale, 1.25));
-      const progressSlotMinWidth = Math.round((contract.completed ? 104 : 82) * uiScale);
-      const progressSlotMaxWidth = Math.max(progressSlotMinWidth, Math.round(row._width * 0.36));
-      const progressSlotWidth = Math.round(clampNumber(
-        row._width * 0.3,
-        progressSlotMinWidth,
-        Math.min(progressSlotMaxWidth, row._width - Math.round(72 * uiScale))
-      ));
-      const progressSlotHeight = Math.round(Math.max(20 * uiScale, rowHeight * 0.56));
-      const progressSlotX = Math.round(row._width - progressSlotWidth - 7 * uiScale);
-      const progressSlotY = Math.round(rowHeight * 0.5 - progressSlotHeight * 0.5);
+      row._progress.style.fontSize = Math.round((compactBoard ? 9 : (isMobileLayout ? 9 : 10)) * Math.min(uiScale, 1.25));
+      row._reward.style.fontSize = Math.round((compactBoard ? 8 : 9) * Math.min(uiScale, 1.2));
+      const iconSize = Math.round(clampNumber(rowHeight * 0.54, 24, 34));
+      const contentX = Math.round(12 * uiScale + iconSize);
+      const progressValueWidth = Math.round(clampNumber(row._width * 0.22, 70 * uiScale, 112 * uiScale));
+      const progressSlotWidth = Math.max(80, row._width - contentX - progressValueWidth - Math.round(14 * uiScale));
+      const progressSlotHeight = Math.max(7, Math.round(rowHeight * 0.14));
+      const progressSlotX = contentX;
+      const progressSlotY = rowHeight - progressSlotHeight - Math.round(7 * uiScale);
       row._progressSlot = {
         x: progressSlotX,
         y: progressSlotY,
         width: progressSlotWidth,
         height: progressSlotHeight
       };
-      row._title.x = Math.round(13 * uiScale);
-      row._title.y = Math.round(rowHeight * 0.5);
-      row._detail.x = Math.round(13 * uiScale);
-      row._detail.y = Math.round(rowHeight * 0.79);
-      row._progress.x = progressSlotX + progressSlotWidth - Math.round(8 * uiScale);
-      row._progress.y = row._title.y;
-      const titleMaxWidth = Math.max(48 * uiScale, progressSlotX - row._title.x - Math.round(10 * uiScale));
-      const progressTextMaxWidth = Math.max(28 * uiScale, progressSlotWidth - Math.round(16 * uiScale));
-      row._detail.style.wordWrapWidth = titleMaxWidth;
+      const objectiveIconKey = contract.id === 'graze_10'
+        ? 'sectorChallenge'
+        : contract.id === 'boss_breaker'
+          ? 'achievements'
+          : 'threatCodex';
+      row._icon.texture = this.menuIconTextures?.[objectiveIconKey] || PIXI.Texture.EMPTY;
+      row._icon.visible = !contract.completed && GameAssets.isValidTexture(row._icon.texture);
+      row._icon.width = iconSize;
+      row._icon.height = iconSize;
+      row._icon.x = Math.round(8 * uiScale + iconSize * 0.5);
+      row._icon.y = Math.round(rowHeight * 0.5);
+      row._rewardIcon.texture = this.menuIconTextures?.achievements || PIXI.Texture.EMPTY;
+      row._rewardIcon.visible = Boolean(row._reward.text) && GameAssets.isValidTexture(row._rewardIcon.texture);
+      row._rewardIcon.width = Math.round(12 * uiScale);
+      row._rewardIcon.height = Math.round(12 * uiScale);
+      row._title.x = contentX;
+      row._title.y = Math.round(rowHeight * 0.24);
+      row._detail.x = contentX;
+      row._detail.anchor.set(0, 0);
+      row._detail.y = Math.round(rowHeight * 0.36);
+      row._progress.x = row._width - Math.round(9 * uiScale);
+      row._progress.y = progressSlotY + Math.round(progressSlotHeight * 0.5);
+      row._reward.x = row._width - Math.round(9 * uiScale);
+      row._reward.y = row._title.y;
+      row._rewardIcon.x = row._reward.x - row._reward.width - Math.round(8 * uiScale);
+      row._rewardIcon.y = row._reward.y;
+      const titleMaxWidth = Math.max(90 * uiScale, row._rewardIcon.x - row._title.x - Math.round(8 * uiScale));
+      const detailMaxWidth = Math.max(110 * uiScale, row._width - row._detail.x - Math.round(12 * uiScale));
+      const progressTextMaxWidth = progressValueWidth - Math.round(8 * uiScale);
+      row._detail.style.wordWrapWidth = detailMaxWidth;
       row.hitArea = new PIXI.Rectangle(0, 0, row._width, row._height);
       refreshTextTexture(row._title);
       refreshTextTexture(row._detail);
       refreshTextTexture(row._progress);
+      refreshTextTexture(row._reward);
       fitTextToWidth(row._title, titleMaxWidth, { minScale: 0.62 });
-      fitTextToWidth(row._detail, titleMaxWidth, { minScale: 0.72 });
+      fitTextToWidth(row._detail, detailMaxWidth, { minScale: 0.82 });
       fitTextToWidth(row._progress, progressTextMaxWidth, { minScale: 0.48 });
+      fitTextToWidth(row._reward, progressValueWidth, { minScale: 0.65 });
     });
     this.updateMissionBoardDetailText();
 
@@ -3027,11 +3901,7 @@ export class MenuScene {
       this.missionBoardSelectedDetail = null;
       return;
     }
-    const text = this.getMissionBoardDetailText(rows[index]);
-    if (text) {
-      this.missionBoardSubtitle.text = text;
-      refreshTextTexture(this.missionBoardSubtitle);
-    }
+    this.getMissionBoardDetailText(rows[index]);
   }
 
   selectMissionBoardOrder(index, { manual = false } = {}) {
@@ -3043,6 +3913,7 @@ export class MenuScene {
     this.missionBoardSelectedIndex = clamped;
     this.missionBoardSelectedOrderId = contract.id;
     this.missionBoardSelectionManual = Boolean(manual);
+    this.missionBoardFocusActive = Boolean(manual);
     this.updateMissionBoardDetailText();
     this.drawMissionBoardPanel();
   }
@@ -3052,20 +3923,9 @@ export class MenuScene {
     const { x, y, width, height } = this.missionBoardBounds;
     this.missionBoardPanel.clear();
     if (this.missionBoardBounds.hidden || height <= 0) return;
-    drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.78 }, { color: 0xffd15c, width: 1.2, alpha: 0.52 });
-    drawCutPanel(this.missionBoardPanel, x + 5, y + 5, width - 10, height - 10, 8, { color: 0x061d2c, alpha: 0.28 }, { color: 0x7fffd8, width: 1, alpha: 0.18 });
+    drawCutPanel(this.missionBoardPanel, x, y, width, height, 10, { color: 0x031321, alpha: 0.82 }, { color: 0xffd15c, width: 1, alpha: 0.34 });
     this.missionBoardPanel.rect(x + 10, y + 9, 3, Math.max(8, height - 18));
-    this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.68 });
-    if (this.missionBoardBounds.status === 'active') {
-      const headerHeight = this.missionBoardBounds.headerHeight || 34;
-      const detailBandX = x + 18;
-      const detailBandY = y + Math.round(headerHeight * 0.38);
-      const detailBandW = width - 36;
-      const detailBandH = Math.max(28, Math.round(headerHeight * 0.52));
-      drawCutPanel(this.missionBoardPanel, detailBandX, detailBandY, detailBandW, detailBandH, 5, { color: 0x08233a, alpha: 0.62 }, { color: 0x7fffd8, width: 1, alpha: 0.42 });
-      this.missionBoardPanel.rect(detailBandX + 6, detailBandY + detailBandH - 4, Math.max(6, detailBandW - 12), 2);
-      this.missionBoardPanel.fill({ color: 0xffef7e, alpha: 0.2 });
-    }
+    this.missionBoardPanel.fill({ color: 0xffd15c, alpha: 0.42 });
     this.missionBoardPanel.rect(x + 18, y + Math.min(height - 16, this.missionBoardBounds.headerHeight || 34), width - 36, 1);
     this.missionBoardPanel.fill({ color: 0xffef7e, alpha: 0.18 });
     if (this.missionBoardBounds.status === 'active') {
@@ -3086,7 +3946,7 @@ export class MenuScene {
       const w = row._width || 0;
       const h = row._height || 0;
       const accent = row._accent || 0x37f5ff;
-      const selected = Boolean(row._selected);
+      const selected = Boolean(row._selected && this.missionBoardFocusActive);
       const progressRatio = clampNumber(Number(row._progressRatio) || 0, 0, 1);
       const progressSlot = row._progressSlot || {
         x: w - Math.min(92, Math.max(58, w * 0.28)) - 7,
@@ -3095,29 +3955,34 @@ export class MenuScene {
         height: Math.max(15, h * 0.42)
       };
       row._bg.clear();
-      drawCutPanel(row._bg, 0, 0, w, h, 6, { color: row._completed ? 0x082116 : 0x061b2a, alpha: selected ? 0.88 : (row._completed ? 0.82 : 0.72) }, { color: selected ? 0xffffff : accent, width: selected ? 1.6 : 1, alpha: selected ? 0.72 : (row._completed ? 0.48 : 0.28) });
+      row._bg.rect(0, 0, w, h);
+      row._bg.fill({
+        color: row._completed ? 0x082116 : 0x061b2a,
+        alpha: selected ? 0.84 : (row._completed ? 0.62 : 0.46)
+      });
       if (selected) {
-        drawCutPanel(row._bg, 3, 3, w - 6, h - 6, 5, { color: accent, alpha: 0.08 }, { color: accent, width: 1, alpha: 0.36 });
+        drawCutPanel(row._bg, 1, 1, w - 2, h - 2, 5, { color: accent, alpha: 0.06 }, { color: 0xffffff, width: 1.4, alpha: 0.62 });
       }
-      drawCutPanel(row._bg, 6, 5, w - 12, Math.max(12, h * 0.35), 4, { color: 0x37f5ff, alpha: selected ? 0.12 : 0.07 });
+      row._bg.rect(10, h - 1, Math.max(1, w - 20), 1);
+      row._bg.fill({ color: accent, alpha: row._completed ? 0.28 : 0.16 });
       row._bg.rect(5, 5, 3, Math.max(6, h - 10));
-      row._bg.fill({ color: accent, alpha: selected ? 0.82 : (row._completed ? 0.72 : 0.46) });
-      for (let tick = 1; tick < 4; tick += 1) {
-        const tx = 12 + ((w - 24) * tick) / 4;
-        row._bg.rect(tx, h - 9, 1, 5);
-        row._bg.fill({ color: 0xdffcff, alpha: 0.12 });
-      }
-      drawCutPanel(row._bg, progressSlot.x, progressSlot.y, progressSlot.width, progressSlot.height, 4, { color: 0x020711, alpha: 0.36 }, { color: 0xffef7e, width: 1, alpha: 0.26 });
+      row._bg.fill({ color: accent, alpha: selected ? 0.78 : (row._completed ? 0.54 : 0.3) });
+      row._bg.roundRect(progressSlot.x, progressSlot.y, progressSlot.width, progressSlot.height, Math.max(2, progressSlot.height * 0.5));
+      row._bg.fill({ color: 0x020711, alpha: 0.72 });
+      row._bg.roundRect(progressSlot.x, progressSlot.y, progressSlot.width, progressSlot.height, Math.max(2, progressSlot.height * 0.5));
+      row._bg.stroke({ color: 0x6fb8c4, width: 1, alpha: 0.28 });
       if (progressRatio > 0) {
-        const fillWidth = Math.max(4, Math.round((progressSlot.width - 8) * progressRatio));
-        row._bg.roundRect(progressSlot.x + 4, progressSlot.y + 4, fillWidth, Math.max(5, h * 0.18), 3);
-        row._bg.fill({ color: row._completed ? 0x7dffcc : 0xffef7e, alpha: row._completed ? 0.48 : 0.34 });
+        const fillWidth = Math.max(3, Math.round(progressSlot.width * progressRatio));
+        row._bg.roundRect(progressSlot.x, progressSlot.y, fillWidth, progressSlot.height, Math.max(2, progressSlot.height * 0.5));
+        row._bg.fill({ color: row._completed ? 0x7dffcc : accent, alpha: row._completed ? 0.82 : 0.72 });
       }
-      row._bg.rect(12, h - 6, w - 24, 2);
-      row._bg.fill({ color: accent, alpha: 0.16 });
-      if (progressRatio > 0) {
-        row._bg.rect(12, h - 6, Math.max(4, Math.round((w - 24) * progressRatio)), 2);
-        row._bg.fill({ color: row._completed ? 0x7dffcc : 0xffef7e, alpha: row._completed ? 0.62 : 0.46 });
+      if (row._completed) {
+        row._bg.circle(18, h * 0.5, Math.max(8, h * 0.17));
+        row._bg.fill({ color: 0x7dffcc, alpha: 0.16 });
+        row._bg.moveTo(13, h * 0.5);
+        row._bg.lineTo(17, h * 0.5 + 4);
+        row._bg.lineTo(24, h * 0.5 - 5);
+        row._bg.stroke({ color: 0xd7ffec, width: 2.2, alpha: 0.92 });
       }
     }
   }
@@ -3689,13 +4554,34 @@ export class MenuScene {
       inputDevice: this.lastInputDevice,
       menuIconVariant: this.menuIconVariant,
       missionBriefing: {
-        title: this.runModeBriefingTitle?.text || null,
+        eyebrow: this.runModeBriefingTitle?.text || null,
+        title: this.runModeTitle?.text || null,
         body: this.runModeExplainer?.text || null,
+        status: this.runModeStatusBadge?.text || null,
+        restriction: this.runModeRestriction?.text || null,
+        personalBest: this.runModePersonalBest?.text || null,
+        detailsFocused: Boolean(this.runModeDetailsFocused),
+        detailsButtonLabel: this.runModeDetailsButtonText?.text || null,
+        renderPadding: {
+          eyebrow: Number(this.runModeBriefingTitle?.style?.padding) || 0,
+          title: Number(this.runModeTitle?.style?.padding) || 0,
+          status: Number(this.runModeStatusBadge?.style?.padding) || 0,
+          body: Number(this.runModeExplainer?.style?.padding) || 0,
+          restriction: Number(this.runModeRestriction?.style?.padding) || 0,
+          details: Number(this.runModeDetailsButtonText?.style?.padding) || 0
+        },
+        detailsButtonBounds: boundsForDisplayObject(this.runModeDetailsButton),
+        tiles: this.runModeInfoTileItems.map((item) => ({
+          label: item?._nodes?.label?.text || null,
+          value: item?._nodes?.value?.text || null,
+          bounds: boundsForDisplayObject(item)
+        })),
         mode: this.getRunModeBriefing().id,
         panelBounds: this.runModePanel?._briefingBounds || boundsForDisplayObject(this.runModePanel),
         titleBounds: boundsForDisplayObject(this.runModeBriefingTitle),
         bodyBounds: boundsForDisplayObject(this.runModeExplainer)
       },
+      modeBriefing: this.modeBriefingOverlay?.getDebugState?.() || null,
       modeNarration: {
         focusDelayMs: MENU_BOSS_BARK_FOCUS_DELAY_MS,
         focusCooldownMs: MENU_BOSS_BARK_FOCUS_COOLDOWN_MS,
@@ -3723,6 +4609,8 @@ export class MenuScene {
       missionBoard: {
         title: this.missionBoardTitle?.text || null,
         subtitle: this.missionBoardSubtitle?.text || null,
+        secondaryStatus: this.missionBoardStatus?.text || null,
+        focusActive: Boolean(this.missionBoardFocusActive),
         selectedIndex: Number(this.missionBoardSelectedIndex) || 0,
         selectedOrder: this.missionBoardSelectedDetail || null,
         status: this.missionBoardState?.status || null,
@@ -3746,6 +4634,7 @@ export class MenuScene {
           title: row?._title?.text || null,
           detail: row?._detail?.text || null,
           progress: row?._progress?.text || null,
+          reward: row?._reward?.text || null,
           selected: Boolean(row?._selected),
           progressRatio: Number(row?._progressRatio) || 0,
           bounds: boundsForDisplayObject(row),
@@ -3968,6 +4857,10 @@ export class MenuScene {
       this.backdropShade.fill({ color: 0x020711, alpha: 0.08 });
       this.backdropShade.rect(0, 0, Math.min(width * 0.38, 660), height * 0.38);
       this.backdropShade.fill({ color: 0x020711, alpha: 0.18 });
+      this.backdropShade.rect(0, height * 0.27, width * 0.25, height * 0.55);
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.11 });
+      this.backdropShade.rect(width * 0.69, height * 0.12, width * 0.31, height * 0.72);
+      this.backdropShade.fill({ color: 0x020711, alpha: 0.12 });
       this.backdropShade.rect(0, height * 0.72, width, height * 0.28);
       this.backdropShade.fill({ color: 0x000000, alpha: 0.44 });
       this.backdropShade.rect(0, height * 0.88, width, height * 0.12);
@@ -4276,6 +5169,9 @@ export class MenuScene {
     row.on('pointertap', () => this.selectMissionBoardOrder(index, { manual: true }));
     row._bg = new PIXI.Graphics();
     row.addChild(row._bg);
+    row._icon = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    row._icon.anchor.set(0.5);
+    row.addChild(row._icon);
     row._title = createText('', {
       fontFamily: FONT_MONO,
       fontSize: 12,
@@ -4283,7 +5179,8 @@ export class MenuScene {
       fill: '#dffcff',
       stroke: '#020711',
       strokeThickness: 2,
-      align: 'left'
+      align: 'left',
+      padding: 10
     });
     row._title.anchor.set(0, 0.5);
     row.addChild(row._title);
@@ -4296,7 +5193,8 @@ export class MenuScene {
       strokeThickness: 2,
       align: 'left',
       wordWrap: true,
-      lineHeight: 11
+      lineHeight: 11,
+      padding: 10
     });
     row._detail.anchor.set(0, 0.5);
     row.addChild(row._detail);
@@ -4307,10 +5205,26 @@ export class MenuScene {
       fill: '#ffef7e',
       stroke: '#020711',
       strokeThickness: 2,
-      align: 'right'
+      align: 'right',
+      padding: 10
     });
     row._progress.anchor.set(1, 0.5);
     row.addChild(row._progress);
+    row._rewardIcon = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    row._rewardIcon.anchor.set(0.5);
+    row.addChild(row._rewardIcon);
+    row._reward = createText('', {
+      fontFamily: FONT_MONO,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#9feeff',
+      stroke: '#020711',
+      strokeThickness: 2,
+      align: 'right',
+      padding: 10
+    });
+    row._reward.anchor.set(1, 0.5);
+    row.addChild(row._reward);
     return row;
   }
 
@@ -4879,7 +5793,7 @@ export class MenuScene {
       const focused = Boolean(button._focused && !modalOpen);
       const primary = button === this.tacticalStartBtn;
       const utility = button._variant === 'utility' || button._variant === 'utilityDanger';
-      const breathe = primary && !modalOpen ? Math.sin(this.animationTime * 2.25) * 0.018 : 0;
+      const breathe = primary && focused && !modalOpen ? Math.sin(this.animationTime * 2.25) * 0.012 : 0;
       const targetScale = focused ? (utility ? 1.04 : 1.056) : (primary ? 1 + breathe : 1);
       const targetY = button._layoutY - (focused ? (utility ? 3 : 5) : 0);
       button._motionScale = Number.isFinite(button._motionScale)
@@ -4890,7 +5804,7 @@ export class MenuScene {
         : targetY;
       button.scale.set(button._motionScale);
       button.y = button._motionY;
-      if ((focused || primary || utility) && button.visible && button.alpha > 0.05) {
+      if ((focused || utility) && button.visible && button.alpha > 0.05) {
         this.drawMenuButton(button, false);
       }
     });
@@ -5055,27 +5969,27 @@ export class MenuScene {
       focus.rect(x + w * 0.18, y - 7, w * 0.64, 2);
       focus.fill({ color: hotAccent, alpha: 0.28 + pulse * 0.12 });
     } else if (isPrimaryMode) {
-      drawCutPanel(focus, x - 6, y - 6, w + 12, h + 12, 12, { color: 0xff55d9, alpha: 0.025 + pulse * 0.025 }, { color: 0x7fffd8, width: 1.35, alpha: 0.24 + pulse * 0.12 });
+      drawCutPanel(focus, x - 4, y - 4, w + 8, h + 8, 12, { color: 0xff55d9, alpha: 0.012 }, { color: 0xff55d9, width: 1, alpha: 0.14 });
     }
 
     bg.clear();
-    drawCutPanel(bg, x + 10, y + 12, w, h, 14, { color: 0x000000, alpha: isPrimaryMode ? 0.62 : 0.52 });
-    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, 14, { color: accent, alpha: active ? 0.2 : (isPrimaryMode ? 0.18 + pulse * 0.08 : (isMayhem ? 0.13 + pulse * 0.06 : 0.09)) }, { color: accent, width: active ? 2.2 : (isPrimaryMode ? 1.8 : 1.35), alpha: active ? 0.86 : (isPrimaryMode ? 0.62 + pulse * 0.16 : (isMayhem ? 0.5 + pulse * 0.12 : 0.38)) });
+    drawCutPanel(bg, x + 8, y + 9, w, h, 14, { color: 0x000000, alpha: active ? 0.58 : 0.42 });
+    drawCutPanel(bg, x - 2, y - 2, w + 4, h + 4, 14, { color: accent, alpha: active ? 0.18 : 0.055 }, { color: accent, width: active ? 2.2 : 1.15, alpha: active ? 0.86 : (isPrimaryMode ? 0.3 : 0.32) });
     const mayhemBase = (isPureMayhem || isSelectedPureMayhem) ? 0x241704 : (isTacticalMayhem ? 0x240822 : 0x031321);
     const mayhemInner = (isPureMayhem || isSelectedPureMayhem) ? 0x3b2506 : (isTacticalMayhem ? 0x3c1039 : 0x06243a);
-    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: isPrimaryMode ? 0.94 : 0.88 }, { color: active ? hotAccent : accent, width: active ? 2.35 : (isPrimaryMode ? 1.85 : 1.4), alpha: active ? 0.94 : (isPrimaryMode ? 0.7 : 0.52) });
-    drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.46 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.08 });
+    drawCutPanel(bg, x, y, w, h, 12, { color: mayhemBase, alpha: active ? 0.94 : 0.78 }, { color: active ? hotAccent : accent, width: active ? 2.35 : 1.25, alpha: active ? 0.94 : (isPrimaryMode ? 0.4 : 0.46) });
+    drawCutPanel(bg, x + 6, y + 6, w - 12, h - 12, 10, { color: mayhemInner, alpha: active ? 0.6 : 0.34 }, { color: 0xffffff, width: 1, alpha: active ? 0.16 : 0.045 });
     bg.rect(x + 8, y + 8, w - 16, Math.max(34, h * 0.34));
     bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.18 : 0.1 });
     bg.rect(x + 12, y + h - 13, w - 24, 4);
     bg.fill({ color: (isPureMayhem || isSelectedPureMayhem) ? 0xffd15c : accent, alpha: active ? 0.56 : 0.34 });
     bg.rect(x + 12, y + 12, 4, h - 24);
-    bg.fill({ color: hotAccent, alpha: active ? 0.82 : 0.48 });
+    bg.fill({ color: hotAccent, alpha: active ? 0.82 : 0.32 });
     bg.rect(x + w - 16, y + 12, 4, h - 24);
     bg.fill({ color: accent, alpha: active ? 0.52 : 0.28 });
     const sweepX = x + 24 + (w - 118) * sweep;
     bg.rect(sweepX, y + 12, 82, 3);
-    bg.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.12 + pulse * 0.08 });
+    bg.fill({ color: 0xffffff, alpha: active ? 0.26 : 0.08 });
     bg.rect(x + 24, y + Math.round(h * 0.55), w - 48, 1);
     bg.fill({ color: secondary, alpha: active ? 0.34 : 0.18 });
 
@@ -5095,15 +6009,17 @@ export class MenuScene {
     bg.circle(iconX + 2, iconY + 4, iconSize * 0.72);
     bg.fill({ color: 0x000000, alpha: 0.38 });
     bg.circle(iconX, iconY, iconSize * 0.82);
-    bg.fill({ color: active ? accent : 0x031323, alpha: active ? 0.16 : 0.54 });
+    bg.fill({ color: active ? accent : 0x031323, alpha: active ? 0.16 : 0.46 });
     bg.circle(iconX, iconY, iconSize * 0.86);
-    bg.stroke({ color: hotAccent, width: active ? 2 : 1.4, alpha: active ? 0.78 : 0.48 });
+    bg.stroke({ color: hotAccent, width: active ? 2 : 1.2, alpha: active ? 0.78 : 0.34 });
 
     if (label) {
       label.visible = true;
       label.anchor.set(0, 0.5);
       label.style.align = 'left';
-      label.style.fill = isSelectedPureMayhem ? '#ffe584' : (isPrimaryMode ? '#ffffff' : (isPureMayhem ? '#ffe584' : '#dffcff'));
+      label.style.fill = active
+        ? '#ffffff'
+        : (isSelectedPureMayhem || isPureMayhem ? '#d8c887' : (isPrimaryMode ? '#d8c8d7' : '#bdd7dc'));
       label.style.strokeThickness = 4;
       label.x = x + (compactCard ? 66 : 82);
       label.y = compactCard ? (y + h * 0.38) : (y + 32);
@@ -5112,8 +6028,8 @@ export class MenuScene {
       sublabel.visible = true;
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
-      sublabel.style.fill = isSelectedPureMayhem ? '#fff3b6' : (isPrimaryMode ? '#7fffd8' : (isPureMayhem ? '#fff3b6' : '#9feeff'));
-      sublabel.alpha = sublabel.text ? (active ? 1 : 0.84) : 0;
+      sublabel.style.fill = isSelectedPureMayhem ? '#d6cda4' : (isPrimaryMode ? '#78b7aa' : (isPureMayhem ? '#d6cda4' : '#7caeb5'));
+      sublabel.alpha = sublabel.text ? (active ? 1 : 0.68) : 0;
       sublabel.x = x + (compactCard ? 66 : 82);
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
     }
@@ -5137,11 +6053,11 @@ export class MenuScene {
         iconSprite.y = iconY;
         const maxSide = Math.max(texture.width || 1, texture.height || 1);
         iconSprite.scale.set((iconSize * 1.2) / maxSide);
-        iconSprite.alpha = active ? 1 : 0.94;
+        iconSprite.alpha = active ? 1 : 0.7;
       } else {
         if (iconSprite) iconSprite.visible = false;
         icon.visible = true;
-        this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize * 0.56, hotAccent, active ? 1 : 0.84);
+        this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize * 0.56, hotAccent, active ? 1 : 0.62);
       }
     }
 
@@ -5151,7 +6067,7 @@ export class MenuScene {
     shine.stroke({ color: 0xffffff, width: 1.2, alpha: active ? 0.24 : 0.12 });
     shine.moveTo(x + 24, y + h - 9);
     shine.lineTo(x + w - 24, y + h - 9);
-    shine.stroke({ color: hotAccent, width: active ? 1.8 : 1.2, alpha: active ? 0.42 : 0.22 });
+    shine.stroke({ color: hotAccent, width: active ? 1.8 : 1, alpha: active ? 0.42 : 0.12 });
     if (active) {
       shine.moveTo(x + 28 + (w - 132) * sweep, y + h - 17);
       shine.lineTo(x + 112 + (w - 132) * sweep, y + h - 17);
@@ -5206,7 +6122,7 @@ export class MenuScene {
     const cut = clampNumber(h * 0.16, 5, 10);
     const iconRenderSize = isCompact
       ? clampNumber(h * 0.82, 24, 30)
-      : clampNumber(h * (isPrimary ? 0.63 : (isNarrowDockButton ? 0.36 : 0.465)), isPrimary ? 78 : (isNarrowDockButton ? 40 : 56), isPrimary ? 90 : (isNarrowDockButton ? 50 : 68));
+      : clampNumber(h * (isPrimary ? 0.63 : (isDockButton ? 0.4 : (isNarrowDockButton ? 0.34 : 0.44))), isPrimary ? 78 : (isNarrowDockButton ? 36 : 46), isPrimary ? 90 : (isNarrowDockButton ? 46 : 60));
     const iconPlateSize = iconRenderSize + (isCompact ? 4 : (isPrimary ? 18 : 12));
     const label = container._label;
     const sublabel = container._sublabel;
@@ -5231,9 +6147,9 @@ export class MenuScene {
     drawCutPanel(bg, x + 8, y + 10, w, h, cut, { color: 0x000000, alpha: isPrimary ? 0.58 : 0.48 });
     drawCutPanel(bg, x + 3, y + 4, w, h, cut, { color: 0x000000, alpha: 0.22 });
     drawCutPanel(bg, x + 1, y + h - 4, w - 2, 8, Math.max(2, cut - 5), { color: 0x000000, alpha: isPrimary ? 0.42 : 0.32 });
-    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.2 : (isPrimary ? 0.09 + ignition * 0.075 : (isUtilityDanger ? 0.035 : 0.075)) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isPrimary ? 0.26 + ignition * 0.22 : (isUtilityDanger ? 0.18 : 0.22)) });
-    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.84 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.35, alpha: active ? 0.88 : (isPrimary ? 0.78 : 0.48) });
-    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.48 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.08 });
+    drawCutPanel(bg, x - 3, y - 3, w + 6, h + 6, cut + 3, { color: drawAccent, alpha: active ? 0.2 : (isUtilityDanger ? 0.018 : 0.045) }, { color: drawAccent, width: 1, alpha: active ? 0.56 : (isUtilityDanger ? 0.12 : 0.15) });
+    drawCutPanel(bg, x, y, w, h, cut, { color: baseColor, alpha: active ? 0.94 : 0.8 }, { color: active ? hotAccent : drawAccent, width: active ? 2.15 : 1.1, alpha: active ? 0.88 : (isUtility ? 0.28 : 0.34) });
+    drawCutPanel(bg, x + 4, y + 4, w - 8, h - 8, Math.max(2, cut - 3), { color: glassColor, alpha: active ? 0.66 : 0.38 }, { color: 0xffffff, width: 1, alpha: active ? 0.18 : 0.045 });
     drawCutPanel(bg, x + 8, y + h * 0.17, w - 16, h * 0.48, Math.max(2, cut - 4), { color: isPrimary ? 0x5a3a0b : (isDanger ? 0x3b101b : 0x0a3750), alpha: active ? 0.18 : 0.11 });
     if (isPrimary) {
       bg.rect(x + 16, y + h - 13, w - 32, 5);
@@ -5257,7 +6173,7 @@ export class MenuScene {
     bg.fill({ color: drawAccent, alpha: active ? 0.5 : 0.25 });
 
     const cornerLen = clampNumber(w * 0.11, 18, isPrimary ? 42 : 30);
-    const cornerAlpha = active ? 0.72 : 0.36;
+    const cornerAlpha = active ? 0.72 : 0.22;
     bg.moveTo(x + cut + 4, y + 6);
     bg.lineTo(x + cut + cornerLen, y + 6);
     bg.stroke({ color: hotAccent, width: 1.4, alpha: cornerAlpha });
@@ -5334,7 +6250,7 @@ export class MenuScene {
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
       sublabel.style.fill = isPrimary ? '#fff3b6' : (isUtilityDanger ? '#98aab8' : (isDanger ? '#ff9aa5' : '#8deeff'));
-      sublabel.alpha = hasSubLabel ? (active ? 1 : 0.78) : 0;
+      sublabel.alpha = hasSubLabel ? (active ? 1 : 0.62) : 0;
       sublabel.x = label?.x || (x + 44);
       sublabel.y = h * (isPrimary ? 0.175 : 0.155);
     }
@@ -5350,11 +6266,11 @@ export class MenuScene {
         iconSprite.y = iconY;
         const maxSide = Math.max(texture.width || 1, texture.height || 1);
         iconSprite.scale.set(iconRenderSize / maxSide);
-        iconSprite.alpha = active ? 1 : (isUtilityDanger ? 0.84 : 0.94);
+        iconSprite.alpha = active ? 1 : (isUtilityDanger ? 0.58 : 0.68);
       } else {
         if (iconSprite) iconSprite.visible = false;
         icon.visible = true;
-        this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.82);
+        this.drawMenuButtonIcon(icon, container._iconType, iconX, iconY, iconSize, active ? hotAccent : drawAccent, active ? 1 : 0.62);
       }
     }
     container.hitArea = new PIXI.Rectangle(x, y, w, h);
@@ -5370,10 +6286,18 @@ export class MenuScene {
     this.animateElement(this.primaryHint, 0.68, 0.42);
     this.animateElement(this.runModePanel, 0.74, 0.42);
     this.animateElement(this.runModeBriefingTitle, 0.75, 0.42);
+    this.animateElement(this.runModeTitle, 0.76, 0.42);
     this.animateElement(this.runModeExplainer, 0.77, 0.42);
+    this.animateElement(this.runModeStatusBadgeBg, 0.78, 0.4);
+    this.animateElement(this.runModeStatusBadge, 0.78, 0.4);
+    this.animateElement(this.runModeInfoTiles, 0.79, 0.4);
+    this.animateElement(this.runModeRestriction, 0.8, 0.4);
+    this.animateElement(this.runModePersonalBest, 0.81, 0.4);
+    this.animateElement(this.runModeDetailsButton, 0.82, 0.4);
     this.animateElement(this.missionBoardPanel, 0.82, 0.42);
     this.animateElement(this.missionBoardTitle, 0.84, 0.42);
     this.animateElement(this.missionBoardSubtitle, 0.86, 0.42);
+    this.animateElement(this.missionBoardStatus, 0.87, 0.42);
     this.missionBoardRows?.forEach((row, index) => this.animateElement(row, 0.88 + index * 0.06, 0.36));
     this.animateElement(this.menuPanel, 0.78, 0.45);
     this.animateElement(this.tacticalStartBtn, 0.86, 0.42);
@@ -5490,6 +6414,8 @@ export class MenuScene {
 
   setMenuFocus(index) {
     if (!this.menuOptions.length) return;
+    this.runModeDetailsFocused = false;
+    this.missionBoardFocusActive = false;
     const count = this.menuOptions.length;
     const next = ((index % count) + count) % count;
     this.menuOptions.forEach((option, optionIndex) => {
@@ -5499,11 +6425,7 @@ export class MenuScene {
     });
     this.focusedMenuIndex = next;
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
-    if (this.runModeBriefingTitle || this.runModeExplainer) {
-      const briefing = this.getRunModeBriefing();
-      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
-      if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
-    }
+    this.updateRunModeBriefing();
     this.drawSectorStartStepperCue();
     this.layoutMenu();
   }
@@ -5522,11 +6444,7 @@ export class MenuScene {
     this.refreshButtonCopy(this.scoutRunBtn, { forceGpuRefresh: true });
     this.drawMenuButton(this.scoutRunBtn, false);
     if (this.primaryHint) this.primaryHint.text = this.getPrimaryHintText();
-    const briefing = this.getRunModeBriefing();
-    if (this.runModeBriefingTitle) {
-      this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
-    }
-    if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+    this.updateRunModeBriefing();
     playMenuFocusSfx(0.12);
     this.layoutMenu();
     return true;
@@ -5574,6 +6492,35 @@ export class MenuScene {
       if (nav.pressed.cancel || nav.pressed.back) {
         this.playBossMenuBark('cancel', { target: this.sectorSelectorBackButton || this.sectorSelectorPanel, intent: 'activate', force: true });
         this.closeSectorSelector();
+      }
+      return;
+    }
+    if (nav.pressed.y && this.getRunModeBriefing()?.details) {
+      this.runModeDetailsFocused = true;
+      this.missionBoardFocusActive = false;
+      this.drawRunModeDetailsButton();
+      this.openModeBriefing();
+      return;
+    }
+    if (nav.pressed.x && (this.missionBoardState?.active || []).length) {
+      this.runModeDetailsFocused = false;
+      this.missionBoardFocusActive = true;
+      this.selectMissionBoardOrder(this.missionBoardSelectedIndex, { manual: true });
+      this.drawRunModeDetailsButton();
+      return;
+    }
+    if (this.missionBoardFocusActive) {
+      const pilotRows = this.missionBoardState?.active || [];
+      if (nav.pressed.up || nav.pressed.left) {
+        this.selectMissionBoardOrder(Math.max(0, this.missionBoardSelectedIndex - 1), { manual: true });
+      }
+      if (nav.pressed.down || nav.pressed.right) {
+        this.selectMissionBoardOrder(Math.min(pilotRows.length - 1, this.missionBoardSelectedIndex + 1), { manual: true });
+      }
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.back) {
+        this.missionBoardFocusActive = false;
+        this.missionBoardSelectionManual = false;
+        this.drawMissionBoardPanel();
       }
       return;
     }
@@ -5754,9 +6701,7 @@ export class MenuScene {
       this.refreshButtonCopy(this.dailySignalBtn, { forceGpuRefresh: force || dayChanged });
     }
     if ((force || dayChanged) && this.getSelectedMenuOptionId() === 'dailySignal') {
-      const briefing = this.getRunModeBriefing();
-      if (this.runModeBriefingTitle) this.runModeBriefingTitle.text = [translateText('RUN MODES'), briefing.title].join(' · ');
-      if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+      this.updateRunModeBriefing();
     }
     return contract;
   }
@@ -6232,6 +7177,9 @@ export class MenuScene {
     this.overrunStartState = getOverrunStartState(readHangarProgressState());
     this.updateSectorStartButton({ forceGpuRefresh: true });
     this.settingsOverlay?.rebuild?.();
+    if (this.modeBriefingOverlay) {
+      this.modeBriefingOverlay.rebuild(this.getModeBriefingOverlayData());
+    }
     this.layoutMenu();
   }
 
@@ -6391,7 +7339,9 @@ export class MenuScene {
       });
     }
 
-    if (this.howToPlayOverlay) {
+    if (this.modeBriefingOverlay) {
+      this.modeBriefingOverlay.update?.(delta);
+    } else if (this.howToPlayOverlay) {
       this.howToPlayOverlay.update?.(delta);
     } else if (this.settingsOverlay) {
       this.settingsOverlay.update?.(delta);
@@ -6439,6 +7389,7 @@ export class MenuScene {
   destroy() {
     this.closeQuitConfirmation();
     this.closeSectorSelector();
+    this.closeModeBriefing();
     this.closeSettingsOverlay();
     this.closeHowToPlayOverlay();
     this.clearPendingBossMenuBark();

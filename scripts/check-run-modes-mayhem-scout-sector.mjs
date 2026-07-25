@@ -532,8 +532,13 @@ try {
   assertLaunchDeckVisible(settledMenu, '1366x768 initial menu');
   assert.equal(settledMenu.menu?.focusedOption, 'launchTactical', 'Mayhem Tactical should receive default focus');
   assert.equal(settledMenu.menu?.missionBriefing?.mode, 'launchTactical', 'Mission briefing should default to Mayhem Tactical');
-  assert.match(settledMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM TACTICAL/i);
-  assert.match(settledMenu.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*CHANGE RULESET/i);
+  assert.equal(settledMenu.menu?.missionBriefing?.eyebrow, 'RUN MODE');
+  assert.equal(settledMenu.menu?.missionBriefing?.title, 'MAYHEM');
+  assert.equal(settledMenu.menu?.missionBriefing?.status, 'RANKED');
+  assert.ok(settledMenu.menu?.missionBriefing?.renderPadding?.title >= 12, 'dynamic mode title needs anti-clipping render padding');
+  assert.ok(settledMenu.menu?.missionBriefing?.renderPadding?.status >= 12, 'dynamic status badge needs anti-clipping render padding');
+  assert.ok(settledMenu.menu?.missionBriefing?.renderPadding?.details >= 24, 'dynamic details label needs anti-clipping render padding');
+  assert.match(settledMenu.menu?.missionBriefing?.body || '', /permanent tactical upgrade[\s\S]*separate Tactical leaderboard/i);
   assert.ok(settledMenu.menu?.missionBriefing?.panelBounds?.width > 0, 'Mission briefing panel should be visible');
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(180);
@@ -542,8 +547,9 @@ try {
   assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM PURE', 'Mayhem family should expose Pure');
   assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.sublabel, 'ALTERNATIVE RANKED MODE', 'Pure ruleset should explain its role');
   assert.equal(pureMayhemMenu.menu?.launchDeck?.cards?.mayhemTactical?.runMode, RUN_MODES.RANKED, 'Pure ruleset should retain ranked identity');
-  assert.match(pureMayhemMenu.menu?.missionBriefing?.title || '', /RUN MODES.*MAYHEM PURE/i);
-  assert.match(pureMayhemMenu.menu?.missionBriefing?.body || '', /No tactical drafts[\s\S]*PURE LEADERBOARD[\s\S]*CHANGE RULESET/i);
+  assert.equal(pureMayhemMenu.menu?.missionBriefing?.title, 'MAYHEM');
+  assert.equal(pureMayhemMenu.menu?.missionBriefing?.status, 'RANKED');
+  assert.match(pureMayhemMenu.menu?.missionBriefing?.body || '', /original Mayhem rules[\s\S]*no Tactical Drafts[\s\S]*Pure leaderboard/i);
   const pureLaunch = await page.evaluate(() => {
     const scene = window.__game?.currentScene;
     const game = window.__game;
@@ -610,8 +616,14 @@ try {
   await page.waitForTimeout(500);
   assertLaunchDeckVisible(await readState(page), '1280x800 menu');
   await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-1280x800.png'), fullPage: false });
+  await page.setViewportSize({ width: 2560, height: 1440 });
+  await waitForScene(page, 'menu');
+  await page.waitForTimeout(500);
+  assertLaunchDeckVisible(await readState(page), '2560x1440 menu');
+  await page.screenshot({ path: path.join(outputDir, 'menu-run-modes-2560x1440.png'), fullPage: false });
 
   for (const viewport of [
+    { width: 2560, height: 1440, name: '2560x1440' },
     { width: 1920, height: 1080, name: '1920x1080' },
     { width: 1366, height: 768, name: '1366x768' },
     { width: 1280, height: 720, name: '1280x720' },
@@ -629,7 +641,15 @@ try {
   await waitForScene(page, 'menu');
   const dailyFocus = await focusMenuOption(page, 'dailySignal');
   assert.equal(dailyFocus.menu?.missionBriefing?.mode, 'dailySignal');
-  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /TODAY: CLEAR SECTOR 10[\s\S]*TACTICAL DRAFTS[\s\S]*NOT ATTEMPTED[\s\S]*WEEKLY CLEARS: 0 \/ 7[\s\S]*LOCAL RECORD ONLY[\s\S]*NO PUBLIC DAILY LEADERBOARD[\s\S]*RESETS IN/i);
+  assert.match(dailyFocus.menu?.missionBriefing?.body || '', /Clear today’s challenge with a loaner ship[\s\S]*local daily record/i);
+  const dailyTiles = Object.fromEntries(
+    dailyFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]) || []
+  );
+  assert.equal(dailyTiles.TARGET, 'SECTOR 10');
+  assert.ok(String(dailyTiles.SHIP || '').length > 2, 'Daily briefing should expose the derived loaner ship');
+  assert.equal(dailyTiles.DRAFTS, 'TACTICAL');
+  assert.equal(dailyTiles.RECORD, 'NOT ATTEMPTED');
+  assert.match(dailyFocus.menu?.missionBriefing?.restriction || '', /Local record only.*No public daily leaderboard/i);
   assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /[◆◇]/, 'Daily menu briefing must use words and numbers instead of symbolic status glyphs');
   assert.doesNotMatch(dailyFocus.menu?.missionBriefing?.body || '', /fixed route/i, 'Daily briefing must not overclaim full route determinism');
   assert.equal(dailyFocus.menu?.launchDeck?.featuredDailySignal?.contract?.localOnly, true);
@@ -641,7 +661,7 @@ try {
   assert.equal(mayhemFocus.menu?.focusedOption, 'launchTactical', 'ArrowRight should keep focus on the Mayhem family');
   assert.equal(mayhemFocus.menu?.missionBriefing?.mode, 'launchTactical');
   assert.equal(mayhemFocus.menu?.launchDeck?.cards?.mayhemTactical?.label, 'MAYHEM PURE');
-  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /ALTERNATIVE RANKED MODE[\s\S]*No tactical drafts[\s\S]*original Mayhem ruleset[\s\S]*PURE LEADERBOARD[\s\S]*CHANGE RULESET/i);
+  assert.match(mayhemFocus.menu?.missionBriefing?.body || '', /original Mayhem rules[\s\S]*no Tactical Drafts[\s\S]*Pure leaderboard/i);
   assert.doesNotMatch(mayhemFocus.menu?.missionBriefing?.body || '', /Sector 1 climb/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-focused.png'), fullPage: false });
   await page.keyboard.press('ArrowRight');
@@ -652,13 +672,13 @@ try {
   assert.equal((await readState(page)).menu?.focusedOption, 'dailySignal', 'ArrowDown should move from Mayhem to Daily Challenge');
   const tacticalFocus = await focusMenuOption(page, 'launchTactical');
   assert.equal(tacticalFocus.menu?.missionBriefing?.mode, 'launchTactical');
-  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /MAIN MODE.*RECOMMENDED[\s\S]*permanent tactical upgrade[\s\S]*TACTICAL LEADERBOARD[\s\S]*CHANGE RULESET/i);
+  assert.match(tacticalFocus.menu?.missionBriefing?.body || '', /permanent tactical upgrade[\s\S]*separate Tactical leaderboard/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-mayhem-tactical-focused.png'), fullPage: false });
   const scoutFocus = await focusMenuOption(page, 'scout');
   assert.equal(scoutFocus.menu?.missionBriefing?.mode, 'scout');
   assert.match(
     scoutFocus.menu?.missionBriefing?.body || '',
-    /PRACTICE.*UNRANKED[\s\S]*ANOMALY: CALIBRATION[\s\S]*Lower-pressure route and hull practice[\s\S]*Scout pressure.*Scout bosses[\s\S]*LEFT\/RIGHT: CHANGE ANOMALY[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*career XP[\s\S]*checkpoint unlocks/i
+    /Lower-pressure route and hull practice[\s\S]*Scout pressure.*Scout bosses/i
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-focused.png'), fullPage: false });
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', {
@@ -674,7 +694,11 @@ try {
   assert.equal(bulletSchoolFocus.menu?.scoutRun?.buttonSubtext, 'ANOMALY: BULLET SCHOOL');
   assert.match(
     bulletSchoolFocus.menu?.missionBriefing?.body || '',
-    /ANOMALY: BULLET SCHOOL[\s\S]*Ranked-speed shots and firing pressure with Scout sustain/i
+    /Ranked-speed shots and firing pressure with Scout sustain[\s\S]*Ranked bullet pressure.*Scout sustain/i
+  );
+  assert.equal(
+    Object.fromEntries(bulletSchoolFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]) || []).ANOMALY,
+    'BULLET SCHOOL'
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-scout-bullet-school.png'), fullPage: false });
   await page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keydown', {
@@ -687,7 +711,8 @@ try {
   assert.equal((await readState(page)).menu?.scoutRun?.anomaly?.id, 'calibration', 'Scout anomaly should cycle back deterministically');
   const sectorFocus = await focusMenuOption(page, 'sectorStart');
   assert.equal(sectorFocus.menu?.missionBriefing?.mode, 'sectorStart');
-  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /CHECKPOINT PRACTICE.*UNRANKED[\s\S]*Start from checkpoints unlocked in Mayhem[\s\S]*practice later sectors[\s\S]*No leaderboard submission[\s\S]*achievements[\s\S]*Sector records stay local/i);
+  assert.match(sectorFocus.menu?.missionBriefing?.body || '', /checkpoint unlocked in Mayhem[\s\S]*Practice later sectors/i);
+  assert.match(sectorFocus.menu?.missionBriefing?.restriction || '', /No leaderboard submission or achievements.*Sector records stay local/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-sector-run-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.openSectorSelector?.());
   await page.waitForTimeout(250);
@@ -721,8 +746,10 @@ try {
   assert.equal(lockedOverrunFocus.menu?.launchDeck?.cards?.overrun?.sublabel, 'LOCKED · REACH SECTOR 30');
   assert.match(
     lockedOverrunFocus.menu?.missionBriefing?.body || '',
-    /Reach Sector 30 in Mayhem[\s\S]*Sector milestone, not Pilot Rank 30[\s\S]*zero starting score and 65% of normal Career XP/i
+    /Reach Sector 30 in Mayhem Tactical to unlock the Sector 51 start/i
   );
+  assert.equal(lockedOverrunFocus.menu?.missionBriefing?.status, 'LOCKED');
+  assert.match(lockedOverrunFocus.menu?.missionBriefing?.restriction || '', /highest Sector reached, not Pilot Rank/i);
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-locked-focused.png'), fullPage: false });
   await page.evaluate(() => {
     const scene = window.__game?.scenes?.menu;
@@ -740,7 +767,11 @@ try {
   assert.equal(overrunFocus.menu?.missionBriefing?.mode, 'overrun');
   assert.match(
     overrunFocus.menu?.missionBriefing?.body || '',
-    /SECTOR 51.*UNRANKED[\s\S]*Damage Up.*Rapid Fire.*Blink Drive.*Focus Lens.*Double Shot[\s\S]*Boss Drafts continue[\s\S]*zero score[\s\S]*65% NORMAL CAREER XP[\s\S]*Career XP and cumulative Pilot Orders stay active[\s\S]*No leaderboard submission, achievements, or checkpoint unlocks/i
+    /Start at Sector 51 with five fixed upgrades[\s\S]*Boss victories still offer new upgrade choices/i
+  );
+  assert.deepEqual(
+    overrunFocus.menu?.missionBriefing?.tiles?.map(({ label, value }) => [label, value]),
+    [['START', 'SECTOR 51'], ['SCORE', 'STARTS AT 0'], ['CAREER XP', '65% OF NORMAL'], ['BOSS DRAFTS', 'CONTINUE']]
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-tactical-focused.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.cycleOverrunRunMode?.(-1, { force: true }));
@@ -750,7 +781,7 @@ try {
   assert.equal(overrunPureFocus.menu?.launchDeck?.cards?.overrun?.label, 'OVERRUN PURE');
   assert.match(
     overrunPureFocus.menu?.missionBriefing?.body || '',
-    /Pure ship baseline with no Tactical Drafts[\s\S]*zero score[\s\S]*65% NORMAL CAREER XP/i
+    /Start at Sector 51 on the Pure ship baseline[\s\S]*No Tactical upgrades or Boss Drafts/i
   );
   await page.screenshot({ path: path.join(outputDir, 'menu-overrun-pure-focused.png'), fullPage: false });
 
@@ -1073,7 +1104,7 @@ try {
   });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').menu?.missionBriefing?.mode === 'dailySignal', null, { timeout: 15000 });
   const clearedDailyMenu = await readState(page);
-  assert.match(clearedDailyMenu.menu?.missionBriefing?.body || '', /CLEARED[\s\S]*BEST[\s\S]*1:30/i, 'stored clear menu briefing must expose the time tie-break');
+  assert.match(clearedDailyMenu.menu?.missionBriefing?.personalBest || '', /BEST[\s\S]*CLEARED[\s\S]*1:30/i, 'stored clear compact record must expose the time tie-break');
   await page.screenshot({ path: path.join(outputDir, 'menu-daily-signal-cleared.png'), fullPage: false });
   await page.evaluate(() => window.__game?.scenes?.menu?.startDailySignalRun?.());
   const improveDaily = await waitForScene(page, 'play');

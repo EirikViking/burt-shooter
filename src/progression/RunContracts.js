@@ -980,6 +980,8 @@ function buildRunContractDisplayEntry(id, state = {}) {
     shortDescription: contract.shortDescription || contract.description || '',
     howTo: getRunContractHowTo(contract),
     modeLabel: contract.modeLabel || 'Mayhem',
+    modes: Array.isArray(contract.modes) ? [...contract.modes] : [],
+    persistAcrossRuns: Boolean(contract.persistAcrossRuns),
     target,
     reward: getRunContractReward(contract),
     progress: completed

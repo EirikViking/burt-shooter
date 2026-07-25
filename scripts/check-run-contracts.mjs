@@ -144,11 +144,17 @@ function completion(id, overrides = {}) {
   };
 }
 
-function runContractState({ activeIds = DEFAULT_ACTIVE_RUN_CONTRACT_IDS, completedIds = [], completionNoticeSeen = false } = {}) {
+function runContractState({
+  activeIds = DEFAULT_ACTIVE_RUN_CONTRACT_IDS,
+  completedIds = [],
+  completionNoticeSeen = false,
+  progress = {}
+} = {}) {
   return normalizeRunContractsState({
     activeIds,
     completedIds,
     completed: Object.fromEntries(completedIds.map((id) => [id, completion(id)])),
+    progress,
     completionNoticeSeen
   });
 }
@@ -1078,11 +1084,8 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   const screen = menu?.screen;
   const board = menu?.missionBoard;
   assert.ok(screen?.width > 0 && screen?.height > 0, 'menu screen bounds should be exposed');
-  assert.match(
-    menu?.missionBriefing?.title || '',
-    /^RUN MODES(?: \/\/| ·) /,
-    'run mode panel should avoid Mission wording repetition'
-  );
+  assert.equal(menu?.missionBriefing?.eyebrow, 'RUN MODE', 'compact briefing should use the new eyebrow hierarchy');
+  assert.ok(String(menu?.missionBriefing?.title || '').trim(), 'compact briefing should expose a non-redundant mode-family title');
   assert.equal(board?.status, expectedStatus);
   if (expectedDisabledBySetting !== null) {
     assert.equal(board?.disabledBySetting, expectedDisabledBySetting, 'Pilot Orders hidden reason should match expectation');
@@ -1119,7 +1122,10 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     assert.ok(featuredDaily.bottom <= menu.launchDeck.bounds.bottom + 2, 'Daily Challenge should stay inside the launch deck');
     assert.ok(!boundsOverlap(featuredDaily, board.bounds, 2), 'Daily Signal feature must not overlap Pilot Orders');
   }
-  assert.ok(board.bounds.bottom <= menu.panel.y + 6, 'Pilot Orders should stay above the utility dock');
+  assert.ok(
+    board.bounds.bottom <= menu.panel.y + 6,
+    `Pilot Orders should stay above the utility dock board=${JSON.stringify(board.bounds)} dock=${JSON.stringify(menu.panel)}`
+  );
 
   if (expectedStatus === 'complete') {
     assert.equal(board.title, 'PILOT ORDERS COMPLETE');
@@ -1128,8 +1134,10 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
     return;
   }
 
-  assert.match(board?.title || '', /^PILOT ORDERS \/\/ COMPLETED: [0-9,]+$/);
-  assert.doesNotMatch(board?.title || '', /\/50/, 'Pilot Orders board title must not reveal the catalog total');
+  assert.equal(board?.title, 'PILOT ORDERS');
+  assert.match(board?.subtitle || '', /^[0-9,]+ \/ [0-9,]+ COMPLETE$/);
+  assert.doesNotMatch(board?.subtitle || '', /\/ ?50/, 'Pilot Orders board must not reveal the catalog total');
+  assert.match(board?.secondaryStatus || '', /^(ACTIVE|NOT ACTIVE) IN THIS MODE$/);
   assert.ok(Number(board?.trackProgressRatio) >= 0 && Number(board?.trackProgressRatio) <= 1, 'Pilot Orders should expose a bounded track progress ratio');
   assert.equal(board?.rows?.length, 3, 'Pilot Orders should show exactly three active rows');
   assert.equal(new Set(board.rows.map((row) => row.group)).size, board.rows.length, 'Pilot Orders should not show two similar order groups at once');
@@ -1140,17 +1148,16 @@ function assertPilotOrdersLayout(menu, expectedStatus = 'active', { expectedDisa
   assert.equal(board.selectedOrder?.id, selectedRow.id, 'Pilot Orders selected detail should match the highlighted row');
   assert.equal(board.selectedOrder?.title, selectedRow.title, 'Pilot Orders selected detail should reuse the visible title');
   assert.equal(board.selectedOrder?.detail, expectedDetail, 'Pilot Orders selected detail should use the catalog guidance');
-  assert.equal(board.subtitle, expectedDetail, 'Pilot Orders subtitle should explain exactly how to progress the selected row');
-  assert.ok(!boundsOverlap(board.subtitleBounds, selectedRow.bounds, 2), 'Pilot Orders detail strip should not overlap the selected row');
   for (const row of board.rows) {
     assertInside(row.bounds, screen, `${row.id} row`);
     assertInside(row.titleBounds, screen, `${row.id} title`);
+    assertInside(row.detailBounds, screen, `${row.id} detail`);
     assertInside(row.progressBounds, screen, `${row.id} progress`);
     assertInside(row.progressSlotBounds, screen, `${row.id} progress slot`);
-    assertContained(row.progressBounds, row.progressSlotBounds, `${row.id} progress text`);
     assert.ok(!boundsOverlap(row.titleBounds, row.progressBounds, 2), `${row.id} title/progress text should not overlap`);
-    assert.ok(!String(row.detail || '').trim(), `${row.id} should keep the main-menu row compact`);
-    assert.match(row.progress, /^(COMPLETE|[0-9,]+\/[0-9,]+)$/, `${row.id} should show clear progress`);
+    assert.equal(row.detail, ACTIVE_HOW_TO[row.id], `${row.id} should explain its objective inline`);
+    assert.match(row.progress, /^(COMPLETE|[0-9,]+ \/ [0-9,]+)$/, `${row.id} should show clear progress`);
+    assert.match(row.reward || '', /^\+[0-9,]+ XP$/, `${row.id} should show its real Career XP reward`);
     assert.ok(Number(row.progressRatio) >= 0 && Number(row.progressRatio) <= 1, `${row.id} should expose a bounded visual progress ratio`);
   }
 }
@@ -1176,6 +1183,12 @@ async function runBrowserSmoke() {
     mkdirSync(outputDir, { recursive: true });
 
     const activeState = runContractState();
+    const partialState = runContractState({
+      progress: {
+        graze_10: { id: 'graze_10', progress: 6, target: 10 },
+        enemy_sweep_1000: { id: 'enemy_sweep_1000', progress: 437, target: 1000 }
+      }
+    });
     const completedOrderState = runContractState({ completedIds: ['graze_10'] });
     const completedReviewState = runContractState({ completedIds: ['boss_breaker', 'enemy_sweep_1000', 'enemy_sweep_2500'] });
     const completeNoticeState = runContractState({ completedIds: RUN_CONTRACT_ORDER_IDS, completionNoticeSeen: false });
@@ -1195,15 +1208,36 @@ async function runBrowserSmoke() {
       expectedStatus: 'active'
     });
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.id), FIRST_THREE);
-    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0/10', '0/1', '0/1,000']);
+    assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.progress), ['0 / 10', '0 / 1', '0 / 1,000']);
     assert.equal(activeProof.state.menu.missionBoard.selectedOrder?.id, 'graze_10', 'fresh Pilot Orders board should explain the first active order by default');
-    assert.equal(activeProof.state.menu.missionBoard.subtitle, 'Fly close to enemy bullets without touching them.', 'fresh Pilot Orders board should show exact action guidance');
+    assert.equal(activeProof.state.menu.missionBoard.subtitle, '0 / 3 COMPLETE', 'fresh Pilot Orders board should show visible-order completion');
     assert.equal(activeProof.state.menu.menuIcons?.shipHangar?.sublabel, 'UPGRADE & CUSTOMIZE', 'fresh Ship Hangar card should keep its normal subtitle');
-    assert.equal(activeProof.state.menu.missionBoard.title, 'PILOT ORDERS // COMPLETED: 0', 'main-menu header should show completed orders without revealing the endpoint');
+    assert.equal(activeProof.state.menu.missionBoard.title, 'PILOT ORDERS', 'main-menu header should use the requested hierarchy');
     assert.doesNotMatch(activeProof.state.menu.missionBoard.title || '', /\/50/, 'main-menu Pilot Orders header must keep the catalog total hidden');
     assert.deepEqual(activeProof.state.menu.missionBoard.rows.map((row) => row.orderSlot), ['01', '02', '03'], 'main-menu rows should expose order numbers without the catalog total');
     assert.match(activeProof.state.menu.missionBoard.rows[0]?.title || '', /^Graze x10$/, 'main-menu row title should stay compact');
     assert.doesNotMatch(activeProof.state.menu.missionBriefing.body || '', /PILOT ORDERS/i, 'Run Modes briefing should not duplicate Pilot Orders progress');
+
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(120);
+    const keyboardFocusState = await readState(page);
+    assert.equal(keyboardFocusState.menu.missionBoard.focusActive, true, 'Tab should move focus from Mode Details into Pilot Orders');
+    assert.equal(keyboardFocusState.menu.missionBoard.selectedIndex, 0);
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(80);
+    const keyboardMovedState = await readState(page);
+    assert.equal(keyboardMovedState.menu.missionBoard.selectedIndex, 1, 'keyboard navigation should move between fixed-height order cards');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(80);
+    const keyboardExitState = await readState(page);
+    assert.equal(keyboardExitState.scene, 'menu', 'activating a focused Pilot Order must not launch a run');
+    assert.equal(keyboardExitState.menu.missionBoard.focusActive, false, 'Enter should return focus from the read-only tracker');
+    await page.keyboard.press('KeyI');
+    await page.waitForTimeout(120);
+    const modeOverlayState = await readState(page);
+    assert.equal(modeOverlayState.menu.modeBriefing?.open, true, 'I should open the reusable Mode Briefing overlay');
+    await page.keyboard.press('Escape');
 
     const secondRowBounds = activeProof.state.menu.missionBoard.rows[1]?.bounds;
     await page.mouse.move(
@@ -1214,8 +1248,22 @@ async function runBrowserSmoke() {
     const hoverState = await readState(page);
     assertPilotOrdersLayout(hoverState.menu, 'active');
     assert.equal(hoverState.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'hovering a Pilot Order row should update the detail strip');
-    assert.equal(hoverState.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'hover detail should explain the hovered order');
+    assert.equal(hoverState.menu.missionBoard.rows[1].detail, 'Survive to a boss wave, then destroy the boss.', 'hovered order should remain understandable inline');
     await page.screenshot({ path: path.join(outputDir, 'pilot-orders-hover-detail-menu.png'), fullPage: true });
+
+    const partialProof = await captureMenuProof(page, {
+      label: 'pilot-orders-partial-menu',
+      width: 1920,
+      height: 1080,
+      uiScale: 1,
+      runContracts: partialState,
+      expectedStatus: 'active'
+    });
+    assert.deepEqual(
+      partialProof.state.menu.missionBoard.rows.map((row) => row.progress),
+      ['6 / 10', '0 / 1', '437 / 1,000'],
+      'partial Pilot Orders should retain exact canonical progress'
+    );
 
     const wideOverrunProof = await captureMenuProof(page, {
       label: 'pilot-orders-wide-overrun-menu',
@@ -1414,7 +1462,7 @@ async function runBrowserSmoke() {
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progress, 'COMPLETE');
     assert.equal(completedProof.state.menu.missionBoard.rows[0].progressRatio, 1, 'completed Pilot Order row should expose a full progress meter');
     assert.equal(completedProof.state.menu.missionBoard.selectedOrder?.id, 'boss_breaker', 'completed active rows should default the detail strip to the next unfinished order');
-    assert.equal(completedProof.state.menu.missionBoard.subtitle, 'Survive to a boss wave, then destroy the boss.', 'completed active rows should still explain the next unfinished order');
+    assert.equal(completedProof.state.menu.missionBoard.subtitle, '1 / 3 COMPLETE', 'completed active rows should update the visible completion count');
     assert.equal(completedProof.state.menu.menuIcons?.shipHangar?.sublabel, 'PILOT ORDERS // COMPLETED: 1', 'Ship Hangar dock card should advertise completed orders without revealing the endpoint');
 
     const completeProof = await captureMenuProof(page, {

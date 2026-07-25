@@ -8,6 +8,7 @@ import { ko } from '../src/i18n/locales/ko.js';
 import { ptBR } from '../src/i18n/locales/pt-BR.js';
 import { ru } from '../src/i18n/locales/ru.js';
 import { zhCN } from '../src/i18n/locales/zh-CN.js';
+import { MODE_BRIEFING_ENGLISH_REVIEW_PENDING } from '../src/i18n/modeBriefingReviewSourceText.js';
 import {
   normalizeLanguageCode,
   resolveLanguage,
@@ -565,3 +566,6 @@ for (const marker of ['spawnMarketingDebugBoss', 'marketingDebugMode']) {
 }
 
 console.log('i18n checks passed');
+console.log(
+  `i18n review pending: ${MODE_BRIEFING_ENGLISH_REVIEW_PENDING.length} Mode Briefing/Pilot Orders English source strings intentionally use clean fallbacks in 7 non-English locales until UX copy approval`
+);

@@ -13,6 +13,7 @@ import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
 import { getCompetitionLearningSourceText } from '../competitionLearningSourceText.js';
 import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySourceText.js';
+import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
 
 const sourceText = Object.freeze({
   "ACE CONTACT": "CONTATO AS",
@@ -1847,6 +1848,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getModeBriefingReviewSourceText() }),
   patterns
 };
