@@ -136,11 +136,21 @@ const browser = await chromium.launch({
 });
 const report = { ok: false, baseUrl, outputDir, scenarios: [], failures: [] };
 try {
-  const variantIds = [
+  const allVariantIds = [
     'ghost_fleet_salute',
     'astral_leviathan_library',
     'celestial_crane_migration'
   ];
+  const requestedVariantIds = new Set(
+    String(process.env.CHECK_VARIANT_IDS || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+  );
+  const variantIds = requestedVariantIds.size
+    ? allVariantIds.filter((variantId) => requestedVariantIds.has(variantId))
+    : allVariantIds;
+  if (variantIds.length === 0) throw new Error(`No Cabinet Wonder variants matched CHECK_VARIANT_IDS=${[...requestedVariantIds].join(',')}`);
   for (const [index, variantId] of variantIds.entries()) {
     report.scenarios.push(await runVariant(
       browser,
