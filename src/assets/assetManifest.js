@@ -7,6 +7,7 @@ import {
     ELITE_MIDDLE_SHIP_EXPANSION_SFX_KEYS
 } from '../config/EliteMiddleShipExpansion.js';
 import { GAME_OVER_FINAL_TRANSMISSION_VARIANTS } from '../config/GameOverFinalTransmissionVariants.js';
+import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 
 export const AssetManifest = {
     generated: {
@@ -33,18 +34,9 @@ export const AssetManifest = {
         bossArenaBackdrop: '/art/generated/nova-swarm/nova-swarm-boss-arena.webp',
         bossDossier: '/art/generated/nova-swarm/nova-swarm-boss-dossier.png',
         tacticalDraftField: '/art/generated/nova-swarm/ui/tactical-draft/nova-tactical-draft-command-field-20260722.png',
-        cabinetWonders: {
-            ghost_fleet_salute: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-ghost-fleet-salute-20260722.png',
-            starwhale_constellation: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-starwhale-constellation-20260722.png',
-            aurora_crown: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-aurora-crown-20260722.png',
-            singularity_bloom: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-singularity-bloom-20260722.png',
-            celestial_koi_procession: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-celestial-koi-procession-20260722.png',
-            prismatic_supernova: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-prismatic-supernova-20260722.png',
-            warp_cathedral: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-warp-cathedral-20260722.png',
-            quantum_eclipse: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-quantum-eclipse-20260722.png',
-            nebula_jellyfish: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-nebula-jellyfish-20260722.png',
-            phoenix_comet: '/art/generated/nova-swarm/vfx/cabinet-wonders/nova-wonder-phoenix-comet-20260722.png'
-        },
+        cabinetWonders: Object.freeze(Object.fromEntries(
+            CABINET_WONDER_DEFINITIONS.map((entry) => [entry.id, entry.art])
+        )),
         vfx: {
             overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',

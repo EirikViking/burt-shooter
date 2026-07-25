@@ -1,61 +1,9 @@
-const freezeEntries = (entries) => Object.freeze(entries.map((entry) => Object.freeze({ ...entry })));
+import { CABINET_WONDER_DEFINITIONS } from '../config/CabinetWonderLore.js';
 
-export const CABINET_WONDER_CATALOG = freezeEntries([
-  {
-    id: 'ghost_fleet_salute',
-    palette: Object.freeze([0x7df9ff, 0xb6a1ff, 0xff70d7]),
-    pitchScale: 0.92
-  },
-  {
-    id: 'starwhale_constellation',
-    palette: Object.freeze([0xe8fbff, 0x7df9ff, 0xffef9a]),
-    pitchScale: 1.08
-  },
-  {
-    id: 'aurora_crown',
-    palette: Object.freeze([0x66ffd1, 0x7a8cff, 0xff62d8]),
-    pitchScale: 1.2
-  },
-  {
-    id: 'singularity_bloom',
-    palette: Object.freeze([0x9a7dff, 0xff65d8, 0x63f4ff]),
-    pitchScale: 0.74
-  },
-  {
-    id: 'celestial_koi_procession',
-    palette: Object.freeze([0xffd36a, 0xff6fcf, 0x75f7ff]),
-    pitchScale: 1.14
-  },
-  {
-    id: 'prismatic_supernova',
-    palette: Object.freeze([0xffffff, 0x73efff, 0xff78d7]),
-    pitchScale: 1.32
-  },
-  {
-    id: 'warp_cathedral',
-    palette: Object.freeze([0x61f7ff, 0x8d7cff, 0xffd86b]),
-    pitchScale: 0.84
-  },
-  {
-    id: 'quantum_eclipse',
-    palette: Object.freeze([0xffc86b, 0xff5ec9, 0x79eaff]),
-    pitchScale: 0.68
-  },
-  {
-    id: 'nebula_jellyfish',
-    palette: Object.freeze([0x8c7dff, 0x67ffe0, 0xff78dc]),
-    pitchScale: 0.98
-  },
-  {
-    id: 'phoenix_comet',
-    palette: Object.freeze([0xffee8a, 0xff7a57, 0xff59cb]),
-    pitchScale: 1.26
-  }
-]);
+export const CABINET_WONDER_CATALOG = CABINET_WONDER_DEFINITIONS;
 
 export const CABINET_WONDER_VARIANT_COUNT = CABINET_WONDER_CATALOG.length;
-export const CABINET_WONDER_BASE_CHANCE = 0.055;
-export const CABINET_WONDER_MAX_CHANCE = 0.22;
+export const CABINET_WONDER_SECTOR_CADENCE = 3;
 
 function hashUint32(value) {
   let hash = 2166136261;
@@ -67,20 +15,23 @@ function hashUint32(value) {
   return hash >>> 0;
 }
 
-function hashUnit(value) {
-  return hashUint32(value) / 0x100000000;
-}
-
 export function getCabinetWonderById(id) {
   return CABINET_WONDER_CATALOG.find((entry) => entry.id === id) || null;
 }
 
 export function getCabinetWonderChance({ sector = 1, eligibleChecks = 0 } = {}) {
   const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
-  const safeChecks = Math.max(0, Math.floor(Number(eligibleChecks) || 0));
-  const sectorLift = Math.min(0.045, Math.max(0, safeSector - 2) * 0.0045);
-  const droughtLift = Math.min(0.12, Math.max(0, safeChecks - 1) * 0.012);
-  return Number(Math.min(CABINET_WONDER_MAX_CHANCE, CABINET_WONDER_BASE_CHANCE + sectorLift + droughtLift).toFixed(4));
+  return safeSector >= CABINET_WONDER_SECTOR_CADENCE && safeSector % CABINET_WONDER_SECTOR_CADENCE === 0 ? 1 : 0;
+}
+
+function pickFreshVariant(seed, sector, waveNumber, recentVariantIds = []) {
+  const recent = new Set((recentVariantIds || []).map(String));
+  const startIndex = hashUint32(`${seed}:cabinet-wonder:${sector}:${waveNumber}:variant`) % CABINET_WONDER_VARIANT_COUNT;
+  for (let offset = 0; offset < CABINET_WONDER_VARIANT_COUNT; offset += 1) {
+    const candidate = CABINET_WONDER_CATALOG[(startIndex + offset) % CABINET_WONDER_VARIANT_COUNT];
+    if (!recent.has(candidate.id)) return candidate;
+  }
+  return CABINET_WONDER_CATALOG[startIndex];
 }
 
 export function evaluateCabinetWonder(seed, context = {}) {
@@ -102,7 +53,7 @@ export function evaluateCabinetWonder(seed, context = {}) {
     gameplayNeutral: true
   };
 
-  if (context.alreadyShown) return { ...base, reason: 'already_shown' };
+  if (context.sectorAlreadyShown) return { ...base, reason: 'already_shown_this_sector' };
   if (context.debugForce === true) {
     const variant = forcedVariant || CABINET_WONDER_CATALOG[hashUint32(`${seed}:debug:${sector}:${waveNumber}`) % CABINET_WONDER_VARIANT_COUNT];
     return {
@@ -118,22 +69,18 @@ export function evaluateCabinetWonder(seed, context = {}) {
   if (context.hasUpcomingWave !== true) return { ...base, reason: 'no_safe_transition' };
   if (context.isChallenge === true) return { ...base, reason: 'challenge_transition' };
   if (context.busyTransition === true) return { ...base, reason: 'busy_transition' };
-  if (sector < 2 || waveNumber < 2) return { ...base, reason: 'early_run' };
+  if (sector < CABINET_WONDER_SECTOR_CADENCE || waveNumber < 2) return { ...base, reason: 'early_run' };
 
   const chance = getCabinetWonderChance({ sector, eligibleChecks });
-  const rollKey = `${seed}:cabinet-wonder:${sector}:${waveNumber}:${eligibleChecks}:roll`;
-  const roll = Number(hashUnit(rollKey).toFixed(6));
-  if (roll >= chance) {
-    return { ...base, eligible: true, reason: 'roll_missed', chance, roll };
-  }
-  const variantIndex = hashUint32(`${seed}:cabinet-wonder:${sector}:${waveNumber}:${eligibleChecks}:variant`) % CABINET_WONDER_VARIANT_COUNT;
+  if (chance === 0) return { ...base, reason: 'between_cadence_sectors' };
+  const variant = pickFreshVariant(seed, sector, waveNumber, context.recentVariantIds);
   return {
     ...base,
     eligible: true,
     triggered: true,
-    reason: 'rare_window',
+    reason: 'sector_cadence',
     chance,
-    roll,
-    variant: CABINET_WONDER_CATALOG[variantIndex]
+    roll: 0,
+    variant
   };
 }

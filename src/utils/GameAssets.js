@@ -144,21 +144,24 @@ class GameAssetsManager {
         return this.gameOverFinalTransmissionTextures[variant.id] || null;
     }
 
-    async ensureCabinetWonderTextures() {
+    async ensureCabinetWonderTexture(id) {
         const sources = AssetManifest.generated?.cabinetWonders || {};
-        const entries = await Promise.all(Object.entries(sources).map(async ([id, src]) => {
-            if (this.isValidTexture(this.cabinetWonderTextures[id])) return [id, this.cabinetWonderTextures[id]];
-            try {
-                const texture = await PIXI.Assets.load({ alias: `nova_cabinet_wonder_${id}`, src });
-                return [id, this.isValidTexture(texture) ? texture : null];
-            } catch (error) {
-                console.warn(`[GameAssets] Cabinet Wonder texture ${id} unavailable:`, error?.message || error);
-                return [id, null];
-            }
-        }));
-        entries.forEach(([id, texture]) => {
-            if (texture) this.cabinetWonderTextures[id] = texture;
-        });
+        const key = String(id || '');
+        if (!key || !sources[key]) return null;
+        if (this.isValidTexture(this.cabinetWonderTextures[key])) return this.cabinetWonderTextures[key];
+        try {
+            const texture = await PIXI.Assets.load({ alias: `nova_cabinet_wonder_${key}`, src: sources[key] });
+            if (this.isValidTexture(texture)) this.cabinetWonderTextures[key] = texture;
+        } catch (error) {
+            console.warn(`[GameAssets] Cabinet Wonder texture ${key} unavailable:`, error?.message || error);
+        }
+        return this.getCabinetWonderTexture(key);
+    }
+
+    async ensureCabinetWonderTextures(ids = []) {
+        const sources = AssetManifest.generated?.cabinetWonders || {};
+        const requestedIds = Array.isArray(ids) && ids.length ? ids : Object.keys(sources).slice(0, 1);
+        await Promise.all(requestedIds.map((id) => this.ensureCabinetWonderTexture(id)));
         return this.cabinetWonderTextures;
     }
 

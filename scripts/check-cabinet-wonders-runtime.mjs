@@ -138,22 +138,15 @@ const report = { ok: false, baseUrl, outputDir, scenarios: [], failures: [] };
 try {
   const variantIds = [
     'ghost_fleet_salute',
-    'starwhale_constellation',
-    'aurora_crown',
-    'singularity_bloom',
-    'celestial_koi_procession',
-    'prismatic_supernova',
-    'warp_cathedral',
-    'quantum_eclipse',
-    'nebula_jellyfish',
-    'phoenix_comet'
+    'astral_leviathan_library',
+    'celestial_crane_migration'
   ];
   for (const [index, variantId] of variantIds.entries()) {
     report.scenarios.push(await runVariant(
       browser,
       variantId,
       index % 3 === 1 ? { width: 1920, height: 1080 } : { width: 1280, height: 720 },
-      variantId === 'aurora_crown'
+      variantId === 'astral_leviathan_library'
     ));
   }
 
@@ -168,12 +161,14 @@ try {
       || scenario.synchronous.runModeReason !== 'debug_cabinet_wonder'
       || scenario.synchronous.isDebugRun !== true
     ) {
-      report.failures.push(`${scenario.variantId} force/one-per-run/score-neutral mismatch: ${JSON.stringify(scenario.synchronous)}`);
+      report.failures.push(`${scenario.variantId} force/one-per-sector/score-neutral mismatch: ${JSON.stringify(scenario.synchronous)}`);
     }
     if (
-      active?.availableVariants !== 10
+      active?.availableVariants !== 60
       || active?.shownCount !== 1
-      || active?.onePerRun !== true
+      || active?.onePerRun !== false
+      || active?.onePerSector !== true
+      || active?.cadenceSectors !== 3
       || active?.scoreNeutral !== true
       || active?.gameplayNeutral !== true
       || active?.active?.id !== scenario.variantId

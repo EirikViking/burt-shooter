@@ -292,6 +292,7 @@ export class PlayScene {
     this.cabinetWonderHistory = [];
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
+    this.pendingCabinetWonder = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -830,6 +831,7 @@ export class PlayScene {
     this.cabinetWonderHistory = [];
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
+    this.pendingCabinetWonder = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -2575,6 +2577,7 @@ export class PlayScene {
   }
 
   maybeShowCabinetWonder(context = {}) {
+    if (this.pendingCabinetWonder || this.activeCabinetWonder) return false;
     const debugForce = context.debugForce === true;
     if (debugForce) {
       this.game?.markUnrankedRun?.('debug_cabinet_wonder');
@@ -2586,7 +2589,8 @@ export class PlayScene {
     const decision = evaluateCabinetWonder(seed, {
       ...context,
       eligibleChecks,
-      alreadyShown: this.cabinetWonderHistory.length > 0
+      sectorAlreadyShown: this.cabinetWonderHistory.some((entry) => entry.sector === Math.max(1, Math.floor(Number(context.sector) || 1))),
+      recentVariantIds: this.cabinetWonderHistory.slice(-12).map((entry) => entry.id)
     });
     if (decision.eligible && !debugForce) this.cabinetWonderEligibleChecks = eligibleChecks;
     this.cabinetWonderLastDecision = {
@@ -2595,7 +2599,22 @@ export class PlayScene {
       variant: undefined
     };
     if (!decision.triggered || !decision.variant) return false;
-    return this.showCabinetWonder(decision);
+    if (GameAssets.getCabinetWonderTexture?.(decision.variant.id)) {
+      return this.showCabinetWonder(decision);
+    }
+    const pendingKey = `${decision.variant.id}:${decision.sector}:${decision.waveNumber}`;
+    if (this.pendingCabinetWonder?.key === pendingKey) return true;
+    this.pendingCabinetWonder = { key: pendingKey, decision };
+    GameAssets.ensureCabinetWonderTexture?.(decision.variant.id)
+      .catch(() => null)
+      .then(() => {
+        if (this.pendingCabinetWonder?.key !== pendingKey) return;
+        this.pendingCabinetWonder = null;
+        if (this.game?.currentScene !== this || this.activeCabinetWonder) return;
+        if (this.cabinetWonderHistory.some((entry) => entry.sector === decision.sector)) return;
+        this.showCabinetWonder(decision);
+      });
+    return true;
   }
 
   debugForceCabinetWonder(variantId = 'ghost_fleet_salute') {
@@ -3275,7 +3294,8 @@ export class PlayScene {
   }
 
   showCabinetWonder(decision = {}) {
-    if (!decision.variant || this.activeCabinetWonder || this.cabinetWonderHistory.length > 0 || !this.gameContainer) return false;
+    if (!decision.variant || this.activeCabinetWonder || !this.gameContainer) return false;
+    if (decision.reason !== 'debug_force' && this.cabinetWonderHistory.some((entry) => entry.sector === decision.sector)) return false;
     const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
     const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
@@ -3294,8 +3314,14 @@ export class PlayScene {
       pitchScale: decision.variant.pitchScale || 1,
       durationSeconds: reducedMotion ? 0.7 : 1.18
     });
+    const codexDiscovery = recordThreatSeen(decision.variant.id, 'wonders', {
+      name: decision.variant.title,
+      signalClass: decision.variant.signalClass,
+      source: 'cabinet_wonder'
+    });
     const historyEntry = {
       id: decision.variant.id,
+      title: decision.variant.title,
       sector: decision.sector,
       waveNumber: decision.waveNumber,
       chance: decision.chance,
@@ -3309,6 +3335,7 @@ export class PlayScene {
       authoredBounds: { ...visual.authoredBounds },
       audioProfile: 'wonder',
       audioPlayed,
+      codexDiscovered: Boolean(codexDiscovery?.isNew),
       layer: 'gameplay_background',
       visualLanguage: visual.generatedArtReady ? 'cabinet_wonder_imagegen_v2' : 'cabinet_wonder_procedural_fallback',
       generatedArtReady: visual.generatedArtReady,
@@ -3371,7 +3398,13 @@ export class PlayScene {
       availableVariants: CABINET_WONDER_VARIANT_COUNT,
       shownCount: this.cabinetWonderHistory.length,
       eligibleChecks: this.cabinetWonderEligibleChecks,
-      onePerRun: true,
+      onePerRun: false,
+      onePerSector: true,
+      cadenceSectors: 3,
+      pending: this.pendingCabinetWonder ? {
+        id: this.pendingCabinetWonder.decision?.variant?.id || null,
+        sector: this.pendingCabinetWonder.decision?.sector || null
+      } : null,
       scoreNeutral: true,
       gameplayNeutral: true,
       active: active ? {
