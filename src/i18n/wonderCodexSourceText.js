@@ -39,4 +39,3 @@ const COPY = Object.freeze({
 export function getWonderCodexSourceText(locale = 'en') {
   return COPY[locale] || Object.freeze({});
 }
-
