@@ -12,6 +12,12 @@ export class InputManager {
     this.previousGamepadButtons = {};
     this.suppressedKeys = new Set();
     this.suppressedGamepadActions = new Map();
+    this.continuityDiagnostics = {
+      enabled: this.isContinuityDiagnosticsEnabled(),
+      events: [],
+      longFrames: [],
+      maxEntries: 180
+    };
     this.setupKeyboard();
     this.setupMouse();
     this.setupFocusHandlers();
@@ -21,13 +27,16 @@ export class InputManager {
   setupMouse() {
     this.handleMouseDown = (e) => {
       if (e.button === 0) this.touchFireActive = true;
+      this.recordContinuityEvent('pointer_down', { button: e.button });
     };
     this.handleMouseUp = (e) => {
       if (e.button === 0) this.touchFireActive = false;
+      this.recordContinuityEvent('pointer_up', { button: e.button });
     };
     this.handlePointerCancel = () => {
       this.touchFireActive = false;
       this.touches = [];
+      this.recordContinuityEvent('pointer_cancel');
     };
     // Bind to window to catch clicks outside canvas if needed, or document
     document.addEventListener('pointerdown', this.handleMouseDown);
@@ -37,6 +46,7 @@ export class InputManager {
 
   setupKeyboard() {
     this.handleKeyDown = (e) => {
+      this.recordContinuityEvent('key_down', { code: e.code, key: e.key, repeat: Boolean(e.repeat) });
       if (this.suppressedKeys.has(e.code) || this.suppressedKeys.has(e.key)) return;
       if (!this.keys[e.code]) this.justPressed[e.code] = true;
       if (!this.keys[e.key]) this.justPressed[e.key] = true;
@@ -45,6 +55,7 @@ export class InputManager {
     };
 
     this.handleKeyUp = (e) => {
+      this.recordContinuityEvent('key_up', { code: e.code, key: e.key });
       this.keys[e.code] = false;
       this.keys[e.key] = false;
       this.suppressedKeys.delete(e.code);
@@ -58,14 +69,17 @@ export class InputManager {
   setupFocusHandlers() {
     // Reset all keys when window loses focus to prevent stuck keys
     this.handleBlur = () => {
+      this.recordContinuityEvent('window_blur');
       this.resetAllKeys();
     };
     this.handleNativeBlur = () => {
+      this.recordContinuityEvent('native_window_blur');
       this.resetAllKeys();
     };
 
     this.handleVisibilityChange = () => {
       if (document.hidden) {
+        this.recordContinuityEvent('document_hidden');
         this.resetAllKeys();
       }
     };
@@ -78,6 +92,7 @@ export class InputManager {
   setupGamepadHandlers() {
     this.handleGamepadConnected = () => this.pollGamepad(true);
     this.handleGamepadDisconnected = () => {
+      this.recordContinuityEvent('gamepad_disconnected');
       this.gamepadState = this.createEmptyGamepadState();
       this.previousGamepadButtons = {};
       this.suppressedGamepadActions.clear();
@@ -155,6 +170,58 @@ export class InputManager {
     if (button == null) return false;
     if (typeof button === 'number') return button > 0.5;
     return Boolean(button.pressed || button.value > 0.5);
+  }
+
+  isContinuityDiagnosticsEnabled() {
+    if (typeof window === 'undefined') return false;
+    if (window.__NOVA_INPUT_DIAGNOSTICS__ === true) return true;
+    try {
+      return new URLSearchParams(window.location?.search || '').get('inputDiagnostics') === '1'
+        || window.localStorage?.getItem('nova_swarm_input_diagnostics') === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  recordContinuityEvent(type, detail = {}) {
+    const diagnostics = this.continuityDiagnostics;
+    if (!diagnostics?.enabled) return false;
+    diagnostics.events.push({
+      at: Math.round(typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()),
+      type,
+      ...detail
+    });
+    if (diagnostics.events.length > diagnostics.maxEntries) {
+      diagnostics.events.splice(0, diagnostics.events.length - diagnostics.maxEntries);
+    }
+    return true;
+  }
+
+  recordFrameContinuity(frameMs, context = {}) {
+    const diagnostics = this.continuityDiagnostics;
+    const duration = Number(frameMs);
+    if (!diagnostics?.enabled || !Number.isFinite(duration) || duration < 34) return false;
+    diagnostics.longFrames.push({
+      at: Math.round(typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()),
+      frameMs: Number(duration.toFixed(2)),
+      pressedKeys: Object.entries(this.keys).filter(([, pressed]) => Boolean(pressed)).map(([key]) => key).sort(),
+      suppressedKeys: Array.from(this.suppressedKeys).sort(),
+      ...context
+    });
+    if (diagnostics.longFrames.length > diagnostics.maxEntries) {
+      diagnostics.longFrames.splice(0, diagnostics.longFrames.length - diagnostics.maxEntries);
+    }
+    return true;
+  }
+
+  getContinuityDebugState() {
+    const diagnostics = this.continuityDiagnostics;
+    return {
+      enabled: Boolean(diagnostics?.enabled),
+      events: diagnostics?.enabled ? diagnostics.events.slice(-30) : [],
+      longFrames: diagnostics?.enabled ? diagnostics.longFrames.slice(-30) : [],
+      transient: this.getTransientDebugState()
+    };
   }
 
   readGamepadControls(pad) {
@@ -300,6 +367,11 @@ export class InputManager {
     preserveMovement = false,
     suppressUntilReleased = true
   } = {}) {
+    this.recordContinuityEvent('reset_transient', {
+      preserveFire: Boolean(preserveFire),
+      preserveMovement: Boolean(preserveMovement),
+      suppressUntilReleased: Boolean(suppressUntilReleased)
+    });
     const fireKeys = new Set(['Space', ' ', 'shoot']);
     const movementKeys = new Set([
       'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',

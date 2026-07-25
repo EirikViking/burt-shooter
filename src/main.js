@@ -1084,6 +1084,7 @@ function buildGameTextState(game) {
         playerY: playScene.lastTractorHijack.playerY || 0
       } : null
     } : null,
+    inputContinuity: playScene?.inputManager?.getContinuityDebugState?.() || null,
     eliteMiddleShips: enemies
       .filter(enemy => enemy?.kind === 'elite_middle_ship' && (enemy.active !== false || enemy.waitingForEntry))
       .map(enemy => ({

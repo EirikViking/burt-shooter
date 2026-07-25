@@ -23,6 +23,7 @@ class FakeEventTarget {
 
 const classList = { add() {}, remove() {} };
 globalThis.window = new FakeEventTarget();
+window.__NOVA_INPUT_DIAGNOSTICS__ = true;
 globalThis.document = Object.assign(new FakeEventTarget(), {
   hidden: false,
   documentElement: { classList },
@@ -63,6 +64,7 @@ function setPad({ axes = [0, 0], pressed = [], connected = true } = {}) {
 }
 
 const input = new InputManager();
+assert.equal(input.getContinuityDebugState().enabled, true, 'opt-in continuity diagnostics should be enabled');
 
 key('keydown', 'ShiftLeft', 'Shift');
 key('keydown', 'ArrowLeft', 'ArrowLeft');
@@ -87,6 +89,11 @@ assert.equal(input.isKeyPressed('ShiftLeft'), true, 'phase must re-arm after rel
 key('keyup', 'ShiftLeft', 'Shift');
 key('keyup', 'ArrowRight', 'ArrowRight');
 key('keyup', 'Space', ' ');
+input.recordFrameContinuity(51.25, { level: 10, bossWarning: true });
+const continuity = input.getContinuityDebugState();
+assert.equal(continuity.longFrames.length, 1, 'diagnostics should retain a long frame');
+assert.equal(continuity.longFrames[0].bossWarning, true, 'long-frame context should identify spectacle state');
+assert(continuity.events.some((event) => event.type === 'key_down' && event.code === 'ArrowLeft'), 'diagnostics should retain input edges');
 
 key('keydown', 'KeyW', 'w');
 key('keydown', 'ArrowRight', 'ArrowRight');
@@ -197,6 +204,7 @@ assert.match(playSource, /boss_intro_exit[\s\S]*preserveFire: true,[\s\S]*preser
 assert.match(playSource, /focus_loss:\$\{reason\}[\s\S]*preserveFire: false/);
 assert.match(gameSource, /scene_teardown[\s\S]*preserveFire: true/);
 assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*resetTransientState/);
+assert.match(playSource, /recordFrameContinuity/);
 
 input.destroy();
 console.log('[input-state-transitions] PASS keyboard, pointer, touch, controller, phase edge, focus, movement, modal, focus-loss, and scene-transition contracts');
