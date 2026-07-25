@@ -320,6 +320,14 @@ function assertOpenReport(state, viewport) {
     assertContains(panel, section, `Report section ${section.id}`);
     assert(!rectanglesOverlap(section, tactical.bounds), `Report section ${section.id} overlaps Tactical Loadout.`);
   }
+  const combatSection = overlay.sections?.find((section) => section.id === 'combat');
+  assert(combatSection?.metrics?.length >= 8, 'Combat section should expose its rendered metric layout.');
+  for (const metric of combatSection.metrics) {
+    assert(metric.columns <= 2, `Combat metric ${metric.id} was compressed into too many columns.`);
+    assert(metric.labelFontSize >= 11, `Combat metric ${metric.id} label font is too small.`);
+    assert(metric.valueFontSize >= 14, `Combat metric ${metric.id} value font is too small.`);
+    assertContains(combatSection, metric, `Combat metric ${metric.id}`);
+  }
   for (let index = 0; index < (overlay.sections || []).length; index += 1) {
     for (let otherIndex = index + 1; otherIndex < overlay.sections.length; otherIndex += 1) {
       assert(!rectanglesOverlap(overlay.sections[index], overlay.sections[otherIndex]),

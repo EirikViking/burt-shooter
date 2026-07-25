@@ -5319,13 +5319,15 @@ export class GameOverScene {
       sectionBox.rect(x + 18, y + 29, sectionWidth - 32, 1);
       sectionBox.fill({ color: sectionAccent, alpha: 0.24 });
       this.runReportPanel.addChild(sectionBox);
-      sectionBounds.push({
+      const sectionDebug = {
         id: section.id,
         x: Math.round(this.runReportPanel.x + x),
         y: Math.round(this.runReportPanel.y + y),
         width: Math.round(sectionWidth),
-        height: Math.round(sectionHeight)
-      });
+        height: Math.round(sectionHeight),
+        metrics: []
+      };
+      sectionBounds.push(sectionDebug);
 
       const header = createText(this.getRunReportSectionLabel(section.id), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -5344,7 +5346,8 @@ export class GameOverScene {
 
       const rows = (section.rows || [])
         .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
-      const metricColumns = narrow || sectionWidth < 390 ? 1 : compact ? 3 : 2;
+      const isCombatSection = section.id === 'combat';
+      const metricColumns = narrow || sectionWidth < 390 ? 1 : isCombatSection ? 2 : compact ? 3 : 2;
       const metricGap = compact ? 3 : 7;
       const metricAreaX = x + 14;
       const metricAreaY = y + 37;
@@ -5372,9 +5375,15 @@ export class GameOverScene {
         metricBg.fill({ color: sectionAccent, alpha: 0.5 });
         this.runReportPanel.addChild(metricBg);
 
+        const metricLabelFontSize = isCombatSection
+          ? (denseMetrics ? 11 : compact ? 12 : 13)
+          : (denseMetrics ? 7 : compact ? 9 : 11);
+        const metricValueFontSize = isCombatSection
+          ? (denseMetrics ? 14 : compact ? 16 : 19)
+          : (denseMetrics ? 10 : compact ? 13 : 17);
         const metricLabel = createText(label.toUpperCase(), {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: denseMetrics ? 7 : compact ? 9 : 11,
+          fontSize: metricLabelFontSize,
           fontWeight: '900',
           fill: sectionAccent,
           stroke: '#031323',
@@ -5389,12 +5398,12 @@ export class GameOverScene {
           metricLabel,
           denseMetrics ? metricWidth * 0.58 : metricWidth - 18,
           denseMetrics ? metricHeight - 5 : Math.max(7, metricHeight * 0.32),
-          { minScale: 0.52 }
+          { minScale: isCombatSection ? 0.68 : 0.52 }
         );
 
         const metricValue = createText(value, {
           fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: denseMetrics ? 10 : compact ? 13 : 17,
+          fontSize: metricValueFontSize,
           fontWeight: '900',
           fill: '#eefcff',
           stroke: '#031323',
@@ -5413,9 +5422,20 @@ export class GameOverScene {
           metricValue,
           denseMetrics ? metricWidth * 0.37 : metricWidth - 18,
           denseMetrics ? metricHeight - 5 : Math.max(8, metricHeight * 0.5),
-          { minScale: 0.52 }
+          { minScale: isCombatSection ? 0.68 : 0.52 }
         );
         this.runReportPanel.addChild(metricLabel, metricValue);
+        sectionDebug.metrics.push({
+          id: entry.id,
+          columns: metricColumns,
+          labelFontSize: metricLabelFontSize,
+          valueFontSize: metricValueFontSize,
+          dense: denseMetrics,
+          x: Math.round(this.runReportPanel.x + metricX),
+          y: Math.round(this.runReportPanel.y + metricY),
+          width: Math.round(metricWidth),
+          height: Math.round(metricHeight)
+        });
         textLines.push(rowText);
       });
     });
