@@ -113,6 +113,8 @@ export function createDefaultHangarProgress() {
     lastNewlyUnlockedShipIds: [],
     newRanksThisRun: [],
     rankAchievementsUnlocked: [],
+    overrunUnlockCelebrationPending: false,
+    overrunUnlockCelebrationSeen: false,
     runContracts: normalizeRunContractsState(),
     updatedAt: nowIso()
   };
@@ -339,6 +341,9 @@ export function normalizeHangarProgress(raw = {}) {
     lastNewlyUnlockedShipIds: Array.isArray(raw.lastNewlyUnlockedShipIds) ? raw.lastNewlyUnlockedShipIds.map(String) : [],
     newRanksThisRun: Array.isArray(raw.newRanksThisRun) ? raw.newRanksThisRun.map(Number).filter(Number.isFinite) : [],
     rankAchievementsUnlocked: Array.isArray(raw.rankAchievementsUnlocked) ? raw.rankAchievementsUnlocked.map(String) : [],
+    overrunUnlockCelebrationPending: Boolean(raw.overrunUnlockCelebrationPending)
+      && !Boolean(raw.overrunUnlockCelebrationSeen),
+    overrunUnlockCelebrationSeen: Boolean(raw.overrunUnlockCelebrationSeen),
     runContracts: normalizeRunContractsState(raw.runContracts),
     updatedAt: raw.updatedAt || nowIso()
   };
@@ -740,6 +745,14 @@ export function applyRunProgression(summary = {}, { updateCompetitiveBests = tru
   });
   next.newRanksThisRun = newRanksThisRun;
   next.rankProgress = getPilotRankProgress(next.pilotXp);
+  if (
+    updateCompetitiveBests
+    && previous.bestSector < 30
+    && next.bestSector >= 30
+    && !previous.overrunUnlockCelebrationSeen
+  ) {
+    next.overrunUnlockCelebrationPending = true;
+  }
   writeHangarProgressState(next);
   return {
     previous,

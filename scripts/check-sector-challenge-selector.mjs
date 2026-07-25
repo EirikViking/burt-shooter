@@ -232,7 +232,9 @@ async function clickBounds(page, bounds) {
 }
 
 function sectorEntry(state, sector) {
-  return state.menu?.sectorStart?.selector?.sectors?.find((entry) => entry.sector === sector);
+  const selector = state.menu?.sectorStart?.selector;
+  return selector?.sectors?.find((entry) => entry.sector === sector)
+    || selector?.roadmapSectors?.find((entry) => entry.sector === sector);
 }
 
 function assertNoNonCheckpointTiles(state, label) {
@@ -248,6 +250,8 @@ async function selectSectorForScreenshot(page, sector) {
   await page.evaluate((targetSector) => {
     const menu = window.__game?.scenes?.menu;
     if (!menu?.sectorSelectorOpen) throw new Error('sector selector is not open');
+    menu.setSectorSelectorPageForSector(targetSector);
+    menu.layoutMenu({ forceLabelGpuRefresh: true });
     const index = menu.sectorSelectorSectors.findIndex((entry) => entry.sector === targetSector);
     if (index < 0) throw new Error(`sector ${targetSector} not present in selector`);
     menu.selectedSectorSelectorIndex = index;
@@ -499,6 +503,22 @@ try {
     }
   });
   await matureProfilePage.close();
+
+  const sector60ProfilePage = await newSeededPage(
+    browser,
+    { width: 1920, height: 1080 },
+    makeProgress({ bestSector: 60, bestLevel: 60, pilotXp: 26000, pilotRank: 18, highestPilotRank: 18, bestScore: 180000, totalRuns: 54 }),
+    { version: 1, updatedAt: '2026-07-25T00:00:00.000Z', byCheckpoint: {} }
+  );
+  const sector60ProfileState = await openSelector(sector60ProfilePage);
+  assert.equal(sectorEntry(sector60ProfileState, 65)?.unlocked, false, 'Sector 65 should be visible as the next locked goal at the Sector 60 horizon');
+  assert.equal(sectorEntry(sector60ProfileState, 70)?.unlocked, false, 'the roadmap should visibly continue beyond Sector 65');
+  assert.ok(
+    sector60ProfileState.menu.sectorStart.selector.sectors.some((entry) => entry.sector > 60),
+    'the initially visible selector window must extend beyond Sector 60'
+  );
+  await sector60ProfilePage.screenshot({ path: path.join(outputDir, 'selector-sector-60-roadmap-1920x1080.png'), fullPage: false });
+  await sector60ProfilePage.close();
 
   for (const sector of [5, 10, 20, 30]) {
     state = await selectSectorForScreenshot(page, sector);

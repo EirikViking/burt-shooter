@@ -22,6 +22,7 @@ import {
   getRunContractMenuState
 } from '../progression/RunContracts.js';
 import { getSectorStartChallengeRecord } from '../progression/SectorStartChallengeRecords.js';
+import { getOverrunRunBest } from '../progression/OverrunRunRecords.js';
 import {
   formatDailySignalFlightLogSymbols,
   getDailySignalBest,
@@ -46,6 +47,7 @@ import {
 } from '../game/RunMode.js';
 import {
   applyScoutAnomalyToProfile,
+  SCOUT_ANOMALIES,
   cycleScoutAnomaly,
   getScoutAnomaly,
   readScoutAnomalySelection,
@@ -263,6 +265,11 @@ export class MenuScene {
     this.runModePanel = null;
     this.runModeBriefingTitle = null;
     this.runModeExplainer = null;
+    this.runModeVariantSelector = null;
+    this.runModeVariantTabs = [];
+    this.runModeVariantSignature = '';
+    this.overrunUnlockCelebration = null;
+    this.overrunUnlockCelebrationVisible = false;
     this.missionBoardPanel = null;
     this.missionBoardTitle = null;
     this.missionBoardSubtitle = null;
@@ -515,6 +522,10 @@ export class MenuScene {
 
       event.preventDefault();
       this.setInputDevice('keyboard');
+      if (this.overrunUnlockCelebrationVisible) {
+        this.dismissOverrunUnlockCelebration();
+        return;
+      }
       if (this.quitConfirmOpen) {
         if (isMoveLeft || isMoveRight || isMoveUp || isMoveDown || event.key === 'Tab') {
           this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
@@ -1258,6 +1269,11 @@ export class MenuScene {
     this.runModeExplainer.zIndex = 10;
     this.container.addChild(this.runModeExplainer);
 
+    this.runModeVariantSelector = new PIXI.Container();
+    this.runModeVariantSelector.zIndex = 11;
+    this.runModeVariantSelector.alpha = 0;
+    this.container.addChild(this.runModeVariantSelector);
+
     this.missionBoardPanel = new PIXI.Graphics();
     this.missionBoardPanel.zIndex = 9;
     this.missionBoardPanel.alpha = 0;
@@ -1369,17 +1385,10 @@ export class MenuScene {
       )
     });
     this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8, role: 'main' });
-    this.attachScoutAnomalyCue(this.tacticalStartBtn);
     this.tacticalStartBtn.alpha = 0;
-    this.tacticalStartBtn.on('pointerdown', (event) => {
+    this.tacticalStartBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.tacticalStartBtn);
-      const local = event?.getLocalPosition?.(this.tacticalStartBtn);
-      const width = Number(this.tacticalStartBtn?._btnWidth) || 0;
-      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
-        this.cycleMayhemRunMode(local.x < 0 ? -1 : 1, { force: true });
-        return;
-      }
       this.quickStartRun(this.mayhemRunMode);
     });
     this.container.addChild(this.tacticalStartBtn);
@@ -1393,17 +1402,10 @@ export class MenuScene {
       })
     });
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff, role: 'practice' });
-    this.attachScoutAnomalyCue(this.scoutRunBtn);
     this.scoutRunBtn.alpha = 0;
-    this.scoutRunBtn.on('pointerdown', (event) => {
+    this.scoutRunBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.scoutRunBtn);
-      const local = event?.getLocalPosition?.(this.scoutRunBtn);
-      const width = Number(this.scoutRunBtn?._btnWidth) || 0;
-      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
-        this.cycleScoutAnomalySelection(local.x < 0 ? -1 : 1, { force: true });
-        return;
-      }
       this.quickStartRun(RUN_MODES.SCOUT);
     });
     this.container.addChild(this.scoutRunBtn);
@@ -1428,17 +1430,10 @@ export class MenuScene {
       labelMinScale: 0.66
     });
     this.configureRunModeCard(this.overrunStartBtn, { id: 'overrun', secondary: 0xffd15c, role: 'advanced' });
-    this.attachScoutAnomalyCue(this.overrunStartBtn);
     this.overrunStartBtn.alpha = 0;
-    this.overrunStartBtn.on('pointerdown', (event) => {
+    this.overrunStartBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.overrunStartBtn);
-      const local = event?.getLocalPosition?.(this.overrunStartBtn);
-      const width = Number(this.overrunStartBtn?._btnWidth) || 0;
-      if (local && width > 0 && Math.abs(local.x) >= width * 0.38) {
-        this.cycleOverrunRunMode(local.x < 0 ? -1 : 1, { force: true });
-        return;
-      }
       this.startOverrunRun();
     });
     this.container.addChild(this.overrunStartBtn);
@@ -1849,6 +1844,7 @@ export class MenuScene {
 
     this.refreshSectorStartState();
     this.overrunStartState = getOverrunStartState(readHangarProgressState());
+    this.layoutOverrunUnlockCelebration(width, height);
     this.updateSectorStartButton({ forceGpuRefresh: forceLabelGpuRefresh });
     const runModeCards = [
       this.tacticalStartBtn,
@@ -2041,16 +2037,28 @@ export class MenuScene {
     this.runModeBriefingTitle.x = briefingX + briefingPadX;
     this.runModeBriefingTitle.y = briefingY + briefingPadY;
     this.runModeBriefingTitle.alpha = this.runModeBriefingTitle.alpha || 1;
+    const selectorOffset = this.layoutRunModeVariantSelector({
+      x: briefingX + briefingPadX,
+      y: briefingY + briefingPadY + Math.round((isShortLayout ? 25 : 29) * briefingScale),
+      width: briefingWidth - briefingPadX * 2,
+      height: Math.round((isShortLayout ? 30 : 34) * briefingScale),
+      accent: runModeBriefing.accent
+    });
     this.runModeExplainer.style.fontSize = Math.round((isMobileLayout ? 12 : 13) * uiScale);
     this.runModeExplainer.style.wordWrapWidth = briefingWidth - briefingPadX * 2;
     this.runModeExplainer.style.lineHeight = Math.round(this.runModeExplainer.style.fontSize * 1.24);
     this.runModeExplainer.x = briefingX + briefingPadX;
-    this.runModeExplainer.y = briefingY + briefingPadY + Math.round((isShortLayout ? 26 : 31) * briefingScale);
+    this.runModeExplainer.y = briefingY + briefingPadY
+      + Math.round((isShortLayout ? 26 : 31) * briefingScale)
+      + selectorOffset;
     this.runModeExplainer.scale.set(1);
     refreshTextTexture(this.runModeExplainer);
     const briefingBodyMaxHeight = Math.max(48, briefingHeight - (this.runModeExplainer.y - briefingY) - 6);
     if ((this.runModeExplainer.height || 0) > briefingBodyMaxHeight) {
-      const bodyScale = Math.max(runModeBriefing.id === 'dailySignal' ? 0.68 : 0.82, briefingBodyMaxHeight / this.runModeExplainer.height);
+      const minimumBodyScale = selectorOffset > 0
+        ? (runModeBriefing.id === 'scout' ? 0.62 : 0.66)
+        : (runModeBriefing.id === 'dailySignal' ? 0.68 : 0.82);
+      const bodyScale = Math.max(minimumBodyScale, briefingBodyMaxHeight / this.runModeExplainer.height);
       this.runModeExplainer.scale.set(bodyScale);
       refreshTextTexture(this.runModeExplainer);
     }
@@ -2224,8 +2232,168 @@ export class MenuScene {
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
     const body = briefing.menuBody || briefing.body;
-    const humorLine = briefing.id === 'dailySignal' ? '' : this.menuHumorLine;
+    const humorLine = briefing.id === 'overview' ? this.menuHumorLine : '';
     return humorLine ? `${body}\n// ${humorLine}` : body;
+  }
+
+  layoutOverrunUnlockCelebration(width, height) {
+    const progress = readHangarProgressState();
+    const shouldShow = Boolean(
+      progress.overrunUnlockCelebrationPending
+      && !progress.overrunUnlockCelebrationSeen
+      && this.overrunStartState?.available
+    );
+    if (!shouldShow && !this.overrunUnlockCelebrationVisible) {
+      if (this.overrunUnlockCelebration) this.overrunUnlockCelebration.visible = false;
+      return;
+    }
+    if (!this.overrunUnlockCelebration) {
+      const overlay = new PIXI.Container();
+      overlay.zIndex = 80;
+      overlay.eventMode = 'static';
+      const panel = new PIXI.Graphics();
+      const title = createText('', {
+        fontFamily: FONT_DISPLAY,
+        fontSize: 42,
+        fontWeight: '900',
+        fill: '#fff4a8',
+        stroke: '#19040d',
+        strokeThickness: 6,
+        align: 'center'
+      });
+      title.anchor.set(0.5);
+      const milestone = createText('', {
+        fontFamily: FONT_MONO,
+        fontSize: 19,
+        fontWeight: '900',
+        fill: '#dffcff',
+        stroke: '#020711',
+        strokeThickness: 3,
+        align: 'center',
+        wordWrap: true
+      });
+      milestone.anchor.set(0.5);
+      const modes = createText('', {
+        fontFamily: FONT_MONO,
+        fontSize: 18,
+        fontWeight: '900',
+        fill: '#ff9fef',
+        stroke: '#020711',
+        strokeThickness: 3,
+        align: 'center'
+      });
+      modes.anchor.set(0.5);
+      const rewards = createText('', {
+        fontFamily: FONT_MONO,
+        fontSize: 16,
+        fontWeight: '900',
+        fill: '#9feeff',
+        stroke: '#020711',
+        strokeThickness: 3,
+        align: 'center'
+      });
+      rewards.anchor.set(0.5);
+      const confirm = new PIXI.Container();
+      confirm.eventMode = 'static';
+      confirm.cursor = 'pointer';
+      const confirmBg = new PIXI.Graphics();
+      const confirmText = createText(translateText('CONTINUE'), {
+        fontFamily: FONT_DISPLAY,
+        fontSize: 18,
+        fontWeight: '900',
+        fill: '#06101a',
+        align: 'center'
+      });
+      confirmText.anchor.set(0.5);
+      confirm.addChild(confirmBg, confirmText);
+      confirm.on('pointerdown', (event) => {
+        event.stopPropagation?.();
+        this.dismissOverrunUnlockCelebration();
+      });
+      overlay.addChild(panel, title, milestone, modes, rewards, confirm);
+      overlay._panel = panel;
+      overlay._title = title;
+      overlay._milestone = milestone;
+      overlay._modes = modes;
+      overlay._rewards = rewards;
+      overlay._confirm = confirm;
+      overlay._confirmBg = confirmBg;
+      overlay._confirmText = confirmText;
+      this.overrunUnlockCelebration = overlay;
+      this.container.addChild(overlay);
+    }
+
+    const overlay = this.overrunUnlockCelebration;
+    const panelWidth = clampNumber(width * 0.58, 620, 900);
+    const panelHeight = clampNumber(height * 0.46, 360, 500);
+    const panelX = (width - panelWidth) / 2;
+    const panelY = (height - panelHeight) / 2;
+    const g = overlay._panel;
+    g.clear();
+    g.rect(0, 0, width, height);
+    g.fill({ color: 0x000208, alpha: 0.82 });
+    drawCutPanel(g, panelX - 12, panelY - 12, panelWidth + 24, panelHeight + 24, 20,
+      { color: 0xff6b45, alpha: 0.12 }, { color: 0xffd15c, width: 2, alpha: 0.7 });
+    drawCutPanel(g, panelX, panelY, panelWidth, panelHeight, 16,
+      { color: 0x10071a, alpha: 0.96 }, { color: 0xff55d9, width: 3, alpha: 0.9 });
+    g.rect(panelX + 24, panelY + 22, panelWidth - 48, 4);
+    g.fill({ color: 0xffd15c, alpha: 0.82 });
+    g.rect(panelX + 74, panelY + panelHeight - 30, panelWidth - 148, 3);
+    g.fill({ color: 0x37f5ff, alpha: 0.62 });
+
+    overlay._title.text = [
+      translateText('OVERRUN'),
+      translateText('UNLOCKED')
+    ].join(' · ');
+    overlay._title.x = width / 2;
+    overlay._title.y = panelY + 84;
+    fitTextToWidth(overlay._title, panelWidth - 64, { minScale: 0.68 });
+    overlay._milestone.text = translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.');
+    overlay._milestone.style.wordWrapWidth = panelWidth - 96;
+    overlay._milestone.x = width / 2;
+    overlay._milestone.y = panelY + 146;
+    overlay._modes.text = [
+      translateText('OVERRUN TACTICAL'),
+      translateText('OVERRUN PURE')
+    ].join('  //  ');
+    overlay._modes.x = width / 2;
+    overlay._modes.y = panelY + 202;
+    overlay._rewards.text = [
+      translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
+      translateText('Career XP and cumulative Pilot Orders stay active.')
+    ].join('\n');
+    overlay._rewards.x = width / 2;
+    overlay._rewards.y = panelY + 257;
+    const confirmW = Math.min(320, panelWidth - 120);
+    const confirmH = 54;
+    overlay._confirm.x = width / 2 - confirmW / 2;
+    overlay._confirm.y = panelY + panelHeight - 92;
+    overlay._confirm.hitArea = new PIXI.Rectangle(0, 0, confirmW, confirmH);
+    overlay._confirmBg.clear();
+    drawCutPanel(overlay._confirmBg, 0, 0, confirmW, confirmH, 10,
+      { color: 0xffd15c, alpha: 0.92 }, { color: 0xffffff, width: 2, alpha: 0.88 });
+    overlay._confirmText.x = confirmW / 2;
+    overlay._confirmText.y = confirmH / 2;
+    overlay.visible = true;
+    this.overrunUnlockCelebrationVisible = true;
+    if (!overlay._announced) {
+      overlay._announced = true;
+      AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 0.85, minIntervalMs: 0 });
+      AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 0.82, minIntervalMs: 0 });
+    }
+  }
+
+  dismissOverrunUnlockCelebration() {
+    if (!this.overrunUnlockCelebrationVisible) return;
+    const progress = readHangarProgressState();
+    writeHangarProgressState({
+      ...progress,
+      overrunUnlockCelebrationPending: false,
+      overrunUnlockCelebrationSeen: true
+    });
+    this.overrunUnlockCelebrationVisible = false;
+    if (this.overrunUnlockCelebration) this.overrunUnlockCelebration.visible = false;
+    AudioManager.playSfx('start_game_confirm', { force: true, volume: 0.72 });
   }
 
   updateRunModeBriefing() {
@@ -2234,6 +2402,132 @@ export class MenuScene {
       this.runModeBriefingTitle.text = translateText('RUN MODES') + ' · ' + briefing.title;
     }
     if (this.runModeExplainer) this.runModeExplainer.text = this.getRunModeExplainerText(briefing);
+    this.runModeVariantSignature = '';
+  }
+
+  getRunModeVariantOptions() {
+    const focused = this.getSelectedMenuOptionId();
+    if (focused === 'launchTactical') {
+      return [
+        {
+          id: RUN_MODES.MAYHEM_TACTICAL,
+          label: translateText('TACTICAL'),
+          selected: this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL,
+          activate: () => {
+            if (this.mayhemRunMode !== RUN_MODES.MAYHEM_TACTICAL) this.cycleMayhemRunMode(1, { force: true });
+          }
+        },
+        {
+          id: RUN_MODES.RANKED,
+          label: translateText('PURE'),
+          selected: this.mayhemRunMode === RUN_MODES.RANKED,
+          activate: () => {
+            if (this.mayhemRunMode !== RUN_MODES.RANKED) this.cycleMayhemRunMode(-1, { force: true });
+          }
+        }
+      ];
+    }
+    if (focused === 'scout') {
+      return SCOUT_ANOMALIES.map((anomaly) => ({
+        id: anomaly.id,
+        label: translateText(anomaly.name),
+        selected: this.scoutAnomaly?.id === anomaly.id,
+        activate: () => {
+          if (this.scoutAnomaly?.id === anomaly.id) return;
+          this.scoutAnomaly = writeScoutAnomalySelection(anomaly.id);
+          this.refreshButtonCopy(this.scoutRunBtn, { forceGpuRefresh: true });
+          this.drawMenuButton(this.scoutRunBtn, false);
+          this.updateRunModeBriefing();
+          playMenuFocusSfx(0.12);
+          this.layoutMenu({ forceLabelGpuRefresh: true });
+        }
+      }));
+    }
+    if (focused === 'overrun') {
+      return [
+        {
+          id: RUN_MODES.OVERRUN_TACTICAL,
+          label: translateText('TACTICAL'),
+          selected: this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL,
+          activate: () => {
+            if (this.overrunRunMode !== RUN_MODES.OVERRUN_TACTICAL) this.cycleOverrunRunMode(1, { force: true });
+          }
+        },
+        {
+          id: RUN_MODES.OVERRUN_PURE,
+          label: translateText('PURE'),
+          selected: this.overrunRunMode === RUN_MODES.OVERRUN_PURE,
+          activate: () => {
+            if (this.overrunRunMode !== RUN_MODES.OVERRUN_PURE) this.cycleOverrunRunMode(-1, { force: true });
+          }
+        }
+      ];
+    }
+    return [];
+  }
+
+  layoutRunModeVariantSelector({
+    x,
+    y,
+    width,
+    height = 34,
+    accent = 0x37f5ff
+  }) {
+    const selector = this.runModeVariantSelector;
+    if (!selector) return 0;
+    const options = this.getRunModeVariantOptions();
+    selector.visible = options.length > 0;
+    if (!options.length) return 0;
+    const signature = [
+      Math.round(width),
+      Math.round(height),
+      accent,
+      ...options.map((option) => `${option.id}:${option.selected ? 1 : 0}:${option.label}`)
+    ].join('|');
+    if (signature !== this.runModeVariantSignature) {
+      selector.removeChildren().forEach((child) => child.destroy?.({ children: true }));
+      this.runModeVariantTabs = [];
+      const gap = 7;
+      const tabWidth = (width - gap * (options.length - 1)) / options.length;
+      options.forEach((option, index) => {
+        const tab = new PIXI.Container();
+        tab.eventMode = 'static';
+        tab.cursor = 'pointer';
+        tab.x = index * (tabWidth + gap);
+        const bg = new PIXI.Graphics();
+        drawCutPanel(bg, 0, 0, tabWidth, height, 7,
+          { color: option.selected ? accent : 0x031827, alpha: option.selected ? 0.72 : 0.5 },
+          { color: option.selected ? 0xffffff : accent, width: option.selected ? 2 : 1, alpha: option.selected ? 0.92 : 0.46 });
+        const label = createText(option.label, {
+          fontFamily: FONT_MONO,
+          fontSize: Math.max(10, Math.round(height * 0.37)),
+          fontWeight: '900',
+          fill: option.selected ? '#ffffff' : '#9feeff',
+          stroke: '#020711',
+          strokeThickness: 2,
+          align: 'center'
+        });
+        label.anchor.set(0.5);
+        label.x = tabWidth / 2;
+        label.y = height / 2;
+        fitTextToWidth(label, tabWidth - 16, { minScale: 0.62 });
+        tab.addChild(bg, label);
+        tab.hitArea = new PIXI.Rectangle(0, 0, tabWidth, height);
+        tab.on('pointerover', () => playMenuFocusSfx(0.07));
+        tab.on('pointerdown', (event) => {
+          event.stopPropagation?.();
+          this.setInputDevice('keyboard');
+          option.activate();
+        });
+        selector.addChild(tab);
+        this.runModeVariantTabs.push(tab);
+      });
+      this.runModeVariantSignature = signature;
+    }
+    selector.x = x;
+    selector.y = y;
+    selector.alpha = selector.alpha || 1;
+    return height + 9;
   }
 
   getRunModeBriefing() {
@@ -2317,10 +2611,17 @@ export class MenuScene {
     if (focused === 'overrun') {
       const state = this.overrunStartState || getOverrunStartState(readHangarProgressState());
       const tactical = this.overrunRunMode === RUN_MODES.OVERRUN_TACTICAL;
+      const personalBest = getOverrunRunBest(this.overrunRunMode);
+      const personalBestLine = [
+        translateText('PERSONAL BEST'),
+        personalBest ? formatNumber(personalBest.score) : translateText('NOT ATTEMPTED')
+      ].join(' · ');
       const availableModeLines = tactical
         ? [
-            translateText('TACTICAL START: Damage Up · Rapid Fire · Blink Drive · Focus Lens · Double Shot.'),
-            translateText('Boss Drafts continue after the fixed starting loadout.')
+            [
+              translateText('TACTICAL START: Damage Up · Rapid Fire · Blink Drive · Focus Lens · Double Shot.'),
+              translateText('Boss Drafts continue after the fixed starting loadout.')
+            ].join(' ')
           ]
         : [
             translateText('Pure ship baseline with no Tactical Drafts.')
@@ -2332,13 +2633,16 @@ export class MenuScene {
         secondary: 0xffd15c,
         menuBody: state.available
           ? [
+              translateText('Reach Sector 30 in Mayhem to unlock the Sector 51 start.'),
               translateText('SECTOR 51 · UNRANKED'),
               ...availableModeLines,
               translateText('Starts at zero score. No skipped-sector rewards.'),
-              translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
-              translateText('Career XP and cumulative Pilot Orders stay active.'),
-              translateText('No leaderboard submission, achievements, or checkpoint unlocks.'),
-              translateText('LEFT/RIGHT: CHANGE LOADOUT')
+              [
+                translateText('SECTOR 51 // 65% NORMAL CAREER XP'),
+                translateText('Career XP and cumulative Pilot Orders stay active.')
+              ].join(' // '),
+              personalBestLine,
+              translateText('No leaderboard submission, achievements, or checkpoint unlocks.')
             ].join('\n')
           : [
               translateText('LOCKED · REACH SECTOR 30'),
@@ -3692,6 +3996,14 @@ export class MenuScene {
       backButtonBounds: boundsForDisplayObject(this.sectorSelectorBackButton),
       panelBounds: this.lastSectorSelectorPanelBounds,
       gridBounds: boundsForDisplayObject(this.sectorSelectorGrid),
+      roadmapSectors: (this.sectorSelectorAllSectors || this.sectorSelectorSectors || []).map((entry) => ({
+        sector: entry.sector,
+        checkpointEligible: Boolean(entry.checkpointEligible),
+        unlocked: Boolean(entry.unlocked),
+        playSector: entry.playSector || null,
+        overrunCheckpoint: Boolean(entry.overrunCheckpoint),
+        hasRecord: Boolean(entry.record?.scoreEarned > 0)
+      })),
       sectors: (this.sectorSelectorSectors || []).map((entry, index) => ({
         sector: entry.sector,
         checkpointEligible: Boolean(entry.checkpointEligible),
@@ -4293,11 +4605,13 @@ export class MenuScene {
     const highest = Math.max(1, Math.floor(Number(this.sectorStartState?.highestReachedSector) || 1));
     const checkpoints = this.sectorStartState?.checkpoints || [];
     const maxCheckpoint = checkpoints.length ? Math.max(...checkpoints) : 0;
-    const displayMax = Math.max(
-      SECTOR_START_CHECKPOINT_INTERVAL,
-      Math.ceil(Math.max(highest, maxCheckpoint, SECTOR_START_CHECKPOINT_INTERVAL) / SECTOR_START_CHECKPOINT_INTERVAL)
-        * SECTOR_START_CHECKPOINT_INTERVAL
-    );
+    const unlockedHorizon = Math.ceil(
+      Math.max(highest, maxCheckpoint, SECTOR_START_CHECKPOINT_INTERVAL) / SECTOR_START_CHECKPOINT_INTERVAL
+    ) * SECTOR_START_CHECKPOINT_INTERVAL;
+    const roadmapHorizon = Math.ceil(
+      Math.max(90, highest + 30) / SECTOR_START_CHECKPOINT_INTERVAL
+    ) * SECTOR_START_CHECKPOINT_INTERVAL;
+    const displayMax = Math.max(unlockedHorizon, roadmapHorizon);
     const sectors = [];
     for (let sector = SECTOR_START_CHECKPOINT_INTERVAL; sector <= displayMax; sector += SECTOR_START_CHECKPOINT_INTERVAL) {
       sectors.push(sector);
@@ -4323,11 +4637,9 @@ export class MenuScene {
 
   openSectorSelector() {
     this.refreshSectorStartState();
-    this.sectorSelectorSectors = this.buildSectorSelectorSectors();
+    this.sectorSelectorAllSectors = this.buildSectorSelectorSectors();
     const selected = this.getSelectedSectorStartCheckpoint();
-    const selectedIndex = this.sectorSelectorSectors.findIndex((entry) => entry.sector === selected);
-    const firstUnlocked = this.sectorSelectorSectors.findIndex((entry) => entry.unlocked);
-    this.selectedSectorSelectorIndex = selectedIndex >= 0 ? selectedIndex : Math.max(0, firstUnlocked);
+    this.setSectorSelectorPageForSector(selected);
     this.sectorSelectorOpen = true;
     this.sectorSelectorOpenAge = 0;
     this.sectorSelectorOverlay.visible = true;
@@ -4352,8 +4664,14 @@ export class MenuScene {
 
   moveSectorSelectorFocus(delta) {
     if (!this.sectorSelectorOpen || !this.sectorSelectorSectors.length) return;
-    const count = this.sectorSelectorSectors.length;
-    this.selectedSectorSelectorIndex = (this.selectedSectorSelectorIndex + delta + count) % count;
+    const allSectors = this.sectorSelectorAllSectors?.length
+      ? this.sectorSelectorAllSectors
+      : this.buildSectorSelectorSectors();
+    const selectedSector = this.sectorSelectorSectors[this.selectedSectorSelectorIndex]?.sector;
+    const currentIndex = Math.max(0, allSectors.findIndex((entry) => entry.sector === selectedSector));
+    const nextIndex = (currentIndex + delta + allSectors.length) % allSectors.length;
+    this.setSectorSelectorPageForSector(allSectors[nextIndex].sector);
+    this.layoutMenu({ forceLabelGpuRefresh: true });
     this.drawSectorSelectorOverlay();
     playMenuFocusSfx(0.09);
     this.playBossMenuBark('sectorSelect', {
@@ -5225,6 +5543,12 @@ export class MenuScene {
     if (!nav.connected || !nav.active) return;
     this.setInputDevice('controller');
     if (Object.values(nav.pressed || {}).some(Boolean)) this.markMenuActivity();
+    if (this.overrunUnlockCelebrationVisible) {
+      if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.back) {
+        this.dismissOverrunUnlockCelebration();
+      }
+      return;
+    }
     if (this.quitConfirmOpen) {
       if (nav.pressed.left || nav.pressed.right || nav.pressed.up || nav.pressed.down) {
         this.setQuitConfirmFocus(this.quitConfirmFocusIndex === 0 ? 1 : 0);
@@ -5298,6 +5622,28 @@ export class MenuScene {
     return getDefaultShipKey();
   }
 
+  getSectorSelectorPageSize() {
+    return Math.max(1, this.getSectorSelectorColumns() * 3);
+  }
+
+  setSectorSelectorPageForSector(sector) {
+    const allSectors = this.sectorSelectorAllSectors?.length
+      ? this.sectorSelectorAllSectors
+      : this.buildSectorSelectorSectors();
+    this.sectorSelectorAllSectors = allSectors;
+    const selectedIndex = allSectors.findIndex((entry) => entry.sector === sector);
+    const firstUnlocked = allSectors.findIndex((entry) => entry.unlocked);
+    const resolvedIndex = selectedIndex >= 0 ? selectedIndex : Math.max(0, firstUnlocked);
+    const pageSize = this.getSectorSelectorPageSize();
+    const pageStart = Math.floor(resolvedIndex / pageSize) * pageSize;
+    this.sectorSelectorPageStart = pageStart;
+    this.sectorSelectorSectors = allSectors.slice(pageStart, pageStart + pageSize);
+    this.selectedSectorSelectorIndex = Math.max(
+      0,
+      this.sectorSelectorSectors.findIndex((entry) => entry.sector === allSectors[resolvedIndex]?.sector)
+    );
+  }
+
   cycleMayhemRunMode(delta, { force = false } = {}) {
     if (!force && this.getSelectedMenuOptionId() !== 'launchTactical') return false;
     this.mayhemRunMode = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
@@ -5314,6 +5660,7 @@ export class MenuScene {
       intent: 'focus',
       force: true
     });
+    this.layoutMenu({ forceLabelGpuRefresh: true });
     return true;
   }
 
@@ -5336,6 +5683,7 @@ export class MenuScene {
     this.drawMenuButton(this.overrunStartBtn, false);
     this.updateRunModeBriefing();
     playMenuFocusSfx(0.09);
+    this.layoutMenu({ forceLabelGpuRefresh: true });
     return true;
   }
 
