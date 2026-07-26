@@ -2497,4 +2497,7 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Added a generated alien command spine to Mission Status while preserving the live text, progress meter, priority tinting, safe-area layout, and HUD behavior.
 - Preserved functional hitboxes, attack telegraphs, targeting rings, timers, progress meters, and radar geometry; these are gameplay communication, not decorative filler.
 - Focused runtime checks pass for score-popup readability, Wave Clear, rank-up clarity, and 48-sample gameplay-message arbitration. The normalized before/after visual review is recorded in `design-qa.md` with `final result: passed`.
-- Full localization, release-line, packaging, performance, and Steam `sector-continue-test` deployment verification remain pending.
+- Full localization, release-line, packaging, packaged launch/controls, fresh-profile isolation, package review, and payload checks pass.
+- Packaged exact source `4af8519a0777cf5597f011187c966143fd07cecd` as `v2026-07-26_20-50-56`; packaged performance held `58.14` minimum / `59.83` average FPS with no warnings or errors.
+- Uploaded only to the same branch as the previous deployment, `sector-continue-test`, as Steam BuildID `24401245`, depot manifest `230225884267098466`. A fresh pre-upload read found `public` had externally moved to `24400692`; post-upload verification proves it remained there and `test-build` remained `23782673`.
+- No public/default assignment, store metadata, achievements, published patch notes, Git push, or other Steamworks setting changed. The private rollback target is BuildID `24400692`.
