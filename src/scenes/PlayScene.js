@@ -18,6 +18,10 @@ import { rankManager } from '../managers/RankManager.js';
 import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { SpectacleDirector } from '../effects/SpectacleDirector.js';
+import {
+  hideMicroSignals,
+  presentDirectionalSignal
+} from '../effects/MicroSignalVfx.js';
 import { ScorePopupManager } from '../ui/ScorePopup.js';
 import { InputManager } from '../input/InputManager.js';
 import { TouchControls } from '../input/TouchControls.js';
@@ -224,6 +228,7 @@ export class PlayScene {
     this.container.addChild(this.uiContainer);
     this.container.addChild(this.uiOverlay);
     GameAssets.ensurePlasmaBloomTextures?.().catch(() => {});
+    GameAssets.ensureMicroSignalTextures?.().catch(() => {});
     GameAssets.ensureTacticalDraftFieldTexture?.().catch(() => {});
     this.gameOverFinalTransmissionVariant = null;
     this.gameOverFinalTransmissionReady = null;
@@ -7954,6 +7959,7 @@ export class PlayScene {
     let edgeArrowCount = 0;
 
     layer.clear();
+    hideMicroSignals(layer, 'straggler:');
     layer.visible = true;
 
     targets.forEach((enemy, index) => {
@@ -8009,28 +8015,19 @@ export class PlayScene {
         }
         const nx = dx / dist;
         const ny = dy / dist;
-        const tx = -ny;
-        const ty = nx;
         const arrowSize = isElite ? 15 : 12;
-        const arrowBack = arrowSize * 1.2;
-        const arrowWing = arrowSize * 0.68;
         const anchorX = arrowX + nx * (2 + pulse * 2);
         const anchorY = arrowY + ny * (2 + pulse * 2);
-
-        layer.poly([
-          anchorX + nx * arrowSize, anchorY + ny * arrowSize,
-          anchorX - nx * arrowBack + tx * arrowWing, anchorY - ny * arrowBack + ty * arrowWing,
-          anchorX - nx * arrowBack - tx * arrowWing, anchorY - ny * arrowBack - ty * arrowWing
-        ]);
-        layer.fill({ color, alpha: 0.76 });
-        layer.poly([
-          anchorX + nx * (arrowSize + 5), anchorY + ny * (arrowSize + 5),
-          anchorX - nx * (arrowBack + 5) + tx * (arrowWing + 4), anchorY - ny * (arrowBack + 5) + ty * (arrowWing + 4),
-          anchorX - nx * (arrowBack + 5) - tx * (arrowWing + 4), anchorY - ny * (arrowBack + 5) - ty * (arrowWing + 4)
-        ]);
-        layer.stroke({ color: 0xffffff, width: 1.25, alpha: 0.44 + pulse * 0.16 });
-        layer.circle(anchorX - nx * (arrowBack + 11), anchorY - ny * (arrowBack + 11), 3.2 + pulse * 1.2);
-        layer.fill({ color: 0xffffff, alpha: 0.52 });
+        presentDirectionalSignal(layer, `straggler:${index}`, {
+          x: anchorX,
+          y: anchorY,
+          directionX: nx,
+          directionY: ny,
+          color,
+          size: arrowSize * 3.35,
+          alpha: 0.8 + pulse * 0.2,
+          pulse
+        });
         edgeArrowCount += 1;
       }
     });
@@ -20051,21 +20048,31 @@ export class PlayScene {
     root.zIndex = 9800;
     const fromLeft = normalizedRoute.includes('left');
     const fromRight = normalizedRoute.includes('right');
-    const fromBottom = normalizedRoute.includes('bottom') || normalizedRoute.includes('opposite');
+    const fromBottom = normalizedRoute.includes('bottom');
     root.position.set(
       fromLeft ? 34 : fromRight ? width - 34 : width / 2,
       fromBottom ? height - 86 : Math.max(150, height * 0.36)
     );
-    root.rotation = fromLeft ? -Math.PI / 2 : fromRight ? Math.PI / 2 : Math.PI;
-    const cue = new PIXI.Graphics();
-    for (let index = 0; index < 3; index += 1) {
-      const y = index * 14;
-      cue.moveTo(-14, y - 8);
-      cue.lineTo(0, y);
-      cue.lineTo(14, y - 8);
-      cue.stroke({ color: index % 2 ? 0xffdf63 : 0x43efff, width: 2.4, alpha: 0.82 - index * 0.14 });
+    root.rotation = 0;
+    const directionX = fromLeft ? -1 : fromRight ? 1 : 0;
+    const directionY = fromBottom ? 1 : -1;
+    const beacon = presentDirectionalSignal(root, 'routine-warning', {
+      x: 0,
+      y: 0,
+      directionX,
+      directionY,
+      color: 0xffdf63,
+      size: 54,
+      alpha: 0.96
+    });
+    if (!beacon) {
+      const cue = new PIXI.Graphics();
+      cue.moveTo(-16, 8);
+      cue.lineTo(0, -10);
+      cue.lineTo(16, 8);
+      cue.stroke({ color: 0xffdf63, width: 3, alpha: 0.9 });
+      root.addChild(cue);
     }
-    root.addChild(cue);
     host.addChild(root);
     host.sortChildren?.();
 

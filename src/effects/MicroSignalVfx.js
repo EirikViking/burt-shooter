@@ -1,0 +1,87 @@
+import * as PIXI from 'pixi.js';
+import { GameAssets } from '../utils/GameAssets.js';
+
+function getStore(host) {
+  if (!host) return null;
+  if (!host.__novaMicroSignalSprites) host.__novaMicroSignalSprites = new Map();
+  return host.__novaMicroSignalSprites;
+}
+
+export function ensureMicroSignalSprite(host, key, textureKey = 'direction') {
+  const store = getStore(host);
+  if (!store) return null;
+  const id = String(key || textureKey);
+  let sprite = store.get(id);
+  const texture = GameAssets.getMicroSignalTexture(textureKey);
+  if (!GameAssets.isValidTexture(texture)) {
+    if (sprite) sprite.visible = false;
+    return null;
+  }
+  if (!sprite) {
+    sprite = new PIXI.Sprite(texture);
+    sprite.anchor.set(0.5);
+    sprite.label = `microSignal:${id}`;
+    sprite.eventMode = 'none';
+    sprite.blendMode = 'add';
+    host.addChild(sprite);
+    store.set(id, sprite);
+  } else if (sprite.texture !== texture) {
+    sprite.texture = texture;
+  }
+  return sprite;
+}
+
+export function presentDirectionalSignal(host, key, {
+  x,
+  y,
+  directionX,
+  directionY,
+  color = 0xffffff,
+  size = 34,
+  alpha = 1,
+  pulse = 0
+} = {}) {
+  const sprite = ensureMicroSignalSprite(host, key, 'direction');
+  if (!sprite) return null;
+  const dx = Number(directionX) || 0;
+  const dy = Number(directionY) || -1;
+  sprite.position.set(Number(x) || 0, Number(y) || 0);
+  sprite.rotation = Math.atan2(dy, dx) + Math.PI / 2;
+  sprite.tint = color;
+  sprite.alpha = Math.max(0, Math.min(1, alpha));
+  const displaySize = Math.max(8, Number(size) || 34) * (0.94 + Math.max(0, Number(pulse) || 0) * 0.12);
+  sprite.width = displaySize;
+  sprite.height = displaySize;
+  sprite.visible = true;
+  return sprite;
+}
+
+export function presentPhaseSignal(host, key, {
+  x,
+  y,
+  color = 0xffffff,
+  size = 16,
+  alpha = 1,
+  current = false,
+  pulse = 0
+} = {}) {
+  const sprite = ensureMicroSignalSprite(host, key, 'phase');
+  if (!sprite) return null;
+  sprite.position.set(Number(x) || 0, Number(y) || 0);
+  sprite.rotation = current ? Math.sin(Date.now() * 0.003) * 0.04 : 0;
+  sprite.tint = color;
+  sprite.alpha = Math.max(0, Math.min(1, alpha));
+  const displaySize = Math.max(8, Number(size) || 16) * (current ? 1.08 + Math.max(0, Number(pulse) || 0) * 0.12 : 1);
+  sprite.width = displaySize;
+  sprite.height = displaySize;
+  sprite.visible = true;
+  return sprite;
+}
+
+export function hideMicroSignals(host, prefix = '') {
+  const store = host?.__novaMicroSignalSprites;
+  if (!store) return;
+  for (const [key, sprite] of store.entries()) {
+    if (!prefix || key.startsWith(prefix)) sprite.visible = false;
+  }
+}

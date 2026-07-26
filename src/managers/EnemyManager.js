@@ -33,6 +33,7 @@ import {
 import { getDangerMidShipProfile, pickDangerMidShipProfile } from '../config/DangerMidShips.js';
 import { WAVE_TACTIC_VARIANTS } from '../config/WaveTacticVariants.js';
 import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../config/BossSupportShips.js';
+import { hideMicroSignals, presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
 import { getBossProfileForRun } from '../config/BossRoster.js';
 import {
   getRareChaosVisitorVariant,
@@ -1232,6 +1233,14 @@ export class EnemyManager {
     return routes[(level + index) % routes.length];
   }
 
+  resolveOverrunRoutineReinforcementRoute(route) {
+    const normalized = String(route || 'side_left').toLowerCase();
+    if (normalized !== 'opposite_player') return normalized;
+    const screenW = Math.max(1, Number(this.game?.getWidth?.()) || 1280);
+    const playerX = Number(this.game?.scenes?.play?.player?.x);
+    return Number.isFinite(playerX) && playerX < screenW / 2 ? 'side_right' : 'side_left';
+  }
+
   createOverrunRoutineReinforcementConfig(sequence = this.currentWaveIndex, { boss = false } = {}) {
     const level = Math.max(1, Math.floor(Number(this.level) || 1));
     const waveIndex = Math.max(0, Math.floor(Number(sequence) || 0));
@@ -1239,6 +1248,9 @@ export class EnemyManager {
     const formation = ['STAGGERED_WING', 'PINCER', 'CROSS_STREAM', 'SIDEWINDER'][(level + waveIndex) % 4];
     const tacticId = this.pickWaveTactic(normalWaveLevel, waveIndex, formation);
     const countRoll = this.getStableReinforcementRoll(level, waveIndex, boss ? 'overrun-boss-routine-count' : 'overrun-routine-count');
+    const reinforcementEntryRoute = this.resolveOverrunRoutineReinforcementRoute(
+      this.getOverrunRoutineReinforcementRoute(waveIndex + (boss ? 2 : 0))
+    );
     const baseWave = {
       type: pickGeneratedEnemyTypeForLevel(normalWaveLevel),
       count: 2 + Math.min(2, Math.floor(countRoll * 3)),
@@ -1252,7 +1264,7 @@ export class EnemyManager {
         forcedDive: true
       },
       entry: 'single',
-      reinforcementEntryRoute: this.getOverrunRoutineReinforcementRoute(waveIndex + (boss ? 2 : 0)),
+      reinforcementEntryRoute,
       cadence: 1.18,
       sourceLevel: level,
       normalWaveDifficultyLevel: normalWaveLevel,
@@ -4371,6 +4383,7 @@ export class EnemyManager {
     let offscreenEdgeMarkerCount = 0;
 
     tether.clear();
+    hideMicroSignals(tether, 'boss-fuel-edge');
     tether.visible = true;
     tether.renderable = true;
     tether.alpha = 0.88 + pulse * 0.12;
@@ -4511,13 +4524,9 @@ export class EnemyManager {
       }
       const nx = markerDx / markerDist;
       const ny = markerDy / markerDist;
-      const tx = -ny;
-      const ty = nx;
       const markerPulse = Math.sin(now * 0.026 + groupSlot) * 0.5 + 0.5;
       const markerRadius = 14 + groupSize * 2.2 + markerPulse * 3.4;
       const arrowLength = 13 + groupSize * 2 + markerPulse * 2.2;
-      const arrowBack = arrowLength * 0.9;
-      const arrowWing = 7.5 + groupSize * 1.2;
       const markerX = edgeX + nx * (2 + markerPulse * 2);
       const markerY = edgeY + ny * (2 + markerPulse * 2);
 
@@ -4525,18 +4534,16 @@ export class EnemyManager {
       tether.stroke({ color: baseColor, width: 2.4, alpha: 0.12 + tension * 0.16 });
       tether.circle(markerX, markerY, markerRadius);
       tether.stroke({ color: accentColor, width: 1.6, alpha: 0.2 + tension * 0.22 });
-      tether.moveTo(markerX + nx * arrowLength, markerY + ny * arrowLength);
-      tether.lineTo(markerX - nx * arrowBack + tx * arrowWing, markerY - ny * arrowBack + ty * arrowWing);
-      tether.lineTo(markerX - nx * arrowBack - tx * arrowWing, markerY - ny * arrowBack - ty * arrowWing);
-      tether.lineTo(markerX + nx * arrowLength, markerY + ny * arrowLength);
-      tether.stroke({ color: 0xffffff, width: 2.3, alpha: 0.36 + tension * 0.28 });
-      tether.moveTo(markerX - nx * (arrowBack + 8), markerY - ny * (arrowBack + 8));
-      tether.lineTo(markerX - nx * (arrowBack + 24), markerY - ny * (arrowBack + 24));
-      tether.stroke({ color: baseColor, width: 2.8, alpha: 0.28 + tension * 0.28 });
-      for (let i = 0; i < 2; i += 1) {
-        tether.circle(markerX - nx * (arrowBack + 18 + i * 9), markerY - ny * (arrowBack + 18 + i * 9), 2.8 + markerPulse * 1.2);
-      }
-      tether.fill({ color: 0xffffff, alpha: 0.2 + tension * 0.22 });
+      presentDirectionalSignal(tether, 'boss-fuel-edge', {
+        x: markerX,
+        y: markerY,
+        directionX: nx,
+        directionY: ny,
+        color: baseColor,
+        size: arrowLength * 3.4,
+        alpha: 0.76 + tension * 0.24,
+        pulse: markerPulse
+      });
       offscreenEdgeMarkerCount += 1;
     }
 

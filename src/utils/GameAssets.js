@@ -8,6 +8,7 @@ class GameAssetsManager {
         this.bonusCoreTexture = null;
         this.plasmaBloomTexture = null;
         this.plasmaBloomTextures = [];
+        this.microSignalTextures = {};
         this.tacticalDraftFieldTexture = null;
         this.gameOverFinalTransmissionTexture = null;
         this.gameOverFinalTransmissionTextures = {};
@@ -91,6 +92,31 @@ class GameAssetsManager {
         this.plasmaBloomTextures = loaded.filter((texture) => this.isValidTexture(texture));
         this.plasmaBloomTexture = this.plasmaBloomTextures[0] || null;
         return this.plasmaBloomTextures;
+    }
+
+    async ensureMicroSignalTextures() {
+        const sources = {
+            phase: AssetManifest.generated?.vfx?.microPhaseSigil,
+            direction: AssetManifest.generated?.vfx?.microDirectionBeacon
+        };
+        const entries = await Promise.all(Object.entries(sources).map(async ([key, src]) => {
+            if (this.isValidTexture(this.microSignalTextures[key])) return [key, this.microSignalTextures[key]];
+            if (!src) return [key, null];
+            try {
+                const texture = await PIXI.Assets.load({
+                    alias: `nova_micro_signal_${key}`,
+                    src
+                });
+                return [key, texture];
+            } catch (error) {
+                console.warn(`[GameAssets] Micro-signal texture ${key} unavailable:`, error?.message || error);
+                return [key, null];
+            }
+        }));
+        for (const [key, texture] of entries) {
+            if (this.isValidTexture(texture)) this.microSignalTextures[key] = texture;
+        }
+        return this.microSignalTextures;
     }
 
     async ensureTacticalDraftFieldTexture() {
@@ -253,6 +279,11 @@ class GameAssetsManager {
 
     getPlasmaBloomTextures() {
         return this.plasmaBloomTextures.filter((texture) => this.isValidTexture(texture));
+    }
+
+    getMicroSignalTexture(key) {
+        const texture = this.microSignalTextures[String(key || '')];
+        return this.isValidTexture(texture) ? texture : null;
     }
 
     getTacticalDraftFieldTexture() {

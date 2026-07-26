@@ -4,6 +4,7 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
 import { ALL_POWERUP_TYPES, getPowerupMeta } from '../config/PowerupCatalog.js';
 
 const POWERUP_CODEX_NAMES = Object.freeze(Object.fromEntries(
@@ -869,39 +870,25 @@ class Powerup {
     const localY = s * (worldX - this.x) + c * (worldY - this.y);
     const localNx = c * nx - s * ny;
     const localNy = s * nx + c * ny;
-    const tx = -localNy;
-    const ty = localNx;
     const pulse = Math.sin((Number(options.age) || 0) * 0.018) * 0.5 + 0.5;
     const major = MAJOR_POWERUP_TYPES.has(this.type);
     const color = this.type === 'super_extra_life' ? 0xffe34d : this.color;
     const arrowSize = major || this.type === 'super_extra_life' ? 16 : 13;
-    const arrowBack = arrowSize * 1.18;
-    const arrowWing = arrowSize * 0.68;
     const anchorX = localX + localNx * (2 + pulse * 3);
     const anchorY = localY + localNy * (2 + pulse * 3);
 
     guide.circle(anchorX, anchorY, arrowSize + 10 + pulse * 4);
     guide.stroke({ width: 1.4, color, alpha: 0.16 + timeUrgency * 0.22 });
-    guide.poly([
-      anchorX + localNx * arrowSize, anchorY + localNy * arrowSize,
-      anchorX - localNx * arrowBack + tx * arrowWing, anchorY - localNy * arrowBack + ty * arrowWing,
-      anchorX - localNx * arrowBack - tx * arrowWing, anchorY - localNy * arrowBack - ty * arrowWing
-    ]);
-    guide.fill({ color, alpha: 0.54 + timeUrgency * 0.26 });
-    guide.poly([
-      anchorX + localNx * (arrowSize + 5), anchorY + localNy * (arrowSize + 5),
-      anchorX - localNx * (arrowBack + 5) + tx * (arrowWing + 4), anchorY - localNy * (arrowBack + 5) + ty * (arrowWing + 4),
-      anchorX - localNx * (arrowBack + 5) - tx * (arrowWing + 4), anchorY - localNy * (arrowBack + 5) - ty * (arrowWing + 4)
-    ]);
-    guide.stroke({ width: 1.2, color: 0xffffff, alpha: 0.26 + timeUrgency * 0.24 });
-
-    const beadBaseX = anchorX - localNx * (arrowBack + 12);
-    const beadBaseY = anchorY - localNy * (arrowBack + 12);
-    for (let i = 0; i < 2; i += 1) {
-      const bead = 2.6 + pulse * 1.2 - i * 0.35;
-      guide.circle(beadBaseX - localNx * i * 8, beadBaseY - localNy * i * 8, bead);
-    }
-    guide.fill({ color: 0xffffff, alpha: 0.22 + timeUrgency * 0.24 });
+    presentDirectionalSignal(guide, 'pickup-edge', {
+      x: anchorX,
+      y: anchorY,
+      directionX: localNx,
+      directionY: localNy,
+      color,
+      size: arrowSize * 3.35,
+      alpha: 0.76 + timeUrgency * 0.24,
+      pulse
+    });
 
     return {
       visible: true,

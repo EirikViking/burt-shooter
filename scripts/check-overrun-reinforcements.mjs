@@ -72,7 +72,17 @@ for (let index = 0; index < 12; index += 1) {
   assert.ok(config.tactic.fireDelayMult < 1);
   assert.ok(config.tactic.diveBias > 1);
   assert.equal(config.tactic.forcedDive, true);
+  assert.notEqual(
+    config.reinforcementEntryRoute,
+    'opposite_player',
+    'routine warnings and spawns must share a concrete entry edge'
+  );
 }
+
+assert.equal(manager.resolveOverrunRoutineReinforcementRoute('opposite_player'), 'side_right');
+manager.game.scenes.play.player.x = 1000;
+assert.equal(manager.resolveOverrunRoutineReinforcementRoute('opposite_player'), 'side_left');
+manager.game.scenes.play.player.x = 200;
 
 const eligibility = manager.getOverrunRoutineReinforcementEligibility(8);
 assert.equal(eligibility.eligible, true);
@@ -195,8 +205,8 @@ assert.equal(spawnedBossConfigs.length, 1);
 assert.equal(spawnedBossConfigs[0]?.allowConcurrentSpawn, true);
 assert.equal(spawnedBossConfigs[0]?.isOverrunRoutineReinforcement, true);
 assert.ok(spawnedBossConfigs[0]?.count >= 2 && spawnedBossConfigs[0]?.count <= 4);
-assert.ok(['side_left', 'side_right', 'bottom', 'opposite_player'].includes(
+assert.ok(['side_left', 'side_right', 'bottom'].includes(
   spawnedBossConfigs[0]?.reinforcementEntryRoute
 ));
 
-console.log('[overrun-reinforcements] PASS small routine groups, high aggression, side/bottom/opposite-player routes');
+console.log('[overrun-reinforcements] PASS concrete warning/spawn routes, small routine groups, high aggression');

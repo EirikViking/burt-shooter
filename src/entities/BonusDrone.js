@@ -2,6 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
 
 export class BonusDrone {
     constructor(x, y, game, type = 'HAZARD') {
@@ -303,8 +304,6 @@ export class BonusDrone {
         }
         const nx = dx / dist;
         const ny = dy / dist;
-        const tx = -ny;
-        const ty = nx;
         const isPowerup = this.type === 'POWERUP';
         const pulse = Number.isFinite(this.clarityPulse) ? this.clarityPulse : 0.5;
         const primary = isPowerup ? 0xfff2a8 : 0xff516d;
@@ -313,8 +312,6 @@ export class BonusDrone {
         const markerY = edgeY + ny * (2 + pulse * 3);
         const markerRadius = (isPowerup ? 15 : 13) + pulse * 3;
         const arrowLength = (isPowerup ? 15 : 13) + pulse * 2.2;
-        const arrowBack = arrowLength * 0.92;
-        const arrowWing = isPowerup ? 8.5 : 7.4;
 
         marker.clear();
         marker.visible = true;
@@ -324,22 +321,16 @@ export class BonusDrone {
         marker.stroke({ color: primary, width: isPowerup ? 2.2 : 1.9, alpha: 0.16 + pulse * 0.16 });
         marker.circle(markerX, markerY, markerRadius);
         marker.stroke({ color: secondary, width: 1.2, alpha: 0.24 + pulse * 0.22 });
-        marker.poly([
-            markerX + nx * arrowLength, markerY + ny * arrowLength,
-            markerX - nx * arrowBack + tx * arrowWing, markerY - ny * arrowBack + ty * arrowWing,
-            markerX - nx * arrowBack - tx * arrowWing, markerY - ny * arrowBack - ty * arrowWing
-        ]);
-        marker.fill({ color: primary, alpha: isPowerup ? 0.5 + pulse * 0.22 : 0.44 + pulse * 0.2 });
-        marker.poly([
-            markerX + nx * (arrowLength + 4), markerY + ny * (arrowLength + 4),
-            markerX - nx * (arrowBack + 4) + tx * (arrowWing + 3), markerY - ny * (arrowBack + 4) + ty * (arrowWing + 3),
-            markerX - nx * (arrowBack + 4) - tx * (arrowWing + 3), markerY - ny * (arrowBack + 4) - ty * (arrowWing + 3)
-        ]);
-        marker.stroke({ color: 0xffffff, width: 1.2, alpha: 0.22 + pulse * 0.22 });
-        for (let i = 0; i < 2; i += 1) {
-            marker.circle(markerX - nx * (arrowBack + 11 + i * 8), markerY - ny * (arrowBack + 11 + i * 8), 2.4 + pulse * 1.1);
-        }
-        marker.fill({ color: secondary, alpha: 0.28 + pulse * 0.24 });
+        presentDirectionalSignal(marker, 'bonus-drone-edge', {
+            x: markerX,
+            y: markerY,
+            directionX: nx,
+            directionY: ny,
+            color: primary,
+            size: arrowLength * 3.25,
+            alpha: 0.78 + pulse * 0.22,
+            pulse
+        });
         marker.__debugBonusEdgeMarker = {
             visible: true,
             type: this.type,

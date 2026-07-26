@@ -39,6 +39,8 @@ export const AssetManifest = {
         )),
         vfx: {
             overrunVictorySeal: '/art/generated/nova-swarm/vfx/overrun-victory-seal.png',
+            microPhaseSigil: '/art/generated/nova-swarm/vfx/micro-phase-sigil.png',
+            microDirectionBeacon: '/art/generated/nova-swarm/vfx/micro-direction-beacon.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
             plasmaBlooms: [
                 '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',

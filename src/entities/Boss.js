@@ -7,6 +7,10 @@ import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import {
+  hideMicroSignals,
+  presentPhaseSignal
+} from '../effects/MicroSignalVfx.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const BOSS_POLISH_VERSION = 'boss-impact-20260612';
@@ -369,23 +373,32 @@ export class Boss {
     const phasePipY = barY + barHeight + 9;
     const phasePipSpacing = Math.min(18, Math.max(12, barWidth / 8));
     const phasePipStartX = -((bossPhaseCount - 1) * phasePipSpacing) / 2;
+    const phasePulse = Math.sin(now * 0.012) * 0.5 + 0.5;
+    hideMicroSignals(this.healthBar, 'boss-phase:');
     for (let index = 0; index < bossPhaseCount; index += 1) {
       const phaseNumber = index + 1;
       const pipX = phasePipStartX + index * phasePipSpacing;
       const active = phaseNumber <= currentPhase;
       const current = phaseNumber === currentPhase;
       const pipColor = phasePipColors[index] || 0xffd166;
-      this.healthBar.poly([
-        pipX, phasePipY - 4,
-        pipX + 5, phasePipY,
-        pipX, phasePipY + 4,
-        pipX - 5, phasePipY
-      ]);
-      this.healthBar.fill({ color: active ? pipColor : 0x152838, alpha: active ? (current ? 0.92 : 0.68) : 0.46 });
-      this.healthBar.stroke({ color: current ? 0xffffff : pipColor, width: current ? 1.2 : 0.8, alpha: current ? 0.86 : 0.46 });
-      if (current) {
-        this.healthBar.circle(pipX, phasePipY, 7);
-        this.healthBar.stroke({ color: pipColor, width: 0.9, alpha: 0.46 });
+      const signal = presentPhaseSignal(this.healthBar, `boss-phase:${index}`, {
+        x: pipX,
+        y: phasePipY,
+        color: active ? pipColor : 0x466071,
+        size: current ? 17 : 13,
+        alpha: active ? (current ? 1 : 0.72) : 0.3,
+        current,
+        pulse: phasePulse
+      });
+      if (!signal) {
+        this.healthBar.poly([
+          pipX, phasePipY - 4,
+          pipX + 5, phasePipY,
+          pipX, phasePipY + 4,
+          pipX - 5, phasePipY
+        ]);
+        this.healthBar.fill({ color: active ? pipColor : 0x152838, alpha: active ? (current ? 0.92 : 0.68) : 0.46 });
+        this.healthBar.stroke({ color: current ? 0xffffff : pipColor, width: current ? 1.2 : 0.8, alpha: current ? 0.86 : 0.46 });
       }
     }
     if (lowHealth) {
