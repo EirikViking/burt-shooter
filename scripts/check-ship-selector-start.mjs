@@ -144,11 +144,20 @@ try {
   const beforeClick = await showShipSelect(page);
   const clickTarget = beforeClick.shipSelect.startButton;
   await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
-  await page.mouse.click(clickTarget.x + clickTarget.width / 2, clickTarget.y + clickTarget.height / 2);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.launchModeChoice?.visible === true, { timeout: 10000 });
+  const mouseModeChoice = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  mkdirSync(outputDir, { recursive: true });
+  const modeChoiceScreenshot = path.join(outputDir, 'hangar-launch-mode-choice.png');
+  await page.screenshot({ path: modeChoiceScreenshot, fullPage: true });
+  const pureTarget = mouseModeChoice.shipSelect.launchModeChoice.modes.ranked.bounds;
+  await page.mouse.click(pureTarget.x + pureTarget.width / 2, pureTarget.y + pureTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterClick = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
   const beforeKeyboard = await showShipSelect(page);
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.launchModeChoice?.visible === true, { timeout: 10000 });
+  const keyboardModeChoice = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterKeyboard = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
@@ -160,10 +169,13 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'shipDetails', { timeout: 10000 });
   const beforeDetailsStart = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await page.evaluate(() => window.__game?.currentScene?.startGame?.());
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipDetails?.launchModeChoice?.visible === true, { timeout: 10000 });
+  const detailsModeChoice = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('Enter');
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterDetailsStart = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
-  mkdirSync(outputDir, { recursive: true });
   const screenshot = path.join(outputDir, 'ship-selector-start.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
@@ -186,10 +198,13 @@ try {
       afterEscapeMenu.shipSelect?.hangarMenu?.visible === true &&
       afterMainMenu.scene === 'menu' &&
       beforeClick.shipSelect?.spriteKey &&
+      mouseModeChoice.shipSelect?.launchModeChoice?.focusedMode === 'ranked_tactical' &&
+      mouseModeChoice.shipSelect?.launchModeChoice?.modes?.ranked?.bounds?.width > 0 &&
       afterClick.scene === 'play' &&
       afterClick.selectedShipSpriteKey === beforeClick.shipSelect.spriteKey &&
-      afterClick.runMode === 'ranked_tactical' &&
+      afterClick.runMode === 'ranked' &&
       beforeKeyboard.shipSelect?.spriteKey &&
+      keyboardModeChoice.shipSelect?.launchModeChoice?.focusedMode === 'ranked_tactical' &&
       afterKeyboard.scene === 'play' &&
       afterKeyboard.selectedShipSpriteKey === beforeKeyboard.shipSelect.spriteKey &&
       afterKeyboard.runMode === 'ranked_tactical' &&
@@ -197,9 +212,10 @@ try {
       afterKeyboard.lives === 3 &&
       beforeDetailsStart.scene === 'shipDetails' &&
       beforeDetailsStart.shipDetails?.spriteKey === detailsShipKey &&
+      detailsModeChoice.shipDetails?.launchModeChoice?.focusedMode === 'ranked_tactical' &&
       afterDetailsStart.scene === 'play' &&
       afterDetailsStart.selectedShipSpriteKey === detailsShipKey &&
-      afterDetailsStart.runMode === 'ranked_tactical' &&
+      afterDetailsStart.runMode === 'ranked' &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -218,6 +234,8 @@ try {
       scene: afterMainMenu.scene
     },
     beforeClick: beforeClick.shipSelect,
+    mouseModeChoice: mouseModeChoice.shipSelect?.launchModeChoice,
+    keyboardModeChoice: keyboardModeChoice.shipSelect?.launchModeChoice,
     afterClick: {
       scene: afterClick.scene,
       selectedShipSpriteKey: afterClick.selectedShipSpriteKey,
@@ -234,6 +252,7 @@ try {
       lives: afterKeyboard.lives
     },
     beforeDetailsStart: beforeDetailsStart.shipDetails,
+    detailsModeChoice: detailsModeChoice.shipDetails?.launchModeChoice,
     afterDetailsStart: {
       scene: afterDetailsStart.scene,
       selectedShipSpriteKey: afterDetailsStart.selectedShipSpriteKey,
@@ -243,7 +262,8 @@ try {
     },
     pageErrors,
     consoleErrors,
-    screenshot
+    screenshot,
+    modeChoiceScreenshot
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));
 
@@ -251,7 +271,7 @@ try {
     console.error(JSON.stringify(report, null, 2));
     process.exitCode = 1;
   } else {
-    console.log(`[ship-selector-start] PASS menuOverlay=${afterMenuButton.shipSelect.hangarMenu.visible} escape=${afterEscapeMenu.shipSelect.hangarMenu.visible}->${afterMainMenu.scene} click=${afterClick.selectedShipSpriteKey}:${afterClick.runMode} keyboard=${afterKeyboard.selectedShipSpriteKey}:${afterKeyboard.runMode} details=${afterDetailsStart.selectedShipSpriteKey}:${afterDetailsStart.runMode} screenshot=${screenshot}`);
+    console.log(`[ship-selector-start] PASS modeChoice=${mouseModeChoice.shipSelect.launchModeChoice.focusedMode} mouse=${afterClick.selectedShipSpriteKey}:${afterClick.runMode} keyboard=${afterKeyboard.selectedShipSpriteKey}:${afterKeyboard.runMode} details=${afterDetailsStart.selectedShipSpriteKey}:${afterDetailsStart.runMode} screenshot=${modeChoiceScreenshot}`);
   }
 } finally {
   await browser.close();

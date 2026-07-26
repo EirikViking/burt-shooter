@@ -907,6 +907,7 @@ function buildGameTextState(game) {
         reason: shipSelectScene.recommendationReasonText?.text || null
       } : null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
+      launchModeChoice: shipSelectScene.launchModeOverlay?.getDebugState?.(getBoundsDebug) || null,
       controllerFocus: shipSelectScene.getControllerFocus ? shipSelectScene.getControllerFocus() : (shipSelectScene.mainMenuButtonFocused ? 'back' : 'ship'),
       focusedActionButtonId: shipSelectScene.getFocusedActionButtonId ? shipSelectScene.getFocusedActionButtonId() : null,
       backButton: getBoundsDebug(shipSelectScene.backButton),
@@ -932,6 +933,7 @@ function buildGameTextState(game) {
       unlockProvenanceBounds: getBoundsDebug(shipDetailsScene.unlockProvenanceText),
       focusedButtonIndex: Number.isFinite(shipDetailsScene.focusedButtonIndex) ? shipDetailsScene.focusedButtonIndex : null,
       focusedButtonId: shipDetailsScene.focusedButtonIndex === 0 ? 'back' : shipDetailsScene.focusedButtonIndex === 1 ? 'start' : null,
+      launchModeChoice: shipDetailsScene.launchModeOverlay?.getDebugState?.(getBoundsDebug) || null,
       backButton: getBoundsDebug(shipDetailsScene.backButton),
       startButton: getBoundsDebug(shipDetailsScene.startButton)
     } : null,

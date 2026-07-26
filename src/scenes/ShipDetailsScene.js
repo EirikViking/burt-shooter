@@ -19,6 +19,7 @@ import { translateText } from '../i18n/index.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { HangarLaunchModeOverlay } from '../ui/HangarLaunchModeOverlay.js';
 
 export class ShipDetailsScene {
     constructor(game, spriteKey) {
@@ -31,6 +32,8 @@ export class ShipDetailsScene {
         this.buttons = [];
         this.menuFx = null;
         this.focusedButtonIndex = 1;
+        this.launchModeOverlay = null;
+        this.launchInProgress = false;
 
         if (!this.ship) {
             console.error('[ShipDetails] Invalid sprite key:', spriteKey);
@@ -488,7 +491,9 @@ export class ShipDetailsScene {
 
     setupInput() {
         this.keyHandler = (e) => {
-            if (e.key === 'Escape') {
+            if (this.launchModeOverlay) {
+                this.launchModeOverlay.handleKey(e);
+            } else if (e.key === 'Escape') {
                 this.goBack();
             } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                 e.preventDefault();
@@ -516,6 +521,10 @@ export class ShipDetailsScene {
         updateMenuFx(this, delta);
         const nav = this.gamepadNavigator.update();
         if (!nav.connected || !nav.active) return;
+        if (this.launchModeOverlay) {
+            this.launchModeOverlay.handleGamepad(nav);
+            return;
+        }
         if (nav.pressed.left || nav.pressed.right) this.setButtonFocus(this.focusedButtonIndex === 0 ? 1 : 0);
         if (nav.pressed.confirm) {
             playMenuConfirmSfx(0.16);
@@ -530,15 +539,37 @@ export class ShipDetailsScene {
     }
 
     startGame() {
-        if (!isShipUnlocked(this.spriteKey, this.unlockProgress)) {
-            return;
-        }
-        console.log('[ShipDetails] Starting game with ship:', this.spriteKey);
-        // Read from state to ensure we have the latest selection
-        this.game.startGame(this.spriteKey, { runMode: RUN_MODES.MAYHEM_TACTICAL });
+        if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress || this.launchModeOverlay) return;
+        this.launchModeOverlay = new HangarLaunchModeOverlay({
+            parent: this.container,
+            width: this.game.getWidth(),
+            height: this.game.getHeight(),
+            shipName: this.ship?.name,
+            onLaunch: (runMode) => this.startGameInMode(runMode),
+            onCancel: () => this.closeLaunchModeOverlay()
+        });
+        this.gamepadNavigator.suppressUntilReleased();
+    }
+
+    closeLaunchModeOverlay() {
+        this.launchModeOverlay?.destroy();
+        this.launchModeOverlay = null;
+        this.gamepadNavigator.suppressUntilReleased();
+    }
+
+    startGameInMode(runMode = RUN_MODES.MAYHEM_TACTICAL) {
+        if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress) return;
+        this.launchInProgress = true;
+        this.closeLaunchModeOverlay();
+        console.log(`[ShipDetails] Starting ${runMode} with ship:`, this.spriteKey);
+        Promise.resolve(this.game.startGame(this.spriteKey, { runMode })).catch((error) => {
+            this.launchInProgress = false;
+            console.error('[ShipDetails] Failed to start selected ship:', error);
+        });
     }
 
     cleanup() {
+        this.closeLaunchModeOverlay();
         if (this.keyHandler) {
             window.removeEventListener('keydown', this.keyHandler);
         }

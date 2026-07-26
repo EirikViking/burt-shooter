@@ -29,6 +29,7 @@ import { destroyMenuFx, installMenuFx, playMenuFocusSfx, updateMenuFx } from '..
 import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgressState.js';
 import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 import { RUN_MODES } from '../game/RunMode.js';
+import { HangarLaunchModeOverlay } from '../ui/HangarLaunchModeOverlay.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -123,6 +124,7 @@ export class ShipSelectScene {
     this.baseOrder = [...new Set(this.ships.map(ship => ship.baseId).filter(Boolean))];
     this.unlockProgress = getShipUnlockProgress();
     this.launchInProgress = false;
+    this.launchModeOverlay = null;
     this.backButton = null;
     this.hangarMenuOverlay = null;
     this.careerInfoOverlay = null;
@@ -3287,6 +3289,12 @@ export class ShipSelectScene {
         return;
       }
 
+      if (this.launchModeOverlay) {
+        e.stopImmediatePropagation();
+        this.launchModeOverlay.handleKey(e);
+        return;
+      }
+
       if (this.hangarMenuOverlay?.visible) {
         this.handleHangarMenuKey(e);
         return;
@@ -3398,6 +3406,11 @@ export class ShipSelectScene {
   pollHangarMenuGamepad() {
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.launchModeOverlay) {
+      this.launchModeOverlay.handleGamepad(nav);
+      return;
+    }
 
     if (this.hangarUnlockPresentation?.visible) {
       if (nav.pressed.confirm || nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
@@ -3517,7 +3530,7 @@ export class ShipSelectScene {
   }
 
   launchSelectedShip(source = 'unknown') {
-    if (this.launchInProgress) return;
+    if (this.launchInProgress || this.launchModeOverlay) return;
     const ship = this.ships[this.selectedIndex];
     if (!ship?.spriteKey) return;
 
@@ -3527,14 +3540,43 @@ export class ShipSelectScene {
       return;
     }
 
-    this.launchInProgress = true;
     const spriteKey = ship.spriteKey;
     setSelectedShipKey(spriteKey);
     this.saveSelection(spriteKey);
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
 
-    if (DEBUG) console.log(`[ShipSelect] Starting game via ${source}:`, spriteKey);
-    this.game.startGame(spriteKey, { runMode: RUN_MODES.MAYHEM_TACTICAL }).catch((error) => {
+    if (DEBUG) console.log(`[ShipSelect] Opening launch mode choice via ${source}:`, spriteKey);
+    this.openLaunchModeOverlay(ship);
+  }
+
+  openLaunchModeOverlay(ship = this.ships[this.selectedIndex]) {
+    if (!ship?.spriteKey || this.launchModeOverlay) return;
+    this.launchModeOverlay = new HangarLaunchModeOverlay({
+      parent: this.container,
+      width: this.game.getWidth(),
+      height: this.game.getHeight(),
+      shipName: ship.name,
+      onLaunch: (runMode) => this.startSelectedShipInMode(runMode),
+      onCancel: () => this.closeLaunchModeOverlay()
+    });
+    this.gamepadNavigator.suppressUntilReleased();
+  }
+
+  closeLaunchModeOverlay() {
+    this.launchModeOverlay?.destroy();
+    this.launchModeOverlay = null;
+    this.gamepadNavigator.suppressUntilReleased();
+  }
+
+  startSelectedShipInMode(runMode = RUN_MODES.MAYHEM_TACTICAL) {
+    if (this.launchInProgress) return;
+    const ship = this.ships[this.selectedIndex];
+    if (!ship?.spriteKey || !isShipUnlocked(ship.spriteKey, this.unlockProgress)) return;
+    this.launchInProgress = true;
+    const spriteKey = ship.spriteKey;
+    this.closeLaunchModeOverlay();
+    if (DEBUG) console.log(`[ShipSelect] Starting game in ${runMode}:`, spriteKey);
+    Promise.resolve(this.game.startGame(spriteKey, { runMode })).catch((error) => {
       this.launchInProgress = false;
       console.error('[ShipSelect] Failed to start selected ship:', error);
     });
@@ -3570,6 +3612,7 @@ export class ShipSelectScene {
 
   cleanup() {
     console.log('[ShipSelectInput] detached');
+    this.closeLaunchModeOverlay();
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
     }

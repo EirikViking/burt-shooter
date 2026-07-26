@@ -13,6 +13,7 @@ import { getCompetitionLearningSourceText } from '../competitionLearningSourceTe
 import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySourceText.js';
 import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
+import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "ROUTE",
@@ -2215,6 +2216,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de') }),
   patterns
 };

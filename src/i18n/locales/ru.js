@@ -15,6 +15,7 @@ import { getCompetitionLearningSourceText } from '../competitionLearningSourceTe
 import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySourceText.js';
 import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
+import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "\u041c\u0410\u0420\u0428\u0420\u0423\u0422",
@@ -1821,6 +1822,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru') }),
   patterns
 };
