@@ -68,6 +68,7 @@ import {
   RARE_CHAOS_VISITOR_WAVE_CHANCE
 } from '../config/RareChaosVisitors.js';
 import {
+  TACTICAL_DRAFT_AUGMENTS,
   TACTICAL_DRAFT_BAN_COUNT,
   buildTacticalDraftOffers,
   getActiveTacticalAugmentIds,
@@ -174,7 +175,7 @@ function pickBossWarningJoke(profile, level = 1) {
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
-const GAME_OVER_DEATH_HOLD_MS = 550;
+const GAME_OVER_DEATH_HOLD_MS = 1100;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
@@ -650,9 +651,10 @@ export class PlayScene {
     this.gameOverAnimationLayer = null;
     this.gameOverAnimationDebug = null;
     this.gameOverFinalTransmissionVariant = reserveNextGameOverFinalTransmissionVariant();
-    this.gameOverFinalTransmissionReady = GameAssets.ensureGameOverFinalTransmissionTexture?.(
-      this.gameOverFinalTransmissionVariant
-    ).catch(() => null);
+    this.gameOverFinalTransmissionReady = Promise.all([
+      GameAssets.ensureGameOverFinalTransmissionTexture?.(this.gameOverFinalTransmissionVariant),
+      GameAssets.ensureGameOverFinalSignalTexture?.(this.gameOverFinalTransmissionVariant)
+    ]).catch(() => [null, null]);
     this.overrunClearLayer = new PIXI.Container();
     this.overrunClearLayer.zIndex = 9600;
     this.overrunClearLayer.sortableChildren = true;
@@ -8076,6 +8078,19 @@ export class PlayScene {
     }));
   }
 
+  getIneffectiveTacticalDraftOfferIds() {
+    if (!this.player?.getRunAugmentStatPreview) return [];
+    return TACTICAL_DRAFT_AUGMENTS
+      .filter((augment) => {
+        if (augment.consumedOnApply || augment.id === 'combo_anchor') return false;
+        const preview = this.player.getRunAugmentStatPreview(augment.id);
+        return preview?.kind === 'stat'
+          && preview.capped === true
+          && !(preview.projectedFusionIds?.length > 0);
+      })
+      .map((augment) => augment.id);
+  }
+
   formatTacticalDraftStatPreview(preview = null) {
     if (preview?.kind !== 'stat' || !preview.metric) {
       return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
@@ -8097,13 +8112,34 @@ export class PlayScene {
     const metrics = (Array.isArray(preview.metrics) && preview.metrics.length
       ? preview.metrics
       : [{ metric: preview.metric, before: preview.before, after: preview.after }])
-      .map((entry) => ({ ...entry, definition: definitions[entry.metric] }))
+      .map((entry) => ({
+        ...entry,
+        definition: definitions[entry.metric],
+        unchanged: typeof entry.before === 'number' && typeof entry.after === 'number'
+          ? Math.abs(entry.before - entry.after) < 0.000001
+          : entry.before === entry.after
+      }))
       .filter((entry) => entry.definition);
     if (!metrics.length) return { kind: 'contextual', label: translateText('CONTEXTUAL EFFECT'), value: '' };
+    const directDamageCapped = metrics.some((entry) => (
+      entry.unchanged && (entry.metric === 'damage' || entry.metric === 'directDps')
+    ));
+    const effectiveMetrics = metrics.filter((entry) => !entry.unchanged);
+    if (directDamageCapped && effectiveMetrics.length === 0) {
+      return {
+        kind: 'capped',
+        label: translateText('DIRECT DAMAGE CAP REACHED'),
+        value: ''
+      };
+    }
+    const labels = [
+      ...(directDamageCapped ? [translateText('DIRECT DAMAGE CAP REACHED')] : []),
+      ...effectiveMetrics.map(({ definition }) => translateText(definition.label))
+    ];
     return {
       kind: 'stat',
-      label: metrics.map(({ definition }) => translateText(definition.label)).join(' / '),
-      value: metrics.map(({ before, after, definition }) => (
+      label: labels.join(' / '),
+      value: effectiveMetrics.map(({ before, after, definition }) => (
         `${definition.format(before)} → ${definition.format(after)}`
       )).join(' / ')
     };
@@ -8248,6 +8284,8 @@ export class PlayScene {
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
     if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
+    const ineffectiveIds = this.getIneffectiveTacticalDraftOfferIds();
+    if (ineffectiveIds.includes(this.tacticalDraftHeldId)) this.tacticalDraftHeldId = null;
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
       seed: this.game?.contentDirector?.seed || `run-${this.game?.runStartedAtMs || 0}`,
       sectorCleared,
@@ -8258,6 +8296,7 @@ export class PlayScene {
       baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      ineffectiveIds,
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
@@ -8478,12 +8517,16 @@ export class PlayScene {
     });
     description.anchor.set(0.5);
     const impact = this.formatTacticalDraftStatPreview(offer.statPreview);
+    card._impactKind = impact.kind;
     const impactBadge = new PIXI.Graphics();
-    const impactLabel = createText(impact.kind === 'stat' ? impact.label : translateText('CONTEXTUAL EFFECT'), {
+    const impactLabel = createText(
+      impact.kind === 'stat' || impact.kind === 'capped'
+        ? impact.label
+        : translateText('CONTEXTUAL EFFECT'), {
       fontFamily: FONT_BODY,
       fontSize: 8,
       fontWeight: '900',
-      fill: impact.kind === 'stat' ? '#8df7ff' : '#9fb6c0',
+      fill: impact.kind === 'capped' ? '#fff3a0' : impact.kind === 'stat' ? '#8df7ff' : '#9fb6c0',
       letterSpacing: 0.7
     });
     impactLabel.anchor.set(0.5);
@@ -9390,12 +9433,16 @@ export class PlayScene {
       nodes.stackLabel.style.fill = card._offer?.currentStacks > 0 ? '#fff3a0' : '#b7d4df';
     }
     drawPill(nodes.impactBadge, nodes.impactBadge._pillLayout, {
-      color: card._offer?.statPreview?.kind === 'stat' ? 0x37f5ff : 0x536572,
+      color: card._impactKind === 'capped' ? 0xffd15c : card._impactKind === 'stat' ? 0x37f5ff : 0x536572,
       fill: 0x06131f,
       alpha: 0.9
     });
-    nodes.impactValue.visible = card._offer?.statPreview?.kind === 'stat';
-    nodes.impactLabel.style.fill = card._offer?.statPreview?.kind === 'stat' ? '#8df7ff' : '#9fb6c0';
+    nodes.impactValue.visible = card._impactKind === 'stat' && Boolean(nodes.impactValue.text);
+    nodes.impactLabel.style.fill = card._impactKind === 'capped'
+      ? '#fff3a0'
+      : card._impactKind === 'stat'
+        ? '#8df7ff'
+        : '#9fb6c0';
     drawPill(nodes.doctrineBadge, nodes.doctrineBadge._pillLayout, {
       color: Number(card._offer?.doctrineProjection?.after?.color) || accent,
       fill: 0x081421,
@@ -9657,6 +9704,7 @@ export class PlayScene {
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
+      ineffectiveIds: this.getIneffectiveTacticalDraftOfferIds(),
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
@@ -9715,6 +9763,7 @@ export class PlayScene {
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
       excludedIds: previousIds,
+      ineffectiveIds: this.getIneffectiveTacticalDraftOfferIds(),
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
@@ -11971,6 +12020,7 @@ export class PlayScene {
     const gameplayHeight = this.gameplayGame.getHeight();
     const impactX = this.player?.x ?? gameplayWidth / 2;
     const impactY = this.player?.y ?? gameplayHeight * 0.72;
+    if (finalDeath) this.finalDeathImpact = { x: impactX, y: impactY };
 
     this.lastHitStopRequestMs = finalDeath ? 420 : 180;
     this.freezeTimerMs = this.lastHitStopRequestMs;
@@ -12110,17 +12160,47 @@ export class PlayScene {
     });
     layer.addChild(fractureVeil);
 
-    const coreSignal = new PIXI.Graphics();
-    coreSignal.label = 'game_over_angular_core_signal';
-    coreSignal.poly([0, -34, 34, 0, 0, 34, -34, 0]);
-    coreSignal.fill({ color: colors.secondary, alpha: 0.16 });
-    coreSignal.stroke({ color: colors.accent, width: 2, alpha: 0.88 });
-    coreSignal.poly([0, -21, 21, 0, 0, 21, -21, 0]);
-    coreSignal.stroke({ color: colors.primary, width: 2, alpha: 0.92 });
-    coreSignal.position.set(coreX, coreY);
-    coreSignal.alpha = 0;
-    coreSignal.scale.set(0.35);
-    layer.addChild(coreSignal);
+    const signalTexture = GameAssets.getGameOverFinalSignalTexture?.(variant);
+    const createSignalSprite = (label) => {
+      const sprite = new PIXI.Sprite(GameAssets.isValidTexture(signalTexture) ? signalTexture : PIXI.Texture.EMPTY);
+      sprite.label = label;
+      sprite.anchor.set(0.5);
+      sprite.blendMode = 'add';
+      sprite.eventMode = 'none';
+      sprite.position.set(coreX, coreY);
+      sprite.visible = false;
+      sprite.alpha = 0;
+      return sprite;
+    };
+    const signalField = new PIXI.Graphics();
+    signalField.label = 'game_over_final_signal_field';
+    signalField.blendMode = 'add';
+    signalField.eventMode = 'none';
+    signalField.position.set(coreX, coreY);
+    const signalEchoBack = createSignalSprite('game_over_final_signal_echo_back');
+    const signalEchoFront = createSignalSprite('game_over_final_signal_echo_front');
+    const coreSignal = createSignalSprite('game_over_final_signal_core');
+    const signalSprites = [signalEchoBack, signalEchoFront, coreSignal];
+    const fitSignal = (texture) => {
+      if (!GameAssets.isValidTexture(texture) || coreSignal.destroyed) return false;
+      const targetSize = Math.max(126, Math.min(214, Math.min(width, height) * (width < 720 ? 0.22 : 0.19)));
+      const baseScale = targetSize / Math.max(1, texture.width, texture.height);
+      signalSprites.forEach((sprite) => {
+        sprite.texture = texture;
+        sprite._baseScale = baseScale;
+        sprite.scale.set(baseScale);
+        sprite.visible = true;
+      });
+      if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.signalAssetReady = true;
+      return true;
+    };
+    fitSignal(signalTexture);
+    layer.addChild(signalField, signalEchoBack, signalEchoFront, coreSignal);
+    if (!coreSignal.visible) {
+      GameAssets.ensureGameOverFinalSignalTexture?.(variant).then((texture) => {
+        if (this.gameOverAnimationLayer === layer) fitSignal(texture);
+      }).catch(() => {});
+    }
 
     const scanBlade = new PIXI.Graphics();
     scanBlade.label = 'game_over_signal_scan_blade';
@@ -12243,21 +12323,30 @@ export class PlayScene {
     handoffShade.alpha = 0;
     layer.addChild(handoffShade);
 
+    const deathHoldCue = new PIXI.Graphics();
+    deathHoldCue.label = 'game_over_death_hold_cue';
+    deathHoldCue.zIndex = 999999;
+    deathHoldCue.eventMode = 'none';
+    this.uiOverlay.addChild(deathHoldCue);
     this.uiOverlay.addChild(layer);
     this.uiOverlay.sortChildren?.();
     this.gameOverAnimationDebug = {
       active: true,
-      visualLanguage: 'final_transmission_imagegen_v2',
+      visualLanguage: 'final_transmission_imagegen_v3_signal_atlas',
       variantId: variant.id,
       variantCount: 30,
       animationSignature: { ...animation },
       generatedArtReady: hero.visible,
+      signalAssetReady: coreSignal.visible,
+      signalMode: animation.signalMode,
+      signalSrc: variant.signalSrc,
       primitiveRingCount: 0,
       shardCount: shards.length,
       titlePlate: true,
       animationPhases: ['death_hold', 'impact', 'fracture', 'title_reveal', 'final_hold', 'direct_handoff'],
       directHandoff: true,
       deathHoldMs: GAME_OVER_DEATH_HOLD_MS,
+      deathHoldCue: true,
       skippable: true,
       skipped: false,
       skipReason: null,
@@ -12284,6 +12373,8 @@ export class PlayScene {
       this._activeTickers = (this._activeTickers || []).filter((fn) => fn !== ticker);
       window.removeEventListener('keydown', handleGameOverSkipKey);
       layer.removeAllListeners?.('pointerdown');
+      if (deathHoldCue.parent) deathHoldCue.parent.removeChild(deathHoldCue);
+      deathHoldCue.destroy?.();
       onComplete?.();
     };
     const requestSkip = (reason) => {
@@ -12316,9 +12407,32 @@ export class PlayScene {
         return;
       }
       if (elapsed < 0) {
+        const holdProgress = clamp01((elapsed + GAME_OVER_DEATH_HOLD_MS) / GAME_OVER_DEATH_HOLD_MS);
+        const holdPulse = 0.5 + Math.sin(holdProgress * Math.PI * 5) * 0.5;
+        const impact = this.finalDeathImpact || { x: width / 2, y: height * 0.7 };
+        const ringRadius = 44 + holdProgress * 150;
+        deathHoldCue.clear();
+        deathHoldCue.rect(5, 5, width - 10, height - 10);
+        deathHoldCue.stroke({
+          color: holdProgress < 0.42 ? 0xff315d : colors.primary,
+          width: 3 + holdPulse * 2,
+          alpha: 0.22 + holdPulse * 0.32
+        });
+        deathHoldCue.circle(impact.x, impact.y, ringRadius);
+        deathHoldCue.stroke({ color: 0xff315d, width: 5 - holdProgress * 3, alpha: (1 - holdProgress) * 0.7 });
+        deathHoldCue.circle(impact.x, impact.y, ringRadius * 0.62);
+        deathHoldCue.stroke({ color: colors.primary, width: 2, alpha: 0.32 + holdPulse * 0.3 });
+        deathHoldCue.rect(0, 0, width, Math.max(10, height * 0.018));
+        deathHoldCue.fill({ color: 0x01040b, alpha: 0.58 });
+        deathHoldCue.rect(0, height - Math.max(10, height * 0.018), width, Math.max(10, height * 0.018));
+        deathHoldCue.fill({ color: 0x01040b, alpha: 0.58 });
+        deathHoldCue.alpha = Math.min(1, holdProgress * 2.4);
+        deathHoldCue.visible = true;
+        if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.deathHoldProgress = holdProgress;
         layer.alpha = 0;
         return;
       }
+      deathHoldCue.visible = false;
       if (!presentationStarted) {
         presentationStarted = true;
         AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });
@@ -12370,10 +12484,51 @@ export class PlayScene {
       if (animation.coreMode === 'breathe') corePulse = 0.5 + Math.sin(elapsed * 0.0035) * 0.5;
       if (animation.coreMode === 'tremor') corePulse = 0.5 + Math.sin(elapsed * 0.014) * 0.5;
       if (animation.coreMode === 'doublebeat') corePulse = Math.pow(Math.max(0, Math.sin(elapsed * 0.009)), 5);
-      coreSignal.alpha = Math.max(0, 0.78 - coreBurst * 0.34 + corePulse * 0.24);
-      coreSignal.scale.set(0.35 + coreBurst * 1.18 + corePulse * 0.075);
-      coreSignal.rotation = elapsed * 0.00035 * (animation.direction || 1);
-      coreSignal.x = coreX + (animation.coreMode === 'tremor' ? Math.sin(elapsed * 0.025) * 3 : 0);
+      const signalPhase = elapsed * (animation.signalPulseRate || 0.0045) + (animation.phase || 0);
+      const signalSpin = elapsed * (animation.signalSpin || 0.00035);
+      const echoSpread = animation.signalEchoSpread || 0.15;
+      const orbitCount = animation.signalOrbitCount || 5;
+      const signalPulse = 0.5 + Math.sin(signalPhase * Math.PI * 2) * 0.5;
+      let signalOffsetX = 0;
+      let signalOffsetY = 0;
+      if (animation.signalMode === 'cathedral') signalOffsetY = Math.sin(signalPhase) * 8;
+      else if (animation.signalMode === 'eclipse') signalOffsetX = Math.cos(signalPhase) * 10;
+      else if (animation.signalMode === 'compass') {
+        signalOffsetX = Math.sin(signalPhase * 1.7) * 6;
+        signalOffsetY = Math.cos(signalPhase * 1.3) * 6;
+      } else if (animation.signalMode === 'quantum_knot') {
+        signalOffsetX = Math.sin(signalPhase * 2) * 9;
+        signalOffsetY = Math.sin(signalPhase * 3) * 5;
+      } else if (animation.signalMode === 'nova') {
+        signalOffsetY = -Math.pow(signalPulse, 3) * 9;
+      }
+      const baseSignalScale = coreSignal._baseScale || 0.6;
+      const revealScale = 0.42 + coreBurst * 0.58;
+      coreSignal.alpha = Math.max(0, 0.6 + corePulse * 0.34);
+      coreSignal.scale.set(baseSignalScale * revealScale * (0.94 + signalPulse * 0.1));
+      coreSignal.rotation = signalSpin + (animation.signalTilt || 0);
+      coreSignal.position.set(coreX + signalOffsetX, coreY + signalOffsetY);
+      signalEchoBack.alpha = 0.08 + signalPulse * 0.2;
+      signalEchoBack.scale.set(baseSignalScale * revealScale * (1.18 + echoSpread + signalPulse * 0.12));
+      signalEchoBack.rotation = -signalSpin * 0.72 - (animation.signalTilt || 0);
+      signalEchoBack.position.set(coreX - signalOffsetX * 0.35, coreY - signalOffsetY * 0.35);
+      signalEchoFront.alpha = 0.1 + (1 - signalPulse) * 0.16;
+      signalEchoFront.scale.set(baseSignalScale * revealScale * (0.78 - echoSpread * 0.2 + signalPulse * 0.08));
+      signalEchoFront.rotation = signalSpin * 1.45;
+      signalEchoFront.position.set(coreX + signalOffsetX * 0.5, coreY + signalOffsetY * 0.5);
+      signalField.clear();
+      for (let orbitIndex = 0; orbitIndex < orbitCount; orbitIndex += 1) {
+        const angle = signalPhase * (animation.direction || 1) + (Math.PI * 2 * orbitIndex) / orbitCount;
+        const radius = 66 + (orbitIndex % 3) * 13 + signalPulse * 8;
+        const dotRadius = 1.6 + (orbitIndex % 3) * 0.9;
+        signalField.circle(Math.cos(angle) * radius, Math.sin(angle) * radius * 0.58, dotRadius);
+        signalField.fill({
+          color: orbitIndex % 3 === 0 ? colors.accent : orbitIndex % 2 ? colors.primary : colors.secondary,
+          alpha: 0.34 + signalPulse * 0.42
+        });
+      }
+      signalField.alpha = coreBurst;
+      signalField.rotation = signalSpin * -0.45;
       const scanProgress = clamp01((elapsed - 260) / 1500);
       if (animation.scanMode === 'up') {
         scanBlade.position.set(coreX, coreY + height * 0.14 - scanProgress * height * 0.25);

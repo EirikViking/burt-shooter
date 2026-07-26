@@ -25,6 +25,7 @@ const variants = GAME_OVER_FINAL_TRANSMISSION_VARIANTS;
 assert(variants.length === 30, 'final-transmission deck must contain exactly 30 variants', { count: variants.length });
 assert(new Set(variants.map((variant) => variant.id)).size === 30, 'final-transmission IDs must be unique');
 assert(new Set(variants.map((variant) => variant.src)).size === 30, 'final-transmission asset paths must be unique');
+assert(new Set(variants.map((variant) => variant.signalSrc)).size === 30, 'final-signal asset paths must be unique');
 
 const signatures = variants.map(getGameOverFinalTransmissionAnimationSignature);
 assert(new Set(signatures).size === 30, 'all 30 final transmissions must have distinct animation signatures');
@@ -33,6 +34,7 @@ assert(new Set(variants.map((variant) => variant.animation.scanMode)).size >= 6,
 assert(new Set(variants.map((variant) => variant.animation.shardMode)).size >= 5, 'fragment motion needs five distinct families');
 assert(new Set(variants.map((variant) => variant.animation.coreMode)).size >= 5, 'core motion needs five distinct families');
 assert(new Set(variants.map((variant) => variant.animation.titleEntry)).size >= 5, 'title motion needs five distinct entries');
+assert(new Set(variants.map((variant) => variant.animation.signalMode)).size >= 10, 'signal motion needs ten distinct families');
 
 const assetResults = variants.map((variant) => {
   const assetPath = path.resolve('public', variant.src.replace(/^\/+/, ''));
@@ -50,6 +52,27 @@ const assetResults = variants.map((variant) => {
   };
 });
 assert(new Set(assetResults.map((asset) => asset.sha256)).size === 30, 'final-transmission artwork must be visually unique at the file level');
+
+const signalResults = variants.map((variant) => {
+  const assetPath = path.resolve('public', variant.signalSrc.replace(/^\/+/, ''));
+  assert(existsSync(assetPath), 'final-signal asset is missing', { id: variant.id, assetPath });
+  const buffer = readFileSync(assetPath);
+  const dimensions = pngDimensions(buffer);
+  assert(dimensions.width >= 229 && dimensions.width <= 230, 'final-signal asset has unexpected width', {
+    id: variant.id,
+    ...dimensions
+  });
+  assert(dimensions.height >= 228 && dimensions.height <= 229, 'final-signal asset has unexpected height', {
+    id: variant.id,
+    ...dimensions
+  });
+  return {
+    id: variant.id,
+    sha256: createHash('sha256').update(buffer).digest('hex'),
+    ...dimensions
+  };
+});
+assert(new Set(signalResults.map((asset) => asset.sha256)).size === 30, 'final-signal artwork must be visually unique at the file level');
 
 const values = new Map();
 const storage = {
@@ -85,5 +108,7 @@ assert(playSource.includes('handoffShade.alpha = handoff;'), 'direct handoff bla
 assert(playSource.includes('onComplete?.();'), 'ticker does not synchronously hand off to the result scene');
 assert(playSource.includes('layer.alpha = intro;'), 'celebration layer is not held through scene transition');
 assert(!playSource.includes('layer.alpha = intro * (1 - exit)'), 'old playing-field-revealing fade returned');
+assert(playSource.includes("coreSignal = createSignalSprite('game_over_final_signal_core')"), 'generated final-signal core is missing');
+assert(!playSource.includes("coreSignal.label = 'game_over_angular_core_signal'"), 'old geometric diamond core returned');
 
-console.log('[gameover-final-transmissions] PASS variants=30 uniqueArt=30 uniqueAnimations=30 cycles=2 directHandoff=true');
+console.log('[gameover-final-transmissions] PASS variants=30 uniqueArt=30 uniqueSignals=30 uniqueAnimations=30 cycles=2 directHandoff=true');

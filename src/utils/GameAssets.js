@@ -11,6 +11,8 @@ class GameAssetsManager {
         this.tacticalDraftFieldTexture = null;
         this.gameOverFinalTransmissionTexture = null;
         this.gameOverFinalTransmissionTextures = {};
+        this.gameOverFinalSignalTexture = null;
+        this.gameOverFinalSignalTextures = {};
         this.cabinetWonderTextures = {};
         this.commsPortraits = {};
         this.fallbackCommsPortraitList = AssetManifest.loreImages;
@@ -144,6 +146,36 @@ class GameAssetsManager {
         return this.gameOverFinalTransmissionTextures[variant.id] || null;
     }
 
+    async ensureGameOverFinalSignalTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        if (!variant.signalSrc) return null;
+        if (this.isValidTexture(this.gameOverFinalSignalTextures[variant.id])) {
+            return this.gameOverFinalSignalTextures[variant.id];
+        }
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: `nova_game_over_signal_${variant.id}`,
+                src: variant.signalSrc
+            });
+            if (this.isValidTexture(texture)) {
+                Object.keys(this.gameOverFinalSignalTextures).forEach((cachedId) => {
+                    if (cachedId === variant.id) return;
+                    delete this.gameOverFinalSignalTextures[cachedId];
+                    try {
+                        Promise.resolve(PIXI.Assets.unload(`nova_game_over_signal_${cachedId}`)).catch(() => {});
+                    } catch {
+                        // The selected signal remains usable if an old cache entry cannot unload.
+                    }
+                });
+                this.gameOverFinalSignalTextures[variant.id] = texture;
+                this.gameOverFinalSignalTexture = texture;
+            }
+        } catch (error) {
+            console.warn(`[GameAssets] Game Over final-signal ${variant.id} unavailable:`, error?.message || error);
+        }
+        return this.gameOverFinalSignalTextures[variant.id] || null;
+    }
+
     async ensureCabinetWonderTexture(id) {
         const sources = AssetManifest.generated?.cabinetWonders || {};
         const key = String(id || '');
@@ -230,6 +262,11 @@ class GameAssetsManager {
     getGameOverFinalTransmissionTexture(variantOrId) {
         const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
         return this.gameOverFinalTransmissionTextures[variant.id] || null;
+    }
+
+    getGameOverFinalSignalTexture(variantOrId) {
+        const variant = this.resolveGameOverFinalTransmissionVariant(variantOrId);
+        return this.gameOverFinalSignalTextures[variant.id] || null;
     }
 
     getCabinetWonderTexture(id) {

@@ -38,6 +38,18 @@ const paths = ['orbital', 'parallax', 'ascend', 'descend', 'figure_eight', 'reco
 const scanModes = ['down', 'up', 'left', 'right', 'diagonal_down', 'diagonal_up'];
 const shardModes = ['burst', 'spiral', 'shear', 'cascade', 'return'];
 const coreModes = ['pulse', 'flare', 'breathe', 'tremor', 'doublebeat'];
+const signalModes = [
+  'constellation',
+  'cathedral',
+  'corona',
+  'eclipse',
+  'compass',
+  'reliquary',
+  'crystal',
+  'orrery',
+  'quantum_knot',
+  'nova'
+];
 const titleEntries = ['left', 'right', 'rise', 'drop', 'zoom'];
 const palettes = [
   [0x37f5ff, 0xff55d9, 0xfff3a2],
@@ -54,12 +66,19 @@ export const GAME_OVER_FINAL_TRANSMISSION_VARIANTS = Object.freeze(
     return Object.freeze({
       id: `final_transmission_${String(index + 1).padStart(2, '0')}_${slug}`,
       src,
+      signalSrc: `/art/generated/nova-swarm/gameover/signal-cores-20260726/nova-swarm-final-signal-${String(index + 1).padStart(2, '0')}.png`,
       colors: Object.freeze({ primary: palette[0], secondary: palette[1], accent: palette[2] }),
       animation: Object.freeze({
         path: paths[index % paths.length],
         scanMode: scanModes[(index * 5) % scanModes.length],
         shardMode: shardModes[(index * 2) % shardModes.length],
         coreMode: coreModes[(index * 3) % coreModes.length],
+        signalMode: signalModes[index % signalModes.length],
+        signalPulseRate: Number((0.0036 + index * 0.00019).toFixed(5)),
+        signalSpin: direction * Number((0.00018 + index * 0.000025).toFixed(6)),
+        signalOrbitCount: 3 + (index % 8),
+        signalEchoSpread: Number((0.12 + (index % 6) * 0.025).toFixed(3)),
+        signalTilt: Number((((index % 7) - 3) * 0.018).toFixed(3)),
         titleEntry: titleEntries[(index * 4) % titleEntries.length],
         direction,
         phase: Number((index * 0.71).toFixed(2)),

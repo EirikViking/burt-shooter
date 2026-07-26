@@ -144,6 +144,9 @@ async function checkCeremony(browser, { score, expectedTier, titlePattern, shotN
 
 async function checkInGameFinalDeathAnimation(browser) {
   const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+  });
   await page.evaluate(() => {
     const game = window.__game;
     game.score = 12345;
@@ -167,17 +170,23 @@ async function checkInGameFinalDeathAnimation(browser) {
       finalScoreSnapshot: game.finalScoreSnapshot,
       finalScoreLocked: game.finalScoreLocked,
       animation: structuredClone(play?.gameOverAnimationDebug || null),
-      layerAlpha: play?.gameOverAnimationLayer?.alpha
+      layerAlpha: play?.gameOverAnimationLayer?.alpha,
+      deathHoldCueAttached: Boolean(play?.uiOverlay?.children?.some((child) => child?.label === 'game_over_death_hold_cue'))
     };
   });
   assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
   assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
   assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
   assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
-  assert(lockedState.animation?.deathHoldMs === 550 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.deathHoldMs === 1100 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
   assert(lockedState.layerAlpha === 0, `frozen battle should remain visible during the death hold: ${lockedState.layerAlpha}`);
-  await page.waitForTimeout(450);
+  assert(lockedState.deathHoldCueAttached === true, 'visible frozen-battle death-hold cue is missing');
+  await page.waitForTimeout(650);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
+  await page.waitForTimeout(850);
+  const signalState = await page.evaluate(() => structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null));
+  assert(signalState?.signalAssetReady === true, `generated final-signal asset was not visible: ${JSON.stringify(signalState)}`);
+  await page.screenshot({ path: path.join(outputDir, 'in-game-final-signal.png'), fullPage: true });
   await page.keyboard.press('Enter');
   await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
   const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));

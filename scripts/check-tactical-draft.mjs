@@ -346,6 +346,22 @@ assert(heldAndFixed.some((offer) => offer.id === 'combo_anchor' && offer.fixedSc
   `fixed Sector 5 score route did not survive Fusion priority: ${JSON.stringify(heldAndFixed)}`);
 
 for (let index = 0; index < 40; index += 1) {
+  const capSafeOffers = buildTacticalDraftOffers({
+    seed: `ineffective-cap-filter-${index}`,
+    sectorCleared: 12,
+    selectedIds: ['damage_up'],
+    ineffectiveIds: ['damage_up'],
+    heldId: 'damage_up',
+    lives: 3,
+    maxLives: 4
+  });
+  assert(!capSafeOffers.some((offer) => offer.id === 'damage_up'),
+    `ineffective damage-only choice survived the cap filter for seed ${index}: ${JSON.stringify(capSafeOffers)}`);
+  assert(capSafeOffers.length === 3,
+    `cap filter did not backfill three useful choices for seed ${index}: ${JSON.stringify(capSafeOffers)}`);
+}
+
+for (let index = 0; index < 40; index += 1) {
   const bannedPartner = buildTacticalDraftOffers({
     seed: `banned-fusion-partner-${index}`,
     sectorCleared: 9,
@@ -776,6 +792,35 @@ try {
     const mobilityPreview = player.getRunAugmentStatPreview('blink_drive');
     const dynamicPreview = player.getRunAugmentStatPreview('phase_reactor');
     const dronePreview = player.getRunAugmentStatPreview('drones');
+    const selectedBeforeCapOfferCheck = player.runAugmentIds.slice();
+    const consumedBeforeCapOfferCheck = player.consumedRunAugmentIds.slice();
+    player.runAugmentIds = [
+      'damage_up', 'damage_up', 'damage_up',
+      'rapid_fire', 'rapid_fire', 'rapid_fire',
+      'target_paint', 'target_paint', 'target_paint',
+      'rail_surge', 'rail_surge', 'rail_surge',
+      'double_shot', 'double_shot', 'double_shot'
+    ];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats({ preview: true });
+    const damageCapPreview = player.getRunAugmentStatPreview('damage_up');
+    const plasmaAtDamageCapPreview = player.getRunAugmentStatPreview('plasma_lance');
+    const ineffectiveCapOfferIds = game.scenes.play.getIneffectiveTacticalDraftOfferIds();
+    const damageCapFormat = game.scenes.play.formatTacticalDraftStatPreview(damageCapPreview);
+    const plasmaAtDamageCapFormat = game.scenes.play.formatTacticalDraftStatPreview(plasmaAtDamageCapPreview);
+    const mixedDamageCapFormat = game.scenes.play.formatTacticalDraftStatPreview({
+      kind: 'stat',
+      metric: 'directDps',
+      before: 55.33,
+      after: 55.33,
+      metrics: [
+        { metric: 'directDps', before: 55.33, after: 55.33 },
+        { metric: 'bulletSpeed', before: 13, after: 14.04 }
+      ]
+    });
+    player.runAugmentIds = selectedBeforeCapOfferCheck;
+    player.consumedRunAugmentIds = consumedBeforeCapOfferCheck;
+    player.recalculateStats({ preview: true });
     const rankBoostTypeBeforeCapPreview = player.rankBoost?.type || null;
     if (player.rankBoost) player.rankBoost.type = 'fire_rate';
     player.recalculateStats({ preview: true });
@@ -867,6 +912,12 @@ try {
         fusionIdsAfterPreview,
         dynamicPreview,
         dronePreview,
+        damageCapPreview,
+        plasmaAtDamageCapPreview,
+        ineffectiveCapOfferIds,
+        damageCapFormat,
+        plasmaAtDamageCapFormat,
+        mixedDamageCapFormat,
         previewStateUnchanged,
         damageAfterApply
       },
@@ -927,6 +978,17 @@ try {
   `Fusion preview mutated active Fusion state: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.preview.dynamicPreview.kind === 'contextual' && runtime.preview.dronePreview.kind === 'stat',
     `dynamic/direct preview classification drifted: ${JSON.stringify(runtime.preview)}`);
+  assert(runtime.preview.damageCapPreview.capped === true
+    && runtime.preview.ineffectiveCapOfferIds.includes('damage_up'),
+  `damage-only cap was not recognized as an ineffective offer: ${JSON.stringify(runtime.preview)}`);
+  assert(runtime.preview.damageCapFormat.kind === 'capped'
+    && runtime.preview.damageCapFormat.label === 'DIRECT DAMAGE CAP REACHED',
+  `damage cap did not produce explicit player-facing copy: ${JSON.stringify(runtime.preview.damageCapFormat)}`);
+  assert(runtime.preview.mixedDamageCapFormat.kind === 'stat'
+    && /DIRECT DAMAGE CAP REACHED/.test(runtime.preview.mixedDamageCapFormat.label)
+    && /BULLET SPEED/.test(runtime.preview.mixedDamageCapFormat.label)
+    && runtime.preview.mixedDamageCapFormat.value === '13.00 → 14.04',
+  `mixed capped/effective offer did not preserve its useful stat: ${JSON.stringify(runtime.preview.mixedDamageCapFormat)}`);
   assert(runtime.repair.nanoPatchAgain.applied === false && runtime.repair.nanoPatchAgain.reason === 'stack_cap', 'consumed nano patch could be applied twice');
   assert(runtime.debug.consumedIds.includes('nano_patch') && !runtime.debug.activeIds.includes('nano_patch'), 'consumed nano patch remained active');
   assert(runtime.overlap.activeType === 'damage_up' && runtime.overlap.suppressedId === 'damage_up', 'matching ordinary pickup did not take temporary priority');
