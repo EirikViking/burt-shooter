@@ -2481,3 +2481,10 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Replaced primitive decorative treatments in the floating score/combo toast, HUD combo urgency meter, main-menu radar contacts, Mode Briefing bullets, Ace command signature, and final-death hold impact.
 - Increased every Cabinet Wonder presentation from 1.4/2.3 seconds to 2.4/3.3 seconds, preserving compact intro/outro fades so the full extra second is useful viewing time.
 - Passed `npm run check:i18n`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:score-popup-readability`, `npm run check:combo-meter-urgency`, `npm run check:ace-bounty-runtime`, `npm run check:cabinet-wonders`, `npm run check:cabinet-wonders-runtime`, and `npm run check:gameover-ceremony`. Release-line, packaging, and Steam `sector-continue-test` deployment verification remain pending.
+- Release and deployment complete:
+  - Source commit: `e651db5b94ec3e6fd491e94a3b01d8db92da310d`
+  - Package build: `v2026-07-26_19-37-25`
+  - Passed release-line, Steam SDK/package runtime, strict packaged Steam runtime, fresh-profile isolation, packaged smoke, packaged controls, packaged performance, desktop-package, and payload-manifest checks.
+  - Packaged performance: 60.25 average FPS, 58.48 minimum FPS across 12 samples.
+  - Steam BuildID `24400692`, depot `4765071`, manifest `5350198171556098372`.
+  - Assigned only to `sector-continue-test`; post-upload Steam app-info confirms that branch points to `24400692`, `public` remains `24399959`, and `test-build` remains `23782673`.
