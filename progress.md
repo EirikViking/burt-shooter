@@ -2453,3 +2453,11 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Replaced its English epic Codex entry with an in-universe tribute to Tyrian's precise reports, persistence, and contribution to clearer, safer systems. The long entry and combat tip render cleanly at four desktop sizes.
 - Focused Codex/localization checks, the required text/UI build gates, release-line checks, package runtime, and packaged launch smoke pass.
 - Uploaded exact source `fe0c225` as `v2026-07-26_11-33-38` only to `sector-continue-test`: BuildID `24397254`, depot manifest `3672975861801350471`. Public remained `24393438`; rollback target is `24396942`.
+
+## 2026-07-26 - Codex readability and complete Hangar launch chooser
+
+- Long Threat Codex stories now render as readable paragraph groups without rewriting any localized lore.
+- Both Hangar launch paths now open one shared, mouse/keyboard/controller-ready chooser covering all seven real launch contracts: Mayhem Tactical, Mayhem Pure, Daily Cabinet Signal, Scout Run, Sector Run, Overrun Tactical, and Overrun Pure.
+- Daily loaners, Scout anomalies, Sector checkpoints, Overrun eligibility, selected hulls, saves, gameplay balance, progression, achievements, and leaderboard identities remain intact. The chooser is fully localized in all eight supported interface languages.
+- Focused Codex, launch-contract, controller, all-language UI, release-line, browser smoke, native runtime, packaged launch/control, desktop review, and packaged performance checks pass. The packaged performance probe held `58.14` minimum / `59.69` average FPS.
+- Uploaded product source `9b0aed1` as `v2026-07-26_15-57-05` to SteamPipe as private, unassigned BuildID `24398974`, depot manifest `939621609412580332`. `SetLive` remained blank, so no public/default or beta branch pointer and no other Steamworks setting changed.
