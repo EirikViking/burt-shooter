@@ -4,6 +4,8 @@
 import * as PIXI from 'pixi.js';
 import { createText } from '../utils/pixiText.js';
 import { isFloatingComboMilestone } from '../config/RetentionPresentation.js';
+import { GameAssets } from '../utils/GameAssets.js';
+import { presentAuthoredSignal } from '../effects/MicroSignalVfx.js';
 
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false, options = {}) {
@@ -25,8 +27,7 @@ export class ScorePopup {
     this.sourceY = Number.isFinite(options.sourceY) ? options.sourceY : y;
     this.baseScale = this.isMajor ? 1.05 : 0.92;
     this.numericScore = Math.max(0, Math.round(Number(score) || 0));
-    this.comboSignalPipCount = this.isCombo ? Math.max(3, Math.min(6, Math.ceil(this.numericScore / 4))) : 0;
-    this.majorValueBarCount = this.isMajor && !this.isCombo ? Math.max(3, Math.min(5, Math.ceil(this.numericScore / 220))) : 0;
+    this.authoredSignalCount = this.isFramed ? (this.isCombo ? 1 : 2) : 0;
 
     const fontSize = Number(options.fontSize) || (isCombo ? 24 : (this.isFramed ? 18 : 15));
     const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
@@ -44,8 +45,9 @@ export class ScorePopup {
       type: this.type,
       combo: Boolean(isCombo),
       major: this.isMajor,
-      comboSignalPipCount: this.comboSignalPipCount,
-      majorValueBarCount: this.majorValueBarCount,
+      authoredSignalCount: this.authoredSignalCount,
+      primitiveSignalCount: 0,
+      visualLanguage: 'authored_micro_signal_v3',
       clusterIndex: this.clusterIndex
     };
 
@@ -71,6 +73,7 @@ export class ScorePopup {
     this.textNode.anchor.set(0.5);
     if (this.backplate && this.tickLayer) this.sprite.addChild(this.backplate, this.tickLayer);
     this.sprite.addChild(this.textNode);
+    GameAssets.ensureMicroSignalTextures?.().then(() => this.drawFrame(0)).catch(() => {});
     this.frameColor = color;
     this.accentColor = Number.isFinite(options.accent)
       ? options.accent
@@ -105,39 +108,31 @@ export class ScorePopup {
     this.tickLayer.rect(-width / 2 - 3, -height / 2 + 4, 2, height - 8);
     this.tickLayer.rect(width / 2 + 1, -height / 2 + 4, 2, height - 8);
     this.tickLayer.fill({ color: accent, alpha: railAlpha });
-    if (this.isCombo || this.isNearMiss) {
-      for (let i = 0; i < 3; i += 1) {
-        const x = width / 2 - 9 - i * 7;
-        this.tickLayer.circle(x, -height / 2 + 7, 1.8 + pulse * 0.4);
-        this.tickLayer.fill({ color: i === 0 ? color : accent, alpha: 0.46 + pulse * 0.32 });
+    if (this.isCombo) {
+      presentAuthoredSignal(this.sprite, 'popup_combo_crest', {
+        textureKey: 'combo',
+        x: 0,
+        y: height / 2 - 3,
+        width: Math.min(width * 0.72, 82),
+        height: 21,
+        color: accent,
+        alpha: 0.46 + pulse * 0.34,
+        pulse
+      });
+    } else if (this.isMajor) {
+      for (const side of [-1, 1]) {
+        presentAuthoredSignal(this.sprite, `popup_contact_${side}`, {
+          textureKey: 'contact',
+          x: side * (width / 2 - 8),
+          y: -height / 2 + 7,
+          width: 13,
+          height: 16,
+          color: side < 0 ? accent : color,
+          alpha: 0.42 + pulse * 0.36,
+          rotation: side * 0.34,
+          pulse
+        });
       }
-    }
-    if (this.majorValueBarCount > 0) {
-      const startX = -width / 2 + 8;
-      const bottomY = height / 2 - 6;
-      for (let i = 0; i < this.majorValueBarCount; i += 1) {
-        const x = startX + i * 6;
-        const barH = 4 + i * 1.4;
-        this.tickLayer.roundRect(x, bottomY - barH, 3, barH, 1.5);
-        this.tickLayer.fill({ color: i === this.majorValueBarCount - 1 ? 0xffffff : color, alpha: 0.26 + pulse * 0.22 + i * 0.045 });
-      }
-    }
-    if (this.comboSignalPipCount > 0) {
-      const startX = -((this.comboSignalPipCount - 1) * 7) / 2;
-      const y = height / 2 - 5;
-      for (let i = 0; i < this.comboSignalPipCount; i += 1) {
-        const x = startX + i * 7;
-        this.tickLayer.poly([
-          x, y - 3,
-          x + 3.4, y,
-          x, y + 3,
-          x - 3.4, y
-        ]);
-        this.tickLayer.fill({ color: i === this.comboSignalPipCount - 1 ? 0xffffff : accent, alpha: 0.3 + pulse * 0.28 + i * 0.04 });
-      }
-      this.tickLayer.moveTo(startX - 6, y);
-      this.tickLayer.lineTo(startX + (this.comboSignalPipCount - 1) * 7 + 6, y);
-      this.tickLayer.stroke({ color: accent, width: 0.9, alpha: 0.18 + pulse * 0.18 });
     }
   }
 
@@ -185,8 +180,9 @@ export class ScorePopup {
       sourceY: Math.round(this.sourceY),
       frameWidth: this.frameWidth,
       frameHeight: this.frameHeight,
-      comboSignalPipCount: this.comboSignalPipCount,
-      majorValueBarCount: this.majorValueBarCount,
+      authoredSignalCount: this.authoredSignalCount,
+      primitiveSignalCount: 0,
+      visualLanguage: 'authored_micro_signal_v3',
       progress: Number(progress.toFixed(3)),
       x: Math.round(this.x),
       y: Math.round(this.y)

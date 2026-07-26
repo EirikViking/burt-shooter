@@ -45,6 +45,7 @@ export class ModeBriefingOverlay {
     onVariantChange = null
   } = {}) {
     this.game = game;
+    GameAssets.ensureMicroSignalTextures?.().catch(() => {});
     this.data = data;
     this.onClose = typeof onClose === 'function' ? onClose : null;
     this.onVariantChange = typeof onVariantChange === 'function' ? onVariantChange : null;
@@ -379,9 +380,20 @@ export class ModeBriefingOverlay {
     } else if (section.items?.length) {
       section.items.forEach((item, index) => {
         const bulletY = bodyTop + index * (compact ? 25 : 29);
-        const marker = new PIXI.Graphics();
-        marker.circle(18, bulletY + (compact ? 7 : 8), 3);
-        marker.fill({ color: section.tone === 'warning' ? 0xff8a58 : (this.data?.accent || 0x37f5ff), alpha: 0.92 });
+        const marker = new PIXI.Sprite(GameAssets.getMicroSignalTexture('contact') || PIXI.Texture.EMPTY);
+        marker.anchor.set(0.5);
+        marker.position.set(18, bulletY + (compact ? 7 : 8));
+        marker.width = compact ? 12 : 14;
+        marker.height = compact ? 15 : 17;
+        marker.tint = section.tone === 'warning' ? 0xff8a58 : (this.data?.accent || 0x37f5ff);
+        marker.alpha = 0.92;
+        marker.rotation = index % 2 ? 0.18 : -0.18;
+        marker.blendMode = 'add';
+        marker.label = 'modeBriefingAuthoredBullet';
+        GameAssets.ensureMicroSignalTextures?.().then(() => {
+          const texture = GameAssets.getMicroSignalTexture('contact');
+          if (texture && !marker.destroyed) marker.texture = texture;
+        }).catch(() => {});
         const line = createText(translateText(item), {
           fontFamily: FONT_BODY,
           fontSize: compact ? 14 : 16,

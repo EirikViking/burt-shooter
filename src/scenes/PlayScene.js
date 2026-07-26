@@ -3308,7 +3308,9 @@ export class PlayScene {
     const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
     const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const durationMs = reducedMotion ? 1400 : 2300;
+    const durationMs = reducedMotion ? 2400 : 3300;
+    const introMs = reducedMotion ? 280 : 420;
+    const outroMs = reducedMotion ? 420 : 650;
     const visual = this.createCabinetWonderVisual(decision.variant, width, height, reducedMotion);
     visual.root.alpha = 0;
     this.gameContainer.addChild(visual.root);
@@ -3369,8 +3371,8 @@ export class PlayScene {
       }
       active.elapsedMs += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
       const progress = Math.min(1, active.elapsedMs / durationMs);
-      const intro = Math.min(1, progress / 0.18);
-      const outro = Math.max(0, (progress - 0.72) / 0.28);
+      const intro = Math.min(1, active.elapsedMs / introMs);
+      const outro = Math.max(0, (active.elapsedMs - (durationMs - outroMs)) / outroMs);
       active.root.alpha = (1 - Math.pow(1 - intro, 3)) * (1 - outro);
       active.animate(progress, active.elapsedMs);
       if (active.elapsedMs >= durationMs) this.clearCabinetWonder('complete');
@@ -12328,6 +12330,14 @@ export class PlayScene {
     deathHoldCue.zIndex = 999999;
     deathHoldCue.eventMode = 'none';
     this.uiOverlay.addChild(deathHoldCue);
+    const deathHoldImpact = new PIXI.Sprite(GameAssets.getPlasmaBloomTexture?.(2) || PIXI.Texture.EMPTY);
+    deathHoldImpact.label = 'game_over_death_hold_authored_impact';
+    deathHoldImpact.anchor.set(0.5);
+    deathHoldImpact.blendMode = 'add';
+    deathHoldImpact.eventMode = 'none';
+    deathHoldImpact.visible = false;
+    deathHoldImpact.zIndex = 1000000;
+    this.uiOverlay.addChild(deathHoldImpact);
     this.uiOverlay.addChild(layer);
     this.uiOverlay.sortChildren?.();
     this.gameOverAnimationDebug = {
@@ -12341,6 +12351,7 @@ export class PlayScene {
       signalMode: animation.signalMode,
       signalSrc: variant.signalSrc,
       primitiveRingCount: 0,
+      authoredImpactCount: 1,
       shardCount: shards.length,
       titlePlate: true,
       animationPhases: ['death_hold', 'impact', 'fracture', 'title_reveal', 'final_hold', 'direct_handoff'],
@@ -12375,6 +12386,8 @@ export class PlayScene {
       layer.removeAllListeners?.('pointerdown');
       if (deathHoldCue.parent) deathHoldCue.parent.removeChild(deathHoldCue);
       deathHoldCue.destroy?.();
+      if (deathHoldImpact.parent) deathHoldImpact.parent.removeChild(deathHoldImpact);
+      deathHoldImpact.destroy?.();
       onComplete?.();
     };
     const requestSkip = (reason) => {
@@ -12410,7 +12423,6 @@ export class PlayScene {
         const holdProgress = clamp01((elapsed + GAME_OVER_DEATH_HOLD_MS) / GAME_OVER_DEATH_HOLD_MS);
         const holdPulse = 0.5 + Math.sin(holdProgress * Math.PI * 5) * 0.5;
         const impact = this.finalDeathImpact || { x: width / 2, y: height * 0.7 };
-        const ringRadius = 44 + holdProgress * 150;
         deathHoldCue.clear();
         deathHoldCue.rect(5, 5, width - 10, height - 10);
         deathHoldCue.stroke({
@@ -12418,21 +12430,25 @@ export class PlayScene {
           width: 3 + holdPulse * 2,
           alpha: 0.22 + holdPulse * 0.32
         });
-        deathHoldCue.circle(impact.x, impact.y, ringRadius);
-        deathHoldCue.stroke({ color: 0xff315d, width: 5 - holdProgress * 3, alpha: (1 - holdProgress) * 0.7 });
-        deathHoldCue.circle(impact.x, impact.y, ringRadius * 0.62);
-        deathHoldCue.stroke({ color: colors.primary, width: 2, alpha: 0.32 + holdPulse * 0.3 });
         deathHoldCue.rect(0, 0, width, Math.max(10, height * 0.018));
         deathHoldCue.fill({ color: 0x01040b, alpha: 0.58 });
         deathHoldCue.rect(0, height - Math.max(10, height * 0.018), width, Math.max(10, height * 0.018));
         deathHoldCue.fill({ color: 0x01040b, alpha: 0.58 });
         deathHoldCue.alpha = Math.min(1, holdProgress * 2.4);
         deathHoldCue.visible = true;
+        deathHoldImpact.position.set(impact.x, impact.y);
+        deathHoldImpact.width = 118 + holdProgress * 270;
+        deathHoldImpact.height = 118 + holdProgress * 270;
+        deathHoldImpact.rotation = holdProgress * 0.8;
+        deathHoldImpact.tint = holdProgress < 0.42 ? 0xff5a86 : colors.primary;
+        deathHoldImpact.alpha = (1 - holdProgress * 0.62) * (0.5 + holdPulse * 0.42);
+        deathHoldImpact.visible = GameAssets.isValidTexture(deathHoldImpact.texture);
         if (this.gameOverAnimationDebug) this.gameOverAnimationDebug.deathHoldProgress = holdProgress;
         layer.alpha = 0;
         return;
       }
       deathHoldCue.visible = false;
+      deathHoldImpact.visible = false;
       if (!presentationStarted) {
         presentationStarted = true;
         AudioManager.playSfx('swarm_chatter_stinger', { force: true, volume: 0.92, minIntervalMs: 0 });

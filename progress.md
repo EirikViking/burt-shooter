@@ -2471,3 +2471,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - The first packaged performance run caught an invalid PIXI `Graphics` child attachment before upload. Micro-signal sprites now use lifecycle-safe sibling VFX layers for graphics hosts; the unchanged focused checks and the strict packaged performance rerun pass with no warnings or errors.
 - Verification passes the focused reinforcement, boss phase, straggler, bonus-drone, pickup-guide, boss-support, and reinforcement spectacle checks; `build:current`; controller and Steam bridge checks; all-eight-language UI coverage; release-line; native runtime; packaged launch, controls, fresh-profile isolation, strict Steam runtime, desktop package review, and packaged performance. The final 64-second packaged performance run held `59.52` minimum / `59.98` average FPS.
 - Packaged exact source `f23599c` as `v2026-07-26_18-06-07`. Uploaded it to SteamPipe as private, unassigned BuildID `24399959`, depot manifest `8505781631912805982`. `SetLive` remained blank, so no public/default or beta branch pointer, store metadata, achievements, patch notes, or other Steamworks setting changed. Post-upload app info shows `public` still at `24397254`, `sector-continue-test` at `24398974`, and `test-build` at `23782673`.
+## 2026-07-26 - Authored micro-VFX polish and longer Cabinet Wonders
+
+- Audited the player-visible decorative graphics pass for placeholder dots, pips, diamonds, generic crowns, and orbit marks. Preserved functional geometry used for hitboxes, attack telegraphs, timers, meters, and radar range.
+- Generated and integrated three transparent authored ImageGen assets:
+  - `micro-combo-crest.png`
+  - `micro-contact-rune.png`
+  - `micro-ace-command-crest.png`
+- Replaced primitive decorative treatments in the floating score/combo toast, HUD combo urgency meter, main-menu radar contacts, Mode Briefing bullets, Ace command signature, and final-death hold impact.
+- Increased every Cabinet Wonder presentation from 1.4/2.3 seconds to 2.4/3.3 seconds, preserving compact intro/outro fades so the full extra second is useful viewing time.
+- Passed `npm run check:i18n`, `npm run build:current`, `npm run check:i18n-ui`, `npm run check:score-popup-readability`, `npm run check:combo-meter-urgency`, `npm run check:ace-bounty-runtime`, `npm run check:cabinet-wonders`, `npm run check:cabinet-wonders-runtime`, and `npm run check:gameover-ceremony`. Release-line, packaging, and Steam `sector-continue-test` deployment verification remain pending.

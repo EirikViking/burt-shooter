@@ -111,7 +111,7 @@ async function runVariant(browser, variantId, viewport, reducedMotion = false) {
   const activeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   const screenshot = path.join(outputDir, `${variantId}-${viewport.width}x${viewport.height}${reducedMotion ? '-reduced' : ''}.png`);
   await page.screenshot({ path: screenshot, fullPage: false });
-  await page.waitForTimeout(1900);
+  await page.waitForTimeout(3500);
   const completedState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await context.close();
   return {

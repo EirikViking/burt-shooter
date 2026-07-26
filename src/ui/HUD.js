@@ -12,6 +12,7 @@ import {
   getTacticalDraftMeta
 } from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
+import { presentAuthoredSignal, hideMicroSignals } from '../effects/MicroSignalVfx.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -150,6 +151,7 @@ export class HUD {
     this.comboMeterGroup.addChild(this.comboMeterFill);
     this.comboMeterGroup.addChild(this.comboMeterTicks);
     this.comboMeterGroup.addChild(this.comboMeterText);
+    GameAssets.ensureMicroSignalTextures?.().catch(() => {});
     this.comboMeterGroup.visible = false;
     this.hudContainer.addChild(this.comboMeterGroup);
 
@@ -2141,6 +2143,7 @@ export class HUD {
       if (this.comboMeterGroup) {
         this.comboMeterGroup.visible = false;
         this.comboMeterTicks?.clear?.();
+        hideMicroSignals(this.comboMeterGroup, 'combo_');
         this.comboMeterGroup._debugComboMeter = { visible: false, count, multiplier, progress: 0 };
       }
       return;
@@ -2173,29 +2176,25 @@ export class HUD {
     this.comboMeterTicks.clear();
     const glintX = Math.round(2 + fillWidth);
     let alarmBracketCount = 0;
-    let deadlineSparkCount = 0;
-    let momentumPipCount = 0;
+    let authoredSignalCount = 0;
     const highMomentum = count >= 20 || multiplier >= 3;
     this.comboMeterTicks.roundRect(glintX - 2, height - 8, 4, 8, 2);
     this.comboMeterTicks.fill({ color: 0xffffff, alpha: low ? 0.34 + pulse * 0.3 : 0.42 });
     const tierPips = Math.max(1, Math.min(4, multiplier));
-    for (let i = 0; i < tierPips; i += 1) {
-      this.comboMeterTicks.circle(width - 8 - i * 7, 6, 2.1);
-      this.comboMeterTicks.fill({ color: i === 0 ? color : 0xffffff, alpha: i === 0 ? 0.9 : 0.46 });
-    }
+    const crest = presentAuthoredSignal(this.comboMeterGroup, 'combo_meter_crest', {
+      textureKey: 'combo',
+      x: width - 24,
+      y: 7,
+      width: highMomentum ? 46 : 36,
+      height: 14,
+      color,
+      alpha: highMomentum ? 0.74 : 0.48,
+      pulse
+    });
+    authoredSignalCount += crest ? 1 : 0;
     if (highMomentum) {
-      const pipCount = Math.max(4, Math.min(7, Math.floor(count / 8)));
       const railLeft = Math.round(width * 0.28);
       const railRight = Math.max(railLeft + 12, width - 34);
-      const railWidth = Math.max(1, railRight - railLeft);
-      for (let i = 0; i < pipCount; i += 1) {
-        const ratio = pipCount <= 1 ? 0 : i / (pipCount - 1);
-        const x = railLeft + railWidth * ratio;
-        const y = 4 + (i % 2) * 2;
-        this.comboMeterTicks.circle(x, y, i === pipCount - 1 ? 2.4 : 1.7);
-        this.comboMeterTicks.fill({ color: i === pipCount - 1 ? 0xffffff : color, alpha: low ? 0.22 + pulse * 0.22 : 0.34 });
-        momentumPipCount += 1;
-      }
       this.comboMeterTicks.moveTo(railLeft, 3);
       this.comboMeterTicks.lineTo(railRight, 3);
       this.comboMeterTicks.stroke({ color, width: 0.85, alpha: low ? 0.16 + pulse * 0.18 : 0.22 });
@@ -2222,14 +2221,20 @@ export class HUD {
       }
       this.comboMeterTicks.stroke({ color: 0xff4b6b, width: 1.45, alpha: 0.42 + pulse * 0.34 });
 
-      const sparkStart = Math.min(width - 33, Math.max(glintX + 8, Math.round(width * 0.34)));
-      for (let i = 0; i < 3; i += 1) {
-        const sparkX = sparkStart + i * 9;
-        if (sparkX >= width - 10) continue;
-        this.comboMeterTicks.circle(sparkX, height - 5, 1.8 + pulse * 0.7);
-        this.comboMeterTicks.fill({ color: i === 0 ? 0xffffff : 0xffd166, alpha: 0.28 + pulse * 0.42 });
-        deadlineSparkCount += 1;
-      }
+      const alarm = presentAuthoredSignal(this.comboMeterGroup, 'combo_deadline_rune', {
+        textureKey: 'contact',
+        x: Math.min(width - 13, Math.max(glintX + 11, width * 0.66)),
+        y: height - 5,
+        width: 14,
+        height: 16,
+        color: 0xffd166,
+        alpha: 0.42 + pulse * 0.5,
+        rotation: Math.sin(Date.now() * 0.018) * 0.18,
+        pulse
+      });
+      authoredSignalCount += alarm ? 1 : 0;
+    } else {
+      hideMicroSignals(this.comboMeterGroup, 'combo_deadline');
     }
 
     const comboLabel = translateText('COMBO');
@@ -2266,10 +2271,11 @@ export class HUD {
       tierPips,
       glintX,
       highMomentum,
-      momentumPipCount,
+      authoredSignalCount,
+      primitiveSignalCount: 0,
+      visualLanguage: 'authored_combo_crest_v3',
       lowWarning: low,
       alarmBracketCount,
-      deadlineSparkCount,
       label: this.comboMeterText.text,
       placement: this.comboMeterGroup.__placement || 'adaptive',
       scoreBounds,

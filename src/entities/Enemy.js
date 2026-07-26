@@ -23,6 +23,7 @@ import {
 import { activateRivalWingMorale, applyRivalWingToEnemy, getRivalWingDoctrineById } from '../config/RivalWingDoctrines.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
+import { presentAuthoredSignal, hideMicroSignals, destroyMicroSignals } from '../effects/MicroSignalVfx.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -1463,7 +1464,7 @@ export class Enemy {
       labelBounds,
       labelFontSize: Number(this.aceLabel?.style?.fontSize) || 0,
       labelScale: Number((this.aceLabel?.scale?.x || 0).toFixed(3)),
-      visualLanguage: 'ace_command_signature_v2',
+      visualLanguage: 'ace_authored_command_crest_v3',
       health: Math.max(0, Number(this.health) || 0),
       maxHealth: Math.max(0, Number(this.maxHealth) || 0),
       rewardClaimed: this.aceRewardClaimed === true
@@ -1945,6 +1946,7 @@ export class Enemy {
 
     const profile = getEnemyThreatFrameProfile(this);
     if (!profile || !this.active || this.visualsDeactivated || this.waitingForEntry) {
+      hideMicroSignals(layer, 'ace_');
       layer.visible = false;
       layer._debugThreatFrame = {
         visible: false,
@@ -1975,9 +1977,6 @@ export class Enemy {
     }
 
     if (profile.tier === 'ace') {
-      const diamondRadius = outer + 4;
-      layer.poly([0, -diamondRadius, diamondRadius, 0, 0, diamondRadius, -diamondRadius, 0]);
-      layer.stroke({ color: profile.color, width: 1.7, alpha: 0.28 + pulse * 0.2 });
       for (let i = 0; i < 6; i += 1) {
         const angle = -Math.PI / 2 + i * (Math.PI * 2 / 6);
         const radial = outer + 13 + (i % 2) * 6;
@@ -1991,20 +1990,19 @@ export class Enemy {
         commandChevronCount += 1;
       }
       layer.stroke({ color: profile.accent, width: 2.6, alpha: 0.48 + pulse * 0.3 });
-      const crownY = -outer - 20;
-      layer.poly([-16, crownY + 7, -9, crownY - 3, 0, crownY + 3, 9, crownY - 3, 16, crownY + 7]);
-      layer.stroke({ color: 0xfff3a0, width: 2, alpha: 0.56 + pulse * 0.3 });
-      const orbitalRadius = outer + 23 + pulse * 2;
-      for (let i = 0; i < markerCount; i += 1) {
-        const angle = now * 0.0011 + this.idlePhase * 0.18 + i * (Math.PI * 2 / markerCount);
-        const x = Math.cos(angle) * orbitalRadius;
-        const y = Math.sin(angle) * orbitalRadius;
-        const pip = i % 2 ? 2.8 : 3.8;
-        layer.poly([x, y - pip, x + pip, y, x, y + pip, x - pip, y]);
-        orbitalPipCount += 1;
-      }
-      layer.fill({ color: profile.accent, alpha: 0.18 + pulse * 0.14 });
+      presentAuthoredSignal(layer, 'ace_command_crest', {
+        textureKey: 'ace',
+        x: 0,
+        y: -outer * 0.06,
+        width: (outer + 18) * 1.55,
+        height: (outer + 18) * 1.86,
+        color: 0xffffff,
+        alpha: 0.42 + pulse * 0.22,
+        rotation: Math.sin(now * 0.0014 + this.idlePhase) * 0.045,
+        pulse
+      });
     } else {
+      hideMicroSignals(layer, 'ace_');
       layer.circle(0, 0, radius);
       layer.stroke({ color: profile.color, width: profile.tier === 'elite' ? 2.2 : 1.5, alpha: 0.18 + pulse * 0.1 });
       layer.circle(0, 0, outer);
@@ -2060,16 +2058,7 @@ export class Enemy {
       }
     }
 
-    if (profile.tier === 'ace') {
-      for (let i = 0; i < markerCount; i += 1) {
-        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
-        const cx = Math.cos(angle) * (outer + 9);
-        const cy = Math.sin(angle) * (outer + 9);
-        const pip = 2.6;
-        layer.poly([cx, cy - pip, cx + pip, cy, cx, cy + pip, cx - pip, cy]);
-      }
-      layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
-    } else if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
+    if (profile.tier === 'elite' || profile.tier === 'danger_mid') {
       for (let i = 0; i < markerCount; i += 1) {
         const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount);
         const cx = Math.cos(angle) * (outer + 9);
@@ -2137,7 +2126,9 @@ export class Enemy {
       arrivalGuardArcCount,
       arrivalGuardPipCount,
       commandChevronCount,
-      visualLanguage: profile.tier === 'ace' ? 'ace_command_signature_v2' : 'threat_frame_v1',
+      authoredSignalCount: profile.tier === 'ace' ? 1 : 0,
+      primitiveOrnamentCount: profile.tier === 'ace' ? 0 : undefined,
+      visualLanguage: profile.tier === 'ace' ? 'ace_authored_command_crest_v3' : 'threat_frame_v1',
       arrivalGuardDamageMultiplier: arrivalGuardActive ? this.arrivalGuardDamageMultiplier : 1
     };
   }
@@ -3968,6 +3959,7 @@ export class Enemy {
     this.spawnCueLayer?.clear();
     if (this.spawnCueLayer) this.spawnCueLayer.visible = false;
     this.threatFrameLayer?.clear();
+    destroyMicroSignals(this.threatFrameLayer);
     if (this.threatFrameLayer) this.threatFrameLayer.visible = false;
     this.threatTelegraphLayer?.clear();
     this.eliteVfxLayer?.clear();

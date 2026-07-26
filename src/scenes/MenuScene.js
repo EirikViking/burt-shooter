@@ -259,6 +259,7 @@ function boundsForMenuButtonLayout(button) {
 export class MenuScene {
   constructor(game) {
     this.game = game;
+    GameAssets.ensureMicroSignalTextures?.().catch(() => {});
     this.container = new PIXI.Container();
     this.layoutUnsubscribe = null;
     this.kicker = null;
@@ -1047,21 +1048,33 @@ export class MenuScene {
 
     this.radarBlips = [];
     const blipLayout = [
-      { x: -0.32, y: -0.08, r: 3.5, phase: 0.1 },
-      { x: 0.26, y: 0.18, r: 2.5, phase: 1.4 },
-      { x: 0.08, y: -0.32, r: 2.8, phase: 2.1 },
-      { x: -0.12, y: 0.34, r: 2.4, phase: 2.9 }
+      { x: -0.32, y: -0.08, size: 16, phase: 0.1, rotation: -0.5 },
+      { x: 0.26, y: 0.18, size: 13, phase: 1.4, rotation: 0.75 },
+      { x: 0.08, y: -0.32, size: 14, phase: 2.1, rotation: 2.3 },
+      { x: -0.12, y: 0.34, size: 12, phase: 2.9, rotation: -2.1 }
     ];
     blipLayout.forEach((item) => {
-      const blip = new PIXI.Graphics();
-      blip.circle(0, 0, item.r);
-      blip.fill({ color: 0xffe76a, alpha: 0.55 });
+      const texture = GameAssets.getMicroSignalTexture('contact') || PIXI.Texture.EMPTY;
+      const blip = new PIXI.Sprite(texture);
+      blip.anchor.set(0.5);
+      blip.width = item.size;
+      blip.height = item.size * 1.18;
+      blip.tint = 0xffe76a;
+      blip.alpha = 0.62;
+      blip.rotation = item.rotation;
+      blip.blendMode = 'add';
+      blip.label = 'ui_menuRadarAuthoredContact';
       blip.x = item.x * radius;
       blip.y = item.y * radius;
       blip.phase = item.phase;
       radar.addChild(blip);
       this.radarBlips.push(blip);
     });
+    GameAssets.ensureMicroSignalTextures?.().then(() => {
+      const texture = GameAssets.getMicroSignalTexture('contact');
+      if (!texture) return;
+      this.radarBlips.forEach((blip) => { if (!blip.destroyed) blip.texture = texture; });
+    }).catch(() => {});
   }
 
   createCommsFrames(parent, width, height, layout) {

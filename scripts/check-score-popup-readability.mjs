@@ -180,14 +180,14 @@ try {
   const major = (state.popups || []).filter((popup) => popup.debug?.major);
   if (major.length < 2) failures.push(`expected at least two major/near-miss/combo popups: ${JSON.stringify(state.popups)}`);
   const majorScore = (state.popups || []).find((popup) => popup.debug?.major && !popup.debug?.combo && !popup.debug?.nearMiss);
-  if ((majorScore?.debug?.majorValueBarCount || 0) < 3) failures.push(`major score popup missing value bars: ${JSON.stringify(majorScore)}`);
+  if ((majorScore?.debug?.authoredSignalCount || 0) < 2 || majorScore?.debug?.primitiveSignalCount !== 0) failures.push(`major score popup missing authored contact runes: ${JSON.stringify(majorScore)}`);
   const nearMiss = (state.popups || []).find((popup) => popup.debug?.nearMiss);
   if (!nearMiss) failures.push(`near-miss popup did not keep type styling: ${JSON.stringify(state.popups)}`);
   const combo = (state.popups || []).find((popup) => popup.debug?.combo);
   if (!combo) failures.push(`combo popup did not keep combo styling: ${JSON.stringify(state.popups)}`);
   if (state.comboCount !== 3) failures.push(`focused combo probe should stop at count 3, saw ${state.comboCount}`);
   if ((state.popups || []).filter((popup) => popup.debug?.combo).length !== 1) failures.push(`only the combo milestone should use a combo frame: ${JSON.stringify(state.popups)}`);
-  if ((combo?.debug?.comboSignalPipCount || 0) < 3) failures.push(`combo popup missing signal pips: ${JSON.stringify(combo)}`);
+  if ((combo?.debug?.authoredSignalCount || 0) < 1 || combo?.debug?.primitiveSignalCount !== 0) failures.push(`combo popup missing authored signal treatment: ${JSON.stringify(combo)}`);
   const clustered = (state.popups || []).filter((popup) => (popup.debug?.clusterIndex || 0) > 0);
   if (clustered.length < 3) failures.push(`cluster de-overlap did not engage enough: ${JSON.stringify(state.popups)}`);
   const uniquePositions = new Set((state.popups || []).map((popup) => `${popup.x},${popup.y}`));

@@ -171,14 +171,16 @@ try {
     desktop.threatFrame?.tier !== 'ace'
     || desktop.threatFrame?.markerCount !== 8
     || desktop.threatFrame?.commandChevronCount !== 6
-    || desktop.threatFrame?.visualLanguage !== 'ace_command_signature_v2'
+    || desktop.threatFrame?.visualLanguage !== 'ace_authored_command_crest_v3'
+    || desktop.threatFrame?.authoredSignalCount !== 1
+    || desktop.threatFrame?.primitiveOrnamentCount !== 0
   ) failures.push(`Ace/Nemesis threat frame mismatch: ${JSON.stringify(desktop.threatFrame)}`);
   if (!/^ACE 0001.*2X SHIELD/.test(desktop.ace?.label || '')) failures.push(`Ace label mismatch: ${desktop.ace?.label}`);
   if (
     (desktop.ace?.label || '').includes('\n')
     || desktop.ace?.labelFontSize < 18
     || desktop.ace?.labelScale < 0.7
-    || desktop.ace?.visualLanguage !== 'ace_command_signature_v2'
+    || desktop.ace?.visualLanguage !== 'ace_authored_command_crest_v3'
   ) failures.push(`Ace identity plate is not persistently readable: ${JSON.stringify(desktop.ace)}`);
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
   if (

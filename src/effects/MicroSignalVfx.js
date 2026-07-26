@@ -114,6 +114,35 @@ export function presentPhaseSignal(host, key, {
   return sprite;
 }
 
+export function presentAuthoredSignal(host, key, {
+  textureKey = 'contact',
+  x = 0,
+  y = 0,
+  width,
+  height,
+  size = 24,
+  color = 0xffffff,
+  alpha = 1,
+  rotation = 0,
+  pulse = 0,
+  blendMode = 'add'
+} = {}) {
+  const sprite = ensureMicroSignalSprite(host, key, textureKey);
+  if (!sprite) return null;
+  const pulseScale = 1 + Math.max(0, Number(pulse) || 0) * 0.08;
+  const baseWidth = Math.max(8, Number(width) || Number(size) || 24);
+  const baseHeight = Math.max(8, Number(height) || Number(size) || 24);
+  sprite.position.set(Number(x) || 0, Number(y) || 0);
+  sprite.rotation = Number(rotation) || 0;
+  sprite.tint = color;
+  sprite.alpha = Math.max(0, Math.min(1, alpha));
+  sprite.width = baseWidth * pulseScale;
+  sprite.height = baseHeight * pulseScale;
+  sprite.blendMode = blendMode;
+  sprite.visible = true;
+  return sprite;
+}
+
 export function hideMicroSignals(host, prefix = '') {
   const store = host?.__novaMicroSignalSprites;
   if (!store) return;
