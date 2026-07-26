@@ -89,6 +89,29 @@ function fitTextHeight(node, maxHeight, minScale = 0.76) {
   node.scale.set(scale);
 }
 
+function formatCodexStoryParagraphs(value) {
+  const text = String(value || '').trim();
+  if (!text || text.includes('\n\n')) return text;
+
+  const sentenceSegmenter = typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function'
+    ? new Intl.Segmenter(undefined, { granularity: 'sentence' })
+    : null;
+  const sentences = sentenceSegmenter
+    ? [...sentenceSegmenter.segment(text)].map((segment) => segment.segment.trim()).filter(Boolean)
+    : (text.match(/[^.!?。！？]+[.!?。！？]+|[^.!?。！？]+$/g) || [text])
+      .map((sentence) => sentence.trim())
+      .filter(Boolean);
+  if (sentences.length < 3) return text;
+
+  const targetParagraphs = sentences.length >= 9 ? 4 : 3;
+  const sentencesPerParagraph = Math.max(2, Math.ceil(sentences.length / targetParagraphs));
+  const paragraphs = [];
+  for (let index = 0; index < sentences.length; index += sentencesPerParagraph) {
+    paragraphs.push(sentences.slice(index, index + sentencesPerParagraph).join(' '));
+  }
+  return paragraphs.join('\n\n');
+}
+
 function drawPanel(graphics, x, y, width, height, {
   fill = PANEL_BG,
   alpha = 0.9,
@@ -1171,7 +1194,7 @@ export class ThreatCodexScene {
         ? chipY + 36
         : chipY + (compact ? 38 : 44);
     const bodyText = discovered
-      ? localize(entry.description)
+      ? (storyBody ? formatCodexStoryParagraphs(localize(entry.description)) : localize(entry.description))
       : codexUi('lockedDescription');
     const tipY = panelH - (epicBody ? (veryShortEpic ? 90 : shortPanel ? 96 : compact ? 104 : 116) : compact ? 116 : 138);
     const bodyMaxHeight = Math.max(54, tipY - bodyY - (epicBody ? 14 : 24));
@@ -1202,7 +1225,8 @@ export class ThreatCodexScene {
       wordWrap: true,
       breakWords: true,
       wordWrapWidth: textW,
-      lineHeight: bodyLineHeight
+      lineHeight: bodyLineHeight,
+      leading: storyBody ? Math.max(4, Math.round(bodyLineHeight * 0.34)) : 0
     }, textX, bodyY);
     if (storyBody) {
       const bodyContentHeight = bodyNode.height;

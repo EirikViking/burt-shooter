@@ -12,6 +12,8 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || 'test-results/codex-lore-layout');
 const allScenarios = [
   { locale: 'en', width: 1920, height: 1080, category: 'wonders', entryId: 'celestial_crane_migration', label: 'en-wonder-epic-history' },
+  { locale: 'en', width: 1920, height: 1080, category: 'bosses', entryId: 'nova_boss_01', label: 'en-sonia-story' },
+  { locale: 'en', width: 1920, height: 1080, category: 'bosses', entryId: 'nova_boss_03', label: 'en-tyrian-story' },
   { locale: 'en', width: 1920, height: 1080, category: 'enemies', entryId: 'rare_chaos_visitor_11', label: 'en-long-chaos-name' },
   { locale: 'de', width: 1600, height: 900, category: 'augments', entryId: 'combo_anchor', label: 'de-augment' },
   { locale: 'es', width: 1600, height: 900, category: 'cabinetLogs', entryId: 'codex-discovery', label: 'es-cabinet-log' },
