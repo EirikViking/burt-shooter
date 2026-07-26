@@ -2435,3 +2435,10 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Packaged exact source `64e5b01` as `v2026-07-26_10-33-58`. Packaged launch, controls, live Steam bridge, fresh-profile isolation, payload review, and performance gates pass; the 63-second packaged performance run held 60.0 minimum and average FPS.
 - Uploaded only to `sector-continue-test` as Steam BuildID `24396942`, depot manifest `3257325674348362189`. Post-upload app info proves `public` remained `24393438` and `test-build` remained `23782673`; the private rollback target is `24394148`.
 - No Game Over screen/backdrop replacement, public/default assignment, store metadata, achievements, published patch notes, Git push, or other Steamworks setting changed.
+
+## 2026-07-26 - Tyrian the Great
+
+- Renamed boss profile `nova_boss_03` from `Ro ro ro` to `Tyrian the Great` without changing its ID, order, art, mechanics, balance, save identity, or audio asset.
+- Replaced its English epic Codex entry with an in-universe tribute to Tyrian's precise reports, persistence, and contribution to clearer, safer systems. The long entry and combat tip render cleanly at four desktop sizes.
+- Focused Codex/localization checks, the required text/UI build gates, release-line checks, package runtime, and packaged launch smoke pass.
+- Uploaded exact source `fe0c225` as `v2026-07-26_11-33-38` only to `sector-continue-test`: BuildID `24397254`, depot manifest `3672975861801350471`. Public remained `24393438`; rollback target is `24396942`.
