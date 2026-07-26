@@ -17,6 +17,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 
 const sourceText = Object.freeze({
+  "ROUTE": "ROTA",
   "ACE CONTACT": "CONTATO AS",
   "ACE CONTRACT": "CONTRATO DE AS",
   "DESTROY THE GOLD-MARKED ACE": "DESTRUA O AS MARCADO EM DOURADO",
@@ -1850,6 +1851,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getModeBriefingReviewSourceText(), ...getWonderCodexSourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('pt-BR'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getWonderCodexSourceText('pt-BR') }),
   patterns
 };

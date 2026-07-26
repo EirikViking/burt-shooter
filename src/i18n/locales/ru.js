@@ -17,6 +17,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 
 const sourceText = Object.freeze({
+  "ROUTE": "\u041c\u0410\u0420\u0428\u0420\u0423\u0422",
   "ACE CONTACT": "\u041a\u041e\u041d\u0422\u0410\u041a\u0422 \u0421 \u0410\u0421\u041e\u041c",
   "ACE CONTRACT": "\u041a\u041e\u041d\u0422\u0420\u0410\u041a\u0422 \u0421 \u0410\u0421\u041e\u041c",
   "DESTROY THE GOLD-MARKED ACE": "\u0423\u041d\u0418\u0427\u0422\u041e\u0416\u042c\u0422\u0415 \u0410\u0421\u0410 \u0421 \u0417\u041e\u041b\u041e\u0422\u041e\u0419 \u041c\u0415\u0422\u041a\u041e\u0419",
@@ -1820,6 +1821,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getModeBriefingReviewSourceText(), ...getWonderCodexSourceText('ru') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru') }),
   patterns
 };

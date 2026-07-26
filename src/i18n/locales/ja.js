@@ -17,6 +17,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 
 const sourceText = Object.freeze({
+  "ROUTE": "\u30eb\u30fc\u30c8",
   "ACE CONTACT": "\u30a8\u30fc\u30b9\u63a5\u89e6",
   "ACE CONTRACT": "\u30a8\u30fc\u30b9\u5951\u7d04",
   "DESTROY THE GOLD-MARKED ACE": "\u91d1\u8272\u3067\u30de\u30fc\u30af\u3055\u308c\u305f\u30a8\u30fc\u30b9\u3092\u6483\u7834\u305b\u3088",
@@ -1819,6 +1820,6 @@ export const ja = {
   diagnostics: {
     interfaceLanguage: 'インターフェイス言語'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getOverrunModeSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja'), ...getMenuHierarchySourceText('ja'), ...getForumFollowupSourceText('ja'), ...getPlayerFeedbackReliabilitySourceText('ja'), ...getCompetitionLearningSourceText('ja'), ...getTacticalDraftClaritySourceText('ja'), ...getModeBriefingReviewSourceText(), ...getWonderCodexSourceText('ja') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ja'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ja'), ...getNovaHumorSourceText('ja'), ...getMayhemModesSourceText('ja'), ...getOverrunModeSourceText('ja'), ...getEliteExpansionSourceText('ja'), ...getHowToPlayCompleteSourceText('ja'), ...getTacticalFusionSourceText('ja'), ...getDailyCabinetSignalSourceText('ja'), ...getMenuHierarchySourceText('ja'), ...getForumFollowupSourceText('ja'), ...getPlayerFeedbackReliabilitySourceText('ja'), ...getCompetitionLearningSourceText('ja'), ...getTacticalDraftClaritySourceText('ja'), ...getWonderCodexSourceText('ja') }),
   patterns
 };

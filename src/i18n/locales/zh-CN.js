@@ -17,6 +17,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 
 const sourceText = Object.freeze({
+  "ROUTE": "\u8def\u7ebf",
   "ACE CONTACT": "\u738b\u724c\u63a5\u89e6",
   "ACE CONTRACT": "\u738b\u724c\u5408\u7ea6",
   "DESTROY THE GOLD-MARKED ACE": "\u6467\u6bc1\u91d1\u8272\u6807\u8bb0\u7684\u738b\u724c",
@@ -1820,6 +1821,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getModeBriefingReviewSourceText(), ...getWonderCodexSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN') }),
   patterns
 };

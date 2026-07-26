@@ -8,7 +8,10 @@ import { ko } from '../src/i18n/locales/ko.js';
 import { ptBR } from '../src/i18n/locales/pt-BR.js';
 import { ru } from '../src/i18n/locales/ru.js';
 import { zhCN } from '../src/i18n/locales/zh-CN.js';
-import { MODE_BRIEFING_ENGLISH_REVIEW_PENDING } from '../src/i18n/modeBriefingReviewSourceText.js';
+import {
+  MODE_BRIEFING_SOURCE_TEXT,
+  getModeBriefingReviewSourceText
+} from '../src/i18n/modeBriefingReviewSourceText.js';
 import {
   normalizeLanguageCode,
   resolveLanguage,
@@ -514,6 +517,29 @@ assert.equal(translateTextForLocale('ja', 'Sector 1: Popcorn Patrol'), 'セク�
 assert.notEqual(translateTextForLocale('ko', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 assert.notEqual(translateTextForLocale('ja', 'No scores yet. Start the first legend.'), 'No scores yet. Start the first legend.');
 
+const modeBriefingLocales = ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
+const placeholderPattern = /\{[^}]+\}/g;
+for (const code of modeBriefingLocales) {
+  const translated = getModeBriefingReviewSourceText(code);
+  assert.equal(
+    Object.keys(translated).length,
+    MODE_BRIEFING_SOURCE_TEXT.length,
+    `${code} must translate every Mode Briefing source string`
+  );
+  for (const source of MODE_BRIEFING_SOURCE_TEXT) {
+    const localized = translated[source];
+    assert.ok(
+      typeof localized === 'string' && localized.trim().length > 0,
+      `${code} has an empty Mode Briefing translation for "${source}"`
+    );
+    assert.deepEqual(
+      localized.match(placeholderPattern) || [],
+      source.match(placeholderPattern) || [],
+      `${code} changed placeholders in Mode Briefing source "${source}"`
+    );
+  }
+}
+
 const phrasePoolEnglishLeaks = [];
 for (const code of ['pt-BR', 'ko', 'ja']) {
   await setLanguagePreference(code);
@@ -567,5 +593,5 @@ for (const marker of ['spawnMarketingDebugBoss', 'marketingDebugMode']) {
 
 console.log('i18n checks passed');
 console.log(
-  `i18n review pending: ${MODE_BRIEFING_ENGLISH_REVIEW_PENDING.length} Mode Briefing/Pilot Orders English source strings intentionally use clean fallbacks in 7 non-English locales until UX copy approval`
+  `i18n Mode Briefing complete: ${MODE_BRIEFING_SOURCE_TEXT.length} source strings translated in ${modeBriefingLocales.length} non-English locales`
 );

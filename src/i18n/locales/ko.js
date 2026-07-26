@@ -17,6 +17,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 
 const sourceText = Object.freeze({
+  "ROUTE": "\uacbd\ub85c",
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
   "ACE CONTRACT": "\uc5d0\uc774\uc2a4 \uacc4\uc57d",
   "DESTROY THE GOLD-MARKED ACE": "\uae08\uc0c9 \ud45c\uc2dd\uc758 \uc5d0\uc774\uc2a4\ub97c \uaca9\ud30c\ud558\uc138\uc694",
@@ -1819,6 +1820,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getModeBriefingReviewSourceText(), ...getWonderCodexSourceText('ko') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko') }),
   patterns
 };
