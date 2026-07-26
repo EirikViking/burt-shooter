@@ -2,7 +2,7 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 
 function getStore(host) {
-  if (!host) return null;
+  if (!host || host.destroyed) return null;
   if (!host.__novaMicroSignalSprites) host.__novaMicroSignalSprites = new Map();
   return host.__novaMicroSignalSprites;
 }
@@ -12,6 +12,10 @@ export function ensureMicroSignalSprite(host, key, textureKey = 'direction') {
   if (!store) return null;
   const id = String(key || textureKey);
   let sprite = store.get(id);
+  if (sprite?.destroyed || (sprite && sprite.parent !== host)) {
+    store.delete(id);
+    sprite = null;
+  }
   const texture = GameAssets.getMicroSignalTexture(textureKey);
   if (!GameAssets.isValidTexture(texture)) {
     if (sprite) sprite.visible = false;
@@ -82,6 +86,10 @@ export function hideMicroSignals(host, prefix = '') {
   const store = host?.__novaMicroSignalSprites;
   if (!store) return;
   for (const [key, sprite] of store.entries()) {
-    if (!prefix || key.startsWith(prefix)) sprite.visible = false;
+    if (sprite?.destroyed || sprite?.parent !== host) {
+      store.delete(key);
+    } else if (!prefix || key.startsWith(prefix)) {
+      sprite.visible = false;
+    }
   }
 }
