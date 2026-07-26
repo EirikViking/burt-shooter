@@ -100,7 +100,9 @@ class GameAssetsManager {
             direction: AssetManifest.generated?.vfx?.microDirectionBeacon,
             combo: AssetManifest.generated?.vfx?.microComboCrest,
             contact: AssetManifest.generated?.vfx?.microContactRune,
-            ace: AssetManifest.generated?.vfx?.microAceCommandCrest
+            ace: AssetManifest.generated?.vfx?.microAceCommandCrest,
+            waveClear: AssetManifest.generated?.vfx?.waveClearVictoryFlourish,
+            mission: AssetManifest.generated?.vfx?.missionCommandSpine
         };
         const entries = await Promise.all(Object.entries(sources).map(async ([key, src]) => {
             if (this.isValidTexture(this.microSignalTextures[key])) return [key, this.microSignalTextures[key]];

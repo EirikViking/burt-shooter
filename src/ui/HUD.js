@@ -52,6 +52,11 @@ export class HUD {
     this.leftPanel = new PIXI.Graphics();
     this.rightPanel = new PIXI.Graphics();
     this.missionPanel = new PIXI.Graphics();
+    this.missionFrameArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.missionFrameArt.anchor.set(0.5);
+    this.missionFrameArt.eventMode = 'none';
+    this.missionFrameArt.blendMode = 'normal';
+    this.missionFrameArt.label = 'missionAuthoredCommandSpine';
     this.missionLabel = null;
     this.missionText = null;
     this.missionProgressBg = new PIXI.Graphics();
@@ -95,6 +100,7 @@ export class HUD {
   createHUD() {
     this.hudContainer.addChild(this.leftPanel);
     this.hudContainer.addChild(this.rightPanel);
+    this.hudContainer.addChild(this.missionFrameArt);
     this.hudContainer.addChild(this.missionPanel);
     this.hudContainer.addChild(this.missionProgressBg);
     this.hudContainer.addChild(this.missionProgressFill);
@@ -102,6 +108,10 @@ export class HUD {
     this.hudContainer.addChild(this.missionProgressTicks);
     this.hudContainer.addChild(this.directiveProgressBg);
     this.hudContainer.addChild(this.directiveProgressFill);
+    GameAssets.ensureMicroSignalTextures?.().then(() => {
+      const texture = GameAssets.getMicroSignalTexture('mission');
+      if (texture && !this.missionFrameArt.destroyed) this.missionFrameArt.texture = texture;
+    }).catch(() => {});
 
     // Rank Group
     this.rankIcon.anchor.set(0.5);
@@ -1139,13 +1149,15 @@ export class HUD {
       layout.width,
       layout.height,
       accent,
-      critical ? 0.1 : 0.035,
+      critical ? 0.075 : 0.02,
       {
-        fillAlpha: critical ? 0.7 : 0.54,
-        strokeAlpha: critical ? 0.9 : 0.58,
-        strokeWidth: critical ? 1.8 : 1.15
+        fillAlpha: critical ? 0.56 : 0.38,
+        strokeAlpha: critical ? 0.46 : 0.2,
+        strokeWidth: critical ? 1.2 : 0.7
       }
     );
+    this.missionFrameArt.tint = accent;
+    this.missionFrameArt.alpha = critical ? 0.88 : 0.72;
 
     this.missionLabel.alpha = critical ? 0.9 : 0.68;
     this.missionText.alpha = 1;
@@ -1158,7 +1170,10 @@ export class HUD {
       boss: isBoss,
       immediateDanger,
       pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
-      accent
+      accent,
+      authoredFrameReady: GameAssets.isValidTexture(this.missionFrameArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_command_spine_v2'
     };
   }
 
@@ -2330,6 +2345,15 @@ export class HUD {
       width: missionPanelWidth,
       height: missionPanelHeight
     };
+    this.missionFrameArt.position.set(
+      missionPanelX + missionPanelWidth / 2,
+      missionPanelY + missionPanelHeight / 2
+    );
+    this.missionFrameArt.width = missionPanelWidth + Math.round(20 * uiScale);
+    this.missionFrameArt.height = Math.min(
+      missionPanelHeight + Math.round(16 * uiScale),
+      this.missionFrameArt.width * (265 / 2148)
+    );
     this.updateMissionPriorityVisual();
 
     this.rankGroup.alpha = 0.72;

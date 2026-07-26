@@ -168,8 +168,10 @@ try {
     if (!popup.active) failures.push(`popup inactive too early: ${JSON.stringify(popup)}`);
     if (popup.debug?.major) {
       if (!popup.debug?.framed) failures.push(`major popup missing framed debug: ${JSON.stringify(popup)}`);
-      if (!popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`major popup missing backplate: ${JSON.stringify(popup.childLabels)}`);
-      if (!popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`major popup missing ticks: ${JSON.stringify(popup.childLabels)}`);
+      if (popup.debug?.borderless !== true) failures.push(`major popup did not use borderless signal treatment: ${JSON.stringify(popup.debug)}`);
+      if (popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`major popup retained primitive backplate: ${JSON.stringify(popup.childLabels)}`);
+      if (popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`major popup retained primitive ticks: ${JSON.stringify(popup.childLabels)}`);
+      if (popup.debug?.visualLanguage !== 'borderless_plasma_badge_v4') failures.push(`major popup visual language mismatch: ${JSON.stringify(popup.debug)}`);
       if ((popup.debug?.frameWidth || 0) < 50 || (popup.debug?.frameHeight || 0) < 20) failures.push(`major popup frame too small: ${JSON.stringify(popup.debug)}`);
     } else {
       if (popup.debug?.framed) failures.push(`routine popup should be lightweight: ${JSON.stringify(popup)}`);
@@ -188,6 +190,7 @@ try {
   if (state.comboCount !== 3) failures.push(`focused combo probe should stop at count 3, saw ${state.comboCount}`);
   if ((state.popups || []).filter((popup) => popup.debug?.combo).length !== 1) failures.push(`only the combo milestone should use a combo frame: ${JSON.stringify(state.popups)}`);
   if ((combo?.debug?.authoredSignalCount || 0) < 1 || combo?.debug?.primitiveSignalCount !== 0) failures.push(`combo popup missing authored signal treatment: ${JSON.stringify(combo)}`);
+  if ((combo?.debug?.comboTier || 0) < 1) failures.push(`combo popup missing milestone tier treatment: ${JSON.stringify(combo)}`);
   const clustered = (state.popups || []).filter((popup) => (popup.debug?.clusterIndex || 0) > 0);
   if (clustered.length < 3) failures.push(`cluster de-overlap did not engage enough: ${JSON.stringify(state.popups)}`);
   const uniquePositions = new Set((state.popups || []).map((popup) => `${popup.x},${popup.y}`));

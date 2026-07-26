@@ -134,10 +134,10 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if ((state.badgeCount || 0) < 1) failures.push('rank-up badge did not render');
-  if (!state.badgeDebug?.broadcastBurst) failures.push(`rank-up broadcast burst missing: ${JSON.stringify(state.badgeDebug)}`);
-  if ((state.badgeDebug?.signalPips || 0) < 4) failures.push(`rank-up signal pips missing: ${JSON.stringify(state.badgeDebug)}`);
-  if ((state.badgeDebug?.chevronTrail || 0) < 3) failures.push(`rank-up chevron trail missing: ${JSON.stringify(state.badgeDebug)}`);
-  if (!state.badgeDebug?.rankHalo) failures.push(`rank-up rank halo missing: ${JSON.stringify(state.badgeDebug)}`);
+  if (!state.badgeDebug?.authoredFlourishReady) failures.push(`rank-up authored flourish missing: ${JSON.stringify(state.badgeDebug)}`);
+  if (state.badgeDebug?.visualLanguage !== 'authored_rank_broadcast_v2') failures.push(`rank-up visual language mismatch: ${JSON.stringify(state.badgeDebug)}`);
+  if ((state.badgeDebug?.primitiveOrnamentCount || 0) !== 0) failures.push(`rank-up retained primitive ornaments: ${JSON.stringify(state.badgeDebug)}`);
+  if (!state.badgeDebug?.rankArtworkReady) failures.push(`rank-up achievement artwork missing: ${JSON.stringify(state.badgeDebug)}`);
   if (state.rankBoostType !== 'damage') failures.push(`rank boost did not apply damage state: ${state.rankBoostType}`);
   if (!state.auraVisible) failures.push('rank boost aura not visible after update');
   if (state.auraDebug?.type !== 'damage') failures.push(`damage aura debug mismatch: ${JSON.stringify(state.auraDebug)}`);

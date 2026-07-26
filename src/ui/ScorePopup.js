@@ -19,6 +19,7 @@ export class ScorePopup {
     this.isNearMiss = this.type === 'nearMiss' || this.type === 'near_miss';
     this.isMajor = Boolean(isCombo || this.isNearMiss || options.major || Number(score) >= 500);
     this.isFramed = Boolean(this.isMajor || options.framed === true);
+    this.isBorderlessSignal = Boolean(this.isMajor);
     this.maxLifetime = Math.max(250, Number(options.maxLifetime) || (this.isMajor ? 980 : 560));
     this.vx = Number(options.vx) || 0;
     this.vy = Number(options.vy) || (this.isMajor ? -1.55 : -1.85);
@@ -27,9 +28,14 @@ export class ScorePopup {
     this.sourceY = Number.isFinite(options.sourceY) ? options.sourceY : y;
     this.baseScale = this.isMajor ? 1.05 : 0.92;
     this.numericScore = Math.max(0, Math.round(Number(score) || 0));
+    this.comboTier = this.isCombo
+      ? (this.numericScore >= 50 ? 4 : this.numericScore >= 25 ? 3 : this.numericScore >= 10 ? 2 : 1)
+      : 0;
     this.authoredSignalCount = this.isFramed ? (this.isCombo ? 1 : 2) : 0;
 
-    const fontSize = Number(options.fontSize) || (isCombo ? 24 : (this.isFramed ? 18 : 15));
+    const fontSize = Number(options.fontSize) || (isCombo
+      ? [0, 24, 27, 31, 35][this.comboTier]
+      : (this.isFramed ? 18 : 15));
     const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
     const text = options.text
       ? String(options.text)
@@ -47,16 +53,18 @@ export class ScorePopup {
       major: this.isMajor,
       authoredSignalCount: this.authoredSignalCount,
       primitiveSignalCount: 0,
-      visualLanguage: 'authored_micro_signal_v3',
+      comboTier: this.comboTier,
+      borderless: this.isBorderlessSignal,
+      visualLanguage: this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
       clusterIndex: this.clusterIndex
     };
 
-    this.backplate = this.isFramed ? new PIXI.Graphics() : null;
+    this.backplate = this.isFramed && !this.isBorderlessSignal ? new PIXI.Graphics() : null;
     if (this.backplate) {
       this.backplate.label = 'scorePopupBackplate';
       this.backplate.blendMode = 'normal';
     }
-    this.tickLayer = this.isFramed ? new PIXI.Graphics() : null;
+    this.tickLayer = this.isFramed && !this.isBorderlessSignal ? new PIXI.Graphics() : null;
     if (this.tickLayer) {
       this.tickLayer.label = 'scorePopupTicks';
       this.tickLayer.blendMode = 'add';
@@ -89,36 +97,50 @@ export class ScorePopup {
   }
 
   drawFrame(progress = 0) {
-    if (!this.isFramed || !this.backplate || !this.tickLayer) return;
     const pulse = Math.sin(progress * Math.PI);
     const width = this.frameWidth;
     const height = this.frameHeight;
     const color = this.frameColor;
     const accent = this.accentColor;
-    const majorAlpha = this.isMajor ? 0.22 : 0.13;
-    this.backplate.clear();
-    this.backplate.roundRect(-width / 2, -height / 2, width, height, this.isMajor ? 5 : 4);
-    this.backplate.fill({ color: 0x03101d, alpha: majorAlpha + pulse * 0.08 });
-    this.backplate.stroke({ color, width: this.isMajor ? 1.45 : 1, alpha: (this.isMajor ? 0.62 : 0.38) + pulse * 0.18 });
-    this.backplate.rect(-width / 2 + 4, -height / 2 + 3, width - 8, 1);
-    this.backplate.fill({ color: 0xffffff, alpha: this.isMajor ? 0.18 : 0.1 });
-
-    this.tickLayer.clear();
-    const railAlpha = this.isMajor ? 0.7 : 0.4;
-    this.tickLayer.rect(-width / 2 - 3, -height / 2 + 4, 2, height - 8);
-    this.tickLayer.rect(width / 2 + 1, -height / 2 + 4, 2, height - 8);
-    this.tickLayer.fill({ color: accent, alpha: railAlpha });
+    if (this.backplate && this.tickLayer) {
+      const majorAlpha = this.isMajor ? 0.22 : 0.13;
+      this.backplate.clear();
+      this.backplate.roundRect(-width / 2, -height / 2, width, height, this.isMajor ? 5 : 4);
+      this.backplate.fill({ color: 0x03101d, alpha: majorAlpha + pulse * 0.08 });
+      this.backplate.stroke({ color, width: this.isMajor ? 1.45 : 1, alpha: (this.isMajor ? 0.62 : 0.38) + pulse * 0.18 });
+      this.backplate.rect(-width / 2 + 4, -height / 2 + 3, width - 8, 1);
+      this.backplate.fill({ color: 0xffffff, alpha: this.isMajor ? 0.18 : 0.1 });
+      this.tickLayer.clear();
+      this.tickLayer.rect(-width / 2 - 3, -height / 2 + 4, 2, height - 8);
+      this.tickLayer.rect(width / 2 + 1, -height / 2 + 4, 2, height - 8);
+      this.tickLayer.fill({ color: accent, alpha: this.isMajor ? 0.7 : 0.4 });
+    }
     if (this.isCombo) {
-      presentAuthoredSignal(this.sprite, 'popup_combo_crest', {
+      const crest = presentAuthoredSignal(this.sprite, 'popup_combo_crest', {
         textureKey: 'combo',
         x: 0,
-        y: height / 2 - 3,
-        width: Math.min(width * 0.72, 82),
-        height: 21,
-        color: accent,
-        alpha: 0.46 + pulse * 0.34,
+        y: 1,
+        width: Math.min(250, width * (1.28 + this.comboTier * 0.06)),
+        height: 46 + this.comboTier * 5,
+        color: this.comboTier >= 3 ? 0xffffff : accent,
+        alpha: 0.48 + pulse * 0.22 + this.comboTier * 0.04,
         pulse
       });
+      if (crest && crest.parent === this.sprite) this.sprite.setChildIndex(crest, 0);
+      this.textNode.y = -1;
+    } else if (this.isNearMiss) {
+      const crest = presentAuthoredSignal(this.sprite, 'popup_near_miss_crest', {
+        textureKey: 'combo',
+        x: 0,
+        y: 0,
+        width: Math.min(230, width * 1.34),
+        height: 43,
+        color: 0x7ee9ff,
+        alpha: 0.38 + pulse * 0.2,
+        rotation: -0.025,
+        pulse
+      });
+      if (crest && crest.parent === this.sprite) this.sprite.setChildIndex(crest, 0);
     } else if (this.isMajor) {
       for (const side of [-1, 1]) {
         presentAuthoredSignal(this.sprite, `popup_contact_${side}`, {
@@ -182,7 +204,9 @@ export class ScorePopup {
       frameHeight: this.frameHeight,
       authoredSignalCount: this.authoredSignalCount,
       primitiveSignalCount: 0,
-      visualLanguage: 'authored_micro_signal_v3',
+      comboTier: this.comboTier,
+      borderless: this.isBorderlessSignal,
+      visualLanguage: this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
       progress: Number(progress.toFixed(3)),
       x: Math.round(this.x),
       y: Math.round(this.y)

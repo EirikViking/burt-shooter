@@ -124,14 +124,14 @@ try {
 
     const effect = play.uiContainer?.children?.find?.((child) => child?.label === 'ui_wave_bonus_effect');
     const labels = (effect?.children || []).map((child) => child?.label || child?.constructor?.name || 'node');
-    const sweep = effect?.children?.find?.((child) => child?.label === 'waveClearSweepLayer');
+    const flourish = effect?.children?.find?.((child) => child?.label === 'waveClearAuthoredFlourish');
     return {
       ok: true,
       effectCount: play.uiContainer?.children?.filter?.((child) => child?.label === 'ui_wave_bonus_effect')?.length || 0,
       labels,
       debug: effect?._debugWaveClearEffect || null,
       effectAlpha: Number(effect?.alpha || 0),
-      sweepAlpha: Number(sweep?.alpha || 0),
+      flourishAlpha: Number(flourish?.alpha || 0),
       screen: { width: game.getWidth(), height: game.getHeight() }
     };
   });
@@ -143,12 +143,13 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if ((state.effectCount || 0) !== 1) failures.push(`expected one wave clear effect, saw ${state.effectCount}`);
-  if (!state.labels?.includes?.('waveClearSweepLayer')) failures.push(`wave clear sweep layer missing: ${JSON.stringify(state.labels)}`);
-  if ((state.debug?.sweepBandCount || 0) < 3) failures.push(`wave clear sweep bands missing: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.sweepChevronCount || 0) < 6) failures.push(`wave clear sweep chevrons missing: ${JSON.stringify(state.debug)}`);
+  if (!state.labels?.includes?.('waveClearAuthoredFlourish')) failures.push(`wave clear authored flourish missing: ${JSON.stringify(state.labels)}`);
+  if (state.debug?.authoredFlourishCount !== 1 || state.debug?.authoredFlourishReady !== true) failures.push(`wave clear authored flourish not ready: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.visualLanguage !== 'authored_victory_flourish_v3') failures.push(`wave clear visual language mismatch: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.primitiveOrnamentCount !== 0) failures.push(`wave clear retained primitive ornament: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.ringCount || 0) !== 0) failures.push(`wave clear retained target rings: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.glintCount || 0) !== 0) failures.push(`wave clear retained star glints: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.accentRailCount || 0) < 2) failures.push(`wave clear accent rails missing: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.accentRailCount || 0) !== 0) failures.push(`wave clear retained accent rails: ${JSON.stringify(state.debug)}`);
   if (!state.debug?.subtitle) failures.push(`wave clear subtitle flag missing: ${JSON.stringify(state.debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

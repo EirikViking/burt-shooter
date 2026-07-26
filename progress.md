@@ -2488,3 +2488,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
   - Packaged performance: 60.25 average FPS, 58.48 minimum FPS across 12 samples.
   - Steam BuildID `24400692`, depot `4765071`, manifest `5350198171556098372`.
   - Assigned only to `sector-continue-test`; post-upload Steam app-info confirms that branch points to `24400692`, `public` remains `24399959`, and `test-build` remains `23782673`.
+
+## 2026-07-26 - Gameplay signal, clear-banner, and Mission Status polish
+
+- Replaced the remaining box-heavy floating combo and Near Miss treatments with borderless authored plasma crests. Combo scale now steps through four visual tiers while scoring, timing, and placement remain unchanged.
+- Reworked Wave Clear and related completion banners around a generated transparent victory flourish instead of nested black panels, green borders, sweep bands, chevrons, and accent rails.
+- Replaced decorative boxes in Flawless Wave, trait, score boost, repair, level clear/up, rank up, run clear, and unlock feedback with authored signal art. The rank-up presentation also drops its procedural burst rings, pips, and chevron trail.
+- Added a generated alien command spine to Mission Status while preserving the live text, progress meter, priority tinting, safe-area layout, and HUD behavior.
+- Preserved functional hitboxes, attack telegraphs, targeting rings, timers, progress meters, and radar geometry; these are gameplay communication, not decorative filler.
+- Focused runtime checks pass for score-popup readability, Wave Clear, rank-up clarity, and 48-sample gameplay-message arbitration. The normalized before/after visual review is recorded in `design-qa.md` with `final result: passed`.
+- Full localization, release-line, packaging, performance, and Steam `sector-continue-test` deployment verification remain pending.

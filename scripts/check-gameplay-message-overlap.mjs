@@ -271,6 +271,11 @@ try {
     const activeFlawless = (state.toast?.active || []).find((toast) => toast.type === 'flawlessWave');
     if (activeFlawless && !presentation.waveBonusActive && !presentation.rankUpActive) {
       flawlessReleasedAfterPresentations = true;
+      if (activeFlawless.visualLanguage !== 'plasma_flawless_badge_v2'
+        || activeFlawless.authoredSignalCount !== 1
+        || activeFlawless.primitiveOrnamentCount !== 0) {
+        throw new Error(`flawless streak did not use authored visual language: ${JSON.stringify(activeFlawless, null, 2)}`);
+      }
     }
     if (activeFlawless && (presentation.waveBonusActive || presentation.rankUpActive)) {
       throw new Error(`flawless streak overlapped a center progression presentation: ${JSON.stringify({ activeFlawless, presentation }, null, 2)}`);
@@ -337,6 +342,11 @@ try {
   const relocatedToast = (relocationState.toast?.active || []).find((toast) => toast.message === 'COMBAT SAFE REWARD +200');
   if (!relocatedToast || relocatedToast.slot !== 'top' || relocatedToast.combatRelocated !== true) {
     throw new Error(`combat relocation failed: ${JSON.stringify(relocationState.toast?.active || [], null, 2)}`);
+  }
+  if (relocatedToast.visualLanguage !== 'contact_rune_feedback_v2'
+    || relocatedToast.authoredSignalCount !== 1
+    || relocatedToast.primitiveOrnamentCount !== 0) {
+    throw new Error(`combat reward did not use authored visual language: ${JSON.stringify(relocatedToast, null, 2)}`);
   }
   validateSample(relocationState, 'combat_relocation');
 

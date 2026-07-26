@@ -44,6 +44,8 @@ export const AssetManifest = {
             microComboCrest: '/art/generated/nova-swarm/vfx/micro-combo-crest.png',
             microContactRune: '/art/generated/nova-swarm/vfx/micro-contact-rune.png',
             microAceCommandCrest: '/art/generated/nova-swarm/vfx/micro-ace-command-crest.png',
+            waveClearVictoryFlourish: '/art/generated/nova-swarm/vfx/wave-clear-victory-flourish.png',
+            missionCommandSpine: '/art/generated/nova-swarm/vfx/mission-command-spine.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
             plasmaBlooms: [
                 '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',

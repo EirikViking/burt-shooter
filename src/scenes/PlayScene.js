@@ -5065,26 +5065,15 @@ export class PlayScene {
     container.zIndex = 10000;
     this.uiOverlay.addChild(container);
 
-    const burstLayer = new PIXI.Container();
-    burstLayer.label = 'rank_up_broadcast_burst';
-    burstLayer.alpha = 0.82;
-    container.addChild(burstLayer);
-
-    const burst = new PIXI.Graphics();
-    const burstRadius = panelWidth * (compact ? 0.5 : 0.56);
-    for (let i = 0; i < 16; i++) {
-      const angle = (Math.PI * 2 * i) / 16;
-      const inner = burstRadius * (i % 2 === 0 ? 0.78 : 0.88);
-      const outer = burstRadius + (i % 2 === 0 ? 28 : 16);
-      burst.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-      burst.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-    }
-    burst.stroke({ color: 0xffef7e, width: 2, alpha: 0.42 });
-    burst.circle(0, 0, burstRadius * 0.82);
-    burst.stroke({ color: 0x66f7ff, width: 1.5, alpha: 0.34 });
-    burst.circle(0, 0, burstRadius + 20);
-    burst.stroke({ color: 0xffef7e, width: 1, alpha: 0.28 });
-    burstLayer.addChild(burst);
+    const rankFlourishTexture = GameAssets.getMicroSignalTexture('waveClear');
+    const rankFlourish = new PIXI.Sprite(rankFlourishTexture || PIXI.Texture.EMPTY);
+    rankFlourish.label = 'rank_up_authored_flourish';
+    rankFlourish.anchor.set(0.5);
+    rankFlourish.width = panelWidth + (compact ? 64 : 94);
+    rankFlourish.height = panelHeight + (compact ? 34 : 52);
+    rankFlourish.alpha = compact ? 0.44 : 0.52;
+    rankFlourish.tint = 0xffe78a;
+    container.addChild(rankFlourish);
 
     const panel = new PIXI.Graphics();
     panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, 8);
@@ -5100,61 +5089,20 @@ export class PlayScene {
     container.addChild(glow);
 
     const rankTexture = this.game.getRankTexture ? this.game.getRankTexture(rank) : null;
-    const chevronTrail = new PIXI.Container();
-    chevronTrail.label = 'rank_up_chevron_trail';
-    const chevronCount = compact ? 3 : 4;
-    const chevronStartX = rankTexture ? -panelWidth / 2 + 94 : -46;
-    for (let i = 0; i < chevronCount; i++) {
-      const chevron = new PIXI.Graphics();
-      const alpha = 0.34 + i * 0.12;
-      chevron.moveTo(-4, -7);
-      chevron.lineTo(4, 0);
-      chevron.lineTo(-4, 7);
-      chevron.stroke({ color: i % 2 ? 0x66f7ff : 0xffef7e, width: 2, alpha });
-      chevron.x = chevronStartX + i * (compact ? 14 : 16);
-      chevron.y = rankTitle ? -32 : -15;
-      chevronTrail.addChild(chevron);
-    }
-    container.addChild(chevronTrail);
-
-    const signalPips = new PIXI.Container();
-    signalPips.label = 'rank_up_signal_pips';
-    const pipCount = compact ? 4 : 5;
-    for (let i = 0; i < pipCount; i++) {
-      const pip = new PIXI.Graphics();
-      const pipW = 24 + i * 5;
-      pip.roundRect(-pipW / 2, 0, pipW, 4, 2);
-      pip.fill({ color: i % 2 === 0 ? 0xffef7e : 0x66f7ff, alpha: 0.86 - i * 0.08 });
-      pip.x = -panelWidth / 2 + 40 + i * 44;
-      pip.y = panelHeight / 2 - 17;
-      signalPips.addChild(pip);
-    }
-    container.addChild(signalPips);
-
-    const rankHalo = new PIXI.Graphics();
-    rankHalo.label = 'rank_up_rank_halo';
-    const haloX = -panelWidth / 2 + 58;
-    const haloY = -6;
-    const haloRadius = compact ? 34 : 39;
-    rankHalo.x = haloX;
-    rankHalo.y = haloY;
-    rankHalo.circle(0, 0, haloRadius);
-    rankHalo.stroke({ color: 0xffef7e, width: 2, alpha: 0.62 });
-    for (let i = 0; i < 8; i++) {
-      const angle = (Math.PI * 2 * i) / 8;
-      rankHalo.moveTo(Math.cos(angle) * (haloRadius + 4), Math.sin(angle) * (haloRadius + 4));
-      rankHalo.lineTo(Math.cos(angle) * (haloRadius + 12), Math.sin(angle) * (haloRadius + 12));
-    }
-    rankHalo.stroke({ color: 0x66f7ff, width: 2, alpha: 0.72 });
+    let rankHalo = null;
     if (!rankTexture) {
-      rankHalo.moveTo(0, -haloRadius * 0.38);
-      rankHalo.lineTo(haloRadius * 0.34, 0);
-      rankHalo.lineTo(0, haloRadius * 0.38);
-      rankHalo.lineTo(-haloRadius * 0.34, 0);
-      rankHalo.lineTo(0, -haloRadius * 0.38);
-      rankHalo.stroke({ color: 0xffef7e, width: 2, alpha: 0.78 });
+      const fallbackRankTexture = GameAssets.getMicroSignalTexture('contact');
+      rankHalo = new PIXI.Sprite(fallbackRankTexture || PIXI.Texture.EMPTY);
+      rankHalo.label = 'rank_up_authored_fallback_rank_mark';
+      rankHalo.anchor.set(0.5);
+      rankHalo.x = -panelWidth / 2 + 58;
+      rankHalo.y = -6;
+      rankHalo.width = compact ? 72 : 82;
+      rankHalo.height = compact ? 72 : 82;
+      rankHalo.tint = 0xffe78a;
+      rankHalo.alpha = 0.92;
+      container.addChild(rankHalo);
     }
-    container.addChild(rankHalo);
 
     if (rankTexture) {
       const rankSprite = new PIXI.Sprite(rankTexture);
@@ -5204,10 +5152,11 @@ export class PlayScene {
     }
 
     container._debugRankUpClarity = {
-      broadcastBurst: true,
-      signalPips: pipCount,
-      chevronTrail: chevronCount,
-      rankHalo: Boolean(rankHalo),
+      authoredFlourishReady: Boolean(rankFlourishTexture && rankFlourishTexture !== PIXI.Texture.EMPTY),
+      visualLanguage: 'authored_rank_broadcast_v2',
+      primitiveOrnamentCount: 0,
+      rankArtworkReady: Boolean(rankTexture || rankHalo?.texture),
+      rankArtSource: rankTexture ? 'rank_achievement_art' : 'authored_signal_fallback',
       panelWidth,
       panelHeight,
       compact
@@ -5225,11 +5174,8 @@ export class PlayScene {
       }
       elapsed += delta.deltaTime * 16.67;
       const shimmer = Math.sin(elapsed * 0.008);
-      burstLayer.rotation = shimmer * 0.012;
-      burstLayer.alpha = 0.62 + Math.max(0, shimmer) * 0.24;
-      chevronTrail.alpha = 0.58 + Math.max(0, Math.sin(elapsed * 0.014)) * 0.34;
-      chevronTrail.x = Math.sin(elapsed * 0.012) * 2.5;
-      signalPips.alpha = 0.74 + Math.max(0, Math.sin(elapsed * 0.012)) * 0.22;
+      rankFlourish.rotation = shimmer * 0.006;
+      rankFlourish.alpha = (compact ? 0.4 : 0.48) + Math.max(0, shimmer) * 0.1;
       if (rankHalo) rankHalo.rotation += delta.deltaTime * 0.028;
       if (elapsed < phases.easeIn) {
         const t = elapsed / phases.easeIn;
@@ -5271,9 +5217,8 @@ export class PlayScene {
       : defaultQuipAllowed
         ? tauntDirector.getRotationDebugState()
         : null;
-    const panelWidth = compact ? 340 : 400;
-    const panelHeight = compact ? 108 : 130;
-    const panelRadius = compact ? 8 : 10;
+    const panelWidth = compact ? 390 : 620;
+    const panelHeight = compact ? 118 : 190;
     const ringCount = 0;
     const effectY = compact ? height * 0.38 : height * 0.35;
     const phases = {
@@ -5297,94 +5242,54 @@ export class PlayScene {
     this.uiContainer.addChild(effectContainer);
     this.activeWaveBonusEffect = effectContainer;
 
-    const sweepLayer = new PIXI.Graphics();
-    sweepLayer.label = 'waveClearSweepLayer';
-    const sweepBandCount = compact ? 3 : 4;
-    const sweepChevronCount = compact ? 6 : 10;
-    for (let i = 0; i < sweepBandCount; i += 1) {
-      const bandY = (i - (sweepBandCount - 1) / 2) * (compact ? 24 : 28);
-      const bandHeight = compact ? 6 : 8;
-      sweepLayer.roundRect(-width * 0.42, bandY - bandHeight / 2, width * 0.84, bandHeight, bandHeight / 2);
-      sweepLayer.fill({ color: i % 2 ? 0x7ee9ff : 0x00ff66, alpha: compact ? 0.08 : 0.11 });
-      sweepLayer.moveTo(-width * 0.36, bandY + bandHeight * 1.15);
-      sweepLayer.lineTo(width * 0.36, bandY + bandHeight * 1.15);
-      sweepLayer.stroke({ color: i % 2 ? 0xffffff : 0x7ee9ff, width: 1, alpha: compact ? 0.12 : 0.18 });
-    }
-    for (let i = 0; i < sweepChevronCount; i += 1) {
-      const ratio = (i + 0.5) / sweepChevronCount;
-      const side = i % 2 === 0 ? -1 : 1;
-      const x = -width * 0.34 + ratio * width * 0.68;
-      const y = side * (compact ? 45 : 56);
-      const size = compact ? 9 : 12;
-      sweepLayer.moveTo(x - size, y - size * 0.7);
-      sweepLayer.lineTo(x, y);
-      sweepLayer.lineTo(x - size, y + size * 0.7);
-      sweepLayer.stroke({ color: 0xffff66, width: compact ? 1.4 : 1.8, alpha: compact ? 0.34 : 0.48 });
-    }
-    effectContainer.addChild(sweepLayer);
+    const flourishTexture = GameAssets.getMicroSignalTexture('waveClear');
+    const flourish = new PIXI.Sprite(flourishTexture || PIXI.Texture.EMPTY);
+    flourish.label = 'waveClearAuthoredFlourish';
+    flourish.anchor.set(0.5);
+    flourish.width = panelWidth;
+    flourish.height = panelHeight;
+    flourish.alpha = compact ? 0.86 : 0.94;
+    flourish.blendMode = 'normal';
+    effectContainer.addChild(flourish);
 
-    // Background panel with glow
-    const panel = new PIXI.Graphics();
-    panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, panelRadius);
-    panel.fill({ color: 0x000000, alpha: 0.95 });
-    panel.stroke({ color: 0x00ff00, width: 4 });
-    effectContainer.addChild(panel);
-
-    // Inner glow with multiple layers for depth
-    const glow = new PIXI.Graphics();
-    glow.roundRect(-panelWidth / 2 + 5, -panelHeight / 2 + 5, panelWidth - 10, panelHeight - 10, Math.max(4, panelRadius - 2));
-    glow.stroke({ color: 0x00ff00, width: 3, alpha: 0.6 });
-    effectContainer.addChild(glow);
-
-    const innerGlow = new PIXI.Graphics();
-    innerGlow.roundRect(-panelWidth / 2 + 10, -panelHeight / 2 + 10, panelWidth - 20, panelHeight - 20, Math.max(3, panelRadius - 3));
-    innerGlow.stroke({ color: 0xffff00, width: 2, alpha: 0.3 });
-    effectContainer.addChild(innerGlow);
-
-    const accentRails = new PIXI.Graphics();
-    const accentRailCount = compact ? 2 : 4;
-    for (let i = 0; i < accentRailCount; i += 1) {
-      const side = i % 2 ? 1 : -1;
-      const lane = Math.floor(i / 2);
-      const x = side * (panelWidth / 2 + 18 + lane * 14);
-      const y = (lane - 0.5) * (compact ? 34 : 46);
-      accentRails.moveTo(x - side * 18, y - 7);
-      accentRails.lineTo(x, y);
-      accentRails.lineTo(x - side * 18, y + 7);
-    }
-    accentRails.stroke({ color: 0x7ee9ff, width: compact ? 1.4 : 1.8, alpha: 0.46 });
-    effectContainer.addChild(accentRails);
+    const lightBand = new PIXI.Graphics();
+    lightBand.label = 'waveClearLightBand';
+    lightBand.moveTo(-Math.min(width * 0.42, panelWidth * 0.9), 0);
+    lightBand.lineTo(Math.min(width * 0.42, panelWidth * 0.9), 0);
+    lightBand.stroke({ color: 0x7ee9ff, width: compact ? 1.2 : 1.6, alpha: 0.2 });
+    lightBand.blendMode = 'add';
+    effectContainer.addChild(lightBand);
 
     // Main label (WAVE CLEARED!) - Big and bold
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 28 : 38,
-      fill: '#00ff00',
-      stroke: '#004400',
-      strokeThickness: 6,
+      fill: '#dfffee',
+      stroke: '#063324',
+      strokeThickness: compact ? 5 : 7,
       dropShadow: true,
-      dropShadowColor: '#00ff00',
-      dropShadowBlur: 10,
-      dropShadowDistance: 3
+      dropShadowColor: '#35ff9a',
+      dropShadowBlur: 14,
+      dropShadowDistance: 0
     });
     labelText.anchor.set(0.5);
-    labelText.y = compact ? -30 : -30;
+    labelText.y = compact ? -25 : -35;
     effectContainer.addChild(labelText);
 
     // Bonus amount with coin icon
     const bonusText = createText(`+${bonusAmount}`, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: compact ? 34 : 48,
-      fill: '#ffff00',
-      stroke: '#000000',
-      strokeThickness: 8,
+      fill: '#fff3a0',
+      stroke: '#071019',
+      strokeThickness: compact ? 6 : 8,
       dropShadow: true,
-      dropShadowColor: '#ffff00',
+      dropShadowColor: '#8fffd5',
       dropShadowBlur: 15,
-      dropShadowDistance: 4
+      dropShadowDistance: 0
     });
     bonusText.anchor.set(0.5);
-    bonusText.y = compact && subtitle ? 8 : 30;
+    bonusText.y = compact && subtitle ? 8 : 20;
     effectContainer.addChild(bonusText);
 
     if (subtitle) {
@@ -5397,7 +5302,7 @@ export class PlayScene {
         align: 'center'
       });
       subtitleText.anchor.set(0.5);
-      subtitleText.y = compact ? 39 : 56;
+      subtitleText.y = compact ? 38 : 58;
       effectContainer.addChild(subtitleText);
     }
 
@@ -5449,9 +5354,13 @@ export class PlayScene {
       panelHeight,
       ringCount,
       glintCount: 0,
-      accentRailCount,
-      sweepBandCount,
-      sweepChevronCount,
+      accentRailCount: 0,
+      sweepBandCount: 0,
+      sweepChevronCount: 0,
+      authoredFlourishCount: 1,
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_victory_flourish_v3',
+      authoredFlourishReady: GameAssets.isValidTexture(flourish.texture),
       subtitle: Boolean(subtitle),
       subtitleText: subtitle ? String(subtitle) : '',
       humor: humorState
@@ -5459,9 +5368,10 @@ export class PlayScene {
 
     const animate = (delta) => {
       elapsed += delta.deltaTime * 16.67;
-      const sweepPulse = Math.sin(elapsed * 0.018) * 0.5 + 0.5;
-      sweepLayer.alpha = 0.72 + sweepPulse * 0.22;
-      sweepLayer.x = Math.sin(elapsed * 0.012) * (compact ? 5 : 8);
+      const sweepPulse = Math.sin(elapsed * 0.008) * 0.5 + 0.5;
+      flourish.alpha = (compact ? 0.78 : 0.86) + sweepPulse * 0.12;
+      flourish.rotation = Math.sin(elapsed * 0.003) * 0.006;
+      lightBand.alpha = 0.18 + sweepPulse * 0.18;
 
       if (elapsed < phases.entry) {
         // Explosive entry: scale up with ease-out elastic
@@ -15755,6 +15665,9 @@ export class PlayScene {
       combatRelocated: Boolean(meta.combatRelocated),
       edgeAligned: Boolean(meta.edgeAligned),
       placement: meta.placement || null,
+      visualLanguage: meta.visualLanguage || null,
+      authoredSignalCount: Number(meta.authoredSignalCount) || 0,
+      primitiveOrnamentCount: Number(meta.primitiveOrnamentCount) || 0,
       ageMs: Math.max(0, Date.now() - meta.createdAt),
       dossier: display.__aceDossierDebug ? { ...display.__aceDossierDebug } : null,
       specialSignal: display.__specialEnemySignalDebug ? { ...display.__specialEnemySignalDebug } : null,
@@ -16303,6 +16216,17 @@ export class PlayScene {
         isMajorSignal ||
         (slot === 'top' && type !== 'generic')
       );
+      const useAuthoredBadge = [
+        'flawlessWave',
+        'trait',
+        'score_boost',
+        'repair',
+        'level_clear',
+        'level_up',
+        'rank_up',
+        'run_clear',
+        'unlock'
+      ].includes(type) && options.authoredBadge !== false;
       const textMaxWidth = slot === 'corner'
         ? maxWidth
         : Math.max(160, maxWidth - (slot === 'top' ? 46 : 58));
@@ -16338,7 +16262,40 @@ export class PlayScene {
         text.updateText?.(false);
       }
 
-      if (slot === 'corner' || !useSignalPlate) {
+      if (useAuthoredBadge) {
+        const badge = new PIXI.Container();
+        badge.label = `ui_${slot}_authored_signal_badge`;
+        badge.eventMode = 'none';
+        const textureKey = type === 'flawlessWave' ? 'combo' : 'contact';
+        const ornament = new PIXI.Sprite(GameAssets.getMicroSignalTexture(textureKey) || PIXI.Texture.EMPTY);
+        ornament.anchor.set(0.5);
+        ornament.blendMode = 'add';
+        ornament.tint = accentColor;
+        ornament.alpha = type === 'flawlessWave' ? 0.58 : 0.48;
+        ornament.width = type === 'flawlessWave'
+          ? Math.min(maxWidth, Math.max(180, text.width + 72))
+          : Math.min(92, Math.max(54, text.width * 0.32));
+        ornament.height = type === 'flawlessWave'
+          ? Math.max(42, Math.min(76, text.height + 30))
+          : Math.max(34, Math.min(56, text.height + 20));
+        ornament.rotation = type === 'flawlessWave' ? 0 : -0.12;
+        badge.addChild(ornament);
+        text.anchor.set(0.5);
+        text.position.set(type === 'flawlessWave' ? 0 : 12, 0);
+        badge.addChild(text);
+        badge.x = slot === 'corner'
+          ? width - Math.max(16, ornament.width * 0.34)
+          : width / 2;
+        badge.y = y;
+        badge.alpha = 0;
+        badge.__authoredSignalFx = {
+          ornament,
+          baseAlpha: ornament.alpha,
+          visualLanguage: type === 'flawlessWave' ? 'plasma_flawless_badge_v2' : 'contact_rune_feedback_v2'
+        };
+        display = badge;
+        this.uiOverlay.addChild(badge);
+      } else if (slot === 'corner' || !useSignalPlate) {
         text.anchor.set(1, 0.5);
         text.x = slot === 'corner' ? width - 16 : width / 2;
         text.y = y;
@@ -16426,6 +16383,11 @@ export class PlayScene {
       createdAt: now,
       protectedUntil: now + minVisibleMs
     };
+    if (display.__authoredSignalFx) {
+      display.__toastMeta.visualLanguage = display.__authoredSignalFx.visualLanguage;
+      display.__toastMeta.authoredSignalCount = 1;
+      display.__toastMeta.primitiveOrnamentCount = 0;
+    }
     options.onShown?.({ display, shownAt: now, duration });
 
     const majorTypes = ['boss', 'level_clear', 'rank_up', 'level_up', 'rank_boost'];
@@ -16450,13 +16412,19 @@ export class PlayScene {
         aceFx.burst.alpha = 0.76 + pulse * 0.16;
         aceFx.outerGlow.alpha = 0.78 + pulse * 0.12;
       }
+      const authoredFx = display.__authoredSignalFx;
+      if (authoredFx) {
+        const pulse = 0.5 + Math.sin(elapsed * 0.01) * 0.5;
+        authoredFx.ornament.alpha = authoredFx.baseAlpha + pulse * 0.16;
+        authoredFx.ornament.scale.set(1 + pulse * 0.035, 1 - pulse * 0.018);
+      }
 
       const introDuration = options.aceDossier ? 180 : 250;
       if (elapsed < introDuration) {
         display.alpha = elapsed / introDuration;
-        if (options.banner || options.aceDossier) {
+        if (options.banner || options.aceDossier || display.__authoredSignalFx) {
           const t = elapsed / introDuration;
-          const startScale = options.aceDossier ? 0.94 : 0.88;
+          const startScale = options.aceDossier ? 0.94 : (display.__authoredSignalFx ? 0.84 : 0.88);
           display.scale.set(startScale + t * (1 - startScale));
         }
       } else if (elapsed > duration - 350) {
