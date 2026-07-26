@@ -2511,4 +2511,8 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Cabinet Skill Flight uses a dedicated targeting plaque; Drone Constellation uses dedicated crest art; the Overrun gate and continuation summary use an authored coronation presentation and command capsule.
 - Preserved functional attack telegraphs, hit geometry, spawn warnings, target rings, timers, meters, scoring, progression, saves, controller behavior, and localization.
 - Focused runtime and visual checks pass for message arbitration, Mission Status, challenge flight, Overrun confirmation, Tactical Fusions, HUD/trait readability, Wave Clear, powerup affordances, boss warning, controller flow, Steam bridge, all-language UI, and release-line.
-- Final packaging, packaged runtime/performance gates, and Steam `sector-continue-test` deployment are pending.
+- Packaged exact source `b8ccd2c458e4ba81405250bdeb7cec59d2a94692` as `v2026-07-27_01-33-54`. Strict Steam runtime, fresh-profile isolation, packaged launch, packaged controls, desktop package review, and payload-manifest gates pass.
+- Packaged performance held `58.48` minimum / `60.03` average FPS across 12 samples with no warnings or errors.
+- Uploaded only to `sector-continue-test` as Steam BuildID `24403621`, depot manifest `1402463280774430983`.
+- Pre/post Steam app-info proves `public` remained `24400692` and `test-build` remained `23782673`. The private rollback target is the preceding `sector-continue-test` BuildID `24401245`.
+- No public/default assignment, store metadata, achievements, patch notes, Git push, or other Steamworks setting changed.
