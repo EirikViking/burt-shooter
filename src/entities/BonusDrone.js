@@ -2,7 +2,11 @@ import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { BalanceConfig } from '../config/BalanceConfig.js';
 import { AudioManager } from '../audio/AudioManager.js';
-import { presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
+import {
+    destroyMicroSignals,
+    hideMicroSignals,
+    presentDirectionalSignal
+} from '../effects/MicroSignalVfx.js';
 
 export class BonusDrone {
     constructor(x, y, game, type = 'HAZARD') {
@@ -251,6 +255,7 @@ export class BonusDrone {
 
     hideEdgeMarker(reason = 'hidden') {
         if (this.edgeMarker) {
+            hideMicroSignals(this.edgeMarker);
             this.edgeMarker.clear();
             this.edgeMarker.visible = false;
             this.edgeMarker.renderable = false;
@@ -443,6 +448,7 @@ export class BonusDrone {
 
     destroy() {
         this.hideEdgeMarker('destroy');
+        destroyMicroSignals(this.edgeMarker);
         if (this.edgeMarker?.parent) this.edgeMarker.parent.removeChild(this.edgeMarker);
         if (this.sprite?.parent) this.sprite.parent.removeChild(this.sprite);
         this.edgeMarker = null;

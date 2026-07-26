@@ -4,7 +4,7 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
-import { presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
+import { hideMicroSignals, presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
 import { ALL_POWERUP_TYPES, getPowerupMeta } from '../config/PowerupCatalog.js';
 
 const POWERUP_CODEX_NAMES = Object.freeze(Object.fromEntries(
@@ -818,6 +818,7 @@ class Powerup {
   }
 
   drawPickupEdgeGuide(scene, guide, options = {}) {
+    hideMicroSignals(guide);
     const game = scene?.gameplayGame || scene?.game || this.game;
     const width = Math.max(
       320,

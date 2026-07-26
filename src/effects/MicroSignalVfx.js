@@ -7,12 +7,44 @@ function getStore(host) {
   return host.__novaMicroSignalSprites;
 }
 
+function getMount(host) {
+  if (!host || host.destroyed) return null;
+  if (!(host instanceof PIXI.Graphics)) return host;
+
+  const parent = host.parent;
+  if (!parent || parent.destroyed) return null;
+  let mount = host.__novaMicroSignalMount;
+  if (mount?.destroyed || (mount && mount.parent !== parent)) {
+    mount?.destroy?.({ children: true });
+    mount = null;
+  }
+  if (!mount) {
+    mount = new PIXI.Container();
+    mount.label = `${host.label || 'graphics'}:microSignals`;
+    mount.eventMode = 'none';
+    parent.addChild(mount);
+    host.__novaMicroSignalMount = mount;
+  }
+
+  mount.position.copyFrom(host.position);
+  mount.pivot.copyFrom(host.pivot);
+  mount.scale.copyFrom(host.scale);
+  mount.skew.copyFrom(host.skew);
+  mount.rotation = host.rotation;
+  mount.alpha = host.alpha;
+  mount.visible = host.visible;
+  mount.renderable = host.renderable;
+  mount.zIndex = (Number(host.zIndex) || 0) + 0.01;
+  return mount;
+}
+
 export function ensureMicroSignalSprite(host, key, textureKey = 'direction') {
   const store = getStore(host);
-  if (!store) return null;
+  const mount = getMount(host);
+  if (!store || !mount) return null;
   const id = String(key || textureKey);
   let sprite = store.get(id);
-  if (sprite?.destroyed || (sprite && sprite.parent !== host)) {
+  if (sprite?.destroyed || (sprite && sprite.parent !== mount)) {
     store.delete(id);
     sprite = null;
   }
@@ -27,7 +59,7 @@ export function ensureMicroSignalSprite(host, key, textureKey = 'direction') {
     sprite.label = `microSignal:${id}`;
     sprite.eventMode = 'none';
     sprite.blendMode = 'add';
-    host.addChild(sprite);
+    mount.addChild(sprite);
     store.set(id, sprite);
   } else if (sprite.texture !== texture) {
     sprite.texture = texture;
@@ -85,11 +117,31 @@ export function presentPhaseSignal(host, key, {
 export function hideMicroSignals(host, prefix = '') {
   const store = host?.__novaMicroSignalSprites;
   if (!store) return;
+  const mount = host.__novaMicroSignalMount || host;
   for (const [key, sprite] of store.entries()) {
-    if (sprite?.destroyed || sprite?.parent !== host) {
+    if (sprite?.destroyed || sprite?.parent !== mount) {
       store.delete(key);
     } else if (!prefix || key.startsWith(prefix)) {
       sprite.visible = false;
     }
   }
+  if (mount !== host) {
+    mount.visible = host.visible !== false && [...store.values()].some((sprite) => (
+      !sprite?.destroyed && sprite.parent === mount && sprite.visible
+    ));
+  }
+}
+
+export function destroyMicroSignals(host) {
+  const store = host?.__novaMicroSignalSprites;
+  if (store) {
+    for (const sprite of store.values()) {
+      sprite?.destroy?.();
+    }
+    store.clear();
+    delete host.__novaMicroSignalSprites;
+  }
+  const mount = host?.__novaMicroSignalMount;
+  if (mount && !mount.destroyed) mount.destroy({ children: true });
+  if (host) delete host.__novaMicroSignalMount;
 }

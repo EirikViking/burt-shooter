@@ -4345,6 +4345,7 @@ export class EnemyManager {
   clearBossFuelTether(enemy) {
     const tether = enemy?.bossFuelTether;
     if (!tether) return;
+    hideMicroSignals(tether);
     tether.clear?.();
     tether.visible = false;
     tether.renderable = false;

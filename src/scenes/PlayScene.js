@@ -19,6 +19,7 @@ import { ParticleManager } from '../effects/ParticleManager.js';
 import { ScreenShake } from '../effects/ScreenShake.js';
 import { SpectacleDirector } from '../effects/SpectacleDirector.js';
 import {
+  destroyMicroSignals,
   hideMicroSignals,
   presentDirectionalSignal
 } from '../effects/MicroSignalVfx.js';
@@ -7577,6 +7578,7 @@ export class PlayScene {
       this.magnetFieldVisual = null;
     }
     this.clearStragglerBeacon('destroy');
+    destroyMicroSignals(this.stragglerBeaconLayer);
     if (this.stragglerBeaconLayer?.parent) {
       this.stragglerBeaconLayer.parent.removeChild(this.stragglerBeaconLayer);
     }
@@ -7890,6 +7892,7 @@ export class PlayScene {
 
   clearStragglerBeacon(reason = 'clear') {
     if (this.stragglerBeaconLayer) {
+      hideMicroSignals(this.stragglerBeaconLayer);
       this.stragglerBeaconLayer.clear();
       this.stragglerBeaconLayer.visible = false;
       this.stragglerBeaconLayer._debugStragglerBeacon = {
