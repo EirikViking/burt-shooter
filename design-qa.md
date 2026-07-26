@@ -49,3 +49,32 @@ Focused region review was necessary because the transient messages are small in 
 - P3: none required for this release candidate. Further changes to functional gameplay geometry should be treated as mechanics/readability work, not decorative polish.
 
 final result: passed
+
+## Deep HUD and command-surface follow-up — 2026-07-26
+
+### Reviewed evidence
+
+- Mission Status rails and right-side command HUD:
+  - `test-results/mission-progress-hud-2026-07-26T22-43-08-685Z/mission-progress-hud.png`
+- Localized Cabinet Skill Flight plaque:
+  - `test-results/challenge-flight-2026-07-26T22-43-18-839Z/flugpruefung-840x640.png`
+- Overrun coronation and confirmation:
+  - `test-results/overrun-confirmation-2026-07-26T23-10-22-213Z/overrun-confirmation-held.png`
+- Tactical Fusion / Drone Constellation and top-signal safe area:
+  - `test-results/tactical-fusions-2026-07-26T23-19-43-291Z/03-drone-constellation.png`
+- Forty-eight-frame message placement and clipping sample:
+  - `test-results/gameplay-message-overlap-2026-07-26T23-13-06-921Z/report.json`
+
+### Findings
+
+- Flawless Wave is measured from its complete rendered width and remains fully inside the right edge.
+- Mission Status progress and directive rails are inset within the authored frame.
+- Wave briefing, boss signal, boss phase, boss reward/refuel, Bomb Banked, Near Miss, combo, and related shared signal families use the authored combat flourish with live localized text.
+- Lives, Sector, and Trait now form one authored command stack without changing their values, timers, or status behavior.
+- Cabinet Skill Flight uses a dedicated targeting plaque while its live objective and progress bar remain functional.
+- Drone Constellation has dedicated crest art in both the fusion reveal and HUD chip.
+- The Overrun gate uses an authored coronation dais and command capsule while preserving the existing seal, score, hull count, reward values, and confirmation hold.
+- Functional attack telegraphs, hit geometry, spawn warnings, target rings, meters, and timers were deliberately retained.
+- The final 1280 x 720 capture shows the top signal below Mission Status and all right-side command capsules inside the viewport.
+
+final result: passed

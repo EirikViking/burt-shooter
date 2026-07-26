@@ -5220,13 +5220,15 @@ export class EnemyManager {
         ? translateText('SKILL FLIGHT: {pattern}\nBREAK TARGETS BEFORE THEY EXIT', {
           pattern: translateText(challengePattern)
         })
-        : `${waveLabel}: ${descriptor}`;
+        : `${waveLabel}\n${descriptor}`;
       this.game.scenes.play.showToast(message, {
         fontSize: compactHud ? (isChallenge ? 18 : 15) : (isChallenge ? 25 : 18),
         fill: isChallenge ? '#fff3a0' : '#7ee9ff',
         stroke: '#00111d',
         strokeThickness: isChallenge ? 5 : 4,
-        y: isChallenge ? this.game.getHeight() * 0.32 : (compactHud ? this.game.getHeight() * 0.25 : 112),
+        y: isChallenge
+          ? this.game.getHeight() * 0.32
+          : (compactHud ? this.game.getHeight() * 0.27 : Math.max(132, this.game.getHeight() * 0.14)),
         duration: isChallenge ? Math.max(1700, openingMomentum.waveToastDurationMs) : openingMomentum.waveToastDurationMs,
         slot: isChallenge ? 'center' : 'top',
         type: isChallenge ? 'bonus' : 'level_up',

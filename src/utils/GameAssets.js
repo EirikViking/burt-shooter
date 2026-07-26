@@ -94,30 +94,45 @@ class GameAssetsManager {
         return this.plasmaBloomTextures;
     }
 
-    async ensureMicroSignalTextures() {
-        const sources = {
+    getMicroSignalSources() {
+        return {
             phase: AssetManifest.generated?.vfx?.microPhaseSigil,
             direction: AssetManifest.generated?.vfx?.microDirectionBeacon,
             combo: AssetManifest.generated?.vfx?.microComboCrest,
             contact: AssetManifest.generated?.vfx?.microContactRune,
             ace: AssetManifest.generated?.vfx?.microAceCommandCrest,
             waveClear: AssetManifest.generated?.vfx?.waveClearVictoryFlourish,
-            mission: AssetManifest.generated?.vfx?.missionCommandSpine
+            mission: AssetManifest.generated?.vfx?.missionCommandSpine,
+            combatSignal: AssetManifest.generated?.vfx?.combatSignalFlourish,
+            hudCapsule: AssetManifest.generated?.vfx?.hudCommandCapsule,
+            skillFlight: AssetManifest.generated?.vfx?.cabinetSkillFlightPlaque,
+            overrunDais: AssetManifest.generated?.vfx?.overrunCoronationDais,
+            droneConstellation: AssetManifest.generated?.vfx?.droneConstellationCrest
         };
-        const entries = await Promise.all(Object.entries(sources).map(async ([key, src]) => {
-            if (this.isValidTexture(this.microSignalTextures[key])) return [key, this.microSignalTextures[key]];
-            if (!src) return [key, null];
-            try {
-                const texture = await PIXI.Assets.load({
-                    alias: `nova_micro_signal_${key}`,
-                    src
-                });
-                return [key, texture];
-            } catch (error) {
-                console.warn(`[GameAssets] Micro-signal texture ${key} unavailable:`, error?.message || error);
-                return [key, null];
-            }
-        }));
+    }
+
+    async ensureMicroSignalTexture(key) {
+        if (this.isValidTexture(this.microSignalTextures[key])) return this.microSignalTextures[key];
+        const src = this.getMicroSignalSources()[key];
+        if (!src) return null;
+        try {
+            const texture = await PIXI.Assets.load({
+                alias: `nova_micro_signal_${key}`,
+                src
+            });
+            if (this.isValidTexture(texture)) this.microSignalTextures[key] = texture;
+            return this.microSignalTextures[key] || null;
+        } catch (error) {
+            console.warn(`[GameAssets] Micro-signal texture ${key} unavailable:`, error?.message || error);
+            return null;
+        }
+    }
+
+    async ensureMicroSignalTextures() {
+        const entries = await Promise.all(Object.keys(this.getMicroSignalSources()).map(async (key) => [
+            key,
+            await this.ensureMicroSignalTexture(key)
+        ]));
         for (const [key, texture] of entries) {
             if (this.isValidTexture(texture)) this.microSignalTextures[key] = texture;
         }

@@ -5435,46 +5435,26 @@ export class PlayScene {
     container.zIndex = 8800;
     container.label = 'ui_challenge_flight_hud';
 
-    const shadow = new PIXI.Graphics();
-    shadow.roundRect(5, 6, panelWidth, panelHeight, 10);
-    shadow.fill({ color: 0x000000, alpha: 0.46 });
-    container.addChild(shadow);
-
-    const frame = new PIXI.Graphics();
-    frame.roundRect(0, 0, panelWidth, panelHeight, 10);
-    frame.fill({ color: 0x06111c, alpha: 0.94 });
-    frame.stroke({ color: 0xffd85a, width: 3, alpha: 0.96 });
-    frame.roundRect(6, 6, panelWidth - 12, panelHeight - 12, 7);
-    frame.stroke({ color: 0x7ee9ff, width: 1.4, alpha: 0.55 });
+    const frame = new PIXI.Sprite(GameAssets.getMicroSignalTexture('skillFlight') || PIXI.Texture.EMPTY);
+    frame.width = panelWidth;
+    frame.height = panelHeight;
+    frame.label = 'authoredCabinetSkillFlightPlaque';
     container.addChild(frame);
+    GameAssets.ensureMicroSignalTexture?.('skillFlight').then((texture) => {
+      if (texture && !frame.destroyed) frame.texture = texture;
+    }).catch(() => {});
 
     const rail = new PIXI.Graphics();
-    rail.roundRect(12, panelHeight - 14, panelWidth - 24, 5, 2.5);
-    rail.fill({ color: 0x0b2936, alpha: 0.95 });
+    rail.roundRect(panelWidth * 0.25, panelHeight - 14, panelWidth * 0.65, 4, 2);
+    rail.fill({ color: 0x031420, alpha: 0.88 });
     container.addChild(rail);
 
     const progress = new PIXI.Graphics();
     progress.label = 'challengeFlightProgress';
     container.addChild(progress);
 
-    const reticle = new PIXI.Graphics();
-    const reticleRadius = compact ? 15 : 18;
-    const reticleOuter = compact ? 22 : 26;
-    const reticleInner = compact ? 11 : 14;
-    reticle.circle(0, 0, reticleRadius);
-    reticle.stroke({ color: 0xffd85a, width: 2.5, alpha: 0.9 });
-    reticle.moveTo(0, -reticleOuter);
-    reticle.lineTo(0, -reticleInner);
-    reticle.moveTo(0, reticleOuter);
-    reticle.lineTo(0, reticleInner);
-    reticle.moveTo(-reticleOuter, 0);
-    reticle.lineTo(-reticleInner, 0);
-    reticle.moveTo(reticleOuter, 0);
-    reticle.lineTo(reticleInner, 0);
-    reticle.stroke({ color: 0x7ee9ff, width: 2, alpha: 0.85 });
-    reticle.x = compact ? 34 : 39;
-    reticle.y = compact ? 42 : 48;
-    container.addChild(reticle);
+    const reticle = new PIXI.Container();
+    reticle.label = 'authoredReticleInPlaque';
 
     const title = createText(translateText('CABINET SKILL FLIGHT'), {
       fontFamily: FONT_DISPLAY,
@@ -5485,7 +5465,7 @@ export class PlayScene {
       fontWeight: '800',
       letterSpacing: 0.7
     });
-    title.x = compact ? 61 : 72;
+    title.x = compact ? 78 : 94;
     title.y = compact ? 9 : 11;
     const titleMaxWidth = panelWidth - title.x - 18;
     const titleScale = title.width > titleMaxWidth ? titleMaxWidth / title.width : 1;
@@ -5524,9 +5504,8 @@ export class PlayScene {
         return;
       }
       elapsed += delta.deltaTime * 16.67;
-      reticle.rotation += delta.deltaTime * 0.018;
       const pulse = Math.sin(elapsed * 0.009) * 0.5 + 0.5;
-      frame.alpha = 0.9 + pulse * 0.1;
+      frame.alpha = 0.88 + pulse * 0.12;
       progress.alpha = 0.78 + pulse * 0.22;
     };
     this.game.app.ticker.add(animate);
@@ -5558,10 +5537,11 @@ export class PlayScene {
     hud.status.text = translateText('TARGETS {kills}/{total} // {seconds}s', { kills, total, seconds });
     hud.pattern.text = translateText(state.patternLabel || 'STAR PARADE');
     hud.progress.clear();
-    const railWidth = hud.panelWidth - 24;
+    const railX = hud.panelWidth * 0.25;
+    const railWidth = hud.panelWidth * 0.65;
     const fillWidth = railWidth * (kills / total);
     if (fillWidth > 0) {
-      hud.progress.roundRect(12, hud.panelHeight - 14, fillWidth, 5, 2.5);
+      hud.progress.roundRect(railX, hud.panelHeight - 14, fillWidth, 4, 2);
       hud.progress.fill({ color: kills === total ? 0xffef7e : 0x7ee9ff, alpha: 0.98 });
     }
     hud.state = { ...state, targetCount: total, kills, remainingSeconds: seconds };
@@ -5573,7 +5553,10 @@ export class PlayScene {
       panelWidth: hud.panelWidth,
       panelHeight: hud.panelHeight,
       titleScale: hud.titleScale,
-      compact: hud.compact
+      compact: hud.compact,
+      authoredPlaqueReady: GameAssets.isValidTexture(hud.frame.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_skill_flight_plaque_v1'
     };
     return true;
   }
@@ -10253,6 +10236,16 @@ export class PlayScene {
 
     const panel = new PIXI.Container();
     panel.position.set(centerX, centerY);
+    const frameArt = new PIXI.Sprite(GameAssets.getMicroSignalTexture('combatSignal') || PIXI.Texture.EMPTY);
+    frameArt.anchor.set(0.5);
+    frameArt.width = panelWidth + (compact ? 28 : 44);
+    frameArt.height = panelHeight + (compact ? 18 : 28);
+    frameArt.alpha = 0.9;
+    frameArt.label = 'authoredFusionProtocolFrame';
+    panel.addChild(frameArt);
+    GameAssets.ensureMicroSignalTexture?.('combatSignal').then((texture) => {
+      if (texture && !frameArt.destroyed) frameArt.texture = texture;
+    }).catch(() => {});
     const glow = new PIXI.Graphics();
     const chamfer = compact ? 15 : 20;
     const panelPoints = [
@@ -10271,8 +10264,8 @@ export class PlayScene {
     panel.addChild(glow);
     const bg = new PIXI.Graphics();
     bg.poly(panelPoints);
-    bg.fill({ color: 0x030812, alpha: 0.94 });
-    bg.stroke({ color: accent, width: compact ? 2.5 : 3.5, alpha: 0.96 });
+    bg.fill({ color: 0x030812, alpha: 0.7 });
+    bg.stroke({ color: accent, width: compact ? 1.2 : 1.5, alpha: 0.38 });
     bg.moveTo(-panelWidth / 2 + 18, -panelHeight / 2 + 10);
     bg.lineTo(panelWidth / 2 - 34, -panelHeight / 2 + 10);
     bg.moveTo(-panelWidth / 2 + 34, panelHeight / 2 - 10);
@@ -10280,8 +10273,20 @@ export class PlayScene {
     bg.stroke({ color: 0x66efff, width: 1.3, alpha: 0.52 });
     panel.addChild(bg);
 
-    const core = new PIXI.Graphics();
-    this.drawTacticalFusionEmblem(core, fusion, accent, compact);
+    const droneCrestTexture = fusion.id === 'drone_constellation'
+      ? GameAssets.getMicroSignalTexture('droneConstellation')
+      : null;
+    const core = GameAssets.isValidTexture(droneCrestTexture)
+      ? new PIXI.Sprite(droneCrestTexture)
+      : new PIXI.Graphics();
+    if (core instanceof PIXI.Sprite) {
+      core.anchor.set(0.5);
+      core.width = compact ? 82 : 104;
+      core.height = compact ? 82 : 104;
+      core._fusionEmblemId = 'drone_constellation_authored_crest';
+    } else {
+      this.drawTacticalFusionEmblem(core, fusion, accent, compact);
+    }
     core.position.set(-panelWidth / 2 + (compact ? 54 : 66), 0);
     core.blendMode = 'add';
     panel.addChild(core);
@@ -10331,7 +10336,10 @@ export class PlayScene {
       rayCount: 0,
       plasmaRibbonCount,
       emblemId: core._fusionEmblemId,
-      visualLanguage: 'fusion_signature_v2',
+      visualLanguage: core instanceof PIXI.Sprite
+        ? 'authored_drone_constellation_crest_v1'
+        : 'fusion_signature_v3_authored_frame',
+      authoredFrameReady: GameAssets.isValidTexture(frameArt.texture),
       scoreNeutral: true,
       bounds: {
         x: Math.round(centerX - panelWidth / 2),
@@ -14625,8 +14633,8 @@ export class PlayScene {
     milestoneReward = null
   }) {
     const compact = width < 720;
-    const cardWidth = Math.min(width - 32, compact ? 540 : 820);
-    const cardHeight = Math.min(height * (compact ? 0.72 : 0.64), compact ? 330 : 420);
+    const cardWidth = Math.min(width - 32, compact ? 560 : 980);
+    const cardHeight = Math.min(height * (compact ? 0.76 : 0.7), compact ? 350 : 520);
     const visual = celebration?.visual || {};
     const primaryColor = visual.primaryColor || 0xffd15c;
     const accentColor = visual.accentColor || 0x61f6ff;
@@ -14647,37 +14655,21 @@ export class PlayScene {
     card.alpha = 0;
     card.scale.set(0.92);
 
-    const bg = new PIXI.Graphics();
-    bg.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, 10);
-    bg.fill({ color: backgroundColor, alpha: 0.95 });
-    bg.stroke({ color: frameColor, width: 3, alpha: 0.96 });
-    bg.roundRect(-cardWidth / 2 + 8, -cardHeight / 2 + 8, cardWidth - 16, cardHeight - 16, 7);
-    bg.stroke({ color: accentColor, width: 1.4, alpha: 0.76 });
-    bg.rect(-cardWidth / 2 + 18, -cardHeight / 2 + 18, cardWidth - 36, 4);
-    bg.fill({ color: secondaryColor, alpha: 0.86 });
-    if (visual.motif === 'double_rail') {
-      bg.rect(-cardWidth / 2 + 28, -cardHeight / 2 + 32, 4, cardHeight - 64);
-      bg.fill({ color: accentColor, alpha: 0.38 });
-      bg.rect(cardWidth / 2 - 32, -cardHeight / 2 + 32, 4, cardHeight - 64);
-      bg.fill({ color: primaryColor, alpha: 0.42 });
-    } else if (visual.motif === 'deep_scan') {
-      for (let x = -cardWidth / 2 + 32; x < cardWidth / 2 - 32; x += 46) {
-        bg.moveTo(x, -cardHeight / 2 + 28);
-        bg.lineTo(x + 22, cardHeight / 2 - 28);
-        bg.stroke({ color: accentColor, width: 1, alpha: 0.11 });
-      }
-    } else if (visual.motif === 'finale') {
-      bg.rect(-cardWidth / 2 + 18, cardHeight / 2 - 23, cardWidth - 36, 4);
-      bg.fill({ color: 0xff4d6d, alpha: 0.72 });
-    }
-    card.addChild(bg);
+    const dais = new PIXI.Sprite(GameAssets.getMicroSignalTexture('overrunDais') || PIXI.Texture.EMPTY);
+    dais.anchor.set(0.5);
+    dais.width = cardWidth + (compact ? 20 : 54);
+    dais.height = cardHeight + (compact ? 14 : 34);
+    dais.alpha = 0.96;
+    dais.label = 'authoredOverrunCoronationDais';
+    card.addChild(dais);
+    GameAssets.ensureMicroSignalTexture?.('overrunDais').then((texture) => {
+      if (texture && !dais.destroyed) dais.texture = texture;
+    }).catch(() => {});
 
-    const icon = new PIXI.Graphics();
-    icon.label = 'ui_overrun_card_icon';
-    icon.x = -cardWidth / 2 + (compact ? 38 : 48);
-    icon.y = -cardHeight / 2 + (compact ? 43 : 50);
-    this.drawOverrunMotifIcon(icon, visual.motif, { primaryColor, accentColor, secondaryColor });
-    card.addChild(icon);
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-cardWidth * 0.39, -cardHeight * 0.33, cardWidth * 0.78, cardHeight * 0.61, 18);
+    bg.fill({ color: backgroundColor, alpha: 0.34 });
+    card.addChild(bg);
 
     const title = createText(translateText(celebration?.title || 'OVERRUN MILESTONE', vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -14804,7 +14796,7 @@ export class PlayScene {
     });
     warning.anchor.set(0.5);
     warning.label = 'ui_overrun_card_warning';
-    warning.y = cardHeight / 2 - 72;
+    warning.y = cardHeight / 2 - (compact ? 82 : 96);
     card.addChild(warning);
 
     const button = new PIXI.Container();
@@ -14815,22 +14807,23 @@ export class PlayScene {
     const buttonWidth = Math.min(cardWidth - 96, compact ? 340 : 430);
     const buttonHeight = compact ? 38 : 44;
     button.hitArea = new PIXI.Rectangle(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight);
-    const buttonBg = new PIXI.Graphics();
+    const buttonBg = new PIXI.Sprite(GameAssets.getMicroSignalTexture('hudCapsule') || PIXI.Texture.EMPTY);
+    buttonBg.anchor.set(0.5);
+    buttonBg.width = buttonWidth;
+    buttonBg.height = buttonHeight + 12;
+    buttonBg.label = 'authoredOverrunConfirmCapsule';
     const drawButton = (hovered = false) => {
-      buttonBg.clear();
-      buttonBg.roundRect(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight, 7);
-      buttonBg.fill({ color: hovered ? accentColor : 0x06243a, alpha: hovered ? 0.94 : 0.88 });
-      buttonBg.stroke({ color: hovered ? 0xffffff : primaryColor, width: hovered ? 2.4 : 1.8, alpha: 0.92 });
-      buttonBg.rect(-buttonWidth / 2 + 14, -buttonHeight / 2 + 8, 4, buttonHeight - 16);
-      buttonBg.fill({ color: secondaryColor, alpha: hovered ? 0.82 : 0.56 });
-      buttonBg.rect(buttonWidth / 2 - 18, -buttonHeight / 2 + 8, 4, buttonHeight - 16);
-      buttonBg.fill({ color: accentColor, alpha: hovered ? 0.82 : 0.56 });
+      buttonBg.alpha = hovered ? 1 : 0.86;
+      buttonBg.tint = hovered ? 0xffffff : 0xd8f7ff;
     };
     drawButton(false);
     button.addChild(buttonBg);
     button.on('pointerover', () => drawButton(true));
     button.on('pointerout', () => drawButton(false));
     button.on('pointertap', () => this.confirmOverrunInterlude('pointer'));
+    GameAssets.ensureMicroSignalTexture?.('hudCapsule').then((texture) => {
+      if (texture && !buttonBg.destroyed) buttonBg.texture = texture;
+    }).catch(() => {});
 
     const confirmText = createText(translateText(celebration?.continueText || "I'M READY - BRING THE SWARM", vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -14848,6 +14841,12 @@ export class PlayScene {
     confirmText.label = 'ui_overrun_confirm_prompt';
     button.addChild(confirmText);
     card.addChild(button);
+    card._debugOverrunVisual = {
+      authoredDaisReady: GameAssets.isValidTexture(dais.texture),
+      authoredConfirmReady: GameAssets.isValidTexture(buttonBg.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_overrun_coronation_dais_v1'
+    };
 
     return card;
   }
@@ -16041,11 +16040,16 @@ export class PlayScene {
       : Math.max(178, height * 0.28);
     const requestedY = Number.isFinite(options.y) ? options.y : defaultY;
     const hudSafeY = slot === 'corner' && options.avoidHud !== false
-      ? this.getCornerToastSafeY(message, fontSize)
+      ? this.getCornerToastSafeY(message, fontSize, options.type)
+      : requestedY;
+    const topSafeY = slot === 'top' && options.avoidHud !== false
+      ? this.getTopToastSafeY(fontSize, options.type)
       : requestedY;
     const y = slot === 'corner'
       ? Math.min(height - 80, Math.max(requestedY, hudSafeY, 156))
-      : requestedY;
+      : slot === 'top'
+        ? Math.min(height - 90, Math.max(requestedY, topSafeY))
+        : requestedY;
 
     let display = null;
     if (options.type === 'aceContact' && options.aceDossier) {
@@ -16108,16 +16112,28 @@ export class PlayScene {
 
       const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot);
       const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
+      const authoredFrameTexture = GameAssets.getMicroSignalTexture('combatSignal');
+      const authoredFrame = GameAssets.isValidTexture(authoredFrameTexture)
+        ? new PIXI.Sprite(authoredFrameTexture)
+        : null;
+      if (authoredFrame) {
+        authoredFrame.anchor.set(0.5);
+        authoredFrame.width = Math.min(width - 20, panelWidth + (runContractBanner ? 50 : 34));
+        authoredFrame.height = panelHeight + (runContractBanner ? 28 : 20);
+        authoredFrame.alpha = runContractBanner ? 0.7 : 0.84;
+        authoredFrame.label = 'authoredCombatSignalFrame';
+        banner.addChild(authoredFrame);
+      }
       const panel = new PIXI.Graphics();
       panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, specialEnemySignal ? 8 : 14);
       panel.fill({
         color: options.type === 'lore' ? 0x05121c : (runContractBanner || specialEnemySignal ? 0x031321 : 0x111111),
-        alpha: options.type === 'lore' ? 0.78 : (runContractBanner ? 0.94 : specialEnemySignal ? 0.9 : 0.88)
+        alpha: options.type === 'lore' ? 0.72 : (runContractBanner ? 0.78 : specialEnemySignal ? 0.74 : 0.7)
       });
       panel.stroke({
         color: options.type === 'lore' || runContractBanner || specialEnemySignal ? (options.accent || 0x6fe7ff) : 0xffff00,
-        width: options.type === 'lore' ? 1.5 : (runContractBanner ? 3.5 : specialEnemySignal ? 2.2 : 3),
-        alpha: options.type === 'lore' ? 0.78 : 1
+        width: options.type === 'lore' ? 1 : (runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1.2),
+        alpha: authoredFrame ? 0.24 : (options.type === 'lore' ? 0.78 : 1)
       });
 
       const accent = new PIXI.Graphics();
@@ -16138,7 +16154,7 @@ export class PlayScene {
 
       banner.addChild(panel);
       banner.addChild(accent);
-      banner.addChild(noise);
+      if (!authoredFrame) banner.addChild(noise);
       banner.addChild(bannerText);
 
       bannerText.x = -panelWidth / 2 + paddingX + avatarSlot;
@@ -16184,6 +16200,15 @@ export class PlayScene {
       }
       banner.y = y;
       banner.alpha = 0;
+      if (authoredFrame) {
+        banner.__authoredSignalFx = {
+          ornament: authoredFrame,
+          baseAlpha: authoredFrame.alpha,
+          baseScaleX: authoredFrame.scale.x,
+          baseScaleY: authoredFrame.scale.y,
+          visualLanguage: 'authored_combat_signal_banner_v1'
+        };
+      }
       if (specialEnemySignal) {
         banner.__specialEnemySignalDebug = {
           edgeAligned: options.edgeAligned === true,
@@ -16216,6 +16241,19 @@ export class PlayScene {
         isMajorSignal ||
         (slot === 'top' && type !== 'generic')
       );
+      const useCombatFlourish = [
+        'boss',
+        'powerup',
+        'bonus',
+        'level_clear',
+        'level_up',
+        'rank_up',
+        'run_clear',
+        'unlock'
+      ].includes(type)
+        || options.authoredStyle === 'combat'
+        || (slot === 'top' && type !== 'generic')
+        || (slot === 'center' && fontSize >= 18);
       const useAuthoredBadge = [
         'flawlessWave',
         'trait',
@@ -16225,8 +16263,18 @@ export class PlayScene {
         'level_up',
         'rank_up',
         'run_clear',
-        'unlock'
-      ].includes(type) && options.authoredBadge !== false;
+        'unlock',
+        'boss',
+        'powerup',
+        'bonus',
+        'rank_boost',
+        'dangerDodge',
+        'synergy',
+        'tactical_draft',
+        'tacticalDirective',
+        'rareChaosPhase',
+        'discovery'
+      ].includes(type) || (slot === 'top' && type !== 'generic') || (slot === 'center' && fontSize >= 18);
       const textMaxWidth = slot === 'corner'
         ? maxWidth
         : Math.max(160, maxWidth - (slot === 'top' ? 46 : 58));
@@ -16262,36 +16310,51 @@ export class PlayScene {
         text.updateText?.(false);
       }
 
-      if (useAuthoredBadge) {
+      if (useAuthoredBadge && options.authoredBadge !== false) {
         const badge = new PIXI.Container();
         badge.label = `ui_${slot}_authored_signal_badge`;
         badge.eventMode = 'none';
-        const textureKey = type === 'flawlessWave' ? 'combo' : 'contact';
+        const textureKey = type === 'flawlessWave'
+          ? 'combo'
+          : useCombatFlourish
+            ? 'combatSignal'
+            : 'contact';
         const ornament = new PIXI.Sprite(GameAssets.getMicroSignalTexture(textureKey) || PIXI.Texture.EMPTY);
         ornament.anchor.set(0.5);
-        ornament.blendMode = 'add';
-        ornament.tint = accentColor;
-        ornament.alpha = type === 'flawlessWave' ? 0.58 : 0.48;
+        ornament.blendMode = useCombatFlourish ? 'normal' : 'add';
+        ornament.tint = useCombatFlourish ? 0xffffff : accentColor;
+        ornament.alpha = type === 'flawlessWave' ? 0.58 : useCombatFlourish ? 0.88 : 0.48;
         ornament.width = type === 'flawlessWave'
           ? Math.min(maxWidth, Math.max(180, text.width + 72))
+          : useCombatFlourish
+            ? Math.min(maxWidth, Math.max(slot === 'top' ? 360 : 440, text.width + 118))
           : Math.min(92, Math.max(54, text.width * 0.32));
         ornament.height = type === 'flawlessWave'
           ? Math.max(42, Math.min(76, text.height + 30))
+          : useCombatFlourish
+            ? Math.max(slot === 'top' ? 72 : 92, Math.min(slot === 'top' ? 130 : 190, text.height + 58))
           : Math.max(34, Math.min(56, text.height + 20));
         ornament.rotation = type === 'flawlessWave' ? 0 : -0.12;
         badge.addChild(ornament);
         text.anchor.set(0.5);
-        text.position.set(type === 'flawlessWave' ? 0 : 12, 0);
+        text.position.set(type === 'flawlessWave' || useCombatFlourish ? 0 : 12, 0);
         badge.addChild(text);
+        const badgeWidth = Math.max(ornament.width, text.width + (useCombatFlourish ? 36 : 0));
         badge.x = slot === 'corner'
-          ? width - Math.max(16, ornament.width * 0.34)
+          ? width - 18 - badgeWidth / 2
           : width / 2;
         badge.y = y;
         badge.alpha = 0;
         badge.__authoredSignalFx = {
           ornament,
           baseAlpha: ornament.alpha,
-          visualLanguage: type === 'flawlessWave' ? 'plasma_flawless_badge_v2' : 'contact_rune_feedback_v2'
+          baseScaleX: ornament.scale.x,
+          baseScaleY: ornament.scale.y,
+          visualLanguage: type === 'flawlessWave'
+            ? 'plasma_flawless_badge_v3_edge_safe'
+            : useCombatFlourish
+              ? 'authored_combat_signal_flourish_v1'
+              : 'contact_rune_feedback_v2'
         };
         display = badge;
         this.uiOverlay.addChild(badge);
@@ -16416,7 +16479,10 @@ export class PlayScene {
       if (authoredFx) {
         const pulse = 0.5 + Math.sin(elapsed * 0.01) * 0.5;
         authoredFx.ornament.alpha = authoredFx.baseAlpha + pulse * 0.16;
-        authoredFx.ornament.scale.set(1 + pulse * 0.035, 1 - pulse * 0.018);
+        authoredFx.ornament.scale.set(
+          (authoredFx.baseScaleX || 1) * (1 + pulse * 0.035),
+          (authoredFx.baseScaleY || 1) * (1 - pulse * 0.018)
+        );
       }
 
       const introDuration = options.aceDossier ? 180 : 250;
@@ -16451,7 +16517,7 @@ export class PlayScene {
     return display;
   }
 
-  getCornerToastSafeY(message = '', fontSize = 16) {
+  getCornerToastSafeY(message = '', fontSize = 16, type = 'generic') {
     const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
     const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
     const rightHudNodes = [
@@ -16473,7 +16539,40 @@ export class PlayScene {
     }
     const lineCount = Math.max(1, String(message || '').split('\n').length);
     const estimatedHalfHeight = lineCount * (Math.max(10, Number(fontSize) || 16) + 6) * 0.5;
-    return Math.min(height - 80, Math.max(156, rightHudBottom + estimatedHalfHeight + 12));
+    const authoredHalfHeight = ['boss', 'powerup', 'bonus', 'level_clear', 'level_up', 'rank_up', 'run_clear', 'unlock'].includes(type)
+      ? 72
+      : type === 'flawlessWave'
+        ? 42
+        : estimatedHalfHeight;
+    const safeHalfHeight = Math.max(36, estimatedHalfHeight, authoredHalfHeight);
+    const activeTopBounds = this.getToastDisplayBounds(this.activeTopToast);
+    const topToastBottom = activeTopBounds ? activeTopBounds.y + activeTopBounds.height : 0;
+    return Math.min(
+      height - 80,
+      Math.max(
+        156,
+        rightHudBottom + safeHalfHeight + 12,
+        topToastBottom + safeHalfHeight + 18
+      )
+    );
+  }
+
+  getTopToastSafeY(fontSize = 18, type = 'generic') {
+    const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
+    const nodes = [this.hud?.missionFrameArt, this.hud?.missionPanel];
+    if (this.hud?.comboMeterGroup?.visible && this.hud.comboMeterGroup.__placement === 'mission-underrail') {
+      nodes.push(this.hud.comboMeterGroup);
+    }
+    let hudBottom = 0;
+    for (const node of nodes) {
+      const bounds = this.getVisibleHudBounds(node);
+      if (bounds) hudBottom = Math.max(hudBottom, bounds.y + bounds.height);
+    }
+    const authoredSignal = type !== 'generic';
+    const halfHeight = authoredSignal
+      ? Math.max(46, Math.min(72, (Number(fontSize) || 18) + 40))
+      : Math.max(30, (Number(fontSize) || 18) + 16);
+    return Math.min(height - 90, Math.max(118, hudBottom + halfHeight + 14));
   }
 
   createSynergyBadge() {

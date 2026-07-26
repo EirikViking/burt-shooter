@@ -2501,3 +2501,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Packaged exact source `4af8519a0777cf5597f011187c966143fd07cecd` as `v2026-07-26_20-50-56`; packaged performance held `58.14` minimum / `59.83` average FPS with no warnings or errors.
 - Uploaded only to the same branch as the previous deployment, `sector-continue-test`, as Steam BuildID `24401245`, depot manifest `230225884267098466`. A fresh pre-upload read found `public` had externally moved to `24400692`; post-upload verification proves it remained there and `test-build` remained `23782673`.
 - No public/default assignment, store metadata, achievements, published patch notes, Git push, or other Steamworks setting changed. The private rollback target is BuildID `24400692`.
+
+## 2026-07-26 - Deep gameplay HUD and command-surface facelift
+
+- Added five generated, transparent authored assets for combat signals, HUD command capsules, Cabinet Skill Flight, Overrun coronation, and Drone Constellation.
+- Applied the shared combat-signal treatment to the remaining primitive message families, including wave briefing, boss inbound/phase/defeat/refuel, Bomb Banked, Near Miss, combo milestones, completion rewards, level/rank/run clear, unlocks, and Tactical Fusion.
+- Flawless Wave now measures its full badge width before right-edge placement, and top-center signals dynamically clear Mission Status.
+- Mission Status rails are inset inside their frame. Lives, Sector, and Trait now use a coherent authored command stack while all live values, timers, progress, and gameplay behavior remain unchanged.
+- Cabinet Skill Flight uses a dedicated targeting plaque; Drone Constellation uses dedicated crest art; the Overrun gate and continuation summary use an authored coronation presentation and command capsule.
+- Preserved functional attack telegraphs, hit geometry, spawn warnings, target rings, timers, meters, scoring, progression, saves, controller behavior, and localization.
+- Focused runtime and visual checks pass for message arbitration, Mission Status, challenge flight, Overrun confirmation, Tactical Fusions, HUD/trait readability, Wave Clear, powerup affordances, boss warning, controller flow, Steam bridge, all-language UI, and release-line.
+- Final packaging, packaged runtime/performance gates, and Steam `sector-continue-test` deployment are pending.

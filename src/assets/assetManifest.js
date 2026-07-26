@@ -46,6 +46,11 @@ export const AssetManifest = {
             microAceCommandCrest: '/art/generated/nova-swarm/vfx/micro-ace-command-crest.png',
             waveClearVictoryFlourish: '/art/generated/nova-swarm/vfx/wave-clear-victory-flourish.png',
             missionCommandSpine: '/art/generated/nova-swarm/vfx/mission-command-spine.png',
+            combatSignalFlourish: '/art/generated/nova-swarm/vfx/hud-polish-20260726/combat-signal-flourish.png',
+            hudCommandCapsule: '/art/generated/nova-swarm/vfx/hud-polish-20260726/hud-command-capsule.png',
+            cabinetSkillFlightPlaque: '/art/generated/nova-swarm/vfx/hud-polish-20260726/cabinet-skill-flight-plaque.png',
+            overrunCoronationDais: '/art/generated/nova-swarm/vfx/hud-polish-20260726/overrun-coronation-dais.png',
+            droneConstellationCrest: '/art/generated/nova-swarm/vfx/hud-polish-20260726/drone-constellation-crest.png',
             plasmaBloom: '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',
             plasmaBlooms: [
                 '/art/generated/nova-swarm/vfx/plasma/nova-plasma-bloom-20260722.png',

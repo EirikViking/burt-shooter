@@ -108,8 +108,7 @@ export class HUD {
     this.hudContainer.addChild(this.missionProgressTicks);
     this.hudContainer.addChild(this.directiveProgressBg);
     this.hudContainer.addChild(this.directiveProgressFill);
-    GameAssets.ensureMicroSignalTextures?.().then(() => {
-      const texture = GameAssets.getMicroSignalTexture('mission');
+    GameAssets.ensureMicroSignalTexture?.('mission').then((texture) => {
       if (texture && !this.missionFrameArt.destroyed) this.missionFrameArt.texture = texture;
     }).catch(() => {});
 
@@ -217,7 +216,11 @@ export class HUD {
 
     // Lives group
     this.livesGroup = new PIXI.Container();
+    this.livesArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.livesArt.label = 'authoredLivesCommandCapsule';
+    this.livesArt.eventMode = 'none';
     this.livesBg = new PIXI.Graphics();
+    this.livesGroup.addChild(this.livesArt);
     this.livesGroup.addChild(this.livesBg);
     this.livesIcon = createText('\u2665', {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -294,6 +297,9 @@ export class HUD {
     this.hudContainer.addChild(this.tacticalAugmentGroup);
 
     this.traitGroup = new PIXI.Container();
+    this.traitArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.traitArt.label = 'authoredTraitCommandCapsule';
+    this.traitArt.eventMode = 'none';
     this.traitBg = new PIXI.Graphics();
     this.traitBarBg = new PIXI.Graphics();
     this.traitBarFill = new PIXI.Graphics();
@@ -312,6 +318,7 @@ export class HUD {
       stroke: '#000000',
       strokeThickness: 3
     });
+    this.traitGroup.addChild(this.traitArt);
     this.traitGroup.addChild(this.traitBg);
     this.traitGroup.addChild(this.traitLabel);
     this.traitGroup.addChild(this.traitText);
@@ -356,6 +363,11 @@ export class HUD {
     this.hudContainer.addChild(this.directiveText);
 
     // Current sector label.
+    this.locationArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
+    this.locationArt.anchor.set(0.5);
+    this.locationArt.label = 'authoredSectorCommandCapsule';
+    this.locationArt.eventMode = 'none';
+    this.hudContainer.addChild(this.locationArt);
     this.locationText = createText(formatSectorLabel(this.game.level || 1, {
       sectorWord: translateText('SECTOR'),
       compact: true
@@ -366,6 +378,12 @@ export class HUD {
     });
     this.locationText.anchor.set(1, 0);
     this.hudContainer.addChild(this.locationText);
+    GameAssets.ensureMicroSignalTexture?.('hudCapsule').then((texture) => {
+      if (!texture) return;
+      if (!this.livesArt.destroyed) this.livesArt.texture = texture;
+      if (!this.traitArt.destroyed) this.traitArt.texture = texture;
+      if (!this.locationArt.destroyed) this.locationArt.texture = texture;
+    }).catch(() => {});
   }
 
   update(options = {}) {
@@ -1384,7 +1402,10 @@ export class HUD {
     item.icon.visible = false;
     item.emblem.visible = !overflow;
     if (!overflow) {
-      const texture = GameAssets.getPowerupTexture?.(entry.id);
+      const fusionTexture = entry.id === 'drone_constellation'
+        ? GameAssets.getMicroSignalTexture('droneConstellation')
+        : null;
+      const texture = fusionTexture || GameAssets.getPowerupTexture?.(entry.id);
       if (texture && GameAssets.isValidTexture?.(texture)) {
         item.icon.visible = true;
         item.icon.texture = texture;
@@ -1392,6 +1413,7 @@ export class HUD {
         item.icon.scale.set(Number.isFinite(scale) ? scale : 1);
         item.icon.x = iconX;
         item.icon.y = iconY;
+        item.icon.label = fusionTexture ? 'authoredDroneConstellationHudCrest' : 'tacticalAugmentIcon';
         item.emblem.clear();
         item.emblem.circle(iconX, iconY, iconSize * 0.62);
         item.emblem.fill({ color: 0x03101d, alpha: 0.94 });
@@ -2009,6 +2031,7 @@ export class HUD {
     const uiScale = Math.max(1, Math.min(2, Number(layout?.uiScale) || 1));
     const isLargeDesktop = !layout?.isMobile && canvasWidth >= 1920;
     const paddingX = Math.round(8 * uiScale);
+    const authoredInset = Math.round(42 * uiScale);
     const paddingY = Math.round(6 * uiScale);
     const barHeight = Math.max(4, Math.round(4 * uiScale));
     const barGap = Math.round(4 * uiScale);
@@ -2026,29 +2049,35 @@ export class HUD {
       canvasWidth ? canvasWidth * (layout?.isMobile ? 0.74 : 0.34) : 300 * uiScale,
       (isLargeDesktop ? 300 : 260) * uiScale
     ));
-    const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + paddingX * 2));
+    const width = Math.max(minWidth, Math.min(maxWidth, Math.max(this.traitLabel.width, this.traitText.width) + authoredInset + paddingX));
     const textHeight = this.traitLabel.height + this.traitText.height + 1;
     const height = textHeight + barGap + barHeight + paddingY * 2;
 
     this.traitBg.clear();
-    this.traitBg.roundRect(0, 0, width, height, 8 * uiScale);
-    this.traitBg.fill({ color: 0x050914, alpha: 0.52 });
-    this.traitBg.stroke({ color: event.color, width: 1.2 * uiScale, alpha: 0.7 });
+    this.traitArt.width = width;
+    this.traitArt.height = height;
+    this.traitArt.tint = 0xffffff;
+    this.traitArt.alpha = 0.82;
 
-    this.traitLabel.x = paddingX;
+    this.traitLabel.x = authoredInset;
     this.traitLabel.y = paddingY - 2;
-    this.traitText.x = paddingX;
+    this.traitText.x = authoredInset;
     this.traitText.y = paddingY + this.traitLabel.height - 2;
 
-    const barWidth = Math.max(24, width - paddingX * 2);
+    const barWidth = Math.max(24, width - authoredInset - paddingX);
     const barY = paddingY + textHeight + barGap - 3;
     this.traitBarBg.clear();
-    this.traitBarBg.roundRect(paddingX, barY, barWidth, barHeight, 2 * uiScale);
+    this.traitBarBg.roundRect(authoredInset, barY, barWidth, barHeight, 2 * uiScale);
     this.traitBarBg.fill({ color: 0x231a14, alpha: 0.85 });
     this.traitBarFill.clear();
-    this.traitBarFill.roundRect(paddingX, barY, Math.max(2 * uiScale, barWidth * event.progress), barHeight, 2 * uiScale);
+    this.traitBarFill.roundRect(authoredInset, barY, Math.max(2 * uiScale, barWidth * event.progress), barHeight, 2 * uiScale);
     this.traitBarFill.fill({ color: event.color, alpha: 0.96 });
     this.traitGroup.visible = true;
+    this.traitGroup._debugVisual = {
+      authoredCapsuleReady: GameAssets.isValidTexture(this.traitArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_trait_capsule_v1'
+    };
 
     if (canvasWidth) {
       const margin = Math.round(10 * Math.min(uiScale, 1.45));
@@ -2334,11 +2363,8 @@ export class HUD {
       strokeAlpha: 0.36,
       strokeWidth: 1
     });
-    this.drawGlassPanel(this.rightPanel, canvasWidth - margin - rightPanelWidth, margin, rightPanelWidth, rightPanelHeight, 0x75ff8d, 0.055, {
-      fillAlpha: 0.62,
-      strokeAlpha: 0.72,
-      strokeWidth: 1.55
-    });
+    this.rightPanel.clear();
+    this.rightPanel.visible = false;
     this.missionPanel.__layout = {
       x: missionPanelX,
       y: missionPanelY,
@@ -2421,7 +2447,10 @@ export class HUD {
     this.directiveText.x = missionPanelX + missionPanelWidth / 2;
     this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 49 : (isLargeDesktop ? 64 : 58)) * uiScale);
     if (this.missionProgressBg) {
-      const railPad = Math.round((layout.isMobile ? 10 : 14) * uiScale);
+      const railPad = Math.round(Math.max(
+        (layout.isMobile ? 18 : 30) * uiScale,
+        missionPanelWidth * 0.09
+      ));
       const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
       this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
       this.missionProgressBg.__y = Math.round(missionPanelY + (layout.isMobile ? 35 : (isLargeDesktop ? 49 : 43)) * uiScale);
@@ -2429,7 +2458,10 @@ export class HUD {
       this.missionProgressBg.__h = railHeight;
     }
     if (this.directiveProgressBg) {
-      const railPad = Math.round((layout.isMobile ? 10 : 14) * uiScale);
+      const railPad = Math.round(Math.max(
+        (layout.isMobile ? 18 : 30) * uiScale,
+        missionPanelWidth * 0.09
+      ));
       const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
       this.directiveProgressBg.__x = Math.round(missionPanelX + railPad);
       this.directiveProgressBg.__y = Math.round(missionPanelY + missionPanelHeight - railHeight - 4 * Math.min(uiScale, 1.4));
@@ -2437,13 +2469,31 @@ export class HUD {
       this.directiveProgressBg.__h = railHeight;
     }
 
-    this.locationText.x = canvasWidth - margin;
+    this.locationText.x = canvasWidth - margin - Math.round(12 * uiScale);
     this.locationText.y = layout.isMobile
       ? missionPanelY + missionPanelHeight + 6
       : margin + blockSpacing * 2.5;
+    const locationWidth = Math.max(
+      Math.round((layout.isMobile ? 142 : 178) * uiScale),
+      this.locationText.width + Math.round(54 * uiScale)
+    );
+    const locationHeight = Math.max(28, Math.round((layout.isMobile ? 28 : 34) * uiScale));
+    this.locationArt.width = locationWidth;
+    this.locationArt.height = locationHeight;
+    this.locationArt.position.set(
+      canvasWidth - margin - locationWidth / 2,
+      this.locationText.y + locationHeight / 2 - Math.round(5 * uiScale)
+    );
+    this.locationArt.tint = 0x8adfff;
+    this.locationArt.alpha = 0.62;
+    this.locationArt._debugVisual = {
+      authoredCapsuleReady: GameAssets.isValidTexture(this.locationArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_sector_capsule_v1'
+    };
 
     this.updateLivesVisuals();
-    this.livesGroup.x = canvasWidth - margin - rightPanelWidth + 10;
+    this.livesGroup.x = canvasWidth - margin - this.livesGroup.width;
     this.livesGroup.y = margin + 7;
 
     if (this.activePowerupGroup) {
@@ -2483,30 +2533,29 @@ export class HUD {
 
   updateLivesVisuals() {
     if (!this.livesGroup || !this.livesText || !this.livesIcon) return;
-    const padding = 8;
+    const padding = 10;
     const critical = Number(this.game?.lives || 0) === 1;
     const pulse = critical ? 0.5 + Math.sin(Date.now() * 0.014) * 0.5 : 0;
-    this.livesIcon.style.fill = critical ? (pulse > 0.52 ? '#ff4444' : '#ffd166') : '#ff8080';
-    this.livesIcon.alpha = critical ? 0.86 + pulse * 0.14 : 1;
-    this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff4444' : '#ffd166') : '#00ff00';
-    const height = Math.max(this.livesIcon.height, this.livesText.height) + padding;
+    this.livesIcon.visible = false;
+    this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff716d' : '#ffd166') : '#d9ffb8';
+    const height = Math.max(38, this.livesText.height + padding + 2);
     this.livesGroup.pivot.set(0, 0);
-    this.livesIcon.x = padding / 2;
-    this.livesIcon.y = height / 2 - this.livesIcon.height / 2;
-    this.livesText.x = this.livesIcon.x + this.livesIcon.width + 6;
+    this.livesText.x = Math.max(38, Math.round(height * 0.92));
     this.livesText.y = height / 2 - this.livesText.height / 2;
-    const width = this.livesText.x + this.livesText.width + padding / 2;
+    const width = Math.max(138, this.livesText.x + this.livesText.width + padding);
     this.livesBg.clear();
-    this.livesBg.roundRect(0, 0, width, height, 8); // v8 syntax prefer roundRect
-    this.livesBg.fill({ color: critical ? 0x2a050a : 0x03120a, alpha: critical ? 0.72 + pulse * 0.08 : 0.58 });
-    if (critical) {
-      this.livesBg.stroke({ color: pulse > 0.52 ? 0xff4040 : 0xffd166, width: 2.2, alpha: 0.76 + pulse * 0.22 });
-    } else {
-      this.livesBg.stroke({ color: 0x75ff8d, width: 1.45, alpha: 0.78 });
-    }
+    this.livesArt.width = width;
+    this.livesArt.height = height;
+    this.livesArt.tint = critical ? (pulse > 0.52 ? 0xff6a6a : 0xffd166) : 0xb8ffd0;
+    this.livesArt.alpha = critical ? 0.92 + pulse * 0.08 : 0.82;
     this.livesGroup._debugCritical = critical;
     this.livesGroup._debugPulse = Number(pulse.toFixed(3));
     this.livesGroup._debugPriority = 'critical';
+    this.livesGroup._debugVisual = {
+      authoredCapsuleReady: GameAssets.isValidTexture(this.livesArt.texture),
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'authored_survival_capsule_v1'
+    };
   }
 
   destroy() {

@@ -146,7 +146,7 @@ try {
   report.states.riftUnlock = await readState(page);
   assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.active === true, 'Fusion unlock presentation is not active');
   assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.scoreNeutral === true, 'Fusion unlock presentation lost score-neutral contract');
-  assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.visualLanguage === 'fusion_signature_v2', 'Fusion unlock retained its legacy geometry');
+  assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.visualLanguage === 'fusion_signature_v3_authored_frame', 'Fusion unlock did not use the authored protocol frame');
   assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.emblemId === 'rift_reprisal', 'Rift Reprisal did not receive its unique emblem');
   assert(report.states.riftUnlock.tacticalDraft?.fusionUnlock?.rayCount === 0, 'Fusion unlock retained primitive radial rays');
   report.screenshots.unlock = path.join(outputDir, '01-fusion-protocol-online.png');
