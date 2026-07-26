@@ -545,7 +545,7 @@ export class ShipDetailsScene {
             width: this.game.getWidth(),
             height: this.game.getHeight(),
             shipName: this.ship?.name,
-            onLaunch: (runMode) => this.startGameInMode(runMode),
+            onLaunch: (option) => this.startGameInMode(option),
             onCancel: () => this.closeLaunchModeOverlay()
         });
         this.gamepadNavigator.suppressUntilReleased();
@@ -557,12 +557,20 @@ export class ShipDetailsScene {
         this.gamepadNavigator.suppressUntilReleased();
     }
 
-    startGameInMode(runMode = RUN_MODES.MAYHEM_TACTICAL) {
+    startGameInMode(option = { id: RUN_MODES.MAYHEM_TACTICAL }) {
         if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress) return;
+        const runMode = option.id || RUN_MODES.MAYHEM_TACTICAL;
+        const spriteKey = option.launchShipKey || this.spriteKey;
+        const launchOptions = {
+            runMode,
+            dailySignalContract: option.dailySignalContract || undefined,
+            scoutAnomalyId: option.scoutAnomalyId || undefined,
+            startSector: option.startSector || undefined
+        };
         this.launchInProgress = true;
         this.closeLaunchModeOverlay();
-        console.log(`[ShipDetails] Starting ${runMode} with ship:`, this.spriteKey);
-        Promise.resolve(this.game.startGame(this.spriteKey, { runMode })).catch((error) => {
+        console.log(`[ShipDetails] Starting ${runMode} with ship:`, spriteKey);
+        Promise.resolve(this.game.startGame(spriteKey, launchOptions)).catch((error) => {
             this.launchInProgress = false;
             console.error('[ShipDetails] Failed to start selected ship:', error);
         });

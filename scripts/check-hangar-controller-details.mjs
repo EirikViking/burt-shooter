@@ -329,8 +329,15 @@ try {
   checkpoint('start-action-refocused', startRefocused);
 
   await tapButton(page, 0);
+  const launchModeChoice = await waitForState(page, (state) =>
+    state.scene === 'shipSelect' &&
+    state.shipSelect?.launchModeChoice?.visible === true &&
+    state.shipSelect?.launchModeChoice?.focusedMode === 'ranked_tactical',
+  'controller opened Hangar launch mode choice');
+  checkpoint('launch-mode-choice-opened', launchModeChoice, { screenshot: await screenshot(page, '05-launch-mode-choice') });
+  await tapButton(page, 0);
   const playStarted = await waitForState(page, (state) => state.scene === 'play' && state.player, 'controller equipped/launched selected ship', 30000);
-  checkpoint('play-started-from-start-action', playStarted, { screenshot: await screenshot(page, '05-play-started') });
+  checkpoint('play-started-from-start-action', playStarted, { screenshot: await screenshot(page, '06-play-started') });
 
   const report = {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
@@ -340,7 +347,8 @@ try {
       oldBugWouldFailAt: 'D-pad Down from ship focus must focus Details; A on Details must open ShipDetails instead of launching or leaving Hangar.',
       openedDetailsSprite: detailsSprite,
       closedBackFocus: detailsClosed.shipSelect.controllerFocus,
-      launchedFromFocusedAction: startRefocused.shipSelect.focusedActionButtonId
+      launchedFromFocusedAction: startRefocused.shipSelect.focusedActionButtonId,
+      launchModeChoice: launchModeChoice.shipSelect.launchModeChoice.focusedMode
     },
     checkpoints,
     pageErrors,

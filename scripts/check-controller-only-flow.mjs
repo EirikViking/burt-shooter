@@ -340,8 +340,15 @@ try {
   await tapButton(page, 1);
   await waitForState(page, (state) => state.scene === 'shipSelect', 'ship details closed by controller B');
   await tapButton(page, 0);
+  const launchModeChoice = await waitForState(page, (state) =>
+    state.scene === 'shipSelect' &&
+    state.shipSelect?.launchModeChoice?.visible === true &&
+    state.shipSelect?.launchModeChoice?.focusedMode === 'ranked_tactical',
+  'Hangar launch mode choice opened by controller');
+  checkpoint('hangar-launch-mode-choice', launchModeChoice, { screenshot: await screenshot(page, '09-hangar-launch-mode-choice') });
+  await tapButton(page, 0);
   const playStarted = await waitForState(page, (state) => state.scene === 'play' && state.player, 'gameplay launched by controller', 30000);
-  checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '09-gameplay-launched') });
+  checkpoint('gameplay-launched', playStarted, { screenshot: await screenshot(page, '10-gameplay-launched') });
   assert(playStarted.runMode === 'ranked_tactical', `Hangar controller launch entered ${playStarted.runMode || 'unknown'} instead of Mayhem Tactical`);
 
   await page.evaluate(() => {

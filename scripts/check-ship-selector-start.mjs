@@ -74,7 +74,9 @@ function findChrome() {
 
 async function showShipSelect(page) {
   await page.evaluate(() => {
-    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify({ bestScore: 150000, bestRank: 19, bestLevel: 60 }));
+    const matureProgress = { bestScore: 150000, bestRank: 19, bestLevel: 60, bestSector: 60, pilotRank: 19 };
+    localStorage.setItem('burt.shipUnlockProgress.v1', JSON.stringify(matureProgress));
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(matureProgress));
     window.__game?.showShipSelect?.();
   });
   await page.waitForFunction(() => {
@@ -176,6 +178,40 @@ try {
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', { timeout: 10000 });
   const afterDetailsStart = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 
+  const additionalModes = [
+    'daily_signal',
+    'scout',
+    'sector_start',
+    'overrun_tactical',
+    'overrun_pure'
+  ];
+  const additionalLaunches = {};
+  for (const mode of additionalModes) {
+    const before = await showShipSelect(page);
+    const start = before.shipSelect.startButton;
+    await page.mouse.click(start.x + start.width / 2, start.y + start.height / 2);
+    await page.waitForFunction((targetMode) => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.shipSelect?.launchModeChoice?.modes?.[targetMode]?.enabled === true;
+    }, mode, { timeout: 10000 });
+    const choice = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+    const target = choice.shipSelect.launchModeChoice.modes[mode];
+    await page.mouse.click(target.bounds.x + target.bounds.width / 2, target.bounds.y + target.bounds.height / 2);
+    await page.waitForFunction((targetMode) => {
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.scene === 'play' && state.runMode === targetMode;
+    }, mode, { timeout: 15000 });
+    const launched = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+    additionalLaunches[mode] = {
+      selectedShipBefore: before.shipSelect.spriteKey,
+      launchChoice: target,
+      runMode: launched.runMode,
+      selectedShipSpriteKey: launched.selectedShipSpriteKey,
+      scoutAnomalyId: launched.scoutAnomaly?.id || null,
+      sectorStartCheckpoint: launched.sectorStartChallenge?.checkpoint || null
+    };
+  }
+
   const screenshot = path.join(outputDir, 'ship-selector-start.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
@@ -199,6 +235,8 @@ try {
       afterMainMenu.scene === 'menu' &&
       beforeClick.shipSelect?.spriteKey &&
       mouseModeChoice.shipSelect?.launchModeChoice?.focusedMode === 'ranked_tactical' &&
+      Object.keys(mouseModeChoice.shipSelect?.launchModeChoice?.modes || {}).length === 7 &&
+      Object.values(mouseModeChoice.shipSelect?.launchModeChoice?.modes || {}).every((entry) => entry?.bounds?.width > 0) &&
       mouseModeChoice.shipSelect?.launchModeChoice?.modes?.ranked?.bounds?.width > 0 &&
       afterClick.scene === 'play' &&
       afterClick.selectedShipSpriteKey === beforeClick.shipSelect.spriteKey &&
@@ -216,6 +254,13 @@ try {
       afterDetailsStart.scene === 'play' &&
       afterDetailsStart.selectedShipSpriteKey === detailsShipKey &&
       afterDetailsStart.runMode === 'ranked' &&
+      additionalLaunches.daily_signal?.selectedShipSpriteKey === additionalLaunches.daily_signal?.launchChoice?.launchShipKey &&
+      additionalLaunches.scout?.selectedShipSpriteKey === additionalLaunches.scout?.selectedShipBefore &&
+      additionalLaunches.scout?.scoutAnomalyId === additionalLaunches.scout?.launchChoice?.scoutAnomalyId &&
+      additionalLaunches.sector_start?.selectedShipSpriteKey === additionalLaunches.sector_start?.selectedShipBefore &&
+      additionalLaunches.sector_start?.sectorStartCheckpoint === additionalLaunches.sector_start?.launchChoice?.startSector &&
+      additionalLaunches.overrun_tactical?.selectedShipSpriteKey === additionalLaunches.overrun_tactical?.selectedShipBefore &&
+      additionalLaunches.overrun_pure?.selectedShipSpriteKey === additionalLaunches.overrun_pure?.selectedShipBefore &&
       pageErrors.length === 0 &&
       consoleErrors.length === 0
     ),
@@ -253,6 +298,7 @@ try {
     },
     beforeDetailsStart: beforeDetailsStart.shipDetails,
     detailsModeChoice: detailsModeChoice.shipDetails?.launchModeChoice,
+    additionalLaunches,
     afterDetailsStart: {
       scene: afterDetailsStart.scene,
       selectedShipSpriteKey: afterDetailsStart.selectedShipSpriteKey,

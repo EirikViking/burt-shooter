@@ -1,5 +1,16 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-26 Codex readability and Hangar launch-mode polish
+
+- Current prompt: break up long Threat Codex descriptions, let a selected Hangar hull choose its launch mode, and deploy the verified result to Steam.
+- Verified takeover: exact folder `D:\vibe-coding-e\nova-swarm-authoritative-post-stable-20260720`, branch `codex/tyrian-feedback-program-20260724`, clean HEAD `55d9b33300808434a1a2af30a70b9e2b1dd1a8dd`. Backed up unchanged to `origin/codex/tyrian-feedback-program-20260724`; local and remote matched exactly before edits.
+- Codex story entries now preserve authored/localized prose while automatically grouping sentences into three or four readable paragraphs. The existing masked story deck, scroll wheel, keyboard/controller scroll, and drag rail remain authoritative. Real-Chrome lore QA passes 11 scenarios, now including English Sonia and Tyrian at 1920x1080; both inspected captures show clear paragraph rhythm, no overlap, and no out-of-bounds text.
+- Hangar START and Ship Details START now open a shared full launch-deck chooser instead of hard-launching Mayhem Tactical. After user review caught the first two-mode scope as incomplete, the chooser was expanded to all seven real launch contracts: Mayhem Tactical, Mayhem Pure, Daily Cabinet Signal, Scout Run, Sector Run, Overrun Tactical, and Overrun Pure.
+- The full chooser preserves each contract rather than approximating it: Daily visibly swaps to its deterministic loaner hull/contract, Scout uses the saved anomaly, Sector uses the earned remembered checkpoint, and both Overrun variants remain locked until the real Career requirement is met.
+- The chooser supports mouse, keyboard, and controller navigation/cancel/confirm, exposes debug bounds/state, and has complete interface translations in German, Spanish, Russian, Simplified Chinese, Brazilian Portuguese, Korean, and Japanese.
+- Focused real-Chrome launch coverage passes all seven cards: mouse selected Mayhem Pure, keyboard accepted Mayhem Tactical, Ship Details selected Mayhem Pure, Daily used its required loaner, Scout preserved the selected hull and saved anomaly, Sector preserved the selected hull and checkpoint, and both Overrun variants preserved the selected hull. The inspected full-deck capture is readable at 1366x768.
+- Passed so far: `check:release-line`, `check:i18n`, `build:current`, `check:ship-selector-start`, and `check:codex-lore-layout`. Remaining work: broader i18n/controller/smoke checks, exact Steam package/runtime/performance gates, source commits, private SteamPipe upload, and evidence.
+
 ## 2026-07-24 Tyrian-feedback improvement program
 
 - Current prompt: implement the attached four-phase Tyrian-feedback program in the authoritative JavaScript/Pixi game, beginning with confirmed sector-selector, Tactical preview, rank-icon, input-state, boss-warning, Bomb, and frame-pacing fixes; then add compatible career counters, a leaderboard-safe Advanced/Overrun Start, and deterministic late-game variety.
