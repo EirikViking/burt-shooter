@@ -2394,3 +2394,23 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Verification passes `check:input-state-transitions`, `build:current`, `check:boss-warning-popup`, `check:controller-flow`, `check:frame-pacing-probe:browser`, `check:mayhem-sector-frame-pacing`, and `git diff --check`. Browser pacing held about 59.9 Hz with 17.2 ms p95 / 17.4 ms p99; active-wave Mayhem pacing held 16.8 ms p95 / 16.9 ms p99 with no 50 ms frame. No performance regression reproduced in the deterministic probes. The optional generic web-game client remains unavailable before navigation because its separate Playwright cache lacks `chromium_headless_shell-1208`; the repository-native installed-Chrome checks passed.
 - Packaged source `28f591f` as `v2026-07-26_00-03-46`. Native/runtime, strict Steam failure, explicit-local EXE smoke, packaged keyboard/gamepad, current Steam bridge, package review, and performance gates pass; packaged performance held 59.88 minimum / 60.08 average FPS.
 - Pre-upload app info showed external branch drift: `public` and `sector-continue-test` were both already on BuildID `24390949`. Uploaded exactly one build to `sector-continue-test` as BuildID `24393438`, depot manifest `5209036808547903819`. Post-upload app info proves `public` remained `24390949` and `test-build` remained `23782673`; rollback target is `24390949`. No public/default assignment, store metadata, achievements, published patch notes, Git push, or other Steamworks setting changed.
+
+## 2026-07-26 - Tyrian follow-up implementation in progress
+
+- Resumed from clean committed HEAD `3237e00` on `codex/tyrian-feedback-program-20260724`; baseline `41f9f0e` remains an ancestor. The current worktree changes belong to this implementation pass and have not been discarded or overwritten.
+- Drone Constellation now produces genuine mirrored convergence with one drone, while permanent drone silhouettes render below the player hull. Boss warnings use perimeter accents and portrait corner brackets instead of target-like lines through the boss.
+- Reinforcement warnings now have routine, major, and headline tiers. Routine route traffic uses restrained edge chevrons without voice spam; major and headline events retain progressively stronger presentation.
+- Final death now holds on the frozen combat field for 550 ms before the Game Over transmission and can be deliberately skipped by fresh keyboard, pointer, or controller input without held-fire auto-skipping.
+- Sector Run now quick-launches the remembered checkpoint from its primary action; `SELECT START POINT` is the explicit secondary action. The briefing exposes the selected checkpoint and highest Mayhem sector.
+- Eligible diving, returning, and reinforcement-route ships can award one guarded ship-graze near miss without allowing formation or repeated-enemy farming.
+- Overrun Career XP has been retuned from 65% to 85% after a representative reward comparison. Skipped-sector XP remains zero, and competitive bests/achievements remain isolated.
+- Opt-in `inputDiagnostics=1` continuity telemetry now records bounded input edges, transient resets, focus loss, and 34 ms+ frames with boss/reinforcement/draft/game-over context. It is off by default.
+- Focused verification is in progress. One isolated reinforcement performance run landed at 50.1 ms against a strict 50 ms gate and is retained as unresolved evidence until a clean rerun passes or the source is optimized; the threshold has not been weakened.
+
+## 2026-07-26 - Tyrian follow-up verified and uploaded
+
+- Committed the implementation as three reviewed increments: `454c253` combat feedback/final death, `4ef297b` Sector Run/Overrun rewards, and `80ae7bc` opt-in continuity diagnostics.
+- The isolated full-VFX reinforcement rerun passed with the original strict threshold. Focused gameplay, controller, eight-language UI, release-line, native runtime, packaged controls, fresh-profile isolation, and package review gates all pass.
+- Packaged exact source `80ae7bc` as `v2026-07-26_01-54-55`. Packaged performance measured `58.48` minimum / `59.69` average FPS with no warnings or errors.
+- Pre-upload Steam state showed external drift: `public` and `sector-continue-test` were both already on BuildID `24393438`. Uploaded only to `sector-continue-test` as BuildID `24394148`, depot manifest `802192151679690464`. Post-upload verification proves `public` remained `24393438` and `test-build` remained `23782673`.
+- No store metadata, achievements, published patch notes, public/default assignment, Git push, or other Steamworks setting changed. Roll back the private test branch to BuildID `24393438` if required.
