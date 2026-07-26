@@ -27,7 +27,7 @@ const categoryShots = [
   { categoryId: 'sectors', entryId: 'sector_060', label: 'sectors-60-far-signal' },
   { categoryId: 'runThemes', entryIndex: 0, label: 'runThemes' },
   { categoryId: 'bosses', entryId: 'nova_boss_01', label: 'bosses-sonia' },
-  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-ro-ro-ro' },
+  { categoryId: 'bosses', entryId: 'nova_boss_03', label: 'bosses-tyrian-the-great' },
   { categoryId: 'cabinetLogs', entryId: 'codex-discovery', label: 'cabinet-new-receipt' },
   { categoryId: 'pilotRanks', entryId: 'pilot_rank_39', label: 'pilot-rank-heat-death' }
 ];

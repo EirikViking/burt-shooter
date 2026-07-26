@@ -36,13 +36,19 @@ Now Sonia fights like a love letter locked behind a safety glass. Her movement t
     tip: 'Sonia is all signal and boundary. Read the balcony beam, cross once, and fire before the conversation gets expensive.'
   },
   nova_boss_03: {
-    signalClass: 'Berget class authority hangover',
-    description: `Ro ro ro began as Kurt Edgar, deckhand third class on Mining Rock Berget-9, where the gravity sagged, the coffee argued back, and every supervisor believed morale was a wrench you hit people with. Kurt dodged work with heroic consistency. He blamed the drills, the stars, his boots, and once a lunch tray that had already filed a complaint.
+    signalClass: 'Tyrian class adversarial mirror',
+    description: `Tyrian the Great is not the original Tyrian. The archive is unusually firm about that.
 
-One payday he drank reactor gin beside an ore chute and woke in the admiral throne of a stolen dreadnought. The officers had found him snoring, thought it would be funny, and dressed him in a cape with too many medals. Kurt looked at the bridge, accepted the evidence, and became awful in under twelve seconds. He promoted a mop. He taxed the moon for looking smug. He ordered the ship's doctor to diagnose everyone else with being insufficiently Kurt.
+The original was a civilian test pilot stationed beyond the Cabinet's polished telemetry, where faults survived because everyone had learned to fly around them. He returned from every sortie with pages of exact observations: the half-second when steering went quiet, the warning that named the wrong threat, the reward whose numbers promised more than its machinery could deliver. Command called the reports excessive until the black boxes began agreeing with him.
 
-Then the joke reversed. They dumped him back on Berget-9 with a headache, a fake execution notice, and just enough memory to become dangerous. Kurt decided the universe had briefly confessed its secret: power is a chair, and whoever wakes in it gets to shout. He bolted a throne to a gunship and kept the paperwork error as his name. His movement lurches like borrowed authority, his pressure comes in pompous barrages, and his signature tell is the royal hangover cannon. Let him posture. When the crown light blinks, move. Every tyrant has a recovery animation.`,
-    tip: 'Ro ro ro is funniest before the cannon fires. Let the throne wobble, dodge the royal hangover shot, then revoke his chair privileges.'
+Tyrian kept flying. He noticed what spectacle concealed, described not only what failed but when and under which pressure, and refused to let an almost-correct system pretend it was finished. Ships became safer. Briefings became clearer. The Cabinet quietly rewrote whole doctrines around sentences that had once been filed under “pilot opinion.”
+
+The Swarm intercepted those reports and reached the wrong conclusion. It decided Tyrian's attention was a weapon that could be copied.
+
+This Mirror Hive command shell is the result: a phase-shifting examiner built from stolen debriefs, split barrages, and the belief that every pilot eventually reveals a lazy habit. It watches the lane you favor, reflects pressure back through it, then waits to see whether you noticed the flaw in your own solution. The real Tyrian taught the fleet that every pattern can be improved. The imitation intends to make you prove it.
+
+When its mirror signal fractures, do not follow the brightest reflection. Read the second movement, cross the false lane, and answer with something the report did not predict.`,
+    tip: 'The copy tests whether you read as carefully as its namesake. Ignore the first reflection, move on the mirror tell, and punish the return.'
   }
 });
 

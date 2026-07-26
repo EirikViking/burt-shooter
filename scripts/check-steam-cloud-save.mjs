@@ -564,7 +564,7 @@ try {
       })
     },
     threatDiscovery: {
-      items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'Ro ro ro' } } },
+      items: { bosses: { nova_boss_03: { id: 'nova_boss_03', category: 'bosses', name: 'Tyrian the Great' } } },
       unreadIds: ['bosses:nova_boss_03']
     },
     shipUsage: {
@@ -622,7 +622,7 @@ try {
   assert.equal(restoredHangarProgress.pilotXp, 8888);
   assert.equal(restoredHangarProgress.runContracts.completed.boss_hunter_10.count, 1, 'restored Steam Cloud storage should keep Pilot Order completions');
   assert.equal(restoredHangarProgress.runContracts.progress.enemy_sweep_10000.progress, 900, 'restored Steam Cloud storage should keep Pilot Order progress');
-  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'Ro ro ro');
+  assert.equal(JSON.parse(restartStorage.getItem(CLOUD_THREAT_DISCOVERY_KEY)).items.bosses.nova_boss_03.name, 'Tyrian the Great');
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY)).nova_ship_01, 5);
   assert.equal(JSON.parse(restartStorage.getItem(CLOUD_SHIP_USAGE_KEY))['row2_ship_1.png'], 3);
   assert.equal(restartStorage.getItem(CLOUD_SHIP_USAGE_TOTAL_KEY), '8');
