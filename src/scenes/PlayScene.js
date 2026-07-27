@@ -421,6 +421,9 @@ export class PlayScene {
     this.toastCornerQueue = [];
     this.activeCenterToast = null;
     this.activeBossIntroCard = null;
+    this.activeBossDossier = null;
+    this.notificationExitAt = new Map();
+    this.lastBossActivation = null;
     this.tractorHijack = null;
     this.lastTractorHijack = null;
     this.tractorHijackLayer = null;
@@ -1764,10 +1767,12 @@ export class PlayScene {
       fill: milestone ? '#fff3a0' : '#9cfbff',
       stroke: '#071019',
       strokeThickness: milestone ? 5 : 3,
-      slot: milestone ? 'center' : 'corner',
+      slot: 'corner',
+      channel: 'side',
       type: 'flawlessWave',
       priority: milestone ? 7 : 2,
-      duration: milestone ? 1800 : 900,
+      duration: milestone ? 1350 : 900,
+      extraReadTimeMs: 0,
       accent: milestone ? 0xffef7e : 0x9cfbff
     });
     AudioManager.playSfx(milestone ? 'rare_visitor_reward' : 'combo_tick', {
@@ -5204,6 +5209,62 @@ export class PlayScene {
 
   // Wave bonus WOW effect with premium arcade feel
   showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!', options = {}) {
+    {
+    const screenWidth = this.game.getWidth();
+    const screenHeight = this.game.getHeight();
+    const compactHud = screenWidth < 1100 || screenHeight < 700;
+    const normalizedLabel = String(label || '').toUpperCase();
+    const isSectorClear = normalizedLabel.includes('SECTOR CLEAR');
+    const subtitle = String(options.subtitle || '').trim();
+    const scoreLine = `+${Math.max(0, Number(bonusAmount) || 0).toLocaleString('en-US')}`;
+    const message = isSectorClear
+      ? [label, scoreLine, subtitle].filter(Boolean).join('\n')
+      : [`${label}  ${scoreLine}`, subtitle].filter(Boolean).join('\n');
+    const type = isSectorClear ? 'sector_clear' : 'wave_clear';
+    const duration = isSectorClear ? 1650 : 1120;
+    this.enqueueToast(message, {
+      fontSize: isSectorClear ? (compactHud ? 24 : 32) : (compactHud ? 14 : 17),
+      fill: isSectorClear ? '#fff3a2' : '#d8fbff',
+      stroke: '#02131f',
+      strokeThickness: isSectorClear ? 4 : 2,
+      duration,
+      minVisibleMs: isSectorClear ? 1200 : 780,
+      extraReadTimeMs: 0,
+      slot: isSectorClear ? 'center' : 'top',
+      channel: isSectorClear ? 'major' : 'transition',
+      type,
+      priority: isSectorClear ? 9 : 4,
+      y: isSectorClear
+        ? screenHeight * 0.36
+        : this.getTopToastSafeY(compactHud ? 14 : 17, type),
+      maxWidth: screenWidth * (compactHud ? 0.82 : isSectorClear ? 0.62 : 0.48),
+      signalWidth: Math.min(isSectorClear ? 530 : 340, screenWidth - 96),
+      authoredStyle: 'combat',
+      authoredBadge: true,
+      signalPlate: false,
+      restrained: !isSectorClear,
+      onShown: ({ display }) => {
+        display._debugWaveClearEffect = {
+          compact: !isSectorClear,
+          channel: isSectorClear ? 'major' : 'transition',
+          visualLanguage: isSectorClear
+            ? 'restrained_sector_clear_v4'
+            : 'compact_wave_transition_v4',
+          authoredFlourishCount: 1,
+          primitiveOrnamentCount: 0,
+          subtitle: Boolean(subtitle),
+          subtitleText: subtitle
+        };
+      }
+    });
+    AudioManager.playSfx(options.sfxKey || 'nova_wave_clear_sweep', {
+      force: true,
+      volume: isSectorClear ? 0.66 : 0.42,
+      minIntervalMs: 620
+    });
+    return true;
+    }
+
     const { width, height } = this.game.app.screen;
     const compact = Boolean(options.compact);
     const defaultQuipAllowed = !this.shouldSuppressPositiveAfterWaveCompliment();
@@ -14400,26 +14461,6 @@ export class PlayScene {
         celebration,
         milestoneReward
       });
-      this.showToast([
-        translateText('RUN CLEAR! OVERRUN UNLOCKED'),
-        translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
-          clearBonus: clearBonus.toLocaleString('en-US'),
-          livesBonus: livesBonus.toLocaleString('en-US')
-        }),
-        translateText('SECTOR {sector} WILL NOT BE POLITE', { sector: nextSector })
-      ].join('\n'), {
-        fontSize: compactHud ? 21 : 32,
-        fill: '#fff3a2',
-        stroke: '#150318',
-        strokeThickness: compactHud ? 4 : 6,
-        duration: 4300,
-        slot: 'center',
-        type: 'run_clear',
-        priority: 10,
-        transition: true,
-        y: this.game.getHeight() * (compactHud ? 0.29 : 0.37),
-        maxWidth: this.game.getWidth() * (compactHud ? 0.9 : 0.78)
-      });
       this.reserveMessageFocus(OVERRUN_INTERLUDE_MS + 900, { priority: 10, slots: ['top', 'corner'] });
       return true;
     }
@@ -14491,6 +14532,9 @@ export class PlayScene {
     milestoneReward = null,
     onComplete = null
   } = {}) {
+    this.applyNotificationSupersession?.('overrun_unlocked', { channel: 'major' });
+    this.dismissToastDisplay?.(this.activeCenterToast, 'center');
+    this.hud?.setNotificationFocus?.('major');
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const centerX = width * 0.5;
@@ -14510,27 +14554,8 @@ export class PlayScene {
     container.addChild(flash);
 
     const rays = new PIXI.Graphics();
-    rays.blendMode = 'add';
-    rays.zIndex = 2;
-    container.addChild(rays);
-
-    const sealTexture = this.overrunSealTexture;
-    let seal = null;
-    if (sealTexture && GameAssets.isValidTexture(sealTexture)) {
-      seal = new PIXI.Sprite(sealTexture);
-      seal.anchor.set(0.5);
-      seal.x = centerX;
-      seal.y = centerY;
-      seal.alpha = 0;
-      seal.blendMode = 'add';
-      seal.zIndex = 1;
-      container.addChild(seal);
-    }
-
     const rings = new PIXI.Graphics();
-    rings.blendMode = 'add';
-    rings.zIndex = 3;
-    container.addChild(rings);
+    const seal = null;
 
     const interludeCard = this.createOverrunInterludeCard({
       width,
@@ -14548,13 +14573,7 @@ export class PlayScene {
       container.addChild(interludeCard);
     }
 
-    const shards = Array.from({ length: width < 620 ? 28 : 46 }, (_, index) => ({
-      angle: (Math.PI * 2 * index) / (width < 620 ? 28 : 46) + Math.random() * 0.16,
-      speed: 0.72 + Math.random() * 0.55,
-      size: 4 + Math.random() * 10,
-      drift: Math.random() * 0.9,
-      color: shardPalette[index % shardPalette.length]
-    }));
+    const shards = [];
 
     const effect = {
       startedAt: Date.now(),
@@ -14573,7 +14592,8 @@ export class PlayScene {
       rings,
       seal,
       interludeCard,
-      shards
+      shards,
+      simpleModal: true
     };
     this.overrunClearLayer?.addChild(container);
     this.overrunClearEffects.push(effect);
@@ -14582,7 +14602,7 @@ export class PlayScene {
       startedAt: Date.now(),
       durationMs: OVERRUN_INTERLUDE_MS,
       requiresConfirm: eventKind === 'run_clear' || eventKind === 'overrun_milestone' || eventKind === 'daily_signal_complete',
-      confirmReadyAt: Date.now() + 1250,
+      confirmReadyAt: Date.now() + 650,
       confirmed: false,
       confirmedBy: null,
       eventKind,
@@ -14600,8 +14620,8 @@ export class PlayScene {
     }
     this.reserveMessageFocus(OVERRUN_INTERLUDE_MS + 900, { priority: 10, slots: ['center', 'top', 'corner'] });
 
-    this.screenShake?.shake(width < 620 ? 16 : 24, width < 620 ? 24 : 34);
-    AudioManager.duckMusic?.(0.28, 4300);
+    this.screenShake?.shake(width < 620 ? 4 : 6, width < 620 ? 10 : 14);
+    AudioManager.duckMusic?.(0.42, 4300);
     AudioManager.playSfx('overrun_clear_shockwave', { force: true, volume: 1.0, minIntervalMs: 0 });
     AudioManager.playSfx('overrun_clear_coronation', { force: true, volume: 1.0, minIntervalMs: 0 });
     const voiceCue = resolveOverrunMilestoneVoiceCue({ milestoneSector, eventKind, celebration });
@@ -14633,8 +14653,8 @@ export class PlayScene {
     milestoneReward = null
   }) {
     const compact = width < 720;
-    const cardWidth = Math.min(width - 32, compact ? 560 : 980);
-    const cardHeight = Math.min(height * (compact ? 0.76 : 0.7), compact ? 350 : 520);
+    const cardWidth = Math.min(width - (compact ? 32 : 96), compact ? 560 : 860);
+    const cardHeight = Math.min(height - (compact ? 42 : 96), compact ? 350 : 460);
     const visual = celebration?.visual || {};
     const primaryColor = visual.primaryColor || 0xffd15c;
     const accentColor = visual.accentColor || 0x61f6ff;
@@ -14655,25 +14675,30 @@ export class PlayScene {
     card.alpha = 0;
     card.scale.set(0.92);
 
+    const bg = new PIXI.Graphics();
+    bg.roundRect(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight, compact ? 12 : 16);
+    bg.fill({ color: backgroundColor, alpha: 0.94 });
+    bg.stroke({ color: frameColor, width: compact ? 2 : 2.5, alpha: 0.92 });
+    card.addChild(bg);
+
     const dais = new PIXI.Sprite(GameAssets.getMicroSignalTexture('overrunDais') || PIXI.Texture.EMPTY);
     dais.anchor.set(0.5);
-    dais.width = cardWidth + (compact ? 20 : 54);
-    dais.height = cardHeight + (compact ? 14 : 34);
-    dais.alpha = 0.96;
-    dais.label = 'authoredOverrunCoronationDais';
+    dais.width = compact ? 190 : 240;
+    dais.height = compact ? 82 : 106;
+    dais.y = -cardHeight / 2 + (compact ? 46 : 54);
+    dais.alpha = 0.32;
+    dais.label = 'authoredOverrunCoronationCrest';
     card.addChild(dais);
     GameAssets.ensureMicroSignalTexture?.('overrunDais').then((texture) => {
       if (texture && !dais.destroyed) dais.texture = texture;
     }).catch(() => {});
 
-    const bg = new PIXI.Graphics();
-    bg.roundRect(-cardWidth * 0.39, -cardHeight * 0.33, cardWidth * 0.78, cardHeight * 0.61, 18);
-    bg.fill({ color: backgroundColor, alpha: 0.34 });
-    card.addChild(bg);
-
-    const title = createText(translateText(celebration?.title || 'OVERRUN MILESTONE', vars), {
+    const titleKey = eventKind === 'run_clear'
+      ? 'OVERRUN UNLOCKED'
+      : (celebration?.title || 'OVERRUN MILESTONE');
+    const title = createText(translateText(titleKey, vars), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: compact ? 23 : 32,
+      fontSize: compact ? 22 : 29,
       fill: '#fff3a2',
       stroke: '#150318',
       strokeThickness: 5,
@@ -14685,7 +14710,7 @@ export class PlayScene {
     });
     title.anchor.set(0.5);
     title.label = 'ui_overrun_card_title';
-    title.y = -cardHeight / 2 + (compact ? 42 : 50);
+    title.y = -cardHeight / 2 + (compact ? 42 : 52);
     card.addChild(title);
 
     const flavorText = createText(translateText(celebration?.flavor || '', vars), {
@@ -14702,7 +14727,7 @@ export class PlayScene {
     });
     flavorText.anchor.set(0.5);
     flavorText.label = 'ui_overrun_card_flavor';
-    flavorText.y = -cardHeight / 2 + (compact ? 84 : 96);
+    flavorText.y = -cardHeight / 2 + (compact ? 84 : 104);
     card.addChild(flavorText);
 
     const reportText = createText(translateText(celebration?.statusLine || 'PILOT REPORT', vars), {
@@ -14719,7 +14744,7 @@ export class PlayScene {
     });
     reportText.anchor.set(0.5);
     reportText.label = 'ui_overrun_card_report';
-    reportText.y = compact ? -34 : -36;
+    reportText.y = compact ? -34 : -72;
     card.addChild(reportText);
 
     const sectorText = createText(translateText(celebration?.warning || 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.', vars), {
@@ -14736,14 +14761,14 @@ export class PlayScene {
     });
     sectorText.anchor.set(0.5);
     sectorText.label = 'ui_overrun_card_sector';
-    sectorText.y = compact ? 15 : 18;
+    sectorText.y = compact ? 15 : -22;
     card.addChild(sectorText);
 
     const bonusLine = (eventKind === 'run_clear' || eventKind === 'overrun_milestone' || eventKind === 'daily_signal_complete') && (clearBonus || livesBonus)
       ? translateText('CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}', {
         clearBonus: Number(clearBonus || 0).toLocaleString('en-US'),
         livesBonus: Number(livesBonus || 0).toLocaleString('en-US')
-      })
+      }).replace(/\s{2,}/, '\n')
       : '';
     const bonusText = createText(bonusLine, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -14755,12 +14780,12 @@ export class PlayScene {
       align: 'center',
       wordWrap: true,
       wordWrapWidth: cardWidth - 84,
-      lineHeight: compact ? 14 : 18
+      lineHeight: compact ? 15 : 20
     });
     bonusText.anchor.set(0.5);
     bonusText.label = 'ui_overrun_card_bonus';
     bonusText.visible = Boolean(bonusLine);
-    bonusText.y = compact ? 43 : 54;
+    bonusText.y = compact ? 43 : 22;
     card.addChild(bonusText);
 
     const rewardLine = translateText(milestoneReward?.label || celebration?.reward?.label || '');
@@ -14779,7 +14804,7 @@ export class PlayScene {
     rewardText.anchor.set(0.5);
     rewardText.label = 'ui_overrun_card_reward';
     rewardText.visible = Boolean(rewardLine);
-    rewardText.y = compact ? 65 : 86;
+    rewardText.y = compact ? 70 : 70;
     card.addChild(rewardText);
 
     const warning = createText(translateText(celebration?.footerWarning || 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.'), {
@@ -14796,14 +14821,14 @@ export class PlayScene {
     });
     warning.anchor.set(0.5);
     warning.label = 'ui_overrun_card_warning';
-    warning.y = cardHeight / 2 - (compact ? 82 : 96);
+    warning.y = cardHeight / 2 - (compact ? 82 : 90);
     card.addChild(warning);
 
     const button = new PIXI.Container();
     button.label = 'ui_overrun_confirm_button';
     button.eventMode = 'static';
     button.cursor = 'pointer';
-    button.y = cardHeight / 2 - (compact ? 38 : 42);
+    button.y = cardHeight / 2 - (compact ? 38 : 46);
     const buttonWidth = Math.min(cardWidth - 96, compact ? 340 : 430);
     const buttonHeight = compact ? 38 : 44;
     button.hitArea = new PIXI.Rectangle(-buttonWidth / 2, -buttonHeight / 2, buttonWidth, buttonHeight);
@@ -14845,7 +14870,10 @@ export class PlayScene {
       authoredDaisReady: GameAssets.isValidTexture(dais.texture),
       authoredConfirmReady: GameAssets.isValidTexture(buttonBg.texture),
       primitiveOrnamentCount: 0,
-      visualLanguage: 'authored_overrun_coronation_dais_v1'
+      cardWidth,
+      cardHeight,
+      paused: true,
+      visualLanguage: 'restrained_overrun_command_modal_v2'
     };
 
     return card;
@@ -14913,19 +14941,19 @@ export class PlayScene {
       const intro = Math.min(1, progress * 5.2);
       const outro = !waitingForConfirm && progress > 0.82 ? Math.max(0, 1 - (progress - 0.82) / 0.18) : 1;
       card.alpha = (1 - Math.pow(1 - intro, 3)) * outro;
-      card.scale.set((0.92 + Math.sin(elapsed * 0.006) * 0.012) * (0.96 + intro * 0.04));
+      card.scale.set(0.98 + intro * 0.02);
       const confirmPrompt = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_prompt');
       const confirmButton = this.findOverrunInterludeNode(card, 'ui_overrun_confirm_button');
       if (confirmPrompt) {
         const ready = Date.now() >= (interlude.confirmReadyAt || interlude.startedAt);
         confirmPrompt.visible = Boolean(interlude.requiresConfirm);
         confirmPrompt.alpha = waitingForConfirm
-          ? (ready ? 0.72 + Math.sin(elapsed * 0.008) * 0.18 : 0.42)
+          ? (ready ? 0.82 + Math.sin(elapsed * 0.008) * 0.12 : 0.7)
           : Math.max(0, 1 - rawProgress * 1.4);
       }
       if (confirmButton) {
         const ready = Date.now() >= (interlude.confirmReadyAt || interlude.startedAt);
-        confirmButton.alpha = waitingForConfirm ? (ready ? 1 : 0.72) : Math.max(0, 1 - rawProgress * 1.4);
+        confirmButton.alpha = waitingForConfirm ? (ready ? 1 : 0.9) : Math.max(0, 1 - rawProgress * 1.4);
       }
     }
     if (waitingForConfirm) return;
@@ -14935,6 +14963,19 @@ export class PlayScene {
       interlude.active = false;
       this.overrunMilestoneInterlude = null;
       this.clearOverrunConfirmationHandlers();
+      this.hud?.setNotificationFocus?.('none');
+      if (interlude.eventKind === 'run_clear') {
+        this.showToast(translateText('OVERRUN ACTIVE'), {
+          slot: 'corner',
+          channel: 'side',
+          type: 'overrun_active',
+          priority: 2,
+          duration: 950,
+          fontSize: this.game.getWidth() < 720 ? 12 : 15,
+          restrained: true,
+          authoredFrame: false
+        });
+      }
       onComplete?.();
     }
   }
@@ -14954,6 +14995,17 @@ export class PlayScene {
         effect.container?.parent?.removeChild(effect.container);
         effect.container?.destroy?.({ children: true });
         return false;
+      }
+
+      if (effect.simpleModal) {
+        effect.flash.clear();
+        const intro = Math.min(1, rawProgress * 6);
+        const outro = waitingForConfirm || rawProgress < 0.82
+          ? 1
+          : Math.max(0, 1 - (rawProgress - 0.82) / 0.18);
+        effect.flash.rect(0, 0, width, height);
+        effect.flash.fill({ color: 0x01040a, alpha: 0.62 * intro * outro });
+        return true;
       }
 
       const burst = 1 - Math.pow(1 - Math.min(1, progress * 2.2), 3);
@@ -15181,11 +15233,22 @@ export class PlayScene {
 
   enqueueToast(message, options = {}) {
     if (!message) return;
-    const slot = options.slot || 'center';
     const type = options.type || 'generic';
+    const channel = options.channel || this.getNotificationChannel(type, options);
+    const slot = options.slot || this.getNotificationSlot(channel);
     const priorityMap = {
+      overrun_unlocked: 10,
+      sector_clear: 9,
+      boss_defeated: 9,
+      boss_warning: 6,
+      boss_phase: 5,
+      boss_refuel: 4,
+      fuel_ship: 4,
+      reinforcement_warning: 4,
+      wave_clear: 4,
+      wave_start: 3,
+      run_clear: 9,
       boss: 4,
-      run_clear: 5,
       level_clear: 3,
       rank_up: 3,
       repair: 2,
@@ -15195,9 +15258,13 @@ export class PlayScene {
     };
     const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
     const now = Date.now();
+    this.applyNotificationSupersession(type, { channel, priority });
     const lockUntil = this.getToastSlotLockUntil(slot);
     const bypassFocusLock = options.bypassFocusLock === true || (options.bypassFocusLock !== false && priority > 3);
     let notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
+    if (type === 'wave_start') {
+      notBefore = Math.max(notBefore, Number(this.notificationExitAt.get('wave_clear')) || 0);
+    }
     const firstRunOnboardingUntil = Math.max(0, Number(this.firstRunOnboardingUntil) || 0);
     if (slot === 'corner' && firstRunOnboardingUntil > now && priority <= 1) {
       notBefore = Math.max(notBefore, firstRunOnboardingUntil);
@@ -15208,7 +15275,7 @@ export class PlayScene {
     }
     const entry = {
       message,
-      options: { ...options, type, slot, priority, notBefore, duplicateKey },
+      options: { ...options, type, channel, slot, priority, notBefore, duplicateKey },
       priority,
       createdAt: now,
       notBefore,
@@ -15254,7 +15321,7 @@ export class PlayScene {
   getToastQueueLimit(slot) {
     if (slot === 'corner') return 2;
     if (slot === 'top') return 2;
-    return 4;
+    return 2;
   }
 
   getToastDuplicateKey(message, type = 'generic') {
@@ -15374,8 +15441,9 @@ export class PlayScene {
     return Math.max(0, Math.min(Math.max(minMs, maxMs), desired));
   }
 
-  dismissToastDisplay(display, slot) {
+  dismissToastDisplay(display, slot, { reason = 'dismissed' } = {}) {
     if (!display) return;
+    const meta = display.__toastMeta;
     if (display.__toastTicker) {
       this.game.app.ticker.remove(display.__toastTicker);
       display.__toastTicker = null;
@@ -15391,6 +15459,9 @@ export class PlayScene {
     } else if (this.activeCenterToast === display) {
       this.activeCenterToast = null;
     }
+    if (meta?.type) this.notificationExitAt.set(meta.type, Date.now());
+    if (meta?.channel === 'major') this.hud?.setNotificationFocus?.('none');
+    display.__dismissReason = reason;
   }
 
   deferActiveToastDisplay(display, slot, delayMs = 0, { minRemainingMs = 900 } = {}) {
@@ -15443,6 +15514,8 @@ export class PlayScene {
     this.dismissToastDisplay(this.activeCenterToast, 'center');
     this.dismissToastDisplay(this.activeTopToast, 'top');
     this.dismissToastDisplay(this.activeCornerToast, 'corner');
+    this.dismissBossDossier?.();
+    this.hud?.setNotificationFocus?.('none');
     this.centerToastLockUntil = 0;
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
   }
@@ -15533,6 +15606,13 @@ export class PlayScene {
   processToastQueue() {
     if (this.overrunMilestoneInterlude?.active) return;
     const now = Date.now();
+    if (this.activeBossDossier?.parent) {
+      const delayedTop = !this.activeTopToast ? this.peekReadyToast(this.toastTopQueue, now) : null;
+      const delayedCorner = !this.activeCornerToast ? this.peekReadyToast(this.toastCornerQueue, now) : null;
+      if (delayedTop) this.delayReadyToast(this.toastTopQueue, delayedTop, 400, now);
+      if (delayedCorner) this.delayReadyToast(this.toastCornerQueue, delayedCorner, 400, now);
+      return;
+    }
     this.maybeRelocateActiveCenterToastForCombat(now);
     const centerPresentationActive = Boolean(this.activeWaveBonusEffect?.parent || this.activeRankUpPresentation?.parent);
     let centerReady = !centerPresentationActive && !this.activeBossIntroCard && !this.activeCenterToast && now >= this.getToastSlotLockUntil('center')
@@ -15576,6 +15656,22 @@ export class PlayScene {
       if (entry) this.activeCenterToast = this.showToastNow(entry.message, entry.options, 'center');
     }
     const blockingCenterMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
+    const blockingCenterChannel = blockingCenterMeta?.channel
+      || this.getNotificationChannel(blockingCenterMeta?.type || 'generic', blockingCenterMeta?.originalOptions || {});
+    if (blockingCenterChannel === 'major') {
+      this.hud?.setNotificationFocus?.('major');
+      const delayedTop = !this.activeTopToast && now >= this.getToastSlotLockUntil('top')
+        ? this.peekReadyToast(this.toastTopQueue, now)
+        : null;
+      const delayedCorner = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (delayedTop) this.delayReadyToast(this.toastTopQueue, delayedTop, 500, now);
+      if (delayedCorner && (delayedCorner.priority || 0) < (blockingCenterMeta?.priority || 0)) {
+        this.delayReadyToast(this.toastCornerQueue, delayedCorner, 500, now);
+      }
+      return;
+    }
     if (blockingCenterMeta && this.isTransitionToastType(blockingCenterMeta.type)) {
       const centerPriority = blockingCenterMeta.priority || 0;
       this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], centerPriority);
@@ -15664,6 +15760,7 @@ export class PlayScene {
       combatRelocated: Boolean(meta.combatRelocated),
       edgeAligned: Boolean(meta.edgeAligned),
       placement: meta.placement || null,
+      channel: meta.channel || this.getNotificationChannel(meta.type, meta.originalOptions || {}),
       visualLanguage: meta.visualLanguage || null,
       authoredSignalCount: Number(meta.authoredSignalCount) || 0,
       primitiveOrnamentCount: Number(meta.primitiveOrnamentCount) || 0,
@@ -15748,6 +15845,11 @@ export class PlayScene {
         center: Math.max(0, this.getToastSlotLockUntil('center') - Date.now()),
         top: Math.max(0, this.getToastSlotLockUntil('top') - Date.now()),
         corner: Math.max(0, this.getToastSlotLockUntil('corner') - Date.now())
+      },
+      channels: {
+        major: this.getActiveNotificationChannel(this.activeCenterToast) === 'major',
+        transition: this.getActiveNotificationChannel(this.activeTopToast) === 'transition',
+        side: this.getActiveNotificationChannel(this.activeCornerToast) === 'side'
       }
     };
   }
@@ -16016,6 +16118,113 @@ export class PlayScene {
     return dossier;
   }
 
+  getNotificationChannel(type = 'generic', options = {}) {
+    if (options.channel) return options.channel;
+    if (['overrun_unlocked', 'sector_clear', 'boss_defeated', 'run_clear'].includes(type)) return 'major';
+    if ([
+      'wave_start',
+      'wave_clear',
+      'boss_phase',
+      'boss_warning',
+      'boss_refuel',
+      'fuel_ship',
+      'reinforcement_warning'
+    ].includes(type)) return 'transition';
+    if (type === 'combo') return 'combo';
+    return options.slot === 'corner' ? 'side' : options.slot === 'top' ? 'transition' : 'side';
+  }
+
+  getNotificationSlot(channel = 'side') {
+    if (channel === 'major') return 'center';
+    if (channel === 'transition') return 'top';
+    return 'corner';
+  }
+
+  getActiveNotificationChannel(display) {
+    if (!display) return null;
+    const meta = display?.__toastMeta;
+    return meta?.channel || this.getNotificationChannel(meta?.type || 'generic', meta?.originalOptions || {});
+  }
+
+  cancelNotificationTypes(types = [], reason = 'superseded') {
+    const wanted = new Set(types.filter(Boolean));
+    if (!wanted.size) return 0;
+    let removed = 0;
+    for (const queue of [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]) {
+      for (let index = queue.length - 1; index >= 0; index -= 1) {
+        if (!wanted.has(queue[index]?.options?.type)) continue;
+        queue.splice(index, 1);
+        removed += 1;
+      }
+    }
+    for (const [slot, display] of [
+      ['center', this.activeBossIntroCard],
+      ['center', this.activeCenterToast],
+      ['top', this.activeTopToast],
+      ['corner', this.activeCornerToast]
+    ]) {
+      if (!wanted.has(display?.__toastMeta?.type)) continue;
+      this.dismissToastDisplay(display, slot, { reason });
+      removed += 1;
+    }
+    if (this.activeBossDossier && wanted.has(this.activeBossDossier.__toastMeta?.type)) {
+      this.dismissBossDossier(reason);
+      removed += 1;
+    }
+    return removed;
+  }
+
+  applyNotificationSupersession(type, { channel = null } = {}) {
+    if (type === 'boss_defeated') {
+      this.cancelNotificationTypes([
+        'boss_phase',
+        'boss_warning',
+        'boss_intro',
+        'boss_refuel',
+        'fuel_ship',
+        'reinforcement_warning'
+      ], 'boss_defeated');
+    } else if (type === 'sector_clear') {
+      this.cancelNotificationTypes(['wave_start', 'wave_clear'], 'sector_clear');
+    } else if (type === 'overrun_unlocked' || type === 'run_clear') {
+      this.cancelNotificationTypes([
+        'wave_start',
+        'wave_clear',
+        'boss_phase',
+        'boss_warning',
+        'boss_intro',
+        'boss_refuel',
+        'fuel_ship',
+        'reinforcement_warning',
+        'boss_defeated',
+        'sector_clear'
+      ], 'overrun_unlocked');
+      this.toastCornerQueue = [];
+      this.dismissToastDisplay(this.activeCornerToast, 'corner', { reason: 'overrun_unlocked' });
+    }
+
+    if (channel === 'major') {
+      const current = this.activeCenterToast;
+      if (current && this.getActiveNotificationChannel(current) === 'major') {
+        this.dismissToastDisplay(current, 'center', { reason: 'major_replaced' });
+      }
+    }
+  }
+
+  dismissBossDossier(reason = 'dismissed') {
+    const dossier = this.activeBossDossier;
+    if (!dossier) return false;
+    if (dossier.__toastTicker) {
+      this.game?.app?.ticker?.remove?.(dossier.__toastTicker);
+      dossier.__toastTicker = null;
+    }
+    dossier.__dismissReason = reason;
+    dossier.parent?.removeChild?.(dossier);
+    dossier.destroy?.({ children: true });
+    this.activeBossDossier = null;
+    return true;
+  }
+
   getVisibleHudBounds(node) {
     if (!node || node.visible === false || node.alpha <= 0.05 || !node.getBounds) return null;
     try {
@@ -16113,7 +16322,7 @@ export class PlayScene {
       const panelWidth = Math.min(maxWidth, bannerText.width + paddingX * 2 + avatarSlot);
       const panelHeight = Math.max(52, bannerText.height + paddingY * 2);
       const authoredFrameTexture = GameAssets.getMicroSignalTexture('combatSignal');
-      const authoredFrame = GameAssets.isValidTexture(authoredFrameTexture)
+      const authoredFrame = options.authoredFrame !== false && GameAssets.isValidTexture(authoredFrameTexture)
         ? new PIXI.Sprite(authoredFrameTexture)
         : null;
       if (authoredFrame) {
@@ -16125,24 +16334,26 @@ export class PlayScene {
         banner.addChild(authoredFrame);
       }
       const panel = new PIXI.Graphics();
-      panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, specialEnemySignal ? 8 : 14);
+      panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, options.restrained ? 8 : specialEnemySignal ? 8 : 14);
       panel.fill({
         color: options.type === 'lore' ? 0x05121c : (runContractBanner || specialEnemySignal ? 0x031321 : 0x111111),
         alpha: options.type === 'lore' ? 0.72 : (runContractBanner ? 0.78 : specialEnemySignal ? 0.74 : 0.7)
       });
       panel.stroke({
         color: options.type === 'lore' || runContractBanner || specialEnemySignal ? (options.accent || 0x6fe7ff) : 0xffff00,
-        width: options.type === 'lore' ? 1 : (runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1.2),
+        width: options.restrained ? 1.4 : options.type === 'lore' ? 1 : (runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1.2),
         alpha: authoredFrame ? 0.24 : (options.type === 'lore' ? 0.78 : 1)
       });
 
       const accent = new PIXI.Graphics();
-      accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, specialEnemySignal ? 5 : 10);
-      accent.stroke({
-        color: runContractBanner ? 0xffef7e : specialEnemySignal ? 0x7ee9ff : 0xff66cc,
-        width: runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1,
-        alpha: runContractBanner ? 0.82 : specialEnemySignal ? 0.46 : 0.7
-      });
+      if (!options.restrained) {
+        accent.roundRect(-panelWidth / 2 + 6, -panelHeight / 2 + 6, panelWidth - 12, panelHeight - 12, specialEnemySignal ? 5 : 10);
+        accent.stroke({
+          color: runContractBanner ? 0xffef7e : specialEnemySignal ? 0x7ee9ff : 0xff66cc,
+          width: runContractBanner ? 1.4 : specialEnemySignal ? 1.1 : 1,
+          alpha: runContractBanner ? 0.82 : specialEnemySignal ? 0.46 : 0.7
+        });
+      }
 
       const noise = new PIXI.Graphics();
       for (let i = 0; i < (specialEnemySignal ? 8 : 24); i++) {
@@ -16153,7 +16364,7 @@ export class PlayScene {
       noise.fill({ color: 0xffffff, alpha: 0.08 });
 
       banner.addChild(panel);
-      banner.addChild(accent);
+      if (!options.restrained) banner.addChild(accent);
       if (!authoredFrame) banner.addChild(noise);
       banner.addChild(bannerText);
 
@@ -16164,7 +16375,7 @@ export class PlayScene {
       if (options.title) {
         const titleLabel = createText(String(options.title).toUpperCase(), {
           fontFamily: runContractBanner ? '"Rajdhani", "Segoe UI Semibold", "Segoe UI", sans-serif' : 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: options.type === 'lore' ? 12 : (runContractBanner ? 11 : specialEnemySignal ? 11 : 14),
+          fontSize: Number(options.titleFontSize) || (options.type === 'lore' ? 12 : (runContractBanner ? 11 : specialEnemySignal ? 11 : 14)),
           fill: options.type === 'lore' ? '#7ee9ff' : (runContractBanner ? '#ffef7e' : specialEnemySignal ? `#${(Number(options.accent) || 0xffd15c).toString(16).padStart(6, '0')}` : '#ffff00'),
           fontWeight: runContractBanner ? '600' : 'bold',
           stroke: runContractBanner ? '#02131f' : '#000000',
@@ -16256,6 +16467,7 @@ export class PlayScene {
         || (slot === 'center' && fontSize >= 18);
       const useAuthoredBadge = [
         'flawlessWave',
+        'combo',
         'trait',
         'score_boost',
         'repair',
@@ -16314,7 +16526,8 @@ export class PlayScene {
         const badge = new PIXI.Container();
         badge.label = `ui_${slot}_authored_signal_badge`;
         badge.eventMode = 'none';
-        const textureKey = type === 'flawlessWave'
+        const isPlasmaCallout = type === 'flawlessWave' || type === 'combo';
+        const textureKey = isPlasmaCallout
           ? 'combo'
           : useCombatFlourish
             ? 'combatSignal'
@@ -16323,35 +16536,43 @@ export class PlayScene {
         ornament.anchor.set(0.5);
         ornament.blendMode = useCombatFlourish ? 'normal' : 'add';
         ornament.tint = useCombatFlourish ? 0xffffff : accentColor;
-        ornament.alpha = type === 'flawlessWave' ? 0.58 : useCombatFlourish ? 0.88 : 0.48;
-        ornament.width = type === 'flawlessWave'
+        ornament.alpha = isPlasmaCallout ? 0.58 : useCombatFlourish ? 0.88 : 0.48;
+        ornament.width = Number.isFinite(Number(options.signalWidth))
+          ? Math.min(maxWidth, Number(options.signalWidth))
+          : isPlasmaCallout
           ? Math.min(maxWidth, Math.max(180, text.width + 72))
           : useCombatFlourish
             ? Math.min(maxWidth, Math.max(slot === 'top' ? 360 : 440, text.width + 118))
           : Math.min(92, Math.max(54, text.width * 0.32));
-        ornament.height = type === 'flawlessWave'
+        ornament.height = isPlasmaCallout
           ? Math.max(42, Math.min(76, text.height + 30))
           : useCombatFlourish
             ? Math.max(slot === 'top' ? 72 : 92, Math.min(slot === 'top' ? 130 : 190, text.height + 58))
           : Math.max(34, Math.min(56, text.height + 20));
-        ornament.rotation = type === 'flawlessWave' ? 0 : -0.12;
+        ornament.rotation = isPlasmaCallout ? 0 : -0.12;
         badge.addChild(ornament);
         text.anchor.set(0.5);
-        text.position.set(type === 'flawlessWave' || useCombatFlourish ? 0 : 12, 0);
+        text.position.set(isPlasmaCallout || useCombatFlourish ? 0 : 12, 0);
         badge.addChild(text);
         const badgeWidth = Math.max(ornament.width, text.width + (useCombatFlourish ? 36 : 0));
-        badge.x = slot === 'corner'
-          ? width - 18 - badgeWidth / 2
+        badge.x = options.comboLane
+          ? 52 + badgeWidth / 2
+          : slot === 'corner'
+            ? width - 52 - badgeWidth / 2
           : width / 2;
-        badge.y = y;
+        badge.y = options.comboLane
+          ? Math.max(y, Math.min(height - 64, 202))
+          : y;
         badge.alpha = 0;
         badge.__authoredSignalFx = {
           ornament,
           baseAlpha: ornament.alpha,
           baseScaleX: ornament.scale.x,
           baseScaleY: ornament.scale.y,
-          visualLanguage: type === 'flawlessWave'
-            ? 'plasma_flawless_badge_v3_edge_safe'
+          visualLanguage: isPlasmaCallout
+            ? type === 'combo'
+              ? 'plasma_combo_callout_v4_dedicated_lane'
+              : 'plasma_flawless_badge_v3_edge_safe'
             : useCombatFlourish
               ? 'authored_combat_signal_flourish_v1'
               : 'contact_rune_feedback_v2'
@@ -16360,7 +16581,7 @@ export class PlayScene {
         this.uiOverlay.addChild(badge);
       } else if (slot === 'corner' || !useSignalPlate) {
         text.anchor.set(1, 0.5);
-        text.x = slot === 'corner' ? width - 16 : width / 2;
+        text.x = slot === 'corner' ? width - 48 : width / 2;
         text.y = y;
         text.alpha = 0;
         if (slot !== 'corner') text.anchor.set(0.5);
@@ -16388,25 +16609,39 @@ export class PlayScene {
         panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, radius);
         panel.fill({ color: type === 'boss' ? 0x10070b : 0x04101a, alpha: slot === 'top' ? 0.84 : 0.9 });
         panel.stroke({ color: accentColor, width: isMajorSignal ? 2.4 : 1.8, alpha: isMajorSignal ? 0.9 : 0.72 });
-        panel.roundRect(-panelWidth / 2 + 7, -panelHeight / 2 + 7, panelWidth - 14, panelHeight - 14, Math.max(3, radius - 3));
-        panel.stroke({ color: 0xffffff, width: 0.8, alpha: 0.13 });
+        if (!options.restrained) {
+          panel.roundRect(-panelWidth / 2 + 7, -panelHeight / 2 + 7, panelWidth - 14, panelHeight - 14, Math.max(3, radius - 3));
+          panel.stroke({ color: 0xffffff, width: 0.8, alpha: 0.13 });
+        }
         plate.addChild(panel);
 
         const rails = new PIXI.Graphics();
-        rails.blendMode = 'add';
-        rails.rect(-panelWidth / 2 + 13, -panelHeight / 2 + 8, panelWidth - 26, 2);
-        rails.fill({ color: accentColor, alpha: isMajorSignal ? 0.46 : 0.32 });
-        rails.rect(-panelWidth / 2 + 13, panelHeight / 2 - 10, panelWidth - 26, 2);
-        rails.fill({ color: type === 'boss' ? 0xfff45c : 0x7ee9ff, alpha: isMajorSignal ? 0.28 : 0.18 });
-        for (const side of [-1, 1]) {
-          const x = side * (panelWidth / 2 - 18);
-          rails.moveTo(x, -panelHeight / 2 + 12);
-          rails.lineTo(x + side * -14, -panelHeight / 2 + 12);
-          rails.moveTo(x, panelHeight / 2 - 12);
-          rails.lineTo(x + side * -14, panelHeight / 2 - 12);
+        if (!options.restrained) {
+          rails.blendMode = 'add';
+          rails.rect(-panelWidth / 2 + 13, -panelHeight / 2 + 8, panelWidth - 26, 2);
+          rails.fill({ color: accentColor, alpha: isMajorSignal ? 0.46 : 0.32 });
+          rails.rect(-panelWidth / 2 + 13, panelHeight / 2 - 10, panelWidth - 26, 2);
+          rails.fill({ color: type === 'boss' ? 0xfff45c : 0x7ee9ff, alpha: isMajorSignal ? 0.28 : 0.18 });
+          for (const side of [-1, 1]) {
+            const x = side * (panelWidth / 2 - 18);
+            rails.moveTo(x, -panelHeight / 2 + 12);
+            rails.lineTo(x + side * -14, -panelHeight / 2 + 12);
+            rails.moveTo(x, panelHeight / 2 - 12);
+            rails.lineTo(x + side * -14, panelHeight / 2 - 12);
+          }
+          rails.stroke({ color: 0xffffff, width: 1.4, alpha: 0.34 });
+          plate.addChild(rails);
         }
-        rails.stroke({ color: 0xffffff, width: 1.4, alpha: 0.34 });
-        plate.addChild(rails);
+
+        if (options.restrained) {
+          const edgePulse = new PIXI.Graphics();
+          edgePulse.roundRect(-panelWidth / 2 - 3, -panelHeight / 2 - 3, panelWidth + 6, panelHeight + 6, radius + 2);
+          edgePulse.stroke({ color: accentColor, width: 2.2, alpha: 0.86 });
+          edgePulse.alpha = 0;
+          edgePulse.blendMode = 'add';
+          plate.addChild(edgePulse);
+          plate.__notificationEdgePulse = edgePulse;
+        }
 
         text.anchor.set(0.5);
         text.x = 0;
@@ -16433,6 +16668,7 @@ export class PlayScene {
     display.__toastMeta = {
       message,
       type: options.type || 'generic',
+      channel: options.channel || this.getNotificationChannel(options.type || 'generic', options),
       slot,
       priority: Number.isFinite(options.priority) ? options.priority : 0,
       duration,
@@ -16452,6 +16688,7 @@ export class PlayScene {
       display.__toastMeta.primitiveOrnamentCount = 0;
     }
     options.onShown?.({ display, shownAt: now, duration });
+    if (display.__toastMeta.channel === 'major') this.hud?.setNotificationFocus?.('major');
 
     const majorTypes = ['boss', 'level_clear', 'rank_up', 'level_up', 'rank_boost'];
     if (majorTypes.includes(options.type)) {
@@ -16484,6 +16721,11 @@ export class PlayScene {
           (authoredFx.baseScaleY || 1) * (1 - pulse * 0.018)
         );
       }
+      if (display.__notificationEdgePulse) {
+        display.__notificationEdgePulse.alpha = elapsed <= 260
+          ? Math.sin(Math.min(1, elapsed / 260) * Math.PI) * 0.9
+          : 0;
+      }
 
       const introDuration = options.aceDossier ? 180 : 250;
       if (elapsed < introDuration) {
@@ -16500,15 +16742,7 @@ export class PlayScene {
       }
 
       if (elapsed >= duration) {
-        this.game.app.ticker.remove(ticker);
-        if (display.parent) display.parent.removeChild(display);
-        if (slot === 'corner' && this.activeCornerToast === display) {
-          this.activeCornerToast = null;
-        } else if (slot === 'top' && this.activeTopToast === display) {
-          this.activeTopToast = null;
-        } else if (this.activeCenterToast === display) {
-          this.activeCenterToast = null;
-        }
+        this.dismissToastDisplay(display, slot, { reason: 'completed' });
         this.processToastQueue();
       }
     };
@@ -18034,12 +18268,16 @@ export class PlayScene {
       if (this.comboCount === milestone.threshold && !this.comboMilestonesReached.has(milestone.threshold)) {
         this.comboMilestonesReached.add(milestone.threshold);
         const appliedBonus = this.addNormalWaveScore(milestone.bonus, 'baseScore', enemy);
-        this.queueEnemyKillToast(sideEffects, `${milestone.label} +${appliedBonus}`, {
-          fontSize: 26,
-          fill: '#ffaa00',
-          slot: 'center',
-          type: 'milestone',
-          duration: 1800
+        this.queueEnemyKillToast(sideEffects, `${translateText(milestone.label)} +${appliedBonus}`, {
+          fontSize: this.game.getWidth() < 720 ? 18 : 23,
+          fill: '#fff3a2',
+          slot: 'corner',
+          channel: 'combo',
+          type: 'combo',
+          comboLane: true,
+          duration: 1050,
+          extraReadTimeMs: 0,
+          priority: 2
         });
         this.queueEnemyKillExplosion(sideEffects, this.player?.x, (this.player?.y || 0) - 40, 0xffaa00);
         this.queueEnemyKillShake(sideEffects, 6, 15);
@@ -18060,10 +18298,22 @@ export class PlayScene {
     else this.comboMultiplier = 1;
 
     if (this.comboMultiplier !== prevMultiplier) {
-      const label = this.comboMultiplier >= 4 ? 'COMBO 50!' : this.comboMultiplier >= 3 ? 'COMBO 25!' : 'COMBO 10!';
-      this.queueEnemyKillToast(sideEffects, label, { fontSize: 24, fill: '#00ffff', slot: 'top', type: 'combo' });
       this.queueEnemyKillExplosion(sideEffects, this.player?.x, this.player?.y, 0x00ffff);
       if (!COMBO_MILESTONES.some((milestone) => milestone.threshold === this.comboCount)) {
+        this.queueEnemyKillToast(sideEffects, translateText('COMBO {count} x{multiplier}', {
+          count: this.comboCount,
+          multiplier: this.comboMultiplier
+        }), {
+          fontSize: this.game.getWidth() < 720 ? 18 : 23,
+          fill: '#9cfbff',
+          slot: 'corner',
+          channel: 'combo',
+          type: 'combo',
+          comboLane: true,
+          duration: 900,
+          extraReadTimeMs: 0,
+          priority: 2
+        });
         this.queueEnemyKillComboFlare(sideEffects, {
           threshold: this.comboCount,
           multiplier: this.comboMultiplier,
@@ -18076,10 +18326,7 @@ export class PlayScene {
 
     if (this.comboCount > 0 && this.comboCount % 10 === 0) {
       const bonus = this.getComboScore(100 * (this.comboCount / 10));
-      const appliedBonus = this.addNormalWaveScore(bonus, 'baseScore', enemy);
-      if (this.comboCount % 20 === 0) {
-        this.queueEnemyKillToast(sideEffects, `COMBO BONUS +${appliedBonus}`, { fontSize: 16, fill: '#fff3a2', slot: 'top', type: 'combo', duration: 900, priority: 1 });
-      }
+      this.addNormalWaveScore(bonus, 'baseScore', enemy);
     }
 
     const clutchChance = 0;
@@ -19590,28 +19837,26 @@ export class PlayScene {
     burst.stroke({ color: primaryColor, width: 5, alpha: spectacular ? 0.24 : 0.1 });
     burst.circle(0, -24, 188);
     burst.stroke({ color: accentColor, width: 3, alpha: spectacular ? 0.34 : 0.14 });
-    poster.addChild(burst);
+    if (!spectacular) poster.addChild(burst);
 
     const bg = new PIXI.Graphics();
     bg.roundRect(-188, -220, 376, 440, 12);
     bg.fill({ color: 0x06101a, alpha: 0.94 });
-    bg.stroke({ color: primaryColor, width: 4, alpha: 0.92 });
-    bg.roundRect(-174, -206, 348, 412, 8);
-    bg.stroke({ color: accentColor, width: 1.4, alpha: 0.58 });
+    bg.stroke({ color: primaryColor, width: 2.2, alpha: 0.86 });
     bg.rect(-188, -220, 376, 42);
     bg.fill({ color: primaryColor, alpha: 0.22 });
     poster.addChild(bg);
 
     const pattern = new PIXI.Graphics();
     this.drawBossWarningSignature(pattern, bossProfile, primaryColor, accentColor);
-    poster.addChild(pattern);
+    if (!spectacular) poster.addChild(pattern);
 
     const emblem = this.createBossWarningEmblem(bossProfile, primaryColor, accentColor, spectacular);
     poster.addChild(emblem);
 
     const scanOverlay = new PIXI.Graphics();
-    scanOverlay.roundRect(-136, -148, 272, 268, 7);
-    scanOverlay.stroke({ color: primaryColor, width: 2, alpha: 0.72 });
+    scanOverlay.roundRect(-146, -158, 292, 278, 7);
+    scanOverlay.stroke({ color: accentColor, width: 1.4, alpha: 0.58 });
     const bracketLength = 28;
     for (const [x, y, sx, sy] of [
       [-122, -134, 1, 1],
@@ -19640,7 +19885,7 @@ export class PlayScene {
       threatMeter.lineTo(144, y + 12);
       threatMeter.stroke({ color: active ? 0xffff99 : accentColor, width: 1, alpha: active ? 0.42 : 0.18 });
     }
-    poster.addChild(threatMeter);
+    if (!spectacular) poster.addChild(threatMeter);
 
     const approachCue = new PIXI.Graphics();
     approachCue.label = 'boss_warning_approach_cue';
@@ -19656,7 +19901,7 @@ export class PlayScene {
       approachCue.circle(x, y + 9, 2.8);
       approachCue.fill({ color: i % 2 ? primaryColor : accentColor, alpha: alpha + 0.08 });
     }
-    poster.addChild(approachCue);
+    if (!spectacular) poster.addChild(approachCue);
 
     const headerLabel = reason === 'boss_spawn'
       ? 'BOSS INCOMING'
@@ -19681,7 +19926,7 @@ export class PlayScene {
 
     const bossName = createText(bossProfile?.name || translateText('BOSS'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 18,
+      fontSize: 22,
       fill: '#ffffff',
       stroke: '#020711',
       strokeThickness: 4,
@@ -19730,11 +19975,12 @@ export class PlayScene {
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
+    const safeMargin = 48;
     poster.x = spectacular
-      ? Math.min(width - 236, Math.max(220, width * 0.24))
+      ? Math.min(width - safeMargin - 110, Math.max(safeMargin + 110, width * 0.24))
       : Math.min(286, Math.max(210, width * 0.2));
     poster.y = spectacular
-      ? Math.min(height - 210, Math.max(348, height * 0.56))
+      ? Math.min(height - safeMargin - 128, Math.max(safeMargin + 128, height * 0.56))
       : Math.min(height - 230, Math.max(382, height * 0.53));
     poster.rotation = spectacular ? -0.035 : -0.025;
     poster._debugBossWarningDossier = {
@@ -19744,14 +19990,32 @@ export class PlayScene {
       spectacular,
       reason,
       bossProfileId: bossProfile?.id || null,
-      bossProfileName: bossProfile?.name || null
+      bossProfileName: bossProfile?.name || null,
+      safeMargin,
+      portraitTargetPx: 232,
+      redundantNameplateRemoved: true,
+      primitiveOrnamentCount: 0,
+      visualLanguage: 'restrained_boss_dossier_v2'
+    };
+    poster.__toastMeta = {
+      message: `${bossProfile?.name || translateText('BOSS')}\n${detailParts.join(' // ')}`,
+      type: 'boss_warning',
+      channel: 'transition',
+      slot: 'center',
+      priority: 6,
+      duration: spectacular ? 1750 : 1500,
+      duplicateKey: this.getToastDuplicateKey(bossProfile?.name || 'BOSS', 'boss_warning'),
+      originalOptions: { type: 'boss_warning', channel: 'transition', slot: 'center' },
+      createdAt: Date.now()
     };
 
+    this.dismissBossDossier('replaced');
     this.uiOverlay.addChild(poster);
+    this.activeBossDossier = poster;
     console.log('[UI] boss dossier shown uiOnly=true');
 
-    const baseScale = spectacular ? 0.54 : 0.68;
-    const popScale = spectacular ? 0.7 : 0.78;
+    const baseScale = spectacular ? 0.5 : 0.64;
+    const popScale = spectacular ? 0.58 : 0.72;
     poster.scale.set(baseScale);
     let elapsed = 0;
     const fadeDelay = spectacular ? 1650 : 1500;
@@ -19771,6 +20035,9 @@ export class PlayScene {
         if (t >= 1) {
           this.game.app.ticker.remove(animate);
           if (this.uiOverlay) this.uiOverlay.removeChild(poster);
+          if (this.activeBossDossier === poster) this.activeBossDossier = null;
+          poster.destroy?.({ children: true });
+          this.processToastQueue();
         }
       } else if (spectacular) {
         const pulse = Math.sin(elapsed * 0.012) * 0.018;
@@ -19921,26 +20188,16 @@ export class PlayScene {
 
     const radar = new PIXI.Graphics();
     radar.blendMode = 'add';
-    for (let i = 0; i < 4; i += 1) {
-      radar.circle(0, 0, 52 + i * 24);
+    for (let i = 0; i < 2; i += 1) {
+      radar.circle(0, 0, 108 + i * 18);
       radar.stroke({ color: i % 2 ? accentColor : primaryColor, width: i === 0 ? 2.2 : 1.2, alpha: 0.38 - i * 0.045 });
-    }
-    for (let i = 0; i < 12; i += 1) {
-      const angle = (Math.PI * 2 * i) / 12;
-      const inner = 36 + (i % 2) * 12;
-      const outer = 118;
-      radar.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-      radar.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-      radar.stroke({ color: i % 3 === 0 ? primaryColor : accentColor, width: i % 3 === 0 ? 2 : 1, alpha: 0.2 });
     }
     emblem.addChild(radar);
 
     const portraitFrame = new PIXI.Graphics();
-    portraitFrame.roundRect(-118, -118, 236, 236, 10);
+    portraitFrame.roundRect(-134, -134, 268, 268, 10);
     portraitFrame.fill({ color: 0x020711, alpha: 0.92 });
-    portraitFrame.stroke({ color: primaryColor, width: 3.5, alpha: 0.92 });
-    portraitFrame.roundRect(-106, -106, 212, 212, 8);
-    portraitFrame.stroke({ color: accentColor, width: 1.4, alpha: 0.72 });
+    portraitFrame.stroke({ color: primaryColor, width: 2.4, alpha: 0.88 });
     emblem.addChild(portraitFrame);
 
     const bossIndex = Math.max(0, Math.min(49, (Number(profile?.index) || Number(this.game?.level) || 1) - 1));
@@ -19984,7 +20241,7 @@ export class PlayScene {
       const tw = texture.width || 1;
       const th = texture.height || 1;
       const usesBossPortrait = /\/bosses\//i.test(String(sprite.__bossWarningSource || ''));
-      const scale = Math.min(196 / tw, 196 / th) * (usesBossPortrait ? 1.02 : 0.94);
+      const scale = Math.min(232 / tw, 232 / th) * (usesBossPortrait ? 1.04 : 0.98);
       sprite.scale.set(scale);
       sprite.x = 0;
       sprite.y = 0;
@@ -20069,11 +20326,15 @@ export class PlayScene {
       stroke: '#140006',
       strokeThickness: compactHud ? 2 : 3,
       slot: 'top',
-      type: 'boss',
+      channel: 'transition',
+      type: reason === 'boss_life_lost' ? 'boss_warning' : 'boss_phase',
       priority: 3,
-      duration: reason === 'boss_life_lost' ? 850 : 1250,
-      y: this.game.getHeight() * (compactHud ? 0.28 : 0.2),
-      maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.64)
+      duration: reason === 'boss_life_lost' ? 800 : 1050,
+      extraReadTimeMs: 0,
+      restrained: true,
+      authoredBadge: false,
+      signalPlate: true,
+      maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.5)
     });
   }
 
@@ -20173,6 +20434,7 @@ export class PlayScene {
       startedAt,
       activeUntil: startedAt + duration
     };
+    poster.__toastTicker = animate;
     let elapsed = 0;
     const ticker = (delta) => {
       elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
@@ -20196,14 +20458,13 @@ export class PlayScene {
     const height = this.game.getHeight();
     const compactHud = width < 1100 || height < 700;
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const duration = Math.max(1500, Math.min(2800, Math.floor(Number(warningMs) || 2000)));
+    const duration = Math.max(900, Math.min(1250, Math.floor(Number(warningMs) || 1050)));
     const primary = superStorm ? 0xff45f4 : boss ? 0xff5577 : 0xffdf63;
     const secondary = 0x43efff;
-    const plateWidth = Math.max(360, Math.min(compactHud ? 480 : 540, width * (compactHud ? 0.5 : 0.34)));
-    const plateHeight = compactHud ? 58 : 64;
-    const plateY = compactHud
-      ? Math.min(168, Math.max(132, height * 0.245))
-      : Math.min(170, Math.max(142, height * 0.135));
+    const plateWidth = Math.max(300, Math.min(compactHud ? 390 : 430, width * (compactHud ? 0.46 : 0.3)));
+    const plateHeight = compactHud ? 44 : 48;
+    const plateY = this.getTopToastSafeY?.(12, 'reinforcement_warning') ||
+      (compactHud ? Math.min(158, Math.max(122, height * 0.22)) : Math.min(156, Math.max(132, height * 0.13)));
     const gateY = compactHud
       ? Math.min(height * 0.5, Math.max(220, height * 0.4))
       : Math.min(height * 0.38, Math.max(260, height * 0.255));
@@ -20268,17 +20529,11 @@ export class PlayScene {
     signalPlate.alpha = 0;
 
     const plateGlow = new PIXI.Graphics();
-    plateGlow.roundRect(-plateWidth / 2 - 8, -plateHeight / 2 - 6, plateWidth + 16, plateHeight + 12, 10);
-    plateGlow.fill({ color: primary, alpha: 0.12 });
-    plateGlow.blendMode = 'add';
-    signalPlate.addChild(plateGlow);
 
     const plate = new PIXI.Graphics();
     plate.roundRect(-plateWidth / 2, -plateHeight / 2, plateWidth, plateHeight, 7);
     plate.fill({ color: 0x040914, alpha: 0.94 });
-    plate.stroke({ color: primary, width: compactHud ? 2 : 3, alpha: 0.94 });
-    plate.roundRect(-plateWidth / 2 + 6, -plateHeight / 2 + 6, plateWidth - 12, plateHeight - 12, 5);
-    plate.stroke({ color: secondary, width: 1.2, alpha: 0.52 });
+    plate.stroke({ color: primary, width: compactHud ? 1.5 : 2, alpha: 0.88 });
     signalPlate.addChild(plate);
 
     const plateRails = new PIXI.Graphics();
@@ -20287,14 +20542,13 @@ export class PlayScene {
     plateRails.moveTo(-plateWidth / 2 + 18, plateHeight / 2 - 9);
     plateRails.lineTo(plateWidth / 2 - 18, plateHeight / 2 - 9);
     plateRails.stroke({ color: secondary, width: 1.5, alpha: 0.34 });
-    signalPlate.addChild(plateRails);
 
     const title = createText(translateText('INCOMING REINFORCEMENTS'), {
       fontFamily: FONT_DISPLAY,
-      fontSize: compactHud ? 18 : 22,
+      fontSize: compactHud ? 15 : 17,
       fill: superStorm ? '#ff83fb' : boss ? '#ff8f9c' : '#fff09a',
       stroke: '#100008',
-      strokeThickness: compactHud ? 3 : 4,
+      strokeThickness: compactHud ? 2 : 3,
       fontWeight: '900',
       letterSpacing: compactHud ? 0.6 : 1.2,
       dropShadow: true,
@@ -20303,13 +20557,13 @@ export class PlayScene {
       dropShadowDistance: 0
     });
     title.anchor.set(0.5);
-    title.y = compactHud ? -8 : -9;
+    title.y = compactHud ? -6 : -7;
     if (title.width > plateWidth - 66) title.scale.set((plateWidth - 66) / title.width);
     signalPlate.addChild(title);
 
     const subtitle = createText(translateText('REINFORCEMENT STORM') + ' ×' + count, {
       fontFamily: FONT_BODY,
-      fontSize: compactHud ? 11 : 13,
+      fontSize: compactHud ? 9 : 10,
       fill: '#72f5ff',
       stroke: '#021018',
       strokeThickness: 2,
@@ -20317,7 +20571,7 @@ export class PlayScene {
       letterSpacing: 0.8
     });
     subtitle.anchor.set(0.5);
-    subtitle.y = compactHud ? 12 : 14;
+    subtitle.y = compactHud ? 10 : 11;
     if (subtitle.width > plateWidth - 82) subtitle.scale.set((plateWidth - 82) / subtitle.width);
     signalPlate.addChild(subtitle);
 
@@ -20333,19 +20587,17 @@ export class PlayScene {
       ]);
     }
     platePips.fill({ color: primary, alpha: 0.9 });
-    signalPlate.addChild(platePips);
 
     const plateScan = new PIXI.Graphics();
     plateScan.rect(-plateWidth / 2 + 8, -plateHeight / 2 + 8, compactHud ? 34 : 48, plateHeight - 16);
     plateScan.fill({ color: secondary, alpha: 0.12 });
     plateScan.blendMode = 'add';
-    signalPlate.addChild(plateScan);
     this.uiOverlay?.addChild?.(signalPlate);
     this.uiOverlay?.sortChildren?.();
 
     const wash = new PIXI.Graphics();
     wash.rect(0, 0, width, height);
-    wash.fill({ color: superStorm ? 0x18001f : 0x10050b, alpha: reducedMotion ? 0.12 : 0.22 });
+    wash.fill({ color: superStorm ? 0x18001f : 0x10050b, alpha: reducedMotion ? 0.05 : 0.1 });
     wash.blendMode = 'add';
     overlay.addChild(wash);
 
@@ -20488,16 +20740,16 @@ export class PlayScene {
     const ticker = (delta) => {
       elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
       const t = Math.min(1, elapsed / duration);
-      const intro = Math.min(1, t / 0.2);
+      const intro = Math.min(1, t / 0.16);
       const fade = t > 0.78 ? Math.max(0, (1 - t) / 0.22) : 1;
+      const edgePulse = Math.max(0, 1 - elapsed / 260);
       const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.012) + 1) * 0.5;
       overlay.alpha = fade;
       signalPlate.alpha = intro * fade;
       signalPlate.scale.set(0.9 + intro * 0.1 + (reducedMotion ? 0 : pulse * 0.012));
-      plateGlow.alpha = 0.45 + pulse * 0.55;
-      plateScan.x = -plateWidth * 0.44 + ((elapsed % 760) / 760) * plateWidth * 0.88;
-      wash.alpha = (0.28 + pulse * 0.38) * intro;
-      edge.alpha = (0.58 + pulse * 0.42) * intro;
+      plateGlow.alpha = 0;
+      wash.alpha = edgePulse * intro;
+      edge.alpha = edgePulse * intro;
       motion.clear();
 
       const sweepY = -height * 0.08 + height * 0.74 * ((elapsed % 820) / 820);
@@ -20979,6 +21231,21 @@ export class PlayScene {
       preserveFire: true,
       preserveMovement: true
     });
+    this.cancelNotificationTypes(['boss_warning', 'boss_intro'], 'boss_active');
+    this.dismissToastDisplay(this.activeBossIntroCard, 'center', { reason: 'redundant_boss_nameplate_removed' });
+    this.lastBossActivation = {
+      name: String(name || 'BOSS'),
+      classification: String(taunt || ''),
+      shownAt: Date.now(),
+      redundantNameplateRemoved: true
+    };
+    this.resetTransientGameplayInput('boss_intro_exit', {
+      preserveFire: true,
+      preserveMovement: true
+    });
+    this.processToastQueue();
+    return true;
+
     const { width, height } = this.game.app.screen;
     const compact = width < 720;
     const edgeAligned = !compact && width >= 1100;
@@ -21478,7 +21745,22 @@ export class PlayScene {
   onBossPhaseChange(phase, boss) {
     this.recordBalanceBossPhase(phase, boss);
     const label = phase === 2 ? 'BOSS PHASE 2' : 'BOSS PHASE 3';
-    this.enqueueToast(label, { fontSize: 22, fill: '#ff3300', slot: 'top', type: 'boss' });
+    this.enqueueToast(label, {
+      fontSize: this.game.getWidth() < 1100 ? 15 : 18,
+      fill: '#ff765c',
+      stroke: '#140006',
+      strokeThickness: 2,
+      slot: 'top',
+      channel: 'transition',
+      type: 'boss_phase',
+      priority: 5,
+      duration: 1000,
+      extraReadTimeMs: 0,
+      restrained: true,
+      authoredBadge: false,
+      signalPlate: true,
+      maxWidth: this.game.getWidth() * 0.48
+    });
     this.triggerShockwave(boss.x, boss.y, phase === 2 ? 0xffaa00 : 0xff3300);
     AudioManager.playSfx('boss_phase_surge', { force: true, volume: 1.0 });
     this.emitSpectacle('boss_phase', {
@@ -21507,7 +21789,15 @@ export class PlayScene {
     const bossId = this.enemyManager?.boss?.profile?.id || String(type || `boss_${level}`).toLowerCase();
     const bossName = this.enemyManager?.boss?.profile?.name || String(type || 'Boss').replace(/_/g, ' ');
     this.defeatedBossIds = [...new Set([...(this.defeatedBossIds || []), bossId])];
-    this.reserveMessageFocus(2800, { priority: 4, slots: ['top', 'corner'] });
+    this.cancelNotificationTypes([
+      'boss_phase',
+      'boss_warning',
+      'boss_intro',
+      'boss_refuel',
+      'fuel_ship',
+      'reinforcement_warning'
+    ], 'boss_defeated');
+    this.reserveMessageFocus(1850, { priority: 9, slots: ['center', 'top', 'corner'] });
     this.emitRunContractEvent('boss_defeated', {
       sector: level,
       bossId,
@@ -21526,20 +21816,29 @@ export class PlayScene {
     const repairDelta = this.applyBossClearRecovery(level);
 
     const compactHud = this.game.getWidth() < 620;
-    const repairLine = repairDelta > 0 ? `\nHULL REPAIR +${repairDelta}` : '';
-    this.showToast(`BOSS DEFEATED! +1000${repairLine}`, {
-      fontSize: compactHud ? 20 : 28,
-      fill: '#ffff00',
+    const repairLine = repairDelta > 0 ? `  ${translateText('HULL REPAIR')} +${repairDelta}` : '';
+    this.showToast(`+1,000${repairLine}`, {
+      title: translateText('BOSS DEFEATED'),
+      titleFontSize: compactHud ? 22 : 28,
+      fontSize: compactHud ? 15 : 18,
+      fill: '#fff3a2',
       stroke: '#330000',
-      strokeThickness: compactHud ? 3 : 5,
-      duration: 3600,
+      strokeThickness: 2,
+      duration: 1700,
+      minVisibleMs: 1250,
+      extraReadTimeMs: 0,
       slot: 'center',
-      type: 'boss',
-      priority: 4,
+      channel: 'major',
+      type: 'boss_defeated',
+      priority: 9,
+      banner: true,
+      restrained: true,
+      authoredFrame: false,
+      showAvatar: false,
       y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
-      maxWidth: this.game.getWidth() * (compactHud ? 0.84 : 0.72)
+      maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.46)
     });
-    this.reserveMessageFocus(2800, { priority: 4, slots: ['top', 'corner'] });
+    this.reserveMessageFocus(1850, { priority: 9, slots: ['top', 'corner'] });
 
     const boss = this.enemyManager?.boss;
     const bossColor = boss?.profile?.accent || boss?.color || 0xffff33;

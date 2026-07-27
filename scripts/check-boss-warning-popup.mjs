@@ -192,11 +192,8 @@ try {
   assert(report.poster, 'boss warning poster missing');
   assert(report.poster.hasEmblem, 'boss warning emblem missing');
   assert(report.poster.hasBossArt === true, 'boss spawn warning should show one clipped boss portrait');
-  assert(report.poster.hasThreatMeter === true, 'boss spawn warning should show a compact threat meter');
-  assert(report.poster.hasApproachCue === true, 'boss spawn warning should show approach chevrons');
-  assert((report.poster.debug?.threatPipCount || 0) >= 5, `boss warning threat pips missing: ${JSON.stringify(report.poster.debug)}`);
-  assert((report.poster.debug?.threatLevel || 0) >= 2, `boss warning threat level missing: ${JSON.stringify(report.poster.debug)}`);
-  assert((report.poster.debug?.approachChevronCount || 0) >= 4, `boss warning approach chevrons missing: ${JSON.stringify(report.poster.debug)}`);
+  assert(report.poster.hasThreatMeter === false, 'boss dossier should not retain the redundant threat-pip meter');
+  assert(report.poster.hasApproachCue === false, 'boss dossier should not retain decorative approach chevrons');
   assert(report.poster.bossArtContained === true, 'boss spawn warning portrait should stay contained inside the dossier frame');
   assert(/\/bosses\/|boss-warning-emblems|cached_boss_warning_art/i.test(report.poster.bossArtSource || ''), `boss warning should use boss portrait or clean emblem art, got ${report.poster.bossArtSource}`);
   assert(report.texts.includes('BOSS INCOMING'), `boss warning title missing: ${report.texts.join(' | ')}`);
@@ -216,8 +213,8 @@ try {
       input: play.inputManager.getTransientDebugState()
     };
   });
-  assert(bossIntroEnterInput.reset?.reason === 'boss_intro_enter',
-    `boss intro enter did not reset through the expected path: ${JSON.stringify(bossIntroEnterInput)}`);
+  assert(bossIntroEnterInput.reset?.reason === 'boss_intro_exit',
+    `boss activation did not complete the input reset after suppressing the redundant nameplate: ${JSON.stringify(bossIntroEnterInput)}`);
   assert(bossIntroEnterInput.reset?.preserveMovement === true,
     `boss intro enter did not preserve movement: ${JSON.stringify(bossIntroEnterInput)}`);
   assert(bossIntroEnterInput.input?.pressedKeys?.includes('KeyW'),

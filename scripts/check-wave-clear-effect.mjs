@@ -122,16 +122,14 @@ try {
       sfxKey: 'nova_wave_clear_sweep'
     });
 
-    const effect = play.uiContainer?.children?.find?.((child) => child?.label === 'ui_wave_bonus_effect');
-    const labels = (effect?.children || []).map((child) => child?.label || child?.constructor?.name || 'node');
-    const flourish = effect?.children?.find?.((child) => child?.label === 'waveClearAuthoredFlourish');
+    const effect = play.activeTopToast;
+    const toastState = play.getToastDebugState?.() || null;
     return {
       ok: true,
-      effectCount: play.uiContainer?.children?.filter?.((child) => child?.label === 'ui_wave_bonus_effect')?.length || 0,
-      labels,
+      effectCount: effect ? 1 : 0,
       debug: effect?._debugWaveClearEffect || null,
       effectAlpha: Number(effect?.alpha || 0),
-      flourishAlpha: Number(flourish?.alpha || 0),
+      toastState,
       screen: { width: game.getWidth(), height: game.getHeight() }
     };
   });
@@ -143,14 +141,15 @@ try {
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'state setup failed');
   if ((state.effectCount || 0) !== 1) failures.push(`expected one wave clear effect, saw ${state.effectCount}`);
-  if (!state.labels?.includes?.('waveClearAuthoredFlourish')) failures.push(`wave clear authored flourish missing: ${JSON.stringify(state.labels)}`);
-  if (state.debug?.authoredFlourishCount !== 1 || state.debug?.authoredFlourishReady !== true) failures.push(`wave clear authored flourish not ready: ${JSON.stringify(state.debug)}`);
-  if (state.debug?.visualLanguage !== 'authored_victory_flourish_v3') failures.push(`wave clear visual language mismatch: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.authoredFlourishCount !== 1) failures.push(`wave clear subtle authored accent missing: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.visualLanguage !== 'compact_wave_transition_v4') failures.push(`wave clear visual language mismatch: ${JSON.stringify(state.debug)}`);
   if (state.debug?.primitiveOrnamentCount !== 0) failures.push(`wave clear retained primitive ornament: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.ringCount || 0) !== 0) failures.push(`wave clear retained target rings: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.glintCount || 0) !== 0) failures.push(`wave clear retained star glints: ${JSON.stringify(state.debug)}`);
-  if ((state.debug?.accentRailCount || 0) !== 0) failures.push(`wave clear retained accent rails: ${JSON.stringify(state.debug)}`);
+  if (state.debug?.channel !== 'transition') failures.push(`wave clear did not use the transition channel: ${JSON.stringify(state.debug)}`);
   if (!state.debug?.subtitle) failures.push(`wave clear subtitle flag missing: ${JSON.stringify(state.debug)}`);
+  const active = state.toastState?.active || [];
+  if (!active.some((toast) => toast.type === 'wave_clear' && toast.slot === 'top' && toast.channel === 'transition')) {
+    failures.push(`wave clear did not occupy the compact top transition slot: ${JSON.stringify(active)}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

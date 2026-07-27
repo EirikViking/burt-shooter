@@ -1804,16 +1804,20 @@ export class EnemyManager {
     if (warningTier !== 'routine' && !specializedPresentationShown && playScene?.showToast) {
       const compactHud = this.game.getWidth() < 1100 || this.game.getHeight() < 700;
       playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
-        fontSize: compactHud ? 17 : 22,
+        fontSize: compactHud ? 14 : 17,
         fill: '#ffef7e',
         stroke: '#1d0500',
-        strokeThickness: 4,
-        y: compactHud ? this.game.getHeight() * 0.25 : 118,
-        duration: Math.max(1200, Math.min(2200, state.warningMs + 250)),
+        strokeThickness: 2,
+        duration: Math.max(900, Math.min(1250, state.warningMs)),
+        extraReadTimeMs: 0,
         slot: 'top',
-        type: 'warning',
+        channel: 'transition',
+        type: 'reinforcement_warning',
         priority: 4,
-        maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.64)
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.5)
       });
     }
     if (warningTier === 'routine') {
@@ -4313,11 +4317,16 @@ export class EnemyManager {
         fill: `#${supportProfile.tint.toString(16).padStart(6, '0')}`,
         stroke: '#032015',
         strokeThickness: 4,
-        duration: 1250,
+        duration: 1050,
+        extraReadTimeMs: 0,
         slot: 'top',
-        type: 'boss',
-        priority: 5,
-        maxWidth: this.game.getWidth() * 0.76
+        channel: 'transition',
+        type: 'fuel_ship',
+        priority: 4,
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        maxWidth: this.game.getWidth() * 0.52
       });
     }
     AudioManager.playSfx('nova_fuel_ship_spawn', { volume: 0.68, minIntervalMs: 900 });
@@ -4660,11 +4669,16 @@ export class EnemyManager {
         fill: '#ffec8a',
         stroke: '#241800',
         strokeThickness: 4,
-        duration: 1150,
+        duration: 950,
+        extraReadTimeMs: 0,
         slot: 'top',
-        type: 'boss',
-        priority: 5,
-        maxWidth: this.game.getWidth() * 0.72
+        channel: 'transition',
+        type: 'boss_refuel',
+        priority: 4,
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        maxWidth: this.game.getWidth() * 0.5
       });
       AudioManager.playSfx('nova_fuel_ship_heal', { force: true, volume: 0.76, minIntervalMs: 0 });
     }
@@ -4753,11 +4767,16 @@ export class EnemyManager {
       fill: '#ffcc66',
       stroke: '#1c0b00',
       strokeThickness: 4,
-      duration: 1350,
+      duration: 1100,
+      extraReadTimeMs: 0,
       slot: 'top',
-      type: 'boss',
+      channel: 'transition',
+      type: 'reinforcement_warning',
       priority: 4,
-      maxWidth: this.game.getWidth() * 0.76
+      restrained: true,
+      authoredBadge: false,
+      signalPlate: true,
+      maxWidth: this.game.getWidth() * 0.52
     });
     console.log(`[BossChaos] event=${event} level=${level} count=${spawned}`);
     if (elite) console.log(`[BossChaos] event=MINI_BOSS level=${level} id=${elite.type || elite.middleShipProfile?.id || 'unknown'}`);
@@ -5222,18 +5241,22 @@ export class EnemyManager {
         })
         : `${waveLabel}\n${descriptor}`;
       this.game.scenes.play.showToast(message, {
-        fontSize: compactHud ? (isChallenge ? 18 : 15) : (isChallenge ? 25 : 18),
+        fontSize: compactHud ? (isChallenge ? 17 : 14) : (isChallenge ? 21 : 16),
         fill: isChallenge ? '#fff3a0' : '#7ee9ff',
         stroke: '#00111d',
-        strokeThickness: isChallenge ? 5 : 4,
-        y: isChallenge
-          ? this.game.getHeight() * 0.32
-          : (compactHud ? this.game.getHeight() * 0.27 : Math.max(132, this.game.getHeight() * 0.14)),
-        duration: isChallenge ? Math.max(1700, openingMomentum.waveToastDurationMs) : openingMomentum.waveToastDurationMs,
-        slot: isChallenge ? 'center' : 'top',
-        type: isChallenge ? 'bonus' : 'level_up',
-        priority: isChallenge ? 7 : 2,
-        maxWidth: this.game.getWidth() * (compactHud ? 0.86 : 0.7)
+        strokeThickness: isChallenge ? 3 : 2,
+        y: this.game.scenes.play.getTopToastSafeY?.(compactHud ? 14 : 16, 'wave_start'),
+        duration: isChallenge ? 1280 : Math.min(1150, openingMomentum.waveToastDurationMs),
+        minVisibleMs: isChallenge ? 900 : 760,
+        extraReadTimeMs: 0,
+        slot: 'top',
+        channel: 'transition',
+        type: 'wave_start',
+        priority: isChallenge ? 5 : 3,
+        restrained: true,
+        authoredBadge: false,
+        signalPlate: true,
+        maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.52)
       });
       AudioManager.playSfx(isChallenge ? 'combo_breakout' : 'ui_open', {
         volume: isChallenge ? 0.58 : 0.25,

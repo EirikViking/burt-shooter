@@ -73,6 +73,8 @@ export class HUD {
     this.highscoreChaseDisplayScore = 0;
     this.globalRivalFlash = null;
     this.globalRivalFlashUntil = 0;
+    this.notificationFocus = 'none';
+    this.missionPriorityState = {};
 
     // Rank Elements
     this.rankGroup = new PIXI.Container();
@@ -1144,9 +1146,15 @@ export class HUD {
     };
   }
 
+  setNotificationFocus(focus = 'none') {
+    this.notificationFocus = focus === 'major' || focus === 'transition' ? focus : 'none';
+    this.updateMissionPriorityVisual(this.missionPriorityState);
+  }
+
   updateMissionPriorityVisual({ isBoss = false, isClear = false, isBriefing = false, pressure = 0 } = {}) {
     const layout = this.missionPanel?.__layout;
     if (!layout) return;
+    this.missionPriorityState = { isBoss, isClear, isBriefing, pressure };
 
     const immediateDanger = !isClear && pressure >= 0.7;
     const critical = isBoss || immediateDanger;
@@ -1175,20 +1183,31 @@ export class HUD {
       }
     );
     this.missionFrameArt.tint = accent;
-    this.missionFrameArt.alpha = critical ? 0.88 : 0.72;
+    const focusAlpha = this.notificationFocus === 'major'
+      ? 0.5
+      : this.notificationFocus === 'transition'
+        ? 0.78
+        : 1;
+    this.missionPanel.alpha = focusAlpha;
+    this.missionFrameArt.alpha = (critical ? 0.88 : 0.72) * focusAlpha;
 
-    this.missionLabel.alpha = critical ? 0.9 : 0.68;
-    this.missionText.alpha = 1;
+    this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
+    this.missionText.alpha = this.notificationFocus === 'major' ? 0.7 : focusAlpha;
     this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
-    this.directiveText.alpha = 0.62;
-    this.directiveProgressBg.alpha = 0.56;
-    this.directiveProgressFill.alpha = 0.72;
+    this.directiveText.alpha = 0.62 * focusAlpha;
+    this.directiveProgressBg.alpha = 0.56 * focusAlpha;
+    this.directiveProgressFill.alpha = 0.72 * focusAlpha;
+    this.missionProgressBg.alpha = focusAlpha;
+    this.missionProgressFill.alpha = focusAlpha;
+    this.missionProgressActive.alpha = focusAlpha;
+    this.missionProgressTicks.alpha = focusAlpha;
     this.missionPanel._debugPriority = {
       tier: critical ? 'critical' : 'objective',
       boss: isBoss,
       immediateDanger,
       pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
       accent,
+      notificationFocus: this.notificationFocus,
       authoredFrameReady: GameAssets.isValidTexture(this.missionFrameArt.texture),
       primitiveOrnamentCount: 0,
       visualLanguage: 'authored_command_spine_v2'

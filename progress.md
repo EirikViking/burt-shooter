@@ -2516,3 +2516,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Uploaded only to `sector-continue-test` as Steam BuildID `24403621`, depot manifest `1402463280774430983`.
 - Pre/post Steam app-info proves `public` remained `24400692` and `test-build` remained `23782673`. The private rollback target is the preceding `sector-continue-test` BuildID `24401245`.
 - No public/default assignment, store metadata, achievements, patch notes, Git push, or other Steamworks setting changed.
+
+## 2026-07-27 - Combat notification hierarchy and restraint pass
+
+- Split player messaging into explicit major-centre, combat-transition, side, persistent-HUD, and combo channels with queue limits, duplicate collapse, cancellation, and supersession rules.
+- Boss Defeated now clears boss warnings/phases/refuel notices and uses one restrained major message. Sector Clear clears pending wave start/clear notices. Wave starts wait behind Wave Clear, and Overrun supersedes competing centre/transition messages.
+- Reduced routine Wave Clear and tactical warnings to short premium strips with one authored accent; retained the larger authored treatment only for Sector Clear. Removed the redundant post-dossier boss nameplate.
+- Reduced the boss dossier by roughly 17%, enlarged its portrait, removed threat pips and approach chevrons, simplified the frame/radar treatment, and enforced 48px safe margins.
+- Mission Status now yields visually while a major notification owns attention, without losing its live state. Side notices use the 48px edge-safe lane and wait while a major centre message is active.
+- Rebuilt the Overrun continuation as a paused 860x460 command modal at 1920x1080 with a dark scrim, a small authored crest, clean report/bonus rows, controller-ready confirmation, and no repeated giant banner after dismissal.
+- Added `check:notification-orchestration` to cover boss and sector supersession, wave sequencing, redundant-nameplate removal, 48px edge safety, German long-string layout, the four requested 1280x720 through 1920x1080 resolutions, and fixed-logical-playfield ultrawide behavior.
+- Focused checks currently pass for current build compilation, all eight locales, localized UI, Wave Clear, boss dossier/input continuity, Mission Status/HUD readability, Overrun confirmation/milestones, controller-only flow, and the new orchestration contract. Steam packaging, performance, commit, and `sector-continue-test` deployment remain pending.
