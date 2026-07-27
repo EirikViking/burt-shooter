@@ -366,6 +366,7 @@ export class PlayScene {
     this.gameplayBackdropWidth = 0;
     this.gameplayBackdropHeight = 0;
     this.activeMayhemReinforcementWarning = null;
+    this.activeMayhemRoutineWarning = null;
     this.lastMayhemReinforcementPresentation = null;
     this.firstRunOnboardingComplete = true;
     this.firstRunOnboardingUntil = 0;
@@ -7476,6 +7477,7 @@ export class PlayScene {
     this.clearSectorArrivalStinger();
     this.clearPickupEffects('scene_destroy');
     this.clearGrazeBreakVisual('scene_destroy');
+    this.clearMayhemReinforcementPresentations('scene_destroy');
     this.bulletManager?.clearAll?.('scene_destroy');
     this.clearBossHazards('scene_destroy');
     if (this.bossHazardLayer?.parent) {
@@ -15515,6 +15517,7 @@ export class PlayScene {
     this.dismissToastDisplay(this.activeTopToast, 'top');
     this.dismissToastDisplay(this.activeCornerToast, 'corner');
     this.dismissBossDossier?.();
+    this.clearMayhemReinforcementPresentations('toast_state_cleared');
     this.hud?.setNotificationFocus?.('none');
     this.centerToastLockUntil = 0;
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
@@ -20044,6 +20047,7 @@ export class PlayScene {
         poster.scale.set(popScale + pulse);
       }
     };
+    poster.__toastTicker = animate;
     this.game.app.ticker.add(animate);
     if (spectacular) {
       AudioManager.playSfx('boss_reveal_stinger', { force: true, volume: 0.98, minIntervalMs: 0 });
@@ -20382,9 +20386,22 @@ export class PlayScene {
     };
   }
 
+  clearMayhemReinforcementPresentations(reason = 'cleared') {
+    const routine = this.activeMayhemRoutineWarning;
+    const storm = this.activeMayhemReinforcementWarning;
+    routine?.cleanup?.(reason);
+    storm?.cleanup?.(reason);
+    this.activeMayhemRoutineWarning = null;
+    this.activeMayhemReinforcementWarning = null;
+    return Boolean(routine || storm);
+  }
+
   showMayhemRoutineReinforcementWarning({ groupCount = 1, route = 'side', warningMs = 1200 } = {}) {
     const host = this.uiOverlay || this.decorativeOverlay || this.gameContainer || this.container;
-    if (!host || !this.game?.app?.ticker) return false;
+    const appTicker = this.game?.app?.ticker;
+    if (!host || host.destroyed || !appTicker) return false;
+    this.activeMayhemRoutineWarning?.cleanup?.('replaced');
+
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const normalizedRoute = String(route || 'side').toLowerCase();
@@ -20393,63 +20410,92 @@ export class PlayScene {
     root.label = 'mayhem_routine_reinforcement_warning';
     root.eventMode = 'none';
     root.zIndex = 9800;
-    const fromLeft = normalizedRoute.includes('left');
-    const fromRight = normalizedRoute.includes('right');
-    const fromBottom = normalizedRoute.includes('bottom');
-    root.position.set(
-      fromLeft ? 34 : fromRight ? width - 34 : width / 2,
-      fromBottom ? height - 86 : Math.max(150, height * 0.36)
-    );
-    root.rotation = 0;
-    const directionX = fromLeft ? -1 : fromRight ? 1 : 0;
-    const directionY = fromBottom ? 1 : -1;
-    const beacon = presentDirectionalSignal(root, 'routine-warning', {
-      x: 0,
-      y: 0,
-      directionX,
-      directionY,
-      color: 0xffdf63,
-      size: 54,
-      alpha: 0.96
-    });
-    if (!beacon) {
-      const cue = new PIXI.Graphics();
-      cue.moveTo(-16, 8);
-      cue.lineTo(0, -10);
-      cue.lineTo(16, 8);
-      cue.stroke({ color: 0xffdf63, width: 3, alpha: 0.9 });
-      root.addChild(cue);
-    }
-    host.addChild(root);
-    host.sortChildren?.();
-
-    const startedAt = Date.now();
-    this.lastMayhemReinforcementPresentation = {
-      phase: 'warning',
-      tier: 'routine',
-      route: normalizedRoute,
-      groupCount: Math.max(1, Math.floor(Number(groupCount) || 1)),
-      signalPlateVisible: false,
-      scoreNeutral: true,
-      startedAt,
-      activeUntil: startedAt + duration
-    };
-    poster.__toastTicker = animate;
-    let elapsed = 0;
-    const ticker = (delta) => {
-      elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
-      const t = Math.min(1, elapsed / duration);
-      const pulse = (Math.sin(elapsed * 0.02) + 1) * 0.5;
-      root.alpha = Math.pow(Math.max(0, 1 - t), 0.62) * (0.62 + pulse * 0.38);
-      root.scale.set(0.9 + pulse * 0.12);
-      if (t >= 1 || this.game?.currentScene !== this) {
-        this.game.app.ticker.remove(ticker);
-        if (root.parent) root.parent.removeChild(root);
-        root.destroy?.({ children: true });
+    let ticker = null;
+    let cleaned = false;
+    const cleanup = (reason = 'completed') => {
+      if (cleaned) return false;
+      cleaned = true;
+      if (ticker) appTicker.remove?.(ticker);
+      if (root.parent) root.parent.removeChild(root);
+      if (!root.destroyed) root.destroy?.({ children: true });
+      if (this.activeMayhemRoutineWarning?.root === root) {
+        this.activeMayhemRoutineWarning = null;
       }
+      root.__dismissReason = reason;
+      return true;
     };
-    this.game.app.ticker.add(ticker);
-    return true;
+
+    try {
+      const fromLeft = normalizedRoute.includes('left');
+      const fromRight = normalizedRoute.includes('right');
+      const fromBottom = normalizedRoute.includes('bottom');
+      root.position.set(
+        fromLeft ? 34 : fromRight ? width - 34 : width / 2,
+        fromBottom ? height - 86 : Math.max(150, height * 0.36)
+      );
+      root.rotation = 0;
+      const directionX = fromLeft ? -1 : fromRight ? 1 : 0;
+      const directionY = fromBottom ? 1 : -1;
+      const beacon = presentDirectionalSignal(root, 'routine-warning', {
+        x: 0,
+        y: 0,
+        directionX,
+        directionY,
+        color: 0xffdf63,
+        size: 54,
+        alpha: 0.96
+      });
+      if (!beacon) {
+        const cue = new PIXI.Graphics();
+        cue.moveTo(-16, 8);
+        cue.lineTo(0, -10);
+        cue.lineTo(16, 8);
+        cue.stroke({ color: 0xffdf63, width: 3, alpha: 0.9 });
+        root.addChild(cue);
+      }
+
+      const startedAt = Date.now();
+      let elapsed = 0;
+      ticker = (delta) => {
+        if (
+          cleaned ||
+          root.destroyed ||
+          host.destroyed ||
+          root.parent !== host ||
+          this.game?.currentScene !== this
+        ) {
+          cleanup('invalid_lifecycle');
+          return;
+        }
+        elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+        const t = Math.min(1, elapsed / duration);
+        const pulse = (Math.sin(elapsed * 0.02) + 1) * 0.5;
+        root.alpha = Math.pow(Math.max(0, 1 - t), 0.62) * (0.62 + pulse * 0.38);
+        root.scale.set(0.9 + pulse * 0.12);
+        if (t >= 1) cleanup('completed');
+      };
+
+      host.addChild(root);
+      host.sortChildren?.();
+      this.lastMayhemReinforcementPresentation = {
+        phase: 'warning',
+        tier: 'routine',
+        route: normalizedRoute,
+        groupCount: Math.max(1, Math.floor(Number(groupCount) || 1)),
+        signalPlateVisible: false,
+        scoreNeutral: true,
+        startedAt,
+        activeUntil: startedAt + duration
+      };
+      root.__toastTicker = ticker;
+      this.activeMayhemRoutineWarning = { root, cleanup };
+      appTicker.add(ticker);
+      return true;
+    } catch (error) {
+      cleanup('presentation_error');
+      console.error('[UI] Mayhem routine reinforcement presentation failed:', error);
+      return false;
+    }
   }
 
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false, warningMs = 2000 } = {}) {

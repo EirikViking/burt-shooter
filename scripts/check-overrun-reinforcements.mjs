@@ -179,6 +179,61 @@ assert.equal(
   'synthetic routine groups must not consume a scheduled future wave'
 );
 
+const failSoftManager = createManager();
+const failSoftConfig = failSoftManager.createOverrunRoutineReinforcementConfig(0);
+failSoftManager.mayhemReinforcementState = {
+  currentWaveIndex: 0,
+  reinforcementWaveIndex: 0,
+  reinforcementWaveIndices: [],
+  reinforcementWaveConfigs: [failSoftConfig],
+  syntheticWaveCount: 1,
+  isSuperStorm: false,
+  isRoutineReinforcement: true,
+  warningMs: 1200,
+  spawnAt: Date.now() + 1200,
+  warningFired: false,
+  spawned: false
+};
+failSoftManager.mayhemReinforcementConsumedWaveIndices = new Set();
+failSoftManager.mayhemReinforcementStats = {
+  warnings: 0,
+  spawned: 0,
+  lastWarningLeadMs: 0
+};
+failSoftManager.mayhemSuperStormSurvivalWaveCounts = new Map();
+failSoftManager.mayhemSuperStormRunMissedWaveKeys = new Set();
+failSoftManager.mayhemReinforcementRunMissedWaveKeys = new Set();
+failSoftManager.measurePerformance = (_id, operation) => operation();
+failSoftManager.game.scenes.play.showMayhemRoutineReinforcementWarning = () => {
+  throw new ReferenceError('cosmetic regression probe');
+};
+let failSoftSpawn = null;
+failSoftManager.spawnWave = (config) => {
+  failSoftSpawn = config;
+};
+const presentationErrors = [];
+const originalConsoleError = console.error;
+console.error = (...args) => presentationErrors.push(args.map(String).join(' '));
+try {
+  assert.equal(failSoftManager.fireMayhemReinforcementWarning(), true);
+} finally {
+  console.error = originalConsoleError;
+}
+assert.equal(failSoftManager.mayhemReinforcementState.warningFired, true);
+assert.equal(failSoftManager.mayhemReinforcementState.warningTier, 'routine');
+assert.equal(failSoftManager.mayhemReinforcementStats.warnings, 1);
+assert.ok(
+  presentationErrors.some((entry) => entry.includes('cosmetic warning presentation failed tier=routine')),
+  'cosmetic presentation failure must be logged'
+);
+failSoftManager.mayhemReinforcementState.spawnAt = 0;
+assert.equal(
+  failSoftManager.updateMayhemReinforcement(),
+  true,
+  'cosmetic presentation failure must not stop reinforcement gameplay'
+);
+assert.equal(failSoftSpawn?.isOverrunRoutineReinforcement, true);
+
 const bossManager = createManager();
 bossManager.state = 'BOSS_ACTIVE';
 bossManager.boss = { active: true, spawnedAtMs: Date.now() - 5000 };

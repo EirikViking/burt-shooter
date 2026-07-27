@@ -1789,36 +1789,43 @@ export class EnemyManager {
         1)
     );
     const useSuperStormVoice = state.isSuperStorm === true;
-    const specializedPresentationShown = warningTier === 'routine'
-      ? playScene?.showMayhemRoutineReinforcementWarning?.({
-          groupCount,
-          route: state.reinforcementWaveConfigs?.[0]?.reinforcementEntryRoute || 'side',
-          warningMs: state.warningMs
-        })
-      : playScene?.showMayhemReinforcementStormWarning?.({
-          groupCount,
-          boss,
-          superStorm: state.isSuperStorm === true,
-          warningMs: state.warningMs
+    try {
+      const specializedPresentationShown = warningTier === 'routine'
+        ? playScene?.showMayhemRoutineReinforcementWarning?.({
+            groupCount,
+            route: state.reinforcementWaveConfigs?.[0]?.reinforcementEntryRoute || 'side',
+            warningMs: state.warningMs
+          })
+        : playScene?.showMayhemReinforcementStormWarning?.({
+            groupCount,
+            boss,
+            superStorm: state.isSuperStorm === true,
+            warningMs: state.warningMs
+          });
+      if (warningTier !== 'routine' && !specializedPresentationShown && playScene?.showToast) {
+        const compactHud = this.game.getWidth() < 1100 || this.game.getHeight() < 700;
+        playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
+          fontSize: compactHud ? 14 : 17,
+          fill: '#ffef7e',
+          stroke: '#1d0500',
+          strokeThickness: 2,
+          duration: Math.max(900, Math.min(1250, state.warningMs)),
+          extraReadTimeMs: 0,
+          slot: 'top',
+          channel: 'transition',
+          type: 'reinforcement_warning',
+          priority: 4,
+          restrained: true,
+          authoredBadge: false,
+          signalPlate: true,
+          maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.5)
         });
-    if (warningTier !== 'routine' && !specializedPresentationShown && playScene?.showToast) {
-      const compactHud = this.game.getWidth() < 1100 || this.game.getHeight() < 700;
-      playScene.showToast(translateText(MAYHEM_REINFORCEMENT_WARNING_TEXT), {
-        fontSize: compactHud ? 14 : 17,
-        fill: '#ffef7e',
-        stroke: '#1d0500',
-        strokeThickness: 2,
-        duration: Math.max(900, Math.min(1250, state.warningMs)),
-        extraReadTimeMs: 0,
-        slot: 'top',
-        channel: 'transition',
-        type: 'reinforcement_warning',
-        priority: 4,
-        restrained: true,
-        authoredBadge: false,
-        signalPlate: true,
-        maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.5)
-      });
+      }
+    } catch (error) {
+      console.error(
+        `[MayhemReinforcement] cosmetic warning presentation failed tier=${warningTier}:`,
+        error
+      );
     }
     if (warningTier === 'routine') {
       AudioManager.playSfx('enemy_threat_soft_warn', {

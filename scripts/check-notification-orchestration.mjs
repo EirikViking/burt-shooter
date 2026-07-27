@@ -425,6 +425,108 @@ try {
   assert(heavyCombat.comboDebug?.visible === true,
     `Combo feedback lost its reserved HUD lane: ${JSON.stringify(heavyCombat.comboDebug)}`);
 
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const reinforcementLifecycle = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearMayhemReinforcementPresentations('test_start');
+
+    const firstShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'side_left',
+      warningMs: 1200
+    });
+    const first = play.activeMayhemRoutineWarning;
+    const firstMounted = Boolean(first?.root?.parent);
+
+    const secondShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'side_right',
+      warningMs: 1200
+    });
+    const second = play.activeMayhemRoutineWarning;
+    const repeatedReplacedCleanly = Boolean(first?.root?.destroyed && second?.root?.parent);
+
+    play.clearToastState();
+    play.enqueueToast('BOSS PHASE 2: PATTERN SHIFT', {
+      type: 'boss_phase',
+      channel: 'transition',
+      slot: 'top',
+      duration: 1200,
+      priority: 4,
+      restrained: true,
+      authoredBadge: false,
+      signalPlate: true
+    });
+    const afterTacticalShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'bottom',
+      warningMs: 1200
+    });
+    const tacticalStillActive = play.getToastDebugState().active
+      .some((entry) => entry.type === 'boss_phase');
+
+    play.clearMayhemReinforcementPresentations('scene_reset');
+    const sceneResetClean = play.activeMayhemRoutineWarning === null &&
+      play.activeMayhemReinforcementWarning === null;
+    const afterSceneResetShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'side_left',
+      warningMs: 1200
+    });
+    const sceneResetHandle = play.activeMayhemRoutineWarning;
+
+    play.clearToastState();
+    const gameOverClean = play.activeMayhemRoutineWarning === null &&
+      play.activeMayhemReinforcementWarning === null &&
+      Boolean(sceneResetHandle?.root?.destroyed);
+    const newRunShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'side_right',
+      warningMs: 1200
+    });
+    const newRunHandle = play.activeMayhemRoutineWarning;
+    const newRunFresh = Boolean(
+      newRunHandle?.root?.parent &&
+      newRunHandle !== sceneResetHandle &&
+      newRunHandle.root !== sceneResetHandle?.root
+    );
+    play.clearMayhemReinforcementPresentations('test_complete');
+
+    return {
+      reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      afterOverrunShown: firstShown,
+      firstMounted,
+      secondShown,
+      repeatedReplacedCleanly,
+      afterTacticalShown,
+      tacticalStillActive,
+      sceneResetClean,
+      afterSceneResetShown,
+      gameOverClean,
+      newRunShown,
+      newRunFresh,
+      finalRoutineState: play.activeMayhemRoutineWarning
+    };
+  });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+  assert(reinforcementLifecycle.reducedMotion === true,
+    `Reduced-effects probe did not activate: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.afterOverrunShown === true && reinforcementLifecycle.firstMounted === true,
+    `Routine warning failed after Overrun dismissal: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.secondShown === true && reinforcementLifecycle.repeatedReplacedCleanly === true,
+    `Repeated routine warning leaked its prior presentation: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.afterTacticalShown === true && reinforcementLifecycle.tacticalStillActive === true,
+    `Routine warning failed after another tactical notification: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.sceneResetClean === true && reinforcementLifecycle.afterSceneResetShown === true,
+    `Routine warning failed across scene reset cleanup: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.gameOverClean === true,
+    `Game Over cleanup left a routine warning alive: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.newRunShown === true && reinforcementLifecycle.newRunFresh === true,
+    `New run inherited stale routine-warning state: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(reinforcementLifecycle.finalRoutineState === null,
+    `Routine-warning cleanup did not finish: ${JSON.stringify(reinforcementLifecycle)}`);
+
   assert(pageErrors.length === 0, `Page errors: ${pageErrors.join('; ')}`);
 
   const result = {
@@ -439,6 +541,7 @@ try {
     comboCallout,
     comboScreenshot,
     heavyCombat,
+    reinforcementLifecycle,
     screenshot,
     pageErrors
   };
