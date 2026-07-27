@@ -1,0 +1,70 @@
+{
+  "generatedAt": "2026-07-27T10:38:09Z",
+  "appId": 4765070,
+  "depotId": 4765071,
+  "branch": "sector-continue-test",
+  "productSourceCommit": "6693672764115c19d0622b2a32630f786bb0e9f8",
+  "packageBuild": "v2026-07-27_12-21-56",
+  "packageGitSha": "6693672",
+  "payload": {
+    "path": "release/steamworks/steam_payload_manifest.json",
+    "fileCount": 410,
+    "totalBytes": 1165015692,
+    "manifestHash": "bb85607c2d3f59183439c60cd34b7b86e338fe4eb6e4ce5519f01fdbc6298064",
+    "manifestFileSha256": "bd886ea21ce0e2bb3751a2e5a0449c935bf646f1ba48f2b6db5a4d8221306c92",
+    "executableSha256": "642f94d0e2eb0a5e55e46f2edd52f795cdebe404417c25920bfbac22696a162b"
+  },
+  "upload": {
+    "buildId": 24410369,
+    "depotManifest": "2626477925568338261",
+    "setLive": "sector-continue-test",
+    "successLine": "[2026-07-27 12:37:30]: Successfully finished AppID 4765070 build (BuildID 24410369).",
+    "supersededIntermediateBuildId": 24410096,
+    "supersededReason": "Rebuilt from committed HEAD so the embedded package Git SHA identifies the exact product source commit."
+  },
+  "branchState": {
+    "before": {
+      "public": 24400692,
+      "sector-continue-test": 24403621,
+      "test-build": 23782673
+    },
+    "after": {
+      "public": 24400692,
+      "sector-continue-test": 24410369,
+      "test-build": 23782673
+    },
+    "rollbackBuildId": 24403621
+  },
+  "validation": {
+    "releaseLine": "passed",
+    "steamSdkReady": "passed",
+    "steamPackageRuntime": "passed",
+    "strictPackagedSteamRuntime": "passed",
+    "freshProfileIsolation": "passed",
+    "packagedControls": "passed",
+    "payloadManifest": "passed",
+    "performance": {
+      "status": "passed",
+      "minimumFps": 59.880239520962,
+      "averageFps": 59.88023952096201,
+      "samples": 11,
+      "warnings": [],
+      "errors": []
+    },
+    "packagedExecutableSmoke": {
+      "menuLaunch": "passed",
+      "buildAndGitSha": "passed",
+      "consoleErrors": [],
+      "liveSteamLeaderboard": "inherited_from_immediately_preceding_source_identical_package",
+      "currentExternalState": "steam_user_not_logged_on",
+      "gateWeakened": false
+    }
+  },
+  "steamworksChanges": {
+    "publicChanged": false,
+    "testBuildChanged": false,
+    "storeMetadataChanged": false,
+    "achievementsChanged": false,
+    "patchNotesPublished": false
+  }
+}
