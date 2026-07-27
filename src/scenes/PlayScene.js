@@ -197,6 +197,23 @@ const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const GAME_OVER_CELEBRATION_DURATION_MS = 3800;
+const WAVE_CLEARED_COMMAND_HUD_TOKENS = Object.freeze({
+  minWidth: 600,
+  maxWidth: 720,
+  height: 120,
+  safeMargin: 48,
+  hudGap: 18,
+  durationMs: 1320,
+  minVisibleMs: 960,
+  introMs: 180,
+  exitMs: 300,
+  surface: 0x03111e,
+  surfaceLift: 0x09243a,
+  primaryEdge: 0x57eaff,
+  secondaryEdge: 0x1d6c83,
+  reward: 0xffe58a,
+  text: 0xecfbff
+});
 const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
   offense: 0xff647f,
   mobility: 0x58d8ff,
@@ -5208,6 +5225,270 @@ export class PlayScene {
     return container;
   }
 
+  createWaveClearedCommandHud(options = {}, { width, height, y } = {}) {
+    const tokens = WAVE_CLEARED_COMMAND_HUD_TOKENS;
+    const panelWidth = Math.round(
+      Math.max(tokens.minWidth, Math.min(tokens.maxWidth, width * 0.36)) / 2
+    ) * 2;
+    const panelHeight = tokens.height;
+    const halfWidth = panelWidth / 2;
+    const halfHeight = panelHeight / 2;
+    const decorativeAccents = options.decorativeAccents !== false;
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const titleValue = String(options.primaryText || '').trim();
+    const secondaryValue = String(options.secondaryText || '').trim();
+
+    const root = new PIXI.Container();
+    root.label = 'ui_wave_cleared_command_hud';
+    root.eventMode = 'none';
+    root.interactive = false;
+    root.pivot.set(0, 0);
+    root.zIndex = 9950;
+
+    const content = new PIXI.Container();
+    content.label = 'waveClearCommandHudContent';
+    root.addChild(content);
+
+    const buildStructuralHalf = () => {
+      const half = new PIXI.Container();
+      half.label = 'waveClearCommandHudStructuralHalf';
+      const surfacePoints = [
+        0, -halfHeight,
+        halfWidth - 42, -halfHeight,
+        halfWidth - 14, -halfHeight + 17,
+        halfWidth, -halfHeight + 34,
+        halfWidth - 10, 0,
+        halfWidth, halfHeight - 34,
+        halfWidth - 14, halfHeight - 17,
+        halfWidth - 42, halfHeight,
+        0, halfHeight
+      ];
+
+      const surface = new PIXI.Graphics();
+      surface.poly(surfacePoints);
+      surface.fill({ color: tokens.surface, alpha: 0.9 });
+      half.addChild(surface);
+
+      const surfaceLift = new PIXI.Graphics();
+      surfaceLift.poly([
+        0, -halfHeight + 7,
+        halfWidth - 46, -halfHeight + 7,
+        halfWidth - 23, -halfHeight + 21,
+        halfWidth - 13, -8,
+        0, -8
+      ]);
+      surfaceLift.fill({ color: tokens.surfaceLift, alpha: 0.34 });
+      half.addChild(surfaceLift);
+
+      const primaryEdge = new PIXI.Graphics();
+      primaryEdge.moveTo(22, -halfHeight);
+      primaryEdge.lineTo(halfWidth - 42, -halfHeight);
+      primaryEdge.lineTo(halfWidth - 14, -halfHeight + 17);
+      primaryEdge.lineTo(halfWidth, -halfHeight + 34);
+      primaryEdge.lineTo(halfWidth - 10, 0);
+      primaryEdge.lineTo(halfWidth, halfHeight - 34);
+      primaryEdge.lineTo(halfWidth - 14, halfHeight - 17);
+      primaryEdge.lineTo(halfWidth - 42, halfHeight);
+      primaryEdge.lineTo(22, halfHeight);
+      primaryEdge.stroke({ color: tokens.primaryEdge, width: 1.7, alpha: 0.9 });
+      half.addChild(primaryEdge);
+
+      const secondaryEdge = new PIXI.Graphics();
+      secondaryEdge.moveTo(30, -halfHeight + 8);
+      secondaryEdge.lineTo(halfWidth - 48, -halfHeight + 8);
+      secondaryEdge.lineTo(halfWidth - 23, -halfHeight + 23);
+      secondaryEdge.moveTo(30, halfHeight - 8);
+      secondaryEdge.lineTo(halfWidth - 48, halfHeight - 8);
+      secondaryEdge.lineTo(halfWidth - 23, halfHeight - 23);
+      secondaryEdge.stroke({ color: tokens.secondaryEdge, width: 1, alpha: 0.48 });
+      half.addChild(secondaryEdge);
+
+      let rail = null;
+      if (decorativeAccents) {
+        rail = new PIXI.Graphics();
+        rail.moveTo(halfWidth - 124, -halfHeight + 15);
+        rail.lineTo(halfWidth - 68, -halfHeight + 15);
+        rail.moveTo(halfWidth - 152, halfHeight - 15);
+        rail.lineTo(halfWidth - 92, halfHeight - 15);
+        rail.moveTo(halfWidth - 48, -halfHeight + 31);
+        rail.lineTo(halfWidth - 27, -halfHeight + 43);
+        rail.stroke({ color: tokens.primaryEdge, width: 2, alpha: 0.54 });
+        rail.blendMode = 'add';
+        half.addChild(rail);
+
+        const texture = new PIXI.Graphics();
+        for (let index = 0; index < 4; index += 1) {
+          const x = 74 + index * 46;
+          texture.moveTo(x, -24 + index * 2);
+          texture.lineTo(x + 22, -24 + index * 2);
+          texture.moveTo(x + 8, 27 - index * 2);
+          texture.lineTo(x + 28, 27 - index * 2);
+        }
+        texture.stroke({ color: tokens.primaryEdge, width: 0.8, alpha: 0.1 });
+        half.addChild(texture);
+      }
+
+      return { half, primaryEdge, secondaryEdge, rail };
+    };
+
+    const right = buildStructuralHalf();
+    right.half.scale.x = 1;
+    const left = buildStructuralHalf();
+    left.half.scale.x = -1;
+    content.addChild(left.half, right.half);
+
+    const reactorNotch = new PIXI.Graphics();
+    reactorNotch.poly([-22, -halfHeight, -11, -halfHeight - 7, 0, -halfHeight - 2, 11, -halfHeight - 7, 22, -halfHeight]);
+    reactorNotch.fill({ color: tokens.surface, alpha: 0.98 });
+    reactorNotch.stroke({ color: tokens.primaryEdge, width: 1.5, alpha: 0.84 });
+    reactorNotch.poly([-16, halfHeight, -8, halfHeight + 5, 0, halfHeight + 1, 8, halfHeight + 5, 16, halfHeight]);
+    reactorNotch.fill({ color: tokens.surface, alpha: 0.98 });
+    reactorNotch.stroke({ color: tokens.secondaryEdge, width: 1, alpha: 0.62 });
+    content.addChild(reactorNotch);
+
+    const textLayer = new PIXI.Container();
+    textLayer.label = 'waveClearCommandHudTypography';
+    const titleText = createText(titleValue.toUpperCase(), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: width <= 1280 ? 27 : 30,
+      fontWeight: '900',
+      letterSpacing: width <= 1280 ? 1.4 : 2,
+      fill: `#${tokens.text.toString(16).padStart(6, '0')}`,
+      stroke: '#02131f',
+      strokeThickness: 2,
+      dropShadow: true,
+      dropShadowColor: '#2fdfff',
+      dropShadowBlur: 5,
+      dropShadowDistance: 0,
+      align: 'center'
+    });
+    titleText.anchor.set(0.5);
+    titleText.position.set(0, secondaryValue ? -17 : 0);
+    const titleMaxWidth = panelWidth - 150;
+    while (titleText.width > titleMaxWidth && titleText.style.fontSize > 21) {
+      titleText.style.fontSize -= 1;
+      titleText.updateText?.(false);
+    }
+    textLayer.addChild(titleText);
+
+    let secondaryText = null;
+    if (secondaryValue) {
+      secondaryText = createText(secondaryValue.toUpperCase(), {
+        fontFamily: FONT_BODY,
+        fontSize: width <= 1280 ? 13 : 14,
+        fontWeight: '700',
+        letterSpacing: 1.25,
+        fill: `#${tokens.reward.toString(16).padStart(6, '0')}`,
+        stroke: '#02131f',
+        strokeThickness: 1,
+        dropShadow: true,
+        dropShadowColor: '#0d8ca7',
+        dropShadowBlur: 3,
+        dropShadowDistance: 0,
+        align: 'center'
+      });
+      secondaryText.anchor.set(0.5);
+      secondaryText.position.set(0, 23);
+      const secondaryMaxWidth = panelWidth - 118;
+      while (secondaryText.width > secondaryMaxWidth && secondaryText.style.fontSize > 10) {
+        secondaryText.style.fontSize -= 1;
+        secondaryText.updateText?.(false);
+      }
+      textLayer.addChild(secondaryText);
+    }
+    content.addChild(textLayer);
+
+    const alphaBounds = content.getLocalBounds();
+    const textBounds = textLayer.getLocalBounds();
+    const alphaCenterOffsetPx = alphaBounds.x + alphaBounds.width / 2;
+    const textCenterOffsetPx = textBounds.x + textBounds.width / 2;
+
+    let sweep = null;
+    if (decorativeAccents) {
+      sweep = new PIXI.Graphics();
+      sweep.poly([-64, -halfHeight + 10, -20, -halfHeight + 10, 64, halfHeight - 10, 20, halfHeight - 10]);
+      sweep.fill({ color: tokens.primaryEdge, alpha: 0.16 });
+      sweep.blendMode = 'add';
+      sweep.x = -halfWidth - 74;
+      content.addChild(sweep);
+    }
+
+    const missionBounds = [
+      this.getVisibleHudBounds(this.hud?.missionFrameArt),
+      this.getVisibleHudBounds(this.hud?.missionPanel)
+    ].filter(Boolean);
+    const missionBottom = missionBounds.reduce((max, bounds) => Math.max(max, bounds.y + bounds.height), 0);
+    const safeY = Math.min(
+      height - tokens.safeMargin - halfHeight,
+      Math.max(
+        Number(y) || 0,
+        tokens.safeMargin + halfHeight,
+        missionBottom + tokens.hudGap + halfHeight
+      )
+    );
+    root.position.set(width / 2, safeY);
+    root.alpha = 0;
+
+    if (options.debugGeometry === true) {
+      const overlay = new PIXI.Graphics();
+      overlay.label = 'waveClearCommandHudGeometryOverlay';
+      overlay.rect(-halfWidth, -halfHeight, panelWidth, panelHeight);
+      overlay.stroke({ color: 0xffdf63, width: 1, alpha: 0.92 });
+      overlay.rect(alphaBounds.x, alphaBounds.y, alphaBounds.width, alphaBounds.height);
+      overlay.stroke({ color: 0xff4fd8, width: 1, alpha: 0.9 });
+      overlay.rect(textBounds.x, textBounds.y, textBounds.width, textBounds.height);
+      overlay.stroke({ color: 0x7dff83, width: 1, alpha: 0.92 });
+      overlay.moveTo(0, -halfHeight);
+      overlay.lineTo(0, halfHeight);
+      overlay.moveTo(-halfWidth, 0);
+      overlay.lineTo(halfWidth, 0);
+      overlay.stroke({ color: 0xffffff, width: 0.8, alpha: 0.68 });
+      overlay.circle(0, 0, 5);
+      overlay.stroke({ color: 0xff5d5d, width: 1.5, alpha: 1 });
+      overlay.poly([-4, 0, 0, -4, 4, 0, 0, 4]);
+      overlay.stroke({ color: 0x7ee9ff, width: 1.2, alpha: 1 });
+      root.addChild(overlay);
+    }
+
+    root.__waveClearCommandHudFx = {
+      left,
+      right,
+      sweep,
+      panelWidth,
+      reducedMotion,
+      introMs: tokens.introMs,
+      exitMs: tokens.exitMs
+    };
+    root._debugWaveClearEffect = {
+      visualLanguage: 'nova_command_hud_wave_clear_v1',
+      componentWidth: panelWidth,
+      componentHeight: panelHeight,
+      structuralHalfCount: 2,
+      mirroredStructure: left.half.scale.x === -right.half.scale.x,
+      preciselyCentredParent: root.x === width / 2,
+      alphaBounds: {
+        x: Number(alphaBounds.x.toFixed(2)),
+        y: Number(alphaBounds.y.toFixed(2)),
+        width: Number(alphaBounds.width.toFixed(2)),
+        height: Number(alphaBounds.height.toFixed(2))
+      },
+      alphaCenterOffsetPx: Number(alphaCenterOffsetPx.toFixed(3)),
+      textCenterOffsetPx: Number(textCenterOffsetPx.toFixed(3)),
+      anchor: { x: 0.5, y: 0.5 },
+      pivot: { x: root.pivot.x, y: root.pivot.y },
+      safeAreaMargin: tokens.safeMargin,
+      decorativeAccents,
+      typographyReadableWithoutAccents: true,
+      debugGeometry: options.debugGeometry === true,
+      deterministicAssetCount: 0,
+      newRasterAssetCount: 0,
+      title: titleValue,
+      secondary: secondaryValue,
+      reducedMotion
+    };
+    return root;
+  }
+
   // Wave bonus WOW effect with premium arcade feel
   showWaveBonusEffect(bonusAmount, label = 'WAVE CLEARED!', options = {}) {
     {
@@ -5218,18 +5499,19 @@ export class PlayScene {
     const isSectorClear = normalizedLabel.includes('SECTOR CLEAR');
     const subtitle = String(options.subtitle || '').trim();
     const scoreLine = `+${Math.max(0, Number(bonusAmount) || 0).toLocaleString('en-US')}`;
+    const secondaryLine = [scoreLine, subtitle].filter(Boolean).join('  //  ');
     const message = isSectorClear
       ? [label, scoreLine, subtitle].filter(Boolean).join('\n')
-      : [`${label}  ${scoreLine}`, subtitle].filter(Boolean).join('\n');
+      : [label, secondaryLine].filter(Boolean).join(' ');
     const type = isSectorClear ? 'sector_clear' : 'wave_clear';
-    const duration = isSectorClear ? 1650 : 1120;
+    const duration = isSectorClear ? 1650 : WAVE_CLEARED_COMMAND_HUD_TOKENS.durationMs;
     this.enqueueToast(message, {
       fontSize: isSectorClear ? (compactHud ? 24 : 32) : (compactHud ? 14 : 17),
       fill: isSectorClear ? '#fff3a2' : '#d8fbff',
       stroke: '#02131f',
       strokeThickness: isSectorClear ? 4 : 2,
       duration,
-      minVisibleMs: isSectorClear ? 1200 : 780,
+      minVisibleMs: isSectorClear ? 1200 : WAVE_CLEARED_COMMAND_HUD_TOKENS.minVisibleMs,
       extraReadTimeMs: 0,
       slot: isSectorClear ? 'center' : 'top',
       channel: isSectorClear ? 'major' : 'transition',
@@ -5237,21 +5519,28 @@ export class PlayScene {
       priority: isSectorClear ? 9 : 4,
       y: isSectorClear
         ? screenHeight * 0.36
-        : this.getTopToastSafeY(compactHud ? 14 : 17, type),
+        : this.getTopToastSafeY(compactHud ? 27 : 30, type),
       maxWidth: screenWidth * (compactHud ? 0.82 : isSectorClear ? 0.62 : 0.48),
       signalWidth: Math.min(isSectorClear ? 530 : 340, screenWidth - 96),
       authoredStyle: 'combat',
-      authoredBadge: true,
+      authoredBadge: isSectorClear,
       signalPlate: false,
       restrained: !isSectorClear,
+      waveClearCommandHud: !isSectorClear,
+      primaryText: label,
+      secondaryText: secondaryLine,
+      decorativeAccents: options.decorativeAccents !== false,
+      debugGeometry: options.debugGeometry === true,
       onShown: ({ display }) => {
         display._debugWaveClearEffect = {
+          ...(display._debugWaveClearEffect || {}),
           compact: !isSectorClear,
           channel: isSectorClear ? 'major' : 'transition',
+          slot: isSectorClear ? 'center' : 'top',
           visualLanguage: isSectorClear
             ? 'restrained_sector_clear_v4'
-            : 'compact_wave_transition_v4',
-          authoredFlourishCount: 1,
+            : 'nova_command_hud_wave_clear_v1',
+          authoredFlourishCount: isSectorClear ? 1 : 0,
           primitiveOrnamentCount: 0,
           subtitle: Boolean(subtitle),
           subtitleText: subtitle
@@ -16264,7 +16553,11 @@ export class PlayScene {
         : requestedY;
 
     let display = null;
-    if (options.type === 'aceContact' && options.aceDossier) {
+    if (options.type === 'wave_clear' && slot === 'top' && options.waveClearCommandHud === true) {
+      display = this.createWaveClearedCommandHud(options, { width, height, maxWidth, y });
+      this.uiOverlay.addChild(display);
+      this.uiOverlay.sortChildren?.();
+    } else if (options.type === 'aceContact' && options.aceDossier) {
       display = this.createAceContactDossier(options, { width, height, maxWidth, y });
     } else if (options.banner) {
       const runContractBanner = options.type === 'runContract'
@@ -16706,8 +16999,41 @@ export class PlayScene {
     console.log(`[Toast] show type=${options.type} ms=${duration} slot=${slot}`);
 
     let elapsed = 0;
+    const animationStartedAt = Date.now();
     const ticker = (delta) => {
-      elapsed += delta.deltaTime * 16.67;
+      const commandFx = display.__waveClearCommandHudFx;
+      const frameMs = (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
+      elapsed = commandFx ? Math.max(0, Date.now() - animationStartedAt) : elapsed + frameMs;
+
+      if (commandFx) {
+        const introProgress = Math.max(0, Math.min(1, elapsed / commandFx.introMs));
+        const reveal = 1 - Math.pow(1 - introProgress, 3);
+        const exitStart = duration - commandFx.exitMs;
+        const exitProgress = Math.max(0, Math.min(1, (elapsed - exitStart) / commandFx.exitMs));
+        const lineEnergy = Math.max(0.28, reveal * (1 - exitProgress * 0.68));
+        for (const side of [commandFx.left, commandFx.right]) {
+          side.primaryEdge.alpha = 0.24 + lineEnergy * 0.76;
+          side.secondaryEdge.alpha = 0.16 + lineEnergy * 0.36;
+          if (side.rail) side.rail.alpha = 0.18 + lineEnergy * 0.64;
+        }
+        if (commandFx.sweep) {
+          if (commandFx.reducedMotion) {
+            commandFx.sweep.alpha = 0;
+          } else {
+            const sweepProgress = Math.max(0, Math.min(1, (elapsed - 45) / 430));
+            commandFx.sweep.x = -commandFx.panelWidth / 2 - 74 +
+              sweepProgress * (commandFx.panelWidth + 148);
+            commandFx.sweep.alpha = Math.sin(sweepProgress * Math.PI) * 0.72;
+          }
+        }
+        if (display._debugWaveClearEffect) {
+          display._debugWaveClearEffect.motionPhase = elapsed < commandFx.introMs
+            ? 'entrance'
+            : elapsed >= exitStart
+              ? 'exit'
+              : 'hold';
+        }
+      }
 
       const aceFx = display.__aceDossierFx;
       if (aceFx) {
@@ -16730,18 +17056,29 @@ export class PlayScene {
           : 0;
       }
 
-      const introDuration = options.aceDossier ? 180 : 250;
+      const introDuration = commandFx?.introMs || (options.aceDossier ? 180 : 250);
+      const exitDuration = commandFx?.exitMs || 350;
       if (elapsed < introDuration) {
         display.alpha = elapsed / introDuration;
-        if (options.banner || options.aceDossier || display.__authoredSignalFx) {
+        if (commandFx) {
+          const t = elapsed / introDuration;
+          const eased = 1 - Math.pow(1 - t, 3);
+          const startScale = commandFx.reducedMotion ? 0.992 : 0.965;
+          display.scale.set(startScale + eased * (1 - startScale));
+        } else if (options.banner || options.aceDossier || display.__authoredSignalFx) {
           const t = elapsed / introDuration;
           const startScale = options.aceDossier ? 0.94 : (display.__authoredSignalFx ? 0.84 : 0.88);
           display.scale.set(startScale + t * (1 - startScale));
         }
-      } else if (elapsed > duration - 350) {
-        display.alpha = Math.max(0, (duration - elapsed) / 350);
+      } else if (elapsed > duration - exitDuration) {
+        display.alpha = Math.max(0, (duration - elapsed) / exitDuration);
+        if (commandFx) {
+          const t = Math.max(0, Math.min(1, (elapsed - (duration - exitDuration)) / exitDuration));
+          display.scale.set(1 - t * (commandFx.reducedMotion ? 0.004 : 0.012));
+        }
       } else {
         display.alpha = 1;
+        if (commandFx) display.scale.set(1);
       }
 
       if (elapsed >= duration) {

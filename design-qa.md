@@ -50,6 +50,51 @@ Focused region review was necessary because the transient messages are small in 
 
 final result: passed
 
+## 2026-07-27 - Wave Cleared Nova Command HUD prototype
+
+### Approved scope
+
+- This is the Approval Gate 2 prototype for Wave Cleared only. No other notification family, HUD component, gameplay behavior, localization source, Steam setting, or deployment target was changed.
+- The supplied 1920x1080 gameplay recordings were reviewed in motion before implementation. The prior treatment used a small, ornate authored flourish whose asymmetric visual weight and low information hierarchy became weak during active combat.
+
+### Design system
+
+- Structural frame: one 300-360 px half is created once and mathematically mirrored with `scale.x = -1` / `scale.x = 1`. Title and secondary typography live in a separate centered layer, so visual symmetry does not depend on the copy length.
+- Size contract: 600-720 px wide by 120 px high, inside 48 px viewport margins and at least 18 px below the live Mission Status boundary.
+- Timing contract: 180 ms entrance, restrained hold, 300 ms exit, 1320 ms total. The component settles in place and fades without vertical travel or residue.
+- Color tokens: dark navy `#03111e`, lifted navy `#09243a`, primary cyan `#57eaff`, secondary cyan `#1d6c83`, reward gold `#ffe58a`, and primary text `#ecfbff`.
+- Decorative details: optional deterministic segmented rails, low-alpha technical texture, mirrored reactor notches, and one bounded vector sweep. Typography and structural framing remain complete when decorative accents are disabled.
+- Assets: zero new raster or generated assets. The premium result comes from controlled hierarchy, coherent spacing, mirrored engineered geometry, restrained motion, and the existing Nova Swarm type/color system.
+
+### Geometry and localization proof
+
+- Temporary development overlay legend: yellow = component bounds, magenta = rendered alpha bounds, green = typography bounds, white = center axes, red circle = anchor, cyan diamond = pivot.
+- Automated assertions require exactly two mirrored structural halves, alpha and typography center offsets no greater than 0.75 px, component dimensions inside 600-740 x 96-145 px, transition-channel ownership, and complete 48 px safe-area containment.
+- The final eight-scenario matrix covers quiet, normal, and dense combat; 1920x1080 and 1280x720; English and a long German sample; entrance, hold, and exit; plus decorative accents disabled:
+  - `test-results/wave-clear-effect-2026-07-27T15-33-28-407Z`
+- The unchanged baseline matrix is preserved outside the repository:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260727\baseline-matrix-v2`
+- Side-by-side baseline/proposed comparisons:
+  - `test-results/wave-clear-effect-2026-07-27T15-01-00-016Z/comparisons/before-after-quiet-1920x1080-en-hold.png`
+  - `test-results/wave-clear-effect-2026-07-27T15-01-00-016Z/comparisons/before-after-dense-1920x1080-en-hold.png`
+  - `test-results/wave-clear-effect-2026-07-27T15-01-00-016Z/comparisons/before-after-quiet-1280x720-en-hold.png`
+  - `test-results/wave-clear-effect-2026-07-27T15-01-00-016Z/comparisons/before-after-dense-1280x720-de-long-hold.png`
+
+### Packaged-game proof
+
+- Packaged executable report:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260727\packaged-wave-clear-2026-07-27T15-36-07-399Z\report.json`
+- Dense 1920x1080 hold capture with 15 real level-55 enemies:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260727\packaged-wave-clear-2026-07-27T15-36-07-399Z\packaged-dense-1920x1080-hold.png`
+- 1280x720, 60 fps entrance-hold-exit recording:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260727\packaged-wave-clear-2026-07-27T15-36-07-399Z\packaged-wave-clear-entrance-hold-exit.mp4`
+- Packaged local smoke:
+  - `test-results/packaged-exe-smoke-2026-07-27T15-33-17-006Z/report.json`
+- Full browser gameplay smoke:
+  - `test-results/smoke-2026-07-27T15-23-12-931Z/report.json`
+
+final result: passed
+
 ## Deep HUD and command-surface follow-up — 2026-07-26
 
 ### Reviewed evidence

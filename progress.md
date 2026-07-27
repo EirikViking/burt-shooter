@@ -2517,6 +2517,21 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Pre/post Steam app-info proves `public` remained `24400692` and `test-build` remained `23782673`. The private rollback target is the preceding `sector-continue-test` BuildID `24401245`.
 - No public/default assignment, store metadata, achievements, patch notes, Git push, or other Steamworks setting changed.
 
+## 2026-07-27 Wave Cleared Nova Command HUD prototype
+
+- Approval Gate 1 was passed explicitly with `Continue`; Phase 2 is limited to one Wave Cleared visual prototype.
+- Verified clean authoritative branch `codex/tyrian-feedback-program-20260724` at crash-fix commit `36eee4d8896ac9fcb011cec7d74391ef5fdb4a45`; remote remains an ancestor.
+- Inspected both supplied captures in motion. The existing Wave Cleared treatment is a very small floating two-line label under Mission Status; it lacks a coherent structural frame and loses visual authority during active combat.
+- Expanded the focused Wave Clear browser check into a deterministic evidence matrix covering quiet, normal, and dense gameplay; 1920x1080 and 1280x720; English and a long German sample; entrance, hold, exit; and decorative accents disabled.
+- Captured the unchanged eight-scenario baseline matrix at `D:\CodexTemp\nova-swarm-wave-cleared-20260727\baseline-matrix-v2`.
+- Implemented one deterministic Nova Command HUD renderer for Wave Cleared only: 600-720 px by 120 px, one structural half mirrored with `scale.x = -1`, independently centered title/secondary typography, dark navy layered surface, cyan edge/bevel, optional segmented rails and energy sweep, and no new raster asset.
+- Added a temporary development geometry overlay for screen centre, component/alpha/text bounds, anchor, and pivot. Runtime assertions hold alpha/text centre offsets under 0.75 px and all captures inside the 48 px safe area.
+- The final focused eight-scenario check passes with entrance/hold/exit, quiet/normal/dense staged states, both target resolutions, long German text, and accents disabled. Latest evidence: `test-results/wave-clear-effect-2026-07-27T15-33-28-407Z`.
+- Adjacent checks pass: release-line, localization source/UI, current build, notification orchestration, Steam/Electron bridge, full gameplay smoke, exact packaged runtime, and local packaged-executable smoke.
+- Packaged motion proof passed with 15 real level-55 enemies and no fatal/page errors. Evidence: `D:\CodexTemp\nova-swarm-wave-cleared-20260727\packaged-wave-clear-2026-07-27T15-36-07-399Z`.
+- The temporary geometry overlay and its color legend, design tokens, before/after comparisons, packaged screenshot, and 60 fps recording are documented in `design-qa.md`.
+- Final source rebuild, exact package runtime, refreshed packaged motion capture, and local packaged smoke pass. Commit once and stop at Approval Gate 2. No Steam upload, deployment, Steamworks change, or Git push is authorized.
+
 ## 2026-07-27 - Combat notification hierarchy and restraint pass
 
 - Split player messaging into explicit major-centre, combat-transition, side, persistent-HUD, and combo channels with queue limits, duplicate collapse, cancellation, and supersession rules.
