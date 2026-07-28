@@ -377,6 +377,7 @@ export class PlayScene {
     this.gameplayBackdropHeight = 0;
     this.activeMayhemReinforcementWarning = null;
     this.activeMayhemRoutineWarning = null;
+    this.novaCommandTacticalAlertUntil = 0;
     this.lastMayhemReinforcementPresentation = null;
     this.firstRunOnboardingComplete = true;
     this.firstRunOnboardingUntil = 0;
@@ -5629,6 +5630,7 @@ export class PlayScene {
 
     const hasReward = Boolean(rewardValue);
     const hasDetail = Boolean(detailValue);
+    const hasSecondary = hasReward || hasDetail;
     const separatorGap = hasReward && hasDetail ? 26 : 0;
     const getSecondaryWidth = () =>
       (hasReward ? rewardText.width : 0) +
@@ -5646,13 +5648,20 @@ export class PlayScene {
       getSecondaryWidth() + (variant === 'major' ? 118 : 76)
     ) / 2) * 2;
     componentWidth = Math.max(minimumWidth, Math.min(maximumWidth, componentWidth));
-    const componentHeight = variant === 'major' ? (compact ? 108 : 112) : (hasReward || hasDetail ? 64 : 54);
+    let componentHeight = variant === 'major' ? (compact ? 108 : 112) : (hasReward || hasDetail ? 64 : 54);
 
     const titleMaxWidth = componentWidth - (variant === 'major' ? 132 : 72);
     const titleFloor = variant === 'major' ? 24 : 15;
     while (titleText.width > titleMaxWidth && titleText.style.fontSize > titleFloor) {
       titleText.style.fontSize -= 1;
       titleText.updateText?.(false);
+    }
+    if (variant === 'side' && titleText.width > titleMaxWidth) {
+      titleText.style.wordWrap = true;
+      titleText.style.wordWrapWidth = titleMaxWidth;
+      titleText.style.breakWords = true;
+      titleText.updateText?.(false);
+      componentHeight = Math.max(componentHeight, hasReward || hasDetail ? 74 : 66);
     }
     const secondaryMaxWidth = componentWidth - (variant === 'major' ? 104 : 66);
     while (
@@ -5664,6 +5673,21 @@ export class PlayScene {
       detailText.style.fontSize -= 1;
       rewardText.updateText?.(false);
       detailText.updateText?.(false);
+    }
+    const detailAllowance = Math.max(
+      96,
+      secondaryMaxWidth - (hasReward ? rewardText.width + separatorGap : 0)
+    );
+    if (variant === 'side' && hasDetail && detailText.width > detailAllowance) {
+      detailText.style.wordWrap = true;
+      detailText.style.wordWrapWidth = detailAllowance;
+      detailText.style.breakWords = true;
+      detailText.updateText?.(false);
+      componentHeight = Math.max(componentHeight, 76);
+    }
+    const titleWrapped = titleText.height > Number(titleText.style.fontSize) * 1.45;
+    if (variant === 'side' && titleWrapped && hasSecondary) {
+      componentHeight = Math.max(componentHeight, 84);
     }
 
     const accent = Number(options.accent) || (variant === 'major'
@@ -5685,8 +5709,10 @@ export class PlayScene {
 
     const textLayer = new PIXI.Container();
     textLayer.label = `novaCommandHud${variant}Typography`;
-    const hasSecondary = hasReward || hasDetail;
-    titleText.position.set(0, hasSecondary ? (variant === 'major' ? -17 : -12) : 0);
+    titleText.position.set(
+      0,
+      hasSecondary ? (variant === 'major' ? -17 : (titleWrapped ? -19 : -12)) : 0
+    );
     textLayer.addChild(titleText);
 
     const secondaryLayer = new PIXI.Container();
@@ -5711,7 +5737,10 @@ export class PlayScene {
       detailText.position.set(secondaryX, 0);
       secondaryLayer.addChild(detailText);
     }
-    secondaryLayer.position.set(0, variant === 'major' ? 25 : 15);
+    secondaryLayer.position.set(
+      0,
+      variant === 'major' ? 25 : (titleWrapped ? 21 : (detailText.height > 20 ? 12 : 15))
+    );
     textLayer.addChild(secondaryLayer);
     textLayer.alpha = 0;
     root.addChild(textLayer);
@@ -15997,8 +16026,9 @@ export class PlayScene {
   enqueueToast(message, options = {}) {
     if (!message) return;
     const type = options.type || 'generic';
-    const channel = options.channel || this.getNotificationChannel(type, options);
-    const slot = options.slot || this.getNotificationSlot(channel);
+    const normalizedOptions = this.getNovaCommandNotificationOptions(message, { ...options, type });
+    const channel = normalizedOptions.channel || this.getNotificationChannel(type, normalizedOptions);
+    const slot = normalizedOptions.slot || this.getNotificationSlot(channel);
     const priorityMap = {
       overrun_unlocked: 10,
       sector_clear: 9,
@@ -16019,12 +16049,15 @@ export class PlayScene {
       level_up: 1,
       score_boost: 1
     };
-    const priority = Number.isFinite(options.priority) ? options.priority : (priorityMap[type] || 0);
+    const priority = Number.isFinite(normalizedOptions.priority) ? normalizedOptions.priority : (priorityMap[type] || 0);
     const now = Date.now();
     this.applyNotificationSupersession(type, { channel, priority });
     const lockUntil = this.getToastSlotLockUntil(slot);
-    const bypassFocusLock = options.bypassFocusLock === true || (options.bypassFocusLock !== false && priority > 3);
-    let notBefore = bypassFocusLock ? (Number(options.notBefore) || 0) : Math.max(Number(options.notBefore) || 0, lockUntil);
+    const bypassFocusLock = normalizedOptions.bypassFocusLock === true ||
+      (normalizedOptions.bypassFocusLock !== false && priority > 3);
+    let notBefore = bypassFocusLock
+      ? (Number(normalizedOptions.notBefore) || 0)
+      : Math.max(Number(normalizedOptions.notBefore) || 0, lockUntil);
     if (type === 'wave_start') {
       notBefore = Math.max(notBefore, Number(this.notificationExitAt.get('wave_clear')) || 0);
     }
@@ -16032,16 +16065,29 @@ export class PlayScene {
     if (slot === 'corner' && firstRunOnboardingUntil > now && priority <= 1) {
       notBefore = Math.max(notBefore, firstRunOnboardingUntil);
     }
+    if (slot === 'corner' && channel === 'side') {
+      notBefore = Math.max(notBefore, this.getTacticalAlertBlockUntil(now));
+    }
     const duplicateKey = this.getToastDuplicateKey(message, type);
     if (duplicateKey && this.hasActiveDuplicateToast(duplicateKey)) {
       return;
     }
+    const queueAgeMs = Number.isFinite(normalizedOptions.maxQueueAgeMs)
+      ? Math.max(0, Number(normalizedOptions.maxQueueAgeMs))
+      : priority <= 0
+        ? 1800
+        : priority === 1
+          ? 2600
+          : priority === 2
+            ? 5200
+            : 7600;
     const entry = {
       message,
-      options: { ...options, type, channel, slot, priority, notBefore, duplicateKey },
+      options: { ...normalizedOptions, type, channel, slot, priority, notBefore, duplicateKey },
       priority,
       createdAt: now,
       notBefore,
+      expiresAt: now + queueAgeMs,
       duplicateKey
     };
 
@@ -16279,6 +16325,7 @@ export class PlayScene {
     this.dismissToastDisplay(this.activeCornerToast, 'corner');
     this.dismissBossDossier?.();
     this.clearMayhemReinforcementPresentations('toast_state_cleared');
+    this.novaCommandTacticalAlertUntil = 0;
     this.hud?.setNotificationFocus?.('none');
     this.centerToastLockUntil = 0;
     this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
@@ -16460,20 +16507,40 @@ export class PlayScene {
       const entry = this.dequeueReadyToast(this.toastTopQueue, now);
       if (entry) this.activeTopToast = this.showToastNow(entry.message, entry.options, 'top');
     }
-    if (!this.activeCornerToast && now >= this.getToastSlotLockUntil('corner') && this.toastCornerQueue.length > 0) {
+    const tacticalBlockUntil = this.getTacticalAlertBlockUntil(now);
+    if (
+      !this.activeCornerToast &&
+      tacticalBlockUntil <= now &&
+      now >= this.getToastSlotLockUntil('corner') &&
+      this.toastCornerQueue.length > 0
+    ) {
       const entry = this.dequeueReadyToast(this.toastCornerQueue, now);
       if (entry) this.activeCornerToast = this.showToastNow(entry.message, entry.options, 'corner');
     }
   }
 
   dequeueReadyToast(queue, now) {
+    this.pruneExpiredToasts(queue, now);
     const index = queue.findIndex(entry => (entry.notBefore || 0) <= now);
     if (index < 0) return null;
     return queue.splice(index, 1)[0];
   }
 
   peekReadyToast(queue, now) {
+    this.pruneExpiredToasts(queue, now);
     return queue.find(entry => (entry.notBefore || 0) <= now) || null;
+  }
+
+  pruneExpiredToasts(queue, now = Date.now()) {
+    if (!Array.isArray(queue)) return 0;
+    let removed = 0;
+    for (let index = queue.length - 1; index >= 0; index -= 1) {
+      const expiresAt = Number(queue[index]?.expiresAt) || 0;
+      if (!expiresAt || expiresAt > now) continue;
+      queue.splice(index, 1);
+      removed += 1;
+    }
+    return removed;
   }
 
   isTransitionToastEntry(entry) {
@@ -16880,6 +16947,138 @@ export class PlayScene {
     };
     this.uiOverlay.addChild(dossier);
     return dossier;
+  }
+
+  getNovaCommandNotificationOptions(message, options = {}) {
+    const type = options.type || 'generic';
+    if (options.novaCommandVariant) return options;
+    const routineSideTypes = new Set([
+      'nearMiss',
+      'dangerDodge',
+      'beamBroken',
+      'wingHit',
+      'bombBanked',
+      'bonus',
+      'bonus_core',
+      'powerup',
+      'repair',
+      'score_boost',
+      'score_popup',
+      'info',
+      'trait',
+      'unlock',
+      'discovery',
+      'tacticalDirective',
+      'runContractProgress',
+      'aceBounty',
+      'side_status'
+    ]);
+    if (!routineSideTypes.has(type)) return options;
+
+    const lines = String(message || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const primaryText = String(options.primaryText || lines[0] || '').trim();
+    const detailText = String(
+      options.detailText ||
+      options.secondaryText ||
+      lines.slice(1).join('  ·  ')
+    ).trim();
+    const prestigeReward = type === 'aceBounty';
+    return {
+      ...options,
+      channel: 'side',
+      slot: 'corner',
+      novaCommandVariant: 'side',
+      primaryText,
+      detailText,
+      accent: Number(options.accent) || (prestigeReward
+        ? NOVA_COMMAND_HUD_TOKENS.prestige
+        : NOVA_COMMAND_HUD_TOKENS.primaryEdge),
+      semanticTone: prestigeReward ? 'prestige_reward' : 'neutral',
+      decorativeAccents: options.decorativeAccents !== false
+    };
+  }
+
+  getTacticalAlertBlockUntil(now = Date.now()) {
+    const routineActive = Boolean(this.activeMayhemRoutineWarning?.root?.parent);
+    const stormActive = Boolean(this.activeMayhemReinforcementWarning?.overlay?.parent);
+    const topType = this.activeTopToast?.__toastMeta?.type;
+    const tacticalTopTypes = new Set([
+      'reinforcement_warning',
+      'fuel_ship',
+      'boss_warning',
+      'boss_refuel',
+      'boss_phase'
+    ]);
+    const explicitUntil = Math.max(0, Number(this.novaCommandTacticalAlertUntil) || 0);
+    if (routineActive || stormActive || tacticalTopTypes.has(topType)) {
+      return Math.max(explicitUntil, now + 80);
+    }
+    return explicitUntil > now ? explicitUntil : 0;
+  }
+
+  deferSideToastsForTacticalAlert(durationMs = 0, reason = 'tactical_alert') {
+    const now = Date.now();
+    const blockUntil = now + Math.max(0, Number(durationMs) || 0);
+    this.novaCommandTacticalAlertUntil = Math.max(
+      Number(this.novaCommandTacticalAlertUntil) || 0,
+      blockUntil
+    );
+    for (const entry of this.toastCornerQueue) {
+      if (entry?.options?.channel !== 'side') continue;
+      entry.notBefore = Math.max(Number(entry.notBefore) || 0, blockUntil);
+      entry.options = { ...entry.options, notBefore: entry.notBefore };
+    }
+
+    const active = this.activeCornerToast;
+    const meta = active?.__toastMeta;
+    if (active && meta?.channel === 'side') {
+      const ageMs = Math.max(0, now - (Number(meta.createdAt) || now));
+      const remainingMs = Math.max(0, (Number(meta.duration) || 0) - ageMs);
+      if ((Number(meta.priority) || 0) >= 2 && remainingMs >= 280) {
+        const queueAgeMs = Math.max(1200, Math.min(5200, remainingMs + durationMs + 600));
+        this.toastCornerQueue.push({
+          message: meta.message,
+          options: {
+            ...meta.originalOptions,
+            channel: 'side',
+            slot: 'corner',
+            duration: remainingMs,
+            notBefore: blockUntil
+          },
+          priority: Number(meta.priority) || 0,
+          createdAt: now,
+          notBefore: blockUntil,
+          expiresAt: now + queueAgeMs,
+          duplicateKey: meta.duplicateKey
+        });
+      }
+      this.dismissToastDisplay(active, 'corner', { reason });
+    }
+    this.toastCornerQueue.sort((a, b) =>
+      b.priority - a.priority ||
+      (a.notBefore || 0) - (b.notBefore || 0) ||
+      a.createdAt - b.createdAt
+    );
+    const limit = this.getToastQueueLimit('corner');
+    while (this.toastCornerQueue.length > limit) this.toastCornerQueue.pop();
+    return blockUntil;
+  }
+
+  getReinforcementDirectionCueMode(route = '') {
+    const normalized = String(route || '').trim().toLowerCase();
+    const hasLeft = normalized.includes('left');
+    const hasRight = normalized.includes('right');
+    const hasBottom = normalized.includes('bottom');
+    const directionalCount = Number(hasLeft) + Number(hasRight) + Number(hasBottom);
+    if (directionalCount !== 1 || normalized.includes('mixed') || normalized.includes('both')) {
+      return 'symmetric';
+    }
+    if (hasLeft) return 'left';
+    if (hasRight) return 'right';
+    return 'bottom';
   }
 
   getNotificationChannel(type = 'generic', options = {}) {
@@ -21225,6 +21424,7 @@ export class PlayScene {
     storm?.cleanup?.(reason);
     this.activeMayhemRoutineWarning = null;
     this.activeMayhemReinforcementWarning = null;
+    this.novaCommandTacticalAlertUntil = 0;
     return Boolean(routine || storm);
   }
 
@@ -21250,6 +21450,8 @@ export class PlayScene {
     const count = Math.max(1, Math.floor(Number(groupCount) || 1));
     const componentWidth = Math.min(width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2, compact ? 360 : 420);
     const componentHeight = compact ? 60 : 64;
+    const cueMode = this.getReinforcementDirectionCueMode(normalizedRoute);
+    this.deferSideToastsForTacticalAlert(duration + 40, 'tactical_reinforcement');
     let root = null;
     let ticker = null;
     let cleaned = false;
@@ -21262,14 +21464,17 @@ export class PlayScene {
       if (this.activeMayhemRoutineWarning?.root === root) {
         this.activeMayhemRoutineWarning = null;
       }
+      if (!this.activeMayhemReinforcementWarning?.parent) {
+        this.novaCommandTacticalAlertUntil = 0;
+      }
       if (root) root.__dismissReason = reason;
+      setTimeout(() => {
+        if (this.game?.app && this.game?.currentScene === this) this.processToastQueue();
+      }, 0);
       return true;
     };
 
     try {
-      const fromLeft = normalizedRoute.includes('left');
-      const fromRight = normalizedRoute.includes('right');
-      const fromBottom = normalizedRoute.includes('bottom');
       const frame = createNovaCommandFrame({
         variant: 'warning',
         width: componentWidth,
@@ -21322,15 +21527,23 @@ export class PlayScene {
         directionCue.lineTo(x + dx * 7, y + dy * 7);
         directionCue.lineTo(x - dx * 7 - px * 6, y - dy * 7 - py * 6);
       };
-      if (fromLeft) {
+      const drawSymmetricPulse = (x, y) => {
+        directionCue.poly([
+          x, y - 6,
+          x + 6, y,
+          x, y + 6,
+          x - 6, y
+        ]);
+      };
+      if (cueMode === 'left') {
         drawArrow(-componentWidth / 2 + 24, 0, 1, 0);
-      } else if (fromRight) {
+      } else if (cueMode === 'right') {
         drawArrow(componentWidth / 2 - 24, 0, -1, 0);
-      } else if (fromBottom) {
+      } else if (cueMode === 'bottom') {
         drawArrow(0, componentHeight / 2 - 15, 0, -1);
       } else {
-        drawArrow(-componentWidth / 2 + 24, 0, 1, 0);
-        drawArrow(componentWidth / 2 - 24, 0, -1, 0);
+        drawSymmetricPulse(-componentWidth / 2 + 24, 0);
+        drawSymmetricPulse(componentWidth / 2 - 24, 0);
       }
       directionCue.stroke({ color: NOVA_COMMAND_HUD_TOKENS.warning, width: 1.8, alpha: 0.84 });
       root.addChild(directionCue);
@@ -21406,7 +21619,9 @@ export class PlayScene {
         titleFontSize: Number(title.style.fontSize),
         secondaryMinimumFontSize: NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact,
         route: normalizedRoute,
-        routeCueCount: normalizedRoute === 'side' ? 2 : 1,
+        routeCueMode: cueMode,
+        routeCueCount: cueMode === 'symmetric' ? 2 : 1,
+        routeCueTruthful: true,
         reducedMotion,
         debugGeometry,
         decorativeAccents

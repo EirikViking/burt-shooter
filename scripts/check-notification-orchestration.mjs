@@ -426,9 +426,52 @@ try {
     `Combo feedback lost its reserved HUD lane: ${JSON.stringify(heavyCombat.comboDebug)}`);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  const reinforcementLifecycle = await page.evaluate(() => {
+  const reinforcementLifecycle = await page.evaluate(async () => {
     const play = window.__game.scenes.play;
     play.clearMayhemReinforcementPresentations('test_start');
+    play.clearToastState();
+
+    const routeModes = {};
+    for (const route of ['side_left', 'side_right', 'bottom', 'mixed_left_right', 'side']) {
+      play.showMayhemRoutineReinforcementWarning({
+        groupCount: 1,
+        route,
+        warningMs: 700
+      });
+      routeModes[route] = play.activeMayhemRoutineWarning?.root?._debugNovaCommandHud?.routeCueMode || null;
+      play.clearMayhemReinforcementPresentations(`route_probe_${route}`);
+    }
+
+    play.enqueueToast('BOMB BANKED\nRESERVE CHARGE READY', {
+      type: 'bombBanked',
+      duration: 1800,
+      priority: 2,
+      maxQueueAgeMs: 5000
+    });
+    play.enqueueToast('NEAR MISS x2', {
+      type: 'nearMiss',
+      duration: 900,
+      priority: 0,
+      maxQueueAgeMs: 120
+    });
+    const tacticalArbitrationShown = play.showMayhemRoutineReinforcementWarning({
+      groupCount: 1,
+      route: 'side_left',
+      warningMs: 700
+    });
+    const duringTactical = {
+      activeCorner: play.activeCornerToast?.__toastMeta?.type || null,
+      queuedCornerTypes: play.toastCornerQueue.map((entry) => entry.options?.type),
+      blockUntil: play.getTacticalAlertBlockUntil()
+    };
+    await new Promise((resolve) => setTimeout(resolve, 850));
+    play.processToastQueue();
+    const afterTactical = {
+      activeCorner: play.activeCornerToast?.__toastMeta?.type || null,
+      queuedCornerTypes: play.toastCornerQueue.map((entry) => entry.options?.type),
+      tacticalActive: Boolean(play.activeMayhemRoutineWarning?.root?.parent)
+    };
+    play.clearToastState();
 
     const firstShown = play.showMayhemRoutineReinforcementWarning({
       groupCount: 1,
@@ -505,6 +548,10 @@ try {
       gameOverClean,
       newRunShown,
       newRunFresh,
+      routeModes,
+      tacticalArbitrationShown,
+      duringTactical,
+      afterTactical,
       finalRoutineState: play.activeMayhemRoutineWarning
     };
   });
@@ -526,6 +573,52 @@ try {
     `New run inherited stale routine-warning state: ${JSON.stringify(reinforcementLifecycle)}`);
   assert(reinforcementLifecycle.finalRoutineState === null,
     `Routine-warning cleanup did not finish: ${JSON.stringify(reinforcementLifecycle)}`);
+  assert(
+    reinforcementLifecycle.routeModes.side_left === 'left' &&
+    reinforcementLifecycle.routeModes.side_right === 'right' &&
+    reinforcementLifecycle.routeModes.bottom === 'bottom' &&
+    reinforcementLifecycle.routeModes.mixed_left_right === 'symmetric' &&
+    reinforcementLifecycle.routeModes.side === 'symmetric',
+    `Reinforcement direction cues were not truthful: ${JSON.stringify(reinforcementLifecycle.routeModes)}`
+  );
+  assert(
+    reinforcementLifecycle.tacticalArbitrationShown === true &&
+    reinforcementLifecycle.duringTactical.activeCorner === null &&
+    reinforcementLifecycle.duringTactical.queuedCornerTypes.includes('bombBanked'),
+    `Tactical warning did not suppress and preserve the relevant side toast: ${JSON.stringify(reinforcementLifecycle)}`
+  );
+  assert(
+    reinforcementLifecycle.afterTactical.activeCorner === 'bombBanked' &&
+    !reinforcementLifecycle.afterTactical.queuedCornerTypes.includes('nearMiss') &&
+    reinforcementLifecycle.afterTactical.tacticalActive === false,
+    `Side queue did not resume relevant state and drop stale low-value state: ${JSON.stringify(reinforcementLifecycle)}`
+  );
+
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const routineSideToast = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.enqueueToast('BOMB BANKED\nRESERVE CHARGE READY', {
+      type: 'bombBanked',
+      duration: 1800,
+      priority: 2
+    });
+    return {
+      bounds: play.getToastDisplayBounds(play.activeCornerToast),
+      meta: play.describeToastDisplay(play.activeCornerToast),
+      geometry: play.activeCornerToast?._debugNovaCommandHud || null
+    };
+  });
+  assert(
+    routineSideToast.meta?.visualLanguage === 'nova_command_hud_side_v1' &&
+    routineSideToast.geometry?.detailFontSize >= 13 &&
+    routineSideToast.bounds?.x >= 48 &&
+    routineSideToast.bounds?.x + routineSideToast.bounds?.width <= 1280 - 48,
+    `Routine side toast did not preserve Nova Command readability and safe area: ${JSON.stringify(routineSideToast)}`
+  );
+  await page.waitForTimeout(140);
+  const routineSideScreenshot = path.join(outputDir, 'routine-side-toast-1280x720.png');
+  await page.screenshot({ path: routineSideScreenshot, fullPage: false });
 
   assert(pageErrors.length === 0, `Page errors: ${pageErrors.join('; ')}`);
 
@@ -542,6 +635,8 @@ try {
     comboScreenshot,
     heavyCombat,
     reinforcementLifecycle,
+    routineSideToast,
+    routineSideScreenshot,
     screenshot,
     pageErrors
   };

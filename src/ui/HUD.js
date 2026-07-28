@@ -1149,9 +1149,7 @@ export class HUD {
         ? 0xff765c
         : isClear
           ? 0x75ff8d
-          : isBriefing
-            ? 0xffef7e
-            : 0x66dff7;
+          : 0x66dff7;
 
     const frameKey = [
       Math.round(layout.x),
@@ -1204,6 +1202,7 @@ export class HUD {
       tier: critical ? 'critical' : 'objective',
       boss: isBoss,
       immediateDanger,
+      neutralBriefing: isBriefing && !critical,
       pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
       accent,
       notificationFocus: this.notificationFocus,

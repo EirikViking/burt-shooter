@@ -2573,3 +2573,14 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Uploaded only to `sector-continue-test` as final Steam BuildID `24410369`, depot manifest `2626477925568338261`. An intermediate provenance-check BuildID `24410096` was immediately superseded after its embedded SHA exposed the pre-commit build stamp.
 - Post-upload Steam app info proves `public` remained `24400692` and `test-build` remained `23782673`. The private rollback target remains the preceding accepted `sector-continue-test` BuildID `24403621`.
 - No public/default assignment, store metadata, achievements, patch notes, Git push, or other Steamworks setting changed.
+
+## 2026-07-28 Nova Command HUD Phase 4 - Batch A
+
+- Approval Gate 3 passed with explicit full-migration approval. Pushed the existing feature branch once to its existing upstream at approved Gate 3 commit `5be5667a4139f47fc7e699fbc824690f5fed3c0d` as the required safety checkpoint; upstream then matched exactly.
+- Migrated routine side notices including Near Miss, Bomb Banked, repair, powerup, small bonus/progress, discovery, trait, and related compact messages to the deterministic Nova Command side-toast family.
+- Added bounded localization wrapping while preserving a 13 px secondary-text floor, 48 px safe margins, pixel-centred geometry, cyan neutral semantics, and prestige gold only for explicit prestige/reward cases.
+- Changed neutral Mission Status wave briefing from amber to cyan; danger/boss pressure retains the existing critical semantic colors.
+- Added tactical-over-side arbitration: incoming reinforcement warnings suppress an active side notice, preserve relevant queued notices, expire stale low-value notices, and resume the side lane immediately after the tactical alert exits.
+- Reinforcement route cues now report and render truthful left/right/bottom arrows. Mixed or non-directional routes use paired symmetric pulse diamonds with no implied arrival direction.
+- Focused notification orchestration passes across 1280x720, 1366x768, 1600x900, 1920x1080, and 3440x1440, including the exact tactical suppression/resume/stale-drop case, all route modes, 48 px edge safety, 13 px secondary text, reduced motion, and scene/Game Over/new-run cleanup.
+- Browser evidence: `test-results/notification-orchestration-2026-07-28T18-34-40-236Z`.
