@@ -30,6 +30,12 @@ import { NullTouchControls } from '../input/NullTouchControls.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { SFX_MIX } from '../audio/SoundCatalog.js';
 import { HUD } from '../ui/HUD.js';
+import {
+  NOVA_COMMAND_HUD_TOKENS,
+  WAVE_CLEARED_COMMAND_HUD_TOKENS,
+  createNovaCommandFrame,
+  createNovaCommandGeometryOverlay
+} from '../ui/NovaCommandHud.js';
 import { SettingsOverlay } from '../ui/SettingsOverlay.js';
 import { HowToPlayOverlay } from '../ui/HowToPlayOverlay.js';
 import { TacticalLoadoutOverlay } from '../ui/TacticalLoadoutOverlay.js';
@@ -54,7 +60,11 @@ import {
 } from '../text/phrasePool.js';
 import { getShipMetadata } from '../config/ShipMetadata.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
-import { translateText } from '../i18n/index.js';
+import {
+  getCurrentLanguage,
+  setLanguagePreference,
+  translateText
+} from '../i18n/index.js';
 import { tauntDirector } from '../game/TauntDirector.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
@@ -197,25 +207,6 @@ const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const GAME_OVER_CELEBRATION_DURATION_MS = 3800;
-const WAVE_CLEARED_COMMAND_HUD_TOKENS = Object.freeze({
-  minWidth: 520,
-  englishWidth: 560,
-  maxWidth: 660,
-  height: 96,
-  safeMargin: 48,
-  hudGap: 18,
-  durationMs: 1320,
-  minVisibleMs: 960,
-  introMs: 180,
-  exitMs: 300,
-  surface: 0x03111e,
-  surfaceLift: 0x09243a,
-  primaryEdge: 0x57eaff,
-  secondaryEdge: 0x1d6c83,
-  reward: 0xffe58a,
-  text: 0xecfbff,
-  detail: 0xcdf8ff
-});
 const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
   offense: 0xff647f,
   mobility: 0x58d8ff,
@@ -1080,6 +1071,7 @@ export class PlayScene {
       forceRareChaosVisitor.playScene = this;
       window.__novaForceRareChaosVisitor = forceRareChaosVisitor;
     }
+    this.installNovaCommandHudPilotPreview(params);
 
     // Start first level - DEFERRED until intro complete
     // this.startLevel();
@@ -1777,23 +1769,34 @@ export class PlayScene {
     AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });
   }
 
-  showFlawlessWaveCelebration(streak = 1, score = 400) {
+  showFlawlessWaveCelebration(streak = 1, score = 400, previewOptions = {}) {
     const milestone = streak >= 3 && streak % 3 === 0;
-    const message = milestone
-      ? `${translateText('FLAWLESS STREAK')} x${streak}\n${translateText('NO-HIT BONUS +{score}', { score: Number(score).toLocaleString('en-US') })}`
-      : translateText('FLAWLESS WAVE +{score}', { score: Number(score).toLocaleString('en-US') });
+    const scoreValue = Number(score).toLocaleString('en-US');
+    const primaryText = milestone
+      ? `${translateText('FLAWLESS STREAK')} x${streak}`
+      : translateText('FLAWLESS WAVE +{score}', { score: scoreValue });
+    const secondaryText = milestone
+      ? translateText('NO-HIT BONUS +{score}', { score: scoreValue })
+      : '';
+    const message = [primaryText, secondaryText].filter(Boolean).join('\n');
     this.enqueueToast(message, {
-      fontSize: milestone ? (this.game.getWidth() < 720 ? 18 : 25) : 15,
+      fontSize: milestone ? (this.game.getWidth() < 720 ? 18 : 20) : 17,
       fill: milestone ? '#fff3a0' : '#9cfbff',
       stroke: '#071019',
-      strokeThickness: milestone ? 5 : 3,
+      strokeThickness: 2,
       slot: 'corner',
       channel: 'side',
       type: 'flawlessWave',
       priority: milestone ? 7 : 2,
       duration: milestone ? 1350 : 900,
       extraReadTimeMs: 0,
-      accent: milestone ? 0xffef7e : 0x9cfbff
+      accent: milestone ? NOVA_COMMAND_HUD_TOKENS.prestige : NOVA_COMMAND_HUD_TOKENS.primaryEdge,
+      novaCommandVariant: 'side',
+      primaryText,
+      secondaryText,
+      decorativeAccents: previewOptions.decorativeAccents !== false,
+      debugGeometry: previewOptions.debugGeometry === true,
+      reducedMotion: previewOptions.reducedMotion === true
     });
     AudioManager.playSfx(milestone ? 'rare_visitor_reward' : 'combo_tick', {
       volume: milestone ? 0.62 : 0.2,
@@ -5230,7 +5233,8 @@ export class PlayScene {
   createWaveClearedCommandHud(options = {}, { width, height, y } = {}) {
     const tokens = WAVE_CLEARED_COMMAND_HUD_TOKENS;
     const decorativeAccents = options.decorativeAccents !== false;
-    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const reducedMotion = options.reducedMotion === true ||
+      Boolean(getAccessibilitySettings().prefersReducedMotion);
     const titleValue = String(options.primaryText || '').trim();
     const rewardValue = String(options.rewardText || '').trim();
     const detailValue = String(options.detailText || options.secondaryText || '').trim();
@@ -5566,6 +5570,386 @@ export class PlayScene {
       reducedMotion
     };
     return root;
+  }
+
+  createNovaCommandPilotToast(options = {}, { width, height, y, slot } = {}) {
+    const variant = options.novaCommandVariant === 'major' ? 'major' : 'side';
+    const compact = width <= 1280;
+    const decorativeAccents = options.decorativeAccents !== false;
+    const reducedMotion = options.reducedMotion === true ||
+      Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const titleValue = String(options.primaryText || options.title || '').trim();
+    const rewardValue = String(options.rewardText || '').trim();
+    const detailValue = String(options.detailText || options.secondaryText || '').trim();
+    const singleLineValue = String(options.singleLineText || '').trim();
+
+    const titleText = createText((titleValue || singleLineValue).toUpperCase(), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: variant === 'major' ? (compact ? 27 : 30) : (compact ? 17 : 19),
+      fontWeight: '900',
+      letterSpacing: variant === 'major' ? (compact ? 1.3 : 1.8) : 1,
+      fill: `#${NOVA_COMMAND_HUD_TOKENS.text.toString(16).padStart(6, '0')}`,
+      stroke: '#02131f',
+      strokeThickness: variant === 'major' ? 2 : 1.5,
+      dropShadow: true,
+      dropShadowColor: `#${(Number(options.accent) || NOVA_COMMAND_HUD_TOKENS.primaryEdge).toString(16).padStart(6, '0')}`,
+      dropShadowBlur: variant === 'major' ? 5 : 3,
+      dropShadowDistance: 0,
+      align: 'center'
+    });
+    titleText.anchor.set(0.5);
+
+    const rewardText = createText(rewardValue.toUpperCase(), {
+      fontFamily: FONT_BODY,
+      fontSize: compact
+        ? NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact
+        : NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.standard + (variant === 'major' ? 1 : 0),
+      fontWeight: '800',
+      letterSpacing: 0.9,
+      fill: `#${NOVA_COMMAND_HUD_TOKENS.prestige.toString(16).padStart(6, '0')}`,
+      stroke: '#02131f',
+      strokeThickness: 1,
+      align: 'center'
+    });
+    rewardText.anchor.set(0, 0.5);
+
+    const detailText = createText(detailValue.toUpperCase(), {
+      fontFamily: FONT_BODY,
+      fontSize: compact
+        ? NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact
+        : NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.standard,
+      fontWeight: '700',
+      letterSpacing: 0.85,
+      fill: `#${NOVA_COMMAND_HUD_TOKENS.detail.toString(16).padStart(6, '0')}`,
+      stroke: '#02131f',
+      strokeThickness: 1,
+      align: 'center'
+    });
+    detailText.anchor.set(0, 0.5);
+
+    const hasReward = Boolean(rewardValue);
+    const hasDetail = Boolean(detailValue);
+    const separatorGap = hasReward && hasDetail ? 26 : 0;
+    const getSecondaryWidth = () =>
+      (hasReward ? rewardText.width : 0) +
+      (hasDetail ? detailText.width : 0) +
+      separatorGap;
+    const minimumWidth = variant === 'major' ? (compact ? 520 : 600) : (compact ? 286 : 310);
+    const maximumWidth = Math.min(
+      width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2,
+      variant === 'major' ? 680 : 400
+    );
+    const horizontalAllowance = variant === 'major' ? 142 : 88;
+    let componentWidth = Math.ceil(Math.max(
+      minimumWidth,
+      titleText.width + horizontalAllowance,
+      getSecondaryWidth() + (variant === 'major' ? 118 : 76)
+    ) / 2) * 2;
+    componentWidth = Math.max(minimumWidth, Math.min(maximumWidth, componentWidth));
+    const componentHeight = variant === 'major' ? (compact ? 108 : 112) : (hasReward || hasDetail ? 64 : 54);
+
+    const titleMaxWidth = componentWidth - (variant === 'major' ? 132 : 72);
+    const titleFloor = variant === 'major' ? 24 : 15;
+    while (titleText.width > titleMaxWidth && titleText.style.fontSize > titleFloor) {
+      titleText.style.fontSize -= 1;
+      titleText.updateText?.(false);
+    }
+    const secondaryMaxWidth = componentWidth - (variant === 'major' ? 104 : 66);
+    while (
+      getSecondaryWidth() > secondaryMaxWidth &&
+      rewardText.style.fontSize > NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact &&
+      detailText.style.fontSize > NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact
+    ) {
+      rewardText.style.fontSize -= 1;
+      detailText.style.fontSize -= 1;
+      rewardText.updateText?.(false);
+      detailText.updateText?.(false);
+    }
+
+    const accent = Number(options.accent) || (variant === 'major'
+      ? NOVA_COMMAND_HUD_TOKENS.prestige
+      : NOVA_COMMAND_HUD_TOKENS.primaryEdge);
+    const frame = createNovaCommandFrame({
+      variant,
+      width: componentWidth,
+      height: componentHeight,
+      accent,
+      secondaryAccent: NOVA_COMMAND_HUD_TOKENS.secondaryEdge,
+      decorativeAccents
+    });
+    const root = frame.root;
+    root.label = variant === 'major'
+      ? 'ui_nova_command_major_event'
+      : 'ui_nova_command_side_toast';
+    root.zIndex = variant === 'major' ? 9960 : 9940;
+
+    const textLayer = new PIXI.Container();
+    textLayer.label = `novaCommandHud${variant}Typography`;
+    const hasSecondary = hasReward || hasDetail;
+    titleText.position.set(0, hasSecondary ? (variant === 'major' ? -17 : -12) : 0);
+    textLayer.addChild(titleText);
+
+    const secondaryLayer = new PIXI.Container();
+    secondaryLayer.label = `novaCommandHud${variant}SecondaryLine`;
+    const secondaryWidth = getSecondaryWidth();
+    let secondaryX = -secondaryWidth / 2;
+    if (hasReward) {
+      rewardText.position.set(secondaryX, 0);
+      secondaryLayer.addChild(rewardText);
+      secondaryX += rewardText.width;
+    }
+    if (hasReward && hasDetail) {
+      const separator = new PIXI.Graphics();
+      separator.moveTo(0, -6);
+      separator.lineTo(0, 6);
+      separator.stroke({ color: accent, width: 1.2, alpha: 0.66 });
+      separator.position.set(secondaryX + separatorGap / 2, 0);
+      secondaryLayer.addChild(separator);
+      secondaryX += separatorGap;
+    }
+    if (hasDetail) {
+      detailText.position.set(secondaryX, 0);
+      secondaryLayer.addChild(detailText);
+    }
+    secondaryLayer.position.set(0, variant === 'major' ? 25 : 15);
+    textLayer.addChild(secondaryLayer);
+    textLayer.alpha = 0;
+    root.addChild(textLayer);
+
+    const alphaBounds = root.getLocalBounds();
+    const textBounds = textLayer.getLocalBounds();
+    if (options.debugGeometry === true) {
+      root.addChild(createNovaCommandGeometryOverlay({
+        width: frame.componentWidth,
+        height: frame.componentHeight,
+        alphaBounds,
+        textBounds
+      }));
+    }
+
+    if (variant === 'major') {
+      root.position.set(
+        width / 2,
+        Math.min(
+          height - NOVA_COMMAND_HUD_TOKENS.safeMargin - componentHeight / 2,
+          Math.max(NOVA_COMMAND_HUD_TOKENS.safeMargin + componentHeight / 2, Number(y) || height * 0.32)
+        )
+      );
+    } else {
+      root.position.set(
+        width - NOVA_COMMAND_HUD_TOKENS.safeMargin - componentWidth / 2,
+        Math.min(
+          height - NOVA_COMMAND_HUD_TOKENS.safeMargin - componentHeight / 2,
+          Math.max(NOVA_COMMAND_HUD_TOKENS.safeMargin + componentHeight / 2, Number(y) || height * 0.24)
+        )
+      );
+    }
+    root.alpha = 0;
+
+    const motion = NOVA_COMMAND_HUD_TOKENS.motion[variant];
+    root.__novaCommandHudFx = {
+      left: frame.left,
+      right: frame.right,
+      sweep: null,
+      textLayer,
+      reactorPulse: frame.motif,
+      panelWidth: frame.componentWidth,
+      plateWidth: frame.plateWidth,
+      reducedMotion,
+      introMs: motion.introMs,
+      exitMs: motion.exitMs
+    };
+    root._debugNovaCommandHud = {
+      ...frame.debug,
+      visualLanguage: `nova_command_hud_${variant}_v1`,
+      x: Number(root.x.toFixed(2)),
+      y: Number(root.y.toFixed(2)),
+      safeAreaMargin: NOVA_COMMAND_HUD_TOKENS.safeMargin,
+      title: titleValue || singleLineValue,
+      reward: rewardValue,
+      detail: detailValue,
+      titleFontSize: Number(titleText.style.fontSize),
+      rewardFontSize: Number(rewardText.style.fontSize),
+      detailFontSize: Number(detailText.style.fontSize),
+      secondaryMinimumFontSize: NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact,
+      textCenterOffsetPx: Number((textBounds.x + textBounds.width / 2).toFixed(3)),
+      reducedMotion,
+      debugGeometry: options.debugGeometry === true,
+      slot
+    };
+    return root;
+  }
+
+  installNovaCommandHudPilotPreview(params = new URLSearchParams()) {
+    if (typeof window === 'undefined') return false;
+    if (this._novaCommandPilotKeyHandler) {
+      window.removeEventListener('keydown', this._novaCommandPilotKeyHandler);
+      this._novaCommandPilotKeyHandler = null;
+    }
+    if (window.__novaCommandHudPilot?.playScene === this) delete window.__novaCommandHudPilot;
+    if (params.get('novaCommandPilot') !== '1') return false;
+    this.game.markUnrankedRun?.('nova_command_hud_pilot_preview');
+    const state = {
+      component: 'mission',
+      debugGeometry: params.get('pilotBounds') === '1',
+      decorativeAccents: params.get('pilotAccents') !== '0',
+      reducedMotion: params.get('pilotReduced') === '1',
+      requestedResolution: {
+        width: this.game.getWidth(),
+        height: this.game.getHeight()
+      }
+    };
+    const clearTransient = () => {
+      this.clearToastState?.();
+      this.clearMayhemReinforcementPresentations?.('pilot_preview_clear');
+      return true;
+    };
+    const trigger = (component = state.component, overrides = {}) => {
+      const key = String(component || 'mission').toLowerCase();
+      state.component = key;
+      const previewOptions = {
+        decorativeAccents: overrides.decorativeAccents ?? state.decorativeAccents,
+        debugGeometry: overrides.debugGeometry ?? state.debugGeometry,
+        reducedMotion: overrides.reducedMotion ?? state.reducedMotion
+      };
+      clearTransient();
+      if (key === 'mission') {
+        const manager = this.enemyManager;
+        if (manager) {
+          manager.phase = 'WAVES';
+          manager.state = 'WAVE_ACTIVE';
+          manager.normalWavesTotal = 8;
+          manager.currentWaveIndex = 5;
+        }
+        this.hud?.updateMissionStatus?.();
+      } else if (key === 'side' || key === 'flawless') {
+        this.showFlawlessWaveCelebration(3, 710, previewOptions);
+      } else if (key === 'warning' || key === 'reinforcements') {
+        this.showMayhemRoutineReinforcementWarning({
+          groupCount: 3,
+          route: overrides.route || 'side',
+          warningMs: 1300,
+          ...previewOptions
+        });
+      } else if (key === 'wave' || key === 'wave_clear') {
+        this.showWaveBonusEffect(1500, translateText('WAVE CLEARED!'), {
+        subtitle: translateText('NEXT WAVE {current}/{total}', { current: 7, total: 8 }),
+          decorativeAccents: previewOptions.decorativeAccents,
+          debugGeometry: previewOptions.debugGeometry,
+          reducedMotion: previewOptions.reducedMotion
+        });
+      } else if (key === 'major' || key === 'boss_defeated') {
+        this.showBossDefeatedCommandHud({
+          repairDelta: 1,
+          ...previewOptions
+        });
+      } else if (key === 'overlap') {
+        this.showFlawlessWaveCelebration(3, 710, previewOptions);
+        this.showMayhemRoutineReinforcementWarning({
+          groupCount: 3,
+          route: 'right',
+          warningMs: 1300,
+          ...previewOptions
+        });
+      } else {
+        throw new Error(`Unknown Nova Command HUD pilot component: ${component}`);
+      }
+      return this.getNovaCommandHudPilotPreviewState();
+    };
+    const controller = {
+      help: {
+        keys: '1 Mission, 2 Flawless, 3 Reinforcements, 4 Wave Cleared, 5 Boss Defeated, O overlap, R replay, B bounds, E reduced motion',
+        components: ['mission', 'flawless', 'reinforcements', 'wave_clear', 'boss_defeated', 'overlap'],
+        resolutions: ['1920x1080', '1280x720']
+      },
+      playScene: this,
+      state,
+      trigger,
+      replay: () => trigger(state.component),
+      clear: clearTransient,
+      setBounds: (enabled) => {
+        state.debugGeometry = Boolean(enabled);
+        return trigger(state.component);
+      },
+      setReducedMotion: (enabled) => {
+        state.reducedMotion = Boolean(enabled);
+        return trigger(state.component);
+      },
+      setDecorativeAccents: (enabled) => {
+        state.decorativeAccents = Boolean(enabled);
+        return trigger(state.component);
+      },
+      setLanguage: async (language) => {
+        await setLanguagePreference(language);
+        this.hud?.updateMissionStatus?.();
+        trigger(state.component);
+        return getCurrentLanguage();
+      },
+      setResolution: (width, height) => {
+        const requestedWidth = Math.max(640, Math.round(Number(width) || 1280));
+        const requestedHeight = Math.max(480, Math.round(Number(height) || 720));
+        state.requestedResolution = { width: requestedWidth, height: requestedHeight };
+        window.resizeTo?.(requestedWidth, requestedHeight);
+        return {
+          requested: { ...state.requestedResolution },
+          actual: { width: this.game.getWidth(), height: this.game.getHeight() }
+        };
+      },
+      getState: () => this.getNovaCommandHudPilotPreviewState()
+    };
+    window.__novaCommandHudPilot = controller;
+    this._novaCommandPilotKeyHandler = (event) => {
+      if (event.repeat) return;
+      const mapping = {
+        Digit1: 'mission',
+        Digit2: 'flawless',
+        Digit3: 'reinforcements',
+        Digit4: 'wave_clear',
+        Digit5: 'boss_defeated',
+        KeyO: 'overlap'
+      };
+      if (mapping[event.code]) {
+        event.preventDefault();
+        trigger(mapping[event.code]);
+      } else if (event.code === 'KeyR') {
+        event.preventDefault();
+        controller.replay();
+      } else if (event.code === 'KeyB') {
+        event.preventDefault();
+        controller.setBounds(!state.debugGeometry);
+      } else if (event.code === 'KeyE') {
+        event.preventDefault();
+        controller.setReducedMotion(!state.reducedMotion);
+      }
+    };
+    window.addEventListener('keydown', this._novaCommandPilotKeyHandler);
+    trigger('mission');
+    return true;
+  }
+
+  getNovaCommandHudPilotPreviewState() {
+    const activeDisplays = [
+      this.activeCenterToast,
+      this.activeTopToast,
+      this.activeCornerToast,
+      this.activeMayhemRoutineWarning?.root
+    ].filter(Boolean);
+    return {
+      enabled: Boolean(this._novaCommandPilotKeyHandler),
+      language: getCurrentLanguage(),
+      screen: {
+        width: this.game.getWidth(),
+        height: this.game.getHeight()
+      },
+      mission: this.hud?.missionPanel?._debugPriority || null,
+      active: activeDisplays.map((display) => ({
+        label: display.label || null,
+        type: display.__toastMeta?.type || null,
+        debug: display._debugWaveClearEffect || display._debugNovaCommandHud || null,
+        bounds: this.getToastDisplayBounds?.(display) || null
+      })),
+      reinforcement: this.getMayhemReinforcementPresentationDebugState?.() || null
+    };
   }
 
   // Wave bonus WOW effect with premium arcade feel
@@ -7873,6 +8257,13 @@ export class PlayScene {
     if (this._debugKeyHandler) {
       window.removeEventListener('keydown', this._debugKeyHandler);
       this._debugKeyHandler = null;
+    }
+    if (this._novaCommandPilotKeyHandler) {
+      window.removeEventListener('keydown', this._novaCommandPilotKeyHandler);
+      this._novaCommandPilotKeyHandler = null;
+    }
+    if (typeof window !== 'undefined' && window.__novaCommandHudPilot?.playScene === this) {
+      delete window.__novaCommandHudPilot;
     }
     if (typeof window !== 'undefined' && window.__novaForceMayhemSuperStorm?.playScene === this) {
       delete window.__novaForceMayhemSuperStorm;
@@ -16640,6 +17031,10 @@ export class PlayScene {
       this.uiOverlay.sortChildren?.();
     } else if (options.type === 'aceContact' && options.aceDossier) {
       display = this.createAceContactDossier(options, { width, height, maxWidth, y });
+    } else if (options.novaCommandVariant === 'side' || options.novaCommandVariant === 'major') {
+      display = this.createNovaCommandPilotToast(options, { width, height, maxWidth, y, slot });
+      this.uiOverlay.addChild(display);
+      this.uiOverlay.sortChildren?.();
     } else if (options.banner) {
       const runContractBanner = options.type === 'runContract'
         || options.type === 'runContractStart'
@@ -17064,6 +17459,11 @@ export class PlayScene {
       display.__toastMeta.authoredSignalCount = 1;
       display.__toastMeta.primitiveOrnamentCount = 0;
     }
+    if (display._debugNovaCommandHud) {
+      display.__toastMeta.visualLanguage = display._debugNovaCommandHud.visualLanguage;
+      display.__toastMeta.deterministicFrameCount = 1;
+      display.__toastMeta.newRasterAssetCount = 0;
+    }
     options.onShown?.({ display, shownAt: now, duration });
     if (display.__toastMeta.channel === 'major') this.hud?.setNotificationFocus?.('major');
 
@@ -17082,7 +17482,7 @@ export class PlayScene {
     let elapsed = 0;
     const animationStartedAt = Date.now();
     const ticker = (delta) => {
-      const commandFx = display.__waveClearCommandHudFx;
+      const commandFx = display.__waveClearCommandHudFx || display.__novaCommandHudFx;
       const frameMs = (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
       elapsed = commandFx ? Math.max(0, Date.now() - animationStartedAt) : elapsed + frameMs;
 
@@ -17116,6 +17516,13 @@ export class PlayScene {
         }
         if (display._debugWaveClearEffect) {
           display._debugWaveClearEffect.motionPhase = elapsed < commandFx.introMs
+            ? 'entrance'
+            : elapsed >= exitStart
+              ? 'exit'
+              : 'hold';
+        }
+        if (display._debugNovaCommandHud) {
+          display._debugNovaCommandHud.motionPhase = elapsed < commandFx.introMs
             ? 'entrance'
             : elapsed >= exitStart
               ? 'exit'
@@ -20821,7 +21228,14 @@ export class PlayScene {
     return Boolean(routine || storm);
   }
 
-  showMayhemRoutineReinforcementWarning({ groupCount = 1, route = 'side', warningMs = 1200 } = {}) {
+  showMayhemRoutineReinforcementWarning({
+    groupCount = 1,
+    route = 'side',
+    warningMs = 1200,
+    decorativeAccents = true,
+    debugGeometry = false,
+    reducedMotion: forceReducedMotion = false
+  } = {}) {
     const host = this.uiOverlay || this.decorativeOverlay || this.gameContainer || this.container;
     const appTicker = this.game?.app?.ticker;
     if (!host || host.destroyed || !appTicker) return false;
@@ -20831,22 +21245,24 @@ export class PlayScene {
     const height = this.game.getHeight();
     const normalizedRoute = String(route || 'side').toLowerCase();
     const duration = Math.max(700, Math.min(1500, Math.floor(Number(warningMs) || 1200)));
-    const root = new PIXI.Container();
-    root.label = 'mayhem_routine_reinforcement_warning';
-    root.eventMode = 'none';
-    root.zIndex = 9800;
+    const compact = width <= 1280 || height <= 720;
+    const reducedMotion = forceReducedMotion || Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const count = Math.max(1, Math.floor(Number(groupCount) || 1));
+    const componentWidth = Math.min(width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2, compact ? 360 : 420);
+    const componentHeight = compact ? 60 : 64;
+    let root = null;
     let ticker = null;
     let cleaned = false;
     const cleanup = (reason = 'completed') => {
       if (cleaned) return false;
       cleaned = true;
       if (ticker) appTicker.remove?.(ticker);
-      if (root.parent) root.parent.removeChild(root);
-      if (!root.destroyed) root.destroy?.({ children: true });
+      if (root?.parent) root.parent.removeChild(root);
+      if (root && !root.destroyed) root.destroy?.({ children: true });
       if (this.activeMayhemRoutineWarning?.root === root) {
         this.activeMayhemRoutineWarning = null;
       }
-      root.__dismissReason = reason;
+      if (root) root.__dismissReason = reason;
       return true;
     };
 
@@ -20854,30 +21270,79 @@ export class PlayScene {
       const fromLeft = normalizedRoute.includes('left');
       const fromRight = normalizedRoute.includes('right');
       const fromBottom = normalizedRoute.includes('bottom');
-      root.position.set(
-        fromLeft ? 34 : fromRight ? width - 34 : width / 2,
-        fromBottom ? height - 86 : Math.max(150, height * 0.36)
-      );
-      root.rotation = 0;
-      const directionX = fromLeft ? -1 : fromRight ? 1 : 0;
-      const directionY = fromBottom ? 1 : -1;
-      const beacon = presentDirectionalSignal(root, 'routine-warning', {
-        x: 0,
-        y: 0,
-        directionX,
-        directionY,
-        color: 0xffdf63,
-        size: 54,
-        alpha: 0.96
+      const frame = createNovaCommandFrame({
+        variant: 'warning',
+        width: componentWidth,
+        height: componentHeight,
+        accent: NOVA_COMMAND_HUD_TOKENS.warning,
+        secondaryAccent: NOVA_COMMAND_HUD_TOKENS.danger,
+        decorativeAccents
       });
-      if (!beacon) {
-        const cue = new PIXI.Graphics();
-        cue.moveTo(-16, 8);
-        cue.lineTo(0, -10);
-        cue.lineTo(16, 8);
-        cue.stroke({ color: 0xffdf63, width: 3, alpha: 0.9 });
-        root.addChild(cue);
+      root = frame.root;
+      root.label = 'mayhem_routine_reinforcement_warning';
+      root.eventMode = 'none';
+      root.zIndex = 9800;
+      const safeY = this.getTopToastSafeY(compact ? 17 : 18, 'reinforcement_warning');
+      root.position.set(
+        width / 2,
+        Math.min(
+          height - NOVA_COMMAND_HUD_TOKENS.safeMargin - componentHeight / 2,
+          Math.max(NOVA_COMMAND_HUD_TOKENS.safeMargin + componentHeight / 2, safeY)
+        )
+      );
+
+      const textLayer = new PIXI.Container();
+      textLayer.label = 'novaCommandHudWarningTypography';
+      const title = createText(translateText('INCOMING REINFORCEMENTS'), {
+        fontFamily: FONT_DISPLAY,
+        fontSize: compact ? 17 : 19,
+        fontWeight: '900',
+        fill: '#fff1c2',
+        stroke: '#12060a',
+        strokeThickness: 2,
+        letterSpacing: compact ? 0.7 : 1.1,
+        dropShadow: true,
+        dropShadowColor: '#ff765c',
+        dropShadowBlur: 4,
+        dropShadowDistance: 0,
+        align: 'center'
+      });
+      title.anchor.set(0.5);
+      title.position.set(0, 0);
+      textLayer.addChild(title);
+      textLayer.alpha = 0;
+      root.addChild(textLayer);
+
+      const directionCue = new PIXI.Graphics();
+      directionCue.label = 'novaCommandHudReinforcementRouteCue';
+      const drawArrow = (x, y, dx, dy) => {
+        const px = -dy;
+        const py = dx;
+        directionCue.moveTo(x - dx * 7 + px * 6, y - dy * 7 + py * 6);
+        directionCue.lineTo(x + dx * 7, y + dy * 7);
+        directionCue.lineTo(x - dx * 7 - px * 6, y - dy * 7 - py * 6);
+      };
+      if (fromLeft) {
+        drawArrow(-componentWidth / 2 + 24, 0, 1, 0);
+      } else if (fromRight) {
+        drawArrow(componentWidth / 2 - 24, 0, -1, 0);
+      } else if (fromBottom) {
+        drawArrow(0, componentHeight / 2 - 15, 0, -1);
+      } else {
+        drawArrow(-componentWidth / 2 + 24, 0, 1, 0);
+        drawArrow(componentWidth / 2 - 24, 0, -1, 0);
       }
+      directionCue.stroke({ color: NOVA_COMMAND_HUD_TOKENS.warning, width: 1.8, alpha: 0.84 });
+      root.addChild(directionCue);
+      if (debugGeometry) {
+        root.addChild(createNovaCommandGeometryOverlay({
+          width: frame.componentWidth,
+          height: frame.componentHeight,
+          alphaBounds: root.getLocalBounds(),
+          textBounds: textLayer.getLocalBounds()
+        }));
+      }
+      root.alpha = 0;
 
       const startedAt = Date.now();
       let elapsed = 0;
@@ -20894,20 +21359,70 @@ export class PlayScene {
         }
         elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
         const t = Math.min(1, elapsed / duration);
-        const pulse = (Math.sin(elapsed * 0.02) + 1) * 0.5;
-        root.alpha = Math.pow(Math.max(0, 1 - t), 0.62) * (0.62 + pulse * 0.38);
-        root.scale.set(0.9 + pulse * 0.12);
+        const introProgress = Math.max(0, Math.min(1, elapsed / NOVA_COMMAND_HUD_TOKENS.motion.warning.introMs));
+        const reveal = 1 - Math.pow(1 - introProgress, 3);
+        const textProgress = Math.max(0, Math.min(1, (elapsed - 34) /
+          Math.max(1, NOVA_COMMAND_HUD_TOKENS.motion.warning.introMs - 34)));
+        const exitStart = duration - NOVA_COMMAND_HUD_TOKENS.motion.warning.exitMs;
+        const exitProgress = Math.max(0, Math.min(1,
+          (elapsed - exitStart) / NOVA_COMMAND_HUD_TOKENS.motion.warning.exitMs));
+        const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.018) + 1) * 0.5;
+        root.alpha = Math.min(1, reveal) * (1 - exitProgress);
+        root.scale.set(reducedMotion ? 1 : 0.978 + reveal * 0.022);
+        for (const side of [frame.left, frame.right]) {
+          side.half.alpha = 0.36 + reveal * 0.64;
+          side.primaryEdge.alpha = 0.4 + reveal * 0.6;
+          side.secondaryEdge.alpha = 0.18 + reveal * 0.4;
+          if (side.rail) side.rail.alpha = 0.28 + pulse * 0.32;
+        }
+        frame.motif.alpha = 0.58 + pulse * 0.34;
+        directionCue.alpha = reducedMotion ? 0.82 : 0.58 + pulse * 0.36;
+        textLayer.alpha = 1 - Math.pow(1 - textProgress, 2);
+        if (root._debugNovaCommandHud) {
+          root._debugNovaCommandHud.motionPhase = elapsed < NOVA_COMMAND_HUD_TOKENS.motion.warning.introMs
+            ? 'entrance'
+            : elapsed >= exitStart
+              ? 'exit'
+              : 'hold';
+        }
         if (t >= 1) cleanup('completed');
       };
 
       host.addChild(root);
       host.sortChildren?.();
+      const bounds = {
+        x: Math.round(root.x - componentWidth / 2),
+        y: Math.round(root.y - componentHeight / 2),
+        width: Math.round(componentWidth),
+        height: Math.round(componentHeight)
+      };
+      root._debugNovaCommandHud = {
+        ...frame.debug,
+        visualLanguage: 'nova_command_hud_warning_v1',
+        x: Number(root.x.toFixed(2)),
+        y: Number(root.y.toFixed(2)),
+        safeAreaMargin: NOVA_COMMAND_HUD_TOKENS.safeMargin,
+        title: translateText('INCOMING REINFORCEMENTS'),
+        titleFontSize: Number(title.style.fontSize),
+        secondaryMinimumFontSize: NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact,
+        route: normalizedRoute,
+        routeCueCount: normalizedRoute === 'side' ? 2 : 1,
+        reducedMotion,
+        debugGeometry,
+        decorativeAccents
+      };
       this.lastMayhemReinforcementPresentation = {
         phase: 'warning',
-        tier: 'routine',
+        tier: 'tactical',
         route: normalizedRoute,
-        groupCount: Math.max(1, Math.floor(Number(groupCount) || 1)),
-        signalPlateVisible: false,
+        groupCount: count,
+        signalPlateVisible: true,
+        signalPlateBounds: bounds,
+        hudSafe: bounds.x >= NOVA_COMMAND_HUD_TOKENS.safeMargin &&
+          bounds.y >= NOVA_COMMAND_HUD_TOKENS.safeMargin &&
+          bounds.x + bounds.width <= width - NOVA_COMMAND_HUD_TOKENS.safeMargin &&
+          bounds.y + bounds.height <= height - NOVA_COMMAND_HUD_TOKENS.safeMargin,
+        visualLanguage: 'nova_command_hud_warning_v1',
         scoreNeutral: true,
         startedAt,
         activeUntil: startedAt + duration
@@ -22252,6 +22767,46 @@ export class PlayScene {
     this.showBossTaunt('boss_spawn');
   }
 
+  showBossDefeatedCommandHud({
+    repairDelta = 0,
+    decorativeAccents = true,
+    debugGeometry = false,
+    reducedMotion = false
+  } = {}) {
+    const compactHud = this.game.getWidth() < 620;
+    const repairLine = repairDelta > 0 ? `${translateText('HULL REPAIR')} +${repairDelta}` : '';
+    this.showToast(['+1,000', repairLine].filter(Boolean).join(' · '), {
+      title: translateText('BOSS DEFEATED'),
+      titleFontSize: compactHud ? 22 : 28,
+      fontSize: compactHud ? 15 : 18,
+      fill: '#fff3a2',
+      stroke: '#330000',
+      strokeThickness: 2,
+      duration: 1700,
+      minVisibleMs: 1250,
+      extraReadTimeMs: 0,
+      slot: 'center',
+      channel: 'major',
+      type: 'boss_defeated',
+      priority: 9,
+      banner: true,
+      restrained: true,
+      authoredFrame: false,
+      showAvatar: false,
+      novaCommandVariant: 'major',
+      primaryText: translateText('BOSS DEFEATED'),
+      rewardText: '+1,000',
+      detailText: repairLine,
+      accent: NOVA_COMMAND_HUD_TOKENS.prestige,
+      decorativeAccents,
+      debugGeometry,
+      reducedMotion,
+      y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
+      maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.46)
+    });
+    return true;
+  }
+
   showBossCelebration({ level = this.game.level, type = 'UNKNOWN' } = {}) {
     this.resetBossLifeLossCap('boss_defeated');
     this.resetBossWipeoutGuard('boss_defeated');
@@ -22286,29 +22841,7 @@ export class PlayScene {
     });
     const repairDelta = this.applyBossClearRecovery(level);
 
-    const compactHud = this.game.getWidth() < 620;
-    const repairLine = repairDelta > 0 ? `  ${translateText('HULL REPAIR')} +${repairDelta}` : '';
-    this.showToast(`+1,000${repairLine}`, {
-      title: translateText('BOSS DEFEATED'),
-      titleFontSize: compactHud ? 22 : 28,
-      fontSize: compactHud ? 15 : 18,
-      fill: '#fff3a2',
-      stroke: '#330000',
-      strokeThickness: 2,
-      duration: 1700,
-      minVisibleMs: 1250,
-      extraReadTimeMs: 0,
-      slot: 'center',
-      channel: 'major',
-      type: 'boss_defeated',
-      priority: 9,
-      banner: true,
-      restrained: true,
-      authoredFrame: false,
-      showAvatar: false,
-      y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
-      maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.46)
-    });
+    this.showBossDefeatedCommandHud({ repairDelta });
     this.reserveMessageFocus(1850, { priority: 9, slots: ['top', 'corner'] });
 
     const boss = this.enemyManager?.boss;

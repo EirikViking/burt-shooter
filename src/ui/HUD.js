@@ -13,6 +13,10 @@ import {
 } from '../config/TacticalDraft.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import { presentAuthoredSignal, hideMicroSignals } from '../effects/MicroSignalVfx.js';
+import {
+  NOVA_COMMAND_HUD_TOKENS,
+  createNovaCommandFrame
+} from './NovaCommandHud.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -51,12 +55,16 @@ export class HUD {
     this.container.addChild(this.hudContainer);
     this.leftPanel = new PIXI.Graphics();
     this.rightPanel = new PIXI.Graphics();
-    this.missionPanel = new PIXI.Graphics();
+    this.missionPanel = new PIXI.Container();
+    this.missionPanel.label = 'novaCommandMissionStatusFrame';
+    this.missionFrameGeometry = null;
+    this.missionFrameRenderKey = '';
     this.missionFrameArt = new PIXI.Sprite(PIXI.Texture.EMPTY);
     this.missionFrameArt.anchor.set(0.5);
     this.missionFrameArt.eventMode = 'none';
     this.missionFrameArt.blendMode = 'normal';
     this.missionFrameArt.label = 'missionAuthoredCommandSpine';
+    this.missionFrameArt.visible = false;
     this.missionLabel = null;
     this.missionText = null;
     this.missionProgressBg = new PIXI.Graphics();
@@ -110,10 +118,6 @@ export class HUD {
     this.hudContainer.addChild(this.missionProgressTicks);
     this.hudContainer.addChild(this.directiveProgressBg);
     this.hudContainer.addChild(this.directiveProgressFill);
-    GameAssets.ensureMicroSignalTexture?.('mission').then((texture) => {
-      if (texture && !this.missionFrameArt.destroyed) this.missionFrameArt.texture = texture;
-    }).catch(() => {});
-
     // Rank Group
     this.rankIcon.anchor.set(0.5);
     this.rankGroup.addChild(this.rankBadgeBg);
@@ -329,7 +333,7 @@ export class HUD {
     this.traitGroup.visible = false;
     this.hudContainer.addChild(this.traitGroup);
 
-    this.missionLabel = createText('MISSION STATUS', {
+    this.missionLabel = createText(translateText('MISSION STATUS'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: 10,
       fontWeight: 'bold',
@@ -835,6 +839,7 @@ export class HUD {
 
   updateMissionStatus() {
     if (!this.missionText) return;
+    if (this.missionLabel) this.missionLabel.text = translateText('MISSION STATUS');
     const play = this.game?.scenes?.play;
     const manager = play?.enemyManager;
     const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'bonus_drone').length || 0;
@@ -1099,34 +1104,13 @@ export class HUD {
       ticks.stroke({ color: 0xf8fbff, width: 1, alpha: 0.38 });
     }
 
-    let heatPipCount = 0;
+    let pressureMarkerCount = 0;
     let threatChevronCount = 0;
     if (!isClear && pressure > 0.2) {
-      const heatCount = Math.max(2, Math.min(6, Math.ceil(pressure * 6)));
-      const heatLeft = x + width * 0.12;
-      const heatRight = x + width * 0.88;
-      const heatWidth = Math.max(1, heatRight - heatLeft);
-      for (let i = 0; i < heatCount; i += 1) {
-        const ratio = heatCount <= 1 ? 0 : i / (heatCount - 1);
-        const pipX = heatLeft + heatWidth * ratio;
-        const pipY = y - 4 - (i % 2);
-        ticks.circle(pipX, pipY, 1.4 + pressure * 0.7);
-        ticks.fill({ color: activeColor, alpha: 0.2 + pressure * 0.34 + pulse * 0.12 });
-        heatPipCount += 1;
-      }
-    }
-
-    if (!isClear && activeBullets > 0) {
-      const chevronCount = Math.max(1, Math.min(5, Math.ceil(activeBullets / 8)));
-      for (let i = 0; i < chevronCount; i += 1) {
-        const cx = x + width - 7 - i * 9;
-        const cy = y + height + 4;
-        ticks.moveTo(cx - 3, cy - 2);
-        ticks.lineTo(cx, cy + 1);
-        ticks.lineTo(cx + 3, cy - 2);
-        threatChevronCount += 1;
-      }
-      ticks.stroke({ color: activeColor, width: 1.05, alpha: 0.34 + pulse * 0.28 });
+      const markerX = x + width * Math.max(activeStart, Math.min(activeEnd, 0.5));
+      ticks.circle(markerX, y - 4, 1.6 + pressure * 0.8);
+      ticks.fill({ color: activeColor, alpha: 0.36 + pressure * 0.28 + pulse * 0.1 });
+      pressureMarkerCount = 1;
     }
 
     rail._debugMissionProgress = {
@@ -1140,7 +1124,8 @@ export class HUD {
       activeEnd: Number(activeEnd.toFixed(3)),
       pressure: Number(pressure.toFixed(3)),
       tickCount,
-      heatPipCount,
+      heatPipCount: pressureMarkerCount,
+      pressureMarkerCount,
       threatChevronCount,
       color: activeColor
     };
@@ -1168,28 +1153,42 @@ export class HUD {
             ? 0xffef7e
             : 0x66dff7;
 
-    this.drawGlassPanel(
-      this.missionPanel,
-      layout.x,
-      layout.y,
-      layout.width,
-      layout.height,
+    const frameKey = [
+      Math.round(layout.x),
+      Math.round(layout.y),
+      Math.round(layout.width),
+      Math.round(layout.height),
       accent,
-      critical ? 0.075 : 0.02,
-      {
-        fillAlpha: critical ? 0.56 : 0.38,
-        strokeAlpha: critical ? 0.46 : 0.2,
-        strokeWidth: critical ? 1.2 : 0.7
-      }
-    );
-    this.missionFrameArt.tint = accent;
+      critical ? 1 : 0
+    ].join('|');
+    if (frameKey !== this.missionFrameRenderKey) {
+      this.missionFrameRenderKey = frameKey;
+      this.missionFrameGeometry?.root?.destroy?.({ children: true });
+      this.missionPanel.removeChildren();
+      this.missionFrameGeometry = createNovaCommandFrame({
+        variant: 'persistent',
+        width: layout.width,
+        height: layout.height,
+        accent,
+        secondaryAccent: NOVA_COMMAND_HUD_TOKENS.secondaryEdge,
+        decorativeAccents: false,
+        surfaceAlpha: critical ? 0.42 : 0.3,
+        liftAlpha: critical ? 0.2 : 0.12
+      });
+      this.missionFrameGeometry.root.position.set(
+        layout.x + layout.width / 2,
+        layout.y + layout.height / 2
+      );
+      this.missionPanel.addChild(this.missionFrameGeometry.root);
+    }
+    this.missionFrameArt.visible = false;
     const focusAlpha = this.notificationFocus === 'major'
       ? 0.5
       : this.notificationFocus === 'transition'
         ? 0.78
         : 1;
     this.missionPanel.alpha = focusAlpha;
-    this.missionFrameArt.alpha = (critical ? 0.88 : 0.72) * focusAlpha;
+    this.missionFrameArt.alpha = 0;
 
     this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
     this.missionText.alpha = this.notificationFocus === 'major' ? 0.7 : focusAlpha;
@@ -1208,9 +1207,11 @@ export class HUD {
       pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
       accent,
       notificationFocus: this.notificationFocus,
-      authoredFrameReady: GameAssets.isValidTexture(this.missionFrameArt.texture),
+      authoredFrameReady: false,
+      deterministicFrameReady: Boolean(this.missionFrameGeometry?.root),
+      frame: this.missionFrameGeometry?.debug || null,
       primitiveOrnamentCount: 0,
-      visualLanguage: 'authored_command_spine_v2'
+      visualLanguage: 'nova_command_hud_persistent_v1'
     };
   }
 
@@ -2363,8 +2364,8 @@ export class HUD {
     const leftPanelHeight = Math.round((layout.isMobile ? 126 : (isLargeDesktop ? 142 : 136)) * uiScale);
     const rightPanelWidth = Math.round((layout.isMobile ? 118 : (isLargeDesktop ? 180 : 164)) * uiScale);
     const rightPanelHeight = Math.round((layout.isMobile ? 42 : (isLargeDesktop ? 56 : 52)) * uiScale);
-    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.56, (isLargeDesktop ? 520 : 440) * uiScale);
-    const missionPanelHeight = Math.round((layout.isMobile ? 62 : (isLargeDesktop ? 82 : 74)) * uiScale);
+    const missionPanelWidth = layout.isMobile ? canvasWidth - margin * 2 : Math.min(canvasWidth * 0.52, (isLargeDesktop ? 480 : 420) * uiScale);
+    const missionPanelHeight = Math.round((layout.isMobile ? 60 : (isLargeDesktop ? 74 : 68)) * uiScale);
     const missionPanelX = layout.isMobile ? margin : canvasWidth / 2 - missionPanelWidth / 2;
     const missionPanelY = layout.isMobile ? margin + leftPanelHeight + 7 : margin;
 
@@ -2396,7 +2397,7 @@ export class HUD {
     );
     this.missionFrameArt.width = missionPanelWidth + Math.round(20 * uiScale);
     this.missionFrameArt.height = Math.min(
-      missionPanelHeight + Math.round(16 * uiScale),
+      missionPanelHeight + Math.round(12 * uiScale),
       this.missionFrameArt.width * (265 / 2148)
     );
     this.updateMissionPriorityVisual();
@@ -2460,11 +2461,11 @@ export class HUD {
     }
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
-    this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 14 : 12));
+    this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 13 : 11));
     this.missionText.x = missionPanelX + missionPanelWidth / 2;
-    this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 36 : 32));
+    this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 32 : 29));
     this.directiveText.x = missionPanelX + missionPanelWidth / 2;
-    this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 49 : (isLargeDesktop ? 64 : 58)) * uiScale);
+    this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 47 : (isLargeDesktop ? 57 : 52)) * uiScale);
     if (this.missionProgressBg) {
       const railPad = Math.round(Math.max(
         (layout.isMobile ? 18 : 30) * uiScale,
@@ -2472,7 +2473,7 @@ export class HUD {
       ));
       const railHeight = Math.max(3, Math.round((layout.isMobile ? 3 : 4) * Math.min(uiScale, 1.6)));
       this.missionProgressBg.__x = Math.round(missionPanelX + railPad);
-      this.missionProgressBg.__y = Math.round(missionPanelY + (layout.isMobile ? 35 : (isLargeDesktop ? 49 : 43)) * uiScale);
+      this.missionProgressBg.__y = Math.round(missionPanelY + (layout.isMobile ? 35 : (isLargeDesktop ? 43 : 38)) * uiScale);
       this.missionProgressBg.__w = Math.round(Math.max(0, missionPanelWidth - railPad * 2));
       this.missionProgressBg.__h = railHeight;
     }

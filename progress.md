@@ -2544,6 +2544,19 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Adjacent gates pass: notification orchestration, all-language source/UI checks, current build, Steam/Electron bridge, full gameplay smoke, release-line and exact-package runtime, and local packaged-executable smoke.
 - No other notification, external asset, localization file, Steamworks setting, deployment target, or remote Git state changed. Commit once and stop at Approval Gate 2.
 
+## 2026-07-28 Nova Command HUD five-component pilot
+
+- Approval Gate 2 passed explicitly with `Approve and continue`. Phase 3 is limited to Mission Status, Flawless Streak, Incoming Reinforcements, approved Wave Cleared V2, and Boss Defeated.
+- Verified the authoritative worktree is clean at approved V2 commit `796b2523c9df35017eb8a7bbceb31058c3feb037` on `codex/tyrian-feedback-program-20260724`; upstream remains an ancestor and `check:release-line` passes.
+- Preserved an independently clean detached baseline worktree at `D:\CodexTemp\nova-swarm-command-pilot-20260728\baseline-worktree`.
+- Added a deterministic shared Nova Command HUD frame family with common material, line-weight, typography, safe-area, motion, and paired reactor-motif tokens. No raster, ImageGen, or external asset was added.
+- First implementation slice applies category-specific silhouettes to the calmer persistent Mission Status, compact Flawless side toast, compact tactical reinforcement warning, and restrained Boss Defeated major event. Wave Cleared V2 retains its approved renderer and exact geometry/timing tokens.
+- Final pilot dimensions at 1920x1080 are Mission Status 480 x 74, Flawless 370 x 64, Reinforcements 420 x 64, Wave Cleared 560 x 96, and Boss Defeated 600 x 112. At 1280x720 they are 420 x 68, 342 x 64, 360 x 60, 520 x 96, and 520 x 108 respectively. Long German Wave Cleared expands to 596 x 96.
+- The 30-capture browser matrix plus a dense overlap case passes at `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z`; exact approved-V2 baseline comparisons are at `test-results/nova-command-hud-pilot-gate3-comparisons-20260728`.
+- Packaged visual validation passes on `release/desktop/win-unpacked/Nova Swarm.exe` with all five components, 18 visible enemies, a contact sheet, and a 3.5-second 1280x720 60 fps video at `test-results/packaged-nova-command-hud-pilot-2026-07-28T10-43-35-882Z`.
+- Localization source/UI, current build, mission HUD, notification orchestration, reinforcement behavior, controller flow, Steam bridge, release-line, full gameplay smoke, local Electron smoke, and exact package-runtime validation pass. The generic packaged Steam smoke reaches the package but cannot initialize Steam outside the client (`steam_init_returned_false`); the packaged UI harness and native-runtime validator are green.
+- No notification outside the five pilot paths, external asset, Steamworks setting, deployment target, or remote Git state changed. Commit once and stop at Approval Gate 3.
+
 ## 2026-07-27 - Combat notification hierarchy and restraint pass
 
 - Split player messaging into explicit major-centre, combat-transition, side, persistent-HUD, and combo channels with queue limits, duplicate collapse, cancellation, and supersession rules.

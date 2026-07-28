@@ -50,6 +50,52 @@ Focused region review was necessary because the transient messages are small in 
 
 final result: passed
 
+## 2026-07-28 - Nova Command HUD five-component pilot
+
+### Approval Gate 3 scope
+
+- Gate 2 approved Wave Cleared V2 at `796b2523c9df35017eb8a7bbceb31058c3feb037`. The pilot applies the approved material, typography, line weights, color hierarchy, motion principles, and paired center-axis reactor motif to exactly four additional paths: Mission Status, Flawless side toast, routine Incoming Reinforcements, and Boss Defeated.
+- Wave Cleared keeps its approved V2 renderer, dimensions, timing, open-rail occlusion contract, and text hierarchy. Other notification families and the system-wide notification architecture were not migrated.
+- No ImageGen output, external asset pack, or new raster asset was added.
+
+### Category-specific results
+
+- Mission Status uses a calm persistent bracket frame, low-opacity central plate, one pressure marker, and no decorative chevron/pip clutter. It is 480 x 74 px at 1920x1080 and 420 x 68 px at 1280x720.
+- Flawless is a right-anchored compact rail, 370 x 64 px at 1920x1080 and 342 x 64 px at 1280x720. Its secondary line remains 14/13 px and clears the 48 px edge margin.
+- Incoming Reinforcements is an open amber/danger stepped rail with a semantic route cue, not a full-width warning slab. It is 420 x 64 px at 1920x1080 and 360 x 60 px at 1280x720.
+- Wave Cleared remains 560 x 96 px at 1920x1080 and 520 x 96 px at 1280x720. The staged German copy expands to 596 x 96 px.
+- Boss Defeated uses the restrained major-event variant, 600 x 112 px at 1920x1080 and 520 x 108 px at 1280x720. Prestige reward and neutral repair detail remain at or above the 13 px secondary floor.
+
+### Occlusion and identity
+
+- Each frame defines one deterministic structural half and instantiates it at `scale.x = -1` / `scale.x = 1`. The four categories use different calm-bracket, compact-cap, alert-step, and prestige-step silhouettes rather than copying the Wave Cleared point.
+- Dark material is concentrated beneath text. Outer rails remain open and the measured opaque-width coverage is 34.4% for dense compact Mission Status, 57.8% for the compact major event, and below the Wave V2 72% maximum for the transition frame.
+- The shared Nova Swarm identifier is the small paired reactor-pulse notch on the exact center axis, supported by `#03111e`/`#09243a` navy material, `#57eaff` primary cyan, `#1d6c83` secondary cyan, semantic amber/danger, prestige gold, and 1.6/1.0 px structural line weights.
+- Motion resolves structural rails first and typography immediately afterward from the center. Reduced-motion evidence disables the pulse/scale flourish without changing hierarchy or duration.
+
+### Browser evidence
+
+- Passing 30-capture matrix: `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z`
+- Dense English contact sheet: `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z/contact-sheet-dense-1280x720-en.png`
+- Dense German contact sheet: `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z/contact-sheet-dense-1280x720-de.png`
+- Reduced-motion contact sheet: `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z/contact-sheet-dense-1280x720-en-reduced.png`
+- Real dense overlap case: `test-results/nova-command-hud-pilot-proposed-2026-07-28T10-12-18-750Z/overlap-dense-1280x720-en.png`
+- Exact approved-baseline comparisons: `test-results/nova-command-hud-pilot-gate3-comparisons-20260728`
+
+### Packaged evidence and validation
+
+- Packaged executable: `release/desktop/win-unpacked/Nova Swarm.exe`
+- Passing packaged report: `test-results/packaged-nova-command-hud-pilot-2026-07-28T10-43-35-882Z/report.json`
+- Packaged five-component contact sheet: `test-results/packaged-nova-command-hud-pilot-2026-07-28T10-43-35-882Z/packaged-five-component-contact-sheet.png`
+- Packaged 1280x720 H.264 video: `test-results/packaged-nova-command-hud-pilot-2026-07-28T10-43-35-882Z/packaged-five-component-pilot-60fps.mp4` (3.5 seconds, 210 frames, 60 fps)
+- Exact Steam runtime package validation: `test-results/steam-package-runtime-2026-07-28T10-40-06-311Z/report.json`
+- Full gameplay smoke: `test-results/smoke-2026-07-28T10-44-52-746Z/report.json`
+- Passed release-line, localization source/UI checks, current production build, Mission Status, pilot matrix, notification orchestration, reinforcement behavior, controller flow, Steam bridge, browser smoke, local Electron smoke, exact package runtime, and packaged five-component visual validation.
+- The generic packaged Steam smoke reports `steam_init_returned_false` because the executable was launched outside the Steam client. Native modules and SDK paths are present; the task did not authorize deployment or Steam state changes.
+- Steamworks was untouched. No upload, deployment, branch assignment, Git push, or public/default change occurred.
+
+final result: passed
+
 ## 2026-07-27 - Wave Cleared Nova Command HUD prototype
 
 ### Approved scope

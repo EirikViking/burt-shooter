@@ -5135,10 +5135,17 @@ export class EnemyManager {
           );
         }
         const nextLabel = hasUpcomingWave
-          ? `NEXT WAVE ${transitionWaveIndex + 2}/${this.normalWavesTotal}`
-          : 'BOSS GATE NEXT';
-        const repairLabel = repairDelta > 0 ? ` - REPAIR +${repairDelta}` : '';
-        const transitionLabel = hasUpcomingWave ? 'WAVE CLEARED!' : 'SECTOR CLEAR';
+          ? translateText('NEXT WAVE {current}/{total}', {
+            current: transitionWaveIndex + 2,
+            total: this.normalWavesTotal
+          })
+          : translateText('BOSS GATE NEXT');
+        const repairLabel = repairDelta > 0
+          ? ` · ${translateText('REPAIR +{amount}', { amount: repairDelta })}`
+          : '';
+        const transitionLabel = hasUpcomingWave
+          ? translateText('WAVE CLEARED!')
+          : translateText('SECTOR CLEAR');
         this.measurePerformance('first_use_asset_effect_creation.wave_bonus_effect', () => {
           this.game.scenes.play.showWaveBonusEffect(appliedBonus, transitionLabel, {
             compact: hasUpcomingWave,

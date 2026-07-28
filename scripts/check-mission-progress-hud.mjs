@@ -208,8 +208,8 @@ try {
   if (state.activeWave?.activeEnd !== 0.5) failures.push(`unexpected active end ${state.activeWave?.activeEnd}`);
   if ((state.activeWave?.tickCount || 0) < 5) failures.push(`expected visible wave ticks, got ${state.activeWave?.tickCount}`);
   if ((state.activeWave?.pressure || 0) <= 0.9) failures.push(`expected pressure cue above 0.9, got ${state.activeWave?.pressure}`);
-  if ((state.activeWave?.heatPipCount || 0) < 5) failures.push(`expected mission heat pips, got ${state.activeWave?.heatPipCount}`);
-  if ((state.activeWave?.threatChevronCount || 0) < 3) failures.push(`expected threat chevrons, got ${state.activeWave?.threatChevronCount}`);
+  if (state.activeWave?.pressureMarkerCount !== 1) failures.push(`expected one restrained pressure marker, got ${state.activeWave?.pressureMarkerCount}`);
+  if ((state.activeWave?.threatChevronCount || 0) !== 0) failures.push(`persistent Mission Status retained decorative threat chevrons: ${state.activeWave?.threatChevronCount}`);
   if (!/^WAVE: 3\/6 \| HOSTILES: 7 \| THREATS: 18$/.test(state.activeText || '')) failures.push(`mission text did not stay readable in wave state: ${state.activeText}`);
   if (!/^LEVEL: 4 \| HOSTILES: 3 \| THREATS: 0$/.test(state.levelText || '')) failures.push(`level fallback mission text was not separated: ${state.levelText}`);
   if (state.boss?.completedRatio !== 1 || state.boss?.phase !== 'BOSS') failures.push(`boss state did not fill the rail: ${JSON.stringify(state.boss)}`);
