@@ -4772,18 +4772,10 @@ export class PlayScene {
           ? this.applyLifeRepair(repairTarget, rewardConfig.repairInvulnerabilityMs || 0)
           : 0;
         const repairSuffix = repairDelta > 0 ? `  REPAIR +${repairDelta}` : '';
-        if (!bossCompletion) {
-          this.showToast(`SECTOR CLEAR +${appliedLevelClearScore}${repairSuffix}`, {
-            fontSize: compactHud ? 20 : 26,
-            fill: '#8fffd5',
-            stroke: '#001616',
-            strokeThickness: compactHud ? 2 : 3,
-            duration: 1500,
-            slot: 'top',
-            type: 'level_clear',
-            priority: 3,
-            y: this.game.getHeight() * (compactHud ? 0.22 : 0.17),
-            maxWidth: this.game.getWidth() * (compactHud ? 0.82 : 0.7)
+        if (!bossCompletion && !this.hasNotificationType('sector_clear')) {
+          this.showWaveBonusEffect(appliedLevelClearScore, translateText('SECTOR CLEAR'), {
+            subtitle: repairSuffix.trim(),
+            sfxKey: 'levelComplete'
           });
         }
         if (!dailySignalFinish) this.playLevelClearVoice({ bossCompletion });
@@ -5574,7 +5566,14 @@ export class PlayScene {
   }
 
   createNovaCommandPilotToast(options = {}, { width, height, y, slot } = {}) {
-    const variant = options.novaCommandVariant === 'major' ? 'major' : 'side';
+    const variant = options.novaCommandVariant === 'major'
+      ? 'major'
+      : options.novaCommandVariant === 'transition'
+        ? 'transition'
+        : 'side';
+    const isMajor = variant === 'major';
+    const isTransition = variant === 'transition';
+    const frameVariant = isTransition ? 'warning' : variant;
     const compact = width <= 1280;
     const decorativeAccents = options.decorativeAccents !== false;
     const reducedMotion = options.reducedMotion === true ||
@@ -5586,15 +5585,19 @@ export class PlayScene {
 
     const titleText = createText((titleValue || singleLineValue).toUpperCase(), {
       fontFamily: FONT_DISPLAY,
-      fontSize: variant === 'major' ? (compact ? 27 : 30) : (compact ? 17 : 19),
+      fontSize: isMajor
+        ? (compact ? 27 : 30)
+        : isTransition
+          ? (compact ? 18 : 20)
+          : (compact ? 17 : 19),
       fontWeight: '900',
-      letterSpacing: variant === 'major' ? (compact ? 1.3 : 1.8) : 1,
+      letterSpacing: isMajor ? (compact ? 1.3 : 1.8) : (isTransition ? 1.1 : 1),
       fill: `#${NOVA_COMMAND_HUD_TOKENS.text.toString(16).padStart(6, '0')}`,
       stroke: '#02131f',
-      strokeThickness: variant === 'major' ? 2 : 1.5,
+      strokeThickness: isMajor ? 2 : 1.5,
       dropShadow: true,
       dropShadowColor: `#${(Number(options.accent) || NOVA_COMMAND_HUD_TOKENS.primaryEdge).toString(16).padStart(6, '0')}`,
-      dropShadowBlur: variant === 'major' ? 5 : 3,
+      dropShadowBlur: isMajor ? 5 : 3,
       dropShadowDistance: 0,
       align: 'center'
     });
@@ -5604,7 +5607,7 @@ export class PlayScene {
       fontFamily: FONT_BODY,
       fontSize: compact
         ? NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact
-        : NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.standard + (variant === 'major' ? 1 : 0),
+        : NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.standard + (isMajor ? 1 : 0),
       fontWeight: '800',
       letterSpacing: 0.9,
       fill: `#${NOVA_COMMAND_HUD_TOKENS.prestige.toString(16).padStart(6, '0')}`,
@@ -5636,34 +5639,42 @@ export class PlayScene {
       (hasReward ? rewardText.width : 0) +
       (hasDetail ? detailText.width : 0) +
       separatorGap;
-    const minimumWidth = variant === 'major' ? (compact ? 520 : 600) : (compact ? 286 : 310);
+    const minimumWidth = isMajor
+      ? (compact ? 520 : 600)
+      : isTransition
+        ? (compact ? 360 : 420)
+        : (compact ? 286 : 310);
     const maximumWidth = Math.min(
       width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2,
-      variant === 'major' ? 680 : 400
+      isMajor ? 680 : isTransition ? 540 : 400
     );
-    const horizontalAllowance = variant === 'major' ? 142 : 88;
+    const horizontalAllowance = isMajor ? 142 : isTransition ? 96 : 88;
     let componentWidth = Math.ceil(Math.max(
       minimumWidth,
       titleText.width + horizontalAllowance,
-      getSecondaryWidth() + (variant === 'major' ? 118 : 76)
+      getSecondaryWidth() + (isMajor ? 118 : isTransition ? 88 : 76)
     ) / 2) * 2;
     componentWidth = Math.max(minimumWidth, Math.min(maximumWidth, componentWidth));
-    let componentHeight = variant === 'major' ? (compact ? 108 : 112) : (hasReward || hasDetail ? 64 : 54);
+    let componentHeight = isMajor
+      ? (compact ? 108 : 112)
+      : isTransition
+        ? (hasSecondary ? (compact ? 66 : 68) : (compact ? 58 : 60))
+        : (hasSecondary ? 64 : 54);
 
-    const titleMaxWidth = componentWidth - (variant === 'major' ? 132 : 72);
-    const titleFloor = variant === 'major' ? 24 : 15;
+    const titleMaxWidth = componentWidth - (isMajor ? 132 : isTransition ? 84 : 72);
+    const titleFloor = isMajor ? 24 : isTransition ? 16 : 15;
     while (titleText.width > titleMaxWidth && titleText.style.fontSize > titleFloor) {
       titleText.style.fontSize -= 1;
       titleText.updateText?.(false);
     }
-    if (variant === 'side' && titleText.width > titleMaxWidth) {
+    if (!isMajor && titleText.width > titleMaxWidth) {
       titleText.style.wordWrap = true;
       titleText.style.wordWrapWidth = titleMaxWidth;
       titleText.style.breakWords = true;
       titleText.updateText?.(false);
       componentHeight = Math.max(componentHeight, hasReward || hasDetail ? 74 : 66);
     }
-    const secondaryMaxWidth = componentWidth - (variant === 'major' ? 104 : 66);
+    const secondaryMaxWidth = componentWidth - (isMajor ? 104 : isTransition ? 78 : 66);
     while (
       getSecondaryWidth() > secondaryMaxWidth &&
       rewardText.style.fontSize > NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact &&
@@ -5678,7 +5689,7 @@ export class PlayScene {
       96,
       secondaryMaxWidth - (hasReward ? rewardText.width + separatorGap : 0)
     );
-    if (variant === 'side' && hasDetail && detailText.width > detailAllowance) {
+    if (!isMajor && hasDetail && detailText.width > detailAllowance) {
       detailText.style.wordWrap = true;
       detailText.style.wordWrapWidth = detailAllowance;
       detailText.style.breakWords = true;
@@ -5686,15 +5697,15 @@ export class PlayScene {
       componentHeight = Math.max(componentHeight, 76);
     }
     const titleWrapped = titleText.height > Number(titleText.style.fontSize) * 1.45;
-    if (variant === 'side' && titleWrapped && hasSecondary) {
+    if (!isMajor && titleWrapped && hasSecondary) {
       componentHeight = Math.max(componentHeight, 84);
     }
 
-    const accent = Number(options.accent) || (variant === 'major'
+    const accent = Number(options.accent) || (isMajor
       ? NOVA_COMMAND_HUD_TOKENS.prestige
       : NOVA_COMMAND_HUD_TOKENS.primaryEdge);
     const frame = createNovaCommandFrame({
-      variant,
+      variant: frameVariant,
       width: componentWidth,
       height: componentHeight,
       accent,
@@ -5702,16 +5713,18 @@ export class PlayScene {
       decorativeAccents
     });
     const root = frame.root;
-    root.label = variant === 'major'
+    root.label = isMajor
       ? 'ui_nova_command_major_event'
-      : 'ui_nova_command_side_toast';
-    root.zIndex = variant === 'major' ? 9960 : 9940;
+      : isTransition
+        ? 'ui_nova_command_transition'
+        : 'ui_nova_command_side_toast';
+    root.zIndex = isMajor ? 9960 : isTransition ? 9950 : 9940;
 
     const textLayer = new PIXI.Container();
     textLayer.label = `novaCommandHud${variant}Typography`;
     titleText.position.set(
       0,
-      hasSecondary ? (variant === 'major' ? -17 : (titleWrapped ? -19 : -12)) : 0
+      hasSecondary ? (isMajor ? -17 : (titleWrapped ? -19 : -12)) : 0
     );
     textLayer.addChild(titleText);
 
@@ -5739,7 +5752,7 @@ export class PlayScene {
     }
     secondaryLayer.position.set(
       0,
-      variant === 'major' ? 25 : (titleWrapped ? 21 : (detailText.height > 20 ? 12 : 15))
+      isMajor ? 25 : (titleWrapped ? 21 : (detailText.height > 20 ? 12 : 15))
     );
     textLayer.addChild(secondaryLayer);
     textLayer.alpha = 0;
@@ -5756,12 +5769,15 @@ export class PlayScene {
       }));
     }
 
-    if (variant === 'major') {
+    if (isMajor || isTransition) {
       root.position.set(
         width / 2,
         Math.min(
           height - NOVA_COMMAND_HUD_TOKENS.safeMargin - componentHeight / 2,
-          Math.max(NOVA_COMMAND_HUD_TOKENS.safeMargin + componentHeight / 2, Number(y) || height * 0.32)
+          Math.max(
+            NOVA_COMMAND_HUD_TOKENS.safeMargin + componentHeight / 2,
+            Number(y) || height * (isMajor ? 0.32 : 0.18)
+          )
         )
       );
     } else {
@@ -5775,7 +5791,7 @@ export class PlayScene {
     }
     root.alpha = 0;
 
-    const motion = NOVA_COMMAND_HUD_TOKENS.motion[variant];
+    const motion = NOVA_COMMAND_HUD_TOKENS.motion[frameVariant];
     root.__novaCommandHudFx = {
       left: frame.left,
       right: frame.right,
@@ -6018,6 +6034,8 @@ export class PlayScene {
       authoredBadge: isSectorClear,
       signalPlate: false,
       restrained: !isSectorClear,
+      novaCommandVariant: isSectorClear ? 'major' : undefined,
+      accent: isSectorClear ? 0x75ff8d : NOVA_COMMAND_HUD_TOKENS.primaryEdge,
       waveClearCommandHud: !isSectorClear,
       primaryText: label,
       secondaryText: secondaryLine,
@@ -6032,9 +6050,9 @@ export class PlayScene {
           channel: isSectorClear ? 'major' : 'transition',
           slot: isSectorClear ? 'center' : 'top',
           visualLanguage: isSectorClear
-            ? 'restrained_sector_clear_v4'
+            ? 'nova_command_hud_sector_clear_v1'
             : 'nova_command_hud_wave_clear_v2',
-          authoredFlourishCount: isSectorClear ? 1 : 0,
+          authoredFlourishCount: 0,
           primitiveOrnamentCount: 0,
           subtitle: Boolean(subtitle),
           subtitleText: subtitle
@@ -16549,7 +16567,16 @@ export class PlayScene {
   }
 
   isTransitionToastType(type) {
-    return type === 'level_clear' || type === 'level_up' || type === 'boss' || type === 'boss_intro' || type === 'run_clear';
+    return [
+      'wave_start',
+      'wave_clear',
+      'sector_arrival',
+      'level_clear',
+      'level_up',
+      'boss',
+      'boss_intro',
+      'run_clear'
+    ].includes(type);
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -16951,6 +16978,31 @@ export class PlayScene {
 
   getNovaCommandNotificationOptions(message, options = {}) {
     const type = options.type || 'generic';
+    const transitionTypes = new Set(['wave_start', 'sector_arrival', 'level_up']);
+    if (transitionTypes.has(type)) {
+      const rawLines = String(message || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const divided = rawLines.length === 1 && rawLines[0].includes('//')
+        ? rawLines[0].split('//').map((line) => line.trim()).filter(Boolean)
+        : rawLines;
+      return {
+        ...options,
+        channel: 'transition',
+        slot: 'top',
+        novaCommandVariant: 'transition',
+        primaryText: String(options.primaryText || divided[0] || '').trim(),
+        detailText: String(
+          options.detailText ||
+          options.secondaryText ||
+          divided.slice(1).join('  ·  ')
+        ).trim(),
+        accent: NOVA_COMMAND_HUD_TOKENS.primaryEdge,
+        semanticTone: 'neutral_transition',
+        decorativeAccents: options.decorativeAccents !== false
+      };
+    }
     if (options.novaCommandVariant) return options;
     const routineSideTypes = new Set([
       'nearMiss',
@@ -17109,6 +17161,20 @@ export class PlayScene {
     return meta?.channel || this.getNotificationChannel(meta?.type || 'generic', meta?.originalOptions || {});
   }
 
+  hasNotificationType(type) {
+    if (!type) return false;
+    const active = [
+      this.activeBossIntroCard,
+      this.activeCenterToast,
+      this.activeTopToast,
+      this.activeCornerToast,
+      this.activeBossDossier
+    ];
+    if (active.some((display) => display?.__toastMeta?.type === type)) return true;
+    return [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]
+      .some((queue) => queue.some((entry) => entry?.options?.type === type));
+  }
+
   cancelNotificationTypes(types = [], reason = 'superseded') {
     const wanted = new Set(types.filter(Boolean));
     if (!wanted.size) return 0;
@@ -17148,7 +17214,7 @@ export class PlayScene {
         'reinforcement_warning'
       ], 'boss_defeated');
     } else if (type === 'sector_clear') {
-      this.cancelNotificationTypes(['wave_start', 'wave_clear'], 'sector_clear');
+      this.cancelNotificationTypes(['wave_start', 'wave_clear', 'level_clear'], 'sector_clear');
     } else if (type === 'overrun_unlocked' || type === 'run_clear') {
       this.cancelNotificationTypes([
         'wave_start',
@@ -17230,7 +17296,11 @@ export class PlayScene {
       this.uiOverlay.sortChildren?.();
     } else if (options.type === 'aceContact' && options.aceDossier) {
       display = this.createAceContactDossier(options, { width, height, maxWidth, y });
-    } else if (options.novaCommandVariant === 'side' || options.novaCommandVariant === 'major') {
+    } else if (
+      options.novaCommandVariant === 'side' ||
+      options.novaCommandVariant === 'transition' ||
+      options.novaCommandVariant === 'major'
+    ) {
       display = this.createNovaCommandPilotToast(options, { width, height, maxWidth, y, slot });
       this.uiOverlay.addChild(display);
       this.uiOverlay.sortChildren?.();

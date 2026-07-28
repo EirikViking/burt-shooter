@@ -2584,3 +2584,12 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Reinforcement route cues now report and render truthful left/right/bottom arrows. Mixed or non-directional routes use paired symmetric pulse diamonds with no implied arrival direction.
 - Focused notification orchestration passes across 1280x720, 1366x768, 1600x900, 1920x1080, and 3440x1440, including the exact tactical suppression/resume/stale-drop case, all route modes, 48 px edge safety, 13 px secondary text, reduced motion, and scene/Game Over/new-run cleanup.
 - Browser evidence: `test-results/notification-orchestration-2026-07-28T18-34-40-236Z`.
+
+## 2026-07-28 Nova Command HUD Phase 4 - Batch B
+
+- Added a distinct restrained transition frame role for Wave Start, sector arrival, and sector intro. It shares Nova Command material, typography, line weight, paired reactor motif, centre-origin motion, and 13 px secondary floor without copying the approved Wave Cleared silhouette.
+- Preserved Wave Cleared V2 geometry and motion unchanged.
+- Migrated Sector Clear to the restrained major-event family with success-green structure, prestige reward text, cyan/white supporting detail, a 600 x 112 px 1920x1080 footprint, and open side rails rather than a large opaque victory slab.
+- Removed the duplicate legacy non-boss sector-clear toast path. The final wave owns a single Sector Clear major event; a guarded fallback creates the same event only if no Sector Clear is active or queued.
+- Expanded transition arbitration so Wave Start, Wave Clear, sector arrival, level intro, and other transitions share one lane. Sector Clear cancels stale queued or active Wave Start/Wave Clear/legacy level-clear state.
+- Current build and the five-resolution notification orchestration suite pass. Focused screenshots and state evidence for Wave Start at 1280x720 and Sector Clear at 1920x1080 are at `test-results/notification-orchestration-2026-07-28T18-47-14-935Z`.

@@ -620,6 +620,67 @@ try {
   const routineSideScreenshot = path.join(outputDir, 'routine-side-toast-1280x720.png');
   await page.screenshot({ path: routineSideScreenshot, fullPage: false });
 
+  const waveStartTransition = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', {
+      type: 'wave_start',
+      duration: 1200,
+      priority: 3
+    });
+    return {
+      bounds: play.getToastDisplayBounds(play.activeTopToast),
+      meta: play.describeToastDisplay(play.activeTopToast),
+      geometry: play.activeTopToast?._debugNovaCommandHud || null
+    };
+  });
+  assert(
+    waveStartTransition.meta?.channel === 'transition' &&
+    waveStartTransition.meta?.visualLanguage === 'nova_command_hud_transition_v1' &&
+    waveStartTransition.geometry?.detailFontSize >= 13 &&
+    waveStartTransition.bounds?.x >= 48 &&
+    waveStartTransition.bounds?.x + waveStartTransition.bounds?.width <= 1280 - 48,
+    `Wave Start did not use the safe restrained transition family: ${JSON.stringify(waveStartTransition)}`
+  );
+  await page.waitForTimeout(140);
+  const waveStartScreenshot = path.join(outputDir, 'wave-start-transition-1280x720.png');
+  await page.screenshot({ path: waveStartScreenshot, fullPage: false });
+
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  const sectorClearMajor = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.enqueueToast('WAVE 5/6\nHOSTILES INBOUND', {
+      type: 'wave_start',
+      duration: 1200,
+      priority: 3
+    });
+    play.showWaveBonusEffect(3200, 'SECTOR CLEAR', {
+      subtitle: 'REPAIR +1',
+      decorativeAccents: true
+    });
+    const state = play.getToastDebugState();
+    return {
+      state,
+      bounds: play.getToastDisplayBounds(play.activeCenterToast),
+      meta: play.describeToastDisplay(play.activeCenterToast),
+      geometry: play.activeCenterToast?._debugNovaCommandHud || null,
+      staleWaveState: play.hasNotificationType('wave_start') || play.hasNotificationType('wave_clear')
+    };
+  });
+  assert(
+    sectorClearMajor.meta?.type === 'sector_clear' &&
+    sectorClearMajor.meta?.channel === 'major' &&
+    sectorClearMajor.geometry?.visualLanguage === 'nova_command_hud_major_v1' &&
+    sectorClearMajor.geometry?.detailFontSize >= 13 &&
+    sectorClearMajor.staleWaveState === false &&
+    sectorClearMajor.state.active.filter((entry) => entry.channel === 'major').length === 1,
+    `Sector Clear did not own one restrained major channel and clear stale wave state: ${JSON.stringify(sectorClearMajor)}`
+  );
+  await page.waitForTimeout(160);
+  const sectorClearScreenshot = path.join(outputDir, 'sector-clear-major-1920x1080.png');
+  await page.screenshot({ path: sectorClearScreenshot, fullPage: false });
+
   assert(pageErrors.length === 0, `Page errors: ${pageErrors.join('; ')}`);
 
   const result = {
@@ -637,6 +698,10 @@ try {
     reinforcementLifecycle,
     routineSideToast,
     routineSideScreenshot,
+    waveStartTransition,
+    waveStartScreenshot,
+    sectorClearMajor,
+    sectorClearScreenshot,
     screenshot,
     pageErrors
   };
