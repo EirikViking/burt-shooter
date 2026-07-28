@@ -278,13 +278,20 @@ try {
       phase,
       mission,
       overlaps,
-      active: play.getToastDebugState().active
+      active: play.getToastDebugState().active,
+      geometry: play.activeTopToast?._debugNovaCommandHud || null
     };
   });
   assert(bossPhase.active.some((entry) => entry.type === 'boss_phase' && entry.channel === 'transition'),
     `Boss phase warning did not use the transition channel: ${JSON.stringify(bossPhase)}`);
   assert(!bossPhase.overlaps && bossPhase.phase?.height <= 90,
     `Boss phase strip collided with Mission Status or grew too large: ${JSON.stringify(bossPhase)}`);
+  assert(
+    bossPhase.geometry?.visualLanguage === 'nova_command_hud_tactical_v1' &&
+    bossPhase.geometry?.detailFontSize >= 13 &&
+    bossPhase.geometry?.componentWidth <= 540,
+    `Boss phase warning did not use the restrained tactical family: ${JSON.stringify(bossPhase.geometry)}`
+  );
   const bossPhaseScreenshot = path.join(outputDir, 'boss-phase-strip-1920x1080.png');
   await page.screenshot({ path: bossPhaseScreenshot, fullPage: false });
 
@@ -681,6 +688,98 @@ try {
   const sectorClearScreenshot = path.join(outputDir, 'sector-clear-major-1920x1080.png');
   await page.screenshot({ path: sectorClearScreenshot, fullPage: false });
 
+  const bossDefeatExplosion = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const manager = play.enemyManager;
+    play.clearToastState();
+    play.enqueueToast('BOSS PHASE 3', {
+      type: 'boss_phase',
+      duration: 1200,
+      priority: 5
+    });
+    play.showMayhemReinforcementStormWarning({
+      groupCount: 3,
+      boss: true,
+      superStorm: false,
+      warningMs: 1200
+    });
+    manager.boss = {
+      x: window.__game.getWidth() / 2,
+      y: window.__game.getHeight() * 0.28,
+      color: 0xff55d9,
+      profile: {
+        id: 'gate4_lifecycle_boss',
+        name: 'GATE FOUR WARDEN',
+        title: 'LIFECYCLE PROBE',
+        accent: 0xff55d9,
+        index: 3
+      }
+    };
+    play.showBossCelebration({ level: 30, type: 'GATE4_LIFECYCLE_BOSS' });
+    return {
+      lifecycle: play.lastBossDefeatedLifecycle,
+      impact: play.lastBossDeathImpact,
+      bossDefeatedActiveImmediately: play.hasNotificationType('boss_defeated'),
+      warningStateImmediately: {
+        bossPhase: play.hasNotificationType('boss_phase'),
+        routine: Boolean(play.activeMayhemRoutineWarning?.root?.parent),
+        storm: Boolean(
+          play.activeMayhemReinforcementWarning?.root?.parent ||
+          play.activeMayhemReinforcementWarning?.overlay?.parent
+        )
+      }
+    };
+  });
+  assert(
+    bossDefeatExplosion.impact?.realParticleSequence === true &&
+    bossDefeatExplosion.impact?.burstCount >= 8 &&
+    bossDefeatExplosion.bossDefeatedActiveImmediately === false &&
+    Object.values(bossDefeatExplosion.warningStateImmediately).every((value) => value === false) &&
+    bossDefeatExplosion.lifecycle?.warningsClearedBeforeEntry === true,
+    `Boss Defeated did not begin with a clean genuine explosion phase: ${JSON.stringify(bossDefeatExplosion)}`
+  );
+  await page.waitForTimeout(340);
+  const bossDefeatEntry = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    return {
+      lifecycle: play.lastBossDefeatedLifecycle,
+      state: play.getToastDebugState(),
+      geometry: play.activeCenterToast?._debugNovaCommandHud || null
+    };
+  });
+  assert(
+    bossDefeatEntry.lifecycle?.entryAt > bossDefeatEntry.lifecycle?.explosionAt &&
+    bossDefeatEntry.lifecycle?.displayMountedAtEntry === true &&
+    Object.values(bossDefeatEntry.lifecycle?.warningStateAtEntry || {}).every((value) => value === false) &&
+    bossDefeatEntry.state.active.filter((entry) => entry.type === 'boss_defeated').length === 1 &&
+    bossDefeatEntry.geometry?.detailFontSize >= 13,
+    `Boss Defeated entry/hold phase was not clean: ${JSON.stringify(bossDefeatEntry)}`
+  );
+  const bossDefeatLifecycleScreenshot = path.join(outputDir, 'boss-defeated-real-lifecycle-1920x1080.png');
+  await page.screenshot({ path: bossDefeatLifecycleScreenshot, fullPage: false });
+  await page.waitForTimeout(1700);
+  const bossDefeatPost = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    return {
+      lifecycle: play.lastBossDefeatedLifecycle,
+      activeTypes: play.getToastDebugState().active.map((entry) => entry.type),
+      queued: play.getToastDebugState().queued
+    };
+  });
+  assert(
+    bossDefeatPost.lifecycle?.exitAt > bossDefeatPost.lifecycle?.entryAt &&
+    bossDefeatPost.lifecycle?.postStateClean === true &&
+    !bossDefeatPost.activeTypes.some((type) => [
+      'boss_defeated',
+      'boss_phase',
+      'boss_warning',
+      'boss_refuel',
+      'fuel_ship',
+      'reinforcement_warning'
+    ].includes(type)),
+    `Boss Defeated left warning or major-event residue: ${JSON.stringify(bossDefeatPost)}`
+  );
+
   assert(pageErrors.length === 0, `Page errors: ${pageErrors.join('; ')}`);
 
   const result = {
@@ -702,6 +801,10 @@ try {
     waveStartScreenshot,
     sectorClearMajor,
     sectorClearScreenshot,
+    bossDefeatExplosion,
+    bossDefeatEntry,
+    bossDefeatPost,
+    bossDefeatLifecycleScreenshot,
     screenshot,
     pageErrors
   };

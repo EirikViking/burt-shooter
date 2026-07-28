@@ -2593,3 +2593,13 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Removed the duplicate legacy non-boss sector-clear toast path. The final wave owns a single Sector Clear major event; a guarded fallback creates the same event only if no Sector Clear is active or queued.
 - Expanded transition arbitration so Wave Start, Wave Clear, sector arrival, level intro, and other transitions share one lane. Sector Clear cancels stale queued or active Wave Start/Wave Clear/legacy level-clear state.
 - Current build and the five-resolution notification orchestration suite pass. Focused screenshots and state evidence for Wave Start at 1280x720 and Sector Clear at 1920x1080 are at `test-results/notification-orchestration-2026-07-28T18-47-14-935Z`.
+
+## 2026-07-28 Nova Command HUD Phase 4 - Batch C
+
+- Migrated Boss Phase, Boss Refueled, Fuel Ship, fallback boss warning, and reinforcement-storm warnings to a compact tactical rail family. Danger/boss states use coral; reinforcement caution uses amber; no score or prestige gold is used for danger.
+- Removed the live-combat reinforcement storm's playfield-spanning preview gates and ship illustrations. Real reinforcement entry still uses truthful multi-lane arrival bursts, impacts, audio, and ship wakes after the warning exits.
+- Preserved the approved Boss Defeated frame and typography while changing its real lifecycle to boss explosion first, a 170-240 ms delayed HUD entry, hold, clean exit, and verified post-state with no boss phase/refuel/fuel/reinforcement warning residue.
+- Boss Defeated, Overrun, Game Over, scene cleanup, and new-run cleanup now also cancel direct reinforcement presentations, tactical side-lane locks, and any pending delayed Boss Defeated entry.
+- Extended the focused orchestration suite with compact tactical-family assertions, a genuine boss particle-death lifecycle probe, warning competition cleanup, and post-exit residue checks. Latest browser evidence: `test-results/notification-orchestration-2026-07-28T19-06-12-201Z`.
+- Updated reinforcement visual validation to require the restrained warning strip while retaining the real three-lane spawn/impact behavior. It passes with 46 reinforcement enemies and four screenshots at `test-results/reinforcement-wow`.
+- Overrun confirmation and controller-only flow pass. Added a packaged Gate 4 evidence harness covering both target resolutions, dense bullets/effects, side arbitration, transition chains, boss intro/warnings/death, Overrun, Game Over, reset/new run, long German text, and a longer 60 fps video.

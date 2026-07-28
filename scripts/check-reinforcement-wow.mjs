@@ -149,24 +149,25 @@ try {
   if (warningPresentation?.phase !== 'warning' || warningPresentation?.groupCount !== 3 || !warningPresentation?.superStorm) {
     fail(`warning presentation state is wrong: ${JSON.stringify(warningPresentation)}`);
   }
-  if (warningPresentation.gateCount !== 3 || warningPresentation.previewShipCount !== 3) {
-    fail(`warning must preview a real ship in every gate: ${JSON.stringify(warningPresentation)}`);
+  if (warningPresentation.gateCount !== 0 || warningPresentation.previewShipCount !== 0) {
+    fail(`warning must not cover combat with preview gates or ship illustrations: ${JSON.stringify(warningPresentation)}`);
   }
   if (!warningPresentation.scoreNeutral || !warningPresentation.hudSafe || !warningPresentation.signalPlateVisible) {
     fail(`warning must be score-neutral and HUD-safe: ${JSON.stringify(warningPresentation)}`);
   }
-  if (warningPresentation.gatePositions?.length !== 3 ||
-    warningPresentation.gatePositions[2] - warningPresentation.gatePositions[0] < 800) {
-    fail(`warning gates must span the playfield: ${JSON.stringify(warningPresentation.gatePositions)}`);
+  if (warningPresentation.gatePositions?.length !== 0) {
+    fail(`warning retained obsolete playfield-spanning gates: ${JSON.stringify(warningPresentation.gatePositions)}`);
   }
   const warningPlacement = await page.evaluate(() => {
     const play = window.__game?.scenes?.play;
     const effect = play?.decorativeOverlay?.children?.find((child) => child?.label === 'mayhem_reinforcement_storm_warning');
-    const signalPlate = play?.uiOverlay?.children?.find((child) => child?.label === 'ui_mayhem_reinforcement_signal_plate');
+    const signalPlate = play?.uiOverlay?.children?.find((child) => child?.label === 'mayhem_reinforcement_storm_warning');
     const plateBounds = signalPlate?.getBounds?.();
     return {
-      inDecorativeLayer: Boolean(effect),
+      obsoleteDecorativeEffect: Boolean(effect),
+      inUiLayer: Boolean(signalPlate),
       signalPlateVisible: Boolean(signalPlate?.visible),
+      visualLanguage: signalPlate?._debugNovaCommandHud?.visualLanguage || null,
       plateBounds: plateBounds ? {
         x: Math.round(plateBounds.x),
         y: Math.round(plateBounds.y),
@@ -177,12 +178,16 @@ try {
       uiLayerIndex: play?.container?.getChildIndex?.(play.uiContainer) ?? -1
     };
   });
-  if (!warningPlacement.inDecorativeLayer || warningPlacement.decorativeLayerIndex >= warningPlacement.uiLayerIndex) {
-    fail(`warning must render beneath the HUD: ${JSON.stringify(warningPlacement)}`);
+  if (
+    warningPlacement.obsoleteDecorativeEffect ||
+    !warningPlacement.inUiLayer ||
+    warningPlacement.visualLanguage !== 'nova_command_hud_reinforcement_storm_v1'
+  ) {
+    fail(`warning did not migrate to the restrained Nova Command tactical layer: ${JSON.stringify(warningPlacement)}`);
   }
-  if (!warningPlacement.signalPlateVisible || warningPlacement.plateBounds?.y < 100 ||
-    warningPlacement.plateBounds?.x < 420 ||
-    warningPlacement.plateBounds?.x + warningPlacement.plateBounds?.width > 1500) {
+  if (!warningPlacement.signalPlateVisible || warningPlacement.plateBounds?.y < 48 ||
+    warningPlacement.plateBounds?.x < 48 ||
+    warningPlacement.plateBounds?.x + warningPlacement.plateBounds?.width > 1920 - 48) {
     fail(`signal plate overlaps the permanent desktop HUD: ${JSON.stringify(warningPlacement)}`);
   }
 
@@ -303,13 +308,13 @@ try {
   report.screenshots.compact = path.join(outputDir, '04-warning-compact.png');
   await compactPage.screenshot({ path: report.screenshots.compact, fullPage: false });
   const compactPresentation = report.states.compact.reinforcementPresentation;
-  if (compactPresentation?.groupCount !== 3 || compactPresentation?.previewShipCount !== 3) {
-    fail(`compact warning lost its three-ship signature: ${JSON.stringify(compactPresentation)}`);
+  if (compactPresentation?.groupCount !== 3 || compactPresentation?.previewShipCount !== 0) {
+    fail(`compact warning did not retain group truth while removing ship illustrations: ${JSON.stringify(compactPresentation)}`);
   }
   if (!compactPresentation.hudSafe || !compactPresentation.signalPlateVisible ||
-    compactPresentation.signalPlateBounds?.y < 100 ||
-    compactPresentation.signalPlateBounds?.x < 190 ||
-    compactPresentation.signalPlateBounds?.x + compactPresentation.signalPlateBounds?.width > 770) {
+    compactPresentation.signalPlateBounds?.y < 48 ||
+    compactPresentation.signalPlateBounds?.x < 48 ||
+    compactPresentation.signalPlateBounds?.x + compactPresentation.signalPlateBounds?.width > 960 - 48) {
     fail(`compact warning overlaps the permanent HUD: ${JSON.stringify(compactPresentation)}`);
   }
   await compactPage.close();

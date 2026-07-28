@@ -378,6 +378,9 @@ export class PlayScene {
     this.activeMayhemReinforcementWarning = null;
     this.activeMayhemRoutineWarning = null;
     this.novaCommandTacticalAlertUntil = 0;
+    this.bossDefeatedHudTimeout = null;
+    this.lastBossDefeatedLifecycle = null;
+    this.lastBossDeathImpact = null;
     this.lastMayhemReinforcementPresentation = null;
     this.firstRunOnboardingComplete = true;
     this.firstRunOnboardingUntil = 0;
@@ -5568,12 +5571,14 @@ export class PlayScene {
   createNovaCommandPilotToast(options = {}, { width, height, y, slot } = {}) {
     const variant = options.novaCommandVariant === 'major'
       ? 'major'
-      : options.novaCommandVariant === 'transition'
-        ? 'transition'
+      : options.novaCommandVariant === 'transition' || options.novaCommandVariant === 'tactical'
+        ? options.novaCommandVariant
         : 'side';
     const isMajor = variant === 'major';
     const isTransition = variant === 'transition';
-    const frameVariant = isTransition ? 'warning' : variant;
+    const isTactical = variant === 'tactical';
+    const isCentredStrip = isTransition || isTactical;
+    const frameVariant = isCentredStrip ? 'warning' : variant;
     const compact = width <= 1280;
     const decorativeAccents = options.decorativeAccents !== false;
     const reducedMotion = options.reducedMotion === true ||
@@ -5587,11 +5592,11 @@ export class PlayScene {
       fontFamily: FONT_DISPLAY,
       fontSize: isMajor
         ? (compact ? 27 : 30)
-        : isTransition
+        : isCentredStrip
           ? (compact ? 18 : 20)
           : (compact ? 17 : 19),
       fontWeight: '900',
-      letterSpacing: isMajor ? (compact ? 1.3 : 1.8) : (isTransition ? 1.1 : 1),
+      letterSpacing: isMajor ? (compact ? 1.3 : 1.8) : (isCentredStrip ? 1.1 : 1),
       fill: `#${NOVA_COMMAND_HUD_TOKENS.text.toString(16).padStart(6, '0')}`,
       stroke: '#02131f',
       strokeThickness: isMajor ? 2 : 1.5,
@@ -5641,28 +5646,28 @@ export class PlayScene {
       separatorGap;
     const minimumWidth = isMajor
       ? (compact ? 520 : 600)
-      : isTransition
+      : isCentredStrip
         ? (compact ? 360 : 420)
         : (compact ? 286 : 310);
     const maximumWidth = Math.min(
       width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2,
-      isMajor ? 680 : isTransition ? 540 : 400
+      isMajor ? 680 : isCentredStrip ? 540 : 400
     );
-    const horizontalAllowance = isMajor ? 142 : isTransition ? 96 : 88;
+    const horizontalAllowance = isMajor ? 142 : isCentredStrip ? 96 : 88;
     let componentWidth = Math.ceil(Math.max(
       minimumWidth,
       titleText.width + horizontalAllowance,
-      getSecondaryWidth() + (isMajor ? 118 : isTransition ? 88 : 76)
+      getSecondaryWidth() + (isMajor ? 118 : isCentredStrip ? 88 : 76)
     ) / 2) * 2;
     componentWidth = Math.max(minimumWidth, Math.min(maximumWidth, componentWidth));
     let componentHeight = isMajor
       ? (compact ? 108 : 112)
-      : isTransition
+      : isCentredStrip
         ? (hasSecondary ? (compact ? 66 : 68) : (compact ? 58 : 60))
         : (hasSecondary ? 64 : 54);
 
-    const titleMaxWidth = componentWidth - (isMajor ? 132 : isTransition ? 84 : 72);
-    const titleFloor = isMajor ? 24 : isTransition ? 16 : 15;
+    const titleMaxWidth = componentWidth - (isMajor ? 132 : isCentredStrip ? 84 : 72);
+    const titleFloor = isMajor ? 24 : isCentredStrip ? 16 : 15;
     while (titleText.width > titleMaxWidth && titleText.style.fontSize > titleFloor) {
       titleText.style.fontSize -= 1;
       titleText.updateText?.(false);
@@ -5674,7 +5679,7 @@ export class PlayScene {
       titleText.updateText?.(false);
       componentHeight = Math.max(componentHeight, hasReward || hasDetail ? 74 : 66);
     }
-    const secondaryMaxWidth = componentWidth - (isMajor ? 104 : isTransition ? 78 : 66);
+    const secondaryMaxWidth = componentWidth - (isMajor ? 104 : isCentredStrip ? 78 : 66);
     while (
       getSecondaryWidth() > secondaryMaxWidth &&
       rewardText.style.fontSize > NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact &&
@@ -5715,10 +5720,10 @@ export class PlayScene {
     const root = frame.root;
     root.label = isMajor
       ? 'ui_nova_command_major_event'
-      : isTransition
-        ? 'ui_nova_command_transition'
+      : isCentredStrip
+        ? `ui_nova_command_${variant}`
         : 'ui_nova_command_side_toast';
-    root.zIndex = isMajor ? 9960 : isTransition ? 9950 : 9940;
+    root.zIndex = isMajor ? 9960 : isCentredStrip ? 9950 : 9940;
 
     const textLayer = new PIXI.Container();
     textLayer.label = `novaCommandHud${variant}Typography`;
@@ -5769,7 +5774,7 @@ export class PlayScene {
       }));
     }
 
-    if (isMajor || isTransition) {
+    if (isMajor || isCentredStrip) {
       root.position.set(
         width / 2,
         Math.min(
@@ -15774,6 +15779,8 @@ export class PlayScene {
       this.overrunMilestoneInterlude = null;
       this.clearOverrunConfirmationHandlers();
       this.hud?.setNotificationFocus?.('none');
+      this.centerToastLockUntil = 0;
+      this.toastSlotLockUntil = { center: 0, top: 0, corner: 0 };
       if (interlude.eventKind === 'run_clear') {
         this.showToast(translateText('OVERRUN ACTIVE'), {
           slot: 'corner',
@@ -15787,6 +15794,7 @@ export class PlayScene {
         });
       }
       onComplete?.();
+      this.processToastQueue();
     }
   }
 
@@ -16069,6 +16077,12 @@ export class PlayScene {
     };
     const priority = Number.isFinite(normalizedOptions.priority) ? normalizedOptions.priority : (priorityMap[type] || 0);
     const now = Date.now();
+    const tacticalAlert = normalizedOptions.novaCommandVariant === 'tactical';
+    if (tacticalAlert) {
+      const baseDuration = Number(normalizedOptions.duration) || 1100;
+      const extraReadTime = Math.max(0, Number(normalizedOptions.extraReadTimeMs) || 0);
+      this.deferSideToastsForTacticalAlert(baseDuration + extraReadTime + 40, `tactical_${type}`);
+    }
     this.applyNotificationSupersession(type, { channel, priority });
     const lockUntil = this.getToastSlotLockUntil(slot);
     const bypassFocusLock = normalizedOptions.bypassFocusLock === true ||
@@ -16110,8 +16124,14 @@ export class PlayScene {
     };
 
     if (priority >= 3) {
-      this.dropLowerPriorityToastBacklog(priority);
-      this.dismissActiveToastsBelowPriority(priority);
+      if (tacticalAlert) {
+        this.toastQueue = this.toastQueue.filter((queued) => queued.priority >= priority);
+        this.toastTopQueue = this.toastTopQueue.filter((queued) => queued.priority >= priority);
+        this.dismissActiveToastSlotsBelowPriority(['center', 'top'], priority);
+      } else {
+        this.dropLowerPriorityToastBacklog(priority);
+        this.dismissActiveToastsBelowPriority(priority);
+      }
     }
 
     const queue = this.getToastQueueForSlot(slot);
@@ -16289,6 +16309,11 @@ export class PlayScene {
     if (meta?.type) this.notificationExitAt.set(meta.type, Date.now());
     if (meta?.channel === 'major') this.hud?.setNotificationFocus?.('none');
     display.__dismissReason = reason;
+    meta?.originalOptions?.onDismissed?.({
+      display,
+      reason,
+      dismissedAt: Date.now()
+    });
   }
 
   deferActiveToastDisplay(display, slot, delayMs = 0, { minRemainingMs = 900 } = {}) {
@@ -16343,6 +16368,8 @@ export class PlayScene {
     this.dismissToastDisplay(this.activeCornerToast, 'corner');
     this.dismissBossDossier?.();
     this.clearMayhemReinforcementPresentations('toast_state_cleared');
+    this.clearBossDefeatedHudSchedule('toast_state_cleared');
+    this.lastBossDefeatedLifecycle = null;
     this.novaCommandTacticalAlertUntil = 0;
     this.hud?.setNotificationFocus?.('none');
     this.centerToastLockUntil = 0;
@@ -16978,6 +17005,35 @@ export class PlayScene {
 
   getNovaCommandNotificationOptions(message, options = {}) {
     const type = options.type || 'generic';
+    const tacticalTypes = new Set([
+      'boss_phase',
+      'boss_warning',
+      'boss_refuel',
+      'fuel_ship',
+      'reinforcement_warning'
+    ]);
+    if (tacticalTypes.has(type)) {
+      const lines = String(message || '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const dangerTone = ['boss_phase', 'boss_warning', 'boss_refuel'].includes(type);
+      return {
+        ...options,
+        channel: 'transition',
+        slot: 'top',
+        novaCommandVariant: 'tactical',
+        primaryText: String(options.primaryText || lines[0] || '').trim(),
+        detailText: String(
+          options.detailText ||
+          options.secondaryText ||
+          lines.slice(1).join('  ·  ')
+        ).trim(),
+        accent: dangerTone ? NOVA_COMMAND_HUD_TOKENS.danger : NOVA_COMMAND_HUD_TOKENS.warning,
+        semanticTone: dangerTone ? 'danger' : 'warning',
+        decorativeAccents: options.decorativeAccents !== false
+      };
+    }
     const transitionTypes = new Set(['wave_start', 'sector_arrival', 'level_up']);
     if (transitionTypes.has(type)) {
       const rawLines = String(message || '')
@@ -17213,6 +17269,8 @@ export class PlayScene {
         'fuel_ship',
         'reinforcement_warning'
       ], 'boss_defeated');
+      this.clearMayhemReinforcementPresentations('boss_defeated');
+      this.novaCommandTacticalAlertUntil = 0;
     } else if (type === 'sector_clear') {
       this.cancelNotificationTypes(['wave_start', 'wave_clear', 'level_clear'], 'sector_clear');
     } else if (type === 'overrun_unlocked' || type === 'run_clear') {
@@ -17230,6 +17288,9 @@ export class PlayScene {
       ], 'overrun_unlocked');
       this.toastCornerQueue = [];
       this.dismissToastDisplay(this.activeCornerToast, 'corner', { reason: 'overrun_unlocked' });
+      this.clearMayhemReinforcementPresentations('overrun_unlocked');
+      this.clearBossDefeatedHudSchedule('overrun_unlocked');
+      this.lastBossDefeatedLifecycle = null;
     }
 
     if (channel === 'major') {
@@ -17299,6 +17360,7 @@ export class PlayScene {
     } else if (
       options.novaCommandVariant === 'side' ||
       options.novaCommandVariant === 'transition' ||
+      options.novaCommandVariant === 'tactical' ||
       options.novaCommandVariant === 'major'
     ) {
       display = this.createNovaCommandPilotToast(options, { width, height, maxWidth, y, slot });
@@ -21502,6 +21564,11 @@ export class PlayScene {
     groupCount = 1,
     route = 'side',
     warningMs = 1200,
+    titleText: requestedTitleText = '',
+    tacticalTone = 'warning',
+    stateSlot = 'routine',
+    boss = false,
+    superStorm = false,
     decorativeAccents = true,
     debugGeometry = false,
     reducedMotion: forceReducedMotion = false
@@ -21509,7 +21576,11 @@ export class PlayScene {
     const host = this.uiOverlay || this.decorativeOverlay || this.gameContainer || this.container;
     const appTicker = this.game?.app?.ticker;
     if (!host || host.destroyed || !appTicker) return false;
-    this.activeMayhemRoutineWarning?.cleanup?.('replaced');
+    const stormPresentation = stateSlot === 'storm';
+    const activeHandle = stormPresentation
+      ? this.activeMayhemReinforcementWarning
+      : this.activeMayhemRoutineWarning;
+    activeHandle?.cleanup?.('replaced');
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -21521,6 +21592,10 @@ export class PlayScene {
     const componentWidth = Math.min(width - NOVA_COMMAND_HUD_TOKENS.safeMargin * 2, compact ? 360 : 420);
     const componentHeight = compact ? 60 : 64;
     const cueMode = this.getReinforcementDirectionCueMode(normalizedRoute);
+    const warningAccent = tacticalTone === 'critical'
+      ? NOVA_COMMAND_HUD_TOKENS.danger
+      : NOVA_COMMAND_HUD_TOKENS.warning;
+    const titleLabel = String(requestedTitleText || translateText('INCOMING REINFORCEMENTS'));
     this.deferSideToastsForTacticalAlert(duration + 40, 'tactical_reinforcement');
     let root = null;
     let ticker = null;
@@ -21531,10 +21606,17 @@ export class PlayScene {
       if (ticker) appTicker.remove?.(ticker);
       if (root?.parent) root.parent.removeChild(root);
       if (root && !root.destroyed) root.destroy?.({ children: true });
-      if (this.activeMayhemRoutineWarning?.root === root) {
-        this.activeMayhemRoutineWarning = null;
+      const currentHandle = stormPresentation
+        ? this.activeMayhemReinforcementWarning
+        : this.activeMayhemRoutineWarning;
+      if (currentHandle?.root === root || currentHandle?.overlay === root) {
+        if (stormPresentation) this.activeMayhemReinforcementWarning = null;
+        else this.activeMayhemRoutineWarning = null;
       }
-      if (!this.activeMayhemReinforcementWarning?.parent) {
+      if (
+        !this.activeMayhemReinforcementWarning?.root?.parent &&
+        !this.activeMayhemReinforcementWarning?.overlay?.parent
+      ) {
         this.novaCommandTacticalAlertUntil = 0;
       }
       if (root) root.__dismissReason = reason;
@@ -21549,12 +21631,14 @@ export class PlayScene {
         variant: 'warning',
         width: componentWidth,
         height: componentHeight,
-        accent: NOVA_COMMAND_HUD_TOKENS.warning,
+        accent: warningAccent,
         secondaryAccent: NOVA_COMMAND_HUD_TOKENS.danger,
         decorativeAccents
       });
       root = frame.root;
-      root.label = 'mayhem_routine_reinforcement_warning';
+      root.label = stormPresentation
+        ? 'mayhem_reinforcement_storm_warning'
+        : 'mayhem_routine_reinforcement_warning';
       root.eventMode = 'none';
       root.zIndex = 9800;
       const safeY = this.getTopToastSafeY(compact ? 17 : 18, 'reinforcement_warning');
@@ -21568,7 +21652,7 @@ export class PlayScene {
 
       const textLayer = new PIXI.Container();
       textLayer.label = 'novaCommandHudWarningTypography';
-      const title = createText(translateText('INCOMING REINFORCEMENTS'), {
+      const title = createText(titleLabel, {
         fontFamily: FONT_DISPLAY,
         fontSize: compact ? 17 : 19,
         fontWeight: '900',
@@ -21577,7 +21661,7 @@ export class PlayScene {
         strokeThickness: 2,
         letterSpacing: compact ? 0.7 : 1.1,
         dropShadow: true,
-        dropShadowColor: '#ff765c',
+        dropShadowColor: tacticalTone === 'critical' ? '#ff3f55' : '#ff765c',
         dropShadowBlur: 4,
         dropShadowDistance: 0,
         align: 'center'
@@ -21615,7 +21699,7 @@ export class PlayScene {
         drawSymmetricPulse(-componentWidth / 2 + 24, 0);
         drawSymmetricPulse(componentWidth / 2 - 24, 0);
       }
-      directionCue.stroke({ color: NOVA_COMMAND_HUD_TOKENS.warning, width: 1.8, alpha: 0.84 });
+      directionCue.stroke({ color: warningAccent, width: 1.8, alpha: 0.84 });
       root.addChild(directionCue);
       if (debugGeometry) {
         root.addChild(createNovaCommandGeometryOverlay({
@@ -21681,11 +21765,13 @@ export class PlayScene {
       };
       root._debugNovaCommandHud = {
         ...frame.debug,
-        visualLanguage: 'nova_command_hud_warning_v1',
+        visualLanguage: stormPresentation
+          ? 'nova_command_hud_reinforcement_storm_v1'
+          : 'nova_command_hud_warning_v1',
         x: Number(root.x.toFixed(2)),
         y: Number(root.y.toFixed(2)),
         safeAreaMargin: NOVA_COMMAND_HUD_TOKENS.safeMargin,
-        title: translateText('INCOMING REINFORCEMENTS'),
+        title: titleLabel,
         titleFontSize: Number(title.style.fontSize),
         secondaryMinimumFontSize: NOVA_COMMAND_HUD_TOKENS.secondaryFontSize.compact,
         route: normalizedRoute,
@@ -21701,19 +21787,25 @@ export class PlayScene {
         tier: 'tactical',
         route: normalizedRoute,
         groupCount: count,
+        boss,
+        superStorm,
         signalPlateVisible: true,
         signalPlateBounds: bounds,
         hudSafe: bounds.x >= NOVA_COMMAND_HUD_TOKENS.safeMargin &&
           bounds.y >= NOVA_COMMAND_HUD_TOKENS.safeMargin &&
           bounds.x + bounds.width <= width - NOVA_COMMAND_HUD_TOKENS.safeMargin &&
           bounds.y + bounds.height <= height - NOVA_COMMAND_HUD_TOKENS.safeMargin,
-        visualLanguage: 'nova_command_hud_warning_v1',
+        visualLanguage: stormPresentation
+          ? 'nova_command_hud_reinforcement_storm_v1'
+          : 'nova_command_hud_warning_v1',
         scoreNeutral: true,
         startedAt,
         activeUntil: startedAt + duration
       };
       root.__toastTicker = ticker;
-      this.activeMayhemRoutineWarning = { root, cleanup };
+      const handle = { root, overlay: root, cleanup };
+      if (stormPresentation) this.activeMayhemReinforcementWarning = handle;
+      else this.activeMayhemRoutineWarning = handle;
       appTicker.add(ticker);
       return true;
     } catch (error) {
@@ -21724,6 +21816,19 @@ export class PlayScene {
   }
 
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false, warningMs = 2000 } = {}) {
+    return this.showMayhemRoutineReinforcementWarning({
+      groupCount,
+      route: 'mixed',
+      warningMs,
+      titleText: superStorm
+        ? translateText('REINFORCEMENT STORM')
+        : translateText('INCOMING REINFORCEMENTS'),
+      tacticalTone: superStorm || boss ? 'critical' : 'warning',
+      stateSlot: 'storm',
+      boss,
+      superStorm
+    });
+
     const count = Math.max(1, Math.min(8, Math.floor(Number(groupCount) || 1)));
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -22926,6 +23031,15 @@ export class PlayScene {
     const palette = [baseColor, style.accent, 0xfff066, 0xff6633, 0xff3d7f, 0x61f6ff, 0x8cfffb, 0xffffff];
     const burstCount = 8 + (seed % 4) + (style.pattern === 'confetti' ? 2 : 0);
     const ringCount = 1;
+    this.lastBossDeathImpact = {
+      startedAt: Date.now(),
+      x: Number(bossX.toFixed(2)),
+      y: Number(bossY.toFixed(2)),
+      styleId: style.id,
+      burstCount,
+      ringCount,
+      realParticleSequence: true
+    };
 
     this.emitSpectacle('boss_death', {
       x: bossX,
@@ -23052,6 +23166,17 @@ export class PlayScene {
     this.showBossTaunt('boss_spawn');
   }
 
+  clearBossDefeatedHudSchedule(reason = 'cleared') {
+    if (!this.bossDefeatedHudTimeout) return false;
+    clearTimeout(this.bossDefeatedHudTimeout);
+    this.bossDefeatedHudTimeout = null;
+    if (this.lastBossDefeatedLifecycle) {
+      this.lastBossDefeatedLifecycle.cancelledAt = Date.now();
+      this.lastBossDefeatedLifecycle.cancelReason = reason;
+    }
+    return true;
+  }
+
   showBossDefeatedCommandHud({
     repairDelta = 0,
     decorativeAccents = true,
@@ -23086,6 +23211,37 @@ export class PlayScene {
       decorativeAccents,
       debugGeometry,
       reducedMotion,
+      onShown: ({ shownAt, display }) => {
+        this.lastBossDefeatedLifecycle = {
+          ...(this.lastBossDefeatedLifecycle || {}),
+          entryAt: shownAt,
+          holdStartedAt: shownAt + NOVA_COMMAND_HUD_TOKENS.motion.major.introMs,
+          displayMountedAtEntry: Boolean(display?.parent),
+          warningStateAtEntry: {
+            bossDossier: Boolean(this.activeBossDossier?.parent),
+            routineReinforcement: Boolean(this.activeMayhemRoutineWarning?.root?.parent),
+            stormReinforcement: Boolean(
+              this.activeMayhemReinforcementWarning?.root?.parent ||
+              this.activeMayhemReinforcementWarning?.overlay?.parent
+            ),
+            tacticalToast: ['boss_phase', 'boss_warning', 'boss_refuel', 'fuel_ship', 'reinforcement_warning']
+              .includes(this.activeTopToast?.__toastMeta?.type)
+          }
+        };
+      },
+      onDismissed: ({ reason, dismissedAt }) => {
+        this.lastBossDefeatedLifecycle = {
+          ...(this.lastBossDefeatedLifecycle || {}),
+          exitAt: dismissedAt,
+          exitReason: reason,
+          postStateClean: !this.hasNotificationType('boss_defeated') &&
+            !this.hasNotificationType('boss_warning') &&
+            !this.hasNotificationType('boss_phase') &&
+            !this.hasNotificationType('boss_refuel') &&
+            !this.hasNotificationType('fuel_ship') &&
+            !this.hasNotificationType('reinforcement_warning')
+        };
+      },
       y: this.game.getHeight() * (compactHud ? 0.34 : 0.32),
       maxWidth: this.game.getWidth() * (compactHud ? 0.78 : 0.46)
     });
@@ -23108,7 +23264,9 @@ export class PlayScene {
       'fuel_ship',
       'reinforcement_warning'
     ], 'boss_defeated');
-    this.reserveMessageFocus(1850, { priority: 9, slots: ['center', 'top', 'corner'] });
+    this.clearMayhemReinforcementPresentations('boss_defeated');
+    this.novaCommandTacticalAlertUntil = 0;
+    this.reserveMessageFocus(1850, { priority: 9, slots: ['top', 'corner'] });
     this.emitRunContractEvent('boss_defeated', {
       sector: level,
       bossId,
@@ -23126,12 +23284,41 @@ export class PlayScene {
     });
     const repairDelta = this.applyBossClearRecovery(level);
 
-    this.showBossDefeatedCommandHud({ repairDelta });
-    this.reserveMessageFocus(1850, { priority: 9, slots: ['top', 'corner'] });
-
     const boss = this.enemyManager?.boss;
     const bossColor = boss?.profile?.accent || boss?.color || 0xffff33;
+    const explosionAt = Date.now();
     this.triggerBossDeathImpact({ boss, color: bossColor, type });
+    this.clearBossDefeatedHudSchedule('boss_defeated_replaced');
+    const entryDelayMs = getAccessibilitySettings().prefersReducedMotion ? 170 : 240;
+    this.lastBossDefeatedLifecycle = {
+      phase: 'explosion',
+      bossId,
+      preDeathAt: explosionAt,
+      explosionAt,
+      entryDelayMs,
+      warningsClearedBeforeEntry: !this.hasNotificationType('boss_warning') &&
+        !this.hasNotificationType('boss_phase') &&
+        !this.hasNotificationType('boss_refuel') &&
+        !this.hasNotificationType('fuel_ship') &&
+        !this.hasNotificationType('reinforcement_warning'),
+      deathImpact: this.lastBossDeathImpact ? { ...this.lastBossDeathImpact } : null
+    };
+    this.bossDefeatedHudTimeout = setTimeout(() => {
+      this.bossDefeatedHudTimeout = null;
+      if (
+        this.game?.currentScene !== this ||
+        this.gameOverSequenceStarted ||
+        !this.uiOverlay?.parent
+      ) {
+        if (this.lastBossDefeatedLifecycle) {
+          this.lastBossDefeatedLifecycle.cancelledAt = Date.now();
+          this.lastBossDefeatedLifecycle.cancelReason = 'invalid_scene_before_entry';
+        }
+        return;
+      }
+      this.showBossDefeatedCommandHud({ repairDelta });
+    }, entryDelayMs);
+    this.reserveMessageFocus(1850, { priority: 9, slots: ['top', 'corner'] });
 
     AudioManager.playMusicContext('victory', { resetPlaylist: true });
     if (type === 'BONUS_CORE') AudioManager.playSfx('pickup', { force: true, volume: 0.9 });
