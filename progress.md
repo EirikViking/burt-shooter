@@ -2603,3 +2603,10 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Extended the focused orchestration suite with compact tactical-family assertions, a genuine boss particle-death lifecycle probe, warning competition cleanup, and post-exit residue checks. Latest browser evidence: `test-results/notification-orchestration-2026-07-28T19-06-12-201Z`.
 - Updated reinforcement visual validation to require the restrained warning strip while retaining the real three-lane spawn/impact behavior. It passes with 46 reinforcement enemies and four screenshots at `test-results/reinforcement-wow`.
 - Overrun confirmation and controller-only flow pass. Added a packaged Gate 4 evidence harness covering both target resolutions, dense bullets/effects, side arbitration, transition chains, boss intro/warnings/death, Overrun, Game Over, reset/new run, long German text, and a longer 60 fps video.
+
+## 2026-07-28 Nova Command HUD Approval Gate 4 packaged evidence
+
+- Final packaged Gate 4 validation passes from the exact Batch C product source at `test-results/packaged-nova-command-hud-gate4-20260728`.
+- Evidence includes 18 live enemies, at least 8 real managed enemy bullets, ten simultaneous explosion effects, 1920x1080 and 1280x720 captures, long German text, tactical side suppression/resume, Wave Clear before Wave Start, Sector Clear into boss intro, competing boss warnings, real boss explosion before Boss Defeated entry/hold/exit, Overrun dismissal/resume, Game Over cleanup, and clean new-run state.
+- The packaged 60 fps H.264 evidence video contains 653 captured frames: `test-results/packaged-nova-command-hud-gate4-20260728/nova-command-hud-gate4-packaged-60fps.mp4`.
+- The packaged run discovered and verified a real fix: Overrun confirmation now releases its temporary notification locks and immediately processes the resumed queue.

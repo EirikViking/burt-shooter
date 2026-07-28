@@ -328,6 +328,50 @@ try {
     format: 'jpeg', quality: 92, maxWidth: 1280, maxHeight: 720, everyNthFrame: 1
   });
 
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.enqueueToast('BOMB BANKED\nRESERVE CHARGE READY', {
+      type: 'bombBanked', duration: 1800, priority: 2
+    });
+    play.showMayhemRoutineReinforcementWarning({
+      groupCount: 2, route: 'side_left', warningMs: 900
+    });
+  });
+  await page.waitForTimeout(1100);
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showWaveBonusEffect(1800, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/6' });
+    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', { type: 'wave_start', duration: 1200, priority: 3 });
+  });
+  await page.waitForTimeout(1650);
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showWaveBonusEffect(3200, 'SECTOR CLEAR', { subtitle: 'BOSS GATE NEXT' });
+  });
+  await page.waitForTimeout(1750);
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.enemyManager.boss = {
+      x: window.__game.getWidth() / 2,
+      y: window.__game.getHeight() * 0.28,
+      color: 0xff55d9,
+      profile: {
+        id: 'gate4_video_boss',
+        name: 'NOVA WARDEN',
+        title: 'SECTOR EXECUTIONER',
+        accent: 0xff55d9,
+        index: 3
+      }
+    };
+    play.enqueueToast('BOSS PHASE 3', { type: 'boss_phase', duration: 1200, priority: 5 });
+    play.showMayhemReinforcementStormWarning({ groupCount: 3, boss: true, warningMs: 1200 });
+    play.showBossCelebration({ level: 30, type: 'GATE4_VIDEO_BOSS' });
+  });
+  await page.waitForTimeout(2200);
+
   await page.evaluate(async () => {
     await window.__novaI18n?.setLanguagePreference?.('de');
     const play = window.__game.scenes.play;
@@ -417,7 +461,17 @@ try {
   states.newRun1280 = await readState(page);
   assert(!states.newRun1280.gameOver && !states.newRun1280.overrun &&
     !states.newRun1280.tactical.routine && !states.newRun1280.tactical.storm &&
-    states.newRun1280.active.length === 0,
+    states.newRun1280.bossLifecycle === null &&
+    !states.newRun1280.active.some((entry) => [
+      'boss_defeated',
+      'boss_phase',
+      'boss_warning',
+      'boss_refuel',
+      'fuel_ship',
+      'reinforcement_warning',
+      'overrun_unlocked',
+      'overrun_active'
+    ].includes(entry.type)),
   `New run inherited notification state: ${JSON.stringify(states.newRun1280)}`);
   screenshots.newRun1280 = path.join(outputDir, '11-new-run-clean-1280x720.png');
   await page.screenshot({ path: screenshots.newRun1280, fullPage: false });
@@ -432,7 +486,7 @@ try {
     '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoPath
   ], { encoding: 'utf8' });
   assert(ffmpeg.status === 0, `ffmpeg failed: ${ffmpeg.stderr}`);
-  assert(frameIndex >= 300, `Packaged video captured only ${frameIndex} frames`);
+  assert(frameIndex >= 450, `Packaged video captured only ${frameIndex} frames`);
   assert(pageErrors.length === 0, `Packaged page errors: ${pageErrors.join(' | ')}`);
 
   const report = {
