@@ -53,7 +53,7 @@ function viteCommand() {
 async function startDevServer() {
   if (await canFetch(baseUrl)) return null;
   const { command, args } = viteCommand();
-  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort'], {
+  const server = spawn(command, [...args, '--host', host, '--port', String(port), '--strictPort', '--force'], {
     cwd: process.cwd(),
     stdio: ['ignore', 'pipe', 'pipe'],
     windowsHide: true
@@ -141,6 +141,15 @@ const scenarios = [
     subtitle: 'NEXT WAVE 2/5'
   },
   {
+    id: 'dense-1280x720-en-hold',
+    width: 1280,
+    height: 720,
+    intensity: 'dense',
+    phaseMs: 460,
+    label: 'WAVE CLEARED!',
+    subtitle: 'NEXT WAVE 7/8'
+  },
+  {
     id: 'dense-1280x720-de-long-hold',
     width: 1280,
     height: 720,
@@ -181,8 +190,23 @@ async function stageScenario(page, scenario) {
     play.completeFirstRunOnboarding?.();
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     play.clearToastState?.();
+    play.showToast = () => false;
+    if (play.player) {
+      play.player.applyRankUpBoost = () => {};
+      if (play.player.rankBoost) {
+        play.player.rankBoost.type = null;
+        play.player.rankBoost.expiresAt = 0;
+      }
+      play.player.drawRankBoostAura?.(null);
+    }
     play.bulletManager?.clearAll?.('wave_clear_visual_evidence');
     manager.clearEnemies?.();
+    manager.update = () => {};
+    if (manager.container) {
+      manager.container.visible = true;
+      manager.container.renderable = true;
+      manager.container.alpha = 1;
+    }
     manager.boss = null;
     manager.phase = 'WAVES';
     manager.state = 'WAVE_ACTIVE';
@@ -195,51 +219,67 @@ async function stageScenario(page, scenario) {
       const config = waves.find((entry) => entry?.type !== 'BOSS') || waves[0];
       manager.currentWaveIndex = Math.min(settings.intensity === 'dense' ? 5 : 2, Math.max(0, waves.length - 1));
       manager.normalWavesTotal = Math.max(1, waves.length);
-      manager.spawnWave({
-        ...config,
-        count: settings.intensity === 'dense' ? 18 : 8
-      });
-      const enemies = manager.enemies.filter((enemy) => enemy?.kind === 'enemy');
-      for (const enemy of enemies) {
-        enemy.waitingForEntry = false;
-        enemy.active = true;
-        if (enemy.sprite) enemy.sprite.visible = true;
-        enemy.state = 'FORMATION';
-        enemy.x = Number.isFinite(enemy.formationX) ? enemy.formationX : enemy.x;
-        enemy.y = Number.isFinite(enemy.formationY) ? enemy.formationY : enemy.y;
-      }
-      const actionCount = settings.intensity === 'dense' ? enemies.length : Math.min(3, enemies.length);
-      for (const enemy of enemies.slice(0, actionCount)) {
-        const action = enemy.threatActionDefinition;
-        if (!action || typeof enemy.executeThreatAction !== 'function') continue;
-        enemy.executeThreatAction(action, {
-          x: play.player?.x || game.getWidth() / 2,
-          y: Math.max(120, (play.player?.y || game.getHeight() * 0.8) - 150)
-        }, { fakeout: false });
-      }
-      for (let frame = 0; frame < (settings.intensity === 'dense' ? 28 : 10); frame += 1) {
-        play.bulletManager?.update?.(1);
+      manager.currentModifier = null;
+      play.recordThreatDiscovery = () => false;
+      play.maybePromoteAceEnemy = () => false;
+      play.maybeApplyRivalWingEnemy = () => false;
+      manager.maybeSpawnRareChaosVisitor = () => null;
+      const groupCount = settings.intensity === 'dense' ? 6 : 3;
+      for (let group = 0; group < groupCount; group += 1) {
+        manager.spawnWave({
+          ...config,
+          count: 3,
+          allowConcurrentSpawn: true,
+          dangerMidShipIds: [],
+          eliteMiddleShipId: null,
+          multiEliteMiddleShipIds: [],
+          forcedThreatActionIds: []
+        });
       }
     }
 
     play.hud?.update?.();
   }, scenario);
-  const settleMs = scenario.intensity === 'quiet' ? 0 : 180;
+  const settleMs = scenario.intensity === 'quiet' ? 0 : 80;
   if (settleMs > 0) await page.waitForTimeout(settleMs);
   await page.evaluate((settings) => {
-    const play = window.__game?.scenes?.play;
-    for (const enemy of (play?.enemyManager?.enemies || [])) {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const manager = play?.enemyManager;
+    const enemies = (manager?.enemies || []).filter((enemy) => enemy?.kind === 'enemy');
+    const columns = settings.intensity === 'dense'
+      ? Math.min(settings.width <= 1280 ? 8 : 9, Math.max(1, Math.ceil(enemies.length / 2)))
+      : Math.min(5, Math.max(1, Math.ceil(enemies.length / 2)));
+    const spacingX = Math.min(
+      settings.width <= 1280 ? 116 : 142,
+      (settings.width - (settings.width <= 1280 ? 210 : 420)) / Math.max(1, columns - 1)
+    );
+    for (let index = 0; index < enemies.length; index += 1) {
+      const enemy = enemies[index];
+      const row = Math.floor(index / columns);
+      const column = index % columns;
+      const rowCount = Math.min(columns, enemies.length - row * columns);
+      const x = settings.width / 2 - Math.max(0, rowCount - 1) * spacingX / 2 + column * spacingX;
+      const y = (settings.height <= 720 ? 270 : 300) + row * (settings.height <= 720 ? 86 : 104);
       enemy.waitingForEntry = false;
       enemy.active = true;
+      enemy.state = 'FORMATION';
       if (!enemy.sprite) continue;
       enemy.sprite.visible = true;
+      enemy.sprite.renderable = true;
       enemy.sprite.alpha = 1;
-      const x = Number.isFinite(enemy.formationX) ? enemy.formationX : enemy.x;
-      const y = Number.isFinite(enemy.formationY) ? enemy.formationY : enemy.y;
+      enemy.formationX = x;
+      enemy.formationY = y;
       enemy.x = x;
       enemy.y = y;
       enemy.sprite.position?.set?.(x, y);
     }
+    manager?.clearPendingWaveSpawns?.();
+    if (manager) {
+      manager.spawning = false;
+      manager.waveSpawnPendingCount = 0;
+    }
+    play?.bulletManager?.clearAll?.('wave_clear_visual_evidence_hold');
     play?.clearToastState?.();
     play?.showWaveBonusEffect?.(1500, settings.label, {
       compact: true,
@@ -258,12 +298,31 @@ async function stageScenario(page, scenario) {
     const play = game?.scenes?.play;
     const activeEffect = play?.activeTopToast || null;
     const effect = activeEffect || window.__waveClearEvidenceDisplay || null;
+    const enemies = (play?.enemyManager?.enemies || []).filter((enemy) => enemy?.kind === 'enemy');
     return {
       debug: effect?._debugWaveClearEffect || null,
       bounds: effect ? play.getToastDisplayBounds(effect) : null,
       active: activeEffect === effect,
       dismissReason: effect?.__dismissReason || null,
       toastState: play?.getToastDebugState?.() || null,
+      enemyVisuals: {
+        total: enemies.length,
+        active: enemies.filter((enemy) => enemy?.active).length,
+        visible: enemies.filter((enemy) =>
+          enemy?.active &&
+          enemy?.sprite?.visible &&
+          enemy?.sprite?.renderable &&
+          enemy?.sprite?.parent?.visible !== false
+        ).length,
+        sample: enemies.slice(0, 4).map((enemy) => ({
+          x: Math.round(Number(enemy.x) || 0),
+          y: Math.round(Number(enemy.y) || 0),
+          alpha: Number(enemy.sprite?.alpha ?? 0),
+          visible: Boolean(enemy.sprite?.visible),
+          worldVisible: Boolean(enemy.sprite?.worldVisible),
+          parentVisible: Boolean(enemy.sprite?.parent?.visible)
+        }))
+      },
       screen: { width: game?.getWidth?.() || 0, height: game?.getHeight?.() || 0 }
     };
   });
@@ -310,7 +369,7 @@ try {
       if (!capture.state.active) {
         failures.push(`${capture.id}: Wave Cleared dismissed before capture: ${capture.state.dismissReason || 'unknown'}`);
       }
-      if (debug?.visualLanguage !== 'nova_command_hud_wave_clear_v1') {
+      if (debug?.visualLanguage !== 'nova_command_hud_wave_clear_v2') {
         failures.push(`${capture.id}: visual language mismatch: ${JSON.stringify(debug)}`);
       }
       if (debug?.channel !== 'transition' || debug?.slot !== 'top') {
@@ -325,11 +384,26 @@ try {
       if (Math.abs(Number(debug?.textCenterOffsetPx) || 0) > 0.75) {
         failures.push(`${capture.id}: text bounds are off-centre: ${JSON.stringify(debug)}`);
       }
-      if ((debug?.componentWidth || 0) < 600 || (debug?.componentWidth || 0) > 740) {
-        failures.push(`${capture.id}: width outside 600-740 target: ${JSON.stringify(debug)}`);
+      const isLongLocalization = capture.id.includes('-de-long-');
+      const minWidth = isLongLocalization ? 520 : 520;
+      const maxWidth = isLongLocalization ? 660 : 610;
+      if ((debug?.componentWidth || 0) < minWidth || (debug?.componentWidth || 0) > maxWidth) {
+        failures.push(`${capture.id}: width outside ${minWidth}-${maxWidth} target: ${JSON.stringify(debug)}`);
       }
-      if ((debug?.componentHeight || 0) < 96 || (debug?.componentHeight || 0) > 145) {
-        failures.push(`${capture.id}: height outside 96-145 target: ${JSON.stringify(debug)}`);
+      if ((debug?.componentHeight || 0) < 90 || (debug?.componentHeight || 0) > 108) {
+        failures.push(`${capture.id}: height outside 90-108 target: ${JSON.stringify(debug)}`);
+      }
+      if ((debug?.centralPlateWidth || 0) >= (debug?.componentWidth || 0) - 72 ||
+        (debug?.openRailWidthPerSide || 0) < 36 ||
+        (debug?.opaqueCoverageRatio || 1) > 0.72 ||
+        (debug?.surfaceAlpha || 1) > 0.82) {
+        failures.push(`${capture.id}: V2 open-rail occlusion contract failed: ${JSON.stringify(debug)}`);
+      }
+      if (debug?.signatureMotif !== 'paired_reactor_pulse') {
+        failures.push(`${capture.id}: Nova Swarm signature motif missing: ${JSON.stringify(debug)}`);
+      }
+      if (capture.intensity === 'dense' && (capture.state.enemyVisuals?.visible || 0) < 12) {
+        failures.push(`${capture.id}: dense evidence has too few visible real enemies: ${JSON.stringify(capture.state.enemyVisuals)}`);
       }
       if (!bounds || bounds.x < 48 || bounds.y < 48 ||
         bounds.x + bounds.width > screen.width - 48 ||

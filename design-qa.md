@@ -95,6 +95,67 @@ final result: passed
 
 final result: passed
 
+## 2026-07-28 - Wave Cleared Nova Command HUD V2
+
+### Scope and preserved contracts
+
+- V1 remains intact at `cd69db9e76d5be9380160d979e06ff234ad509b3`. V2 changes Wave Cleared only; the other notification renderers and notification timing/orchestration contracts are unchanged.
+- Mathematical mirroring, independently centered localized text, 48 px safe margins, strong title type, the 1320 ms duration, clean exit, and deterministic code-built geometry are preserved.
+- No ImageGen output or external asset was introduced. No locale source required modification because all dynamic copy continues through the existing i18n path.
+
+### Final geometry and occlusion
+
+- English at 1920x1080: 560 x 96 px overall, with a 398 x 76 px central readability plate and 81 px open rail region per side.
+- English at 1280x720: 520 x 96 px overall, with a 360 x 76 px central plate and 80 px open rail region per side.
+- Long German at 1280x720: 596 x 96 px overall, with a 492 x 76 px central plate and 52 px open rail region per side. Runtime measurement may expand to the 660 px maximum.
+- The full-width opaque slab is gone. Only the text plate carries the stronger dark surface; the mirrored outer rails are open geometry. Measured opaque-width coverage is 56.3% for English at 1920, 54.8% for English at 1280, and 65.4% for the long German sample.
+
+### Nova Swarm signature and hierarchy
+
+- A paired top/bottom reactor-pulse mark sits on the exact center axis. It is a small, mirrored diamond/notch motif rather than a crest or illustration.
+- Each side uses one stronger swept energy rail built from the same mirrored half; arbitrary short HUD fragments and low-alpha texture clutter were removed.
+- The reward value is a restrained 15/14 px prestige-gold accent. The next-wave detail is neutral cyan at 14/13 px, separated by one clean vertical rule. The title remains 30 px at 1920 and 27 px at 1280 or for the German sample, with a 24 px localization floor.
+- During the 180 ms entrance the structural rails resolve first, title and secondary copy begin 38 ms later, and a bounded plate sweep supplies the activation pulse. There is no viewport slide, bounce, extended duration, or residue.
+- Optional decorative blade fill and sweep can be disabled while the structural frame, reactor mark, text hierarchy, and safe-area behavior remain complete.
+
+### V1/V2 evidence
+
+- Final nine-scenario V2 matrix:
+  - `test-results/wave-clear-effect-2026-07-28T08-40-44-092Z`
+- Side-by-side V1/V2 set:
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-quiet-1920x1080-en-hold.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-dense-1920x1080-en-hold.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-quiet-1280x720-en-hold.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-dense-1280x720-en-hold.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-dense-1280x720-de-long-hold.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-quiet-1920x1080-en-entrance.png`
+  - `test-results/wave-clear-v1-v2-20260728/v1-v2-quiet-1920x1080-en-exit.png`
+- V2 accents-disabled capture:
+  - `test-results/wave-clear-effect-2026-07-28T08-40-44-092Z/proposed-quiet-1920x1080-en-no-accents-hold.png`
+
+### Packaged-game proof
+
+- Packaged executable:
+  - `release/desktop/win-unpacked/Nova Swarm.exe`
+- Packaged validation report:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260728\packaged-wave-clear-2026-07-28T09-04-11-372Z\report.json`
+- Dense 1920x1080 packaged capture with 18 real enemies:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260728\packaged-wave-clear-2026-07-28T09-04-11-372Z\packaged-dense-1920x1080-hold.png`
+- Packaged 1280x720, H.264, 60 fps entrance-hold-exit recording:
+  - `D:\CodexTemp\nova-swarm-wave-cleared-20260728\packaged-wave-clear-2026-07-28T09-04-11-372Z\packaged-wave-clear-entrance-hold-exit.mp4`
+- Local packaged-executable smoke:
+  - `test-results/packaged-exe-smoke-2026-07-28T09-07-45-418Z/report.json`
+- Exact-package runtime validation:
+  - `test-results/steam-package-runtime-2026-07-28T09-02-55-345Z/report.json`
+
+### Validation
+
+- Passed `check:release-line`, `check:wave-clear-effect`, `check:notification-orchestration`, `check:i18n`, `build:current`, `check:i18n-ui`, `check:steam-electron-bridge`, `smoke`, `package:steam:win:current`, packaged Wave Cleared motion proof, and packaged-executable smoke.
+- The all-language UI matrix passed for all eight supported interface languages with no missing translation, overflow, or English-leak failures. Existing ascendant-rank fallback and Rollup chunk-size warnings remain unchanged.
+- Steamworks was untouched. No Steam upload, deployment, branch assignment, or Git push occurred.
+
+final result: passed
+
 ## Deep HUD and command-surface follow-up — 2026-07-26
 
 ### Reviewed evidence

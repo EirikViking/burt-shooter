@@ -2532,6 +2532,18 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - The temporary geometry overlay and its color legend, design tokens, before/after comparisons, packaged screenshot, and 60 fps recording are documented in `design-qa.md`.
 - Final source rebuild, exact package runtime, refreshed packaged motion capture, and local packaged smoke pass. Commit once and stop at Approval Gate 2. No Steam upload, deployment, Steamworks change, or Git push is authorized.
 
+## 2026-07-28 Wave Cleared Nova Command HUD V2 revision
+
+- Current prompt: preserve V1 commit `cd69db9e76d5be9380160d979e06ff234ad509b3` as the reversible baseline and make one focused Wave Cleared V2 revision only; no five-component pilot, ImageGen, external assets, other notification changes, Steam deployment, or Git push.
+- Verified clean authoritative worktree and branch at exact V1 HEAD `cd69db9`; remote remains an ancestor. Required German/top3 localization and marketing-hotkey commits are present, and `check:release-line` passes.
+- Implemented localized 520-660 px width and 96 px height, a dark central text plate instead of a full-width slab, open mirrored energy rails, a paired central reactor-pulse motif, fewer structural lines, and separately styled reward/detail text.
+- The focused browser matrix now includes dense English at 1280x720 in addition to quiet/normal/dense 1920, quiet 1280, long German 1280, entrance/hold/exit, and accents disabled.
+- Final dimensions are 560 x 96 px for English at 1920x1080, 520 x 96 px for English at 1280x720, and 596 x 96 px for the staged long German copy at 1280x720, with a 660 px runtime maximum.
+- Final V2 browser evidence passes nine scenarios at `test-results/wave-clear-effect-2026-07-28T08-40-44-092Z`; the complete labeled V1/V2 comparison set is at `test-results/wave-clear-v1-v2-20260728`.
+- Packaged validation passes with 18 real enemies, a dense 1920x1080 screenshot, and a 1280x720 H.264 60 fps entrance-hold-exit recording at `D:\CodexTemp\nova-swarm-wave-cleared-20260728\packaged-wave-clear-2026-07-28T09-04-11-372Z`.
+- Adjacent gates pass: notification orchestration, all-language source/UI checks, current build, Steam/Electron bridge, full gameplay smoke, release-line and exact-package runtime, and local packaged-executable smoke.
+- No other notification, external asset, localization file, Steamworks setting, deployment target, or remote Git state changed. Commit once and stop at Approval Gate 2.
+
 ## 2026-07-27 - Combat notification hierarchy and restraint pass
 
 - Split player messaging into explicit major-centre, combat-transition, side, persistent-HUD, and combo channels with queue limits, duplicate collapse, cancellation, and supersession rules.
