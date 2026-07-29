@@ -311,6 +311,7 @@ export class PlayScene {
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
     this.pendingCabinetWonder = null;
+    this.pendingCabinetWonderReleaseTimer = null;
     this.pendingEnemyStartTimeout = null;
     this.capState = {
       bullets: false,
@@ -1754,20 +1755,22 @@ export class PlayScene {
 
   showTacticalDirectiveCompletion(completion = {}) {
     const title = translateText('SIDE DIRECTIVE COMPLETE');
-    const objective = translateText(completion.objectiveLabel || 'SIDE DIRECTIVE');
     const reward = translateText(completion.rewardLabel || 'EXTRA RESCAN');
-    const cabinetQuip = tauntDirector.getRotatingText('directive_complete_quip');
-    const momentum = completion.momentumBonus > 0
-      ? `\n${translateText('MOMENTUM BONUS +{score}', { score: Number(completion.momentumBonus).toLocaleString('en-US') })}`
-      : '';
-    this.lastDirectiveHumor = tauntDirector.getRotationDebugState();
-    this.enqueueToast(`${title}\n${objective} // ${translateText('REWARD: {reward}', { reward })}\n${cabinetQuip}${momentum}`, {
+    const result = completion.momentumBonus > 0
+      ? translateText('MOMENTUM BONUS +{score}', { score: Number(completion.momentumBonus).toLocaleString('en-US') })
+      : translateText('REWARD: {reward}', { reward });
+    const conciseQuip = tauntDirector.getRotatingText('directive_complete_quip');
+    this.lastDirectiveHumor = {
+      ...tauntDirector.getRotationDebugState(),
+      conciseQuip
+    };
+    this.enqueueToast(`${title}\n${result}`, {
       fontSize: this.game.getWidth() < 720 ? 15 : 18,
       fill: '#fff3a0',
       slot: 'corner',
       type: 'tacticalDirective',
       priority: 4,
-      duration: 1800,
+      duration: 1450,
       accent: 0xffef7e
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });
@@ -2349,6 +2352,7 @@ export class PlayScene {
     if (!enemy.attachRivalWingCommand?.(active.rivalWingId)) return false;
     active.spawned = true;
     active.spawnedAt = Date.now();
+    active.compactObjectiveReadyAt = active.spawnedAt + 2700;
     active.spawnedWaveIndex = waveIndex;
     active.enemyType = enemy.type || null;
     const number = String(active.number).padStart(4, '0');
@@ -2379,8 +2383,8 @@ export class PlayScene {
       slot: 'top',
       type: 'aceContact',
       priority: 5,
-      duration: 3900,
-      minVisibleMs: 3300,
+      duration: 2700,
+      minVisibleMs: 2300,
       extraReadTimeMs: 0,
       y: Math.max(176, this.game.getHeight() * 0.25),
       maxWidth: Math.min(540, Math.max(360, this.game.getWidth() - 32)),
@@ -2658,6 +2662,40 @@ export class PlayScene {
     return true;
   }
 
+  hasAuthoritativeTransitionPresentation() {
+    const centerMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
+    const topMeta = this.activeTopToast?.__toastMeta || null;
+    const authoritativeTypes = new Set(['wave_clear', 'sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked']);
+    return Boolean(
+      this.overrunMilestoneInterlude?.active
+      || this.activeWaveBonusEffect?.parent
+      || (centerMeta && (centerMeta.channel === 'major' || authoritativeTypes.has(centerMeta.type)))
+      || (topMeta && authoritativeTypes.has(topMeta.type))
+    );
+  }
+
+  scheduleCabinetWonderAfterPresentation(decision = {}) {
+    if (!decision?.variant || this.game?.currentScene !== this) return false;
+    if (this.pendingCabinetWonderReleaseTimer) clearTimeout(this.pendingCabinetWonderReleaseTimer);
+    const pendingKey = `presentation:${decision.variant.id}:${decision.sector}:${decision.waveNumber}`;
+    this.pendingCabinetWonder = { key: pendingKey, decision, kind: 'presentation_release' };
+    const retry = () => {
+      this.pendingCabinetWonderReleaseTimer = null;
+      if (this.game?.currentScene !== this || this.activeCabinetWonder) {
+        if (this.pendingCabinetWonder?.key === pendingKey) this.pendingCabinetWonder = null;
+        return;
+      }
+      if (this.hasAuthoritativeTransitionPresentation()) {
+        this.pendingCabinetWonderReleaseTimer = setTimeout(retry, 120);
+        return;
+      }
+      if (this.pendingCabinetWonder?.key === pendingKey) this.pendingCabinetWonder = null;
+      this.showCabinetWonder({ ...decision, presentationReleased: true });
+    };
+    this.pendingCabinetWonderReleaseTimer = setTimeout(retry, 120);
+    return true;
+  }
+
   debugForceCabinetWonder(variantId = 'ghost_fleet_salute') {
     if (!this.canUseMaintainerDevtools()) return false;
     return this.maybeShowCabinetWonder({
@@ -2689,7 +2727,7 @@ export class PlayScene {
       generatedArt.y = height * 0.29;
       const sourceWidth = Math.max(1, generatedTexture.width || 1);
       const sourceHeight = Math.max(1, generatedTexture.height || 1);
-      const scale = Math.min((width * 0.72) / sourceWidth, (height * 0.54) / sourceHeight);
+      const scale = Math.min((width * 0.5) / sourceWidth, (height * 0.38) / sourceHeight);
       generatedArt.scale.set(scale);
       generatedArt.alpha = reducedMotion ? 0.7 : 0.82;
       generatedArt.blendMode = 'add';
@@ -3337,12 +3375,18 @@ export class PlayScene {
   showCabinetWonder(decision = {}) {
     if (!decision.variant || this.activeCabinetWonder || !this.gameContainer) return false;
     if (decision.reason !== 'debug_force' && this.cabinetWonderHistory.some((entry) => entry.sector === decision.sector)) return false;
+    if (decision.presentationReleased !== true && this.hasAuthoritativeTransitionPresentation()) {
+      return this.scheduleCabinetWonderAfterPresentation(decision);
+    }
     const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
     const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const durationMs = reducedMotion ? 2400 : 3300;
-    const introMs = reducedMotion ? 280 : 420;
-    const outroMs = reducedMotion ? 420 : 650;
+    const durationMs = reducedMotion ? 1150 : 1500;
+    const introMs = reducedMotion ? 160 : 210;
+    const fullIntensityMs = reducedMotion ? 500 : 650;
+    const settleMs = reducedMotion ? 210 : 280;
+    const ambientAlpha = reducedMotion ? 0.25 : 0.3;
+    const outroMs = reducedMotion ? 180 : 240;
     const visual = this.createCabinetWonderVisual(decision.variant, width, height, reducedMotion);
     visual.root.alpha = 0;
     this.gameContainer.addChild(visual.root);
@@ -3374,6 +3418,10 @@ export class PlayScene {
       gameplayNeutral: true,
       reducedMotion,
       durationMs,
+      fullIntensityMs,
+      settleMs,
+      ambientAlpha,
+      scaleReduction: 0.3,
       elementCount: visual.elementCount,
       authoredBounds: { ...visual.authoredBounds },
       audioProfile: 'wonder',
@@ -3404,8 +3452,10 @@ export class PlayScene {
       active.elapsedMs += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
       const progress = Math.min(1, active.elapsedMs / durationMs);
       const intro = Math.min(1, active.elapsedMs / introMs);
-      const outro = Math.max(0, (active.elapsedMs - (durationMs - outroMs)) / outroMs);
-      active.root.alpha = (1 - Math.pow(1 - intro, 3)) * (1 - outro);
+      const settle = Math.max(0, Math.min(1, (active.elapsedMs - fullIntensityMs) / settleMs));
+      const outro = Math.max(0, Math.min(1, (active.elapsedMs - (durationMs - outroMs)) / outroMs));
+      const resolvedAlpha = 1 - settle * (1 - ambientAlpha);
+      active.root.alpha = (1 - Math.pow(1 - intro, 3)) * resolvedAlpha * (1 - outro);
       active.animate(progress, active.elapsedMs);
       if (active.elapsedMs >= durationMs) this.clearCabinetWonder('complete');
     };
@@ -3418,6 +3468,13 @@ export class PlayScene {
   }
 
   clearCabinetWonder(reason = 'cleared') {
+    if (this.pendingCabinetWonderReleaseTimer) {
+      clearTimeout(this.pendingCabinetWonderReleaseTimer);
+      this.pendingCabinetWonderReleaseTimer = null;
+    }
+    if (reason !== 'complete' && this.pendingCabinetWonder?.kind === 'presentation_release') {
+      this.pendingCabinetWonder = null;
+    }
     const active = this.activeCabinetWonder;
     if (!active) return false;
     if (active.ticker && this.game?.app?.ticker) this.game.app.ticker.remove(active.ticker);
@@ -5011,6 +5068,8 @@ export class PlayScene {
     if (this.gameOverSequenceStarted || this.game?.currentScene !== this) return false;
     return Boolean(
       this.activeRankUpPresentation?.parent
+      || this.activeTacticalFusionUnlock?.container?.parent
+      || this.hasAuthoritativeTransitionPresentation()
       || (
         this.pendingRankUpPresentation !== null
         && this.pendingRankUpPresentation !== undefined
@@ -6049,6 +6108,7 @@ export class PlayScene {
       decorativeAccents: options.decorativeAccents !== false,
       debugGeometry: options.debugGeometry === true,
       onShown: ({ display }) => {
+        this.hud?.setNotificationFocus?.(isSectorClear ? 'major' : 'transition');
         display._debugWaveClearEffect = {
           ...(display._debugWaveClearEffect || {}),
           compact: !isSectorClear,
@@ -6062,6 +6122,9 @@ export class PlayScene {
           subtitle: Boolean(subtitle),
           subtitleText: subtitle
         };
+      },
+      onDismissed: () => {
+        this.refreshMissionNotificationFocus();
       }
     });
     AudioManager.playSfx(options.sfxKey || 'nova_wave_clear_sweep', {
@@ -10930,15 +10993,18 @@ export class PlayScene {
       this.clearTacticalDraft('confirmed');
       this.externalPauseSuppressedUntil = Date.now() + 600;
       if (this.isPaused) this.setPaused(false);
-      const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
-      this.enqueueToast(`${translateText(offer.displayName || offer.name)}  ${status}`, {
-        fontSize: 18,
-        fill: '#fff3a0',
-        slot: 'top',
-        type: 'tactical_draft',
-        duration: 1500,
-        priority: 5
-      });
+      const fusion = result.newFusions?.[0] || null;
+      if (!fusion) {
+        const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
+        this.enqueueToast(`${translateText(offer.displayName || offer.name)}  ${status}`, {
+          fontSize: 18,
+          fill: '#fff3a0',
+          slot: 'top',
+          type: 'tactical_draft',
+          duration: 1300,
+          priority: 5
+        });
+      }
       if (state.scoreRouteDecision === 'closed') {
         this.enqueueToast(translateText('SCORE ROUTE CLOSED FOR THIS RUN'), {
           fontSize: 16,
@@ -10950,7 +11016,7 @@ export class PlayScene {
           accent: 0xffa84d
         });
       }
-      if (state.doctrineChanged) {
+      if (state.doctrineChanged && !fusion) {
         this.enqueueToast(translateText('{name} // {stage}', {
           name: translateText(state.doctrineChanged.name),
           stage: translateText(state.doctrineChanged.stage)
@@ -10963,7 +11029,7 @@ export class PlayScene {
           priority: 4
         });
       }
-      if (result.newFusions?.length) this.showTacticalFusionUnlock(result.newFusions[0]);
+      if (fusion) this.showTacticalFusionUnlock(fusion);
       complete?.();
     }, state.confirmHoldMs);
     return true;
@@ -11074,9 +11140,9 @@ export class PlayScene {
     const height = Math.max(360, Number(this.game.getHeight?.() || this.game.app.screen?.height) || 720);
     const compact = width < 760 || height < 560;
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
-    const durationMs = reducedMotion ? 1500 : 2050;
-    const panelWidth = Math.min(width - (compact ? 28 : 96), compact ? 520 : 690);
-    const panelHeight = compact ? 126 : 148;
+    const durationMs = reducedMotion ? 1050 : 1400;
+    const panelWidth = Math.min(width - (compact ? 96 : 128), compact ? 470 : 580);
+    const panelHeight = compact ? 112 : 124;
     const centerX = width / 2;
     const centerY = Math.max(compact ? 160 : 192, height * 0.36);
     const accent = Number(fusion.color) || 0xff5bd6;
@@ -11209,6 +11275,10 @@ export class PlayScene {
       name: fusion.name,
       description: fusion.description,
       reducedMotion,
+      durationMs,
+      panelWidth,
+      panelHeight,
+      conciseSinglePresentation: true,
       rayCount: 0,
       plasmaRibbonCount,
       emblemId: core._fusionEmblemId,
@@ -11241,7 +11311,7 @@ export class PlayScene {
       }
       elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
       const intro = Math.min(1, elapsed / 230);
-      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - 420)) / 420));
+      const outro = Math.max(0, Math.min(1, (elapsed - (durationMs - 300)) / 300));
       const eased = 1 - Math.pow(1 - intro, 3);
       container.alpha = eased * (1 - outro);
       panel.scale.set(0.78 + eased * 0.22 + Math.sin(elapsed * 0.012) * (reducedMotion ? 0.004 : 0.014));
@@ -12821,19 +12891,45 @@ export class PlayScene {
     this.lastHitStopRequestMs = finalDeath ? 420 : 180;
     this.freezeTimerMs = this.lastHitStopRequestMs;
 
-    if (this.screenShake) this.screenShake.shake(finalDeath ? 42 : 25);
+    const accessibility = getAccessibilitySettings();
+    const reducedMotion = Boolean(accessibility.prefersReducedMotion);
+    const shakeScale = Math.max(0, Number(accessibility.screenShake) || 0);
+    if (this.screenShake && shakeScale > 0) {
+      this.screenShake.shake(finalDeath ? 42 : 25);
+    }
 
     const flash = new PIXI.Graphics();
-    flash.rect(0, 0, width, height).fill({ color: finalDeath ? 0xff174a : 0xff0000, alpha: finalDeath ? 0.68 : 0.5 });
+    const flashColor = finalDeath ? 0xff174a : 0xff304f;
+    const centerAlpha = reducedMotion ? 0.035 : finalDeath ? 0.1 : 0.065;
+    const edgeAlpha = reducedMotion ? 0.2 : finalDeath ? 0.52 : 0.4;
+    flash.label = 'player_damage_edge_flash';
+    flash.rect(0, 0, width, height).fill({ color: flashColor, alpha: centerAlpha });
+    const edgeDepth = Math.max(18, Math.min(64, Math.min(width, height) * 0.075));
+    for (let band = 0; band < 4; band += 1) {
+      const inset = band * edgeDepth * 0.24;
+      flash.rect(inset, inset, width - inset * 2, height - inset * 2);
+      flash.stroke({ color: flashColor, width: edgeDepth * 0.32, alpha: edgeAlpha * (1 - band * 0.2) });
+    }
+    flash._debugDamageFlash = {
+      edgeWeighted: true,
+      centerAlpha,
+      edgeAlpha,
+      reducedMotion,
+      shakeScale,
+      finalDeath
+    };
     this.uiOverlay.addChild(flash);
 
+    const flashDurationMs = reducedMotion ? 120 : finalDeath ? 300 : 190;
+    let flashElapsedMs = 0;
     const fadeTicker = (ticker) => {
       if (!flash.parent) {
         this.game.app.ticker.remove(fadeTicker);
         return;
       }
-      flash.alpha -= (finalDeath ? 0.028 : 0.05) * ticker.deltaTime;
-      if (flash.alpha <= 0) {
+      flashElapsedMs += (Number(ticker?.deltaTime) || 1) * 16.67;
+      flash.alpha = Math.max(0, 1 - flashElapsedMs / flashDurationMs);
+      if (flashElapsedMs >= flashDurationMs) {
         if (flash.parent) flash.parent.removeChild(flash);
         this.game.app.ticker.remove(fadeTicker);
       }
@@ -16078,6 +16174,7 @@ export class PlayScene {
     const priority = Number.isFinite(normalizedOptions.priority) ? normalizedOptions.priority : (priorityMap[type] || 0);
     const now = Date.now();
     const tacticalAlert = normalizedOptions.novaCommandVariant === 'tactical';
+    const authoritativeTransition = this.isAuthoritativeTransitionType(type);
     if (tacticalAlert) {
       const baseDuration = Number(normalizedOptions.duration) || 1100;
       const extraReadTime = Math.max(0, Number(normalizedOptions.extraReadTimeMs) || 0);
@@ -16128,6 +16225,14 @@ export class PlayScene {
         this.toastQueue = this.toastQueue.filter((queued) => queued.priority >= priority);
         this.toastTopQueue = this.toastTopQueue.filter((queued) => queued.priority >= priority);
         this.dismissActiveToastSlotsBelowPriority(['center', 'top'], priority);
+      } else if (authoritativeTransition) {
+        this.toastQueue = this.toastQueue.filter((queued) => queued.priority >= priority);
+        this.toastTopQueue = this.toastTopQueue.filter((queued) => queued.priority >= priority);
+        this.dismissActiveToastSlotsBelowPriority(['center', 'top'], priority);
+        this.deferSideToastsForTacticalAlert(
+          (Number(normalizedOptions.duration) || 1200) + (Number(normalizedOptions.extraReadTimeMs) || 0) + 80,
+          `authoritative_${type}`
+        );
       } else {
         this.dropLowerPriorityToastBacklog(priority);
         this.dismissActiveToastsBelowPriority(priority);
@@ -16283,7 +16388,14 @@ export class PlayScene {
     const lockRemaining = ['center', 'top', 'corner']
       .map(slot => Math.max(0, this.getToastSlotLockUntil(slot) - now))
       .reduce((max, value) => Math.max(max, value), 0);
-    const activeRemaining = (this.activeBossIntroCard || this.activeCenterToast || this.activeTopToast) ? minMs : 0;
+    const activeDisplay = this.activeBossIntroCard || this.activeCenterToast || this.activeTopToast;
+    const activeMeta = activeDisplay?.__toastMeta;
+    const activeRemaining = activeMeta
+      ? Math.max(
+          minMs,
+          (Number(activeMeta.createdAt) || now) + (Number(activeMeta.duration) || minMs) - now
+        )
+      : 0;
     const desired = Math.max(lockRemaining, activeRemaining);
     return Math.max(0, Math.min(Math.max(minMs, maxMs), desired));
   }
@@ -16307,7 +16419,9 @@ export class PlayScene {
       this.activeCenterToast = null;
     }
     if (meta?.type) this.notificationExitAt.set(meta.type, Date.now());
-    if (meta?.channel === 'major') this.hud?.setNotificationFocus?.('none');
+    if (meta?.channel === 'major' || this.isAuthoritativeTransitionType(meta?.type)) {
+      this.refreshMissionNotificationFocus();
+    }
     display.__dismissReason = reason;
     meta?.originalOptions?.onDismissed?.({
       display,
@@ -16528,6 +16642,15 @@ export class PlayScene {
       }
       return;
     }
+    const authoritativeTopMeta = this.activeTopToast?.__toastMeta || null;
+    if (authoritativeTopMeta && this.isAuthoritativeTransitionType(authoritativeTopMeta.type)) {
+      this.hud?.setNotificationFocus?.('transition');
+      const delayedCorner = !this.activeCornerToast && now >= this.getToastSlotLockUntil('corner')
+        ? this.peekReadyToast(this.toastCornerQueue, now)
+        : null;
+      if (delayedCorner) this.delayReadyToast(this.toastCornerQueue, delayedCorner, 360, now);
+      return;
+    }
     if (blockingCenterMeta && this.isTransitionToastType(blockingCenterMeta.type)) {
       const centerPriority = blockingCenterMeta.priority || 0;
       this.dismissActiveToastSlotsBelowPriority(['top', 'corner'], centerPriority);
@@ -16604,6 +16727,25 @@ export class PlayScene {
       'boss_intro',
       'run_clear'
     ].includes(type);
+  }
+
+  isAuthoritativeTransitionType(type) {
+    return ['wave_clear', 'sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked'].includes(type);
+  }
+
+  refreshMissionNotificationFocus() {
+    const centerMeta = this.activeBossIntroCard?.__toastMeta || this.activeCenterToast?.__toastMeta || null;
+    const topMeta = this.activeTopToast?.__toastMeta || null;
+    if (centerMeta?.channel === 'major') {
+      this.hud?.setNotificationFocus?.('major');
+      return 'major';
+    }
+    if (this.isAuthoritativeTransitionType(topMeta?.type)) {
+      this.hud?.setNotificationFocus?.('transition');
+      return 'transition';
+    }
+    this.hud?.setNotificationFocus?.('none');
+    return 'none';
   }
 
   delayReadyToast(queue, entry, delayMs, now = Date.now()) {
@@ -17295,7 +17437,9 @@ export class PlayScene {
 
     if (channel === 'major') {
       const current = this.activeCenterToast;
-      if (current && this.getActiveNotificationChannel(current) === 'major') {
+      const currentIsMajor = current && this.getActiveNotificationChannel(current) === 'major';
+      const terminalSupersession = type === 'overrun_unlocked' || type === 'run_clear';
+      if (currentIsMajor && terminalSupersession) {
         this.dismissToastDisplay(current, 'center', { reason: 'major_replaced' });
       }
     }
@@ -19150,14 +19294,14 @@ export class PlayScene {
 
     const nearMissLabel = translateText('NEAR MISS');
     this.enqueueToast(`${nearMissLabel} x${streak}`, {
-      fontSize: this.game.getWidth() < 620 ? 16 : 20,
+      fontSize: this.game.getWidth() < 620 ? 13 : 15,
       fill: streak >= 10 ? '#ff66ff' : '#ffef7e',
       stroke: '#120018',
       strokeThickness: this.game.getWidth() < 620 ? 2 : 3,
       slot: 'corner',
       type: 'dangerDodge',
       priority: 3,
-      duration: 850
+      duration: 700
     });
 
     this.nearMissSurgesThisRun = (Number(this.nearMissSurgesThisRun) || 0) + 1;
@@ -20080,17 +20224,6 @@ export class PlayScene {
       AudioManager.playSfx('tactical_graze_plating', { force: true, volume: 0.76, minIntervalMs: 500 });
     }
     const nearMissLabel = translateText(labelKey);
-    const label = this.dangerDodgeCount >= 2
-      ? `${nearMissLabel} x${this.dangerDodgeCount} +${appliedScore}`
-      : `${nearMissLabel} +${appliedScore}`;
-    this.enqueueToast(label, {
-      fontSize: this.dangerDodgeCount >= 3 ? 18 : 16,
-      fill: '#ffcc00',
-      slot: 'top',
-      type: 'dangerDodge',
-      priority: this.dangerDodgeCount >= 2 ? 3 : 1,
-      duration: 950
-    });
     if (this.particleManager) {
       if (typeof this.particleManager.createNearMissEffect === 'function') {
         this.particleManager.createNearMissEffect(this.player.x, this.player.y, this.dangerDodgeCount);
@@ -20105,8 +20238,8 @@ export class PlayScene {
         color: this.dangerDodgeCount >= 3 ? 0xff66ff : 0xffcc00,
         prefix: this.dangerDodgeCount >= 2 ? `${nearMissLabel} x${this.dangerDodgeCount}` : nearMissLabel,
         type: 'nearMiss',
-        fontSize: this.dangerDodgeCount >= 3 ? 21 : 19,
-        maxLifetime: 950
+        fontSize: this.dangerDodgeCount >= 3 ? 17 : 15,
+        maxLifetime: 700
       });
     }
     if (this.dangerDodgeCount >= 3) {
@@ -21107,9 +21240,9 @@ export class PlayScene {
 
     const detailParts = [translateText(detailLabel)];
     if (bossProfile?.title) detailParts.push(String(bossProfile.title).toUpperCase());
-    const detailText = createText(detailParts.join(' // '), {
+    const detailText = createText(detailParts.slice(0, 1).join(' // '), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: 11,
+      fontSize: 14,
       fill: '#d8fbff',
       fontWeight: '900',
       align: 'center',
@@ -21119,25 +21252,6 @@ export class PlayScene {
     detailText.anchor.set(0.5);
     detailText.y = 160;
     poster.addChild(detailText);
-
-    const warningCaption = reason === 'boss_spawn'
-      ? translateText(pickBossWarningJoke(bossProfile, this.game?.level || 1))
-      : caption;
-    const bottomText = createText(warningCaption, {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: spectacular ? 17 : 15,
-      fill: spectacular ? '#fff3a2' : '#ffffff',
-      stroke: '#12020c',
-      strokeThickness: spectacular ? 3 : 0,
-      fontWeight: '900',
-      align: 'center',
-      wordWrap: true,
-      wordWrapWidth: 304
-    });
-    bottomText.label = 'boss_warning_caption';
-    bottomText.anchor.set(0.5);
-    bottomText.y = 192;
-    poster.addChild(bottomText);
 
     const width = this.game.getWidth();
     const height = this.game.getHeight();
@@ -21158,7 +21272,9 @@ export class PlayScene {
       bossProfileId: bossProfile?.id || null,
       bossProfileName: bossProfile?.name || null,
       safeMargin,
-      portraitTargetPx: 232,
+      portraitTargetPx: 258,
+      detailLineCount: 1,
+      tinyCaptionRemoved: true,
       redundantNameplateRemoved: true,
       primitiveOrnamentCount: 0,
       visualLanguage: 'restrained_boss_dossier_v2'
@@ -21180,12 +21296,12 @@ export class PlayScene {
     this.activeBossDossier = poster;
     console.log('[UI] boss dossier shown uiOnly=true');
 
-    const baseScale = spectacular ? 0.5 : 0.64;
-    const popScale = spectacular ? 0.58 : 0.72;
+    const baseScale = spectacular ? 0.57 : 0.64;
+    const popScale = spectacular ? 0.66 : 0.72;
     poster.scale.set(baseScale);
     let elapsed = 0;
-    const fadeDelay = spectacular ? 1650 : 1500;
-    const fadeDuration = spectacular ? 520 : 600;
+    const fadeDelay = spectacular ? 1420 : 1380;
+    const fadeDuration = spectacular ? 420 : 500;
     const animate = (delta) => {
       if (poster.destroyed || !poster.scale || !this.game?.app?.ticker) {
         this.game?.app?.ticker?.remove?.(animate);

@@ -8,7 +8,8 @@ const root = process.cwd();
 const exePath = path.resolve('release/desktop/win-unpacked/Nova Swarm.exe');
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR ||
   `test-results/packaged-nova-command-hud-gate4-${stamp()}`);
-const framesDir = path.join(outputDir, 'frames');
+const frames1920Dir = path.join(outputDir, 'frames-1920x1080');
+const frames1280Dir = path.join(outputDir, 'frames-1280x720');
 
 function stamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -156,7 +157,8 @@ async function readState(page) {
 }
 
 if (!existsSync(exePath)) throw new Error(`Packaged executable not found: ${exePath}`);
-mkdirSync(framesDir, { recursive: true });
+mkdirSync(frames1920Dir, { recursive: true });
+mkdirSync(frames1280Dir, { recursive: true });
 const port = await openPort();
 const child = spawn(exePath, ['--windowed', `--remote-debugging-port=${port}`], {
   cwd: root,
@@ -204,6 +206,16 @@ try {
   await page.waitForFunction(() => window.__novaCommandHudPilot?.trigger, null, { timeout: 30000 });
 
   await page.setViewportSize({ width: 1920, height: 1080 });
+  cdp = await context.newCDPSession(page);
+  let frameIndex1920 = 0;
+  const capture1920 = async (event) => {
+    writeFileSync(
+      path.join(frames1920Dir, `frame-${String(frameIndex1920++).padStart(4, '0')}.jpg`),
+      Buffer.from(event.data, 'base64')
+    );
+    await cdp.send('Page.screencastFrameAck', { sessionId: event.sessionId }).catch(() => {});
+  };
+  cdp.on('Page.screencastFrame', capture1920);
   states.dense1920 = await stageDenseCombat(page);
   assert(states.dense1920.enemies >= 12 && states.dense1920.bullets >= 8,
     `Dense 1920 staging was insufficient: ${JSON.stringify(states.dense1920)}`);
@@ -213,7 +225,7 @@ try {
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.enqueueToast('BOMB BANKED\nRESERVE CHARGE READY', {
-      type: 'bombBanked', duration: 1800, priority: 2, maxQueueAgeMs: 5000
+      type: 'bombBanked', duration: 3000, priority: 2, maxQueueAgeMs: 15000
     });
     play.enqueueToast('NEAR MISS x2', {
       type: 'nearMiss', duration: 900, priority: 0, maxQueueAgeMs: 120
@@ -230,17 +242,30 @@ try {
   screenshots.sideSuppression1920 = path.join(outputDir, '02-side-queue-reinforcement-suppression-1920x1080.png');
   await page.screenshot({ path: screenshots.sideSuppression1920, fullPage: false });
   await page.waitForTimeout(900);
-  await page.evaluate(() => window.__game.scenes.play.processToastQueue());
-  await page.waitForTimeout(120);
+  const sideResumeTrace = [];
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    await page.evaluate(() => window.__game.scenes.play.processToastQueue());
+    const sample = await readState(page);
+    sideResumeTrace.push(sample);
+    if (
+      !sample.tactical.routine &&
+      sample.active.some((entry) => entry.type === 'bombBanked')
+    ) break;
+    await page.waitForTimeout(250);
+  }
   states.sideResume1920 = await readState(page);
+  states.sideResumeTrace1920 = sideResumeTrace;
   assert(states.sideResume1920.active.some((entry) => entry.type === 'bombBanked') &&
     !states.sideResume1920.tactical.routine, `Side resume failed: ${JSON.stringify(states.sideResume1920)}`);
+  await cdp.send('Page.startScreencast', {
+    format: 'jpeg', quality: 92, maxWidth: 1920, maxHeight: 1080, everyNthFrame: 1
+  });
 
   await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.clearToastState();
     play.showWaveBonusEffect(1800, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/6' });
-    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', { type: 'wave_start', duration: 1200, priority: 3 });
+    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', { type: 'wave_start', duration: 5000, priority: 3 });
   });
   await page.waitForTimeout(220);
   states.waveChainHold1920 = await readState(page);
@@ -293,8 +318,10 @@ try {
   });
   await page.waitForTimeout(100);
   states.bossExplosion1920 = await readState(page);
+  const bossExplosionAt = Number(states.bossExplosion1920.bossLifecycle?.explosionAt) || 0;
+  const bossEntryAt = Number(states.bossExplosion1920.bossLifecycle?.entryAt) || 0;
   assert(states.bossExplosion1920.bossLifecycle?.deathImpact?.realParticleSequence &&
-    !states.bossExplosion1920.active.some((entry) => entry.type === 'boss_defeated') &&
+    (bossEntryAt === 0 || bossEntryAt - bossExplosionAt >= 170) &&
     !states.bossExplosion1920.tactical.storm,
   `Boss explosion phase was not clean: ${JSON.stringify(states.bossExplosion1920)}`);
   screenshots.bossExplosion1920 = path.join(outputDir, '06-boss-explosion-before-hud-1920x1080.png');
@@ -311,15 +338,162 @@ try {
   assert(states.bossPost1920.bossLifecycle?.postStateClean === true,
     `Boss Defeated post-state was not clean: ${JSON.stringify(states.bossPost1920)}`);
 
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showFlawlessWaveCelebration(1, 400);
+    play.showWaveBonusEffect(1800, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/6' });
+    play.showCabinetWonder({
+      reason: 'packaged_evidence',
+      sector: 3,
+      waveNumber: 3,
+      chance: 1,
+      roll: 0,
+      variant: {
+        id: 'starwhale_constellation',
+        title: 'ORISON OF THE STARWHALE',
+        signalClass: 'MIGRATORY STELLAR LIFE',
+        palette: [0xe8fbff, 0x7df9ff, 0xffef9a],
+        pitchScale: 1.08
+      }
+    });
+  });
+  await page.waitForTimeout(260);
+  states.waveFlawlessWonderDeferred1920 = await readState(page);
+  assert(
+    states.waveFlawlessWonderDeferred1920.active.some((entry) => entry.type === 'wave_clear') &&
+    !states.waveFlawlessWonderDeferred1920.active.some((entry) => entry.type === 'flawlessWave'),
+    `Wave/Flawless authority failed at 1920: ${JSON.stringify(states.waveFlawlessWonderDeferred1920)}`
+  );
+  screenshots.waveFlawlessDeferred1920 = path.join(outputDir, '08-wave-flawless-wonder-deferred-1920x1080.png');
+  await page.screenshot({ path: screenshots.waveFlawlessDeferred1920, fullPage: false });
+  await page.evaluate(async () => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.clearCabinetWonder('packaged_evidence_restage');
+    play.pendingCabinetWonder = null;
+    play.showCabinetWonder({
+      reason: 'debug_force',
+      sector: 3,
+      waveNumber: 3,
+      chance: 1,
+      roll: 0,
+      presentationReleased: true,
+      variant: {
+        id: 'starwhale_constellation',
+        title: 'ORISON OF THE STARWHALE',
+        signalClass: 'MIGRATORY STELLAR LIFE',
+        palette: [0xe8fbff, 0x7df9ff, 0xffef9a],
+        pitchScale: 1.08
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 280));
+    window.__game.app.ticker.stop();
+  });
+  states.wonderFull1920 = await page.evaluate(() => window.__game.scenes.play.getCabinetWonderDebugState());
+  assert(states.wonderFull1920.active && states.wonderFull1920.last?.scaleReduction === 0.3,
+    `Constellation did not release at reduced scale at 1920: ${JSON.stringify(states.wonderFull1920)}`);
+  screenshots.wonderFull1920 = path.join(outputDir, '09-constellation-released-1920x1080.png');
+  await page.screenshot({ path: screenshots.wonderFull1920, fullPage: false });
+  await page.evaluate(async () => {
+    window.__game.app.ticker.start();
+    await new Promise((resolve) => setTimeout(resolve, 720));
+    window.__game.app.ticker.stop();
+  });
+  states.wonderAmbient1920 = await page.evaluate(() => window.__game.scenes.play.getCabinetWonderDebugState());
+  assert(
+    states.wonderAmbient1920.active &&
+    states.wonderAmbient1920.active.elapsedMs >= 800 &&
+    states.wonderAmbient1920.last?.ambientAlpha === 0.3,
+    `Constellation did not settle to restrained ambient intensity: ${JSON.stringify(states.wonderAmbient1920)}`
+  );
+  screenshots.wonderAmbient1920 = path.join(outputDir, '10-constellation-ambient-fade-1920x1080.png');
+  await page.screenshot({ path: screenshots.wonderAmbient1920, fullPage: false });
+
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    window.__game.app.ticker.start();
+    play.clearToastState();
+    play.clearCabinetWonder('packaged_evidence');
+    play.showTacticalFusionUnlock({
+      id: 'sky_verdict',
+      name: 'SKY VERDICT',
+      description: 'ORBITAL STRIKE PROTOCOL ONLINE',
+      color: 0xffef7e,
+      sfx: 'achievement'
+    });
+  });
+  await page.waitForTimeout(320);
+  states.rareUpgrade1920 = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    return {
+      fusion: play.getTacticalDraftDebugState().fusionUnlock,
+      activeNotifications: play.getToastDebugState().active
+    };
+  });
+  assert(
+    states.rareUpgrade1920.fusion?.conciseSinglePresentation === true &&
+    states.rareUpgrade1920.fusion?.panelWidth <= 580 &&
+    states.rareUpgrade1920.activeNotifications.length === 0,
+    `Rare upgrade duplicated or grew too large at 1920: ${JSON.stringify(states.rareUpgrade1920)}`
+  );
+  screenshots.rareUpgrade1920 = path.join(outputDir, '11-sky-verdict-single-presentation-1920x1080.png');
+  await page.screenshot({ path: screenshots.rareUpgrade1920, fullPage: false });
+  await page.waitForTimeout(1150);
+
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showTacticalDirectiveCompletion({
+      objectiveLabel: 'SURVIVE THE CROSSWAVE',
+      rewardLabel: 'EXTRA RESCAN',
+      momentumBonus: 0
+    });
+  });
+  await page.waitForTimeout(240);
+  screenshots.directiveCleanup1920 = path.join(outputDir, '12-side-directive-cleanup-1920x1080.png');
+  await page.screenshot({ path: screenshots.directiveCleanup1920, fullPage: false });
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.tacticalDirectiveSession = null;
+    play.aceBountyActive = {
+      spawned: true,
+      completed: false,
+      compactObjectiveReadyAt: 0,
+      number: 27,
+      rewardLabel: 'EXTRA RESCAN',
+      color: 0xffd15c
+    };
+    play.hud.updateTacticalDirective();
+  });
+  states.compactAce1920 = await page.evaluate(() =>
+    window.__game.scenes.play.hud.directiveProgressBg?._debugDirective || null);
+  assert(states.compactAce1920?.compactAce === true,
+    `Ace Contract did not collapse into the objective rail at 1920: ${JSON.stringify(states.compactAce1920)}`);
+  screenshots.compactAce1920 = path.join(outputDir, '13-ace-compact-objective-1920x1080.png');
+  await page.screenshot({ path: screenshots.compactAce1920, fullPage: false });
+  await page.evaluate(() => window.__game.scenes.play.triggerPlayerDeathFeedback({ final: false }));
+  await page.waitForTimeout(45);
+  states.damageFlash1920 = await page.evaluate(() =>
+    (window.__game.scenes.play.uiOverlay?.children || [])
+      .find((child) => child.label === 'player_damage_edge_flash')?._debugDamageFlash || null);
+  assert(states.damageFlash1920?.edgeWeighted && states.damageFlash1920.centerAlpha <= 0.1,
+    `Damage flash centre remained opaque at 1920: ${JSON.stringify(states.damageFlash1920)}`);
+  screenshots.damageFlash1920 = path.join(outputDir, '14-damage-edge-flash-1920x1080.png');
+  await page.screenshot({ path: screenshots.damageFlash1920, fullPage: false });
+  await page.waitForTimeout(360);
+
+  await cdp.send('Page.stopScreencast');
+  cdp.off('Page.screencastFrame', capture1920);
   await page.setViewportSize({ width: 1280, height: 720 });
   states.dense1280 = await stageDenseCombat(page);
   assert(states.dense1280.enemies >= 12 && states.dense1280.bullets >= 8,
     `Dense 1280 staging was insufficient: ${JSON.stringify(states.dense1280)}`);
-  cdp = await context.newCDPSession(page);
-  let frameIndex = 0;
+  let frameIndex1280 = 0;
   cdp.on('Page.screencastFrame', async (event) => {
     writeFileSync(
-      path.join(framesDir, `frame-${String(frameIndex++).padStart(4, '0')}.jpg`),
+      path.join(frames1280Dir, `frame-${String(frameIndex1280++).padStart(4, '0')}.jpg`),
       Buffer.from(event.data, 'base64')
     );
     await cdp.send('Page.screencastFrameAck', { sessionId: event.sessionId }).catch(() => {});
@@ -342,7 +516,7 @@ try {
     const play = window.__game.scenes.play;
     play.clearToastState();
     play.showWaveBonusEffect(1800, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/6' });
-    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', { type: 'wave_start', duration: 1200, priority: 3 });
+    play.enqueueToast('WAVE 4/6\nDIVE CHAIN', { type: 'wave_start', duration: 5000, priority: 3 });
   });
   await page.waitForTimeout(1650);
   await page.evaluate(() => {
@@ -371,6 +545,133 @@ try {
     play.showBossCelebration({ level: 30, type: 'GATE4_VIDEO_BOSS' });
   });
   await page.waitForTimeout(2200);
+
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showFlawlessWaveCelebration(1, 400);
+    play.showWaveBonusEffect(1800, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 4/6' });
+    play.showCabinetWonder({
+      reason: 'packaged_evidence_1280',
+      sector: 6,
+      waveNumber: 3,
+      chance: 1,
+      roll: 0,
+      variant: {
+        id: 'celestial_fox_constellation',
+        title: 'THE MOON-THIEVES',
+        signalClass: 'MYTHOGENIC STELLAR PAIR',
+        palette: [0x6aeaff, 0x9c76ff, 0xffcb72],
+        pitchScale: 1.19
+      }
+    });
+  });
+  await page.waitForTimeout(250);
+  screenshots.waveFlawlessDeferred1280 = path.join(outputDir, '15-wave-flawless-wonder-deferred-1280x720.png');
+  await page.screenshot({ path: screenshots.waveFlawlessDeferred1280, fullPage: false });
+  await page.evaluate(async () => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.clearCabinetWonder('packaged_evidence_restage_1280');
+    play.pendingCabinetWonder = null;
+    play.showCabinetWonder({
+      reason: 'debug_force',
+      sector: 6,
+      waveNumber: 3,
+      chance: 1,
+      roll: 0,
+      presentationReleased: true,
+      variant: {
+        id: 'celestial_fox_constellation',
+        title: 'THE MOON-THIEVES',
+        signalClass: 'MYTHOGENIC STELLAR PAIR',
+        palette: [0x6aeaff, 0x9c76ff, 0xffcb72],
+        pitchScale: 1.19
+      }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 280));
+    window.__game.app.ticker.stop();
+  });
+  states.wonder1280 = await page.evaluate(() => window.__game.scenes.play.getCabinetWonderDebugState());
+  assert(states.wonder1280.active && states.wonder1280.last?.scaleReduction === 0.3,
+    `Constellation did not release at reduced scale at 1280: ${JSON.stringify(states.wonder1280)}`);
+  screenshots.wonder1280 = path.join(outputDir, '16-constellation-released-1280x720.png');
+  await page.screenshot({ path: screenshots.wonder1280, fullPage: false });
+
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    window.__game.app.ticker.start();
+    play.clearToastState();
+    play.clearCabinetWonder('packaged_evidence_1280');
+    play.showTacticalFusionUnlock({
+      id: 'sky_verdict',
+      name: 'SKY VERDICT',
+      description: 'ORBITAL STRIKE PROTOCOL ONLINE',
+      color: 0xffef7e,
+      sfx: 'achievement'
+    });
+  });
+  await page.waitForTimeout(320);
+  states.rareUpgrade1280 = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    return {
+      fusion: play.getTacticalDraftDebugState().fusionUnlock,
+      bounds: play.getToastDisplayBounds(play.activeTacticalFusionUnlock?.container),
+      activeNotifications: play.getToastDebugState().active
+    };
+  });
+  assert(
+    states.rareUpgrade1280.fusion?.conciseSinglePresentation === true &&
+    states.rareUpgrade1280.fusion?.panelWidth <= 580 &&
+    states.rareUpgrade1280.activeNotifications.length === 0,
+    `Rare upgrade duplicated or grew too large at 1280: ${JSON.stringify(states.rareUpgrade1280)}`
+  );
+  screenshots.rareUpgrade1280 = path.join(outputDir, '17-sky-verdict-single-presentation-1280x720.png');
+  await page.screenshot({ path: screenshots.rareUpgrade1280, fullPage: false });
+  await page.waitForTimeout(1150);
+
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.showTacticalDirectiveCompletion({
+      objectiveLabel: 'SURVIVE THE CROSSWAVE',
+      rewardLabel: 'EXTRA RESCAN',
+      momentumBonus: 0
+    });
+  });
+  await page.waitForTimeout(220);
+  screenshots.directiveCleanup1280 = path.join(outputDir, '18-side-directive-cleanup-1280x720.png');
+  await page.screenshot({ path: screenshots.directiveCleanup1280, fullPage: false });
+  await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearToastState();
+    play.tacticalDirectiveSession = null;
+    play.aceBountyActive = {
+      spawned: true,
+      completed: false,
+      compactObjectiveReadyAt: 0,
+      number: 27,
+      rewardLabel: 'EXTRA RESCAN',
+      color: 0xffd15c
+    };
+    play.hud.updateTacticalDirective();
+  });
+  states.compactAce1280 = await page.evaluate(() =>
+    window.__game.scenes.play.hud.directiveProgressBg?._debugDirective || null);
+  assert(states.compactAce1280?.compactAce === true,
+    `Ace Contract did not collapse into the objective rail at 1280: ${JSON.stringify(states.compactAce1280)}`);
+  screenshots.compactAce1280 = path.join(outputDir, '19-ace-compact-objective-1280x720.png');
+  await page.screenshot({ path: screenshots.compactAce1280, fullPage: false });
+  await page.evaluate(() => window.__game.scenes.play.triggerPlayerDeathFeedback({ final: false }));
+  await page.waitForTimeout(45);
+  states.damageFlash1280 = await page.evaluate(() =>
+    (window.__game.scenes.play.uiOverlay?.children || [])
+      .find((child) => child.label === 'player_damage_edge_flash')?._debugDamageFlash || null);
+  assert(states.damageFlash1280?.edgeWeighted && states.damageFlash1280.centerAlpha <= 0.1,
+    `Damage flash centre remained opaque at 1280: ${JSON.stringify(states.damageFlash1280)}`);
+  screenshots.damageFlash1280 = path.join(outputDir, '20-damage-edge-flash-1280x720.png');
+  await page.screenshot({ path: screenshots.damageFlash1280, fullPage: false });
+  await page.waitForTimeout(360);
 
   await page.evaluate(async () => {
     await window.__novaI18n?.setLanguagePreference?.('de');
@@ -477,16 +778,26 @@ try {
   await page.screenshot({ path: screenshots.newRun1280, fullPage: false });
   await cdp.send('Page.stopScreencast');
 
-  const videoPath = path.join(outputDir, 'nova-command-hud-gate4-packaged-60fps.mp4');
-  const ffmpeg = spawnSync('ffmpeg', [
+  const video1920Path = path.join(outputDir, 'presentation-cleanup-packaged-1920x1080-60fps.mp4');
+  const ffmpeg1920 = spawnSync('ffmpeg', [
     '-y', '-framerate', '60',
-    '-i', path.join(framesDir, 'frame-%04d.jpg'),
+    '-i', path.join(frames1920Dir, 'frame-%04d.jpg'),
+    '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
+    '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', video1920Path
+  ], { encoding: 'utf8' });
+  assert(ffmpeg1920.status === 0, `1920 ffmpeg failed: ${ffmpeg1920.stderr}`);
+  const video1280Path = path.join(outputDir, 'presentation-cleanup-packaged-1280x720-60fps.mp4');
+  const ffmpeg1280 = spawnSync('ffmpeg', [
+    '-y', '-framerate', '60',
+    '-i', path.join(frames1280Dir, 'frame-%04d.jpg'),
     '-vf', 'scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '18',
-    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', videoPath
+    '-pix_fmt', 'yuv420p', '-movflags', '+faststart', video1280Path
   ], { encoding: 'utf8' });
-  assert(ffmpeg.status === 0, `ffmpeg failed: ${ffmpeg.stderr}`);
-  assert(frameIndex >= 450, `Packaged video captured only ${frameIndex} frames`);
+  assert(ffmpeg1280.status === 0, `1280 ffmpeg failed: ${ffmpeg1280.stderr}`);
+  assert(frameIndex1920 >= 300, `Packaged 1920 video captured only ${frameIndex1920} frames`);
+  assert(frameIndex1280 >= 450, `Packaged 1280 video captured only ${frameIndex1280} frames`);
   assert(pageErrors.length === 0, `Packaged page errors: ${pageErrors.join(' | ')}`);
 
   const report = {
@@ -495,13 +806,13 @@ try {
     outputDir,
     screenshots,
     states,
-    videoPath,
-    videoFrameCount: frameIndex,
+    videoPaths: { video1920Path, video1280Path },
+    videoFrameCounts: { frameIndex1920, frameIndex1280 },
     pageErrors,
     consoleErrors
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[packaged-nova-command-hud-gate4] PASS frames=${frameIndex} output=${outputDir}`);
+  console.log(`[packaged-nova-command-hud-gate4] PASS frames1920=${frameIndex1920} frames1280=${frameIndex1280} output=${outputDir}`);
 } finally {
   await cdp?.send('Page.stopScreencast').catch(() => {});
   if (page) await page.evaluate(() => window.__novaApp?.exitGame?.()).catch(() => {});

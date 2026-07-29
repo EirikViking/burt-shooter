@@ -165,6 +165,186 @@ try {
   assert(arbitration.lastBossActivation?.redundantNameplateRemoved === true,
     `Boss activation did not record redundant-nameplate removal: ${JSON.stringify(arbitration.lastBossActivation)}`);
 
+  const presentationSequences = await page.evaluate(async () => {
+    const play = window.__game.scenes.play;
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const activeTypes = () => play.getToastDebugState().active.map((entry) => entry.type);
+
+    play.clearToastState();
+    play.enemyManager.state = 'WAVE_BRIEFING';
+    play.enemyManager.phase = 'WAVES';
+    play.hud.updateMissionStatus();
+    const missionBeforeWaveClear = play.hud.missionText.text;
+    play.showFlawlessWaveCelebration(1, 400);
+    play.showWaveBonusEffect(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
+    play.enemyManager.currentWaveIndex = Math.min(
+      Math.max(0, Number(play.enemyManager.normalWavesTotal || 5) - 1),
+      2
+    );
+    play.hud.updateMissionStatus();
+    const waveClearHold = {
+      active: activeTypes(),
+      cornerActive: play.activeCornerToast?.__toastMeta?.type || null,
+      cornerQueued: play.toastCornerQueue.map((entry) => entry.options?.type),
+      missionFocus: play.hud.notificationFocus,
+      missionText: play.hud.missionText.text,
+      missionBeforeWaveClear
+    };
+    play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
+    await wait(1700);
+    play.processToastQueue();
+    const waveClearExit = {
+      active: activeTypes(),
+      cornerActive: play.activeCornerToast?.__toastMeta?.type || null,
+      missionFocus: play.hud.notificationFocus
+    };
+
+    play.clearToastState();
+    play.showBossDefeatedCommandHud();
+    await wait(40);
+    const bossBeforeSector = {
+      active: activeTypes(),
+      centerPriority: play.activeCenterToast?.__toastMeta?.priority ?? null,
+      centerChannel: play.activeCenterToast?.__toastMeta?.channel || null,
+      queuedCenter: play.toastQueue.map((entry) => ({
+        type: entry.options?.type,
+        priority: entry.priority,
+        notBefore: entry.notBefore
+      }))
+    };
+    play.enqueueToast('SECTOR CLEAR\n+1,000', {
+      type: 'sector_clear',
+      channel: 'major',
+      slot: 'center',
+      duration: 900,
+      priority: 9
+    });
+    const bossToSectorHold = {
+      active: activeTypes(),
+      queuedCenter: play.toastQueue.map((entry) => entry.options?.type)
+    };
+    play.dismissToastDisplay(play.activeCenterToast, 'center', { reason: 'sequence_probe_exit' });
+    play.processToastQueue();
+    const bossToSectorExit = {
+      active: activeTypes(),
+      queuedCenter: play.toastQueue.map((entry) => entry.options?.type)
+    };
+
+    play.clearToastState();
+    play.enemyManager.state = 'LEVEL_COMPLETE';
+    play.enemyManager.phase = 'WAVES';
+    play.hud.updateMissionStatus();
+    play.enqueueToast('SECTOR CLEAR\n+3,200', {
+      type: 'sector_clear',
+      channel: 'major',
+      slot: 'center',
+      duration: 1200,
+      priority: 9
+    });
+    const sectorMissionFrozen = play.hud.missionText.text;
+    play.enemyManager.state = 'BOSS_GATE';
+    play.enemyManager.phase = 'BOSS';
+    play.hud.updateMissionStatus();
+    const bossSignalDuringSector = play.hud.missionText.text;
+    const dossierDelayMs = play.getTransitionMessageDelayMs({ minMs: 900, maxMs: 3600 });
+    play.dismissToastDisplay(play.activeCenterToast, 'center', { reason: 'sequence_probe_exit' });
+    play.hud.updateMissionStatus();
+    const bossSignalAfterSector = play.hud.missionText.text;
+
+    play.clearToastState();
+    play.showWaveBonusEffect(500, 'WAVE CLEARED!', { subtitle: 'NEXT WAVE 3/5' });
+    const wonderDecision = {
+      reason: 'sequence_probe',
+      sector: 3,
+      waveNumber: 3,
+      chance: 1,
+      roll: 0,
+      variant: {
+        id: 'sequence_probe_constellation',
+        title: 'SEQUENCE PROBE',
+        signalClass: 'CONSTELLATION',
+        palette: [0x7df9ff, 0xff70d7, 0xffef9a],
+        pitchScale: 1
+      }
+    };
+    const wonderDeferred = play.showCabinetWonder(wonderDecision);
+    const wonderDuringWaveClear = {
+      deferred: wonderDeferred,
+      active: Boolean(play.activeCabinetWonder),
+      pendingKind: play.pendingCabinetWonder?.kind || null
+    };
+    play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
+    await wait(180);
+    const wonderAfterWaveClear = play.getCabinetWonderDebugState();
+    play.clearCabinetWonder('sequence_probe_complete');
+    play.pendingCabinetWonder = null;
+
+    play.clearToastState();
+    play.triggerPlayerDeathFeedback({ final: false });
+    const damageFlash = (play.uiOverlay?.children || [])
+      .find((child) => child.label === 'player_damage_edge_flash')?._debugDamageFlash || null;
+    await wait(240);
+
+    return {
+      waveClearHold,
+      waveClearExit,
+      bossBeforeSector,
+      bossToSectorHold,
+      bossToSectorExit,
+      sectorToBossSignal: {
+        sectorMissionFrozen,
+        bossSignalDuringSector,
+        bossSignalAfterSector,
+        dossierDelayMs
+      },
+      wonderDuringWaveClear,
+      wonderAfterWaveClear,
+      damageFlash
+    };
+  });
+
+  assert(
+    presentationSequences.waveClearHold.active.includes('wave_clear') &&
+    presentationSequences.waveClearHold.cornerActive === null &&
+    presentationSequences.waveClearHold.cornerQueued.includes('flawlessWave') &&
+    presentationSequences.waveClearHold.missionFocus === 'transition' &&
+    presentationSequences.waveClearHold.missionText === presentationSequences.waveClearHold.missionBeforeWaveClear,
+    `Wave Cleared did not hold Mission Status and defer Flawless: ${JSON.stringify(presentationSequences.waveClearHold)}`
+  );
+  assert(
+    presentationSequences.waveClearExit.cornerActive === 'flawlessWave' &&
+    presentationSequences.waveClearExit.missionFocus === 'none',
+    `Wave Cleared exit did not release the preserved side reward: ${JSON.stringify(presentationSequences.waveClearExit)}`
+  );
+  assert(
+    presentationSequences.bossToSectorHold.active.includes('boss_defeated') &&
+    presentationSequences.bossToSectorHold.queuedCenter.includes('sector_clear') &&
+    presentationSequences.bossToSectorExit.active.includes('sector_clear'),
+    `Boss Defeated did not hand authority to Sector Clear: ${JSON.stringify(presentationSequences)}`
+  );
+  assert(
+    presentationSequences.sectorToBossSignal.bossSignalDuringSector === presentationSequences.sectorToBossSignal.sectorMissionFrozen &&
+    presentationSequences.sectorToBossSignal.bossSignalAfterSector.includes('BOSS') &&
+    presentationSequences.sectorToBossSignal.dossierDelayMs >= 1100,
+    `Sector Clear did not defer Boss Signal/dossier timing: ${JSON.stringify(presentationSequences.sectorToBossSignal)}`
+  );
+  assert(
+    presentationSequences.wonderDuringWaveClear.deferred === true &&
+    presentationSequences.wonderDuringWaveClear.active === false &&
+    presentationSequences.wonderDuringWaveClear.pendingKind === 'presentation_release' &&
+    Boolean(presentationSequences.wonderAfterWaveClear.active) &&
+    presentationSequences.wonderAfterWaveClear.last?.scaleReduction === 0.3 &&
+    presentationSequences.wonderAfterWaveClear.last?.ambientAlpha >= 0.25 &&
+    presentationSequences.wonderAfterWaveClear.last?.ambientAlpha <= 0.35,
+    `Constellation presentation did not defer, shrink, and settle: ${JSON.stringify(presentationSequences)}`
+  );
+  assert(
+    presentationSequences.damageFlash?.edgeWeighted === true &&
+    presentationSequences.damageFlash.centerAlpha <= 0.1 &&
+    presentationSequences.damageFlash.edgeAlpha > presentationSequences.damageFlash.centerAlpha,
+    `Damage flash did not preserve strong edges with a clear centre: ${JSON.stringify(presentationSequences.damageFlash)}`
+  );
+
   const resolutionReports = [];
   for (const resolution of resolutions) {
     await page.setViewportSize(resolution);
@@ -786,6 +966,7 @@ try {
     ok: true,
     baseUrl,
     arbitration,
+    presentationSequences,
     resolutionReports,
     bossPhase,
     bossPhaseScreenshot,

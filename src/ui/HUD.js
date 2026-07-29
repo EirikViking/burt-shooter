@@ -840,6 +840,13 @@ export class HUD {
   updateMissionStatus() {
     if (!this.missionText) return;
     if (this.missionLabel) this.missionLabel.text = translateText('MISSION STATUS');
+    if (this.notificationFocus === 'major' || this.notificationFocus === 'transition') {
+      if (this.missionPanel?._debugPriority) {
+        this.missionPanel._debugPriority.semanticFrozen = true;
+        this.missionPanel._debugPriority.frozenText = this.missionText.text;
+      }
+      return;
+    }
     const play = this.game?.scenes?.play;
     const manager = play?.enemyManager;
     const activeEnemies = manager?.enemies?.filter(enemy => enemy?.active !== false && enemy?.kind !== 'bonus_drone').length || 0;
@@ -919,6 +926,29 @@ export class HUD {
     fill.clear();
 
     if (!active) {
+      const ace = play?.getAceBountyDebugState?.()?.active;
+      const compactAceReady = ace?.spawned && !ace?.completed && Date.now() >= (Number(ace.compactObjectiveReadyAt) || 0);
+      if (compactAceReady) {
+        const number = String(ace.number || 0).padStart(4, '0');
+        const reward = translateText(ace.rewardLabel || 'EXTRA RESCAN');
+        this.directiveText.text = translateText('DESTROY ACE {number} // {reward}', { number, reward });
+        this.directiveText.style.fill = '#fff3a0';
+        this.directiveText.visible = true;
+        this.directiveText.scale.set(1);
+        this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+        rail.visible = fill.visible = width > 0 && height > 0;
+        rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+        rail.fill({ color: 0x06141b, alpha: 0.9 });
+        rail.stroke({ color: ace.color || 0xffd15c, width: 0.9, alpha: 0.68 });
+        rail._debugDirective = {
+          visible: true,
+          compactAce: true,
+          number,
+          label: this.directiveText.text,
+          railBounds: { x, y, width, height }
+        };
+        return;
+      }
       const capped = Number(debugState?.completedCount) >= Number(debugState?.completionCap)
         && Number(debugState?.completionCap) > 0;
       this.directiveText.visible = capped;
@@ -1181,15 +1211,15 @@ export class HUD {
     }
     this.missionFrameArt.visible = false;
     const focusAlpha = this.notificationFocus === 'major'
-      ? 0.5
+      ? 0.16
       : this.notificationFocus === 'transition'
-        ? 0.78
+        ? 0.32
         : 1;
     this.missionPanel.alpha = focusAlpha;
     this.missionFrameArt.alpha = 0;
 
     this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
-    this.missionText.alpha = this.notificationFocus === 'major' ? 0.7 : focusAlpha;
+    this.missionText.alpha = this.notificationFocus === 'none' ? 1 : focusAlpha * 0.72;
     this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
     this.directiveText.alpha = 0.62 * focusAlpha;
     this.directiveProgressBg.alpha = 0.56 * focusAlpha;
@@ -1206,6 +1236,7 @@ export class HUD {
       pressure: Number(Math.max(0, Number(pressure) || 0).toFixed(3)),
       accent,
       notificationFocus: this.notificationFocus,
+      semanticFrozen: this.notificationFocus !== 'none',
       authoredFrameReady: false,
       deterministicFrameReady: Boolean(this.missionFrameGeometry?.root),
       frame: this.missionFrameGeometry?.debug || null,

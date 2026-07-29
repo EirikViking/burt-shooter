@@ -2610,3 +2610,15 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Evidence includes 18 live enemies, at least 8 real managed enemy bullets, ten simultaneous explosion effects, 1920x1080 and 1280x720 captures, long German text, tactical side suppression/resume, Wave Clear before Wave Start, Sector Clear into boss intro, competing boss warnings, real boss explosion before Boss Defeated entry/hold/exit, Overrun dismissal/resume, Game Over cleanup, and clean new-run state.
 - The packaged 60 fps H.264 evidence video contains 653 captured frames: `test-results/packaged-nova-command-hud-gate4-20260728/nova-command-hud-gate4-packaged-60fps.mp4`.
 - The packaged run discovered and verified a real fix: Overrun confirmation now releases its temporary notification locks and immediately processes the resumed queue.
+
+## 2026-07-29 Nova Command HUD presentation choreography and cleanup
+
+- Primary gameplay evidence: `E:\video-clips\Misfit-galaxy\Desktop\Desktop 2026.07.29 - 13.06.48.01.mp4`.
+- Preserve the approved Nova Command HUD appearance; this pass changes only presentation authority, sequencing, restraint, and legacy cleanup.
+- Major centre transitions temporarily collapse and freeze Mission Status semantics, hold later semantic state until exit, and defer relevant routine side feedback. Wave Cleared now hands off cleanly to Wave Start, Boss Defeated to Sector Clear, and Sector Clear to the boss signal/dossier.
+- Large generated constellation/summon art waits until the centre transition clears, renders about 30% smaller, holds full intensity briefly, then settles rapidly to 30% opacity before removal.
+- Sky Verdict uses one concise rare-upgrade presentation in a progression-safe window; the duplicate permanent-upgrade and doctrine confirmations are suppressed.
+- The boss dossier keeps portrait, name, and one useful classification line; its tiny paragraph is removed and the remaining content is modestly larger.
+- Near Miss is local and compact, Side Directive Complete is title plus one result, and the Ace Contract becomes a compact objective rail after its initial full presentation.
+- Damage feedback uses strong edge bands with a low-opacity centre wash and shorter timing while continuing to respect reduced-effects settings.
+- Focused orchestration coverage includes all required major-transition handoffs, deferred Flawless feedback, deferred constellation activation, rare-upgrade deduplication, concise legacy messages, and edge-weighted damage flash.
