@@ -65,6 +65,8 @@ assert.match(
 );
 assert.match(play, /maybeSuppressRoutineFireAfterFinalWaveHostile\(enemy\)/, 'final-kill fire suppression hook is missing');
 assert.match(play, /waveTransitionFireSuppressedWaveIndex === null/, 'routine fire does not remain suppressed until the next wave is active');
+assert.match(play, /activeBossCombatResumed = enemyState === 'BOSS_ACTIVE'/, 'routine fire is not released when boss combat becomes active');
+assert.match(play, /this\.enemyManager\?\.level !== this\.waveTransitionFireSuppressedLevel/, 'routine fire cannot recover when a new sector reuses the same wave index');
 assert.match(enemyManager, /beginPlayerTransitionRetirement\?\.\(\s*'wave_clear_no_targets',\s*200/s, 'friendly projectiles are not retired over 200 ms');
 assert.match(bullet, /if \(this\.transitionRetirement\) return false/, 'friendly retirement can be restarted beyond its bounded duration');
 assert.match(bulletManager, /friendlyVfxCompressionStartCount = 44/, 'adaptive compression start threshold changed unexpectedly');

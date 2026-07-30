@@ -1,5 +1,16 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-07-30 Autofire continuity Steam hotfix
+
+- Current prompt: fix the deployed regression where the ship stops shooting after extended play, then upload the corrected build to Steam.
+- Verified authoritative state before edits: `D:\vibe-coding-e\nova-swarm-authoritative-post-stable-20260720`, branch `codex/tyrian-feedback-program-20260724`, clean HEAD `1b0166db7b6d64e5fb852ef58660f894356bb5c8`; upstream remains intentionally at `17b4a0195b9f47648b1ae2f239e59aad9152979d`.
+- Initial trace identifies the newly added wave-transition suppression flag as the likely regression: it clears for a later `WAVE_ACTIVE` index but has no release path when the last ordinary wave proceeds into `BOSS_ACTIVE`, so the global fire gate can remain closed for the boss.
+- Added a focused real-Chrome regression check covering same-wave hold, next-wave resume, same-index/new-sector resume, boss-gate silence, and boss-active resume. Against deployed source `1b0166d`, it failed exactly at `autofire did not resume when boss combat became active`.
+- Narrow product fix: preserve the approved quiet transition and projectile retirement, but release the suppression flag when `BOSS_ACTIVE` begins, when the wave index advances, or when a new sector reuses the same wave index. Both the wave and sector suppression tokens are cleared together.
+- The focused harness also holds fire through 1,800 deterministic boss-active frames (about 30 simulated seconds) and requires at least 100 additional firing volleys with no suppression reappearing.
+- Source verification passes: autofire continuity, input-state transitions, weapon firing duration, projectile lifecycle, legacy transition readability, Wave Cleared visuals, notification arbitration, boss telegraph, reinforcement behavior, release-line, i18n, and localized UI.
+- Added an exact-source packaged executable variant of the autofire regression for the post-commit Windows package. The generic skill driver was also attempted but its bundled Playwright browser is not installed; project checks use installed Chrome successfully.
+
 ## 2026-07-26 Codex readability and Hangar launch-mode polish
 
 - Current prompt: break up long Threat Codex descriptions, let a selected Hangar hull choose its launch mode, and deploy the verified result to Steam.

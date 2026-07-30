@@ -862,6 +862,7 @@ export class PlayScene {
     this.pendingCabinetWonder = null;
     this.pendingStormSurvivedRewards = [];
     this.waveTransitionFireSuppressedWaveIndex = null;
+    this.waveTransitionFireSuppressedLevel = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -4719,13 +4720,24 @@ export class PlayScene {
       this.updateGrazeBreakFireIntent(firePressed);
 
       const enemyState = this.enemyManager?.state || 'IDLE';
-      if (
-        this.waveTransitionFireSuppressedWaveIndex !== null &&
+      const activeBossCombatResumed = enemyState === 'BOSS_ACTIVE';
+      const activeWaveCombatResumed = (
         enemyState === 'WAVE_ACTIVE' &&
         !this.enemyManager?.waveEnding &&
-        this.enemyManager?.currentWaveIndex !== this.waveTransitionFireSuppressedWaveIndex
+        (
+          this.enemyManager?.currentWaveIndex !== this.waveTransitionFireSuppressedWaveIndex ||
+          (
+            this.waveTransitionFireSuppressedLevel !== null &&
+            this.enemyManager?.level !== this.waveTransitionFireSuppressedLevel
+          )
+        )
+      );
+      if (
+        this.waveTransitionFireSuppressedWaveIndex !== null &&
+        (activeBossCombatResumed || activeWaveCombatResumed)
       ) {
         this.waveTransitionFireSuppressedWaveIndex = null;
+        this.waveTransitionFireSuppressedLevel = null;
       }
       const routineFireAllowed = (
         (enemyState === 'WAVE_ACTIVE' && !this.enemyManager?.waveEnding) ||
@@ -22036,6 +22048,7 @@ export class PlayScene {
       return false;
     }
     this.waveTransitionFireSuppressedWaveIndex = manager.currentWaveIndex;
+    this.waveTransitionFireSuppressedLevel = manager.level;
     const retiring = this.bulletManager?.beginPlayerTransitionRetirement?.(
       'final_wave_hostile_defeated',
       200

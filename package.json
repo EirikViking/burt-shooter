@@ -230,6 +230,8 @@
     "check:packaged-nova-command-hud-gate4": "node scripts/check-packaged-nova-command-hud-gate4.mjs",
     "check:packaged-overrun-directive-qa": "node scripts/check-packaged-overrun-directive-qa.mjs",
     "check:legacy-vfx-transition-readability": "node scripts/check-legacy-vfx-transition-readability.mjs",
+    "check:autofire-continuity": "node scripts/check-autofire-continuity.mjs",
+    "check:packaged-autofire-continuity": "node scripts/check-packaged-autofire-continuity.mjs",
     "check:packaged-legacy-vfx-transition-readability": "node scripts/check-packaged-legacy-vfx-transition-readability.mjs",
     "check:enemy-spawn-cue": "node scripts/check-enemy-spawn-cue.mjs",
     "check:enemy-muzzle-readability": "node scripts/check-enemy-muzzle-readability.mjs",
