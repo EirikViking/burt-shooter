@@ -1445,7 +1445,7 @@ const sourceText = Object.freeze({
   'COMBO {count} x{multiplier}': '콤보 {count} x{multiplier}',
   'OVERRUN UNLOCKED': '오버런 해제',
   'CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}': '클리어 보너스 +{clearBonus}  예비 선체 +{livesBonus}',
-  'SECTOR {sector} WILL NOT BE POLITE': '섹터 {sector}는 예의가 없습니다',
+  'SECTOR {nextSector} WILL NOT BE POLITE': '섹터 {nextSector}는 예의가 없습니다',
   'OVERRUN MILESTONE': '오버런 이정표',
   'PILOT REPORT': '파일럿 보고',
   'SECTOR {sector} OVERRUN SURGE': '섹터 {sector} 오버런 급증',

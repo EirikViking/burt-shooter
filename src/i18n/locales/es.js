@@ -1535,7 +1535,7 @@ const sourceText = Object.freeze({
   'COMBO {count} x{multiplier}': 'COMBO {count} x{multiplier}',
   'OVERRUN UNLOCKED': 'SOBRECARGA DESBLOQUEADA',
   'CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}': 'BONUS DE VICTORIA +{clearBonus}  CASCOS DE REPUESTO +{livesBonus}',
-  'SECTOR {sector} WILL NOT BE POLITE': 'EL SECTOR {sector} NO SERA AMABLE',
+  'SECTOR {nextSector} WILL NOT BE POLITE': 'EL SECTOR {nextSector} NO SERA AMABLE',
   'OVERRUN MILESTONE': 'HITO DE SOBRECARGA',
   'PILOT REPORT': 'INFORME DE PILOTO',
   'SECTOR {sector} OVERRUN SURGE': 'OLEADA DE SOBRECARGA EN SECTOR {sector}',

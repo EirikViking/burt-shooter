@@ -1426,7 +1426,7 @@ const sourceText = Object.freeze({
   'COMBO {count} x{multiplier}': '连击 {count} x{multiplier}',
   'OVERRUN UNLOCKED': '超限模式已解锁',
   'CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}': '通关奖励 +{clearBonus}  备用船体 +{livesBonus}',
-  'SECTOR {sector} WILL NOT BE POLITE': '第 {sector} 扇区不会客气',
+  'SECTOR {nextSector} WILL NOT BE POLITE': '第 {nextSector} 扇区不会客气',
   'OVERRUN MILESTONE': '超限里程碑',
   'PILOT REPORT': '飞行员报告',
   'SECTOR {sector} OVERRUN SURGE': '第 {sector} 扇区超限涌动',

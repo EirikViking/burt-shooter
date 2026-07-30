@@ -345,6 +345,90 @@ try {
     `Damage flash did not preserve strong edges with a clear centre: ${JSON.stringify(presentationSequences.damageFlash)}`
   );
 
+  const directiveTiming = await page.evaluate(async () => {
+    const play = window.__game.scenes.play;
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const sample = () => ({
+      type: play.activeCornerToast?.__toastMeta?.type || null,
+      duration: play.activeCornerToast?.__toastMeta?.duration || 0,
+      phase: play.activeCornerToast?._debugNovaCommandHud?.motionPhase || null,
+      introMs: play.activeCornerToast?.__novaCommandHudFx?.introMs || 0,
+      exitMs: play.activeCornerToast?.__novaCommandHudFx?.exitMs || 0,
+      alpha: play.activeCornerToast?.alpha ?? null
+    });
+
+    play.clearToastState();
+    play.showTacticalDirectiveCompletion({ rewardLabel: 'EXTRA RESCAN', momentumBonus: 0 });
+    const entrance = sample();
+    await wait(190);
+    const holdStart = sample();
+    await wait(570);
+    const holdEnd = sample();
+    await wait(170);
+    const exit = sample();
+    await wait(210);
+    const completed = sample();
+
+    play.clearToastState();
+    play.showTacticalDirectiveCompletion({ rewardLabel: 'EXTRA RESCAN', momentumBonus: 0 });
+    await wait(200);
+    play.showMayhemRoutineReinforcementWarning({
+      groupCount: 2,
+      route: 'side_left',
+      warningMs: 700
+    });
+    await wait(60);
+    const interrupted = {
+      tacticalActive: Boolean(play.activeMayhemRoutineWarning?.root?.parent),
+      activeCornerType: play.activeCornerToast?.__toastMeta?.type || null,
+      queuedCornerTypes: play.toastCornerQueue.map((entry) => entry.options?.type)
+    };
+    await wait(760);
+    play.processToastQueue();
+    await wait(80);
+    const resumed = sample();
+    play.clearMayhemReinforcementPresentations('directive_timing_probe_complete');
+    play.clearToastState();
+
+    return {
+      entrance,
+      holdStart,
+      holdEnd,
+      exit,
+      completed,
+      interrupted,
+      resumed
+    };
+  });
+
+  assert(
+    directiveTiming.entrance.type === 'tacticalDirective' &&
+    directiveTiming.entrance.duration === 1100 &&
+    directiveTiming.entrance.introMs === 150 &&
+    directiveTiming.entrance.exitMs === 220 &&
+    [null, 'entrance'].includes(directiveTiming.entrance.phase),
+    `Side Directive entrance/timing contract regressed: ${JSON.stringify(directiveTiming)}`
+  );
+  assert(
+    directiveTiming.holdStart.phase === 'hold' &&
+    directiveTiming.holdEnd.phase === 'hold' &&
+    directiveTiming.holdEnd.alpha === 1 &&
+    directiveTiming.entrance.duration - directiveTiming.entrance.introMs - directiveTiming.entrance.exitMs === 730,
+    `Side Directive readable hold is not 730ms: ${JSON.stringify(directiveTiming)}`
+  );
+  assert(
+    directiveTiming.exit.phase === 'exit' &&
+    directiveTiming.completed.type === null,
+    `Side Directive did not use a concise exit within 1.15s: ${JSON.stringify(directiveTiming)}`
+  );
+  assert(
+    directiveTiming.interrupted.tacticalActive === true &&
+    directiveTiming.interrupted.activeCornerType === null &&
+    directiveTiming.interrupted.queuedCornerTypes.includes('tacticalDirective') &&
+    directiveTiming.resumed.type === 'tacticalDirective',
+    `Higher-priority tactical alert did not interrupt and resume Side Directive correctly: ${JSON.stringify(directiveTiming)}`
+  );
+
   const resolutionReports = [];
   for (const resolution of resolutions) {
     await page.setViewportSize(resolution);
@@ -368,7 +452,7 @@ try {
       play.clearToastState();
       const celebration = {
         title: 'RUN CLEAR! OVERRUN UNLOCKED',
-        flavor: 'THE CLEAR GATE OPENS. THE SWARM DOES NOT APPLAUD; IT RELOADS.',
+        flavor: 'The clear gate opens. The swarm does not applaud; it reloads.',
         statusLine: 'STATUS: CLEAR GATE SECURED // SCORE {score} // HULLS {lives}',
         warning: 'SECTOR {nextSector} WILL NOT BE POLITE',
         footerWarning: 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.',
@@ -550,10 +634,10 @@ try {
       celebration: {
         id: 'acceptance',
         title: 'RUN CLEAR! OVERRUN UNLOCKED',
-        flavor: 'THE CLEAR GATE OPENS.',
+        flavor: 'The clear gate opens. The swarm does not applaud; it reloads.',
         statusLine: 'STATUS: CLEAR GATE SECURED // SCORE {score} // HULLS {lives}',
         warning: 'SECTOR {nextSector} WILL NOT BE POLITE',
-        footerWarning: 'STRAP IN, PILOT.',
+        footerWarning: 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.',
         continueText: "I'M READY - BRING THE SWARM",
         visual: {}
       },

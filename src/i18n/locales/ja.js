@@ -1445,7 +1445,7 @@ const sourceText = Object.freeze({
   'COMBO {count} x{multiplier}': 'コンボ {count} x{multiplier}',
   'OVERRUN UNLOCKED': 'オーバーラン解放',
   'CLEAR BONUS +{clearBonus}  SPARE HULLS +{livesBonus}': 'クリアボーナス +{clearBonus}  予備船体 +{livesBonus}',
-  'SECTOR {sector} WILL NOT BE POLITE': 'セクター{sector}は遠慮しません',
+  'SECTOR {nextSector} WILL NOT BE POLITE': 'セクター{nextSector}は遠慮しません',
   'OVERRUN MILESTONE': 'オーバーラン到達点',
   'PILOT REPORT': 'パイロット報告',
   'SECTOR {sector} OVERRUN SURGE': 'セクター{sector} オーバーラン急増',

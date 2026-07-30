@@ -708,10 +708,10 @@ try {
       celebration: {
         id: 'gate4',
         title: 'RUN CLEAR! OVERRUN UNLOCKED',
-        flavor: 'THE CLEAR GATE OPENS.',
+        flavor: 'The clear gate opens. The swarm does not applaud; it reloads.',
         statusLine: 'STATUS: CLEAR GATE SECURED // SCORE {score} // HULLS {lives}',
         warning: 'SECTOR {nextSector} WILL NOT BE POLITE',
-        footerWarning: 'STRAP IN, PILOT.',
+        footerWarning: 'STRAP IN, PILOT. OVERRUN DOES NOT DO EASY.',
         continueText: "I'M READY - BRING THE SWARM",
         visual: {}
       },

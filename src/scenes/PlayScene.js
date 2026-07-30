@@ -1770,7 +1770,8 @@ export class PlayScene {
       slot: 'corner',
       type: 'tacticalDirective',
       priority: 4,
-      duration: 1450,
+      duration: 1100,
+      extraReadTimeMs: 0,
       accent: 0xffef7e
     });
     AudioManager.playSfx('achievement', { force: true, volume: 0.72, minIntervalMs: 280 });

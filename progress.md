@@ -2622,3 +2622,11 @@ Original goal: Continue autonomous development of Nova Swarm toward a polished S
 - Near Miss is local and compact, Side Directive Complete is title plus one result, and the Ace Contract becomes a compact objective rail after its initial full presentation.
 - Damage feedback uses strong edge bands with a low-opacity centre wash and shorter timing while continuing to respect reduced-effects settings.
 - Focused orchestration coverage includes all required major-transition handoffs, deferred Flawless feedback, deferred constellation activation, rare-upgrade deduplication, concise legacy messages, and edge-weighted damage flash.
+
+## 2026-07-30 Overrun localization and Side Directive final QA
+
+- Verified the authoritative worktree, `codex/tyrian-feedback-program-20260724`, clean baseline `15f672925609f8e0dd38e9ac47e4a915de34b9ac`, and one local commit ahead of the unchanged upstream before editing.
+- Root cause: packaged evidence injected shortened English-only Overrun sentences that were never localization keys, while the real Sector 10 warning emitted `{nextSector}` but every translated locale defined `{sector}`. Existing broad checks verified locale shape and common leak fragments, not arbitrary runtime strings or placeholder-name parity.
+- All production Overrun modal fields across sectors 10, 20, 30, 40, 50, and the far-signal fallback are now covered by an exact-key fallback check across all eight locales. Its identity whitelist is limited to established proper names and universal input labels.
+- Side Directive Complete preserves its approved frame and motion while using 150 ms entrance, 730 ms fully readable hold, and 220 ms exit for 1,100 ms total. It explicitly opts out of the global extra-read extension so interruption/resume cannot double-extend it.
+- Focused notification orchestration passes the timing phases plus immediate tactical interruption, queued preservation, and resume behavior.
