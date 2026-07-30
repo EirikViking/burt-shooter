@@ -229,6 +229,8 @@
     "check:packaged-nova-command-hud-pilot": "node scripts/check-packaged-nova-command-hud-pilot.mjs",
     "check:packaged-nova-command-hud-gate4": "node scripts/check-packaged-nova-command-hud-gate4.mjs",
     "check:packaged-overrun-directive-qa": "node scripts/check-packaged-overrun-directive-qa.mjs",
+    "check:legacy-vfx-transition-readability": "node scripts/check-legacy-vfx-transition-readability.mjs",
+    "check:packaged-legacy-vfx-transition-readability": "node scripts/check-packaged-legacy-vfx-transition-readability.mjs",
     "check:enemy-spawn-cue": "node scripts/check-enemy-spawn-cue.mjs",
     "check:enemy-muzzle-readability": "node scripts/check-enemy-muzzle-readability.mjs",
     "check:sector10-clear-time-pacing": "node scripts/check-sector10-clear-time-pacing.mjs",

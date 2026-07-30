@@ -51,6 +51,9 @@ export class Bullet {
     this.friendlySpeedRibbon = null;
     this.playerIntentLayer = null;
     this.core = null;
+    this.friendlyVfxCompression = 0;
+    this.focusCombatClarity = false;
+    this.transitionRetirement = null;
     this.visualConfig = visualConfig || {};
     this.coreAnimationStyle = !isPlayer ? (this.visualConfig.animationStyle || 'pulse') : 'none';
     this.coreAnimationRate = Number.isFinite(this.visualConfig.animationRate) ? this.visualConfig.animationRate : 1;
@@ -799,6 +802,20 @@ export class Bullet {
 
     this.age += delta;
     this.ageMs += delta * 16.67;
+    if (this.isPlayer && this.transitionRetirement) {
+      const retirement = this.transitionRetirement;
+      retirement.elapsedMs += delta * 16.67;
+      const progress = Math.max(0, Math.min(1, retirement.elapsedMs / Math.max(1, retirement.durationMs)));
+      const deceleration = Math.max(0.72, 1 - delta * 0.08);
+      this.vx *= deceleration;
+      this.vy *= deceleration;
+      retirement.progress = progress;
+      if (progress >= 1) {
+        this.active = false;
+        this.sprite.visible = false;
+        return;
+      }
+    }
     if (!this.isPlayer) this.applyEnemyWeaponBehavior(delta);
     if (this.isBomb) this.updateBombGuidance();
 
@@ -865,6 +882,7 @@ export class Bullet {
         this.playerIntentLayer.scale.set(intentPulse);
         this.playerIntentLayer.alpha = 0.7 + Math.sin(this.pulseTimer * 3.1) * 0.18;
       }
+      this.refreshFriendlyVfxPresentation();
     }
 
     this.handleTimedThreatBehavior();
@@ -883,7 +901,85 @@ export class Bullet {
 
   setFocusCombatClarity(active) {
     if (!this.isPlayer || this.isBomb || !this.sprite) return;
-    this.sprite.alpha = active ? FOCUS_FRIENDLY_PROJECTILE_ALPHA : 1;
+    this.focusCombatClarity = Boolean(active);
+    this.refreshFriendlyVfxPresentation();
+  }
+
+  isPriorityPlayerProjectile() {
+    if (!this.isPlayer) return false;
+    return Boolean(
+      this.isBomb ||
+      this.isPlasmaLance ||
+      this.isGrazeBreaker ||
+      this.isTraitCriticalShot ||
+      this.isTraitPiercingShot ||
+      this.isTraitWingShot ||
+      this.isTraitBonusShot ||
+      this.piercing ||
+      this.tacticalFusionId ||
+      this.powerupType === 'bomb' ||
+      this.powerupType === 'plasma_lance'
+    );
+  }
+
+  setFriendlyVfxCompression(level = 0) {
+    if (!this.isPlayer) return;
+    this.friendlyVfxCompression = Math.max(0, Math.min(1, Number(level) || 0));
+    this.refreshFriendlyVfxPresentation();
+  }
+
+  beginTransitionRetirement(durationMs = 200, reason = 'wave_transition') {
+    if (!this.isPlayer || this.active === false) return false;
+    if (this.transitionRetirement) return false;
+    this.transitionRetirement = {
+      reason,
+      durationMs: Math.max(150, Math.min(250, Number(durationMs) || 200)),
+      elapsedMs: 0,
+      progress: 0
+    };
+    this.refreshFriendlyVfxPresentation();
+    return true;
+  }
+
+  refreshFriendlyVfxPresentation() {
+    if (!this.isPlayer || !this.sprite) return;
+    const priority = this.isPriorityPlayerProjectile();
+    const compression = priority ? 0 : this.friendlyVfxCompression;
+    const retirementProgress = Math.max(0, Math.min(1, Number(this.transitionRetirement?.progress) || 0));
+    const retirementAlpha = 1 - retirementProgress;
+    const focusAlpha = this.focusCombatClarity && !priority ? FOCUS_FRIENDLY_PROJECTILE_ALPHA : 1;
+    const densityAlpha = 1 - compression * 0.22;
+    this.sprite.alpha = focusAlpha * densityAlpha * retirementAlpha;
+    if (this.trail) {
+      const trailScale = 1 - compression * 0.34;
+      this.trail.scale.set(trailScale);
+      this.trail.alpha = 1 - compression * 0.38;
+    }
+    if (this.friendlyWingTrace) {
+      const wingScale = 1 - compression * 0.28;
+      this.friendlyWingTrace.scale.set(wingScale);
+      this.friendlyWingTrace.alpha *= 1 - compression * 0.58;
+    }
+    if (this.friendlyGlint) {
+      this.friendlyGlint.alpha *= 1 - compression * 0.64;
+    }
+    if (this.core) {
+      this.core.alpha = 1 - compression * 0.12;
+    }
+    if (this.playerIntentLayer?.visible) {
+      this.playerIntentLayer.alpha = Math.max(this.playerIntentLayer.alpha, 0.68);
+    }
+    if (this.sprite._debugProjectileReadability) {
+      Object.assign(this.sprite._debugProjectileReadability, {
+        priorityPlayerProjectile: priority,
+        friendlyVfxCompression: Number(compression.toFixed(3)),
+        ordinaryOpacity: Number(densityAlpha.toFixed(3)),
+        trailScale: Number((1 - compression * 0.34).toFixed(3)),
+        routineHaloIntensity: Number((1 - compression * 0.64).toFixed(3)),
+        transitionRetiring: Boolean(this.transitionRetirement),
+        transitionRetirementProgress: Number(retirementProgress.toFixed(3))
+      });
+    }
   }
 
   updateEnemyProjectileAnimation(delta) {

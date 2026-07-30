@@ -148,6 +148,41 @@ function percentile(values, pct) {
   return sorted[index];
 }
 
+function makeCombatReadabilityState() {
+  return {
+    enemies: new Map(),
+    waveTransitions: new Map(),
+    completedWaveTransitions: [],
+    projectileRetirements: [],
+    playerHeatmap: {
+      columns: 6,
+      rows: 4,
+      samples: 0,
+      cells: Array(24).fill(0)
+    },
+    projectileSamples: 0,
+    friendlyProjectileTotal: 0,
+    hostileProjectileTotal: 0,
+    friendlyProjectileMax: 0,
+    hostileProjectileMax: 0,
+    lastSpatialSampleAt: 0
+  };
+}
+
+function summarizeDurations(values = []) {
+  const finite = values.filter(Number.isFinite).map(value => Math.max(0, Number(value)));
+  if (!finite.length) return { count: 0, minMs: null, averageMs: null, medianMs: null, p95Ms: null, maxMs: null };
+  const total = finite.reduce((sum, value) => sum + value, 0);
+  return {
+    count: finite.length,
+    minMs: roundMs(Math.min(...finite)),
+    averageMs: roundMs(total / finite.length),
+    medianMs: roundMs(percentile(finite, 50)),
+    p95Ms: roundMs(percentile(finite, 95)),
+    maxMs: roundMs(Math.max(...finite))
+  };
+}
+
 function installStorageProbe() {
   const win = getWindow();
   const StorageCtor = win?.Storage;
@@ -362,6 +397,7 @@ class MayhemPerformanceDiagnostics {
     this.lastCounts = getCounts(scene);
     this.pendingEvents = [];
     this.eventLog = [];
+    this.combatReadability = makeCombatReadabilityState();
     this.overlay = null;
     this.hotkeyHandler = this.handleHotkey.bind(this);
     this.visibilityHandler = this.handleVisibilityChange.bind(this);
@@ -464,6 +500,7 @@ class MayhemPerformanceDiagnostics {
     this.sections.clear();
     this.pendingEvents = [];
     this.eventLog = [];
+    this.combatReadability = makeCombatReadabilityState();
   }
 
   handleVisibilityChange() {
@@ -539,6 +576,150 @@ class MayhemPerformanceDiagnostics {
     }
     this.eventLog.push(event);
     if (this.eventLog.length > 180) this.eventLog.shift();
+    this.recordCombatReadabilityEvent(event.label, event.details);
+  }
+
+  recordCombatReadabilityEvent(label, details = {}) {
+    const state = this.combatReadability;
+    if (!state || !String(label).includes('combat_readability') && label !== 'wave_clear.objectives_zero') return;
+    const atMs = Number(details.atMs) || Date.now();
+    if (label === 'combat_readability.enemy_spawn') {
+      state.enemies.set(details.id, {
+        id: details.id,
+        kind: details.kind || 'enemy',
+        signature: Boolean(details.signature),
+        boss: Boolean(details.boss),
+        spawnedAtMs: atMs,
+        firstAttackAtMs: null,
+        deathAtMs: null
+      });
+      return;
+    }
+    if (label === 'combat_readability.enemy_first_attack') {
+      const enemy = state.enemies.get(details.id);
+      if (enemy && !enemy.firstAttackAtMs) enemy.firstAttackAtMs = atMs;
+      return;
+    }
+    if (label === 'combat_readability.enemy_death') {
+      const enemy = state.enemies.get(details.id);
+      if (enemy && !enemy.deathAtMs) {
+        enemy.deathAtMs = atMs;
+        enemy.attackedBeforeDeath = Boolean(details.attackedBeforeDeath || enemy.firstAttackAtMs);
+      }
+      return;
+    }
+    if (label === 'wave_clear.objectives_zero') {
+      const key = `${details.level || 0}:${details.wave || 0}`;
+      state.waveTransitions.set(key, {
+        key,
+        level: details.level || null,
+        wave: details.wave || null,
+        objectivesZeroAtMs: atMs,
+        presentationAtMs: null,
+        activeAtMs: null
+      });
+      return;
+    }
+    if (label === 'combat_readability.wave_clear_presentation') {
+      const key = `${details.level || 0}:${details.wave || 0}`;
+      const transition = state.waveTransitions.get(key);
+      if (transition) {
+        transition.presentationAtMs = atMs;
+        transition.cleanupDurationMs = Number.isFinite(details.cleanupDurationMs)
+          ? Number(details.cleanupDurationMs)
+          : Math.max(0, atMs - transition.objectivesZeroAtMs);
+      }
+      return;
+    }
+    if (label === 'combat_readability.wave_transition_complete') {
+      const candidates = [...state.waveTransitions.values()].filter(transition => !transition.activeAtMs);
+      const transition = candidates[candidates.length - 1];
+      if (transition) {
+        transition.activeAtMs = atMs;
+        transition.totalDurationMs = Math.max(0, atMs - transition.objectivesZeroAtMs);
+        state.completedWaveTransitions.push({ ...transition });
+      }
+      return;
+    }
+    if (label === 'combat_readability.friendly_projectile_retirement') {
+      state.projectileRetirements.push({
+        atMs,
+        count: Math.max(0, Number(details.count) || 0),
+        durationMs: Math.max(0, Number(details.durationMs) || 0)
+      });
+      if (state.projectileRetirements.length > 24) state.projectileRetirements.shift();
+    }
+  }
+
+  sampleCombatReadability(scene = this.scene) {
+    const state = this.combatReadability;
+    const now = performance.now();
+    if (!state || now - state.lastSpatialSampleAt < 100) return;
+    state.lastSpatialSampleAt = now;
+    const width = Math.max(1, Number(scene?.game?.getWidth?.()) || 1);
+    const height = Math.max(1, Number(scene?.game?.getHeight?.()) || 1);
+    const playerX = Math.max(0, Math.min(width - 0.001, Number(scene?.player?.x) || width / 2));
+    const playerY = Math.max(0, Math.min(height - 0.001, Number(scene?.player?.y) || height / 2));
+    const column = Math.max(0, Math.min(state.playerHeatmap.columns - 1, Math.floor(playerX / width * state.playerHeatmap.columns)));
+    const row = Math.max(0, Math.min(state.playerHeatmap.rows - 1, Math.floor(playerY / height * state.playerHeatmap.rows)));
+    state.playerHeatmap.cells[row * state.playerHeatmap.columns + column] += 1;
+    state.playerHeatmap.samples += 1;
+    const friendlyCount = scene?.bulletManager?.playerBullets?.filter(bullet => bullet?.active !== false).length || 0;
+    const hostileCount = scene?.bulletManager?.enemyBullets?.filter(bullet => bullet?.active !== false).length || 0;
+    state.projectileSamples += 1;
+    state.friendlyProjectileTotal += friendlyCount;
+    state.hostileProjectileTotal += hostileCount;
+    state.friendlyProjectileMax = Math.max(state.friendlyProjectileMax, friendlyCount);
+    state.hostileProjectileMax = Math.max(state.hostileProjectileMax, hostileCount);
+  }
+
+  getCombatReadabilityReport() {
+    const state = this.combatReadability;
+    const defeated = [...state.enemies.values()].filter(enemy => Number.isFinite(enemy.deathAtMs));
+    const attacked = defeated.filter(enemy => Number.isFinite(enemy.firstAttackAtMs));
+    const signatureDefeated = defeated.filter(enemy => enemy.signature);
+    const signatureAttacked = signatureDefeated.filter(enemy => enemy.attackedBeforeDeath);
+    const bossDefeated = defeated.filter(enemy => enemy.boss);
+    const heatmapSamples = Math.max(1, state.playerHeatmap.samples);
+    return {
+      enemySpawnToFirstAttack: summarizeDurations(attacked.map(enemy => enemy.firstAttackAtMs - enemy.spawnedAtMs)),
+      enemySpawnToDeath: summarizeDurations(defeated.map(enemy => enemy.deathAtMs - enemy.spawnedAtMs)),
+      signatureEnemies: {
+        defeated: signatureDefeated.length,
+        attackedBeforeDeath: signatureAttacked.length,
+        attackedBeforeDeathPercent: signatureDefeated.length
+          ? roundMs(signatureAttacked.length / signatureDefeated.length * 100)
+          : null
+      },
+      bossTimeToKill: summarizeDurations(bossDefeated.map(enemy => enemy.deathAtMs - enemy.spawnedAtMs)),
+      waveClearCleanupDuration: summarizeDurations(
+        [...state.waveTransitions.values()].map(transition => transition.cleanupDurationMs)
+      ),
+      waveClearToNextActive: summarizeDurations(
+        state.completedWaveTransitions.map(transition => transition.totalDurationMs)
+      ),
+      projectileCounts: {
+        samples: state.projectileSamples,
+        friendlyAverage: state.projectileSamples
+          ? roundMs(state.friendlyProjectileTotal / state.projectileSamples)
+          : null,
+        hostileAverage: state.projectileSamples
+          ? roundMs(state.hostileProjectileTotal / state.projectileSamples)
+          : null,
+        friendlyMax: state.friendlyProjectileMax,
+        hostileMax: state.hostileProjectileMax
+      },
+      playerPositionHeatmap: {
+        columns: state.playerHeatmap.columns,
+        rows: state.playerHeatmap.rows,
+        samples: state.playerHeatmap.samples,
+        cells: state.playerHeatmap.cells.map(count => ({
+          count,
+          percent: roundMs(count / heatmapSamples * 100)
+        }))
+      },
+      projectileRetirements: state.projectileRetirements.map(entry => ({ ...entry }))
+    };
   }
 
   endFrame(scene = this.scene) {
@@ -547,6 +728,7 @@ class MayhemPerformanceDiagnostics {
     const frameCounters = consumeFrameCounters();
     addFrameCounterTotals(this.frameCounterTotals, frameCounters);
     const counts = getCounts(scene);
+    this.sampleCombatReadability(scene);
     const frameTiming = getFrameTiming(scene, this.currentFrame.delta);
     const combat = getCombatTiming(scene);
     const sample = {
@@ -731,6 +913,7 @@ class MayhemPerformanceDiagnostics {
       lastWriteResult: this.lastWriteResult,
       topSections,
       recentEvents: this.eventLog.slice(-60),
+      combatReadability: this.getCombatReadabilityReport(),
       recentSamples: this.samples.slice(-30),
       recentSlowFrames: this.slowFrames.slice(-40),
       worstSlowFrames: [...this.slowFrames]

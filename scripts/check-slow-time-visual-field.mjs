@@ -166,11 +166,20 @@ try {
   const failures = [];
   if (!active.ok) failures.push(active.reason || 'state setup failed');
   if (!active.visible || !active.debug?.visible) failures.push(`slow time field was not visible: ${JSON.stringify(active)}`);
-  if ((active.debug?.edge || 0) < 12) failures.push(`slow time edge too small: ${active.debug?.edge}`);
-  if ((active.debug?.radius || 0) < 60) failures.push(`slow time player ring too small: ${active.debug?.radius}`);
-  if ((active.debug?.alpha || 0) <= 0.05) failures.push(`slow time alpha too low: ${active.debug?.alpha}`);
-  if ((active.debug?.timeSliceCount || 0) < 7) failures.push(`slow time field missing time-slice bands: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.clockTickCount || 0) < 16) failures.push(`slow time field missing player clock ticks: ${JSON.stringify(active.debug)}`);
+  if (active.debug?.visualLanguage !== 'chrono_anchor_single_distortion_ring_v1') {
+    failures.push(`slow time visual language mismatch: ${JSON.stringify(active.debug)}`);
+  }
+  if ((active.debug?.radius || 0) < 54 || (active.debug?.radius || 0) > 100) {
+    failures.push(`slow time player ring outside restrained footprint: ${active.debug?.radius}`);
+  }
+  if ((active.debug?.alpha || 0) <= 0.035 || (active.debug?.alpha || 0) > 0.09) {
+    failures.push(`slow time field alpha outside restrained range: ${active.debug?.alpha}`);
+  }
+  if (active.debug?.primaryRingCount !== 1) failures.push(`slow time field must use one primary ring: ${JSON.stringify(active.debug)}`);
+  if (active.debug?.timeSliceCount !== 0 || active.debug?.clockTickCount !== 0 || active.debug?.fullScreenGeometryCount !== 0) {
+    failures.push(`legacy full-screen time grid remains: ${JSON.stringify(active.debug)}`);
+  }
+  if (active.debug?.pairedRailCount !== 4) failures.push(`slow time paired rails are incomplete: ${JSON.stringify(active.debug)}`);
   if ((active.scales?.enemy || 1) > 0.35) failures.push(`enemy slow scale regressed: ${active.scales?.enemy}`);
   if ((active.scales?.bullet || 1) > 0.35) failures.push(`bullet slow scale regressed: ${active.scales?.bullet}`);
   if ((active.scales?.hazard || 1) > 0.35) failures.push(`hazard slow scale regressed: ${active.scales?.hazard}`);
