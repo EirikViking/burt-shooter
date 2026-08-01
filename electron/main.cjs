@@ -863,11 +863,13 @@ async function waitForPlay(window) {
       }
     }
     const playerReady = Boolean(lastState?.player?.active && Number.isFinite(lastState?.player?.x) && Number.isFinite(lastState?.player?.y));
+    const combatReady = ['WAVE_ACTIVE', 'BOSS_ACTIVE'].includes(lastState?.textState?.wave?.state);
     const controlsReady = Boolean(
       lastState?.scene === 'play' &&
       lastState?.playReady &&
       lastState?.hasInputManager &&
       playerReady &&
+      combatReady &&
       lastState?.introComplete &&
       !lastState?.introActive &&
       !lastState?.isPaused
