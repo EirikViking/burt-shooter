@@ -47,7 +47,7 @@ const SHIP_BLUEPRINTS = [
     ['Nova Overdrive', 'nova', 'Aggressive late-roster all-round pressure machine.', 'overdrive', 58, 7.1, 112, 1.3, 12.6, 3, 0.16, 12],
     ['Arcade Legend', 'arcade', 'Final cabinet hero craft with absurd confidence.', 'legend', 60, 7.25, 108, 1.45, 13.0, 3, 0.22, 12],
     ['Aegis Comet', 'aegis', 'Survive the sector wall. Shield-style recovery and mistake forgiveness at the cost of speed.', 'aegis-comet', 30, 5.9, 108, 1.62, 12.4, 3, 0.13, 12, {
-        textureIndex: 20,
+        textureIndex: 27,
         tier: 'ascendant',
         powerClass: 'late_game',
         powerRating: 1.1,
@@ -57,10 +57,15 @@ const SHIP_BLUEPRINTS = [
         fantasy: 'A late-game shield cruiser built to survive the first impossible sector wall.',
         weakness: 'Slower movement and less boss burst than the cannon hulls.',
         recommendedBuildTags: ['shield', 'recovery', 'safe-entry'],
-        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-21.png', note: 'Final Aegis Comet art needed.' }
+        art: {
+            temporaryFallback: false,
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-aegis-comet-20260801.png',
+            fallbackSpriteKey: 'nova-player-ship-21.png',
+            note: 'Dedicated crescent-shield cruiser with visible layered Aegis emitters.'
+        }
     }],
     ['Railbreaker', 'railbreaker', 'Crack boss gates. Heavy precision damage, weaker crowd cleanup.', 'railbreaker', 35, 5.45, 112, 2.11, 13.8, 3, 0.02, 13, {
-        textureIndex: 21,
+        textureIndex: 28,
         tier: 'ascendant',
         powerClass: 'late_game',
         powerRating: 1.11,
@@ -71,10 +76,15 @@ const SHIP_BLUEPRINTS = [
         weakness: 'Tight lanes and slower handling make dense swarms harder.',
         recommendedBuildTags: ['boss', 'pierce', 'precision'],
         shootSfx: 'shoot_railbreaker',
-        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-22.png', note: 'Final Railbreaker art needed.' }
+        art: {
+            temporaryFallback: false,
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-railbreaker-20260801.png',
+            fallbackSpriteKey: 'nova-player-ship-22.png',
+            note: 'Dedicated ship-length accelerator cannon with exposed copper rail coils.'
+        }
     }],
     ['Drone Sovereign', 'sovereign', 'Command the swarm back. Drone-style side pressure and magnet control turn density into opportunity.', 'drone-sovereign', 40, 6.15, 94, 0.96, 12.2, 4, 0.21, 12, {
-        textureIndex: 22,
+        textureIndex: 29,
         tier: 'ascendant',
         powerClass: 'late_game',
         powerRating: 1.12,
@@ -84,7 +94,12 @@ const SHIP_BLUEPRINTS = [
         fantasy: 'A command ship that turns drones, magnets, and chain pressure into a moving kill zone.',
         weakness: 'Crowd tools are excellent, but boss damage relies on staying on target.',
         recommendedBuildTags: ['crowd-clear', 'magnet', 'side-lanes'],
-        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-23.png', note: 'Final Drone Sovereign art needed.' }
+        art: {
+            temporaryFallback: false,
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-drone-sovereign-20260801.png',
+            fallbackSpriteKey: 'nova-player-ship-23.png',
+            note: 'Dedicated crowned command carrier with six visible docked drone pods.'
+        }
     }],
     ['Phase Seraph', 'seraph', 'Slip through impossible screens. Phase and near-miss tools, lower raw damage than the cannon hulls.', 'phase-seraph', 45, 7.4, 90, 0.98, 13.0, 4, 0.11, 10, {
         textureIndex: 25,
@@ -117,13 +132,60 @@ const SHIP_BLUEPRINTS = [
         recommendedBuildTags: ['overdrive', 'boss', 'crowd-control'],
         art: {
             temporaryFallback: false,
-            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801.png',
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801-v2.png',
             fallbackSpriteKey: 'nova-player-ship-25.png',
             inscription: 'ᛖᛁᚱᛁᚲ',
-            note: 'Prestige Viking flagship with dragon prow, shield nacelles, and carved runic bands.'
+            hangarHeroScale: 1.75,
+            hangarHeroScaleCompact: 0.9,
+            hangarHeroScaleMobile: 0.82,
+            hangarHeroY: -100,
+            hangarHeroYCompact: -38,
+            hangarHeroYMobile: -30,
+            note: 'Prestige Viking flagship with a dragon prow, shield nacelles, and prominent carved runic inscriptions.'
         }
     }]
 ];
+
+const HANGAR_IDENTITY_PROFILES = [
+    ['sparrow', 1.02, 6, 2, 0.12],
+    ['courier', 0.98, 5, 3, 0.2],
+    ['needle', 1.08, 2, 0, 0.02],
+    ['skater', 1.0, 4, 4, 0.32],
+    ['fangs', 1.1, 3, 2, 0.46],
+    ['orbit', 1.13, 8, 1, 0.08],
+    ['fan', 1.08, 9, 3, 0.56],
+    ['scope', 1.05, 4, 0, 0.0],
+    ['arc', 1.1, 7, 2, 0.4],
+    ['hammer', 1.16, 4, 1, 0.18],
+    ['circuit', 1.02, 12, 4, 0.25],
+    ['feint', 0.96, 5, 2, 0.68],
+    ['core', 1.15, 10, 2, 0.12],
+    ['plasma', 1.04, 6, 3, 0.52],
+    ['spike', 1.17, 3, 1, 0.0],
+    ['spectral', 0.98, 7, 5, 0.74],
+    ['guard', 1.14, 8, 2, 0.16],
+    ['burst', 1.06, 10, 3, 0.36],
+    ['stutter', 1.03, 14, 4, 0.6],
+    ['quartz', 1.0, 6, 2, 0.05],
+    ['rail', 1.12, 2, 0, 0.0],
+    ['flow', 1.06, 8, 5, 0.42],
+    ['hazard', 1.16, 6, 3, 0.3],
+    ['overdrive', 1.18, 12, 4, 0.5],
+    ['legend', 1.22, 16, 5, 0.22],
+    ['aegis', 1.34, 8, 2, 0.08],
+    ['railbreaker', 1.38, 2, 0, 0.0],
+    ['sovereign', 1.42, 6, 6, 0.28],
+    ['seraph', 1.48, 12, 6, 0.72],
+    ['viking', 1.75, 18, 8, 0.18]
+].map(([style, hangarHeroScale, spokes, satellites, phase], index) => ({
+    hangarHeroScale,
+    hangarHeroScaleCompact: Math.min(hangarHeroScale, 1.28),
+    hangarHeroScaleMobile: Math.min(hangarHeroScale, 1.22),
+    hangarHeroY: index >= 25 ? -76 : -62,
+    hangarHeroYCompact: index >= 25 ? -66 : -58,
+    hangarHeroYMobile: index >= 25 ? -48 : -40,
+    hangarSignature: { style, spokes, satellites, phase }
+}));
 
 function shipSpriteKey(index) {
     return `nova-player-ship-${String(index + 1).padStart(2, '0')}.png`;
@@ -178,10 +240,12 @@ export const ShipData = SHIP_BLUEPRINTS.map(([
     art: metadata.art ? {
         spriteKey: shipSpriteKey(index),
         textureIndex: Number.isInteger(metadata.textureIndex) ? metadata.textureIndex : index,
+        ...HANGAR_IDENTITY_PROFILES[index],
         ...metadata.art
     } : {
         spriteKey: shipSpriteKey(index),
         textureIndex: Number.isInteger(metadata.textureIndex) ? metadata.textureIndex : index,
+        ...HANGAR_IDENTITY_PROFILES[index],
         temporaryFallback: false
     },
     stats: {

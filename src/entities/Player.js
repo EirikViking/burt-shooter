@@ -393,6 +393,41 @@ export class Player {
     return targetWidth;
   }
 
+  computeShipTextureScale(texture) {
+    const targetWidth = this.targetShipWidthPx || this.baseShipWidth || this.computeBaselineShipWidth();
+    const textureWidth = Math.max(1, Number(texture?.width) || 1);
+    const textureHeight = Math.max(1, Number(texture?.height) || 1);
+    const widthScale = targetWidth / textureWidth;
+    const heightScale = (targetWidth * 1.34) / textureHeight;
+    return Math.min(widthScale, heightScale);
+  }
+
+  normalizeShipSpriteScale(reason = 'runtime') {
+    if (!(this.shipSprite instanceof PIXI.Sprite) || !GameAssets.isValidTexture(this.shipSprite.texture)) return false;
+    const expectedScale = this.computeShipTextureScale(this.shipSprite.texture);
+    const currentScaleX = Number(this.shipSprite.scale?.x);
+    const currentScaleY = Number(this.shipSprite.scale?.y);
+    const scaleRatioX = currentScaleX / expectedScale;
+    const scaleRatioY = currentScaleY / expectedScale;
+    const unsafe = !Number.isFinite(currentScaleX) || !Number.isFinite(currentScaleY)
+      || scaleRatioX < 0.58 || scaleRatioX > 1.65
+      || scaleRatioY < 0.58 || scaleRatioY > 1.65;
+    if (!unsafe) return false;
+    this.shipSprite.scale.set(expectedScale);
+    this.baseScale = expectedScale;
+    this.applyShipVisualCentering(this.shipSprite, this.selectedShipTextureIndex);
+    this.lastShipScaleRepair = {
+      reason,
+      repairedAt: Date.now(),
+      expectedScale,
+      previousScaleX: currentScaleX,
+      previousScaleY: currentScaleY,
+      renderedWidth: this.shipSprite.width,
+      renderedHeight: this.shipSprite.height
+    };
+    return true;
+  }
+
   buildDefaultShipSprite() {
     // Use selected ship texture index if available
     let texture;
@@ -412,8 +447,7 @@ export class Player {
       sprite.tint = this.visualVariant.tint;
     }
 
-    const targetWidth = this.baseShipWidth || this.computeBaselineShipWidth();
-    const scale = texture.width > 0 ? targetWidth / texture.width : 1;
+    const scale = this.computeShipTextureScale(texture);
     sprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
     this.applyShipVisualCentering(sprite, this.selectedShipTextureIndex);
@@ -1330,9 +1364,8 @@ export class Player {
       this.targetShipWidthPx = this.computeBaselineShipWidth();
     }
     const targetWidth = this.targetShipWidthPx;
-
     const texWidth = texture.width || 1;
-    const scale = targetWidth / texWidth;
+    const scale = this.computeShipTextureScale(texture);
     this.shipSprite.scale.set(scale);
     this.baseScale = Number.isFinite(scale) ? scale : 1;
     this.applyShipVisualCentering(this.shipSprite, index);
@@ -1583,6 +1616,7 @@ export class Player {
   update(delta) {
     if (!this.active) return;
     if (!this.sprite) return; // Guard: Sprite might be missing/destroyed during update
+    this.normalizeShipSpriteScale('update');
 
     const visualNow = Date.now();
     const now = this.getGameplayClockMs();

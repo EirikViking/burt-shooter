@@ -14,7 +14,7 @@ import {
 const root = process.cwd();
 const errors = [];
 const PLAYABLE_SHIP_COUNT = 30;
-const GENERATED_PLAYER_SHIP_ASSET_COUNT = 27;
+const GENERATED_PLAYER_SHIP_ASSET_COUNT = 30;
 
 function fail(message) {
   errors.push(message);

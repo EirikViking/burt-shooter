@@ -248,16 +248,30 @@ async function prepareGameplay(page) {
       play.enemyManager.phase = 'WAVES';
       play.enemyManager.spawning = false;
     }
+    const targetWidth = play.player.targetShipWidthPx || play.player.baseShipWidth || 0;
+    const initialRenderedWidth = play.player.shipSprite?.width || 0;
+    play.player.shipSprite?.scale?.set?.(1);
+    const repaired = play.player.normalizeShipSpriteScale?.('tyrian-responsive-regression') || false;
     return {
       textureIndex: play.player.selectedShipTextureIndex,
       width: play.player.shipSprite?.texture?.width || 0,
       height: play.player.shipSprite?.texture?.height || 0,
-      tint: play.player.shipSprite?.tint ?? null
+      tint: play.player.shipSprite?.tint ?? null,
+      targetWidth,
+      initialRenderedWidth,
+      renderedWidth: play.player.shipSprite?.width || 0,
+      renderedHeight: play.player.shipSprite?.height || 0,
+      repaired,
+      repairReason: play.player.lastShipScaleRepair?.reason || null
     };
   });
   assert.equal(eirikVisual.textureIndex, 26);
   assert(eirikVisual.width >= 1200 && eirikVisual.height >= 1200, `Eirik gameplay art was replaced by fallback: ${JSON.stringify(eirikVisual)}`);
   assert.equal(eirikVisual.tint, 0xffffff, `Eirik gameplay colors were flattened by a trait tint: ${JSON.stringify(eirikVisual)}`);
+  assert.equal(eirikVisual.repaired, true, `Eirik gameplay scale corruption was not repaired: ${JSON.stringify(eirikVisual)}`);
+  assert.equal(eirikVisual.repairReason, 'tyrian-responsive-regression');
+  assert(eirikVisual.renderedWidth <= eirikVisual.targetWidth * 1.02, `Eirik gameplay hull is oversized: ${JSON.stringify(eirikVisual)}`);
+  assert(eirikVisual.renderedHeight <= eirikVisual.targetWidth * 1.35 * 1.02, `Eirik gameplay hull is too tall: ${JSON.stringify(eirikVisual)}`);
   return eirikVisual;
 }
 

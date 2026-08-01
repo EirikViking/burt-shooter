@@ -221,6 +221,8 @@ for (const [id, expectedName, expectedLevel, targetRange] of ASCENDANT_TARGETS) 
 }
 
 const level30 = shipsById.get('nova_ship_26');
+const railbreaker = shipsById.get('nova_ship_27');
+const droneSovereign = shipsById.get('nova_ship_28');
 const phaseSeraph = shipsById.get('nova_ship_29');
 const level50 = shipsById.get('nova_ship_30');
 const level30Ratio = level30 ? ratio(calculateSustainedShotDps(level30), topNormalSustainedDps) : 0;
@@ -229,7 +231,7 @@ if (level30Ratio < 1.09) fail(`Aegis Comet should stay near 10% above top normal
 if (level50Ratio < 1.11) fail(`Eirik the Viking should remain a stronger endgame hull, got ${level50Ratio.toFixed(3)}`);
 if (level50Ratio > 1.16) fail(`Eirik the Viking exceeds the modest Ascendant damage ceiling, got ${level50Ratio.toFixed(3)}`);
 
-for (const ship of [phaseSeraph, level50].filter(Boolean)) {
+for (const ship of [level30, railbreaker, droneSovereign, phaseSeraph, level50].filter(Boolean)) {
   const asset = AssetManifest.sprites.playerRankShips[ship.textureIndex];
   const fallbackAsset = AssetManifest.sprites.playerRankShipFallbacks?.[ship.textureIndex];
   if (ship.art?.temporaryFallback) fail(`${ship.id} must use dedicated final art, not a temporary fallback`);
@@ -243,6 +245,27 @@ if (level50 && level50.textureIndex === shipsById.get('nova_ship_25')?.textureIn
   fail('Eirik the Viking must not share Arcade Legend art');
 }
 if (level50?.art?.inscription !== 'ᛖᛁᚱᛁᚲ') fail('Eirik the Viking must carry its explicit Viking runic inscription');
+if (!level50?.art?.sourceSpritePath?.includes('eirik-viking-20260801-v2.png')) {
+  fail('Eirik the Viking must use the detailed v2 Viking flagship art');
+}
+const textureIndices = ships.map((ship) => ship.textureIndex);
+if (new Set(textureIndices).size !== ships.length) {
+  fail(`all playable hulls must have distinct texture slots, got ${new Set(textureIndices).size}/${ships.length}`);
+}
+const hangarSignatures = ships.map((ship) => ship.art?.hangarSignature?.style).filter(Boolean);
+if (hangarSignatures.length !== ships.length || new Set(hangarSignatures).size !== ships.length) {
+  fail(`all playable hulls must have distinct Hangar signatures, got ${new Set(hangarSignatures).size}/${ships.length}`);
+}
+const largestNonEirikScale = Math.max(...ships.filter((ship) => ship !== level50).map((ship) => Number(ship.art?.hangarHeroScale) || 1));
+if ((Number(level50?.art?.hangarHeroScale) || 0) <= largestNonEirikScale) {
+  fail(`Eirik must remain the largest Hangar hull (${level50?.art?.hangarHeroScale} <= ${largestNonEirikScale})`);
+}
+if ((Number(level50?.art?.hangarHeroScale) || 0) < 1.7) {
+  fail('Eirik the Viking must have a materially larger desktop Hangar presentation');
+}
+if (!String(level50?.art?.note || '').toLowerCase().includes('runic inscriptions')) {
+  fail('Eirik the Viking art contract must call out its prominent runic inscriptions');
+}
 
 const shipSelectSource = fs.readFileSync(path.join(root, 'src/scenes/ShipSelectScene.js'), 'utf8');
 for (const token of ['getShipTierLabel', 'tierBadge', 'this.ships.length', 'WEAKNESS:']) {

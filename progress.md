@@ -2667,3 +2667,11 @@ Original request: continue the complete 21-item Tyrian #93/#94 brief from a new 
 - Timed Magnet now uses a 180 px / 0.14 baseline and permanent Magnet builds extend from that baseline. Edge pull remains useful, while the always-on visual is a compact 44-68 px near-hull core plus a very faint truthful range boundary; target halos and funnels own the strong feedback.
 - Sky Verdict now exposes a READY/SPENT emergency state. Charged bomb impacts still spend exactly one charge; at zero charges, one synchronously reserved, reduced-damage/reduced-radius beam is available per sector and rapid repeats cannot fire it twice.
 - Focused checks passing on the rebuilt runtime: `node scripts/check-tactical-draft.mjs` (120-step anti-repeat simulation and all 30 hulls), `node scripts/check-tactical-fusion-protocols.mjs`, `node scripts/check-powerup-effects.mjs` (44 types plus compatibility pairs), `node scripts/check-tactical-directive-runtime.mjs`, `node scripts/check-focus-lens-spread.mjs`, and `node scripts/check-magnet-field-readability.mjs`. Visual evidence: `test-results/focus-lens-spread-2026-08-01T09-40-03-538Z` and `test-results/magnet-field-readability-2026-08-01T09-45-01-556Z`.
+
+## 2026-08-02 Ship identity and gameplay-scale correction
+
+- Replaced the remaining Ascendant fallback art for Aegis Comet, Railbreaker, and Drone Sovereign; upgraded Eirik to the detailed v2 Viking flagship with visible runes.
+- Added distinct animated Hangar signatures for all 30 hulls while preserving Eirik as the largest full-resolution Hangar showcase.
+- Gameplay footage exposed Eirik scaling to roughly 500-650 px while its collision core stayed small. Gameplay ship textures now derive a bounded 70-80 px footprint and self-repair unsafe runtime scale corruption without suppressing normal firing/pickup pulse animation.
+- Compact and mobile Hangar layouts use restrained Eirik sizing; the duplicate compact FIRST FLIGHT badge is hidden while the status remains in the existing header/readout.
+- Focused checks passed: generated rosters, Ascendant ship contract, player ship padding, `build:current`, and the three-layout Tyrian responsive suite. Evidence: `test-results/tyrian-responsive-ui-2026-08-01T23-19-52-816Z`.

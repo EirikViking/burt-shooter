@@ -86,6 +86,54 @@ function hexColor(color) {
   return `#${Number(color || 0xffffff).toString(16).padStart(6, '0')}`;
 }
 
+function createHangarSignature(art, heroSize, heroY, accent, glowColor, locked) {
+  const profile = art?.hangarSignature;
+  if (!profile) return null;
+  const signature = new PIXI.Container();
+  signature.position.set(0, heroY);
+  signature.alpha = locked ? 0.1 : 0.34;
+  signature.__rotationSpeed = 0.0015 + (Number(profile.phase) || 0) * 0.004;
+
+  const spokes = Math.max(2, Math.min(18, Number(profile.spokes) || 6));
+  const phase = Number(profile.phase) || 0;
+  const radius = heroSize * (0.56 + phase * 0.08);
+  const crest = new PIXI.Graphics();
+  for (let i = 0; i < spokes; i += 1) {
+    const angle = (Math.PI * 2 * i) / spokes + phase;
+    const alternate = i % 2 ? 0.72 : 1;
+    const inner = radius * (0.3 + (i % 3) * 0.055);
+    crest.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+    crest.lineTo(Math.cos(angle) * radius * alternate, Math.sin(angle) * radius * alternate);
+  }
+  crest.stroke({ color: accent, width: profile.style === 'viking' ? 2.4 : 1.4, alpha: 0.72 });
+
+  const inner = new PIXI.Graphics();
+  const sides = Math.max(3, Math.min(10, 3 + (spokes % 8)));
+  for (let i = 0; i <= sides; i += 1) {
+    const angle = -Math.PI / 2 + (Math.PI * 2 * i) / sides + phase * 0.4;
+    const r = heroSize * (i % 2 && sides > 5 ? 0.31 : 0.38);
+    const x = Math.cos(angle) * r;
+    const y = Math.sin(angle) * r;
+    if (i === 0) inner.moveTo(x, y);
+    else inner.lineTo(x, y);
+  }
+  inner.stroke({ color: glowColor, width: 2, alpha: 0.52 });
+
+  const satellites = new PIXI.Graphics();
+  const satelliteCount = Math.max(0, Math.min(8, Number(profile.satellites) || 0));
+  for (let i = 0; i < satelliteCount; i += 1) {
+    const angle = (Math.PI * 2 * i) / Math.max(1, satelliteCount) - phase;
+    const orbitRadius = heroSize * (0.68 + (i % 2) * 0.07);
+    const dotRadius = profile.style === 'sovereign' ? 5.5 : 2.6 + (i % 3);
+    satellites.circle(Math.cos(angle) * orbitRadius, Math.sin(angle) * orbitRadius, dotRadius);
+  }
+  satellites.fill({ color: accent, alpha: profile.style === 'sovereign' ? 0.86 : 0.58 });
+
+  signature.addChild(crest, inner, satellites);
+  signature.__profile = { ...profile };
+  return signature;
+}
+
 function getHangarProfileFooterLines(progress = {}) {
   if (HANGAR_PROFILE_REPAIR_REASONS.has(progress?.integrityRepairReason)) {
     return [
@@ -306,6 +354,11 @@ export class ShipSelectScene {
         centerShip.lightRays.children.forEach((ray, idx) => {
           ray.alpha = (Math.sin(now * 0.003 + idx) * 0.5 + 0.5);
         });
+      }
+
+      if (centerShip.hangarSignature) {
+        centerShip.hangarSignature.rotation += centerShip.hangarSignature.__rotationSpeed || 0.002;
+        centerShip.hangarSignature.alpha = 0.2 + pulse * 0.24;
       }
 
       // Holographic scan line continuous sweep
@@ -2354,11 +2407,19 @@ export class ShipSelectScene {
     const glowColor = variant?.glow || variant?.tint || 0x00ff00;
     const tierLabel = getShipTierLabel(ship);
 
-    const heroY = this.layout.isMobile ? -38 : -58;
+    const art = ship.art || {};
+    const heroY = this.layout.isMobile
+      ? (Number.isFinite(art.hangarHeroYMobile) ? art.hangarHeroYMobile : -38)
+      : (this.layout.showSideIntel
+        ? (Number.isFinite(art.hangarHeroY) ? art.hangarHeroY : -58)
+        : (Number.isFinite(art.hangarHeroYCompact) ? art.hangarHeroYCompact : -58));
     const baseHeroSize = this.layout.isMobile ? 128 : 172;
-    const prestigeScale = ship.art?.inscription
-      ? (this.layout.showSideIntel ? 1.24 : 1.05)
-      : 1;
+    const authoredHeroScale = this.layout.isMobile
+      ? art.hangarHeroScaleMobile
+      : (this.layout.showSideIntel ? art.hangarHeroScale : art.hangarHeroScaleCompact);
+    const prestigeScale = Number.isFinite(authoredHeroScale)
+      ? authoredHeroScale
+      : (art.inscription ? (this.layout.showSideIntel ? 1.24 : 1.05) : 1);
     const heroSize = Math.round(baseHeroSize * prestigeScale);
     container.heroY = heroY;
 
@@ -2409,6 +2470,12 @@ export class ShipSelectScene {
     }
     container.addChild(lightRays);
     container.lightRays = lightRays;
+
+    const hangarSignature = createHangarSignature(art, heroSize, heroY, accent, glowColor, locked);
+    if (hangarSignature) {
+      container.addChild(hangarSignature);
+      container.hangarSignature = hangarSignature;
+    }
 
     // Ship sprite (large for better visibility)
     const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex)
@@ -2497,7 +2564,9 @@ export class ShipSelectScene {
       const badgeWidth = this.layout.isMobile ? 116 : 138;
       const badgeHeight = this.layout.isMobile ? 24 : 28;
       const badge = new PIXI.Container();
-      badge.position.set(-badgeWidth / 2, heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.66));
+      const preferredBadgeY = heroY - heroSize * (this.layout.isMobile ? 0.7 : 0.66);
+      const viewportSafeBadgeY = (10 - this.carouselContainer.y) / this.centerScale;
+      badge.position.set(-badgeWidth / 2, Math.max(preferredBadgeY, viewportSafeBadgeY));
       const badgeGlow = new PIXI.Graphics();
       badgeGlow.roundRect(-4, -4, badgeWidth + 8, badgeHeight + 8, 9);
       badgeGlow.fill({ color: 0xffef7e, alpha: 0.11 });
@@ -2693,12 +2762,15 @@ export class ShipSelectScene {
       if (shipContainer.descText) shipContainer.descText.visible = isCenter;
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
-      if (shipContainer.firstFlightBadge) shipContainer.firstFlightBadge.visible = isCenter;
+      if (shipContainer.firstFlightBadge) {
+        shipContainer.firstFlightBadge.visible = isCenter && this.layout.showSideIntel;
+      }
       if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
       if (shipContainer.pedestal) shipContainer.pedestal.visible = isCenter;
+      if (shipContainer.hangarSignature) shipContainer.hangarSignature.visible = isCenter;
 
       if (!isCenter) {
         if (shipContainer.outerRing) shipContainer.outerRing.alpha = 0;
@@ -2706,6 +2778,7 @@ export class ShipSelectScene {
         if (shipContainer.innerGlow) shipContainer.innerGlow.alpha = 0;
         if (shipContainer.lightRays) shipContainer.lightRays.alpha = 0;
         if (shipContainer.scanLine) shipContainer.scanLine.alpha = 0;
+        if (shipContainer.hangarSignature) shipContainer.hangarSignature.alpha = 0;
         if (shipContainer.glowEffect) shipContainer.glowEffect.alpha = 0;
       } else if (shipContainer.glowEffect) {
         shipContainer.glowEffect.alpha = 0.16;
