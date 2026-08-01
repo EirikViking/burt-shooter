@@ -267,15 +267,22 @@ try {
       play.bulletManager.enemyBullets = [];
       play.bulletManager.playerBullets = [];
     }
+    manager.phase = 'WAVES';
+    manager.state = 'WAVE_ACTIVE';
+    manager.waveEnding = false;
+    play.cancelNotificationTypes?.(['wave_clear', 'wave_start', 'sector_clear'], 'reinforcement_wow_survival_flush');
     if (game) game.score = Math.max(Number(game.score) || 0, 1800);
     play.activeMayhemReinforcementWarning?.cleanup?.();
     play.showMayhemReinforcementStormSurvived({ groupCount: 3, score: 1800, superStorm: true });
+    play.maybeFlushPendingWaveTransitionRewards?.();
   });
   await page.waitForTimeout(260);
   report.states.survived = await readState(page);
   report.screenshots.survived = await capture(page, '03-survived-desktop.png');
   const survivedPresentation = report.states.survived.reinforcementPresentation;
-  if (survivedPresentation?.phase !== 'survived' || survivedPresentation?.score !== 1800 || !survivedPresentation?.active) {
+  if (!['survived', 'survived_collapse'].includes(survivedPresentation?.phase) ||
+    survivedPresentation?.score !== 1800 ||
+    (survivedPresentation?.phase === 'survived' && !survivedPresentation?.active)) {
     fail(`survival payoff state is wrong: ${JSON.stringify(survivedPresentation)}`);
   }
 

@@ -2682,12 +2682,29 @@ export class EnemyManager {
     const angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
     playScene?.particleManager?.createMuzzleFlash(enemy.x, enemy.y, angle, enemy.color || 0xff5544);
     this.maybePlayAlienAttackBark(enemy, playerX, playerY);
+    const playerDistance = Math.hypot((playerX || 0) - enemy.x, (playerY || 0) - enemy.y);
+    const isPriorityEnemy = enemy.kind === 'elite_middle_ship' ||
+      enemy.kind === 'danger_mid_ship' ||
+      enemy.kind === 'boss_add' ||
+      enemy.kind === 'boss_chaos_support' ||
+      enemy.isEliteMiddleShip ||
+      Boolean(enemy.middleShipProfile) ||
+      enemy.isMayhemReinforcement;
+    const isDiveThreat = enemy.state === 'DIVE' || enemy.waveTactic?.forcedDive || enemy.tacticalDiveUsed;
+    const isClose = playerDistance < Math.max(180, (this.game?.getWidth?.() || 1280) * 0.22);
+    if (!enemy?.isRareChaosVisitor && (isPriorityEnemy || isDiveThreat || isClose)) {
+      AudioManager.playSfx('enemy_shoot', {
+        volume: isPriorityEnemy || isDiveThreat ? 0.38 : 0.3,
+        minIntervalMs: isPriorityEnemy || isDiveThreat ? 150 : 220,
+        priority: isPriorityEnemy || isDiveThreat ? 5 : 4
+      });
+    }
     if (enemy?.isRareChaosVisitor) {
       AudioManager.playSfx('rare_visitor_barrage', { volume: 0.42, minIntervalMs: 520 });
     }
 
-    // Most enemy fire stays visual-only. The old recurring enemy_shoot chirp
-    // became grating; alien barks are rare, diegetic, and globally gated.
+    // Fodder fire stays visual-only; only close, diving, reinforced, or
+    // signature enemies receive the readable threat cue.
   }
 
   maybePlayAlienAttackBark(enemy, playerX, playerY) {
@@ -3033,10 +3050,34 @@ export class EnemyManager {
     const delayStep = Math.max(55, ((diff.enemyEntryDelayBaseMs || 150) * openingMomentum.entryDelayMult) / cadence);
     const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1) * openingMomentum.entryDurationMult);
     if (config.isChallenge) this.beginChallengeFlight(config, count);
+    // Reinforcement groups arrive together by design, but constructing a whole
+    // first chunk for every concurrent group concentrates enemy generation and
+    // wake VFX on one frame. Keep the requested entry timing unchanged by
+    // compensating each delayed constructor below in entryDelayMs.
+    const reinforcementSpawn = config.isMayhemReinforcement === true;
+    const reinforcementGroupIndex = Math.max(0, Math.floor(Number(config.reinforcementGroupIndex) || 0));
+    const reinforcementGroupCount = Math.max(1, Math.floor(Number(config.reinforcementGroupCount) || 1));
     const spawnChunkSize = config.isChallenge
       ? Math.max(1, positions.length)
-      : Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
+      : reinforcementSpawn
+        ? 1
+        : Math.max(3, Math.min(6, Math.floor(Number(diff.enemyEntrySpawnChunkSize) || 4)));
     const spawnChunkDelayMs = Math.max(8, Math.min(24, Math.floor(Number(diff.enemyEntrySpawnChunkDelayMs) || 16)));
+    const reinforcementGroupSpawnOffsetMs = reinforcementSpawn && reinforcementGroupCount > 1
+      ? Math.min(24, reinforcementGroupIndex * 8)
+      : 0;
+    this.markPerformance('wave_spawn.schedule', {
+      atMs: Date.now(),
+      level: this.level,
+      wave: this.currentWaveIndex + 1,
+      reinforcementSpawn,
+      reinforcementGroupIndex,
+      reinforcementGroupCount,
+      spawnChunkSize,
+      spawnChunkDelayMs,
+      reinforcementGroupSpawnOffsetMs,
+      intendedEntryDelayMs: Math.max(0, Number(config.reinforcementEntryDelayMs) || 0)
+    });
     const waveSpawnSerial = this.waveSpawnSerial;
     const allowBossReinforcementSpawn = config.isBossMayhemReinforcement === true;
     const dangerAssignments = new Map((Array.isArray(config.dangerMidShipIds) ? config.dangerMidShipIds : [])
@@ -3175,7 +3216,7 @@ export class EnemyManager {
     };
 
     positions.forEach((pos, i) => {
-      const scheduledDelayMs = Math.floor(i / spawnChunkSize) * spawnChunkDelayMs;
+      const scheduledDelayMs = reinforcementGroupSpawnOffsetMs + Math.floor(i / spawnChunkSize) * spawnChunkDelayMs;
       if (scheduledDelayMs <= 0) {
         spawnEnemyAtSlot(pos, i, 0);
         return;
