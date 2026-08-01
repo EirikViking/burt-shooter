@@ -540,9 +540,14 @@ async function runSmoke() {
 
     const gamepadPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gamepadPage, 'gamepad');
-    await gamepadPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await gamepadPage.goto(`${baseUrl}/?autostart=1&controlSmoke=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await gamepadPage.waitForFunction(() => window.__perfStats?.scene === 'play', null, { timeout: 15000 });
     await gamepadPage.waitForFunction(() => window.__game?.scenes?.play?.player, null, { timeout: 15000 });
+    await gamepadPage.waitForFunction(
+      () => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_ACTIVE',
+      null,
+      { timeout: 15000 }
+    );
     await gamepadPage.evaluate(() => {
       const game = window.__game;
       const play = game?.scenes?.play;
