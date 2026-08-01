@@ -21560,7 +21560,11 @@ export class PlayScene {
     bossName.y = 132;
     poster.addChild(bossName);
 
-    const detailParts = [translateText(detailLabel)];
+    const detailParts = [translateText(
+      reason === 'boss_spawn'
+        ? pickBossWarningJoke(bossProfile, this.game?.level)
+        : detailLabel
+    )];
     if (bossProfile?.title) detailParts.push(String(bossProfile.title).toUpperCase());
     const detailText = createText(detailParts.slice(0, 1).join(' // '), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
