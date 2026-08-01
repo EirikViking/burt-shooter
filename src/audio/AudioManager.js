@@ -1,6 +1,12 @@
 import { AssetManifest } from '../assets/assetManifest.js';
 import * as Features from '../config/Features.js';
 import { SFX_CATALOG, SFX_MIX, VOICE_MIX, VOICE_EVENT_FALLBACKS, getMusicPlaylists, normalizeMusicPack } from './SoundCatalog.js';
+import {
+  CHATTER_FREQUENCY_KEY,
+  classifyVoiceEvent,
+  normalizeChatterFrequency,
+  shouldPlayChatterRequest
+} from './VoicePolicy.js';
 import { BUILD_ID } from '../buildInfo.js';
 
 const SPECTACLE_ACCENT_PROFILES = Object.freeze({
@@ -94,6 +100,9 @@ class AudioController {
     this.voiceEnabled = false;
     this.ctaVoiceEnabled = true;
     this.bossVoiceEnabled = true;
+    this.chatterFrequency = 'full';
+    this.chatterSequence = 0;
+    this.lastVoiceClassification = null;
     this.musicPack = 'classic';
 
     // Volume
@@ -235,6 +244,7 @@ class AudioController {
     if (savedCtaVoice !== null) this.ctaVoiceEnabled = savedCtaVoice !== 'false';
     const savedBossVoice = localStorage.getItem('burt_boss_voice_enabled');
     if (savedBossVoice !== null) this.bossVoiceEnabled = savedBossVoice !== 'false';
+    this.chatterFrequency = normalizeChatterFrequency(localStorage.getItem(CHATTER_FREQUENCY_KEY), this.chatterFrequency);
 
     this.applyMusicVolume();
   }
@@ -1090,6 +1100,9 @@ class AudioController {
       voiceEnabled: this.voiceEnabled,
       ctaVoiceEnabled: this.ctaVoiceEnabled,
       bossVoiceEnabled: this.bossVoiceEnabled,
+      chatterFrequency: this.chatterFrequency,
+      chatterSequence: this.chatterSequence,
+      lastVoiceClassification: this.lastVoiceClassification,
       musicDuckFactor: this.musicDuckFactor,
       pauseDuckFactor: this.pauseDuckFactor,
       currentMusicContext: this.currentContext,
@@ -1197,6 +1210,16 @@ class AudioController {
       localStorage.setItem('burt_boss_voice_enabled', this.bossVoiceEnabled);
     } catch { }
     return this.bossVoiceEnabled;
+  }
+
+  setChatterFrequency(value) {
+    this.chatterFrequency = normalizeChatterFrequency(value, this.chatterFrequency);
+    this.chatterSequence = 0;
+    try {
+      localStorage.setItem(CHATTER_FREQUENCY_KEY, this.chatterFrequency);
+      if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+    } catch { }
+    return this.chatterFrequency;
   }
 
   isCtaVoiceEnabled() {
@@ -1322,6 +1345,20 @@ class AudioController {
       return false;
     }
     const now = Date.now();
+    const classification = classifyVoiceEvent(eventName);
+    this.lastVoiceClassification = classification;
+    if (classification.chatter) {
+      const sequence = this.chatterSequence;
+      this.chatterSequence += 1;
+      if (!shouldPlayChatterRequest(this.chatterFrequency, sequence)) {
+        this.recordVoiceSuppression(eventName, 'chatter_frequency', now, {
+          category: classification.category,
+          chatterFrequency: this.chatterFrequency,
+          sequence
+        });
+        return false;
+      }
+    }
     const mix = VOICE_MIX[eventName] || {};
     const voicePriority = this.readMixNumber(options.voicePriority, mix.priority ?? 0);
     const activeLock = this.getActiveVoiceLock(now);

@@ -7210,6 +7210,7 @@ export class PlayScene {
           continue;
         }
         this.recordCombatProjectileHit(bullet);
+        this.recordRiftShardHit(bullet, enemy);
         const destroyed = this.applyCombatDamage(enemy, bulletProxy.damage, getCombatDamageSourceForBullet(bullet), {
           impactX: event.impactX,
           impactY: event.impactY
@@ -7298,6 +7299,7 @@ export class PlayScene {
             }
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_hijacker_hit');
             this.recordCombatProjectileHit(bullet);
+            this.recordRiftShardHit(bullet, hijacker);
             const destroyed = this.applyCombatDamage(hijacker, bullet.damage, getCombatDamageSourceForBullet(bullet));
             this.triggerChainLightning(hijacker, bullet.damage);
 
@@ -7463,6 +7465,7 @@ export class PlayScene {
             collisionStats.playerBulletAmbientHits += 1;
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_ambient_hit');
             this.recordCombatProjectileHit(bullet);
+            this.recordRiftShardHit(bullet, bonusDrone);
             const destroyed = this.applyCombatDamage(bonusDrone, bullet.damage || 1, getCombatDamageSourceForBullet(bullet));
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
@@ -7674,6 +7677,32 @@ export class PlayScene {
 
   recordCombatProjectileHit(bullet) {
     return recordCombatProjectileHit(this.combatTelemetry, bullet);
+  }
+
+  recordRiftShardHit(bullet, target) {
+    if (!bullet?.isTacticalRiftShard || !target) return false;
+    const pulse = this.player?.lastDodgeExitPulse;
+    const token = Math.max(0, Math.floor(Number(bullet.riftPulseToken) || 0));
+    if (!pulse || token <= 0 || Number(pulse.token) !== token || !Array.isArray(pulse.hits)) return false;
+    const shardIndex = Math.max(0, Math.floor(Number(bullet.riftShardIndex) || 0));
+    const targetId = String(target.id || target.type || target.kind || target.name || bullet.riftTargetId || 'unknown');
+    if (pulse.hits.some((hit) => hit.shardIndex === shardIndex && hit.targetId === targetId)) return false;
+    const hit = {
+      shardIndex,
+      intendedTargetId: bullet.riftTargetId || null,
+      targetId,
+      x: Math.round(Number(target.x) || 0),
+      y: Math.round(Number(target.y) || 0),
+      damage: Number((Number(bullet.damage) || 0).toFixed(3))
+    };
+    pulse.hits.push(hit);
+    pulse.hitCount = pulse.hits.length;
+    if (this.player?.lastTacticalFusionEvent?.id === 'rift_reprisal'
+      && Number(this.player.lastTacticalFusionEvent.token) === token) {
+      this.player.lastTacticalFusionEvent.hitCount = pulse.hits.length;
+    }
+    bullet.riftHitRecorded = true;
+    return true;
   }
 
   recordCombatVolley(bullets = []) {

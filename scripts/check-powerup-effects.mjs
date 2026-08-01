@@ -502,10 +502,20 @@ try {
           note('enemyBulletDelta', { slowDelta, normalDelta });
           break;
         }
-        case 'ghost':
+        case 'ghost': {
+          player.update(1);
+          const ghostTimer = player.getGhostTimerDebugState?.();
           assert(player.activePowerup.type === 'ghost' && player.sprite.alpha <= 0.45, `${type}: ghost alpha missing`, { alpha: player.sprite.alpha });
+          assert(ghostTimer?.visible === true && ghostTimer.remainingMs > 7000,
+            `${type}: near-ship countdown did not show accurate remaining time`, ghostTimer);
+          assert(ghostTimer.attachedToPlayer === true && ghostTimer.dominantFullRing === false,
+            `${type}: countdown should stay attached and avoid a dominant full ring`, ghostTimer);
+          assert(ghostTimer.radius <= 35 && ghostTimer.arcSpanRadians < Math.PI,
+            `${type}: countdown footprint is too large for dense bullet patterns`, ghostTimer);
           note('alpha', player.sprite.alpha);
+          note('timer', ghostTimer);
           break;
+        }
         case 'life':
           assert(game.lives === (maxLives || 7), `${type}: life did not increase beyond the old cap`, { maxLives, lives: game.lives });
           note('lives', game.lives);

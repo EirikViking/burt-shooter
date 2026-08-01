@@ -1057,6 +1057,8 @@ function buildGameTextState(game) {
       },
       statusEffects: player.getActiveStatusEffects ? player.getActiveStatusEffects() : [],
       hitboxReticle: player.getHitboxReticleDebugState ? player.getHitboxReticleDebugState() : null,
+      ghostTimer: player.getGhostTimerDebugState ? player.getGhostTimerDebugState() : null,
+      dodgeExitPulse: player.lastDodgeExitPulse ? { ...player.lastDodgeExitPulse } : null,
       tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null
     } : null,
     hijacker: hijacker?.active ? {

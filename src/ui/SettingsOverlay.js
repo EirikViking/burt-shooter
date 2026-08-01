@@ -2,6 +2,11 @@ import * as PIXI from 'pixi.js';
 import { AudioManager } from '../audio/AudioManager.js';
 import { MUSIC_PACK_OPTIONS } from '../audio/SoundCatalog.js';
 import {
+  CHATTER_FREQUENCY_OPTIONS,
+  getChatterFrequencyLabel,
+  normalizeChatterFrequency
+} from '../audio/VoicePolicy.js';
+import {
   getAccessibilitySettings,
   setColorAssistEnabled,
   setPlayerHitboxVisible,
@@ -317,6 +322,8 @@ export class SettingsOverlay {
       rightY += tighterGap;
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, rightY, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       rightY += tighterGap;
+      this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, rightY);
+      rightY += tighterGap;
       this.addMusicPackRow('MUSIC SET', settings.musicPack, rightY);
       rightY += tighterGap;
       this.addAudioTestRow('TEST', rightY);
@@ -373,6 +380,8 @@ export class SettingsOverlay {
       this.addToggleRow('Boss Voices', settings.bossVoiceEnabled, y, (enabled) => AudioManager.setBossVoiceEnabled(enabled));
       y += tighterGap;
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
+      y += tighterGap;
+      this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
       y += tighterGap;
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       y += tighterGap;
@@ -599,6 +608,35 @@ export class SettingsOverlay {
       this.languageHint.text = option.hint;
       fitTextToWidth(this.languageHint, 118, { minScale: 0.68 });
     }
+  }
+
+  addChatterFrequencyRow(label, initialValue, y) {
+    let selectedIndex = Math.max(0, CHATTER_FREQUENCY_OPTIONS.indexOf(normalizeChatterFrequency(initialValue)));
+    let buttonRef = null;
+    const updateButton = () => {
+      if (!buttonRef?._label) return;
+      buttonRef._label.text = translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex]));
+      fitTextToWidth(buttonRef._label, 150, { minScale: 0.7 });
+    };
+    this.addChoiceRow(
+      label,
+      translateText(getChatterFrequencyLabel(CHATTER_FREQUENCY_OPTIONS[selectedIndex])),
+      y,
+      (direction = 1) => {
+        selectedIndex = ((selectedIndex + Math.sign(direction || 1)) % CHATTER_FREQUENCY_OPTIONS.length + CHATTER_FREQUENCY_OPTIONS.length) % CHATTER_FREQUENCY_OPTIONS.length;
+        AudioManager.setChatterFrequency(CHATTER_FREQUENCY_OPTIONS[selectedIndex]);
+        updateButton();
+        AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+      },
+      {
+        id: 'chatter_frequency',
+        buttonWidth: 190,
+        description: 'Only non-critical chatter is reduced. Boss warnings and mission updates always play.',
+        onButton: (button) => {
+          buttonRef = button;
+        }
+      }
+    );
   }
 
   addMusicPackRow(label, initialPack, y) {
@@ -979,7 +1017,7 @@ export class SettingsOverlay {
     this.registerControl({ type: 'button', id: 'display_reset', button, label });
   }
 
-  addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null } = {}) {
+  addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null, description = null } = {}) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
 
@@ -1000,6 +1038,20 @@ export class SettingsOverlay {
     button.label = `ui_settings_${id}`;
     row.addChild(button);
     onButton?.(button);
+
+    if (description) {
+      const hint = createText(translateText(description), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 9,
+        fill: '#ffc96e',
+        align: 'center'
+      });
+      hint.anchor.set(0.5, 0);
+      hint.position.set(0, 15);
+      fitTextToWidth(hint, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.62 });
+      row.addChild(hint);
+      row._description = hint;
+    }
 
     this.container.addChild(row);
     this.rows.push(row);

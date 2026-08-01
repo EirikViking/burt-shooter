@@ -168,6 +168,8 @@ export class Player {
     this.dodgeCooldownRing = null;
     this.dodgeRing = null;
     this.dodgeText = null;
+    this.ghostTimerLayer = null;
+    this.ghostTimerText = null;
     this.dodgeFlashMs = 0;
     this.dodgeReadyFlashMs = 0;
     this.focusDriftActive = false;
@@ -526,6 +528,32 @@ export class Player {
       this.sprite.addChild(this.dodgeText);
     } else if (!this.dodgeText.parent) {
       this.sprite.addChild(this.dodgeText);
+    }
+
+    if (!this.ghostTimerLayer) {
+      this.ghostTimerLayer = new PIXI.Graphics();
+      this.ghostTimerLayer.label = 'playerGhostTimerArc';
+      this.ghostTimerLayer.visible = false;
+      this.sprite.addChild(this.ghostTimerLayer);
+    } else if (!this.ghostTimerLayer.parent) {
+      this.sprite.addChild(this.ghostTimerLayer);
+    }
+
+    if (!this.ghostTimerText) {
+      this.ghostTimerText = createText('', {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: 11,
+        fill: '#efe7ff',
+        stroke: '#080316',
+        strokeThickness: 3,
+        fontWeight: '900',
+        align: 'center'
+      });
+      this.ghostTimerText.anchor.set(0.5);
+      this.ghostTimerText.visible = false;
+      this.sprite.addChild(this.ghostTimerText);
+    } else if (!this.ghostTimerText.parent) {
+      this.sprite.addChild(this.ghostTimerText);
     }
 
     if (!this.shieldSprite) {
@@ -1592,6 +1620,7 @@ export class Player {
       this.scoreBoostExpiresAt = 0;
     }
     this.updateStatusEffects(now, timedDt / 1000);
+    this.updateGhostTimerVisual(now, visualNow);
 
     // Shield Logic
     if (this.shieldActive) {
@@ -1863,10 +1892,16 @@ export class Player {
       if (this.invulnerable) {
         this.invulnerableTime -= timedDt;
 
-        // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
-        const period = 150;
-        const phase = Math.floor(Date.now() / period) % 2;
-        this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        if (this.isGhostActive()) {
+          // Ghost opacity is itself the invulnerability cue; do not let the
+          // ordinary damage strobe intermittently make the ship fully opaque.
+          this.sprite.alpha = 0.4;
+        } else {
+          // Strobe logic: Toggle between 1.0 and 0.25 every 150ms
+          const period = 150;
+          const phase = Math.floor(Date.now() / period) % 2;
+          this.sprite.alpha = phase === 0 ? 1.0 : 0.25;
+        }
 
         if (this.invulnerableTime <= 0) {
           this.invulnerable = false;
@@ -2917,6 +2952,86 @@ export class Player {
     return this.activePowerup?.type === 'ghost' && !this.isPowerupSuppressed();
   }
 
+  updateGhostTimerVisual(now = this.getGameplayClockMs(), visualNow = Date.now()) {
+    const layer = this.ghostTimerLayer;
+    const text = this.ghostTimerText;
+    if (!layer || !text) return null;
+    const remainingMs = this.isGhostActive() ? this.getActivePowerupRemainingMs(now) : 0;
+    if (remainingMs <= 0) {
+      layer.clear();
+      layer.visible = false;
+      text.visible = false;
+      layer.__debugGhostTimer = {
+        visible: false,
+        remainingMs: 0,
+        reducedMotion: Boolean(layer.__debugGhostTimer?.reducedMotion)
+      };
+      return layer.__debugGhostTimer;
+    }
+
+    const accessibility = getAccessibilitySettings();
+    const reducedMotion = Boolean(accessibility.prefersReducedMotion);
+    const compact = Number(this.game?.getWidth?.()) < 720;
+    const durationMs = Math.max(1, Number(this.getCurrentPowerupEffect()?.durationMs) || remainingMs);
+    const progress = Math.max(0, Math.min(1, remainingMs / durationMs));
+    const radius = compact ? 30 : 35;
+    const startAngle = Math.PI * 0.16;
+    const span = Math.PI * 0.68;
+    const endAngle = startAngle + span;
+    const progressEnd = startAngle + span * progress;
+    const pulse = reducedMotion ? 0 : (Math.sin(visualNow * 0.008) * 0.5 + 0.5);
+
+    layer.clear();
+    layer.arc(0, 0, radius, startAngle, endAngle);
+    layer.stroke({ color: 0x25163c, width: 4, alpha: 0.58 });
+    layer.arc(0, 0, radius, startAngle, progressEnd);
+    layer.stroke({ color: 0xc89bff, width: 3.2, alpha: 0.7 + pulse * 0.12 });
+    for (let index = 0; index <= 6; index += 1) {
+      const angle = startAngle + span * (index / 6);
+      const inner = radius - 4;
+      const outer = radius + 3;
+      layer.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      layer.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+    }
+    layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.32 });
+    if (!reducedMotion) {
+      const beadAngle = progressEnd;
+      layer.circle(Math.cos(beadAngle) * radius, Math.sin(beadAngle) * radius, 2.5 + pulse * 0.6);
+      layer.fill({ color: 0xffffff, alpha: 0.72 });
+    }
+    layer.visible = true;
+
+    const seconds = (remainingMs / 1000).toFixed(1);
+    text.text = translateText('GHOST {seconds}s', { seconds });
+    text.position.set(0, radius + (compact ? 8 : 9));
+    text.style.fontSize = compact ? 10 : 11;
+    text.visible = true;
+    text.alpha = 0.82;
+
+    layer.__debugGhostTimer = {
+      visible: true,
+      remainingMs: Math.round(remainingMs),
+      durationMs: Math.round(durationMs),
+      progress: Number(progress.toFixed(4)),
+      seconds,
+      radius,
+      arcSpanRadians: Number(span.toFixed(3)),
+      attachedToPlayer: layer.parent === this.sprite && text.parent === this.sprite,
+      reducedMotion,
+      animatedBead: !reducedMotion,
+      dominantFullRing: false
+    };
+    return layer.__debugGhostTimer;
+  }
+
+  getGhostTimerDebugState() {
+    return this.ghostTimerLayer?.__debugGhostTimer || {
+      visible: false,
+      remainingMs: 0,
+      reducedMotion: Boolean(this.ghostTimerLayer?.__debugGhostTimer?.reducedMotion)
+    };
+  }
+
   isDefenseSuppressed() {
     return this.hasStatusEffect('shield_flicker') || this.isPowerupSuppressed();
   }
@@ -3435,10 +3550,17 @@ export class Player {
       this.lastDodgeExitPulse = {
         token,
         reason,
+        discardedReason: reason,
         cancelled: true,
         cleared: 0,
         phaseCleared: 0,
-        shards: 0
+        clearedByRadius: { trait: 0, phase: 0, combinedBonus: 0 },
+        riftEligible: 0,
+        riftCap: 5,
+        shards: 0,
+        shardsCreated: 0,
+        targets: [],
+        hits: []
       };
     }
     return token > 0;
@@ -3671,7 +3793,14 @@ export class Player {
         radius: 0,
         cleared: 0,
         phaseCleared: 0,
+        clearedByRadius: { trait: 0, phase: 0, combinedBonus: 0 },
+        riftEligible: 0,
+        riftCap: 5,
         shards: 0,
+        shardsCreated: 0,
+        targets: [],
+        hits: [],
+        discardedReason: 'no_pulse_source',
         clearAudioEvents: 0,
         fusionAudioEvents: 0
       };
@@ -3680,6 +3809,7 @@ export class Player {
 
     let cleared = 0;
     let phaseCleared = 0;
+    const clearedByRadius = { trait: 0, phase: 0, combinedBonus: 0 };
     const phaseClearedPositions = [];
     const clearReason = combinesTraitAndPhase
       ? 'combined_dodge_exit_pulse'
@@ -3692,54 +3822,106 @@ export class Player {
       if (dist > radius) return;
       playScene.bulletManager.deactivateBullet?.(bullet, clearReason);
       cleared += 1;
+      if (traitRadius > 0 && dist <= traitRadius) clearedByRadius.trait += 1;
       if (phaseContributionRadius > 0 && dist <= phaseContributionRadius) {
         phaseCleared += 1;
+        clearedByRadius.phase += 1;
         if (phaseClearedPositions.length < 5) {
           phaseClearedPositions.push({ x: Number(bullet.x) || this.x, y: Number(bullet.y) || this.y });
         }
+      }
+      if (combinedRadiusBonus > 0 && dist > Math.max(traitRadius, phaseRadius)) {
+        clearedByRadius.combinedBonus += 1;
       }
       if (playScene.particleManager) {
         playScene.particleManager.createHitSpark(bullet.x, bullet.y, this.visualVariant?.accent || 0x66ffff);
       }
     });
 
+    const riftCap = 5;
+    const riftEligible = phaseCleared;
+    let shardsCreated = 0;
+    let shardAddRejected = 0;
+    const riftTargets = [];
+    const riftHits = [];
     if (cleared > 0) {
       playScene.bulletManager.pruneInactiveBullets?.('enemy', clearReason);
       AudioManager.playSfx('forceField', { force: false, volume: 0.35 });
       if (playScene.enqueueToast) {
-        playScene.enqueueToast(`DODGE PULSE x${cleared}`, { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
+        playScene.enqueueToast(translateText('DODGE PULSE ×{count}', { count: cleared }), { fontSize: 16, fill: '#66ffff', slot: 'top', type: 'trait', duration: 800 });
       }
       if (this.runAugmentModifiers?.riftReprisal && phaseClearedPositions.length > 0) {
-        const shardCount = phaseClearedPositions.length;
+        const shardCount = Math.min(riftCap, phaseClearedPositions.length);
+        const targetPool = [
+          ...(Array.isArray(playScene.enemyManager?.enemies) ? playScene.enemyManager.enemies : []),
+          playScene.enemyManager?.hijacker,
+          playScene.enemyManager?.boss
+        ].filter((target, index, list) => target?.active && list.indexOf(target) === index);
         phaseClearedPositions.forEach((position, index) => {
-          const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.09;
+          const nearestTargets = targetPool
+            .slice()
+            .sort((a, b) => Math.hypot((a.x || 0) - position.x, (a.y || 0) - position.y)
+              - Math.hypot((b.x || 0) - position.x, (b.y || 0) - position.y));
+          const target = nearestTargets.length ? nearestTargets[index % Math.min(3, nearestTargets.length)] : null;
+          const targetId = target
+            ? String(target.id || target.type || target.kind || target.name || `target-${index + 1}`)
+            : null;
+          const spread = shardCount <= 1 ? 0 : (index - (shardCount - 1) / 2) * 0.075;
+          const speed = this.bulletSpeed * 1.36;
+          const targetDx = target ? (Number(target.x) || 0) - position.x : Math.sin(spread) * speed;
+          const targetDy = target ? (Number(target.y) || 0) - position.y : -Math.cos(spread) * speed;
+          const targetDistance = Math.max(0.001, Math.hypot(targetDx, targetDy));
+          const velocityX = target ? (targetDx / targetDistance) * speed : targetDx;
+          const velocityY = target ? (targetDy / targetDistance) * speed : targetDy;
           const shard = new Bullet(
             position.x,
             position.y,
-            Math.sin(spread) * this.bulletSpeed * 1.28,
-            -Math.cos(spread) * this.bulletSpeed * 1.28,
+            velocityX,
+            velocityY,
             Math.max(0.8, this.bulletDamage * 0.52),
             index % 2 === 0 ? 0xd86bff : 0x66ffff,
             true,
             { color: index % 2 === 0 ? 'Red' : 'Blue', index: index % 2 === 0 ? 15 : 8 }
           );
-          shard.radius = 5;
+          shard.radius = 6;
           shard.isTacticalFusionShot = true;
           shard.isTacticalRiftShard = true;
           shard.tacticalFusionId = 'rift_reprisal';
-          shard.trailLength = 46;
-          shard.pulseRate = 1.05;
+          shard.riftPulseToken = token;
+          shard.riftShardIndex = index;
+          shard.riftTargetId = targetId;
+          shard.trailLength = 72;
+          shard.pulseRate = 1.35;
           if (playScene.bulletManager.addPlayerBullet(shard)) {
             playScene.recordCombatVolley?.([shard]);
+            shardsCreated += 1;
+            riftTargets.push({
+              shardIndex: index,
+              targetId,
+              sourceX: Math.round(position.x),
+              sourceY: Math.round(position.y),
+              targetX: target ? Math.round(Number(target.x) || 0) : null,
+              targetY: target ? Math.round(Number(target.y) || 0) : null,
+              velocityX: Number(velocityX.toFixed(3)),
+              velocityY: Number(velocityY.toFixed(3))
+            });
+          } else {
+            shardAddRejected += 1;
           }
         });
-        this.tacticalFusionStats.riftShardsFired += shardCount;
+        this.tacticalFusionStats.riftShardsFired += shardsCreated;
         this.lastTacticalFusionEvent = {
           id: 'rift_reprisal',
           at: Date.now(),
+          token,
           cleared,
-          projectileCount: shardCount,
-          totalProjectiles: this.tacticalFusionStats.riftShardsFired
+          phaseCleared,
+          riftEligible,
+          riftCap,
+          projectileCount: shardsCreated,
+          totalProjectiles: this.tacticalFusionStats.riftShardsFired,
+          targets: riftTargets,
+          hits: riftHits
         };
         AudioManager.playSfx('tactical_phase_reactor', { force: true, volume: 0.5, minIntervalMs: 180 });
       }
@@ -3753,7 +3935,25 @@ export class Player {
       alpha: 0.38,
       aspect: 1.28
     });
-    const shards = this.runAugmentModifiers?.riftReprisal ? phaseClearedPositions.length : 0;
+    playScene.particleManager?.createRadialBurst?.(this.x, this.y, pulseColor, {
+      count: Math.min(22, 8 + cleared * 2),
+      intensity: 0.72,
+      minSpeed: 1.2,
+      maxSpeed: 4.8,
+      size: 2.1,
+      lifetime: 34,
+      alternateColor: this.runAugmentModifiers?.riftReprisal ? 0xd86bff : 0xffffff,
+      upwardBias: 0
+    });
+    const discardedReason = !this.runAugmentModifiers?.riftReprisal
+      ? 'rift_not_owned'
+      : riftEligible <= 0
+        ? 'no_phase_clears'
+        : shardAddRejected > 0
+          ? 'bullet_manager_rejected'
+          : riftEligible > riftCap
+            ? 'rift_cap'
+            : null;
     this.lastDodgeExitPulse = {
       token,
       reason: clearReason,
@@ -3765,9 +3965,18 @@ export class Player {
       radius,
       cleared,
       phaseCleared,
-      shards,
+      clearedByRadius,
+      riftEligible,
+      riftCap,
+      shards: shardsCreated,
+      shardsCreated,
+      shardAddRejected,
+      discardedCount: Math.max(0, riftEligible - shardsCreated),
+      discardedReason,
+      targets: riftTargets,
+      hits: riftHits,
       clearAudioEvents: cleared > 0 ? 1 : 0,
-      fusionAudioEvents: shards > 0 ? 1 : 0
+      fusionAudioEvents: shardsCreated > 0 ? 1 : 0
     };
     return this.lastDodgeExitPulse;
   }

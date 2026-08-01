@@ -41,6 +41,7 @@ import {
 import { mergeRunContractsState } from './progression/RunContracts.js';
 import { mergeShipMasteryMaps } from './progression/ShipMastery.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
+import { CHATTER_FREQUENCY_KEY, normalizeChatterFrequency } from './audio/VoicePolicy.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
 
@@ -69,7 +70,8 @@ const AUDIO_KEYS = Object.freeze({
   voiceEnabled: 'burt_voice_enabled',
   bossVoiceEnabled: 'burt_boss_voice_enabled',
   ctaVoiceEnabled: 'burt_cta_voice_enabled',
-  musicPack: 'burt_music_pack'
+  musicPack: 'burt_music_pack',
+  chatterFrequency: CHATTER_FREQUENCY_KEY
 });
 const SUPPORTED_LANGUAGE_MODES = new Set(['system', 'en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']);
 
@@ -821,6 +823,7 @@ function collectAudioSettings(storage) {
   if (has(AUDIO_KEYS.bossVoiceEnabled)) audio.bossVoiceEnabled = readStorage(storage, AUDIO_KEYS.bossVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.ctaVoiceEnabled)) audio.ctaVoiceEnabled = readStorage(storage, AUDIO_KEYS.ctaVoiceEnabled) !== 'false';
   if (has(AUDIO_KEYS.musicPack)) audio.musicPack = String(readStorage(storage, AUDIO_KEYS.musicPack) || '').slice(0, 64);
+  if (has(AUDIO_KEYS.chatterFrequency)) audio.chatterFrequency = normalizeChatterFrequency(readStorage(storage, AUDIO_KEYS.chatterFrequency));
   return audio;
 }
 
@@ -834,6 +837,9 @@ function restoreAudioSettings(storage, audio = {}) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], Boolean(audio[key]))) changed += 1;
   }
   if (audio.musicPack !== undefined && writeStorage(storage, AUDIO_KEYS.musicPack, String(audio.musicPack).slice(0, 64))) {
+    changed += 1;
+  }
+  if (audio.chatterFrequency !== undefined && writeStorage(storage, AUDIO_KEYS.chatterFrequency, normalizeChatterFrequency(audio.chatterFrequency))) {
     changed += 1;
   }
   return changed;

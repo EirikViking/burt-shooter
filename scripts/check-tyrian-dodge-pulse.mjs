@@ -8,9 +8,10 @@ globalThis.Audio = class {
   play() { return Promise.resolve(); }
 };
 
-const [{ Player }, { AudioManager }] = await Promise.all([
+const [{ Player }, { AudioManager }, { PlayScene }] = await Promise.all([
   import('../src/entities/Player.js'),
-  import('../src/audio/AudioManager.js')
+  import('../src/audio/AudioManager.js'),
+  import('../src/scenes/PlayScene.js')
 ]);
 
 const audioEvents = [];
@@ -62,6 +63,11 @@ function makeHarness({
   };
   const play = {
     bulletManager,
+    enemyManager: {
+      enemies: [{ id: 'target-alpha', active: true, x: 300, y: 80, radius: 18 }],
+      hijacker: null,
+      boss: null
+    },
     particleManager: null,
     gameContainer: null,
     enqueueToast() {
@@ -142,6 +148,7 @@ try {
   assert.equal(traitResult.cleared, 1, 'trait-only pulse should clear only bullets inside its radius');
   assert.equal(traitResult.phaseCleared, 0, 'trait-only pulse must not claim Phase clears');
   assert.equal(traitResult.shards, 0, 'trait-only pulse must not fire Rift shards');
+  assert.equal(traitResult.discardedReason, 'rift_not_owned');
   assert.equal(traitOnly.counters.deactivations, 1);
 
   audioEvents.length = 0;
@@ -168,11 +175,22 @@ try {
   assert.equal(combinedResult.cleared, 3, 'combined pulse should gain one bounded outer clear');
   assert.equal(combinedResult.phaseCleared, 2, 'only the Phase/Fusion contribution should feed Rift Reprisal');
   assert.equal(combinedResult.shards, 2, 'Rift Reprisal should return only Phase-cleared bullets');
+  assert.deepEqual(combinedResult.clearedByRadius, { trait: 2, phase: 2, combinedBonus: 1 }, 'radius/source accounting drifted');
+  assert.equal(combinedResult.riftEligible, 2);
+  assert.equal(combinedResult.riftCap, 5);
+  assert.equal(combinedResult.shardsCreated, 2);
+  assert.equal(combinedResult.targets.length, 2, 'each created Rift shard should expose its initial target trajectory');
+  assert.equal(combinedResult.discardedReason, null);
   assert.equal(combined.counters.deactivations, 3, 'a combined pulse must clear each bullet exactly once');
   assert.equal(combined.counters.playerBullets, 2, 'Rift shard count should match Phase-cleared positions');
   assert.equal(combined.counters.scoreEvents, 0, 'dodge exit clears must remain score-neutral');
   assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 1, 'combined clear must not duplicate clear audio');
   assert.equal(audioEvents.filter((event) => event.id === 'tactical_phase_reactor').length, 1, 'Rift volley must emit one Fusion audio event');
+  const firstRiftShard = combined.play.bulletManager.playerBullets[0];
+  const target = combined.play.enemyManager.enemies[0];
+  assert.equal(PlayScene.prototype.recordRiftShardHit.call({ player: combined.player }, firstRiftShard, target), true);
+  assert.equal(combinedResult.hits.length, 1, 'consolidated pulse audit must record Rift hits');
+  assert.equal(combinedResult.hits[0].intendedTargetId, 'target-alpha');
 
   audioEvents.length = 0;
   const riftCap = makeHarness({
@@ -183,6 +201,10 @@ try {
   const riftResult = runDodge(riftCap);
   assert.equal(riftResult.cleared, 7);
   assert.equal(riftResult.shards, 5, 'Rift Reprisal must keep its five-shard cap');
+  assert.equal(riftResult.riftEligible, 7);
+  assert.equal(riftResult.shardsCreated, 5);
+  assert.equal(riftResult.discardedCount, 2);
+  assert.equal(riftResult.discardedReason, 'rift_cap');
 
   audioEvents.length = 0;
   const empty = makeHarness({ traitRadius: 64, bullets: [] });
@@ -198,6 +220,7 @@ try {
   assert.equal(interrupted.player.cancelDodgeExitPulse('life_lost', { endDodge: true }), true);
   assert.equal(interrupted.player.lastDodgeExitPulse.reason, 'life_lost');
   assert.equal(interrupted.player.lastDodgeExitPulse.cancelled, true);
+  assert.equal(interrupted.player.lastDodgeExitPulse.discardedReason, 'life_lost');
   assert.equal(interrupted.player.resolveDodgeExitPulse(interruptedToken), false, 'life loss must invalidate the queued pulse');
   assert.equal(interrupted.play.bulletManager.enemyBullets[0].active, true, 'life-loss interruption must not clear bullets later');
   assert.equal(interrupted.counters.deactivations, 0);
