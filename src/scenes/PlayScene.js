@@ -138,6 +138,7 @@ import {
 } from '../progression/ThreatDiscoveryState.js';
 import { BOSS_FUEL_SHIP_CODEX_ID, getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
 import { readHangarProgressState, updateHangarProgress, writeHangarProgressState } from '../progression/HangarProgressState.js';
+import { HULL_SURPLUS_BASE_LIVES, shouldTriggerHullSurplusCabinetLog } from '../progression/CabinetLogReachability.js';
 import {
   areAllRunContractsComplete,
   applyRunContractEvent,
@@ -9186,10 +9187,16 @@ export class PlayScene {
     ));
     const effectiveMetrics = metrics.filter((entry) => !entry.unchanged);
     if (directDamageCapped && effectiveMetrics.length === 0) {
+      const cappedDamageMetrics = metrics.filter((entry) => (
+        entry.metric === 'damage' || entry.metric === 'directDps'
+      ));
       return {
         kind: 'capped',
         label: translateText('DIRECT DAMAGE CAP REACHED'),
-        value: ''
+        value: cappedDamageMetrics.map(({ before, after, definition }) => (
+          `${definition.format(before)} → ${definition.format(after)}`
+        )).join(' / '),
+        capped: true
       };
     }
     const labels = [
@@ -10131,9 +10138,13 @@ export class PlayScene {
       summary._visualLanguage = 'active_build_command_deck_v4';
     }
 
+    const shortCompact = compact && height < 600;
+    const compactCardGap = shortCompact ? 6 : 24;
     const cardWidth = compact ? Math.min(width - 42, 650) : Math.min(420, (width - 140) / 3);
-    const cardHeight = compact ? Math.max(112, Math.min(132, (height - 192) / 3 - 8)) : Math.min(460, Math.max(410, height - 420));
-    const cardTop = compact ? 178 : 246;
+    const cardHeight = compact
+      ? Math.max(shortCompact ? 104 : 112, Math.min(shortCompact ? 112 : 132, (height - 192) / 3 - 8))
+      : Math.min(460, Math.max(410, height - 420));
+    const cardTop = compact ? (shortCompact ? 174 : 178) : 246;
 
     if (state.rescan && state.hold && state.ban) {
       const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
@@ -10160,7 +10171,7 @@ export class PlayScene {
     state.cards.forEach((card, index) => {
       card.position.set(
         compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 28),
-        cardTop + cardHeight / 2 + (compact ? index * (cardHeight + 24) : 0)
+        cardTop + cardHeight / 2 + (compact ? index * (cardHeight + compactCardGap) : 0)
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
       card._draftLayout = { width: cardWidth, height: cardHeight, compact };
@@ -10171,6 +10182,15 @@ export class PlayScene {
         node.scale.set(1);
         node.updateText?.(false);
         node.scale.set(Math.min(1, Math.max(minimumScale, maxWidth / Math.max(1, node.width))));
+      };
+      const fitTextBox = (node, maxWidth, maxHeight, minimumScale = 0.42) => {
+        if (!node) return;
+        node.scale.set(1);
+        node.updateText?.(false);
+        node.scale.set(Math.min(1, Math.max(
+          minimumScale,
+          Math.min(maxWidth / Math.max(1, node.width), maxHeight / Math.max(1, node.height))
+        )));
       };
       if (compact) {
         nodes.category.anchor.set(0, 0.5);
@@ -10195,15 +10215,22 @@ export class PlayScene {
         nodes.name.style.fontSize = 17;
         nodes.name.position.set(-cardWidth / 2 + 86, -cardHeight / 2 + 39);
         nodes.description.anchor.set(0, 0.5);
-        nodes.description.style.fontSize = 11;
+        nodes.description.style.fontSize = shortCompact ? 8 : 11;
         nodes.description.style.align = 'left';
         nodes.description.style.wordWrapWidth = hasFusionBlueprint ? Math.max(175, cardWidth * 0.46) : cardWidth - 190;
-        nodes.description.position.set(-cardWidth / 2 + 86, -2);
+        nodes.description.position.set(-cardWidth / 2 + 86, shortCompact ? -7 : -2);
+        nodes.description.visible = !shortCompact;
+        fitTextBox(
+          nodes.description,
+          nodes.description.style.wordWrapWidth,
+          shortCompact ? 18 : 30,
+          shortCompact ? 0.42 : 0.55
+        );
         const compactImpactWidth = hasFusionBlueprint ? Math.max(170, cardWidth * 0.34) : Math.min(270, cardWidth - 210);
         const compactImpactX = -cardWidth / 2 + 86 + compactImpactWidth / 2;
         const compactImpactY = cardHeight / 2 - 44;
         nodes.impactBadge.position.set(compactImpactX, compactImpactY);
-        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: 30 };
+        nodes.impactBadge._pillLayout = { width: compactImpactWidth, height: shortCompact ? 24 : 30 };
         nodes.impactLabel.anchor.set(0.5);
         nodes.impactLabel.style.fontSize = 7;
         nodes.impactLabel.position.set(compactImpactX, compactImpactY - 6);
@@ -10250,6 +10277,7 @@ export class PlayScene {
           fitTextWidth(nodes.name, cardWidth - 190, 0.62);
         }
       } else {
+        nodes.description.visible = true;
         nodes.choose.anchor.set(0.5);
         nodes.category.anchor.set(0.5);
         nodes.category.position.set(0, -cardHeight / 2 + 24);
@@ -10503,7 +10531,7 @@ export class PlayScene {
       fill: 0x06131f,
       alpha: 0.9
     });
-    nodes.impactValue.visible = card._impactKind === 'stat' && Boolean(nodes.impactValue.text);
+    nodes.impactValue.visible = ['stat', 'capped'].includes(card._impactKind) && Boolean(nodes.impactValue.text);
     nodes.impactLabel.style.fill = card._impactKind === 'capped'
       ? '#fff3a0'
       : card._impactKind === 'stat'
@@ -14192,13 +14220,22 @@ export class PlayScene {
     if (gained > 0) {
       this.extraLivesEarnedThisRun = (Number(this.extraLivesEarnedThisRun) || 0) + gained;
     }
+    const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
+    const beforeLives = Number.isFinite(context.before) ? context.before : Math.max(0, currentLives - gained);
+    if (shouldTriggerHullSurplusCabinetLog({ before: beforeLives, after: currentLives, gained })) {
+      this.triggerCabinetLog('max-lives-read', {
+        source: 'life_surplus',
+        pickupSource: context.source || 'extra_life',
+        baseLives: HULL_SURPLUS_BASE_LIVES,
+        beforeLives,
+        currentLives
+      });
+    }
     const configuredMaxLives = Number(context.maxLives) || this.getMaxLives();
     const maxLives = Number.isFinite(configuredMaxLives)
       ? Math.max(1, configuredMaxLives)
       : Number.POSITIVE_INFINITY;
     if (!Number.isFinite(maxLives)) return;
-    const beforeLives = Number.isFinite(context.before) ? context.before : maxLives - 1;
-    const currentLives = Number.isFinite(lives) ? lives : Number(this.game?.lives) || 0;
     if (currentLives >= maxLives && beforeLives < maxLives) {
       this.showMaxLivesNotification({ maxLives });
     }
@@ -14235,9 +14272,6 @@ export class PlayScene {
         volume: 1.75
       });
     }
-    this.triggerCabinetLog('max-lives-read', {
-      source: 'max_lives'
-    });
     console.log(`[Lives] max_reached lives=${maxLives}`);
   }
 

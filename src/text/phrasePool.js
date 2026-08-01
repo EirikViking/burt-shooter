@@ -234,8 +234,8 @@ const cabinetLogsEn = Object.freeze([
     title: 'CABINET LOG: HULL SURPLUS',
     role: 'Sustain read',
     line: 'Extra life banked. Excellent. Spend that confidence on reading patterns, not auditioning for the next explosion.',
-    description: 'Filed for the old capped-life reward moment. Retained only for legacy copy references.',
-    tip: 'Extra lives are breathing room for mistakes, not permission to stand still.',
+    description: 'Filed when a life pickup carries the run above its normal three-hull reserve.',
+    tip: 'A surplus hull is breathing room for mistakes, not permission to stand still.',
     imageAlias: 'nova-swarm-story-comms-02-20260519',
     accent: 0x7dffcc
   }
@@ -301,11 +301,11 @@ const localizedCabinetLogs = {
     },
     {
       id: 'max-lives-read',
-      title: 'CABINET-LOG: RUMPFÃœBERSCHUSS',
+      title: 'CABINET-LOG: RUMPFÜBERSCHUSS',
       role: 'Sustain-Read',
-      line: 'Maximale Leben erreicht. Ausgezeichnet. Gib dieses Selbstvertrauen fÃ¼r Musterlesen aus, nicht fÃ¼r die nÃ¤chste Explosion.',
-      description: 'Wird beim Erreichen des Lebencaps abgelegt. Der Bonus ist Atemraum, keine Erlaubnis, Muster zu ignorieren.',
-      tip: 'Bei maximalen Leben sicher weiter punkten. Der Puffer ist fÃ¼r Fehler da, nicht fÃ¼r Stillstand.'
+      line: 'Ein Extraleben über dem normalen Drei-Hüllen-Vorrat ist gebunkert. Ausgezeichnet. Nutze das Vertrauen zum Lesen der Muster.',
+      description: 'Wird abgelegt, wenn ein Leben-Pickup den Run über den normalen Vorrat von drei Hüllen bringt.',
+      tip: 'Eine zusätzliche Hülle ist Puffer für Fehler, keine Erlaubnis zum Stillstand.'
     }
   ]
 };
@@ -318,7 +318,7 @@ localizedCabinetLogs.es = [
   ['CABINET LOG: AUDITORÃA DE CONTADOR', 'Tiempo de rasgo', 'Disparo extra conectado. El contador cuenta disparos, no segundos. Contar gritando es legal.', 'Archivado cuando un rasgo de disparo extra impacta por primera vez.', 'Disparar con ritmo llena contadores antes que esperar un temporizador.'],
   ['CABINET LOG: UN CASCO RESTANTE', 'Lectura de supervivencia', 'Una vida restante. Lectura Ãºtil: no persigas monedas salvo que reparen. El Cabinet no reembolsa heroÃ­smo.', 'Archivado al caer a una vida por primera vez.', 'Con una vida, prioriza carriles abiertos y reparaciones.'],
   ['CABINET LOG: VENTANA DE PIEDAD', 'Lectura de recuperaciÃ³n', 'Piedad del jefe activada. Esa ventana es real. AlÃ©jate ahora; dispara cuando el drama deje de pisarte.', 'Archivado cuando la piedad del jefe evita daÃ±o seguido.', 'Tras un golpe de jefe, separa primero y dispara despuÃ©s.'],
-  ['CABINET LOG: SUPERÃVIT DE CASCO', 'Lectura de sustain', 'Vidas al mÃ¡ximo. Excelente. Usa esa confianza para leer patrones, no para audicionar para la prÃ³xima explosiÃ³n.', 'Archivado al llegar al lÃ­mite de vidas.', 'Con vidas mÃ¡ximas, puntÃºa seguro. El colchÃ³n es para errores.']
+  ['CABINET LOG: SUPERÁVIT DE CASCO', 'Lectura de sustain', 'Vida extra por encima de la reserva normal de tres cascos. Excelente. Usa esa confianza para leer patrones.', 'Archivado cuando una vida recogida eleva la partida por encima de la reserva normal de tres cascos.', 'Un casco de sobra da margen para errores, no permiso para quedarse quieto.']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 localizedCabinetLogs['pt-BR'] = [
@@ -329,7 +329,7 @@ localizedCabinetLogs['pt-BR'] = [
   ['CABINET LOG: AUDITORIA DO CONTADOR', 'Tempo de traÃ§o', 'Disparo bÃ´nus acertou. O contador conta tiros disparados, nÃ£o segundos. Contar enquanto grita Ã© reconhecido.', 'Arquivado quando um traÃ§o de disparo bÃ´nus acerta.', 'Disparo constante enche contadores antes que esperar temporizadores.'],
   ['CABINET LOG: UM CASCO SOBRANDO', 'Leitura de sobrevivÃªncia', 'Uma vida restante. Leitura Ãºtil: nÃ£o persiga fichas a menos que reparem vocÃª. O Cabinet nÃ£o reembolsa heroÃ­smo.', 'Arquivado ao chegar a uma vida pela primeira vez.', 'Com uma vida, priorize rotas abertas e reparos.'],
   ['CABINET LOG: JANELA DE MISERICÃ“RDIA', 'Leitura de recuperaÃ§Ã£o', 'MisericÃ³rdia do chefe ativada. Essa janela Ã© real. Afaste-se agora, atire depois.', 'Arquivado quando a misericÃ³rdia do chefe evita dano em sequÃªncia.', 'Depois de um golpe de chefe, separe primeiro e atire depois.'],
-  ['CABINET LOG: CASCO EM EXCESSO', 'Leitura de sustain', 'Vidas no mÃ¡ximo. Excelente. Use essa confianÃ§a para ler padrÃµes, nÃ£o para testar a prÃ³xima explosÃ£o.', 'Arquivado ao atingir o limite de vidas.', 'Com vidas no mÃ¡ximo, pontue em seguranÃ§a. O colchÃ£o Ã© para erros.']
+  ['CABINET LOG: CASCO EM EXCESSO', 'Leitura de sustain', 'Vida extra acima da reserva normal de três cascos. Excelente. Use essa confiança para ler padrões.', 'Arquivado quando uma vida coletada leva a partida acima da reserva normal de três cascos.', 'Um casco excedente dá margem para erros, não permissão para ficar parado.']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 localizedCabinetLogs.ru = [
@@ -340,7 +340,7 @@ localizedCabinetLogs.ru = [
   ['CABINET LOG: АУДИТ СЧЕТЧИКА', 'Тайминг трейта', 'Бонусный выстрел попал. Счетчик считает выстрелы, а не секунды. Считать во время крика разрешено.', 'Архивируется при первом попадании бонусного трейта.', 'Ровная стрельба быстрее заполняет счетчики, чем ожидание таймера.'],
   ['CABINET LOG: ОДИН КОРПУС', 'Выживание', 'Одна жизнь. Полезно: не гонись за монетами, если они тебя не чинят. Cabinet не возвращает героизм.', 'Архивируется при первой одной жизни.', 'На одной жизни выбирай свободные линии и ремонт.'],
   ['CABINET LOG: ОКНО ПОЩАДЫ', 'Восстановление', 'Пощада босса сработала. Окно настоящее. Отойди сейчас, стреляй потом.', 'Архивируется, когда пощада босса предотвращает повторный урон.', 'После удара босса сначала разорви дистанцию, потом стреляй.'],
-  ['CABINET LOG: ЗАПАС КОРПУСОВ', 'Sustain', 'Жизни на максимуме. Отлично. Трать уверенность на чтение паттернов, а не на кастинг для следующего взрыва.', 'Архивируется при достижении лимита жизней.', 'На максимуме жизней набирай очки безопасно. Запас нужен для ошибок.']
+  ['CABINET LOG: ЗАПАС КОРПУСОВ', 'Запас прочности', 'Дополнительная жизнь сверх обычного резерва из трёх корпусов. Отлично. Используй уверенность для чтения паттернов.', 'Архивируется, когда подбор жизни поднимает запас выше обычных трёх корпусов.', 'Запасной корпус даёт право на ошибку, а не разрешение стоять на месте.']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 localizedCabinetLogs['zh-CN'] = [
@@ -351,7 +351,7 @@ localizedCabinetLogs['zh-CN'] = [
   ['CABINET 日志：计数审计', '特性时机', '奖励弹命中。计数器数的是开火次数，不是秒数。边喊边数也合法。', '奖励射击特性首次命中时归档。', '稳定开火比等计时器更快触发计数特性。'],
   ['CABINET 日志：最后一层 hull', '生存阅读', '只剩一条命。实用提示：除非能修你，否则别追硬币。Cabinet 不报销英雄主义。', '首次掉到一条命时归档。', '一条命时优先开放航道和修复拾取物。'],
   ['CABINET 日志：宽恕窗口', '恢复阅读', 'Boss 宽恕触发。这个恢复窗口是真的。先离开，再等戏剧别踩你时开火。', 'Boss mercy 阻止连续伤害时归档。', '被 Boss 打中后，先拉开距离，再开火。'],
-  ['CABINET 日志：hull 盈余', '续航阅读', '生命已满。很好。把信心花在读模式上，不要报名下一次爆炸。', '达到生命上限时归档。', '满生命时安全得分。缓冲是给失误用的。']
+  ['CABINET 日志：机体盈余', '续航阅读', '额外生命已超过常规三机体储备。很好。把这份信心用来读取弹幕。', '拾取生命使本局超过常规三机体储备时归档。', '备用机体用于容错，不是允许原地不动。']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 localizedCabinetLogs.ko = [
@@ -362,7 +362,7 @@ localizedCabinetLogs.ko = [
   ['CABINET 로그: 카운터 감사', '특성 타이밍', '보너스 샷 명중. 카운터는 초가 아니라 발사한 탄을 센다. 비명 중 계산도 인정된다.', '보너스 샷 특성이 처음 명중할 때 보관된다.', '꾸준한 발사가 타이머를 기다리는 것보다 카운터를 빨리 채운다.'],
   ['CABINET 로그: 선체 하나 남음', '생존 읽기', '목숨 하나 남았다. 쓸모 있는 읽기: 수리하지 않는 코인은 쫓지 마라. Cabinet은 영웅심을 환불하지 않는다.', '목숨 하나가 되었을 때 보관된다.', '목숨 하나일 때는 열린 라인과 수리 픽업을 우선하라.'],
   ['CABINET 로그: 자비 창', '회복 읽기', '보스 mercy 발동. 이 회복 창은 진짜다. 지금 떨어지고, 드라마가 비킬 때 쏴라.', '보스 mercy가 연속 피해를 막을 때 보관된다.', '보스에게 맞은 뒤 먼저 거리를 벌리고 나중에 쏴라.'],
-  ['CABINET 로그: 선체 여유', '유지 읽기', '목숨 최대치. 훌륭하다. 그 자신감은 패턴 읽기에 쓰고 다음 폭발 오디션에는 쓰지 마라.', '목숨 상한에 도달할 때 보관된다.', '최대 목숨일 때 안전하게 점수를 벌어라. 여유분은 실수용이다.']
+  ['CABINET 로그: 선체 여유', '생존 여유', '기본 선체 세 대를 넘는 추가 목숨을 확보했다. 훌륭하다. 그 자신감은 패턴 읽기에 써라.', '목숨 픽업으로 기본 선체 세 대의 예비분을 넘을 때 보관된다.', '남는 선체는 실수를 위한 여유지, 멈춰 설 허가는 아니다.']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 localizedCabinetLogs.ja = [
@@ -373,7 +373,7 @@ localizedCabinetLogs.ja = [
   ['CABINETログ: カウンター監査', '特性タイミング', 'ボーナスショット命中。カウンターは秒ではなく発射数を数える。叫びながら数えるのも認定済み。', 'ボーナスショット特性が初命中した時に保存される。', '安定して撃つ方がタイマー待ちより早くカウンターを進める。'],
   ['CABINETログ: 残り1船体', '生存読み', '残機1。役立つ読み: 修理しないコインは追うな。Cabinetは英雄行為を返金しない。', '初めて残機1になった時に保存される。', '残機1では開いたレーンと修理ピックアップを優先。'],
   ['CABINETログ: 慈悲ウィンドウ', '回復読み', 'ボスmercy発動。その回復時間は本物だ。今は離れ、演出が足をどけてから撃て。', 'ボスmercyが連続ダメージを防いだ時に保存される。', 'ボス被弾後はまず距離を取り、それから撃つ。'],
-  ['CABINETログ: 船体余剰', '維持読み', '残機最大。素晴らしい。その自信はパターン読みへ。次の爆発オーディションには使うな。', '残機上限に到達した時に保存される。', '最大残機では安全に稼ぐ。余裕はミス用だ。']
+  ['CABINETログ: 船体余剰', '生存余裕', '通常の3機を超える残機を確保。素晴らしい。その自信はパターン読みに使え。', '残機ピックアップで通常の3機分の予備を超えた時に保存される。', '余剰機はミスへの猶予であり、停止許可ではない。']
 ].map(([title, role, line, description, tip], index) => ({ id: cabinetLogsEn[index].id, title, role, line, description, tip }));
 
 const fragments = {

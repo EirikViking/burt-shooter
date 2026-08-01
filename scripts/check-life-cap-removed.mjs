@@ -10,7 +10,7 @@ assert.equal(Number.isFinite(BalanceConfig.survival?.maxLives), false, 'survival
 assert.equal(BalanceConfig.rewards?.bossClearRepairMaxLives, 3, 'boss-clear recovery should still only repair up to 3 lives');
 
 const gameSource = read('src/game/Game.js');
-assert.match(gameSource, /Math\.min\(this\.lives \+ 1, maxLives\)/, 'Game.gainLife should still use the shared max lives value');
+assert.match(gameSource, /Math\.min\(this\.lives \+ grantCount, maxLives\)/, 'Game.gainLife should apply the requested grant against the shared max lives value');
 assert.match(gameSource, /Number\.isFinite\(maxLives\).*after >= maxLives/s, 'Game.gainLife should only report reachedMax for finite caps');
 
 const powerupSource = read('src/managers/PowerupManager.js');

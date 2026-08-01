@@ -67,6 +67,7 @@ export class Player {
       stats: { ...(selectedMetadata.stats || {}) },
       weapon: { ...(selectedMetadata.weapon || {}) },
       visuals: { ...(selectedMetadata.visuals || {}) },
+      art: selectedMetadata.art ? { ...selectedMetadata.art } : null,
       hitbox: { ...(selectedMetadata.hitbox || { radius: 12 }) },
       trait: selectedMetadata.trait ? { ...selectedMetadata.trait } : null
     } : (ShipRegistry[shipId] || ShipRegistry.rank_ship_0);
@@ -407,7 +408,7 @@ export class Player {
 
     const sprite = new PIXI.Sprite(texture);
     sprite.anchor.set(0.5);
-    if (Number.isFinite(this.visualVariant?.tint)) {
+    if (Number.isFinite(this.visualVariant?.tint) && this.config?.art?.temporaryFallback !== false) {
       sprite.tint = this.visualVariant.tint;
     }
 
@@ -1250,6 +1251,7 @@ export class Player {
           stats: { ...(metadata.stats || {}) },
           weapon: { ...(metadata.weapon || {}) },
           visuals: { ...(metadata.visuals || {}) },
+          art: metadata.art ? { ...metadata.art } : null,
           hitbox: { ...(metadata.hitbox || { radius: 12 }) },
           trait: metadata.trait ? { ...metadata.trait } : null,
           spriteKey: metadata.spriteKey

@@ -205,7 +205,7 @@ export class SettingsOverlay {
     });
 
     const isCompact = width < 760 || height < 680;
-    const twoColumn = width >= 980 && height >= 660;
+    const twoColumn = width >= 900 && height >= 520;
     const panelWidth = Math.min(width * (isCompact ? 0.96 : 0.92), twoColumn ? 1080 : 700);
     const panelHeight = Math.min(height * (isCompact ? 0.96 : 0.92), twoColumn ? 760 : 860);
     const panelX = width / 2 - panelWidth / 2;
@@ -236,10 +236,10 @@ export class SettingsOverlay {
     this.container.addChild(titleText);
 
     const dense = height < 760;
-    const sectionGap = Math.round((twoColumn ? 34 : dense ? 26 : 29) * this.uiScale);
-    const rowGap = Math.round((twoColumn ? 38 : dense ? 29 : 32) * this.uiScale);
-    const tighterGap = Math.round((twoColumn ? 34 : dense ? 27 : 30) * this.uiScale);
-    const sliderGap = Math.round((twoColumn ? 32 : dense ? 28 : 30) * this.uiScale);
+    const sectionGap = Math.round((dense ? 24 : twoColumn ? 34 : 29) * this.uiScale);
+    const rowGap = Math.round((dense ? 28 : twoColumn ? 38 : 32) * this.uiScale);
+    const tighterGap = Math.round((dense ? 26 : twoColumn ? 34 : 30) * this.uiScale);
+    const sliderGap = Math.round((dense ? 26 : twoColumn ? 32 : 30) * this.uiScale);
     const footerButtonHeight = isCompact ? 32 : 38;
     const stackedButtonWidth = Math.min(240 * this.uiScale, panelWidth - 56);
     const footerY = panelY + panelHeight - (isCompact ? 26 : 38);
@@ -263,7 +263,7 @@ export class SettingsOverlay {
       this.drawSettingsSectionFrame(rightX, contentTop, columnWidth, columnHeight, 0xff55d9);
 
       setFormColumn(leftX);
-      let leftY = contentTop + Math.round(22 * this.uiScale);
+      let leftY = contentTop + Math.round((dense ? 16 : 22) * this.uiScale);
       this.addSectionLabel('DISPLAY', leftY);
       leftY += sectionGap;
       this.addDisplayModeRow('Display Mode', leftY);
@@ -273,7 +273,7 @@ export class SettingsOverlay {
       this.addUiScaleRow('UI Scale', leftY);
       leftY += rowGap;
       this.addDisplayResetRow('Safe Reset', leftY);
-      leftY += Math.round(40 * this.uiScale);
+      leftY += Math.round((dense ? 28 : 40) * this.uiScale);
       this.addSectionLabel('GAMEPLAY', leftY);
       leftY += sectionGap;
       this.addToggleRow('Confirm Exit', menuSettings.confirmExit, leftY, (enabled) => saveMenuSettings({ confirmExit: enabled }), {
@@ -293,7 +293,7 @@ export class SettingsOverlay {
           this.pilotOrdersButton = button;
         }
       });
-      leftY += Math.round(40 * this.uiScale);
+      leftY += Math.round((dense ? 28 : 40) * this.uiScale);
       this.addSectionLabel('ACCESSIBILITY', leftY);
       leftY += sectionGap;
       this.addSliderRow('SHAKE', 'screenShake', accessibility.screenShake, leftY, {
@@ -311,7 +311,7 @@ export class SettingsOverlay {
       this.addToggleRow('COLOR AID', accessibility.colorAssist, leftY, setColorAssistEnabled);
 
       setFormColumn(rightX);
-      let rightY = contentTop + Math.round(22 * this.uiScale);
+      let rightY = contentTop + Math.round((dense ? 16 : 22) * this.uiScale);
       this.addSectionLabel('AUDIO', rightY);
       rightY += sectionGap;
       this.addToggleRow('MUSIC', settings.musicEnabled, rightY, (enabled) => AudioManager.setMusicEnabled(enabled));
@@ -323,7 +323,7 @@ export class SettingsOverlay {
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, rightY, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       rightY += tighterGap;
       this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, rightY);
-      rightY += tighterGap;
+      rightY += Math.round((dense ? 42 : 44) * this.uiScale);
       this.addMusicPackRow('MUSIC SET', settings.musicPack, rightY);
       rightY += tighterGap;
       this.addAudioTestRow('TEST', rightY);
@@ -382,7 +382,7 @@ export class SettingsOverlay {
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       y += tighterGap;
       this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
-      y += tighterGap;
+      y += Math.round((dense ? 42 : 44) * this.uiScale);
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       y += tighterGap;
       this.addAudioTestRow('TEST', y);
@@ -461,6 +461,21 @@ export class SettingsOverlay {
     return Number.isFinite(this.formColumnWidth) ? this.formColumnWidth : Math.min(560, this.game.getWidth() - 72);
   }
 
+  getFormRowMetrics() {
+    const columnWidth = this.getFormColumnWidth();
+    const compactColumn = columnWidth < 540;
+    return {
+      compactColumn,
+      labelX: compactColumn ? -104 : -154,
+      labelWidth: compactColumn ? 100 : 132,
+      choiceX: compactColumn ? 58 : 34,
+      choiceWidth: compactColumn ? Math.min(180, Math.max(150, columnWidth * 0.43)) : 190,
+      sliderWidth: compactColumn
+        ? Math.min(190, Math.max(150, columnWidth - 228))
+        : Math.min(250, Math.max(178, columnWidth - 230))
+    };
+  }
+
   drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
     const frame = new PIXI.Graphics();
     frame.roundRect(x, y, width, height, 8);
@@ -514,6 +529,7 @@ export class SettingsOverlay {
   addAudioTestRow(label, y) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -521,7 +537,8 @@ export class SettingsOverlay {
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
     row.addChild(labelText);
 
     const sfxButton = this.createButton('SFX', -46, 0, () => this.playAudioTest('sfx'), { width: 96, height: 30 });
@@ -549,6 +566,7 @@ export class SettingsOverlay {
   addLanguageRow(label, y) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -556,7 +574,8 @@ export class SettingsOverlay {
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
     row.addChild(labelText);
 
     const options = getLanguageOptions();
@@ -570,7 +589,7 @@ export class SettingsOverlay {
       AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
     };
 
-    const button = this.createButton(selected().label, 18, 0, () => {
+    const button = this.createButton(selected().label, metrics.compactColumn ? 50 : 18, 0, () => {
       cycle(1).catch((error) => console.warn('[SettingsOverlay] Language change failed:', error));
     }, { width: 170, height: 30 });
     button.label = 'ui_settingsLanguage';
@@ -583,7 +602,8 @@ export class SettingsOverlay {
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
-    hint.x = 116;
+    hint.x = metrics.compactColumn ? 150 : 116;
+    fitTextToWidth(hint, metrics.compactColumn ? 52 : 118, { minScale: 0.62 });
     this.languageHint = hint;
     row.addChild(hint);
 
@@ -642,6 +662,7 @@ export class SettingsOverlay {
   addMusicPackRow(label, initialPack, y) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -649,12 +670,13 @@ export class SettingsOverlay {
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
     row.addChild(labelText);
 
     let selectedIndex = Math.max(0, MUSIC_PACK_OPTIONS.findIndex((option) => option.id === initialPack));
     const selected = () => MUSIC_PACK_OPTIONS[selectedIndex] || MUSIC_PACK_OPTIONS[0];
-    const button = this.createButton(selected().label, 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
+    const button = this.createButton(selected().label, metrics.compactColumn ? 50 : 18, 0, () => cycleMusicPack(1), { width: 170, height: 30 });
     button.label = 'ui_settingsMusicPack';
     this.musicPackButton = button;
     fitTextToWidth(button._label, 132);
@@ -666,7 +688,8 @@ export class SettingsOverlay {
       fill: '#ffc96e'
     });
     hint.anchor.set(0, 0.5);
-    hint.x = 116;
+    hint.x = metrics.compactColumn ? 150 : 116;
+    fitTextToWidth(hint, metrics.compactColumn ? 52 : 118, { minScale: 0.62 });
     row.addChild(hint);
 
     const updateDisplay = (pack) => {
@@ -699,6 +722,7 @@ export class SettingsOverlay {
   addSliderRow(label, kind, initialValue, y, { onChange = null } = {}) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
     const labelText = createText(label, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -706,10 +730,11 @@ export class SettingsOverlay {
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
     row.addChild(labelText);
 
-    const trackWidth = Math.min(250, Math.max(178, this.getFormColumnWidth() - 230));
+    const trackWidth = metrics.sliderWidth;
     const track = new PIXI.Graphics();
     const knob = new PIXI.Graphics();
     const focus = new PIXI.Graphics();
@@ -1020,6 +1045,7 @@ export class SettingsOverlay {
   addChoiceRow(label, valueLabel, y, onCycle, { id, buttonWidth = 190, onButton = null, description = null } = {}) {
     const row = new PIXI.Container();
     row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
 
     const labelText = createText(translateText(label), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
@@ -1027,14 +1053,15 @@ export class SettingsOverlay {
       fill: '#9befff'
     });
     labelText.anchor.set(1, 0.5);
-    labelText.x = -154;
-    fitTextToWidth(labelText, 132, { minScale: 0.7 });
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
     row.addChild(labelText);
 
     const cycle = (direction = 1) => {
       Promise.resolve(onCycle?.(direction)).catch((error) => console.warn('[SettingsOverlay] Choice update failed:', error));
     };
-    const button = this.createButton(valueLabel, 34, 0, () => cycle(1), { width: buttonWidth, height: 30 });
+    const resolvedButtonWidth = metrics.compactColumn ? Math.min(buttonWidth, metrics.choiceWidth) : buttonWidth;
+    const button = this.createButton(valueLabel, metrics.choiceX, 0, () => cycle(1), { width: resolvedButtonWidth, height: 30 });
     button.label = `ui_settings_${id}`;
     row.addChild(button);
     onButton?.(button);
@@ -1044,11 +1071,13 @@ export class SettingsOverlay {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: 9,
         fill: '#ffc96e',
-        align: 'center'
+        align: 'center',
+        wordWrap: true,
+        wordWrapWidth: Math.max(210, this.getFormColumnWidth() - 44)
       });
       hint.anchor.set(0.5, 0);
       hint.position.set(0, 15);
-      fitTextToWidth(hint, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.62 });
+      fitTextToWidth(hint, Math.max(210, this.getFormColumnWidth() - 44), { minScale: 0.45 });
       row.addChild(hint);
       row._description = hint;
     }

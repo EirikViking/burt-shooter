@@ -851,6 +851,7 @@ const sourceText = Object.freeze({
   'Reduced': '减少',
   'Minimal': '最少',
   'Only non-critical chatter is reduced. Boss warnings and mission updates always play.': '仅减少非关键闲聊。首领警告和任务更新始终播放。',
+  'CLEARS ×{count}': '通关 ×{count}',
   'MUSIC SET': '音乐模式',
   'TEST': '测试',
   'TEST SFX': '测试 SFX',

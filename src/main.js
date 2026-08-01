@@ -892,6 +892,7 @@ function buildGameTextState(game) {
         badgeBounds: getBoundsDebug(shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.firstFlightBadge),
         eligibleShipCount: (shipSelectScene.shipCards || []).filter(card => card?.firstFlightEligible).length
       },
+      mastery: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.masteryBadge?.__debugMastery || null,
       careerSignal: shipSelectScene.leftIntel ? {
         count: shipSelectScene.leftIntel.count?.text || null,
         progress: shipSelectScene.leftIntel.progress?.text || null,
@@ -1059,6 +1060,7 @@ function buildGameTextState(game) {
       hitboxReticle: player.getHitboxReticleDebugState ? player.getHitboxReticleDebugState() : null,
       ghostTimer: player.getGhostTimerDebugState ? player.getGhostTimerDebugState() : null,
       dodgeExitPulse: player.lastDodgeExitPulse ? { ...player.lastDodgeExitPulse } : null,
+      cockpitMastery: playScene?.hud?.livesGroup?._debugShipMastery || null,
       tractorDebuff: player.getTractorDebuffState ? player.getTractorDebuffState() : null
     } : null,
     hijacker: hijacker?.active ? {

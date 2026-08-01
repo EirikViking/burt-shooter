@@ -910,6 +910,7 @@ const sourceText = Object.freeze({
   'Reduced': 'Reduziert',
   'Minimal': 'Minimal',
   'Only non-critical chatter is reduced. Boss warnings and mission updates always play.': 'Nur unkritische Sprüche werden reduziert. Bosswarnungen und Missionsmeldungen werden immer abgespielt.',
+  'CLEARS ×{count}': 'ABSCHLÜSSE ×{count}',
   'MUSIC SET': 'MUSIKSTIL',
   'TEST': 'TEST',
   'TEST SFX': 'SFX TESTEN',

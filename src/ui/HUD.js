@@ -17,6 +17,8 @@ import {
   NOVA_COMMAND_HUD_TOKENS,
   createNovaCommandFrame
 } from './NovaCommandHud.js';
+import { getShipMetadata, getShipUnlockProgress } from '../config/ShipMetadata.js';
+import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
 
 const FONT_BODY = 'Rajdhani, Orbitron, Bahnschrift, Segoe UI, sans-serif';
 const FONT_MONO = 'Rajdhani, Orbitron, Bahnschrift, sans-serif';
@@ -50,6 +52,9 @@ export class HUD {
   constructor(container, game) {
     this.container = container;
     this.game = game;
+    const selectedShip = getShipMetadata(game?.selectedShipSpriteKey);
+    const shipProgress = getShipUnlockProgress();
+    this.shipMasteryView = getShipMasteryView(shipProgress?.shipSpecificMilestones?.[selectedShip?.id]);
     this.hudContainer = new PIXI.Container();
     this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);
@@ -243,6 +248,18 @@ export class HUD {
       strokeThickness: 3
     });
     this.livesGroup.addChild(this.livesText);
+    this.shipMasteryMedals = new PIXI.Graphics();
+    this.shipMasteryMedals.label = 'cockpitShipMasteryMedals';
+    this.shipMasteryText = createText('', {
+      fontFamily: FONT_BODY,
+      fontSize: 9,
+      fontWeight: '900',
+      fill: '#d8fbff',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    this.livesGroup.addChild(this.shipMasteryMedals);
+    this.livesGroup.addChild(this.shipMasteryText);
     this.hudContainer.addChild(this.livesGroup);
 
     // Active powerup indicator
@@ -2613,12 +2630,25 @@ export class HUD {
     const pulse = critical ? 0.5 + Math.sin(Date.now() * 0.014) * 0.5 : 0;
     this.livesIcon.visible = false;
     this.livesText.style.fill = critical ? (pulse > 0.52 ? '#ff716d' : '#ffd166') : '#d9ffb8';
-    const height = Math.max(38, this.livesText.height + padding + 2);
+    const mastery = this.shipMasteryView || getShipMasteryView();
+    this.shipMasteryText.text = translateText('CLEARS ×{count}', { count: mastery.clears });
+    const height = Math.max(54, this.livesText.height + this.shipMasteryText.height + padding + 7);
     this.livesGroup.pivot.set(0, 0);
-    this.livesText.x = Math.max(38, Math.round(height * 0.92));
-    this.livesText.y = height / 2 - this.livesText.height / 2;
-    const width = Math.max(138, this.livesText.x + this.livesText.width + padding);
+    this.livesText.x = 48;
+    this.livesText.y = 5;
+    this.shipMasteryText.x = 48;
+    this.shipMasteryText.y = this.livesText.y + this.livesText.height + 1;
+    const width = Math.max(154, this.livesText.x + Math.max(this.livesText.width, this.shipMasteryText.width) + padding);
     this.livesBg.clear();
+    this.shipMasteryMedals.clear();
+    [SHIP_MASTERY_TIERS.bronze, SHIP_MASTERY_TIERS.silver, SHIP_MASTERY_TIERS.gold].forEach((tier, medalIndex) => {
+      const earned = mastery.tier.rank >= tier.rank;
+      const medalX = 14 + medalIndex * 11;
+      const medalY = height - 14;
+      this.shipMasteryMedals.circle(medalX, medalY, 3.8);
+      this.shipMasteryMedals.fill({ color: earned ? tier.color : 0x173044, alpha: earned ? 0.96 : 0.68 });
+      this.shipMasteryMedals.stroke({ color: earned ? 0xffffff : 0x527084, width: earned ? 1 : 0.7, alpha: earned ? 0.78 : 0.42 });
+    });
     this.livesArt.width = width;
     this.livesArt.height = height;
     this.livesArt.tint = critical ? (pulse > 0.52 ? 0xff6a6a : 0xffd166) : 0xb8ffd0;
@@ -2626,6 +2656,13 @@ export class HUD {
     this.livesGroup._debugCritical = critical;
     this.livesGroup._debugPulse = Number(pulse.toFixed(3));
     this.livesGroup._debugPriority = 'critical';
+    this.livesGroup._debugShipMastery = {
+      tier: mastery.tier.id,
+      medalCount: mastery.medalCount,
+      clears: mastery.clears,
+      tally: this.shipMasteryText.text,
+      rewardsAdded: false
+    };
     this.livesGroup._debugVisual = {
       authoredCapsuleReady: GameAssets.isValidTexture(this.livesArt.texture),
       primitiveOrnamentCount: 0,

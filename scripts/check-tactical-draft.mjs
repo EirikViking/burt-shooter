@@ -1018,7 +1018,9 @@ try {
     && runtime.preview.ineffectiveCapOfferIds.includes('damage_up'),
   `damage-only cap was not recognized as an ineffective offer: ${JSON.stringify(runtime.preview)}`);
   assert(runtime.preview.damageCapFormat.kind === 'capped'
-    && runtime.preview.damageCapFormat.label === 'DIRECT DAMAGE CAP REACHED',
+    && runtime.preview.damageCapFormat.label === 'DIRECT DAMAGE CAP REACHED'
+    && /^\d+(?:\.\d+)? → \d+(?:\.\d+)?$/.test(runtime.preview.damageCapFormat.value)
+    && runtime.preview.damageCapFormat.value.split(' → ')[0] === runtime.preview.damageCapFormat.value.split(' → ')[1],
   `damage cap did not produce explicit player-facing copy: ${JSON.stringify(runtime.preview.damageCapFormat)}`);
   assert(runtime.preview.mixedDamageCapFormat.kind === 'stat'
     && /DIRECT DAMAGE CAP REACHED/.test(runtime.preview.mixedDamageCapFormat.label)

@@ -35,6 +35,7 @@ import {
   getHangarRecommendationKey,
   isHangarRecommendationAcknowledged
 } from '../config/HangarRecommendationSettings.js';
+import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -2354,7 +2355,11 @@ export class ShipSelectScene {
     const tierLabel = getShipTierLabel(ship);
 
     const heroY = this.layout.isMobile ? -38 : -58;
-    const heroSize = this.layout.isMobile ? 128 : 172;
+    const baseHeroSize = this.layout.isMobile ? 128 : 172;
+    const prestigeScale = ship.art?.inscription
+      ? (this.layout.showSideIntel ? 1.24 : 1.05)
+      : 1;
+    const heroSize = Math.round(baseHeroSize * prestigeScale);
     container.heroY = heroY;
 
     const pedestal = new PIXI.Graphics();
@@ -2406,12 +2411,13 @@ export class ShipSelectScene {
     container.lightRays = lightRays;
 
     // Ship sprite (large for better visibility)
-    const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex);
+    const shipTexture = GameAssets.getRankShipTexture(ship.textureIndex)
+      || await GameAssets.ensureRankShipTexture(ship.textureIndex);
     if (shipTexture && shipTexture.width > 0) {
       const sprite = new PIXI.Sprite(shipTexture);
       sprite.anchor.set(0.5);
       sprite.position.set(0, heroY);
-      if (Number.isFinite(variant?.tint)) {
+      if (Number.isFinite(variant?.tint) && ship.art?.temporaryFallback !== false) {
         sprite.tint = variant.tint;
       }
 
@@ -2515,6 +2521,50 @@ export class ShipSelectScene {
       container.firstFlightBadge = badge;
       container.firstFlightBadgeText = badgeText;
     }
+
+    const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[ship.id]);
+    const masteryBadge = new PIXI.Container();
+    masteryBadge.label = 'hangarShipMasteryBadge';
+    const masteryWidth = this.layout.isMobile ? 112 : 132;
+    const masteryHeight = this.layout.isMobile ? 27 : 31;
+    masteryBadge.position.set(
+      heroSize * (this.layout.isMobile ? 0.38 : 0.42),
+      heroY + heroSize * (this.layout.isMobile ? 0.36 : 0.38)
+    );
+    const masteryBg = new PIXI.Graphics();
+    masteryBg.roundRect(0, 0, masteryWidth, masteryHeight, 7);
+    masteryBg.fill({ color: 0x020711, alpha: 0.92 });
+    masteryBg.stroke({ color: mastery.tier.color, width: 1.4, alpha: mastery.tier.rank > 0 ? 0.88 : 0.44 });
+    masteryBadge.addChild(masteryBg);
+    [SHIP_MASTERY_TIERS.bronze, SHIP_MASTERY_TIERS.silver, SHIP_MASTERY_TIERS.gold].forEach((tier, medalIndex) => {
+      const earned = mastery.tier.rank >= tier.rank;
+      const medal = new PIXI.Graphics();
+      const medalX = 13 + medalIndex * (this.layout.isMobile ? 14 : 16);
+      medal.circle(medalX, masteryHeight / 2, this.layout.isMobile ? 4.3 : 5.2);
+      medal.fill({ color: earned ? tier.color : 0x173044, alpha: earned ? 0.98 : 0.72 });
+      medal.stroke({ color: earned ? 0xffffff : 0x527084, width: earned ? 1.2 : 0.8, alpha: earned ? 0.82 : 0.45 });
+      masteryBadge.addChild(medal);
+    });
+    const clearTally = createText(translateText('CLEARS ×{count}', { count: mastery.clears }), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: this.layout.isMobile ? 8 : 9,
+      fill: mastery.tier.rank > 0 ? hexColor(mastery.tier.color) : '#91a8b8',
+      fontWeight: '900',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    clearTally.anchor.set(0, 0.5);
+    clearTally.position.set(this.layout.isMobile ? 58 : 67, masteryHeight / 2);
+    masteryBadge.addChild(clearTally);
+    masteryBadge.__debugMastery = {
+      tier: mastery.tier.id,
+      medalCount: mastery.medalCount,
+      clears: mastery.clears,
+      tally: clearTally.text,
+      rewardsAdded: false
+    };
+    container.addChild(masteryBadge);
+    container.masteryBadge = masteryBadge;
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {
@@ -2644,6 +2694,7 @@ export class ShipSelectScene {
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
       if (shipContainer.firstFlightBadge) shipContainer.firstFlightBadge.visible = isCenter;
+      if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
       if (shipContainer.lockPlate) shipContainer.lockPlate.visible = isCenter;
       if (shipContainer.lockText) shipContainer.lockText.visible = isCenter;
