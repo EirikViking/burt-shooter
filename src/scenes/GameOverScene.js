@@ -2505,9 +2505,17 @@ export class GameOverScene {
       return;
     }
     const padX = layout.isMobile ? 20 : 28;
-    const padY = layout.isMobile ? 10 : 12;
+    const compactRunbackDesktop = this.state === 'runback' && !layout.isMobile && layout.height < 820;
+    // Compact result screens already use measured stack spacing. Reduce only
+    // the card's internal vertical padding so the visible card-to-card gap
+    // does not collapse on short desktop viewports or push the CTA below the
+    // safe footer.
+    const padY = layout.isMobile ? 10 : compactRunbackDesktop ? 10 : 12;
     const widthRatio = Number.isFinite(options.widthRatio) ? options.widthRatio : (layout.isMobile ? 0.88 : 0.58);
-    const minHeight = Number.isFinite(options.minHeight) ? options.minHeight : (layout.isMobile ? 52 : 62);
+    const requestedMinHeight = Number.isFinite(options.minHeight) ? options.minHeight : (layout.isMobile ? 52 : 62);
+    const minHeight = compactRunbackDesktop && !Number.isFinite(options.minHeight)
+      ? Math.max(48, requestedMinHeight - 2)
+      : requestedMinHeight;
     const width = Math.min(layout.width * widthRatio, Math.max(260, textNode.width + padX * 2));
     const height = Math.max(minHeight, textNode.height + padY * 2);
     const x = textNode.x - width / 2;

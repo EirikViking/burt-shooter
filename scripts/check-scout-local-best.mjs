@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {
   SCOUT_RUN_RECORDS_KEY,
+  compareScoutRunRecords,
   getScoutRunBest,
   isBetterScoutRunRecord,
   readScoutRunRecords,
@@ -92,5 +93,18 @@ assert.equal(getScoutRunBest({ targetStorage: storage }).sectorReached, 11);
 const duplicate = recordScoutRun(sameScoreDeeper, { targetStorage: storage });
 assert.equal(duplicate.stored, false, 'Running the same Scout best twice should be idempotent');
 assert.equal(getScoutRunBest({ targetStorage: storage }).score, 150000);
+
+const sameScoreSameDepthLater = {
+  ...sameScoreDeeper,
+  completedAt: '2099-01-01T00:00:00.000Z'
+};
+assert.equal(compareScoutRunRecords(sameScoreSameDepthLater, deeper.bestRecord), 0,
+  'Equal score/depth ties must remain a deterministic tie regardless of completion timestamp');
+assert.equal(isBetterScoutRunRecord(sameScoreSameDepthLater, deeper.bestRecord), false,
+  'A later identical Scout score must not replace the existing local best');
+const laterTie = recordScoutRun(sameScoreSameDepthLater, { targetStorage: storage });
+assert.equal(laterTie.stored, false, 'A later identical Scout score must remain idempotent');
+assert.equal(laterTie.bestRecord.completedAt, deeper.bestRecord.completedAt,
+  'An exact tie must preserve the incumbent record metadata');
 
 console.log('[check-scout-local-best] PASS');

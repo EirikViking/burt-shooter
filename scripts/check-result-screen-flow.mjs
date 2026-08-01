@@ -163,6 +163,50 @@ async function runSteamGameOver(page, {
   await page.waitForTimeout(100);
 }
 
+async function runScoutGameOver(page, {
+  score,
+  level,
+  runSummary,
+  hangarProgress
+}) {
+  await page.evaluate((scenario) => {
+    localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(scenario.hangarProgress || {}));
+    localStorage.removeItem('burt.shipUnlockProgress.v1');
+    localStorage.removeItem('novaSwarm.localLeaderboard.v2');
+    const game = window.__game;
+    game.runMode = 'scout';
+    game.runModeReason = 'scout_run';
+    game.isDebugRun = false;
+    game.runSummary = {
+      ...(scenario.runSummary || {}),
+      runMode: 'scout',
+      levelReached: scenario.level,
+      sectorReached: scenario.level,
+      score: scenario.score,
+      finalScore: scenario.score,
+      pilotXpGained: 0,
+      runElapsedSeconds: scenario.runSummary?.runElapsedSeconds ?? 0
+    };
+    game.score = scenario.score;
+    game.level = scenario.level;
+    game.lives = 0;
+    game.switchScene('gameOver');
+  }, { score, level, runSummary, hangarProgress });
+
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.scene === 'gameOver' &&
+      state.gameOver?.state === 'runback' &&
+      state.scoreSubmissionAllowed === false;
+  }, null, { timeout: 12000 });
+  await page.evaluate(() => {
+    const scene = window.__game?.scenes?.gameOver;
+    scene?.refreshPrimaryCta?.();
+    scene?.layoutScreen?.();
+  });
+  await page.waitForTimeout(100);
+}
+
 async function readScenario(page) {
   return page.evaluate(() => {
     const scene = window.__game?.scenes?.gameOver;
@@ -332,8 +376,8 @@ function assertCelebrationReadable(snapshot, label) {
 
 function assertFrameSpacing(snapshot, label) {
   [
-    ['run-summary-card', 'rank-progress-card', 10],
-    ['rank-progress-card', 'ship-progress-card', 10],
+    ['run-summary-card', 'rank-progress-card', 12],
+    ['rank-progress-card', 'ship-progress-card', 12],
     ['ship-progress-card', 'leaderboard', 10],
     ['leaderboard', 'next-goal-card', 12],
     ['next-goal-card', 'one-more-run-button', 28]
@@ -411,6 +455,18 @@ function assertLowRun(snapshot) {
   if (!/Next rank:/i.test(text) || !/XP to next:/i.test(text)) {
     throw new Error(`Low-score run did not show next rank and XP-to-next:\n${text}`);
   }
+}
+
+function assertScoutRun(snapshot) {
+  const text = snapshot.visibleText;
+  if (!/SCOUT RUN/i.test(text) || !/No leaderboard submission/i.test(text)) {
+    throw new Error(`Scout result did not retain local-only copy:\n${text}`);
+  }
+  if (/Steamboard|Steam Board|Steam board/i.test(text)) {
+    throw new Error(`Scout result exposed ranked-board copy:\n${text}`);
+  }
+  assertVerticalGap(snapshot, 'run-summary-card', 'rank-progress-card', 12, 'Scout result cards');
+  assertVerticalGap(snapshot, 'rank-progress-card', 'leaderboard', 12, 'Scout result cards');
 }
 
 function assertNumberOneRun(snapshot) {
@@ -568,6 +624,32 @@ try {
   await lowPage.screenshot({ path: path.join(outputDir, 'low-score-best-unchanged.png'), fullPage: true });
   await lowPage.close();
 
+  const scoutPage = await openScenarioPage(browser, consoleEvents);
+  await runScoutGameOver(scoutPage, {
+    score: 120000,
+    level: 8,
+    hangarProgress: {
+      version: 1,
+      pilotXp: 0,
+      pilotRank: 1,
+      bestScore: 0,
+      bestSector: 1,
+      bestLevel: 1
+    },
+    runSummary: {
+      runElapsedSeconds: 240,
+      scoutRunBest: { score: 125000, sectorReached: 9, levelReached: 9 },
+      scoutRunNewBest: false
+    }
+  });
+  const scoutInitial = await readScenario(scoutPage);
+  assertScoutRun(scoutInitial);
+  assertNoOverlaps(scoutInitial, 'Scout result initial render');
+  assertFrameSpacing(scoutInitial, 'Scout result initial render');
+  const scoutAfterRelayout = await assertRelayoutStable(scoutPage, 'Scout result');
+  await scoutPage.screenshot({ path: path.join(outputDir, 'scout-run-local-best.png'), fullPage: true });
+  await scoutPage.close();
+
   const report = {
     status: 'passed',
     baseUrl,
@@ -580,6 +662,8 @@ try {
     numberOneAfterRelayout,
     lowInitial,
     lowAfterRelayout,
+    scoutInitial,
+    scoutAfterRelayout,
     consoleEvents
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

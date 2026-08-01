@@ -85,15 +85,22 @@ export function getScoutRunBest(options = {}) {
   return readScoutRunRecords(options).best;
 }
 
-export function isBetterScoutRunRecord(candidate, previous) {
+export function compareScoutRunRecords(candidate, previous) {
   const next = normalizeScoutRunRecord(candidate);
   const current = normalizeScoutRunRecord(previous);
-  if (!next) return false;
-  if (!current) return true;
-  if (next.score !== current.score) return next.score > current.score;
-  if (next.sectorReached !== current.sectorReached) return next.sectorReached > current.sectorReached;
-  if (next.levelReached !== current.levelReached) return next.levelReached > current.levelReached;
-  return Date.parse(next.completedAt) > Date.parse(current.completedAt);
+  if (!next) return -1;
+  if (!current) return 1;
+  if (next.score !== current.score) return next.score > current.score ? 1 : -1;
+  if (next.sectorReached !== current.sectorReached) return next.sectorReached > current.sectorReached ? 1 : -1;
+  if (next.levelReached !== current.levelReached) return next.levelReached > current.levelReached ? 1 : -1;
+
+  // Exact score/depth ties are a tie. Wall-clock completion time is not a
+  // gameplay result and must not make an identical local best flip-flop.
+  return 0;
+}
+
+export function isBetterScoutRunRecord(candidate, previous) {
+  return compareScoutRunRecords(candidate, previous) > 0;
 }
 
 export function createScoutRunRecord(summary = {}, {
