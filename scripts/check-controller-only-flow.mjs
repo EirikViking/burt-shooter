@@ -334,7 +334,17 @@ try {
     afterRightIndex: afterRight.shipSelect?.selectedIndex,
     afterLeftIndex: afterLeft.shipSelect?.selectedIndex
   });
+  const beforeDetails = await readState(page);
   await tapButton(page, 2);
+  if (beforeDetails.shipSelect?.recommended?.bannerVisible) {
+    const recommendationDismissed = await waitForState(
+      page,
+      (state) => state.scene === 'shipSelect' && state.shipSelect?.recommended?.bannerVisible === false,
+      'Hangar recommendation dismissed by controller X'
+    );
+    checkpoint('ship-select-recommendation-dismissed', recommendationDismissed);
+    await tapButton(page, 2);
+  }
   const details = await waitForState(page, (state) => state.scene === 'shipDetails', 'ship details opened by controller X');
   checkpoint('ship-details-open', details, { screenshot: await screenshot(page, '08-ship-details-open') });
   await tapButton(page, 1);
