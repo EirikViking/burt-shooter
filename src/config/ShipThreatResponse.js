@@ -11,6 +11,15 @@ function round(value, digits = 3) {
   return Math.round(value * scale) / scale;
 }
 
+export function getHybridDraftMovementMultiplier(baseSpeed, requestedMultiplier) {
+  const speed = Math.max(1, Number(baseSpeed) || 1);
+  const requested = Math.max(0.5, Number(requestedMultiplier) || 1);
+  if (requested <= 1) return requested;
+  const requestedGain = requested - 1;
+  const hullResponse = clamp(5.5 / speed, 0.72, 1.12);
+  return round(1 + Math.min(0.24, requestedGain * hullResponse), 4);
+}
+
 export function calculateSustainedShipDps(ship = {}, volleys = 240) {
   const stats = ship.stats || {};
   const weapon = ship.weapon || {};
@@ -110,6 +119,7 @@ export const SHIP_THREAT_RESPONSE_TARGETS = Object.freeze({
   responseStartDpsRatio: RESPONSE_START_DPS_RATIO,
   apexSustainedDpsRatio: APEX_SUSTAINED_DPS_RATIO,
   maxDirectDraftOutputMult: 1.45,
+  maxDraftMovementGain: 0.24,
   secondStackEffectiveness: 0.55,
   thirdStackEffectiveness: 0.3,
   minApexFodderPowerRetention: 1.65,

@@ -192,10 +192,32 @@ try {
     ]);
 
     play.applyMagnetPull(1);
+    const debug = { ...(play.magnetFieldVisual?.__debugMagnetField || {}) };
+
+    const measureAcquisition = (radius, strength, startDistance, type) => {
+      const probe = makePowerup(type, player.x + startDistance, player.y);
+      player.magnetRadius = radius;
+      player.magnetStrength = strength;
+      let frames = 0;
+      while (Math.hypot(probe.x - player.x, probe.y - player.y) > 36 && frames < 180) {
+        play.applyMagnetPull(1);
+        frames += 1;
+      }
+      probe.active = false;
+      return { frames, startDistance, finalDistance: Math.round(Math.hypot(probe.x - player.x, probe.y - player.y)), radius, strength };
+    };
+    const acquisition = {
+      timed: measureAcquisition(180, 0.14, 170, 'shield'),
+      permanent: measureAcquisition(270, 0.17, 250, 'score_x2')
+    };
+    player.magnetRadius = 260;
+    player.magnetStrength = 0.16;
+    play.applyMagnetPull(1);
 
     return {
       ok: true,
-      debug: { ...(play.magnetFieldVisual?.__debugMagnetField || {}) },
+      debug,
+      acquisition,
       visible: Boolean(play.magnetFieldVisual?.visible),
       powerups: manager.powerups.map((powerup) => ({
         type: powerup.type,
@@ -238,7 +260,9 @@ try {
   if (!state.visible || !state.debug?.visible) failures.push(`magnet field was not visible: ${JSON.stringify(state.debug)}`);
   if (state.debug?.fieldType !== 'gravity_well') failures.push(`field type should be gravity_well: ${state.debug?.fieldType}`);
   if ((state.debug?.range || 0) !== 260) failures.push(`range debug mismatch: ${state.debug?.range}`);
-  if ((state.debug?.segmentCount || 0) < 12) failures.push(`segment count too low for large field: ${state.debug?.segmentCount}`);
+  if ((state.debug?.segmentCount || 0) !== 8) failures.push(`compact field segment count mismatch: ${state.debug?.segmentCount}`);
+  if ((state.debug?.coreRadius || 0) >= (state.debug?.range || 0) * 0.34) failures.push(`magnet core art is too large: ${JSON.stringify(state.debug)}`);
+  if ((state.debug?.boundaryAlpha || 1) > 0.05) failures.push(`magnet range boundary is too dominant: ${JSON.stringify(state.debug)}`);
   if ((state.debug?.targetCount || 0) < 2) failures.push(`expected at least two pulled targets: ${state.debug?.targetCount}`);
   if ((state.debug?.powerupTargetCount || 0) < 2) failures.push(`expected two powerup pull lines: ${state.debug?.powerupTargetCount}`);
   if ((state.debug?.captureHaloCount || 0) < 2) failures.push(`expected capture halos for pulled targets: ${JSON.stringify(state.debug)}`);
@@ -249,6 +273,8 @@ try {
   if ((state.moved?.collectibleCore || 0) <= 0.5) failures.push(`collectible bonus core was not pulled: ${state.moved?.collectibleCore}`);
   if ((state.moved?.hazardDrone || 0) > 0.1) failures.push(`hazard bonus drone must not be pulled toward the player: ${state.moved?.hazardDrone}`);
   if ((state.debug?.bonusTargetCount || 0) !== 1) failures.push(`only the collectible bonus core should be a bonus pull target: ${state.debug?.bonusTargetCount}`);
+  if ((state.acquisition?.timed?.frames || 999) >= 120 || state.acquisition?.timed?.finalDistance > 36) failures.push(`timed magnet acquisition too weak: ${JSON.stringify(state.acquisition?.timed)}`);
+  if ((state.acquisition?.permanent?.frames || 999) >= 140 || state.acquisition?.permanent?.finalDistance > 36) failures.push(`permanent magnet acquisition too weak: ${JSON.stringify(state.acquisition?.permanent)}`);
   if (!hidden.ok) failures.push(hidden.reason || 'hidden state failed');
   if (hidden.visible || hidden.debug?.visible) failures.push(`magnet field did not hide after deactivation: ${JSON.stringify(hidden)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

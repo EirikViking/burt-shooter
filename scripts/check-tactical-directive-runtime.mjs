@@ -192,6 +192,34 @@ try {
   if (completion.directive?.active?.id === 'hostile_quota_t01_shield') failures.push('completed directive repeated immediately');
   if (!completion.directive?.active?.queued || completion.directive?.active?.eligibleFromSector !== 2) failures.push(`next directive did not queue for level 2: ${JSON.stringify(completion.directive?.active)}`);
 
+  const safeReward = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const spawnKey = `directive-safe-probe:${Date.now()}`;
+    play.isCollisionHotPathActive = true;
+    play.applyTacticalDirectiveReward({
+      rewardKind: 'powerup',
+      rewardPowerupType: 'magnet',
+      rewardSpawnKey: spawnKey,
+      sector: play.game.level
+    });
+    const duringCollision = play.powerupManager.powerups.some((powerup) => powerup.spawnKey === spawnKey);
+    play.isCollisionHotPathActive = false;
+    play.flushPendingTacticalDirectiveRewards();
+    const reward = play.powerupManager.powerups.find((powerup) => powerup.spawnKey === spawnKey);
+    return {
+      duringCollision,
+      spawnedAfter: Boolean(reward),
+      rewardClaim: Boolean(reward?.rewardClaim),
+      claimGraceRemainingMs: Math.max(0, Number(reward?.collectibleAt || 0) - Date.now()),
+      position: reward ? { x: Math.round(reward.x), y: Math.round(reward.y) } : null,
+      debug: structuredClone(play.lastTacticalDirectiveRewardSpawn)
+    };
+  });
+  report.scenarios.safeReward = safeReward;
+  if (safeReward.duringCollision || !safeReward.spawnedAfter || !safeReward.rewardClaim || safeReward.claimGraceRemainingMs < 500) {
+    failures.push(`directive reward was not safely deferred: ${JSON.stringify(safeReward)}`);
+  }
+
   const sameSectorGate = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     const before = structuredClone(play.getTacticalDirectiveDebugState());

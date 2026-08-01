@@ -353,6 +353,58 @@ try {
   assert(afterStrike.tacticalAugments?.fusionStats?.skyVerdicts === 1, 'Sky Verdict completion count mismatch');
   report.states.afterStrike = afterStrike.tacticalAugments;
 
+  const emergencySky = await page.evaluate(() => {
+    const play = window.__game.scenes.play;
+    const player = play.player;
+    const target = {
+      active: true,
+      waitingForEntry: false,
+      kind: 'emergency_sky_target',
+      type: 'emergency_sky_target',
+      x: player.x,
+      y: Math.max(180, player.y - 240),
+      radius: 16,
+      health: 9999,
+      maxHealth: 9999,
+      scoreValue: 0,
+      update() {},
+      takeDamage(damage) { this.health -= Math.max(0, Number(damage) || 0); return false; }
+    };
+    play.enemyManager.enemies.push(target);
+    player.applyRunAugmentSectorStartEffects(2);
+    player.orbitalStrikeCharges = 0;
+    player.tacticalOrbitalStrikeCharges = 0;
+    const makeBomb = () => ({
+      active: true,
+      isBomb: true,
+      bombDetonated: false,
+      x: target.x,
+      y: target.y,
+      radius: 8,
+      blastRadius: 120,
+      damage: 1
+    });
+    const first = play.detonateBombBullet(makeBomb(), 'emergency_sky_first');
+    const firstDebug = structuredClone(play.lastOrbitalStrikeDebug);
+    const stateAfterFirst = player.skyVerdictEmergencyState;
+    const second = play.detonateBombBullet(makeBomb(), 'emergency_sky_rapid_repeat');
+    const stateAfterSecond = player.skyVerdictEmergencyState;
+    play.hud?.update?.();
+    const hud = structuredClone(play.hud?.tacticalAugmentGroup?._debugTacticalAugments || null);
+    target.active = false;
+    play.enemyManager.enemies = play.enemyManager.enemies.filter((enemy) => enemy !== target);
+    return { first, second, firstDebug, stateAfterFirst, stateAfterSecond, hud };
+  });
+  assert(emergencySky.first && emergencySky.second, `Sky emergency bomb detonation path failed: ${JSON.stringify(emergencySky)}`);
+  assert(emergencySky.firstDebug?.emergency === true && emergencySky.firstDebug?.consumeCharge === false
+    && emergencySky.firstDebug?.damageScale === 0.55 && emergencySky.firstDebug?.radiusScale === 0.72,
+  `Sky emergency beam was not reduced and charge-free: ${JSON.stringify(emergencySky)}`);
+  assert(emergencySky.stateAfterFirst === 'spent' && emergencySky.stateAfterSecond === 'spent',
+    `Sky emergency state was not rapid-trigger safe: ${JSON.stringify(emergencySky)}`);
+  assert(emergencySky.hud?.entries?.some((entry) => entry.id === 'sky_verdict' && /SPENT/.test(entry.name || '')),
+    `Sky emergency spent state was not visible in the HUD: ${JSON.stringify(emergencySky.hud)}`);
+  report.states.emergencySky = emergencySky;
+
   const loadoutState = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.clearTacticalFusionUnlock?.('loadout_check');

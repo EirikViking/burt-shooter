@@ -14,7 +14,11 @@ import {
   getTacticalDraftMeta,
   getTacticalFusionBlueprints
 } from '../src/config/TacticalDraft.js';
-import { SHIP_THREAT_RESPONSE_TARGETS } from '../src/config/ShipThreatResponse.js';
+import {
+  SHIP_THREAT_RESPONSE_TARGETS,
+  getHybridDraftMovementMultiplier
+} from '../src/config/ShipThreatResponse.js';
+import { ShipData } from '../src/config/ShipData.js';
 import { analyzeTacticalDoctrine } from '../src/config/TacticalDoctrine.js';
 import { RUN_MODES } from '../src/game/RunMode.js';
 
@@ -432,6 +436,38 @@ for (let index = 0; index < 80; index += 1) {
     `seeded offers changed between identical calls for seed ${args.seed}`
   );
 }
+
+const offerSimulation = [];
+let recentOfferIds = [];
+let previousOfferIds = [];
+for (let index = 0; index < 120; index += 1) {
+  const offers = buildTacticalDraftOffers({
+    seed: `long-offer-simulation-${index}`,
+    sectorCleared: 1 + (index % 24),
+    lives: 2 + (index % 2),
+    maxLives: 4,
+    baseShotCount: 2,
+    recentOfferIds
+  });
+  const repeats = offers.filter((offer) => previousOfferIds.includes(offer.id));
+  const unexplainedRepeats = repeats.filter((offer) => !(
+    offer.fusionCompletionPriority || offer.singleLaneCatchup || offer.fixedScoreRoute || offer.held
+  ));
+  assert(unexplainedRepeats.length === 0,
+    `long simulation repeated ordinary offers at step ${index}: ${unexplainedRepeats.map((offer) => offer.id).join(', ')}`);
+  offerSimulation.push({ index, offers: offers.map((offer) => offer.id), repeats: repeats.map((offer) => offer.id) });
+  previousOfferIds = offers.map((offer) => offer.id);
+  recentOfferIds = [...recentOfferIds, ...previousOfferIds].slice(-9);
+}
+
+assert(ShipData.length === 30, `expected 30 hulls for movement scaling audit, got ${ShipData.length}`);
+const movementAudit = ShipData.map((ship) => {
+  const speed = Number(ship.stats?.speed) || 1;
+  const multiplier = getHybridDraftMovementMultiplier(speed, 1.24);
+  assert(multiplier >= 1 && multiplier <= 1 + SHIP_THREAT_RESPONSE_TARGETS.maxDraftMovementGain,
+    `${ship.name}: movement multiplier ${multiplier} escaped cap`);
+  return { ship: ship.name, speed, multiplier };
+});
 for (const [offerId, partnerId, fusionId] of [
   ['drones', 'drone_link', 'drone_constellation'],
   ['shield', 'point_defense', 'aegis_reactor'],

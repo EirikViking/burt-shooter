@@ -1547,15 +1547,26 @@ export class HUD {
       const display = getTacticalDraftDisplayMeta(entry.id, entry.stacks);
       return { ...entry, name: display?.displayName || entry.name, evolved: Boolean(display?.evolved) };
     });
-    const fusionEntries = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => ({
-      id: fusion.id,
-      name: fusion.name,
-      category: 'fusion',
-      color: fusion.color,
-      stacks: 1,
-      evolved: false,
-      fusion: true
-    }));
+    const fusionEntries = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => {
+      const skyState = fusion.id === 'sky_verdict'
+        ? String(player?.skyVerdictEmergencyState || 'unavailable')
+        : null;
+      const stateLabel = skyState === 'ready'
+        ? translateText('READY')
+        : skyState === 'spent'
+          ? translateText('SPENT')
+          : null;
+      return {
+        id: fusion.id,
+        name: stateLabel ? `${fusion.name} / ${stateLabel}` : fusion.name,
+        category: 'fusion',
+        color: skyState === 'spent' ? 0x8f6f63 : fusion.color,
+        stacks: 1,
+        evolved: false,
+        fusion: true,
+        state: skyState
+      };
+    });
     const entries = [...fusionEntries, ...augmentEntries];
     const doctrine = analyzeTacticalDoctrine(allSelectedIds, [...consumedIds]);
     if (!entries.length) {

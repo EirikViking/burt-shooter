@@ -14,7 +14,12 @@ import {
   TRACTOR_DEBUFF_IMMUNITY_MS,
   pickTractorDebuff
 } from '../config/TractorDebuffs.js';
-import { BASE_POWERUP_TYPES, getPowerupDurationMode, getPowerupMeta } from '../config/PowerupCatalog.js';
+import {
+  BASE_POWERUP_TYPES,
+  arePowerupsCompatible,
+  getPowerupDurationMode,
+  getPowerupMeta
+} from '../config/PowerupCatalog.js';
 import {
   buildTacticalDraftModifiers,
   getActiveTacticalAugmentIds,
@@ -22,7 +27,10 @@ import {
   getTacticalDraftAugment,
   summarizeTacticalDraftPicks
 } from '../config/TacticalDraft.js';
-import { SHIP_THREAT_RESPONSE_TARGETS } from '../config/ShipThreatResponse.js';
+import {
+  SHIP_THREAT_RESPONSE_TARGETS,
+  getHybridDraftMovementMultiplier
+} from '../config/ShipThreatResponse.js';
 import { POINT_DEFENSE_RADIUS } from '../game/ProjectileDefenseRules.js';
 import { BOMB_ARMING_MS, findBombCommitTarget } from '../game/BombTargetingRules.js';
 
@@ -123,6 +131,7 @@ export class Player {
 
     // Powerups
     this.activePowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock' };
+    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
     this.doubleShotShotFloor = 0;
     this.powerupEffect = null;
     this.powerupMovementBoostMult = 1;
@@ -140,6 +149,8 @@ export class Player {
       aegisPurges: 0,
       skyVerdicts: 0
     };
+    this.skyVerdictEmergencyState = 'unavailable';
+    this.skyVerdictEmergencySector = 0;
     this.scoreMultiplierType = null;
     this.bombMaxShots = 3;
     this.bombBlastRadius = 150;
@@ -160,6 +171,8 @@ export class Player {
     this.dodgeFlashMs = 0;
     this.dodgeReadyFlashMs = 0;
     this.focusDriftActive = false;
+    this.focusRequested = false;
+    this.focusMovementActive = false;
     this.focusPulse = 0;
     this.hitboxPulseUntil = 0;
     this.hitboxPulseReason = null;
@@ -181,8 +194,8 @@ export class Player {
     this.synergyState = { type: null, expiresAt: 0, label: '' };
     this.magnetActive = false;
     this.magnetExpiresAt = 0;
-    this.magnetRadius = 140;
-    this.magnetStrength = 0.08;
+    this.magnetRadius = 180;
+    this.magnetStrength = 0.14;
     this.dronesActive = false;
     this.dronesExpiresAt = 0;
     this.drones = [];
@@ -1548,11 +1561,15 @@ export class Player {
     const deltaSeconds = dt / 1000;
 
     this.updateActivePowerupDuration(now, timedDt);
+    if (this.secondaryPowerup.type && this.getSecondaryPowerupRemainingMs(now) <= 0) {
+      this.expireSecondaryPowerup();
+    }
 
     // Powerup Expiry
     if (this.activePowerup.type && !this.hasUnspentChargePowerup() && this.getActivePowerupRemainingMs(now) <= 0) {
       const pointDefenseExpired = this.pointDefenseActive && Boolean(this.getCurrentPowerupEffect()?.pointDefense);
-      this.resetPowerups();
+      const promoted = this.promoteSecondaryPowerup(now);
+      if (!promoted) this.resetPowerups();
       if (pointDefenseExpired && !this.pointDefenseActive) {
         this.deactivatePointDefense({ expired: true });
       }
@@ -1760,8 +1777,10 @@ export class Player {
     const engineDrag = this.getStatusEffect('engine_drag');
     const controlDrift = this.getStatusEffect('control_drift');
     const focusDriftRequested = Boolean(this.inputManager?.isKeyPressed?.('focus'));
-    this.focusDriftActive = focusDriftRequested && !this.isDodging && !this.isGhostActive();
-    const focusDriftMultiplier = this.focusDriftActive
+    this.focusRequested = focusDriftRequested;
+    this.focusDriftActive = focusDriftRequested;
+    this.focusMovementActive = focusDriftRequested && !this.isDodging;
+    const focusDriftMultiplier = this.focusMovementActive
       ? Math.min(0.82, FOCUS_DRIFT_SPEED_MULTIPLIER * (Number(this.runAugmentModifiers?.focusSpeedMult) || 1))
       : 1;
     const speedMultiplier = this.getPowerupMovementMultiplier() * (engineDrag?.movementSpeedMult || 1) * focusDriftMultiplier;
@@ -2111,7 +2130,7 @@ export class Player {
 
     const scramble = this.getStatusEffect('target_scramble');
     const focusSpreadMult = this.focusDriftActive
-      ? Math.max(0.6, Math.min(1, Number(this.runAugmentModifiers?.focusSpreadMult) || 1))
+      ? this.getAdaptiveFocusSpreadMultiplier()
       : 1;
     const spread = (this.weaponProfile?.spread ?? 0.15) * (scramble?.shotSpreadMult || 1) * focusSpreadMult;
     const jitterRange = scramble?.shotJitter || 0;
@@ -2286,6 +2305,17 @@ export class Player {
     }
 
     return bullets;
+  }
+
+  getAdaptiveFocusSpreadMultiplier() {
+    const configuredFloor = Math.max(0.55, Math.min(1, Number(this.runAugmentModifiers?.focusSpreadMult) || 1));
+    if (configuredFloor >= 0.999) return 1;
+    const baseSpread = Math.max(0, Number(this.weaponProfile?.spread) || 0);
+    const shotCount = Math.max(1, Number(this.multiShot) || Number(this.weaponProfile?.bullets) || 1);
+    const spreadPressure = Math.max(0, Math.min(1, (baseSpread - 0.06) / 0.34));
+    const lanePressure = Math.max(0, Math.min(1, (shotCount - 1) / 5));
+    const adaptive = 0.86 - (spreadPressure * 0.15 + lanePressure * 0.11);
+    return Math.max(configuredFloor, Math.min(0.86, adaptive));
   }
 
   createDrones(count = this.droneCount, color = this.droneColor) {
@@ -3084,6 +3114,14 @@ export class Player {
     return Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
   }
 
+  getSecondaryPowerupRemainingMs(now = this.getGameplayClockMs()) {
+    if (!this.secondaryPowerup?.type) return 0;
+    if (this.secondaryPowerup.durationMode === 'while_firing') {
+      return Math.max(0, Number(this.secondaryPowerup.remainingMs) || 0);
+    }
+    return Math.max(0, (Number(this.secondaryPowerup.expiresAt) || 0) - now);
+  }
+
   setActivePowerupDuration(type, durationMs, now = this.getGameplayClockMs()) {
     const safeDuration = Math.max(0, Number(durationMs) || 0);
     const durationMode = getPowerupDurationMode(type);
@@ -3100,6 +3138,17 @@ export class Player {
   }
 
   updateActivePowerupDuration(now = this.getGameplayClockMs(), dt = 0) {
+    if (this.secondaryPowerup?.type) {
+      if (this.secondaryPowerup.durationMode === 'while_firing') {
+        const drainMs = this.isPowerupSuppressed() || !this.inputManager?.isFiring?.()
+          ? 0
+          : Math.max(0, Number(dt) || 0);
+        this.secondaryPowerup.remainingMs = Math.max(0, (Number(this.secondaryPowerup.remainingMs) || 0) - drainMs);
+        this.secondaryPowerup.expiresAt = now + this.secondaryPowerup.remainingMs;
+      } else {
+        this.secondaryPowerup.remainingMs = Math.max(0, (Number(this.secondaryPowerup.expiresAt) || 0) - now);
+      }
+    }
     if (!this.activePowerup?.type) return;
     if (this.activePowerup.durationMode !== 'while_firing') {
       this.activePowerup.remainingMs = Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
@@ -3115,6 +3164,33 @@ export class Player {
     const remainingMs = Math.max(0, previousRemaining - drainMs);
     this.activePowerup.remainingMs = remainingMs;
     this.activePowerup.expiresAt = now + remainingMs;
+  }
+
+  expireSecondaryPowerup() {
+    const expiredType = this.secondaryPowerup?.type || null;
+    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
+    if (expiredType === 'score_x2' && this.activePowerup?.type !== 'score_x2') {
+      this.scoreMultiplier = 1;
+      this.scoreMultiplierType = null;
+      this.scoreBoostExpiresAt = 0;
+    }
+    this.recalculateStats();
+    return expiredType;
+  }
+
+  promoteSecondaryPowerup(now = this.getGameplayClockMs()) {
+    if (!this.secondaryPowerup?.type) return false;
+    const promoted = { ...this.secondaryPowerup };
+    const remainingMs = this.getSecondaryPowerupRemainingMs(now);
+    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
+    this.resetPowerups();
+    this.applyPowerup(promoted.type);
+    this.activePowerup.durationMode = promoted.durationMode || getPowerupDurationMode(promoted.type);
+    this.activePowerup.remainingMs = remainingMs;
+    this.activePowerup.expiresAt = now + remainingMs;
+    if (this.scoreMultiplierType === promoted.type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
+    if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
+    return true;
   }
 
   hasUnspentChargePowerup() {
@@ -3187,6 +3263,12 @@ export class Player {
           ...getPrimaryStateDetail(powerupType)
         });
       }
+    }
+    if (this.secondaryPowerup?.type) {
+      addTimedState(this.secondaryPowerup.type, now + this.getSecondaryPowerupRemainingMs(now), {
+        durationMode: this.secondaryPowerup.durationMode || 'wall_clock',
+        compatible: true
+      });
     }
 
     if (this.rowCoreActive) {
@@ -4115,7 +4197,8 @@ export class Player {
         ? Math.min(this.shootDelay, projectedDelay)
         : projectedDelay;
     }
-    this.speed = Math.max(1.5, this.speed * modifiers.speedMult);
+    const movementMultiplier = getHybridDraftMovementMultiplier(this.stats?.speed, modifiers.speedMult);
+    this.speed = Math.max(1.5, this.speed * movementMultiplier);
     this.bulletSpeed = Math.max(2.5, this.bulletSpeed * modifiers.bulletSpeedMult);
     this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
     this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
@@ -4135,8 +4218,8 @@ export class Player {
     if (modifiers.magnetRadiusBonus > 0) {
       this.magnetActive = true;
       this.magnetExpiresAt = Number.MAX_SAFE_INTEGER;
-      this.magnetRadius = Math.max(this.magnetRadius, 140 + modifiers.magnetRadiusBonus);
-      this.magnetStrength = Math.max(this.magnetStrength, 0.08 + modifiers.magnetStrengthBonus);
+      this.magnetRadius = Math.max(this.magnetRadius, 180 + modifiers.magnetRadiusBonus);
+      this.magnetStrength = Math.max(this.magnetStrength, 0.14 + modifiers.magnetStrengthBonus);
     }
     if (modifiers.droneCount > 0) {
       this.dronesActive = true;
@@ -4154,6 +4237,8 @@ export class Player {
     const effects = this.runAugmentModifiers?.sectorStart || {};
     const triggered = [];
     this.runAugmentGrazeCount = 0;
+    this.skyVerdictEmergencySector = Math.max(1, Math.floor(Number(sector) || 1));
+    this.skyVerdictEmergencyState = this.runAugmentModifiers?.skyVerdict ? 'ready' : 'unavailable';
     if ((Number(this.runAugmentModifiers?.lowLifeSectorShieldMs) || 0) > 0 && this.game?.lives <= 1 && !this.shieldActive) {
       this.activateShield(this.runAugmentModifiers.lowLifeSectorShieldMs);
       triggered.push('emergency_bulkhead');
@@ -4210,6 +4295,10 @@ export class Player {
       ).map((fusion) => fusion.id),
       lastFusionEvent: this.lastTacticalFusionEvent,
       fusionStats: { ...this.tacticalFusionStats },
+      skyVerdictEmergency: {
+        state: this.skyVerdictEmergencyState,
+        sector: this.skyVerdictEmergencySector
+      },
       modifiers: this.runAugmentModifiers,
       overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
       lastSectorStart: this.lastRunAugmentSectorStart
@@ -4375,11 +4464,26 @@ export class Player {
       console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
       return;
     }
+    if (type !== 'shield' && this.secondaryPowerup.type === type && effect.charges !== true) {
+      this.secondaryPowerup.durationMode = getPowerupDurationMode(type);
+      this.secondaryPowerup.remainingMs = durationMs;
+      this.secondaryPowerup.expiresAt = now + durationMs;
+      console.log(`[Powerup] refresh compatible type=${type} expiresAt=${this.secondaryPowerup.expiresAt}`);
+      return;
+    }
 
     const doubleShotShotFloor = type === 'double_shot'
       ? Math.max(1, Math.min(8, Math.round(Number(this.multiShot) || 1)))
       : 0;
-    this.resetPowerups(); // Clear existing to prevent stacking weirdness
+    const compatibleWithActive = arePowerupsCompatible(this.activePowerup.type, type);
+    if (compatibleWithActive) {
+      this.secondaryPowerup = {
+        ...this.activePowerup,
+        effect: this.powerupEffect || getPowerupMeta(this.activePowerup.type)?.effect || null
+      };
+    } else {
+      this.resetPowerups();
+    }
     this.doubleShotShotFloor = doubleShotShotFloor;
     this.activePowerup.type = type;
     this.setActivePowerupDuration(type, durationMs, now);
@@ -4533,6 +4637,7 @@ export class Player {
     this.droneCount = 2;
     this.droneColor = 0x66ccff;
     this.doubleShotShotFloor = 0;
+    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
     this.activePowerup.type = null;
     this.activePowerup.expiresAt = 0;
     this.activePowerup.remainingMs = 0;
@@ -4679,8 +4784,8 @@ export class Player {
     this.rankBoostBulletFx = false;
     this.magnetActive = false;
     this.dronesActive = false;
-    this.magnetRadius = 140;
-    this.magnetStrength = 0.08;
+    this.magnetRadius = 180;
+    this.magnetStrength = 0.14;
 
     // 4. Apply Powerups (Additive or Multiplicative). Tractor nullification
     // suppresses active effects briefly, but keeps their timers intact.
@@ -4724,6 +4829,28 @@ export class Player {
 
       if (!BASE_POWERUP_TYPE_SET.has(this.activePowerup.type)) {
         this.applyCatalogStatModifiers(this.powerupEffect || {}, { preview });
+      }
+      if (this.secondaryPowerup?.type) {
+        switch (this.secondaryPowerup.type) {
+          case 'rapid_fire':
+            this.shootDelay = this.stats.fireRate * 0.5;
+            break;
+          case 'double_shot':
+            this.multiShot = Math.min(8, this.multiShot + 1);
+            break;
+          case 'damage_up':
+            this.bulletDamage = Math.max(2, Math.round(this.bulletDamage * 1.6));
+            break;
+          case 'pierce':
+            this.bulletPierce = true;
+            break;
+          case 'magnet':
+            this.magnetActive = true;
+            break;
+          default:
+            this.applyCatalogStatModifiers(this.secondaryPowerup.effect || {}, { preview });
+            break;
+        }
       }
     }
 

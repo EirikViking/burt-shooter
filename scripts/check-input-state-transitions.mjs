@@ -200,9 +200,11 @@ const dodgeIndex = playerSource.indexOf('// Dodge Logic');
 assert(movementIndex >= 0 && dodgeIndex > movementIndex, 'movement must remain active before phase resolution');
 assert.match(
   playerSource,
-  /focusDriftActive = focusDriftRequested && !this\.isDodging && !this\.isGhostActive\(\)/,
-  'focus must remain independent of phase cooldown availability'
+  /focusDriftActive = focusDriftRequested/,
+  'focus combat state must remain armed whenever Focus is held'
 );
+assert.match(playerSource, /focusMovementActive = focusDriftRequested && !this\.isDodging/,
+  'Focus movement drag must release during Phase without disabling Focus combat benefits');
 assert.match(playSource, /tactical_draft_enter[\s\S]*preserveFire: true, preserveMovement: true/);
 assert.match(playSource, /tactical_draft_exit:\$\{reason\}[\s\S]*preserveFire: true, preserveMovement: true/);
 assert.match(playSource, /pause_enter' : 'pause_exit'[\s\S]*preserveFire: true, preserveMovement: true/);

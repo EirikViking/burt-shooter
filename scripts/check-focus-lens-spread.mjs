@@ -142,6 +142,7 @@ try {
         multiShot: player.multiShot,
         rankBoostExtraShots: player.rankBoostExtraShots,
         cadence,
+        adaptiveSpreadMult: player.getAdaptiveFocusSpreadMultiplier(),
         damage: bullets.reduce((sum, bullet) => sum + Number(bullet.damage || 0), 0) / Math.max(1, bullets.length),
         angles: bullets.map((bullet) => Math.atan2(Number(bullet.vx) || 0, -(Number(bullet.vy) || -1))),
         velocities: bullets.map((bullet) => ({ vx: bullet.vx, vy: bullet.vy }))
@@ -237,11 +238,55 @@ try {
       `${sample.shipName}: Focus changed firing cadence`);
     assert(sample.focused.damage > sample.unfocused.damage * 1.17,
       `${sample.shipName}: existing Focus Lens damage identity was lost`);
-    assert(Math.abs(sample.outerAngleRatio - 0.6) < 0.015,
-      `${sample.shipName}: focused spread ratio ${sample.outerAngleRatio} was not 0.6`);
+    assert(sample.focused.adaptiveSpreadMult >= 0.6 && sample.focused.adaptiveSpreadMult <= 0.86,
+      `${sample.shipName}: adaptive spread ${sample.focused.adaptiveSpreadMult} escaped the safe bounds`);
+    assert(Math.abs(sample.outerAngleRatio - sample.focused.adaptiveSpreadMult) < 0.02,
+      `${sample.shipName}: focused spread ratio ${sample.outerAngleRatio} did not match adaptive ${sample.focused.adaptiveSpreadMult}`);
     assert(sample.envelopeAt600.focused < sample.envelopeAt600.unfocused,
       `${sample.shipName}: focused envelope did not tighten`);
   }
+  const adaptiveRatios = samples.map((sample) => Number(sample.focused.adaptiveSpreadMult.toFixed(3)));
+  assert(new Set(adaptiveRatios).size >= 2, `Focus correction did not adapt across hulls: ${adaptiveRatios.join(', ')}`);
+  assert(samples.find((sample) => sample.lane === 'WIDE').focused.adaptiveSpreadMult
+    <= samples.find((sample) => sample.lane === 'NARROW').focused.adaptiveSpreadMult,
+  'wide battery did not receive at least as much Focus correction as the narrow battery');
+
+  const continuity = await page.evaluate(() => {
+    const player = window.__game.scenes.play.player;
+    const saved = {
+      focus: player.focusDriftActive,
+      dodge: player.isDodging,
+      activePowerup: { ...player.activePowerup },
+      powerupEffect: player.powerupEffect,
+      runAugmentIds: [...player.runAugmentIds]
+    };
+    player.runAugmentIds = ['focus_lens'];
+    player.recalculateStats();
+    player.focusDriftActive = true;
+    player.isDodging = true;
+    player.shootCooldown = 0;
+    const phaseShots = player.shoot();
+    const phaseDamage = phaseShots[0]?.damage || 0;
+    phaseShots.forEach((bullet) => bullet.destroy?.());
+    player.isDodging = false;
+    player.activePowerup = { type: 'ghost', expiresAt: player.getGameplayClockMs() + 1000, remainingMs: 1000, durationMode: 'wall_clock' };
+    player.powerupEffect = { durationMs: 1000, ghost: true };
+    player.recalculateStats();
+    player.focusDriftActive = true;
+    player.shootCooldown = 0;
+    const ghostShots = player.shoot();
+    const ghostDamage = ghostShots[0]?.damage || 0;
+    ghostShots.forEach((bullet) => bullet.destroy?.());
+    player.focusDriftActive = saved.focus;
+    player.isDodging = saved.dodge;
+    player.activePowerup = saved.activePowerup;
+    player.powerupEffect = saved.powerupEffect;
+    player.runAugmentIds = saved.runAugmentIds;
+    player.recalculateStats();
+    return { phaseDamage, ghostDamage };
+  });
+  assert(continuity.phaseDamage > 0 && continuity.ghostDamage > 0,
+    `Focus did not remain armed through Phase/Ghost: ${JSON.stringify(continuity)}`);
 
   await page.evaluate((samplesForCanvas) => {
     const canvas = document.createElement('canvas');
@@ -269,7 +314,7 @@ try {
     ctx.fillText('FOCUS LENS // LIVE VOLLEY SPREAD EVIDENCE', 960, 58);
     ctx.fillStyle = '#9cfbff';
     ctx.font = '700 22px Rajdhani, Arial';
-    ctx.fillText('Focus = 60% spread • friendly fire dims • bombs and hostile fire stay fully visible', 960, 94);
+    ctx.fillText('Focus adapts by hull • friendly fire dims • bombs and hostile fire stay fully visible', 960, 94);
 
     const colors = { unfocused: '#ff55d9', focused: '#66f7ff' };
     const panelWidth = 590;

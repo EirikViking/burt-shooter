@@ -62,7 +62,7 @@ export const TACTICAL_DRAFT_AUGMENTS = Object.freeze([
   defineAugment({ id: 'bomb', evolutionName: 'SIEGE RACK', category: 'utility', draftDescription: 'Start each sector with 2 bomb shots', sectorStart: { bombShots: 2 } }),
   defineAugment({ id: 'orbital_strike', evolutionName: 'SKY TRIBUNAL', category: 'utility', draftDescription: 'Start each sector with 2 orbital charges', sectorStart: { orbitalCharges: 2 } }),
   defineAugment({ id: 'phase_reactor', name: 'PHASE REACTOR', category: 'mobility', color: 0xff5bd6, sfx: 'tactical_phase_reactor', draftDescription: 'Phase instantly primes your next volley', detail: 'The reactor converts one tasteful violation of spacetime into a fully stamped firing permit. Phase, then shoot. Physics has filed a complaint and is waiting in the wrong queue.', modifiers: { phaseReload: true }, maxStacks: 1 }),
-  defineAugment({ id: 'focus_lens', name: 'FOCUS LENS', category: 'mobility', color: 0xffef7e, sfx: 'tactical_focus_lens', draftDescription: 'Focused shots deal +18% damage and tighten spread 40%', detail: 'Holding Focus routes every loose photon through the expensive glass. Shots tighten to 60% of their normal spread while focused, without changing projectile count or fire rate. The beam gets meaner, the ship gets deliberate, and nearby insurance forms begin filling themselves out.', modifiers: { focusDamageMult: 1.18, focusSpreadMult: 0.6 }, maxStacks: 1 }),
+  defineAugment({ id: 'focus_lens', name: 'FOCUS LENS', category: 'mobility', color: 0xffef7e, sfx: 'tactical_focus_lens', draftDescription: 'Focused shots deal +18% damage with hull-tuned spread', detail: 'Holding Focus routes every loose photon through the expensive glass. Focus stays armed through Ghost and Phase, while spread tightens according to the hull weapon profile without changing projectile count or fire rate. Broad batteries receive stronger correction than already-precise cannons.', modifiers: { focusDamageMult: 1.18, focusSpreadMult: 0.6 }, maxStacks: 1 }),
   defineAugment({ id: 'inertial_dampers', name: 'INERTIAL DAMPERS', category: 'mobility', color: 0x63f4ff, sfx: 'tactical_inertial_dampers', draftDescription: 'Focus movement keeps 22% more speed', detail: 'A padded cup holder for momentum. Tight weaving stays precise without making the ship feel like it is towing a municipal moon. The manual insists this was always intentional.', modifiers: { focusSpeedMult: 1.22 }, maxStacks: 1 }),
   defineAugment({ id: 'phase_wake', name: 'PHASE WAKE', category: 'mobility', color: 0x8d7dff, sfx: 'tactical_phase_wake', draftDescription: 'Phase exit clears hostile bullets within 58px', detail: 'Your phase exit leaves a tiny hole in causality and a much larger hole in nearby enemy paperwork. It clears danger, not score. Heroism still needs witnesses.', modifiers: { phaseClearRadius: 58 }, maxStacks: 1 }),
   defineAugment({ id: 'slipstream_coils', name: 'SLIPSTREAM COILS', category: 'mobility', color: 0x4dffbf, sfx: 'tactical_slipstream_coils', draftDescription: 'Moving recharges Phase 18% faster', detail: 'The coils steal charge from the trail you were going to leave behind anyway. Standing still remains technically legal and spiritually suspicious.', modifiers: { movingDodgeRecoveryMult: 1.18 }, maxStacks: 1 }),
@@ -121,8 +121,8 @@ export const TACTICAL_FUSION_PROTOCOLS = Object.freeze([
     color: 0xffb34f,
     sfx: 'tactical_orbital_strike',
     requiredIds: ['bomb', 'orbital_strike'],
-    description: 'Bomb impacts spend orbital charges at the blast marker.',
-    detail: 'BOMB + ORBITAL STRIKE. Orbital charges stop choosing random targets. Each bomb detonation spends one charge and calls the beam onto that exact blast marker, turning two automatic systems into one deliberate verdict.'
+    description: 'Bomb impacts call charged verdicts, plus one reduced emergency beam per sector.',
+    detail: 'BOMB + ORBITAL STRIKE. Bomb detonations spend orbital charges at the blast marker. With no charges left, one visibly tracked emergency verdict remains each sector: a smaller, reduced-damage beam that can only fire once.'
   })
 ]);
 
@@ -250,7 +250,8 @@ export function buildTacticalDraftOffers({
   excludedIds = [],
   ineffectiveIds = [],
   bannedIds = [],
-  heldId = null
+  heldId = null,
+  recentOfferIds = []
 } = {}) {
   const counts = getStackCounts(selectedIds);
   const consumed = new Set(Array.isArray(consumedIds) ? consumedIds : []);
@@ -270,6 +271,7 @@ export function buildTacticalDraftOffers({
   let candidates = eligibleCandidates;
   const unseenCandidates = candidates.filter((augment) => (counts.get(augment.id) || 0) === 0);
   const excluded = new Set(Array.isArray(excludedIds) ? excludedIds : []);
+  const recent = new Set(Array.isArray(recentOfferIds) ? recentOfferIds : []);
   const eligibleById = new Map(eligibleCandidates.map((augment) => [augment.id, augment]));
   const fusionCompletionCandidate = TACTICAL_FUSION_PROTOCOLS
     .flatMap((fusion) => {
@@ -303,6 +305,8 @@ export function buildTacticalDraftOffers({
     evolutionCandidate = null;
   }
   if (unseenCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = unseenCandidates;
+  const nonRecentCandidates = candidates.filter((augment) => !recent.has(augment.id));
+  if (nonRecentCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = nonRecentCandidates;
   const freshCandidates = candidates.filter((augment) => !excluded.has(augment.id));
   if (freshCandidates.length >= TACTICAL_DRAFT_OFFER_COUNT) candidates = freshCandidates;
   const used = new Set();

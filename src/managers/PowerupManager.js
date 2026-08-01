@@ -83,6 +83,7 @@ class Powerup {
     this.radius = 12;
     this.vy = 1;
     this.createdAt = Date.now();
+    this.collectibleAt = Math.max(this.createdAt, Number(options.collectibleAt) || this.createdAt);
     this.lifeTime = 26000;
 
     const data = getPowerupMeta(type) || getPowerupMeta('triple_beam');
@@ -1464,7 +1465,8 @@ export class PowerupManager {
       pickupAssistRadius: powerup.pickupAssistRadius,
       x: Math.round(x),
       y: Math.round(y),
-      spawnedAt: powerup.createdAt
+      spawnedAt: powerup.createdAt,
+      collectibleAt: powerup.collectibleAt
     });
     if (this.spawnHistory.length > 64) this.spawnHistory.shift();
     return powerup;
@@ -1506,6 +1508,8 @@ export class PowerupManager {
           lifeTimeMs: powerup.lifeTime,
           verticalSpeed: powerup.vy,
           pickupAssistRadius: powerup.pickupAssistRadius,
+          collectibleAt: powerup.collectibleAt,
+          claimGraceRemainingMs: Math.max(0, powerup.collectibleAt - Date.now()),
           x: Math.round(Number(powerup.x) || 0),
           y: Math.round(Number(powerup.y) || 0)
         })),

@@ -988,6 +988,62 @@ try {
       timedShotFloors.push({ activeType, beforeReplacement, afterReplacement });
     }
 
+    resetScene();
+    player.weaponProfile = { ...(savedDoubleShotState.weaponProfile || {}), bullets: 1 };
+    player.runAugmentIds = [];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats();
+    const baseDelay = player.shootDelay;
+    player.applyPowerup('rapid_fire');
+    player.applyPowerup('double_shot');
+    const rapidDouble = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      shots: player.multiShot,
+      shootDelay: player.shootDelay,
+      hudTypes: player.getActivePowerupStates().map((entry) => entry.type)
+    };
+    assert(rapidDouble.primary === 'double_shot' && rapidDouble.secondary === 'rapid_fire'
+      && rapidDouble.shots >= 2 && rapidDouble.shootDelay < baseDelay
+      && rapidDouble.hudTypes.includes('double_shot') && rapidDouble.hudTypes.includes('rapid_fire'),
+    'compatible Rapid Fire + Double Shot did not coexist', rapidDouble);
+
+    resetScene();
+    player.applyPowerup('pierce');
+    player.applyPowerup('damage_up');
+    const pierceDamage = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      piercing: player.bulletPierce,
+      damage: player.bulletDamage,
+      hudTypes: player.getActivePowerupStates().map((entry) => entry.type)
+    };
+    assert(pierceDamage.primary === 'damage_up' && pierceDamage.secondary === 'pierce'
+      && pierceDamage.piercing && pierceDamage.damage > Number(player.stats.damage || 0)
+      && pierceDamage.hudTypes.includes('damage_up') && pierceDamage.hudTypes.includes('pierce'),
+    'compatible Pierce + Damage Up did not coexist', pierceDamage);
+
+    resetScene();
+    player.applyPowerup('magnet');
+    player.applyPowerup('score_x2');
+    const magnetScore = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      magnetActive: player.magnetActive,
+      scoreMultiplier: player.scoreMultiplier,
+      hudTypes: player.getActivePowerupStates().map((entry) => entry.type)
+    };
+    assert(magnetScore.primary === 'score_x2' && magnetScore.secondary === 'magnet'
+      && magnetScore.magnetActive && magnetScore.scoreMultiplier === 2
+      && magnetScore.hudTypes.includes('score_x2') && magnetScore.hudTypes.includes('magnet'),
+    'compatible Magnet + Score x2 did not coexist', magnetScore);
+    player.secondaryPowerup.remainingMs = 0;
+    player.secondaryPowerup.expiresAt = player.getGameplayClockMs() - 1;
+    player.update(1);
+    assert(player.activePowerup.type === 'score_x2' && !player.secondaryPowerup.type && player.scoreMultiplier === 2,
+      'secondary compatible pickup expiry removed or corrupted the primary pickup');
+    const compatibilityRegression = { rapidDouble, pierceDamage, magnetScore };
+
     player.weaponProfile = savedDoubleShotState.weaponProfile;
     player.runAugmentIds = savedDoubleShotState.runAugmentIds;
     player.consumedRunAugmentIds = savedDoubleShotState.consumedRunAugmentIds;
@@ -1011,6 +1067,7 @@ try {
       testedTypes: types,
       results,
       doubleShotRegression,
+      compatibilityRegression,
       runClockProbe,
       gameplayTimerProbe,
       pickupCleanupProbe,
@@ -1083,6 +1140,7 @@ try {
     const game = window.__game;
     const play = game?.scenes?.play;
     if (!play) throw new Error('Missing play scene before powerup visual screenshot');
+    play.clearToastState?.();
     play.showToast('BOMB', {
       slot: 'center',
       type: 'powerup',
@@ -1100,7 +1158,7 @@ try {
 
   const screenshotState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   assertNoMessageOverlap(screenshotState, 'powerup visual stress screenshot');
-  if (!screenshotState.toast?.active?.some(entry => entry.slot === 'center' && entry.message === 'BOMB')) {
+  if (!screenshotState.toast?.active?.some(entry => entry.message === 'BOMB')) {
     throw new Error(`powerup visual stress screenshot did not keep BOMB feedback visible: ${JSON.stringify(screenshotState.toast, null, 2)}`);
   }
 

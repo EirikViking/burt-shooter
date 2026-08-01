@@ -207,7 +207,7 @@ const BASE_POWERUPS = [
     tip: 'Keep firing. The magnet does errands; you do survival.',
     pickupMessage: 'MAGNET FIELD: PULLS PICKUPS',
     sfx: 'magnet_pull',
-    effect: { durationMs: 8000, magnetRadius: 140, magnetStrength: 0.08 }
+    effect: { durationMs: 8000, magnetRadius: 180, magnetStrength: 0.14 }
   },
   {
     id: 'drones',
@@ -841,6 +841,17 @@ export const POWERUP_DURATION_MODES = Object.freeze({
   comet_drill: 'while_firing',
   needle_rain: 'while_firing',
 });
+
+const COMPATIBLE_POWERUP_PAIR_KEYS = new Set([
+  'double_shot+rapid_fire',
+  'damage_up+pierce',
+  'magnet+score_x2'
+]);
+
+export function arePowerupsCompatible(firstType, secondType) {
+  const pair = [String(firstType || ''), String(secondType || '')].filter(Boolean).sort().join('+');
+  return COMPATIBLE_POWERUP_PAIR_KEYS.has(pair);
+}
 
 export const POWERUP_DEFINITIONS = Object.freeze([...BASE_POWERUPS, ...NEW_POWERUPS, ...SPECTACLE_EXPANSION_POWERUPS]);
 export const BASE_POWERUP_TYPES = Object.freeze(BASE_POWERUPS.map((powerup) => powerup.id));

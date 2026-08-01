@@ -78,6 +78,7 @@ import {
 import { RunPacingConfig } from '../config/RunPacingConfig.js';
 import { getShipIntroTiming, isReturningPilot } from '../config/RetentionPresentation.js';
 import { getPowerupMeta } from '../config/PowerupCatalog.js';
+import { hashString } from '../config/VisualVariantCatalog.js';
 import {
   RARE_CHAOS_VISITOR_VARIANT_COUNT,
   RARE_CHAOS_VISITOR_WAVE_CHANCE
@@ -282,6 +283,7 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.tacticalDraft = null;
     this.tacticalDraftHistory = [];
+    this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
@@ -304,6 +306,8 @@ export class PlayScene {
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
     this.lastTacticalDirectiveCompletion = null;
+    this.pendingTacticalDirectiveRewards = [];
+    this.lastTacticalDirectiveRewardSpawn = null;
     this.aceBountyActive = null;
     this.aceBountyHistory = [];
     this.aceBountySequence = 0;
@@ -844,6 +848,7 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.clearTacticalDraft('run_reset');
     this.tacticalDraftHistory = [];
+    this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
@@ -854,6 +859,8 @@ export class PlayScene {
     this.tacticalDirectiveHistory = [];
     this.tacticalDirectiveSequence = 0;
     this.lastTacticalDirectiveCompletion = null;
+    this.pendingTacticalDirectiveRewards = [];
+    this.lastTacticalDirectiveRewardSpawn = null;
     this.aceBountyActive = null;
     this.aceBountyHistory = [];
     this.aceBountySequence = 0;
@@ -1752,16 +1759,81 @@ export class PlayScene {
     }
     const type = completion.rewardPowerupType;
     if (!type || !this.powerupManager || !this.player) return { granted: false, kind: completion.rewardKind || null };
-    const powerup = this.powerupManager.spawnSpecific(
-      Number(this.player.x) || this.game.getWidth() / 2,
-      Math.max(96, (Number(this.player.y) || this.game.getHeight() * 0.72) - 42),
+    this.pendingTacticalDirectiveRewards.push({
       type,
-      {
+      spawnKey: completion.rewardSpawnKey || null,
+      queuedAt: Date.now(),
+      completionSector: completion.sector || this.game?.level || 1
+    });
+    if (!this.isCollisionHotPathActive) this.flushPendingTacticalDirectiveRewards();
+    return { granted: true, queued: true, kind: 'powerup', type };
+  }
+
+  getTacticalDirectiveRewardPosition(spawnKey = '') {
+    const width = Math.max(320, Number(this.game?.getWidth?.()) || 800);
+    const height = Math.max(320, Number(this.game?.getHeight?.()) || 900);
+    const playerX = Number(this.player?.x) || width / 2;
+    const playerY = Number(this.player?.y) || height * 0.72;
+    const left = Math.max(72, width * 0.12);
+    const right = Math.min(width - 72, width * 0.88);
+    const top = Math.max(112, height * 0.22);
+    const bottom = Math.min(height - 126, height * 0.7);
+    const columns = [0.18, 0.38, 0.62, 0.82];
+    const rows = [0.25, 0.56, 0.86];
+    const candidates = [];
+    rows.forEach((row) => columns.forEach((column) => {
+      candidates.push({
+        x: left + (right - left) * column,
+        y: top + (bottom - top) * row
+      });
+    }));
+    const rotation = hashString(String(spawnKey || 'tactical-directive')) % candidates.length;
+    const ordered = candidates.slice(rotation).concat(candidates.slice(0, rotation));
+    const threats = [
+      ...(this.enemyManager?.enemies || []),
+      ...(this.bulletManager?.enemyBullets || [])
+    ].filter((entry) => entry?.active !== false && Number.isFinite(Number(entry?.x)) && Number.isFinite(Number(entry?.y)));
+    const scored = ordered.map((candidate, order) => {
+      const nearestThreat = threats.reduce((nearest, threat) => Math.min(
+        nearest,
+        Math.hypot(candidate.x - Number(threat.x), candidate.y - Number(threat.y))
+      ), Math.max(width, height));
+      const playerDistance = Math.hypot(candidate.x - playerX, candidate.y - playerY);
+      const reachability = Math.max(0, 260 - playerDistance) * 0.35;
+      return { ...candidate, score: nearestThreat + reachability - order * 0.001 };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    return scored[0] || { x: playerX, y: Math.max(112, playerY - 96) };
+  }
+
+  flushPendingTacticalDirectiveRewards() {
+    if (this.isCollisionHotPathActive || !this.pendingTacticalDirectiveRewards?.length) return [];
+    const pending = this.pendingTacticalDirectiveRewards.splice(0);
+    return pending.map((reward) => {
+      const position = this.getTacticalDirectiveRewardPosition(reward.spawnKey);
+      const collectibleAt = Date.now() + 650;
+      const powerup = this.powerupManager?.spawnSpecific?.(position.x, position.y, reward.type, {
         source: 'tactical_directive',
-        spawnKey: completion.rewardSpawnKey || null
-      }
-    );
-    return { granted: Boolean(powerup), kind: 'powerup', type };
+        spawnKey: reward.spawnKey,
+        rewardClaim: true,
+        collectibleAt,
+        pickupAssistRadius: 34,
+        verticalSpeed: 0.28,
+        lifeTimeMs: 20000,
+        visualSeed: reward.spawnKey || `directive:${reward.completionSector}:${reward.type}`
+      });
+      this.lastTacticalDirectiveRewardSpawn = {
+        type: reward.type,
+        spawnKey: reward.spawnKey,
+        queuedAt: reward.queuedAt,
+        spawnedAt: Date.now(),
+        collectibleAt,
+        x: Math.round(position.x),
+        y: Math.round(position.y),
+        granted: Boolean(powerup)
+      };
+      return powerup;
+    }).filter(Boolean);
   }
 
   showTacticalDirectiveCompletion(completion = {}) {
@@ -6670,9 +6742,23 @@ export class PlayScene {
     }
 
     console.log(`[BombPowerup] detonated reason=${reason} x=${Math.round(x)} y=${Math.round(y)} radius=${Math.round(radius)}`);
-    if (this.player?.runAugmentModifiers?.skyVerdict && this.player?.orbitalStrikeCharges > 0) {
+    if (this.player?.runAugmentModifiers?.skyVerdict) {
       this.orbitalStrikeTimer = 0;
-      this.triggerOrbitalStrike({ targetX: x, targetY: y, fusionId: 'sky_verdict' });
+      if (this.player.orbitalStrikeCharges > 0) {
+        this.triggerOrbitalStrike({ targetX: x, targetY: y, fusionId: 'sky_verdict' });
+      } else if (this.player.skyVerdictEmergencyState === 'ready') {
+        this.player.skyVerdictEmergencyState = 'reserved';
+        const triggered = this.triggerOrbitalStrike({
+          targetX: x,
+          targetY: y,
+          fusionId: 'sky_verdict',
+          consumeCharge: false,
+          emergency: true,
+          damageScale: 0.55,
+          radiusScale: 0.72
+        });
+        this.player.skyVerdictEmergencyState = triggered ? 'spent' : 'ready';
+      }
     }
     return true;
   }
@@ -7494,7 +7580,7 @@ export class PlayScene {
     // Powerups vs player
     measure('collision.powerups_player', () => {
     this.powerupManager.powerups.forEach(powerup => {
-      if (powerup.active && this.player.active) {
+      if (powerup.active && this.player.active && Date.now() >= Number(powerup.collectibleAt || 0)) {
         collisionStats.powerupPlayerChecks += 1;
         if (this.checkCollision(powerup, this.player)) {
           collisionStats.powerupPickups += 1;
@@ -7518,6 +7604,7 @@ export class PlayScene {
     });
     } finally {
       this.isCollisionHotPathActive = false;
+      this.flushPendingTacticalDirectiveRewards();
     }
   }
 
@@ -9240,11 +9327,16 @@ export class PlayScene {
       baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      recentOfferIds: this.tacticalDraftRecentOfferIds,
       ineffectiveIds,
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
     if (offers.length < 3) return false;
+    this.tacticalDraftRecentOfferIds = [
+      ...this.tacticalDraftRecentOfferIds,
+      ...offers.map((offer) => offer.id)
+    ].slice(-9);
     const scoreRouteOffer = offers.find((offer) => offer.fixedScoreRoute) || null;
 
     const overlay = new PIXI.Container();
@@ -10648,6 +10740,7 @@ export class PlayScene {
       baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      recentOfferIds: this.tacticalDraftRecentOfferIds,
       excludedIds: previousIds,
       ineffectiveIds: this.getIneffectiveTacticalDraftOfferIds(),
       bannedIds: this.tacticalDraftBannedIds,
@@ -10707,6 +10800,7 @@ export class PlayScene {
       baseShotCount: Number(this.player?.weaponProfile?.bullets) || 1,
       activePowerupType: this.player?.activePowerup?.type || null,
       runTheme: this.game?.contentDirector?.runTheme?.id || null,
+      recentOfferIds: this.tacticalDraftRecentOfferIds,
       excludedIds: previousIds,
       ineffectiveIds: this.getIneffectiveTacticalDraftOfferIds(),
       bannedIds: this.tacticalDraftBannedIds,
@@ -20822,9 +20916,9 @@ export class PlayScene {
       }
       return;
     }
-    const range = this.player.magnetRadius || 140;
-    const strength = this.player.magnetStrength || 0.08;
-    const pull = strength * delta * 15; // MUCH stronger pull (was too weak before)
+    const range = this.player.magnetRadius || 180;
+    const strength = this.player.magnetStrength || 0.14;
+    const pull = strength * delta * 18;
     const px = this.player.x;
     const py = this.player.y;
     const fieldType = this.player.activePowerup?.type || this.player.scoreMultiplierType || 'magnet';
@@ -20851,27 +20945,28 @@ export class PlayScene {
     this.magnetFieldVisual.clear();
     const now = Date.now();
     const pulse = Math.sin(now * 0.005) * 0.5 + 0.5;
-    const alpha = 0.14 + pulse * 0.08;
+    const boundaryAlpha = 0.025 + pulse * 0.018;
+    const coreRadius = Math.min(68, 44 + range * 0.07);
 
-    // Outer ring
+    // A faint truthful boundary plus a compact near-hull field keeps the effect
+    // readable without painting the entire combat lane.
     this.magnetFieldVisual.circle(px, py, range);
-    this.magnetFieldVisual.stroke({ color: palette.primary, width: 2.2, alpha: alpha * 0.92 });
-    this.magnetFieldVisual.fill({ color: palette.primary, alpha: alpha * 0.1 });
+    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1, alpha: boundaryAlpha });
+    this.magnetFieldVisual.circle(px, py, coreRadius + pulse * 5);
+    this.magnetFieldVisual.stroke({ color: palette.secondary, width: 1.8, alpha: 0.12 + pulse * 0.08 });
+    this.magnetFieldVisual.circle(px, py, coreRadius * 0.62);
+    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1.2, alpha: 0.16 + pulse * 0.1 });
 
-    // Inner ring
-    this.magnetFieldVisual.circle(px, py, range * 0.6);
-    this.magnetFieldVisual.stroke({ color: palette.secondary, width: 1.2, alpha: alpha * 0.52 });
-
-    const segmentCount = range >= 220 ? 14 : 10;
+    const segmentCount = 8;
     const spin = now * 0.0018;
     for (let i = 0; i < segmentCount; i += 1) {
       const angle = spin + i * (Math.PI * 2 / segmentCount);
-      const inner = range * (0.82 + (i % 2) * 0.05);
-      const outer = range + 7 + pulse * 4;
+      const inner = coreRadius * (0.76 + (i % 2) * 0.08);
+      const outer = coreRadius + 6 + pulse * 3;
       this.magnetFieldVisual.moveTo(px + Math.cos(angle) * inner, py + Math.sin(angle) * inner);
       this.magnetFieldVisual.lineTo(px + Math.cos(angle) * outer, py + Math.sin(angle) * outer);
     }
-    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1.4, alpha: 0.16 + pulse * 0.12 });
+    this.magnetFieldVisual.stroke({ color: palette.primary, width: 1.25, alpha: 0.11 + pulse * 0.08 });
 
     this.powerupManager?.powerups?.forEach(p => {
       if (!p.active) return;
@@ -20881,7 +20976,8 @@ export class PlayScene {
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < range && dist > 5) {
         // Stronger pull with distance falloff
-        const pullForce = pull * (1 - dist / range) * 2;
+        const falloff = 0.32 + (1 - dist / range) * 0.68;
+        const pullForce = pull * falloff * 1.9;
         p.x += (dx / dist) * pullForce;
         p.y += (dy / dist) * pullForce;
         p.sprite.x = p.x;
@@ -20901,7 +20997,8 @@ export class PlayScene {
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < range && dist > 5) {
         // Stronger pull with distance falloff
-        const pullForce = pull * (1 - dist / range) * 1.5;
+        const falloff = 0.32 + (1 - dist / range) * 0.68;
+        const pullForce = pull * falloff * 1.45;
         b.x += (dx / dist) * pullForce;
         b.y += (dy / dist) * pullForce;
         b.sprite.x = b.x;
@@ -20952,6 +21049,8 @@ export class PlayScene {
       fieldType,
       range: Math.round(range),
       strength: Number(strength.toFixed(3)),
+      boundaryAlpha: Number(boundaryAlpha.toFixed(3)),
+      coreRadius: Math.round(coreRadius),
       segmentCount,
       targetCount: pulledTargets.length,
       powerupTargetCount,
@@ -20997,27 +21096,38 @@ export class PlayScene {
     const targetX = hasRequestedTarget ? requestedX : target.x;
     const targetY = hasRequestedTarget ? requestedY : target.y;
     const fusionId = options.fusionId || null;
+    const consumeCharge = options.consumeCharge !== false;
+    const emergency = options.emergency === true;
+    const damageScale = Math.max(0.25, Math.min(1.5, Number(options.damageScale) || 1));
+    const radiusScale = Math.max(0.4, Math.min(1.5, Number(options.radiusScale) || 1));
+    if (consumeCharge && (Number(this.player?.orbitalStrikeCharges) || 0) <= 0) return false;
     const strikeColor = fusionId === 'sky_verdict' ? 0xffb34f : 0xff6600;
     const debug = {
       targetX: Math.round(targetX || 0),
       targetY: Math.round(targetY || 0),
       chargesBefore: this.player?.orbitalStrikeCharges || 0,
       fusionId,
+      consumeCharge,
+      emergency,
+      damageScale,
+      radiusScale,
       damageEvents: [],
       completed: false
     };
     this.lastOrbitalStrikeDebug = debug;
 
     // Decrement charges
-    this.player.orbitalStrikeCharges--;
-    if (this.player.tacticalOrbitalStrikeCharges > 0) this.player.tacticalOrbitalStrikeCharges--;
+    if (consumeCharge) {
+      this.player.orbitalStrikeCharges--;
+      if (this.player.tacticalOrbitalStrikeCharges > 0) this.player.tacticalOrbitalStrikeCharges--;
+    }
     debug.chargesAfter = this.player.orbitalStrikeCharges;
 
     // Show warning indicator
     const warning = new PIXI.Graphics();
-    warning.circle(0, 0, 60);
+    warning.circle(0, 0, 60 * radiusScale);
     warning.stroke({ color: strikeColor, width: fusionId ? 5 : 3, alpha: 0.8 });
-    warning.circle(0, 0, 40);
+    warning.circle(0, 0, 40 * radiusScale);
     warning.stroke({ color: fusionId ? 0xff62dc : 0xff6600, width: 2, alpha: 0.5 });
     warning.position.set(targetX, targetY);
     this.gameContainer.addChild(warning);
@@ -21052,8 +21162,10 @@ export class PlayScene {
       this.gameContainer.addChild(beam);
 
       // Deal area damage
-      const damageRadius = 80;
-      const damage = 30;
+      const damageRadius = Math.round(80 * radiusScale);
+      const damage = Math.max(1, Math.round(30 * damageScale));
+      debug.damageRadius = damageRadius;
+      debug.damage = damage;
       const damagedEnemies = new Set();
 
       const applyStrikeDamage = (enemy, forceTarget = false) => {
@@ -21103,6 +21215,8 @@ export class PlayScene {
           targetX: Math.round(targetX),
           targetY: Math.round(targetY),
           damageEvents: debug.damageEvents.length,
+          emergency,
+          emergencyState: this.player.skyVerdictEmergencyState,
           verdict: this.player.tacticalFusionStats.skyVerdicts
         };
       }
