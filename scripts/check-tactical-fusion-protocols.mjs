@@ -132,15 +132,26 @@ try {
     const player = play.player;
     player.applyRunAugment('phase_reactor');
     const result = player.applyRunAugment('phase_wake');
+    play.overrunMilestoneInterlude = { active: true };
     play.showTacticalFusionUnlock(result.newFusions[0]);
+    const blocked = {
+      active: Boolean(play.activeTacticalFusionUnlock),
+      pending: play.pendingTacticalFusionUnlocks?.map((entry) => entry.fusion?.id) || []
+    };
+    play.overrunMilestoneInterlude = null;
+    const flushed = play.flushPendingTacticalFusionUnlock?.() === true;
     play.hud?.update?.();
     return {
       newFusionIds: result.newFusionIds,
       fusionIds: result.fusionIds,
+      blocked,
+      flushed,
       hud: structuredClone(play.hud?.tacticalAugmentGroup?._debugTacticalAugments || null)
     };
   });
   assert(riftUnlock.newFusionIds.join(',') === 'rift_reprisal', `Rift unlock mismatch: ${JSON.stringify(riftUnlock)}`);
+  assert(riftUnlock.blocked?.active === false && riftUnlock.blocked?.pending?.[0] === 'rift_reprisal', 'Fusion unlock should queue behind the Overrun interlude');
+  assert(riftUnlock.flushed === true, 'queued Fusion unlock should release after the Overrun interlude closes');
   assert(riftUnlock.hud?.fusionCount === 1 && riftUnlock.hud?.visibleEntries?.[0] === 'rift_reprisal', 'Rift Fusion is not visible first in the HUD tray');
   await page.waitForTimeout(280);
   report.states.riftUnlock = await readState(page);

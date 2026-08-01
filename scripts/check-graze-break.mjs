@@ -181,6 +181,9 @@ try {
     play.checkCollisions();
     await new Promise((resolve) => setTimeout(resolve, 180));
     const finalState = JSON.parse(window.render_game_to_text());
+    play.nearMissCooldownAt = 0;
+    play.applyNearMiss({ x: player.x + player.radius + 10, y: player.y, radius: 5, active: true });
+    const reearnState = JSON.parse(window.render_game_to_text());
 
     return {
       ok: true,
@@ -211,6 +214,12 @@ try {
       chargedBulletMarked: Boolean(charged?.isGrazeBreaker),
       remainingEnemyBullets: finalState.counts?.enemyBullets || 0,
       lastGrazeBreak: finalState.scoring?.lastGrazeBreak || null,
+      immediateReearn: {
+        grazeBreakReady: reearnState.scoring?.grazeBreakReady || false,
+        dangerDodgeCount: reearnState.scoring?.dangerDodgeCount || 0,
+        cooldownAt: play.grazeBreakCooldownAt || 0,
+        gameplayClockMs: play.getGameplayClockMs?.() || 0
+      },
       activeToastMessages: (finalState.toast?.active || []).map((toast) => toast.message),
       lastSfxEvent: finalState.audio?.lastSfxEvent || null
     };
@@ -242,6 +251,8 @@ try {
       last.visualSparkleCount >= 14 &&
       last.visualRingCount >= 3 &&
       last.visual?.active === true &&
+      result.immediateReearn?.grazeBreakReady === true &&
+      result.immediateReearn?.cooldownAt <= result.immediateReearn?.gameplayClockMs &&
       result.scoreGain > 0 &&
       result.remainingEnemyBullets <= 2 &&
       pageErrors.length === 0 &&

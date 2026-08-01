@@ -234,7 +234,8 @@ export class TouchControls {
     };
   }
 
-  resetTransientState() {
+  resetTransientState({ preserveMovement = false } = {}) {
+    if (preserveMovement) return;
     this.moveTouch = null;
     this.moveX = 0;
     this.moveY = 0;

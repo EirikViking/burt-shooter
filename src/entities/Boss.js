@@ -7,6 +7,7 @@ import { createText } from '../utils/pixiText.js';
 import { getBossProfile } from '../config/BossRoster.js';
 import { getBossSignatureWeaponProfile, getBossWeaponProfile, toBulletVisualConfig } from '../config/EnemyWeaponProfiles.js';
 import { AudioManager } from '../audio/AudioManager.js';
+import { translateText } from '../i18n/index.js';
 import {
   hideMicroSignals,
   presentPhaseSignal
@@ -2468,18 +2469,24 @@ export class Boss {
   startRegularAttackTelegraph(playerX, playerY) {
     const fairness = BalanceConfig.difficulty.bossFairness || {};
     const attack = this.profile?.attack || 'aimed';
-    const type = ['spiral', 'clock', 'chord'].includes(attack)
+    const type = attack === 'split'
+      ? 'split'
+      : ['spiral', 'clock', 'chord'].includes(attack)
       ? 'radial'
       : attack === 'wall'
         ? 'wall'
         : ['fan', 'burst', 'fakeout'].includes(attack)
           ? 'fan'
           : 'aim';
+    const lockedAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const duration = this.getRegularTelegraphDurationMs();
     this.regularTelegraph = {
       attack,
       type,
       start: Date.now(),
-      duration: this.getRegularTelegraphDurationMs()
+      duration,
+      lockedAngle,
+      laneOffsets: type === 'split' ? [-0.18, 0.18] : null
     };
     if (type === 'wall') {
       this.setWallSafeLane();
@@ -2488,9 +2495,32 @@ export class Boss {
     } else {
       const spread = type === 'fan'
         ? (this.level <= 2 ? 0.3 : 0.42)
+        : type === 'split'
+          ? 0.18
         : (attack === 'sniper' ? 0.07 : 0.16);
       this.setAimedSafeLane(type, playerX, playerY, spread);
     }
+    this.lastRegularTelegraphStart = {
+      attack,
+      type,
+      lockedAngle,
+      laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || [0],
+      warningAt: this.regularTelegraph.start,
+      releaseNotBefore: this.regularTelegraph.start + duration
+    };
+    const attackLabel = translateText(String(attack).toUpperCase());
+    this.game?.scenes?.play?.enqueueToast?.(translateText('ATTACK: {threat}', { threat: attackLabel }), {
+      fontSize: this.game?.getWidth?.() < 720 ? 13 : 15,
+      fill: '#fff3a0',
+      slot: 'top',
+      channel: 'combat',
+      type: 'boss_attack_windup',
+      priority: 5,
+      duration: Math.max(700, Math.min(1100, duration)),
+      restrained: true,
+      authoredBadge: false,
+      signalPlate: true
+    });
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
   }
 
@@ -2511,7 +2541,9 @@ export class Boss {
     const gameWidth = this.game?.getWidth ? this.game.getWidth() : 800;
     const gameHeight = this.game?.getHeight ? this.game.getHeight() : 600;
     const length = Math.max(gameHeight * 0.7, 440);
-    const angle = Math.atan2(playerY - this.y, playerX - this.x);
+    const angle = Number.isFinite(this.regularTelegraph.lockedAngle)
+      ? this.regularTelegraph.lockedAngle
+      : Math.atan2(playerY - this.y, playerX - this.x);
 
     if (this.regularTelegraph.type === 'radial') {
       const outer = Math.max(visualRadius * 1.85, 145) * (0.78 + progress * 0.24) * pulse;
@@ -2575,8 +2607,14 @@ export class Boss {
 
     const spread = this.regularTelegraph.type === 'fan'
       ? (this.level <= 2 ? 0.3 : 0.42)
+      : this.regularTelegraph.type === 'split'
+        ? 0.18
       : (this.regularTelegraph.attack === 'sniper' ? 0.07 : 0.16);
-    const lanes = this.regularTelegraph.type === 'fan' ? [-0.5, -0.25, 0, 0.25, 0.5] : [0];
+    const lanes = this.regularTelegraph.type === 'fan'
+      ? [-0.5, -0.25, 0, 0.25, 0.5]
+      : this.regularTelegraph.type === 'split'
+        ? [-1, 1]
+        : [0];
     for (const lane of lanes) {
       const a = angle + lane * spread;
       const start = visualRadius * 0.55;
@@ -2736,13 +2774,24 @@ export class Boss {
   shoot(playerX, playerY) {
     const attack = this.profile?.attack || 'aimed';
     const regularTelegraph = this.regularTelegraph
-      ? { type: this.regularTelegraph.type, attack: this.regularTelegraph.attack }
+      ? {
+        type: this.regularTelegraph.type,
+        attack: this.regularTelegraph.attack,
+        lockedAngle: this.regularTelegraph.lockedAngle,
+        warningAt: this.regularTelegraph.start,
+        laneOffsets: this.regularTelegraph.laneOffsets?.slice?.() || null
+      }
       : null;
     this.shootCooldown = this.shootDelay;
     this.regularAttackReadyAt = Date.now() + this.getRegularAttackIntervalMs();
     this.regularTelegraph = null;
     this.clearRegularAttackTelegraphVisual();
-    this.triggerFirePresentation(attack, false, playerX, playerY);
+    const releaseAimAngle = Number.isFinite(regularTelegraph?.lockedAngle)
+      ? regularTelegraph.lockedAngle
+      : Math.atan2(playerY - this.y, playerX - this.x);
+    const releaseAimX = this.x + Math.cos(releaseAimAngle) * 300;
+    const releaseAimY = this.y + Math.sin(releaseAimAngle) * 300;
+    this.triggerFirePresentation(attack, false, releaseAimX, releaseAimY);
     const bullets = [];
 
     // Boss FX
@@ -2757,7 +2806,7 @@ export class Boss {
       : null;
     const pressure = BalanceConfig.difficulty.pressureScalar * this.getBossPressureScalar();
     const weaponSpeedMult = weaponProfile?.speedMult || 1;
-    const aimAngle = Math.atan2(playerY - this.y, playerX - this.x);
+    const aimAngle = releaseAimAngle;
     const addBullet = (x, y, angle, speed, color = weaponProfile?.color || this.color) => {
       bullets.push(this.markBossBullet(new Bullet(
         x,
@@ -2892,8 +2941,19 @@ export class Boss {
       type: regularTelegraph?.type || attack,
       attack,
       playerX,
-      playerY
+      playerY,
+      lockedAngle: regularTelegraph?.lockedAngle ?? null
     });
+
+    this.lastRegularAttackRelease = {
+      attack,
+      type: regularTelegraph?.type || attack,
+      lockedAngle: aimAngle,
+      warningAt: regularTelegraph?.warningAt || null,
+      releasedAt: Date.now(),
+      laneOffsets: attack === 'split' ? [-0.18, 0.18] : regularTelegraph?.laneOffsets || [0],
+      projectileAngles: bullets.map((bullet) => Math.atan2(Number(bullet.vy) || 0, Number(bullet.vx) || 0))
+    };
 
     return bullets;
   }

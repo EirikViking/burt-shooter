@@ -9,6 +9,7 @@ import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
+import { getTyrianFeedbackSourceText } from '../tyrianFeedbackSourceText.js';
 import { getCompetitionLearningSourceText } from '../competitionLearningSourceText.js';
 import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySourceText.js';
 import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
@@ -2223,6 +2224,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de') }),
   patterns
 };

@@ -288,6 +288,8 @@ export class PlayScene {
     this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
     this.tacticalDraftBannedIds = [];
     this.tacticalDraftConfirmTimeout = null;
+    this.pendingTacticalFusionUnlocks = [];
+    this.activeTacticalFusionUnlock = null;
     this.tacticalScoreRouteRestrictionTimeout = null;
     this.tacticalScoreRouteDecision = null;
     this.tacticalBossBanterTimer = null;
@@ -4562,6 +4564,8 @@ export class PlayScene {
         this.updateDiagnosticsLayout();
         this.cleanupSkippedFrameVisuals('frame_start');
       });
+
+      this.flushPendingTacticalFusionUnlock();
 
       if (this.gameOverInterlude?.active) {
         this.cleanupSkippedFrameVisuals('gameover_interlude');
@@ -9307,7 +9311,7 @@ export class PlayScene {
     const ban = this.createTacticalDraftBanControl();
     overlay.addChild(rescan, hold, ban);
     const initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
-    this.resetTransientGameplayInput('tactical_draft_enter', { preserveFire: true });
+    this.resetTransientGameplayInput('tactical_draft_enter', { preserveFire: true, preserveMovement: true });
     this.tacticalDraft = {
       active: true,
       sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
@@ -9338,6 +9342,7 @@ export class PlayScene {
       rescanCount: 0,
       rescansRemaining: this.tacticalDraftRescansRemaining,
       bansRemaining: this.tacticalDraftBansRemaining,
+      wasPausedBeforeOpen: Boolean(this.isPaused),
       onComplete: typeof onComplete === 'function' ? onComplete : null,
       openedAt: Date.now(),
       inputArmed: false,
@@ -11098,7 +11103,7 @@ export class PlayScene {
       this.tacticalDraftConfirmTimeout = null;
       this.clearTacticalDraft('confirmed');
       this.externalPauseSuppressedUntil = Date.now() + 600;
-      if (this.isPaused) this.setPaused(false);
+      if (state.wasPausedBeforeOpen && !this.isPaused) this.setPaused(true);
       const fusion = result.newFusions?.[0] || null;
       if (!fusion) {
         const status = result.consumed ? translateText('CONSUMED') : translateText('PERMANENT THIS RUN');
@@ -11135,7 +11140,7 @@ export class PlayScene {
           priority: 4
         });
       }
-      if (fusion) this.showTacticalFusionUnlock(fusion);
+      if (fusion) this.queueTacticalFusionUnlock(fusion, 'draft_confirmed');
       complete?.();
     }, state.confirmHoldMs);
     return true;
@@ -11156,6 +11161,43 @@ export class PlayScene {
     }
     this.activeTacticalFusionUnlock = null;
     return true;
+  }
+
+  hasBlockingTacticalFusionPresentation() {
+    return Boolean(
+      this.tacticalDraft?.active
+      || this.overrunMilestoneInterlude?.active
+      || this.gameOverInterlude?.active
+      || this.gameOverSequenceStarted
+      || this.isPaused
+      || this.activeWaveBonusEffect?.parent
+      || this.activeRankUpPresentation?.parent
+      || this.activeBossIntroCard?.parent
+      || this.activeBossDossier?.parent
+    );
+  }
+
+  queueTacticalFusionUnlock(fusion, source = 'unknown') {
+    if (!fusion?.id) return false;
+    if (this.activeTacticalFusionUnlock?.fusionId === fusion.id) return false;
+    if (this.pendingTacticalFusionUnlocks.some((entry) => entry.fusion?.id === fusion.id)) return false;
+    this.pendingTacticalFusionUnlocks.push({ fusion, source, queuedAt: Date.now() });
+    this.lastTacticalFusionQueue = {
+      id: fusion.id,
+      source,
+      queuedAt: Date.now(),
+      pendingCount: this.pendingTacticalFusionUnlocks.length
+    };
+    return true;
+  }
+
+  flushPendingTacticalFusionUnlock() {
+    if (this.activeTacticalFusionUnlock || !this.pendingTacticalFusionUnlocks.length) return false;
+    if (this.hasBlockingTacticalFusionPresentation()) return false;
+    const pending = this.pendingTacticalFusionUnlocks.shift();
+    const shown = this.showTacticalFusionUnlock(pending.fusion, { fromQueue: true });
+    if (!shown) this.pendingTacticalFusionUnlocks.unshift(pending);
+    return shown;
   }
 
   drawTacticalFusionEmblem(graphics, fusion, accent, compact = false) {
@@ -11239,8 +11281,11 @@ export class PlayScene {
     return id;
   }
 
-  showTacticalFusionUnlock(fusion) {
+  showTacticalFusionUnlock(fusion, { fromQueue = false } = {}) {
     if (!fusion || !this.uiOverlay || !this.game?.app?.ticker) return false;
+    if (!fromQueue && this.hasBlockingTacticalFusionPresentation()) {
+      return this.queueTacticalFusionUnlock(fusion, 'presentation_blocked');
+    }
     this.clearTacticalFusionUnlock('replaced');
     const width = Math.max(480, Number(this.game.getWidth?.() || this.game.app.screen?.width) || 1280);
     const height = Math.max(360, Number(this.game.getHeight?.() || this.game.app.screen?.height) || 720);
@@ -11426,7 +11471,7 @@ export class PlayScene {
       core.scale.set(0.94 + Math.sin(elapsed * 0.014) * (reducedMotion ? 0.01 : 0.045));
       if (elapsed >= durationMs) this.clearTacticalFusionUnlock('complete');
     };
-    this.activeTacticalFusionUnlock = { container, ticker };
+    this.activeTacticalFusionUnlock = { container, ticker, fusionId: fusion.id };
     this._activeTickers.push(ticker);
     this.game.app.ticker.add(ticker);
     ticker({ deltaTime: 0 });
@@ -11445,7 +11490,7 @@ export class PlayScene {
     }
     const state = this.tacticalDraft;
     if (state?.active) {
-      this.resetTransientGameplayInput(`tactical_draft_exit:${reason}`, { preserveFire: true });
+      this.resetTransientGameplayInput(`tactical_draft_exit:${reason}`, { preserveFire: true, preserveMovement: true });
     }
     if (state?.overlay?.parent) state.overlay.parent.removeChild(state.overlay);
     state?.overlay?.destroy?.({ children: true });
@@ -11620,8 +11665,8 @@ export class PlayScene {
       preserveMovement,
       suppressUntilReleased: true
     }) || null;
-    this.touchControls?.resetTransientState?.();
-    this.player?.resetTransientInputState?.();
+    this.touchControls?.resetTransientState?.({ preserveMovement });
+    this.player?.resetTransientInputState?.({ preserveMovement });
     this.lastTransientInputReset = {
       reason,
       preserveFire: Boolean(preserveFire),
@@ -11646,7 +11691,7 @@ export class PlayScene {
 
   setPaused(paused) {
     if (this.isPaused === paused) return;
-    this.resetTransientGameplayInput(paused ? 'pause_enter' : 'pause_exit', { preserveFire: true });
+    this.resetTransientGameplayInput(paused ? 'pause_enter' : 'pause_exit', { preserveFire: true, preserveMovement: true });
     this.isPaused = paused;
     if (paused) {
       this.showPauseOverlay();
@@ -19891,12 +19936,12 @@ export class PlayScene {
 
   armGrazeBreak() {
     const now = this.getGameplayClockMs();
-    if (this.grazeBreakReady || now < this.grazeBreakCooldownAt) return false;
+    if (this.grazeBreakReady) return false;
 
     this.grazeBreakReady = true;
     this.grazeBreakArmedAt = now;
     this.grazeBreakExpiresAt = now + 6500;
-    this.grazeBreakCooldownAt = now + 2400;
+    this.grazeBreakCooldownAt = 0;
     this.grazeBreakNeedsFireRelease = Boolean(this.currentFirePressed);
     this.grazeBreakReleasePrimed = !this.grazeBreakNeedsFireRelease;
     this.player?.pulseHitboxReticle?.('graze_break_armed', 1200);
@@ -20241,7 +20286,7 @@ export class PlayScene {
       bulletsCleared: cleared.length,
       enemiesDestroyed
     });
-    this.grazeBreakCooldownAt = this.getGameplayClockMs() + 5200;
+    this.grazeBreakCooldownAt = 0;
     return this.lastGrazeBreak;
   }
 

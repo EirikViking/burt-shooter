@@ -1898,8 +1898,8 @@ export class Player {
     return justPressed;
   }
 
-  resetTransientInputState() {
-    this.touchInput = { moveX: 0, moveY: 0 };
+  resetTransientInputState({ preserveMovement = false } = {}) {
+    if (!preserveMovement) this.touchInput = { moveX: 0, moveY: 0 };
     this.dodgeInputWasPressed = false;
   }
 

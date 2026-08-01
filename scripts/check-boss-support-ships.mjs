@@ -113,7 +113,11 @@ for (const token of [
   'attachBossFuelTether',
   'updateBossFuelTether',
   'createBossFuelDeliveryBurst',
-  'bossFuelShipHealTether'
+  'bossFuelShipHealTether',
+  'pendingBossFuelShipSquad',
+  'releasePendingBossFuelShipSquad',
+  'warningLeadMs',
+  'warningToHealMs'
 ]) {
   if (!managerSource.includes(token)) fail(`EnemyManager missing support ship runtime token ${token}`);
 }
@@ -198,12 +202,16 @@ const spawnProbe = Object.assign(Object.create(EnemyManager.prototype), {
   bossFuelShipsSpawnedThisBoss: 0,
   bossFuelShipCooldownUntilMs: 0,
   bossFuelShipNextCheckAtMs: 0,
+  pendingBossFuelShipSquad: null,
   enemies: [],
   boss: { active: true, health: 80, maxHealth: 100, x: 360, spawnedAtMs: 1000 },
   game: {
+    getWidth: () => 1280,
+    getHeight: () => 720,
     scenes: {
       play: {
-        bulletManager: { enemyBullets: [] }
+        bulletManager: { enemyBullets: [] },
+        showToast() {}
       }
     }
   }
@@ -216,17 +224,28 @@ spawnProbe.spawnBossFuelShipSquad = (count) => {
 const originalDateNow = Date.now;
 const originalRandom = Math.random;
 try {
-  Date.now = () => 10000;
+  let fakeNow = 20000;
+  Date.now = () => fakeNow;
   Math.random = () => 0.99;
   spawnProbe.maybeSpawnBossFuelShip();
-  if (spawned !== 1 || spawnProbe.bossFuelShipsSpawnedThisBoss !== 1) {
-    fail('first eligible hurt boss should spawn boss support even when random chance is unfavorable');
+  if (spawned !== 0 || !spawnProbe.pendingBossFuelShipSquad || spawnProbe.lastBossFuelSupportOrder?.state !== 'warned') {
+    fail('first eligible hurt boss should warn before releasing boss support even when random chance is unfavorable');
+  }
+  const firstWarningAt = spawnProbe.pendingBossFuelShipSquad?.warningAt || 0;
+  fakeNow = spawnProbe.pendingBossFuelShipSquad?.releaseAt || fakeNow;
+  spawnProbe.maybeSpawnBossFuelShip();
+  if (spawned !== 1 || spawnProbe.bossFuelShipsSpawnedThisBoss !== 1 || spawnProbe.lastBossFuelSupportOrder?.warningLeadMs < 1100) {
+    fail('first eligible hurt boss should release support only after the warning lead window');
+  }
+  if (spawnProbe.lastBossFuelSupportOrder?.warningAt !== firstWarningAt || spawnProbe.lastBossFuelSupportOrder?.releaseAt <= firstWarningAt) {
+    fail('boss support diagnostics should retain warning-before-release ordering');
   }
   spawnProbe.bossFuelShipCooldownUntilMs = 0;
   spawnProbe.bossFuelShipNextCheckAtMs = 0;
   spawnProbe.boss.health = 72;
+  fakeNow += 20000;
   spawnProbe.maybeSpawnBossFuelShip();
-  if (spawned !== 1) {
+  if (spawned !== 1 || spawnProbe.pendingBossFuelShipSquad) {
     fail('later boss support events should remain chance-gated after the guaranteed first helper');
   }
 
@@ -238,12 +257,16 @@ try {
     bossFuelShipsSpawnedThisBoss: 0,
     bossFuelShipCooldownUntilMs: 0,
     bossFuelShipNextCheckAtMs: 0,
+    pendingBossFuelShipSquad: null,
     enemies: [],
     boss: { active: true, health: 17, maxHealth: 100, x: 360, spawnedAtMs: 1000, isFinishPacingActive: () => true },
     game: {
+      getWidth: () => 1280,
+      getHeight: () => 720,
       scenes: {
         play: {
-          bulletManager: { enemyBullets: [] }
+          bulletManager: { enemyBullets: [] },
+          showToast() {}
         }
       }
     }
@@ -253,11 +276,16 @@ try {
     armorBleedSpawned += count;
     return count;
   };
-  Date.now = () => 5000;
+  fakeNow = 5000;
   Math.random = () => 0.99;
   armorBleedSpawnProbe.maybeSpawnBossFuelShip();
+  if (armorBleedSpawned !== 0 || !armorBleedSpawnProbe.pendingBossFuelShipSquad) {
+    fail('armor-bleed boss should receive an early support warning before the old default delay');
+  }
+  fakeNow = armorBleedSpawnProbe.pendingBossFuelShipSquad?.releaseAt || fakeNow;
+  armorBleedSpawnProbe.maybeSpawnBossFuelShip();
   if (armorBleedSpawned !== 1 || armorBleedSpawnProbe.bossFuelShipsSpawnedThisBoss !== 1) {
-    fail('armor-bleed boss should get early unarmed support before the old default delay');
+    fail('armor-bleed boss should get early unarmed support after the warning lead window');
   }
 } finally {
   Date.now = originalDateNow;
@@ -300,6 +328,8 @@ deliveryProbe.updateBossFuelShip({
   y: 120,
   radius: 18,
   bossFuelProfile: { speed: 0, healPercent: 0.08 },
+  bossFuelWarningAt: Date.now() - 1800,
+  bossFuelReleasedAt: Date.now() - 600,
   sprite: { rotation: 0, x: 96, y: 120 },
   deactivateVisuals() {
     deactivated = true;
@@ -310,6 +340,13 @@ if (deliveredHeal !== 8 || deliveredSource !== 'boss_fuel_ship' || !deactivated)
 }
 if (deliveryToast !== 'BOSS REFUELED +1 HP' || deliveryToast.includes('.')) {
   fail(`support delivery toast should round fractional heals, got ${deliveryToast}`);
+}
+if (
+  deliveryProbe.lastBossFuelSupportOrder?.state !== 'healed'
+  || deliveryProbe.lastBossFuelSupportOrder?.warningToHealMs < 1700
+  || deliveryProbe.lastBossFuelSupportOrder?.releaseToHealMs < 500
+) {
+  fail('support delivery diagnostics should prove warning -> release -> heal ordering');
 }
 
 let tetherClears = 0;

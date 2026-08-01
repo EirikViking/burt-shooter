@@ -172,6 +172,10 @@ touch.moveTouch = 42;
 touch.moveX = 0.8;
 touch.moveY = -0.4;
 touch.firing = true;
+touch.resetTransientState({ preserveMovement: true });
+assert.equal(touch.moveTouch, 42, 'held touch steering must survive an authorized presentation transition');
+assert.equal(touch.moveX, 0.8);
+assert.equal(touch.moveY, -0.4);
 touch.resetTransientState();
 assert.equal(touch.moveTouch, null);
 assert.equal(touch.moveX, 0);
@@ -180,6 +184,9 @@ assert.equal(touch.firing, true, 'mobile autofire must survive movement reset');
 
 const player = Object.create(Player.prototype);
 player.dodgeInputWasPressed = false;
+player.touchInput = { moveX: 0.7, moveY: -0.2 };
+player.resetTransientInputState({ preserveMovement: true });
+assert.deepEqual(player.touchInput, { moveX: 0.7, moveY: -0.2 }, 'player touch steering must survive presentation resets');
 assert.equal(player.consumeDodgeInputEdge(true), true, 'first phase press must trigger');
 assert.equal(player.consumeDodgeInputEdge(true), false, 'held phase must not repeat');
 assert.equal(player.consumeDodgeInputEdge(false), false, 'phase release must only re-arm');
@@ -196,9 +203,11 @@ assert.match(
   /focusDriftActive = focusDriftRequested && !this\.isDodging && !this\.isGhostActive\(\)/,
   'focus must remain independent of phase cooldown availability'
 );
-assert.match(playSource, /tactical_draft_enter[\s\S]*preserveFire: true/);
-assert.match(playSource, /tactical_draft_exit:\$\{reason\}[\s\S]*preserveFire: true/);
-assert.match(playSource, /pause_enter' : 'pause_exit'[\s\S]*preserveFire: true/);
+assert.match(playSource, /tactical_draft_enter[\s\S]*preserveFire: true, preserveMovement: true/);
+assert.match(playSource, /tactical_draft_exit:\$\{reason\}[\s\S]*preserveFire: true, preserveMovement: true/);
+assert.match(playSource, /pause_enter' : 'pause_exit'[\s\S]*preserveFire: true, preserveMovement: true/);
+assert.match(playSource, /wasPausedBeforeOpen: Boolean\(this\.isPaused\)/);
+assert.doesNotMatch(playSource, /if \(this\.isPaused\) this\.setPaused\(false\)/, 'draft confirmation must not erase prior pause intent');
 assert.match(playSource, /boss_intro_enter[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
 assert.match(playSource, /boss_intro_exit[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
 assert.match(playSource, /focus_loss:\$\{reason\}[\s\S]*preserveFire: false/);

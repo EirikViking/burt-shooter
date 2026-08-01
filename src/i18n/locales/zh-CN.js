@@ -11,6 +11,7 @@ import { getDailyCabinetSignalSourceText } from '../dailyCabinetSignalSourceText
 import { getMenuHierarchySourceText } from '../menuHierarchySourceText.js';
 import { getForumFollowupSourceText } from '../forumFollowupSourceText.js';
 import { getPlayerFeedbackReliabilitySourceText } from '../playerFeedbackReliabilitySourceText.js';
+import { getTyrianFeedbackSourceText } from '../tyrianFeedbackSourceText.js';
 import { getCompetitionLearningSourceText } from '../competitionLearningSourceText.js';
 import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySourceText.js';
 import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
@@ -1829,6 +1830,6 @@ export const zhCN = {
   diagnostics: {
     interfaceLanguage: '界面语言'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('zh-CN'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('zh-CN'), ...getNovaHumorSourceText('zh-CN'), ...getMayhemModesSourceText('zh-CN'), ...getOverrunModeSourceText('zh-CN'), ...getEliteExpansionSourceText('zh-CN'), ...getHowToPlayCompleteSourceText('zh-CN'), ...getTacticalFusionSourceText('zh-CN'), ...getDailyCabinetSignalSourceText('zh-CN'), ...getMenuHierarchySourceText('zh-CN'), ...getForumFollowupSourceText('zh-CN'), ...getPlayerFeedbackReliabilitySourceText('zh-CN'), ...getTyrianFeedbackSourceText('zh-CN'), ...getCompetitionLearningSourceText('zh-CN'), ...getTacticalDraftClaritySourceText('zh-CN'), ...getWonderCodexSourceText('zh-CN'), ...getHangarLaunchModeSourceText('zh-CN') }),
   patterns
 };

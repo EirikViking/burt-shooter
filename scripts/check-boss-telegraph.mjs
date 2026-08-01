@@ -169,6 +169,50 @@ try {
   const firedState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
 
   const bossTelegraph = telegraphState.visibleEnemies?.find(enemy => enemy.kind === 'boss')?.telegraph || null;
+  const splitWarning = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const boss = play?.enemyManager?.boss;
+    const player = play?.player;
+    if (!boss || !player) return { ok: false, reason: 'missing_boss_or_player' };
+    game.app?.ticker?.stop?.();
+    boss.profile = { ...(boss.profile || {}), attack: 'split' };
+    player.x = game.getWidth() * 0.78;
+    player.y = game.getHeight() * 0.82;
+    boss.regularTelegraph = null;
+    boss.clearRegularAttackTelegraphVisual?.();
+    boss.startRegularAttackTelegraph(player.x, player.y);
+    boss.updateRegularAttackTelegraphVisual(0.72, player.x, player.y);
+    return {
+      ok: true,
+      lockedAngle: boss.regularTelegraph?.lockedAngle,
+      laneOffsets: boss.regularTelegraph?.laneOffsets?.slice?.() || [],
+      type: boss.regularTelegraph?.type,
+      warningStart: boss.lastRegularTelegraphStart || null,
+      attackSignalQueued: (play.toastTopQueue || []).some((toast) => String(toast?.message || '').includes('ATTACK'))
+        || String(play.activeTopToast?.text || '').includes('ATTACK')
+    };
+  });
+  const splitScreenshot = path.join(outputDir, 'boss-split-two-lane-warning.png');
+  await page.screenshot({ path: splitScreenshot, fullPage: true });
+  const splitRelease = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    const boss = play?.enemyManager?.boss;
+    const player = play?.player;
+    if (!boss || !player || !boss.regularTelegraph) return { ok: false, reason: 'missing_split_warning' };
+    const lockedAngle = boss.regularTelegraph.lockedAngle;
+    player.x = play.game.getWidth() * 0.12;
+    player.y = play.game.getHeight() * 0.88;
+    const bullets = boss.shoot(player.x, player.y);
+    const normalize = (angle) => Math.atan2(Math.sin(angle), Math.cos(angle));
+    return {
+      ok: true,
+      lockedAngle,
+      angles: bullets.map((bullet) => Math.atan2(bullet.vy, bullet.vx)),
+      deltas: bullets.map((bullet) => normalize(Math.atan2(bullet.vy, bullet.vx) - lockedAngle)),
+      releaseDebug: boss.lastRegularAttackRelease || null
+    };
+  });
   const signatureWarning = await page.evaluate(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
@@ -275,6 +319,17 @@ try {
       warningDebug?.timer?.rightArcSweep > 1 &&
       warningDebug?.timer?.nameCountdownRemoved === true &&
       signatureWarning.nameText === signatureWarning.bossName &&
+      splitWarning.ok === true &&
+      splitWarning.type === 'split' &&
+      splitWarning.laneOffsets?.length === 2 &&
+      Math.abs(splitWarning.laneOffsets[0] + 0.18) < 0.001 &&
+      Math.abs(splitWarning.laneOffsets[1] - 0.18) < 0.001 &&
+      splitWarning.warningStart?.releaseNotBefore > splitWarning.warningStart?.warningAt &&
+      splitRelease.ok === true &&
+      splitRelease.angles?.length === 2 &&
+      Math.abs(splitRelease.deltas?.[0] + 0.18) < 0.001 &&
+      Math.abs(splitRelease.deltas?.[1] - 0.18) < 0.001 &&
+      splitRelease.releaseDebug?.releasedAt >= splitWarning.warningStart?.warningAt &&
       signatureRelease.ok === true &&
       signatureRelease.created?.length === 5 &&
       signatureRelease.center?.delta < 0.001 &&
@@ -295,10 +350,13 @@ try {
       layer: signatureWarning.layerDebug
     },
     signatureRelease,
+    splitWarning,
+    splitRelease,
     pageErrors,
     consoleErrors,
     screenshots: {
       regular: telegraphScreenshot,
+      split: splitScreenshot,
       signature: signatureScreenshot
     }
   };
