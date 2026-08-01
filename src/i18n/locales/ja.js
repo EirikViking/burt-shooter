@@ -684,6 +684,8 @@ const sourceText = Object.freeze({
   'USING RECOMMENDED HULL': '推奨機体を使用中',
   'BEST UNLOCKED': '解放済み最良',
   'HANGAR SAYS THIS ONE HAS THE BEST ODDS': 'ハンガー評価: この機体が最有力です',
+  'DISMISS RECOMMENDATION': '推奨を非表示',
+  'DISMISS RECOMMENDATION [X]': '推奨を非表示 [X]',
   'STEAM SECTOR: OFFLINE': 'Steamセクター: オフライン',
   'STEAM SECTOR: SUBMITTING...': 'Steamセクター: 送信中...',
   'STEAM SECTOR: #{rank}': 'Steamセクター: #{rank}',

@@ -903,6 +903,8 @@ function buildGameTextState(game) {
         spriteKey: shipSelectScene.recommendedShip.spriteKey || null,
         selected: shipSelectScene.recommendedShip.spriteKey === selectedShip.spriteKey,
         bannerVisible: Boolean(shipSelectScene.recommendationBanner?.visible !== false && shipSelectScene.recommendationBanner?.parent),
+        dismissed: Boolean(shipSelectScene.recommendationDismissed),
+        recommendationKey: shipSelectScene.recommendationKey || null,
         label: shipSelectScene.recommendationText?.text || null,
         reason: shipSelectScene.recommendationReasonText?.text || null
       } : null,

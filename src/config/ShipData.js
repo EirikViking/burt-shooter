@@ -2,7 +2,8 @@
  * Single source of truth for playable ship data.
  *
  * The public roster uses 25 original generated Nova Swarm ship sprites plus
- * five late-game Ascendant hulls with explicit temporary art fallbacks. Only the
+ * five late-game Ascendant hulls. Phase Seraph and Eirik the Viking have dedicated
+ * final art while the first three Ascendant hulls retain explicit safe fallbacks. Only the
  * first craft is available on a fresh profile; the rest unlock through
  * level progress so ship choice becomes part of long-term mastery.
  */
@@ -86,7 +87,7 @@ const SHIP_BLUEPRINTS = [
         art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-23.png', note: 'Final Drone Sovereign art needed.' }
     }],
     ['Phase Seraph', 'seraph', 'Slip through impossible screens. Phase and near-miss tools, lower raw damage than the cannon hulls.', 'phase-seraph', 45, 7.4, 90, 0.98, 13.0, 4, 0.11, 10, {
-        textureIndex: 23,
+        textureIndex: 25,
         tier: 'ascendant',
         powerClass: 'late_game',
         powerRating: 1.13,
@@ -96,10 +97,15 @@ const SHIP_BLUEPRINTS = [
         fantasy: 'A phase-dodge ship built for sectors where the screen stops pretending to be fair.',
         weakness: 'Lower raw boss pressure than Railbreaker or Eirik the Viking.',
         recommendedBuildTags: ['phase', 'near-miss', 'dodge'],
-        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-24.png', note: 'Final Phase Seraph art needed.' }
+        art: {
+            temporaryFallback: false,
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
+            fallbackSpriteKey: 'nova-player-ship-24.png',
+            note: 'Dedicated phase-seraph silhouette with a safe legacy fallback.'
+        }
     }],
     ['Eirik the Viking', 'singularity', 'Level-50 endgame hull. Viking overdrive built for the sectors that hate you personally.', 'eirik-the-viking', 50, 6.85, 90, 0.96, 13.5, 4, 0.19, 13, {
-        textureIndex: 24,
+        textureIndex: 26,
         tier: 'ascendant',
         powerClass: 'late_game',
         powerRating: 1.14,
@@ -109,7 +115,13 @@ const SHIP_BLUEPRINTS = [
         fantasy: 'The level-50 endgame monster ship: Viking overdrive, boss pressure, and swarm control in one terrifying package.',
         weakness: 'Large core and high output reward clean positioning; sloppy overdrive windows still lose runs.',
         recommendedBuildTags: ['overdrive', 'boss', 'crowd-control'],
-        art: { temporaryFallback: true, fallbackSpriteKey: 'nova-player-ship-25.png', note: 'Final Eirik the Viking art needed.' }
+        art: {
+            temporaryFallback: false,
+            sourceSpritePath: '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801.png',
+            fallbackSpriteKey: 'nova-player-ship-25.png',
+            inscription: 'ᛖᛁᚱᛁᚲ',
+            note: 'Prestige Viking flagship with dragon prow, shield nacelles, and carved runic bands.'
+        }
     }]
 ];
 

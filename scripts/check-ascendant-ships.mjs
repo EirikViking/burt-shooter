@@ -221,12 +221,28 @@ for (const [id, expectedName, expectedLevel, targetRange] of ASCENDANT_TARGETS) 
 }
 
 const level30 = shipsById.get('nova_ship_26');
+const phaseSeraph = shipsById.get('nova_ship_29');
 const level50 = shipsById.get('nova_ship_30');
 const level30Ratio = level30 ? ratio(calculateSustainedShotDps(level30), topNormalSustainedDps) : 0;
 const level50Ratio = level50 ? ratio(calculateSustainedShotDps(level50), topNormalSustainedDps) : 0;
 if (level30Ratio < 1.09) fail(`Aegis Comet should stay near 10% above top normal sustained damage, got ${level30Ratio.toFixed(3)}`);
 if (level50Ratio < 1.11) fail(`Eirik the Viking should remain a stronger endgame hull, got ${level50Ratio.toFixed(3)}`);
 if (level50Ratio > 1.16) fail(`Eirik the Viking exceeds the modest Ascendant damage ceiling, got ${level50Ratio.toFixed(3)}`);
+
+for (const ship of [phaseSeraph, level50].filter(Boolean)) {
+  const asset = AssetManifest.sprites.playerRankShips[ship.textureIndex];
+  const fallbackAsset = AssetManifest.sprites.playerRankShipFallbacks?.[ship.textureIndex];
+  if (ship.art?.temporaryFallback) fail(`${ship.id} must use dedicated final art, not a temporary fallback`);
+  if (ship.art?.sourceSpritePath !== asset) fail(`${ship.id} art source must match its playable manifest asset`);
+  if (!fallbackAsset || !publicPathExists(fallbackAsset)) fail(`${ship.id} must retain a valid runtime-safe fallback asset`);
+}
+if (phaseSeraph && phaseSeraph.textureIndex === shipsById.get('nova_ship_24')?.textureIndex) {
+  fail('Phase Seraph must not share Nova Overdrive art');
+}
+if (level50 && level50.textureIndex === shipsById.get('nova_ship_25')?.textureIndex) {
+  fail('Eirik the Viking must not share Arcade Legend art');
+}
+if (level50?.art?.inscription !== 'ᛖᛁᚱᛁᚲ') fail('Eirik the Viking must carry its explicit Viking runic inscription');
 
 const shipSelectSource = fs.readFileSync(path.join(root, 'src/scenes/ShipSelectScene.js'), 'utf8');
 for (const token of ['getShipTierLabel', 'tierBadge', 'this.ships.length', 'WEAKNESS:']) {

@@ -63,7 +63,11 @@ export const AssetManifest = {
         },
         sectors: Array.from({ length: 240 }, (_, i) => `/art/generated/nova-swarm/replacements/sector-scenes/nova-sector-scene-${String(i + 1).padStart(3, '0')}-20260616.png`),
         bosses: Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/bosses/nova-boss-${String(i + 1).padStart(2, '0')}.png`),
-        playerShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+        playerShips: [
+            ...Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+            '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
+            '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801.png'
+        ],
         enemies: [
             ...Array.from({ length: 50 }, (_, i) => `/art/generated/nova-swarm/enemies/enhanced/nova-enemy-enhanced-${String(i + 1).padStart(2, '0')}.png`),
             ...Array.from({ length: 177 }, (_, i) => `/art/generated/nova-swarm/enemies/late-mayhem/nova-late-mayhem-enemy-${String(i + 1).padStart(3, '0')}.png`)
@@ -240,7 +244,15 @@ export const AssetManifest = {
         // Core Ships
         ships: Array.from({ length: 9 }, (_, i) => `/sprites/Ships/spaceShips_00${(i + 1).toString()}.png`),
         player: '/sprites/player/player_01.png',
-        playerRankShips: Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+        playerRankShips: [
+            ...Array.from({ length: 25 }, (_, i) => `/art/generated/nova-swarm/ships/nova-player-ship-${String(i + 1).padStart(2, '0')}.png`),
+            '/art/generated/nova-swarm/ships/nova-player-ship-phase-seraph-20260801.png',
+            '/art/generated/nova-swarm/ships/nova-player-ship-eirik-viking-20260801.png'
+        ],
+        playerRankShipFallbacks: Object.freeze({
+            25: '/art/generated/nova-swarm/ships/nova-player-ship-24.png',
+            26: '/art/generated/nova-swarm/ships/nova-player-ship-25.png'
+        }),
 
         // Core Enemies
         enemies: {

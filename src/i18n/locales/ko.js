@@ -711,6 +711,8 @@ const sourceText = Object.freeze({
   'USING RECOMMENDED HULL': '추천 기체 사용 중',
   'BEST UNLOCKED': '해금 중 최고',
   'HANGAR SAYS THIS ONE HAS THE BEST ODDS': '격납고 판단: 이 기체가 승산이 가장 높습니다',
+  'DISMISS RECOMMENDATION': '추천 숨기기',
+  'DISMISS RECOMMENDATION [X]': '추천 숨기기 [X]',
   'STEAM SECTOR: OFFLINE': 'Steam 섹터: 오프라인',
   'STEAM SECTOR: SUBMITTING...': 'Steam 섹터: 제출 중...',
   'STEAM SECTOR: #{rank}': 'Steam 섹터: #{rank}',

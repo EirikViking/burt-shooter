@@ -490,6 +490,25 @@ class GameAssetsManager {
             console.warn(`[GameAssets] Failed to load rank ship ${filename}:`, e);
         }
 
+        const fallbackFilename = AssetManifest.sprites.playerRankShipFallbacks?.[safeIndex];
+        if (fallbackFilename) {
+            const fallbackParts = fallbackFilename.split('/');
+            const fallbackAlias = `rank_ship_${safeIndex}_fallback_${fallbackParts[fallbackParts.length - 1].split('.')[0]}`;
+            try {
+                const fallbackTexture = await PIXI.Assets.load({
+                    alias: fallbackAlias,
+                    src: fallbackFilename
+                });
+                if (this.isValidTexture(fallbackTexture)) {
+                    this.rankShipTextures[safeIndex] = fallbackTexture;
+                    console.warn(`[GameAssets] Using safe fallback for rank ship ${safeIndex}: ${fallbackFilename}`);
+                    return fallbackTexture;
+                }
+            } catch (fallbackError) {
+                console.warn(`[GameAssets] Failed to load rank ship fallback ${fallbackFilename}:`, fallbackError);
+            }
+        }
+
         return null;
     }
 

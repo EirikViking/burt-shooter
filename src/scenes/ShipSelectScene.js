@@ -30,6 +30,11 @@ import { acknowledgeHangarUnlockPresentation } from '../progression/HangarProgre
 import { formatRunContractProgressValue, getRunContractCompletionReviewState } from '../progression/RunContracts.js';
 import { RUN_MODES } from '../game/RunMode.js';
 import { HangarLaunchModeOverlay } from '../ui/HangarLaunchModeOverlay.js';
+import {
+  acknowledgeHangarRecommendation,
+  getHangarRecommendationKey,
+  isHangarRecommendationAcknowledged
+} from '../config/HangarRecommendationSettings.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -148,9 +153,12 @@ export class ShipSelectScene {
     this.menuFx = null;
     this.exitNoticeTimeout = null;
     this.recommendedShip = this.getRecommendedShip();
+    this.recommendationKey = getHangarRecommendationKey(this.recommendedShip);
+    this.recommendationDismissed = isHangarRecommendationAcknowledged(this.recommendedShip);
     this.recommendationBanner = null;
     this.recommendationText = null;
     this.recommendationReasonText = null;
+    this.recommendationDismissText = null;
     this.pendingHangarUnlockShips = this.resolvePendingHangarUnlockShips();
     this.hangarUnlockPresentation = null;
     this.hangarUnlockPresentationRefs = null;
@@ -164,22 +172,12 @@ export class ShipSelectScene {
 
     // Load saved selection
     const preferredSpriteKey = options.preferredSpriteKey;
-    const saved = preferredSpriteKey && isValidShipKey(preferredSpriteKey) ? preferredSpriteKey : this.loadSelection();
-    const newlyUnlockedSpriteKey = this.pendingHangarUnlockShips[0]?.spriteKey || null;
-    const canRestoreSelection = saved && isValidShipKey(saved) && !this.recommendedShip && (
-      saved === preferredSpriteKey ||
-      isShipUnlocked(saved, this.unlockProgress)
-    );
+    const saved = this.loadSelection();
+    const canRestoreSelection = saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress);
     if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
       const resolvedPreferred = resolveShipKey(preferredSpriteKey);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedPreferred);
       if (index >= 0) this.selectedIndex = index;
-    } else if (newlyUnlockedSpriteKey) {
-      const index = this.ships.findIndex(s => s.spriteKey === newlyUnlockedSpriteKey);
-      if (index >= 0) this.selectedIndex = index;
-    } else if (!preferredSpriteKey && this.recommendedShip?.spriteKey) {
-      const recommendedIndex = this.ships.findIndex(s => s.spriteKey === this.recommendedShip.spriteKey);
-      if (recommendedIndex >= 0) this.selectedIndex = recommendedIndex;
     } else if (canRestoreSelection) {
       const resolvedSaved = resolveShipKey(saved);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedSaved);
@@ -1638,15 +1636,18 @@ export class ShipSelectScene {
 
   createRecommendationBanner(width, height) {
     const recommended = this.recommendedShip;
-    if (!recommended || width < 760) return;
+    if (!recommended || this.recommendationDismissed) return;
+    const compact = width < 760;
     const uiScale = Math.max(1, Math.min(2, Number(this.layout?.uiScale) || 1));
-    const bannerWidth = Math.min(760, width - 360);
-    const bannerHeight = 42;
+    const bannerWidth = Math.max(280, Math.min(760, width - (compact ? 32 : 360)));
+    const bannerHeight = compact ? 56 : 42;
+    const dismissWidth = compact ? 94 : 160;
     const banner = new PIXI.Container();
     banner.label = 'ui_shipRecommendationBanner';
-    banner.position.set(width / 2 - bannerWidth / 2, Math.round(100 * Math.min(uiScale, 1.45)));
+    banner.position.set(width / 2 - bannerWidth / 2, Math.round((compact ? 86 : 100) * Math.min(uiScale, 1.45)));
     banner.zIndex = 50;
     banner.bannerWidth = bannerWidth;
+    banner.textWidth = bannerWidth - dismissWidth - 42;
 
     const bg = new PIXI.Graphics();
     bg.roundRect(0, 0, bannerWidth, bannerHeight, 8);
@@ -1675,14 +1676,53 @@ export class ShipSelectScene {
       fill: '#c9fbff',
       letterSpacing: 0
     });
-    reason.position.set(24, 24);
+    reason.position.set(24, compact ? 30 : 24);
 
-    banner.addChild(bg, label, reason);
+    const dismissButton = new PIXI.Container();
+    dismissButton.label = 'ui_shipRecommendationDismiss';
+    dismissButton.position.set(bannerWidth - dismissWidth - 8, compact ? 11 : 7);
+    dismissButton.eventMode = 'static';
+    dismissButton.cursor = 'pointer';
+    dismissButton.hitArea = new PIXI.Rectangle(0, 0, dismissWidth, compact ? 34 : 28);
+    const dismissBg = new PIXI.Graphics();
+    dismissBg.roundRect(0, 0, dismissWidth, compact ? 34 : 28, 6);
+    dismissBg.fill({ color: 0x13243a, alpha: 0.96 });
+    dismissBg.stroke({ color: 0xffd15c, width: 1.2, alpha: 0.8 });
+    const dismissText = createText(translateText('DISMISS RECOMMENDATION [X]'), {
+      fontFamily: FONT_BODY,
+      fontSize: compact ? 10 : 11,
+      fontWeight: '900',
+      fill: '#ffffff',
+      align: 'center',
+      letterSpacing: 0
+    });
+    dismissText.anchor.set(0.5);
+    dismissText.position.set(dismissWidth / 2, compact ? 17 : 14);
+    fitDisplayToBox(dismissText, dismissWidth - 10, compact ? 23 : 19, { minScale: 0.58 });
+    dismissButton.addChild(dismissBg, dismissText);
+    dismissButton.on('pointertap', (event) => {
+      event.stopPropagation();
+      this.dismissRecommendation('pointer');
+    });
+
+    banner.addChild(bg, label, reason, dismissButton);
     this.recommendationBanner = banner;
     this.recommendationText = label;
     this.recommendationReasonText = reason;
+    this.recommendationDismissText = dismissText;
     this.container.addChild(banner);
     this.updateRecommendationBanner();
+  }
+
+  dismissRecommendation(source = 'unknown') {
+    if (!this.recommendedShip || this.recommendationDismissed) return false;
+    const persisted = acknowledgeHangarRecommendation(this.recommendedShip);
+    this.recommendationDismissed = true;
+    if (this.recommendationBanner) this.recommendationBanner.visible = false;
+    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+    AudioManager.playSfx('menuMove', { volume: 0.18 });
+    if (DEBUG) console.log(`[ShipSelect] Recommendation dismissed via ${source}:`, this.recommendationKey, { persisted });
+    return true;
   }
 
   updateRecommendationBanner() {
@@ -1696,9 +1736,9 @@ export class ShipSelectScene {
       : [translateText('BEST UNLOCKED'), role, translateText('HANGAR SAYS THIS ONE HAS THE BEST ODDS')].join(' // ');
     this.recommendationText.scale.set(1);
     this.recommendationReasonText.scale.set(1);
-    const textWidth = (Number.isFinite(this.recommendationBanner.bannerWidth)
-      ? this.recommendationBanner.bannerWidth
-      : this.recommendationBanner.width) - 48;
+    const textWidth = Number.isFinite(this.recommendationBanner.textWidth)
+      ? this.recommendationBanner.textWidth
+      : (this.recommendationBanner.width - 48);
     fitDisplayToBox(this.recommendationText, textWidth, 18, { minScale: 0.7 });
     fitDisplayToBox(this.recommendationReasonText, textWidth, 16, { minScale: 0.68 });
   }
@@ -2801,12 +2841,15 @@ export class ShipSelectScene {
   navigateTo(newIndex) {
     if (newIndex < 0 || newIndex >= this.ships.length || this.animating) return;
     this.selectedIndex = newIndex;
-    setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
+    const ship = this.ships[this.selectedIndex];
+    setSelectedShipKey(ship.spriteKey);
+    if (isShipUnlocked(ship.spriteKey, this.unlockProgress)) {
+      this.saveSelection(ship.spriteKey, { syncCloud: false });
+    }
 
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
     playMenuFocusSfx(0.12);
-    const ship = this.ships[this.selectedIndex];
     this.menuFx?.burst?.(this.game.getWidth() / 2, this.game.getHeight() * 0.52, {
       color: ship?.visuals?.variant?.accent || ship?.visuals?.variant?.glow || 0x66ffdd,
       radius: 160,
@@ -3269,6 +3312,7 @@ export class ShipSelectScene {
         e.code === 'KeyE' ||
         e.code === 'KeyI' ||
         e.code === 'KeyR' ||
+        e.code === 'KeyX' ||
         e.code === 'Space' ||
         e.code === 'Enter' ||
         e.code === 'NumpadEnter';
@@ -3334,6 +3378,9 @@ export class ShipSelectScene {
         e.preventDefault();
         this.setMainMenuButtonFocus(false);
         this.navigateRandom();
+      } else if (e.code === 'KeyX' && this.recommendationBanner?.visible) {
+        e.preventDefault();
+        this.dismissRecommendation('keyboard');
       } else if (e.code === 'KeyI') {
         e.preventDefault();
         this.openCareerInfoOverlay('keyboard');
@@ -3512,7 +3559,8 @@ export class ShipSelectScene {
     }
     if (nav.pressed.x) {
       this.setControllerFocus('ship');
-      this.openSelectedShipDetails();
+      if (this.recommendationBanner?.visible) this.dismissRecommendation('controller');
+      else this.openSelectedShipDetails();
     }
     if (nav.pressed.confirm) {
       this.activateControllerFocus('controller');
@@ -3599,10 +3647,10 @@ export class ShipSelectScene {
     this.game.showShipDetails(spriteKey);
   }
 
-  saveSelection(spriteKey) {
+  saveSelection(spriteKey, { syncCloud = true } = {}) {
     try {
       localStorage.setItem(STORAGE_KEY, spriteKey);
-      if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+      if (syncCloud && typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
     } catch (e) {
       console.warn('[ShipSelect] Failed to save selection:', e);
     }

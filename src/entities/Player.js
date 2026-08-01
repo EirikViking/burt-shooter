@@ -1210,7 +1210,7 @@ export class Player {
       || (typeof this.selectedShipSpriteKey === 'string' && this.selectedShipSpriteKey.includes('::')
         ? this.selectedShipSpriteKey.split('::').pop()
         : null);
-    const baseShip = ShipData[index];
+    const baseShip = ShipData.find(ship => Number(ship.textureIndex) === Number(index)) || ShipData[index];
     if (baseShip) {
       const metadata = getShipMetadata(baseShip.spriteKey) || (slug ? getShipMetadata(`${baseShip.spriteKey}::${slug}`) : null);
       if (metadata) {

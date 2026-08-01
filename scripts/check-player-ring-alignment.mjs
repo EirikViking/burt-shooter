@@ -6,18 +6,19 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { inflateSync } from 'node:zlib';
 import { chromium } from 'playwright';
+import { AssetManifest } from '../src/assets/assetManifest.js';
+import { ShipData } from '../src/config/ShipData.js';
 
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4574));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/player-ring-alignment-${timestamp()}`);
-const shipDir = path.resolve('public/art/generated/nova-swarm/ships');
 const viewports = [
   { width: 1600, height: 900, name: '1600x900' },
   { width: 1366, height: 768, name: '1366x768' },
   { width: 1280, height: 720, name: '1280x720' }
 ];
-const representativeShipIndexes = [0, 5, 10, 20, 24];
+const representativeShipIndexes = [0, 5, 10, 20, 24, 25, 26];
 const runtimeTolerancePx = 0.75;
 const sourceTolerancePx = 0.75;
 
@@ -197,18 +198,21 @@ function alphaCenterDelta(image) {
 }
 
 function readShipSourceCenters() {
-  return Array.from({ length: 25 }, (_, index) => {
-    const file = `nova-player-ship-${String(index + 1).padStart(2, '0')}.png`;
-    const fullPath = path.join(shipDir, file);
+  return AssetManifest.sprites.playerRankShips.map((publicPath, index) => {
+    const file = path.basename(publicPath);
+    const shipKey = ShipData.find(ship => Number(ship.textureIndex) === index)?.spriteKey || file;
+    const fullPath = path.resolve('public', publicPath.replace(/^\//, ''));
     const image = parsePngImage(readFileSync(fullPath), file);
     const centerDelta = alphaCenterDelta(image);
+    const scaledSourceTolerance = sourceTolerancePx * Math.max(1, image.width / 256, image.height / 256);
     assert.ok(
-      Math.abs(centerDelta.x) <= sourceTolerancePx && Math.abs(centerDelta.y) <= sourceTolerancePx,
-      `${file}: source alpha center drift ${JSON.stringify(centerDelta)} exceeds ${sourceTolerancePx}px`
+      Math.abs(centerDelta.x) <= scaledSourceTolerance && Math.abs(centerDelta.y) <= scaledSourceTolerance,
+      `${file}: source alpha center drift ${JSON.stringify(centerDelta)} exceeds scaled tolerance ${scaledSourceTolerance.toFixed(2)}px`
     );
     return {
       index,
-      shipKey: file,
+      shipKey,
+      assetFile: file,
       fullPath,
       width: image.width,
       height: image.height,

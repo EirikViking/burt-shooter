@@ -770,6 +770,8 @@ const sourceText = Object.freeze({
   'USING RECOMMENDED HULL': 'РЕКОМЕНДОВАННЫЙ КОРПУС ВЫБРАН',
   'BEST UNLOCKED': 'ЛУЧШИЙ ОТКРЫТЫЙ',
   'HANGAR SAYS THIS ONE HAS THE BEST ODDS': 'АНГАР СЧИТАЕТ: У ЭТОГО ЛУЧШИЕ ШАНСЫ',
+  'DISMISS RECOMMENDATION': 'СКРЫТЬ РЕКОМЕНДАЦИЮ',
+  'DISMISS RECOMMENDATION [X]': 'СКРЫТЬ РЕКОМЕНДАЦИЮ [X]',
   'STEAM SECTOR: OFFLINE': 'STEAM-СЕКТОР: ОФЛАЙН',
   'STEAM SECTOR: SUBMITTING...': 'STEAM-СЕКТОР: ОТПРАВКА...',
   'STEAM SECTOR: #{rank}': 'STEAM-СЕКТОР: #{rank}',
