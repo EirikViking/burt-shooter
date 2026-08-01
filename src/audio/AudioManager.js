@@ -147,6 +147,9 @@ class AudioController {
     this.sfxPools = {};
     this.sfxPoolIndex = {};
     this.lastSfxPlayedAt = {};
+    this.sfxVariantBags = {};
+    this.lastSfxVariantByEvent = {};
+    this.sfxPriorityLock = null;
     this.lastPowerupVoiceIndex = -1;
     this.lastVoicePlayedAt = {};
     this.voiceVariantBags = {};
@@ -437,6 +440,31 @@ class AudioController {
     }
   }
 
+  getActiveSfxPriority(now = Date.now()) {
+    if (!this.sfxPriorityLock || Number(this.sfxPriorityLock.until) <= now) {
+      this.sfxPriorityLock = null;
+      return null;
+    }
+    return this.sfxPriorityLock;
+  }
+
+  pickSfxVariant(eventName, variants) {
+    const pool = Array.isArray(variants) ? variants.filter(Boolean) : [];
+    if (pool.length <= 1) return pool[0] || null;
+
+    if (!Array.isArray(this.sfxVariantBags[eventName]) || this.sfxVariantBags[eventName].length === 0) {
+      const lastIndex = this.lastSfxVariantByEvent[eventName];
+      const bag = pool.map((_, index) => index).filter((index) => index !== lastIndex);
+      this.sfxVariantBags[eventName] = bag.length ? bag : pool.map((_, index) => index);
+    }
+
+    const bag = this.sfxVariantBags[eventName];
+    const pick = Math.floor(Math.random() * bag.length);
+    const [index] = bag.splice(pick, 1);
+    this.lastSfxVariantByEvent[eventName] = index;
+    return pool[index] || pool[0] || null;
+  }
+
   playSfx(eventName, options = {}) {
     if (!this.enabled) return false;
     const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
@@ -482,14 +510,27 @@ class AudioController {
     }
     this.sfxCooldowns[eventName] = now + minIntervalMs;
 
-    // 3. Pick variant
-    const src = variants[Math.floor(Math.random() * variants.length)];
+    const priority = this.readMixNumber(options.priority, mix.priority ?? 0);
+    const hasPriorityMix = Number.isFinite(Number(options.priority)) || Number.isFinite(Number(mix.priority));
+    const activePriority = this.getActiveSfxPriority(now);
+    const priorityDucked = Boolean(
+      hasPriorityMix &&
+      activePriority &&
+      priority < activePriority.priority
+    );
+
+    // 3. Pick a non-repeating variant before returning to the start of the bag.
+    const src = this.pickSfxVariant(eventName, variants);
 
     // 4. Play
     if (!src) return false;
 
     const audio = this.getSfxAudio(eventName, src, options);
-    const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0);
+    const volumeMultiplier = this.readMixNumber(options.volume, mix.volume ?? 1.0) * (
+      priorityDucked
+        ? this.clampUnit(this.readMixNumber(options.sfxDuckFactor, mix.priorityDuckFactor ?? 0.72))
+        : 1
+    );
     audio.volume = this.clampUnit(this.masterVolume * this.sfxVolume * volumeMultiplier);
     const authoredRate = this.readMixNumber(options.playbackRate, mix.playbackRate ?? 1);
     const rateMin = this.readMixNumber(options.playbackRateMin, mix.playbackRateMin ?? authoredRate);
@@ -507,6 +548,14 @@ class AudioController {
     this.lastSfxPlayedAt[eventName] = now;
     this.lastSfxEvent = eventName;
     this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
+    const priorityHoldMs = this.readMixNumber(options.priorityHoldMs, mix.priorityHoldMs ?? 0);
+    if (priority > 0 && priorityHoldMs > 0 && (!activePriority || priority >= activePriority.priority)) {
+      this.sfxPriorityLock = {
+        eventName,
+        priority,
+        until: now + priorityHoldMs
+      };
+    }
     if (frameCounters) {
       frameCounters.sfxPlayed = (Number(frameCounters.sfxPlayed) || 0) + 1;
       frameCounters.lastSfxEvent = eventName;
@@ -1112,6 +1161,11 @@ class AudioController {
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
       lastSfxTrack: this.lastSfxTrack,
+      sfxPriorityLock: this.getActiveSfxPriority() ? {
+        eventName: this.sfxPriorityLock.eventName,
+        priority: this.sfxPriorityLock.priority,
+        remainingMs: Math.max(0, Math.round(this.sfxPriorityLock.until - Date.now()))
+      } : null,
       lastSpectacleAccent: this.lastSpectacleAccent,
       lastVoiceEvent: this.lastVoiceEvent,
       lastVoiceTrack: this.lastVoiceTrack,
