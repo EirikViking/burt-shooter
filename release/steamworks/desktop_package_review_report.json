@@ -1,26 +1,26 @@
 {
-  "generatedAt": "2026-07-27T10:32:26.311Z",
-  "status": "failed",
+  "generatedAt": "2026-08-01T12:57:14.079Z",
+  "status": "passed",
   "currentBuild": {
-    "version": "v2026-07-27_12-21-56",
-    "timestamp": "2026-07-27T10:21:56.957Z"
+    "version": "v2026-08-01_14-04-57",
+    "timestamp": "2026-08-01T12:04:57.173Z"
   },
   "packagedSmokeMode": "steam",
   "desktopPayload": {
     "path": "release/desktop/win-unpacked/Nova Swarm.exe",
     "sizeBytes": 226698752,
-    "modifiedAt": "2026-07-27T10:25:59.742Z"
+    "modifiedAt": "2026-08-01T12:40:01.298Z"
   },
   "steamApiPayload": {
     "path": "release/desktop/win-unpacked/steam_api64.dll",
     "sizeBytes": 317080,
-    "modifiedAt": "2026-06-04T17:20:54.000Z"
+    "modifiedAt": "2026-03-10T23:13:48.000Z"
   },
   "latestElectronSmoke": {
-    "reportPath": "test-results/electron-smoke-2026-07-27T10-29-07-292Z/report.json",
-    "screenshotPath": "test-results/electron-smoke-2026-07-27T10-29-07-292Z/01-electron-menu.png",
+    "reportPath": "test-results/electron-smoke-2026-08-01T12-17-04-119Z/report.json",
+    "screenshotPath": "test-results/electron-smoke-2026-08-01T12-17-04-119Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-27_12-21-56",
+    "build": "v2026-08-01_14-04-57",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -39,10 +39,10 @@
     "consoleEvents": []
   },
   "latestPackagedExeSmoke": {
-    "reportPath": "test-results/packaged-exe-smoke-2026-07-27T10-29-50-558Z/report.json",
-    "screenshotPath": "test-results/packaged-exe-smoke-2026-07-27T10-29-50-558Z/01-electron-menu.png",
+    "reportPath": "test-results/packaged-exe-smoke-2026-08-01T12-40-28-227Z/report.json",
+    "screenshotPath": "test-results/packaged-exe-smoke-2026-08-01T12-40-28-227Z/01-electron-menu.png",
     "status": "passed",
-    "build": "v2026-07-27_12-21-56",
+    "build": "v2026-08-01_14-04-57",
     "title": "Nova Swarm - Arcade Patrol",
     "scene": "menu",
     "introTitle": null,
@@ -60,24 +60,22 @@
     "steamRuntimeValidation": {
       "mode": "steam",
       "required": true,
-      "passed": false,
-      "errors": [
-        "packaged Steam leaderboard unavailable"
-      ]
+      "passed": true,
+      "errors": []
     },
     "consoleEvents": []
   },
   "latestPackagedControlsSmoke": {
-    "reportPath": "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/report.json",
+    "reportPath": "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/report.json",
     "screenshotPaths": [
-      "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/00-control-start.png",
-      "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/01-keyboard-run.png",
-      "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/02-keyboard-pause.png",
-      "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/03-gamepad-run.png",
-      "test-results/packaged-control-smoke-2026-07-27T10-28-56-079Z/04-gamepad-pause.png"
+      "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/00-control-start.png",
+      "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/01-keyboard-run.png",
+      "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/02-keyboard-pause.png",
+      "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/03-gamepad-run.png",
+      "test-results/packaged-control-smoke-2026-08-01T12-40-41-073Z/04-gamepad-pause.png"
     ],
     "status": "passed",
-    "build": "v2026-07-27_12-21-56",
+    "build": "v2026-08-01_14-04-57",
     "checks": {
       "keyboardMovement": true,
       "keyboardFire": true,
@@ -90,18 +88,16 @@
     "errors": []
   },
   "latestPackagedPerfSmoke": {
-    "reportPath": "test-results/packaged-perf-smoke-2026-07-27T10-31-17-147Z/report.json",
-    "screenshotPath": "test-results/packaged-perf-smoke-2026-07-27T10-31-17-147Z/01-electron-perf-final.png",
+    "reportPath": "test-results/packaged-perf-smoke-2026-08-01T14-53-00-5min/report.json",
+    "screenshotPath": "test-results/packaged-perf-smoke-2026-08-01T14-53-00-5min/01-electron-perf-final.png",
     "status": "passed",
-    "build": "v2026-07-27_12-21-56",
-    "minFps": 59.880239520962,
-    "avgFps": 59.88023952096201,
+    "build": "v2026-08-01_14-04-57",
+    "minFps": 57.80346820808276,
+    "avgFps": 59.77231741213408,
     "minRequiredFps": 50,
     "consoleEvents": [],
     "errors": []
   },
-  "errors": [
-    "packaged executable smoke packaged Steam leaderboard unavailable"
-  ],
+  "errors": [],
   "warnings": []
 }
