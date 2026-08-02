@@ -252,6 +252,14 @@ async function prepareGameplay(page) {
     const initialRenderedWidth = play.player.shipSprite?.width || 0;
     play.player.shipSprite?.scale?.set?.(1);
     const repaired = play.player.normalizeShipSpriteScale?.('tyrian-responsive-regression') || false;
+    for (let rankEvent = 0; rankEvent < 30; rankEvent += 1) {
+      play.player.pulseRankUpShipScale?.();
+    }
+    const stackedContainerScaleX = play.player.sprite?.scale?.x || 0;
+    const stackedContainerScaleY = play.player.sprite?.scale?.y || 0;
+    const stackedRenderedWidth = (play.player.shipSprite?.width || 0) * stackedContainerScaleX;
+    play.player.sprite?.scale?.set?.(8);
+    const containerRepaired = play.player.normalizeShipContainerScale?.('rank-catchup-regression') || false;
     return {
       textureIndex: play.player.selectedShipTextureIndex,
       width: play.player.shipSprite?.texture?.width || 0,
@@ -262,7 +270,14 @@ async function prepareGameplay(page) {
       renderedWidth: play.player.shipSprite?.width || 0,
       renderedHeight: play.player.shipSprite?.height || 0,
       repaired,
-      repairReason: play.player.lastShipScaleRepair?.reason || null
+      repairReason: play.player.lastShipScaleRepair?.reason || null,
+      stackedContainerScaleX,
+      stackedContainerScaleY,
+      stackedRenderedWidth,
+      containerRepaired,
+      containerRepairReason: play.player.lastShipContainerScaleRepair?.reason || null,
+      repairedContainerScaleX: play.player.sprite?.scale?.x || 0,
+      repairedContainerScaleY: play.player.sprite?.scale?.y || 0
     };
   });
   assert.equal(eirikVisual.textureIndex, 26);
@@ -272,6 +287,12 @@ async function prepareGameplay(page) {
   assert.equal(eirikVisual.repairReason, 'tyrian-responsive-regression');
   assert(eirikVisual.renderedWidth <= eirikVisual.targetWidth * 1.02, `Eirik gameplay hull is oversized: ${JSON.stringify(eirikVisual)}`);
   assert(eirikVisual.renderedHeight <= eirikVisual.targetWidth * 1.35 * 1.02, `Eirik gameplay hull is too tall: ${JSON.stringify(eirikVisual)}`);
+  assert(eirikVisual.stackedContainerScaleX <= 1.2 && eirikVisual.stackedContainerScaleY <= 1.2, `rapid rank-up pulses stacked ship scale: ${JSON.stringify(eirikVisual)}`);
+  assert(eirikVisual.stackedRenderedWidth <= eirikVisual.targetWidth * 1.2, `rapid rank-up pulses oversized Eirik: ${JSON.stringify(eirikVisual)}`);
+  assert.equal(eirikVisual.containerRepaired, true, `unsafe ship container scale was not repaired: ${JSON.stringify(eirikVisual)}`);
+  assert.equal(eirikVisual.containerRepairReason, 'rank-catchup-regression');
+  assert.equal(eirikVisual.repairedContainerScaleX, 1);
+  assert.equal(eirikVisual.repairedContainerScaleY, 1);
   return eirikVisual;
 }
 

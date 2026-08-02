@@ -47,6 +47,10 @@ const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
 const FOCUS_DRIFT_SPEED_MULTIPLIER = 0.48;
 const SHIELD_SPENT_FEEDBACK_MS = 2400;
 const BOMB_SPENT_FEEDBACK_MS = 2400;
+const SHIP_CONTAINER_BASE_SCALE = 1;
+const SHIP_CONTAINER_MIN_SAFE_SCALE = 0.58;
+const SHIP_CONTAINER_MAX_SAFE_SCALE = 1.4;
+const RANK_UP_SHIP_PULSE_SCALE = 1.18;
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -163,6 +167,8 @@ export class Player {
     this.rankBoostPulse = 0;
     this.rankBoostExtraShots = 0;
     this.rankBoostBulletFx = false;
+    this.rankUpScalePulseToken = 0;
+    this.lastShipContainerScaleRepair = null;
     this.currentModel = 1;
     this.focusRing = null;
     this.hitboxReticle = null;
@@ -381,6 +387,7 @@ export class Player {
     this.sprite = new PIXI.Container();
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.sprite.scale.set(SHIP_CONTAINER_BASE_SCALE);
     this.sprite.alpha = 0; // Start invisible for fade-in
 
     this.rebuildShipSprite('init');
@@ -400,6 +407,26 @@ export class Player {
     const widthScale = targetWidth / textureWidth;
     const heightScale = (targetWidth * 1.34) / textureHeight;
     return Math.min(widthScale, heightScale);
+  }
+
+  normalizeShipContainerScale(reason = 'runtime') {
+    if (!this.sprite?.scale) return false;
+    const currentScaleX = Number(this.sprite.scale.x);
+    const currentScaleY = Number(this.sprite.scale.y);
+    const unsafe = !Number.isFinite(currentScaleX) || !Number.isFinite(currentScaleY)
+      || currentScaleX < SHIP_CONTAINER_MIN_SAFE_SCALE || currentScaleX > SHIP_CONTAINER_MAX_SAFE_SCALE
+      || currentScaleY < SHIP_CONTAINER_MIN_SAFE_SCALE || currentScaleY > SHIP_CONTAINER_MAX_SAFE_SCALE;
+    if (!unsafe) return false;
+    this.sprite.scale.set(SHIP_CONTAINER_BASE_SCALE);
+    this.rankUpScalePulseToken += 1;
+    this.lastShipContainerScaleRepair = {
+      reason,
+      repairedAt: Date.now(),
+      previousScaleX: currentScaleX,
+      previousScaleY: currentScaleY,
+      repairedScale: SHIP_CONTAINER_BASE_SCALE
+    };
+    return true;
   }
 
   normalizeShipSpriteScale(reason = 'runtime') {
@@ -1564,6 +1591,19 @@ export class Player {
     );
   }
 
+  pulseRankUpShipScale() {
+    if (!this.sprite) return false;
+    const pulseContainer = this.sprite;
+    const pulseToken = ++this.rankUpScalePulseToken;
+    pulseContainer.scale.set(RANK_UP_SHIP_PULSE_SCALE);
+    setTimeout(() => {
+      if (this.sprite === pulseContainer && this.rankUpScalePulseToken === pulseToken) {
+        pulseContainer.scale.set(SHIP_CONTAINER_BASE_SCALE);
+      }
+    }, 300);
+    return true;
+  }
+
   animateRankUp(newRank) {
     console.log('[RankUp] applying visual evolution');
 
@@ -1575,15 +1615,10 @@ export class Player {
       }, 200);
     }
 
-    // 2. Scale Pulse (Pop up and down) - Container scale
-    if (this.sprite) {
-      const startScaleX = this.sprite.scale.x;
-      const startScaleY = this.sprite.scale.y;
-      this.sprite.scale.set(startScaleX * 1.3, startScaleY * 1.3);
-      setTimeout(() => {
-        if (this.sprite) this.sprite.scale.set(startScaleX, startScaleY);
-      }, 300);
-    }
+    // 2. Scale pulse from a fixed baseline. Rapid catch-up rank events can
+    // overlap, so never multiply the current container scale or allow an old
+    // timer to restore a stale enlarged value.
+    this.pulseRankUpShipScale();
 
     // 3. Swap Sprite PRE-LOG
     if (this.shipSprite && this.shipSprite.texture) {
@@ -1616,6 +1651,7 @@ export class Player {
   update(delta) {
     if (!this.active) return;
     if (!this.sprite) return; // Guard: Sprite might be missing/destroyed during update
+    this.normalizeShipContainerScale('update');
     this.normalizeShipSpriteScale('update');
 
     const visualNow = Date.now();

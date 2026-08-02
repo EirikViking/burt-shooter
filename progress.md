@@ -2675,3 +2675,11 @@ Original request: continue the complete 21-item Tyrian #93/#94 brief from a new 
 - Gameplay footage exposed Eirik scaling to roughly 500-650 px while its collision core stayed small. Gameplay ship textures now derive a bounded 70-80 px footprint and self-repair unsafe runtime scale corruption without suppressing normal firing/pickup pulse animation.
 - Compact and mobile Hangar layouts use restrained Eirik sizing; the duplicate compact FIRST FLIGHT badge is hidden while the status remains in the existing header/readout.
 - Focused checks passed: generated rosters, Ascendant ship contract, player ship padding, `build:current`, and the three-layout Tyrian responsive suite. Evidence: `test-results/tyrian-responsive-ui-2026-08-01T23-19-52-816Z`.
+
+## 2026-08-02 Emergency stacked rank-up scale hotfix
+
+- A live Steam screenshot at Rank 27 exposed a second scale path outside the bounded Eirik texture: overlapping catch-up rank celebrations multiplied the entire player container by 1.3, allowing exponential growth while the inner texture-scale guard still reported a valid 70-80 px hull.
+- Rank-up celebration now pulses from a fixed 1.18 container baseline, uses a token so stale timers cannot restore an enlarged value, and never multiplies the current scale. Runtime also repairs unsafe parent-container scale independently of the existing texture-scale repair.
+- The responsive runtime regression now fires 30 overlapping rank pulses, proves they remain at or below the intended 1.18 pulse, corrupts the parent scale to 8x, and verifies immediate repair to 1x before screenshot capture.
+- `npm run build:current` and the three-layout `npm run check:tyrian-responsive-ui` pass. The inspected 1920x1080 gameplay capture shows Eirik at the intended compact combat footprint: `test-results/tyrian-responsive-ui-2026-08-02T07-16-29-326Z/standard-16x9-1920x1080/01-wave-hud-compatible-timers.png`.
+- The generic web-game client was attempted as required, but its bundled Chromium headless shell is not installed (`chromium_headless_shell-1208`). The repository-native Playwright suite used installed Chrome successfully and supplies the passing runtime assertions and screenshots above.
