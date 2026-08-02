@@ -546,7 +546,9 @@ async function runSmoke() {
     await gamepadPage.waitForFunction(
       () => window.__game?.scenes?.play?.enemyManager?.state === 'WAVE_ACTIVE',
       null,
-      { timeout: 15000 }
+      // This is the smoke suite's second live game page. Allow the shared ship
+      // catalog and level-entry warmup to finish under concurrent rendering.
+      { timeout: 30000 }
     );
     await gamepadPage.evaluate(() => {
       const game = window.__game;
