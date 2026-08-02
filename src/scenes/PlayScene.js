@@ -18152,10 +18152,22 @@ export class PlayScene {
         plate.interactive = false;
         const paddingX = slot === 'top' ? 23 : 29;
         const paddingY = slot === 'top' ? 12 : 16;
-        const minPlateWidth = slot === 'top' ? 244 : 322;
+        const defaultMinPlateWidth = slot === 'top' ? 244 : 322;
+        const minPlateWidth = Number.isFinite(Number(options.signalMinWidth))
+          ? Math.max(120, Math.min(defaultMinPlateWidth, Number(options.signalMinWidth)))
+          : defaultMinPlateWidth;
         const panelWidth = Math.min(width - 28, Math.max(minPlateWidth, Math.min(maxWidth, text.width + paddingX * 2)));
         const panelHeight = Math.max(slot === 'top' ? 48 : 62, text.height + paddingY * 2);
         const radius = slot === 'top' ? 7 : 9;
+        plate._debugSignalPlate = {
+          type,
+          slot,
+          panelWidth: Math.round(panelWidth),
+          panelHeight: Math.round(panelHeight),
+          textWidth: Math.round(text.width),
+          minPlateWidth: Math.round(minPlateWidth),
+          maxWidth: Math.round(maxWidth)
+        };
 
         const panel = new PIXI.Graphics();
         panel.roundRect(-panelWidth / 2, -panelHeight / 2, panelWidth, panelHeight, radius);

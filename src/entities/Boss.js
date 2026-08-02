@@ -2509,8 +2509,9 @@ export class Boss {
       releaseNotBefore: this.regularTelegraph.start + duration
     };
     const attackLabel = translateText(String(attack).toUpperCase());
+    const viewportWidth = this.game?.getWidth?.() || 800;
     this.game?.scenes?.play?.enqueueToast?.(translateText('ATTACK: {threat}', { threat: attackLabel }), {
-      fontSize: this.game?.getWidth?.() < 720 ? 13 : 15,
+      fontSize: viewportWidth < 720 ? 13 : 15,
       fill: '#fff3a0',
       slot: 'top',
       channel: 'combat',
@@ -2519,7 +2520,9 @@ export class Boss {
       duration: Math.max(700, Math.min(1100, duration)),
       restrained: true,
       authoredBadge: false,
-      signalPlate: true
+      signalPlate: true,
+      signalMinWidth: viewportWidth < 720 ? 144 : 168,
+      maxWidth: Math.min(viewportWidth - 40, viewportWidth < 720 ? viewportWidth * 0.62 : 280)
     });
     this.updateRegularAttackTelegraphVisual(0, playerX, playerY);
   }

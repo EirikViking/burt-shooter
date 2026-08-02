@@ -161,6 +161,9 @@ try {
   mkdirSync(outputDir, { recursive: true });
   const telegraphScreenshot = path.join(outputDir, 'boss-regular-telegraph.png');
   await page.screenshot({ path: telegraphScreenshot, fullPage: true });
+  const regularSignalPlate = await page.evaluate(() => ({
+    ...(window.__game?.scenes?.play?.activeTopToast?._debugSignalPlate || {})
+  }));
 
   await page.waitForFunction((startCount) => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
@@ -307,6 +310,9 @@ try {
   const report = {
     ok: Boolean(bossTelegraph) &&
       bossTelegraph.label === 'REGULAR ATTACK TELL' &&
+      regularSignalPlate.type === 'boss_attack_windup' &&
+      regularSignalPlate.panelWidth >= regularSignalPlate.textWidth &&
+      regularSignalPlate.panelWidth <= 190 &&
       (firedState.counts?.enemyBullets || 0) > (telegraphState.counts?.enemyBullets || 0) &&
       signatureWarning.ok === true &&
       movementDelta < 0.01 &&
@@ -338,6 +344,7 @@ try {
       consoleErrors.length === 0,
     baseUrl,
     bossTelegraph,
+    regularSignalPlate,
     enemyBulletsBefore: telegraphState.counts?.enemyBullets || 0,
     enemyBulletsAfter: firedState.counts?.enemyBullets || 0,
     signatureWarning: {
