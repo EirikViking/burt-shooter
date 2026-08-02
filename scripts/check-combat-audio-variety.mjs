@@ -4,6 +4,7 @@ import { SFX_CATALOG, SFX_MIX } from '../src/audio/SoundCatalog.js';
 
 const audioManager = readFileSync('src/audio/AudioManager.js', 'utf8');
 const enemyManager = readFileSync('src/managers/EnemyManager.js', 'utf8');
+const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
 
 for (const key of ['enemy_shoot', 'enemy_explode', 'pickup', 'powerup', 'powerup_pickup']) {
   const variants = SFX_CATALOG[key] || [];
@@ -36,5 +37,13 @@ assert.match(enemyManager, /AudioManager\.playSfx\('enemy_shoot'/,
   'signature enemy fire must have an audible threat cue');
 assert.match(enemyManager, /isPriorityEnemy \|\| isDiveThreat \|\| isClose/,
   'enemy fire cue must remain gated to readable threat moments');
+assert.doesNotMatch(playScene, /AudioManager\.playSfx\('powerup_pickup'/,
+  'collision handling must not layer a duplicate generic pickup sting over the category-owned sound');
+assert.match(playScene, /AudioManager\.playSpectacleAccent\?\.\('pickup'/,
+  'ordinary pickups need a restrained positional accent');
+assert.match(playScene, /cooldownKey:\s*'pickup_spatial'/,
+  'ordinary positional pickup accents need one bounded cooldown lane');
+assert.match(playScene, /pitchScale = 0\.94 \+ \(Math\.abs\(hashString\(type\)\) % 7\) \* 0\.02/,
+  'ordinary pickup accents need deterministic per-type pitch variety');
 
 console.log('[check-combat-audio-variety] PASS');

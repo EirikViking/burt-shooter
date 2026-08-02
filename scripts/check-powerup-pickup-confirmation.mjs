@@ -138,6 +138,7 @@ try {
     return {
       ok: Boolean(juice?.triggered),
       juice: { ...(juice || {}) },
+      spatialAudio: { ...(play.lastPowerupPickupSpatialAudio || {}) },
       debug: { ...(play.powerupPickupClaimCue?.layer?._debugPowerupPickupClaimCue || {}) }
     };
   });
@@ -174,6 +175,9 @@ try {
   const failures = [];
   if (!started.ok) failures.push(started.reason || 'pickup juice did not start');
   if (!started.juice?.claimCue) failures.push(`pickup juice did not report claim cue: ${JSON.stringify(started.juice)}`);
+  if (!started.juice?.spatialAudio || started.spatialAudio?.kind !== 'pickup') failures.push(`ordinary pickup did not request positional audio: ${JSON.stringify(started)}`);
+  if (Math.abs(Number(started.spatialAudio?.pan) || 0) < 0.05) failures.push(`ordinary pickup pan did not preserve source position: ${JSON.stringify(started.spatialAudio)}`);
+  if ((Number(started.spatialAudio?.pitchScale) || 0) < 0.94 || (Number(started.spatialAudio?.pitchScale) || 0) > 1.06) failures.push(`ordinary pickup pitch variety escaped its restrained range: ${JSON.stringify(started.spatialAudio)}`);
   if (!started.debug?.visible || started.debug?.type !== 'shield') failures.push(`claim cue start debug mismatch: ${JSON.stringify(started)}`);
   if (!active.visible || !active.debug?.visible) failures.push(`claim cue was not visible after animation step: ${JSON.stringify(active)}`);
   if ((active.debug?.pipCount || 0) < 6) failures.push(`claim cue pips missing: ${JSON.stringify(active.debug)}`);

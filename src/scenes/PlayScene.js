@@ -7590,9 +7590,6 @@ export class PlayScene {
           collisionStats.powerupPickups += 1;
           this.recordBalancePickup(powerup);
           powerup.collect(this.player, this);
-          if (powerup.type !== 'nova_miracle') {
-            AudioManager.playSfx('powerup_pickup', { volume: 0.35, minIntervalMs: 120 });
-          }
           const pickupColor = this.player?.synergyState?.type === 'cash_vacuum' ? 0xffff00 : powerup.color;
           this.particleManager.createPickupEffect(powerup.x, powerup.y, pickupColor);
           this.triggerPowerupPickupJuice(powerup);
@@ -19338,6 +19335,7 @@ export class PlayScene {
     this.triggerShockwave?.(x, y, color);
     const claimCue = this.triggerPowerupPickupClaimCue(powerup, { color, major, type });
     this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : (major ? 5 : 3), major ? 14 : 9);
+    this.lastPowerupPickupSpatialAudio = null;
     if (major && type !== 'nova_miracle') {
       this.emitSpectacle('pickup', {
         x,
@@ -19350,6 +19348,29 @@ export class PlayScene {
         pitchScale: type === 'row_core' ? 0.82 : 1.04,
         force: true
       });
+    } else if (!major) {
+      const playfieldWidth = Math.max(1, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 800);
+      const audioX = Number.isFinite(Number(powerup?.x)) ? Number(powerup.x) : x;
+      const pan = Math.max(-0.78, Math.min(0.78, ((audioX / playfieldWidth) - 0.5) * 1.42));
+      const pitchScale = 0.94 + (Math.abs(hashString(type)) % 7) * 0.02;
+      const played = AudioManager.playSpectacleAccent?.('pickup', {
+        pan,
+        intensity: 0.48,
+        volume: 0.38,
+        pitchScale,
+        durationSeconds: 0.34,
+        cooldownKey: 'pickup_spatial',
+        minIntervalMs: 140
+      }) === true;
+      this.lastPowerupPickupSpatialAudio = {
+        requested: true,
+        played,
+        kind: 'pickup',
+        type,
+        pan: Number(pan.toFixed(2)),
+        pitchScale: Number(pitchScale.toFixed(2)),
+        sourceX: Math.round(audioX)
+      };
     }
 
     this.lastPowerupPickupJuice = {
@@ -19359,6 +19380,7 @@ export class PlayScene {
       type,
       major,
       claimCue: Boolean(claimCue?.triggered),
+      spatialAudio: Boolean(this.lastPowerupPickupSpatialAudio?.requested),
       claimPips: claimCue?.pipCount || 0,
       claimRings: claimCue?.ringCount || 0,
       x: Math.round(x),
