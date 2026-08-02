@@ -1237,16 +1237,21 @@ export class HUD {
     const focusAlpha = this.notificationFocus === 'major'
       ? 0.16
       : this.notificationFocus === 'transition'
-        ? 0.32
+        ? 0.72
         : 1;
     this.missionPanel.alpha = focusAlpha;
     this.missionFrameArt.alpha = 0;
 
     this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
-    const semanticSuppressed = this.notificationFocus === 'transition';
+    // Transition banners sit below the persistent mission panel. Keep the
+    // current sector/wave context readable instead of making the top bar blink
+    // off and on between Wave Cleared and Wave Incoming.
+    const semanticSuppressed = false;
     this.missionText.alpha = semanticSuppressed
       ? 0
-      : this.notificationFocus === 'none' ? 1 : focusAlpha * 0.72;
+      : this.notificationFocus === 'none'
+        ? 1
+        : this.notificationFocus === 'transition' ? focusAlpha : focusAlpha * 0.72;
     this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
     this.directiveText.alpha = semanticSuppressed ? 0 : 0.62 * focusAlpha;
     this.directiveProgressBg.alpha = semanticSuppressed ? 0 : 0.56 * focusAlpha;
@@ -1277,10 +1282,21 @@ export class HUD {
   }
 
   updateActivePowerup() {
-    const player = this.game?.scenes?.play?.player;
+    const playScene = this.game?.scenes?.play;
+    const player = playScene?.player;
     const states = player?.getActivePowerupStates
       ? player.getActivePowerupStates()
       : (player?.getActivePowerupState ? [player.getActivePowerupState()] : []);
+    if (playScene?.grazeBreakReady) {
+      states.push({
+        type: 'graze_break',
+        label: translateText('GRAZE BREAK'),
+        remainingMs: Math.max(0, (Number(playScene.grazeBreakExpiresAt) || 0) - playScene.getGameplayClockMs()),
+        durationMs: 6500,
+        color: 0xff66ff,
+        category: 'defense'
+      });
+    }
     const activeStates = states.filter(state => state?.label);
     if (!activeStates.length) {
       this.activePowerupRows.forEach(row => { row.container.visible = false; });
@@ -1326,7 +1342,11 @@ export class HUD {
       hasDebuff,
       hasSpent,
       hasExpiring,
-      statusColor
+      statusColor,
+      states: activeStates.map((state) => ({
+        type: state.type,
+        remainingMs: Math.round(Number(state.remainingMs) || 0)
+      }))
     };
 
     activeStates.forEach((state, index) => {

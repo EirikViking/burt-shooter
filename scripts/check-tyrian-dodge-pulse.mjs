@@ -41,6 +41,7 @@ function makeHarness({
     playerBullets: 0,
     scoreEvents: 0,
     toasts: 0,
+    toastMessages: [],
     combatVolleys: 0
   };
   const bulletManager = {
@@ -70,8 +71,9 @@ function makeHarness({
     },
     particleManager: null,
     gameContainer: null,
-    enqueueToast() {
+    enqueueToast(message) {
       counters.toasts += 1;
+      counters.toastMessages.push(String(message));
     },
     recordCombatVolley() {
       counters.combatVolleys += 1;
@@ -183,6 +185,7 @@ try {
   assert.equal(combinedResult.discardedReason, null);
   assert.equal(combined.counters.deactivations, 3, 'a combined pulse must clear each bullet exactly once');
   assert.equal(combined.counters.playerBullets, 2, 'Rift shard count should match Phase-cleared positions');
+  assert(combined.counters.toastMessages.some((message) => message.includes('×2')), 'Rift Reprisal should report the visible shard count');
   assert.equal(combined.counters.scoreEvents, 0, 'dodge exit clears must remain score-neutral');
   assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 1, 'combined clear must not duplicate clear audio');
   assert.equal(audioEvents.filter((event) => event.id === 'tactical_phase_reactor').length, 1, 'Rift volley must emit one Fusion audio event');

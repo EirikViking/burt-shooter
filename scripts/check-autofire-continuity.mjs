@@ -159,7 +159,7 @@ try {
 
     const cases = [
       runCase({
-        name: 'same_wave_transition_hold',
+        name: 'same_wave_transition_keeps_firing',
         state: 'WAVE_ACTIVE',
         phase: 'WAVES',
         currentWaveIndex: 2,
@@ -182,7 +182,7 @@ try {
         suppressedLevel: 4
       }),
       runCase({
-        name: 'boss_gate_stays_quiet',
+        name: 'boss_gate_keeps_firing',
         state: 'BOSS_GATE',
         phase: 'BOSS',
         currentWaveIndex: 3,
@@ -220,15 +220,17 @@ try {
   });
 
   const byName = Object.fromEntries(runtime.cases.map((entry) => [entry.name, entry]));
-  assert.equal(byName.same_wave_transition_hold.playerBulletCount, 0, 'autofire must remain quiet during the cleared wave hold');
-  assert.equal(byName.same_wave_transition_hold.suppressedAfter, 2, 'same-wave transition suppression released early');
+  assert(byName.same_wave_transition_keeps_firing.playerBulletCount > 0, 'autofire should continue during the cleared-wave hold');
+  assert.equal(byName.same_wave_transition_keeps_firing.suppressedAfter, null, 'legacy same-wave suppression was not cleared');
+  assert.equal(byName.same_wave_transition_keeps_firing.suppressedLevelAfter, null, 'legacy same-wave suppression level was not cleared');
   assert(byName.next_wave_resumes.playerBulletCount > 0, 'autofire did not resume in the next ordinary wave');
   assert.equal(byName.next_wave_resumes.suppressedAfter, null, 'next-wave suppression flag was not cleared');
   assert(byName.same_index_new_sector_resumes.playerBulletCount > 0, 'autofire did not resume when a new sector reused the same wave index');
   assert.equal(byName.same_index_new_sector_resumes.suppressedAfter, null, 'new-sector suppression flag was not cleared');
   assert.equal(byName.same_index_new_sector_resumes.suppressedLevelAfter, null, 'new-sector suppression level was not cleared');
-  assert.equal(byName.boss_gate_stays_quiet.playerBulletCount, 0, 'autofire must remain quiet during the boss gate');
-  assert.equal(byName.boss_gate_stays_quiet.suppressedAfter, 3, 'boss-gate suppression released before combat');
+  assert(byName.boss_gate_keeps_firing.playerBulletCount > 0, 'autofire should continue during the boss gate');
+  assert.equal(byName.boss_gate_keeps_firing.suppressedAfter, null, 'legacy boss-gate suppression was not cleared');
+  assert.equal(byName.boss_gate_keeps_firing.suppressedLevelAfter, null, 'legacy boss-gate suppression level was not cleared');
   assert(byName.boss_active_resumes.playerBulletCount > 0, 'autofire did not resume when boss combat became active');
   assert.equal(byName.boss_active_resumes.suppressedAfter, null, 'boss-active suppression flag was not cleared');
   assert.equal(byName.boss_active_resumes.suppressedLevelAfter, null, 'boss-active suppression level was not cleared');

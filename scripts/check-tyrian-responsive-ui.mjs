@@ -260,6 +260,17 @@ async function prepareGameplay(page) {
     const stackedRenderedWidth = (play.player.shipSprite?.width || 0) * stackedContainerScaleX;
     play.player.sprite?.scale?.set?.(8);
     const containerRepaired = play.player.normalizeShipContainerScale?.('rank-catchup-regression') || false;
+    play.player.createDrones?.(2, 0x66ccff);
+    play.player.updateDrones?.(1 / 60);
+    const supportDrones = (play.player.drones || []).map((drone) => {
+      const sprite = (drone.children || []).find((child) => child?.texture);
+      return {
+        width: sprite?.width || 0,
+        height: sprite?.height || 0,
+        scaleX: sprite?.scale?.x || 0,
+        scaleY: sprite?.scale?.y || 0
+      };
+    });
     return {
       textureIndex: play.player.selectedShipTextureIndex,
       width: play.player.shipSprite?.texture?.width || 0,
@@ -277,7 +288,8 @@ async function prepareGameplay(page) {
       containerRepaired,
       containerRepairReason: play.player.lastShipContainerScaleRepair?.reason || null,
       repairedContainerScaleX: play.player.sprite?.scale?.x || 0,
-      repairedContainerScaleY: play.player.sprite?.scale?.y || 0
+      repairedContainerScaleY: play.player.sprite?.scale?.y || 0,
+      supportDrones
     };
   });
   assert.equal(eirikVisual.textureIndex, 26);
@@ -293,6 +305,11 @@ async function prepareGameplay(page) {
   assert.equal(eirikVisual.containerRepairReason, 'rank-catchup-regression');
   assert.equal(eirikVisual.repairedContainerScaleX, 1);
   assert.equal(eirikVisual.repairedContainerScaleY, 1);
+  assert.equal(eirikVisual.supportDrones.length, 2, `Eirik support drones were not created: ${JSON.stringify(eirikVisual)}`);
+  for (const drone of eirikVisual.supportDrones) {
+    assert(Math.max(drone.width, drone.height) <= 34.5, `Eirik support drone inherited flagship dimensions: ${JSON.stringify(drone)}`);
+    assert(drone.scaleX > 0 && drone.scaleY > 0, `Eirik support drone has an invalid texture scale: ${JSON.stringify(drone)}`);
+  }
   return eirikVisual;
 }
 

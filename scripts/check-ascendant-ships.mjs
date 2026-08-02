@@ -5,6 +5,7 @@ import { AssetManifest } from '../src/assets/assetManifest.js';
 import { ShipData } from '../src/config/ShipData.js';
 import { getSelectableShips } from '../src/config/ShipMetadata.js';
 import { ShipUnlockConfig, getShipUnlockDefinition } from '../src/config/ShipUnlockConfig.js';
+import { SUPPORT_DRONE_TARGET_SPAN, computeSupportDroneTextureScale } from '../src/entities/SupportDroneVisual.js';
 
 const root = process.cwd();
 const errors = [];
@@ -265,6 +266,18 @@ if ((Number(level50?.art?.hangarHeroScale) || 0) < 1.7) {
 }
 if (!String(level50?.art?.note || '').toLowerCase().includes('runic inscriptions')) {
   fail('Eirik the Viking art contract must call out its prominent runic inscriptions');
+}
+
+const generatedDroneScale = computeSupportDroneTextureScale({ width: 1536, height: 1536 });
+if (generatedDroneScale * 1536 > SUPPORT_DRONE_TARGET_SPAN + 0.001) {
+  fail(`large generated hull drones must be normalized (${generatedDroneScale * 1536}px)`);
+}
+if (computeSupportDroneTextureScale({ width: 48, height: 32 }) > 0.45) {
+  fail('support drone scale must retain the legacy upper bound');
+}
+const playerSource = fs.readFileSync(path.join(root, 'src/entities/Player.js'), 'utf8');
+if (!playerSource.includes('computeSupportDroneTextureScale(texture)')) {
+  fail('Player support drones must normalize generated hull texture dimensions');
 }
 
 const shipSelectSource = fs.readFileSync(path.join(root, 'src/scenes/ShipSelectScene.js'), 'utf8');

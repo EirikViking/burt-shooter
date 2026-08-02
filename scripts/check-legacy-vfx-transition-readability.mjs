@@ -54,20 +54,17 @@ assert.match(
   'An authoritative transition does not suppress Mission Status from its first visible frame through dismissal'
 );
 assert.match(play, /maybeFlushPendingWaveTransitionRewards\(\)/, 'deferred Storm reward flush is missing');
-assert.match(hud, /semanticSuppressed = this\.notificationFocus === 'transition'/, 'Mission Status semantic suppression is missing');
-assert.match(hud, /this\.missionText\.alpha = semanticSuppressed\s*\?\s*0/, 'Mission Status text is still readable beneath transitions');
-assert.match(hud, /this\.missionProgressBg\.alpha = semanticSuppressed \? 0/, 'Mission Status progress remains readable beneath transitions');
+assert.match(hud, /const semanticSuppressed = false/, 'Mission Status should remain readable beneath transitions');
+assert.match(hud, /this\.notificationFocus === 'transition' \? focusAlpha/, 'Mission Status transition alpha is not preserved');
 
 assert.match(
   play,
-  /\(enemyState === 'WAVE_ACTIVE' && !this\.enemyManager\?\.waveEnding\)/,
-  'routine autofire is not stopped at wave end'
+  /if \(firePressed && this\.player && !this\.introActive\)/,
+  'routine autofire does not stay available across wave transitions'
 );
 assert.match(play, /maybeSuppressRoutineFireAfterFinalWaveHostile\(enemy\)/, 'final-kill fire suppression hook is missing');
-assert.match(play, /waveTransitionFireSuppressedWaveIndex === null/, 'routine fire does not remain suppressed until the next wave is active');
-assert.match(play, /activeBossCombatResumed = enemyState === 'BOSS_ACTIVE'/, 'routine fire is not released when boss combat becomes active');
-assert.match(play, /this\.enemyManager\?\.level !== this\.waveTransitionFireSuppressedLevel/, 'routine fire cannot recover when a new sector reuses the same wave index');
-assert.match(enemyManager, /beginPlayerTransitionRetirement\?\.\(\s*'wave_clear_no_targets',\s*200/s, 'friendly projectiles are not retired over 200 ms');
+assert.match(play, /this\.waveTransitionFireSuppressedWaveIndex = null;[\s\S]*return false;/, 'legacy transition suppression is not retired');
+assert.doesNotMatch(enemyManager, /beginPlayerTransitionRetirement\?\.\(\s*'wave_clear_no_targets'/, 'wave clear still retires friendly projectiles');
 assert.match(bullet, /if \(this\.transitionRetirement\) return false/, 'friendly retirement can be restarted beyond its bounded duration');
 assert.match(bulletManager, /friendlyVfxCompressionStartCount = 44/, 'adaptive compression start threshold changed unexpectedly');
 assert.match(bulletManager, /friendlyVfxCompressionFullCount = 150/, 'adaptive compression full threshold changed unexpectedly');

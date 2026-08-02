@@ -1,5 +1,6 @@
 import * as PIXI from 'pixi.js';
 import { Bullet } from './Bullet.js';
+import { computeSupportDroneTextureScale } from './SupportDroneVisual.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { ShipRegistry } from '../utils/ShipRegistry.js';
 import { AudioManager } from '../audio/AudioManager.js';
@@ -2447,7 +2448,7 @@ export class Player {
       if (texture && GameAssets.isValidTexture(texture)) {
         const droneSprite = new PIXI.Sprite(texture);
         droneSprite.anchor.set(0.5);
-        droneSprite.scale.set(0.45); // Larger than before (was 0.35)
+        droneSprite.scale.set(computeSupportDroneTextureScale(texture));
         droneSprite.tint = safeColor;
         droneContainer.addChild(droneSprite);
       } else {
@@ -3996,6 +3997,14 @@ export class Player {
           hits: riftHits
         };
         AudioManager.playSfx('tactical_phase_reactor', { force: true, volume: 0.5, minIntervalMs: 180 });
+        playScene.enqueueToast?.(`${translateText('RIFT REPRISAL')} ×${shardsCreated}`, {
+          fontSize: 15,
+          fill: '#d86bff',
+          slot: 'corner',
+          type: 'fusion',
+          priority: 3,
+          duration: 850
+        });
       }
     }
 

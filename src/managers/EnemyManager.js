@@ -2235,17 +2235,6 @@ export class EnemyManager {
           if (playScene?.clearEnemyBullets) {
             playScene.clearEnemyBullets('wave_clear');
           }
-          const retiringFriendlyProjectiles = playScene?.bulletManager?.beginPlayerTransitionRetirement?.(
-            'wave_clear_no_targets',
-            200
-          ) || 0;
-          if (retiringFriendlyProjectiles > 0) {
-            this.markPerformance('combat_readability.friendly_projectile_retirement', {
-              atMs: Date.now(),
-              count: retiringFriendlyProjectiles,
-              durationMs: 200
-            });
-          }
           let bonusDroneCount = 0;
           if (playScene && playScene.getWaveCleanupTargets) {
             bonusDroneCount = playScene.getWaveCleanupTargets().length;

@@ -188,7 +188,9 @@ try {
       cornerQueued: play.toastCornerQueue.map((entry) => entry.options?.type),
       missionFocus: play.hud.notificationFocus,
       missionText: play.hud.missionText.text,
-      missionBeforeWaveClear
+      missionBeforeWaveClear,
+      missionTextAlpha: play.hud.missionText.alpha,
+      semanticSuppressed: play.hud.missionPanel?._debugPriority?.semanticSuppressed
     };
     play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
     await wait(1700);
@@ -308,7 +310,9 @@ try {
     presentationSequences.waveClearHold.cornerActive === null &&
     presentationSequences.waveClearHold.cornerQueued.includes('flawlessWave') &&
     presentationSequences.waveClearHold.missionFocus === 'transition' &&
-    presentationSequences.waveClearHold.missionText === presentationSequences.waveClearHold.missionBeforeWaveClear,
+    presentationSequences.waveClearHold.missionText === presentationSequences.waveClearHold.missionBeforeWaveClear &&
+    presentationSequences.waveClearHold.missionTextAlpha >= 0.7 &&
+    presentationSequences.waveClearHold.semanticSuppressed === false,
     `Wave Cleared did not hold Mission Status and defer Flawless: ${JSON.stringify(presentationSequences.waveClearHold)}`
   );
   assert(

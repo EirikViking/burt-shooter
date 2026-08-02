@@ -1,5 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-02 Tyrian post #99 follow-up
+
+- Current prompt: read Tyrian Mollusk's latest Steam feedback, act on the parts that should be acted on, and prepare a reply for owner approval without posting it.
+- Live forum review: post #99 reports Hangar click-through into the exit dialog, comically oversized Eirik drones, dead fire input and disappearing friendly shots during transitions, distracting Mission Status/banner flicker, partial/subtle Rift Reprisal feedback, and Graze Break direction/expiry ambiguity.
+- Verified source baseline: clean `cc86bf9edc1715777becd640d1d712f11661573f`, continuing on `codex/tyrian-99-20260802-f44a`; protected authoritative checkout remains clean and untouched at `55560f4b15c9904a92a2d1077d8fdb8526d63dd3`.
+- Implemented: Hangar Back now requires a press that began on the button; generated-hull support drones normalize to a compact 34px source span; firing and existing friendly shots continue through wave-clear, briefing, bonus-drone, tractor, and boss-gate windows; Mission Status remains steadily readable under transition banners; Graze Break stays manual/straight and appears in the timed powerup rail; Rift Reprisal reports the number of shards actually launched.
+- Deliberately not changed: Rift Reprisal's five-shard cap and Phase-only eligibility, shard damage scaling, and Eirik's base in-run artwork/sparkle treatment. Those are balance/art-direction questions rather than confirmed defects and need play evidence beyond this narrow reliability pass.
+- Verification passed: release-line and i18n source checks; current web build; all focused Hangar, transition-autofire, projectile lifecycle, Graze Break, notification, Ascendant/Eirik, weapon-duration, wave-clear, controller, responsive-layout, and localized UI checks; full browser smoke; and current Electron desktop smoke. The first concurrent weapon-duration launch timed out under test contention and passed immediately when rerun alone; one responsive pass hit a random off-screen enemy-label audit and the complete rerun passed 27/27 captures. Steam initialization was intentionally unavailable in the isolated desktop smoke, and no Steamworks or deployment action was performed.
+
 ## 2026-07-30 Autofire continuity Steam hotfix
 
 - Current prompt: fix the deployed regression where the ship stops shooting after extended play, then upload the corrected build to Steam.

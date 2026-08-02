@@ -109,6 +109,10 @@ try {
 
   const beforeMenuButton = await showShipSelect(page);
   const menuTarget = beforeMenuButton.shipSelect.backButton;
+  await page.mouse.move(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
+  await page.mouse.up();
+  await page.waitForTimeout(120);
+  const afterOrphanRelease = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await page.mouse.click(menuTarget.x + menuTarget.width / 2, menuTarget.y + menuTarget.height / 2);
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').shipSelect?.hangarMenu?.visible === true, { timeout: 10000 });
   const afterMenuButton = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
@@ -218,6 +222,7 @@ try {
   const report = {
     ok: Boolean(
       beforeMenuButton.shipSelect?.backButton?.width > 0 &&
+      afterOrphanRelease.shipSelect?.hangarMenu?.visible === false &&
       afterMenuButton.scene === 'shipSelect' &&
       afterMenuButton.shipSelect?.hangarMenu?.visible === true &&
       afterExitFallback.shipSelect?.hangarMenu?.visible === true &&
@@ -266,6 +271,7 @@ try {
     ),
     baseUrl,
     beforeMenuButton: beforeMenuButton.shipSelect,
+    afterOrphanRelease: afterOrphanRelease.shipSelect?.hangarMenu,
     afterMenuButton: afterMenuButton.shipSelect,
     afterExitFallback: afterExitFallback.shipSelect?.hangarMenu,
     afterResume: afterResume.shipSelect?.hangarMenu,

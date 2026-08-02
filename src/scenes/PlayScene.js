@@ -4795,32 +4795,16 @@ export class PlayScene {
       const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
       this.updateGrazeBreakFireIntent(firePressed);
-
-      const enemyState = this.enemyManager?.state || 'IDLE';
-      const activeBossCombatResumed = enemyState === 'BOSS_ACTIVE';
-      const activeWaveCombatResumed = (
-        enemyState === 'WAVE_ACTIVE' &&
-        !this.enemyManager?.waveEnding &&
-        (
-          this.enemyManager?.currentWaveIndex !== this.waveTransitionFireSuppressedWaveIndex ||
-          (
-            this.waveTransitionFireSuppressedLevel !== null &&
-            this.enemyManager?.level !== this.waveTransitionFireSuppressedLevel
-          )
-        )
-      );
-      if (
-        this.waveTransitionFireSuppressedWaveIndex !== null &&
-        (activeBossCombatResumed || activeWaveCombatResumed)
-      ) {
+      if (this.waveTransitionFireSuppressedWaveIndex !== null || this.waveTransitionFireSuppressedLevel !== null) {
         this.waveTransitionFireSuppressedWaveIndex = null;
         this.waveTransitionFireSuppressedLevel = null;
       }
-      const routineFireAllowed = (
-        (enemyState === 'WAVE_ACTIVE' && !this.enemyManager?.waveEnding) ||
-        enemyState === 'BOSS_ACTIVE'
-      ) && this.waveTransitionFireSuppressedWaveIndex === null;
-      if (firePressed && this.player && !this.introActive && routineFireAllowed) {
+
+      // Keep the fire control honest across wave-clear, briefing, boss-gate,
+      // bonus-drone, and tractor-ship windows. Projectiles naturally leave the
+      // playfield, so suppressing the button here only creates dead input and
+      // consumes while-firing powerup time without producing a shot.
+      if (firePressed && this.player && !this.introActive) {
         measure('shooting', () => {
           if (!this.player.canShoot()) return;
           const bullets = this.player.shoot();
@@ -20175,6 +20159,15 @@ export class PlayScene {
       .sort((a, b) => Math.abs(a.vx || 0) - Math.abs(b.vx || 0))[0];
     if (!eligible) return null;
 
+    // Graze Break remains a manual, straight-ahead defensive shot even on
+    // even-lane and wide-spread hulls. It must not inherit an arbitrary wing
+    // lane that looks like auto-targeting.
+    const speed = Math.max(0.2, Math.hypot(Number(eligible.vx) || 0, Number(eligible.vy) || 0));
+    eligible.x = Number(this.player?.x) || eligible.x;
+    eligible.vx = 0;
+    eligible.vy = -speed;
+    if (eligible.sprite) eligible.sprite.x = eligible.x;
+
     this.grazeBreakToken += 1;
     eligible.isGrazeBreaker = true;
     eligible.grazeBreakToken = this.grazeBreakToken;
@@ -22318,20 +22311,12 @@ export class PlayScene {
     ) {
       return false;
     }
-    this.waveTransitionFireSuppressedWaveIndex = manager.currentWaveIndex;
-    this.waveTransitionFireSuppressedLevel = manager.level;
-    const retiring = this.bulletManager?.beginPlayerTransitionRetirement?.(
-      'final_wave_hostile_defeated',
-      200
-    ) || 0;
-    if (retiring > 0) {
-      manager.markPerformance?.('combat_readability.friendly_projectile_retirement', {
-        atMs: Date.now(),
-        count: retiring,
-        durationMs: 200
-      });
-    }
-    return true;
+    // This hook used to retire friendly shots and suppress held fire until the
+    // next active combat state. Keep it for compatibility, but let player
+    // projectiles and fire intent continue through the transition.
+    this.waveTransitionFireSuppressedWaveIndex = null;
+    this.waveTransitionFireSuppressedLevel = null;
+    return false;
   }
 
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false, warningMs = 2000 } = {}) {

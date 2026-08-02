@@ -149,6 +149,8 @@ try {
       if (i < 2) await new Promise((resolve) => setTimeout(resolve, 80));
     }
 
+    play.hud?.updateActivePowerup?.();
+    const armedHud = play.hud?.activePowerupGroup?._debugStatus || null;
     const armedState = JSON.parse(window.render_game_to_text());
     play.setPaused(true);
     const pausedBefore = JSON.parse(window.render_game_to_text());
@@ -166,6 +168,12 @@ try {
     player.shootCooldown = 0;
     const playerBullets = player.shoot();
     const charged = play.markGrazeBreakShot(playerBullets);
+    const chargedLaunch = charged ? {
+      x: charged.x,
+      vx: charged.vx,
+      vy: charged.vy,
+      playerX: player.x
+    } : null;
     for (const bullet of playerBullets) play.bulletManager.addPlayerBullet(bullet);
     if (charged) {
       charged.x = impactX;
@@ -196,6 +204,7 @@ try {
         grazeBreakNeedsFireRelease: armedState.scoring?.grazeBreakNeedsFireRelease || false,
         grazeBreakReleasePrimed: armedState.scoring?.grazeBreakReleasePrimed || false
       },
+      armedHud,
       pausedTimer: {
         beforeMs: pausedBefore.scoring?.grazeBreakReadyMs || 0,
         afterMs: pausedAfter.scoring?.grazeBreakReadyMs || 0,
@@ -212,6 +221,7 @@ try {
         grazeBreakReleasePrimed: releaseState.scoring?.grazeBreakReleasePrimed || false
       },
       chargedBulletMarked: Boolean(charged?.isGrazeBreaker),
+      chargedLaunch,
       remainingEnemyBullets: finalState.counts?.enemyBullets || 0,
       lastGrazeBreak: finalState.scoring?.lastGrazeBreak || null,
       immediateReearn: {
@@ -237,6 +247,7 @@ try {
       result.armedState?.dangerDodgeCount >= 3 &&
       result.armedState?.grazeBreakReady === true &&
       result.armedState?.grazeBreakNeedsFireRelease === true &&
+      result.armedHud?.states?.some((state) => state.type === 'graze_break' && state.remainingMs > 0) &&
       result.pausedTimer?.remainedReady === true &&
       Math.abs((result.pausedTimer?.afterMs || 0) - (result.pausedTimer?.beforeMs || 0)) <= 40 &&
       result.heldShotMarked === false &&
@@ -244,6 +255,9 @@ try {
       result.afterHeldState?.grazeBreakNeedsFireRelease === true &&
       result.releaseState?.grazeBreakReleasePrimed === true &&
       result.chargedBulletMarked === true &&
+      result.chargedLaunch?.vx === 0 &&
+      result.chargedLaunch?.vy < 0 &&
+      Math.abs((result.chargedLaunch?.x || 0) - (result.chargedLaunch?.playerX || 0)) < 0.001 &&
       last.triggered === true &&
       last.bulletsCleared >= 3 &&
       last.bonusScore >= 775 &&

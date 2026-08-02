@@ -556,8 +556,12 @@ export class ShipSelectScene {
     });
     this.backButton.on('pointerup', (e) => {
       e.stopPropagation();
+      const activatedHere = this.backButton.active;
       this.backButton.active = false;
       drawButton();
+      // A pointer release can arrive immediately after the main-menu Hangar
+      // button swaps scenes. Only accept a release that began on this button.
+      if (!activatedHere) return;
       this.openHangarMenu('button');
     });
     this.backButton.on('pointerupoutside', () => {
