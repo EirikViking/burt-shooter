@@ -18730,8 +18730,19 @@ export class PlayScene {
     for (const toast of (feedback.toasts || []).slice(0, 1)) {
       if (toast?.message) this.enqueueToast(toast.message, toast.options || {});
     }
-    for (const shake of (feedback.screenShakes || []).slice(0, plasmaSweepLoad ? 1 : 3)) {
-      this.screenShake?.shake?.(shake.intensity, shake.duration);
+    const shakeBudget = plasmaSweepLoad ? 1 : 3;
+    const shakeCandidates = (feedback.screenShakes || []).slice(0, shakeBudget);
+    if (shakeCandidates.length > 0) {
+      const coalescedShake = shakeCandidates.reduce((strongest, shake) => ({
+        intensity: Math.max(strongest.intensity, Math.max(0, Number(shake?.intensity) || 0)),
+        duration: Math.max(
+          strongest.duration,
+          Number.isFinite(Number(shake?.duration)) ? Math.max(1, Number(shake.duration)) : 15
+        )
+      }), { intensity: 0, duration: 1 });
+      if (coalescedShake.intensity > 0) {
+        this.screenShake?.shake?.(coalescedShake.intensity, coalescedShake.duration);
+      }
     }
     if (!plasmaSweepLoad && !this.performanceDiagnostics?.options?.noParticles) {
       for (const entry of (feedback.playerExplosions || []).slice(0, 1)) {

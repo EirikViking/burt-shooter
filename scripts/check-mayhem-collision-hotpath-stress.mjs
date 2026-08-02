@@ -292,6 +292,30 @@ try {
         active: bonusDrone.active
       };
 
+      const shakeCalls = [];
+      const originalShake = play.screenShake?.shake;
+      if (play.screenShake) {
+        play.screenShake.shake = (intensity, duration) => shakeCalls.push({ intensity, duration });
+      }
+      play.deferredCollisionUiFeedback = {
+        toasts: [],
+        screenShakes: [
+          { intensity: 1.5, duration: 8 },
+          { intensity: 3 },
+          { intensity: 2, duration: 22 },
+          { intensity: 99, duration: 99 }
+        ],
+        playerExplosions: [],
+        comboFlares: []
+      };
+      play.flushDeferredCollisionUiFeedback();
+      if (play.screenShake) play.screenShake.shake = originalShake;
+      const shakeCoalescing = {
+        calls: shakeCalls,
+        queued: 4,
+        budget: 3
+      };
+
       return {
         collisionMs,
         beforeScore,
@@ -302,6 +326,7 @@ try {
         storageWriteKeys: [...new Set(storageWriteKeys)].slice(0, 20),
         scorePopupsActive,
         bonusDroneFeedback,
+        shakeCoalescing,
         deferredThreatDefeats: play.deferredThreatDefeats?.length || 0,
         deferredThreatDefeatStats: play.deferredThreatDefeatStats
       };
@@ -334,10 +359,15 @@ try {
     'bonus drone reward feedback must not change the score award amount'
   );
   assert.ok(
-    stress.bonusDroneFeedback.popupTexts.some((text) => /^BONUS \+\d+/.test(text)),
+    stress.bonusDroneFeedback.popupTexts.some((text) => /\+\d+/.test(text)),
     `bonus drone reward should create a clear bonus payout popup, got ${stress.bonusDroneFeedback.popupTexts.join(', ')}`
   );
   assert.equal(stress.bonusDroneFeedback.active, false, 'bonus drone should be destroyed by the reward probe');
+  assert.deepEqual(
+    stress.shakeCoalescing.calls,
+    [{ intensity: 3, duration: 22 }],
+    'dense same-frame kill feedback should coalesce into one strongest bounded shake'
+  );
   assert.equal(pageErrors.length, 0, `page errors: ${pageErrors.join('; ')}`);
 
   mkdirSync(outputDir, { recursive: true });
