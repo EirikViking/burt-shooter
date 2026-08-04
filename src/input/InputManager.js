@@ -487,6 +487,19 @@ export class InputManager {
     const action = getKeyboardActionForQuery(actionId);
     if (!action) return false;
     const bindings = this.keyboardBindings?.[action] || [];
+    const keyboardOverride = typeof window !== 'undefined' ? window.__burtKeyboardOverride : null;
+    if (keyboardOverride) {
+      const overridePressed = bindings.some((token) => {
+        if (token === 'Shift') return keyboardOverride.Shift === true
+          || keyboardOverride.ShiftLeft === true || keyboardOverride.ShiftRight === true;
+        if (token === 'Control') return keyboardOverride.Control === true
+          || keyboardOverride.ControlLeft === true || keyboardOverride.ControlRight === true;
+        return keyboardOverride[token] === true;
+      }) || (action === 'shoot' && keyboardOverride.Space === true)
+        || (action === 'focus' && (keyboardOverride.ControlLeft === true || keyboardOverride.ControlRight === true))
+        || (action === 'dodge' && (keyboardOverride.ShiftLeft === true || keyboardOverride.ShiftRight === true));
+      if (overridePressed) return true;
+    }
     const pressed = bindings.some((token) => {
       if (token === 'Shift') return Boolean(this.keys.ShiftLeft || this.keys.ShiftRight || this.keys.Shift);
       if (token === 'Control') return Boolean(this.keys.ControlLeft || this.keys.ControlRight || this.keys.Control);
