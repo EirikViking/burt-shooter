@@ -54,7 +54,7 @@ export class HUD {
     this.game = game;
     const selectedShip = getShipMetadata(game?.selectedShipSpriteKey);
     const shipProgress = getShipUnlockProgress();
-    this.shipMasteryView = getShipMasteryView(shipProgress?.shipSpecificMilestones?.[selectedShip?.id]);
+    this.shipMasteryView = getShipMasteryView(shipProgress?.shipSpecificMilestones?.[selectedShip?.id], selectedShip);
     this.hudContainer = new PIXI.Container();
     this.layoutUnsubscribe = null;
     this.container.addChild(this.hudContainer);

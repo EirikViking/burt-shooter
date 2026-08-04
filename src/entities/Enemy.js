@@ -3249,7 +3249,13 @@ export class Enemy {
         level: this.level,
         waveSlot: this.waveSlot
       });
-      AudioManager.playSfx('enemy_threat_soft_warn', { volume: 0.12, minIntervalMs: 1800 });
+      AudioManager.playSfx('enemy_threat_soft_warn', {
+        volume: 0.2,
+        minIntervalMs: 900,
+        priority: 7,
+        priorityHoldMs: 300,
+        sfxDuckFactor: 0.42
+      });
       if (this.isRareChaosVisitor) {
         AudioManager.playSfx('rare_visitor_laser_charge', { volume: 0.64, minIntervalMs: 850 });
       }

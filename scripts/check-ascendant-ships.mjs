@@ -6,6 +6,7 @@ import { ShipData } from '../src/config/ShipData.js';
 import { getSelectableShips } from '../src/config/ShipMetadata.js';
 import { ShipUnlockConfig, getShipUnlockDefinition } from '../src/config/ShipUnlockConfig.js';
 import { SUPPORT_DRONE_TARGET_SPAN, computeSupportDroneTextureScale } from '../src/entities/SupportDroneVisual.js';
+import { getShipMasteryIdentity } from '../src/progression/ShipMastery.js';
 
 const root = process.cwd();
 const errors = [];
@@ -256,6 +257,13 @@ if (new Set(textureIndices).size !== ships.length) {
 const hangarSignatures = ships.map((ship) => ship.art?.hangarSignature?.style).filter(Boolean);
 if (hangarSignatures.length !== ships.length || new Set(hangarSignatures).size !== ships.length) {
   fail(`all playable hulls must have distinct Hangar signatures, got ${new Set(hangarSignatures).size}/${ships.length}`);
+}
+const masteryIdentities = ships.map((ship) => getShipMasteryIdentity(ship));
+if (masteryIdentities.some((identity) => !identity?.key || !Number.isFinite(Number(identity.accent)))) {
+  fail('all playable hulls must expose a deterministic mastery identity motif');
+}
+if (new Set(masteryIdentities.map((identity) => identity.key)).size !== ships.length) {
+  fail(`all playable hulls must have distinct mastery identity keys, got ${new Set(masteryIdentities.map((identity) => identity.key)).size}/${ships.length}`);
 }
 const largestNonEirikScale = Math.max(...ships.filter((ship) => ship !== level50).map((ship) => Number(ship.art?.hangarHeroScale) || 1));
 if ((Number(level50?.art?.hangarHeroScale) || 0) <= largestNonEirikScale) {

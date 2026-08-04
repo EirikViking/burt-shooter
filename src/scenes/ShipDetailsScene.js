@@ -258,7 +258,7 @@ export class ShipDetailsScene {
     }
 
     createShipMasterySection(container, panelWidth, yOffset, isMobile) {
-        const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[this.ship.id]);
+        const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[this.ship.id], this.ship);
         const row = new PIXI.Container();
         row.label = 'ui_shipMasteryMedals';
         row.position.set(panelWidth / 2, yOffset);

@@ -2595,7 +2595,7 @@ export class ShipSelectScene {
       container.firstFlightBadgeText = badgeText;
     }
 
-    const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[ship.id]);
+    const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[ship.id], ship);
     const masteryBadge = new PIXI.Container();
     masteryBadge.label = 'hangarShipMasteryBadge';
     const masteryWidth = this.layout.isMobile ? 112 : 132;
@@ -2629,15 +2629,38 @@ export class ShipSelectScene {
     clearTally.anchor.set(0, 0.5);
     clearTally.position.set(this.layout.isMobile ? 58 : 67, masteryHeight / 2);
     masteryBadge.addChild(clearTally);
+    const identityIcon = new PIXI.Graphics();
+    const identity = mastery.identity || { accent: textAccent, spokes: 6, satellites: 2, phase: 0, key: 'balanced' };
+    const iconX = this.layout.isMobile ? masteryWidth - 12 : masteryWidth - 14;
+    const iconRadius = this.layout.isMobile ? 5 : 6;
+    const iconPhase = Number(identity.phase) || 0;
+    const spokeCount = Math.max(3, Math.min(10, Number(identity.spokes) || 6));
+    for (let index = 0; index < spokeCount; index += 1) {
+      const angle = iconPhase + (Math.PI * 2 * index) / spokeCount;
+      identityIcon.moveTo(Math.cos(angle) * 1.8, Math.sin(angle) * 1.8);
+      identityIcon.lineTo(Math.cos(angle) * iconRadius, Math.sin(angle) * iconRadius);
+    }
+    identityIcon.stroke({ color: identity.accent, width: 1.1, alpha: 0.9 });
+    const satelliteCount = Math.max(0, Math.min(4, Number(identity.satellites) || 0));
+    for (let index = 0; index < satelliteCount; index += 1) {
+      const angle = iconPhase + (Math.PI * 2 * index) / Math.max(1, satelliteCount);
+      identityIcon.circle(Math.cos(angle) * (iconRadius + 2), Math.sin(angle) * (iconRadius + 2), 1.2);
+    }
+    identityIcon.fill({ color: identity.accent, alpha: 0.9 });
+    identityIcon.position.set(iconX, masteryHeight / 2);
+    identityIcon.label = 'hangarShipMasteryIdentity';
+    masteryBadge.addChild(identityIcon);
     masteryBadge.__debugMastery = {
       tier: mastery.tier.id,
       medalCount: mastery.medalCount,
       clears: mastery.clears,
       tally: clearTally.text,
+      identity: { ...identity },
       rewardsAdded: false
     };
     container.addChild(masteryBadge);
     container.masteryBadge = masteryBadge;
+    container.masteryIdentityIcon = identityIcon;
 
     // Ship name below sprite - LARGER and more readable
     const name = createText(ship.name, {

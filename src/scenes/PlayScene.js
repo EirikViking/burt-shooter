@@ -3486,6 +3486,15 @@ export class PlayScene {
       pitchScale: decision.variant.pitchScale || 1,
       durationSeconds: reducedMotion ? 0.7 : 1.18
     });
+    const audioRevelationPlayed = AudioManager.playSfx('wonder_revelation', {
+      force: true,
+      minIntervalMs: 0,
+      volume: reducedMotion ? 0.52 : 0.72,
+      priority: 8,
+      priorityHoldMs: reducedMotion ? 720 : 1000,
+      sfxDuckFactor: 0.34,
+      preservePitch: true
+    });
     const codexDiscovery = recordThreatSeen(decision.variant.id, 'wonders', {
       name: decision.variant.title,
       signalClass: decision.variant.signalClass,
@@ -3511,6 +3520,8 @@ export class PlayScene {
       authoredBounds: { ...visual.authoredBounds },
       audioProfile: 'wonder',
       audioPlayed,
+      audioRevelationPlayed,
+      audioLayers: ['synthetic_wonder', 'authored_revelation'],
       codexDiscovered: Boolean(codexDiscovery?.isNew),
       layer: 'gameplay_background',
       visualLanguage: visual.generatedArtReady ? 'cabinet_wonder_imagegen_v2' : 'cabinet_wonder_procedural_fallback',
@@ -3604,6 +3615,8 @@ export class PlayScene {
         generatedArtReady: active.historyEntry.generatedArtReady,
         proceduralAccentAlpha: active.historyEntry.proceduralAccentAlpha,
         authoredBounds: { ...active.historyEntry.authoredBounds },
+        audioRevelationPlayed: Boolean(active.historyEntry.audioRevelationPlayed),
+        audioLayers: [...(active.historyEntry.audioLayers || [])],
         upperFieldSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * 0.5
       } : null,
       overlayCount: this.gameContainer?.children?.filter?.((child) => String(child?.label || '').startsWith('cabinet_wonder_')).length || 0,

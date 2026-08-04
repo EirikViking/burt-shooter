@@ -52,6 +52,13 @@ const SHIP_CONTAINER_BASE_SCALE = 1;
 const SHIP_CONTAINER_MIN_SAFE_SCALE = 0.58;
 const SHIP_CONTAINER_MAX_SAFE_SCALE = 1.4;
 const RANK_UP_SHIP_PULSE_SCALE = 1.18;
+// Keep the combat hull readable without allowing a presentation pulse or a
+// stale runtime scale to turn a playable ship into a screen-filling prop.
+const SHIP_RENDER_MAX_WIDTH_MULTIPLIER = 1.32;
+const SHIP_RENDER_MIN_CAP_WIDTH = 74;
+const SHIP_RENDER_MAX_CAP_WIDTH = 108;
+const SHIP_RENDER_MAX_HEIGHT_MULTIPLIER = 1.82;
+const SHIP_RENDER_MAX_CAP_HEIGHT = 156;
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -401,13 +408,37 @@ export class Player {
     return targetWidth;
   }
 
+  getShipVisualWidthCap(targetWidth = null) {
+    const resolvedTarget = Number(targetWidth)
+      || Number(this.targetShipWidthPx)
+      || Number(this.baseShipWidth)
+      || this.computeBaselineShipWidth();
+    return Math.max(
+      SHIP_RENDER_MIN_CAP_WIDTH,
+      Math.min(SHIP_RENDER_MAX_CAP_WIDTH, resolvedTarget * SHIP_RENDER_MAX_WIDTH_MULTIPLIER)
+    );
+  }
+
+  getShipVisualHeightCap(targetWidth = null) {
+    const resolvedTarget = Number(targetWidth)
+      || Number(this.targetShipWidthPx)
+      || Number(this.baseShipWidth)
+      || this.computeBaselineShipWidth();
+    return Math.min(
+      SHIP_RENDER_MAX_CAP_HEIGHT,
+      Math.max(112, resolvedTarget * SHIP_RENDER_MAX_HEIGHT_MULTIPLIER)
+    );
+  }
+
   computeShipTextureScale(texture) {
     const targetWidth = this.targetShipWidthPx || this.baseShipWidth || this.computeBaselineShipWidth();
     const textureWidth = Math.max(1, Number(texture?.width) || 1);
     const textureHeight = Math.max(1, Number(texture?.height) || 1);
     const widthScale = targetWidth / textureWidth;
     const heightScale = (targetWidth * 1.34) / textureHeight;
-    return Math.min(widthScale, heightScale);
+    const visualWidthCap = this.getShipVisualWidthCap(targetWidth);
+    const visualHeightCap = this.getShipVisualHeightCap(targetWidth);
+    return Math.min(widthScale, heightScale, visualWidthCap / textureWidth, visualHeightCap / textureHeight);
   }
 
   normalizeShipContainerScale(reason = 'runtime') {
@@ -432,22 +463,34 @@ export class Player {
 
   normalizeShipSpriteScale(reason = 'runtime') {
     if (!(this.shipSprite instanceof PIXI.Sprite) || !GameAssets.isValidTexture(this.shipSprite.texture)) return false;
+    const textureWidth = Math.max(1, Number(this.shipSprite.texture?.width) || 1);
+    const textureHeight = Math.max(1, Number(this.shipSprite.texture?.height) || 1);
     const expectedScale = this.computeShipTextureScale(this.shipSprite.texture);
+    const visualWidthCap = this.getShipVisualWidthCap();
+    const visualHeightCap = this.getShipVisualHeightCap();
+    const safeScale = Math.min(expectedScale, visualWidthCap / textureWidth, visualHeightCap / textureHeight);
     const currentScaleX = Number(this.shipSprite.scale?.x);
     const currentScaleY = Number(this.shipSprite.scale?.y);
     const scaleRatioX = currentScaleX / expectedScale;
     const scaleRatioY = currentScaleY / expectedScale;
+    const renderedWidth = textureWidth * Math.abs(currentScaleX || 0);
+    const renderedHeight = textureHeight * Math.abs(currentScaleY || 0);
     const unsafe = !Number.isFinite(currentScaleX) || !Number.isFinite(currentScaleY)
       || scaleRatioX < 0.58 || scaleRatioX > 1.65
-      || scaleRatioY < 0.58 || scaleRatioY > 1.65;
+      || scaleRatioY < 0.58 || scaleRatioY > 1.65
+      || renderedWidth > visualWidthCap * 1.02
+      || renderedHeight > visualHeightCap * 1.02;
     if (!unsafe) return false;
-    this.shipSprite.scale.set(expectedScale);
-    this.baseScale = expectedScale;
+    this.shipSprite.scale.set(safeScale);
+    this.baseScale = safeScale;
     this.applyShipVisualCentering(this.shipSprite, this.selectedShipTextureIndex);
     this.lastShipScaleRepair = {
       reason,
       repairedAt: Date.now(),
       expectedScale,
+      safeScale,
+      visualWidthCap,
+      visualHeightCap,
       previousScaleX: currentScaleX,
       previousScaleY: currentScaleY,
       renderedWidth: this.shipSprite.width,
@@ -1428,7 +1471,7 @@ export class Player {
 
     if (this.shipSprite && this.baseScale) {
       // Pulse relative to baseScale, not 1
-      const pulseScale = this.baseScale * 1.5; // Bigger pulse for visibility
+      const pulseScale = this.baseScale * RANK_UP_SHIP_PULSE_SCALE;
       this.shipSprite.scale.set(pulseScale);
       this.applyShipVisualCentering(this.shipSprite, index);
       setTimeout(() => {

@@ -33,6 +33,56 @@ function normalizeShipId(value) {
   return String(value || '').trim().slice(0, 120);
 }
 
+const MASTERY_IDENTITY_DEFAULT = Object.freeze({
+  key: 'balanced',
+  accent: 0x66f6ff,
+  spokes: 6,
+  satellites: 2,
+  phase: 0
+});
+
+const MASTERY_IDENTITY_PROFILES = Object.freeze({
+  viking: Object.freeze({ accent: 0xffd15c, spokes: 6, satellites: 2, phase: 0.18 }),
+  seraph: Object.freeze({ accent: 0xc89bff, spokes: 8, satellites: 6, phase: 0.72 }),
+  sovereign: Object.freeze({ accent: 0x7df9ff, spokes: 8, satellites: 6, phase: 0.28 }),
+  railbreaker: Object.freeze({ accent: 0xff8a62, spokes: 4, satellites: 0, phase: 0 }),
+  aegis: Object.freeze({ accent: 0x66ffdd, spokes: 8, satellites: 2, phase: 0.08 }),
+  speed: Object.freeze({ accent: 0x52f6ff, spokes: 5, satellites: 4, phase: 0.58 }),
+  pressure: Object.freeze({ accent: 0xffd86b, spokes: 7, satellites: 3, phase: 0.36 }),
+  precision: Object.freeze({ accent: 0x9dff8a, spokes: 4, satellites: 1, phase: 0.02 }),
+  heavy: Object.freeze({ accent: 0xff6174, spokes: 5, satellites: 1, phase: 0.12 })
+});
+
+function normalizeIdentityKey(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+/**
+ * Returns a deterministic visual identity derived from the ship's existing
+ * art/trait metadata. It is presentation-only: mastery saves and gameplay
+ * stats remain untouched.
+ */
+export function getShipMasteryIdentity(ship = {}) {
+  const artStyle = normalizeIdentityKey(ship?.art?.hangarSignature?.style);
+  const traitSlug = normalizeIdentityKey(ship?.traitSlug || ship?.trait?.slug);
+  const role = normalizeIdentityKey(ship?.role);
+  const key = artStyle || traitSlug || role || MASTERY_IDENTITY_DEFAULT.key;
+  const profile = MASTERY_IDENTITY_PROFILES[key]
+    || (/(speed|runner|skater|feint|spectral|needle)/.test(`${key} ${role}`) ? MASTERY_IDENTITY_PROFILES.speed : null)
+    || (/(rail|scope|precision|cannon)/.test(`${key} ${role}`) ? MASTERY_IDENTITY_PROFILES.precision : null)
+    || (/(heavy|hammer|guard|bulwark)/.test(`${key} ${role}`) ? MASTERY_IDENTITY_PROFILES.heavy : null)
+    || (/(pressure|burst|overdrive|fan|tempo)/.test(`${key} ${role}`) ? MASTERY_IDENTITY_PROFILES.pressure : null)
+    || MASTERY_IDENTITY_DEFAULT;
+  const variantAccent = Number(ship?.visuals?.variant?.accent);
+  return {
+    key,
+    accent: Number.isFinite(variantAccent) ? variantAccent : profile.accent,
+    spokes: profile.spokes,
+    satellites: profile.satellites,
+    phase: profile.phase
+  };
+}
+
 export function normalizeShipMasteryRecord(raw = {}) {
   const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
   const bestSector = Math.max(1, whole(source.bestSector ?? source.bestLevel, 1));
@@ -98,7 +148,7 @@ export function getNextShipMasteryGoal(record = {}) {
   };
 }
 
-export function getShipMasteryView(record = {}) {
+export function getShipMasteryView(record = {}, ship = null) {
   const normalized = normalizeShipMasteryRecord(record);
   const tier = getShipMasteryTier(normalized);
   const nextGoal = getNextShipMasteryGoal(normalized);
@@ -106,6 +156,7 @@ export function getShipMasteryView(record = {}) {
     ...normalized,
     tier,
     nextGoal,
+    identity: ship ? getShipMasteryIdentity(ship) : null,
     medalCount: tier.rank,
     maxed: tier.id === 'gold'
   };

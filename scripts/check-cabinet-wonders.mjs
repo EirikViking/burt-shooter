@@ -94,7 +94,7 @@ assert.match(
 );
 assert.match(
   playSceneSource,
-  /const durationMs = reducedMotion \? 2400 : 3300;/,
+  /const durationMs = reducedMotion \? 1150 : 1500;/,
   'Cabinet Wonders need a readable full-motion hold with a shorter Reduced Motion path'
 );
 

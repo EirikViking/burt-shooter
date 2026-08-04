@@ -2682,10 +2682,13 @@ export class EnemyManager {
     const isDiveThreat = enemy.state === 'DIVE' || enemy.waveTactic?.forcedDive || enemy.tacticalDiveUsed;
     const isClose = playerDistance < Math.max(180, (this.game?.getWidth?.() || 1280) * 0.22);
     if (!enemy?.isRareChaosVisitor && (isPriorityEnemy || isDiveThreat || isClose)) {
+      const threatPriority = isPriorityEnemy ? 8 : isDiveThreat ? 7 : 6;
       AudioManager.playSfx('enemy_shoot', {
-        volume: isPriorityEnemy || isDiveThreat ? 0.38 : 0.3,
+        volume: isPriorityEnemy || isDiveThreat ? 0.4 : 0.32,
         minIntervalMs: isPriorityEnemy || isDiveThreat ? 150 : 220,
-        priority: isPriorityEnemy || isDiveThreat ? 5 : 4
+        priority: threatPriority,
+        priorityHoldMs: isPriorityEnemy ? 280 : isDiveThreat ? 230 : 180,
+        sfxDuckFactor: isPriorityEnemy || isDiveThreat ? 0.44 : 0.56
       });
     }
     if (enemy?.isRareChaosVisitor) {

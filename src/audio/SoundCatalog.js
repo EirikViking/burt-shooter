@@ -250,7 +250,7 @@ export const SFX_MIX = {
     shoot_alt: { volume: 0.7, minIntervalMs: 50 },
     shoot_heavy: { volume: 0.82, minIntervalMs: 80 },
     shoot_railbreaker: { volume: 0.66, minIntervalMs: 145 },
-    enemy_explode: { volume: 0.72, minIntervalMs: 35, playbackRateMin: 0.9, playbackRateMax: 1.08, priority: 4, priorityHoldMs: 140, priorityDuckFactor: 0.72 },
+    enemy_explode: { volume: 0.72, minIntervalMs: 35, playbackRateMin: 0.9, playbackRateMax: 1.08, priority: 7, priorityHoldMs: 170, priorityDuckFactor: 0.68 },
     boss_explode: { volume: 0.95, minIntervalMs: 300, playbackRateMin: 0.94, playbackRateMax: 1.03, priority: 9, priorityHoldMs: 620 },
     hit: { volume: 0.48, minIntervalMs: 45, playbackRateMin: 0.96, playbackRateMax: 1.07 },
     impactMetal: { volume: 0.42, minIntervalMs: 60, playbackRateMin: 0.92, playbackRateMax: 1.04 },
@@ -260,18 +260,18 @@ export const SFX_MIX = {
     codex_open: { volume: 0.18, minIntervalMs: 180 },
     codex_move: { volume: 0.12, minIntervalMs: 120 },
     codex_back: { volume: 0.16, minIntervalMs: 180 },
-    pickup: { volume: 0.72, minIntervalMs: 90, playbackRateMin: 0.98, playbackRateMax: 1.06, priority: 5, priorityHoldMs: 220, priorityDuckFactor: 0.76 },
+    pickup: { volume: 0.72, minIntervalMs: 90, playbackRateMin: 0.98, playbackRateMax: 1.06, priority: 8, priorityHoldMs: 260, priorityDuckFactor: 0.66 },
     achievement: { volume: 0.68, minIntervalMs: 450 },
-    enemy_shoot: { volume: 0.3, minIntervalMs: 150, playbackRateMin: 0.94, playbackRateMax: 1.08, priority: 3, priorityHoldMs: 90, priorityDuckFactor: 0.78 },
-    enemy_threat_soft_warn: { volume: 0.12, minIntervalMs: 1800 },
+    enemy_shoot: { volume: 0.34, minIntervalMs: 150, playbackRateMin: 0.94, playbackRateMax: 1.08, priority: 6, priorityHoldMs: 180, priorityDuckFactor: 0.52 },
+    enemy_threat_soft_warn: { volume: 0.2, minIntervalMs: 900, priority: 7, priorityHoldMs: 300, priorityDuckFactor: 0.42 },
     computerNoise: { volume: 0.22, minIntervalMs: 350 },
     thrusterFire: { volume: 0.18, minIntervalMs: 240 },
     doorClose: { volume: 0.24, minIntervalMs: 120 },
     spaceEngine: { volume: 0.18, minIntervalMs: 350 },
     shoot: { volume: 0.72, minIntervalMs: 55 },
     explosion: { volume: 0.78, minIntervalMs: 80, playbackRateMin: 0.91, playbackRateMax: 1.05, priority: 4, priorityHoldMs: 150, priorityDuckFactor: 0.72 },
-    powerup: { volume: 0.8, minIntervalMs: 150, priority: 6, priorityHoldMs: 360, priorityDuckFactor: 0.82 },
-    powerup_pickup: { volume: 0.68, minIntervalMs: 120, playbackRateMin: 0.98, playbackRateMax: 1.04, priority: 5, priorityHoldMs: 240, priorityDuckFactor: 0.76 },
+    powerup: { volume: 0.8, minIntervalMs: 150, priority: 9, priorityHoldMs: 420, priorityDuckFactor: 0.62 },
+    powerup_pickup: { volume: 0.68, minIntervalMs: 120, playbackRateMin: 0.98, playbackRateMax: 1.04, priority: 8, priorityHoldMs: 300, priorityDuckFactor: 0.66 },
     menuSelect: { volume: 0.3, minIntervalMs: 120 },
     playerHit: { volume: 0.78, minIntervalMs: 220 },
     levelComplete: { volume: 0.45, minIntervalMs: 700 },
@@ -347,6 +347,7 @@ export const SFX_MIX = {
     row_core_wave: { volume: 0.58, minIntervalMs: 150 },
     row_core_perfect: { volume: 0.9, minIntervalMs: 1000 },
     row_core_viking_row: { volume: 1, minIntervalMs: 4500 },
+    wonder_revelation: { volume: 0.74, minIntervalMs: 0, priority: 8, priorityHoldMs: 1000, priorityDuckFactor: 0.34 },
     rare_visitor_arrival: { volume: 0.92, minIntervalMs: 8000 },
     rare_visitor_theme_sting: { volume: 0.72, minIntervalMs: 8000 },
     rare_visitor_laser_charge: { volume: 0.64, minIntervalMs: 850 },
@@ -573,7 +574,7 @@ export const SFX_CATALOG = {
         getSfx('laserRetro_000'), getSfx('laserRetro_001'), getSfx('laserSmall_003')
     ],
     'enemy_threat_soft_warn': [
-        getSfx('forceField_001'), getSfx('forceField_002')
+        getSfx('nova_danger_mid_pop'), getSfx('forceField_001'), getSfx('forceField_002')
     ],
     // Direct matches from manifest
     'computerNoise': [getSfx('computerNoise_000')],
@@ -636,6 +637,11 @@ export const SFX_CATALOG = {
         getSfx('nova_row_core_perfect')
     ],
     'row_core_viking_row': [getSfx('nova_row_core_viking_row')],
+    'wonder_revelation': [
+        getSfx('nova_row_core_ro_big'),
+        getSfx('nova_row_core_horn'),
+        getSfx('nova_row_core_viking_row')
+    ],
     'rare_visitor_arrival': [getSfx('nova_rare_visitor_arrival')],
     'rare_visitor_theme_sting': [getSfx('nova_rare_visitor_theme_sting')],
     'rare_visitor_laser_charge': [getSfx('nova_rare_visitor_laser_charge')],

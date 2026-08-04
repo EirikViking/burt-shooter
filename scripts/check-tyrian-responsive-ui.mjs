@@ -252,6 +252,13 @@ async function prepareGameplay(page) {
     const initialRenderedWidth = play.player.shipSprite?.width || 0;
     play.player.shipSprite?.scale?.set?.(1);
     const repaired = play.player.normalizeShipSpriteScale?.('tyrian-responsive-regression') || false;
+    const repairReason = play.player.lastShipScaleRepair?.reason || null;
+    play.player.shipSprite?.scale?.set?.(0.45);
+    const oversizedBeforeRepairWidth = play.player.shipSprite?.width || 0;
+    const oversizedRepair = play.player.normalizeShipSpriteScale?.('oversized-in-run-regression') || false;
+    const oversizedRenderedWidth = play.player.shipSprite?.width || 0;
+    const oversizedVisualWidthCap = play.player.getShipVisualWidthCap?.(targetWidth) || targetWidth * 1.32;
+    const oversizedRepairReason = play.player.lastShipScaleRepair?.reason || null;
     for (let rankEvent = 0; rankEvent < 30; rankEvent += 1) {
       play.player.pulseRankUpShipScale?.();
     }
@@ -281,7 +288,12 @@ async function prepareGameplay(page) {
       renderedWidth: play.player.shipSprite?.width || 0,
       renderedHeight: play.player.shipSprite?.height || 0,
       repaired,
-      repairReason: play.player.lastShipScaleRepair?.reason || null,
+      repairReason,
+      oversizedBeforeRepairWidth,
+      oversizedRepair,
+      oversizedRenderedWidth,
+      oversizedVisualWidthCap,
+      oversizedRepairReason,
       stackedContainerScaleX,
       stackedContainerScaleY,
       stackedRenderedWidth,
@@ -297,6 +309,10 @@ async function prepareGameplay(page) {
   assert.equal(eirikVisual.tint, 0xffffff, `Eirik gameplay colors were flattened by a trait tint: ${JSON.stringify(eirikVisual)}`);
   assert.equal(eirikVisual.repaired, true, `Eirik gameplay scale corruption was not repaired: ${JSON.stringify(eirikVisual)}`);
   assert.equal(eirikVisual.repairReason, 'tyrian-responsive-regression');
+  assert.equal(eirikVisual.oversizedRepair, true, `Eirik oversized in-run scale was not repaired: ${JSON.stringify(eirikVisual)}`);
+  assert.equal(eirikVisual.oversizedRepairReason, 'oversized-in-run-regression');
+  assert(eirikVisual.oversizedBeforeRepairWidth > eirikVisual.oversizedVisualWidthCap, `Oversized regression did not exceed the visual cap: ${JSON.stringify(eirikVisual)}`);
+  assert(eirikVisual.oversizedRenderedWidth <= eirikVisual.oversizedVisualWidthCap * 1.02, `Eirik visual cap was exceeded after repair: ${JSON.stringify(eirikVisual)}`);
   assert(eirikVisual.renderedWidth <= eirikVisual.targetWidth * 1.02, `Eirik gameplay hull is oversized: ${JSON.stringify(eirikVisual)}`);
   assert(eirikVisual.renderedHeight <= eirikVisual.targetWidth * 1.35 * 1.02, `Eirik gameplay hull is too tall: ${JSON.stringify(eirikVisual)}`);
   assert(eirikVisual.stackedContainerScaleX <= 1.2 && eirikVisual.stackedContainerScaleY <= 1.2, `rapid rank-up pulses stacked ship scale: ${JSON.stringify(eirikVisual)}`);
@@ -564,6 +580,7 @@ async function runHangarScenario(browser, scenario, scenarioDir) {
     assert(String(state.shipSelect?.recommended?.shipName || '').trim(), 'Hangar recommendation has no ship identity');
     assert(state.shipSelect.recommended.bannerVisible, 'Hangar recommendation is not visible');
     assert.equal(state.shipSelect?.mastery?.clears, 7);
+    assert(state.shipSelect?.mastery?.identity?.key, 'Hangar mastery identity motif is missing');
     assert.equal(state.shipSelect?.mastery?.medalCount, 3);
     const eirikVisual = await page.evaluate(() => {
       const scene = window.__game.scenes.shipSelect;

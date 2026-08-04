@@ -185,6 +185,9 @@ try {
       || active?.active?.upperFieldSafe !== true
       || active?.active?.elementCount < 5
       || active?.active?.audioProfile !== 'wonder'
+      || active?.active?.audioRevelationPlayed !== true
+      || !Array.isArray(active?.active?.audioLayers)
+      || !active.active.audioLayers.includes('authored_revelation')
       || active?.active?.layer !== 'gameplay_background'
       || active?.active?.generatedArtReady !== true
       || active?.active?.visualLanguage !== 'cabinet_wonder_imagegen_v2'

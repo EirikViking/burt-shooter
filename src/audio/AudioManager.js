@@ -51,11 +51,11 @@ const SPECTACLE_ACCENT_PROFILES = Object.freeze({
     minIntervalMs: 520
   }),
   wonder: Object.freeze({
-    rootHz: 132,
-    sparkleHz: 1320,
-    durationSeconds: 0.92,
-    volume: 0.32,
-    noise: 0.04,
+    rootHz: 72,
+    sparkleHz: 1560,
+    durationSeconds: 1.28,
+    volume: 0.46,
+    noise: 0.015,
     minIntervalMs: 12000
   }),
   reinforcement: Object.freeze({
@@ -670,6 +670,29 @@ class AudioController {
     sparkleFilter.connect(sparkleGain);
     sparkleGain.connect(output);
 
+    // Cabinet Wonders are meant to feel like a brief revelation, not a
+    // generic pickup. Add a quiet detuned choir layer to the synthetic accent
+    // so every showing carries the same sacred, otherworldly signature.
+    let choir = null;
+    if (kind === 'wonder') {
+      const choirFilter = ctx.createBiquadFilter();
+      const choirGain = ctx.createGain();
+      choir = ctx.createOscillator();
+      choir.type = 'sine';
+      choir.frequency.setValueAtTime(Math.max(48, rootHz * 2.01), startAt);
+      choir.frequency.exponentialRampToValueAtTime(Math.max(44, rootHz * 1.48), startAt + durationSeconds * 0.86);
+      choir.detune.setValueAtTime(-9 + accentJitter * 18, startAt);
+      choirFilter.type = 'lowpass';
+      choirFilter.frequency.setValueAtTime(Math.max(680, sparkleHz * 0.72), startAt);
+      choirFilter.Q.setValueAtTime(1.4, startAt);
+      choirGain.gain.setValueAtTime(0.0001, startAt);
+      choirGain.gain.exponentialRampToValueAtTime(0.18 * intensity, startAt + 0.11);
+      choirGain.gain.exponentialRampToValueAtTime(0.0001, startAt + durationSeconds * 0.88);
+      choir.connect(choirFilter);
+      choirFilter.connect(choirGain);
+      choirGain.connect(output);
+    }
+
     const noiseBuffer = this.getSpectacleNoiseBuffer();
     let noise = null;
     if (noiseBuffer && profile.noise > 0) {
@@ -693,9 +716,11 @@ class AudioController {
 
     sub.start(startAt);
     sparkle.start(startAt);
+    choir?.start?.(startAt);
     noise?.start?.(startAt);
     sub.stop(stopAt);
     sparkle.stop(stopAt);
+    choir?.stop?.(stopAt);
     noise?.stop?.(stopAt);
 
     this.lastSpectacleAccent = {
@@ -707,7 +732,8 @@ class AudioController {
       durationMs: Math.round(durationSeconds * 1000),
       playedAt: now,
       compressor: true,
-      synthetic: true
+      synthetic: true,
+      etherealLayer: kind === 'wonder'
     };
     const frameCounters = typeof window !== 'undefined' ? window.__novaMayhemFrameCounters : null;
     if (frameCounters) {
