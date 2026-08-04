@@ -2719,3 +2719,11 @@ Original request: continue improving the current non-Unity game and choose three
 - Every hull now exposes a deterministic mastery identity motif derived from its existing art and trait metadata. Hangar mastery badges show the compact signature graphic without changing saves, scores, unlocks, or progression; Eirik retains the Viking motif and remains the premium Hangar showcase.
 - Focused checks passed: audio catalog and combat-audio variety, enemy threat readability, Cabinet Wonders static and runtime, Ship Mastery readout, Ascendant roster, localization, current build, and the three-layout Tyrian responsive suite. Responsive evidence: `test-results/tyrian-responsive-ui-2026-08-04T10-14-18-885Z`; Wonder evidence: `test-results/cabinet-wonders-2026-08-04T10-12-53-508Z`.
 - No Steam upload, deployment, branch assignment, Steamworks change, Git push, score/balance/progression change, or Pure Mode change was performed.
+
+## 2026-08-04 Keyboard rebinding, ship framing, and verified Steam upload
+
+- Added a localized Settings keyboard-controls panel for movement, focus, fire, dodge, and pause. Shift is a first-class rebindable action, with capture, reset, local persistence, and Steam Cloud persistence. Existing controller mappings and legacy keyboard queries remain intact.
+- Restored the existing maintainer keyboard-override diagnostic contract after the new action resolver was introduced; the full power-up effects suite now passes again.
+- Corrected transparent-frame centering for Aegis Comet, Railbreaker, and Drone Sovereign so authored hull art and focus rings share the same logical center. The player ring alignment check now passes for all 30 player hulls.
+- Final source build: `v2026-08-04_15-19-00`, source commit `2bbea07` on `codex/tyrian-99-20260802-f44a`. Full release hardening passed all 40/40 checks; browser smoke, localization UI, controller flow, packaged smoke/controls/performance, and Steam package runtime all passed. Packaged frame pacing measured 58.82 FPS minimum and 59.95 FPS average.
+- SteamPipe upload completed privately and unassigned for AppID `4765070`, depot `4765071`: BuildID `24552921`, depot manifest `2794816507068655357`. VDF used `SetLive ""`; no Steam branch, public/default assignment, Steamworks setting, forum post, or Git push was made.
