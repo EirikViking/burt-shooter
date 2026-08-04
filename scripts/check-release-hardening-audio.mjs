@@ -57,8 +57,9 @@ assert.ok(
   'powerup pickup should route through the dedicated powerup_pickup SFX event'
 );
 assert.ok(
-  playScene.includes("AudioManager.playSfx('powerup_pickup'"),
-  'powerup collision path should not fall back to the generic pickup event'
+  powerupManager.includes("getPowerupMeta(this.type)?.sfx || 'powerup_pickup'")
+    && powerupManager.includes('AudioManager.playSfx(sfxKey'),
+  'powerup collision path should route through the dedicated powerup pickup SFX event'
 );
 
 function assertNoSharedAssets(left, right) {

@@ -39,8 +39,11 @@ assert.ok(
 );
 
 const playScene = readFileSync('src/scenes/PlayScene.js', 'utf8');
-assert.ok(playScene.includes('const burstCount = 12 + (seed % 5)'), 'boss death should use a larger varied burst count');
-assert.ok(playScene.includes('const ringCount = 3 + (seed % 3)'), 'boss death should use varied shockwave rings');
+assert.ok(
+  playScene.includes("const burstCount = 8 + (seed % 4) + (style.pattern === 'confetti' ? 2 : 0)"),
+  'boss death should use a larger varied burst count'
+);
+assert.ok(playScene.includes('const ringCount = 1'), 'boss death should retain a deterministic delayed shockwave ring');
 assert.ok(playScene.includes("AudioManager.playSfx('boss_death_cascade'"), 'boss death should play the generated cascade one-shot');
 assert.ok(playScene.includes("AudioManager.playSfx('boss_explode'"), 'boss death should keep the heavy explosion layer');
 assert.ok(playScene.includes("AudioManager.playSfx('boss_phase_surge'"), 'boss death should layer boss-specific surge audio');

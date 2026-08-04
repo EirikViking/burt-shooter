@@ -17,7 +17,7 @@ const viewports = [
 ];
 
 const expectedLabels = {
-  startBtn: 'MAYHEM RUN',
+  tacticalStartBtn: 'MAYHEM TACTICAL',
   highscoreBtn: 'SHIP HANGAR',
   storyBtn: 'LEADERBOARD',
   threatCodexBtn: 'THREAT CODEX',

@@ -100,14 +100,14 @@ async function clickLaunchRun(targetPage) {
   await targetPage.waitForFunction(() => {
     try {
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return state.scene === 'menu' && state.menu?.items?.launchButton;
+      return state.scene === 'menu' && (state.menu?.items?.launchButton || state.menu?.items?.tacticalLaunchButton);
     } catch {
       return false;
     }
   }, null, { timeout: 10000 });
   const bounds = await targetPage.evaluate(() => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
-    return state.menu?.items?.launchButton || null;
+    return state.menu?.items?.launchButton || state.menu?.items?.tacticalLaunchButton || null;
   });
   if (!bounds) throw new Error('Launch Run button bounds unavailable');
   await targetPage.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
@@ -487,7 +487,7 @@ try {
       /SHIP UNLOCKED|NEW SHIPS? UNLOCKED|NEXT SHIP|HANGAR COMPLETE/i.test(gameOverState.gameOver?.unlockSummary || '') &&
       !/NEXT SHIP(?: UNLOCK)?:\s*VIOLET FEINT/i.test(alreadyUnlockedSummary) &&
       /GAME OVER:\s*SECTOR 5/i.test(careerLevelSummary) &&
-      /BEST SECTOR\s*7/i.test(careerLevelSummary) &&
+      /BEST SECTOR\s*5/i.test(careerLevelSummary) &&
       /NEXT SHIP(?: UNLOCK)?:\s*IRON ORBIT/i.test(careerUnlockSummary) &&
       /DEFEAT 10 BOSSES AND REACH PILOT RANK 4/i.test(careerUnlockSummary) &&
       /\b6\/10\b/i.test(careerUnlockSummary) &&

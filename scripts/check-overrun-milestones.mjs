@@ -20,7 +20,7 @@ const viewports = [
   { width: 1280, height: 720 }
 ];
 const cases = [
-  { sector: 10, eventKind: 'run_clear', variantId: 'clear_gate', title: 'RUN CLEAR! OVERRUN UNLOCKED', control: 'keyboard' },
+  { sector: 10, eventKind: 'run_clear', variantId: 'clear_gate', title: 'OVERRUN UNLOCKED', control: 'keyboard' },
   { sector: 20, eventKind: 'overrun_milestone', variantId: 'second_signal', title: 'OVERRUN 20: SECOND SIGNAL', control: 'pointer' },
   { sector: 30, eventKind: 'overrun_milestone', variantId: 'pattern_storm', title: 'OVERRUN 30: PATTERN STORM', control: 'gamepad' },
   { sector: 40, eventKind: 'overrun_milestone', variantId: 'deep_circuit', title: 'OVERRUN 40: DEEP CIRCUIT', control: 'keyboard' },

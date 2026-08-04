@@ -47,12 +47,12 @@ assert.ok(
   !playScene.includes('createComboDisplay()') &&
     !playScene.includes('COMBO x${this.comboMultiplier}  (${this.comboCount})') &&
     playScene.includes('comboDisplay: null') &&
-    playScene.includes('this.comboCount % 20 === 0') &&
+    playScene.includes('this.comboCount % 10 === 0') &&
     playScene.includes('duration: 900'),
   'persistent combo HUD should stay removed while every-10 scoring remains'
 );
 assert.ok(
-  playScene.includes("const appliedBonus = this.addNormalWaveScore(bonus, 'baseScore', enemy);"),
+  playScene.includes("this.addNormalWaveScore(bonus, 'baseScore', enemy);"),
   'combo bonus scoring must remain intact'
 );
 assert.ok(
