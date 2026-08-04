@@ -65,6 +65,8 @@
     "check:focus-lens-spread": "node scripts/check-focus-lens-spread.mjs",
     "check:tyrian-dodge-pulse": "node scripts/check-tyrian-dodge-pulse.mjs",
     "check:input-state-transitions": "node scripts/check-input-state-transitions.mjs",
+    "check:keyboard-bindings": "node scripts/check-keyboard-bindings.mjs",
+    "check:keyboard-bindings-runtime": "node scripts/check-keyboard-bindings-runtime.mjs",
     "check:near-miss-streak-clarity": "node scripts/check-near-miss-streak-clarity.mjs",
     "check:phase-cooldown-readability": "node scripts/check-phase-cooldown-readability.mjs",
     "check:invulnerability-window-readability": "node scripts/check-invulnerability-window-readability.mjs",

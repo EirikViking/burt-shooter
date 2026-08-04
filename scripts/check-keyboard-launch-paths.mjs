@@ -164,7 +164,7 @@ async function openFreshPage(browser, pageErrors, consoleWarningsOrErrors) {
     localStorage.setItem('novaSwarm.language', 'en');
     localStorage.setItem('novaSwarm.skipBootIntro', '1');
   });
-  await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${baseUrl}/?skipIntro=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await waitForScene(page, 'menu');
   return page;
 }
@@ -188,6 +188,12 @@ try {
   });
   await waitForScene(hangarPage, 'shipSelect');
   await hangarPage.keyboard.down('Enter');
+  await hangarPage.keyboard.up('Enter');
+  await hangarPage.waitForTimeout(120);
+  const hangarSceneAfterFirstKey = await hangarPage.evaluate(() => window.__game?.currentSceneName || null);
+  if (hangarSceneAfterFirstKey === 'shipSelect') {
+    await hangarPage.keyboard.down('Enter');
+  }
   await waitForScene(hangarPage, 'play');
   await hangarPage.keyboard.up('Enter');
   const hangarState = await assertKeyboardGameplayControls(hangarPage, 'Hangar launch');

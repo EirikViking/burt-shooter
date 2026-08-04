@@ -42,8 +42,14 @@ import { mergeRunContractsState } from './progression/RunContracts.js';
 import { mergeShipMasteryMaps } from './progression/ShipMastery.js';
 import { getPilotXpThreshold } from './shared/RankPolicy.js';
 import { CHATTER_FREQUENCY_KEY, normalizeChatterFrequency } from './audio/VoicePolicy.js';
+import {
+  KEYBOARD_BINDINGS_KEY,
+  getKeyboardBindings,
+  normalizeKeyboardBindings
+} from './input/KeyboardBindings.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
+export { KEYBOARD_BINDINGS_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -923,7 +929,8 @@ export function collectSteamCloudPersistenceState({
       colorAssist: Boolean(settings.colorAssist),
       audio: collectAudioSettings(storage),
       display: getDisplaySettings({ storage }),
-      menu: getMenuSettings({ storage })
+      menu: getMenuSettings({ storage }),
+      keyboardBindings: getKeyboardBindings({ storage })
     }
   };
 }
@@ -1111,6 +1118,14 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = true;
   }
   if (settings.menu?.showPilotOrders !== undefined && writeStorage(storage, SHOW_PILOT_ORDERS_KEY, normalizeShowPilotOrders(settings.menu.showPilotOrders) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.keyboardBindings !== undefined && writeStorage(
+    storage,
+    KEYBOARD_BINDINGS_KEY,
+    JSON.stringify(normalizeKeyboardBindings(settings.keyboardBindings))
+  )) {
     summary.settings += 1;
     summary.restored = true;
   }

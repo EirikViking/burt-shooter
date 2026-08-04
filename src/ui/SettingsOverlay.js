@@ -29,6 +29,13 @@ import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import {
+  KEYBOARD_ACTIONS,
+  formatKeyboardBinding,
+  getKeyboardBindings,
+  resetKeyboardBindings,
+  setKeyboardBinding
+} from '../input/KeyboardBindings.js';
+import {
   getLanguageOptions,
   getLanguagePreferenceMode,
   onLanguageChange,
@@ -162,6 +169,13 @@ export class SettingsOverlay {
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
+    this.keyBindingsPanel = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingCaptureAction = null;
+    this.keyBindingCaptureHandler = null;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
     this.controls = [];
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
@@ -293,6 +307,8 @@ export class SettingsOverlay {
           this.pilotOrdersButton = button;
         }
       });
+      leftY += tighterGap;
+      this.addKeyboardBindingsRow('KEYBOARD CONTROLS', leftY);
       leftY += Math.round((dense ? 28 : 40) * this.uiScale);
       this.addSectionLabel('ACCESSIBILITY', leftY);
       leftY += sectionGap;
@@ -370,6 +386,8 @@ export class SettingsOverlay {
           this.pilotOrdersButton = button;
         }
       });
+      y += tighterGap;
+      this.addKeyboardBindingsRow('KEYBOARD CONTROLS', y);
       y += Math.round(32 * this.uiScale);
       this.addSectionLabel('AUDIO', y);
       y += sectionGap;
@@ -524,6 +542,36 @@ export class SettingsOverlay {
 
     this.container.addChild(row);
     this.rows.push(row);
+  }
+
+  addKeyboardBindingsRow(label, y) {
+    const row = new PIXI.Container();
+    row.position.set(this.getFormCenterX(), y);
+    const metrics = this.getFormRowMetrics();
+    const labelText = createText(translateText(label), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fill: '#9befff'
+    });
+    labelText.anchor.set(1, 0.5);
+    labelText.x = metrics.labelX;
+    fitTextToWidth(labelText, metrics.labelWidth, { minScale: 0.7 });
+    row.addChild(labelText);
+
+    const button = this.createButton('REMAP', metrics.choiceX, 0, () => this.openKeyBindingsPanel(), {
+      width: metrics.compactColumn ? Math.min(178, metrics.choiceWidth) : 190,
+      height: 30
+    });
+    button.label = 'ui_settingsKeyboardBindings';
+    row.addChild(button);
+    this.container.addChild(row);
+    this.rows.push(row);
+    this.registerControl({
+      type: 'button',
+      id: 'keyboard_bindings',
+      button,
+      label
+    });
   }
 
   addAudioTestRow(label, y) {
@@ -1174,8 +1222,241 @@ export class SettingsOverlay {
     return true;
   }
 
+  openKeyBindingsPanel() {
+    if (this.keyBindingsPanel) return;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const isCompact = width < 820 || height < 700;
+    const panelWidth = Math.min(width * 0.92, isCompact ? 620 : 760);
+    const panelHeight = Math.min(height * 0.9, isCompact ? 640 : 700);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const overlay = new PIXI.Container();
+    overlay.zIndex = 1200;
+    overlay.label = 'ui_keyboardBindingsPanel';
+    overlay.eventMode = 'static';
+    overlay.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x00040b, alpha: 0.92 });
+    overlay.addChild(dim);
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 8);
+    panel.fill({ color: 0x06111f, alpha: 0.99 });
+    panel.stroke({ color: 0x37f5ff, width: 2, alpha: 0.98 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 6);
+    panel.stroke({ color: 0xff55d9, width: 1, alpha: 0.34 });
+    overlay.addChild(panel);
+
+    const title = createText(translateText('KEYBOARD CONTROLS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 24 : 32,
+      fontWeight: 'bold',
+      fill: '#f6fbff',
+      stroke: '#003344',
+      strokeThickness: 4,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + (isCompact ? 34 : 46));
+    fitTextToWidth(title, panelWidth - 44, { minScale: 0.64 });
+    overlay.addChild(title);
+
+    const hint = createText(translateText('SELECT AN ACTION, THEN PRESS A KEY'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 12 : 15,
+      fontWeight: '700',
+      fill: '#ffc96e',
+      align: 'center'
+    });
+    hint.anchor.set(0.5);
+    hint.position.set(width / 2, title.y + (isCompact ? 24 : 32));
+    fitTextToWidth(hint, panelWidth - 54, { minScale: 0.62 });
+    overlay.addChild(hint);
+
+    const contentTop = panelY + (isCompact ? 106 : 122);
+    const rowGap = Math.min(isCompact ? 43 : 48, Math.max(36, (panelHeight - (isCompact ? 180 : 204)) / KEYBOARD_ACTIONS.length));
+    const rowLeft = panelX + (isCompact ? 42 : 64);
+    const rowRight = panelX + panelWidth - (isCompact ? 42 : 64);
+    const bindings = getKeyboardBindings();
+    this.keyBindingsControls = [];
+    this.keyBindingsButtonMap = new Map();
+    KEYBOARD_ACTIONS.forEach((action, index) => {
+      const y = contentTop + index * rowGap;
+      const label = createText(translateText(action.label), {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: isCompact ? 15 : 18,
+        fontWeight: '700',
+        fill: '#9befff'
+      });
+      label.anchor.set(0, 0.5);
+      label.position.set(rowLeft, y);
+      fitTextToWidth(label, panelWidth * 0.42, { minScale: 0.62 });
+      overlay.addChild(label);
+
+      const button = this.createButton(formatKeyboardBinding(bindings[action.id]), rowRight, y, () => {
+        this.startKeyBindingCapture(action.id);
+      }, { width: isCompact ? 172 : 210, height: 32 });
+      button.position.x = rowRight;
+      button.label = `ui_keyBinding_${action.id}`;
+      overlay.addChild(button);
+      this.keyBindingsControls.push(button);
+      this.keyBindingsButtonMap.set(action.id, button);
+    });
+
+    const status = createText(translateText('SELECT AN ACTION, THEN PRESS A KEY'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: isCompact ? 11 : 13,
+      fontWeight: '800',
+      fill: '#9cfbff',
+      align: 'center'
+    });
+    status.anchor.set(0.5);
+    status.position.set(width / 2, panelY + panelHeight - (isCompact ? 82 : 94));
+    fitTextToWidth(status, panelWidth - 48, { minScale: 0.62 });
+    overlay.addChild(status);
+    this.keyBindingsStatusText = status;
+
+    const footerY = panelY + panelHeight - (isCompact ? 34 : 42);
+    const footerGap = isCompact ? 12 : 16;
+    const footerWidth = isCompact ? 164 : 188;
+    const resetButton = this.createButton('RESET KEYBOARD', width / 2 - (footerWidth + footerGap) / 2, footerY, () => {
+      this.resetKeyBindings();
+    }, { width: footerWidth, height: isCompact ? 32 : 36 });
+    resetButton.label = 'ui_keyBindingsReset';
+    const backButton = this.createButton('BACK', width / 2 + (footerWidth + footerGap) / 2, footerY, () => {
+      this.closeKeyBindingsPanel();
+    }, { width: footerWidth, height: isCompact ? 32 : 36 });
+    backButton.label = 'ui_keyBindingsBack';
+    overlay.addChild(resetButton, backButton);
+    this.keyBindingsControls.push(resetButton, backButton);
+    this.keyBindingsPanel = overlay;
+    this.keyBindingsFocusedIndex = 0;
+    this.setKeyBindingsFocus(0);
+    this.container.addChild(overlay);
+    AudioManager.playSfx('ui_open', { volume: 0.18, minIntervalMs: 80 });
+  }
+
+  setKeyBindingsFocus(index) {
+    if (!this.keyBindingsControls.length) return;
+    const count = this.keyBindingsControls.length;
+    const next = ((index % count) + count) % count;
+    this.keyBindingsControls.forEach((button, buttonIndex) => {
+      button._focused = buttonIndex === next;
+      button._drawButton?.(false);
+    });
+    this.keyBindingsFocusedIndex = next;
+  }
+
+  moveKeyBindingsFocus(delta) {
+    this.setKeyBindingsFocus(this.keyBindingsFocusedIndex + delta);
+    AudioManager.playSfx('thrusterFire', { volume: 0.06, minIntervalMs: 90 });
+  }
+
+  activateKeyBindingsFocus() {
+    this.keyBindingsControls[this.keyBindingsFocusedIndex]?.activate?.();
+  }
+
+  updateKeyBindingButton(actionId) {
+    const button = this.keyBindingsButtonMap.get(actionId);
+    if (!button?._label) return;
+    const bindings = getKeyboardBindings();
+    button._label.text = this.keyBindingCaptureAction === actionId
+      ? translateText('PRESS A KEY')
+      : formatKeyboardBinding(bindings[actionId]);
+    fitDisplayToBox(button._label, button.hitArea.width - 18, button.hitArea.height - 8, { minScale: 0.62 });
+  }
+
+  startKeyBindingCapture(actionId) {
+    this.cancelKeyBindingCapture();
+    this.keyBindingCaptureAction = actionId;
+    this.updateKeyBindingButton(actionId);
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('PRESS A KEY');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+    this.keyBindingCaptureHandler = (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (event.code === 'Escape') {
+        this.cancelKeyBindingCapture();
+        return;
+      }
+      const token = event.code || event.key;
+      if (!token) return;
+      setKeyboardBinding(actionId, token);
+      this.keyBindingCaptureAction = null;
+      if (this.keyBindingCaptureHandler) {
+        window.removeEventListener('keydown', this.keyBindingCaptureHandler, true);
+        this.keyBindingCaptureHandler = null;
+      }
+      this.updateKeyBindingButton(actionId);
+      if (this.keyBindingsStatusText) {
+        this.keyBindingsStatusText.text = translateText('KEY BOUND');
+        fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+      }
+      AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 0 });
+    };
+    window.addEventListener('keydown', this.keyBindingCaptureHandler, true);
+  }
+
+  cancelKeyBindingCapture() {
+    if (this.keyBindingCaptureHandler) {
+      window.removeEventListener('keydown', this.keyBindingCaptureHandler, true);
+      this.keyBindingCaptureHandler = null;
+    }
+    const previous = this.keyBindingCaptureAction;
+    this.keyBindingCaptureAction = null;
+    if (previous) this.updateKeyBindingButton(previous);
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('SELECT AN ACTION, THEN PRESS A KEY');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+  }
+
+  resetKeyBindings() {
+    this.cancelKeyBindingCapture();
+    resetKeyboardBindings();
+    KEYBOARD_ACTIONS.forEach((action) => this.updateKeyBindingButton(action.id));
+    if (this.keyBindingsStatusText) {
+      this.keyBindingsStatusText.text = translateText('DEFAULT KEYBOARD CONTROLS RESTORED');
+      fitTextToWidth(this.keyBindingsStatusText, this.game.getWidth() * 0.7, { minScale: 0.62 });
+    }
+    AudioManager.playSfx('powerup', { volume: 0.16, minIntervalMs: 0 });
+  }
+
+  closeKeyBindingsPanel() {
+    if (!this.keyBindingsPanel) return;
+    this.cancelKeyBindingCapture();
+    if (this.keyBindingsPanel.parent) this.keyBindingsPanel.parent.removeChild(this.keyBindingsPanel);
+    this.keyBindingsPanel.destroy({ children: true });
+    this.keyBindingsPanel = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
+  }
+
   setupKeyboardNavigation() {
     this.keyHandler = (event) => {
+      if (this.keyBindingsPanel) {
+        if (this.keyBindingCaptureAction) return;
+        const key = event.key || event.code;
+        const handled = ['ArrowUp', 'ArrowDown', 'Enter', ' ', 'Escape'].includes(key) || event.code === 'Space';
+        if (!handled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (key === 'Escape') {
+          this.closeKeyBindingsPanel();
+          return;
+        }
+        if (key === 'ArrowUp') this.moveKeyBindingsFocus(-1);
+        else if (key === 'ArrowDown') this.moveKeyBindingsFocus(1);
+        else this.activateKeyBindingsFocus();
+        return;
+      }
       const key = event.key || event.code;
       const handled = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(key) ||
         event.code === 'Space';
@@ -1200,6 +1481,7 @@ export class SettingsOverlay {
   rebuild() {
     const focusedId = this.getFocusedControl()?.id || null;
     this.closeCreditsPanel();
+    this.closeKeyBindingsPanel();
     const children = this.container.removeChildren();
     children.forEach((child) => child?.destroy?.({ children: true }));
     this.menuFx = null;
@@ -1226,6 +1508,13 @@ export class SettingsOverlay {
     this.creditsCoinClicks = 0;
     this.creditsEggStatusText = null;
     this.creditsUnlockReveal = null;
+    this.keyBindingsPanel = null;
+    this.keyBindingsControls = [];
+    this.keyBindingsFocusedIndex = 0;
+    this.keyBindingCaptureAction = null;
+    this.keyBindingCaptureHandler = null;
+    this.keyBindingsStatusText = null;
+    this.keyBindingsButtonMap = new Map();
     this.build();
     const nextIndex = Math.max(0, this.controls.findIndex((control) => control.id === focusedId));
     this.setControlFocus(nextIndex);
@@ -1235,6 +1524,18 @@ export class SettingsOverlay {
     updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.keyBindingsPanel) {
+      if (this.keyBindingCaptureAction) return;
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.closeKeyBindingsPanel();
+        return;
+      }
+      if (nav.pressed.up || nav.pressed.left) this.moveKeyBindingsFocus(-1);
+      if (nav.pressed.down || nav.pressed.right) this.moveKeyBindingsFocus(1);
+      if (nav.pressed.confirm) this.activateKeyBindingsFocus();
+      return;
+    }
 
     if (this.creditsPanel) {
       if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
@@ -2065,12 +2366,19 @@ export class SettingsOverlay {
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,
       creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
+      keyboardBindings: {
+        panel: Boolean(this.keyBindingsPanel),
+        focus: this.keyBindingsControls[this.keyBindingsFocusedIndex]?.label || null,
+        pendingAction: this.keyBindingCaptureAction || null,
+        bindings: getKeyboardBindings()
+      },
       focus: this.getFocusedControl()?.id || null,
       menuFx: this.menuFx?.getDebugState?.() || null
     };
   }
 
   close() {
+    this.closeKeyBindingsPanel();
     this.closeCreditsPanel();
     destroyMenuFx(this);
     if (this.languageUnsubscribe) {

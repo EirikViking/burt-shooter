@@ -1,9 +1,16 @@
 import { markControllerInputActive } from './GamepadNavigator.js';
+import {
+  getKeyboardActionForQuery,
+  getKeyboardActionForToken,
+  getKeyboardBindings,
+  KEYBOARD_BINDINGS_CHANGED_EVENT
+} from './KeyboardBindings.js';
 
 export class InputManager {
   constructor() {
     this.keys = {};
     this.justPressed = {};
+    this.justPressedActions = {};
     this.touches = [];
     this.touchFireActive = false;
     this.destroyed = false;
@@ -12,6 +19,7 @@ export class InputManager {
     this.previousGamepadButtons = {};
     this.suppressedKeys = new Set();
     this.suppressedGamepadActions = new Map();
+    this.keyboardBindings = getKeyboardBindings();
     this.continuityDiagnostics = {
       enabled: this.isContinuityDiagnosticsEnabled(),
       events: [],
@@ -19,6 +27,7 @@ export class InputManager {
       maxEntries: 180
     };
     this.setupKeyboard();
+    this.setupKeyboardBindingsListener();
     this.setupMouse();
     this.setupFocusHandlers();
     this.setupGamepadHandlers();
@@ -50,6 +59,14 @@ export class InputManager {
       if (this.suppressedKeys.has(e.code) || this.suppressedKeys.has(e.key)) return;
       if (!this.keys[e.code]) this.justPressed[e.code] = true;
       if (!this.keys[e.key]) this.justPressed[e.key] = true;
+      const actions = new Set([
+        getKeyboardActionForToken(e.code, this.keyboardBindings),
+        getKeyboardActionForToken(e.key, this.keyboardBindings)
+      ].filter(Boolean));
+      for (const action of actions) {
+        const wasPressed = this.isActionPressed(action, { includeGamepad: false });
+        if (!wasPressed) this.justPressedActions[action] = true;
+      }
       this.keys[e.code] = true;
       this.keys[e.key] = true;
     };
@@ -64,6 +81,16 @@ export class InputManager {
 
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
+  }
+
+  setupKeyboardBindingsListener() {
+    this.handleKeyboardBindingsChanged = (event) => {
+      this.keyboardBindings = getKeyboardBindings();
+      this.recordContinuityEvent('keyboard_bindings_changed', {
+        actions: Object.keys(event?.detail || this.keyboardBindings)
+      });
+    };
+    window.addEventListener(KEYBOARD_BINDINGS_CHANGED_EVENT, this.handleKeyboardBindingsChanged);
   }
 
   setupFocusHandlers() {
@@ -372,18 +399,15 @@ export class InputManager {
       preserveMovement: Boolean(preserveMovement),
       suppressUntilReleased: Boolean(suppressUntilReleased)
     });
-    const fireKeys = new Set(['Space', ' ', 'shoot']);
-    const movementKeys = new Set([
-      'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-      'KeyA', 'KeyD', 'KeyW', 'KeyS',
-      'a', 'A', 'd', 'D', 'w', 'W', 's', 'S'
-    ]);
+    const fireKeys = new Set(['shoot']);
+    const movementKeys = new Set(['moveLeft', 'moveRight', 'moveUp', 'moveDown']);
     const nextKeys = {};
     for (const [key, pressed] of Object.entries(this.keys)) {
       if (!pressed) continue;
-      if (preserveFire && fireKeys.has(key)) {
+      const action = getKeyboardActionForToken(key, this.keyboardBindings);
+      if (preserveFire && (fireKeys.has(action) || fireKeys.has(key))) {
         nextKeys[key] = true;
-      } else if (preserveMovement && movementKeys.has(key)) {
+      } else if (preserveMovement && (movementKeys.has(action) || movementKeys.has(key))) {
         nextKeys[key] = true;
       } else if (suppressUntilReleased) {
         this.suppressedKeys.add(key);
@@ -391,6 +415,7 @@ export class InputManager {
     }
     this.keys = nextKeys;
     this.justPressed = {};
+    this.justPressedActions = {};
     this.touches = [];
     if (!preserveFire) this.touchFireActive = false;
 
@@ -453,10 +478,30 @@ export class InputManager {
 
   isFiring() {
     const gamepad = this.pollGamepad();
-    return this.isKeyPressed('Space') ||
-      this.isKeyPressed('shoot') ||
+    return this.isActionPressed('shoot') ||
       this.touchFireActive ||
       gamepad.firing;
+  }
+
+  isActionPressed(actionId, { includeGamepad = true } = {}) {
+    const action = getKeyboardActionForQuery(actionId);
+    if (!action) return false;
+    const bindings = this.keyboardBindings?.[action] || [];
+    const pressed = bindings.some((token) => {
+      if (token === 'Shift') return Boolean(this.keys.ShiftLeft || this.keys.ShiftRight || this.keys.Shift);
+      if (token === 'Control') return Boolean(this.keys.ControlLeft || this.keys.ControlRight || this.keys.Control);
+      return Boolean(this.keys[token]);
+    });
+    if (pressed || !includeGamepad) return pressed;
+    const gamepad = this.pollGamepad();
+    if (action === 'moveLeft') return gamepad.moveX < -0.35;
+    if (action === 'moveRight') return gamepad.moveX > 0.35;
+    if (action === 'moveUp') return gamepad.moveY < -0.35;
+    if (action === 'moveDown') return gamepad.moveY > 0.35;
+    if (action === 'focus') return gamepad.focus;
+    if (action === 'shoot') return gamepad.firing;
+    if (action === 'dodge') return gamepad.dodge;
+    return false;
   }
 
   isKeyPressed(key) {
@@ -466,15 +511,8 @@ export class InputManager {
       (key === 'focus' && (keyboardOverride.ControlLeft === true || keyboardOverride.ControlRight === true))
     );
     if (overridePressed) return true;
-    const gamepad = this.pollGamepad();
-    if (key === 'ArrowLeft' || key === 'KeyA' || key === 'a' || key === 'A') return !!this.keys[key] || gamepad.moveX < -0.35;
-    if (key === 'ArrowRight' || key === 'KeyD' || key === 'd' || key === 'D') return !!this.keys[key] || gamepad.moveX > 0.35;
-    if (key === 'ArrowUp' || key === 'KeyW' || key === 'w' || key === 'W') return !!this.keys[key] || gamepad.moveY < -0.35;
-    if (key === 'ArrowDown' || key === 'KeyS' || key === 's' || key === 'S') return !!this.keys[key] || gamepad.moveY > 0.35;
-    if (key === 'ShiftLeft' || key === 'ShiftRight') return !!this.keys[key] || gamepad.dodge;
-    if (key === 'focus') return !!this.keys.focus || !!this.keys.ControlLeft || !!this.keys.ControlRight || gamepad.focus;
-    if (key === 'ControlLeft' || key === 'ControlRight') return !!this.keys[key] || !!this.keys.focus || gamepad.focus;
-    if (key === 'Space' || key === 'shoot') return !!this.keys[key] || gamepad.firing;
+    const action = getKeyboardActionForQuery(key);
+    if (action) return this.isActionPressed(action);
     return !!this.keys[key];
   }
 
@@ -484,12 +522,16 @@ export class InputManager {
 
   consumeKeyPress(...keys) {
     const gamepad = this.pollGamepad(true);
-    const wantsPause = keys.some(key => ['KeyP', 'p', 'P', 'Escape'].includes(key));
-    const matched = keys.some(key => this.justPressed[key]);
+    const actions = [...new Set(keys.map(getKeyboardActionForQuery).filter(Boolean))];
+    const wantsPause = actions.includes('pause');
+    const matched = keys.some(key => this.justPressed[key]) || actions.some(action => this.justPressedActions[action]);
     const gamepadMatched = wantsPause && gamepad.pauseJustPressed;
     if (matched || gamepadMatched) {
       keys.forEach(key => {
         this.justPressed[key] = false;
+      });
+      actions.forEach((action) => {
+        this.justPressedActions[action] = false;
       });
       if (gamepadMatched) {
         this.gamepadState.pauseJustPressed = false;
@@ -512,8 +554,10 @@ export class InputManager {
     document.removeEventListener('pointercancel', this.handlePointerCancel);
     this.keys = {};
     this.justPressed = {};
+    this.justPressedActions = {};
     this.suppressedKeys.clear();
     this.suppressedGamepadActions.clear();
+    window.removeEventListener(KEYBOARD_BINDINGS_CHANGED_EVENT, this.handleKeyboardBindingsChanged);
     this.gamepadState = this.createEmptyGamepadState();
     this.destroyed = true;
   }
