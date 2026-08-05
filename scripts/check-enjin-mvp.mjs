@@ -59,6 +59,8 @@ for (const required of [
 for (const required of [
   'setEnjinEditionMode',
   'STEAM BUILD ONLY',
+  'showEnjinSteamOnlyNotice',
+  'FULL STEAM VERSION REQUIRED',
   'enjinEditionController',
   '_enjinDisabled'
 ]) assert.ok(menuSource.includes(required), `missing Enjin menu lock contract: ${required}`);

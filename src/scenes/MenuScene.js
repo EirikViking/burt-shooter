@@ -435,8 +435,8 @@ export class MenuScene {
     ].filter(Boolean);
     disabledButtons.forEach((button) => {
       button._enjinDisabled = this.enjinEditionMode;
-      button.eventMode = this.enjinEditionMode ? 'none' : 'static';
-      button.cursor = this.enjinEditionMode ? 'default' : 'pointer';
+      button.eventMode = 'static';
+      button.cursor = this.enjinEditionMode ? 'not-allowed' : 'pointer';
     });
     if (this.enjinEditionMode) {
       this.mayhemRunMode = RUN_MODES.MAYHEM_TACTICAL;
@@ -450,6 +450,15 @@ export class MenuScene {
     this.refreshMenuText({ forceGpuRefresh: true });
     this.layoutMenu({ forceLabelGpuRefresh: true });
     return this.enjinEditionMode;
+  }
+
+  showEnjinSteamOnlyNotice(button = null) {
+    if (!this.isEnjinEdition() || !button?._enjinDisabled) return false;
+    this.setInputDevice('keyboard');
+    this.setMenuFocusByButton(this.tacticalStartBtn);
+    this.showExitNotice(translateText('FULL STEAM VERSION REQUIRED'));
+    AudioManager.playSfx('ui_open', { volume: 0.2, minIntervalMs: 180 });
+    return true;
   }
 
   init() {
@@ -1613,6 +1622,7 @@ export class MenuScene {
     this.dailySignalBtn._isDailySignalFeature = true;
     this.dailySignalBtn.alpha = 0;
     this.dailySignalBtn.on('pointerdown', () => {
+      if (this.showEnjinSteamOnlyNotice(this.dailySignalBtn)) return;
       this.setInputDevice('keyboard');
       this.startDailySignalRun();
     });
@@ -1671,6 +1681,7 @@ export class MenuScene {
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff, role: 'practice' });
     this.scoutRunBtn.alpha = 0;
     this.scoutRunBtn.on('pointerdown', () => {
+      if (this.showEnjinSteamOnlyNotice(this.scoutRunBtn)) return;
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.scoutRunBtn);
       this.quickStartRun(RUN_MODES.SCOUT);
@@ -1700,6 +1711,7 @@ export class MenuScene {
     this.configureRunModeCard(this.overrunStartBtn, { id: 'overrun', secondary: 0xffd15c, role: 'advanced' });
     this.overrunStartBtn.alpha = 0;
     this.overrunStartBtn.on('pointerdown', () => {
+      if (this.showEnjinSteamOnlyNotice(this.overrunStartBtn)) return;
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.overrunStartBtn);
       this.startOverrunRun();
@@ -6946,6 +6958,10 @@ export class MenuScene {
   }
 
   handleSectorStartPointerDown(event) {
+    if (this.showEnjinSteamOnlyNotice(this.sectorStartBtn)) {
+      event?.stopPropagation?.();
+      return;
+    }
     this.setInputDevice('keyboard');
     this.setMenuFocusByButton(this.sectorStartBtn);
     event?.stopPropagation?.();

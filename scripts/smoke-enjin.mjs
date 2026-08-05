@@ -73,6 +73,18 @@ async function main() {
     assert.ok(!mainMenuState.menu.optionOrder.includes('overrun'), 'Enjin menu made Overrun selectable');
     assert.equal(await page.locator('#enjin-shell').innerText(), '', 'Enjin menu shell should not replace the game menu');
 
+    const blockedModeBounds = mainMenuState.menu.launchDeck.cards.daily.bounds;
+    await page.mouse.click(blockedModeBounds.x + blockedModeBounds.width / 2, blockedModeBounds.y + blockedModeBounds.height / 2);
+    await page.waitForFunction(() => {
+      const state = JSON.parse(window.render_game_to_text());
+      return state.scene === 'menu' && state.enjin?.mode === 'menu' && state.menu?.exitNoticeText === 'FULL STEAM VERSION REQUIRED';
+    }, null, { timeout: interactionTimeout });
+    const blockedModeState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+    assert.equal(blockedModeState.scene, 'menu');
+    assert.equal(blockedModeState.enjin.mode, 'menu');
+    assert.equal(blockedModeState.menu.exitNoticeText, 'FULL STEAM VERSION REQUIRED');
+    await page.screenshot({ path: path.join(outputDir, 'steam-only-notice-1280x720.png'), fullPage: true });
+
     const launchBounds = mainMenuState.menu.launchDeck.cards.mayhemTactical.bounds;
     await page.mouse.click(launchBounds.x + launchBounds.width / 2, launchBounds.y + launchBounds.height / 2);
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'playing', null, { timeout: interactionTimeout });
@@ -152,6 +164,7 @@ async function main() {
         'main_menu_free_play',
         'direct_main_menu_entry',
         'mayhem_tactical_only_mode_lock',
+        'steam_only_mode_notice',
         'exact_25000_completion',
         'post_gate_state_is_frozen_after_5_seconds',
         'claim_qr_renders_locally',
