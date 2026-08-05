@@ -452,8 +452,10 @@ export class MenuScene {
     return this.enjinEditionMode;
   }
 
-  showEnjinSteamOnlyNotice(button = null) {
+  showEnjinSteamOnlyNotice(button = null, event = null) {
     if (!this.isEnjinEdition() || !button?._enjinDisabled) return false;
+    event?.stopPropagation?.();
+    event?.preventDefault?.();
     this.setInputDevice('keyboard');
     this.setMenuFocusByButton(this.tacticalStartBtn);
     this.showExitNotice(translateText('FULL STEAM VERSION REQUIRED'));
@@ -1621,8 +1623,8 @@ export class MenuScene {
     this.configureRunModeCard(this.dailySignalBtn, { id: 'dailySignal', secondary: 0xff55d9, role: 'activity' });
     this.dailySignalBtn._isDailySignalFeature = true;
     this.dailySignalBtn.alpha = 0;
-    this.dailySignalBtn.on('pointerdown', () => {
-      if (this.showEnjinSteamOnlyNotice(this.dailySignalBtn)) return;
+    this.dailySignalBtn.on('pointerdown', (event) => {
+      if (this.showEnjinSteamOnlyNotice(this.dailySignalBtn, event)) return;
       this.setInputDevice('keyboard');
       this.startDailySignalRun();
     });
@@ -1659,7 +1661,9 @@ export class MenuScene {
     });
     this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8, role: 'main' });
     this.tacticalStartBtn.alpha = 0;
-    this.tacticalStartBtn.on('pointerdown', () => {
+    this.tacticalStartBtn.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      event?.preventDefault?.();
       this.game?.enjinEditionController?.requestFullscreenForRun?.();
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.tacticalStartBtn);
@@ -1681,8 +1685,8 @@ export class MenuScene {
     });
     this.configureRunModeCard(this.scoutRunBtn, { id: 'scout', secondary: 0x37f5ff, role: 'practice' });
     this.scoutRunBtn.alpha = 0;
-    this.scoutRunBtn.on('pointerdown', () => {
-      if (this.showEnjinSteamOnlyNotice(this.scoutRunBtn)) return;
+    this.scoutRunBtn.on('pointerdown', (event) => {
+      if (this.showEnjinSteamOnlyNotice(this.scoutRunBtn, event)) return;
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.scoutRunBtn);
       this.quickStartRun(RUN_MODES.SCOUT);
@@ -1711,8 +1715,8 @@ export class MenuScene {
     });
     this.configureRunModeCard(this.overrunStartBtn, { id: 'overrun', secondary: 0xffd15c, role: 'advanced' });
     this.overrunStartBtn.alpha = 0;
-    this.overrunStartBtn.on('pointerdown', () => {
-      if (this.showEnjinSteamOnlyNotice(this.overrunStartBtn)) return;
+    this.overrunStartBtn.on('pointerdown', (event) => {
+      if (this.showEnjinSteamOnlyNotice(this.overrunStartBtn, event)) return;
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.overrunStartBtn);
       this.startOverrunRun();
@@ -6962,7 +6966,7 @@ export class MenuScene {
   }
 
   handleSectorStartPointerDown(event) {
-    if (this.showEnjinSteamOnlyNotice(this.sectorStartBtn)) {
+    if (this.showEnjinSteamOnlyNotice(this.sectorStartBtn, event)) {
       event?.stopPropagation?.();
       return;
     }

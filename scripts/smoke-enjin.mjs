@@ -11,6 +11,7 @@ const remoteBaseUrl = process.env.ENJIN_SMOKE_BASE_URL?.replace(/\/$/, '');
 const baseUrl = remoteBaseUrl || `http://127.0.0.1:${port}`;
 const navigationWaitUntil = remoteBaseUrl ? 'domcontentloaded' : 'networkidle';
 const interactionTimeout = remoteBaseUrl ? 60_000 : 30_000;
+const smokeUrl = () => `${baseUrl}/?enjin_test=1&cb=${Date.now()}`;
 const chromeExecutablePath = process.env.CHROME_PATH
   || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
 
@@ -68,7 +69,7 @@ async function main() {
       }
     });
 
-    await page.goto(`${baseUrl}/?enjin_test=1`, { waitUntil: navigationWaitUntil });
+    await page.goto(smokeUrl(), { waitUntil: navigationWaitUntil });
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'menu' && window.__game?.currentSceneName === 'menu', null, { timeout: 60_000 });
     await page.screenshot({ path: path.join(outputDir, 'main-menu-1280x720.png'), fullPage: true });
     assert.equal(await page.locator('[data-enjin-action="start"]').count(), 0, 'Enjin landing screen still intercepts the main menu');
@@ -93,6 +94,7 @@ async function main() {
     assert.equal(blockedModeState.scene, 'menu');
     assert.equal(blockedModeState.enjin.mode, 'menu');
     assert.equal(blockedModeState.menu.exitNoticeText, 'FULL STEAM VERSION REQUIRED');
+    assert.equal(new URL(page.url()).hostname, new URL(baseUrl).hostname, 'Steam-only mode click navigated away from the game');
     await page.screenshot({ path: path.join(outputDir, 'steam-only-notice-1280x720.png'), fullPage: true });
 
     const launchBounds = mainMenuState.menu.launchDeck.cards.mayhemTactical.bounds;
@@ -103,11 +105,25 @@ async function main() {
     assert.equal(playingState.modeLock, 'ranked_tactical');
     assert.equal(await page.evaluate(() => window.__fullscreenRequestCount), 1, 'Mayhem Tactical launch did not request browser fullscreen');
     assert.equal(playingState.fullscreenRequested, true);
-    await page.waitForTimeout(8000);
+    assert.equal(new URL(page.url()).hostname, new URL(baseUrl).hostname, 'Mayhem Tactical launch navigated away from the game');
+    await page.waitForTimeout(1500);
     await page.evaluate(() => window.advanceTime(900));
     const combatState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
     assert.equal(combatState.scene, 'play');
-    assert.ok(combatState.counts.enemies > 0, 'Enjin gameplay has no visible enemies after the opening beat');
+    assert.ok(combatState.counts.enemies > 0, 'Enjin gameplay has no visible enemies after the fast opening beat');
+    assert.equal(combatState.highscoreChase.source, 'enjin_edition');
+    const firstKillCueState = await page.evaluate(() => {
+      window.__game.addScore(100, 'mvp_test_first_enemy');
+      const text = JSON.parse(window.render_game_to_text());
+      return {
+        highscoreChase: text.highscoreChase,
+        personalBestCelebration: text.personalBestCelebration,
+        personalBestToasts: (text.toast?.active || []).filter((toast) => /PERSONAL BEST/i.test(String(toast.text || '')))
+      };
+    });
+    assert.equal(firstKillCueState.highscoreChase.targetScore, 0, 'Enjin run loaded a personal-best target');
+    assert.equal(firstKillCueState.personalBestCelebration.active, false, 'Enjin first kill opened a personal-best celebration');
+    assert.equal(firstKillCueState.personalBestToasts.length, 0, 'Enjin first kill showed a personal-best toast');
     await page.screenshot({ path: path.join(outputDir, 'playing-1280x720.png'), fullPage: true });
     assert.match(await page.locator('#enjin-shell').innerText(), /VAULT SCORE/);
     await page.evaluate(async () => window.__enjinMvp.debugCompleteForTest());
@@ -162,7 +178,7 @@ async function main() {
       }
     });
     const retryPage = await retryContext.newPage();
-    await retryPage.goto(`${baseUrl}/?enjin_test=1`, { waitUntil: navigationWaitUntil });
+    await retryPage.goto(smokeUrl(), { waitUntil: navigationWaitUntil });
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'menu' && window.__game?.currentSceneName === 'menu', null, { timeout: 60_000 });
     const retryMenuState = await retryPage.evaluate(() => JSON.parse(window.render_game_to_text()));
     assert.equal(retryMenuState.menu.launchDeck.cards.mayhemTactical.runMode, 'ranked_tactical');

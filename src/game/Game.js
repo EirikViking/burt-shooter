@@ -504,7 +504,10 @@ export class Game {
     AudioManager.silenceVoicePlayback?.('gameplay_start_handoff');
     this.switchScene('play');
     this.prepareGameplayInputFocus();
-    if (!isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {
+    // The Enjin run is a fixed qualification challenge, not a ranked
+    // leaderboard chase. Avoid loading the Steam/local personal-best target
+    // so the first enemy cannot trigger a misleading "NEW PERSONAL BEST".
+    if (!this.enjinEditionModeLocked && !isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {
       this.primeHighscoreChaseTarget();
       this.primeGlobalLeaderboardTargets();
     }
@@ -978,6 +981,26 @@ export class Game {
     sectorStartCheckpoint = null,
     dailySignalContract = this.dailySignalContract
   } = {}) {
+    if (this.enjinEditionModeLocked) {
+      return {
+        targetScore: 0,
+        targetSector: null,
+        targetTimeSeconds: null,
+        goalMode: 'score',
+        bestAttemptSector: null,
+        hasDailyClear: false,
+        runMode,
+        source: 'enjin_edition',
+        syncingTarget: false,
+        checkpoint: null,
+        surpassed: true,
+        celebrationFired: false,
+        celebrationScore: 0,
+        milestones: new Set(),
+        lastTauntAtMs: 0,
+        tauntIndex: 0
+      };
+    }
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
     const isDailySignal = runMode === RUN_MODES.DAILY_SIGNAL;
     const isOverrun = isOverrunRunMode(runMode);

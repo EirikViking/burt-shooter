@@ -930,6 +930,7 @@ export class PlayScene {
     const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
     this.controlSmokeMode = controlSmoke;
     this.maintainerDevtoolsEnabled = isMaintainerDevtoolsEnabled();
     const logShipDebug = () => {
@@ -948,10 +949,20 @@ export class PlayScene {
       this.player.setRank(currentRank, source);
       this.applySeasonCosmetics();
       logShipDebug();
-      if (controlSmoke) {
+      if (controlSmoke || enjinEdition) {
         this.introActive = false;
         this.introComplete = true;
-        this.startLevelWhenWarm('controlSmoke');
+        this.shipIntroTiming = enjinEdition
+          ? {
+              flightMs: 0,
+              totalMs: 0,
+              fadeInMs: 0,
+              holdUntilMs: 0,
+              impactStartMs: 0,
+              impactEndMs: 0
+            }
+          : null;
+        this.startLevelWhenWarm(enjinEdition ? 'enjinFastStart' : 'controlSmoke');
       } else {
         this.startShipIntro(spriteKey);
       }
@@ -965,10 +976,12 @@ export class PlayScene {
       .catch((error) => {
         console.warn('[PlayScene] Selected ship texture preload failed:', error);
       });
-    Promise.race([
-      selectedShipReady,
-      new Promise((resolve) => setTimeout(resolve, 2500))
-    ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    if (!enjinEdition) {
+      Promise.race([
+        selectedShipReady,
+        new Promise((resolve) => setTimeout(resolve, 2500))
+      ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    }
     this.shipCatalogLoaded = false;
     this.shipIntroAssetGatePending = false;
     this.shipCatalogReady = selectedShipReady.finally(() => {
@@ -1018,6 +1031,12 @@ export class PlayScene {
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
+    if (enjinEdition) {
+      // The Web3 edition is a short arcade conversion funnel. Start the
+      // first wave as soon as the scene exists instead of waiting for the
+      // optional cinematic ship/catalog preload.
+      startIntroFromPlayer('enjin_fast_start');
+    }
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
@@ -4146,7 +4165,8 @@ export class PlayScene {
         console.warn('[PlayScene] level entry asset prewarm failed:', error);
       });
     });
-    const showingFirstRunControls = Boolean(
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
+    const showingFirstRunControls = !enjinEdition && Boolean(
       this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
     );
     const showArrivalStinger = !showingFirstRunControls && this.shouldShowSectorArrivalStinger(this.game.level);
@@ -4466,11 +4486,14 @@ export class PlayScene {
     if (this.levelStartWarmupPending) return;
     const targetLevel = Number.isFinite(this.debugStartLevel) ? this.debugStartLevel : (this.game?.level || 1);
     this.levelStartWarmupPending = true;
-    const catalogReady = this.shipCatalogLoaded
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
+    const catalogReady = enjinEdition || this.shipCatalogLoaded
       ? Promise.resolve(true)
       : (this.shipCatalogReady || Promise.resolve(true)).catch(() => true);
     catalogReady
-      .then(() => this.prewarmLevelEntryAssets(targetLevel, { ahead: 2 }))
+      .then(() => enjinEdition
+        ? true
+        : this.prewarmLevelEntryAssets(targetLevel, { ahead: 2 }))
       .finally(() => {
         this.levelStartWarmupPending = false;
         if (this.game?.currentScene !== this || !this.introComplete || !this.enemyManager || !this.game?.level) return;
