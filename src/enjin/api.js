@@ -4,13 +4,22 @@ const MOCK_CLAIM_ORIGIN = 'https://mock.invalid/enjin/claim/';
 const DEFAULT_CAMPAIGN = Object.freeze({
   id: 'eirik-viking-vault-1',
   mode: 'enjin_vault_run',
-  targetScore: 25_000,
+  targetScore: 30_000,
   title: 'EIRIK THE VIKING VAULT RUN',
   collectionName: 'Eirik The Viking',
   collectionUrl: 'https://nft.io/collection/eirik-the-viking-1/assets',
   mockMode: true,
   availableClaims: 1
 });
+
+function shouldUseMockClaims() {
+  if (typeof window === 'undefined') return true;
+  const hostname = window.location.hostname;
+  return hostname === 'localhost'
+    || hostname === '127.0.0.1'
+    || hostname === '[::1]'
+    || new URLSearchParams(window.location.search).has('enjin_test');
+}
 
 function readLocalState() {
   try {
@@ -87,7 +96,7 @@ export async function getCompletionStatus() {
   const localState = readLocalState();
   try {
     const remote = await request('/api/enjin/completion-status');
-    if (localState.completed) {
+    if (localState.completed && shouldUseMockClaims()) {
       return {
         ...remote,
         completed: true,
@@ -113,6 +122,7 @@ export async function startRun({ buildId = 'dev' } = {}) {
       body: JSON.stringify({ buildId, mode: 'enjin_vault_run' })
     });
   } catch {
+    if (!shouldUseMockClaims()) return { ok: false, unavailable: true, mock: false };
     return {
       mock: true,
       campaignId: DEFAULT_CAMPAIGN.id,
@@ -134,7 +144,7 @@ export async function finishRun(payload) {
       body: JSON.stringify({
         ...payload,
         mode: 'enjin_vault_run',
-        score: 25_000
+        score: 30_000
       })
     });
     const current = readLocalState();
@@ -148,6 +158,9 @@ export async function finishRun(payload) {
     });
     return result;
   } catch {
+    if (!shouldUseMockClaims()) {
+      return { ok: false, mock: false, status: 'unavailable', reward: null };
+    }
     const current = readLocalState();
     const reward = current.inventoryEmpty ? null : mockReward(current);
     writeLocalState({
@@ -171,10 +184,12 @@ export async function getReward() {
   const localState = readLocalState();
   try {
     const remote = await request('/api/enjin/reward/current');
-    if (remote?.reward || !localState.completed) return remote;
+    if (remote?.reward || !localState.completed || !shouldUseMockClaims()) return remote;
     return { reward: mockReward(localState) };
   } catch {
-    return localState.completed && localState.assignmentId ? { reward: mockReward(localState) } : null;
+    return shouldUseMockClaims() && localState.completed && localState.assignmentId
+      ? { reward: mockReward(localState) }
+      : null;
   }
 }
 
@@ -185,6 +200,7 @@ export async function markRewardOpened(assignmentId) {
       body: JSON.stringify({ assignmentId })
     });
   } catch {
+    if (!shouldUseMockClaims()) return { ok: false, status: 'unavailable', mock: false };
     const state = readLocalState();
     writeLocalState({ ...state, claimOpened: true });
     return { ok: true, status: 'CLAIM OPENED', mock: true };

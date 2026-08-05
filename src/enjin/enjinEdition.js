@@ -41,8 +41,48 @@ export class EnjinEditionController {
     this.inventoryEmpty = false;
     this.restoring = true;
     this.startedAt = 0;
+    this.fullscreen = {
+      requested: false,
+      active: false,
+      error: null
+    };
     this.tickTimer = null;
     this.boundKeydown = (event) => this.handleKeydown(event);
+  }
+
+  requestFullscreenForRun() {
+    if (typeof document === 'undefined') return false;
+    if (document.fullscreenElement) {
+      this.fullscreen.requested = true;
+      this.fullscreen.active = true;
+      this.fullscreen.error = null;
+      return true;
+    }
+
+    const root = document.documentElement;
+    if (typeof root?.requestFullscreen !== 'function') {
+      this.fullscreen.error = 'fullscreen_unavailable';
+      return false;
+    }
+
+    this.fullscreen.requested = true;
+    this.fullscreen.error = null;
+    try {
+      // This method is called directly from the Mayhem Tactical pointer event.
+      // Keeping the browser request in that gesture is required by the Fullscreen API.
+      Promise.resolve(root.requestFullscreen())
+        .then(() => {
+          this.fullscreen.active = Boolean(document.fullscreenElement);
+        })
+        .catch((error) => {
+          this.fullscreen.active = false;
+          this.fullscreen.error = error?.name || 'fullscreen_request_rejected';
+        });
+    } catch (error) {
+      this.fullscreen.active = false;
+      this.fullscreen.error = error?.name || 'fullscreen_request_failed';
+    }
+    return true;
   }
 
   async mount() {
@@ -138,6 +178,11 @@ export class EnjinEditionController {
     this.mode = 'starting';
     this.renderValidation('CALIBRATING VAULT RUN');
     this.run = await startRun({ buildId: this.buildId });
+    if (this.run?.unavailable) {
+      this.mode = 'menu';
+      this.renderMainMenu('Vault validation is temporarily unavailable. Please try again.');
+      return false;
+    }
     this.gate = createVaultRunGate({
       target: VAULT_RUN_TARGET,
       onReached: (snapshot) => this.handleGateReached(snapshot)
@@ -176,7 +221,7 @@ export class EnjinEditionController {
   async handleGateReached(snapshot) {
     if (this.mode === 'validating' || this.completed) return;
     this.mode = 'validating';
-    this.renderValidation('25,000 REACHED', snapshot);
+    this.renderValidation('30,000 REACHED', snapshot);
     AudioManager.playSfx?.('nova_highscore_chime', { force: true, volume: 0.8, minIntervalMs: 0 });
     const result = await finishRun({
       runId: this.run?.runId || 'mock-run',
@@ -210,8 +255,8 @@ export class EnjinEditionController {
           <div class="enjin-hero-copy">
             <div class="enjin-kicker">NOVA SWARM: WEB3 ARCADE</div>
             <h1 class="enjin-title" id="enjin-title">EIRIK THE VIKING<br>VAULT RUN</h1>
-            <p class="enjin-campaign">SCORE 25,000.<br>CLAIM A FREE ENJIN NFT.</p>
-            <p class="enjin-copy">Play the Vault Run free in your browser. Reach 25,000 in a validated run and unlock one collectible from the Eirik The Viking collection, while verified rewards remain.</p>
+            <p class="enjin-campaign">SCORE 30,000.<br>CLAIM A FREE ENJIN NFT.</p>
+            <p class="enjin-copy">Play the Vault Run free in your browser. Reach 30,000 in a validated run and unlock one collectible from the Eirik The Viking collection, while verified rewards remain.</p>
             <div class="enjin-hero-promise" aria-label="Web edition benefits">
               <span>NO WALLET</span><span>FREE TO PLAY</span><span>ONE SCORE GATE</span>
             </div>
@@ -286,7 +331,7 @@ export class EnjinEditionController {
       <div class="enjin-playing" aria-live="polite">
         <div class="enjin-hud">
           <div class="enjin-label">VAULT SCORE</div>
-          <div class="enjin-hud-score"><span data-enjin-score>0</span> / 25,000</div>
+          <div class="enjin-hud-score"><span data-enjin-score>0</span> / 30,000</div>
           <div class="enjin-progress" aria-hidden="true"><span data-enjin-progress></span></div>
           <div class="enjin-hud-status">Mayhem Tactical · Reach the gate. The run ends there.</div>
         </div>
@@ -301,7 +346,7 @@ export class EnjinEditionController {
           <div class="enjin-kicker">EIRIK THE VIKING VAULT RUN</div>
           <div class="enjin-validation">${escapeHtml(label)}</div>
           <h2>${snapshot ? 'THE SCORE GATE IS LOCKED' : 'PREPARING THE ARCADE'}</h2>
-          <p>${snapshot ? 'Gameplay is permanently stopped at exactly 25,000 while the free claim is validated.' : 'No wallet connection is needed. Your browser is ready for a free run.'}</p>
+          <p>${snapshot ? 'Gameplay is permanently stopped at exactly 30,000 while the free claim is validated.' : 'No wallet connection is needed. Your browser is ready for a free run.'}</p>
         </div>
       </section>`;
   }
@@ -346,9 +391,9 @@ export class EnjinEditionController {
     this.root.innerHTML = `
       <section class="enjin-screen enjin-completion-screen">
         <div class="enjin-card">
-          <div class="enjin-kicker">25,000 REACHED · VALIDATED VAULT RUN</div>
+          <div class="enjin-kicker">30,000 REACHED · VALIDATED VAULT RUN</div>
           <h2>VAULT RUN COMPLETE</h2>
-          <p class="enjin-completion-headline">THE FREE WEB3 EDITION ENDS AT 25,000</p>
+          <p class="enjin-completion-headline">THE FREE WEB3 EDITION ENDS AT 30,000</p>
           <p class="enjin-completion-subcopy">YOU BEAT THE WEB GATE. THE FULL SWARM DOESN'T STOP HERE.</p>
           <div class="enjin-steam-bridge enjin-steam-bridge-complete">
             <div>
@@ -356,7 +401,7 @@ export class EnjinEditionController {
               <strong>MORE MODES. MORE SECTORS. MORE SWARM.</strong>
               <span>The web edition was the hook. The full Nova Swarm experience keeps going.</span>
             </div>
-            <button class="enjin-button enjin-steam-bridge-cta" data-enjin-action="steam" data-placement="vault_complete">CONTINUE BEYOND 25,000 ON STEAM</button>
+          <button class="enjin-button enjin-steam-bridge-cta" data-enjin-action="steam" data-placement="vault_complete">CONTINUE BEYOND 30,000 ON STEAM</button>
           </div>
           ${rewardMarkup}
           <div class="enjin-actions">
@@ -407,7 +452,7 @@ export class EnjinEditionController {
   showModal(kind) {
     const title = kind === 'terms' ? 'Vault Run Terms' : 'Vault Run Privacy';
     const body = kind === 'terms'
-      ? 'No purchase is necessary. Browser play is free, and the qualifying score is exactly 25,000. Gameplay ends at 25,000 and a run must pass server validation. One reward is allowed per campaign identity while verified inventory remains. Rewards come only from the Eirik The Viking collection and are free digital collectibles with no promised market, resale, exchange, melt, or future value. TinyFoundry operates this independent promotion; it is not officially endorsed by Enjin. Void where prohibited.'
+      ? 'No purchase is necessary. Browser play is free, and the qualifying score is exactly 30,000. Gameplay ends at 30,000 and a run must pass server validation. One reward is allowed per campaign identity while verified inventory remains. Rewards come only from the Eirik The Viking collection and are free digital collectibles with no promised market, resale, exchange, melt, or future value. TinyFoundry operates this independent promotion; it is not officially endorsed by Enjin. Void where prohibited.'
       : 'This preview uses an anonymous campaign cookie, run score and timing, compact gameplay telemetry, and eligibility records to protect the one-reward limit. We do not request wallets, private keys, recovery phrases, or raw IP addresses. Privacy-preserving abuse signals may be hashed server-side.';
     const modal = document.createElement('div');
     modal.className = 'enjin-modal';
@@ -447,6 +492,9 @@ export class EnjinEditionController {
       inventoryEmpty: this.inventoryEmpty,
       runMode: this.game.runMode,
       modeLock: ENJIN_RUN_MODE,
+      fullscreenRequested: this.fullscreen.requested,
+      fullscreenActive: this.fullscreen.active,
+      fullscreenError: this.fullscreen.error,
       steamUrl: getSteamUrl('vault_complete')
     };
   }

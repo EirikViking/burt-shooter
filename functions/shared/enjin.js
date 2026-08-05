@@ -1,5 +1,5 @@
 const CAMPAIGN_ID = 'eirik-viking-vault-1';
-const TARGET_SCORE = 25_000;
+const TARGET_SCORE = 30_000;
 const IDENTITY_COOKIE = 'nova_swarm_enjin_identity';
 const COLLECTION_NAME = 'Eirik The Viking';
 const COLLECTION_URL = 'https://nft.io/collection/eirik-the-viking-1/assets';
@@ -250,6 +250,9 @@ export async function ensureCampaign(db, env) {
     (id, name, collection_name, collection_url, owner_profile_url, target_score, mode, mock_mode, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(record.id, record.name, record.collection_name, record.collection_url, record.owner_profile_url, record.target_score, record.mode, record.mock_mode, record.created_at)
+    .run();
+  await db.prepare('UPDATE enjin_campaigns SET target_score = ?, mode = ?, mock_mode = ? WHERE id = ?')
+    .bind(record.target_score, record.mode, record.mock_mode, record.id)
     .run();
   return db.prepare('SELECT * FROM enjin_campaigns WHERE id = ?').bind(CAMPAIGN_ID).first();
 }

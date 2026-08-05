@@ -43,6 +43,16 @@ async function main() {
   try {
     await waitForServer();
     const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    await context.addInitScript(() => {
+      window.__fullscreenRequestCount = 0;
+      const nativeRequestFullscreen = Element.prototype.requestFullscreen;
+      if (typeof nativeRequestFullscreen === 'function') {
+        Element.prototype.requestFullscreen = function (...args) {
+          window.__fullscreenRequestCount += 1;
+          return nativeRequestFullscreen.apply(this, args);
+        };
+      }
+    });
     const page = await context.newPage();
     const consoleErrors = [];
     const localApiFallbacks = [];
@@ -91,6 +101,8 @@ async function main() {
     const playingState = await page.evaluate(() => window.__enjinMvp.debugState());
     assert.equal(playingState.runMode, 'ranked_tactical');
     assert.equal(playingState.modeLock, 'ranked_tactical');
+    assert.equal(await page.evaluate(() => window.__fullscreenRequestCount), 1, 'Mayhem Tactical launch did not request browser fullscreen');
+    assert.equal(playingState.fullscreenRequested, true);
     await page.waitForTimeout(8000);
     await page.evaluate(() => window.advanceTime(900));
     const combatState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
@@ -103,7 +115,7 @@ async function main() {
     await page.waitForSelector('[data-enjin-qr] svg');
     const completionCopy = await page.locator('#enjin-shell').innerText();
     assert.match(completionCopy, /CLAIM YOUR FREE ENJIN NFT/);
-    assert.match(completionCopy, /CONTINUE BEYOND 25,000 ON STEAM/);
+    assert.match(completionCopy, /CONTINUE BEYOND 30,000 ON STEAM/);
     assert.match(completionCopy, /THE FULL SWARM DOESN'T STOP HERE/);
     await page.screenshot({ path: path.join(outputDir, 'vault-complete-1280x720.png'), fullPage: true });
 
@@ -113,11 +125,11 @@ async function main() {
       const after = window.__enjinMvp.debugState();
       return { before, after, text: window.render_game_to_text() };
     });
-    assert.equal(frozenState.before.score, 25_000);
-    assert.equal(frozenState.after.score, 25_000);
+    assert.equal(frozenState.before.score, 30_000);
+    assert.equal(frozenState.after.score, 30_000);
     assert.equal(frozenState.after.frozen, true);
     assert.equal(frozenState.after.completed, true);
-    assert.match(frozenState.text, /"score":25000/);
+    assert.match(frozenState.text, /"score":30000/);
     assert.ok(!await page.locator('[data-enjin-action="retry"]').count(), 'completed identity received retry');
 
     const steamHref = await page.locator('[data-enjin-action="steam"]').getAttribute('href');
@@ -165,7 +177,7 @@ async function main() {
         'direct_main_menu_entry',
         'mayhem_tactical_only_mode_lock',
         'steam_only_mode_notice',
-        'exact_25000_completion',
+        'exact_30000_completion',
         'post_gate_state_is_frozen_after_5_seconds',
         'claim_qr_renders_locally',
         'steam_utm_link',

@@ -1660,6 +1660,7 @@ export class MenuScene {
     this.configureRunModeCard(this.tacticalStartBtn, { id: 'mayhemTactical', secondary: 0x7fffd8, role: 'main' });
     this.tacticalStartBtn.alpha = 0;
     this.tacticalStartBtn.on('pointerdown', () => {
+      this.game?.enjinEditionController?.requestFullscreenForRun?.();
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.tacticalStartBtn);
       if (this.game?.enjinEditionController?.beginRun) {

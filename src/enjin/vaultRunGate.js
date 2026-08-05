@@ -1,4 +1,4 @@
-export const VAULT_RUN_TARGET = 25_000;
+export const VAULT_RUN_TARGET = 30_000;
 
 function finiteScore(value) {
   return Math.max(0, Math.floor(Number(value) || 0));

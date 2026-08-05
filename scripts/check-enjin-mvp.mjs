@@ -7,14 +7,14 @@ const root = process.cwd();
 const read = (relative) => fs.readFileSync(path.join(root, relative), 'utf8');
 
 const gate = new VaultRunGate();
-assert.equal(VAULT_RUN_TARGET, 25_000);
-assert.equal(gate.acceptAward(24_950, { previousScore: 0 }).score, 24_950);
-const crossing = gate.acceptAward(200, { previousScore: 24_950, level: 4 });
+assert.equal(VAULT_RUN_TARGET, 30_000);
+assert.equal(gate.acceptAward(29_950, { previousScore: 0 }).score, 29_950);
+const crossing = gate.acceptAward(200, { previousScore: 29_950, level: 4 });
 assert.equal(crossing.completed, true);
-assert.equal(crossing.score, 25_000);
-assert.equal(crossing.rawCrossingScore, 25_150);
+assert.equal(crossing.score, 30_000);
+assert.equal(crossing.rawCrossingScore, 30_150);
 assert.equal(gate.acceptAward(999_999).applied, 0);
-assert.equal(gate.score, 25_000);
+assert.equal(gate.score, 30_000);
 assert.equal(gate.frozen, true);
 assert.equal(gate.freezeFrames, 0);
 gate.onFrozenFrame();
@@ -42,8 +42,8 @@ assert.ok(playSource.includes("cleanupSkippedFrameVisuals('score_gate')"), 'play
 for (const required of [
   'NOVA SWARM: WEB3 ARCADE',
   'EIRIK THE VIKING',
-  'SCORE 25,000',
-  'CONTINUE BEYOND 25,000 ON STEAM',
+  'SCORE 30,000',
+  'CONTINUE BEYOND 30,000 ON STEAM',
   'NO PURCHASE NECESSARY',
   'MAYHEM TACTICAL',
   'STEAM BUILD ONLY',
@@ -86,6 +86,7 @@ for (const required of ['enjin_campaigns', 'enjin_runs', 'enjin_claim_inventory'
 }
 assert.ok(apiSource.includes('credentials: \'include\''), 'campaign identity is not sent with API calls');
 assert.ok(apiSource.includes('https://mock.invalid/enjin/claim/'), 'mock claims are not clearly non-production');
+assert.ok(apiSource.includes('shouldUseMockClaims'), 'mock claims are not restricted to local/test runtimes');
 assert.ok(importerSource.includes("'claim_link'"), 'NFT.io Claim link CSV exports are not supported');
 assert.ok(!controllerSource.match(/https:\/\/[^\s"']+beam[^\s"']+/i), 'a real Beam URL leaked into the frontend source');
 
@@ -98,7 +99,7 @@ assert.equal(steamUrl.searchParams.get('utm_content'), 'vault_complete');
 console.log(JSON.stringify({
   status: 'passed',
   checks: [
-    'exact_25000_gate',
+    'exact_30000_gate',
     'post_gate_freeze',
     'completed_identity_contract',
     'encrypted_claim_inventory_contract',
