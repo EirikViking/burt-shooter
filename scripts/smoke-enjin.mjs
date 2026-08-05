@@ -111,6 +111,7 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: path.join(outputDir, 'claim-mobile-390x844.png'), fullPage: true });
     assert.ok(await page.locator('.enjin-mobile-only[data-enjin-action="open-claim"]').count(), 'mobile claim CTA missing');
+    assert.match(await page.locator('.enjin-mobile-only[data-enjin-action="open-claim"]').innerText(), /OPEN ENJIN CLAIM/);
     await page.reload({ waitUntil: navigationWaitUntil });
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete');
     assert.ok(!await page.locator('[data-enjin-action="start"]').count(), 'completed identity can start again after refresh');

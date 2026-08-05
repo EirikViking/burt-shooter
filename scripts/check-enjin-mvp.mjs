@@ -49,6 +49,7 @@ for (const required of [
   'THE EIRIK VAULT',
   'THE FULL SWARM CONTINUES ON STEAM',
   'NO WALLET',
+  'OPEN ENJIN CLAIM',
   'debugCompleteForTest'
 ]) assert.ok(controllerSource.includes(required), `missing campaign copy or test hook: ${required}`);
 assert.ok(gameSource.includes('enjinEditionModeLocked'), 'Enjin edition does not enforce its locked run mode');

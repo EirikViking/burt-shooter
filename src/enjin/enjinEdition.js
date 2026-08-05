@@ -345,7 +345,7 @@ export class EnjinEditionController {
           </div>
           ${rewardMarkup}
           <div class="enjin-actions">
-            ${this.reward ? '<button class="enjin-button enjin-mobile-only" data-enjin-action="open-claim">CLAIM YOUR FREE ENJIN NFT</button>' : ''}
+            ${this.reward ? '<button class="enjin-button enjin-mobile-only" data-enjin-action="open-claim">OPEN ENJIN CLAIM</button>' : ''}
             <a class="enjin-button secondary" href="${COLLECTION_URL}" target="_blank" rel="noopener noreferrer">VIEW EIRIK THE VIKING COLLECTION</a>
           </div>
           <p class="enjin-disclaimer">The Beam system remains authoritative for final redemption. This collectible provides no gameplay advantage and is not promised to work in Steam.</p>
