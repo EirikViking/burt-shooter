@@ -6433,9 +6433,12 @@ export class MenuScene {
       {
         id: 'launchTactical',
         button: this.tacticalStartBtn,
-        activate: () => this.game?.enjinEditionController?.beginRun
-          ? this.game.enjinEditionController.beginRun()
-          : this.quickStartRun(this.mayhemRunMode)
+        activate: () => {
+          this.game?.enjinEditionController?.requestFullscreenForRun?.();
+          return this.game?.enjinEditionController?.beginRun
+            ? this.game.enjinEditionController.beginRun()
+            : this.quickStartRun(this.mayhemRunMode);
+        }
       },
       { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },

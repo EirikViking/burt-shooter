@@ -48,6 +48,10 @@ export class EnjinEditionController {
     };
     this.tickTimer = null;
     this.boundKeydown = (event) => this.handleKeydown(event);
+    this.boundFullscreenGesture = () => {
+      if (this.completed || this.mode === 'complete' || document.fullscreenElement) return;
+      this.requestFullscreenForRun();
+    };
   }
 
   requestFullscreenForRun() {
@@ -58,6 +62,7 @@ export class EnjinEditionController {
       this.fullscreen.error = null;
       return true;
     }
+    if (this.fullscreen.requested && !this.fullscreen.error) return true;
 
     const root = document.documentElement;
     if (typeof root?.requestFullscreen !== 'function') {
@@ -97,6 +102,7 @@ export class EnjinEditionController {
     document.getElementById('game-container')?.appendChild(this.root);
     this.root.addEventListener('click', (event) => this.handleClick(event));
     window.addEventListener('keydown', this.boundKeydown, true);
+    window.addEventListener('pointerdown', this.boundFullscreenGesture, true);
     this.renderMainMenu();
 
     const status = await getCompletionStatus();
@@ -139,6 +145,7 @@ export class EnjinEditionController {
   destroy() {
     if (this.tickTimer) window.clearInterval(this.tickTimer);
     window.removeEventListener('keydown', this.boundKeydown, true);
+    window.removeEventListener('pointerdown', this.boundFullscreenGesture, true);
     this.root?.remove();
     if (this.game?.scoreGate === this.gate) this.game.scoreGate = null;
     if (this.game?.enjinEditionModeLocked === ENJIN_RUN_MODE) {

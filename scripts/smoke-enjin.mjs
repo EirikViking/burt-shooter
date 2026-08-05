@@ -151,13 +151,24 @@ async function main() {
     assert.ok(!await page.locator('[data-enjin-action="start"]').count(), 'completed identity can start again after refresh');
 
     const retryContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    await retryContext.addInitScript(() => {
+      window.__fullscreenRequestCount = 0;
+      const nativeRequestFullscreen = Element.prototype.requestFullscreen;
+      if (typeof nativeRequestFullscreen === 'function') {
+        Element.prototype.requestFullscreen = function (...args) {
+          window.__fullscreenRequestCount += 1;
+          return nativeRequestFullscreen.apply(this, args);
+        };
+      }
+    });
     const retryPage = await retryContext.newPage();
     await retryPage.goto(`${baseUrl}/?enjin_test=1`, { waitUntil: navigationWaitUntil });
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'menu' && window.__game?.currentSceneName === 'menu', null, { timeout: 60_000 });
     const retryMenuState = await retryPage.evaluate(() => JSON.parse(window.render_game_to_text()));
-    const retryLaunchBounds = retryMenuState.menu.launchDeck.cards.mayhemTactical.bounds;
-    await retryPage.mouse.click(retryLaunchBounds.x + retryLaunchBounds.width / 2, retryLaunchBounds.y + retryLaunchBounds.height / 2);
+    assert.equal(retryMenuState.menu.launchDeck.cards.mayhemTactical.runMode, 'ranked_tactical');
+    await retryPage.keyboard.press('Enter');
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'playing', null, { timeout: interactionTimeout });
+    assert.equal(await retryPage.evaluate(() => window.__fullscreenRequestCount), 1, 'Keyboard Mayhem Tactical launch did not request browser fullscreen');
     await retryPage.evaluate(() => window.__enjinMvp.debugFailForTest());
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'failed');
     assert.match(await retryPage.locator('#enjin-shell').innerText(), /TRY AGAIN/);
