@@ -4813,6 +4813,12 @@ export class PlayScene {
       measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
       measure('collisions', () => this.checkCollisions());
+      if (this.game?.scoreGate?.frozen) {
+        this.cleanupSkippedFrameVisuals('score_gate');
+        this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
+        return;
+      }
       measure('deferred_progression.score_progress', () => {
         if (this.shouldDeferActiveGameplayPersistence()) {
           return {

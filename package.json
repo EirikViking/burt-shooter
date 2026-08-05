@@ -7,8 +7,16 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "dev:enjin": "vite --mode enjin",
     "prebuild": "node scripts/update-build.cjs && node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-achievements-catalog.mjs && node scripts/check-milestone-achievements.mjs && node scripts/check-i18n.mjs && node scripts/check-easter-eggs.mjs && node scripts/check-fullscreen-menu-removed.mjs && node scripts/check-ship-recommendation.mjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-ship-trait-explanations.mjs && node scripts/check-ascendant-ships.mjs && node scripts/check-credits-ascendant-easter-egg.mjs && node scripts/check-hangar-unlock-integrity.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-enemy-movement-smoothing.mjs && node scripts/check-late-enemy-mayhem.mjs && node scripts/check-generated-ship-art.mjs && node scripts/check-sector-arrival-stinger.mjs && node scripts/check-boss-support-ships.mjs && node scripts/check-boss-roster.mjs && node scripts/check-boss-mercy.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-super-extra-life-powerup.mjs && node scripts/check-nova-miracle-powerup.mjs && node scripts/check-row-core.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs && node scripts/check-voice-mute-contract.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs && node scripts/check-tactical-boss-banter.mjs",
     "build": "vite build",
+    "prebuild:enjin": "node scripts/update-build.cjs",
+    "build:enjin": "npm run check:enjin && vite build --mode enjin",
+    "preview:enjin": "vite preview --mode enjin",
+    "check:enjin": "node scripts/check-enjin-mvp.mjs",
+    "check:standard-enjin-isolation": "node scripts/check-standard-enjin-isolation.mjs",
+    "smoke:enjin": "node scripts/smoke-enjin.mjs",
+    "enjin:import-beam": "node scripts/enjin-import-beam.mjs",
     "prebuild:current": "npm run check:codex-copy && npm run check:powerup-expansion && npm run check:global-score-tuning && npm run check:gameplay-backdrop-motion && npm run check:tactical-directives && npm run check:nova-humor && npm run check:challenge-flight",
     "build:current": "node scripts/check-ranks.cjs && node scripts/check-rankpolicy-parity.cjs && node scripts/check-i18n.mjs && node scripts/check-easter-eggs.mjs && node scripts/check-fullscreen-menu-removed.mjs && node scripts/check-ship-recommendation.mjs && node scripts/check-sprite-catalog.cjs && node scripts/check-ship-traits.mjs && node scripts/check-ship-trait-explanations.mjs && node scripts/check-ascendant-ships.mjs && node scripts/check-credits-ascendant-easter-egg.mjs && node scripts/check-hangar-unlock-integrity.mjs && node scripts/check-generated-rosters.mjs && node scripts/check-normal-enemy-variety.mjs && node scripts/check-enemy-movement-smoothing.mjs && node scripts/check-late-enemy-mayhem.mjs && node scripts/check-generated-ship-art.mjs && node scripts/check-sector-arrival-stinger.mjs && node scripts/check-boss-support-ships.mjs && node scripts/check-boss-roster.mjs && node scripts/check-boss-mercy.mjs && node scripts/check-powerup-balance.mjs && node scripts/check-powerup-assets.mjs && node scripts/check-super-extra-life-powerup.mjs && node scripts/check-nova-miracle-powerup.mjs && node scripts/check-row-core.mjs && node scripts/check-enemy-weapons.mjs && node scripts/check-elite-ships.mjs && node scripts/check-tractor-debuffs.mjs && node scripts/check-audio-catalog.mjs && node scripts/check-voice-mute-contract.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs && node scripts/check-tactical-boss-banter.mjs && vite build",
     "check:i18n": "node scripts/check-i18n.mjs && node scripts/check-overrun-localization.mjs",
@@ -387,11 +395,13 @@
     "desktop:controls:packaged": "node scripts/smoke-packaged-controls.mjs",
     "package:steam:win": "npm run check:release-line && npm run check:steam-sdk-ready && npm run build && electron-builder --win dir --x64 --config electron-builder.json && npm run stage:steam-native-runtime && npm run check:steam-package-runtime",
     "package:steam:win:current": "npm run check:release-line && npm run check:steam-sdk-ready && electron-builder --win dir --x64 --config electron-builder.json && npm run stage:steam-native-runtime && npm run check:steam-package-runtime",
-    "deploy": "npm run build && wrangler pages deploy dist"
+    "deploy": "npm run build && wrangler pages deploy dist",
+    "deploy:enjin:preview": "npm run build:enjin && wrangler pages deploy dist --project-name=burt-game --branch=enjin-webedition"
   },
   "dependencies": {
     "howler": "^2.2.4",
-    "pixi.js": "^8.15.0"
+    "pixi.js": "^8.15.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

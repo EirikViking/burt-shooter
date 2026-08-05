@@ -2,6 +2,7 @@ import './styles.css';
 import * as PIXI from 'pixi.js';
 import { Game } from './game/Game.js';
 import { RUN_MODES, getRunModeProfile } from './game/RunMode.js';
+import { IS_ENJIN_EDITION } from './config/edition.js';
 import { summarizeRunReport } from './game/RunReport.js';
 import { POINT_DEFENSE_RADIUS } from './game/ProjectileDefenseRules.js';
 import { AudioManager } from './audio/AudioManager.js';
@@ -1754,7 +1755,7 @@ async function init() {
     return buildGameTextState(game);
   };
   perfState.renderer = app.renderer?.constructor?.name || perfState.renderer;
-  await runBootStep(bootLogger, 'start game', () => {
+  await runBootStep(bootLogger, 'start game', async () => {
     game.start();
     if (document.body) {
       document.body.dataset.menuReady = '1';
@@ -1765,7 +1766,11 @@ async function init() {
     if (hasDisplayBridge || displaySettings.mode !== 'fullscreen') {
       applyDisplaySettings(displaySettings).catch(() => {});
     }
-    if (isAutoStartEnabled() && !autoStartTriggered) {
+    if (IS_ENJIN_EDITION) {
+      const { mountEnjinEdition } = await import('@nova-enjin-edition');
+      window.__enjinMvp = await mountEnjinEdition({ game, app, buildId: BUILD_ID, gitSha: GIT_SHA });
+    }
+    if (!IS_ENJIN_EDITION && isAutoStartEnabled() && !autoStartTriggered) {
       autoStartTriggered = true;
       setTimeout(() => {
         game.startGame(undefined, { countShipUsage: false });

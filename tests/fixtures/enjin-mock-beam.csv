@@ -1,0 +1,3 @@
+claim_url,token_name,image_url,collection_name
+https://mock.invalid/enjin/claim/mock-01,Eirik The Viking Test Pilot,https://mock.invalid/images/mock-01.png,Eirik The Viking
+https://mock.invalid/enjin/claim/mock-02,,,Eirik The Viking

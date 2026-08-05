@@ -1,5 +1,13 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-05 Nova Swarm Enjin Web3 Arcade MVP
+
+- Isolated web edition branch: `codex/enjin-webedition-production-20260805`, based on source `55560f4b15c9904a92a2d1077d8fdb8526d63dd3`.
+- Enjin edition exposes only Mayhem Tactical. Other modes are visibly greyed out and marked Steam-build-only; standard builds do not mount Enjin UI.
+- Free play requires no wallet. A successful run freezes permanently at exactly 25,000, while deaths below the threshold may retry. Claims use mock mode locally and encrypted D1 inventory endpoints in the Cloudflare lane.
+- The 20-item NFT.io Beam was created from visible-image Eirik the Viking assets. Its single-use CSV was validated and encrypted into the local import manifest; no real claim URL is committed or logged.
+- Cloudflare preview `enjin-webedition.burt-game.pages.dev` is deployed with the safe mock fallback. Dedicated D1 provisioning is still blocked because the account has reached its ten-database limit and the CLI token lacks D1 permission; the production `burt-game-db` was not touched.
+
 ## 2026-07-30 Autofire continuity Steam hotfix
 
 - Current prompt: fix the deployed regression where the ship stops shooting after extended play, then upload the corrected build to Steam.
