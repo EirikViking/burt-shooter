@@ -114,6 +114,8 @@ export class Game {
     // Optional edition-owned score controller. The normal and Steam builds
     // leave this null, so their score and run lifecycle remain unchanged.
     this.scoreGate = null;
+    this.enjinEditionModeLocked = null;
+    this.enjinEditionController = null;
     this.level = 1;
     this.lives = 3;
     this.scoreMultiplier = 1;

@@ -17,6 +17,7 @@ import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js'
 
 const sourceText = Object.freeze({
   "ROUTE": "ROUTE",
+  "STEAM BUILD ONLY": "NUR IN DER STEAM-VERSION",
   "ACE CONTACT": "ASS-KONTAKT",
   "ACE CONTRACT": "ASS-AUFTRAG",
   "DESTROY THE GOLD-MARKED ACE": "ZERSTOERE DAS GOLDMARKIERTE ASS",

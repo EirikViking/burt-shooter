@@ -33,7 +33,7 @@ export class EnjinEditionController {
     this.gitSha = gitSha;
     this.campaign = { ...DEFAULT_CAMPAIGN };
     this.root = null;
-    this.mode = 'landing';
+    this.mode = 'menu';
     this.run = null;
     this.gate = null;
     this.reward = null;
@@ -49,12 +49,15 @@ export class EnjinEditionController {
     document.body.dataset.enjinEdition = '1';
     document.title = 'Nova Swarm: Web3 Arcade | Eirik The Viking Vault Run';
     this.campaign = await getCampaign();
+    this.game.enjinEditionModeLocked = ENJIN_RUN_MODE;
+    this.game.enjinEditionController = this;
+    this.game.scenes?.menu?.setEnjinEditionMode?.(true);
     this.root = document.createElement('div');
     this.root.id = 'enjin-shell';
     document.getElementById('game-container')?.appendChild(this.root);
     this.root.addEventListener('click', (event) => this.handleClick(event));
     window.addEventListener('keydown', this.boundKeydown, true);
-    this.renderLanding();
+    this.renderMainMenu();
 
     const status = await getCompletionStatus();
     this.completed = Boolean(status?.completed);
@@ -65,7 +68,8 @@ export class EnjinEditionController {
       this.inventoryEmpty = !this.reward;
       this.renderCompletion();
     } else {
-      this.renderLanding();
+      this.mode = 'menu';
+      this.renderMainMenu();
     }
 
     this.tickTimer = window.setInterval(() => this.tick(), 100);
@@ -97,7 +101,11 @@ export class EnjinEditionController {
     window.removeEventListener('keydown', this.boundKeydown, true);
     this.root?.remove();
     if (this.game?.scoreGate === this.gate) this.game.scoreGate = null;
-    if (this.game?.enjinEditionModeLocked === ENJIN_RUN_MODE) this.game.enjinEditionModeLocked = null;
+    if (this.game?.enjinEditionModeLocked === ENJIN_RUN_MODE) {
+      this.game.enjinEditionModeLocked = null;
+      this.game.scenes?.menu?.setEnjinEditionMode?.(false);
+    }
+    if (this.game?.enjinEditionController === this) this.game.enjinEditionController = null;
   }
 
   handleKeydown(event) {
@@ -141,8 +149,8 @@ export class EnjinEditionController {
       countShipUsage: false
     });
     if (!started) {
-      this.mode = 'landing';
-      this.renderLanding('The Vault Run could not start. Try again.');
+      this.mode = 'menu';
+      this.renderMainMenu('The Vault Run could not start. Try again.');
       return false;
     }
     this.startedAt = Date.now();
@@ -263,6 +271,13 @@ export class EnjinEditionController {
         ${message ? `<p class="enjin-validation">${escapeHtml(message)}</p>` : ''}
         <div class="enjin-footer-links"><button class="enjin-link" data-enjin-action="terms">Terms</button><button class="enjin-link" data-enjin-action="privacy">Privacy</button></div>
       </section>`;
+  }
+
+  renderMainMenu(message = '') {
+    this.root.className = 'enjin-shell mode-menu';
+    this.root.innerHTML = message
+      ? `<div class="enjin-menu-notice" role="status">${escapeHtml(message)}</div>`
+      : '';
   }
 
   renderPlaying() {

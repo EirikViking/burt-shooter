@@ -24,6 +24,8 @@ assert.equal(gate.freezeFrames, 2);
 const gameSource = read('src/game/Game.js');
 const playSource = read('src/scenes/PlayScene.js');
 const controllerSource = read('src/enjin/enjinEdition.js');
+const menuSource = read('src/scenes/MenuScene.js');
+const editionStyleSource = read('src/enjin/enjinEdition.css');
 const apiSource = read('src/enjin/api.js');
 const workerSource = read('functions/shared/enjin.js');
 const importerSource = read('scripts/enjin-import-beam.mjs');
@@ -50,8 +52,19 @@ for (const required of [
   'THE FULL SWARM CONTINUES ON STEAM',
   'NO WALLET',
   'OPEN ENJIN CLAIM',
-  'debugCompleteForTest'
+  'debugCompleteForTest',
+  'renderMainMenu',
+  "this.mode = 'menu'"
 ]) assert.ok(controllerSource.includes(required), `missing campaign copy or test hook: ${required}`);
+for (const required of [
+  'setEnjinEditionMode',
+  'STEAM BUILD ONLY',
+  'enjinEditionController',
+  '_enjinDisabled'
+]) assert.ok(menuSource.includes(required), `missing Enjin menu lock contract: ${required}`);
+for (const required of ['mode-menu', 'mode-playing', 'background: transparent', 'pointer-events: none']) {
+  assert.ok(editionStyleSource.includes(required), `missing Enjin visibility contract: ${required}`);
+}
 assert.ok(gameSource.includes('enjinEditionModeLocked'), 'Enjin edition does not enforce its locked run mode');
 for (const required of [
   'HttpOnly',

@@ -59,23 +59,33 @@ async function main() {
     });
 
     await page.goto(`${baseUrl}/?enjin_test=1`, { waitUntil: navigationWaitUntil });
-    await page.waitForSelector('[data-enjin-action="start"]');
-    await page.waitForFunction(() => window.__enjinMvp?.mode === 'landing', null, { timeout: 60_000 });
-    await page.screenshot({ path: path.join(outputDir, 'landing-1280x720.png'), fullPage: true });
-    assert.match(await page.locator('#enjin-shell').innerText(), /NOVA SWARM: WEB3 ARCADE/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /NO PURCHASE NECESSARY/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /MAYHEM TACTICAL/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /MAIN MODE/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /STEAM BUILD ONLY/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /THE EIRIK VAULT/);
-    assert.match(await page.locator('#enjin-shell').innerText(), /THE FULL SWARM CONTINUES ON STEAM/);
-    assert.ok(await page.locator('.enjin-mode-card.disabled').count() >= 2, 'Enjin edition exposes another active mode');
+    await page.waitForFunction(() => window.__enjinMvp?.mode === 'menu' && window.__game?.currentSceneName === 'menu', null, { timeout: 60_000 });
+    await page.screenshot({ path: path.join(outputDir, 'main-menu-1280x720.png'), fullPage: true });
+    assert.equal(await page.locator('[data-enjin-action="start"]').count(), 0, 'Enjin landing screen still intercepts the main menu');
+    const mainMenuState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+    assert.equal(mainMenuState.enjin.mode, 'menu');
+    assert.equal(mainMenuState.menu.launchDeck.cards.mayhemTactical.runMode, 'ranked_tactical');
+    assert.equal(mainMenuState.menu.launchDeck.cards.daily.sublabel, 'STEAM BUILD ONLY');
+    assert.equal(mainMenuState.menu.launchDeck.cards.scout.sublabel, 'STEAM BUILD ONLY');
+    assert.equal(mainMenuState.menu.launchDeck.cards.overrun.sublabel, 'STEAM BUILD ONLY');
+    assert.ok(!mainMenuState.menu.optionOrder.includes('dailySignal'), 'Enjin menu made Daily Challenge selectable');
+    assert.ok(!mainMenuState.menu.optionOrder.includes('scout'), 'Enjin menu made Scout Run selectable');
+    assert.ok(!mainMenuState.menu.optionOrder.includes('overrun'), 'Enjin menu made Overrun selectable');
+    assert.equal(await page.locator('#enjin-shell').innerText(), '', 'Enjin menu shell should not replace the game menu');
 
-    await page.locator('[data-enjin-action="start"]').click();
+    const launchBounds = mainMenuState.menu.launchDeck.cards.mayhemTactical.bounds;
+    await page.mouse.click(launchBounds.x + launchBounds.width / 2, launchBounds.y + launchBounds.height / 2);
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'playing', null, { timeout: interactionTimeout });
     const playingState = await page.evaluate(() => window.__enjinMvp.debugState());
     assert.equal(playingState.runMode, 'ranked_tactical');
     assert.equal(playingState.modeLock, 'ranked_tactical');
+    await page.waitForTimeout(8000);
+    await page.evaluate(() => window.advanceTime(900));
+    const combatState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
+    assert.equal(combatState.scene, 'play');
+    assert.ok(combatState.counts.enemies > 0, 'Enjin gameplay has no visible enemies after the opening beat');
+    await page.screenshot({ path: path.join(outputDir, 'playing-1280x720.png'), fullPage: true });
+    assert.match(await page.locator('#enjin-shell').innerText(), /VAULT SCORE/);
     await page.evaluate(async () => window.__enjinMvp.debugCompleteForTest());
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete', null, { timeout: interactionTimeout });
     await page.waitForSelector('[data-enjin-qr] svg');
@@ -119,8 +129,10 @@ async function main() {
     const retryContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     const retryPage = await retryContext.newPage();
     await retryPage.goto(`${baseUrl}/?enjin_test=1`, { waitUntil: navigationWaitUntil });
-    await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'landing', null, { timeout: 60_000 });
-    await retryPage.locator('[data-enjin-action="start"]').click();
+    await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'menu' && window.__game?.currentSceneName === 'menu', null, { timeout: 60_000 });
+    const retryMenuState = await retryPage.evaluate(() => JSON.parse(window.render_game_to_text()));
+    const retryLaunchBounds = retryMenuState.menu.launchDeck.cards.mayhemTactical.bounds;
+    await retryPage.mouse.click(retryLaunchBounds.x + retryLaunchBounds.width / 2, retryLaunchBounds.y + retryLaunchBounds.height / 2);
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'playing', null, { timeout: interactionTimeout });
     await retryPage.evaluate(() => window.__enjinMvp.debugFailForTest());
     await retryPage.waitForFunction(() => window.__enjinMvp?.mode === 'failed');
@@ -137,7 +149,8 @@ async function main() {
       baseUrl,
       outputDir,
       assertions: [
-        'landing_copy_and_free_play',
+        'main_menu_free_play',
+        'direct_main_menu_entry',
         'mayhem_tactical_only_mode_lock',
         'exact_25000_completion',
         'post_gate_state_is_frozen_after_5_seconds',

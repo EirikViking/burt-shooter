@@ -416,6 +416,40 @@ export class MenuScene {
     this.menuIconTextures = {};
     this.menuIconLoadPromise = null;
     this.menuIconVariant = getMenuIconVariant();
+    this.enjinEditionMode = false;
+  }
+
+  isEnjinEdition() {
+    return this.enjinEditionMode === true
+      || this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
+  }
+
+  setEnjinEditionMode(enabled = true) {
+    this.enjinEditionMode = Boolean(enabled);
+    const disabledButtons = [
+      this.startBtn,
+      this.dailySignalBtn,
+      this.scoutRunBtn,
+      this.sectorStartBtn,
+      this.overrunStartBtn
+    ].filter(Boolean);
+    disabledButtons.forEach((button) => {
+      button._enjinDisabled = this.enjinEditionMode;
+      button.eventMode = this.enjinEditionMode ? 'none' : 'static';
+      button.cursor = this.enjinEditionMode ? 'default' : 'pointer';
+    });
+    if (this.enjinEditionMode) {
+      this.mayhemRunMode = RUN_MODES.MAYHEM_TACTICAL;
+      if (this.tacticalStartBtn) {
+        this.tacticalStartBtn._enjinDisabled = false;
+        this.tacticalStartBtn.eventMode = 'static';
+        this.tacticalStartBtn.cursor = 'pointer';
+      }
+    }
+    this.buildMenuNavigation();
+    this.refreshMenuText({ forceGpuRefresh: true });
+    this.layoutMenu({ forceLabelGpuRefresh: true });
+    return this.enjinEditionMode;
   }
 
   init() {
@@ -1618,7 +1652,11 @@ export class MenuScene {
     this.tacticalStartBtn.on('pointerdown', () => {
       this.setInputDevice('keyboard');
       this.setMenuFocusByButton(this.tacticalStartBtn);
-      this.quickStartRun(this.mayhemRunMode);
+      if (this.game?.enjinEditionController?.beginRun) {
+        this.game.enjinEditionController.beginRun();
+      } else {
+        this.quickStartRun(this.mayhemRunMode);
+      }
     });
     this.container.addChild(this.tacticalStartBtn);
 
@@ -1942,6 +1980,9 @@ export class MenuScene {
       button._sublabel.text = button._dynamicSubLabel();
     } else if (button._sublabelKey) {
       button._sublabel.text = translateText(button._sublabelKey);
+    }
+    if (button._enjinDisabled && button._sublabel) {
+      button._sublabel.text = translateText('STEAM BUILD ONLY');
     }
     if (button._bodyLabel) {
       if (button._dynamicBodyLabel) {
@@ -2951,15 +2992,17 @@ export class MenuScene {
   getRunModeVariantOptions() {
     const focused = this.getSelectedMenuOptionId();
     if (focused === 'launchTactical') {
+      const tactical = {
+        id: RUN_MODES.MAYHEM_TACTICAL,
+        label: translateText('TACTICAL'),
+        selected: this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL,
+        activate: () => {
+          if (this.mayhemRunMode !== RUN_MODES.MAYHEM_TACTICAL) this.cycleMayhemRunMode(1, { force: true });
+        }
+      };
+      if (this.isEnjinEdition()) return [tactical];
       return [
-        {
-          id: RUN_MODES.MAYHEM_TACTICAL,
-          label: translateText('TACTICAL'),
-          selected: this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL,
-          activate: () => {
-            if (this.mayhemRunMode !== RUN_MODES.MAYHEM_TACTICAL) this.cycleMayhemRunMode(1, { force: true });
-          }
-        },
+        tactical,
         {
           id: RUN_MODES.RANKED,
           label: translateText('PURE'),
@@ -6004,13 +6047,16 @@ export class MenuScene {
     const isPrimaryMode = isTacticalMayhem;
     const isSelectedPureMayhem = isTacticalMayhem && this.mayhemRunMode === RUN_MODES.RANKED;
     const isMayhem = isPureMayhem || isTacticalMayhem;
-    const accent = container._accent || 0x37f5ff;
-    const secondary = container._secondaryAccent || 0x7fffd8;
-    const isFocused = Boolean(container._focused && !this.sectorSelectorOpen);
-    const active = isHover || isFocused;
+    const isDisabled = Boolean(container._enjinDisabled);
+    const accent = isDisabled ? 0x667482 : (container._accent || 0x37f5ff);
+    const secondary = isDisabled ? 0x667482 : (container._secondaryAccent || 0x7fffd8);
+    const isFocused = Boolean(!isDisabled && container._focused && !this.sectorSelectorOpen);
+    const active = Boolean(!isDisabled && (isHover || isFocused));
     const pulse = 0.5 + Math.sin(this.animationTime * (isPrimaryMode ? 2.35 : (isMayhem ? 2.6 : 3.3))) * 0.5;
     const sweep = active ? (0.5 + Math.sin(this.animationTime * 4.9) * 0.5) : pulse;
-    const hotAccent = (isPureMayhem || isSelectedPureMayhem) ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary));
+    const hotAccent = isDisabled
+      ? 0x8b98a4
+      : ((isPureMayhem || isSelectedPureMayhem) ? 0xffef7e : (isTacticalMayhem ? 0xff8ee7 : (active ? 0xdffcff : secondary)));
 
     focus.clear();
     if (isFocused) {
@@ -6066,9 +6112,11 @@ export class MenuScene {
       label.visible = true;
       label.anchor.set(0, 0.5);
       label.style.align = 'left';
-      label.style.fill = active
-        ? '#ffffff'
-        : (isSelectedPureMayhem || isPureMayhem ? '#d8c887' : (isPrimaryMode ? '#d8c8d7' : '#bdd7dc'));
+      label.style.fill = isDisabled
+        ? '#7d8995'
+        : (active
+          ? '#ffffff'
+          : (isSelectedPureMayhem || isPureMayhem ? '#d8c887' : (isPrimaryMode ? '#d8c8d7' : '#bdd7dc')));
       label.style.strokeThickness = 4;
       label.x = x + (compactCard ? 66 : 82);
       label.y = compactCard ? (y + h * 0.38) : (y + 32);
@@ -6077,7 +6125,9 @@ export class MenuScene {
       sublabel.visible = true;
       sublabel.anchor.set(0, 0.5);
       sublabel.style.align = 'left';
-      sublabel.style.fill = isSelectedPureMayhem ? '#d6cda4' : (isPrimaryMode ? '#78b7aa' : (isPureMayhem ? '#d6cda4' : '#7caeb5'));
+      sublabel.style.fill = isDisabled
+        ? '#77838f'
+        : (isSelectedPureMayhem ? '#d6cda4' : (isPrimaryMode ? '#78b7aa' : (isPureMayhem ? '#d6cda4' : '#7caeb5')));
       sublabel.alpha = sublabel.text ? (active ? 1 : 0.68) : 0;
       sublabel.x = x + (compactCard ? 66 : 82);
       sublabel.y = compactCard ? (y + h * 0.66) : (y + 56);
@@ -6102,7 +6152,7 @@ export class MenuScene {
         iconSprite.y = iconY;
         const maxSide = Math.max(texture.width || 1, texture.height || 1);
         iconSprite.scale.set((iconSize * 1.2) / maxSide);
-        iconSprite.alpha = active ? 1 : 0.7;
+        iconSprite.alpha = isDisabled ? 0.34 : (active ? 1 : 0.7);
       } else {
         if (iconSprite) iconSprite.visible = false;
         icon.visible = true;
@@ -6367,7 +6417,13 @@ export class MenuScene {
   buildMenuNavigation() {
     const previousFocusedId = this.getSelectedMenuOptionId();
     this.menuOptions = [
-      { id: 'launchTactical', button: this.tacticalStartBtn, activate: () => this.quickStartRun(this.mayhemRunMode) },
+      {
+        id: 'launchTactical',
+        button: this.tacticalStartBtn,
+        activate: () => this.game?.enjinEditionController?.beginRun
+          ? this.game.enjinEditionController.beginRun()
+          : this.quickStartRun(this.mayhemRunMode)
+      },
       { id: 'dailySignal', button: this.dailySignalBtn, activate: () => this.startDailySignalRun() },
       { id: 'scout', button: this.scoutRunBtn, activate: () => this.quickStartRun(RUN_MODES.SCOUT) },
       ...(this.sectorStartBtn?.visible
@@ -6433,7 +6489,7 @@ export class MenuScene {
         }
       },
       { id: 'exit', button: this.exitBtn, activate: () => this.openQuitConfirmation() }
-    ].filter((option) => option.button);
+    ].filter((option) => option.button && !option.button._enjinDisabled);
 
     this.menuOptions.forEach((option) => {
       option.button._menuOptionId = option.id;
@@ -6641,6 +6697,10 @@ export class MenuScene {
   }
 
   cycleMayhemRunMode(delta, { force = false } = {}) {
+    if (this.isEnjinEdition()) {
+      this.mayhemRunMode = RUN_MODES.MAYHEM_TACTICAL;
+      return false;
+    }
     if (!force && this.getSelectedMenuOptionId() !== 'launchTactical') return false;
     this.mayhemRunMode = this.mayhemRunMode === RUN_MODES.MAYHEM_TACTICAL
       ? RUN_MODES.RANKED
