@@ -126,6 +126,33 @@ async function main() {
     assert.equal(firstKillCueState.personalBestToasts.length, 0, 'Enjin first kill showed a personal-best toast');
     await page.screenshot({ path: path.join(outputDir, 'playing-1280x720.png'), fullPage: true });
     assert.match(await page.locator('#enjin-shell').innerText(), /VAULT SCORE/);
+
+    // Remote smoke must never complete a run: the live campaign uses real D1
+    // inventory, while the full claim/freeze/retry flow is covered locally.
+    if (remoteBaseUrl) {
+      assert.equal(consoleErrors.length, 0, `browser console errors: ${consoleErrors.join(' | ')}`);
+      await context.close();
+      const report = {
+        status: 'passed',
+        baseUrl,
+        outputDir,
+        assertions: [
+          'main_menu_free_play',
+          'direct_main_menu_entry',
+          'mayhem_tactical_only_mode_lock',
+          'steam_only_mode_notice',
+          'fast_enemy_spawn',
+          'personal_best_cue_suppressed'
+        ],
+        consoleErrors,
+        localApiFallbacks,
+        serverLog: serverLog.replaceAll(/https:\/\/[^\s]+/g, '[redacted-url]')
+      };
+      await fs.writeFile(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2), 'utf8');
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+
     await page.evaluate(async () => window.__enjinMvp.debugCompleteForTest());
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete', null, { timeout: interactionTimeout });
     await page.waitForSelector('[data-enjin-qr] svg');
