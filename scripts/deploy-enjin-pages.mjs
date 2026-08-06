@@ -5,15 +5,17 @@ import path from 'node:path';
 
 const root = process.cwd();
 const dist = path.join(root, 'dist');
+const functions = path.join(root, 'functions');
 const enjinConfig = path.join(root, 'wrangler.enjin.toml');
 const wrangler = path.join(root, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 const staging = await fs.mkdtemp(path.join(os.tmpdir(), 'nova-swarm-enjin-pages-'));
 
 try {
-  await Promise.all([fs.access(dist), fs.access(enjinConfig), fs.access(wrangler)]);
+  await Promise.all([fs.access(dist), fs.access(functions), fs.access(enjinConfig), fs.access(wrangler)]);
   // Pages only accepts a config named wrangler.toml. Stage the Enjin-only
   // configuration so the standard deployment config remains untouched.
   await fs.copyFile(enjinConfig, path.join(staging, 'wrangler.toml'));
+  await fs.cp(functions, path.join(staging, 'functions'), { recursive: true });
 
   const args = [
     wrangler,
