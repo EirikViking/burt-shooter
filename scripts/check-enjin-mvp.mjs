@@ -30,6 +30,7 @@ const apiSource = read('src/enjin/api.js');
 const workerSource = read('functions/shared/enjin.js');
 const importerSource = read('scripts/enjin-import-beam.mjs');
 const packageSource = read('package.json');
+const deployerSource = read('scripts/deploy-enjin-pages.mjs');
 const enjinWranglerSource = read('wrangler.enjin.toml');
 const migrationSource = read('migrations/002_enjin_mvp.sql');
 
@@ -82,11 +83,9 @@ for (const required of [
   'build:enjin',
   'deploy:enjin:preview'
 ]) assert.ok(packageSource.includes(required), `missing npm command: ${required}`);
-assert.match(
-  packageSource,
-  /deploy:enjin:preview[^\n]+--config wrangler\.enjin\.toml/,
-  'Enjin deploy must select wrangler.enjin.toml so WEB3_DB is bound'
-);
+assert.ok(packageSource.includes('node scripts/deploy-enjin-pages.mjs'), 'Enjin deploy must use the isolated Pages deploy helper');
+assert.ok(deployerSource.includes("fs.copyFile(enjinConfig, path.join(staging, 'wrangler.toml'))"), 'Enjin deploy helper must stage the Enjin config as wrangler.toml');
+assert.ok(deployerSource.includes("'--branch=enjin-webedition'"), 'Enjin deploy helper must target only the Enjin preview branch');
 assert.match(enjinWranglerSource, /binding\s*=\s*"WEB3_DB"/, 'Enjin Wrangler config must bind WEB3_DB');
 assert.match(enjinWranglerSource, /database_name\s*=\s*"nova-swarm-enjin-web3"/, 'Enjin Wrangler config must use the dedicated D1 database');
 for (const required of ['enjin_campaigns', 'enjin_runs', 'enjin_claim_inventory', 'enjin_reward_assignments']) {
