@@ -23,6 +23,7 @@ Original prompt: identify some low hanging fruits to make the game more fun, the
 - 2026-08-06 live QR claim repair: production diagnostics showed the dedicated `nova-swarm-enjin-web3` D1 still contained 20 available encrypted Beam claims, while `https://game.novaswarm.tinyfoundry.app/api/enjin/campaign` reported zero. Direct uploads inherited the standard `DB` binding instead of `WEB3_DB`; Pages rejects custom config paths, so the Enjin deploy helper now stages `wrangler.enjin.toml` under the required literal name in an isolated temporary directory. The MVP check locks the helper, preview branch, and dedicated D1 binding.
 - Cloudflare Pages config validation also rejects the Worker-only `account_id` key. It was removed from the staged Enjin config; the authenticated deployment environment and explicit dedicated D1 database ID remain authoritative.
 - The isolated staging helper also copies `functions/`; without that directory, Pages serves the SPA fallback for `/api/enjin/*` and cannot assign claims. The regression check now locks both the Enjin config and Pages Functions into every preview deploy.
+- Corrected deployment `https://d9fc5173.burt-game.pages.dev` updated the `enjin-webedition` alias. Cloudflare Preview settings visibly show `WEB3_DB` bound to `nova-swarm-enjin-web3`, both Enjin secrets present, and mock mode false. The public Tiny Foundry campaign API returned JSON with `availableClaims: 20`; verification consumed no real claim.
 
 ## 2026-07-30 Autofire continuity Steam hotfix
 
