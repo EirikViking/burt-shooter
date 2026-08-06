@@ -2736,3 +2736,15 @@ Original request: continue improving the current non-Unity game and choose three
 - Corrected transparent-frame centering for Aegis Comet, Railbreaker, and Drone Sovereign so authored hull art and focus rings share the same logical center. The player ring alignment check now passes for all 30 player hulls.
 - Final source build: `v2026-08-04_15-19-00`, source commit `2bbea07` on `codex/tyrian-99-20260802-f44a`. Full release hardening passed all 40/40 checks; browser smoke, localization UI, controller flow, packaged smoke/controls/performance, and Steam package runtime all passed. Packaged frame pacing measured 58.82 FPS minimum and 59.95 FPS average.
 - SteamPipe upload completed privately and unassigned for AppID `4765070`, depot `4765071`: BuildID `24552921`, depot manifest `2794816507068655357`. VDF used `SetLive ""`; no Steam branch, public/default assignment, Steamworks setting, forum post, or Git push was made.
+
+## 2026-08-06 Tyrian feedback, dedicated Wonder revelation, and verified Steam upload
+
+- Corrected Cobalt Guard trait copy so Hangar and combat readouts no longer claim near miss scoring or wide shots that the hull does not actually provide.
+- Fixed the Tactical Draft sequence where moving a held card away, returning to the original card, and selecting another option could lose the hold on the next draft.
+- Fixed the Drone Constellation Fusion crest scale and added texture aware support drone bounds for all five Ascendant hulls.
+- Corrected Settings and keyboard control layout bounds at 1920 by 1080 while preserving direct Shift rebinding, persistence, reset, and controller behavior.
+- Replaced the reused Wonder audio pool with `nova_wonder_revelation.mp3`, a dedicated four second ElevenLabs wordless choir and ceremonial bell. It begins 1.5 seconds before every eligible Wonder visual while keeping the event score and gameplay neutral.
+- Final build `v2026-08-06_21-17-26` embeds source `f15c76d`. Browser smoke, eight locale UI, focused gameplay, Steam bridge, fresh profile isolation, controller, keyboard, current desktop, packaged smoke, packaged controls, Steam runtime, desktop integrity, and current and packaged performance gates passed. Current and packaged performance each measured 60 FPS minimum and average.
+- SteamPipe uploaded the verified payload privately and unassigned as BuildID `24599854`, depot manifest `4879574498594448776`, with `SetLive ""`. No public or default branch or Steamworks setting changed.
+- Published the no dash Tyrian follow up as Steam comment `#105`: `https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=3#c583930562168924373`.
+- Full evidence: `release/steamworks/steam-upload-evidence-20260806-build24599854.md`.
