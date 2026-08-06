@@ -100,6 +100,8 @@ npm run generate:nova-sfx
 
 Current generated SFX include boss arrival, leaderboard/highscore fanfares, powerup and trait cues, UI/pause/ship-select cues, and the 2026-05-22 tractor/boss-special attack cues:
 
+- `nova_wonder_revelation.mp3` is the dedicated four-second wordless angelic choir and cathedral-scale revelation used by every Cabinet Wonder. It begins 1.5 seconds before the Wonder visual and replaces the former reused Viking Row cues.
+
 - `nova_tractor_lock_charge.mp3`, `nova_tractor_beam_active.mp3`, `nova_tractor_break_bloom.mp3`
 - `nova_boss_beam_telegraph.mp3`, `nova_boss_beam_fire.mp3`
 - `nova_boss_web_telegraph.mp3`, `nova_boss_web_snap.mp3`

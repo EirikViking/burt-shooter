@@ -2258,7 +2258,7 @@ export class HUD {
       };
     }
 
-    if (Number(state.projectileRadiusMult || 1) !== 1) {
+    if (Number(state.projectileRadiusMult || 1) >= 1.08) {
       return {
         text: 'WIDE SHOTS ACTIVE',
         progress: 1,

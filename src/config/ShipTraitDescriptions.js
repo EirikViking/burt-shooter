@@ -113,6 +113,6 @@ export function getTraitHudHint(trait, ship = {}) {
   if (combat.pierceEvery) return `Piercing shot every ${combat.pierceEvery} shots.`;
   if (combat.critEvery) return `Critical shot every ${combat.critEvery} shots.`;
   if (combat.dodgePulseRadius) return 'Phase exit pulse clears nearby bullets.';
-  if (combat.nearMissScoreMult && combat.nearMissScoreMult !== 1) return 'Near misses boost score.';
+  if (Number(combat.nearMissScoreMult || 1) > 1.02) return 'Near misses boost score.';
   return trait?.description || 'Passive trait active.';
 }

@@ -20,7 +20,9 @@ function requireText(condition, ship, message) {
   if (!condition) fail(`${ship.name || ship.id}: ${message}`);
 }
 
-for (const ship of getSelectableShips()) {
+const ships = getSelectableShips();
+
+for (const ship of ships) {
   const trait = ship.trait || ship.visuals?.trait;
   if (!trait?.label) continue;
 
@@ -89,10 +91,23 @@ for (const ship of getSelectableShips()) {
   if (spread <= -0.025) requireText(text.includes('tighter shot spread'), ship, 'tight spread traits must mention tighter shot spread');
 }
 
+const cobaltGuard = ships.find((ship) => ship.id === 'nova_ship_17');
+if (!cobaltGuard) {
+  fail('Cobalt Guard is missing from the selectable roster');
+} else {
+  const cobaltHint = getTraitHudHint(cobaltGuard.trait, cobaltGuard);
+  if (/near misses boost score/i.test(cobaltHint)) {
+    fail('Cobalt Guard must not advertise a near-miss score boost when its factor is not above 1.0');
+  }
+  if (!/steadier aim/i.test(cobaltHint)) {
+    fail(`Cobalt Guard HUD hint lost its actual handling identity: ${cobaltHint}`);
+  }
+}
+
 if (failures.length) {
   console.error(`[ship-trait-explanations] FAIL ${failures.length} issue(s)`);
   failures.forEach((message) => console.error(`- ${message}`));
   process.exit(1);
 }
 
-console.log(`[ship-trait-explanations] PASS ships=${getSelectableShips().length}`);
+console.log(`[ship-trait-explanations] PASS ships=${ships.length}`);

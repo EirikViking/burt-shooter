@@ -722,6 +722,52 @@ try {
   }
   await page.evaluate(() => window.__novaI18n.setLanguagePreference('en'));
 
+  const holdPage = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  await holdPage.goto(`${baseUrl}/?autostart=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await waitForPlay(holdPage);
+  await holdPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.tacticalDraftHeldId = null;
+    play.openTacticalDraft({ sectorCleared: 4 });
+  });
+  await holdPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  let holdState = await readState(holdPage);
+  const carriedId = holdState.tacticalDraft.offers[holdState.tacticalDraft.focusIndex].id;
+  await holdPage.keyboard.press('l');
+  await holdPage.waitForFunction((id) => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId === id, carriedId);
+  const firstChoiceIndex = holdState.tacticalDraft.offers.findIndex((offer) => offer.id !== carriedId);
+  await holdPage.evaluate((index) => window.__game.scenes.play.setTacticalDraftFocus(index), firstChoiceIndex);
+  await holdPage.keyboard.press('Enter');
+  await holdPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+
+  await holdPage.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 5 }));
+  await holdPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  holdState = await readState(holdPage);
+  assert(holdState.tacticalDraft.heldAtOpenId === carriedId, 'held upgrade did not carry into the re-hold regression Draft');
+  const alternateIndex = holdState.tacticalDraft.offers.findIndex((offer) => offer.id !== carriedId && !offer.fixedScoreRoute);
+  await holdPage.evaluate((index) => window.__game.scenes.play.setTacticalDraftFocus(index), alternateIndex);
+  await holdPage.evaluate(() => window.__game.scenes.play.toggleTacticalDraftHold('rehold-regression'));
+  await holdPage.waitForFunction((id) => JSON.parse(window.render_game_to_text()).tacticalDraft?.heldId !== id, carriedId);
+  const carriedIndex = holdState.tacticalDraft.offers.findIndex((offer) => offer.id === carriedId);
+  await holdPage.evaluate((index) => window.__game.scenes.play.setTacticalDraftFocus(index), carriedIndex);
+  await holdPage.evaluate(() => window.__game.scenes.play.toggleTacticalDraftHold('rehold-regression'));
+  await holdPage.waitForFunction((id) => {
+    const draft = JSON.parse(window.render_game_to_text()).tacticalDraft;
+    return draft?.heldId === id && draft?.holdChangedSinceOpen === true;
+  }, carriedId);
+  const secondChoiceIndex = holdState.tacticalDraft.offers.findIndex((offer) => offer.id !== carriedId && !offer.fixedScoreRoute);
+  await holdPage.evaluate((index) => window.__game.scenes.play.setTacticalDraftFocus(index), secondChoiceIndex);
+  await holdPage.keyboard.press('Enter');
+  await holdPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+
+  await holdPage.evaluate(() => window.__game.scenes.play.openTacticalDraft({ sectorCleared: 6 }));
+  await holdPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  holdState = await readState(holdPage);
+  assert(holdState.tacticalDraft.heldId === carriedId && holdState.tacticalDraft.heldAtOpenId === carriedId,
+    `reselected held upgrade was lost after choosing another card: ${JSON.stringify(holdState.tacticalDraft)}`);
+  await holdPage.evaluate(() => window.__game.scenes.play.clearTacticalDraft('rehold_regression_complete'));
+  await holdPage.close();
+
   const fusionPage = await browser.newPage({ viewport: { width: 760, height: 640 } });
   fusionPage.on('pageerror', (error) => consoleErrors.push(`fusion pageerror: ${error.message}`));
   fusionPage.on('console', (message) => {
@@ -803,6 +849,25 @@ try {
     `desktop Active Build did not expose all category modules: ${JSON.stringify(activeFusionDraftState.tacticalDraft.buildSummary)}`);
   const activeFusionScreenshot = path.join(outputDir, 'tactical-draft-active-fusion-1920x1080.png');
   await fusionPage.screenshot({ path: activeFusionScreenshot });
+  await fusionPage.evaluate(() => {
+    const play = window.__game.scenes.play;
+    play.clearTacticalDraft('drone_constellation_crest_check');
+    play.showTacticalFusionUnlock({
+      id: 'drone_constellation',
+      name: 'DRONE CONSTELLATION',
+      description: 'Every fourth volley sends converging drone crossfire.',
+      color: 0x58e8ff,
+      sfx: 'tactical_drone_link'
+    });
+  });
+  await fusionPage.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.fusionUnlock?.active === true);
+  const droneCrestState = await readState(fusionPage);
+  assert(droneCrestState.tacticalDraft.fusionUnlock.emblemId === 'drone_constellation_authored_crest',
+    `Drone Constellation lost its authored crest: ${JSON.stringify(droneCrestState.tacticalDraft.fusionUnlock)}`);
+  assert(droneCrestState.tacticalDraft.fusionUnlock.emblemSpan <= 72,
+    `Drone Constellation crest is oversized in the Fusion popup: ${JSON.stringify(droneCrestState.tacticalDraft.fusionUnlock)}`);
+  const droneCrestScreenshot = path.join(outputDir, 'tactical-draft-drone-constellation-crest.png');
+  await fusionPage.screenshot({ path: droneCrestScreenshot });
   await fusionPage.close();
 
   const runtimePage = await browser.newPage({ viewport: { width: 1280, height: 720 } });

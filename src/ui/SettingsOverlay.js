@@ -176,6 +176,7 @@ export class SettingsOverlay {
     this.keyBindingCaptureHandler = null;
     this.keyBindingsStatusText = null;
     this.keyBindingsButtonMap = new Map();
+    this.keyBindingsPanelBounds = null;
     this.controls = [];
     this.focusedControlIndex = 0;
     this.gamepadNavigator = new GamepadNavigator();
@@ -339,7 +340,7 @@ export class SettingsOverlay {
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, rightY, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       rightY += tighterGap;
       this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, rightY);
-      rightY += Math.round((dense ? 42 : 44) * this.uiScale);
+      rightY += Math.round((dense ? 50 : 52) * this.uiScale);
       this.addMusicPackRow('MUSIC SET', settings.musicPack, rightY);
       rightY += tighterGap;
       this.addAudioTestRow('TEST', rightY);
@@ -400,7 +401,7 @@ export class SettingsOverlay {
       this.addToggleRow('CTA VOICE', settings.ctaVoiceEnabled, y, (enabled) => AudioManager.setCtaVoiceEnabled(enabled));
       y += tighterGap;
       this.addChatterFrequencyRow('Chatter Frequency', settings.chatterFrequency, y);
-      y += Math.round((dense ? 42 : 44) * this.uiScale);
+      y += Math.round((dense ? 50 : 52) * this.uiScale);
       this.addMusicPackRow('MUSIC SET', settings.musicPack, y);
       y += tighterGap;
       this.addAudioTestRow('TEST', y);
@@ -1279,7 +1280,9 @@ export class SettingsOverlay {
     const contentTop = panelY + (isCompact ? 106 : 122);
     const rowGap = Math.min(isCompact ? 43 : 48, Math.max(36, (panelHeight - (isCompact ? 180 : 204)) / KEYBOARD_ACTIONS.length));
     const rowLeft = panelX + (isCompact ? 42 : 64);
-    const rowRight = panelX + panelWidth - (isCompact ? 42 : 64);
+    const bindingButtonWidth = isCompact ? 172 : 210;
+    const rowRightInset = isCompact ? 42 : 64;
+    const bindingButtonX = panelX + panelWidth - rowRightInset - bindingButtonWidth / 2;
     const bindings = getKeyboardBindings();
     this.keyBindingsControls = [];
     this.keyBindingsButtonMap = new Map();
@@ -1296,10 +1299,9 @@ export class SettingsOverlay {
       fitTextToWidth(label, panelWidth * 0.42, { minScale: 0.62 });
       overlay.addChild(label);
 
-      const button = this.createButton(formatKeyboardBinding(bindings[action.id]), rowRight, y, () => {
+      const button = this.createButton(formatKeyboardBinding(bindings[action.id]), bindingButtonX, y, () => {
         this.startKeyBindingCapture(action.id);
-      }, { width: isCompact ? 172 : 210, height: 32 });
-      button.position.x = rowRight;
+      }, { width: bindingButtonWidth, height: 32 });
       button.label = `ui_keyBinding_${action.id}`;
       overlay.addChild(button);
       this.keyBindingsControls.push(button);
@@ -1333,6 +1335,7 @@ export class SettingsOverlay {
     overlay.addChild(resetButton, backButton);
     this.keyBindingsControls.push(resetButton, backButton);
     this.keyBindingsPanel = overlay;
+    this.keyBindingsPanelBounds = { x: panelX, y: panelY, width: panelWidth, height: panelHeight };
     this.keyBindingsFocusedIndex = 0;
     this.setKeyBindingsFocus(0);
     this.container.addChild(overlay);
@@ -1433,6 +1436,7 @@ export class SettingsOverlay {
     if (this.keyBindingsPanel.parent) this.keyBindingsPanel.parent.removeChild(this.keyBindingsPanel);
     this.keyBindingsPanel.destroy({ children: true });
     this.keyBindingsPanel = null;
+    this.keyBindingsPanelBounds = null;
     this.keyBindingsControls = [];
     this.keyBindingsFocusedIndex = 0;
     this.keyBindingsStatusText = null;
@@ -2368,6 +2372,11 @@ export class SettingsOverlay {
       creditsFocus: this.creditsControls[this.creditsFocusedIndex]?.label || null,
       keyboardBindings: {
         panel: Boolean(this.keyBindingsPanel),
+        panelBounds: this.keyBindingsPanelBounds,
+        controls: this.keyBindingsControls.map((button) => ({
+          label: button.label || null,
+          bounds: debugBounds(button)
+        })),
         focus: this.keyBindingsControls[this.keyBindingsFocusedIndex]?.label || null,
         pendingAction: this.keyBindingCaptureAction || null,
         bindings: getKeyboardBindings()

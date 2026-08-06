@@ -107,11 +107,20 @@ async function runVariant(browser, variantId, viewport, reducedMotion = false) {
       isDebugRun: game.isDebugRun
     };
   }, variantId);
-  await page.waitForTimeout(420);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.cabinetWonders?.pending?.kind === 'audio_prelude';
+  }, null, { timeout: 5000 });
+  const preludeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  await page.waitForFunction((id) => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state.cabinetWonders?.active?.id === id;
+  }, variantId, { timeout: 5000 });
+  await page.waitForTimeout(180);
   const activeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   const screenshot = path.join(outputDir, `${variantId}-${viewport.width}x${viewport.height}${reducedMotion ? '-reduced' : ''}.png`);
   await page.screenshot({ path: screenshot, fullPage: false });
-  await page.waitForTimeout(3500);
+  await page.waitForTimeout(2200);
   const completedState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
   await context.close();
   return {
@@ -119,6 +128,7 @@ async function runVariant(browser, variantId, viewport, reducedMotion = false) {
     viewport,
     reducedMotion,
     synchronous,
+    prelude: preludeState.cabinetWonders,
     active: activeState.cabinetWonders,
     completed: completedState.cabinetWonders,
     screenshot,
@@ -162,6 +172,7 @@ try {
 
   for (const scenario of report.scenarios) {
     const active = scenario.active;
+    const prelude = scenario.prelude;
     const completed = scenario.completed;
     if (
       !scenario.synchronous.shown
@@ -172,6 +183,15 @@ try {
       || scenario.synchronous.isDebugRun !== true
     ) {
       report.failures.push(`${scenario.variantId} force/one-per-sector/score-neutral mismatch: ${JSON.stringify(scenario.synchronous)}`);
+    }
+    if (
+      prelude?.pending?.kind !== 'audio_prelude'
+      || prelude?.pending?.preludeLeadMs !== 1500
+      || prelude?.pending?.audioRevelationPlayed !== true
+      || prelude?.active !== null
+      || prelude?.shownCount !== 0
+    ) {
+      report.failures.push(`${scenario.variantId} sacred prelude mismatch: ${JSON.stringify(prelude)}`);
     }
     if (
       active?.availableVariants !== 60
@@ -186,8 +206,11 @@ try {
       || active?.active?.elementCount < 5
       || active?.active?.audioProfile !== 'wonder'
       || active?.active?.audioRevelationPlayed !== true
+      || active?.active?.preludeLeadMs !== 1500
+      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt < 1400
+      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt > 1800
       || !Array.isArray(active?.active?.audioLayers)
-      || !active.active.audioLayers.includes('authored_revelation')
+      || !active.active.audioLayers.includes('elevenlabs_wonder_choir_prelude')
       || active?.active?.layer !== 'gameplay_background'
       || active?.active?.generatedArtReady !== true
       || active?.active?.visualLanguage !== 'cabinet_wonder_imagegen_v2'

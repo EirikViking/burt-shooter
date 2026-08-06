@@ -20,6 +20,8 @@ assert.ok(
   CABINET_WONDER_CATALOG.every((entry) => existsSync(path.resolve('public', entry.art.replace(/^\/+/, '')))),
   'every Cabinet Wonder art path must resolve to a packaged file'
 );
+const wonderRevelationPath = path.resolve('public/audio/sfx/nova-swarm/nova_wonder_revelation.mp3');
+assert.ok(existsSync(wonderRevelationPath), 'dedicated ElevenLabs Cabinet Wonder revelation SFX is missing');
 
 assert.equal(evaluateCabinetWonder('test', { sector: 4, waveNumber: 3, hasUpcomingWave: false }).reason, 'no_safe_transition');
 assert.equal(evaluateCabinetWonder('test', { sector: 4, waveNumber: 3, hasUpcomingWave: true, isChallenge: true }).reason, 'challenge_transition');
@@ -87,6 +89,7 @@ assert.match(
 );
 
 const playSceneSource = readFileSync(new URL('../src/scenes/PlayScene.js', import.meta.url), 'utf8');
+const soundCatalogSource = readFileSync(new URL('../src/audio/SoundCatalog.js', import.meta.url), 'utf8');
 assert.match(
   playSceneSource,
   /const width = Math\.max\(320, Number\(this\.gameplayGame\?\.getWidth\?\.\(\)\)/,
@@ -97,5 +100,9 @@ assert.match(
   /const durationMs = reducedMotion \? 1150 : 1500;/,
   'Cabinet Wonders need a readable full-motion hold with a shorter Reduced Motion path'
 );
+assert.match(playSceneSource, /const preludeLeadMs = 1500;/, 'every Wonder needs a 1.5 second sacred audio prelude');
+assert.match(playSceneSource, /scheduleCabinetWonderPrelude\(decision/, 'Wonder visuals must wait for their revelation prelude');
+assert.match(soundCatalogSource, /'wonder_revelation': \[getSfx\('nova_wonder_revelation'\)\]/, 'Wonder revelation must use its dedicated authored SFX');
+assert.doesNotMatch(soundCatalogSource, /'wonder_revelation': \[[\s\S]{0,180}nova_row_core_/, 'Wonder revelation must not reuse Viking Row cues');
 
 console.log(`[cabinet-wonders] PASS variants=${CABINET_WONDER_VARIANT_COUNT} cadence=${CABINET_WONDER_SECTOR_CADENCE}`);

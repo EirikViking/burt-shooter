@@ -2781,6 +2781,48 @@ export class PlayScene {
     return true;
   }
 
+  scheduleCabinetWonderPrelude(decision = {}) {
+    if (!decision?.variant || this.game?.currentScene !== this) return false;
+    if (this.pendingCabinetWonderReleaseTimer) clearTimeout(this.pendingCabinetWonderReleaseTimer);
+    const preludeLeadMs = 1500;
+    const pendingKey = `prelude:${decision.variant.id}:${decision.sector}:${decision.waveNumber}`;
+    if (this.pendingCabinetWonder?.key === pendingKey) return true;
+    AudioManager.init();
+    const audioRevelationPlayed = AudioManager.playSfx('wonder_revelation', {
+      force: true,
+      minIntervalMs: 0,
+      volume: 0.82,
+      priority: 9,
+      priorityHoldMs: 3000,
+      sfxDuckFactor: 0.26,
+      preservePitch: true
+    });
+    const preludeStartedAt = Date.now();
+    this.pendingCabinetWonder = {
+      key: pendingKey,
+      decision,
+      kind: 'audio_prelude',
+      preludeLeadMs,
+      preludeStartedAt,
+      audioRevelationPlayed
+    };
+    this.pendingCabinetWonderReleaseTimer = setTimeout(() => {
+      this.pendingCabinetWonderReleaseTimer = null;
+      if (this.pendingCabinetWonder?.key !== pendingKey) return;
+      this.pendingCabinetWonder = null;
+      if (this.game?.currentScene !== this || this.activeCabinetWonder) return;
+      this.showCabinetWonder({
+        ...decision,
+        presentationReleased: true,
+        preludeComplete: true,
+        preludeLeadMs,
+        preludeStartedAt,
+        audioRevelationPlayed
+      });
+    }, preludeLeadMs);
+    return true;
+  }
+
   debugForceCabinetWonder(variantId = 'ghost_fleet_salute') {
     if (!this.canUseMaintainerDevtools()) return false;
     return this.maybeShowCabinetWonder({
@@ -3463,6 +3505,9 @@ export class PlayScene {
     if (decision.presentationReleased !== true && this.hasAuthoritativeTransitionPresentation()) {
       return this.scheduleCabinetWonderAfterPresentation(decision);
     }
+    if (decision.preludeComplete !== true) {
+      return this.scheduleCabinetWonderPrelude(decision);
+    }
     const width = Math.max(320, Number(this.gameplayGame?.getWidth?.()) || Number(this.game?.getWidth?.()) || 1280);
     const height = Math.max(240, Number(this.gameplayGame?.getHeight?.()) || Number(this.game?.getHeight?.()) || 720);
     const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
@@ -3486,15 +3531,7 @@ export class PlayScene {
       pitchScale: decision.variant.pitchScale || 1,
       durationSeconds: reducedMotion ? 0.7 : 1.18
     });
-    const audioRevelationPlayed = AudioManager.playSfx('wonder_revelation', {
-      force: true,
-      minIntervalMs: 0,
-      volume: reducedMotion ? 0.52 : 0.72,
-      priority: 8,
-      priorityHoldMs: reducedMotion ? 720 : 1000,
-      sfxDuckFactor: 0.34,
-      preservePitch: true
-    });
+    const audioRevelationPlayed = decision.audioRevelationPlayed === true;
     const codexDiscovery = recordThreatSeen(decision.variant.id, 'wonders', {
       name: decision.variant.title,
       signalClass: decision.variant.signalClass,
@@ -3521,7 +3558,10 @@ export class PlayScene {
       audioProfile: 'wonder',
       audioPlayed,
       audioRevelationPlayed,
-      audioLayers: ['synthetic_wonder', 'authored_revelation'],
+      preludeLeadMs: Number(decision.preludeLeadMs) || 1500,
+      preludeStartedAt: Number(decision.preludeStartedAt) || null,
+      visualStartedAt: Date.now(),
+      audioLayers: ['elevenlabs_wonder_choir_prelude', 'synthetic_wonder'],
       codexDiscovered: Boolean(codexDiscovery?.isNew),
       layer: 'gameplay_background',
       visualLanguage: visual.generatedArtReady ? 'cabinet_wonder_imagegen_v2' : 'cabinet_wonder_procedural_fallback',
@@ -3568,7 +3608,7 @@ export class PlayScene {
       clearTimeout(this.pendingCabinetWonderReleaseTimer);
       this.pendingCabinetWonderReleaseTimer = null;
     }
-    if (reason !== 'complete' && this.pendingCabinetWonder?.kind === 'presentation_release') {
+    if (reason !== 'complete' && this.pendingCabinetWonder) {
       this.pendingCabinetWonder = null;
     }
     const active = this.activeCabinetWonder;
@@ -3599,7 +3639,10 @@ export class PlayScene {
       cadenceSectors: 3,
       pending: this.pendingCabinetWonder ? {
         id: this.pendingCabinetWonder.decision?.variant?.id || null,
-        sector: this.pendingCabinetWonder.decision?.sector || null
+        sector: this.pendingCabinetWonder.decision?.sector || null,
+        kind: this.pendingCabinetWonder.kind || null,
+        preludeLeadMs: Number(this.pendingCabinetWonder.preludeLeadMs) || null,
+        audioRevelationPlayed: Boolean(this.pendingCabinetWonder.audioRevelationPlayed)
       } : null,
       scoreNeutral: true,
       gameplayNeutral: true,
@@ -3616,6 +3659,9 @@ export class PlayScene {
         proceduralAccentAlpha: active.historyEntry.proceduralAccentAlpha,
         authoredBounds: { ...active.historyEntry.authoredBounds },
         audioRevelationPlayed: Boolean(active.historyEntry.audioRevelationPlayed),
+        preludeLeadMs: active.historyEntry.preludeLeadMs,
+        preludeStartedAt: active.historyEntry.preludeStartedAt,
+        visualStartedAt: active.historyEntry.visualStartedAt,
         audioLayers: [...(active.historyEntry.audioLayers || [])],
         upperFieldSafe: active.historyEntry.authoredBounds.y + active.historyEntry.authoredBounds.height <= screenHeight * 0.5
       } : null,
@@ -9461,6 +9507,7 @@ export class PlayScene {
         ? translateText('Take COMBO ANCHOR now or close this score route for the run.')
         : null,
       heldAtOpenId: this.tacticalDraftHeldId,
+      holdChangedSinceOpen: false,
       rescanCount: 0,
       rescansRemaining: this.tacticalDraftRescansRemaining,
       bansRemaining: this.tacticalDraftBansRemaining,
@@ -10828,6 +10875,7 @@ export class PlayScene {
     if (!offer) return false;
     if (offer.fixedScoreRoute) return this.showTacticalScoreRouteRestriction('hold');
     this.tacticalDraftHeldId = this.tacticalDraftHeldId === offer.id ? null : offer.id;
+    state.holdChangedSinceOpen = true;
     state.offers.forEach((entry) => { entry.held = entry.id === this.tacticalDraftHeldId; });
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftHold();
@@ -11199,7 +11247,10 @@ export class PlayScene {
         decidedAt: Date.now()
       };
     }
-    if (this.tacticalDraftHeldId === offer.id || this.tacticalDraftHeldId === state.heldAtOpenId) {
+    const selectedHeldOffer = this.tacticalDraftHeldId === offer.id;
+    const untouchedCarry = !state.holdChangedSinceOpen
+      && this.tacticalDraftHeldId === state.heldAtOpenId;
+    if (selectedHeldOffer || untouchedCarry) {
       this.tacticalDraftHeldId = null;
     }
     state.confirmedId = offer.id;
@@ -11519,15 +11570,19 @@ export class PlayScene {
       : new PIXI.Graphics();
     if (core instanceof PIXI.Sprite) {
       core.anchor.set(0.5);
-      core.width = compact ? 82 : 104;
-      core.height = compact ? 82 : 104;
+      const crestSpan = compact ? 58 : 72;
+      const textureSpan = Math.max(1, Number(core.texture?.width) || 1, Number(core.texture?.height) || 1);
+      core.scale.set(crestSpan / textureSpan);
       core._fusionEmblemId = 'drone_constellation_authored_crest';
     } else {
       this.drawTacticalFusionEmblem(core, fusion, accent, compact);
     }
     core.position.set(-panelWidth / 2 + (compact ? 54 : 66), 0);
     core.blendMode = 'add';
+    core.label = 'tactical_fusion_emblem';
     panel.addChild(core);
+    const coreBaseScaleX = Number(core.scale?.x) || 1;
+    const coreBaseScaleY = Number(core.scale?.y) || 1;
 
     const label = createText(translateText('FUSION PROTOCOL ONLINE'), {
       fontFamily: FONT_BODY,
@@ -11578,6 +11633,7 @@ export class PlayScene {
       rayCount: 0,
       plasmaRibbonCount,
       emblemId: core._fusionEmblemId,
+      emblemSpan: Math.round(Math.max(Number(core.width) || 0, Number(core.height) || 0)),
       visualLanguage: core instanceof PIXI.Sprite
         ? 'authored_drone_constellation_crest_v1'
         : 'fusion_signature_v3_authored_frame',
@@ -11613,7 +11669,11 @@ export class PlayScene {
       panel.scale.set(0.78 + eased * 0.22 + Math.sin(elapsed * 0.012) * (reducedMotion ? 0.004 : 0.014));
       burst.scale.set(0.78 + eased * 0.22, 0.72 + eased * 0.28);
       burst.alpha = 0.62 + Math.sin(elapsed * 0.009) * (reducedMotion ? 0.02 : 0.12);
-      core.scale.set(0.94 + Math.sin(elapsed * 0.014) * (reducedMotion ? 0.01 : 0.045));
+      const corePulse = 0.94 + Math.sin(elapsed * 0.014) * (reducedMotion ? 0.01 : 0.045);
+      core.scale.set(coreBaseScaleX * corePulse, coreBaseScaleY * corePulse);
+      if (this.lastTacticalFusionUnlock) {
+        this.lastTacticalFusionUnlock.emblemSpan = Math.round(Math.max(Number(core.width) || 0, Number(core.height) || 0));
+      }
       if (elapsed >= durationMs) this.clearTacticalFusionUnlock('complete');
     };
     this.activeTacticalFusionUnlock = { container, ticker, fusionId: fusion.id };
@@ -11704,6 +11764,7 @@ export class PlayScene {
       rescanBounds: boundsOf(state?.rescan),
       heldId: this.tacticalDraftHeldId || null,
       heldAtOpenId: state?.heldAtOpenId || null,
+      holdChangedSinceOpen: Boolean(state?.holdChangedSinceOpen),
       holdLabel: state?.hold?._nodes?.label?.text || null,
       holdBounds: boundsOf(state?.hold),
       bansRemaining: state?.bansRemaining ?? this.tacticalDraftBansRemaining,

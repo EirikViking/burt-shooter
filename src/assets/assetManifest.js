@@ -502,6 +502,7 @@ export const AssetManifest = {
             '/audio/sfx/nova-swarm/nova_boss_death_cascade.mp3',
             '/audio/sfx/nova-swarm/nova_bonus_core_jackpot.mp3',
             '/audio/sfx/nova-swarm/nova_miracle_collect.mp3',
+            '/audio/sfx/nova-swarm/nova_wonder_revelation.mp3',
             '/audio/sfx/nova-swarm/nova_miracle_purge.mp3',
             '/audio/sfx/nova-swarm/nova_shield_snap.mp3',
             '/audio/sfx/nova-swarm/nova_rank_fanfare.mp3',

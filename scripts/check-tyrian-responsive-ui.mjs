@@ -278,6 +278,14 @@ async function prepareGameplay(page) {
         scaleY: sprite?.scale?.y || 0
       };
     });
+    const cobaltGuardMeter = play.hud?.getTraitMeterEvent?.({
+      nearMissScoreMult: 0.95,
+      projectileRadiusMult: 1.04
+    });
+    const materialWideShotMeter = play.hud?.getTraitMeterEvent?.({
+      nearMissScoreMult: 1,
+      projectileRadiusMult: 1.14
+    });
     return {
       textureIndex: play.player.selectedShipTextureIndex,
       width: play.player.shipSprite?.texture?.width || 0,
@@ -301,7 +309,9 @@ async function prepareGameplay(page) {
       containerRepairReason: play.player.lastShipContainerScaleRepair?.reason || null,
       repairedContainerScaleX: play.player.sprite?.scale?.x || 0,
       repairedContainerScaleY: play.player.sprite?.scale?.y || 0,
-      supportDrones
+      supportDrones,
+      cobaltGuardMeter,
+      materialWideShotMeter
     };
   });
   assert.equal(eirikVisual.textureIndex, 26);
@@ -326,6 +336,8 @@ async function prepareGameplay(page) {
     assert(Math.max(drone.width, drone.height) <= 34.5, `Eirik support drone inherited flagship dimensions: ${JSON.stringify(drone)}`);
     assert(drone.scaleX > 0 && drone.scaleY > 0, `Eirik support drone has an invalid texture scale: ${JSON.stringify(drone)}`);
   }
+  assert.equal(eirikVisual.cobaltGuardMeter?.text, 'PASSIVE ACTIVE', `Cobalt Guard still claims a wide-shot or graze bonus: ${JSON.stringify(eirikVisual.cobaltGuardMeter)}`);
+  assert.equal(eirikVisual.materialWideShotMeter?.text, 'WIDE SHOTS ACTIVE', `Material projectile width no longer reports the wide-shot trait: ${JSON.stringify(eirikVisual.materialWideShotMeter)}`);
   return eirikVisual;
 }
 
@@ -620,25 +632,51 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
     const chatter = await page.evaluate(() => {
       const overlay = window.__game?.currentScene?.settingsOverlay;
       const control = overlay?.controls?.find((entry) => entry.id === 'chatter_frequency');
+      const musicPack = overlay?.controls?.find((entry) => entry.id === 'music_pack');
       const bounds = (node) => {
         const box = node?.getBounds?.();
-        return box ? { x: Math.round(box.x), y: Math.round(box.y), width: Math.round(box.width), height: Math.round(box.height) } : null;
+        return box ? {
+          x: Math.round(box.x),
+          y: Math.round(box.y),
+          width: Math.round(box.width),
+          height: Math.round(box.height),
+          right: Math.round(box.x + box.width),
+          bottom: Math.round(box.y + box.height)
+        } : null;
       };
       return {
         exists: Boolean(control),
         label: control?.button?._label?.text || null,
         button: bounds(control?.button),
         description: control?.button?.parent?._description?.text || null,
-        descriptionBounds: bounds(control?.button?.parent?._description)
+        descriptionBounds: bounds(control?.button?.parent?._description),
+        nextRowButton: bounds(musicPack?.button)
       };
     });
     assert(chatter.exists && ['Full', 'Reduced', 'Minimal'].includes(chatter.label), `Chatter Frequency control missing: ${JSON.stringify(chatter)}`);
     assert(chatter.description?.includes('Boss warnings'), 'Chatter safety description is missing');
+    assert(
+      chatter.descriptionBounds?.bottom + 6 <= chatter.nextRowButton?.y,
+      `Chatter safety description overlaps MUSIC SET: ${JSON.stringify(chatter)}`
+    );
     assert(state.settingsOverlay?.display, 'Settings debug state is missing');
     const shot = await capture(page, scenarioDir, '09-settings-chatter-frequency', 'settings');
+    await page.evaluate(() => window.__game?.currentScene?.settingsOverlay?.openKeyBindingsPanel?.());
+    await page.waitForFunction(() => window.__game?.currentScene?.settingsOverlay?.getDebugState?.().keyboardBindings?.panel === true);
+    const keyboard = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().keyboardBindings);
+    const keyboardPanelRight = keyboard.panelBounds.x + keyboard.panelBounds.width;
+    const keyboardPanelBottom = keyboard.panelBounds.y + keyboard.panelBounds.height;
+    for (const control of keyboard.controls) {
+      assert(control.bounds, `Keyboard control has no bounds: ${JSON.stringify(control)}`);
+      assert(control.bounds.x >= keyboard.panelBounds.x + 12, `Keyboard control crosses left panel edge: ${JSON.stringify(control)}`);
+      assert(control.bounds.right <= keyboardPanelRight - 12, `Keyboard control crosses right panel edge: ${JSON.stringify(control)}`);
+      assert(control.bounds.y >= keyboard.panelBounds.y + 12, `Keyboard control crosses top panel edge: ${JSON.stringify(control)}`);
+      assert(control.bounds.bottom <= keyboardPanelBottom - 12, `Keyboard control crosses bottom panel edge: ${JSON.stringify(control)}`);
+    }
+    const keyboardShot = await capture(page, scenarioDir, '10-keyboard-bindings-no-overlap', 'settings');
     assert.deepEqual(observed.pageErrors, [], `${scenario.id} Settings page errors`);
     assert.deepEqual(observed.consoleErrors, [], `${scenario.id} Settings console errors`);
-    return { state, chatter, shot, errors: observed };
+    return { state, chatter, keyboard, shot, keyboardShot, errors: observed };
   } finally {
     await page.close();
   }
@@ -675,7 +713,7 @@ try {
     reports
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 9} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 10} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();

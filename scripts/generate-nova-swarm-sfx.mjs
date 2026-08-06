@@ -174,6 +174,13 @@ const eliteMiddleShipSounds = [
 
 const sounds = [
   {
+    file: 'nova_wonder_revelation.mp3',
+    text: 'A sacred cosmic revelation for a premium space arcade game. A distant luminous breath opens into a vast wordless angelic choir singing pure open fifths, with cathedral scale, celestial overtones, one deep ceremonial bell, and radiant upward shimmer. Holy, beautiful, benevolent, godlike, epic, grandiose, and awe inspiring, as if a divine presence appears among the stars. No words, horror, drums, or familiar melody. Four seconds.',
+    duration_seconds: 4,
+    prompt_influence: 0.88,
+    allowCreate: true
+  },
+  {
     file: 'nova_miracle_collect.mp3',
     text: 'A spectacular ultra-rare jackpot pickup sound for a premium neon arcade space shooter: one deep clean sub impact, a brilliant crystalline heart chime, white-gold energy blooming upward, euphoric choir-like synthesizer sparkle, and a short victorious tail. Extremely gratifying and unmistakably positive, huge but clear in a busy combat mix, original sound design, no voice, no spoken words, no copyrighted melody, four seconds.',
     duration_seconds: 4,

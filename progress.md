@@ -1,5 +1,14 @@
 Original prompt: identify some low hanging fruits to make the game more fun, then implement it. at least 3.
 
+## 2026-08-06 Tyrian post #103 and Settings overlap pass
+
+- Current prompt: review Tyrian Mollusk's latest Steam forum feedback, act on the high-confidence defects, and include the Settings and keyboard-remapping overlaps shown by the owner.
+- Isolated worktree: `D:\vibe-coding-e\codex\nova-swarm-tyrian-103-20260806-6b7d`; branch: `codex/tyrian-103-20260806-6b7d`; verified clean baseline: `a249cb11e2ec70a2b15ecd0b541ae70fec97dfc4`. The protected authoritative checkout remains untouched.
+- Implemented: Cobalt Guard no longer falsely advertises a positive graze-score or wide-shot bonus for its small negative/near-neutral modifiers; Tactical Draft preserves a re-held card when the player changes the hold away and back before confirming; Drone Constellation's authored Fusion crest stays compact throughout its animation; all five real Ascendant textures are checked against the compact support-drone contract; keyboard-remapping buttons stay inside their modal; and the Chatter Frequency safety note has a guaranteed gap before Music Set.
+- Deliberately deferred: Railbreaker balance, pilot-rank pacing, tractor/target-drone collision behavior, intermittent Focus Lens visuals, leaderboard medal styling, and Steam achievement-notification timing. These require balance decisions or additional runtime evidence rather than a speculative change.
+- Focused runtime verification passes: Tactical Draft including the re-hold sequence and compact Fusion crest; responsive UI at 960x540, 1920x1080, and 3440x1440 with 30 screenshots and explicit bounds assertions; Shift/custom-dodge rebinding; ship-trait combat; all ship explanations; and all Ascendant source-art drone spans. The 1920x1080 Settings, keyboard-controls, and Fusion screenshots were visually inspected. No Steamworks or deployment action is part of this pass.
+- Owner follow-up added a dedicated four-second ElevenLabs Cabinet Wonder revelation: a wordless angelic choir, ceremonial bell, and celestial rise. It is a new local runtime asset, replaces the reused Viking Row pool, starts 1.5 seconds before every Wonder visual, and keeps the existing synthetic accent at the moment of appearance. The owner subsequently authorized full verification, a private unassigned SteamPipe upload, and a public reply to Tyrian explaining the implemented fixes.
+
 ## 2026-08-02 Tyrian post #99 follow-up
 
 - Current prompt: read Tyrian Mollusk's latest Steam feedback, act on the parts that should be acted on, and prepare a reply for owner approval without posting it.

@@ -347,7 +347,7 @@ export const SFX_MIX = {
     row_core_wave: { volume: 0.58, minIntervalMs: 150 },
     row_core_perfect: { volume: 0.9, minIntervalMs: 1000 },
     row_core_viking_row: { volume: 1, minIntervalMs: 4500 },
-    wonder_revelation: { volume: 0.74, minIntervalMs: 0, priority: 8, priorityHoldMs: 1000, priorityDuckFactor: 0.34 },
+    wonder_revelation: { volume: 0.82, minIntervalMs: 0, priority: 9, priorityHoldMs: 3000, priorityDuckFactor: 0.26 },
     rare_visitor_arrival: { volume: 0.92, minIntervalMs: 8000 },
     rare_visitor_theme_sting: { volume: 0.72, minIntervalMs: 8000 },
     rare_visitor_laser_charge: { volume: 0.64, minIntervalMs: 850 },
@@ -637,11 +637,7 @@ export const SFX_CATALOG = {
         getSfx('nova_row_core_perfect')
     ],
     'row_core_viking_row': [getSfx('nova_row_core_viking_row')],
-    'wonder_revelation': [
-        getSfx('nova_row_core_ro_big'),
-        getSfx('nova_row_core_horn'),
-        getSfx('nova_row_core_viking_row')
-    ],
+    'wonder_revelation': [getSfx('nova_wonder_revelation')],
     'rare_visitor_arrival': [getSfx('nova_rare_visitor_arrival')],
     'rare_visitor_theme_sting': [getSfx('nova_rare_visitor_theme_sting')],
     'rare_visitor_laser_charge': [getSfx('nova_rare_visitor_laser_charge')],

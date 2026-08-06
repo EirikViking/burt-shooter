@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import sharp from 'sharp';
 
 import { AssetManifest } from '../src/assets/assetManifest.js';
 import { ShipData } from '../src/config/ShipData.js';
@@ -239,6 +240,13 @@ for (const ship of [level30, railbreaker, droneSovereign, phaseSeraph, level50].
   if (ship.art?.temporaryFallback) fail(`${ship.id} must use dedicated final art, not a temporary fallback`);
   if (ship.art?.sourceSpritePath !== asset) fail(`${ship.id} art source must match its playable manifest asset`);
   if (!fallbackAsset || !publicPathExists(fallbackAsset)) fail(`${ship.id} must retain a valid runtime-safe fallback asset`);
+  const assetFile = path.join(root, 'public', String(asset || '').replace(/^\//, ''));
+  const metadata = await sharp(assetFile).metadata();
+  const sourceSpan = Math.max(Number(metadata.width) || 0, Number(metadata.height) || 0);
+  const renderedSpan = sourceSpan * computeSupportDroneTextureScale(metadata);
+  if (!sourceSpan || renderedSpan > SUPPORT_DRONE_TARGET_SPAN + 0.001) {
+    fail(`${ship.id} support drone would exceed ${SUPPORT_DRONE_TARGET_SPAN}px from its real ${metadata.width}x${metadata.height} texture`);
+  }
 }
 if (phaseSeraph && phaseSeraph.textureIndex === shipsById.get('nova_ship_24')?.textureIndex) {
   fail('Phase Seraph must not share Nova Overdrive art');
