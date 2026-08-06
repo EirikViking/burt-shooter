@@ -84,12 +84,15 @@ async function main() {
     assert.ok(!mainMenuState.menu.optionOrder.includes('overrun'), 'Enjin menu made Overrun selectable');
     assert.equal(await page.locator('#enjin-shell').innerText(), '', 'Enjin menu shell should not replace the game menu');
 
-    const blockedModeBounds = mainMenuState.menu.launchDeck.cards.daily.bounds;
-    await page.mouse.click(blockedModeBounds.x + blockedModeBounds.width / 2, blockedModeBounds.y + blockedModeBounds.height / 2);
-    await page.waitForFunction(() => {
-      const state = JSON.parse(window.render_game_to_text());
-      return state.scene === 'menu' && state.enjin?.mode === 'menu' && state.menu?.exitNoticeText === 'FULL STEAM VERSION REQUIRED';
-    }, null, { timeout: interactionTimeout });
+    for (const modeId of ['daily', 'scout', 'sector', 'overrun']) {
+      const blockedModeBounds = mainMenuState.menu.launchDeck.cards[modeId].bounds;
+      await page.mouse.click(blockedModeBounds.x + blockedModeBounds.width / 2, blockedModeBounds.y + blockedModeBounds.height / 2);
+      await page.waitForFunction(() => {
+        const state = JSON.parse(window.render_game_to_text());
+        return state.scene === 'menu' && state.enjin?.mode === 'menu' && state.menu?.exitNoticeText === 'FULL STEAM VERSION REQUIRED';
+      }, null, { timeout: interactionTimeout });
+      assert.equal(new URL(page.url()).hostname, new URL(baseUrl).hostname, `${modeId} mode click navigated away from the game`);
+    }
     const blockedModeState = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
     assert.equal(blockedModeState.scene, 'menu');
     assert.equal(blockedModeState.enjin.mode, 'menu');

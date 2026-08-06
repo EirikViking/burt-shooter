@@ -424,15 +424,23 @@ export class MenuScene {
       || this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
   }
 
-  setEnjinEditionMode(enabled = true) {
-    this.enjinEditionMode = Boolean(enabled);
-    const disabledButtons = [
+  getEnjinSteamOnlyButtons() {
+    return [
       this.startBtn,
       this.dailySignalBtn,
       this.scoutRunBtn,
       this.sectorStartBtn,
       this.overrunStartBtn
     ].filter(Boolean);
+  }
+
+  isEnjinSteamOnlyButton(button) {
+    if (!this.isEnjinEdition() || !button) return false;
+    return button._enjinDisabled === true || this.getEnjinSteamOnlyButtons().includes(button);
+  }
+
+  applyEnjinEditionModeButtonState() {
+    const disabledButtons = this.getEnjinSteamOnlyButtons();
     disabledButtons.forEach((button) => {
       button._enjinDisabled = this.enjinEditionMode;
       button.eventMode = 'static';
@@ -446,6 +454,11 @@ export class MenuScene {
         this.tacticalStartBtn.cursor = 'pointer';
       }
     }
+  }
+
+  setEnjinEditionMode(enabled = true) {
+    this.enjinEditionMode = Boolean(enabled);
+    this.applyEnjinEditionModeButtonState();
     this.buildMenuNavigation();
     this.refreshMenuText({ forceGpuRefresh: true });
     this.layoutMenu({ forceLabelGpuRefresh: true });
@@ -453,7 +466,7 @@ export class MenuScene {
   }
 
   showEnjinSteamOnlyNotice(button = null, event = null) {
-    if (!this.isEnjinEdition() || !button?._enjinDisabled) return false;
+    if (!this.isEnjinSteamOnlyButton(button)) return false;
     event?.stopPropagation?.();
     event?.preventDefault?.();
     this.setInputDevice('keyboard');
@@ -1637,7 +1650,8 @@ export class MenuScene {
     });
     this.configureRunModeCard(this.startBtn, { id: 'mayhem', secondary: 0xffef7e, role: 'alternative' });
     this.startBtn.alpha = 0;  // Start invisible
-    this.startBtn.on('pointerdown', () => {
+    this.startBtn.on('pointerdown', (event) => {
+      if (this.showEnjinSteamOnlyNotice(this.startBtn, event)) return;
       this.setInputDevice('keyboard');
       this.quickStartRun(RUN_MODES.RANKED);
     });
@@ -1881,6 +1895,10 @@ export class MenuScene {
     this.container.addChild(this.musicBtn);
     this.refreshSectorStartState();
     this.updateSectorStartButton();
+    // MenuScene is reused after a failed run. Re-apply the edition lock to
+    // newly-created Pixi buttons before rebuilding keyboard/controller
+    // navigation, so no stale scene can launch a Steam-only mode.
+    this.applyEnjinEditionModeButtonState();
     this.buildMenuNavigation();
 
     const stampFont = Math.max(10, getResponsiveFontSize(layout, 'small') - 2);
@@ -6509,7 +6527,7 @@ export class MenuScene {
         }
       },
       { id: 'exit', button: this.exitBtn, activate: () => this.openQuitConfirmation() }
-    ].filter((option) => option.button && !option.button._enjinDisabled);
+    ].filter((option) => option.button && !this.isEnjinSteamOnlyButton(option.button));
 
     this.menuOptions.forEach((option) => {
       option.button._menuOptionId = option.id;
@@ -6764,6 +6782,10 @@ export class MenuScene {
   }
 
   startOverrunRun() {
+    if (this.isEnjinEdition()) {
+      this.showEnjinSteamOnlyNotice(this.overrunStartBtn);
+      return false;
+    }
     this.overrunStartState = getOverrunStartState(readHangarProgressState());
     this.refreshButtonCopy(this.overrunStartBtn, { forceGpuRefresh: true });
     if (!this.overrunStartState.available) {
@@ -6793,6 +6815,10 @@ export class MenuScene {
   }
 
   startDailySignalRun() {
+    if (this.isEnjinEdition()) {
+      this.showEnjinSteamOnlyNotice(this.dailySignalBtn);
+      return false;
+    }
     if (this.launchingRun) return;
     this.refreshDailySignalMenuState({ force: true });
     const contract = this.dailySignalContract || deriveDailySignalContract();
@@ -6977,6 +7003,10 @@ export class MenuScene {
   }
 
   launchSectorStartRun(requestedCheckpoint = null) {
+    if (this.isEnjinEdition()) {
+      this.showEnjinSteamOnlyNotice(this.sectorStartBtn);
+      return false;
+    }
     if (this.launchingRun) return;
     const checkpoint = requestedCheckpoint || this.getSelectedSectorStartCheckpoint();
     if (!checkpoint) {
