@@ -184,11 +184,12 @@ export async function getReward() {
   const localState = readLocalState();
   try {
     const remote = await request('/api/enjin/reward/current');
-    if (remote?.reward || !localState.completed || !shouldUseMockClaims()) return remote;
-    return { reward: mockReward(localState) };
+    if (remote?.reward) return remote.reward;
+    if (!localState.completed || !shouldUseMockClaims()) return null;
+    return mockReward(localState);
   } catch {
     return shouldUseMockClaims() && localState.completed && localState.assignmentId
-      ? { reward: mockReward(localState) }
+      ? mockReward(localState)
       : null;
   }
 }

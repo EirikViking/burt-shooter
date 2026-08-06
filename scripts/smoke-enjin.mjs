@@ -158,7 +158,7 @@ async function main() {
 
     await page.evaluate(async () => window.__enjinMvp.debugCompleteForTest());
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete', null, { timeout: interactionTimeout });
-    await page.waitForSelector('[data-enjin-qr] svg');
+    await page.waitForSelector('[data-enjin-qr] svg', { state: 'attached' });
     const qrPixels = await page.locator('[data-enjin-qr] svg').evaluate((svg) => ({
       pathLength: svg.querySelector('path')?.getAttribute('d')?.length || 0,
       darkFill: svg.querySelector('path')?.getAttribute('fill') || '',
@@ -215,6 +215,13 @@ async function main() {
     await page.reload({ waitUntil: navigationWaitUntil });
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete');
     assert.ok(!await page.locator('[data-enjin-action="start"]').count(), 'completed identity can start again after refresh');
+    await page.waitForSelector('[data-enjin-qr] svg', { state: 'attached' });
+    const restoredQr = await page.locator('[data-enjin-qr] svg').evaluate((svg) => ({
+      pathLength: svg.querySelector('path')?.getAttribute('d')?.length || 0,
+      connected: svg.isConnected
+    }));
+    assert.ok(restoredQr.pathLength > 1_000, 'refresh restored the claim card without QR modules');
+    assert.equal(restoredQr.connected, true);
 
     const retryContext = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     await retryContext.addInitScript(() => {
@@ -256,7 +263,8 @@ async function main() {
         'steam_only_mode_notice',
         'exact_30000_completion',
         'post_gate_state_is_frozen_after_5_seconds',
-        'claim_qr_renders_locally',
+          'claim_qr_renders_locally',
+          'refresh_restores_claim_qr',
         'steam_utm_link',
         'refresh_restores_completion_without_replay',
         'below_threshold_retry'

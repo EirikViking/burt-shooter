@@ -2680,7 +2680,7 @@ Original request: use the latest 3:04 gameplay video as primary evidence; trace 
 
 ## 2026-08-06 Enjin completion QR rendering repair
 
-- Reproduced the production failure: the completed-player reward panel existed, but its QR container had no child SVG or canvas.
+- Reproduced the production failure: the completed-player reward panel existed, but its QR container had no child SVG or canvas. Restored completions were retaining the API `{ reward }` wrapper instead of the reward object, so the claim URL was unavailable to the renderer.
 - Replaced the asynchronous HTML-string QR path with synchronous, connected-DOM SVG construction from the QR matrix.
 - Added regression coverage using a long NFT.io-shaped mock Beam URL; no real Beam claim was opened or consumed.
 - Enjin smoke coverage, five-second completion freeze, completion restoration, standard-build Enjin isolation, and visual QR inspection passed before preview deployment.
