@@ -43,4 +43,3 @@
 - Published reply: `https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=3#c583930562168924373`
 - Steam comment: `#105`
 - The reply states what was fixed and separately identifies balance or reproduction dependent items that were deliberately not changed.
-
