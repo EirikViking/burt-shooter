@@ -860,6 +860,9 @@ export class PlayScene {
     this.cabinetWonderEligibleChecks = 0;
     this.cabinetWonderLastDecision = null;
     this.pendingCabinetWonder = null;
+    this.pendingStormSurvivedRewards = [];
+    this.waveTransitionFireSuppressedWaveIndex = null;
+    this.waveTransitionFireSuppressedLevel = null;
     this.clearPendingEnemyStart();
     this.capState = { bullets: false, enemies: false, particles: false };
     this.firstRunKillCount = 0;
@@ -915,12 +918,19 @@ export class PlayScene {
     this.stragglerBeaconLayer.blendMode = 'add';
     this.stragglerBeaconLayer.visible = false;
     this.gameContainer.addChild(this.stragglerBeaconLayer);
+    this.bossPriorityEdgeLayer = new PIXI.Graphics();
+    this.bossPriorityEdgeLayer.label = 'bossPriorityEdgeLayer';
+    this.bossPriorityEdgeLayer.zIndex = 105;
+    this.bossPriorityEdgeLayer.blendMode = 'add';
+    this.bossPriorityEdgeLayer.visible = false;
+    this.gameContainer.addChild(this.bossPriorityEdgeLayer);
 
     const params = new URLSearchParams(window.location.search);
     const spriteKey = this.game.selectedShipSpriteKey || getDefaultShipKey();
     const initialRank = Number.isFinite(this.game.rankIndex) ? this.game.rankIndex : 1;
     const selectedShipTextureIndex = getShipMetadata(spriteKey)?.textureIndex ?? 0;
     const controlSmoke = params.get('controlSmoke') === '1';
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
     this.controlSmokeMode = controlSmoke;
     this.maintainerDevtoolsEnabled = isMaintainerDevtoolsEnabled();
     const logShipDebug = () => {
@@ -939,10 +949,20 @@ export class PlayScene {
       this.player.setRank(currentRank, source);
       this.applySeasonCosmetics();
       logShipDebug();
-      if (controlSmoke) {
+      if (controlSmoke || enjinEdition) {
         this.introActive = false;
         this.introComplete = true;
-        this.startLevelWhenWarm('controlSmoke');
+        this.shipIntroTiming = enjinEdition
+          ? {
+              flightMs: 0,
+              totalMs: 0,
+              fadeInMs: 0,
+              holdUntilMs: 0,
+              impactStartMs: 0,
+              impactEndMs: 0
+            }
+          : null;
+        this.startLevelWhenWarm(enjinEdition ? 'enjinFastStart' : 'controlSmoke');
       } else {
         this.startShipIntro(spriteKey);
       }
@@ -956,10 +976,12 @@ export class PlayScene {
       .catch((error) => {
         console.warn('[PlayScene] Selected ship texture preload failed:', error);
       });
-    Promise.race([
-      selectedShipReady,
-      new Promise((resolve) => setTimeout(resolve, 2500))
-    ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    if (!enjinEdition) {
+      Promise.race([
+        selectedShipReady,
+        new Promise((resolve) => setTimeout(resolve, 2500))
+      ]).then(() => startIntroFromPlayer('selected_ship_ready'));
+    }
     this.shipCatalogLoaded = false;
     this.shipIntroAssetGatePending = false;
     this.shipCatalogReady = selectedShipReady.finally(() => {
@@ -1009,6 +1031,12 @@ export class PlayScene {
 
     // Create enemy manager
     this.enemyManager = new EnemyManager(this.gameContainer, this.gameplayGame, capHandler);
+    if (enjinEdition) {
+      // The Web3 edition is a short arcade conversion funnel. Start the
+      // first wave as soon as the scene exists instead of waiting for the
+      // optional cinematic ship/catalog preload.
+      startIntroFromPlayer('enjin_fast_start');
+    }
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
@@ -4137,7 +4165,8 @@ export class PlayScene {
         console.warn('[PlayScene] level entry asset prewarm failed:', error);
       });
     });
-    const showingFirstRunControls = Boolean(
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
+    const showingFirstRunControls = !enjinEdition && Boolean(
       this.game.level === this.getRunStartSector() && this.getFirstRunControlsNudge()
     );
     const showArrivalStinger = !showingFirstRunControls && this.shouldShowSectorArrivalStinger(this.game.level);
@@ -4457,11 +4486,14 @@ export class PlayScene {
     if (this.levelStartWarmupPending) return;
     const targetLevel = Number.isFinite(this.debugStartLevel) ? this.debugStartLevel : (this.game?.level || 1);
     this.levelStartWarmupPending = true;
-    const catalogReady = this.shipCatalogLoaded
+    const enjinEdition = this.game?.enjinEditionModeLocked === RUN_MODES.MAYHEM_TACTICAL;
+    const catalogReady = enjinEdition || this.shipCatalogLoaded
       ? Promise.resolve(true)
       : (this.shipCatalogReady || Promise.resolve(true)).catch(() => true);
     catalogReady
-      .then(() => this.prewarmLevelEntryAssets(targetLevel, { ahead: 2 }))
+      .then(() => enjinEdition
+        ? true
+        : this.prewarmLevelEntryAssets(targetLevel, { ahead: 2 }))
       .finally(() => {
         this.levelStartWarmupPending = false;
         if (this.game?.currentScene !== this || !this.introComplete || !this.enemyManager || !this.game?.level) return;
@@ -4710,7 +4742,31 @@ export class PlayScene {
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
       this.updateGrazeBreakFireIntent(firePressed);
 
-      if (firePressed && this.player && !this.introActive) {
+      const enemyState = this.enemyManager?.state || 'IDLE';
+      const activeBossCombatResumed = enemyState === 'BOSS_ACTIVE';
+      const activeWaveCombatResumed = (
+        enemyState === 'WAVE_ACTIVE' &&
+        !this.enemyManager?.waveEnding &&
+        (
+          this.enemyManager?.currentWaveIndex !== this.waveTransitionFireSuppressedWaveIndex ||
+          (
+            this.waveTransitionFireSuppressedLevel !== null &&
+            this.enemyManager?.level !== this.waveTransitionFireSuppressedLevel
+          )
+        )
+      );
+      if (
+        this.waveTransitionFireSuppressedWaveIndex !== null &&
+        (activeBossCombatResumed || activeWaveCombatResumed)
+      ) {
+        this.waveTransitionFireSuppressedWaveIndex = null;
+        this.waveTransitionFireSuppressedLevel = null;
+      }
+      const routineFireAllowed = (
+        (enemyState === 'WAVE_ACTIVE' && !this.enemyManager?.waveEnding) ||
+        enemyState === 'BOSS_ACTIVE'
+      ) && this.waveTransitionFireSuppressedWaveIndex === null;
+      if (firePressed && this.player && !this.introActive && routineFireAllowed) {
         measure('shooting', () => {
           if (!this.player.canShoot()) return;
           const bullets = this.player.shoot();
@@ -4736,6 +4792,8 @@ export class PlayScene {
       measure('enemies', () => {
         if (this.enemyManager) this.enemyManager.update(delta);
       });
+      measure('post_wave_rewards', () => this.maybeFlushPendingWaveTransitionRewards());
+      measure('boss_priority_edge', () => this.updateBossPriorityEdge(delta));
       measure('straggler_beacon', () => this.updateStragglerBeacon(delta));
       measure('boss_director', () => {
         this.sampleBalanceBoss();
@@ -4758,7 +4816,10 @@ export class PlayScene {
       if (!perfOptions?.noScorePopups) {
         measure('score_popups', () => {
           measure('score_combo_popup_cleanup', () => {
-            if (this.scorePopupManager) this.scorePopupManager.update(delta);
+            if (this.scorePopupManager) {
+              this.scorePopupManager.setDenseCombatCompression?.(this.bulletManager?.friendlyVfxCompression || 0);
+              this.scorePopupManager.update(delta);
+            }
           });
         });
       }
@@ -4775,6 +4836,12 @@ export class PlayScene {
       measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
       measure('collisions', () => this.checkCollisions());
+      if (this.game?.scoreGate?.frozen) {
+        this.cleanupSkippedFrameVisuals('score_gate');
+        this.updateCriticalHullOverlay(delta);
+        this.updateSlowTimeVisualField(delta);
+        return;
+      }
       measure('deferred_progression.score_progress', () => {
         if (this.shouldDeferActiveGameplayPersistence()) {
           return {
@@ -7341,32 +7408,36 @@ export class PlayScene {
               let appliedScore = 0;
               if (!this.player.isSlowTimeActive?.()) {
                 appliedScore = this.game.addScore(this.getComboScore(500));
-                if (!this.queueCollisionSideEffect(sideEffects, 'scorePopups', {
-                  x: bonusDrone.x,
-                  y: bonusDrone.y,
-                  score: appliedScore,
-                  options: {
-                    comboEligible: false,
-                    color: 0xffef7e,
-                    prefix: translateText('BONUS')
-                  }
-                })) {
-                  this.scorePopupManager?.addScorePopup?.(bonusDrone.x, bonusDrone.y, appliedScore, {
-                    comboEligible: false,
-                    color: 0xffef7e,
-                    prefix: translateText('BONUS')
-                  });
+              }
+              const bonusDroneLabel = translateText('BONUS DRONE DOWN!');
+              const bonusDroneText = appliedScore > 0
+                ? `${bonusDroneLabel}\n+${appliedScore.toLocaleString('en-US')}`
+                : bonusDroneLabel;
+              const bonusDronePopup = {
+                x: bonusDrone.x,
+                y: bonusDrone.y,
+                score: 0,
+                options: {
+                  comboEligible: false,
+                  color: 0xffef7e,
+                  text: bonusDroneText,
+                  type: 'bonus_drone',
+                  fontSize: this.game.getWidth() < 720 ? 14 : 16,
+                  maxLifetime: 780,
+                  vy: -1.15
                 }
+              };
+              if (!this.queueCollisionSideEffect(sideEffects, 'scorePopups', bonusDronePopup)) {
+                this.scorePopupManager?.addScorePopup?.(
+                  bonusDronePopup.x,
+                  bonusDronePopup.y,
+                  bonusDronePopup.score,
+                  bonusDronePopup.options
+                );
               }
               this.onEnemyKilled(bonusDrone);
               this.particleManager.createExplosion(bonusDrone.x, bonusDrone.y, 0xffaa00);
               AudioManager.playSfx('enemy_explode', { volume: 0.5 });
-              if (!this.queueCollisionSideEffect(sideEffects, 'toasts', {
-                message: translateText('BONUS DRONE DOWN!'),
-                options: { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' }
-              })) {
-                this.showToast(translateText('BONUS DRONE DOWN!'), { fontSize: 18, y: bonusDrone.y, fill: '#ffff00' });
-              }
             } else {
               this.particleManager.createHitSpark(bonusDrone.x, bonusDrone.y);
             }
@@ -8723,6 +8794,69 @@ export class PlayScene {
       particles: this.particleManager ? this.particleManager.particles.length : 0,
       children: this.gameContainer ? this.gameContainer.children.length : 0
     };
+  }
+
+  updateBossPriorityEdge(delta = 1) {
+    const layer = this.bossPriorityEdgeLayer;
+    const boss = this.enemyManager?.boss;
+    if (!layer) return null;
+    layer.clear();
+    if (
+      !boss?.active ||
+      !boss.sprite?.visible ||
+      this.isPaused ||
+      this.gameOverSequenceStarted ||
+      this.gameOverInterlude?.active ||
+      this.overrunMilestoneInterlude?.active
+    ) {
+      layer.visible = false;
+      layer._debugBossPriorityEdge = {
+        visible: false,
+        reason: boss?.active ? 'scene_suppressed' : 'no_active_boss',
+        segmentCount: 0
+      };
+      return layer._debugBossPriorityEdge;
+    }
+
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const radius = Math.max(46, Number(boss.getVisualRadius?.() || boss.visualRadius || boss.radius) + 18);
+    const pulse = reducedMotion ? 0.5 : (0.5 + Math.sin(Date.now() * 0.008 + (Number(delta) || 0) * 0.04) * 0.5);
+    const segmentSweep = 0.23;
+    const rotation = reducedMotion ? Math.PI / 4 : Math.PI / 4 + Math.sin(Date.now() * 0.0013) * 0.025;
+    const dangerColor = Number(boss.health) <= Number(boss.maxHealth) * 0.25 ? 0xffd166 : 0xff5f72;
+    layer.visible = true;
+    for (let index = 0; index < 4; index += 1) {
+      const angle = rotation + index * Math.PI / 2;
+      layer.arc(boss.x, boss.y, radius, angle - segmentSweep, angle + segmentSweep);
+    }
+    layer.stroke({
+      color: dangerColor,
+      width: 1.35,
+      alpha: (reducedMotion ? 0.32 : 0.3 + pulse * 0.16)
+    });
+    for (let index = 0; index < 4; index += 1) {
+      const angle = rotation + index * Math.PI / 2;
+      const inner = radius - 5;
+      const outer = radius + 5;
+      layer.moveTo(boss.x + Math.cos(angle) * inner, boss.y + Math.sin(angle) * inner);
+      layer.lineTo(boss.x + Math.cos(angle) * outer, boss.y + Math.sin(angle) * outer);
+    }
+    layer.stroke({ color: 0xffffff, width: 1, alpha: reducedMotion ? 0.22 : 0.18 + pulse * 0.12 });
+    layer._debugBossPriorityEdge = {
+      visible: true,
+      visualLanguage: 'restrained_boss_priority_edge_v1',
+      x: Math.round(boss.x),
+      y: Math.round(boss.y),
+      radius: Math.round(radius),
+      segmentCount: 4,
+      tickCount: 4,
+      dangerColor,
+      zIndex: layer.zIndex,
+      hostileProjectilesAbove: 120 > layer.zIndex,
+      routineFriendlyProjectilesBelow: 80 < layer.zIndex,
+      reducedMotion
+    };
+    return layer._debugBossPriorityEdge;
   }
 
   clearStragglerBeacon(reason = 'clear') {
@@ -12641,70 +12775,66 @@ export class PlayScene {
 
     const width = Math.max(1, Number(this.game?.getWidth?.()) || Number(this.game?.app?.screen?.width) || 1280);
     const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
-    const px = Math.max(0, Math.min(width, Number(this.player?.x) || width / 2));
-    const py = Math.max(0, Math.min(height, Number(this.player?.y) || height / 2));
+    const worldX = Number(this.player?.x) || this.gameplayGame?.getWidth?.() / 2 || width / 2;
+    const worldY = Number(this.player?.y) || this.gameplayGame?.getHeight?.() / 2 || height / 2;
+    const screenPosition = this.game?.gameplayToScreen?.(worldX, worldY) || { x: worldX, y: worldY };
+    const px = Math.max(0, Math.min(width, Number(screenPosition?.x) || width / 2));
+    const py = Math.max(0, Math.min(height, Number(screenPosition?.y) || height / 2));
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
     const pulse = 0.5 + Math.sin(Date.now() * 0.006 + Number(delta || 0) * 0.05) * 0.5;
-    const edge = Math.max(16, Math.min(42, Math.min(width, height) * 0.034));
-    const alpha = 0.06 + pulse * 0.035;
-    field.rect(0, 0, width, edge);
-    field.fill({ color: 0x574dff, alpha });
-    field.rect(0, height - edge, width, edge);
-    field.fill({ color: 0x37f5ff, alpha: alpha * 0.82 });
-    field.rect(0, 0, edge * 0.8, height);
-    field.fill({ color: 0x8f6dff, alpha: alpha * 0.72 });
-    field.rect(width - edge * 0.8, 0, edge * 0.8, height);
-    field.fill({ color: 0x37f5ff, alpha: alpha * 0.72 });
+    const radius = Math.max(54, Math.min(94, Math.min(width, height) * 0.105)) + (reducedMotion ? 0 : pulse * 5);
+    const fieldAlpha = reducedMotion ? 0.045 : 0.055 + pulse * 0.025;
+    field.circle(px, py, radius);
+    field.fill({ color: 0x574dff, alpha: fieldAlpha });
+    field.circle(px, py, radius);
+    field.stroke({
+      color: 0x62efff,
+      width: 1.7,
+      alpha: reducedMotion ? 0.3 : 0.32 + pulse * 0.16
+    });
 
-    const timeSliceCount = 7;
-    for (let i = 0; i < timeSliceCount; i += 1) {
-      const sliceProgress = (i + 1) / (timeSliceCount + 1);
-      const sliceY = (height * sliceProgress + Math.sin(Date.now() * 0.0014 + i * 1.7) * edge * 0.32) % height;
-      const sliceInset = edge * (1.35 + (i % 2) * 0.34);
-      const sliceWidth = Math.max(24, width - sliceInset * 2);
-      field.rect(sliceInset, sliceY, sliceWidth, Math.max(1, edge * 0.045));
-      field.fill({ color: i % 2 ? 0xb39cff : 0x37f5ff, alpha: 0.045 + pulse * 0.035 });
+    const pairedRailCount = 4;
+    const rotation = reducedMotion ? 0 : Math.sin(Date.now() * 0.0011) * 0.035;
+    for (let index = 0; index < pairedRailCount; index += 1) {
+      const angle = rotation + index * Math.PI / 2;
+      const inner = radius * 0.68;
+      const outer = radius + 10;
+      const tangentX = -Math.sin(angle);
+      const tangentY = Math.cos(angle);
+      const innerX = px + Math.cos(angle) * inner;
+      const innerY = py + Math.sin(angle) * inner;
+      const outerX = px + Math.cos(angle) * outer;
+      const outerY = py + Math.sin(angle) * outer;
+      field.moveTo(innerX + tangentX * 5, innerY + tangentY * 5);
+      field.lineTo(outerX + tangentX * 5, outerY + tangentY * 5);
+      field.moveTo(innerX - tangentX * 5, innerY - tangentY * 5);
+      field.lineTo(outerX - tangentX * 5, outerY - tangentY * 5);
     }
-
-    const radiusA = Math.max(48, Math.min(width, height) * 0.088 + pulse * 10);
-    const radiusB = radiusA + Math.max(22, Math.min(width, height) * 0.044);
-    field.circle(px, py, radiusA);
-    field.stroke({ color: 0x37f5ff, width: 2, alpha: 0.34 + pulse * 0.18 });
-    field.circle(px, py, radiusB);
-    field.stroke({ color: 0xb39cff, width: 1.4, alpha: 0.2 + pulse * 0.12 });
-    const tickCount = 12;
-    const spin = Date.now() * 0.0012;
-    for (let i = 0; i < tickCount; i += 1) {
-      const angle = spin + (Math.PI * 2 * i) / tickCount;
-      const inner = radiusA * 0.72;
-      const outer = radiusB + (i % 3 === 0 ? 9 : 3);
-      field.moveTo(px + Math.cos(angle) * inner, py + Math.sin(angle) * inner);
-      field.lineTo(px + Math.cos(angle) * outer, py + Math.sin(angle) * outer);
-    }
-    field.stroke({ color: 0xffffff, width: 1, alpha: 0.16 + pulse * 0.12 });
-    const clockTickCount = 16;
-    for (let i = 0; i < clockTickCount; i += 1) {
-      const angle = -spin * 0.55 + (Math.PI * 2 * i) / clockTickCount;
-      const center = radiusB + (i % 4 === 0 ? 11 : 6);
-      const length = i % 4 === 0 ? 9 : 5;
-      const tx = -Math.sin(angle);
-      const ty = Math.cos(angle);
-      const cx = px + Math.cos(angle) * center;
-      const cy = py + Math.sin(angle) * center;
-      field.moveTo(cx - tx * length * 0.5, cy - ty * length * 0.5);
-      field.lineTo(cx + tx * length * 0.5, cy + ty * length * 0.5);
-    }
-    field.stroke({ color: 0xb39cff, width: 1.25, alpha: 0.22 + pulse * 0.14 });
+    field.stroke({ color: 0xb39cff, width: 1.2, alpha: reducedMotion ? 0.24 : 0.24 + pulse * 0.14 });
+    const reactorSize = 7 + (reducedMotion ? 0 : pulse * 2);
+    field.moveTo(px - reactorSize, py);
+    field.lineTo(px + reactorSize, py);
+    field.moveTo(px, py - reactorSize);
+    field.lineTo(px, py + reactorSize);
+    field.stroke({ color: 0xffffff, width: 1.2, alpha: reducedMotion ? 0.36 : 0.36 + pulse * 0.18 });
     field.visible = true;
     field._debugSlowTimeField = {
       visible: true,
       active: true,
-      edge: Math.round(edge),
-      radius: Number(radiusB.toFixed(1)),
-      alpha: Number(alpha.toFixed(3)),
-      timeSliceCount,
-      clockTickCount,
+      visualLanguage: 'chrono_anchor_single_distortion_ring_v1',
+      radius: Number(radius.toFixed(1)),
+      alpha: Number(fieldAlpha.toFixed(3)),
+      primaryRingCount: 1,
+      timeSliceCount: 0,
+      clockTickCount: 0,
+      pairedRailCount,
+      fullScreenGeometryCount: 0,
       x: Math.round(px),
-      y: Math.round(py)
+      y: Math.round(py),
+      worldX: Math.round(worldX),
+      worldY: Math.round(worldY),
+      screenMapped: true,
+      reducedMotion
     };
   }
 
@@ -16731,7 +16861,7 @@ export class PlayScene {
   }
 
   isAuthoritativeTransitionType(type) {
-    return ['wave_clear', 'sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked'].includes(type);
+    return ['wave_start', 'wave_clear', 'sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked'].includes(type);
   }
 
   refreshMissionNotificationFocus() {
@@ -17210,6 +17340,7 @@ export class PlayScene {
       'wingHit',
       'bombBanked',
       'bonus',
+      'storm_survived',
       'bonus_core',
       'powerup',
       'repair',
@@ -17941,7 +18072,11 @@ export class PlayScene {
       display.__toastMeta.newRasterAssetCount = 0;
     }
     options.onShown?.({ display, shownAt: now, duration });
-    if (display.__toastMeta.channel === 'major') this.hud?.setNotificationFocus?.('major');
+    if (display.__toastMeta.channel === 'major') {
+      this.hud?.setNotificationFocus?.('major');
+    } else if (this.isAuthoritativeTransitionType(display.__toastMeta.type)) {
+      this.hud?.setNotificationFocus?.('transition');
+    }
 
     const majorTypes = ['boss', 'level_clear', 'rank_up', 'level_up', 'rank_boost'];
     if (majorTypes.includes(options.type)) {
@@ -18770,41 +18905,32 @@ export class PlayScene {
     const accent = Number.isFinite(options.accent) ? options.accent : (highTier ? 0xffff66 : 0xffffff);
 
     this.particleManager?.createRadialBurst?.(x, y, color, {
-      count: highTier ? 34 : 24,
-      intensity: highTier ? 1.08 : 0.78,
-      minSpeed: 1.6,
-      maxSpeed: highTier ? 6.2 : 4.8,
-      size: highTier ? 2.8 : 2.2,
-      lifetime: highTier ? 44 : 34,
+      count: highTier ? 18 : 12,
+      intensity: highTier ? 0.72 : 0.56,
+      minSpeed: 1.2,
+      maxSpeed: highTier ? 4.2 : 3.4,
+      size: highTier ? 2.2 : 1.8,
+      lifetime: highTier ? 30 : 24,
       alternateColor: accent,
-      upwardBias: 0.35
+      upwardBias: 0.22
     });
-    this.particleManager?.createHitSpark?.(x, y - 18, accent, highTier ? 1.45 : 1.05);
-    this.triggerShockwave?.(x, y, color);
-    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 3 : (highTier ? 6 : 4), highTier ? 16 : 11);
+    this.particleManager?.createHitSpark?.(x, y - 12, accent, highTier ? 1.05 : 0.82);
+    this.screenShake?.shake?.(this.game.getWidth() < 620 ? 2 : (highTier ? 3 : 2), highTier ? 10 : 7);
     AudioManager.playSfx(highTier ? 'combo_breakout' : 'combo_tick', {
       volume: highTier ? 0.58 : 0.44,
       minIntervalMs: 160
     });
-    this.emitSpectacle('combo', {
-      x,
-      y,
-      color,
-      accent,
-      intensity: highTier ? 1.24 : 0.88,
-      audioIntensity: highTier ? 1.14 : 0.82,
-      audioVolume: highTier ? 0.92 : 0.68,
-      pitchScale: highTier ? 0.94 : 1.08,
-      force: true
-    });
-
     this.lastComboCelebration = {
       triggered: true,
       startedAt: Date.now(),
-      durationMs: highTier ? 1050 : 850,
+      durationMs: highTier ? 760 : 650,
       threshold,
       multiplier,
-      reason
+      reason,
+      visualLanguage: 'compact_combo_milestone_pulse_v1',
+      radialParticleCount: highTier ? 18 : 12,
+      shockwaveCount: 0,
+      spectacleCount: 0
     };
     return this.lastComboCelebration;
   }
@@ -19486,6 +19612,8 @@ export class PlayScene {
 
   onEnemyKilled(enemy, options = {}) {
     const now = Date.now();
+    this.enemyManager?.recordCombatReadabilityDeath?.(enemy);
+    this.maybeSuppressRoutineFireAfterFinalWaveHostile(enemy);
     this.enemyManager?.recordChallengeFlightKill?.(enemy);
     const sideEffects = options.sideEffects || null;
     if (enemy?.isRareChaosVisitor) this.completeRareChaosVisitor(enemy);
@@ -21673,6 +21801,7 @@ export class PlayScene {
     storm?.cleanup?.(reason);
     this.activeMayhemRoutineWarning = null;
     this.activeMayhemReinforcementWarning = null;
+    this.pendingStormSurvivedRewards = [];
     this.novaCommandTacticalAlertUntil = 0;
     return Boolean(routine || storm);
   }
@@ -21930,6 +22059,37 @@ export class PlayScene {
       console.error('[UI] Mayhem routine reinforcement presentation failed:', error);
       return false;
     }
+  }
+
+  maybeSuppressRoutineFireAfterFinalWaveHostile(enemy) {
+    const manager = this.enemyManager;
+    if (
+      !enemy ||
+      enemy.kind === 'bonus_drone' ||
+      enemy.kind === 'boss' ||
+      manager?.phase !== 'WAVES' ||
+      manager?.state !== 'WAVE_ACTIVE' ||
+      manager?.waveEnding ||
+      manager?.spawning ||
+      manager?.hasPendingMayhemReinforcement?.() ||
+      manager?.getObjectiveEnemyCount?.() !== 0
+    ) {
+      return false;
+    }
+    this.waveTransitionFireSuppressedWaveIndex = manager.currentWaveIndex;
+    this.waveTransitionFireSuppressedLevel = manager.level;
+    const retiring = this.bulletManager?.beginPlayerTransitionRetirement?.(
+      'final_wave_hostile_defeated',
+      200
+    ) || 0;
+    if (retiring > 0) {
+      manager.markPerformance?.('combat_readability.friendly_projectile_retirement', {
+        atMs: Date.now(),
+        count: retiring,
+        durationMs: 200
+      });
+    }
+    return true;
   }
 
   showMayhemReinforcementStormWarning({ groupCount = 1, boss = false, superStorm = false, warningMs = 2000 } = {}) {
@@ -22597,125 +22757,159 @@ export class PlayScene {
   }
 
   showMayhemReinforcementStormSurvived({ groupCount = 2, score = 0, superStorm = false } = {}) {
-    const width = this.game.getWidth();
-    const height = this.game.getHeight();
-    const compact = width < 620;
-    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
     const count = Math.max(2, Math.min(8, Math.floor(Number(groupCount) || 2)));
     const appliedScore = Math.max(0, Math.floor(Number(score) || 0));
-    const duration = reducedMotion ? 900 : 1450;
     const startedAt = Date.now();
-    const primary = superStorm ? 0xff5df7 : 0xffef7e;
-    const secondary = 0x43efff;
-    const centerX = Number(this.player?.x) || width / 2;
-    const centerY = Math.max(height * 0.28, Math.min(height * 0.64, (Number(this.player?.y) || height * 0.68) - 30));
-
+    this.pendingStormSurvivedRewards ||= [];
+    this.pendingStormSurvivedRewards.push({
+      groupCount: count,
+      score: appliedScore,
+      superStorm: Boolean(superStorm),
+      queuedAt: startedAt,
+      expiresAt: startedAt + 9000
+    });
     this.lastMayhemReinforcementPresentation = {
       ...(this.lastMayhemReinforcementPresentation || {}),
-      phase: 'survived',
+      phase: 'survived_reward_pending',
       groupCount: count,
-      superStorm,
+      superStorm: Boolean(superStorm),
       score: appliedScore,
       startedAt,
-      activeUntil: startedAt + duration
+      activeUntil: 0,
+      deferredUntilCenterTransitionsClear: true,
+      legacyWheelRemoved: true
     };
+    return true;
+  }
 
+  maybeFlushPendingWaveTransitionRewards() {
+    const pending = this.pendingStormSurvivedRewards;
+    if (!Array.isArray(pending) || pending.length === 0) return false;
+    const now = Date.now();
+    while (pending.length && Number(pending[0]?.expiresAt) <= now) pending.shift();
+    if (!pending.length) return false;
+    if (this.enemyManager?.waveEnding || this.enemyManager?.state === 'WAVE_BRIEFING') return false;
+    if (['wave_clear', 'wave_start', 'sector_clear'].some((type) => this.hasNotificationType?.(type))) return false;
+
+    const reward = pending.shift();
+    const width = this.game.getWidth();
+    const compact = width < 720;
     this.enqueueToast?.(translateText('STORM SURVIVED +{score}', {
-      score: appliedScore.toLocaleString('en-US')
+      score: reward.score.toLocaleString('en-US')
     }), {
-      fontSize: compact ? 18 : 24,
-      fill: superStorm ? '#ff9cff' : '#ffef7e',
-      stroke: '#160006',
-      strokeThickness: compact ? 3 : 4,
-      slot: 'top',
-      type: 'bonus',
-      priority: 7,
-      duration: Math.min(1800, duration + 250),
-      maxWidth: width * (compact ? 0.86 : 0.58)
+      fontSize: compact ? 14 : 16,
+      fill: reward.superStorm ? '#ffb2f7' : '#ffef7e',
+      stroke: '#07131c',
+      strokeThickness: 2,
+      slot: 'corner',
+      channel: 'side',
+      type: 'storm_survived',
+      priority: 2,
+      duration: 1050,
+      minVisibleMs: 720,
+      extraReadTimeMs: 0,
+      maxQueueAgeMs: 8000,
+      restrained: true,
+      maxWidth: width * (compact ? 0.72 : 0.34),
+      onShown: () => this.spawnStormSurvivedCollapse(reward)
     });
+    return true;
+  }
 
+  spawnStormSurvivedCollapse({ groupCount = 2, score = 0, superStorm = false } = {}) {
     const layer = this.decorativeOverlay || this.gameContainer || this.container;
-    if (layer && this.game?.app?.ticker) {
-      const root = new PIXI.Container();
-      root.label = 'mayhem_reinforcement_storm_survived';
-      root.position.set(centerX, centerY);
-      root.eventMode = 'none';
-      root.blendMode = 'add';
-      layer.addChild(root);
+    const tickerHost = this.game?.app?.ticker;
+    if (!layer || !tickerHost) return false;
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
+    const durationMs = reducedMotion ? 320 : 410;
+    const centerX = Number(this.player?.x) || width / 2;
+    const centerY = Number(this.player?.y) || height * 0.68;
+    const maxRadius = Math.max(170, Math.min(200, width * 0.105));
+    const primary = superStorm ? 0xff72e8 : 0xffd166;
+    const secondary = 0x63e8ff;
+    const root = new PIXI.Container();
+    root.label = 'nova_command_storm_survived_collapse';
+    root.position.set(centerX, centerY);
+    root.zIndex = 92;
+    root.eventMode = 'none';
+    root.blendMode = 'add';
+    const geometry = new PIXI.Graphics();
+    root.addChild(geometry);
+    layer.addChild(root);
 
-      const flash = new PIXI.Graphics();
-      flash.rect(-centerX, -centerY, width, height);
-      flash.fill({ color: superStorm ? 0xff9cff : 0xffefb0, alpha: 0.2 });
-      root.addChild(flash);
-
-      const rays = new PIXI.Graphics();
-      const rayCount = reducedMotion ? 8 : 18;
-      for (let ray = 0; ray < rayCount; ray += 1) {
-        const angle = (Math.PI * 2 * ray) / rayCount;
-        const inner = compact ? 36 : 54;
-        const outer = (compact ? 120 : 210) * (0.76 + (ray % 4) * 0.09);
-        rays.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
-        rays.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
-        rays.stroke({ color: ray % 3 ? secondary : primary, width: ray % 3 ? 2 : 5, alpha: ray % 3 ? 0.34 : 0.58 });
+    let elapsedMs = 0;
+    const draw = (progress) => {
+      const easeIn = 1 - Math.pow(1 - progress, 2.4);
+      const fade = Math.max(0, 1 - Math.max(0, progress - 0.58) / 0.42);
+      const outerRadius = maxRadius - (maxRadius - 48) * easeIn;
+      const innerRadius = maxRadius * 0.72 - (maxRadius * 0.72 - 28) * easeIn;
+      geometry.clear();
+      geometry.circle(0, 0, outerRadius);
+      geometry.stroke({ color: primary, width: 2, alpha: 0.34 * fade });
+      geometry.circle(0, 0, innerRadius);
+      geometry.stroke({ color: secondary, width: 1.4, alpha: 0.3 * fade });
+      const railLength = Math.max(18, outerRadius * 0.24);
+      for (const side of [-1, 1]) {
+        const x = side * outerRadius * 0.82;
+        geometry.moveTo(x - side * railLength, -7);
+        geometry.lineTo(x, 0);
+        geometry.lineTo(x - side * railLength, 7);
       }
-      root.addChild(rays);
-
-      const rings = new PIXI.Graphics();
-      root.addChild(rings);
-      const core = new PIXI.Graphics();
-      core.poly([0, -28, 18, -10, 38, 0, 18, 10, 0, 28, -18, 10, -38, 0, -18, -10]);
-      core.fill({ color: primary, alpha: 0.8 });
-      core.stroke({ color: 0xffffff, width: 2, alpha: 0.9 });
-      root.addChild(core);
-
-      let elapsed = 0;
-      const ticker = (delta) => {
-        elapsed += (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67;
-        const t = Math.min(1, elapsed / duration);
-        const intro = Math.min(1, t / 0.14);
-        const fade = Math.pow(Math.max(0, 1 - t), 0.72);
-        const pulse = reducedMotion ? 0.5 : (Math.sin(elapsed * 0.018) + 1) * 0.5;
-        root.alpha = fade;
-        root.scale.set(0.62 + intro * 0.52 + pulse * (reducedMotion ? 0.01 : 0.06));
-        flash.alpha = Math.max(0, (1 - t / 0.24) * (reducedMotion ? 0.18 : 0.48));
-        rays.rotation += reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.008;
-        core.rotation -= reducedMotion ? 0 : (Number(delta?.deltaTime) || 1) * 0.025;
-        rings.clear();
-        for (let ring = 0; ring < 4; ring += 1) {
-          const phase = Math.min(1, Math.max(0, t * 1.35 - ring * 0.13));
-          const radius = (compact ? 48 : 72) + phase * (compact ? 180 : 330);
-          rings.circle(0, 0, radius);
-          rings.stroke({
-            color: ring % 2 ? secondary : primary,
-            width: Math.max(1, (compact ? 5 : 8) * (1 - phase)),
-            alpha: (0.56 - ring * 0.08) * (1 - phase) * fade
-          });
-        }
-        if (t >= 1 || this.game?.currentScene !== this) {
-          this.game.app.ticker.remove(ticker);
-          if (root.parent) root.parent.removeChild(root);
-          root.destroy?.({ children: true });
-        }
+      geometry.stroke({ color: secondary, width: 1.5, alpha: 0.38 * fade });
+      const pulseSize = 5 + (1 - progress) * 5;
+      geometry.moveTo(-pulseSize, 0);
+      geometry.lineTo(pulseSize, 0);
+      geometry.moveTo(0, -pulseSize);
+      geometry.lineTo(0, pulseSize);
+      geometry.stroke({ color: 0xffffff, width: 1.2, alpha: 0.46 * fade });
+      root.alpha = fade;
+      root._debugStormSurvivedCollapse = {
+        visualLanguage: 'nova_command_in_world_collapse_v1',
+        progress: Number(progress.toFixed(3)),
+        durationMs,
+        maxFootprint: Math.round(maxRadius * 2),
+        ringCount: 2,
+        pairedRailCount: 2,
+        spokeCount: 0,
+        diamondCount: 0,
+        fullScreenWashCount: 0,
+        groupCount: Math.max(2, Math.round(Number(groupCount) || 2)),
+        score: Math.max(0, Math.round(Number(score) || 0)),
+        superStorm: Boolean(superStorm),
+        reducedMotion
       };
-      this.game.app.ticker.add(ticker);
-    }
+      this.lastMayhemReinforcementPresentation = {
+        ...(this.lastMayhemReinforcementPresentation || {}),
+        phase: 'survived_collapse',
+        activeUntil: Date.now() + Math.max(0, durationMs - elapsedMs),
+        effect: { ...root._debugStormSurvivedCollapse }
+      };
+    };
+    draw(0);
+    const ticker = (delta) => {
+      elapsedMs += (Number(delta?.deltaMS) || (Number(delta?.deltaTime) || Number(delta) || 1) * 16.67);
+      const progress = Math.min(1, elapsedMs / durationMs);
+      draw(progress);
+      if (progress >= 1 || this.game?.currentScene !== this) {
+        tickerHost.remove(ticker);
+        this._activeTickers = (this._activeTickers || []).filter((activeTicker) => activeTicker !== ticker);
+        if (root.parent) root.parent.removeChild(root);
+        root.destroy?.({ children: true });
+        this.lastMayhemReinforcementPresentation = {
+          ...(this.lastMayhemReinforcementPresentation || {}),
+          phase: 'survived_complete',
+          activeUntil: 0
+        };
+      }
+    };
+    tickerHost.add(ticker);
+    this._activeTickers ||= [];
+    this._activeTickers.push(ticker);
 
-    this.particleManager?.createExplosion?.(centerX, centerY, primary, superStorm ? 1.2 : 0.92);
-    this.particleManager?.createExplosion?.(centerX, centerY, secondary, superStorm ? 1.0 : 0.72);
-    if (!reducedMotion) this.screenShake?.shake?.(superStorm ? 7 : 5, superStorm ? 18 : 14);
-    AudioManager.playSfx('combo_breakout', { force: true, volume: superStorm ? 0.72 : 0.58, minIntervalMs: 0 });
-    AudioManager.playSfx('nova_wave_clear_sweep', { force: true, volume: superStorm ? 0.72 : 0.56, minIntervalMs: 0 });
-    this.emitSpectacle('reinforcement', {
-      x: centerX,
-      y: centerY,
-      color: primary,
-      accent: secondary,
-      intensity: superStorm ? 1.24 : 0.96,
-      audioIntensity: superStorm ? 1.08 : 0.86,
-      audioVolume: 0.72,
-      pitchScale: 1.06,
-      force: true
-    });
+    this.particleManager?.createHitSpark?.(centerX, centerY, primary, superStorm ? 0.9 : 0.72);
+    AudioManager.playSfx('combo_tick', { force: true, volume: superStorm ? 0.5 : 0.42, minIntervalMs: 0 });
     return true;
   }
 

@@ -866,6 +866,10 @@ try {
   );
 
   await page.setViewportSize({ width: 1280, height: 720 });
+  await page.waitForFunction(() => (
+    Math.round(window.__game?.getWidth?.() || 0) === 1280 &&
+    Math.round(window.__game?.getHeight?.() || 0) === 720
+  ), null, { timeout: 5000 });
   const routineSideToast = await page.evaluate(() => {
     const play = window.__game.scenes.play;
     play.clearToastState();

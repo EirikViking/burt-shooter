@@ -20,13 +20,13 @@ export class ScorePopup {
     this.isMajor = Boolean(isCombo || this.isNearMiss || options.major || Number(score) >= 500);
     this.isFramed = Boolean(this.isMajor || options.framed === true);
     this.isBorderlessSignal = Boolean(this.isMajor);
-    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || (this.isMajor ? 980 : 560));
+    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || (this.isCombo ? 760 : this.isMajor ? 980 : 560));
     this.vx = Number(options.vx) || 0;
     this.vy = Number(options.vy) || (this.isMajor ? -1.55 : -1.85);
     this.clusterIndex = Math.max(0, Math.round(Number(options.clusterIndex) || 0));
     this.sourceX = Number.isFinite(options.sourceX) ? options.sourceX : x;
     this.sourceY = Number.isFinite(options.sourceY) ? options.sourceY : y;
-    this.baseScale = this.isMajor ? 1.05 : 0.92;
+    this.baseScale = this.isCombo ? 0.94 : (this.isMajor ? 1.05 : 0.92);
     this.numericScore = Math.max(0, Math.round(Number(score) || 0));
     this.comboTier = this.isCombo
       ? (this.numericScore >= 50 ? 4 : this.numericScore >= 25 ? 3 : this.numericScore >= 10 ? 2 : 1)
@@ -34,7 +34,7 @@ export class ScorePopup {
     this.authoredSignalCount = this.isFramed ? (this.isCombo ? 1 : 2) : 0;
 
     const fontSize = Number(options.fontSize) || (isCombo
-      ? [0, 24, 27, 31, 35][this.comboTier]
+      ? [0, 18, 20, 22, 24][this.comboTier]
       : (this.isFramed ? 18 : 15));
     const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
     const text = options.text
@@ -55,7 +55,9 @@ export class ScorePopup {
       primitiveSignalCount: 0,
       comboTier: this.comboTier,
       borderless: this.isBorderlessSignal,
-      visualLanguage: this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
+      visualLanguage: this.isCombo
+        ? 'compact_combo_milestone_pulse_v1'
+        : this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
       clusterIndex: this.clusterIndex
     };
 
@@ -120,10 +122,10 @@ export class ScorePopup {
         textureKey: 'combo',
         x: 0,
         y: 1,
-        width: Math.min(250, width * (1.28 + this.comboTier * 0.06)),
-        height: 46 + this.comboTier * 5,
+        width: Math.min(174, width * (1.16 + this.comboTier * 0.04)),
+        height: 34 + this.comboTier * 2,
         color: this.comboTier >= 3 ? 0xffffff : accent,
-        alpha: 0.48 + pulse * 0.22 + this.comboTier * 0.04,
+        alpha: 0.36 + pulse * 0.18 + this.comboTier * 0.025,
         pulse
       });
       if (crest && crest.parent === this.sprite) this.sprite.setChildIndex(crest, 0);
@@ -183,11 +185,11 @@ export class ScorePopup {
     }
 
     if (progress < 0.2) {
-      const scale = this.baseScale + (progress / 0.2) * (this.isMajor ? 0.28 : 0.18);
+      const scale = this.baseScale + (progress / 0.2) * (this.isCombo ? 0.14 : this.isMajor ? 0.28 : 0.18);
       this.sprite.scale.set(scale);
     } else {
-      const peak = this.baseScale + (this.isMajor ? 0.28 : 0.18);
-      const scale = peak - ((progress - 0.2) / 0.8) * (this.isMajor ? 0.24 : 0.16);
+      const peak = this.baseScale + (this.isCombo ? 0.14 : this.isMajor ? 0.28 : 0.18);
+      const scale = peak - ((progress - 0.2) / 0.8) * (this.isCombo ? 0.12 : this.isMajor ? 0.24 : 0.16);
       this.sprite.scale.set(Math.max(this.baseScale, scale));
     }
 
@@ -206,11 +208,31 @@ export class ScorePopup {
       primitiveSignalCount: 0,
       comboTier: this.comboTier,
       borderless: this.isBorderlessSignal,
-      visualLanguage: this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
+      visualLanguage: this.isCombo
+        ? 'compact_combo_milestone_pulse_v1'
+        : this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
       progress: Number(progress.toFixed(3)),
       x: Math.round(this.x),
       y: Math.round(this.y)
     };
+  }
+
+  aggregateScore(score = 0) {
+    if (this.isCombo || this.isMajor || !this.textNode) return false;
+    const amount = Math.max(0, Math.round(Number(score) || 0));
+    if (amount <= 0) return false;
+    this.numericScore += amount;
+    const text = `+${this.numericScore}`;
+    this.textNode.text = text;
+    this.sprite.text = text;
+    this.sprite.__novaScorePopupText = text;
+    this.frameWidth = Math.max(54, Math.round((this.textNode.width || 48) + 18));
+    this.lifetime = Math.min(this.lifetime, this.maxLifetime * 0.34);
+    if (this.sprite.__debugScorePopup) {
+      this.sprite.__debugScorePopup.aggregated = true;
+      this.sprite.__debugScorePopup.aggregatedScore = this.numericScore;
+    }
+    return true;
   }
 
   destroy() {
@@ -231,6 +253,8 @@ export class ScorePopupManager {
     this.pendingPopups = [];
     this.defaultMaxActivePopups = 14;
     this.maxActivePopups = this.defaultMaxActivePopups;
+    this.denseCombatCompression = 0;
+    this.aggregatedPopupCount = 0;
 
     // Combo system
     this.comboCount = 0;
@@ -255,6 +279,11 @@ export class ScorePopupManager {
     this.comboWindow = Math.max(1800, Math.min(5000, Number(windowMs) || 3200));
   }
 
+  setDenseCombatCompression(level = 0) {
+    this.denseCombatCompression = Math.max(0, Math.min(1, Number(level) || 0));
+    return this.denseCombatCompression;
+  }
+
   addScorePopup(x, y, score, options = {}) {
     const comboEligible = options.comboEligible === true;
     const now = Date.now();
@@ -276,6 +305,27 @@ export class ScorePopupManager {
     const displayScore = isCombo ? this.comboCount : score;
     const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
     const position = this.resolvePopupPosition(x, y, options);
+    const canAggregate = this.denseCombatCompression >= 0.28 &&
+      !isCombo &&
+      !options.major &&
+      !options.text &&
+      (!options.type || options.type === 'score') &&
+      Number(score) < 500;
+    if (canAggregate) {
+      const aggregateTarget = [...this.popups].reverse().find((candidate) => (
+        candidate?.active &&
+        !candidate.isCombo &&
+        !candidate.isMajor &&
+        candidate.type === 'score' &&
+        candidate.lifetime <= 320 &&
+        Math.abs((candidate.sourceX || candidate.x) - x) <= 132 &&
+        Math.abs((candidate.sourceY || candidate.y) - y) <= 96
+      ));
+      if (aggregateTarget?.aggregateScore?.(score)) {
+        this.aggregatedPopupCount += 1;
+        return aggregateTarget;
+      }
+    }
 
     const popup = new ScorePopup(position.x, position.y, displayScore, color, isCombo, {
       prefix: options.prefix,
@@ -298,6 +348,7 @@ export class ScorePopupManager {
       const stale = this.popups.shift();
       stale?.destroy?.();
     }
+    return popup;
   }
 
   separatePopupFromActive(popup) {
@@ -428,5 +479,6 @@ export class ScorePopupManager {
     this.popups = [];
     this.pendingPopups = [];
     this.comboCount = 0;
+    this.aggregatedPopupCount = 0;
   }
 }

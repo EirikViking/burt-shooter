@@ -458,6 +458,8 @@ export class Boss {
       this.sprite.addChild(this.healthText);
     }
     this.healthBar.__debugBossHealthBar = {
+      semanticRole: 'dominant_boss_health',
+      missionStatusDuplicatesHealth: false,
       tickCount: bossPhaseThresholds.length,
       healthPercent: Number(healthPercent.toFixed(3)),
       lowHealth,
@@ -2093,12 +2095,12 @@ export class Boss {
   }
 
   getTelegraphVfxPalette(type, fallbackColor) {
-    if (type === 'lance') return { warning: 0x72fff1, hot: 0xffffff, edge: 0xff4fe4 };
-    if (type === 'mirror') return { warning: 0xff6fff, hot: 0xffffff, edge: 0x74fff0 };
-    if (type === 'cone' || type === 'fan' || type === 'aim') return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0xffa83d };
-    if (type === 'wall') return { warning: 0xff8f3d, hot: 0xffffff, edge: 0x8cffb5 };
-    if (type === 'ring' || type === 'adds' || type === 'radial') return { warning: fallbackColor || 0xff3355, hot: 0xffffff, edge: 0xffe066 };
-    return { warning: fallbackColor || 0xfff45c, hot: 0xffffff, edge: 0x72fff1 };
+    if (type === 'lance') return { warning: 0xff665c, hot: 0xffffff, edge: 0xffc45c };
+    if (type === 'mirror') return { warning: 0xff5f72, hot: 0xffffff, edge: 0xffb24f };
+    if (type === 'cone' || type === 'fan' || type === 'aim') return { warning: 0xff8a4a, hot: 0xffffff, edge: 0xffd166 };
+    if (type === 'wall') return { warning: 0xff704d, hot: 0xffffff, edge: 0xffc45c };
+    if (type === 'ring' || type === 'adds' || type === 'radial') return { warning: 0xff4f67, hot: 0xffffff, edge: 0xffd166 };
+    return { warning: fallbackColor || 0xff6b57, hot: 0xffffff, edge: 0xffc45c };
   }
 
   drawTelegraphChargeHalo(layer, originX, originY, radius, palette, progress, options = {}) {

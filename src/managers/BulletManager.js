@@ -12,6 +12,11 @@ export class BulletManager {
     this.pendingEnemyBullets = [];
     this.orphanSweepInterval = 120;
     this.framesUntilOrphanSweep = this.orphanSweepInterval;
+    this.adaptiveFriendlyVfxEnabled = true;
+    this.friendlyVfxCompression = 0;
+    this.friendlyVfxCompressionTarget = 0;
+    this.friendlyVfxCompressionStartCount = 44;
+    this.friendlyVfxCompressionFullCount = 150;
     this.cleanupDiagnostics = {
       updatePasses: 0,
       disposedPlayer: 0,
@@ -88,6 +93,7 @@ export class BulletManager {
       this.disposeBullet(bullet, 'player_cap_rejected', 'player');
       return false;
     }
+    bullet.setFriendlyVfxCompression?.(this.friendlyVfxCompression);
     this.playerBullets.push(bullet);
     this.attachBulletVisual(bullet);
     return true;
@@ -184,6 +190,57 @@ export class BulletManager {
     return cleared;
   }
 
+  beginPlayerTransitionRetirement(reason = 'wave_transition', durationMs = 200) {
+    let retiring = 0;
+    for (const bullet of this.playerBullets) {
+      if (bullet?.beginTransitionRetirement?.(durationMs, reason)) retiring += 1;
+    }
+    this.cleanupDiagnostics.lastTransitionRetirement = {
+      reason,
+      retiring,
+      durationMs: Math.max(150, Math.min(250, Number(durationMs) || 200)),
+      at: Date.now()
+    };
+    return retiring;
+  }
+
+  setAdaptiveFriendlyVfxEnabled(enabled = true) {
+    this.adaptiveFriendlyVfxEnabled = Boolean(enabled);
+    if (!this.adaptiveFriendlyVfxEnabled) {
+      this.friendlyVfxCompression = 0;
+      this.friendlyVfxCompressionTarget = 0;
+      for (const bullet of this.playerBullets) bullet?.setFriendlyVfxCompression?.(0);
+    }
+    return this.adaptiveFriendlyVfxEnabled;
+  }
+
+  updateAdaptiveFriendlyVfxCompression(delta = 1) {
+    const activeCount = this.playerBullets.reduce(
+      (count, bullet) => count + (bullet?.active !== false && !bullet?.isPriorityPlayerProjectile?.() ? 1 : 0),
+      0
+    );
+    const span = Math.max(1, this.friendlyVfxCompressionFullCount - this.friendlyVfxCompressionStartCount);
+    const target = this.adaptiveFriendlyVfxEnabled
+      ? Math.max(0, Math.min(1, (activeCount - this.friendlyVfxCompressionStartCount) / span))
+      : 0;
+    const blend = Math.max(0.08, Math.min(0.34, (Number(delta) || 1) * 0.12));
+    this.friendlyVfxCompressionTarget = target;
+    this.friendlyVfxCompression += (target - this.friendlyVfxCompression) * blend;
+    if (Math.abs(this.friendlyVfxCompression - target) < 0.005) this.friendlyVfxCompression = target;
+    for (const bullet of this.playerBullets) {
+      if (bullet?.active !== false) bullet.setFriendlyVfxCompression?.(this.friendlyVfxCompression);
+    }
+    this.cleanupDiagnostics.friendlyVfxCompression = {
+      enabled: this.adaptiveFriendlyVfxEnabled,
+      activeRoutineCount: activeCount,
+      startCount: this.friendlyVfxCompressionStartCount,
+      fullCount: this.friendlyVfxCompressionFullCount,
+      target: Number(target.toFixed(3)),
+      level: Number(this.friendlyVfxCompression.toFixed(3))
+    };
+    return this.friendlyVfxCompression;
+  }
+
   clearEnemyBullets(reason = 'enemy_cleanup') {
     const cleared = this.clearBulletList(this.enemyBullets, reason, 'enemy');
     const pending = this.clearBulletList(this.pendingEnemyBullets, reason, 'pending');
@@ -234,6 +291,7 @@ export class BulletManager {
 
   update(delta, enemyScale = 1) {
     this.cleanupDiagnostics.updatePasses += 1;
+    this.updateAdaptiveFriendlyVfxCompression(delta);
     this.compactBulletList(this.playerBullets, {
       delta,
       kind: 'player',
@@ -282,6 +340,13 @@ export class BulletManager {
       inPlaceCompaction: true,
       orphanSweepInterval: this.orphanSweepInterval,
       framesUntilOrphanSweep: this.framesUntilOrphanSweep,
+      adaptiveFriendlyVfx: {
+        enabled: this.adaptiveFriendlyVfxEnabled,
+        level: Number(this.friendlyVfxCompression.toFixed(3)),
+        target: Number(this.friendlyVfxCompressionTarget.toFixed(3)),
+        startCount: this.friendlyVfxCompressionStartCount,
+        fullCount: this.friendlyVfxCompressionFullCount
+      },
       ...this.cleanupDiagnostics,
       lastCleanup: this.cleanupDiagnostics.lastCleanup
         ? { ...this.cleanupDiagnostics.lastCleanup }

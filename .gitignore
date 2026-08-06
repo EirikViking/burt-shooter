@@ -7,6 +7,7 @@ RESCUE_*.txt
 .claude/
 .codex-snapshots/
 .wrangler/
+.enjin/
 test-results/
 performance-video/
 tmp/

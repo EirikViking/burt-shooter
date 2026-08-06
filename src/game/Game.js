@@ -111,6 +111,11 @@ export class Game {
     this.currentScene = null;
     this.currentSceneName = 'boot';
     this.score = 0;
+    // Optional edition-owned score controller. The normal and Steam builds
+    // leave this null, so their score and run lifecycle remain unchanged.
+    this.scoreGate = null;
+    this.enjinEditionModeLocked = null;
+    this.enjinEditionController = null;
     this.level = 1;
     this.lives = 3;
     this.scoreMultiplier = 1;
@@ -329,8 +334,10 @@ export class Game {
   }
 
   async startGame(spriteKey, options = {}) {
+    if (this.scoreGate?.completed) return false;
+    this.scoreGate?.reset?.();
     this.prepareGameplayInputFocus();
-    const requestedRunMode = normalizeRunMode(options.runMode);
+    const requestedRunMode = normalizeRunMode(this.enjinEditionModeLocked || options.runMode);
     const scoutAnomaly = requestedRunMode === RUN_MODES.SCOUT
       ? getScoutAnomaly(options.scoutAnomalyId || readScoutAnomalySelection().id)
       : null;
@@ -497,7 +504,10 @@ export class Game {
     AudioManager.silenceVoicePlayback?.('gameplay_start_handoff');
     this.switchScene('play');
     this.prepareGameplayInputFocus();
-    if (!isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {
+    // The Enjin run is a fixed qualification challenge, not a ranked
+    // leaderboard chase. Avoid loading the Steam/local personal-best target
+    // so the first enemy cannot trigger a misleading "NEW PERSONAL BEST".
+    if (!this.enjinEditionModeLocked && !isMayhemPerformanceOptionEnabled('noLeaderboardTargets')) {
       this.primeHighscoreChaseTarget();
       this.primeGlobalLeaderboardTargets();
     }
@@ -890,6 +900,7 @@ export class Game {
 
   addScore(points, source = 'baseScore') {
     if (this.finalScoreLocked) return 0;
+    if (this.scoreGate?.frozen) return 0;
     const base = Number(points) || 0;
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playScene = this.scenes?.play;
@@ -897,8 +908,22 @@ export class Game {
     const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const playerMult = playScene?.player?.scoreMultiplier || 1;
     const preDangerAward = normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
-    const applied = this.getScoreAward(points);
+    const candidateApplied = this.getScoreAward(points);
+    const gateDecision = this.scoreGate?.acceptAward?.(candidateApplied, {
+      source,
+      previousScore: this.score,
+      rawScore: this.score + candidateApplied,
+      level: this.level,
+      lives: this.lives
+    }) || null;
+    const applied = gateDecision ? gateDecision.applied : candidateApplied;
     this.score += applied;
+    if (gateDecision?.completed) {
+      this.score = gateDecision.score;
+      this.finalScoreLocked = true;
+      this.finalScoreSnapshot = gateDecision.score;
+      this.finalScoreLockReason = 'score_gate';
+    }
     this.updateNoRepairReceiptsQualification();
     const breakdownKey = this.scoreBreakdown[source] !== undefined ? source : 'baseScore';
     this.scoreBreakdown[breakdownKey] += applied;
@@ -938,6 +963,15 @@ export class Game {
       measurePerformance('rank_highscore_cue_update.global_leaderboard', () => this.updateGlobalLeaderboardVoiceCues());
       measurePerformance('rank_highscore_cue_update.highscore_chase', () => this.updateHighscoreChaseCues());
     }
+    if (gateDecision?.completed) {
+      this.scoreGate.onReached?.({
+        ...gateDecision,
+        score: this.score,
+        source,
+        level: this.level,
+        lives: this.lives
+      });
+    }
     return applied;
   }
 
@@ -947,6 +981,26 @@ export class Game {
     sectorStartCheckpoint = null,
     dailySignalContract = this.dailySignalContract
   } = {}) {
+    if (this.enjinEditionModeLocked) {
+      return {
+        targetScore: 0,
+        targetSector: null,
+        targetTimeSeconds: null,
+        goalMode: 'score',
+        bestAttemptSector: null,
+        hasDailyClear: false,
+        runMode,
+        source: 'enjin_edition',
+        syncingTarget: false,
+        checkpoint: null,
+        surpassed: true,
+        celebrationFired: false,
+        celebrationScore: 0,
+        milestones: new Set(),
+        lastTauntAtMs: 0,
+        tauntIndex: 0
+      };
+    }
     const isSectorStart = runMode === RUN_MODES.SECTOR_START;
     const isDailySignal = runMode === RUN_MODES.DAILY_SIGNAL;
     const isOverrun = isOverrunRunMode(runMode);
@@ -1702,6 +1756,11 @@ export class Game {
   }
 
   update(delta) {
+    if (this.scoreGate?.frozen) {
+      this.scoreGate.onFrozenFrame?.(this);
+      this.syncGameplayCursor();
+      return;
+    }
     if (this.currentScene && this.currentScene.update) {
       this.currentScene.update(delta);
     }

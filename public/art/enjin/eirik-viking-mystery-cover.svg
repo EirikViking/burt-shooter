@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="350" height="350" viewBox="0 0 350 350" role="img" aria-labelledby="title desc">
+  <title id="title">Eirik The Viking Mystery Beam</title>
+  <desc id="desc">A dark cyan and magenta mystery card for the Eirik The Viking Beam.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071528"/>
+      <stop offset="1" stop-color="#210c39"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#44f0ff"/>
+      <stop offset="1" stop-color="#ff4bd8"/>
+    </linearGradient>
+  </defs>
+  <rect width="350" height="350" fill="url(#bg)"/>
+  <path d="M18 46h314M18 304h314M46 18v314M304 18v314" stroke="#44f0ff" stroke-opacity=".35"/>
+  <path d="M56 230l119-144 119 144-25 0-94-109-94 109z" fill="none" stroke="url(#glow)" stroke-width="5"/>
+  <circle cx="175" cy="165" r="44" fill="#0d1930" stroke="#ff4bd8" stroke-width="4"/>
+  <path d="M151 174c15 15 33 15 48 0M161 144c-14 11-20 24-18 39M189 144c14 11 20 24 18 39" fill="none" stroke="#44f0ff" stroke-width="5" stroke-linecap="round"/>
+  <text x="175" y="60" text-anchor="middle" fill="#44f0ff" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="3">EIRIK THE VIKING</text>
+  <text x="175" y="279" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="22" font-weight="700" letter-spacing="4">MYSTERY BEAM</text>
+  <text x="175" y="302" text-anchor="middle" fill="#ff4bd8" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="2">NOVA SWARM WEB3 ARCADE</text>
+</svg>

@@ -857,10 +857,12 @@ export class HUD {
     const state = manager?.state || 'IDLE';
 
     if (phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE') {
-      const bossHealth = manager?.boss ? Math.max(0, Math.ceil(manager.boss.health)) : null;
-      this.missionText.text = bossHealth === null
-        ? 'BOSS SIGNAL INBOUND'
-        : `BOSS HP ${bossHealth}`;
+      const boss = manager?.boss;
+      const bossName = String(boss?.name || '').trim();
+      const bossPhase = Math.max(1, Math.min(3, Math.round(Number(boss?.phase) || 1)));
+      this.missionText.text = bossName
+        ? `${bossName} // ${translateText('PHASE')} ${bossPhase}`
+        : translateText('BOSS SIGNAL INBOUND');
       this.updateMissionProgress({
         state,
         phase: 'BOSS',
@@ -1162,8 +1164,13 @@ export class HUD {
   }
 
   setNotificationFocus(focus = 'none') {
+    const previousFocus = this.notificationFocus;
     this.notificationFocus = focus === 'major' || focus === 'transition' ? focus : 'none';
     this.updateMissionPriorityVisual(this.missionPriorityState);
+    if (previousFocus !== 'none' && this.notificationFocus === 'none') {
+      this.updateMissionStatus();
+      this.updateTacticalDirective();
+    }
   }
 
   updateMissionPriorityVisual({ isBoss = false, isClear = false, isBriefing = false, pressure = 0 } = {}) {
@@ -1219,15 +1226,18 @@ export class HUD {
     this.missionFrameArt.alpha = 0;
 
     this.missionLabel.alpha = (critical ? 0.9 : 0.68) * focusAlpha;
-    this.missionText.alpha = this.notificationFocus === 'none' ? 1 : focusAlpha * 0.72;
+    const semanticSuppressed = this.notificationFocus === 'transition';
+    this.missionText.alpha = semanticSuppressed
+      ? 0
+      : this.notificationFocus === 'none' ? 1 : focusAlpha * 0.72;
     this.missionText.style.fill = immediateDanger ? '#fff0d8' : '#f8fbff';
-    this.directiveText.alpha = 0.62 * focusAlpha;
-    this.directiveProgressBg.alpha = 0.56 * focusAlpha;
-    this.directiveProgressFill.alpha = 0.72 * focusAlpha;
-    this.missionProgressBg.alpha = focusAlpha;
-    this.missionProgressFill.alpha = focusAlpha;
-    this.missionProgressActive.alpha = focusAlpha;
-    this.missionProgressTicks.alpha = focusAlpha;
+    this.directiveText.alpha = semanticSuppressed ? 0 : 0.62 * focusAlpha;
+    this.directiveProgressBg.alpha = semanticSuppressed ? 0 : 0.56 * focusAlpha;
+    this.directiveProgressFill.alpha = semanticSuppressed ? 0 : 0.72 * focusAlpha;
+    this.missionProgressBg.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressFill.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressActive.alpha = semanticSuppressed ? 0 : focusAlpha;
+    this.missionProgressTicks.alpha = semanticSuppressed ? 0 : focusAlpha;
     this.missionPanel._debugPriority = {
       tier: critical ? 'critical' : 'objective',
       boss: isBoss,
@@ -1237,6 +1247,10 @@ export class HUD {
       accent,
       notificationFocus: this.notificationFocus,
       semanticFrozen: this.notificationFocus !== 'none',
+      semanticSuppressed,
+      missionTextAlpha: Number(this.missionText.alpha.toFixed(3)),
+      directiveTextAlpha: Number(this.directiveText.alpha.toFixed(3)),
+      progressAlpha: Number(this.missionProgressBg.alpha.toFixed(3)),
       authoredFrameReady: false,
       deterministicFrameReady: Boolean(this.missionFrameGeometry?.root),
       frame: this.missionFrameGeometry?.debug || null,

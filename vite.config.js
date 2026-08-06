@@ -26,10 +26,19 @@ try {
   gitSha = process.env.GIT_SHA || gitSha;
 }
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  resolve: {
+    alias: {
+      '@nova-enjin-edition': path.resolve(
+        __dirname,
+        mode === 'enjin' ? 'src/enjin/enjinEdition.js' : 'src/enjin/enjinEdition.standard.js'
+      )
+    }
+  },
   define: {
     __BUILD_ID__: JSON.stringify(buildId),
-    __GIT_SHA__: JSON.stringify(gitSha)
+    __GIT_SHA__: JSON.stringify(gitSha),
+    __NOVA_EDITION__: JSON.stringify(mode === 'enjin' ? 'enjin' : 'standard')
   },
   base: './',
   build: {
@@ -50,4 +59,4 @@ export default defineConfig({
   server: {
     port: 3000
   }
-});
+}));

@@ -19,6 +19,8 @@ import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js'
 
 const sourceText = Object.freeze({
   "ROUTE": "\uacbd\ub85c",
+  "FULL STEAM VERSION REQUIRED": "\uc804\uccb4 STEAM \ubc84\uc804\uc774 \ud544\uc694\ud569\ub2c8\ub2e4",
+  "STEAM BUILD ONLY": "STEAM \ube4c\ub4dc \uc804\uc6a9",
   "ACE CONTACT": "\uc5d0\uc774\uc2a4 \uc811\ucd09",
   "ACE CONTRACT": "\uc5d0\uc774\uc2a4 \uacc4\uc57d",
   "DESTROY THE GOLD-MARKED ACE": "\uae08\uc0c9 \ud45c\uc2dd\uc758 \uc5d0\uc774\uc2a4\ub97c \uaca9\ud30c\ud558\uc138\uc694",

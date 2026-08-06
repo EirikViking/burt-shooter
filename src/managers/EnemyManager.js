@@ -277,6 +277,8 @@ export class EnemyManager {
     this.waveStragglerPressureLastAt = 0;
     this.waveStragglerPressureCount = 0;
     this.waveStragglerRetreatTriggered = false;
+    this.combatReadabilityEnemySequence = 0;
+    this.waveClearStartedAtMs = 0;
 
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
@@ -379,6 +381,7 @@ export class EnemyManager {
 
     // WAVE FIX: Reset wave ending state
     this.waveEnding = false;
+    this.waveClearStartedAtMs = 0;
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
     this.resetWaveWatchdog();
@@ -640,6 +643,69 @@ export class EnemyManager {
 
   markPerformance(label, details = {}) {
     this.game?.scenes?.play?.performanceDiagnostics?.mark?.(label, details);
+  }
+
+  isCombatReadabilitySignatureEnemy(enemy) {
+    if (!enemy) return false;
+    return Boolean(
+      enemy.kind === 'boss' ||
+      enemy.kind === 'elite_middle_ship' ||
+      enemy.kind === 'danger_mid_ship' ||
+      enemy.isEliteMiddleShip ||
+      enemy.isRareChaosVisitor ||
+      enemy.middleShipProfile ||
+      enemy.generatedProfile?.signature === true
+    );
+  }
+
+  ensureCombatReadabilityIdentity(enemy) {
+    if (!enemy || enemy.kind === 'bonus_drone') return null;
+    if (!this.game?.scenes?.play?.performanceDiagnostics?.enabled) return null;
+    if (!enemy.__combatReadabilityId) {
+      this.combatReadabilityEnemySequence += 1;
+      enemy.__combatReadabilityId = `L${Math.max(1, Number(this.level) || 1)}-E${this.combatReadabilityEnemySequence}`;
+      enemy.__combatReadabilitySpawnedAtMs = Date.now();
+      enemy.__combatReadabilitySignature = this.isCombatReadabilitySignatureEnemy(enemy);
+      this.markPerformance('combat_readability.enemy_spawn', {
+        id: enemy.__combatReadabilityId,
+        atMs: enemy.__combatReadabilitySpawnedAtMs,
+        kind: enemy.kind || enemy.type || 'enemy',
+        signature: enemy.__combatReadabilitySignature,
+        boss: enemy.kind === 'boss',
+        level: this.level,
+        wave: this.currentWaveIndex + 1
+      });
+    }
+    return enemy.__combatReadabilityId;
+  }
+
+  recordCombatReadabilityFirstAttack(enemy) {
+    const id = this.ensureCombatReadabilityIdentity(enemy);
+    if (!id || enemy.__combatReadabilityFirstAttackAtMs) return false;
+    enemy.__combatReadabilityFirstAttackAtMs = Date.now();
+    this.markPerformance('combat_readability.enemy_first_attack', {
+      id,
+      atMs: enemy.__combatReadabilityFirstAttackAtMs,
+      spawnToFirstAttackMs: Math.max(0, enemy.__combatReadabilityFirstAttackAtMs - enemy.__combatReadabilitySpawnedAtMs),
+      signature: Boolean(enemy.__combatReadabilitySignature),
+      boss: enemy.kind === 'boss'
+    });
+    return true;
+  }
+
+  recordCombatReadabilityDeath(enemy) {
+    const id = this.ensureCombatReadabilityIdentity(enemy);
+    if (!id || enemy.__combatReadabilityDeathAtMs) return false;
+    enemy.__combatReadabilityDeathAtMs = Date.now();
+    this.markPerformance('combat_readability.enemy_death', {
+      id,
+      atMs: enemy.__combatReadabilityDeathAtMs,
+      spawnToDeathMs: Math.max(0, enemy.__combatReadabilityDeathAtMs - enemy.__combatReadabilitySpawnedAtMs),
+      attackedBeforeDeath: Boolean(enemy.__combatReadabilityFirstAttackAtMs),
+      signature: Boolean(enemy.__combatReadabilitySignature),
+      boss: enemy.kind === 'boss'
+    });
+    return true;
   }
 
   getNormalWaveDifficultyLevel(level = this.level) {
@@ -2150,7 +2216,9 @@ export class EnemyManager {
           }
           // Start wave ending immediately when last objective enemy dies
           this.waveEnding = true;
+          this.waveClearStartedAtMs = Date.now();
           this.markPerformance('wave_clear.objectives_zero', {
+            atMs: this.waveClearStartedAtMs,
             level: this.level,
             wave: this.currentWaveIndex + 1,
             total: this.normalWavesTotal
@@ -2160,6 +2228,17 @@ export class EnemyManager {
           const playScene = this.game.scenes.play;
           if (playScene?.clearEnemyBullets) {
             playScene.clearEnemyBullets('wave_clear');
+          }
+          const retiringFriendlyProjectiles = playScene?.bulletManager?.beginPlayerTransitionRetirement?.(
+            'wave_clear_no_targets',
+            200
+          ) || 0;
+          if (retiringFriendlyProjectiles > 0) {
+            this.markPerformance('combat_readability.friendly_projectile_retirement', {
+              atMs: Date.now(),
+              count: retiringFriendlyProjectiles,
+              durationMs: 200
+            });
           }
           let bonusDroneCount = 0;
           if (playScene && playScene.getWaveCleanupTargets) {
@@ -2541,6 +2620,7 @@ export class EnemyManager {
       }
 
       const isBoss = enemy.kind === 'boss';
+      this.ensureCombatReadabilityIdentity(enemy);
       enemy.update(isBoss ? dt : dt * enemySpeedMult, playerX, playerY);
 
       if (enemy.challengeFlightReticle) {
@@ -2577,6 +2657,7 @@ export class EnemyManager {
         if (shots) {
           if (Array.isArray(shots)) shots.forEach(s => this.game.scenes.play.bulletManager.addEnemyBullet(s));
           else this.game.scenes.play.bulletManager.addEnemyBullet(shots);
+          this.recordCombatReadabilityFirstAttack(enemy);
           this.playEnemyShotFeedback(enemy, playerX, playerY);
         }
       }
@@ -2835,6 +2916,16 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    if (this.waveClearStartedAtMs && !config?.isMayhemReinforcement && !config?.allowConcurrentSpawn) {
+      const nextWaveActiveAtMs = Date.now();
+      this.markPerformance('combat_readability.wave_transition_complete', {
+        atMs: nextWaveActiveAtMs,
+        level: this.level,
+        wave: this.currentWaveIndex + 1,
+        waveClearToActiveMs: Math.max(0, nextWaveActiveAtMs - this.waveClearStartedAtMs)
+      });
+      this.waveClearStartedAtMs = 0;
+    }
     this.markPerformance('wave_spawn.begin', {
       level: this.level,
       wave: this.currentWaveIndex + 1,
@@ -5016,6 +5107,14 @@ export class EnemyManager {
 
   onWaveCleared() {
     console.log('Wave Cleared!');
+    this.markPerformance('combat_readability.wave_clear_presentation', {
+      atMs: Date.now(),
+      level: this.level,
+      wave: this.currentWaveIndex + 1,
+      cleanupDurationMs: this.waveClearStartedAtMs
+        ? Math.max(0, Date.now() - this.waveClearStartedAtMs)
+        : null
+    });
     console.log(`[BossPhase] level=${this.level} phase=${this.phase} waveCleared waveIndex=${this.currentWaveIndex} of ${this.normalWavesTotal}`);
     if (this.phase !== 'WAVES') return;
 
