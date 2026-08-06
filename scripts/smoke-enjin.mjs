@@ -3,6 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from 'playwright';
+import QRCode from 'qrcode';
+import { getWalletClaimUrl } from '../src/enjin/api.js';
 
 const root = process.cwd();
 const outputDir = path.join(root, 'test-results', `enjin-mvp-${new Date().toISOString().replaceAll(':', '-').replaceAll('.', '-')}`);
@@ -14,6 +16,17 @@ const interactionTimeout = remoteBaseUrl ? 60_000 : 30_000;
 const smokeUrl = () => `${baseUrl}/?enjin_test=1&cb=${Date.now()}`;
 const chromeExecutablePath = process.env.CHROME_PATH
   || (process.platform === 'win32' ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' : undefined);
+
+function qrPath(value) {
+  const qr = QRCode.create(String(value), { errorCorrectionLevel: 'M' });
+  const cells = [];
+  for (let row = 0; row < qr.modules.size; row += 1) {
+    for (let column = 0; column < qr.modules.size; column += 1) {
+      if (qr.modules.get(row, column)) cells.push(`M${column} ${row}h1v1h-1z`);
+    }
+  }
+  return cells.join('');
+}
 
 async function waitForServer() {
   for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -168,16 +181,22 @@ async function main() {
     assert.equal(qrPixels.darkFill, '#07101e');
     assert.equal(qrPixels.connected, true);
 
-    await page.evaluate(() => {
-      window.__enjinMvp.reward.claimUrl = `https://nft.io/beam/claim/${'A'.repeat(310)}`;
+    const nftIoClaimUrl = `https://nft.io/beam/claim/${'A'.repeat(310)}`;
+    const walletClaimUrl = `https://platform.enjin.io/claim/${'A'.repeat(310)}`;
+    assert.equal(getWalletClaimUrl(nftIoClaimUrl), walletClaimUrl);
+    await page.evaluate((claimUrl) => {
+      window.__enjinMvp.reward.claimUrl = claimUrl;
       window.__enjinMvp.renderCompletion();
-    });
+    }, nftIoClaimUrl);
     const longQrPixels = await page.locator('[data-enjin-qr] svg').evaluate((svg) => ({
       pathLength: svg.querySelector('path')?.getAttribute('d')?.length || 0,
-      darkFill: svg.querySelector('path')?.getAttribute('fill') || ''
+      darkFill: svg.querySelector('path')?.getAttribute('fill') || '',
+      path: svg.querySelector('path')?.getAttribute('d') || ''
     }));
     assert.ok(longQrPixels.pathLength > 5_000, 'long NFT.io claim URL produced an empty QR');
     assert.equal(longQrPixels.darkFill, '#07101e');
+    assert.equal(longQrPixels.path, qrPath(walletClaimUrl), 'QR did not encode the official Enjin Wallet claim endpoint');
+    assert.notEqual(longQrPixels.path, qrPath(nftIoClaimUrl), 'QR still encoded the NFT.io web claim page');
     await page.locator('[data-enjin-qr]').screenshot({ path: path.join(outputDir, 'claim-qr-long-url.png') });
     const completionCopy = await page.locator('#enjin-shell').innerText();
     assert.match(completionCopy, /CLAIM YOUR FREE ENJIN NFT/);
@@ -212,6 +231,13 @@ async function main() {
     await page.screenshot({ path: path.join(outputDir, 'claim-mobile-390x844.png'), fullPage: true });
     assert.ok(await page.locator('.enjin-mobile-only[data-enjin-action="open-claim"]').count(), 'mobile claim CTA missing');
     assert.match(await page.locator('.enjin-mobile-only[data-enjin-action="open-claim"]').innerText(), /OPEN ENJIN CLAIM/);
+    await page.evaluate(() => {
+      window.__openedClaimUrls = [];
+      window.open = (url) => { window.__openedClaimUrls.push(String(url)); };
+    });
+    await page.locator('.enjin-mobile-only[data-enjin-action="open-claim"]').click();
+    await page.waitForFunction(() => window.__openedClaimUrls?.length === 1);
+    assert.equal(await page.evaluate(() => window.__openedClaimUrls[0]), walletClaimUrl, 'mobile claim CTA did not open the official Enjin Wallet endpoint');
     await page.reload({ waitUntil: navigationWaitUntil });
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete');
     assert.ok(!await page.locator('[data-enjin-action="start"]').count(), 'completed identity can start again after refresh');
@@ -263,8 +289,10 @@ async function main() {
         'steam_only_mode_notice',
         'exact_30000_completion',
         'post_gate_state_is_frozen_after_5_seconds',
-          'claim_qr_renders_locally',
-          'refresh_restores_claim_qr',
+        'claim_qr_renders_locally',
+        'claim_qr_uses_official_wallet_endpoint',
+        'mobile_claim_uses_official_wallet_endpoint',
+        'refresh_restores_claim_qr',
         'steam_utm_link',
         'refresh_restores_completion_without_replay',
         'below_threshold_retry'

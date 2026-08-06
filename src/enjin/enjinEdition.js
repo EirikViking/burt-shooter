@@ -8,6 +8,7 @@ import {
   getCampaign,
   getCompletionStatus,
   getReward,
+  getWalletClaimUrl,
   markRewardOpened,
   startRun
 } from './api.js';
@@ -456,7 +457,7 @@ export class EnjinEditionController {
     const container = this.root.querySelector('[data-enjin-qr]');
     if (!container || !this.reward?.claimUrl) return;
     try {
-      const svg = createClaimQrSvg(this.reward.claimUrl);
+      const svg = createClaimQrSvg(getWalletClaimUrl(this.reward.claimUrl));
       if (this.mode === 'complete' && container.isConnected) container.replaceChildren(svg);
     } catch {
       container.textContent = 'QR unavailable';
@@ -467,7 +468,7 @@ export class EnjinEditionController {
     if (!this.reward?.claimUrl) return;
     await markRewardOpened(this.reward.assignmentId);
     this.reward.status = 'CLAIM OPENED';
-    window.open(this.reward.claimUrl, '_blank', 'noopener,noreferrer');
+    window.open(getWalletClaimUrl(this.reward.claimUrl), '_blank', 'noopener,noreferrer');
     const note = this.root.querySelector('.enjin-mock-note');
     if (note && !this.reward.mock) note.textContent = 'CLAIM OPENED';
   }

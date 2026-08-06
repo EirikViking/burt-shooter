@@ -2684,3 +2684,4 @@ Original request: use the latest 3:04 gameplay video as primary evidence; trace 
 - Replaced the asynchronous HTML-string QR path with synchronous, connected-DOM SVG construction from the QR matrix.
 - Added regression coverage using a long NFT.io-shaped mock Beam URL; no real Beam claim was opened or consumed.
 - Enjin smoke coverage, five-second completion freeze, completion restoration, standard-build Enjin isolation, and visual QR inspection passed before preview deployment.
+- NFT.io exports both a browser `Claim link` and a raw `Code`, but its official QR encodes `https://platform.enjin.io/claim/{Code}`. Encoding the exported NFT.io page URL sent Enjin Wallet down the wrong route and produced a false `no more claims` error despite an Active 0/20 campaign. The desktop QR and mobile open action now derive the official wallet endpoint; the copied browser fallback remains the original NFT.io link.

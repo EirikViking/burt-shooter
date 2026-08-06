@@ -1,5 +1,7 @@
 const LOCAL_STATE_KEY = 'novaSwarm.enjin.mvp.v1';
 const MOCK_CLAIM_ORIGIN = 'https://mock.invalid/enjin/claim/';
+const NFT_IO_CLAIM_PREFIX = '/beam/claim/';
+const ENJIN_WALLET_CLAIM_ORIGIN = 'https://platform.enjin.io';
 
 const DEFAULT_CAMPAIGN = Object.freeze({
   id: 'eirik-viking-vault-1',
@@ -19,6 +21,20 @@ function shouldUseMockClaims() {
     || hostname === '127.0.0.1'
     || hostname === '[::1]'
     || new URLSearchParams(window.location.search).has('enjin_test');
+}
+
+export function getWalletClaimUrl(claimUrl) {
+  try {
+    const parsed = new URL(String(claimUrl || ''));
+    if (parsed.protocol !== 'https:' || parsed.hostname !== 'nft.io' || !parsed.pathname.startsWith(NFT_IO_CLAIM_PREFIX)) {
+      return String(claimUrl || '');
+    }
+    const code = parsed.pathname.slice(NFT_IO_CLAIM_PREFIX.length);
+    if (!code || code.includes('/')) return String(claimUrl || '');
+    return `${ENJIN_WALLET_CLAIM_ORIGIN}/claim/${code}`;
+  } catch {
+    return String(claimUrl || '');
+  }
 }
 
 function readLocalState() {
