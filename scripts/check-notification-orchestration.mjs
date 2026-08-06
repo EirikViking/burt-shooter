@@ -276,7 +276,8 @@ try {
       pendingKind: play.pendingCabinetWonder?.kind || null
     };
     play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
-    await wait(180);
+    const wonderPreludeLeadMs = Number(play.pendingCabinetWonder?.preludeLeadMs) || 1500;
+    await wait(wonderPreludeLeadMs + 180);
     const wonderAfterWaveClear = play.getCabinetWonderDebugState();
     play.clearCabinetWonder('sequence_probe_complete');
     play.pendingCabinetWonder = null;
