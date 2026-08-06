@@ -25,6 +25,37 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+function createClaimQrSvg(claimUrl) {
+  const qr = QRCode.create(String(claimUrl), { errorCorrectionLevel: 'M' });
+  const size = qr.modules.size;
+  const cells = [];
+  for (let row = 0; row < size; row += 1) {
+    for (let column = 0; column < size; column += 1) {
+      if (qr.modules.get(row, column)) cells.push(`M${column} ${row}h1v1h-1z`);
+    }
+  }
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `-1 -1 ${size + 2} ${size + 2}`);
+  svg.setAttribute('shape-rendering', 'crispEdges');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Enjin NFT claim QR code');
+
+  const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  background.setAttribute('x', '-1');
+  background.setAttribute('y', '-1');
+  background.setAttribute('width', String(size + 2));
+  background.setAttribute('height', String(size + 2));
+  background.setAttribute('fill', '#ffffff');
+
+  const modules = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  modules.setAttribute('d', cells.join(''));
+  modules.setAttribute('fill', '#07101e');
+
+  svg.append(background, modules);
+  return svg;
+}
+
 export class EnjinEditionController {
   constructor({ game, app, buildId = 'dev', gitSha = 'unknown' }) {
     this.game = game;
@@ -421,16 +452,12 @@ export class EnjinEditionController {
     if (this.reward) this.renderQr();
   }
 
-  async renderQr() {
+  renderQr() {
     const container = this.root.querySelector('[data-enjin-qr]');
     if (!container || !this.reward?.claimUrl) return;
     try {
-      const svg = await QRCode.toString(this.reward.claimUrl, {
-        type: 'svg',
-        margin: 1,
-        color: { dark: '#07101e', light: '#ffffff' }
-      });
-      if (this.mode === 'complete') container.innerHTML = svg;
+      const svg = createClaimQrSvg(this.reward.claimUrl);
+      if (this.mode === 'complete' && container.isConnected) container.replaceChildren(svg);
     } catch {
       container.textContent = 'QR unavailable';
     }

@@ -2677,3 +2677,10 @@ Original request: use the latest 3:04 gameplay video as primary evidence; trace 
 - Final-hostile detection suppresses autofire on the kill callback, retires no-target friendly projectiles once over 200 ms, and clears suppression only when the next wave index becomes active. Dense routine-friendly VFX compression is reversible and exempts charged/trait-significant attacks.
 - The giant combo treatment is now a compact pulse, Bonus Drone Down is local feedback, Chrono Anchor uses one restrained distortion ring, boss HP has one dominant owner, danger telegraphs use warning hues, and bosses receive a restrained edge pass above routine friendly shots.
 - Opt-in diagnostics now record wave cleanup/transition duration, enemy attack and lifetime timing, signature attack participation, player heatmap, projectile counts/retirements, and boss TTK. Focused source/runtime checks and all eight rendered locales passed; the required generic web-game client was attempted but its bundled Chromium headless shell is not installed, while repository-native Playwright checks run successfully through the installed Chrome.
+
+## 2026-08-06 Enjin completion QR rendering repair
+
+- Reproduced the production failure: the completed-player reward panel existed, but its QR container had no child SVG or canvas.
+- Replaced the asynchronous HTML-string QR path with synchronous, connected-DOM SVG construction from the QR matrix.
+- Added regression coverage using a long NFT.io-shaped mock Beam URL; no real Beam claim was opened or consumed.
+- Enjin smoke coverage, five-second completion freeze, completion restoration, standard-build Enjin isolation, and visual QR inspection passed before preview deployment.

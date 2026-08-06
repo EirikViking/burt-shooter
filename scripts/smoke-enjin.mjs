@@ -159,6 +159,26 @@ async function main() {
     await page.evaluate(async () => window.__enjinMvp.debugCompleteForTest());
     await page.waitForFunction(() => window.__enjinMvp?.mode === 'complete', null, { timeout: interactionTimeout });
     await page.waitForSelector('[data-enjin-qr] svg');
+    const qrPixels = await page.locator('[data-enjin-qr] svg').evaluate((svg) => ({
+      pathLength: svg.querySelector('path')?.getAttribute('d')?.length || 0,
+      darkFill: svg.querySelector('path')?.getAttribute('fill') || '',
+      connected: svg.isConnected
+    }));
+    assert.ok(qrPixels.pathLength > 1_000, 'claim QR rendered without visible modules');
+    assert.equal(qrPixels.darkFill, '#07101e');
+    assert.equal(qrPixels.connected, true);
+
+    await page.evaluate(() => {
+      window.__enjinMvp.reward.claimUrl = `https://nft.io/beam/claim/${'A'.repeat(310)}`;
+      window.__enjinMvp.renderCompletion();
+    });
+    const longQrPixels = await page.locator('[data-enjin-qr] svg').evaluate((svg) => ({
+      pathLength: svg.querySelector('path')?.getAttribute('d')?.length || 0,
+      darkFill: svg.querySelector('path')?.getAttribute('fill') || ''
+    }));
+    assert.ok(longQrPixels.pathLength > 5_000, 'long NFT.io claim URL produced an empty QR');
+    assert.equal(longQrPixels.darkFill, '#07101e');
+    await page.locator('[data-enjin-qr]').screenshot({ path: path.join(outputDir, 'claim-qr-long-url.png') });
     const completionCopy = await page.locator('#enjin-shell').innerText();
     assert.match(completionCopy, /CLAIM YOUR FREE ENJIN NFT/);
     assert.match(completionCopy, /CONTINUE BEYOND 30,000 ON STEAM/);
