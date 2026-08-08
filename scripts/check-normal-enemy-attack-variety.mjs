@@ -15,6 +15,9 @@ const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/nor
 const LOCAL_DEVTOOLS_HASH = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const MAX_ACTION_UNLOCK_LEVEL = Math.max(...ENEMY_THREAT_ACTIONS.map((action) => Math.max(1, Number(action.minLevel) || 1)));
 const ACTION_DEFINITIONS = ENEMY_THREAT_ACTIONS.map((action) => ({ ...action }));
+const ALLOWED_CONSOLE_WARNINGS = new Set([
+  '[SW] Service worker script missing or invalid, skipping registration.'
+]);
 const MAX_SYNTHETIC_ORBITERS = Math.max(
   6,
   ...ENEMY_THREAT_ACTIONS
@@ -136,9 +139,16 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const pageErrors = [];
 const consoleWarningsOrErrors = [];
+const allowedConsoleWarnings = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
-  if (message.type() === 'error' || message.type() === 'warning') consoleWarningsOrErrors.push(message.text());
+  if (message.type() !== 'error' && message.type() !== 'warning') return;
+  const text = message.text();
+  if (message.type() === 'warning' && ALLOWED_CONSOLE_WARNINGS.has(text)) {
+    allowedConsoleWarnings.push(text);
+    return;
+  }
+  consoleWarningsOrErrors.push(text);
 });
 
 try {
@@ -339,6 +349,7 @@ try {
     sampleCount: runtime.samples.length,
     samples: runtime.samples,
     pageErrors,
+    allowedConsoleWarnings,
     consoleWarningsOrErrors,
     screenshot
   };

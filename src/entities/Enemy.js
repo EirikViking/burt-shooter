@@ -949,7 +949,26 @@ export class Enemy {
     const barWidth = this.radius * 2;
     const colorAssist = getColorAssistEnabled();
     const barHeight = colorAssist ? 5 : 3;
-    const healthPercent = this.health / this.maxHealth;
+    const healthPercent = Math.max(0, Math.min(1, this.health / Math.max(1, this.maxHealth)));
+    const threatTier = getEnemyThreatFrameProfile(this)?.tier || null;
+    const isMeaningfullyDurable = [
+      'rare_chaos',
+      'ace',
+      'rival_wing',
+      'elite',
+      'danger_mid',
+      'late_mayhem',
+      'durable'
+    ].includes(threatTier);
+    const isDamaged = healthPercent < 0.999;
+    this.healthBar.visible = isDamaged || isMeaningfullyDurable;
+    this.healthBar._debugReadability = {
+      visible: this.healthBar.visible,
+      reason: isDamaged ? 'damaged' : isMeaningfullyDurable ? 'durable' : 'full_health_standard',
+      threatTier,
+      healthPercent: Number(healthPercent.toFixed(3))
+    };
+    if (!this.healthBar.visible) return;
     this.healthBar.rect(-barWidth / 2, this.radius + 5, barWidth, barHeight);
     this.healthBar.fill({ color: colorAssist ? 0x05070c : 0x333333 });
     if (colorAssist) {
@@ -1414,9 +1433,86 @@ export class Enemy {
     this.aceLabelRails?.stroke({ color: accent, width: 2.2, alpha: 0.9 });
     this.aceLabelRails?.poly([0, -panelHeight / 2 - 7, 5, -panelHeight / 2 - 2, 0, -panelHeight / 2 + 3, -5, -panelHeight / 2 - 2]);
     this.aceLabelRails?.fill({ color: 0xfff3a0, alpha: 0.84 });
+    this.aceLabelPlate.__panelWidth = panelWidth;
+    this.aceLabelPlate.__panelHeight = panelHeight;
     this.aceLabelPlate.y = -Math.max(48, this.radius + 38);
+    this.aceLabelPlate.x = 0;
     this.aceLabelPlate.visible = true;
     this.aceLabel.visible = true;
+  }
+
+  updateAceLabelPlacement() {
+    const plate = this.aceLabelPlate;
+    if (!plate || !this.isAce) return;
+
+    const screenWidth = Math.max(320, Number(this.game?.getWidth?.()) || 1280);
+    const screenHeight = Math.max(240, Number(this.game?.getHeight?.()) || 720);
+    const panelWidth = Math.max(138, Number(plate.__panelWidth) || 232);
+    const panelHeight = Math.max(38, Number(plate.__panelHeight) || 38);
+    const padding = 7;
+    const hud = this.game?.scenes?.play?.hud;
+    const reserved = Object.values(hud?.reservedRegions || {}).filter((region) =>
+      Number.isFinite(region?.x) && Number.isFinite(region?.y)
+      && Number.isFinite(region?.width) && Number.isFinite(region?.height)
+    );
+    const intersectsReserved = (centerX, centerY) => {
+      const left = centerX - panelWidth / 2;
+      const right = centerX + panelWidth / 2;
+      const top = centerY - panelHeight / 2;
+      const bottom = centerY + panelHeight / 2;
+      return reserved.some((region) => !(
+        right + padding <= region.x
+        || region.x + region.width + padding <= left
+        || bottom + padding <= region.y
+        || region.y + region.height + padding <= top
+      ));
+    };
+    const withinViewport = (centerX, centerY) => (
+      centerX - panelWidth / 2 >= padding
+      && centerX + panelWidth / 2 <= screenWidth - padding
+      && centerY - panelHeight / 2 >= padding
+      && centerY + panelHeight / 2 <= screenHeight - padding
+    );
+
+    const verticalOffset = Math.max(48, this.radius + 38);
+    const horizontalOffset = this.radius + panelWidth / 2 + 18;
+    const belowOffset = this.radius + panelHeight / 2 + 18;
+    const candidates = [
+      { placement: 'above', x: this.x, y: this.y - verticalOffset },
+      { placement: 'right', x: this.x + horizontalOffset, y: this.y },
+      { placement: 'left', x: this.x - horizontalOffset, y: this.y },
+      { placement: 'below', x: this.x, y: this.y + belowOffset }
+    ];
+    const selected = candidates.find((candidate) =>
+      withinViewport(candidate.x, candidate.y) && !intersectsReserved(candidate.x, candidate.y)
+    ) || {
+      placement: 'hidden-in-hud-lane',
+      x: this.x,
+      y: this.y - verticalOffset,
+      hidden: true
+    };
+
+    const worldDx = selected.x - this.x;
+    const worldDy = selected.y - this.y;
+    const rotation = Number(this.sprite?.rotation) || 0;
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    plate.x = cos * worldDx + sin * worldDy;
+    plate.y = -sin * worldDx + cos * worldDy;
+    plate.rotation = -rotation;
+    plate.visible = selected.hidden !== true;
+    plate._debugHudAvoidance = {
+      placement: selected.placement,
+      hidden: selected.hidden === true,
+      worldBounds: {
+        x: Math.round(selected.x - panelWidth / 2),
+        y: Math.round(selected.y - panelHeight / 2),
+        width: Math.round(panelWidth),
+        height: Math.round(panelHeight)
+      },
+      overlapsReserved: selected.hidden ? true : intersectsReserved(selected.x, selected.y),
+      reservedRegionCount: reserved.length
+    };
   }
 
   getAceDebugState() {
@@ -1465,6 +1561,7 @@ export class Enemy {
       labelFontSize: Number(this.aceLabel?.style?.fontSize) || 0,
       labelScale: Number((this.aceLabel?.scale?.x || 0).toFixed(3)),
       visualLanguage: 'ace_authored_command_crest_v3',
+      hudAvoidance: this.aceLabelPlate?._debugHudAvoidance || null,
       health: Math.max(0, Number(this.health) || 0),
       maxHealth: Math.max(0, Number(this.maxHealth) || 0),
       rewardClaimed: this.aceRewardClaimed === true
@@ -1730,6 +1827,7 @@ export class Enemy {
 
     this.sprite.x = this.x;
     this.sprite.y = this.y;
+    this.updateAceLabelPlacement();
 
     // Shooting
     if (this.shootCooldown > 0) this.shootCooldown -= delta;

@@ -194,6 +194,7 @@ const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
 const GAME_OVER_DEATH_HOLD_MS = 1100;
+const GAME_OVER_SKIP_DEBOUNCE_MS = 750;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
@@ -12478,10 +12479,10 @@ export class PlayScene {
       });
     }
     if (active.queued) {
-      return translateText('DIRECTIVE {current}/{cap} QUEUED // LEVEL {level}', {
+      return translateText('DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}', {
         current: state.currentOrdinal,
         cap: state.completionCap,
-        level: active.eligibleFromSector
+        sector: active.eligibleFromSector
       });
     }
     return translateText('DIRECTIVE {current}/{cap}: {objective} {progress} // {reward}', {
@@ -13256,7 +13257,8 @@ export class PlayScene {
     const gameplayHeight = this.gameplayGame.getHeight();
     const impactX = this.player?.x ?? gameplayWidth / 2;
     const impactY = this.player?.y ?? gameplayHeight * 0.72;
-    if (finalDeath) this.finalDeathImpact = { x: impactX, y: impactY };
+    const impactSource = options.source || this.finalLifeLossSource || 'unknown';
+    if (finalDeath) this.finalDeathImpact = { x: impactX, y: impactY, source: impactSource };
 
     this.lastHitStopRequestMs = finalDeath ? 420 : 180;
     this.freezeTimerMs = this.lastHitStopRequestMs;
@@ -13264,30 +13266,41 @@ export class PlayScene {
     const accessibility = getAccessibilitySettings();
     const reducedMotion = Boolean(accessibility.prefersReducedMotion);
     const shakeScale = Math.max(0, Number(accessibility.screenShake) || 0);
+    const flashIntensity = Math.max(0, Math.min(1, Number(accessibility.flashIntensity) || 0));
     if (this.screenShake && shakeScale > 0) {
       this.screenShake.shake(finalDeath ? 42 : 25);
     }
 
     const flash = new PIXI.Graphics();
     const flashColor = finalDeath ? 0xff174a : 0xff304f;
-    const centerAlpha = reducedMotion ? 0.035 : finalDeath ? 0.1 : 0.065;
-    const edgeAlpha = reducedMotion ? 0.2 : finalDeath ? 0.52 : 0.4;
+    const centerAlpha = (reducedMotion ? 0.035 : finalDeath ? 0.1 : 0.065) * flashIntensity;
+    const edgeAlpha = (reducedMotion ? 0.2 : finalDeath ? 0.52 : 0.4) * flashIntensity;
     flash.label = 'player_damage_edge_flash';
     flash.rect(0, 0, width, height).fill({ color: flashColor, alpha: centerAlpha });
     const edgeDepth = Math.max(18, Math.min(64, Math.min(width, height) * 0.075));
     for (let band = 0; band < 4; band += 1) {
-      const inset = band * edgeDepth * 0.24;
-      flash.rect(inset, inset, width - inset * 2, height - inset * 2);
-      flash.stroke({ color: flashColor, width: edgeDepth * 0.32, alpha: edgeAlpha * (1 - band * 0.2) });
+      const inset = band * edgeDepth * 0.18;
+      const bandDepth = Math.max(2, edgeDepth * 0.28);
+      const bandAlpha = edgeAlpha * (1 - band * 0.22);
+      flash.rect(inset, inset, width - inset * 2, bandDepth);
+      flash.rect(inset, height - inset - bandDepth, width - inset * 2, bandDepth);
+      flash.rect(inset, inset + bandDepth, bandDepth, Math.max(0, height - inset * 2 - bandDepth * 2));
+      flash.rect(width - inset - bandDepth, inset + bandDepth, bandDepth, Math.max(0, height - inset * 2 - bandDepth * 2));
+      flash.fill({ color: flashColor, alpha: bandAlpha });
     }
     flash._debugDamageFlash = {
       edgeWeighted: true,
+      renderMode: 'filled_edge_bands',
+      strokeCount: 0,
       centerAlpha,
       edgeAlpha,
       reducedMotion,
+      flashIntensity,
       shakeScale,
-      finalDeath
+      finalDeath,
+      impactSource
     };
+    this.lastPlayerDamageFlashDebug = { ...flash._debugDamageFlash };
     this.uiOverlay.addChild(flash);
 
     const flashDurationMs = reducedMotion ? 120 : finalDeath ? 300 : 190;
@@ -13338,7 +13351,8 @@ export class PlayScene {
     this.flushDeferredRunContractProgress(true);
     this.game.lockFinalScore?.('final_life_lost');
     this.clearToastState();
-    this.triggerPlayerDeathFeedback({ final: true });
+    this.clearFinalDeathCombatVisuals('final_death');
+    this.triggerPlayerDeathFeedback({ final: true, source: this.finalLifeLossSource });
     commitGameOverFinalTransmissionVariant(this.gameOverFinalTransmissionVariant);
     let transitioned = false;
     let safetyId = null;
@@ -13629,7 +13643,7 @@ export class PlayScene {
     let presentationStarted = false;
     let completed = false;
     let ticker = null;
-    const skipDebounceUntil = Date.now() + 180;
+    const skipDebounceUntil = Date.now() + GAME_OVER_SKIP_DEBOUNCE_MS;
     const initialControllerState = this.inputManager?.getGamepadState?.() || {};
     let controllerReleasedSinceStart = !Object.values(initialControllerState.buttons || {}).some(Boolean);
     const completeAnimation = (reason = 'natural') => {
@@ -13885,6 +13899,7 @@ export class PlayScene {
     this.recordBalanceLifeLost();
     this.player?.cancelDodgeExitPulse?.('life_lost', { endDodge: true });
     this.player?.clearStatusEffects?.('life_lost');
+    this.suppressSecondaryNotificationsForLifeLoss({ final: context?.final || (Number(lives) || 0) <= 0 });
     if (this.tryLastStandRepair()) {
       if ((Number(this.game?.lives) || 0) > 0) {
         this.respawnsThisRun = (Number(this.respawnsThisRun) || 0) + 1;
@@ -13896,7 +13911,14 @@ export class PlayScene {
       return;
     }
 
-    this.showToast(getMicroMessage('lifeLost'), { fontSize: 22, y: this.game.getHeight() * 0.32 });
+    this.showToast(getMicroMessage('lifeLost'), {
+      fontSize: 22,
+      y: this.game.getHeight() * 0.32,
+      slot: 'top',
+      type: 'player_survival',
+      priority: 7,
+      duration: 1250
+    });
     if (this.game.lives === 1) {
       this.triggerCabinetLog('low-life-read', {
         source: 'one_life_left'
@@ -15597,6 +15619,51 @@ export class PlayScene {
       console.log(`[BossHazardCleanup] reason=${reason} cleared=${cleared}`);
     }
     return cleared;
+  }
+
+  suppressSecondaryNotificationsForLifeLoss({ final = false } = {}) {
+    const minimumPriority = final ? 99 : 5;
+    const queuedBefore = [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]
+      .reduce((total, queue) => total + (Array.isArray(queue) ? queue.length : 0), 0);
+    const activeBefore = this.getActiveToastDisplays?.().length || 0;
+    this.dropLowerPriorityToastBacklog?.(minimumPriority);
+    this.dismissActiveToastsBelowPriority?.(minimumPriority);
+
+    // Rank and wave reward ceremonies retain their underlying progression,
+    // but their render-only surfaces must yield immediately to survival.
+    let hiddenPositiveSurfaces = 0;
+    for (const surface of [this.activeWaveBonusEffect, this.activeRankUpPresentation]) {
+      if (!surface?.parent || surface.visible === false) continue;
+      surface.visible = false;
+      hiddenPositiveSurfaces += 1;
+    }
+
+    const queuedAfter = [this.toastQueue, this.toastTopQueue, this.toastCornerQueue]
+      .reduce((total, queue) => total + (Array.isArray(queue) ? queue.length : 0), 0);
+    const activeAfter = this.getActiveToastDisplays?.().length || 0;
+    this.lastLifeLossNotificationSuppression = {
+      final: Boolean(final),
+      minimumPriority,
+      queuedRemoved: Math.max(0, queuedBefore - queuedAfter),
+      activeDismissed: Math.max(0, activeBefore - activeAfter),
+      hiddenPositiveSurfaces,
+      at: Date.now()
+    };
+    return this.lastLifeLossNotificationSuppression;
+  }
+
+  clearFinalDeathCombatVisuals(reason = 'final_death') {
+    const enemyBulletsCleared = this.clearEnemyBullets(reason);
+    const bossHazardsCleared = this.clearBossHazards(reason);
+    this.lastFinalDeathCombatCleanup = {
+      reason,
+      source: this.finalLifeLossSource || 'unknown',
+      enemyBulletsCleared,
+      bossHazardsCleared,
+      bossHazardGeometryRemaining: Boolean(this.bossHazardLayerHasGeometry),
+      at: Date.now()
+    };
+    return enemyBulletsCleared + bossHazardsCleared;
   }
 
   clearRespawnHazards(reason = 'respawn') {
@@ -17596,7 +17663,6 @@ export class PlayScene {
       'unlock',
       'discovery',
       'tacticalDirective',
-      'runContractProgress',
       'aceBounty',
       'side_status'
     ]);
@@ -18496,7 +18562,11 @@ export class PlayScene {
 
   getTopToastSafeY(fontSize = 18, type = 'generic') {
     const height = Math.max(1, Number(this.game?.getHeight?.()) || Number(this.game?.app?.screen?.height) || 720);
-    const nodes = [this.hud?.missionFrameArt, this.hud?.missionPanel];
+    const nodes = [
+      this.hud?.missionFrameArt,
+      this.hud?.missionPanel,
+      this.hud?.highscoreChaseGroup
+    ];
     if (this.hud?.comboMeterGroup?.visible && this.hud.comboMeterGroup.__placement === 'mission-underrail') {
       nodes.push(this.hud.comboMeterGroup);
     }

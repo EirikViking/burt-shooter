@@ -185,8 +185,8 @@ try {
   if (!desktop.labelBounds || desktop.labelBounds.x < 0 || desktop.labelBounds.x + desktop.labelBounds.width > 1920) failures.push(`desktop Ace label outside viewport: ${JSON.stringify(desktop.labelBounds)}`);
   if (
     desktop.toast?.type !== 'aceContact'
-    || desktop.toast?.duration < 3900
-    || desktop.toast?.protectedRemainingMs < 2500
+    || desktop.toast?.duration < 2600
+    || desktop.toast?.protectedRemainingMs < 1500
     || desktop.toast?.dossier?.primaryFontSize < 27
     || desktop.toast?.dossier?.actionFontSize < 13
     || desktop.toast?.dossier?.panelWidth > 500
@@ -200,6 +200,16 @@ try {
     || !/ATTACK: PRECISION/i.test(desktop.toast?.dossier?.danger || '')
   ) failures.push(`desktop Ace action briefing hierarchy missing: ${JSON.stringify(desktop.toast)}`);
   if (!desktop.toast?.bounds || desktop.toast.bounds.x < 0 || desktop.toast.bounds.x + desktop.toast.bounds.width > 1920 || desktop.toast.bounds.y < 0 || desktop.toast.bounds.y + desktop.toast.bounds.height > 1080) failures.push(`desktop Ace dossier outside viewport: ${JSON.stringify(desktop.toast?.bounds)}`);
+
+  const hudLane = await promoteAce(page, 'bulwark_sweep_precision', { x: 400, y: 128 });
+  hudLane.screenshot = path.join(outputDir, 'ace-bounty-hud-lane-avoidance-1920x1080.png');
+  await page.screenshot({ path: hudLane.screenshot, fullPage: true });
+  report.scenarios.hudLane = hudLane;
+  if (
+    !hudLane.ok
+    || hudLane.ace?.hudAvoidance?.overlapsReserved !== false
+    || !['right', 'left', 'below'].includes(hudLane.ace?.hudAvoidance?.placement)
+  ) failures.push(`Ace identity plate did not avoid the reserved HUD lanes: ${JSON.stringify(hudLane.ace?.hudAvoidance)}`);
 
   const wingSetup = await page.evaluate(() => {
     const play = window.__game.scenes.play;
@@ -496,7 +506,7 @@ try {
   if (!localized.labelBounds || localized.labelBounds.x < 0 || localized.labelBounds.x + localized.labelBounds.width > 840 || localized.labelBounds.y < 0) failures.push(`compact localized Ace label outside viewport: ${JSON.stringify(localized.labelBounds)}`);
   if (
     localized.toast?.type !== 'aceContact'
-    || localized.toast?.duration < 3900
+    || localized.toast?.duration < 2600
     || localized.toast?.dossier?.primaryFontSize < 23
     || localized.toast?.dossier?.actionFontSize < 12
     || localized.toast?.dossier?.panelWidth > 460

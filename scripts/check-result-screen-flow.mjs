@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import path from 'node:path';
@@ -101,6 +102,53 @@ async function openScenarioPage(browser, consoleEvents) {
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game && window.render_game_to_text), null, { timeout: 15000 });
   return page;
+}
+
+async function checkBrandedAsyncTransition(browser, consoleEvents, sceneName) {
+  const page = await openScenarioPage(browser, consoleEvents);
+  const initial = await page.evaluate((targetScene) => {
+    const game = window.__game;
+    const adapter = game.getLeaderboardAdapter();
+    const originalRefresh = adapter.refreshAvailability.bind(adapter);
+    adapter.refreshAvailability = async (...args) => {
+      await new Promise((resolve) => window.setTimeout(resolve, 900));
+      return originalRefresh(...args);
+    };
+    game.runMode = targetScene === 'gameOver' ? 'scout' : game.runMode;
+    game.runModeReason = targetScene === 'gameOver' ? 'transition_check' : game.runModeReason;
+    game.runSummary = targetScene === 'gameOver'
+      ? { runMode: 'scout', levelReached: 3, sectorReached: 3, score: 3210, finalScore: 3210 }
+      : game.runSummary;
+    game.score = 3210;
+    game.level = 3;
+    game.lives = targetScene === 'gameOver' ? 0 : game.lives;
+    game.switchScene(targetScene);
+    const scene = game.scenes?.[targetScene];
+    return {
+      currentSceneName: game.currentSceneName,
+      debug: structuredClone(scene?.transitionPlaceholderDebug || null),
+      placeholderAttached: Boolean(scene?.transitionPlaceholder?.parent),
+      childCount: scene?.container?.children?.length || 0
+    };
+  }, sceneName);
+  assert(initial.currentSceneName === sceneName, `transition did not enter ${sceneName}: ${JSON.stringify(initial)}`);
+  assert(initial.placeholderAttached === true && initial.debug?.visible === true && initial.debug?.branded === true, `${sceneName} showed an unbranded async gap: ${JSON.stringify(initial)}`);
+  await page.screenshot({ path: path.join(outputDir, `${sceneName}-branded-transition.png`), fullPage: true });
+  await page.waitForFunction((targetScene) => {
+    const scene = window.__game?.scenes?.[targetScene];
+    return window.__game?.currentSceneName === targetScene && scene?.transitionPlaceholderDebug?.visible === false;
+  }, sceneName, { timeout: 15000 });
+  const completed = await page.evaluate((targetScene) => {
+    const scene = window.__game?.scenes?.[targetScene];
+    return {
+      debug: structuredClone(scene?.transitionPlaceholderDebug || null),
+      placeholderAttached: Boolean(scene?.transitionPlaceholder?.parent),
+      title: scene?.title?.text || null
+    };
+  }, sceneName);
+  assert(completed.placeholderAttached === false && completed.title, `${sceneName} did not replace its loading handoff with composed UI: ${JSON.stringify(completed)}`);
+  await page.close();
+  return { sceneName, initial, completed };
 }
 
 async function runSteamGameOver(page, {
@@ -519,6 +567,10 @@ try {
   });
   const consoleEvents = [];
 
+  const brandedTransitions = [];
+  brandedTransitions.push(await checkBrandedAsyncTransition(browser, consoleEvents, 'gameOver'));
+  brandedTransitions.push(await checkBrandedAsyncTransition(browser, consoleEvents, 'highscore'));
+
   const goodPage = await openScenarioPage(browser, consoleEvents);
   await runSteamGameOver(goodPage, {
     score: 25286,
@@ -654,6 +706,7 @@ try {
     status: 'passed',
     baseUrl,
     outputDir,
+    brandedTransitions,
     goodHold,
     goodInitial,
     goodAfterRelayout,

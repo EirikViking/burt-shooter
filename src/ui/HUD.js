@@ -428,7 +428,12 @@ export class HUD {
       this.scoreMultiplierText.visible = false;
       this.scoreMultiplierText.scale.set(1);
     }
-    this.levelText.text = `LEVEL ${this.game.level}`;
+    // `game.level` is the current sector. The authored sector capsule already
+    // communicates that value, so do not present the same number as a second
+    // system called "LEVEL" in the permanent score block.
+    this.levelText.text = '';
+    this.levelText.visible = false;
+    this.levelText._debugSectorDuplicateRemoved = true;
     this.updateComboMeter();
     this.livesText.text = `LIVES ${this.game.lives}`;
     this.updateMissionStatus();
@@ -988,10 +993,10 @@ export class HUD {
     }
 
     if (active.queued) {
-      this.directiveText.text = translateText('DIRECTIVE {current}/{cap} QUEUED // LEVEL {level}', {
+      this.directiveText.text = translateText('DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}', {
         current: debugState.currentOrdinal,
         cap: debugState.completionCap,
-        level: active.eligibleFromSector
+        sector: active.eligibleFromSector
       });
       this.directiveText.style.fill = '#9cfbff';
       this.directiveText.visible = true;
@@ -2315,9 +2320,13 @@ export class HUD {
     this.comboMeterGroup.x = Number.isFinite(Number(this.comboMeterGroup.__fixedX))
       ? Number(this.comboMeterGroup.__fixedX)
       : this.scoreText.x + this.scoreText.width + Math.round(9 * uiScale);
-    this.comboMeterGroup.y = Number.isFinite(Number(this.comboMeterGroup.__fixedY))
+    const configuredComboY = Number.isFinite(Number(this.comboMeterGroup.__fixedY))
       ? Number(this.comboMeterGroup.__fixedY)
-      : this.scoreText.y + Math.round(2 * uiScale);
+      : this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale);
+    this.comboMeterGroup.y = Math.max(
+      configuredComboY,
+      this.scoreText.y + this.scoreText.height + Math.round(5 * uiScale)
+    );
 
     this.comboMeterBg.clear();
     this.comboMeterBg.roundRect(0, 0, width, height, 5);
@@ -2496,8 +2505,8 @@ export class HUD {
 
     this.rankGroup.alpha = 0.72;
     this.rankGroup._debugPriority = 'secondary';
-    this.scoreText.alpha = 0.74;
-    this.scoreText._debugPriority = 'secondary';
+    this.scoreText.alpha = 0.94;
+    this.scoreText._debugPriority = 'primary';
     this.scoreMultiplierText.alpha = 0.78;
     this.levelText.alpha = 0.68;
     this.levelText._debugPriority = 'secondary';
@@ -2523,25 +2532,21 @@ export class HUD {
     if (this.comboMeterGroup) {
       const comboWidth = Math.round((layout.isMobile ? 90 : (isLargeDesktop ? 124 : 108)) * uiScale);
       const comboHeight = Math.round((layout.isMobile ? 19 : 22) * uiScale);
-      const adjacentX = margin + leftPanelWidth + Math.round(10 * uiScale);
-      const adjacentRoom = missionPanelX - Math.round(10 * uiScale) - adjacentX;
-      const useAdjacentLane = !layout.isMobile && adjacentRoom >= comboWidth;
       this.comboMeterGroup.__w = comboWidth;
       this.comboMeterGroup.__h = comboHeight;
-      this.comboMeterGroup.__fixedX = useAdjacentLane
-        ? adjacentX
-        : Math.round(missionPanelX + (missionPanelWidth - comboWidth) / 2);
-      this.comboMeterGroup.__fixedY = useAdjacentLane
-        ? margin + 10
-        : Math.round(missionPanelY + missionPanelHeight + 7 * uiScale);
-      this.comboMeterGroup.__placement = useAdjacentLane ? 'score-sidecar' : 'mission-underrail';
+      this.comboMeterGroup.__fixedX = this.scoreText.x;
+      this.comboMeterGroup.__fixedY = margin + blockSpacing + Math.round(14 * uiScale);
+      this.comboMeterGroup.__placement = 'score-lane';
     }
 
     this.levelText.x = margin + rankOffset;
     this.levelText.y = margin + blockSpacing + 8;
 
     if (this.highscoreChaseGroup) {
-      const chaseWidth = Math.max((layout.isMobile ? 248 : 320) * uiScale, leftPanelWidth - 24);
+      const chaseWidth = Math.min(
+        leftPanelWidth - 24,
+        Math.round((layout.isMobile ? 248 : (isLargeDesktop ? 288 : 276)) * uiScale)
+      );
       const chaseHeight = Math.round((layout.isMobile ? 50 : (isLargeDesktop ? 54 : 52)) * uiScale);
       this.highscoreChaseGroup.__w = chaseWidth;
       this.highscoreChaseGroup.__h = chaseHeight;
@@ -2551,6 +2556,20 @@ export class HUD {
       this.highscoreChaseTarget.style.fontSize = Math.round((layout.isMobile ? 11 : (isLargeDesktop ? 14 : 13)) * uiScale);
       this.highscoreChaseGap.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 11 : 10)) * uiScale);
     }
+
+    // Expose stable HUD reservations to render-only world labels. This lets
+    // elite identity plates avoid the permanent score/objective/survival lanes
+    // without changing enemy movement or collision coordinates.
+    this.reservedRegions = {
+      left: { x: margin, y: margin, width: leftPanelWidth, height: leftPanelHeight },
+      center: { x: missionPanelX, y: missionPanelY, width: missionPanelWidth, height: missionPanelHeight },
+      right: {
+        x: canvasWidth - margin - rightPanelWidth,
+        y: margin,
+        width: rightPanelWidth,
+        height: Math.max(rightPanelHeight, Math.round(138 * uiScale))
+      }
+    };
 
     this.missionLabel.x = missionPanelX + missionPanelWidth / 2;
     this.missionLabel.y = missionPanelY + (layout.isMobile ? 10 : (isLargeDesktop ? 13 : 11));

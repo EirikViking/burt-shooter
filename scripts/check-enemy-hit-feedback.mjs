@@ -131,6 +131,10 @@ try {
     enemy.health = 5;
     enemy.maxHealth = 5;
     enemy.updateHealthBar?.();
+    const fullHealthBar = {
+      visible: Boolean(enemy.healthBar?.visible),
+      readability: enemy.healthBar?._debugReadability || null
+    };
     play.gameContainer.addChild(enemy.sprite);
     manager.enemies = [enemy];
     const beforeHealth = enemy.health;
@@ -155,7 +159,9 @@ try {
       hitFeedback: enemy.hitFeedbackLayer?._debugHitFeedback || null,
       layerVisible: Boolean(enemy.hitFeedbackLayer?.visible),
       sparkCount: enemy.hitFeedbackSparkCount || 0,
+      fullHealthBar,
       healthBarVisible: Boolean(enemy.healthBar?.visible !== false),
+      healthBarReadability: enemy.healthBar?._debugReadability || null,
       spritePosition: {
         x: Math.round(enemy.sprite?.x || 0),
         y: Math.round(enemy.sprite?.y || 0)
@@ -186,7 +192,10 @@ try {
   if ((state.hitFeedback?.woundedSmokeHashCount || 0) < 3) failures.push(`wounded hash marks missing: ${JSON.stringify(state.hitFeedback)}`);
   if (!Number.isFinite(state.hitFeedback?.healthRatio) || state.hitFeedback.healthRatio >= 1) failures.push(`durable health ratio not recorded after damage: ${JSON.stringify(state.hitFeedback)}`);
   if ((state.sparkCount || 0) < 1 || (state.hitFeedback?.sparkCount || 0) < 1) failures.push(`hit spark was not recorded: ${state.sparkCount}`);
+  if (state.fullHealthBar?.visible) failures.push(`standard full-health bar remained visible: ${JSON.stringify(state.fullHealthBar)}`);
+  if (state.fullHealthBar?.readability?.reason !== 'full_health_standard') failures.push(`full-health bar reason was not recorded: ${JSON.stringify(state.fullHealthBar)}`);
   if (!state.healthBarVisible) failures.push('health bar disappeared after non-lethal hit');
+  if (state.healthBarReadability?.reason !== 'damaged') failures.push(`damaged health bar reason was not recorded: ${JSON.stringify(state.healthBarReadability)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

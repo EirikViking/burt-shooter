@@ -147,13 +147,39 @@ async function checkInGameFinalDeathAnimation(browser) {
   await page.evaluate(async () => {
     await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
   });
-  await page.evaluate(() => {
+  const injectedHazard = await page.evaluate(() => {
     const game = window.__game;
+    const play = game.scenes?.play;
+    const width = game.getWidth();
+    const height = game.getHeight();
+    const wall = {
+      kind: 'wall',
+      type: 'wall',
+      sourceX: width / 2,
+      sourceY: 80,
+      columns: [width * 0.41, width * 0.59],
+      startY: 100,
+      endY: height + 80,
+      width: 24,
+      durationMs: 500,
+      armingMs: 80,
+      elapsedMs: 250,
+      color: 0xff315f,
+      hit: false
+    };
+    play.bossHazards = [wall];
+    play.drawBossHazard(wall, 0.5);
+    const before = {
+      hazards: play.bossHazards.length,
+      geometry: play.bossHazardLayerHasGeometry
+    };
     game.score = 12345;
     game.level = 6;
     game.lives = 1;
-    game.loseLife();
+    game.loseLife({ source: 'boss_wall' });
+    return before;
   });
+  assert(injectedHazard.hazards === 1 && injectedHazard.geometry === true, `synthetic wall hazard did not render before final death: ${JSON.stringify(injectedHazard)}`);
   await page.waitForFunction(() => {
     const game = window.__game;
     const play = game?.scenes?.play;
@@ -171,7 +197,12 @@ async function checkInGameFinalDeathAnimation(browser) {
       finalScoreLocked: game.finalScoreLocked,
       animation: structuredClone(play?.gameOverAnimationDebug || null),
       layerAlpha: play?.gameOverAnimationLayer?.alpha,
-      deathHoldCueAttached: Boolean(play?.uiOverlay?.children?.some((child) => child?.label === 'game_over_death_hold_cue'))
+      deathHoldCueAttached: Boolean(play?.uiOverlay?.children?.some((child) => child?.label === 'game_over_death_hold_cue')),
+      fatalImpact: structuredClone(play?.finalDeathImpact || null),
+      combatCleanup: structuredClone(play?.lastFinalDeathCombatCleanup || null),
+      damageFlash: structuredClone(play?.lastPlayerDamageFlashDebug || null),
+      bossHazards: play?.bossHazards?.length || 0,
+      bossHazardGeometry: Boolean(play?.bossHazardLayerHasGeometry)
     };
   });
   assert(lockedState.blockedAward === 0, `post-death score award was not blocked: ${lockedState.blockedAward}`);
@@ -181,7 +212,16 @@ async function checkInGameFinalDeathAnimation(browser) {
   assert(lockedState.animation?.deathHoldMs === 1100 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
   assert(lockedState.layerAlpha === 0, `frozen battle should remain visible during the death hold: ${lockedState.layerAlpha}`);
   assert(lockedState.deathHoldCueAttached === true, 'visible frozen-battle death-hold cue is missing');
-  await page.waitForTimeout(650);
+  assert(lockedState.fatalImpact?.source === 'boss_wall', `fatal source was not preserved: ${JSON.stringify(lockedState.fatalImpact)}`);
+  assert(lockedState.combatCleanup?.bossHazardsCleared === 1, `final-death wall hazard was not cleared: ${JSON.stringify(lockedState.combatCleanup)}`);
+  assert(lockedState.bossHazards === 0 && lockedState.bossHazardGeometry === false, `boss-hazard seam geometry survived final death: ${JSON.stringify(lockedState)}`);
+  assert(lockedState.damageFlash?.renderMode === 'filled_edge_bands' && lockedState.damageFlash?.strokeCount === 0, `damage cue still uses seam-prone strokes: ${JSON.stringify(lockedState.damageFlash)}`);
+  await page.waitForTimeout(300);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(100);
+  const earlySkipState = await page.evaluate(() => window.__game?.currentSceneName);
+  assert(earlySkipState === 'play', `held/early input skipped the final-death presentation before 750ms: ${earlySkipState}`);
+  await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
   await page.waitForTimeout(850);
   const signalState = await page.evaluate(() => structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null));
@@ -212,6 +252,42 @@ async function checkInGameFinalDeathAnimation(browser) {
     finalScore: state.gameOver?.score || 0,
     invariant
   };
+}
+
+async function checkNormalLifeLossFeedback(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  const setup = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    game.lives = 2;
+    play.clearToastState();
+    play.showToast('SHIP GRAZE +8', { slot: 'corner', type: 'nearMiss', priority: 1, duration: 4000 });
+    play.enqueueToast('CABINET LOG PARAGRAPH', { slot: 'top', type: 'lore', priority: 1, duration: 4000 });
+    game.loseLife({ source: 'enemy_contact' });
+    play.triggerPlayerDeathFeedback({ source: 'enemy_contact' });
+    return {
+      lives: game.lives,
+      gameOverSequenceStarted: Boolean(play.gameOverSequenceStarted),
+      suppression: structuredClone(play.lastLifeLossNotificationSuppression || null),
+      damageFlash: structuredClone(play.lastPlayerDamageFlashDebug || null),
+      toast: structuredClone(play.getToastDebugState?.() || null),
+      playerInvulnerable: Boolean(play.player?.invulnerable)
+    };
+  });
+  await page.waitForTimeout(120);
+  const screenshot = path.join(outputDir, 'in-game-normal-life-loss.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  assert(setup.lives === 1 && setup.gameOverSequenceStarted === false, `normal life loss entered final-death flow: ${JSON.stringify(setup)}`);
+  const suppressedSecondaryCount = Number(setup.suppression?.queuedRemoved || 0)
+    + Number(setup.suppression?.activeDismissed || 0)
+    + Number(setup.suppression?.hiddenPositiveSurfaces || 0);
+  assert(suppressedSecondaryCount >= 2, `secondary notifications survived life loss: ${JSON.stringify(setup.suppression)}`);
+  assert(setup.toast?.active?.some?.((toast) => toast?.type === 'player_survival'), `survival notice did not replace positive notifications: ${JSON.stringify(setup.toast)}`);
+  assert(setup.damageFlash?.finalDeath === false && setup.damageFlash?.impactSource === 'enemy_contact', `normal impact feedback lost its source: ${JSON.stringify(setup.damageFlash)}`);
+  assert(setup.playerInvulnerable === true, 'normal life loss did not enter respawn invulnerability');
+  assert(pageErrors.length === 0, `page errors for normal life loss: ${pageErrors.join('; ')}`);
+  await page.close();
+  return { scenario: 'normal_life_loss_feedback', screenshot, setup };
 }
 
 const server = await startPreviewServer();
@@ -257,6 +333,9 @@ try {
 
   console.log('[gameover-ceremony] checking in-game final death animation');
   results.push(await checkInGameFinalDeathAnimation(browser));
+
+  console.log('[gameover-ceremony] checking normal life-loss hierarchy');
+  results.push(await checkNormalLifeLossFeedback(browser));
 
   console.log('[gameover-ceremony] checking number-one ceremony');
   results.push(await checkCeremony(browser, {

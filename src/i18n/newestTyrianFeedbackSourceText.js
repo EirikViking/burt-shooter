@@ -5,15 +5,31 @@ const ENTRIES = Object.freeze({
     TOGGLE: 'UMSCHALTEN',
     'Mouse Steering': 'Maussteuerung',
     'AUTO FIRE ON': 'DAUERFEUER AN',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Halte Feuer gedrueckt oder aktiviere Umschalten in den Einstellungen. Die Maussteuerung folgt dem Zeiger; Controller-Feuer bleibt immer Halten.'
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Halte Feuer gedrueckt oder aktiviere Umschalten in den Einstellungen. Die Maussteuerung folgt dem Zeiger; Controller-Feuer bleibt immer Halten.',
+    'VIEWING HULL {current} OF {total}': 'RUMPF {current} VON {total} ANSEHEN',
+    'ACTIVE HULL {current} OF {total}': 'AKTIVER RUMPF {current} VON {total}',
+    'VIEW RECOMMENDED [J]': 'EMPFEHLUNG ANSEHEN [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'AUFTRAG {current}/{cap} BEREIT // SEKTOR {sector}',
+    'SCORE / SECTOR': 'PUNKTE / SEKTOR',
+    'UI VOL': 'UI-LAUTSTÄRKE',
+    FLASH: 'BLITZINTENSITÄT',
+    'REDUCED MOTION': 'REDUZIERTE BEWEGUNG'
   },
   es: {
     'Fire Input': 'Entrada de disparo',
     HOLD: 'MANTENER',
     TOGGLE: 'ALTERNAR',
-    'Mouse Steering': 'Control con raton',
-    'AUTO FIRE ON': 'DISPARO AUTOMATICO ACTIVO',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Manten pulsado para disparar o activa Alternar en Ajustes. El control con raton sigue el puntero; el mando siempre usa mantener.'
+    'Mouse Steering': 'Control con ratón',
+    'AUTO FIRE ON': 'DISPARO AUTOMÁTICO ACTIVO',
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Mantén pulsado para disparar o activa Alternar en Ajustes. El control con ratón sigue el puntero; el mando siempre usa mantener.',
+    'VIEWING HULL {current} OF {total}': 'VIENDO CASCO {current} DE {total}',
+    'ACTIVE HULL {current} OF {total}': 'CASCO ACTIVO {current} DE {total}',
+    'VIEW RECOMMENDED [J]': 'VER RECOMENDADA [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'DIRECTIVA {current}/{cap} EN COLA // SECTOR {sector}',
+    'SCORE / SECTOR': 'PUNTOS / SECTOR',
+    'UI VOL': 'VOL. INTERFAZ',
+    FLASH: 'DESTELLOS',
+    'REDUCED MOTION': 'MOVIMIENTO REDUCIDO'
   },
   ru: {
     'Fire Input': 'Режим огня',
@@ -21,7 +37,15 @@ const ENTRIES = Object.freeze({
     TOGGLE: 'ПЕРЕКЛЮЧЕНИЕ',
     'Mouse Steering': 'Управление мышью',
     'AUTO FIRE ON': 'АВТООГОНЬ ВКЛ',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Удерживай огонь или включи переключение в настройках. Управление мышью следует за указателем; огонь с геймпада всегда работает удержанием.'
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Удерживайте огонь или включите переключение в настройках. Управление мышью следует за указателем; огонь с геймпада всегда работает удержанием.',
+    'VIEWING HULL {current} OF {total}': 'ПРОСМОТР КОРПУСА {current} ИЗ {total}',
+    'ACTIVE HULL {current} OF {total}': 'АКТИВНЫЙ КОРПУС {current} ИЗ {total}',
+    'VIEW RECOMMENDED [J]': 'ПОКАЗАТЬ РЕКОМЕНДАЦИЮ [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'ДИРЕКТИВА {current}/{cap} В ОЧЕРЕДИ // СЕКТОР {sector}',
+    'SCORE / SECTOR': 'ОЧКИ / СЕКТОР',
+    'UI VOL': 'ГРОМКОСТЬ ИНТЕРФЕЙСА',
+    FLASH: 'ВСПЫШКИ',
+    'REDUCED MOTION': 'МЕНЬШЕ ДВИЖЕНИЯ'
   },
   'zh-CN': {
     'Fire Input': '开火输入',
@@ -29,15 +53,31 @@ const ENTRIES = Object.freeze({
     TOGGLE: '切换',
     'Mouse Steering': '鼠标操控',
     'AUTO FIRE ON': '自动开火已开启',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '按住即可开火，或在设置中启用切换模式。鼠标操控会跟随指针；手柄开火始终为按住。'
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '按住即可开火，或在设置中启用切换模式。鼠标操控会跟随指针；手柄开火始终为按住。',
+    'VIEWING HULL {current} OF {total}': '查看机体 {current}/{total}',
+    'ACTIVE HULL {current} OF {total}': '当前机体 {current}/{total}',
+    'VIEW RECOMMENDED [J]': '查看推荐 [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': '指令 {current}/{cap} 已排队 // 区域 {sector}',
+    'SCORE / SECTOR': '分数 / 区域',
+    'UI VOL': '界面音量',
+    FLASH: '闪光强度',
+    'REDUCED MOTION': '减少动态效果'
   },
   'pt-BR': {
     'Fire Input': 'Entrada de tiro',
     HOLD: 'SEGURAR',
     TOGGLE: 'ALTERNAR',
     'Mouse Steering': 'Controle pelo mouse',
-    'AUTO FIRE ON': 'TIRO AUTOMATICO ATIVO',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Segure para atirar ou ative Alternar nas Configuracoes. O controle pelo mouse segue o ponteiro; o controle sempre usa segurar.'
+    'AUTO FIRE ON': 'TIRO AUTOMÁTICO ATIVO',
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': 'Segure para atirar ou ative Alternar nas Configurações. O controle pelo mouse segue o ponteiro; o controle sempre usa segurar.',
+    'VIEWING HULL {current} OF {total}': 'VENDO NAVE {current} DE {total}',
+    'ACTIVE HULL {current} OF {total}': 'NAVE ATIVA {current} DE {total}',
+    'VIEW RECOMMENDED [J]': 'VER RECOMENDADA [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': 'DIRETRIZ {current}/{cap} NA FILA // SETOR {sector}',
+    'SCORE / SECTOR': 'PONTOS / SETOR',
+    'UI VOL': 'VOL. DA INTERFACE',
+    FLASH: 'FLASHES',
+    'REDUCED MOTION': 'MOVIMENTO REDUZIDO'
   },
   ko: {
     'Fire Input': '발사 입력',
@@ -45,7 +85,15 @@ const ENTRIES = Object.freeze({
     TOGGLE: '전환',
     'Mouse Steering': '마우스 조종',
     'AUTO FIRE ON': '자동 발사 켜짐',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '발사를 누르고 있거나 설정에서 전환을 켜세요. 마우스 조종은 포인터를 따라가며, 컨트롤러 발사는 항상 누르기 방식입니다.'
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '발사를 누르고 있거나 설정에서 전환을 켜세요. 마우스 조종은 포인터를 따라가며, 컨트롤러 발사는 항상 누르기 방식입니다.',
+    'VIEWING HULL {current} OF {total}': '기체 보기 {current}/{total}',
+    'ACTIVE HULL {current} OF {total}': '활성 기체 {current}/{total}',
+    'VIEW RECOMMENDED [J]': '추천 기체 보기 [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': '지령 {current}/{cap} 대기 // 섹터 {sector}',
+    'SCORE / SECTOR': '점수 / 섹터',
+    'UI VOL': 'UI 음량',
+    FLASH: '화면 섬광',
+    'REDUCED MOTION': '모션 줄이기'
   },
   ja: {
     'Fire Input': '射撃入力',
@@ -53,7 +101,15 @@ const ENTRIES = Object.freeze({
     TOGGLE: '切り替え',
     'Mouse Steering': 'マウス操縦',
     'AUTO FIRE ON': '自動射撃オン',
-    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '射撃を長押しするか、設定で切り替えを有効にします。マウス操縦はポインターを追従し、コントローラー射撃は常に長押しです。'
+    'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.': '射撃を長押しするか、設定で切り替えを有効にします。マウス操縦はポインターを追従し、コントローラー射撃は常に長押しです。',
+    'VIEWING HULL {current} OF {total}': '機体を表示 {current}/{total}',
+    'ACTIVE HULL {current} OF {total}': '使用中の機体 {current}/{total}',
+    'VIEW RECOMMENDED [J]': 'おすすめを見る [J]',
+    'DIRECTIVE {current}/{cap} QUEUED // SECTOR {sector}': '指令 {current}/{cap} 待機中 // セクター {sector}',
+    'SCORE / SECTOR': 'スコア / セクター',
+    'UI VOL': 'UI音量',
+    FLASH: 'フラッシュ',
+    'REDUCED MOTION': '視覚効果を減らす'
   }
 });
 

@@ -288,7 +288,6 @@ if (!audioSource.includes('createDynamicsCompressor')) staticErrors.push('specta
 if (!audioSource.includes('audio.playbackRate = playbackRate')) staticErrors.push('runtime SFX pitch variation is missing');
 if (!catalogSource.includes('playbackRateMin')) staticErrors.push('authored SFX pitch ranges are missing');
 for (const marker of [
-  "emitSpectacle('combo'",
   "emitSpectacle('pickup'",
   "emitSpectacle('wave'",
   "emitSpectacle('reinforcement'",

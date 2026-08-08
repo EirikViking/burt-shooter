@@ -161,6 +161,11 @@ try {
       livesPulse: hud.livesGroup?._debugPulse ?? null,
       rankProgress: hud.rankGroup?._debugRankProgress || null,
       comboMeter: hud.comboMeterGroup?._debugComboMeter || null,
+      sectorSemantics: {
+        duplicateLevelVisible: Boolean(hud.levelText?.visible),
+        duplicateLevelText: hud.levelText?.text || '',
+        sectorText: hud.locationText?.text || ''
+      },
       status: hud.activePowerupGroup?._debugStatus || null,
       rows,
       activePowerupVisible: Boolean(hud.activePowerupGroup?.visible),
@@ -228,7 +233,10 @@ try {
       state.comboMeter?.progress > 0.35 &&
       state.comboMeter?.progress < 0.5 &&
       state.comboMeter?.scoreOverlap === false &&
-      ['score-sidecar', 'mission-underrail'].includes(state.comboMeter?.placement) &&
+      state.comboMeter?.placement === 'score-lane' &&
+      state.sectorSemantics?.duplicateLevelVisible === false &&
+      state.sectorSemantics?.duplicateLevelText === '' &&
+      /SECTOR/i.test(state.sectorSemantics?.sectorText || '') &&
       state.activePowerupVisible &&
       state.status?.hasSpent &&
       state.status?.hasExpiring &&
@@ -240,13 +248,14 @@ try {
       expiringRow?.expiryOverlayVisible &&
       state.hierarchy?.livesPriority === 'critical' &&
       state.hierarchy?.missionPriority?.tier === 'objective' &&
-      state.hierarchy?.scorePriority === 'secondary' &&
+      state.hierarchy?.scorePriority === 'primary' &&
       state.hierarchy?.rankPriority === 'secondary' &&
       state.hierarchy?.recordPriority === 'secondary' &&
       state.hierarchy?.powerupPriority === 'support' &&
       state.hierarchy?.traitPriority === 'support' &&
-      state.hierarchy?.livesAlpha > state.hierarchy?.scoreAlpha &&
-      state.hierarchy?.powerupAlpha > state.hierarchy?.scoreAlpha &&
+      state.hierarchy?.livesAlpha >= state.hierarchy?.scoreAlpha &&
+      state.hierarchy?.scoreAlpha > state.hierarchy?.rankAlpha &&
+      state.hierarchy?.scoreAlpha > state.hierarchy?.recordAlpha &&
       state.hierarchy?.traitAlpha > state.hierarchy?.rankAlpha &&
       state.hierarchy?.missionTextAlpha > state.hierarchy?.directiveAlpha &&
       bossHierarchy?.tier === 'critical' &&

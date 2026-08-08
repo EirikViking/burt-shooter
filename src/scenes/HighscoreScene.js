@@ -62,7 +62,7 @@ function hasLeaderboardLevelColumn(view = LeaderboardView.GLOBAL) {
 
 function getLeaderboardScoreHeader(view = LeaderboardView.GLOBAL) {
   if (view === LeaderboardView.SECTOR) return 'SCORE / START';
-  if (view === LeaderboardView.LOCAL) return 'SCORE / LEVEL';
+  if (view === LeaderboardView.LOCAL) return 'SCORE / SECTOR';
   return 'SCORE';
 }
 
@@ -72,7 +72,7 @@ function getLeaderboardLevelDisplay(entry = {}, view = LeaderboardView.GLOBAL) {
     return `${translateText('S')} ${sector || '?'}`;
   }
   if (!hasLeaderboardLevelColumn(view)) return '';
-  const label = translateText('LV');
+  const label = translateText('S');
   if (entry.levelSource === 'score_estimate') return `${label} ?`;
   const level = Math.max(0, Math.floor(Number(entry.level ?? entry.levelReached) || 0));
   return `${label} ${level}`;
@@ -133,6 +133,8 @@ export class HighscoreScene {
     this.leaderboardPanel = null;
     this.backdropSprite = null;
     this.backdropShade = null;
+    this.transitionPlaceholder = null;
+    this.transitionPlaceholderDebug = null;
     this.titlePlate = null;
     this.holoRails = null;
     this.statsDeck = null;
@@ -146,7 +148,9 @@ export class HighscoreScene {
 
   async init() {
     this.gamepadNavigator.suppressUntilReleased();
+    this.container.sortableChildren = true;
     this.container.removeChildren();
+    this.createTransitionPlaceholder(this.game.app.screen.width, this.game.app.screen.height);
     this.backdropSprite = null;
     this.backdropShade = null;
     this.titlePlate = null;
@@ -391,8 +395,79 @@ export class HighscoreScene {
     this.layoutHighscore();
     this.setupKeyboardNavigation();
     this.setHighscoreFocus(0);
+    this.removeTransitionPlaceholder();
     console.log(`HighscoreScene build:${BUILD_ID}`);
     this.loadActiveLeaderboard();
+  }
+
+  createTransitionPlaceholder(width, height) {
+    this.removeTransitionPlaceholder();
+    const layer = new PIXI.Container();
+    layer.label = 'ui_highscoreTransitionPlaceholder';
+    layer.zIndex = 2000000;
+    layer.eventMode = 'none';
+
+    const background = new PIXI.Graphics();
+    background.rect(0, 0, width, height);
+    background.fill({ color: 0x020711, alpha: 1 });
+    const panelWidth = Math.min(width - 48, 680);
+    const panelHeight = Math.min(168, Math.max(118, height * 0.21));
+    const panelX = (width - panelWidth) / 2;
+    const panelY = (height - panelHeight) / 2;
+    background.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
+    background.fill({ color: 0x061827, alpha: 0.94 });
+    background.stroke({ color: 0x00f6ff, width: 2, alpha: 0.78 });
+    background.rect(panelX + 18, panelY + 16, Math.max(84, panelWidth * 0.24), 2);
+    background.fill({ color: 0xffd15c, alpha: 0.64 });
+    background.rect(panelX + panelWidth - Math.max(96, panelWidth * 0.26) - 18, panelY + panelHeight - 18, Math.max(96, panelWidth * 0.26), 2);
+    background.fill({ color: 0xff55d9, alpha: 0.48 });
+    layer.addChild(background);
+
+    const title = createText(translateText('NOVA LEADERBOARD'), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(18, Math.min(34, width * 0.024)),
+      fontWeight: '900',
+      fill: '#faffd7',
+      stroke: '#00131b',
+      strokeThickness: 4,
+      letterSpacing: 1.5,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + panelHeight * 0.44);
+    layer.addChild(title);
+
+    const signal = new PIXI.Graphics();
+    const signalY = panelY + panelHeight * 0.72;
+    for (let index = 0; index < 5; index += 1) {
+      const barHeight = index % 2 === 0 ? 12 : 7;
+      signal.roundRect(width / 2 - 31 + index * 14, signalY - barHeight / 2, 5, barHeight, 2);
+    }
+    signal.fill({ color: 0x00f6ff, alpha: 0.82 });
+    layer.addChild(signal);
+
+    this.transitionPlaceholder = layer;
+    this.transitionPlaceholderDebug = {
+      visible: true,
+      branded: true,
+      width,
+      height,
+      title: title.text,
+      createdAt: Date.now()
+    };
+    this.container.addChild(layer);
+    this.container.sortChildren?.();
+  }
+
+  removeTransitionPlaceholder() {
+    const layer = this.transitionPlaceholder;
+    if (layer?.parent) layer.parent.removeChild(layer);
+    layer?.destroy?.({ children: true });
+    this.transitionPlaceholder = null;
+    if (this.transitionPlaceholderDebug) {
+      this.transitionPlaceholderDebug.visible = false;
+      this.transitionPlaceholderDebug.removedAt = Date.now();
+    }
   }
 
   async createLeaderboardBackdrop(width, height) {

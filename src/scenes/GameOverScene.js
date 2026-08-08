@@ -297,6 +297,8 @@ export class GameOverScene {
     this.boundHiddenKeyDown = null;
     this.backdrop = null;
     this.backdropShade = null;
+    this.transitionPlaceholder = null;
+    this.transitionPlaceholderDebug = null;
     this.menuFx = null;
     this.backdropLoaded = false;
     this.ceremonyFrame = null;
@@ -445,6 +447,7 @@ export class GameOverScene {
     this.gamepadNavigator.suppressUntilReleased();
     this.container.sortableChildren = true;
     this.container.removeChildren();
+    this.createTransitionPlaceholder(this.game.app.screen.width, this.game.app.screen.height);
     this.removeInputOverlay();
     this.nameInput = '';
     this.state = 'prompt';
@@ -828,6 +831,7 @@ export class GameOverScene {
     this.layoutUnsubscribe?.();
     this.layoutUnsubscribe = addResponsiveListener(() => this.layoutScreen());
     this.layoutScreen();
+    this.removeTransitionPlaceholder();
     this.reportShownAt = Date.now();
 
     this.updateNameDisplay();
@@ -1484,7 +1488,7 @@ export class GameOverScene {
     }
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
       return [
-        translateText('SCOUT RUN') + ` | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
+        `${translateText('SCOUT RUN')} | ${this.formatElapsedTime(elapsedSeconds)} | ${translateText('SECTOR')} ${this.finalLevel || 1}`,
         translateText('NO CAREER XP')
       ].join('\n');
     }
@@ -1496,8 +1500,8 @@ export class GameOverScene {
       ].join('\n');
     }
     return [
-      `Sector ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)} | Level ${this.finalLevel || 1}`,
-      `XP +${gained.toLocaleString('en-US')}`
+      `${translateText('SECTOR')} ${this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)}`,
+      `${translateText('XP')} +${gained.toLocaleString('en-US')}`
     ].join('\n');
   }
 
@@ -3130,6 +3134,96 @@ export class GameOverScene {
     this.backdropShade.zIndex = -10;
     this.container.addChild(this.backdropShade);
     this.layoutBackdrop(width, height);
+  }
+
+  createTransitionPlaceholder(width, height) {
+    this.removeTransitionPlaceholder();
+    const layer = new PIXI.Container();
+    layer.label = 'ui_gameOverTransitionPlaceholder';
+    layer.zIndex = 2000000;
+    layer.eventMode = 'none';
+
+    const background = new PIXI.Graphics();
+    background.rect(0, 0, width, height);
+    background.fill({ color: 0x020711, alpha: 1 });
+    const horizonY = height * 0.52;
+    background.rect(0, horizonY - 1, width, 2);
+    background.fill({ color: 0x37f5ff, alpha: 0.18 });
+    background.rect(0, horizonY + Math.max(22, height * 0.045), width, 1);
+    background.fill({ color: 0xff55d9, alpha: 0.12 });
+    layer.addChild(background);
+
+    const frame = new PIXI.Graphics();
+    const frameWidth = Math.min(width - 48, 620);
+    const frameHeight = Math.min(164, Math.max(116, height * 0.2));
+    const frameX = (width - frameWidth) / 2;
+    const frameY = (height - frameHeight) / 2;
+    frame.roundRect(frameX, frameY, frameWidth, frameHeight, 10);
+    frame.fill({ color: 0x061827, alpha: 0.92 });
+    frame.stroke({ color: 0x37f5ff, width: 2, alpha: 0.76 });
+    frame.rect(frameX + 18, frameY + 16, Math.max(72, frameWidth * 0.22), 2);
+    frame.fill({ color: 0xffef7e, alpha: 0.62 });
+    frame.rect(frameX + frameWidth - Math.max(90, frameWidth * 0.25) - 18, frameY + frameHeight - 18, Math.max(90, frameWidth * 0.25), 2);
+    frame.fill({ color: 0xff55d9, alpha: 0.46 });
+    layer.addChild(frame);
+
+    const title = createText('NOVA SWARM', {
+      fontFamily: 'Orbitron, Rajdhani, Bahnschrift, sans-serif',
+      fontSize: Math.max(18, Math.min(34, width * 0.024)),
+      fontWeight: '900',
+      fill: '#fff3a2',
+      stroke: '#031323',
+      strokeThickness: 4,
+      letterSpacing: 2,
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, frameY + frameHeight * 0.42);
+    layer.addChild(title);
+
+    const status = createText(translateText('FLIGHT REPORT'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: Math.max(13, Math.min(20, width * 0.015)),
+      fontWeight: '800',
+      fill: '#9cfbff',
+      letterSpacing: 1,
+      align: 'center'
+    });
+    status.anchor.set(0.5);
+    status.position.set(width / 2, frameY + frameHeight * 0.7);
+    layer.addChild(status);
+
+    const signal = new PIXI.Graphics();
+    const signalY = frameY + frameHeight - 22;
+    for (let index = 0; index < 3; index += 1) {
+      signal.circle(width / 2 + (index - 1) * 15, signalY, 3.2);
+    }
+    signal.fill({ color: 0x37f5ff, alpha: 0.86 });
+    layer.addChild(signal);
+
+    this.transitionPlaceholder = layer;
+    this.transitionPlaceholderDebug = {
+      visible: true,
+      branded: true,
+      width,
+      height,
+      title: title.text,
+      status: status.text,
+      createdAt: Date.now()
+    };
+    this.container.addChild(layer);
+    this.container.sortChildren?.();
+  }
+
+  removeTransitionPlaceholder() {
+    const layer = this.transitionPlaceholder;
+    if (layer?.parent) layer.parent.removeChild(layer);
+    layer?.destroy?.({ children: true });
+    this.transitionPlaceholder = null;
+    if (this.transitionPlaceholderDebug) {
+      this.transitionPlaceholderDebug.visible = false;
+      this.transitionPlaceholderDebug.removedAt = Date.now();
+    }
   }
 
   createCeremonyVisuals() {
