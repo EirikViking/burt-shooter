@@ -64,6 +64,13 @@ function setPad({ axes = [0, 0], pressed = [], connected = true } = {}) {
 }
 
 const input = new InputManager();
+const gameplayCanvas = {};
+let gameplayAcceptsPointer = true;
+input.setGameplaySurface({
+  canvas: gameplayCanvas,
+  canAccept: () => gameplayAcceptsPointer,
+  mapPointer: (clientX, clientY) => ({ x: clientX * 2, y: clientY * 2 })
+});
 assert.equal(input.getContinuityDebugState().enabled, true, 'opt-in continuity diagnostics should be enabled');
 
 key('keydown', 'ShiftLeft', 'Shift');
@@ -110,14 +117,52 @@ key('keyup', 'KeyW', 'w');
 key('keyup', 'ArrowRight', 'ArrowRight');
 key('keyup', 'Space', ' ');
 
-document.emit('pointerdown', { button: 0 });
+document.emit('pointerdown', { button: 0, target: gameplayCanvas });
 input.resetTransientState({ preserveFire: true, suppressUntilReleased: true });
 assert.equal(input.isFiring(), true, 'held pointer fire must survive a gameplay transition');
-document.emit('pointerup', { button: 0 });
+document.emit('pointerup', { button: 0, target: gameplayCanvas });
 assert.equal(input.isFiring(), false);
-document.emit('pointerdown', { button: 0 });
+document.emit('pointerdown', { button: 0, target: gameplayCanvas });
 document.emit('pointercancel', { button: 0 });
 assert.equal(input.isFiring(), false, 'pointer cancellation must clear fire intent');
+
+window.emit('nova-controls-changed', { detail: { fireInput: 'toggle', mouseSteering: true } });
+document.emit('pointerdown', { button: 0, target: { id: 'settings-button' } });
+document.emit('pointerup', { button: 0, target: { id: 'settings-button' } });
+assert.equal(input.isFiring(), false, 'document UI clicks must not toggle firing');
+document.emit('pointerdown', { button: 0, target: gameplayCanvas });
+document.emit('pointerup', { button: 0, target: gameplayCanvas });
+assert.equal(input.isFiring(), true, 'left canvas press must latch Toggle fire');
+document.emit('pointerdown', { button: 0, target: gameplayCanvas });
+document.emit('pointerup', { button: 0, target: gameplayCanvas });
+assert.equal(input.isFiring(), false, 'second left canvas press must release Toggle fire');
+key('keydown', 'Space', ' ');
+assert.equal(input.isFiring(), true, 'real keyboard press edge must latch Toggle fire');
+key('keyup', 'Space', ' ');
+input.resetTransientState({ preserveFire: true, preserveMovement: true });
+assert.equal(input.isFiring(), true, 'authorized pause/presentation transitions must preserve the Toggle latch');
+gameplayAcceptsPointer = false;
+document.emit('pointerdown', { button: 0, target: gameplayCanvas });
+document.emit('pointermove', { target: gameplayCanvas, clientX: 100, clientY: 120 });
+assert.equal(input.isFiring(), true, 'paused or blocked canvas clicks must not change the Toggle latch');
+assert.equal(input.getTransientDebugState().mouseSteeringTarget, null, 'blocked pointer movement must not steer');
+gameplayAcceptsPointer = true;
+document.emit('pointermove', { target: gameplayCanvas, clientX: 100, clientY: 120 });
+const mouseIntent = input.getMouseSteeringIntent(150, 180);
+assert.equal(mouseIntent.active, true, 'canvas movement must activate absolute mouse steering');
+assert.ok(mouseIntent.moveX > 0 && mouseIntent.moveY > 0, 'mouse steering target must use mapped game coordinates');
+input.noteNonMouseMovement('keyboard');
+assert.equal(input.getTransientDebugState().mouseSteeringTarget, null, 'keyboard movement must cancel stale mouse steering');
+window.emit('blur');
+assert.equal(input.isFiring(), false, 'focus loss must clear the Toggle latch');
+assert.equal(input.getTransientDebugState().mouseSteeringTarget, null, 'focus loss must clear mouse steering');
+
+window.emit('nova-controls-changed', { detail: { fireInput: 'toggle', mouseSteering: false } });
+setPad({ pressed: [0] });
+assert.equal(input.pollGamepad(true).firing, true, 'controller fire must remain hold-based in Toggle mode');
+setPad();
+assert.equal(input.pollGamepad(true).firing, false, 'controller fire must release normally in Toggle mode');
+window.emit('nova-controls-changed', { detail: { fireInput: 'hold', mouseSteering: false } });
 
 setPad({ axes: [-1, 0], pressed: [0, 1, 6] });
 let gamepad = input.pollGamepad(true);
@@ -213,9 +258,12 @@ assert.doesNotMatch(playSource, /if \(this\.isPaused\) this\.setPaused\(false\)/
 assert.match(playSource, /boss_intro_enter[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
 assert.match(playSource, /boss_intro_exit[\s\S]*preserveFire: true,[\s\S]*preserveMovement: true/);
 assert.match(playSource, /focus_loss:\$\{reason\}[\s\S]*preserveFire: false/);
-assert.match(gameSource, /scene_teardown[\s\S]*preserveFire: true/);
+assert.match(playSource, /pause\|tactical_draft\|boss_intro\|interlude[\s\S]*clearMouseSteeringTarget/,
+  'blocking gameplay surfaces must invalidate stale mouse targets');
+assert.match(gameSource, /scene_teardown[\s\S]*preserveFire: false/);
 assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*resetTransientState/);
+assert.match(gameSource, /prepareGameplayInputFocus\(\)[\s\S]*preserveFire: false/);
 assert.match(playSource, /recordFrameContinuity/);
 
 input.destroy();
-console.log('[input-state-transitions] PASS keyboard, pointer, touch, controller, phase edge, focus, movement, modal, focus-loss, and scene-transition contracts');
+console.log('[input-state-transitions] PASS Hold/Toggle keyboard+canvas edges, UI isolation, mouse steering ownership, controller hold, phase, focus-loss, and transition contracts');

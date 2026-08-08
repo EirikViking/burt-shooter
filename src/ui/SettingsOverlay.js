@@ -24,6 +24,7 @@ import {
   resetDisplaySettings
 } from '../config/DisplaySettings.js';
 import { getMenuSettings, saveMenuSettings } from '../config/MenuSettings.js';
+import { getControlSettings, saveControlSettings } from '../config/ControlSettings.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -199,6 +200,7 @@ export class SettingsOverlay {
     const settings = AudioManager.getSettings();
     const accessibility = getAccessibilitySettings();
     const menuSettings = this.getMenuSettingsForOverlay();
+    const controlSettings = getControlSettings();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -309,6 +311,12 @@ export class SettingsOverlay {
         }
       });
       leftY += tighterGap;
+      this.addFireInputRow(controlSettings.fireInput, leftY);
+      leftY += tighterGap;
+      this.addToggleRow('Mouse Steering', controlSettings.mouseSteering, leftY, (enabled) => {
+        saveControlSettings({ ...getControlSettings(), mouseSteering: enabled });
+      }, { id: 'mouse_steering' });
+      leftY += tighterGap;
       this.addKeyboardBindingsRow('KEYBOARD CONTROLS', leftY);
       leftY += Math.round((dense ? 28 : 40) * this.uiScale);
       this.addSectionLabel('ACCESSIBILITY', leftY);
@@ -387,6 +395,12 @@ export class SettingsOverlay {
           this.pilotOrdersButton = button;
         }
       });
+      y += tighterGap;
+      this.addFireInputRow(controlSettings.fireInput, y);
+      y += tighterGap;
+      this.addToggleRow('Mouse Steering', controlSettings.mouseSteering, y, (enabled) => {
+        saveControlSettings({ ...getControlSettings(), mouseSteering: enabled });
+      }, { id: 'mouse_steering' });
       y += tighterGap;
       this.addKeyboardBindingsRow('KEYBOARD CONTROLS', y);
       y += Math.round(32 * this.uiScale);
@@ -1139,6 +1153,22 @@ export class SettingsOverlay {
       button,
       label,
       cycle
+    });
+  }
+
+  addFireInputRow(initialMode, y) {
+    let mode = initialMode === 'toggle' ? 'toggle' : 'hold';
+    this.addChoiceRow('Fire Input', translateText(mode === 'toggle' ? 'TOGGLE' : 'HOLD'), y, () => {
+      mode = mode === 'hold' ? 'toggle' : 'hold';
+      saveControlSettings({ ...getControlSettings(), fireInput: mode });
+      if (this.fireInputButton?._label) {
+        this.fireInputButton._label.text = translateText(mode === 'toggle' ? 'TOGGLE' : 'HOLD');
+      }
+    }, {
+      id: 'fire_input',
+      onButton: (button) => {
+        this.fireInputButton = button;
+      }
     });
   }
 
@@ -2340,6 +2370,7 @@ export class SettingsOverlay {
 
   getDebugState() {
     const displaySettings = getDisplaySettings();
+    const controlSettings = getControlSettings();
     return {
       display: {
         mode: displaySettings.mode,
@@ -2366,6 +2397,10 @@ export class SettingsOverlay {
         value: AudioManager.getSettings().musicPack,
         button: debugBounds(this.musicPackButton),
         label: this.musicPackButton?._label?.text || null
+      },
+      controls: {
+        ...controlSettings,
+        fireInputLabel: this.fireInputButton?._label?.text || translateText(controlSettings.fireInput === 'toggle' ? 'TOGGLE' : 'HOLD')
       },
       footer: Object.fromEntries(Object.entries(this.footerButtons).map(([key, button]) => [key, debugBounds(button)])),
       credits: this.creditsDebugState,

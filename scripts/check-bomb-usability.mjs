@@ -128,7 +128,7 @@ try {
       bullets.playerBullets = [];
       bullets.enemyBullets = [];
     };
-    const preparePlayer = (x, y) => {
+    const preparePlayer = (x, y, enemyState = 'WAVE_ACTIVE') => {
       player.active = true;
       player.x = x;
       player.y = y;
@@ -139,7 +139,7 @@ try {
       player.bombMaxShots = 3;
       player.bombArmedAt = player.getGameplayClockMs() - 1;
       player.bombTriggerQueued = false;
-      manager.state = 'WAVE_ACTIVE';
+      manager.state = enemyState;
     };
     const launchBomb = () => {
       const queued = player.queueBombTriggerIntent(player.getGameplayClockMs());
@@ -162,6 +162,9 @@ try {
 
     const width = game.getWidth();
     const height = game.getHeight();
+    preparePlayer(width * 0.5, height * 0.84, 'WAVE_BRIEFING');
+    const genericBriefing = player.getBombCommitState(player.getGameplayClockMs());
+
     preparePlayer(width * 0.5, height * 0.38);
     const highTarget = {
       active: true,
@@ -195,7 +198,43 @@ try {
 
     cleanupBullets();
     manager.enemies = [];
-    preparePlayer(width * 0.5, height * 0.84);
+    preparePlayer(width * 0.5, height * 0.84, 'BOSS_ACTIVE');
+    const openingBoss = {
+      active: true,
+      destroyed: false,
+      kind: 'boss',
+      x: player.x,
+      y: 150,
+      radius: 42,
+      health: 999,
+      invulnerable: true,
+      sprite: { visible: true, renderable: true, alpha: 1 }
+    };
+    manager.boss = openingBoss;
+    const bossOpeningQueued = player.queueBombTriggerIntent(player.getGameplayClockMs());
+    player.shootCooldown = 0;
+    const openingVolley = player.shoot();
+    const openingBomb = openingVolley.find((candidate) => candidate?.isBomb);
+    openingVolley.forEach((candidate) => candidate?.destroy?.());
+    const bufferSurvivedOpening = player.bombTriggerQueued;
+    openingBoss.invulnerable = false;
+    player.shootCooldown = 0;
+    const vulnerableVolley = player.shoot();
+    const vulnerableBomb = vulnerableVolley.find((candidate) => candidate?.isBomb);
+    vulnerableVolley.forEach((candidate) => candidate?.destroy?.());
+    const bossOpening = {
+      queued: bossOpeningQueued,
+      openingBombCreated: Boolean(openingBomb),
+      bufferSurvivedOpening,
+      vulnerabilityBombCreated: Boolean(vulnerableBomb),
+      targetKind: vulnerableBomb?.bombTarget?.kind || null,
+      bufferConsumed: !player.bombTriggerQueued
+    };
+    manager.boss = null;
+
+    cleanupBullets();
+    manager.enemies = [];
+    preparePlayer(width * 0.5, height * 0.84, 'WAVE_BRIEFING');
     const hijacker = new Hijacker(player.x + 92, 150, Math.max(1, Number(game.level) || 1), game);
     hijacker.baseY = hijacker.y;
     hijacker.vx = 1.5;
@@ -240,8 +279,13 @@ try {
     };
     return {
       ok: true,
+      genericBriefing: {
+        ready: genericBriefing.ready,
+        reason: genericBriefing.reason
+      },
       highBefore,
       highAfter,
+      bossOpening,
       tractor: {
         queued: tractorLaunch.queued,
         bombCreated: Boolean(tractorBomb),
@@ -314,6 +358,9 @@ try {
 
   const failures = [];
   if (!setup.ok) failures.push(setup.reason || 'setup failed');
+  if (setup.genericBriefing?.ready || setup.genericBriefing?.reason !== 'combat_unavailable') {
+    failures.push(`generic wave briefing incorrectly allowed a Bomb: ${JSON.stringify(setup.genericBriefing)}`);
+  }
   if (!setup.highBefore?.queued || !setup.highBefore?.bombCreated) {
     failures.push(`high-screen valid target did not launch a Bomb: ${JSON.stringify(setup.highBefore)}`);
   }
@@ -325,6 +372,16 @@ try {
   }
   if (!setup.tractor?.queued || !setup.tractor?.bombCreated || setup.tractor?.targetKind !== 'hijacker') {
     failures.push(`Tractor/Hijacker was not a valid Bomb lock: ${JSON.stringify(setup.tractor)}`);
+  }
+  if (
+    !setup.bossOpening?.queued
+    || setup.bossOpening?.openingBombCreated
+    || !setup.bossOpening?.bufferSurvivedOpening
+    || !setup.bossOpening?.vulnerabilityBombCreated
+    || setup.bossOpening?.targetKind !== 'boss'
+    || !setup.bossOpening?.bufferConsumed
+  ) {
+    failures.push(`boss-opening Bomb press was not buffered exactly until vulnerability: ${JSON.stringify(setup.bossOpening)}`);
   }
   if (!setup.projectileCrossing?.hostileActive || !setup.projectileCrossing?.bombActive || setup.projectileCrossing?.bombDetonated) {
     failures.push(`hostile projectile incorrectly collided with or detonated the Bomb: ${JSON.stringify(setup.projectileCrossing)}`);

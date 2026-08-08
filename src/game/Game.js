@@ -229,7 +229,7 @@ export class Game {
   teardownCurrentScene() {
     const scene = this.currentScene;
     if (!scene) return;
-    scene.resetTransientGameplayInput?.('scene_teardown', { preserveFire: true });
+    scene.resetTransientGameplayInput?.('scene_teardown', { preserveFire: false });
     if (scene.container?.parent) {
       scene.container.parent.removeChild(scene.container);
     }
@@ -257,7 +257,7 @@ export class Game {
       // Focus can fail in headless/test shells; keyboard listeners still get reset below.
     }
     this.scenes?.play?.inputManager?.resetTransientState?.({
-      preserveFire: true,
+      preserveFire: false,
       suppressUntilReleased: true
     });
     this.scenes?.play?.pauseGamepadNavigator?.suppressUntilReleased?.();

@@ -1025,6 +1025,14 @@ function sanitizeMenuSettings(menu = {}) {
   return { confirmExit, showPilotOrders };
 }
 
+function sanitizeControlSettings(controls = {}) {
+  const raw = controls && typeof controls === 'object' ? controls : {};
+  return {
+    fireInput: raw.fireInput === 'toggle' ? 'toggle' : 'hold',
+    mouseSteering: raw.mouseSteering === true
+  };
+}
+
 function sanitizeSettings(settings = {}) {
   const clampUnit = (value, fallback) => {
     const number = Number(value);
@@ -1037,7 +1045,8 @@ function sanitizeSettings(settings = {}) {
     colorAssist: Boolean(settings.colorAssist),
     audio: sanitizeAudioSettings(settings.audio || {}),
     display: sanitizeDisplaySettings(settings.display || {}),
-    menu: sanitizeMenuSettings(settings.menu || {})
+    menu: sanitizeMenuSettings(settings.menu || {}),
+    controls: sanitizeControlSettings(settings.controls || {})
   };
 }
 

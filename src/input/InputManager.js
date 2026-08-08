@@ -1,5 +1,10 @@
 import { markControllerInputActive } from './GamepadNavigator.js';
 import {
+  CONTROL_SETTINGS_CHANGED_EVENT,
+  getControlSettings,
+  normalizeControlSettings
+} from '../config/ControlSettings.js';
+import {
   getKeyboardActionForQuery,
   getKeyboardActionForToken,
   getKeyboardBindings,
@@ -13,6 +18,12 @@ export class InputManager {
     this.justPressedActions = {};
     this.touches = [];
     this.touchFireActive = false;
+    this.mouseFireActive = false;
+    this.fireToggleLatched = false;
+    this.controlSettings = getControlSettings();
+    this.gameplaySurface = null;
+    this.mouseSteeringTarget = null;
+    this.lastMovementDevice = null;
     this.destroyed = false;
     this.gamepadDeadzone = 0.24;
     this.gamepadState = this.createEmptyGamepadState();
@@ -28,6 +39,7 @@ export class InputManager {
     };
     this.setupKeyboard();
     this.setupKeyboardBindingsListener();
+    this.setupControlSettingsListener();
     this.setupMouse();
     this.setupFocusHandlers();
     this.setupGamepadHandlers();
@@ -35,21 +47,41 @@ export class InputManager {
 
   setupMouse() {
     this.handleMouseDown = (e) => {
-      if (e.button === 0) this.touchFireActive = true;
+      const onGameplayCanvas = e.button === 0 && this.isGameplayPointerEvent(e);
+      if (onGameplayCanvas && this.canAcceptGameplayPointerInput()) {
+        if (this.controlSettings.fireInput === 'toggle') {
+          this.fireToggleLatched = !this.fireToggleLatched;
+        } else {
+          this.mouseFireActive = true;
+        }
+      }
       this.recordContinuityEvent('pointer_down', { button: e.button });
     };
     this.handleMouseUp = (e) => {
-      if (e.button === 0) this.touchFireActive = false;
+      if (e.button === 0) this.mouseFireActive = false;
       this.recordContinuityEvent('pointer_up', { button: e.button });
+    };
+    this.handlePointerMove = (e) => {
+      if (!this.controlSettings.mouseSteering || !this.isGameplayPointerEvent(e) || !this.canAcceptGameplayPointerInput()) return;
+      const target = this.gameplaySurface?.mapPointer?.(e.clientX, e.clientY);
+      if (!target || !Number.isFinite(target.x) || !Number.isFinite(target.y)) return;
+      this.mouseSteeringTarget = { x: target.x, y: target.y, at: Date.now() };
+      this.lastMovementDevice = 'mouse';
+    };
+    this.handlePointerLeave = (e) => {
+      if (e?.target === this.gameplaySurface?.canvas) this.clearMouseSteeringTarget('canvas_leave');
     };
     this.handlePointerCancel = () => {
       this.touchFireActive = false;
+      this.mouseFireActive = false;
+      this.clearMouseSteeringTarget('pointer_cancel');
       this.touches = [];
       this.recordContinuityEvent('pointer_cancel');
     };
-    // Bind to window to catch clicks outside canvas if needed, or document
     document.addEventListener('pointerdown', this.handleMouseDown);
     document.addEventListener('pointerup', this.handleMouseUp);
+    document.addEventListener('pointermove', this.handlePointerMove);
+    document.addEventListener('pointerleave', this.handlePointerLeave, true);
     document.addEventListener('pointercancel', this.handlePointerCancel);
   }
 
@@ -65,7 +97,12 @@ export class InputManager {
       ].filter(Boolean));
       for (const action of actions) {
         const wasPressed = this.isActionPressed(action, { includeGamepad: false });
-        if (!wasPressed) this.justPressedActions[action] = true;
+        if (!wasPressed) {
+          this.justPressedActions[action] = true;
+          if (action === 'shoot' && !e.repeat && this.controlSettings.fireInput === 'toggle' && this.canAcceptGameplayPointerInput()) {
+            this.fireToggleLatched = !this.fireToggleLatched;
+          }
+        }
       }
       this.keys[e.code] = true;
       this.keys[e.key] = true;
@@ -91,6 +128,57 @@ export class InputManager {
       });
     };
     window.addEventListener(KEYBOARD_BINDINGS_CHANGED_EVENT, this.handleKeyboardBindingsChanged);
+  }
+
+  setupControlSettingsListener() {
+    this.handleControlSettingsChanged = (event) => {
+      const previousMode = this.controlSettings.fireInput;
+      this.controlSettings = normalizeControlSettings(event?.detail || getControlSettings());
+      if (previousMode !== this.controlSettings.fireInput || this.controlSettings.fireInput !== 'toggle') {
+        this.fireToggleLatched = false;
+      }
+      if (!this.controlSettings.mouseSteering) this.clearMouseSteeringTarget('setting_disabled');
+      this.recordContinuityEvent('control_settings_changed', this.controlSettings);
+    };
+    window.addEventListener(CONTROL_SETTINGS_CHANGED_EVENT, this.handleControlSettingsChanged);
+  }
+
+  setGameplaySurface(surface = null) {
+    this.gameplaySurface = surface;
+    if (!surface) this.clearMouseSteeringTarget('surface_removed');
+  }
+
+  isGameplayPointerEvent(event) {
+    return Boolean(this.gameplaySurface?.canvas && event?.target === this.gameplaySurface.canvas);
+  }
+
+  canAcceptGameplayPointerInput() {
+    return Boolean(this.gameplaySurface?.canvas && this.gameplaySurface?.canAccept?.());
+  }
+
+  clearMouseSteeringTarget(reason = 'cleared') {
+    const hadTarget = Boolean(this.mouseSteeringTarget);
+    this.mouseSteeringTarget = null;
+    if (this.lastMovementDevice === 'mouse') this.lastMovementDevice = null;
+    if (hadTarget) this.recordContinuityEvent('mouse_steering_cleared', { reason });
+  }
+
+  noteNonMouseMovement(device = 'keyboard') {
+    this.lastMovementDevice = device;
+    this.clearMouseSteeringTarget(`${device}_movement`);
+  }
+
+  getMouseSteeringIntent(x, y, deadzone = 8) {
+    if (!this.controlSettings.mouseSteering || !this.mouseSteeringTarget || !this.canAcceptGameplayPointerInput()) {
+      return { moveX: 0, moveY: 0, active: false, distance: 0 };
+    }
+    const dx = this.mouseSteeringTarget.x - x;
+    const dy = this.mouseSteeringTarget.y - y;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= Math.max(1, Number(deadzone) || 8)) {
+      return { moveX: 0, moveY: 0, active: true, distance };
+    }
+    return { moveX: dx / distance, moveY: dy / distance, active: true, distance };
   }
 
   setupFocusHandlers() {
@@ -418,6 +506,11 @@ export class InputManager {
     this.justPressedActions = {};
     this.touches = [];
     if (!preserveFire) this.touchFireActive = false;
+    if (!preserveFire) {
+      this.mouseFireActive = false;
+      this.fireToggleLatched = false;
+    }
+    if (!preserveMovement) this.clearMouseSteeringTarget('transient_reset');
 
     const raw = this.readGamepadControls(this.getGamepadSnapshot());
     if (!suppressUntilReleased) {
@@ -472,14 +565,23 @@ export class InputManager {
       suppressedKeys: Array.from(this.suppressedKeys).sort(),
       suppressedGamepadActions: Object.fromEntries(this.suppressedGamepadActions),
       touchFireActive: Boolean(this.touchFireActive),
+      mouseFireActive: Boolean(this.mouseFireActive),
+      fireToggleLatched: Boolean(this.fireToggleLatched),
+      controlSettings: { ...this.controlSettings },
+      mouseSteeringTarget: this.mouseSteeringTarget ? { ...this.mouseSteeringTarget } : null,
+      lastMovementDevice: this.lastMovementDevice,
       touches: this.touches.length
     };
   }
 
   isFiring() {
     const gamepad = this.pollGamepad();
-    return this.isActionPressed('shoot') ||
+    const keyboardFiring = this.controlSettings.fireInput === 'hold'
+      && this.isActionPressed('shoot', { includeGamepad: false });
+    return keyboardFiring ||
       this.touchFireActive ||
+      this.mouseFireActive ||
+      (this.controlSettings.fireInput === 'toggle' && this.fireToggleLatched) ||
       gamepad.firing;
   }
 
@@ -564,6 +666,8 @@ export class InputManager {
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     document.removeEventListener('pointerdown', this.handleMouseDown);
     document.removeEventListener('pointerup', this.handleMouseUp);
+    document.removeEventListener('pointermove', this.handlePointerMove);
+    document.removeEventListener('pointerleave', this.handlePointerLeave, true);
     document.removeEventListener('pointercancel', this.handlePointerCancel);
     this.keys = {};
     this.justPressed = {};
@@ -571,6 +675,8 @@ export class InputManager {
     this.suppressedKeys.clear();
     this.suppressedGamepadActions.clear();
     window.removeEventListener(KEYBOARD_BINDINGS_CHANGED_EVENT, this.handleKeyboardBindingsChanged);
+    window.removeEventListener(CONTROL_SETTINGS_CHANGED_EVENT, this.handleControlSettingsChanged);
+    this.setGameplaySurface(null);
     this.gamepadState = this.createEmptyGamepadState();
     this.destroyed = true;
   }

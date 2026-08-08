@@ -200,15 +200,16 @@ for (const needle of [
 }
 
 for (const needle of [
-  "this.isKeyPressed('Space')",
-  "this.isKeyPressed('shoot')",
+  "this.isActionPressed('shoot', { includeGamepad: false })",
   'this.touchFireActive',
+  'this.mouseFireActive',
+  'this.fireToggleLatched',
   'gamepad.firing'
 ]) {
   if (!inputSource.includes(needle)) fail(`InputManager.isFiring missing source marker: ${needle}`);
 }
 if (!inputSource.includes('pointerdown') || !inputSource.includes('pointerup')) {
-  fail('mouse/pointer fire should feed touchFireActive');
+  fail('mouse/pointer fire should feed the canvas-scoped fire state');
 }
 
 const baseMs = 10000;

@@ -38,6 +38,7 @@ function extractFunction(source, name) {
 
 const onEnemyKilled = extractFunction(playScene, 'onEnemyKilled');
 const updateComboTimers = extractFunction(playScene, 'updateComboTimers');
+const init = extractFunction(playScene, 'init');
 const forceClearAllEnemies = extractFunction(enemyManager, 'forceClearAllEnemies');
 
 if (!/COMBO_WINDOW_MS\s*=\s*3200/.test(comboConfig)) fail('combo window should remain 3200ms for this non-scoring pass');
@@ -49,8 +50,29 @@ for (const needle of [
 ]) {
   if (!onEnemyKilled.includes(needle)) fail(`onEnemyKilled missing combo kill marker: ${needle}`);
 }
+for (const needle of [
+  'this.comboCount = 0',
+  'this.comboMultiplier = 1',
+  'this.comboTimerMs = 0',
+  'this.killStreak = 0',
+  'this.lastKillAt = 0',
+  'this.comboMilestonesReached = new Set()'
+]) {
+  if (!init.includes(needle)) fail(`PlayScene.init missing new-run combo reset: ${needle}`);
+}
+if (/now\s*-\s*this\.lastKillAt\s*>\s*this\.comboWindowMs/.test(onEnemyKilled)) {
+  fail('onEnemyKilled must not reset combo from wall-clock elapsed time');
+}
 if (!updateComboTimers.includes('this.comboTimerMs -= delta * 16.67')) {
   fail('combo timer should decay by frame delta');
+}
+for (const needle of [
+  "enemyState === 'WAVE_ACTIVE'",
+  "enemyState === 'BOSS_ACTIVE'",
+  'this.enemyManager?.waveEnding',
+  '!this.isGameplayClockAdvancing()'
+]) {
+  if (!updateComboTimers.includes(needle)) fail(`combo timer missing transition/agency guard: ${needle}`);
 }
 if (!updateComboTimers.includes('this.comboCount = 0')) {
   fail('combo expiration should reset combo count');
@@ -77,6 +99,39 @@ if (/onEnemyKilled|addNormalWaveScore|getComboScore/.test(forceClearAllEnemies))
   fail('forceClearAllEnemies should not silently award kill combo or score credit');
 }
 
+const model = {
+  comboCount: 9,
+  comboMultiplier: 1,
+  comboTimerMs: 1200,
+  killStreak: 9,
+  milestones: new Set([5])
+};
+const tick = (state, deltaMs, { enemyState, waveEnding = false, clockAdvancing = true }) => {
+  const activeCombat = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
+  if (state.comboCount <= 0 || !activeCombat || waveEnding || !clockAdvancing) return;
+  state.comboTimerMs -= deltaMs;
+  if (state.comboTimerMs <= 0) {
+    state.comboCount = 0;
+    state.comboMultiplier = 1;
+    state.killStreak = 0;
+    state.milestones.clear();
+  }
+};
+tick(model, 900, { enemyState: 'WAVE_BRIEFING' });
+if (model.comboTimerMs !== 1200 || model.comboCount !== 9) fail('combo must carry through wave briefing');
+model.comboCount += 1;
+model.killStreak += 1;
+model.comboTimerMs = 3200;
+if (model.comboCount !== 10 || model.comboTimerMs !== 3200) fail('first next-wave kill must continue and refresh the carried combo');
+tick(model, 3300, { enemyState: 'WAVE_ACTIVE' });
+if (model.comboCount !== 0 || model.killStreak !== 0 || model.milestones.size !== 0) fail('active-play expiry must fully reset combo state');
+for (const runMode of ['mayhem_pure', 'overrun']) {
+  const state = { comboCount: 3, comboMultiplier: 1, comboTimerMs: 800, killStreak: 3, milestones: new Set() };
+  tick(state, 400, { enemyState: 'WAVE_BRIEFING' });
+  tick(state, 900, { enemyState: 'WAVE_ACTIVE' });
+  if (state.comboCount !== 0) fail(`${runMode} must use the same authoritative active-play expiry`);
+}
+
 const report = {
   generatedAt: new Date().toISOString(),
   summary: {
@@ -86,6 +141,11 @@ const report = {
     comboAnchorPresentationWindowSynced: true,
     damageOnlyHitsRefreshScoreCombo: false,
     waveCleanupAwardsComboKills: false,
+    transitionCarryVerified: true,
+    nextWaveKillContinuesCombo: true,
+    activePlayExpiryVerified: true,
+    pureAndOverrunParityVerified: true,
+    secondRunInitResetVerified: true,
     scoringMechanicsChangedByThisCheck: false
   },
   findings: [

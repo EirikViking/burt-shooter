@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 globalThis.Audio = class {
   addEventListener() {}
@@ -14,6 +15,8 @@ globalThis.window = {
 };
 
 const { EnemyManager } = await import('../src/managers/EnemyManager.js');
+const enemyManagerSource = readFileSync('src/managers/EnemyManager.js', 'utf8');
+const playSceneSource = readFileSync('src/scenes/PlayScene.js', 'utf8');
 
 function createManager({ playerX = 200, aggression = 1.12 } = {}) {
   const manager = Object.create(EnemyManager.prototype);
@@ -103,6 +106,26 @@ const position = { x: 640, y: 160 };
 assert.deepEqual(
   manager.getWaveEntryStart({ route: 'side_left', screenW: 1280, pos: position }),
   { x: -100, y: 160 }
+);
+assert.match(
+  enemyManagerSource,
+  /enemy\.contactSafeDuringEntry = Boolean\([\s\S]*isOverrunRoutineReinforcement[\s\S]*reinforcementEntryRoute === 'bottom'/,
+  'only bottom-route Overrun routine reinforcements should receive entry contact safety'
+);
+assert.match(
+  playSceneSource,
+  /if \(enemy\.contactSafeDuringEntry && enemy\.state === 'ENTRY'\) return;[\s\S]*collisionStats\.enemyPlayerChecks/,
+  'bottom-entry safety must bypass ship contact only while the enemy remains in ENTRY'
+);
+const bottomEntryPath = Array.from({ length: 11 }, (_entry, index) => {
+  const t = index / 10;
+  const oneMinus = 1 - t;
+  const y = oneMinus * oneMinus * 820 + 2 * oneMinus * t * 1220 + t * t * 160;
+  return { t: Number(t.toFixed(1)), elapsedMs: Math.round(t * 1400), y: Number(y.toFixed(1)) };
+});
+assert.ok(
+  bottomEntryPath.some((sample) => sample.y >= 560 && sample.y <= 680),
+  `bottom route should reproduce the player-lane crossing that needs ENTRY-only safety: ${JSON.stringify(bottomEntryPath)}`
 );
 assert.deepEqual(
   manager.getWaveEntryStart({ route: 'side_right', screenW: 1280, pos: position }),
@@ -264,4 +287,4 @@ assert.ok(['side_left', 'side_right', 'bottom'].includes(
   spawnedBossConfigs[0]?.reinforcementEntryRoute
 ));
 
-console.log('[overrun-reinforcements] PASS concrete warning/spawn routes, small routine groups, high aggression');
+console.log(`[overrun-reinforcements] PASS concrete routes, ENTRY-only bottom contact safety, small groups, high aggression path=${JSON.stringify(bottomEntryPath)}`);

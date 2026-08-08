@@ -270,17 +270,48 @@ try {
       }
     };
     const wonderDeferred = play.showCabinetWonder(wonderDecision);
+    const manager = play.enemyManager;
+    const previousProgression = {
+      state: manager.state,
+      phase: manager.phase,
+      waveBriefingTimer: manager.waveBriefingTimer,
+      bossGateTimer: manager.bossGateTimer
+    };
+    manager.phase = 'WAVES';
+    manager.state = 'WAVE_BRIEFING';
+    manager.waveBriefingTimer = 417;
+    manager.update(1);
+    const pendingWaveTimerHeld = manager.waveBriefingTimer === 417;
+    manager.phase = 'BOSS';
+    manager.state = 'BOSS_GATE';
+    manager.bossGateTimer = 533;
+    manager.update(1);
+    const pendingBossTimerHeld = manager.bossGateTimer === 533;
     const wonderDuringWaveClear = {
       deferred: wonderDeferred,
       active: Boolean(play.activeCabinetWonder),
-      pendingKind: play.pendingCabinetWonder?.kind || null
+      pendingKind: play.pendingCabinetWonder?.kind || null,
+      pendingWaveTimerHeld,
+      pendingBossTimerHeld
     };
     play.dismissToastDisplay(play.activeTopToast, 'top', { reason: 'sequence_probe_exit' });
     const wonderPreludeLeadMs = Number(play.pendingCabinetWonder?.preludeLeadMs) || 1500;
     await wait(wonderPreludeLeadMs + 180);
     const wonderAfterWaveClear = play.getCabinetWonderDebugState();
+    manager.phase = 'WAVES';
+    manager.state = 'WAVE_BRIEFING';
+    manager.waveBriefingTimer = 619;
+    manager.update(1);
+    const activeWaveTimerHeld = manager.waveBriefingTimer === 619;
+    manager.phase = 'BOSS';
+    manager.state = 'BOSS_GATE';
+    manager.bossGateTimer = 727;
+    manager.update(1);
+    const activeBossTimerHeld = manager.bossGateTimer === 727;
+    wonderAfterWaveClear.progressionHold = { activeWaveTimerHeld, activeBossTimerHeld };
     play.clearCabinetWonder('sequence_probe_complete');
     play.pendingCabinetWonder = null;
+    Object.assign(manager, previousProgression);
 
     play.clearToastState();
     play.triggerPlayerDeathFeedback({ final: false });
@@ -337,7 +368,11 @@ try {
     presentationSequences.wonderDuringWaveClear.deferred === true &&
     presentationSequences.wonderDuringWaveClear.active === false &&
     presentationSequences.wonderDuringWaveClear.pendingKind === 'presentation_release' &&
+    presentationSequences.wonderDuringWaveClear.pendingWaveTimerHeld === true &&
+    presentationSequences.wonderDuringWaveClear.pendingBossTimerHeld === true &&
     Boolean(presentationSequences.wonderAfterWaveClear.active) &&
+    presentationSequences.wonderAfterWaveClear.progressionHold?.activeWaveTimerHeld === true &&
+    presentationSequences.wonderAfterWaveClear.progressionHold?.activeBossTimerHeld === true &&
     presentationSequences.wonderAfterWaveClear.last?.scaleReduction === 0.3 &&
     presentationSequences.wonderAfterWaveClear.last?.ambientAlpha >= 0.25 &&
     presentationSequences.wonderAfterWaveClear.last?.ambientAlpha <= 0.35,

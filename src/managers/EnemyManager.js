@@ -3121,6 +3121,10 @@ export class EnemyManager {
           enemy.isReinforcementSwarmEntry = enemy.reinforcementGroupCount > 1;
           enemy.isOverrunRoutineReinforcement = config.isOverrunRoutineReinforcement === true;
           enemy.reinforcementEntryRoute = reinforcementEntryRoute || null;
+          enemy.contactSafeDuringEntry = Boolean(
+            enemy.isOverrunRoutineReinforcement
+            && reinforcementEntryRoute === 'bottom'
+          );
           if (enemy.isOverrunRoutineReinforcement) enemy.isReinforcementSwarmEntry = true;
           const scoreMultiplier = Math.max(1, Number(config.reinforcementScoreMultiplier) || 1);
           if (scoreMultiplier > 1) {
@@ -3194,6 +3198,18 @@ export class EnemyManager {
         const entryDelayMs = Math.max(0, i * delayStep - scheduledDelayMs + (Number(config.reinforcementEntryDelayMs) || 0));
         const resolvedEntryDurationMs = entryDurationMs * Math.max(0.6, Math.min(1.2, Number(enemy.nemesisOpeningEntryDurationMult) || 1));
         enemy.startEntry(startX, startY, pos.x, pos.y, resolvedEntryDurationMs, entryDelayMs);
+        if (enemy.contactSafeDuringEntry) {
+          enemy.bottomEntrySafetyDebug = {
+            route: reinforcementEntryRoute,
+            startX,
+            startY,
+            targetX: pos.x,
+            targetY: pos.y,
+            entryDurationMs: resolvedEntryDurationMs,
+            entryDelayMs,
+            contactSafeState: 'ENTRY'
+          };
+        }
         if (config.isChallenge) {
           this.registerChallengeFlightTarget(enemy, {
             index: i,

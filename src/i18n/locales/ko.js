@@ -17,6 +17,7 @@ import { getTacticalDraftClaritySourceText } from '../tacticalDraftClaritySource
 import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText.js';
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
+import { getNewestTyrianFeedbackSourceText } from '../newestTyrianFeedbackSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "\uacbd\ub85c",
@@ -1850,6 +1851,6 @@ export const ko = {
   diagnostics: {
     interfaceLanguage: '인터페이스 언어'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ko'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ko'), ...getNovaHumorSourceText('ko'), ...getMayhemModesSourceText('ko'), ...getOverrunModeSourceText('ko'), ...getEliteExpansionSourceText('ko'), ...getHowToPlayCompleteSourceText('ko'), ...getTacticalFusionSourceText('ko'), ...getDailyCabinetSignalSourceText('ko'), ...getMenuHierarchySourceText('ko'), ...getForumFollowupSourceText('ko'), ...getPlayerFeedbackReliabilitySourceText('ko'), ...getTyrianFeedbackSourceText('ko'), ...getCompetitionLearningSourceText('ko'), ...getTacticalDraftClaritySourceText('ko'), ...getWonderCodexSourceText('ko'), ...getHangarLaunchModeSourceText('ko'), ...getNewestTyrianFeedbackSourceText('ko') }),
   patterns
 };

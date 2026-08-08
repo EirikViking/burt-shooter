@@ -707,7 +707,9 @@ function buildGameTextState(game) {
     layout: getCurrentLayout(),
     accessibility: getAccessibilitySettings(),
     input: {
-      gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null
+      gamepad: playScene?.inputManager?.getGamepadState ? playScene.inputManager.getGamepadState() : null,
+      controls: playScene?.inputManager?.getTransientDebugState?.() || null,
+      autoFireCueVisible: Boolean(playScene?.controlModeHudCue?.visible)
     },
     debugTools: playScene ? {
       enabled: isMaintainerDevtoolsEnabled(),

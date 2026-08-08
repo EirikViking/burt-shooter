@@ -15,6 +15,7 @@ import {
   CLOUD_SHIP_USAGE_TOTAL_KEY,
   CLOUD_THREAT_DISCOVERY_KEY,
   CONFIRM_EXIT_KEY,
+  CONTROL_SETTINGS_KEY,
   DISPLAY_MODE_KEY,
   DISPLAY_WINDOW_SIZE_KEY,
   SHOW_PILOT_ORDERS_KEY,
@@ -165,7 +166,8 @@ try {
         mode: 'windowed',
         windowSize: { width: 1600, height: 900 }
       },
-      menu: { confirmExit: false, showPilotOrders: false }
+      menu: { confirmExit: false, showPilotOrders: false },
+      controls: { fireInput: 'toggle', mouseSteering: true }
     },
     hangarProgress: {
       pilotXp: 54321,
@@ -274,6 +276,7 @@ try {
   assert.deepEqual(merged.settings.display.windowSize, { width: 1600, height: 900 });
   assert.equal(merged.settings.menu.confirmExit, false);
   assert.equal(merged.settings.menu.showPilotOrders, false);
+  assert.deepEqual(merged.settings.controls, { fireInput: 'toggle', mouseSteering: true });
   assert.equal(Object.hasOwn(merged, 'debugFlags'), false);
   assert.equal(Object.hasOwn(merged, 'absolutePath'), false);
 
@@ -348,7 +351,8 @@ try {
       }
     })],
     [CONFIRM_EXIT_KEY, '0'],
-    [SHOW_PILOT_ORDERS_KEY, '0']
+    [SHOW_PILOT_ORDERS_KEY, '0'],
+    [CONTROL_SETTINGS_KEY, JSON.stringify({ fireInput: 'toggle', mouseSteering: true })]
   ]);
   const collected = collectSteamCloudPersistenceState({
     storage,
@@ -392,6 +396,7 @@ try {
   assert.equal(collectedSave.scoutRunRecords.best.score, 130000);
   assert.equal(collectedSave.settings.menu.confirmExit, false);
   assert.equal(collectedSave.settings.menu.showPilotOrders, false);
+  assert.deepEqual(collectedSave.settings.controls, { fireInput: 'toggle', mouseSteering: true });
 
   const markerUserData = mkdtempSync(path.join(tmpdir(), 'nova-steam-cloud-codex-marker-'));
   try {
@@ -611,7 +616,8 @@ try {
       colorAssist: true,
       audio: { musicEnabled: false, bossVoiceEnabled: false, musicPack: 'classic' },
       display: { mode: 'borderless', windowSize: { width: 1920, height: 1080 } },
-      menu: { confirmExit: false, showPilotOrders: false }
+      menu: { confirmExit: false, showPilotOrders: false },
+      controls: { fireInput: 'toggle', mouseSteering: true }
     }
   }, { storage: restartStorage });
   assert.equal(restoreSummary.language, 'ja');
@@ -630,6 +636,7 @@ try {
   assert.deepEqual(JSON.parse(restartStorage.getItem(DISPLAY_WINDOW_SIZE_KEY)), { width: 1920, height: 1080 });
   assert.equal(restartStorage.getItem(CONFIRM_EXIT_KEY), '0');
   assert.equal(restartStorage.getItem(SHOW_PILOT_ORDERS_KEY), '0');
+  assert.deepEqual(JSON.parse(restartStorage.getItem(CONTROL_SETTINGS_KEY)), { fireInput: 'toggle', mouseSteering: true });
   const restoredSectorRecords = JSON.parse(restartStorage.getItem(CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY));
   assert.equal(restoredSectorRecords.byCheckpoint['10'].scoreEarned, 9000);
   assert.equal(restoredSectorRecords.byCheckpoint['20'].scoreEarned, 12000);

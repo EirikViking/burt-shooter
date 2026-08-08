@@ -31,7 +31,7 @@ const CORE_HELP_ROWS = Object.freeze([
     icon: 'FIRE',
     label: 'SHOOT',
     control: 'SPACE / LEFT MOUSE / GAMEPAD A',
-    tip: 'Hold fire and choose targets. Clearing the right enemies keeps the run under control.',
+    tip: 'Hold fire, or enable Toggle in Settings. Mouse Steering follows the pointer; controller fire always stays hold.',
     accent: 0xffef7e
   },
   {

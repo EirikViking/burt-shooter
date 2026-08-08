@@ -288,6 +288,37 @@ try {
   assert(continuity.phaseDamage > 0 && continuity.ghostDamage > 0,
     `Focus did not remain armed through Phase/Ghost: ${JSON.stringify(continuity)}`);
 
+  const priorityContract = await page.evaluate(async () => {
+    const { Bullet } = await import('/src/entities/Bullet.js');
+    const classify = (overrides = {}) => Bullet.prototype.isPriorityPlayerProjectile.call({
+      isPlayer: true,
+      isBomb: false,
+      isPlasmaLance: false,
+      isGrazeBreaker: false,
+      isTraitCriticalShot: false,
+      isTraitPiercingShot: false,
+      isTraitWingShot: false,
+      isTraitBonusShot: false,
+      piercing: false,
+      tacticalFusionId: null,
+      powerupType: null,
+      ...overrides
+    });
+    return {
+      ordinary: classify(),
+      genericPiercing: classify({ piercing: true }),
+      traitPiercing: classify({ isTraitPiercingShot: true, piercing: true }),
+      critical: classify({ isTraitCriticalShot: true }),
+      wing: classify({ isTraitWingShot: true }),
+      bomb: classify({ isBomb: true })
+    };
+  });
+  assert(priorityContract.ordinary === false, `ordinary player shot must be dimmable: ${JSON.stringify(priorityContract)}`);
+  assert(priorityContract.genericPiercing === false, `generic piercing shot must be dimmable: ${JSON.stringify(priorityContract)}`);
+  assert(priorityContract.traitPiercing === false, `trait piercing shot must be dimmable: ${JSON.stringify(priorityContract)}`);
+  assert(priorityContract.critical && priorityContract.wing && priorityContract.bomb,
+    `authored priority projectiles must remain exempt: ${JSON.stringify(priorityContract)}`);
+
   await page.evaluate((samplesForCanvas) => {
     const canvas = document.createElement('canvas');
     canvas.id = 'focus-lens-evidence';
@@ -432,6 +463,7 @@ try {
     composite,
     profileScreenshots,
     samples,
+    priorityContract,
     pageErrors,
     consoleErrors
   };

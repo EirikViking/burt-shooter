@@ -69,6 +69,7 @@ import { tauntDirector } from '../game/TauntDirector.js';
 import { isMaintainerDevtoolsEnabled } from '../config/MaintainerDevtools.js';
 import { getNovaPerformanceFlags } from '../config/PerformanceFlags.js';
 import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
+import { getControlSettings } from '../config/ControlSettings.js';
 import {
   getGameplayBackdropCoverScale,
   getGameplayBackdropProfile,
@@ -636,7 +637,7 @@ export class PlayScene {
     if (!this.inputManager || this.inputManager.destroyed) {
       this.inputManager = new InputManager();
     }
-    this.inputManager.resetTransientState({ preserveFire: true, suppressUntilReleased: true });
+    this.inputManager.resetTransientState({ preserveFire: false, suppressUntilReleased: true });
     this.gameplayGame = this.game.createGameplayFacade?.() || this.game;
     this.isPaused = false;
     this.bossClearRecoveryLevels.clear();
@@ -705,6 +706,7 @@ export class PlayScene {
     // Note: HUD creates itself in constructor
     this.initMetaProgress();
     this.createSynergyBadge();
+    this.createControlModeHudCue();
 
     // TASK C: Debug diagnostics removed from gameplay screen
     // const diagStyle = {
@@ -748,6 +750,13 @@ export class PlayScene {
     this.totalKills = 0;
     this.bossKills = 0;
     this.wavesCleared = 0;
+    this.comboCount = 0;
+    this.comboMultiplier = 1;
+    this.comboTimerMs = 0;
+    this.comboWindowMs = COMBO_WINDOW_MS;
+    this.killStreak = 0;
+    this.lastKillAt = 0;
+    this.comboMilestonesReached = new Set();
     this.noHitWavesThisRun = 0;
     this.flawlessWaveStreak = 0;
     this.noHitSectorsThisRun = 0;
@@ -1017,6 +1026,7 @@ export class PlayScene {
     }
     this.player = new Player(width / 2, height - 100, this.inputManager, this.gameplayGame, spriteKey);
     this.gameContainer.addChild(this.player.sprite);
+    this.bindGameplayPointerSurface();
     if (this.player.setRank) {
       this.player.setRank(initialRank, 'init_placeholder');
     }
@@ -4679,6 +4689,7 @@ export class PlayScene {
   update(delta) {
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
+    this.updateControlModeHudCue();
     this.inputManager?.recordFrameContinuity?.(delta * (1000 / 60), {
       level: this.game?.level || null,
       bossWarning: Boolean(this.bossWarningActive || this.bossIntroActive),
@@ -5228,6 +5239,8 @@ export class PlayScene {
     return Boolean(
       this.activeRankUpPresentation?.parent
       || this.activeTacticalFusionUnlock?.container?.parent
+      || this.pendingCabinetWonder
+      || this.activeCabinetWonder
       || this.hasAuthoritativeTransitionPresentation()
       || (
         this.pendingRankUpPresentation !== null
@@ -7560,6 +7573,7 @@ export class PlayScene {
     this.enemyManager.enemies.forEach(enemy => {
       if (enemy.active && this.player.active) {
         if (enemy.challengeFlightTarget) return;
+        if (enemy.contactSafeDuringEntry && enemy.state === 'ENTRY') return;
         collisionStats.enemyPlayerChecks += 1;
         if (this.tryApplyEnemyShipGraze(enemy)) {
           collisionStats.enemyPlayerShipGrazes = (collisionStats.enemyPlayerShipGrazes || 0) + 1;
@@ -11871,6 +11885,9 @@ export class PlayScene {
       preserveMovement,
       suppressUntilReleased: true
     }) || null;
+    if (/pause|tactical_draft|boss_intro|interlude/.test(String(reason))) {
+      this.inputManager?.clearMouseSteeringTarget?.(`blocking_state:${reason}`);
+    }
     this.touchControls?.resetTransientState?.({ preserveMovement });
     this.player?.resetTransientInputState?.({ preserveMovement });
     this.lastTransientInputReset = {
@@ -18513,6 +18530,81 @@ export class PlayScene {
     this.synergyBadge.y = height * 0.1;
   }
 
+  canAcceptGameplayPointerInput() {
+    return Boolean(
+      this.game?.currentScene === this
+      && this.isReady
+      && this.introComplete
+      && !this.introActive
+      && !this.isPaused
+      && !this.tacticalDraft?.active
+      && !this.settingsOverlay
+      && !this.howToPlayOverlay
+      && !this.tacticalLoadoutOverlay
+      && !this.overrunMilestoneInterlude?.active
+      && !this.gameOverInterlude?.active
+      && !this.gameOverSequenceStarted
+      && !this.game?.gameOverTransitionPending
+      && (this.game?.lives || 0) > 0
+    );
+  }
+
+  mapClientPointerToGameplay(clientX, clientY) {
+    const canvas = this.game?.app?.canvas || this.game?.app?.view;
+    const rect = canvas?.getBoundingClientRect?.();
+    if (!rect || rect.width <= 0 || rect.height <= 0 || !this.gameContainer) return null;
+    const screen = this.game?.app?.screen || { width: this.game.getWidth(), height: this.game.getHeight() };
+    const globalPoint = new PIXI.Point(
+      (Number(clientX) - rect.left) * screen.width / rect.width,
+      (Number(clientY) - rect.top) * screen.height / rect.height
+    );
+    const local = this.gameContainer.toLocal(globalPoint);
+    return { x: local.x, y: local.y };
+  }
+
+  bindGameplayPointerSurface() {
+    const canvas = this.game?.app?.canvas || this.game?.app?.view || null;
+    this.inputManager?.setGameplaySurface?.(canvas ? {
+      canvas,
+      canAccept: () => this.canAcceptGameplayPointerInput(),
+      mapPointer: (clientX, clientY) => this.mapClientPointerToGameplay(clientX, clientY)
+    } : null);
+  }
+
+  createControlModeHudCue() {
+    if (this.controlModeHudCue?.parent) this.controlModeHudCue.parent.removeChild(this.controlModeHudCue);
+    this.controlModeHudCue?.destroy?.();
+    this.controlModeHudCue = createText(translateText('AUTO FIRE ON'), {
+      fontFamily: FONT_BODY,
+      fontSize: 13,
+      fontWeight: '600',
+      fill: '#b9f8ff',
+      stroke: '#04131b',
+      strokeThickness: 2,
+      letterSpacing: 1.2
+    });
+    this.controlModeHudCue.anchor.set(1, 1);
+    this.controlModeHudCue.alpha = 0.72;
+    this.controlModeHudCue.zIndex = 9500;
+    this.controlModeHudCue.visible = false;
+    this.uiContainer.addChild(this.controlModeHudCue);
+    this.updateControlModeHudCue();
+  }
+
+  updateControlModeHudCue() {
+    const cue = this.controlModeHudCue;
+    if (!cue || cue.destroyed) return;
+    cue.text = translateText('AUTO FIRE ON');
+    cue.x = Math.max(120, this.game.getWidth() - 22);
+    cue.y = Math.max(90, this.game.getHeight() - 18);
+    const settings = getControlSettings();
+    cue.visible = Boolean(
+      settings.fireInput === 'toggle'
+      && this.inputManager?.fireToggleLatched
+      && this.canAcceptGameplayPointerInput()
+    );
+  }
+
   setSynergyBadge(text) {
     if (!this.synergyBadge) return;
     if (!text) {
@@ -19956,12 +20048,6 @@ export class PlayScene {
       }
     }
     this.recordBalanceKill(enemy);
-    if (now - this.lastKillAt > this.comboWindowMs) {
-      this.comboCount = 0;
-      this.comboMultiplier = 1;
-      this.killStreak = 0;
-      this.comboMilestonesReached.clear(); // Reset milestone tracking
-    }
     this.comboCount += 1;
     this.killStreak += 1;
     this.totalKills += 1;
@@ -20095,7 +20181,9 @@ export class PlayScene {
 
   updateComboTimers(delta) {
     if (this.comboCount <= 0) return;
-    if (this.enemyManager?.state === 'BOSS_GATE') return;
+    const enemyState = this.enemyManager?.state;
+    const activeCombat = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
+    if (!activeCombat || this.enemyManager?.waveEnding || !this.isGameplayClockAdvancing()) return;
     this.comboTimerMs -= delta * 16.67;
     if (this.comboTimerMs <= 0) {
       this.comboCount = 0;

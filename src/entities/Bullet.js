@@ -912,10 +912,8 @@ export class Bullet {
       this.isPlasmaLance ||
       this.isGrazeBreaker ||
       this.isTraitCriticalShot ||
-      this.isTraitPiercingShot ||
       this.isTraitWingShot ||
       this.isTraitBonusShot ||
-      this.piercing ||
       this.tacticalFusionId ||
       this.powerupType === 'bomb' ||
       this.powerupType === 'plasma_lance'

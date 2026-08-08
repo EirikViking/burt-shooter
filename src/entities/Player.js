@@ -324,7 +324,20 @@ export class Player {
     }
     const playScene = this.getPlayScene();
     const enemyState = playScene?.enemyManager?.state || '';
-    const activeCombatState = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
+    const hijacker = playScene?.enemyManager?.hijacker || null;
+    const visibleHijackerPressure = Boolean(
+      enemyState === 'WAVE_BRIEFING'
+      && hijacker
+      && hijacker.active !== false
+      && hijacker.destroyed !== true
+      && hijacker.waitingForEntry !== true
+      && hijacker.sprite?.visible !== false
+      && hijacker.sprite?.renderable !== false
+      && (!Number.isFinite(Number(hijacker.sprite?.alpha)) || Number(hijacker.sprite.alpha) > 0)
+    );
+    const activeCombatState = enemyState === 'WAVE_ACTIVE'
+      || enemyState === 'BOSS_ACTIVE'
+      || visibleHijackerPressure;
     if (!this.isGameplayClockAdvancing() || !activeCombatState) {
       return {
         ready: false,
@@ -349,23 +362,39 @@ export class Player {
       player: this,
       enemies: playScene?.enemyManager?.enemies || [],
       boss: playScene?.enemyManager?.boss || null,
-      hijacker: playScene?.enemyManager?.hijacker || null,
+      hijacker,
       blastRadius: this.bombBlastRadius,
       shotDamage: this.bulletDamage * this.bombDamageMult,
       viewportWidth: this.game?.getWidth?.(),
       viewportHeight: this.game?.getHeight?.(),
       nowMs: Date.now()
     });
+    const boss = playScene?.enemyManager?.boss || null;
+    const bossOpening = Boolean(
+      enemyState === 'BOSS_ACTIVE'
+      && boss
+      && boss.active !== false
+      && boss.destroyed !== true
+      && (boss.invulnerable === true
+        || (Number.isFinite(Number(boss.invulnerableUntilMs)) && Date.now() < Number(boss.invulnerableUntilMs)))
+    );
     return {
       ...match,
       ready: Boolean(match.target),
+      reason: match.target
+        ? match.reason
+        : bossOpening
+          ? 'boss_opening'
+          : visibleHijackerPressure
+            ? 'tractor_briefing_no_target'
+            : match.reason,
       triggerQueued: Boolean(this.bombTriggerQueued)
     };
   }
 
   queueBombTriggerIntent(now = this.getGameplayClockMs()) {
     const state = this.getBombCommitState(now);
-    const queued = this.bombShotsLeft > 0 && state.ready;
+    const queued = this.bombShotsLeft > 0 && (state.ready || state.reason === 'boss_opening');
     this.bombTriggerQueued = queued;
     this.lastBombCommitState = state;
     this.lastBombTriggerIntent = {
@@ -1891,19 +1920,34 @@ export class Player {
       this.shipSprite.tint = 0xffffff;
     }
 
-    // Input & Movement - merge keyboard and touch
+    // Input & Movement - the latest intentional device owns steering.
     let dx = 0;
     let dy = 0;
 
-    // Keyboard input
-    if (this.inputManager.isKeyPressed('ArrowLeft') || this.inputManager.isKeyPressed('KeyA')) dx -= 1;
-    if (this.inputManager.isKeyPressed('ArrowRight') || this.inputManager.isKeyPressed('KeyD')) dx += 1;
-    if (this.inputManager.isKeyPressed('ArrowUp') || this.inputManager.isKeyPressed('KeyW')) dy -= 1;
-    if (this.inputManager.isKeyPressed('ArrowDown') || this.inputManager.isKeyPressed('KeyS')) dy += 1;
+    const keyboardX = (this.inputManager.isActionPressed('moveRight', { includeGamepad: false }) ? 1 : 0)
+      - (this.inputManager.isActionPressed('moveLeft', { includeGamepad: false }) ? 1 : 0);
+    const keyboardY = (this.inputManager.isActionPressed('moveDown', { includeGamepad: false }) ? 1 : 0)
+      - (this.inputManager.isActionPressed('moveUp', { includeGamepad: false }) ? 1 : 0);
+    const gamepadMove = this.inputManager.getGamepadMovement?.() || { moveX: 0, moveY: 0 };
+    const touchX = Number(this.touchInput?.moveX) || 0;
+    const touchY = Number(this.touchInput?.moveY) || 0;
+    const hasKeyboardMovement = Math.abs(keyboardX) + Math.abs(keyboardY) > 0.05;
+    const hasGamepadMovement = Math.abs(gamepadMove.moveX) + Math.abs(gamepadMove.moveY) > 0.15;
+    const hasTouchMovement = Math.abs(touchX) + Math.abs(touchY) > 0.05;
 
-    // Touch input (additive, clamped later)
-    dx += this.touchInput.moveX;
-    dy += this.touchInput.moveY;
+    if (hasKeyboardMovement || hasGamepadMovement || hasTouchMovement) {
+      dx = keyboardX + gamepadMove.moveX + touchX;
+      dy = keyboardY + gamepadMove.moveY + touchY;
+      this.inputManager.noteNonMouseMovement?.(
+        hasKeyboardMovement ? 'keyboard' : hasGamepadMovement ? 'gamepad' : 'touch'
+      );
+    } else {
+      const mouseIntent = this.inputManager.getMouseSteeringIntent?.(this.x, this.y, 9);
+      if (mouseIntent?.active) {
+        dx = mouseIntent.moveX;
+        dy = mouseIntent.moveY;
+      }
+    }
 
     // Clamp to -1..1 range
     dx = Math.max(-1, Math.min(1, dx));
@@ -2230,7 +2274,8 @@ export class Player {
     const bombCommitState = this.getBombCommitState();
     this.lastBombCommitState = bombCommitState;
     const shouldFireBomb = this.bombShotsLeft > 0 && this.bombTriggerQueued && bombCommitState.ready;
-    this.bombTriggerQueued = false;
+    const keepBossOpeningBuffer = this.bombTriggerQueued && bombCommitState.reason === 'boss_opening';
+    if (!keepBossOpeningBuffer) this.bombTriggerQueued = false;
     if (shouldFireBomb) {
       const launchX = this.x;
       const launchY = this.y - 20;

@@ -47,9 +47,15 @@ import {
   getKeyboardBindings,
   normalizeKeyboardBindings
 } from './input/KeyboardBindings.js';
+import {
+  CONTROL_SETTINGS_KEY,
+  getControlSettings,
+  normalizeControlSettings
+} from './config/ControlSettings.js';
 
 export { DISPLAY_MODE_KEY, DISPLAY_WINDOW_SIZE_KEY, UI_SCALE_KEY, CONFIRM_EXIT_KEY, SHOW_PILOT_ORDERS_KEY };
 export { KEYBOARD_BINDINGS_KEY };
+export { CONTROL_SETTINGS_KEY };
 
 export const CLOUD_LANGUAGE_KEY = 'novaSwarm.languagePreference.v1';
 export const CLOUD_LOCAL_LEADERBOARD_KEY = 'novaSwarm.localLeaderboard.v2';
@@ -930,6 +936,7 @@ export function collectSteamCloudPersistenceState({
       audio: collectAudioSettings(storage),
       display: getDisplaySettings({ storage }),
       menu: getMenuSettings({ storage }),
+      controls: getControlSettings({ storage }),
       keyboardBindings: getKeyboardBindings({ storage })
     }
   };
@@ -1118,6 +1125,14 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = true;
   }
   if (settings.menu?.showPilotOrders !== undefined && writeStorage(storage, SHOW_PILOT_ORDERS_KEY, normalizeShowPilotOrders(settings.menu.showPilotOrders) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.controls !== undefined && writeStorage(
+    storage,
+    CONTROL_SETTINGS_KEY,
+    JSON.stringify(normalizeControlSettings(settings.controls))
+  )) {
     summary.settings += 1;
     summary.restored = true;
   }
