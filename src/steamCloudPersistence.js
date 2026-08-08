@@ -73,10 +73,13 @@ export const CLOUD_OVERRUN_RUN_RECORDS_KEY = OVERRUN_RUN_RECORDS_KEY;
 const SCREEN_SHAKE_KEY = 'burt_accessibility_screen_shake';
 const PLAYER_FOCUS_KEY = 'burt_accessibility_player_focus';
 const COLOR_ASSIST_KEY = 'nova_accessibility_color_assist';
+const FLASH_INTENSITY_KEY = 'nova_accessibility_flash_intensity';
+const REDUCED_MOTION_KEY = 'nova_accessibility_reduced_motion';
 const AUDIO_KEYS = Object.freeze({
   masterVolume: 'burt_volume_master',
   musicVolume: 'burt_volume_music',
   sfxVolume: 'burt_volume_sfx',
+  uiVolume: 'burt_volume_ui',
   voiceVolume: 'burt_volume_voice',
   musicEnabled: 'burt_music_enabled',
   voiceEnabled: 'burt_voice_enabled',
@@ -829,6 +832,7 @@ function collectAudioSettings(storage) {
   if (has(AUDIO_KEYS.masterVolume)) audio.masterVolume = clampUnit(readStorage(storage, AUDIO_KEYS.masterVolume), 0.3);
   if (has(AUDIO_KEYS.musicVolume)) audio.musicVolume = clampUnit(readStorage(storage, AUDIO_KEYS.musicVolume), 0.2);
   if (has(AUDIO_KEYS.sfxVolume)) audio.sfxVolume = clampUnit(readStorage(storage, AUDIO_KEYS.sfxVolume), 0.4);
+  if (has(AUDIO_KEYS.uiVolume)) audio.uiVolume = clampUnit(readStorage(storage, AUDIO_KEYS.uiVolume), 0.4);
   if (has(AUDIO_KEYS.voiceVolume)) audio.voiceVolume = clampUnit(readStorage(storage, AUDIO_KEYS.voiceVolume), 0.45);
   if (has(AUDIO_KEYS.musicEnabled)) audio.musicEnabled = readStorage(storage, AUDIO_KEYS.musicEnabled) !== 'false';
   if (has(AUDIO_KEYS.voiceEnabled)) audio.voiceEnabled = readStorage(storage, AUDIO_KEYS.voiceEnabled) !== 'false';
@@ -842,7 +846,7 @@ function collectAudioSettings(storage) {
 function restoreAudioSettings(storage, audio = {}) {
   if (!audio || typeof audio !== 'object') return 0;
   let changed = 0;
-  for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'voiceVolume']) {
+  for (const key of ['masterVolume', 'musicVolume', 'sfxVolume', 'uiVolume', 'voiceVolume']) {
     if (audio[key] !== undefined && writeStorage(storage, AUDIO_KEYS[key], clampUnit(audio[key], 1))) changed += 1;
   }
   for (const key of ['musicEnabled', 'voiceEnabled', 'bossVoiceEnabled', 'ctaVoiceEnabled']) {
@@ -898,7 +902,9 @@ export function collectSteamCloudPersistenceState({
     : {
       screenShake: clampUnit(readStorage(storage, SCREEN_SHAKE_KEY), 1),
       playerFocus: clampUnit(readStorage(storage, PLAYER_FOCUS_KEY), 0.72),
-      colorAssist: readStorage(storage, COLOR_ASSIST_KEY) === '1'
+      colorAssist: readStorage(storage, COLOR_ASSIST_KEY) === '1',
+      flashIntensity: clampUnit(readStorage(storage, FLASH_INTENSITY_KEY), 1),
+      reducedMotion: readStorage(storage, REDUCED_MOTION_KEY) === '1'
     };
 
   return {
@@ -933,6 +939,8 @@ export function collectSteamCloudPersistenceState({
       screenShake: clampUnit(settings.screenShake, 1),
       playerFocus: clampUnit(settings.playerFocus, 0.72),
       colorAssist: Boolean(settings.colorAssist),
+      flashIntensity: clampUnit(settings.flashIntensity, 1),
+      reducedMotion: Boolean(settings.reducedMotion),
       audio: collectAudioSettings(storage),
       display: getDisplaySettings({ storage }),
       menu: getMenuSettings({ storage }),
@@ -1106,6 +1114,14 @@ export function restoreSteamCloudPersistenceToStorage(save, {
     summary.restored = true;
   }
   if (settings.colorAssist !== undefined && writeStorage(storage, COLOR_ASSIST_KEY, Boolean(settings.colorAssist) ? '1' : '0')) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.flashIntensity !== undefined && writeStorage(storage, FLASH_INTENSITY_KEY, clampUnit(settings.flashIntensity, 1))) {
+    summary.settings += 1;
+    summary.restored = true;
+  }
+  if (settings.reducedMotion !== undefined && writeStorage(storage, REDUCED_MOTION_KEY, Boolean(settings.reducedMotion) ? '1' : '0')) {
     summary.settings += 1;
     summary.restored = true;
   }

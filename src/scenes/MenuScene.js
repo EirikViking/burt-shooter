@@ -278,6 +278,10 @@ export class MenuScene {
     this.runModeInfoTileSignature = '';
     this.runModeRestriction = null;
     this.runModePersonalBest = null;
+    this.runModeLaunchButton = null;
+    this.runModeLaunchButtonBg = null;
+    this.runModeLaunchButtonText = null;
+    this.runModeLaunchFocused = false;
     this.runModeDetailsButton = null;
     this.runModeDetailsButtonBg = null;
     this.runModeDetailsButtonIcon = null;
@@ -1464,7 +1468,9 @@ export class MenuScene {
       this.runModeDetailsButtonText
     );
     this.runModeDetailsButton.on('pointerover', () => {
+      this.runModeLaunchFocused = false;
       this.runModeDetailsFocused = true;
+      this.drawRunModeLaunchButton();
       this.drawRunModeDetailsButton();
       playMenuFocusSfx(0.07);
     });
@@ -1480,6 +1486,42 @@ export class MenuScene {
       this.activateRunModeDetailsAction();
     });
     this.container.addChild(this.runModeDetailsButton);
+
+    this.runModeLaunchButton = new PIXI.Container();
+    this.runModeLaunchButton.zIndex = 13;
+    this.runModeLaunchButton.eventMode = 'static';
+    this.runModeLaunchButton.cursor = 'pointer';
+    this.runModeLaunchButtonBg = new PIXI.Graphics();
+    this.runModeLaunchButtonText = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: Math.max(11, Math.round(runModeSize)),
+      fontWeight: '900',
+      fill: '#03151b',
+      align: 'center',
+      padding: 36
+    });
+    this.runModeLaunchButtonText.anchor.set(0.5);
+    this.runModeLaunchButton.addChild(this.runModeLaunchButtonBg, this.runModeLaunchButtonText);
+    this.runModeLaunchButton.on('pointerover', () => {
+      this.runModeLaunchFocused = true;
+      this.runModeDetailsFocused = false;
+      this.drawRunModeLaunchButton();
+      this.drawRunModeDetailsButton();
+      playMenuFocusSfx(0.09);
+    });
+    this.runModeLaunchButton.on('pointerout', () => {
+      if (this.lastInputDevice !== 'keyboard') return;
+      this.runModeLaunchFocused = false;
+      this.drawRunModeLaunchButton();
+    });
+    this.runModeLaunchButton.on('pointertap', (event) => {
+      event.stopPropagation?.();
+      this.setInputDevice('keyboard');
+      this.runModeLaunchFocused = true;
+      this.runModeDetailsFocused = false;
+      this.activateRunModeLaunchAction();
+    });
+    this.container.addChild(this.runModeLaunchButton);
 
     this.runModeVariantSelector = new PIXI.Container();
     this.runModeVariantSelector.zIndex = 11;
@@ -2563,14 +2605,44 @@ export class MenuScene {
     this.runModeRestriction.position.set(innerX, restrictionY);
     this.runModeRestriction.visible = restrictionVisible;
 
-    const detailsWidth = briefing.personalBest
-      ? Math.min(innerWidth * 0.58, Math.round(236 * compactScale))
-      : innerWidth;
-    const bestWidth = Math.max(0, innerWidth - detailsWidth - Math.round(10 * compactScale));
+    const launchOptionIds = new Set(['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun']);
+    const showLaunch = launchOptionIds.has(this.getSelectedMenuOptionId());
+    const actionGap = Math.round(8 * compactScale);
+    const bestWidth = briefing.personalBest
+      ? Math.min(innerWidth * 0.26, Math.round(172 * compactScale))
+      : 0;
+    const bestGap = bestWidth > 0 ? Math.round(9 * compactScale) : 0;
+    const actionWidth = Math.max(0, innerWidth - bestWidth - bestGap);
+    const detailsWidth = briefing.details
+      ? Math.min(actionWidth * 0.42, Math.round(214 * compactScale))
+      : 0;
+    const launchSpace = Math.max(0, actionWidth - detailsWidth - (detailsWidth > 0 ? actionGap : 0));
+    const launchWidth = showLaunch
+      ? Math.max(Math.min(actionWidth, Math.round(112 * compactScale)), launchSpace)
+      : 0;
     this.runModePersonalBest.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
     this.runModePersonalBest.position.set(innerX, footerY + footerHeight / 2);
     fitTextToWidth(this.runModePersonalBest, bestWidth, { minScale: 0.68 });
     this.runModePersonalBest.visible = Boolean(briefing.personalBest);
+
+    const actionX = innerX + bestWidth + bestGap;
+    this.runModeLaunchButton.position.set(actionX + launchWidth / 2, footerY + footerHeight / 2);
+    this.runModeLaunchButton._btnWidth = launchWidth;
+    this.runModeLaunchButton._btnHeight = footerHeight;
+    this.runModeLaunchButton._locked = Boolean(briefing.locked);
+    this.runModeLaunchButton.hitArea = new PIXI.Rectangle(
+      -launchWidth / 2,
+      -footerHeight / 2,
+      launchWidth,
+      footerHeight
+    );
+    this.runModeLaunchButtonText.text = translateText(briefing.locked ? 'LOCKED' : 'LAUNCH RUN');
+    this.runModeLaunchButtonText.style.fontSize = Math.round((isShortLayout ? 11 : 12) * compactScale);
+    this.runModeLaunchButtonText.position.set(0, 0);
+    fitTextToWidth(this.runModeLaunchButtonText, launchWidth - Math.round(20 * compactScale), { minScale: 0.68 });
+    this.runModeLaunchButton.visible = showLaunch;
+    this.runModeLaunchButton.cursor = briefing.locked ? 'default' : 'pointer';
+    this.drawRunModeLaunchButton();
 
     this.runModeDetailsButton.position.set(innerX + innerWidth - detailsWidth / 2, footerY + footerHeight / 2);
     this.runModeDetailsButton._btnWidth = detailsWidth;
@@ -2706,6 +2778,39 @@ export class MenuScene {
       { color: focused ? 0x0c3850 : 0x061827, alpha: focused ? 0.98 : 0.78 },
       { color: focused ? 0xffffff : accent, width: focused ? 2 : 1, alpha: focused ? 0.96 : 0.34 }
     );
+  }
+
+  drawRunModeLaunchButton() {
+    const button = this.runModeLaunchButton;
+    if (!button || !button.visible) return;
+    const width = Number(button._btnWidth) || 240;
+    const height = Number(button._btnHeight) || 34;
+    const focused = Boolean(this.runModeLaunchFocused);
+    const locked = Boolean(button._locked);
+    const accent = locked ? 0x68727c : (this.runModePanel?._briefingAccent || 0x37f5ff);
+    this.runModeLaunchButtonBg.clear();
+    drawCutPanel(
+      this.runModeLaunchButtonBg,
+      -width / 2,
+      -height / 2,
+      width,
+      height,
+      7,
+      { color: locked ? 0x17191d : (focused ? 0xffef7e : 0x66ffdd), alpha: locked ? 0.86 : 0.98 },
+      { color: focused ? 0xffffff : accent, width: focused ? 2.4 : 1.6, alpha: focused ? 1 : 0.9 }
+    );
+    this.runModeLaunchButtonText.style.fill = locked ? '#929da5' : '#03151b';
+  }
+
+  activateRunModeLaunchAction() {
+    const launchOptionIds = new Set(['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun']);
+    if (!launchOptionIds.has(this.getSelectedMenuOptionId())) return false;
+    if (this.getRunModeBriefing()?.locked) {
+      AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.5 });
+      return false;
+    }
+    this.activateFocusedMenuOption();
+    return true;
   }
 
   getRunModeExplainerText(briefing = this.getRunModeBriefing()) {
@@ -4600,6 +4705,8 @@ export class MenuScene {
         status: this.runModeStatusBadge?.text || null,
         restriction: this.runModeRestriction?.text || null,
         personalBest: this.runModePersonalBest?.text || null,
+        launchFocused: Boolean(this.runModeLaunchFocused),
+        launchButtonLabel: this.runModeLaunchButtonText?.text || null,
         detailsFocused: Boolean(this.runModeDetailsFocused),
         detailsButtonLabel: this.runModeDetailsButtonText?.text || null,
         renderPadding: {
@@ -4608,6 +4715,7 @@ export class MenuScene {
           status: Number(this.runModeStatusBadge?.style?.padding) || 0,
           body: Number(this.runModeExplainer?.style?.padding) || 0,
           restriction: Number(this.runModeRestriction?.style?.padding) || 0,
+          launch: Number(this.runModeLaunchButtonText?.style?.padding) || 0,
           details: Number(this.runModeDetailsButtonText?.style?.padding) || 0
         },
         statusBounds: boundsForDisplayObject(this.runModeStatusBadgeBg),
@@ -4618,6 +4726,7 @@ export class MenuScene {
         personalBestBounds: this.runModePersonalBest?.visible
           ? boundsForDisplayObject(this.runModePersonalBest)
           : null,
+        launchButtonBounds: boundsForDisplayObject(this.runModeLaunchButton),
         detailsButtonBounds: boundsForDisplayObject(this.runModeDetailsButton),
         tiles: this.runModeInfoTileItems.map((item) => ({
           label: item?._nodes?.label?.text || null,
@@ -6342,6 +6451,7 @@ export class MenuScene {
     this.animateElement(this.runModeInfoTiles, 0.79, 0.4);
     this.animateElement(this.runModeRestriction, 0.8, 0.4);
     this.animateElement(this.runModePersonalBest, 0.81, 0.4);
+    this.animateElement(this.runModeLaunchButton, 0.81, 0.4);
     this.animateElement(this.runModeDetailsButton, 0.82, 0.4);
     this.animateElement(this.missionBoardPanel, 0.82, 0.42);
     this.animateElement(this.missionBoardTitle, 0.84, 0.42);

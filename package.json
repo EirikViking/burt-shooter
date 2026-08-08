@@ -309,6 +309,7 @@
     "check:powerup-pickup-guides": "node scripts/check-powerup-pickup-guides.mjs",
     "check:powerup-pickup-confirmation": "node scripts/check-powerup-pickup-confirmation.mjs",
     "check:audio": "node scripts/check-audio-catalog.mjs && node scripts/check-combat-audio-variety.mjs && node scripts/check-voice-mute-contract.mjs && node scripts/check-reinforcement-voices.mjs && node scripts/check-mayhem-super-storm-voices.mjs && node scripts/check-boss-death-voices.mjs && node scripts/check-gameover-taunts.mjs && node scripts/check-level-clear-voices.mjs && node scripts/check-menu-boss-barks.mjs && node scripts/check-tactical-boss-banter.mjs",
+    "check:footage-polish-accessibility": "node scripts/check-footage-polish-accessibility.mjs",
     "check:combat-audio-variety": "node scripts/check-combat-audio-variety.mjs",
     "qa:release": "node scripts/qa-release-gauntlet.mjs",
     "qa:progression": "npm run check:unlock-rank-pacing && npm run check:gameover-motivation",

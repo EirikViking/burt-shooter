@@ -9,8 +9,10 @@ import {
 import {
   getAccessibilitySettings,
   setColorAssistEnabled,
+  setFlashIntensityScale,
   setPlayerHitboxVisible,
   setPlayerFocusScale,
+  setReducedMotionEnabled,
   setScreenShakeScale
 } from '../config/AccessibilitySettings.js';
 import {
@@ -328,12 +330,20 @@ export class SettingsOverlay {
       this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, leftY, {
         onChange: setPlayerFocusScale
       });
+      leftY += sliderGap;
+      this.addSliderRow('FLASH', 'flashIntensity', accessibility.flashIntensity, leftY, {
+        onChange: setFlashIntensityScale
+      });
       leftY += tighterGap;
       this.addToggleRow('HITBOX', accessibility.playerHitbox, leftY, setPlayerHitboxVisible, {
         id: 'player_hitbox'
       });
       leftY += tighterGap;
       this.addToggleRow('COLOR AID', accessibility.colorAssist, leftY, setColorAssistEnabled);
+      leftY += tighterGap;
+      this.addToggleRow('REDUCED MOTION', accessibility.reducedMotion, leftY, setReducedMotionEnabled, {
+        id: 'reduced_motion'
+      });
 
       setFormColumn(rightX);
       let rightY = contentTop + Math.round((dense ? 16 : 22) * this.uiScale);
@@ -360,6 +370,8 @@ export class SettingsOverlay {
       this.addSliderRow('MUSIC VOL', 'music', settings.musicVolume, rightY);
       rightY += sliderGap;
       this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, rightY);
+      rightY += sliderGap;
+      this.addSliderRow('UI VOL', 'ui', settings.uiVolume, rightY);
       rightY += sliderGap;
       this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, rightY);
     } else {
@@ -428,6 +440,8 @@ export class SettingsOverlay {
       y += sliderGap;
       this.addSliderRow('SFX VOL', 'sfx', settings.sfxVolume, y);
       y += sliderGap;
+      this.addSliderRow('UI VOL', 'ui', settings.uiVolume, y);
+      y += sliderGap;
       this.addSliderRow('VOICE VOL', 'voice', settings.voiceVolume, y);
       y += Math.round(30 * this.uiScale);
       this.addSectionLabel('ACCESSIBILITY', y);
@@ -439,12 +453,20 @@ export class SettingsOverlay {
       this.addSliderRow('FOCUS', 'playerFocus', accessibility.playerFocus, y, {
         onChange: setPlayerFocusScale
       });
+      y += sliderGap;
+      this.addSliderRow('FLASH', 'flashIntensity', accessibility.flashIntensity, y, {
+        onChange: setFlashIntensityScale
+      });
       y += tighterGap;
       this.addToggleRow('HITBOX', accessibility.playerHitbox, y, setPlayerHitboxVisible, {
         id: 'player_hitbox'
       });
       y += tighterGap;
       this.addToggleRow('COLOR AID', accessibility.colorAssist, y, setColorAssistEnabled);
+      y += tighterGap;
+      this.addToggleRow('REDUCED MOTION', accessibility.reducedMotion, y, setReducedMotionEnabled, {
+        id: 'reduced_motion'
+      });
     }
 
     this.formCenterX = null;
@@ -1248,7 +1270,7 @@ export class SettingsOverlay {
       this.moveControlFocus(direction > 0 ? 1 : -1);
       return true;
     }
-    const step = control.id === 'slider_screenShake' || control.id === 'slider_playerFocus' ? 0.05 : 0.08;
+    const step = ['slider_screenShake', 'slider_playerFocus', 'slider_flashIntensity'].includes(control.id) ? 0.05 : 0.08;
     control.setValue?.((Number(control.value) || 0) + step * Math.sign(direction || 1));
     return true;
   }

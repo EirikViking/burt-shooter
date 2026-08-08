@@ -208,6 +208,7 @@ export class ShipSelectScene {
     this.recommendationText = null;
     this.recommendationReasonText = null;
     this.recommendationDismissText = null;
+    this.recommendationJumpText = null;
     this.pendingHangarUnlockShips = this.resolvePendingHangarUnlockShips();
     this.hangarUnlockPresentation = null;
     this.hangarUnlockPresentationRefs = null;
@@ -223,6 +224,10 @@ export class ShipSelectScene {
     const preferredSpriteKey = options.preferredSpriteKey;
     const saved = this.loadSelection();
     const canRestoreSelection = saved && isValidShipKey(saved) && isShipUnlocked(saved, this.unlockProgress);
+    const activeSpriteKey = isValidShipKey(this.game?.selectedShipSpriteKey)
+      ? resolveShipKey(this.game.selectedShipSpriteKey)
+      : (canRestoreSelection ? resolveShipKey(saved) : getDefaultShipKey());
+    this.activeShipSpriteKey = activeSpriteKey;
     if (preferredSpriteKey && isValidShipKey(preferredSpriteKey)) {
       const resolvedPreferred = resolveShipKey(preferredSpriteKey);
       const index = this.ships.findIndex(s => s.spriteKey === resolvedPreferred);
@@ -233,10 +238,7 @@ export class ShipSelectScene {
       if (index >= 0) this.selectedIndex = index;
     }
 
-    // Set initial selection in state
-    if (this.ships[this.selectedIndex]) {
-      setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
-    }
+    setSelectedShipKey(activeSpriteKey);
   }
 
   async create() {
@@ -1700,12 +1702,15 @@ export class ShipSelectScene {
     const bannerWidth = Math.max(280, Math.min(760, width - (compact ? 32 : 360)));
     const bannerHeight = compact ? 56 : 42;
     const dismissWidth = compact ? 94 : 160;
+    const jumpWidth = compact ? 0 : 166;
     const banner = new PIXI.Container();
     banner.label = 'ui_shipRecommendationBanner';
     banner.position.set(width / 2 - bannerWidth / 2, Math.round((compact ? 86 : 100) * Math.min(uiScale, 1.45)));
     banner.zIndex = 50;
     banner.bannerWidth = bannerWidth;
-    banner.textWidth = bannerWidth - dismissWidth - 42;
+    banner.textWidth = bannerWidth - dismissWidth - jumpWidth - 54;
+    banner.eventMode = 'static';
+    banner.cursor = compact ? 'default' : 'pointer';
 
     const bg = new PIXI.Graphics();
     bg.roundRect(0, 0, bannerWidth, bannerHeight, 8);
@@ -1763,11 +1768,45 @@ export class ShipSelectScene {
       this.dismissRecommendation('pointer');
     });
 
-    banner.addChild(bg, label, reason, dismissButton);
+    let jumpText = null;
+    let jumpButton = null;
+    if (!compact) {
+      jumpButton = new PIXI.Container();
+      jumpButton.label = 'ui_shipRecommendationJump';
+      jumpButton.position.set(bannerWidth - dismissWidth - jumpWidth - 16, 7);
+      jumpButton.eventMode = 'static';
+      jumpButton.cursor = 'pointer';
+      jumpButton.hitArea = new PIXI.Rectangle(0, 0, jumpWidth, 28);
+      const jumpBg = new PIXI.Graphics();
+      jumpBg.roundRect(0, 0, jumpWidth, 28, 6);
+      jumpBg.fill({ color: 0x083b45, alpha: 0.96 });
+      jumpBg.stroke({ color: 0x66ffdd, width: 1.2, alpha: 0.84 });
+      jumpText = createText(translateText('VIEW RECOMMENDED [J]'), {
+        fontFamily: FONT_BODY,
+        fontSize: 11,
+        fontWeight: '900',
+        fill: '#eafff8',
+        align: 'center',
+        letterSpacing: 0
+      });
+      jumpText.anchor.set(0.5);
+      jumpText.position.set(jumpWidth / 2, 14);
+      fitDisplayToBox(jumpText, jumpWidth - 10, 19, { minScale: 0.58 });
+      jumpButton.addChild(jumpBg, jumpText);
+      jumpButton.on('pointertap', (event) => {
+        event.stopPropagation();
+        this.jumpToRecommendedShip('pointer');
+      });
+    }
+
+    banner.addChild(bg, label, reason);
+    if (jumpButton) banner.addChild(jumpButton);
+    banner.addChild(dismissButton);
     this.recommendationBanner = banner;
     this.recommendationText = label;
     this.recommendationReasonText = reason;
     this.recommendationDismissText = dismissText;
+    this.recommendationJumpText = jumpText;
     this.container.addChild(banner);
     this.updateRecommendationBanner();
   }
@@ -1780,6 +1819,15 @@ export class ShipSelectScene {
     if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
     AudioManager.playSfx('menuMove', { volume: 0.18 });
     if (DEBUG) console.log(`[ShipSelect] Recommendation dismissed via ${source}:`, this.recommendationKey, { persisted });
+    return true;
+  }
+
+  jumpToRecommendedShip(source = 'unknown') {
+    if (!this.recommendedShip) return false;
+    const index = this.ships.findIndex((ship) => ship.spriteKey === this.recommendedShip.spriteKey);
+    if (index < 0) return false;
+    if (index !== this.selectedIndex) this.navigateTo(index);
+    if (DEBUG) console.log(`[ShipSelect] Recommendation viewed via ${source}:`, this.recommendationKey);
     return true;
   }
 
@@ -2382,7 +2430,8 @@ export class ShipSelectScene {
 
   async createShipCarousel(width, carouselHeight) {
     this.shipSpacing = Math.min(470, Math.max(250, width * (this.layout.isMobile ? 0.72 : 0.38)));
-    this.centerScale = this.layout.isMobile ? 1.02 : 1.22;
+    this.compactHangar = !this.layout.isMobile && carouselHeight < 660;
+    this.centerScale = this.layout.isMobile ? 1.02 : (this.compactHangar ? 1.08 : 1.22);
     this.sideScale = this.layout.isMobile ? 0.42 : 0.52;
     this.sideAlpha = this.layout.isMobile ? 0.38 : 0.54;
     this.animating = false;
@@ -2682,14 +2731,14 @@ export class ShipSelectScene {
     container.nameText = name;
 
     // Ship description - BETTER spacing and size
-    const teaser = this.getShortTeaser(ship.baseDescription || ship.description, this.layout.isMobile ? 54 : 68);
-    const desc = createText(teaser, {
+    const description = ship.baseDescription || ship.description || '';
+    const desc = createText(description, {
       fontFamily: FONT_BODY,
       fontSize: this.layout.isMobile ? 14 : 16,
       fill: '#d8fbff',
       align: 'center',
       wordWrap: true,
-      wordWrapWidth: this.layout.isMobile ? 310 : 430,
+      wordWrapWidth: this.layout.isMobile ? 310 : (this.compactHangar ? 500 : 560),
       lineHeight: this.layout.isMobile ? 18 : 21,
       fontWeight: '700'
     });
@@ -2712,7 +2761,7 @@ export class ShipSelectScene {
     });
     trait.anchor.set(0.5, 0);
     trait.position.set(0, bottomOf(desc) + (this.layout.isMobile ? 10 : 12));
-    fitDisplayToBox(trait, this.layout.isMobile ? 330 : 560, this.layout.isMobile ? 52 : 58, { minScale: 0.72 });
+    fitDisplayToBox(trait, this.layout.isMobile ? 330 : 580, this.layout.isMobile ? 62 : (this.compactHangar ? 72 : 82), { minScale: 0.68 });
     container.addChild(trait);
     container.traitText = trait;
 
@@ -2724,7 +2773,8 @@ export class ShipSelectScene {
       title: 'SHIP TUNE'
     });
     statPanel.scale.set(1 / this.centerScale);
-    statPanel.position.set(0, this.layout.isMobile ? 176 : 194);
+    statPanel.position.set(0, Math.max(this.layout.isMobile ? 176 : 194, bottomOf(trait) + 10));
+    statPanel.visible = !this.compactHangar;
     container.addChild(statPanel);
     container.statPanel = statPanel;
 
@@ -2790,7 +2840,10 @@ export class ShipSelectScene {
       if (shipContainer.traitText) shipContainer.traitText.visible = isCenter;
       if (shipContainer.tierBadge) shipContainer.tierBadge.visible = isCenter;
       if (shipContainer.firstFlightBadge) {
-        shipContainer.firstFlightBadge.visible = isCenter && this.layout.showSideIntel;
+        // Compact desktop already states FIRST FLIGHT in the right-side combat
+        // readout. Hiding the duplicate badge keeps the title/recommendation
+        // header clear at 1280x720 and 1280x800.
+        shipContainer.firstFlightBadge.visible = isCenter && this.layout.showSideIntel && !this.compactHangar;
       }
       if (shipContainer.masteryBadge) shipContainer.masteryBadge.visible = isCenter;
       if (shipContainer.statPanel) shipContainer.statPanel.visible = isCenter && !this.layout.showSideIntel && !this.compactIntel;
@@ -2993,10 +3046,6 @@ export class ShipSelectScene {
     if (newIndex < 0 || newIndex >= this.ships.length || this.animating) return;
     this.selectedIndex = newIndex;
     const ship = this.ships[this.selectedIndex];
-    setSelectedShipKey(ship.spriteKey);
-    if (isShipUnlocked(ship.spriteKey, this.unlockProgress)) {
-      this.saveSelection(ship.spriteKey, { syncCloud: false });
-    }
 
     // More dramatic navigation sound
     AudioManager.playSfx('thrusterFire', { volume: 0.25 });
@@ -3042,13 +3091,23 @@ export class ShipSelectScene {
   updateSelectionInfo() {
     if (!this.selectionInfoText) return;
     const ship = this.ships[this.selectedIndex];
-    const modelIndex = Math.max(0, this.baseOrder.indexOf(ship?.baseId)) + 1;
-    const modelTotal = Math.max(1, this.baseOrder.length);
     const unlocked = ship && isShipUnlocked(ship.spriteKey, this.unlockProgress);
     const status = unlocked
       ? (getShipUsage(ship.spriteKey) === 0 ? translateText('FIRST FLIGHT') : translateText('READY'))
       : getShipUnlockLabel(ship?.spriteKey);
-    this.selectionInfoText.text = `HULL ${this.selectedIndex + 1}/${this.ships.length}  |  SERIES ${modelIndex}/${modelTotal}  |  ${status}`;
+    const activeKey = isValidShipKey(this.game?.selectedShipSpriteKey)
+      ? resolveShipKey(this.game.selectedShipSpriteKey)
+      : this.activeShipSpriteKey;
+    const activeIndex = Math.max(0, this.ships.findIndex((candidate) => candidate.spriteKey === activeKey));
+    const viewing = translateText('VIEWING HULL {current} OF {total}', {
+      current: this.selectedIndex + 1,
+      total: this.ships.length
+    });
+    const active = translateText('ACTIVE HULL {current} OF {total}', {
+      current: activeIndex + 1,
+      total: this.ships.length
+    });
+    this.selectionInfoText.text = [viewing, active, status].join('  |  ');
     this.updateRecommendationBanner();
   }
 
@@ -3404,7 +3463,7 @@ export class ShipSelectScene {
     const trait = ship?.trait || ship?.visuals?.trait;
     if (!trait?.label) return 'TRAIT: BALANCED TUNE';
     const weakness = ship?.tier === 'ascendant' && ship?.weakness
-      ? `\nWEAKNESS: ${this.getShortTeaser(ship.weakness, 74)}`
+      ? `\nWEAKNESS: ${ship.weakness}`
       : '';
     return `TRAIT: ${trait.label} - ${getTraitHudHint(trait, ship)}${weakness}`;
   }
@@ -3434,8 +3493,7 @@ export class ShipSelectScene {
 
   updateSelection() {
     // Carousel handles selection visually via position/scale/alpha
-    // Just ensure the selection state is saved
-    setSelectedShipKey(this.ships[this.selectedIndex].spriteKey);
+    this.updateSelectionInfo();
   }
 
   setupInput() {
@@ -3463,6 +3521,7 @@ export class ShipSelectScene {
         e.code === 'KeyE' ||
         e.code === 'KeyI' ||
         e.code === 'KeyR' ||
+        e.code === 'KeyJ' ||
         e.code === 'KeyX' ||
         e.code === 'Space' ||
         e.code === 'Enter' ||
@@ -3529,9 +3588,9 @@ export class ShipSelectScene {
         e.preventDefault();
         this.setMainMenuButtonFocus(false);
         this.navigateRandom();
-      } else if (e.code === 'KeyX' && this.recommendationBanner?.visible) {
+      } else if (e.code === 'KeyJ' && this.recommendationBanner?.visible) {
         e.preventDefault();
-        this.dismissRecommendation('keyboard');
+        this.jumpToRecommendedShip('keyboard');
       } else if (e.code === 'KeyI') {
         e.preventDefault();
         this.openCareerInfoOverlay('keyboard');
@@ -3710,8 +3769,7 @@ export class ShipSelectScene {
     }
     if (nav.pressed.x) {
       this.setControllerFocus('ship');
-      if (this.recommendationBanner?.visible) this.dismissRecommendation('controller');
-      else this.openSelectedShipDetails();
+      this.openSelectedShipDetails();
     }
     if (nav.pressed.confirm) {
       this.activateControllerFocus('controller');
@@ -3740,8 +3798,6 @@ export class ShipSelectScene {
     }
 
     const spriteKey = ship.spriteKey;
-    setSelectedShipKey(spriteKey);
-    this.saveSelection(spriteKey);
     AudioManager.playSfx('ship_lock_chime', { force: true, volume: 0.8 });
 
     if (DEBUG) console.log(`[ShipSelect] Opening launch mode choice via ${source}:`, spriteKey);
@@ -3774,6 +3830,9 @@ export class ShipSelectScene {
     const runMode = option.id || RUN_MODES.MAYHEM_TACTICAL;
     this.launchInProgress = true;
     const spriteKey = option.launchShipKey || ship.spriteKey;
+    this.activeShipSpriteKey = spriteKey;
+    setSelectedShipKey(spriteKey);
+    this.saveSelection(ship.spriteKey);
     const launchOptions = {
       runMode,
       dailySignalContract: option.dailySignalContract || undefined,
@@ -3792,8 +3851,6 @@ export class ShipSelectScene {
     const ship = this.ships[this.selectedIndex];
     if (!ship?.spriteKey) return;
     const spriteKey = ship.spriteKey;
-    setSelectedShipKey(spriteKey);
-    this.saveSelection(spriteKey);
     if (DEBUG) console.log('[ShipSelect] Opening details for:', spriteKey);
     this.game.showShipDetails(spriteKey);
   }

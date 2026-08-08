@@ -16,6 +16,7 @@ import { createShipStatPanel, getShipTierLabel } from '../ui/ShipStatPanel.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { getTraitExplanation } from '../config/ShipTraitDescriptions.js';
 import { translateText } from '../i18n/index.js';
+import { AssetManifest } from '../assets/assetManifest.js';
 import { destroyMenuFx, installMenuFx, playMenuConfirmSfx, playMenuFocusSfx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
 import { RUN_MODES } from '../game/RunMode.js';
@@ -42,8 +43,6 @@ export class ShipDetailsScene {
         }
         this.unlockProgress = getShipUnlockProgress();
 
-        // Ensure state is updated
-        setSelectedShipKey(this.spriteKey);
     }
 
     async create() {
@@ -53,8 +52,10 @@ export class ShipDetailsScene {
         // Background
         const bg = new PIXI.Graphics();
         bg.rect(0, 0, width, height);
-        bg.fill({ color: 0x000000 });
+        bg.fill({ color: 0x020711 });
+        bg.zIndex = -3;
         this.container.addChild(bg);
+        await this.createHangarBackdrop(width, height);
         installMenuFx(this, {
             label: 'ui_menuFxShipDetails',
             zIndex: 0,
@@ -181,6 +182,31 @@ export class ShipDetailsScene {
 
         // Setup input
         this.setupInput();
+    }
+
+    async createHangarBackdrop(width, height) {
+        const backdropSrc = AssetManifest.generated?.shipHangar;
+        if (!backdropSrc) return;
+        try {
+            const texture = await PIXI.Assets.load(backdropSrc);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.label = 'ui_shipDetailsHangarBackdrop';
+            sprite.anchor.set(0.5);
+            const scale = Math.max(width / Math.max(1, texture.width), height / Math.max(1, texture.height));
+            sprite.scale.set(scale);
+            sprite.position.set(width / 2, height / 2);
+            sprite.alpha = 0.34;
+            sprite.zIndex = -2;
+            this.container.addChild(sprite);
+            const shade = new PIXI.Graphics();
+            shade.label = 'ui_shipDetailsHangarShade';
+            shade.rect(0, 0, width, height);
+            shade.fill({ color: 0x020711, alpha: 0.5 });
+            shade.zIndex = -1;
+            this.container.addChild(shade);
+        } catch (error) {
+            console.warn('[ShipDetails] Hangar backdrop failed to load:', error);
+        }
     }
 
     createStatsSection(container, panelWidth, yOffset, isMobile) {
@@ -561,6 +587,13 @@ export class ShipDetailsScene {
         if (!isShipUnlocked(this.spriteKey, this.unlockProgress) || this.launchInProgress) return;
         const runMode = option.id || RUN_MODES.MAYHEM_TACTICAL;
         const spriteKey = option.launchShipKey || this.spriteKey;
+        setSelectedShipKey(spriteKey);
+        try {
+            localStorage.setItem('burt.selectedShip.v1', this.spriteKey);
+            window.__novaSteamCloudDiagnostics?.sync?.();
+        } catch {
+            // Selection persistence is best-effort; launch remains authoritative.
+        }
         const launchOptions = {
             runMode,
             dailySignalContract: option.dailySignalContract || undefined,

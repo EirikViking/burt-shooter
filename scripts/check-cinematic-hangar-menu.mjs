@@ -341,7 +341,7 @@ function assertLaunchDeck(state, label) {
   }
   assert.equal(deck.cards?.mayhemTactical?.sublabel, 'MAIN MODE · RECOMMENDED · RANKED', `${label}: Tactical card protocol`);
   assert.match(deck.cards?.scout?.sublabel || '', /^ANOMALY: /, `${label}: Scout card should expose the selected practice anomaly`);
-  assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT PUSH', `${label}: Sector card protocol`);
+  assert.equal(deck.cards?.sector?.sublabel, 'CHECKPOINT 30', `${label}: Sector card should expose the selected checkpoint`);
   assert.ok(deck.cards.mayhemTactical.bounds.height >= deck.cards.daily.bounds.height * 1.25, `${label}: Mayhem should be the largest mode card`);
   assert.equal(deck.cards?.scout?.body || '', '', `${label}: Scout card should stay paragraph-free`);
   assert.equal(deck.cards?.sector?.body || '', '', `${label}: Sector card should stay paragraph-free`);
@@ -362,6 +362,12 @@ function assertLaunchDeck(state, label) {
   assert.ok(briefing.panelBounds.bottom < menu.panel.y, `${label}: Mission Briefing should stay above the utility dock`);
   assert.ok((briefing.titleBounds?.bottom || 0) < (briefing.bodyBounds?.y || 0) + 8, `${label}: Mission Briefing title/body collision`);
   assert.ok((briefing.bodyBounds?.bottom || 0) <= briefing.panelBounds.bottom + 4, `${label}: Mission Briefing body should stay inside frame`);
+  assertInside(briefing.launchButtonBounds, screen, `${label}: Mission Briefing launch button`);
+  assert.equal(briefing.launchButtonLabel, 'LAUNCH RUN', `${label}: Mission Briefing should expose the primary launch action`);
+  assert.ok(briefing.launchButtonBounds.width >= 150, `${label}: launch action is too small to read as primary`);
+  if (briefing.detailsButtonBounds?.width > 0) {
+    assert.ok(briefing.launchButtonBounds.right <= briefing.detailsButtonBounds.x + 2, `${label}: launch and details actions overlap`);
+  }
 }
 
 function assertUtilityCluster(state, label) {
@@ -372,11 +378,14 @@ function assertUtilityCluster(state, label) {
   const exit = menu.items.exitButton;
   for (const [name, bounds] of [['music', music], ['howToPlay', help], ['exit', exit]]) {
     assertInside(bounds, screen, `${label}: ${name} utility`);
-    assert.ok(bounds.right > screen.width * 0.88, `${label}: ${name} utility should live in the top-right system cluster`);
+    assert.ok(bounds.x > screen.width * 0.65, `${label}: ${name} utility should live in the top-right system cluster ${JSON.stringify(bounds)}`);
     assert.ok(bounds.y < screen.height * 0.16, `${label}: ${name} utility should stay above the cinematic play space`);
     assert.ok(bounds.width <= 190, `${label}: ${name} utility should be compact, not a destination tile`);
   }
-  assert.ok(music.y < help.y && help.y < exit.y, `${label}: utility stack should read Music, How To Play, Exit`);
+  const utilityVertical = music.y < help.y && help.y < exit.y;
+  const utilityHorizontal = music.x < help.x && help.x < exit.x;
+  assert.ok(utilityVertical || utilityHorizontal, `${label}: utility cluster should read Music, How To Play, Exit ${JSON.stringify({ music, help, exit })}`);
+  assert.ok(exit.right > screen.width * 0.9, `${label}: utility cluster should terminate near the right edge`);
   assert.ok(exit.height <= 58, `${label}: exit utility should remain compact`);
   assert.deepEqual(menu.optionOrder.slice(10), ['music', 'howToPlay', 'exit'], `${label}: wrong utility navigation order`);
 }
@@ -402,14 +411,17 @@ function assertMenuState(state, viewport) {
   assertUtilityCluster(state, viewport.name);
   assert.equal(menu.sectorStart.buttonVisualText, 'SECTOR RUN', `${viewport.name}: sector tile visual label`);
   assert.equal(menu.sectorStart.buttonText, 'SECTOR RUN', `${viewport.name}: sector dock label should stay stable`);
-  assert.equal(menu.sectorStart.buttonSubtext, 'CHECKPOINT PUSH', `${viewport.name}: sector card should summarize checkpoint purpose`);
-  assert.match(
-    menu.missionBriefing?.body || '',
-    /MAIN MODE.*RECOMMENDED[\s\S]*Draft one permanent tactical upgrade after each boss[\s\S]*RANKED.*TACTICAL LEADERBOARD[\s\S]*CHANGE RULESET/i,
-    `${viewport.name}: mission briefing should explain the focused Tactical run mode`
-  );
+  assert.equal(menu.sectorStart.buttonSubtext, 'CHECKPOINT 30', `${viewport.name}: sector card should show the selected checkpoint`);
+  const briefingCopy = [
+    menu.missionBriefing?.eyebrow,
+    menu.missionBriefing?.title,
+    menu.missionBriefing?.body,
+    menu.missionBriefing?.status,
+    menu.missionBriefing?.restriction
+  ].filter(Boolean).join('\n');
+  assert.match(briefingCopy, /RUN MODE[\s\S]*MAYHEM[\s\S]*Draft one permanent tactical upgrade after each boss[\s\S]*TACTICAL LEADERBOARD[\s\S]*RANKED/i, `${viewport.name}: mission briefing should explain the focused Tactical run mode`);
   assert.doesNotMatch(JSON.stringify(menu), /Sector 1 climb/i, `${viewport.name}: old Sector 1 climb wording should not be player-facing`);
-  assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31|BEST|CHECKPOINT 30/, `${viewport.name}: dock tile should not carry overrun start detail`);
+  assert.doesNotMatch(menu.sectorStart.buttonSubtext || '', /BEGINS AT SECTOR 31|BEST/, `${viewport.name}: dock tile should not carry overrun start detail`);
   assert.equal(menu.sectorStart.arrowCueVisible, false, `${viewport.name}: sector tile should not show dock stepper arrows`);
   assert.ok((menu.items.runModePanel?.width || 0) > 0, `${viewport.name}: mission briefing panel should be visible`);
   assert.ok((menu.items.flavor?.width || 0) === 0, `${viewport.name}: old flavor text should not be visible`);

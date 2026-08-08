@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
 import { AssetManifest } from '../assets/assetManifest.js';
 import { GamepadNavigator } from '../input/GamepadNavigator.js';
 import { translateText } from '../i18n/index.js';
@@ -413,7 +414,7 @@ export class HowToPlayOverlay {
     this.debugLayout = null;
     this.heroMotionNodes = [];
     this.heroTextureSprites = [];
-    this.reducedMotion = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
+    this.reducedMotion = Boolean(getAccessibilitySettings().prefersReducedMotion);
     this.gamepadNavigator = new GamepadNavigator();
     this.gamepadNavigator.suppressUntilReleased();
     this.build();

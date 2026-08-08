@@ -456,6 +456,9 @@ function buildGameTextState(game) {
   const achievementsScene = getStableSceneName(game) === 'achievements' ? game?.currentScene : null;
   const threatCodexScene = getStableSceneName(game) === 'threatCodex' ? game?.currentScene : null;
   const selectedShip = shipSelectScene?.ships?.[shipSelectScene?.selectedIndex] || null;
+  const activeHangarShip = shipSelectScene?.ships?.find?.((ship) => (
+    ship.spriteKey === (game?.selectedShipSpriteKey || shipSelectScene?.activeShipSpriteKey)
+  )) || null;
   const pacingDebug = getRunPacingDebugState(game);
   const hangarProgressSummary = getHangarProgressSummary();
   const threatCodexCatalog = getThreatCodexCatalog();
@@ -877,6 +880,13 @@ function buildGameTextState(game) {
       totalModels: shipSelectScene.baseOrder?.length || 0,
       shipName: selectedShip.name || null,
       spriteKey: selectedShip.spriteKey || null,
+      selectionInfo: shipSelectScene.selectionInfoText?.text || null,
+      activeShipName: activeHangarShip?.name || null,
+      activeSpriteKey: activeHangarShip?.spriteKey || null,
+      activeIndex: activeHangarShip ? shipSelectScene.ships.indexOf(activeHangarShip) : null,
+      description: selectedShip.baseDescription || selectedShip.description || null,
+      renderedDescription: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.descText?.text || null,
+      renderedTrait: shipSelectScene.shipCards?.[shipSelectScene.selectedIndex]?.traitText?.text || null,
       tier: selectedShip.tier || 'standard',
       role: selectedShip.role || null,
       weakness: selectedShip.weakness || null,
@@ -909,7 +919,8 @@ function buildGameTextState(game) {
         dismissed: Boolean(shipSelectScene.recommendationDismissed),
         recommendationKey: shipSelectScene.recommendationKey || null,
         label: shipSelectScene.recommendationText?.text || null,
-        reason: shipSelectScene.recommendationReasonText?.text || null
+        reason: shipSelectScene.recommendationReasonText?.text || null,
+        jumpLabel: shipSelectScene.recommendationJumpText?.text || null
       } : null,
       launchInProgress: Boolean(shipSelectScene.launchInProgress),
       launchModeChoice: shipSelectScene.launchModeOverlay?.getDebugState?.(getBoundsDebug) || null,

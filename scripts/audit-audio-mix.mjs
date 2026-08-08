@@ -133,6 +133,7 @@ function readAudioDefaults() {
     masterVolume: 0.3,
     musicVolume: 0.2,
     sfxVolume: 0.4,
+    uiVolume: 0.4,
     voiceVolume: 0.45
   };
 
@@ -481,10 +482,12 @@ function buildReport() {
       masterVolume: defaultMix.masterVolume,
       musicVolume: defaultMix.musicVolume,
       sfxVolume: defaultMix.sfxVolume,
+      uiVolume: defaultMix.uiVolume,
       voiceVolume: defaultMix.voiceVolume,
       effective: {
         music: defaultMix.masterVolume * defaultMix.musicVolume,
         sfxBase: defaultMix.masterVolume * defaultMix.sfxVolume,
+        uiBase: defaultMix.masterVolume * defaultMix.uiVolume,
         voiceBase: defaultMix.masterVolume * defaultMix.voiceVolume
       }
     },
@@ -574,6 +577,7 @@ function renderMarkdown(report) {
     `- Master: ${report.defaults.masterVolume}`,
     `- Music: ${report.defaults.musicVolume} (effective ${report.defaults.effective.music.toFixed(3)})`,
     `- SFX base: ${report.defaults.sfxVolume} (effective ${report.defaults.effective.sfxBase.toFixed(3)} before per-event mix)`,
+    `- UI base: ${report.defaults.uiVolume} (effective ${report.defaults.effective.uiBase.toFixed(3)} before per-event mix)`,
     `- Voice base: ${report.defaults.voiceVolume} (effective ${report.defaults.effective.voiceBase.toFixed(3)} before per-event mix)`,
     '',
     '## Coverage',
@@ -655,7 +659,7 @@ function printConsoleSummary(report) {
   }
 
   console.log(`[audio-mix] measured ${report.counts.measuredFiles} files across ${report.counts.musicRows} music, ${report.counts.sfxRows} SFX, and ${report.counts.voiceRows} voice rows`);
-  console.log(`[audio-mix] defaults: master ${report.defaults.masterVolume}, music ${report.defaults.musicVolume}, sfx ${report.defaults.sfxVolume}, voice ${report.defaults.voiceVolume}`);
+  console.log(`[audio-mix] defaults: master ${report.defaults.masterVolume}, music ${report.defaults.musicVolume}, sfx ${report.defaults.sfxVolume}, ui ${report.defaults.uiVolume}, voice ${report.defaults.voiceVolume}`);
   console.log('[audio-mix] loudest effective peaks:');
   printTopLine('music', report.loudestEffectivePeaks.music);
   printTopLine('sfx', report.loudestEffectivePeaks.sfx);

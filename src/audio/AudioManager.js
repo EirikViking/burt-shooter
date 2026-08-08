@@ -9,6 +9,13 @@ import {
 } from './VoicePolicy.js';
 import { BUILD_ID } from '../buildInfo.js';
 
+const UI_SFX_EVENTS = new Set([
+  'ui_open', 'ui_close', 'ui_error', 'ui_cancel',
+  'menuMove', 'menuSelect', 'menu_tick',
+  'codex_open', 'codex_move', 'codex_back',
+  'pause_in', 'pause_out', 'start_game_confirm', 'ship_lock_chime'
+]);
+
 const SPECTACLE_ACCENT_PROFILES = Object.freeze({
   kill: Object.freeze({
     rootHz: 92,
@@ -109,6 +116,7 @@ class AudioController {
     this.masterVolume = 0.3;
     this.musicVolume = 0.2;
     this.sfxVolume = 0.4;
+    this.uiVolume = 0.4;
     this.voiceVolume = 0.45;
     this.musicDuckFactor = 1;
     this.pauseDuckFactor = 1;
@@ -235,6 +243,7 @@ class AudioController {
     this.masterVolume = this.readStoredFloat('burt_volume_master', this.masterVolume);
     this.musicVolume = this.readStoredFloat('burt_volume_music', this.musicVolume);
     this.sfxVolume = this.readStoredFloat('burt_volume_sfx', this.sfxVolume);
+    this.uiVolume = this.readStoredFloat('burt_volume_ui', this.uiVolume);
     this.voiceVolume = this.readStoredFloat('burt_volume_voice', this.voiceVolume);
     this.musicPack = normalizeMusicPack(localStorage.getItem('burt_music_pack') || this.musicPack);
 
@@ -531,7 +540,9 @@ class AudioController {
         ? this.clampUnit(this.readMixNumber(options.sfxDuckFactor, mix.priorityDuckFactor ?? 0.72))
         : 1
     );
-    audio.volume = this.clampUnit(this.masterVolume * this.sfxVolume * volumeMultiplier);
+    const volumeBus = options.volumeBus || mix.volumeBus || (UI_SFX_EVENTS.has(eventName) ? 'ui' : 'sfx');
+    const busVolume = volumeBus === 'ui' ? this.uiVolume : this.sfxVolume;
+    audio.volume = this.clampUnit(this.masterVolume * busVolume * volumeMultiplier);
     const authoredRate = this.readMixNumber(options.playbackRate, mix.playbackRate ?? 1);
     const rateMin = this.readMixNumber(options.playbackRateMin, mix.playbackRateMin ?? authoredRate);
     const rateMax = this.readMixNumber(options.playbackRateMax, mix.playbackRateMax ?? authoredRate);
@@ -547,6 +558,7 @@ class AudioController {
     });
     this.lastSfxPlayedAt[eventName] = now;
     this.lastSfxEvent = eventName;
+    this.lastSfxBus = volumeBus;
     this.lastSfxTrack = decodeURIComponent((src || '').split('/').pop() || '');
     const priorityHoldMs = this.readMixNumber(options.priorityHoldMs, mix.priorityHoldMs ?? 0);
     if (priority > 0 && priorityHoldMs > 0 && (!activePriority || priority >= activePriority.priority)) {
@@ -1170,6 +1182,7 @@ class AudioController {
       masterVolume: this.masterVolume,
       musicVolume: this.musicVolume,
       sfxVolume: this.sfxVolume,
+      uiVolume: this.uiVolume,
       voiceVolume: this.voiceVolume,
       musicEnabled: this.musicEnabled,
       voiceEnabled: this.voiceEnabled,
@@ -1186,6 +1199,7 @@ class AudioController {
       musicReadyState: this.musicAudio?.readyState || 0,
       currentMusicTrack: musicSrc ? decodeURIComponent(musicSrc.split('/').pop() || '') : null,
       lastSfxEvent: this.lastSfxEvent,
+      lastSfxBus: this.lastSfxBus || null,
       lastSfxTrack: this.lastSfxTrack,
       sfxPriorityLock: this.getActiveSfxPriority() ? {
         eventName: this.sfxPriorityLock.eventName,
@@ -1218,6 +1232,7 @@ class AudioController {
       master: 'masterVolume',
       music: 'musicVolume',
       sfx: 'sfxVolume',
+      ui: 'uiVolume',
       voice: 'voiceVolume'
     };
     const prop = keyMap[kind];

@@ -21,10 +21,11 @@ const requiredTokens = [
   'HANGAR SAYS THIS ONE HAS THE BEST ODDS',
   'DISMISS RECOMMENDATION',
   'DISMISS RECOMMENDATION [X]',
+  'VIEW RECOMMENDED [J]',
   'this.recommendationDismissed = isHangarRecommendationAcknowledged(this.recommendedShip)',
-  "this.dismissRecommendation('keyboard')",
-  "this.dismissRecommendation('controller')",
-  'setSelectedShipKey(this.ships[this.selectedIndex].spriteKey)'
+  "this.dismissRecommendation('pointer')",
+  "this.jumpToRecommendedShip('keyboard')",
+  'setSelectedShipKey(activeSpriteKey)'
 ];
 
 for (const token of requiredTokens) {
@@ -35,12 +36,11 @@ assert(
   /banner\.bannerWidth\s*=\s*bannerWidth/.test(shipSelect),
   'recommendation banner must keep stable width for translated text fitting'
 );
-assert(!shipSelect.includes('recommendedIndex'), 'recommendation must never force ship selection');
+assert(!shipSelect.includes('recommendedIndex'), 'recommendation should resolve by stable ship key');
 assert(!shipSelect.includes('newlyUnlockedSpriteKey'), 'unlock presentation must not replace the manually selected hull');
-assert(
-  shipSelect.includes("this.saveSelection(ship.spriteKey, { syncCloud: false })"),
-  'manual navigation should persist the last unlocked selection without forcing a cloud write on every step'
-);
+const navigateBody = shipSelect.slice(shipSelect.indexOf('navigateTo(newIndex)'), shipSelect.indexOf('navigateLeft()'));
+assert(!navigateBody.includes('saveSelection('), 'carousel browsing must remain a preview and must not overwrite the active hull');
+assert(shipSelect.includes("jumpToRecommendedShip(source = 'unknown')"), 'recommendation banner needs an explicit quick-jump action');
 assert(
   shipSelect.indexOf('else if (canRestoreSelection)') > shipSelect.indexOf('if (preferredSpriteKey && isValidShipKey(preferredSpriteKey))'),
   'saved unlocked selection should be restored after an explicit preferred selection check'

@@ -11,8 +11,10 @@ const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || a
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/tyrian-responsive-ui-${timestamp()}`);
 const scenarios = [
-  { id: 'compact', width: 960, height: 540, uiScale: 1 },
+  { id: 'minimum-16x9', width: 1280, height: 720, uiScale: 1 },
+  { id: 'minimum-16x10', width: 1280, height: 800, uiScale: 1 },
   { id: 'standard-16x9', width: 1920, height: 1080, uiScale: 1 },
+  { id: 'large-16x9', width: 2560, height: 1440, uiScale: 1.15 },
   { id: 'ultrawide', width: 3440, height: 1440, uiScale: 1.25 }
 ];
 
@@ -589,11 +591,19 @@ async function runHangarScenario(browser, scenario, scenarioDir) {
     await page.waitForTimeout(700);
     const state = await readState(page);
     assert.equal(state.shipSelect?.shipName, 'EIRIK THE VIKING');
+    assert.equal(state.shipSelect?.renderedDescription, state.shipSelect?.description, 'Hangar description was truncated');
+    assert(!String(state.shipSelect?.renderedDescription || '').includes('...'), 'Hangar description still contains an ellipsis');
+    assert(!String(state.shipSelect?.renderedTrait || '').includes('...'), 'Hangar trait or weakness still contains an ellipsis');
+    assert.match(state.shipSelect?.selectionInfo || '', /VIEWING HULL \d+ OF 30\s+\|\s+ACTIVE HULL \d+ OF 30/i, 'Hangar does not distinguish preview from active hull');
     assert(String(state.shipSelect?.recommended?.shipName || '').trim(), 'Hangar recommendation has no ship identity');
     assert(state.shipSelect.recommended.bannerVisible, 'Hangar recommendation is not visible');
+    assert.match(state.shipSelect?.recommended?.jumpLabel || '', /VIEW RECOMMENDED/i, 'Hangar recommendation has no quick-jump action');
     assert.equal(state.shipSelect?.mastery?.clears, 7);
     assert(state.shipSelect?.mastery?.identity?.key, 'Hangar mastery identity motif is missing');
     assert.equal(state.shipSelect?.mastery?.medalCount, 3);
+    if (scenario.width <= 1280 && scenario.height <= 800) {
+      assert.equal(state.shipSelect?.firstFlight?.badgeVisible, false, 'Compact Hangar duplicates FIRST FLIGHT over the title header');
+    }
     const eirikVisual = await page.evaluate(() => {
       const scene = window.__game.scenes.shipSelect;
       const selectedShip = scene.ships[scene.selectedIndex];
@@ -609,10 +619,50 @@ async function runHangarScenario(browser, scenario, scenarioDir) {
     assert.equal(eirikVisual.textureIndex, 26);
     assert(eirikVisual.width >= 1200 && eirikVisual.height >= 1200, `Eirik dedicated art was replaced by fallback: ${JSON.stringify(eirikVisual)}`);
     assert.equal(eirikVisual.tint, 0xffffff, `Eirik dedicated colors were flattened by a carousel tint: ${JSON.stringify(eirikVisual)}`);
+    const previewContract = await page.evaluate(async () => {
+      const scene = window.__game.scenes.shipSelect;
+      const originalIndex = scene.selectedIndex;
+      const originalActive = window.__game.selectedShipSpriteKey || scene.activeShipSpriteKey;
+      scene.navigateLeft();
+      await new Promise((resolve) => window.setTimeout(resolve, 560));
+      const previewState = JSON.parse(window.render_game_to_text());
+      scene.jumpToRecommendedShip('responsive_check');
+      await new Promise((resolve) => window.setTimeout(resolve, 560));
+      const recommendedState = JSON.parse(window.render_game_to_text());
+      if (scene.selectedIndex !== originalIndex) {
+        scene.navigateTo(originalIndex);
+        await new Promise((resolve) => window.setTimeout(resolve, 560));
+      }
+      return {
+        originalIndex,
+        originalActive,
+        preview: previewState.shipSelect,
+        recommended: recommendedState.shipSelect
+      };
+    });
+    assert.notEqual(previewContract.preview?.selectedIndex, previewContract.originalIndex, 'Hangar preview navigation did not move');
+    assert.equal(previewContract.preview?.activeSpriteKey, previewContract.originalActive, 'Hangar preview navigation changed the active hull');
+    assert.equal(previewContract.recommended?.spriteKey, state.shipSelect?.recommended?.spriteKey, 'Recommendation quick-jump did not select the recommended preview');
+    assert.equal(previewContract.recommended?.activeSpriteKey, previewContract.originalActive, 'Recommendation quick-jump changed the active hull without launch');
     const shot = await capture(page, scenarioDir, '08-hangar-eirik-recommendation-mastery');
+    await page.evaluate(() => window.__game.scenes.shipSelect.openSelectedShipDetails());
+    await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'shipDetails', null, { timeout: 30000 });
+    await page.waitForTimeout(260);
+    const detailsContext = await page.evaluate(() => {
+      const scene = window.__game.currentScene;
+      const backdrop = scene?.container?.children?.find((child) => child?.label === 'ui_shipDetailsHangarBackdrop');
+      return {
+        attached: Boolean(backdrop?.parent),
+        alpha: Number(backdrop?.alpha || 0),
+        width: Number(backdrop?.texture?.width || 0),
+        height: Number(backdrop?.texture?.height || 0)
+      };
+    });
+    assert(detailsContext.attached && detailsContext.alpha > 0.2, `Ship Details lost Hangar context: ${JSON.stringify(detailsContext)}`);
+    const detailsShot = await capture(page, scenarioDir, '09-ship-details-hangar-context');
     assert.deepEqual(observed.pageErrors, [], `${scenario.id} Hangar page errors`);
     assert.deepEqual(observed.consoleErrors, [], `${scenario.id} Hangar console errors`);
-    return { state, eirikVisual, shot, errors: observed };
+    return { state, eirikVisual, previewContract, detailsContext, shot, detailsShot, errors: observed };
   } finally {
     await page.close();
   }
@@ -713,7 +763,7 @@ try {
     reports
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 10} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 11} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();
