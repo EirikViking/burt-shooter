@@ -139,7 +139,10 @@ try {
   assert(interludeState.gameOverAnimation?.generatedArtReady === true, 'generated final-transmission art was not ready for the celebration', interludeState.gameOverAnimation);
   assert(interludeState.gameOverAnimation?.primitiveRingCount === 0, 'primitive circle rings returned to the final-death celebration', interludeState.gameOverAnimation);
   assert((interludeState.gameOverAnimation?.shardCount || 0) >= 12, 'angular breakup fragments are missing from the final-death celebration', interludeState.gameOverAnimation);
-  assert((interludeState.gameOverAnimation?.durationMs || 0) >= 3600, 'final-death celebration is still too brief to read', interludeState.gameOverAnimation);
+  assert(interludeState.gameOverAnimation?.durationMs === interludeState.gameOverAnimation?.automaticTargetMs,
+    'final-death celebration duration drifted from its direct handoff target', interludeState.gameOverAnimation);
+  assert((interludeState.gameOverAnimation?.durationMs || 0) >= 2300,
+    'final-death celebration is shorter than the readable direct handoff floor', interludeState.gameOverAnimation);
   assert((interludeState.gameOverAnimation?.animationPhases || []).length >= 5, 'final-death celebration is missing staged animation phases', interludeState.gameOverAnimation);
 
   await page.evaluate(() => window.advanceTime?.(1400));

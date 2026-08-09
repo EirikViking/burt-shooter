@@ -126,7 +126,7 @@ const browser = await chromium.launch({
   args: ['--autoplay-policy=no-user-gesture-required']
 });
 
-const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const pageErrors = [];
 const consoleErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -202,8 +202,12 @@ try {
     localStorage.setItem('burt.shipUsageTotal.v1', '11');
   });
 
-  const firstFlightInitial = await showShipSelect(page, firstFlightShip);
-  await page.waitForTimeout(650);
+  await showShipSelect(page, firstFlightShip);
+  await page.waitForFunction(() => {
+    const state = JSON.parse(window.render_game_to_text?.() || '{}');
+    return state?.shipSelect?.firstFlight?.badgeVisible === true;
+  }, null, { timeout: 3000 });
+  const firstFlightInitial = await page.evaluate(() => JSON.parse(window.render_game_to_text()).shipSelect);
   assert.equal(firstFlightInitial.usageCount, 0);
   assert.equal(firstFlightInitial.firstFlight?.eligible, true);
   assert.equal(firstFlightInitial.firstFlight?.badgeVisible, true);
