@@ -197,6 +197,16 @@ function assertSettingsPageLayout(debug, label) {
       );
     }
   }
+  if (debug.activePage === 'prototype') {
+    const infoCard = debug.prototype?.infoCard;
+    assert(infoCard?.frameBounds, `${label}: prototype information frame is missing`);
+    assert(infoCard?.contentBounds, `${label}: prototype information content is missing`);
+    assert(
+      contains(infoCard.frameBounds, infoCard.contentBounds, 3),
+      `${label}: prototype information escapes its card: ${JSON.stringify(infoCard)}`
+    );
+    assert(infoCard.scale >= 0.62, `${label}: prototype information became too small: ${JSON.stringify(infoCard)}`);
+  }
 }
 
 async function auditVisibleText(page, rootKind = 'scene') {

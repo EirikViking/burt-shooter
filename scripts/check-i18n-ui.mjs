@@ -259,6 +259,7 @@ async function snapshot(page) {
     const scene = game?.currentScene;
     const play = game?.scenes?.play;
     const settings = scene?.settingsOverlay || play?.settingsOverlay || null;
+    const settingsDebug = settings?.getDebugState?.() || null;
     const highscore = game?.scenes?.highscore;
     const pause = play?.pauseOverlay || play?.settingsOverlay || null;
     return {
@@ -277,9 +278,12 @@ async function snapshot(page) {
           : null
       },
       settings: {
+        activePage: settingsDebug?.activePage || null,
         language: settings?.languageButton?._label?.text || null,
         languageHint: settings?.languageHint?.text || null,
-        close: settings?.footerButtons?.close?._label?.text || null
+        close: settings?.footerButtons?.close?._label?.text || null,
+        renderedText: collectRenderedText(settings?.pageContainers?.[settingsDebug?.activePage]),
+        prototype: settingsDebug?.prototype || null
       },
       hud: {
         score: play?.hud?.scoreText?.text || null,
@@ -426,6 +430,16 @@ async function captureLanguage(page, language, index) {
   shots.settings = await screenshot(page, `${prefix}-settings.png`);
   assert(snaps.settings.language.current === language.code, `${language.slug} did not resolve to ${language.code}`);
   assert(snaps.settings.settings.language === language.settingsLabel, `${language.slug} Settings language label mismatch`);
+
+  await page.evaluate(() => window.__game?.currentScene?.settingsOverlay?.setActiveSettingsPage?.('prototype'));
+  await page.waitForTimeout(120);
+  snaps.prototypeSettings = await snapshot(page);
+  assertSnapshotClean(snaps.prototypeSettings, language, `${language.slug}.prototypeSettings`);
+  shots.prototypeSettings = await screenshot(page, `${prefix}-settings-prototype.png`);
+  const prototypeInfo = snaps.prototypeSettings.settings?.prototype?.infoCard;
+  assert(snaps.prototypeSettings.settings.activePage === 'prototype', `${language.slug} Prototype Settings page did not open`);
+  assert(boxContains(prototypeInfo?.frameBounds, prototypeInfo?.contentBounds), `${language.slug} prototype explanation escaped its frame: ${JSON.stringify(prototypeInfo)}`);
+  assert(prototypeInfo?.scale >= 0.62, `${language.slug} prototype explanation became too small: ${JSON.stringify(prototypeInfo)}`);
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !window.__game?.currentScene?.settingsOverlay, null, { timeout: 10000 });

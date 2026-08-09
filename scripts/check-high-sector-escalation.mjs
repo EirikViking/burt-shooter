@@ -136,7 +136,11 @@ const sourceKeys = ['DEEP SPACE PROTOCOL', ...HIGH_SECTOR_PROTOCOLS.flatMap((pro
   'LATE-GAME PROTOTYPE', 'ENABLE PROTOTYPE', 'JUMP TO SECTOR 75', 'WHAT TO EXPECT',
   'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.',
   'Quick Start launches Sector {sector} with five fixed upgrades.',
-  'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.'];
+  'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.',
+  'ABOUT THIS TEST',
+  'This temporary test explores a tougher, faster late game, so skilled players can reach serious pressure without needing to play for a very long time.',
+  'It is available for a limited time to anyone who would like to try it. Feedback is very welcome in the Steam Community Discussions.',
+  'This prototype is highly experimental and may contain bugs, balance issues, or performance problems. Please play at your own risk, and thank you for helping us improve it.'];
 const identityTranslations = new Set(['es:GENERAL', 'pt-BR:VOLUME']);
 for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
   const entries = getHighSectorSourceText(locale);

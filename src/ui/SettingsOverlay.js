@@ -178,6 +178,7 @@ export class SettingsOverlay {
     this.sectionBounds = [];
     this.prototypeEnabledButton = null;
     this.prototypeQuickStartButton = null;
+    this.prototypeInfoCard = null;
     this.languageButton = null;
     this.languageHint = null;
     this.creditsPanel = null;
@@ -221,6 +222,7 @@ export class SettingsOverlay {
     this.pageContainers = {};
     this.sectionBounds = [];
     this.sectionBoundsByPage = {};
+    this.prototypeInfoCard = null;
     const width = this.game.getWidth();
     const height = this.game.getHeight();
     const requestedUiScale = Math.max(1, Math.min(2, Number(getCurrentLayout()?.uiScale) || 1));
@@ -456,7 +458,8 @@ export class SettingsOverlay {
         onButton: (button) => { this.prototypeQuickStartButton = button; }
       });
       if (!twoColumn) {
-        this.addPrototypeInfoCard(contentTop + columnHeight * 0.52, leftX, columnWidth, columnHeight * 0.42);
+        const infoTop = y + Math.round(38 * this.uiScale);
+        this.addPrototypeInfoCard(infoTop, leftX, columnWidth, Math.max(140, contentBottom - infoTop - Math.round(8 * this.uiScale)));
       } else {
         this.addPrototypeInfoCard(contentTop + Math.round(24 * this.uiScale), rightX, columnWidth, columnHeight - Math.round(48 * this.uiScale));
       }
@@ -607,42 +610,101 @@ export class SettingsOverlay {
   addPrototypeInfoCard(y, x, width, height) {
     const pad = Math.max(22, Math.round(30 * this.uiScale));
     const textWidth = Math.max(180, width - pad * 2);
+    const cardX = x + 18;
+    const cardWidth = width - 36;
     const card = new PIXI.Graphics();
-    card.roundRect(x + 18, y, width - 36, height, 8);
+    card.roundRect(cardX, y, cardWidth, height, 8);
     card.fill({ color: 0x07192a, alpha: 0.86 });
     card.stroke({ color: 0xff55d9, width: 1, alpha: 0.46 });
     this.container.addChild(card);
 
-    const title = createText(translateText('WHAT TO EXPECT'), {
-      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-      fontSize: Math.round(17 * Math.min(1.2, this.uiScale)),
-      fontWeight: '900',
-      fill: '#ffef7e'
-    });
-    title.position.set(x + pad, y + Math.round(22 * this.uiScale));
-    fitTextToWidth(title, textWidth, { minScale: 0.7 });
-    this.container.addChild(title);
+    const content = new PIXI.Container();
+    content.label = 'ui_settingsPrototypeInfoContent';
+    content.position.set(x + pad, y + Math.round(20 * this.uiScale));
+    this.container.addChild(content);
 
-    const paragraphs = [
-      'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.',
-      'Quick Start launches Sector {sector} with five fixed upgrades.',
-      'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.'
+    const sections = [
+      {
+        title: 'WHAT TO EXPECT',
+        paragraphs: [
+          { source: 'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.' },
+          { source: 'Quick Start launches Sector {sector} with five fixed upgrades.' },
+          {
+            source: 'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.',
+            accent: true
+          }
+        ]
+      },
+      {
+        title: 'ABOUT THIS TEST',
+        paragraphs: [
+          { source: 'This temporary test explores a tougher, faster late game, so skilled players can reach serious pressure without needing to play for a very long time.' },
+          { source: 'It is available for a limited time to anyone who would like to try it. Feedback is very welcome in the Steam Community Discussions.' },
+          {
+            source: 'This prototype is highly experimental and may contain bugs, balance issues, or performance problems. Please play at your own risk, and thank you for helping us improve it.',
+            accent: true
+          }
+        ]
+      }
     ];
-    let textY = title.y + Math.round(38 * this.uiScale);
-    paragraphs.forEach((source, index) => {
-      const body = createText(translateText(source, { sector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR }), {
+    const scaleCap = Math.min(1.16, this.uiScale);
+    const headingGap = Math.round(12 * scaleCap);
+    const paragraphGap = Math.round(10 * scaleCap);
+    const sectionGap = Math.round(18 * scaleCap);
+    let cursorY = 0;
+
+    sections.forEach((section, sectionIndex) => {
+      if (sectionIndex > 0) cursorY += sectionGap;
+      const title = createText(translateText(section.title), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: Math.round(15 * Math.min(1.16, this.uiScale)),
-        fill: index === paragraphs.length - 1 ? '#ffc96e' : '#c9f4ff',
-        lineHeight: Math.round(20 * Math.min(1.16, this.uiScale)),
-        wordWrap: true,
-        wordWrapWidth: textWidth
+        fontSize: Math.round(17 * scaleCap),
+        fontWeight: '900',
+        fill: '#ffef7e'
       });
-      body.position.set(x + pad, textY);
-      fitDisplayToBox(body, textWidth, Math.max(48, height * 0.25), { minScale: 0.68 });
-      this.container.addChild(body);
-      textY += Math.max(body.height, Math.round(48 * this.uiScale)) + Math.round(12 * this.uiScale);
+      title.position.set(0, cursorY);
+      fitTextToWidth(title, textWidth, { minScale: 0.7 });
+      content.addChild(title);
+      cursorY += title.height + headingGap;
+
+      section.paragraphs.forEach(({ source, accent }, paragraphIndex) => {
+        const body = createText(translateText(source, { sector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR }), {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: Math.round(15 * scaleCap),
+          fill: accent ? '#ffc96e' : '#c9f4ff',
+          lineHeight: Math.round(20 * scaleCap),
+          wordWrap: true,
+          wordWrapWidth: textWidth,
+          breakWords: true
+        });
+        body.position.set(0, cursorY);
+        content.addChild(body);
+        cursorY += body.height;
+        if (paragraphIndex < section.paragraphs.length - 1) cursorY += paragraphGap;
+      });
     });
+
+    const availableHeight = Math.max(80, height - Math.round(40 * this.uiScale));
+    const measuredWidth = Math.max(1, content.width);
+    const measuredHeight = Math.max(1, content.height);
+    const contentScale = Math.min(1, textWidth / measuredWidth, availableHeight / measuredHeight);
+    for (const child of content.children) {
+      const childScaleX = child.scale.x;
+      const childScaleY = child.scale.y;
+      child.position.y *= contentScale;
+      child.scale.set(childScaleX * contentScale, childScaleY * contentScale);
+    }
+    this.prototypeInfoCard = {
+      frameBounds: {
+        x: Math.round(cardX),
+        y: Math.round(y),
+        width: Math.round(cardWidth),
+        height: Math.round(height),
+        right: Math.round(cardX + cardWidth),
+        bottom: Math.round(y + height)
+      },
+      content,
+      scale: contentScale
+    };
   }
 
   drawSettingsSectionFrame(x, y, width, height, accent = 0x37f5ff) {
@@ -1729,6 +1791,7 @@ export class SettingsOverlay {
     this.sectionBounds = [];
     this.prototypeEnabledButton = null;
     this.prototypeQuickStartButton = null;
+    this.prototypeInfoCard = null;
     this.languageButton = null;
     this.languageHint = null;
     this.creditsPanel = null;
@@ -2595,7 +2658,12 @@ export class SettingsOverlay {
         ...prototypeSettings,
         quickStartSector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
         enabledButton: debugBounds(this.prototypeEnabledButton),
-        quickStartButton: debugBounds(this.prototypeQuickStartButton)
+        quickStartButton: debugBounds(this.prototypeQuickStartButton),
+        infoCard: this.prototypeInfoCard ? {
+          frameBounds: this.prototypeInfoCard.frameBounds,
+          contentBounds: debugBounds(this.prototypeInfoCard.content),
+          scale: Number(this.prototypeInfoCard.scale.toFixed(3))
+        } : null
       },
       display: {
         mode: displaySettings.mode,
