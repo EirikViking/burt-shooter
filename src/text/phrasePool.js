@@ -566,13 +566,13 @@ const localizedStoryTransmissions = {
 };
 
 const localizedLabels = {
-  de: { wave: 'Welle', overload: 'ÜBERLASTUNG!', pause: 'PAUSE', resume: 'WEITER', lowHealth: 'WENIG LEBEN', lifeLost: 'SCHIFF VERLOREN - HITBOX GETROFFEN!', newWave: 'NEUE WELLE' },
-  es: { wave: 'Oleada', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'POCA VIDA', lifeLost: 'NAVE PERDIDA - HITBOX TOCADA!', newWave: 'NUEVA OLEADA' },
-  ru: { wave: 'Волна', overload: 'ПЕРЕГРУЗКА!', pause: 'ПАУЗА', resume: 'ПРОДОЛЖИТЬ', lowHealth: 'МАЛО ЖИЗНИ', lifeLost: 'КОРАБЛЬ СБИТ - HITBOX ЗАДЕТ!', newWave: 'НОВАЯ ВОЛНА' },
-  'zh-CN': { wave: '波次', overload: '过载！', pause: '暂停', resume: '继续', lowHealth: '生命偏低', lifeLost: '飞船损毁 - 命中 HITBOX！', newWave: '新波次' },
-  'pt-BR': { wave: 'Onda', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'VIDA BAIXA', lifeLost: 'NAVE PERDIDA - HITBOX ATINGIDA!', newWave: 'NOVA ONDA' },
-  ko: { wave: '웨이브', overload: '과부하!', pause: '일시정지', resume: '계속', lowHealth: '체력 낮음', lifeLost: '함선 격추 - 히트박스 피격!', newWave: '새 웨이브' },
-  ja: { wave: 'ウェーブ', overload: 'オーバーロード！', pause: '一時停止', resume: '続ける', lowHealth: 'ライフ低下', lifeLost: '機体撃墜 - ヒットボックス被弾！', newWave: '新ウェーブ' }
+  de: { wave: 'Welle', overload: 'ÜBERLASTUNG!', pause: 'PAUSE', resume: 'WEITER', lowHealth: 'WENIG LEBEN', lifeLost: 'SCHIFF VERLOREN', newWave: 'NEUE WELLE' },
+  es: { wave: 'Oleada', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'POCA VIDA', lifeLost: 'NAVE PERDIDA', newWave: 'NUEVA OLEADA' },
+  ru: { wave: 'Волна', overload: 'ПЕРЕГРУЗКА!', pause: 'ПАУЗА', resume: 'ПРОДОЛЖИТЬ', lowHealth: 'МАЛО ЖИЗНИ', lifeLost: 'КОРАБЛЬ ПОТЕРЯН', newWave: 'НОВАЯ ВОЛНА' },
+  'zh-CN': { wave: '波次', overload: '过载！', pause: '暂停', resume: '继续', lowHealth: '生命偏低', lifeLost: '飞船损毁', newWave: '新波次' },
+  'pt-BR': { wave: 'Onda', overload: 'SOBRECARGA!', pause: 'PAUSA', resume: 'CONTINUAR', lowHealth: 'VIDA BAIXA', lifeLost: 'NAVE PERDIDA', newWave: 'NOVA ONDA' },
+  ko: { wave: '웨이브', overload: '과부하!', pause: '일시정지', resume: '계속', lowHealth: '체력 낮음', lifeLost: '함선 격추', newWave: '새 웨이브' },
+  ja: { wave: 'ウェーブ', overload: 'オーバーロード！', pause: '一時停止', resume: '続ける', lowHealth: 'ライフ低下', lifeLost: '機体撃墜', newWave: '新ウェーブ' }
 };
 
 function isGerman() {
@@ -739,7 +739,7 @@ export function getMicroMessage(type) {
     case 'lowHealth':
       return labels?.lowHealth || 'LOW LIFE';
     case 'lifeLost':
-      return labels?.lifeLost || 'SHIP DOWN - HITBOX HIT!';
+      return labels?.lifeLost || 'SHIP DOWN';
     case 'newWave':
       return labels?.newWave || 'NEW WAVE';
     case 'bossIntro':

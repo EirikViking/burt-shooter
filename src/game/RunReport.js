@@ -6,6 +6,7 @@ import {
 import { TACTICAL_DIRECTIVE_RUN_COMPLETION_CAP } from '../config/TacticalDirectives.js';
 import { RUN_MODES, getRunModeReportIdentity } from './RunMode.js';
 import { getCombatDamageSourceLabel } from './CombatTelemetry.js';
+import { getPlayerDamageCause } from './PlayerDamageCause.js';
 
 const RUN_REPORT_VERSION = 15;
 
@@ -26,15 +27,6 @@ function formatDuration(seconds) {
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
 }
 
-function normalizeDeathSource(value) {
-  const source = String(value || '').trim();
-  if (!source) return 'unknown';
-  return source
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/\b\w/g, (match) => match.toUpperCase());
-}
-
 function normalizeDeathSourceKey(value) {
   return String(value || 'unknown').trim().toLowerCase().replace(/[\s-]+/g, '_') || 'unknown';
 }
@@ -52,7 +44,7 @@ export function getDeathCoachAdvice(value) {
   };
   return {
     source,
-    label: normalizeDeathSource(source),
+    label: getPlayerDamageCause(source).label,
     advice: adviceBySource[source] || adviceBySource.unknown
   };
 }
@@ -150,7 +142,7 @@ export function createRunReport(summary = {}) {
   const extraLivesEarned = toWholeNumber(summary.extraLivesEarned);
   const lifeLosses = toWholeNumber(summary.lifeLosses);
   const respawns = toWholeNumber(summary.respawns);
-  const finalDeathSource = normalizeDeathSource(summary.finalDeathSource || summary.lastLifeLossSource);
+  const finalDeathSource = getPlayerDamageCause(summary.finalDeathSource || summary.lastLifeLossSource).label;
   const deathCoach = getDeathCoachAdvice(summary.finalDeathSource || summary.lastLifeLossSource);
   const combatTelemetry = {
     totalDamage: toNumber(summary.combatTelemetry?.totalDamage),

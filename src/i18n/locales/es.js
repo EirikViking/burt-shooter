@@ -18,6 +18,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
 import { getNewestTyrianFeedbackSourceText } from '../newestTyrianFeedbackSourceText.js';
+import { getSecondPolishSourceText } from '../secondPolishSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "RUTA",
@@ -1876,6 +1877,6 @@ export const es = {
   diagnostics: {
     interfaceLanguage: 'Idioma de interfaz'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('es'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getOverrunModeSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getTyrianFeedbackSourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es'), ...getWonderCodexSourceText('es'), ...getHangarLaunchModeSourceText('es'), ...getNewestTyrianFeedbackSourceText('es') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('es'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('es'), ...getNovaHumorSourceText('es'), ...getMayhemModesSourceText('es'), ...getOverrunModeSourceText('es'), ...getEliteExpansionSourceText('es'), ...getHowToPlayCompleteSourceText('es'), ...getTacticalFusionSourceText('es'), ...getDailyCabinetSignalSourceText('es'), ...getMenuHierarchySourceText('es'), ...getForumFollowupSourceText('es'), ...getPlayerFeedbackReliabilitySourceText('es'), ...getTyrianFeedbackSourceText('es'), ...getCompetitionLearningSourceText('es'), ...getTacticalDraftClaritySourceText('es'), ...getWonderCodexSourceText('es'), ...getHangarLaunchModeSourceText('es'), ...getNewestTyrianFeedbackSourceText('es'), ...getSecondPolishSourceText('es') }),
   patterns
 };

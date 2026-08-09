@@ -36,6 +36,11 @@ import {
   isHangarRecommendationAcknowledged
 } from '../config/HangarRecommendationSettings.js';
 import { getShipMasteryView, SHIP_MASTERY_TIERS } from '../progression/ShipMastery.js';
+import {
+  fitMasteryTextScale,
+  getMasteryBadgeRegionDebug,
+  getShipMasteryBadgeLayout
+} from '../ui/ShipMasteryBadgeLayout.js';
 
 const STORAGE_KEY = 'burt.selectedShip.v1';
 const DEBUG = false; // Set to true to enable debug logs
@@ -199,6 +204,10 @@ export class ShipSelectScene {
     this.gamepadCancelWasPressed = false;
     this.gamepadVerticalWasPressed = false;
     this.gamepadNavigator = new GamepadNavigator();
+    this.lastInputDevice = 'keyboard';
+    this.inputPromptSwitchCount = 0;
+    this.inputPromptLastChangedAt = 0;
+    this.hangarPointerDeviceHandler = null;
     this.menuFx = null;
     this.exitNoticeTimeout = null;
     this.recommendedShip = this.getRecommendedShip();
@@ -303,7 +312,7 @@ export class ShipSelectScene {
     // Fixed footer
     const footerContainer = new PIXI.Container();
     const instructions = createText(
-      translateText('ARROWS/STICK: SHIP  |  A/ENTER: LAUNCH  |  X: DETAILS  |  Y/R: RANDOM  |  B/ESC: BACK'),
+      this.getHangarFooterPrompt(),
       {
         fontFamily: FONT_BODY,
         fontSize: this.layout.isMobile ? 11 : 14,
@@ -2645,10 +2654,11 @@ export class ShipSelectScene {
     }
 
     const mastery = getShipMasteryView(this.unlockProgress?.shipSpecificMilestones?.[ship.id], ship);
+    const masteryLayout = getShipMasteryBadgeLayout({ mobile: this.layout.isMobile });
     const masteryBadge = new PIXI.Container();
     masteryBadge.label = 'hangarShipMasteryBadge';
-    const masteryWidth = this.layout.isMobile ? 112 : 132;
-    const masteryHeight = this.layout.isMobile ? 27 : 31;
+    const masteryWidth = masteryLayout.width;
+    const masteryHeight = masteryLayout.height;
     masteryBadge.position.set(
       heroSize * (this.layout.isMobile ? 0.38 : 0.42),
       heroY + heroSize * (this.layout.isMobile ? 0.36 : 0.38)
@@ -2661,13 +2671,13 @@ export class ShipSelectScene {
     [SHIP_MASTERY_TIERS.bronze, SHIP_MASTERY_TIERS.silver, SHIP_MASTERY_TIERS.gold].forEach((tier, medalIndex) => {
       const earned = mastery.tier.rank >= tier.rank;
       const medal = new PIXI.Graphics();
-      const medalX = 13 + medalIndex * (this.layout.isMobile ? 14 : 16);
-      medal.circle(medalX, masteryHeight / 2, this.layout.isMobile ? 4.3 : 5.2);
+      const medalX = masteryLayout.medalStartX + medalIndex * masteryLayout.medalSpacing;
+      medal.circle(medalX, masteryHeight / 2, masteryLayout.medalRadius);
       medal.fill({ color: earned ? tier.color : 0x173044, alpha: earned ? 0.98 : 0.72 });
       medal.stroke({ color: earned ? 0xffffff : 0x527084, width: earned ? 1.2 : 0.8, alpha: earned ? 0.82 : 0.45 });
       masteryBadge.addChild(medal);
     });
-    const clearTally = createText(translateText('CLEARS ×{count}', { count: mastery.clears }), {
+    const clearLabel = createText(translateText('CLEARS'), {
       fontFamily: FONT_DISPLAY,
       fontSize: this.layout.isMobile ? 8 : 9,
       fill: mastery.tier.rank > 0 ? hexColor(mastery.tier.color) : '#91a8b8',
@@ -2675,13 +2685,39 @@ export class ShipSelectScene {
       stroke: '#000000',
       strokeThickness: 2
     });
-    clearTally.anchor.set(0, 0.5);
-    clearTally.position.set(this.layout.isMobile ? 58 : 67, masteryHeight / 2);
-    masteryBadge.addChild(clearTally);
+    clearLabel.label = 'hangarShipMasteryClearsLabel';
+    clearLabel.anchor.set(0, 0.5);
+    clearLabel.position.set(masteryLayout.labelX, masteryHeight / 2);
+    const clearLabelMeasuredWidth = clearLabel.width;
+    const clearLabelScale = fitMasteryTextScale(clearLabelMeasuredWidth, masteryLayout.labelMaxWidth);
+    clearLabel.scale.set(clearLabelScale);
+    masteryBadge.addChild(clearLabel);
+
+    const clearCount = createText(String(Math.max(0, Math.round(Number(mastery.clears) || 0))), {
+      fontFamily: FONT_DISPLAY,
+      fontSize: this.layout.isMobile ? 9 : 10,
+      fill: mastery.tier.rank > 0 ? '#f5ffff' : '#b8cad6',
+      fontWeight: '900',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    clearCount.label = 'hangarShipMasteryClearsCount';
+    clearCount.anchor.set(1, 0.5);
+    clearCount.position.set(masteryLayout.countRightX, masteryHeight / 2);
+    const clearCountMeasuredWidth = clearCount.width;
+    const clearCountScale = fitMasteryTextScale(clearCountMeasuredWidth, masteryLayout.countMaxWidth);
+    clearCount.scale.set(clearCountScale);
+    masteryBadge.addChild(clearCount);
+
+    const identityDivider = new PIXI.Graphics();
+    identityDivider.moveTo(masteryLayout.dividerX, 6);
+    identityDivider.lineTo(masteryLayout.dividerX, masteryHeight - 6);
+    identityDivider.stroke({ color: mastery.tier.color, width: 1, alpha: 0.28 });
+    masteryBadge.addChild(identityDivider);
     const identityIcon = new PIXI.Graphics();
     const identity = mastery.identity || { accent: textAccent, spokes: 6, satellites: 2, phase: 0, key: 'balanced' };
-    const iconX = this.layout.isMobile ? masteryWidth - 12 : masteryWidth - 14;
-    const iconRadius = this.layout.isMobile ? 5 : 6;
+    const iconX = masteryLayout.identityX;
+    const iconRadius = masteryLayout.identityRadius;
     const iconPhase = Number(identity.phase) || 0;
     const spokeCount = Math.max(3, Math.min(10, Number(identity.spokes) || 6));
     for (let index = 0; index < spokeCount; index += 1) {
@@ -2699,12 +2735,22 @@ export class ShipSelectScene {
     identityIcon.position.set(iconX, masteryHeight / 2);
     identityIcon.label = 'hangarShipMasteryIdentity';
     masteryBadge.addChild(identityIcon);
+    const masteryRegions = getMasteryBadgeRegionDebug(masteryLayout, {
+      labelWidth: clearLabelMeasuredWidth * clearLabelScale,
+      countWidth: clearCountMeasuredWidth * clearCountScale
+    });
     masteryBadge.__debugMastery = {
       tier: mastery.tier.id,
       medalCount: mastery.medalCount,
+      renderedMedalCount: 3,
       clears: mastery.clears,
-      tally: clearTally.text,
+      clearLabel: clearLabel.text,
+      clearCount: clearCount.text,
       identity: { ...identity },
+      layout: { ...masteryLayout },
+      regions: masteryRegions,
+      overlapFree: Object.values(masteryRegions.overlaps).every((value) => value === false),
+      threeDigitCapacity: true,
       rewardsAdded: false
     };
     container.addChild(masteryBadge);
@@ -3496,9 +3542,46 @@ export class ShipSelectScene {
     this.updateSelectionInfo();
   }
 
+  getHangarFooterPrompt(device = this.lastInputDevice) {
+    return device === 'controller'
+      ? translateText('STICK: SHIP | A: LAUNCH | X: DETAILS | Y: RANDOM | B: BACK')
+      : translateText('ARROWS: SHIP | ENTER: LAUNCH | X: DETAILS | R: RANDOM | ESC: BACK');
+  }
+
+  setHangarInputDevice(device, reason = 'input') {
+    const normalized = device === 'controller' ? 'controller' : 'keyboard';
+    if (this.lastInputDevice === normalized) return false;
+    this.lastInputDevice = normalized;
+    this.inputPromptSwitchCount += 1;
+    this.inputPromptLastChangedAt = Date.now();
+    if (this.footerInstructions) {
+      this.footerInstructions.text = this.getHangarFooterPrompt(normalized);
+    }
+    this.lastInputPromptChange = {
+      device: normalized,
+      reason,
+      at: this.inputPromptLastChangedAt
+    };
+    return true;
+  }
+
+  getHangarInputPromptDebugState() {
+    return {
+      device: this.lastInputDevice,
+      text: this.footerInstructions?.text || this.getHangarFooterPrompt(),
+      switchCount: this.inputPromptSwitchCount,
+      lastChangedAt: this.inputPromptLastChangedAt,
+      lastChange: this.lastInputPromptChange ? { ...this.lastInputPromptChange } : null
+    };
+  }
+
   setupInput() {
     console.log('[ShipSelectInput] attached');
+    const canvas = this.game.app.canvas || this.game.app.view;
+    this.hangarPointerDeviceHandler = () => this.setHangarInputDevice('keyboard', 'pointerdown');
+    canvas?.addEventListener?.('pointerdown', this.hangarPointerDeviceHandler, true);
     this.keyHandler = (e) => {
+      this.setHangarInputDevice('keyboard', 'keydown');
       // Log first key press for debug
       if (DEBUG) console.log(`[ShipSelectInput] key=${e.key} code=${e.code}`);
 
@@ -3594,6 +3677,10 @@ export class ShipSelectScene {
       } else if (e.code === 'KeyI') {
         e.preventDefault();
         this.openCareerInfoOverlay('keyboard');
+      } else if (e.code === 'KeyX') {
+        e.preventDefault();
+        this.setMainMenuButtonFocus(false);
+        this.openSelectedShipDetails();
       } else if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
         this.openHangarMenu('keyboard');
@@ -3663,6 +3750,7 @@ export class ShipSelectScene {
   pollHangarMenuGamepad() {
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+    this.setHangarInputDevice('controller', 'gamepad');
 
     if (this.launchModeOverlay) {
       this.launchModeOverlay.handleGamepad(nav);
@@ -3878,6 +3966,11 @@ export class ShipSelectScene {
     this.closeLaunchModeOverlay();
     if (this.keyHandler) {
       window.removeEventListener('keydown', this.keyHandler, true);
+    }
+    if (this.hangarPointerDeviceHandler) {
+      const canvas = this.game.app.canvas || this.game.app.view;
+      canvas?.removeEventListener?.('pointerdown', this.hangarPointerDeviceHandler, true);
+      this.hangarPointerDeviceHandler = null;
     }
     if (this.wheelHandler) {
       window.removeEventListener('wheel', this.wheelHandler);

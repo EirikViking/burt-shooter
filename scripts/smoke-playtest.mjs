@@ -146,8 +146,9 @@ async function collectGameState(page) {
             return [];
           }
         })();
-        return toasts.find((toast) => toast?.type === 'lore') || null;
+        return toasts.find((toast) => toast?.type === 'lore' || toast?.type === 'cabinet_log') || null;
       })(),
+      cabinetLogArchive: play?.lastCabinetLog ? { ...play.lastCabinetLog } : null,
       fatalOverlay: Boolean(document.getElementById('fatal-overlay')),
       textState: (() => {
         try {
@@ -298,6 +299,7 @@ function summarizeSmokeReport(report, blockingIssues) {
       '02-gameplay.png',
       '02-powerup-hud.png',
       '03-gamepad-pause.png',
+      '05-cabinet-log-compact.png',
       '06-game-over.png',
       '08-mobile-intro.png',
       '10-level3-gameplay.png',
@@ -324,7 +326,7 @@ function summarizeSmokeReport(report, blockingIssues) {
     coverage: {
       gamepadConnected: Boolean(report.gamepadMoveState?.textState?.input?.gamepad?.connected),
       powerupHud: report.powerupHudState?.label || null,
-      storyTransmission: report.storyTransmissionState?.storyTransmission?.imageAlias || null,
+      cabinetLog: report.storyTransmissionState?.storyTransmission?.type || null,
       waveTransition: report.waveTransitionState?.textState?.wave?.currentWaveNumber || null,
       bossDefeatMusic: `${musicContext(report.bossDefeatedState) || 'none'} / ${musicTrackName(report.bossDefeatedState) || 'none'}`
     },
@@ -627,13 +629,17 @@ async function runSmoke() {
       play.dismissActiveToastSlotsBelowPriority?.(['top'], 99);
       play.showStoryTransmission({ force: true });
       const state = JSON.parse(window.render_game_to_text?.() || '{}');
-      return (state.toast?.active || []).some((toast) => toast?.type === 'lore' && /^nova-swarm-story-comms-/.test(toast.imageAlias || ''));
+      return (state.toast?.active || []).some((toast) => (
+        toast?.type === 'cabinet_log'
+        && String(toast.message || '').split('\n').length === 2
+        && !toast.imageAlias
+      ));
     }, null, { timeout: 15000 });
     await storyPage.waitForTimeout(500);
-    await storyPage.screenshot({ path: path.join(outputDir, '05-story-transmission.png'), fullPage: true });
+    await storyPage.screenshot({ path: path.join(outputDir, '05-cabinet-log-compact.png'), fullPage: true });
     const storyTransmissionState = await collectGameState(storyPage);
     await storyPage.close();
-    logStep('story transmission captured');
+    logStep('compact Cabinet Log captured');
 
     const gameOverPage = await browser.newPage({ viewport: { width: 1366, height: 768 } });
     observePage(gameOverPage, 'game-over');
@@ -911,8 +917,10 @@ async function runSmoke() {
       ...((gamepadMoveState.textState?.player?.y || 0) >= (gamepadBeforeState.textState?.player?.y || 9999) - 4 ? ['gamepad movement did not move the player upward'] : []),
       ...((gamepadMoveState.textState?.counts?.playerBullets || 0) <= 0 ? ['gamepad fire did not produce player bullets'] : []),
       ...(!gamepadPauseState.isPaused || !gamepadPauseState.pauseOverlayVisible ? ['gamepad pause button did not open pause overlay'] : []),
-      ...(!storyTransmissionState.storyTransmission ? ['forced story transmission did not appear'] : []),
-      ...(!/^nova-swarm-story-comms-/.test(storyTransmissionState.storyTransmission?.imageAlias || '') ? [`story transmission did not use generated story art: ${storyTransmissionState.storyTransmission?.imageAlias || 'none'}`] : []),
+      ...(!storyTransmissionState.storyTransmission ? ['forced Cabinet Log did not appear'] : []),
+      ...(storyTransmissionState.storyTransmission?.type !== 'cabinet_log' ? [`Cabinet Log did not use compact combat presentation: ${storyTransmissionState.storyTransmission?.type || 'none'}`] : []),
+      ...(String(storyTransmissionState.storyTransmission?.message || '').split('\n').length !== 2 ? ['compact Cabinet Log did not use a two-line live toast'] : []),
+      ...(storyTransmissionState.cabinetLogArchive?.fullTextArchived !== true ? ['Cabinet Log full archive text was not preserved'] : []),
       ...(gameOverState.scene !== 'gameOver' ? ['forced game over did not reach game over scene'] : []),
       ...(gameOverState.perf?.scene !== 'gameOver' ? [`game-over perf state used unstable scene name: ${gameOverState.perf?.scene || 'none'}`] : []),
       ...(gameOverState.textState?.scene !== 'gameOver' ? [`game-over text state used unstable scene name: ${gameOverState.textState?.scene || 'none'}`] : []),
@@ -935,7 +943,7 @@ async function runSmoke() {
       ...((powerupHudState.group?.right || 0) > (powerupHudState.canvas?.width || 0) ? ['powerup HUD overflowed right edge'] : []),
       ...((powerupHudState.location && powerupHudState.group?.y < powerupHudState.location.bottom + 3) ? ['powerup HUD overlapped sector/location label'] : []),
       ...visibleEnemyHealthIssues(gameplayState, 'desktop gameplay'),
-      ...visibleEnemyHealthIssues(storyTransmissionState, 'story transmission'),
+      ...visibleEnemyHealthIssues(storyTransmissionState, 'Cabinet Log'),
       ...(mobileGameplayState.fatalOverlay ? ['mobile fatal overlay visible'] : []),
       ...(mobileGameplayState.textState?.scene !== 'play' ? ['mobile autostart did not reach play scene'] : []),
       ...(!mobileGameplayState.textState?.wave ? ['mobile gameplay did not expose wave state'] : []),

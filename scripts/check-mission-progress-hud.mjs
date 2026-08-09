@@ -152,7 +152,7 @@ try {
     manager.state = 'BOSS_ACTIVE';
     manager.normalWavesTotal = 6;
     manager.currentWaveIndex = 6;
-    manager.boss = { health: 420 };
+    manager.boss = { health: 420, name: 'ASTRAL TYRANT', phase: 2 };
     hud.updateMissionStatus();
     const boss = { ...(hud.missionProgressBg?._debugMissionProgress || {}) };
     const bossText = hud.missionText?.text || '';
@@ -211,9 +211,9 @@ try {
   if (state.activeWave?.pressureMarkerCount !== 1) failures.push(`expected one restrained pressure marker, got ${state.activeWave?.pressureMarkerCount}`);
   if ((state.activeWave?.threatChevronCount || 0) !== 0) failures.push(`persistent Mission Status retained decorative threat chevrons: ${state.activeWave?.threatChevronCount}`);
   if (!/^WAVE: 3\/6 \| HOSTILES: 7 \| THREATS: 18$/.test(state.activeText || '')) failures.push(`mission text did not stay readable in wave state: ${state.activeText}`);
-  if (!/^LEVEL: 4 \| HOSTILES: 3 \| THREATS: 0$/.test(state.levelText || '')) failures.push(`level fallback mission text was not separated: ${state.levelText}`);
+  if (!/^SECTOR 4 \| HOSTILES 3 \| THREATS 0$/.test(state.levelText || '')) failures.push(`sector fallback mission text was not semantically separated: ${state.levelText}`);
   if (state.boss?.completedRatio !== 1 || state.boss?.phase !== 'BOSS') failures.push(`boss state did not fill the rail: ${JSON.stringify(state.boss)}`);
-  if (!/^BOSS HP 420/.test(state.bossText || '')) failures.push(`boss text did not render expected HP: ${state.bossText}`);
+  if (state.bossText !== 'ASTRAL TYRANT // PHASE 2') failures.push(`boss text did not render expected identity and phase: ${state.bossText}`);
   if (state.clear?.completedRatio !== 1 || state.clear?.state !== 'LEVEL_COMPLETE') failures.push(`clear state did not fill the rail: ${JSON.stringify(state.clear)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

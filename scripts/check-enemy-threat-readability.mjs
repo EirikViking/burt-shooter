@@ -320,7 +320,6 @@ try {
   };
   const expectedTiers = new Map([
     ['elite', 'elite'],
-    ['threat', 'threat_action'],
     ['late', 'late_mayhem'],
     ['durable', 'durable']
   ]);
@@ -349,6 +348,13 @@ try {
   if (ordinary && (!ordinary.hasBodySpriteTexture || ordinary.bodySize?.width < 20 || ordinary.bodySize?.height < 20)) failures.push(`ordinary sample body texture too small/missing: ${JSON.stringify(ordinary.bodySize)}`);
   if (ordinary) assertHullDetail(ordinary, 'ordinary');
   if (ordinary) assertOnScreen(ordinary, 'ordinary');
+  const threat = state.enemies?.find((item) => item.key === 'threat');
+  if (!threat) failures.push('missing threat-action enemy');
+  if (threat?.visible || threat?.debug?.visible) failures.push(`ordinary threat-action enemy should not have a persistent frame: ${JSON.stringify(threat)}`);
+  if (threat && !threat.usingGeneratedEnemyTexture) failures.push(`threat-action sample did not use real generated enemy texture: ${JSON.stringify(threat)}`);
+  if (threat && (!threat.hasBodySpriteTexture || threat.bodySize?.width < 20 || threat.bodySize?.height < 20)) failures.push(`threat-action sample body texture too small/missing: ${JSON.stringify(threat.bodySize)}`);
+  if (threat) assertHullDetail(threat, 'threat-action');
+  if (threat) assertOnScreen(threat, 'threat-action');
   const fallback = state.enemies?.find((item) => item.key === 'fallback_generated_missing');
   if (!fallback) failures.push('missing generated-texture fallback sample');
   if (fallback?.usingFallbackGraphics) failures.push(`generated texture fallback sample used simple graphics: ${JSON.stringify(fallback)}`);
@@ -372,7 +378,6 @@ try {
   if (fallbackUpgrade) assertOnScreen(fallbackUpgrade, 'fallback upgrade');
   const late = state.enemies?.find((item) => item.key === 'late');
   if (!late?.lateMayhem) failures.push(`late sample is not lateMayhem: ${JSON.stringify(late)}`);
-  const threat = state.enemies?.find((item) => item.key === 'threat');
   if (!threat?.hasThreatAction) failures.push('threat sample did not keep a threat action definition');
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);

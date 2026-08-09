@@ -16,6 +16,7 @@ import { getModeBriefingReviewSourceText } from '../modeBriefingReviewSourceText
 import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
 import { getNewestTyrianFeedbackSourceText } from '../newestTyrianFeedbackSourceText.js';
+import { getSecondPolishSourceText } from '../secondPolishSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "ROUTE",
@@ -2246,6 +2247,6 @@ export const de = {
   diagnostics: {
     interfaceLanguage: 'Oberflächensprache'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('de'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('de'), ...getNovaHumorSourceText('de'), ...getMayhemModesSourceText('de'), ...getOverrunModeSourceText('de'), ...getEliteExpansionSourceText('de'), ...getHowToPlayCompleteSourceText('de'), ...getTacticalFusionSourceText('de'), ...getDailyCabinetSignalSourceText('de'), ...getMenuHierarchySourceText('de'), ...getForumFollowupSourceText('de'), ...getPlayerFeedbackReliabilitySourceText('de'), ...getTyrianFeedbackSourceText('de'), ...getCompetitionLearningSourceText('de'), ...getTacticalDraftClaritySourceText('de'), ...getWonderCodexSourceText('de'), ...getHangarLaunchModeSourceText('de'), ...getNewestTyrianFeedbackSourceText('de'), ...getSecondPolishSourceText('de') }),
   patterns
 };

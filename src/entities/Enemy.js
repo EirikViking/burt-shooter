@@ -60,12 +60,9 @@ function getEnemyThreatFrameProfile(enemy) {
   if (enemy.generatedProfile?.lateMayhem) {
     return { tier: 'late_mayhem', color: enemy.generatedProfile.accent || accent, accent: enemy.generatedProfile.tint || 0xffffff, markerCount: 5, radiusMult: 1.9 };
   }
-  if (enemy.generatedProfile?.role === 'fast_scout' || enemy.generatedProfile?.movementStyle === 'fastNeedle') {
-    return { tier: 'fast', color: 0x66f7ff, accent: enemy.generatedProfile.accent || accent || 0xffef7e, markerCount: 4, radiusMult: 2.6 };
-  }
-  if (enemy.threatActionDefinition) {
-    return { tier: 'threat_action', color: 0xffd36b, accent: accent || 0xff6174, markerCount: 4, radiusMult: 1.82 };
-  }
+  // Ordinary fast movers and enemies with a discrete threat action already
+  // communicate through motion and their action telegraph. A persistent ring
+  // on those common enemies obscures bullets without adding new information.
   if (enemy.isElite || Number(enemy.maxHealth) >= 8) {
     return { tier: 'durable', color: 0xffe56d, accent: accent || 0xfff1a8, markerCount: 3, radiusMult: 1.7 };
   }
@@ -1890,6 +1887,59 @@ export class Enemy {
     let entryLockPipCount = 0;
     let approachSparkCount = 0;
     let reinforcementWakeCount = 0;
+    const specialEntry = Boolean(
+      reinforcementSwarm
+      || this.isRareChaosVisitor
+      || this.isAce
+      || this.rivalWingDoctrine
+      || this.middleShipProfile
+      || this.isEliteMiddleShip
+      || this.kind === 'danger_mid_ship'
+      || this.generatedProfile?.lateMayhem
+      || this.isElite
+      || Number(this.maxHealth) >= 8
+    );
+    const dirX = Math.cos(inboundAngle);
+    const dirY = Math.sin(inboundAngle);
+    const sideX = Math.cos(inboundAngle + Math.PI * 0.5);
+    const sideY = Math.sin(inboundAngle + Math.PI * 0.5);
+    if (!specialEntry) {
+      layer.circle(0, 0, outer);
+      layer.stroke({ color, width: 1.35, alpha: 0.32 * fade });
+      for (let i = 0; i < 2; i += 1) {
+        const distance = outer + 12 + i * 10;
+        const baseX = -dirX * distance;
+        const baseY = -dirY * distance;
+        const tipX = baseX + dirX * 7;
+        const tipY = baseY + dirY * 7;
+        const wing = 4 + i * 0.4;
+        layer.moveTo(baseX - sideX * wing, baseY - sideY * wing);
+        layer.lineTo(tipX, tipY);
+        layer.lineTo(baseX + sideX * wing, baseY + sideY * wing);
+        inboundChevronCount += 1;
+      }
+      layer.stroke({ color: 0xffffff, width: 1.1, alpha: 0.22 * fade + 0.08 });
+      layer.visible = true;
+      layer._debugSpawnCue = {
+        visible: true,
+        progress: Number(progress.toFixed(3)),
+        radius: Number(outer.toFixed(1)),
+        fade: Number(fade.toFixed(3)),
+        simplifiedStandard: true,
+        inboundChevronCount,
+        entryGateTickCount,
+        entryGhostLaneCount,
+        braidChevronCount,
+        formationBracketCount,
+        entryLockPipCount,
+        approachSparkCount,
+        reinforcementWakeCount,
+        reinforcementSwarm,
+        superStorm,
+        inboundAngle: Number(inboundAngle.toFixed(3))
+      };
+      return;
+    }
     layer.circle(0, 0, outer);
     layer.stroke({ color, width: this.isEliteMiddleShip ? 2.4 : 1.8, alpha: 0.42 * fade });
     layer.circle(0, 0, radius * 0.66);
@@ -1909,10 +1959,6 @@ export class Enemy {
     }
     layer.stroke({ color: 0x37f5ff, width: 1.2, alpha: 0.26 * fade });
 
-    const dirX = Math.cos(inboundAngle);
-    const dirY = Math.sin(inboundAngle);
-    const sideX = Math.cos(inboundAngle + Math.PI * 0.5);
-    const sideY = Math.sin(inboundAngle + Math.PI * 0.5);
     for (let i = 0; i < 3; i += 1) {
       const distance = outer + 14 + i * 11;
       const baseX = -dirX * distance;
@@ -2033,6 +2079,7 @@ export class Enemy {
       reinforcementWakeCount,
       reinforcementSwarm,
       superStorm,
+      simplifiedStandard: false,
       inboundAngle: Number(inboundAngle.toFixed(3))
     };
   }
@@ -2164,50 +2211,12 @@ export class Enemy {
         layer.circle(cx, cy, profile.tier === 'elite' || profile.tier === 'ace' ? 2.6 : 2.1);
       }
       layer.fill({ color: profile.accent, alpha: 0.2 + pulse * 0.12 });
-    } else if (profile.tier === 'threat_action') {
-      for (let i = 0; i < markerCount; i += 1) {
-        const angle = Math.PI / 4 + i * (Math.PI * 2 / markerCount);
-        drawThreatFrameTick(layer, angle, radius * 0.64, radius * 0.92);
-      }
-      layer.stroke({ color: profile.accent, width: 1.4, alpha: 0.28 + pulse * 0.18 });
     } else if (profile.tier === 'late_mayhem') {
       for (let i = 0; i < markerCount; i += 1) {
         const angle = now * 0.002 + i * (Math.PI * 2 / markerCount);
         drawThreatFrameTick(layer, angle, radius * 0.78, outer + 4);
       }
       layer.stroke({ color: profile.accent, width: 1.3, alpha: 0.26 + pulse * 0.18 });
-    } else if (profile.tier === 'fast') {
-      const trailLean = Math.sin(now * 0.006 + this.idlePhase) * 0.24;
-      for (let i = 0; i < 3; i += 1) {
-        const spread = (i - 1) * radius * 0.34;
-        const y0 = radius * 0.38 + i * 1.5;
-        const y1 = outer + 12 + i * 5;
-        layer.moveTo(spread - 4, y0);
-        layer.lineTo(spread - trailLean * y1, y1);
-        layer.lineTo(spread + 4, y0);
-        layer.closePath();
-        layer.fill({ color: profile.color, alpha: 0.08 + pulse * 0.08 });
-        layer.moveTo(spread, y0);
-        layer.lineTo(spread - trailLean * y1, y1);
-        motionTrailCount += 1;
-      }
-      layer.stroke({ color: profile.color, width: 2.1, alpha: 0.38 + pulse * 0.28 });
-      for (let i = 0; i < markerCount; i += 1) {
-        const angle = -Math.PI / 2 + i * (Math.PI * 2 / markerCount) + pulse * 0.16;
-        drawThreatFrameTick(layer, angle, radius * 0.82, outer + 5);
-        layer.circle(Math.cos(angle) * (outer + 8), Math.sin(angle) * (outer + 8), 2.4);
-      }
-      layer.fill({ color: profile.accent, alpha: 0.28 + pulse * 0.2 });
-      layer.stroke({ color: profile.accent, width: 1.8, alpha: 0.32 + pulse * 0.24 });
-      for (let i = 0; i < 2; i += 1) {
-        const y = outer + 18 + i * 8;
-        const spread = 5 + i * 2;
-        layer.moveTo(-spread, y);
-        layer.lineTo(0, y + 8 + pulse * 4);
-        layer.lineTo(spread, y);
-        vectorArrowCount += 1;
-      }
-      layer.stroke({ color: 0xffffff, width: 1.2, alpha: 0.18 + pulse * 0.2 });
     }
 
     layer.visible = true;

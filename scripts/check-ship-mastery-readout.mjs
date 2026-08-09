@@ -22,7 +22,12 @@ const main = read('../src/main.js');
 for (const token of [
   "masteryBadge.label = 'hangarShipMasteryBadge'",
   'SHIP_MASTERY_TIERS.bronze',
-  "translateText('CLEARS ×{count}'",
+  "translateText('CLEARS')",
+  'getShipMasteryBadgeLayout',
+  'fitMasteryTextScale',
+  'overlapFree:',
+  'threeDigitCapacity: true',
+  'renderedMedalCount: 3',
   'rewardsAdded: false',
   'shipContainer.masteryBadge.visible = isCenter'
 ]) {

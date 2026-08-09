@@ -763,7 +763,7 @@ try {
     reports
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 11} report=${path.join(outputDir, 'report.json')}`);
+  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 10} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();

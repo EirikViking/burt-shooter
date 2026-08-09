@@ -108,6 +108,32 @@ async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
 }
 
+async function readProgressionState(page) {
+  return page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const manager = play?.enemyManager;
+    return {
+      currentSceneIsPlay: game?.currentScene === play,
+      tickerStarted: Boolean(game?.app?.ticker?.started),
+      playReady: Boolean(play?.isReady),
+      playPaused: Boolean(play?.isPaused),
+      levelAdvancePending: Boolean(play?.levelAdvancePending),
+      levelComplete: Boolean(manager?.isLevelComplete?.()),
+      managerSpawning: Boolean(manager?.spawning),
+      managerState: manager?.state || null,
+      managerPhase: manager?.phase || null,
+      tacticalDraftActive: Boolean(play?.tacticalDraft?.active),
+      pendingRankUpPresentation: play?.pendingRankUpPresentation ?? null,
+      activeRankUpPresentation: Boolean(play?.activeRankUpPresentation?.parent),
+      activeTransitionPresentation: Boolean(play?.hasAuthoritativeTransitionPresentation?.()),
+      holdProgressionPresentation: Boolean(play?.shouldHoldProgressionPresentation?.()),
+      level: game?.level ?? null,
+      runCleared: Boolean(game?.runCleared)
+    };
+  });
+}
+
 async function startMixedRecording(page) {
   return page.evaluate(async () => {
     await window.__novaCaptureAudioContext?.resume?.();
@@ -183,6 +209,7 @@ async function prepareSectorTenBoss(page) {
 
     game.level = 10;
     game.score = 180000;
+    play.lastScoreSeen = game.score;
     game.lives = 3;
     game.runCleared = false;
     game.runClearReason = null;
@@ -245,6 +272,8 @@ async function prepareSectorTenBoss(page) {
     }
     play.damageTakenThisSector = 1;
     play.levelAdvancePending = false;
+    game.updateLiveRunRank?.({ force: true });
+    play.pendingRankUpPresentation = null;
     return JSON.parse(window.render_game_to_text?.() || '{}');
   });
 }
@@ -280,10 +309,11 @@ await context.addInitScript(() => {
   localStorage.setItem('burt_music_enabled', 'true');
   localStorage.setItem('burt_voice_enabled', 'true');
   localStorage.setItem('burt_cta_voice_enabled', 'true');
-  localStorage.setItem('burt_volume_master', '0.9');
-  localStorage.setItem('burt_volume_music', '0.35');
-  localStorage.setItem('burt_volume_sfx', '0.85');
-  localStorage.setItem('burt_volume_voice', '0.75');
+  localStorage.setItem('burt_volume_master', '0.3');
+  localStorage.setItem('burt_volume_music', '0.2');
+  localStorage.setItem('burt_volume_sfx', '0.4');
+  localStorage.setItem('burt_volume_ui', '0.4');
+  localStorage.setItem('burt_volume_voice', '0.45');
   localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
   window.__novaLeaderboardMode = 'local';
 
@@ -346,9 +376,36 @@ try {
   await page.waitForTimeout(1000);
   defeatTrigger = await triggerBossDefeat(page);
   await page.waitForFunction(() => {
+    try {
+      const game = window.__game;
+      const state = JSON.parse(window.render_game_to_text?.() || '{}');
+      return state.tacticalDraft?.active === true || (game?.runCleared === true && game?.level >= 11);
+    } catch {
+      return false;
+    }
+  }, null, { timeout: 12000 });
+  const tacticalDraftActive = await page.evaluate(() => {
+    try {
+      return JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.active === true;
+    } catch {
+      return false;
+    }
+  });
+  if (tacticalDraftActive) {
+    await page.waitForFunction(() => {
+      try {
+        return JSON.parse(window.render_game_to_text?.() || '{}').tacticalDraft?.inputArmed === true;
+      } catch {
+        return false;
+      }
+    }, null, { timeout: 5000 });
+    await page.waitForTimeout(700);
+    await page.evaluate(() => window.__game?.scenes?.play?.confirmTacticalDraft?.(1, 'pointer'));
+  }
+  await page.waitForFunction(() => {
     const game = window.__game;
     return game?.runCleared === true && game?.level >= 11;
-  }, null, { timeout: 9000 });
+  }, null, { timeout: 12000 });
   await page.waitForTimeout(2600);
   finalState = await readState(page);
   await page.screenshot({ path: finalScreenshot, fullPage: true });
@@ -396,6 +453,7 @@ try {
   console.log(`[overrun-clear-capture] PASS video=${outputVideo} screenshot=${finalScreenshot} report=${reportPath}`);
 } catch (error) {
   const fallbackState = await readState(page).catch(() => null);
+  const progressionState = await readProgressionState(page).catch(() => null);
   writeFileSync(reportPath, `${JSON.stringify({
     ok: false,
     error: error?.stack || error?.message || String(error),
@@ -403,6 +461,7 @@ try {
     recorderInfo,
     defeatTrigger,
     fallbackState,
+    progressionState,
     consoleEvents,
     pageErrors,
     badResponses

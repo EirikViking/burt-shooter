@@ -922,8 +922,13 @@ export class HUD {
       return;
     }
 
-    const waveText = waveTotal > 0 ? `WAVE: ${Math.min(waveIndex, waveTotal)}/${waveTotal}` : `LEVEL: ${this.game.level}`;
-    this.missionText.text = translateText(`${waveText} | HOSTILES: ${activeEnemies} | THREATS: ${activeBullets}`);
+    this.missionText.text = waveTotal > 0
+      ? translateText(`WAVE: ${Math.min(waveIndex, waveTotal)}/${waveTotal} | HOSTILES: ${activeEnemies} | THREATS: ${activeBullets}`)
+      : translateText('SECTOR {sector} | HOSTILES {hostiles} | THREATS {threats}', {
+        sector: this.game.level,
+        hostiles: activeEnemies,
+        threats: activeBullets
+      });
     this.updateMissionProgress({
       state,
       phase,
@@ -949,30 +954,33 @@ export class HUD {
     rail.clear();
     fill.clear();
 
+    const ace = play?.getAceBountyDebugState?.()?.active;
+    const compactAceReady = ace?.spawned && !ace?.completed && Date.now() >= (Number(ace.compactObjectiveReadyAt) || 0);
+    if (compactAceReady) {
+      const number = String(ace.number || 0).padStart(4, '0');
+      const reward = translateText(ace.rewardLabel || 'EXTRA RESCAN');
+      this.directiveText.text = translateText('DESTROY ACE {number} // {reward}', { number, reward });
+      this.directiveText.style.fill = '#fff3a0';
+      this.directiveText.visible = true;
+      this.directiveText.scale.set(1);
+      this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
+      rail.visible = fill.visible = width > 0 && height > 0;
+      rail.roundRect(x, y, width, height, Math.max(1, height / 2));
+      rail.fill({ color: 0x06141b, alpha: 0.9 });
+      rail.stroke({ color: ace.color || 0xffd15c, width: 0.9, alpha: 0.68 });
+      rail._debugDirective = {
+        visible: true,
+        compactAce: true,
+        number,
+        label: this.directiveText.text,
+        suspendedDirectiveId: active?.id || null,
+        suspendedDirectiveQueued: Boolean(active?.queued),
+        railBounds: { x, y, width, height }
+      };
+      return;
+    }
+
     if (!active) {
-      const ace = play?.getAceBountyDebugState?.()?.active;
-      const compactAceReady = ace?.spawned && !ace?.completed && Date.now() >= (Number(ace.compactObjectiveReadyAt) || 0);
-      if (compactAceReady) {
-        const number = String(ace.number || 0).padStart(4, '0');
-        const reward = translateText(ace.rewardLabel || 'EXTRA RESCAN');
-        this.directiveText.text = translateText('DESTROY ACE {number} // {reward}', { number, reward });
-        this.directiveText.style.fill = '#fff3a0';
-        this.directiveText.visible = true;
-        this.directiveText.scale.set(1);
-        this.fitTextToWidth(this.directiveText, Math.max(120, width), this.game.getWidth() < 1000 ? 0.78 : 0.62);
-        rail.visible = fill.visible = width > 0 && height > 0;
-        rail.roundRect(x, y, width, height, Math.max(1, height / 2));
-        rail.fill({ color: 0x06141b, alpha: 0.9 });
-        rail.stroke({ color: ace.color || 0xffd15c, width: 0.9, alpha: 0.68 });
-        rail._debugDirective = {
-          visible: true,
-          compactAce: true,
-          number,
-          label: this.directiveText.text,
-          railBounds: { x, y, width, height }
-        };
-        return;
-      }
       const capped = Number(debugState?.completedCount) >= Number(debugState?.completionCap)
         && Number(debugState?.completionCap) > 0;
       this.directiveText.visible = capped;

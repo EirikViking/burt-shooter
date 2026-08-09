@@ -54,7 +54,10 @@ for (const locale of ['en', 'de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
 }
 await setLanguagePreference('en');
 assert.equal(criticalMessages.en.levelStart, 'NEW WAVE');
-assert.equal(criticalMessages.en.lifeLost, 'SHIP DOWN - HITBOX HIT!');
+assert.equal(criticalMessages.en.lifeLost, 'SHIP DOWN');
+for (const messages of Object.values(criticalMessages)) {
+  assert.doesNotMatch(messages.lifeLost, /hitbox/i, 'player-facing life-loss copy must describe the damage cause, not implementation geometry');
+}
 assert.equal(criticalMessages.en.bossIntro, 'BOSS');
 
 const playSceneSource = readFileSync(path.resolve('src/scenes/PlayScene.js'), 'utf8');

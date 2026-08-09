@@ -176,6 +176,7 @@ import {
   recordCombatProjectileHit,
   recordCombatVolley
 } from '../game/CombatTelemetry.js';
+import { getPlayerDamageCause } from '../game/PlayerDamageCause.js';
 
 const BOSS_WARNING_JOKES = [
   'Mission Control is hiding under the desk.',
@@ -193,8 +194,8 @@ function pickBossWarningJoke(profile, level = 1) {
 const OVERRUN_CLEAR_VFX_MS = 5600;
 const OVERRUN_INTERLUDE_MS = 4300;
 const GAME_OVER_INTERLUDE_MS = 3600;
-const GAME_OVER_DEATH_HOLD_MS = 1100;
-const GAME_OVER_SKIP_DEBOUNCE_MS = 750;
+const GAME_OVER_DEATH_HOLD_MS = 620;
+const GAME_OVER_SKIP_DEBOUNCE_MS = 600;
 const BOSS_DEATH_VOICE_LOCK_MS = 9400;
 const LIFE_LOSS_COMPLIMENT_GRACE_MS = 4000;
 const GAMEPLAY_MESSAGE_EXTRA_READ_MS = 1000;
@@ -210,7 +211,7 @@ const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
-const GAME_OVER_CELEBRATION_DURATION_MS = 3800;
+const GAME_OVER_CELEBRATION_DURATION_MS = 1700;
 const TACTICAL_DRAFT_CATEGORY_COLORS = Object.freeze({
   offense: 0xff647f,
   mobility: 0x58d8ff,
@@ -594,6 +595,9 @@ export class PlayScene {
     this.lastHitStopRequestMs = 0;
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
+    this.fatalEventBarrier = null;
+    this.lastLifeLossImpact = null;
+    this.lastLifeLossCause = null;
     this.gameOverAnimationLayer = null;
     this.gameOverAnimationDebug = null;
     this.stragglerBeaconLayer = null;
@@ -682,6 +686,9 @@ export class PlayScene {
     this.clearSectorArrivalStinger();
     this.gameOverSequenceStarted = false;
     this.finalDeathFeedbackShown = false;
+    this.fatalEventBarrier = null;
+    this.lastLifeLossImpact = null;
+    this.lastLifeLossCause = null;
     this.gameOverAnimationLayer = null;
     this.gameOverAnimationDebug = null;
     this.gameOverFinalTransmissionVariant = reserveNextGameOverFinalTransmissionVariant();
@@ -2448,7 +2455,7 @@ export class PlayScene {
     if (!enemy.attachRivalWingCommand?.(active.rivalWingId)) return false;
     active.spawned = true;
     active.spawnedAt = Date.now();
-    active.compactObjectiveReadyAt = active.spawnedAt + 2700;
+    active.compactObjectiveReadyAt = active.spawnedAt + 1000;
     active.spawnedWaveIndex = waveIndex;
     active.enemyType = enemy.type || null;
     const number = String(active.number).padStart(4, '0');
@@ -2479,8 +2486,8 @@ export class PlayScene {
       slot: 'top',
       type: 'aceContact',
       priority: 5,
-      duration: 2700,
-      minVisibleMs: 2300,
+      duration: 1050,
+      minVisibleMs: 900,
       extraReadTimeMs: 0,
       y: Math.max(176, this.game.getHeight() * 0.25),
       maxWidth: Math.min(540, Math.max(360, this.game.getWidth() - 32)),
@@ -4926,6 +4933,14 @@ export class PlayScene {
         measure('score_popups', () => {
           measure('score_combo_popup_cleanup', () => {
             if (this.scorePopupManager) {
+              this.scorePopupManager.setProtectedLayout?.(
+                this.gameplayGame.getWidth(),
+                this.gameplayGame.getHeight(),
+                this.player?.x,
+                this.player?.y,
+                this.player?.radius || 12,
+                Boolean(this.enemyManager?.boss?.active)
+              );
               this.scorePopupManager.setDenseCombatCompression?.(this.bulletManager?.friendlyVfxCompression || 0);
               this.scorePopupManager.update(delta);
             }
@@ -4945,6 +4960,10 @@ export class PlayScene {
       measure('player_metrics', () => this.updatePlayerMetrics(delta));
 
       measure('collisions', () => this.checkCollisions());
+      if (this.isFatalEventBarrierActive()) {
+        this.clearDeferredCollisionUiFeedback('fatal_event_barrier');
+        return;
+      }
       measure('deferred_progression.score_progress', () => {
         if (this.shouldDeferActiveGameplayPersistence()) {
           return {
@@ -6837,6 +6856,12 @@ export class PlayScene {
 
   queueCollisionSideEffect(queue, type, payload = {}) {
     if (!queue?.[type]) return false;
+    if (this.isFatalEventBarrierActive()) {
+      const barrier = this.fatalEventBarrier;
+      barrier.suppressedCollisionEffects = (Number(barrier.suppressedCollisionEffects) || 0) + 1;
+      barrier.suppressedCollisionEffectTypes[type] = (Number(barrier.suppressedCollisionEffectTypes[type]) || 0) + 1;
+      return true;
+    }
     if (type === 'scorePopups' && queue[type].length >= COLLISION_SCORE_POPUP_QUEUE_BUDGET) {
       queue.scorePopupsDropped = (Number(queue.scorePopupsDropped) || 0) + 1;
       return true;
@@ -6847,6 +6872,14 @@ export class PlayScene {
 
   processCollisionSideEffects(queue, stats, measure) {
     if (!queue) return;
+    if (this.isFatalEventBarrierActive()) {
+      const suppressed = Object.values(queue).reduce((total, entries) => (
+        total + (Array.isArray(entries) ? entries.length : 0)
+      ), 0);
+      this.fatalEventBarrier.suppressedQueuedVisuals += suppressed;
+      stats.fatalBarrierSuppressedVisuals = (Number(stats.fatalBarrierSuppressedVisuals) || 0) + suppressed;
+      return;
+    }
     const measured = measure || ((_label, callback) => callback());
     const diagnosticOptions = this.performanceDiagnostics?.options || {};
     const skipAllSideEffects = Boolean(diagnosticOptions.rawCollisionOnly || diagnosticOptions.noCollisionSideEffects);
@@ -7295,7 +7328,7 @@ export class PlayScene {
               x: enemy.x,
               y: enemy.y,
               score: appliedScore,
-              options: { comboEligible: true }
+              options: { comboEligible: true, showComboMilestone: false }
             });
           }
           measure('collision.progression_hooks.enemy_killed', () => this.onEnemyKilled(enemy, { sideEffects }));
@@ -7420,11 +7453,6 @@ export class PlayScene {
         const dy = bullet.y - this.player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const nearThreshold = (this.player.radius || 12) + (bullet.radius || 6) + 12;
-        if (!bullet.nearMissed && dist < nearThreshold && dist > (this.player.radius || 12)) {
-          bullet.nearMissed = true;
-          collisionStats.enemyBulletPlayerNearMisses += 1;
-          this.applyNearMiss(bullet);
-        }
         if (this.checkCollision(bullet, this.player)) {
           collisionStats.enemyBulletPlayerHits += 1;
           // Feature: Ghost Ship prevents hit
@@ -7460,6 +7488,12 @@ export class PlayScene {
               this.particleManager.createHitSpark(this.player.x, this.player.y);
             }
           }
+          return;
+        }
+        if (!bullet.nearMissed && dist < nearThreshold && dist > (this.player.radius || 12)) {
+          bullet.nearMissed = true;
+          collisionStats.enemyBulletPlayerNearMisses += 1;
+          this.applyNearMiss(bullet);
         }
       }
     });
@@ -12798,8 +12832,23 @@ export class PlayScene {
     return true;
   }
 
+  getCompactCabinetLogLine(line, maxCharacters = 92) {
+    const normalized = String(line || '').replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    const sentenceMatch = normalized.match(/^.*?[.!?。！？](?:\s|$)/);
+    const sentence = (sentenceMatch?.[0] || normalized).trim();
+    if (sentence.length <= maxCharacters) return sentence;
+    const clipped = sentence.slice(0, Math.max(24, maxCharacters - 1));
+    const lastSpace = clipped.lastIndexOf(' ');
+    return `${clipped.slice(0, lastSpace > 30 ? lastSpace : clipped.length).trim()}…`;
+  }
+
   triggerCabinetLog(id, context = {}, options = {}) {
     if (!id) return false;
+    if (this.isFatalEventBarrierActive()) {
+      this.fatalEventBarrier.suppressedToasts += 1;
+      return false;
+    }
     if (!options.force && this.shownCabinetLogIds.has(id)) return false;
     if (!options.force && !this.canShowLore()) return false;
 
@@ -12827,25 +12876,38 @@ export class PlayScene {
       appliedBonus = discovery.appliedBonus;
     }
 
-    const archiveLine = appliedBonus > 0
-      ? `\n${translateText('CABINET LOG ARCHIVED')} +${appliedBonus}`
-      : '';
-    const shown = this.showLoreBanner(`${entry.line}${archiveLine}`, {
-      title: entry.title || translateText('CABINET LOG'),
-      imageAlias: entry.imageAlias,
-      force: options.force,
-      accent: entry.accent,
-      duration: options.duration || (appliedBonus > 0 ? 4200 : 3600),
+    const compactLine = this.getCompactCabinetLogLine(entry.line, this.game.getWidth() < 720 ? 70 : 92);
+    const archiveSuffix = appliedBonus > 0 ? ` // +${appliedBonus}` : '';
+    const cabinetLabel = translateText('CABINET LOG');
+    const rawTitle = String(entry.title || cabinetLabel).trim();
+    const liveTitle = rawTitle.toLocaleUpperCase().startsWith(cabinetLabel.toLocaleUpperCase())
+      ? rawTitle.slice(cabinetLabel.length).replace(/^[\s:/|\-]+/, '').trim() || cabinetLabel
+      : rawTitle;
+    this.enqueueToast(`${cabinetLabel} // ${liveTitle}\n${compactLine}${archiveSuffix}`, {
+      fontSize: this.game.getWidth() < 720 ? 13 : 15,
+      fill: '#d8fbff',
+      slot: 'corner',
+      type: 'cabinet_log',
+      channel: 'side',
+      priority: 1,
+      duration: options.duration || 1450,
+      minVisibleMs: Math.min(options.duration || 1450, 1100),
+      extraReadTimeMs: 0,
+      maxQueueAgeMs: 3200,
       maxWidth: this.game.getWidth() < 620
-        ? this.game.getWidth() * 0.82
-        : Math.min(460, this.game.getWidth() * 0.38)
+        ? this.game.getWidth() * 0.78
+        : Math.min(390, this.game.getWidth() * 0.32),
+      accent: entry.accent || 0x66f7ff,
+      notBefore: Math.max(Number(options.notBefore) || 0, this.getTacticalAlertBlockUntil?.() || 0)
     });
-    if (!shown) return false;
     this.shownCabinetLogIds.add(id);
     this.lastCabinetLog = {
       id,
       title: entry.title,
       line: entry.line,
+      compactLine,
+      combatPresentation: 'compact_corner_toast',
+      fullTextArchived: true,
       archived: Boolean(discovery?.isNew),
       appliedBonus
     };
@@ -13245,6 +13307,81 @@ export class PlayScene {
     return true;
   }
 
+  isFatalEventBarrierActive() {
+    return this.fatalEventBarrier?.active === true;
+  }
+
+  activateFatalEventBarrier(source = this.finalLifeLossSource || 'unknown') {
+    if (this.isFatalEventBarrierActive()) return this.fatalEventBarrier;
+    const impactX = Number.isFinite(Number(this.player?.x))
+      ? Number(this.player.x)
+      : this.gameplayGame.getWidth() / 2;
+    const impactY = Number.isFinite(Number(this.player?.y))
+      ? Number(this.player.y)
+      : this.gameplayGame.getHeight() * 0.72;
+    const damageCause = getPlayerDamageCause(source);
+    const at = Date.now();
+    this.finalDeathImpact = { x: impactX, y: impactY, source: damageCause.source };
+    this.finalLifeLossSource = damageCause.source;
+    this.lastLifeLossCause = damageCause;
+    this.fatalEventBarrier = {
+      active: true,
+      acceptedAt: at,
+      source: damageCause.source,
+      category: damageCause.category,
+      label: damageCause.label,
+      cause: { ...damageCause },
+      impactX: Math.round(impactX),
+      impactY: Math.round(impactY),
+      playerInputDisabled: true,
+      playerFiringDisabled: true,
+      playerVisibleAfterFatal: false,
+      suppressedNearMisses: 0,
+      suppressedToasts: 0,
+      suppressedAchievements: 0,
+      suppressedCollisionEffects: 0,
+      suppressedCollisionEffectTypes: {},
+      suppressedQueuedVisuals: 0,
+      suppressedDeferredVisuals: 0
+    };
+
+    this.currentFirePressed = false;
+    this.fireInputWasPressed = false;
+    this.grazeBreakNeedsFireRelease = false;
+    this.resetTransientGameplayInput('fatal_life_loss', { preserveFire: false, preserveMovement: false });
+    this.touchControls?.resetTransientState?.({ preserveMovement: false });
+    this.clearDeferredCollisionUiFeedback('fatal_event_barrier_activated');
+    this.scorePopupManager?.clearVisuals?.({ preserveCombo: true });
+
+    if (this.player) {
+      this.player.active = false;
+      this.player.shootCooldown = Number.POSITIVE_INFINITY;
+      if (this.player.sprite) {
+        this.player.sprite.visible = false;
+        this.player.sprite.renderable = false;
+        this.player.sprite._debugFatalDestroyed = {
+          at,
+          source: damageCause.source,
+          x: Math.round(impactX),
+          y: Math.round(impactY)
+        };
+      }
+    }
+    return this.fatalEventBarrier;
+  }
+
+  getFatalEventBarrierDebugState() {
+    return this.fatalEventBarrier
+      ? {
+          ...this.fatalEventBarrier,
+          cause: { ...this.fatalEventBarrier.cause },
+          suppressedCollisionEffectTypes: { ...this.fatalEventBarrier.suppressedCollisionEffectTypes },
+          playerActive: Boolean(this.player?.active),
+          playerVisible: Boolean(this.player?.sprite?.visible && this.player?.sprite?.renderable)
+        }
+      : { active: false };
+  }
+
   triggerPlayerDeathFeedback(options = {}) {
     const finalDeath = Boolean(options.final || this.game?.lives <= 0);
     if (finalDeath && this.finalDeathFeedbackShown) return;
@@ -13255,8 +13392,17 @@ export class PlayScene {
     const height = this.game.getHeight();
     const gameplayWidth = this.gameplayGame.getWidth();
     const gameplayHeight = this.gameplayGame.getHeight();
-    const impactX = this.player?.x ?? gameplayWidth / 2;
-    const impactY = this.player?.y ?? gameplayHeight * 0.72;
+    const capturedImpact = finalDeath ? this.finalDeathImpact : this.lastLifeLossImpact;
+    const impactX = Number.isFinite(Number(options.impactX))
+      ? Number(options.impactX)
+      : Number.isFinite(Number(capturedImpact?.x))
+        ? Number(capturedImpact.x)
+        : this.player?.x ?? gameplayWidth / 2;
+    const impactY = Number.isFinite(Number(options.impactY))
+      ? Number(options.impactY)
+      : Number.isFinite(Number(capturedImpact?.y))
+        ? Number(capturedImpact.y)
+        : this.player?.y ?? gameplayHeight * 0.72;
     const impactSource = options.source || this.finalLifeLossSource || 'unknown';
     if (finalDeath) this.finalDeathImpact = { x: impactX, y: impactY, source: impactSource };
 
@@ -13346,6 +13492,7 @@ export class PlayScene {
 
   beginGameOverSequence() {
     if (this.gameOverSequenceStarted) return true;
+    this.activateFatalEventBarrier(this.finalLifeLossSource || this.lastLifeLossSource || 'unknown');
     this.gameOverSequenceStarted = true;
     this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
     this.flushDeferredRunContractProgress(true);
@@ -13365,7 +13512,7 @@ export class PlayScene {
       }
     };
     this.showInGameGameOverAnimation({ onComplete: complete });
-    safetyId = setTimeout(complete, GAME_OVER_DEATH_HOLD_MS + GAME_OVER_CELEBRATION_DURATION_MS + 1200);
+    safetyId = setTimeout(complete, GAME_OVER_DEATH_HOLD_MS + GAME_OVER_CELEBRATION_DURATION_MS + 350);
     if (!this._deathTimeouts) this._deathTimeouts = [];
     this._deathTimeouts.push(safetyId);
     return true;
@@ -13577,7 +13724,9 @@ export class PlayScene {
     layer.addChild(title);
 
     const finalScore = typeof this.game.getFinalScore === 'function' ? this.game.getFinalScore() : this.game.score;
-    const subtitle = createText(`${translateText('SCORE')}: ${Number(finalScore || 0).toLocaleString('en-US')}  //  ${translateText('SECTOR')} ${this.game.level || 1}`, {
+    const finalDamageCause = getPlayerDamageCause(this.finalDeathImpact?.source || this.finalLifeLossSource);
+    const finalHitLine = translateText('FINAL HIT: {cause}', { cause: finalDamageCause.label });
+    const subtitle = createText(`${finalHitLine}\n${translateText('SCORE')}: ${Number(finalScore || 0).toLocaleString('en-US')}  //  ${translateText('SECTOR')} ${this.game.level || 1}`, {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: width < 720 ? 17 : 24,
       fontWeight: '900',
@@ -13598,6 +13747,26 @@ export class PlayScene {
     handoffShade.fill({ color: 0x01030a, alpha: 1 });
     handoffShade.alpha = 0;
     layer.addChild(handoffShade);
+
+    const continuePromptText = translateText('PRESS A / ANY KEY / CLICK TO CONTINUE');
+    const continuePrompt = createText(continuePromptText, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: width < 720 ? 13 : 17,
+      fontWeight: '900',
+      fill: '#f8fbff',
+      stroke: '#01040b',
+      strokeThickness: 4,
+      align: 'center',
+      letterSpacing: width < 720 ? 0 : 1
+    });
+    continuePrompt.label = 'game_over_continue_prompt';
+    continuePrompt.anchor.set(0.5);
+    continuePrompt.position.set(
+      width / 2,
+      Math.min(height - 24, Math.max(plateY + plateHeight / 2 + 28, height * 0.86))
+    );
+    continuePrompt.alpha = 0;
+    layer.addChild(continuePrompt);
 
     const deathHoldCue = new PIXI.Graphics();
     deathHoldCue.label = 'game_over_death_hold_cue';
@@ -13633,6 +13802,15 @@ export class PlayScene {
       deathHoldMs: GAME_OVER_DEATH_HOLD_MS,
       deathHoldCue: true,
       skippable: true,
+      skipDebounceMs: GAME_OVER_SKIP_DEBOUNCE_MS,
+      automaticTargetMs: GAME_OVER_DEATH_HOLD_MS + GAME_OVER_CELEBRATION_DURATION_MS,
+      skippedTargetMs: 1500,
+      finalDamageSource: finalDamageCause.source,
+      finalDamageCategory: finalDamageCause.category,
+      finalDamageLabel: finalDamageCause.label,
+      finalHitLine,
+      continuePrompt: continuePromptText,
+      continuePromptVisible: false,
       skipped: false,
       skipReason: null,
       startedAt: Date.now(),
@@ -13653,10 +13831,12 @@ export class PlayScene {
         this.gameOverAnimationDebug.active = false;
         this.gameOverAnimationDebug.skipped = reason !== 'natural';
         this.gameOverAnimationDebug.skipReason = reason === 'natural' ? null : reason;
+        this.gameOverAnimationDebug.completedAt = Date.now();
+        this.gameOverAnimationDebug.transitionElapsedMs = Date.now() - this.gameOverAnimationDebug.startedAt;
       }
       if (ticker) this.game.app.ticker.remove(ticker);
       this._activeTickers = (this._activeTickers || []).filter((fn) => fn !== ticker);
-      window.removeEventListener('keydown', handleGameOverSkipKey);
+      window.removeEventListener('keydown', handleGameOverSkipKey, true);
       layer.removeAllListeners?.('pointerdown');
       if (deathHoldCue.parent) deathHoldCue.parent.removeChild(deathHoldCue);
       deathHoldCue.destroy?.();
@@ -13671,12 +13851,16 @@ export class PlayScene {
     };
     const handleGameOverSkipKey = (event) => {
       if (event.repeat) return;
-      if (!['Enter', 'NumpadEnter', 'Space', 'Escape'].includes(event.code)) return;
+      if (['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(event.code)) return;
       event.preventDefault?.();
+      event.stopImmediatePropagation?.();
       requestSkip('keyboard');
     };
-    window.addEventListener('keydown', handleGameOverSkipKey);
-    layer.on('pointerdown', () => requestSkip('pointer'));
+    window.addEventListener('keydown', handleGameOverSkipKey, true);
+    layer.on('pointerdown', (event) => {
+      event?.stopPropagation?.();
+      requestSkip('pointer');
+    });
     const duration = GAME_OVER_CELEBRATION_DURATION_MS;
     const clamp01 = (value) => Math.max(0, Math.min(1, value));
     const easeOutCubic = (value) => 1 - Math.pow(1 - clamp01(value), 3);
@@ -13734,6 +13918,11 @@ export class PlayScene {
       const handoff = easeInOut((elapsed - (duration - 420)) / 420);
       const holdPulse = 0.5 + Math.sin(elapsed * 0.0065) * 0.5;
       layer.alpha = intro;
+      const promptReady = Date.now() >= skipDebounceUntil;
+      continuePrompt.alpha = promptReady ? intro * (0.68 + holdPulse * 0.32) : 0;
+      if (this.gameOverAnimationDebug) {
+        this.gameOverAnimationDebug.continuePromptVisible = continuePrompt.alpha > 0.05;
+      }
       layer.scale.set(0.965 + intro * 0.035);
       if (hero.visible && hero._baseScale) {
         const cinematicDrift = easeInOut(t);
@@ -13877,6 +14066,12 @@ export class PlayScene {
 
   onLifeLost(lives, context = {}) {
     const source = String(context?.source || 'unknown');
+    const fatalCandidate = Boolean(context?.final || (Number(lives) || 0) <= 0);
+    const impactX = Number.isFinite(Number(this.player?.x)) ? Number(this.player.x) : this.gameplayGame.getWidth() / 2;
+    const impactY = Number.isFinite(Number(this.player?.y)) ? Number(this.player.y) : this.gameplayGame.getHeight() * 0.72;
+    const damageCause = getPlayerDamageCause(source);
+    this.lastLifeLossImpact = { x: impactX, y: impactY, source: damageCause.source, at: Date.now() };
+    this.lastLifeLossCause = damageCause;
     this.lifeLostThisWave = true;
     this.lastLifeLossAtMs = Date.now();
     this.levelClearVoiceToken = (this.levelClearVoiceToken || 0) + 1;
@@ -13889,9 +14084,6 @@ export class PlayScene {
       };
     }
     this.lastLifeLossSource = source;
-    if (context?.final || (Number(lives) || 0) <= 0) {
-      this.finalLifeLossSource = source;
-    }
     this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
@@ -13899,19 +14091,22 @@ export class PlayScene {
     this.recordBalanceLifeLost();
     this.player?.cancelDodgeExitPulse?.('life_lost', { endDodge: true });
     this.player?.clearStatusEffects?.('life_lost');
-    this.suppressSecondaryNotificationsForLifeLoss({ final: context?.final || (Number(lives) || 0) <= 0 });
+    this.suppressSecondaryNotificationsForLifeLoss({ final: fatalCandidate });
     if (this.tryLastStandRepair()) {
+      if (fatalCandidate) this.finalLifeLossSource = null;
       if ((Number(this.game?.lives) || 0) > 0) {
         this.respawnsThisRun = (Number(this.respawnsThisRun) || 0) + 1;
       }
       return;
     }
     if (this.game.lives <= 0) {
+      this.finalLifeLossSource = source;
+      this.activateFatalEventBarrier(source);
       this.flushBalanceDebugSummary('game_over');
       return;
     }
 
-    this.showToast(getMicroMessage('lifeLost'), {
+    this.showToast(`${getMicroMessage('lifeLost')}\n${damageCause.label}`, {
       fontSize: 22,
       y: this.game.getHeight() * 0.32,
       slot: 'top',
@@ -14513,6 +14708,10 @@ export class PlayScene {
   }
 
   showAchievementToast(toast) {
+    if (this.isFatalEventBarrierActive()) {
+      this.fatalEventBarrier.suppressedAchievements += 1;
+      return false;
+    }
     const achievement = toast?.achievement || toast;
     if (!achievement?.name) return false;
     const id = achievement.id || toast?.id || achievement.name;
@@ -15628,6 +15827,18 @@ export class PlayScene {
     const activeBefore = this.getActiveToastDisplays?.().length || 0;
     this.dropLowerPriorityToastBacklog?.(minimumPriority);
     this.dismissActiveToastsBelowPriority?.(minimumPriority);
+    const scorePopupsBefore = (this.scorePopupManager?.popups?.length || 0)
+      + (this.scorePopupManager?.pendingPopups?.length || 0);
+    let achievementsRemoved = 0;
+    let deferredVisualsRemoved = 0;
+    if (final) {
+      this.scorePopupManager?.clearVisuals?.({ preserveCombo: true });
+      achievementsRemoved = (this.activeAchievementToast ? 1 : 0) + (this.achievementToastQueue?.length || 0);
+      this.removeAchievementToast?.();
+      this.achievementToastQueue = [];
+      const deferredRemoved = this.clearDeferredCollisionUiFeedback('final_life_loss');
+      deferredVisualsRemoved = Object.values(deferredRemoved).reduce((sum, count) => sum + count, 0);
+    }
 
     // Rank and wave reward ceremonies retain their underlying progression,
     // but their render-only surfaces must yield immediately to survival.
@@ -15646,6 +15857,9 @@ export class PlayScene {
       minimumPriority,
       queuedRemoved: Math.max(0, queuedBefore - queuedAfter),
       activeDismissed: Math.max(0, activeBefore - activeAfter),
+      scorePopupsRemoved: final ? scorePopupsBefore : 0,
+      achievementsRemoved,
+      deferredVisualsRemoved,
       hiddenPositiveSurfaces,
       at: Date.now()
     };
@@ -15653,17 +15867,19 @@ export class PlayScene {
   }
 
   clearFinalDeathCombatVisuals(reason = 'final_death') {
+    const playerBulletsCleared = this.bulletManager?.clearPlayerBullets?.(reason) || 0;
     const enemyBulletsCleared = this.clearEnemyBullets(reason);
     const bossHazardsCleared = this.clearBossHazards(reason);
     this.lastFinalDeathCombatCleanup = {
       reason,
       source: this.finalLifeLossSource || 'unknown',
+      playerBulletsCleared,
       enemyBulletsCleared,
       bossHazardsCleared,
       bossHazardGeometryRemaining: Boolean(this.bossHazardLayerHasGeometry),
       at: Date.now()
     };
-    return enemyBulletsCleared + bossHazardsCleared;
+    return playerBulletsCleared + enemyBulletsCleared + bossHazardsCleared;
   }
 
   clearRespawnHazards(reason = 'respawn') {
@@ -16279,7 +16495,17 @@ export class PlayScene {
     const perfOptions = this.performanceDiagnostics?.enabled ? this.performanceDiagnostics.options : null;
     if (!perfOptions?.noStarfield) this.updateStarfield(delta);
     if (this.screenShake) this.screenShake.update(delta);
-    if (this.scorePopupManager) this.scorePopupManager.update(delta);
+    if (this.scorePopupManager) {
+      this.scorePopupManager.setProtectedLayout?.(
+        this.gameplayGame.getWidth(),
+        this.gameplayGame.getHeight(),
+        this.player?.x,
+        this.player?.y,
+        this.player?.radius || 12,
+        Boolean(this.enemyManager?.boss?.active)
+      );
+      this.scorePopupManager.update(delta);
+    }
     if (this.hud) this.hud.update();
     if (AudioManager && AudioManager.update) AudioManager.update(delta);
 
@@ -16590,6 +16816,10 @@ export class PlayScene {
 
   enqueueToast(message, options = {}) {
     if (!message) return;
+    if (this.isFatalEventBarrierActive() && options.allowDuringFatal !== true) {
+      this.fatalEventBarrier.suppressedToasts += 1;
+      return false;
+    }
     const type = options.type || 'generic';
     const normalizedOptions = this.getNovaCommandNotificationOptions(message, { ...options, type });
     const channel = normalizedOptions.channel || this.getNotificationChannel(type, normalizedOptions);
@@ -18946,16 +19176,35 @@ export class PlayScene {
     }
   }
 
-  flushDeferredCollisionUiFeedback() {
+  clearDeferredCollisionUiFeedback(reason = 'cleanup') {
     const feedback = this.deferredCollisionUiFeedback || {};
-    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
-    const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance' && activeEnemyCount >= 32;
+    const counts = {
+      toasts: feedback.toasts?.length || 0,
+      screenShakes: feedback.screenShakes?.length || 0,
+      playerExplosions: feedback.playerExplosions?.length || 0,
+      comboFlares: feedback.comboFlares?.length || 0
+    };
     this.deferredCollisionUiFeedback = {
       toasts: [],
       screenShakes: [],
       playerExplosions: [],
       comboFlares: []
     };
+    if (this.isFatalEventBarrierActive()) {
+      this.fatalEventBarrier.suppressedDeferredVisuals += Object.values(counts).reduce((sum, count) => sum + count, 0);
+      this.fatalEventBarrier.lastDeferredClearReason = reason;
+    }
+    return counts;
+  }
+
+  flushDeferredCollisionUiFeedback() {
+    const feedback = this.deferredCollisionUiFeedback || {};
+    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
+    const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance' && activeEnemyCount >= 32;
+    if (this.isFatalEventBarrierActive()) {
+      return this.clearDeferredCollisionUiFeedback('fatal_flush_suppressed');
+    }
+    this.clearDeferredCollisionUiFeedback('flush');
     for (const toast of (feedback.toasts || []).slice(0, 1)) {
       if (toast?.message) this.enqueueToast(toast.message, toast.options || {});
     }
@@ -20748,6 +20997,12 @@ export class PlayScene {
     scoreMultiplier = 1,
     labelKey = 'NEAR MISS'
   } = {}) {
+    if (this.isFatalEventBarrierActive() || (Number(this.game?.lives) || 0) <= 0 || !this.player?.active) {
+      if (this.isFatalEventBarrierActive()) {
+        this.fatalEventBarrier.suppressedNearMisses += 1;
+      }
+      return false;
+    }
     const now = Date.now();
     if (now < this.nearMissCooldownAt) return false;
     this.nearMissCooldownAt = now + 450;

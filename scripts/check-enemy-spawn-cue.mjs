@@ -169,13 +169,11 @@ try {
   if (!active.visible || !active.debug?.visible) failures.push(`spawn cue was not visible: ${JSON.stringify(active)}`);
   if ((active.debug?.radius || 0) <= active.radius) failures.push(`spawn cue radius too small: ${active.debug?.radius} <= ${active.radius}`);
   if ((active.debug?.fade || 0) <= 0.1) failures.push(`spawn cue fade too low: ${active.debug?.fade}`);
-  if ((active.debug?.inboundChevronCount || 0) < 3) failures.push(`spawn cue inbound chevrons missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.entryGateTickCount || 0) < 2) failures.push(`spawn cue entry gate ticks missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.entryGhostLaneCount || 0) < 3) failures.push(`spawn cue ghost lanes missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.braidChevronCount || 0) < 4) failures.push(`spawn cue braided chevrons missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.formationBracketCount || 0) < 2) failures.push(`spawn cue formation brackets missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.entryLockPipCount || 0) < 4) failures.push(`spawn cue lock pips missing: ${JSON.stringify(active.debug)}`);
-  if ((active.debug?.approachSparkCount || 0) < 3) failures.push(`spawn cue approach sparks missing: ${JSON.stringify(active.debug)}`);
+  if (active.debug?.simplifiedStandard !== true) failures.push(`ordinary spawn cue did not use the restrained profile: ${JSON.stringify(active.debug)}`);
+  if (active.debug?.inboundChevronCount !== 2) failures.push(`ordinary spawn cue should use exactly two inbound chevrons: ${JSON.stringify(active.debug)}`);
+  for (const key of ['entryGateTickCount', 'entryGhostLaneCount', 'braidChevronCount', 'formationBracketCount', 'entryLockPipCount', 'approachSparkCount']) {
+    if ((active.debug?.[key] || 0) !== 0) failures.push(`ordinary spawn cue retained decorative ${key}: ${JSON.stringify(active.debug)}`);
+  }
   if (!active.children?.includes?.('enemySpawnCue')) failures.push(`enemySpawnCue layer missing: ${JSON.stringify(active.children)}`);
   if (!hidden.ok) failures.push(hidden.reason || 'hidden state failed');
   if (hidden.visible || hidden.debug?.visible) failures.push(`spawn cue did not hide after duration: ${JSON.stringify(hidden)}`);

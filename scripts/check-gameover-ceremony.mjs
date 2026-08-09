@@ -196,11 +196,17 @@ async function checkInGameFinalDeathAnimation(browser) {
       finalScoreSnapshot: game.finalScoreSnapshot,
       finalScoreLocked: game.finalScoreLocked,
       animation: structuredClone(play?.gameOverAnimationDebug || null),
+      fatalBarrier: structuredClone(play?.getFatalEventBarrierDebugState?.() || null),
       layerAlpha: play?.gameOverAnimationLayer?.alpha,
       deathHoldCueAttached: Boolean(play?.uiOverlay?.children?.some((child) => child?.label === 'game_over_death_hold_cue')),
       fatalImpact: structuredClone(play?.finalDeathImpact || null),
       combatCleanup: structuredClone(play?.lastFinalDeathCombatCleanup || null),
       damageFlash: structuredClone(play?.lastPlayerDamageFlashDebug || null),
+      player: {
+        active: play?.player?.active,
+        visible: play?.player?.sprite?.visible,
+        renderable: play?.player?.sprite?.renderable
+      },
       bossHazards: play?.bossHazards?.length || 0,
       bossHazardGeometry: Boolean(play?.bossHazardLayerHasGeometry)
     };
@@ -209,7 +215,12 @@ async function checkInGameFinalDeathAnimation(browser) {
   assert(lockedState.score === 12345, `score changed after final death: ${lockedState.score}`);
   assert(lockedState.finalScoreSnapshot === 12345, `wrong final score snapshot: ${lockedState.finalScoreSnapshot}`);
   assert(lockedState.finalScoreLocked === true, 'final score did not lock on the final life');
-  assert(lockedState.animation?.deathHoldMs === 1100 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.deathHoldMs === 620 && lockedState.animation?.skipDebounceMs === 600 && lockedState.animation?.skippable === true, `death hold/skip contract missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.automaticTargetMs <= 3000 && lockedState.animation?.skippedTargetMs <= 1500, `death-to-results timing budget regressed: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.animation?.finalDamageLabel === 'HAZARD IMPACT' && /^FINAL HIT: HAZARD IMPACT$/.test(lockedState.animation?.finalHitLine || ''), `final-hit cause was not explained: ${JSON.stringify(lockedState.animation)}`);
+  assert(/ANY KEY/.test(lockedState.animation?.continuePrompt || ''), `universal continue prompt missing: ${JSON.stringify(lockedState.animation)}`);
+  assert(lockedState.fatalBarrier?.active === true && lockedState.fatalBarrier?.cause?.category === 'hazard_impact', `fatal event barrier did not activate with the final cause: ${JSON.stringify(lockedState.fatalBarrier)}`);
+  assert(lockedState.player?.active === false && lockedState.player?.visible === false && lockedState.player?.renderable === false, `destroyed player ship remained active or visible: ${JSON.stringify(lockedState.player)}`);
   assert(lockedState.layerAlpha === 0, `frozen battle should remain visible during the death hold: ${lockedState.layerAlpha}`);
   assert(lockedState.deathHoldCueAttached === true, 'visible frozen-battle death-hold cue is missing');
   assert(lockedState.fatalImpact?.source === 'boss_wall', `fatal source was not preserved: ${JSON.stringify(lockedState.fatalImpact)}`);
@@ -220,14 +231,16 @@ async function checkInGameFinalDeathAnimation(browser) {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(100);
   const earlySkipState = await page.evaluate(() => window.__game?.currentSceneName);
-  assert(earlySkipState === 'play', `held/early input skipped the final-death presentation before 750ms: ${earlySkipState}`);
+  assert(earlySkipState === 'play', `held/early input skipped the final-death presentation before 600ms: ${earlySkipState}`);
   await page.waitForTimeout(250);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-death.png'), fullPage: true });
-  await page.waitForTimeout(850);
+  await page.waitForTimeout(300);
   const signalState = await page.evaluate(() => structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null));
   assert(signalState?.signalAssetReady === true, `generated final-signal asset was not visible: ${JSON.stringify(signalState)}`);
+  assert(signalState?.continuePromptVisible === true, `continue prompt was not visible once skipping became available: ${JSON.stringify(signalState)}`);
   await page.screenshot({ path: path.join(outputDir, 'in-game-final-signal.png'), fullPage: true });
-  await page.keyboard.press('Enter');
+  const skipRequestedAt = await page.evaluate(() => Date.now());
+  await page.keyboard.press('q');
   await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
   const state = await page.evaluate(() => JSON.parse(window.render_game_to_text()));
   const invariant = await page.evaluate(() => {
@@ -243,6 +256,7 @@ async function checkInGameFinalDeathAnimation(browser) {
   });
   assert(state.scene === 'gameOver', `expected gameOver after final death ceremony, got ${state.scene}`);
   assert(state.gameOverAnimation?.skipped === true && state.gameOverAnimation?.skipReason === 'keyboard', `game-over ceremony did not record the intentional skip: ${JSON.stringify(state.gameOverAnimation)}`);
+  assert(state.gameOverAnimation?.completedAt - skipRequestedAt <= 500, `skip input did not hand off promptly: ${JSON.stringify(state.gameOverAnimation)}`);
   assert(Object.values(invariant).every((value) => value === 12345), `final score invariant failed: ${JSON.stringify(invariant)}`);
   assert(pageErrors.length === 0, `page errors for in-game final death animation: ${pageErrors.join('; ')}`);
   await page.close();
@@ -252,6 +266,68 @@ async function checkInGameFinalDeathAnimation(browser) {
     finalScore: state.gameOver?.score || 0,
     invariant
   };
+}
+
+async function checkEarlySkipDeathTransition(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+    const game = window.__game;
+    const play = game.scenes.play;
+    play.clearToastState?.();
+    game.score = 19001;
+    game.level = 5;
+    game.lives = 1;
+    game.loseLife({ source: 'enemy_contact' });
+  });
+  await page.waitForTimeout(650);
+  const skipRequestedAt = await page.evaluate(() => Date.now());
+  await page.keyboard.press('x');
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 2500 });
+  const timing = await page.evaluate(() => ({
+    scene: window.__game?.currentSceneName,
+    animation: structuredClone(window.__game?.scenes?.play?.gameOverAnimationDebug || null)
+  }));
+  assert(timing.animation?.skipped === true && timing.animation?.skipReason === 'keyboard', `early skip was not accepted: ${JSON.stringify(timing)}`);
+  assert(timing.animation?.transitionElapsedMs <= 1500, `true skipped death-to-results exceeded 1.5s: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.completedAt - skipRequestedAt <= 500, `early skip handoff latency exceeded 500ms: ${JSON.stringify(timing.animation)}`);
+  assert(pageErrors.length === 0, `page errors for early-skip death transition: ${pageErrors.join('; ')}`);
+  await page.close();
+  return { scenario: 'early_skip_death_transition', ...timing };
+}
+
+async function checkNaturalDeathTransition(browser) {
+  const { page, pageErrors } = await preparePage(browser);
+  await page.evaluate(async () => {
+    await window.__game?.scenes?.play?.gameOverFinalTransmissionReady;
+    const game = window.__game;
+    const play = game.scenes.play;
+    play.clearToastState?.();
+    play.scorePopupManager?.clearVisuals?.({ preserveCombo: true });
+    game.score = 23456;
+    game.level = 8;
+    game.lives = 1;
+    game.loseLife({ source: 'enemy_bullet' });
+  });
+  await page.waitForFunction(() => window.__game?.currentSceneName === 'gameOver', null, { timeout: 5000 });
+  const timing = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return {
+      animation: structuredClone(play?.gameOverAnimationDebug || null),
+      scene: window.__game?.currentSceneName,
+      gameOverStatus: window.__game?.scenes?.gameOver?.globalStatus || null
+    };
+  });
+  assert(timing.scene === 'gameOver', `natural death did not reach results: ${JSON.stringify(timing)}`);
+  assert(timing.animation?.skipped === false && timing.animation?.skipReason == null, `natural death was incorrectly marked skipped: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.transitionElapsedMs <= 3000, `natural death-to-results exceeded 3s: ${JSON.stringify(timing.animation)}`);
+  assert(timing.animation?.transitionElapsedMs >= 1800, `natural death presentation was cut off too early: ${JSON.stringify(timing.animation)}`);
+  assert(['checking', 'offline', 'submitting', 'submitted', 'idle', 'steam_ready', null].includes(timing.gameOverStatus), `results waited on online work: ${JSON.stringify(timing)}`);
+  assert(pageErrors.length === 0, `page errors for natural death transition: ${pageErrors.join('; ')}`);
+  const screenshot = path.join(outputDir, 'natural-death-results.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  await page.close();
+  return { scenario: 'natural_death_transition', screenshot, ...timing };
 }
 
 async function checkNormalLifeLossFeedback(browser) {
@@ -333,6 +409,12 @@ try {
 
   console.log('[gameover-ceremony] checking in-game final death animation');
   results.push(await checkInGameFinalDeathAnimation(browser));
+
+  console.log('[gameover-ceremony] checking natural death-to-results timing');
+  results.push(await checkNaturalDeathTransition(browser));
+
+  console.log('[gameover-ceremony] checking earliest intentional skip timing');
+  results.push(await checkEarlySkipDeathTransition(browser));
 
   console.log('[gameover-ceremony] checking normal life-loss hierarchy');
   results.push(await checkNormalLifeLossFeedback(browser));

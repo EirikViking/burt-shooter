@@ -7,10 +7,43 @@ import { isFloatingComboMilestone } from '../config/RetentionPresentation.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { presentAuthoredSignal } from '../effects/MicroSignalVfx.js';
 
+const POPUP_SAFE_OFFSETS = Object.freeze([
+  Object.freeze([0, 0]),
+  Object.freeze([0, -92]),
+  Object.freeze([118, -58]),
+  Object.freeze([-118, -58]),
+  Object.freeze([132, 54]),
+  Object.freeze([-132, 54]),
+  Object.freeze([0, 118]),
+  Object.freeze([164, 126]),
+  Object.freeze([-164, 126])
+]);
+
+const NEAR_MISS_SAFE_OFFSETS = Object.freeze([
+  Object.freeze([0, -122]),
+  Object.freeze([122, -54]),
+  Object.freeze([-122, -54]),
+  Object.freeze([148, 38]),
+  Object.freeze([-148, 38]),
+  Object.freeze([0, 126])
+]);
+
+const POPUP_SEPARATION_OFFSETS = Object.freeze([
+  Object.freeze([0, 0]),
+  Object.freeze([0, -92]),
+  Object.freeze([154, -62]),
+  Object.freeze([-154, -62]),
+  Object.freeze([184, 54]),
+  Object.freeze([-184, 54]),
+  Object.freeze([124, 142]),
+  Object.freeze([-124, 142]),
+  Object.freeze([0, 214])
+]);
+
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false, options = {}) {
     this.x = x;
-    this.minY = 104;
+    this.minY = Math.max(104, Number(options.minY) || 104);
     this.y = Math.max(this.minY, y);
     this.active = true;
     this.lifetime = 0;
@@ -255,6 +288,15 @@ export class ScorePopupManager {
     this.maxActivePopups = this.defaultMaxActivePopups;
     this.denseCombatCompression = 0;
     this.aggregatedPopupCount = 0;
+    this.persistentComboHudActive = true;
+    this.protectedWidth = 1280;
+    this.protectedHeight = 720;
+    this.protectedPlayerX = Number.NaN;
+    this.protectedPlayerY = Number.NaN;
+    this.protectedPlayerRadius = 12;
+    this.protectedBossUiActive = false;
+    this.protectedPlacementCount = 0;
+    this.lastProtectedPlacement = null;
 
     // Combo system
     this.comboCount = 0;
@@ -284,6 +326,81 @@ export class ScorePopupManager {
     return this.denseCombatCompression;
   }
 
+  setPersistentComboHudActive(active = true) {
+    this.persistentComboHudActive = Boolean(active);
+  }
+
+  setProtectedLayout(width, height, playerX, playerY, playerRadius = 12, bossUiActive = false) {
+    this.protectedWidth = Math.max(320, Number(width) || 1280);
+    this.protectedHeight = Math.max(240, Number(height) || 720);
+    this.protectedPlayerX = Number.isFinite(Number(playerX)) ? Number(playerX) : Number.NaN;
+    this.protectedPlayerY = Number.isFinite(Number(playerY)) ? Number(playerY) : Number.NaN;
+    this.protectedPlayerRadius = Math.max(8, Number(playerRadius) || 12);
+    this.protectedBossUiActive = Boolean(bossUiActive);
+  }
+
+  getProtectedTopY() {
+    return this.protectedBossUiActive ? 188 : 142;
+  }
+
+  clampProtectedPosition(x, y, halfWidth = 42, halfHeight = 18) {
+    const marginX = Math.max(18, Number(halfWidth) || 42);
+    const minY = this.getProtectedTopY() + Math.max(8, Number(halfHeight) || 18);
+    const maxY = Math.max(minY, this.protectedHeight - 64 - Math.max(8, Number(halfHeight) || 18));
+    return {
+      x: Math.max(marginX, Math.min(this.protectedWidth - marginX, Number(x) || marginX)),
+      y: Math.max(minY, Math.min(maxY, Number(y) || minY))
+    };
+  }
+
+  isProtectedPosition(x, y, halfWidth = 42, halfHeight = 18) {
+    const safeX = Number(x) || 0;
+    const safeY = Number(y) || 0;
+    const width = this.protectedWidth;
+    const height = this.protectedHeight;
+    const top = this.getProtectedTopY();
+    if (safeY - halfHeight < top || safeY + halfHeight > height - 58) return true;
+
+    const sideHudWidth = Math.min(390, width * 0.29);
+    const upperHudBottom = this.protectedBossUiActive ? 222 : 186;
+    if (safeY - halfHeight < upperHudBottom && (safeX - halfWidth < sideHudWidth || safeX + halfWidth > width - sideHudWidth)) {
+      return true;
+    }
+    const lowerStatusTop = height - 132;
+    if (safeY + halfHeight > lowerStatusTop && (safeX - halfWidth < 330 || safeX + halfWidth > width - 330)) {
+      return true;
+    }
+
+    if (Number.isFinite(this.protectedPlayerX) && Number.isFinite(this.protectedPlayerY)) {
+      const dx = safeX - this.protectedPlayerX;
+      const dy = safeY - this.protectedPlayerY;
+      const popupReach = Math.max(58, Math.hypot(Math.max(22, halfWidth), Math.max(14, halfHeight)));
+      const safetyRadius = this.protectedPlayerRadius + 70 + popupReach * 0.34;
+      if (Math.hypot(dx, dy) < safetyRadius) return true;
+    }
+    return false;
+  }
+
+  getProtectedLayoutDebugState() {
+    return {
+      width: this.protectedWidth,
+      height: this.protectedHeight,
+      topReservedY: this.getProtectedTopY(),
+      player: Number.isFinite(this.protectedPlayerX) && Number.isFinite(this.protectedPlayerY)
+        ? {
+            x: Math.round(this.protectedPlayerX),
+            y: Math.round(this.protectedPlayerY),
+            radius: this.protectedPlayerRadius,
+            popupSafetyPadding: 70
+          }
+        : null,
+      bossUiActive: this.protectedBossUiActive,
+      placementsAdjusted: this.protectedPlacementCount,
+      lastPlacement: this.lastProtectedPlacement ? { ...this.lastProtectedPlacement } : null,
+      persistentComboHudActive: this.persistentComboHudActive
+    };
+  }
+
   addScorePopup(x, y, score, options = {}) {
     const comboEligible = options.comboEligible === true;
     const now = Date.now();
@@ -301,7 +418,10 @@ export class ScorePopupManager {
     }
 
     // Determine if this is a combo popup
-    const isCombo = comboEligible && isFloatingComboMilestone(this.comboCount);
+    const isCombo = comboEligible
+      && options.showComboMilestone !== false
+      && !this.persistentComboHudActive
+      && isFloatingComboMilestone(this.comboCount);
     const displayScore = isCombo ? this.comboCount : score;
     const color = options.color ?? (isCombo ? 0xff00ff : (score >= 100 ? 0xffaa00 : 0xffff00));
     const position = this.resolvePopupPosition(x, y, options);
@@ -339,7 +459,8 @@ export class ScorePopupManager {
       sourceX: x,
       sourceY: y,
       vx: position.vx,
-      vy: options.vy
+      vy: options.vy,
+      minY: this.getProtectedTopY()
     });
     this.separatePopupFromActive(popup);
     this.popups.push(popup);
@@ -354,20 +475,8 @@ export class ScorePopupManager {
   separatePopupFromActive(popup) {
     if (!popup) return;
     const active = this.popups.filter((candidate) => candidate?.active);
-    if (!active.length) return;
     const originX = popup.x;
     const originY = popup.y;
-    const offsets = [
-      [0, 0],
-      [0, -92],
-      [154, -62],
-      [-154, -62],
-      [184, 54],
-      [-184, 54],
-      [124, 142],
-      [-124, 142],
-      [0, 214]
-    ];
     const getSize = (candidate) => ({
       width: Math.max(28, Number(candidate?.frameWidth) || Number(candidate?.textNode?.width) || 28)
         * Math.max(1, (Number(candidate?.baseScale) || 1) + (candidate?.isMajor ? 0.28 : 0.18)),
@@ -380,14 +489,15 @@ export class ScorePopupManager {
       return Math.abs(x - candidate.x) < (popupSize.width + candidateSize.width) / 2 + 10
         && Math.abs(y - candidate.y) < (popupSize.height + candidateSize.height) / 2 + 10;
     };
-    const openOffset = offsets.find(([dx, dy]) => {
-      const x = originX + dx;
-      const y = Math.max(popup.minY, originY + dy);
-      return active.every((candidate) => !overlaps(x, y, candidate));
-    });
-    if (!openOffset) return;
-    popup.x = originX + openOffset[0];
-    popup.y = Math.max(popup.minY, originY + openOffset[1]);
+    const openPosition = POPUP_SEPARATION_OFFSETS.map(([dx, dy]) => (
+      this.clampProtectedPosition(originX + dx, originY + dy, popupSize.width / 2, popupSize.height / 2)
+    )).find((position) => (
+      !this.isProtectedPosition(position.x, position.y, popupSize.width / 2, popupSize.height / 2)
+      && active.every((candidate) => !overlaps(position.x, position.y, candidate))
+    ));
+    if (!openPosition) return;
+    popup.x = openPosition.x;
+    popup.y = openPosition.y;
     popup.sprite.x = popup.x;
     popup.sprite.y = popup.y;
   }
@@ -402,24 +512,47 @@ export class ScorePopupManager {
       return Math.abs((popupSourceX || 0) - sourceX) < 92 && Math.abs((popupSourceY || 0) - sourceY) < 72;
     }).length;
     const clusterIndex = Math.max(0, activeNearby);
-    if (clusterIndex <= 0) {
-      return { x: sourceX, y: sourceY, vx: Number(options.vx) || 0, clusterIndex: 0 };
+    const type = String(options.type || '').toLowerCase();
+    const offsets = type === 'nearmiss' || type === 'near_miss'
+      ? NEAR_MISS_SAFE_OFFSETS
+      : POPUP_SAFE_OFFSETS;
+    const startIndex = Math.min(offsets.length - 1, clusterIndex);
+    let chosen = null;
+    for (let offsetIndex = 0; offsetIndex < offsets.length; offsetIndex += 1) {
+      const candidateIndex = (startIndex + offsetIndex) % offsets.length;
+      const [dx, dy] = offsets[candidateIndex];
+      const extra = Math.max(0, clusterIndex - offsets.length + 1);
+      const clamped = this.clampProtectedPosition(
+        sourceX + dx + Math.sign(dx || 1) * extra * 12,
+        sourceY + dy + extra * 16
+      );
+      if (this.isProtectedPosition(clamped.x, clamped.y)) continue;
+      chosen = { ...clamped, candidateIndex };
+      break;
     }
-    const lanes = [
-      { x: 112, y: -56 },
-      { x: -128, y: 62 },
-      { x: 124, y: 126 },
-      { x: -118, y: 190 },
-      { x: 24, y: 254 },
-      { x: 146, y: 318 }
-    ];
-    const lane = lanes[Math.min(lanes.length - 1, clusterIndex - 1)];
-    const extra = Math.max(0, clusterIndex - lanes.length);
-    const side = lane.x < 0 ? -1 : 1;
+    if (!chosen) {
+      const fallback = this.clampProtectedPosition(this.protectedWidth / 2, Math.max(this.getProtectedTopY() + 48, sourceY - 120));
+      chosen = { ...fallback, candidateIndex: -1 };
+    }
+    const adjusted = Math.abs(chosen.x - sourceX) > 1 || Math.abs(chosen.y - sourceY) > 1;
+    if (adjusted) this.protectedPlacementCount += 1;
+    this.lastProtectedPlacement = {
+      type: type || 'score',
+      sourceX: Math.round(sourceX),
+      sourceY: Math.round(sourceY),
+      x: Math.round(chosen.x),
+      y: Math.round(chosen.y),
+      candidateIndex: chosen.candidateIndex,
+      adjusted,
+      clusterIndex
+    };
+    const side = chosen.x < sourceX ? -1 : chosen.x > sourceX ? 1 : 0;
     return {
-      x: sourceX + lane.x + side * extra * 12,
-      y: sourceY + lane.y + extra * 18,
-      vx: side * (0.04 + Math.min(4, clusterIndex) * 0.015),
+      x: chosen.x,
+      y: chosen.y,
+      vx: Number.isFinite(Number(options.vx))
+        ? Number(options.vx)
+        : side * (0.04 + Math.min(4, clusterIndex) * 0.015),
       clusterIndex
     };
   }
@@ -474,11 +607,15 @@ export class ScorePopupManager {
     return this.comboCount;
   }
 
-  cleanup() {
+  clearVisuals({ preserveCombo = true } = {}) {
     this.popups.forEach(popup => popup.destroy());
     this.popups = [];
     this.pendingPopups = [];
-    this.comboCount = 0;
+    if (!preserveCombo) this.comboCount = 0;
     this.aggregatedPopupCount = 0;
+  }
+
+  cleanup() {
+    this.clearVisuals({ preserveCombo: false });
   }
 }
