@@ -57,7 +57,8 @@ VDF: `release/steamworks/app_build_LOCAL.vdf`
 ## Forum follow-up
 
 - Live review reconfirmed Tyrian Mollusk comment `#115`, Steam comment ID `583930834798629669`, as his newest post.
-- A no-dash, human-written reply is staged in the signed-in forum textarea but is not yet published. Publication requires the final `Post Comment` action and live comment-ID verification.
+- Developer reply `#118`, Steam comment ID `583930834798645077`, is public at `https://steamcommunity.com/app/4765070/discussions/0/569288155749142195/?ctp=3#c583930834798645077` and acknowledges the boss-combo correction, Tyrian's 3,873,303 score, and the initial high-sector direction.
+- An expanded no-dash request for Tyrian's detailed late-game feedback is staged in the signed-in Edit form for reply `#118`, but `Save Changes` remains untouched. The staged replacement is not public. Its exact text is preserved in `docs/release/nova-swarm-high-sector-implementation-handoff-20260809.md`.
 
 ## Rollback
 
