@@ -107,4 +107,3 @@ Tyrian's detailed input can change the protocol deck, target run length, or lead
 - No Steam upload, branch movement, public/default deployment, Steamworks change, leaderboard migration, patch note, forum post/edit, Git push, or release publication is part of the first implementation slice unless the user explicitly adds it.
 - Keep the profile disabled by default so rollback is immediate while prototyping.
 - Preserve `sector-continue-test` rollback BuildID `24635286` and source rollback `git revert 66b7e17` for the already deployed boss-combo build.
-
