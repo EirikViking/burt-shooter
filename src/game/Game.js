@@ -52,6 +52,7 @@ import {
 import {
   RUN_MODES,
   OVERRUN_START_SECTOR,
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   canRunModeUpdateCareerProgress,
   canRunModeUpdateCompetitiveCareerBests,
   canRunModeSubmitGlobalLeaderboard,
@@ -95,6 +96,10 @@ import { syncGameplayCursorVisibility } from '../ui/GameplayCursor.js';
 import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiagnostics.js';
 import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
 import { generateUUID } from '../utils/uuid.js';
+import {
+  HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
+  getHighSectorPrototypeSettings
+} from '../config/HighSectorPrototypeSettings.js';
 import {
   applyScoutAnomalyToProfile,
   getScoutAnomaly,
@@ -153,6 +158,7 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.highSectorPrototypeRun = null;
     this.scoutAnomalyId = null;
     this.scoutAnomaly = null;
     this.runStartInputDevice = 'keyboard';
@@ -331,6 +337,15 @@ export class Game {
   async startGame(spriteKey, options = {}) {
     this.prepareGameplayInputFocus();
     const requestedRunMode = normalizeRunMode(options.runMode);
+    const prototypeSettings = getHighSectorPrototypeSettings();
+    const prototypeEligible = [
+      RUN_MODES.RANKED,
+      RUN_MODES.MAYHEM_TACTICAL,
+      RUN_MODES.OVERRUN_PURE,
+      RUN_MODES.OVERRUN_TACTICAL
+    ].includes(requestedRunMode);
+    const prototypeEnabled = prototypeEligible && prototypeSettings.enabled;
+    const prototypeQuickStart = prototypeEnabled && prototypeSettings.quickStart;
     const scoutAnomaly = requestedRunMode === RUN_MODES.SCOUT
       ? getScoutAnomaly(options.scoutAnomalyId || readScoutAnomalySelection().id)
       : null;
@@ -384,27 +399,40 @@ export class Game {
       console.warn('[Game] overrun_start blocked', overrunStartState);
       return false;
     }
-    const runStartSector = overrunStartState?.available
+    const normalRunStartSector = overrunStartState?.available
       ? OVERRUN_START_SECTOR
       : (sectorStartPlaySector || 1);
-    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector}`);
+    const runStartSector = prototypeQuickStart
+      ? HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR
+      : normalRunStartSector;
+    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector} prototype=${prototypeEnabled} quickStart=${prototypeQuickStart}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
     this.refreshThreatResponse(0);
 
     this.score = 0;
     this.level = runStartSector;
     this.lives = 3;
-    this.isDebugRun = false;
+    this.isDebugRun = prototypeEnabled;
     this.runMode = requestedRunMode;
-    this.runModeReason = isOverrunRunMode(requestedRunMode)
-      ? 'overrun_sector_51_career'
-      : requestedRunMode === RUN_MODES.SECTOR_START
-      ? 'sector_start_checkpoint'
-      : requestedRunMode === RUN_MODES.DAILY_SIGNAL
-        ? 'daily_signal_local_challenge'
-        : scoutAnomaly
-          ? `scout_anomaly:${scoutAnomaly.id}`
-          : null;
+    this.runModeReason = prototypeEnabled
+      ? (prototypeQuickStart ? 'high_sector_prototype_quick_start' : 'high_sector_prototype')
+      : isOverrunRunMode(requestedRunMode)
+        ? 'overrun_sector_51_career'
+        : requestedRunMode === RUN_MODES.SECTOR_START
+          ? 'sector_start_checkpoint'
+          : requestedRunMode === RUN_MODES.DAILY_SIGNAL
+            ? 'daily_signal_local_challenge'
+            : scoutAnomaly
+              ? `scout_anomaly:${scoutAnomaly.id}`
+              : null;
+    this.highSectorPrototypeRun = {
+      enabled: prototypeEnabled,
+      quickStart: prototypeQuickStart,
+      eligible: prototypeEligible,
+      requestedRunMode,
+      startSector: runStartSector,
+      baselineAugmentIds: prototypeQuickStart ? [...OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS] : []
+    };
     this.scoutAnomalyId = scoutAnomaly?.id || null;
     this.scoutAnomaly = scoutAnomaly;
     this.runStartInputDevice = requestedInputDevice;
@@ -422,7 +450,7 @@ export class Game {
     this.dailySignalAttemptId = requestedRunMode === RUN_MODES.DAILY_SIGNAL ? generateUUID() : null;
     this.lastDailySignalRecord = null;
     this.highscoreChase = this.createHighscoreChaseState({
-      runMode: requestedRunMode,
+      runMode: prototypeEnabled ? RUN_MODES.UNRANKED : requestedRunMode,
       progress: startingProgress,
       sectorStartCheckpoint,
       dailySignalContract

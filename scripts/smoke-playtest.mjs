@@ -423,6 +423,14 @@ async function runSmoke() {
     }, null, { timeout: 5000 });
     await page.waitForTimeout(500);
     await page.screenshot({ path: path.join(outputDir, '01-settings.png'), fullPage: true });
+    await page.evaluate(() => {
+      window.__game?.scenes?.menu?.settingsOverlay?.setActiveSettingsPage?.('audio');
+    });
+    await page.waitForFunction(() => {
+      return window.__game?.scenes?.menu?.settingsOverlay?.getDebugState?.().activePage === 'audio';
+    }, null, { timeout: 5000 });
+    await page.waitForTimeout(150);
+    await page.screenshot({ path: path.join(outputDir, '01-settings-audio.png'), fullPage: true });
     let settingsSfxState = null;
     const audioTestButtonState = await page.evaluate(() => {
       const overlay = window.__game?.scenes?.menu?.settingsOverlay;

@@ -1053,7 +1053,12 @@ export class PlayScene {
       this.player.setRank(initialRank, 'init_placeholder');
     }
     const tacticalBaselineAugmentIds = this.game?.getRunModeProfile?.()?.tacticalBaselineAugmentIds || [];
-    this.overrunBaselineAugmentIds = tacticalBaselineAugmentIds
+    const prototypeBaselineAugmentIds = this.game?.highSectorPrototypeRun?.baselineAugmentIds || [];
+    const runBaselineAugmentIds = [...new Set([
+      ...tacticalBaselineAugmentIds,
+      ...prototypeBaselineAugmentIds
+    ])];
+    this.overrunBaselineAugmentIds = runBaselineAugmentIds
       .filter((id) => this.player.applyRunAugment?.(id)?.applied);
     this.applySeasonCosmetics();
     this.startNextTacticalDirective('run_start');
@@ -1063,10 +1068,11 @@ export class PlayScene {
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
+    const prototypeEscalationArmed = this.game?.highSectorPrototypeRun?.enabled === true;
     this.game.highSectorEscalationProfile = {
-      armed: false,
+      armed: prototypeEscalationArmed,
       diagnosticOnly: true,
-      source: null
+      source: prototypeEscalationArmed ? 'settings_prototype' : null
     };
     const debugToken = params.get('debugBossToken');
     if (this.canUseMaintainerDevtools() && debugToken === 'NOVA_DEBUG_2026') {
@@ -1083,9 +1089,11 @@ export class PlayScene {
       this.debugPowerups = debugPowerups;
       this.debugOverlayEnabled = debugOverlay;
       this.game.highSectorEscalationProfile = {
-        armed: highSectorEscalation,
+        armed: prototypeEscalationArmed || highSectorEscalation,
         diagnosticOnly: true,
-        source: highSectorEscalation ? 'maintainer_query' : null
+        source: highSectorEscalation
+          ? 'maintainer_query'
+          : (prototypeEscalationArmed ? 'settings_prototype' : null)
       };
       if (highSectorEscalation) this.game.markUnrankedRun?.('debug_high_sector_escalation');
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay} highSectorEscalation=${highSectorEscalation}`);

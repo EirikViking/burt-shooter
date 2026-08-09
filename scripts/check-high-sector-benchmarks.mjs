@@ -15,12 +15,25 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/high-sector-benchmarks-${timestamp()}`);
 const devtoolsHash = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const config = BalanceConfig.difficulty.highSectorEscalation;
-const sectors = [60, 80, 100, 120, 130];
+const defaultSectors = [60, 80, 100, 120, 130];
+const requestedSectors = new Set(String(process.env.CHECK_HIGH_SECTOR_SECTORS || '')
+  .split(',')
+  .map((value) => Number(value.trim()))
+  .filter((value) => Number.isFinite(value)));
+const sectors = requestedSectors.size > 0
+  ? defaultSectors.filter((sector) => requestedSectors.has(sector))
+  : defaultSectors;
+const requestedHulls = new Set(String(process.env.CHECK_HIGH_SECTOR_HULLS || '')
+  .split(',')
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean));
 const hulls = [
   { class: 'slow', id: 'nova_ship_06' },
   { class: 'standard', id: 'nova_ship_01' },
   { class: 'fast', id: 'nova_ship_04' }
-].map((entry) => ({ ...entry, ship: ShipData.find((ship) => ship.id === entry.id) }));
+]
+  .filter((entry) => requestedHulls.size === 0 || requestedHulls.has(entry.class))
+  .map((entry) => ({ ...entry, ship: ShipData.find((ship) => ship.id === entry.id) }));
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -240,6 +253,8 @@ async function runRenderedProbe(browser, hull, sector) {
 }
 
 mkdirSync(outputDir, { recursive: true });
+assert.ok(sectors.length > 0, 'Benchmark sector filter did not match a supported sector');
+assert.ok(hulls.length > 0, 'Benchmark hull filter did not match a supported hull');
 for (const hull of hulls) assert.ok(hull.ship, `Missing ${hull.class} benchmark hull`);
 const server = await startServer();
 const chrome = findChrome();

@@ -17,6 +17,16 @@ const scenarios = [
   { id: 'large-16x9', width: 2560, height: 1440, uiScale: 1.15 },
   { id: 'ultrawide', width: 3440, height: 1440, uiScale: 1.25 }
 ];
+const settingsOnly = process.env.CHECK_TYRIAN_SETTINGS_ONLY === '1';
+const scenarioFilter = new Set(
+  String(process.env.CHECK_TYRIAN_SCENARIOS || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
+const selectedScenarios = scenarioFilter.size
+  ? scenarios.filter((scenario) => scenarioFilter.has(scenario.id))
+  : scenarios;
 
 function timestamp() {
   return new Date().toISOString().replace(/[:.]/g, '-');
@@ -141,6 +151,52 @@ function observePage(page) {
 
 async function readState(page) {
   return page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+}
+
+function assertSettingsPageLayout(debug, label) {
+  assert(debug?.panelBounds, `${label}: Settings panel bounds are missing`);
+  assert(debug.sectionBounds?.length > 0, `${label}: Settings section bounds are missing`);
+  const contains = (outer, inner, tolerance = 5) => Boolean(
+    outer && inner
+    && inner.x >= outer.x - tolerance
+    && inner.y >= outer.y - tolerance
+    && inner.right <= outer.right + tolerance
+    && inner.bottom <= outer.bottom + tolerance
+  );
+  for (const [pageId, page] of Object.entries(debug.pages || {})) {
+    assert(contains(debug.panelBounds, page.bounds, 3), `${label}: ${pageId} tab escapes the panel: ${JSON.stringify(page)}`);
+    assert(contains(page.bounds, page.labelBounds, 3), `${label}: ${pageId} tab label escapes its button: ${JSON.stringify(page)}`);
+  }
+  const footerEntries = Object.entries(debug.footer || {});
+  for (const [key, bounds] of footerEntries) {
+    assert(contains(debug.panelBounds, bounds, 3), `${label}: ${key} footer escapes the panel`);
+    assert(contains(bounds, debug.footerLabels?.[key], 3), `${label}: ${key} footer label escapes its button`);
+  }
+  for (let index = 1; index < footerEntries.length; index += 1) {
+    const previous = footerEntries[index - 1][1];
+    const current = footerEntries[index][1];
+    assert(previous.right + 6 <= current.x, `${label}: footer buttons overlap: ${JSON.stringify(debug.footer)}`);
+  }
+  for (const control of debug.visibleControls || []) {
+    if (control.page !== debug.activePage || /^(page|footer)_/.test(control.id || '')) continue;
+    const container = control.bounds || control.rowBounds;
+    assert(
+      debug.sectionBounds.some((section) => contains(section, container, 8)),
+      `${label}: ${control.id} escapes its section: ${JSON.stringify({ control, sections: debug.sectionBounds })}`
+    );
+    if (control.labelBounds) {
+      assert(
+        debug.sectionBounds.some((section) => contains(section, control.labelBounds, 8)),
+        `${label}: ${control.id} label escapes its section: ${JSON.stringify({ control, sections: debug.sectionBounds })}`
+      );
+    }
+    if (control.valueLabelBounds && control.bounds) {
+      assert(
+        contains(control.bounds, control.valueLabelBounds, 3),
+        `${label}: ${control.id} value label escapes its control: ${JSON.stringify(control)}`
+      );
+    }
+  }
 }
 
 async function auditVisibleText(page, rootKind = 'scene') {
@@ -678,7 +734,18 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
     await page.evaluate(() => window.__game.scenes.menu.openSettingsOverlay());
     await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').overlays?.settings === true, null, { timeout: 10000 });
     await page.waitForTimeout(280);
+    const general = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState());
+    assert.equal(general.activePage, 'general');
+    assertSettingsPageLayout(general, `${scenario.id} general`);
+    const generalShot = await capture(page, scenarioDir, '09-settings-general', 'settings');
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.setActiveSettingsPage('audio');
+    });
+    await page.waitForFunction(() => window.__game.currentScene.settingsOverlay.getDebugState().activePage === 'audio');
     const state = await readState(page);
+    const audio = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState());
+    assertSettingsPageLayout(audio, `${scenario.id} audio`);
     const chatter = await page.evaluate(() => {
       const overlay = window.__game?.currentScene?.settingsOverlay;
       const control = overlay?.controls?.find((entry) => entry.id === 'chatter_frequency');
@@ -710,7 +777,50 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
       `Chatter safety description overlaps MUSIC SET: ${JSON.stringify(chatter)}`
     );
     assert(state.settingsOverlay?.display, 'Settings debug state is missing');
-    const shot = await capture(page, scenarioDir, '09-settings-chatter-frequency', 'settings');
+    const audioShot = await capture(page, scenarioDir, '10-settings-audio', 'settings');
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.setActiveSettingsPage('accessibility');
+    });
+    const accessibility = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState());
+    assertSettingsPageLayout(accessibility, `${scenario.id} accessibility`);
+    const accessibilityShot = await capture(page, scenarioDir, '11-settings-accessibility', 'settings');
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.setActiveSettingsPage('prototype');
+    });
+    const prototypeInitial = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState());
+    assertSettingsPageLayout(prototypeInitial, `${scenario.id} prototype`);
+    assert.equal(prototypeInitial.prototype.enabled, false, `${scenario.id}: prototype must default off`);
+    assert.equal(prototypeInitial.prototype.quickStart, false, `${scenario.id}: Quick Start must default off`);
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.controls.find((control) => control.id === 'toggle_high_sector_quick_start')?.button?.activate?.();
+    });
+    await page.waitForTimeout(100);
+    const quickStartState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.controls.find((control) => control.id === 'toggle_high_sector_prototype')?.button?.activate?.();
+    });
+    await page.waitForTimeout(100);
+    const disabledState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
+    const prototypeToggles = { quickStart: quickStartState, disabled: disabledState };
+    assert.deepEqual(
+      { enabled: prototypeToggles.quickStart.enabled, quickStart: prototypeToggles.quickStart.quickStart },
+      { enabled: true, quickStart: true },
+      `${scenario.id}: Quick Start should arm the prototype`
+    );
+    assert.deepEqual(
+      { enabled: prototypeToggles.disabled.enabled, quickStart: prototypeToggles.disabled.quickStart },
+      { enabled: false, quickStart: false },
+      `${scenario.id}: disabling the prototype should clear Quick Start`
+    );
+    const prototypeShot = await capture(page, scenarioDir, '12-settings-prototype', 'settings');
+    await page.evaluate(() => {
+      const overlay = window.__game.currentScene.settingsOverlay;
+      overlay.setActiveSettingsPage('general');
+    });
     await page.evaluate(() => window.__game?.currentScene?.settingsOverlay?.openKeyBindingsPanel?.());
     await page.waitForFunction(() => window.__game?.currentScene?.settingsOverlay?.getDebugState?.().keyboardBindings?.panel === true);
     const keyboard = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().keyboardBindings);
@@ -723,10 +833,25 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
       assert(control.bounds.y >= keyboard.panelBounds.y + 12, `Keyboard control crosses top panel edge: ${JSON.stringify(control)}`);
       assert(control.bounds.bottom <= keyboardPanelBottom - 12, `Keyboard control crosses bottom panel edge: ${JSON.stringify(control)}`);
     }
-    const keyboardShot = await capture(page, scenarioDir, '10-keyboard-bindings-no-overlap', 'settings');
+    const keyboardShot = await capture(page, scenarioDir, '13-keyboard-bindings-no-overlap', 'settings');
     assert.deepEqual(observed.pageErrors, [], `${scenario.id} Settings page errors`);
     assert.deepEqual(observed.consoleErrors, [], `${scenario.id} Settings console errors`);
-    return { state, chatter, keyboard, shot, keyboardShot, errors: observed };
+    return {
+      state,
+      general,
+      audio,
+      accessibility,
+      prototypeInitial,
+      prototypeToggles,
+      chatter,
+      keyboard,
+      generalShot,
+      audioShot,
+      accessibilityShot,
+      prototypeShot,
+      keyboardShot,
+      errors: observed
+    };
   } finally {
     await page.close();
   }
@@ -742,16 +867,16 @@ const browser = await chromium.launch({
 
 try {
   const reports = [];
-  for (const scenario of scenarios) {
+  for (const scenario of selectedScenarios) {
     const scenarioDir = path.join(outputDir, `${scenario.id}-${scenario.width}x${scenario.height}`);
     mkdirSync(scenarioDir, { recursive: true });
-    const gameplay = await runGameplayScenario(browser, scenario, scenarioDir);
-    const hangar = await runHangarScenario(browser, scenario, scenarioDir);
+    const gameplay = settingsOnly ? null : await runGameplayScenario(browser, scenario, scenarioDir);
+    const hangar = settingsOnly ? null : await runHangarScenario(browser, scenario, scenarioDir);
     const settings = await runSettingsScenario(browser, scenario, scenarioDir);
     reports.push({ scenario, gameplay, hangar, settings });
   }
   const report = {
-    ok: reports.length === scenarios.length,
+    ok: reports.length === selectedScenarios.length,
     baseUrl,
     coverage: [
       'wave messages', 'lives display', 'sector name', 'ship trait', 'powerup box',
@@ -763,7 +888,8 @@ try {
     reports
   };
   writeFileSync(path.join(outputDir, 'report.json'), `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * 10} report=${path.join(outputDir, 'report.json')}`);
+  const screenshotsPerLayout = settingsOnly ? 5 : 10;
+  console.log(`[tyrian-responsive-ui] PASS layouts=${reports.length} screenshots=${reports.length * screenshotsPerLayout} report=${path.join(outputDir, 'report.json')}`);
 } finally {
   await browser.close();
   if (server) server.kill();

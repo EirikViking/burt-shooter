@@ -290,6 +290,14 @@ function assertInside(bounds, screen, label) {
   assert.ok(bounds.bottom <= screen.height + 2, `${label}: bottom edge offscreen`);
 }
 
+function assertContained(inner, outer, label, padding = 3) {
+  assert.ok(inner?.width > 0 && outer?.width > 0, `${label}: missing visible bounds`);
+  assert.ok(inner.x >= outer.x + padding, `${label}: crosses left edge`);
+  assert.ok(inner.y >= outer.y + padding, `${label}: crosses top edge`);
+  assert.ok(inner.right <= outer.right - padding, `${label}: crosses right edge`);
+  assert.ok(inner.bottom <= outer.bottom - padding, `${label}: crosses bottom edge`);
+}
+
 function assertHorizontalDock(state, label) {
   const menu = state.menu;
   const screen = menu.screen;
@@ -367,7 +375,12 @@ function assertLaunchDeck(state, label) {
   assert.ok(briefing.launchButtonBounds.width >= 150, `${label}: launch action is too small to read as primary`);
   if (briefing.detailsButtonBounds?.width > 0) {
     assert.ok(briefing.launchButtonBounds.right <= briefing.detailsButtonBounds.x + 2, `${label}: launch and details actions overlap`);
+    assertContained(briefing.detailsButtonLabelBounds, briefing.detailsButtonBounds, `${label}: details label`, 2);
+    if (briefing.detailsButtonIconBounds) {
+      assertContained(briefing.detailsButtonIconBounds, briefing.detailsButtonBounds, `${label}: details icon`, 2);
+    }
   }
+  assertContained(briefing.launchButtonLabelBounds, briefing.launchButtonBounds, `${label}: launch label`, 2);
 }
 
 function assertUtilityCluster(state, label) {

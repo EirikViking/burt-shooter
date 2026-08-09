@@ -2608,13 +2608,24 @@ export class MenuScene {
     const launchOptionIds = new Set(['launchTactical', 'dailySignal', 'scout', 'sectorStart', 'overrun']);
     const showLaunch = launchOptionIds.has(this.getSelectedMenuOptionId());
     const actionGap = Math.round(8 * compactScale);
-    const bestWidth = briefing.personalBest
+    const launchMinWidth = Math.round(156 * compactScale);
+    const detailsMinWidth = briefing.details ? Math.round(176 * compactScale) : 0;
+    const requiredActionWidth = launchMinWidth + detailsMinWidth + (detailsMinWidth > 0 ? actionGap : 0);
+    const preferredBestWidth = briefing.personalBest
       ? Math.min(innerWidth * 0.26, Math.round(172 * compactScale))
+      : 0;
+    const bestWidth = briefing.personalBest
+      ? Math.max(0, Math.min(preferredBestWidth, innerWidth - requiredActionWidth - Math.round(9 * compactScale)))
       : 0;
     const bestGap = bestWidth > 0 ? Math.round(9 * compactScale) : 0;
     const actionWidth = Math.max(0, innerWidth - bestWidth - bestGap);
+    const detailsMaxWidth = Math.max(0, actionWidth - launchMinWidth - (briefing.details ? actionGap : 0));
     const detailsWidth = briefing.details
-      ? Math.min(actionWidth * 0.42, Math.round(214 * compactScale))
+      ? Math.min(
+        Math.round(230 * compactScale),
+        detailsMaxWidth,
+        Math.max(detailsMinWidth, actionWidth * 0.45)
+      )
       : 0;
     const launchSpace = Math.max(0, actionWidth - detailsWidth - (detailsWidth > 0 ? actionGap : 0));
     const launchWidth = showLaunch
@@ -2660,7 +2671,11 @@ export class MenuScene {
     this.runModeDetailsButtonText.text = translateText(detailsLabel) + inputGlyph;
     this.runModeDetailsButtonText.style.fontSize = Math.round((isShortLayout ? 10 : 11) * compactScale);
     const helpTexture = this.menuIconTextures?.help;
-    const hasIcon = Boolean(helpTexture && GameAssets.isValidTexture(helpTexture));
+    const hasIcon = Boolean(
+      helpTexture
+      && GameAssets.isValidTexture(helpTexture)
+      && detailsWidth >= Math.round(196 * compactScale)
+    );
     this.runModeDetailsButtonIcon.visible = hasIcon;
     if (hasIcon) {
       this.runModeDetailsButtonIcon.texture = helpTexture;
@@ -4727,7 +4742,12 @@ export class MenuScene {
           ? boundsForDisplayObject(this.runModePersonalBest)
           : null,
         launchButtonBounds: boundsForDisplayObject(this.runModeLaunchButton),
+        launchButtonLabelBounds: boundsForDisplayObject(this.runModeLaunchButtonText),
         detailsButtonBounds: boundsForDisplayObject(this.runModeDetailsButton),
+        detailsButtonLabelBounds: boundsForDisplayObject(this.runModeDetailsButtonText),
+        detailsButtonIconBounds: this.runModeDetailsButtonIcon?.visible
+          ? boundsForDisplayObject(this.runModeDetailsButtonIcon)
+          : null,
         tiles: this.runModeInfoTileItems.map((item) => ({
           label: item?._nodes?.label?.text || null,
           value: item?._nodes?.value?.text || null,

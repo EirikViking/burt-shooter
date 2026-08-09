@@ -30,6 +30,8 @@ import { STEAM_LEADERBOARD_NAME, STEAM_TACTICAL_LEADERBOARD_NAME } from '../src/
 const host = process.env.CHECK_HOST || '127.0.0.1';
 const port = process.env.CHECK_URL ? null : (Number(process.env.CHECK_PORT) || await findAvailablePort(4666));
 const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
+const NAVIGATION_TIMEOUT_MS = 60000;
+const GAME_READY_TIMEOUT_MS = 120000;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/run-modes-mayhem-scout-sector-${timestamp()}`);
 
 function timestamp() {
@@ -150,7 +152,7 @@ async function readState(page) {
 }
 
 async function waitForGame(page) {
-  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), { timeout: 30000 });
+  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), { timeout: GAME_READY_TIMEOUT_MS });
 }
 
 async function waitForScene(page, sceneName) {
@@ -178,7 +180,7 @@ async function waitForGameOverActionStage(page) {
 }
 
 async function seedProfile(page, progress = makeProgress()) {
-  await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.goto(`${baseUrl}/?mockSteamLeaderboard=1`, { waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
   await waitForGame(page);
   await page.evaluate((nextProgress) => {
     localStorage.clear();
@@ -200,7 +202,7 @@ async function seedProfile(page, progress = makeProgress()) {
     localStorage.setItem('burt.shipUsage.v1', '{}');
     localStorage.setItem('burt.shipUsageTotal.v1', '0');
   }, progress);
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.reload({ waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
   await waitForGame(page);
   return waitForScene(page, 'menu');
 }
@@ -278,6 +280,14 @@ function assertInside(bounds, screen, label) {
   assert.ok(bounds.y >= -2, `${label}: top edge offscreen`);
   assert.ok(bounds.right <= screen.width + 2, `${label}: right edge offscreen`);
   assert.ok(bounds.bottom <= screen.height + 2, `${label}: bottom edge offscreen`);
+}
+
+function assertContained(inner, outer, label, padding = 3) {
+  assert.ok(inner?.width > 0 && outer?.width > 0, `${label}: missing bounds`);
+  assert.ok(inner.x >= outer.x + padding, `${label}: crosses left edge`);
+  assert.ok(inner.y >= outer.y + padding, `${label}: crosses top edge`);
+  assert.ok(inner.right <= outer.right - padding, `${label}: crosses right edge`);
+  assert.ok(inner.bottom <= outer.bottom - padding, `${label}: crosses bottom edge`);
 }
 
 function assertSeparated(upperBounds, lowerBounds, label, gap = 0) {
@@ -406,6 +416,21 @@ function assertLaunchDeckVisible(state, label) {
     `${label}: personal best and details button`,
     2
   );
+  if (briefing.launchButtonBounds?.width > 0) {
+    assertContained(briefing.launchButtonLabelBounds, briefing.launchButtonBounds, `${label}: launch label`, 2);
+  }
+  if (briefing.detailsButtonBounds?.width > 0) {
+    assertContained(briefing.detailsButtonLabelBounds, briefing.detailsButtonBounds, `${label}: details label`, 2);
+    if (briefing.detailsButtonIconBounds) {
+      assertContained(briefing.detailsButtonIconBounds, briefing.detailsButtonBounds, `${label}: details icon`, 2);
+      assertNoOverlap(
+        briefing.detailsButtonIconBounds,
+        briefing.detailsButtonLabelBounds,
+        `${label}: details icon and label`,
+        2
+      );
+    }
+  }
 }
 
 async function selectSectorSelectorCheckpoint(page, checkpoint) {
@@ -536,15 +561,15 @@ const report = {
 
 try {
   await page.goto(`${baseUrl}/?mockSteamLeaderboard=1&skipIntro=1&overrunPreview=1`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 30000
+    waitUntil: 'commit',
+    timeout: NAVIGATION_TIMEOUT_MS
   });
   await waitForGame(page);
   await page.evaluate(() => {
     localStorage.clear();
     localStorage.setItem('novaSwarm.languagePreference.v1', 'en');
   });
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.reload({ waitUntil: 'commit', timeout: NAVIGATION_TIMEOUT_MS });
   await waitForGame(page);
   await waitForScene(page, 'menu');
   await page.setViewportSize({ width: 1920, height: 900 });
@@ -1367,6 +1392,46 @@ try {
   assert.equal(sectorGameOver.scoreSubmissionAllowed, false);
   await page.screenshot({ path: path.join(outputDir, 'sector-result-run.png'), fullPage: false });
 
+  await seedProfile(page);
+  await page.evaluate(() => {
+    localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
+    return window.__game.startGame(undefined, { runMode: 'ranked_tactical' });
+  });
+  const prototypePlay = await waitForScene(page, 'play');
+  const prototypeRuntime = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    return {
+      level: game?.level,
+      startSector: game?.runStartSector,
+      runMode: game?.runMode,
+      runModeReason: game?.runModeReason,
+      isDebugRun: game?.isDebugRun,
+      prototype: game?.highSectorPrototypeRun || null,
+      escalationProfile: game?.highSectorEscalationProfile || null,
+      baselineIds: play?.overrunBaselineAugmentIds || [],
+      playerAugmentIds: play?.player?.runAugmentIds || [],
+      leaderboardAllowed: game?.isScoreSubmissionAllowed?.(),
+      achievementAllowed: game?.canUnlockAchievementsForCurrentRun?.(),
+      careerAllowed: game?.canUpdateCareerProgressForCurrentRun?.()
+    };
+  });
+  assert.equal(prototypePlay.runMode, RUN_MODES.MAYHEM_TACTICAL);
+  assert.equal(prototypeRuntime.level, 75);
+  assert.equal(prototypeRuntime.startSector, 75);
+  assert.equal(prototypeRuntime.isDebugRun, true);
+  assert.equal(prototypeRuntime.runModeReason, 'high_sector_prototype_quick_start');
+  assert.equal(prototypeRuntime.prototype?.enabled, true);
+  assert.equal(prototypeRuntime.prototype?.quickStart, true);
+  assert.equal(prototypeRuntime.escalationProfile?.armed, true);
+  assert.equal(prototypeRuntime.escalationProfile?.source, 'settings_prototype');
+  assert.deepEqual(prototypeRuntime.baselineIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
+  assert.deepEqual(prototypeRuntime.playerAugmentIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
+  assert.equal(prototypeRuntime.leaderboardAllowed, false);
+  assert.equal(prototypeRuntime.achievementAllowed, false);
+  assert.equal(prototypeRuntime.careerAllowed, false);
+  await page.screenshot({ path: path.join(outputDir, 'high-sector-prototype-quick-start-75.png'), fullPage: false });
+
   Object.assign(report, {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
     scout: {
@@ -1395,6 +1460,13 @@ try {
       playSector: sectorPlay.level,
       achievements: sectorPlay.runModeProfile?.unlocksAchievements,
       resultExplained: /NO ACHIEVEMENTS/i.test(sectorResultText)
+    },
+    highSectorPrototype: {
+      enabled: prototypeRuntime.prototype?.enabled,
+      quickStart: prototypeRuntime.prototype?.quickStart,
+      startSector: prototypeRuntime.startSector,
+      unranked: prototypeRuntime.isDebugRun,
+      baselineIds: prototypeRuntime.baselineIds
     },
     pageErrors,
     consoleErrors

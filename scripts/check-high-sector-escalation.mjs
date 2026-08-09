@@ -11,6 +11,12 @@ import {
 } from '../src/config/HighSectorEscalation.js';
 import { getHighSectorSourceText } from '../src/i18n/highSectorSourceText.js';
 import { translateTextForLocale } from '../src/i18n/index.js';
+import {
+  DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS,
+  HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
+  getHighSectorPrototypeSettings,
+  saveHighSectorPrototypeSettings
+} from '../src/config/HighSectorPrototypeSettings.js';
 
 const config = BalanceConfig.difficulty.highSectorEscalation;
 const seed = 'high-sector-fairness-seed-20260809';
@@ -24,6 +30,23 @@ const makeState = (sector, options = {}) => createHighSectorEscalationState({
 });
 
 assert.equal(config.enabled, false, 'the profile must stay disabled by default');
+const prototypeStorageValues = new Map();
+const prototypeStorage = {
+  getItem: (key) => prototypeStorageValues.get(key) ?? null,
+  setItem: (key, value) => prototypeStorageValues.set(key, value)
+};
+assert.deepEqual(getHighSectorPrototypeSettings({ storage: prototypeStorage }), DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS);
+assert.deepEqual(
+  saveHighSectorPrototypeSettings({ quickStart: true }, { storage: prototypeStorage, dispatch: false }),
+  { enabled: true, quickStart: true },
+  'Quick Start must arm the prototype'
+);
+assert.deepEqual(
+  saveHighSectorPrototypeSettings({ enabled: false }, { storage: prototypeStorage, dispatch: false }),
+  { enabled: false, quickStart: false },
+  'disabling the prototype must also disable Quick Start'
+);
+assert.equal(HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR, 75);
 for (const sector of [1, 25, 50]) {
   const state = makeState(sector);
   assert.equal(state.active, false, `armed profile must remain inert at Sector ${sector}`);
@@ -108,12 +131,20 @@ assert.equal(capHighSectorBossHealth(450, inactive), 450);
 
 const sourceKeys = ['DEEP SPACE PROTOCOL', ...HIGH_SECTOR_PROTOCOLS.flatMap((protocol) => [protocol.name, protocol.cue]),
   'FRONT SHIFT INBOUND // SAFE SIDE: {side}', 'FRONT SHIFT // SAFE SIDE: {side}',
-  'ASCENDANT SUPPORT FORMATION', 'SUPPORT FORMATION INBOUND // BREAK THE TETHER', 'LEFT', 'RIGHT'];
+  'ASCENDANT SUPPORT FORMATION', 'SUPPORT FORMATION INBOUND // BREAK THE TETHER', 'LEFT', 'RIGHT',
+  'GENERAL', 'PLAYBACK', 'VOLUME', 'INTENSITY', 'VISUAL ASSISTS', 'PROTOTYPE',
+  'LATE-GAME PROTOTYPE', 'ENABLE PROTOTYPE', 'JUMP TO SECTOR 75', 'WHAT TO EXPECT',
+  'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.',
+  'Quick Start launches Sector {sector} with five fixed upgrades.',
+  'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.'];
+const identityTranslations = new Set(['es:GENERAL', 'pt-BR:VOLUME']);
 for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
   const entries = getHighSectorSourceText(locale);
   for (const key of sourceKeys) {
     assert.ok(entries[key], `${locale} missing high-sector translation: ${key}`);
-    assert.notEqual(entries[key], key, `${locale} left source English untranslated: ${key}`);
+    if (!identityTranslations.has(`${locale}:${key}`)) {
+      assert.notEqual(entries[key], key, `${locale} left source English untranslated: ${key}`);
+    }
   }
   const interpolated = translateTextForLocale(locale, 'FRONT SHIFT INBOUND // SAFE SIDE: {side}', {
     side: translateTextForLocale(locale, 'LEFT')

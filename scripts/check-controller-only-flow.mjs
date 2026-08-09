@@ -182,6 +182,17 @@ async function steerSettingsFocusTo(page, focusId, { maxSteps = 28, directionBut
   return waitForState(page, (state) => state.settingsOverlay?.focus === focusId, `${focusId} settings focus`);
 }
 
+async function activateSettingsPage(page, pageId) {
+  const focusId = `page_${pageId}`;
+  const focused = await steerSettingsFocusTo(page, focusId);
+  await tapButton(page, 0);
+  const active = await waitForState(page, (state) => (
+    state.settingsOverlay?.activePage === pageId
+    && state.settingsOverlay?.focus === focusId
+  ), `${pageId} settings page activated`);
+  return { focused, active };
+}
+
 const server = await startPreviewServer();
 const browser = await chromium.launch({
   headless: true,
@@ -252,8 +263,11 @@ try {
   const masterBefore = settingsOpen.audio?.masterVolume;
   const languageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('menu-settings-language-focus', languageFocused);
-  await tapButton(page, 13);
-  const masterFocused = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider focus');
+  const menuAudioPage = await activateSettingsPage(page, 'audio');
+  checkpoint('menu-settings-audio-tab-focus', menuAudioPage.focused);
+  checkpoint('menu-settings-audio-page', menuAudioPage.active);
+  const masterFocused = await steerSettingsFocusTo(page, 'slider_master');
+  checkpoint('menu-settings-master-focus', masterFocused);
   await tapButton(page, 14);
   const masterAfter = await waitForState(page, (state) => state.settingsOverlay?.focus === 'slider_master', 'master slider after adjustment');
   checkpoint('menu-settings-slider-adjusted', masterAfter, {
@@ -401,7 +415,10 @@ try {
   const pauseMasterBefore = pauseSettings.audio?.masterVolume;
   const pauseLanguageFocused = await steerSettingsFocusTo(page, 'language');
   checkpoint('pause-settings-language-focus', pauseLanguageFocused);
-  await tapButton(page, 13);
+  const pauseAudioPage = await activateSettingsPage(page, 'audio');
+  checkpoint('pause-settings-audio-tab-focus', pauseAudioPage.focused);
+  checkpoint('pause-settings-audio-page', pauseAudioPage.active);
+  await steerSettingsFocusTo(page, 'slider_master');
   await tapButton(page, 15);
   const pauseMasterAfter = await waitForState(page, (state) => state.overlays?.settings && state.settingsOverlay?.focus === 'slider_master', 'pause settings slider adjusted');
   checkpoint('pause-settings-slider-adjusted', pauseMasterAfter, {
