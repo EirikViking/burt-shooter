@@ -848,9 +848,63 @@ const COMPATIBLE_POWERUP_PAIR_KEYS = new Set([
   'magnet+score_x2'
 ]);
 
+export const POWERUP_COEXISTENCE_LANES = Object.freeze({
+  OFFENSE: 'offense',
+  SUPPORT: 'support',
+  EXCLUSIVE: 'exclusive',
+  INSTANT: 'instant'
+});
+
+const OFFENSE_EFFECT_KEYS = Object.freeze([
+  'shotsMin',
+  'shotBonus',
+  'damageMult',
+  'damageMin',
+  'fireRateMult',
+  'bulletSpeedMult',
+  'pierce',
+  'bombShots',
+  'orbitalCharges',
+  'chainMax',
+  'droneCount'
+]);
+
+const SUPPORT_EFFECT_KEYS = Object.freeze([
+  'movementBoostMult',
+  'speedMult',
+  'dodgeDelayMult',
+  'slowTime',
+  'ghost',
+  'shield',
+  'pointDefense',
+  'magnetRadius',
+  'scoreMultiplier',
+  'vampire'
+]);
+
+export function getPowerupCoexistenceLane(type) {
+  const effect = getPowerupMeta(type)?.effect || {};
+  if (!type || effect.instant === true) return POWERUP_COEXISTENCE_LANES.INSTANT;
+  const hasOffense = OFFENSE_EFFECT_KEYS.some((key) => effect[key] === true || Number.isFinite(Number(effect[key])));
+  const hasSupport = SUPPORT_EFFECT_KEYS.some((key) => effect[key] === true || Number.isFinite(Number(effect[key])));
+  if (hasOffense && hasSupport) return POWERUP_COEXISTENCE_LANES.EXCLUSIVE;
+  if (hasOffense) return POWERUP_COEXISTENCE_LANES.OFFENSE;
+  if (hasSupport) return POWERUP_COEXISTENCE_LANES.SUPPORT;
+  return POWERUP_COEXISTENCE_LANES.EXCLUSIVE;
+}
+
 export function arePowerupsCompatible(firstType, secondType) {
   const pair = [String(firstType || ''), String(secondType || '')].filter(Boolean).sort().join('+');
-  return COMPATIBLE_POWERUP_PAIR_KEYS.has(pair);
+  if (COMPATIBLE_POWERUP_PAIR_KEYS.has(pair)) return true;
+  const firstLane = getPowerupCoexistenceLane(firstType);
+  const secondLane = getPowerupCoexistenceLane(secondType);
+  return (
+    firstLane === POWERUP_COEXISTENCE_LANES.OFFENSE
+    && secondLane === POWERUP_COEXISTENCE_LANES.SUPPORT
+  ) || (
+    firstLane === POWERUP_COEXISTENCE_LANES.SUPPORT
+    && secondLane === POWERUP_COEXISTENCE_LANES.OFFENSE
+  );
 }
 
 export const POWERUP_DEFINITIONS = Object.freeze([...BASE_POWERUPS, ...NEW_POWERUPS, ...SPECTACLE_EXPANSION_POWERUPS]);

@@ -189,8 +189,8 @@ const TACTICS_HELP_ROWS = Object.freeze([
     code: '20',
     icon: 'SLOT',
     label: 'POWERUP OVERLAP',
-    control: 'SAME NAME: TIMED PICKUP TAKES PRIORITY',
-    tip: 'You have one ordinary timed pickup slot. The same pickup refreshes; a different pickup replaces it. A matching Draft effect returns when the timed pickup ends.',
+    control: 'OFFENSE + SUPPORT // DUPLICATES STACK',
+    tip: 'Normally, hold one timed offense and one timed support effect. A few linked pairs still coexist. A same-name pickup adds duration or charges up to a two-pickup cap; a different pickup replaces only its lane. Matching Draft effects return when the timed pickup ends.',
     accent: 0xb285ff
   },
   {
@@ -323,7 +323,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'DRAFT TOOLS': 'Rescan replaces the available offers once per run and never grants an extra augment. Hold preserves one card for the next boss Draft while you choose another. Pass installs nothing and continues the flight. Drafts remain usable when the valid pool falls below three.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
-  'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',
+  'POWERUP OVERLAP': 'The timed rack normally pairs one offense lane with one support lane; a few linked pairs can share a lane. Same-name pickups add time or charges up to a two-pickup cap; a new pickup replaces only its own lane. Hybrid spectacle powerups stay exclusive. Permanent Draft hardware waits underneath and resumes when matching temporary hardware expires.',
   'STACK LIMITS': 'Sixteen repeatable augments can reach three stacks. Stack I gives the full base effect, Stack II adds fifty-five percent and an Evolution identity, and Stack III adds thirty percent and an Overdrive identity. Direct Draft weapon output still stops at plus forty-five percent.',
   'THREAT RESPONSE': 'Threat Response notices stronger hulls and larger builds, then adds measured pressure. It is not allowed to erase progression. Better ships still clear faster; the swarm simply arrives with a clipboard and slightly better shoes.',
   'ACE BOUNTIES': 'One marked Ace appears during every sector. Its four-digit Ace number identifies one of one thousand chassis, flight, and weapon combinations. A five-digit Nemesis number adds one of ten thousand personal protocols. The Ace wave also draws one of ten thousand Rival Wings: formation, discipline, synchronized volley, and morale response. The framed escorts transform with the Ace phase, but enemy count, score value, and leaderboard rules stay unchanged.',

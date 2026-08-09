@@ -166,7 +166,9 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('Combo Anchor is always offered'), `${label} should explain score-route fairness`);
     assert(joined.includes('R / Y: RESCAN // L / X: HOLD // Q / B: PASS'), `${label} should explain Draft rescan, hold, and pass controls`);
     assert(joined.includes('pass without installing an upgrade'), `${label} should explain that passing a Draft does not install an upgrade`);
-    assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
+    assert(joined.includes('OFFENSE + SUPPORT // DUPLICATES STACK'), `${label} should explain the two timed pickup lanes`);
+    assert(joined.includes('two-pickup cap'), `${label} should explain bounded duplicate stacking`);
+    assert(joined.includes('replaces only its lane'), `${label} should explain same-lane replacement`);
     assert(joined.includes('STACK I 100% // II 55% // III 30%'), `${label} should explain all three stack values`);
     assert(joined.includes('Sixteen repeatable augments can reach Stack III'), `${label} should explain Tactical evolution and Overdrive identities`);
     assert(joined.includes('capped at +45%'), `${label} should explain the direct Draft output cap`);
@@ -362,6 +364,31 @@ try {
       assertOverlayLayout(menuTactics, `${scenario.name} menu tactics page`);
       assertCleanHelpCopy(menuTactics, `${scenario.name} menu tactics page`, 'tactics');
       const menuTacticsShot = await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-tactics');
+      await page.evaluate(() => {
+        const overlay = window.__game?.currentScene?.howToPlayOverlay;
+        const overlapCard = overlay?.cards?.find((card) => card?._helpRow?.label === 'POWERUP OVERLAP');
+        overlay?.openDetail?.(overlapCard?._helpRow);
+      });
+      const overlapDetail = await waitForState(
+        page,
+        (state) => state.howToPlayOverlay?.detail?.label === 'POWERUP OVERLAP',
+        `${scenario.name} powerup overlap detail`
+      );
+      assert(
+        overlapDetail.howToPlayOverlay.detail.detail.includes('Hybrid spectacle powerups stay exclusive'),
+        `${scenario.name} powerup overlap detail should explain hybrid pickup exclusivity`
+      );
+      assert(
+        overlapDetail.howToPlayOverlay.detail.detail.includes('Permanent Draft hardware waits underneath'),
+        `${scenario.name} powerup overlap detail should explain temporary pickup priority over matching Draft hardware`
+      );
+      await screenshotWithAudit(page, scenarioDir, 'menu-how-to-play-powerup-overlap-detail');
+      await page.keyboard.press('Escape');
+      await waitForState(
+        page,
+        (state) => state.overlays?.howToPlay && !state.howToPlayOverlay?.detail,
+        `${scenario.name} powerup overlap detail closed`
+      );
       await page.keyboard.press('ArrowRight');
       const menuIntel = await waitForState(page, (state) => state.howToPlayOverlay?.pageId === 'intel', `${scenario.name} menu intel page`);
       assertOverlayLayout(menuIntel, `${scenario.name} menu intel page`);

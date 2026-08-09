@@ -1325,7 +1325,7 @@ export class HUD {
     const paddingX = 7;
     const paddingTop = 6;
     const rowGap = 5;
-    const rowHeight = Math.round((isMobile ? 32 : 38) * uiScale);
+    const rowHeight = Math.round((isMobile ? 38 : 44) * uiScale);
     const titleHeight = Math.round((isMobile ? 16 : 18) * uiScale);
     const height = paddingTop + titleHeight + activeStates.length * rowHeight + Math.max(0, activeStates.length - 1) * rowGap + 7;
 
@@ -1825,14 +1825,21 @@ export class HUD {
     row.meta.style.fontSize = Math.round((isMobile ? 10 : 12) * uiScale);
     row.label.style.fill = spent ? '#ffd6d6' : '#f8fbff';
     row.meta.style.fill = spent ? '#ff9d9d' : expiring ? (pulse > 0.5 ? '#fff2a6' : '#ffc95b') : '#ffff66';
-    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 15 : 18);
+    row.label.text = this.truncateLabel(translateText(state.label), isMobile ? 18 : 24);
     row.meta.text = this.formatPowerupMeta(state);
-    row.label.x = 34;
-    row.label.y = 4;
-    row.meta.x = Math.max(row.label.x + 42, width - 7 - row.meta.width);
-    row.meta.y = 4;
+    const textX = Math.round((isMobile ? 32 : 34) * uiScale);
+    const rightPad = Math.round(7 * uiScale);
+    const maxCharges = Math.max(0, Math.min(6, Number(state?.maxCharges || 0)));
+    const chargeReserve = maxCharges > 1 ? 11 + (maxCharges - 1) * 7 : 0;
+    const urgencyReserve = expiring ? Math.round(38 * uiScale) : 0;
+    row.label.x = textX;
+    row.label.y = Math.round(2 * uiScale);
+    this.fitTextToWidth(row.label, Math.max(42, width - textX - rightPad - chargeReserve), 0.68);
+    row.meta.x = textX;
+    row.meta.y = Math.round((isMobile ? 18 : 22) * uiScale);
+    this.fitTextToWidth(row.meta, Math.max(42, width - textX - rightPad - urgencyReserve), 0.58);
 
-    const barX = 34;
+    const barX = textX;
     const barY = height - 8;
     const barWidth = Math.max(34, width - barX - 7);
     row.barBg.clear();
@@ -1882,12 +1889,32 @@ export class HUD {
       expiring,
       category,
       progress: Number(progress.toFixed(3)),
+      rowWidth: Number(width.toFixed(2)),
+      rowHeight: Number(height.toFixed(2)),
       categoryAccentVisible: Boolean(row.categoryAccent.visible),
       categoryRailPipCount,
       timerTickCount,
       chargePipCount: chargeDebug.count,
       chargePipActive: chargeDebug.active,
       urgencyChevronCount,
+      labelBounds: {
+        x: Number(row.label.x.toFixed(2)),
+        y: Number(row.label.y.toFixed(2)),
+        width: Number(row.label.width.toFixed(2)),
+        height: Number(row.label.height.toFixed(2))
+      },
+      metaBounds: {
+        x: Number(row.meta.x.toFixed(2)),
+        y: Number(row.meta.y.toFixed(2)),
+        width: Number(row.meta.width.toFixed(2)),
+        height: Number(row.meta.height.toFixed(2))
+      },
+      textOverlap: (
+        row.label.x < row.meta.x + row.meta.width
+        && row.label.x + row.label.width > row.meta.x
+        && row.label.y < row.meta.y + row.meta.height
+        && row.label.y + row.label.height > row.meta.y
+      ),
       spentOverlayVisible: Boolean(row.spentOverlay.visible),
       expiryOverlayVisible: Boolean(row.expiryOverlay.visible)
     };
@@ -2000,7 +2027,7 @@ export class HUD {
 
     const pipGap = 7;
     const startX = Math.max(45, width - 9 - (maxCharges - 1) * pipGap);
-    const y = Math.max(18, height - 16);
+    const y = Math.max(11, Math.min(height - 16, height * 0.28));
     for (let i = 0; i < maxCharges; i += 1) {
       const active = i < charges && !spent;
       const x = startX + i * pipGap;

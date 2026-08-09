@@ -1052,7 +1052,177 @@ try {
     player.update(1);
     assert(player.activePowerup.type === 'score_x2' && !player.secondaryPowerup.type && player.scoreMultiplier === 2,
       'secondary compatible pickup expiry removed or corrupted the primary pickup');
-    const compatibilityRegression = { rapidDouble, pierceDamage, magnetScore };
+
+    resetScene();
+    player.runAugmentIds = [];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats();
+    const categoryBaseDelay = player.shootDelay;
+    player.applyPowerup('rapid_fire');
+    player.applyPowerup('ghost');
+    const offenseDefense = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      ghostActive: player.isGhostActive(),
+      shootDelay: player.shootDelay,
+      hudTypes: player.getActivePowerupStates().map((entry) => entry.type)
+    };
+    assert(offenseDefense.primary === 'ghost' && offenseDefense.secondary === 'rapid_fire'
+      && offenseDefense.ghostActive && offenseDefense.shootDelay < categoryBaseDelay
+      && offenseDefense.hudTypes.includes('ghost') && offenseDefense.hudTypes.includes('rapid_fire'),
+    'offense + defense lane coexistence failed', offenseDefense);
+
+    player.applyPowerup('damage_up');
+    const sameLaneReplacement = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      ghostActive: player.isGhostActive(),
+      shootDelay: player.shootDelay,
+      damage: player.bulletDamage,
+      hudTypes: player.getActivePowerupStates().map((entry) => entry.type)
+    };
+    assert(sameLaneReplacement.primary === 'damage_up' && sameLaneReplacement.secondary === 'ghost'
+      && sameLaneReplacement.ghostActive && sameLaneReplacement.shootDelay === categoryBaseDelay
+      && sameLaneReplacement.damage > Number(player.stats.damage || 0)
+      && !sameLaneReplacement.hudTypes.includes('rapid_fire'),
+    'new offense did not replace only the existing offense lane', sameLaneReplacement);
+
+    resetScene();
+    player.applyPowerup('vector_boost');
+    player.applyPowerup('rapid_fire');
+    const mobilityOffense = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      movementMult: player.getPowerupMovementMultiplier(),
+      shootDelay: player.shootDelay
+    };
+    assert(mobilityOffense.primary === 'rapid_fire' && mobilityOffense.secondary === 'vector_boost'
+      && mobilityOffense.movementMult > 1 && mobilityOffense.shootDelay < categoryBaseDelay,
+    'mobility + offense reverse pickup order failed', mobilityOffense);
+
+    player.applyPowerup('black_ice');
+    const hybridExclusive = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      slowTime: player.isSlowTimeActive(),
+      piercing: player.bulletPierce
+    };
+    assert(hybridExclusive.primary === 'black_ice' && !hybridExclusive.secondary
+      && hybridExclusive.slowTime && hybridExclusive.piercing,
+    'hybrid spectacle pickup did not remain exclusive', hybridExclusive);
+
+    resetScene();
+    player.applyPowerup('rapid_fire');
+    const rapidBeforeShield = { type: player.activePowerup.type, remainingMs: player.getActivePowerupRemainingMs() };
+    player.applyPowerup('shield');
+    const instantDefense = {
+      primary: player.activePowerup.type,
+      secondary: player.secondaryPowerup.type,
+      shieldActive: player.shieldActive,
+      remainingMs: player.getActivePowerupRemainingMs()
+    };
+    assert(instantDefense.primary === rapidBeforeShield.type && !instantDefense.secondary
+      && instantDefense.shieldActive && instantDefense.remainingMs > 0,
+    'instant Shield removed the ordinary timed offense slot', instantDefense);
+
+    resetScene();
+    player.applyPowerup('speed_up');
+    const firstSpeedDuration = player.getActivePowerupRemainingMs();
+    player.applyPowerup('speed_up');
+    const secondSpeedDuration = player.getActivePowerupRemainingMs();
+    player.applyPowerup('speed_up');
+    const cappedSpeedDuration = player.getActivePowerupRemainingMs();
+    const durationStacking = { firstSpeedDuration, secondSpeedDuration, cappedSpeedDuration };
+    assert(secondSpeedDuration >= firstSpeedDuration * 1.99
+      && cappedSpeedDuration <= firstSpeedDuration * 2.01
+      && cappedSpeedDuration >= secondSpeedDuration - 1,
+    'duplicate timed pickup did not add one duration with a two-pickup cap', durationStacking);
+
+    resetScene();
+    player.applyPowerup('bomb');
+    const bombFirst = player.bombShotsLeft;
+    player.applyPowerup('bomb');
+    const bombSecond = player.bombShotsLeft;
+    player.applyPowerup('bomb');
+    const bombCapped = player.bombShotsLeft;
+    const bombChargeStacking = { bombFirst, bombSecond, bombCapped };
+    assert(bombFirst === 3 && bombSecond === 6 && bombCapped === 6,
+      'matching Bomb pickups did not stop at the two-pickup charge cap', bombChargeStacking);
+
+    resetScene();
+    player.applyPowerup('nova_bloom');
+    const novaBloomFirst = player.bombShotsLeft;
+    player.applyPowerup('nova_bloom');
+    const novaBloomSecond = player.bombShotsLeft;
+    player.applyPowerup('nova_bloom');
+    const novaBloomCapped = player.bombShotsLeft;
+    const chargedStacking = { novaBloomFirst, novaBloomSecond, novaBloomCapped };
+    assert(novaBloomFirst === 7 && novaBloomSecond === 14 && novaBloomCapped === 14,
+      'matching Nova Bloom charge pickups did not stack to the bounded two-pickup cap', chargedStacking);
+
+    resetScene();
+    player.applyPowerup('orbital_strike');
+    const orbitalFirst = { charges: player.orbitalStrikeCharges, remainingMs: player.getActivePowerupRemainingMs() };
+    player.applyPowerup('orbital_strike');
+    const orbitalSecond = { charges: player.orbitalStrikeCharges, remainingMs: player.getActivePowerupRemainingMs() };
+    player.applyPowerup('orbital_strike');
+    const orbitalCapped = { charges: player.orbitalStrikeCharges, remainingMs: player.getActivePowerupRemainingMs() };
+    assert(orbitalFirst.charges === 5 && orbitalSecond.charges === 10 && orbitalCapped.charges === 10
+      && orbitalSecond.remainingMs >= orbitalFirst.remainingMs * 1.99
+      && orbitalCapped.remainingMs <= orbitalFirst.remainingMs * 2.01,
+    'matching Orbital Strike did not stack charges and time within caps', { orbitalFirst, orbitalSecond, orbitalCapped });
+
+    resetScene();
+    player.applyPowerup('boss_breaker');
+    player.applyPowerup('ghost');
+    const bossBreakerHudStates = player.getActivePowerupStates();
+    const bossBreakerState = bossBreakerHudStates.find((entry) => entry.type === 'boss_breaker');
+    assert(bossBreakerHudStates.filter((entry) => entry.type === 'boss_breaker').length === 1
+      && !bossBreakerHudStates.some((entry) => entry.type === 'orbital_strike')
+      && bossBreakerState?.charges === 3 && bossBreakerState?.detail === '3 STRIKES',
+    'secondary Boss Breaker produced a duplicate orbital HUD row or lost its charge detail', bossBreakerHudStates);
+
+    resetScene();
+    player.applyPowerup('aegis_burst');
+    player.applyPowerup('rapid_fire');
+    const aegisHudStates = player.getActivePowerupStates();
+    const aegisState = aegisHudStates.find((entry) => entry.type === 'aegis_burst');
+    assert(aegisHudStates.filter((entry) => entry.type === 'aegis_burst').length === 1
+      && !aegisHudStates.some((entry) => entry.type === 'point_defense')
+      && !aegisHudStates.some((entry) => entry.type === 'shield')
+      && aegisState?.detail === 'AUTO-INTERCEPTS',
+    'secondary Aegis Burst produced duplicate defensive HUD rows', aegisHudStates);
+
+    resetScene();
+    player.runAugmentIds = ['rapid_fire', 'speed_up'];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats();
+    player.applyPowerup('rapid_fire');
+    player.applyPowerup('speed_up');
+    const overlapSuppression = {
+      activeTypes: player.getPowerupSlots().map((slot) => slot.type),
+      suppressedIds: player.runAugmentModifiers?.overlapSuppressedIds?.slice?.() || []
+    };
+    assert(overlapSuppression.suppressedIds.includes('rapid_fire') && overlapSuppression.suppressedIds.includes('speed_up'),
+      'both matching permanent Draft effects were not suppressed beneath two timed slots', overlapSuppression);
+
+    const compatibilityRegression = {
+      rapidDouble,
+      pierceDamage,
+      magnetScore,
+      offenseDefense,
+      sameLaneReplacement,
+      mobilityOffense,
+      hybridExclusive,
+      instantDefense,
+      durationStacking,
+      bombChargeStacking,
+      chargedStacking,
+      orbitalStacking: { orbitalFirst, orbitalSecond, orbitalCapped },
+      bossBreakerHudStates,
+      aegisHudStates,
+      overlapSuppression
+    };
 
     resetScene();
     player.runAugmentIds = ['bomb', 'orbital_strike'];

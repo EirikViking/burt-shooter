@@ -194,6 +194,43 @@ try {
   const screenshot = path.join(outputDir, 'powerup-hud-affordances.png');
   await page.screenshot({ path: screenshot, fullPage: true });
 
+  await page.setViewportSize({ width: 640, height: 480 });
+  await page.waitForTimeout(250);
+  const compactState = await page.evaluate(() => {
+    const game = window.__game;
+    const play = game?.scenes?.play;
+    const hud = play?.hud;
+    const player = play?.player;
+    if (!game || !play || !hud || !player) return { ok: false, reason: 'missing compact game/play/hud/player' };
+    play.isPaused = true;
+    player.getActivePowerupStates = () => ([{
+      type: 'nova_bloom',
+      iconType: 'nova_bloom',
+      label: 'NOVA BLOOM',
+      remainingMs: 0,
+      charges: 3,
+      maxCharges: 7,
+      detail: 'BANKED // COMBAT PAUSED',
+      color: 0xff5aa8
+    }]);
+    hud.update();
+    hud.updateActivePowerup();
+    return {
+      ok: true,
+      group: {
+        visible: Boolean(hud.activePowerupGroup?.visible),
+        x: Math.round(hud.activePowerupGroup?.x || 0),
+        y: Math.round(hud.activePowerupGroup?.y || 0),
+        width: Math.round(hud.activePowerupGroup?.width || 0),
+        height: Math.round(hud.activePowerupGroup?.height || 0)
+      },
+      row: (hud.activePowerupRows || []).find((candidate) => candidate?.container?.visible)?.container?._debugPowerupState || null
+    };
+  });
+  await page.waitForTimeout(200);
+  const compactScreenshot = path.join(outputDir, 'powerup-hud-nova-bloom-compact.png');
+  await page.screenshot({ path: compactScreenshot, fullPage: true });
+
   const failures = [];
   if (!state.ok) failures.push(state.reason || 'setup failed');
   if (!state.group?.visible) failures.push('active powerup HUD is not visible');
@@ -214,6 +251,17 @@ try {
   if (status?.category !== 'status' || !status?.categoryAccentVisible || status?.categoryRailPipCount !== 3 || status?.timerTickCount !== 3) {
     failures.push(`status row missing status accent/timer ticks: ${JSON.stringify(status)}`);
   }
+  if (!compactState.ok || !compactState.group?.visible) failures.push(compactState.reason || 'compact powerup HUD is not visible');
+  if (compactState.row?.type !== 'nova_bloom' || compactState.row?.meta !== 'BANKED // COMBAT PAUSED') {
+    failures.push(`compact Nova Bloom state is wrong: ${JSON.stringify(compactState)}`);
+  }
+  if (compactState.row?.textOverlap) failures.push(`compact Nova Bloom label overlaps status: ${JSON.stringify(compactState.row)}`);
+  if ((compactState.row?.labelBounds?.y || 0) + (compactState.row?.labelBounds?.height || 0) > (compactState.row?.metaBounds?.y || 0)) {
+    failures.push(`compact Nova Bloom name/status bands intersect: ${JSON.stringify(compactState.row)}`);
+  }
+  if ((compactState.row?.metaBounds?.x || 0) + (compactState.row?.metaBounds?.width || 0) > (compactState.row?.rowWidth || 0) - 7) {
+    failures.push(`compact Nova Bloom status exceeds its row: ${JSON.stringify(compactState.row)}`);
+  }
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 
@@ -221,7 +269,9 @@ try {
     ok: failures.length === 0,
     baseUrl,
     screenshot,
+    compactScreenshot,
     state,
+    compactState,
     failures,
     pageErrors,
     consoleErrors

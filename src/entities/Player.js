@@ -61,6 +61,11 @@ const SHIP_RENDER_MIN_CAP_WIDTH = 74;
 const SHIP_RENDER_MAX_CAP_WIDTH = 108;
 const SHIP_RENDER_MAX_HEIGHT_MULTIPLIER = 1.82;
 const SHIP_RENDER_MAX_CAP_HEIGHT = 156;
+const MAX_DUPLICATE_DURATION_STACKS = 2;
+
+function createEmptyPowerupSlot() {
+  return { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
+}
 
 export class Player {
   constructor(x, y, inputManager, game, spriteKey = getDefaultShipKey()) {
@@ -145,8 +150,8 @@ export class Player {
     this.flashDuration = 0;
 
     // Powerups
-    this.activePowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock' };
-    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
+    this.activePowerup = createEmptyPowerupSlot();
+    this.secondaryPowerup = createEmptyPowerupSlot();
     this.doubleShotShotFloor = 0;
     this.powerupEffect = null;
     this.powerupMovementBoostMult = 1;
@@ -237,18 +242,22 @@ export class Player {
     this.orbitalStrikeMaxCharges = 5;
     this.tacticalOrbitalStrikeCharges = 0;
     this.orbitalStrikeCooldown = 0;
+    this.orbitalStrikePowerupType = null;
     this.vampireActive = false;
     this.vampireKillCount = 0;
+    this.vampirePowerupType = null;
 
     // Shield State
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
     this.shieldSpentUntil = 0;
+    this.shieldSource = null;
     this.shieldSprite = null;
 
     // Point Defense State
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.pointDefenseSource = null;
     this.tacticalPointDefenseExpiresAt = 0;
     this.pointDefenseRing = null;
     this.pointDefenseStartedAt = 0;
@@ -282,6 +291,7 @@ export class Player {
     this.bombTriggerQueued = false;
     this.lastBombTriggerIntent = null;
     this.lastBombCommitState = null;
+    this.bombPowerupType = null;
     this.bombIndicator = null;
 
     // Touch input (set externally by PlayScene)
@@ -1443,12 +1453,7 @@ export class Player {
       this.weaponSfxKey = this.weaponProfile.shootSfx;
       this.selectedShipSpriteKey = newConfig.spriteKey || this.selectedShipSpriteKey;
       this.selectedShipTextureIndex = index;
-      this.activePowerup.type = null; // Clear powerups on ship swap to avoid stuck states? No, keep powerups.
-      this.activePowerup.expiresAt = 0;
-      this.activePowerup.remainingMs = 0;
-      this.activePowerup.durationMode = 'wall_clock';
-      this.powerupEffect = null;
-      this.recalculateStats();
+      this.resetPowerups();
     }
 
     const shipPath = GameAssets.getRankShipPath(index);
@@ -1737,7 +1742,7 @@ export class Player {
     const deltaSeconds = dt / 1000;
 
     this.updateActivePowerupDuration(now, timedDt);
-    if (this.secondaryPowerup.type && this.getSecondaryPowerupRemainingMs(now) <= 0) {
+    if (this.secondaryPowerup.type && !this.hasUnspentChargePowerup(this.secondaryPowerup) && this.getSecondaryPowerupRemainingMs(now) <= 0) {
       this.expireSecondaryPowerup();
     }
 
@@ -3082,24 +3087,42 @@ export class Player {
     return this.hasStatusEffect('powerup_nullification');
   }
 
+  getPowerupSlotEffect(slot) {
+    if (!slot?.type) return null;
+    return slot.effect || getPowerupMeta(slot.type)?.effect || null;
+  }
+
+  getPowerupSlots() {
+    return [this.activePowerup, this.secondaryPowerup].filter((slot) => slot?.type);
+  }
+
+  getPowerupEffectEntry(predicate) {
+    if (typeof predicate !== 'function') return null;
+    for (const slot of this.getPowerupSlots()) {
+      const effect = this.getPowerupSlotEffect(slot) || {};
+      if (predicate(effect, slot)) return { slot, effect };
+    }
+    return null;
+  }
+
   getCurrentPowerupEffect() {
-    return this.powerupEffect || getPowerupMeta(this.activePowerup?.type)?.effect || null;
+    return this.powerupEffect || this.getPowerupSlotEffect(this.activePowerup);
   }
 
   getPowerupMovementMultiplier() {
     if (this.isPowerupSuppressed()) return 1;
-    const effect = this.getCurrentPowerupEffect() || {};
+    const effect = this.getPowerupEffectEntry((candidate) => Number.isFinite(Number(candidate.movementBoostMult)))?.effect || {};
     return Math.max(0.1, Number(effect.movementBoostMult || 1));
   }
 
   isSlowTimeActive() {
     if (this.isPowerupSuppressed()) return false;
-    return this.activePowerup?.type === 'slow_time' || this.getCurrentPowerupEffect()?.slowTime === true;
+    return Boolean(this.getPowerupEffectEntry((effect) => effect.slowTime === true));
   }
 
   getSlowTimeScale(effectKey, fallback = 0.35) {
     if (!this.isSlowTimeActive()) return 1;
-    const effect = this.getCurrentPowerupEffect() || {};
+    const effect = this.getPowerupEffectEntry((candidate) => candidate.slowTime === true)?.effect || {};
     const value = Number(effect[effectKey]);
     if (!Number.isFinite(value)) return fallback;
     return Math.max(0.05, Math.min(1, value));
@@ -3118,14 +3141,17 @@ export class Player {
   }
 
   isGhostActive() {
-    return this.activePowerup?.type === 'ghost' && !this.isPowerupSuppressed();
+    return !this.isPowerupSuppressed() && Boolean(this.getPowerupEffectEntry((effect) => effect.ghost === true));
   }
 
   updateGhostTimerVisual(now = this.getGameplayClockMs(), visualNow = Date.now()) {
     const layer = this.ghostTimerLayer;
     const text = this.ghostTimerText;
     if (!layer || !text) return null;
-    const remainingMs = this.isGhostActive() ? this.getActivePowerupRemainingMs(now) : 0;
+    const ghostEntry = this.isGhostActive()
+      ? this.getPowerupEffectEntry((effect) => effect.ghost === true)
+      : null;
+    const remainingMs = ghostEntry ? this.getPowerupSlotRemainingMs(ghostEntry.slot, now) : 0;
     if (remainingMs <= 0) {
       layer.clear();
       layer.visible = false;
@@ -3141,7 +3167,7 @@ export class Player {
     const accessibility = getAccessibilitySettings();
     const reducedMotion = Boolean(accessibility.prefersReducedMotion);
     const compact = Number(this.game?.getWidth?.()) < 720;
-    const durationMs = Math.max(1, Number(this.getCurrentPowerupEffect()?.durationMs) || remainingMs);
+    const durationMs = Math.max(1, Number(ghostEntry?.effect?.durationMs) || remainingMs);
     const progress = Math.max(0, Math.min(1, remainingMs / durationMs));
     const radius = compact ? 30 : 35;
     const startAngle = Math.PI * 0.16;
@@ -3390,29 +3416,42 @@ export class Player {
     return getPowerupMeta(type)?.name || String(type || '').replace(/_/g, ' ').toUpperCase();
   }
 
-  getActivePowerupRemainingMs(now = this.getGameplayClockMs()) {
-    if (!this.activePowerup?.type) return 0;
-    if (this.activePowerup.durationMode === 'while_firing') {
-      return Math.max(0, Number(this.activePowerup.remainingMs) || 0);
+  getPowerupSlotRemainingMs(slot, now = this.getGameplayClockMs()) {
+    if (!slot?.type) return 0;
+    if (slot.durationMode === 'while_firing') {
+      return Math.max(0, Number(slot.remainingMs) || 0);
     }
-    return Math.max(0, (Number(this.activePowerup.expiresAt) || 0) - now);
+    return Math.max(0, (Number(slot.expiresAt) || 0) - now);
+  }
+
+  getActivePowerupRemainingMs(now = this.getGameplayClockMs()) {
+    return this.getPowerupSlotRemainingMs(this.activePowerup, now);
   }
 
   getSecondaryPowerupRemainingMs(now = this.getGameplayClockMs()) {
-    if (!this.secondaryPowerup?.type) return 0;
-    if (this.secondaryPowerup.durationMode === 'while_firing') {
-      return Math.max(0, Number(this.secondaryPowerup.remainingMs) || 0);
-    }
-    return Math.max(0, (Number(this.secondaryPowerup.expiresAt) || 0) - now);
+    return this.getPowerupSlotRemainingMs(this.secondaryPowerup, now);
+  }
+
+  setPowerupSlotDuration(slot, type, durationMs, now = this.getGameplayClockMs()) {
+    if (!slot) return 0;
+    const safeDuration = Math.max(0, Number(durationMs) || 0);
+    slot.durationMode = getPowerupDurationMode(type);
+    slot.remainingMs = safeDuration;
+    slot.expiresAt = now + safeDuration;
+    return slot.expiresAt;
   }
 
   setActivePowerupDuration(type, durationMs, now = this.getGameplayClockMs()) {
-    const safeDuration = Math.max(0, Number(durationMs) || 0);
-    const durationMode = getPowerupDurationMode(type);
-    this.activePowerup.durationMode = durationMode;
-    this.activePowerup.remainingMs = safeDuration;
-    this.activePowerup.expiresAt = now + safeDuration;
-    return this.activePowerup.expiresAt;
+    return this.setPowerupSlotDuration(this.activePowerup, type, durationMs, now);
+  }
+
+  stackPowerupSlotDuration(slot, type, durationMs, now = this.getGameplayClockMs()) {
+    const pickupDuration = Math.max(0, Number(durationMs) || 0);
+    const currentRemaining = this.getPowerupSlotRemainingMs(slot, now);
+    const cap = pickupDuration * MAX_DUPLICATE_DURATION_STACKS;
+    const stackedRemaining = Math.max(currentRemaining, Math.min(cap, currentRemaining + pickupDuration));
+    this.setPowerupSlotDuration(slot, type, stackedRemaining, now);
+    return stackedRemaining;
   }
 
   isWeaponPowerupDrainActive() {
@@ -3450,35 +3489,139 @@ export class Player {
     this.activePowerup.expiresAt = now + remainingMs;
   }
 
-  expireSecondaryPowerup() {
-    const expiredType = this.secondaryPowerup?.type || null;
-    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
-    if (expiredType === 'score_x2' && this.activePowerup?.type !== 'score_x2') {
+  syncPowerupRuntimeState(now = this.getGameplayClockMs()) {
+    const entries = this.getPowerupSlots().map((slot) => ({ slot, effect: this.getPowerupSlotEffect(slot) || {} }));
+    const scoreEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.scoreMultiplier)));
+    if (scoreEntries.length) {
+      scoreEntries.sort((a, b) => Number(b.effect.scoreMultiplier) - Number(a.effect.scoreMultiplier));
+      const selected = scoreEntries[0];
+      this.scoreMultiplier = Math.max(1, Number(selected.effect.scoreMultiplier) || 1);
+      this.scoreMultiplierType = selected.slot.type;
+      this.scoreBoostExpiresAt = Number(selected.slot.expiresAt) || (now + this.getPowerupSlotRemainingMs(selected.slot, now));
+    } else {
       this.scoreMultiplier = 1;
       this.scoreMultiplierType = null;
       this.scoreBoostExpiresAt = 0;
     }
+
+    const tacticalMagnetActive = Number(this.runAugmentModifiers?.magnetRadiusBonus || 0) > 0;
+    const magnetEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.magnetRadius)));
+    if (tacticalMagnetActive) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Number.MAX_SAFE_INTEGER;
+    } else if (magnetEntries.length) {
+      this.magnetActive = true;
+      this.magnetExpiresAt = Math.max(...magnetEntries.map(({ slot }) => Number(slot.expiresAt) || 0));
+    } else {
+      this.magnetActive = false;
+      this.magnetExpiresAt = 0;
+    }
+
+    const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
+    const droneEntries = entries.filter(({ effect }) => Number.isFinite(Number(effect.droneCount)));
+    if (tacticalDronesActive) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Number.MAX_SAFE_INTEGER;
+    } else if (droneEntries.length) {
+      this.dronesActive = true;
+      this.dronesExpiresAt = Math.max(...droneEntries.map(({ slot }) => Number(slot.expiresAt) || 0));
+    } else if (this.dronesActive || this.drones?.length) {
+      this.clearDrones();
+      this.dronesExpiresAt = 0;
+    }
+
+    const tacticalChainMax = Math.max(0, Math.round(Number(this.runAugmentModifiers?.chainMax) || 0));
+    const timedChainMax = Math.max(0, ...entries.map(({ effect }) => Math.round(Number(effect.chainMax) || 0)));
+    this.chainLightningActive = tacticalChainMax > 0 || timedChainMax > 0;
+    this.chainLightningMaxChains = Math.max(3, tacticalChainMax, timedChainMax);
+
+    const vampireEntry = entries.find(({ effect }) => effect.vampire === true);
+    this.vampireActive = Boolean(vampireEntry);
+    this.vampirePowerupType = vampireEntry?.slot?.type || null;
+    if (!vampireEntry) this.vampireKillCount = 0;
+
+    const ghostActive = !this.isPowerupSuppressed() && entries.some(({ effect }) => effect.ghost === true);
+    if (this.sprite && !this.isDodging && !this.invulnerable) {
+      this.sprite.alpha = ghostActive ? 0.4 : 1;
+    }
+  }
+
+  clearPowerupRuntimeForSlot(slot, preservedSlots = []) {
+    if (!slot?.type) return;
+    const type = slot.type;
+    const effect = this.getPowerupSlotEffect(slot) || {};
+    const preservedEffects = preservedSlots.map((candidate) => this.getPowerupSlotEffect(candidate) || {});
+    const preservedHas = (key) => preservedEffects.some((candidate) => candidate[key] === true || Number.isFinite(Number(candidate[key])));
+
+    if (effect.pointDefense && this.pointDefenseSource === type && !preservedHas('pointDefense')) {
+      this.deactivatePointDefense();
+    }
+    if (effect.bombShots && this.bombPowerupType === type && !preservedHas('bombShots')) {
+      this.bombShotsLeft = 0;
+      this.bombArmedAt = 0;
+      this.bombTriggerQueued = false;
+      this.lastBombCommitState = null;
+      this.bombPowerupType = null;
+      if (this.bombIndicator) this.bombIndicator.visible = false;
+    }
+    if (effect.orbitalCharges && this.orbitalStrikePowerupType === type && !preservedHas('orbitalCharges')) {
+      this.orbitalStrikeActive = false;
+      this.orbitalStrikeCharges = 0;
+      this.orbitalStrikeMaxCharges = 5;
+      this.orbitalStrikePowerupType = null;
+    }
+    if (effect.vampire && this.vampirePowerupType === type && !preservedHas('vampire')) {
+      this.vampireActive = false;
+      this.vampireKillCount = 0;
+      this.vampirePowerupType = null;
+    }
+  }
+
+  preparePowerupSlotsFor(type) {
+    const existing = this.getPowerupSlots().map((slot) => ({
+      ...slot,
+      effect: this.getPowerupSlotEffect(slot)
+    }));
+    const preserved = existing.find((slot) => arePowerupsCompatible(slot.type, type)) || null;
+    const preservedSlots = preserved ? [preserved] : [];
+    existing.filter((slot) => slot !== preserved).forEach((slot) => {
+      this.clearPowerupRuntimeForSlot(slot, preservedSlots);
+    });
+    this.activePowerup = createEmptyPowerupSlot();
+    this.secondaryPowerup = preserved ? { ...preserved } : createEmptyPowerupSlot();
+    this.powerupEffect = null;
+    return preserved;
+  }
+
+  expireSecondaryPowerup() {
+    const expired = { ...this.secondaryPowerup, effect: this.getPowerupSlotEffect(this.secondaryPowerup) };
+    const expiredType = expired.type || null;
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.clearPowerupRuntimeForSlot(expired, this.activePowerup?.type ? [this.activePowerup] : []);
     this.recalculateStats();
+    this.syncPowerupRuntimeState();
     return expiredType;
   }
 
   promoteSecondaryPowerup(now = this.getGameplayClockMs()) {
     if (!this.secondaryPowerup?.type) return false;
-    const promoted = { ...this.secondaryPowerup };
+    const expired = { ...this.activePowerup, effect: this.getPowerupSlotEffect(this.activePowerup) };
+    const promoted = { ...this.secondaryPowerup, effect: this.getPowerupSlotEffect(this.secondaryPowerup) };
     const remainingMs = this.getSecondaryPowerupRemainingMs(now);
-    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
-    this.resetPowerups();
-    this.applyPowerup(promoted.type);
+    this.clearPowerupRuntimeForSlot(expired, [promoted]);
+    this.activePowerup = promoted;
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.powerupEffect = promoted.effect || null;
     this.activePowerup.durationMode = promoted.durationMode || getPowerupDurationMode(promoted.type);
     this.activePowerup.remainingMs = remainingMs;
     this.activePowerup.expiresAt = now + remainingMs;
-    if (this.scoreMultiplierType === promoted.type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
-    if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
+    this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
     return true;
   }
 
-  hasUnspentChargePowerup() {
-    const effect = this.getCurrentPowerupEffect() || {};
+  hasUnspentChargePowerup(slot = this.activePowerup) {
+    const effect = this.getPowerupSlotEffect(slot) || {};
     return effect.charges === true && Boolean(effect.bombShots) && this.bombShotsLeft > 0;
   }
 
@@ -3487,6 +3630,8 @@ export class Player {
     const states = [];
     const seen = new Set();
     const activeEffect = this.getCurrentPowerupEffect() || {};
+    const slotEffects = this.getPowerupSlots().map((slot) => this.getPowerupSlotEffect(slot) || {});
+    const hasSlotEffect = (predicate) => slotEffects.some((effect) => predicate(effect));
     const addTimedState = (type, expiresAt, extra = {}) => {
       if (!type || seen.has(type)) return;
       const remainingMs = Math.max(0, (Number(expiresAt) || 0) - now);
@@ -3499,13 +3644,26 @@ export class Player {
         ...extra
       });
     };
-    const getPrimaryStateDetail = (type) => {
-      if (activeEffect.charges === true && activeEffect.bombShots) {
+    const getStateDetail = (type, effect = {}) => {
+      if (effect.charges === true && effect.bombShots) {
         return {
           charges: Math.max(0, this.bombShotsLeft || 0),
-          maxCharges: this.bombMaxShots || Math.max(1, Math.round(Number(activeEffect.bombShots) || 3)),
+          maxCharges: this.bombMaxShots || Math.max(1, Math.round(Number(effect.bombShots) || 3)),
           detail: this.getBombHudDetail(now)
         };
+      }
+      if (effect.orbitalCharges) {
+        return {
+          charges: Math.max(0, this.orbitalStrikeCharges || 0),
+          maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || Number(effect.orbitalCharges) || 1),
+          detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
+        };
+      }
+      if (effect.vampire) {
+        return { detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS` };
+      }
+      if (effect.pointDefense) {
+        return { detail: 'AUTO-INTERCEPTS' };
       }
       switch (type) {
         case 'bomb':
@@ -3531,28 +3689,32 @@ export class Player {
       }
     };
 
-    const activePowerupIsEmptyBomb = () => (
+    const powerupSlotIsEmptyBomb = (slot) => (
       this.bombShotsLeft <= 0
       && (
-        this.activePowerup?.type === 'bomb'
-        || this.getCurrentPowerupEffect()?.bombShots
+        slot?.type === 'bomb'
+        || this.getPowerupSlotEffect(slot)?.bombShots
       )
     );
 
     if (this.activePowerup?.type) {
       const powerupType = this.activePowerup.type;
-      if (!activePowerupIsEmptyBomb()) {
+      if (!powerupSlotIsEmptyBomb(this.activePowerup)) {
         addTimedState(powerupType, now + this.getActivePowerupRemainingMs(now), {
           durationMode: this.activePowerup.durationMode || 'wall_clock',
-          ...getPrimaryStateDetail(powerupType)
+          ...getStateDetail(powerupType, activeEffect)
         });
       }
     }
     if (this.secondaryPowerup?.type) {
-      addTimedState(this.secondaryPowerup.type, now + this.getSecondaryPowerupRemainingMs(now), {
-        durationMode: this.secondaryPowerup.durationMode || 'wall_clock',
-        compatible: true
-      });
+      const secondaryEffect = this.getPowerupSlotEffect(this.secondaryPowerup) || {};
+      if (!powerupSlotIsEmptyBomb(this.secondaryPowerup)) {
+        addTimedState(this.secondaryPowerup.type, now + this.getSecondaryPowerupRemainingMs(now), {
+          durationMode: this.secondaryPowerup.durationMode || 'wall_clock',
+          compatible: true,
+          ...getStateDetail(this.secondaryPowerup.type, secondaryEffect)
+        });
+      }
     }
 
     if (this.rowCoreActive) {
@@ -3563,7 +3725,7 @@ export class Player {
       });
     }
 
-    if (this.shieldActive && !activeEffect.shield) {
+    if (this.shieldActive && !hasSlotEffect((effect) => effect.shield === true)) {
       addTimedState('shield', this.shieldExpiresAt);
     } else if (!this.shieldActive && this.shieldSpentUntil > now) {
       addTimedState('shield', now, {
@@ -3579,23 +3741,23 @@ export class Player {
     }
 
     const tacticalMagnetActive = Number(this.runAugmentModifiers?.magnetRadiusBonus || 0) > 0;
-    if (this.magnetActive && !activeEffect.magnetRadius && !tacticalMagnetActive) {
+    if (this.magnetActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.magnetRadius))) && !tacticalMagnetActive) {
       addTimedState('magnet', this.magnetExpiresAt);
     }
 
     const tacticalDronesActive = Number(this.runAugmentModifiers?.droneCount || 0) > 0;
-    if (this.dronesActive && !activeEffect.droneCount && !tacticalDronesActive) {
+    if (this.dronesActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.droneCount))) && !tacticalDronesActive) {
       addTimedState('drones', this.dronesExpiresAt);
     }
 
-    if (this.pointDefenseActive && !activeEffect.pointDefense) {
+    if (this.pointDefenseActive && !hasSlotEffect((effect) => effect.pointDefense === true)) {
       addTimedState('point_defense', this.pointDefenseExpiresAt, {
         label: 'P-DEF',
         detail: 'AUTO-INTERCEPTS'
       });
     }
 
-    if (this.bombShotsLeft > 0 && !activeEffect.bombShots) {
+    if (this.bombShotsLeft > 0 && !hasSlotEffect((effect) => Number.isFinite(Number(effect.bombShots)))) {
       addTimedState('bomb', 0, {
         remainingMs: 0,
         charges: this.bombShotsLeft,
@@ -3614,11 +3776,11 @@ export class Player {
     }
 
     const tacticalChainActive = Number(this.runAugmentModifiers?.chainMax || 0) > 0;
-    if (this.chainLightningActive && !activeEffect.chainMax && !tacticalChainActive) {
+    if (this.chainLightningActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.chainMax))) && !tacticalChainActive) {
       addTimedState('chain_lightning', this.activePowerup?.type === 'chain_lightning' ? this.activePowerup.expiresAt : 0);
     }
 
-    if (this.orbitalStrikeActive && !activeEffect.orbitalCharges) {
+    if (this.orbitalStrikeActive && !hasSlotEffect((effect) => Number.isFinite(Number(effect.orbitalCharges)))) {
       addTimedState('orbital_strike', this.activePowerup?.type === 'orbital_strike' ? this.activePowerup.expiresAt : 0, {
         charges: this.orbitalStrikeCharges,
         maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || 5),
@@ -3626,7 +3788,7 @@ export class Player {
       });
     }
 
-    if (this.vampireActive && !activeEffect.vampire) {
+    if (this.vampireActive && !hasSlotEffect((effect) => effect.vampire === true)) {
       addTimedState('vampire', this.activePowerup?.type === 'vampire' ? this.activePowerup.expiresAt : 0, {
         detail: `${Math.max(0, this.vampireKillCount || 0)} KILLS`
       });
@@ -4192,10 +4354,11 @@ export class Player {
     this.flashColor = color;
   }
 
-  activateShield(durationMs = 15000) {
+  activateShield(durationMs = 15000, options = {}) {
     this.shieldActive = true;
     this.shieldExpiresAt = this.getGameplayClockMs() + Math.max(1000, Number(durationMs) || 15000);
     this.shieldSpentUntil = 0;
+    this.shieldSource = options.source || 'independent';
     if (this.shieldSprite) this.shieldSprite.visible = true;
     // CRITICAL: Ensure player remains visible after shield activation
     this.ensureRenderable('activateShield');
@@ -4204,6 +4367,7 @@ export class Player {
   deactivateShield(options = {}) {
     this.shieldActive = false;
     this.shieldExpiresAt = 0;
+    this.shieldSource = null;
     if (options.spentFeedback) {
       this.shieldSpentUntil = this.getGameplayClockMs() + SHIELD_SPENT_FEEDBACK_MS;
     }
@@ -4282,6 +4446,7 @@ export class Player {
       : requestedExpiry;
     const wasActive = this.pointDefenseActive;
     this.pointDefenseActive = true;
+    this.pointDefenseSource = options.source || 'independent';
     this.pointDefenseStartedAt = wasActive && options.extend
       ? Math.min(Number(this.pointDefenseStartedAt) || now, now)
       : now;
@@ -4320,6 +4485,7 @@ export class Player {
   deactivatePointDefense(options = {}) {
     this.pointDefenseActive = false;
     this.pointDefenseExpiresAt = 0;
+    this.pointDefenseSource = null;
     this.pointDefenseStartedAt = 0;
     this.pointDefenseDurationMs = 0;
     if (options.expired) {
@@ -4429,18 +4595,25 @@ export class Player {
     this.bombArmedAt = 0;
     this.bombTriggerQueued = false;
     this.lastBombCommitState = null;
+    this.bombPowerupType = null;
     if (options.spentFeedback) {
       this.bombSpentUntil = this.getGameplayClockMs() + BOMB_SPENT_FEEDBACK_MS;
     }
     if (this.bombIndicator) {
       this.bombIndicator.visible = false;
     }
-    if (this.activePowerup.type === 'bomb' || this.getCurrentPowerupEffect()?.bombShots) {
-      this.activePowerup.type = null;
-      this.activePowerup.expiresAt = 0;
-      this.activePowerup.remainingMs = 0;
-      this.activePowerup.durationMode = 'wall_clock';
-      this.powerupEffect = null;
+    if (!options.preserveSlots) {
+      const activeIsBomb = this.activePowerup?.type === 'bomb' || this.getPowerupSlotEffect(this.activePowerup)?.bombShots;
+      const secondaryIsBomb = this.secondaryPowerup?.type === 'bomb' || this.getPowerupSlotEffect(this.secondaryPowerup)?.bombShots;
+      if (activeIsBomb) this.activePowerup = createEmptyPowerupSlot();
+      if (secondaryIsBomb) this.secondaryPowerup = createEmptyPowerupSlot();
+      if (!this.activePowerup.type && this.secondaryPowerup.type) {
+        this.activePowerup = { ...this.secondaryPowerup };
+        this.secondaryPowerup = createEmptyPowerupSlot();
+      }
+      this.powerupEffect = this.getPowerupSlotEffect(this.activePowerup);
+      this.recalculateStats();
+      this.syncPowerupRuntimeState();
     }
   }
 
@@ -4535,7 +4708,9 @@ export class Player {
       this.recalculateStats({ preview: true });
       afterMetrics = metricIds.map((metric) => ({ metric, value: readMetric(metric) }));
       projectedFusionIds = this.runAugmentModifiers?.fusionIds?.slice?.() || [];
-      overlapSuppressed = this.runAugmentModifiers?.overlapSuppressedId === id;
+      overlapSuppressed = Array.isArray(this.runAugmentModifiers?.overlapSuppressedIds)
+        ? this.runAugmentModifiers.overlapSuppressedIds.includes(id)
+        : this.runAugmentModifiers?.overlapSuppressedId === id;
     } finally {
       this.runAugmentIds = selectedIds;
       this.consumedRunAugmentIds = consumedIds;
@@ -4572,7 +4747,8 @@ export class Player {
   applyRunAugmentModifiers({ preview = false } = {}) {
     const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
     const modifiers = buildTacticalDraftModifiers(activeIds, {
-      activePowerupType: this.activePowerup?.type || null
+      activePowerupType: this.activePowerup?.type || null,
+      activePowerupTypes: this.getPowerupSlots().map((slot) => slot.type)
     });
     this.runAugmentModifiers = modifiers;
     const directOutputBefore = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);
@@ -4589,7 +4765,7 @@ export class Player {
     this.dodgeDelay = Math.round(Math.max(450, this.dodgeDelay * modifiers.dodgeDelayMult));
     this.dodgeDurationMax = Math.round(Math.max(240, this.dodgeDurationMax * modifiers.dodgeDurationMult));
     this.multiShot = Math.max(1, Math.min(8, this.multiShot + Math.round(modifiers.shotBonus || 0)));
-    if (this.activePowerup?.type === 'double_shot' && !this.isPowerupSuppressed()) {
+    if (this.getPowerupSlots().some((slot) => slot.type === 'double_shot') && !this.isPowerupSuppressed()) {
       this.multiShot = Math.min(8, Math.max(
         this.multiShot,
         Math.max(1, Number(this.doubleShotShotFloor) || 1)
@@ -4691,6 +4867,7 @@ export class Player {
       },
       modifiers: this.runAugmentModifiers,
       overlapSuppressedId: this.runAugmentModifiers?.overlapSuppressedId || null,
+      overlapSuppressedIds: this.runAugmentModifiers?.overlapSuppressedIds?.slice?.() || [],
       lastSectorStart: this.lastRunAugmentSectorStart
     };
   }
@@ -4730,7 +4907,7 @@ export class Player {
     return { granted: true, count: this.runAugmentGrazeCount, threshold };
   }
 
-  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs()) {
+  applyCatalogPowerupEffect(type, effect = {}, now = this.getGameplayClockMs(), { preserveSlots = false } = {}) {
     const durationMs = Math.max(0, Number(effect.durationMs || 0));
     const expiresAt = durationMs > 0 ? now + durationMs : this.activePowerup.expiresAt;
 
@@ -4747,7 +4924,7 @@ export class Player {
     }
 
     if (effect.shield) {
-      this.activateShield(effect.shieldDurationMs || durationMs || 15000);
+      this.activateShield(effect.shieldDurationMs || durationMs || 15000, { source: type });
     }
 
     if (effect.pointDefense) {
@@ -4766,6 +4943,7 @@ export class Player {
       this.bombBlastRadius = Math.max(40, Number(effect.bombBlastRadius || 150));
       this.bombDamageMult = Math.max(1, Number(effect.bombDamageMult || 5));
       this.bombColor = Number.isFinite(effect.bombColor) ? effect.bombColor : (getPowerupMeta(type)?.color || 0xffaa00);
+      this.bombPowerupType = type;
       this.armBombTargetingWindow(now);
       this.createBombIndicator();
       AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
@@ -4799,6 +4977,7 @@ export class Player {
 
     if (effect.orbitalCharges) {
       this.orbitalStrikeActive = true;
+      this.orbitalStrikePowerupType = type;
       this.orbitalStrikeCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
       this.orbitalStrikeMaxCharges = Math.max(1, this.orbitalStrikeCharges);
       this.orbitalStrikeCooldown = 0;
@@ -4806,6 +4985,7 @@ export class Player {
 
     if (effect.vampire) {
       this.vampireActive = true;
+      this.vampirePowerupType = type;
       this.vampireKillCount = 0;
     }
 
@@ -4819,7 +4999,7 @@ export class Player {
       });
     }
 
-    if (effect.instant && !effect.durationMs && !effect.bombShots) {
+    if (!preserveSlots && effect.instant && !effect.durationMs && !effect.bombShots) {
       this.activePowerup.type = null;
       this.activePowerup.expiresAt = 0;
       this.activePowerup.remainingMs = 0;
@@ -4839,13 +5019,27 @@ export class Player {
       this.ensureRenderable('applyPowerup:' + type);
       return;
     }
+    if (effect.instant === true && effect.charges !== true) {
+      this.applyCatalogPowerupEffect(type, effect, now, { preserveSlots: true });
+      this.notePowerup(type);
+      this.recalculateStats();
+      this.syncPowerupRuntimeState(now);
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
     const permanentBombRack = Number(this.runAugmentModifiers?.sectorStart?.bombShots || 0) > 0;
     if (type === 'bomb' && (permanentBombRack || this.bombShotsLeft > 0)) {
       const addedShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
-      this.bombShotsLeft = Math.min(MAX_BANKED_BOMB_SHOTS,
+      const chargeCap = permanentBombRack
+        ? MAX_BANKED_BOMB_SHOTS
+        : addedShots * MAX_DUPLICATE_DURATION_STACKS;
+      this.bombShotsLeft = Math.min(chargeCap,
         Math.max(0, Math.round(Number(this.bombShotsLeft) || 0)) + addedShots);
       this.bombMaxShots = Math.max(this.bombMaxShots || 3, this.bombShotsLeft);
-      if (permanentBombRack) this.tacticalBombShotsLeft = this.bombShotsLeft;
+      if (permanentBombRack) {
+        this.tacticalBombShotsLeft = this.bombShotsLeft;
+        this.bombPowerupType = 'tactical';
+      }
       this.bombSpentUntil = 0;
       this.armBombTargetingWindow(now);
       this.createBombIndicator();
@@ -4863,6 +5057,7 @@ export class Player {
       this.tacticalOrbitalStrikeCharges = this.orbitalStrikeCharges;
       this.orbitalStrikeMaxCharges = Math.max(5, this.orbitalStrikeCharges);
       this.orbitalStrikeActive = this.orbitalStrikeCharges > 0;
+      this.orbitalStrikePowerupType = 'tactical';
       this.orbitalStrikeCooldown = 0;
       this.notePowerup(type);
       this.lastBankedPowerupPickup = { type, added: addedCharges, total: this.orbitalStrikeCharges, at: now };
@@ -4870,83 +5065,95 @@ export class Player {
       this.ensureRenderable('applyPowerup:' + type);
       return;
     }
-    if (type !== 'shield' && this.activePowerup.type === type && effect.charges !== true) {
-      this.setActivePowerupDuration(type, durationMs, now);
-      if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
-      if (this.magnetActive) this.magnetExpiresAt = this.activePowerup.expiresAt;
-      if (this.dronesActive) this.dronesExpiresAt = this.activePowerup.expiresAt;
-      if (this.pointDefenseActive) {
-        this.activatePointDefense(0, {
-          now,
-          expiresAt: this.activePowerup.expiresAt,
-          playSfx: false,
-          source: 'refresh'
-        });
-      }
-      console.log(`[Powerup] refresh type=${type} expiresAt=${this.activePowerup.expiresAt}`);
+    const duplicateSlot = this.getPowerupSlots().find((slot) => slot.type === type) || null;
+    if (duplicateSlot && effect.charges === true && effect.bombShots) {
+      const addedShots = Math.max(1, Math.round(Number(effect.bombShots) || 1));
+      const chargeCap = addedShots * MAX_DUPLICATE_DURATION_STACKS;
+      this.bombShotsLeft = Math.min(chargeCap, Math.max(0, Math.round(Number(this.bombShotsLeft) || 0)) + addedShots);
+      this.bombMaxShots = Math.max(this.bombMaxShots || addedShots, this.bombShotsLeft);
+      this.bombSpentUntil = 0;
+      this.bombPowerupType = type;
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+      this.lastBankedPowerupPickup = { type, added: addedShots, total: this.bombShotsLeft, at: now, duplicate: true };
+      console.log(`[Powerup] stack charges type=${type} total=${this.bombShotsLeft}`);
       return;
     }
-    if (type !== 'shield' && this.secondaryPowerup.type === type && effect.charges !== true) {
-      this.secondaryPowerup.durationMode = getPowerupDurationMode(type);
-      this.secondaryPowerup.remainingMs = durationMs;
-      this.secondaryPowerup.expiresAt = now + durationMs;
-      console.log(`[Powerup] refresh compatible type=${type} expiresAt=${this.secondaryPowerup.expiresAt}`);
+    if (duplicateSlot && effect.orbitalCharges) {
+      const addedCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 1));
+      const chargeCap = addedCharges * MAX_DUPLICATE_DURATION_STACKS;
+      this.orbitalStrikeCharges = Math.min(chargeCap,
+        Math.max(0, Math.round(Number(this.orbitalStrikeCharges) || 0)) + addedCharges);
+      this.orbitalStrikeMaxCharges = Math.max(this.orbitalStrikeMaxCharges || addedCharges, this.orbitalStrikeCharges);
+      this.orbitalStrikeActive = this.orbitalStrikeCharges > 0;
+      this.orbitalStrikePowerupType = type;
+      this.stackPowerupSlotDuration(duplicateSlot, type, durationMs, now);
+      this.syncPowerupRuntimeState(now);
+      console.log(`[Powerup] stack orbital type=${type} total=${this.orbitalStrikeCharges}`);
+      return;
+    }
+    if (duplicateSlot && effect.charges !== true) {
+      const stackedRemaining = this.stackPowerupSlotDuration(duplicateSlot, type, durationMs, now);
+      if (effect.shield && this.shieldSource === type) {
+        this.shieldExpiresAt = Math.max(this.shieldExpiresAt || 0, duplicateSlot.expiresAt);
+      }
+      if (effect.pointDefense && this.pointDefenseSource === type) {
+        this.activatePointDefense(0, {
+          now,
+          expiresAt: duplicateSlot.expiresAt,
+          extend: true,
+          playSfx: false,
+          source: type
+        });
+      }
+      this.syncPowerupRuntimeState(now);
+      if (duplicateSlot === this.activePowerup) this.powerupEffect = effect;
+      if (this.scoreMultiplierType === type) this.scoreBoostExpiresAt = duplicateSlot.expiresAt;
+      if (this.magnetActive && effect.magnetRadius) this.magnetExpiresAt = duplicateSlot.expiresAt;
+      if (this.dronesActive && effect.droneCount) this.dronesExpiresAt = duplicateSlot.expiresAt;
+      console.log(`[Powerup] stack duration type=${type} remainingMs=${stackedRemaining}`);
       return;
     }
 
+    const previousDoubleShotFloor = this.doubleShotShotFloor;
     const doubleShotShotFloor = type === 'double_shot'
       ? Math.max(1, Math.min(8, Math.round(Number(this.multiShot) || 1)))
       : 0;
-    const compatibleWithActive = arePowerupsCompatible(this.activePowerup.type, type);
-    if (compatibleWithActive) {
-      this.secondaryPowerup = {
-        ...this.activePowerup,
-        effect: this.powerupEffect || getPowerupMeta(this.activePowerup.type)?.effect || null
-      };
-    } else {
-      this.resetPowerups();
-    }
-    this.doubleShotShotFloor = doubleShotShotFloor;
-    this.activePowerup.type = type;
+    const preserved = this.preparePowerupSlotsFor(type);
+    this.doubleShotShotFloor = doubleShotShotFloor || (preserved?.type === 'double_shot' ? previousDoubleShotFloor : 0);
+    this.activePowerup = { ...createEmptyPowerupSlot(), type, effect };
     this.setActivePowerupDuration(type, durationMs, now);
     this.powerupEffect = effect;
 
     switch (type) {
       case 'slow_time':
         // Global effect handled by Scene
-        this.setActivePowerupDuration(type, 8000); // 8s
         break;
       case 'ghost':
-        this.setActivePowerupDuration(type, 8000); // 8s
         // Ghost mode uses reduced alpha for the CONTAINER only, not destroying visibility
         this.sprite.alpha = 0.4;
         break;
       case 'magnet':
         this.magnetActive = true;
-        this.magnetExpiresAt = now + 8000;
+        this.magnetExpiresAt = this.activePowerup.expiresAt;
         break;
       case 'drones':
         this.dronesActive = true;
-        this.dronesExpiresAt = now + 8000;
+        this.dronesExpiresAt = this.activePowerup.expiresAt;
         this.createDrones();
         break;
       case 'rapid_fire':
-        this.setActivePowerupDuration(type, 8000);
         break;
       case 'double_shot':
-        this.setActivePowerupDuration(type, 8000);
         break;
       case 'damage_up':
-        this.setActivePowerupDuration(type, 8000);
         break;
       case 'speed_up':
-        this.setActivePowerupDuration(type, 8000);
         break;
       case 'pierce':
-        this.setActivePowerupDuration(type, 7000);
         break;
       case 'shield':
-        this.activateShield();
+        this.activateShield(15000, { source: type });
         if (type === 'shield') {
           this.activePowerup.type = null; // Don't block weapon slot
           this.activePowerup.expiresAt = 0;
@@ -4956,7 +5163,7 @@ export class Player {
         }
         break;
       case 'point_defense':
-        this.activatePointDefense(10000, {
+        this.activatePointDefense(durationMs, {
           now,
           playSfx: true,
           volume: 0.8,
@@ -4966,6 +5173,7 @@ export class Player {
       case 'bomb':
         this.bombShotsLeft = 3; // Next 3 shots are bombs
         this.bombSpentUntil = 0;
+        this.bombPowerupType = type;
         this.armBombTargetingWindow(now);
         this.createBombIndicator();
         AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
@@ -4973,8 +5181,7 @@ export class Player {
       case 'score_x2':
         this.scoreMultiplier = 2;
         this.scoreMultiplierType = 'score_x2';
-        this.scoreBoostExpiresAt = now + 10000; // 10 seconds of playable combat
-        this.setActivePowerupDuration(type, 10000);
+        this.scoreBoostExpiresAt = this.activePowerup.expiresAt;
         break;
       case 'shockwave':
         // Clear all enemy bullets and deal damage to nearby enemies
@@ -4988,19 +5195,18 @@ export class Player {
       case 'chain_lightning':
         this.chainLightningActive = true;
         this.chainLightningMaxChains = 3;
-        this.setActivePowerupDuration(type, 12000);
         break;
       case 'orbital_strike':
         this.orbitalStrikeActive = true;
+        this.orbitalStrikePowerupType = type;
         this.orbitalStrikeCharges = 5;
         this.orbitalStrikeMaxCharges = 5;
         this.orbitalStrikeCooldown = 0;
-        this.setActivePowerupDuration(type, 15000);
         break;
       case 'vampire':
         this.vampireActive = true;
+        this.vampirePowerupType = type;
         this.vampireKillCount = 0;
-        this.setActivePowerupDuration(type, 20000); // 20 seconds
         break;
       default:
         this.applyCatalogPowerupEffect(type, effect, now);
@@ -5010,6 +5216,7 @@ export class Player {
     this.notePowerup(type);
     const before = this.getStatSnapshot();
     this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
     const after = this.getStatSnapshot();
     console.log(`[Powerup] apply type=${type} before=${before} after=${after}`);
 
@@ -5040,7 +5247,7 @@ export class Player {
     this.magnetExpiresAt = 0;
     this.clearDrones();
     this.deactivatePointDefense();
-    this.deactivateBomb();
+    this.deactivateBomb({ preserveSlots: true });
     this.powerupEffect = null;
     this.shieldSpentUntil = 0;
     this.bombSpentUntil = 0;
@@ -5052,8 +5259,10 @@ export class Player {
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
     this.orbitalStrikeMaxCharges = 5;
+    this.orbitalStrikePowerupType = null;
     this.vampireActive = false;
     this.vampireKillCount = 0;
+    this.vampirePowerupType = null;
     this.bombMaxShots = 3;
     this.bombBlastRadius = 150;
     this.bombDamageMult = 5;
@@ -5061,11 +5270,8 @@ export class Player {
     this.droneCount = 2;
     this.droneColor = 0x66ccff;
     this.doubleShotShotFloor = 0;
-    this.secondaryPowerup = { type: null, expiresAt: 0, remainingMs: 0, durationMode: 'wall_clock', effect: null };
-    this.activePowerup.type = null;
-    this.activePowerup.expiresAt = 0;
-    this.activePowerup.remainingMs = 0;
-    this.activePowerup.durationMode = 'wall_clock';
+    this.secondaryPowerup = createEmptyPowerupSlot();
+    this.activePowerup = createEmptyPowerupSlot();
     if (tacticalPointDefenseExpiresAt > now) {
       this.activatePointDefense(0, {
         now,
@@ -5076,17 +5282,20 @@ export class Player {
     }
     if (tacticalBombShotsLeft > 0) {
       this.bombShotsLeft = tacticalBombShotsLeft;
+      this.bombPowerupType = 'tactical';
       this.bombMaxShots = Math.max(this.bombMaxShots, tacticalBombShotsLeft);
       this.armBombTargetingWindow(now);
       this.createBombIndicator();
     }
     if (tacticalOrbitalStrikeCharges > 0) {
       this.orbitalStrikeActive = true;
+      this.orbitalStrikePowerupType = 'tactical';
       this.orbitalStrikeCharges = tacticalOrbitalStrikeCharges;
       this.orbitalStrikeMaxCharges = Math.max(5, tacticalOrbitalStrikeCharges);
     }
     const before = this.getStatSnapshot();
     this.recalculateStats();
+    this.syncPowerupRuntimeState(now);
     const after = this.getStatSnapshot();
     console.log(`[Powerup] expire before=${before} after=${after}`);
     const playScene = this.game?.scenes?.play;

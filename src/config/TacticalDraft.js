@@ -404,7 +404,11 @@ export function buildTacticalDraftOffers({
   });
 }
 
-export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null } = {}) {
+export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null, activePowerupTypes = [] } = {}) {
+  const timedPowerupTypes = new Set([
+    activePowerupType,
+    ...(Array.isArray(activePowerupTypes) ? activePowerupTypes : [])
+  ].filter(Boolean));
   const result = {
     damageMult: 1,
     fireDelayMult: 1,
@@ -457,7 +461,7 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
         ? SHIP_THREAT_RESPONSE_TARGETS.secondStackEffectiveness
         : SHIP_THREAT_RESPONSE_TARGETS.thirdStackEffectiveness;
     const modifiers = augment.modifiers || {};
-    const suppressMatchingTimedEffect = activePowerupType === id && id !== 'double_shot';
+    const suppressMatchingTimedEffect = timedPowerupTypes.has(id) && id !== 'double_shot';
     if (!suppressMatchingTimedEffect) {
       result.damageMult *= Math.pow(Number(modifiers.damageMult) || 1, effectiveness);
       result.fireDelayMult *= Math.pow(Number(modifiers.fireDelayMult) || 1, effectiveness);
@@ -493,11 +497,8 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     result.sectorStart.bombShots += Number(sectorStart.bombShots) || 0;
     result.sectorStart.orbitalCharges += Number(sectorStart.orbitalCharges) || 0;
   }
-  result.overlapSuppressedId = activePowerupType
-    && activePowerupType !== 'double_shot'
-    && selectedIds.includes(activePowerupType)
-    ? activePowerupType
-    : null;
+  result.overlapSuppressedIds = [...timedPowerupTypes].filter((id) => id !== 'double_shot' && selectedIds.includes(id));
+  result.overlapSuppressedId = result.overlapSuppressedIds[0] || null;
   result.fusionIds = getActiveTacticalFusionProtocols(selectedIds).map((fusion) => fusion.id);
   result.riftReprisal = result.fusionIds.includes('rift_reprisal');
   result.droneConstellation = result.fusionIds.includes('drone_constellation');
