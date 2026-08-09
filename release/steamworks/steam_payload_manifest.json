@@ -1,2521 +1,2479 @@
 {
-  "generatedAt": "2026-08-09T09:22:53.029Z",
+  "generatedAt": "2026-08-09T17:38:21.470Z",
   "build": {
-    "version": "v2026-08-09_11-07-01",
-    "timestamp": "2026-08-09T09:07:01.075Z"
+    "version": "v2026-08-09_19-19-37",
+    "timestamp": "2026-08-09T17:19:37.899Z"
   },
   "contentRoot": "release/desktop/win-unpacked",
   "executable": {
     "path": "Nova Swarm.exe",
     "bytes": 226698752,
-    "sha256": "aa2e36faf03ffa7bd3d033209cfc90d2821007aeaaad13c4e89e538724942353",
-    "modifiedAt": "2026-08-09T09:16:24.235Z"
+    "sha256": "91fa383bf7f36bc517c122bd3054ec16cd8405bdcbddc79ff1bc4a62019609c0",
+    "modifiedAt": "2026-08-09T17:30:48.937Z"
   },
-  "fileCount": 417,
-  "totalBytes": 1177565823,
-  "manifestHash": "675b6e277ceb319bd2456ee6e2d9c2747f0371f539334ad8f0e628ad9596e940",
+  "fileCount": 410,
+  "totalBytes": 1174774512,
+  "manifestHash": "0722fc4f14d3bab36c077463f1992083d6ee5c27603009e9612af6a4613c6b8c",
   "files": [
     {
       "path": "chrome_100_percent.pak",
       "bytes": 119889,
       "sha256": "15a5bcb49a5c02d6a4e736e8dfa11dabb0bac0589641a4e25f0c06472ccaae6d",
-      "modifiedAt": "2026-08-09T09:13:49.584Z"
+      "modifiedAt": "2026-08-09T17:24:35.495Z"
     },
     {
       "path": "chrome_200_percent.pak",
       "bytes": 197073,
       "sha256": "b7acfb068fa681f4ecb8f782bd4e3926590076c61fd0de3de4a12dde227cf52b",
-      "modifiedAt": "2026-08-09T09:13:47.486Z"
+      "modifiedAt": "2026-08-09T17:24:31.910Z"
     },
     {
       "path": "d3dcompiler_47.dll",
       "bytes": 4741488,
       "sha256": "a05f99734f7c4822fefc12b367af21fd0976ed6608752fb1e1e80b6ece7ecbbb",
-      "modifiedAt": "2026-08-09T09:13:49.754Z"
+      "modifiedAt": "2026-08-09T17:24:35.571Z"
     },
     {
       "path": "dxcompiler.dll",
       "bytes": 25722880,
       "sha256": "9feb01af5460d69042b715dd2dc8d23faa3a409b07b811e07b7195c044aac1c7",
-      "modifiedAt": "2026-08-09T09:13:49.781Z"
+      "modifiedAt": "2026-08-09T17:24:34.757Z"
     },
     {
       "path": "dxil.dll",
       "bytes": 1509760,
       "sha256": "77e039c905030a641e53658a008b74e90635a5ea9b6b79eabd0f2003bdfca59a",
-      "modifiedAt": "2026-08-09T09:13:48.843Z"
+      "modifiedAt": "2026-08-09T17:24:34.003Z"
     },
     {
       "path": "ffmpeg.dll",
       "bytes": 3046912,
       "sha256": "568b4a799381c45e34f7ecdc73d7ffc4340688153766f5e6d15b7d99ca8a47ee",
-      "modifiedAt": "2026-08-09T09:13:49.781Z"
+      "modifiedAt": "2026-08-09T17:24:35.875Z"
     },
     {
       "path": "icudtl.dat",
       "bytes": 10876464,
       "sha256": "c5da2fc389d1bb0ecb13fe22a8e069b7abc491f8aa5d16eb65d4ff32c85a46b6",
-      "modifiedAt": "2026-08-09T09:13:53.336Z"
+      "modifiedAt": "2026-08-09T17:24:38.919Z"
     },
     {
       "path": "libEGL.dll",
       "bytes": 507904,
       "sha256": "6f7c54b18fd4db3bf1b6ecdb0a013c557fef8b69d3ddc58c1413015830833436",
-      "modifiedAt": "2026-08-09T09:13:47.783Z"
+      "modifiedAt": "2026-08-09T17:24:32.318Z"
     },
     {
       "path": "libGLESv2.dll",
       "bytes": 8106496,
       "sha256": "4edc26548b5d22ff932257ff59e468b9119d6f4c691fa4e1683d94b25d5b46ba",
-      "modifiedAt": "2026-08-09T09:13:47.732Z"
+      "modifiedAt": "2026-08-09T17:24:32.118Z"
     },
     {
       "path": "LICENSE.electron.txt",
       "bytes": 1096,
       "sha256": "5154e165bd6c2cc0cfbcd8916498c7abab0497923bafcd5cb07673fe8480087d",
-      "modifiedAt": "2026-08-09T09:13:49.084Z"
+      "modifiedAt": "2026-08-09T17:24:34.189Z"
     },
     {
       "path": "LICENSES.chromium.html",
       "bytes": 20367095,
       "sha256": "e3c8a6093358521d4512d68945e16338755e687619196e63948d46c9267537b6",
-      "modifiedAt": "2026-08-09T09:13:52.341Z"
+      "modifiedAt": "2026-08-09T17:24:37.942Z"
     },
     {
       "path": "locales/af.pak",
       "bytes": 620482,
       "sha256": "dbf68bf3227181d7c047161c6c704ace32d6880bba6ea02bfbd33475f3356e91",
-      "modifiedAt": "2026-08-09T09:13:49.536Z"
+      "modifiedAt": "2026-08-09T17:24:35.531Z"
     },
     {
       "path": "locales/am.pak",
       "bytes": 1006731,
       "sha256": "8d3d5dfc64acfbb0c35036d74561d09ddf3b22058eeed0f8d26a2e9c0703248e",
-      "modifiedAt": "2026-08-09T09:13:49.394Z"
+      "modifiedAt": "2026-08-09T17:24:35.198Z"
     },
     {
       "path": "locales/ar.pak",
       "bytes": 1109621,
       "sha256": "3c253eebf4207c416fac047f1f0bf425a7d9a12fe63714667c69841d2550b89e",
-      "modifiedAt": "2026-08-09T09:13:54.316Z"
+      "modifiedAt": "2026-08-09T17:24:38.510Z"
     },
     {
       "path": "locales/bg.pak",
       "bytes": 1150764,
       "sha256": "2789212aac5f2133ed23c1f84623bc64eb4cfbd93aef7af751d1221e27a21daa",
-      "modifiedAt": "2026-08-09T09:13:52.519Z"
+      "modifiedAt": "2026-08-09T17:24:37.918Z"
     },
     {
       "path": "locales/bn.pak",
       "bytes": 1479936,
       "sha256": "e72b72977b40fb10472fe1a3fcffcda8b434bf52e2bb2da2935faa80da224812",
-      "modifiedAt": "2026-08-09T09:13:54.800Z"
+      "modifiedAt": "2026-08-09T17:24:38.617Z"
     },
     {
       "path": "locales/ca.pak",
       "bytes": 699590,
       "sha256": "bc36a54e977f67a09090d5565f2c5664d5e01dcc4fa01a9b418fe55f32dd9026",
-      "modifiedAt": "2026-08-09T09:13:47.870Z"
+      "modifiedAt": "2026-08-09T17:24:32.284Z"
     },
     {
       "path": "locales/cs.pak",
       "bytes": 726068,
       "sha256": "7c7e7df2664ef1a37609f43306e06c332d2cdd6983b7c519fd70f208626641cc",
-      "modifiedAt": "2026-08-09T09:13:49.012Z"
+      "modifiedAt": "2026-08-09T17:24:34.084Z"
     },
     {
       "path": "locales/da.pak",
       "bytes": 652593,
       "sha256": "c4a4bcb72297be145525309494e56ef0985be3e4e57df435a65ab7fddc78766f",
-      "modifiedAt": "2026-08-09T09:13:47.564Z"
+      "modifiedAt": "2026-08-09T17:24:31.979Z"
     },
     {
       "path": "locales/de.pak",
       "bytes": 700770,
       "sha256": "7fb0ec938ace5ddc1d094c7877facb94ed33758652d0f4262e2fb1fd2bd34c8f",
-      "modifiedAt": "2026-08-09T09:13:47.669Z"
+      "modifiedAt": "2026-08-09T17:24:32.101Z"
     },
     {
       "path": "locales/el.pak",
       "bytes": 1265039,
       "sha256": "3ee2e46a5a569e411ccf9d77ee4f356e1833bfccbaefcc5e71b7c1517206ab5f",
-      "modifiedAt": "2026-08-09T09:13:50.540Z"
+      "modifiedAt": "2026-08-09T17:24:35.854Z"
     },
     {
       "path": "locales/en-GB.pak",
       "bytes": 565496,
       "sha256": "aac3b4904d021d58d053bdea2d8056a219ecda1e341d87cb70070aea2cee418f",
-      "modifiedAt": "2026-08-09T09:13:47.196Z"
+      "modifiedAt": "2026-08-09T17:24:31.629Z"
     },
     {
       "path": "locales/en-US.pak",
       "bytes": 571518,
       "sha256": "bce3ec06227dba2273c4ff12482cba37b709cc8bf5fd29c4380f9a07b92bf821",
-      "modifiedAt": "2026-08-09T09:13:51.480Z"
+      "modifiedAt": "2026-08-09T17:24:36.449Z"
     },
     {
       "path": "locales/es-419.pak",
       "bytes": 690698,
       "sha256": "97322b7e206b017f3c95733be396df40fca9d68363d8aa4d092c5dd8d1056f14",
-      "modifiedAt": "2026-08-09T09:13:48.323Z"
+      "modifiedAt": "2026-08-09T17:24:32.798Z"
     },
     {
       "path": "locales/es.pak",
       "bytes": 686798,
       "sha256": "cdc1127ed91118648d10a2f3ca71bf1c26ba99ab134426de3f1d1058ca2eccf9",
-      "modifiedAt": "2026-08-09T09:13:47.337Z"
+      "modifiedAt": "2026-08-09T17:24:31.747Z"
     },
     {
       "path": "locales/et.pak",
       "bytes": 627098,
       "sha256": "ecc838878412cc9f28dda9efed2fc60b67315f5fdf64e912db33cee7571a5939",
-      "modifiedAt": "2026-08-09T09:13:48.424Z"
+      "modifiedAt": "2026-08-09T17:24:32.825Z"
     },
     {
       "path": "locales/fa.pak",
       "bytes": 1038159,
       "sha256": "43df61ce1b39a00d5d638d1b9df8aaad9b3a970b2bedf18129ff4d34e0688ccb",
-      "modifiedAt": "2026-08-09T09:13:49.010Z"
+      "modifiedAt": "2026-08-09T17:24:33.974Z"
     },
     {
       "path": "locales/fi.pak",
       "bytes": 638637,
       "sha256": "18d904efd7d15a49ef3638c45a40b3aa604e5ec4b68e017ab3f568e6a8202fd4",
-      "modifiedAt": "2026-08-09T09:13:49.470Z"
+      "modifiedAt": "2026-08-09T17:24:35.415Z"
     },
     {
       "path": "locales/fil.pak",
       "bytes": 723751,
       "sha256": "95ddb0e14b0811476d5d636f0797f3ec7cafe77719b5b4e1140d5bf783556061",
-      "modifiedAt": "2026-08-09T09:13:49.009Z"
+      "modifiedAt": "2026-08-09T17:24:33.970Z"
     },
     {
       "path": "locales/fr.pak",
       "bytes": 746462,
       "sha256": "83ff7dcb48d70e5d3d4880eb3aaa3abebbde6b84e8524fde415701a342946cf0",
-      "modifiedAt": "2026-08-09T09:13:47.186Z"
+      "modifiedAt": "2026-08-09T17:24:31.633Z"
     },
     {
       "path": "locales/gu.pak",
       "bytes": 1462607,
       "sha256": "b207f2046791aa8150015ca78f9f76f2f6509953a00c5e89b155bb40e3a26474",
-      "modifiedAt": "2026-08-09T09:13:48.435Z"
+      "modifiedAt": "2026-08-09T17:24:32.872Z"
     },
     {
       "path": "locales/he.pak",
       "bytes": 908719,
       "sha256": "60513280b46bd34c559bd47ea852ac9e9460e43493e5ab767376883eb26232c2",
-      "modifiedAt": "2026-08-09T09:13:49.317Z"
+      "modifiedAt": "2026-08-09T17:24:35.195Z"
     },
     {
       "path": "locales/hi.pak",
       "bytes": 1549614,
       "sha256": "25277d90750849791096845b912b1820bb2d3b1766ed8d751ffc213d1af74b32",
-      "modifiedAt": "2026-08-09T09:13:48.154Z"
+      "modifiedAt": "2026-08-09T17:24:32.551Z"
     },
     {
       "path": "locales/hr.pak",
       "bytes": 698895,
       "sha256": "704dda9c632246402cbbd12b0c71ebc60b0e53f1af8ba54903d33a50bc7e6ee8",
-      "modifiedAt": "2026-08-09T09:13:49.390Z"
+      "modifiedAt": "2026-08-09T17:24:35.415Z"
     },
     {
       "path": "locales/hu.pak",
       "bytes": 747469,
       "sha256": "b83fc60c6d3ce3a04338ea16ba4627d6dfdf81f4373fe4921ac01c7c9558bcb6",
-      "modifiedAt": "2026-08-09T09:13:48.340Z"
+      "modifiedAt": "2026-08-09T17:24:32.824Z"
     },
     {
       "path": "locales/id.pak",
       "bytes": 618244,
       "sha256": "97f882b538710dac7d3af9518eedb30f680447bc465fcbcf505de776c54c7571",
-      "modifiedAt": "2026-08-09T09:13:51.943Z"
+      "modifiedAt": "2026-08-09T17:24:36.449Z"
     },
     {
       "path": "locales/it.pak",
       "bytes": 675911,
       "sha256": "7e6157c84b655e0363336b89518e64ca15350e81101dc9829d2dc8efd9015b3d",
-      "modifiedAt": "2026-08-09T09:13:52.177Z"
+      "modifiedAt": "2026-08-09T17:24:37.866Z"
     },
     {
       "path": "locales/ja.pak",
       "bytes": 824124,
       "sha256": "423b2562b1ed7c5af8fc3ecd495af1d2437e70d27bc6fdde2d5eec6608ae7151",
-      "modifiedAt": "2026-08-09T09:13:47.338Z"
+      "modifiedAt": "2026-08-09T17:24:31.750Z"
     },
     {
       "path": "locales/kn.pak",
       "bytes": 1680794,
       "sha256": "4ceac5506e0e3f045fe4bea3cff571b44df8d637f40814e9e4fd4cad49955d9a",
-      "modifiedAt": "2026-08-09T09:13:47.572Z"
+      "modifiedAt": "2026-08-09T17:24:31.998Z"
     },
     {
       "path": "locales/ko.pak",
       "bytes": 701209,
       "sha256": "471d660f4099f066ab5cb3b262932645cda59f7e47731ec9ca73381ca49398e3",
-      "modifiedAt": "2026-08-09T09:13:47.667Z"
+      "modifiedAt": "2026-08-09T17:24:32.095Z"
     },
     {
       "path": "locales/lt.pak",
       "bytes": 759941,
       "sha256": "0c755ce72d1b71e77d58ab014228458d8ce2b0c51a9b00769635c6609255c9f2",
-      "modifiedAt": "2026-08-09T09:13:48.296Z"
+      "modifiedAt": "2026-08-09T17:24:32.689Z"
     },
     {
       "path": "locales/lv.pak",
       "bytes": 757295,
       "sha256": "911f922f6ab11d04c4913b04088619276994104979b2c5f132182953fabc24a9",
-      "modifiedAt": "2026-08-09T09:13:48.428Z"
+      "modifiedAt": "2026-08-09T17:24:32.857Z"
     },
     {
       "path": "locales/ml.pak",
       "bytes": 1728748,
       "sha256": "9ffdc8b432d8fed00bad72740fe2d1f3836e4a06ff584d460f8773b7f02a072e",
-      "modifiedAt": "2026-08-09T09:13:48.835Z"
+      "modifiedAt": "2026-08-09T17:24:33.012Z"
     },
     {
       "path": "locales/mr.pak",
       "bytes": 1431694,
       "sha256": "1971da05e4868841c9d9f78be5e17ab09178af99b86a6c07df385015a0c9d9ef",
-      "modifiedAt": "2026-08-09T09:13:48.163Z"
+      "modifiedAt": "2026-08-09T17:24:32.601Z"
     },
     {
       "path": "locales/ms.pak",
       "bytes": 651309,
       "sha256": "b60c552a9ced5d0e1f4ed408f65a04068acad7d80db7cf88528fbebbcd337e23",
-      "modifiedAt": "2026-08-09T09:13:52.481Z"
+      "modifiedAt": "2026-08-09T17:24:38.264Z"
     },
     {
       "path": "locales/nb.pak",
       "bytes": 623206,
       "sha256": "cb50908b03c77263297e63ff75d4d3c58fb0cb491c69a8964239e787c762f52d",
-      "modifiedAt": "2026-08-09T09:13:49.221Z"
+      "modifiedAt": "2026-08-09T17:24:34.897Z"
     },
     {
       "path": "locales/nl.pak",
       "bytes": 649224,
       "sha256": "756cb19043f21eefa77f64d274d950412ef7b0a7d3012da7f12f6821c6eb4c67",
-      "modifiedAt": "2026-08-09T09:13:51.105Z"
+      "modifiedAt": "2026-08-09T17:24:36.148Z"
     },
     {
       "path": "locales/pl.pak",
       "bytes": 725422,
       "sha256": "dee5b710ca72425cd4d1236ce260f8d68b41bfdfceaeb2f98c8e89217b24208f",
-      "modifiedAt": "2026-08-09T09:13:50.507Z"
+      "modifiedAt": "2026-08-09T17:24:35.877Z"
     },
     {
       "path": "locales/pt-BR.pak",
       "bytes": 680477,
       "sha256": "38fee1950ec36b95160aee6a30e76653196afefad085274a77d47746a5255db1",
-      "modifiedAt": "2026-08-09T09:13:52.892Z"
+      "modifiedAt": "2026-08-09T17:24:38.339Z"
     },
     {
       "path": "locales/pt-PT.pak",
       "bytes": 684179,
       "sha256": "8ef7b3105657e21db66cc07a41cb06addb859c788e0f038797c5d08cbef29eb8",
-      "modifiedAt": "2026-08-09T09:13:47.184Z"
+      "modifiedAt": "2026-08-09T17:24:31.633Z"
     },
     {
       "path": "locales/ro.pak",
       "bytes": 710046,
       "sha256": "16b11fb73ea0c5d0336de453d3e2abd2de69b3e6c66dcd72bae318666525bb18",
-      "modifiedAt": "2026-08-09T09:13:47.350Z"
+      "modifiedAt": "2026-08-09T17:24:31.747Z"
     },
     {
       "path": "locales/ru.pak",
       "bytes": 1177875,
       "sha256": "03bd75e603d68c3a29a55f5887bc6d0b921f4365e266f25d579de8810953e823",
-      "modifiedAt": "2026-08-09T09:13:48.834Z"
+      "modifiedAt": "2026-08-09T17:24:33.009Z"
     },
     {
       "path": "locales/sk.pak",
       "bytes": 738142,
       "sha256": "c033373575cc83d84dff00116d504f7a66bdf7ae019c9d5c7c6907b2c808b662",
-      "modifiedAt": "2026-08-09T09:13:49.120Z"
+      "modifiedAt": "2026-08-09T17:24:34.272Z"
     },
     {
       "path": "locales/sl.pak",
       "bytes": 706741,
       "sha256": "69fec14840de7543eccf21c8a77b7c6dfaa0d807b013d61a3fd408a22d20869f",
-      "modifiedAt": "2026-08-09T09:13:47.493Z"
+      "modifiedAt": "2026-08-09T17:24:31.918Z"
     },
     {
       "path": "locales/sr.pak",
       "bytes": 1088559,
       "sha256": "ad0053df35e012ceebdee5db5d39526107cee2d5bce8696d129e782ceba41b66",
-      "modifiedAt": "2026-08-09T09:13:53.444Z"
+      "modifiedAt": "2026-08-09T17:24:38.490Z"
     },
     {
       "path": "locales/sv.pak",
       "bytes": 630691,
       "sha256": "db66a75f740289e14a9e9c93085818cef7f3e006c4b9b66ea0e1d1fb1b353755",
-      "modifiedAt": "2026-08-09T09:13:49.112Z"
+      "modifiedAt": "2026-08-09T17:24:34.083Z"
     },
     {
       "path": "locales/sw.pak",
       "bytes": 667148,
       "sha256": "114da3f568ab205c196cfe44908107929026fee9b28457f53f589f5397685793",
-      "modifiedAt": "2026-08-09T09:13:48.827Z"
+      "modifiedAt": "2026-08-09T17:24:33.003Z"
     },
     {
       "path": "locales/ta.pak",
       "bytes": 1720238,
       "sha256": "2c5f8aaf21c9a035f71d763cfa9a20886892fcde7cf71878168a9df0faa6d417",
-      "modifiedAt": "2026-08-09T09:13:47.353Z"
+      "modifiedAt": "2026-08-09T17:24:31.752Z"
     },
     {
       "path": "locales/te.pak",
       "bytes": 1591909,
       "sha256": "30de9d8e6eaa7c418b15065d6e4b1e5066f81d2b10ba09305270a463a55e6105",
-      "modifiedAt": "2026-08-09T09:13:48.156Z"
+      "modifiedAt": "2026-08-09T17:24:32.568Z"
     },
     {
       "path": "locales/th.pak",
       "bytes": 1337523,
       "sha256": "0684a30ec9e0fe9baeeb215840b6c6b4f04e11c9afbcf9d18687af9a685e0927",
-      "modifiedAt": "2026-08-09T09:13:48.322Z"
+      "modifiedAt": "2026-08-09T17:24:32.715Z"
     },
     {
       "path": "locales/tr.pak",
       "bytes": 679647,
       "sha256": "e427e99465f1fb5e6628868f550d845db79379ed4cd58994d2e5ea3b1881ee6b",
-      "modifiedAt": "2026-08-09T09:13:49.224Z"
+      "modifiedAt": "2026-08-09T17:24:34.897Z"
     },
     {
       "path": "locales/uk.pak",
       "bytes": 1185632,
       "sha256": "1fafb514e4380b430b19b9031b30249e93aaecd71109b125e5b6d99c2be60b43",
-      "modifiedAt": "2026-08-09T09:13:49.120Z"
+      "modifiedAt": "2026-08-09T17:24:34.274Z"
     },
     {
       "path": "locales/ur.pak",
       "bytes": 1021689,
       "sha256": "0c1cfa61d9a9be6338b0a160b43ff362a982003053ae5be3b3ec867e78374d7b",
-      "modifiedAt": "2026-08-09T09:13:52.182Z"
+      "modifiedAt": "2026-08-09T17:24:36.856Z"
     },
     {
       "path": "locales/vi.pak",
       "bytes": 808100,
       "sha256": "bb7d0d58e3807d102b25cfbf3aa951bbe529f956e06a2f943e205f610d1a891a",
-      "modifiedAt": "2026-08-09T09:13:48.139Z"
+      "modifiedAt": "2026-08-09T17:24:32.547Z"
     },
     {
       "path": "locales/zh-CN.pak",
       "bytes": 577808,
       "sha256": "157222d970a2cf1d51a63860bffb6d71f0a6161472a6f3eca3b08fe681ef075c",
-      "modifiedAt": "2026-08-09T09:13:49.221Z"
+      "modifiedAt": "2026-08-09T17:24:34.334Z"
     },
     {
       "path": "locales/zh-TW.pak",
       "bytes": 570087,
       "sha256": "37d183b679fe4a5a0a204ac3b8e5f3e0110e99a784ed0e20ea2eced574142b8f",
-      "modifiedAt": "2026-08-09T09:13:47.197Z"
+      "modifiedAt": "2026-08-09T17:24:31.633Z"
     },
     {
       "path": "Nova Swarm.exe",
       "bytes": 226698752,
-      "sha256": "aa2e36faf03ffa7bd3d033209cfc90d2821007aeaaad13c4e89e538724942353",
-      "modifiedAt": "2026-08-09T09:16:24.235Z"
+      "sha256": "91fa383bf7f36bc517c122bd3054ec16cd8405bdcbddc79ff1bc4a62019609c0",
+      "modifiedAt": "2026-08-09T17:30:48.937Z"
     },
     {
       "path": "resources.pak",
       "bytes": 6873130,
       "sha256": "74c4be8feca65976312f9ddd6ed8f06b669f6a551c91c9b67f9dc76d84e7e97b",
-      "modifiedAt": "2026-08-09T09:13:51.603Z"
+      "modifiedAt": "2026-08-09T17:24:36.288Z"
     },
     {
       "path": "resources/app.asar",
-      "bytes": 776261047,
-      "sha256": "dff21591ffac43887b2efe9729ff71d1c42f590bcbd3ebc9f09aabb92a98c732",
-      "modifiedAt": "2026-08-09T09:16:10.302Z"
+      "bytes": 776295264,
+      "sha256": "a8db8f0a7051bb5321e029ee81bf626d91eb62e78c5de5926c5cba2d69e3b245",
+      "modifiedAt": "2026-08-09T17:30:20.807Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/darwin_arm64/koffi.node",
       "bytes": 1244231,
       "sha256": "6c88b2173bdf403046265f859201c13504eba2b258b23da61fff23f7659797b0",
-      "modifiedAt": "2026-08-09T08:33:59.175Z"
+      "modifiedAt": "2026-07-20T22:53:43.421Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/darwin_x64/koffi.node",
       "bytes": 1601744,
       "sha256": "f7ba306880ab40286c4443577fa95c47615111ce0a958442e4eb0a5e83928b67",
-      "modifiedAt": "2026-08-09T08:33:59.900Z"
+      "modifiedAt": "2026-07-20T22:53:51.929Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/freebsd_arm64/koffi.node",
       "bytes": 1543480,
       "sha256": "4c730af0d6c84f2b88e22b80fb106b7af416deebe9a1c8e8336d6e4b1fce819f",
-      "modifiedAt": "2026-08-09T08:34:00.273Z"
+      "modifiedAt": "2026-07-20T22:53:59.059Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/freebsd_ia32/koffi.node",
       "bytes": 1429796,
       "sha256": "7acaf95d9da7dd4e2c5823be5321dd6cda109c07c1079306c3216d1aa6688f8f",
-      "modifiedAt": "2026-08-09T08:34:00.787Z"
+      "modifiedAt": "2026-07-20T22:54:05.543Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/freebsd_x64/koffi.node",
       "bytes": 1604792,
       "sha256": "ef05047b3ec7fb73e74c96113f67bf878ad74a9e4eaef20ec3f83317460a2bbb",
-      "modifiedAt": "2026-08-09T08:34:01.074Z"
+      "modifiedAt": "2026-07-20T22:54:12.855Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_arm64/koffi.node",
       "bytes": 1573560,
       "sha256": "da394ea5d8f28cf8e90c6b1bbc3f35485adb24f36dc36265806967213c235a50",
-      "modifiedAt": "2026-08-09T08:34:02.357Z"
+      "modifiedAt": "2026-07-20T22:54:19.100Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_armhf/koffi.node",
       "bytes": 1285808,
       "sha256": "5ece8a66d2ec7eed61da4d294c834b40c7631868a0e1b9ce45649e9c4df81ce3",
-      "modifiedAt": "2026-08-09T08:34:03.059Z"
+      "modifiedAt": "2026-07-20T22:54:24.252Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_ia32/koffi.node",
       "bytes": 1526736,
       "sha256": "f5d7732a3a9d890ce184855399907c85fd86f0ea8a2ed2fb846534059de1181f",
-      "modifiedAt": "2026-08-09T08:34:03.662Z"
+      "modifiedAt": "2026-07-20T22:54:28.792Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_loong64/koffi.node",
       "bytes": 1422248,
       "sha256": "31a7add40a525c65be33ee30a771f447b0b1d60ba83b3e502439ccf69a08b3df",
-      "modifiedAt": "2026-08-09T08:34:03.862Z"
+      "modifiedAt": "2026-07-20T22:54:31.863Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_riscv64d/koffi.node",
       "bytes": 1281048,
       "sha256": "26c7a6fd6962fef8ca5fdcd5a6956e9758a2d652822bd3ef4c9c04e4725c06d0",
-      "modifiedAt": "2026-08-09T08:34:04.383Z"
+      "modifiedAt": "2026-07-20T22:54:33.851Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/linux_x64/koffi.node",
       "bytes": 1622800,
       "sha256": "ecc61aa265a56b99182c648e56a91e4c60bf3c7e542efaca93dfdb0452e03330",
-      "modifiedAt": "2026-08-09T08:34:05.568Z"
+      "modifiedAt": "2026-07-20T22:54:34.936Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/musl_arm64/koffi.node",
       "bytes": 1665048,
       "sha256": "6cbff8fcc93c19874ffe68668ab806b933f1f1f98f2a18d399964c7bd81c939a",
-      "modifiedAt": "2026-08-09T08:34:06.079Z"
+      "modifiedAt": "2026-07-20T22:54:36.318Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/musl_x64/koffi.node",
       "bytes": 1535736,
       "sha256": "53ff9cc831cd1539dc3131e616603df42d6f17ff3a836a5e2d72adc0c99a6606",
-      "modifiedAt": "2026-08-09T08:34:06.203Z"
+      "modifiedAt": "2026-07-20T22:54:38.159Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/openbsd_ia32/koffi.node",
       "bytes": 1459544,
       "sha256": "bc3b558da1ab1180dc3279b1349aac9ac569e92a8de30e28ca78199560aca8b0",
-      "modifiedAt": "2026-08-09T08:34:06.631Z"
+      "modifiedAt": "2026-07-20T22:54:39.625Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/openbsd_x64/koffi.node",
       "bytes": 1622608,
       "sha256": "be1f117f36f420608e34be5db430f9066e9f73407c339db31960aeb102e9e7a6",
-      "modifiedAt": "2026-08-09T08:34:07.247Z"
+      "modifiedAt": "2026-07-20T22:54:40.895Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_arm64/koffi.exp",
       "bytes": 1045,
       "sha256": "31e13e095cbf175ee9ae5276324397b014146a04f690f872b1f0f34a5e31beaf",
-      "modifiedAt": "2026-08-09T08:33:51.727Z"
+      "modifiedAt": "2026-07-20T22:52:07.661Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_arm64/koffi.lib",
       "bytes": 2054,
       "sha256": "95e9fcc922bda6a01dd9a163827c1be07fba2ab00bb6818674b349ccbe1ec3fc",
-      "modifiedAt": "2026-08-09T08:33:57.258Z"
+      "modifiedAt": "2026-07-20T22:53:23.794Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_arm64/koffi.node",
       "bytes": 1410560,
       "sha256": "5a04ca448b37cfcf9a9327be8fae7624053b3d2a46c5dcca4ed3689df33400dd",
-      "modifiedAt": "2026-08-09T08:34:07.361Z"
+      "modifiedAt": "2026-07-20T22:54:41.444Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_ia32/koffi.exp",
       "bytes": 1033,
       "sha256": "061cac6635fb6424ccda30c5e1f0d92cfb7b20ceecbfaf110a35d8214737079a",
-      "modifiedAt": "2026-08-09T08:33:52.071Z"
+      "modifiedAt": "2026-07-20T22:52:10.440Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_ia32/koffi.lib",
       "bytes": 2056,
       "sha256": "2c599c527797d56c69ee161aeac041b98fd850fc6ef6b8bd2b52148897619f99",
-      "modifiedAt": "2026-08-09T08:33:57.347Z"
+      "modifiedAt": "2026-07-20T22:53:24.333Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_ia32/koffi.node",
       "bytes": 1026048,
       "sha256": "af700e05e2578e3062917248fd5cb3a2cfdb209e2aeedf157b072534d0e884c7",
-      "modifiedAt": "2026-08-09T08:34:07.468Z"
+      "modifiedAt": "2026-07-20T22:54:42.264Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_x64/koffi.exp",
       "bytes": 1025,
       "sha256": "ba68b3d4f5ded3101fb3248061e0c229a4d6dfb96e8487354ba877cb16908af2",
-      "modifiedAt": "2026-08-09T08:33:52.163Z"
+      "modifiedAt": "2026-07-20T22:52:13.324Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_x64/koffi.lib",
       "bytes": 2054,
       "sha256": "5d9d9c318d33edab02db8858d5345141aa2f7863dd7f3e0949217be07847c1a7",
-      "modifiedAt": "2026-08-09T08:33:57.375Z"
+      "modifiedAt": "2026-07-20T22:53:25.108Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/build/koffi/win32_x64/koffi.node",
       "bytes": 1603584,
       "sha256": "cd9fb878c2e73711e37cf82e60526509a3df361148396dcb3a95b053b582880c",
-      "modifiedAt": "2026-08-09T08:34:07.565Z"
+      "modifiedAt": "2026-07-20T22:54:43.774Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/CHANGELOG.md",
       "bytes": 27814,
       "sha256": "edc38dd746db06b029506cb2e0b11560ea6edca1e944f5ef83055451ce24cb59",
-      "modifiedAt": "2026-08-09T08:33:57.429Z"
+      "modifiedAt": "2026-07-20T22:53:27.108Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/benchmarks.md",
       "bytes": 5943,
       "sha256": "d10260739b956bd469b2aedd570c92ce9b8db915626510bc3b5fbc302240f581",
-      "modifiedAt": "2026-08-09T08:33:57.391Z"
+      "modifiedAt": "2026-07-20T22:53:25.728Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/callbacks.md",
       "bytes": 9108,
       "sha256": "29c28636411bede482b63fab512caaa9a813cd42261a5271d71a7ab4f762ace8",
-      "modifiedAt": "2026-08-09T08:33:57.408Z"
+      "modifiedAt": "2026-07-20T22:53:26.318Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/contribute.md",
       "bytes": 5206,
       "sha256": "542335d52d68bc6f4f7b11499d16e238d888e72ecb0e1abe4d8db028adfe5e99",
-      "modifiedAt": "2026-08-09T08:33:57.445Z"
+      "modifiedAt": "2026-07-20T22:53:27.721Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/functions.md",
       "bytes": 9686,
       "sha256": "59442e4bdb502bf22e1207afa75e38983b837d7b68f890387f9e30bb53976ba9",
-      "modifiedAt": "2026-08-09T08:33:57.470Z"
+      "modifiedAt": "2026-07-20T22:53:28.318Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/index.md",
       "bytes": 3601,
       "sha256": "8c6ff4962fd18478d07a474d3fc9e7d9a8c9ec2180e6b78adf434463f4dadcff",
-      "modifiedAt": "2026-08-09T08:33:57.487Z"
+      "modifiedAt": "2026-07-20T22:53:28.678Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/input.md",
       "bytes": 17377,
       "sha256": "be0569a396cb33e70d7f95edfe7a0957669566694c75cf87212c0881e3bf4adf",
-      "modifiedAt": "2026-08-09T08:33:57.512Z"
+      "modifiedAt": "2026-07-20T22:53:29.126Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/migration.md",
       "bytes": 4978,
       "sha256": "3c5ef411cc137e194e3bff13243f7d7c7c71da12e09ce4e103f79ba79906ca90",
-      "modifiedAt": "2026-08-09T08:33:57.554Z"
+      "modifiedAt": "2026-07-20T22:53:30.080Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/misc.md",
       "bytes": 6781,
       "sha256": "09602031dd666662c6024f35dcc5c4a4e74c31b8a18d4aa7e9999c1937d71640",
-      "modifiedAt": "2026-08-09T08:33:57.723Z"
+      "modifiedAt": "2026-07-20T22:53:30.628Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/output.md",
       "bytes": 9451,
       "sha256": "b92367ccfdca8da935cfb2351240f5599896df152347d0b835e2f348b1175e4d",
-      "modifiedAt": "2026-08-09T08:33:57.741Z"
+      "modifiedAt": "2026-07-20T22:53:31.289Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/packaging.md",
       "bytes": 2865,
       "sha256": "e1bfe8b62b143f5e4ed2ceee11150f9ef802bdf01bd9d84caef419e79efadfe4",
-      "modifiedAt": "2026-08-09T08:33:57.808Z"
+      "modifiedAt": "2026-07-20T22:53:31.758Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/platforms.md",
       "bytes": 2269,
       "sha256": "02bdc435d62a619fa0b32462b7ed37399471d152c9c9f255ff5b1dcb3d64f923",
-      "modifiedAt": "2026-08-09T08:33:57.830Z"
+      "modifiedAt": "2026-07-20T22:53:32.298Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/pointers.md",
       "bytes": 12984,
       "sha256": "0952c0bb41f4fdc9f47524d5ec04a094c10939f5b2c7ebf6c775ee519731db82",
-      "modifiedAt": "2026-08-09T08:33:57.858Z"
+      "modifiedAt": "2026-07-20T22:53:33.162Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/start.md",
       "bytes": 3310,
       "sha256": "2624333facf7f80b21c6d422ecc9289dc069577e5f946f468eeecb4fde62205f",
-      "modifiedAt": "2026-08-09T08:33:58.277Z"
+      "modifiedAt": "2026-07-20T22:53:35.873Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/unions.md",
       "bytes": 5120,
       "sha256": "2adf36a1ce803786036fa7ee9cfd4ceca2f62cd6e0560554ce49315cbc67674d",
-      "modifiedAt": "2026-08-09T08:33:58.291Z"
+      "modifiedAt": "2026-07-20T22:53:36.383Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/doc/variables.md",
       "bytes": 3769,
       "sha256": "4248d1c6494ae8d3fa3531178487edd0964ed1c4eaae35da4fc42cd83712f83a",
-      "modifiedAt": "2026-08-09T08:33:58.314Z"
+      "modifiedAt": "2026-07-20T22:53:36.860Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/index.d.ts",
       "bytes": 10524,
       "sha256": "1318dd95fa67a83c0f6fbbdca6e88bb12c66efb771b5b79fc732a12edfa4f759",
-      "modifiedAt": "2026-08-09T08:34:07.893Z"
+      "modifiedAt": "2026-07-20T22:54:46.828Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/index.js",
       "bytes": 20869,
       "sha256": "39e05b73cec3a65d5841906b97cb8c95055e6fb300271de0c0b5a7f918f2ca80",
-      "modifiedAt": "2026-08-09T08:33:56.544Z"
+      "modifiedAt": "2026-07-20T22:53:16.658Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/indirect.js",
       "bytes": 18571,
       "sha256": "375321335528e603091398dea286361aa8ca045ce7f76bf99dce7c92b768cbfa",
-      "modifiedAt": "2026-08-09T08:33:56.854Z"
+      "modifiedAt": "2026-07-20T22:53:18.228Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/base.cc",
       "bytes": 315139,
       "sha256": "295b51043eb254861dca88dc6391633a9746850328300604de6d533b75f78c05",
-      "modifiedAt": "2026-08-09T08:33:48.628Z"
+      "modifiedAt": "2026-07-20T22:50:57.384Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/base.hh",
       "bytes": 175616,
       "sha256": "bab8771c26713bad29ec2fe507ff5f16f84c3948dc08fc318a623cef04ec9a26",
-      "modifiedAt": "2026-08-09T08:33:55.174Z"
+      "modifiedAt": "2026-07-20T22:53:00.313Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/crc_gen.py",
       "bytes": 2205,
       "sha256": "605109bcb12c06748b022bb1a7948fe5e4c6376bc87b21d232fca9b1d9a241ec",
-      "modifiedAt": "2026-08-09T08:34:07.624Z"
+      "modifiedAt": "2026-07-20T22:54:44.478Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/crc.inc",
       "bytes": 205462,
       "sha256": "aeeea0b506cf505b884b7d8071a0a90ce353e0ce5c7a0454ca129a31c85a29d0",
-      "modifiedAt": "2026-08-09T08:33:56.078Z"
+      "modifiedAt": "2026-07-20T22:53:10.828Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/mimetypes_gen.py",
       "bytes": 1894,
       "sha256": "18e93987189889bed91f06b27ea80e16241ddb59f32409dae160cc54356f6236",
-      "modifiedAt": "2026-08-09T08:34:07.636Z"
+      "modifiedAt": "2026-07-20T22:54:44.693Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/mimetypes.inc",
       "bytes": 55130,
       "sha256": "f3a0c670fcb8f8ff9ea29ff1de9d646a1787187f0500118f7d084a80ab0cbc04",
-      "modifiedAt": "2026-08-09T08:33:56.220Z"
+      "modifiedAt": "2026-07-20T22:53:13.500Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/tower.cc",
       "bytes": 20244,
       "sha256": "d4dc7781af21c478a8a567bbe5fdf8696706a52d8f3f83823db6135af31c523b",
-      "modifiedAt": "2026-08-09T08:33:49.748Z"
+      "modifiedAt": "2026-07-20T22:51:12.090Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/tower.hh",
       "bytes": 2112,
       "sha256": "49c73bfc47750187b556220489a0be158c178545f216ded075853ae1575f882b",
-      "modifiedAt": "2026-08-09T08:33:55.317Z"
+      "modifiedAt": "2026-07-20T22:53:05.229Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/unicode_gen.py",
       "bytes": 4669,
       "sha256": "402e17c0b48c4d79da1234e10e57d7174b9103c376dd43ad9a1e044a9fb39944",
-      "modifiedAt": "2026-08-09T08:34:07.649Z"
+      "modifiedAt": "2026-07-20T22:54:44.828Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/lib/native/base/unicode.inc",
       "bytes": 36653,
       "sha256": "5678c732bf1026059b0363c8e1ead8669e09c57b973321b1931aeb64dc0fa56e",
-      "modifiedAt": "2026-08-09T08:33:56.264Z"
+      "modifiedAt": "2026-07-20T22:53:14.409Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/LICENSE.txt",
       "bytes": 1117,
       "sha256": "48bfd53f76185bd32bb91393a7e27ab553b77b4b965245ba73f4714c11030a4a",
-      "modifiedAt": "2026-08-09T08:34:07.910Z"
+      "modifiedAt": "2026-07-20T22:54:47.175Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/package.json",
       "bytes": 981,
       "sha256": "64422f2ef44d2b10c009d83ee008226cdbb80e824ddadd02dbbaff4684483000",
-      "modifiedAt": "2026-08-09T08:33:57.056Z"
+      "modifiedAt": "2026-07-20T22:53:21.118Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/README.md",
       "bytes": 2646,
       "sha256": "026dee03f961268fe0a62c1074392abe640011c2540f0b7e32288ba6df96fa1a",
-      "modifiedAt": "2026-08-09T08:33:57.873Z"
+      "modifiedAt": "2026-07-20T22:53:33.420Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/assets/FindCNoke.cmake",
       "bytes": 5312,
       "sha256": "e81954cb439202214648894dcf59a838ff31a2d903e7ae26fa3346a21cd9de8a",
-      "modifiedAt": "2026-08-09T08:33:51.071Z"
+      "modifiedAt": "2026-07-20T22:51:24.782Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/assets/toolchains.json",
       "bytes": 6186,
       "sha256": "c09f4ccd3eee4da5f834af376376359cb8025f23fedd635a82860dc3594d88cf",
-      "modifiedAt": "2026-08-09T08:33:57.171Z"
+      "modifiedAt": "2026-07-20T22:53:22.988Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/assets/win_delay_hook.c",
       "bytes": 879,
       "sha256": "569e120d81b67fd9d19a40db4ae9d2f7b9c60549ef734c95a16183c5c2427e64",
-      "modifiedAt": "2026-08-09T08:33:44.971Z"
+      "modifiedAt": "2026-07-20T22:50:23.200Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/cnoke.js",
       "bytes": 6784,
       "sha256": "dfa8d4d5a1e7e4cdd51ac2b656b93e816718d5912dcaa28002bf3d6cb3068b46",
-      "modifiedAt": "2026-08-09T08:33:56.521Z"
+      "modifiedAt": "2026-07-20T22:53:16.178Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/LICENSE.txt",
       "bytes": 1117,
       "sha256": "48bfd53f76185bd32bb91393a7e27ab553b77b4b965245ba73f4714c11030a4a",
-      "modifiedAt": "2026-08-09T08:34:07.922Z"
+      "modifiedAt": "2026-07-20T22:54:47.472Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/package.json",
       "bytes": 506,
       "sha256": "ef318fafc1fb2ef741eae6b231ee598c7471155c75b4ec67fedc27f9f577e15c",
-      "modifiedAt": "2026-08-09T08:33:57.079Z"
+      "modifiedAt": "2026-07-20T22:53:21.978Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/README.md",
       "bytes": 3376,
       "sha256": "5fd2f3bb3c9bbb2f603e757b2a366ad8ce1eba23bd5683a12e5170c9d31a4ae5",
-      "modifiedAt": "2026-08-09T08:33:57.898Z"
+      "modifiedAt": "2026-07-20T22:53:33.949Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/src/builder.js",
       "bytes": 17846,
       "sha256": "53a48af14d00256f3f60d6265d8bc637fe1fe50e0cbebb3ecc610bd9cc46b199",
-      "modifiedAt": "2026-08-09T08:33:56.302Z"
+      "modifiedAt": "2026-07-20T22:53:15.358Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/src/index.js",
       "bytes": 247,
       "sha256": "01cdd6266047bdf69d79c0ea48fdcd830471282eddc0b9c8259558baaff62cd7",
-      "modifiedAt": "2026-08-09T08:33:56.829Z"
+      "modifiedAt": "2026-07-20T22:53:17.519Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/cnoke/src/tools.js",
       "bytes": 13074,
       "sha256": "7b12a3ddc0a7706b7e5cc6155537e9abf3c75c124e5ca38ab58c8dc0b8eea58a",
-      "modifiedAt": "2026-08-09T08:33:56.983Z"
+      "modifiedAt": "2026-07-20T22:53:20.155Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/CMakeLists.txt",
       "bytes": 7478,
       "sha256": "a1582f5f227945f80b1841e9af205991e3dfbfccc76490e624eb2f3555f8fa67",
-      "modifiedAt": "2026-08-09T08:34:07.904Z"
+      "modifiedAt": "2026-07-20T22:54:47.077Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_arm32_asm.S",
       "bytes": 3927,
       "sha256": "fdf21db17e6e0e9de810e446190eb21873c0115cec5aa91cf17adfcb9f751e56",
-      "modifiedAt": "2026-08-09T08:34:07.658Z"
+      "modifiedAt": "2026-07-20T22:54:44.911Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_arm32.cc",
       "bytes": 39493,
       "sha256": "81104f5c51da7a8184352f7d4e58e27b2e29c26cc3981a4c4487f2042aa439e0",
-      "modifiedAt": "2026-08-09T08:33:45.637Z"
+      "modifiedAt": "2026-07-20T22:50:23.595Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_arm64_asm.asm",
       "bytes": 3917,
       "sha256": "2ec2d897e5246f15383e6a701007a4ce9841cf1ef1d31b892926e6bac2320fb6",
-      "modifiedAt": "2026-08-09T08:33:42.653Z"
+      "modifiedAt": "2026-07-20T22:50:19.813Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_arm64_asm.S",
       "bytes": 4732,
       "sha256": "57692d1cad793c54c17075e8086233777c90dd8d8b2eeba1275c117670952f3b",
-      "modifiedAt": "2026-08-09T08:34:07.670Z"
+      "modifiedAt": "2026-07-20T22:54:44.993Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_arm64.cc",
       "bytes": 46745,
       "sha256": "1f6cc6557999fa2eba256bec373556d10ed0b80141a0d43565c7ea0f48ced69c",
-      "modifiedAt": "2026-08-09T08:33:46.085Z"
+      "modifiedAt": "2026-07-20T22:50:23.942Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_loong64_asm.S",
       "bytes": 4577,
       "sha256": "b495099f97aef59b22ce11f520a08cc622469546455745717c44b780428192f5",
-      "modifiedAt": "2026-08-09T08:34:07.685Z"
+      "modifiedAt": "2026-07-20T22:54:45.083Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_loong64.cc",
       "bytes": 273,
       "sha256": "e32676251f3d35ab701d2cb506577ac90a649b454a6b487ab930a113ae81dfbc",
-      "modifiedAt": "2026-08-09T08:33:46.736Z"
+      "modifiedAt": "2026-07-20T22:50:24.936Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_riscv64_asm.S",
       "bytes": 4274,
       "sha256": "45de40bd082fc1d0762df89188e4fdc4d6ab8c9a2a7bca193a3e095aab81f875",
-      "modifiedAt": "2026-08-09T08:34:07.696Z"
+      "modifiedAt": "2026-07-20T22:54:45.203Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_riscv64.cc",
       "bytes": 35669,
       "sha256": "67cd10e35ff3cc85153d425401daaa347d29ec7c286de3d8be01b24d4ac33458",
-      "modifiedAt": "2026-08-09T08:33:46.952Z"
+      "modifiedAt": "2026-07-20T22:50:27.585Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x64_sysv_asm.S",
       "bytes": 5335,
       "sha256": "55830267a9687ef43321f268bec922db28f38737b2b7901a9ded131933b32a5d",
-      "modifiedAt": "2026-08-09T08:34:07.713Z"
+      "modifiedAt": "2026-07-20T22:54:45.803Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x64_sysv.cc",
       "bytes": 36052,
       "sha256": "94cd08ddd0ebd8d1ea88c13aa9bb2dbe6947bc04ad28c1190d2ab62aebcf4a64",
-      "modifiedAt": "2026-08-09T08:33:47.275Z"
+      "modifiedAt": "2026-07-20T22:50:34.741Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x64_win_asm.asm",
       "bytes": 4887,
       "sha256": "6d638107d051c2d0d2c0d2feb67efe10a252c71bed119c71280aecb22f5cb30c",
-      "modifiedAt": "2026-08-09T08:33:43.854Z"
+      "modifiedAt": "2026-07-20T22:50:20.653Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x64_win_asm.S",
       "bytes": 4041,
       "sha256": "66d5f472d61ede2e914132036473de756df548b0fd244cb487a722cd78890da7",
-      "modifiedAt": "2026-08-09T08:34:07.723Z"
+      "modifiedAt": "2026-07-20T22:54:46.241Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x64_win.cc",
       "bytes": 28369,
       "sha256": "2806c245de3745823c22bc19cf3a257e13699085117303cdcfd00d5ff09b79c6",
-      "modifiedAt": "2026-08-09T08:33:47.476Z"
+      "modifiedAt": "2026-07-20T22:50:40.061Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x86_asm.asm",
       "bytes": 4034,
       "sha256": "fa8df97b24096427fa8717296e78a100c52606f6f14aa8e8178a77ef6fefee73",
-      "modifiedAt": "2026-08-09T08:33:44.544Z"
+      "modifiedAt": "2026-07-20T22:50:21.567Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x86_asm.S",
       "bytes": 4281,
       "sha256": "1d0105e991176b807d39f4ab2b18295a7778c9963060645517873accba09b5a7",
-      "modifiedAt": "2026-08-09T08:34:07.885Z"
+      "modifiedAt": "2026-07-20T22:54:46.445Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/abi_x86.cc",
       "bytes": 33250,
       "sha256": "c4c3cba0b1ac7a3aa706dd937d65fba893ae432d4a27b56fb3e4ad6a9a8abe0e",
-      "modifiedAt": "2026-08-09T08:33:48.164Z"
+      "modifiedAt": "2026-07-20T22:50:46.063Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/call.cc",
       "bytes": 45529,
       "sha256": "b179edf006c62c7cce75bb6c569e95c3d7ad94bff62572c73dda084a05c83090",
-      "modifiedAt": "2026-08-09T08:33:48.785Z"
+      "modifiedAt": "2026-07-20T22:51:01.134Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/call.hh",
       "bytes": 4988,
       "sha256": "343688cf8ab6cf96df2e6090b664f4827d12c79a2f8e2287ef26d00278597661",
-      "modifiedAt": "2026-08-09T08:33:55.216Z"
+      "modifiedAt": "2026-07-20T22:53:01.458Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/errno.inc",
       "bytes": 8776,
       "sha256": "e33097d18eb694c136bdb0d0dd912dfd1ea62e9cc66f3f3a7efdd4da8b3e8eca",
-      "modifiedAt": "2026-08-09T08:33:56.153Z"
+      "modifiedAt": "2026-07-20T22:53:12.128Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/ffi.cc",
       "bytes": 90699,
       "sha256": "470bfa7d0ed836efbd421d00240ee598d0567c08cc96e11daf7a7de1adb67d15",
-      "modifiedAt": "2026-08-09T08:33:49.500Z"
+      "modifiedAt": "2026-07-20T22:51:05.587Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/ffi.hh",
       "bytes": 8331,
       "sha256": "59d1835bb717ac15092c0868bbbe79c04bf6d7600105364ea349ba3dcb35036d",
-      "modifiedAt": "2026-08-09T08:33:55.252Z"
+      "modifiedAt": "2026-07-20T22:53:03.088Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/init.js",
       "bytes": 4008,
       "sha256": "76c95aba02c0e8b2df4a0580af41c65f5a2fab8dbbc86cc02e6eb177268d0d9b",
-      "modifiedAt": "2026-08-09T08:33:56.941Z"
+      "modifiedAt": "2026-07-20T22:53:19.131Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/parser.cc",
       "bytes": 6442,
       "sha256": "108bd94cac7791ce6c4124177e7a2ce701ef8268dc43e447d7819ee3b9794869",
-      "modifiedAt": "2026-08-09T08:33:49.619Z"
+      "modifiedAt": "2026-07-20T22:51:08.860Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/parser.hh",
       "bytes": 1252,
       "sha256": "b9234ebdac4bf20dff9197627d97a21c112d94283698b042dcccd9b808872291",
-      "modifiedAt": "2026-08-09T08:33:55.283Z"
+      "modifiedAt": "2026-07-20T22:53:04.002Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/util.cc",
       "bytes": 63691,
       "sha256": "ad305de1057ebb7affcdcdebf8dc84503c8536a174d4d5c49045bd2fa1d7b73d",
-      "modifiedAt": "2026-08-09T08:33:50.246Z"
+      "modifiedAt": "2026-07-20T22:51:16.293Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/util.hh",
       "bytes": 6904,
       "sha256": "bc9776889202e16a30623f1b165079fa3c86efce178442e4a04d6c395f2f594a",
-      "modifiedAt": "2026-08-09T08:33:55.350Z"
+      "modifiedAt": "2026-07-20T22:53:06.094Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/uv.cc",
       "bytes": 5621,
       "sha256": "40b2828cd96c2cffdd732cb37c19078d59a8311aafe4e9d6ce41210b583e5c71",
-      "modifiedAt": "2026-08-09T08:33:50.376Z"
+      "modifiedAt": "2026-07-20T22:51:19.525Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/uv.def",
       "bytes": 119,
       "sha256": "fea5f7c4132badf3b726e640470109f5431df110ad897bee4406330db055494c",
-      "modifiedAt": "2026-08-09T08:33:51.651Z"
+      "modifiedAt": "2026-07-20T22:51:59.739Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/uv.hh",
       "bytes": 858,
       "sha256": "a3db799445482d3ca4177149856160fc52e3129fc1214a5a11a3d55db20bbb92",
-      "modifiedAt": "2026-08-09T08:33:55.413Z"
+      "modifiedAt": "2026-07-20T22:53:07.103Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/win32.cc",
       "bytes": 5776,
       "sha256": "7c81b48ded5f61ea3db93d2620d82dd3da79a32196c55b7608e4a876c95133af",
-      "modifiedAt": "2026-08-09T08:33:50.843Z"
+      "modifiedAt": "2026-07-20T22:51:22.271Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/src/win32.hh",
       "bytes": 2597,
       "sha256": "486192c4d21f4e65693a6d0ec5596e3dd5b66b5c9dadc16a335906cb5d55347b",
-      "modifiedAt": "2026-08-09T08:33:55.488Z"
+      "modifiedAt": "2026-07-20T22:53:08.056Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/src/koffi/tools/write_trampolines.js",
       "bytes": 2028,
       "sha256": "3ab8e2ca421a950555b9866396ea9d2632d3a70d5674096a20968fd0458cfd7d",
-      "modifiedAt": "2026-08-09T08:33:57.043Z"
+      "modifiedAt": "2026-07-20T22:53:20.781Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-addon-api/LICENSE.md",
       "bytes": 1150,
       "sha256": "89024017b88a9f2b763f79b941a4f2db3b4428edfcacdc0b23866b2da633ad0c",
-      "modifiedAt": "2026-08-09T08:33:57.538Z"
+      "modifiedAt": "2026-07-20T22:53:29.737Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-addon-api/napi-inl.deprecated.h",
       "bytes": 6323,
       "sha256": "b66ed1e565e735bbfabcc2f72d466ab7c5414d3ef8851d1af440b81be7f2375c",
-      "modifiedAt": "2026-08-09T08:33:53.563Z"
+      "modifiedAt": "2026-07-20T22:52:32.372Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-addon-api/napi-inl.h",
       "bytes": 235906,
       "sha256": "797668948d7f2df0ee8fcfe734af5b55942768bc7e15e77196a1f1107bba3635",
-      "modifiedAt": "2026-08-09T08:33:53.720Z"
+      "modifiedAt": "2026-07-20T22:52:36.081Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-addon-api/napi.h",
       "bytes": 119871,
       "sha256": "ffb807c34a8b3e346a6d0eacd7c8dbc0bdd92ee06bf42668557568dc54f918e9",
-      "modifiedAt": "2026-08-09T08:33:53.825Z"
+      "modifiedAt": "2026-07-20T22:52:38.207Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-addon-api/README.md",
       "bytes": 4994,
       "sha256": "8a5624af026ea5e9cf311476aa30cf33d9fc2c0c3be40bd7c5d8600a01ff1932",
-      "modifiedAt": "2026-08-09T08:33:57.927Z"
+      "modifiedAt": "2026-07-20T22:53:34.585Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/def/js_native_api.def",
       "bytes": 2734,
       "sha256": "77653a554fbb27f6c5666f4ba05f87d26f0de72bc3d0439961ac030030c2be66",
-      "modifiedAt": "2026-08-09T08:33:51.363Z"
+      "modifiedAt": "2026-07-20T22:51:28.584Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/def/node_api.def",
       "bytes": 3550,
       "sha256": "e0d5e3da0520a42e26b563f6321291081bd15bdd20821d46818e5f47900f77d6",
-      "modifiedAt": "2026-08-09T08:33:51.499Z"
+      "modifiedAt": "2026-07-20T22:51:40.855Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/js_native_api_types.h",
       "bytes": 6744,
       "sha256": "21eebde05d2ee59d315ac27d4aa82434ca88508a0b2cf5819802a00ca523831d",
-      "modifiedAt": "2026-08-09T08:33:53.029Z"
+      "modifiedAt": "2026-07-20T22:52:27.252Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/js_native_api.h",
       "bytes": 31081,
       "sha256": "0953395662ea63697cd7a77a9320d94aa2829f9c9569abf3a74272b7a2923ce8",
-      "modifiedAt": "2026-08-09T08:33:53.096Z"
+      "modifiedAt": "2026-07-20T22:52:28.959Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/node_api_types.h",
       "bytes": 1930,
       "sha256": "a25356630d3058f0a0c8937d9f297e9471e037fda58c2696d8a505c2bd99cb00",
-      "modifiedAt": "2026-08-09T08:33:54.046Z"
+      "modifiedAt": "2026-07-20T22:52:39.566Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/node_api.h",
       "bytes": 10370,
       "sha256": "2d4560831e525b47b060ec8a0864ab73993df9e20215ce9f0fe7b24cd31af32a",
-      "modifiedAt": "2026-08-09T08:33:54.096Z"
+      "modifiedAt": "2026-07-20T22:52:40.940Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv.h",
       "bytes": 72810,
       "sha256": "fddec8c096616675b4578d85222663c8624dce3ee67f5be1c33ba83eb02a827c",
-      "modifiedAt": "2026-08-09T08:33:54.503Z"
+      "modifiedAt": "2026-07-20T22:52:55.341Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/aix.h",
       "bytes": 1615,
       "sha256": "bed77e4cf6c06f1224e681cbe607eff04713ca0c1e1f4a102e6a6565ee3f02aa",
-      "modifiedAt": "2026-08-09T08:33:52.257Z"
+      "modifiedAt": "2026-07-20T22:52:17.168Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/bsd.h",
       "bytes": 1641,
       "sha256": "963533ff4b16f72a204a8c760896a857c54d0ac50570f1793e3bef1f2ae8b35f",
-      "modifiedAt": "2026-08-09T08:33:52.357Z"
+      "modifiedAt": "2026-07-20T22:52:20.292Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/darwin.h",
       "bytes": 3213,
       "sha256": "222b6dd3ce67cfbb735b14b1662f065fc23570d6969acf463b39d946b7590d8c",
-      "modifiedAt": "2026-08-09T08:33:52.712Z"
+      "modifiedAt": "2026-07-20T22:52:22.349Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/errno.h",
       "bytes": 11216,
       "sha256": "4242edf790e4569ef349026ab4c6e31093334ee5fc02b16ed7a0d9fbacdffd16",
-      "modifiedAt": "2026-08-09T08:33:52.849Z"
+      "modifiedAt": "2026-07-20T22:52:24.922Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/linux.h",
       "bytes": 1781,
       "sha256": "adce0ed0821c8466a87a0a4c9e0df9ea7e4a4b24d099c7d7ed196f72a13f669d",
-      "modifiedAt": "2026-08-09T08:33:53.509Z"
+      "modifiedAt": "2026-07-20T22:52:31.013Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/os390.h",
       "bytes": 1553,
       "sha256": "98388ae32ce2c4390b82c3529539d2a476c44f590e960ed30a79f72b807ecd02",
-      "modifiedAt": "2026-08-09T08:33:54.153Z"
+      "modifiedAt": "2026-07-20T22:52:45.494Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/posix.h",
       "bytes": 1606,
       "sha256": "e9d7218b34e6e89b7b412891b7e2aa8b3a561c5ce9714c1f4def6c8a8593a6a6",
-      "modifiedAt": "2026-08-09T08:33:54.212Z"
+      "modifiedAt": "2026-07-20T22:52:47.025Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/sunos.h",
       "bytes": 1985,
       "sha256": "29d4b4ef48dc3c3ab32d75e0a85bcb80e084d42b32aae40d67fc1d882b93298a",
-      "modifiedAt": "2026-08-09T08:33:54.265Z"
+      "modifiedAt": "2026-07-20T22:52:49.125Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/threadpool.h",
       "bytes": 1505,
       "sha256": "09ae41099af710289155be012df45c2fce04da6a02e813278b4558935e645938",
-      "modifiedAt": "2026-08-09T08:33:54.315Z"
+      "modifiedAt": "2026-07-20T22:52:50.510Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/tree.h",
       "bytes": 36117,
       "sha256": "34393c74082c71ddd5bd9ec4afe30ef03df7fa7bb64be5a50ae070cdfebb5c43",
-      "modifiedAt": "2026-08-09T08:33:54.382Z"
+      "modifiedAt": "2026-07-20T22:52:52.159Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/unix.h",
       "bytes": 20057,
       "sha256": "a246095a1476d76631f5ec85be171aee8107eb0423007546ec91c58887c28f02",
-      "modifiedAt": "2026-08-09T08:33:54.438Z"
+      "modifiedAt": "2026-07-20T22:52:53.695Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/version.h",
       "bytes": 1831,
       "sha256": "aef7fb55ffcece76db9cb7f87d0632e432369747f329679779616cd0721981da",
-      "modifiedAt": "2026-08-09T08:33:54.729Z"
+      "modifiedAt": "2026-07-20T22:52:56.583Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/include/uv/win.h",
       "bytes": 33836,
       "sha256": "51b6bf729c4c3e66cd89e0b0b0d734998776e675fe0a5eda9db77b634eb83ef0",
-      "modifiedAt": "2026-08-09T08:33:54.784Z"
+      "modifiedAt": "2026-07-20T22:52:58.114Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/LICENSE",
       "bytes": 1064,
       "sha256": "a553508f516031c91f3af1148d44970cb81bbae6c4f091be6835d39cc252238c",
-      "modifiedAt": "2026-08-09T08:33:41.533Z"
+      "modifiedAt": "2026-07-20T22:50:19.075Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/koffi/vendor/node-api-headers/README.md",
       "bytes": 2741,
       "sha256": "63a4e81d19f02b164d51c4721ff3e88c81d410640de7e1d3520a2c406f0a7d83",
-      "modifiedAt": "2026-08-09T08:33:58.264Z"
+      "modifiedAt": "2026-07-20T22:53:35.364Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/index.d.ts",
       "bytes": 1161,
       "sha256": "7827f3ea54c792c29b15c3f6742a754ebef34179b6c2b936995e54e4e7ffdeed",
-      "modifiedAt": "2026-08-09T08:34:00.704Z"
+      "modifiedAt": "2026-07-20T22:54:02.979Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/index.d.ts.map",
       "bytes": 832,
       "sha256": "a51a58ef72483a1b34597c3756d350bd0bf04bf254251912cb8982624fffe89d",
-      "modifiedAt": "2026-08-09T08:33:54.409Z"
+      "modifiedAt": "2026-07-20T22:52:52.766Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/index.js",
       "bytes": 4927,
       "sha256": "feb632ae24120abdf9243608cc2383f72a8c4c15b463849c689e68d210bf3b33",
-      "modifiedAt": "2026-08-09T08:33:45.334Z"
+      "modifiedAt": "2026-07-20T22:50:23.436Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/index.js.map",
       "bytes": 760,
       "sha256": "7f6557c2a64be9d0a3b27f11eca377fdd2b7a40bf8b80b51b4c1144a428cf654",
-      "modifiedAt": "2026-08-09T08:33:54.514Z"
+      "modifiedAt": "2026-07-20T22:52:55.371Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/index.d.ts",
       "bytes": 182,
       "sha256": "124cddeaf5717c5ae6581f639acb477a770ffcbf2aceadf685388ffc985a1249",
-      "modifiedAt": "2026-08-09T08:34:00.722Z"
+      "modifiedAt": "2026-07-20T22:54:03.563Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/index.d.ts.map",
       "bytes": 188,
       "sha256": "446e41e42d996025460f8b65c9f222a72c04f2a6ae7afea4cf046fbc03019cba",
-      "modifiedAt": "2026-08-09T08:33:54.454Z"
+      "modifiedAt": "2026-07-20T22:52:53.854Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/index.js",
       "bytes": 973,
       "sha256": "7dedc5aa365f2687962eaea4440eca94e60f59945ab84a74d12ad1442fee9513",
-      "modifiedAt": "2026-08-09T08:33:45.732Z"
+      "modifiedAt": "2026-07-20T22:50:23.662Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/index.js.map",
       "bytes": 182,
       "sha256": "0b24ada1063c0ccc716312cc803aa1cdfc1188ff74347d3a3551a6c6abc92d19",
-      "modifiedAt": "2026-08-09T08:33:54.733Z"
+      "modifiedAt": "2026-07-20T22:52:56.439Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackIds.d.ts",
       "bytes": 2595,
       "sha256": "3dca23d3b213eddce26605b980f9988413dfeb5f43d037b41859dcde7280d4c3",
-      "modifiedAt": "2026-08-09T08:34:01.417Z"
+      "modifiedAt": "2026-07-20T22:54:14.426Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackIds.d.ts.map",
       "bytes": 1134,
       "sha256": "221feff3c8e50752e90636cd4981a7d0cfcd9ab61256f5ae587822afba346aac",
-      "modifiedAt": "2026-08-09T08:33:56.983Z"
+      "modifiedAt": "2026-07-20T22:53:20.098Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackIds.js",
       "bytes": 4107,
       "sha256": "885492c94138d7f6f6d69d0b2cea84c806c48667626fb397a35ce22aba31ed6a",
-      "modifiedAt": "2026-08-09T08:33:49.684Z"
+      "modifiedAt": "2026-07-20T22:51:10.487Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackIds.js.map",
       "bytes": 1414,
       "sha256": "85bf41b3d59b39eb969ab189b76e3aca7bee82a61101e8fe8b45e98dc87247be",
-      "modifiedAt": "2026-08-09T08:33:57.040Z"
+      "modifiedAt": "2026-07-20T22:53:20.781Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackTypes.d.ts",
       "bytes": 6200,
       "sha256": "28a9c3cc5579061d62642a7fc9fcf45658c07ae5f8c0cb4dfa0d4762ae7a1bf2",
-      "modifiedAt": "2026-08-09T08:34:01.777Z"
+      "modifiedAt": "2026-07-20T22:54:15.640Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackTypes.d.ts.map",
       "bytes": 3120,
       "sha256": "506cd22737efc4401e66629e212cfd58e9204f8883fedcab01a0b725d250c5cb",
-      "modifiedAt": "2026-08-09T08:33:57.181Z"
+      "modifiedAt": "2026-07-20T22:53:23.268Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackTypes.js",
       "bytes": 326,
       "sha256": "4fc61f05019c94b3dec9fe6400b1ce1b8a76b84ffdf40a661d9365b94c637bc9",
-      "modifiedAt": "2026-08-09T08:33:50.170Z"
+      "modifiedAt": "2026-07-20T22:51:15.722Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/callbackTypes/SteamCallbackTypes.js.map",
       "bytes": 171,
       "sha256": "4472916bf67bdcefa18eef6e9450cc4d3206056ee065da21828eb233c9a8914b",
-      "modifiedAt": "2026-08-09T08:33:57.262Z"
+      "modifiedAt": "2026-07-20T22:53:23.878Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAchievementManager.d.ts",
       "bytes": 28310,
       "sha256": "7d985aaac189677a4a263f1f3c769640b1f24111d23d96470e7d0db043939c4e",
-      "modifiedAt": "2026-08-09T08:34:01.029Z"
+      "modifiedAt": "2026-07-20T22:54:12.182Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAchievementManager.d.ts.map",
       "bytes": 2785,
       "sha256": "5d3fba4673b65347ea262f46e692b0daba1c8fbc9461520f8f443de5a352f09b",
-      "modifiedAt": "2026-08-09T08:33:56.302Z"
+      "modifiedAt": "2026-07-20T22:53:15.158Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAchievementManager.js",
       "bytes": 54069,
       "sha256": "5abb3a5b2f935d2fe83ea082c3dc8402dc7acb5f4cd0ad20ab1d66d8181304ec",
-      "modifiedAt": "2026-08-09T08:33:48.790Z"
+      "modifiedAt": "2026-07-20T22:51:01.327Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAchievementManager.js.map",
       "bytes": 19853,
       "sha256": "2403b1a614f0e682afc482c6a5e53a39cc0fe60303bef9437c1692079d38d712",
-      "modifiedAt": "2026-08-09T08:33:56.519Z"
+      "modifiedAt": "2026-07-20T22:53:15.994Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAPICore.d.ts",
       "bytes": 16064,
       "sha256": "a0aac9a50a70e4948033c0c6c6b3fb4d4b7ff6262b42e8cf92db48aa5e398f3a",
-      "modifiedAt": "2026-08-09T08:34:01.052Z"
+      "modifiedAt": "2026-07-20T22:54:12.964Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAPICore.d.ts.map",
       "bytes": 1840,
       "sha256": "29bb2150e1d206ca039b12f4d18f474c3cb540d8d023617a61d39c6bc074eaf9",
-      "modifiedAt": "2026-08-09T08:33:56.552Z"
+      "modifiedAt": "2026-07-20T22:53:16.702Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAPICore.js",
       "bytes": 24081,
       "sha256": "af62e10b89094369d95be11077b806b2c66cbeb7dfdbb9f421ea66d5b96ccca3",
-      "modifiedAt": "2026-08-09T08:33:48.954Z"
+      "modifiedAt": "2026-07-20T22:51:04.087Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAPICore.js.map",
       "bytes": 7026,
       "sha256": "49259ef44a49a58afa61811cf2417c8e66b3637f5b4b2b71614d7a7e81110ed0",
-      "modifiedAt": "2026-08-09T08:33:56.832Z"
+      "modifiedAt": "2026-07-20T22:53:17.519Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAppsManager.d.ts",
       "bytes": 15467,
       "sha256": "d1a623756108a5987c136f9b5ad46ef0730e58bbfebf5ba59d8bccc4a92f9841",
-      "modifiedAt": "2026-08-09T08:34:01.074Z"
+      "modifiedAt": "2026-07-20T22:54:13.886Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAppsManager.d.ts.map",
       "bytes": 2481,
       "sha256": "adbddb6a2fe5acd2cda6fa65401d4d301ed1dd218f0fea0b9de8d7df7ccd95fa",
-      "modifiedAt": "2026-08-09T08:33:56.866Z"
+      "modifiedAt": "2026-07-20T22:53:18.354Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAppsManager.js",
       "bytes": 34712,
       "sha256": "9e935efd34a0b94f5d1b99bf23bc6b52f64d8eb1b7a8011f667610d2155882c7",
-      "modifiedAt": "2026-08-09T08:33:49.558Z"
+      "modifiedAt": "2026-07-20T22:51:07.305Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamAppsManager.js.map",
       "bytes": 17080,
       "sha256": "9d66afae70084ec384065d3cc7dda5e30aa841fd1e6c786ebc9259fa48c3d6a7",
-      "modifiedAt": "2026-08-09T08:33:56.938Z"
+      "modifiedAt": "2026-07-20T22:53:19.188Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCallbackPoller.d.ts",
       "bytes": 8018,
       "sha256": "84db0c243b0664409e816d175a2b1cbf44f823021706a70cda090b0e9f00fe32",
-      "modifiedAt": "2026-08-09T08:34:01.550Z"
+      "modifiedAt": "2026-07-20T22:54:15.140Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCallbackPoller.d.ts.map",
       "bytes": 1245,
       "sha256": "1dbe691644e1263f70f5b71838a295a969ee58994d6bafd77106302970e3e33e",
-      "modifiedAt": "2026-08-09T08:33:57.067Z"
+      "modifiedAt": "2026-07-20T22:53:21.488Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCallbackPoller.js",
       "bytes": 18957,
       "sha256": "c4d53203514e55e919b7e86f997d0c6e8a39afd4fc7f8b7e6999b734ed7713be",
-      "modifiedAt": "2026-08-09T08:33:49.825Z"
+      "modifiedAt": "2026-07-20T22:51:12.927Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCallbackPoller.js.map",
       "bytes": 8175,
       "sha256": "71cb0621da28f089fe8368394c87484665a91bde2a8b90e4ed5b6f149acb53de",
-      "modifiedAt": "2026-08-09T08:33:57.094Z"
+      "modifiedAt": "2026-07-20T22:53:22.294Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCloudManager.d.ts",
       "bytes": 13496,
       "sha256": "f82450224bfa0651dd03f04e35fa8e20724ab9a70600d4231ab5e1ffe52c5800",
-      "modifiedAt": "2026-08-09T08:34:01.912Z"
+      "modifiedAt": "2026-07-20T22:54:16.480Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCloudManager.d.ts.map",
       "bytes": 1726,
       "sha256": "b351705413147bf9b232f08632811bca9651d1e1b743c67ee0b748bcac435265",
-      "modifiedAt": "2026-08-09T08:33:57.350Z"
+      "modifiedAt": "2026-07-20T22:53:24.430Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCloudManager.js",
       "bytes": 25126,
       "sha256": "497ddccba6b616863a3c176f0a551c6f125ad8048cbad7155355486a82c3df3b",
-      "modifiedAt": "2026-08-09T08:33:50.356Z"
+      "modifiedAt": "2026-07-20T22:51:19.006Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamCloudManager.js.map",
       "bytes": 10764,
       "sha256": "e4130a02ade59fc1587faca34987c4a7f2ae5e54c9d1d84afc743e47bd95ce9c",
-      "modifiedAt": "2026-08-09T08:33:57.373Z"
+      "modifiedAt": "2026-07-20T22:53:25.108Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamFriendsManager.d.ts",
       "bytes": 28135,
       "sha256": "87706b599778229b3eb713b38029cd950deca8837d52ec100d983b97c11fda16",
-      "modifiedAt": "2026-08-09T08:34:01.950Z"
+      "modifiedAt": "2026-07-20T22:54:17.051Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamFriendsManager.d.ts.map",
       "bytes": 2378,
       "sha256": "9a5e59398e22c7ef5b311ecaffd98677d7ccfc13f509c082e432c7f1717fe882",
-      "modifiedAt": "2026-08-09T08:33:57.395Z"
+      "modifiedAt": "2026-07-20T22:53:26.028Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamFriendsManager.js",
       "bytes": 47843,
       "sha256": "c5d309fd01e4d86274a57508cb91901b6fd11e96e79ab66519984cd394b72a78",
-      "modifiedAt": "2026-08-09T08:33:50.835Z"
+      "modifiedAt": "2026-07-20T22:51:22.365Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamFriendsManager.js.map",
       "bytes": 15575,
       "sha256": "c0ca56f12c1e050f4ff306c96b83576c599585569ef06d3b9f432ca35587e34b",
-      "modifiedAt": "2026-08-09T08:33:57.414Z"
+      "modifiedAt": "2026-07-20T22:53:26.558Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamInputManager.d.ts",
       "bytes": 21290,
       "sha256": "fcc74d3d13bdef0551073f3c806063ddbbc4be812547e8c59bc1febe5b52b300",
-      "modifiedAt": "2026-08-09T08:34:02.041Z"
+      "modifiedAt": "2026-07-20T22:54:17.672Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamInputManager.d.ts.map",
       "bytes": 3756,
       "sha256": "051e1b8b16cdd0df1d742679d909f271bbdaa87e9219547bb85f40c7051fec9b",
-      "modifiedAt": "2026-08-09T08:33:57.438Z"
+      "modifiedAt": "2026-07-20T22:53:27.558Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamInputManager.js",
       "bytes": 39645,
       "sha256": "067a1b606389702ee837176576b629c42a76cb0092254628a42e23697a472ca6",
-      "modifiedAt": "2026-08-09T08:33:51.059Z"
+      "modifiedAt": "2026-07-20T22:51:25.004Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamInputManager.js.map",
       "bytes": 17913,
       "sha256": "01561189bf324e1379116109eec820b715ed4e98ad99aeb27f0cc6f592eca6ae",
-      "modifiedAt": "2026-08-09T08:33:57.465Z"
+      "modifiedAt": "2026-07-20T22:53:28.278Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLeaderboardManager.d.ts",
       "bytes": 13888,
       "sha256": "6b3d4ba48361fab67ee3fd16914a598d9d86ebd5272f4a84f7a11b72290a3260",
-      "modifiedAt": "2026-08-09T08:34:02.099Z"
+      "modifiedAt": "2026-07-20T22:54:18.210Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLeaderboardManager.d.ts.map",
       "bytes": 1641,
       "sha256": "a7db2b8a7f168209165733f63958aa7d682da61b2ee96dfbe662e61031b4c538",
-      "modifiedAt": "2026-08-09T08:33:57.483Z"
+      "modifiedAt": "2026-07-20T22:53:28.748Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLeaderboardManager.js",
       "bytes": 33032,
       "sha256": "19d0a6a018c8c3b886e2c715ef02d3eb6dbb11978b4bb8399d1242665a845270",
-      "modifiedAt": "2026-08-09T08:33:51.366Z"
+      "modifiedAt": "2026-07-20T22:51:31.341Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLeaderboardManager.js.map",
       "bytes": 13737,
       "sha256": "f3810f2c231d8e72690a6ad65ebf868455d11b864e4d7781c8481fb249ba1c54",
-      "modifiedAt": "2026-08-09T08:33:57.511Z"
+      "modifiedAt": "2026-07-20T22:53:29.238Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLibraryLoader.d.ts",
       "bytes": 28214,
       "sha256": "a8001483fdca4e1b7573a85f77d0d089b53ddc7a2d0b4fb2bb5dc1a6b6d62ea4",
-      "modifiedAt": "2026-08-09T08:34:02.139Z"
+      "modifiedAt": "2026-07-20T22:54:18.865Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLibraryLoader.d.ts.map",
       "bytes": 15228,
       "sha256": "60830f30ba8805fc2347d7717819da83ba1d9ebd5065737f6da623f284a98e1c",
-      "modifiedAt": "2026-08-09T08:33:57.539Z"
+      "modifiedAt": "2026-07-20T22:53:29.898Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLibraryLoader.js",
       "bytes": 78659,
       "sha256": "f3fa15f4c1e48b9ffa1a757a38d35d40cc8e454e13d68b47164f86ce639a8b84",
-      "modifiedAt": "2026-08-09T08:33:51.549Z"
+      "modifiedAt": "2026-07-20T22:51:45.339Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLibraryLoader.js.map",
       "bytes": 53345,
       "sha256": "247a4f9a1b08f9eb1c3a57639236dd4cf321971ac929dd35f2bfa3cac9da2625",
-      "modifiedAt": "2026-08-09T08:33:57.722Z"
+      "modifiedAt": "2026-07-20T22:53:30.838Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLogger.d.ts",
       "bytes": 2974,
       "sha256": "8fcc5bd760af81fd01a7517b4a67bcfdc35ebbe3c36cfb4f2d8e87f5673fe0e2",
-      "modifiedAt": "2026-08-09T08:34:02.350Z"
+      "modifiedAt": "2026-07-20T22:54:19.577Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLogger.d.ts.map",
       "bytes": 805,
       "sha256": "57bfd63063d6a127245233144aaf0de5c336ea2be5eac742fed8926d1e019fdd",
-      "modifiedAt": "2026-08-09T08:33:57.742Z"
+      "modifiedAt": "2026-07-20T22:53:31.469Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLogger.js",
       "bytes": 3610,
       "sha256": "9793e7f603199a37de26bbad282efec0f320f156620bf2ea491cba543d7f6343",
-      "modifiedAt": "2026-08-09T08:33:51.670Z"
+      "modifiedAt": "2026-07-20T22:52:04.153Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamLogger.js.map",
       "bytes": 1207,
       "sha256": "ec06a7751d03bc766046ecada6eba69654d0c542efb0264eae86ea1511c1f8cf",
-      "modifiedAt": "2026-08-09T08:33:57.817Z"
+      "modifiedAt": "2026-07-20T22:53:32.297Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamMatchmakingManager.d.ts",
       "bytes": 26011,
       "sha256": "61dad737e506828ef816b510708fa57b579b8e1c73a7779eb0a58a16ad7e843b",
-      "modifiedAt": "2026-08-09T08:34:02.483Z"
+      "modifiedAt": "2026-07-20T22:54:20.190Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamMatchmakingManager.d.ts.map",
       "bytes": 4298,
       "sha256": "93d51078f9084a74b3c9c0b2882a33e4c27b9387d3f8e15066a12ea9c44b5c45",
-      "modifiedAt": "2026-08-09T08:33:57.855Z"
+      "modifiedAt": "2026-07-20T22:53:33.162Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamMatchmakingManager.js",
       "bytes": 52706,
       "sha256": "ba83699351bdf77741cd73ebcb67ca39977e9f594b226592ae3fcd92e3d87dd6",
-      "modifiedAt": "2026-08-09T08:33:51.787Z"
+      "modifiedAt": "2026-07-20T22:52:09.615Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamMatchmakingManager.js.map",
       "bytes": 22780,
       "sha256": "e5aa6fe1cdfb1657511b320033c45b2d50facb462f2044e6228f72e66c7662f5",
-      "modifiedAt": "2026-08-09T08:33:57.892Z"
+      "modifiedAt": "2026-07-20T22:53:33.726Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingSocketsManager.d.ts",
       "bytes": 17061,
       "sha256": "0ed54b85e2109047fca497a3c630c7824e340276c21af093871f9abc172ac048",
-      "modifiedAt": "2026-08-09T08:34:02.520Z"
+      "modifiedAt": "2026-07-20T22:54:20.760Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingSocketsManager.d.ts.map",
       "bytes": 3496,
       "sha256": "ac4fb09c6a6de6fb85212b4dcb4a6b53ea33ac635d9c70e9771b6f50411ebea5",
-      "modifiedAt": "2026-08-09T08:33:57.914Z"
+      "modifiedAt": "2026-07-20T22:53:34.201Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingSocketsManager.js",
       "bytes": 44371,
       "sha256": "5d55ea7bdabe2167b5052560976a26b4def767791f31dd6979af805735e881bd",
-      "modifiedAt": "2026-08-09T08:33:52.141Z"
+      "modifiedAt": "2026-07-20T22:52:13.143Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingSocketsManager.js.map",
       "bytes": 20234,
       "sha256": "f3797af69a9426c6fece69239942fb628387d8757bb71b39c923b67de186e0a1",
-      "modifiedAt": "2026-08-09T08:33:58.248Z"
+      "modifiedAt": "2026-07-20T22:53:35.240Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingUtilsManager.d.ts",
       "bytes": 13522,
       "sha256": "a199e5afcbd26e17777c225c78e5333a5b13e54123a94537a5cc7b04889bb4ce",
-      "modifiedAt": "2026-08-09T08:34:02.545Z"
+      "modifiedAt": "2026-07-20T22:54:21.280Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingUtilsManager.d.ts.map",
       "bytes": 1479,
       "sha256": "3e4e5ca412700561e0687f5c8a62f0192c3d0dfbbca931733eb5656373d9fc07",
-      "modifiedAt": "2026-08-09T08:33:58.282Z"
+      "modifiedAt": "2026-07-20T22:53:35.909Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingUtilsManager.js",
       "bytes": 26217,
       "sha256": "1bb3259e5ed7342b59f478b9351352d9631d2a5748c092993558905f70d4eacf",
-      "modifiedAt": "2026-08-09T08:33:52.237Z"
+      "modifiedAt": "2026-07-20T22:52:16.890Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamNetworkingUtilsManager.js.map",
       "bytes": 9073,
       "sha256": "7103b700ddc1a60b5a6c4f64f2c266ce2c047f5b821ec93cbb9d41f7cf1d4dbe",
-      "modifiedAt": "2026-08-09T08:33:58.302Z"
+      "modifiedAt": "2026-07-20T22:53:36.619Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlay.d.ts",
       "bytes": 3272,
       "sha256": "8708b52927e758a0c1b95029e2a001e89626918301b75b104ab7ab5abe405c67",
-      "modifiedAt": "2026-08-09T08:34:02.964Z"
+      "modifiedAt": "2026-07-20T22:54:21.835Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlay.d.ts.map",
       "bytes": 647,
       "sha256": "bb62862b41f5f04376a2b378cf88d173cece947722e6301c2f43555cc351eec0",
-      "modifiedAt": "2026-08-09T08:33:58.565Z"
+      "modifiedAt": "2026-07-20T22:53:37.253Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlay.js",
       "bytes": 18248,
       "sha256": "c88af2f7359f88d69cb0484e78ef2a63b90dd6b0639dffb7340666e288894f94",
-      "modifiedAt": "2026-08-09T08:33:52.320Z"
+      "modifiedAt": "2026-07-20T22:52:19.418Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlay.js.map",
       "bytes": 9976,
       "sha256": "43d2b827929e33c7b31c86c1e4cb7ba8379372362f8cdc1c4fa24b43410d41fe",
-      "modifiedAt": "2026-08-09T08:33:58.774Z"
+      "modifiedAt": "2026-07-20T22:53:37.989Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlayManager.d.ts",
       "bytes": 14111,
       "sha256": "69c701e9ddc83cd548bdd95ff9bc3dc9e06208cba4d1955300f5860eb24fc7b9",
-      "modifiedAt": "2026-08-09T08:34:02.983Z"
+      "modifiedAt": "2026-07-20T22:54:22.640Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlayManager.d.ts.map",
       "bytes": 1322,
       "sha256": "4f7d6dc224740ecebf2a1343548b99f02c7dfece37ed1368b0dd59ae2077f866",
-      "modifiedAt": "2026-08-09T08:33:58.953Z"
+      "modifiedAt": "2026-07-20T22:53:38.549Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlayManager.js",
       "bytes": 18950,
       "sha256": "c47a4a55b616298050ee93e13ebcddac6920a798cfc4fe3f6289c2f9d9c6be3a",
-      "modifiedAt": "2026-08-09T08:33:52.406Z"
+      "modifiedAt": "2026-07-20T22:52:21.314Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamOverlayManager.js.map",
       "bytes": 4455,
       "sha256": "bdda8787efd1cc1e6688561a0b2d800b6201a549bad8247cad7d66ad3f42ebce",
-      "modifiedAt": "2026-08-09T08:33:58.992Z"
+      "modifiedAt": "2026-07-20T22:53:39.503Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamRichPresenceManager.d.ts",
       "bytes": 10310,
       "sha256": "3983c9adfaaadb0941bcdcd1f24b290bf973fbb6d02c27ffc9177e414454bfaa",
-      "modifiedAt": "2026-08-09T08:34:03.000Z"
+      "modifiedAt": "2026-07-20T22:54:23.130Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamRichPresenceManager.d.ts.map",
       "bytes": 1020,
       "sha256": "7cee4218f72f3b5c718c97a2958a3600f3ed217ffa027bc015dcc16ea1123956",
-      "modifiedAt": "2026-08-09T08:33:59.021Z"
+      "modifiedAt": "2026-07-20T22:53:40.069Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamRichPresenceManager.js",
       "bytes": 14753,
       "sha256": "c2400bb002b5ae9c5dde1b3165209d856a1e995b41e8da4cb8bee0d23afcccd4",
-      "modifiedAt": "2026-08-09T08:33:52.724Z"
+      "modifiedAt": "2026-07-20T22:52:22.996Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamRichPresenceManager.js.map",
       "bytes": 4129,
       "sha256": "828fe7c51a4b4fa20ffdc31041d7d1c105c626f6f2675290f2b65499afe7000c",
-      "modifiedAt": "2026-08-09T08:33:59.038Z"
+      "modifiedAt": "2026-07-20T22:53:40.921Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamScreenshotManager.d.ts",
       "bytes": 12241,
       "sha256": "97c158d1bcc75b580c19b0913e218d35179415268c1776617eebdf76e7346608",
-      "modifiedAt": "2026-08-09T08:34:03.032Z"
+      "modifiedAt": "2026-07-20T22:54:23.792Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamScreenshotManager.d.ts.map",
       "bytes": 1493,
       "sha256": "307542972e9ff98d9e365c61252cc1c0fd0c38d715f522468618b0765552f8bb",
-      "modifiedAt": "2026-08-09T08:33:59.058Z"
+      "modifiedAt": "2026-07-20T22:53:41.556Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamScreenshotManager.js",
       "bytes": 17283,
       "sha256": "8a99a8a67f900658e5190a9282251302d60edefd1fd04e7b30e629cf2487b15e",
-      "modifiedAt": "2026-08-09T08:33:52.839Z"
+      "modifiedAt": "2026-07-20T22:52:24.922Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamScreenshotManager.js.map",
       "bytes": 4859,
       "sha256": "c1e44fe5529efca253e2722360239992fd16cad03c40b7cf686a14a5ab2a18fc",
-      "modifiedAt": "2026-08-09T08:33:59.080Z"
+      "modifiedAt": "2026-07-20T22:53:42.139Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamStatsManager.d.ts",
       "bytes": 21714,
       "sha256": "b507116afffe0c688e91246c9ada87e8ace68de36323b0f597118ad8794589b9",
-      "modifiedAt": "2026-08-09T08:34:03.051Z"
+      "modifiedAt": "2026-07-20T22:54:24.472Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamStatsManager.d.ts.map",
       "bytes": 2195,
       "sha256": "6ee0edff26f4ad485e703f38c8454a67b168a81b6a8c2be89e967c1778ed6e37",
-      "modifiedAt": "2026-08-09T08:33:59.163Z"
+      "modifiedAt": "2026-07-20T22:53:42.779Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamStatsManager.js",
       "bytes": 41541,
       "sha256": "4a97fec240809867f0039ab29ac7babcf1147918d44ce486f5e7d736ec62ad03",
-      "modifiedAt": "2026-08-09T08:33:53.022Z"
+      "modifiedAt": "2026-07-20T22:52:27.252Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamStatsManager.js.map",
       "bytes": 15193,
       "sha256": "2ce73544607243fde53ef71282e3f093c5f5712725ca63151fc3473b13b5ffa5",
-      "modifiedAt": "2026-08-09T08:33:59.229Z"
+      "modifiedAt": "2026-07-20T22:53:43.664Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUserManager.d.ts",
       "bytes": 25552,
       "sha256": "e3d22038f067354d0210b678fc3bcd5890ded65c126e6da92a6c3050ae2bf3fe",
-      "modifiedAt": "2026-08-09T08:34:03.114Z"
+      "modifiedAt": "2026-07-20T22:54:25.035Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUserManager.d.ts.map",
       "bytes": 2951,
       "sha256": "56d7511bb8b1ec0e0aa2d53b2ad7171ab16e54fe5e18d73ef8e6232037c35e5a",
-      "modifiedAt": "2026-08-09T08:33:59.378Z"
+      "modifiedAt": "2026-07-20T22:53:44.281Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUserManager.js",
       "bytes": 67569,
       "sha256": "1af6ca76e8eab073f97353039b3521be75b7aa9fa931a0d9aac25fda4e41a1f9",
-      "modifiedAt": "2026-08-09T08:33:53.098Z"
+      "modifiedAt": "2026-07-20T22:52:29.118Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUserManager.js.map",
       "bytes": 29682,
       "sha256": "eb8eac1f12aa1f68b28f9577ac794199c7064905343e2169c63222618e5bd41e",
-      "modifiedAt": "2026-08-09T08:33:59.412Z"
+      "modifiedAt": "2026-07-20T22:53:45.306Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUtilsManager.d.ts",
       "bytes": 20012,
       "sha256": "8089ec6643856164a919288d74ae944fe135f6d6092a77b1484ae9a7b10225f1",
-      "modifiedAt": "2026-08-09T08:34:03.182Z"
+      "modifiedAt": "2026-07-20T22:54:25.792Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUtilsManager.d.ts.map",
       "bytes": 2775,
       "sha256": "a60d106f4ce7abce90b8da63fa9ac823cc531666f5b5de11d74e049dc4d3519e",
-      "modifiedAt": "2026-08-09T08:33:59.438Z"
+      "modifiedAt": "2026-07-20T22:53:45.849Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUtilsManager.js",
       "bytes": 34835,
       "sha256": "ccc4aae6be3d5d99c48a72c1aba94733c913ee6678a6aebe3c567f8ea7dae97f",
-      "modifiedAt": "2026-08-09T08:33:53.501Z"
+      "modifiedAt": "2026-07-20T22:52:30.754Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamUtilsManager.js.map",
       "bytes": 12841,
       "sha256": "6c8b7c167fa75844dcfed5db63ce931550a909ce8318b40cbc4678211f53098c",
-      "modifiedAt": "2026-08-09T08:33:59.514Z"
+      "modifiedAt": "2026-07-20T22:53:46.590Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamWorkshopManager.d.ts",
       "bytes": 30569,
       "sha256": "23931c70285c84a63042a710d302808a791c9206b61311038dd6977836ab45be",
-      "modifiedAt": "2026-08-09T08:34:03.509Z"
+      "modifiedAt": "2026-07-20T22:54:26.452Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamWorkshopManager.d.ts.map",
       "bytes": 4462,
       "sha256": "fc456efd6def1f1ead64d2c3291e3b5bf5763f69509cf9d87b9fb6adbec33e2e",
-      "modifiedAt": "2026-08-09T08:33:59.543Z"
+      "modifiedAt": "2026-07-20T22:53:47.349Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamWorkshopManager.js",
       "bytes": 79648,
       "sha256": "bbbb49cf66d20c0d6f6ab357e1e7c578ff2a2eb65df9f7e4ae012d5dfd658da8",
-      "modifiedAt": "2026-08-09T08:33:53.605Z"
+      "modifiedAt": "2026-07-20T22:52:33.129Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/internal/SteamWorkshopManager.js.map",
       "bytes": 38155,
       "sha256": "08851445ee13e4a929f57a5bccc7fe35bffe2e388d493d69e685723cb7fe0e38",
-      "modifiedAt": "2026-08-09T08:33:59.760Z"
+      "modifiedAt": "2026-07-20T22:53:48.269Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/steam.d.ts",
       "bytes": 36715,
       "sha256": "7a96f11284edb549f4076c28ddab00a0483c388c1c8d0bf37f07c5b68d15eca4",
-      "modifiedAt": "2026-08-09T08:34:00.998Z"
+      "modifiedAt": "2026-07-20T22:54:11.240Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/steam.d.ts.map",
       "bytes": 3287,
       "sha256": "68950c25fe6861f0a697efddabf87fc4cf3c7127dcf560c3602dce4365b91c9a",
-      "modifiedAt": "2026-08-09T08:33:56.251Z"
+      "modifiedAt": "2026-07-20T22:53:13.878Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/steam.js",
       "bytes": 17731,
       "sha256": "5803d2b87c861b9fd6f06897fc39fb2006a11659b163560291b85bef49ddaa03",
-      "modifiedAt": "2026-08-09T08:33:48.633Z"
+      "modifiedAt": "2026-07-20T22:50:57.645Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/steam.js.map",
       "bytes": 3891,
       "sha256": "86777a353827aaf07d952b3831e3167b4b17106de288395d55173495ce50af5a",
-      "modifiedAt": "2026-08-09T08:33:56.269Z"
+      "modifiedAt": "2026-07-20T22:53:14.468Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/achievements.d.ts",
       "bytes": 1086,
       "sha256": "ed954c377dcfd4b8e2fe8e148df1fdd3dd21c5051b253f36456ee998479fb7cd",
-      "modifiedAt": "2026-08-09T08:34:00.328Z"
+      "modifiedAt": "2026-07-20T22:54:00.013Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/achievements.d.ts.map",
       "bytes": 869,
       "sha256": "92c6ee26c707bdd3e3166c78da9c014a96a2ee5e816deae761ab13af6a0c5536",
-      "modifiedAt": "2026-08-09T08:33:54.050Z"
+      "modifiedAt": "2026-07-20T22:52:39.491Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/achievements.js",
       "bytes": 186,
       "sha256": "0a39d09ef07fc11b3cd4819d6c604f8ea731b4414a908ac71a13450a5daf56ae",
-      "modifiedAt": "2026-08-09T08:33:42.079Z"
+      "modifiedAt": "2026-07-20T22:50:19.412Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/achievements.js.map",
       "bytes": 136,
       "sha256": "4abbe2da2e5b7ad2996ab59c4ad0cae8efc92f34a1bc7bd66a3bfc7efa23f177",
-      "modifiedAt": "2026-08-09T08:33:54.091Z"
+      "modifiedAt": "2026-07-20T22:52:40.450Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/apps.d.ts",
       "bytes": 3208,
       "sha256": "ad95fbc48b3545b879c8a9ed22f8ed495b7f9807861d6cdfb314f5c15867eb05",
-      "modifiedAt": "2026-08-09T08:34:00.348Z"
+      "modifiedAt": "2026-07-20T22:54:00.512Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/apps.d.ts.map",
       "bytes": 1757,
       "sha256": "7c30f6579add83cf310614151d90b796b110fc5747c0c06f1e530c5e3076e0de",
-      "modifiedAt": "2026-08-09T08:33:54.133Z"
+      "modifiedAt": "2026-07-20T22:52:44.572Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/apps.js",
       "bytes": 995,
       "sha256": "f8a13eb7b92a2359c76193dc973ccb98159eb5423e12c0e5b4537c370c591b2c",
-      "modifiedAt": "2026-08-09T08:33:43.138Z"
+      "modifiedAt": "2026-07-20T22:50:20.255Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/apps.js.map",
       "bytes": 366,
       "sha256": "10b8fc31d5cadff6919f6c0f00c5d208583ea0fe420533d9a647dd495cdc7b08",
-      "modifiedAt": "2026-08-09T08:33:54.166Z"
+      "modifiedAt": "2026-07-20T22:52:45.514Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/cloud.d.ts",
       "bytes": 2194,
       "sha256": "1cb171834be18445b1826d5f6beeabc3ee2e629f8f1827da8a72e39bc08e584c",
-      "modifiedAt": "2026-08-09T08:34:00.372Z"
+      "modifiedAt": "2026-07-20T22:54:01.284Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/cloud.d.ts.map",
       "bytes": 1173,
       "sha256": "19c2858043f5e7cd9a119e5212ee8368ec753e1df990a4923392f67380e0dace",
-      "modifiedAt": "2026-08-09T08:33:54.208Z"
+      "modifiedAt": "2026-07-20T22:52:46.720Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/cloud.js",
       "bytes": 1561,
       "sha256": "8aa75713b1ed9042dba9a56cf127cb7ef4361e4b58f13fe1e32217cb1f1665d5",
-      "modifiedAt": "2026-08-09T08:33:44.010Z"
+      "modifiedAt": "2026-07-20T22:50:20.990Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/cloud.js.map",
       "bytes": 556,
       "sha256": "2d51d117e24c47b80dcd5b3a0de9ed91b7018f00ccbc507251c7c6b0ba2eb444",
-      "modifiedAt": "2026-08-09T08:33:54.237Z"
+      "modifiedAt": "2026-07-20T22:52:48.167Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/core.d.ts",
       "bytes": 364,
       "sha256": "4c252835e39f6f83495ba7c5ff9910116e440731c3ee665c35d114df209d97ec",
-      "modifiedAt": "2026-08-09T08:34:00.671Z"
+      "modifiedAt": "2026-07-20T22:54:01.847Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/core.d.ts.map",
       "bytes": 312,
       "sha256": "4b1e6b45ae45df5bc7aad31350ee5edfdd2cd03f3ce1e455139c2cfae4592747",
-      "modifiedAt": "2026-08-09T08:33:54.279Z"
+      "modifiedAt": "2026-07-20T22:52:49.232Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/core.js",
       "bytes": 166,
       "sha256": "67a308f4ec9ee0e98e27f6414519e41602c0fa4a7306ddd9a4ca1dcd5c8ee5c3",
-      "modifiedAt": "2026-08-09T08:33:44.522Z"
+      "modifiedAt": "2026-07-20T22:50:21.549Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/core.js.map",
       "bytes": 120,
       "sha256": "f6c23b0a8e25c756065ee0d89ed98bbe7a5107c14c120e6b19b981bc28610ba4",
-      "modifiedAt": "2026-08-09T08:33:54.312Z"
+      "modifiedAt": "2026-07-20T22:52:50.168Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/friends.d.ts",
       "bytes": 1829,
       "sha256": "de44c1b57996a6bb225f892475dee6651cbc97ae8b5b121afed9d870b54429b5",
-      "modifiedAt": "2026-08-09T08:34:00.690Z"
+      "modifiedAt": "2026-07-20T22:54:02.509Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/friends.d.ts.map",
       "bytes": 1341,
       "sha256": "0092c131f3319b9e5c679992e782bf2f66b39f8888fedcca62ad8d2f0b1be785",
-      "modifiedAt": "2026-08-09T08:33:54.345Z"
+      "modifiedAt": "2026-07-20T22:52:50.953Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/friends.js",
       "bytes": 2919,
       "sha256": "703b18c1a0bfe13c84c8641db815a32373481e78ab9f100448f76236eb7c682c",
-      "modifiedAt": "2026-08-09T08:33:44.946Z"
+      "modifiedAt": "2026-07-20T22:50:23.186Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/friends.js.map",
       "bytes": 931,
       "sha256": "3bc78e4da1df0317c8322cc448cda1f0e75b65919e6f970fa43529ce9f4423de",
-      "modifiedAt": "2026-08-09T08:33:54.382Z"
+      "modifiedAt": "2026-07-20T22:52:52.028Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/index.d.ts",
       "bytes": 1052,
       "sha256": "6e0b5cab8e8ced0addc90246829e1bea6c2f65ae5b0379a0b6b90696474b5385",
-      "modifiedAt": "2026-08-09T08:34:00.738Z"
+      "modifiedAt": "2026-07-20T22:54:04.280Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/index.d.ts.map",
       "bytes": 499,
       "sha256": "8c83b85d141d1ef3be3dae6e582539f0012ad1eee1d1fae3b327c23ec9a1d970",
-      "modifiedAt": "2026-08-09T08:33:54.489Z"
+      "modifiedAt": "2026-07-20T22:52:54.763Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/index.js",
       "bytes": 2447,
       "sha256": "a36168e4bdc72456fbfedd0722e60ab0f20b0d825c1b906e82ab526bbe42ca95",
-      "modifiedAt": "2026-08-09T08:33:46.021Z"
+      "modifiedAt": "2026-07-20T22:50:23.885Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/index.js.map",
       "bytes": 575,
       "sha256": "9d730b9eddcd7483537d3b09ae9ac55b985da03a4400b503b45a3a538efb9f37",
-      "modifiedAt": "2026-08-09T08:33:54.767Z"
+      "modifiedAt": "2026-07-20T22:52:57.488Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/input.d.ts",
       "bytes": 6755,
       "sha256": "b7013f51b5f1a253bc44f4c8544ca8ae693efc18ea231d2e8b0033578c040280",
-      "modifiedAt": "2026-08-09T08:34:00.755Z"
+      "modifiedAt": "2026-07-20T22:54:04.853Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/input.d.ts.map",
       "bytes": 3283,
       "sha256": "7bdf803503d79bd06efea46a31ed6d51e802fa05bc15f05b139ca3350f56a199",
-      "modifiedAt": "2026-08-09T08:33:54.792Z"
+      "modifiedAt": "2026-07-20T22:52:58.393Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/input.js",
       "bytes": 7510,
       "sha256": "03f9e328ee540fba3217b4c0ebe8b6708544646ee36e7f1f3a17a23c615a7848",
-      "modifiedAt": "2026-08-09T08:33:46.220Z"
+      "modifiedAt": "2026-07-20T22:50:24.622Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/input.js.map",
       "bytes": 2195,
       "sha256": "5105a41af3bd47cc6e508733e4b4f8fa4eb855193a82474a7dcf5f1cb8c6b4d0",
-      "modifiedAt": "2026-08-09T08:33:54.904Z"
+      "modifiedAt": "2026-07-20T22:52:59.301Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/inputActionOrigins.d.ts",
       "bytes": 19373,
       "sha256": "ae3702519e6261406e4b8f901c8abc325ff529539bd2ccb330c0c52174e46712",
-      "modifiedAt": "2026-08-09T08:34:00.774Z"
+      "modifiedAt": "2026-07-20T22:54:05.661Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/inputActionOrigins.d.ts.map",
       "bytes": 9331,
       "sha256": "f5b4164a3bb5eca14c9ca00fc2d8cfb0a1a91cf93336b33508496ca1d0ff86c3",
-      "modifiedAt": "2026-08-09T08:33:55.162Z"
+      "modifiedAt": "2026-07-20T22:53:00.007Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/inputActionOrigins.js",
       "bytes": 53008,
       "sha256": "50268fcc0420b7b60cccb328bc4a0a18385d29c31f147977ae836813a00ebcd5",
-      "modifiedAt": "2026-08-09T08:33:46.873Z"
+      "modifiedAt": "2026-07-20T22:50:26.241Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/inputActionOrigins.js.map",
       "bytes": 10681,
       "sha256": "845e333e35dbf6911f8a8ff830903aad95aae44098b5939b943dff4b825fe71d",
-      "modifiedAt": "2026-08-09T08:33:55.204Z"
+      "modifiedAt": "2026-07-20T22:53:00.865Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/leaderboards.d.ts",
       "bytes": 2937,
       "sha256": "24ace105ccd48f779133aa449915a3545009a343ea47673f413e56ce50c7ca9c",
-      "modifiedAt": "2026-08-09T08:34:00.790Z"
+      "modifiedAt": "2026-07-20T22:54:06.269Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/leaderboards.d.ts.map",
       "bytes": 1767,
       "sha256": "676d3a7bb8b411b42b0c26969bc8db5168924a945d4d33f964da424df90ff3c7",
-      "modifiedAt": "2026-08-09T08:33:55.228Z"
+      "modifiedAt": "2026-07-20T22:53:01.700Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/leaderboards.js",
       "bytes": 2233,
       "sha256": "9be4bcc4d1ec28a6a0ab46659b569b4c8eafd96e1505857f4f7cb244836cb676",
-      "modifiedAt": "2026-08-09T08:33:47.016Z"
+      "modifiedAt": "2026-07-20T22:50:30.046Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/leaderboards.js.map",
       "bytes": 717,
       "sha256": "342fa215bc4ac6f76cf6d4c486a3779c073e8389fcfcfd7e6f9e337b1a056dc3",
-      "modifiedAt": "2026-08-09T08:33:55.258Z"
+      "modifiedAt": "2026-07-20T22:53:03.073Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/matchmaking.d.ts",
       "bytes": 9487,
       "sha256": "7de96a1d0bba5c91f7cbfa745eedb111fc4ebf8f7b9ba2e93eee07b1f19bb78d",
-      "modifiedAt": "2026-08-09T08:34:00.854Z"
+      "modifiedAt": "2026-07-20T22:54:06.989Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/matchmaking.d.ts.map",
       "bytes": 5311,
       "sha256": "9715c9b1ec4f798b0199be66564bb0877e8624e23d278bcedcd5a32c3c74a847",
-      "modifiedAt": "2026-08-09T08:33:55.287Z"
+      "modifiedAt": "2026-07-20T22:53:03.962Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/matchmaking.js",
       "bytes": 6984,
       "sha256": "c02cdf670ab97fea56c852809396dabebb44d9a246b3633c3be24fddb2c2546a",
-      "modifiedAt": "2026-08-09T08:33:47.238Z"
+      "modifiedAt": "2026-07-20T22:50:34.114Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/matchmaking.js.map",
       "bytes": 1955,
       "sha256": "7a9f2a33cea9968143d0f849bb6b3b8fba8ec1b57cc55b7597f77253b3ad39b2",
-      "modifiedAt": "2026-08-09T08:33:55.313Z"
+      "modifiedAt": "2026-07-20T22:53:04.644Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/networking.d.ts",
       "bytes": 14752,
       "sha256": "8c12a7259e743e70abead8af3bb5f5e5e28dcfa6d6815e5c708b153cef3632e0",
-      "modifiedAt": "2026-08-09T08:34:00.879Z"
+      "modifiedAt": "2026-07-20T22:54:07.742Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/networking.d.ts.map",
       "bytes": 6620,
       "sha256": "835fe71abf7e590974632530ebf1a54ffaac0d9a2ec909eecaaa65312bc0402a",
-      "modifiedAt": "2026-08-09T08:33:55.341Z"
+      "modifiedAt": "2026-07-20T22:53:05.627Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/networking.js",
       "bytes": 20319,
       "sha256": "5554dbdfa39d6e8787b12159428a486c848a256999acf519cc3c0f2a2db16d16",
-      "modifiedAt": "2026-08-09T08:33:47.423Z"
+      "modifiedAt": "2026-07-20T22:50:38.958Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/networking.js.map",
       "bytes": 6802,
       "sha256": "52d9432e0a754f6343e452536f03327c4bda56a87818a6ae7041a3a29e311402",
-      "modifiedAt": "2026-08-09T08:33:55.400Z"
+      "modifiedAt": "2026-07-20T22:53:06.497Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/overlay.d.ts",
       "bytes": 2252,
       "sha256": "038c47fdcb7f70d89056799456a41a2a185b1ef9415a938af2620dd30518d107",
-      "modifiedAt": "2026-08-09T08:34:00.900Z"
+      "modifiedAt": "2026-07-20T22:54:08.260Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/overlay.d.ts.map",
       "bytes": 885,
       "sha256": "ca90657ac16dcc5981fd3335e77daabb33251103d77c90460f77dbbfce85c4c1",
-      "modifiedAt": "2026-08-09T08:33:55.424Z"
+      "modifiedAt": "2026-07-20T22:53:07.288Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/overlay.js",
       "bytes": 3593,
       "sha256": "8c549e9c1ab262719fd5307d82eaed83d1e9d7ff71e3fa4321360425e7df8f60",
-      "modifiedAt": "2026-08-09T08:33:47.580Z"
+      "modifiedAt": "2026-07-20T22:50:42.820Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/overlay.js.map",
       "bytes": 1107,
       "sha256": "241af1460007eb03e6cd3ef80978be88537289816ab839a86ae58ba9e5099607",
-      "modifiedAt": "2026-08-09T08:33:55.979Z"
+      "modifiedAt": "2026-07-20T22:53:08.085Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/richpresence.d.ts",
       "bytes": 1433,
       "sha256": "b827d564263423860ebe1fe0a1d3edd2437a9864a9d0a77a1546362d5f182fc3",
-      "modifiedAt": "2026-08-09T08:34:00.918Z"
+      "modifiedAt": "2026-07-20T22:54:08.932Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/richpresence.d.ts.map",
       "bytes": 456,
       "sha256": "95cca55bf16986d246017882048c39154b787fd9663360351a3d4c2499e59ce8",
-      "modifiedAt": "2026-08-09T08:33:56.017Z"
+      "modifiedAt": "2026-07-20T22:53:08.824Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/richpresence.js",
       "bytes": 1141,
       "sha256": "239269580bb0c6b9ce1a1cb8c59fe64aa821365d1eed0a540b7beedf8fd3d405",
-      "modifiedAt": "2026-08-09T08:33:48.245Z"
+      "modifiedAt": "2026-07-20T22:50:48.101Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/richpresence.js.map",
       "bytes": 507,
       "sha256": "e32da7869de7c51eb178ea0586f169678ac4dc33b9b10f95e3c8a8843735737d",
-      "modifiedAt": "2026-08-09T08:33:56.048Z"
+      "modifiedAt": "2026-07-20T22:53:09.728Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/screenshots.d.ts",
       "bytes": 1737,
       "sha256": "2f671918851172a902bb237f037556cb597fb634051979799f1aebda7b19206d",
-      "modifiedAt": "2026-08-09T08:34:00.937Z"
+      "modifiedAt": "2026-07-20T22:54:09.810Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/screenshots.d.ts.map",
       "bytes": 812,
       "sha256": "33b3b662717a6ae7fb7288f50ecc5cec67369bb3110f1e1b714ae9d18aaed54f",
-      "modifiedAt": "2026-08-09T08:33:56.089Z"
+      "modifiedAt": "2026-07-20T22:53:10.710Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/screenshots.js",
       "bytes": 1751,
       "sha256": "d7ee16cf720bcfdea8decda56b568a5234950d3d1e82af8664bfdc730c688180",
-      "modifiedAt": "2026-08-09T08:33:48.346Z"
+      "modifiedAt": "2026-07-20T22:50:51.113Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/screenshots.js.map",
       "bytes": 581,
       "sha256": "1214117ddb30fb2b1f3f01f2abb585b3f6f13b17dd495a5253987d7578b6b0aa",
-      "modifiedAt": "2026-08-09T08:33:56.123Z"
+      "modifiedAt": "2026-07-20T22:53:11.578Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/stats.d.ts",
       "bytes": 936,
       "sha256": "105b2792c90ddac896bd379a60716217d0954d1991af657aa052d0c92f947e01",
-      "modifiedAt": "2026-08-09T08:34:00.955Z"
+      "modifiedAt": "2026-07-20T22:54:10.361Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/stats.d.ts.map",
       "bytes": 742,
       "sha256": "53bf8155ff6778ee471e3765ec592c7acbbb24bba70c96f355f412378455a911",
-      "modifiedAt": "2026-08-09T08:33:56.183Z"
+      "modifiedAt": "2026-07-20T22:53:12.469Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/stats.js",
       "bytes": 167,
       "sha256": "cbc6e045e6092c477dd57a3d3e86a6af1297bcf481e895771786c519ad2e8110",
-      "modifiedAt": "2026-08-09T08:33:48.531Z"
+      "modifiedAt": "2026-07-20T22:50:54.532Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/stats.js.map",
       "bytes": 122,
       "sha256": "98527c5ab88be7219a8ad2ae9b645d01500438b1e993cd17ce7af06c9fccf9ae",
-      "modifiedAt": "2026-08-09T08:33:56.220Z"
+      "modifiedAt": "2026-07-20T22:53:13.339Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/user.d.ts",
       "bytes": 10057,
       "sha256": "4621332a55ab5024e66e71ecdf16e2ceeb0c402ddcae5618931063d5d6e8fd7a",
-      "modifiedAt": "2026-08-09T08:34:03.532Z"
+      "modifiedAt": "2026-07-20T22:54:27.092Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/user.d.ts.map",
       "bytes": 4383,
       "sha256": "7135da46e795dcb5596e0ab114b549ebde1bd2de14e062c0561bd8ee4a982aee",
-      "modifiedAt": "2026-08-09T08:33:59.792Z"
+      "modifiedAt": "2026-07-20T22:53:49.501Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/user.js",
       "bytes": 7616,
       "sha256": "35d10539f61e78b9cde02e3455f6fffac59a1f583422c7fcaac6804c585cecdc",
-      "modifiedAt": "2026-08-09T08:33:53.671Z"
+      "modifiedAt": "2026-07-20T22:52:34.603Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/user.js.map",
       "bytes": 1756,
       "sha256": "9ba35664a2708b8fe87009bbd57eeff5a1604ca962a67b965e627814eaa41719",
-      "modifiedAt": "2026-08-09T08:33:59.840Z"
+      "modifiedAt": "2026-07-20T22:53:50.424Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/utils.d.ts",
       "bytes": 3194,
       "sha256": "1c45df9de3146d560f966c2b7a0cac185bcc785bb538081d4a00dc98d45ee1d0",
-      "modifiedAt": "2026-08-09T08:34:03.549Z"
+      "modifiedAt": "2026-07-20T22:54:27.692Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/utils.d.ts.map",
       "bytes": 1476,
       "sha256": "d36b030f23efdc7f5dc6d4779e0dc8908ef6505ca8275491615c85615a8a6020",
-      "modifiedAt": "2026-08-09T08:33:59.862Z"
+      "modifiedAt": "2026-07-20T22:53:51.221Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/utils.js",
       "bytes": 5179,
       "sha256": "cb4f63d2698b9194595c0548b2cec8d72aa1d729683b05b8da14f837e14057aa",
-      "modifiedAt": "2026-08-09T08:33:53.716Z"
+      "modifiedAt": "2026-07-20T22:52:35.910Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/utils.js.map",
       "bytes": 1514,
       "sha256": "91ac0435d9637240debed91ceafc24d5d3dcfdc9b2c0899790ec0d4807d3fe51",
-      "modifiedAt": "2026-08-09T08:33:59.889Z"
+      "modifiedAt": "2026-07-20T22:53:51.909Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/workshop.d.ts",
       "bytes": 8957,
       "sha256": "8f26f0f4d51edc157a7d0694247ce9aa193c8e72d773f3a7641734f8d4c8d639",
-      "modifiedAt": "2026-08-09T08:34:03.578Z"
+      "modifiedAt": "2026-07-20T22:54:27.710Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/workshop.d.ts.map",
       "bytes": 5415,
       "sha256": "8d7c583a1f0f49ddd4910a2bdbcea0c2789834f49fef9cb708d903954a5afece",
-      "modifiedAt": "2026-08-09T08:33:59.959Z"
+      "modifiedAt": "2026-07-20T22:53:52.489Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/workshop.js",
       "bytes": 13384,
       "sha256": "6a4d525deee2e78ca9f5b3307f43b7210a6c9b24b8cc6500cc5913a0506460a6",
-      "modifiedAt": "2026-08-09T08:33:53.812Z"
+      "modifiedAt": "2026-07-20T22:52:37.709Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/dist/types/workshop.js.map",
       "bytes": 3655,
       "sha256": "673340cfaab89ca8dd603ec7cf2de0bac886ae9d497a6f9fc0b651488c5013de",
-      "modifiedAt": "2026-08-09T08:33:59.980Z"
+      "modifiedAt": "2026-07-20T22:53:53.067Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/docs/README.md",
       "bytes": 16792,
       "sha256": "eb92897c1bebc799f038367e1e396f64c1dffc949ecd046e3361ddb7713f6714",
-      "modifiedAt": "2026-08-09T08:34:00.058Z"
+      "modifiedAt": "2026-07-20T22:53:53.523Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/docs/STEAMWORKS_SDK_SETUP.md",
       "bytes": 7245,
       "sha256": "6bca681d8b1e6411e9b61966116125287c08cbda43d16cd8106584cfef576996",
-      "modifiedAt": "2026-08-09T08:34:00.098Z"
+      "modifiedAt": "2026-07-20T22:53:54.931Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/LICENSE",
       "bytes": 1069,
       "sha256": "163e3136d3d1067a2fe50cf159236a3aab50fec8cfa5b1d0bbec1aeae39df58f",
-      "modifiedAt": "2026-08-09T08:33:41.166Z"
+      "modifiedAt": "2026-07-20T22:50:13.583Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/common.gypi",
       "bytes": 833,
       "sha256": "c2588f59f1d4eebe14331b2cfabcfdff85e8c282f9f66028385cffece8aa85e9",
-      "modifiedAt": "2026-08-09T08:33:42.890Z"
+      "modifiedAt": "2026-07-20T22:50:20.031Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/except.gypi",
       "bytes": 560,
       "sha256": "ddbc09f5b66fe24dd898fbe659085a6ff72e9575025004fc3762271dba781e8b",
-      "modifiedAt": "2026-08-09T08:33:43.264Z"
+      "modifiedAt": "2026-07-20T22:50:20.376Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/index.js",
       "bytes": 435,
       "sha256": "afbfa96b5c40c643828f212610129d2911095eff1e86e63ccfe81658d6fe61d9",
-      "modifiedAt": "2026-08-09T08:33:46.803Z"
+      "modifiedAt": "2026-07-20T22:50:25.529Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/LICENSE.md",
       "bytes": 1150,
       "sha256": "89024017b88a9f2b763f79b941a4f2db3b4428edfcacdc0b23866b2da633ad0c",
-      "modifiedAt": "2026-08-09T08:33:47.039Z"
+      "modifiedAt": "2026-07-20T22:50:30.677Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/napi-inl.deprecated.h",
       "bytes": 6323,
       "sha256": "b66ed1e565e735bbfabcc2f72d466ab7c5414d3ef8851d1af440b81be7f2375c",
-      "modifiedAt": "2026-08-09T08:33:44.111Z"
+      "modifiedAt": "2026-07-20T22:50:21.083Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/napi-inl.h",
       "bytes": 240559,
       "sha256": "9a1069f372dd39252837302aa415bb3f9b74ab2c22949d1f66d2cb320e2c9ef4",
-      "modifiedAt": "2026-08-09T08:33:45.270Z"
+      "modifiedAt": "2026-07-20T22:50:23.344Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/napi.h",
       "bytes": 121727,
       "sha256": "8d05728c4ad9accd0cd13c6d38184dab44c31b8cd74842a1f0e3e344c1bae358",
-      "modifiedAt": "2026-08-09T08:33:45.806Z"
+      "modifiedAt": "2026-07-20T22:50:23.719Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/node_addon_api.gyp",
       "bytes": 1097,
       "sha256": "6d34b9bae562103233f650d8a041edc0ca6b44d90898cd232b38745adfb7edfc",
-      "modifiedAt": "2026-08-09T08:33:41.711Z"
+      "modifiedAt": "2026-07-20T22:50:19.161Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/node_api.gyp",
       "bytes": 132,
       "sha256": "3cd2c44fb0974f016376b676d46bbebbca7c89d4383b09ece30e4cb4122a1499",
-      "modifiedAt": "2026-08-09T08:33:42.346Z"
+      "modifiedAt": "2026-07-20T22:50:19.643Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/noexcept.gypi",
       "bytes": 649,
       "sha256": "0e815179b5d2697e0acdc8f3c3a5d0a1ed050d48a295ee000454cf5352357f66",
-      "modifiedAt": "2026-08-09T08:33:43.870Z"
+      "modifiedAt": "2026-07-20T22:50:20.836Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/nothing.c",
       "bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "modifiedAt": "2026-08-09T08:33:41.129Z"
+      "modifiedAt": "2026-07-20T22:50:13.075Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/package-support.json",
       "bytes": 467,
       "sha256": "b1cb7da23cca1681c7392a3c889eb0cc4916c53d2d7692d4b654ae751f3442f3",
-      "modifiedAt": "2026-08-09T08:33:46.876Z"
+      "modifiedAt": "2026-07-20T22:50:26.249Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/package.json",
       "bytes": 11005,
       "sha256": "ff7d60540ca77db3b50f2ee91f2f3fab4c26c9456a440b332039dc9555140ba8",
-      "modifiedAt": "2026-08-09T08:33:46.971Z"
+      "modifiedAt": "2026-07-20T22:50:28.517Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/README.md",
       "bytes": 4994,
       "sha256": "2b520803037118c4f3245aa330e67d06335d477918e04ed45492d05ed0b75d6d",
-      "modifiedAt": "2026-08-09T08:33:47.199Z"
+      "modifiedAt": "2026-07-20T22:50:33.052Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/tools/check-napi.js",
       "bytes": 3176,
       "sha256": "9e1207808023cd998fe9e377aefbe77d6c59fa129f94e6acbf24907149d8c11e",
-      "modifiedAt": "2026-08-09T08:33:46.005Z"
+      "modifiedAt": "2026-07-20T22:50:23.864Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/tools/clang-format.js",
       "bytes": 2002,
       "sha256": "3e0b5e6d6f1a0c5ed106115871d0fd48f37bac5554effdacaf8d2439f4ed0c65",
-      "modifiedAt": "2026-08-09T08:33:46.148Z"
+      "modifiedAt": "2026-07-20T22:50:24.568Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/tools/conversion.js",
       "bytes": 15001,
       "sha256": "9f375b0f9d9ec93c2ded07470478b3f523a2661c6ca707c28b0e9dae15009002",
-      "modifiedAt": "2026-08-09T08:33:46.702Z"
+      "modifiedAt": "2026-07-20T22:50:24.938Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/node_modules/node-addon-api/tools/README.md",
       "bytes": 3217,
       "sha256": "65e9ea918538f453166b10a1d609cf44cec3d2d01f23fecb5265fb3a4bf303d5",
-      "modifiedAt": "2026-08-09T08:33:47.340Z"
+      "modifiedAt": "2026-07-20T22:50:36.534Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/package.json",
       "bytes": 4818,
       "sha256": "6ab9b8bf9b42112322fb487f50c8b9b0a8fc03ce2a726f5e918258f7784db9db",
-      "modifiedAt": "2026-08-09T08:33:53.841Z"
+      "modifiedAt": "2026-07-20T22:52:38.396Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/postinstall.js",
       "bytes": 1392,
       "sha256": "31f9eae69d29466161f74aecb003dbe54c6f0690a375f44f2c3693f6624130d0",
-      "modifiedAt": "2026-08-09T08:33:47.660Z"
+      "modifiedAt": "2026-07-20T22:50:45.257Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/prebuilds/darwin-arm64/steam-overlay.node",
       "bytes": 81536,
       "sha256": "2740de2f1eb721a7f2dfaaa84d15220497e9dfdbe3201b3d832ad8e4febfc804",
-      "modifiedAt": "2026-08-09T08:34:00.145Z"
+      "modifiedAt": "2026-07-20T22:53:56.049Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/prebuilds/darwin-x64/steam-overlay.node",
       "bytes": 36696,
       "sha256": "f7c72a85ec471628e95daca1e3f1b3e8c3af6703dc995eb2b62d95bbe043c3c1",
-      "modifiedAt": "2026-08-09T08:34:00.178Z"
+      "modifiedAt": "2026-07-20T22:53:56.965Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/prebuilds/linux-x64/steam-overlay.node",
       "bytes": 33880,
       "sha256": "dfe3cf4191c360fe16c4c1eb8edf1a3d179436de5827af1c62bc3d7e1779d36f",
-      "modifiedAt": "2026-08-09T08:34:00.217Z"
+      "modifiedAt": "2026-07-20T22:53:57.826Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/prebuilds/win32-x64/steam-overlay.node",
       "bytes": 171008,
       "sha256": "f3bde2f48c4dd7f5e15b9949d754da1d70e6b9ca6bd352ed3ed22baaf0b0a394",
-      "modifiedAt": "2026-08-09T08:34:00.265Z"
+      "modifiedAt": "2026-07-20T22:53:59.189Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/README.md",
       "bytes": 35114,
       "sha256": "8f38925d692d8bb83fc6bff6105f0747d40614c08d0df6d79649230f2748fa7e",
-      "modifiedAt": "2026-08-09T08:34:00.077Z"
+      "modifiedAt": "2026-07-20T22:53:54.109Z"
     },
     {
       "path": "resources/app.asar.unpacked/node_modules/steamworks-ffi-node/verify-sdk-setup.js",
       "bytes": 7612,
       "sha256": "aefad1c496ce2e5a7d417bf46a9a80626dc3c4e8d00d43daa65ae92a9bf91339",
-      "modifiedAt": "2026-08-09T08:33:53.740Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/androidarm64/libsteam_api.so",
-      "bytes": 524392,
-      "sha256": "ee573a79ad0bf0fa4e6530fa35a4e2911e9f473141a7580b83a3d79fd1679646",
-      "modifiedAt": "2026-03-10T23:13:36.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/linux32/libsteam_api.so",
-      "bytes": 373416,
-      "sha256": "c5508fc7433d35eefc9beb711a294134db938183ba8cd2c6325023102748eb8a",
-      "modifiedAt": "2026-03-10T23:13:38.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/linux64/libsteam_api.so",
-      "bytes": 383432,
-      "sha256": "ec4797f76a206eb0af627af0f0788eb5a2eabf5dee38ee0a6affbaa44a645f4e",
-      "modifiedAt": "2026-03-10T23:13:42.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/linuxarm64/libsteam_api.so",
-      "bytes": 381904,
-      "sha256": "179bfb241de94c0320755b558d91edb0004f72d98bf7ad6f1147f9ada835dcbc",
-      "modifiedAt": "2026-03-10T23:13:48.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/osx/libsteam_api.dylib",
-      "bytes": 427968,
-      "sha256": "1e2282e1032851e423b501c2c483586793f1d5e11585edaae4c78d6a3abad1eb",
-      "modifiedAt": "2026-03-10T23:13:34.000Z"
+      "modifiedAt": "2026-07-20T22:52:36.650Z"
     },
     {
       "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/steam_api.dll",
       "bytes": 274584,
       "sha256": "fdafb7c65ec7d4182b42bf92cc8671c68e4dc547cc6e613899d2618a47eb65da",
-      "modifiedAt": "2026-03-11T04:06:20.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/steam_api.lib",
-      "bytes": 368772,
-      "sha256": "5a7e876ebf82e15b283c0be262108728a5795acc41d9d53b1c1a687c4b3dc4d1",
-      "modifiedAt": "2026-03-10T23:14:30.000Z"
+      "modifiedAt": "2026-06-04T17:20:54.000Z"
     },
     {
       "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/win64/steam_api64.dll",
       "bytes": 317080,
       "sha256": "eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75",
-      "modifiedAt": "2026-03-10T23:13:48.000Z"
-    },
-    {
-      "path": "resources/app.asar.unpacked/steam_sdk/sdk/redistributable_bin/win64/steam_api64.lib",
-      "bytes": 365644,
-      "sha256": "37e58b9bf3c1097dfdffb88e79370c9638bf17eaa4d266e4907cd12cc16a1935",
-      "modifiedAt": "2026-03-10T23:14:34.000Z"
+      "modifiedAt": "2026-06-04T17:20:54.000Z"
     },
     {
       "path": "snapshot_blob.bin",
       "bytes": 346432,
       "sha256": "df9a17d5d9929ec6eff408acb080ecd0f2a3a6f4b093a760ef962ec47ae91946",
-      "modifiedAt": "2026-08-09T09:13:51.048Z"
+      "modifiedAt": "2026-08-09T17:24:36.137Z"
     },
     {
       "path": "steam_api.dll",
       "bytes": 274584,
       "sha256": "fdafb7c65ec7d4182b42bf92cc8671c68e4dc547cc6e613899d2618a47eb65da",
-      "modifiedAt": "2026-03-11T04:06:20.000Z"
+      "modifiedAt": "2026-06-04T17:20:54.000Z"
     },
     {
       "path": "steam_api64.dll",
       "bytes": 317080,
       "sha256": "eb17909a76668cf9ae0b92a618a34a50f6c73d3a6787cb4dd8ce36a8b10bfb75",
-      "modifiedAt": "2026-03-10T23:13:48.000Z"
+      "modifiedAt": "2026-06-04T17:20:54.000Z"
     },
     {
       "path": "v8_context_snapshot.bin",
       "bytes": 721176,
       "sha256": "a04efc1404d85595fb2c9c00268f6d49aee41cb63897ecb9ce5408a68dbb041f",
-      "modifiedAt": "2026-08-09T09:13:49.313Z"
+      "modifiedAt": "2026-08-09T17:24:34.897Z"
     },
     {
       "path": "vk_swiftshader_icd.json",
       "bytes": 106,
       "sha256": "32d83ff113fef532a9f97e0d2831f8656628ab1c99e9060f0332b1532839afd9",
-      "modifiedAt": "2026-08-09T09:13:49.190Z"
+      "modifiedAt": "2026-08-09T17:24:34.767Z"
     },
     {
       "path": "vk_swiftshader.dll",
       "bytes": 5611520,
       "sha256": "6be6d3b872a55209e842aae41584d409db3596c72911356fddffc405c3754887",
-      "modifiedAt": "2026-08-09T09:13:47.697Z"
+      "modifiedAt": "2026-08-09T17:24:32.115Z"
     },
     {
       "path": "vulkan-1.dll",
       "bytes": 954368,
       "sha256": "1c01a7dc24b5b6b9cb88026adbdf5e99551e091fbdd9d552e6d472d2692a6aa5",
-      "modifiedAt": "2026-08-09T09:13:48.438Z"
+      "modifiedAt": "2026-08-09T17:24:33.014Z"
     }
   ]
 }
