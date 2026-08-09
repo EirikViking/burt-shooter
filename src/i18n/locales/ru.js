@@ -19,6 +19,7 @@ import { getWonderCodexSourceText } from '../wonderCodexSourceText.js';
 import { getHangarLaunchModeSourceText } from '../hangarLaunchModeSourceText.js';
 import { getNewestTyrianFeedbackSourceText } from '../newestTyrianFeedbackSourceText.js';
 import { getSecondPolishSourceText } from '../secondPolishSourceText.js';
+import { getTyrian112SourceText } from '../tyrian112SourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "\u041c\u0410\u0420\u0428\u0420\u0423\u0422",
@@ -1853,6 +1854,6 @@ export const ru = {
   diagnostics: {
     interfaceLanguage: 'Язык интерфейса'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('ru'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('ru'), ...getNovaHumorSourceText('ru'), ...getMayhemModesSourceText('ru'), ...getOverrunModeSourceText('ru'), ...getEliteExpansionSourceText('ru'), ...getHowToPlayCompleteSourceText('ru'), ...getTacticalFusionSourceText('ru'), ...getDailyCabinetSignalSourceText('ru'), ...getMenuHierarchySourceText('ru'), ...getForumFollowupSourceText('ru'), ...getPlayerFeedbackReliabilitySourceText('ru'), ...getTyrianFeedbackSourceText('ru'), ...getCompetitionLearningSourceText('ru'), ...getTacticalDraftClaritySourceText('ru'), ...getWonderCodexSourceText('ru'), ...getHangarLaunchModeSourceText('ru'), ...getNewestTyrianFeedbackSourceText('ru'), ...getSecondPolishSourceText('ru'), ...getTyrian112SourceText('ru') }),
   patterns
 };

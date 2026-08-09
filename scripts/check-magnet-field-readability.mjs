@@ -199,12 +199,26 @@ try {
       player.magnetRadius = radius;
       player.magnetStrength = strength;
       let frames = 0;
-      while (Math.hypot(probe.x - player.x, probe.y - player.y) > 36 && frames < 180) {
+      while (!probe.magnetStaged && frames < 180) {
         play.applyMagnetPull(1);
         frames += 1;
       }
+      const stagingDistance = Number(probe.magnetStagingDistance) || 0;
+      const finalDistance = Math.hypot(probe.x - player.x, probe.y - player.y);
+      const debugStagedPowerupCount = Number(
+        play.magnetFieldVisual?.__debugMagnetField?.stagedPowerupCount
+      ) || 0;
       probe.active = false;
-      return { frames, startDistance, finalDistance: Math.round(Math.hypot(probe.x - player.x, probe.y - player.y)), radius, strength };
+      return {
+        frames,
+        startDistance,
+        finalDistance: Math.round(finalDistance * 10) / 10,
+        stagingDistance,
+        staged: Boolean(probe.magnetStaged),
+        debugStagedPowerupCount,
+        radius,
+        strength
+      };
     };
     const acquisition = {
       timed: measureAcquisition(180, 0.14, 170, 'shield'),
@@ -273,8 +287,19 @@ try {
   if ((state.moved?.collectibleCore || 0) <= 0.5) failures.push(`collectible bonus core was not pulled: ${state.moved?.collectibleCore}`);
   if ((state.moved?.hazardDrone || 0) > 0.1) failures.push(`hazard bonus drone must not be pulled toward the player: ${state.moved?.hazardDrone}`);
   if ((state.debug?.bonusTargetCount || 0) !== 1) failures.push(`only the collectible bonus core should be a bonus pull target: ${state.debug?.bonusTargetCount}`);
-  if ((state.acquisition?.timed?.frames || 999) >= 120 || state.acquisition?.timed?.finalDistance > 36) failures.push(`timed magnet acquisition too weak: ${JSON.stringify(state.acquisition?.timed)}`);
-  if ((state.acquisition?.permanent?.frames || 999) >= 140 || state.acquisition?.permanent?.finalDistance > 36) failures.push(`permanent magnet acquisition too weak: ${JSON.stringify(state.acquisition?.permanent)}`);
+  const stagedCleanly = (entry, maxFrames) => Boolean(
+    entry?.staged
+    && entry.frames < maxFrames
+    && entry.stagingDistance >= 48
+    && entry.finalDistance >= entry.stagingDistance - 1
+    && entry.finalDistance <= entry.stagingDistance + 2
+  );
+  if (!stagedCleanly(state.acquisition?.timed, 120)) failures.push(`timed magnet staging failed: ${JSON.stringify(state.acquisition?.timed)}`);
+  if (!stagedCleanly(state.acquisition?.permanent, 140)) failures.push(`permanent magnet staging failed: ${JSON.stringify(state.acquisition?.permanent)}`);
+  if ((state.acquisition?.timed?.debugStagedPowerupCount || 0) < 1
+    || (state.acquisition?.permanent?.debugStagedPowerupCount || 0) < 1) {
+    failures.push(`magnet debug did not report staged pickup probes: ${JSON.stringify(state.acquisition)}`);
+  }
   if (!hidden.ok) failures.push(hidden.reason || 'hidden state failed');
   if (hidden.visible || hidden.debug?.visible) failures.push(`magnet field did not hide after deactivation: ${JSON.stringify(hidden)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);

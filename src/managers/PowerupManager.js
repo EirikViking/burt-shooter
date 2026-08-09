@@ -1123,6 +1123,7 @@ export class PowerupManager {
     this.spawnedEventKeys = new Map();
     this.spawnHistory = [];
     this.duplicateSpawnAttempts = [];
+    this.enduranceLifeBlocks = [];
     this.dropsThisLevel = 0;
     this.dropsThisRun = 0; // Track total drops this run
     const runStartLevel = Math.max(1, Math.floor(Number(game?.level) || 1));
@@ -1141,6 +1142,16 @@ export class PowerupManager {
     this.debugPowerupTypes = ALL_POWERUP_TYPES;
   }
 
+  areExtraLifeDropsEnabled(level = this.currentLevel) {
+    const finalSector = Math.max(1, Math.floor(Number(BalanceConfig.powerups.extraLifeFinalSector) || 100));
+    return BalanceConfig.powerups.extraLifeDropsEnabled === true
+      && Math.max(1, Math.floor(Number(level) || 1)) <= finalSector;
+  }
+
+  isExtraLifeType(type) {
+    return type === 'life' || type === 'super_extra_life' || type === 'nova_miracle';
+  }
+
   checkLevelReset(level) {
     if (this.currentLevel !== level) {
       if (level === 1) {
@@ -1155,7 +1166,8 @@ export class PowerupManager {
       this.extraLifeSpawnedThisLevel = false;
 
       // Force spawn guaranteed extra life if needed.
-      const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
+      const extraLifeDropsEnabled = this.areExtraLifeDropsEnabled(level);
+      if (!extraLifeDropsEnabled) this.pendingGuaranteedExtraLifeLevel = null;
       const levelsSinceLastLife = level - this.lastExtraLifeLevel;
       const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
       if (extraLifeDropsEnabled && guaranteedLifeLevels > 0 && levelsSinceLastLife >= guaranteedLifeLevels) {
@@ -1179,7 +1191,7 @@ export class PowerupManager {
     }
     if (this.game?.scenes?.play?.overrunMilestoneInterlude?.active) return;
 
-    const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
+    const extraLifeDropsEnabled = this.areExtraLifeDropsEnabled(pendingLevel);
     const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
     const levelsSinceLastLife = pendingLevel - this.lastExtraLifeLevel;
     if (extraLifeDropsEnabled && guaranteedLifeLevels > 0 && levelsSinceLastLife >= guaranteedLifeLevels) {
@@ -1190,6 +1202,7 @@ export class PowerupManager {
   }
 
   forceExtraLifeSpawn() {
+    if (!this.areExtraLifeDropsEnabled()) return false;
     // Spawn guaranteed extra life at safe, reachable position
     const screenWidth = this.game.getWidth ? this.game.getWidth() : 800;
     const safeX = screenWidth * 0.3 + Math.random() * screenWidth * 0.4; // Middle 40% of screen
@@ -1263,7 +1276,7 @@ export class PowerupManager {
     const shieldActive = player && player.shieldActive;
 
     // Extra lives are explicit only; ordinary random drops should not quietly add lives.
-    const extraLifeDropsEnabled = BalanceConfig.powerups.extraLifeDropsEnabled === true;
+    const extraLifeDropsEnabled = this.areExtraLifeDropsEnabled();
     const levelsSinceLastLife = this.currentLevel - this.lastExtraLifeLevel;
     const guaranteedLifeLevels = Number(BalanceConfig.powerups.extraLifeGuaranteedEveryLevels) || 0;
     const needsGuaranteedLife = extraLifeDropsEnabled &&
@@ -1413,11 +1426,13 @@ export class PowerupManager {
   }
 
   canSpawnSuperExtraLife() {
-    return !this.powerups.some((powerup) => powerup.type === 'super_extra_life' && powerup.active);
+    return this.areExtraLifeDropsEnabled()
+      && !this.powerups.some((powerup) => powerup.type === 'super_extra_life' && powerup.active);
   }
 
   canSpawnNovaMiracle() {
-    return this.novaMiracleSpawnedThisRun !== true
+    return this.areExtraLifeDropsEnabled()
+      && this.novaMiracleSpawnedThisRun !== true
       && !this.powerups.some((powerup) => powerup.type === 'nova_miracle' && powerup.active);
   }
 
@@ -1427,6 +1442,21 @@ export class PowerupManager {
   }
 
   createPowerup(x, y, type, options = {}) {
+    const source = String(options.source || 'specific');
+    const debugOverride = options.allowEnduranceLife === true || source.startsWith('debug');
+    if (this.isExtraLifeType(type) && !this.areExtraLifeDropsEnabled() && !debugOverride) {
+      const blocked = {
+        type,
+        source,
+        sector: this.currentLevel,
+        finalSector: Math.max(1, Math.floor(Number(BalanceConfig.powerups.extraLifeFinalSector) || 100)),
+        blockedAt: Date.now()
+      };
+      this.enduranceLifeBlocks.push(blocked);
+      if (this.enduranceLifeBlocks.length > 24) this.enduranceLifeBlocks.shift();
+      console.log(`[PowerupManager] BLOCKED endurance extra life type=${type} sector=${this.currentLevel} source=${source}`);
+      return null;
+    }
     const spawnKey = this.normalizeSpawnKey(options.spawnKey);
     if (spawnKey && this.spawnedEventKeys.has(spawnKey)) {
       const blocked = {
@@ -1495,6 +1525,9 @@ export class PowerupManager {
     return {
       activeCount: this.powerups.filter((powerup) => powerup?.active !== false).length,
       duplicateBlockedCount: this.duplicateSpawnAttempts.length,
+      enduranceLifeBlockedCount: this.enduranceLifeBlocks.length,
+      extraLifeDropsEnabled: this.areExtraLifeDropsEnabled(),
+      extraLifeFinalSector: Math.max(1, Math.floor(Number(BalanceConfig.powerups.extraLifeFinalSector) || 100)),
       active: this.powerups
         .filter((powerup) => powerup?.active !== false)
         .map((powerup) => ({

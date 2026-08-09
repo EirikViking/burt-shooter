@@ -8,6 +8,7 @@ export const KEYBOARD_ACTIONS = Object.freeze([
   { id: 'moveDown', label: 'MOVE DOWN', defaults: ['ArrowDown', 'KeyS'] },
   { id: 'focus', label: 'FOCUS', defaults: ['ControlLeft', 'ControlRight'] },
   { id: 'shoot', label: 'SHOOT', defaults: ['Space'] },
+  { id: 'specialFire', label: 'SPECIAL FIRE', defaults: ['KeyE'] },
   { id: 'dodge', label: 'DODGE / PHASE', defaults: ['ShiftLeft', 'ShiftRight'] },
   { id: 'pause', label: 'PAUSED', defaults: ['KeyP', 'Escape'] }
 ]);
@@ -21,6 +22,7 @@ const QUERY_ALIASES = Object.freeze({
   ControlLeft: 'focus', ControlRight: 'focus', control: 'focus',
   ShiftLeft: 'dodge', ShiftRight: 'dodge', Shift: 'dodge',
   Space: 'shoot', ' ': 'shoot', shoot: 'shoot',
+  KeyE: 'specialFire', e: 'specialFire', E: 'specialFire', specialFire: 'specialFire',
   KeyP: 'pause', p: 'pause', P: 'pause', Escape: 'pause', pause: 'pause',
   focus: 'focus', dodge: 'dodge'
 });

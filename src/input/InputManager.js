@@ -19,6 +19,7 @@ export class InputManager {
     this.touches = [];
     this.touchFireActive = false;
     this.mouseFireActive = false;
+    this.specialFirePointerJustPressed = false;
     this.fireToggleLatched = false;
     this.controlSettings = getControlSettings();
     this.gameplaySurface = null;
@@ -55,6 +56,11 @@ export class InputManager {
           this.mouseFireActive = true;
         }
       }
+      const specialOnGameplayCanvas = e.button === 2 && this.isGameplayPointerEvent(e);
+      if (specialOnGameplayCanvas && this.canAcceptGameplayPointerInput()) {
+        this.specialFirePointerJustPressed = true;
+        e.preventDefault?.();
+      }
       this.recordContinuityEvent('pointer_down', { button: e.button });
     };
     this.handleMouseUp = (e) => {
@@ -74,15 +80,20 @@ export class InputManager {
     this.handlePointerCancel = () => {
       this.touchFireActive = false;
       this.mouseFireActive = false;
+      this.specialFirePointerJustPressed = false;
       this.clearMouseSteeringTarget('pointer_cancel');
       this.touches = [];
       this.recordContinuityEvent('pointer_cancel');
+    };
+    this.handleContextMenu = (e) => {
+      if (this.isGameplayPointerEvent(e)) e.preventDefault?.();
     };
     document.addEventListener('pointerdown', this.handleMouseDown);
     document.addEventListener('pointerup', this.handleMouseUp);
     document.addEventListener('pointermove', this.handlePointerMove);
     document.addEventListener('pointerleave', this.handlePointerLeave, true);
     document.addEventListener('pointercancel', this.handlePointerCancel);
+    document.addEventListener('contextmenu', this.handleContextMenu);
   }
 
   setupKeyboard() {
@@ -229,6 +240,8 @@ export class InputManager {
       focus: false,
       pause: false,
       pauseJustPressed: false,
+      specialFire: false,
+      specialFireJustPressed: false,
       buttons: {},
       updatedAt: 0
     };
@@ -351,6 +364,7 @@ export class InputManager {
         dodge: false,
         focus: false,
         pause: false,
+        specialFire: false,
         dpadLeft: false,
         dpadRight: false,
         dpadUp: false,
@@ -381,6 +395,7 @@ export class InputManager {
       pause: this.isButtonPressed(buttons, 9) ||
         this.isButtonPressed(buttons, 8) ||
         this.isButtonPressed(buttons, 16),
+      specialFire: this.isButtonPressed(buttons, 2),
       dpadLeft,
       dpadRight,
       dpadUp,
@@ -427,14 +442,19 @@ export class InputManager {
     const dodge = this.applySuppressedButton('dodge', raw.dodge);
     const focus = this.applySuppressedButton('focus', raw.focus);
     const pause = this.applySuppressedButton('pause', raw.pause);
+    const specialFire = this.applySuppressedButton('specialFire', raw.specialFire);
     const pauseWasPressed = Boolean(this.previousGamepadButtons.pause);
     const pauseJustPressed = Boolean(pause && (this.gamepadState.pauseJustPressed || !pauseWasPressed));
+    const specialFireWasPressed = Boolean(this.previousGamepadButtons.specialFire);
+    const specialFireJustPressed = Boolean(specialFire
+      && (this.gamepadState.specialFireJustPressed || !specialFireWasPressed));
     const controllerActive = Math.abs(raw.moveX) > 0 ||
       Math.abs(raw.moveY) > 0 ||
       raw.firing ||
       raw.dodge ||
       raw.focus ||
-      raw.pause;
+      raw.pause ||
+      raw.specialFire;
     if (controllerActive) markControllerInputActive();
 
     this.gamepadState = {
@@ -448,6 +468,8 @@ export class InputManager {
       focus,
       pause,
       pauseJustPressed,
+      specialFire,
+      specialFireJustPressed,
       buttons: {
         dpadLeft: moveX < -0.35 && raw.dpadLeft,
         dpadRight: moveX > 0.35 && raw.dpadRight,
@@ -456,11 +478,12 @@ export class InputManager {
         firing,
         dodge,
         focus,
-        pause
+        pause,
+        specialFire
       },
       updatedAt: now
     };
-    this.previousGamepadButtons = { pause };
+    this.previousGamepadButtons = { pause, specialFire };
     return this.gamepadState;
   }
 
@@ -504,6 +527,7 @@ export class InputManager {
     this.keys = nextKeys;
     this.justPressed = {};
     this.justPressedActions = {};
+    this.specialFirePointerJustPressed = false;
     this.touches = [];
     if (!preserveFire) this.touchFireActive = false;
     if (!preserveFire) {
@@ -522,6 +546,7 @@ export class InputManager {
       if (raw.dodge) this.suppressedGamepadActions.set('dodge', true);
       if (raw.focus) this.suppressedGamepadActions.set('focus', true);
       if (raw.pause) this.suppressedGamepadActions.set('pause', true);
+      if (raw.specialFire) this.suppressedGamepadActions.set('specialFire', true);
       if (raw.firing && !preserveFire) this.suppressedGamepadActions.set('firing', true);
     }
 
@@ -544,7 +569,8 @@ export class InputManager {
         firing: preservedGamepadFire,
         dodge: false,
         focus: false,
-        pause: false
+        pause: false,
+        specialFire: false
       },
       updatedAt: 0
     };
@@ -567,6 +593,7 @@ export class InputManager {
       touchFireActive: Boolean(this.touchFireActive),
       mouseFireActive: Boolean(this.mouseFireActive),
       fireToggleLatched: Boolean(this.fireToggleLatched),
+      specialFirePointerJustPressed: Boolean(this.specialFirePointerJustPressed),
       controlSettings: { ...this.controlSettings },
       mouseSteeringTarget: this.mouseSteeringTarget ? { ...this.mouseSteeringTarget } : null,
       lastMovementDevice: this.lastMovementDevice,
@@ -616,7 +643,23 @@ export class InputManager {
     if (action === 'focus') return gamepad.focus;
     if (action === 'shoot') return gamepad.firing;
     if (action === 'dodge') return gamepad.dodge;
+    if (action === 'specialFire') return gamepad.specialFire;
     return false;
+  }
+
+  consumeSpecialFirePress() {
+    const keyboardPressed = Boolean(this.justPressedActions.specialFire);
+    this.justPressedActions.specialFire = false;
+    for (const key of ['KeyE', 'e', 'E']) this.justPressed[key] = false;
+    const pointerPressed = Boolean(this.specialFirePointerJustPressed);
+    this.specialFirePointerJustPressed = false;
+    const gamepad = this.pollGamepad(true);
+    const gamepadPressed = Boolean(gamepad.specialFireJustPressed);
+    if (gamepadPressed) {
+      this.gamepadState.specialFireJustPressed = false;
+      this.previousGamepadButtons.specialFire = true;
+    }
+    return keyboardPressed || pointerPressed || gamepadPressed;
   }
 
   isKeyPressed(key) {
@@ -669,6 +712,7 @@ export class InputManager {
     document.removeEventListener('pointermove', this.handlePointerMove);
     document.removeEventListener('pointerleave', this.handlePointerLeave, true);
     document.removeEventListener('pointercancel', this.handlePointerCancel);
+    document.removeEventListener('contextmenu', this.handleContextMenu);
     this.keys = {};
     this.justPressed = {};
     this.justPressedActions = {};

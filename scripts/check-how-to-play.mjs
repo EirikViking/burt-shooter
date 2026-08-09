@@ -142,8 +142,8 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('3 GRAZES ARM YOUR NEXT SHOT'), `${label} should explain Graze Break arming`);
     assert(joined.includes('Danger Dodge achievements'), `${label} should connect chained dodges to achievements`);
     assert(joined.includes('fire the charged magenta shot into enemy fire'), `${label} should explain how to spend Graze Break`);
-    assert(joined.includes('P-DEF AUTO-INTERCEPTS // BOMBS TAP FIRE'), `${label} should explain Point Defense and bomb controls`);
-    assert(joined.includes('Bomb charges stay banked'), `${label} should explain intentional bomb spending`);
+    assert(joined.includes('E / RIGHT MOUSE / GAMEPAD X'), `${label} should expose dedicated Special Fire controls`);
+    assert(joined.includes('without changing Toggle fire'), `${label} should explain Toggle-safe Bomb and Graze Break spending`);
   }
   if (expectedPage === 'modes') {
     assert(joined.includes('CLEAR S10 // BEAT YOUR BEST'), `${label} should explain the Daily Challenge goal`);
@@ -159,13 +159,13 @@ function assertCleanHelpCopy(state, label, expectedPage = state.howToPlayOverlay
     assert(joined.includes('competitive bests untouched'), `${label} should explain Overrun progression isolation`);
   }
   if (expectedPage === 'tactics') {
-    assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF 3'), `${label} should explain when Tactical Draft appears`);
+    assert(joined.includes('AFTER EACH BOSS: CHOOSE 1 OF UP TO 3'), `${label} should explain when Tactical Draft appears and its bounded offer count`);
     assert(joined.includes('OWN BOTH LISTED AUGMENTS // NO SCORE MULTIPLIER'), `${label} should explain how Fusion Protocols unlock without changing score rules`);
     assert(joined.includes('never adds a score multiplier'), `${label} should explain Fusion Protocol score fairness`);
-    assert(joined.includes('SECTOR 5 SCORE CHOICE // 2 PERMANENT BANS'), `${label} should explain the fixed score choice and two bans`);
+    assert(joined.includes('SECTOR 5 SCORE CHOICE // 2 BANS + 1 EACH 15 SECTORS'), `${label} should explain the fixed score choice and recurring bans`);
     assert(joined.includes('Combo Anchor is always offered'), `${label} should explain score-route fairness`);
-    assert(joined.includes('R / GAMEPAD Y: RESCAN ONCE // L / GAMEPAD X: HOLD ONE'), `${label} should explain both Draft agency tools`);
-    assert(joined.includes('taking the held card consumes it'), `${label} should explain how Rescan and Hold remain bounded`);
+    assert(joined.includes('R / Y: RESCAN // L / X: HOLD // Q / B: PASS'), `${label} should explain Draft rescan, hold, and pass controls`);
+    assert(joined.includes('pass without installing an upgrade'), `${label} should explain that passing a Draft does not install an upgrade`);
     assert(joined.includes('SAME NAME: TIMED PICKUP TAKES PRIORITY'), `${label} should explain ordinary pickup priority`);
     assert(joined.includes('STACK I 100% // II 55% // III 30%'), `${label} should explain all three stack values`);
     assert(joined.includes('Sixteen repeatable augments can reach Stack III'), `${label} should explain Tactical evolution and Overdrive identities`);

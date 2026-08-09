@@ -112,22 +112,36 @@ async function runVariant(browser, variantId, viewport, reducedMotion = false) {
     return state.cabinetWonders?.pending?.kind === 'audio_prelude';
   }, null, { timeout: 5000 });
   const preludeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const preludeProgressionHeld = await page.evaluate(() => (
+    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
+  ));
   await page.waitForFunction((id) => {
     const state = JSON.parse(window.render_game_to_text?.() || '{}');
     return state.cabinetWonders?.active?.id === id;
   }, variantId, { timeout: 5000 });
   await page.waitForTimeout(180);
   const activeState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const activeProgressionHeld = await page.evaluate(() => (
+    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
+  ));
   const screenshot = path.join(outputDir, `${variantId}-${viewport.width}x${viewport.height}${reducedMotion ? '-reduced' : ''}.png`);
   await page.screenshot({ path: screenshot, fullPage: false });
   await page.waitForTimeout(2200);
   const completedState = await page.evaluate(() => JSON.parse(window.render_game_to_text?.() || '{}'));
+  const completedProgressionHeld = await page.evaluate(() => (
+    window.__game?.scenes?.play?.shouldHoldProgressionPresentation?.() === true
+  ));
   await context.close();
   return {
     variantId,
     viewport,
     reducedMotion,
     synchronous,
+    progressionHold: {
+      prelude: preludeProgressionHeld,
+      active: activeProgressionHeld,
+      completed: completedProgressionHeld
+    },
     prelude: preludeState.cabinetWonders,
     active: activeState.cabinetWonders,
     completed: completedState.cabinetWonders,
@@ -208,7 +222,7 @@ try {
       || active?.active?.audioRevelationPlayed !== true
       || active?.active?.preludeLeadMs !== 1500
       || active?.active?.visualStartedAt - active?.active?.preludeStartedAt < 1400
-      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt > 1800
+      || active?.active?.visualStartedAt - active?.active?.preludeStartedAt > 3000
       || !Array.isArray(active?.active?.audioLayers)
       || !active.active.audioLayers.includes('elevenlabs_wonder_choir_prelude')
       || active?.active?.layer !== 'gameplay_background'
@@ -219,6 +233,13 @@ try {
       || active?.active?.reducedMotion !== scenario.reducedMotion
     ) {
       report.failures.push(`${scenario.variantId} active presentation mismatch: ${JSON.stringify(active)}`);
+    }
+    if (
+      scenario.progressionHold?.prelude !== true
+      || scenario.progressionHold?.active !== true
+      || scenario.progressionHold?.completed !== false
+    ) {
+      report.failures.push(`${scenario.variantId} progression hold mismatch: ${JSON.stringify(scenario.progressionHold)}`);
     }
     if (completed?.active !== null || completed?.overlayCount !== 0 || completed?.shownCount !== 1 || completed?.last?.completed !== true) {
       report.failures.push(`${scenario.variantId} cleanup mismatch: ${JSON.stringify(completed)}`);

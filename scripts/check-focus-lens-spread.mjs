@@ -195,15 +195,18 @@ try {
 
     const friendly = new Bullet(320, 700, 0, -12, 1, 0x66f7ff, true);
     const bomb = new Bullet(360, 700, 0, -8, 5, 0xffa84d, true);
+    const priority = new Bullet(380, 700, 0, -11, 3, 0x8df7ff, true);
     const hostile = new Bullet(340, 220, 0, 6, 1, 0xff6174, false);
     bomb.isBomb = true;
+    priority.isPlasmaLance = true;
 
     const savedPlayerBullets = manager.playerBullets;
-    manager.playerBullets = [friendly, bomb];
+    manager.playerBullets = [friendly, bomb, priority];
     manager.setFocusCombatClarity(true);
     const focused = {
       friendlyAlpha: friendly.sprite.alpha,
       bombAlpha: bomb.sprite.alpha,
+      priorityAlpha: priority.sprite.alpha,
       hostileAlpha: hostile.sprite.alpha,
       friendlyZ: friendly.sprite.zIndex,
       hostileZ: hostile.sprite.zIndex
@@ -213,14 +216,17 @@ try {
     manager.playerBullets = savedPlayerBullets;
     friendly.destroy?.();
     bomb.destroy?.();
+    priority.destroy?.();
     hostile.destroy?.();
     return { focused, restoredFriendlyAlpha };
   });
 
   assert(clarity.focused.friendlyAlpha <= 0.45,
     `Focus left friendly projectile alpha at ${clarity.focused.friendlyAlpha}`);
-  assert(clarity.focused.bombAlpha === 1,
-    `Focus dimmed the tactical bomb to ${clarity.focused.bombAlpha}`);
+  assert(clarity.focused.bombAlpha <= 0.45,
+    `Focus left the tactical bomb bright at ${clarity.focused.bombAlpha}`);
+  assert(clarity.focused.priorityAlpha <= 0.45,
+    `Focus left a priority piercing shot bright at ${clarity.focused.priorityAlpha}`);
   assert(clarity.focused.hostileAlpha === 1,
     `Focus dimmed hostile fire to ${clarity.focused.hostileAlpha}`);
   assert(clarity.focused.hostileZ > clarity.focused.friendlyZ,
@@ -345,7 +351,7 @@ try {
     ctx.fillText('FOCUS LENS // LIVE VOLLEY SPREAD EVIDENCE', 960, 58);
     ctx.fillStyle = '#9cfbff';
     ctx.font = '700 22px Rajdhani, Arial';
-    ctx.fillText('Focus adapts by hull • friendly fire dims • bombs and hostile fire stay fully visible', 960, 94);
+    ctx.fillText('Focus adapts by hull • all friendly fire dims • hostile fire stays fully visible', 960, 94);
 
     const colors = { unfocused: '#ff55d9', focused: '#66f7ff' };
     const panelWidth = 590;

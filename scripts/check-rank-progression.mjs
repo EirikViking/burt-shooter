@@ -1,4 +1,5 @@
 import { ACHIEVEMENTS, getRankAchievementId } from '../src/achievements/AchievementCatalog.js';
+import { RunPacingConfig } from '../src/config/RunPacingConfig.js';
 import {
   NUM_RANKS,
   getPilotRankProgress,
@@ -10,6 +11,7 @@ import {
   HANGAR_PROGRESS_KEY,
   LEGACY_UNLOCK_PROGRESS_KEY,
   applyRunProgression,
+  calculatePilotXpForRun,
   previewRunProgression,
   readHangarProgressState
 } from '../src/progression/HangarProgressState.js';
@@ -43,6 +45,14 @@ if (getRankAchievementId(meteorNotaryRankIndex) !== 'ACH_RANK_23') fail('Meteor 
 if (ACHIEVEMENTS.length >= 100) fail(`achievement catalog must stay below Steam's 100 achievement limit, got ${ACHIEVEMENTS.length}`);
 
 const before = readHangarProgressState();
+const normalRunXp = calculatePilotXpForRun({ score: 8400000, startSector: 1, sectorReached: 50 });
+const enduranceRunXp = calculatePilotXpForRun({ score: 46140000, startSector: 1, sectorReached: 130 });
+const shiftedEnduranceXp = calculatePilotXpForRun({ score: 46140000, startSector: 51, sectorReached: 180 });
+if (normalRunXp !== Math.floor(8400000 / RunPacingConfig.pilotXp.scoreDivisor) + 49 * RunPacingConfig.pilotXp.sectorReachedBase) {
+  fail('endurance bonus must not alter runs before 50 sectors cleared');
+}
+if (enduranceRunXp < 160000) fail(`130-sector endurance run should clear the reported late-rank gap, got ${enduranceRunXp}`);
+if (shiftedEnduranceXp !== enduranceRunXp) fail('endurance bonus must use sectors actually cleared, not absolute starting sector');
 const previewBeforeRaw = fakeStorage.get(HANGAR_PROGRESS_KEY);
 const preview = previewRunProgression({
   score: 250000,

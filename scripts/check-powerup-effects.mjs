@@ -1054,6 +1054,64 @@ try {
       'secondary compatible pickup expiry removed or corrupted the primary pickup');
     const compatibilityRegression = { rapidDouble, pierceDamage, magnetScore };
 
+    resetScene();
+    player.runAugmentIds = ['bomb', 'orbital_strike'];
+    player.consumedRunAugmentIds = [];
+    player.recalculateStats();
+    player.applyRunAugmentSectorStartEffects?.(game.level || 1);
+    player.applyPowerup('rapid_fire');
+    const activeBeforeBanking = player.activePowerup.type;
+    player.applyPowerup('bomb');
+    player.applyPowerup('orbital_strike');
+    const bankedBeforeReset = {
+      bombShots: player.bombShotsLeft,
+      orbitalCharges: player.orbitalStrikeCharges,
+      activePowerup: player.activePowerup.type
+    };
+    assert(bankedBeforeReset.bombShots === 5 && bankedBeforeReset.orbitalCharges === 7,
+      'permanent sector stock did not add dropped Bomb and Orbital charges', bankedBeforeReset);
+    assert(bankedBeforeReset.activePowerup === activeBeforeBanking,
+      'banked Bomb or Orbital pickup replaced the active timed pickup', bankedBeforeReset);
+    player.resetPowerups();
+    const bankedAfterReset = {
+      bombShots: player.bombShotsLeft,
+      orbitalCharges: player.orbitalStrikeCharges,
+      bombMax: player.bombMaxShots,
+      orbitalMax: player.orbitalStrikeMaxCharges
+    };
+    assert(bankedAfterReset.bombShots === 5 && bankedAfterReset.orbitalCharges === 7,
+      'powerup reset erased banked permanent Bomb or Orbital stock', bankedAfterReset);
+    const bankedStockRegression = { activeBeforeBanking, bankedBeforeReset, bankedAfterReset };
+
+    const spawnedLifeProbes = [];
+    manager.lastExtraLifeLevel = 99;
+    manager.checkLevelReset(100);
+    const sector100Life = manager.createPowerup(player.x, player.y - 100, 'life', { source: 'runtime_life_sector_100' });
+    if (sector100Life) spawnedLifeProbes.push(sector100Life);
+    manager.checkLevelReset(101);
+    const sector101Life = manager.createPowerup(player.x, player.y - 100, 'life', { source: 'runtime_life_sector_101' });
+    const sector101Super = manager.createPowerup(player.x, player.y - 100, 'super_extra_life', { source: 'runtime_super_life_sector_101' });
+    const sector101Miracle = manager.createPowerup(player.x, player.y - 100, 'nova_miracle', { source: 'runtime_miracle_sector_101' });
+    const debugLife = manager.createPowerup(player.x, player.y - 100, 'life', { source: 'debug_runtime_life_sector_101' });
+    if (debugLife) spawnedLifeProbes.push(debugLife);
+    assert(Boolean(sector100Life), 'Sector 100 should remain the final extra-life sector');
+    assert(!sector101Life && !sector101Super && !sector101Miracle,
+      'extra-life variants remained available after Sector 100');
+    assert(Boolean(debugLife), 'maintainer debug extra-life override was blocked');
+    const enduranceLifeRegression = {
+      sector100Allowed: Boolean(sector100Life),
+      sector101Blocked: !sector101Life && !sector101Super && !sector101Miracle,
+      debugOverrideAllowed: Boolean(debugLife),
+      blockedCount: manager.enduranceLifeBlocks?.length || 0
+    };
+    for (const probe of spawnedLifeProbes) {
+      probe.active = false;
+      if (probe.sprite?.parent) probe.sprite.parent.removeChild(probe.sprite);
+      probe.sprite?.destroy?.({ children: true });
+    }
+    manager.powerups = manager.powerups.filter((entry) => !spawnedLifeProbes.includes(entry));
+    manager.checkLevelReset(game.level || 1);
+
     player.weaponProfile = savedDoubleShotState.weaponProfile;
     player.runAugmentIds = savedDoubleShotState.runAugmentIds;
     player.consumedRunAugmentIds = savedDoubleShotState.consumedRunAugmentIds;
@@ -1078,12 +1136,83 @@ try {
       results,
       doubleShotRegression,
       compatibilityRegression,
+      bankedStockRegression,
+      enduranceLifeRegression,
       runClockProbe,
       gameplayTimerProbe,
       pickupCleanupProbe,
       finalState: renderState()
     };
   }, powerupTypes);
+
+  const specialFireProbe = await page.evaluate(async () => {
+    const play = window.__game?.scenes?.play;
+    const player = play?.player;
+    const input = play?.inputManager;
+    if (!play || !player || !input) throw new Error('Missing play state for Special Fire probe');
+    player.resetPowerups?.();
+    const target = {
+      active: true,
+      waitingForEntry: false,
+      kind: 'special_fire_probe',
+      type: 'special_fire_probe',
+      x: player.x,
+      y: player.y - 180,
+      radius: 24,
+      health: 9999,
+      maxHealth: 9999,
+      scoreValue: 0,
+      update() {},
+      canShoot() { return false; },
+      shoot() { return null; },
+      takeDamage(damage) {
+        this.health -= Math.max(0, Number(damage) || 0);
+        return false;
+      }
+    };
+    play.enemyManager.enemies.push(target);
+    play.enemyManager.state = 'WAVE_ACTIVE';
+    player.bombShotsLeft = 1;
+    player.bombMaxShots = 1;
+    player.bombArmedAt = player.getGameplayClockMs() - 1;
+    play.grazeBreakReady = true;
+    play.grazeBreakExpiresAt = play.getGameplayClockMs() + 6500;
+    play.grazeBreakNeedsFireRelease = true;
+    play.grazeBreakReleasePrimed = false;
+    player.shootCooldown = 0;
+    input.fireToggleLatched = true;
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE', key: 'e', bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 220));
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', key: 'e', bubbles: true }));
+    const result = {
+      fireToggleLatched: input.fireToggleLatched,
+      bombShotsLeft: player.bombShotsLeft,
+      grazeBreakReady: play.grazeBreakReady,
+      lastIntent: play.lastSpecialFireIntent ? { ...play.lastSpecialFireIntent } : null,
+      bombMuzzleFlash: player.lastMuzzleFlashDebug ? { ...player.lastMuzzleFlashDebug } : null,
+      specialBinding: [...(input.keyboardBindings?.specialFire || [])]
+    };
+    target.active = false;
+    play.enemyManager.enemies = play.enemyManager.enemies.filter((entry) => entry !== target);
+    input.fireToggleLatched = false;
+    play.grazeBreakReady = false;
+    play.grazeBreakNeedsFireRelease = false;
+    play.grazeBreakReleasePrimed = false;
+    return result;
+  });
+  if (!specialFireProbe.fireToggleLatched
+    || specialFireProbe.bombShotsLeft !== 0
+    || specialFireProbe.grazeBreakReady !== true
+    || specialFireProbe.lastIntent?.fired !== true
+    || specialFireProbe.lastIntent?.mode !== 'bomb') {
+    throw new Error(`Special Fire did not spend a Bomb while preserving Toggle: ${JSON.stringify(specialFireProbe)}`);
+  }
+  if (specialFireProbe.bombMuzzleFlash?.visualProfile !== 'bounded_bomb_launch'
+    || specialFireProbe.bombMuzzleFlash?.blendMode !== 'normal'
+    || Number(specialFireProbe.bombMuzzleFlash?.maxAlpha) > 0.5) {
+    throw new Error(`Bomb launch signal remained unbounded: ${JSON.stringify(specialFireProbe.bombMuzzleFlash)}`);
+  }
+  runtimeReport.specialFireProbe = specialFireProbe;
 
   await page.evaluate(() => {
     const game = window.__game;

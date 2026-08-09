@@ -48,6 +48,8 @@ const BASE_POWERUP_TYPE_SET = new Set(BASE_POWERUP_TYPES);
 const FOCUS_DRIFT_SPEED_MULTIPLIER = 0.48;
 const SHIELD_SPENT_FEEDBACK_MS = 2400;
 const BOMB_SPENT_FEEDBACK_MS = 2400;
+export const MAX_BANKED_BOMB_SHOTS = 9;
+export const MAX_BANKED_ORBITAL_CHARGES = 10;
 const SHIP_CONTAINER_BASE_SCALE = 1;
 const SHIP_CONTAINER_MIN_SAFE_SCALE = 0.58;
 const SHIP_CONTAINER_MAX_SAFE_SCALE = 1.4;
@@ -232,6 +234,7 @@ export class Player {
     this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
+    this.orbitalStrikeMaxCharges = 5;
     this.tacticalOrbitalStrikeCharges = 0;
     this.orbitalStrikeCooldown = 0;
     this.vampireActive = false;
@@ -2128,11 +2131,13 @@ export class Player {
     const flash = new PIXI.Graphics();
     flash.label = 'playerMuzzleFlashIntent';
     flash.__novaPlayerMuzzleFlashIntent = true;
-    flash.blendMode = 'add';
+    // Bomb fire must remain unmistakable without producing an additive white
+    // flash over the ship. The orange launch glyph carries the signal instead.
+    flash.blendMode = bomb ? 'normal' : 'add';
     flash.zIndex = 12;
 
     const noseY = -22;
-    const length = bomb ? 36 : 24 + Math.min(4, volleyCount - 1) * 4;
+    const length = bomb ? 30 : 24 + Math.min(4, volleyCount - 1) * 4;
     let laneCount = 0;
     for (let i = 0; i < volleyCount; i += 1) {
       const offsetX = Number(offsets[i] ?? offsets[offsets.length - 1] ?? 0) || 0;
@@ -2141,18 +2146,18 @@ export class Player {
       const dy = -Math.cos(angle);
       const tipX = offsetX + dx * length;
       const tipY = noseY + dy * length;
-      const sideX = Math.cos(angle) * (bomb ? 7 : 4.5);
-      const sideY = Math.sin(angle) * (bomb ? 7 : 4.5);
+      const sideX = Math.cos(angle) * (bomb ? 5.5 : 4.5);
+      const sideY = Math.sin(angle) * (bomb ? 5.5 : 4.5);
       flash.moveTo(offsetX - sideX, noseY - sideY);
       flash.lineTo(tipX, tipY);
       flash.lineTo(offsetX + sideX, noseY + sideY);
       flash.closePath();
-      flash.fill({ color, alpha: bomb ? 0.34 : 0.24 });
+      flash.fill({ color, alpha: bomb ? 0.2 : 0.24 });
       flash.moveTo(offsetX, noseY + 2);
       flash.lineTo(tipX, tipY - 2);
       laneCount += 1;
     }
-    flash.stroke({ color: accent, width: bomb ? 2.6 : 1.8, alpha: bomb ? 0.58 : 0.44 });
+    flash.stroke({ color: accent, width: bomb ? 2 : 1.8, alpha: bomb ? 0.4 : 0.44 });
 
     const minOffset = Math.min(...offsets);
     const maxOffset = Math.max(...offsets);
@@ -2167,10 +2172,10 @@ export class Player {
     }
 
     if (bomb) {
-      flash.poly([0, noseY - 38, 10, noseY - 28, 0, noseY - 18, -10, noseY - 28]);
-      flash.stroke({ color: 0xffef7e, width: 2.4, alpha: 0.7 });
-      flash.circle(0, noseY - 28, 5.5);
-      flash.fill({ color: 0xffffff, alpha: 0.36 });
+      flash.poly([0, noseY - 34, 8, noseY - 26, 0, noseY - 18, -8, noseY - 26]);
+      flash.stroke({ color: 0xffef7e, width: 1.8, alpha: 0.48 });
+      flash.circle(0, noseY - 26, 4.5);
+      flash.fill({ color: 0xffef7e, alpha: 0.16 });
     } else {
       flash.circle(0, noseY - 12, 6.5 + Math.min(4, volleyCount));
       flash.fill({ color: 0xffffff, alpha: 0.2 });
@@ -2184,12 +2189,15 @@ export class Player {
       laneCount,
       bomb,
       bracketVisible: volleyCount > 1,
+      visualProfile: bomb ? 'bounded_bomb_launch' : 'standard_volley',
+      maxAlpha: bomb ? 0.48 : 0.52,
+      blendMode: bomb ? 'normal' : 'add',
       minOffset,
       maxOffset,
       color
     };
     this.lastMuzzleFlashDebug = flash.__debugMuzzleFlashIntent;
-    const durationMs = Math.max(40, Math.min(700, Number(options.durationMs) || (bomb ? 140 : 115)));
+    const durationMs = Math.max(40, Math.min(700, Number(options.durationMs) || (bomb ? 110 : 115)));
     flash.__debugMuzzleFlashIntent.durationMs = durationMs;
     this.sprite.addChild(flash);
     setTimeout(() => {
@@ -3511,7 +3519,7 @@ export class Player {
         case 'orbital_strike':
           return {
             charges: Math.max(0, this.orbitalStrikeCharges || 0),
-            maxCharges: 5,
+            maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || 5),
             detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
           };
         case 'vampire':
@@ -3613,7 +3621,7 @@ export class Player {
     if (this.orbitalStrikeActive && !activeEffect.orbitalCharges) {
       addTimedState('orbital_strike', this.activePowerup?.type === 'orbital_strike' ? this.activePowerup.expiresAt : 0, {
         charges: this.orbitalStrikeCharges,
-        maxCharges: 5,
+        maxCharges: Math.max(1, this.orbitalStrikeMaxCharges || 5),
         detail: `${Math.max(0, this.orbitalStrikeCharges || 0)} STRIKES`
       });
     }
@@ -4639,9 +4647,10 @@ export class Player {
       triggered.push('point_defense');
     }
     if (effects.bombShots > 0) {
-      this.bombMaxShots = Math.max(this.bombMaxShots || 3, Math.min(5, effects.bombShots));
-      this.tacticalBombShotsLeft = Math.min(5, effects.bombShots);
-      this.bombShotsLeft = Math.max(this.bombShotsLeft || 0, this.tacticalBombShotsLeft);
+      const sectorFloor = Math.min(MAX_BANKED_BOMB_SHOTS, Math.max(1, Math.round(effects.bombShots)));
+      this.bombShotsLeft = Math.min(MAX_BANKED_BOMB_SHOTS, Math.max(this.bombShotsLeft || 0, sectorFloor));
+      this.tacticalBombShotsLeft = this.bombShotsLeft;
+      this.bombMaxShots = Math.max(this.bombMaxShots || 3, this.bombShotsLeft);
       this.bombSpentUntil = 0;
       this.armBombTargetingWindow();
       this.createBombIndicator();
@@ -4649,8 +4658,11 @@ export class Player {
     }
     if (effects.orbitalCharges > 0) {
       this.orbitalStrikeActive = true;
-      this.tacticalOrbitalStrikeCharges = Math.min(5, effects.orbitalCharges);
-      this.orbitalStrikeCharges = Math.max(this.orbitalStrikeCharges || 0, this.tacticalOrbitalStrikeCharges);
+      const sectorFloor = Math.min(MAX_BANKED_ORBITAL_CHARGES, Math.max(1, Math.round(effects.orbitalCharges)));
+      this.orbitalStrikeCharges = Math.min(MAX_BANKED_ORBITAL_CHARGES,
+        Math.max(this.orbitalStrikeCharges || 0, sectorFloor));
+      this.tacticalOrbitalStrikeCharges = this.orbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, this.orbitalStrikeCharges);
       this.orbitalStrikeCooldown = 0;
       triggered.push('orbital_strike');
     }
@@ -4788,6 +4800,7 @@ export class Player {
     if (effect.orbitalCharges) {
       this.orbitalStrikeActive = true;
       this.orbitalStrikeCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
+      this.orbitalStrikeMaxCharges = Math.max(1, this.orbitalStrikeCharges);
       this.orbitalStrikeCooldown = 0;
     }
 
@@ -4823,6 +4836,37 @@ export class Player {
     if (type === 'row_core' || effect.rowCore) {
       this.triggerRowCore();
       this.notePowerup(type);
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    const permanentBombRack = Number(this.runAugmentModifiers?.sectorStart?.bombShots || 0) > 0;
+    if (type === 'bomb' && (permanentBombRack || this.bombShotsLeft > 0)) {
+      const addedShots = Math.max(1, Math.round(Number(effect.bombShots) || 3));
+      this.bombShotsLeft = Math.min(MAX_BANKED_BOMB_SHOTS,
+        Math.max(0, Math.round(Number(this.bombShotsLeft) || 0)) + addedShots);
+      this.bombMaxShots = Math.max(this.bombMaxShots || 3, this.bombShotsLeft);
+      if (permanentBombRack) this.tacticalBombShotsLeft = this.bombShotsLeft;
+      this.bombSpentUntil = 0;
+      this.armBombTargetingWindow(now);
+      this.createBombIndicator();
+      this.notePowerup(type);
+      this.lastBankedPowerupPickup = { type, added: addedShots, total: this.bombShotsLeft, at: now };
+      AudioManager.playSfx('powerup', { force: true, volume: 0.9 });
+      this.ensureRenderable('applyPowerup:' + type);
+      return;
+    }
+    const permanentOrbitalRack = Number(this.runAugmentModifiers?.sectorStart?.orbitalCharges || 0) > 0;
+    if (type === 'orbital_strike' && permanentOrbitalRack) {
+      const addedCharges = Math.max(1, Math.round(Number(effect.orbitalCharges) || 5));
+      this.orbitalStrikeCharges = Math.min(MAX_BANKED_ORBITAL_CHARGES,
+        Math.max(0, Math.round(Number(this.orbitalStrikeCharges) || 0)) + addedCharges);
+      this.tacticalOrbitalStrikeCharges = this.orbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, this.orbitalStrikeCharges);
+      this.orbitalStrikeActive = this.orbitalStrikeCharges > 0;
+      this.orbitalStrikeCooldown = 0;
+      this.notePowerup(type);
+      this.lastBankedPowerupPickup = { type, added: addedCharges, total: this.orbitalStrikeCharges, at: now };
+      AudioManager.playSfx(meta?.sfx || 'orbital_strike_charge', { force: true, volume: 0.9 });
       this.ensureRenderable('applyPowerup:' + type);
       return;
     }
@@ -4949,6 +4993,7 @@ export class Player {
       case 'orbital_strike':
         this.orbitalStrikeActive = true;
         this.orbitalStrikeCharges = 5;
+        this.orbitalStrikeMaxCharges = 5;
         this.orbitalStrikeCooldown = 0;
         this.setActivePowerupDuration(type, 15000);
         break;
@@ -5006,6 +5051,7 @@ export class Player {
     this.chainLightningMaxChains = 3;
     this.orbitalStrikeActive = false;
     this.orbitalStrikeCharges = 0;
+    this.orbitalStrikeMaxCharges = 5;
     this.vampireActive = false;
     this.vampireKillCount = 0;
     this.bombMaxShots = 3;
@@ -5037,6 +5083,7 @@ export class Player {
     if (tacticalOrbitalStrikeCharges > 0) {
       this.orbitalStrikeActive = true;
       this.orbitalStrikeCharges = tacticalOrbitalStrikeCharges;
+      this.orbitalStrikeMaxCharges = Math.max(5, tacticalOrbitalStrikeCharges);
     }
     const before = this.getStatSnapshot();
     this.recalculateStats();

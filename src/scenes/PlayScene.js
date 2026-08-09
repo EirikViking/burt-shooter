@@ -86,7 +86,9 @@ import {
 } from '../config/RareChaosVisitors.js';
 import {
   TACTICAL_DRAFT_AUGMENTS,
+  TACTICAL_DRAFT_BAN_BANK_MAX,
   TACTICAL_DRAFT_BAN_COUNT,
+  TACTICAL_DRAFT_BAN_EARN_INTERVAL,
   buildTacticalDraftOffers,
   getActiveTacticalAugmentIds,
   getActiveTacticalFusionProtocols,
@@ -287,11 +289,13 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.tacticalDraft = null;
     this.tacticalDraftHistory = [];
+    this.tacticalDraftPassHistory = [];
     this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
     this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
+    this.tacticalDraftBanMilestonesAwarded = 0;
     this.tacticalDraftBannedIds = [];
     this.tacticalDraftConfirmTimeout = null;
     this.pendingTacticalFusionUnlocks = [];
@@ -557,6 +561,8 @@ export class PlayScene {
     this.grazeBreakReleasePrimed = false;
     this.currentFirePressed = false;
     this.fireInputWasPressed = false;
+    this.specialFireQueuedUntil = 0;
+    this.lastSpecialFireIntent = null;
     this.grazeBreaksThisRun = 0;
     this.lastGrazeBreak = null;
     this.activeGrazeBreakVisual = null;
@@ -799,6 +805,8 @@ export class PlayScene {
     this.grazeBreakReleasePrimed = false;
     this.currentFirePressed = false;
     this.fireInputWasPressed = false;
+    this.specialFireQueuedUntil = 0;
+    this.lastSpecialFireIntent = null;
     this.clearGrazeBreakVisual('scene_init');
     this.lastGrazeBreak = null;
     this.lastGrazeBreakVisualDebug = null;
@@ -866,11 +874,13 @@ export class PlayScene {
     this.levelAdvanceTimeout = null;
     this.clearTacticalDraft('run_reset');
     this.tacticalDraftHistory = [];
+    this.tacticalDraftPassHistory = [];
     this.tacticalDraftRecentOfferIds = [];
     this.tacticalDraftRescansRemaining = 1;
     this.tacticalDraftRescansUsed = 0;
     this.tacticalDraftHeldId = null;
     this.tacticalDraftBansRemaining = TACTICAL_DRAFT_BAN_COUNT;
+    this.tacticalDraftBanMilestonesAwarded = 0;
     this.tacticalDraftBannedIds = [];
     this.tacticalScoreRouteDecision = null;
     this.tacticalDirectiveSession = null;
@@ -4873,6 +4883,43 @@ export class PlayScene {
       const touchInput = this.touchControls ? this.touchControls.getInput() : { firing: false };
       const firePressed = this.inputManager.isFiring() || touchInput.firing;
       this.updateGrazeBreakFireIntent(firePressed);
+      const gameplayClockMs = this.getGameplayClockMs();
+      const specialFirePressed = this.inputManager.consumeSpecialFirePress?.() === true
+        && this.canAcceptGameplayPointerInput();
+      const hasBombStock = Number(this.player?.bombShotsLeft || 0) > 0;
+      const hasGrazeBreak = Boolean(this.grazeBreakReady && gameplayClockMs <= this.grazeBreakExpiresAt);
+      if (specialFirePressed && (hasBombStock || hasGrazeBreak)) {
+        this.specialFireQueuedUntil = gameplayClockMs + 500;
+        this.lastSpecialFireIntent = {
+          requestedAt: gameplayClockMs,
+          bombStock: Number(this.player?.bombShotsLeft || 0),
+          grazeBreakReady: hasGrazeBreak,
+          source: 'dedicated_input',
+          fired: false
+        };
+      }
+      if (this.specialFireQueuedUntil > 0 && (gameplayClockMs > this.specialFireQueuedUntil || (!hasBombStock && !hasGrazeBreak))) {
+        this.specialFireQueuedUntil = 0;
+      }
+      let specialFireRequested = false;
+      let specialFireMode = null;
+      if (this.specialFireQueuedUntil > 0) {
+        const bombQueued = hasBombStock
+          ? this.player?.queueBombTriggerIntent?.(gameplayClockMs) === true
+          : false;
+        if (bombQueued) {
+          specialFireMode = 'bomb';
+        } else {
+          if (hasGrazeBreak && this.grazeBreakNeedsFireRelease) this.primeGrazeBreakAfterRelease();
+          const grazeReadyForShot = Boolean(
+            this.grazeBreakReady
+            && !this.grazeBreakNeedsFireRelease
+            && gameplayClockMs <= this.grazeBreakExpiresAt
+          );
+          if (grazeReadyForShot) specialFireMode = 'graze_break';
+        }
+        specialFireRequested = specialFireMode !== null;
+      }
       if (this.waveTransitionFireSuppressedWaveIndex !== null || this.waveTransitionFireSuppressedLevel !== null) {
         this.waveTransitionFireSuppressedWaveIndex = null;
         this.waveTransitionFireSuppressedLevel = null;
@@ -4882,13 +4929,25 @@ export class PlayScene {
       // bonus-drone, and tractor-ship windows. Projectiles naturally leave the
       // playfield, so suppressing the button here only creates dead input and
       // consumes while-firing powerup time without producing a shot.
-      if (firePressed && this.player && !this.introActive) {
+      if ((firePressed || specialFireRequested) && this.player && !this.introActive) {
         measure('shooting', () => {
           if (!this.player.canShoot()) return;
           const bullets = this.player.shoot();
-          this.markGrazeBreakShot(bullets);
+          // A dedicated press spends exactly one tactical shot. A valid Bomb
+          // lock wins; otherwise Graze Break uses the volley. Never consume
+          // both resources on the same Special Fire press.
+          if (specialFireMode !== 'bomb') this.markGrazeBreakShot(bullets);
           const launchedBullets = bullets.filter((bullet) => this.bulletManager.addPlayerBullet(bullet));
           recordCombatVolley(this.combatTelemetry, launchedBullets);
+          if (specialFireRequested) {
+            this.specialFireQueuedUntil = 0;
+            if (this.lastSpecialFireIntent) {
+              this.lastSpecialFireIntent.fired = launchedBullets.length > 0;
+              this.lastSpecialFireIntent.firedAt = gameplayClockMs;
+              this.lastSpecialFireIntent.launchedBullets = launchedBullets.length;
+              this.lastSpecialFireIntent.mode = specialFireMode;
+            }
+          }
 
           // TASK 4: Shooting sound with health check
           this.playShootSoundWithHealthCheck();
@@ -6773,7 +6832,7 @@ export class PlayScene {
     const y = Number.isFinite(bullet.y) ? bullet.y : this.player?.y || gameplayHeight * 0.45;
 
     if (this.particleManager) {
-      const burstCount = this.game.getWidth() < 620 ? 9 : 14;
+      const burstCount = this.game.getWidth() < 620 ? 6 : 9;
       for (let i = 0; i < burstCount; i += 1) {
         const angle = (Math.PI * 2 * i) / burstCount;
         const distance = radius * (0.28 + Math.random() * 0.68);
@@ -6781,14 +6840,14 @@ export class PlayScene {
           x + Math.cos(angle) * distance,
           y + Math.sin(angle) * distance,
           i % 3 === 0 ? 0xffff66 : 0xff6600,
-          0.72
+          0.52
         );
       }
-      this.particleManager.createExplosion(x, y, 0xffff00, 1.15);
+      this.particleManager.createExplosion(x, y, 0xffd84d, 0.86);
     }
     this.triggerShockwave?.(x, y, 0xffaa00);
-    this.screenShake?.shake(reason === 'apex' ? 12 : 16, 28);
-    AudioManager.playSfx('explosion', { force: true, volume: 1.0 });
+    this.screenShake?.shake(reason === 'apex' ? 8 : 10, 22);
+    AudioManager.playSfx('explosion', { force: true, volume: 0.82 });
 
     this.enemyManager.enemies.forEach(enemy => {
       if (!enemy?.active) return;
@@ -9437,9 +9496,32 @@ export class PlayScene {
     return summary;
   }
 
+  awardTacticalDraftBanMilestones(sectorCleared = this.game?.level || 1) {
+    const runStartSector = this.getRunStartSector();
+    const sectorsClearedThisRun = Math.max(0,
+      Math.floor(Number(sectorCleared) || runStartSector) - runStartSector + 1);
+    const earnedMilestones = Math.floor(sectorsClearedThisRun / TACTICAL_DRAFT_BAN_EARN_INTERVAL);
+    const newlyEarned = Math.max(0, earnedMilestones - this.tacticalDraftBanMilestonesAwarded);
+    if (newlyEarned > 0) {
+      this.tacticalDraftBansRemaining = Math.min(TACTICAL_DRAFT_BAN_BANK_MAX,
+        this.tacticalDraftBansRemaining + newlyEarned);
+      this.tacticalDraftBanMilestonesAwarded = earnedMilestones;
+    }
+    this.lastTacticalDraftBanAward = {
+      sectorCleared: Math.max(1, Math.floor(Number(sectorCleared) || 1)),
+      runStartSector,
+      sectorsClearedThisRun,
+      earnedMilestones,
+      newlyEarned,
+      bansRemaining: this.tacticalDraftBansRemaining
+    };
+    return this.lastTacticalDraftBanAward;
+  }
+
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
     if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
+    this.awardTacticalDraftBanMilestones(sectorCleared);
     const ineffectiveIds = this.getIneffectiveTacticalDraftOfferIds();
     if (ineffectiveIds.includes(this.tacticalDraftHeldId)) this.tacticalDraftHeldId = null;
     const offers = this.decorateTacticalDraftOffers(buildTacticalDraftOffers({
@@ -9457,7 +9539,7 @@ export class PlayScene {
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
-    if (offers.length < 3) return false;
+    if (offers.length < 1) return false;
     this.tacticalDraftRecentOfferIds = [
       ...this.tacticalDraftRecentOfferIds,
       ...offers.map((offer) => offer.id)
@@ -9526,7 +9608,8 @@ export class PlayScene {
     const rescan = this.createTacticalDraftRescanControl();
     const hold = this.createTacticalDraftHoldControl();
     const ban = this.createTacticalDraftBanControl();
-    overlay.addChild(rescan, hold, ban);
+    const pass = this.createTacticalDraftPassControl();
+    overlay.addChild(rescan, hold, ban, pass);
     const initialFocusIndex = this.getInitialTacticalDraftFocusIndex(offers);
     this.resetTransientGameplayInput('tactical_draft_enter', { preserveFire: true, preserveMovement: true });
     this.tacticalDraft = {
@@ -9536,6 +9619,7 @@ export class PlayScene {
       focusIndex: initialFocusIndex,
       initialFocusIndex,
       confirmedId: null,
+      passed: false,
       result: null,
       overlay,
       dim,
@@ -9550,6 +9634,7 @@ export class PlayScene {
       rescan,
       hold,
       ban,
+      pass,
       scoreRouteOfferId: scoreRouteOffer?.id || null,
       scoreRouteDecision: scoreRouteOffer ? 'pending' : null,
       scoreRouteDefaultSubtitle: scoreRouteOffer
@@ -9933,6 +10018,28 @@ export class PlayScene {
     return control;
   }
 
+  createTacticalDraftPassControl() {
+    const control = new PIXI.Container();
+    control.label = 'tactical_draft_pass';
+    control.eventMode = 'static';
+    control.cursor = 'pointer';
+    const bg = new PIXI.Graphics();
+    const label = createText('', {
+      fontFamily: FONT_DISPLAY,
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#b9cad4',
+      stroke: '#00111d',
+      strokeThickness: 2,
+      align: 'center'
+    });
+    label.anchor.set(0.5);
+    control.addChild(bg, label);
+    control._nodes = { bg, label };
+    control.on('pointertap', () => this.passTacticalDraft('pointer'));
+    return control;
+  }
+
   getTacticalDoctrinePreviewText(offer = null) {
     const projection = offer?.doctrineProjection;
     if (!projection?.valid || projection.consumed || !projection.after) return translateText('ONE-SHOT: NO DOCTRINE SHIFT');
@@ -10236,31 +10343,36 @@ export class PlayScene {
       : Math.min(460, Math.max(410, height - 420));
     const cardTop = compact ? (shortCompact ? 174 : 178) : 246;
 
-    if (state.rescan && state.hold && state.ban) {
-      const controlWidth = compact ? Math.min(148, Math.max(92, (width - 48) / 3)) : 190;
+    if (state.rescan && state.hold && state.ban && state.pass) {
+      const controlGap = compact ? 6 : 12;
+      const controlWidth = compact
+        ? Math.min(132, Math.max(62, (width - 48 - controlGap * 3) / 4))
+        : 170;
       const controlHeight = compact ? 28 : 38;
       state.rescan._draftLayout = { width: controlWidth, height: controlHeight };
       state.hold._draftLayout = { width: controlWidth, height: controlHeight };
       state.ban._draftLayout = { width: controlWidth, height: controlHeight };
-      const controlGap = compact ? 8 : 12;
-      const controlsWidth = controlWidth * 3 + controlGap * 2;
+      state.pass._draftLayout = { width: controlWidth, height: controlHeight };
+      const controlsWidth = controlWidth * 4 + controlGap * 3;
       const controlY = compact
         ? (state.scoreRouteOfferId ? 118 : 112)
         : Math.min(height - 30, cardTop + cardHeight + 42);
-      state.rescan.position.set(width / 2 - controlsWidth / 2 + controlWidth / 2, controlY);
-      state.hold.position.set(width / 2, controlY);
-      state.ban.position.set(width / 2 + controlsWidth / 2 - controlWidth / 2, controlY);
-      state.rescan.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
-      state.hold.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
-      state.ban.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+      [state.rescan, state.hold, state.ban, state.pass].forEach((control, index) => {
+        control.position.set(
+          width / 2 - controlsWidth / 2 + controlWidth / 2 + index * (controlWidth + controlGap),
+          controlY
+        );
+        control.hitArea = new PIXI.Rectangle(-controlWidth / 2, -controlHeight / 2, controlWidth, controlHeight);
+      });
       this.redrawTacticalDraftRescan();
       this.redrawTacticalDraftHold();
       this.redrawTacticalDraftBan();
+      this.redrawTacticalDraftPass();
     }
 
     state.cards.forEach((card, index) => {
       card.position.set(
-        compact ? width / 2 : width / 2 + (index - 1) * (cardWidth + 28),
+        compact ? width / 2 : width / 2 + (index - (state.cards.length - 1) / 2) * (cardWidth + 28),
         cardTop + cardHeight / 2 + (compact ? index * (cardHeight + compactCardGap) : 0)
       );
       card.hitArea = new PIXI.Rectangle(-cardWidth / 2, -cardHeight / 2, cardWidth, cardHeight);
@@ -10759,7 +10871,7 @@ export class PlayScene {
     const layout = control?._draftLayout;
     const nodes = control?._nodes;
     if (!state?.active || !layout || !nodes) return;
-    const available = state.rescansRemaining > 0 && !state.confirmedId;
+    const available = state.rescansRemaining > 0 && !state.confirmedId && !state.passed;
     nodes.bg.clear();
     nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
     nodes.bg.fill({ color: available ? 0x082338 : 0x07111b, alpha: 0.94 });
@@ -10867,6 +10979,27 @@ export class PlayScene {
     control.cursor = available ? 'pointer' : 'default';
   }
 
+  redrawTacticalDraftPass() {
+    const state = this.tacticalDraft;
+    const control = state?.pass;
+    const layout = control?._draftLayout;
+    const nodes = control?._nodes;
+    if (!state?.active || !layout || !nodes) return;
+    const available = Boolean(!state.confirmedId && !state.passed && state.inputArmed);
+    nodes.bg.clear();
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.fill({ color: available ? 0x15202a : 0x07111b, alpha: 0.94 });
+    nodes.bg.roundRect(-layout.width / 2, -layout.height / 2, layout.width, layout.height, 5);
+    nodes.bg.stroke({ color: available ? 0xa9c7d8 : 0x536572, width: 1.2, alpha: available ? 0.72 : 0.36 });
+    nodes.label.text = translateText(state.passed ? 'PASSED' : 'Q / B  PASS');
+    nodes.label.scale.set(1);
+    nodes.label.updateText?.(false);
+    nodes.label.scale.set(Math.min(1, Math.max(0.58, (layout.width - 18) / Math.max(1, nodes.label.width))));
+    nodes.label.style.fill = available ? '#d8e8ef' : '#71848f';
+    control.alpha = available ? 1 : 0.68;
+    control.cursor = available ? 'pointer' : 'default';
+  }
+
   banTacticalDraftOffer(source = 'unknown') {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId || !state.inputArmed) return false;
@@ -10893,7 +11026,7 @@ export class PlayScene {
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
-    if (offers.length < 3) {
+    if (offers.length < 1) {
       this.tacticalDraftBannedIds.pop();
       return false;
     }
@@ -10933,6 +11066,73 @@ export class PlayScene {
     return true;
   }
 
+  passTacticalDraft(source = 'unknown') {
+    const state = this.tacticalDraft;
+    if (!state?.active || state.confirmedId || state.passed) return false;
+    if (!state.inputArmed && source !== 'pointer') return false;
+    this.clearPendingTacticalBossBanter({ stopActive: true });
+    const scoreRouteOffer = state.offers.find((entry) => entry.fixedScoreRoute) || null;
+    if (scoreRouteOffer) {
+      state.scoreRouteDecision = 'closed';
+      this.tacticalScoreRouteDecision = {
+        sector: state.sectorCleared,
+        offerId: scoreRouteOffer.id,
+        selectedId: null,
+        status: 'closed',
+        decidedAt: Date.now()
+      };
+    }
+    state.passed = true;
+    state.passedAt = Date.now();
+    state.inputArmed = false;
+    state.result = { passed: true };
+    state.title.text = translateText('DRAFT PASSED');
+    state.subtitle.text = translateText('No upgrade installed. Flight continues.');
+    state.cards.forEach((card) => {
+      card.alpha = 0.54;
+      this.redrawTacticalDraftCard(card);
+    });
+    this.tacticalDraftPassHistory.push({
+      sectorCleared: state.sectorCleared,
+      passed: true,
+      scoreRouteDecision: state.scoreRouteDecision || null,
+      source
+    });
+    this.redrawTacticalDraftRescan();
+    this.redrawTacticalDraftHold();
+    this.redrawTacticalDraftBan();
+    this.redrawTacticalDraftPass();
+    playMenuConfirmSfx(0.2);
+    const complete = state.onComplete;
+    this.tacticalDraftConfirmTimeout = setTimeout(() => {
+      this.tacticalDraftConfirmTimeout = null;
+      this.clearTacticalDraft('passed');
+      this.externalPauseSuppressedUntil = Date.now() + 600;
+      if (state.wasPausedBeforeOpen && !this.isPaused) this.setPaused(true);
+      this.enqueueToast(translateText('NO UPGRADE INSTALLED'), {
+        fontSize: 16,
+        fill: '#c7d8e0',
+        slot: 'top',
+        type: 'tactical_draft',
+        duration: 1100,
+        priority: 4
+      });
+      if (state.scoreRouteDecision === 'closed') {
+        this.enqueueToast(translateText('SCORE ROUTE CLOSED FOR THIS RUN'), {
+          fontSize: 16,
+          fill: '#ffcf86',
+          slot: 'top',
+          type: 'tactical_score_route',
+          duration: 1500,
+          priority: 6,
+          accent: 0xffa84d
+        });
+      }
+      complete?.();
+    }, 420);
+    return true;
+  }
+
   rescanTacticalDraft(source = 'unknown') {
     const state = this.tacticalDraft;
     if (!state?.active || state.confirmedId || !state.inputArmed || state.rescansRemaining <= 0) return false;
@@ -10954,7 +11154,7 @@ export class PlayScene {
       bannedIds: this.tacticalDraftBannedIds,
       heldId: this.tacticalDraftHeldId
     }));
-    if (offers.length < 3) return false;
+    if (offers.length < 1) return false;
     state.cards.forEach((card) => {
       if (card.parent) card.parent.removeChild(card);
       card.destroy?.({ children: true });
@@ -10982,7 +11182,7 @@ export class PlayScene {
 
   setTacticalDraftFocus(index, { silent = false } = {}) {
     const state = this.tacticalDraft;
-    if (!state?.active || state.confirmedId) return;
+    if (!state?.active || state.confirmedId || state.passed || state.cards.length === 0) return;
     const next = ((Math.floor(Number(index) || 0) % state.cards.length) + state.cards.length) % state.cards.length;
     if (state.focusIndex === next && !silent) return;
     state.focusIndex = next;
@@ -11101,12 +11301,19 @@ export class PlayScene {
       state.buildSummary._nodes.material.x = Math.sin(state.pulse * 0.27) * 4;
       state.buildSummary._nodes.material.alpha = (state.compact ? 0.3 : 0.4) + Math.sin(state.pulse * 0.42) * 0.035;
     }
+    if (state.passed) {
+      this.redrawTacticalDraftRescan();
+      this.redrawTacticalDraftHold();
+      this.redrawTacticalDraftBan();
+      this.redrawTacticalDraftPass();
+      return;
+    }
     const nav = this.tacticalDraftNavigator.update();
     if (!state.inputArmed) {
       const keyboardHeld = [
         'Space', 'Enter', 'NumpadEnter',
         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
-        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyL', 'KeyB', 'a', 'd', 'w', 's', 'l', 'b', 'A', 'D', 'W', 'S', 'L', 'B'
+        'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyL', 'KeyB', 'KeyQ', 'a', 'd', 'w', 's', 'l', 'b', 'q', 'A', 'D', 'W', 'S', 'L', 'B', 'Q'
       ].some((key) => this.inputManager?.isKeyPressed?.(key));
       const minimumReadGateOpen = Date.now() - state.openedAt >= 280;
       if (!minimumReadGateOpen || keyboardHeld || nav.active || nav.suppressed) {
@@ -11131,16 +11338,19 @@ export class PlayScene {
     const rescan = this.inputManager?.consumeKeyPress?.('KeyR', 'r', 'R');
     const hold = this.inputManager?.consumeKeyPress?.('KeyL', 'l', 'L');
     const ban = this.inputManager?.consumeKeyPress?.('KeyB', 'b', 'B');
+    const pass = this.inputManager?.consumeKeyPress?.('KeyQ', 'q', 'Q');
     if (left || up || nav.pressed.left || nav.pressed.up) this.setTacticalDraftFocus(state.focusIndex - 1);
     if (right || down || nav.pressed.right || nav.pressed.down) this.setTacticalDraftFocus(state.focusIndex + 1);
     if (confirm || nav.pressed.confirm) this.confirmTacticalDraft(state.focusIndex, nav.pressed.confirm ? 'gamepad' : 'keyboard');
     if (rescan || nav.pressed.y) this.rescanTacticalDraft(nav.pressed.y ? 'gamepad' : 'keyboard');
     if (hold || nav.pressed.x) this.toggleTacticalDraftHold(nav.pressed.x ? 'gamepad' : 'keyboard');
     if (ban || nav.pressed.rb) this.banTacticalDraftOffer(nav.pressed.rb ? 'gamepad' : 'keyboard');
+    if (pass || nav.pressed.cancel) this.passTacticalDraft(nav.pressed.cancel ? 'gamepad' : 'keyboard');
     state.cards.forEach((card) => this.redrawTacticalDraftCard(card));
     this.redrawTacticalDraftRescan();
     this.redrawTacticalDraftHold();
     this.redrawTacticalDraftBan();
+    this.redrawTacticalDraftPass();
   }
 
   updateTacticalDraftLockIn() {
@@ -11269,6 +11479,7 @@ export class PlayScene {
     state.rescan.alpha = Math.max(0.18, 1 - reveal * 0.82);
     state.hold.alpha = Math.max(0.18, 1 - reveal * 0.82);
     state.ban.alpha = Math.max(0.18, 1 - reveal * 0.82);
+    state.pass.alpha = Math.max(0.18, 1 - reveal * 0.82);
     state.title.scale.set(1 + Math.sin(Math.min(1, elapsed / 270) * Math.PI) * 0.045);
     state.subtitle.alpha = 0.76 + fade * 0.24;
     state.lockInProgress = progress;
@@ -11276,7 +11487,7 @@ export class PlayScene {
 
   confirmTacticalDraft(index = this.tacticalDraft?.focusIndex || 0, source = 'unknown') {
     const state = this.tacticalDraft;
-    if (!state?.active || state.confirmedId) return false;
+    if (!state?.active || state.confirmedId || state.passed) return false;
     if (!state.inputArmed && source !== 'pointer') return false;
     const offer = state.offers[index];
     if (!offer) return false;
@@ -11750,7 +11961,7 @@ export class PlayScene {
     state?.overlay?.destroy?.({ children: true });
     this.lastTacticalDraftCloseReason = reason;
     this.tacticalDraft = null;
-    if (reason === 'confirmed') {
+    if (reason === 'confirmed' || reason === 'passed') {
       this.externalPauseSuppressedUntil = Date.now() + 600;
       this.tacticalDraftNavigator.suppressUntilReleased();
       this.pauseGamepadNavigator.suppressUntilReleased();
@@ -11771,6 +11982,7 @@ export class PlayScene {
       focusIndex: state?.focusIndex ?? null,
       initialFocusIndex: state?.initialFocusIndex ?? null,
       confirmedId: state?.confirmedId || null,
+      passed: Boolean(state?.passed),
       installingCategory: state?.installingCategory || null,
       installingName: state?.installingName || null,
       confirmHoldMs: Number(state?.confirmHoldMs) || 0,
@@ -11820,6 +12032,9 @@ export class PlayScene {
       bannedIds: this.tacticalDraftBannedIds.slice(),
       banLabel: state?.ban?._nodes?.label?.text || null,
       banBounds: boundsOf(state?.ban),
+      passLabel: state?.pass?._nodes?.label?.text || null,
+      passBounds: boundsOf(state?.pass),
+      banAward: this.lastTacticalDraftBanAward ? { ...this.lastTacticalDraftBanAward } : null,
       lastBannedId: state?.lastBannedId || null,
       lastBanSource: state?.lastBanSource || null,
       lastHoldSource: state?.lastHoldSource || null,
@@ -11906,6 +12121,7 @@ export class PlayScene {
       selectedIds: this.player?.runAugmentIds?.slice?.() || [],
       selectedLabels: summarizeTacticalDraftPicks(this.player?.runAugmentIds || []),
       history: this.tacticalDraftHistory.slice(),
+      passes: this.tacticalDraftPassHistory.slice(),
       player: this.player?.getRunAugmentDebugState?.() || null,
       closeReason: this.lastTacticalDraftCloseReason || null
     };
@@ -21518,6 +21734,7 @@ export class PlayScene {
           ? { primary: 0xc6ff3d, secondary: 0x40d6ff }
           : { primary: 0x99ffcc, secondary: 0xccffee };
     const pulledTargets = [];
+    let stagedPowerupCount = 0;
 
     // Draw visual indicator for magnet field
     if (!this.magnetFieldVisual) {
@@ -21559,20 +21776,40 @@ export class PlayScene {
     this.powerupManager?.powerups?.forEach(p => {
       if (!p.active) return;
       if (p.magnetImmune) return;
+      p.magnetStaged = false;
       const dx = px - p.x;
       const dy = py - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < range && dist > 5) {
-        // Stronger pull with distance falloff
+      // Choice-bearing pickups gather at a safe ring instead of being dragged
+      // through the collection collider. Magnet remains useful, including as a
+      // permanent augment, without silently choosing the pickup for the player.
+      const stagingDistance = Math.max(48,
+        this.getCollisionRadius(p) + this.getCollisionRadius(this.player) + 18);
+      if (dist < range && dist > stagingDistance) {
         const falloff = 0.32 + (1 - dist / range) * 0.68;
-        const pullForce = pull * falloff * 1.9;
+        const pullForce = Math.min(dist - stagingDistance, pull * falloff * 1.9);
         p.x += (dx / dist) * pullForce;
         p.y += (dy / dist) * pullForce;
         p.sprite.x = p.x;
         p.sprite.y = p.y;
+        p.magnetStagingDistance = stagingDistance;
+        p.magnetStaged = dist - pullForce <= stagingDistance + 0.5;
+        if (p.magnetStaged) stagedPowerupCount += 1;
         if (pulledTargets.length < 8) {
-          pulledTargets.push({ kind: 'powerup', x: p.x, y: p.y, distance: dist, intensity: 1 - dist / range });
+          pulledTargets.push({
+            kind: 'powerup',
+            x: p.x,
+            y: p.y,
+            distance: Math.max(stagingDistance, dist - pullForce),
+            intensity: 1 - dist / range,
+            staged: p.magnetStaged,
+            stagingDistance
+          });
         }
+      } else if (dist <= stagingDistance) {
+        p.magnetStagingDistance = stagingDistance;
+        p.magnetStaged = true;
+        stagedPowerupCount += 1;
       }
     });
 
@@ -21642,6 +21879,7 @@ export class PlayScene {
       segmentCount,
       targetCount: pulledTargets.length,
       powerupTargetCount,
+      stagedPowerupCount,
       bonusTargetCount,
       captureHaloCount,
       funnelBeadCount
@@ -21652,7 +21890,11 @@ export class PlayScene {
     if (!this.player?.orbitalStrikeActive || !this.player?.orbitalStrikeCharges || this.player.orbitalStrikeCharges <= 0) {
       return;
     }
-    if (this.player?.runAugmentModifiers?.skyVerdict) return;
+    const skyVerdict = Boolean(this.player?.runAugmentModifiers?.skyVerdict);
+    // Sky Verdict marks orbital stock for a launched Bomb while Bomb stock is
+    // available. With no Bombs banked, it must fall back to the normal cadence
+    // instead of trapping every remaining orbital charge forever.
+    if (skyVerdict && Number(this.player?.bombShotsLeft || 0) > 0) return;
 
     // Initialize timer if not set
     if (!this.orbitalStrikeTimer) {
@@ -21664,7 +21906,9 @@ export class PlayScene {
 
     if (this.orbitalStrikeTimer >= strikeInterval) {
       this.orbitalStrikeTimer = 0;
-      this.triggerOrbitalStrike();
+      this.triggerOrbitalStrike(skyVerdict
+        ? { fusionId: 'sky_verdict', deterministicTarget: true }
+        : {});
     }
   }
 
@@ -21676,11 +21920,26 @@ export class PlayScene {
     const requestedX = Number(options.targetX);
     const requestedY = Number(options.targetY);
     const hasRequestedTarget = Number.isFinite(requestedX) && Number.isFinite(requestedY);
+    const deterministicTarget = options.deterministicTarget === true;
+    const deterministicCandidates = deterministicTarget
+      ? activeEnemies.slice().sort((a, b) => {
+        const aBoss = a === this.enemyManager?.boss || a?.kind === 'boss' || a?.isBoss ? 1 : 0;
+        const bBoss = b === this.enemyManager?.boss || b?.kind === 'boss' || b?.isBoss ? 1 : 0;
+        if (aBoss !== bBoss) return bBoss - aBoss;
+        const yDelta = (Number(b?.y) || 0) - (Number(a?.y) || 0);
+        if (Math.abs(yDelta) > 0.001) return yDelta;
+        const xDelta = (Number(a?.x) || 0) - (Number(b?.x) || 0);
+        if (Math.abs(xDelta) > 0.001) return xDelta;
+        return String(a?.id || a?.type || '').localeCompare(String(b?.id || b?.type || ''));
+      })
+      : activeEnemies;
     const target = options.target?.active
       ? options.target
       : hasRequestedTarget
         ? activeEnemies.slice().sort((a, b) => Math.hypot(a.x - requestedX, a.y - requestedY) - Math.hypot(b.x - requestedX, b.y - requestedY))[0]
-        : activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
+        : deterministicTarget
+          ? deterministicCandidates[0]
+          : activeEnemies[Math.floor(Math.random() * activeEnemies.length)];
     const targetX = hasRequestedTarget ? requestedX : target.x;
     const targetY = hasRequestedTarget ? requestedY : target.y;
     const fusionId = options.fusionId || null;
@@ -21695,6 +21954,7 @@ export class PlayScene {
       targetY: Math.round(targetY || 0),
       chargesBefore: this.player?.orbitalStrikeCharges || 0,
       fusionId,
+      deterministicTarget,
       consumeCharge,
       emergency,
       damageScale,

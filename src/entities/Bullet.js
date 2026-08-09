@@ -900,7 +900,7 @@ export class Bullet {
   }
 
   setFocusCombatClarity(active) {
-    if (!this.isPlayer || this.isBomb || !this.sprite) return;
+    if (!this.isPlayer || !this.sprite) return;
     this.focusCombatClarity = Boolean(active);
     this.refreshFriendlyVfxPresentation();
   }
@@ -945,7 +945,10 @@ export class Bullet {
     const compression = priority ? 0 : this.friendlyVfxCompression;
     const retirementProgress = Math.max(0, Math.min(1, Number(this.transitionRetirement?.progress) || 0));
     const retirementAlpha = 1 - retirementProgress;
-    const focusAlpha = this.focusCombatClarity && !priority ? FOCUS_FRIENDLY_PROJECTILE_ALPHA : 1;
+    // Focus is a combat-reading mode, so every friendly projectile must step
+    // back together. Priority shots keep their density exemptions, but they no
+    // longer stay bright while the player is trying to read enemy fire.
+    const focusAlpha = this.focusCombatClarity ? FOCUS_FRIENDLY_PROJECTILE_ALPHA : 1;
     const densityAlpha = 1 - compression * 0.22;
     this.sprite.alpha = focusAlpha * densityAlpha * retirementAlpha;
     if (this.trail) {
@@ -970,6 +973,8 @@ export class Bullet {
     if (this.sprite._debugProjectileReadability) {
       Object.assign(this.sprite._debugProjectileReadability, {
         priorityPlayerProjectile: priority,
+        focusCombatClarity: Boolean(this.focusCombatClarity),
+        focusOpacity: Number(focusAlpha.toFixed(3)),
         friendlyVfxCompression: Number(compression.toFixed(3)),
         ordinaryOpacity: Number(densityAlpha.toFixed(3)),
         trailScale: Number((1 - compression * 0.34).toFixed(3)),

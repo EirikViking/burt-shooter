@@ -19,6 +19,7 @@ export const BalanceConfig = {
         maxPerLevel: 2,
         minPerLevel: 1,
         extraLifeDropsEnabled: true,
+        extraLifeFinalSector: 100,
         extraLifeChance: 0.06,
         superExtraLifeChance: 0.012,
         novaMiracleChance: 0.0025,

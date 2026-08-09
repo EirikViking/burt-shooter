@@ -87,8 +87,8 @@ const CORE_HELP_ROWS = Object.freeze([
     code: '10',
     icon: 'LOOT',
     label: 'PICKUP INTENT',
-    control: 'P-DEF AUTO-INTERCEPTS // BOMBS TAP FIRE',
-    tip: 'Point Defense destroys hostile shots inside its cyan ring. Bomb charges stay banked until you release fire and tap again on a locked boss or cluster.',
+    control: 'E / RIGHT MOUSE / GAMEPAD X',
+    tip: 'Special Fire launches a ready Bomb or Graze Break without changing Toggle fire. Point Defense still auto-intercepts inside its cyan ring.',
     accent: 0xb285ff
   },
 ]);
@@ -157,8 +157,8 @@ const TACTICS_HELP_ROWS = Object.freeze([
     code: '16',
     icon: 'DRAFT',
     label: 'TACTICAL DRAFT',
-    control: 'AFTER EACH BOSS: CHOOSE 1 OF 3',
-    tip: 'Choose one augment after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack. A Run Doctrine reflects your current build and never restricts or weights future offers.',
+    control: 'AFTER EACH BOSS: CHOOSE 1 OF UP TO 3',
+    tip: 'Choose one of up to three augments after each boss. Active augments stay visible in the HUD; open Tactical upgrades from pause to inspect every stack. A Run Doctrine reflects your current build and never restricts or weights future offers.',
     accent: 0xffef7e
   },
   {
@@ -173,16 +173,16 @@ const TACTICS_HELP_ROWS = Object.freeze([
     code: '17',
     icon: 'ROUTE',
     label: 'SCORE ROUTE & BANS',
-    control: 'SECTOR 5 SCORE CHOICE // 2 PERMANENT BANS',
-    tip: 'Combo Anchor is always offered as the marked Score Route in Sector 5. Each run also has two permanent bans, so score ambition is a choice and unwanted upgrades stay out.',
+    control: 'SECTOR 5 SCORE CHOICE // 2 BANS + 1 EACH 15 SECTORS',
+    tip: 'Combo Anchor is always offered as the marked Score Route in Sector 5. Start with two permanent bans and earn another every 15 cleared sectors, up to five banked bans.',
     accent: 0xffa84d
   },
   {
     code: '18',
     icon: 'TOOLS',
     label: 'DRAFT TOOLS',
-    control: 'R / GAMEPAD Y: RESCAN ONCE // L / GAMEPAD X: HOLD ONE',
-    tip: 'Use your single rescan when all three offers miss. Hold one promising card for the next boss; a new hold replaces the old one, and taking the held card consumes it.',
+    control: 'R / Y: RESCAN // L / X: HOLD // Q / B: PASS',
+    tip: 'Rescan once, hold one card for the next boss, or pass without installing an upgrade. Drafts continue even when fewer than three valid offers remain.',
     accent: 0x37f5ff
   },
   {
@@ -308,7 +308,7 @@ const HELP_DETAIL_COPY = Object.freeze({
   'GRAZE BREAK': 'Three quick grazes arm one magenta shot. Fire it into enemy bullets or a crowded threat pocket. The shot clears space, hurts nearby enemies, and proves that reckless proximity can occasionally produce an invoice in your favor.',
   COMBOS: 'Every fast kill refreshes the combo clock. Fragile enemies are rhythm fuel; armored enemies are rhythm potholes. Change targets when a tough hull would otherwise make your multiplier quietly pack a suitcase.',
   'TRACTOR SHIPS': 'A live beam is the opportunity. Break the tractor while it is pulling to clear nearby shots and punish the formation around it. Destroying it too early is safe; destroying it during the beam is safe with applause.',
-  'PICKUP INTENT': 'Point Defense automatically destroys hostile shots inside the cyan ring and never damages enemies. Bomb charges do not expire or auto-spend: release fire, line up a boss or tight cluster, then tap fire to launch one.',
+  'PICKUP INTENT': 'Bombs stay banked until a boss or tight cluster is locked. Use Special Fire to launch a ready Bomb or Graze Break without changing Toggle fire. Point Defense still auto-intercepts inside its cyan ring.',
   'DAILY CHALLENGE': 'Everyone receives the same loaner ship, route theme, and rules for that UTC day, while combat events still vary. Tactical drafts remain active. Career XP, achievements, checkpoints, and existing Steam boards stay unchanged. Flight Report can save a local PNG or copy the share caption.',
   'MAYHEM PURE': 'No tactical drafts. Just your ship, your hands, and the original leaderboard. Achievements, career XP, and checkpoint unlocks remain fully active.',
   'MAYHEM TACTICAL': 'Bosses offer permanent tactical upgrades for the current run. Build something outrageous, then prove it on the separate Tactical leaderboard.',
@@ -317,10 +317,10 @@ const HELP_DETAIL_COPY = Object.freeze({
   OVERRUN: 'Unlock by reaching Sector 30 in Mayhem. Pure starts without Tactical augments or boss Drafts. Tactical starts with Damage Up, Rapid Fire, Blink Drive, Focus Lens, and Double Shot, then continues boss Drafts. Both begin at zero score and award no credit for skipped sectors. The 85% rate is reduced Career XP—not a +85% bonus.',
   'PILOT ORDERS': 'Orders are optional drills, not commandments from a clipboard deity. Use them to practice one behavior inside a real run. If an order makes survival worse, survive first and let the bureaucracy experience personal growth.',
   'SIDE DIRECTIVES': 'Every run draws a fifty-stage chain from one thousand objective, intensity, and reward combinations. Only one directive can clear per level, unfinished progress carries forward and recalibrates after a drought, and the fiftieth cannot clear before level 50. Chase the hardware when it is safe; the clipboard never outranks survival.',
-  'TACTICAL DRAFT': 'Every boss leaves behind three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
+  'TACTICAL DRAFT': 'Every boss leaves behind up to three run-only hardware proposals. Pick the effect that changes your next decisions, not merely the largest number. The best build has a plan; the worst build has seventeen unrelated souvenirs.',
   'FUSION PROTOCOLS': 'Fusion Protocols unlock only when you own both listed augments. Rift Reprisal returns Phase-cleared bullets; Drone Constellation creates every-fourth-volley crossfire; Aegis Reactor turns shield break into a purge; Sky Verdict routes orbital charges through bomb markers. Inspect active protocols in Tactical upgrades.',
-  'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Choosing it means passing on survival hardware. You also receive two permanent bans per run; ban an offer to remove that augment from later Drafts.',
-  'DRAFT TOOLS': 'Rescan replaces all three offers once per run and never grants an extra augment. Hold preserves one card for the next boss Draft while you choose another; holding a new card replaces the old hold, and taking the held card consumes it. Use both to shape a build instead of inflating it.',
+  'SCORE ROUTE & BANS': 'Combo Anchor is the fixed, marked scoring offer in Sector 5, so a serious score attempt never depends on an early random draw. Start with two permanent bans, then earn another every 15 sectors cleared in this run, with up to five banked. Ban an offer to remove that augment from later Drafts.',
+  'DRAFT TOOLS': 'Rescan replaces the available offers once per run and never grants an extra augment. Hold preserves one card for the next boss Draft while you choose another. Pass installs nothing and continues the flight. Drafts remain usable when the valid pool falls below three.',
   'DRAFT RESCAN': 'One rescan replaces all three offers and cannot be refunded, photocopied, or argued with. Spend it when the entire page misses your build. Mild disappointment is not an emergency; three dead choices are.',
   'DRAFT HOLD': 'Hold is a promise to your future build. Mark one card, choose something else, and the marked hardware returns after the next boss. Holding a different card replaces the promise; taking the held card closes the contract.',
   'POWERUP OVERLAP': 'The ordinary timed slot holds one effect. A matching pickup refreshes it; a different pickup replaces it. Permanent Draft hardware waits underneath and resumes when the temporary celebrity leaves the stage.',

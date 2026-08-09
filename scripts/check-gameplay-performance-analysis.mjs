@@ -193,6 +193,64 @@ async function sampleFrameIntervals(page, sampleMs) {
   }), sampleMs);
 }
 
+async function sampleHighSectorEventBurst(page, sampleMs = 2800) {
+  return page.evaluate((durationMs) => new Promise((resolve) => {
+    const intervals = [];
+    let previous = performance.now();
+    const startedAt = previous;
+    let triggered = false;
+    let burstState = null;
+    const tick = (now) => {
+      intervals.push(now - previous);
+      previous = now;
+      if (!triggered && now - startedAt >= 350) {
+        triggered = true;
+        const game = window.__game;
+        const play = game?.scenes?.play;
+        const player = play?.player;
+        const px = Number(player?.x) || 640;
+        const py = Number(player?.y) || 560;
+        for (let index = 0; index < 8; index += 1) {
+          const angle = index * Math.PI / 4;
+          play?.particleManager?.createExplosion?.(
+            px + Math.cos(angle) * (70 + index * 4),
+            py - 150 + Math.sin(angle) * 55,
+            index % 2 ? 0xff8f5a : 0x66f7ff
+          );
+        }
+        for (const [index, type] of ['shield', 'bomb', 'orbital_strike'].entries()) {
+          play?.powerupManager?.spawnSpecific?.(px - 90 + index * 90, py - 230, type, {
+            source: `performance_event_burst_${index}`
+          });
+        }
+        play?.enqueueToast?.('PERFORMANCE EVENT BURST', {
+          slot: 'corner',
+          type: 'powerup',
+          duration: 700,
+          priority: 3
+        });
+        play?.enqueueToast?.('SECTOR PRESSURE CHECK', {
+          slot: 'top',
+          type: 'boss',
+          duration: 700,
+          priority: 4
+        });
+        burstState = {
+          particles: play?.particleManager?.particles?.length || 0,
+          powerups: play?.powerupManager?.powerups?.filter?.((entry) => entry?.active !== false).length || 0,
+          sector: Number(game?.level) || 0
+        };
+      }
+      if (now - startedAt >= durationMs) {
+        resolve({ intervals, burstState });
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }), sampleMs);
+}
+
 async function sampleParkedEnemyMotion(page, sampleFrames = 180) {
   return page.evaluate((framesToSample) => new Promise((resolve) => {
     window.__perfEnemyIds = window.__perfEnemyIds || new WeakMap();
@@ -482,6 +540,9 @@ async function runScenario(browser, scenario) {
   const before = await readState(page);
   const runtimeBefore = await collectRuntimeSnapshot(page);
   const intervals = await sampleFrameIntervals(page, scenario.sampleMs || 6000);
+  const highSectorBurst = scenario.highSectorBurst
+    ? await sampleHighSectorEventBurst(page, scenario.burstSampleMs || 2800)
+    : null;
   const motionSamples = await sampleParkedEnemyMotion(page, scenario.motionFrames || 180);
   await makeProbePlayerSafe(page);
   const nextWaveEntry = await sampleNextWaveEntry(page, scenario.entrySampleMs || 3600);
@@ -492,6 +553,10 @@ async function runScenario(browser, scenario) {
     startLevel: scenario.startLevel,
     flags: scenario.flags || [],
     frameSummary: summarizeFrameIntervals(intervals),
+    highSectorBurst: highSectorBurst ? {
+      frameSummary: summarizeFrameIntervals(highSectorBurst.intervals),
+      state: highSectorBurst.burstState
+    } : null,
     nextWaveEntry,
     parkedMotion: summarizeParkedMotion(motionSamples),
     before: {
@@ -526,7 +591,8 @@ try {
   const scenarios = [
     { name: 'sector-1-opening-wave', startLevel: 1, sampleMs: 5000, motionFrames: 150 },
     { name: 'sector-5-challenge-entry', startLevel: 5, sampleMs: 5200, motionFrames: 170 },
-    { name: 'sector-20-generated-wave', startLevel: 20, sampleMs: 6500, motionFrames: 210 }
+    { name: 'sector-20-generated-wave', startLevel: 20, sampleMs: 6500, motionFrames: 210 },
+    { name: 'sector-130-endurance-burst', startLevel: 130, sampleMs: 7000, motionFrames: 210, highSectorBurst: true }
   ];
   const transitionScenarios = [
     { name: 'transition-sector-20-cold-no-warmup', targetLevel: 20, prewarm: false, diagnosticOnly: true, sampleMs: 5600 },
@@ -577,6 +643,17 @@ try {
       }
       if ((result.nextWaveEntry.after?.enemies || 0) <= 0) {
         failures.push(`${result.name} wave entry did not spawn enemies`);
+      }
+    }
+    if (result.highSectorBurst) {
+      if (result.highSectorBurst.frameSummary.p99Ms > 40) {
+        failures.push(`${result.name} event burst p99 frame ${result.highSectorBurst.frameSummary.p99Ms}ms exceeds 40ms`);
+      }
+      if (result.highSectorBurst.frameSummary.longFrames50 > 1) {
+        failures.push(`${result.name} event burst has ${result.highSectorBurst.frameSummary.longFrames50} frame(s) over 50ms`);
+      }
+      if (result.highSectorBurst.state?.sector !== 130) {
+        failures.push(`${result.name} event burst ran at sector ${result.highSectorBurst.state?.sector}`);
       }
     }
     if (result.parkedMotion.maxXStepPx > 5.5) {

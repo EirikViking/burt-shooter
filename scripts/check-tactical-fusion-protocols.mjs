@@ -308,11 +308,11 @@ try {
     player.orbitalStrikeActive = true;
     player.orbitalStrikeCharges = 2;
     player.tacticalOrbitalStrikeCharges = 2;
+    player.bombShotsLeft = 1;
+    player.bombMaxShots = 1;
     play.orbitalStrikeTimer = 2490;
     play.updateOrbitalStrike(10);
     const chargesAfterSuppressedTimer = player.orbitalStrikeCharges;
-    player.bombShotsLeft = 1;
-    player.bombMaxShots = 1;
     player.bombArmedAt = player.getGameplayClockMs() - 1;
     const bombQueued = player.queueBombTriggerIntent();
     player.shootCooldown = 0;
@@ -321,6 +321,13 @@ try {
     bomb.y = Math.max(180, player.y - 260);
     const target = { x: bomb.x, y: bomb.y };
     const detonated = play.detonateBombBullet(bomb, 'fusion_check');
+    const chargesAfterBomb = player.orbitalStrikeCharges;
+    const markerOrbitalDebug = structuredClone(play.lastOrbitalStrikeDebug);
+    player.bombShotsLeft = 0;
+    play.orbitalStrikeTimer = 2490;
+    play.updateOrbitalStrike(10);
+    const chargesAfterFallback = player.orbitalStrikeCharges;
+    const fallbackOrbitalDebug = structuredClone(play.lastOrbitalStrikeDebug);
     fusionTarget.active = false;
     play.enemyManager.enemies = play.enemyManager.enemies.filter((enemy) => enemy !== fusionTarget);
     play.showTacticalFusionUnlock(result.newFusions[0]);
@@ -328,11 +335,13 @@ try {
     return {
       newFusionIds: result.newFusionIds,
       chargesAfterSuppressedTimer,
-      chargesAfterBomb: player.orbitalStrikeCharges,
+      chargesAfterBomb,
+      chargesAfterFallback,
       bombQueued,
       detonated,
       target,
-      orbitalDebug: structuredClone(play.lastOrbitalStrikeDebug),
+      markerOrbitalDebug,
+      fallbackOrbitalDebug,
       hud: structuredClone(play.hud?.tacticalAugmentGroup?._debugTacticalAugments || null)
     };
   });
@@ -340,8 +349,11 @@ try {
   assert(skyRuntime.chargesAfterSuppressedTimer === 2, 'Sky Verdict did not suppress random automatic targeting');
   assert(skyRuntime.bombQueued, `Sky Verdict test bomb did not pass the current guarded Bomb commit path: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.detonated && skyRuntime.chargesAfterBomb === 1, `Sky Verdict did not spend exactly one charge: ${JSON.stringify(skyRuntime)}`);
-  assert(skyRuntime.orbitalDebug?.fusionId === 'sky_verdict', `Sky Verdict did not mark the forced orbital strike: ${JSON.stringify(skyRuntime)}`);
-  assert(skyRuntime.orbitalDebug?.targetX === Math.round(skyRuntime.target.x) && skyRuntime.orbitalDebug?.targetY === Math.round(skyRuntime.target.y), 'Sky Verdict beam did not use the bomb marker');
+  assert(skyRuntime.markerOrbitalDebug?.fusionId === 'sky_verdict', `Sky Verdict did not mark the forced orbital strike: ${JSON.stringify(skyRuntime)}`);
+  assert(skyRuntime.markerOrbitalDebug?.targetX === Math.round(skyRuntime.target.x) && skyRuntime.markerOrbitalDebug?.targetY === Math.round(skyRuntime.target.y), 'Sky Verdict beam did not use the bomb marker');
+  assert(skyRuntime.chargesAfterFallback === 0, `Sky Verdict did not spend its no-Bomb fallback charge: ${JSON.stringify(skyRuntime)}`);
+  assert(skyRuntime.fallbackOrbitalDebug?.fusionId === 'sky_verdict' && skyRuntime.fallbackOrbitalDebug?.deterministicTarget === true,
+    `Sky Verdict no-Bomb fallback was not deterministic: ${JSON.stringify(skyRuntime)}`);
   assert(skyRuntime.hud?.fusionCount === 4, `HUD did not expose all four Fusion Protocols: ${JSON.stringify(skyRuntime.hud)}`);
   report.states.skyRuntime = skyRuntime;
   await page.waitForTimeout(180);
@@ -350,7 +362,7 @@ try {
   await page.waitForTimeout(520);
   const afterStrike = await readState(page);
   assert(afterStrike.tacticalAugments?.lastFusionEvent?.id === 'sky_verdict', `Sky Verdict completion missing from text state: ${JSON.stringify(afterStrike.tacticalAugments)}`);
-  assert(afterStrike.tacticalAugments?.fusionStats?.skyVerdicts === 1, 'Sky Verdict completion count mismatch');
+  assert(afterStrike.tacticalAugments?.fusionStats?.skyVerdicts === 2, 'Sky Verdict marker plus fallback completion count mismatch');
   report.states.afterStrike = afterStrike.tacticalAugments;
 
   const emergencySky = await page.evaluate(() => {

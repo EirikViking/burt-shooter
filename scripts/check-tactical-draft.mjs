@@ -105,11 +105,11 @@ function overlap(a, b, margin = 4) {
     a.y < b.y + b.height + margin && a.y + a.height + margin > b.y;
 }
 
-function assertDraftLayout(state, width, height, label) {
+function assertDraftLayout(state, width, height, label, expectedOfferCount = 3) {
   assert(state.tacticalDraft?.active, `${label}: draft not active`);
-  assert(state.tacticalDraft.offers.length === 3, `${label}: expected three offers`);
+  assert(state.tacticalDraft.offers.length === expectedOfferCount, `${label}: expected ${expectedOfferCount} offers`);
   const ids = state.tacticalDraft.offers.map((offer) => offer.id);
-  assert(new Set(ids).size === 3, `${label}: duplicate offers ${ids.join(', ')}`);
+  assert(new Set(ids).size === expectedOfferCount, `${label}: duplicate offers ${ids.join(', ')}`);
   const bounds = state.tacticalDraft.offers.map((offer) => offer.bounds);
   bounds.forEach((box, index) => {
     assert(box && box.width > 80 && box.height > 80, `${label}: invalid card ${index} bounds`);
@@ -123,14 +123,19 @@ function assertDraftLayout(state, width, height, label) {
   const holdBounds = state.tacticalDraft.holdBounds;
   const rescanBounds = state.tacticalDraft.rescanBounds;
   const banBounds = state.tacticalDraft.banBounds;
-  assert(holdBounds && rescanBounds && banBounds, `${label}: missing Draft controls`);
+  const passBounds = state.tacticalDraft.passBounds;
+  assert(holdBounds && rescanBounds && banBounds && passBounds, `${label}: missing Draft controls`);
   assert(!overlap(holdBounds, rescanBounds), `${label}: hold and rescan controls overlap`);
   assert(!overlap(holdBounds, banBounds), `${label}: hold and ban controls overlap`);
+  assert(!overlap(holdBounds, passBounds), `${label}: hold and pass controls overlap`);
   assert(!overlap(rescanBounds, banBounds), `${label}: rescan and ban controls overlap`);
+  assert(!overlap(rescanBounds, passBounds), `${label}: rescan and pass controls overlap`);
+  assert(!overlap(banBounds, passBounds), `${label}: ban and pass controls overlap`);
   for (const box of bounds) {
     assert(!overlap(holdBounds, box, 0), `${label}: hold control overlaps a card`);
     assert(!overlap(rescanBounds, box, 0), `${label}: rescan control overlaps a card`);
     assert(!overlap(banBounds, box, 0), `${label}: ban control overlaps a card`);
+    assert(!overlap(passBounds, box, 0), `${label}: pass control overlaps a card`);
   }
   const buildSummary = state.tacticalDraft.buildSummary;
   assert(buildSummary?.bounds && buildSummary.bounds.width > 120 && buildSummary.bounds.height > 20,
@@ -288,6 +293,19 @@ const heldOffers = buildTacticalDraftOffers({
 assert(heldOffers.some((offer) => offer.id === heldOfferId && offer.held === true),
   `held offer did not survive exclusion/rescan: ${JSON.stringify(heldOffers)}`);
 assert(heldOffers.filter((offer) => offer.held).length === 1, 'Draft should expose exactly one held offer');
+
+const exhaustedSelectedIds = TACTICAL_DRAFT_AUGMENTS.flatMap((augment) => (
+  augment.id === 'shield' ? [] : Array.from({ length: augment.maxStacks }, () => augment.id)
+));
+const exhaustedOffers = buildTacticalDraftOffers({
+  seed: 'exhausted-draft-fixture',
+  sectorCleared: 99,
+  selectedIds: exhaustedSelectedIds,
+  lives: 2,
+  maxLives: 4
+});
+assert(exhaustedOffers.length === 1 && exhaustedOffers[0].id === 'shield',
+  `exhausted Draft should stay usable with one valid offer: ${JSON.stringify(exhaustedOffers)}`);
 
 const phaseBlueprint = getTacticalFusionBlueprints('phase_reactor', []);
 assert(phaseBlueprint.length === 1 && phaseBlueprint[0].id === 'rift_reprisal', 'Phase Reactor should expose the Rift Reprisal blueprint');
@@ -686,6 +704,38 @@ try {
   assert(pauseTacticalSummary.trim() && pickedNames.some((name) => pauseTacticalSummary.toUpperCase().includes(name)),
     `pause menu did not expose the current tactical build: ${JSON.stringify(pauseState.pauseOverlay)}`);
   await page.evaluate(() => window.__game.scenes.play.setPaused(false));
+
+  await page.evaluate((selectedIds) => {
+    const play = window.__game.scenes.play;
+    play.tacticalDraftHeldId = null;
+    play.tacticalDraftBansRemaining = 0;
+    play.tacticalDraftBanMilestonesAwarded = 0;
+    play.player.runAugmentIds = selectedIds.slice();
+    play.player.consumedRunAugmentIds = [];
+    play.player.recomputeRunAugmentModifiers?.();
+    play.openTacticalDraft({ sectorCleared: 15 });
+  }, exhaustedSelectedIds);
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.inputArmed === true);
+  const exhaustedState = await readState(page);
+  assertDraftLayout(exhaustedState, 760, 640, 'exhausted-one-offer', 1);
+  assert(exhaustedState.tacticalDraft.bansRemaining === 1,
+    `sector-15 milestone did not replenish one Draft ban: ${JSON.stringify(exhaustedState.tacticalDraft.banAward)}`);
+  assert(exhaustedState.tacticalDraft.banAward?.newlyEarned === 1,
+    `Draft ban milestone was not recorded: ${JSON.stringify(exhaustedState.tacticalDraft.banAward)}`);
+  const exhaustedScreenshot = path.join(outputDir, 'tactical-draft-exhausted-one-offer.png');
+  await page.screenshot({ path: exhaustedScreenshot });
+  await page.keyboard.press('q');
+  await page.waitForFunction(() => JSON.parse(window.render_game_to_text()).tacticalDraft?.active === false, null, { timeout: 4000 });
+  const passedState = await readState(page);
+  assert(passedState.tacticalDraft.history.length === 3,
+    'passing a Draft polluted the installed-upgrade history');
+  assert(passedState.tacticalDraft.passes.length === 1 && passedState.tacticalDraft.passes[0].passed,
+    `passing a Draft was not recorded separately: ${JSON.stringify(passedState.tacticalDraft.passes)}`);
+  assert(JSON.stringify(passedState.tacticalDraft.selectedIds) === JSON.stringify(exhaustedSelectedIds),
+    'passing a Draft installed or removed an augment');
+  const summaryAfterPass = await page.evaluate(() => window.__game.buildRunSummary());
+  assert(summaryAfterPass.tacticalDraftPicks.length === 3,
+    'passing a Draft polluted the run-summary upgrade picks');
 
   const localeResults = [];
   await page.evaluate(() => {

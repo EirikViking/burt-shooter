@@ -119,7 +119,13 @@ export const RunPacingConfig = {
     noHitWave: 45,
     noHitSector: 160,
     runClear: 900,
-    clearWithLivesRemaining: 250
+    clearWithLivesRemaining: 250,
+    // Very long survival runs consume dramatically more real time than normal
+    // sessions. Ramp career credit only after 50 sectors actually cleared, and
+    // reach 2x at 120 cleared sectors so late ranks value endurance fairly.
+    enduranceBonusStartSectors: 50,
+    enduranceBonusFullSectors: 120,
+    enduranceMaxMultiplier: 2
   }
 };
 

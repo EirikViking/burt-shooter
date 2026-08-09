@@ -20,6 +20,7 @@ const storage = {
 
 const defaults = getKeyboardBindings({ storage });
 assert.deepEqual(defaults.dodge, ['Shift']);
+assert.deepEqual(defaults.specialFire, ['KeyE']);
 assert.equal(getKeyboardActionForToken('ShiftLeft', defaults), 'dodge');
 assert.equal(getKeyboardActionForToken('ShiftRight', defaults), 'dodge');
 assert.equal(getKeyboardActionForQuery('ShiftLeft'), 'dodge');
@@ -40,7 +41,7 @@ const reset = resetKeyboardBindings({ storage, syncCloud: false });
 assert.deepEqual(reset.dodge, ['Shift']);
 assert.deepEqual(reset.moveLeft, ['ArrowLeft', 'KeyA']);
 assert.deepEqual(KEYBOARD_ACTIONS.map(({ id }) => id), [
-  'moveLeft', 'moveRight', 'moveUp', 'moveDown', 'focus', 'shoot', 'dodge', 'pause'
+  'moveLeft', 'moveRight', 'moveUp', 'moveDown', 'focus', 'shoot', 'specialFire', 'dodge', 'pause'
 ]);
 
 const persisted = saveKeyboardBindings({ ...reset, dodge: ['Shift'] }, { storage, syncCloud: false });

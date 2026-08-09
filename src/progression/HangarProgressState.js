@@ -640,7 +640,8 @@ export function calculatePilotXpForRun(summary = {}) {
   const normalWaveXpMult = getRunModeNormalWaveScoreXpMultiplier(summary.runMode);
   const scoreXp = Math.floor((Number(summary.score) || 0) / Math.max(1, xp.scoreDivisor));
   const startSector = Math.max(1, floor(summary.startSector ?? summary.sectorStartPlaySector, 1));
-  const sectorXp = Math.max(0, floor(summary.sectorReached, startSector) - startSector) * xp.sectorReachedBase;
+  const sectorsCleared = Math.max(0, floor(summary.sectorReached, startSector) - startSector);
+  const sectorXp = sectorsCleared * xp.sectorReachedBase;
   const waveXp = floor(summary.wavesCleared) * xp.waveClear * normalWaveXpMult;
   const bossXp = floor(summary.bossesKilled) * xp.bossDefeat;
   const discoveryXp = floor(summary.codexDiscoveries) * xp.codexDiscovery;
@@ -651,9 +652,16 @@ export function calculatePilotXpForRun(summary = {}) {
   const clearLivesRemaining = floor(summary.clearLivesRemaining ?? summary.livesRemaining);
   const livesXp = summary.runCleared ? clearLivesRemaining * xp.clearWithLivesRemaining : 0;
   const pilotOrderXp = getRunContractRewardXpForRun(summary.runContracts);
+  const enduranceStart = Math.max(0, floor(xp.enduranceBonusStartSectors, 50));
+  const enduranceFull = Math.max(enduranceStart + 1, floor(xp.enduranceBonusFullSectors, 120));
+  const enduranceProgress = Math.max(0, Math.min(1,
+    (sectorsCleared - enduranceStart) / (enduranceFull - enduranceStart)));
+  const enduranceMultiplier = 1 + enduranceProgress
+    * Math.max(0, (Number(xp.enduranceMaxMultiplier) || 1) - 1);
   return Math.max(0, Math.floor(
     (scoreXp + sectorXp + waveXp + bossXp + discoveryXp + themeXp + noHitWaveXp + noHitSectorXp + clearXp + livesXp + pilotOrderXp)
     * careerXpMultiplier
+    * enduranceMultiplier
   ));
 }
 

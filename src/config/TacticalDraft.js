@@ -4,6 +4,8 @@ import { SHIP_THREAT_RESPONSE_TARGETS } from './ShipThreatResponse.js';
 export const TACTICAL_DRAFT_VERSION = 2;
 export const TACTICAL_DRAFT_OFFER_COUNT = 3;
 export const TACTICAL_DRAFT_BAN_COUNT = 2;
+export const TACTICAL_DRAFT_BAN_EARN_INTERVAL = 15;
+export const TACTICAL_DRAFT_BAN_BANK_MAX = 5;
 export const TACTICAL_SCORE_ROUTE_SECTOR = 5;
 
 const TACTICAL_AUGMENT_DETAIL_COPY = Object.freeze({
