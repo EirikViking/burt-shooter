@@ -35,12 +35,20 @@ function makeComboState(overrides = {}) {
     comboWindowMs: 3200,
     killStreak: 9,
     comboMilestonesReached: new Set([5]),
+    comboBossEncounterActive: false,
+    lastComboResetReason: 'init',
     enemyManager: { state: 'WAVE_ACTIVE', waveEnding: false },
     isGameplayClockAdvancing: () => true,
+    resetComboState,
+    syncComboBossBoundary,
     ...overrides
   };
 }
 
+const resetSource = extractMethod('resetComboState');
+const resetComboState = compileSingleArgumentMethod(resetSource, 'reason');
+const syncSource = extractMethod('syncComboBossBoundary');
+const syncComboBossBoundary = compileSingleArgumentMethod(syncSource, 'enemyState');
 const updateSource = extractMethod('updateComboTimers');
 const updateComboTimers = compileSingleArgumentMethod(updateSource, 'delta');
 const onKillSource = extractMethod('onEnemyKilled');
@@ -50,9 +58,6 @@ const transition = makeComboState({ enemyManager: { state: 'WAVE_BRIEFING', wave
 updateComboTimers.call(transition, 90);
 assert.equal(transition.comboCount, 9, 'combo count changed during briefing');
 assert.equal(transition.comboTimerMs, 1200, 'combo timer decayed during briefing');
-transition.enemyManager.state = 'BOSS_GATE';
-updateComboTimers.call(transition, 90);
-assert.equal(transition.comboTimerMs, 1200, 'combo timer decayed during boss gate');
 transition.enemyManager.state = 'WAVE_ACTIVE';
 transition.enemyManager.waveEnding = true;
 updateComboTimers.call(transition, 90);
@@ -67,6 +72,24 @@ transition.killStreak += 1;
 transition.comboTimerMs = transition.comboWindowMs;
 assert.equal(transition.comboCount, 10);
 assert.equal(transition.comboTimerMs, 3200);
+
+const bossBoundary = makeComboState({ enemyManager: { state: 'BOSS_GATE', waveEnding: false } });
+updateComboTimers.call(bossBoundary, 1);
+assert.equal(bossBoundary.comboCount, 0, 'boss entry did not close the pre-boss combo');
+assert.equal(bossBoundary.comboTimerMs, 0, 'boss entry left a pre-boss combo timer active');
+assert.equal(bossBoundary.lastComboResetReason, 'boss_entry');
+bossBoundary.comboCount = 4;
+bossBoundary.killStreak = 4;
+bossBoundary.comboTimerMs = 800;
+bossBoundary.enemyManager.state = 'BOSS_ACTIVE';
+updateComboTimers.call(bossBoundary, 1);
+assert.equal(bossBoundary.comboCount, 4, 'boss-local combo was reset while the encounter remained active');
+assert.ok(bossBoundary.comboTimerMs > 0 && bossBoundary.comboTimerMs < 800, 'boss-local combo timer did not use active-combat decay');
+bossBoundary.enemyManager.state = 'LEVEL_COMPLETE';
+updateComboTimers.call(bossBoundary, 1);
+assert.equal(bossBoundary.comboCount, 0, 'boss exit carried a boss-local combo into the next sector');
+assert.equal(bossBoundary.comboTimerMs, 0, 'boss exit left a boss-local combo timer active');
+assert.equal(bossBoundary.lastComboResetReason, 'boss_exit');
 
 const activeExpiry = makeComboState({ comboTimerMs: 100 });
 updateComboTimers.call(activeExpiry, 10);
@@ -96,6 +119,11 @@ for (const reset of [
 const report = {
   ok: true,
   transitionCarry: { comboCount: transition.comboCount, timerAfterFirstNextWaveKill: transition.comboTimerMs },
+  bossBoundary: {
+    entryReason: 'boss_entry',
+    bossLocalTimerDecay: true,
+    exitReason: bossBoundary.lastComboResetReason
+  },
   activeExpiry: { comboCount: activeExpiry.comboCount, multiplier: activeExpiry.comboMultiplier, killStreak: activeExpiry.killStreak },
   modes: ['mayhem_pure', 'overrun_pure', 'overrun_tactical'],
   secondRunResetFields: 7

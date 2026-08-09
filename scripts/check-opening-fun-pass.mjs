@@ -51,11 +51,14 @@ for (const hook of [
   if (!enemyManagerSource.includes(hook)) fail(`EnemyManager missing opening momentum hook: ${hook}`);
 }
 
-if (!playSceneSource.includes("this.enemyManager?.state === 'BOSS_GATE'")) {
-  fail('combo timer must pause during the boss gate');
+if (!playSceneSource.includes('this.syncComboBossBoundary(enemyState);')) {
+  fail('combo lifecycle must synchronize an explicit boss boundary');
 }
-if (!playSceneSource.includes('this.refreshComboFromBossPressure(enemy);')) {
-  fail('player bullet damage must refresh an active combo on boss pressure');
+if (!playSceneSource.includes("bossEncounterActive ? 'boss_entry' : 'boss_exit'")) {
+  fail('boss entry and exit must both close the current combo');
+}
+if (playSceneSource.includes('refreshComboFromBossPressure')) {
+  fail('boss damage must not refresh the combo timer');
 }
 if (!playSceneSource.includes('this.firstRunKillCount < 2')) {
   fail('opening Rapid Fire pickup must arrive on the second kill');
@@ -70,4 +73,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('[opening-fun-pass] PASS sectors=1-3 pickupKill=2 bossComboGate=paused bossHitSustainMs=1400');
+console.log('[opening-fun-pass] PASS sectors=1-3 pickupKill=2 bossComboBoundary=entry+exit bossHits=neutral');

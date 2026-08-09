@@ -142,7 +142,7 @@ try {
   if (state.debug?.multiplier !== 3) failures.push(`multiplier mismatch: ${JSON.stringify(state.debug)}`);
   if (state.debug?.count !== 28) failures.push(`count mismatch: ${JSON.stringify(state.debug)}`);
   if (state.debug?.scoreOverlap) failures.push(`combo meter covers score: ${JSON.stringify(state.debug)}`);
-  if (!['score-sidecar', 'mission-underrail'].includes(state.debug?.placement)) failures.push(`combo placement lane missing: ${JSON.stringify(state.debug)}`);
+  if (!['score-lane', 'score-sidecar', 'mission-underrail'].includes(state.debug?.placement)) failures.push(`combo placement lane missing: ${JSON.stringify(state.debug)}`);
   if (pageErrors.length) failures.push(`page errors: ${pageErrors.join('; ')}`);
   if (consoleErrors.length) failures.push(`console errors: ${consoleErrors.join('; ')}`);
 

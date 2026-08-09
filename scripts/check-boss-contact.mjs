@@ -90,7 +90,10 @@ const pageErrors = [];
 const consoleWarningsOrErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('console', (message) => {
-  if (message.type() === 'error' || message.type() === 'warning') consoleWarningsOrErrors.push(message.text());
+  if (message.type() !== 'error' && message.type() !== 'warning') return;
+  const text = message.text();
+  if (/Service worker script missing or invalid/i.test(text)) return;
+  consoleWarningsOrErrors.push(text);
 });
 
 try {

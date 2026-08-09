@@ -37,6 +37,8 @@ function extractFunction(source, name) {
 }
 
 const onEnemyKilled = extractFunction(playScene, 'onEnemyKilled');
+const resetComboState = extractFunction(playScene, 'resetComboState');
+const syncComboBossBoundary = extractFunction(playScene, 'syncComboBossBoundary');
 const updateComboTimers = extractFunction(playScene, 'updateComboTimers');
 const init = extractFunction(playScene, 'init');
 const forceClearAllEnemies = extractFunction(enemyManager, 'forceClearAllEnemies');
@@ -67,6 +69,7 @@ if (!updateComboTimers.includes('this.comboTimerMs -= delta * 16.67')) {
   fail('combo timer should decay by frame delta');
 }
 for (const needle of [
+  'this.syncComboBossBoundary(enemyState)',
   "enemyState === 'WAVE_ACTIVE'",
   "enemyState === 'BOSS_ACTIVE'",
   'this.enemyManager?.waveEnding',
@@ -74,13 +77,29 @@ for (const needle of [
 ]) {
   if (!updateComboTimers.includes(needle)) fail(`combo timer missing transition/agency guard: ${needle}`);
 }
-if (!updateComboTimers.includes('this.comboCount = 0')) {
-  fail('combo expiration should reset combo count');
+if (!updateComboTimers.includes("this.resetComboState('expired')")) {
+  fail('combo expiration should use the authoritative combo reset');
+}
+for (const needle of [
+  'this.comboCount = 0',
+  'this.comboMultiplier = 1',
+  'this.comboTimerMs = 0',
+  'this.killStreak = 0',
+  'this.comboMilestonesReached?.clear?.()'
+]) {
+  if (!resetComboState.includes(needle)) fail(`authoritative combo reset missing: ${needle}`);
+}
+for (const needle of [
+  "enemyState === 'BOSS_GATE'",
+  "enemyState === 'BOSS_ACTIVE'",
+  "bossEncounterActive ? 'boss_entry' : 'boss_exit'"
+]) {
+  if (!syncComboBossBoundary.includes(needle)) fail(`boss combo boundary missing: ${needle}`);
 }
 if (!playScene.includes('playerBulletEnemyDamageOnly += 1')) {
   fail('expected damage-only bullet accounting marker');
 }
-if (!/scorePopups[\s\S]{0,220}options:\s*\{\s*comboEligible:\s*true\s*\}/.test(playScene)) {
+if (!/scorePopups[\s\S]{0,260}options:\s*\{[\s\S]{0,120}comboEligible:\s*true/.test(playScene)) {
   fail('normal player-bullet kills must feed the floating combo presentation');
 }
 if (!/setComboWindow\(windowMs = 3200\)/.test(scorePopup) || !/Math\.min\(5000/.test(scorePopup)) {
@@ -104,9 +123,19 @@ const model = {
   comboMultiplier: 1,
   comboTimerMs: 1200,
   killStreak: 9,
-  milestones: new Set([5])
+  milestones: new Set([5]),
+  bossEncounterActive: false
 };
 const tick = (state, deltaMs, { enemyState, waveEnding = false, clockAdvancing = true }) => {
+  const bossEncounterActive = enemyState === 'BOSS_GATE' || enemyState === 'BOSS_ACTIVE';
+  if (bossEncounterActive !== state.bossEncounterActive) {
+    state.bossEncounterActive = bossEncounterActive;
+    state.comboCount = 0;
+    state.comboMultiplier = 1;
+    state.comboTimerMs = 0;
+    state.killStreak = 0;
+    state.milestones.clear();
+  }
   const activeCombat = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
   if (state.comboCount <= 0 || !activeCombat || waveEnding || !clockAdvancing) return;
   state.comboTimerMs -= deltaMs;
@@ -125,8 +154,27 @@ model.comboTimerMs = 3200;
 if (model.comboCount !== 10 || model.comboTimerMs !== 3200) fail('first next-wave kill must continue and refresh the carried combo');
 tick(model, 3300, { enemyState: 'WAVE_ACTIVE' });
 if (model.comboCount !== 0 || model.killStreak !== 0 || model.milestones.size !== 0) fail('active-play expiry must fully reset combo state');
+model.comboCount = 8;
+model.killStreak = 8;
+model.comboTimerMs = 1200;
+tick(model, 0, { enemyState: 'BOSS_GATE' });
+if (model.comboCount !== 0 || model.comboTimerMs !== 0) fail('boss entry must close the pre-boss combo');
+model.comboCount = 3;
+model.killStreak = 3;
+model.comboTimerMs = 800;
+tick(model, 100, { enemyState: 'BOSS_ACTIVE' });
+if (model.comboCount !== 3 || model.comboTimerMs !== 700) fail('boss-local combo should decay during active boss combat');
+tick(model, 0, { enemyState: 'LEVEL_COMPLETE' });
+if (model.comboCount !== 0 || model.comboTimerMs !== 0) fail('boss exit must close the boss-local combo');
 for (const runMode of ['mayhem_pure', 'overrun']) {
-  const state = { comboCount: 3, comboMultiplier: 1, comboTimerMs: 800, killStreak: 3, milestones: new Set() };
+  const state = {
+    comboCount: 3,
+    comboMultiplier: 1,
+    comboTimerMs: 800,
+    killStreak: 3,
+    milestones: new Set(),
+    bossEncounterActive: false
+  };
   tick(state, 400, { enemyState: 'WAVE_BRIEFING' });
   tick(state, 900, { enemyState: 'WAVE_ACTIVE' });
   if (state.comboCount !== 0) fail(`${runMode} must use the same authoritative active-play expiry`);
@@ -143,6 +191,9 @@ const report = {
     waveCleanupAwardsComboKills: false,
     transitionCarryVerified: true,
     nextWaveKillContinuesCombo: true,
+    bossEntryClosesCombo: true,
+    bossHitsRefreshCombo: false,
+    bossExitClosesCombo: true,
     activePlayExpiryVerified: true,
     pureAndOverrunParityVerified: true,
     secondRunInitResetVerified: true,
@@ -151,9 +202,10 @@ const report = {
   findings: [
     'Score combo starts, increments, and refreshes in onEnemyKilled.',
     'Damage-only hits do not refresh the score combo timer.',
+    'Boss entry and boss exit are explicit score-combo boundaries.',
     'Wave cleanup can remove leftover non-boss enemies without granting kill combo credit.'
   ],
-  recommendation: 'Hit-refresh, partial hit-refresh, or cleanup kill-credit would affect scoring and leaderboards, so this pass documents them for explicit design approval instead of implementing them.'
+  recommendation: 'Keep ordinary wave-to-wave combo continuity while treating every boss encounter as a clear scoring boundary.'
 };
 
 mkdirSync(outputDir, { recursive: true });

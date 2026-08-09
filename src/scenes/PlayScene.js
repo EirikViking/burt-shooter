@@ -519,6 +519,8 @@ export class PlayScene {
     this.bestComboCount = 0;
     this.comboTimerMs = 0;
     this.comboWindowMs = COMBO_WINDOW_MS;
+    this.comboBossEncounterActive = false;
+    this.lastComboResetReason = 'init';
     this.killStreak = 0;
     this.totalKills = 0;
     this.bossKills = 0;
@@ -768,6 +770,8 @@ export class PlayScene {
     this.comboMultiplier = 1;
     this.comboTimerMs = 0;
     this.comboWindowMs = COMBO_WINDOW_MS;
+    this.comboBossEncounterActive = false;
+    this.lastComboResetReason = 'init';
     this.killStreak = 0;
     this.lastKillAt = 0;
     this.comboMilestonesReached = new Set();
@@ -7365,7 +7369,6 @@ export class PlayScene {
           impactX: event.impactX,
           impactY: event.impactY
         });
-        this.refreshComboFromBossPressure(enemy);
         event.destroyed = destroyed;
         this.triggerChainLightning(enemy, bulletProxy.damage);
         this.applyShipTraitBulletImpact(bullet, enemy);
@@ -20714,25 +20717,34 @@ export class PlayScene {
     }
   }
 
+  resetComboState(reason = 'expired') {
+    const hadCombo = this.comboCount > 0 || this.comboMultiplier > 1 || this.killStreak > 0;
+    this.comboCount = 0;
+    this.comboMultiplier = 1;
+    this.comboTimerMs = 0;
+    this.killStreak = 0;
+    this.comboMilestonesReached?.clear?.();
+    this.lastComboResetReason = reason;
+    return hadCombo;
+  }
+
+  syncComboBossBoundary(enemyState = this.enemyManager?.state) {
+    const bossEncounterActive = enemyState === 'BOSS_GATE' || enemyState === 'BOSS_ACTIVE';
+    if (bossEncounterActive === this.comboBossEncounterActive) return false;
+    this.comboBossEncounterActive = bossEncounterActive;
+    return this.resetComboState(bossEncounterActive ? 'boss_entry' : 'boss_exit');
+  }
+
   updateComboTimers(delta) {
-    if (this.comboCount <= 0) return;
     const enemyState = this.enemyManager?.state;
+    this.syncComboBossBoundary(enemyState);
+    if (this.comboCount <= 0) return;
     const activeCombat = enemyState === 'WAVE_ACTIVE' || enemyState === 'BOSS_ACTIVE';
     if (!activeCombat || this.enemyManager?.waveEnding || !this.isGameplayClockAdvancing()) return;
     this.comboTimerMs -= delta * 16.67;
     if (this.comboTimerMs <= 0) {
-      this.comboCount = 0;
-      this.comboMultiplier = 1;
-      this.killStreak = 0;
-      this.comboMilestonesReached.clear(); // Reset milestones when combo expires
+      this.resetComboState('expired');
     }
-  }
-
-  refreshComboFromBossPressure(enemy) {
-    if (this.comboCount <= 0 || enemy?.kind !== 'boss' || enemy?.active === false) return false;
-    const sustainMs = Math.min(Math.max(0, Number(this.comboWindowMs) || COMBO_WINDOW_MS), 1400);
-    this.comboTimerMs = Math.max(Number(this.comboTimerMs) || 0, sustainMs);
-    return true;
   }
 
   maybeDropFirstRunPickup(enemy) {
