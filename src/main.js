@@ -831,6 +831,7 @@ function buildGameTextState(game) {
     tacticalDraft: playScene?.getTacticalDraftDebugState?.() || null,
     tacticalAugments: player?.getRunAugmentDebugState?.() || null,
     runReport: summarizeRunReport(game?.lastRunReport || null),
+    highSectorEscalation: enemyManager?.getHighSectorEscalationDebugState?.() || null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,
       state: enemyManager.state || null,

@@ -1063,6 +1063,11 @@ export class PlayScene {
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
+    this.game.highSectorEscalationProfile = {
+      armed: false,
+      diagnosticOnly: true,
+      source: null
+    };
     const debugToken = params.get('debugBossToken');
     if (this.canUseMaintainerDevtools() && debugToken === 'NOVA_DEBUG_2026') {
       this.game.markUnrankedRun?.('debug_route');
@@ -1070,13 +1075,20 @@ export class PlayScene {
       const startAtBoss = params.get('startAtBoss') === '1';
       const debugPowerups = params.get('debugPowerups') === '1';
       const debugOverlay = params.get('debugOverlay') === '1';
+      const highSectorEscalation = params.get('highSectorEscalation') === '1';
       if (Number.isFinite(startLevel) && startLevel > 0) {
         this.debugStartLevel = Math.floor(startLevel);
       }
       this.debugStartAtBoss = startAtBoss;
       this.debugPowerups = debugPowerups;
       this.debugOverlayEnabled = debugOverlay;
-      console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay}`);
+      this.game.highSectorEscalationProfile = {
+        armed: highSectorEscalation,
+        diagnosticOnly: true,
+        source: highSectorEscalation ? 'maintainer_query' : null
+      };
+      if (highSectorEscalation) this.game.markUnrankedRun?.('debug_high_sector_escalation');
+      console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay} highSectorEscalation=${highSectorEscalation}`);
     }
     // Ensure Assets are ready for gameplay
     GameAssets.ensureBonusCoreTexture().then(tex => {
@@ -15339,6 +15351,43 @@ export class PlayScene {
     });
   }
 
+  capBossHazardForHighSector(hazard, width, height) {
+    const escalation = this.enemyManager?.highSectorEscalationState;
+    if (!hazard || !escalation?.active || !escalation.caps) return hazard;
+    const screenArea = Math.max(1, width * height);
+    const maxRatio = escalation.caps.maxHazardAreaRatio;
+    const estimateArea = () => {
+      if (hazard.kind === 'wall') {
+        return Math.max(0, hazard.endY - hazard.startY)
+          * Math.max(1, hazard.columns?.length || 1)
+          * Math.max(1, hazard.width * 2);
+      }
+      if (hazard.kind === 'ring') {
+        const annulus = Math.PI * Math.max(0, hazard.outerRadius ** 2 - hazard.innerRadius ** 2);
+        const safeFraction = Math.max(0, Math.min(0.8, Number(hazard.safeWedge) / Math.PI));
+        return annulus * (1 - safeFraction);
+      }
+      if (hazard.kind === 'beam') return Math.max(1, hazard.length) * Math.max(1, hazard.radius * 2);
+      return 0.5 * Math.max(1, hazard.length) ** 2 * Math.max(0.01, hazard.spread);
+    };
+    const beforeRatio = estimateArea() / screenArea;
+    if (beforeRatio > maxRatio) {
+      const scale = Math.sqrt(maxRatio / beforeRatio);
+      if (hazard.kind === 'wall') hazard.width = Math.max(12, hazard.width * scale * scale);
+      else if (hazard.kind === 'ring') {
+        hazard.outerRadius *= scale;
+        hazard.innerRadius *= scale;
+      } else if (hazard.kind === 'beam') hazard.radius = Math.max(8, hazard.radius * scale * scale);
+      else hazard.spread = Math.max(0.04, hazard.spread * scale * scale);
+    }
+    hazard.highSectorAreaCap = {
+      maxRatio,
+      beforeRatio: Number(beforeRatio.toFixed(4)),
+      afterRatio: Number((estimateArea() / screenArea).toFixed(4))
+    };
+    return hazard;
+  }
+
   registerBossHazardFromBoss(boss, category = 'regular', details = {}) {
     if (!boss || !this.player || !this.game) return null;
 
@@ -15441,6 +15490,7 @@ export class PlayScene {
       };
     }
 
+    this.capBossHazardForHighSector(hazard, width, height);
     this.bossHazards.push(hazard);
     this.playBossHazardFireSfx(hazard);
     return hazard;

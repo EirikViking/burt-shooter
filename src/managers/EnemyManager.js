@@ -36,6 +36,12 @@ import { getBossSupportShipEventSeed, pickBossSupportShipProfile } from '../conf
 import { hideMicroSignals, presentDirectionalSignal } from '../effects/MicroSignalVfx.js';
 import { getBossProfileForRun } from '../config/BossRoster.js';
 import {
+  capHighSectorBossHealth,
+  createHighSectorEscalationState,
+  shapeHighSectorWaves
+} from '../config/HighSectorEscalation.js';
+import { getAccessibilitySettings } from '../config/AccessibilitySettings.js';
+import {
   getRareChaosVisitorVariant,
   planRareChaosVisitorSpawn
 } from '../config/RareChaosVisitors.js';
@@ -252,6 +258,10 @@ export class EnemyManager {
     this.currentNormalWaveDifficultyLevel = 1;
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
+    this.highSectorEscalationState = createHighSectorEscalationState();
+    this.highSectorProtocolRuntime = null;
+    this.ascendantSupportState = null;
+    this.highSectorDefaultMaxEnemyBullets = Number(this.game?.scenes?.play?.bulletManager?.maxEnemyBullets) || 300;
 
     // Debug Stats
     this.totalEnemiesSpawned = 0;
@@ -359,6 +369,8 @@ export class EnemyManager {
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = level;
+    this.refreshHighSectorEscalationState(level);
+    this.configureHighSectorRuntimeCaps();
     this.clearPendingWaveSpawns();
     this.measurePerformance('level_start.array_cleanup_compaction', () => this.clearEnemies());
 
@@ -453,6 +465,7 @@ export class EnemyManager {
     this.logBossStatus('level_start');
     console.log(`[BossPhase] level=${level} phase=${this.phase} waveIndex=${this.currentWaveIndex} normalWaves=${this.normalWavesTotal} hasBoss=${this.isBossLevel}`);
     this.logLevelDifficulty(level, normalWaves.length);
+    this.announceHighSectorProtocol();
 
     if (this.normalWavesTotal > 0) {
       const config = this.waves[this.currentWaveIndex];
@@ -476,6 +489,8 @@ export class EnemyManager {
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = targetLevel;
+    this.refreshHighSectorEscalationState(targetLevel);
+    this.configureHighSectorRuntimeCaps();
     this.clearPendingWaveSpawns();
     this.clearEnemies();
 
@@ -527,6 +542,8 @@ export class EnemyManager {
     this.bossFuelShipsSpawnedThisBoss = 0;
     this.pendingBossFuelShipSquad = null;
     this.lastBossFuelSupportOrder = null;
+    this.highSectorProtocolRuntime = null;
+    this.ascendantSupportState = null;
     this.bossFuelEightShipSwarmPlanned = false;
     this.bossFuelEightShipSwarmTriggered = false;
     this.bossReinforcementState = null;
@@ -730,8 +747,9 @@ export class EnemyManager {
         const dangerMoment = this.applyNormalWaveDangerMoment(wave, normalWaveLevel, waveIndex, shapedCurated.length);
         return this.applyDangerMidShipPlan(dangerMoment, normalWaveLevel, waveIndex, shapedCurated.length);
       });
-      return this.applyEliteMiddleShipPlan(threatShapedCurated, normalWaveLevel)
+      const planned = this.applyEliteMiddleShipPlan(threatShapedCurated, normalWaveLevel)
         .map((wave) => ({ ...wave, sourceLevel, normalWaveDifficultyLevel: normalWaveLevel }));
+      return shapeHighSectorWaves(planned, this.highSectorEscalationState);
     }
 
     const numWaves = this.getNormalWaveCount(normalWaveLevel);
@@ -781,8 +799,9 @@ export class EnemyManager {
       const dangerMoment = this.applyNormalWaveDangerMoment(shaped, normalWaveLevel, i, numWaves);
       waves.push(this.applyDangerMidShipPlan(dangerMoment, normalWaveLevel, i, numWaves));
     }
-    return this.applyEliteMiddleShipPlan(waves, normalWaveLevel)
+    const planned = this.applyEliteMiddleShipPlan(waves, normalWaveLevel)
       .map((wave) => ({ ...wave, sourceLevel, normalWaveDifficultyLevel: normalWaveLevel }));
+    return shapeHighSectorWaves(planned, this.highSectorEscalationState);
   }
 
   applyDangerMidShipPlan(wave, level, waveIndex, waveCount) {
@@ -982,7 +1001,11 @@ export class EnemyManager {
     const pressureTuning = getNormalWavePressureTuning(level);
     const waveBonus = Math.max(0, Number(pressureTuning.waveCountBonus) || 0);
     const planned = Math.round(base + Math.max(0, level - 1) * perLevel) + waveBonus;
-    return Math.max(min, Math.min(max + waveBonus, planned));
+    const baseline = Math.max(min, Math.min(max + waveBonus, planned));
+    const authoredLimit = this.highSectorEscalationState?.active && Number(level) > 80
+      ? Number(this.highSectorEscalationState.authoredEncounterLimit)
+      : 0;
+    return authoredLimit > 0 ? Math.min(baseline, authoredLimit) : baseline;
   }
 
   getWaveEnemyCount(level, waveIndex = 0) {
@@ -2182,6 +2205,132 @@ export class EnemyManager {
     return scalars[this.currentWaveIndex] ?? 0.74;
   }
 
+  refreshHighSectorEscalationState(level = this.level) {
+    const config = BalanceConfig.difficulty?.highSectorEscalation || {};
+    const diagnostic = this.game?.highSectorEscalationProfile || {};
+    this.highSectorEscalationState = createHighSectorEscalationState({
+      config,
+      armed: config.enabled === true || diagnostic.armed === true,
+      sector: level,
+      seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
+      reducedMotion: Boolean(getAccessibilitySettings().prefersReducedMotion),
+      runMode: this.game?.runMode || 'ranked'
+    });
+    this.highSectorProtocolRuntime = null;
+    this.ascendantSupportState = null;
+    return this.highSectorEscalationState;
+  }
+
+  configureHighSectorRuntimeCaps() {
+    const bulletManager = this.game?.scenes?.play?.bulletManager;
+    if (!bulletManager) return null;
+    if (this.highSectorEscalationState?.active) {
+      bulletManager.maxEnemyBullets = this.highSectorEscalationState.caps.maxHostileProjectiles;
+    } else {
+      bulletManager.maxEnemyBullets = this.highSectorDefaultMaxEnemyBullets;
+    }
+    return bulletManager.maxEnemyBullets;
+  }
+
+  announceHighSectorProtocol() {
+    const protocol = this.highSectorEscalationState?.protocol;
+    if (!protocol) return false;
+    const playScene = this.game?.scenes?.play;
+    playScene?.enqueueToast?.(
+      `${translateText('DEEP SPACE PROTOCOL')}: ${translateText(protocol.name)}\n${translateText(protocol.cue)}`,
+      {
+        slot: 'top',
+        channel: 'transition',
+        type: 'deep_space_protocol',
+        priority: 8,
+        duration: this.highSectorEscalationState.reducedMotion ? 2900 : 3400,
+        restrained: true,
+        signalPlate: true,
+        maxWidth: this.game.getWidth() * 0.72
+      }
+    );
+    this.highSectorEscalationState.lastAnnouncement = {
+      protocolId: protocol.id,
+      sector: this.level,
+      atMs: Date.now()
+    };
+    return true;
+  }
+
+  beginHighSectorProtocolRuntime(config = {}) {
+    const shift = config.highSectorShift;
+    this.highSectorProtocolRuntime = shift ? {
+      protocolId: config.highSectorProtocolId || 'shifting_front',
+      waveIndex: this.currentWaveIndex,
+      elapsedMs: 0,
+      warned: false,
+      shifted: false,
+      initialSafeSide: shift.initialSafeSide,
+      currentSafeSide: shift.initialSafeSide,
+      shiftedSafeSide: shift.shiftedSafeSide,
+      warningAtMs: Math.max(1200, Number(shift.warningAtMs) || 3100),
+      shiftAtMs: Math.max(2600, Number(shift.shiftAtMs) || 5000),
+      reducedMotion: Boolean(this.highSectorEscalationState?.reducedMotion)
+    } : null;
+  }
+
+  updateHighSectorProtocolRuntime(delta = 1) {
+    const runtime = this.highSectorProtocolRuntime;
+    if (!runtime || runtime.shifted || this.state !== 'WAVE_ACTIVE' || this.waveEnding) return;
+    runtime.elapsedMs += Math.max(0, Number(delta) || 0) * 16.67;
+    const playScene = this.game?.scenes?.play;
+    if (!runtime.warned && runtime.elapsedMs >= runtime.warningAtMs) {
+      runtime.warned = true;
+      playScene?.enqueueToast?.(translateText('FRONT SHIFT INBOUND // SAFE SIDE: {side}', {
+        side: translateText(String(runtime.shiftedSafeSide).toUpperCase())
+      }), {
+        slot: 'top',
+        channel: 'combat',
+        type: 'deep_space_protocol',
+        priority: 9,
+        duration: Math.max(1500, runtime.shiftAtMs - runtime.warningAtMs - 120),
+        restrained: true,
+        signalPlate: true
+      });
+    }
+    if (runtime.elapsedMs < runtime.shiftAtMs) return;
+    runtime.shifted = true;
+    runtime.currentSafeSide = runtime.shiftedSafeSide;
+    const screenWidth = this.game.getWidth();
+    for (const enemy of this.enemies) {
+      if (!enemy || enemy.kind === 'boss' || enemy.kind === 'boss_fuel_ship' || enemy.active === false) continue;
+      if (Number.isFinite(Number(enemy.formationX))) {
+        enemy.formationX = Math.max(74, Math.min(screenWidth - 74, screenWidth - Number(enemy.formationX)));
+      }
+    }
+    playScene?.enqueueToast?.(translateText('FRONT SHIFT // SAFE SIDE: {side}', {
+      side: translateText(String(runtime.currentSafeSide).toUpperCase())
+    }), {
+      slot: 'top',
+      channel: 'combat',
+      type: 'deep_space_protocol',
+      priority: 9,
+      duration: runtime.reducedMotion ? 1700 : 2100,
+      restrained: true,
+      signalPlate: true
+    });
+  }
+
+  getHighSectorEscalationDebugState() {
+    const state = this.highSectorEscalationState || createHighSectorEscalationState();
+    return {
+      ...state,
+      protocol: state.protocol ? { ...state.protocol } : null,
+      bossModifier: state.bossModifier ? { ...state.bossModifier } : null,
+      caps: state.caps ? { ...state.caps } : null,
+      downtime: state.downtime ? { ...state.downtime } : null,
+      runtime: this.highSectorProtocolRuntime ? { ...this.highSectorProtocolRuntime } : null,
+      ascendantSupport: this.ascendantSupportState ? { ...this.ascendantSupportState } : null,
+      hostileProjectiles: this.game?.scenes?.play?.bulletManager?.enemyBullets?.filter?.((bullet) => bullet?.active !== false).length || 0,
+      hostileProjectileCap: this.game?.scenes?.play?.bulletManager?.maxEnemyBullets || null
+    };
+  }
+
   getOpeningMomentumTuning(sourceLevel = this.level) {
     const config = BalanceConfig.difficulty?.openingMomentum || {};
     const level = Math.max(1, Math.floor(Number(sourceLevel) || 1));
@@ -2190,12 +2339,17 @@ export class EnemyManager {
       const value = Number(config?.[key]?.[level]);
       return enabled && Number.isFinite(value) && value > 0 ? value : fallback;
     };
+    const highSectorDowntime = this.highSectorEscalationState?.active
+      ? this.highSectorEscalationState.downtime
+      : null;
     return {
       enabled,
       sourceLevel: level,
-      waveBriefingMs: levelValue('waveBriefingMsByLevel', BalanceConfig.difficulty.waveDelayMs || 1600),
+      waveBriefingMs: highSectorDowntime?.briefingMs
+        || levelValue('waveBriefingMsByLevel', BalanceConfig.difficulty.waveDelayMs || 1600),
       waveToastDurationMs: levelValue('waveToastDurationMsByLevel', 2800),
-      waveCleanupMs: levelValue('waveCleanupMsByLevel', BalanceConfig.difficulty.waveCleanupMs || 2000),
+      waveCleanupMs: highSectorDowntime?.cleanupMs
+        || levelValue('waveCleanupMsByLevel', BalanceConfig.difficulty.waveCleanupMs || 2000),
       entryDurationMult: levelValue('entryDurationMultByLevel'),
       entryDelayMult: levelValue('entryDelayMultByLevel'),
       enemySpeedMult: levelValue('enemySpeedMultByLevel'),
@@ -2207,6 +2361,7 @@ export class EnemyManager {
     // 1. Update State Machine
     switch (this.state) {
       case 'WAVE_ACTIVE':
+        this.updateHighSectorProtocolRuntime(delta);
         if (!this.waveEnding) {
           this.waveActiveTimer += Math.max(0, Math.min(1000, delta * 16.67));
         }
@@ -2299,7 +2454,9 @@ export class EnemyManager {
         if (waveBriefingPlayScene?.shouldHoldProgressionPresentation?.()) break;
         this.waveBriefingTimer += delta * 16.67;
         const diff = BalanceConfig.difficulty;
-        const announceMs = diff.waveBriefingAnnounceMs || 650;
+        const announceMs = this.highSectorEscalationState?.active
+          ? this.highSectorEscalationState.downtime.announceMs
+          : (diff.waveBriefingAnnounceMs || 650);
         const briefingMs = this.getOpeningMomentumTuning().waveBriefingMs;
         if (!this.waveBriefingAnnounced && this.waveBriefingTimer >= announceMs) {
           this.measurePerformance('incoming_wave_banner', () => this.announceWaveBriefing());
@@ -2416,6 +2573,7 @@ export class EnemyManager {
         this.updateBossMayhemReinforcement();
         this.maybeScheduleBossMayhemReinforcement();
         this.maybeTriggerBossChaos();
+        this.updateAscendantBossModifier(delta);
         this.maybeSpawnBossFuelShip();
         break;
 
@@ -2931,6 +3089,7 @@ export class EnemyManager {
   }
 
   spawnWave(config) {
+    this.beginHighSectorProtocolRuntime(config);
     if (this.waveClearStartedAtMs && !config?.isMayhemReinforcement && !config?.allowConcurrentSpawn) {
       const nextWaveActiveAtMs = Date.now();
       this.markPerformance('combat_readability.wave_transition_complete', {
@@ -3040,7 +3199,13 @@ export class EnemyManager {
     const cadence = (this.directorState?.spawnCadenceScale || 1) * (config.cadence || 1);
     const openingMomentum = this.getOpeningMomentumTuning(config.sourceLevel);
     const delayStep = Math.max(55, ((diff.enemyEntryDelayBaseMs || 150) * openingMomentum.entryDelayMult) / cadence);
-    const entryDurationMs = Math.max(760, (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1) * openingMomentum.entryDurationMult);
+    const entryDurationFloor = this.highSectorEscalationState?.active
+      ? this.highSectorEscalationState.caps.minEntryDurationMs
+      : 760;
+    const entryDurationMs = Math.max(
+      entryDurationFloor,
+      (diff.enemyEntryDurationMs || 2000) * (tactic.entrySpeed || 1) * openingMomentum.entryDurationMult
+    );
     if (config.isChallenge) this.beginChallengeFlight(config, count);
     // Reinforcement groups arrive together by design, but constructing a whole
     // first chunk for every concurrent group concentrates enemy generation and
@@ -4106,6 +4271,12 @@ export class EnemyManager {
       seenThroughSector: this.game?.overrunSeenBossMaxSector || 50
     });
     const boss = new Boss(centerX, spawnY, level, this.game, bossProfile); // VISIBILITY FIX: Spawn at visible position
+    if (!marketingDebug && this.highSectorEscalationState?.active) {
+      const cappedHealth = capHighSectorBossHealth(boss.health, this.highSectorEscalationState);
+      boss.health = cappedHealth;
+      boss.maxHealth = cappedHealth;
+      boss.highSectorHealthCap = this.highSectorEscalationState.caps.maxBossHealth;
+    }
 
     // Wait for boss visual to load
     await boss.createSprite();
@@ -4140,6 +4311,22 @@ export class EnemyManager {
       this.bossFuelEightShipSwarmPlanned = level >= BOSS_FUEL_EIGHT_SHIP_SWARM_MIN_LEVEL
         && Math.random() < BOSS_FUEL_EIGHT_SHIP_SWARM_CHANCE;
       this.bossFuelEightShipSwarmTriggered = false;
+      const modifier = this.highSectorEscalationState?.bossModifier;
+      this.ascendantSupportState = modifier ? {
+        modifierId: modifier.id,
+        name: modifier.name,
+        cue: modifier.cue,
+        state: 'pending_warning',
+        elapsedMs: 0,
+        supportCount: modifier.supportCount,
+        warningLeadMs: modifier.warningLeadMs,
+        nonPhaseEscapeSide: modifier.nonPhaseEscapeSide,
+        warnedAtMs: null,
+        releasedAtMs: null,
+        spawnedCount: 0,
+        healthMultiplier: 1,
+        reducedMotion: Boolean(this.highSectorEscalationState.reducedMotion)
+      } : null;
     } else {
       this.boss = boss;
     }
@@ -4233,11 +4420,60 @@ export class EnemyManager {
     );
   }
 
+  updateAscendantBossModifier(delta = 1) {
+    const modifier = this.ascendantSupportState;
+    if (!modifier || modifier.state === 'complete' || this.state !== 'BOSS_ACTIVE' || !this.boss?.active) return;
+    modifier.elapsedMs += Math.max(0, Number(delta) || 0) * 16.67;
+    const playScene = this.game?.scenes?.play;
+    if (modifier.state === 'pending_warning' && modifier.elapsedMs >= 900) {
+      modifier.state = 'warned';
+      modifier.elapsedMs = 0;
+      modifier.warnedAtMs = Date.now();
+      playScene?.enqueueToast?.(
+        `${translateText(modifier.name)}\n${translateText(modifier.cue)}`,
+        {
+          slot: 'top',
+          channel: 'combat',
+          type: 'ascendant_modifier',
+          priority: 10,
+          duration: modifier.warningLeadMs,
+          restrained: true,
+          signalPlate: true,
+          maxWidth: this.game.getWidth() * 0.7
+        }
+      );
+      return;
+    }
+    if (modifier.state !== 'warned' || modifier.elapsedMs < modifier.warningLeadMs) return;
+    const formationFlip = modifier.nonPhaseEscapeSide === 'left' ? 1 : -1;
+    const spawnedCount = this.spawnBossFuelShipSquad(modifier.supportCount, {
+      warningAt: modifier.warnedAtMs,
+      releasedAt: Date.now(),
+      formationFlip
+    });
+    this.bossFuelShipsSpawnedThisBoss += spawnedCount;
+    this.bossFuelShipCooldownUntilMs = Date.now() + 13500;
+    this.bossFuelShipNextCheckAtMs = this.bossFuelShipCooldownUntilMs;
+    modifier.state = 'complete';
+    modifier.releasedAtMs = Date.now();
+    modifier.spawnedCount = spawnedCount;
+    this.lastBossFuelSupportOrder = {
+      state: 'released',
+      source: 'ascendant_support_formation',
+      count: spawnedCount,
+      warningAt: modifier.warnedAtMs,
+      releaseAt: modifier.releasedAtMs,
+      healAt: null,
+      warningLeadMs: modifier.warningLeadMs
+    };
+  }
+
   maybeSpawnBossFuelShip() {
     if (this.state !== 'BOSS_ACTIVE' || !this.boss?.active || this.bossDefeatedThisLevel) {
       this.pendingBossFuelShipSquad = null;
       return;
     }
+    if (this.ascendantSupportState && this.ascendantSupportState.state !== 'complete') return;
     const level = Math.max(1, Number(this.level) || 1);
     const now = Date.now();
     if (this.pendingBossFuelShipSquad) {
@@ -4346,7 +4582,9 @@ export class EnemyManager {
   spawnBossFuelShipSquad(count = 1, options = {}) {
     const desiredCount = Math.max(1, Math.min(BOSS_FUEL_MAX_ACTIVE_SUPPORT_SHIPS, Math.floor(Number(count) || 1)));
     const baseEventIndex = Math.max(0, Math.floor(Number(this.bossFuelShipsSpawnedThisBoss) || 0));
-    const formationFlip = Math.random() < 0.5 ? -1 : 1;
+    const formationFlip = Number(options.formationFlip) === -1 || Number(options.formationFlip) === 1
+      ? Number(options.formationFlip)
+      : (Math.random() < 0.5 ? -1 : 1);
     let spawned = 0;
     for (let slot = 0; slot < desiredCount; slot += 1) {
       if (this.spawnBossFuelShip({
