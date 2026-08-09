@@ -835,6 +835,11 @@ function buildGameTextState(game) {
       ...game.highSectorPrototypeRun,
       baselineAugmentIds: [...(game.highSectorPrototypeRun.baselineAugmentIds || [])]
     } : null,
+    runRewardSuppression: game?.getRunRewardSuppressionState?.() || {
+      suppressed: false,
+      reason: null,
+      surfaces: []
+    },
     highSectorEscalation: enemyManager?.getHighSectorEscalationDebugState?.() || null,
     wave: enemyManager ? {
       phase: enemyManager.phase || null,

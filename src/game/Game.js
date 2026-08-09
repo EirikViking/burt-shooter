@@ -97,7 +97,9 @@ import { isMayhemPerformanceOptionEnabled } from '../debug/MayhemPerformanceDiag
 import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
 import { generateUUID } from '../utils/uuid.js';
 import {
+  HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON,
   HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
+  HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS,
   getHighSectorPrototypeSettings
 } from '../config/HighSectorPrototypeSettings.js';
 import {
@@ -166,6 +168,8 @@ export class Game {
     this.sectorStartPlaySector = null;
     this.sectorStartHighestReached = null;
     this.lastSectorStartChallengeRecord = null;
+    this.lastScoutRunRecord = null;
+    this.lastOverrunRunRecord = null;
     this.dailySignalContract = null;
     this.dailySignalContractValidation = null;
     this.dailySignalInvalidReason = null;
@@ -444,6 +448,8 @@ export class Game {
       ? Math.min(50, overrunStartState.highestReachedSector)
       : null;
     this.lastSectorStartChallengeRecord = null;
+    this.lastScoutRunRecord = null;
+    this.lastOverrunRunRecord = null;
     this.dailySignalContract = dailySignalContract;
     this.dailySignalContractValidation = dailySignalContractValidation;
     this.dailySignalInvalidReason = null;
@@ -487,7 +493,8 @@ export class Game {
       seed: dailySignalContract?.seed || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
     if (
-      (this.isRankedRun()
+      !this.areRunRewardsSuppressed()
+      && (this.isRankedRun()
         || this.canUpdateCareerProgressForCurrentRun()
         || requestedRunMode === RUN_MODES.SCOUT
         || requestedRunMode === RUN_MODES.DAILY_SIGNAL)
@@ -529,7 +536,7 @@ export class Game {
       this.primeHighscoreChaseTarget();
       this.primeGlobalLeaderboardTargets();
     }
-    if (options.countShipUsage !== false) incrementShipUsage(selectedSpriteKey);
+    if (options.countShipUsage !== false && !this.areRunRewardsSuppressed()) incrementShipUsage(selectedSpriteKey);
     return true;
   }
 
@@ -565,19 +572,40 @@ export class Game {
   }
 
   isScoreSubmissionAllowed() {
-    return canRunModeSubmitGlobalLeaderboard(this.runMode, { isDebugRun: this.isDebugRun });
+    return !this.areRunRewardsSuppressed()
+      && canRunModeSubmitGlobalLeaderboard(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isRankedRun() {
-    return isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+    return !this.areRunRewardsSuppressed()
+      && isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+  }
+
+  isHighSectorPrototypeRun() {
+    return this.highSectorPrototypeRun?.enabled === true;
+  }
+
+  areRunRewardsSuppressed() {
+    return this.isHighSectorPrototypeRun();
+  }
+
+  getRunRewardSuppressionState() {
+    const suppressed = this.areRunRewardsSuppressed();
+    return {
+      suppressed,
+      reason: suppressed ? HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON : null,
+      surfaces: suppressed ? [...HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS] : []
+    };
   }
 
   canUpdateCareerProgressForCurrentRun() {
-    return canRunModeUpdateCareerProgress(this.runMode, { isDebugRun: this.isDebugRun });
+    return !this.areRunRewardsSuppressed()
+      && canRunModeUpdateCareerProgress(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   canUpdateCompetitiveCareerBestsForCurrentRun() {
-    return canRunModeUpdateCompetitiveCareerBests(this.runMode, { isDebugRun: this.isDebugRun });
+    return !this.areRunRewardsSuppressed()
+      && canRunModeUpdateCompetitiveCareerBests(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isDailySignalRun() {
@@ -602,7 +630,8 @@ export class Game {
   }
 
   canUnlockAchievementsForCurrentRun() {
-    return canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
+    return !this.areRunRewardsSuppressed()
+      && canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   gameOver(options = {}) {
@@ -1391,8 +1420,11 @@ export class Game {
   buildRunSummary(overrides = {}) {
     const play = this.scenes?.play;
     const finalScore = this.getFinalScore();
-    const discoveryStats = getDiscoveryStats();
-    const discoveries = getDiscoveriesThisRun();
+    const rewardsSuppressed = this.areRunRewardsSuppressed();
+    const discoveryStats = rewardsSuppressed
+      ? { totalDiscovered: Math.max(0, Number(this.hangarProgressAtRunStart?.totalCodexDiscoveries) || 0) }
+      : getDiscoveryStats();
+    const discoveries = rewardsSuppressed ? [] : getDiscoveriesThisRun();
     const elapsed = Number(play?.gameTime) || (this.runStartedAtMs ? (Date.now() - this.runStartedAtMs) / 1000 : 0);
     const levelReached = Math.max(1, Number(this.level) || 1, (Number(play?.bossKills) || 0) + 1);
     const ship = getShipMetadata(this.selectedShipSpriteKey);
@@ -1470,11 +1502,14 @@ export class Game {
         ...(this.dailySignalInvalidReason ? [this.dailySignalInvalidReason] : [])
       ],
       dailySignalInvalidReason: this.dailySignalInvalidReason || null,
+      runRewardsSuppressed: rewardsSuppressed,
+      runRewardSuppressionReason: rewardsSuppressed ? HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON : null,
+      suppressedAwardSurfaces: rewardsSuppressed ? [...HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS] : [],
       runContracts: play?.getRunContractDebugState?.() || null,
       tacticalDirectives: play?.getTacticalDirectiveDebugState?.() || null,
       aceBounties: play?.getAceBountyDebugState?.() || null,
       discoveriesThisRun: discoveries,
-      codexCompletionCounts: getCodexCompletionCounts(),
+      codexCompletionCounts: rewardsSuppressed ? null : getCodexCompletionCounts(),
       scoreBreakdown: { ...this.scoreBreakdown },
       combatTelemetry: play?.getCombatTelemetrySummary?.() || null,
       pacing: getRunPacingDebugState(this),
@@ -1565,7 +1600,7 @@ export class Game {
         legacyPureBest: this.hangarProgressAtRunStart?.bestScore
       });
     }
-    flushThreatDiscoveryState();
+    if (!this.areRunRewardsSuppressed()) flushThreatDiscoveryState();
     const previousProgress = readHangarProgressState();
     const updatesCareerProgress = this.canUpdateCareerProgressForCurrentRun()
       && RunPacingConfig.pilotRankProgressionEnabled;
@@ -1651,7 +1686,7 @@ export class Game {
         scoutRunNewBest: scoutRecord.isNewBest
       };
     }
-    if (isOverrunRunMode(this.runMode)) {
+    if (isOverrunRunMode(this.runMode) && !this.areRunRewardsSuppressed()) {
       const ship = getShipMetadata(this.selectedShipSpriteKey);
       const overrunRecord = recordOverrunRun(this.runSummary, {
         selectedShipSpriteKey: this.selectedShipSpriteKey,

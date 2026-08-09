@@ -152,7 +152,11 @@ async function readState(page) {
 }
 
 async function waitForGame(page) {
-  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), { timeout: GAME_READY_TIMEOUT_MS });
+  await page.waitForFunction(
+    () => Boolean(window.__game?.startGame && window.render_game_to_text),
+    null,
+    { timeout: GAME_READY_TIMEOUT_MS }
+  );
 }
 
 async function waitForScene(page, sceneName) {
@@ -217,10 +221,13 @@ async function storageSnapshot(page) {
     sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
     scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
     dailySignalRecords: JSON.parse(localStorage.getItem('novaSwarm.dailySignalRecords.v1') || '{"records":{}}'),
+    overrunRunRecords: JSON.parse(localStorage.getItem('novaSwarm.overrunRunRecords.v1') || '{}'),
     threatDiscovery: JSON.parse(localStorage.getItem('nova.threatDiscovery.v1') || '{"items":{},"discoveriesThisRun":[],"unreadIds":[]}'),
     shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
     shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
-    mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}')
+    mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}'),
+    seasonXp: localStorage.getItem('burt_season_xp'),
+    seasonUnlocks: JSON.parse(localStorage.getItem('burt_season_unlocks') || '{}')
   }));
 }
 
@@ -1393,6 +1400,7 @@ try {
   await page.screenshot({ path: path.join(outputDir, 'sector-result-run.png'), fullPage: false });
 
   await seedProfile(page);
+  const beforePrototype = await storageSnapshot(page);
   await page.evaluate(() => {
     localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
     return window.__game.startGame(undefined, { runMode: 'ranked_tactical' });
@@ -1413,7 +1421,15 @@ try {
       playerAugmentIds: play?.player?.runAugmentIds || [],
       leaderboardAllowed: game?.isScoreSubmissionAllowed?.(),
       achievementAllowed: game?.canUnlockAchievementsForCurrentRun?.(),
-      careerAllowed: game?.canUpdateCareerProgressForCurrentRun?.()
+      careerAllowed: game?.canUpdateCareerProgressForCurrentRun?.(),
+      suppression: game?.getRunRewardSuppressionState?.() || null,
+      runContracts: play?.getRunContractDebugState?.() || null,
+      discoveryAttempt: play?.recordThreatDiscovery?.('prototype_reward_probe', 'sectors', {
+        name: 'PROTOTYPE REWARD PROBE',
+        sector: 999
+      }),
+      contractAttempt: play?.emitRunContractEvent?.('sector_reached', { sector: 999 }) || [],
+      seasonAttempt: play?.updateMetaProgress?.(100000, true) || null
     };
   });
   assert.equal(prototypePlay.runMode, RUN_MODES.MAYHEM_TACTICAL);
@@ -1430,7 +1446,59 @@ try {
   assert.equal(prototypeRuntime.leaderboardAllowed, false);
   assert.equal(prototypeRuntime.achievementAllowed, false);
   assert.equal(prototypeRuntime.careerAllowed, false);
+  assert.equal(prototypeRuntime.suppression?.suppressed, true);
+  assert.equal(prototypeRuntime.suppression?.reason, 'high_sector_prototype_no_awards');
+  assert.deepEqual(prototypeRuntime.suppression?.surfaces, [
+    'rankings',
+    'achievements',
+    'codexDiscoveries',
+    'unlocks',
+    'careerProgress',
+    'checkpoints',
+    'personalBests',
+    'pilotOrders',
+    'shipUsage',
+    'seasonProgress'
+  ]);
+  assert.equal(prototypeRuntime.runContracts, null, 'prototype must not initialize Pilot Orders');
+  assert.equal(prototypeRuntime.discoveryAttempt?.isNew, false, 'prototype must not discover Codex entries');
+  assert.equal(prototypeRuntime.discoveryAttempt?.skipped, 'high_sector_prototype_no_awards');
+  assert.deepEqual(prototypeRuntime.contractAttempt, [], 'prototype must reject Pilot Order events');
+  assert.equal(prototypeRuntime.seasonAttempt?.suppressed, true, 'prototype must reject season/meta progress');
   await page.screenshot({ path: path.join(outputDir, 'high-sector-prototype-quick-start-75.png'), fullPage: false });
+
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(900000, 'baseScore');
+    game.level = 99;
+    game.unlockAchievement?.('ACH_SCORE_250K', { source: 'prototype_no_awards_probe' });
+    game.gameOver({ fromInterlude: true });
+  });
+  const prototypeGameOver = await waitForScene(page, 'gameOver');
+  assert.equal(prototypeGameOver.runRewardSuppression?.suppressed, true);
+  assert.equal(prototypeGameOver.runReport?.summary?.codexDiscoveries ?? prototypeGameOver.runReport?.codexDiscoveries ?? 0, 0);
+  const afterPrototype = await storageSnapshot(page);
+  assert.deepEqual(afterPrototype, beforePrototype, 'prototype Mayhem must leave every progression and reward store unchanged');
+
+  await seedProfile(page, makeProgress(60));
+  const beforePrototypeOverrun = await storageSnapshot(page);
+  const prototypeOverrunStarted = await page.evaluate(() => {
+    localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
+    return window.__game.startGame(undefined, { runMode: 'overrun_tactical' });
+  });
+  assert.equal(prototypeOverrunStarted, true, 'prototype Overrun should launch from the mature fixture');
+  const prototypeOverrunPlay = await waitForScene(page, 'play');
+  assert.equal(prototypeOverrunPlay.runMode, RUN_MODES.OVERRUN_TACTICAL);
+  assert.equal(prototypeOverrunPlay.runRewardSuppression?.suppressed, true);
+  await page.evaluate(() => {
+    const game = window.__game;
+    game.addScore(950000, 'baseScore');
+    game.level = 101;
+    game.gameOver({ fromInterlude: true });
+  });
+  await waitForScene(page, 'gameOver');
+  const afterPrototypeOverrun = await storageSnapshot(page);
+  assert.deepEqual(afterPrototypeOverrun, beforePrototypeOverrun, 'prototype Overrun must not store attempts or personal bests');
 
   Object.assign(report, {
     ok: pageErrors.length === 0 && consoleErrors.length === 0,
@@ -1466,7 +1534,10 @@ try {
       quickStart: prototypeRuntime.prototype?.quickStart,
       startSector: prototypeRuntime.startSector,
       unranked: prototypeRuntime.isDebugRun,
-      baselineIds: prototypeRuntime.baselineIds
+      baselineIds: prototypeRuntime.baselineIds,
+      rewardsSuppressed: prototypeRuntime.suppression?.surfaces || [],
+      persistenceUnchanged: true,
+      overrunPersonalBestUnchanged: true
     },
     pageErrors,
     consoleErrors

@@ -623,64 +623,68 @@ export class SettingsOverlay {
     content.position.set(x + pad, y + Math.round(20 * this.uiScale));
     this.container.addChild(content);
 
-    const sections = [
+    const blocks = [
+      { kind: 'heading', source: 'EXPERIMENTAL TEST' },
       {
-        title: 'WHAT TO EXPECT',
-        paragraphs: [
-          { source: 'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.' },
-          { source: 'Quick Start launches Sector {sector} with five fixed upgrades.' },
-          {
-            source: 'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.',
-            accent: true
-          }
-        ]
+        source: 'This is an optional test of a possible new late-game direction for Nova Swarm.',
+        gapBefore: 10
       },
       {
-        title: 'ABOUT THIS TEST',
-        paragraphs: [
-          { source: 'This temporary test explores a tougher, faster late game, so skilled players can reach serious pressure without needing to play for a very long time.' },
-          { source: 'It is available for a limited time to anyone who would like to try it. Feedback is very welcome in the Steam Community Discussions.' },
-          {
-            source: 'This prototype is highly experimental and may contain bugs, balance issues, or performance problems. Please play at your own risk, and thank you for helping us improve it.',
-            accent: true
-          }
-        ]
+        source: 'It is not part of the main game yet and may be changed, removed, or never added at all.',
+        emphasis: true,
+        gapBefore: 5
+      },
+      {
+        source: 'Prototype runs award nothing: no rankings, achievements, Codex discoveries, unlocks, Career progress, checkpoints, or personal bests.',
+        accent: true,
+        emphasis: true,
+        gapBefore: 12
+      },
+      { kind: 'heading', source: 'WHAT TO EXPECT', gapBefore: 17 },
+      {
+        source: 'Prototype pressure begins at Sector 60. From Sector 75, Deep Space Protocols introduce special tactical encounters. Quick Start jumps directly there with a fixed test loadout.',
+        gapBefore: 10
+      },
+      {
+        source: 'The prototype is designed for skilled players who already survive deep runs.',
+        gapBefore: 12
+      },
+      {
+        source: 'Instead of simply inflating enemy health or damage, it increases pressure through faster pacing, denser coordinated encounters, tougher enemy combinations, less downtime, and new tactical situations.',
+        emphasis: true,
+        gapBefore: 5
+      },
+      {
+        source: 'Expect the challenge to keep rising as you go deeper.',
+        gapBefore: 10
+      },
+      {
+        source: 'Experimental content may contain bugs or balance issues. Feedback is very welcome.',
+        accent: true,
+        emphasis: true,
+        gapBefore: 12
       }
     ];
     const scaleCap = Math.min(1.16, this.uiScale);
-    const headingGap = Math.round(12 * scaleCap);
-    const paragraphGap = Math.round(10 * scaleCap);
-    const sectionGap = Math.round(18 * scaleCap);
     let cursorY = 0;
 
-    sections.forEach((section, sectionIndex) => {
-      if (sectionIndex > 0) cursorY += sectionGap;
-      const title = createText(translateText(section.title), {
+    blocks.forEach(({ kind = 'body', source, accent = false, emphasis = false, gapBefore = 0 }) => {
+      cursorY += Math.round(gapBefore * scaleCap);
+      const heading = kind === 'heading';
+      const text = createText(translateText(source, { sector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR }), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-        fontSize: Math.round(17 * scaleCap),
-        fontWeight: '900',
-        fill: '#ffef7e'
+        fontSize: Math.round((heading ? 17 : 14) * scaleCap),
+        fontWeight: heading ? '900' : (emphasis ? '700' : '500'),
+        fill: heading ? '#ffef7e' : (accent ? '#ffc96e' : (emphasis ? '#e9fbff' : '#c9f4ff')),
+        lineHeight: Math.round((heading ? 19 : 18) * scaleCap),
+        wordWrap: !heading,
+        wordWrapWidth: textWidth,
+        breakWords: !heading
       });
-      title.position.set(0, cursorY);
-      fitTextToWidth(title, textWidth, { minScale: 0.7 });
-      content.addChild(title);
-      cursorY += title.height + headingGap;
-
-      section.paragraphs.forEach(({ source, accent }, paragraphIndex) => {
-        const body = createText(translateText(source, { sector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR }), {
-          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
-          fontSize: Math.round(15 * scaleCap),
-          fill: accent ? '#ffc96e' : '#c9f4ff',
-          lineHeight: Math.round(20 * scaleCap),
-          wordWrap: true,
-          wordWrapWidth: textWidth,
-          breakWords: true
-        });
-        body.position.set(0, cursorY);
-        content.addChild(body);
-        cursorY += body.height;
-        if (paragraphIndex < section.paragraphs.length - 1) cursorY += paragraphGap;
-      });
+      text.position.set(0, cursorY);
+      if (heading) fitTextToWidth(text, textWidth, { minScale: 0.7 });
+      content.addChild(text);
+      cursorY += text.height;
     });
 
     const availableHeight = Math.max(80, height - Math.round(40 * this.uiScale));

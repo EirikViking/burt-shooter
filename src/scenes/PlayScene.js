@@ -160,14 +160,14 @@ import { getBossProfile, getBossProfileForRun } from '../config/BossRoster.js';
 import {
   RUN_MODES,
   canRunModeUseTacticalDraft,
-  getRunModeNormalWaveScoreXpMultiplier,
-  isRankedRunMode
+  getRunModeNormalWaveScoreXpMultiplier
 } from '../game/RunMode.js';
 import {
   CABINET_WONDER_VARIANT_COUNT,
   evaluateCabinetWonder
 } from '../game/CabinetWonders.js';
 import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDiagnostics.js';
+import { HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON } from '../config/HighSectorPrototypeSettings.js';
 import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
 import {
   createCombatTelemetryState,
@@ -838,7 +838,8 @@ export class PlayScene {
     this.processingDeferredRunContractEvents = false;
     this.lastRunContractProgressWriteAt = 0;
     let runContractProgress = this.game?.hangarProgressAtRunStart || readHangarProgressState();
-    const runContractsEnabledForRun = isRankedRunMode(this.game?.runMode || RUN_MODES.RANKED);
+    const runContractsEnabledForRun = this.game?.isRankedRun?.() === true
+      && !this.areRunRewardsSuppressed();
     if (runContractsEnabledForRun) {
       const preparedRunContracts = prepareRunContractsForEligibleRun(runContractProgress.runContracts);
       runContractProgress = writeHangarProgressState({
@@ -1646,7 +1647,12 @@ export class PlayScene {
     stats.pickupsCollected[key] = (stats.pickupsCollected[key] || 0) + 1;
   }
 
+  areRunRewardsSuppressed() {
+    return this.game?.areRunRewardsSuppressed?.() === true;
+  }
+
   emitRunContractEvent(type, payload = {}) {
+    if (this.areRunRewardsSuppressed()) return [];
     if (!this.runContractSession) return [];
     const { suppressProgressToast = false, deferPersistence = false, ...eventPayload } = payload || {};
     const previousActive = Array.isArray(this.runContractSession.active)
@@ -3584,11 +3590,11 @@ export class PlayScene {
       durationSeconds: reducedMotion ? 0.7 : 1.18
     });
     const audioRevelationPlayed = decision.audioRevelationPlayed === true;
-    const codexDiscovery = recordThreatSeen(decision.variant.id, 'wonders', {
+    const codexDiscovery = this.recordThreatDiscovery(decision.variant.id, 'wonders', {
       name: decision.variant.title,
       signalClass: decision.variant.signalClass,
       source: 'cabinet_wonder'
-    });
+    }, { silent: true, scoreBonus: false });
     const historyEntry = {
       id: decision.variant.id,
       title: decision.variant.title,
@@ -3925,6 +3931,7 @@ export class PlayScene {
   }
 
   persistRunContractCompletion(completion) {
+    if (this.areRunRewardsSuppressed()) return;
     if (!completion?.id) return;
     if (this.isCollisionHotPathActive) {
       this.queueDeferredRunContractCompletion(completion);
@@ -3948,6 +3955,7 @@ export class PlayScene {
   }
 
   persistRunContractSessionProgress() {
+    if (this.areRunRewardsSuppressed()) return;
     if (!this.runContractSession) return;
     if (this.isCollisionHotPathActive) {
       this.runContractPersistenceDirty = true;
@@ -3967,6 +3975,7 @@ export class PlayScene {
   }
 
   queueDeferredRunContractCompletion(completion = {}) {
+    if (this.areRunRewardsSuppressed()) return;
     if (!completion?.id) return;
     if (!Array.isArray(this.deferredRunContractCompletions)) this.deferredRunContractCompletions = [];
     const existingIndex = this.deferredRunContractCompletions.findIndex((entry) => entry?.id === completion.id);
@@ -3982,11 +3991,17 @@ export class PlayScene {
   }
 
   queueDeferredRunContractEnemyDefeat(payload = {}) {
+    if (this.areRunRewardsSuppressed()) return;
     if (!Array.isArray(this.deferredRunContractEnemyDefeats)) this.deferredRunContractEnemyDefeats = [];
     this.deferredRunContractEnemyDefeats.push({ ...payload });
   }
 
   flushDeferredRunContractEvents(maxEvents = 100) {
+    if (this.areRunRewardsSuppressed()) {
+      const dropped = this.deferredRunContractEnemyDefeats?.length || 0;
+      this.deferredRunContractEnemyDefeats = [];
+      return { flushed: 0, pending: 0, dropped, suppressed: true };
+    }
     const pending = Array.isArray(this.deferredRunContractEnemyDefeats)
       ? this.deferredRunContractEnemyDefeats
       : [];
@@ -19194,6 +19209,9 @@ export class PlayScene {
 
   recordThreatDiscovery(id, category, metadata = {}, options = {}) {
     if (!RunPacingConfig.threatCodexEnabled || !id || !category) return null;
+    if (this.areRunRewardsSuppressed()) {
+      return { item: null, isNew: false, skipped: HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON };
+    }
     if (this.game?.isDailySignalRun?.()) {
       return { item: null, isNew: false, skipped: 'daily_signal_no_codex_progress' };
     }
@@ -19292,6 +19310,11 @@ export class PlayScene {
   }
 
   processDeferredThreatDefeats(maxEntries = 40) {
+    if (this.areRunRewardsSuppressed()) {
+      const dropped = this.deferredThreatDefeats?.length || 0;
+      this.deferredThreatDefeats = [];
+      return { flushed: 0, pending: 0, firstDefeats: 0, dropped, suppressed: true };
+    }
     if (!this.deferredThreatDefeats?.length) return { flushed: 0, pending: 0, firstDefeats: 0 };
     const batchSize = Math.max(1, Math.floor(Number(maxEntries) || 1));
     const batch = this.deferredThreatDefeats.splice(0, batchSize);
@@ -19329,6 +19352,13 @@ export class PlayScene {
   }
 
   flushDeferredRunContractProgress(force = false) {
+    if (this.areRunRewardsSuppressed()) {
+      const droppedCompletions = this.deferredRunContractCompletions?.length || 0;
+      this.deferredRunContractCompletions = [];
+      this.runContractPersistenceDirty = false;
+      this.runContractSession = null;
+      return { flushed: false, dirty: false, droppedCompletions, suppressed: true };
+    }
     const pendingCompletions = Array.isArray(this.deferredRunContractCompletions)
       ? this.deferredRunContractCompletions.filter((entry) => entry?.id)
       : [];
@@ -19428,10 +19458,16 @@ export class PlayScene {
   }
 
   markSeasonProgressDirty() {
+    if (this.areRunRewardsSuppressed()) return false;
     this.seasonProgressDirty = true;
+    return true;
   }
 
   flushDeferredSeasonProgress(force = false) {
+    if (this.areRunRewardsSuppressed()) {
+      this.seasonProgressDirty = false;
+      return { flushed: false, dirty: false, suppressed: true };
+    }
     if (!this.seasonProgressDirty) return { flushed: false, dirty: false };
     const now = Date.now();
     if (!force) {
@@ -21613,8 +21649,11 @@ export class PlayScene {
   }
 
   updateMetaProgress(deltaScore, bossDefeated) {
+    if (this.areRunRewardsSuppressed()) {
+      return { applied: false, suppressed: true, reason: HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON };
+    }
     const gain = Math.max(0, Math.floor(deltaScore * 0.1)) + (bossDefeated ? 500 : 0);
-    if (!gain) return;
+    if (!gain) return { applied: false, suppressed: false };
     this.seasonXp += gain;
     const newLevel = Math.floor(this.seasonXp / 5000);
     if (newLevel > this.seasonLevel) {
@@ -21627,6 +21666,7 @@ export class PlayScene {
       this.applySeasonCosmetics();
     }
     this.markSeasonProgressDirty();
+    return { applied: true, suppressed: false, gain };
   }
 
   showUnlockToast(text) {

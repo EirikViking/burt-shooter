@@ -1,6 +1,20 @@
 export const HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY = 'nova.highSectorPrototype.v1';
 export const HIGH_SECTOR_PROTOTYPE_CHANGED_EVENT = 'nova-high-sector-prototype-changed';
 export const HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR = 75;
+export const HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON = 'high_sector_prototype_no_awards';
+
+export const HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS = Object.freeze([
+  'rankings',
+  'achievements',
+  'codexDiscoveries',
+  'unlocks',
+  'careerProgress',
+  'checkpoints',
+  'personalBests',
+  'pilotOrders',
+  'shipUsage',
+  'seasonProgress'
+]);
 
 export const DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS = Object.freeze({
   enabled: false,

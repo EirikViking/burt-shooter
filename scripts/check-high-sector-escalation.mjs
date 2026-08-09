@@ -13,7 +13,9 @@ import { getHighSectorSourceText } from '../src/i18n/highSectorSourceText.js';
 import { translateTextForLocale } from '../src/i18n/index.js';
 import {
   DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS,
+  HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON,
   HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
+  HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS,
   getHighSectorPrototypeSettings,
   saveHighSectorPrototypeSettings
 } from '../src/config/HighSectorPrototypeSettings.js';
@@ -47,6 +49,19 @@ assert.deepEqual(
   'disabling the prototype must also disable Quick Start'
 );
 assert.equal(HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR, 75);
+assert.equal(HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON, 'high_sector_prototype_no_awards');
+assert.deepEqual(HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS, [
+  'rankings',
+  'achievements',
+  'codexDiscoveries',
+  'unlocks',
+  'careerProgress',
+  'checkpoints',
+  'personalBests',
+  'pilotOrders',
+  'shipUsage',
+  'seasonProgress'
+]);
 for (const sector of [1, 25, 50]) {
   const state = makeState(sector);
   assert.equal(state.active, false, `armed profile must remain inert at Sector ${sector}`);
@@ -133,14 +148,16 @@ const sourceKeys = ['DEEP SPACE PROTOCOL', ...HIGH_SECTOR_PROTOCOLS.flatMap((pro
   'FRONT SHIFT INBOUND // SAFE SIDE: {side}', 'FRONT SHIFT // SAFE SIDE: {side}',
   'ASCENDANT SUPPORT FORMATION', 'SUPPORT FORMATION INBOUND // BREAK THE TETHER', 'LEFT', 'RIGHT',
   'GENERAL', 'PLAYBACK', 'VOLUME', 'INTENSITY', 'VISUAL ASSISTS', 'PROTOTYPE',
-  'LATE-GAME PROTOTYPE', 'ENABLE PROTOTYPE', 'JUMP TO SECTOR 75', 'WHAT TO EXPECT',
-  'In Mayhem and Overrun, prototype pressure starts at Sector 60. Deep Space Protocols begin at Sector 75.',
-  'Quick Start launches Sector {sector} with five fixed upgrades.',
-  'Prototype runs are unranked. Leaderboards, achievements, checkpoints, and career progress are disabled.',
-  'ABOUT THIS TEST',
-  'This temporary test explores a tougher, faster late game, so skilled players can reach serious pressure without needing to play for a very long time.',
-  'It is available for a limited time to anyone who would like to try it. Feedback is very welcome in the Steam Community Discussions.',
-  'This prototype is highly experimental and may contain bugs, balance issues, or performance problems. Please play at your own risk, and thank you for helping us improve it.'];
+  'LATE-GAME PROTOTYPE', 'ENABLE PROTOTYPE', 'JUMP TO SECTOR 75', 'EXPERIMENTAL TEST',
+  'This is an optional test of a possible new late-game direction for Nova Swarm.',
+  'It is not part of the main game yet and may be changed, removed, or never added at all.',
+  'Prototype runs award nothing: no rankings, achievements, Codex discoveries, unlocks, Career progress, checkpoints, or personal bests.',
+  'WHAT TO EXPECT',
+  'Prototype pressure begins at Sector 60. From Sector 75, Deep Space Protocols introduce special tactical encounters. Quick Start jumps directly there with a fixed test loadout.',
+  'The prototype is designed for skilled players who already survive deep runs.',
+  'Instead of simply inflating enemy health or damage, it increases pressure through faster pacing, denser coordinated encounters, tougher enemy combinations, less downtime, and new tactical situations.',
+  'Expect the challenge to keep rising as you go deeper.',
+  'Experimental content may contain bugs or balance issues. Feedback is very welcome.'];
 const identityTranslations = new Set(['es:GENERAL', 'pt-BR:VOLUME']);
 for (const locale of ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja']) {
   const entries = getHighSectorSourceText(locale);
