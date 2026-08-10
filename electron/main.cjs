@@ -625,15 +625,26 @@ function createWindow() {
     frame: !startBorderless,
     resizable: !startBorderless,
     backgroundColor: '#030714',
-    show: !isSmoke && !isSteamLeaderboardProbe,
+    show: !isSmoke && !isPerfSmoke && !isSteamLeaderboardProbe,
     autoHideMenuBar: true,
     webPreferences: {
+      // Performance smoke must keep receiving animation frames while the
+      // automation host owns focus or occludes the Electron window.
+      backgroundThrottling: !isPerfSmoke,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
       preload: path.join(__dirname, 'preload.cjs')
     }
   });
+
+  if (isPerfSmoke) {
+    // Give Chromium a native surface without activating over the user's work.
+    win.setSkipTaskbar(true);
+    win.once('ready-to-show', () => {
+      if (!win.isDestroyed()) win.showInactive();
+    });
+  }
 
   const hasSteamLaunchHint = Boolean(
     process.env.SteamAppId
@@ -847,10 +858,11 @@ async function settleShipIntroForControlSmoke(window) {
 
 async function waitForPlay(window) {
   const startedAt = Date.now();
+  const readyTimeoutMs = Math.max(20000, Number(process.env.NOVA_SWARM_CONTROL_READY_TIMEOUT_MS || 35000));
   let lastState = null;
   let introSettled = false;
   let runStartRequested = false;
-  while (Date.now() - startedAt < 20000) {
+  while (Date.now() - startedAt < readyTimeoutMs) {
     lastState = await readPlayState(window);
     if (!runStartRequested && lastState?.scene === 'menu') {
       runStartRequested = await window.webContents.executeJavaScript(`
@@ -1233,7 +1245,7 @@ async function runPerfSmoke(window) {
   });
 
   await waitForWindowLoad(window, smokeLoadTimeoutMs(), 'Electron perf smoke');
-  await window.loadURL(`${baseUrl}/?desktop=1&perf=1`);
+  await window.loadURL(`${baseUrl}/?desktop=1&perf=1&controlSmoke=1`);
   const startState = await waitForPlay(window);
   await window.webContents.executeJavaScript(`
     (() => {
@@ -1249,6 +1261,7 @@ async function runPerfSmoke(window) {
       };
       const play = window.__game?.scenes?.play;
       const player = play?.player;
+      if (play) play.externalPauseSuppressedUntil = Number.MAX_SAFE_INTEGER;
       if (player) {
         player.invulnerable = true;
         player.invulnerableTime = 1e9;
@@ -1264,6 +1277,7 @@ async function runPerfSmoke(window) {
   const sampleMs = Math.max(1000, Number(process.env.NOVA_SWARM_PERF_SMOKE_SAMPLE_MS || 5000));
   const minRequiredFps = Math.max(1, Number(process.env.NOVA_SWARM_PERF_SMOKE_MIN_FPS || 50));
   const warmupSamples = Math.max(0, Number(process.env.NOVA_SWARM_PERF_SMOKE_WARMUP_SAMPLES || 1));
+  const maxFrameAgeMs = Math.max(1000, Number(process.env.NOVA_SWARM_PERF_SMOKE_MAX_FRAME_AGE_MS || 2000));
   const samples = [];
   const startedAt = Date.now();
 
@@ -1281,6 +1295,8 @@ async function runPerfSmoke(window) {
           }
           const nextPerf = window.__perfStats || perf;
           const nextTextState = typeof window.render_game_to_text === 'function' ? JSON.parse(window.render_game_to_text()) : textState;
+          const app = window.__app || window.__PIXI_APP;
+          const play = window.__game?.scenes?.play;
           return {
             elapsedMs: ${Math.round(elapsedMs)},
             fps: Number(nextPerf.fps || 0),
@@ -1291,7 +1307,16 @@ async function runPerfSmoke(window) {
             scene: nextPerf.scene || nextTextState?.scene || null,
             textScene: nextTextState?.scene || null,
             perfLastFrameAgeMs: Number(nextPerf.lastFrameTime ? performance.now() - nextPerf.lastFrameTime : 0),
-            tickerProbe: window.__perfSmokeTickerProbe || null,
+            documentHidden: Boolean(document.hidden),
+            documentHasFocus: Boolean(document.hasFocus?.()),
+            isPaused: Boolean(play?.isPaused),
+            pauseOverlayVisible: Boolean(play?.pauseOverlay?.visible && play?.pauseOverlay?.parent),
+            tickerProbe: {
+              ...(window.__perfSmokeTickerProbe || {}),
+              tickerStarted: Boolean(app?.ticker?.started),
+              tickerMaxFPS: Number(app?.ticker?.maxFPS || 0),
+              tickerMinFPS: Number(app?.ticker?.minFPS || 0)
+            },
             manualAdvanceUsed: Boolean((!perf.fps || perf.scene === 'boot') && typeof window.advanceTime === 'function'),
             level: Number(nextPerf.level || nextTextState?.level || 0),
             bullets: Number(nextPerf.bullets || nextTextState?.counts?.bullets || 0),
@@ -1313,6 +1338,7 @@ async function runPerfSmoke(window) {
   }
 
   const measuredSamples = samples.slice(warmupSamples);
+  const staleSamples = measuredSamples.filter((sample) => sample.perfLastFrameAgeMs > maxFrameAgeMs);
   const fpsValues = measuredSamples.map((sample) => sample.fps).filter(Number.isFinite);
   const minFps = fpsValues.length ? Math.min(...fpsValues) : 0;
   const avgFps = fpsValues.length ? fpsValues.reduce((sum, fps) => sum + fps, 0) / fpsValues.length : 0;
@@ -1322,7 +1348,10 @@ async function runPerfSmoke(window) {
   for (let attempt = 1; attempt <= 3 && !screenshotWritten; attempt += 1) {
     try {
       if (attempt > 1) await new Promise((resolve) => setTimeout(resolve, 350));
-      const image = await window.webContents.capturePage();
+      const image = await Promise.race([
+        window.webContents.capturePage(undefined, { stayHidden: true }),
+        new Promise((_resolve, reject) => setTimeout(() => reject(new Error('capturePage timed out after 5000ms')), 5000))
+      ]);
       fs.writeFileSync(path.join(outputDir, '01-electron-perf-final.png'), image.toPNG());
       screenshotWritten = true;
     } catch (error) {
@@ -1331,6 +1360,7 @@ async function runPerfSmoke(window) {
   }
   const errors = [
     ...(minFps >= minRequiredFps ? [] : [`min FPS ${minFps.toFixed(1)} below ${minRequiredFps}`]),
+    ...(staleSamples.length ? [`${staleSamples.length} stale renderer sample(s); worst frame age ${Math.max(...staleSamples.map((sample) => sample.perfLastFrameAgeMs)).toFixed(1)}ms exceeds ${maxFrameAgeMs}ms`] : []),
     ...(samples.some((sample) => sample.fatal) ? ['fatal overlay detected'] : []),
     ...(finalState?.scene === 'play' ? [] : [`final scene was ${finalState?.scene || 'unknown'}`]),
     ...(consoleEvents.length ? [`${consoleEvents.length} console event(s)`] : []),
@@ -1347,7 +1377,9 @@ async function runPerfSmoke(window) {
     build: startState.build || null,
     gitSha: startState.gitSha || null,
     durationMs,
+    sampleMs,
     minRequiredFps,
+    maxFrameAgeMs,
     warmupSamples,
     minFps,
     avgFps,

@@ -359,6 +359,22 @@ async function sampleNextWaveEntry(page, sampleMs = 3600) {
   });
   if (!setup.available) return { setup, frameSummary: summarizeFrameIntervals([]), after: null };
   const intervals = await sampleFrameIntervals(page, sampleMs);
+  await page.evaluate(() => new Promise((resolve) => {
+    const deadline = performance.now() + 1500;
+    const waitForSettledWave = () => {
+      const manager = window.__game?.scenes?.play?.enemyManager;
+      const settled = manager?.state === 'WAVE_ACTIVE'
+        && manager?.spawning !== true
+        && (Number(manager?.waveSpawnPendingCount) || 0) === 0
+        && (manager?.enemies?.length || 0) > 0;
+      if (settled || performance.now() >= deadline) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(waitForSettledWave);
+    };
+    requestAnimationFrame(waitForSettledWave);
+  }));
   const after = await page.evaluate(() => {
     const manager = window.__game?.scenes?.play?.enemyManager;
     return {
