@@ -39,6 +39,7 @@ import { RunContentDirector } from './RunContentDirector.js';
 import { GLOBAL_SCORE_TUNING_MULTIPLIER } from '../config/ScoreTuning.js';
 import { awardRunClearScoreBonuses } from './RunClearScoreBonuses.js';
 import { createRunReport } from './RunReport.js';
+import { createLateGameExperimentReport } from './LateGameExperimentReport.js';
 import { analyzeTacticalDoctrine } from '../config/TacticalDoctrine.js';
 import {
   LOGICAL_PLAYFIELD_HEIGHT,
@@ -498,6 +499,7 @@ export class Game {
     this.finalScoreSnapshot = null;
     this.finalScoreLockReason = null;
     this.runSummary = null;
+    this.lastRunReport = null;
     this.runProgressionResult = null;
     this.liveRankProgression = null;
     this.liveRankBaseProgress = null;
@@ -1787,7 +1789,9 @@ export class Game {
         if (unlock?.id) this.runSummary.milestoneAchievementsUnlocked.push(unlock.id);
       }
     }
-    this.lastRunReport = createRunReport(this.runSummary);
+    this.lastRunReport = this.lateGameExperiment?.active === true
+      ? createLateGameExperimentReport(this.lateGameExperiment, this.runSummary)
+      : createRunReport(this.runSummary);
     if (this.runPolicy?.allowCloudProgressSync === true) {
       markPersistenceDirty('runResults', { scheduleFlush: false });
       void flushPersistence({ reason: 'run_finalize', force: true });

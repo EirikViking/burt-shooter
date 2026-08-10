@@ -26,8 +26,16 @@ const playSource = read('src/scenes/PlayScene.js');
 const mainSource = read('src/main.js');
 assert.match(managerSource, /enemy\.challengeFlightTarget\s*\?\s*false/, 'challenge targets must never shoot');
 assert.match(managerSource, /enemy\.health = 1;[\s\S]*enemy\.shootDelay = Number\.MAX_SAFE_INTEGER/, 'challenge targets must be one-hit and unarmed');
-assert.match(managerSource, /if \(!config\.isChallenge\) \{[\s\S]*maybePromoteAceEnemy/, 'challenge flights must not inherit Ace encounters');
-assert.match(managerSource, /if \(!config\.isChallenge\) \{[\s\S]{0,220}requestAnimationFrame\(runDiscoveryHooks\)/, 'challenge flights must not open Codex discovery panels');
+assert.match(
+  managerSource,
+  /if \(!config\.isChallenge && !config\.highSectorAuthoredEncounter\) \{[\s\S]{0,260}maybePromoteAceEnemy/,
+  'challenge flights and authored high-sector encounters must not inherit Ace encounters'
+);
+assert.match(
+  managerSource,
+  /if \(!config\.isChallenge && !config\.highSectorAuthoredEncounter\) \{[\s\S]{0,220}requestAnimationFrame\(runDiscoveryHooks\)/,
+  'challenge flights and authored high-sector encounters must not open Codex discovery panels'
+);
 assert.match(managerSource, /showChallengeFlightResult/, 'challenge completion must use the graded presentation');
 assert.match(playSource, /if \(enemy\.challengeFlightTarget\) return;/, 'challenge targets must be harmless on contact');
 assert.match(playSource, /showChallengeFlightHud\(state = \{\}\)/, 'live challenge HUD is missing');

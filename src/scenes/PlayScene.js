@@ -4722,6 +4722,36 @@ export class PlayScene {
   update(delta) {
     if (!Number.isFinite(delta) || delta > 100 || delta < 0) return;
     if (!this.isReady) return;
+    const experimentMetrics = this.game?.lateGameExperiment?.active === true
+      ? this.game.lateGameExperiment.metrics
+      : null;
+    if (experimentMetrics) {
+      const activeProjectiles = this.bulletManager?.enemyBullets?.reduce(
+        (count, bullet) => count + (bullet?.active !== false ? 1 : 0),
+        0
+      ) || 0;
+      experimentMetrics.projectilePeak = Math.max(
+        Math.max(0, Number(experimentMetrics.projectilePeak) || 0),
+        activeProjectiles
+      );
+      const frameNowMs = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      const previousFrameAtMs = Number(this.experimentTelemetryLastFrameAtMs) || 0;
+      const frameGapMs = previousFrameAtMs > 0 ? frameNowMs - previousFrameAtMs : 0;
+      if (
+        frameGapMs > 50
+        && !this.isPaused
+        && !this.gameOverSequenceStarted
+        && ['WAVE_ACTIVE', 'BOSS_ACTIVE'].includes(this.enemyManager?.state)
+      ) {
+        experimentMetrics.significantStalls = Math.max(
+          0,
+          Number(experimentMetrics.significantStalls) || 0
+        ) + 1;
+      }
+      this.experimentTelemetryLastFrameAtMs = frameNowMs;
+    } else {
+      this.experimentTelemetryLastFrameAtMs = 0;
+    }
     this.updateControlModeHudCue();
     this.inputManager?.recordFrameContinuity?.(delta * (1000 / 60), {
       level: this.game?.level || null,
@@ -5073,6 +5103,10 @@ export class PlayScene {
         }
         const compactHud = this.game.getWidth() < 620;
         const completedSector = Math.max(1, Math.floor(Number(this.game.level) || 1));
+        if (this.game?.lateGameExperiment?.active === true) {
+          const metrics = this.game.lateGameExperiment.metrics;
+          metrics.sectorsCompleted = Math.max(0, Number(metrics.sectorsCompleted) || 0) + 1;
+        }
         const dailySignalFinish = this.game.shouldFinishDailySignal?.(completedSector, bossCompletion) === true;
         const repairTarget = rewardConfig.levelClearRepairTargetLives || 0;
         const repairDelta = repairTarget > 0
@@ -14404,6 +14438,11 @@ export class PlayScene {
     this.lifeLossesThisRun = (Number(this.lifeLossesThisRun) || 0) + 1;
     this.damageTakenThisWave = (Number(this.damageTakenThisWave) || 0) + 1;
     this.damageTakenThisSector = (Number(this.damageTakenThisSector) || 0) + 1;
+    if (this.game?.lateGameExperiment?.active === true) {
+      const metrics = this.game.lateGameExperiment.metrics;
+      metrics.deaths = Math.max(0, Number(metrics.deaths) || 0) + 1;
+      metrics.damageTaken = Math.max(0, Number(metrics.damageTaken) || 0) + 1;
+    }
     this.emitRunContractEvent('life_lost', { sector: this.game?.level || 1, source });
     this.recordBalanceLifeLost();
     this.player?.cancelDodgeExitPulse?.('life_lost', { endDodge: true });

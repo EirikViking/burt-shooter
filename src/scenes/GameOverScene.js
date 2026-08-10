@@ -40,6 +40,11 @@ import { MAX_RANK_INDEX, getPilotRankProgress, getRankTitle } from '../shared/Ra
 import { LocalLeaderboard } from '../api/LocalLeaderboard.js';
 import { RUN_MODES, getRunModeProfile, isOverrunRunMode } from '../game/RunMode.js';
 import { getDeathCoachAdvice as getRunDeathCoachAdvice } from '../game/RunReport.js';
+import {
+  createLateGameExperimentCopyText,
+  formatLateGameExperimentReportRow,
+  isLateGameExperimentReport
+} from '../game/LateGameExperimentReport.js';
 import { destroyMenuFx, installMenuFx, resizeMenuFx, updateMenuFx } from '../ui/MenuFxLayer.js';
 import { getRecoverySectorGoal } from '../config/RetentionPresentation.js';
 import { formatDailySignalFlightLogSymbols } from '../progression/DailySignalRecords.js';
@@ -93,7 +98,11 @@ const RUN_REPORT_SECTION_LABELS = Object.freeze({
   dailySignal: 'Daily Signal Contract',
   combat: 'Combat',
   survival: 'Survival',
-  rewards: 'Run Progress'
+  rewards: 'Run Progress',
+  experimentSetup: 'Experiment setup',
+  experimentFixture: 'Fixture / loadout',
+  experimentOutcome: 'Test outcome',
+  experimentSafety: 'Safety signals'
 });
 
 const RUN_REPORT_FIELD_LABELS = Object.freeze({
@@ -136,7 +145,24 @@ const RUN_REPORT_FIELD_LABELS = Object.freeze({
   dailyBestAttempt: 'Best attempt',
   dailyBestClear: 'Best clear',
   dailyFlightLog: '7-day flight log',
-  scoutAnomaly: 'Scout anomaly'
+  scoutAnomaly: 'Scout anomaly',
+  experimentVersion: 'Experiment version',
+  scenarioSeed: 'Scenario / seed',
+  ruleset: 'Ruleset',
+  startPressure: 'Starting pressure',
+  fixtureLoadout: 'Fixture / loadout',
+  lifeStock: 'Life stock',
+  pulseState: 'Phase Pulse',
+  segmentCount: 'Measured segments',
+  sectorsCompleted: 'Sectors completed',
+  deathsDamage: 'Deaths / damage',
+  pierceChain: 'Pierce hits / Chain origins',
+  pulseClears: 'Pulse clears',
+  tractorRecovery: 'Tractor pulls / recovery',
+  projectilePeak: 'Projectile peak',
+  hazardPeak: 'Hazard peak',
+  significantStalls: 'Significant stalls',
+  experimentFeedback: 'FEEDBACK QUESTIONS'
 });
 
 function formatUnlockRequirementProgress(item) {
@@ -330,6 +356,10 @@ export class GameOverScene {
     this.dailySignalShareBusy = false;
     this.dailySignalShareStatus = null;
     this.dailySignalShareDebug = null;
+    this.experimentCopyBusy = false;
+    this.experimentCopyStatus = null;
+    this.experimentCopyDebug = null;
+    this.experimentCopyStatusText = null;
     // Frozen final values
     this.finalScore = 0;
     this.finalLevel = 0;
@@ -461,6 +491,10 @@ export class GameOverScene {
     this.dailySignalShareBusy = false;
     this.dailySignalShareStatus = null;
     this.dailySignalShareDebug = null;
+    this.experimentCopyBusy = false;
+    this.experimentCopyStatus = null;
+    this.experimentCopyDebug = null;
+    this.experimentCopyStatusText = null;
     this.counterAdviceCardDebug = null;
     this.pendingRunbackReason = null;
     this.submittedHoldContinueReadyAt = 0;
@@ -496,7 +530,7 @@ export class GameOverScene {
     this.leaderboardAdapter = typeof this.game.getLeaderboardAdapter === 'function'
       ? this.game.getLeaderboardAdapter()
       : createLeaderboardAdapter();
-    if (!this.isDailySignalResult()) {
+    if (!this.isDailySignalResult() && !this.isLateGameExperimentResult()) {
       await this.leaderboardAdapter.refreshAvailability();
     }
     this.leaderboardRuntime = this.leaderboardAdapter.getRuntimeSummary();
@@ -849,6 +883,9 @@ export class GameOverScene {
     if (!this.isRankedRun) {
       console.log(`[GameOver] Unranked run blocked from leaderboard reason=${this.submitBlockedReason}`);
       this.enterRunbackStage('practice');
+      if (this.isLateGameExperimentResult()) {
+        this.openRunReport();
+      }
       if (this.isSectorStartChallengeResult()) {
         this.submitSectorStartSteamScore();
       }
@@ -1012,6 +1049,10 @@ export class GameOverScene {
     return this.game?.runSummary?.runMode === RUN_MODES.DAILY_SIGNAL || this.game?.runMode === RUN_MODES.DAILY_SIGNAL;
   }
 
+  isLateGameExperimentResult() {
+    return isLateGameExperimentReport(this.game?.lastRunReport);
+  }
+
   isOverrunResult() {
     return isOverrunRunMode(this.game?.runSummary?.runMode || this.game?.runMode);
   }
@@ -1130,6 +1171,7 @@ export class GameOverScene {
   }
 
   getUnrankedScoreBlockedText() {
+    if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST // NO AWARDS');
     return this.isDailySignalResult()
       ? translateText('DAILY SIGNAL - LOCAL UTC CHALLENGE - NO PUBLIC SUBMISSION')
       : this.game?.runMode === RUN_MODES.SECTOR_START
@@ -1301,6 +1343,11 @@ export class GameOverScene {
   }
 
   getInstructionsText() {
+    if (this.isLateGameExperimentResult() && this.isResultActionStage()) {
+      return this.lastInputDevice === 'controller'
+        ? translateText('A: RETURN TO TEST SETUP  |  B/START: MENU')
+        : translateText('ENTER / SPACE: RETURN TO TEST SETUP  |  ESC: MENU');
+    }
     if (this.lastInputDevice === 'controller') {
       if (this.state === 'input') {
         return 'D-PAD/STICK: LETTER  |  LB/RB: SLOT  |  A/Y: SUBMIT  |  B: BACK';
@@ -1471,6 +1518,13 @@ export class GameOverScene {
   getRunbackRunSummaryText() {
     const summary = this.game?.runSummary || {};
     const elapsedSeconds = Math.max(0, Math.floor(Number(summary.runElapsedSeconds) || 0));
+    if (this.isLateGameExperimentResult()) {
+      const experiment = this.getRunReport()?.summary || {};
+      return [
+        translateText('EXPERIMENTAL TEST // NO AWARDS'),
+        `${translateText('SECTOR')} ${experiment.sectorReached || this.finalLevel || 1} | ${this.formatElapsedTime(elapsedSeconds)}`
+      ].join('\n');
+    }
     if (this.isDailySignalResult()) {
       const contract = summary.dailySignalContract || {};
       return [
@@ -1513,6 +1567,7 @@ export class GameOverScene {
   }
 
   createRunbackRankProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isLateGameExperimentResult()) return translateText('NO RANKINGS, UNLOCKS, RECORDS, OR PROGRESS');
     if (this.isDailySignalResult()) return translateText('DAILY SIGNAL: NO CAREER XP OR RANKED PROGRESS');
     if (this.isSectorStartChallengeResult()) return '';
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) {
@@ -1527,6 +1582,7 @@ export class GameOverScene {
   }
 
   createRunbackShipProgressSummary(currentProgress = this.currentProgressForResult || {}) {
+    if (this.isLateGameExperimentResult()) return '';
     if (this.isDailySignalResult()) return '';
     if (this.isSectorStartChallengeResult()) return '';
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SCOUT) return '';
@@ -1540,10 +1596,12 @@ export class GameOverScene {
   }
 
   getRunbackLeaderboardText() {
+    if (this.isLateGameExperimentResult()) return translateText('LOCAL TEST REPORT ONLY // NOTHING WAS AWARDED');
     return this.getLeaderboardPlacementLines().join('\n');
   }
 
   getRunbackNextGoalText() {
+    if (this.isLateGameExperimentResult()) return translateText('COPY THE TEST SUMMARY AND SHARE ANY FEEDBACK YOU CHOOSE');
     if (this.isDailySignalResult()) {
       const summary = this.game?.runSummary || {};
       return summary.runCleared
@@ -1574,6 +1632,7 @@ export class GameOverScene {
   }
 
   getScoreResultText() {
+    if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST // NO AWARDS');
     return translateText('SCORE') + ': ' + this.formatScoreNumber(this.finalScore);
   }
 
@@ -1675,6 +1734,7 @@ export class GameOverScene {
   }
 
   getCeremonyTitle() {
+    if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST COMPLETE');
     if (this.isDailySignalResult()) {
       return translateText(this.game?.runSummary?.runCleared ? 'DAILY SIGNAL CLEARED' : 'DAILY SIGNAL ENDED');
     }
@@ -1698,6 +1758,9 @@ export class GameOverScene {
 
   getCeremonyComment() {
     if (!this.isRankedRun) {
+      if (this.isLateGameExperimentResult()) {
+        return translateText('This local test report records experiment telemetry only. No rankings, unlocks, records, or progress were awarded.');
+      }
       if (this.isDailySignalResult()) {
         const contract = this.game?.runSummary?.dailySignalContract || {};
         const resultText = this.getDailySignalResultLines().join('\n');
@@ -1776,6 +1839,7 @@ export class GameOverScene {
   }
 
   shouldShowCounterAdviceCard() {
+    if (this.isLateGameExperimentResult()) return false;
     if (this.state === 'submitting' || this.state === 'submitted_hold' || this.state === 'result_hold') return false;
     return this.isResultActionStage() && Boolean(this.getCounterAdviceText());
   }
@@ -2745,6 +2809,7 @@ export class GameOverScene {
 
   shouldShowLeaderboardButton() {
     if (this.isSubmitting) return false;
+    if (this.isLateGameExperimentResult()) return false;
     if (this.game?.runMode === RUN_MODES.SCOUT || this.isDailySignalResult() || this.isOverrunResult()) return false;
     return this.isResultActionStage() && (
       !this.isSectorStartChallengeResult() ||
@@ -2753,6 +2818,7 @@ export class GameOverScene {
   }
 
   shouldShowHangarButton() {
+    if (this.isLateGameExperimentResult()) return false;
     return !this.isSubmitting && this.isResultActionStage() && typeof this.game?.showShipSelect === 'function';
   }
 
@@ -2997,6 +3063,17 @@ export class GameOverScene {
 
   getPrimaryCtaConfig() {
     if (this.state === 'runback' || this.state === 'submitted' || this.state === 'skipped' || this.state === 'unranked') {
+      if (this.isLateGameExperimentResult()) {
+        return {
+          mode: 'restart',
+          label: translateText('RETURN TO TEST SETUP'),
+          hint: this.lastInputDevice === 'controller'
+            ? translateText('A: TEST SETUP  |  B: MENU')
+            : translateText('ENTER / SPACE / CLICK - TEST SETUP'),
+          disabled: false,
+          runback: true
+        };
+      }
       return {
         mode: 'restart',
         label: translateText(getRunModeProfile(this.game?.runMode).oneMoreLabel || 'ONE MORE RUN'),
@@ -3499,6 +3576,11 @@ export class GameOverScene {
       this.setInputDevice('keyboard');
 
       if (this.runReportOpen) {
+        if (this.isLateGameExperimentResult() && (e.code === 'KeyC' || e.key === 'c' || e.key === 'C')) {
+          e.preventDefault();
+          if (!e.repeat) void this.copyLateGameExperimentSummary();
+          return;
+        }
         if (this.isDailySignalResult() && (e.code === 'KeyS' || e.key === 's' || e.key === 'S')) {
           e.preventDefault();
           if (!e.repeat) void this.saveDailySignalShareCard();
@@ -3684,7 +3766,9 @@ export class GameOverScene {
 
   handleGamepadNavigation(nav) {
     if (this.runReportOpen) {
-      if (this.isDailySignalResult() && nav.pressed.x) {
+      if (this.isLateGameExperimentResult() && nav.pressed.x) {
+        void this.copyLateGameExperimentSummary();
+      } else if (this.isDailySignalResult() && nav.pressed.x) {
         void this.saveDailySignalShareCard();
       } else if (this.isDailySignalResult() && nav.pressed.y) {
         void this.copyDailySignalShareCaption();
@@ -4959,11 +5043,12 @@ export class GameOverScene {
     this.runReportButtonBg.fill({ color: 0x37f5ff, alpha: visible ? 0.24 : 0 });
 
     const dailySignal = this.isDailySignalResult();
-    this.runReportButtonLabel.text = translateText(dailySignal ? 'FLIGHT REPORT' : 'RUN REPORT');
+    const experiment = this.isLateGameExperimentResult();
+    this.runReportButtonLabel.text = translateText(experiment ? 'TEST REPORT' : dailySignal ? 'FLIGHT REPORT' : 'RUN REPORT');
     this.runReportButtonLabel.style.fontSize = layout.isMobile ? 18 : 22;
     this.runReportButtonLabel.y = layout.isMobile ? -7 : -8;
     if (this.runReportButtonHint) {
-      this.runReportButtonHint.text = translateText(dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
+      this.runReportButtonHint.text = translateText(experiment ? 'LOCAL TELEMETRY + COPY' : dailySignal ? 'VIEW + SAVE SHARE CARD' : 'Counter advice');
       this.runReportButtonHint.style.fontSize = layout.isMobile ? 10 : 12;
       this.runReportButtonHint.y = layout.isMobile ? 14 : 16;
     }
@@ -5115,6 +5200,57 @@ export class GameOverScene {
     }
   }
 
+  setExperimentCopyStatus(source, tone = 'info') {
+    this.experimentCopyStatus = source ? { source, tone } : null;
+    if (this.experimentCopyStatusText && source) {
+      this.experimentCopyStatusText.text = translateText(source);
+      this.experimentCopyStatusText.style.fill = tone === 'success'
+        ? '#7dffcc'
+        : tone === 'error'
+          ? '#ff8b9b'
+          : tone === 'muted'
+            ? '#9ab4bf'
+            : '#9cfbff';
+    }
+    if (this.runReportOverlayDebug?.lateGameExperiment) {
+      this.runReportOverlayDebug.lateGameExperiment.status = translateText(source || 'LOCAL COPY ONLY // NOTHING SENT AUTOMATICALLY');
+    }
+  }
+
+  async copyLateGameExperimentSummary() {
+    const report = this.getRunReport();
+    if (!isLateGameExperimentReport(report) || this.experimentCopyBusy) return null;
+    const copy = createLateGameExperimentCopyText(report, translateText);
+    this.experimentCopyBusy = true;
+    this.setExperimentCopyStatus('COPYING TEST SUMMARY...', 'info');
+    try {
+      const result = await copyDailySignalCaption(copy);
+      if (result?.ok !== true) throw new Error(result?.error || 'experiment_summary_copy_failed');
+      this.setExperimentCopyStatus('TEST SUMMARY COPIED', 'success');
+      this.experimentCopyDebug = {
+        action: 'copy',
+        ok: true,
+        copyLength: copy.length
+      };
+      return result;
+    } catch (error) {
+      console.warn('[LateGamePressureExperiment] Summary copy failed:', error?.message || String(error));
+      this.setExperimentCopyStatus('TEST SUMMARY COPY FAILED', 'error');
+      this.experimentCopyDebug = {
+        action: 'copy',
+        ok: false,
+        error: error?.message || String(error)
+      };
+      return { ok: false, error: error?.message || String(error) };
+    } finally {
+      this.experimentCopyBusy = false;
+      if (this.runReportOverlayDebug?.lateGameExperiment) {
+        this.runReportOverlayDebug.lateGameExperiment.busy = false;
+        this.runReportOverlayDebug.lateGameExperiment.lastAction = this.experimentCopyDebug;
+      }
+    }
+  }
+
   getRunReportSectionLabel(sectionId) {
     return translateText(RUN_REPORT_SECTION_LABELS[sectionId] || sectionId);
   }
@@ -5146,6 +5282,9 @@ export class GameOverScene {
   }
 
   formatRunReportValue(row = {}) {
+    if (this.isLateGameExperimentResult()) {
+      return formatLateGameExperimentReportRow(row, translateText);
+    }
     if (row.id === 'mode') return translateText(this.getRunReportModeLabel(row.rawValue, row.value));
     if (row.id === 'finalHit') return translateText(this.getRunReportDeathSourceLabel(row.rawValue || row.value));
     if (row.id === 'deathCoach') return translateText(row.value || row.rawValue?.advice || '');
@@ -5304,6 +5443,7 @@ export class GameOverScene {
     this.runReportOverlayBg.fill({ color: 0x020712, alpha: this.runReportOverlay.visible ? 0.62 : 0 });
     this.runReportOverlayBg.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
+    this.experimentCopyStatusText = null;
     const removed = this.runReportPanel.removeChildren();
     removed.forEach((child) => child.destroy?.({ children: true }));
 
@@ -5325,8 +5465,10 @@ export class GameOverScene {
     const rowSize = compact ? 11 : 14;
     const dailyShareModel = createDailySignalCardModel(report);
     const dailyShareAvailable = Boolean(dailyShareModel);
-    const closeHeight = dailyShareAvailable ? (compact ? 42 : 46) : (compact ? 32 : 36);
-    const shareStatusHeight = dailyShareAvailable ? (compact ? 18 : 22) : 0;
+    const experimentReport = isLateGameExperimentReport(report);
+    const reportHasExtraAction = dailyShareAvailable || experimentReport;
+    const closeHeight = reportHasExtraAction ? (compact ? 42 : 46) : (compact ? 32 : 36);
+    const shareStatusHeight = reportHasExtraAction ? (compact ? 18 : 22) : 0;
     const tacticalLoadout = this.getRunReportTacticalLoadout(report);
     const tacticalBandWidth = panelWidth - innerPad * 2;
     const chipGap = compact ? 6 : 8;
@@ -5345,12 +5487,21 @@ export class GameOverScene {
     const pilotOrdersRow = (report.sections || [])
       .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
       .find((row) => row?.id === 'pilotOrders') || null;
+    const experimentFeedbackRow = (report.sections || [])
+      .flatMap((section) => Array.isArray(section.rows) ? section.rows : [])
+      .find((row) => row?.id === 'experimentFeedback') || null;
     const counterBandHeight = deathCoachRow ? (compact ? 62 : 78) : 0;
     const pilotBandHeight = pilotOrdersRow ? (compact ? 78 : 86) : 0;
+    const experimentFeedbackBandHeight = experimentFeedbackRow ? (compact ? 118 : 144) : 0;
     const contentTop = -panelHeight / 2 + innerPad + titleSize + (compact ? 18 : 26);
     const footerButtonTop = panelHeight / 2 - innerPad - closeHeight;
     const closeTop = footerButtonTop - shareStatusHeight;
-    const pilotBandY = pilotOrdersRow ? closeTop - (compact ? 14 : 18) - pilotBandHeight : null;
+    const experimentFeedbackBandY = experimentFeedbackRow
+      ? closeTop - (compact ? 14 : 18) - experimentFeedbackBandHeight
+      : null;
+    const pilotBandY = pilotOrdersRow
+      ? (experimentFeedbackRow ? experimentFeedbackBandY - gap - pilotBandHeight : closeTop - (compact ? 14 : 18) - pilotBandHeight)
+      : null;
     const counterBandY = deathCoachRow
       ? (pilotOrdersRow ? pilotBandY - gap - counterBandHeight : closeTop - (compact ? 14 : 18) - counterBandHeight)
       : null;
@@ -5367,6 +5518,8 @@ export class GameOverScene {
         ? counterBandY - gap
         : pilotOrdersRow
           ? pilotBandY - gap
+          : experimentFeedbackRow
+            ? experimentFeedbackBandY - gap
           : closeTop - (compact ? 12 : 18);
     const sectionAreaHeight = Math.max(0, sectionAreaBottom - contentTop);
     const sectionWidth = (panelWidth - innerPad * 2 - gap * (columns - 1)) / columns;
@@ -5387,7 +5540,7 @@ export class GameOverScene {
     panelBg.fill({ color: 0xffd15c, alpha: 0.22 });
     this.runReportPanel.addChild(panelBg);
 
-    const title = createText(translateText(dailyShareAvailable ? 'FLIGHT REPORT' : 'RUN REPORT'), {
+    const title = createText(translateText(experimentReport ? 'TEST REPORT' : dailyShareAvailable ? 'FLIGHT REPORT' : 'RUN REPORT'), {
       fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
       fontSize: titleSize,
       fontWeight: 'bold',
@@ -5407,7 +5560,11 @@ export class GameOverScene {
       run: 0xffd15c,
       combat: 0xff6b8a,
       survival: 0x7dffcc,
-      rewards: 0x37f5ff
+      rewards: 0x37f5ff,
+      experimentSetup: 0xffd15c,
+      experimentFixture: 0x37f5ff,
+      experimentOutcome: 0x7dffcc,
+      experimentSafety: 0xff6b8a
     };
     (report.sections || []).forEach((section, index) => {
       const column = columns === 1 ? 0 : index % columns;
@@ -5451,7 +5608,7 @@ export class GameOverScene {
       textLines.push(header.text);
 
       const rows = (section.rows || [])
-        .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts');
+        .filter((entry) => entry?.id !== 'pilotOrders' && entry?.id !== 'deathCoach' && entry?.id !== 'tacticalDrafts' && entry?.id !== 'experimentFeedback');
       const isCombatSection = section.id === 'combat';
       const metricColumns = narrow || sectionWidth < 390 ? 1 : isCombatSection ? 2 : compact ? 3 : 2;
       const metricGap = compact ? 3 : 7;
@@ -5727,9 +5884,89 @@ export class GameOverScene {
       textLines.push(`${label}: ${value}`);
     }
 
+    if (experimentFeedbackRow) {
+      const x = -panelWidth / 2 + innerPad;
+      const y = experimentFeedbackBandY;
+      const bandWidth = panelWidth - innerPad * 2;
+      const band = new PIXI.Graphics();
+      band.roundRect(x, y, bandWidth, experimentFeedbackBandHeight, 8);
+      band.fill({ color: 0x071624, alpha: 0.96 });
+      band.roundRect(x, y, bandWidth, experimentFeedbackBandHeight, 8);
+      band.stroke({ color: 0xffd15c, width: 1.4, alpha: 0.72 });
+      band.rect(x, y, 7, experimentFeedbackBandHeight);
+      band.fill({ color: 0xffd15c, alpha: 0.9 });
+      band.rect(x + 18, y + (compact ? 28 : 32), bandWidth - 36, 1);
+      band.fill({ color: 0xffd15c, alpha: 0.24 });
+      this.runReportPanel.addChild(band);
+
+      const headingText = this.getRunReportFieldLabel('experimentFeedback');
+      const heading = createText(headingText, {
+        fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+        fontSize: compact ? 13 : 16,
+        fontWeight: '900',
+        fill: '#fff3a2',
+        stroke: '#031323',
+        strokeThickness: 2,
+        align: 'left'
+      });
+      heading.x = x + 18;
+      heading.y = y + (compact ? 8 : 9);
+      fitDisplayToBox(heading, bandWidth - 36, compact ? 18 : 22, { minScale: 0.64 });
+      this.runReportPanel.addChild(heading);
+
+      const prompts = (Array.isArray(experimentFeedbackRow.value) ? experimentFeedbackRow.value : [])
+        .map((prompt) => translateText(prompt));
+      const feedbackColumns = narrow ? 1 : 2;
+      const feedbackColumnGap = compact ? 12 : 20;
+      const feedbackColumnWidth = (bandWidth - 36 - feedbackColumnGap * (feedbackColumns - 1)) / feedbackColumns;
+      const promptsPerColumn = Math.max(1, Math.ceil(prompts.length / feedbackColumns));
+      for (let column = 0; column < feedbackColumns; column += 1) {
+        const columnPrompts = prompts.slice(column * promptsPerColumn, (column + 1) * promptsPerColumn);
+        if (columnPrompts.length === 0) continue;
+        const body = createText(columnPrompts.map((prompt, index) => `${column * promptsPerColumn + index + 1}. ${prompt}`).join('\n'), {
+          fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+          fontSize: compact ? 11 : 13,
+          fontWeight: 'bold',
+          fill: '#d8fbff',
+          stroke: '#031323',
+          strokeThickness: 2,
+          align: 'left',
+          wordWrap: true,
+          wordWrapWidth: feedbackColumnWidth,
+          lineHeight: compact ? 14 : 18
+        });
+        body.x = x + 18 + column * (feedbackColumnWidth + feedbackColumnGap);
+        body.y = y + (compact ? 35 : 40);
+        fitDisplayToBox(body, feedbackColumnWidth, experimentFeedbackBandHeight - (compact ? 42 : 48), { minScale: 0.58 });
+        this.runReportPanel.addChild(body);
+      }
+      textLines.push(`${headingText}: ${prompts.join(' | ')}`);
+    }
+
     const footerGap = compact ? 8 : 12;
-    const footerSpecs = dailyShareAvailable
+    const footerSpecs = experimentReport
       ? [
+          {
+            id: 'copyExperiment',
+            label: 'COPY TEST SUMMARY',
+            hint: 'C / X',
+            preferredWidth: 260,
+            accent: 0x7dffcc,
+            fill: '#d8fff0',
+            activate: () => void this.copyLateGameExperimentSummary()
+          },
+          {
+            id: 'close',
+            label: 'CLOSE',
+            hint: 'ENTER / A',
+            preferredWidth: 170,
+            accent: 0xffd15c,
+            fill: '#fff3a2',
+            activate: () => this.closeRunReport()
+          }
+        ]
+      : dailyShareAvailable
+        ? [
           {
             id: 'save',
             label: 'SAVE SIGNAL CARD',
@@ -5757,8 +5994,8 @@ export class GameOverScene {
             fill: '#fff3a2',
             activate: () => this.closeRunReport()
           }
-        ]
-      : [{
+          ]
+        : [{
           id: 'close',
           label: 'CLOSE',
           hint: null,
@@ -5781,7 +6018,7 @@ export class GameOverScene {
     footerSpecs.forEach((spec, index) => {
       const buttonWidth = footerWidths[index];
       const button = new PIXI.Container();
-      const disabled = this.dailySignalShareBusy && spec.id !== 'close';
+      const disabled = (this.dailySignalShareBusy || this.experimentCopyBusy) && spec.id !== 'close';
       button.eventMode = disabled ? 'none' : 'static';
       button.cursor = disabled ? 'default' : 'pointer';
       button.on('pointerdown', spec.activate);
@@ -5835,9 +6072,13 @@ export class GameOverScene {
       footerX += buttonWidth + footerGap;
     });
 
-    if (dailyShareAvailable) {
-      const statusSource = this.dailySignalShareStatus?.source || 'LOCAL SIGNAL // NO PUBLIC RANK';
-      const tone = this.dailySignalShareStatus?.tone || 'info';
+    if (reportHasExtraAction) {
+      const statusSource = experimentReport
+        ? (this.experimentCopyStatus?.source || 'LOCAL COPY ONLY // NOTHING SENT AUTOMATICALLY')
+        : (this.dailySignalShareStatus?.source || 'LOCAL SIGNAL // NO PUBLIC RANK');
+      const tone = experimentReport
+        ? (this.experimentCopyStatus?.tone || 'info')
+        : (this.dailySignalShareStatus?.tone || 'info');
       const statusColor = tone === 'success'
         ? '#7dffcc'
         : tone === 'error'
@@ -5859,6 +6100,7 @@ export class GameOverScene {
       status.y = footerButtonTop - shareStatusHeight / 2;
       fitDisplayToBox(status, footerAvailableWidth, shareStatusHeight, { minScale: 0.66 });
       this.runReportPanel.addChild(status);
+      if (experimentReport) this.experimentCopyStatusText = status;
       textLines.push(status.text);
     }
 
@@ -5894,6 +6136,19 @@ export class GameOverScene {
       pilotOrdersBounds: pilotOrdersRow
         ? toScreenRect(-panelWidth / 2 + innerPad, pilotBandY, panelWidth - innerPad * 2, pilotBandHeight)
         : null,
+      experimentFeedbackBounds: experimentFeedbackRow
+        ? toScreenRect(-panelWidth / 2 + innerPad, experimentFeedbackBandY, panelWidth - innerPad * 2, experimentFeedbackBandHeight)
+        : null,
+      lateGameExperiment: experimentReport ? {
+        available: true,
+        busy: this.experimentCopyBusy,
+        status: translateText(this.experimentCopyStatus?.source || 'LOCAL COPY ONLY // NOTHING SENT AUTOMATICALLY'),
+        copyButtonLabel: translateText('COPY TEST SUMMARY'),
+        copyButtonBounds: footerActionBounds.copyExperiment
+          ? toScreenRect(footerActionBounds.copyExperiment.x, footerActionBounds.copyExperiment.y, footerActionBounds.copyExperiment.width, footerActionBounds.copyExperiment.height)
+          : null,
+        lastAction: this.experimentCopyDebug
+      } : { available: false },
       dailySignalShare: dailyShareAvailable ? {
         available: true,
         busy: this.dailySignalShareBusy,
@@ -6040,6 +6295,7 @@ export class GameOverScene {
   }
 
   getRunbackTitle() {
+    if (this.isLateGameExperimentResult()) return translateText('EXPERIMENTAL TEST COMPLETE');
     if (this.isDailySignalResult()) return this.getCeremonyTitle();
     if (this.isOverrunResult()) return translateText('OVERRUN COMPLETE');
     if (!this.isRankedRun && this.game?.runMode === RUN_MODES.SECTOR_START) return translateText('SECTOR RUN');

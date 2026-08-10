@@ -13,6 +13,7 @@ import {
   validateDailySignalContract
 } from '../src/config/DailyCabinetSignal.js';
 import {
+  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   RUN_MODES,
   canRunModeUseTacticalDraft,
   canRunModeUseMayhemReinforcements,
@@ -1472,8 +1473,9 @@ try {
   assert.equal(prototypeRuntime.escalationProfile?.armed, true);
   assert.equal(prototypeRuntime.escalationProfile?.source, 'late_game_pressure_experiment');
   const boundedFixtureIds = getLateGameExperimentFixture('tactical_saturation_bounded').baselineAugmentIds;
-  assert.deepEqual(prototypeRuntime.baselineIds, boundedFixtureIds);
-  assert.deepEqual(prototypeRuntime.playerAugmentIds, boundedFixtureIds);
+  const boundedPulseFixtureIds = [...boundedFixtureIds, 'phase_wake'];
+  assert.deepEqual(prototypeRuntime.baselineIds, boundedPulseFixtureIds);
+  assert.deepEqual(prototypeRuntime.playerAugmentIds, boundedPulseFixtureIds);
   assert.equal(prototypeRuntime.leaderboardAllowed, false);
   assert.equal(prototypeRuntime.achievementAllowed, false);
   assert.equal(prototypeRuntime.careerAllowed, false);

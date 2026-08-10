@@ -1,3 +1,7 @@
+# Historical high-sector handoff prompt
+
+> Superseded. Do not execute this prompt as current instructions. The active temporary experiment and its verified limits are documented in `docs/release/nova-swarm-late-game-pressure-experiment-20260810.md`; no 60-90 minute result or four-protocol/Ascendant release direction has been validated.
+
 You are continuing Nova Swarm current-version development from the immutable local tag `nova-swarm-high-sector-handoff-20260809-build24637691`.
 
 Create and use a new isolated Codex worktree and uniquely named `codex/` branch from that tag. Do not edit, reset, clean, stash, rebase, discard, overwrite, or rewrite the source worktree `D:\vibe-coding-e\codex\nova-swarm-tyrian-boss-combo-20260809-3f8a`, its branch, or the lock tag. Unity V2 is out of scope.

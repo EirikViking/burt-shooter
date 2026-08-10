@@ -1,5 +1,7 @@
 # Nova Swarm high-sector implementation handoff
 
+> Historical implementation handoff only. It is superseded for active prototype behavior by `docs/release/nova-swarm-late-game-pressure-experiment-20260810.md`. In particular, the four-protocol/Ascendant slice and modeled run-length projections below must not be treated as the current experiment, validated human-play evidence, or authorization to release anything.
+
 Date: 2026-08-09
 
 Use this handoff for the next Codex task. It closes the Tyrian boss-combo and Steam deployment pass and defines the safe starting point for late-game implementation. Unity V2 is out of scope.

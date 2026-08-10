@@ -166,7 +166,8 @@ export function normalizeLateGameExperimentDraft(value = {}) {
     fixtureId: fixture.id,
     startSector,
     lifeStock,
-    phasePulseAvailable: raw.phasePulseAvailable !== false
+    phasePulseAvailable: requestedRuleset === LATE_GAME_EXPERIMENT_RULESETS.TACTICAL
+      && raw.phasePulseAvailable !== false
   };
 }
 
@@ -187,6 +188,12 @@ export function createLateGamePressureExperimentRun(request = {}) {
   const underlyingRunMode = draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.PURE
     ? RUN_MODES.RANKED
     : RUN_MODES.MAYHEM_TACTICAL;
+  const baselineAugmentIds = [
+    ...fixture.baselineAugmentIds,
+    ...(draft.phasePulseAvailable && !fixture.baselineAugmentIds.includes('phase_wake')
+      ? ['phase_wake']
+      : [])
+  ];
   const seed = [
     LATE_GAME_PRESSURE_EXPERIMENT_VERSION,
     draft.scenario,
@@ -206,7 +213,7 @@ export function createLateGamePressureExperimentRun(request = {}) {
     fixtureId: fixture.id,
     fixtureLabel: fixture.label,
     fixtureDescription: fixture.description,
-    baselineAugmentIds: [...fixture.baselineAugmentIds],
+    baselineAugmentIds,
     permanentPierceContract: fixture.permanentPierceContract,
     phasePulseAvailable: draft.phasePulseAvailable,
     phasePulse: {

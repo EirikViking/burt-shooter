@@ -1,5 +1,7 @@
 # Nova Swarm High Sector Escalation Plan
 
+> Historical planning reference only. The active temporary experiment is documented in `docs/release/nova-swarm-late-game-pressure-experiment-20260810.md`. The older four-protocol catalog, Ascendant boss ladder, twenty-sector repeat target, and 60-90 minute outcome below are not current implementation claims, release promises, or validated results. Skilled human testing of run length and feel is still pending.
+
 Date: 2026-08-09
 
 Status: implementation plan, not a promise that every item ships unchanged

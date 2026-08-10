@@ -7,6 +7,16 @@ import {
   getLateGameExperimentFixtures
 } from '../src/game/LateGamePressureExperiment.js';
 import {
+  createLateGameExperimentCopyText,
+  createLateGameExperimentReport,
+  formatLateGameExperimentReportRow,
+  isLateGameExperimentReport
+} from '../src/game/LateGameExperimentReport.js';
+import {
+  LATE_GAME_EXPERIMENT_REPORT_SOURCE_KEYS,
+  getLateGameExperimentSourceText
+} from '../src/i18n/lateGameExperimentSourceText.js';
+import {
   PROJECTILE_PIERCE_PROVENANCE,
   claimExperimentalChainLightningOrigin,
   claimExperimentalProjectileHit,
@@ -60,6 +70,63 @@ assert.equal(standardA.seed, standardB.seed, 'equivalent Standard fixtures must 
 assert.equal(standardA.underlyingRunMode, 'ranked_tactical');
 assert.equal(standardA.permanentPierceContract, 'bounded');
 assert.deepEqual(standardA.phasePulse, { available: true, maxRadius: 72, rechargeMs: 2000 });
+assert.ok(standardA.baselineAugmentIds.includes('phase_wake'), 'pulse-on Tactical fixtures must own Phase Wake');
+
+const reportRun = createLateGamePressureExperimentRun({
+  ...DEFAULT_LATE_GAME_EXPERIMENT_DRAFT,
+  acknowledged: true
+});
+reportRun.metrics.sectorsCompleted = 4;
+reportRun.metrics.deaths = 1;
+reportRun.metrics.damageTaken = 275;
+reportRun.metrics.pierceHits = 24;
+reportRun.metrics.effectivePenetrationHits = 11;
+reportRun.metrics.chainLightningOrigins = 9;
+reportRun.metrics.pulseActivations = 3;
+reportRun.metrics.pulseClears = 7;
+reportRun.metrics.tractorPulls = 2;
+reportRun.metrics.tractorBreaks = 2;
+reportRun.metrics.tractorBreakTimeMs = 520;
+reportRun.metrics.tractorRecoveryMs = 14400;
+reportRun.metrics.projectilePeak = 188;
+reportRun.metrics.hazardPeak = 0.42;
+reportRun.metrics.significantStalls = 0;
+reportRun.metrics.waveSegments = [{ sector: 75 }, { sector: 76 }];
+const experimentReport = createLateGameExperimentReport(reportRun, {
+  sectorReached: 79,
+  lifeLosses: 1,
+  runElapsedSeconds: 225,
+  clearReason: 'late_game_experiment_retired'
+});
+assert.equal(isLateGameExperimentReport(experimentReport), true);
+assert.equal(experimentReport.localOnly, true);
+assert.deepEqual(experimentReport.sections.map((section) => section.id), [
+  'experimentSetup',
+  'experimentFixture',
+  'experimentOutcome',
+  'experimentSafety'
+]);
+assert.equal(experimentReport.summary.tractorBreakAverageMs, 260);
+assert.equal(experimentReport.summary.tractorRecoveryAverageMs, 7200);
+assert.equal(experimentReport.summary.hazardPeak, 0.42);
+const tractorRow = experimentReport.sections
+  .flatMap((section) => section.rows)
+  .find((row) => row.id === 'tractorRecovery');
+assert.match(formatLateGameExperimentReportRow(tractorRow), /2 PULLS \/\/ 7200ms RECOVERY/);
+const experimentCopy = createLateGameExperimentCopyText(experimentReport);
+assert.match(experimentCopy, /EXPERIMENTAL TEST \/\/ NO AWARDS/);
+assert.match(experimentCopy, new RegExp(reportRun.seed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+assert.match(experimentCopy, /Pierce hits \/ Chain origins: 24 \/ 9/);
+assert.match(experimentCopy, /LOCAL COPY ONLY \/\/ NOTHING SENT AUTOMATICALLY/);
+
+const reportLocales = ['de', 'es', 'ru', 'zh-CN', 'pt-BR', 'ko', 'ja'];
+for (const locale of reportLocales) {
+  const sourceText = getLateGameExperimentSourceText(locale);
+  for (const key of LATE_GAME_EXPERIMENT_REPORT_SOURCE_KEYS) {
+    assert.equal(typeof sourceText[key], 'string', `${locale} must translate ${key}`);
+    assert.notEqual(sourceText[key].trim(), '', `${locale} translation must not be blank for ${key}`);
+  }
+}
 
 const boundedBullet = { piercing: true };
 stampProjectilePierceProvenance(boundedBullet, { permanentTacticalPierce: true }, standardA);
@@ -133,6 +200,15 @@ assert.equal(pure.pressureProfile.id, 'sector_120_deep_endurance');
 assert.equal(pure.pressureProfile.elapsedSeconds, 2100);
 assert.equal(pure.phasePulseAvailable, false);
 assert.deepEqual(pure.phasePulse, { available: false, maxRadius: 72, rechargeMs: 2000 });
+assert.deepEqual(pure.baselineAugmentIds, [], 'Pure must never gain Phase Wake from the comparison switch');
+
+const tacticalNoPulse = createLateGamePressureExperimentRun({
+  acknowledged: true,
+  ruleset: 'tactical',
+  fixtureId: 'tactical_saturation_bounded',
+  phasePulseAvailable: false
+});
+assert.equal(tacticalNoPulse.baselineAugmentIds.includes('phase_wake'), false);
 
 const tacticalFixtures = getLateGameExperimentFixtures('tactical');
 assert.deepEqual(
@@ -169,6 +245,7 @@ const settingsSource = fs.readFileSync('src/ui/SettingsOverlay.js', 'utf8');
 const playSource = fs.readFileSync('src/scenes/PlayScene.js', 'utf8');
 assert.match(gameSource, /createLateGamePressureExperimentRun\(options\.lateGameExperiment\)/);
 assert.match(gameSource, /clearLateGameExperimentState\('return_to_menu'\)/);
+assert.match(gameSource, /createLateGameExperimentReport\(this\.lateGameExperiment, this\.runSummary\)/);
 assert.doesNotMatch(gameSource, /getHighSectorPrototypeSettings\(\)/, 'legacy preferences must not arm gameplay');
 assert.match(settingsSource, /allowExperimentLaunch/);
 assert.match(settingsSource, /acknowledged: true/);
@@ -179,6 +256,17 @@ assert.match(playSource, /late_game_experiment_window_complete/);
 assert.match(playSource, /draftMode !== 'disabled'/);
 assert.match(playSource, /claimExperimentalProjectileHit/);
 assert.match(playSource, /claimExperimentalChainLightningOrigin/);
+assert.match(playSource, /metrics\.sectorsCompleted/);
+assert.match(playSource, /metrics\.deaths/);
+assert.match(playSource, /metrics\.damageTaken/);
+assert.match(playSource, /experimentMetrics\.projectilePeak/);
+assert.match(playSource, /experimentMetrics\.significantStalls/);
+const enemyManagerSource = fs.readFileSync('src/managers/EnemyManager.js', 'utf8');
+assert.match(enemyManagerSource, /experimentMetrics\.waveSegments\.push/);
+const gameOverSource = fs.readFileSync('src/scenes/GameOverScene.js', 'utf8');
+assert.match(gameOverSource, /COPY TEST SUMMARY/);
+assert.match(gameOverSource, /copyLateGameExperimentSummary/);
+assert.match(gameOverSource, /this\.openRunReport\(\)/);
 
 console.log(JSON.stringify({
   pass: true,
@@ -195,5 +283,7 @@ console.log(JSON.stringify({
     pureAugments: pure.baselineAugmentIds.length
   },
   fixtures: tacticalFixtures.map((fixture) => fixture.id),
+  reportLocales: reportLocales.length,
+  reportSourceKeys: LATE_GAME_EXPERIMENT_REPORT_SOURCE_KEYS.length,
   legacyKeyRemoved: migration.removed
 }, null, 2));

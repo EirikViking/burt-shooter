@@ -289,6 +289,7 @@ export class EnemyManager {
     this.waveStragglerRetreatTriggered = false;
     this.combatReadabilityEnemySequence = 0;
     this.waveClearStartedAtMs = 0;
+    this.experimentWaveSegment = null;
 
     // WAVE FIX: Wave ending state to prevent bonus drone spawning
     this.waveEnding = false;
@@ -396,6 +397,7 @@ export class EnemyManager {
     // WAVE FIX: Reset wave ending state
     this.waveEnding = false;
     this.waveClearStartedAtMs = 0;
+    this.experimentWaveSegment = null;
     this.cleanupTimer = 0;
     this.cleanupPhase = 'NONE';
     this.resetWaveWatchdog();
@@ -3130,6 +3132,22 @@ export class EnemyManager {
 
   spawnWave(config) {
     this.beginHighSectorProtocolRuntime(config);
+    if (
+      this.game?.lateGameExperiment?.active === true
+      && config?.highSectorAuthoredEncounter === true
+      && !config?.isMayhemReinforcement
+      && !config?.allowConcurrentSpawn
+    ) {
+      this.experimentWaveSegment = {
+        sector: Math.max(1, Math.floor(Number(this.level) || 1)),
+        waveIndex: Math.max(0, Math.floor(Number(this.currentWaveIndex) || 0)),
+        beatId: config.highSectorBeatId || null,
+        beatNumber: Math.max(1, Math.floor(Number(config.highSectorBeatNumber) || this.currentWaveIndex + 1)),
+        protocolId: config.highSectorProtocolId || this.highSectorEscalationState?.protocol?.id || null,
+        plannedEnemyCount: Math.max(0, Math.floor(Number(config.count) || 0)),
+        startedAtMs: Date.now()
+      };
+    }
     if (this.waveClearStartedAtMs && !config?.isMayhemReinforcement && !config?.allowConcurrentSpawn) {
       const nextWaveActiveAtMs = Date.now();
       this.markPerformance('combat_readability.wave_transition_complete', {
@@ -3538,7 +3556,7 @@ export class EnemyManager {
         });
       });
     };
-        if (!config.isChallenge && !config.highSectorAuthoredEncounter) {
+    if (!config.isChallenge && !config.highSectorAuthoredEncounter) {
       if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
         window.requestAnimationFrame(runDiscoveryHooks);
       } else {
@@ -5607,6 +5625,22 @@ export class EnemyManager {
     const clearedWaveIndex = this.currentWaveIndex;
     const clearedWave = (clearedWaveIndex >= 0 && clearedWaveIndex < this.waves.length) ? this.waves[clearedWaveIndex] : null;
     const clearedWaveNumber = clearedWaveIndex + 1;
+    const experimentMetrics = this.game?.lateGameExperiment?.active === true
+      ? this.game.lateGameExperiment.metrics
+      : null;
+    if (
+      experimentMetrics
+      && clearedWave?.highSectorAuthoredEncounter === true
+      && this.experimentWaveSegment?.waveIndex === clearedWaveIndex
+    ) {
+      if (!Array.isArray(experimentMetrics.waveSegments)) experimentMetrics.waveSegments = [];
+      experimentMetrics.waveSegments.push({
+        ...this.experimentWaveSegment,
+        completedAtMs: Date.now(),
+        durationMs: Math.max(0, Date.now() - this.experimentWaveSegment.startedAtMs)
+      });
+      this.experimentWaveSegment = null;
+    }
     const consumedReinforcementWaveIndices = [];
     let nextConsumedWaveIndex = clearedWaveIndex + 1;
     while (this.mayhemReinforcementConsumedWaveIndices?.has(nextConsumedWaveIndex)) {
