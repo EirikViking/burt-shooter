@@ -5,10 +5,9 @@ const FRAME_COUNTER_KEY = '__novaMayhemFrameCounters';
 const STORAGE_PATCH_KEY = '__novaMayhemStorageProbe';
 const AUTO_DIAGNOSTICS_ENABLED = false;
 const SLOW_FRAME_MS = 20;
+const NOTICEABLE_SLOW_FRAME_MS = 25;
 const IMPORTANT_SLOW_FRAME_MS = 33;
 const SEVERE_SLOW_FRAME_MS = 50;
-const AUTO_WRITE_INTERVAL_MS = 5000;
-const PERIODIC_WRITE_INTERVAL_MS = 10000;
 
 const DEFAULT_OPTIONS = Object.freeze({
   enabled: AUTO_DIAGNOSTICS_ENABLED,
@@ -89,7 +88,9 @@ function readQueryOptions() {
   try {
     const params = new URLSearchParams(win.location.search);
     return {
-      enabled: parseBoolean(params.get('novaPerfDiag'), undefined),
+      enabled: params.has('novaPerfDiag')
+        ? parseBoolean(params.get('novaPerfDiag'))
+        : (params.has('perf') ? parseBoolean(params.get('perf')) : undefined),
       showOverlay: parseBoolean(params.get('novaDiagOverlay'), undefined),
       hideHighscoreChase: parseBoolean(params.get('novaDiagHideHighscore'), undefined),
       hudLite: parseBoolean(params.get('novaDiagHudLite'), undefined),
@@ -186,9 +187,25 @@ function summarizeDurations(values = []) {
 function installStorageProbe() {
   const win = getWindow();
   const StorageCtor = win?.Storage;
-  if (!StorageCtor?.prototype?.setItem || win[STORAGE_PATCH_KEY]) return;
+  if (!StorageCtor?.prototype?.setItem || !StorageCtor?.prototype?.getItem || win[STORAGE_PATCH_KEY]) return;
   const originalSetItem = StorageCtor.prototype.setItem;
-  win[STORAGE_PATCH_KEY] = { originalSetItem };
+  const originalGetItem = StorageCtor.prototype.getItem;
+  win[STORAGE_PATCH_KEY] = { originalSetItem, originalGetItem };
+  StorageCtor.prototype.getItem = function novaMayhemStorageReadProbe(key) {
+    const counters = win[FRAME_COUNTER_KEY];
+    const startedAt = counters ? performance.now() : 0;
+    try {
+      return originalGetItem.call(this, key);
+    } finally {
+      if (counters) {
+        const textKey = String(key ?? 'unknown');
+        counters.localStorageReads = (Number(counters.localStorageReads) || 0) + 1;
+        counters.localStorageReadMs = (Number(counters.localStorageReadMs) || 0) + (performance.now() - startedAt);
+        counters.localStorageReadKeys = counters.localStorageReadKeys || {};
+        counters.localStorageReadKeys[textKey] = (Number(counters.localStorageReadKeys[textKey]) || 0) + 1;
+      }
+    }
+  };
   StorageCtor.prototype.setItem = function novaMayhemStorageProbe(key, value) {
     const counters = win[FRAME_COUNTER_KEY];
     const startedAt = counters ? performance.now() : 0;
@@ -214,6 +231,9 @@ function startFrameCounters() {
     sfxAttempts: 0,
     sfxPlayed: 0,
     sfxSuppressed: 0,
+    localStorageReads: 0,
+    localStorageReadMs: 0,
+    localStorageReadKeys: {},
     localStorageWrites: 0,
     localStorageWriteMs: 0,
     localStorageWriteBytes: 0,
@@ -233,6 +253,9 @@ function consumeFrameCounters() {
       sfxAttempts: 0,
       sfxPlayed: 0,
       sfxSuppressed: 0,
+      localStorageReads: 0,
+      localStorageReadMs: 0,
+      localStorageReadKeys: {},
       localStorageWrites: 0,
       localStorageWriteMs: 0,
       localStorageWriteBytes: 0,
@@ -244,6 +267,9 @@ function consumeFrameCounters() {
     sfxAttempts: Math.max(0, Math.floor(Number(counters.sfxAttempts) || 0)),
     sfxPlayed: Math.max(0, Math.floor(Number(counters.sfxPlayed) || 0)),
     sfxSuppressed: Math.max(0, Math.floor(Number(counters.sfxSuppressed) || 0)),
+    localStorageReads: Math.max(0, Math.floor(Number(counters.localStorageReads) || 0)),
+    localStorageReadMs: roundMs(counters.localStorageReadMs),
+    localStorageReadKeys: { ...(counters.localStorageReadKeys || {}) },
     localStorageWrites: Math.max(0, Math.floor(Number(counters.localStorageWrites) || 0)),
     localStorageWriteMs: roundMs(counters.localStorageWriteMs),
     localStorageWriteBytes: Math.max(0, Math.floor(Number(counters.localStorageWriteBytes) || 0)),
@@ -257,6 +283,9 @@ function makeFrameCounterTotals() {
     sfxAttempts: 0,
     sfxPlayed: 0,
     sfxSuppressed: 0,
+    localStorageReads: 0,
+    localStorageReadMs: 0,
+    localStorageReadKeys: {},
     localStorageWrites: 0,
     localStorageWriteMs: 0,
     localStorageWriteBytes: 0,
@@ -270,10 +299,15 @@ function addFrameCounterTotals(totals, counters) {
   totals.sfxAttempts += Number(counters.sfxAttempts) || 0;
   totals.sfxPlayed += Number(counters.sfxPlayed) || 0;
   totals.sfxSuppressed += Number(counters.sfxSuppressed) || 0;
+  totals.localStorageReads += Number(counters.localStorageReads) || 0;
+  totals.localStorageReadMs = roundMs((Number(totals.localStorageReadMs) || 0) + (Number(counters.localStorageReadMs) || 0));
   totals.localStorageWrites += Number(counters.localStorageWrites) || 0;
   totals.localStorageWriteMs = roundMs((Number(totals.localStorageWriteMs) || 0) + (Number(counters.localStorageWriteMs) || 0));
   totals.localStorageWriteBytes += Number(counters.localStorageWriteBytes) || 0;
   if (counters.lastSfxEvent) totals.lastSfxEvent = counters.lastSfxEvent;
+  for (const [key, count] of Object.entries(counters.localStorageReadKeys || {})) {
+    totals.localStorageReadKeys[key] = (Number(totals.localStorageReadKeys[key]) || 0) + (Number(count) || 0);
+  }
   for (const [key, count] of Object.entries(counters.localStorageKeys || {})) {
     totals.localStorageKeys[key] = (Number(totals.localStorageKeys[key]) || 0) + (Number(count) || 0);
   }
@@ -314,7 +348,25 @@ function getCombatTiming(scene) {
   };
 }
 
-function getCounts(scene) {
+function getDisplayTreeCounts(root) {
+  if (!root) return { activeTextObjects: 0, displayObjectCount: 0 };
+  let activeTextObjects = 0;
+  let displayObjectCount = 0;
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node || node.destroyed) continue;
+    displayObjectCount += 1;
+    const constructorName = node.constructor?.name || '';
+    if (node.visible !== false && (constructorName === 'Text' || constructorName === 'BitmapText')) {
+      activeTextObjects += 1;
+    }
+    if (Array.isArray(node.children)) stack.push(...node.children);
+  }
+  return { activeTextObjects, displayObjectCount };
+}
+
+function getCounts(scene, includeDisplayTree = false) {
   const bulletManager = scene?.bulletManager;
   const enemyManager = scene?.enemyManager;
   const playerBullets = bulletManager?.playerBullets?.length || 0;
@@ -323,11 +375,19 @@ function getCounts(scene) {
   const particles = scene?.particleManager?.particles?.length || 0;
   const scorePopups = scene?.scorePopupManager?.popups?.length || 0;
   const pendingScorePopups = scene?.scorePopupManager?.pendingPopups?.length || 0;
+  const displayTree = includeDisplayTree
+    ? getDisplayTreeCounts(scene?.container || scene?.gameContainer)
+    : { activeTextObjects: null, displayObjectCount: null };
+  const persistence = getWindow()?.__novaSteamCloudDiagnostics?.getSchedulerState?.() || null;
   return {
     sector: Math.max(1, Math.floor(Number(scene?.game?.level) || 1)),
     score: Math.max(0, Math.floor(Number(scene?.game?.score) || 0)),
     lives: Math.max(0, Math.floor(Number(scene?.game?.lives) || 0)),
     runMode: scene?.game?.runMode || 'unknown',
+    enemyManagerState: enemyManager?.state || null,
+    tacticalDraftActive: scene?.tacticalDraft?.active === true,
+    overrunInterludeActive: scene?.overrunMilestoneInterlude?.active === true,
+    paused: scene?.isPaused === true,
     enemies: enemyManager?.enemies?.length || 0,
     enemyCount: enemyManager?.enemies?.length || 0,
     bossActive: Boolean(enemyManager?.boss?.active),
@@ -337,9 +397,17 @@ function getCounts(scene) {
     projectileCount: playerBullets + enemyBullets + pendingEnemyBullets,
     particles,
     particleCount: particles,
+    particlePoolCount: scene?.particleManager?.pool?.length || 0,
+    energyBloomCount: scene?.particleManager?.energyBlooms?.length || 0,
+    energyBloomPoolCount: scene?.particleManager?.energyBloomPool?.length || 0,
     scorePopups,
     pendingScorePopups,
     combatTextCount: scorePopups + pendingScorePopups,
+    activeTextObjects: displayTree.activeTextObjects,
+    displayObjectCount: displayTree.displayObjectCount,
+    gameContainerChildCount: scene?.gameContainer?.children?.length || 0,
+    pendingCloudSyncCount: persistence?.pendingCloudSyncCount || 0,
+    activePersistenceOperations: persistence?.activeOperations || 0,
     bossHazards: scene?.bossHazards?.length || 0,
     ambientBonusDrones: scene?.ambientBonusDrones?.length || 0,
     deferredThreatDefeats: scene?.deferredThreatDefeats?.length || 0,
@@ -377,9 +445,12 @@ class MayhemPerformanceDiagnostics {
     this.enabled = Boolean(this.options.enabled);
     this.sessionId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`;
     this.samples = [];
+    this.frameTimes = [];
+    this.preFrameGaps = [];
     this.slowFrames = [];
     this.longFrameBuckets = {
       over20Ms: 0,
+      over25Ms: 0,
       over33Ms: 0,
       over50Ms: 0
     };
@@ -397,6 +468,9 @@ class MayhemPerformanceDiagnostics {
     this.lastCounts = getCounts(scene);
     this.pendingEvents = [];
     this.eventLog = [];
+    this.eventCounts = {};
+    this.pendingLongFrameContexts = [];
+    this.longFrameContexts = [];
     this.combatReadability = makeCombatReadabilityState();
     this.overlay = null;
     this.hotkeyHandler = this.handleHotkey.bind(this);
@@ -423,10 +497,10 @@ class MayhemPerformanceDiagnostics {
   }
 
   installPeriodicWrites() {
-    const win = getWindow();
-    if (!win?.setInterval || !this.enabled) return;
-    this.initialWriteTimeout = win.setTimeout?.(() => this.writeReport('initial_auto_flush'), 2500) || null;
-    this.periodicWriteInterval = win.setInterval(() => this.writeReport('periodic_auto_flush'), PERIODIC_WRITE_INTERVAL_MS);
+    // Keep the capture in memory during play. Serializing and writing a large
+    // diagnostic report from the frame that is being diagnosed would perturb
+    // the measurement and can create the exact kind of stall we are tracing.
+    // Reports are exported manually or at lifecycle-safe visibility/destroy points.
   }
 
   destroy() {
@@ -469,7 +543,8 @@ class MayhemPerformanceDiagnostics {
       disable: () => this.setOptions({ enabled: false }),
       mark: (label, details = {}) => this.mark(label, details),
       reset: () => this.resetSamples(),
-      writeReport: (reason = 'manual') => this.writeReport(reason)
+      writeReport: (reason = 'manual') => this.writeReport(reason),
+      exportJson: () => JSON.stringify(this.getReport(), null, 2)
     };
   }
 
@@ -490,9 +565,12 @@ class MayhemPerformanceDiagnostics {
 
   resetSamples() {
     this.samples = [];
+    this.frameTimes = [];
+    this.preFrameGaps = [];
     this.slowFrames = [];
     this.longFrameBuckets = {
       over20Ms: 0,
+      over25Ms: 0,
       over33Ms: 0,
       over50Ms: 0
     };
@@ -500,6 +578,9 @@ class MayhemPerformanceDiagnostics {
     this.sections.clear();
     this.pendingEvents = [];
     this.eventLog = [];
+    this.eventCounts = {};
+    this.pendingLongFrameContexts = [];
+    this.longFrameContexts = [];
     this.combatReadability = makeCombatReadabilityState();
   }
 
@@ -517,7 +598,7 @@ class MayhemPerformanceDiagnostics {
     const previousStartedAt = this.previousFrameStartedAt;
     this.frameStartedAt = performance.now();
     this.previousFrameStartedAt = this.frameStartedAt;
-    this.lastCounts = getCounts(scene);
+    this.lastCounts = getCounts(scene, false);
     const frameTiming = getFrameTiming(scene, delta);
     this.currentFrame = {
       delta: roundMs(delta),
@@ -576,7 +657,29 @@ class MayhemPerformanceDiagnostics {
     }
     this.eventLog.push(event);
     if (this.eventLog.length > 180) this.eventLog.shift();
+    this.eventCounts[event.label] = (Number(this.eventCounts[event.label]) || 0) + 1;
+    for (const context of this.pendingLongFrameContexts) {
+      if (event.at >= context.windowStartAt && event.at <= context.captureUntilAt) {
+        context.events.push(event);
+      }
+    }
     this.recordCombatReadabilityEvent(event.label, event.details);
+  }
+
+  finalizeLongFrameContexts(now = performance.now()) {
+    const stillPending = [];
+    for (const context of this.pendingLongFrameContexts) {
+      if (now < context.captureUntilAt) {
+        stillPending.push(context);
+        continue;
+      }
+      this.longFrameContexts.push({
+        ...context,
+        events: context.events.slice(-60)
+      });
+      if (this.longFrameContexts.length > 60) this.longFrameContexts.shift();
+    }
+    this.pendingLongFrameContexts = stillPending;
   }
 
   recordCombatReadabilityEvent(label, details = {}) {
@@ -727,7 +830,8 @@ class MayhemPerformanceDiagnostics {
     const elapsed = performance.now() - this.frameStartedAt;
     const frameCounters = consumeFrameCounters();
     addFrameCounterTotals(this.frameCounterTotals, frameCounters);
-    const counts = getCounts(scene);
+    this.finalizeLongFrameContexts();
+    const counts = getCounts(scene, true);
     this.sampleCombatReadability(scene);
     const frameTiming = getFrameTiming(scene, this.currentFrame.delta);
     const combat = getCombatTiming(scene);
@@ -752,16 +856,41 @@ class MayhemPerformanceDiagnostics {
       topSections: getFrameTopSections(this.currentFrame.sections)
     };
     this.samples.push(sample);
+    this.frameTimes.push(Math.max(sample.frameMs, Number(sample.preFrameGapMs) || 0));
+    this.preFrameGaps.push(Number(sample.preFrameGapMs) || 0);
+    if (this.frameTimes.length > 20000) this.frameTimes.shift();
+    if (this.preFrameGaps.length > 20000) this.preFrameGaps.shift();
     this.lastCounts = sample.counts;
     if (this.samples.length > 900) this.samples.shift();
     const frameCost = elapsed;
     const gapCost = Number(sample.preFrameGapMs) || 0;
-    if (frameCost >= SLOW_FRAME_MS) this.longFrameBuckets.over20Ms += 1;
-    if (frameCost >= IMPORTANT_SLOW_FRAME_MS) this.longFrameBuckets.over33Ms += 1;
-    if (frameCost >= SEVERE_SLOW_FRAME_MS) this.longFrameBuckets.over50Ms += 1;
+    const observedFrameCost = Math.max(frameCost, gapCost);
+    if (observedFrameCost >= SLOW_FRAME_MS) this.longFrameBuckets.over20Ms += 1;
+    if (observedFrameCost >= NOTICEABLE_SLOW_FRAME_MS) this.longFrameBuckets.over25Ms += 1;
+    if (observedFrameCost >= IMPORTANT_SLOW_FRAME_MS) this.longFrameBuckets.over33Ms += 1;
+    if (observedFrameCost >= SEVERE_SLOW_FRAME_MS) this.longFrameBuckets.over50Ms += 1;
     if (elapsed >= SLOW_FRAME_MS || sample.preFrameGapMs >= SLOW_FRAME_MS) {
       this.slowFrames.push(sample);
       if (this.slowFrames.length > 120) this.slowFrames.shift();
+      if (Math.max(elapsed, sample.preFrameGapMs) >= IMPORTANT_SLOW_FRAME_MS) {
+        const frameEndedAt = performance.now();
+        const windowStartAt = this.frameStartedAt - 100;
+        this.pendingLongFrameContexts.push({
+          frameStartedAt: this.frameStartedAt,
+          frameEndedAt,
+          frameMs: sample.frameMs,
+          preFrameGapMs: sample.preFrameGapMs,
+          windowStartAt,
+          captureUntilAt: frameEndedAt + 100,
+          counts: sample.counts,
+          topSections: sample.topSections,
+          events: this.eventLog.filter((event) => event.at >= windowStartAt && event.at <= frameEndedAt)
+        });
+        if (this.pendingLongFrameContexts.length > 12) {
+          const oldest = this.pendingLongFrameContexts.shift();
+          this.longFrameContexts.push(oldest);
+        }
+      }
       this.scheduleReportWrite(Math.max(frameCost, gapCost) >= IMPORTANT_SLOW_FRAME_MS ? 'important_slow_frame' : 'slow_frame');
     }
     this.currentFrame = null;
@@ -769,20 +898,9 @@ class MayhemPerformanceDiagnostics {
   }
 
   scheduleReportWrite(reason = 'scheduled') {
-    const now = Date.now();
-    if (
-      reason !== 'important_slow_frame' &&
-      now - this.lastReportWriteAt < AUTO_WRITE_INTERVAL_MS &&
-      this.slowFrames.length === this.lastWrittenSlowFrameCount
-    ) {
-      return;
-    }
-    if (this.reportWritePending) return;
-    this.reportWritePending = true;
-    setTimeout(() => {
-      this.reportWritePending = false;
-      this.writeReport(reason);
-    }, 0);
+    // Captures remain memory-only while the scene is active. Retain the latest
+    // reason for the eventual manual/lifecycle export without scheduling work.
+    this.pendingAutoWriteReason = reason;
   }
 
   async writeReport(reason = 'manual') {
@@ -876,8 +994,9 @@ class MayhemPerformanceDiagnostics {
   }
 
   getReport() {
-    const frameValues = this.samples.map((sample) => sample.frameMs);
-    const preFrameGapValues = this.samples.map((sample) => Number(sample.preFrameGapMs) || 0);
+    this.finalizeLongFrameContexts();
+    const frameValues = this.frameTimes;
+    const preFrameGapValues = this.preFrameGaps;
     const maxMs = frameValues.length ? Math.max(...frameValues) : 0;
     const avgMs = frameValues.length
       ? frameValues.reduce((sum, value) => sum + value, 0) / frameValues.length
@@ -899,7 +1018,9 @@ class MayhemPerformanceDiagnostics {
       slowFrameCount: this.slowFrames.length,
       frame: {
         avgMs: roundMs(avgMs),
+        p50Ms: roundMs(percentile(frameValues, 50)),
         p95Ms: roundMs(percentile(frameValues, 95)),
+        p99Ms: roundMs(percentile(frameValues, 99)),
         maxMs: roundMs(maxMs),
         preFrameGapP95Ms: roundMs(percentile(preFrameGapValues, 95)),
         preFrameGapMaxMs: roundMs(preFrameGapValues.length ? Math.max(...preFrameGapValues) : 0)
@@ -908,11 +1029,17 @@ class MayhemPerformanceDiagnostics {
       longFrames: { ...this.longFrameBuckets },
       frameCounterTotals: {
         ...this.frameCounterTotals,
+        localStorageReadKeys: { ...this.frameCounterTotals.localStorageReadKeys },
         localStorageKeys: { ...this.frameCounterTotals.localStorageKeys }
       },
       lastWriteResult: this.lastWriteResult,
       topSections,
       recentEvents: this.eventLog.slice(-60),
+      eventCounts: { ...this.eventCounts },
+      recentLongFrameContexts: [
+        ...this.longFrameContexts,
+        ...this.pendingLongFrameContexts
+      ].slice(-40),
       combatReadability: this.getCombatReadabilityReport(),
       recentSamples: this.samples.slice(-30),
       recentSlowFrames: this.slowFrames.slice(-40),
@@ -927,4 +1054,24 @@ class MayhemPerformanceDiagnostics {
 
 export function createMayhemPerformanceDiagnostics(scene) {
   return new MayhemPerformanceDiagnostics(scene);
+}
+
+export function markMayhemPerformanceEvent(label, details = {}) {
+  getWindow()?.[GLOBAL_KEY]?.mark?.(label, details);
+}
+
+export function isMayhemPerformanceDiagnosticsActive() {
+  return getWindow()?.[GLOBAL_KEY]?.owner?.enabled === true;
+}
+
+export function measureMayhemPerformanceScope(label, callback) {
+  const owner = getWindow()?.[GLOBAL_KEY]?.owner;
+  return owner?.measure ? owner.measure(label, callback) : callback();
+}
+
+export function recordMayhemPerformanceDuration(label, elapsedMs) {
+  const owner = getWindow()?.[GLOBAL_KEY]?.owner;
+  if (owner?.enabled && Number.isFinite(Number(elapsedMs))) {
+    owner.recordSection(label, Math.max(0, Number(elapsedMs)));
+  }
 }

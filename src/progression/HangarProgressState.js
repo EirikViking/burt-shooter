@@ -16,6 +16,11 @@ import {
   normalizeShipMasteryMap,
   recordShipMasteryRun
 } from './ShipMastery.js';
+import { markPersistenceDirty } from '../persistence/PersistenceScheduler.js';
+import {
+  markMayhemPerformanceEvent,
+  measureMayhemPerformanceScope
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 export const HANGAR_PROGRESS_KEY = 'nova.hangarProgress.v1';
 export const LEGACY_UNLOCK_PROGRESS_KEY = 'burt.shipUnlockProgress.v1';
@@ -63,7 +68,9 @@ function interpolateSourceText(value, vars = {}) {
 function readJson(key, fallback = {}) {
   try {
     const raw = storage()?.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    return raw
+      ? measureMayhemPerformanceScope(`persistence.json_parse.${key}`, () => JSON.parse(raw))
+      : fallback;
   } catch {
     return fallback;
   }
@@ -71,8 +78,12 @@ function readJson(key, fallback = {}) {
 
 function writeJson(key, value) {
   try {
-    storage()?.setItem(key, JSON.stringify(value));
-    if (typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+    const serialized = measureMayhemPerformanceScope(
+      `persistence.json_stringify.${key}`,
+      () => JSON.stringify(value)
+    );
+    storage()?.setItem(key, serialized);
+    markMayhemPerformanceEvent('persistence.hangar_write', { key, bytes: serialized.length });
   } catch (error) {
     console.warn('[HangarProgressState] Failed to write progress:', error);
   }
@@ -353,7 +364,10 @@ export function normalizeHangarProgress(raw = {}) {
 }
 
 export function readHangarProgressState() {
-  return normalizeHangarProgress(readJson(HANGAR_PROGRESS_KEY, {}));
+  return measureMayhemPerformanceScope('persistence.readHangarProgress', () => {
+    markMayhemPerformanceEvent('persistence.hangar_read', { key: HANGAR_PROGRESS_KEY });
+    return normalizeHangarProgress(readJson(HANGAR_PROGRESS_KEY, {}));
+  });
 }
 
 export function writeHangarProgressState(progress) {
@@ -367,6 +381,7 @@ export function writeHangarProgressState(progress) {
     bestRank: normalized.bestRank,
     bestLevel: normalized.bestLevel
   });
+  markPersistenceDirty('hangarProgress');
   return normalized;
 }
 
@@ -434,69 +449,71 @@ export function recalculateUnlockedShipIds(progress = readHangarProgressState())
 }
 
 export function updateHangarProgress(partial = {}, { preserveLastUnlocks = true, unlockContext = {} } = {}) {
-  const previous = readHangarProgressState();
-  const merged = normalizeHangarProgress({
-    ...previous,
-    ...partial,
-    pilotXp: partial.pilotXp !== undefined ? floor(partial.pilotXp) : previous.pilotXp,
-    totalRuns: Math.max(previous.totalRuns, floor(partial.totalRuns, previous.totalRuns)),
-    bestScore: Math.max(previous.bestScore, floor(partial.bestScore, previous.bestScore)),
-    bestSector: Math.max(previous.bestSector, floor(partial.bestSector, previous.bestSector)),
-    bestLevel: Math.max(previous.bestLevel, floor(partial.bestLevel, previous.bestLevel)),
-    bestRank: Math.max(previous.bestRank, floor(partial.bestRank, previous.bestRank)),
-    bestRunTimeSeconds: Math.max(previous.bestRunTimeSeconds, floor(partial.bestRunTimeSeconds, previous.bestRunTimeSeconds)),
-    survivedSeconds: Math.max(previous.survivedSeconds, floor(partial.survivedSeconds, previous.survivedSeconds)),
-    totalBossesDefeated: Math.max(previous.totalBossesDefeated, floor(partial.totalBossesDefeated, previous.totalBossesDefeated)),
-    totalWavesCleared: Math.max(previous.totalWavesCleared, floor(partial.totalWavesCleared, previous.totalWavesCleared)),
-    totalCodexDiscoveries: Math.max(previous.totalCodexDiscoveries, floor(partial.totalCodexDiscoveries, previous.totalCodexDiscoveries)),
-    runClears: Math.max(previous.runClears, floor(partial.runClears, previous.runClears)),
-    noHitWaves: Math.max(previous.noHitWaves, floor(partial.noHitWaves, previous.noHitWaves)),
-    noHitSectors: Math.max(previous.noHitSectors, floor(partial.noHitSectors, previous.noHitSectors)),
-    clearWithLivesRemaining: Math.max(previous.clearWithLivesRemaining, floor(partial.clearWithLivesRemaining, previous.clearWithLivesRemaining)),
-    highestScoreMultiplier: Math.max(previous.highestScoreMultiplier, Number(partial.highestScoreMultiplier) || previous.highestScoreMultiplier || 1),
-    discoveredThreatIds: [...new Set([...previous.discoveredThreatIds, ...(Array.isArray(partial.discoveredThreatIds) ? partial.discoveredThreatIds : [])])],
-    defeatedBossIds: [...new Set([...previous.defeatedBossIds, ...(Array.isArray(partial.defeatedBossIds) ? partial.defeatedBossIds : [])])],
-    runThemesSurvived: [...new Set([...previous.runThemesSurvived, ...(Array.isArray(partial.runThemesSurvived) ? partial.runThemesSurvived : [])])],
-    secretShipUnlockIds: [...new Set([...previous.secretShipUnlockIds, ...(Array.isArray(partial.secretShipUnlockIds) ? partial.secretShipUnlockIds : [])])],
-    creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || partial.creditsEasterEggFound),
-    creditsAscendantEasterEggAttempts: Math.min(
-      CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
-      Math.max(
-        previous.creditsAscendantEasterEggAttempts || 0,
-        floor(partial.creditsAscendantEasterEggAttempts, previous.creditsAscendantEasterEggAttempts || 0)
-      )
-    ),
-    creditsAscendantEasterEggFound: Boolean(previous.creditsAscendantEasterEggFound || partial.creditsAscendantEasterEggFound),
-    shipUnlockHistory: {
-      ...previous.shipUnlockHistory,
-      ...normalizeShipUnlockHistory(partial.shipUnlockHistory)
-    },
-    lastNewlyUnlockedShipIds: preserveLastUnlocks ? previous.lastNewlyUnlockedShipIds : []
-  });
-  merged.pilotRank = getRankFromPilotXp(merged.pilotXp);
-  merged.highestPilotRank = Math.max(previous.highestPilotRank, merged.pilotRank);
-  merged.bestRank = Math.max(merged.bestRank, merged.highestPilotRank);
-  const before = new Set(previous.unlockedShipIds);
-  merged.unlockedShipIds = recalculateUnlockedShipIds(merged);
-  const newlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
-  merged.lastNewlyUnlockedShipIds = preserveLastUnlocks
-    ? [...new Set([...(previous.lastNewlyUnlockedShipIds || []), ...newlyUnlockedShipIds])]
-      .filter((shipId) => merged.unlockedShipIds.includes(shipId))
-    : newlyUnlockedShipIds;
-  merged.shipUnlockHistory = fillMissingShipUnlockHistory(merged);
-  for (const shipId of merged.lastNewlyUnlockedShipIds) {
-    if (!shouldReplaceHistoryEntry(merged.shipUnlockHistory[shipId])) continue;
-    const requirements = selectUnlockRequirementGroup(shipId, previous, merged);
-    merged.shipUnlockHistory[shipId] = createHistoryEntry(shipId, {
-      reasonKey: requirements.length
-        ? SHIP_UNLOCK_HISTORY_REASON_KEYS.requirements
-        : (shipId === 'nova_ship_01' ? SHIP_UNLOCK_HISTORY_REASON_KEYS.available : SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown),
-      requirements,
-      source: clampText(unlockContext.source || unlockContext.runMode || 'run_progression', 80),
-      context: unlockContext
+  return measureMayhemPerformanceScope('persistence.updateHangarProgress', () => {
+    const previous = readHangarProgressState();
+    const merged = normalizeHangarProgress({
+      ...previous,
+      ...partial,
+      pilotXp: partial.pilotXp !== undefined ? floor(partial.pilotXp) : previous.pilotXp,
+      totalRuns: Math.max(previous.totalRuns, floor(partial.totalRuns, previous.totalRuns)),
+      bestScore: Math.max(previous.bestScore, floor(partial.bestScore, previous.bestScore)),
+      bestSector: Math.max(previous.bestSector, floor(partial.bestSector, previous.bestSector)),
+      bestLevel: Math.max(previous.bestLevel, floor(partial.bestLevel, previous.bestLevel)),
+      bestRank: Math.max(previous.bestRank, floor(partial.bestRank, previous.bestRank)),
+      bestRunTimeSeconds: Math.max(previous.bestRunTimeSeconds, floor(partial.bestRunTimeSeconds, previous.bestRunTimeSeconds)),
+      survivedSeconds: Math.max(previous.survivedSeconds, floor(partial.survivedSeconds, previous.survivedSeconds)),
+      totalBossesDefeated: Math.max(previous.totalBossesDefeated, floor(partial.totalBossesDefeated, previous.totalBossesDefeated)),
+      totalWavesCleared: Math.max(previous.totalWavesCleared, floor(partial.totalWavesCleared, previous.totalWavesCleared)),
+      totalCodexDiscoveries: Math.max(previous.totalCodexDiscoveries, floor(partial.totalCodexDiscoveries, previous.totalCodexDiscoveries)),
+      runClears: Math.max(previous.runClears, floor(partial.runClears, previous.runClears)),
+      noHitWaves: Math.max(previous.noHitWaves, floor(partial.noHitWaves, previous.noHitWaves)),
+      noHitSectors: Math.max(previous.noHitSectors, floor(partial.noHitSectors, previous.noHitSectors)),
+      clearWithLivesRemaining: Math.max(previous.clearWithLivesRemaining, floor(partial.clearWithLivesRemaining, previous.clearWithLivesRemaining)),
+      highestScoreMultiplier: Math.max(previous.highestScoreMultiplier, Number(partial.highestScoreMultiplier) || previous.highestScoreMultiplier || 1),
+      discoveredThreatIds: [...new Set([...previous.discoveredThreatIds, ...(Array.isArray(partial.discoveredThreatIds) ? partial.discoveredThreatIds : [])])],
+      defeatedBossIds: [...new Set([...previous.defeatedBossIds, ...(Array.isArray(partial.defeatedBossIds) ? partial.defeatedBossIds : [])])],
+      runThemesSurvived: [...new Set([...previous.runThemesSurvived, ...(Array.isArray(partial.runThemesSurvived) ? partial.runThemesSurvived : [])])],
+      secretShipUnlockIds: [...new Set([...previous.secretShipUnlockIds, ...(Array.isArray(partial.secretShipUnlockIds) ? partial.secretShipUnlockIds : [])])],
+      creditsEasterEggFound: Boolean(previous.creditsEasterEggFound || partial.creditsEasterEggFound),
+      creditsAscendantEasterEggAttempts: Math.min(
+        CREDITS_ASCENDANT_EASTER_EGG_MAX_ATTEMPTS,
+        Math.max(
+          previous.creditsAscendantEasterEggAttempts || 0,
+          floor(partial.creditsAscendantEasterEggAttempts, previous.creditsAscendantEasterEggAttempts || 0)
+        )
+      ),
+      creditsAscendantEasterEggFound: Boolean(previous.creditsAscendantEasterEggFound || partial.creditsAscendantEasterEggFound),
+      shipUnlockHistory: {
+        ...previous.shipUnlockHistory,
+        ...normalizeShipUnlockHistory(partial.shipUnlockHistory)
+      },
+      lastNewlyUnlockedShipIds: preserveLastUnlocks ? previous.lastNewlyUnlockedShipIds : []
     });
-  }
-  return writeHangarProgressState(merged);
+    merged.pilotRank = getRankFromPilotXp(merged.pilotXp);
+    merged.highestPilotRank = Math.max(previous.highestPilotRank, merged.pilotRank);
+    merged.bestRank = Math.max(merged.bestRank, merged.highestPilotRank);
+    const before = new Set(previous.unlockedShipIds);
+    merged.unlockedShipIds = recalculateUnlockedShipIds(merged);
+    const newlyUnlockedShipIds = merged.unlockedShipIds.filter((shipId) => !before.has(shipId));
+    merged.lastNewlyUnlockedShipIds = preserveLastUnlocks
+      ? [...new Set([...(previous.lastNewlyUnlockedShipIds || []), ...newlyUnlockedShipIds])]
+        .filter((shipId) => merged.unlockedShipIds.includes(shipId))
+      : newlyUnlockedShipIds;
+    merged.shipUnlockHistory = fillMissingShipUnlockHistory(merged);
+    for (const shipId of merged.lastNewlyUnlockedShipIds) {
+      if (!shouldReplaceHistoryEntry(merged.shipUnlockHistory[shipId])) continue;
+      const requirements = selectUnlockRequirementGroup(shipId, previous, merged);
+      merged.shipUnlockHistory[shipId] = createHistoryEntry(shipId, {
+        reasonKey: requirements.length
+          ? SHIP_UNLOCK_HISTORY_REASON_KEYS.requirements
+          : (shipId === 'nova_ship_01' ? SHIP_UNLOCK_HISTORY_REASON_KEYS.available : SHIP_UNLOCK_HISTORY_REASON_KEYS.unknown),
+        requirements,
+        source: clampText(unlockContext.source || unlockContext.runMode || 'run_progression', 80),
+        context: unlockContext
+      });
+    }
+    return writeHangarProgressState(merged);
+  });
 }
 
 function writeSecretShipUnlock(previous, shipId, { source = 'secret', extraProgress = {} } = {}) {

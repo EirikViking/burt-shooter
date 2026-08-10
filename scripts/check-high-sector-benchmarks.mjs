@@ -15,7 +15,12 @@ const baseUrl = process.env.CHECK_URL || `http://${host}:${port}`;
 const outputDir = path.resolve(process.env.CHECK_OUTPUT_DIR || `test-results/high-sector-benchmarks-${timestamp()}`);
 const devtoolsHash = 'f07e7cbbaa835bfa3ecf9bb181e93e59a8f86021ddcda00ec835edcad56a559c';
 const config = BalanceConfig.difficulty.highSectorEscalation;
-const defaultSectors = [60, 80, 100, 120, 130];
+const defaultSectors = [60, 75, 80, 100, 120, 130];
+const sampleDurationMs = Math.max(1000, Number(process.env.CHECK_HIGH_SECTOR_SAMPLE_MS) || 1800);
+const warmupDurationMs = Math.max(0, Number(process.env.CHECK_HIGH_SECTOR_WARMUP_MS) || 900);
+const performanceDiagnosticsEnabled = process.env.CHECK_HIGH_SECTOR_PERF === '1';
+const prototypeMode = process.env.CHECK_HIGH_SECTOR_PROTOTYPE === '1';
+const stressMode = process.env.CHECK_HIGH_SECTOR_STRESS === '1';
 const requestedSectors = new Set(String(process.env.CHECK_HIGH_SECTOR_SECTORS || '')
   .split(',')
   .map((value) => Number(value.trim()))
@@ -95,7 +100,28 @@ function summarizeFrames(intervals) {
     averageFps: Number((1000 / Math.max(0.01, averageMs)).toFixed(2)),
     p95Ms: Number(percentile(values, 0.95).toFixed(2)),
     p99Ms: Number(percentile(values, 0.99).toFixed(2)),
-    framesAbove33Ms: values.filter((value) => value > 33.34).length
+    maxMs: Number(Math.max(0, ...values).toFixed(2)),
+    framesAbove25Ms: values.filter((value) => value > 25).length,
+    framesAbove33Ms: values.filter((value) => value > 33.34).length,
+    framesAbove50Ms: values.filter((value) => value > 50).length
+  };
+}
+
+function summarizeLongFrames(diagnostics = {}) {
+  const contexts = Array.isArray(diagnostics?.recentLongFrameContexts)
+    ? diagnostics.recentLongFrameContexts
+    : [];
+  const over50 = contexts.filter((context) => Math.max(Number(context.frameMs) || 0, Number(context.preFrameGapMs) || 0) > 50);
+  return {
+    capturedContextsOver50Ms: over50.length,
+    updateWorkOver50Ms: over50.filter((context) => (Number(context.frameMs) || 0) > 50).length,
+    renderOrSchedulerGapOver50Ms: over50.filter((context) => (Number(context.preFrameGapMs) || 0) > 50).length,
+    gameplayBreadcrumbContextsOver50Ms: over50.filter((context) => (context.events || [])
+      .some((event) => String(event?.label || '').startsWith('gameplay.'))).length,
+    worstContexts: over50
+      .sort((left, right) => Math.max(Number(right.frameMs) || 0, Number(right.preFrameGapMs) || 0)
+        - Math.max(Number(left.frameMs) || 0, Number(left.preFrameGapMs) || 0))
+      .slice(0, 10)
   };
 }
 
@@ -166,26 +192,33 @@ async function runRenderedProbe(browser, hull, sector) {
   const page = await browser.newPage({ viewport: { width: 1366, height: 768 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.addInitScript(() => {
+  await page.addInitScript(({ prototypeMode: enablePrototype }) => {
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify({
       bestScore: 1000000, bestSector: 130, bestLevel: 130, pilotRank: 50, pilotXp: 999999,
       totalRuns: 100, totalBossesDefeated: 130, totalWavesCleared: 1000,
       unlockedShipIds: Array.from({ length: 30 }, (_, index) => `nova_ship_${String(index + 1).padStart(2, '0')}`)
     }));
-  });
+    if (enablePrototype) {
+      localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
+    }
+  }, { prototypeMode });
   const url = new URL(baseUrl);
   url.searchParams.set('nova-devtools-hash', devtoolsHash);
   url.searchParams.set('debugBossToken', 'NOVA_DEBUG_2026');
   url.searchParams.set('controlSmoke', '1');
   url.searchParams.set('startLevel', String(sector));
   url.searchParams.set('highSectorEscalation', '1');
+  if (performanceDiagnosticsEnabled) url.searchParams.set('perf', '1');
   await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
-  assert.equal(await page.evaluate((spriteKey) => window.__game.startGame(spriteKey, { countShipUsage: false }), hull.ship.spriteKey), true);
-  await page.waitForFunction((target) => {
+  assert.equal(await page.evaluate(({ spriteKey, prototypeMode: enablePrototype }) => window.__game.startGame(spriteKey, {
+    countShipUsage: false,
+    ...(enablePrototype ? { runMode: 'ranked_tactical' } : {})
+  }), { spriteKey: hull.ship.spriteKey, prototypeMode }), true);
+  await page.waitForFunction(() => {
     const manager = window.__game?.scenes?.play?.enemyManager;
-    return manager?.level === target && (manager?.enemies?.length || 0) > 0;
-  }, sector, { timeout: 30000 });
+    return window.__game?.currentSceneName === 'play' && manager && (manager?.enemies?.length || 0) > 0;
+  }, null, { timeout: 30000 });
   await page.evaluate(({ target, seed }) => {
     const game = window.__game;
     const play = game.scenes.play;
@@ -198,19 +231,129 @@ async function runRenderedProbe(browser, hull, sector) {
     play.clearEnemyBullets?.('high_sector_benchmark_setup');
   }, { target: sector, seed: `benchmark-${hull.class}-20260809` });
   await page.waitForFunction(() => (window.__game?.scenes?.play?.enemyManager?.enemies?.length || 0) > 0, null, { timeout: 15000 });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(warmupDurationMs);
   await page.keyboard.down('Space');
-  const sample = await page.evaluate(() => new Promise((resolve) => {
+  const sample = await page.evaluate(({ durationMs, stressMode: enableStress }) => new Promise((resolve) => {
+    const progressionKeys = [
+      'nova.hangarProgress.v1',
+      'burt.shipUnlockProgress.v1',
+      'nova_swarm_achievements_v1',
+      'nova_swarm_steam_achievement_queue_v1',
+      'novaSwarm.localLeaderboard.v2',
+      'novaSwarm.mockSteamLeaderboard.v1',
+      'novaSwarm.pendingSteamLeaderboardSubmits.v1',
+      'novaSwarm.sectorStartChallengeRecords.v1',
+      'novaSwarm.scoutRunRecords.v1',
+      'novaSwarm.dailySignalRecords.v1',
+      'novaSwarm.overrunRunRecords.v1',
+      'novaSwarm.mayhemModeRecords.v1',
+      'nova.threatDiscovery.v1',
+      'burt.shipUsage.v1',
+      'burt.shipUsageTotal.v1',
+      'burt_season_xp',
+      'burt_season_unlocks'
+    ];
+    const snapshotProgression = () => Object.fromEntries(
+      progressionKeys.map((key) => [key, localStorage.getItem(key)])
+    );
+    const getObjectCounts = () => {
+      const play = window.__game?.scenes?.play;
+      const diagnosticOwner = window.__novaMayhemPerformanceDiagnostics?.owner;
+      const bulletDebug = play?.bulletManager?.getDebugState?.() || {};
+      return {
+        enemies: play?.enemyManager?.enemies?.length || 0,
+        playerBullets: play?.bulletManager?.playerBullets?.length || 0,
+        enemyBullets: play?.bulletManager?.enemyBullets?.length || 0,
+        particles: play?.particleManager?.particles?.length || 0,
+        particlePool: play?.particleManager?.pool?.length || 0,
+        energyBlooms: play?.particleManager?.energyBlooms?.length || 0,
+        energyBloomPool: play?.particleManager?.energyBloomPool?.length || 0,
+        scorePopups: play?.scorePopupManager?.popups?.length || 0,
+        pendingScorePopups: play?.scorePopupManager?.pendingPopups?.length || 0,
+        activeTextObjects: diagnosticOwner?.lastCounts?.activeTextObjects ?? null,
+        gameContainerChildCount: play?.gameContainer?.children?.length || 0,
+        tickerCount: window.__game?.app?.ticker?.count ?? null,
+        activePickupEffects: play?.activePickupEffects?.size || 0,
+        managedProjectileVisuals: bulletDebug.managedVisuals || 0,
+        projectileOrphansRemoved: bulletDebug.orphanVisualsRemoved || 0,
+        enemyManagerState: play?.enemyManager?.state || null,
+        tacticalDraftActive: play?.tacticalDraft?.active === true,
+        overrunInterludeActive: play?.overrunMilestoneInterlude?.active === true,
+        paused: play?.isPaused === true
+      };
+    };
+    const schedulerStart = window.__novaSteamCloudDiagnostics?.getSchedulerState?.() || null;
+    const progressionBefore = snapshotProgression();
+    const objectsBefore = getObjectCounts();
+    window.__novaMayhemPerformanceDiagnostics?.reset?.();
+    window.__game?.scenes?.play?.enemyManager?.announceHighSectorProtocol?.();
     const intervals = [];
     const peaks = { enemies: 0, hostileProjectiles: 0, hazards: 0, particles: 0, effects: 0 };
     let comboActiveFrames = 0;
     let previous = performance.now();
     const startedAt = previous;
+    let nextStressAt = startedAt + 1500;
+    let nextObjectSampleAt = startedAt;
+    let stressSequence = 0;
+    let skippedInactiveStressEvents = 0;
+    const objectSamples = [];
     const tick = (now) => {
       intervals.push(now - previous);
       previous = now;
       const play = window.__game.scenes.play;
       const manager = play.enemyManager;
+      if (now >= nextObjectSampleAt) {
+        nextObjectSampleAt += 5000;
+        objectSamples.push({ elapsedMs: now - startedAt, ...getObjectCounts() });
+      }
+      if (play.tacticalDraft?.active && !play.tacticalDraft?.passed && !play.tacticalDraft?.confirmedId) {
+        play.passTacticalDraft?.('pointer');
+      }
+      if (play.overrunMilestoneInterlude?.active) {
+        play.confirmOverrunInterlude?.('performance_stress');
+      }
+      if (enableStress && now >= nextStressAt) {
+        nextStressAt = now + 1500;
+        const activeCombat = !play.isPaused
+          && !play.tacticalDraft?.active
+          && !play.overrunMilestoneInterlude?.active
+          && (manager.state === 'WAVE_ACTIVE' || manager.state === 'BOSS_ACTIVE');
+        if (!activeCombat) {
+          skippedInactiveStressEvents += 1;
+        } else {
+          stressSequence += 1;
+          const candidates = manager.enemies
+            .filter((enemy) => enemy?.active !== false && enemy?.kind !== 'boss')
+            .slice(0, stressSequence % 8 === 0 ? 4 : 1);
+          for (const enemy of candidates) {
+            const destroyed = enemy.takeDamage?.((Number(enemy.health) || 1) + 1000, { source: 'performance_stress' }) === true;
+            if (destroyed) play.onEnemyKilled?.(enemy);
+          }
+          const anchor = candidates[0] || play.player;
+          if (anchor) {
+            const award = window.__game.addScore?.(25, 'enemyScore') || 25;
+            play.scorePopupManager?.addScorePopup?.(anchor.x, anchor.y, award);
+            play.particleManager?.createExplosion?.(anchor.x, anchor.y, 0x37f5ff, 1);
+          }
+          if (stressSequence % 6 === 0) {
+            const pickup = play.powerupManager?.spawnSpecific?.(
+              play.player.x,
+              play.player.y,
+              'rapid_fire',
+              { source: 'debug_performance_stress', countDrop: false }
+            );
+            pickup?.collect?.(play.player, play);
+          }
+          if (stressSequence % 10 === 0) {
+            play.enqueueToast?.('PERFORMANCE STRESS EVENT', {
+              type: 'generic',
+              duration: 500,
+              priority: 0,
+              silent: true
+            });
+          }
+        }
+      }
       peaks.enemies = Math.max(peaks.enemies, manager.enemies.filter((enemy) => enemy?.active !== false || enemy?.waitingForEntry).length);
       peaks.hostileProjectiles = Math.max(peaks.hostileProjectiles, play.bulletManager.enemyBullets.filter((bullet) => bullet?.active !== false).length);
       peaks.hazards = Math.max(peaks.hazards, play.bossHazards?.length || 0);
@@ -218,7 +361,9 @@ async function runRenderedProbe(browser, hull, sector) {
       peaks.effects = Math.max(peaks.effects,
         (play.activePickupEffects?.size || 0) + (play.spectacleDirector?.getDebugState?.().activePulses || 0));
       if ((play.comboCount || 0) > 0 || (play.comboMultiplier || 1) > 1) comboActiveFrames += 1;
-      if (now - startedAt >= 1800) {
+      if (now - startedAt >= durationMs) {
+        const diagnostics = window.__novaMayhemPerformanceDiagnostics?.getReport?.() || null;
+        const schedulerEnd = window.__novaSteamCloudDiagnostics?.getSchedulerState?.() || null;
         resolve({
           intervals,
           peaks,
@@ -228,14 +373,24 @@ async function runRenderedProbe(browser, hull, sector) {
           damageSources: play.balanceDebugStats?.damageTakenBySource || {},
           protocol: manager.highSectorEscalationState?.protocol?.id || null,
           projectileCap: play.bulletManager.maxEnemyBullets,
-          renderState: JSON.parse(window.render_game_to_text()).highSectorEscalation
+          renderState: JSON.parse(window.render_game_to_text()).highSectorEscalation,
+          diagnostics,
+          schedulerStart,
+          schedulerEnd,
+          progressionBefore,
+          progressionAfter: snapshotProgression(),
+          objectsBefore,
+          objectsAfter: getObjectCounts(),
+          objectSamples,
+          stressSequence,
+          skippedInactiveStressEvents
         });
         return;
       }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-  }));
+  }), { durationMs: sampleDurationMs, stressMode });
   await page.keyboard.up('Space');
   await page.close();
   return {
@@ -248,6 +403,16 @@ async function runRenderedProbe(browser, hull, sector) {
     protocol: sample.protocol,
     projectileCap: sample.projectileCap,
     renderState: sample.renderState,
+    diagnostics: sample.diagnostics,
+    longFrameAnalysis: summarizeLongFrames(sample.diagnostics),
+    schedulerStart: sample.schedulerStart,
+    schedulerEnd: sample.schedulerEnd,
+    progressionBytesUnchanged: JSON.stringify(sample.progressionAfter) === JSON.stringify(sample.progressionBefore),
+    objectsBefore: sample.objectsBefore,
+    objectsAfter: sample.objectsAfter,
+    objectSamples: sample.objectSamples,
+    stressSequence: sample.stressSequence,
+    skippedInactiveStressEvents: sample.skippedInactiveStressEvents,
     errors
   };
 }
@@ -268,10 +433,51 @@ try {
       console.log(`[high-sector-benchmarks] sector=${sector} hull=${hull.class}`);
       const model = projectedDifficulty(hull, sector);
       const rendered = await runRenderedProbe(browser, hull, sector);
+      writeFileSync(
+        path.join(outputDir, `sector-${sector}-${hull.class}-raw.json`),
+        `${JSON.stringify({ sector, hullClass: hull.class, model, rendered }, null, 2)}\n`,
+        'utf8'
+      );
       assert.equal(rendered.renderState.active, true);
       assert.equal(rendered.projectileCap, 48);
       assert.ok(rendered.peaks.hostileProjectiles <= rendered.projectileCap);
       assert.deepEqual(rendered.errors, []);
+      if (stressMode) {
+        console.log(`[high-sector-benchmarks] storage sector=${sector} ${JSON.stringify(rendered.diagnostics?.frameCounterTotals || {})}`);
+        assert.equal(rendered.progressionBytesUnchanged, true, 'prototype stress must leave progression bytes unchanged');
+        assert.equal(rendered.diagnostics?.frameCounterTotals?.localStorageReads || 0, 0, 'active stress must perform zero localStorage reads');
+        assert.equal(rendered.diagnostics?.frameCounterTotals?.localStorageWrites || 0, 0, 'active stress must perform zero localStorage writes');
+        assert.equal(
+          (rendered.schedulerEnd?.metrics?.snapshotCollections || 0) - (rendered.schedulerStart?.metrics?.snapshotCollections || 0),
+          0,
+          'active stress must collect zero Cloud snapshots'
+        );
+        assert.equal(
+          (rendered.schedulerEnd?.metrics?.ipcRequests || 0) - (rendered.schedulerStart?.metrics?.ipcRequests || 0),
+          0,
+          'active stress must issue zero Cloud IPC requests'
+        );
+        if (sampleDurationMs >= 60000) {
+          const eventCounts = rendered.diagnostics?.eventCounts || {};
+          for (const label of [
+            'gameplay.player_shot',
+            'gameplay.enemy_hit',
+            'gameplay.enemy_kill',
+            'gameplay.score_award',
+            'gameplay.score_popup',
+            'gameplay.particle_burst',
+            'gameplay.pickup_collected',
+            'gameplay.toast_created',
+            'gameplay.enemy_wave_spawned',
+            'gameplay.deep_space_protocol'
+          ]) {
+            assert.ok((eventCounts[label] || 0) > 0, `stress capture must include ${label}`);
+          }
+          if (sector === 80) {
+            assert.ok((eventCounts['gameplay.boss_action'] || 0) > 0, 'Sector 80 stress capture must include a boss action');
+          }
+        }
+      }
       matrix.push({
         sector,
         hullClass: hull.class,
@@ -293,6 +499,11 @@ try {
     status: 'passed',
     generatedAt: new Date().toISOString(),
     chrome,
+    sampleDurationMs,
+    warmupDurationMs,
+    performanceDiagnosticsEnabled,
+    prototypeMode,
+    stressMode,
     sectors,
     hulls: hulls.map((hull) => ({ class: hull.class, id: hull.ship.id, name: hull.ship.name, speed: hull.ship.stats.speed })),
     matrix,

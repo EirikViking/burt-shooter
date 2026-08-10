@@ -24,6 +24,7 @@ import { activateRivalWingMorale, applyRivalWingToEnemy, getRivalWingDoctrineByI
 import { createText } from '../utils/pixiText.js';
 import { translateText } from '../i18n/index.js';
 import { presentAuthoredSignal, hideMicroSignals, destroyMicroSignals } from '../effects/MicroSignalVfx.js';
+import { isWeaponFxKillSwitchActive } from '../config/isExtrasEnabled.js';
 
 const ENABLE_ENEMY_WEAPON_FX_VARIETY = true;
 
@@ -3780,7 +3781,7 @@ export class Enemy {
 
     // Feature Flag + Kill Switch Check
     // Kill Switch: localStorage key "bs_disable_weapon_fx" == "1"
-    const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
+    const killSwitch = isWeaponFxKillSwitchActive();
 
     if (ENABLE_ENEMY_WEAPON_FX_VARIETY && !killSwitch) {
       vConfig = toBulletVisualConfig(weaponProfile, {

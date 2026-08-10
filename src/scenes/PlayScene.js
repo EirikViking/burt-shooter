@@ -134,13 +134,14 @@ import {
   pickBossSupportShipProfile
 } from '../config/BossSupportShips.js';
 import {
+  flushThreatDiscoveryState,
   readThreatDiscoveryState,
   recordThreatDefeated,
   recordThreatDefeatedBatch,
   recordThreatSeen
 } from '../progression/ThreatDiscoveryState.js';
 import { BOSS_FUEL_SHIP_CODEX_ID, getBossSupportCodexDefeatEntries } from '../progression/BossSupportCodexTracking.js';
-import { readHangarProgressState, updateHangarProgress, writeHangarProgressState } from '../progression/HangarProgressState.js';
+import { readHangarProgressState, writeHangarProgressState } from '../progression/HangarProgressState.js';
 import { HULL_SURPLUS_BASE_LIVES, shouldTriggerHullSurplusCabinetLog } from '../progression/CabinetLogReachability.js';
 import {
   areAllRunContractsComplete,
@@ -3933,45 +3934,13 @@ export class PlayScene {
   persistRunContractCompletion(completion) {
     if (this.areRunRewardsSuppressed()) return;
     if (!completion?.id) return;
-    if (this.isCollisionHotPathActive) {
-      this.queueDeferredRunContractCompletion(completion);
-      return;
-    }
-    if (this.runContractPersistenceDirty || this.deferredRunContractCompletions?.length) {
-      this.flushDeferredRunContractProgress(true);
-    }
-    const previous = readHangarProgressState();
-    const wasAllComplete = areAllRunContractsComplete(previous.runContracts);
-    const runContracts = recordRunContractCompletion(previous.runContracts, completion);
-    const isAllComplete = areAllRunContractsComplete(runContracts);
-    if (!wasAllComplete && isAllComplete && this.runContractSession) {
-      this.runContractSession.allCompleteThisRun = true;
-      this.runContractSession.allCompletedAt = runContracts.allCompletedAt || completion.completedAt || null;
-    }
-    writeHangarProgressState({
-      ...previous,
-      runContracts
-    });
+    this.queueDeferredRunContractCompletion(completion);
   }
 
   persistRunContractSessionProgress() {
     if (this.areRunRewardsSuppressed()) return;
     if (!this.runContractSession) return;
-    if (this.isCollisionHotPathActive) {
-      this.runContractPersistenceDirty = true;
-      return;
-    }
-    if (this.runContractPersistenceDirty || this.deferredRunContractCompletions?.length) {
-      const flushed = this.flushDeferredRunContractProgress(true);
-      if (flushed.flushed) return;
-    }
-    const previous = readHangarProgressState();
-    const runContracts = recordRunContractSessionProgress(previous.runContracts, this.runContractSession);
-    writeHangarProgressState({
-      ...previous,
-      runContracts
-    });
-    this.lastRunContractProgressWriteAt = Date.now();
+    this.runContractPersistenceDirty = true;
   }
 
   queueDeferredRunContractCompletion(completion = {}) {
@@ -4971,12 +4940,17 @@ export class PlayScene {
       if ((firePressed || specialFireRequested) && this.player && !this.introActive) {
         measure('shooting', () => {
           if (!this.player.canShoot()) return;
-          const bullets = this.player.shoot();
+          const bullets = measure('vfx.player_bullet_burst_creation', () => this.player.shoot());
           // A dedicated press spends exactly one tactical shot. A valid Bomb
           // lock wins; otherwise Graze Break uses the volley. Never consume
           // both resources on the same Special Fire press.
           if (specialFireMode !== 'bomb') this.markGrazeBreakShot(bullets);
           const launchedBullets = bullets.filter((bullet) => this.bulletManager.addPlayerBullet(bullet));
+          this.performanceDiagnostics?.mark?.('gameplay.player_shot', {
+            requestedBullets: bullets.length,
+            launchedBullets: launchedBullets.length,
+            specialFireMode: specialFireMode || null
+          });
           recordCombatVolley(this.combatTelemetry, launchedBullets);
           if (specialFireRequested) {
             this.specialFireQueuedUntil = 0;
@@ -5062,31 +5036,9 @@ export class PlayScene {
         this.clearDeferredCollisionUiFeedback('fatal_event_barrier');
         return;
       }
-      measure('deferred_progression.score_progress', () => {
-        if (this.shouldDeferActiveGameplayPersistence()) {
-          return {
-            progressFlushed: false,
-            liveRankRefreshed: false,
-            scoreCuesRefreshed: false,
-            deferred: true
-          };
-        }
-        return this.flushDeferredHotPathProgress();
-      });
+      measure('deferred_progression.score_progress', () => this.flushDeferredHotPathProgress());
       measure('deferred_progression.run_contract_events', () => this.flushDeferredRunContractEvents());
-      measure('deferred_progression.run_contracts', () => this.flushDeferredRunContractProgress());
-      measure('deferred_progression.threat_defeats', () => {
-        if (this.shouldDeferActiveGameplayPersistence()) {
-          return {
-            flushed: 0,
-            pending: this.deferredThreatDefeats?.length || 0,
-            firstDefeats: 0,
-            deferred: true
-          };
-        }
-        return this.processDeferredThreatDefeats(40);
-      });
-      measure('deferred_progression.season_progress', () => this.flushDeferredSeasonProgress());
+      measure('deferred_progression.threat_defeats', () => this.processDeferredThreatDefeats(40));
       measure('deferred_visual_feedback.collision_ui', () => this.flushDeferredCollisionUiFeedback());
       measure('overrun_celebrations', () => this.updateOverrunClearCelebrations());
 
@@ -7416,6 +7368,11 @@ export class PlayScene {
         if (event.bulletProxy?.isBomb) continue;
         const frequentMultiHit = Boolean(bulletProxy?.isPlasmaLance || bulletProxy?.piercing);
         if (destroyed) {
+          this.performanceDiagnostics?.mark?.('gameplay.enemy_kill', {
+            kind: enemy.kind || enemy.type || 'enemy',
+            scoreValue: Number(enemy.scoreValue) || 0,
+            bulletType: bulletProxy?.powerupType || null
+          });
           collisionStats.playerBulletEnemyKills += 1;
           if (bulletProxy?.isPlasmaLance) collisionStats.plasmaLanceKills += 1;
           if (!this.player.isSlowTimeActive?.()) {
@@ -7445,6 +7402,11 @@ export class PlayScene {
             y: enemy.y
           });
         } else {
+          this.performanceDiagnostics?.mark?.('gameplay.enemy_hit', {
+            kind: enemy.kind || enemy.type || 'enemy',
+            damage: Number(bulletProxy?.damage) || 0,
+            bulletType: bulletProxy?.powerupType || null
+          });
           collisionStats.playerBulletEnemyDamageOnly += 1;
           this.queueCollisionSideEffect(sideEffects, 'hitSparks', {
             x: event.impactX ?? enemy.x,
@@ -8664,15 +8626,34 @@ export class PlayScene {
     }
   }
 
+  flushRunPersistenceAtSafePoint(reason = 'safe_point') {
+    const diagnostics = this.performanceDiagnostics;
+    const startedAt = diagnostics?.enabled ? performance.now() : 0;
+    const score = this.flushDeferredHotPathProgress();
+    const contractEvents = this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
+    const threatDefeats = this.deferredThreatDefeats?.length
+      ? this.processDeferredThreatDefeats(this.deferredThreatDefeats.length)
+      : { flushed: 0, pending: 0, firstDefeats: 0 };
+    const contracts = this.flushDeferredRunContractProgress(true);
+    const season = this.flushDeferredSeasonProgress(true);
+    const codex = flushThreatDiscoveryState({
+      sync: this.game?.runPolicy?.allowCloudProgressSync === true
+    });
+    diagnostics?.mark?.('persistence.safe_point', {
+      reason,
+      contractEvents: contractEvents.flushed || 0,
+      threatDefeats: threatDefeats.flushed || 0,
+      contractsFlushed: contracts.flushed === true,
+      seasonFlushed: season.flushed === true,
+      codexFlushed: this.game?.runPolicy?.allowCodexProgress === true
+    });
+    if (startedAt > 0) diagnostics?.recordSection?.('persistence.safe_point', performance.now() - startedAt);
+    return { reason, score, contractEvents, threatDefeats, contracts, season, codex };
+  }
+
   destroy() {
     this.flushBalanceDebugSummary('scene_destroy');
-    this.flushDeferredHotPathProgress();
-    this.flushDeferredRunContractEvents(Number.MAX_SAFE_INTEGER);
-    this.flushDeferredRunContractProgress(true);
-    this.flushDeferredSeasonProgress(true);
-    if (this.deferredThreatDefeats?.length) {
-      this.processDeferredThreatDefeats(this.deferredThreatDefeats.length);
-    }
+    this.flushRunPersistenceAtSafePoint('scene_destroy');
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = null;
     this.clearCabinetWonder('scene_destroy');
@@ -17108,6 +17089,7 @@ export class PlayScene {
 
   enqueueToast(message, options = {}) {
     if (!message) return;
+    const toastStartedAt = this.performanceDiagnostics?.enabled ? performance.now() : 0;
     if (this.isFatalEventBarrierActive() && options.allowDuringFatal !== true) {
       this.fatalEventBarrier.suppressedToasts += 1;
       return false;
@@ -17222,11 +17204,21 @@ export class PlayScene {
     }
 
     queue.push(entry);
+    this.performanceDiagnostics?.mark?.('gameplay.toast_created', {
+      type,
+      slot,
+      priority,
+      messageLength: String(message).length,
+      queueLength: queue.length
+    });
     queue.sort((a, b) => b.priority - a.priority || a.createdAt - b.createdAt);
     const limit = this.getToastQueueLimit(slot);
     while (queue.length > limit) queue.pop();
 
     this.processToastQueue();
+    if (toastStartedAt > 0) {
+      this.performanceDiagnostics.recordSection('ui.toast_message_construction', performance.now() - toastStartedAt);
+    }
   }
 
   getToastQueueForSlot(slot) {
@@ -17695,7 +17687,15 @@ export class PlayScene {
   }
 
   isAuthoritativeTransitionType(type) {
-    return ['wave_start', 'wave_clear', 'sector_clear', 'boss_defeated', 'run_clear', 'overrun_unlocked'].includes(type);
+    return [
+      'wave_start',
+      'wave_clear',
+      'sector_arrival',
+      'sector_clear',
+      'boss_defeated',
+      'run_clear',
+      'overrun_unlocked'
+    ].includes(type);
   }
 
   refreshMissionNotificationFocus() {
@@ -19423,9 +19423,6 @@ export class PlayScene {
 
     const progress = this.deferredHotPathScoreProgress;
     this.deferredHotPathScoreProgress = null;
-    if (progress && this.game?.canUnlockAchievementsForCurrentRun?.()) {
-      updateHangarProgress(progress);
-    }
     if (this.deferredLiveRankRefreshRequested) {
       this.deferredLiveRankRefreshRequested = false;
       measurePerformance('rank_highscore_cue_update.live_rank', () => this.game?.updateLiveRunRank?.({ force: true }));

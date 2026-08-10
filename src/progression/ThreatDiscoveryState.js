@@ -1,6 +1,11 @@
 import { getThreatCodexCatalog } from '../config/ThreatCodexCatalog.js';
 import { formatSectorLabel } from '../config/SectorCatalog.js';
 import { readHangarProgressState } from './HangarProgressState.js';
+import { markPersistenceDirty } from '../persistence/PersistenceScheduler.js';
+import {
+  markMayhemPerformanceEvent,
+  measureMayhemPerformanceScope
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 export const THREAT_DISCOVERY_KEY = 'nova.threatDiscovery.v1';
 export const THREAT_DISCOVERY_VERSION = 1;
@@ -28,6 +33,7 @@ let cachedThreatDiscoveryState = null;
 let pendingPersistState = null;
 let pendingPersistTimer = null;
 let flushHandlersInstalled = false;
+let activeThreatDiscoverySession = null;
 
 function storage() {
   try {
@@ -153,8 +159,13 @@ function installFlushHandlers() {
 function persistThreatDiscoveryState(state, { sync = true } = {}) {
   if (!state) return state;
   try {
-    storage()?.setItem(THREAT_DISCOVERY_KEY, JSON.stringify(state));
-    if (sync && typeof window !== 'undefined') window.__novaSteamCloudDiagnostics?.sync?.();
+    const serialized = measureMayhemPerformanceScope(
+      'persistence.json_stringify.threatDiscovery',
+      () => JSON.stringify(state)
+    );
+    storage()?.setItem(THREAT_DISCOVERY_KEY, serialized);
+    markMayhemPerformanceEvent('persistence.codex_write', { bytes: serialized.length });
+    if (sync) markPersistenceDirty('threatDiscovery');
   } catch (error) {
     console.warn('[ThreatDiscoveryState] Failed to write state:', error);
   }
@@ -180,13 +191,22 @@ export function flushThreatDiscoveryState(options = {}) {
     clearTimeout(pendingPersistTimer);
     pendingPersistTimer = null;
   }
-  const state = pendingPersistState || cachedThreatDiscoveryState;
+  if (activeThreatDiscoverySession) {
+    const session = activeThreatDiscoverySession;
+    if (!session.allowPersistentProgress || !session.dirty) return session.state;
+    session.dirty = false;
+    cachedThreatDiscoveryState = session.state;
+    return persistThreatDiscoveryState(session.state, options);
+  }
+  const state = pendingPersistState;
   pendingPersistState = null;
+  if (!state) return cachedThreatDiscoveryState;
   return persistThreatDiscoveryState(state, options);
 }
 
 export function invalidateThreatDiscoveryStateCache() {
   cachedThreatDiscoveryState = null;
+  activeThreatDiscoverySession = null;
   pendingPersistState = null;
   if (pendingPersistTimer) {
     clearTimeout(pendingPersistTimer);
@@ -386,11 +406,15 @@ export function normalizeThreatDiscoveryState(raw = {}) {
 }
 
 export function readThreatDiscoveryState() {
+  if (activeThreatDiscoverySession) return activeThreatDiscoverySession.state;
   if (cachedThreatDiscoveryState) return cachedThreatDiscoveryState;
   let parsed = {};
   try {
     const raw = storage()?.getItem(THREAT_DISCOVERY_KEY);
-    parsed = raw ? JSON.parse(raw) : {};
+    markMayhemPerformanceEvent('persistence.codex_read', { hasStoredState: Boolean(raw) });
+    parsed = raw
+      ? measureMayhemPerformanceScope('persistence.json_parse.threatDiscovery', () => JSON.parse(raw))
+      : {};
   } catch (error) {
     console.warn('[ThreatDiscoveryState] Failed to read state:', error);
   }
@@ -399,6 +423,13 @@ export function readThreatDiscoveryState() {
 }
 
 export function writeThreatDiscoveryState(state) {
+  if (activeThreatDiscoverySession) {
+    const sessionState = state && typeof state === 'object' ? state : activeThreatDiscoverySession.state;
+    sessionState.updatedAt = nowIso();
+    activeThreatDiscoverySession.state = sessionState;
+    if (activeThreatDiscoverySession.allowPersistentProgress) activeThreatDiscoverySession.dirty = true;
+    return sessionState;
+  }
   const normalized = normalizeThreatDiscoveryState({
     ...state,
     updatedAt: nowIso()
@@ -457,92 +488,160 @@ function record(category, id, metadata = {}, mutate = null, options = {}) {
   };
 }
 
-export function startThreatDiscoveryRun() {
-  const state = readThreatDiscoveryState();
+export function startThreatDiscoveryRun({ allowPersistentProgress = true } = {}) {
+  if (activeThreatDiscoverySession) {
+    flushThreatDiscoveryState();
+    activeThreatDiscoverySession = null;
+  }
+  const source = readThreatDiscoveryState();
+  const state = typeof structuredClone === 'function'
+    ? structuredClone(source)
+    : JSON.parse(JSON.stringify(source));
   state.discoveriesThisRun = [];
-  return writeThreatDiscoveryState(state);
+  state.updatedAt = nowIso();
+  activeThreatDiscoverySession = {
+    allowPersistentProgress: allowPersistentProgress === true,
+    dirty: allowPersistentProgress === true,
+    state
+  };
+  markMayhemPerformanceEvent('persistence.codex_session_start', {
+    allowPersistentProgress: activeThreatDiscoverySession.allowPersistentProgress
+  });
+  return state;
+}
+
+export function finishThreatDiscoveryRun({ persist = true, sync = true } = {}) {
+  if (!activeThreatDiscoverySession) return cachedThreatDiscoveryState || readThreatDiscoveryState();
+  const session = activeThreatDiscoverySession;
+  let state = session.state;
+  if (persist && session.allowPersistentProgress && session.dirty) {
+    session.dirty = false;
+    cachedThreatDiscoveryState = state;
+    state = persistThreatDiscoveryState(state, { sync });
+  }
+  activeThreatDiscoverySession = null;
+  markMayhemPerformanceEvent('persistence.codex_session_finish', {
+    persisted: Boolean(persist && session.allowPersistentProgress),
+    sync: Boolean(sync)
+  });
+  return state;
+}
+
+export function getThreatDiscoverySessionDebugState() {
+  return activeThreatDiscoverySession
+    ? {
+        active: true,
+        allowPersistentProgress: activeThreatDiscoverySession.allowPersistentProgress,
+        dirty: activeThreatDiscoverySession.dirty
+      }
+    : { active: false, allowPersistentProgress: false, dirty: false };
 }
 
 export function recordThreatSeen(threatId, category, metadata = {}) {
-  return record(category, threatId, metadata);
+  return measureMayhemPerformanceScope('persistence.recordThreatSeen', () => {
+    const result = record(category, threatId, metadata);
+    markMayhemPerformanceEvent('gameplay.codex_record', {
+      operation: 'seen',
+      threatId: String(threatId || ''),
+      category,
+      isNew: result?.isNew === true
+    });
+    return result;
+  });
 }
 
 export function recordThreatDefeated(threatId, category = 'enemies', metadata = {}) {
-  const previous = readThreatDiscoveryState().items?.[category]?.[String(threatId)] || null;
-  const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
-  const result = record(category, threatId, metadata, (item) => {
-    item.timesDefeated += 1;
-  }, { countSeen: false });
-  return {
-    ...result,
-    isFirstDefeat: previousDefeats === 0
-  };
+  return measureMayhemPerformanceScope('persistence.recordThreatDefeated', () => {
+    const previous = readThreatDiscoveryState().items?.[category]?.[String(threatId)] || null;
+    const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
+    const result = record(category, threatId, metadata, (item) => {
+      item.timesDefeated += 1;
+    }, { countSeen: false });
+    const response = {
+      ...result,
+      isFirstDefeat: previousDefeats === 0
+    };
+    markMayhemPerformanceEvent('gameplay.codex_record', {
+      operation: 'defeated',
+      threatId: String(threatId || ''),
+      category,
+      isNew: response.isNew === true,
+      isFirstDefeat: response.isFirstDefeat
+    });
+    return response;
+  });
 }
 
 export function recordThreatDefeatedBatch(entries = []) {
-  const validEntries = Array.isArray(entries)
-    ? entries.filter((entry) => entry?.threatId && DISCOVERY_CATEGORIES.includes(entry.category || 'enemies'))
-    : [];
-  if (validEntries.length === 0) {
-    return { state: readThreatDiscoveryState(), results: [] };
-  }
-
-  const state = readThreatDiscoveryState();
-  const results = [];
-  let changed = false;
-
-  for (const entry of validEntries) {
-    const category = entry.category || 'enemies';
-    const key = String(entry.threatId);
-    const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
-    const bucket = state.items[category] || {};
-    const previous = bucket[key] || null;
-    const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
-    const isNew = !previous;
-    const item = normalizeItem(previous || {
-      id: key,
-      category,
-      name: metadata.name || metadata.label || key,
-      firstSeenAt: nowIso()
-    }, { id: key, category });
-
-    item.name = String(metadata.name || metadata.label || item.name || key);
-    item.lastSeenAt = nowIso();
-    item.timesDefeated += 1;
-    item.metadata = {
-      ...item.metadata,
-      ...metadata
-    };
-    bucket[key] = item;
-    state.items[category] = bucket;
-
-    if (isNew) {
-      const discovery = {
-        id: key,
-        category,
-        name: item.name,
-        discoveredAt: item.firstSeenAt,
-        metadata: item.metadata
-      };
-      state.discoveriesThisRun = [...state.discoveriesThisRun, discovery].slice(-80);
-      state.unreadIds = [...new Set([...state.unreadIds, makeUnreadId(category, key)])];
+  return measureMayhemPerformanceScope('persistence.recordThreatDefeatedBatch', () => {
+    const validEntries = Array.isArray(entries)
+      ? entries.filter((entry) => entry?.threatId && DISCOVERY_CATEGORIES.includes(entry.category || 'enemies'))
+      : [];
+    if (validEntries.length === 0) {
+      return { state: readThreatDiscoveryState(), results: [] };
     }
 
-    changed = true;
-    results.push({
-      item,
-      isNew,
-      isFirstDefeat: previousDefeats === 0
+    const state = readThreatDiscoveryState();
+    const results = [];
+    let changed = false;
+
+    for (const entry of validEntries) {
+      const category = entry.category || 'enemies';
+      const key = String(entry.threatId);
+      const metadata = entry.metadata && typeof entry.metadata === 'object' ? entry.metadata : {};
+      const bucket = state.items[category] || {};
+      const previous = bucket[key] || null;
+      const previousDefeats = Math.max(0, Math.floor(Number(previous?.timesDefeated) || 0));
+      const isNew = !previous;
+      const item = normalizeItem(previous || {
+        id: key,
+        category,
+        name: metadata.name || metadata.label || key,
+        firstSeenAt: nowIso()
+      }, { id: key, category });
+
+      item.name = String(metadata.name || metadata.label || item.name || key);
+      item.lastSeenAt = nowIso();
+      item.timesDefeated += 1;
+      item.metadata = {
+        ...item.metadata,
+        ...metadata
+      };
+      bucket[key] = item;
+      state.items[category] = bucket;
+
+      if (isNew) {
+        const discovery = {
+          id: key,
+          category,
+          name: item.name,
+          discoveredAt: item.firstSeenAt,
+          metadata: item.metadata
+        };
+        state.discoveriesThisRun = [...state.discoveriesThisRun, discovery].slice(-80);
+        state.unreadIds = [...new Set([...state.unreadIds, makeUnreadId(category, key)])];
+      }
+
+      changed = true;
+      results.push({
+        item,
+        isNew,
+        isFirstDefeat: previousDefeats === 0
+      });
+    }
+
+    if (changed) {
+      writeThreatDiscoveryState(state);
+    }
+
+    markMayhemPerformanceEvent('gameplay.codex_record', {
+      operation: 'defeated_batch',
+      count: results.length,
+      newDiscoveries: results.filter((entry) => entry.isNew).length,
+      firstDefeats: results.filter((entry) => entry.isFirstDefeat).length
     });
-  }
-
-  if (changed) {
-    state.updatedAt = nowIso();
-    cachedThreatDiscoveryState = state;
-    scheduleThreatDiscoveryPersist(state);
-  }
-
-  return { state, results };
+    return { state, results };
+  });
 }
 
 export function recordThreatSurvived(threatId, category = 'enemies', metadata = {}) {
@@ -640,6 +739,7 @@ export function clearThreatCodexUnread() {
 export function resetDiscoveryStateForTests() {
   const state = emptyState();
   cachedThreatDiscoveryState = state;
+  activeThreatDiscoverySession = null;
   pendingPersistState = null;
   if (pendingPersistTimer) {
     clearTimeout(pendingPersistTimer);

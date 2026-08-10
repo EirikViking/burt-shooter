@@ -907,6 +907,11 @@ class Powerup {
   collect(player, scene) {
     this.active = false;
     const collectedTypes = [this.type, ...this.bundledPowerupTypes];
+    scene?.performanceDiagnostics?.mark?.('gameplay.pickup_collected', {
+      type: this.type,
+      bundledTypes: this.bundledPowerupTypes.slice(),
+      sector: scene?.game?.level || 1
+    });
     collectedTypes.forEach((type) => {
       scene?.recordThreatDiscovery?.(type, 'powerups', {
         name: POWERUP_CODEX_NAMES[type] || String(type || 'powerup').replace(/_/g, ' ').toUpperCase(),

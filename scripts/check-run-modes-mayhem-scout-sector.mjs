@@ -212,23 +212,46 @@ async function seedProfile(page, progress = makeProgress()) {
 }
 
 async function storageSnapshot(page) {
-  return page.evaluate(() => ({
-    hangar: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}'),
-    legacy: JSON.parse(localStorage.getItem('burt.shipUnlockProgress.v1') || '{}'),
-    achievements: JSON.parse(localStorage.getItem('nova_swarm_achievements_v1') || '{}'),
-    localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
-    mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
-    sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
-    scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
-    dailySignalRecords: JSON.parse(localStorage.getItem('novaSwarm.dailySignalRecords.v1') || '{"records":{}}'),
-    overrunRunRecords: JSON.parse(localStorage.getItem('novaSwarm.overrunRunRecords.v1') || '{}'),
-    threatDiscovery: JSON.parse(localStorage.getItem('nova.threatDiscovery.v1') || '{"items":{},"discoveriesThisRun":[],"unreadIds":[]}'),
-    shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
-    shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
-    mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}'),
-    seasonXp: localStorage.getItem('burt_season_xp'),
-    seasonUnlocks: JSON.parse(localStorage.getItem('burt_season_unlocks') || '{}')
-  }));
+  return page.evaluate(() => {
+    const progressionKeys = [
+      'nova.hangarProgress.v1',
+      'burt.shipUnlockProgress.v1',
+      'nova_swarm_achievements_v1',
+      'nova_swarm_steam_achievement_queue_v1',
+      'novaSwarm.localLeaderboard.v2',
+      'novaSwarm.mockSteamLeaderboard.v1',
+      'novaSwarm.pendingSteamLeaderboardSubmits.v1',
+      'novaSwarm.sectorStartChallengeRecords.v1',
+      'novaSwarm.scoutRunRecords.v1',
+      'novaSwarm.dailySignalRecords.v1',
+      'novaSwarm.overrunRunRecords.v1',
+      'novaSwarm.mayhemModeRecords.v1',
+      'nova.threatDiscovery.v1',
+      'burt.shipUsage.v1',
+      'burt.shipUsageTotal.v1',
+      'burt.selectedShip.v1',
+      'burt_season_xp',
+      'burt_season_unlocks'
+    ];
+    return {
+      rawProgressionBytes: Object.fromEntries(progressionKeys.map((key) => [key, localStorage.getItem(key)])),
+      hangar: JSON.parse(localStorage.getItem('nova.hangarProgress.v1') || '{}'),
+      legacy: JSON.parse(localStorage.getItem('burt.shipUnlockProgress.v1') || '{}'),
+      achievements: JSON.parse(localStorage.getItem('nova_swarm_achievements_v1') || '{}'),
+      localLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.localLeaderboard.v2') || '[]'),
+      mockSteamLeaderboard: JSON.parse(localStorage.getItem('novaSwarm.mockSteamLeaderboard.v1') || '[]'),
+      sectorChallenge: JSON.parse(localStorage.getItem('novaSwarm.sectorStartChallengeRecords.v1') || '{"byCheckpoint":{}}'),
+      scoutRunRecords: JSON.parse(localStorage.getItem('novaSwarm.scoutRunRecords.v1') || '{"best":null}'),
+      dailySignalRecords: JSON.parse(localStorage.getItem('novaSwarm.dailySignalRecords.v1') || '{"records":{}}'),
+      overrunRunRecords: JSON.parse(localStorage.getItem('novaSwarm.overrunRunRecords.v1') || '{}'),
+      threatDiscovery: JSON.parse(localStorage.getItem('nova.threatDiscovery.v1') || '{"items":{},"discoveriesThisRun":[],"unreadIds":[]}'),
+      shipUsage: JSON.parse(localStorage.getItem('burt.shipUsage.v1') || '{}'),
+      shipUsageTotal: localStorage.getItem('burt.shipUsageTotal.v1') || '0',
+      mayhemModeRecords: JSON.parse(localStorage.getItem('novaSwarm.mayhemModeRecords.v1') || '{}'),
+      seasonXp: localStorage.getItem('burt_season_xp'),
+      seasonUnlocks: JSON.parse(localStorage.getItem('burt_season_unlocks') || '{}')
+    };
+  });
 }
 
 function summarizeThreatDiscoveryProgress(state = {}) {

@@ -355,7 +355,10 @@ function registerSteamCloudIpc() {
   ipcMain.handle('nova-steam-cloud:getDiagnostics', () => steamCloudSave?.getDiagnostics() || null);
   ipcMain.handle('nova-steam-cloud:readSave', () => steamCloudSave?.readSave() || null);
   ipcMain.handle('nova-steam-cloud:getPersistenceSummary', () => steamCloudSave?.getPersistenceSummary() || null);
-  ipcMain.handle('nova-steam-cloud:mergeRendererState', (_event, payload) => steamCloudSave?.mergeRendererState(payload) || null);
+  ipcMain.handle('nova-steam-cloud:mergeRendererState', async (_event, payload) => {
+    if (steamCloudSave?.mergeRendererStateAsync) return steamCloudSave.mergeRendererStateAsync(payload);
+    return steamCloudSave?.mergeRendererState(payload) || null;
+  });
 }
 
 function jsonResponse(status, payload) {

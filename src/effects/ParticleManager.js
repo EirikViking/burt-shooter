@@ -1,5 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
+import {
+  isMayhemPerformanceDiagnosticsActive,
+  markMayhemPerformanceEvent,
+  recordMayhemPerformanceDuration
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 class Particle {
   constructor() {
@@ -267,6 +272,9 @@ export class ParticleManager {
   }
 
   createExplosion(x, y, color, intensity = 1) {
+    const startedAt = isMayhemPerformanceDiagnosticsActive()
+      ? (globalThis.performance?.now?.() || 0)
+      : 0;
     const visualIntensity = Math.max(0.2, Number(intensity) || 1);
     const bloomIntensity = Math.min(2.2, visualIntensity);
     this.createEnergyBloom(x, y, bloomIntensity, {
@@ -289,6 +297,15 @@ export class ParticleManager {
       if (!this.spawnParticle(x, y, vx, vy, color, size, lifetime)) {
         break;
       }
+    }
+    markMayhemPerformanceEvent('gameplay.particle_burst', {
+      type: 'explosion',
+      requestedParticles: particleCount,
+      activeParticles: this.particles.length,
+      intensity: visualIntensity
+    });
+    if (startedAt > 0) {
+      recordMayhemPerformanceDuration('vfx.particle_burst_creation', performance.now() - startedAt);
     }
   }
 

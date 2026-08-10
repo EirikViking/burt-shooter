@@ -657,6 +657,12 @@ export class LeaderboardAdapter {
 
   writePendingSteamSubmissions(entries = []) {
     const normalized = normalizePendingQueue({ entries });
+    const current = normalizePendingQueue(
+      readJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, { version: 1, entries: [] })
+    );
+    if (JSON.stringify(current) === JSON.stringify(normalized)) {
+      return normalized;
+    }
     writeJsonStorage(PENDING_STEAM_SUBMISSIONS_KEY, {
       version: 1,
       updatedAt: new Date().toISOString(),
@@ -707,6 +713,9 @@ export class LeaderboardAdapter {
       return { attempted: 0, submitted: 0, remaining: this.getPendingSteamSubmissions().length, reason: 'steam_unavailable' };
     }
     const queue = this.getPendingSteamSubmissions();
+    if (queue.length === 0) {
+      return { attempted: 0, submitted: 0, remaining: 0, reason: 'empty_queue' };
+    }
     let submitted = 0;
     const remaining = [];
     for (const entry of queue) {

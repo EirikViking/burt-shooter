@@ -70,7 +70,7 @@ import {
   getCodexCompletionCounts,
   getDiscoveriesThisRun,
   getDiscoveryStats,
-  flushThreatDiscoveryState,
+  finishThreatDiscoveryRun,
   startThreatDiscoveryRun
 } from '../progression/ThreatDiscoveryState.js';
 import {
@@ -78,7 +78,6 @@ import {
   getHangarProgressSummary,
   previewRunProgression,
   readHangarProgressState,
-  updateHangarProgress,
   writeHangarProgressState
 } from '../progression/HangarProgressState.js';
 import { recordScoutRun } from '../progression/ScoutRunRecords.js';
@@ -107,6 +106,11 @@ import {
   getScoutAnomaly,
   readScoutAnomalySelection
 } from './ScoutAnomalies.js';
+import { createRunPolicy } from './RunPolicy.js';
+import { flushPersistence, markPersistenceDirty } from '../persistence/PersistenceScheduler.js';
+import { warmAccessibilitySettingsRuntimeCache } from '../config/AccessibilitySettings.js';
+import { warmRuntimeFeatureSwitchCache } from '../config/isExtrasEnabled.js';
+import { warmNovaPerformanceFlagsRuntimeCache } from '../config/PerformanceFlags.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -340,6 +344,9 @@ export class Game {
 
   async startGame(spriteKey, options = {}) {
     this.prepareGameplayInputFocus();
+    warmAccessibilitySettingsRuntimeCache();
+    warmRuntimeFeatureSwitchCache();
+    warmNovaPerformanceFlagsRuntimeCache();
     const requestedRunMode = normalizeRunMode(options.runMode);
     const prototypeSettings = getHighSectorPrototypeSettings();
     const prototypeEligible = [
@@ -437,6 +444,11 @@ export class Game {
       startSector: runStartSector,
       baselineAugmentIds: prototypeQuickStart ? [...OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS] : []
     };
+    this.runPolicy = createRunPolicy({
+      runMode: requestedRunMode,
+      isDebugRun: this.isDebugRun,
+      prototype: prototypeEnabled
+    });
     this.scoutAnomalyId = scoutAnomaly?.id || null;
     this.scoutAnomaly = scoutAnomaly;
     this.runStartInputDevice = requestedInputDevice;
@@ -492,15 +504,8 @@ export class Game {
     this.contentDirector = new RunContentDirector(this, {
       seed: dailySignalContract?.seed || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
-    if (
-      !this.areRunRewardsSuppressed()
-      && (this.isRankedRun()
-        || this.canUpdateCareerProgressForCurrentRun()
-        || requestedRunMode === RUN_MODES.SCOUT
-        || requestedRunMode === RUN_MODES.DAILY_SIGNAL)
-      && RunPacingConfig.threatCodexEnabled
-    ) {
-      startThreatDiscoveryRun();
+    if (RunPacingConfig.threatCodexEnabled && (this.runPolicy.allowCodexProgress || this.runPolicy.prototype)) {
+      startThreatDiscoveryRun({ allowPersistentProgress: this.runPolicy.allowCodexProgress });
     }
     if (RunPacingConfig.contentDirectorEnabled) {
       this.contentDirector.startRun({ runThemeId: dailySignalContract?.runThemeId || null });
@@ -572,13 +577,13 @@ export class Game {
   }
 
   isScoreSubmissionAllowed() {
-    return !this.areRunRewardsSuppressed()
-      && canRunModeSubmitGlobalLeaderboard(this.runMode, { isDebugRun: this.isDebugRun });
+    return this.runPolicy?.allowGlobalLeaderboardSubmission
+      ?? canRunModeSubmitGlobalLeaderboard(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isRankedRun() {
-    return !this.areRunRewardsSuppressed()
-      && isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
+    return this.runPolicy?.ranked
+      ?? isRankedRunMode(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isHighSectorPrototypeRun() {
@@ -586,7 +591,7 @@ export class Game {
   }
 
   areRunRewardsSuppressed() {
-    return this.isHighSectorPrototypeRun();
+    return this.runPolicy ? !this.runPolicy.allowPersistentRewards : this.isHighSectorPrototypeRun();
   }
 
   getRunRewardSuppressionState() {
@@ -599,13 +604,13 @@ export class Game {
   }
 
   canUpdateCareerProgressForCurrentRun() {
-    return !this.areRunRewardsSuppressed()
-      && canRunModeUpdateCareerProgress(this.runMode, { isDebugRun: this.isDebugRun });
+    return this.runPolicy?.allowCareerProgress
+      ?? canRunModeUpdateCareerProgress(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   canUpdateCompetitiveCareerBestsForCurrentRun() {
-    return !this.areRunRewardsSuppressed()
-      && canRunModeUpdateCompetitiveCareerBests(this.runMode, { isDebugRun: this.isDebugRun });
+    return this.runPolicy?.allowPersonalBests
+      ?? canRunModeUpdateCompetitiveCareerBests(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   isDailySignalRun() {
@@ -630,8 +635,8 @@ export class Game {
   }
 
   canUnlockAchievementsForCurrentRun() {
-    return !this.areRunRewardsSuppressed()
-      && canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
+    return this.runPolicy?.allowAchievements
+      ?? canRunModeUnlockAchievements(this.runMode, { isDebugRun: this.isDebugRun });
   }
 
   gameOver(options = {}) {
@@ -951,6 +956,7 @@ export class Game {
     const gameMult = Number(this.scoreMultiplier) || 1;
     const playScene = this.scenes?.play;
     const diagnostics = playScene?.performanceDiagnostics;
+    const addScoreStartedAt = diagnostics?.enabled ? performance.now() : 0;
     const measurePerformance = diagnostics?.measure?.bind(diagnostics) || ((_label, callback) => callback());
     const playerMult = playScene?.player?.scoreMultiplier || 1;
     const preDangerAward = normalizeScoreDelta(base, GLOBAL_SCORE_TUNING_MULTIPLIER * gameMult * playerMult);
@@ -963,16 +969,6 @@ export class Game {
     this.scoreBreakdown.finalScore = this.score;
 
     const deferProgress = Boolean(playScene?.isCollisionHotPathActive || playScene?.shouldDeferActiveGameplayPersistence?.());
-    if (this.canUnlockAchievementsForCurrentRun() && !deferProgress) {
-      updateHangarProgress({ bestScore: this.score, bestRank: this.rankIndex, bestLevel: this.level, bestSector: this.level });
-    } else if (this.canUnlockAchievementsForCurrentRun() && deferProgress) {
-      playScene.deferHotPathScoreProgress?.({
-        bestScore: this.score,
-        bestRank: this.rankIndex,
-        bestLevel: this.level,
-        bestSector: this.level
-      });
-    }
 
     const previousRank = this.rankIndex;
     if (deferProgress) {
@@ -995,6 +991,13 @@ export class Game {
       measurePerformance('rank_highscore_cue_update.global_leaderboard', () => this.updateGlobalLeaderboardVoiceCues());
       measurePerformance('rank_highscore_cue_update.highscore_chase', () => this.updateHighscoreChaseCues());
     }
+    diagnostics?.mark?.('gameplay.score_award', {
+      points: base,
+      applied,
+      source,
+      score: this.score
+    });
+    if (addScoreStartedAt > 0) diagnostics?.recordSection?.('game.addScore', performance.now() - addScoreStartedAt);
     return applied;
   }
 
@@ -1347,7 +1350,10 @@ export class Game {
     ) {
       return Math.max(0, Math.min(1, Number(this.liveRankProgression.rankProgress.progress)));
     }
-    const currentPilotXp = this.runProgressionResult?.next?.pilotXp ?? readHangarProgressState().pilotXp;
+    const currentPilotXp = this.runProgressionResult?.next?.pilotXp
+      ?? this.liveRankProgression?.next?.pilotXp
+      ?? (this.currentSceneName === 'play' ? this.hangarProgressAtRunStart?.pilotXp : null)
+      ?? readHangarProgressState().pilotXp;
     return rankManager.getPilotRankProgress(currentPilotXp).progress;
   }
 
@@ -1409,9 +1415,6 @@ export class Game {
   nextLevel() {
     this.level++;
     this.updateLiveRunRank({ force: true });
-    if (this.isRankedRun()) {
-      updateHangarProgress({ score: this.score, rank: this.rankIndex, bestScore: this.score, bestLevel: this.level, bestSector: this.level });
-    }
     if (this.currentScene && this.currentScene.startLevel) {
       this.currentScene.startLevel();
     }
@@ -1589,6 +1592,7 @@ export class Game {
 
   finalizeRunProgression(overrides = {}) {
     if (this.runFinalized) return this.runProgressionResult;
+    this.currentScene?.flushRunPersistenceAtSafePoint?.('run_finalize');
     const finalScore = this.lockFinalScore('run_finalize');
     this.runFinalized = true;
     this.runSummary = this.buildRunSummary(overrides);
@@ -1600,8 +1604,11 @@ export class Game {
         legacyPureBest: this.hangarProgressAtRunStart?.bestScore
       });
     }
-    if (!this.areRunRewardsSuppressed()) flushThreatDiscoveryState();
-    const previousProgress = readHangarProgressState();
+    finishThreatDiscoveryRun({
+      persist: this.runPolicy?.allowCodexProgress === true,
+      sync: this.runPolicy?.allowCloudProgressSync === true
+    });
+    const previousProgress = this.hangarProgressAtRunStart || readHangarProgressState();
     const updatesCareerProgress = this.canUpdateCareerProgressForCurrentRun()
       && RunPacingConfig.pilotRankProgressionEnabled;
     let result = updatesCareerProgress
@@ -1761,6 +1768,10 @@ export class Game {
       }
     }
     this.lastRunReport = createRunReport(this.runSummary);
+    if (this.runPolicy?.allowCloudProgressSync === true) {
+      markPersistenceDirty('runResults', { scheduleFlush: false });
+      void flushPersistence({ reason: 'run_finalize', force: true });
+    }
     return result;
   }
 

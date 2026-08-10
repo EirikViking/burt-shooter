@@ -1,5 +1,9 @@
 import { readLeaderboardLevel } from './leaderboard/LeaderboardTypes.js';
 import {
+  markMayhemPerformanceEvent,
+  measureMayhemPerformanceScope
+} from './debug/MayhemPerformanceDiagnostics.js';
+import {
   SECTOR_START_CHALLENGE_RECORDS_KEY,
   isBetterSectorStartChallengeRecord,
   normalizeSectorStartChallengeRecord
@@ -869,85 +873,95 @@ export function collectSteamCloudPersistenceState({
   getLanguagePreferenceMode = null,
   getCurrentLanguage = null
 } = {}) {
-  const selectedShipKey = readStorage(storage, CLOUD_SELECTED_SHIP_KEY) || game?.selectedShipSpriteKey || null;
-  const achievementPayload = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
-  const localHighscores = normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, []));
-  const progression = normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {}));
-  const threatDiscovery = readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {});
-  const sectorStartChallengeRecords = normalizeSectorStartChallengeRecordsPayload(
-    readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {})
-  );
-  const scoutRunRecords = normalizeScoutRunRecordsPayload(
-    readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {})
-  );
-  const overrunRunRecords = normalizeOverrunRunRecords(
-    readJsonStorage(storage, CLOUD_OVERRUN_RUN_RECORDS_KEY, {})
-  );
-  const shipUsage = normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}));
-  const rawHangarProgress = typeof getShipUnlockProgress === 'function'
-    ? getShipUnlockProgress()
-    : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {});
-  const hangarProgress = repairHangarProgressFromPersistence(rawHangarProgress, {
-    threatDiscovery,
-    localHighscores,
-    progression,
-    selectedShipKey,
-    sectorStartChallengeRecords,
-    scoutRunRecords,
-    overrunRunRecords,
-    shipUsage
-  });
-  const settings = typeof getAccessibilitySettings === 'function'
-    ? getAccessibilitySettings()
-    : {
-      screenShake: clampUnit(readStorage(storage, SCREEN_SHAKE_KEY), 1),
-      playerFocus: clampUnit(readStorage(storage, PLAYER_FOCUS_KEY), 0.72),
-      colorAssist: readStorage(storage, COLOR_ASSIST_KEY) === '1',
-      flashIntensity: clampUnit(readStorage(storage, FLASH_INTENSITY_KEY), 1),
-      reducedMotion: readStorage(storage, REDUCED_MOTION_KEY) === '1'
-    };
+  return measureMayhemPerformanceScope('persistence.collectSteamCloudPersistenceState', () => {
+    markMayhemPerformanceEvent('persistence.cloud_snapshot_collection', { phase: 'begin' });
+    const selectedShipKey = readStorage(storage, CLOUD_SELECTED_SHIP_KEY) || game?.selectedShipSpriteKey || null;
+    const achievementPayload = normalizeAchievementPayload(readJsonStorage(storage, CLOUD_ACHIEVEMENT_KEY, {}));
+    const localHighscores = normalizeScores(readJsonStorage(storage, CLOUD_LOCAL_LEADERBOARD_KEY, []));
+    const progression = normalizeProgression(readJsonStorage(storage, CLOUD_UNLOCK_PROGRESS_KEY, {}));
+    const threatDiscovery = readJsonStorage(storage, CLOUD_THREAT_DISCOVERY_KEY, {});
+    const sectorStartChallengeRecords = normalizeSectorStartChallengeRecordsPayload(
+      readJsonStorage(storage, CLOUD_SECTOR_START_CHALLENGE_RECORDS_KEY, {})
+    );
+    const scoutRunRecords = normalizeScoutRunRecordsPayload(
+      readJsonStorage(storage, CLOUD_SCOUT_RUN_RECORDS_KEY, {})
+    );
+    const overrunRunRecords = normalizeOverrunRunRecords(
+      readJsonStorage(storage, CLOUD_OVERRUN_RUN_RECORDS_KEY, {})
+    );
+    const shipUsage = normalizeUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}));
+    const rawHangarProgress = typeof getShipUnlockProgress === 'function'
+      ? getShipUnlockProgress()
+      : readJsonStorage(storage, CLOUD_HANGAR_PROGRESS_KEY, {});
+    const hangarProgress = repairHangarProgressFromPersistence(rawHangarProgress, {
+      threatDiscovery,
+      localHighscores,
+      progression,
+      selectedShipKey,
+      sectorStartChallengeRecords,
+      scoutRunRecords,
+      overrunRunRecords,
+      shipUsage
+    });
+    const settings = typeof getAccessibilitySettings === 'function'
+      ? getAccessibilitySettings()
+      : {
+        screenShake: clampUnit(readStorage(storage, SCREEN_SHAKE_KEY), 1),
+        playerFocus: clampUnit(readStorage(storage, PLAYER_FOCUS_KEY), 0.72),
+        colorAssist: readStorage(storage, COLOR_ASSIST_KEY) === '1',
+        flashIntensity: clampUnit(readStorage(storage, FLASH_INTENSITY_KEY), 1),
+        reducedMotion: readStorage(storage, REDUCED_MOTION_KEY) === '1'
+      };
 
-  return {
-    language: {
-      preference: normalizeLanguagePreference(
-        typeof getLanguagePreferenceMode === 'function'
-          ? getLanguagePreferenceMode()
-          : readStorage(storage, CLOUD_LANGUAGE_KEY)
+    const result = {
+      language: {
+        preference: normalizeLanguagePreference(
+          typeof getLanguagePreferenceMode === 'function'
+            ? getLanguagePreferenceMode()
+            : readStorage(storage, CLOUD_LANGUAGE_KEY)
+        ),
+        current: typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : null
+      },
+      localHighscores,
+      achievements: achievementPayload,
+      selectedShipKey,
+      progression: normalizeProgression({
+        ...progression,
+        bestScore: Math.max(progression.bestScore || 0, hangarProgress.bestScore || 0),
+        bestRank: Math.max(progression.bestRank || 0, hangarProgress.bestRank || 0),
+        bestLevel: Math.max(progression.bestLevel || 1, hangarProgress.bestLevel || 1, hangarProgress.bestSector || 1)
+      }),
+      hangarProgress,
+      threatDiscovery,
+      sectorStartChallengeRecords,
+      scoutRunRecords,
+      overrunRunRecords,
+      shipUsage,
+      shipUsageTotal: Math.max(
+        Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
+        sumUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}))
       ),
-      current: typeof getCurrentLanguage === 'function' ? getCurrentLanguage() : null
-    },
-    localHighscores,
-    achievements: achievementPayload,
-    selectedShipKey,
-    progression: normalizeProgression({
-      ...progression,
-      bestScore: Math.max(progression.bestScore || 0, hangarProgress.bestScore || 0),
-      bestRank: Math.max(progression.bestRank || 0, hangarProgress.bestRank || 0),
-      bestLevel: Math.max(progression.bestLevel || 1, hangarProgress.bestLevel || 1, hangarProgress.bestSector || 1)
-    }),
-    hangarProgress,
-    threatDiscovery,
-    sectorStartChallengeRecords,
-    scoutRunRecords,
-    overrunRunRecords,
-    shipUsage,
-    shipUsageTotal: Math.max(
-      Math.floor(Number(readStorage(storage, CLOUD_SHIP_USAGE_TOTAL_KEY)) || 0),
-      sumUsageMap(readJsonStorage(storage, CLOUD_SHIP_USAGE_KEY, {}))
-    ),
-    settings: {
-      screenShake: clampUnit(settings.screenShake, 1),
-      playerFocus: clampUnit(settings.playerFocus, 0.72),
-      colorAssist: Boolean(settings.colorAssist),
-      flashIntensity: clampUnit(settings.flashIntensity, 1),
-      reducedMotion: Boolean(settings.reducedMotion),
-      audio: collectAudioSettings(storage),
-      display: getDisplaySettings({ storage }),
-      menu: getMenuSettings({ storage }),
-      controls: getControlSettings({ storage }),
-      keyboardBindings: getKeyboardBindings({ storage })
-    }
-  };
+      settings: {
+        screenShake: clampUnit(settings.screenShake, 1),
+        playerFocus: clampUnit(settings.playerFocus, 0.72),
+        colorAssist: Boolean(settings.colorAssist),
+        flashIntensity: clampUnit(settings.flashIntensity, 1),
+        reducedMotion: Boolean(settings.reducedMotion),
+        audio: collectAudioSettings(storage),
+        display: getDisplaySettings({ storage }),
+        menu: getMenuSettings({ storage }),
+        controls: getControlSettings({ storage }),
+        keyboardBindings: getKeyboardBindings({ storage })
+      }
+    };
+    markMayhemPerformanceEvent('persistence.cloud_snapshot_collection', {
+      phase: 'end',
+      localHighscores: result.localHighscores.length,
+      threatCategories: Object.keys(result.threatDiscovery?.items || {}).length,
+      unlockedShips: result.hangarProgress?.unlockedShipIds?.length || 0
+    });
+    return result;
+  });
 }
 
 export function restoreSteamCloudPersistenceToStorage(save, {

@@ -2236,6 +2236,11 @@ export class EnemyManager {
     const protocol = this.highSectorEscalationState?.protocol;
     if (!protocol) return false;
     const playScene = this.game?.scenes?.play;
+    this.markPerformance('gameplay.deep_space_protocol', {
+      phase: 'announced',
+      protocolId: protocol.id,
+      sector: this.level
+    });
     playScene?.enqueueToast?.(
       `${translateText('DEEP SPACE PROTOCOL')}: ${translateText(protocol.name)}\n${translateText(protocol.cue)}`,
       {
@@ -2272,6 +2277,14 @@ export class EnemyManager {
       shiftAtMs: Math.max(2600, Number(shift.shiftAtMs) || 5000),
       reducedMotion: Boolean(this.highSectorEscalationState?.reducedMotion)
     } : null;
+    if (config.highSectorProtocolId) {
+      this.markPerformance('gameplay.deep_space_protocol', {
+        phase: 'applied',
+        protocolId: config.highSectorProtocolId,
+        sector: this.level,
+        wave: this.currentWaveIndex + 1
+      });
+    }
   }
 
   updateHighSectorProtocolRuntime(delta = 1) {
@@ -3106,6 +3119,12 @@ export class EnemyManager {
       total: this.normalWavesTotal,
       type: config?.type,
       count: config?.count
+    });
+    this.markPerformance('gameplay.enemy_wave_spawned', {
+      level: this.level,
+      wave: this.currentWaveIndex + 1,
+      type: config?.type || 'normal',
+      protocolId: config?.highSectorProtocolId || null
     });
     if (!config.allowConcurrentSpawn) {
       this.clearPendingWaveSpawns();

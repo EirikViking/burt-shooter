@@ -204,6 +204,29 @@ function writeJsonAtomic(filePath, payload) {
   fs.renameSync(tempPath, filePath);
 }
 
+async function readJsonFileAsync(filePath, fallback = null) {
+  try {
+    const raw = await fs.promises.readFile(filePath, 'utf8');
+    if (!raw.trim()) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+async function writeJsonAtomicAsync(filePath, payload) {
+  await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
+  const tempPath = `${filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+  await fs.promises.writeFile(tempPath, JSON.stringify(payload, null, 2), 'utf8');
+  await fs.promises.rename(tempPath, filePath);
+}
+
+function comparableSaveText(save = {}) {
+  const comparable = { ...(save && typeof save === 'object' ? save : {}) };
+  delete comparable.updatedAt;
+  return JSON.stringify(comparable);
+}
+
 function readProfileIndex(filePath) {
   const parsed = readJsonFile(filePath, {});
   const profiles = parsed?.profiles && typeof parsed.profiles === 'object' ? parsed.profiles : {};
@@ -287,6 +310,27 @@ function preserveLegacyCloudSave(paths, logger = console, reason = 'profile_mism
     return stampedPath;
   } catch (error) {
     logger.warn?.(`[SteamCloudSave] Failed to preserve shared legacy save: ${error?.message || error}`);
+    return null;
+  }
+}
+
+async function preserveLegacyCloudSaveAsync(paths, logger = console, reason = 'profile_mismatch') {
+  try {
+    await fs.promises.access(paths.legacyCloudSavePath);
+    await fs.promises.mkdir(path.dirname(paths.legacySharedSavePath), { recursive: true });
+    try {
+      await fs.promises.access(paths.legacySharedSavePath);
+    } catch {
+      await fs.promises.copyFile(paths.legacyCloudSavePath, paths.legacySharedSavePath);
+    }
+    const stampedPath = `${paths.legacySharedSavePath}.preserved-${new Date().toISOString().replace(/[:.]/g, '-')}.bak`;
+    await fs.promises.copyFile(paths.legacyCloudSavePath, stampedPath);
+    logger.warn?.(`[SteamCloudSave] Preserved shared legacy save before ${reason}: ${stampedPath}`);
+    return stampedPath;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') {
+      logger.warn?.(`[SteamCloudSave] Failed to preserve shared legacy save: ${error?.message || error}`);
+    }
     return null;
   }
 }
@@ -1581,6 +1625,18 @@ function normalizeSave(rawSave = {}, localHighscores = null, profileContext = {}
 function createSteamCloudSave(userDataPath, logger = console, options = {}) {
   const profile = normalizeProfileContext(options.profile || options.profileContext || {});
   const paths = getPaths(userDataPath, profile);
+  let asyncMergeQueue = Promise.resolve();
+  const ioDiagnostics = {
+    asyncReads: 0,
+    asyncWrites: 0,
+    skippedUnchangedWrites: 0,
+    queuedMerges: 0,
+    activeMerges: 0,
+    maxConcurrentMerges: 0,
+    lastReadMs: 0,
+    lastWriteMs: 0,
+    lastWriteSkipped: false
+  };
 
   function readLegacyHighscores() {
     const current = sanitizeScores(readJsonFile(paths.legacyHighscorePath, []));
@@ -1639,6 +1695,16 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       profile: createSaveProfile(profile),
       updatedAt: nowIso()
     }, null, profile);
+    const existingRaw = readJsonFile(paths.cloudSavePath, null);
+    if (existingRaw) {
+      const existing = normalizeSave(existingRaw, null, profile);
+      if (comparableSaveText(existing) === comparableSaveText(normalized)) {
+        ioDiagnostics.skippedUnchangedWrites += 1;
+        ioDiagnostics.lastWriteSkipped = true;
+        return existing;
+      }
+    }
+    ioDiagnostics.lastWriteSkipped = false;
     writeJsonAtomic(paths.cloudSavePath, normalized);
     updateProfileIndex(paths, profile);
     if (shouldMirrorLegacy(normalized)) {
@@ -1671,14 +1737,13 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
     });
   }
 
-  function mergeRendererState(state = {}) {
-    const current = readSave();
+  function buildMergedRendererState(current, state = {}) {
     const rendererState = sanitizeRendererState(state);
     const hasShipUsage = Object.hasOwn(state, 'shipUsage') || Object.hasOwn(state, 'shipUsageByShip');
     const shipUsage = hasShipUsage
       ? mergeShipUsage(current.shipUsage, rendererState.shipUsage)
       : current.shipUsage;
-    return writeSave({
+    return {
       ...current,
       language: Object.hasOwn(state, 'language') || Object.hasOwn(state, 'languagePreference')
         ? rendererState.language
@@ -1730,7 +1795,93 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
         sumShipUsage(shipUsage)
       ),
       settings: rendererState.settings
+    };
+  }
+
+  function mergeRendererState(state = {}) {
+    return writeSave(buildMergedRendererState(readSave(), state));
+  }
+
+  async function readSaveForMergeAsync() {
+    const startedAt = performance.now();
+    const parsed = await readJsonFileAsync(paths.cloudSavePath, null);
+    ioDiagnostics.asyncReads += 1;
+    ioDiagnostics.lastReadMs = performance.now() - startedAt;
+    if (parsed) return normalizeSave(parsed, null, profile);
+    return readSave();
+  }
+
+  async function writeSaveAsync(nextSave, currentSave = null) {
+    const normalized = normalizeSave({
+      ...nextSave,
+      profile: createSaveProfile(profile),
+      updatedAt: nowIso()
+    }, null, profile);
+    const current = currentSave || await readSaveForMergeAsync();
+    if (comparableSaveText(current) === comparableSaveText(normalized)) {
+      ioDiagnostics.skippedUnchangedWrites += 1;
+      ioDiagnostics.lastWriteSkipped = true;
+      ioDiagnostics.lastWriteMs = 0;
+      return {
+        ...current,
+        _persistenceIo: {
+          writeSkipped: true,
+          fileReads: 1,
+          readMs: ioDiagnostics.lastReadMs,
+          fileWrites: 0,
+          writeMs: 0,
+          queuedMerges: ioDiagnostics.queuedMerges
+        }
+      };
+    }
+
+    const startedAt = performance.now();
+    let fileWrites = 0;
+    await writeJsonAtomicAsync(paths.cloudSavePath, normalized);
+    fileWrites += 1;
+    // The profile index is identity metadata created during initialization;
+    // renderer merges only update save data and must not rewrite that index.
+    if (profile.type === 'steam') {
+      const legacyParsed = await readJsonFileAsync(paths.legacyCloudSavePath, null);
+      const shouldMirror = !legacyParsed || profileMatches(legacyParsed, profile) || isMeaningfulSave(normalized);
+      if (shouldMirror) {
+        if (legacyParsed && !profileMatches(legacyParsed, profile)) {
+          await preserveLegacyCloudSaveAsync(paths, logger, `mirroring ${profile.storageId}`);
+        }
+        await writeJsonAtomicAsync(paths.legacyCloudSavePath, normalized);
+        fileWrites += 1;
+      }
+    }
+    ioDiagnostics.asyncWrites += fileWrites;
+    ioDiagnostics.lastWriteMs = performance.now() - startedAt;
+    ioDiagnostics.lastWriteSkipped = false;
+    return {
+      ...normalized,
+      _persistenceIo: {
+        writeSkipped: false,
+        fileReads: 1,
+        readMs: ioDiagnostics.lastReadMs,
+        fileWrites,
+        writeMs: ioDiagnostics.lastWriteMs,
+        queuedMerges: ioDiagnostics.queuedMerges
+      }
+    };
+  }
+
+  function mergeRendererStateAsync(state = {}) {
+    ioDiagnostics.queuedMerges += 1;
+    const operation = asyncMergeQueue.then(async () => {
+      ioDiagnostics.activeMerges += 1;
+      ioDiagnostics.maxConcurrentMerges = Math.max(ioDiagnostics.maxConcurrentMerges, ioDiagnostics.activeMerges);
+      try {
+        const current = await readSaveForMergeAsync();
+        return await writeSaveAsync(buildMergedRendererState(current, state), current);
+      } finally {
+        ioDiagnostics.activeMerges = Math.max(0, ioDiagnostics.activeMerges - 1);
+      }
     });
+    asyncMergeQueue = operation.catch(() => null);
+    return operation;
   }
 
   function getPersistenceSummary() {
@@ -1775,6 +1926,7 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
       cloudSavePath: paths.cloudSavePath,
       legacyCloudSavePath: paths.legacyCloudSavePath,
       legacySharedSavePath: paths.legacySharedSavePath,
+      io: { ...ioDiagnostics },
       persistenceSummary: getPersistenceSummary(),
       steamworksAutoCloud: {
         byteQuota: 1048576,
@@ -1796,6 +1948,7 @@ function createSteamCloudSave(userDataPath, logger = console, options = {}) {
     writeSave,
     mirrorLocalHighscores,
     mergeRendererState,
+    mergeRendererStateAsync,
     getPersistenceSummary,
     getDiagnostics
   };

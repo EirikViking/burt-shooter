@@ -32,6 +32,15 @@ const TRUE_VALUES = new Set(['1', 'true', 'yes', 'on']);
 const DEFAULT_FLAGS = Object.freeze(
   Object.fromEntries(Object.keys(NOVA_PERF_FLAG_DEFINITIONS).map((key) => [key, false]))
 );
+let runtimeFlagsCache = null;
+
+function isActiveGameplayRuntime() {
+  try {
+    return typeof window !== 'undefined' && window.__game?.currentSceneName === 'play';
+  } catch {
+    return false;
+  }
+}
 
 function parseFlagValue(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
@@ -57,7 +66,11 @@ function readStorageValue(key) {
 }
 
 export function getNovaPerformanceFlags() {
-  if (!isMaintainerDevtoolsEnabled()) return DEFAULT_FLAGS;
+  if (isActiveGameplayRuntime() && runtimeFlagsCache) return runtimeFlagsCache;
+  if (!isMaintainerDevtoolsEnabled()) {
+    runtimeFlagsCache = DEFAULT_FLAGS;
+    return DEFAULT_FLAGS;
+  }
 
   const params = readParams();
   const flags = { ...DEFAULT_FLAGS };
@@ -66,7 +79,17 @@ export function getNovaPerformanceFlags() {
     const storedValue = readStorageValue(definition.env);
     flags[key] = parseFlagValue(queryValue ?? storedValue);
   }
-  return Object.freeze(flags);
+  runtimeFlagsCache = Object.freeze(flags);
+  return runtimeFlagsCache;
+}
+
+export function warmNovaPerformanceFlagsRuntimeCache() {
+  runtimeFlagsCache = null;
+  return getNovaPerformanceFlags();
+}
+
+export function invalidateNovaPerformanceFlagsRuntimeCache() {
+  runtimeFlagsCache = null;
 }
 
 export function getNovaPerformanceFlagQuery(flagKeys = []) {

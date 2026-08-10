@@ -21,7 +21,12 @@ import {
   isMaintainerDevtoolsEnabled
 } from './config/MaintainerDevtools.js';
 import { getThreatCodexCatalog } from './config/ThreatCodexCatalog.js';
-import { getCodexCompletionCounts, getDiscoveriesThisRun, getDiscoveryStats } from './progression/ThreatDiscoveryState.js';
+import {
+  flushThreatDiscoveryState,
+  getCodexCompletionCounts,
+  getDiscoveriesThisRun,
+  getDiscoveryStats
+} from './progression/ThreatDiscoveryState.js';
 import { getHangarProgressSummary } from './progression/HangarProgressState.js';
 import {
   getActiveProfileStorageContext,
@@ -42,6 +47,12 @@ import {
   restoreSteamCloudPersistenceToStorage,
   summarizeSteamCloudPersistence
 } from './steamCloudPersistence.js';
+import {
+  configurePersistenceScheduler,
+  flushPersistence,
+  getPersistenceSchedulerDebugState,
+  markPersistenceDirty
+} from './persistence/PersistenceScheduler.js';
 
 installConsoleLogFilter();
 installPixiTextLocalization(PIXI);
@@ -170,10 +181,9 @@ async function initializeProfileStorageNamespace() {
   };
 }
 
-async function syncSteamCloudRendererState() {
-  const api = window.__novaSteamCloud;
-  if (!api?.mergeRendererState) return null;
-  return api.mergeRendererState(collectSteamCloudRendererState());
+async function syncSteamCloudRendererState({ reason = 'explicit_sync', force = false, domain = 'explicit' } = {}) {
+  markPersistenceDirty(domain, { scheduleFlush: false });
+  return flushPersistence({ reason, force });
 }
 
 async function collectSteamCloudDiagnostics() {
@@ -201,16 +211,37 @@ async function logSteamCloudDiagnostics() {
 }
 
 function installSteamCloudStateExport() {
+  configurePersistenceScheduler({
+    collectSnapshot: collectSteamCloudRendererState,
+    mergeSnapshot: async (snapshot) => {
+      const api = window.__novaSteamCloud;
+      if (!api?.mergeRendererState) return { ok: true, skipped: true, reason: 'native_cloud_bridge_unavailable' };
+      return api.mergeRendererState(snapshot);
+    },
+    isCombatActive: () => {
+      const game = window.__game;
+      const play = game?.scenes?.play;
+      if (game?.currentSceneName !== 'play' || !play) return false;
+      const state = play.enemyManager?.state || '';
+      return state === 'WAVE_ACTIVE'
+        || state === 'BOSS_ACTIVE'
+        || play.shouldDeferActiveGameplayPersistence?.() === true;
+    },
+    onEvent: (label, details) => window.__novaMayhemPerformanceDiagnostics?.mark?.(label, details)
+  });
   window.__novaSteamCloudDiagnostics = Object.freeze({
     collect: collectSteamCloudDiagnostics,
     log: logSteamCloudDiagnostics,
-    sync: syncSteamCloudRendererState
+    sync: syncSteamCloudRendererState,
+    getSchedulerState: getPersistenceSchedulerDebugState
   });
   window.addEventListener('pagehide', () => {
-    syncSteamCloudRendererState().catch(() => {});
+    window.__game?.scenes?.play?.flushRunPersistenceAtSafePoint?.('pagehide');
+    flushThreatDiscoveryState();
+    syncSteamCloudRendererState({ reason: 'pagehide', force: true, domain: 'pagehide' }).catch(() => {});
   });
   window.addEventListener(LANGUAGE_CHANGE_EVENT, () => {
-    syncSteamCloudRendererState().catch(() => {});
+    syncSteamCloudRendererState({ reason: 'language_change', force: true, domain: 'settings' }).catch(() => {});
   });
   window.addEventListener('keydown', (event) => {
     if (!isMaintainerDevtoolsEnabled()) return;

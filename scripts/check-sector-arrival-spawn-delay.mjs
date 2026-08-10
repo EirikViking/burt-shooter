@@ -85,7 +85,7 @@ async function readArrivalDebug(page) {
     const play = window.__game?.scenes?.play;
     return {
       level: window.__game?.level || null,
-      stingerVisible: Boolean(play?.sectorArrivalStinger?.container?.parent),
+      stingerVisible: Boolean(play?.sectorArrivalStinger),
       pendingEnemyStart: Boolean(play?.pendingEnemyStartTimeout),
       enemyCount: play?.enemyManager?.enemies?.length || 0,
       activeEnemyCount: JSON.parse(window.render_game_to_text?.() || '{}')?.counts?.enemies || 0,
@@ -100,8 +100,19 @@ async function readArrivalDebug(page) {
 async function startPlay(page, url) {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
-  await page.evaluate(() => window.__game.startGame());
+  await page.evaluate(() => {
+    void window.__game.startGame();
+  });
   await page.waitForFunction(() => JSON.parse(window.render_game_to_text?.() || '{}').scene === 'play', null, { timeout: 30000 });
+}
+
+async function waitThroughArrivalMidpoint(page) {
+  const releaseDelayMs = await page.evaluate(() => {
+    const play = window.__game?.scenes?.play;
+    return Math.max(1, Number(play?.getSectorArrivalStingerDuration?.({ postBoss: false })) || 0) + 120;
+  });
+  await page.waitForTimeout(Math.max(250, Math.floor(releaseDelayMs * 0.5)));
+  return releaseDelayMs;
 }
 
 async function runStaleCompleteRegression(page) {
@@ -126,7 +137,7 @@ async function runStaleCompleteRegression(page) {
     play._lastStartedLevel = null;
     play.startLevel('stale_complete_regression');
   });
-  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.sectorArrivalStinger?.container?.parent), null, { timeout: 15000 });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.sectorArrivalStinger), null, { timeout: 15000 });
 
   const holdStart = await readArrivalDebug(page);
   await page.screenshot({ path: path.join(outputDir, 'sector-2-stale-complete-hold.png'), fullPage: true });
@@ -137,7 +148,7 @@ async function runStaleCompleteRegression(page) {
   assert.equal(holdStart.wavePhase, 'ENTRY_HOLD', 'delayed entry should replace stale COMPLETE phase');
   assert.equal(holdStart.levelComplete, false, 'entry hold must not report level complete');
 
-  await page.waitForTimeout(1900);
+  await waitThroughArrivalMidpoint(page);
   const holdLate = await readArrivalDebug(page);
   assert.equal(holdLate.level, 2, 'sector should not auto-advance while arrival stinger is holding enemies');
   assert.equal(holdLate.pendingEnemyStart, true, 'enemy release should still be pending before the release gate');
@@ -178,7 +189,7 @@ page.on('console', (message) => {
 try {
   const url = `${baseUrl}/?nova-devtools-hash=${devtoolsHash}&debugBossToken=NOVA_DEBUG_2026&startLevel=2&controlSmoke=1`;
   await startPlay(page, url);
-  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.sectorArrivalStinger?.container?.parent), null, { timeout: 15000 });
+  await page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.sectorArrivalStinger), null, { timeout: 15000 });
 
   const duringStart = await readArrivalDebug(page);
   await page.screenshot({ path: path.join(outputDir, 'sector-2-stinger-before-enemies.png'), fullPage: true });
@@ -188,7 +199,7 @@ try {
   assert.equal(duringStart.enemyCount, 0, 'no enemies should be spawned at stinger start');
   assert.equal(duringStart.activeEnemyCount, 0, 'no active enemies should be visible at stinger start');
 
-  await page.waitForTimeout(1100);
+  await waitThroughArrivalMidpoint(page);
   const duringLate = await readArrivalDebug(page);
   assert.equal(duringLate.stingerVisible, true, 'sector arrival stinger should still be visible before the release gate');
   assert.equal(duringLate.enemyCount, 0, 'no enemies should spawn before the stinger is done');

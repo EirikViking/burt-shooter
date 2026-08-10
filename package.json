@@ -175,6 +175,7 @@
     "stage:steam-native-runtime": "node scripts/stage-steam-native-runtime.mjs",
     "check:packaged-steam-runtime-gate": "node scripts/check-packaged-steam-runtime-gate.mjs",
     "check:steam-cloud-save": "node scripts/check-steam-cloud-save.mjs",
+    "check:runtime-persistence": "node scripts/check-runtime-persistence.mjs",
     "check:profile-isolation": "node scripts/check-profile-isolation.mjs",
     "check:save-profile-migration": "node scripts/check-save-profile-migration.mjs",
     "check:profile-rescue-import": "node scripts/check-profile-rescue-import.mjs",

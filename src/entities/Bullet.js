@@ -1,6 +1,10 @@
 import * as PIXI from 'pixi.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { getColorAssistEnabled } from '../config/AccessibilitySettings.js';
+import {
+  isMayhemPerformanceDiagnosticsActive,
+  recordMayhemPerformanceDuration
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 const GENERATED_PROJECTILE_UNFRAMED_SCALE_MULT = 1.32;
 const PLAYER_PROJECTILE_Z_INDEX = 80;
@@ -9,6 +13,9 @@ const FOCUS_FRIENDLY_PROJECTILE_ALPHA = 0.42;
 
 export class Bullet {
   constructor(x, y, vx, vy, damage, color, isPlayer, visualConfig = null) {
+    const constructionStartedAt = isMayhemPerformanceDiagnosticsActive()
+      ? (globalThis.performance?.now?.() || 0)
+      : 0;
     this.x = x;
     this.y = y;
     this.vx = vx;
@@ -149,6 +156,9 @@ export class Bullet {
     }
 
     this.createReadableProjectileShell();
+    if (constructionStartedAt > 0) {
+      recordMayhemPerformanceDuration('vfx.bullet_construction', performance.now() - constructionStartedAt);
+    }
   }
 
   createReadableProjectileShell() {

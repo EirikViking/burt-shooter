@@ -6,6 +6,10 @@ import { createText } from '../utils/pixiText.js';
 import { isFloatingComboMilestone } from '../config/RetentionPresentation.js';
 import { GameAssets } from '../utils/GameAssets.js';
 import { presentAuthoredSignal } from '../effects/MicroSignalVfx.js';
+import {
+  markMayhemPerformanceEvent,
+  measureMayhemPerformanceScope
+} from '../debug/MayhemPerformanceDiagnostics.js';
 
 const POPUP_SAFE_OFFSETS = Object.freeze([
   Object.freeze([0, 0]),
@@ -447,7 +451,7 @@ export class ScorePopupManager {
       }
     }
 
-    const popup = new ScorePopup(position.x, position.y, displayScore, color, isCombo, {
+    const popup = measureMayhemPerformanceScope('vfx.score_popup_construction', () => new ScorePopup(position.x, position.y, displayScore, color, isCombo, {
       prefix: options.prefix,
       text: options.text,
       type: options.type,
@@ -461,6 +465,12 @@ export class ScorePopupManager {
       vx: position.vx,
       vy: options.vy,
       minY: this.getProtectedTopY()
+    }));
+    markMayhemPerformanceEvent('gameplay.score_popup', {
+      score: Number(displayScore) || 0,
+      type: options.type || (isCombo ? 'combo' : 'score'),
+      major: popup.isMajor,
+      active: this.popups.length + 1
     });
     this.separatePopupFromActive(popup);
     this.popups.push(popup);

@@ -12,6 +12,7 @@ import {
   hideMicroSignals,
   presentPhaseSignal
 } from '../effects/MicroSignalVfx.js';
+import { isWeaponFxKillSwitchActive } from '../config/isExtrasEnabled.js';
 
 const ENABLE_BOSS_WEAPON_FX = true;
 const BOSS_POLISH_VERSION = 'boss-impact-20260612';
@@ -2775,6 +2776,8 @@ export class Boss {
   }
 
   shoot(playerX, playerY) {
+    const performanceDiagnostics = this.game?.scenes?.play?.performanceDiagnostics;
+    const burstStartedAt = performanceDiagnostics?.enabled ? performance.now() : 0;
     const attack = this.profile?.attack || 'aimed';
     const regularTelegraph = this.regularTelegraph
       ? {
@@ -2798,7 +2801,7 @@ export class Boss {
     const bullets = [];
 
     // Boss FX
-    const killSwitch = typeof localStorage !== 'undefined' && localStorage.getItem("bs_disable_weapon_fx") === "1";
+    const killSwitch = isWeaponFxKillSwitchActive();
     const weaponProfile = getBossWeaponProfile(attack, this.phase);
     const vConfig = (ENABLE_BOSS_WEAPON_FX && !killSwitch)
       ? toBulletVisualConfig(weaponProfile, {
@@ -2957,6 +2960,16 @@ export class Boss {
       laneOffsets: attack === 'split' ? [-0.18, 0.18] : regularTelegraph?.laneOffsets || [0],
       projectileAngles: bullets.map((bullet) => Math.atan2(Number(bullet.vy) || 0, Number(bullet.vx) || 0))
     };
+    this.game?.scenes?.play?.performanceDiagnostics?.mark?.('gameplay.boss_action', {
+      action: attack,
+      phase: this.phase,
+      level: this.level,
+      projectiles: bullets.length,
+      summonedAdds: attack === 'summon' && this.phase >= 2
+    });
+    if (burstStartedAt > 0) {
+      performanceDiagnostics.recordSection('vfx.boss_bullet_burst_creation', performance.now() - burstStartedAt);
+    }
 
     return bullets;
   }
