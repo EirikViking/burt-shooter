@@ -309,6 +309,23 @@ export class ParticleManager {
     }
   }
 
+  async prewarmEnergyBlooms(count = this.maxEnergyBlooms) {
+    const target = Math.max(0, Math.min(this.maxEnergyBlooms, Math.floor(Number(count) || 0)));
+    await GameAssets.ensurePlasmaBloomTextures?.();
+    const texture = GameAssets.getPlasmaBloomTexture?.(0);
+    if (!GameAssets.isValidTexture(texture)) return 0;
+    const existing = this.energyBloomPool.length + this.energyBlooms.length;
+    for (let index = existing; index < target; index += 1) {
+      const sprite = new PIXI.Sprite(texture);
+      sprite.anchor.set(0.5);
+      sprite.visible = false;
+      sprite.blendMode = 'add';
+      this.container.addChild(sprite);
+      this.energyBloomPool.push(sprite);
+    }
+    return this.energyBloomPool.length;
+  }
+
   createRadialBurst(x, y, color, options = {}) {
     const count = Math.max(1, Math.floor(options.count ?? 24));
     const intensity = Math.max(0.1, Number(options.intensity) || 1);
@@ -592,17 +609,20 @@ export class ParticleManager {
     }
     this.lastPressureTrimCount = trimmed;
 
-    this.particles = this.particles.filter(particle => {
+    let writeIndex = 0;
+    for (const particle of this.particles) {
       if (!particle.active) {
         this.pool.push(particle);
-        return false;
+        continue;
       }
       particle.update(delta);
       if (!particle.active) {
         this.pool.push(particle);
-        return false;
+        continue;
       }
-      return true;
-    });
+      this.particles[writeIndex] = particle;
+      writeIndex += 1;
+    }
+    this.particles.length = writeIndex;
   }
 }

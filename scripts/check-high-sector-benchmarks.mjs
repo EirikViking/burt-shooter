@@ -262,7 +262,12 @@ async function runCase(browser, definition) {
       energyBloomPool: play.particleManager?.energyBloomPool?.length || 0,
       scorePopups: play.scorePopupManager?.popups?.length || 0,
       pendingScorePopups: play.scorePopupManager?.pendingPopups?.length || 0,
-      gameContainerChildren: play.gameContainer?.children?.length || 0
+      scorePopupPoolAvailable: play.scorePopupManager?.ordinaryPool?.length || 0,
+      scorePopupPoolCreated: play.scorePopupManager?.ordinaryPoolCreated || 0,
+      scorePopupPoolReused: play.scorePopupManager?.ordinaryPoolReused || 0,
+      scorePopupPoolReleased: play.scorePopupManager?.ordinaryPoolReleased || 0,
+      gameContainerChildren: play.gameContainer?.children?.length || 0,
+      uiContainerChildren: play.uiContainer?.children?.length || 0
     });
     const totalEntities = (counts) => [
       'enemies',
@@ -730,6 +735,19 @@ try {
     assert.equal(result.metrics.waveSegments.length, 5);
     assert.equal(result.entities.peak.hostileProjectiles <= 48, true);
     assert.equal(result.metrics.projectilePeak <= 48, true);
+    assert.ok(result.entities.after.scorePopupPoolCreated <= 20, `${definition.id} exceeded the bounded ordinary score-popup pool`);
+    assert.ok(result.entities.after.scorePopupPoolReused > 0, `${definition.id} did not reuse prewarmed score popups`);
+    assert.equal(
+      result.entities.after.particles + result.entities.after.particlePool,
+      result.entities.before.particles + result.entities.before.particlePool,
+      `${definition.id} allocated particles beyond the prewarmed pool`
+    );
+    assert.equal(
+      result.entities.after.energyBlooms + result.entities.after.energyBloomPool,
+      result.entities.before.energyBlooms + result.entities.before.energyBloomPool,
+      `${definition.id} allocated energy blooms during combat`
+    );
+    assert.equal(result.entities.after.uiContainerChildren, result.entities.before.uiContainerChildren, `${definition.id} leaked UI display objects`);
     assert.ok(result.frameTime.frames > 20);
     assert.equal(result.bossSegment.supportComplete, true);
     assert.equal(result.bossSegment.supportCount, 3);

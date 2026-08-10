@@ -46,6 +46,7 @@ const POPUP_SEPARATION_OFFSETS = Object.freeze([
 
 export class ScorePopup {
   constructor(x, y, score, color = 0xffff00, isCombo = false, options = {}) {
+    this.poolable = options.poolable === true;
     this.x = x;
     this.minY = Math.max(104, Number(options.minY) || 104);
     this.y = Math.max(this.minY, y);
@@ -135,7 +136,87 @@ export class ScorePopup {
     this.sprite.scale.set(this.baseScale);
   }
 
+  syncDebugState(progress = null) {
+    if (!this.sprite) return;
+    const debug = this.sprite.__debugScorePopup || {};
+    debug.framed = this.isFramed;
+    debug.type = this.type;
+    debug.combo = this.isCombo;
+    debug.nearMiss = this.isNearMiss;
+    debug.major = this.isMajor;
+    debug.clusterIndex = this.clusterIndex;
+    debug.sourceX = Math.round(this.sourceX);
+    debug.sourceY = Math.round(this.sourceY);
+    debug.frameWidth = this.frameWidth;
+    debug.frameHeight = this.frameHeight;
+    debug.authoredSignalCount = this.authoredSignalCount;
+    debug.primitiveSignalCount = 0;
+    debug.comboTier = this.comboTier;
+    debug.borderless = this.isBorderlessSignal;
+    debug.visualLanguage = this.isCombo
+      ? 'compact_combo_milestone_pulse_v1'
+      : this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3';
+    if (progress !== null) debug.progress = Number(progress.toFixed(3));
+    debug.x = Math.round(this.x);
+    debug.y = Math.round(this.y);
+    this.sprite.__debugScorePopup = debug;
+  }
+
+  resetOrdinary(x, y, score, color = 0xffff00, options = {}) {
+    if (!this.poolable || !this.sprite || !this.textNode) return false;
+    this.x = Number(x) || 0;
+    this.minY = Math.max(104, Number(options.minY) || 104);
+    this.y = Math.max(this.minY, Number(y) || this.minY);
+    this.active = true;
+    this.lifetime = 0;
+    this.type = 'score';
+    this.isCombo = false;
+    this.isNearMiss = false;
+    this.isMajor = false;
+    this.isFramed = false;
+    this.isBorderlessSignal = false;
+    this.maxLifetime = Math.max(250, Number(options.maxLifetime) || 560);
+    this.vx = Number(options.vx) || 0;
+    this.vy = Number(options.vy) || -1.85;
+    this.clusterIndex = Math.max(0, Math.round(Number(options.clusterIndex) || 0));
+    this.sourceX = Number.isFinite(options.sourceX) ? options.sourceX : this.x;
+    this.sourceY = Number.isFinite(options.sourceY) ? options.sourceY : this.y;
+    this.baseScale = 0.92;
+    this.numericScore = Math.max(0, Math.round(Number(score) || 0));
+    this.comboTier = 0;
+    this.authoredSignalCount = 0;
+    const prefix = options.prefix ? `${String(options.prefix).trim()} ` : '';
+    const text = `${prefix}+${this.numericScore}`;
+    this.textNode.text = text;
+    this.textNode.style.fill = color;
+    this.sprite.text = text;
+    this.sprite.__novaScorePopupText = text;
+    this.sprite.__novaScorePopupType = this.type;
+    this.frameColor = color;
+    this.accentColor = Number.isFinite(options.accent) ? options.accent : 0x8fffd5;
+    this.frameWidth = Math.max(54, Math.round((this.textNode.width || 48) + 18));
+    this.frameHeight = Math.max(22, Math.round((this.textNode.height || 15) + 9));
+    this.sprite.x = this.x;
+    this.sprite.y = this.y;
+    this.sprite.alpha = 1;
+    this.sprite.scale.set(this.baseScale);
+    this.sprite.visible = true;
+    this.syncDebugState(0);
+    return true;
+  }
+
+  retireToPool() {
+    this.active = false;
+    if (this.sprite) {
+      this.sprite.visible = false;
+      this.sprite.alpha = 0;
+      this.sprite.x = -10000;
+      this.sprite.y = -10000;
+    }
+  }
+
   drawFrame(progress = 0) {
+    if (!this.sprite || !this.textNode) return;
     const pulse = Math.sin(progress * Math.PI);
     const width = this.frameWidth;
     const height = this.frameHeight;
@@ -230,28 +311,7 @@ export class ScorePopup {
       this.sprite.scale.set(Math.max(this.baseScale, scale));
     }
 
-    this.sprite.__debugScorePopup = {
-      framed: this.isFramed,
-      type: this.type,
-      combo: this.isCombo,
-      nearMiss: this.isNearMiss,
-      major: this.isMajor,
-      clusterIndex: this.clusterIndex,
-      sourceX: Math.round(this.sourceX),
-      sourceY: Math.round(this.sourceY),
-      frameWidth: this.frameWidth,
-      frameHeight: this.frameHeight,
-      authoredSignalCount: this.authoredSignalCount,
-      primitiveSignalCount: 0,
-      comboTier: this.comboTier,
-      borderless: this.isBorderlessSignal,
-      visualLanguage: this.isCombo
-        ? 'compact_combo_milestone_pulse_v1'
-        : this.isBorderlessSignal ? 'borderless_plasma_badge_v4' : 'authored_micro_signal_v3',
-      progress: Number(progress.toFixed(3)),
-      x: Math.round(this.x),
-      y: Math.round(this.y)
-    };
+    this.syncDebugState(progress);
   }
 
   aggregateScore(score = 0) {
@@ -274,9 +334,13 @@ export class ScorePopup {
 
   destroy() {
     this.active = false;
-    if (this.sprite && this.sprite.parent) {
-      this.sprite.parent.removeChild(this.sprite);
-    }
+    if (!this.sprite) return;
+    if (this.sprite.parent) this.sprite.parent.removeChild(this.sprite);
+    if (!this.sprite.destroyed) this.sprite.destroy({ children: true });
+    this.sprite = null;
+    this.textNode = null;
+    this.backplate = null;
+    this.tickLayer = null;
   }
 }
 
@@ -288,6 +352,11 @@ export class ScorePopupManager {
     this.container = container;
     this.popups = [];
     this.pendingPopups = [];
+    this.ordinaryPool = [];
+    this.maxOrdinaryPool = 20;
+    this.ordinaryPoolCreated = 0;
+    this.ordinaryPoolReused = 0;
+    this.ordinaryPoolReleased = 0;
     this.defaultMaxActivePopups = 14;
     this.maxActivePopups = this.defaultMaxActivePopups;
     this.denseCombatCompression = 0;
@@ -309,12 +378,70 @@ export class ScorePopupManager {
     this.lastKillTime = 0;
   }
 
+  isOrdinaryPoolRequest(score, isCombo, options = {}) {
+    const type = String(options.type || 'score').toLowerCase();
+    return !isCombo
+      && !options.major
+      && !options.framed
+      && !options.text
+      && !options.fontSize
+      && (type === 'score' || type === '')
+      && Number(score) < 500;
+  }
+
+  prewarmOrdinary(count = 16) {
+    const target = Math.max(0, Math.min(this.maxOrdinaryPool, Math.floor(Number(count) || 0)));
+    while (this.ordinaryPool.length < target) {
+      const popup = new ScorePopup(-10000, -10000, 0, 0xffff00, false, { poolable: true });
+      popup.retireToPool();
+      this.container.addChild(popup.sprite);
+      this.ordinaryPool.push(popup);
+      this.ordinaryPoolCreated += 1;
+    }
+    return this.ordinaryPool.length;
+  }
+
+  acquireOrdinaryPopup(x, y, score, color, options = {}) {
+    const popup = this.ordinaryPool.pop();
+    if (popup) {
+      popup.resetOrdinary(x, y, score, color, options);
+      this.ordinaryPoolReused += 1;
+      return popup;
+    }
+    const created = new ScorePopup(x, y, score, color, false, { ...options, poolable: true });
+    this.ordinaryPoolCreated += 1;
+    if (created.sprite.parent !== this.container) this.container.addChild(created.sprite);
+    return created;
+  }
+
+  releasePopup(popup) {
+    if (!popup) return;
+    if (popup.poolable && popup.sprite && this.ordinaryPool.length < this.maxOrdinaryPool) {
+      popup.retireToPool();
+      this.ordinaryPool.push(popup);
+      this.ordinaryPoolReleased += 1;
+      return;
+    }
+    popup.destroy?.();
+  }
+
+  getPoolDebugState() {
+    return {
+      active: this.popups.length,
+      pending: this.pendingPopups.length,
+      ordinaryAvailable: this.ordinaryPool.length,
+      ordinaryCreated: this.ordinaryPoolCreated,
+      ordinaryReused: this.ordinaryPoolReused,
+      ordinaryReleased: this.ordinaryPoolReleased
+    };
+  }
+
   setActiveBudget(maxActivePopups = this.defaultMaxActivePopups) {
     const nextBudget = Math.max(1, Math.min(this.defaultMaxActivePopups, Math.floor(Number(maxActivePopups) || this.defaultMaxActivePopups)));
     this.maxActivePopups = nextBudget;
     while (this.popups.length > this.maxActivePopups) {
       const stale = this.popups.shift();
-      stale?.destroy?.();
+      this.releasePopup(stale);
     }
     if (this.pendingPopups.length > this.maxActivePopups) {
       this.pendingPopups.splice(0, this.pendingPopups.length - this.maxActivePopups);
@@ -436,22 +563,27 @@ export class ScorePopupManager {
       (!options.type || options.type === 'score') &&
       Number(score) < 500;
     if (canAggregate) {
-      const aggregateTarget = [...this.popups].reverse().find((candidate) => (
-        candidate?.active &&
-        !candidate.isCombo &&
-        !candidate.isMajor &&
-        candidate.type === 'score' &&
-        candidate.lifetime <= 320 &&
-        Math.abs((candidate.sourceX || candidate.x) - x) <= 132 &&
-        Math.abs((candidate.sourceY || candidate.y) - y) <= 96
-      ));
+      let aggregateTarget = null;
+      for (let index = this.popups.length - 1; index >= 0; index -= 1) {
+        const candidate = this.popups[index];
+        if (candidate?.active &&
+          !candidate.isCombo &&
+          !candidate.isMajor &&
+          candidate.type === 'score' &&
+          candidate.lifetime <= 320 &&
+          Math.abs((candidate.sourceX || candidate.x) - x) <= 132 &&
+          Math.abs((candidate.sourceY || candidate.y) - y) <= 96) {
+          aggregateTarget = candidate;
+          break;
+        }
+      }
       if (aggregateTarget?.aggregateScore?.(score)) {
         this.aggregatedPopupCount += 1;
         return aggregateTarget;
       }
     }
 
-    const popup = measureMayhemPerformanceScope('vfx.score_popup_construction', () => new ScorePopup(position.x, position.y, displayScore, color, isCombo, {
+    const popupOptions = {
       prefix: options.prefix,
       text: options.text,
       type: options.type,
@@ -465,7 +597,13 @@ export class ScorePopupManager {
       vx: position.vx,
       vy: options.vy,
       minY: this.getProtectedTopY()
-    }));
+    };
+    const poolable = this.isOrdinaryPoolRequest(displayScore, isCombo, options);
+    const popup = measureMayhemPerformanceScope('vfx.score_popup_construction', () => (
+      poolable
+        ? this.acquireOrdinaryPopup(position.x, position.y, displayScore, color, popupOptions)
+        : new ScorePopup(position.x, position.y, displayScore, color, isCombo, popupOptions)
+    ));
     markMayhemPerformanceEvent('gameplay.score_popup', {
       score: Number(displayScore) || 0,
       type: options.type || (isCombo ? 'combo' : 'score'),
@@ -474,17 +612,17 @@ export class ScorePopupManager {
     });
     this.separatePopupFromActive(popup);
     this.popups.push(popup);
-    this.container.addChild(popup.sprite);
+    if (popup.sprite.parent !== this.container) this.container.addChild(popup.sprite);
     if (this.popups.length > this.maxActivePopups) {
       const stale = this.popups.shift();
-      stale?.destroy?.();
+      this.releasePopup(stale);
     }
     return popup;
   }
 
   separatePopupFromActive(popup) {
     if (!popup) return;
-    const active = this.popups.filter((candidate) => candidate?.active);
+    const active = this.popups;
     const originX = popup.x;
     const originY = popup.y;
     const getSize = (candidate) => ({
@@ -503,7 +641,7 @@ export class ScorePopupManager {
       this.clampProtectedPosition(originX + dx, originY + dy, popupSize.width / 2, popupSize.height / 2)
     )).find((position) => (
       !this.isProtectedPosition(position.x, position.y, popupSize.width / 2, popupSize.height / 2)
-      && active.every((candidate) => !overlaps(position.x, position.y, candidate))
+      && active.every((candidate) => !candidate?.active || !overlaps(position.x, position.y, candidate))
     ));
     if (!openPosition) return;
     popup.x = openPosition.x;
@@ -515,12 +653,15 @@ export class ScorePopupManager {
   resolvePopupPosition(x, y, options = {}) {
     const sourceX = Number(x) || 0;
     const sourceY = Number(y) || 0;
-    const activeNearby = this.popups.filter((popup) => {
-      if (!popup?.active) return false;
+    let activeNearby = 0;
+    for (const popup of this.popups) {
+      if (!popup?.active) continue;
       const popupSourceX = Number.isFinite(popup.sourceX) ? popup.sourceX : popup.x;
       const popupSourceY = Number.isFinite(popup.sourceY) ? popup.sourceY : popup.y;
-      return Math.abs((popupSourceX || 0) - sourceX) < 92 && Math.abs((popupSourceY || 0) - sourceY) < 72;
-    }).length;
+      if (Math.abs((popupSourceX || 0) - sourceX) < 92 && Math.abs((popupSourceY || 0) - sourceY) < 72) {
+        activeNearby += 1;
+      }
+    }
     const clusterIndex = Math.max(0, activeNearby);
     const type = String(options.type || '').toLowerCase();
     const offsets = type === 'nearmiss' || type === 'near_miss'
@@ -602,15 +743,18 @@ export class ScorePopupManager {
       }
     }
 
-    // Update popups
-    this.popups = this.popups.filter(popup => {
+    // Compact in place so score-heavy frames do not allocate a fresh array.
+    let writeIndex = 0;
+    for (const popup of this.popups) {
       popup.update(delta);
       if (!popup.active) {
-        popup.destroy();
-        return false;
+        this.releasePopup(popup);
+        continue;
       }
-      return true;
-    });
+      this.popups[writeIndex] = popup;
+      writeIndex += 1;
+    }
+    this.popups.length = writeIndex;
   }
 
   getComboCount() {
@@ -618,14 +762,16 @@ export class ScorePopupManager {
   }
 
   clearVisuals({ preserveCombo = true } = {}) {
-    this.popups.forEach(popup => popup.destroy());
-    this.popups = [];
-    this.pendingPopups = [];
+    this.popups.forEach((popup) => this.releasePopup(popup));
+    this.popups.length = 0;
+    this.pendingPopups.length = 0;
     if (!preserveCombo) this.comboCount = 0;
     this.aggregatedPopupCount = 0;
   }
 
   cleanup() {
     this.clearVisuals({ preserveCombo: false });
+    this.ordinaryPool.forEach((popup) => popup.destroy());
+    this.ordinaryPool.length = 0;
   }
 }

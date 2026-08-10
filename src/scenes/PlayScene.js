@@ -219,6 +219,7 @@ const RANK_UP_PRESENTATION_MS = 2610;
 const COLLISION_GRID_CELL_SIZE = 96;
 const COLLISION_SCORE_POPUP_QUEUE_BUDGET = 12;
 const COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET = 6;
+const runWithoutMeasurement = (_label, callback) => callback();
 const TACTICAL_BOSS_BANTER_FOCUS_DELAY_MS = 520;
 const TACTICAL_BOSS_BANTER_MAX_BUSY_RETRIES = 24;
 const GAME_OVER_CELEBRATION_DURATION_MS = 1700;
@@ -626,6 +627,8 @@ export class PlayScene {
     this.balanceDebug = null;
     this.bossClearRecoveryLevels = new Set();
     this.performanceDiagnostics = null;
+    this.measureCollisionScope = runWithoutMeasurement;
+    this.collisionSideEffectQueue = null;
     this.viewportLayoutUnsubscribe = null;
   }
 
@@ -637,6 +640,9 @@ export class PlayScene {
     this.lastPersonalBestCelebration = null;
     this.performanceDiagnostics?.destroy?.();
     this.performanceDiagnostics = createMayhemPerformanceDiagnostics(this);
+    this.measureCollisionScope = this.performanceDiagnostics?.measure
+      ? this.performanceDiagnostics.measure.bind(this.performanceDiagnostics)
+      : runWithoutMeasurement;
     this.deferredThreatDefeats = [];
     this.deferredThreatDefeatStats = {
       queued: 0,
@@ -938,7 +944,8 @@ export class PlayScene {
     this.bulletManager = new BulletManager(this.gameContainer, capHandler);
     this.bulletManager.setScreenBounds(width, height);
     this.particleManager = new ParticleManager(this.gameContainer, capHandler);
-    this.particleManager.prewarm?.(384);
+    this.particleManager.prewarm?.(520);
+    this.particleManager.prewarmEnergyBlooms?.(18).catch?.(() => {});
     this.powerupManager = new PowerupManager(this.gameContainer, this.gameplayGame);
     this.screenShake = new ScreenShake(this.gameContainer);
     this.applyGameplayViewportTransform();
@@ -948,6 +955,7 @@ export class PlayScene {
       this.layoutTacticalDraft();
     });
     this.scorePopupManager = new ScorePopupManager(this.uiContainer);
+    this.scorePopupManager.prewarmOrdinary?.(16);
     this.gameContainer.sortableChildren = true;
     this.tractorHijack = null;
     this.lastTractorHijack = null;
@@ -6950,7 +6958,7 @@ export class PlayScene {
   }
 
   createCollisionSideEffectQueue() {
-    return {
+    this.collisionSideEffectQueue ||= {
       scorePopups: [],
       hitSparks: [],
       deathFeedback: [],
@@ -6959,8 +6967,21 @@ export class PlayScene {
       toasts: [],
       playerExplosions: [],
       screenShakes: [],
-      comboFlares: []
+      comboFlares: [],
+      scorePopupsDropped: 0
     };
+    const queue = this.collisionSideEffectQueue;
+    queue.scorePopups.length = 0;
+    queue.hitSparks.length = 0;
+    queue.deathFeedback.length = 0;
+    queue.audio.length = 0;
+    queue.powerupSpawns.length = 0;
+    queue.toasts.length = 0;
+    queue.playerExplosions.length = 0;
+    queue.screenShakes.length = 0;
+    queue.comboFlares.length = 0;
+    queue.scorePopupsDropped = 0;
+    return queue;
   }
 
   queueCollisionSideEffect(queue, type, payload = {}) {
@@ -6989,13 +7010,28 @@ export class PlayScene {
       stats.fatalBarrierSuppressedVisuals = (Number(stats.fatalBarrierSuppressedVisuals) || 0) + suppressed;
       return;
     }
-    const measured = measure || ((_label, callback) => callback());
+    const hasQueuedEffects = Number(queue.scorePopupsDropped) > 0
+      || queue.scorePopups.length > 0
+      || queue.hitSparks.length > 0
+      || queue.deathFeedback.length > 0
+      || queue.audio.length > 0
+      || queue.powerupSpawns.length > 0
+      || queue.toasts.length > 0
+      || queue.playerExplosions.length > 0
+      || queue.screenShakes.length > 0
+      || queue.comboFlares.length > 0
+      || (this.scorePopupManager?.pendingPopups?.length || 0) > 0;
+    if (!hasQueuedEffects) return;
+    const measured = measure || runWithoutMeasurement;
     const diagnosticOptions = this.performanceDiagnostics?.options || {};
     const skipAllSideEffects = Boolean(diagnosticOptions.rawCollisionOnly || diagnosticOptions.noCollisionSideEffects);
     const activeParticles = this.particleManager?.particles?.length || 0;
     const activeCombatText = (this.scorePopupManager?.popups?.length || 0)
       + (this.scorePopupManager?.pendingPopups?.length || 0);
-    const activeEnemyCount = this.enemyManager?.enemies?.filter?.((enemy) => enemy?.active !== false).length || 0;
+    let activeEnemyCount = 0;
+    for (const enemy of this.enemyManager?.enemies || []) {
+      if (enemy?.active !== false) activeEnemyCount += 1;
+    }
     const plasmaSweepLoad = this.player?.activePowerup?.type === 'plasma_lance'
       && (activeEnemyCount >= 32 || queue.deathFeedback.length > 0 || queue.scorePopups.length >= 2);
     const denseVisualLoad = activeParticles >= 500 || activeCombatText >= 20;
@@ -7008,11 +7044,10 @@ export class PlayScene {
         stats.scorePopupDropped = (stats.scorePopupDropped || 0) + queue.scorePopups.length + overflowDropped;
         return;
       }
-      const visiblePopupEntries = plasmaSweepLoad
-        ? queue.scorePopups.slice(0, 1)
-        : queue.scorePopups;
-      const visuallyDroppedPopups = Math.max(0, queue.scorePopups.length - visiblePopupEntries.length);
-      for (const popup of visiblePopupEntries) {
+      const visiblePopupCount = plasmaSweepLoad ? Math.min(1, queue.scorePopups.length) : queue.scorePopups.length;
+      const visuallyDroppedPopups = Math.max(0, queue.scorePopups.length - visiblePopupCount);
+      for (let index = 0; index < visiblePopupCount; index += 1) {
+        const popup = queue.scorePopups[index];
         this.scorePopupManager?.queueScorePopup?.(popup.x, popup.y, popup.score, popup.options || {});
       }
       const scorePopupBudget = plasmaSweepLoad
@@ -7023,9 +7058,9 @@ export class PlayScene {
         ? 1
         : (queue.scorePopups.length >= 8 ? 2 : 3);
       const flushed = this.scorePopupManager?.flushQueuedPopups?.(maxScorePopups) || {
-        queued: visiblePopupEntries.length,
+        queued: visiblePopupCount,
         created: 0,
-        dropped: visiblePopupEntries.length,
+        dropped: visiblePopupCount,
         remaining: 0
       };
       stats.scorePopupQueued = (stats.scorePopupQueued || 0) + flushed.queued + overflowDropped + visuallyDroppedPopups;
@@ -7045,12 +7080,14 @@ export class PlayScene {
       const massiveBurst = (queue.hitSparks.length + queue.deathFeedback.length) >= 32;
       const maxHitSparks = extremeVisualLoad ? 1 : (massiveBurst || denseVisualLoad || plasmaSweepLoad ? 2 : 4);
       const maxDeathFeedback = (massiveBurst || extremeVisualLoad || plasmaSweepLoad) ? 0 : 1;
-      for (const spark of queue.hitSparks.slice(0, maxHitSparks)) {
+      for (let index = 0; index < Math.min(maxHitSparks, queue.hitSparks.length); index += 1) {
+        const spark = queue.hitSparks[index];
         if (!this.particleManager || spark?.enabled === false) continue;
         this.particleManager.createHitSpark(spark.x, spark.y, spark.color, spark.intensity);
         hitSparkCreated += 1;
       }
-      for (const entry of queue.deathFeedback.slice(0, maxDeathFeedback)) {
+      for (let index = 0; index < Math.min(maxDeathFeedback, queue.deathFeedback.length); index += 1) {
+        const entry = queue.deathFeedback[index];
         if (!entry?.enemy) continue;
         this.playEnemyDeathFeedback(entry.enemy, {
           ...(entry.options || {}),
@@ -7073,7 +7110,8 @@ export class PlayScene {
       }
       let played = 0;
       const maxAudioEvents = 8;
-      for (const entry of queue.audio.slice(0, maxAudioEvents)) {
+      for (let index = 0; index < Math.min(maxAudioEvents, queue.audio.length); index += 1) {
+        const entry = queue.audio[index];
         if (!entry?.sfx) continue;
         AudioManager.playSfx(entry.sfx, entry.options || {});
         played += 1;
@@ -7090,7 +7128,8 @@ export class PlayScene {
       }
       let spawned = 0;
       const maxPowerupSpawns = plasmaSweepLoad ? 1 : COLLISION_POWERUP_SPAWN_ATTEMPT_BUDGET;
-      for (const entry of queue.powerupSpawns.slice(0, maxPowerupSpawns)) {
+      for (let index = 0; index < Math.min(maxPowerupSpawns, queue.powerupSpawns.length); index += 1) {
+        const entry = queue.powerupSpawns[index];
         this.powerupManager?.spawn?.(entry.x, entry.y);
         spawned += 1;
       }
@@ -7173,8 +7212,7 @@ export class PlayScene {
   }
 
   checkCollisions() {
-    const perfDiag = this.performanceDiagnostics;
-    const measure = perfDiag?.measure?.bind(perfDiag) || ((_label, callback) => callback());
+    const measure = this.measureCollisionScope || runWithoutMeasurement;
     const sideEffects = this.createCollisionSideEffectQueue();
     const collisionStats = {
       runMode: this.game?.runMode || 'unknown',

@@ -113,6 +113,7 @@ try {
     play.isPaused = true;
     if (play.introOverlay?.parent) play.introOverlay.parent.removeChild(play.introOverlay);
     manager.cleanup();
+    manager.setPersistentComboHudActive(false);
 
     const centerX = game.getWidth() * 0.52;
     const centerY = game.getHeight() * 0.42;
@@ -171,7 +172,7 @@ try {
       if (popup.debug?.borderless !== true) failures.push(`major popup did not use borderless signal treatment: ${JSON.stringify(popup.debug)}`);
       if (popup.childLabels?.includes?.('scorePopupBackplate')) failures.push(`major popup retained primitive backplate: ${JSON.stringify(popup.childLabels)}`);
       if (popup.childLabels?.includes?.('scorePopupTicks')) failures.push(`major popup retained primitive ticks: ${JSON.stringify(popup.childLabels)}`);
-      if (popup.debug?.visualLanguage !== 'borderless_plasma_badge_v4') failures.push(`major popup visual language mismatch: ${JSON.stringify(popup.debug)}`);
+      if (!popup.debug?.combo && popup.debug?.visualLanguage !== 'borderless_plasma_badge_v4') failures.push(`major popup visual language mismatch: ${JSON.stringify(popup.debug)}`);
       if ((popup.debug?.frameWidth || 0) < 50 || (popup.debug?.frameHeight || 0) < 20) failures.push(`major popup frame too small: ${JSON.stringify(popup.debug)}`);
     } else {
       if (popup.debug?.framed) failures.push(`routine popup should be lightweight: ${JSON.stringify(popup)}`);
