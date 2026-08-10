@@ -2318,14 +2318,27 @@ export class Enemy {
 
     const now = Date.now();
     const profile = this.middleShipProfile;
-    const telegraphMs = profile.specialTelegraphMs || 700;
-    const activeMs = profile.specialActiveMs || 800;
-    const cooldownMs = profile.specialCooldownMs || 9000;
+    const tractorContract = profile.specialAbility === 'tractor_pull' ? this.highSectorTractorContract : null;
+    const telegraphMs = tractorContract?.warningLeadMs || profile.specialTelegraphMs || 700;
+    const activeMs = tractorContract?.activeMs || profile.specialActiveMs || 800;
+    const cooldownMs = tractorContract?.recoveryMs || profile.specialCooldownMs || 9000;
 
     if (this.eliteAbility.state === 'cooldown' && now >= this.eliteAbility.nextAt && this.state !== 'ENTRY') {
       this.eliteAbility.state = 'telegraph';
       this.eliteAbility.startedAt = now;
       this.eliteAbility.triggered = false;
+      if (tractorContract) {
+        const width = this.game?.getWidth?.() || 800;
+        const height = this.game?.getHeight?.() || 600;
+        tractorContract.lockedTargetX = tractorContract.escapeSide === 'left'
+          ? Math.max(Number(playerX) || width / 2, width * 0.58)
+          : Math.min(Number(playerX) || width / 2, width * 0.42);
+        tractorContract.lockedTargetY = Math.max(Number(playerY) || height * 0.78, height * 0.68);
+        tractorContract.outsideSinceMs = null;
+        tractorContract.pullStartedAtMs = null;
+        tractorContract.pullRecorded = false;
+        tractorContract.lastBreakReason = null;
+      }
       this.game?.scenes?.play?.performanceDiagnostics?.mark?.('elite_signal_start', {
         kind: 'elite_ability',
         id: profile.id,
@@ -2335,9 +2348,11 @@ export class Enemy {
       AudioManager.playSfx(profile.sfx?.charge || 'elite_special_charge', { volume: 0.42, minIntervalMs: 360 });
     }
 
+    const abilityTargetX = tractorContract?.lockedTargetX ?? playerX;
+    const abilityTargetY = tractorContract?.lockedTargetY ?? playerY;
     if (this.eliteAbility.state === 'telegraph') {
       const progress = Math.min(1, (now - this.eliteAbility.startedAt) / telegraphMs);
-      this.drawEliteAbilityVfx(progress, false, playerX, playerY);
+      this.drawEliteAbilityVfx(progress, false, abilityTargetX, abilityTargetY);
       if (progress >= 1) {
         this.eliteAbility.state = 'active';
         this.eliteAbility.startedAt = now;
@@ -2355,12 +2370,19 @@ export class Enemy {
         AudioManager.playSfx(profile.sfx?.active || 'elite_special_active', { volume: 0.46, minIntervalMs: 220 });
       }
       const progress = Math.min(1, (now - this.eliteAbility.startedAt) / activeMs);
-      this.applySustainedEliteAbility(delta, playerX, playerY);
-      this.drawEliteAbilityVfx(progress, true, playerX, playerY);
+      const sustainedResult = this.applySustainedEliteAbility(delta, playerX, playerY);
+      this.drawEliteAbilityVfx(progress, true, abilityTargetX, abilityTargetY);
+      if (tractorContract && sustainedResult?.escaped) {
+        this.finishHighSectorTractorCycle(now, 'escaped_lane');
+        return;
+      }
       if (now >= this.eliteAbility.activeUntil) {
-        this.eliteAbility.state = 'cooldown';
-        this.eliteAbility.nextAt = now + cooldownMs + Math.random() * 900;
-        this.eliteVfxLayer?.clear();
+        if (tractorContract) this.finishHighSectorTractorCycle(now, 'window_complete');
+        else {
+          this.eliteAbility.state = 'cooldown';
+          this.eliteAbility.nextAt = now + cooldownMs + Math.random() * 900;
+          this.eliteVfxLayer?.clear();
+        }
       }
       return;
     }
@@ -2468,14 +2490,37 @@ export class Enemy {
   applySustainedEliteAbility(delta, playerX, playerY) {
     const ability = this.middleShipProfile?.specialAbility;
     if (ability === 'tractor_pull') {
-      this.applyEliteTractorPull(delta, playerX, playerY);
+      return this.applyEliteTractorPull(delta, playerX, playerY);
     } else if (ability === 'vortex_gravity') {
-      this.applyEliteVortexPull(delta, playerX, playerY);
+      return this.applyEliteVortexPull(delta, playerX, playerY);
     } else if (ability === 'stasis_lattice') {
-      this.applyEliteVortexPull(delta, playerX, playerY, 0.42);
+      return this.applyEliteVortexPull(delta, playerX, playerY, 0.42);
     } else if (ability === 'siphon_tether') {
-      this.applyEliteTractorPull(delta, playerX, playerY, 0.7);
+      return this.applyEliteTractorPull(delta, playerX, playerY, 0.7);
     }
+    return null;
+  }
+
+  finishHighSectorTractorCycle(now = Date.now(), reason = 'complete') {
+    const contract = this.highSectorTractorContract;
+    if (!contract || !this.eliteAbility) return false;
+    this.eliteAbility.state = 'cooldown';
+    const recoveryMs = Math.max(1200, Number(contract.recoveryMs) || 7200);
+    this.eliteAbility.nextAt = now + recoveryMs;
+    this.eliteAbility.activeUntil = 0;
+    contract.lastBreakReason = reason;
+    contract.lastBreakDurationMs = contract.pullStartedAtMs
+      ? Math.max(0, now - contract.pullStartedAtMs)
+      : 0;
+    contract.lastRecoveryMs = recoveryMs;
+    const metrics = this.game?.lateGameExperiment?.metrics;
+    if (metrics && contract.pullStartedAtMs) {
+      metrics.tractorBreaks = (Number(metrics.tractorBreaks) || 0) + 1;
+      metrics.tractorBreakTimeMs = (Number(metrics.tractorBreakTimeMs) || 0) + contract.lastBreakDurationMs;
+      metrics.tractorRecoveryMs = (Number(metrics.tractorRecoveryMs) || 0) + contract.lastRecoveryMs;
+    }
+    this.eliteVfxLayer?.clear();
+    return true;
   }
 
   drawEliteAbilityVfx(progress, active, playerX, playerY) {
@@ -2568,6 +2613,7 @@ export class Enemy {
 
     if (ability === 'tractor_pull') {
       this.drawEliteTractorSignature(layer, { relX, relY, progress, active, color: accent, tint, now, pulse });
+      this.drawHighSectorTractorEscapeLane(layer, { progress, active, color: accent });
       return;
     }
     if (ability === 'vortex_gravity') {
@@ -2636,6 +2682,30 @@ export class Enemy {
     }
     layer.stroke({ color: 0xffffff, width: active ? 2.1 : 1.2, alpha: active ? 0.32 : 0.1 + progress * 0.2 });
     this.drawEliteCaptureBrackets(layer, relX, targetY, Math.max(20, halfWidth * 0.26), color, active ? 0.58 : 0.18 + progress * 0.28, now);
+  }
+
+  drawHighSectorTractorEscapeLane(layer, { progress, active, color }) {
+    const contract = this.highSectorTractorContract;
+    if (!layer || !contract) return;
+    const width = this.game?.getWidth?.() || 800;
+    const height = this.game?.getHeight?.() || 600;
+    const laneWidth = width * Math.max(0.24, Math.min(0.4, Number(contract.escapeLaneRatio) || 0.32));
+    const laneCenterX = contract.escapeSide === 'left' ? laneWidth / 2 : width - laneWidth / 2;
+    const localX = laneCenterX - this.x;
+    const topY = Math.max(this.radius + 70, height * 0.28 - this.y);
+    const bottomY = Math.max(topY + 80, height * 0.88 - this.y);
+    const alpha = active ? 0.2 : 0.08 + progress * 0.14;
+    layer.roundRect(localX - laneWidth / 2, topY, laneWidth, bottomY - topY, 12);
+    layer.fill({ color: 0x62ffc6, alpha: alpha * 0.28 });
+    layer.roundRect(localX - laneWidth / 2, topY, laneWidth, bottomY - topY, 12);
+    layer.stroke({ color: 0x62ffc6, width: active ? 2.4 : 1.6, alpha });
+    for (let y = topY + 24; y < bottomY; y += 42) {
+      const direction = contract.escapeSide === 'left' ? -1 : 1;
+      layer.moveTo(localX - direction * 8, y - 8);
+      layer.lineTo(localX + direction * 10, y);
+      layer.lineTo(localX - direction * 8, y + 8);
+    }
+    layer.stroke({ color: color || 0x62ffc6, width: 2, alpha: Math.min(0.72, alpha + 0.18) });
   }
 
   drawEliteVortexSignature(layer, { progress, active, color, tint, now, pulse, radius }) {
@@ -3086,20 +3156,56 @@ export class Enemy {
 
   applyEliteTractorPull(delta, playerX, playerY, strengthMult = 1) {
     const player = this.game?.scenes?.play?.player;
-    if (!player?.active) return;
+    if (!player?.active) return { applied: false, escaped: false };
+    const contract = this.highSectorTractorContract;
+    const now = Date.now();
     const relX = player.x - this.x;
     const relY = player.y - this.y;
-    if (relY < this.radius || relY > (this.game?.getHeight?.() || 600) * 0.8) return;
-    const halfWidth = Math.max(44, 22 + relY * 0.18);
-    if (Math.abs(relX) > halfWidth) return;
+    if (relY < this.radius || relY > (this.game?.getHeight?.() || 600) * 0.8) {
+      return { applied: false, escaped: false };
+    }
+    const targetX = Number(contract?.lockedTargetX);
+    const targetY = Math.max(this.y + 1, Number(contract?.lockedTargetY) || player.y);
+    const beamProgress = contract
+      ? Math.max(0, Math.min(1.2, relY / Math.max(1, targetY - this.y)))
+      : 1;
+    const beamCenterX = contract && Number.isFinite(targetX)
+      ? this.x + (targetX - this.x) * beamProgress
+      : this.x;
+    const halfWidth = contract
+      ? Math.max(28, Number(contract.beamHalfWidthPx) || 42)
+      : Math.max(44, 22 + relY * 0.18);
+    const insideBeam = contract
+      ? Math.abs(player.x - beamCenterX) <= halfWidth
+      : Math.abs(relX) <= halfWidth;
+    if (!insideBeam) {
+      if (contract) {
+        contract.outsideSinceMs ??= now;
+        const escaped = now - contract.outsideSinceMs >= Math.max(120, Number(contract.breakHoldMs) || 260);
+        return { applied: false, escaped };
+      }
+      return { applied: false, escaped: false };
+    }
+    if (contract) contract.outsideSinceMs = null;
 
     const frameScale = Math.max(0.5, Math.min(2.2, delta));
     const playerRadius = Number(player.radius) || 14;
     const width = this.game?.getWidth?.() || 800;
     const safeStrength = Math.max(0.2, Math.min(1.4, Number(strengthMult) || 1));
-    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (this.x - player.x) * 0.034 * frameScale * safeStrength));
+    const pullCenterX = contract ? beamCenterX : this.x;
+    player.x = Math.max(playerRadius, Math.min(width - playerRadius, player.x + (pullCenterX - player.x) * 0.034 * frameScale * safeStrength));
     player.y = Math.max(this.y + this.radius + 70, player.y - 1.9 * frameScale * safeStrength);
-    player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
+    if (contract) {
+      contract.pullStartedAtMs ??= now;
+      if (!contract.pullRecorded) {
+        contract.pullRecorded = true;
+        const metrics = this.game?.lateGameExperiment?.metrics;
+        if (metrics) metrics.tractorPulls = (Number(metrics.tractorPulls) || 0) + 1;
+      }
+    } else {
+      player.applyTractorDebuff?.({ source: this.type, x: this.x, y: this.y });
+    }
+    return { applied: true, escaped: false };
   }
 
   applyEliteVortexPull(delta, _playerX, _playerY, strengthMult = 1) {

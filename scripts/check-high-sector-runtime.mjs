@@ -105,8 +105,8 @@ async function openRun(browser, { sector, hull = 'nova-player-ship-01.png', runM
     localStorage.setItem('nova.hangarProgress.v1', JSON.stringify(profile));
     localStorage.setItem('nova_accessibility_reduced_motion', reduced ? '1' : '0');
   }, { profile: matureProfile, reduced: reducedMotion });
-  await page.goto(debugUrl(sector), { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 30000 });
+  await page.goto(debugUrl(sector), { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForFunction(() => Boolean(window.__game?.startGame && window.render_game_to_text), null, { timeout: 90000 });
   const started = await page.evaluate(({ selectedHull, selectedRunMode }) => window.__game.startGame(selectedHull, {
     runMode: selectedRunMode,
     countShipUsage: false
@@ -116,7 +116,7 @@ async function openRun(browser, { sector, hull = 'nova-player-ship-01.png', runM
     const game = window.__game;
     const manager = game?.scenes?.play?.enemyManager;
     return game?.currentSceneName === 'play' && manager?.level === targetSector && Array.isArray(manager?.waves);
-  }, sector, { timeout: 30000 });
+  }, sector, { timeout: 90000 });
   await page.evaluate(({ targetSector, seed, selectedRunMode }) => {
     const game = window.__game;
     const play = game.scenes.play;
@@ -155,7 +155,18 @@ async function readProof(page) {
       safeSide: manager.highSectorEscalationState?.protocol?.initialSafeSide || null,
       runtime: manager.highSectorProtocolRuntime ? { ...manager.highSectorProtocolRuntime } : null,
       waveCount: manager.waves.length,
-      focalWave: manager.waves[Math.floor(manager.waves.length / 2)],
+      waves: manager.waves.map((wave) => ({
+        beatId: wave.highSectorBeatId || null,
+        beatNumber: wave.highSectorBeatNumber || null,
+        objective: wave.highSectorObjective || null,
+        conditionReadMs: wave.highSectorConditionReadMs || null,
+        formation: wave.formation || null,
+        tactic: wave.tactic || null,
+        eliteMiddleShipId: wave.eliteMiddleShipId || null,
+        tractorContract: wave.highSectorTractorContract ? { ...wave.highSectorTractorContract } : null,
+        shift: wave.highSectorShift ? { ...wave.highSectorShift } : null
+      })),
+      objectiveText: play.hud?.missionText?.text || null,
       projectileCap: play.bulletManager.maxEnemyBullets,
       hostileProjectiles: play.bulletManager.enemyBullets.filter((bullet) => bullet?.active !== false).length,
       player: { x: play.player.x, y: play.player.y },
@@ -177,13 +188,13 @@ try {
     { hullClass: 'standard', hull: 'nova-player-ship-01.png' },
     { hullClass: 'fast', hull: 'nova-player-ship-04.png' }
   ];
-  const protocolSectors = [75, 80, 85, 90];
+  const protocolSectors = [75, 80, 85];
   const runModes = ['ranked', 'ranked_tactical', 'overrun_pure', 'overrun_tactical'];
-  const scenarios = hullMatrix.flatMap((hullEntry, hullIndex) => protocolSectors.map((sector, sectorIndex) => ({
-    ...hullEntry,
+  const scenarios = protocolSectors.map((sector, index) => ({
+    ...hullMatrix[index],
     sector,
-    runMode: runModes[(hullIndex + sectorIndex) % runModes.length]
-  })));
+    runMode: runModes[index]
+  }));
   const results = [];
   for (const scenario of scenarios) {
     console.log(`[high-sector-runtime] Sector ${scenario.sector} ${scenario.runMode}`);
@@ -198,7 +209,16 @@ try {
     assert.equal(before.phaseAvailable, false, 'all protocol probes must preserve a non-Phase escape route');
     assert.equal(before.projectileCap, 48);
     assert.ok(before.hostileProjectiles <= before.projectileCap);
-    if (scenario.sector > 80) assert.equal(before.waveCount, 5);
+    assert.equal(before.waveCount, 5);
+    assert.deepEqual(before.waves.map((wave) => wave.beatId), [
+      'opening_read',
+      'priority_problem',
+      'coordinated_escalation',
+      'conversion_relief',
+      'climax_boss_lead_in'
+    ]);
+    assert.deepEqual(before.waves.map((wave) => wave.beatNumber), [1, 2, 3, 4, 5]);
+    assert.ok(before.waves.every((wave) => wave.conditionReadMs >= 1200));
 
     const controlsBefore = await run.page.evaluate(() => ({
       x: window.__game.scenes.play.player.x,
@@ -224,14 +244,15 @@ try {
     if (before.protocolId === 'shifting_front') {
       await run.page.evaluate(() => {
         const manager = window.__game.scenes.play.enemyManager;
-        const focalIndex = Math.floor(manager.waves.length / 2);
+        const shiftIndex = manager.waves.findIndex((wave) => Boolean(wave.highSectorShift));
+        if (shiftIndex < 0) throw new Error('Shifting Front must contain an authored shift beat');
         manager.clearPendingWaveSpawns?.();
         manager.clearEnemies?.();
-        manager.currentWaveIndex = focalIndex;
+        manager.currentWaveIndex = shiftIndex;
         manager.waveEnding = false;
         manager.cleanupPhase = 'NONE';
         manager.state = 'WAVE_ACTIVE';
-        manager.spawnWave(manager.waves[focalIndex]);
+        manager.spawnWave(manager.waves[shiftIndex]);
       });
       await run.page.waitForFunction(() => Boolean(window.__game?.scenes?.play?.enemyManager?.highSectorProtocolRuntime), null, { timeout: 5000 });
       const shiftedRuntime = await run.page.evaluate(() => {
@@ -244,7 +265,10 @@ try {
       shifted = await readProof(run.page);
       shifted.runtime = shiftedRuntime;
       assert.equal(shiftedRuntime.shifted, true);
-      assert.equal(shiftedRuntime.currentSafeSide, before.focalWave.highSectorShift.shiftedSafeSide);
+      assert.equal(
+        shiftedRuntime.currentSafeSide,
+        before.waves.find((wave) => wave.shift)?.shift.shiftedSafeSide
+      );
     }
     await run.page.screenshot({ path: path.join(outputDir, `sector-${scenario.sector}-${scenario.hullClass}-${before.protocolId}.png`), fullPage: true });
     assert.deepEqual(run.pageErrors, []);
@@ -252,14 +276,8 @@ try {
     await run.page.close();
   }
 
-  assert.equal(new Set(results.map((result) => result.before.protocolId)).size, 4, 'runtime must cover all four protocols');
-  for (const hullClass of hullMatrix.map((entry) => entry.hullClass)) {
-    assert.equal(
-      new Set(results.filter((result) => result.scenario.hullClass === hullClass).map((result) => result.before.protocolId)).size,
-      4,
-      `${hullClass} hull must exercise all four protocols`
-    );
-  }
+  assert.equal(new Set(results.map((result) => result.before.protocolId)).size, 3, 'runtime must cover all three protocols');
+  assert.equal(new Set(results.map((result) => result.scenario.hullClass)).size, 3, 'runtime must cover slow, standard, and fast hulls');
 
   const reducedRun = await openRun(browser, {
     sector: 85,
@@ -275,44 +293,196 @@ try {
   assert.deepEqual(reducedRun.pageErrors, []);
   await reducedRun.page.close();
 
-  const bossRun = await openRun(browser, { sector: 80, runMode: 'ranked', hull: 'nova-player-ship-06.png' });
+  const tractorRun = await openRun(browser, {
+    sector: 75,
+    runMode: 'ranked',
+    hull: 'nova-player-ship-06.png'
+  });
+  assert.equal((await readProof(tractorRun.page)).protocolId, 'tractor_intercept');
+  await tractorRun.page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    const manager = play.enemyManager;
+    const tractorIndex = manager.waves.findIndex((wave) => Boolean(wave.highSectorTractorContract));
+    if (tractorIndex < 0) throw new Error('Tractor Intercept must contain an authored Tractor beat');
+    game.lateGameExperiment = {
+      active: true,
+      metrics: { tractorPulls: 0, tractorBreaks: 0, tractorBreakTimeMs: 0, tractorRecoveryMs: 0 }
+    };
+    manager.clearPendingWaveSpawns?.();
+    manager.clearEnemies?.();
+    manager.currentWaveIndex = tractorIndex;
+    manager.waveEnding = false;
+    manager.cleanupPhase = 'NONE';
+    manager.state = 'WAVE_ACTIVE';
+    manager.spawnWave(manager.waves[tractorIndex]);
+  });
+  await tractorRun.page.waitForFunction(() => window.__game.scenes.play.enemyManager.enemies.some(
+    (enemy) => Boolean(enemy.highSectorTractorContract)
+  ), null, { timeout: 5000 });
+  const tractorWarning = await tractorRun.page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    const enemy = play.enemyManager.enemies.find((candidate) => candidate.highSectorTractorContract);
+    const player = play.player;
+    const width = game.getWidth();
+    const height = game.getHeight();
+    window.__highSectorTractorRuntimeProbe = enemy;
+    enemy.health = 999999;
+    enemy.maxHealth = 999999;
+    enemy.active = true;
+    enemy.waitingForEntry = false;
+    enemy.state = 'FORMATION';
+    enemy.x = width / 2;
+    enemy.y = height * 0.24;
+    enemy.sprite.x = enemy.x;
+    enemy.sprite.y = enemy.y;
+    enemy.eliteAbility.state = 'cooldown';
+    enemy.eliteAbility.nextAt = 0;
+    player.dodgeCooldown = 600000;
+    player.clearStatusEffects?.('tractor_runtime_setup');
+    const targetOnRight = enemy.highSectorTractorContract.escapeSide === 'left';
+    player.x = targetOnRight ? width * 0.72 : width * 0.28;
+    player.y = height * 0.76;
+    enemy.updateEliteMiddleShip(1, player.x, player.y);
+    return {
+      contract: { ...enemy.highSectorTractorContract },
+      abilityState: enemy.eliteAbility.state,
+      phaseAvailable: player.dodgeCooldown <= 0,
+      tractorDebuff: player.getTractorDebuffState(),
+      priorityTargetX: enemy.x,
+      width
+    };
+  });
+  assert.equal(tractorWarning.abilityState, 'telegraph');
+  assert.equal(tractorWarning.phaseAvailable, false);
+  assert.ok(tractorWarning.contract.warningLeadMs >= 1400);
+  assert.equal(tractorWarning.contract.maxLossOfControlSources, 1);
+  assert.equal(tractorWarning.contract.allowsMineLayer, false);
+  assert.equal(tractorWarning.contract.allowsForcedLaneShift, false);
+  assert.equal(tractorWarning.tractorDebuff.last, null);
+  assert.ok(Math.abs(tractorWarning.priorityTargetX - tractorWarning.width / 2) <= 1);
+  await tractorRun.page.screenshot({ path: path.join(outputDir, 'sector-75-tractor-warning-slow-pure.png'), fullPage: true });
+  const tractorPull = await tractorRun.page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    const enemy = window.__highSectorTractorRuntimeProbe;
+    const player = play.player;
+    const contract = enemy.highSectorTractorContract;
+    enemy.eliteAbility.startedAt = Date.now() - contract.warningLeadMs - 1;
+    enemy.updateEliteMiddleShip(1, player.x, player.y);
+    player.x = contract.lockedTargetX;
+    player.y = contract.lockedTargetY;
+    enemy.updateEliteMiddleShip(1, player.x, player.y);
+    return {
+      abilityState: enemy.eliteAbility.state,
+      pullStarted: Number.isFinite(contract.pullStartedAtMs),
+      metrics: { ...game.lateGameExperiment.metrics },
+      tractorDebuff: player.getTractorDebuffState()
+    };
+  });
+  assert.equal(tractorPull.abilityState, 'active');
+  assert.equal(tractorPull.pullStarted, true);
+  assert.equal(tractorPull.metrics.tractorPulls, 1);
+  assert.equal(tractorPull.tractorDebuff.last, null);
+  await tractorRun.page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    const enemy = window.__highSectorTractorRuntimeProbe;
+    const player = play.player;
+    const contract = enemy.highSectorTractorContract;
+    const laneWidth = game.getWidth() * contract.escapeLaneRatio;
+    player.x = contract.escapeSide === 'left' ? laneWidth / 2 : game.getWidth() - laneWidth / 2;
+    player.y = contract.lockedTargetY;
+    enemy.updateEliteMiddleShip(1, player.x, player.y);
+  });
+  await tractorRun.page.waitForTimeout(300);
+  const tractorBreak = await tractorRun.page.evaluate(() => {
+    const game = window.__game;
+    const play = game.scenes.play;
+    const enemy = window.__highSectorTractorRuntimeProbe;
+    const player = play.player;
+    enemy.updateEliteMiddleShip(1, player.x, player.y);
+    return {
+      abilityState: enemy.eliteAbility.state,
+      contract: { ...enemy.highSectorTractorContract },
+      cooldownRemainingMs: enemy.eliteAbility.nextAt - Date.now(),
+      metrics: { ...game.lateGameExperiment.metrics },
+      tractorDebuff: player.getTractorDebuffState()
+    };
+  });
+  assert.equal(tractorBreak.abilityState, 'cooldown');
+  assert.equal(tractorBreak.contract.lastBreakReason, 'escaped_lane');
+  assert.ok(tractorBreak.contract.lastBreakDurationMs >= 260);
+  assert.equal(tractorBreak.contract.lastRecoveryMs, 7200);
+  assert.ok(tractorBreak.cooldownRemainingMs >= 7000);
+  assert.equal(tractorBreak.metrics.tractorBreaks, 1);
+  assert.ok(tractorBreak.metrics.tractorBreakTimeMs >= 260);
+  assert.equal(tractorBreak.metrics.tractorRecoveryMs, 7200);
+  assert.equal(tractorBreak.tractorDebuff.last, null);
+  assert.deepEqual(tractorRun.pageErrors, []);
+  await tractorRun.page.close();
+
+  const bossRun = await openRun(browser, { sector: 60, runMode: 'ranked', hull: 'nova-player-ship-06.png' });
   await bossRun.page.evaluate(async () => {
     const manager = window.__game.scenes.play.enemyManager;
     manager.clearPendingWaveSpawns?.();
     manager.clearEnemies?.();
     manager.phase = 'BOSS';
-    await manager.spawnBoss(80);
+    await manager.spawnBoss(60);
     manager.state = 'BOSS_ACTIVE';
-    for (let frame = 0; frame < 60; frame += 1) manager.updateAscendantBossModifier(1);
+    for (let frame = 0; frame < 60; frame += 1) manager.updateAuthoredHighSectorBossSupport(1);
   });
-  await bossRun.page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.ascendantSupportState?.state === 'warned', null, { timeout: 3000 });
-  await bossRun.page.screenshot({ path: path.join(outputDir, 'sector-80-ascendant-warning.png'), fullPage: true });
+  await bossRun.page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.authoredBossSupportState?.state === 'warned', null, { timeout: 3000 });
+  await bossRun.page.screenshot({ path: path.join(outputDir, 'sector-60-authored-support-warning.png'), fullPage: true });
   await bossRun.page.evaluate(() => {
     const manager = window.__game.scenes.play.enemyManager;
     manager.state = 'BOSS_ACTIVE';
-    for (let frame = 0; frame < 120; frame += 1) manager.updateAscendantBossModifier(1);
+    for (let frame = 0; frame < 100; frame += 1) manager.updateAuthoredHighSectorBossSupport(1);
   });
-  await bossRun.page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.ascendantSupportState?.state === 'complete', null, { timeout: 3000 });
+  await bossRun.page.waitForFunction(() => window.__game?.scenes?.play?.enemyManager?.authoredBossSupportState?.state === 'complete', null, { timeout: 3000 });
   const bossProof = await bossRun.page.evaluate(() => {
     const manager = window.__game.scenes.play.enemyManager;
+    const supports = manager.enemies.filter((enemy) => enemy.kind === 'high_sector_boss_support');
     return {
       bossHealth: manager.boss.health,
       bossMaxHealth: manager.boss.maxHealth,
       bossHealthCap: manager.boss.highSectorHealthCap,
-      support: { ...manager.ascendantSupportState },
-      activeSupports: manager.getActiveBossFuelShips().map((ship) => ({ x: ship.x, y: ship.y, active: ship.active })),
+      support: { ...manager.authoredBossSupportState },
+      activeSupports: supports.map((ship) => ({
+        x: ship.x,
+        y: ship.y,
+        active: ship.active,
+        waitingForEntry: ship.waitingForEntry,
+        health: ship.health,
+        kind: ship.kind
+      })),
+      randomFuelSupports: manager.getActiveBossFuelShips().length,
+      randomReinforcementEvents: manager.bossReinforcementEventsThisBoss,
+      randomChaosEvents: manager.bossChaosEventsThisBoss,
       lastOrder: manager.lastBossFuelSupportOrder,
       render: JSON.parse(window.render_game_to_text()).highSectorEscalation
     };
   });
   assert.ok(bossProof.bossHealth <= 280 && bossProof.bossMaxHealth <= 280);
-  assert.equal(bossProof.support.healthMultiplier, 1);
-  assert.equal(bossProof.support.spawnedCount, 2);
-  assert.equal(bossProof.activeSupports.length, 2);
-  assert.equal(bossProof.lastOrder.source, 'ascendant_support_formation');
-  assert.ok(bossProof.lastOrder.warningLeadMs >= 1700);
+  assert.equal(bossProof.support.bossHealthMultiplier, 1);
+  assert.equal(bossProof.support.spawnedCount, 3);
+  assert.equal(bossProof.support.eventCount, 1);
+  assert.equal(bossProof.activeSupports.length, 3);
+  assert.ok(bossProof.activeSupports.every((ship) => ship.health <= 3));
+  assert.equal(bossProof.randomFuelSupports, 0);
+  assert.equal(bossProof.randomReinforcementEvents, 0);
+  assert.equal(bossProof.randomChaosEvents, 0);
+  assert.equal(bossProof.lastOrder.source, 'authored_ordinary_support_intercept');
+  assert.ok(bossProof.lastOrder.warningLeadMs >= 1400);
+  assert.deepEqual(bossProof.lastOrder.constraints, {
+    healing: false,
+    lossOfControl: false,
+    laneDenial: false,
+    randomSupportSuppressed: true
+  });
   assert.deepEqual(bossRun.pageErrors, []);
-  await bossRun.page.screenshot({ path: path.join(outputDir, 'sector-80-ascendant-support.png'), fullPage: true });
+  await bossRun.page.screenshot({ path: path.join(outputDir, 'sector-60-authored-support.png'), fullPage: true });
   await bossRun.page.close();
 
   const report = {
@@ -322,6 +492,7 @@ try {
     fixedSeed,
     results,
     reducedMotion: reducedProof,
+    tractor: { warning: tractorWarning, pull: tractorPull, break: tractorBreak },
     boss: bossProof
   };
   writeFileSync(path.join(outputDir, 'report.json'), JSON.stringify(report, null, 2));

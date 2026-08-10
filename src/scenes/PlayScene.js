@@ -176,6 +176,7 @@ import {
   claimExperimentalProjectileHit,
   recordExperimentalChainLightningOrigin
 } from '../game/ExperimentalProjectileContracts.js';
+import { applyAggregateHighSectorHazardBudget } from '../game/HighSectorHazardBudget.js';
 import {
   createCombatTelemetryState,
   getCombatDamageSourceLabel,
@@ -15439,38 +15440,18 @@ export class PlayScene {
   capBossHazardForHighSector(hazard, width, height) {
     const escalation = this.enemyManager?.highSectorEscalationState;
     if (!hazard || !escalation?.active || !escalation.caps) return hazard;
-    const screenArea = Math.max(1, width * height);
-    const maxRatio = escalation.caps.maxHazardAreaRatio;
-    const estimateArea = () => {
-      if (hazard.kind === 'wall') {
-        return Math.max(0, hazard.endY - hazard.startY)
-          * Math.max(1, hazard.columns?.length || 1)
-          * Math.max(1, hazard.width * 2);
-      }
-      if (hazard.kind === 'ring') {
-        const annulus = Math.PI * Math.max(0, hazard.outerRadius ** 2 - hazard.innerRadius ** 2);
-        const safeFraction = Math.max(0, Math.min(0.8, Number(hazard.safeWedge) / Math.PI));
-        return annulus * (1 - safeFraction);
-      }
-      if (hazard.kind === 'beam') return Math.max(1, hazard.length) * Math.max(1, hazard.radius * 2);
-      return 0.5 * Math.max(1, hazard.length) ** 2 * Math.max(0.01, hazard.spread);
-    };
-    const beforeRatio = estimateArea() / screenArea;
-    if (beforeRatio > maxRatio) {
-      const scale = Math.sqrt(maxRatio / beforeRatio);
-      if (hazard.kind === 'wall') hazard.width = Math.max(12, hazard.width * scale * scale);
-      else if (hazard.kind === 'ring') {
-        hazard.outerRadius *= scale;
-        hazard.innerRadius *= scale;
-      } else if (hazard.kind === 'beam') hazard.radius = Math.max(8, hazard.radius * scale * scale);
-      else hazard.spread = Math.max(0.04, hazard.spread * scale * scale);
+    const result = applyAggregateHighSectorHazardBudget({
+      hazard,
+      activeHazards: this.bossHazards,
+      width,
+      height,
+      maxRatio: escalation.caps.maxHazardAreaRatio
+    });
+    const metrics = this.game?.lateGameExperiment?.metrics;
+    if (metrics && Number.isFinite(result.aggregateAfterRatio)) {
+      metrics.hazardPeak = Math.max(Number(metrics.hazardPeak) || 0, result.aggregateAfterRatio);
     }
-    hazard.highSectorAreaCap = {
-      maxRatio,
-      beforeRatio: Number(beforeRatio.toFixed(4)),
-      afterRatio: Number((estimateArea() / screenArea).toFixed(4))
-    };
-    return hazard;
+    return result.accepted ? hazard : null;
   }
 
   registerBossHazardFromBoss(boss, category = 'regular', details = {}) {
@@ -15575,7 +15556,8 @@ export class PlayScene {
       };
     }
 
-    this.capBossHazardForHighSector(hazard, width, height);
+    hazard = this.capBossHazardForHighSector(hazard, width, height);
+    if (!hazard) return null;
     this.bossHazards.push(hazard);
     this.playBossHazardFireSfx(hazard);
     return hazard;

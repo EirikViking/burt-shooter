@@ -1,39 +1,109 @@
 const PROTOCOL_CADENCE = 5;
 const PROTOCOL_START_SECTOR = 75;
-const PROTOCOL_REPEAT_WINDOW_SECTORS = 20;
+const PROTOCOL_REPEAT_WINDOW_SECTORS = 15;
+const AUTHORED_BEAT_COUNT = 5;
+const CONDITION_READ_MS = 1200;
+
+export const HIGH_SECTOR_ENCOUNTER_BEATS = Object.freeze([
+  Object.freeze({
+    id: 'opening_read',
+    name: 'OPENING READ',
+    objective: 'READ THE FORMATION',
+    countScalar: 0.72,
+    cadence: 0.94,
+    fireScalar: 0.72,
+    fireDelayMult: 1.24
+  }),
+  Object.freeze({
+    id: 'priority_problem',
+    name: 'PRIORITY PROBLEM',
+    objective: 'BREAK THE PRIORITY TARGET',
+    countScalar: 0.56,
+    cadence: 0.98,
+    fireScalar: 0.64,
+    fireDelayMult: 1.3
+  }),
+  Object.freeze({
+    id: 'coordinated_escalation',
+    name: 'COORDINATED ESCALATION',
+    objective: 'HOLD THE OPEN LANE',
+    countScalar: 0.84,
+    cadence: 1.08,
+    fireScalar: 0.78,
+    fireDelayMult: 1.18
+  }),
+  Object.freeze({
+    id: 'conversion_relief',
+    name: 'CONVERSION OR RELIEF',
+    objective: 'RELIEF WINDOW // RESET POSITION',
+    countScalar: 0.46,
+    cadence: 0.86,
+    fireScalar: 0.48,
+    fireDelayMult: 1.52
+  }),
+  Object.freeze({
+    id: 'climax_boss_lead_in',
+    name: 'CLIMAX AND BOSS LEAD-IN',
+    objective: 'MASTER THE RULE // BOSS NEXT',
+    countScalar: 0.88,
+    cadence: 1.1,
+    fireScalar: 0.8,
+    fireDelayMult: 1.16
+  })
+]);
+
+const TACTICAL_DEPTH_PROFILES = Object.freeze([
+  Object.freeze({
+    id: 'sector_75_first_contact',
+    minSector: 75,
+    formations: Object.freeze(['STAGGERED_WING', 'V_SHAPE', 'DOUBLE_ARC', 'ARC', 'CROSS_STREAM']),
+    tactics: Object.freeze(['comet_queue', 'mirror_zipper', 'lunar_turnpike', 'paperclip_parade', 'traffic_court']),
+    reliefMs: 1800
+  }),
+  Object.freeze({
+    id: 'sector_100_lane_relay',
+    minSector: 100,
+    formations: Object.freeze(['SIDEWINDER', 'SCREEN_DOOR', 'CROSS_STREAM', 'ARC', 'DOUBLE_ARC']),
+    tactics: Object.freeze(['sidewinder_choir', 'traffic_court', 'forklift_lattice', 'comet_queue', 'lunar_turnpike']),
+    reliefMs: 1600
+  }),
+  Object.freeze({
+    id: 'sector_120_split_rhythm',
+    minSector: 120,
+    formations: Object.freeze(['DOUBLE_ARC', 'PINCER', 'STAGGERED_WING', 'V_SHAPE', 'SCREEN_DOOR']),
+    tactics: Object.freeze(['orbit_receiving_line', 'neon_jury', 'mirror_zipper', 'paperclip_parade', 'traffic_court']),
+    reliefMs: 1450
+  }),
+  Object.freeze({
+    id: 'sector_150_frontier_rotation',
+    minSector: 150,
+    formations: Object.freeze(['ORBIT_RING', 'SIDEWINDER', 'CROSS_STREAM', 'ARC', 'PINCER']),
+    tactics: Object.freeze(['receipt_spiral', 'sidewinder_choir', 'lunar_turnpike', 'comet_queue', 'neon_jury']),
+    reliefMs: 1300
+  })
+]);
 
 export const HIGH_SECTOR_PROTOCOLS = Object.freeze([
   Object.freeze({
-    id: 'crossfire_doctrine',
-    name: 'CROSSFIRE DOCTRINE',
-    cue: 'LINKED LANES // KEEP ONE EXIT OPEN',
-    formation: 'CROSS_STREAM',
-    tactic: 'lunar_turnpike',
-    forcedThreatActionIds: Object.freeze(['crossfire_pair', 'lane_cutter'])
-  }),
-  Object.freeze({
-    id: 'hunter_pair',
-    name: 'HUNTER PAIR',
-    cue: 'PAIRED HUNTERS // BREAK THE PINCER',
-    formation: 'PINCER',
-    tactic: 'mirror_zipper',
-    forcedThreatActionIds: Object.freeze(['shotgun_fan_feint', 'brake_dash_bolt'])
+    id: 'tractor_intercept',
+    name: 'TRACTOR INTERCEPT',
+    cue: 'ONE TRACTOR // MARKED ESCAPE LANE',
+    forcedThreatActionIds: Object.freeze(['brake_dash_bolt']),
+    priorityEliteId: 'nova_elite_tractor_puller'
   }),
   Object.freeze({
     id: 'escort_debt',
     name: 'ESCORT DEBT',
-    cue: 'BREAK THE TETHER // THEN THE PRIORITY THREAT',
-    formation: 'SCREEN_DOOR',
-    tactic: 'traffic_court',
-    forcedThreatActionIds: Object.freeze(['lane_cutter', 'crossfire_pair'])
+    cue: 'BREAK THE TETHER // THEN THE FORMATION',
+    forcedThreatActionIds: Object.freeze(['crossfire_pair']),
+    priorityEliteId: 'nova_elite_shield_projector'
   }),
   Object.freeze({
     id: 'shifting_front',
     name: 'SHIFTING FRONT',
     cue: 'THE SAFE SIDE WILL SHIFT AFTER THE WARNING',
-    formation: 'STAGGERED_WING',
-    tactic: 'weave_wall',
-    forcedThreatActionIds: Object.freeze(['lane_cutter'])
+    forcedThreatActionIds: Object.freeze(['lane_cutter']),
+    priorityEliteId: 'nova_elite_sniper_rail'
   })
 ]);
 
@@ -63,6 +133,13 @@ function getSeededProtocolDeck(seed) {
     [deck[index], deck[swapIndex]] = [deck[swapIndex], deck[index]];
   }
   return deck;
+}
+
+function getTacticalDepthProfile(sector) {
+  const safeSector = Math.max(PROTOCOL_START_SECTOR, Math.floor(Number(sector) || PROTOCOL_START_SECTOR));
+  return [...TACTICAL_DEPTH_PROFILES]
+    .reverse()
+    .find((profile) => safeSector >= profile.minSector) || TACTICAL_DEPTH_PROFILES[0];
 }
 
 export function isHighSectorProtocolSector(sector) {
@@ -95,6 +172,33 @@ export function getHighSectorProtocolSchedule(seed, sectors = [75, 80, 85, 90, 9
   }));
 }
 
+function createAuthoredBossSupportEvent({ config, sector, seed }) {
+  const formations = ['ARC', 'STAGGERED_WING', 'DOUBLE_ARC'];
+  const tactics = ['comet_queue', 'paperclip_parade', 'sidewinder_choir'];
+  const selection = Math.floor(seededUnit(seed, `boss-support:${sector}`) * formations.length) % formations.length;
+  const safeSide = seededUnit(seed, `boss-support-safe-side:${sector}`) < 0.5 ? 'left' : 'right';
+  return {
+    id: 'authored_ordinary_support_intercept',
+    name: 'BOSS SUPPORT INTERCEPT',
+    cue: 'ORDINARY SUPPORT INBOUND // SAFE LANE: {side}',
+    warningDelayMs: 900,
+    warningLeadMs: Math.max(1400, Number(config.bossSupportWarningLeadMs) || 1600),
+    count: 3,
+    formation: formations[selection],
+    tactic: tactics[selection],
+    safeSide,
+    safeCorridorRatio: 0.32,
+    entryDurationMs: Math.max(1080, Number(config.minEntryDurationMs) || 1080),
+    eventBudget: 1,
+    ordinaryEnemiesOnly: true,
+    suppressRandomBossSupport: true,
+    allowHealing: false,
+    allowLossOfControl: false,
+    allowLaneDenial: false,
+    bossHealthMultiplier: 1
+  };
+}
+
 export function createHighSectorEscalationState({
   config = {},
   armed = false,
@@ -111,20 +215,11 @@ export function createHighSectorEscalationState({
     ? clamp(1 + pressureStep * (Number(config.pressureBudgetPerFiveSectors) || 0.05), 1, Number(config.pressureBudgetMax) || 1.45)
     : 1;
   const protocol = active ? getHighSectorProtocolForSector(seed, safeSector) : null;
-  const bossModifier = active && safeSector === 80
-    ? {
-      id: 'ascendant_support_formation',
-      name: 'ASCENDANT SUPPORT FORMATION',
-      cue: 'SUPPORT FORMATION INBOUND // BREAK THE TETHER',
-      supportCount: Math.max(1, Math.min(3, Math.floor(Number(config.ascendantSupportCount) || 2))),
-      healthMultiplier: 1,
-      warningLeadMs: Math.max(1200, Number(config.ascendantWarningLeadMs) || 1800),
-      nonPhaseEscapeSide: protocol?.initialSafeSide || (seededUnit(seed, 'ascendant-safe-side:80') < 0.5 ? 'left' : 'right')
-    }
-    : null;
+  const depthProfile = protocol ? getTacticalDepthProfile(safeSector) : null;
+  const bossSupportEvent = active ? createAuthoredBossSupportEvent({ config, sector: safeSector, seed }) : null;
 
   return {
-    profileId: config.id || 'high_sector_first_slice_v1',
+    profileId: config.id || 'high_sector_authored_v2',
     enabledByDefault: config.enabled === true,
     armed: Boolean(armed),
     active,
@@ -137,7 +232,8 @@ export function createHighSectorEscalationState({
     pressureStep,
     pressureBudget,
     protocol,
-    bossModifier,
+    tacticalDepthProfile: depthProfile ? { ...depthProfile, formations: [...depthProfile.formations], tactics: [...depthProfile.tactics] } : null,
+    bossSupportEvent,
     caps: active ? {
       maxHostileProjectiles: Math.max(24, Math.floor(Number(config.maxHostileProjectiles) || 48)),
       maxHazardAreaRatio: clamp(config.maxHazardAreaRatio || 0.42, 0.2, 0.7),
@@ -155,86 +251,109 @@ export function createHighSectorEscalationState({
       ),
       announceMs: Math.max(220, Math.floor(Number(config.minimumAnnouncementMs) || 260))
     } : null,
-    authoredEncounterLimit: active && safeSector > 80
-      ? Math.max(4, Math.floor(Number(config.authoredEncounterLimit) || 5))
-      : null
+    authoredEncounterLimit: protocol
+      ? Math.max(AUTHORED_BEAT_COUNT, Math.floor(Number(config.authoredEncounterLimit) || AUTHORED_BEAT_COUNT))
+      : null,
+    authoredEncounterBeatCount: protocol ? AUTHORED_BEAT_COUNT : null,
+    conditionReadMs: protocol ? CONDITION_READ_MS : null
   };
 }
 
-function focalWaveIndex(waves) {
-  return Math.max(0, Math.min(waves.length - 1, Math.floor(waves.length / 2)));
+function clearGeneratedThreatPlans(wave) {
+  const {
+    eliteMiddleShipId: _eliteMiddleShipId,
+    multiEliteMiddleShipIds: _multiEliteMiddleShipIds,
+    multiEliteCompensation: _multiEliteCompensation,
+    dangerMidShipIds: _dangerMidShipIds,
+    ...clean
+  } = wave || {};
+  return clean;
 }
 
-function shapeProtocolWave(wave, protocol, state) {
-  if (!protocol) return wave;
-  const pressureBonus = Math.max(1, state.pressureBudget);
-  const shaped = {
-    ...wave,
-    formation: protocol.formation,
-    tactic: protocol.tactic,
-    cadence: clamp((Number(wave.cadence) || 1) * Math.min(1.16, 1 + (pressureBonus - 1) * 0.32), 0.82, 1.55),
-    forcedThreatActionIds: [...protocol.forcedThreatActionIds],
-    threatBudgetModifiers: {
-      ...(wave.threatBudgetModifiers || {}),
-      dangerBudgetBonus: Math.min(4, 1 + Math.floor(state.pressureStep / 2)),
-      maxActiveBonus: Math.min(2, Math.floor(state.pressureStep / 3)),
-      plannedActionBonus: Math.min(3, 1 + Math.floor(state.pressureStep / 3))
-    },
-    highSectorProtocolId: protocol.id,
-    highSectorAuthoredEncounter: true,
-    highSectorNonPhaseEscapeSide: protocol.initialSafeSide
-  };
+function applyProtocolBeat(shaped, protocol, beat, beatIndex) {
+  if (beat.id === 'priority_problem' || beat.id === 'climax_boss_lead_in') {
+    shaped.eliteMiddleShipId = protocol.priorityEliteId;
+    shaped.eliteHealthScalar = protocol.id === 'tractor_intercept' ? 0.54 : 0.68;
+    shaped.eliteFireDelayMult = 1.34;
+    shaped.eliteSpecialDelayMs = beat.id === 'priority_problem' ? 400 : 700;
+    shaped.highSectorPriorityTargetXRatio = 0.5;
+  }
 
-  if (protocol.id === 'hunter_pair') {
-    shaped.count = Math.max(4, Math.round((Number(wave.count) || 8) * 0.62));
-    shaped.multiEliteMiddleShipIds = ['nova_elite_tractor_puller', 'nova_elite_mine_layer'];
-    shaped.multiEliteCompensation = {
-      normalCountBefore: Number(wave.count) || 8,
-      normalCountAfter: shaped.count,
-      normalFireScalar: 0.56,
-      normalFireDelayMult: 1.28,
-      eliteHealthScalar: 0.56,
-      eliteFireDelayMult: 1.62,
-      eliteTacticFireScalar: 0.46,
-      specialDelayStepMs: 2800
+  if (protocol.id === 'tractor_intercept' && shaped.eliteMiddleShipId === 'nova_elite_tractor_puller') {
+    shaped.highSectorTractorContract = {
+      id: 'single_locked_tractor_lane_v1',
+      warningLeadMs: 1400,
+      activeMs: 1100,
+      recoveryMs: 7200,
+      breakHoldMs: 260,
+      beamHalfWidthPx: 42,
+      escapeSide: protocol.initialSafeSide,
+      escapeLaneRatio: 0.32,
+      maxLossOfControlSources: 1,
+      priorityTargetXRatio: 0.5,
+      deterministic: true,
+      appliesRandomDebuff: false,
+      allowsMineLayer: false,
+      allowsForcedLaneShift: false
     };
-  } else if (protocol.id === 'escort_debt') {
-    shaped.eliteMiddleShipId = 'nova_elite_shield_projector';
-    shaped.eliteHealthScalar = 0.74;
-    shaped.eliteFireDelayMult = 1.18;
-    shaped.dangerMidShipIds = [{ slot: Math.max(0, Math.floor((Number(shaped.count) || 6) / 2)), id: 'danger_mid_001' }];
-  } else if (protocol.id === 'shifting_front') {
+  }
+
+  if (protocol.id === 'shifting_front' && (beatIndex === 0 || beatIndex === 4)) {
     shaped.highSectorShift = {
-      warningAtMs: 3100,
-      shiftAtMs: 5000,
+      warningAtMs: 1800,
+      shiftAtMs: 3400,
       initialSafeSide: protocol.initialSafeSide,
       shiftedSafeSide: protocol.shiftedSafeSide
     };
   }
+
   return shaped;
 }
 
 export function shapeHighSectorWaves(waves, state) {
-  if (!Array.isArray(waves) || !state?.active) return waves;
-  const limited = state.authoredEncounterLimit && waves.length > state.authoredEncounterLimit
-    ? waves.slice(0, state.authoredEncounterLimit)
-    : [...waves];
-  const focus = focalWaveIndex(limited);
-  return limited.map((wave, index) => {
-    const pressureBudgetModifiers = {
-      ...(wave.threatBudgetModifiers || {}),
-      dangerBudgetBonus: Math.max(0, Math.min(3, Math.floor(state.pressureStep / 2))),
-      maxActiveBonus: Math.max(0, Math.min(2, Math.floor(state.pressureStep / 4))),
-      plannedActionBonus: Math.max(0, Math.min(2, Math.floor(state.pressureStep / 3)))
-    };
-    const base = {
-      ...wave,
+  if (!Array.isArray(waves) || !state?.active || !state.protocol) return waves;
+  if (waves.length !== AUTHORED_BEAT_COUNT) {
+    throw new Error(`High-sector authored encounters require exactly ${AUTHORED_BEAT_COUNT} preplanned waves; received ${waves.length}.`);
+  }
+
+  const depth = state.tacticalDepthProfile || getTacticalDepthProfile(state.sector);
+  return waves.map((wave, index) => {
+    const beat = HIGH_SECTOR_ENCOUNTER_BEATS[index];
+    const baseCount = Math.max(1, Math.floor(Number(wave?.count) || 1));
+    const clean = clearGeneratedThreatPlans(wave);
+    const shaped = {
+      ...clean,
+      count: Math.max(3, Math.round(baseCount * beat.countScalar)),
+      formation: depth.formations[index],
+      tactic: depth.tactics[index],
+      entry: index % 2 === 0 ? 'split' : 'alternating',
+      cadence: beat.cadence,
+      forcedThreatActionIds: [...state.protocol.forcedThreatActionIds],
+      threatBudgetModifiers: {
+        dangerBudgetBonus: 0,
+        maxActiveBonus: 0,
+        plannedActionBonus: 0
+      },
+      highSectorProtocolId: state.protocol.id,
+      highSectorAuthoredEncounter: true,
       highSectorPressureBudget: state.pressureBudget,
       highSectorPressureStep: state.pressureStep,
-      highSectorAuthoredEncounter: state.sector > 80,
-      threatBudgetModifiers: pressureBudgetModifiers
+      highSectorTacticalDepthProfile: depth.id,
+      highSectorBeatIndex: index,
+      highSectorBeatNumber: index + 1,
+      highSectorBeatId: beat.id,
+      highSectorBeatName: beat.name,
+      highSectorObjective: beat.objective,
+      highSectorConditionReadMs: CONDITION_READ_MS,
+      highSectorBriefingAnnounceMs: index === 0 ? 1150 : 260,
+      highSectorPreCombatReliefMs: beat.id === 'climax_boss_lead_in' ? depth.reliefMs : 0,
+      highSectorNonPhaseEscapeSide: state.protocol.initialSafeSide,
+      highSectorTacticOverrides: {
+        fireScalar: beat.fireScalar,
+        fireDelayMult: beat.fireDelayMult
+      }
     };
-    return index === focus ? shapeProtocolWave(base, state.protocol, state) : base;
+    return applyProtocolBeat(shaped, state.protocol, beat, index);
   });
 }
 

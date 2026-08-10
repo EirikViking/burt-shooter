@@ -86,7 +86,7 @@ export const BalanceConfig = {
         enemyEntryDurationMs: 1460,
         enemyEntryDelayBaseMs: 150,
         highSectorEscalation: {
-            id: 'high_sector_first_slice_v1',
+            id: 'high_sector_authored_v2',
             enabled: false,
             activationSector: 60,
             pressureBudgetPerFiveSectors: 0.05,
@@ -103,8 +103,7 @@ export const BalanceConfig = {
             maxHazardAreaRatio: 0.42,
             minEntryDurationMs: 1080,
             maxBossHealth: 280,
-            ascendantSupportCount: 2,
-            ascendantWarningLeadMs: 1800
+            bossSupportWarningLeadMs: 1600
         },
         openingMomentum: {
             enabled: true,

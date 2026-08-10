@@ -238,6 +238,8 @@ export function createLateGamePressureExperimentRun(request = {}) {
       pulseRechargeBlocks: 0,
       pulseUnavailableDodges: 0,
       tractorPulls: 0,
+      tractorBreaks: 0,
+      tractorBreakTimeMs: 0,
       tractorRecoveryMs: 0,
       projectilePeak: 0,
       hazardPeak: 0,

@@ -895,14 +895,24 @@ export class HUD {
     const waveIndex = Number.isFinite(manager?.currentWaveIndex) ? manager.currentWaveIndex + 1 : 1;
     const phase = manager?.phase || 'WAVES';
     const state = manager?.state || 'IDLE';
+    const waveConfig = manager?.pendingWaveConfig || manager?.waves?.[manager?.currentWaveIndex] || null;
+    const authoredObjective = waveConfig?.highSectorAuthoredEncounter
+      ? translateText(waveConfig.highSectorObjective)
+      : null;
 
     if (phase === 'BOSS' || state === 'BOSS_ACTIVE' || state === 'BOSS_GATE') {
       const boss = manager?.boss;
       const bossName = String(boss?.name || '').trim();
       const bossPhase = Math.max(1, Math.min(3, Math.round(Number(boss?.phase) || 1)));
-      this.missionText.text = bossName
-        ? `${bossName} // ${translateText('PHASE')} ${bossPhase}`
-        : translateText('BOSS SIGNAL INBOUND');
+      const authoredSupportVisible = Boolean(
+        manager?.authoredBossSupportState?.state === 'warned'
+        || manager?.enemies?.some((enemy) => enemy?.kind === 'high_sector_boss_support' && enemy?.active !== false)
+      );
+      this.missionText.text = authoredSupportVisible
+        ? translateText('BOSS SUPPORT INTERCEPT')
+        : bossName
+          ? `${bossName} // ${translateText('PHASE')} ${bossPhase}`
+          : translateText('BOSS SIGNAL INBOUND');
       this.updateMissionProgress({
         state,
         phase: 'BOSS',
@@ -928,7 +938,30 @@ export class HUD {
     }
 
     if (state === 'WAVE_BRIEFING') {
-      this.missionText.text = `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      this.missionText.text = authoredObjective
+        ? translateText('BEAT {current}/{total} // {objective}', {
+          current: Math.min(waveIndex, waveTotal),
+          total: waveTotal,
+          objective: authoredObjective
+        })
+        : `INCOMING WAVE ${Math.min(waveIndex, waveTotal)}/${waveTotal}`;
+      this.updateMissionProgress({
+        state,
+        phase,
+        waveTotal,
+        waveIndex,
+        activeEnemies,
+        activeBullets
+      });
+      return;
+    }
+
+    if (authoredObjective) {
+      this.missionText.text = translateText('BEAT {current}/{total} // {objective}', {
+        current: Math.min(waveIndex, waveTotal),
+        total: waveTotal,
+        objective: authoredObjective
+      });
       this.updateMissionProgress({
         state,
         phase,
