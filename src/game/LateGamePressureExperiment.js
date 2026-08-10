@@ -5,6 +5,8 @@ export const LATE_GAME_EXPERIMENT_LABEL = 'EXPERIMENTAL TEST // NO AWARDS';
 export const LATE_GAME_EXPERIMENT_STANDARD_SECTORS = 10;
 export const LATE_GAME_EXPERIMENT_START_SECTORS = Object.freeze([60, 75, 100, 120, 150]);
 export const LATE_GAME_EXPERIMENT_MATURE_LIVES = 12;
+export const LATE_GAME_EXPERIMENT_PHASE_PULSE_MAX_RADIUS = 72;
+export const LATE_GAME_EXPERIMENT_PHASE_PULSE_RECHARGE_MS = 2000;
 
 export const LATE_GAME_EXPERIMENT_SCENARIOS = Object.freeze({
   STANDARD: 'standard',
@@ -207,6 +209,11 @@ export function createLateGamePressureExperimentRun(request = {}) {
     baselineAugmentIds: [...fixture.baselineAugmentIds],
     permanentPierceContract: fixture.permanentPierceContract,
     phasePulseAvailable: draft.phasePulseAvailable,
+    phasePulse: {
+      available: draft.phasePulseAvailable,
+      maxRadius: LATE_GAME_EXPERIMENT_PHASE_PULSE_MAX_RADIUS,
+      rechargeMs: LATE_GAME_EXPERIMENT_PHASE_PULSE_RECHARGE_MS
+    },
     startSector: draft.startSector,
     endSectorExclusive: draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD
       ? draft.startSector + LATE_GAME_EXPERIMENT_STANDARD_SECTORS
@@ -216,7 +223,27 @@ export function createLateGamePressureExperimentRun(request = {}) {
     pressureProfile,
     draftMode: 'disabled',
     seed,
-    launchedAtMs: Date.now()
+    launchedAtMs: Date.now(),
+    metrics: {
+      sectorsCompleted: 0,
+      deaths: 0,
+      damageTaken: 0,
+      pierceHits: 0,
+      effectivePenetrationHits: 0,
+      pierceDamage: 0,
+      pierceHitsBySource: {},
+      chainLightningOrigins: 0,
+      pulseActivations: 0,
+      pulseClears: 0,
+      pulseRechargeBlocks: 0,
+      pulseUnavailableDodges: 0,
+      tractorPulls: 0,
+      tractorRecoveryMs: 0,
+      projectilePeak: 0,
+      hazardPeak: 0,
+      significantStalls: 0,
+      waveSegments: []
+    }
   };
 }
 

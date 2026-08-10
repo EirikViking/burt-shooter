@@ -404,7 +404,11 @@ export function buildTacticalDraftOffers({
   });
 }
 
-export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupType = null, activePowerupTypes = [] } = {}) {
+export function buildTacticalDraftModifiers(selectedIds = [], {
+  activePowerupType = null,
+  activePowerupTypes = [],
+  permanentPierceDamageMultOverride = null
+} = {}) {
   const timedPowerupTypes = new Set([
     activePowerupType,
     ...(Array.isArray(activePowerupTypes) ? activePowerupTypes : [])
@@ -463,7 +467,12 @@ export function buildTacticalDraftModifiers(selectedIds = [], { activePowerupTyp
     const modifiers = augment.modifiers || {};
     const suppressMatchingTimedEffect = timedPowerupTypes.has(id) && id !== 'double_shot';
     if (!suppressMatchingTimedEffect) {
-      result.damageMult *= Math.pow(Number(modifiers.damageMult) || 1, effectiveness);
+      const damageMult = id === 'pierce'
+        && permanentPierceDamageMultOverride != null
+        && Number.isFinite(Number(permanentPierceDamageMultOverride))
+        ? Math.max(0.01, Number(permanentPierceDamageMultOverride))
+        : (Number(modifiers.damageMult) || 1);
+      result.damageMult *= Math.pow(damageMult, effectiveness);
       result.fireDelayMult *= Math.pow(Number(modifiers.fireDelayMult) || 1, effectiveness);
       result.speedMult *= Math.pow(Number(modifiers.speedMult) || 1, effectiveness);
       result.bulletSpeedMult *= Math.pow(Number(modifiers.bulletSpeedMult) || 1, effectiveness);

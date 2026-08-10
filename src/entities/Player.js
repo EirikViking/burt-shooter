@@ -34,6 +34,9 @@ import {
 } from '../config/ShipThreatResponse.js';
 import { POINT_DEFENSE_RADIUS } from '../game/ProjectileDefenseRules.js';
 import { BOMB_ARMING_MS, findBombCommitTarget } from '../game/BombTargetingRules.js';
+import {
+  stampProjectilePierceProvenance
+} from '../game/ExperimentalProjectileContracts.js';
 
 export const RESPAWN_INVULNERABILITY_MS = 1000;
 
@@ -136,6 +139,7 @@ export class Player {
     this.pendingDodgeExitPulseToken = 0;
     this.resolvedDodgeExitPulseToken = 0;
     this.lastDodgeExitPulse = null;
+    this.experimentalPulseReadyAt = 0;
 
     // Tractor Beam Removed
 
@@ -2266,6 +2270,17 @@ export class Player {
       bullet.isTacticalDroneShot = true;
     }
 
+    const temporaryPowerupPierce = !this.isPowerupSuppressed()
+      && this.getPowerupSlots().some((slot) => this.getPowerupSlotEffect(slot)?.pierce === true);
+    const permanentTacticalPierce = getActiveTacticalAugmentIds(
+      this.runAugmentIds || [],
+      this.consumedRunAugmentIds || []
+    ).includes('pierce');
+    stampProjectilePierceProvenance(bullet, {
+      temporaryPowerupPierce,
+      shipTraitPierce: bullet.isTraitPiercingShot === true,
+      permanentTacticalPierce
+    }, this.game);
     bullet.refreshPlayerProjectileIntentMarkers?.();
     return bullet;
   }
@@ -3028,6 +3043,7 @@ export class Player {
       return remaining === cadence ? cadence : remaining;
     };
 
+    const experimentalPulse = this.getExperimentalPulseState();
     return {
       slug: this.shipTrait?.slug || null,
       label: this.shipTrait?.label || null,
@@ -3043,7 +3059,29 @@ export class Player {
       nextCritShotIn: countdown(combat.critEvery),
       dodgePulseRadius: Number(combat.dodgePulseRadius || 0),
       nearMissScoreMult: Number(combat.nearMissScoreMult || 1),
-      projectileRadiusMult: Number(combat.projectileRadiusMult || 1)
+      projectileRadiusMult: Number(combat.projectileRadiusMult || 1),
+      experimentalPulse
+    };
+  }
+
+  getExperimentalPulseState(now = this.getGameplayClockMs()) {
+    const experiment = this.game?.lateGameExperiment;
+    if (experiment?.active !== true) return null;
+    const config = experiment.phasePulse || {
+      available: experiment.phasePulseAvailable !== false,
+      maxRadius: 72,
+      rechargeMs: 2000
+    };
+    const rechargeMs = Math.max(0, Number(config.rechargeMs) || 0);
+    const remainingMs = config.available === false
+      ? 0
+      : Math.max(0, (Number(this.experimentalPulseReadyAt) || 0) - now);
+    return {
+      available: config.available !== false,
+      maxRadius: Math.max(1, Number(config.maxRadius) || 72),
+      rechargeMs,
+      remainingMs,
+      ready: config.available !== false && remainingMs <= 0
     };
   }
 
@@ -4101,27 +4139,70 @@ export class Player {
     return this.invulnerableTime;
   }
 
+  showExperimentalDodgePulseRing(radius) {
+    if (!this.sprite?.addChild || !Number.isFinite(radius) || radius <= 0) return null;
+    const ring = new PIXI.Graphics();
+    const color = this.visualVariant?.accent || 0x66ffff;
+    ring.label = 'experimentalDodgeExitPulseRing';
+    ring.circle(0, 0, radius);
+    ring.stroke({ color, width: 3, alpha: 0.9 });
+    ring.circle(0, 0, Math.max(4, radius - 4));
+    ring.stroke({ color: 0xffffff, width: 1, alpha: 0.34 });
+    ring.__debugExperimentalPulse = { radius, visible: true };
+    this.sprite.addChild(ring);
+    setTimeout(() => {
+      if (ring.parent) ring.parent.removeChild(ring);
+      ring.destroy?.();
+    }, 240);
+    return ring;
+  }
+
   triggerTraitDodgePulse({ token = this.resolvedDodgeExitPulseToken } = {}) {
     const traitRadius = Math.max(0, Number(this.traitCombat?.dodgePulseRadius) || 0);
     const phaseRadius = Math.max(0, Number(this.runAugmentModifiers?.phaseClearRadius) || 0);
+    const experiment = this.game?.lateGameExperiment?.active === true
+      ? this.game.lateGameExperiment
+      : null;
+    const experimentalPulse = experiment ? this.getExperimentalPulseState() : null;
+    const now = this.getGameplayClockMs();
+    const rechargeRemainingMs = experimentalPulse
+      ? Math.max(0, (Number(this.experimentalPulseReadyAt) || 0) - now)
+      : 0;
     const combinesTraitAndPhase = traitRadius > 0 && phaseRadius > 0;
-    const combinedRadiusBonus = combinesTraitAndPhase
+    const combinedRadiusBonus = !experiment && combinesTraitAndPhase
       ? Math.max(8, Math.min(14, Math.round(Math.min(traitRadius, phaseRadius) * 0.2)))
       : 0;
-    const radius = Math.min(112, Math.max(traitRadius, phaseRadius) + combinedRadiusBonus);
+    const radiusCap = experimentalPulse?.maxRadius || 112;
+    const radius = Math.min(radiusCap, Math.max(traitRadius, phaseRadius) + combinedRadiusBonus);
     const phaseContributionRadius = phaseRadius > 0
       ? Math.min(radius, phaseRadius + combinedRadiusBonus)
       : 0;
     const playScene = this.game?.scenes?.play;
-    if (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets) {
+    const unavailableReason = experimentalPulse?.available === false
+      ? 'experiment_pulse_unavailable'
+      : rechargeRemainingMs > 0
+        ? 'experiment_pulse_recharging'
+        : (!Number.isFinite(radius) || radius <= 0 || !playScene?.bulletManager?.enemyBullets)
+          ? 'no_pulse_source'
+          : null;
+    if (unavailableReason) {
+      const metrics = experiment?.metrics;
+      if (metrics && unavailableReason === 'experiment_pulse_recharging') {
+        metrics.pulseRechargeBlocks = Math.max(0, Number(metrics.pulseRechargeBlocks) || 0) + 1;
+      }
+      if (metrics && unavailableReason === 'experiment_pulse_unavailable') {
+        metrics.pulseUnavailableDodges = Math.max(0, Number(metrics.pulseUnavailableDodges) || 0) + 1;
+      }
       this.lastDodgeExitPulse = {
         token,
-        reason: 'no_pulse_source',
+        reason: unavailableReason,
         cancelled: false,
         traitRadius,
         phaseRadius,
         combinedRadiusBonus,
         radius: 0,
+        configuredRadius: radius,
+        rechargeRemainingMs,
         cleared: 0,
         phaseCleared: 0,
         clearedByRadius: { trait: 0, phase: 0, combinedBonus: 0 },
@@ -4131,11 +4212,18 @@ export class Player {
         shardsCreated: 0,
         targets: [],
         hits: [],
-        discardedReason: 'no_pulse_source',
+        discardedReason: unavailableReason,
         clearAudioEvents: 0,
         fusionAudioEvents: 0
       };
       return this.lastDodgeExitPulse;
+    }
+
+    if (experimentalPulse) {
+      this.experimentalPulseReadyAt = now + experimentalPulse.rechargeMs;
+      const metrics = experiment?.metrics;
+      if (metrics) metrics.pulseActivations = Math.max(0, Number(metrics.pulseActivations) || 0) + 1;
+      this.showExperimentalDodgePulseRing(radius);
     }
 
     let cleared = 0;
@@ -4293,6 +4381,9 @@ export class Player {
           : riftEligible > riftCap
             ? 'rift_cap'
             : null;
+    if (experiment?.metrics) {
+      experiment.metrics.pulseClears = Math.max(0, Number(experiment.metrics.pulseClears) || 0) + cleared;
+    }
     this.lastDodgeExitPulse = {
       token,
       reason: clearReason,
@@ -4302,6 +4393,8 @@ export class Player {
       phaseContributionRadius,
       combinedRadiusBonus,
       radius,
+      rechargeMs: experimentalPulse?.rechargeMs || 0,
+      nextReadyAt: experimentalPulse ? this.experimentalPulseReadyAt : 0,
       cleared,
       phaseCleared,
       clearedByRadius,
@@ -4748,7 +4841,11 @@ export class Player {
     const activeIds = getActiveTacticalAugmentIds(this.runAugmentIds, this.consumedRunAugmentIds);
     const modifiers = buildTacticalDraftModifiers(activeIds, {
       activePowerupType: this.activePowerup?.type || null,
-      activePowerupTypes: this.getPowerupSlots().map((slot) => slot.type)
+      activePowerupTypes: this.getPowerupSlots().map((slot) => slot.type),
+      permanentPierceDamageMultOverride: this.game?.lateGameExperiment?.active === true
+        && this.game.lateGameExperiment.permanentPierceContract === 'bounded'
+        ? 1
+        : null
     });
     this.runAugmentModifiers = modifiers;
     const directOutputBefore = (this.bulletDamage * Math.max(1, this.multiShot)) / Math.max(1, this.shootDelay);

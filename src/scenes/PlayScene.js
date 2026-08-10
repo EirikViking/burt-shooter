@@ -171,6 +171,12 @@ import { createMayhemPerformanceDiagnostics } from '../debug/MayhemPerformanceDi
 import { HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON } from '../config/HighSectorPrototypeSettings.js';
 import { claimPiercingTargetHit, isWithinPointDefenseRadius } from '../game/ProjectileDefenseRules.js';
 import {
+  PROJECTILE_PIERCE_PROVENANCE,
+  claimExperimentalChainLightningOrigin,
+  claimExperimentalProjectileHit,
+  recordExperimentalChainLightningOrigin
+} from '../game/ExperimentalProjectileContracts.js';
+import {
   createCombatTelemetryState,
   getCombatDamageSourceLabel,
   getCombatDamageSourceForBullet,
@@ -7340,6 +7346,15 @@ export class PlayScene {
           const dy = bulletProxy.y - enemyProxy.y;
           if ((dx * dx + dy * dy) >= radius * radius) continue;
           if (!this.claimPlayerBulletTargetHit(bullet, enemy)) continue;
+          const experimentalHit = claimExperimentalProjectileHit(
+            bullet,
+            bulletProxy.damage,
+            this.game
+          );
+          if (!experimentalHit.allowed) {
+            this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+            break;
+          }
           collisionStats.playerBulletEnemyHits += 1;
           if (bulletProxy.isPlasmaLance) collisionStats.plasmaLanceHitEvents += 1;
           const distance = Math.hypot(dx, dy);
@@ -7350,10 +7365,15 @@ export class PlayScene {
             bullet,
             enemy,
             bulletProxy,
+            damage: experimentalHit.damage,
+            experimentalHit,
             impactX: enemyProxy.x + Math.cos(impactAngle) * contactDistance,
             impactY: enemyProxy.y + Math.sin(impactAngle) * contactDistance
           });
           if (bulletProxy.isBomb) break;
+          if (experimentalHit.shouldDeactivate) {
+            this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+          }
           if (!bulletProxy.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_enemy_hit');
         }
       }
@@ -7370,12 +7390,12 @@ export class PlayScene {
         }
         this.recordCombatProjectileHit(bullet);
         this.recordRiftShardHit(bullet, enemy);
-        const destroyed = this.applyCombatDamage(enemy, bulletProxy.damage, getCombatDamageSourceForBullet(bullet), {
+        const destroyed = this.applyCombatDamage(enemy, event.damage, getCombatDamageSourceForBullet(bullet), {
           impactX: event.impactX,
           impactY: event.impactY
         });
         event.destroyed = destroyed;
-        this.triggerChainLightning(enemy, bulletProxy.damage);
+        this.triggerChainLightning(enemy, event.damage, bullet);
         this.applyShipTraitBulletImpact(bullet, enemy);
       }
     });
@@ -7460,16 +7480,24 @@ export class PlayScene {
           collisionStats.playerBulletHijackerPairs += 1;
           if (this.checkCollision(bullet, hijacker)) {
             if (!this.claimPlayerBulletTargetHit(bullet, hijacker)) return;
+            const experimentalHit = claimExperimentalProjectileHit(bullet, bullet.damage, this.game);
+            if (!experimentalHit.allowed) {
+              this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+              return;
+            }
             collisionStats.playerBulletHijackerHits += 1;
             if (bullet.isBomb) {
               this.detonateBombBullet(bullet, 'hijacker_impact');
               return;
             }
+            if (experimentalHit.shouldDeactivate) {
+              this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+            }
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_hijacker_hit');
             this.recordCombatProjectileHit(bullet);
             this.recordRiftShardHit(bullet, hijacker);
-            const destroyed = this.applyCombatDamage(hijacker, bullet.damage, getCombatDamageSourceForBullet(bullet));
-            this.triggerChainLightning(hijacker, bullet.damage);
+            const destroyed = this.applyCombatDamage(hijacker, experimentalHit.damage, getCombatDamageSourceForBullet(bullet));
+            this.triggerChainLightning(hijacker, experimentalHit.damage, bullet);
 
             if (destroyed) {
               // Hijacker explosion
@@ -7631,11 +7659,19 @@ export class PlayScene {
           if (bonusDrone.active && bonusDrone.type === 'HAZARD') collisionStats.playerBulletAmbientPairs += 1;
           if (bonusDrone.active && bonusDrone.type === 'HAZARD' && this.checkCollision(bullet, bonusDrone)) {
             if (!this.claimPlayerBulletTargetHit(bullet, bonusDrone)) return;
+            const experimentalHit = claimExperimentalProjectileHit(bullet, bullet.damage || 1, this.game);
+            if (!experimentalHit.allowed) {
+              this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+              return;
+            }
             collisionStats.playerBulletAmbientHits += 1;
+            if (experimentalHit.shouldDeactivate) {
+              this.bulletManager?.deactivateBullet?.(bullet, 'experimental_pierce_limit');
+            }
             if (!bullet.piercing) this.bulletManager?.deactivateBullet?.(bullet, 'player_bullet_ambient_hit');
             this.recordCombatProjectileHit(bullet);
             this.recordRiftShardHit(bullet, bonusDrone);
-            const destroyed = this.applyCombatDamage(bonusDrone, bullet.damage || 1, getCombatDamageSourceForBullet(bullet));
+            const destroyed = this.applyCombatDamage(bonusDrone, experimentalHit.damage, getCombatDamageSourceForBullet(bullet));
             if (destroyed) {
               collisionStats.playerBulletAmbientKills += 1;
               let appliedScore = 0;
@@ -21487,7 +21523,12 @@ export class PlayScene {
       bullet.traitPierceHits = (bullet.traitPierceHits || 0) + 1;
       if (this.particleManager) this.particleManager.createHitSpark(sourceEnemy.x, sourceEnemy.y, 0xffffff);
       AudioManager.playSfx('trait_pierce_hit', { volume: 0.58 });
-      if (bullet.traitPierceHits >= 3) {
+      const experimentOwnsPierceLimit = this.game?.lateGameExperiment?.active === true
+        && [
+          PROJECTILE_PIERCE_PROVENANCE.SHIP_TRAIT,
+          PROJECTILE_PIERCE_PROVENANCE.TEMPORARY_POWERUP
+        ].includes(bullet.pierceProvenance);
+      if (!experimentOwnsPierceLimit && bullet.traitPierceHits >= 3) {
         this.bulletManager?.deactivateBullet?.(bullet, 'trait_pierce_limit');
       }
     }
@@ -21541,11 +21582,23 @@ export class PlayScene {
     return this.game.addScore(this.getNormalWaveScoreAward(points, enemy), source);
   }
 
-  triggerChainLightning(sourceEnemy, baseDamage) {
+  triggerChainLightning(sourceEnemy, baseDamage, sourceProjectile = null) {
     if (!this.player?.chainLightningActive || !sourceEnemy) {
       this.lastChainLightning = {
         triggered: false,
         reason: !sourceEnemy ? 'missing_source' : 'inactive'
+      };
+      return this.lastChainLightning;
+    }
+    if (!claimExperimentalChainLightningOrigin(sourceProjectile, this.game)) {
+      this.lastChainLightning = {
+        triggered: false,
+        reason: 'projectile_origin_consumed',
+        source: sourceEnemy,
+        sourceKind: sourceEnemy.kind || sourceEnemy.type || 'enemy',
+        hitCount: 0,
+        hitTargets: [],
+        audioEvents: 0
       };
       return this.lastChainLightning;
     }
@@ -21635,6 +21688,7 @@ export class PlayScene {
       hitTargets,
       audioEvents: hitTargets.length > 0 ? 1 : 0
     };
+    if (this.lastChainLightning.triggered) recordExperimentalChainLightningOrigin(this.game);
     return this.lastChainLightning;
   }
 

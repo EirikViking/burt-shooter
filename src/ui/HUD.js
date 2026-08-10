@@ -2262,6 +2262,32 @@ export class HUD {
   }
 
   getTraitMeterEvent(state) {
+    const experimentalPulse = state.experimentalPulse;
+    if (experimentalPulse) {
+      if (!experimentalPulse.available) {
+        return {
+          text: translateText('PULSE UNAVAILABLE'),
+          progress: 0,
+          color: 0x8b7682
+        };
+      }
+      const rechargeMs = Math.max(1, Number(experimentalPulse.rechargeMs) || 2000);
+      const remainingMs = Math.max(0, Number(experimentalPulse.remainingMs) || 0);
+      if (remainingMs > 0) {
+        return {
+          text: translateText('PULSE RECHARGING // {seconds}s', {
+            seconds: Math.max(0.1, remainingMs / 1000).toFixed(1)
+          }),
+          progress: Math.max(0, Math.min(1, 1 - remainingMs / rechargeMs)),
+          color: 0xffb86b
+        };
+      }
+      return {
+        text: translateText('PULSE READY'),
+        progress: 1,
+        color: 0x66f7ff
+      };
+    }
     const candidates = [
       {
         every: Number(state.critEvery || 0),

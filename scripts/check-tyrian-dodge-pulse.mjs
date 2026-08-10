@@ -33,7 +33,9 @@ function makeHarness({
   traitRadius = 0,
   phaseRadius = 0,
   riftReprisal = false,
-  bullets = []
+  bullets = [],
+  experiment = null,
+  gameTime = 0
 } = {}) {
   const counters = {
     deactivations: 0,
@@ -63,6 +65,7 @@ function makeHarness({
     }
   };
   const play = {
+    gameTime,
     bulletManager,
     enemyManager: {
       enemies: [{ id: 'target-alpha', active: true, x: 300, y: 80, radius: 18 }],
@@ -80,6 +83,7 @@ function makeHarness({
     }
   };
   const game = {
+    lateGameExperiment: experiment,
     scenes: { play },
     addScore() {
       counters.scoreEvents += 1;
@@ -113,6 +117,7 @@ function makeHarness({
     pendingDodgeExitPulseToken: 0,
     resolvedDodgeExitPulseToken: 0,
     lastDodgeExitPulse: null,
+    experimentalPulseReadyAt: 0,
     shootCooldown: 0,
     updateDodgeVisual() {},
     clearDodgeVisual() {},
@@ -215,6 +220,70 @@ try {
   assert.equal(emptyResult.cleared, 0, 'zero nearby bullets should remain a valid zero-clear pulse');
   assert.equal(empty.counters.deactivations, 0);
   assert.equal(audioEvents.filter((event) => event.id === 'forceField').length, 0, 'zero-clear pulse must not emit clear audio');
+
+  const experimentMetrics = {
+    pulseActivations: 0,
+    pulseClears: 0,
+    pulseRechargeBlocks: 0,
+    pulseUnavailableDodges: 0
+  };
+  const experimental = makeHarness({
+    traitRadius: 72,
+    phaseRadius: 58,
+    bullets: [bulletAt(68), bulletAt(73)],
+    experiment: {
+      active: true,
+      phasePulse: { available: true, maxRadius: 72, rechargeMs: 2000 },
+      metrics: experimentMetrics
+    }
+  });
+  const experimentalFirst = runDodge(experimental);
+  assert.equal(experimentalFirst.combinedRadiusBonus, 0, 'experimental pulse must stop hidden additive radius stacking');
+  assert.equal(experimentalFirst.radius, 72, 'experimental pulse radius must cap at 72px');
+  assert.equal(experimentalFirst.cleared, 1, 'every hostile bullet inside the visible 72px ring should clear');
+  assert.equal(experimental.play.bulletManager.enemyBullets[1].active, true, 'bullet outside the ring must remain');
+  assert.equal(experimentalFirst.rechargeMs, 2000);
+  assert.equal(experimentMetrics.pulseActivations, 1);
+  assert.equal(experimentMetrics.pulseClears, 1);
+
+  experimental.play.gameTime = 0.5;
+  experimental.player.dodgeCooldown = 0;
+  experimental.player.invulnerable = false;
+  assert.equal(experimental.player.startDodge(), true, 'movement dodge must remain available while pulse clear recharges');
+  assert.equal(experimental.player.finishDodge('duration'), true);
+  assert.equal(experimental.player.lastDodgeExitPulse.reason, 'experiment_pulse_recharging');
+  assert.equal(experimental.player.lastDodgeExitPulse.rechargeRemainingMs, 1500);
+  assert.equal(experimental.play.bulletManager.enemyBullets[1].active, true);
+  assert.equal(experimentMetrics.pulseRechargeBlocks, 1);
+
+  experimental.play.gameTime = 2.1;
+  experimental.play.bulletManager.enemyBullets.push(bulletAt(40));
+  experimental.player.dodgeCooldown = 0;
+  experimental.player.invulnerable = false;
+  assert.equal(experimental.player.startDodge(), true);
+  assert.equal(experimental.player.finishDodge('duration'), true);
+  assert.equal(experimental.player.lastDodgeExitPulse.cleared, 1, 'pulse should clear again after the configured recharge');
+  assert.equal(experimentMetrics.pulseActivations, 2);
+  assert.equal(experimentMetrics.pulseClears, 2);
+
+  const unavailableExperiment = makeHarness({
+    phaseRadius: 58,
+    bullets: [bulletAt(20)],
+    experiment: {
+      active: true,
+      phasePulse: { available: false, maxRadius: 72, rechargeMs: 2000 },
+      metrics: {
+        pulseActivations: 0,
+        pulseClears: 0,
+        pulseRechargeBlocks: 0,
+        pulseUnavailableDodges: 0
+      }
+    }
+  });
+  const unavailableResult = runDodge(unavailableExperiment);
+  assert.equal(unavailableResult.reason, 'experiment_pulse_unavailable');
+  assert.equal(unavailableExperiment.play.bulletManager.enemyBullets[0].active, true);
+  assert.equal(unavailableExperiment.player.game.lateGameExperiment.metrics.pulseUnavailableDodges, 1);
 
   audioEvents.length = 0;
   const interrupted = makeHarness({ traitRadius: 64, bullets: [bulletAt(20)] });

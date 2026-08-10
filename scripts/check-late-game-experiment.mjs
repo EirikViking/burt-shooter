@@ -6,6 +6,15 @@ import {
   createLateGamePressureExperimentRun,
   getLateGameExperimentFixtures
 } from '../src/game/LateGamePressureExperiment.js';
+import {
+  PROJECTILE_PIERCE_PROVENANCE,
+  claimExperimentalChainLightningOrigin,
+  claimExperimentalProjectileHit,
+  recordExperimentalChainLightningOrigin,
+  resolveProjectilePierceProvenance,
+  stampProjectilePierceProvenance
+} from '../src/game/ExperimentalProjectileContracts.js';
+import { buildTacticalDraftModifiers } from '../src/config/TacticalDraft.js';
 import { getRunElapsedSeconds } from '../src/config/RunPacingConfig.js';
 import {
   HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY,
@@ -50,6 +59,62 @@ assert.equal(standardA.draftMode, 'disabled');
 assert.equal(standardA.seed, standardB.seed, 'equivalent Standard fixtures must have deterministic seeds');
 assert.equal(standardA.underlyingRunMode, 'ranked_tactical');
 assert.equal(standardA.permanentPierceContract, 'bounded');
+assert.deepEqual(standardA.phasePulse, { available: true, maxRadius: 72, rechargeMs: 2000 });
+
+const boundedBullet = { piercing: true };
+stampProjectilePierceProvenance(boundedBullet, { permanentTacticalPierce: true }, standardA);
+assert.equal(boundedBullet.pierceProvenance, PROJECTILE_PIERCE_PROVENANCE.TACTICAL_PERMANENT);
+assert.equal(boundedBullet.maxPierceHits, 2);
+assert.equal(claimExperimentalProjectileHit(boundedBullet, 10, standardA).damage, 10);
+const boundedSecond = claimExperimentalProjectileHit(boundedBullet, 10, standardA);
+assert.equal(boundedSecond.damage, 7, 'bounded Pierce second target must receive 70% damage');
+assert.equal(boundedSecond.shouldDeactivate, true);
+assert.equal(claimExperimentalProjectileHit(boundedBullet, 10, standardA).allowed, false);
+assert.equal(standardA.metrics.pierceHits, 2);
+assert.equal(standardA.metrics.effectivePenetrationHits, 1);
+assert.equal(standardA.metrics.pierceDamage, 17);
+assert.equal(claimExperimentalChainLightningOrigin(boundedBullet, standardA), true);
+assert.equal(claimExperimentalChainLightningOrigin(boundedBullet, standardA), false, 'one projectile may originate Chain Lightning once');
+recordExperimentalChainLightningOrigin(standardA);
+assert.equal(standardA.metrics.chainLightningOrigins, 1);
+
+const unlimitedRun = createLateGamePressureExperimentRun({
+  acknowledged: true,
+  ruleset: 'tactical',
+  fixtureId: 'tactical_saturation_unlimited'
+});
+const unlimitedBullet = { piercing: true };
+stampProjectilePierceProvenance(unlimitedBullet, { permanentTacticalPierce: true }, unlimitedRun);
+for (let index = 0; index < 5; index += 1) {
+  assert.equal(claimExperimentalProjectileHit(unlimitedBullet, 10, unlimitedRun).allowed, true);
+}
+
+const temporaryBullet = { piercing: true, isTraitPiercingShot: true };
+stampProjectilePierceProvenance(temporaryBullet, {
+  temporaryPowerupPierce: true,
+  shipTraitPierce: true,
+  permanentTacticalPierce: true
+}, standardA);
+assert.equal(temporaryBullet.pierceProvenance, PROJECTILE_PIERCE_PROVENANCE.TEMPORARY_POWERUP);
+for (let index = 0; index < 5; index += 1) {
+  assert.equal(claimExperimentalProjectileHit(temporaryBullet, 10, standardA).allowed, true);
+}
+
+const traitBullet = { piercing: true, isTraitPiercingShot: true };
+stampProjectilePierceProvenance(traitBullet, { shipTraitPierce: true }, standardA);
+assert.equal(traitBullet.pierceProvenance, PROJECTILE_PIERCE_PROVENANCE.SHIP_TRAIT);
+for (let index = 0; index < 3; index += 1) {
+  assert.equal(claimExperimentalProjectileHit(traitBullet, 10, standardA).allowed, true);
+}
+assert.equal(claimExperimentalProjectileHit(traitBullet, 10, standardA).allowed, false);
+assert.equal(resolveProjectilePierceProvenance({ piercing: false }), PROJECTILE_PIERCE_PROVENANCE.NONE);
+
+assert.equal(buildTacticalDraftModifiers(['pierce']).damageMult, 0.97, 'normal Tactical Pierce must retain current balance');
+assert.equal(
+  buildTacticalDraftModifiers(['pierce'], { permanentPierceDamageMultOverride: 1 }).damageMult,
+  1,
+  'bounded experimental Pierce must remove only its opaque 3% haircut'
+);
 
 const pure = createLateGamePressureExperimentRun({
   acknowledged: true,
@@ -67,6 +132,7 @@ assert.equal(pure.endSectorExclusive, null);
 assert.equal(pure.pressureProfile.id, 'sector_120_deep_endurance');
 assert.equal(pure.pressureProfile.elapsedSeconds, 2100);
 assert.equal(pure.phasePulseAvailable, false);
+assert.deepEqual(pure.phasePulse, { available: false, maxRadius: 72, rechargeMs: 2000 });
 
 const tacticalFixtures = getLateGameExperimentFixtures('tactical');
 assert.deepEqual(
@@ -111,6 +177,8 @@ assert.match(settingsSource, /EXPERIMENTAL TEST \/\/ NO AWARDS/);
 assert.doesNotMatch(settingsSource, /saveHighSectorPrototypeSettings/);
 assert.match(playSource, /late_game_experiment_window_complete/);
 assert.match(playSource, /draftMode !== 'disabled'/);
+assert.match(playSource, /claimExperimentalProjectileHit/);
+assert.match(playSource, /claimExperimentalChainLightningOrigin/);
 
 console.log(JSON.stringify({
   pass: true,

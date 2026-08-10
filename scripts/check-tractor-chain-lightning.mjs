@@ -55,7 +55,7 @@ function makeTarget({
   };
 }
 
-function makeScene({ enemies = [], hijacker = null, maxChains = 3 } = {}) {
+function makeScene({ enemies = [], hijacker = null, maxChains = 3, experiment = null } = {}) {
   const scene = Object.create(PlayScene.prototype);
   const events = {
     arcs: [],
@@ -82,6 +82,7 @@ function makeScene({ enemies = [], hijacker = null, maxChains = 3 } = {}) {
     },
     gameTime: 0,
     game: {
+      lateGameExperiment: experiment,
       addScore(value) {
         events.scores.push(value);
         return value;
@@ -176,6 +177,22 @@ try {
   assert.equal(onlyResult.hitCount, 1, 'Tractor should work as the only available secondary target');
   assert.equal(onlyResult.hitTargets[0].target, onlyTractor);
   assert.equal(new Set(onlyResult.hitTargets.map((entry) => entry.target)).size, onlyResult.hitCount, 'Chain Lightning must not hit a target twice');
+
+  const experimentMetrics = { chainLightningOrigins: 0 };
+  const experimentState = { active: true, metrics: experimentMetrics };
+  const experimentSource = makeTarget({ x: 100, y: 100, health: 20 });
+  const experimentTarget = makeTarget({ x: 180, y: 100, health: 20 });
+  const experimentHarness = makeScene({
+    enemies: [experimentSource, experimentTarget],
+    maxChains: 1,
+    experiment: experimentState
+  });
+  const sourceProjectile = { chainLightningOriginConsumed: false };
+  const firstOrigin = experimentHarness.scene.triggerChainLightning(experimentSource, 4, sourceProjectile);
+  const rejectedOrigin = experimentHarness.scene.triggerChainLightning(experimentSource, 4, sourceProjectile);
+  assert.equal(firstOrigin.triggered, true);
+  assert.equal(rejectedOrigin.reason, 'projectile_origin_consumed', 'one experiment projectile must not originate Chain Lightning twice');
+  assert.equal(experimentMetrics.chainLightningOrigins, 1);
 
   const feedbackProbe = Object.create(Hijacker.prototype);
   Object.assign(feedbackProbe, {
