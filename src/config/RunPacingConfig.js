@@ -154,13 +154,16 @@ function finiteNumber(value, fallback = 0) {
 }
 
 export function getRunElapsedSeconds(game) {
+  const experimentOffset = game?.lateGameExperiment?.active === true
+    ? Math.max(0, finiteNumber(game.lateGameExperiment?.pressureProfile?.elapsedSeconds, 0))
+    : 0;
   const playScene = game?.scenes?.play;
-  if (Number.isFinite(playScene?.gameTime)) return Math.max(0, playScene.gameTime);
-  if (Number.isFinite(game?.runElapsedSeconds)) return Math.max(0, game.runElapsedSeconds);
+  if (Number.isFinite(playScene?.gameTime)) return experimentOffset + Math.max(0, playScene.gameTime);
+  if (Number.isFinite(game?.runElapsedSeconds)) return experimentOffset + Math.max(0, game.runElapsedSeconds);
   if (Number.isFinite(game?.runStartedAtMs) && game.runStartedAtMs > 0) {
-    return Math.max(0, (Date.now() - game.runStartedAtMs) / 1000);
+    return experimentOffset + Math.max(0, (Date.now() - game.runStartedAtMs) / 1000);
   }
-  return 0;
+  return experimentOffset;
 }
 
 export function getCurrentPressurePhase(elapsedSeconds = 0) {

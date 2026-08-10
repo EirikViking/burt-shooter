@@ -17,8 +17,9 @@ import {
   HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
   HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS,
   getHighSectorPrototypeSettings,
-  saveHighSectorPrototypeSettings
+  migrateLegacyHighSectorPrototypeSettings
 } from '../src/config/HighSectorPrototypeSettings.js';
+import { createLateGamePressureExperimentRun } from '../src/game/LateGamePressureExperiment.js';
 
 const config = BalanceConfig.difficulty.highSectorEscalation;
 const seed = 'high-sector-fairness-seed-20260809';
@@ -35,19 +36,15 @@ assert.equal(config.enabled, false, 'the profile must stay disabled by default')
 const prototypeStorageValues = new Map();
 const prototypeStorage = {
   getItem: (key) => prototypeStorageValues.get(key) ?? null,
-  setItem: (key, value) => prototypeStorageValues.set(key, value)
+  setItem: (key, value) => prototypeStorageValues.set(key, value),
+  removeItem: (key) => prototypeStorageValues.delete(key)
 };
 assert.deepEqual(getHighSectorPrototypeSettings({ storage: prototypeStorage }), DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS);
-assert.deepEqual(
-  saveHighSectorPrototypeSettings({ quickStart: true }, { storage: prototypeStorage, dispatch: false }),
-  { enabled: true, quickStart: true },
-  'Quick Start must arm the prototype'
-);
-assert.deepEqual(
-  saveHighSectorPrototypeSettings({ enabled: false }, { storage: prototypeStorage, dispatch: false }),
-  { enabled: false, quickStart: false },
-  'disabling the prototype must also disable Quick Start'
-);
+prototypeStorageValues.set('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
+assert.equal(migrateLegacyHighSectorPrototypeSettings({ storage: prototypeStorage }).removed, true);
+assert.equal(prototypeStorageValues.has('nova.highSectorPrototype.v1'), false, 'legacy prototype gameplay state must be removed');
+assert.equal(createLateGamePressureExperimentRun({ scenario: 'standard' }), null, 'experiment launch must require acknowledgement');
+assert.equal(createLateGamePressureExperimentRun({ scenario: 'standard', acknowledged: true })?.startSector, 75);
 assert.equal(HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR, 75);
 assert.equal(HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON, 'high_sector_prototype_no_awards');
 assert.deepEqual(HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS, [

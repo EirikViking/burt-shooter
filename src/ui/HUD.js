@@ -401,6 +401,23 @@ export class HUD {
     });
     this.locationText.anchor.set(1, 0);
     this.hudContainer.addChild(this.locationText);
+
+    this.experimentLabelGroup = new PIXI.Container();
+    this.experimentLabelGroup.label = 'ui_experimentNoAwardsLabel';
+    this.experimentLabelBg = new PIXI.Graphics();
+    this.experimentLabelText = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 11,
+      fontWeight: '900',
+      fill: '#ffcf7d',
+      stroke: '#14030a',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    this.experimentLabelText.anchor.set(0.5);
+    this.experimentLabelGroup.addChild(this.experimentLabelBg, this.experimentLabelText);
+    this.experimentLabelGroup.visible = this.game?.lateGameExperiment?.active === true;
+    this.hudContainer.addChild(this.experimentLabelGroup);
     GameAssets.ensureMicroSignalTexture?.('hudCapsule').then((texture) => {
       if (!texture) return;
       if (!this.livesArt.destroyed) this.livesArt.texture = texture;
@@ -410,6 +427,7 @@ export class HUD {
   }
 
   update(options = {}) {
+    this.experimentLabelGroup.visible = this.game?.lateGameExperiment?.active === true;
     this.scoreText.text = `SCORE ${this.formatScore(this.game.score)}`;
     const mult = Number(this.game.scoreMultiplier) || 1;
     this.scoreText.scale.set(1);
@@ -2513,6 +2531,7 @@ export class HUD {
     this.missionLabel.style.fontSize = Math.round((layout.isMobile ? 9 : (isLargeDesktop ? 12 : 11)) * uiScale);
     this.missionText.style.fontSize = Math.round((layout.isMobile ? 12 : (isLargeDesktop ? 17 : 15)) * uiScale);
     this.directiveText.style.fontSize = Math.round((layout.isMobile ? 9 : 12) * uiScale);
+    this.experimentLabelText.style.fontSize = Math.round((layout.isMobile ? 9 : 11) * Math.min(uiScale, 1.35));
 
     this.drawGlassPanel(this.leftPanel, margin, margin, leftPanelWidth, leftPanelHeight, 0x5fa8bd, 0.035, {
       fillAlpha: 0.44,
@@ -2612,6 +2631,19 @@ export class HUD {
     this.missionText.y = missionPanelY + (layout.isMobile ? 25 : (isLargeDesktop ? 32 : 29));
     this.directiveText.x = missionPanelX + missionPanelWidth / 2;
     this.directiveText.y = missionPanelY + Math.round((layout.isMobile ? 47 : (isLargeDesktop ? 57 : 52)) * uiScale);
+    if (this.experimentLabelGroup) {
+      const labelWidth = Math.min(missionPanelWidth - 24, Math.round((layout.isMobile ? 250 : 286) * Math.min(uiScale, 1.35)));
+      const labelHeight = Math.round((layout.isMobile ? 18 : 21) * Math.min(uiScale, 1.35));
+      this.experimentLabelGroup.position.set(
+        missionPanelX + missionPanelWidth / 2,
+        missionPanelY + missionPanelHeight + labelHeight / 2 + 4
+      );
+      this.experimentLabelBg.clear();
+      this.experimentLabelBg.roundRect(-labelWidth / 2, -labelHeight / 2, labelWidth, labelHeight, labelHeight / 2);
+      this.experimentLabelBg.fill({ color: 0x170711, alpha: 0.88 });
+      this.experimentLabelBg.stroke({ color: 0xff8b64, width: 1, alpha: 0.86 });
+      this.fitTextToWidth(this.experimentLabelText, labelWidth - 16, 0.72);
+    }
     if (this.missionProgressBg) {
       const railPad = Math.round(Math.max(
         (layout.isMobile ? 18 : 30) * uiScale,

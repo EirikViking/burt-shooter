@@ -21,6 +21,7 @@ import { getNewestTyrianFeedbackSourceText } from '../newestTyrianFeedbackSource
 import { getSecondPolishSourceText } from '../secondPolishSourceText.js';
 import { getTyrian112SourceText } from '../tyrian112SourceText.js';
 import { getHighSectorSourceText } from '../highSectorSourceText.js';
+import { getLateGameExperimentSourceText } from '../lateGameExperimentSourceText.js';
 
 const sourceText = Object.freeze({
   "ROUTE": "ROTA",
@@ -1885,6 +1886,6 @@ export const ptBR = {
   diagnostics: {
     interfaceLanguage: 'Idioma da interface'
   },
-  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('pt-BR'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getTyrianFeedbackSourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getWonderCodexSourceText('pt-BR'), ...getHangarLaunchModeSourceText('pt-BR'), ...getNewestTyrianFeedbackSourceText('pt-BR'), ...getSecondPolishSourceText('pt-BR'), ...getTyrian112SourceText('pt-BR'), ...getHighSectorSourceText('pt-BR') }),
+  sourceText: Object.freeze({ ...getModeBriefingReviewSourceText('pt-BR'), ...sourceText, ...overhaulSourceText, ...getPowerupExpansionSourceText('pt-BR'), ...getNovaHumorSourceText('pt-BR'), ...getMayhemModesSourceText('pt-BR'), ...getOverrunModeSourceText('pt-BR'), ...getEliteExpansionSourceText('pt-BR'), ...getHowToPlayCompleteSourceText('pt-BR'), ...getTacticalFusionSourceText('pt-BR'), ...getDailyCabinetSignalSourceText('pt-BR'), ...getMenuHierarchySourceText('pt-BR'), ...getForumFollowupSourceText('pt-BR'), ...getPlayerFeedbackReliabilitySourceText('pt-BR'), ...getTyrianFeedbackSourceText('pt-BR'), ...getCompetitionLearningSourceText('pt-BR'), ...getTacticalDraftClaritySourceText('pt-BR'), ...getWonderCodexSourceText('pt-BR'), ...getHangarLaunchModeSourceText('pt-BR'), ...getNewestTyrianFeedbackSourceText('pt-BR'), ...getSecondPolishSourceText('pt-BR'), ...getTyrian112SourceText('pt-BR'), ...getHighSectorSourceText('pt-BR'), ...getLateGameExperimentSourceText('pt-BR') }),
   patterns
 };

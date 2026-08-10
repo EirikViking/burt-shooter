@@ -1055,7 +1055,7 @@ export class PlayScene {
       this.player.setRank(initialRank, 'init_placeholder');
     }
     const tacticalBaselineAugmentIds = this.game?.getRunModeProfile?.()?.tacticalBaselineAugmentIds || [];
-    const prototypeBaselineAugmentIds = this.game?.highSectorPrototypeRun?.baselineAugmentIds || [];
+    const prototypeBaselineAugmentIds = this.game?.lateGameExperiment?.baselineAugmentIds || [];
     const runBaselineAugmentIds = [...new Set([
       ...tacticalBaselineAugmentIds,
       ...prototypeBaselineAugmentIds
@@ -1070,11 +1070,11 @@ export class PlayScene {
     this.game.flushAchievementToasts?.(this);
 
     this.initBalanceDebug(params);
-    const prototypeEscalationArmed = this.game?.highSectorPrototypeRun?.enabled === true;
+    const prototypeEscalationArmed = this.game?.lateGameExperiment?.active === true;
     this.game.highSectorEscalationProfile = {
       armed: prototypeEscalationArmed,
       diagnosticOnly: true,
-      source: prototypeEscalationArmed ? 'settings_prototype' : null
+      source: prototypeEscalationArmed ? 'late_game_pressure_experiment' : null
     };
     const debugToken = params.get('debugBossToken');
     if (this.canUseMaintainerDevtools() && debugToken === 'NOVA_DEBUG_2026') {
@@ -1095,7 +1095,7 @@ export class PlayScene {
         diagnosticOnly: true,
         source: highSectorEscalation
           ? 'maintainer_query'
-          : (prototypeEscalationArmed ? 'settings_prototype' : null)
+          : (prototypeEscalationArmed ? 'late_game_pressure_experiment' : null)
       };
       if (highSectorEscalation) this.game.markUnrankedRun?.('debug_high_sector_escalation');
       console.log(`[Debug] enabled startLevel=${this.debugStartLevel ?? 'default'} startAtBoss=${startAtBoss} debugPowerups=${debugPowerups} debugOverlay=${debugOverlay} highSectorEscalation=${highSectorEscalation}`);
@@ -5119,6 +5119,23 @@ export class PlayScene {
             const sectorCleared = Number(this.game.level) || 1;
             const finishAdvance = () => {
               if (this.game?.currentScene !== this) return;
+              const experiment = this.game?.lateGameExperiment;
+              if (
+                experiment?.active === true
+                && experiment.scenario === 'standard'
+                && Number.isFinite(experiment.endSectorExclusive)
+                && sectorCleared + 1 >= experiment.endSectorExclusive
+              ) {
+                this.levelAdvancePending = false;
+                this.levelAdvanceTimeout = null;
+                this.levelAdvanceWarmupPromise = null;
+                this.game.completeRun?.('late_game_experiment_window_complete', {
+                  levelReached: sectorCleared,
+                  sectorReached: sectorCleared,
+                  experimentWindowComplete: true
+                });
+                return;
+              }
               this.levelAdvancePending = false;
               this.levelAdvanceTimeout = null;
               this.levelAdvanceWarmupPromise = null;
@@ -5146,6 +5163,7 @@ export class PlayScene {
             };
             if (
               bossCompletion
+              && this.game?.lateGameExperiment?.draftMode !== 'disabled'
               && canRunModeUseTacticalDraft(this.game?.runMode)
               && this.openTacticalDraft({ sectorCleared, onComplete: finishAdvance })
             ) return;
@@ -9538,6 +9556,7 @@ export class PlayScene {
   }
 
   openTacticalDraft({ sectorCleared = this.game?.level || 1, onComplete = null } = {}) {
+    if (this.game?.lateGameExperiment?.draftMode === 'disabled') return false;
     if (!canRunModeUseTacticalDraft(this.game?.runMode)) return false;
     if (this.tacticalDraft?.active || !this.player || !this.uiOverlay) return Boolean(this.tacticalDraft?.active);
     this.awardTacticalDraftBanMilestones(sectorCleared);
@@ -12445,6 +12464,21 @@ export class PlayScene {
     status.zIndex = 7;
     overlay.addChild(status);
 
+    const experimentStatus = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 13,
+      fontWeight: '900',
+      fill: '#ffb36e',
+      stroke: '#17030b',
+      strokeThickness: 3,
+      align: 'center'
+    });
+    experimentStatus.anchor.set(0.5);
+    experimentStatus.position.set(centerX, panelY + 132);
+    experimentStatus.visible = this.game?.lateGameExperiment?.active === true;
+    experimentStatus.zIndex = 7;
+    overlay.addChild(experimentStatus);
+
     const makeChip = (label, value, x, y, color = 0x00eaff, options = {}) => {
       const chipWidth = Math.max(116, Number(options.width) || 184);
       const chipHeight = Math.max(34, Number(options.height) || 40);
@@ -12580,12 +12614,20 @@ export class PlayScene {
       this.createPauseButton(translateText('Tactical upgrades'), centerX, panelY + 410, () => this.openTacticalLoadoutOverlay(), { accent: 0xffef7e }),
       this.createPauseButton(translateText('SETTINGS'), centerX, panelY + 462, () => this.openSettingsOverlay(), { accent: 0x00eaff }),
       this.createPauseButton(translateText('HOW TO PLAY'), centerX, panelY + 514, () => this.openHowToPlayOverlay(), { accent: 0x7fffd8 }),
-      this.createPauseButton(translateText('QUIT TO MENU'), centerX, panelY + 566, () => {
+      this.createPauseButton(translateText(this.game?.lateGameExperiment?.active ? 'RETIRE TEST & OPEN REPORT' : 'QUIT TO MENU'), centerX, panelY + 566, () => {
         this.closeSettingsOverlay();
         this.closeHowToPlayOverlay();
         this.closeTacticalLoadoutOverlay();
         this.hidePauseOverlay();
         this.isPaused = false;
+        if (this.game?.lateGameExperiment?.active === true) {
+          this.game.completeRun?.('late_game_experiment_retired', {
+            levelReached: this.game.level,
+            sectorReached: this.game.level,
+            experimentRetired: true
+          });
+          return;
+        }
         this.game.switchScene('menu');
       })
     ];
@@ -12604,6 +12646,7 @@ export class PlayScene {
       scanLine,
       title,
       status,
+      experimentStatus,
       scoreValue: scoreChip.valueText,
       sectorValue: sectorChip.valueText,
       livesChip,
@@ -12692,6 +12735,7 @@ export class PlayScene {
       pilotOrders: decor?.pilotOrdersValue?.text ?? null,
       combatTelemetryText: decor?.combatTelemetryValue?.text ?? null,
       tacticalDraft: decor?.tacticalDraftValue?.text ?? null,
+      experimentLabel: decor?.experimentStatus?.visible ? decor.experimentStatus.text : null,
       tacticalDirective: this.getPauseTacticalDirectiveSummary(),
       combatTelemetry: this.getCombatTelemetrySummary(),
       humor: this.lastPauseHumor ? { ...this.lastPauseHumor } : null,
@@ -12770,6 +12814,7 @@ export class PlayScene {
 
     this.settingsOverlay = new SettingsOverlay(this.game, {
       title: 'SETTINGS',
+      allowExperimentLaunch: false,
       onClose: () => {
         this.settingsOverlay = null;
         this.pauseGamepadNavigator.suppressUntilReleased();
@@ -16276,6 +16321,7 @@ export class PlayScene {
   }
 
   maybeTriggerOverrunCelebration({ sectorCleared, bossCompletion, compactHud = this.game.getWidth() < 620 } = {}) {
+    if (this.game?.lateGameExperiment?.active === true) return false;
     if (!bossCompletion) return false;
     if (this.gameOverInterlude?.active || this.game?.gameOverTransitionPending || this.gameOverSequenceStarted) return false;
     if ((this.game?.lives || 0) <= 0 || this.game?.currentScene !== this) return false;

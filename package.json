@@ -338,6 +338,7 @@
     "check:high-sector-escalation": "node scripts/check-high-sector-escalation.mjs",
     "check:high-sector-runtime": "node scripts/check-high-sector-runtime.mjs",
     "check:high-sector-benchmarks": "node scripts/check-high-sector-benchmarks.mjs",
+    "check:late-game-experiment": "node scripts/check-late-game-experiment.mjs",
     "analyze:frame-cadence": "node scripts/analyze-frame-cadence-video.mjs",
     "check:frame-pacing-probe:browser": "node scripts/check-frame-pacing-probe-browser.mjs",
     "check:frame-pacing-probe:electron": "electron electron/main.cjs --frame-pacing-probe",

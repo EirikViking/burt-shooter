@@ -803,29 +803,26 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
     assertSettingsPageLayout(prototypeInitial, `${scenario.id} prototype`);
     assert.equal(prototypeInitial.prototype.enabled, false, `${scenario.id}: prototype must default off`);
     assert.equal(prototypeInitial.prototype.quickStart, false, `${scenario.id}: Quick Start must default off`);
+    assert.equal(prototypeInitial.prototype.oneRunOnly, true, `${scenario.id}: experiment must be one-run only`);
+    assert.equal(prototypeInitial.prototype.allowLaunch, true, `${scenario.id}: menu Settings should allow an explicit launch`);
+    assert.equal(prototypeInitial.prototype.draft.scenario, 'standard');
     await page.evaluate(() => {
       const overlay = window.__game.currentScene.settingsOverlay;
-      overlay.controls.find((control) => control.id === 'toggle_high_sector_quick_start')?.button?.activate?.();
+      overlay.controls.find((control) => control.id === 'experiment_scenario')?.button?.activate?.();
     });
     await page.waitForTimeout(100);
-    const quickStartState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
+    const enduranceState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
+    assert.equal(enduranceState.draft.scenario, 'endurance', `${scenario.id}: scenario choice should select Endurance`);
     await page.evaluate(() => {
       const overlay = window.__game.currentScene.settingsOverlay;
-      overlay.controls.find((control) => control.id === 'toggle_high_sector_prototype')?.button?.activate?.();
+      overlay.controls.find((control) => control.id === 'experiment_launch')?.button?.activate?.();
     });
     await page.waitForTimeout(100);
-    const disabledState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
-    const prototypeToggles = { quickStart: quickStartState, disabled: disabledState };
-    assert.deepEqual(
-      { enabled: prototypeToggles.quickStart.enabled, quickStart: prototypeToggles.quickStart.quickStart },
-      { enabled: true, quickStart: true },
-      `${scenario.id}: Quick Start should arm the prototype`
-    );
-    assert.deepEqual(
-      { enabled: prototypeToggles.disabled.enabled, quickStart: prototypeToggles.disabled.quickStart },
-      { enabled: false, quickStart: false },
-      `${scenario.id}: disabling the prototype should clear Quick Start`
-    );
+    const confirmationState = await page.evaluate(() => window.__game.currentScene.settingsOverlay.getDebugState().prototype);
+    assert.equal(confirmationState.confirmationOpen, true, `${scenario.id}: launch must open acknowledgement`);
+    const confirmationShot = await capture(page, scenarioDir, '12a-experiment-acknowledgement', 'settings');
+    await page.evaluate(() => window.__game.currentScene.settingsOverlay.closeExperimentConfirmation());
+    const prototypeControls = { endurance: enduranceState, confirmation: confirmationState };
     const prototypeShot = await capture(page, scenarioDir, '12-settings-prototype', 'settings');
     await page.evaluate(() => {
       const overlay = window.__game.currentScene.settingsOverlay;
@@ -852,13 +849,14 @@ async function runSettingsScenario(browser, scenario, scenarioDir) {
       audio,
       accessibility,
       prototypeInitial,
-      prototypeToggles,
+      prototypeControls,
       chatter,
       keyboard,
       generalShot,
       audioShot,
       accessibilityShot,
       prototypeShot,
+      confirmationShot,
       keyboardShot,
       errors: observed
     };

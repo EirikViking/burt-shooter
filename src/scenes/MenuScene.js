@@ -7326,6 +7326,18 @@ export class MenuScene {
 
     this.settingsOverlay = new SettingsOverlay(this.game, {
       title: 'SETTINGS',
+      allowExperimentLaunch: true,
+      onStartExperiment: (lateGameExperiment) => {
+        const selectedSpriteKey = isValidShipKey(this.game?.selectedShipSpriteKey)
+          ? resolveShipKey(this.game.selectedShipSpriteKey)
+          : getDefaultShipKey();
+        this.closeSettingsOverlay();
+        Promise.resolve(this.game.startGame(selectedSpriteKey, { lateGameExperiment }))
+          .then((started) => {
+            if (started === false) console.warn('[MenuScene] Late-game experiment launch was rejected');
+          })
+          .catch((error) => console.error('[MenuScene] Late-game experiment launch failed:', error));
+      },
       onClose: () => {
         this.settingsOverlay = null;
         this.menuGamepadNavigator.suppressUntilReleased();

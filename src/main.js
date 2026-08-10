@@ -862,6 +862,13 @@ function buildGameTextState(game) {
     tacticalDraft: playScene?.getTacticalDraftDebugState?.() || null,
     tacticalAugments: player?.getRunAugmentDebugState?.() || null,
     runReport: summarizeRunReport(game?.lastRunReport || null),
+    lateGameExperiment: game?.lateGameExperiment ? {
+      ...game.lateGameExperiment,
+      baselineAugmentIds: [...(game.lateGameExperiment.baselineAugmentIds || [])],
+      pressureProfile: game.lateGameExperiment.pressureProfile
+        ? { ...game.lateGameExperiment.pressureProfile }
+        : null
+    } : null,
     highSectorPrototype: game?.highSectorPrototypeRun ? {
       ...game.highSectorPrototypeRun,
       baselineAugmentIds: [...(game.highSectorPrototypeRun.baselineAugmentIds || [])]

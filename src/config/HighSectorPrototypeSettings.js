@@ -39,32 +39,38 @@ export function normalizeHighSectorPrototypeSettings(value = {}) {
 }
 
 export function getHighSectorPrototypeSettings({ storage = null } = {}) {
-  try {
-    const raw = getStorage(storage)?.getItem?.(HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY);
-    return normalizeHighSectorPrototypeSettings(raw ? JSON.parse(raw) : DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS);
-  } catch {
-    return { ...DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS };
-  }
+  migrateLegacyHighSectorPrototypeSettings({ storage });
+  return { ...DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS };
 }
 
 export function saveHighSectorPrototypeSettings(value = {}, {
   storage = null,
   dispatch = true
 } = {}) {
-  const current = getHighSectorPrototypeSettings({ storage });
-  const merged = {
-    enabled: value.enabled === undefined ? current.enabled : value.enabled === true,
-    quickStart: value.quickStart === undefined ? current.quickStart : value.quickStart === true
-  };
-  if (value.enabled === false) merged.quickStart = false;
-  const settings = normalizeHighSectorPrototypeSettings(merged);
-  try {
-    getStorage(storage)?.setItem?.(HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // The current screen can still use the normalized result when storage is unavailable.
-  }
+  void value;
+  migrateLegacyHighSectorPrototypeSettings({ storage });
+  const settings = { ...DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS };
   if (dispatch && typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(HIGH_SECTOR_PROTOTYPE_CHANGED_EVENT, { detail: settings }));
   }
   return settings;
+}
+
+export function migrateLegacyHighSectorPrototypeSettings({ storage = null } = {}) {
+  const target = getStorage(storage);
+  if (!target) return { removed: false, legacy: null };
+  try {
+    const raw = target.getItem?.(HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY);
+    if (raw == null) return { removed: false, legacy: null };
+    let legacy = null;
+    try {
+      legacy = normalizeHighSectorPrototypeSettings(JSON.parse(raw));
+    } catch {
+      legacy = { ...DEFAULT_HIGH_SECTOR_PROTOTYPE_SETTINGS };
+    }
+    target.removeItem?.(HIGH_SECTOR_PROTOTYPE_SETTINGS_KEY);
+    return { removed: true, legacy };
+  } catch {
+    return { removed: false, legacy: null };
+  }
 }

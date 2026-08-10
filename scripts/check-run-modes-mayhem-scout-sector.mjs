@@ -19,11 +19,11 @@ import {
   canRunModeSubmitGlobalLeaderboard,
   canRunModeUnlockAchievements,
   getRunModeProfile,
-  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   getSectorStartCheckpoints,
   getSectorStartPlaySector,
   isRankedRunMode
 } from '../src/game/RunMode.js';
+import { getLateGameExperimentFixture } from '../src/game/LateGamePressureExperiment.js';
 import { getShipUsageKey } from '../src/config/ShipMetadata.js';
 import { STEAM_LEADERBOARD_NAME, STEAM_TACTICAL_LEADERBOARD_NAME } from '../src/leaderboard/LeaderboardTypes.js';
 
@@ -1425,8 +1425,15 @@ try {
   await seedProfile(page);
   const beforePrototype = await storageSnapshot(page);
   await page.evaluate(() => {
-    localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
-    return window.__game.startGame(undefined, { runMode: 'ranked_tactical' });
+    return window.__game.startGame(undefined, {
+      lateGameExperiment: {
+        acknowledged: true,
+        scenario: 'standard',
+        ruleset: 'tactical',
+        fixtureId: 'tactical_saturation_bounded',
+        phasePulseAvailable: true
+      }
+    });
   });
   const prototypePlay = await waitForScene(page, 'play');
   const prototypeRuntime = await page.evaluate(() => {
@@ -1438,7 +1445,7 @@ try {
       runMode: game?.runMode,
       runModeReason: game?.runModeReason,
       isDebugRun: game?.isDebugRun,
-      prototype: game?.highSectorPrototypeRun || null,
+      prototype: game?.lateGameExperiment || null,
       escalationProfile: game?.highSectorEscalationProfile || null,
       baselineIds: play?.overrunBaselineAugmentIds || [],
       playerAugmentIds: play?.player?.runAugmentIds || [],
@@ -1459,13 +1466,14 @@ try {
   assert.equal(prototypeRuntime.level, 75);
   assert.equal(prototypeRuntime.startSector, 75);
   assert.equal(prototypeRuntime.isDebugRun, true);
-  assert.equal(prototypeRuntime.runModeReason, 'high_sector_prototype_quick_start');
-  assert.equal(prototypeRuntime.prototype?.enabled, true);
-  assert.equal(prototypeRuntime.prototype?.quickStart, true);
+  assert.equal(prototypeRuntime.runModeReason, 'late_game_pressure_experiment');
+  assert.equal(prototypeRuntime.prototype?.active, true);
+  assert.equal(prototypeRuntime.prototype?.scenario, 'standard');
   assert.equal(prototypeRuntime.escalationProfile?.armed, true);
-  assert.equal(prototypeRuntime.escalationProfile?.source, 'settings_prototype');
-  assert.deepEqual(prototypeRuntime.baselineIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
-  assert.deepEqual(prototypeRuntime.playerAugmentIds, OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS);
+  assert.equal(prototypeRuntime.escalationProfile?.source, 'late_game_pressure_experiment');
+  const boundedFixtureIds = getLateGameExperimentFixture('tactical_saturation_bounded').baselineAugmentIds;
+  assert.deepEqual(prototypeRuntime.baselineIds, boundedFixtureIds);
+  assert.deepEqual(prototypeRuntime.playerAugmentIds, boundedFixtureIds);
   assert.equal(prototypeRuntime.leaderboardAllowed, false);
   assert.equal(prototypeRuntime.achievementAllowed, false);
   assert.equal(prototypeRuntime.careerAllowed, false);
@@ -1488,7 +1496,7 @@ try {
   assert.equal(prototypeRuntime.discoveryAttempt?.skipped, 'high_sector_prototype_no_awards');
   assert.deepEqual(prototypeRuntime.contractAttempt, [], 'prototype must reject Pilot Order events');
   assert.equal(prototypeRuntime.seasonAttempt?.suppressed, true, 'prototype must reject season/meta progress');
-  await page.screenshot({ path: path.join(outputDir, 'high-sector-prototype-quick-start-75.png'), fullPage: false });
+  await page.screenshot({ path: path.join(outputDir, 'late-game-experiment-standard-75.png'), fullPage: false });
 
   await page.evaluate(() => {
     const game = window.__game;
@@ -1506,12 +1514,23 @@ try {
   await seedProfile(page, makeProgress(60));
   const beforePrototypeOverrun = await storageSnapshot(page);
   const prototypeOverrunStarted = await page.evaluate(() => {
-    localStorage.setItem('nova.highSectorPrototype.v1', JSON.stringify({ enabled: true, quickStart: true }));
-    return window.__game.startGame(undefined, { runMode: 'overrun_tactical' });
+    return window.__game.startGame(undefined, {
+      lateGameExperiment: {
+        acknowledged: true,
+        scenario: 'endurance',
+        ruleset: 'tactical',
+        fixtureId: 'tactical_saturation_unlimited',
+        startSector: 100,
+        lifeStock: 'mature_stock',
+        phasePulseAvailable: true
+      }
+    });
   });
-  assert.equal(prototypeOverrunStarted, true, 'prototype Overrun should launch from the mature fixture');
+  assert.equal(prototypeOverrunStarted, true, 'Endurance experiment should launch from the mature fixture');
   const prototypeOverrunPlay = await waitForScene(page, 'play');
-  assert.equal(prototypeOverrunPlay.runMode, RUN_MODES.OVERRUN_TACTICAL);
+  assert.equal(prototypeOverrunPlay.runMode, RUN_MODES.MAYHEM_TACTICAL);
+  assert.equal(prototypeOverrunPlay.level, 100);
+  assert.equal(prototypeOverrunPlay.lives, 12);
   assert.equal(prototypeOverrunPlay.runRewardSuppression?.suppressed, true);
   await page.evaluate(() => {
     const game = window.__game;
@@ -1552,9 +1571,9 @@ try {
       achievements: sectorPlay.runModeProfile?.unlocksAchievements,
       resultExplained: /NO ACHIEVEMENTS/i.test(sectorResultText)
     },
-    highSectorPrototype: {
-      enabled: prototypeRuntime.prototype?.enabled,
-      quickStart: prototypeRuntime.prototype?.quickStart,
+    lateGameExperiment: {
+      active: prototypeRuntime.prototype?.active,
+      scenario: prototypeRuntime.prototype?.scenario,
       startSector: prototypeRuntime.startSector,
       unranked: prototypeRuntime.isDebugRun,
       baselineIds: prototypeRuntime.baselineIds,

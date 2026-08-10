@@ -52,7 +52,6 @@ import {
 import {
   RUN_MODES,
   OVERRUN_START_SECTOR,
-  OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS,
   canRunModeUpdateCareerProgress,
   canRunModeUpdateCompetitiveCareerBests,
   canRunModeSubmitGlobalLeaderboard,
@@ -97,9 +96,8 @@ import { buildShipThreatResponse } from '../config/ShipThreatResponse.js';
 import { generateUUID } from '../utils/uuid.js';
 import {
   HIGH_SECTOR_PROTOTYPE_AWARD_SUPPRESSION_REASON,
-  HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
   HIGH_SECTOR_PROTOTYPE_SUPPRESSED_AWARDS,
-  getHighSectorPrototypeSettings
+  migrateLegacyHighSectorPrototypeSettings
 } from '../config/HighSectorPrototypeSettings.js';
 import {
   applyScoutAnomalyToProfile,
@@ -111,6 +109,10 @@ import { flushPersistence, markPersistenceDirty } from '../persistence/Persisten
 import { warmAccessibilitySettingsRuntimeCache } from '../config/AccessibilitySettings.js';
 import { warmRuntimeFeatureSwitchCache } from '../config/isExtrasEnabled.js';
 import { warmNovaPerformanceFlagsRuntimeCache } from '../config/PerformanceFlags.js';
+import {
+  createLateGamePressureExperimentRun,
+  isLateGamePressureExperimentActive
+} from './LateGamePressureExperiment.js';
 
 const MENU_EXIT_GUARD_MS = 900;
 const SCENE_INPUT_GUARD_MS = 180;
@@ -164,6 +166,7 @@ export class Game {
     this.isDebugRun = false;
     this.runMode = 'ranked';
     this.runModeReason = null;
+    this.lateGameExperiment = null;
     this.highSectorPrototypeRun = null;
     this.scoutAnomalyId = null;
     this.scoutAnomaly = null;
@@ -290,6 +293,9 @@ export class Game {
     if (sceneName === 'gameOver') {
       this.currentScene?.preparePersonalBestCelebrationCarry?.('game_over_transition');
     }
+    if (sceneName === 'menu') {
+      this.clearLateGameExperimentState('return_to_menu');
+    }
     this.teardownCurrentScene();
 
     this.currentScene = this.scenes[sceneName];
@@ -347,16 +353,10 @@ export class Game {
     warmAccessibilitySettingsRuntimeCache();
     warmRuntimeFeatureSwitchCache();
     warmNovaPerformanceFlagsRuntimeCache();
-    const requestedRunMode = normalizeRunMode(options.runMode);
-    const prototypeSettings = getHighSectorPrototypeSettings();
-    const prototypeEligible = [
-      RUN_MODES.RANKED,
-      RUN_MODES.MAYHEM_TACTICAL,
-      RUN_MODES.OVERRUN_PURE,
-      RUN_MODES.OVERRUN_TACTICAL
-    ].includes(requestedRunMode);
-    const prototypeEnabled = prototypeEligible && prototypeSettings.enabled;
-    const prototypeQuickStart = prototypeEnabled && prototypeSettings.quickStart;
+    migrateLegacyHighSectorPrototypeSettings();
+    const lateGameExperiment = createLateGamePressureExperimentRun(options.lateGameExperiment);
+    const requestedRunMode = normalizeRunMode(lateGameExperiment?.underlyingRunMode || options.runMode);
+    const prototypeEnabled = Boolean(lateGameExperiment);
     const scoutAnomaly = requestedRunMode === RUN_MODES.SCOUT
       ? getScoutAnomaly(options.scoutAnomalyId || readScoutAnomalySelection().id)
       : null;
@@ -413,20 +413,20 @@ export class Game {
     const normalRunStartSector = overrunStartState?.available
       ? OVERRUN_START_SECTOR
       : (sectorStartPlaySector || 1);
-    const runStartSector = prototypeQuickStart
-      ? HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR
+    const runStartSector = lateGameExperiment
+      ? lateGameExperiment.startSector
       : normalRunStartSector;
-    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector} prototype=${prototypeEnabled} quickStart=${prototypeQuickStart}`);
+    console.log(`[Game] starting new game spriteKey=${selectedSpriteKey} runMode=${requestedRunMode} sector=${runStartSector} experiment=${prototypeEnabled}`);
     this.selectedShipSpriteKey = selectedSpriteKey;
     this.refreshThreatResponse(0);
 
     this.score = 0;
     this.level = runStartSector;
-    this.lives = 3;
+    this.lives = lateGameExperiment?.lives || 3;
     this.isDebugRun = prototypeEnabled;
     this.runMode = requestedRunMode;
     this.runModeReason = prototypeEnabled
-      ? (prototypeQuickStart ? 'high_sector_prototype_quick_start' : 'high_sector_prototype')
+      ? 'late_game_pressure_experiment'
       : isOverrunRunMode(requestedRunMode)
         ? 'overrun_sector_51_career'
         : requestedRunMode === RUN_MODES.SECTOR_START
@@ -436,14 +436,21 @@ export class Game {
             : scoutAnomaly
               ? `scout_anomaly:${scoutAnomaly.id}`
               : null;
-    this.highSectorPrototypeRun = {
-      enabled: prototypeEnabled,
-      quickStart: prototypeQuickStart,
-      eligible: prototypeEligible,
-      requestedRunMode,
-      startSector: runStartSector,
-      baselineAugmentIds: prototypeQuickStart ? [...OVERRUN_TACTICAL_BASELINE_AUGMENT_IDS] : []
-    };
+    this.lateGameExperiment = lateGameExperiment;
+    // Compatibility alias for the already-shipped high-sector safety gates.
+    // Gameplay configuration now comes exclusively from the acknowledged,
+    // one-run LateGamePressureExperiment state above.
+    this.highSectorPrototypeRun = lateGameExperiment
+      ? {
+          enabled: true,
+          quickStart: true,
+          eligible: true,
+          requestedRunMode,
+          startSector: runStartSector,
+          baselineAugmentIds: [...lateGameExperiment.baselineAugmentIds],
+          experimentVersion: lateGameExperiment.version
+        }
+      : null;
     this.runPolicy = createRunPolicy({
       runMode: requestedRunMode,
       isDebugRun: this.isDebugRun,
@@ -502,7 +509,9 @@ export class Game {
     this.liveRankBaseProgress = this.hangarProgressAtRunStart;
     this.runPressureDirector = new RunPressureDirector(this);
     this.contentDirector = new RunContentDirector(this, {
-      seed: dailySignalContract?.seed || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
+      seed: lateGameExperiment?.seed
+        || dailySignalContract?.seed
+        || `${Date.now()}-${selectedSpriteKey}-${Math.random().toString(36).slice(2)}`
     });
     if (RunPacingConfig.threatCodexEnabled && (this.runPolicy.allowCodexProgress || this.runPolicy.prototype)) {
       startThreatDiscoveryRun({ allowPersistentProgress: this.runPolicy.allowCodexProgress });
@@ -587,7 +596,18 @@ export class Game {
   }
 
   isHighSectorPrototypeRun() {
-    return this.highSectorPrototypeRun?.enabled === true;
+    return isLateGamePressureExperimentActive(this);
+  }
+
+  clearLateGameExperimentState(reason = 'cleared') {
+    const previous = this.lateGameExperiment;
+    this.lateGameExperiment = null;
+    this.highSectorPrototypeRun = null;
+    this.highSectorEscalationProfile = null;
+    if (previous?.active) {
+      console.log(`[LateGamePressureExperiment] cleared reason=${reason} version=${previous.version}`);
+    }
+    return Boolean(previous?.active);
   }
 
   areRunRewardsSuppressed() {

@@ -4282,6 +4282,10 @@ export class GameOverScene {
 
   restartRun() {
     if (this.isSubmitting) return;
+    if (this.game?.lateGameExperiment?.active === true) {
+      this.returnToMenu();
+      return;
+    }
     this.clearSceneTimeouts();
     this.removeInputOverlay();
     this.stopCaretBlink();

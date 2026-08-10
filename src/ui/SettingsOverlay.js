@@ -27,11 +27,18 @@ import {
 } from '../config/DisplaySettings.js';
 import { getMenuSettings, saveMenuSettings } from '../config/MenuSettings.js';
 import { getControlSettings, saveControlSettings } from '../config/ControlSettings.js';
+import { migrateLegacyHighSectorPrototypeSettings } from '../config/HighSectorPrototypeSettings.js';
 import {
-  HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
-  getHighSectorPrototypeSettings,
-  saveHighSectorPrototypeSettings
-} from '../config/HighSectorPrototypeSettings.js';
+  LATE_GAME_EXPERIMENT_LIFE_STOCKS,
+  LATE_GAME_EXPERIMENT_MATURE_LIVES,
+  LATE_GAME_EXPERIMENT_RULESETS,
+  LATE_GAME_EXPERIMENT_SCENARIOS,
+  LATE_GAME_EXPERIMENT_START_SECTORS,
+  createDefaultLateGameExperimentDraft,
+  getLateGameExperimentFixture,
+  getLateGameExperimentFixtures,
+  normalizeLateGameExperimentDraft
+} from '../game/LateGamePressureExperiment.js';
 import { BUILD_ID } from '../buildInfo.js';
 import { createText } from '../utils/pixiText.js';
 import { AssetManifest } from '../assets/assetManifest.js';
@@ -139,11 +146,21 @@ function getMusicPackOption(pack) {
 export class SettingsOverlay {
   constructor(game, {
     title = 'SETTINGS',
-    onClose = null
+    onClose = null,
+    allowExperimentLaunch = false,
+    onStartExperiment = null
   } = {}) {
     this.game = game;
     this.title = title;
     this.onClose = onClose;
+    this.allowExperimentLaunch = allowExperimentLaunch === true;
+    this.onStartExperiment = onStartExperiment;
+    this.experimentDraft = createDefaultLateGameExperimentDraft();
+    this.experimentChoiceButtons = {};
+    this.experimentLaunchButton = null;
+    this.experimentConfirmationPanel = null;
+    this.experimentConfirmationControls = [];
+    this.experimentConfirmationFocusedIndex = 0;
     this.container = new PIXI.Container();
     this.container.zIndex = 2000000;
     this.container.label = 'ui_settingsOverlay';
@@ -176,8 +193,6 @@ export class SettingsOverlay {
     this.retiredBuildChildren = [];
     this.panelBounds = null;
     this.sectionBounds = [];
-    this.prototypeEnabledButton = null;
-    this.prototypeQuickStartButton = null;
     this.prototypeInfoCard = null;
     this.languageButton = null;
     this.languageHint = null;
@@ -232,7 +247,7 @@ export class SettingsOverlay {
     const accessibility = getAccessibilitySettings();
     const menuSettings = this.getMenuSettingsForOverlay();
     const controlSettings = getControlSettings();
-    const prototypeSettings = getHighSectorPrototypeSettings();
+    migrateLegacyHighSectorPrototypeSettings();
     this.container.eventMode = 'static';
     this.container.hitArea = new PIXI.Rectangle(0, 0, width, height);
 
@@ -440,23 +455,9 @@ export class SettingsOverlay {
       }
     } else if (this.activePage === 'prototype') {
       setFormColumn(leftX);
-      this.addSectionLabel('LATE-GAME PROTOTYPE', startY);
+      this.addSectionLabel('LATE-GAME PRESSURE TEST', startY);
       let y = startY + sectionGap;
-      this.addToggleRow('ENABLE PROTOTYPE', prototypeSettings.enabled, y, (enabled) => {
-        const next = saveHighSectorPrototypeSettings({ enabled });
-        this.prototypeQuickStartButton?.setToggleValue?.(next.quickStart);
-      }, {
-        id: 'high_sector_prototype',
-        onButton: (button) => { this.prototypeEnabledButton = button; }
-      });
-      y += Math.round(48 * this.uiScale);
-      this.addToggleRow('JUMP TO SECTOR 75', prototypeSettings.quickStart, y, (quickStart) => {
-        const next = saveHighSectorPrototypeSettings({ quickStart });
-        this.prototypeEnabledButton?.setToggleValue?.(next.enabled);
-      }, {
-        id: 'high_sector_quick_start',
-        onButton: (button) => { this.prototypeQuickStartButton = button; }
-      });
+      y = this.renderExperimentLauncher(y);
       if (!twoColumn) {
         const infoTop = y + Math.round(38 * this.uiScale);
         this.addPrototypeInfoCard(infoTop, leftX, columnWidth, Math.max(140, contentBottom - infoTop - Math.round(8 * this.uiScale)));
@@ -577,7 +578,7 @@ export class SettingsOverlay {
       ['general', 'GENERAL'],
       ['audio', 'AUDIO'],
       ['accessibility', 'ACCESSIBILITY'],
-      ['prototype', 'PROTOTYPE']
+      ['prototype', 'EXPERIMENTAL']
     ];
     const gap = Math.max(6, Math.round(9 * this.uiScale));
     const buttonWidth = Math.max(86, (width - gap * (pages.length - 1)) / pages.length);
@@ -607,6 +608,252 @@ export class SettingsOverlay {
     });
   }
 
+  renderExperimentLauncher(startY) {
+    const rowGap = Math.round(43 * this.uiScale);
+    let y = startY;
+    const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
+    this.experimentDraft = draft;
+    const fixture = getLateGameExperimentFixture(draft.fixtureId);
+    const scenarioOptions = [
+      { id: LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD, label: 'STANDARD TEST' },
+      { id: LATE_GAME_EXPERIMENT_SCENARIOS.ENDURANCE, label: 'ENDURANCE TEST' }
+    ];
+    const rulesetOptions = [
+      { id: LATE_GAME_EXPERIMENT_RULESETS.PURE, label: 'PURE' },
+      { id: LATE_GAME_EXPERIMENT_RULESETS.TACTICAL, label: 'TACTICAL' }
+    ];
+    const lifeOptions = [
+      { id: LATE_GAME_EXPERIMENT_LIFE_STOCKS.THREE, label: '3 LIVES' },
+      { id: LATE_GAME_EXPERIMENT_LIFE_STOCKS.MATURE, label: `${translateText('MATURE LIFE STOCK')} // ${LATE_GAME_EXPERIMENT_MATURE_LIVES}` }
+    ];
+    const cycle = (items, currentId, direction = 1) => {
+      const currentIndex = Math.max(0, items.findIndex((item) => item.id === currentId));
+      return items[(currentIndex + Math.sign(direction || 1) + items.length) % items.length];
+    };
+    const addExperimentChoice = (label, valueLabel, id, onCycle, description = null) => {
+      this.addChoiceRow(label, translateText(valueLabel), y, onCycle, {
+        id: `experiment_${id}`,
+        buttonWidth: 230,
+        description,
+        onButton: (button) => { this.experimentChoiceButtons[id] = button; }
+      });
+      y += rowGap;
+    };
+
+    addExperimentChoice('SCENARIO', scenarioOptions.find((item) => item.id === draft.scenario)?.label, 'scenario', (direction) => {
+      const next = cycle(scenarioOptions, draft.scenario, direction);
+      this.updateExperimentDraft({ scenario: next.id });
+    });
+    addExperimentChoice('RULESET', rulesetOptions.find((item) => item.id === draft.ruleset)?.label, 'ruleset', (direction) => {
+      const next = cycle(rulesetOptions, draft.ruleset, direction);
+      const nextFixture = getLateGameExperimentFixtures(next.id)[0];
+      this.updateExperimentDraft({ ruleset: next.id, fixtureId: nextFixture?.id });
+    });
+
+    const fixtures = getLateGameExperimentFixtures(draft.ruleset);
+    addExperimentChoice('FIXTURE', fixture?.label || '--', 'fixture', (direction) => {
+      const next = cycle(fixtures, draft.fixtureId, direction);
+      this.updateExperimentDraft({ fixtureId: next.id });
+    }, fixture?.description || null);
+
+    const sectorItems = LATE_GAME_EXPERIMENT_START_SECTORS.map((sector) => ({
+      id: sector,
+      label: translateText('SECTOR {sector}', { sector })
+    }));
+    addExperimentChoice('START', translateText('SECTOR {sector}', { sector: draft.startSector }), 'start_sector', (direction) => {
+      if (draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD) return;
+      const next = cycle(sectorItems, draft.startSector, direction);
+      this.updateExperimentDraft({ startSector: next.id });
+    }, draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD
+      ? 'Standard Test uses the fixed Sector-75 comparison start.'
+      : 'This is a test preset, not a naturally reached sector.');
+
+    addExperimentChoice('LIFE STOCK', lifeOptions.find((item) => item.id === draft.lifeStock)?.label, 'life_stock', (direction) => {
+      if (draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD) return;
+      const next = cycle(lifeOptions, draft.lifeStock, direction);
+      this.updateExperimentDraft({ lifeStock: next.id });
+    });
+
+    addExperimentChoice('PHASE PULSE', draft.phasePulseAvailable ? 'AVAILABLE' : 'UNAVAILABLE', 'phase_pulse', () => {
+      this.updateExperimentDraft({ phasePulseAvailable: !draft.phasePulseAvailable });
+    });
+
+    const actionLabel = this.allowExperimentLaunch
+      ? 'START EXPERIMENT'
+      : this.game?.lateGameExperiment?.active
+        ? 'TEST ACTIVE // RETURN TO MENU TO RECONFIGURE'
+        : 'AVAILABLE FROM MAIN MENU';
+    const action = this.createButton(actionLabel, this.getFormCenterX(), y + Math.round(8 * this.uiScale), () => {
+      if (this.allowExperimentLaunch) this.openExperimentConfirmation();
+    }, { width: 330, height: 38 });
+    action.label = 'ui_settings_experiment_launch';
+    if (!this.allowExperimentLaunch) {
+      action.alpha = 0.58;
+      action.cursor = 'default';
+    }
+    this.experimentLaunchButton = action;
+    this.container.addChild(action);
+    this.registerControl({
+      type: 'button',
+      id: 'experiment_launch',
+      button: action,
+      label: actionLabel
+    });
+    return y + Math.round(50 * this.uiScale);
+  }
+
+  updateExperimentDraft(patch = {}) {
+    this.experimentDraft = normalizeLateGameExperimentDraft({
+      ...this.experimentDraft,
+      ...(patch && typeof patch === 'object' ? patch : {})
+    });
+    this.rebuild();
+    return this.experimentDraft;
+  }
+
+  openExperimentConfirmation() {
+    if (!this.allowExperimentLaunch || typeof this.onStartExperiment !== 'function') return false;
+    this.closeExperimentConfirmation();
+    const width = this.game.getWidth();
+    const height = this.game.getHeight();
+    const panelWidth = Math.min(760, width * 0.9);
+    const panelHeight = Math.min(520, height * 0.84);
+    const panelX = width / 2 - panelWidth / 2;
+    const panelY = height / 2 - panelHeight / 2;
+    const draft = normalizeLateGameExperimentDraft(this.experimentDraft);
+    const fixture = getLateGameExperimentFixture(draft.fixtureId);
+    const layer = new PIXI.Container();
+    layer.label = 'ui_experimentConfirmation';
+    layer.zIndex = 5000;
+    layer.eventMode = 'static';
+    layer.hitArea = new PIXI.Rectangle(0, 0, width, height);
+
+    const dim = new PIXI.Graphics();
+    dim.rect(0, 0, width, height);
+    dim.fill({ color: 0x00030a, alpha: 0.9 });
+    dim.eventMode = 'static';
+    layer.addChild(dim);
+
+    const panel = new PIXI.Graphics();
+    panel.roundRect(panelX, panelY, panelWidth, panelHeight, 10);
+    panel.fill({ color: 0x061424, alpha: 0.99 });
+    panel.stroke({ color: 0xff55d9, width: 2, alpha: 0.92 });
+    panel.roundRect(panelX + 10, panelY + 10, panelWidth - 20, panelHeight - 20, 8);
+    panel.stroke({ color: 0x37f5ff, width: 1, alpha: 0.42 });
+    layer.addChild(panel);
+
+    const title = createText(translateText('EXPERIMENTAL LATE-GAME TEST'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 30,
+      fontWeight: '900',
+      fill: '#ffef7e',
+      align: 'center'
+    });
+    title.anchor.set(0.5);
+    title.position.set(width / 2, panelY + 52);
+    fitTextToWidth(title, panelWidth - 60, { minScale: 0.68 });
+    layer.addChild(title);
+
+    const bodyCopy = translateText('This is a temporary, unranked playground where the developer and experienced players test late-game pressure. It is not an official game mode. Rules, balance, and content may change or disappear. Test runs grant no rankings, achievements, progression, or awards.');
+    const body = createText(bodyCopy, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 17,
+      fontWeight: '600',
+      fill: '#d6f8ff',
+      align: 'center',
+      wordWrap: true,
+      wordWrapWidth: panelWidth - 90,
+      lineHeight: 22
+    });
+    body.anchor.set(0.5, 0);
+    body.position.set(width / 2, panelY + 92);
+    layer.addChild(body);
+
+    const scenarioLabel = translateText(draft.scenario === LATE_GAME_EXPERIMENT_SCENARIOS.STANDARD ? 'STANDARD TEST' : 'ENDURANCE TEST');
+    const rulesetLabel = translateText(draft.ruleset === LATE_GAME_EXPERIMENT_RULESETS.PURE ? 'PURE' : 'TACTICAL');
+    const fixtureLabel = translateText(fixture?.label || '--');
+    const sectorLabel = translateText('SECTOR {sector}', { sector: draft.startSector });
+    const livesLabel = draft.lifeStock === LATE_GAME_EXPERIMENT_LIFE_STOCKS.MATURE
+      ? `${translateText('MATURE LIFE STOCK')} // ${LATE_GAME_EXPERIMENT_MATURE_LIVES} ${translateText('LIVES')}`
+      : translateText('3 LIVES');
+    const pulseLabel = translateText(draft.phasePulseAvailable ? 'PHASE PULSE AVAILABLE' : 'PHASE PULSE UNAVAILABLE');
+    const summary = [
+      `${scenarioLabel} // ${rulesetLabel}`,
+      `${fixtureLabel} // ${sectorLabel}`,
+      `${livesLabel} // ${pulseLabel}`
+    ].join('\n');
+    const summaryText = createText(summary, {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 16,
+      fontWeight: '800',
+      fill: '#8df6ff',
+      align: 'center',
+      lineHeight: 23
+    });
+    summaryText.anchor.set(0.5);
+    summaryText.position.set(width / 2, panelY + 292);
+    fitTextToWidth(summaryText, panelWidth - 72, { minScale: 0.62 });
+    layer.addChild(summaryText);
+
+    const warning = createText(translateText('EXPERIMENTAL TEST // NO AWARDS'), {
+      fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
+      fontSize: 19,
+      fontWeight: '900',
+      fill: '#ff9f6e',
+      align: 'center'
+    });
+    warning.anchor.set(0.5);
+    warning.position.set(width / 2, panelY + 360);
+    fitTextToWidth(warning, panelWidth - 60, { minScale: 0.72 });
+    layer.addChild(warning);
+
+    const buttonY = panelY + panelHeight - 58;
+    const startButton = this.createButton('START EXPERIMENT', width / 2 - 150, buttonY, () => this.startAcknowledgedExperiment(), { width: 270, height: 42 });
+    const cancelButton = this.createButton('CANCEL', width / 2 + 150, buttonY, () => this.closeExperimentConfirmation(), { width: 230, height: 42 });
+    startButton.label = 'ui_experimentConfirmStart';
+    cancelButton.label = 'ui_experimentConfirmCancel';
+    layer.addChild(startButton, cancelButton);
+
+    this.experimentConfirmationPanel = layer;
+    this.experimentConfirmationControls = [startButton, cancelButton];
+    this.experimentConfirmationFocusedIndex = 0;
+    this.container.addChild(layer);
+    this.setExperimentConfirmationFocus(0);
+    return true;
+  }
+
+  setExperimentConfirmationFocus(index) {
+    const controls = this.experimentConfirmationControls || [];
+    if (!controls.length) return;
+    this.experimentConfirmationFocusedIndex = ((index % controls.length) + controls.length) % controls.length;
+    controls.forEach((button, controlIndex) => {
+      button._focused = controlIndex === this.experimentConfirmationFocusedIndex;
+      button._drawButton?.(false);
+    });
+  }
+
+  closeExperimentConfirmation() {
+    const panel = this.experimentConfirmationPanel;
+    if (!panel) return;
+    if (panel.parent) panel.parent.removeChild(panel);
+    panel.destroy({ children: true });
+    this.experimentConfirmationPanel = null;
+    this.experimentConfirmationControls = [];
+    this.experimentConfirmationFocusedIndex = 0;
+    const launchIndex = this.controls.findIndex((control) => control.id === 'experiment_launch');
+    if (launchIndex >= 0) this.setControlFocus(launchIndex);
+  }
+
+  startAcknowledgedExperiment() {
+    if (!this.allowExperimentLaunch || typeof this.onStartExperiment !== 'function') return false;
+    const request = {
+      ...normalizeLateGameExperimentDraft(this.experimentDraft),
+      acknowledged: true
+    };
+    this.onStartExperiment(request);
+    return true;
+  }
+
   addPrototypeInfoCard(y, x, width, height) {
     const pad = Math.max(22, Math.round(30 * this.uiScale));
     const textWidth = Math.max(180, width - pad * 2);
@@ -624,42 +871,42 @@ export class SettingsOverlay {
     this.container.addChild(content);
 
     const blocks = [
-      { kind: 'heading', source: 'EXPERIMENTAL TEST' },
+      { kind: 'heading', source: 'EXPERIMENTAL LATE-GAME TEST' },
       {
-        source: 'This is an optional test of a possible new late-game direction for Nova Swarm.',
+        source: 'This is a temporary, unranked playground where the developer and experienced players test late-game pressure.',
         gapBefore: 10
       },
       {
-        source: 'It is not part of the main game yet and may be changed, removed, or never added at all.',
+        source: 'It is not an official game mode. Rules, balance, and content may change or disappear.',
         emphasis: true,
         gapBefore: 5
       },
       {
-        source: 'Prototype runs award nothing: no rankings, achievements, Codex discoveries, unlocks, Career progress, checkpoints, or personal bests.',
+        source: 'Test runs grant no rankings, achievements, progression, Codex discoveries, unlocks, checkpoints, records, or awards.',
         accent: true,
         emphasis: true,
         gapBefore: 12
       },
       { kind: 'heading', source: 'WHAT TO EXPECT', gapBefore: 17 },
       {
-        source: 'Prototype pressure begins at Sector 60. From Sector 75, Deep Space Protocols introduce special tactical encounters. Quick Start jumps directly there with a fixed test loadout.',
+        source: 'Standard Test starts at Sector 75 with a fixed seed, pressure profile, three lives, and loadout. It ends after ten sectors with a test report.',
         gapBefore: 10
       },
       {
-        source: 'The prototype is designed for skilled players who already survive deep runs.',
+        source: 'Endurance Test supports deeper starting presets and either three lives or a mature life stock. It continues until death or retirement.',
         gapBefore: 12
       },
       {
-        source: 'Instead of simply inflating enemy health or damage, it increases pressure through faster pacing, denser coordinated encounters, tougher enemy combinations, less downtime, and new tactical situations.',
+        source: 'Pure uses the real Pure contract with zero Tactical augments. Tactical uses a clearly disclosed comparison fixture.',
         emphasis: true,
         gapBefore: 5
       },
       {
-        source: 'Expect the challenge to keep rising as you go deeper.',
+        source: 'Every launch requires a fresh acknowledgement. Returning to the menu completely clears the test state.',
         gapBefore: 10
       },
       {
-        source: 'Experimental content may contain bugs or balance issues. Feedback is very welcome.',
+        source: 'Experimental content may contain bugs, performance problems, or balance issues. Feedback is very welcome.',
         accent: true,
         emphasis: true,
         gapBefore: 12
@@ -671,7 +918,7 @@ export class SettingsOverlay {
     blocks.forEach(({ kind = 'body', source, accent = false, emphasis = false, gapBefore = 0 }) => {
       cursorY += Math.round(gapBefore * scaleCap);
       const heading = kind === 'heading';
-      const text = createText(translateText(source, { sector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR }), {
+      const text = createText(translateText(source), {
         fontFamily: 'Rajdhani, Orbitron, Bahnschrift, sans-serif',
         fontSize: Math.round((heading ? 17 : 14) * scaleCap),
         fontWeight: heading ? '900' : (emphasis ? '700' : '500'),
@@ -1735,6 +1982,18 @@ export class SettingsOverlay {
 
   setupKeyboardNavigation() {
     this.keyHandler = (event) => {
+      if (this.experimentConfirmationPanel) {
+        const key = event.key || event.code;
+        const handled = ['ArrowLeft', 'ArrowRight', 'Enter', ' ', 'Escape'].includes(key) || event.code === 'Space';
+        if (!handled) return;
+        event.preventDefault();
+        event.stopPropagation();
+        if (key === 'Escape') this.closeExperimentConfirmation();
+        else if (key === 'ArrowLeft') this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex - 1);
+        else if (key === 'ArrowRight') this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex + 1);
+        else this.experimentConfirmationControls[this.experimentConfirmationFocusedIndex]?.activate?.();
+        return;
+      }
       if (this.keyBindingsPanel) {
         if (this.keyBindingCaptureAction) return;
         const key = event.key || event.code;
@@ -1774,6 +2033,7 @@ export class SettingsOverlay {
 
   rebuild() {
     const focusedId = this.getFocusedControl()?.id || null;
+    this.closeExperimentConfirmation();
     this.closeCreditsPanel();
     this.closeKeyBindingsPanel();
     destroyMenuFx(this);
@@ -1793,9 +2053,9 @@ export class SettingsOverlay {
     this.pageContainers = {};
     this.panelBounds = null;
     this.sectionBounds = [];
-    this.prototypeEnabledButton = null;
-    this.prototypeQuickStartButton = null;
     this.prototypeInfoCard = null;
+    this.experimentChoiceButtons = {};
+    this.experimentLaunchButton = null;
     this.languageButton = null;
     this.languageHint = null;
     this.creditsPanel = null;
@@ -1825,6 +2085,23 @@ export class SettingsOverlay {
     updateMenuFx(this, delta);
     const nav = this.gamepadNavigator.update();
     if (!nav.connected || !nav.active) return;
+
+    if (this.experimentConfirmationPanel) {
+      if (nav.pressed.cancel || nav.pressed.menu || nav.pressed.back) {
+        this.closeExperimentConfirmation();
+        return;
+      }
+      if (nav.pressed.left || nav.pressed.up) {
+        this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex - 1);
+      }
+      if (nav.pressed.right || nav.pressed.down) {
+        this.setExperimentConfirmationFocus(this.experimentConfirmationFocusedIndex + 1);
+      }
+      if (nav.pressed.confirm) {
+        this.experimentConfirmationControls[this.experimentConfirmationFocusedIndex]?.activate?.();
+      }
+      return;
+    }
 
     if (this.keyBindingsPanel) {
       if (this.keyBindingCaptureAction) return;
@@ -2638,7 +2915,6 @@ export class SettingsOverlay {
   getDebugState() {
     const displaySettings = getDisplaySettings();
     const controlSettings = getControlSettings();
-    const prototypeSettings = getHighSectorPrototypeSettings();
     return {
       activePage: this.activePage,
       panelBounds: this.panelBounds,
@@ -2659,10 +2935,15 @@ export class SettingsOverlay {
         valueLabelBounds: debugBounds(control.button?._label)
       })),
       prototype: {
-        ...prototypeSettings,
-        quickStartSector: HIGH_SECTOR_PROTOTYPE_QUICK_START_SECTOR,
-        enabledButton: debugBounds(this.prototypeEnabledButton),
-        quickStartButton: debugBounds(this.prototypeQuickStartButton),
+        enabled: false,
+        quickStart: false,
+        oneRunOnly: true,
+        allowLaunch: this.allowExperimentLaunch,
+        draft: { ...this.experimentDraft },
+        activeRun: this.game?.lateGameExperiment?.active === true,
+        launchButton: debugBounds(this.experimentLaunchButton),
+        confirmationOpen: Boolean(this.experimentConfirmationPanel),
+        confirmationBounds: debugBounds(this.experimentConfirmationPanel),
         infoCard: this.prototypeInfoCard ? {
           frameBounds: this.prototypeInfoCard.frameBounds,
           contentBounds: debugBounds(this.prototypeInfoCard.content),
@@ -2720,6 +3001,7 @@ export class SettingsOverlay {
   }
 
   close() {
+    this.closeExperimentConfirmation();
     this.closeKeyBindingsPanel();
     this.closeCreditsPanel();
     destroyMenuFx(this);
