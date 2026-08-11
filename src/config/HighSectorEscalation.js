@@ -205,7 +205,8 @@ export function createHighSectorEscalationState({
   sector = 1,
   seed = 'nova-swarm',
   reducedMotion = false,
-  runMode = 'ranked'
+  runMode = 'ranked',
+  preserveNativePressure = false
 } = {}) {
   const safeSector = Math.max(1, Math.floor(Number(sector) || 1));
   const activationSector = Math.max(51, Math.floor(Number(config.activationSector) || 60));
@@ -229,6 +230,7 @@ export function createHighSectorEscalationState({
     seed: String(seed),
     runMode,
     reducedMotion: Boolean(reducedMotion),
+    preserveNativePressure: Boolean(preserveNativePressure),
     pressureStep,
     pressureBudget,
     protocol,
@@ -268,6 +270,16 @@ function clearGeneratedThreatPlans(wave) {
     ...clean
   } = wave || {};
   return clean;
+}
+
+function getAuthoredBeatAssignments(waveCount) {
+  const count = Math.max(AUTHORED_BEAT_COUNT, Math.floor(Number(waveCount) || 0));
+  const assignments = new Map();
+  for (let beatIndex = 0; beatIndex < AUTHORED_BEAT_COUNT; beatIndex += 1) {
+    const waveIndex = Math.round((beatIndex * (count - 1)) / Math.max(1, AUTHORED_BEAT_COUNT - 1));
+    assignments.set(waveIndex, beatIndex);
+  }
+  return assignments;
 }
 
 function applyProtocolBeat(shaped, protocol, beat, beatIndex) {
@@ -312,48 +324,76 @@ function applyProtocolBeat(shaped, protocol, beat, beatIndex) {
 
 export function shapeHighSectorWaves(waves, state) {
   if (!Array.isArray(waves) || !state?.active || !state.protocol) return waves;
-  if (waves.length !== AUTHORED_BEAT_COUNT) {
+  const preserveNativePressure = state.preserveNativePressure === true;
+  if (!preserveNativePressure && waves.length !== AUTHORED_BEAT_COUNT) {
     throw new Error(`High-sector authored encounters require exactly ${AUTHORED_BEAT_COUNT} preplanned waves; received ${waves.length}.`);
+  }
+  if (preserveNativePressure && waves.length < AUTHORED_BEAT_COUNT) {
+    throw new Error(`Native-pressure high-sector encounters require at least ${AUTHORED_BEAT_COUNT} preplanned waves; received ${waves.length}.`);
   }
 
   const depth = state.tacticalDepthProfile || getTacticalDepthProfile(state.sector);
+  const beatAssignments = preserveNativePressure
+    ? getAuthoredBeatAssignments(waves.length)
+    : new Map(HIGH_SECTOR_ENCOUNTER_BEATS.map((_beat, index) => [index, index]));
   return waves.map((wave, index) => {
-    const beat = HIGH_SECTOR_ENCOUNTER_BEATS[index];
+    const beatIndex = beatAssignments.get(index);
+    if (!Number.isFinite(beatIndex)) {
+      return {
+        ...wave,
+        highSectorPressureBridge: true,
+        highSectorProtocolId: state.protocol.id,
+        highSectorPressureBudget: state.pressureBudget,
+        highSectorPressureStep: state.pressureStep
+      };
+    }
+    const beat = HIGH_SECTOR_ENCOUNTER_BEATS[beatIndex];
     const baseCount = Math.max(1, Math.floor(Number(wave?.count) || 1));
-    const clean = clearGeneratedThreatPlans(wave);
+    const clean = preserveNativePressure ? { ...wave } : clearGeneratedThreatPlans(wave);
+    const nativeForcedThreatActions = Array.isArray(wave?.forcedThreatActionIds)
+      ? wave.forcedThreatActionIds
+      : [];
+    const nativeThreatBudget = wave?.threatBudgetModifiers || {};
     const shaped = {
       ...clean,
-      count: Math.max(3, Math.round(baseCount * beat.countScalar)),
-      formation: depth.formations[index],
-      tactic: depth.tactics[index],
-      entry: index % 2 === 0 ? 'split' : 'alternating',
-      cadence: beat.cadence,
-      forcedThreatActionIds: [...state.protocol.forcedThreatActionIds],
+      count: preserveNativePressure
+        ? baseCount
+        : Math.max(3, Math.round(baseCount * beat.countScalar)),
+      formation: preserveNativePressure ? wave.formation : depth.formations[beatIndex],
+      tactic: preserveNativePressure ? wave.tactic : depth.tactics[beatIndex],
+      entry: preserveNativePressure ? wave.entry : (beatIndex % 2 === 0 ? 'split' : 'alternating'),
+      cadence: preserveNativePressure
+        ? Math.max(Number(wave?.cadence) || 1, beat.cadence)
+        : beat.cadence,
+      forcedThreatActionIds: [...new Set([
+        ...nativeForcedThreatActions,
+        ...state.protocol.forcedThreatActionIds
+      ])],
       threatBudgetModifiers: {
-        dangerBudgetBonus: 0,
-        maxActiveBonus: 0,
-        plannedActionBonus: 0
+        dangerBudgetBonus: preserveNativePressure ? Number(nativeThreatBudget.dangerBudgetBonus) || 0 : 0,
+        maxActiveBonus: preserveNativePressure ? Number(nativeThreatBudget.maxActiveBonus) || 0 : 0,
+        plannedActionBonus: preserveNativePressure ? Number(nativeThreatBudget.plannedActionBonus) || 0 : 0
       },
       highSectorProtocolId: state.protocol.id,
       highSectorAuthoredEncounter: true,
       highSectorPressureBudget: state.pressureBudget,
       highSectorPressureStep: state.pressureStep,
       highSectorTacticalDepthProfile: depth.id,
-      highSectorBeatIndex: index,
-      highSectorBeatNumber: index + 1,
+      highSectorBeatIndex: beatIndex,
+      highSectorBeatNumber: beatIndex + 1,
       highSectorBeatId: beat.id,
       highSectorBeatName: beat.name,
       highSectorObjective: beat.objective,
       highSectorConditionReadMs: CONDITION_READ_MS,
-      highSectorBriefingAnnounceMs: index === 0 ? 1150 : 260,
+      highSectorBriefingAnnounceMs: beatIndex === 0 ? 1150 : 260,
       highSectorPreCombatReliefMs: beat.id === 'climax_boss_lead_in' ? depth.reliefMs : 0,
       highSectorNonPhaseEscapeSide: state.protocol.initialSafeSide,
       highSectorTacticOverrides: {
-        fireScalar: beat.fireScalar,
-        fireDelayMult: beat.fireDelayMult
+        fireScalar: preserveNativePressure ? 1 : beat.fireScalar,
+        fireDelayMult: preserveNativePressure ? 1 : beat.fireDelayMult
       }
     };
-    return applyProtocolBeat(shaped, state.protocol, beat, index);
+    return applyProtocolBeat(shaped, state.protocol, beat, beatIndex);
   });
 }
 

@@ -230,7 +230,7 @@ async function runCase(browser, definition) {
     return game?.currentSceneName === 'play'
       && game?.lateGameExperiment?.active === true
       && manager?.level === sector
-      && manager?.waves?.length === 5
+      && manager?.waves?.length >= 5
       && manager?.enemies?.length > 0;
   }, definition.startSector, { timeout: 90000 });
 
@@ -449,6 +449,7 @@ async function runCase(browser, definition) {
 
     clearCombat('runtime_benchmark_measurement_start');
     play.isPaused = false;
+    play.particleManager.prewarm?.(play.particleManager.maxParticles);
     await sleep(900);
     if (typeof globalThis.gc === 'function') globalThis.gc();
     await sleep(80);
@@ -490,7 +491,7 @@ async function runCase(browser, definition) {
     };
     requestAnimationFrame(sampler);
 
-    const authoredWaves = [];
+    const waveRuns = [];
     for (let waveIndex = 0; waveIndex < manager.waves.length; waveIndex += 1) {
       const wave = await spawnWave(waveIndex);
       const segmentStart = performance.now();
@@ -534,7 +535,7 @@ async function runCase(browser, definition) {
       const recorded = [...metrics.waveSegments].reverse().find((entry) => (
         entry.sector === request.startSector && entry.waveIndex === waveIndex
       ));
-      authoredWaves.push({
+      waveRuns.push({
         waveIndex,
         beatId: wave.highSectorBeatId || null,
         beatNumber: wave.highSectorBeatNumber || null,
@@ -641,7 +642,8 @@ async function runCase(browser, definition) {
       runPolicy: { ...game.runPolicy },
       reducedMotion: JSON.parse(window.render_game_to_text()).highSectorEscalation?.reducedMotion === true,
       protocolId: initialProtocolId,
-      authoredWaves,
+      waveRuns,
+      authoredWaves: waveRuns.filter((wave) => Boolean(wave.beatId)),
       penetration,
       pulse,
       tractor,
@@ -723,6 +725,7 @@ try {
     assert.equal(result.scheduler.snapshots, 0, `${definition.id} collected a Cloud snapshot during combat`);
     assert.equal(result.scheduler.ipcRequests, 0, `${definition.id} issued Cloud IPC during combat`);
     assert.equal(result.authoredWaves.length, 5);
+    assert.ok(result.waveRuns.length > result.authoredWaves.length, `${definition.id} must retain native pressure bridge waves`);
     assert.deepEqual(result.authoredWaves.map((wave) => wave.beatId), [
       'opening_read',
       'priority_problem',
@@ -732,7 +735,7 @@ try {
     ]);
     assert.ok(result.authoredWaves.every((wave) => wave.durationMs >= authoredReadMs));
     assert.ok(result.authoredWaves.every((wave) => Number.isFinite(wave.recordedDurationMs)));
-    assert.equal(result.metrics.waveSegments.length, 5);
+    assert.equal(result.metrics.waveSegments.length, result.authoredWaves.length);
     assert.equal(result.entities.peak.hostileProjectiles <= 48, true);
     assert.equal(result.metrics.projectilePeak <= 48, true);
     assert.ok(result.entities.after.scorePopupPoolCreated <= 20, `${definition.id} exceeded the bounded ordinary score-popup pool`);
@@ -811,7 +814,7 @@ try {
     matrix,
     evidenceClass: 'automated_real_browser_runtime_with_scripted_target_clearance',
     limitations: [
-      'Every five-beat wave arc and boss-support segment ran in the real browser game runtime; targets were then aligned and cleared by scripted real projectiles so the matrix remains bounded and repeatable.',
+      'Every native-pressure wave, including the five authored protocol beats and retained bridge waves, plus the boss-support segment ran in the real browser game runtime; targets were then aligned and cleared by scripted real projectiles so the matrix remains bounded and repeatable.',
       'The harness keeps the player invulnerable. Death and damage values are recorded as zero under that safety fixture and are not survival evidence.',
       'Automated measurements are not evidence of human feel, fairness, fatigue, or a natural-run life economy.',
       'This matrix does not prove a 60-90 minute outcome. Skilled human Standard and Endurance playtests remain pending.',

@@ -370,6 +370,9 @@ export class EnemyManager {
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = level;
+    if (this.game?.lateGameExperiment?.active === true) {
+      this.currentNormalWaveDifficultyLevel = this.getNormalWaveDifficultyLevel(level);
+    }
     this.refreshHighSectorEscalationState(level);
     this.configureHighSectorRuntimeCaps();
     this.clearPendingWaveSpawns();
@@ -495,6 +498,9 @@ export class EnemyManager {
     this.marketingDebugMode = false;
     this.marketingDebugBossSpawnCount = 0;
     this.level = targetLevel;
+    if (this.game?.lateGameExperiment?.active === true) {
+      this.currentNormalWaveDifficultyLevel = this.getNormalWaveDifficultyLevel(targetLevel);
+    }
     this.refreshHighSectorEscalationState(targetLevel);
     this.configureHighSectorRuntimeCaps();
     this.clearPendingWaveSpawns();
@@ -745,6 +751,9 @@ export class EnemyManager {
     const sourceLevel = Math.max(1, Number(level) || 1);
     const normalWaveLevel = this.getNormalWaveDifficultyLevel(sourceLevel);
     const authoredEncounter = Boolean(this.highSectorEscalationState?.active && this.highSectorEscalationState?.protocol);
+    const preserveNativePressure = Boolean(
+      authoredEncounter && this.highSectorEscalationState?.preserveNativePressure
+    );
     const curatedWaves = this.getCuratedWaves(normalWaveLevel);
     if (curatedWaves) {
       const shapedCurated = curatedWaves.map((wave, waveIndex) =>
@@ -754,8 +763,13 @@ export class EnemyManager {
         const dangerMoment = this.applyNormalWaveDangerMoment(wave, normalWaveLevel, waveIndex, shapedCurated.length);
         return this.applyDangerMidShipPlan(dangerMoment, normalWaveLevel, waveIndex, shapedCurated.length);
       });
-      const planned = this.applyEliteMiddleShipPlan(threatShapedCurated, normalWaveLevel)
+      const pressureReady = threatShapedCurated
         .map((wave) => ({ ...wave, sourceLevel, normalWaveDifficultyLevel: normalWaveLevel }));
+      if (preserveNativePressure) {
+        const authored = shapeHighSectorWaves(pressureReady, this.highSectorEscalationState);
+        return this.applyEliteMiddleShipPlan(authored, normalWaveLevel);
+      }
+      const planned = this.applyEliteMiddleShipPlan(pressureReady, normalWaveLevel);
       return shapeHighSectorWaves(planned, this.highSectorEscalationState);
     }
 
@@ -806,14 +820,21 @@ export class EnemyManager {
         normalWaveDifficultyLevel: normalWaveLevel
       };
       const shaped = this.game?.contentDirector?.shapeWaveConfig?.(wave, { level: normalWaveLevel, sourceLevel, waveIndex: i }) || wave;
-      if (authoredEncounter) waves.push(shaped);
+      if (authoredEncounter && !preserveNativePressure) waves.push(shaped);
       else {
         const dangerMoment = this.applyNormalWaveDangerMoment(shaped, normalWaveLevel, i, numWaves);
         waves.push(this.applyDangerMidShipPlan(dangerMoment, normalWaveLevel, i, numWaves));
       }
     }
-    const planned = (authoredEncounter ? waves : this.applyEliteMiddleShipPlan(waves, normalWaveLevel))
+    const pressureReady = waves
       .map((wave) => ({ ...wave, sourceLevel, normalWaveDifficultyLevel: normalWaveLevel }));
+    if (preserveNativePressure) {
+      const authored = shapeHighSectorWaves(pressureReady, this.highSectorEscalationState);
+      return this.applyEliteMiddleShipPlan(authored, normalWaveLevel);
+    }
+    const planned = authoredEncounter
+      ? pressureReady
+      : this.applyEliteMiddleShipPlan(pressureReady, normalWaveLevel);
     return shapeHighSectorWaves(planned, this.highSectorEscalationState);
   }
 
@@ -1015,7 +1036,9 @@ export class EnemyManager {
     const waveBonus = Math.max(0, Number(pressureTuning.waveCountBonus) || 0);
     const planned = Math.round(base + Math.max(0, level - 1) * perLevel) + waveBonus;
     const baseline = Math.max(min, Math.min(max + waveBonus, planned));
-    const authoredLimit = this.highSectorEscalationState?.active && this.highSectorEscalationState?.protocol
+    const authoredLimit = this.highSectorEscalationState?.active
+      && this.highSectorEscalationState?.protocol
+      && !this.highSectorEscalationState?.preserveNativePressure
       ? Number(this.highSectorEscalationState.authoredEncounterBeatCount)
       : 0;
     return authoredLimit > 0 ? authoredLimit : baseline;
@@ -2227,7 +2250,8 @@ export class EnemyManager {
       sector: level,
       seed: this.game?.contentDirector?.seed || this.game?.gameId || 'nova-swarm',
       reducedMotion: Boolean(getAccessibilitySettings().prefersReducedMotion),
-      runMode: this.game?.runMode || 'ranked'
+      runMode: this.game?.runMode || 'ranked',
+      preserveNativePressure: this.game?.lateGameExperiment?.active === true
     });
     this.highSectorProtocolRuntime = null;
     this.authoredBossSupportState = null;
@@ -2301,6 +2325,7 @@ export class EnemyManager {
   }
 
   isCurrentHighSectorAuthoredWave() {
+    if (this.highSectorEscalationState?.preserveNativePressure) return false;
     const config = this.pendingWaveConfig || this.waves?.[this.currentWaveIndex] || null;
     return config?.highSectorAuthoredEncounter === true;
   }
